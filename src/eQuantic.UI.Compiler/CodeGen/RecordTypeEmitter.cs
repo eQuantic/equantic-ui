@@ -4,6 +4,7 @@ using System.Text;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using eQuantic.UI.Compiler.CodeGen.Ir;
 using eQuantic.UI.Compiler.CodeGen.Strategies;
 
 namespace eQuantic.UI.Compiler.CodeGen;
@@ -19,6 +20,11 @@ public class RecordTypeEmitter
 {
     private readonly CSharpToJsConverter _converter;
     private readonly Services.ComponentDependencyResolver? _modules;
+    private readonly MethodLowering _lowering;
+
+    /// <summary>Whether the type being emitted is written as TypeScript: the .ts module's emission
+    /// is, and the conformance harness's plain `.mjs` is not.</summary>
+    private bool _tsTypes;
 
     /// <param name="converter">The converter the bodies go through.</param>
     /// <param name="modules">The per-app scan, which knows which of the app's own types became
@@ -28,6 +34,7 @@ public class RecordTypeEmitter
     {
         _converter = converter;
         _modules = modules;
+        _lowering = new MethodLowering(converter, () => _tsTypes);
     }
 
     /// <summary>True for the value types this emitter handles: any record, or a struct, that exposes at
@@ -309,6 +316,7 @@ public class RecordTypeEmitter
     public string Emit(TypeDeclarationSyntax type, bool tsTypeDeclarations = false)
     {
         _converter.EmitTypeAnnotations(tsTypeDeclarations);
+        _tsTypes = tsTypeDeclarations;
         var name = type.Identifier.Text;
         var members = type.ValueMembers(ModelFor(type));
         var (baseName, superArgs, passedToBase) = BaseInfo(type);
@@ -371,7 +379,7 @@ public class RecordTypeEmitter
         foreach (var method in type.Members.OfType<MethodDeclarationSyntax>())
         {
             if (method.Identifier.Text == "ToString") userToString = true;
-            sb.Append(EmitMethod(method, name, tsTypeDeclarations)).Append(' ');
+            sb.Append(EmitMethod(method, name));
         }
 
         // OPERATOR overloads. JavaScript cannot overload `+`, so the operator becomes a static
@@ -384,16 +392,10 @@ public class RecordTypeEmitter
                 : OperatorMethodName(op.OperatorToken.Text);
             if (opName is null) continue;
             var pars = string.Join(", ", op.ParameterList.Parameters
-                .Select(p => tsTypeDeclarations
-                    ? $"{p.Identifier.Text.ToJsIdentifier()}: {TsTypeOf(p.Type)}"
-                    : p.Identifier.Text.ToJsIdentifier()));
-            // Hoisted locals first — `out var` inside an operator emits an assignment with nothing
-            // declaring the name, and an ES module is strict.
-            var body = OutParameters.HoistedLocals(op.Body ?? (SyntaxNode?)op.ExpressionBody)
-                + (op.ExpressionBody is { } expr
-                    ? $"return {_converter.ConvertExpression(expr.Expression)};"
-                    : op.Body is { } block ? Unwrap(_converter.Convert(block)) : "");
-            sb.Append($"static {opName}({pars}) {{ {body} }} ");
+                .Select(p => _lowering.Param(p.Identifier.Text.ToJsIdentifier(), TsTypeOf(p.Type))));
+            // The body is lowered as a method's (#432): an `out var` inside it is declared in front,
+            // and so is a variable an expression body's pattern binds, where an ES module is strict.
+            sb.Append(StaticMember(opName, pars, op.Body, op.ExpressionBody));
         }
 
         // CONVERSION operators — `implicit operator Money(int v)`, `explicit operator int(Money m)`.
@@ -413,14 +415,8 @@ public class RecordTypeEmitter
                 : ConversionMethodName(
                     conversion.Type.ToString() == name ? parameter.Type!.ToString() : conversion.Type.ToString(),
                     from: conversion.Type.ToString() == name);
-            var par = tsTypeDeclarations
-                ? $"{parameter.Identifier.Text.ToJsIdentifier()}: {TsTypeOf(parameter.Type)}"
-                : parameter.Identifier.Text.ToJsIdentifier();
-            var body = OutParameters.HoistedLocals(conversion.Body ?? (SyntaxNode?)conversion.ExpressionBody)
-                + (conversion.ExpressionBody is { } expr
-                    ? $"return {_converter.ConvertExpression(expr.Expression)};"
-                    : conversion.Body is { } block ? Unwrap(_converter.Convert(block)) : "");
-            sb.Append($"static {opName}({par}) {{ {body} }} ");
+            var par = _lowering.Param(parameter.Identifier.Text.ToJsIdentifier(), TsTypeOf(parameter.Type));
+            sb.Append(StaticMember(opName, par, conversion.Body, conversion.ExpressionBody));
         }
 
         // Static FIELDS — `public static readonly CodePosition Start = new(0, 0);`. The other half of
@@ -493,7 +489,7 @@ public class RecordTypeEmitter
                 switch (member)
                 {
                     case MethodDeclarationSyntax method when method.Body != null || method.ExpressionBody != null:
-                        _converter.InFileOf(method, () => sb.Append(EmitMethod(method, name, tsTypeDeclarations)).Append(' '));
+                        _converter.InFileOf(method, () => sb.Append(EmitMethod(method, name)));
                         break;
                     case PropertyDeclarationSyntax property when ComputedGetter(property) is not null || IsSetterOnly(property):
                         _converter.InFileOf(property, () => sb.Append(ComputedProperty(property, name)));
@@ -559,19 +555,31 @@ public class RecordTypeEmitter
         _converter.SetCurrentClass(className);
         var prefix = property.Modifiers.Any(m => m.IsKind(SyntaxKind.StaticKeyword)) ? "static " : "";
         var propertyName = property.Identifier.Text.ToCamelCase();
-        var text = getter switch
-        {
-            null => "",
-            BlockSyntax block => $"{prefix}get {propertyName}() {{ {Unwrap(_converter.Convert(block))} }} ",
-            _ => $"{prefix}get {propertyName}() {{ return {_converter.Convert(getter)}; }} ",
-        };
+        // Both accessors are lowered as a method's body is (#432), so a variable an expression body's
+        // pattern binds is declared in front of its use, as it is in a class.
+        var text = getter is null
+            ? ""
+            : Written(JsClassMember.Getter(prefix, propertyName, "",
+                _lowering.Body(getter as BlockSyntax, getter as ExpressionSyntax, isIterator: false, [], isAsync: false)));
         var setter = property.AccessorList?.Accessors.FirstOrDefault(a => a.Keyword.Text is "set" or "init");
-        if (setter?.ExpressionBody is { } arrow)
-            text += $"{prefix}set {propertyName}(value) {{ {_converter.Convert(arrow.Expression)}; }} ";
-        else if (setter?.Body is { } body)
-            text += $"{prefix}set {propertyName}(value) {{ {Unwrap(_converter.Convert(body))} }} ";
+        var setterBody = setter?.ExpressionBody is { } arrow
+            ? _lowering.ExpressionBody(arrow.Expression, returns: false)
+            : setter?.Body is { } block
+                ? _lowering.Body(block, null, isIterator: false, [], isAsync: false)
+                : null;
+        if (setterBody is not null)
+            text += Written(JsClassMember.Setter(prefix, propertyName, _lowering.Param("value", TsTypeOf(property.Type)), setterBody));
         return text;
     }
+
+    /// <summary>An operator or a conversion as the static method its call sites reach, its body
+    /// lowered as a method's (#432).</summary>
+    private string StaticMember(string name, string parameters, BlockSyntax? block, ArrowExpressionClauseSyntax? arrow) =>
+        Written(JsClassMember.Method("static ", name, "", parameters, "",
+            _lowering.Body(block, arrow?.Expression, isIterator: false, [], isAsync: false)));
+
+    /// <summary>A member in the one-line layout this emitter writes a class in, and the space after it.</summary>
+    private static string Written(JsClassMember member) => JsMemberWriter.Write(member, JsLayout.Compact) + " ";
 
     /// <summary>
     /// The base record (if any) from a primary-constructor base clause (<c>record Dog(…) : Animal(Name)</c>):
@@ -694,47 +702,17 @@ public class RecordTypeEmitter
         return (from ? "from" : "to") + identifier;
     }
 
-    /// <summary>A converted block comes back braced; a method body wants its contents.</summary>
-    private static string Unwrap(string block)
+    /// <summary>
+    /// A record's or a struct's method, its own or a default an interface supplies, lowered as a
+    /// class's is (<see cref="MethodLowering"/>, #432): an async method, an iterator, an out or ref
+    /// parameter and an expression body's pattern variable went through a copy here that handled
+    /// none of them. Typed only in the .ts emission, where a record's methods are its behaviour and an
+    /// untyped parameter ends the checking on the way in; the conformance harness runs the same class
+    /// as plain `.mjs`, where an annotation is a parse error rather than a type.
+    /// </summary>
+    private string EmitMethod(MethodDeclarationSyntax method, string className)
     {
-        var trimmed = block.Trim();
-        return trimmed.StartsWith('{') && trimmed.EndsWith('}') ? trimmed[1..^1].Trim() : trimmed;
-    }
-
-    private string EmitMethod(MethodDeclarationSyntax method, string className,
-        bool tsTypeDeclarations)
-    {
-        var jsName = method.Identifier.Text.ToCamelCase();
-        // Typed: a record is a VALUE and its methods are its behaviour — untyped parameters put an
-        // `any` at every one of them and quietly ended the checking on the way in. Only in the .ts
-        // emission, though: the conformance harness runs the same class as plain `.mjs`, where an
-        // annotation is a parse error rather than a type.
-        // An OPTIONAL parameter keeps its default, as the class emitter's does: a caller that omits
-        // it passes undefined, which runs the default, where `m(suffix)` handed the body undefined
-        // (found in review, #418).
         _converter.SetCurrentClass(className);
-        var pars = string.Join(", ", method.ParameterList.Parameters
-            .Select(p => (tsTypeDeclarations
-                    ? $"{p.Identifier.Text.ToCamelCase()}: {TsTypeOf(p.Type)}"
-                    : p.Identifier.Text.ToCamelCase())
-                + (p.Default is { } optional ? $" = {_converter.ConvertExpression(optional.Value, p.Type?.ToString())}" : "")));
-
-        string body;
-        if (method.Body != null)
-        {
-            var block = _converter.Convert(method.Body).Trim(); // "{ … }"
-            body = block.StartsWith("{") && block.EndsWith("}") ? block[1..^1].Trim() : block;
-        }
-        else if (method.ExpressionBody != null)
-        {
-            body = $"return {_converter.Convert(method.ExpressionBody.Expression)};";
-        }
-        else
-        {
-            body = "";
-        }
-
-        var isStatic = method.Modifiers.Any(m => m.IsKind(SyntaxKind.StaticKeyword)) ? "static " : "";
-        return $"{isStatic}{jsName}({pars}) {{ {body} }}";
+        return _lowering.Method(method, asStatic: false, TsTypeOf) is { } member ? Written(member) : "";
     }
 }

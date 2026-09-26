@@ -25,9 +25,11 @@ public class TypeScriptEmitter
 
     private TypeScriptCodeBuilder _builder = new();
 
-    /// <summary>One parameter in a hand-written signature: annotated in TypeScript mode, bare in
-    /// plain-JavaScript mode. Every literal signature the emitter writes goes through here.</summary>
-    private string Param(string name, string type) => TypeAnnotations ? $"{name}: {type}" : name;
+    private MethodLowering? _lowering;
+
+    /// <summary>How a method and a member's body are lowered, and every literal signature's
+    /// parameter written: one path shared with the record and struct emitter (#432).</summary>
+    private MethodLowering Lowering => _lowering ??= new MethodLowering(_converter, () => TypeAnnotations);
 
     /// <summary>
     /// An OPTIONAL parameter in a hand-written signature — <c>props?: any</c> in TypeScript, and
@@ -36,7 +38,7 @@ public class TypeScriptEmitter
     /// <para>
     /// The doc comment describing this had outlived the method itself, so four signatures went back
     /// to spelling <c>"props?: any"</c> by hand — and a component with a parameterless constructor
-    /// emitted a module a browser refuses to parse. The claim on <see cref="Param"/> that every
+    /// emitted a module a browser refuses to parse. The claim on <see cref="MethodLowering.Param"/> that every
     /// literal signature goes through it was, for those four, simply false.
     /// </para>
     /// </summary>
@@ -173,84 +175,11 @@ public class TypeScriptEmitter
         if (build?.ExpressionBody != null)
         {
             var expression = build.ExpressionBody.Expression;
-            return (JsStatement.Block(new[] { ExpressionBody(expression, returns: true) }), expression);
+            return (JsStatement.Block(new[] { Lowering.ExpressionBody(expression, returns: true) }), expression);
         }
         return (JsStatement.Block(new[] { fallback }), null);
     }
 
-    /// <summary>
-    /// A method's body as IR, so each statement reaches the class writer carrying the C# it came
-    /// from and the source map leads a frame or a breakpoint to it (#293): converted as text, the
-    /// body lost every origin before the writer saw it, and the map stopped at the method's first
-    /// line. The locals an <c>out var</c> declares lead the block. An iterator's buffer and an out
-    /// parameter's returned object still wrap the body's TEXT, so those two shapes stay text.
-    /// </summary>
-    private JsStatement MethodBody(BlockSyntax? block, ExpressionSyntax? expressionBody, bool isIterator,
-        IReadOnlyList<ParameterSyntax> byReference, bool isAsync)
-    {
-        var hoisted = OutParameters.HoistedLocals(block ?? (SyntaxNode?)expressionBody);
-        if (isIterator || byReference.Count > 0)
-        {
-            string text;
-            if (block != null)
-            {
-                _converter.SetIteratorBuffer(isIterator ? IteratorBufferName : null);
-                text = _converter.Convert(block);
-                _converter.SetIteratorBuffer(null);
-                if (isIterator) text = Braced(WrapIterator(StripJsBraces(text)));
-            }
-            else if (expressionBody != null)
-            {
-                text = Braced(ExpressionBodyReturn(expressionBody));
-            }
-            else
-            {
-                text = "{}";
-            }
-            var body = hoisted + StripJsBraces(text);
-            if (byReference.Count > 0) body = OutParameters.WrapBody(body, byReference, isAsync);
-            return JsStatement.Raw(body);
-        }
-
-        // An expression body never reaches ReturnStatementStrategy, so nothing hoisted the `let` for
-        // a pattern variable bound in it: ExpressionBodyReturn declares it in front of the return.
-        IReadOnlyList<JsStatement> statements = block != null
-            ? _converter.ConvertBlockIr(block) switch
-            {
-                JsBlock converted => converted.Statements,
-                var other => [other],
-            }
-            : expressionBody != null
-                ? [_converter.InBlock(() => ExpressionBody(expressionBody, returns: true))]
-                : [];
-        return hoisted.Length == 0
-            ? JsStatement.Block(statements)
-            : JsStatement.Block([JsStatement.Raw(hoisted.TrimEnd()), .. statements]);
-    }
-
-    /// <summary>An expression body as the one statement of its member — a return, or a bare
-    /// statement where a setter or a constructor has nothing to return — carrying the expression, so
-    /// the map leads a frame in it to its line (#293). A getter's, a setter's, a Build's and a
-    /// constructor's took the text alone, and a debugger read their lines as the member's head.</summary>
-    private JsStatement ExpressionBody(ExpressionSyntax expression, bool returns) =>
-        JsStatement.Raw(returns ? ExpressionBodyReturn(expression) : ExpressionBodyStatement(expression)) with { Origin = expression };
-
-    private string ExpressionBodyReturn(ExpressionSyntax expression) =>
-        $"{PatternVariableScanner.Declarations(expression, TypeAnnotations)}return {_converter.ConvertExpression(expression)};";
-
-    /// <summary>The same, in STATEMENT position (a setter) — no return to give it.</summary>
-    private string ExpressionBodyStatement(ExpressionSyntax expression) =>
-        $"{PatternVariableScanner.Declarations(expression, TypeAnnotations)}{_converter.ConvertExpression(expression)};";
-
-    private string ParamWithDefault(string name, string type, string? convertedDefault,
-        bool rest = false) =>
-        // `params xs` is a REST parameter. Emitted as a plain one it bound only the FIRST argument
-        // (`Count("a", "b")` answered 1) and was undefined when none were passed, which threw on
-        // the first read of `.length`.
-        rest ? $"...{Param(name, type)}"
-        : convertedDefault is null ? Param(name, type)
-        : convertedDefault == "undefined" && TypeAnnotations ? $"{name}?: {type}"
-        : $"{Param(name, type)} = {convertedDefault}";
     public TypeScriptCodeBuilder.ClassBuilder? ClassBuilder { get; set; }
 
     private void WriteLn(string line = "") => _builder.Line(line);
@@ -419,7 +348,7 @@ public class TypeScriptEmitter
                     if (hasExplicitParams)
                     {
                         // Constructor has explicit params (e.g., Heading(content, level))
-                        var paramList = string.Join(", ", ctor!.Parameters.Select(p => Param(p.Name, "any")));
+                        var paramList = string.Join(", ", ctor!.Parameters.Select(p => Lowering.Param(p.Name, "any")));
                         jsParams = paramList;
                     }
                     else
@@ -647,7 +576,7 @@ public class TypeScriptEmitter
                             var bodyLine = statements.Count + 1;
                             if (ctorDef?.BodyNode is { } ctorBlock) statements.Add(Contents(ctorBlock));
                             else if (ctorDef?.ExpressionBodyNode is { } ctorExpression)
-                                statements.Add(ExpressionBody(ctorExpression, returns: false));
+                                statements.Add(Lowering.ExpressionBody(ctorExpression, returns: false));
                             // …and the initializer last, which is where C# runs it.
                             statements.Add(JsStatement.Raw("if (props && typeof props === 'object') Object.assign(this, props);"));
                             c.Member(JsClassMember.Constructor(signature, JsStatement.Block(statements)),
@@ -673,7 +602,7 @@ public class TypeScriptEmitter
                     {
                         var (buildBody, buildSource) = BuildBody(component.BuildMethodNode,
                             JsStatement.Raw("throw new Error('Build method not implemented');"));
-                        c.Member(JsClassMember.Method("", "build", "", Param(buildParamName, "BuildContext"), "", buildBody),
+                        c.Member(JsClassMember.Method("", "build", "", Lowering.Param(buildParamName, "BuildContext"), "", buildBody),
                             bodySource: buildSource);
                     }
 
@@ -693,7 +622,7 @@ public class TypeScriptEmitter
                 foreach (var action in component.ServerActions)
                 {
                     ClassBuilder = c;
-                    var paramsList = string.Join(", ", action.Parameters.Select(p => Param(p.Name, Annotate(p.Type))));
+                    var paramsList = string.Join(", ", action.Parameters.Select(p => Lowering.Param(p.Name, Annotate(p.Type))));
                     var argsList = string.Join(", ", action.Parameters.Select(p => p.Name));
                     var returnType = Annotate(action.ReturnType);
 
@@ -1435,25 +1364,6 @@ public class TypeScriptEmitter
         return setter is not null && (setter.Body != null || setter.ExpressionBody != null);
     }
 
-    /// <summary>Unwrap a converted block body (`{ … }`) to its inner statements for inlining into an
-    /// accessor / constructor.</summary>
-    /// <summary>
-    /// A block's CONTENTS, for a member whose braces the emitter writes itself. The converter lays
-    /// the block out with its statements one level in; here that level comes off again (the first
-    /// line is trimmed, every later line loses one indentation unit), so the contents start at
-    /// column zero and the builder's own indentation puts them where the member is.
-    /// </summary>
-    private static string StripJsBraces(string js)
-    {
-        js = js.Trim();
-        if (js.StartsWith("{") && js.EndsWith("}")) js = js.Substring(1, js.Length - 2).Trim();
-        var lines = js.Split('\n');
-        for (var i = 1; i < lines.Length; i++)
-            if (lines[i].StartsWith("    ", StringComparison.Ordinal)) lines[i] = lines[i][4..];
-        return string.Join("\n", lines);
-    }
-
-    private static string Braced(string body) => JsMemberWriter.Braced(body);
 
     /// <summary>A member body as IR: the block itself when there is one and nothing reshapes it;
     /// otherwise the text the emitter still assembles, as a raw statement the member writer places
@@ -1480,7 +1390,7 @@ public class TypeScriptEmitter
             if (node.ExpressionBody != null)
             {
                 _converter.SetCurrentClass(component.Name);
-                c.Member(JsClassMember.Getter(stat, name, "", ExpressionBody(node.ExpressionBody.Expression, returns: true)), node);
+                c.Member(JsClassMember.Getter(stat, name, "", Lowering.ExpressionBody(node.ExpressionBody.Expression, returns: true)), node);
                 continue;
             }
 
@@ -1512,7 +1422,7 @@ public class TypeScriptEmitter
                     if (getterHasBody)
                     {
                         var body = getter!.ExpressionBody != null
-                            ? ExpressionBody(getter.ExpressionBody.Expression, returns: true)
+                            ? Lowering.ExpressionBody(getter.ExpressionBody.Expression, returns: true)
                             : _converter.ConvertBlockIr(getter.Body!);
                         c.Member(JsClassMember.Getter(stat, name, "", body), getter);
                     }
@@ -1520,7 +1430,7 @@ public class TypeScriptEmitter
                     {
                         // C# setters use the implicit `value` parameter, which survives conversion as-is.
                         var body = setter!.ExpressionBody != null
-                            ? ExpressionBody(setter.ExpressionBody.Expression, returns: false)
+                            ? Lowering.ExpressionBody(setter.ExpressionBody.Expression, returns: false)
                             : _converter.ConvertBlockIr(setter.Body!);
                         c.Member(JsClassMember.Setter(stat, name, "value", body), setter);
                     }
@@ -1760,13 +1670,13 @@ public class TypeScriptEmitter
         if (p.ExpressionBody != null)
         {
             c.Member(JsClassMember.Getter(qualifier, pn, annotation,
-                ExpressionBody(p.ExpressionBody.Expression, returns: true)), p);
+                Lowering.ExpressionBody(p.ExpressionBody.Expression, returns: true)), p);
             return true;
         }
         var g = p.AccessorList?.Accessors.FirstOrDefault(a => a.Keyword.Text == "get");
         if (g?.ExpressionBody != null)
             c.Member(JsClassMember.Getter(qualifier, pn, annotation,
-                ExpressionBody(g.ExpressionBody.Expression, returns: true)), g);
+                Lowering.ExpressionBody(g.ExpressionBody.Expression, returns: true)), g);
         else if (g?.Body != null)
             c.Member(JsClassMember.Getter(qualifier, pn, annotation, _converter.ConvertBlockIr(g.Body)), g);
         else
@@ -1789,7 +1699,7 @@ public class TypeScriptEmitter
         var setter = p.AccessorList?.Accessors.FirstOrDefault(a => a.Keyword.Text is "set" or "init");
         if (setter?.ExpressionBody != null)
             c.Member(JsClassMember.Setter(qualifier, pn, $"value{Annotation(DeclaredType(p.Type))}",
-                ExpressionBody(setter.ExpressionBody.Expression, returns: false)), setter);
+                Lowering.ExpressionBody(setter.ExpressionBody.Expression, returns: false)), setter);
         else if (setter?.Body != null)
             c.Member(JsClassMember.Setter(qualifier, pn, $"value{Annotation(DeclaredType(p.Type))}",
                 _converter.ConvertBlockIr(setter.Body)), setter);
@@ -1799,46 +1709,7 @@ public class TypeScriptEmitter
     /// supplies it.</summary>
     private void EmitClassMethod(MethodDeclarationSyntax m, TypeScriptCodeBuilder.ClassBuilder c, bool asStatic)
     {
-        // Same for an abstract METHOD: there is nothing to emit, and TypeScript needs no
-        // stub on the base.
-        if (m.Modifiers.Any(Microsoft.CodeAnalysis.CSharp.SyntaxKind.AbstractKeyword)) return;
-        var mn = m.Identifier.Text.ToCamelCase();
-        // Optional parameters keep their default here too — a STATIC helper is exactly what
-        // other modules call with the trailing arguments omitted.
-        // `out` leaves the signature — it is not passed IN. What it carries comes back in
-        // the returned object; see OutParameters.
-        var byReference = OutParameters.Of(m.ParameterList);
-        var pars = string.Join(", ", m.ParameterList.Parameters
-            .Where(pp => !OutParameters.IsOut(pp))
-            .Select(pp =>
-        {
-            // A parameter the body never mentions takes the underscore convention — the
-            // interface a tokenizer implements hands over state that a simple language
-            // never reads, and the runtime's own build rejects an unused name.
-            var body = m.Body?.ToString() ?? m.ExpressionBody?.ToString() ?? "";
-            var parameterName = body.Contains(pp.Identifier.Text)
-                ? pp.Identifier.Text.ToJsIdentifier()
-                : "_" + pp.Identifier.Text.ToJsIdentifier();
-            return ParamWithDefault(parameterName, DeclaredType(pp.Type),
-                pp.Default is null ? null : _converter.ConvertExpression(pp.Default.Value),
-                pp.Modifiers.Any(Microsoft.CodeAnalysis.CSharp.SyntaxKind.ParamsKeyword));
-        }));
-        var isAsync = m.ReturnType.ToString().StartsWith("Task")
-            || m.Modifiers.Any(Microsoft.CodeAnalysis.CSharp.SyntaxKind.AsyncKeyword);
-        var isIterator = m.Body.IsIteratorBody();
-        if (isIterator) ReportIfEndless(m.Body);
-        // Generic helpers keep their type parameters in the TS signature (`also<T>(node: T)`)
-        // — constraints drop (TS needs none of them to bind), names pass through.
-        var generics = m.TypeParameterList is { Parameters.Count: > 0 }
-            ? $"<{string.Join(", ", m.TypeParameterList.Parameters.Select(tp => tp.Identifier.Text))}>"
-            : "";
-        if (m.Body == null && m.ExpressionBody == null) return;
-        // `out var x` at a CALL SITE inside this body needs `x` to exist before the call:
-        // MethodBody declares it in front.
-        var mbody = MethodBody(m.Body, m.ExpressionBody?.Expression, isIterator, byReference, isAsync);
-        var modifiers = (m.Modifiers.Any(Microsoft.CodeAnalysis.CSharp.SyntaxKind.StaticKeyword) || asStatic ? "static " : "")
-            + (isAsync ? "async " : "");
-        c.Member(JsClassMember.Method(modifiers, mn, generics, pars, "", mbody), m);
+        if (Lowering.Method(m, asStatic, DeclaredType) is { } member) c.Member(member, m);
     }
 
     /// <summary>A vocabulary default the class takes from the interface's ASSEMBLY, where eqc has no
@@ -1917,7 +1788,7 @@ public class TypeScriptEmitter
     private JsStatement? OperatorBody(BaseMethodDeclarationSyntax op) =>
         op.Body is null && op.ExpressionBody is null
             ? null
-            : MethodBody(op.Body, op.ExpressionBody?.Expression, isIterator: false, byReference: [], isAsync: false);
+            : Lowering.Body(op.Body, op.ExpressionBody?.Expression, isIterator: false, byReference: [], isAsync: false);
 
     /// <summary>
     /// C# 14 extension blocks (<c>extension(T receiver) { … }</c>): every member lowers to a
@@ -1940,7 +1811,7 @@ public class TypeScriptEmitter
             var receiverType = receiverParameter?.Type is { } rt ? DeclaredType(rt) : "any";
             string WithReceiver(string rest) => receiverName is null
                 ? rest
-                : rest.Length == 0 ? Param(receiverName, receiverType) : $"{Param(receiverName, receiverType)}, {rest}";
+                : rest.Length == 0 ? Lowering.Param(receiverName, receiverType) : $"{Lowering.Param(receiverName, receiverType)}, {rest}";
 
             foreach (var member in block.Members)
             {
@@ -1958,7 +1829,7 @@ public class TypeScriptEmitter
                             break;
                         }
                         c.Member(JsClassMember.Method("static ", property.Identifier.Text.ToCamelCase(), "", WithReceiver(""),
-                            Annotation(DeclaredType(property.Type)), MethodBody(getterBlock, body, isIterator: false, [], isAsync: false)), property);
+                            Annotation(DeclaredType(property.Type)), Lowering.Body(getterBlock, body, isIterator: false, [], isAsync: false)), property);
                         ReportExtensionSetter(property.AccessorList?.Accessors, property.Identifier.Text);
                         break;
                     }
@@ -1969,7 +1840,7 @@ public class TypeScriptEmitter
                             ?? indexer.AccessorList?.Accessors.FirstOrDefault(a => a.Keyword.Text == "get")?.ExpressionBody?.Expression;
                         var getterBlock = indexer.AccessorList?.Accessors.FirstOrDefault(a => a.Keyword.Text == "get")?.Body;
                         var pars = string.Join(", ", indexer.ParameterList.Parameters
-                            .Select(pp => Param(pp.Identifier.Text.ToJsIdentifier(), DeclaredType(pp.Type))));
+                            .Select(pp => Lowering.Param(pp.Identifier.Text.ToJsIdentifier(), DeclaredType(pp.Type))));
                         if (body is null && getterBlock is null)
                         {
                             _converter.Report(indexer, ConversionSeverity.Error, "EQ2008",
@@ -1977,7 +1848,7 @@ public class TypeScriptEmitter
                             break;
                         }
                         c.Member(JsClassMember.Method("static ", "item", "", WithReceiver(pars),
-                            Annotation(DeclaredType(indexer.Type)), MethodBody(getterBlock, body, isIterator: false, [], isAsync: false)), indexer);
+                            Annotation(DeclaredType(indexer.Type)), Lowering.Body(getterBlock, body, isIterator: false, [], isAsync: false)), indexer);
                         ReportExtensionSetter(indexer.AccessorList?.Accessors, "this[]");
                         break;
                     }
@@ -1991,13 +1862,13 @@ public class TypeScriptEmitter
                             break;
                         }
                         var pars = string.Join(", ", method.ParameterList.Parameters.Select(pp =>
-                            ParamWithDefault(pp.Identifier.Text.ToJsIdentifier(), DeclaredType(pp.Type),
+                            Lowering.ParamWithDefault(pp.Identifier.Text.ToJsIdentifier(), DeclaredType(pp.Type),
                                 pp.Default is null ? null : _converter.ConvertExpression(pp.Default.Value),
                                 pp.Modifiers.Any(Microsoft.CodeAnalysis.CSharp.SyntaxKind.ParamsKeyword))));
                         var isAsync = method.ReturnType.ToString().StartsWith("Task")
                             || method.Modifiers.Any(Microsoft.CodeAnalysis.CSharp.SyntaxKind.AsyncKeyword);
                         if (method.Body == null && method.ExpressionBody == null) break;
-                        var body = MethodBody(method.Body, method.ExpressionBody?.Expression, isIterator: false, [], isAsync);
+                        var body = Lowering.Body(method.Body, method.ExpressionBody?.Expression, isIterator: false, [], isAsync);
                         c.Member(JsClassMember.Method("static " + (isAsync ? "async " : ""), method.Identifier.Text.ToCamelCase(), "",
                             WithReceiver(pars), "", body), method);
                         break;
@@ -2065,7 +1936,7 @@ public class TypeScriptEmitter
         var parameters = ctor is null
             ? ""
             : string.Join(", ", ctor.ParameterList.Parameters.Select(p =>
-                ParamWithDefault(p.Identifier.Text.ToJsIdentifier(), DeclaredType(p.Type),
+                Lowering.ParamWithDefault(p.Identifier.Text.ToJsIdentifier(), DeclaredType(p.Type),
                     p.Default is null ? null : _converter.ConvertExpression(p.Default.Value),
                     p.Modifiers.Any(Microsoft.CodeAnalysis.CSharp.SyntaxKind.ParamsKeyword))));
 
@@ -2094,34 +1965,6 @@ public class TypeScriptEmitter
             ctor ?? (SyntaxNode)cls);
     }
 
-    /// <summary>
-    /// A PLAIN class the developer wrote — not a record, not static, not a component: a bucket, a
-    /// builder, a small state machine. Nothing emitted one, so `new Bucket()` named something that
-    /// did not exist. Identity, not value: no structural equals and no `with`.
-    /// </summary>
-    /// <summary>The array an iterator method fills — one name, so every emitter agrees.</summary>
-    private const string IteratorBufferName = "_seq";
-
-    /// <summary>
-    /// An iterator that never ends is ordinary C# — the caller stops taking. Materialised into an
-    /// array it is a hang, and a hung tab says nothing about why. Named here instead.
-    /// </summary>
-    private void ReportIfEndless(BlockSyntax? body)
-    {
-        if (body.FindEndlessYieldLoop() is not { } loop) return;
-        _converter.Report(loop, ConversionSeverity.Error, "EQ2005",
-            "This iterator never finishes, and iterators are MATERIALISED into an array — the loop "
-            + "would run forever instead of yielding lazily. Give the loop an end (a bound, a "
-            + "`yield break`), or take what you need inside it and return a finished sequence.");
-    }
-
-    /// <summary>
-    /// Wraps a converted iterator body so it declares the buffer and returns it. The yields inside
-    /// were already lowered to <c>_seq.push(…)</c>.
-    /// </summary>
-    /// <summary>An iterator's body fills a buffer and returns it — contents in, contents out.</summary>
-    private static string WrapIterator(string contents) =>
-        $"const {IteratorBufferName} = [];\n{contents}\nreturn {IteratorBufferName};";
 
     /// <summary>
     /// The TS annotation for a declared type, asking the semantic model what KIND of thing it is
@@ -2487,7 +2330,7 @@ public class TypeScriptEmitter
                 : null;
             var isRest = syntaxParameters is { } paramList && index < paramList.Count
                 && paramList[index].Modifiers.Any(Microsoft.CodeAnalysis.CSharp.SyntaxKind.ParamsKeyword);
-            return ParamWithDefault(name, DeclarationType(component, p.Type),
+            return Lowering.ParamWithDefault(name, DeclarationType(component, p.Type),
                 defaultValue is null ? null : _converter.ConvertExpression(defaultValue), isRest);
         }));
         var methodName = method.Name.ToCamelCase();
@@ -2511,7 +2354,7 @@ public class TypeScriptEmitter
         // read as undefined the moment a LINQ operator touched the result, because every sequence
         // in the emitted world is an array. See ConversionContext.IteratorBuffer.
         var isIterator = method.SyntaxNode?.Body.IsIteratorBody() == true;
-        if (isIterator) ReportIfEndless(method.SyntaxNode!.Body);
+        if (isIterator) Lowering.ReportIfEndless(method.SyntaxNode!.Body);
         var asyncPrefix = isAsync ? "async " : "";
         var promiseReturnType = isAsync && returnType == "void" ? "Promise<void>" : 
                                  isAsync ? $"Promise<{returnType}>" : returnType;
@@ -2519,7 +2362,7 @@ public class TypeScriptEmitter
         if (method.SyntaxNode != null)
         {
             _converter.SetCurrentClass(className);
-            var body = MethodBody(method.SyntaxNode.Body, method.SyntaxNode.ExpressionBody?.Expression, isIterator, byReference, isAsync);
+            var body = Lowering.Body(method.SyntaxNode.Body, method.SyntaxNode.ExpressionBody?.Expression, isIterator, byReference, isAsync);
             var generics = method.TypeParameters is { } typeParameters && typeParameters.Any()
                 ? $"<{string.Join(", ", typeParameters)}>" : "";
             c.Member(JsClassMember.Method((method.IsStatic ? "static " : "") + asyncPrefix, methodName, generics, parameters, "",
