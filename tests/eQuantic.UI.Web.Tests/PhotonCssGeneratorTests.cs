@@ -102,7 +102,7 @@ public class PhotonCssGeneratorTests
     {
         Css.Should().Contain("color-scheme: light dark;");
         // Brand anchor: the Primary base pair straight from the token.
-        Css.Should().Contain("--eq-color-primary-base: light-dark(#0050a0, #5ca2e8);");
+        Css.Should().Contain("--eq-color-primary-base: light-dark(#0050a0, #76baff);");
         Css.Should().Contain("--eq-color-background: light-dark(#f5f6f8, #0c0f13);");
     }
 

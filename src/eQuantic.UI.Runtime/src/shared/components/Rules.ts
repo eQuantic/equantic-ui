@@ -2,7 +2,7 @@ import { $eq, FieldRule, FormField } from "../runtime-exports";
 
 export class Rules {
     static required(message: string = 'This field is required.') {
-        return new FieldRule(message, (value: string) => value.trim().length > 0);
+        return new FieldRule(message, (value: string) => $eq.text.trim(value).length > 0);
     }
 
     static minLength(length: number, message: string | null = null) {

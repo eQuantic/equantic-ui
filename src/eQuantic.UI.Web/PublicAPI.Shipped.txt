@@ -26,6 +26,7 @@ eQuantic.UI.Web.ComponentExpansionScope.Reserved.get -> string?
 eQuantic.UI.Web.ComponentExpansionScope.Reserved.init -> void
 eQuantic.UI.Web.ComponentExpansionScope.Restore.get -> System.Collections.Generic.IReadOnlyDictionary<string!, eQuantic.UI.Web.LoadedComponentState!>!
 eQuantic.UI.Web.ComponentExpansionScope.Restore.init -> void
+eQuantic.UI.Web.ComponentIdentity
 eQuantic.UI.Web.Display
 eQuantic.UI.Web.Display.Block = 0 -> eQuantic.UI.Web.Display
 eQuantic.UI.Web.Display.Contents = 7 -> eQuantic.UI.Web.Display
@@ -370,10 +371,6 @@ eQuantic.UI.Web.HtmlElement.Step.get -> double?
 eQuantic.UI.Web.HtmlElement.Step.set -> void
 eQuantic.UI.Web.HtmlElement.Style.get -> eQuantic.UI.Web.HtmlStyle?
 eQuantic.UI.Web.HtmlElement.Style.set -> void
-eQuantic.UI.Web.HtmlElement.StyleClass.get -> eQuantic.UI.Web.Styling.StyleClass?
-eQuantic.UI.Web.HtmlElement.StyleClass.set -> void
-eQuantic.UI.Web.HtmlElement.StyleClasses.get -> System.Collections.Generic.IReadOnlyList<eQuantic.UI.Web.Styling.StyleClass!>?
-eQuantic.UI.Web.HtmlElement.StyleClasses.set -> void
 eQuantic.UI.Web.HtmlElement.TabIndex.get -> int?
 eQuantic.UI.Web.HtmlElement.TabIndex.set -> void
 eQuantic.UI.Web.HtmlElement.Target.get -> string?
@@ -498,6 +495,8 @@ eQuantic.UI.Web.HtmlStyle.GridTemplateRows.set -> void
 eQuantic.UI.Web.HtmlStyle.Height.get -> string?
 eQuantic.UI.Web.HtmlStyle.Height.set -> void
 eQuantic.UI.Web.HtmlStyle.HtmlStyle() -> void
+eQuantic.UI.Web.HtmlStyle.Isolation.get -> string?
+eQuantic.UI.Web.HtmlStyle.Isolation.set -> void
 eQuantic.UI.Web.HtmlStyle.JustifyContent.get -> eQuantic.UI.Web.JustifyContent?
 eQuantic.UI.Web.HtmlStyle.JustifyContent.set -> void
 eQuantic.UI.Web.HtmlStyle.JustifyItems.get -> eQuantic.UI.Web.JustifyContent?
@@ -536,6 +535,8 @@ eQuantic.UI.Web.HtmlStyle.Outline.get -> string?
 eQuantic.UI.Web.HtmlStyle.Outline.set -> void
 eQuantic.UI.Web.HtmlStyle.Overflow.get -> string?
 eQuantic.UI.Web.HtmlStyle.Overflow.set -> void
+eQuantic.UI.Web.HtmlStyle.OverflowAnchor.get -> string?
+eQuantic.UI.Web.HtmlStyle.OverflowAnchor.set -> void
 eQuantic.UI.Web.HtmlStyle.OverflowX.get -> string?
 eQuantic.UI.Web.HtmlStyle.OverflowX.set -> void
 eQuantic.UI.Web.HtmlStyle.OverflowY.get -> string?
@@ -608,10 +609,6 @@ eQuantic.UI.Web.IComponent.RemoveChild(eQuantic.UI.Web.IComponent! child) -> voi
 eQuantic.UI.Web.IComponent.Render() -> eQuantic.UI.Web.HtmlNode!
 eQuantic.UI.Web.IComponent.Style.get -> eQuantic.UI.Web.HtmlStyle?
 eQuantic.UI.Web.IComponent.Style.set -> void
-eQuantic.UI.Web.IComponent.StyleClass.get -> eQuantic.UI.Web.Styling.StyleClass?
-eQuantic.UI.Web.IComponent.StyleClass.set -> void
-eQuantic.UI.Web.IComponent.StyleClasses.get -> System.Collections.Generic.IReadOnlyList<eQuantic.UI.Web.Styling.StyleClass!>?
-eQuantic.UI.Web.IComponent.StyleClasses.set -> void
 eQuantic.UI.Web.IPseudoStyled
 eQuantic.UI.Web.IPseudoStyled.PseudoDeclarations.get -> System.Collections.Generic.List<(string! Pseudo, string! Prop, string! Value)>!
 eQuantic.UI.Web.IScrolledStyled
@@ -695,10 +692,6 @@ eQuantic.UI.Web.StyleSink.ClassForScrolled(string! property, string! value) -> s
 eQuantic.UI.Web.StyleSink.Css.get -> string!
 eQuantic.UI.Web.StyleSink.IsEmpty.get -> bool
 eQuantic.UI.Web.StyleSink.StyleSink() -> void
-eQuantic.UI.Web.Styling.Breakpoint
-eQuantic.UI.Web.Styling.Breakpoint.Breakpoint() -> void
-eQuantic.UI.Web.Styling.Breakpoint.MaxWidth.get -> int
-eQuantic.UI.Web.Styling.Breakpoint.MaxWidth.init -> void
 eQuantic.UI.Web.Styling.ClassBuilder
 eQuantic.UI.Web.Styling.ClassBuilder.Active(params string?[]! classes) -> eQuantic.UI.Web.Styling.ClassBuilder!
 eQuantic.UI.Web.Styling.ClassBuilder.Add(params string?[]! classes) -> eQuantic.UI.Web.Styling.ClassBuilder!
@@ -726,86 +719,6 @@ eQuantic.UI.Web.Styling.ClassBuilder.WithPrefix(string! prefix, params string?[]
 eQuantic.UI.Web.Styling.ClassBuilder.Xl(params string?[]! classes) -> eQuantic.UI.Web.Styling.ClassBuilder!
 eQuantic.UI.Web.Styling.ClassBuilder.Xl2(params string?[]! classes) -> eQuantic.UI.Web.Styling.ClassBuilder!
 eQuantic.UI.Web.Styling.ClassBuilderExtensions
-eQuantic.UI.Web.Styling.CompileTimeEvaluateAttribute
-eQuantic.UI.Web.Styling.CompileTimeEvaluateAttribute.CompileTimeEvaluateAttribute() -> void
-eQuantic.UI.Web.Styling.CompileTimeEvaluateAttribute.FallbackBehavior.get -> string!
-eQuantic.UI.Web.Styling.CompileTimeEvaluateAttribute.FallbackBehavior.set -> void
-eQuantic.UI.Web.Styling.CompileTimeEvaluateAttribute.WarnOnEvaluationFailure.get -> bool
-eQuantic.UI.Web.Styling.CompileTimeEvaluateAttribute.WarnOnEvaluationFailure.set -> void
-eQuantic.UI.Web.Styling.Spacing
-eQuantic.UI.Web.Styling.Spacing.Bottom.get -> int?
-eQuantic.UI.Web.Styling.Spacing.Bottom.init -> void
-eQuantic.UI.Web.Styling.Spacing.Left.get -> int?
-eQuantic.UI.Web.Styling.Spacing.Left.init -> void
-eQuantic.UI.Web.Styling.Spacing.Right.get -> int?
-eQuantic.UI.Web.Styling.Spacing.Right.init -> void
-eQuantic.UI.Web.Styling.Spacing.Spacing() -> void
-eQuantic.UI.Web.Styling.Spacing.ToCssValue() -> string!
-eQuantic.UI.Web.Styling.Spacing.Top.get -> int?
-eQuantic.UI.Web.Styling.Spacing.Top.init -> void
-eQuantic.UI.Web.Styling.StyleClass
-eQuantic.UI.Web.Styling.StyleClass.Active.get -> eQuantic.UI.Web.Styling.StyleClass?
-eQuantic.UI.Web.Styling.StyleClass.Active.init -> void
-eQuantic.UI.Web.Styling.StyleClass.AlignItems.get -> string?
-eQuantic.UI.Web.Styling.StyleClass.AlignItems.init -> void
-eQuantic.UI.Web.Styling.StyleClass.Background.get -> string?
-eQuantic.UI.Web.Styling.StyleClass.Background.init -> void
-eQuantic.UI.Web.Styling.StyleClass.BackgroundColor.get -> string?
-eQuantic.UI.Web.Styling.StyleClass.BackgroundColor.init -> void
-eQuantic.UI.Web.Styling.StyleClass.Border.get -> string?
-eQuantic.UI.Web.Styling.StyleClass.Border.init -> void
-eQuantic.UI.Web.Styling.StyleClass.BorderColor.get -> string?
-eQuantic.UI.Web.Styling.StyleClass.BorderColor.init -> void
-eQuantic.UI.Web.Styling.StyleClass.BorderRadius.get -> int?
-eQuantic.UI.Web.Styling.StyleClass.BorderRadius.init -> void
-eQuantic.UI.Web.Styling.StyleClass.BoxShadow.get -> string?
-eQuantic.UI.Web.Styling.StyleClass.BoxShadow.init -> void
-eQuantic.UI.Web.Styling.StyleClass.Color.get -> string?
-eQuantic.UI.Web.Styling.StyleClass.Color.init -> void
-eQuantic.UI.Web.Styling.StyleClass.Cursor.get -> string?
-eQuantic.UI.Web.Styling.StyleClass.Cursor.init -> void
-eQuantic.UI.Web.Styling.StyleClass.Disabled.get -> eQuantic.UI.Web.Styling.StyleClass?
-eQuantic.UI.Web.Styling.StyleClass.Disabled.init -> void
-eQuantic.UI.Web.Styling.StyleClass.Display.get -> string?
-eQuantic.UI.Web.Styling.StyleClass.Display.init -> void
-eQuantic.UI.Web.Styling.StyleClass.Extend(eQuantic.UI.Web.Styling.StyleClass! overrides) -> eQuantic.UI.Web.Styling.StyleClass!
-eQuantic.UI.Web.Styling.StyleClass.FlexDirection.get -> string?
-eQuantic.UI.Web.Styling.StyleClass.FlexDirection.init -> void
-eQuantic.UI.Web.Styling.StyleClass.Focus.get -> eQuantic.UI.Web.Styling.StyleClass?
-eQuantic.UI.Web.Styling.StyleClass.Focus.init -> void
-eQuantic.UI.Web.Styling.StyleClass.FontSize.get -> string?
-eQuantic.UI.Web.Styling.StyleClass.FontSize.init -> void
-eQuantic.UI.Web.Styling.StyleClass.FontWeight.get -> string?
-eQuantic.UI.Web.Styling.StyleClass.FontWeight.init -> void
-eQuantic.UI.Web.Styling.StyleClass.Gap.get -> string?
-eQuantic.UI.Web.Styling.StyleClass.Gap.init -> void
-eQuantic.UI.Web.Styling.StyleClass.GeneratedClassName.get -> string!
-eQuantic.UI.Web.Styling.StyleClass.Height.get -> string?
-eQuantic.UI.Web.Styling.StyleClass.Height.init -> void
-eQuantic.UI.Web.Styling.StyleClass.Hover.get -> eQuantic.UI.Web.Styling.StyleClass?
-eQuantic.UI.Web.Styling.StyleClass.Hover.init -> void
-eQuantic.UI.Web.Styling.StyleClass.JustifyContent.get -> string?
-eQuantic.UI.Web.Styling.StyleClass.JustifyContent.init -> void
-eQuantic.UI.Web.Styling.StyleClass.Margin.get -> eQuantic.UI.Web.Styling.Spacing?
-eQuantic.UI.Web.Styling.StyleClass.Margin.init -> void
-eQuantic.UI.Web.Styling.StyleClass.MaxWidth.get -> string?
-eQuantic.UI.Web.Styling.StyleClass.MaxWidth.init -> void
-eQuantic.UI.Web.Styling.StyleClass.Media.get -> System.Collections.Generic.Dictionary<eQuantic.UI.Web.Styling.Breakpoint!, eQuantic.UI.Web.Styling.StyleClass!>?
-eQuantic.UI.Web.Styling.StyleClass.Media.init -> void
-eQuantic.UI.Web.Styling.StyleClass.MinHeight.get -> string?
-eQuantic.UI.Web.Styling.StyleClass.MinHeight.init -> void
-eQuantic.UI.Web.Styling.StyleClass.Padding.get -> eQuantic.UI.Web.Styling.Spacing?
-eQuantic.UI.Web.Styling.StyleClass.Padding.init -> void
-eQuantic.UI.Web.Styling.StyleClass.Position.get -> string?
-eQuantic.UI.Web.Styling.StyleClass.Position.init -> void
-eQuantic.UI.Web.Styling.StyleClass.StyleClass() -> void
-eQuantic.UI.Web.Styling.StyleClass.TextAlign.get -> string?
-eQuantic.UI.Web.Styling.StyleClass.TextAlign.init -> void
-eQuantic.UI.Web.Styling.StyleClass.ToCss() -> string!
-eQuantic.UI.Web.Styling.StyleClass.Transition.get -> string?
-eQuantic.UI.Web.Styling.StyleClass.Transition.init -> void
-eQuantic.UI.Web.Styling.StyleClass.Width.get -> string?
-eQuantic.UI.Web.Styling.StyleClass.Width.init -> void
 eQuantic.UI.Web.TextAlign
 eQuantic.UI.Web.TextAlign.Center = 2 -> eQuantic.UI.Web.TextAlign
 eQuantic.UI.Web.TextAlign.End = 5 -> eQuantic.UI.Web.TextAlign
@@ -839,6 +752,8 @@ static eQuantic.UI.Web.ComponentExpansionScope.Ambient.set -> void
 static eQuantic.UI.Web.ComponentExpansionScope.Capture(eQuantic.UI.Primitives.UiComponent! component) -> System.Collections.Generic.IReadOnlyDictionary<string!, object?>!
 static eQuantic.UI.Web.ComponentExpansionScope.FieldsOf(System.Type! type) -> System.Collections.Generic.IEnumerable<System.Reflection.FieldInfo!>!
 static eQuantic.UI.Web.ComponentExpansionScope.WhatLoaded(eQuantic.UI.Primitives.UiComponent! component, System.Collections.Generic.IReadOnlyDictionary<string!, object?>! asBuilt) -> eQuantic.UI.Web.LoadedComponentState!
+static eQuantic.UI.Web.ComponentIdentity.Key(System.Type! type, int ordinal) -> string!
+static eQuantic.UI.Web.ComponentIdentity.Of(System.Type! type) -> string!
 static eQuantic.UI.Web.GradientSink.Ambient.get -> eQuantic.UI.Web.GradientSink?
 static eQuantic.UI.Web.GradientSink.Ambient.set -> void
 static eQuantic.UI.Web.HtmlNode.Text(string! content) -> eQuantic.UI.Web.HtmlNode!
@@ -861,10 +776,6 @@ static eQuantic.UI.Web.Styling.ClassBuilder.Create(params string?[]! initialClas
 static eQuantic.UI.Web.Styling.ClassBuilder.implicit operator string!(eQuantic.UI.Web.Styling.ClassBuilder! builder) -> string!
 static eQuantic.UI.Web.Styling.ClassBuilderExtensions.JoinClasses(params string?[]! classes) -> string!
 static eQuantic.UI.Web.Styling.ClassBuilderExtensions.WhenClass(bool condition, string? className, string? fallback = null) -> string?
-static eQuantic.UI.Web.Styling.Spacing.All(int value) -> eQuantic.UI.Web.Styling.Spacing!
-static eQuantic.UI.Web.Styling.Spacing.Horizontal(int value) -> eQuantic.UI.Web.Styling.Spacing!
-static eQuantic.UI.Web.Styling.Spacing.Symmetric(int vertical = 0, int horizontal = 0) -> eQuantic.UI.Web.Styling.Spacing!
-static eQuantic.UI.Web.Styling.Spacing.Vertical(int value) -> eQuantic.UI.Web.Styling.Spacing!
 static eQuantic.UI.Web.ThemeBridge.SerializeJson(eQuantic.UI.Primitives.IAppTheme! theme) -> string!
 static eQuantic.UI.Web.ThemeVarMap.For(eQuantic.UI.Primitives.IAppTheme! theme) -> eQuantic.UI.Web.ThemeVarMap!
 static eQuantic.UI.Web.TokenCss.Bezier(eQuantic.UI.Primitives.Curve curve) -> string!
@@ -886,9 +797,5 @@ static eQuantic.UI.Web.TokenCss.Transition(eQuantic.UI.Primitives.TransitionSpec
 static eQuantic.UI.Web.TokenCss.Value(eQuantic.UI.Primitives.ColorToken token) -> string!
 static eQuantic.UI.Web.WebRealizer.GradientId(eQuantic.UI.Primitives.VectorGradient run) -> string!
 static eQuantic.UI.Web.WebRealizer.Lower(eQuantic.UI.Primitives.VisualNode! node, eQuantic.UI.Primitives.IAppTheme! theme, float typeScale = 1, eQuantic.UI.Web.StyleSink? styles = null) -> eQuantic.UI.Web.HtmlElement!
-static readonly eQuantic.UI.Web.Styling.Breakpoint.Desktop -> eQuantic.UI.Web.Styling.Breakpoint!
-static readonly eQuantic.UI.Web.Styling.Breakpoint.Mobile -> eQuantic.UI.Web.Styling.Breakpoint!
-static readonly eQuantic.UI.Web.Styling.Breakpoint.Tablet -> eQuantic.UI.Web.Styling.Breakpoint!
-static readonly eQuantic.UI.Web.Styling.Breakpoint.Wide -> eQuantic.UI.Web.Styling.Breakpoint!
 virtual eQuantic.UI.Web.HtmlElement.AddChild(eQuantic.UI.Web.IComponent! child) -> void
 virtual eQuantic.UI.Web.HtmlElement.RemoveChild(eQuantic.UI.Web.IComponent! child) -> void

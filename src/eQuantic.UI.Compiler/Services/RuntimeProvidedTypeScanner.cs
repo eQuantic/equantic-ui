@@ -44,6 +44,16 @@ public static class RuntimeProvidedTypeScanner
     public static readonly IReadOnlyList<string> VocabularyNamespaces =
         ["eQuantic.UI.Primitives", "eQuantic.UI.Code"];
 
+    /// <summary>
+    /// The assemblies whose types the runtime provides: the visual vocabulary, the code engine, the
+    /// component library and the charts. A namespace says where a type is declared, and any assembly
+    /// can declare a type in one of these; what the runtime HAS is these assemblies' types, so a
+    /// question about what it carries asks the assembly too (found in review, #418).
+    /// <c>VocabularyInterfaceDefaultsTests</c> holds this list to the assemblies it reads.
+    /// </summary>
+    public static readonly IReadOnlyList<string> RuntimeAssemblies =
+        ["eQuantic.UI.Primitives", "eQuantic.UI.Code", "eQuantic.UI.Components", "eQuantic.UI.Charts"];
+
     /// <summary>Whether <paramref name="ns"/> is one of the <see cref="VocabularyNamespaces"/> or
     /// nested inside one — never merely a longer name that starts the same way.</summary>
     public static bool IsVocabularyNamespace(string ns)

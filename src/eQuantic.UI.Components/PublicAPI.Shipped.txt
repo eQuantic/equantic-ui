@@ -1,4 +1,5 @@
 #nullable enable
+const eQuantic.UI.Components.CodeBlock.SelectionAlpha = 0.28 -> float
 const eQuantic.UI.Components.DataTable.RowHeight = 52 -> float
 const eQuantic.UI.Components.PageIndicator.MaxDots = 8 -> int
 const eQuantic.UI.Components.Pagination.AlwaysShow = 7 -> int
@@ -190,20 +191,20 @@ eQuantic.UI.Components.CodeBlock.CodeMetrics.LineHeight.get -> float
 eQuantic.UI.Components.CodeBlock.CodeMetrics.LineHeight.init -> void
 eQuantic.UI.Components.CodeBlock.CodeMetrics.Style.get -> eQuantic.UI.Primitives.TypeStyle
 eQuantic.UI.Components.CodeBlock.CodeMetrics.Style.init -> void
-eQuantic.UI.Components.CodeBlock.Decorations.get -> System.Collections.Generic.IReadOnlyList<eQuantic.UI.Primitives.CodeDecoration!>!
+eQuantic.UI.Components.CodeBlock.Decorations.get -> System.Collections.Generic.IReadOnlyList<eQuantic.UI.Code.CodeDecoration!>!
 eQuantic.UI.Components.CodeBlock.Decorations.init -> void
-eQuantic.UI.Components.CodeBlock.Document.get -> eQuantic.UI.Primitives.CodeDocument!
+eQuantic.UI.Components.CodeBlock.Document.get -> eQuantic.UI.Code.CodeDocument!
 eQuantic.UI.Components.CodeBlock.Document.init -> void
 eQuantic.UI.Components.CodeBlock.FirstLineNumber.get -> int
 eQuantic.UI.Components.CodeBlock.FirstLineNumber.init -> void
 eQuantic.UI.Components.CodeBlock.Gutter(eQuantic.UI.Primitives.ComponentContext! context) -> eQuantic.UI.Primitives.VisualNode!
-eQuantic.UI.Components.CodeBlock.GutterMarkers.get -> System.Collections.Generic.IReadOnlyList<eQuantic.UI.Primitives.CodeGutterMarker!>!
+eQuantic.UI.Components.CodeBlock.GutterMarkers.get -> System.Collections.Generic.IReadOnlyList<eQuantic.UI.Code.CodeGutterMarker!>!
 eQuantic.UI.Components.CodeBlock.GutterMarkers.init -> void
-eQuantic.UI.Components.CodeBlock.Highlighter.get -> eQuantic.UI.Primitives.CodeHighlighter?
+eQuantic.UI.Components.CodeBlock.Highlighter.get -> eQuantic.UI.Code.CodeHighlighter?
 eQuantic.UI.Components.CodeBlock.Highlighter.init -> void
 eQuantic.UI.Components.CodeBlock.Inverse.get -> bool
 eQuantic.UI.Components.CodeBlock.Inverse.init -> void
-eQuantic.UI.Components.CodeBlock.Language.get -> eQuantic.UI.Primitives.ICodeLanguage!
+eQuantic.UI.Components.CodeBlock.Language.get -> eQuantic.UI.Code.ICodeLanguage!
 eQuantic.UI.Components.CodeBlock.Language.init -> void
 eQuantic.UI.Components.CodeBlock.MaxHeight.get -> float
 eQuantic.UI.Components.CodeBlock.MaxHeight.init -> void
@@ -217,6 +218,8 @@ eQuantic.UI.Components.CodeBlock.OnScrolled.get -> System.Action<float>?
 eQuantic.UI.Components.CodeBlock.OnScrolled.init -> void
 eQuantic.UI.Components.CodeBlock.OnViewportChanged.get -> System.Action<float>?
 eQuantic.UI.Components.CodeBlock.OnViewportChanged.init -> void
+eQuantic.UI.Components.CodeBlock.SelectionBands.get -> System.Collections.Generic.IReadOnlyList<eQuantic.UI.Primitives.Rect>!
+eQuantic.UI.Components.CodeBlock.SelectionBands.init -> void
 eQuantic.UI.Components.CodeBlock.ShowLineNumbers.get -> bool
 eQuantic.UI.Components.CodeBlock.ShowLineNumbers.init -> void
 eQuantic.UI.Components.CodeBlock.Size.get -> eQuantic.UI.Primitives.SizeVariant
@@ -229,19 +232,23 @@ eQuantic.UI.Components.CodeBlock.ViewportOffset.get -> float
 eQuantic.UI.Components.CodeBlock.ViewportOffset.init -> void
 eQuantic.UI.Components.CodeBlock.ViewportWidth.get -> float
 eQuantic.UI.Components.CodeBlock.ViewportWidth.init -> void
+eQuantic.UI.Components.CodeBlock.WidestLine.get -> int?
+eQuantic.UI.Components.CodeBlock.WidestLine.init -> void
 eQuantic.UI.Components.CodeEditor
 eQuantic.UI.Components.CodeEditor.Autofocus.get -> bool
 eQuantic.UI.Components.CodeEditor.Autofocus.set -> void
 eQuantic.UI.Components.CodeEditor.Caption.get -> string?
 eQuantic.UI.Components.CodeEditor.Caption.set -> void
 eQuantic.UI.Components.CodeEditor.CodeEditor(string! code = "", string? language = null) -> void
-eQuantic.UI.Components.CodeEditor.Decorations.get -> System.Collections.Generic.IReadOnlyList<eQuantic.UI.Primitives.CodeDecoration!>!
+eQuantic.UI.Components.CodeEditor.Decorations.get -> System.Collections.Generic.IReadOnlyList<eQuantic.UI.Code.CodeDecoration!>!
 eQuantic.UI.Components.CodeEditor.Decorations.set -> void
-eQuantic.UI.Components.CodeEditor.Editor.get -> eQuantic.UI.Primitives.CodeEditorController!
+eQuantic.UI.Components.CodeEditor.Editor.get -> eQuantic.UI.Code.CodeEditorController!
 eQuantic.UI.Components.CodeEditor.FirstLineNumber.get -> int
 eQuantic.UI.Components.CodeEditor.FirstLineNumber.set -> void
-eQuantic.UI.Components.CodeEditor.GutterMarkers.get -> System.Collections.Generic.IReadOnlyList<eQuantic.UI.Primitives.CodeGutterMarker!>!
+eQuantic.UI.Components.CodeEditor.GutterMarkers.get -> System.Collections.Generic.IReadOnlyList<eQuantic.UI.Code.CodeGutterMarker!>!
 eQuantic.UI.Components.CodeEditor.GutterMarkers.set -> void
+eQuantic.UI.Components.CodeEditor.Height.get -> eQuantic.UI.Primitives.SizeValue
+eQuantic.UI.Components.CodeEditor.Height.set -> void
 eQuantic.UI.Components.CodeEditor.InitialCode.get -> string!
 eQuantic.UI.Components.CodeEditor.InitialCode.init -> void
 eQuantic.UI.Components.CodeEditor.Inverse.get -> bool
@@ -256,7 +263,7 @@ eQuantic.UI.Components.CodeEditor.OnChanged.get -> System.Action<string!>?
 eQuantic.UI.Components.CodeEditor.OnChanged.set -> void
 eQuantic.UI.Components.CodeEditor.OnGutterPressed.get -> System.Action<int>?
 eQuantic.UI.Components.CodeEditor.OnGutterPressed.set -> void
-eQuantic.UI.Components.CodeEditor.OnSelectionChanged.get -> System.Action<eQuantic.UI.Primitives.CodeRange>?
+eQuantic.UI.Components.CodeEditor.OnSelectionChanged.get -> System.Action<eQuantic.UI.Code.CodeRange>?
 eQuantic.UI.Components.CodeEditor.OnSelectionChanged.set -> void
 eQuantic.UI.Components.CodeEditor.ReadOnly.get -> bool
 eQuantic.UI.Components.CodeEditor.ReadOnly.set -> void
@@ -517,11 +524,11 @@ eQuantic.UI.Components.List.Items.get -> System.Collections.Generic.IReadOnlyLis
 eQuantic.UI.Components.List.Items.init -> void
 eQuantic.UI.Components.List.List(System.Collections.Generic.IReadOnlyList<eQuantic.UI.Components.ListItem!>! items, bool dividers = true) -> void
 eQuantic.UI.Components.ListDetail
-eQuantic.UI.Components.ListDetail.Detail.get -> eQuantic.UI.Primitives.VisualNode?
+eQuantic.UI.Components.ListDetail.Detail.get -> System.Func<eQuantic.UI.Primitives.VisualNode!>?
 eQuantic.UI.Components.ListDetail.Detail.init -> void
-eQuantic.UI.Components.ListDetail.List.get -> eQuantic.UI.Primitives.VisualNode!
+eQuantic.UI.Components.ListDetail.List.get -> System.Func<eQuantic.UI.Primitives.VisualNode!>!
 eQuantic.UI.Components.ListDetail.List.init -> void
-eQuantic.UI.Components.ListDetail.ListDetail(eQuantic.UI.Primitives.VisualNode! list, eQuantic.UI.Primitives.VisualNode? detail = null, System.Action? onBack = null) -> void
+eQuantic.UI.Components.ListDetail.ListDetail(System.Func<eQuantic.UI.Primitives.VisualNode!>! list, System.Func<eQuantic.UI.Primitives.VisualNode!>? detail = null, System.Action? onBack = null) -> void
 eQuantic.UI.Components.ListDetail.ListTitle.get -> string?
 eQuantic.UI.Components.ListDetail.ListTitle.init -> void
 eQuantic.UI.Components.ListDetail.ListWidth.get -> float
@@ -1164,9 +1171,10 @@ static eQuantic.UI.Components.AccordionItem.operator ==(eQuantic.UI.Components.A
 static eQuantic.UI.Components.Badge.AsDot(eQuantic.UI.Primitives.Variant variant = eQuantic.UI.Primitives.Variant.Destructive) -> eQuantic.UI.Components.Badge!
 static eQuantic.UI.Components.CodeBlock.CodeMetrics.operator !=(eQuantic.UI.Components.CodeBlock.CodeMetrics left, eQuantic.UI.Components.CodeBlock.CodeMetrics right) -> bool
 static eQuantic.UI.Components.CodeBlock.CodeMetrics.operator ==(eQuantic.UI.Components.CodeBlock.CodeMetrics left, eQuantic.UI.Components.CodeBlock.CodeMetrics right) -> bool
+static eQuantic.UI.Components.CodeBlock.Corner(string? caption, System.Action? onCopy, bool inverse, eQuantic.UI.Primitives.IAppTheme! theme) -> eQuantic.UI.Primitives.VisualNode?
 static eQuantic.UI.Components.CodeBlock.InkFor(bool inverse, eQuantic.UI.Primitives.IAppTheme! theme) -> eQuantic.UI.Primitives.ColorToken
 static eQuantic.UI.Components.CodeBlock.MetricsFor(eQuantic.UI.Primitives.ComponentContext! context, eQuantic.UI.Primitives.SizeVariant size, bool showLineNumbers, int lastLineNumber) -> eQuantic.UI.Components.CodeBlock.CodeMetrics
-static eQuantic.UI.Components.CodeBlock.Of(eQuantic.UI.Primitives.CodeDocument! document, eQuantic.UI.Primitives.ICodeLanguage! language) -> eQuantic.UI.Components.CodeBlock!
+static eQuantic.UI.Components.CodeBlock.Of(eQuantic.UI.Code.CodeDocument! document, eQuantic.UI.Code.ICodeLanguage! language) -> eQuantic.UI.Components.CodeBlock!
 static eQuantic.UI.Components.CodeBlock.SelectionFor(bool inverse, eQuantic.UI.Primitives.IAppTheme! theme) -> eQuantic.UI.Primitives.ColorToken
 static eQuantic.UI.Components.CodeBlock.SurfaceFor(bool inverse, eQuantic.UI.Primitives.IAppTheme! theme) -> eQuantic.UI.Primitives.ColorToken
 static eQuantic.UI.Components.Crumb.operator !=(eQuantic.UI.Components.Crumb? left, eQuantic.UI.Components.Crumb? right) -> bool
@@ -1195,8 +1203,11 @@ static eQuantic.UI.Components.SdkStrings.Back.get -> string!
 static eQuantic.UI.Components.SdkStrings.ChooseDate.get -> string!
 static eQuantic.UI.Components.SdkStrings.ChooseTime.get -> string!
 static eQuantic.UI.Components.SdkStrings.ClearSearch.get -> string!
+static eQuantic.UI.Components.SdkStrings.CloseFind.get -> string!
+static eQuantic.UI.Components.SdkStrings.CodeEditor.get -> string!
 static eQuantic.UI.Components.SdkStrings.CookieConsentBody.get -> string!
 static eQuantic.UI.Components.SdkStrings.CookieConsentTitle.get -> string!
+static eQuantic.UI.Components.SdkStrings.CopyCode.get -> string!
 static eQuantic.UI.Components.SdkStrings.DateFormatHint.get -> string!
 static eQuantic.UI.Components.SdkStrings.DateFormatLetters.get -> string!
 static eQuantic.UI.Components.SdkStrings.Dismiss.get -> string!
@@ -1231,7 +1242,7 @@ static eQuantic.UI.Components.UI.Canvas(System.Action<eQuantic.UI.Primitives.ICa
 static eQuantic.UI.Components.UI.Card(eQuantic.UI.Primitives.VisualNode! child, eQuantic.UI.Components.CardKind kind = eQuantic.UI.Components.CardKind.Elevated) -> eQuantic.UI.Components.Card!
 static eQuantic.UI.Components.UI.Checkbox(bool checked, System.Action? onChanged = null, string? label = null, bool disabled = false) -> eQuantic.UI.Components.Checkbox!
 static eQuantic.UI.Components.UI.Chip(string! label, eQuantic.UI.Components.ChipKind kind = eQuantic.UI.Components.ChipKind.Filter, bool selected = false, System.Action? onPressed = null, System.Action? onRemove = null) -> eQuantic.UI.Components.Chip!
-static eQuantic.UI.Components.UI.CodeSurface(eQuantic.UI.Primitives.VisualNode! child, eQuantic.UI.Primitives.CodeEditorController! editor, System.Action? onChanged = null, string? label = null, bool autofocus = false) -> eQuantic.UI.Primitives.CodeSurface!
+static eQuantic.UI.Components.UI.CodeSurface(eQuantic.UI.Primitives.VisualNode! child, eQuantic.UI.Primitives.ICodeSurfaceModel! model, System.Action? onChanged = null, string? label = null, bool autofocus = false) -> eQuantic.UI.Primitives.CodeSurface!
 static eQuantic.UI.Components.UI.Column(float gap = 0, eQuantic.UI.Primitives.MainAlign main = eQuantic.UI.Primitives.MainAlign.Start, eQuantic.UI.Primitives.CrossAlign cross = eQuantic.UI.Primitives.CrossAlign.Stretch, bool wrap = false, float? runGap = null, eQuantic.UI.Primitives.EdgeInsets? padding = null, eQuantic.UI.Primitives.SizeValue width = default(eQuantic.UI.Primitives.SizeValue), eQuantic.UI.Primitives.SizeValue height = default(eQuantic.UI.Primitives.SizeValue), eQuantic.UI.Primitives.VisualNode![]? children = null) -> eQuantic.UI.Primitives.Column!
 static eQuantic.UI.Components.UI.CookieConsent(string? policyHref = null) -> eQuantic.UI.Components.CookieConsent!
 static eQuantic.UI.Components.UI.CultureSwitcher(System.Collections.Generic.IReadOnlyList<eQuantic.UI.Components.CultureOption!>! options) -> eQuantic.UI.Components.CultureSwitcher!
@@ -1255,7 +1266,7 @@ static eQuantic.UI.Components.UI.Image(string! source, float width, float height
 static eQuantic.UI.Components.UI.InFlow(eQuantic.UI.Primitives.VisualNode! child) -> eQuantic.UI.Primitives.InFlow!
 static eQuantic.UI.Components.UI.InView(eQuantic.UI.Primitives.VisualNode! child, System.Action<bool>! onChanged) -> eQuantic.UI.Primitives.InView!
 static eQuantic.UI.Components.UI.Link(string! destination, eQuantic.UI.Primitives.VisualNode! child, string? label = null, bool current = false) -> eQuantic.UI.Primitives.Link!
-static eQuantic.UI.Components.UI.ListDetail(eQuantic.UI.Primitives.VisualNode! list, eQuantic.UI.Primitives.VisualNode? detail = null, System.Action? onBack = null) -> eQuantic.UI.Components.ListDetail!
+static eQuantic.UI.Components.UI.ListDetail(System.Func<eQuantic.UI.Primitives.VisualNode!>! list, System.Func<eQuantic.UI.Primitives.VisualNode!>? detail = null, System.Action? onBack = null) -> eQuantic.UI.Components.ListDetail!
 static eQuantic.UI.Components.UI.ListItem(string! title, string? subtitle = null, System.Action? onPressed = null) -> eQuantic.UI.Components.ListItem!
 static eQuantic.UI.Components.UI.ListView(int count, float itemExtent, System.Func<int, eQuantic.UI.Primitives.VisualNode!>! itemBuilder, eQuantic.UI.Primitives.SizeValue width = default(eQuantic.UI.Primitives.SizeValue), eQuantic.UI.Primitives.SizeValue height = default(eQuantic.UI.Primitives.SizeValue)) -> eQuantic.UI.Components.ListView!
 static eQuantic.UI.Components.UI.LiveRegion(eQuantic.UI.Primitives.VisualNode! child, eQuantic.UI.Primitives.LiveRegionUrgency urgency = eQuantic.UI.Primitives.LiveRegionUrgency.Polite, string! label = "") -> eQuantic.UI.Primitives.LiveRegion!

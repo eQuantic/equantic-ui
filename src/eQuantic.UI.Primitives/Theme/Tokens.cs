@@ -53,14 +53,6 @@ public static class IconSize
 }
 
 /// <summary>
-/// The CONTROL LADDER (spec A12) — height, horizontal padding, inner gap, label size, icon size,
-/// corner radius and hit target for a control of a given <see cref="SizeVariant"/>.
-/// <para>
-/// This is a TOKEN, not a Button detail: a TextInput, Chip, Select, Stepper or SegmentedControl of
-/// the same size must measure identically. Reach for it instead of re-typing 40.
-/// </para>
-/// </summary>
-/// <summary>
 /// How TIGHT the controls are — a property of the TARGET, never of the call site. The same
 /// <c>SizeVariant.Small</c> is 32dp under a finger and 26dp under a mouse, because a pointer is
 /// precise and a fingertip is not: this is Material's density and Apple's control size, and it is
@@ -76,6 +68,14 @@ public enum Density : byte
     Compact = 1,
 }
 
+/// <summary>
+/// The CONTROL LADDER (spec A12) — height, horizontal padding, inner gap, label size, icon size,
+/// corner radius and hit target for a control of a given <see cref="SizeVariant"/>.
+/// <para>
+/// This is a TOKEN, not a Button detail: a TextInput, Chip, Select, Stepper or SegmentedControl of
+/// the same size must measure identically. Reach for it instead of re-typing 40.
+/// </para>
+/// </summary>
 public static class Sizing
 {
     public static float Height(SizeVariant size, Density density = Density.Comfortable) => size switch
@@ -118,7 +118,7 @@ public static class Sizing
     /// tuple view of this ladder.</summary>
     public const float ButtonMinWidth = 64;
 
-    // ---- the SELECTION ladder (spec B10/B11) -------------------------------------------------
+    // ---- the SELECTION ladder (spec B11 Checkbox, B12 Switch, B13 RadioGroup) -------------------------------------------------
     // A switch, a checkbox and a radio have no size rung of their own: there is one of each, and
     // the only thing that moves it is the DENSITY of the target. These numbers used to live in
     // three private tables inside the three components, which is why the Mac's switch stayed at
@@ -232,7 +232,8 @@ public readonly record struct ShadowSpec(float OffsetY, float Blur, float Spread
     public bool IsNone => Blur == 0 && OffsetY == 0 && Spread == 0;
 }
 
-/// <summary>Easing curves (spec §06). Cubic-bézier control points, plus the physical spring.</summary>
+/// <summary>Easing curves (spec §06): cubic-bézier control points and nothing else. The spring is a
+/// separate type, <see cref="SpringSpec"/>, which nothing consumes yet.</summary>
 public readonly record struct Curve(float X1, float Y1, float X2, float Y2)
 {
     /// <summary>On-screen moves: tab indicator, segmented thumb, reorder.</summary>
@@ -243,8 +244,10 @@ public readonly record struct Curve(float X1, float Y1, float X2, float Y2)
     public static readonly Curve Accelerate = new(0.3f, 0f, 1f, 1f);
 }
 
-/// <summary>Spring parameters for gesture releases (sheet snap, swipe settle) — physical, never keyframed;
-/// initial velocity is injected from the gesture velocity at release.</summary>
+/// <summary>Spring parameters meant for gesture releases (sheet snap, swipe settle). Shipped as a TYPE
+/// only: nothing consumes it yet, and releases glide to their target over <see cref="Motion.BaseMs"/>
+/// with smoothstep (Native.Framework, DragStore). docs/design/status.json tracks the behaviour as a
+/// request, and HandoffStatusTests fails the day something outside this file starts reading it.</summary>
 public readonly record struct SpringSpec(float Stiffness, float Damping, float Mass)
 {
     public static readonly SpringSpec Default = new(380, 34, 1);
@@ -284,7 +287,8 @@ public static class Motion
 
 /// <summary>
 /// A motion ROLE — a duration and the curve that belongs with it, so a call site names what is
-/// happening instead of picking a number. The physical settle after a gesture is NOT here: releases
-/// run <see cref="SpringSpec"/> with the release velocity injected, never a keyframed duration.
+/// happening instead of picking a number. The settle after a gesture is NOT here: releases glide to
+/// their target over <see cref="Motion.BaseMs"/> (DragStore), and the velocity-taking spring is still a
+/// request.
 /// </summary>
 public readonly record struct MotionSpec(int DurationMs, Curve Curve);

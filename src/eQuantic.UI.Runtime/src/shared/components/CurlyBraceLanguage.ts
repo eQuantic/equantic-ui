@@ -71,7 +71,7 @@ export abstract class CurlyBraceLanguage {
         }
         while (i < line.length) {
             let c = line[i];
-            if ((/^\p{White_Space}$/u.test(c))) {
+            if ($eq.text.isWhiteSpace(c)) {
                 i++;
                 continue;
             }
@@ -281,12 +281,12 @@ export abstract class CurlyBraceLanguage {
     }
 
     static nextNonSpace(line: string, from: number) {
-        for (let i = from; i < line.length; i++) if (!(/^\p{White_Space}$/u.test(line[i]))) return line[i];
+        for (let i = from; i < line.length; i++) if (!$eq.text.isWhiteSpace(line[i])) return line[i];
         return '\0';
     }
 
     static isLineHead(line: string, index: number) {
-        for (let i = 0; i < index; i++) if (!(/^\p{White_Space}$/u.test(line[i]))) return false;
+        for (let i = 0; i < index; i++) if (!$eq.text.isWhiteSpace(line[i])) return false;
         return true;
     }
 }

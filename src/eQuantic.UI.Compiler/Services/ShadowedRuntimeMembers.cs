@@ -128,10 +128,9 @@ public static class ShadowedRuntimeMembers
     private static string? RuntimeBaseOf(ComponentDefinition component, SemanticModel? model)
     {
         if (model is null || component.SyntaxTree is null) return null;
-        var declaration = component.SyntaxTree.GetRoot()
-            .DescendantNodes()
-            .OfType<TypeDeclarationSyntax>()
-            .FirstOrDefault(type => type.Identifier.Text == component.Name);
+        // The class the parser read, never the first of its name in the tree: two classes of one name
+        // in two namespaces are two types, and the other one's chain is not this one's.
+        TypeDeclarationSyntax? declaration = component.ClassSyntax ?? component.ValueTypeSyntax;
         if (declaration is null || model.SyntaxTree != component.SyntaxTree) return null;
         // `seen` guards a malformed cycle rather than a legal one: C# has no circular base, but a
         // half-written file is what a compiler runs on, and a walk that does not end is a hang.

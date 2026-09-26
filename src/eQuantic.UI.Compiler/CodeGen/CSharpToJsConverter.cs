@@ -68,6 +68,40 @@ public class CSharpToJsConverter
         _context.CurrentClassName = className;
     }
 
+    /// <summary>
+    /// Converts with the model of <paramref name="node"/>'s file in force, and puts this one back as
+    /// it was, the correspondences it holds included. A default interface member is written into
+    /// every class that relies on it, and its body lives in the interface's file, which a model
+    /// answers for only when it is that file's (#414). A file outside the compilation converts
+    /// under the model in force, which answers nothing for it.
+    /// </summary>
+    public void InFileOf(SyntaxNode node, Action convert)
+    {
+        if (_semanticModel is not { } model
+            || ReferenceEquals(node.SyntaxTree, model.SyntaxTree)
+            || !model.Compilation.ContainsSyntaxTree(node.SyntaxTree))
+        {
+            convert();
+            return;
+        }
+
+        var (savedModel, savedHelper) = (_semanticModel, _context.SemanticHelper);
+        var other = model.Compilation.GetSemanticModel(node.SyntaxTree);
+        _semanticModel = other;
+        _context.SemanticModel = other;
+        _context.SemanticHelper = new SemanticHelper(other);
+        try
+        {
+            convert();
+        }
+        finally
+        {
+            _semanticModel = savedModel;
+            _context.SemanticModel = savedModel;
+            _context.SemanticHelper = savedHelper;
+        }
+    }
+
     public void SetFallbackTypeReceivers(IReadOnlySet<string> staticTypes, IReadOnlySet<string> runtimeTypes)
     {
         _context.FallbackStaticTypes = staticTypes;
@@ -75,6 +109,28 @@ public class CSharpToJsConverter
     }
 
     /// <summary>Names the array an ITERATOR method is filling — null outside one.</summary>
+    /// <summary>See <see cref="ConversionContext.ConstructorParametersInScope"/>.</summary>
+    /// <summary>
+    /// Converts with a constructor's parameters in scope as bare names (see
+    /// <see cref="ConversionContext.ConstructorParametersInScope"/>), and puts back the scope in
+    /// force before: a record's member defaults and its base clause both run where no member of the
+    /// instance is set yet, and a base clause runs before <c>super()</c>, where reading
+    /// <c>this</c> throws.
+    /// </summary>
+    public T WithConstructorParametersInScope<T>(Func<T> convert)
+    {
+        var previous = _context.ConstructorParametersInScope;
+        _context.ConstructorParametersInScope = true;
+        try
+        {
+            return convert();
+        }
+        finally
+        {
+            _context.ConstructorParametersInScope = previous;
+        }
+    }
+
     public void SetIteratorBuffer(string? buffer)
     {
         _context.IteratorBuffer = buffer;
@@ -118,6 +174,16 @@ public class CSharpToJsConverter
     /// <summary>See <see cref="ConversionContext.UsedRuntimeTypes"/> — output-introduced names the
     /// RUNTIME provides (the declarative factory surface).</summary>
     public HashSet<string> UsedRuntimeTypes => _context.UsedRuntimeTypes;
+
+    /// <summary>
+    /// The default of <paramref name="type"/> as this conversion writes it (<see cref="DefaultValue"/>),
+    /// so every struct the value constructs joins the module's imports, a nested one included, and so
+    /// does the helper. An emitter that asked the table on its own wrote <c>new Outer(new Inner(), 0)</c>
+    /// for a member of a struct whose zero is built member by member, in a module that imported
+    /// Outer, which its syntax names, and never Inner, which only the zero names (found in review,
+    /// #409). This is the door every emitter's default goes through.
+    /// </summary>
+    public string DefaultOf(ITypeSymbol? type) => DefaultValue.Of(type, _context);
 
     /// <summary>Diagnostics raised during the most recent conversion(s); call <see cref="ClearDiagnostics"/> between components.</summary>
     public IReadOnlyList<ConversionDiagnostic> Diagnostics => _context.Diagnostics;
@@ -254,7 +320,6 @@ public class CSharpToJsConverter
         _strategyRegistry.Register<TaskMethodStrategy>();
         _strategyRegistry.Register<NumberMethodStrategy>();
         _strategyRegistry.Register<CompareToStrategy>();
-        _strategyRegistry.Register<BooleanMethodStrategy>();
         _strategyRegistry.Register<CharMethodStrategy>();
         _strategyRegistry.Register<ConvertStrategy>();
         // StringStaticStrategy is registered in primitives block? Checking order logic.

@@ -6,7 +6,7 @@ namespace eQuantic.UI.Compiler.CodeGen.Strategies.Primitives;
 /// <summary>
 /// Converts C# string instance methods to JavaScript equivalents.
 /// Handles:
-/// - Split(separator) -> split(separator)
+/// - Split(separator) -> split(separator); Split() -> $eq.text.splitOnWhiteSpace, .NET's white space
 /// - Replace(old, new) -> replaceAll(old, new)
 /// - StartsWith(prefix) -> startsWith(prefix)
 /// - EndsWith(suffix) -> endsWith(suffix)
@@ -16,8 +16,7 @@ namespace eQuantic.UI.Compiler.CodeGen.Strategies.Primitives;
 /// - LastIndexOf(value) -> lastIndexOf(value)
 /// - PadLeft(width, char?) -> padStart(width, char)
 /// - PadRight(width, char?) -> padEnd(width, char)
-/// - TrimStart() -> trimStart()
-/// - TrimEnd() -> trimEnd()
+/// - Trim(), TrimStart(), TrimEnd() -> $eq.text.trim/trimStart/trimEnd, .NET's white space
 /// </summary>
 public class StringMethodStrategy : IConversionStrategy
 {
@@ -83,7 +82,7 @@ public class StringMethodStrategy : IConversionStrategy
 
         return methodName switch
         {
-            "Split" => ConvertSplit(caller, args),
+            "Split" => ConvertSplit(caller, args, context),
             "Replace" => ConvertReplace(caller, args),
             "StartsWith" => $"{lhs}.startsWith({Fold(args[0])})",
             "EndsWith" => $"{lhs}.endsWith({Fold(args[0])})",
@@ -94,9 +93,9 @@ public class StringMethodStrategy : IConversionStrategy
             "LastIndexOf" => $"{lhs}.lastIndexOf({Fold(args[0])}{extraArgs})",
             "PadLeft" => ConvertPadLeft(caller, args),
             "PadRight" => ConvertPadRight(caller, args),
-            "TrimStart" => ConvertTrim(caller, args, "start"),
-            "TrimEnd" => ConvertTrim(caller, args, "end"),
-            "Trim" => ConvertTrim(caller, args, "both"),
+            "TrimStart" => ConvertTrim(caller, args, "start", context),
+            "TrimEnd" => ConvertTrim(caller, args, "end", context),
+            "Trim" => ConvertTrim(caller, args, "both", context),
             "ToUpper" => $"{caller}.toUpperCase()",
             "ToLower" => $"{caller}.toLowerCase()",
             "ToUpperInvariant" => $"{caller}.toUpperCase()",
@@ -113,16 +112,18 @@ public class StringMethodStrategy : IConversionStrategy
         context.SemanticHelper.GetType(arg.Expression).IsNamed("System.StringComparison")
         || arg.Expression.ToString().Contains("StringComparison"); // syntax fallback (no semantic model)
 
-    private string ConvertTrim(string caller, List<string> args, string mode)
+    private string ConvertTrim(string caller, List<string> args, string mode, ConversionContext context)
     {
-        // No argument → native whitespace trim.
+        // No argument trims .NET's white space, which JavaScript's `trim` is not: it leaves U+0085
+        // NEXT LINE and takes U+FEFF. The runtime keeps the one list (utils/white-space).
         if (args.Count == 0)
         {
+            context.UsedHelpers.Add(Eq.Import);
             return mode switch
             {
-                "start" => $"{caller}.trimStart()",
-                "end" => $"{caller}.trimEnd()",
-                _ => $"{caller}.trim()"
+                "start" => $"{Eq.TrimStart}({caller})",
+                "end" => $"{Eq.TrimEnd}({caller})",
+                _ => $"{Eq.Trim}({caller})"
             };
         }
 
@@ -137,10 +138,15 @@ public class StringMethodStrategy : IConversionStrategy
         };
     }
 
-    private string ConvertSplit(string caller, List<string> args)
+    private string ConvertSplit(string caller, List<string> args, ConversionContext context)
     {
+        // No separator splits on .NET's white space, keeping the empty entries between two of it.
+        // It was `split('')`, which cut the text into its characters.
         if (args.Count == 0)
-            return $"{caller}.split('')";
+        {
+            context.UsedHelpers.Add(Eq.Import);
+            return $"{Eq.SplitOnWhiteSpace}({caller})";
+        }
 
         // Handle StringSplitOptions.RemoveEmptyEntries
         if (args.Count >= 2 && args[1].Contains("RemoveEmptyEntries"))

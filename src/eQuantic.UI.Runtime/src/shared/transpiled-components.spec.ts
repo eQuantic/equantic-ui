@@ -27,7 +27,7 @@ describe('transpiled shared Button (real eqc output)', () => {
     expect(effectiveStyle(box)).toContain('height: 40px');
     expect(effectiveStyle(box)).toContain('min-width: 64px');
     expect(effectiveStyle(box)).toContain('padding: 0 16px 0 16px');
-    expect(effectiveStyle(box)).toContain('background-color: light-dark(#0050a0, #5ca2e8)');
+    expect(effectiveStyle(box)).toContain('background-color: light-dark(#0050a0, #76baff)');
     expect(effectiveStyle(box)).toContain('border-radius: 10px');
 
     const label = box.children[0].children[0];
@@ -41,7 +41,7 @@ describe('transpiled shared Button (real eqc output)', () => {
     const node = outline.render();
     const box = node.children[0];
 
-    expect(effectiveStyle(box)).toContain('border: 1px solid light-dark(#c9ced6, #3d4754)');
+    expect(effectiveStyle(box)).toContain('border: 1px solid light-dark(#c9ced6, #4c5664)');
     expect(effectiveStyle(box)).not.toContain('background-color');
   });
 
@@ -62,7 +62,7 @@ describe('transpiled shared Button (real eqc output)', () => {
     expect(node.events.click).toBeUndefined();
     // Primary base with alpha 97 (255 × 0.38) → 8-digit hex on both modes.
     expect(effectiveStyle(node.children[0])).toContain(
-      'background-color: light-dark(#0050a061, #5ca2e861)',
+      'background-color: light-dark(#0050a061, #76baff61)',
     );
     expect(fired).toBe(false);
   });

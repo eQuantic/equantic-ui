@@ -1,4 +1,4 @@
-import { CodeToken } from "../runtime-exports";
+import { CodeLanguageRules, CodeToken } from "../runtime-exports";
 
 export class PlainTextLanguage {
     constructor(props?: any) {
@@ -12,6 +12,10 @@ export class PlainTextLanguage {
     tokenize(line: string, _state: number, into: CodeToken[]) {
         if (line.length > 0) into.push(new CodeToken(0, line.length, 'plain'));
         return 0;
+    }
+
+    get rules(): CodeLanguageRules {
+        return CodeLanguageRules.default;
     }
 }
 

@@ -2,7 +2,7 @@ import { $eq, Box, BoxStyle, BuildContext, CalendarNames, Column, CornerRadii, D
 
 export class Calendar extends StatefulComponent {
     static $typeId = 'eQuantic.UI.Components.Calendar';
-    _month: DateOnly;
+    _month: DateOnly = $eq.time.dateOnly.minValue();
     _cursor: any = null;
     static cellSize: number = 44;
     static headerHeight: number = 28;

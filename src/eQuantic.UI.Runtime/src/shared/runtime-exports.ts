@@ -137,6 +137,10 @@ export { VisualNodeComponent } from './visual-node-component';
 export { DateTime, DateOnly, TimeOnly, TimeSpan, DateTimeOffset } from '../utils/datetime';
 export { Decimal } from '../utils/decimal';
 export { CalendarNames } from './calendar-names';
+// The vocabulary's interface defaults (#414): a twin that relies on one delegates to it by the
+// interface's name, and an embedded twin imports from this barrel, not from index (found in review,
+// #418). export-parity.spec.ts holds every one of them here.
+export { IAppTheme, ICodeCompletionProvider, ICodeLanguage } from './interface-defaults';
 export * from './components';
 
 // ---- Device capabilities ---------------------------------------------------------------------

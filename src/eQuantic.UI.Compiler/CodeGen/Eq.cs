@@ -45,6 +45,13 @@ public static class Eq
     public const string IntTryParse = "$eq.num.intTryParse";
     /// <summary><c>Convert.ToInt32(string)</c> and its siblings: a null text is 0, any other reads as Parse does.</summary>
     public const string IntConvert = "$eq.num.intConvert";
+    /// <summary><c>bool.Parse</c>: "True" or "False" in any case, trimmed of white space and NULs, or
+    /// .NET's exception (#402).</summary>
+    public const string BoolParse = "$eq.bool.parse";
+    /// <summary><c>bool.TryParse</c>: the value, or undefined where Parse throws for the text.</summary>
+    public const string BoolTryParse = "$eq.bool.tryParse";
+    /// <summary><c>Convert.ToBoolean(string)</c>: a null text is false, any other reads as Parse does.</summary>
+    public const string BoolConvert = "$eq.bool.convert";
     /// <summary><c>double.Parse</c> and <c>float.Parse</c>: the text read by .NET's grammar under
     /// the call's NumberStyles or <c>Float | AllowThousands</c>, a float rounded once from the
     /// digits, or .NET's exception. Three args: the text, <c>'double'</c> or <c>'single'</c>, the style.</summary>
@@ -90,6 +97,22 @@ public static class Eq
     public const string ToBase = "$eq.num.toBase";
     /// <summary>Substring that refuses an out-of-range index, the way .NET does.</summary>
     public const string Substring = "$eq.text.substring";
+    /// <summary><c>char.IsWhiteSpace</c> over .NET's set, which JavaScript's <c>\s</c> is not: it leaves
+    /// U+0085 NEXT LINE and takes U+FEFF. The runtime's <c>utils/white-space</c> keeps the one list.</summary>
+    public const string IsWhiteSpace = "$eq.text.isWhiteSpace";
+    /// <summary>Whether a string holds more than white space: <c>string.IsNullOrWhiteSpace</c> is its
+    /// negation, reading its argument once, and a predicate that proves a string where it answers
+    /// true and nothing where it answers false, as <c>[NotNullWhen(false)]</c> does in C#.</summary>
+    public const string HasNonWhiteSpace = "$eq.text.hasNonWhiteSpace";
+    /// <summary><c>string.Trim()</c> of .NET's white space.</summary>
+    public const string Trim = "$eq.text.trim";
+    /// <summary><c>string.TrimStart()</c> of .NET's white space.</summary>
+    public const string TrimStart = "$eq.text.trimStart";
+    /// <summary><c>string.TrimEnd()</c> of .NET's white space.</summary>
+    public const string TrimEnd = "$eq.text.trimEnd";
+    /// <summary><c>string.Split()</c> with no separator: every white space character is one, and the
+    /// empty entries between two of them stay.</summary>
+    public const string SplitOnWhiteSpace = "$eq.text.splitOnWhiteSpace";
     /// <summary>A dictionary read that throws for a key that is not there.</summary>
     public const string DictGet = "$eq.dictGet";
     /// <summary>The same read on a runtime map (a sorted or value-keyed dictionary).</summary>
@@ -183,6 +206,17 @@ public static class Eq
     /// <summary><c>HashSet&lt;T&gt;.Add</c>, which answers whether the value was NEW — a JS
     /// <c>Set.add</c> returns the set, so the toggle idiom silently stops removing.</summary>
     public const string SetAdd = "$eq.collections.setAdd";
+
+    /// <summary><c>List&lt;T&gt;.Remove</c>: takes out the first item <c>EqualityComparer&lt;T&gt;.Default</c>
+    /// finds equal to the value, and answers whether there was one (#400).</summary>
+    public const string ListRemove = "$eq.collections.remove";
+
+    /// <summary><c>EqualityComparer&lt;T&gt;.Default</c> for a type compared by reference or by its own
+    /// <c>Equals</c>: identity, NaN equal to NaN, and a twin's own <c>equals</c>.</summary>
+    public const string SameItem = "$eq.collections.sameItem";
+
+    /// <summary>A <c>KeyValuePair&lt;K, V&gt;</c>'s comparer, from each half's (#421).</summary>
+    public const string PairComparer = "$eq.collections.pairComparer";
 
     /// <summary>The container, for a constructor dependency — the browser's ActivatorUtilities.</summary>
     public const string ResolveService = "$eq.services.resolve";

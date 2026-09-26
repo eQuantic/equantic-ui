@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous">
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700;800&amp;family=JetBrains+Mono:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:var(--bg);color:var(--tx1);font-family:'Hanken Grotesk',system-ui,sans-serif;-webkit-font-smoothing:antialiased;
+--bg:#F5F6F8;--sf:#FFFFFF;--sf2:#EFF1F4;--bd:#E2E5EA;--bd2:#C9CED6;--tx1:#171B21;--tx2:#4B5563;--tx3:#5F6B7A;
+--pri:#0050A0;--pris:#E8F1FA;--onpris:#003E7E;--inf:#0C6C86;--infs:#E4F3F8;--oninfs:#0A5468;
+--sucs:#EDF6E6;--onsucs:#2C5E17;--wars:#FBF3DF;--onwars:#7A5200;--dess:#FCEBEA;--ondess:#8F1D1D}
+@media (prefers-color-scheme: dark){body{--bg:#0C0F13;--sf:#14181E;--sf2:#1C232B;--bd:#2A323D;--bd2:#4C5664;--tx1:#F2F4F7;--tx2:#C7D1DC;--tx3:#ACB7C5;
+--pri:#81BAF3;--pris:#0F2740;--onpris:#A8CDF2;--inf:#4DC4DF;--infs:#0A2A32;--oninfs:#9FDCEB;
+--sucs:#16290C;--onsucs:#B5DB97;--wars:#2E2008;--onwars:#EECF8F;--dess:#3A1210;--ondess:#F4A9A4}}
+a{color:var(--pri);text-decoration:none}a:hover{text-decoration:underline}
+</style>
+</helmet>
+
+<div style="max-width:1080px;margin:0 auto;padding:48px clamp(16px,4vw,32px) 80px">
+
+  <div data-screen-label="Header">
+    <div style="font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:600;color:var(--tx3)">docs/design · proposal · re-verified against commit 70363ac</div>
+    <h1 style="margin:10px 0 0;font-size:clamp(30px,4.4vw,44px);line-height:1.08;font-weight:800;letter-spacing:-.028em;text-wrap:balance">Beyond HIG and Material 3</h1>
+    <p style="margin:14px 0 0;max-width:720px;font-size:16px;line-height:1.6;color:var(--tx2)">Apple and Google publish guidance, and their toolkits are the implementation. Material goes further than Apple: its tokens are generated into Compose and Web. What neither does is fail a build when a published page, a token and the shipped control disagree, in both directions, across five targets. That is the bar this proposal sets. It has three tiers: finish making the spec executable, close the gaps where both platforms are ahead today, then go past them where a single write-once core allows it.</p>
+    <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:18px">
+      <span style="height:26px;padding:0 10px;border-radius:999px;background:var(--sucs);color:var(--onsucs);font-size:12px;font-weight:700;display:inline-flex;align-items:center">SHIPPED · in the SDK today</span>
+      <span style="height:26px;padding:0 10px;border-radius:999px;background:var(--wars);color:var(--onwars);font-size:12px;font-weight:700;display:inline-flex;align-items:center">PROPOSED · names are suggestions, not API</span>
+      <span style="height:26px;padding:0 10px;border-radius:999px;background:var(--dess);color:var(--ondess);font-size:12px;font-weight:700;display:inline-flex;align-items:center">DECISION · needs Edgar</span>
+    </div>
+  </div>
+
+  <section data-screen-label="Scorecard" style="margin-top:44px">
+    <h2 style="margin:0;font-size:22px;font-weight:800;letter-spacing:-.015em">Where each system stands</h2>
+    <div style="margin-top:14px;background:var(--sf);border:1px solid var(--bd);border-radius:14px;overflow-x:auto">
+      <div style="display:grid;grid-template-columns:1.1fr 1.2fr 1.2fr 1.3fr;min-width:760px;background:var(--sf2)">
+        <div style="padding:10px 14px;font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--tx3)">Dimension</div>
+        <div style="padding:10px 12px;font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--tx3)">Apple HIG</div>
+        <div style="padding:10px 12px;font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--tx3)">Material 3</div>
+        <div style="padding:10px 12px;font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--pri)">eQuantic today</div>
+      </div>
+      <sc-for list="{{ rows }}" as="r" hint-placeholder-count="10">
+        <div style="display:grid;grid-template-columns:1.1fr 1.2fr 1.2fr 1.3fr;min-width:760px;border-top:1px solid var(--bd)">
+          <div style="padding:11px 14px;font-size:13.5px;font-weight:700">{{ r.d }}</div>
+          <div style="padding:11px 12px;font-size:13px;line-height:1.5;color:var(--tx2)">{{ r.h }}</div>
+          <div style="padding:11px 12px;font-size:13px;line-height:1.5;color:var(--tx2)">{{ r.m }}</div>
+          <div style="padding:11px 12px;font-size:13px;line-height:1.5;color:{{ r.c }};background:{{ r.b }}">{{ r.e }}</div>
+        </div>
+      </sc-for>
+    </div>
+    <div style="margin-top:8px;font-size:12.5px;color:var(--tx3)">Blue cells are where eQuantic already leads. Amber cells are gaps this proposal closes.</div>
+  </section>
+
+  <section data-screen-label="Tier 1" style="margin-top:52px">
+    <div style="display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;border-bottom:2px solid var(--tx1);padding-bottom:10px">
+      <span style="font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:700;color:var(--pri)">TIER 1</span>
+      <h2 style="margin:0;font-size:24px;font-weight:800;letter-spacing:-.02em">Finish making the spec executable</h2>
+    </div>
+    <p style="margin:12px 0 0;max-width:720px;font-size:14.5px;line-height:1.6;color:var(--tx2)">This is the lead neither platform has, and it has four holes. Each one is a place where a number or a status can still drift without a test noticing.</p>
+    <div style="margin-top:14px;display:flex;align-items:flex-start;gap:10px;padding:12px 14px;border-radius:12px;background:var(--sucs);color:var(--onsucs);max-width:760px;box-sizing:border-box">
+      <span style="font-size:11px;font-weight:800;letter-spacing:.08em;padding:2px 8px;border-radius:6px;background:var(--sf);flex:none;margin-top:1px">PREPARED</span>
+      <span style="font-size:13px;line-height:1.55">The patch for all of Tier 1 is in <span style="font-family:'JetBrains Mono',monospace;font-size:12px">handoff-tier1/</span>: three new tests, status.json, tokens.json 1.3.0, the 35 page edits in edits/pages.edits.json and the Tokens.cs comment fixes. APPLY.md says what to copy, delete and run.</span>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,320px),1fr));gap:14px;margin-top:20px">
+
+      <div style="background:var(--sf);border:1px solid var(--bd);border-radius:14px;padding:18px 20px">
+        <div style="display:flex;align-items:center;gap:8px"><span style="font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;color:var(--tx3)">1.1</span><span style="font-size:15.5px;font-weight:700">Generate the C# view, or delete it</span></div>
+        <div style="font-size:13.5px;line-height:1.55;color:var(--tx2);margin-top:8px"><span style="font-family:'JetBrains Mono',monospace;font-size:12px">Tokens.handoff.cs</span> is not compiled and nothing compares it, so it has already drifted. <span style="font-family:'JetBrains Mono',monospace;font-size:12px">Motion.ExitFor</span> returns <span style="font-family:'JetBrains Mono',monospace;font-size:12px">MotionSpec</span> there and <span style="font-family:'JetBrains Mono',monospace;font-size:12px">int</span> in the SDK. The Avatar, selection and wheel members are missing, and <span style="font-family:'JetBrains Mono',monospace;font-size:12px">Space.Gutter</span> means a column gap there and a screen inset in the SDK.</div>
+        <div style="font-size:12.5px;color:var(--oninfs);margin-top:10px;font-weight:600">Pinned by: generating it the way design-system.generated.ts already is.</div>
+      </div>
+
+      <div style="background:var(--sf);border:1px solid var(--bd);border-radius:14px;padding:18px 20px">
+        <div style="display:flex;align-items:center;gap:8px"><span style="font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;color:var(--tx3)">1.2</span><span style="font-size:15.5px;font-weight:700">Pin what the SDK adds</span></div>
+        <div style="font-size:13.5px;line-height:1.55;color:var(--tx2);margin-top:8px">The pin only asks about keys it lists. The switch track (52×32, 44×26), knob, selection box, radio dot, avatar sides and <span style="font-family:'JetBrains Mono',monospace;font-size:12px">Touch.WheelLine</span> ship in the SDK but are not in tokens.json, so nothing holds them.</div>
+        <div style="font-size:12.5px;color:var(--oninfs);margin-top:10px;font-weight:600">Pinned by: reflecting over Sizing and Touch; any public member not published and not exempted fails.</div>
+      </div>
+
+      <div style="background:var(--sf);border:1px solid var(--bd);border-radius:14px;padding:18px 20px">
+        <div style="display:flex;align-items:center;gap:8px"><span style="font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;color:var(--tx3)">1.3</span><span style="font-size:15.5px;font-weight:700">Pin the numbers printed on the pages</span></div>
+        <div style="font-size:13.5px;line-height:1.55;color:var(--tx2);margin-top:8px">The phase pages repeat figures in prose, like "44×44 day cells" or "thumb 24dp". That is a second copy outside the pin. Mark each derived figure with its token path and let a test compare the text.</div>
+        <div style="font-family:'JetBrains Mono',monospace;font-size:11.5px;color:var(--tx1);background:var(--sf2);border-radius:8px;padding:8px 10px;margin-top:10px">&lt;span data-token="controlMetrics.small.height"&gt;32&lt;/span&gt;</div>
+        <div style="font-size:12.5px;color:var(--oninfs);margin-top:10px;font-weight:600">Pinned by: a figure test beside HandoffVocabularyTests.</div>
+      </div>
+
+      <div style="background:var(--sf);border:1px solid var(--bd);border-radius:14px;padding:18px 20px">
+        <div style="display:flex;align-items:center;gap:8px"><span style="font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;color:var(--tx3)">1.4</span><span style="font-size:15.5px;font-weight:700">Derive status instead of typing it</span></div>
+        <div style="font-size:13.5px;line-height:1.55;color:var(--tx2);margin-top:8px">C16 still said <span style="font-family:'JetBrains Mono',monospace;font-size:12px">NOT YET IN SDK</span> and every footer called C15 a request, while both ship. VariantColors.Hover and the SemanticNode state fields had shipped too, and twenty table rows still called them requests. BottomSheet.cs and Toast.cs cite the old C3/C4 numbering. A status.json per block (shipped, partial, request) removes the hand-typed badge.</div>
+        <div style="font-size:12.5px;color:var(--oninfs);margin-top:10px;font-weight:600">Pinned by: checking each "shipped" block against the component type existing.</div>
+      </div>
+
+      <div style="background:var(--sf);border:1px solid var(--bd);border-radius:14px;padding:18px 20px;grid-column:1/-1">
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap"><span style="font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;color:var(--tx3)">1.5</span><span style="font-size:15.5px;font-weight:700">Both settled</span><span style="height:22px;padding:0 9px;border-radius:999px;background:var(--sucs);color:var(--onsucs);font-size:11px;font-weight:800;display:inline-flex;align-items:center">DECIDED</span></div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr));gap:14px;margin-top:10px">
+          <div style="font-size:13.5px;line-height:1.55;color:var(--tx2)"><strong style="color:var(--tx1)">Springs, settled.</strong> No code reads SpringSpec: releases glide over 200ms with smoothstep in DragStore. So tokens.json was right and the SDK's comments were wrong, and the patch corrects the comments. Shipping the behaviour is 2.1.</div>
+          <div style="font-size:13.5px;line-height:1.55;color:var(--tx2)"><strong style="color:var(--tx1)">Compact hit target, decided.</strong> Pointer exception: under a pointer a target is its own visual bounds with a 24dp floor, on a finger it is at least 48dp. <a href="Photon%20DS%20-%20Foundations.dc.html#f-touch-pointer" style="font-weight:700">Foundations §08 →</a></div>
+        </div>
+      </div>
+    </div>
+  </section>
+  <section data-screen-label="Tier 2" style="margin-top:52px">
+    <div style="display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;border-bottom:2px solid var(--tx1);padding-bottom:10px">
+      <span style="font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:700;color:var(--pri)">TIER 2</span>
+      <h2 style="margin:0;font-size:24px;font-weight:800;letter-spacing:-.02em">Close the gaps where both platforms lead</h2>
+    </div>
+    <p style="margin:12px 0 0;max-width:720px;font-size:14.5px;line-height:1.6;color:var(--tx2)">Each card states what Apple and Google ship, what eQuantic adds on top, and the test that holds it. Names are suggestions until the SDK has them.</p>
+    <div style="margin-top:14px;display:flex;align-items:flex-start;gap:10px;padding:12px 14px;border-radius:12px;background:var(--infs);color:var(--oninfs);max-width:760px;box-sizing:border-box">
+      <span style="font-size:11px;font-weight:800;letter-spacing:.08em;padding:2px 8px;border-radius:6px;background:var(--sf);flex:none;margin-top:1px">SPECIFIED</span>
+      <span style="font-size:13px;line-height:1.55">All six are written into the Foundations page as REQUEST blocks, ahead of the SDK. The values they propose live in <span style="font-family:'JetBrains Mono',monospace;font-size:12px">proposals.json</span>, outside the pinned tokens.json, and <span style="font-family:'JetBrains Mono',monospace;font-size:12px">status.json</span> tracks each one until its API appears.</span>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,320px),1fr));gap:14px;margin-top:20px">
+
+      <div style="background:var(--sf);border:1px solid var(--bd);border-radius:14px;padding:18px 20px">
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap"><span style="font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;color:var(--tx3)">2.1</span><span style="font-size:15.5px;font-weight:700">Physical motion</span><span style="height:20px;padding:0 8px;border-radius:999px;background:var(--infs);color:var(--oninfs);font-size:10.5px;font-weight:800;display:inline-flex;align-items:center">SPECIFIED · REQUEST</span></div>
+        <div style="font-size:13px;line-height:1.55;color:var(--tx3);margin-top:8px"><strong style="color:var(--tx2)">Today:</strong> SwiftUI animates with springs by default, and M3 Expressive moved to spring physics.</div>
+        <div style="font-size:13.5px;line-height:1.55;color:var(--tx2);margin-top:6px"><strong style="color:var(--tx1)">Add:</strong> spring roles over the shipped SpringSpec, with the release velocity injected on every gesture. The 200ms smoothstep glide retires, and the web runtime steps the same integrator for pointer drags. The bezier roles stay for keyframed motion.</div>
+        <div style="font-size:12.5px;color:var(--oninfs);margin-top:10px;font-weight:600">Pinned by: comparing the integrator with the closed-form spring within 0.25dp, and goldens of a sheet release.</div>
+        <a href="Photon%20DS%20-%20Foundations.dc.html#f-motion-springs" style="display:inline-block;margin-top:8px;font-size:12.5px;font-weight:700">Spec · Foundations §06 · Spring roles →</a>
+      </div>
+
+      <div style="background:var(--sf);border:1px solid var(--bd);border-radius:14px;padding:18px 20px">
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap"><span style="font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;color:var(--tx3)">2.2</span><span style="font-size:15.5px;font-weight:700">The rest of the adaptive set</span><span style="height:20px;padding:0 8px;border-radius:999px;background:var(--infs);color:var(--oninfs);font-size:10.5px;font-weight:800;display:inline-flex;align-items:center">SPECIFIED · REQUEST</span></div>
+        <div style="font-size:13px;line-height:1.55;color:var(--tx3);margin-top:8px"><strong style="color:var(--tx2)">Today:</strong> M3 has five window classes, breaking at 600, 840, 1200 and 1600, and three canonical layouts: list-detail, supporting pane and feed. eQuantic already ships the first three classes (WindowSizeClass at 600 and 840), AdaptiveNode, whose branches the web emits behind build-time media queries, and ListDetail. NavigationRail swaps with the bar inside an AdaptiveNode.</div>
+        <div style="font-size:13.5px;line-height:1.55;color:var(--tx2);margin-top:6px"><strong style="color:var(--tx1)">Add:</strong> the Large and Extra-large classes, so a wide desktop window can hold a pinned Drawer and a third pane, and supporting pane and feed as components beside ListDetail.</div>
+        <div style="font-size:12.5px;color:var(--oninfs);margin-top:10px;font-weight:600">Pinned by: one golden per class for each canonical layout.</div>
+        <a href="Photon%20DS%20-%20Foundations.dc.html#f-adaptive" style="display:inline-block;margin-top:8px;font-size:12.5px;font-weight:700">Spec · Foundations §11 · Adaptive layout →</a>
+      </div>
+
+      <div style="background:var(--sf);border:1px solid var(--bd);border-radius:14px;padding:18px 20px">
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap"><span style="font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;color:var(--tx3)">2.3</span><span style="font-size:15.5px;font-weight:700">Contrast levels</span><span style="height:20px;padding:0 8px;border-radius:999px;background:var(--infs);color:var(--oninfs);font-size:10.5px;font-weight:800;display:inline-flex;align-items:center">SPECIFIED · REQUEST</span></div>
+        <div style="font-size:13px;line-height:1.55;color:var(--tx3);margin-top:8px"><strong style="color:var(--tx2)">Today:</strong> iOS has Increase Contrast. M3 generates standard, medium and high contrast schemes.</div>
+        <div style="font-size:13.5px;line-height:1.55;color:var(--tx2);margin-top:6px"><strong style="color:var(--tx1)">Add:</strong> contrast as a second resolution axis next to ThemeMode, keeping the theme mode-free. The web emits it under <span style="font-family:'JetBrains Mono',monospace;font-size:12px">@media (prefers-contrast: more)</span>, and native reads the OS setting at paint. Borders and muted text step up, and every pair is recomputed at the stricter level.</div>
+        <div style="font-size:12.5px;color:var(--oninfs);margin-top:10px;font-weight:600">Pinned by: DesignTokenTests, run once per contrast level instead of once.</div>
+        <a href="Photon%20DS%20-%20Foundations.dc.html#f-color-contrast" style="display:inline-block;margin-top:8px;font-size:12.5px;font-weight:700">Spec · Foundations §01 · Contrast levels →</a>
+      </div>
+      <div style="background:var(--sf);border:1px solid var(--bd);border-radius:14px;padding:18px 20px">
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap"><span style="font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;color:var(--tx3)">2.4</span><span style="font-size:15.5px;font-weight:700">Tonal surfaces and a dragged state</span><span style="height:20px;padding:0 8px;border-radius:999px;background:var(--infs);color:var(--oninfs);font-size:10.5px;font-weight:800;display:inline-flex;align-items:center">SPECIFIED · REQUEST</span></div>
+        <div style="font-size:13px;line-height:1.55;color:var(--tx3);margin-top:8px"><strong style="color:var(--tx2)">Today:</strong> M3 raises a surface by tone, from container lowest to highest, and gives dragged its own state layer.</div>
+        <div style="font-size:13.5px;line-height:1.55;color:var(--tx2);margin-top:6px"><strong style="color:var(--tx1)">Add:</strong> a five-step surface ladder so that in dark mode depth reads by tone, where a shadow is nearly invisible. The single rrect shadow stays. Dragged joins the eight states as a derived value, the way hover already is, with no sixth tuple slot.</div>
+        <div style="font-size:12.5px;color:var(--oninfs);margin-top:10px;font-weight:600">Pinned by: tokens.json and HandoffTokenPinTests, like every other surface.</div>
+        <a href="Photon%20DS%20-%20Foundations.dc.html#f-elev-tonal" style="display:inline-block;margin-top:8px;font-size:12.5px;font-weight:700">Spec · Foundations §05 · Tonal surfaces →</a>
+      </div>
+
+      <div style="background:var(--sf);border:1px solid var(--bd);border-radius:14px;padding:18px 20px">
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap"><span style="font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;color:var(--tx3)">2.5</span><span style="font-size:15.5px;font-weight:700">Type that scales like Dynamic Type</span><span style="height:20px;padding:0 8px;border-radius:999px;background:var(--infs);color:var(--oninfs);font-size:10.5px;font-weight:800;display:inline-flex;align-items:center">SPECIFIED · REQUEST</span></div>
+        <div style="font-size:13px;line-height:1.55;color:var(--tx3);margin-top:8px"><strong style="color:var(--tx2)">Today:</strong> Dynamic Type has twelve steps, including accessibility sizes, and large styles grow less than body text.</div>
+        <div style="font-size:13.5px;line-height:1.55;color:var(--tx2);margin-top:6px"><strong style="color:var(--tx1)">Add:</strong> a scale curve per role in place of one MaxScale clamp. Display stops early, Body keeps growing into the accessibility sizes. Layouts that cannot fit switch mode at those sizes: rows stack and trailing values move under the title.</div>
+        <div style="font-size:12.5px;color:var(--oninfs);margin-top:10px;font-weight:600">Pinned by: goldens at 100%, 130% and the largest accessibility size.</div>
+        <a href="Photon%20DS%20-%20Foundations.dc.html#f-type-scaling" style="display:inline-block;margin-top:8px;font-size:12.5px;font-weight:700">Spec · Foundations §02 · Type scaling →</a>
+      </div>
+
+      <div style="background:var(--sf);border:1px solid var(--bd);border-radius:14px;padding:18px 20px">
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap"><span style="font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;color:var(--tx3)">2.6</span><span style="font-size:15.5px;font-weight:700">Haptics as tokens</span><span style="height:20px;padding:0 8px;border-radius:999px;background:var(--infs);color:var(--oninfs);font-size:10.5px;font-weight:800;display:inline-flex;align-items:center">SPECIFIED · REQUEST</span></div>
+        <div style="font-size:13px;line-height:1.55;color:var(--tx3);margin-top:8px"><strong style="color:var(--tx2)">Today:</strong> iOS offers impact, notification and selection feedback. Android documents haptics per interaction.</div>
+        <div style="font-size:13.5px;line-height:1.55;color:var(--tx2);margin-top:6px"><strong style="color:var(--tx1)">Add:</strong> named haptic roles (selection tick, snap, success, warning, error) that components fire on their existing moments: Slider detents, Stepper repeat, sheet snap, swipe commit. A host with no haptics resolves them to nothing, the same rule capabilities follow.</div>
+        <div style="font-size:12.5px;color:var(--oninfs);margin-top:10px;font-weight:600">Pinned by: a recorded haptic trace per component interaction test.</div>
+        <a href="Photon%20DS%20-%20Foundations.dc.html#f-touch-haptics" style="display:inline-block;margin-top:8px;font-size:12.5px;font-weight:700">Spec · Foundations §08 · Haptics →</a>
+      </div>
+    </div>
+  </section>
+  <section data-screen-label="Tier 3" style="margin-top:52px">
+    <div style="display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;border-bottom:2px solid var(--tx1);padding-bottom:10px">
+      <span style="font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:700;color:var(--pri)">TIER 3</span>
+      <h2 style="margin:0;font-size:24px;font-weight:800;letter-spacing:-.02em">Go past them</h2>
+    </div>
+    <p style="margin:12px 0 0;max-width:720px;font-size:14.5px;line-height:1.6;color:var(--tx2)">Apple owns one platform and Google ships a library per platform, so neither can test a promise across all of them. One component tree can.</p>
+    <div style="margin-top:14px;display:flex;align-items:flex-start;gap:10px;padding:12px 14px;border-radius:12px;background:var(--infs);color:var(--oninfs);max-width:760px;box-sizing:border-box">
+      <span style="font-size:11px;font-weight:800;letter-spacing:.08em;padding:2px 8px;border-radius:6px;background:var(--sf);flex:none;margin-top:1px">SPECIFIED</span>
+      <span style="font-size:13px;line-height:1.55">3.1 to 3.3 are REQUEST blocks on Foundations and the Handoff page. 3.4 and 3.5 were decisions, taken on 23 September and confirmed on 26 September: APCA is adopted and the dark palette re-solved, and continuous corners are drawn wherever the target can draw them, on every native target and on the web through corner-shape where the browser supports it.</span>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,320px),1fr));gap:14px;margin-top:20px">
+
+      <div style="background:var(--sf);border:1px solid var(--bd);border-radius:14px;padding:18px 20px">
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap"><span style="font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;color:var(--tx3)">3.1</span><span style="font-size:15.5px;font-weight:700">One accessibility contract, five targets</span></div>
+        <div style="font-size:13.5px;line-height:1.55;color:var(--tx2);margin-top:8px">The same target-neutral semantics tree already feeds VoiceOver on macOS and iOS and TalkBack on Android. What no test says yet is that they agree: assert that one component produces the same role, name, state and reading order through ARIA on the web and through each native bridge, and fail the build when one drifts.</div>
+        <div style="font-size:12.5px;color:var(--oninfs);margin-top:10px;font-weight:600">Pinned by: a semantics parity fixture, like the existing lowering parity.</div>
+        <div style="font-size:13px;line-height:1.55;color:var(--onwars);background:var(--wars);border-radius:8px;padding:8px 10px;margin-top:10px"><strong>Found:</strong> the vocabulary names Radio, Tab, MenuItem, Option and Destination, and the native tree announces all five as Button. SemanticRole needs those members first.</div>
+        <a href="Photon%20DS%20-%20Foundations.dc.html#f-a11y-parity" style="display:inline-block;margin-top:8px;font-size:12.5px;font-weight:700">Spec · Foundations §10 · One accessibility contract →</a>
+      </div>
+
+      <div style="background:var(--sf);border:1px solid var(--bd);border-radius:14px;padding:18px 20px">
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap"><span style="font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;color:var(--tx3)">3.2</span><span style="font-size:15.5px;font-weight:700">The live spec</span></div>
+        <div style="font-size:13.5px;line-height:1.55;color:var(--tx2);margin-top:8px">HIG and M3 show pictures of controls. Each handoff block could render the shipped component instead, compiled by the real eqc the playground already uses, beside its spec. It would link to the pin test and the golden that hold it. A designer then reviews the control users get, not a drawing of it.</div>
+        <div style="font-size:12.5px;color:var(--oninfs);margin-top:10px;font-weight:600">Pinned by: the block fails to render when the component's API changes.</div>
+        <a href="Photon%20Handoff.dc.html#live-blocks" style="display:inline-block;margin-top:8px;font-size:12.5px;font-weight:700">Spec · Photon Handoff · Live blocks →</a>
+      </div>
+
+      <div style="background:var(--sf);border:1px solid var(--bd);border-radius:14px;padding:18px 20px">
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap"><span style="font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;color:var(--tx3)">3.3</span><span style="font-size:15.5px;font-weight:700">Type that knows the script</span></div>
+        <div style="font-size:13.5px;line-height:1.55;color:var(--tx2);margin-top:8px">Both platforms advise taller lines for scripts like Devanagari, Thai and Arabic, and mirrored layouts for right-to-left. The shaper already knows the script of each run, so line height can adjust per script at shaping time, and directional icons can carry a mirror flag in the icon catalog.</div>
+        <div style="font-size:12.5px;color:var(--oninfs);margin-top:10px;font-weight:600">Pinned by: goldens per script and per direction.</div>
+        <a href="Photon%20DS%20-%20Foundations.dc.html#f-type-scripts" style="display:inline-block;margin-top:8px;font-size:12.5px;font-weight:700">Spec · Foundations §02 · Scripts and direction →</a>
+      </div>
+
+      <div style="background:var(--sf);border:1px solid var(--bd);border-radius:14px;padding:18px 20px">
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap"><span style="font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;color:var(--tx3)">3.4</span><span style="font-size:15.5px;font-weight:700">Two contrast metrics, both published</span></div>
+        <div style="font-size:13.5px;line-height:1.55;color:var(--tx2);margin-top:8px">tokens.json records WCAG 2 ratios today. Recording the APCA lightness contrast beside each pair would be a second measure that tracks perceived contrast better in dark mode. The build would fail if either drops below its floor.</div>
+        <div style="font-size:12.5px;color:var(--oninfs);margin-top:10px;font-weight:600">Pinned by: DesignTokenTests, computing both.</div>
+        <a href="Photon%20DS%20-%20Foundations.dc.html#f-color-apca" style="display:inline-block;margin-top:8px;font-size:12.5px;font-weight:700">Spec · Foundations §01 · APCA →</a>
+        <div style="font-size:13px;line-height:1.55;color:var(--onsucs);background:var(--sucs);border-radius:8px;padding:8px 10px;margin-top:10px"><strong>Adopted 2026-09-23.</strong> The 8 dark pairs under APCA's floors were re-solved, with Secondary lifted too so the tiers stay apart. tokens.json 1.5.0 carries the new values and the SDK follows.</div>
+      </div>
+
+      <div style="background:var(--sf);border:1px solid var(--bd);border-radius:14px;padding:18px 20px;grid-column:1/-1">
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap"><span style="font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;color:var(--tx3)">3.5</span><span style="font-size:15.5px;font-weight:700">Continuous corners</span><span style="height:20px;padding:0 8px;border-radius:999px;background:var(--sucs);color:var(--onsucs);font-size:10.5px;font-weight:800;display:inline-flex;align-items:center">DECIDED · NATIVE</span></div>
+        <div style="font-size:13.5px;line-height:1.55;color:var(--tx2);margin-top:8px">Apple draws continuous-curvature corners and Material draws circular ones. Photon's signed-distance model could offer a continuous profile as a corner style, rendered identically on every native target and held by the goldens. On the web, CSS corner-shape draws the same curve where the browser supports it, so the web takes it as a progressive enhancement and keeps the circular corner elsewhere (decided 26 September).</div>
+        <a href="Photon%20DS%20-%20Foundations.dc.html#f-radius-profile" style="display:inline-block;margin-top:8px;font-size:12.5px;font-weight:700">Spec · Foundations §04 · Corner profile →</a>
+      </div>
+    </div>
+  </section>
+  <section data-screen-label="Order of attack" style="margin-top:52px">
+    <div style="display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;border-bottom:2px solid var(--tx1);padding-bottom:10px">
+      <span style="font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:700;color:var(--pri)">ORDER</span>
+      <h2 style="margin:0;font-size:24px;font-weight:800;letter-spacing:-.02em">Order of attack</h2>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:10px;margin-top:18px">
+      <div style="display:flex;gap:14px;align-items:flex-start;background:var(--sf);border:1px solid var(--bd);border-radius:12px;padding:14px 16px">
+        <span style="width:28px;height:28px;border-radius:8px;background:var(--pris);color:var(--onpris);font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:700;display:inline-flex;align-items:center;justify-content:center;flex:none">1</span>
+        <div style="font-size:14px;line-height:1.55;color:var(--tx2)"><strong style="color:var(--tx1)">Tier 1, all five.</strong> Cheap, and it stops drift before new tokens arrive. Every later item adds numbers, and each one needs somewhere pinned to land.</div>
+      </div>
+      <div style="display:flex;gap:14px;align-items:flex-start;background:var(--sf);border:1px solid var(--bd);border-radius:12px;padding:14px 16px">
+        <span style="width:28px;height:28px;border-radius:8px;background:var(--pris);color:var(--onpris);font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:700;display:inline-flex;align-items:center;justify-content:center;flex:none">2</span>
+        <div style="font-size:14px;line-height:1.55;color:var(--tx2)"><strong style="color:var(--tx1)">2.1 springs, then 2.3 contrast, then 2.2.</strong> Springs are the gap a user feels first. Contrast levels are an accessibility gap. The two larger window classes matter once desktop windows get wide.</div>
+      </div>
+      <div style="display:flex;gap:14px;align-items:flex-start;background:var(--sf);border:1px solid var(--bd);border-radius:12px;padding:14px 16px">
+        <span style="width:28px;height:28px;border-radius:8px;background:var(--pris);color:var(--onpris);font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:700;display:inline-flex;align-items:center;justify-content:center;flex:none">3</span>
+        <div style="font-size:14px;line-height:1.55;color:var(--tx2)"><strong style="color:var(--tx1)">3.1, the accessibility contract.</strong> The bridges already exist on macOS, iOS and Android, so what remains is the proof: the same tree, shown equal on every target. It is the claim neither platform can make.</div>
+      </div>
+      <div style="display:flex;gap:14px;align-items:flex-start;background:var(--sf);border:1px solid var(--bd);border-radius:12px;padding:14px 16px">
+        <span style="width:28px;height:28px;border-radius:8px;background:var(--pris);color:var(--onpris);font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:700;display:inline-flex;align-items:center;justify-content:center;flex:none">4</span>
+        <div style="font-size:14px;line-height:1.55;color:var(--tx2)"><strong style="color:var(--tx1)">2.4 to 2.6, then 3.2 to 3.4.</strong> Each is independent. The live spec in 3.2 is the one to show outside the team, because it turns the handoff itself into the demo. 3.5 waits on your call.</div>
+      </div>
+    </div>
+    <div style="margin-top:22px;font-size:12.5px;line-height:1.6;color:var(--tx3)">Figures about HIG and Material 3 describe their public guidance as of September 2026. Every eQuantic figure was read from the repository at commit 70363ac.</div>
+  </section>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  renderVals() {
+    const lead = { c: 'var(--onpris)', b: 'var(--pris)' };
+    const gap = { c: 'var(--onwars)', b: 'var(--wars)' };
+    const R = (d, h, m, e, t) => ({ d, h, m, e, ...(t === 'lead' ? lead : gap) });
+    return {
+      rows: [
+        R('Spec ↔ code', 'Guidance pages; UIKit and SwiftUI are the truth', 'Tokens generated into Compose and Web, one direction', 'Every number in tokens.json pinned both ways by a test; retired words fail the build', 'lead'),
+        R('Targets', 'Apple platforms', 'Android, Web, Flutter, each its own library', 'One token core and one component tree for web, macOS, iOS, Android, Windows', 'lead'),
+        R('Light / dark', 'Semantic colours resolved by the OS', 'Scheme swap at runtime', 'Mode-free theme: web renders once with light-dark(), native resolves at paint', 'lead'),
+        R('Rendering proof', 'None published', 'None published', '91 golden images, GPU held to ±1 LSB against a CPU reference', 'lead'),
+        R('Motion', 'Springs by default in SwiftUI', 'Spring motion physics in M3 Expressive', 'Named bezier roles; SpringSpec ships as a type nothing reads', 'gap'),
+        R('Adaptive layout', 'Size classes', 'Five window size classes and three canonical layouts', 'Three window classes (600 / 840), AdaptiveNode and ListDetail; no Large or Extra-large class yet', 'gap'),
+        R('Contrast modes', 'Increase Contrast, Reduce Transparency, Bold Text', 'Standard, medium and high contrast schemes', 'One contrast level, pinned at AA and AAA for text', 'gap'),
+        R('Type scaling', 'Dynamic Type, 12 steps, per-style curves', '15 roles, scaled by the OS', '10 roles with one MaxScale clamp each', 'gap'),
+        R('Surfaces in dark', 'Elevated system backgrounds', 'Tonal surface containers, lowest to highest', 'Shadow plus a 1dp border on levels 1–2', 'gap'),
+        R('Haptics', 'Impact, notification and selection feedback', 'Haptic guidance per interaction', 'Mentioned per component, no tokens', 'gap')
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

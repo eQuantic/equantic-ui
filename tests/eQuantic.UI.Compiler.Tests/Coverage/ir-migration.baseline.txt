@@ -4,7 +4,6 @@ ArrayCreationStrategy
 ArrayStaticStrategy
 AsExpressionStrategy
 AverageStrategy
-BooleanMethodStrategy
 CastStrategy
 CheckedExpressionStrategy
 CollectionExpressionStrategy

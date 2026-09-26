@@ -43,7 +43,7 @@ public class VisualNodeComponentTests
         node.Children[0].Attributes["class"].Should().NotBeNullOrEmpty();
         adapter.Styles.Css.Should().Contain("height:40px");
         adapter.Styles.Css.Should().Contain(
-            "background-color:var(--eq-color-primary-base, light-dark(#0050a0, #5ca2e8))");
+            "background-color:var(--eq-color-primary-base, light-dark(#0050a0, #76baff))");
     }
 
     [Fact]

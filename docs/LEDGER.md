@@ -493,6 +493,19 @@ record of a release, the wiki's Upgrading page is the distillate.
   32 layers once each layer's root path stopped being rebuilt every frame, under a ceiling one
   object tighter, and the harness runs alone. The definition's code-splitting per route is met by the module graph, and bun already
   splits what pages share into chunks.
+- **2026-09-26 · The handoff's own figures and statuses are held by tests**: the design system came
+  back from Claude Design with a review against Apple's and Google's guidance
+  ([#337](https://github.com/eQuantic/equantic-ui/issues/337)). The pages called four shipped
+  things requests (DatePicker, NavigationRail, `VariantColors.Hover`, the `SemanticNode` state
+  fields) and counted 44 components where the SDK has 56. `status.json` now derives each block's
+  status from the public API, both ways; the SDK's selection, avatar and wheel values are published
+  and a token type `Tokens.cs` declares is scanned or named; a figure printed on a page is compared
+  with its token. APCA joins WCAG 2 as a second contrast gate, and 14 dark values were re-solved to
+  clear it, which moved 19 dark goldens and the web's cross-pins with them. The review's proposals
+  are issues #338 to #351. Edgar confirmed its three decisions on 2026-09-26: the pointer exception
+  keeps a 24dp floor, whose change is [#430](https://github.com/eQuantic/equantic-ui/issues/430), and
+  continuous corners reach the web through `corner-shape`
+  ([#346](https://github.com/eQuantic/equantic-ui/issues/346)).
 - **2026-09-23 · Source maps compose without an npm package**: eqc composed each module's map
   (JavaScript to TypeScript to C#) with a script over `@ampproject/remapping`, installed into the
   SDK's own folder in the package cache on a consumer's first Debug build, and fetched by bun's
@@ -659,6 +672,20 @@ record of a release, the wiki's Upgrading page is the distillate.
   shortcut took still reached the editor on the web, a code block's corner lay over its whole first
   line, and seven tests asserted nothing when their value was null.
 
+- **2026-09-24 · The code engine diffs two texts**: the engine half of slice 2b of
+  [`CODE-EDITOR-PLAN.md`](CODE-EDITOR-PLAN.md) ([#386](https://github.com/eQuantic/equantic-ui/pull/386)).
+  `CodeDiffer` answers the lines that changed between two texts and, inside each change, the words:
+  Myers' shortest edit script over what is left once the common head and tail are trimmed, so the
+  cost follows the change and not the file, and the same algorithm over a change's tokens. Past
+  2,000 rounds two ranges are a rewrite, marked whole, counted in rounds rather than by a clock so
+  .NET and the web stop at the same point. Its counts are `git diff --minimal`'s own on five files of
+  this repository's history, and its twin answers change for change on 400 random pairs. On the way:
+  eqc named a method by its name alone, so two overloads reached a twin as one method, JavaScript
+  kept the last and a component's parser the first; the build now stops at the second declaration
+  and names the first (EQ1007). And white space is .NET's on the web: `char.IsWhiteSpace`, the
+  `Trim` family and `IsNullOrWhiteSpace` read one list, where JavaScript's left U+0085 and took
+  U+FEFF (the twin's word diff split on it), and a bare `Split()` splits on it instead of into
+  characters. The view's design, a row that is not a line, is the plan's ninth section.
 - **2026-09-24 · The BCL audit probes every arity**: a static surface was probed by name, so only
   the shortest overload of each member was graded, and a group whose first overload takes an
   `IFormatProvider` or an `IComparer` hid its siblings
@@ -683,6 +710,108 @@ record of a release, the wiki's Upgrading page is the distillate.
   overloads of one arity are still one probe (267 more lines by signature), a `Dictionary<int, T>`
   loses insertion order, a decimal constant does not cross, a lone surrogate in a string literal
   is written raw, and the date types' `Add*` round a double to the millisecond.
+- **0.2.0-preview.58 released** from `4a330275`: the numeric parity family (#330, #373, #374, #379,
+  #383, #389, #390, #391, #403, #405), the code engine in an assembly of its own (#359) with its
+  input, model and component slices (#368, #371, #375, #370), and a published app that no longer
+  ships its C# in its source maps (#357). *([v0.2.0-preview.58](https://github.com/eQuantic/equantic-ui/releases/tag/v0.2.0-preview.58))*
+- **The working agreement lives in the repository** (#410): the Workflow section, one text in
+  `CLAUDE.md` and `AGENTS.md` held so by `WorkflowSectionTests`; OpenSpec 1.13.2, pinned by a
+  lockfile and validated strictly in CI; and a `SessionStart` hook that gives a cloud container the
+  owner's identity, no foreign signature and the pinned .NET SDK, asserted by CI's `session-start` job.
+
+- **2026-09-26 · A record member starts as its declaration says**: a record's field initializer went
+  nowhere, and the defaults that crossed were copied as literals into every construction site, so a
+  decimal, a long, a float or a `new()` came out as a plain number or as null
+  ([#385](https://github.com/eQuantic/equantic-ui/issues/385)). The twin's constructor now writes
+  every member's default from its declaration, converted like any expression, and a construction
+  that skips a member leaves it to the constructor; a default and a base clause read the primary
+  constructor's parameters as its own. From the review: a zero built member by member names a struct
+  no syntax of the class does, and every emitter now imports it, and a base clause that computed
+  from a parameter read `this` before `super()`. Measured and left to their own issues: an
+  initializer's side effect when an object initializer sets its member
+  ([#413](https://github.com/eQuantic/equantic-ui/issues/413)), and statics read before C# would have
+  zeroed them ([#417](https://github.com/eQuantic/equantic-ui/issues/417)).
+- **2026-09-26 · A date's fractional Add* lands on the tick**: the runtime's `DateTime`,
+  `DateTimeOffset` and `TimeOnly` added a fractional count through milliseconds and rounded, as
+  .NET 6 did, where .NET 7 and later land on the tick, so `AddSeconds(0.00001)` moved nothing and
+  `AddMilliseconds(0.5)` a whole millisecond
+  ([#422](https://github.com/eQuantic/equantic-ui/issues/422)). The twins port .NET 10's
+  `DateTime.AddUnits` now, the whole units and the fraction apart and the fraction truncated
+  toward zero, `TimeOnly` takes its one product as .NET 9 and later convert a double, and
+  `DateTime.AddMicroseconds`, `DateTimeOffset.AddMilliseconds` and `AddMicroseconds`, which the
+  audit graded native and no twin had, exist. An out-of-range count or result throws in .NET's
+  words where it built an invalid date. 38 of the 44 conformance cases failed before the port.
+  Measured and left to its own issue: `Add(TimeSpan)`, the operators, `AddMonths` and `AddYears`
+  at the calendar's edge ([#424](https://github.com/eQuantic/equantic-ui/issues/424)).
+- **2026-09-26 · The wiki moves with its pull request**: CI cloned the wiki's master for every run, so
+  a pull request that added a diagnostic failed its own docs guard until its rows were published,
+  and every other pull request failed the same guard once they were: #386's EQ1007 rows went to
+  master early on 2026-09-24 and had to be taken back out, and #418 met the same wall with EQ1008
+  ([#406](https://github.com/eQuantic/equantic-ui/issues/406)). `scripts/checkout-wiki.sh` now reads
+  the wiki at the branch named like the pull request's own when there is one, and master otherwise,
+  failing rather than guessing when the branches cannot be listed; a `wiki-checkout` job runs its
+  self-test against a fixture wiki, and the Workflow section says the wiki branch merges into master
+  with its pull request. Locally every guard now finds the wiki through one locator, which reads
+  `EQ_WIKI_DIR` for a worktree of a pull request's wiki branch (checking a branch out in the shared
+  clone had made #354's guards fail on #418's rows), fails when the variable names no wiki, and names
+  the directory, branch and commit a failing guard read.
+- **2026-09-26 · A class keeps its interface's defaults**: eqc wrote no default interface member
+  into the twins of the classes that take one, so `PlainTextLanguage`, which relies on
+  `ICodeLanguage.Rules`, had no `rules`, and on 0.2.0-preview.58 every plain-text `CodeBlock` threw
+  on `indentWidth` in the browser, which kept the documentation site on .57
+  ([#414](https://github.com/eQuantic/equantic-ui/issues/414)). Each default a class takes is now
+  written into its twin from the interface's source, in the plain-class, record and component
+  emitters, with the implementation C# picks and the types it names imported. An app compiles
+  against the SDK's assemblies, where its interfaces have no source, so the runtime carries the
+  vocabulary's defaults and an app's theme, language or completion provider delegates to them
+  ([#415](https://github.com/eQuantic/equantic-ui/issues/415)): measured on the site, its theme went
+  from three warnings on every build to none. An interface from any other compiled assembly has
+  neither, and the build refuses the class (EQ1008). From the review: two defaults on one name are
+  EQ1007, and so is the same pair along the class chain (a derived field on the name of its base's
+  default shadowed it for every call through the interface); a default reaching an interface's static
+  is EQ1008, and so is a default indexer, which no twin has a form for
+  ([#427](https://github.com/eQuantic/equantic-ui/issues/427)); only the runtime's own assemblies'
+  interfaces delegate, whatever namespace another assembly declares; an explicit implementation and
+  an event take their member's name in the EQ1007 check; a derived class that lists an interface overriding its base's
+  default takes the more specific one; a record with only a base list gets its twin, one named
+  without arguments extends its base record, and a record's optional parameters and setters are kept.
+  Proposed and archived through OpenSpec (`openspec/specs/transpiler-interfaces`).
+
+- **2026-09-26 · List.Remove and a bool from text answer as .NET does**: `list.Remove(item)` assigned
+  an index nothing declared, so every call threw `ReferenceError: _idx is not defined` in the
+  browser and the documentation site's "you are here" never moved
+  ([#400](https://github.com/eQuantic/equantic-ui/issues/400)); `bool.Parse` was a comparison that
+  never threw, read a null as the text "null" and kept a trailing NUL, and `bool.TryParse` had no
+  translation ([#402](https://github.com/eQuantic/equantic-ui/issues/402)). Both go through the
+  runtime now: Remove answers a bool and compares as `EqualityComparer<T>.Default`, and a bool reads
+  as `Boolean.TryParse`, with .NET's trimming, its ASCII-only case fold and its exceptions. The
+  number reader uses the one white space list, and `Convert.ToBoolean(object)` is left to its family
+  ([#401](https://github.com/eQuantic/equantic-ui/issues/401)). From the review: every other
+  `Convert.ToBoolean` overload answers by the type C# binds (a false bool was true, and so was `0L`,
+  a BigInt here), a tuple in Remove compares element by element as `Contains` compares it, a
+  HashSet, a LinkedList, a SortedSet or a dictionary's pair reached through `ICollection<T>` removes
+  as it does directly, a pair compared half by half and a nullable tuple and an anonymous type by
+  value, a ToBoolean provider is evaluated in the order it is written (another `CultureInfo`
+  than the invariant or the current one is EQ2108, having no twin to evaluate), and the BCL
+  audit's `(Object)` probes call the object overload instead of the string one beside it.
+
+- **2026-09-26 · The Copilot loop stops on its own**: waiting for Copilot's light review to run dry
+  cost about one round per finding (69 findings in 47 rounds on six pull requests, 14 rounds for
+  #354). The author now reviews the whole diff before opening a pull request, a finding earns
+  another round only when it is a defect, and the loop ends at the first round without one, after
+  three rounds in any case. The ruleset no longer reviews on push, so a round is asked for once per
+  push of fixes ([#446](https://github.com/eQuantic/equantic-ui/issues/446)).
+
+- **2026-09-26 · A pull request merges against the current main**: the ruleset requires thirteen of
+  the CI's jobs, the whole dependency chain since GitHub counts a job skipped for a failed dependency
+  as passed, and a head up to date with main. Before it required only a review, so a workflow that
+  never ran read mergeable, and two pull requests that each passed alone broke main together (#453)
+  ([#287](https://github.com/eQuantic/equantic-ui/issues/287)).
+- **2026-09-26 · main's runtime suite is green again**: the interface-defaults fixture pinned
+  PhotonTheme's dark code colours from before #354 re-solved the dark palette, and #418 merged after
+  #354 without a CI run on a main that had it, so `test-runtime` and the fixture's C# pin failed on
+  main. The fixture is regenerated from the palette both sides now carry
+  ([#453](https://github.com/eQuantic/equantic-ui/issues/453)).
 
 ## Retired documents
 

@@ -20,11 +20,12 @@ public class NumericCoverageTests
         TestHelper.ConvertExpression(csharp).Should().Be(expected);
     }
 
+    /// <summary>bool.Parse reads its text through the runtime, as .NET's does (#402): the comparison
+    /// it was lowered to never threw and read a null as the text "null".</summary>
     [Fact]
-    public void BoolParse_MapsToCaseInsensitiveComparison()
+    public void BoolParse_ReadsThroughTheRuntime()
     {
-        TestHelper.ConvertExpression("bool.Parse(\"true\")")
-            .Should().Be("(String('true').trim().toLowerCase() === 'true')");
+        TestHelper.ConvertExpression("bool.Parse(\"true\")").Should().Be("$eq.bool.parse('true')");
     }
 
     [Fact]

@@ -80,12 +80,13 @@ public class DesignTokenTests
     [Fact]
     public void BrandAnchors_ArePinned()
     {
-        // eQuantic blue drives Primary; light Primary IS the brand hex.
+        // eQuantic blue drives Primary; light Primary IS the brand hex. The dark legs are the values
+        // the APCA gate re-solved on 2026-09-23 (DesignTokenApcaTests, Foundations §01).
         Theme.Colors(Variant.Primary).Base.Light.Should().Be(Color.FromRgb(0x00, 0x50, 0xA0));
-        Theme.Colors(Variant.Primary).Base.Dark.Should().Be(Color.FromRgb(0x5C, 0xA2, 0xE8));
+        Theme.Colors(Variant.Primary).Base.Dark.Should().Be(Color.FromRgb(0x76, 0xBA, 0xFF));
         // Success anchors eQuantic green, darkened in light mode to clear AA (§01).
         Theme.Colors(Variant.Success).Base.Light.Should().Be(Color.FromRgb(0x3B, 0x7A, 0x22));
-        Theme.Colors(Variant.Success).Base.Dark.Should().Be(Color.FromRgb(0x85, 0xC0, 0x5E));
+        Theme.Colors(Variant.Success).Base.Dark.Should().Be(Color.FromRgb(0x89, 0xC5, 0x62));
     }
 
     [Fact]
@@ -208,7 +209,7 @@ public class DesignTokenTests
         var primary = Theme.Colors(Variant.Primary);
         primary.Hover.Light.Should().Be(Color.FromRgb(0x00, 0x49, 0x90),
             "midpoint of #0050A0 → #00427F");
-        primary.Hover.Dark.Should().Be(Color.FromRgb(0x6C, 0xAC, 0xEB),
-            "midpoint of #5CA2E8 → #7CB5EE");
+        primary.Hover.Dark.Should().Be(Color.FromRgb(0x89, 0xC4, 0xFF),
+            "midpoint of #76BAFF → #9BCDFF");
     }
 }

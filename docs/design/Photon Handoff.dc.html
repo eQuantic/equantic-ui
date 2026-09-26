@@ -26,15 +26,15 @@ body{margin:0;background:var(--bg);color:var(--tx1);font-family:'Hanken Grotesk'
 --inf:#0C6C86;--infs:#E4F3F8;--oninfs:#0A5468;
 --lnk:#0050A0;--e1:0 1px 3px 0 rgba(15,23,32,.10)}
 body[data-theme="dark"]{
---bg:#0C0F13;--sf:#14181E;--sf2:#1C232B;--bd:#2A323D;--bd2:#3D4754;
---tx1:#F2F4F7;--tx2:#AEB7C2;--tx3:#8B95A3;
---pri:#5CA2E8;--onpri:#06263F;--pris:#0F2740;--onpris:#A8CDF2;
+--bg:#0C0F13;--sf:#14181E;--sf2:#1C232B;--bd:#2A323D;--bd2:#4C5664;
+--tx1:#F2F4F7;--tx2:#C7D1DC;--tx3:#ACB7C5;
+--pri:#76BAFF;--onpri:#06263F;--pris:#0F2740;--onpris:#A8CDF2;
 --sec:#242C36;--onsec:#D7DDE5;
---des:#E5645C;--dess:#3A1210;--ondess:#F4A9A4;
---suc:#85C05E;--sucs:#16290C;--onsucs:#B5DB97;
+--des:#FF958C;--dess:#3A1210;--ondess:#F4A9A4;
+--suc:#89C562;--sucs:#16290C;--onsucs:#B5DB97;
 --war:#E8B04B;--wars:#2E2008;--onwars:#EECF8F;
---inf:#4CC3DE;--infs:#0A2A32;--oninfs:#9FDCEB;
---lnk:#7CB5EE;--e1:0 1px 3px 0 rgba(0,0,0,.45)}
+--inf:#4DC4DF;--infs:#0A2A32;--oninfs:#9FDCEB;
+--lnk:#81BAF3;--e1:0 1px 3px 0 rgba(0,0,0,.45)}
 a{color:var(--lnk)}a:hover{color:var(--onpris)}
 </style>
 </helmet>
@@ -56,7 +56,7 @@ a{color:var(--lnk)}a:hover{color:var(--onpris)}
   </p>
   <div style="margin-top:16px;display:flex;align-items:flex-start;gap:11px;padding:13px 15px;border-radius:12px;background:var(--infs);color:var(--oninfs);max-width:660px">
     <span style="font-family:'Material Symbols Rounded';font-size:20px;line-height:1.2">info</span>
-    <span style="font-size:12.5px;line-height:1.6;flex:1">The token core already ships. <a href="tokens.json" style="color:inherit;font-weight:700">tokens.json</a> mirrors <span style="font-family:'JetBrains Mono',monospace;font-size:11.5px">eQuantic.UI.Primitives</span> value-for-value and is verified by <span style="font-family:'JetBrains Mono',monospace;font-size:11.5px">DesignTokenTests</span> — the component delta is nearly closed; work starts at the <a href="#status" style="color:inherit;font-weight:700">§01 status board</a>&rsquo;s open items. Before writing any call site, read <a href="#api" style="color:inherit;font-weight:700">§3b, the API contract</a>.</span>
+    <span style="font-size:12.5px;line-height:1.6;flex:1">The token core already ships. <a href="tokens.json" style="color:inherit;font-weight:700">tokens.json</a> mirrors <span style="font-family:'JetBrains Mono',monospace;font-size:11.5px">eQuantic.UI.Primitives</span> value-for-value and is pinned by <span style="font-family:'JetBrains Mono',monospace;font-size:11.5px">HandoffTokenPinTests</span> and <span style="font-family:'JetBrains Mono',monospace;font-size:11.5px">HandoffSdkCoverageTests</span>, and its contrast is gated twice, by <span style="font-family:'JetBrains Mono',monospace;font-size:11.5px">DesignTokenTests</span> (WCAG 2) and <span style="font-family:'JetBrains Mono',monospace;font-size:11.5px">DesignTokenApcaTests</span> (APCA) — the component delta is nearly closed; work starts at the <a href="#status" style="color:inherit;font-weight:700">§01 status board</a>&rsquo;s open items. Before writing any call site, read <a href="#api" style="color:inherit;font-weight:700">§3b, the API contract</a>.</span>
   </div>
 
   <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-top:26px">
@@ -85,8 +85,8 @@ a{color:var(--lnk)}a:hover{color:var(--onpris)}
         <span style="width:26px;height:26px;border-radius:8px;background:var(--suc);color:#fff;display:flex;align-items:center;justify-content:center;flex:none"><span style="font-family:'Material Symbols Rounded';font-size:17px">check</span></span>
         <div style="flex:1;opacity:.82">
           <div style="display:flex;align-items:center;gap:8px"><span style="font-size:14.5px;font-weight:700">Token core &amp; theming</span><span style="font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;padding:2px 7px;border-radius:6px;background:var(--sucs);color:var(--onsucs)">Shipped · gated</span></div>
-          <div style="font-size:13px;line-height:1.6;color:var(--tx2);margin-top:3px">Every color, space value, radius, type role, elevation level and motion curve in <span style="font-family:'JetBrains Mono',monospace;font-size:12px">tokens.json</span> matches <span style="font-family:'JetBrains Mono',monospace;font-size:12px">eQuantic.UI.Primitives</span> value-for-value — treat both files as a mirror of the shipped source, not as work to do.</div>
-          <div style="font-size:12px;color:var(--onsucs);background:var(--sucs);display:inline-block;padding:3px 9px;border-radius:7px;margin-top:8px;font-weight:600">Gate passed — <span style="font-family:'JetBrains Mono',monospace;font-size:12px">DesignTokenTests</span>: ≥ 4.5:1 on every OnBase/Base and OnSubtle/Subtle pair in both modes, ≥ 7.0 (AAA) for primary and secondary text</div>
+          <div style="font-size:13px;line-height:1.6;color:var(--tx2);margin-top:3px">Every color, space value, radius, type role, elevation level and motion curve in <span style="font-family:'JetBrains Mono',monospace;font-size:12px">tokens.json</span> matches <span style="font-family:'JetBrains Mono',monospace;font-size:12px">eQuantic.UI.Primitives</span> value-for-value — treat it as a mirror of the shipped source, not as work to do.</div>
+          <div style="font-size:12px;color:var(--onsucs);background:var(--sucs);display:inline-block;padding:3px 9px;border-radius:7px;margin-top:8px;font-weight:600">Gate passed — <span style="font-family:'JetBrains Mono',monospace;font-size:12px">DesignTokenTests</span>: ≥ 4.5:1 on every OnBase/Base and OnSubtle/Subtle pair in both modes, ≥ 7.0 (AAA) for primary and secondary text · <span style="font-family:'JetBrains Mono',monospace;font-size:12px">DesignTokenApcaTests</span>: Lc ≥ 75 for primary and secondary text, ≥ 60 for muted, links and every label on a fill or a Subtle, ≥ 15 for the strong border, in both modes</div>
         </div>
       </div>
       <div style="display:flex;gap:14px;padding:15px 17px;border-radius:12px;background:var(--sf);border:1px solid var(--bd)">
@@ -108,8 +108,8 @@ a{color:var(--lnk)}a:hover{color:var(--onpris)}
       <div style="display:flex;gap:14px;padding:15px 17px;border-radius:12px;background:var(--sf);border:1px solid var(--bd)">
         <span style="width:26px;height:26px;border-radius:8px;background:var(--war);color:#fff;display:flex;align-items:center;justify-content:center;flex:none"><span style="font-family:'Material Symbols Rounded';font-size:17px">priority_high</span></span>
         <div style="flex:1">
-          <div style="display:flex;align-items:center;gap:8px"><span style="font-size:14.5px;font-weight:700">Phase C · surfaces &amp; gestures</span><span style="font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;padding:2px 7px;border-radius:6px;background:var(--wars);color:var(--onwars)">Partial 13/16</span></div>
-          <div style="font-size:13px;line-height:1.6;color:var(--tx2);margin-top:3px">Shipped except: <strong style="color:var(--tx1)">ActionSheet</strong> (C3 — AppBar overflow and Dialog &gt;2 actions reference it; never built), <strong style="color:var(--tx1)">DatePicker</strong> (C15), and <strong style="color:var(--tx1)">BottomSheet detents + scroll handoff</strong> (C1 ships without them). NavigationRail (C16) is also spec-ahead for the desktop tier.</div>
+          <div style="display:flex;align-items:center;gap:8px"><span style="font-size:14.5px;font-weight:700">Phase C · surfaces &amp; gestures</span><span style="font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;padding:2px 7px;border-radius:6px;background:var(--wars);color:var(--onwars)">Partial</span></div>
+          <div style="font-size:13px;line-height:1.6;color:var(--tx2);margin-top:3px">Shipped except: <strong style="color:var(--tx1)">ActionSheet</strong> (C3 — AppBar overflow and Dialog &gt;2 actions reference it; never built) and <strong style="color:var(--tx1)">BottomSheet detents + scroll handoff</strong> (C1 ships without them). DatePicker (C15) and NavigationRail (C16) have shipped.</div>
           <div style="font-size:12px;color:var(--ondess);background:var(--dess);display:inline-block;padding:3px 9px;border-radius:7px;margin-top:8px;font-weight:600">Gate NOT MET — sheet drag does not hand off to inner scroll; swipe actions cannot mirror as a11y custom actions (native semantics tree has none — spec §10 REQUEST)</div>
         </div>
       </div>
@@ -143,7 +143,7 @@ a{color:var(--lnk)}a:hover{color:var(--onpris)}
       <div style="display:grid;grid-template-columns:200px 1fr 118px;border-top:1px solid var(--bd)"><div style="padding:9px 14px;font-size:12.5px;font-weight:600">iOS 04 · Settings</div><div style="padding:9px 12px;font-size:12.5px;color:var(--tx2)">grouped List · Switch · Slider · Stepper · SegmentedControl · Destructive outline button</div><div style="padding:9px 12px;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--tx3)">B2, B12, C6–C8</div></div>
       <div style="display:grid;grid-template-columns:200px 1fr 118px;border-top:1px solid var(--bd)"><div style="padding:9px 14px;font-size:12.5px;font-weight:600">iOS 05 · Empty + dialog</div><div style="padding:9px 12px;font-size:12.5px;color:var(--tx2)">EmptyState · Link button · Toast (inverse surface) · Dialog with destructive confirm</div><div style="padding:9px 12px;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--tx3)">B17, C2, C4</div></div>
       <div style="display:grid;grid-template-columns:200px 1fr 118px;border-top:1px solid var(--bd)"><div style="padding:9px 14px;font-size:12.5px;font-weight:600">iOS 06 · Flow step</div><div style="padding:9px 12px;font-size:12.5px;color:var(--tx2)">ProgressBar · Heading · TextInput with IME · Avatar row · sticky CTA above keyboard</div><div style="padding:9px 12px;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--tx3)">B9, B14, A9</div></div>
-      <div style="display:grid;grid-template-columns:200px 1fr 118px;border-top:1px solid var(--bd)"><div style="padding:9px 14px;font-size:12.5px;font-weight:600">macOS · Gallery</div><div style="padding:9px 12px;font-size:12.5px;color:var(--tx2)">30 of 44 catalog specimens (14 missing — open item) + the variant × size × state → C# inspector (partial)</div><div style="padding:9px 12px;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--tx3)">30 / 44 · open</div></div>
+      <div style="display:grid;grid-template-columns:200px 1fr 118px;border-top:1px solid var(--bd)"><div style="padding:9px 14px;font-size:12.5px;font-weight:600">macOS · Gallery</div><div style="padding:9px 12px;font-size:12.5px;color:var(--tx2)"><span data-figure="gallery.instantiated">32</span> of <span data-figure="components.count">56</span> catalog components instantiated in Studio/Gallery.cs (<span data-figure="gallery.missing">24</span> missing, open item) + the variant × size × state → C# inspector (partial)</div><div style="padding:9px 12px;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--tx3)"><span data-figure="gallery.instantiated">32</span> / <span data-figure="components.count">56</span> · open</div></div>
       <div style="display:grid;grid-template-columns:200px 1fr 118px;border-top:1px solid var(--bd)"><div style="padding:9px 14px;font-size:12.5px;font-weight:600">Web · Console</div><div style="padding:9px 12px;font-size:12.5px;color:var(--tx2)">Sidebar · Breadcrumb · KPI cards · bar chart (rrects) · DataTable (sort/select/hover/skeleton) · Pagination · form</div><div style="padding:9px 12px;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--tx3)">same catalog · spec §10</div></div>
     </div>
   </section>
@@ -246,24 +246,26 @@ fully shipped; Phase C ships except the items below. Do NOT rebuild what
 exists — verify against the status board (Handoff §01).
 
 Inputs:
-  · tokens.json + Tokens.cs — a mirror of the SHIPPED eQuantic.UI.Primitives
-    token core. Already implemented and gated by DesignTokenTests. Use the
+  · tokens.json — the pinned mirror of the SHIPPED eQuantic.UI.Primitives
+    token core. Already implemented, and its contrast gated twice: by
+    DesignTokenTests (WCAG 2) and DesignTokenApcaTests (APCA). Use the
     values verbatim; never invent or re-type a color, size, radius or curve.
   · Photon Design System.dc.html — the spec INDEX. The specs live in
     "Photon DS - Foundations / Phase A / Phase B / Phase C .dc.html"
-    (47 specs; C3, C15 and C16 are specified ahead of the SDK).
+    (47 specs; C3 is specified ahead of the SDK).
   · The three sample apps are BUILT in the repo — WalletMobile,
     PhotonDesktop/Studio, DefaultUIDashboard: validation targets, not work.
 
 The delta, in order:
   1 ActionSheet (C3) — AppBar overflow and Dialog >2 actions reference it;
     it does not exist in code. Anchored context menu on pointer targets.
-  2 DatePicker (C15) — calendar + the required text-entry fallback row.
+  2 DatePicker (C15) has shipped, with Calendar, TimePicker and DateTimePicker.
+    Confirm the required text-entry fallback row before closing it.
   3 BottomSheet detents + scroll handoff (the C1 gate).
   4 A11y custom actions on the native semantics tree (spec §10 REQUEST) —
     unblocks the SwipeableRow / PullToRefresh mirror rule.
   5 Desktop/pointer adapters — thread Density through every control (§3b),
-    hover per spec §10, sheet→popover, NavigationRail (C16).
+    hover per spec §10, sheet→popover. NavigationRail (C16) has shipped.
 
 Read Handoff §3b (API contract) before writing any call site:
   eQuantic.UI.Primitives · no IsDark (mode-free; token.Resolve(ThemeMode))
@@ -295,7 +297,8 @@ contradicts §03. Flag it where it bites; do not pick a side in code.
 Hard rules (Handoff §03):
   · The engine never receives a path. Icons are glyphs; the Vector node is
     allowed because it rasterizes once into a cached A8 texture.
-  · Touch targets ≥ 48dp (Comfortable — see the OPEN QUESTION for Compact).
+  · Touch targets ≥ 48dp on a finger (Comfortable). Under a pointer (Compact)
+    a target is its own visual bounds, never under 24dp (Foundations §08, decided).
   · Every gesture action mirrored as an accessibility custom action.
   · Light and dark in the same commit.
 
@@ -305,9 +308,17 @@ the §04 checklist filled in.</pre>
     </div>
   </section>
 
+  <section id="live-blocks" data-screen-label="Live blocks" style="margin-top:40px">
+    <div style="background:var(--sf);border:1px solid var(--bd);border-radius:12px;padding:18px 20px">
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap"><span style="font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--tx3)">Live blocks</span><span style="font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:700;letter-spacing:.03em;padding:2px 8px;border-radius:6px;background:var(--wars);color:var(--onwars)">REQUEST · live blocks</span><span style="font-size:12px;color:var(--tx3)">roadmap 3.2</span></div>
+      <p style="margin:10px 0 0;font-size:13.5px;line-height:1.6;color:var(--tx2);max-width:820px">Every block on the phase pages draws its component. The playground already compiles C# with the real eqc on the server. The request: a block names its component and a snippet (suggested marker <span style="font-family:'JetBrains Mono',monospace;font-size:12px">data-live="Button"</span>), the page build compiles the snippet through that same path, and the result is mounted beside the drawing in both themes, linked to the tests and goldens that hold it.</p>
+      <div style="margin-top:14px;padding:12px 14px;border-radius:10px;background:var(--infs);color:var(--oninfs);font-size:12.5px;line-height:1.6;max-width:840px"><strong>What it buys.</strong> A block whose snippet stops compiling fails the build, so an API change cannot leave a drawing behind, and a designer reviews the control users get instead of a picture of it.</div>
+    </div>
+  </section>
+
   <div style="margin-top:40px;padding-top:20px;border-top:1px solid var(--bd);display:flex;gap:10px;align-items:baseline;flex-wrap:wrap">
     <span style="font-size:13px;font-weight:700">Photon handoff v1.1</span>
-    <span style="font-size:12px;color:var(--tx3)">Next artifacts worth adding: the a11y state-table appendix (per-component role/state matrix as a checkable table) and the desktop/pointer adaptation specs (Density threading, popover presentations, NavigationRail tier). Already covered elsewhere: the Android shell shipped, and StudioWalkTests does headless golden screenshots. The spec-§10 REQUEST set still stands (SemanticNode state fields + custom actions · VariantColors hover helper · spring consumption).</span>
+    <span style="font-size:12px;color:var(--tx3)">Next artifacts worth adding: the a11y state-table appendix (per-component role/state matrix as a checkable table) and the desktop/pointer adaptation specs (Density threading, popover presentations, NavigationRail tier). Already covered elsewhere: the Android shell shipped, and StudioWalkTests does headless golden screenshots. The spec-§10 REQUEST set is down to two: native custom actions and spring consumption. The SemanticNode state fields and VariantColors.Hover have shipped.</span>
   </div>
 </div>
 </x-dc>

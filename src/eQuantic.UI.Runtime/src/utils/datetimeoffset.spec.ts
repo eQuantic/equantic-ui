@@ -54,4 +54,33 @@ describe('DateTimeOffset — .NET semantics', () => {
       '01/15/2024 16:30:00',
     );
   });
+
+  it('MinValue is default(DateTimeOffset) and MaxValue the last tick, both at +00:00', () => {
+    expect(dateTimeOffset.minValue().toString()).toBe('01/01/0001 00:00:00 +00:00');
+    expect(dateTimeOffset.maxValue().toString()).toBe('12/31/9999 23:59:59 +00:00');
+    expect(dateTimeOffset.maxValue().ticks - dateTimeOffset.minValue().ticks).toBe(
+      3_155_378_975_999_999_999n,
+    );
+  });
+});
+
+describe('DateTimeOffset.Add* — the clock time, then the UTC time', () => {
+  const o = dateTimeOffset(2026, 1, 1, 0, 0, 0, timeSpan.fromHours(3));
+
+  it('lands on the tick, milliseconds and microseconds included', () => {
+    expect(o.addSeconds(0.00001).ticks - o.ticks).toBe(100n);
+    expect(o.addMilliseconds(-0.5).ticks - o.ticks).toBe(-5000n);
+    expect(o.addMicroseconds(1.99).ticks - o.ticks).toBe(19n);
+  });
+
+  it('refuses the clock time first, then the UTC time', () => {
+    expect(() => dateTimeOffset.maxValue().addSeconds(1)).toThrow(
+      "The added or subtracted value results in an un-representable DateTime. (Parameter 'value')",
+    );
+    const late = dateTimeOffset(9999, 12, 31, 19, 59, 59, minus3);
+    expect(late.addMinutes(30).ticks).toBe(3_155_378_849_990_000_000n);
+    expect(() => late.addMinutes(90)).toThrow(
+      "The UTC time represented when the offset is applied must be between year 0 and 10,000. (Parameter 'offset')",
+    );
+  });
 });

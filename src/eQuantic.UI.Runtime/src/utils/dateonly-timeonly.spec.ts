@@ -70,3 +70,19 @@ describe('TimeOnly — .NET semantics', () => {
     expect(timeOnly.parse('09:05:00')).toBeInstanceOf(TimeOnly);
   });
 });
+
+describe('TimeOnly.Add* — one product, saturated, wrapped', () => {
+  const t = timeOnly(10, 0);
+
+  it('takes one product of the count, where DateTime splits it', () => {
+    expect(t.addHours(0.0000001).ticks - t.ticks).toBe(3600n);
+    expect(t.addHours(1.23456789).ticks).toBe(404_444_444_039n);
+    expect(t.addMinutes(-0.0000001).ticks).toBe(359_999_999_940n);
+  });
+
+  it('saturates a product past a long before it wraps, and adds nothing for NaN', () => {
+    expect(t.addHours(1e20).ticks).toBe(460_854_775_807n);
+    expect(t.addHours(-1e20).ticks).toBe(259_145_224_192n);
+    expect(t.addHours(NaN).ticks).toBe(t.ticks);
+  });
+});

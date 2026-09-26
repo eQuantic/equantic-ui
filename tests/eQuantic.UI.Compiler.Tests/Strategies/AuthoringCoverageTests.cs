@@ -269,7 +269,8 @@ public class AuthoringCoverageTests
                     "  private string Label(string package) => package.Trim(); " +
                     "  public override IComponent Build(RenderContext c) => " +
                     "    new Text(string.Join(\",\", new[] { \"a\" }.Select(interfaceName => interfaceName))); }");
-        ts.Should().Contain("package$: string").And.Contain("package$.trim()");
+        // The reserved word takes `$` (#399), and Trim is the runtime's .NET-shaped trim (#403).
+        ts.Should().Contain("package$: string").And.Contain("$eq.text.trim(package$)");
     }
 
     [Fact]

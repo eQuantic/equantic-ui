@@ -10,10 +10,12 @@ public class StringStrategyTests
     // ============ Instance Methods ============
 
     [Fact]
-    public void Split_NoArgs_MapsToSplitEmpty()
+    public void Split_NoArgs_SplitsOnDotNetsWhiteSpace()
     {
+        // It was `split('')`, which cut the text into its characters: with no separator .NET splits
+        // on white space (WhiteSpaceConformanceTests runs both sides).
         var result = TestHelper.ConvertExpression("str.Split()");
-        result.Should().Be("this.str.split('')");
+        result.Should().Be("$eq.text.splitOnWhiteSpace(this.str)");
     }
 
     [Fact]
@@ -104,17 +106,17 @@ public class StringStrategyTests
     }
 
     [Fact]
-    public void TrimStart_MapsToTrimStart()
+    public void TrimStart_TrimsDotNetsWhiteSpace()
     {
         var result = TestHelper.ConvertExpression("str.TrimStart()");
-        result.Should().Be("this.str.trimStart()");
+        result.Should().Be("$eq.text.trimStart(this.str)");
     }
 
     [Fact]
-    public void TrimEnd_MapsToTrimEnd()
+    public void TrimEnd_TrimsDotNetsWhiteSpace()
     {
         var result = TestHelper.ConvertExpression("str.TrimEnd()");
-        result.Should().Be("this.str.trimEnd()");
+        result.Should().Be("$eq.text.trimEnd(this.str)");
     }
 
     [Fact]
@@ -146,10 +148,11 @@ public class StringStrategyTests
     }
 
     [Fact]
-    public void Trim_MapsToTrim()
+    public void Trim_TrimsDotNetsWhiteSpace()
     {
+        // JavaScript's `trim` leaves U+0085 and takes U+FEFF, which .NET does the other way round.
         var result = TestHelper.ConvertExpression("str.Trim()");
-        result.Should().Be("this.str.trim()");
+        result.Should().Be("$eq.text.trim(this.str)");
     }
 
     [Fact]
@@ -190,10 +193,10 @@ public class StringStrategyTests
     }
 
     [Fact]
-    public void IsNullOrWhiteSpace_MapsToTrimCheck()
+    public void IsNullOrWhiteSpace_ReadsItsArgumentOnce_AsDotNetsWhiteSpace()
     {
         var result = TestHelper.ConvertExpression("string.IsNullOrWhiteSpace(str)");
-        result.Should().Be("(!this.str || !this.str.trim())");
+        result.Should().Be("(!$eq.text.hasNonWhiteSpace(this.str))");
     }
 
     [Fact]

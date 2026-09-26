@@ -22,6 +22,9 @@ This page says where.
 You need the [.NET 10 SDK](https://dotnet.microsoft.com/download) and nothing else — no Node.js, no
 npm. The TypeScript runtime is built by an embedded Bun the build extracts itself, and the Photon
 shaders are committed (only framework developers changing a shader run `scripts/generate-shaders.sh`).
+The one exception is outside the build: the change workflow runs the OpenSpec CLI, which needs
+Node >= 20.19, and `./scripts/openspec.sh` installs the pinned version from its lockfile on first
+use. CI validates your change either way.
 
 ```bash
 git clone https://github.com/eQuantic/equantic-ui.git
@@ -100,13 +103,21 @@ actually met.
 
 ## Commits and pull requests
 
-`main` is protected: every change arrives through a pull request, reviewed by GitHub Copilot
-automatically and merged when the review threads are resolved and CI is green.
+The working agreement is the **Workflow** section of [CLAUDE.md](CLAUDE.md), the same text as in
+[AGENTS.md](AGENTS.md); what follows is the short version, and where the two differ that section wins.
 
-**Check that CI actually RAN before you read it as green.** The ruleset requires a review, not a
-status check, so a pull request whose workflow never started still reads mergeable — and a workflow
-whose `if:` expression does not parse fails before it creates a single job, with no log to notice.
-That happened here for an hour and seven pull requests merged on local runs alone.
+`main` is protected: every change arrives through a pull request that closes an issue on the
+[board](https://github.com/orgs/eQuantic/projects/11), is reviewed by its author and then by GitHub
+Copilot (three rounds at most, stopping at the first without a defect), and is squash-merged when
+every review thread is resolved and CI is green.
+
+**Check that CI actually RAN before you read it as green.** Since 2026-09-26 the ruleset requires
+thirteen of the CI's jobs and a branch up to date with `main` (#287), so a pull request whose
+workflow never started stays blocked, and one that `main` moved past has to take `main` and run
+again. Before that it required only a review: a workflow whose `if:` expression did not parse
+failed before it created a single job, with no log to notice, and for an hour seven pull requests
+merged on local runs alone. Two pull requests that each passed alone also broke `main` together
+(#453).
 
 ```bash
 scripts/ci-doctor.sh
@@ -116,7 +127,10 @@ It answers the two questions the pull-request page cannot: does GitHub still cal
 (it falls back to the file's path when it cannot read it), and did the run for this branch create
 any jobs at all.
 
-- **Branch first**, from `main`. Never commit onto `main` locally either.
+- **Start from an issue.** Every change has one on the board; if none exists, create it as a
+  sub-issue of the epic or feature it belongs to, with the right type.
+- **Branch first**, from `main`, named `<type>/<slug>` (`feat/`, `fix/`, `chore/`, `refactor/`,
+  `docs/`, `test/`, `ci/`, `perf/`, `build/`). Never commit onto `main` locally either.
 - **Commit messages** are `emoji type: description`, in English, emoji first:
 
   | Type | Emoji | Use |
@@ -129,13 +143,26 @@ any jobs at all.
   | chore | 🔧 | maintenance |
   | ci | 👷 | the pipeline |
   | perf | ⚡ | performance |
+  | build | 📦 | the build system and dependencies |
   | style | 💄 | formatting |
 
   A breaking change is `✨ feat!: …` with a `BREAKING CHANGE:` paragraph in the body.
+- **No attribution** in a commit or a pull request: no co-authorship line for an assistant, no
+  session link, no generated-with footer.
 - **The PR title follows the same format** — a squash merge takes it as the commit subject. The body
-  says what changed, why, and what you ran; the template asks for exactly that.
-- **Read the Copilot review** and address it: fix, or reply saying why not. A PR is not done when it
-  is opened.
+  says `Closes #N`, what changed, why, and what you ran; the template asks for exactly that.
+- **A change that creates or changes behaviour starts with an OpenSpec proposal** in the same pull
+  request (`/opsx:propose`, under `openspec/changes/`), archived before the merge.
+- **Review the diff yourself before opening the PR** (in Claude Code, `/code-review high`), then
+  **answer Copilot's rounds**. The first starts when a PR that is not a draft opens. A defect is
+  fixed, proved both ways and earns another round, asked for (`gh pr edit <n> --add-reviewer
+  @copilot`) after one push with every fix. Hardening, docs or a nit is fixed in the same push or
+  filed as an issue, and a wrong finding is answered with what shows so: neither earns a round. The
+  loop stops at the first round without a defect, and after three in any case. A PR is not done
+  when it is opened.
+- **Documentation and the ledger change with the code**: the Markdown here, the wiki in English and
+  Portuguese on a wiki branch named like the pull request's, merged into the wiki's master when the
+  pull request merges, and one `docs/LEDGER.md` line citing the issue.
 - **Do not open thin PRs.** Group a coherent body of work — a slice, a family of fixes, a refactor and
   the test that proves it — so it can be reviewed as a unit.
 
@@ -145,7 +172,11 @@ The wiki is bilingual, and it is its own repository
 ([equantic-ui.wiki](https://github.com/eQuantic/equantic-ui/wiki), not a folder of this one). Every
 page has an English canonical file and a Portuguese twin under `locale/pt-BR/<Page>-pt-BR.md` there,
 edited in the **same wiki commit**; the documentation site fails its build
-when a translation is older than its canonical page. Version marks (`*Since **0.2.0-preview.N***`)
+when a translation is older than its canonical page. That commit goes on a wiki branch named exactly
+like the pull request's branch: CI reads it for the docs guards (`scripts/checkout-wiki.sh`), and it
+is merged into the wiki's master when the pull request merges. To run the guards locally against
+that branch, point `EQ_WIKI_DIR` at a worktree of it and leave the clone beside the repository on
+master, since every local run reads that one. Version marks (`*Since **0.2.0-preview.N***`)
 are derived from git, never from memory. The project's word is *component* — never "widget".
 
 ## Reporting

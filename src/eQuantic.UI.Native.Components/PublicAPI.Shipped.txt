@@ -180,6 +180,8 @@ eQuantic.UI.Native.Components.PhotonHost.ImageLoader.set -> void
 eQuantic.UI.Native.Components.PhotonHost.Invalidate() -> void
 eQuantic.UI.Native.Components.PhotonHost.IsFrameDue(float nowMs) -> bool
 eQuantic.UI.Native.Components.PhotonHost.KeyDown(string! key, eQuantic.UI.Primitives.KeyModifiers modifiers = eQuantic.UI.Primitives.KeyModifiers.None) -> bool
+eQuantic.UI.Native.Components.PhotonHost.KeyboardConvention.get -> eQuantic.UI.Primitives.KeyboardConvention
+eQuantic.UI.Native.Components.PhotonHost.KeyboardConvention.init -> void
 eQuantic.UI.Native.Components.PhotonHost.LastFrame.get -> eQuantic.UI.Native.Components.RealizeResult?
 eQuantic.UI.Native.Components.PhotonHost.MarkedRange.get -> (int Start, int Length)
 eQuantic.UI.Native.Components.PhotonHost.MarkedText.get -> string!

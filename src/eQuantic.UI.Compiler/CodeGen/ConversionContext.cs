@@ -88,6 +88,15 @@ public class ConversionContext
     /// LINQ operator touches it. Laziness is the trade, and it only matters for infinite sequences.
     /// </summary>
     public string? IteratorBuffer { get; set; }
+
+    /// <summary>
+    /// Set while converting a twin constructor's parameter defaults, where a record's
+    /// primary-constructor parameter IS the constructor's own JavaScript parameter: a field
+    /// initializer that reads it (<c>public string Tag = "#" + Id;</c>) runs there, before any
+    /// member is assigned. Everywhere else such a parameter reads as captured state,
+    /// <c>this.id</c>, which in that position was still undefined (#385).
+    /// </summary>
+    public bool ConstructorParametersInScope { get; set; }
     public HashSet<string> UsedHelpers { get; } = new();
 
     /// <summary>APP types the conversion itself introduced into the OUTPUT — names that never

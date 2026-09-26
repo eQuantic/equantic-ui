@@ -440,12 +440,7 @@ public class ObjectCreationStrategy : IConversionStrategy
         if (primary != null)
             foreach (var p in primary.Parameters)
                 if (seen.Add(p.Name))
-                    // The parameter's OWN default first — `TextAlignment Align = Start` means an
-                    // omitted argument is Start, not `default(T)`. Reading the type's default here
-                    // filled the slot with null, and a column aligned one way on the server and the
-                    // other on the client for want of asking the parameter.
-                    members.Add(new ValueMember(p.Name, p.Name.ToCamelCase(),
-                        p.HasExplicitDefaultValue ? ParameterDefaultLiteral(p) : SymbolDefault(p.Type), "any"));
+                    members.Add(new ValueMember(p.Name, p.Name.ToCamelCase(), "any"));
 
         foreach (var member in type.GetMembers())
         {
@@ -456,43 +451,25 @@ public class ObjectCreationStrategy : IConversionStrategy
                 && prop.Name != "EqualityContract"
                 && seen.Add(prop.Name))
             {
-                members.Add(new ValueMember(prop.Name, prop.Name.ToCamelCase(), SymbolDefault(prop.Type), "any"));
+                members.Add(new ValueMember(prop.Name, prop.Name.ToCamelCase(), "any"));
             }
             else if (member is IFieldSymbol { IsStatic: false, IsImplicitlyDeclared: false } field
                      && field.DeclaredAccessibility == Accessibility.Public
                      && seen.Add(field.Name))
             {
-                members.Add(new ValueMember(field.Name, field.Name.ToCamelCase(), SymbolDefault(field.Type), "any"));
+                members.Add(new ValueMember(field.Name, field.Name.ToCamelCase(), "any"));
             }
         }
 
         return members;
     }
 
-    /// <summary>JS literal for <c>default(T)</c> from a type SYMBOL — mirrors the syntax-side
-    /// <c>DefaultFor</c> so both paths fill unset slots identically.</summary>
-    private static string SymbolDefault(ITypeSymbol type)
-    {
-        if (type.NullableAnnotation == NullableAnnotation.Annotated) return "null";
-        if (type.OriginalDefinition?.SpecialType == SpecialType.System_Nullable_T) return "null";
-
-        return type.SpecialType switch
-        {
-            SpecialType.System_Int32 or SpecialType.System_Int16 or SpecialType.System_Byte
-                or SpecialType.System_SByte or SpecialType.System_UInt32 or SpecialType.System_UInt16
-                or SpecialType.System_Double or SpecialType.System_Single => "0",
-            SpecialType.System_Boolean => "false",
-            SpecialType.System_Decimal => "$eq.num.dec(0)",
-            SpecialType.System_Int64 or SpecialType.System_UInt64 => "$eq.num.long(0)",
-            _ => "null",
-        };
-    }
-
     /// <summary>
     /// Builds a <c>new T(...)</c> construction for a record/struct, mapping positional arguments and any
     /// object initializer (<c>{ Name = … }</c>) onto the constructor's positional value members (in the
-    /// type's declaration order). Members left unset before the last supplied one get their default
-    /// literal; trailing unset members are omitted (the constructor's parameter defaults cover them).
+    /// type's declaration order). Members left unset before the last supplied one are passed
+    /// <c>undefined</c>, and trailing unset members are omitted: either way the constructor's own
+    /// parameter defaults cover them.
     /// </summary>
     /// <summary>
     /// A model that can answer about THIS node. Roslyn throws when asked about a node from another
@@ -606,8 +583,12 @@ public class ObjectCreationStrategy : IConversionStrategy
         var lastSet = -1;
         for (var i = 0; i < values.Length; i++) if (values[i] != null) lastSet = i;
 
+        // A member the creation does not set is `undefined`, which lets the twin's constructor write
+        // its default: the constructor is where a member's initializer is converted, in its own
+        // module (#385). A default copied here had to be a literal, so a field's `= "x"` and a
+        // property's `= new()` were lost at every `new Fields { N = 3 }`.
         var ctorArgs = new List<string>();
-        for (var i = 0; i <= lastSet; i++) ctorArgs.Add(values[i] ?? members[i].Default);
+        for (var i = 0; i <= lastSet; i++) ctorArgs.Add(values[i] ?? "undefined");
 
         return $"new {type.Name}({string.Join(", ", ctorArgs)})";
     }

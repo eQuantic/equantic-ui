@@ -134,3 +134,35 @@ describe('DateTime — .NET semantics', () => {
     expect(dateTime.parse('01/15/2024 09:30:00').toJSON()).toBe('2024-01-15T09:30:00');
   });
 });
+
+// Measured on .NET 10; the conformance suite runs the same calls on both sides (#422).
+describe('DateTime.Add* — a fraction lands on the tick', () => {
+  const d = dateTime(2026, 1, 1);
+  const moved = (other: { ticks: bigint }) => other.ticks - d.ticks;
+
+  it('splits whole units from the fraction and truncates the fraction toward zero', () => {
+    expect(moved(d.addSeconds(0.00001))).toBe(100n);
+    expect(moved(d.addSeconds(-0.00001))).toBe(-100n);
+    expect(moved(d.addMilliseconds(0.5))).toBe(5000n);
+    expect(moved(d.addDays(1.23456789))).toBe(1_066_666_656_959n);
+    expect(moved(d.addMicroseconds(1.99))).toBe(19n);
+  });
+
+  it('adds nothing for NaN', () => {
+    expect(d.addDays(NaN).ticks).toBe(d.ticks);
+  });
+
+  it("refuses a count or a result out of range in .NET's words", () => {
+    expect(() => d.addDays(1e10)).toThrow("Value to add was out of range. (Parameter 'value')");
+    expect(() => d.addSeconds(Infinity)).toThrow(
+      "Value to add was out of range. (Parameter 'value')",
+    );
+    expect(() => dateTime.maxValue().addSeconds(1)).toThrow(
+      "The added or subtracted value results in an un-representable DateTime. (Parameter 'value')",
+    );
+    expect(() => dateTime.maxValue().addTicks(1n)).toThrow(
+      "The added or subtracted value results in an un-representable DateTime. (Parameter 'value')",
+    );
+    expect(dateTime.minValue().addMilliseconds(-0.00001).ticks).toBe(0n); // truncates to no tick
+  });
+});

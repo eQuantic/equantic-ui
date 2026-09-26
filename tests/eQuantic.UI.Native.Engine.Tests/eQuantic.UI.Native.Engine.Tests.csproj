@@ -15,6 +15,9 @@
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.13.0" />
     <PackageReference Include="xunit" Version="2.9.3" />
     <PackageReference Include="Xunit.SkippableFact" Version="1.5.23" />
+    <!-- HandoffStatusTests reads a source probe as syntax, not text. The version is the one
+         eQuantic.UI.Native.Build already brings here, so the resolved graph does not move. -->
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="5.0.0" />
     <PackageReference Include="xunit.runner.visualstudio" Version="3.0.2" />
   </ItemGroup>
 

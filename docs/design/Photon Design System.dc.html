@@ -24,18 +24,18 @@ body{margin:0;background:var(--bg);color:var(--tx1);font-family:'Hanken Grotesk'
 --suc:#3B7A22;--onsuc:#FFFFFF;--sucp:#2C5E17;--sucs:#EDF6E6;--onsucs:#2C5E17;
 --war:#8A5A00;--onwar:#FFFFFF;--warp:#6E4700;--wars:#FBF3DF;--onwars:#7A5200;
 --inf:#0C6C86;--oninf:#FFFFFF;--infp:#0A5468;--infs:#E4F3F8;--oninfs:#0A5468;
---lnk:#0050A0;--foc:#0050A0;--scrim:rgba(11,14,18,.40);--priinv:#5CA2E8;
+--lnk:#0050A0;--foc:#0050A0;--scrim:rgba(11,14,18,.40);--priinv:#76BAFF;
 --e1:0 1px 3px 0 rgba(15,23,32,.10);--e2:0 2px 8px 0 rgba(15,23,32,.12);--e3:0 6px 16px -2px rgba(15,23,32,.16);--e4:0 12px 28px -4px rgba(15,23,32,.20);--e5:0 20px 44px -6px rgba(15,23,32,.26)}
 body[data-theme="dark"]{
---bg:#0C0F13;--sf:#14181E;--sf2:#1C232B;--bd:#2A323D;--bd2:#3D4754;
---tx1:#F2F4F7;--tx2:#AEB7C2;--tx3:#8B95A3;--txi:#171B21;
---pri:#5CA2E8;--onpri:#06263F;--prip:#7CB5EE;--pris:#0F2740;--onpris:#A8CDF2;
+--bg:#0C0F13;--sf:#14181E;--sf2:#1C232B;--bd:#2A323D;--bd2:#4C5664;
+--tx1:#F2F4F7;--tx2:#C7D1DC;--tx3:#ACB7C5;--txi:#171B21;
+--pri:#76BAFF;--onpri:#06263F;--prip:#9BCDFF;--pris:#0F2740;--onpris:#A8CDF2;
 --sec:#242C36;--onsec:#D7DDE5;--secp:#2E3844;
---des:#E5645C;--ondes:#3B0704;--desp:#F28B85;--dess:#3A1210;--ondess:#F4A9A4;
---suc:#85C05E;--onsuc:#12290A;--sucp:#9ACD74;--sucs:#16290C;--onsucs:#B5DB97;
+--des:#FF958C;--ondes:#3B0704;--desp:#FEC0BB;--dess:#3A1210;--ondess:#F4A9A4;
+--suc:#89C562;--onsuc:#12290A;--sucp:#9FD279;--sucs:#16290C;--onsucs:#B5DB97;
 --war:#E8B04B;--onwar:#2E1B02;--warp:#F0C06B;--wars:#2E2008;--onwars:#EECF8F;
---inf:#4CC3DE;--oninf:#062B33;--infp:#6ED0E6;--infs:#0A2A32;--oninfs:#9FDCEB;
---lnk:#7CB5EE;--foc:#7CB5EE;--scrim:rgba(0,0,0,.56);--priinv:#0050A0;
+--inf:#4DC4DF;--oninf:#062B33;--infp:#6FD1E7;--infs:#0A2A32;--oninfs:#9FDCEB;
+--lnk:#81BAF3;--foc:#81BAF3;--scrim:rgba(0,0,0,.56);--priinv:#0050A0;
 --e1:0 1px 3px 0 rgba(0,0,0,.45);--e2:0 2px 8px 0 rgba(0,0,0,.48);--e3:0 6px 16px -2px rgba(0,0,0,.52);--e4:0 12px 28px -4px rgba(0,0,0,.56);--e5:0 20px 44px -6px rgba(0,0,0,.62)}
 @keyframes ph-blink{0%{opacity:1}100%{opacity:.15}}
 @keyframes ph-shimmer{0%{transform:translateX(-100%)}100%{transform:translateX(100%)}}
@@ -168,7 +168,7 @@ body[data-theme="dark"]{
     <h1 style="margin:0;font-size:44px;line-height:1.05;font-weight:800;letter-spacing:-.025em">Photon Mobile<br>Design System</h1>
     <p style="margin:18px 0 0;max-width:640px;font-size:16px;line-height:1.6;color:var(--tx2)">
       The component specification for <strong style="color:var(--tx1)">eQuantic.UI</strong> — <strong style="color:var(--tx1)">one write-once component library</strong>
-      (<span style="font-family:'JetBrains Mono',monospace;font-size:14px">eQuantic.UI.Components</span>, 44 components authored in C# against <span style="font-family:'JetBrains Mono',monospace;font-size:14px">eQuantic.UI.Primitives</span>),
+      (<span style="font-family:'JetBrains Mono',monospace;font-size:14px">eQuantic.UI.Components</span>, <span data-figure="components.count">56</span> components authored in C# against <span style="font-family:'JetBrains Mono',monospace;font-size:14px">eQuantic.UI.Primitives</span>),
       realized per target: DOM/CSS on web, the Photon GPU renderer on native.
       Every visual in this document is drawn <em>inside the v1 engine fence</em>: rounded rects, uniform borders,
       2-stop linear gradients, rrect shadows, glyph-atlas icons and shaped text — nothing else.
@@ -182,7 +182,7 @@ body[data-theme="dark"]{
       <div style="width:1px;background:var(--bd)"></div>
       <div style="display:flex;flex-direction:column;gap:2px"><span style="font-size:26px;font-weight:800;letter-spacing:-.02em">9 × 4</span><span style="font-size:11.5px;font-weight:600;color:var(--tx3)">variants × sizes</span></div>
       <div style="width:1px;background:var(--bd)"></div>
-      <div style="display:flex;flex-direction:column;gap:2px"><span style="font-size:26px;font-weight:800;letter-spacing:-.02em">47</span><span style="font-size:11.5px;font-weight:600;color:var(--tx3)">component specs · A + B + C · 44 in the SDK</span></div>
+      <div style="display:flex;flex-direction:column;gap:2px"><span style="font-size:26px;font-weight:800;letter-spacing:-.02em">47</span><span style="font-size:11.5px;font-weight:600;color:var(--tx3)">component specs · A + B + C · <span data-figure="components.count">56</span> in the SDK</span></div>
       <div style="width:1px;background:var(--bd)"></div>
       <div style="display:flex;flex-direction:column;gap:2px"><span style="font-size:26px;font-weight:800;letter-spacing:-.02em">AA</span><span style="font-size:11.5px;font-weight:600;color:var(--tx3)">every token pair, both themes</span></div>
     </div>
@@ -200,8 +200,8 @@ body[data-theme="dark"]{
       <a href="Photon%20DS%20-%20Foundations.dc.html" style="display:flex;gap:14px;padding:17px 18px;border-radius:12px;background:var(--sf);border:1px solid var(--bd);text-decoration:none;box-shadow:var(--e1);align-items:flex-start">
         <span style="width:38px;height:38px;border-radius:10px;background:var(--pris);color:var(--onpris);display:inline-flex;align-items:center;justify-content:center;flex:none"><span style="font-family:'Material Symbols Rounded';font-size:20px">foundation</span></span>
         <span style="flex:1;min-width:0">
-          <span style="display:flex;align-items:center;gap:8px"><span style="font-size:15px;font-weight:800;color:var(--tx1);letter-spacing:-.01em">Foundations</span><span style="font-family:'JetBrains Mono',monospace;font-size:10.5px;font-weight:600;padding:2px 7px;border-radius:6px;background:var(--sf2);color:var(--tx3)">§00–§10</span></span>
-          <span style="display:block;font-size:12.5px;line-height:1.6;color:var(--tx2);margin-top:4px">Architecture · engine fence · color · typography · spacing · radius · elevation · motion (Release glide §06) · iconography · touch &amp; safe area · C# token API · <strong style="color:var(--tx1)">§10 states, pointer &amp; semantics</strong> (new in v1.1).</span>
+          <span style="display:flex;align-items:center;gap:8px"><span style="font-size:15px;font-weight:800;color:var(--tx1);letter-spacing:-.01em">Foundations</span><span style="font-family:'JetBrains Mono',monospace;font-size:10.5px;font-weight:600;padding:2px 7px;border-radius:6px;background:var(--sf2);color:var(--tx3)">§00–§11</span></span>
+          <span style="display:block;font-size:12.5px;line-height:1.6;color:var(--tx2);margin-top:4px">Architecture · engine fence · color · typography · spacing · radius · elevation · motion (Release glide §06) · iconography · touch &amp; safe area · C# token API · <strong style="color:var(--tx1)">§10 states, pointer &amp; semantics</strong> (new in v1.1) · <strong style="color:var(--tx1)">§11 adaptive layout</strong>.</span>
         </span>
         <span style="font-family:'Material Symbols Rounded';font-size:17px;color:var(--tx3);margin-top:2px">arrow_forward</span>
       </a>
@@ -228,14 +228,14 @@ body[data-theme="dark"]{
         <span style="width:38px;height:38px;border-radius:10px;background:var(--pris);color:var(--onpris);display:inline-flex;align-items:center;justify-content:center;flex:none"><span style="font-family:'Material Symbols Rounded';font-size:20px">layers</span></span>
         <span style="flex:1;min-width:0">
           <span style="display:flex;align-items:center;gap:8px"><span style="font-size:15px;font-weight:800;color:var(--tx1);letter-spacing:-.01em">Phase C — surfaces &amp; gestures</span><span style="font-family:'JetBrains Mono',monospace;font-size:10.5px;font-weight:600;padding:2px 7px;border-radius:6px;background:var(--sf2);color:var(--tx3)">C1–C16</span></span>
-          <span style="display:block;font-size:12.5px;line-height:1.6;color:var(--tx2);margin-top:4px">BottomSheet · Modal · ActionSheet&dagger; · Toast · Drawer · SegmentedControl · Slider · Stepper · PullToRefresh · SwipeableRow · Accordion · PageIndicator · Tooltip · Select · DatePicker&dagger; · NavigationRail&dagger; — &dagger;&nbsp;specified ahead of the SDK (REQUEST).</span>
+          <span style="display:block;font-size:12.5px;line-height:1.6;color:var(--tx2);margin-top:4px">BottomSheet · Modal · ActionSheet&dagger; · Toast · Drawer · SegmentedControl · Slider · Stepper · PullToRefresh · SwipeableRow · Accordion · PageIndicator · Tooltip · Select · DatePicker · NavigationRail — &dagger;&nbsp;specified ahead of the SDK (REQUEST).</span>
         </span>
         <span style="font-family:'Material Symbols Rounded';font-size:17px;color:var(--tx3);margin-top:2px">arrow_forward</span>
       </a>
     </div>
     <div style="display:flex;gap:18px;margin-top:14px;flex-wrap:wrap;font-size:12.5px;font-weight:600">
       <a href="tokens.json" style="display:inline-flex;align-items:center;gap:6px;color:var(--lnk);text-decoration:none"><span style="font-family:'Material Symbols Rounded';font-size:16px">data_object</span>tokens.json</a>
-      <a href="Tokens.cs" style="display:inline-flex;align-items:center;gap:6px;color:var(--lnk);text-decoration:none"><span style="font-family:'Material Symbols Rounded';font-size:16px">code</span>Tokens.cs</a>
+      <a href="https://github.com/eQuantic/equantic-ui/blob/main/src/eQuantic.UI.Primitives/Theme/Tokens.cs" style="display:inline-flex;align-items:center;gap:6px;color:var(--lnk);text-decoration:none"><span style="font-family:'Material Symbols Rounded';font-size:16px">code</span>Tokens.cs</a>
       <a href="Photon%20Handoff.dc.html" style="display:inline-flex;align-items:center;gap:6px;color:var(--lnk);text-decoration:none"><span style="font-family:'Material Symbols Rounded';font-size:16px">assignment_turned_in</span>Photon Handoff</a>
     </div>
   </section>
@@ -244,7 +244,7 @@ body[data-theme="dark"]{
     <div style="background:var(--sf2);border-radius:14px;padding:20px 24px">
       <div style="font-size:11px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--tx3);margin-bottom:10px">Catalog status — v1 scope closed</div>
       <div style="display:flex;gap:8px;flex-wrap:wrap">
-        <span style="font-size:13px;color:var(--tx2);line-height:1.7;max-width:760px">All 47 catalog specs are written: Foundations 00–10 · Phase A <a href="Photon%20DS%20-%20Phase%20A.dc.html#a-box" style="color:var(--lnk);font-weight:600;text-decoration:none">A1–A13</a> · Phase B <a href="Photon%20DS%20-%20Phase%20B.dc.html#b-card" style="color:var(--lnk);font-weight:600;text-decoration:none">B1–B18</a> · Phase C <a href="Photon%20DS%20-%20Phase%20C.dc.html#c-sheet" style="color:var(--lnk);font-weight:600;text-decoration:none">C1–C16</a>. The shipped write-once library is 44 components — <strong style="color:var(--tx1)">C3 ActionSheet, C15 DatePicker and C16 NavigationRail are specified ahead of the code (REQUEST)</strong>. Next for the SDK team: the §10 REQUEST set — SemanticNode Selected/Checked/Expanded state fields + custom actions, a VariantColors hover helper (Base→Pressed midpoint), the velocity-taking release spring — then golden-harness screenshots per section (light + dark × 100/130% type) and the M3 Dashboard demo composed exclusively from these parts.</span>
+        <span style="font-size:13px;color:var(--tx2);line-height:1.7;max-width:760px">All 47 catalog specs are written: Foundations 00–11 · Phase A <a href="Photon%20DS%20-%20Phase%20A.dc.html#a-box" style="color:var(--lnk);font-weight:600;text-decoration:none">A1–A13</a> · Phase B <a href="Photon%20DS%20-%20Phase%20B.dc.html#b-card" style="color:var(--lnk);font-weight:600;text-decoration:none">B1–B18</a> · Phase C <a href="Photon%20DS%20-%20Phase%20C.dc.html#c-sheet" style="color:var(--lnk);font-weight:600;text-decoration:none">C1–C16</a>. The shipped write-once library is <span data-figure="components.count">56</span> components. <strong style="color:var(--tx1)">C3 ActionSheet is specified ahead of the code (REQUEST)</strong>; C15 DatePicker and C16 NavigationRail have shipped. Next for the SDK team: the rest of the §10 REQUEST set, native custom actions and the velocity-taking release spring, then golden-harness screenshots per section (light + dark × 100/130% type) and the M3 Dashboard demo composed exclusively from these parts.</span>
         <span style="height:28px;padding:0 11px;border-radius:999px;background:var(--wars);color:var(--onwars);font-size:12px;font-weight:600;display:inline-flex;align-items:center">Out of v1 by design: charts · maps · rich-text editors · anything needing arbitrary vector paths</span>
       </div>
     </div>
@@ -252,7 +252,7 @@ body[data-theme="dark"]{
 
   <footer style="border-top:1px solid var(--bd);padding-top:24px;display:flex;gap:10px;align-items:baseline;flex-wrap:wrap">
     <span style="font-size:13px;font-weight:700">Photon Mobile Design System</span>
-    <span style="font-size:12px;color:var(--tx3)">Spec v1.1 (SDK audit) · Foundations 00–10 + Phase A (A1–A13) + Phase B (B1–B18) + Phase C (C1–C16) — C3 · C15 · C16 ahead of the SDK (REQUEST). Charts, maps and rich text are outside the v1 fence by design.</span>
+    <span style="font-size:12px;color:var(--tx3)">Spec v1.1 (SDK audit) · Foundations 00–11 + Phase A (A1–A13) + Phase B (B1–B18) + Phase C (C1–C16) — C3 ahead of the SDK (REQUEST). Charts, maps and rich text are outside the v1 fence by design.</span>
   </footer>
 </main>
 </x-dc>

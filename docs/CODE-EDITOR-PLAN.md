@@ -183,6 +183,34 @@ not escape an `overflow:hidden` scroller); nothing here needs it to.
 - A running page and a running window are the proof of anything visual; a screenshot goes with every
   slice that changes what is drawn.
 
+### 9. A row is not a line
+
+Slice 2b draws two documents side by side with their changes level, and the side that is shorter
+at a change needs rows of nothing to stay level with the other. A run of unchanged lines folds into
+one row that says how many it hides. An inline diff shows the lines a change removed between the
+lines of the text that replaced them: drawn, and part of no document. Folding (slice 6) is the same
+thing again.
+
+So the grid maps a LINE to a ROW before it maps anything to a point. `CodeRows` is the map: runs of
+the document's lines, rows of filler (empty, or carrying lines that belong to no document, like the
+removed lines of an inline diff), and folds (a range of lines drawn as one row). `CodeGrid` carries
+it. A caret is placed on its line's row, a click on a filler lands on the nearest line and a click
+on a fold opens it, the block builds rows instead of lines (its window, its spacers and its gutter
+numbers are counted in rows), and a reveal scrolls to a row. With no map a row is a line, and
+nothing that exists changes.
+
+*How does Flutter solve it?* It has no code editor. VS Code's are view zones (rows of content that
+belong to no line) and a view model that maps the model's lines to view lines through hidden areas,
+and both of its diff editors are built on them. The map here is that pair in one immutable value the
+engine owns, so the hosts, which paint the rectangles the engine answers, need nothing new.
+
+The diff view (`CodeDiff`) is then: one `CodeDiffer.Compare` per pair of documents; the two maps it
+implies (the shorter side of each change padded, unchanged runs longer than twice the context
+folded); a wash for each line removed or added, and a stronger one for the words that changed; both
+sides in ONE vertical scroll view, so they cannot drift apart, each with its own sideways scroll and
+gutter; the modified side a `CodeSurface` over an editor controller, compared again as it is edited;
+and the next and previous change as commands over the changes.
+
 ## Slices
 
 | slice | what lands | proof |
@@ -213,6 +241,7 @@ closes the stories named beside it above.
 | SSR | delivered by [#370](https://github.com/eQuantic/equantic-ui/pull/370): the server writes `CodeSurface` (the code, its carets and its input), and what it could not measure the client draws. `WebRealizer` hands components a measurer with no fonts (`FontlessMeasurer`), which answers 0 and counts, the component whose own `Build` asked is marked `data-eq-unmeasured`, and hydration draws a marked subtree instead of adopting it. Measured in Chromium: the fenced code on `/markdown` has a 26px gutter where it had 12, and `/code` hydrates whole where one missing child sent it to a full re-render (defect 14) |
 | 1b | delivered by [#371](https://github.com/eQuantic/equantic-ui/pull/371): the view model, `CodeLineCells` (a tab to its stop, a wide character across two cells, every text element whole) behind the caret, the bands, the click, the arrows, Backspace and the drawing, with `StringInfo` crossing to the web over `Intl.Segmenter`; Tab, Shift+Tab and ⌘/ keep the selection they edit; a closing brace steps back to its block; typing over a selection is one undo and a paste is its own; C# raw strings are one string across lines. Found on the way in eqc: `char.IsLetter(s, i)` and its siblings tested the whole string, and a code point read from a string reached tsc as `number | undefined` |
 | 1c | delivered by [#375](https://github.com/eQuantic/equantic-ui/pull/375): the component. `Height` (Fill or fixed) bounds the editor and windows its lines; on the web a capped box bounds its child and a scroll view anchors nothing; the find bar is a layer over code that keeps its place, whose field takes the keyboard when it appears, Enter walking the matches, Escape closing it and giving the keyboard back through `CodeEditorController.RequestFocus` (the model's `FocusVersion`, honoured by both hosts); the app hears an edit as an edit and a move as a move; the caption is drawn; the close and copy buttons speak the interface's language; and a build draws and measures the lines in view only: the marks, the selection's bands, the matches (found once per search) and the widest line (once per document), where a select-all with a search on built 8001 boxes a frame over 4000 lines and a scroll step over 50,000 cost 81 ms (it costs 3). An editor that stops being bounded builds every line again, a capped Fill editor is capped whole, and on the web a viewport is measured once the render is written and again whenever it resizes (defects 4, 8–11, 20–25). Found on the way: seven tests whose assertion sat behind a null check, and could not fail for want of the thing they named, now guarded by a Roslyn test |
+| 2b, the engine | in review as [#386](https://github.com/eQuantic/equantic-ui/pull/386): `CodeDiffer` answers what differs between two texts, by lines (Myers' shortest edit script, the one `git diff --minimal` computes, over what is left once the common head and tail are trimmed) and, inside each change, by words (runs of word characters and of whitespace, any other character alone, a surrogate pair whole, the break between two lines); past 2,000 rounds two ranges are a rewrite, marked whole, at the same round on .NET and on the web. Pinned by hand, against a longest common subsequence on 500 random pairs, against `git diff --minimal --numstat` on five files of this history, and against its twin change by change. Found on the way: eqc named a method by its name alone, so two overloads reached a twin as one and every emitter lost one of them in silence; the build now refuses the second (EQ1007); and white space is .NET's on the web, which the twin's tokenizer was not (U+0085 in, U+FEFF out), with the `Trim` family, `IsNullOrWhiteSpace` and a bare `Split()` |
 
 ## Fenced, on purpose
 

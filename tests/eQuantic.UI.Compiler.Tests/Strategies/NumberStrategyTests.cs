@@ -79,6 +79,31 @@ public class NumberStrategyTests
         TestHelper.DiagnosticsFor(call).Should().Contain(d => d.Code == "EQ2108");
     }
 
+    /// <summary>
+    /// <c>Convert.ToBoolean</c> never consults its provider, and C# still evaluates it (found in review,
+    /// #421). The invariant and the current culture, and a null, are reads with no effect and are left
+    /// out; another <c>CultureInfo</c> may throw (<c>GetCultureInfo</c> with a name that is not a
+    /// culture) and has no twin to evaluate it, so it is refused rather than dropped.
+    /// </summary>
+    [Theory]
+    [InlineData("Convert.ToBoolean(str, System.Globalization.CultureInfo.InvariantCulture)", "$eq.bool.convert(this.str)")]
+    [InlineData("Convert.ToBoolean(str, System.Globalization.CultureInfo.CurrentCulture)", "$eq.bool.convert(this.str)")]
+    [InlineData("Convert.ToBoolean(str, (IFormatProvider)null)", "$eq.bool.convert(this.str)")]
+    public void ABoolReadWithANamedCulture_LeavesTheProviderOut(string call, string expected)
+    {
+        TestHelper.ConvertExpression(call).Should().Be(expected);
+        TestHelper.DiagnosticsFor(call).Should().NotContain(d => d.Code == "EQ2108");
+    }
+
+    [Theory]
+    [InlineData("Convert.ToBoolean(str, System.Globalization.CultureInfo.GetCultureInfo(\"not-a-culture\"))")]
+    [InlineData("Convert.ToBoolean(str, new System.Globalization.CultureInfo(\"pt-BR\"))")]
+    [InlineData("Convert.ToBoolean((object)str, System.Globalization.CultureInfo.GetCultureInfo(\"pt-BR\"))")]
+    public void ABoolReadWithAnotherCulture_IsABuildError(string call)
+    {
+        TestHelper.DiagnosticsFor(call).Should().Contain(d => d.Code == "EQ2108");
+    }
+
     [Theory]
     [InlineData("decimal.Parse(str)")]
     [InlineData("decimal.Parse(str, null)")]

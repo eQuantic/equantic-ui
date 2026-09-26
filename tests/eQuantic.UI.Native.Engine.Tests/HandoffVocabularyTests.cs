@@ -48,7 +48,7 @@ public class HandoffVocabularyTests
     private static readonly string[] Extensions = [".html", ".json", ".cs", ".md"];
 
     /// <summary>
-    /// The design pages, the token export, the exported C# view and the notes — not <c>frames/</c>:
+    /// The design pages, the token export, status.json, proposals.json and the notes — not <c>frames/</c>:
     /// those are the device and window chrome the pages are presented INSIDE, written as React
     /// components, and a <c>zIndex</c> there is a CSS property on a bezel, not a name in our
     /// vocabulary. Scanning them would make the pin fail on its own scaffolding.
