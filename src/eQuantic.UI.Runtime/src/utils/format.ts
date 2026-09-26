@@ -64,8 +64,8 @@ import { drawPicture, type PictureNumber, type PictureSymbols } from './number-p
  */
 function asJsDate(value: unknown): Date | null {
   if (value instanceof Date) return value;
-  if (value instanceof DotNetDateTime)
-    return new Date(
+  if (value instanceof DotNetDateTime) {
+    const date = new Date(
       value.year,
       value.month - 1,
       value.day,
@@ -74,7 +74,23 @@ function asJsDate(value: unknown): Date | null {
       value.second,
       value.millisecond,
     );
+    // `Date` reads a year from 0 to 99 as 1900 plus it: DateTime.MinValue printed 1901.
+    date.setFullYear(value.year);
+    return date;
+  }
   return null;
+}
+
+const TICKS_PER_SECOND = 10_000_000n;
+
+/**
+ * A date's fraction of a second as the seven digits .NET's `f` and `o` write: a compat DateTime's
+ * from its ticks, exactly, and a native Date's from its milliseconds, which is all it has.
+ */
+function fractionOf(value: unknown, date: Date): string {
+  if (value instanceof DotNetDateTime)
+    return (value.ticks % TICKS_PER_SECOND).toString().padStart(7, '0');
+  return String(date.getMilliseconds()).padStart(3, '0') + '0000';
 }
 
 /** Which C# number a JavaScript number stands for, by the name of its .NET type. A number cannot
@@ -182,7 +198,7 @@ function formatCore(
     if (typeof value === 'number' || typeof value === 'bigint' || value instanceof Decimal) {
       result = formatNumber(value, format, kind);
     } else if (date !== null) {
-      result = formatDate(date, format);
+      result = formatDate(date, format, fractionOf(value, date));
     }
   }
 
@@ -640,9 +656,13 @@ const INVARIANT_PATTERNS: Readonly<Record<string, string>> = {
   yearMonth: 'yyyy MMMM',
 };
 
-/** A pattern role in the culture the formatter is writing in. */
+/** A pattern role in the culture the formatter is writing in. With no culture in force, the
+ * invariant culture's, as a number's text is invariant then: `Intl`'s presets are the fallback for
+ * a culture whose patterns did not travel, and printed en-US's `9/24/26` for no culture at all. */
 function patternFor(role: string): string | null {
-  return invariantDepth > 0 ? (INVARIANT_PATTERNS[role] ?? null) : activePattern(role);
+  return invariantDepth > 0 || formatLocale() === undefined
+    ? (INVARIANT_PATTERNS[role] ?? null)
+    : activePattern(role);
 }
 
 /** `Intl`'s fallback for a culture whose patterns did not travel (no catalog installed). Close,
@@ -671,10 +691,12 @@ function namePart(value: Date, options: Intl.DateTimeFormatOptions, type: string
 
 /**
  * Renders a .NET date/time PATTERN. The token set is the one the standard patterns of real
- * cultures use; a literal in single quotes travels verbatim (pt-BR's long date is
- * `dddd, d 'de' MMMM 'de' yyyy`), and anything unrecognized is a literal too.
+ * cultures use, and a custom picture's: a literal in quotes travels verbatim (pt-BR's long date is
+ * `dddd, d 'de' MMMM 'de' yyyy`), `f` and `F` write the fraction of a second (`fraction`, seven
+ * digits), `K` writes nothing for a value with no kind, `%` marks a lone token, and anything
+ * unrecognized is a literal too.
  */
-function renderPattern(value: Date, pattern: string): string {
+function renderPattern(value: Date, pattern: string, fraction: string): string {
   const hours24 = value.getHours();
   const hours12 = hours24 % 12 === 0 ? 12 : hours24 % 12;
   const out: string[] = [];
@@ -682,8 +704,33 @@ function renderPattern(value: Date, pattern: string): string {
   for (let i = 0; i < pattern.length; ) {
     const ch = pattern[i];
 
-    if (ch === "'") {
-      const close = pattern.indexOf("'", i + 1);
+    if (ch === '%') {
+      i++;
+      continue;
+    }
+    if (ch === 'f' || ch === 'F') {
+      let digits = 1;
+      while (i + digits < pattern.length && pattern[i + digits] === ch) digits++;
+      const written = fraction.slice(0, Math.min(digits, 7));
+      if (ch === 'f') {
+        out.push(written);
+      } else {
+        // `F` drops the zeros that end it, and with them the point in front when nothing is left.
+        const kept = written.replace(/0+$/, '');
+        if (kept.length > 0) out.push(kept);
+        else if (out.length > 0 && out[out.length - 1].endsWith('.'))
+          out[out.length - 1] = out[out.length - 1].slice(0, -1);
+      }
+      i += digits;
+      continue;
+    }
+    if (ch === 'K') {
+      i++;
+      continue;
+    }
+
+    if (ch === "'" || ch === '"') {
+      const close = pattern.indexOf(ch, i + 1);
       if (close < 0) {
         out.push(pattern.slice(i + 1));
         break;
@@ -778,36 +825,70 @@ function renderPattern(value: Date, pattern: string): string {
   return out.join('');
 }
 
-function formatDate(value: Date, format: string): string {
-  // The invariant round-trip patterns first: they are DEFINED to ignore the culture, which is the
-  // whole reason a wire format uses them.
-  if (format === 'O' || format === 'o') return value.toISOString();
-  if (format === 's') return value.toISOString().slice(0, 19);
+/** The invariant culture's abbreviated names, which `R` writes whatever culture is reading. */
+const INVARIANT_DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+const INVARIANT_MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+/** `yyyy-MM-dd` and `HH:mm:ss` from a date's own parts: a DateTime keeps no time zone to shift. */
+function sortableParts(value: Date): { date: string; time: string } {
+  const two = (part: number): string => String(part).padStart(2, '0');
+  return {
+    date: `${String(value.getFullYear()).padStart(4, '0')}-${two(value.getMonth() + 1)}-${two(value.getDate())}`,
+    time: `${two(value.getHours())}:${two(value.getMinutes())}:${two(value.getSeconds())}`,
+  };
+}
+
+/**
+ * Formats a date through a standard specifier or a custom picture, as .NET formats a DateTime:
+ * its kind is not tracked (a wall-clock value, .NET's `Unspecified`), so the round-trip, sortable
+ * and RFC 1123 forms write its own parts, and only `U` converts, reading it as local time as .NET
+ * does. `fraction` is its fraction of a second, seven digits (#388).
+ */
+function formatDate(value: Date, format: string, fraction: string): string {
+  // The invariant forms first: they are DEFINED to ignore the culture, which is the whole reason a
+  // wire format uses them. They wrote `toISOString()`, which is UTC, so a page off UTC shifted the
+  // hour and `o` spelled a `Z` a wall-clock value does not have.
+  const { date, time } = sortableParts(value);
+  switch (format) {
+    case 'O':
+    case 'o':
+      return `${date}T${time}.${fraction}`;
+    case 's':
+      return `${date}T${time}`;
+    case 'u':
+      return `${date} ${time}Z`;
+    case 'R':
+    case 'r':
+      return `${INVARIANT_DAYS[value.getDay()]}, ${date.slice(8)} ${INVARIANT_MONTHS[value.getMonth()]} ${date.slice(0, 4)} ${time} GMT`;
+    case 'U': {
+      // The full date and time of the value read as local time and moved to UTC, as .NET's
+      // ToUniversalTime moves an unspecified one.
+      const universal = new Date(
+        value.getUTCFullYear(),
+        value.getUTCMonth(),
+        value.getUTCDate(),
+        value.getUTCHours(),
+        value.getUTCMinutes(),
+        value.getUTCSeconds(),
+        value.getUTCMilliseconds(),
+      );
+      universal.setFullYear(value.getUTCFullYear());
+      return formatDate(universal, 'F', fraction);
+    }
+  }
 
   if (format.length === 1 && DATE_ROLES[format] !== undefined) {
     const patterns = DATE_ROLES[format].map(patternFor);
     // Every role must have travelled; a half-known composite would print half a date.
     if (patterns.every((pattern) => pattern !== null))
-      return patterns.map((pattern) => renderPattern(value, pattern as string)).join(' ');
+      return patterns.map((pattern) => renderPattern(value, pattern as string, fraction)).join(' ');
     return new Intl.DateTimeFormat(activeFormatLocale(), DATE_STYLES[format]).format(value);
   }
 
-  // A custom picture — `yyyy-MM-dd HH:mm`. Culture-independent by construction: the author wrote
-  // the layout they want, digit for digit.
-  const yyyy = value.getFullYear().toString();
-  const MM = (value.getMonth() + 1).toString().padStart(2, '0');
-  const dd = value.getDate().toString().padStart(2, '0');
-  const HH = value.getHours().toString().padStart(2, '0');
-  const mm = value.getMinutes().toString().padStart(2, '0');
-  const ss = value.getSeconds().toString().padStart(2, '0');
-
-  return format
-    .replace(/yyyy/g, yyyy)
-    .replace(/MM/g, MM)
-    .replace(/dd/g, dd)
-    .replace(/HH/g, HH)
-    .replace(/mm/g, mm)
-    .replace(/ss/g, ss);
+  // A custom picture — `yyyy-MM-dd HH:mm`, `dd MMM yyyy`, `HH:mm:ss.fff` — drawn token by token as
+  // a culture's own patterns are. It replaced six tokens by text, so `d/M/yyyy` printed `d/M/2026`
+  // and `dd MMM yyyy` printed `24 09M 2026`.
+  return renderPattern(value, format, fraction);
 }
 
 const FORMAT_INDEX =
@@ -862,7 +943,7 @@ function general(value: unknown): string {
   if (typeof value === 'bigint' || value instanceof Decimal) return plainDigits(value);
   if (typeof value === 'boolean') return value ? 'True' : 'False';
   const date = asJsDate(value);
-  if (date !== null) return formatDate(date, 'G');
+  if (date !== null) return formatDate(date, 'G', fractionOf(value, date));
   return String(value);
 }
 

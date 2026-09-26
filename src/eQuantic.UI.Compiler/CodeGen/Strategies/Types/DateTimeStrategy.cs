@@ -29,6 +29,12 @@ public class DateTimeStrategy : ConversionStrategyBase
                 return IsType(context.SemanticHelper.GetType(oc))
                     || (oc is ObjectCreationExpressionSyntax named && named.Type.ToString() == "DateTime");
 
+            // A value's ToString is the formatter's (ToStringStrategy), as a number's is: the twin's
+            // toString(pattern) knew custom tokens only, so `d.ToString("D")` printed `D`, and a
+            // provider crossed to the browser as a name no browser has (#388).
+            case InvocationExpressionSyntax { Expression: MemberAccessExpressionSyntax { Name.Identifier.Text: "ToString" } }:
+                return false;
+
             case InvocationExpressionSyntax { Expression: MemberAccessExpressionSyntax ma }:
                 return IsDateTimeMember(ma, context);
 

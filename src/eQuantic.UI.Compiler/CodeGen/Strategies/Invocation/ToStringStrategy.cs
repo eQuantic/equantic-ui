@@ -81,6 +81,19 @@ public class ToStringStrategy : IConversionStrategy
             }
         }
 
+        // A DATE goes through the formatter whatever it is given, as .NET formats it: a standard
+        // specifier from the culture's patterns, a custom picture drawn token by token, and with
+        // none, or with the current culture or a null, the call with none; the invariant culture
+        // writes the invariant patterns. A null DateTime? writes nothing (#388).
+        if (IsDateTime(receiverType))
+        {
+            context.UsedHelpers.Add(Eq.Import);
+            var specifier = formatArg is null ? "null" : context.Converter.ConvertExpression(formatArg.Expression);
+            return invariant
+                ? $"{Eq.Format}({caller}, {specifier}, undefined, true)"
+                : $"{Eq.Format}({caller}, {specifier})";
+        }
+
         if (formatArg is not null)
         {
             var fmt = context.Converter.ConvertExpression(formatArg.Expression);
@@ -143,6 +156,10 @@ public class ToStringStrategy : IConversionStrategy
 
         return $"String({caller})";
     }
+
+    /// <summary>Whether the receiver is a DateTime, a nullable one's included.</summary>
+    private static bool IsDateTime(ITypeSymbol? type) =>
+        type.UnwrapNullable()?.ToDisplayString() == "System.DateTime";
 
     /// <summary>
     /// A float's or a double's text as .NET writes it, a nullable one's included, which is nothing
