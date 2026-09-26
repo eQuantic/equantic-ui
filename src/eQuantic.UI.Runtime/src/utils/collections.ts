@@ -347,6 +347,34 @@ function sameItem(item: unknown, value: unknown): boolean {
   return typeof own === 'function' && (own as (other: unknown) => boolean).call(item, value);
 }
 
+/** What a dictionary is here: a `Map`, or the runtime's sorted map, keyed by the pair's key. */
+interface Dictionary<K, V> {
+  has(key: K): boolean;
+  get(key: K): V | undefined;
+  delete(key: K): boolean;
+}
+
+function isDictionary(collection: unknown): collection is Dictionary<unknown, unknown> {
+  if (collection instanceof Map) return true;
+  const shape = collection as Partial<Dictionary<unknown, unknown>> | null;
+  return (
+    shape != null &&
+    typeof shape.has === 'function' &&
+    typeof shape.get === 'function' &&
+    typeof shape.delete === 'function' &&
+    !(collection instanceof Set)
+  );
+}
+
+/** `ICollection<KeyValuePair<K, V>>.Remove`: the pair leaves only when its key is there with an equal
+ * value, and the answer says whether it did. */
+function removePair(dictionary: Dictionary<unknown, unknown>, pair: unknown): boolean {
+  if (pair == null || typeof pair !== 'object' || !('key' in pair)) return false;
+  const { key, value } = pair as { key: unknown; value: unknown };
+  if (!dictionary.has(key) || !sameItem(dictionary.get(key), value)) return false;
+  return dictionary.delete(key);
+}
+
 /**
  * `List<T>.Remove`: takes out the FIRST item equal to the value and answers whether there was one
  * (#400). It was lowered to `((_idx = list.indexOf(x)) >= 0 && list.splice(_idx, 1))`, which assigned
@@ -356,17 +384,22 @@ function sameItem(item: unknown, value: unknown): boolean {
  * `Contains` picks it (a tuple is an array here, which `sameItem` takes by reference), and
  * `sameItem` for everything else.
  *
- * The static type may be `ICollection<T>`, which can hold a `HashSet` or a `LinkedList` when the call
- * runs (found in review, #421): a Set answers as `set.Remove(x)` lowers, through `delete`, and a
- * twin with a `remove` of its own answers through it, as `contains` asks the value what it is.
+ * The static type may be `ICollection<T>`, which can hold any collection that implements it when the
+ * call runs (found in review, #421), and each removes as it does when called directly, as `contains`
+ * asks the value what it is: a Set (`HashSet<T>`) through `delete`, the way `set.Remove(x)` lowers; a
+ * dictionary (`ICollection<KeyValuePair<K, V>>`) the pair whose key it holds with an equal value, as
+ * .NET's does; and a twin with a `remove` of its own (`LinkedList<T>`, `SortedSet<T>`) through it. An
+ * array stands for a `List<T>` and for a `T[]` alike, and .NET throws for the second, which this side
+ * cannot tell apart.
  */
 export function remove<T>(
-  list: T[] | Set<T> | { remove(value: T): boolean },
+  list: T[] | Set<T> | Dictionary<unknown, unknown> | { remove(value: T): boolean },
   value: T,
   same: (a: T, b: T) => boolean = sameItem,
 ): boolean {
   if (list instanceof Set) return list.delete(value);
-  if (!Array.isArray(list)) return list.remove(value);
+  if (isDictionary(list)) return removePair(list, value);
+  if (!Array.isArray(list)) return (list as { remove(value: T): boolean }).remove(value);
   for (let index = 0; index < list.length; index++) {
     if (same(list[index], value)) {
       list.splice(index, 1);
