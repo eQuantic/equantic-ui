@@ -16,3 +16,11 @@
 - [x] 3.1 Add the `docs/LEDGER.md` line citing #432
 - [x] 3.2 Update the wiki's SupportedFeatures page, English and Portuguese, on a wiki branch named like this pull request's
 - [x] 3.3 Archive this change before the merge
+
+## 4. Review
+
+- [x] 4.1 Ask whether a method is async of its return type's symbol, in every emitter
+- [x] 4.2 Lower an accessor's block as a method's body: a getter's iterator, an out var's local
+- [x] 4.3 Lower a C# 14 extension member through the same method lowering, its receiver in front
+- [x] 4.4 Check: the conformance class grows to 19 cases, 15 of them failing on main, and the compiler suite holds the class, component and extension paths the harness cannot run
+- [x] 4.5 File the two type-annotation functions that feed the lowering (#461)

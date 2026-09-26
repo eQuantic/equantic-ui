@@ -59,6 +59,8 @@ through the same lowering as a class's members, their own and a default an inter
 async method SHALL run as an async function, an iterator SHALL return its sequence, an `out` or
 `ref` parameter SHALL carry its value back, and a variable an expression body's pattern binds SHALL
 be declared before its use. A parameter SHALL be declared by the name every reference to it uses.
+Whether a method is async SHALL be decided by its `async` modifier or its return type's symbol, never
+by the type's name, and a getter that yields SHALL return its sequence.
 
 #### Scenario: An async method and an iterator
 
@@ -70,6 +72,11 @@ be declared before its use. A parameter SHALL be declared by the name every refe
 
 - **WHEN** `struct SE` declares `public override bool Equals(object o) => o is SE m && m.V == V;`
 - **THEN** `new SE(1).Equals(new SE(1))` answers true, and `List<SE>.Remove(new SE(1))` removes it
+
+#### Scenario: A return type named like a task
+
+- **WHEN** `record R(int V)` declares `TaskItem First() => new TaskItem(V);` with `record TaskItem(int N)`
+- **THEN** `new R(4).First().N` answers 4, the method not being async
 
 #### Scenario: A reserved parameter name
 

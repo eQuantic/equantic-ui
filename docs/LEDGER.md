@@ -803,8 +803,10 @@ record of a release, the wiki's Upgrading page is the distillate.
   with methods (`MethodLowering`): a record's and a struct's method, operator, conversion and
   computed property go through the class emitter's own. On the way, a parameter is declared by the
   name its uses have (`package` was declared as itself, which no module parses), and a verbatim C#
-  keyword that JavaScript reserves (`@class`) takes its underscore. A new conformance class fails 13
-  of its 15 cases on main.
+  keyword that JavaScript reserves (`@class`) takes its underscore. From the review: whether a method
+  is async is asked of its return type's symbol (a method returning `TaskItem` was made async by the
+  name), a getter that yields fills its buffer in every emitter, and a C# 14 extension member takes the
+  same lowering. A new conformance class fails 15 of its 19 cases on main.
 
 - **2026-09-26 · main's runtime suite is green again**: the interface-defaults fixture pinned
   PhotonTheme's dark code colours from before #354 re-solved the dark palette, and #418 merged after
