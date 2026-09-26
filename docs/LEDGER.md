@@ -807,7 +807,7 @@ record of a release, the wiki's Upgrading page is the distillate.
   annotate as `number` and `bigint`. The author's review found three more on the same paths: a
   decimal constant in a pattern or a `case` compared by identity and never matched, a constant of
   an enum type was written as its number (and a flags default as a name), and a lone surrogate left
-  the module unwritable. 43 of the 76 conformance cases failed on main. The BCL audit grades
+  the module unwritable. 43 of the 88 conformance cases failed on main. The BCL audit grades
   `decimal`'s static surface: its nine translated members are proved, and the 38 it fences are left
   to their own issue ([#449](https://github.com/eQuantic/equantic-ui/issues/449)), as are an `is`
   over a named constant ([#451](https://github.com/eQuantic/equantic-ui/issues/451)) and an enum's

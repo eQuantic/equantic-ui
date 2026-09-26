@@ -7,7 +7,7 @@ How a compile-time constant reaches JavaScript: as its value in its C# type, whe
 
 ### Requirement: A constant crosses as its value in its C# type
 
-A reference to a `const` SHALL be written as the constant's value in its C# type: a `decimal` as the runtime's exact Decimal with its scale, a `long` or a `ulong` as a BigInt whatever its size, a `float` as the double it is, and a `char` and a `string` as quoted text. This SHALL hold for a constant reached through its type, for one reached by its bare name under a `using static`, and for one the app declares.
+A reference to a `const` SHALL be written as the constant's value in its C# type: a `decimal` as the runtime's exact Decimal with its scale, a `long` or a `ulong` as a BigInt whatever its size, a `float` as the double it is, and a `char` and a `string` as quoted text. This SHALL hold for a constant reached through its type, one the app declares included, and for one with no source here reached by its bare name under a `using static`. A constant the app declares, reached by its bare name, keeps its reference to the static its module declares, which holds the same value.
 
 #### Scenario: decimal's constants
 
@@ -17,7 +17,7 @@ A reference to a `const` SHALL be written as the constant's value in its C# type
 #### Scenario: A long constant meets a long
 
 - **WHEN** `long t = 20000000;` divides by `TimeSpan.TicksPerSecond`
-- **THEN** it answers 2, as in .NET, where the constant as a number threw a TypeError
+- **THEN** it answers 2, as in .NET
 
 #### Scenario: A constant the app declares
 
@@ -45,7 +45,7 @@ When a named argument skips a parameter, the default filled in SHALL be the cons
 #### Scenario: A char default and a string default with a quote
 
 - **WHEN** `new string(c, n)` takes `char c = 'x'` skipped, and a method returns `string s = "it's"` skipped
-- **THEN** they answer "xxx" and "it's2", as in .NET, where the char was a bare identifier and the quote broke the literal
+- **THEN** they answer "xxx" and "it's2", as in .NET
 
 ### Requirement: A constant of an enum type crosses as the enum's representation
 
@@ -54,12 +54,12 @@ A constant whose type is an enum, inlined or filled in for a skipped argument, S
 #### Scenario: An enum-typed const
 
 - **WHEN** a class declares `public const DayOfWeek First = DayOfWeek.Monday;` and `Cal.First.ToString()` runs
-- **THEN** it answers "Monday", as in .NET, where the constant written as its number named nothing
+- **THEN** it answers "Monday", as in .NET
 
 #### Scenario: A skipped default of a flags enum
 
 - **WHEN** `int F(Perm p = Perm.Read, int n = 0) => (int)p;` is called as `F(n: 1)`, `Perm` being a `[Flags]` enum
-- **THEN** it answers "1", as in .NET, where the default filled in was the member's name
+- **THEN** it answers "1", as in .NET
 
 ### Requirement: A decimal constant matches by value
 
@@ -82,4 +82,4 @@ A constant's text SHALL be escaped wherever a character cannot stand for itself 
 #### Scenario: A lone surrogate
 
 - **WHEN** `int G(char c = (char)0xD800, int n = 0) => c;` is called as `G(n: 1)`
-- **THEN** it answers "55296", as in .NET, where the module holding the raw surrogate could not be written
+- **THEN** it answers "55296", as in .NET
