@@ -770,9 +770,14 @@ record of a release, the wiki's Upgrading page is the distillate.
   and a long's type, a char's quotes and a string's escapes. One writer now answers a constant in
   its C# type for all three paths, a const with no source is inlined under a `using static` too,
   the primitive table keeps only what is not a constant, and a narrow integer and a `ulong`
-  annotate as `number` and `bigint`. 20 of the 37 conformance cases failed on main. The BCL audit
-  grades `decimal`'s static surface: its nine translated members are proved, and the 38 it fences
-  are left to their own issue ([#449](https://github.com/eQuantic/equantic-ui/issues/449)).
+  annotate as `number` and `bigint`. The author's review found three more on the same paths: a
+  decimal constant in a pattern or a `case` compared by identity and never matched, a constant of
+  an enum type was written as its number (and a flags default as a name), and a lone surrogate left
+  the module unwritable. 43 of the 76 conformance cases failed on main. The BCL audit grades
+  `decimal`'s static surface: its nine translated members are proved, and the 38 it fences are left
+  to their own issue ([#449](https://github.com/eQuantic/equantic-ui/issues/449)), as are an `is`
+  over a named constant ([#451](https://github.com/eQuantic/equantic-ui/issues/451)) and an enum's
+  `ToString` ([#452](https://github.com/eQuantic/equantic-ui/issues/452)).
 
 ## Retired documents
 

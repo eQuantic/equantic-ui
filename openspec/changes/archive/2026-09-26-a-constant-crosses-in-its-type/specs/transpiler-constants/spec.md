@@ -47,3 +47,40 @@ When a named argument skips a parameter, the default filled in SHALL be the cons
 
 - **WHEN** `new string(c, n)` takes `char c = 'x'` skipped, and a method returns `string s = "it's"` skipped
 - **THEN** they answer "xxx" and "it's2", as in .NET, where the char was a bare identifier and the quote broke the literal
+
+### Requirement: A constant of an enum type crosses as the enum's representation
+
+A constant whose type is an enum, inlined or filled in for a skipped argument, SHALL be written as that enum's representation: a `[Flags]` enum's number, and any other enum's camelCase member name.
+
+#### Scenario: An enum-typed const
+
+- **WHEN** a class declares `public const DayOfWeek First = DayOfWeek.Monday;` and `Cal.First.ToString()` runs
+- **THEN** it answers "Monday", as in .NET, where the constant written as its number named nothing
+
+#### Scenario: A skipped default of a flags enum
+
+- **WHEN** `int F(Perm p = Perm.Read, int n = 0) => (int)p;` is called as `F(n: 1)`, `Perm` being a `[Flags]` enum
+- **THEN** it answers "1", as in .NET, where the default filled in was the member's name
+
+### Requirement: A decimal constant matches by value
+
+A decimal constant in a constant pattern, a switch expression's arm or a switch statement's case label SHALL match by value, as .NET compares decimals, whether it is written as a literal, as a named constant or as an integer the pattern converts to a decimal.
+
+#### Scenario: A pattern
+
+- **WHEN** `decimal d = 1.0m;` is tested with `d is 1m`
+- **THEN** it answers True, as in .NET
+
+#### Scenario: A case label
+
+- **WHEN** a `switch` over `decimal d = 1m;` has `case decimal.One:`
+- **THEN** that case runs, as in .NET
+
+### Requirement: A constant's text keeps the module writable
+
+A constant's text SHALL be escaped wherever a character cannot stand for itself in the module: a lone surrogate, a control character other than the tab, and a line separator. A surrogate pair SHALL be written as the character it is.
+
+#### Scenario: A lone surrogate
+
+- **WHEN** `int G(char c = (char)0xD800, int n = 0) => c;` is called as `G(n: 1)`
+- **THEN** it answers "55296", as in .NET, where the module holding the raw surrogate could not be written
