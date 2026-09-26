@@ -120,13 +120,15 @@ internal static class OverloadedMethods
         var taken = new Dictionary<string, string>();
         foreach (var member in declared.GetMembers())
         {
+            // A field is a member of the twin too: `class C : I { public int Mark; }` beside a default
+            // `I.Mark()` gave the twin two members named `mark` (found in review, #418).
             if (member.IsStatic || member.IsImplicitlyDeclared
-                || member is not (IPropertySymbol or IMethodSymbol { MethodKind: MethodKind.Ordinary }))
+                || member is not (IFieldSymbol or IPropertySymbol or IMethodSymbol { MethodKind: MethodKind.Ordinary }))
                 continue;
             taken.TryAdd(Simple(member.Name).ToCamelCase(), $"'{declared.Name}.{Simple(member.Name)}'");
         }
         var position = type.Identifier.GetLocation().GetLineSpan().StartLinePosition;
-        foreach (var (implementation, _) in DefaultInterfaceMembers.Of(declared))
+        foreach (var (implementation, _) in DefaultInterfaceMembers.Of(declared, model.Compilation))
         {
             var name = Simple(implementation.Name).ToCamelCase();
             var owner = $"'{implementation.ContainingType.Name}.{Simple(implementation.Name)}'";

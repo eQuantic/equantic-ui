@@ -1206,6 +1206,29 @@ public class TypeScriptEmitter
                 .Any(c => c.FormatClause != null || c.AlignmentClause != null));
     }
 
+    /// <summary>
+    /// Every class or struct declared in SOURCE that a type names, however deep: the type itself, an
+    /// array's element, and each argument of a generic (`Func&lt;Widget, int&gt;` names Widget, and a
+    /// scan that kept a generic's last argument missed it, found in review, #418). Only such a type
+    /// becomes a module; a BCL or a metadata type (`string` is System.String) has none of its own.
+    /// </summary>
+    private static IEnumerable<INamedTypeSymbol> SourceTypesIn(ITypeSymbol type)
+    {
+        switch (type)
+        {
+            case IArrayTypeSymbol array:
+                foreach (var inner in SourceTypesIn(array.ElementType)) yield return inner;
+                break;
+            case INamedTypeSymbol named:
+                if (named.TypeKind is TypeKind.Class or TypeKind.Struct && named.Name.Length > 0
+                    && named.Locations.Any(location => location.IsInSource))
+                    yield return named;
+                foreach (var argument in named.TypeArguments)
+                    foreach (var inner in SourceTypesIn(argument)) yield return inner;
+                break;
+        }
+    }
+
     private HashSet<string> CollectComponentTypesFromNode(SyntaxNode? node, HashSet<string>? localNames = null)
     {
         var types = new HashSet<string>();
@@ -1230,18 +1253,9 @@ public class TypeScriptEmitter
         {
             if (parameter.Type is not { } declared || ModelFor(declared)?.GetTypeInfo(declared).Type is not { } typed)
                 continue;
-            var element = typed is IArrayTypeSymbol array ? array.ElementType : typed;
-            // A BCL generic (`List<Widget>`) carries the app type as its last argument.
-            var named = element is INamedTypeSymbol { IsGenericType: true, TypeArguments: [.., var last] } generic
-                && generic.ContainingNamespace?.ToDisplayString().StartsWith("System") == true
-                    ? last
-                    : element;
-            // Only a type declared in SOURCE becomes a module; a BCL or a metadata type (`string` is
-            // System.String) has none of its own here.
-            if (named is INamedTypeSymbol { TypeKind: TypeKind.Class or TypeKind.Struct, Name.Length: > 0 } candidate
-                && candidate.Locations.Any(location => location.IsInSource)
-                && (localNames == null || !localNames.Contains(candidate.Name)))
-                types.Add(candidate.Name);
+            foreach (var candidate in SourceTypesIn(typed))
+                if (localNames == null || !localNames.Contains(candidate.Name))
+                    types.Add(candidate.Name);
         }
 
         // A TARGET-TYPED `new(...)` states NO name — `ObjectCreationStrategy` recovers it from the
@@ -1844,8 +1858,9 @@ public class TypeScriptEmitter
     /// <summary>The declarations of the defaults a class takes (see <see cref="EmitInheritedDefaults"/>),
     /// for the scans that decide the module's imports: a default names types its class never does.</summary>
     private IEnumerable<MemberDeclarationSyntax> InheritedDeclarations(TypeDeclarationSyntax? declaration) =>
-        declaration is not null && ModelFor(declaration)?.GetDeclaredSymbol(declaration) is INamedTypeSymbol self
-            ? DefaultInterfaceMembers.Of(self).Select(member => member.Declaration).OfType<MemberDeclarationSyntax>()
+        declaration is not null && ModelFor(declaration) is { } model
+            && model.GetDeclaredSymbol(declaration) is INamedTypeSymbol self
+            ? DefaultInterfaceMembers.Of(self, model.Compilation).Select(member => member.Declaration).OfType<MemberDeclarationSyntax>()
             : [];
 
     /// <summary>
@@ -1857,9 +1872,10 @@ public class TypeScriptEmitter
     /// </summary>
     private void EmitInheritedDefaults(TypeDeclarationSyntax? declaration, TypeScriptCodeBuilder.ClassBuilder c)
     {
-        if (declaration is null || ModelFor(declaration)?.GetDeclaredSymbol(declaration) is not INamedTypeSymbol self)
+        if (declaration is null || ModelFor(declaration) is not { } model
+            || model.GetDeclaredSymbol(declaration) is not INamedTypeSymbol self)
             return;
-        foreach (var (implementation, member) in DefaultInterfaceMembers.Of(self))
+        foreach (var (implementation, member) in DefaultInterfaceMembers.Of(self, model.Compilation))
         {
             if (member is not null && ModelFor(member) is { } memberModel
                 && DefaultInterfaceMembers.InterfaceStaticIn(member, memberModel) is { } reached)

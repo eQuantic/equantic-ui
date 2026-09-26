@@ -25,7 +25,7 @@ internal static class DefaultInterfaceMembers
     /// base's default. A member some base class already takes is left to that base: its twin
     /// carries the member, and the prototype chain hands it down.
     /// </summary>
-    public static IReadOnlyList<Inherited> Of(INamedTypeSymbol type)
+    public static IReadOnlyList<Inherited> Of(INamedTypeSymbol type, Compilation compilation)
     {
         var inherited = new List<Inherited>();
         var seen = new HashSet<ISymbol>(SymbolEqualityComparer.Default);
@@ -48,18 +48,26 @@ internal static class DefaultInterfaceMembers
         }
 
         // A default may call a PRIVATE member of its interface, which no class implements and the
-        // language hands to none: it travels with the defaults that need it.
-        var owners = inherited.Select(member => member.Implementation.ContainingType)
-            .Distinct<INamedTypeSymbol>(SymbolEqualityComparer.Default).ToList();
-        foreach (var owner in owners)
+        // language hands to none: it travels with the defaults that call it, directly or through
+        // another helper, and only with those. Copying every helper put members nothing calls into
+        // every twin, and one could collide with a name the class uses (found in review, #418).
+        var pending = new Queue<MemberDeclarationSyntax>(inherited.Select(member => member.Declaration).OfType<MemberDeclarationSyntax>());
+        while (pending.Count > 0)
         {
-            foreach (var helper in owner.GetMembers())
+            var declaration = pending.Dequeue();
+            if (!compilation.ContainsSyntaxTree(declaration.SyntaxTree)) continue;
+            var model = compilation.GetSemanticModel(declaration.SyntaxTree);
+            foreach (var name in declaration.DescendantNodes().OfType<SimpleNameSyntax>())
             {
-                if (helper.IsStatic || helper.IsAbstract || helper.DeclaredAccessibility != Accessibility.Private
+                if (model.GetSymbolInfo(name).Symbol is not { IsStatic: false, IsAbstract: false } helper
+                    || helper.DeclaredAccessibility != Accessibility.Private
+                    || helper.ContainingType?.TypeKind != TypeKind.Interface
                     || helper is not (IPropertySymbol or IMethodSymbol { MethodKind: MethodKind.Ordinary })
                     || !seen.Add(helper))
                     continue;
-                inherited.Add(new Inherited(helper, DeclarationOf(helper)));
+                var helperDeclaration = DeclarationOf(helper);
+                inherited.Add(new Inherited(helper, helperDeclaration));
+                if (helperDeclaration is not null) pending.Enqueue(helperDeclaration);
             }
         }
         return inherited;

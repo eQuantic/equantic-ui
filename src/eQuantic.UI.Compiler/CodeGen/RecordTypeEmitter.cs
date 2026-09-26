@@ -176,7 +176,7 @@ public class RecordTypeEmitter
             Services.RuntimeProvidedTypeScanner.Collect(type, model, runtimeProvided, new HashSet<string>(), appTypes);
             // The defaults the type takes from its interfaces (#414) name types the type never does.
             if (model.GetDeclaredSymbol(type) is INamedTypeSymbol self)
-                foreach (var inherited in DefaultInterfaceMembers.Of(self))
+                foreach (var inherited in DefaultInterfaceMembers.Of(self, model.Compilation))
                     if (inherited.Declaration is { } declaration && ModelFor(declaration) is { } inheritedModel)
                         Services.RuntimeProvidedTypeScanner.Collect(declaration, inheritedModel, runtimeProvided,
                             new HashSet<string>(), appTypes);
@@ -473,9 +473,9 @@ public class RecordTypeEmitter
         // The DEFAULT INTERFACE MEMBERS the type relies on (#414): JavaScript has no interface to
         // hold them, so a record or a struct that did not declare one had no such member at all.
         // Each body converts under its interface's file, where its names resolve.
-        if (ModelFor(type)?.GetDeclaredSymbol(type) is INamedTypeSymbol self)
+        if (ModelFor(type) is { } typeModel && typeModel.GetDeclaredSymbol(type) is INamedTypeSymbol self)
         {
-            foreach (var (implementation, member) in DefaultInterfaceMembers.Of(self))
+            foreach (var (implementation, member) in DefaultInterfaceMembers.Of(self, typeModel.Compilation))
             {
                 if (member is not null && ModelFor(member) is { } memberModel
                     && DefaultInterfaceMembers.InterfaceStaticIn(member, memberModel) is { } reached)
