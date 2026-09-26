@@ -62,6 +62,9 @@ public class NumberFormatSpecifierConformanceTests
     [InlineData("return (-1.0).ToString(\"0.00;(0.00)\") + \"|\" + (0.0).ToString(\"0.00;(0.00);'zero'\") + \"|\" + (0.001).ToString(\"0.00;(0.00);zero\") + \"|\" + (-0.001).ToString(\"0.00;(0.00);zero\") + \"|\" + (-5.0).ToString(\"0;\") + \"|\" + (-1234.5).ToString(\"#,##0.0;-#,##0.0\");")]
     [InlineData("return (-0.001).ToString(\"0.00\") + \"|\" + (-0.0).ToString(\"0.00\") + \"|\" + (-0.001m).ToString(\"0.00\") + \"|\" + (-0.4).ToString(\"0\") + \"|\" + (-0.4).ToString(\"0;(0)\") + \"|\" + (-0.0).ToString(\"0;(0);z\") + \"|\" + (0.4).ToString(\"#\") + \"[\" + (-0.4).ToString(\"#\") + \"]\";")]
     [InlineData("return (1234567.0).ToString(\"#,##0,\") + \"|\" + (1234567.0).ToString(\"#,##0,,\") + \"|\" + (1234567.0).ToString(\"0.00E+00\") + \"|\" + (0.000123).ToString(\"0.0e0\") + \"|\" + (1234567.0).ToString(\"##0.0E-0\") + \"|\" + (1e20).ToString(\"#,##0\");")]
+    // A picture's exponent takes at most ten digits, however many zeros it asks for: .NET caps it
+    // (`if (i > 10) i = 10;` in NumberToStringFormat), measured in review (#445).
+    [InlineData("return (1234567.0).ToString(\"0.0E+00000000000\") + \"|\" + (1234567.0).ToString(\"0.0E-000000000000\");")]
     [InlineData("return (5).ToString(\"Total\") + \"|\" + (-5).ToString(\"abc\") + \"|\" + (1.5).ToString(\"N2x\") + \"|\" + (0.1).ToString(\"#.##\") + \"|\" + (12345.6789).ToString(\"#,##0.00##\") + \"|\" + (12345678.9f).ToString(\"#,##0.00\") + \"|\" + 1234567.ToString(\"0,0\");")]
     // G at the edges of its fixed notation, and R on a decimal, an int and a long, which .NET 10 takes
     // (measured in review, #445: neither diverged).
