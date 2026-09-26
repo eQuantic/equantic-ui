@@ -190,6 +190,18 @@ public class DefaultInterfaceMemberEmissionTests
             public interface INotify { string Changed() => "changed"; }
             public sealed class Eventful : INotify { public event System.Action Changed; }
             """,
+        // A primary constructor's parameter on the name of a default: the twin holds it as a field.
+        ["Captured.cs"] = """
+            namespace App;
+            public interface IMarkC { string Mark() => "m"; }
+            public sealed class Captured(int mark) : IMarkC { public int Twice() => mark * 2; }
+            """,
+        // And a positional record's parameter, which is a property.
+        ["Positional.cs"] = """
+            namespace App;
+            public interface IMarkP { string Mark() => "m"; }
+            public sealed record Positional(int Mark) : IMarkP;
+            """,
         // Compiled into a referenced assembly below, not into this compilation.
         ["Voiced.cs"] = """
             namespace App;
@@ -350,6 +362,25 @@ public class DefaultInterfaceMemberEmissionTests
         result.Errors.Should().ContainSingle(error => error.Code == "EQ1007")
             .Which.Message.Should().Contain("'Eventful' takes the default 'INotify.Changed', which lowers to `changed`, "
                 + "and so does 'Eventful.Changed'");
+    }
+
+    /// <summary>A primary constructor's parameter on the name of a default (found in review, #418): the
+    /// twin assigns every such parameter to a field, which shadows the default on the prototype.</summary>
+    [Fact]
+    public void APrimaryConstructorParameterOnADefaultsNameIsRefused()
+    {
+        var result = Compile("Captured", succeeds: false);
+
+        result.Errors.Should().ContainSingle(error => error.Code == "EQ1007")
+            .Which.Message.Should().Contain("'Captured' takes the default 'IMarkC.Mark', which lowers to `mark`, and so does "
+                + "'Captured(mark)', a primary constructor's parameter the twin holds as a field");
+    }
+
+    /// <summary>A positional record's parameter is a property, refused as one, and once.</summary>
+    [Fact]
+    public void APositionalParameterOnADefaultsNameIsRefusedOnce()
+    {
+        Compile("Positional", succeeds: false).Errors.Should().ContainSingle(error => error.Code == "EQ1007");
     }
 
     /// <summary>A static of the interface reached through a private helper is refused too (asked in
