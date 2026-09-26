@@ -214,6 +214,18 @@ public class DefaultInterfaceMemberEmissionTests
             }
             public sealed class Named : INamed { public int Hidden; }
             """,
+        // A component's server-only method on a default's name: it never reaches the twin.
+        ["Served.cs"] = """
+            using eQuantic.UI.Components;
+            using eQuantic.UI.Primitives;
+            namespace App;
+            public interface IShown { string Show() => "default"; }
+            public sealed class Served : StatelessComponent, IShown
+            {
+                [ServerOnly] public string Show(int id) => "server " + id;
+                public override VisualNode Build(ComponentContext context) => new Text(((IShown)this).Show());
+            }
+            """,
         // Compiled into a referenced assembly below, not into this compilation.
         ["Voiced.cs"] = """
             namespace App;
@@ -405,6 +417,17 @@ public class DefaultInterfaceMemberEmissionTests
 
         result.Errors.Should().NotContain(error => error.Code == "EQ1007" || error.Code == "EQ1008");
         result.TypeScript.Should().NotContain("'helper'").And.NotContain("'static'");
+    }
+
+    /// <summary>A component's server-only method takes no name in its twin, so a default on that name
+    /// is no clash (asked in review, #418).</summary>
+    [Fact]
+    public void AComponentsServerOnlyMethodIsNoClash()
+    {
+        var result = Compile("Served");
+
+        result.Errors.Should().NotContain(error => error.Code == "EQ1007");
+        result.TypeScript.Should().Contain("'default'").And.NotContain("'server '");
     }
 
     /// <summary>A static of the interface reached through a private helper is refused too (asked in
