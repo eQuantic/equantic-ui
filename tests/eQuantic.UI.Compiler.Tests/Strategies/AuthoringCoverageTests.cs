@@ -272,6 +272,18 @@ public class AuthoringCoverageTests
     }
 
     [Fact]
+    public void AVerbatimKeywordThatJsReserves_IsRenamedAtTheDeclarationAndEveryUse()
+    {
+        // `@class` and `@new` are legal C# names, and with the `@` taken off they are JavaScript's
+        // reserved words: declared as `class`, no module parses (found in #432).
+        var ts = Ts("public class C : StatelessComponent { " +
+                    "  private string Label(string @class) => @class.Trim(); " +
+                    "  public override IComponent Build(RenderContext c) { var @new = Label(\" x \"); return new Text(@new); } }");
+        ts.Should().Contain("class_: string").And.Contain("$eq.text.trim(class_)");
+        ts.Should().Contain("let new_ = ").And.NotContain("let new =");
+    }
+
+    [Fact]
     public void OptionalParameters_KeepTheirDefaultsInTheSignature()
     {
         // C# lets a caller omit them; without the default in the signature a call the compiler

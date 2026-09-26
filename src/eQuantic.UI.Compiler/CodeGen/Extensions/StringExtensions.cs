@@ -14,15 +14,21 @@ public static class StringExtensions
         string.IsNullOrEmpty(name) ? name : char.ToLowerInvariant(name[0]) + name[1..];
 
     /// <summary>
-    /// Identifiers JS refuses in a module (modules are always strict): the strict-mode reserved
-    /// words and the FUTURE reserved words. Only the ones a C# author can actually reach are here —
-    /// `class`, `new`, `if` and friends are C# keywords too, so they never arrive.
+    /// Identifiers JS refuses in a module (modules are always strict): the reserved words, the
+    /// strict-mode and FUTURE reserved words, and the names strict mode will not bind. A C# keyword
+    /// among them still arrives, through the verbatim escape: `@class` is a legal parameter, and with
+    /// the `@` taken off it was declared as `class`, which no module parses (found in #432, where the
+    /// list said `class`, `new` and `if` never arrive).
     /// </summary>
     private static readonly HashSet<string> JsReserved = new(StringComparer.Ordinal)
     {
         "package", "interface", "implements", "let", "yield", "enum", "await", "arguments",
         "eval", "function", "var", "typeof", "instanceof", "delete", "debugger", "with",
         "export", "import", "extends", "super", "of",
+        // C# keywords too, reached as `@class`, `@new`…
+        "break", "case", "catch", "class", "const", "continue", "default", "do", "else", "false",
+        "finally", "for", "if", "in", "new", "null", "private", "protected", "public", "return",
+        "static", "switch", "this", "throw", "true", "try", "void", "while",
     };
 
     /// <summary>
