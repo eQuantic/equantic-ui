@@ -43,3 +43,5 @@ static eQuantic.UI.Compiler.CodeGen.ExpressionVariableScanner.Declarations(Syste
 static eQuantic.UI.Compiler.CodeGen.ExpressionVariableScanner.List(System.Collections.Generic.IEnumerable<string!>! names, bool typeAnnotations) -> string!
 static eQuantic.UI.Compiler.CodeGen.ExpressionVariableScanner.Scoped(Microsoft.CodeAnalysis.CSharp.Syntax.ExpressionSyntax? expression, string! converted, bool typeAnnotations) -> string!
 static eQuantic.UI.Compiler.CodeGen.ExpressionVariableScanner.Names(Microsoft.CodeAnalysis.CSharp.Syntax.ExpressionSyntax? expression) -> System.Collections.Generic.IReadOnlyList<string!>!
+static eQuantic.UI.Compiler.CodeGen.ExpressionVariableScanner.InFrontOf(Microsoft.CodeAnalysis.CSharp.Syntax.StatementSyntax! statement, Microsoft.CodeAnalysis.CSharp.Syntax.ExpressionSyntax? expression, bool typeAnnotations) -> string!
+static eQuantic.UI.Compiler.CodeGen.ExpressionVariableScanner.BlockNames(Microsoft.CodeAnalysis.CSharp.Syntax.StatementSyntax! statement) -> System.Collections.Generic.IReadOnlyList<string!>!

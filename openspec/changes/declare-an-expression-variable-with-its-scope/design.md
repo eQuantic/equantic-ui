@@ -23,8 +23,13 @@ and redeclared beside it. The answers decide where the `let` goes:
 | Statement | After it | Where the `let` goes |
 | --- | --- | --- |
 | expression statement, `if`, `return`, `throw`, `yield`, declaration, `switch`, `lock` | usable | in front, in the enclosing block |
-| `while`, `for` | not in scope | the head's own `let`, one per iteration |
-| `do`, `foreach`, `using` | not in scope | a block around the statement |
+| `while`, `do`, `for` | not in scope | the head's own `let`, one per iteration |
+| `foreach`, `using` | not in scope | a block around the statement |
+
+A statement standing directly in a switch section is the exception: C# scopes what it declares to
+the whole switch block, so another section may assign and read it, and the switch declares those
+names once, at the top of its block. Declared in the section that wrote it, a `let` was in its
+temporal dead zone for every other section.
 
 An embedded statement (`if (c) M(out var x);`) is its own scope in C#, and the statement writer
 already braces a statement that becomes two.
@@ -32,8 +37,18 @@ already braces a statement that becomes two.
 .NET gives a loop's condition a fresh variable every time round: a closure over a while's or a
 for's `out var` keeps its own iteration's value (12, where one slot answered 22 or 0). A `for`
 head's `let` is the one JavaScript binding that is copied for each iteration, so the variable goes
-there, and a `while` with one becomes that `for`. A `for` whose head holds expressions rather than a
-declaration runs them as the initializer of one more binding, `$init`, which no C# name can take.
+there, and a `while` with one becomes that `for`. A `do` does too, as
+`for (let n, $again = true; $again; $again = cond)`: the flag runs the body first and the condition
+after it, a `continue` included, and the condition assigns its variables in the iteration's own copy.
+A `for` whose head holds expressions rather than a declaration runs them as the initializer of one
+more binding, `$init`, which no C# name can take, and a deconstruction there that declares itself
+joins the head's `let`.
+
+## A query's clauses are their own scope
+
+C# scopes a variable declared in a query clause to the clause, and eqc lowers each clause to an
+arrow whose body declares its own. The scanner therefore skips a query's body and walks only its
+source, so two queries in one block may bind the same name.
 
 ## An initializer runs outside any statement
 

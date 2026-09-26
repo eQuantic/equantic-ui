@@ -66,16 +66,46 @@ public class ForStatementStrategy : IStatementStrategy
         // for (i = 0; ...)
         if (forStmt.Initializers.Count > 0)
         {
-            var initializers = string.Join(", ",
-                forStmt.Initializers.Select(i => context.Converter.ConvertExpression(i)));
-            // A head holds a declaration OR expressions, never both: the expressions become the
-            // initializer of one more binding, which runs them once, after the names exist.
-            // `$` cannot begin a C# identifier, so the binding shadows nothing the author wrote.
-            return declared.Count == 0 ? initializers : $"let {names}, $init = void ({initializers})";
+            var converted = forStmt.Initializers.Select(i => context.Converter.ConvertExpression(i)).ToList();
+            if (declared.Count == 0) return string.Join(", ", converted);
+
+            // A head holds a declaration OR expressions, never both, and the names need its `let`.
+            // A deconstruction that declares itself (`var (i, j) = (0, 3)`) comes back as a `let` of
+            // its own, which is one more declarator of the head's.
+            var deconstructions = forStmt.Initializers
+                .Select((initializer, i) => converted[i].StartsWith(LetPrefix, StringComparison.Ordinal)
+                    ? DeclaredDeconstruction(initializer)
+                    : null)
+                .ToList();
+            if (deconstructions.All(designation => designation is not null))
+                return $"let {names}, {string.Join(", ", converted.Select(text => text[LetPrefix.Length..]))}";
+
+            // Otherwise the initializers become the initializer of one more binding, which runs them
+            // once, in order, after the names exist: a deconstruction among them assigns names the
+            // head declares. `$` cannot begin a C# identifier, so the binding shadows nothing.
+            var assigned = declared
+                .Concat(deconstructions.Where(d => d is not null).SelectMany(d => ExpressionVariableScanner.Designated(d!)))
+                .Distinct(StringComparer.Ordinal)
+                .ToList();
+            var expressions = converted.Select((text, i) => deconstructions[i] is null ? text : $"({text[LetPrefix.Length..]})");
+            return $"let {ExpressionVariableScanner.List(assigned, context.TypeAnnotations)}, $init = void ({string.Join(", ", expressions)})";
         }
 
         return declared.Count == 0 ? "" : $"let {names}";
     }
+
+    /// <summary>What a deconstruction declaration's assignment strategy writes in front of it.</summary>
+    private const string LetPrefix = "let ";
+
+    /// <summary>The designation of an initializer that is a deconstruction declaring its own names
+    /// (<c>var (i, j) = (0, 3)</c>), which converts to <c>let [i, j] = …</c>; null for any other.</summary>
+    private static VariableDesignationSyntax? DeclaredDeconstruction(ExpressionSyntax initializer) =>
+        initializer is AssignmentExpressionSyntax
+        {
+            Left: DeclarationExpressionSyntax { Designation: ParenthesizedVariableDesignationSyntax designation },
+        }
+            ? designation
+            : null;
 
     public int Priority => 0;
 }

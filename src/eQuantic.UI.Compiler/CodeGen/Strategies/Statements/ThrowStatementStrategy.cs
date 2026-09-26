@@ -17,7 +17,7 @@ public class ThrowStatementStrategy : IStatementStrategy
         var throwStmt = (ThrowStatementSyntax)node;
         if (throwStmt.Expression == null) return JsStatement.Throw(null);
         // What the expression declares is hoisted in front, as a return's is (enclosing block).
-        var declared = ExpressionVariableScanner.Declarations(throwStmt.Expression, context.TypeAnnotations);
+        var declared = ExpressionVariableScanner.InFrontOf(throwStmt, throwStmt.Expression, context.TypeAnnotations);
         return JsStatement.Hoisted(declared, JsStatement.Throw(context.Converter.ConvertIr(throwStmt.Expression)));
     }
 

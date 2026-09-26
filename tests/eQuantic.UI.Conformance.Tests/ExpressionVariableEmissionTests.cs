@@ -252,6 +252,17 @@ public class ExpressionVariableEmissionTests
         }
     }
 
+    /// <summary>The framework and the vocabulary, read ONCE for both modes: a reference made from a
+    /// file copies it into native memory until its finalizer runs, and a suite that makes them per
+    /// compilation is what pushed a 48 GB machine into jetsam (#481).</summary>
+    private static readonly Lazy<MetadataReference[]> References = new(() =>
+        ((string)AppContext.GetData("TRUSTED_PLATFORM_ASSEMBLIES")!)
+            .Split(Path.PathSeparator)
+            .Where(file => file.EndsWith(".dll", StringComparison.OrdinalIgnoreCase))
+            .Select(file => (MetadataReference)MetadataReference.CreateFromFile(file))
+            .Append(MetadataReference.CreateFromFile(typeof(eQuantic.UI.Primitives.VisualNode).Assembly.Location))
+            .ToArray());
+
     /// <summary>The source compiled as eqc compiles it: from a file, with a real compilation behind
     /// the model and the dependency resolver scanning the source directory, so a module imports the
     /// others it names — one module per type.</summary>
@@ -262,13 +273,8 @@ public class ExpressionVariableEmissionTests
         {
             var path = Path.Combine(dir, "Probe.cs");
             File.WriteAllText(path, Source);
-            var references = ((string)AppContext.GetData("TRUSTED_PLATFORM_ASSEMBLIES")!)
-                .Split(Path.PathSeparator)
-                .Where(file => file.EndsWith(".dll", StringComparison.OrdinalIgnoreCase))
-                .Select(file => (MetadataReference)MetadataReference.CreateFromFile(file))
-                .Append(MetadataReference.CreateFromFile(typeof(eQuantic.UI.Primitives.VisualNode).Assembly.Location));
             var tree = CSharpSyntaxTree.ParseText(Source, ParseDefaults.Options, path: path);
-            var compilation = CSharpCompilation.Create("ExpressionVariables", [tree], references,
+            var compilation = CSharpCompilation.Create("ExpressionVariables", [tree], References.Value,
                 new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
             Assert.Empty(compilation.GetDiagnostics().Where(d => d.Severity == DiagnosticSeverity.Error).Select(d => d.ToString()));
 

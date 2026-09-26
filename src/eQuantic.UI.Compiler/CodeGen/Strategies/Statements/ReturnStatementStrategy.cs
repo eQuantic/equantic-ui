@@ -19,7 +19,7 @@ public class ReturnStatementStrategy : IStatementStrategy
         var retStmt = (ReturnStatementSyntax)node;
         if (retStmt.Expression == null) return JsStatement.Return(null);
 
-        var declarations = ExpressionVariableScanner.Declarations(retStmt.Expression, context.TypeAnnotations);
+        var declarations = ExpressionVariableScanner.InFrontOf(retStmt, retStmt.Expression, context.TypeAnnotations);
         var value = context.Converter.ConvertIr(retStmt.Expression);
         return JsStatement.Hoisted(declarations, JsStatement.Return(value));
     }

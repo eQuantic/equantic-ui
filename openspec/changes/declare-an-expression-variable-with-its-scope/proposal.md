@@ -33,11 +33,14 @@ of it showed.
   - an expression statement, an `if`, a `return`, a `throw`, a `yield return`, a declaration, a
     `switch`'s governing expression and a `lock` declare them in front of themselves, in the block
     they live on in;
-  - a `do`, a `foreach` and a `using`, whose variables Roslyn keeps inside the statement, declare
-    them inside a block of their own, so two sibling loops may repeat a name;
-  - a `while` and a `for` declare them in the head's own `let` (`for (let n; cond;)`), which
-    JavaScript copies for every iteration as .NET gives the condition a fresh variable;
-  - a switch expression declares its arms' once, and an initializer in an arrow of its own.
+  - a `foreach` and a `using`, whose variables Roslyn keeps inside the statement, declare them
+    inside a block of their own, so two sibling loops may repeat a name;
+  - a `while`, a `do` and a `for` declare them in the head's own `let` (`for (let n; cond;)`),
+    which JavaScript copies for every iteration as .NET gives the condition a fresh variable;
+  - a statement standing directly in a switch section leaves them to the switch, which declares
+    them for its whole block, as C# scopes them;
+  - a switch expression declares its arms' once, a query's clauses declare their own, and an
+    initializer declares in an arrow of its own.
 - Every name a C# local or parameter takes crosses through `ToJsIdentifier`, whose reserved list
   now holds every JavaScript keyword: a pattern's binding, a deconstruction, a for's and a using's
   variable, a catch's, a delegate called by its local name, a local function's call, and a record

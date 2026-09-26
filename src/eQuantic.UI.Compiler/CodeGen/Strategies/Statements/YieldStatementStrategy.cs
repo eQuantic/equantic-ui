@@ -25,7 +25,7 @@ public class YieldStatementStrategy : IStatementStrategy
             return JsStatement.Return(buffer is null ? null : JsExpr.Identifier(buffer));
 
         // What the value declares is hoisted in front, as a return's is (enclosing block).
-        var declared = ExpressionVariableScanner.Declarations(yieldStmt.Expression, context.TypeAnnotations);
+        var declared = ExpressionVariableScanner.InFrontOf(yieldStmt, yieldStmt.Expression, context.TypeAnnotations);
         var value = context.Converter.ConvertIr(yieldStmt.Expression!);
         return JsStatement.Hoisted(declared, buffer is null
             ? JsStatement.Raw($"yield {JsExprWriter.Write(value)};")

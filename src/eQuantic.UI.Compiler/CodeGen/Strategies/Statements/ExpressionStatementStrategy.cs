@@ -19,7 +19,7 @@ public class ExpressionStatementStrategy : IStatementStrategy
     public JsStatement Convert(StatementSyntax node, ConversionContext context)
     {
         var exprStmt = (ExpressionStatementSyntax)node;
-        var declarations = ExpressionVariableScanner.Declarations(exprStmt.Expression, context.TypeAnnotations);
+        var declarations = ExpressionVariableScanner.InFrontOf(exprStmt, exprStmt.Expression, context.TypeAnnotations);
         var expression = context.Converter.ConvertIr(exprStmt.Expression);
         return JsStatement.Hoisted(declarations, JsStatement.Expression(expression));
     }

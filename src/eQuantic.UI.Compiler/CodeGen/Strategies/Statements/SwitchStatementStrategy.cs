@@ -22,7 +22,7 @@ public class SwitchStatementStrategy : IStatementStrategy
         // What the governing expression declares lives on after the switch — Roslyn scopes it to
         // the enclosing block, like an if's condition — so it is declared in front, outside the
         // block the if-chain form opens.
-        var declared = ExpressionVariableScanner.Declarations(switchStmt.Expression, context.TypeAnnotations);
+        var declared = ExpressionVariableScanner.InFrontOf(switchStmt, switchStmt.Expression, context.TypeAnnotations);
         var expr = context.Converter.ConvertIr(switchStmt.Expression);
         var usesPatterns = switchStmt.Sections
             .SelectMany(s => s.Labels)
@@ -33,6 +33,19 @@ public class SwitchStatementStrategy : IStatementStrategy
             : ConvertAsNativeSwitch(switchStmt, context, expr));
     }
 
+    /// <summary>
+    /// What the statements of the sections declare into their block (<c>case 1: Parse(s, out var
+    /// n);</c>): C# scopes it to the whole switch block, so another section can assign and read it,
+    /// and those statements leave it to the switch (ExpressionVariableScanner.InFrontOf). Declared
+    /// in the section that wrote it, it was in its temporal dead zone for every other section.
+    /// </summary>
+    private static IReadOnlyList<string> SectionNames(SwitchStatementSyntax switchStmt) =>
+        switchStmt.Sections
+            .SelectMany(section => section.Statements)
+            .SelectMany(ExpressionVariableScanner.BlockNames)
+            .Distinct(StringComparer.Ordinal)
+            .ToList();
+
     private static JsStatement ConvertAsNativeSwitch(SwitchStatementSyntax switchStmt, ConversionContext context, JsExpr expr)
     {
         var cases = switchStmt.Sections.Select(section => new JsCase(
@@ -42,7 +55,10 @@ public class SwitchStatementStrategy : IStatementStrategy
                 _ => "default",
             }).ToList(),
             section.Statements.Select(context.Converter.ConvertStatementIr).ToList())).ToList();
-        return JsStatement.Switch(expr, cases);
+        var switchStatement = JsStatement.Switch(expr, cases);
+        // The switch block's own declarations, in a block that is the switch's scope and no wider.
+        var declared = ExpressionVariableScanner.Declarations(SectionNames(switchStmt), context.TypeAnnotations);
+        return declared.Length == 0 ? switchStatement : JsStatement.Block([JsStatement.Raw(declared.TrimEnd()), switchStatement]);
     }
 
     private static JsStatement ConvertAsIfChain(SwitchStatementSyntax switchStmt, JsExpr expr, ConversionContext context)
@@ -51,6 +67,9 @@ public class SwitchStatementStrategy : IStatementStrategy
         var arms = new List<(string Condition, JsStatement Body, SwitchSectionSyntax Section)>();
         var hoist = new List<string>();   // distinct bound names, hoisted once for the whole chain
         var seen = new HashSet<string>();
+        // What the sections' statements declare belongs to the switch block too (see SectionNames).
+        foreach (var name in SectionNames(switchStmt))
+            if (seen.Add(name)) hoist.Add(name);
         SwitchSectionSyntax? defaultSection = null;
 
         foreach (var section in switchStmt.Sections)
@@ -108,7 +127,9 @@ public class SwitchStatementStrategy : IStatementStrategy
             chain = JsStatement.If(JsExpr.Opaque(arms[i].Condition), arms[i].Body, chain) with { Origin = arms[i].Section };
 
         var statements = new List<JsStatement>();
-        if (hoist.Count > 0) statements.Add(JsStatement.Raw($"let {string.Join(", ", hoist)};"));
+        // Annotated in TypeScript, as every declaration the scanner writes is: a section's `out var`
+        // may be assigned inside an arrow (a dictionary's TryGetValue), which TypeScript cannot follow.
+        if (hoist.Count > 0) statements.Add(JsStatement.Raw($"let {ExpressionVariableScanner.List(hoist, context.TypeAnnotations)};"));
         statements.Add(JsStatement.Const("_s", expr));
         if (chain is not null) statements.Add(chain);
         return JsStatement.Block(statements);

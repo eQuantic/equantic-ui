@@ -14,8 +14,9 @@ namespace eQuantic.UI.Compiler.CodeGen;
 /// ONE owner, and whoever writes the code the expression runs in asks it, with C#'s scope: a
 /// statement whose variables live on in the enclosing block (an expression statement, an
 /// <c>if</c>, a <c>return</c>, a declaration, a <c>switch</c>, a <c>lock</c>) declares them in front
-/// of itself; a loop or a <c>using</c>, whose variables Roslyn keeps inside the statement, declares
-/// them inside; an initializer, which runs outside any statement, declares them in its own arrow.
+/// of itself, or leaves them to the switch whose section it stands in; a loop or a <c>using</c>,
+/// whose variables Roslyn keeps inside the statement, declares them inside; an initializer, which
+/// runs outside any statement, declares them in its own arrow.
 /// Before this there were four answers. Pattern variables were declared by the statement; an
 /// <c>out var</c> by a <c>let</c> at the top of a METHOD, so every iteration of a loop and every
 /// call of a recursive local function shared one slot (.NET 12, JavaScript 22); a deconstruction's
@@ -24,7 +25,9 @@ namespace eQuantic.UI.Compiler.CodeGen;
 /// <para>
 /// A lambda, an anonymous method and a local function are not walked: their bodies are their own
 /// scope and their own statements declare what they bind, per call. Nor is a switch expression's
-/// ARM, whose scope is the arrow that strategy emits: it asks for each arm itself.
+/// ARM, whose scope is the arrow that strategy emits: it asks for each arm itself. Nor is a query's
+/// body: C# scopes a clause's variables to the clause, and each clause becomes an arrow that
+/// declares its own, so two queries in one block may bind the same name.
 /// </para>
 /// </summary>
 public static class ExpressionVariableScanner
@@ -64,6 +67,42 @@ public static class ExpressionVariableScanner
     }
 
     /// <summary>
+    /// The declarations a statement writes in FRONT of itself for <paramref name="expression"/>, one
+    /// of the expressions whose variables C# puts in the enclosing block (see
+    /// <see cref="BlockNames"/>). Nothing when the statement stands directly in a switch section: C#
+    /// scopes those to the whole switch block, which a later section can assign, so the switch
+    /// declares them once for all of its sections. A <c>let</c> in the section it was written in
+    /// was in its temporal dead zone for every other one.
+    /// </summary>
+    public static string InFrontOf(StatementSyntax statement, ExpressionSyntax? expression, bool typeAnnotations) =>
+        statement.Parent is SwitchSectionSyntax ? "" : Declarations(expression, typeAnnotations);
+
+    /// <summary>
+    /// The names a statement declares into the block it stands in, which Roslyn measured for each
+    /// kind: an expression statement's, an <c>if</c>'s condition's, a <c>return</c>'s, a
+    /// <c>throw</c>'s, a <c>yield return</c>'s, a declaration's initializers', a <c>lock</c>'s and a
+    /// <c>switch</c>'s governing expression's. A loop's and a <c>using</c>'s stay inside the
+    /// statement, so they are none of the block's.
+    /// </summary>
+    public static IReadOnlyList<string> BlockNames(StatementSyntax statement)
+    {
+        IEnumerable<ExpressionSyntax?> expressions = statement switch
+        {
+            ExpressionStatementSyntax expressionStatement => [expressionStatement.Expression],
+            IfStatementSyntax ifStatement => [ifStatement.Condition],
+            ReturnStatementSyntax returnStatement => [returnStatement.Expression],
+            ThrowStatementSyntax throwStatement => [throwStatement.Expression],
+            YieldStatementSyntax yieldStatement => [yieldStatement.Expression],
+            LocalDeclarationStatementSyntax declaration =>
+                declaration.Declaration.Variables.Select(variable => variable.Initializer?.Value),
+            LockStatementSyntax lockStatement => [lockStatement.Expression],
+            SwitchStatementSyntax switchStatement => [switchStatement.Expression],
+            _ => [],
+        };
+        return expressions.SelectMany(Names).Distinct(StringComparer.Ordinal).ToList();
+    }
+
+    /// <summary>
     /// <paramref name="converted"/>, the JavaScript of an expression that runs OUTSIDE any statement
     /// — a field's or a property's initializer, a prop's default — in an arrow that declares what
     /// <paramref name="expression"/> declares, or unchanged when it declares nothing:
@@ -95,6 +134,15 @@ public static class ExpressionVariableScanner
         return names.Distinct(StringComparer.Ordinal).ToList();
     }
 
+    /// <summary>Every name <paramref name="designation"/> binds, nested ones included, as
+    /// <see cref="Names"/> spells them; a discard binds none.</summary>
+    internal static IReadOnlyList<string> Designated(VariableDesignationSyntax designation)
+    {
+        var names = new List<string>();
+        Designate(designation, names);
+        return names;
+    }
+
     /// <summary>
     /// The binding a designation WRITES where it declares itself — <c>var (a, (b, _))</c> in a
     /// deconstruction or a foreach — spelled exactly as <see cref="Names"/> and every reference spell
@@ -117,8 +165,9 @@ public static class ExpressionVariableScanner
             if (child is LambdaExpressionSyntax or AnonymousFunctionExpressionSyntax or LocalFunctionStatementSyntax)
                 continue;
             // A switch expression's ARMS are the IIFE's scope and it declares them itself; its
-            // GOVERNING expression is not, so the arm is skipped rather than the whole switch.
-            if (child is SwitchExpressionArmSyntax) continue;
+            // GOVERNING expression is not, so the arm is skipped rather than the whole switch. A
+            // query's clauses are arrows of their own, and its source is not, so the body is skipped.
+            if (child is SwitchExpressionArmSyntax or QueryBodySyntax) continue;
             Visit(child, names);
             Walk(child, names);
         }

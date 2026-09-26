@@ -5,7 +5,8 @@
 - [x] 1.1 `ExpressionVariableScanner` replaces `PatternVariableScanner`, the method-top hoisting and the primitive Render path's copy
 - [x] 1.2 Every statement that holds an expression declares its variables with Roslyn's scope; a while and a for in the head's `let`
 - [x] 1.3 Initializers declare in an arrow of their own; a switch expression declares its arms' once
-- [x] 1.4 Check: `ExpressionVariableConformanceTests` run on both sides; 43 of its 47 cases fail on main without the harness's own declarations, and 28 with them
+- [x] 1.4 From the author's review: a switch declares its sections' variables for its whole block, a `do` declares its condition's in a per-iteration head, a query's clauses declare their own, and a deconstruction that initializes a `for` joins the head's `let`
+- [x] 1.5 Check: `ExpressionVariableConformanceTests` run on both sides; 43 of its first 47 cases fail on main without the harness's own declarations, and 28 with them, and the review's cases fail on the branch before their fixes
 
 ## 2. Names and modes
 

@@ -25,7 +25,7 @@ public class IfStatementStrategy : IStatementStrategy
         // The SHARED scanner, not a private copy: this one walked DescendantNodesAndSelf, so a
         // condition containing a lambda (`if (rows.Any(r => r.X is T t))`) hoisted that lambda's
         // binding out into the if's own scope, where it collides with any same-named binding.
-        var declarations = ExpressionVariableScanner.Declarations(ifStmt.Condition, context.TypeAnnotations);
+        var declarations = ExpressionVariableScanner.InFrontOf(ifStmt, ifStmt.Condition, context.TypeAnnotations);
         if (declarations.Length == 0) return result;
 
         // A condition's variables scope to the ENCLOSING block ("definite assignment when false":

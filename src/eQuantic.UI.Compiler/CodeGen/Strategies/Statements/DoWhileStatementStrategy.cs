@@ -12,18 +12,26 @@ public class DoWhileStatementStrategy : IStatementStrategy
         return node is DoStatementSyntax;
     }
 
-    /// <summary>The variables the condition declares are the loop's own — Roslyn scopes them to the
-    /// statement, so two sibling loops may repeat a name — and a block around the loop is where
-    /// they are declared. Nothing but the condition can see them, so one per loop is .NET's
-    /// answer too.</summary>
+    /// <summary>
+    /// A condition that declares variables (<c>while (Next(out var n))</c> after the body) becomes
+    /// <c>for (let n, $again = true; $again; $again = cond) body</c>. Roslyn keeps them inside the
+    /// loop, so two sibling loops may repeat a name, and .NET gives every iteration its own: a closure
+    /// the condition makes keeps its iteration's value (.NET 12, where one variable per loop answered
+    /// 0). A <c>for</c> head's <c>let</c> is the binding JavaScript copies for each iteration, and the
+    /// flag runs the body first and the condition after it, a <c>continue</c> included, as a
+    /// <c>do</c> does. <c>$</c> cannot begin a C# identifier, so the flag shadows nothing.
+    /// </summary>
     public JsStatement Convert(StatementSyntax node, ConversionContext context)
     {
         var doStmt = (DoStatementSyntax)node;
-        var declared = ExpressionVariableScanner.Declarations(doStmt.Condition, context.TypeAnnotations);
+        var declared = ExpressionVariableScanner.Names(doStmt.Condition);
         var condition = context.Converter.ConvertIr(doStmt.Condition);
         var body = context.Converter.ConvertStatementIr(doStmt.Statement);
-        var loop = JsStatement.DoWhile(body, condition);
-        return declared.Length == 0 ? loop : JsStatement.Block([JsStatement.Raw(declared.TrimEnd()), loop]);
+        if (declared.Count == 0) return JsStatement.DoWhile(body, condition);
+
+        var names = ExpressionVariableScanner.List(declared, context.TypeAnnotations);
+        var again = JsExprWriter.Write(JsExpr.Binary(JsExpr.Identifier("$again"), "=", condition));
+        return JsStatement.Headed($"for (let {names}, $again = true; $again; {again})", body);
     }
 
     public int Priority => 0;

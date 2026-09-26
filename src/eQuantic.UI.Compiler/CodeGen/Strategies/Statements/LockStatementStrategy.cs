@@ -21,10 +21,13 @@ public class LockStatementStrategy : IStatementStrategy
     {
         var lockStmt = (LockStatementSyntax)node;
         var body = context.Converter.ConvertStatementIr(lockStmt.Statement);
-        var declared = ExpressionVariableScanner.Declarations(lockStmt.Expression, context.TypeAnnotations);
-        if (declared.Length == 0) return body;
+        if (ExpressionVariableScanner.Names(lockStmt.Expression).Count == 0) return body;
         var expression = JsStatement.Expression(context.Converter.ConvertIr(lockStmt.Expression));
-        return JsStatement.Sequence(JsStatement.Raw(declared.TrimEnd()), expression, body);
+        // Declared in front, unless a switch declares them for the section this lock stands in.
+        var declared = ExpressionVariableScanner.InFrontOf(lockStmt, lockStmt.Expression, context.TypeAnnotations);
+        return declared.Length == 0
+            ? JsStatement.Sequence(expression, body)
+            : JsStatement.Sequence(JsStatement.Raw(declared.TrimEnd()), expression, body);
     }
 
     public int Priority => 10;

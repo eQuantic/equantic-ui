@@ -12,10 +12,11 @@ a deconstruction's element), and under what name.
 A variable a C# expression declares SHALL be declared by the JavaScript the statement holding it is
 written as, with the scope Roslyn gives it. An expression statement, an `if`, a `return`, a `throw`,
 a `yield return`, a local declaration, a `switch`'s governing expression and a `lock` SHALL declare
-it in the block it lives on in, where the statements after them can read it. A `do`, a `foreach` and
-a `using` SHALL declare it inside the statement, so two sibling statements may bind one name. A
-variable a lambda, an anonymous method or a local function declares SHALL be declared inside it,
-once for every call.
+it in the block it lives on in, where the statements after them can read it; when that block is a
+switch's, every section SHALL be able to assign and read it. A `while`, a `do`, a `for`, a
+`foreach` and a `using` SHALL declare it inside the statement, so two sibling statements may bind
+one name. A variable a lambda, an anonymous method, a local function or a query clause declares
+SHALL be declared inside it, once for every call.
 
 #### Scenario: The guard idiom reads it after the if
 
@@ -26,6 +27,11 @@ once for every call.
 
 - **WHEN** `(var c, var d) = (3, 4); return c + d;` and `var (a, (b, c)) = (1, (2, 3)); return a * 100 + b * 10 + c;` run
 - **THEN** they answer 7 and 123
+
+#### Scenario: A switch section assigns what another declared
+
+- **WHEN** `switch (k) { case 1: int.TryParse("5", out var a); return a; case 2: a = 7; return a; default: return 0; }` runs with `k` 2
+- **THEN** it answers 7
 
 #### Scenario: Two sibling loops bind one name
 
@@ -39,9 +45,9 @@ once for every call.
 
 ### Requirement: A loop's condition has a fresh variable every time round
 
-A variable declared in a `while`'s or a `for`'s condition, and in a `foreach`'s body, SHALL be a new
-variable on every iteration, as .NET makes it: a closure made in one iteration SHALL keep that
-iteration's value.
+A variable declared in a `while`'s, a `do`'s or a `for`'s condition, and in a `foreach`'s body,
+SHALL be a new variable on every iteration, as .NET makes it: a closure made in one iteration SHALL
+keep that iteration's value.
 
 #### Scenario: A closure over a while's condition
 

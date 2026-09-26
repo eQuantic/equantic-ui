@@ -839,18 +839,22 @@ record of a release, the wiki's Upgrading page is the distillate.
   by nothing; plain JavaScript carried `let n: any;`; and `@class` stayed a SyntaxError on eight
   binding paths ([#466](https://github.com/eQuantic/equantic-ui/issues/466)). One owner,
   `ExpressionVariableScanner`, now answers every statement with the scope Roslyn gives: in front of
-  an `if` or an expression statement, inside a loop or a `using`, in a `while`'s or a `for`'s own
-  head for a fresh variable every iteration, and in its own arrow for an initializer. The harness
-  had declared every `out var` itself, which is why none of it showed: 43 of the new class's 47
-  cases fail on main without that, and neither mode's modules load in the new emission test. Found
-  on the way: a static property on a plain class was an instance getter, and plain JavaScript
-  annotated a local declared as another type. Filed: two catch clauses do not parse and one ignores
+  an `if` or an expression statement, or at the top of the switch whose section holds it, inside a
+  `foreach` or a `using`, in a `while`'s, a `do`'s or a `for`'s own head for a fresh variable every
+  iteration, and in its own arrow for an initializer. The harness had declared every `out var`
+  itself, which is why none of it showed: 43 of the new class's first 47 cases fail on main without
+  that, and neither mode's modules load in the new emission test. The author's review found four
+  more before the pull request opened: a section's variable assigned by another section, two
+  queries binding one name, a `for` initialized by a deconstruction, and a `do`'s condition, each
+  now a case. Found on the way: a static property on a plain class was an instance getter, and
+  plain JavaScript annotated a local declared as another type. Filed: two catch clauses do not parse and one ignores
   its type and filter ([#474](https://github.com/eQuantic/equantic-ui/issues/474)), a lock drops its
   expression ([#475](https://github.com/eQuantic/equantic-ui/issues/475)), a for's own variable is
   one per iteration ([#476](https://github.com/eQuantic/equantic-ui/issues/476)), `fs[0]()` reads
   off `this` ([#477](https://github.com/eQuantic/equantic-ui/issues/477)), `new object()` names no
-  class ([#478](https://github.com/eQuantic/equantic-ui/issues/478)), and a base written with its
-  namespace is extended as written ([#479](https://github.com/eQuantic/equantic-ui/issues/479)).
+  class ([#478](https://github.com/eQuantic/equantic-ui/issues/478)), a base written with its
+  namespace is extended as written ([#479](https://github.com/eQuantic/equantic-ui/issues/479)), and a
+  bare type pattern never matches ([#482](https://github.com/eQuantic/equantic-ui/issues/482)).
   Proposed and archived through OpenSpec (`openspec/specs/transpiler-expression-variables`).
 
 ## Retired documents
