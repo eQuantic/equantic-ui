@@ -20,6 +20,8 @@ public class NumberFormatSpecifierConformanceTests
     [InlineData("return (1e300).ToString(\"E2\") + \"|\" + (1e-300).ToString(\"E2\") + \"|\" + (5e-324).ToString(\"E3\");")]
     [InlineData("return (1.5f).ToString(\"E3\") + \"|\" + 12345m.ToString(\"E2\") + \"|\" + (-0.5m).ToString(\"E1\") + \"|\" + 12345.ToString(\"E0\") + \"|\" + 12345L.ToString(\"E4\");")]
     [InlineData("return string.Format(\"{0:E2}\", 12345.678) + \"|\" + $\"{-0.00012:e1}\" + \"|\" + string.Format(\"{0:E}\", 42);")]
+    // An integer's placeholder is found after an escaped brace too, and rounds as an integer (found in review, #445).
+    [InlineData("return string.Format(\"{{{0:E1}}}\", 125) + \"|\" + string.Format(\"{{{{{0:E1}\", 125);")]
     // A half rounds by the type: a double's to even, a decimal's and an integer's away from zero.
     [InlineData("return (1.25).ToString(\"E1\") + \"|\" + (2.5).ToString(\"E0\") + \"|\" + (0.125).ToString(\"E1\") + \"|\" + (1.25m).ToString(\"E1\") + \"|\" + (2.5m).ToString(\"E0\") + \"|\" + 125.ToString(\"E1\");")]
     [InlineData("return (2.5).ToString(\"F0\") + \"|\" + (3.5).ToString(\"F0\") + \"|\" + (-2.5).ToString(\"F0\") + \"|\" + (2.5m).ToString(\"F0\") + \"|\" + (0.125).ToString(\"F2\") + \"|\" + (0.125m).ToString(\"F2\");")]
