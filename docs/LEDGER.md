@@ -755,7 +755,8 @@ record of a release, the wiki's Upgrading page is the distillate.
   ([#401](https://github.com/eQuantic/equantic-ui/issues/401)). From the review: every other
   `Convert.ToBoolean` overload answers by the type C# binds (a false bool was true, and so was `0L`,
   a BigInt here), a tuple in Remove compares element by element as `Contains` compares it, a
-  HashSet or a LinkedList reached through `ICollection<T>` removes as it does directly, and the BCL
+  HashSet, a LinkedList, a SortedSet or a dictionary's pair reached through `ICollection<T>` removes
+  as it does directly, and the BCL
   audit's `(Object)` probes call the object overload instead of the string one beside it.
 
 ## Retired documents

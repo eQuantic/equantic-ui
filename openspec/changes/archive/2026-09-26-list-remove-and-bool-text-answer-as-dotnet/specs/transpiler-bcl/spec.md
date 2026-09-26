@@ -12,7 +12,8 @@ What a BCL member answers in the browser, which is what it answers in .NET.
 and answer whether it found one, evaluating the list and the item once each, in that order. A value
 tuple, a record and a struct SHALL compare by value, through the same equality `Contains` uses. Through
 `ICollection<T>`, a HashSet or a LinkedList held when the call runs SHALL remove as it does when
-called directly.
+called directly, and so SHALL a dictionary through `ICollection<KeyValuePair<K, V>>`: the pair
+leaves only when its key is there with an equal value.
 
 #### Scenario: A present item and a missing one
 
