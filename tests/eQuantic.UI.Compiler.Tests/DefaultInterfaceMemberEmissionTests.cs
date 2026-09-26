@@ -173,6 +173,17 @@ public class DefaultInterfaceMemberEmissionTests
             public interface ITwo { string M() => "two"; }
             public sealed class Twice : IOne, ITwo { string IOne.M() => "one"; }
             """,
+        // A static of the interface reached through a private helper, not by the default itself.
+        ["Deep.cs"] = """
+            namespace App;
+            public interface IDeep
+            {
+                string Show() => Wrap("x");
+                private string Wrap(string text) => Bracket(text);
+                private static string Bracket(string text) => "<" + text + ">";
+            }
+            public sealed class Deep : IDeep { public int N; }
+            """,
         // Compiled into a referenced assembly below, not into this compilation.
         ["Voiced.cs"] = """
             namespace App;
@@ -321,6 +332,18 @@ public class DefaultInterfaceMemberEmissionTests
         result.Errors.Should().ContainSingle(error => error.Code == "EQ1008")
             .Which.Message.Should().Contain("IWrapping.Wrap, a static member of an interface")
             .And.Contain("Declare Show in Wrapped");
+    }
+
+    /// <summary>A static of the interface reached through a private helper is refused too (asked in
+    /// review, #418): every helper a default carries is checked as the default is, so the helper
+    /// that reaches the static is the one the error names.</summary>
+    [Fact]
+    public void AStaticReachedThroughAHelperIsRefused()
+    {
+        var result = Compile("Deep", succeeds: false);
+
+        result.Errors.Should().ContainSingle(error => error.Code == "EQ1008")
+            .Which.Message.Should().Contain("Deep relies on the default IDeep.Wrap, which uses IDeep.Bracket");
     }
 
     /// <summary>A type named only in a default method's signature is imported, since the signature
