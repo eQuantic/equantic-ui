@@ -98,6 +98,10 @@ public class HandoffSdkCoverageTests
         ["Curve.Accelerate"] = "motion.curves.accelerate",
 
         ["SpringSpec.Default"] = "motion.spring.default.stiffness",
+        // The shape of the spring value: each field is compared through SpringSpec.Default.
+        ["SpringSpec.Stiffness"] = "motion.spring.default.stiffness",
+        ["SpringSpec.Damping"] = "motion.spring.default.damping",
+        ["SpringSpec.Mass"] = "motion.spring.default.mass",
 
         ["WindowSizeClasses.MediumMinDp"] = "window.mediumMinDp",
         ["WindowSizeClasses.ExpandedMinDp"] = "window.expandedMinDp",
@@ -106,6 +110,10 @@ public class HandoffSdkCoverageTests
     /// <summary>Public members that are not design values, each with the reason.</summary>
     private static readonly Dictionary<string, string> Exempt = new(StringComparer.Ordinal)
     {
+        ["Curve.X1"] = "a control point of every Curve token (motion.curves.*), compared point by point in CurvesAndTheCurveEachRoleUses",
+        ["Curve.Y1"] = "a control point of every Curve token (motion.curves.*), compared point by point in CurvesAndTheCurveEachRoleUses",
+        ["Curve.X2"] = "a control point of every Curve token (motion.curves.*), compared point by point in CurvesAndTheCurveEachRoleUses",
+        ["Curve.Y2"] = "a control point of every Curve token (motion.curves.*), compared point by point in CurvesAndTheCurveEachRoleUses",
         ["Touch.WheelTravel"] = "a rule applied to an input event (delta, precise), not a value. It reads "
             + "Touch.WheelLine, which is published",
         ["Motion.ExitFor"] = "the exit RULE (enter × 2 / 3, integer math), stated as prose under "
@@ -160,7 +168,10 @@ public class HandoffSdkCoverageTests
     /// <summary>Fields, properties and ordinary methods; operators and accessors are not tokens. A
     /// member is its NAME, because names are what the handoff publishes, so an overload would read
     /// as the member already accounted for: <see cref="NoTokenMethodIsOverloaded"/> is what keeps
-    /// that from happening.</summary>
+    /// that from happening. A token that is a VALUE, a <see cref="Primitives.Curve"/> or a
+    /// <see cref="SpringSpec"/>, also has a shape, its instance fields and properties: a member added
+    /// there is a design value too, and reflecting only statics let one ship unaccounted (found in
+    /// review). The methods a record generates are not part of that shape.</summary>
     private static IEnumerable<string> PublicMembers(Type type) =>
         type.GetMembers(BindingFlags.Public | BindingFlags.Static | BindingFlags.DeclaredOnly)
             .Where(member => member switch
@@ -170,6 +181,8 @@ public class HandoffSdkCoverageTests
                 MethodInfo method => !method.IsSpecialName,
                 _ => false,
             })
+            .Concat(type.GetMembers(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly)
+                .Where(member => member is FieldInfo or PropertyInfo))
             .Select(member => $"{type.Name}.{member.Name}");
 
     /// <summary>
