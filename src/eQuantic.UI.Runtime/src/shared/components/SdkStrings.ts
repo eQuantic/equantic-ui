@@ -141,6 +141,10 @@ export class SdkStrings {
         return count === 1 ? $eq.str("SdkResources", "UnchangedLine") : $eq.text.stringFormat($eq.str("SdkResources", "UnchangedLines"), count);
     }
 
+    static hiddenLines(count: number) {
+        return count === 1 ? $eq.str("SdkResources", "HiddenLine") : $eq.text.stringFormat($eq.str("SdkResources", "HiddenLines"), count);
+    }
+
     static hint(pattern: string, letters: string) {
         let day = letters.length > 0 ? letters[0] : 'D';
         let month = letters.length > 1 ? letters[1] : 'M';

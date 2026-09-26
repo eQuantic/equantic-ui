@@ -538,9 +538,12 @@ public sealed class CodeBlock : StatelessComponent
     /// <summary>A folded run, as one row that says what it hides and opens on a press.</summary>
     private VisualNode PlaceholderRow(CodeRow shown, CodeMetrics metrics, IAppTheme theme)
     {
+        // What it hides, in words, when the view that folded it said nothing: the row is a control,
+        // and it was named with a mark that assistive tech cannot announce (a bare "⋯").
+        var label = shown.Label ?? SdkStrings.HiddenLines(shown.Count);
         var row = new Row(gap: 0) { Width = SizeValue.Fill, Height = metrics.LineHeight, Cross = CrossAlign.Center };
         row.Add(new Box(new BoxStyle { Padding = EdgeInsets.Symmetric(Space.S3, 0) },
-            Muted(shown.Label ?? "⋯", metrics, theme)));
+            Muted(label, metrics, theme)));
         VisualNode box = new Box(new BoxStyle
         {
             Width = SizeValue.Fill,
@@ -548,7 +551,7 @@ public sealed class CodeBlock : StatelessComponent
             Background = FillerColor,
         }, row);
         return OnPlaceholderPressed is { } pressed
-            ? new Pressable(box, () => pressed(shown.Line)) { Label = shown.Label }
+            ? new Pressable(box, () => pressed(shown.Line)) { Label = label }
             : box;
     }
 

@@ -117,6 +117,16 @@ namespace eQuantic.UI.Components
             get { return ResourceManager.GetString("UnchangedLines", Culture)!; }
         }
 
+        internal static string HiddenLine
+        {
+            get { return ResourceManager.GetString("HiddenLine", Culture)!; }
+        }
+
+        internal static string HiddenLines
+        {
+            get { return ResourceManager.GetString("HiddenLines", Culture)!; }
+        }
+
         internal static string PreviousChange
         {
             get { return ResourceManager.GetString("PreviousChange", Culture)!; }

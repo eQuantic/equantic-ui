@@ -58,3 +58,4 @@ static eQuantic.UI.Components.SdkStrings.ShowInline.get -> string!
 static eQuantic.UI.Components.SdkStrings.ShowSideBySide.get -> string!
 static eQuantic.UI.Components.SdkStrings.DiffOriginal.get -> string!
 static eQuantic.UI.Components.SdkStrings.DiffModified.get -> string!
+static eQuantic.UI.Components.SdkStrings.HiddenLines(int count) -> string!

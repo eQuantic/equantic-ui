@@ -123,6 +123,24 @@ public class CodeBlockRowsTests
             2 * (TopOf(frame, "l4") - TopOf(frame, "3 unchanged lines")), 0.5f, "l4 is on row 2, after the placeholder");
     }
 
+    /// <summary>A fold the caller left unlabeled is named for what it hides, on screen and for
+    /// assistive tech: a bare "⋯" was a control nothing could announce.</summary>
+    [Fact]
+    public void AFoldWithNoLabel_IsNamedForWhatItHides()
+    {
+        var frame = Settle(new CodeBlock("l0\nl1\nl2\nl3\nl4", "plaintext")
+        {
+            Rows = new CodeRows(5, [], [new CodeCollapse(1, 3)]),
+            ShowLineNumbers = false,
+            OnPlaceholderPressed = _ => { },
+        });
+
+        var name = SdkStrings.HiddenLines(3);
+        frame.HitRegions.Should().ContainSingle(region => region.Node.Label == name);
+        First(frame.Root, node => node.Source is Text { Content: var text } && text == name)
+            .Should().NotBeNull("the row says it too");
+    }
+
     [Fact]
     public void TheGutterNumbersTheLines_AndLeavesTheFillersBlank()
     {

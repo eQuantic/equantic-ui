@@ -48,6 +48,12 @@
   <data name="UnchangedLines" xml:space="preserve">
     <value>{0} unchanged lines</value>
   </data>
+  <data name="HiddenLine" xml:space="preserve">
+    <value>1 hidden line</value>
+  </data>
+  <data name="HiddenLines" xml:space="preserve">
+    <value>{0} hidden lines</value>
+  </data>
   <data name="PreviousChange" xml:space="preserve">
     <value>Previous change</value>
   </data>

@@ -219,11 +219,12 @@ export class CodeBlock extends StatelessComponent {
     }
 
     placeholderRow(shown: CodeRow, metrics: CodeMetrics, theme: any) {
+        let label = shown.label ?? SdkStrings.hiddenLines(shown.count);
         let row = new Row(0, 'start', 'center', false, null, null, { width: SizeValue.fill, height: metrics.lineHeight, cross: 'center' });
-        row.add(new Box(new BoxStyle({ padding: EdgeInsets.symmetric(12, 0) }), this.muted(shown.label ?? '⋯', metrics, theme)));
+        row.add(new Box(new BoxStyle({ padding: EdgeInsets.symmetric(12, 0) }), this.muted(label, metrics, theme)));
         let box: VisualNode = new Box(new BoxStyle({ width: SizeValue.fill, height: metrics.lineHeight, background: this.fillerColor }), row);
         let pressed: any; 
-        return (pressed = this.onPlaceholderPressed) != null ? new Pressable(box, () => pressed(shown.line), { label: shown.label }) : box;
+        return (pressed = this.onPlaceholderPressed) != null ? new Pressable(box, () => pressed(shown.line), { label: label }) : box;
     }
 
     muted(text: string, metrics: CodeMetrics, theme: any) {

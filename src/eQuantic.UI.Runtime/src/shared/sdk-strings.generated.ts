@@ -23,6 +23,8 @@ export const sdkNeutralStrings: Record<string, string> = {
   'DiffOriginal': "Original",
   'Dismiss': "Dismiss",
   'Find': "Find",
+  'HiddenLine': "1 hidden line",
+  'HiddenLines': "{0} hidden lines",
   'LineNumbered': "Line {0}",
   'NextChange': "Next change",
   'NextMatch': "Next match",

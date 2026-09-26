@@ -58,6 +58,12 @@ public static class SdkStrings
     public static string UnchangedLines(int count) =>
         count == 1 ? SdkResources.UnchangedLine : string.Format(CultureInfo.CurrentCulture, SdkResources.UnchangedLines, count);
 
+    /// <summary>What a folded run is called when the view that folded it gave it no words: how many
+    /// lines it holds. The row is a control, and a control with no name is one assistive tech cannot
+    /// announce.</summary>
+    public static string HiddenLines(int count) =>
+        count == 1 ? SdkResources.HiddenLine : string.Format(CultureInfo.CurrentCulture, SdkResources.HiddenLines, count);
+
     public static string PreviousChange => SdkResources.PreviousChange;
     public static string NextChange => SdkResources.NextChange;
     public static string ShowInline => SdkResources.ShowInline;
