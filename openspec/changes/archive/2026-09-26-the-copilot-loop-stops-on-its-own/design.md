@@ -1,5 +1,10 @@
 # Design
 
+## How Flutter answers it
+
+It has no bearing here: this is a rule about reviewing pull requests, not a mechanism of the
+framework, and docs/FLUTTER-PARITY.md has no row for it.
+
 ## Decisions
 
 - **Severity decides, and a ceiling bounds it.** Severity alone keeps a pull request with a real

@@ -151,11 +151,12 @@ any jobs at all.
 - **A change that creates or changes behaviour starts with an OpenSpec proposal** in the same pull
   request (`/opsx:propose`, under `openspec/changes/`), archived before the merge.
 - **Review the diff yourself before opening the PR** (in Claude Code, `/code-review high`), then
-  **answer Copilot's rounds**. The first starts when the PR opens, and each later one is asked for
-  (`gh pr edit <n> --add-reviewer @copilot`) after one push with every fix of the round. A defect
-  earns another round, while hardening, docs or a nit is fixed in the same push or filed as an
-  issue. The loop stops at the first round without a defect, and after three in any case. A PR is
-  not done when it is opened.
+  **answer Copilot's rounds**. The first starts when a PR that is not a draft opens. A defect is
+  fixed, proved both ways and earns another round, asked for (`gh pr edit <n> --add-reviewer
+  @copilot`) after one push with every fix. Hardening, docs or a nit is fixed in the same push or
+  filed as an issue, and a wrong finding is answered with what shows so: neither earns a round. The
+  loop stops at the first round without a defect, and after three in any case. A PR is not done
+  when it is opened.
 - **Documentation and the ledger change with the code**: the Markdown here, the wiki in English and
   Portuguese on a wiki branch named like the pull request's, merged into the wiki's master when the
   pull request merges, and one `docs/LEDGER.md` line citing the issue.

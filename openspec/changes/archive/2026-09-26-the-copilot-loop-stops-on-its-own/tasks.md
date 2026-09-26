@@ -9,3 +9,4 @@
 ## 2. Documentation
 
 - [x] 2.1 One `docs/LEDGER.md` line citing #446
+- [x] 2.2 Check: the line is in the chronology once, and the Workflow's copies (CLAUDE.md, AGENTS.md, CONTRIBUTING.md, the template) state the same ceiling

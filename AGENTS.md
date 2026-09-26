@@ -85,8 +85,10 @@ is not the owner's.
 
 1. **Review it yourself, then open it yourself.** Before opening the pull request, review the whole
    diff (in Claude Code, `/code-review high` on the branch) and fix what the review finds: Copilot's
-   first round starts on its own when the pull request opens, and it should read a diff that has
-   already been through a full review. Work that is committed and pushed is parked on a branch
+   first round starts on its own when a pull request that is not a draft opens (the ruleset skips
+   drafts), and it should read a diff that has already been through a full review. If no round has
+   started a few minutes after the pull request is ready for review, request it with
+   `gh pr edit <n> --add-reviewer @copilot`. Work that is committed and pushed is parked on a branch
    nobody reviews. Opening the pull request is the last step of the work, so open it without
    waiting to be told, whatever a harness's own default says about not opening one unless asked.
 2. **In English, and it closes its issue.** The title is `emoji type: description` and becomes the
@@ -94,24 +96,26 @@ is not the owner's.
    `Closes #N`. Then READ BACK the body you posted: a tool may append its own "Generated with…"
    footer when the pull request is created, and that footer is deleted.
 3. **Answer Copilot: three rounds at most, and stop at the first without a defect.** Its review is
-   light and reveals a pull request a little at a time (69 findings in 47 rounds on six of them,
-   #446), so a loop that waits for it to run dry pays one round per finding. Read the WHOLE review,
-   its body included, where a finding can live without a thread ("Previously missed"). Sort every
-   finding:
+   light and reveals a pull request a little at a time (#446 measured it), so a loop that waits for
+   it to run dry pays one round per finding. Read the WHOLE review, its body included, where a
+   finding can live without a thread ("Previously missed"). Sort every finding:
    - a **defect**, when the code this pull request changes does the wrong thing, or a guard passes
      where it should fail: fix it, prove the fix both ways, and it earns another round;
    - **hardening, documentation or a nit**, a "Previously missed" item that is not a defect
      included: fix it in the same push, or open an issue under the pull request's parent. It earns
-     no round.
+     no round;
+   - **wrong**, when the finding does not hold: answer it with what shows so, a measurement where
+     one exists. It earns no round.
 
    Answer every thread and resolve it (GraphQL `resolveReviewThread`: the ruleset refuses a merge
-   while one is open). Put every fix of a round in ONE push, then ask for the next round with
-   `gh pr edit <n> --add-reviewer @copilot` and wait for it; it takes a few minutes. The ruleset does
-   not review on push, so a merge from main, or a change to the body or the docs alone, costs no
-   round. The loop ends at the first round with no defect, and after the third in any case: a
-   defect found later is still fixed and proved, without asking for another round, and anything
-   else becomes an issue. When the account's GitHub credits are exhausted and Copilot cannot
-   review, skip this step.
+   while one is open), and put every fix of a round in ONE push. When the round found a defect, ask
+   for the next one with `gh pr edit <n> --add-reviewer @copilot` and wait for it; it takes a few
+   minutes. The ruleset does not review on push (ruleset 21198869, `review_on_push` off, readable
+   with `gh api repos/eQuantic/equantic-ui/rulesets/21198869`), so a merge from main, or a change to
+   the body or the docs alone, costs no round. The loop ends at the first round with no defect, and
+   after the third in any case: a defect found later is still fixed and proved, and anything else
+   is sorted as in any round, without asking for another. When the account's GitHub credits are
+   exhausted and Copilot cannot review, skip this step.
 4. **Squash-merge on green CI, composing nothing.** `gh pr merge <n> --squash` takes the
    repository's squash default, the pull request's title and body, so the commit's subject IS the
    title that was already read. If a message is composed anyway, it goes in a file and
