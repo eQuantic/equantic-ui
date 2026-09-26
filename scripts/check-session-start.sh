@@ -38,11 +38,24 @@ container_home() {
 EOF
 }
 
-# A PATH with every dotnet removed, the state of a container that ships none.
-path_without_dotnet="$(printf '%s' "$PATH" | tr ':' '\n' | grep -v -i dotnet | paste -sd: -)"
+# The PATH of a container that ships no .NET SDK. Dropping the directories named after dotnet is not
+# enough, because a runner also links `dotnet` into /usr/bin; so a stub that answers like a missing
+# SDK comes first, and whatever else is on PATH can no longer be the one the hook finds.
+shadow="$work/shadow"
+mkdir -p "$shadow"
+printf '#!/bin/sh\necho "dotnet: not installed in this container" >&2\nexit 127\n' > "$shadow/dotnet"
+chmod +x "$shadow/dotnet"
+path_without_dotnet="$shadow:$(printf '%s' "$PATH" | tr ':' '\n' | grep -v -i dotnet | paste -sd: -)"
 
 git clone --quiet --no-hardlinks "$root" "$work/repo"
 container_home "$work/home"
+
+# Control 0: the emulated container really has no SDK, or the install path is never exercised.
+if (cd "$work/repo" && env -u DOTNET_ROOT PATH="$path_without_dotnet" dotnet --version >/dev/null 2>&1); then
+    fail "dotnet answers before the hook runs, so the fixture would not exercise the pinned download"
+else
+    pass "before the hook, no .NET SDK answers"
+fi
 
 # Control 1: without the hook, the container's config must make a commit fail.
 if (cd "$work/repo" && HOME="$work/home" git commit --allow-empty -q -m "control" 2>/dev/null); then
@@ -79,7 +92,10 @@ fi
 
 sdk="$(session dotnet --version 2>/dev/null || true)"
 [ "$sdk" = "10.0.101" ] && pass ".NET SDK $sdk from the pinned archive" || fail "dotnet --version answered '$sdk'"
-[ -x "$work/home/.dotnet/dotnet" ] && pass "the SDK was installed into HOME/.dotnet" || fail "no SDK in HOME/.dotnet"
+resolved="$(session bash -c 'command -v dotnet' 2>/dev/null || true)"
+[ "$resolved" = "$work/home/.dotnet/dotnet" ] \
+    && pass "the session's dotnet is the one installed into HOME/.dotnet" \
+    || fail "the session resolves dotnet to '$resolved', not HOME/.dotnet"
 
 want_openspec="$(P="$root/tools/openspec/package.json" node -p 'require(process.env.P).devDependencies["@fission-ai/openspec"]')"
 got_openspec="$(session openspec --version 2>/dev/null || true)"

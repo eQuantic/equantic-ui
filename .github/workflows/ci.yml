@@ -49,6 +49,9 @@ jobs:
   # validated: an openspec/ that lost its specs is not a state main can be in.
   openspec:
     runs-on: ubuntu-latest
+    # It reads the tree and nothing else.
+    permissions:
+      contents: read
     env:
       OPENSPEC_TELEMETRY: "0"
     steps:
@@ -68,6 +71,9 @@ jobs:
   # before the hook must fail, and a hook with a wrong SHA-256 must refuse the SDK.
   session-start:
     runs-on: ubuntu-latest
+    # It reads the tree and nothing else; the fixture's commits stay in a throwaway clone.
+    permissions:
+      contents: read
     steps:
       # Full history, so the fixture's clone of HEAD is an ordinary repository.
       - uses: actions/checkout@v4

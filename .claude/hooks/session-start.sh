@@ -115,8 +115,35 @@ install_dotnet() {
         note ".NET SDK: SHA-256 mismatch, refused (expected $sha, got $got)"
         return
     fi
-    mkdir -p "$dest" && tar -xzf "$archive" -C "$dest"
+    # Extract beside the destination and check what came out before anything points at it: a
+    # failed extraction (a full disk, a truncated archive) must not leave a PATH to half an SDK. The
+    # staging directory sits on the same filesystem, so moving it into place is a rename.
+    local staging
+    staging="$(mktemp -d "${dest}.staging.XXXXXX")"
+    if ! tar -xzf "$archive" -C "$staging"; then
+        rm -rf "$staging" "$archive"
+        note ".NET SDK: extracting the archive failed, nothing installed"
+        return
+    fi
     rm -f "$archive"
+    if ! "$staging/dotnet" --list-sdks 2>/dev/null | grep -q "^$DOTNET_VERSION "; then
+        rm -rf "$staging"
+        note ".NET SDK: the extracted archive does not answer SDK $DOTNET_VERSION, nothing installed"
+        return
+    fi
+    if [ ! -e "$dest" ]; then
+        mv "$staging" "$dest"
+    elif ! cp -a "$staging/." "$dest/"; then
+        # $dest already exists (it may hold global tools), so the SDK joins it rather than replacing it.
+        rm -rf "$staging"
+        note ".NET SDK: copying into $dest failed"
+        return
+    fi
+    rm -rf "$staging"
+    if ! "$dest/dotnet" --list-sdks 2>/dev/null | grep -q "^$DOTNET_VERSION "; then
+        note ".NET SDK: $dest does not answer SDK $DOTNET_VERSION after the install"
+        return
+    fi
     persist "export DOTNET_ROOT=\"$dest\""
     persist "export PATH=\"$dest:\$PATH\""
     note ".NET SDK $DOTNET_VERSION installed in $dest, SHA-256 verified"
