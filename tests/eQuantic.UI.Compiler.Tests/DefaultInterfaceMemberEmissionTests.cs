@@ -184,6 +184,12 @@ public class DefaultInterfaceMemberEmissionTests
             }
             public sealed class Deep : IDeep { public int N; }
             """,
+        // An event on the name of a default: an event lowers to an instance field.
+        ["Eventful.cs"] = """
+            namespace App;
+            public interface INotify { string Changed() => "changed"; }
+            public sealed class Eventful : INotify { public event System.Action Changed; }
+            """,
         // Compiled into a referenced assembly below, not into this compilation.
         ["Voiced.cs"] = """
             namespace App;
@@ -332,6 +338,18 @@ public class DefaultInterfaceMemberEmissionTests
         result.Errors.Should().ContainSingle(error => error.Code == "EQ1008")
             .Which.Message.Should().Contain("IWrapping.Wrap, a static member of an interface")
             .And.Contain("Declare Show in Wrapped");
+    }
+
+    /// <summary>An event on the name of a default (found in review, #418): the event is an instance
+    /// field, which shadows the default on the prototype for every call through the interface.</summary>
+    [Fact]
+    public void AnEventOnADefaultsNameIsRefused()
+    {
+        var result = Compile("Eventful", succeeds: false);
+
+        result.Errors.Should().ContainSingle(error => error.Code == "EQ1007")
+            .Which.Message.Should().Contain("'Eventful' takes the default 'INotify.Changed', which lowers to `changed`, "
+                + "and so does 'Eventful.Changed'");
     }
 
     /// <summary>A static of the interface reached through a private helper is refused too (asked in
