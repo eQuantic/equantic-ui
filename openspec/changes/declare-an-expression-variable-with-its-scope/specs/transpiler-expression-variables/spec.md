@@ -3,7 +3,8 @@
 ## Purpose
 
 Where the JavaScript declares a variable a C# expression declares (a pattern's binding, an `out var`,
-a deconstruction's element), and under what name.
+a deconstruction's element), with the scope C# gives it. The name it is declared under is the one
+`transpiler-names` gives every reader.
 
 ## ADDED Requirements
 
@@ -76,22 +77,3 @@ carry no type annotation on a declaration.
 
 - **WHEN** a component's Build runs `int.TryParse("7", out var number); (var tens, var units) = (3, 4);` and stores `number * 100 + tens * 10 + units`
 - **THEN** it stores 734
-
-### Requirement: A name JavaScript reserves is one name on every path
-
-A C# local, parameter or local function whose name JavaScript refuses as a binding (a keyword the
-verbatim escape allows, such as `@class`, or a strict-mode reserved word) SHALL be renamed to one
-legal name at its declaration and at every reference, whichever way it was bound: a declaration, an
-`out var`, a pattern, a deconstruction, a `for`, a `foreach`, a `catch`, a `using`, a lambda's or a
-local function's parameter, a query's range variable, and a call through a delegate local or to a
-local function.
-
-#### Scenario: A verbatim local and a verbatim out var
-
-- **WHEN** `var @class = 5; int.TryParse("7", out var @new); return @class * 10 + @new;` runs
-- **THEN** it answers 57
-
-#### Scenario: A local function named like a keyword
-
-- **WHEN** `int Delete(int from) => from - 1; return Delete(3);` runs
-- **THEN** it answers 2

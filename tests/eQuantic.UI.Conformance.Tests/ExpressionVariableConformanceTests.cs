@@ -81,11 +81,10 @@ public class ExpressionVariableConformanceTests
     }
 
     /// <summary>
-    /// C#'s verbatim escape makes a keyword a name — <c>@class</c>, <c>@new</c>, <c>@default</c> —
-    /// and JavaScript refuses most of them as a binding. The rename (<c>class_</c>) must reach the
-    /// declaration and every reference, whichever way the name was bound: a pattern wrote
-    /// <c>@class = o</c> beside a declaration of <c>class</c>, and a deconstruction and a for kept
-    /// the escape. <c>undefined</c> is no keyword, but the lowerings compare against it.
+    /// C#'s verbatim escape makes a keyword a name (<c>@class</c>, <c>@new</c>, <c>@default</c>), and
+    /// JavaScript refuses most of them as a binding. The escape (<c>class$</c>, #399) must reach the
+    /// declaration and every reference, whichever way the name was bound, the declarations this
+    /// scanner writes included. <c>undefined</c> is no keyword, but the lowerings compare against it.
     /// </summary>
     [SkippableTheory]
     [InlineData("var @class = 5; return @class;")]

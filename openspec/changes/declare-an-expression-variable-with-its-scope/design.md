@@ -59,10 +59,11 @@ only when it declares something.
 
 ## A name is spelled once
 
-`ToJsIdentifier` renames a C# local that JavaScript refuses (`class` → `class_`); a reference
-already went through it. Its list left out the keywords on the reasoning that C# reserves them too,
-but the verbatim escape makes each of them a name. Every declaration site now goes through it, as
-the references do.
+A declaration the scanner writes is spelled by `ToJsIdentifier`, as every reference to the variable
+is, so the two cannot drift. #399, merged while this was under review, made that function escape a
+reserved word with a `$` on every declaration path, which is the spelling kept here. What this change
+adds to it is three names no rule reserves: `undefined`, `NaN` and `Infinity`, which the emitted code
+compares against, so that a local of that name no longer answers for the global.
 
 ## Not here
 

@@ -19,8 +19,6 @@ on main with one source run in .NET and in the modules eqc emits from it:
 - Plain JavaScript, which the playground, the harness and the design host run as written, carried
   `let n: any;` in every method with an `out var` and `let money: Money = …` for a local declared as
   another type: a SyntaxError that costs the whole module.
-- A name JavaScript reserves, which C#'s verbatim escape allows (`@class`, `@new`, `@default`), was a
-  SyntaxError on eight binding paths, and a local function named `Delete` was called as `delete`.
 
 The conformance harness declared every `out var` itself, at the top of the block, which is why none
 of it showed.
@@ -41,10 +39,10 @@ of it showed.
     them for its whole block, as C# scopes them;
   - a switch expression declares its arms' once, a query's clauses declare their own, and an
     initializer declares in an arrow of its own.
-- Every name a C# local or parameter takes crosses through `ToJsIdentifier`, whose reserved list
-  now holds every JavaScript keyword: a pattern's binding, a deconstruction, a for's and a using's
-  variable, a catch's, a delegate called by its local name, a local function's call, and a record
-  method's parameter.
+- Every declaration the scanner writes takes the spelling `transpiler-names` gives the variable's
+  readers (#399, merged first, escapes a reserved word with a `$` on every path), and `undefined`,
+  `NaN` and `Infinity` are escaped too: the emitted code compares against them, and a local of that
+  name answered for the global.
 - Plain JavaScript carries no annotation on a local.
 - Found by the new tests: a `static` property on a plain class is written as a static getter, and a
   label on a loop whose head declares a variable stays on the loop.
@@ -66,7 +64,7 @@ declared an `out var` at its top: the `let` now stands in front of the statement
 
 ### Modified Capabilities
 
-None.
+- `transpiler-names`: a local named after a global the emitted code reads is escaped.
 
 ## Impact
 
