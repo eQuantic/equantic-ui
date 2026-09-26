@@ -760,6 +760,16 @@ record of a release, the wiki's Upgrading page is the distillate.
   value, a ToBoolean provider is evaluated in the order it is written (another `CultureInfo`
   than the invariant or the current one is EQ2108, having no twin to evaluate), and the BCL
   audit's `(Object)` probes call the object overload instead of the string one beside it.
+- **2026-09-26 · A number prints through its specifier as .NET prints it**: the resx subset admitted
+  the `E` specifier and the formatter had no branch for it, so `{0:E2}` passed the build and printed
+  `12345` ([#393](https://github.com/eQuantic/equantic-ui/issues/393)). Measured, every specifier
+  missed in the same way: .NET writes a double from its exact binary value, a long and a decimal from
+  every digit, and rounds a half by the type, and the formatter started from the shortest text with
+  one rule. It now formats from the exact decimal expansion (`utils/exact-decimal.ts`), writes `E` as
+  .NET does, and rounds an exact half to even for a double and a float and away from zero for a
+  decimal and an integer, which the compiler now names where a specifier is written (`FormatKind`,
+  `$eq.text.asInteger`). A new conformance class fails all fifteen of its cases on main. Found on the
+  way: `decimal`'s constants do not cross ([#444](https://github.com/eQuantic/equantic-ui/issues/444)).
 
 ## Retired documents
 
