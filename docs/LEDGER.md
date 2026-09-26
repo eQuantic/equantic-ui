@@ -752,7 +752,10 @@ record of a release, the wiki's Upgrading page is the distillate.
   runtime now: Remove answers a bool and compares as `EqualityComparer<T>.Default`, and a bool reads
   as `Boolean.TryParse`, with .NET's trimming, its ASCII-only case fold and its exceptions. The
   number reader uses the one white space list, and `Convert.ToBoolean(object)` is left to its family
-  ([#401](https://github.com/eQuantic/equantic-ui/issues/401)).
+  ([#401](https://github.com/eQuantic/equantic-ui/issues/401)). From the review: every other
+  `Convert.ToBoolean` overload answers by the type C# binds (a false bool was true, and so was `0L`,
+  a BigInt here), a tuple in Remove compares element by element as `Contains` compares it, and the
+  BCL audit's `(Object)` probes call the object overload instead of the string one beside it.
 
 ## Retired documents
 
