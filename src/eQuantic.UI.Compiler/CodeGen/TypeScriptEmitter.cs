@@ -711,6 +711,9 @@ public class TypeScriptEmitter
                             : $"return {Eq.Hydrate}(await {invoke}, {resultSpec})"),
                     })), action.SyntaxNode);
                 }
+
+                _converter.SetCurrentClass(component.Name);
+                EmitInheritedDefaults(component.ClassSyntax, c);
             }, component.TypeParameters);
 
         // Generate component code without imports
@@ -827,6 +830,17 @@ public class TypeScriptEmitter
             {
                 componentTypes.Add(t);
             }
+        }
+
+        // The defaults the class takes from its interfaces (#414) are written into its body, and
+        // name types no syntax of the class does.
+        foreach (var inherited in InheritedDeclarations(component.ClassSyntax))
+        {
+            if (ModelFor(inherited) is { } inheritedModel)
+                Services.RuntimeProvidedTypeScanner.Collect(inherited, inheritedModel,
+                    component.RuntimeProvidedTypes, new HashSet<string>());
+            foreach (var t in CollectComponentTypesFromNode(inherited, new HashSet<string> { component.Name }))
+                componentTypes.Add(t);
         }
 
         // Types a HYDRATION SPEC names — see _hydrationReferences: emitted into the body, present
@@ -1212,7 +1226,7 @@ public class TypeScriptEmitter
         // (a declared type only covers the OUTERMOST creation; nested ones live inside arguments).
         foreach (var implicitCreation in node.DescendantNodes().OfType<ImplicitObjectCreationExpressionSyntax>())
         {
-            var created = _semanticModel?.GetTypeInfo(implicitCreation).Type;
+            var created = ModelFor(implicitCreation)?.GetTypeInfo(implicitCreation).Type;
             if (created is { Name.Length: > 0 }) types.Add(created.Name);
         }
 
@@ -1584,14 +1598,9 @@ public class TypeScriptEmitter
                     continue;
                 }
                 var pn = p.Identifier.Text.ToCamelCase();
-                // The RETURN type is emitted: a computed property is where a model's types cross
-                // from one member to the next, and an unannotated getter makes every read of it
-                // `any` — which then spreads to every lambda over what it returned.
-                var propertyType = DeclaredType(p.Type);
                 if (p.ExpressionBody != null)
                 {
-                    c.Member(JsClassMember.Getter(qualifier, pn, Annotation(propertyType),
-                        ExpressionBody(p.ExpressionBody.Expression, returns: true)), p);
+                    EmitGetter(p, c, qualifier);
                 }
                 else if (p.AccessorList != null)
                 {
@@ -1610,12 +1619,7 @@ public class TypeScriptEmitter
                             c.Field(slot, DeclaredType(p.Type), slotDefault, p);
                     }
 
-                    var g = p.AccessorList.Accessors.FirstOrDefault(a => a.Keyword.Text == "get");
-                    if (g?.ExpressionBody != null)
-                        c.Member(JsClassMember.Getter(qualifier, pn, Annotation(propertyType),
-                            ExpressionBody(g.ExpressionBody.Expression, returns: true)), g);
-                    else if (g?.Body != null)
-                        c.Member(JsClassMember.Getter(qualifier, pn, Annotation(propertyType), _converter.ConvertBlockIr(g.Body)), g);
+                    if (EmitGetter(p, c, qualifier)) { }
                     else if (p.Initializer != null)
                         c.Field(pn, DeclaredType(p.Type),
                             _converter.ConvertExpression(p.Initializer.Value, p.Type.ToString()), p,
@@ -1640,22 +1644,7 @@ public class TypeScriptEmitter
                             c.Field(pn, DeclaredType(p.Type), defaulted, p, isStatic: isStaticProperty);
                     }
 
-                    // A property with a SETTER body — the guarded assignment idiom
-                    // (`set { if (value == _x) return; _x = value; Raise(); }`) — is where a model
-                    // keeps its invariants. Emitting only the getter made every assignment to it a
-                    // type error, and would have dropped the invariant if it had compiled.
-                    // `init` too, and not only `set`: an init accessor is where a component states
-                    // what its configuration may be (`init => field = value.Count > 3 ? throw …`),
-                    // and looking only for "set" dropped that guard silently — the invariant simply
-                    // did not exist in the twin.
-                    var setter = p.AccessorList.Accessors
-                        .FirstOrDefault(a => a.Keyword.Text is "set" or "init");
-                    if (setter?.ExpressionBody != null)
-                        c.Member(JsClassMember.Setter(qualifier, pn, $"value{Annotation(DeclaredType(p.Type))}",
-                            ExpressionBody(setter.ExpressionBody.Expression, returns: false)), setter);
-                    else if (setter?.Body != null)
-                        c.Member(JsClassMember.Setter(qualifier, pn, $"value{Annotation(DeclaredType(p.Type))}",
-                            _converter.ConvertBlockIr(setter.Body)), setter);
+                    EmitSetter(p, c, qualifier);
                 }
             }
             // `event Action<T>? Changed;` — a member the model raises and a caller subscribes to.
@@ -1669,48 +1658,7 @@ public class TypeScriptEmitter
                 }
             }
             foreach (var m in cls.Members.OfType<MethodDeclarationSyntax>())
-            {
-                // Same for an abstract METHOD: there is nothing to emit, and TypeScript needs no
-                // stub on the base.
-                if (m.Modifiers.Any(Microsoft.CodeAnalysis.CSharp.SyntaxKind.AbstractKeyword)) continue;
-                var mn = m.Identifier.Text.ToCamelCase();
-                // Optional parameters keep their default here too — a STATIC helper is exactly what
-                // other modules call with the trailing arguments omitted.
-                // `out` leaves the signature — it is not passed IN. What it carries comes back in
-                // the returned object; see OutParameters.
-                var byReference = OutParameters.Of(m.ParameterList);
-                var pars = string.Join(", ", m.ParameterList.Parameters
-                    .Where(pp => !OutParameters.IsOut(pp))
-                    .Select(pp =>
-                {
-                    // A parameter the body never mentions takes the underscore convention — the
-                    // interface a tokenizer implements hands over state that a simple language
-                    // never reads, and the runtime's own build rejects an unused name.
-                    var body = m.Body?.ToString() ?? m.ExpressionBody?.ToString() ?? "";
-                    var parameterName = body.Contains(pp.Identifier.Text)
-                        ? pp.Identifier.Text.ToJsIdentifier()
-                        : "_" + pp.Identifier.Text.ToJsIdentifier();
-                    return ParamWithDefault(parameterName, DeclaredType(pp.Type),
-                        pp.Default is null ? null : _converter.ConvertExpression(pp.Default.Value),
-                        pp.Modifiers.Any(Microsoft.CodeAnalysis.CSharp.SyntaxKind.ParamsKeyword));
-                }));
-                var isAsync = m.ReturnType.ToString().StartsWith("Task")
-                    || m.Modifiers.Any(Microsoft.CodeAnalysis.CSharp.SyntaxKind.AsyncKeyword);
-                var isIterator = m.Body.IsIteratorBody();
-                if (isIterator) ReportIfEndless(m.Body);
-                // Generic helpers keep their type parameters in the TS signature (`also<T>(node: T)`)
-                // — constraints drop (TS needs none of them to bind), names pass through.
-                var generics = m.TypeParameterList is { Parameters.Count: > 0 }
-                    ? $"<{string.Join(", ", m.TypeParameterList.Parameters.Select(tp => tp.Identifier.Text))}>"
-                    : "";
-                if (m.Body == null && m.ExpressionBody == null) continue;
-                // `out var x` at a CALL SITE inside this body needs `x` to exist before the call:
-                // MethodBody declares it in front.
-                var mbody = MethodBody(m.Body, m.ExpressionBody?.Expression, isIterator, byReference, isAsync);
-                var modifiers = (m.Modifiers.Any(Microsoft.CodeAnalysis.CSharp.SyntaxKind.StaticKeyword) || asStatic ? "static " : "")
-                    + (isAsync ? "async " : "");
-                c.Member(JsClassMember.Method(modifiers, mn, generics, pars, "", mbody), m);
-            }
+                EmitClassMethod(m, c, asStatic);
             // USER-DEFINED OPERATORS — the same family a record's twin already carries, and for the
             // same reason: JavaScript cannot overload an operator, so the call site lowers `a + b`
             // on two in-source objects to `T.opAdd(a, b)` whatever kind of type T is. It did that
@@ -1762,6 +1710,158 @@ public class TypeScriptEmitter
     /// time it ran instead of returning a value.
     /// </para>
     /// </summary>
+    /// <summary>
+    /// A property's getter where it has one with a body: its expression body, or its get
+    /// accessor's. The RETURN type is emitted: a computed property is where a model's types cross
+    /// from one member to the next, and an unannotated getter makes every read of it `any`, which
+    /// then spreads to every lambda over what it returned.
+    /// </summary>
+    private bool EmitGetter(PropertyDeclarationSyntax p, TypeScriptCodeBuilder.ClassBuilder c, string qualifier)
+    {
+        var pn = p.Identifier.Text.ToCamelCase();
+        var annotation = Annotation(DeclaredType(p.Type));
+        if (p.ExpressionBody != null)
+        {
+            c.Member(JsClassMember.Getter(qualifier, pn, annotation,
+                ExpressionBody(p.ExpressionBody.Expression, returns: true)), p);
+            return true;
+        }
+        var g = p.AccessorList?.Accessors.FirstOrDefault(a => a.Keyword.Text == "get");
+        if (g?.ExpressionBody != null)
+            c.Member(JsClassMember.Getter(qualifier, pn, annotation,
+                ExpressionBody(g.ExpressionBody.Expression, returns: true)), g);
+        else if (g?.Body != null)
+            c.Member(JsClassMember.Getter(qualifier, pn, annotation, _converter.ConvertBlockIr(g.Body)), g);
+        else
+            return false;
+        return true;
+    }
+
+    /// <summary>
+    /// A property's SETTER body — the guarded assignment idiom
+    /// (`set { if (value == _x) return; _x = value; Raise(); }`) is where a model keeps its
+    /// invariants. Emitting only the getter made every assignment to it a type error, and would
+    /// have dropped the invariant if it had compiled. `init` too, and not only `set`: an init
+    /// accessor is where a component states what its configuration may be
+    /// (`init => field = value.Count > 3 ? throw …`), and looking only for "set" dropped that guard
+    /// silently — the invariant simply did not exist in the twin.
+    /// </summary>
+    private void EmitSetter(PropertyDeclarationSyntax p, TypeScriptCodeBuilder.ClassBuilder c, string qualifier)
+    {
+        var pn = p.Identifier.Text.ToCamelCase();
+        var setter = p.AccessorList?.Accessors.FirstOrDefault(a => a.Keyword.Text is "set" or "init");
+        if (setter?.ExpressionBody != null)
+            c.Member(JsClassMember.Setter(qualifier, pn, $"value{Annotation(DeclaredType(p.Type))}",
+                ExpressionBody(setter.ExpressionBody.Expression, returns: false)), setter);
+        else if (setter?.Body != null)
+            c.Member(JsClassMember.Setter(qualifier, pn, $"value{Annotation(DeclaredType(p.Type))}",
+                _converter.ConvertBlockIr(setter.Body)), setter);
+    }
+
+    /// <summary>A method of a class module, or of a component's twin when an interface's default
+    /// supplies it.</summary>
+    private void EmitClassMethod(MethodDeclarationSyntax m, TypeScriptCodeBuilder.ClassBuilder c, bool asStatic)
+    {
+        // Same for an abstract METHOD: there is nothing to emit, and TypeScript needs no
+        // stub on the base.
+        if (m.Modifiers.Any(Microsoft.CodeAnalysis.CSharp.SyntaxKind.AbstractKeyword)) return;
+        var mn = m.Identifier.Text.ToCamelCase();
+        // Optional parameters keep their default here too — a STATIC helper is exactly what
+        // other modules call with the trailing arguments omitted.
+        // `out` leaves the signature — it is not passed IN. What it carries comes back in
+        // the returned object; see OutParameters.
+        var byReference = OutParameters.Of(m.ParameterList);
+        var pars = string.Join(", ", m.ParameterList.Parameters
+            .Where(pp => !OutParameters.IsOut(pp))
+            .Select(pp =>
+        {
+            // A parameter the body never mentions takes the underscore convention — the
+            // interface a tokenizer implements hands over state that a simple language
+            // never reads, and the runtime's own build rejects an unused name.
+            var body = m.Body?.ToString() ?? m.ExpressionBody?.ToString() ?? "";
+            var parameterName = body.Contains(pp.Identifier.Text)
+                ? pp.Identifier.Text.ToJsIdentifier()
+                : "_" + pp.Identifier.Text.ToJsIdentifier();
+            return ParamWithDefault(parameterName, DeclaredType(pp.Type),
+                pp.Default is null ? null : _converter.ConvertExpression(pp.Default.Value),
+                pp.Modifiers.Any(Microsoft.CodeAnalysis.CSharp.SyntaxKind.ParamsKeyword));
+        }));
+        var isAsync = m.ReturnType.ToString().StartsWith("Task")
+            || m.Modifiers.Any(Microsoft.CodeAnalysis.CSharp.SyntaxKind.AsyncKeyword);
+        var isIterator = m.Body.IsIteratorBody();
+        if (isIterator) ReportIfEndless(m.Body);
+        // Generic helpers keep their type parameters in the TS signature (`also<T>(node: T)`)
+        // — constraints drop (TS needs none of them to bind), names pass through.
+        var generics = m.TypeParameterList is { Parameters.Count: > 0 }
+            ? $"<{string.Join(", ", m.TypeParameterList.Parameters.Select(tp => tp.Identifier.Text))}>"
+            : "";
+        if (m.Body == null && m.ExpressionBody == null) return;
+        // `out var x` at a CALL SITE inside this body needs `x` to exist before the call:
+        // MethodBody declares it in front.
+        var mbody = MethodBody(m.Body, m.ExpressionBody?.Expression, isIterator, byReference, isAsync);
+        var modifiers = (m.Modifiers.Any(Microsoft.CodeAnalysis.CSharp.SyntaxKind.StaticKeyword) || asStatic ? "static " : "")
+            + (isAsync ? "async " : "");
+        c.Member(JsClassMember.Method(modifiers, mn, generics, pars, "", mbody), m);
+    }
+
+    /// <summary>A vocabulary default the class takes from the interface's ASSEMBLY, where eqc has no
+    /// body to convert: the twin delegates to the runtime's copy, which the runtime import brings in.</summary>
+    private void EmitDelegatedDefault(ISymbol implementation, TypeScriptCodeBuilder.ClassBuilder c)
+    {
+        var (name, parameters, call) = DefaultInterfaceMembers.Delegation(implementation);
+        _converter.UsedRuntimeTypes.Add(implementation.ContainingType.Name);
+        var body = JsStatement.Block([JsStatement.Return(JsExpr.Callish(call))]);
+        if (implementation is IMethodSymbol)
+            c.Member(JsClassMember.Method("", name, "",
+                string.Join(", ", parameters.Select(parameter => TypeAnnotations ? $"{parameter}: any" : parameter)), "", body));
+        else
+            c.Member(JsClassMember.Getter("", name, "", body));
+    }
+
+    /// <summary>The declarations of the defaults a class takes (see <see cref="EmitInheritedDefaults"/>),
+    /// for the scans that decide the module's imports: a default names types its class never does.</summary>
+    private IEnumerable<MemberDeclarationSyntax> InheritedDeclarations(TypeDeclarationSyntax? declaration) =>
+        declaration is not null && ModelFor(declaration)?.GetDeclaredSymbol(declaration) is INamedTypeSymbol self
+            ? DefaultInterfaceMembers.Of(self).Select(member => member.Declaration).OfType<MemberDeclarationSyntax>()
+            : [];
+
+    /// <summary>
+    /// The DEFAULT INTERFACE MEMBERS the class relies on (#414), written into its twin: JavaScript
+    /// has no interface to hold them, so a class that did not declare one had no such member at all,
+    /// and <c>PlainTextLanguage</c>'s twin answered <c>rules</c> with undefined. Each body converts
+    /// under its interface's file, where its names resolve. A default the transpiler cannot read,
+    /// because its interface is compiled into a referenced assembly, is said instead (EQ1008).
+    /// </summary>
+    private void EmitInheritedDefaults(TypeDeclarationSyntax? declaration, TypeScriptCodeBuilder.ClassBuilder c)
+    {
+        if (declaration is null || ModelFor(declaration)?.GetDeclaredSymbol(declaration) is not INamedTypeSymbol self)
+            return;
+        foreach (var (implementation, member) in DefaultInterfaceMembers.Of(self))
+        {
+            switch (member)
+            {
+                case PropertyDeclarationSyntax property when property.ExpressionBody != null
+                    || property.AccessorList?.Accessors.Any(a => a.Body != null || a.ExpressionBody != null) == true:
+                    _converter.InFileOf(property, () =>
+                    {
+                        EmitGetter(property, c, "");
+                        EmitSetter(property, c, "");
+                    });
+                    break;
+                case MethodDeclarationSyntax method when method.Body != null || method.ExpressionBody != null:
+                    _converter.InFileOf(method, () => EmitClassMethod(method, c, asStatic: false));
+                    break;
+                case null when DefaultInterfaceMembers.RuntimeCarries(implementation.ContainingType):
+                    EmitDelegatedDefault(implementation, c);
+                    break;
+                default:
+                    _converter.Report(declaration, ConversionSeverity.Warning, "EQ1008",
+                        DefaultInterfaceMembers.Unreadable(self, implementation));
+                    break;
+            }
+        }
+    }
+
     private JsStatement? OperatorBody(BaseMethodDeclarationSyntax op) =>
         op.Body is null && op.ExpressionBody is null
             ? null
@@ -1993,8 +2093,11 @@ public class TypeScriptEmitter
         var mapped = Annotate(askedName);
         var echoed = mapped == askedName;
 
-        var resolvedRaw = (_semanticModel?.GetSymbolInfo(asked).Symbol as ITypeSymbol)
-            ?? _semanticModel?.GetTypeInfo(asked).Type;
+        // The model of the type's OWN file: an interface's default is written into a class declared
+        // in another one (#414), and a model throws for a node outside its tree.
+        var model = ModelFor(asked);
+        var resolvedRaw = (model?.GetSymbolInfo(asked).Symbol as ITypeSymbol)
+            ?? model?.GetTypeInfo(asked).Type;
         var resolved = resolvedRaw is INamedTypeSymbol { OriginalDefinition.SpecialType: SpecialType.System_Nullable_T } lifted
             ? lifted.TypeArguments[0]
             : resolvedRaw;
@@ -2210,7 +2313,11 @@ public class TypeScriptEmitter
         // as an empty class that answered "tokenize is not a function" — from very far away from the
         // declaration that lost it.
         var builder = new TypeScriptCodeBuilder { TypeAnnotations = TypeAnnotations, Layout = _converter.Layout };
-        builder.Class(name, BaseClassOf(cls), c => EmitStaticMembers(cls, c, asStatic),
+        builder.Class(name, BaseClassOf(cls), c =>
+            {
+                EmitStaticMembers(cls, c, asStatic);
+                if (!asStatic) EmitInheritedDefaults(cls, c);
+            },
             isAbstract: cls.Modifiers.Any(Microsoft.CodeAnalysis.CSharp.SyntaxKind.AbstractKeyword));
         var emitted = builder.ToString();
         // This module used a LOCAL builder, so the mappings it recorded never reached
@@ -2227,9 +2334,17 @@ public class TypeScriptEmitter
         var runtimeProvided = new HashSet<string>();
         var referencedEnums = new HashSet<string>();
         var hostOnlyInSignatures = new Dictionary<string, SyntaxNode>();
+        var inheritedDefaults = InheritedDeclarations(cls).ToList();
         if (semanticModel != null)
+        {
             Services.RuntimeProvidedTypeScanner.Collect(cls, semanticModel, runtimeProvided,
                 referencedEnums, appTypes: null, hostOnly: hostOnlyInSignatures);
+            // The defaults the class takes from its interfaces (#414) name types the class never does.
+            foreach (var inherited in inheritedDefaults)
+                if (ModelFor(inherited) is { } inheritedModel)
+                    Services.RuntimeProvidedTypeScanner.Collect(inherited, inheritedModel, runtimeProvided,
+                        referencedEnums, appTypes: null, hostOnly: hostOnlyInSignatures);
+        }
         else if (_dependencyResolver != null)
             runtimeProvided.UnionWith(_dependencyResolver.GetRuntimeProvidedTypes());
         // Names the CONVERSION introduced that the runtime provides — a reduced extension call sent
@@ -2269,6 +2384,7 @@ public class TypeScriptEmitter
         // one reference that must resolve before this module's first statement runs.
         if (baseName is not null) imports.Add(new JsImport([baseName], $"./{baseName}"));
         foreach (var t in CollectComponentTypesFromNode(cls, new HashSet<string> { name })
+                     .Concat(inheritedDefaults.SelectMany(inherited => CollectComponentTypesFromNode(inherited, new HashSet<string> { name })))
                      .Concat(_converter.UsedAppTypes) // conversion-introduced names (reduced extension calls)
                      .Distinct().OrderBy(x => x))
         {

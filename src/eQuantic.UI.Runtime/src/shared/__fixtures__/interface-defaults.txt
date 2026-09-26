@@ -1,0 +1,5 @@
+IAppTheme.code
+IAppTheme.data
+IAppTheme.monoFamily
+ICodeCompletionProvider.triggerCharacters
+ICodeLanguage.rules

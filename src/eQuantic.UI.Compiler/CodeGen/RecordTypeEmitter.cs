@@ -169,7 +169,15 @@ public class RecordTypeEmitter
         var runtimeProvided = new HashSet<string> { "$eq" };
         var appTypes = new HashSet<string>();
         if (ModelFor(type) is { } model)
+        {
             Services.RuntimeProvidedTypeScanner.Collect(type, model, runtimeProvided, new HashSet<string>(), appTypes);
+            // The defaults the type takes from its interfaces (#414) name types the type never does.
+            if (model.GetDeclaredSymbol(type) is INamedTypeSymbol self)
+                foreach (var inherited in DefaultInterfaceMembers.Of(self))
+                    if (inherited.Declaration is { } declaration && ModelFor(declaration) is { } inheritedModel)
+                        Services.RuntimeProvidedTypeScanner.Collect(declaration, inheritedModel, runtimeProvided,
+                            new HashSet<string>(), appTypes);
+        }
         runtimeProvided.Remove(type.Identifier.Text);
 
         // What the hydration map names, split by where it comes from: this compilation's own twins
@@ -457,30 +465,38 @@ public class RecordTypeEmitter
         // or static (`static Foo Empty => …`, the factory idiom). A record is a value with
         // BEHAVIOUR; emitting only its positional members threw the behaviour away.
         foreach (var property in type.Members.OfType<PropertyDeclarationSyntax>())
-        {
-            var isStatic = property.Modifiers.Any(m => m.IsKind(SyntaxKind.StaticKeyword));
-            var getter = property.ExpressionBody?.Expression
-                ?? property.AccessorList?.Accessors
-                    .FirstOrDefault(a => a.Keyword.Text == "get")?.ExpressionBody?.Expression;
-            _converter.SetCurrentClass(name);
-            var prefix = isStatic ? "static " : "";
-            var propertyName = property.Identifier.Text.ToCamelCase();
-            if (getter is not null)
-            {
-                sb.Append($"{prefix}get {propertyName}() {{ return ")
-                  .Append(_converter.Convert(getter))
-                  .Append("; } ");
-                continue;
-            }
-            if (property.AccessorList?.Accessors
-                    .FirstOrDefault(a => a.Keyword.Text == "get")?.Body is { } block)
-            {
-                sb.Append($"{prefix}get {propertyName}() {{ ")
-                  .Append(Unwrap(_converter.Convert(block)))
-                  .Append(" } ");
-                continue;
-            }
+            sb.Append(ComputedProperty(property, name));
 
+        // The DEFAULT INTERFACE MEMBERS the type relies on (#414): JavaScript has no interface to
+        // hold them, so a record or a struct that did not declare one had no such member at all.
+        // Each body converts under its interface's file, where its names resolve.
+        if (ModelFor(type)?.GetDeclaredSymbol(type) is INamedTypeSymbol self)
+        {
+            foreach (var (implementation, member) in DefaultInterfaceMembers.Of(self))
+            {
+                switch (member)
+                {
+                    case MethodDeclarationSyntax method when method.Body != null || method.ExpressionBody != null:
+                        _converter.InFileOf(method, () => sb.Append(EmitMethod(method, name, tsTypeDeclarations)).Append(' '));
+                        break;
+                    case PropertyDeclarationSyntax property when ComputedGetter(property) is not null:
+                        _converter.InFileOf(property, () => sb.Append(ComputedProperty(property, name)));
+                        break;
+                    // A vocabulary default from the interface's assembly, with no body to convert:
+                    // the twin delegates to the runtime's copy.
+                    case null when DefaultInterfaceMembers.RuntimeCarries(implementation.ContainingType):
+                        var (delegatedName, parameters, call) = DefaultInterfaceMembers.Delegation(implementation);
+                        _converter.UsedRuntimeTypes.Add(implementation.ContainingType.Name);
+                        sb.Append(implementation is IMethodSymbol
+                            ? $"{delegatedName}({string.Join(", ", parameters.Select(p => tsTypeDeclarations ? $"{p}: any" : p))}) {{ return {call}; }} "
+                            : $"get {delegatedName}() {{ return {call}; }} ");
+                        break;
+                    default:
+                        _converter.Report(type, ConversionSeverity.Warning, "EQ1008",
+                            DefaultInterfaceMembers.Unreadable(self, implementation));
+                        break;
+                }
+            }
         }
 
         // .NET record ToString ("Name { X = …, Y = … }") unless the user overrode it.
@@ -492,6 +508,29 @@ public class RecordTypeEmitter
 
         sb.Append('}');
         return sb.ToString();
+    }
+
+    /// <summary>A property's getter body, an expression or a block, when it has one.</summary>
+    private static SyntaxNode? ComputedGetter(PropertyDeclarationSyntax property) =>
+        (SyntaxNode?)property.ExpressionBody?.Expression
+        ?? property.AccessorList?.Accessors.FirstOrDefault(a => a.Keyword.Text == "get") switch
+        {
+            { ExpressionBody: { } arrow } => arrow.Expression,
+            { Body: { } block } => block,
+            _ => null,
+        };
+
+    /// <summary>A property with a body, as its getter; nothing for one that has none.</summary>
+    private string ComputedProperty(PropertyDeclarationSyntax property, string className)
+    {
+        var getter = ComputedGetter(property);
+        if (getter is null) return "";
+        _converter.SetCurrentClass(className);
+        var prefix = property.Modifiers.Any(m => m.IsKind(SyntaxKind.StaticKeyword)) ? "static " : "";
+        var propertyName = property.Identifier.Text.ToCamelCase();
+        return getter is BlockSyntax block
+            ? $"{prefix}get {propertyName}() {{ {Unwrap(_converter.Convert(block))} }} "
+            : $"{prefix}get {propertyName}() {{ return {_converter.Convert(getter)}; }} ";
     }
 
     /// <summary>
