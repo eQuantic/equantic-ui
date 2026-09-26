@@ -846,8 +846,9 @@ record of a release, the wiki's Upgrading page is the distillate.
   that, and neither mode's modules load in the new emission test. The author's review found four
   more before the pull request opened: a section's variable assigned by another section, two
   queries binding one name, a `for` initialized by a deconstruction, and a `do`'s condition, each
-  now a case. Found on the way: a static property on a plain class was an instance getter, and
-  plain JavaScript annotated a local declared as another type. Filed: two catch clauses do not parse and one ignores
+  now a case. Found on the way: a static property on a plain class was an instance getter (its
+  `field` slot is still an instance one, [#483](https://github.com/eQuantic/equantic-ui/issues/483)),
+  and plain JavaScript annotated a local declared as another type. Filed: two catch clauses do not parse and one ignores
   its type and filter ([#474](https://github.com/eQuantic/equantic-ui/issues/474)), a lock drops its
   expression ([#475](https://github.com/eQuantic/equantic-ui/issues/475)), a for's own variable is
   one per iteration ([#476](https://github.com/eQuantic/equantic-ui/issues/476)), `fs[0]()` reads
