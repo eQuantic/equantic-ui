@@ -742,6 +742,19 @@ record of a release, the wiki's Upgrading page is the distillate.
   `EQ_WIKI_DIR` for a worktree of a pull request's wiki branch (checking a branch out in the shared
   clone had made #354's guards fail on #418's rows), fails when the variable names no wiki, and names
   the directory, branch and commit a failing guard read.
+- **2026-09-26 · A class keeps its interface's defaults**: eqc wrote no default interface member
+  into the twins of the classes that take one, so `PlainTextLanguage`, which relies on
+  `ICodeLanguage.Rules`, had no `rules`, and on 0.2.0-preview.58 every plain-text `CodeBlock` threw
+  on `indentWidth` in the browser, which kept the documentation site on .57
+  ([#414](https://github.com/eQuantic/equantic-ui/issues/414)). Each default a class takes is now
+  written into its twin from the interface's source, in the plain-class, record and component
+  emitters, with the implementation C# picks and the types it names imported. An app compiles
+  against the SDK's assemblies, where its interfaces have no source, so the runtime carries the
+  vocabulary's defaults and an app's theme, language or completion provider delegates to them
+  ([#415](https://github.com/eQuantic/equantic-ui/issues/415)): measured on the site, its theme went
+  from three warnings on every build to none. An interface from any other compiled assembly has
+  neither, and the build says so (EQ1008). The first change proposed and archived through OpenSpec
+  (`openspec/specs/transpiler-interfaces`).
 
 - **2026-09-26 · List.Remove and a bool from text answer as .NET does**: `list.Remove(item)` assigned
   an index nothing declared, so every call threw `ReferenceError: _idx is not defined` in the

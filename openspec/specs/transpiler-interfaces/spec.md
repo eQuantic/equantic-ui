@@ -1,0 +1,66 @@
+# transpiler-interfaces Specification
+
+## Purpose
+What eqc does with a C# interface, which has no JavaScript form: the type erases, and what a class
+takes from it has to be written into the class's twin.
+
+## Requirements
+
+### Requirement: A class keeps the default interface members it relies on
+
+eqc SHALL write every default interface member a class takes without declaring it into the class's
+twin, as the class's own member, whichever emitter writes the class: a plain class, a record, a
+struct or a component. The implementation SHALL be the one C# picks for the class, and a member a
+base class already takes SHALL be left to the base class's twin.
+
+#### Scenario: A default property and a default method
+
+- **WHEN** `record Circle(double R) : IShape` declares `Name` and `Area()`, and `IShape` declares
+  `int Sides => 0;` and `string Describe() => Name + ":" + Area() + ":" + Sides;`
+- **THEN** `((IShape)new Circle(2)).Describe()` answers `circle:12:0` in the browser, as in .NET
+
+#### Scenario: A member the class declares wins
+
+- **WHEN** `record Square(double S) : IShape` declares `int Sides => 4;`
+- **THEN** `((IShape)new Square(3)).Describe()` answers `square:9:4`, and the twin has one `sides`
+
+#### Scenario: A derived interface overrides a base interface's default
+
+- **WHEN** `interface ILabelled : IShape` declares `string IShape.Describe() => "[" + Name + "]";`
+  and `record Tag(string Text) : ILabelled`
+- **THEN** `((IShape)new Tag("x")).Describe()` answers `[x]`
+
+#### Scenario: A default calls a private member of its interface
+
+- **WHEN** `IGreeter.Greet()` calls `private string Wrap(string text)` of the same interface
+- **THEN** `((IGreeter)new Greeter("ana")).Greet()` answers `<hi ana>`
+
+### Requirement: A class takes the SDK's defaults from the runtime
+
+For a default of an interface the runtime provides (the SDK's vocabulary: `IAppTheme`,
+`ICodeLanguage`, `ICodeCompletionProvider`), which an app compiles against as metadata, eqc SHALL
+write a member that delegates to the runtime's copy of that default, and the runtime SHALL carry a
+copy of every default of every such interface.
+
+#### Scenario: An app's language relies on the default rules
+
+- **WHEN** an app's `class Words : ICodeLanguage` declares `Name` and `Tokenize` and not `Rules`
+- **THEN** its twin has `get rules() { return ICodeLanguage.rules(this); }`, which answers the rules
+  whose indent width is 4, as `CodeLanguageRules.Default` does, and the build reports nothing
+
+#### Scenario: The SDK gains a default
+
+- **WHEN** a public interface of the vocabulary gains a member with a body
+- **THEN** the test listing the vocabulary's defaults fails until the runtime carries a copy of it
+
+### Requirement: A default nothing can supply is said
+
+eqc SHALL report EQ1008, a warning naming the class and the member, for each default a class takes
+from an interface compiled into a referenced assembly the runtime does not provide.
+
+#### Scenario: An interface from another assembly
+
+- **WHEN** a class implements an interface of a referenced assembly and relies on its default
+  method `Say()`
+- **THEN** the build reports EQ1008 saying the class relies on that default and to declare `Say`
+  in it, and the twin has no `say`
