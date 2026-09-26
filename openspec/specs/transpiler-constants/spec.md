@@ -77,9 +77,14 @@ A decimal constant in a constant pattern, a switch expression's arm or a switch 
 
 ### Requirement: A constant's text keeps the module writable
 
-A constant's text SHALL be escaped wherever a character cannot stand for itself in the module: a lone surrogate, a control character other than the tab, and a line separator. A surrogate pair SHALL be written as the character it is.
+A constant's text SHALL be escaped wherever a character cannot stand for itself in the module: a lone surrogate, and every character with no glyph of its own (a control, the tab and the line terminators included, a format character, a mark, a separator other than the space). A surrogate pair SHALL be written as the character it is. A char literal SHALL be written from its value, as a string literal is.
 
 #### Scenario: A lone surrogate
 
 - **WHEN** `int G(char c = (char)0xD800, int n = 0) => c;` is called as `G(n: 1)`
 - **THEN** it answers "55296", as in .NET
+
+#### Scenario: A char escape JavaScript does not share
+
+- **WHEN** `char c = '\e';` is read as `(int)c`
+- **THEN** it answers "27", as in .NET

@@ -40,7 +40,7 @@ A constant pattern and a case label wrote `===`, which compares the runtime's De
 
 ### A constant's text keeps the module writable
 
-`ConstantLiteral.Quote` escapes what cannot stand for itself in the module: the quote, the backslash, a line terminator, a control character other than the tab, and a lone surrogate, which UTF-8 cannot encode. A tab stays a tab, as the shared twins already write it, so their pins do not move. A string literal takes the same writer, which removes the literal strategy's copy of the old escaping.
+`ConstantLiteral.Quote` escapes what cannot stand for itself in the module: the quote, the backslash, a lone surrogate, which UTF-8 cannot encode, and every character with no glyph of its own (a control, the tab and the line terminators included, a format character, a mark, a separator other than the space), as `\uXXXX` in the upper case C# source spells them in. A string literal and a char literal take the same writer, from their value: a char's source text spelled C#'s escapes, and `'\e'`, `'\a'` and `'\x041'` read as other characters in JavaScript (Copilot's second round). The shared twins move where they held a raw tab, now `\t`, and a `'\0'`, now `'\u0000'`: the same values, regenerated pins.
 
 ### The audit grades decimal
 

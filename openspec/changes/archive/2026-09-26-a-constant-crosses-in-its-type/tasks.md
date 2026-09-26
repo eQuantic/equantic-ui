@@ -10,7 +10,7 @@
 - [x] 1.6 A narrow integer and a ulong annotate in their JavaScript type
 - [x] 1.7 An enum-typed constant is its enum's representation, inlined or as a skipped default
 - [x] 1.8 A decimal constant matches by value in a pattern, a switch arm and a case label
-- [x] 1.9 A constant's text escapes a lone surrogate, a control character and a line separator, and a string literal takes the same writer
+- [x] 1.9 A constant's text escapes a lone surrogate and every character with no glyph of its own, and a string literal and a char literal take the same writer
 
 ## 2. Proof
 
