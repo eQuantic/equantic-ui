@@ -340,8 +340,8 @@ public class GeneratedDifferentialTests
             program.Append($"DateTime? {maybeDate} = {(Pick(2) == 0 ? "null" : $"new DateTime(20{10 + Pick(15)}, {1 + Pick(12)}, {1 + Pick(28)})")}; ");
             _maybeDates.Add(maybeDate);
 
-            // A DICTIONARY is a plain object on the other side, so its keys are strings there
-            // whatever they are here, and enumerating it goes through $eq.entries.
+            // A DICTIONARY is the runtime's dictionary class on the other side, which enumerates its
+            // pairs in the order .NET's does.
             var mapName = "map0";
             program.Append($"var {mapName} = new Dictionary<string, int> {{ "
                 + string.Join(", ", Enumerable.Range(0, 2 + Pick(3))

@@ -65,7 +65,7 @@ public class ElementAccessStrategy : IExpressionIrStrategy
     private static bool IsAssignmentTarget(ElementAccessExpressionSyntax access)
     {
         // Parentheses are not a context: `(m[k]) = v` is still the target of that assignment, and
-        // reading through them would emit `($eq.dictGet(…)) = v`, which does not even parse.
+        // reading through them would emit `($eq.mapGet(…)) = v`, which does not even parse.
         SyntaxNode node = access;
         while (node.Parent is ParenthesizedExpressionSyntax parenthesized) node = parenthesized;
 
@@ -76,7 +76,7 @@ public class ElementAccessStrategy : IExpressionIrStrategy
             AssignmentExpressionSyntax assignment =>
                 assignment.Left == node && assignment.IsKind(SyntaxKind.SimpleAssignmentExpression),
             // ++ and -- also read first, and .NET throws for a key that is not there — but the
-            // guarded read cannot BE the target (`$eq.dictGet(…)++` does not parse), so the target
+            // guarded read cannot BE the target (`$eq.mapGet(…)++` does not parse), so the target
             // stays plain and the unary strategy reads it through the guard (ReadModifyWrite).
             PrefixUnaryExpressionSyntax prefix =>
                 prefix.IsKind(SyntaxKind.PreIncrementExpression) || prefix.IsKind(SyntaxKind.PreDecrementExpression),

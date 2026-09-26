@@ -154,7 +154,7 @@ public class ReadModifyWriteConformanceTests
         ConformanceRunner.AssertStatementsSameAsDotNet(statements);
     }
 
-    /// <summary>A dictionary keyed by a value is a runtime map too (<c>$eq.collections.valueMap</c>).</summary>
+    /// <summary>A dictionary keyed by a value finds its keys by <c>$eq.equals</c>, and takes the same rules.</summary>
     [SkippableTheory]
     [InlineData("var d = new Dictionary<Point, byte> { { new Point(1, 2), 250 } }; d[new Point(1, 2)] += 10; return d[new Point(1, 2)].ToString();")] // "4"
     [InlineData("var d = new Dictionary<Point, int> { { new Point(1, 2), 1 } }; d[new Point(1, 2)]++; return d[new Point(1, 2)];")] // 2
