@@ -31,10 +31,13 @@ public class RecordTypeEmitter
     }
 
     /// <summary>True for the value types this emitter handles: any record, or a struct, that exposes at
-    /// least one value member (positional parameter, auto-property, or public field).</summary>
+    /// least one value member (positional parameter, auto-property, or public field), a static
+    /// surface, or a base list. A base can give a type every member it has: a base record, or an
+    /// interface's defaults, which `record Nobody : IGreet;` takes whole, and with no twin the
+    /// default had nothing to be written into (found in review, #418).</summary>
     public static bool CanEmit(TypeDeclarationSyntax type) =>
         type is RecordDeclarationSyntax or StructDeclarationSyntax
-        && (type.ValueMembers().Count > 0 || HasStaticSurface(type));
+        && (type.ValueMembers().Count > 0 || HasStaticSurface(type) || type.BaseList is { Types.Count: > 0 });
 
     /// <summary>
     /// Whether this emitter writes a twin for <paramref name="type"/>: declared in source, by a
@@ -169,7 +172,15 @@ public class RecordTypeEmitter
         var runtimeProvided = new HashSet<string> { "$eq" };
         var appTypes = new HashSet<string>();
         if (ModelFor(type) is { } model)
+        {
             Services.RuntimeProvidedTypeScanner.Collect(type, model, runtimeProvided, new HashSet<string>(), appTypes);
+            // The defaults the type takes from its interfaces (#414) name types the type never does.
+            if (model.GetDeclaredSymbol(type) is INamedTypeSymbol self)
+                foreach (var inherited in DefaultInterfaceMembers.Of(self, model.Compilation))
+                    if (inherited.Declaration is { } declaration && ModelFor(declaration) is { } inheritedModel)
+                        Services.RuntimeProvidedTypeScanner.Collect(declaration, inheritedModel, runtimeProvided,
+                            new HashSet<string>(), appTypes);
+        }
         runtimeProvided.Remove(type.Identifier.Text);
 
         // What the hydration map names, split by where it comes from: this compilation's own twins
@@ -457,30 +468,51 @@ public class RecordTypeEmitter
         // or static (`static Foo Empty => …`, the factory idiom). A record is a value with
         // BEHAVIOUR; emitting only its positional members threw the behaviour away.
         foreach (var property in type.Members.OfType<PropertyDeclarationSyntax>())
-        {
-            var isStatic = property.Modifiers.Any(m => m.IsKind(SyntaxKind.StaticKeyword));
-            var getter = property.ExpressionBody?.Expression
-                ?? property.AccessorList?.Accessors
-                    .FirstOrDefault(a => a.Keyword.Text == "get")?.ExpressionBody?.Expression;
-            _converter.SetCurrentClass(name);
-            var prefix = isStatic ? "static " : "";
-            var propertyName = property.Identifier.Text.ToCamelCase();
-            if (getter is not null)
-            {
-                sb.Append($"{prefix}get {propertyName}() {{ return ")
-                  .Append(_converter.Convert(getter))
-                  .Append("; } ");
-                continue;
-            }
-            if (property.AccessorList?.Accessors
-                    .FirstOrDefault(a => a.Keyword.Text == "get")?.Body is { } block)
-            {
-                sb.Append($"{prefix}get {propertyName}() {{ ")
-                  .Append(Unwrap(_converter.Convert(block)))
-                  .Append(" } ");
-                continue;
-            }
+            sb.Append(ComputedProperty(property, name));
 
+        // The DEFAULT INTERFACE MEMBERS the type relies on (#414): JavaScript has no interface to
+        // hold them, so a record or a struct that did not declare one had no such member at all.
+        // Each body converts under its interface's file, where its names resolve.
+        if (ModelFor(type) is { } typeModel && typeModel.GetDeclaredSymbol(type) is INamedTypeSymbol self)
+        {
+            foreach (var (implementation, member, _) in DefaultInterfaceMembers.Of(self, typeModel.Compilation))
+            {
+                if (implementation is IPropertySymbol { IsIndexer: true })
+                {
+                    _converter.Report(type, ConversionSeverity.Error, "EQ1008",
+                        DefaultInterfaceMembers.NoIndexer(self, implementation));
+                    continue;
+                }
+                if (member is not null && ModelFor(member) is { } memberModel
+                    && DefaultInterfaceMembers.InterfaceStaticIn(member, memberModel) is { } reached)
+                {
+                    _converter.Report(type, ConversionSeverity.Error, "EQ1008",
+                        DefaultInterfaceMembers.Homeless(self, implementation, reached));
+                    continue;
+                }
+                switch (member)
+                {
+                    case MethodDeclarationSyntax method when method.Body != null || method.ExpressionBody != null:
+                        _converter.InFileOf(method, () => sb.Append(EmitMethod(method, name, tsTypeDeclarations)).Append(' '));
+                        break;
+                    case PropertyDeclarationSyntax property when ComputedGetter(property) is not null || IsSetterOnly(property):
+                        _converter.InFileOf(property, () => sb.Append(ComputedProperty(property, name)));
+                        break;
+                    // A vocabulary default from the interface's assembly, with no body to convert:
+                    // the twin delegates to the runtime's copy.
+                    case null when DefaultInterfaceMembers.RuntimeCarries(implementation.ContainingType):
+                        var (delegatedName, parameters, call) = DefaultInterfaceMembers.Delegation(implementation);
+                        _converter.UsedRuntimeTypes.Add(implementation.ContainingType.Name);
+                        sb.Append(implementation is IMethodSymbol
+                            ? $"{delegatedName}({string.Join(", ", parameters.Select(p => tsTypeDeclarations ? $"{p}: any" : p))}) {{ return {call}; }} "
+                            : $"get {delegatedName}() {{ return {call}; }} ");
+                        break;
+                    default:
+                        _converter.Report(type, ConversionSeverity.Error, "EQ1008",
+                            DefaultInterfaceMembers.Unreadable(self, implementation));
+                        break;
+                }
+            }
         }
 
         // .NET record ToString ("Name { X = …, Y = … }") unless the user overrode it.
@@ -495,14 +527,75 @@ public class RecordTypeEmitter
     }
 
     /// <summary>
+    /// A property with a setter body and no getter at all (<c>int Twice { set => Stored = value * 2; }</c>),
+    /// which a twin writes as a setter alone. It was dropped with every property whose getter had no
+    /// body, a default interface member included (found in review, #418). A property with an
+    /// automatic getter and a setter body is not one: its getter reads a backing field the value
+    /// members hold.
+    /// </summary>
+    private static bool IsSetterOnly(PropertyDeclarationSyntax property) =>
+        property.ExpressionBody is null
+        && property.AccessorList?.Accessors is { } accessors
+        && accessors.All(a => a.Keyword.Text is "set" or "init")
+        && accessors.Any(a => a.Body is not null || a.ExpressionBody is not null);
+
+    /// <summary>A property's getter body, an expression or a block, when it has one.</summary>
+    private static SyntaxNode? ComputedGetter(PropertyDeclarationSyntax property) =>
+        (SyntaxNode?)property.ExpressionBody?.Expression
+        ?? property.AccessorList?.Accessors.FirstOrDefault(a => a.Keyword.Text == "get") switch
+        {
+            { ExpressionBody: { } arrow } => arrow.Expression,
+            { Body: { } block } => block,
+            _ => null,
+        };
+
+    /// <summary>A property with a body, as its getter, and its setter where it has one with a body
+    /// (an interface's default property writes through its other members, found in review, #418);
+    /// nothing for a property with no getter body.</summary>
+    private string ComputedProperty(PropertyDeclarationSyntax property, string className)
+    {
+        var getter = ComputedGetter(property);
+        if (getter is null && !IsSetterOnly(property)) return "";
+        _converter.SetCurrentClass(className);
+        var prefix = property.Modifiers.Any(m => m.IsKind(SyntaxKind.StaticKeyword)) ? "static " : "";
+        var propertyName = property.Identifier.Text.ToCamelCase();
+        var text = getter switch
+        {
+            null => "",
+            BlockSyntax block => $"{prefix}get {propertyName}() {{ {Unwrap(_converter.Convert(block))} }} ",
+            _ => $"{prefix}get {propertyName}() {{ return {_converter.Convert(getter)}; }} ",
+        };
+        var setter = property.AccessorList?.Accessors.FirstOrDefault(a => a.Keyword.Text is "set" or "init");
+        if (setter?.ExpressionBody is { } arrow)
+            text += $"{prefix}set {propertyName}(value) {{ {_converter.Convert(arrow.Expression)}; }} ";
+        else if (setter?.Body is { } body)
+            text += $"{prefix}set {propertyName}(value) {{ {Unwrap(_converter.Convert(body))} }} ";
+        return text;
+    }
+
+    /// <summary>
     /// The base record (if any) from a primary-constructor base clause (<c>record Dog(…) : Animal(Name)</c>):
     /// its name (generics erased), the JS <c>super(...)</c> arguments, and which members are passed to the
-    /// base (so they aren't re-assigned in the derived constructor). Interfaces / non-record bases yield none.
+    /// base (so they aren't re-assigned in the derived constructor). A base record named without
+    /// arguments (<c>record Dog : Animal;</c>) is extended with a bare <c>super()</c>, since it has a
+    /// constructor that takes none: it was dropped, and the derived twin had none of its base's
+    /// members, the defaults it takes included (found in review, #418). Only a base with a twin is
+    /// extended, or <c>extends</c> would name a module nothing writes (#428). Interfaces yield none.
     /// </summary>
     private (string? BaseName, string SuperArgs, HashSet<string> PassedToBase) BaseInfo(TypeDeclarationSyntax type)
     {
         var primary = type.BaseList?.Types.OfType<PrimaryConstructorBaseTypeSyntax>().FirstOrDefault();
-        if (primary == null) return (null, "", new HashSet<string>());
+        if (primary == null)
+        {
+            if (type.BaseList?.Types.FirstOrDefault() is SimpleBaseTypeSyntax simple
+                && ModelFor(simple)?.GetSymbolInfo(simple.Type).Symbol is INamedTypeSymbol { TypeKind: TypeKind.Class } baseType
+                && EmitsTwin(baseType))
+            {
+                var simpleName = simple.Type.ToString();
+                return (simpleName.Contains('<') ? simpleName[..simpleName.IndexOf('<')] : simpleName, "", new HashSet<string>());
+            }
+            return (null, "", new HashSet<string>());
+        }
 
         var baseName = primary.Type.ToString();
         if (baseName.Contains('<')) baseName = baseName[..baseName.IndexOf('<')]; // erase generics
@@ -616,11 +709,15 @@ public class RecordTypeEmitter
         // `any` at every one of them and quietly ended the checking on the way in. Only in the .ts
         // emission, though: the conformance harness runs the same class as plain `.mjs`, where an
         // annotation is a parse error rather than a type.
-        var pars = string.Join(", ", method.ParameterList.Parameters
-            .Select(p => tsTypeDeclarations
-                ? $"{p.Identifier.Text.ToCamelCase()}: {TsTypeOf(p.Type)}"
-                : p.Identifier.Text.ToCamelCase()));
+        // An OPTIONAL parameter keeps its default, as the class emitter's does: a caller that omits
+        // it passes undefined, which runs the default, where `m(suffix)` handed the body undefined
+        // (found in review, #418).
         _converter.SetCurrentClass(className);
+        var pars = string.Join(", ", method.ParameterList.Parameters
+            .Select(p => (tsTypeDeclarations
+                    ? $"{p.Identifier.Text.ToCamelCase()}: {TsTypeOf(p.Type)}"
+                    : p.Identifier.Text.ToCamelCase())
+                + (p.Default is { } optional ? $" = {_converter.ConvertExpression(optional.Value, p.Type?.ToString())}" : "")));
 
         string body;
         if (method.Body != null)
