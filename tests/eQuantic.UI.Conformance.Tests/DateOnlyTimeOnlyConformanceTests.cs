@@ -46,4 +46,25 @@ public class DateOnlyTimeOnlyConformanceTests
         Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
         ConformanceRunner.AssertSameAsDotNet(expression);
     }
+
+    /// <summary>
+    /// <c>TimeOnly.AddHours</c> and <c>AddMinutes</c> take ONE product, converted as .NET 9 and later
+    /// convert a double (toward zero, NaN to zero, saturated at the ends of a long), wrapped by the day
+    /// (#422).
+    /// </summary>
+    [SkippableTheory]
+    [InlineData("var t = new TimeOnly(10, 0); return (t.AddHours(0.0000001).Ticks - t.Ticks).ToString();")]     // "3600", where rounding to the millisecond gave 0
+    [InlineData("var t = new TimeOnly(10, 0); return t.AddMinutes(0.5).Ticks.ToString();")]                     // "360300000000"
+    [InlineData("var t = new TimeOnly(10, 0); return t.AddMinutes(-0.0000001).Ticks.ToString();")]              // "359999999940": wraps backwards
+    [InlineData("var t = new TimeOnly(10, 0); return t.AddHours(1.23456789).Ticks.ToString();")]                // "404444444039": one product, not split
+    [InlineData("var t = new TimeOnly(10, 0); return t.AddHours(-10.5).ToString();")]                           // "23:30"
+    [InlineData("var t = new TimeOnly(10, 0); return t.AddHours(1e20).Ticks.ToString();")]                      // "460854775807": the product saturates, then wraps
+    [InlineData("var t = new TimeOnly(10, 0); return t.AddHours(-1e20).Ticks.ToString();")]                     // "259145224192"
+    [InlineData("var t = new TimeOnly(10, 0); return t.AddMinutes(double.NegativeInfinity).Ticks.ToString();")] // "259145224192"
+    [InlineData("var t = new TimeOnly(10, 0); return t.AddHours(double.NaN).Ticks.ToString();")]                // "360000000000": NaN adds nothing
+    public void TimeOnlyAdd_MatchesDotNet(string statements)
+    {
+        Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
+        ConformanceRunner.AssertStatementsSameAsDotNet(statements);
+    }
 }
