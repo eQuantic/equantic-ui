@@ -10,8 +10,9 @@ takes from it has to be written into the class's twin.
 
 eqc SHALL write every default interface member a class takes without declaring it into the class's
 twin, as the class's own member, whichever emitter writes the class: a plain class, a record, a
-struct or a component. The implementation SHALL be the one C# picks for the class, and a member a
-base class already takes SHALL be left to the base class's twin.
+struct or a component. The implementation SHALL be the one C# picks for the class. A member whose
+implementation a base class takes too SHALL be left to the base class's twin, and one the base class
+answers with a less specific default SHALL be written into the class's twin, over the base's.
 
 #### Scenario: A default property and a default method
 
@@ -29,6 +30,14 @@ base class already takes SHALL be left to the base class's twin.
 - **WHEN** `interface ILabelled : IShape` declares `string IShape.Describe() => "[" + Name + "]";`
   and `record Tag(string Text) : ILabelled`
 - **THEN** `((IShape)new Tag("x")).Describe()` answers `[x]`
+
+#### Scenario: A derived class takes a more specific default than its base
+
+- **WHEN** `interface ILoudSpeaker : ISpeaker` declares `string ISpeaker.Speak() => "LOUD";`,
+  `record SoftSpeaker : ISpeaker` takes `ISpeaker`'s default `Speak()`, and
+  `record LoudSpeaker : SoftSpeaker, ILoudSpeaker`
+- **THEN** `((ISpeaker)new LoudSpeaker()).Speak()` answers `LOUD`, and
+  `((ISpeaker)new SoftSpeaker()).Speak()` answers `soft`
 
 #### Scenario: A default calls a private member of its interface
 
@@ -50,12 +59,29 @@ base class already takes SHALL be left to the base class's twin.
 
 eqc SHALL refuse with EQ1007 a class that takes two defaults which lower to one name, from different
 interfaces, or a default and an instance member the class declares under that name, since the twin
-holds one member per name.
+holds one member per name. It SHALL refuse the same pairs along the class chain, which holds one
+member per name too: a member the class declares on the name of a default or helper a base class
+takes, unless the member implements that default's interface member for the class; a default the
+class takes on the name of a member a base class declares; and a default the class takes on the name
+of a default a base class takes for a different interface member.
 
 #### Scenario: Two interfaces, one name
 
 - **WHEN** `IAlpha` and `IBeta` each declare `string Mark()` with a body, and `class Doubled : IAlpha, IBeta`
 - **THEN** the build fails with EQ1007, naming both defaults
+
+#### Scenario: A derived member on the name of its base's default
+
+- **WHEN** `class ChainBase : IChained` takes the default `string Mark()`, and
+  `class ChainDerived : ChainBase` declares `public int Mark;`
+- **THEN** the build fails with EQ1007, naming the field and the default its base takes
+
+#### Scenario: A derived member that re-implements the interface
+
+- **WHEN** `record MarkedBase : IMarked` takes the default `string Mark()`, and
+  `record Remarked : MarkedBase, IMarked` declares `public string Mark() => "r";`
+- **THEN** the build reports nothing, `((IMarked)new Remarked()).Mark()` answers `r`, and
+  `((IMarked)new MarkedBase()).Mark()` answers `m`
 
 ### Requirement: A class takes the SDK's defaults from the runtime
 

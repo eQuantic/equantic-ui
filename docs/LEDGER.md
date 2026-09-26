@@ -754,9 +754,11 @@ record of a release, the wiki's Upgrading page is the distillate.
   ([#415](https://github.com/eQuantic/equantic-ui/issues/415)): measured on the site, its theme went
   from three warnings on every build to none. An interface from any other compiled assembly has
   neither, and the build refuses the class (EQ1008). From the review: two defaults on one name are
-  EQ1007, a default reaching an interface's static is EQ1008, a record with only a base list gets
-  its twin, and a record's optional parameters and setters are kept. The first change proposed and archived through OpenSpec
-  (`openspec/specs/transpiler-interfaces`).
+  EQ1007, and so is the same pair along the class chain (a derived field on the name of its base's
+  default shadowed it for every call through the interface); a default reaching an interface's static
+  is EQ1008; a derived class that lists an interface overriding its base's default takes the more
+  specific one; a record with only a base list gets its twin, and a record's optional parameters and
+  setters are kept. Proposed and archived through OpenSpec (`openspec/specs/transpiler-interfaces`).
 
 - **2026-09-26 · List.Remove and a bool from text answer as .NET does**: `list.Remove(item)` assigned
   an index nothing declared, so every call threw `ReferenceError: _idx is not defined` in the
