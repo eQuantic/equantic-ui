@@ -143,6 +143,24 @@ public class InlinedConstantTests
         ts.Should().Contain("Labels.label('x', 'it\\'s', $eq.num.dec(\"1.5\"), 5n, 0.10000000149011612, 1)");
     }
 
+    /// <summary>A CREATION's skipped defaults take the same writer as an invocation's: the
+    /// constructor path fills them in on its own, so it is pinned on its own (found in review, #450).</summary>
+    [Fact]
+    public void ACreationsSkippedDefault_IsWrittenAsItsValue_InItsType()
+    {
+        var ts = Transpile("""
+            namespace App;
+            public class Label
+            {
+                public Label(char c = 'x', string s = "it's", decimal d = 1.5m, long l = 5, float f = 0.1f,
+                    System.AttributeTargets t = System.AttributeTargets.Class, int n = 0) { }
+                public static Label Make() => new Label(n: 1);
+            }
+            """);
+
+        ts.Should().Contain("new Label('x', 'it\\'s', $eq.num.dec(\"1.5\"), 5n, 0.10000000149011612, 4, 1)");
+    }
+
     /// <summary>
     /// A const whose TYPE is an enum is that enum's representation, and so is a skipped default of one:
     /// a member's camelCase name, or a [Flags] enum's number. The value arrives as the underlying

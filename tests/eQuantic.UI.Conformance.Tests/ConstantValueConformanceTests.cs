@@ -18,6 +18,7 @@ public class ConstantValueConformanceTests
         "public static class Cal { public const DayOfWeek First = DayOfWeek.Monday; } " +
         "[Flags] public enum Perm { None = 0, Read = 1, Write = 2 } " +
         "public static class Access { public const Perm Both = Perm.Read | Perm.Write; } " +
+        "public record Slot(decimal Price = 1.5m, long Ticks = 5, char Mark = 'x', string Note = \"it's\", Perm Access = Perm.Read, int N = 0); " +
         "public static class Texts { public const string Odd = \"\\uD800\\e\\u0001\"; public const string Pair = \"\\uD83D\\uDE00\"; }";
 
     [SkippableTheory]
@@ -71,6 +72,37 @@ public class ConstantValueConformanceTests
     [InlineData("string H(string s = \"it's\", int n = 1) => s + n; return H(n: 2);")]
     [InlineData("double D(float f = 0.1f, int b = 1) => f; return D(b: 2).ToString();")]
     public void ASkippedParametersDefault_MatchesDotNet(string statements)
+    {
+        Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
+        ConformanceRunner.AssertStatementsSameAsDotNet(statements);
+    }
+
+    [SkippableTheory]
+    // A RECORD's creation fills a skipped argument with undefined, so its twin's own defaults answer,
+    // written by the same writer. A class's constructor path fills the default in at the call site,
+    // which InlinedConstantTests pins, since this harness emits no class (asked in review, #450).
+    [InlineData("var s = new Slot(N: 2); return (s.Price * s.N).ToString();")]
+    [InlineData("var s = new Slot(N: 2); return (s.Ticks + 1L).ToString();")]
+    [InlineData("var s = new Slot(N: 2); return s.Mark + s.Note;")]
+    [InlineData("var s = new Slot(N: 2); return ((int)s.Access).ToString() + \"|\" + s.Access.HasFlag(Perm.Read);")]
+    [InlineData("var s = new Slot(Ticks: 7); return (s.Price + s.Ticks).ToString();")]
+    public void ACreationsSkippedDefault_MatchesDotNet(string statements)
+    {
+        Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
+        ConformanceRunner.AssertStatementsSameAsDotNet(statements, Prelude);
+    }
+
+    [SkippableTheory]
+    // float's and double's special values are constants the inlining strategy writes, as it always
+    // did: the primitive table's entries for them could never answer (asked in review, #450).
+    [InlineData("return float.IsNaN(float.NaN) + \"|\" + double.IsNaN(double.NaN);")]
+    [InlineData("return (float.PositiveInfinity > float.MaxValue) + \"|\" + (float.NegativeInfinity < float.MinValue);")]
+    [InlineData("return float.PositiveInfinity.ToString() + \"|\" + float.NegativeInfinity.ToString() + \"|\" + float.NaN.ToString();")]
+    [InlineData("return float.MaxValue.ToString() + \"|\" + float.MinValue.ToString() + \"|\" + float.Epsilon.ToString();")]
+    [InlineData("return ((double)float.MaxValue).ToString() + \"|\" + ((double)float.Epsilon).ToString();")]
+    [InlineData("return double.MaxValue.ToString() + \"|\" + double.MinValue.ToString() + \"|\" + double.Epsilon.ToString();")]
+    [InlineData("return double.PositiveInfinity.ToString() + \"|\" + double.NegativeInfinity.ToString() + \"|\" + (1 / double.PositiveInfinity);")]
+    public void AFloatingPointConstant_MatchesDotNet(string statements)
     {
         Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
         ConformanceRunner.AssertStatementsSameAsDotNet(statements);
