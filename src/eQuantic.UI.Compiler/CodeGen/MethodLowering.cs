@@ -26,15 +26,20 @@ internal sealed class MethodLowering
 
     private readonly CSharpToJsConverter _converter;
     private readonly Func<bool> _typeAnnotations;
+    private readonly Func<SyntaxNode, SemanticModel?> _modelFor;
 
     /// <param name="converter">The converter of the emitter that owns the member.</param>
     /// <param name="typeAnnotations">Whether the emitter writes TypeScript, asked at each member:
     /// the class emitter's flag is a property its caller sets, and the record emitter's changes with
     /// each type it is asked to emit.</param>
-    public MethodLowering(CSharpToJsConverter converter, Func<bool> typeAnnotations)
+    /// <param name="modelFor">The semantic model of a node's own file, as the emitter finds it: a
+    /// default an interface supplies is written into a class declared in another one.</param>
+    public MethodLowering(CSharpToJsConverter converter, Func<bool> typeAnnotations,
+        Func<SyntaxNode, SemanticModel?> modelFor)
     {
         _converter = converter;
         _typeAnnotations = typeAnnotations;
+        _modelFor = modelFor;
     }
 
     private bool TypeAnnotations => _typeAnnotations();
@@ -50,7 +55,10 @@ internal sealed class MethodLowering
     /// <param name="asStatic">Emit it as a static member whatever its modifiers say: a static
     /// class's members are its twin's statics.</param>
     /// <param name="declaredType">The emitter's annotation for a parameter's declared type.</param>
-    public JsClassMember? Method(MethodDeclarationSyntax method, bool asStatic, Func<TypeSyntax?, string> declaredType)
+    /// <param name="withReceiver">For a C# 14 extension member, what puts its receiver in front of
+    /// the parameters: the member lowers to a static that takes the receiver first.</param>
+    public JsClassMember? Method(MethodDeclarationSyntax method, bool asStatic, Func<TypeSyntax?, string> declaredType,
+        Func<string, string>? withReceiver = null)
     {
         if (method.Modifiers.Any(SyntaxKind.AbstractKeyword)) return null;
         if (method.Body == null && method.ExpressionBody == null) return null;
@@ -76,8 +84,8 @@ internal sealed class MethodLowering
                     parameter.Modifiers.Any(SyntaxKind.ParamsKeyword));
             }));
 
-        var isAsync = method.ReturnType.ToString().StartsWith("Task")
-            || method.Modifiers.Any(SyntaxKind.AsyncKeyword);
+        if (withReceiver is not null) parameters = withReceiver(parameters);
+        var isAsync = IsAsync(method);
         var isIterator = method.Body.IsIteratorBody();
         if (isIterator) ReportIfEndless(method.Body);
         // A generic method keeps its type parameters in a TypeScript signature (`also<T>(node: T)`):
@@ -90,6 +98,37 @@ internal sealed class MethodLowering
         var modifiers = (method.Modifiers.Any(SyntaxKind.StaticKeyword) || asStatic ? "static " : "")
             + (isAsync ? "async " : "");
         return JsClassMember.Method(modifiers, method.Identifier.Text.ToCamelCase(), generics, parameters, "", body);
+    }
+
+    /// <summary>
+    /// Whether a method's twin is an async function: an <c>async</c> method, whose body awaits, and
+    /// one that returns a <c>Task</c> without awaiting, whose value is a Promise either way. Asked of
+    /// the return type's symbol: the name alone made a method returning a type called
+    /// <c>TaskItem</c> async, and its callers read a Promise (#432). The name decides only where
+    /// there is no model to ask.
+    /// </summary>
+    public bool IsAsync(MethodDeclarationSyntax method)
+    {
+        if (method.Modifiers.Any(SyntaxKind.AsyncKeyword)) return true;
+        var model = _modelFor(method.ReturnType);
+        var returned = model?.GetSymbolInfo(method.ReturnType).Symbol as ITypeSymbol
+            ?? model?.GetTypeInfo(method.ReturnType).Type;
+        if (returned is null || returned.TypeKind == TypeKind.Error)
+            return method.ReturnType.ToString().StartsWith("Task");
+        return returned.OriginalDefinition.ToDisplayString()
+            is "System.Threading.Tasks.Task" or "System.Threading.Tasks.Task<TResult>";
+    }
+
+    /// <summary>
+    /// An accessor's block as its body, lowered as a method's is: the locals an <c>out var</c>
+    /// declares lead it, and a getter that yields fills a buffer and returns it, where it wrote
+    /// <c>yield</c> outside a generator and the module did not parse (#432).
+    /// </summary>
+    public JsStatement AccessorBody(BlockSyntax block)
+    {
+        var isIterator = block.IsIteratorBody();
+        if (isIterator) ReportIfEndless(block);
+        return Body(block, null, isIterator, [], isAsync: false);
     }
 
     /// <summary>

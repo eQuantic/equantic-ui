@@ -29,7 +29,7 @@ public class TypeScriptEmitter
 
     /// <summary>How a method and a member's body are lowered, and every literal signature's
     /// parameter written: one path shared with the record and struct emitter (#432).</summary>
-    private MethodLowering Lowering => _lowering ??= new MethodLowering(_converter, () => TypeAnnotations);
+    private MethodLowering Lowering => _lowering ??= new MethodLowering(_converter, () => TypeAnnotations, ModelFor);
 
     /// <summary>
     /// An OPTIONAL parameter in a hand-written signature — <c>props?: any</c> in TypeScript, and
@@ -1423,7 +1423,7 @@ public class TypeScriptEmitter
                     {
                         var body = getter!.ExpressionBody != null
                             ? Lowering.ExpressionBody(getter.ExpressionBody.Expression, returns: true)
-                            : _converter.ConvertBlockIr(getter.Body!);
+                            : Lowering.AccessorBody(getter.Body!);
                         c.Member(JsClassMember.Getter(stat, name, "", body), getter);
                     }
                     if (setterHasBody)
@@ -1431,7 +1431,7 @@ public class TypeScriptEmitter
                         // C# setters use the implicit `value` parameter, which survives conversion as-is.
                         var body = setter!.ExpressionBody != null
                             ? Lowering.ExpressionBody(setter.ExpressionBody.Expression, returns: false)
-                            : _converter.ConvertBlockIr(setter.Body!);
+                            : Lowering.AccessorBody(setter.Body!);
                         c.Member(JsClassMember.Setter(stat, name, "value", body), setter);
                     }
                     continue;
@@ -1678,7 +1678,7 @@ public class TypeScriptEmitter
             c.Member(JsClassMember.Getter(qualifier, pn, annotation,
                 Lowering.ExpressionBody(g.ExpressionBody.Expression, returns: true)), g);
         else if (g?.Body != null)
-            c.Member(JsClassMember.Getter(qualifier, pn, annotation, _converter.ConvertBlockIr(g.Body)), g);
+            c.Member(JsClassMember.Getter(qualifier, pn, annotation, Lowering.AccessorBody(g.Body)), g);
         else
             return false;
         return true;
@@ -1702,7 +1702,7 @@ public class TypeScriptEmitter
                 Lowering.ExpressionBody(setter.ExpressionBody.Expression, returns: false)), setter);
         else if (setter?.Body != null)
             c.Member(JsClassMember.Setter(qualifier, pn, $"value{Annotation(DeclaredType(p.Type))}",
-                _converter.ConvertBlockIr(setter.Body)), setter);
+                Lowering.AccessorBody(setter.Body)), setter);
     }
 
     /// <summary>A method of a class module, or of a component's twin when an interface's default
@@ -1790,6 +1790,11 @@ public class TypeScriptEmitter
             ? null
             : Lowering.Body(op.Body, op.ExpressionBody?.Expression, isIterator: false, byReference: [], isAsync: false);
 
+    /// <summary>An extension property's or indexer's getter: its expression, or its block lowered as
+    /// an accessor's is, an iterator's included (#432).</summary>
+    private JsStatement ExtensionGetter(BlockSyntax? block, ExpressionSyntax? expression) =>
+        block is not null ? Lowering.AccessorBody(block) : Lowering.Body(null, expression, isIterator: false, [], isAsync: false);
+
     /// <summary>
     /// C# 14 extension blocks (<c>extension(T receiver) { … }</c>): every member lowers to a
     /// STATIC on the declaring class with the receiver as the first parameter — the same lowering
@@ -1829,7 +1834,7 @@ public class TypeScriptEmitter
                             break;
                         }
                         c.Member(JsClassMember.Method("static ", property.Identifier.Text.ToCamelCase(), "", WithReceiver(""),
-                            Annotation(DeclaredType(property.Type)), Lowering.Body(getterBlock, body, isIterator: false, [], isAsync: false)), property);
+                            Annotation(DeclaredType(property.Type)), ExtensionGetter(getterBlock, body)), property);
                         ReportExtensionSetter(property.AccessorList?.Accessors, property.Identifier.Text);
                         break;
                     }
@@ -1848,7 +1853,7 @@ public class TypeScriptEmitter
                             break;
                         }
                         c.Member(JsClassMember.Method("static ", "item", "", WithReceiver(pars),
-                            Annotation(DeclaredType(indexer.Type)), Lowering.Body(getterBlock, body, isIterator: false, [], isAsync: false)), indexer);
+                            Annotation(DeclaredType(indexer.Type)), ExtensionGetter(getterBlock, body)), indexer);
                         ReportExtensionSetter(indexer.AccessorList?.Accessors, "this[]");
                         break;
                     }
@@ -1861,16 +1866,10 @@ public class TypeScriptEmitter
                                 $"extension method '{method.Identifier.Text}' with out/ref parameters is not lowered yet.");
                             break;
                         }
-                        var pars = string.Join(", ", method.ParameterList.Parameters.Select(pp =>
-                            Lowering.ParamWithDefault(pp.Identifier.Text.ToJsIdentifier(), DeclaredType(pp.Type),
-                                pp.Default is null ? null : _converter.ConvertExpression(pp.Default.Value),
-                                pp.Modifiers.Any(Microsoft.CodeAnalysis.CSharp.SyntaxKind.ParamsKeyword))));
-                        var isAsync = method.ReturnType.ToString().StartsWith("Task")
-                            || method.Modifiers.Any(Microsoft.CodeAnalysis.CSharp.SyntaxKind.AsyncKeyword);
-                        if (method.Body == null && method.ExpressionBody == null) break;
-                        var body = Lowering.Body(method.Body, method.ExpressionBody?.Expression, isIterator: false, [], isAsync);
-                        c.Member(JsClassMember.Method("static " + (isAsync ? "async " : ""), method.Identifier.Text.ToCamelCase(), "",
-                            WithReceiver(pars), "", body), method);
+                        // The one method lowering, its receiver in front (#432): it wrote `yield` outside
+                        // a generator for an iterator, and asked the return type's name whether it was async.
+                        if (Lowering.Method(method, asStatic: true, DeclaredType, WithReceiver) is { } lowered)
+                            c.Member(lowered, method);
                         break;
                     }
 
@@ -2347,8 +2346,9 @@ public class TypeScriptEmitter
         // async is a MODIFIER, not a return type: `async void` handlers (the C# event-handler
         // idiom — hover intent timers et al.) must emit `async` too, or their awaits are syntax
         // errors in the bundle. Task-returning methods keep emitting async either way.
-        var isAsync = (method.ReturnType != null && method.ReturnType.StartsWith("Task"))
-            || method.SyntaxNode?.Modifiers.Any(Microsoft.CodeAnalysis.CSharp.SyntaxKind.AsyncKeyword) == true;
+        var isAsync = method.SyntaxNode is { } declaration
+            ? Lowering.IsAsync(declaration)
+            : method.ReturnType != null && method.ReturnType.StartsWith("Task");
         // An iterator method (yield in its OWN body — nested lambdas/local functions don't count)
         // MATERIALISES: it fills an array and returns it. A JS generator would look right and then
         // read as undefined the moment a LINQ operator touched the result, because every sequence

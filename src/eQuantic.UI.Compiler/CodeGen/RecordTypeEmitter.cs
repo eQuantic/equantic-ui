@@ -34,7 +34,7 @@ public class RecordTypeEmitter
     {
         _converter = converter;
         _modules = modules;
-        _lowering = new MethodLowering(converter, () => _tsTypes);
+        _lowering = new MethodLowering(converter, () => _tsTypes, ModelFor);
     }
 
     /// <summary>True for the value types this emitter handles: any record, or a struct, that exposes at
@@ -557,15 +557,18 @@ public class RecordTypeEmitter
         var propertyName = property.Identifier.Text.ToCamelCase();
         // Both accessors are lowered as a method's body is (#432), so a variable an expression body's
         // pattern binds is declared in front of its use, as it is in a class.
-        var text = getter is null
-            ? ""
-            : Written(JsClassMember.Getter(prefix, propertyName, "",
-                _lowering.Body(getter as BlockSyntax, getter as ExpressionSyntax, isIterator: false, [], isAsync: false)));
+        var text = getter switch
+        {
+            null => "",
+            BlockSyntax block => Written(JsClassMember.Getter(prefix, propertyName, "", _lowering.AccessorBody(block))),
+            _ => Written(JsClassMember.Getter(prefix, propertyName, "",
+                _lowering.Body(null, (ExpressionSyntax)getter, isIterator: false, [], isAsync: false))),
+        };
         var setter = property.AccessorList?.Accessors.FirstOrDefault(a => a.Keyword.Text is "set" or "init");
         var setterBody = setter?.ExpressionBody is { } arrow
             ? _lowering.ExpressionBody(arrow.Expression, returns: false)
-            : setter?.Body is { } block
-                ? _lowering.Body(block, null, isIterator: false, [], isAsync: false)
+            : setter?.Body is { } setterBlock
+                ? _lowering.AccessorBody(setterBlock)
                 : null;
         if (setterBody is not null)
             text += Written(JsClassMember.Setter(prefix, propertyName, _lowering.Param("value", TsTypeOf(property.Type)), setterBody));
