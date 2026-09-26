@@ -54,5 +54,5 @@ no range check. Sharing `DateTime`'s split would move `AddHours(1.23456789)` by 
 ## Not here
 
 `DateTime`'s `Add(TimeSpan)`, `Subtract(TimeSpan)` and its `+` and `-` with a `TimeSpan` build the
-date without a range check, and so do `AddMonths` and `AddYears`. They add no fraction and are not
-this rule; each is its own task.
+date without a range check, and so do `AddMonths` and `AddYears`, each with words of its own in
+.NET. They add no fraction and are not this rule: #424 has them, measured.
