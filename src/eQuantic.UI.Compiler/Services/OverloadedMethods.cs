@@ -218,16 +218,16 @@ internal static class OverloadedMethods
         $"'{implementation.ContainingType.Name}.{Simple(implementation.Name)}'";
 
     /// <summary>
-    /// The members a twin writes on an instance or its prototype: fields, properties and methods, an
-    /// explicit implementation under its member's own name, and nothing the compiler declares itself.
-    /// A field takes its name too: <c>class C : I { public int Mark; }</c> beside a default
-    /// <c>I.Mark()</c> gave the twin two members named <c>mark</c>, and so did an explicit
-    /// <c>IA.M()</c> beside a default <c>IB.M()</c> (both found in review, #418). An indexer is
-    /// written into no twin (#427), so it takes no name.
+    /// The members a twin writes on an instance or its prototype: fields, events, properties and
+    /// methods, an explicit implementation under its member's own name, and nothing the compiler
+    /// declares itself. A field takes its name too: <c>class C : I { public int Mark; }</c> beside a
+    /// default <c>I.Mark()</c> gave the twin two members named <c>mark</c>, and so did an explicit
+    /// <c>IA.M()</c> beside a default <c>IB.M()</c>, and an event, which lowers to an instance field
+    /// (all found in review, #418). An indexer is written into no twin (#427), so it takes no name.
     /// </summary>
     private static IEnumerable<ISymbol> InstanceMembers(INamedTypeSymbol type) =>
         type.GetMembers().Where(member => !member.IsStatic && !member.IsImplicitlyDeclared
-            && member is IFieldSymbol or IPropertySymbol { IsIndexer: false }
+            && member is IFieldSymbol or IEventSymbol or IPropertySymbol { IsIndexer: false }
                 or IMethodSymbol { MethodKind: MethodKind.Ordinary or MethodKind.ExplicitInterfaceImplementation });
 
     /// <summary>
