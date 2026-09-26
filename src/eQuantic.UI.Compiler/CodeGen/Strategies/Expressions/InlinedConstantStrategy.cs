@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using eQuantic.UI.Compiler.Services;
@@ -32,9 +33,7 @@ public class InlinedConstantStrategy : IConversionStrategy
         // one keeps its reference, to the static its own module declares.
         IdentifierNameSyntax identifier
             when !(identifier.Parent is MemberAccessExpressionSyntax access && access.Name == identifier) =>
-            context.SemanticHelper.GetSymbol(identifier) is IFieldSymbol { IsConst: true } field
-            && !field.Locations.Any(location => location.IsInSource)
-            && TryResolveConstant(node, context, out _),
+            TryResolveConstant(node, context, out var field) && !field.Locations.Any(location => location.IsInSource),
         _ => false,
     };
 
@@ -44,11 +43,8 @@ public class InlinedConstantStrategy : IConversionStrategy
         // is what lets a page default to a constant from an assembly the client bundle never sees
         // (a server-side domain's `PackageStats.LastVerifiedDownloads`, say: emitting the reference
         // would be "PackageStats is not defined" the moment the page renders).
-        if (TryResolveConstant(node, context, out var constant))
-        {
-            if (ConstantLiteral.NeedsRuntime(constant)) context.UsedHelpers.Add(Eq.Import);
-            return constant;
-        }
+        if (TryResolveConstant(node, context, out var field))
+            return ConstantLiteral.Write(field.ConstantValue, field.Type, context)!;
 
         if (!TryResolveInlinable(node, context, out var initializer, out var glyphTypeName))
             return context.Converter.ConvertExpression(((MemberAccessExpressionSyntax)node).Expression);
@@ -64,18 +60,19 @@ public class InlinedConstantStrategy : IConversionStrategy
     }
 
     /// <summary>
-    /// The JS literal for a `const` field access, in the field's C# type (<see cref="ConstantLiteral"/>).
-    /// ENUM members are excluded: their member-name string representation is the wire contract
-    /// (EnumStrategy owns it), not their ordinal.
+    /// The `const` field this node reads, when its value has a JavaScript spelling in its C# type
+    /// (<see cref="ConstantLiteral"/>). ENUM members are excluded: their member-name string
+    /// representation is the wire contract (EnumStrategy owns it), not their ordinal.
     /// </summary>
-    private static bool TryResolveConstant(SyntaxNode node, ConversionContext context, out string literal)
+    private static bool TryResolveConstant(SyntaxNode node, ConversionContext context,
+        [NotNullWhen(true)] out IFieldSymbol? field)
     {
-        literal = null!;
+        field = null;
         if (context.SemanticModel is null) return false;
         if (context.SemanticHelper.GetSymbol(node) is not IFieldSymbol
             {
                 IsConst: true, HasConstantValue: true, ContainingType: { } owner,
-            } field)
+            } constant)
         {
             return false;
         }
@@ -92,9 +89,11 @@ public class InlinedConstantStrategy : IConversionStrategy
         // `decimal.MaxValue` emitted `decimal.maxValue` and met a ReferenceError, and a long in a
         // number's range was written as a number (`TimeSpan.TicksPerSecond`), which the first long
         // it met threw on. A FLOAT is the double it is: `float.E` printed as "2.7182817" is read back
-        // as 2.7182817000000001, not 2.7182817459106445 (SinglePrecision).
-        literal = ConstantLiteral.Write(field.ConstantValue, field.Type)!;
-        return literal is not null;
+        // as 2.7182817000000001, not 2.7182817459106445 (SinglePrecision). A const whose TYPE is an
+        // enum is that enum's representation, never the ordinal its value arrives as.
+        if (ConstantLiteral.Write(constant.ConstantValue, constant.Type) is null) return false;
+        field = constant;
+        return true;
     }
 
     /// <summary>The inlinable initializer for the accessed field, when this is an external constant
