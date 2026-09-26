@@ -732,7 +732,11 @@ record of a release, the wiki's Upgrading page is the distillate.
   property pattern read `changes.Count`, which is undefined; a button drawn in a code surface never
   heard its click on the web; a `Shortcut` answered for the whole page, so F7 in one diff stepped
   another, and `FocusScoped` now makes a chord the subtree's own (FLUTTER-PARITY said SAME, and it
-  was not); and a Mac's function keys reached the host as the characters they type.
+  was not); and a Mac's function keys reached the host as the characters they type. The author's
+  review found six more, each fixed: a local annotated in the plain JavaScript the design host
+  inlines, a zero-context patch's gaps, F7 stuck past a removed end, the focus a fold's press
+  dropped on the web, a patch line's bare carriage return, and a tuple's enum named as in C#; the
+  find bar's Escape, still page-wide, is [#457](https://github.com/eQuantic/equantic-ui/issues/457).
 
 ## Retired documents
 
