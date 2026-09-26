@@ -257,7 +257,7 @@ export function sameItem(item: unknown, value: unknown): boolean {
   return typeof own === 'function' && (own as (other: unknown) => boolean).call(item, value);
 }
 
-/** What a dictionary is here: a `Map`, or the runtime's sorted map, keyed by the pair's key. */
+/** What a dictionary is here: the runtime's `Dictionary` or sorted map, or a `Map`, keyed by the pair's key. */
 interface Dictionary<K, V> {
   has(key: K): boolean;
   get(key: K): V | undefined;
@@ -274,22 +274,6 @@ function isDictionary(collection: unknown): collection is Dictionary<unknown, un
     typeof shape.delete === 'function' &&
     !(collection instanceof Set)
   );
-}
-
-/** A primitive-keyed `Dictionary<K, V>`, which is a plain object here, its keys its property names. */
-function isPlainDictionary(collection: unknown): collection is Record<string, unknown> {
-  if (collection == null || typeof collection !== 'object' || Array.isArray(collection)) return false;
-  const prototype = Object.getPrototypeOf(collection);
-  return prototype === Object.prototype || prototype === null;
-}
-
-/** The plain object asked as a dictionary is asked: a key is there when it is an own property. */
-function plainDictionary(object: Record<string, unknown>): Dictionary<unknown, unknown> {
-  return {
-    has: (key) => Object.prototype.hasOwnProperty.call(object, key as PropertyKey),
-    get: (key) => object[key as string],
-    delete: (key) => delete object[key as string],
-  };
 }
 
 /**
@@ -335,7 +319,7 @@ export function pairComparer<K, V>(
  * call runs (found in review, #421), and each removes as it does when called directly, as `contains`
  * asks the value what it is: a Set (`HashSet<T>`) through `delete`, the way `set.Remove(x)` lowers; a
  * dictionary (`ICollection<KeyValuePair<K, V>>`) the pair whose key it holds with an equal value, as
- * .NET's does, whether it is a plain object (a primitive key), a `ValueMap` or a sorted map; and a twin
+ * .NET's does, the runtime's `Dictionary` and a sorted map alike; and a twin
  * with a `remove` of its own (`LinkedList<T>`, `SortedSet<T>`) through it. An
  * array stands for a `List<T>` and for a `T[]` alike, and .NET throws for the second, which this side
  * cannot tell apart.
@@ -347,7 +331,6 @@ export function remove<T>(
 ): boolean {
   if (list instanceof Set) return list.delete(value);
   if (isDictionary(list)) return removePair(list, value, same);
-  if (isPlainDictionary(list)) return removePair(plainDictionary(list), value, same);
   if (!Array.isArray(list)) return (list as { remove(value: T): boolean }).remove(value);
   for (let index = 0; index < list.length; index++) {
     if (same(list[index], value)) {
