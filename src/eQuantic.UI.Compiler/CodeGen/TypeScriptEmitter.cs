@@ -5,6 +5,7 @@ using eQuantic.UI.Compiler.CodeGen.Extensions;
 using eQuantic.UI.Compiler.Models;
 using eQuantic.UI.Compiler.Services;
 using eQuantic.UI.Compiler.CodeGen.Ir;
+using eQuantic.UI.Compiler.CodeGen.Strategies;
 
 namespace eQuantic.UI.Compiler.CodeGen;
 
@@ -572,10 +573,12 @@ public class TypeScriptEmitter
                         var paramList = string.Join(", ", passed.Select(p => p.DefaultValueNode != null
                             ? $"{p.Name.ToJsIdentifier()}: any = {_converter.ConvertExpression(p.DefaultValueNode, p.Type)}"
                             : $"{p.Name.ToJsIdentifier()}?: any"));
-                        // The trailing config object is `props`, unless a parameter of the C# constructor
-                        // is: then `constructor(props, props)` did not parse. A `$` in front is a name no
-                        // C# parameter and no renamed local function can take.
-                        var config = ConfigParameter(ctorParams.Select(p => p.Name.ToJsIdentifier()));
+                        // The trailing config object is `props`, unless the C# constructor already binds
+                        // that name: then `constructor(props, props)`, or a body's `let props` beside the
+                        // parameter, did not parse. A `$` in front is a name no C# binding and no renamed
+                        // local function can take.
+                        var config = ConfigParameter(ctorParams.Select(p => p.Name.ToJsIdentifier()),
+                            (SyntaxNode?)ctorDef?.BodyNode ?? ctorDef?.ExpressionBodyNode);
                         var signature = paramList.Length > 0
                             ? $"{paramList}, {OptionalParam(config, "any")}"
                             : OptionalParam(config, "any");
@@ -2103,7 +2106,8 @@ public class TypeScriptEmitter
         // `new Editor(text) { ReadOnly = true }` — an object initialiser is an ordinary way to
         // construct one of these, and it arrives as a trailing config object exactly as it does for
         // a component. A constructor that did not take one made the emitted call arity-wrong.
-        var configName = ConfigParameter(ctor?.ParameterList.Parameters.Select(p => p.Identifier.Text.ToJsIdentifier()) ?? []);
+        var configName = ConfigParameter(ctor?.ParameterList.Parameters.Select(p => p.Identifier.Text.ToJsIdentifier()) ?? [],
+            ctor?.ParameterList);
         var config = parameters.Length == 0 ? OptionalParam(configName, "any") : $", {OptionalParam(configName, "any")}";
         // A derived class must call super() before it touches `this`.
         JsStatement[] superCall = HasEmittedBase(cls) ? [JsStatement.Raw("super();")] : [];
@@ -2137,11 +2141,16 @@ public class TypeScriptEmitter
 
     /// <summary>
     /// The name of the config object a constructor takes last: <c>props</c>, or <c>$props</c> where
-    /// one of the constructor's own parameters is called <c>props</c>, which no C# parameter and no
-    /// renamed local function can be.
+    /// the constructor already binds <c>props</c>, which no C# binding and no renamed local function
+    /// can be. Its parameters are asked, and every binding of the constructor <paramref name="inside"/>
+    /// belongs to: its body shares the parameters' block, so a local `props` beside the parameter was
+    /// "Identifier 'props' has already been declared".
     /// </summary>
-    private static string ConfigParameter(IEnumerable<string> parameterNames) =>
-        parameterNames.Contains("props", StringComparer.Ordinal) ? "$props" : "props";
+    private static string ConfigParameter(IEnumerable<string> parameterNames, SyntaxNode? inside) =>
+        parameterNames.Contains("props", StringComparer.Ordinal)
+            || (inside is not null && LocalFunctionName.MemberDeclares(inside, "props"))
+            ? "$props"
+            : "props";
 
     /// <summary>
     /// A PLAIN class the developer wrote — not a record, not static, not a component: a bucket, a
@@ -2530,7 +2539,7 @@ public class TypeScriptEmitter
             .Select(entry =>
         {
             var (p, index) = entry;
-            var name = bodyText.Contains(p.Name) ? p.Name.ToJsIdentifier() : "_" + p.Name;
+            var name = bodyText.Contains(p.Name) ? p.Name.ToJsIdentifier() : "_" + p.Name.ToJsIdentifier();
             var defaultValue = syntaxParameters is { } list && index < list.Count
                 ? list[index].Default?.Value
                 : null;

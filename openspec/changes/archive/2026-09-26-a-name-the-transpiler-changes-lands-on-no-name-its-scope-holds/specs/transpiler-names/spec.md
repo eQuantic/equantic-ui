@@ -58,3 +58,25 @@ reserved, so that no local function takes it.
 
 - **WHEN** `public int M(int @class) { int _class() => 1; return _class(); }` is transpiled
 - **THEN** the parameter is `_class$` and the function a different name, so the module declares each once
+
+### Requirement: A name the emitter adds lands on no binding the constructor holds
+
+The config object a constructor takes last SHALL be `props`, and SHALL be `$props` where the C#
+constructor already binds `props`, as a parameter or anywhere in its body, since the body shares
+the block its parameters are declared in.
+
+#### Scenario: A constructor local named props
+
+- **WHEN** `public TickPage(string label) { var props = label; _label = props; }` is transpiled
+- **THEN** the constructor is `constructor(label?: any, $props?: any)` and the module declares `props` once
+
+### Requirement: With no model, a reference reaches a binding of a scope around it
+
+A reference converted with no semantic model SHALL read a parameter, local or local function only
+where a scope around it declares that name, and SHALL NOT treat a declaration in a sibling scope of
+the same member as its binding.
+
+#### Scenario: A lambda parameter beside a member read
+
+- **WHEN** `System.Func<int, int> f = Component => Component + 1; return Component;` is converted with no model
+- **THEN** the lambda reads its parameter and the return reads the component's `this._component`

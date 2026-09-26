@@ -232,6 +232,18 @@ public class ConstructorInjectionTests
     }
 
     [Fact]
+    public void ALocalNamedProps_LeavesTheConfigObjectANameOfItsOwn()
+    {
+        // The constructor's body shares the block its parameters are declared in, so a local `props`
+        // was `let props` beside the config parameter: "Identifier 'props' has already been declared",
+        // and the initializer's `Object.assign` read the local (found in review, #399).
+        var page = ClockPage("public TickPage(string label) { var props = label; _label = props; }");
+
+        page.Should().Contain("constructor(label?: any, $props?: any)").And.Contain("let props = label")
+            .And.Contain("Object.assign(this, $props)");
+    }
+
+    [Fact]
     public void AParameterNamedProps_LeavesTheConfigObjectANameOfItsOwn()
     {
         // The config object an initializer arrives in is `props`, and a parameter of that name made

@@ -38,8 +38,8 @@ internal static class LocalFunctionName
     /// <c>isNaN</c> (the number parses), <c>crypto</c> (Guid.NewGuid), <c>setTimeout</c> (Task.Delay
     /// and Task.Yield), <c>encodeURI</c>, <c>decodeURI</c>, <c>encodeURIComponent</c> and
     /// <c>decodeURIComponent</c> (Uri) and <c>undefined</c>, and <c>props</c>, the parameter a
-    /// constructor takes. A function on one of these breaks code beside it that never named it, so even a name
-    /// the casing left alone yields to them. The globals are not trusted to this list staying
+    /// constructor takes. A function on one of these breaks code beside it that never named it, so
+    /// even a name the casing left alone yields to them. The globals are not trusted to this list staying
     /// complete: <c>LocalFunctionNameTests</c> reads the compiler's own source for every one it
     /// emits, and fails on one missing here.
     /// </summary>
@@ -93,14 +93,60 @@ internal static class LocalFunctionName
     }
 
     /// <summary>
-    /// Whether the member around <paramref name="at"/> declares <paramref name="name"/> at all: a
-    /// parameter, a local, a loop, catch or pattern variable, a local function. For a reference with
-    /// no model to ask, where it decides that the name is a binding and not a member.
+    /// The bindings each member declares, by name, each with the scope it is visible in. Built once
+    /// per member: with no model, every reference asks.
     /// </summary>
-    public static bool IsDeclaredAround(SyntaxNode at, string name) =>
-        MemberOf(at).DescendantNodes().Any(node =>
-            node is LocalFunctionStatementSyntax function ? function.Identifier.ValueText == name
-            : Declared(node) is { } declared && declared.ValueText == name);
+    private static readonly ConditionalWeakTable<SyntaxNode, ILookup<string, SyntaxNode>> Bindings = new();
+
+    /// <summary>
+    /// Whether <paramref name="name"/> at <paramref name="at"/> reaches a binding of a scope around
+    /// it: a parameter, a local, a loop, catch or pattern variable, a range variable, a local
+    /// function. For a reference with no model to ask, where it decides that the name is a binding
+    /// and not a member. A scope AROUND it, not anywhere in the member: a lambda's `Component` beside
+    /// a `return Component` made the return's a bare name that nothing there declared.
+    /// </summary>
+    public static bool IsBoundAt(SyntaxNode at, string name) =>
+        BindingsOf(MemberOf(at))[name].Any(scope => scope.Span.Contains(at.Span));
+
+    /// <summary>
+    /// Whether the member <paramref name="inside"/> belongs to declares <paramref name="name"/> in
+    /// any of its scopes. For a name the emitter adds to the member's outermost scope, which every
+    /// binding of the member may meet.
+    /// </summary>
+    public static bool MemberDeclares(SyntaxNode inside, string name) =>
+        BindingsOf(MemberOf(inside)).Contains(name);
+
+    private static ILookup<string, SyntaxNode> BindingsOf(SyntaxNode member) =>
+        Bindings.GetValue(member, static m => m.DescendantNodes()
+            .Select(node => node is LocalFunctionStatementSyntax function
+                ? (Name: function.Identifier.ValueText, Scope: ScopeOf(function))
+                : Declared(node) is { } declared ? (Name: declared.ValueText, Scope: ScopeOf(node)) : default)
+            .Where(binding => binding.Name is not null)
+            .ToLookup(binding => binding.Name, binding => binding.Scope, StringComparer.Ordinal));
+
+    /// <summary>
+    /// The node a binding is visible in: a parameter's function, a loop's or a catch's own clause, and
+    /// otherwise the nearest block, switch section, statement with a declaration of its own, lambda,
+    /// query or member around it. Wider than C# where C# is narrow (a pattern variable of a `while`
+    /// condition), since a scope too wide renames nothing it should not, only a member read by a
+    /// name the scope happens to share.
+    /// </summary>
+    private static SyntaxNode ScopeOf(SyntaxNode declaration) => declaration switch
+    {
+        ParameterSyntax { Parent: BaseParameterListSyntax list } => list.Parent ?? list,
+        ParameterSyntax parameter => parameter.Parent ?? parameter,     // a simple lambda's
+        CommonForEachStatementSyntax loop => loop,
+        CatchDeclarationSyntax caught => caught.Parent ?? caught,
+        // A node parsed on its own (an expression, a statement) has no scope around it but its root.
+        _ => declaration.Ancestors().FirstOrDefault(IsScope) ?? declaration.Ancestors().LastOrDefault() ?? declaration,
+    };
+
+    private static bool IsScope(SyntaxNode node) =>
+        node is BlockSyntax or SwitchSectionSyntax or ForStatementSyntax or CommonForEachStatementSyntax
+            or UsingStatementSyntax or FixedStatementSyntax or AnonymousFunctionExpressionSyntax
+            or QueryExpressionSyntax or CompilationUnitSyntax
+            // Top-level statements share one scope, the file's.
+            or (MemberDeclarationSyntax and not GlobalStatementSyntax);
 
     /// <summary>The name a reference to <paramref name="localFunction"/> reaches.</summary>
     public static string Of(IMethodSymbol localFunction) =>

@@ -34,6 +34,17 @@ public class LocalFunctionNameTests
     }
 
     [Fact]
+    public void InAConstructor_ALocalNamedPropsMovesTheConfigObject()
+    {
+        // The body shares the block the parameters are declared in, so a local `props` was `let props`
+        // beside the config parameter, a module that did not parse (found in review, #399).
+        var ts = TestHelper.ConvertClass(
+            "public int Value { get; set; } public Setup(int seed) { var props = seed; Value = props; }", "Setup");
+
+        ts.Should().Contain("$props?: any)").And.Contain("Object.assign(this, $props)");
+    }
+
+    [Fact]
     public void InASetter_ItDoesNotRedeclareTheImplicitValue()
     {
         // A setter takes `value` with no syntax of its own, and the emitter writes it as the
@@ -67,6 +78,22 @@ public class LocalFunctionNameTests
         var js = new CSharpToJsConverter().Convert(method.Body!);
 
         js.Should().Contain("return Component").And.NotContain("_component");
+    }
+
+    [Fact]
+    public void WithNoModel_ABindingOfAnotherScopeIsNotThisOnes()
+    {
+        // The binding a name reaches is the one of a scope AROUND it. The lookup asked whether the
+        // member declared the name anywhere, so a lambda's `Component` beside the return made the
+        // return's `Component` a bare name, which nothing declares there.
+        var method = CSharpSyntaxTree.ParseText(
+                "class C { object M() { System.Func<int, int> f = Component => Component + 1; return Component; } }",
+                ParseDefaults.Options)
+            .GetRoot().DescendantNodes().OfType<MethodDeclarationSyntax>().Single();
+
+        var js = new CSharpToJsConverter().Convert(method.Body!);
+
+        js.Should().Contain("(Component) => Component + 1").And.Contain("return this._component");
     }
 
     [Fact]
