@@ -60,7 +60,7 @@ public class InterpolatedStringStrategy : IConversionStrategy
                         // integer says so where a specifier is written, since it rounds a half away
                         // from zero (#393); with none, its text is its digits whatever it is.
                         var kind = FormatKind.Of(context.SemanticHelper.GetType(interpolation.Expression));
-                        if (kind == "integer" && format == null) kind = null;
+                        if (FormatKind.IsInteger(kind) && format == null) kind = null;
                         var alignArg = alignment != null ? $", {alignment}" : kind != null ? ", undefined" : "";
                         var kindArg = kind != null ? $", undefined, '{kind}'" : "";
                         sb.Append($"{Eq.Format}({expr}, {fmtArg}{alignArg}{kindArg})");

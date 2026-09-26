@@ -80,6 +80,14 @@ export function isZero(value: ExactDecimal): boolean {
   return value.digits === '0';
 }
 
+/** Digits at a power of ten, leading and trailing zeros allowed, in the canonical form. */
+export function exactOfDigits(negative: boolean, digits: string, exponent: number): ExactDecimal {
+  const start = digits.search(/[1-9]/);
+  return start < 0
+    ? { negative, digits: '0', exponent: 0 }
+    : canonical(negative, digits.slice(start), exponent);
+}
+
 /** The value as plain decimal text, `-0.000125` or `1234500`: what `Intl.NumberFormat` formats
  * exactly when it is handed a string. */
 export function plainText(value: ExactDecimal): string {
@@ -119,11 +127,7 @@ export function roundSignificant(value: ExactDecimal, count: number, tie: Tie): 
     return { negative: value.negative, digits: digits.padEnd(width, '0'), scientific };
   }
   let kept = digits.slice(0, width);
-  const next = digits.charCodeAt(width) - 48;
-  const beyond = digits.length > width + 1;
-  const up =
-    next > 5 ||
-    (next === 5 && (beyond || tie === 'halfExpand' || (kept.charCodeAt(width - 1) - 48) % 2 === 1));
+  const up = roundsUp(digits, width, tie, (kept.charCodeAt(width - 1) - 48) % 2 === 1);
   if (up) {
     const carried = (BigInt(kept) + 1n).toString();
     if (carried.length > width) {
@@ -134,4 +138,41 @@ export function roundSignificant(value: ExactDecimal, count: number, tie: Tie): 
     }
   }
   return { negative: value.negative, digits: kept, scientific };
+}
+
+/** Whether digits cut after `width` of them round up: past a 5 always, at a 5 with nothing after it
+ * (the canonical form has no trailing zeros) by the tie rule, `odd` saying whether the last digit
+ * kept is odd. */
+function roundsUp(digits: string, width: number, tie: Tie, odd: boolean): boolean {
+  const next = digits.charCodeAt(width) - 48;
+  const beyond = digits.length > width + 1;
+  return next > 5 || (next === 5 && (beyond || tie === 'halfExpand' || odd));
+}
+
+/** Significant digits back as an exact decimal, the zeros they were padded with dropped. */
+export function fromSignificant(rounded: Significant): ExactDecimal {
+  return canonical(
+    rounded.negative,
+    rounded.digits,
+    rounded.scientific - rounded.digits.length + 1,
+  );
+}
+
+/**
+ * Rounds to `places` digits after the point by the tie rule given, the sign kept on a result that
+ * rounds to zero (whether a zero shows it is the formatter's call). What `F`, `N`, `P` and `C`
+ * need past the 100 digits `Intl` writes after the point.
+ */
+export function roundFraction(value: ExactDecimal, places: number, tie: Tie): ExactDecimal {
+  if (isZero(value)) return value;
+  // How many of the digits stand before the cut: the ones before the point, and `places` after it.
+  const count = value.digits.length + value.exponent + places;
+  if (count >= value.digits.length) return value;
+  if (count > 0) return fromSignificant(roundSignificant(value, count, tie));
+  // Every digit falls past the cut: the value is below one unit of the last place kept, and it
+  // rounds to that unit only from its half up. The digit kept is a zero, which is even.
+  const up = count === 0 && roundsUp('0' + value.digits, 1, tie, false);
+  return up
+    ? { negative: value.negative, digits: '1', exponent: -places }
+    : { negative: value.negative, digits: '0', exponent: 0 };
 }

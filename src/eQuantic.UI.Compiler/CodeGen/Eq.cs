@@ -163,7 +163,8 @@ public static class Eq
     public const string AsSingle = "$eq.text.asSingle";
 
     /// <summary>An int, a short, a byte or their unsigned twins on its way into <c>string.Format</c>, boxed
-    /// with its kind: it rounds a formatted half away from zero (#393).</summary>
+    /// with its kind (<c>'int32'</c>, <c>'int16'</c>…): it rounds a formatted half away from zero (#393),
+    /// and <c>X</c> writes a negative one at its type's width (#445).</summary>
     public const string AsInteger = "$eq.text.asInteger";
     public const string StringBuilder = "$eq.text.stringBuilder";
     public const string DateTime = "$eq.time.dateTime";

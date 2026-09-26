@@ -299,19 +299,21 @@ public class StringStaticStrategy : IConversionStrategy
         // An integer is boxed with its kind too, where the template writes a specifier, since it rounds
         // a formatted half away from zero where a double rounds it to even (#393).
         var specified = MayWriteASpecifier(template, context);
-        string? BoxOf(ITypeSymbol? type) => FormatKind.Of(type) switch
+        // The call that boxes one value of the type, or null where the value goes as it is. An
+        // integer's box carries its kind, whose width is what X writes a negative one at.
+        Func<string, string>? BoxOf(ITypeSymbol? type) => FormatKind.Of(type) switch
         {
-            "single" => Eq.AsSingle,
-            "integer" when specified => Eq.AsInteger,
+            "single" => text => $"{Eq.AsSingle}({text})",
+            { } integer when specified => text => $"{Eq.AsInteger}({text}, '{integer}')",
             _ => null,
         };
         string Passed((int Slot, ExpressionSyntax Value, bool Spread) value, string text) =>
             value.Spread
                 ? BoxOf(ElementTypeOf(context.SemanticHelper.GetType(value.Value))) is { } spreadBox
-                    ? $"...Array.from({text}, {spreadBox})"
+                    ? $"...Array.from({text}, (value) => {spreadBox("value")})"
                     : $"...{text}"
                 : BoxOf(Boxed(value.Value, context)) is { } box
-                    ? $"{box}({text})"
+                    ? box(text)
                     : text;
 
         // In the written order, the call is text as it always was. Out of it, the parts are the
