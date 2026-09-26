@@ -8,6 +8,7 @@
 
 import type { EventHandler, HtmlNode } from './types';
 import { HtmlElement } from './types';
+import { adoptMember } from '../utils/adopt-member';
 import { bagEntries, type Bag } from '../utils/dictionary';
 
 interface DynamicElementConfig {
@@ -53,8 +54,7 @@ export class DynamicElement extends HtmlElement {
     // DEFINED, not assigned: a C# dictionary may hold "__proto__", and assigning it reached the
     // prototype's setter and dropped the attribute.
     if (this.customAttributes) {
-      for (const [key, value] of bagEntries(this.customAttributes))
-        Object.defineProperty(attributes, key, { value, writable: true, enumerable: true, configurable: true });
+      for (const [key, value] of bagEntries(this.customAttributes)) adoptMember(attributes, key, value);
     }
 
     const events: Record<string, EventHandler> = {};

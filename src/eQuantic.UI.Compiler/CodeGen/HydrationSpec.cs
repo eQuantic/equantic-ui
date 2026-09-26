@@ -65,9 +65,12 @@ public static class HydrationSpec
         if (Scalar(named) is { } scalar) return scalar;
 
         // A dictionary before the enumerable walk — it IS IEnumerable<KeyValuePair<,>>, but it
-        // crosses as a JSON object, which always has to become the runtime's dictionary class.
-        if (DictionaryTypes(named) is var (keyType, valueType))
-            return DictionarySpec(named, keyType, valueType, referenced, visiting);
+        // crosses as a JSON object, which always has to become the runtime's dictionary class. Only
+        // the dictionaries the lowering treats as that class: another shape that implements
+        // IDictionary (ReadOnlyDictionary, ConcurrentDictionary, ImmutableDictionary) is read by a
+        // plain index, which a Dictionary instance answers with undefined (found in review, #443).
+        if (named.IsDictionary())
+            return DictionarySpec(named, named.TypeArguments[0], named.TypeArguments[1], referenced, visiting);
 
         if (ElementType(named) is { } element)
             return List(element, referenced, visiting);
@@ -164,16 +167,6 @@ public static class HydrationSpec
 
     private static string? List(ITypeSymbol element, References referenced, HashSet<INamedTypeSymbol> visiting) =>
         Of(element, referenced, visiting) is { } inner ? $"[{inner}]" : null;
-
-    /// <summary>The key and value types of a dictionary-shaped type — itself or any interface it
-    /// implements constructed from <c>IDictionary&lt;,&gt;</c> / <c>IReadOnlyDictionary&lt;,&gt;</c>.</summary>
-    private static (ITypeSymbol Key, ITypeSymbol Value)? DictionaryTypes(INamedTypeSymbol named) =>
-        SelfAndInterfaces(named)
-            .FirstOrDefault(i => i.Arity == 2 && IsSystemCollection(i)
-                && i.OriginalDefinition.MetadataName is "IDictionary`2" or "IReadOnlyDictionary`2")
-            is { } dictionary
-                ? (dictionary.TypeArguments[0], dictionary.TypeArguments[1])
-                : null;
 
     /// <summary>
     /// <c>{ dict: values, key: tag, byValue: …, sorted: true }</c>: how each value hydrates (null

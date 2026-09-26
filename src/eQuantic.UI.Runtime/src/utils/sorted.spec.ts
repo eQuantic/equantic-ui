@@ -99,3 +99,35 @@ describe('SortedMap<K, V> — key-sorted dictionary (SortedDictionary / SortedLi
     expect(m.equals(sortedDictionary<string, number>([['a', 1], ['b', 2]]))).toBe(false);
   });
 });
+
+describe('SortedMap — a change while its pairs are walked', () => {
+  const modified = 'Collection was modified; enumeration operation may not execute.';
+  const two = () =>
+    sortedDictionary<number, number>([
+      [1, 1],
+      [2, 2],
+    ]);
+
+  it('ends the walk any change breaks into, as a sorted dictionary\'s enumerator does', () => {
+    const added = two();
+    let steps = 0;
+    expect(() => {
+      for (const [key] of added) {
+        added.set(key + 10, 0);
+        if (++steps > 50) break;
+      }
+    }).toThrow(modified);
+    const overwritten = two();
+    expect(() => {
+      for (const [key] of overwritten) overwritten.set(key, 5);
+    }).toThrow(modified);
+    const removed = two();
+    expect(() => {
+      for (const [key] of removed) removed.delete(key);
+    }).toThrow(modified);
+    const cleared = two();
+    expect(() => {
+      for (const _ of cleared) cleared.clear();
+    }).toThrow(modified);
+  });
+});

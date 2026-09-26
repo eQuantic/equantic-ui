@@ -144,6 +144,7 @@ public class DictionaryEnumerationConformanceTests
     [InlineData("var d = new Dictionary<object, int>(); d[new Point(1, 2)] = 1; d[new Point(1, 2)] = 2; return d.Count + \"|\" + d[new Point(1, 2)];")]
     [InlineData("var d = new Dictionary<object, int>(); d[1.0m] = 1; d[1m] = 2; return d.Count + \"|\" + d[1.00m];")]
     [InlineData("var d = new Dictionary<object, int>(); d[1] = 1; d[\"1\"] = 2; d[1] = 3; return d.Count + \"|\" + d[1];")]
+    [InlineData("var d = new Dictionary<object, int>(); d[new { X = 1, Y = 2 }] = 1; d[new Point(1, 2)] = 2; return d.Count.ToString();")]
     [InlineData("var d = new Dictionary<object, string>(); d[new DateTime(2026, 1, 2)] = \"date\"; d[TimeSpan.FromDays(1)] = \"span\"; d[1m] = \"one\"; return d.Count + \"|\" + d[TimeSpan.FromDays(1)];")]
     [InlineData("var d = new Dictionary<IKey, int>(); d[new Key(1)] = 1; d[new Key(1)] = 2; return d.Count.ToString();")]
     [InlineData("int Count<T>(T a, T b) { var d = new Dictionary<T, int>(); d[a] = 1; d[b] = 2; return d.Count; } return Count(new Point(1, 2), new Point(1, 2)) + \"|\" + Count(1, 2);")]
@@ -159,5 +160,24 @@ public class DictionaryEnumerationConformanceTests
     {
         Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
         ConformanceRunner.AssertStatementsSameAsDotNet(statements, Keys);
+    }
+
+    [SkippableTheory]
+    // A change while the pairs are walked, as .NET answers it (measured): a new key ends the walk with an
+    // InvalidOperationException, where the live slots never ended it; an overwrite, a removal and Clear do
+    // not. A sorted dictionary and a sorted list refuse every change (found in review).
+    [InlineData("var d = new Dictionary<int, int> { [1] = 1, [2] = 2 }; var n = 0; try { foreach (var kv in d) { d[kv.Key + 10] = 0; if (++n > 50) return \"ran away\"; } return \"done\"; } catch (InvalidOperationException) { return \"threw\"; }")]
+    [InlineData("var d = new Dictionary<int, int> { [1] = 1, [2] = 2, [3] = 3 }; try { foreach (var kv in d) if (kv.Key == 3) d[99] = 0; return \"done\"; } catch (InvalidOperationException) { return \"threw\"; }")]
+    [InlineData("var d = new Dictionary<int, int> { [1] = 1, [2] = 2, [3] = 3 }; d.Remove(1); try { foreach (var kv in d) if (kv.Key == 3) d[99] = 0; return \"done\"; } catch (InvalidOperationException) { return \"threw\"; }")]
+    [InlineData("var d = new Dictionary<int, int> { [1] = 1, [2] = 2 }; foreach (var kv in d) d[kv.Key] = kv.Value * 10; return string.Join(\",\", d.Values);")]
+    [InlineData("var d = new Dictionary<int, int> { [1] = 1, [2] = 2, [3] = 3 }; foreach (var kv in d) if (kv.Key == 2) d.Remove(kv.Key); return string.Join(\",\", d.Keys);")]
+    [InlineData("var d = new Dictionary<int, int> { [1] = 1, [2] = 2 }; var seen = 0; foreach (var kv in d) { seen++; d.Clear(); } return seen + \"|\" + d.Count;")]
+    [InlineData("var sd = new SortedDictionary<int, int> { [1] = 1 }; var n = 0; try { foreach (var kv in sd) { sd[kv.Key + 1] = 0; if (++n > 50) return \"ran away\"; } return \"done\"; } catch (InvalidOperationException) { return \"threw\"; }")]
+    [InlineData("var sd = new SortedDictionary<int, int> { [1] = 1, [2] = 2 }; try { foreach (var kv in sd) sd[kv.Key] = 5; return \"done\"; } catch (InvalidOperationException) { return \"threw\"; }")]
+    [InlineData("var sl = new SortedList<int, int> { [1] = 1, [2] = 2 }; try { foreach (var kv in sl) sl.Remove(kv.Key); return \"done\"; } catch (InvalidOperationException) { return \"threw\"; }")]
+    public void AChangeWhileThePairsAreWalked_MatchesDotNet(string statements)
+    {
+        Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
+        ConformanceRunner.AssertStatementsSameAsDotNet(statements);
     }
 }

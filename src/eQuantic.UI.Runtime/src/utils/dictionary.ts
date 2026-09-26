@@ -1,3 +1,4 @@
+import { adoptMember } from './adopt-member';
 import { sameItem } from './collections';
 import { equals } from './equals';
 
@@ -49,6 +50,9 @@ export class Dictionary<K, V> implements Iterable<Pair<K, V>> {
   private readonly index: Map<K, number> | null;
   /** How a key is found. */
   private readonly byValue: KeyEquality;
+  /** Bumped when a NEW key goes in, the one change .NET's enumerator refuses: an overwrite, a
+   *  removal and `Clear` leave a walk over the pairs running (measured). */
+  private version = 0;
 
   constructor(entries?: Iterable<readonly [K, V]> | null, byValue: KeyEquality = false) {
     this.byValue = byValue;
@@ -102,6 +106,7 @@ export class Dictionary<K, V> implements Iterable<Pair<K, V>> {
     const slot = this.freed.length > 0 ? this.freed.pop()! : this.slots.length;
     this.slots[slot] = { key, value };
     if (this.indexes(key)) this.index!.set(key, slot);
+    this.version++;
     return this;
   }
 
@@ -151,9 +156,18 @@ export class Dictionary<K, V> implements Iterable<Pair<K, V>> {
     return values;
   }
 
-  /** The pairs, in slot order. */
+  /**
+   * The pairs, in slot order. A key added while they are walked ends the walk as .NET's enumerator
+   * ends it, with its InvalidOperationException: walking the live slots visited each new key in
+   * turn, so a loop that adds as it goes never ended.
+   */
   *[Symbol.iterator](): Iterator<Pair<K, V>> {
-    for (const entry of this.slots) if (entry !== undefined) yield pair(entry.key, entry.value);
+    const version = this.version;
+    for (const entry of this.slots) {
+      if (entry === undefined) continue;
+      yield pair(entry.key, entry.value);
+      if (this.version !== version) throw collectionModified();
+    }
   }
 
   /** A dictionary equals only itself, as .NET's does: `$eq.equals` asks a value's own `equals`. */
@@ -177,16 +191,13 @@ export class Dictionary<K, V> implements Iterable<Pair<K, V>> {
  */
 export function wireObject<K, V>(entries: Iterable<{ key: K; value: V } | undefined>): Record<string, V> {
   const json: Record<string, V> = {};
-  for (const entry of entries) {
-    if (entry === undefined) continue;
-    Object.defineProperty(json, wireKey(entry.key), {
-      value: entry.value,
-      writable: true,
-      enumerable: true,
-      configurable: true,
-    });
-  }
+  for (const entry of entries) if (entry !== undefined) adoptMember(json, wireKey(entry.key), entry.value);
   return json;
+}
+
+/** .NET's InvalidOperationException for a collection changed under a walk over it. */
+export function collectionModified(): Error {
+  return new Error('Collection was modified; enumeration operation may not execute.');
 }
 
 /**
@@ -216,10 +227,13 @@ export function containsValue<V>(
 /**
  * .NET's `EqualityComparer<object>.Default` on the values two keys turned out to be: identity (NaN
  * equal to NaN), a twin's own `equals` (a record, a struct, a decimal, a date, a class overriding
- * `Equals`), and the members of a tuple or an anonymous type, which have no twin to carry one.
+ * `Equals`), and the members of a tuple or an anonymous type, which have no twin to carry one. Two
+ * of those are compared only with one of their own kind, as .NET's Equals checks the type first: an
+ * anonymous type never equals a record with the same members.
  */
 export function sameKey(a: unknown, b: unknown): boolean {
-  return sameItem(a, b) || (isPlainValue(a) && equals(a, b));
+  if (sameItem(a, b)) return true;
+  return isPlainValue(a) && isPlainValue(b) && Array.isArray(a) === Array.isArray(b) && equals(a, b);
 }
 
 /** SameValueZero, a `Map`'s equality: identity, and NaN equal to NaN. */

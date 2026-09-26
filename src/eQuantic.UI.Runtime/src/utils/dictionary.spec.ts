@@ -264,6 +264,13 @@ describe("Dictionary — keys found by their own equality ('own')", () => {
     expect(d.get(new TimeSpan(date.ticks))).toBe('span');
   });
 
+  it('tells an anonymous type from a record with the same members, as their Equals does', () => {
+    const d = dictionary<unknown, number>(null, 'own');
+    d.set({ x: 1, y: 2 }, 1);
+    d.set(new Point(1, 2), 2);
+    expect(d.size).toBe(2);
+  });
+
   it('finds a value by its own equality when ContainsValue is asked so', () => {
     const d = dictionary<string, unknown>([
       ['p', new Point(1, 2)],
@@ -272,6 +279,55 @@ describe("Dictionary — keys found by their own equality ('own')", () => {
     expect(d.containsValue(new Point(1, 2), 'own')).toBe(true);
     expect(d.containsValue(new Plain(1), 'own')).toBe(false);
     expect(d.containsValue(new Point(1, 2))).toBe(false);
+  });
+});
+
+describe('Dictionary — a change while its pairs are walked', () => {
+  const modified = 'Collection was modified; enumeration operation may not execute.';
+  const three = () =>
+    dictionary<number, number>([
+      [1, 1],
+      [2, 2],
+      [3, 3],
+    ]);
+
+  it('ends the walk a new key breaks into, as .NET\'s enumerator does, where it never ended', () => {
+    const d = three();
+    let steps = 0;
+    expect(() => {
+      for (const [key] of d) {
+        d.set(key + 10, 0);
+        if (++steps > 50) break;
+      }
+    }).toThrow(modified);
+    expect(steps).toBe(1);
+  });
+
+  it('ends it for a key added on the last step, and for one that takes a freed slot', () => {
+    const last = three();
+    expect(() => {
+      for (const [key] of last) if (key === 3) last.set(99, 0);
+    }).toThrow(modified);
+    const freed = three();
+    freed.delete(1);
+    expect(() => {
+      for (const [key] of freed) if (key === 3) freed.set(99, 0);
+    }).toThrow(modified);
+  });
+
+  it('lets an overwrite, a removal and Clear run on, as .NET does', () => {
+    const d = three();
+    for (const [key, value] of d) d.set(key, value * 10);
+    expect(d.values()).toEqual([10, 20, 30]);
+    for (const [key] of d) if (key === 2) d.delete(key);
+    expect(d.keys()).toEqual([1, 3]);
+    let seen = 0;
+    for (const _ of d) {
+      seen++;
+      d.clear();
+    }
+    expect(seen).toBe(1);
+    expect(d.size).toBe(0);
   });
 });
 

@@ -11,6 +11,7 @@
  * has all three.
  */
 
+import { adoptMember } from '../../utils/adopt-member';
 import { Dictionary } from '../../utils/dictionary';
 
 /** What an installer (UseGtm) declares before boot. */
@@ -46,12 +47,10 @@ export class WebAnalytics {
     const entry: Record<string, unknown> = { event: eventName };
     // Each field DEFINED, not assigned: a key the data holds may be "__proto__", which an assignment
     // (and Object.assign) sends to the prototype's setter, dropping the field.
-    const put = (key: string, value: unknown) =>
-      Object.defineProperty(entry, key, { value, writable: true, enumerable: true, configurable: true });
     if (data instanceof Map || data instanceof Dictionary) {
-      for (const [key, value] of data) put(key, value);
+      for (const [key, value] of data) adoptMember(entry, key, value);
     } else if (data) {
-      for (const key of Object.keys(data)) put(key, data[key]);
+      for (const key of Object.keys(data)) adoptMember(entry, key, data[key]);
     }
     w[name].push(entry);
   }

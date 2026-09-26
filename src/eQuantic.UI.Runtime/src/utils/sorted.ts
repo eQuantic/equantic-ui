@@ -10,7 +10,15 @@
  * of the string subsystem); pass simple/numeric keys for guaranteed .NET parity.
  */
 
-import { containsValue, pair, requireKey, wireObject, type KeyEquality, type Pair } from './dictionary';
+import {
+  collectionModified,
+  containsValue,
+  pair,
+  requireKey,
+  wireObject,
+  type KeyEquality,
+  type Pair,
+} from './dictionary';
 
 /** `Comparer<T>.Default`-style ordering: numeric for numbers/bigint, relational otherwise. */
 export function defaultCompare<T>(a: T, b: T): number {
@@ -111,6 +119,8 @@ export function sortedSet<T>(
 export class SortedMap<K, V> implements Iterable<Pair<K, V>> {
   private readonly entries: { key: K; value: V }[] = [];
   private readonly compare: (a: K, b: K) => number;
+  /** Bumped by every change, each of which .NET's sorted enumerators refuse. */
+  private version = 0;
 
   constructor(
     initial?: Iterable<readonly [K, V]>,
@@ -155,6 +165,7 @@ export class SortedMap<K, V> implements Iterable<Pair<K, V>> {
     const i = this.indexOf(key);
     if (i >= 0) this.entries[i].value = value;
     else this.entries.splice(~i, 0, { key, value });
+    this.version++;
     return this;
   }
 
@@ -162,6 +173,7 @@ export class SortedMap<K, V> implements Iterable<Pair<K, V>> {
     const i = this.indexOf(key);
     if (i < 0) return false;
     this.entries.splice(i, 1);
+    this.version++;
     return true;
   }
 
@@ -179,6 +191,7 @@ export class SortedMap<K, V> implements Iterable<Pair<K, V>> {
 
   clear(): void {
     this.entries.length = 0;
+    this.version++;
   }
 
   /** Keys in sorted order. */
@@ -191,9 +204,18 @@ export class SortedMap<K, V> implements Iterable<Pair<K, V>> {
     return this.entries.map((e) => e.value);
   }
 
-  /** The pairs in key order, destructuring as `[key, value]` and answering `.key` and `.value`. */
+  /**
+   * The pairs in key order, destructuring as `[key, value]` and answering `.key` and `.value`. Any
+   * change while they are walked ends the walk with .NET's InvalidOperationException, as a sorted
+   * dictionary's and a sorted list's enumerators end it (measured): an addition, an overwrite, a
+   * removal, `Clear`.
+   */
   *[Symbol.iterator](): Iterator<Pair<K, V>> {
-    for (const e of this.entries) yield pair(e.key, e.value);
+    const version = this.version;
+    for (const e of this.entries) {
+      yield pair(e.key, e.value);
+      if (this.version !== version) throw collectionModified();
+    }
   }
 
   /** A dictionary equals only itself, as .NET's does. */
