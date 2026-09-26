@@ -809,6 +809,24 @@ record of a release, the wiki's Upgrading page is the distillate.
   same lowering, and a variable a pattern binds is declared by the name its uses have (the other
   declarations that skip it are [#467](https://github.com/eQuantic/equantic-ui/issues/467)). A new
   conformance class fails 15 of its first 19 cases on main.
+- **2026-09-26 · A number prints through its specifier as .NET prints it**: the resx subset admitted
+  the `E` specifier and the formatter had no branch for it, so `{0:E2}` passed the build and printed
+  `12345` ([#393](https://github.com/eQuantic/equantic-ui/issues/393)). Measured, every specifier
+  missed in the same way: .NET writes a double from its exact binary value, a long and a decimal from
+  every digit, and rounds a half by the type, and the formatter started from the shortest text with
+  one rule. It now formats from the exact decimal expansion (`utils/exact-decimal.ts`), writes `E` as
+  .NET does, and rounds an exact half to even for a double and a float and away from zero for a
+  decimal and an integer, which the compiler now names where a specifier is written (`FormatKind`,
+  `$eq.text.asInteger`). A new conformance class fails all fifteen of its cases on main. Found on the
+  way: `decimal`'s constants do not cross ([#444](https://github.com/eQuantic/equantic-ui/issues/444)).
+  Found in review ([#445](https://github.com/eQuantic/equantic-ui/pull/445)): `X` wrote a negative int
+  as `-1` and now writes it at its type's width, with `B` beside it; a custom picture read its digit
+  places alone and is now drawn as .NET draws it (sections, text, percent, exponents); a precision past
+  100 digits was cut, and a fraction under `D` printed where .NET throws; es-ES left `1234` ungrouped,
+  and sv-SE's minus sign was a hyphen. Left for later: a number's text outside a specifier ignores the
+  culture ([#454](https://github.com/eQuantic/equantic-ui/issues/454)), the guesses where a type did not
+  travel ([#455](https://github.com/eQuantic/equantic-ui/issues/455)), and EQ2100's subset can widen
+  ([#456](https://github.com/eQuantic/equantic-ui/issues/456)).
 
 - **2026-09-26 · The Copilot loop stops on its own**: waiting for Copilot's light review to run dry
   cost about one round per finding (69 findings in 47 rounds on six pull requests, 14 rounds for
