@@ -58,6 +58,24 @@ public class RecordPipelineTests
     }
 
     /// <summary>
+    /// One writer quotes every string, and it escapes the separators a reader cannot see: a line or
+    /// paragraph separator is legal inside a literal since ES2019, and invisible in the emitted source.
+    /// </summary>
+    [Fact]
+    public void AStringsSeparatorsAreEscaped_InALiteralAndInADeclaredDefault()
+    {
+        var ts = new ComponentCompiler().CompileSource("""
+            public sealed record Sep(string Line = "c\u2029d")
+            {
+                public string Text() => "a\u2028b";
+            }
+            """).Single().TypeScript;
+
+        ts.Should().Contain(@"'a\u2028b'").And.Contain(@"'c\u2029d'");
+        ts.Should().NotContain(((char)0x2028).ToString()).And.NotContain(((char)0x2029).ToString());
+    }
+
+    /// <summary>
     /// A declared default is the constant C# folds, whatever expression wrote it: `-1` is a minus
     /// over a literal, and the literal table had no row for it, so an optional `int SourceLine = -1`
     /// constructed as null, and a named call that skipped it passed null. In JavaScript `null >= 0`

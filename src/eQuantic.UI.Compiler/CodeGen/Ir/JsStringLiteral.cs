@@ -5,7 +5,9 @@ namespace eQuantic.UI.Compiler.CodeGen.Ir;
 /// and the two line breaks escaped. A raw line feed or carriage return inside a string literal is a
 /// syntax error that takes the whole module with it, and the text was quoted by hand in nine places:
 /// five of them, a record's declared defaults among them, escaped the backslash and the quote only,
-/// so `string Joined = "a" + "\n"` was written with a line break inside its quotes.
+/// so `string Joined = "a" + "\n"` was written with a line break inside its quotes. The line and
+/// paragraph separators (U+2028, U+2029) are legal inside a literal since ES2019, and are escaped
+/// anyway: invisible in the emitted source, and a line break to every tool older than that.
 /// </summary>
 internal static class JsStringLiteral
 {
@@ -14,5 +16,7 @@ internal static class JsStringLiteral
             .Replace("\\", "\\\\")
             .Replace("'", "\\'")
             .Replace("\n", "\\n")
-            .Replace("\r", "\\r") + "'";
+            .Replace("\r", "\\r")
+            .Replace("\u2028", "\\u2028")
+            .Replace("\u2029", "\\u2029") + "'";
 }
