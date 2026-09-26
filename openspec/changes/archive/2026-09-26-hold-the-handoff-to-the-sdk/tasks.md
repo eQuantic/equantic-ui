@@ -22,4 +22,4 @@
 ## 4. Documentation
 
 - [x] 4.1 One `docs/LEDGER.md` line citing #337
-- [ ] 4.2 The wiki's design system section names the APCA gate, in English and Portuguese in one commit, published when this merges
+- [x] 4.2 The wiki's design system section names the APCA gate, in English and Portuguese in one commit (9206388, on the wiki branch named like this pull request, which CI reads; merged into master when this merges)
