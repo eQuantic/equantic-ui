@@ -399,7 +399,32 @@ public class StringStaticStrategy : IConversionStrategy
     /// </summary>
     private static bool MayWriteASpecifier(ExpressionSyntax template, ConversionContext context) =>
         !context.SemanticHelper.TryGetConstantValue(template, out var constant) || constant is not string text
-        || System.Text.RegularExpressions.Regex.IsMatch(text, @"(?<!\{)\{\d+(\s*,\s*-?\d+)?\s*:");
+        || WritesASpecifier(text);
+
+    /// <summary>
+    /// Whether a composite format string has a placeholder with a specifier, read as
+    /// <c>string.Format</c> reads it, left to right: <c>{{</c> is an escaped brace, and anything else
+    /// that opens a brace opens a placeholder up to its <c>}</c>. A look-behind for a brace refused
+    /// the placeholder in <c>"{{{0:E1}}}"</c>, whose opening brace follows an escaped one (found in
+    /// review, #445).
+    /// </summary>
+    private static bool WritesASpecifier(string template)
+    {
+        for (var i = 0; i < template.Length; i++)
+        {
+            if (template[i] != '{') continue;
+            if (i + 1 < template.Length && template[i + 1] == '{')
+            {
+                i++;
+                continue;
+            }
+            var end = template.IndexOf('}', i);
+            if (end < 0) return false;
+            if (template.IndexOf(':', i, end - i) >= 0) return true;
+            i = end;
+        }
+        return false;
+    }
 
     /// <summary>The element type of a collection, for a spread: an array's, or the T of the
     /// <c>IEnumerable&lt;T&gt;</c> it implements; null where there is none.</summary>

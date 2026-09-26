@@ -10,7 +10,7 @@
  */
 
 /** The digits of a number and where its point goes: `digits × 10^exponent`. The digits carry no
- * leading zeros and no trailing ones (`"0"` is zero), and the sign is kept apart, because a
+ * leading zeros and no trailing zeros (`"0"` is zero), and the sign is kept apart, because a
  * double's zero has one. */
 export interface ExactDecimal {
   readonly negative: boolean;

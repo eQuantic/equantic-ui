@@ -219,12 +219,14 @@ function numeric(value: number | bigint | Decimal, kind: NumberKind): Numeric {
   };
 }
 
-/** `Intl.NumberFormat`'s options as the engines take them since NumberFormat v3, which ES2021's
- * types predate: a rounding mode, and a sign shown for negative numbers but not for a zero. */
-type ExactOptions = Omit<Intl.NumberFormatOptions, 'signDisplay'> & {
-  roundingMode?: Tie;
-  signDisplay?: 'auto' | 'negative';
-};
+/**
+ * `Intl.NumberFormat`'s options as NumberFormat v3 takes them (ES2023): a rounding mode, and a sign
+ * shown for negative numbers but not for a zero. The formatter needs v3 for those and for reading a
+ * STRING as an exact decimal (`format('9007199254740993')` keeps its last digit, where a number
+ * would round to `…992`): V8 10.6 (Chrome and Edge 106), SpiderMonkey (Firefox 116), and
+ * JavaScriptCore (Safari 15.4, Bun) have it, and the conformance suite runs on the last.
+ */
+type ExactOptions = Intl.NumberFormatOptions & { roundingMode?: Tie };
 
 /**
  * Formats a number from its exact digits. `Intl` reads a STRING digit for digit where it would
@@ -242,9 +244,7 @@ function exactly(
     roundingMode: number.tie,
     signDisplay: number.signedZero ? 'auto' : 'negative',
   };
-  return new Intl.NumberFormat(activeFormatLocale(), settings as Intl.NumberFormatOptions).format(
-    text as unknown as number,
-  );
+  return new Intl.NumberFormat(activeFormatLocale(), settings).format(text as Intl.StringNumericLiteral);
 }
 
 /** The culture's decimal separator and minus sign, as `Intl` writes them in the locale in force. */
