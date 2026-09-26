@@ -55,6 +55,47 @@ public class ConvertStrategy : IExpressionIrStrategy
                 ParseCulture.Check(invocation, providerExpr, context);
             return ToDecimal(argExpr, context);
         }
+        if (name == "ToBoolean")
+        {
+            // A bool reads its text the same in every culture, so a provider is not consulted, as .NET
+            // does not consult it. It is still EVALUATED, after the value and before the conversion,
+            // as C# evaluates every argument it writes: a provider with a side effect or an exception
+            // went nowhere (found in review, #421). The invariant and the current culture, and a null,
+            // are reads with no effect, left out as ToString leaves them. Any other CultureInfo
+            // (GetCultureInfo(name), new CultureInfo(name)) may throw, and CultureInfo has no twin to
+            // evaluate it with, so it is EQ2108 rather than a call dropped in silence. The numeric
+            // readers accept only CultureInfo.InvariantCulture (ParseCulture).
+            if (providerExpr is not null && !NamedCulture.IsInvariant(providerExpr, context)
+                && !NamedCulture.IsCurrent(providerExpr, context) && BindsToCultureInfo(providerExpr, context))
+                context.Report(invocation, ConversionSeverity.Error, "EQ2108",
+                    "Convert.ToBoolean does not consult its provider, but C# evaluates it, and this culture cannot be "
+                    + "evaluated in the browser, where CultureInfo has no twin. Pass CultureInfo.InvariantCulture, or no provider.");
+            var provider = providerExpr is null || NamedCulture.IsInvariant(providerExpr, context)
+                || NamedCulture.IsCurrent(providerExpr, context) || BindsToCultureInfo(providerExpr, context)
+                ? null
+                : context.Converter.ConvertIr(providerExpr);
+            var reads = ReadsText(invocation, argExpr, context);
+            if (reads) context.UsedHelpers.Add(Eq.Import);
+            JsExpr Of(JsExpr value) => reads
+                ? JsExpr.Template($"{Eq.BoolConvert}({{0}})", [value], context.TypeAnnotations)
+                : ToBoolean(value, context.SemanticHelper.GetType(argExpr), context);
+            if (provider is null) return Of(context.Converter.ConvertIr(argExpr));
+            // Both arguments in the order they are WRITTEN, which a named argument may reverse
+            // (`Convert.ToBoolean(provider: P(), value: V())` runs P first), then the conversion of
+            // the value (found in review, #421).
+            var providerFirst = providerExpr!.SpanStart < argExpr.SpanStart;
+            var value = context.Converter.ConvertIr(argExpr);
+            var parameters = (providerFirst, context.TypeAnnotations) switch
+            {
+                (true, true) => "(_provider: unknown, $v: any)",
+                (true, false) => "(_provider, $v)",
+                (false, true) => "($v: any, _provider: unknown)",
+                (false, false) => "($v, _provider)",
+            };
+            return JsExpr.Template($"({parameters} => {{0}})({{1}}, {{2}})",
+                [Of(JsExpr.Identifier("$v")), providerFirst ? provider : value, providerFirst ? value : provider],
+                context.TypeAnnotations);
+        }
         if (ReadsText(invocation, argExpr, context) && TextReader(name) is { } text)
         {
             // Text is read in a culture, and the browser reads the invariant one (see ParseCulture).
@@ -221,11 +262,46 @@ public class ConvertStrategy : IExpressionIrStrategy
         return type.IsIntegral() ? Call(Eq.Dec) : Call(Eq.DecConvert);
     }
 
+    /// <summary>Whether the provider is a member or a constructor of <c>CultureInfo</c> itself, which
+    /// has no twin to evaluate it with.</summary>
+    private static bool BindsToCultureInfo(ExpressionSyntax provider, ConversionContext context) =>
+        context.SemanticHelper.GetSymbol(provider)?.ContainingType?.ToDisplayString() == "System.Globalization.CultureInfo";
+
+    /// <summary>
+    /// <c>Convert.ToBoolean</c> by the type of what it converts, as <see cref="ToDecimal"/> is (found in
+    /// review, #421): a bool is itself; a number is whether it is not zero, a NaN included and a
+    /// negative zero not, where a 64-bit integer is a BigInt and a decimal its twin, each compared with
+    /// its own zero; and a char or a DateTime has no conversion, which .NET throws after evaluating the
+    /// argument. Text reads as <c>bool.Parse</c> does before this. The lowering compared every value
+    /// with the number zero, so a false bool was true (<c>false !== 0</c>) and so was <c>0L</c>
+    /// (<c>0n !== 0</c>). An object is #401's: its type is the run time's to settle, and it still
+    /// compares with zero.
+    /// </summary>
+    private static JsExpr ToBoolean(JsExpr value, ITypeSymbol? type, ConversionContext context)
+    {
+        JsExpr Template(string template) => JsExpr.Template(template, [value], context.TypeAnnotations);
+        switch (type?.SpecialType)
+        {
+            case SpecialType.System_Boolean:
+                return value;
+            case SpecialType.System_Int64 or SpecialType.System_UInt64:
+                return Template("(({0}) !== 0n)");
+            case SpecialType.System_Decimal:
+                context.UsedHelpers.Add(Eq.Import);
+                return Template($"!({{0}}).equals({Eq.Dec}(0))");
+            case SpecialType.System_Char or SpecialType.System_DateTime:
+                var from = type.SpecialType == SpecialType.System_Char ? "Char" : "DateTime";
+                var parameter = context.TypeAnnotations ? "(_: unknown)" : "(_)";
+                return Template($"({parameter} => {{ throw new Error(\"Invalid cast from '{from}' to 'Boolean'.\"); }})({{0}})");
+            default:
+                return Template("(({0}) !== 0)");
+        }
+    }
+
     private static string Converted(string name, ExpressionSyntax argExpr, ConversionContext context)
     {
         var value = context.Converter.ConvertExpression(argExpr);
         var argType = context.SemanticHelper.GetType(argExpr);
-        var isStringArg = argType?.SpecialType == SpecialType.System_String;
 
         // Numeric → integer uses .NET banker's rounding via the $eq.math.round compat helper. Text
         // never gets here: it reads as the type's Parse does (TextReader).
@@ -252,9 +328,6 @@ public class ConvertStrategy : IExpressionIrStrategy
             // it reads as float.Parse and double.Parse do (TextReader).
             "ToSingle" => $"Math.fround(Number({value}))",
             "ToDouble" => $"Number({value})",
-            "ToBoolean" => isStringArg
-                ? $"(String({value}).trim().toLowerCase() === 'true')"
-                : $"(({value}) !== 0)",
             "ToChar" => $"String.fromCharCode({value})",
             _ => $"String({value})"
         };

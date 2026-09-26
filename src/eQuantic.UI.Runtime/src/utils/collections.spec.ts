@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest';
+import { sortedDictionary } from './sorted';
 import {
   Queue,
   queue,
@@ -6,6 +7,7 @@ import {
   stack,
   LinkedList,
   linkedList,
+  remove,
 } from './collections';
 
 describe('Queue<T> — FIFO', () => {
@@ -131,5 +133,37 @@ describe('LinkedList<T> — doubly-linked', () => {
   it('throws on remove from empty', () => {
     expect(() => linkedList<number>().removeFirst()).toThrow();
     expect(() => linkedList<number>().removeLast()).toThrow();
+  });
+});
+
+// ICollection<KeyValuePair<K, V>>.Remove, which reaches the runtime's remove with a dictionary. A C#
+// case needs a KeyValuePair built by hand, which does not cross yet (#433), so the dictionary shapes
+// are held here, on the pairs a dictionary itself yields (found in review, #421).
+describe('remove over a dictionary, as ICollection<KeyValuePair<K, V>> removes', () => {
+  it('removes the pair only when its key is there with an equal value', () => {
+    const map = new Map<number, string>([[1, 'a']]);
+    expect(remove(map as never, { key: 1, value: 'b' } as never)).toBe(false);
+    expect(remove(map as never, { key: 2, value: 'a' } as never)).toBe(false);
+    expect(map.size).toBe(1);
+    expect(remove(map as never, { key: 1, value: 'a' } as never)).toBe(true);
+    expect(map.size).toBe(0);
+  });
+
+  it('does the same on a plain object, which a primitive-keyed Dictionary is', () => {
+    const dict: Record<string, number> = { a: 1, b: 2 };
+    expect(remove(dict as never, { key: 'b', value: 3 } as never)).toBe(false);
+    expect(remove(dict as never, { key: 'c', value: 2 } as never)).toBe(false);
+    expect(remove(dict as never, { key: 'b', value: 2 } as never)).toBe(true);
+    expect(Object.keys(dict)).toEqual(['a']);
+  });
+
+  it('does the same on the sorted dictionary', () => {
+    const sorted = sortedDictionary<number, string>();
+    sorted.set(1, 'a');
+    sorted.set(2, 'b');
+    expect(remove(sorted as never, { key: 2, value: 'x' } as never)).toBe(false);
+    expect(remove(sorted as never, { key: 2, value: 'b' } as never)).toBe(true);
+    expect(sorted.size).toBe(1);
+    expect(sorted.has(2)).toBe(false);
   });
 });

@@ -243,6 +243,122 @@ export function contains(collection: unknown, value: unknown): boolean {
 }
 
 /**
+ * `EqualityComparer<T>.Default`, as a list's `Remove` asks it: a type's own `Equals` where its twin
+ * carries one (a record, a struct, a decimal, a date, a class that overrides it), a double's where
+ * NaN equals NaN, and identity for everything else, which is what a class that does not override
+ * `Equals` compares by.
+ */
+export function sameItem(item: unknown, value: unknown): boolean {
+  if (item === value) return true;
+  if (typeof item === 'number' && typeof value === 'number')
+    return item !== item && value !== value;
+  if (item == null || value == null) return false;
+  const own = (item as { equals?: unknown }).equals;
+  return typeof own === 'function' && (own as (other: unknown) => boolean).call(item, value);
+}
+
+/** What a dictionary is here: a `Map`, or the runtime's sorted map, keyed by the pair's key. */
+interface Dictionary<K, V> {
+  has(key: K): boolean;
+  get(key: K): V | undefined;
+  delete(key: K): boolean;
+}
+
+function isDictionary(collection: unknown): collection is Dictionary<unknown, unknown> {
+  if (collection instanceof Map) return true;
+  const shape = collection as Partial<Dictionary<unknown, unknown>> | null;
+  return (
+    shape != null &&
+    typeof shape.has === 'function' &&
+    typeof shape.get === 'function' &&
+    typeof shape.delete === 'function' &&
+    !(collection instanceof Set)
+  );
+}
+
+/** A primitive-keyed `Dictionary<K, V>`, which is a plain object here, its keys its property names. */
+function isPlainDictionary(collection: unknown): collection is Record<string, unknown> {
+  if (collection == null || typeof collection !== 'object' || Array.isArray(collection)) return false;
+  const prototype = Object.getPrototypeOf(collection);
+  return prototype === Object.prototype || prototype === null;
+}
+
+/** The plain object asked as a dictionary is asked: a key is there when it is an own property. */
+function plainDictionary(object: Record<string, unknown>): Dictionary<unknown, unknown> {
+  return {
+    has: (key) => Object.prototype.hasOwnProperty.call(object, key as PropertyKey),
+    get: (key) => object[key as string],
+    delete: (key) => delete object[key as string],
+  };
+}
+
+/**
+ * `ICollection<KeyValuePair<K, V>>.Remove`: the pair leaves only when its key is there with an equal
+ * value, and the answer says whether it did. The comparison is the pair's the compiler picked
+ * (`pairComparer`, found in review, #421), handed the stored pair and the one to remove; without one,
+ * the value is compared as `sameItem` compares it.
+ */
+function removePair<T>(dictionary: Dictionary<unknown, unknown>, pair: T, same: (a: T, b: T) => boolean): boolean {
+  if (pair == null || typeof pair !== 'object' || !('key' in pair)) return false;
+  const { key, value } = pair as unknown as { key: unknown; value: unknown };
+  if (!dictionary.has(key)) return false;
+  const stored = { key, value: dictionary.get(key) };
+  const equal = same === sameItem ? sameItem(stored.value, value) : same(stored as T, pair);
+  return equal && dictionary.delete(key);
+}
+
+/**
+ * `EqualityComparer<KeyValuePair<K, V>>.Default`, which compares the pair's two halves as each one's
+ * own comparer does (`ValueType.Equals` over its fields), and `Dictionary`'s
+ * `ICollection<KeyValuePair<K, V>>.Remove`, which compares the value by `V`'s. The compiler picks
+ * each half's comparison from its static type (found in review, #421): a tuple value is an array
+ * here, and only the type says it compares by value. It reads `.key` and `.value`, which both
+ * shapes of a pair have: a dictionary's entry (an array that carries them) and a plain pair.
+ */
+export function pairComparer<K, V>(
+  key: (a: K, b: K) => boolean,
+  value: (a: V, b: V) => boolean,
+): (a: { key: K; value: V }, b: { key: K; value: V }) => boolean {
+  return (a, b) => key(a.key, b.key) && value(a.value, b.value);
+}
+
+/**
+ * `List<T>.Remove`: takes out the FIRST item equal to the value and answers whether there was one
+ * (#400). It was lowered to `((_idx = list.indexOf(x)) >= 0 && list.splice(_idx, 1))`, which assigned
+ * a name nothing declared, so every call threw `ReferenceError: _idx is not defined` in a module, and
+ * would have answered the spliced array where C# answers a bool. `same` is the comparison the
+ * compiler picks from the element type: the structural one for a tuple, a record or a struct, as
+ * `Contains` picks it (a tuple is an array here, which `sameItem` takes by reference), and
+ * `sameItem` for everything else.
+ *
+ * The static type may be `ICollection<T>`, which can hold any collection that implements it when the
+ * call runs (found in review, #421), and each removes as it does when called directly, as `contains`
+ * asks the value what it is: a Set (`HashSet<T>`) through `delete`, the way `set.Remove(x)` lowers; a
+ * dictionary (`ICollection<KeyValuePair<K, V>>`) the pair whose key it holds with an equal value, as
+ * .NET's does, whether it is a plain object (a primitive key), a `ValueMap` or a sorted map; and a twin
+ * with a `remove` of its own (`LinkedList<T>`, `SortedSet<T>`) through it. An
+ * array stands for a `List<T>` and for a `T[]` alike, and .NET throws for the second, which this side
+ * cannot tell apart.
+ */
+export function remove<T>(
+  list: T[] | Set<T> | Dictionary<unknown, unknown> | { remove(value: T): boolean },
+  value: T,
+  same: (a: T, b: T) => boolean = sameItem,
+): boolean {
+  if (list instanceof Set) return list.delete(value);
+  if (isDictionary(list)) return removePair(list, value, same);
+  if (isPlainDictionary(list)) return removePair(plainDictionary(list), value, same);
+  if (!Array.isArray(list)) return (list as { remove(value: T): boolean }).remove(value);
+  for (let index = 0; index < list.length; index++) {
+    if (same(list[index], value)) {
+      list.splice(index, 1);
+      return true;
+    }
+  }
+  return false;
+}
+
+/**
  * `HashSet<T>.Add` — which answers whether the value was NEW, and is the whole reason
  * `if (!set.Add(x)) set.Remove(x)` toggles. A JS `Set.add` returns the set itself, always truthy,
  * so that idiom silently became "add, and never remove".
@@ -252,7 +368,11 @@ export function contains(collection: unknown, value: unknown): boolean {
  * longer one and hands the selector `undefined` for the missing partner, which for numbers is a
  * silent NaN. Both sources are read once here, so a side-effecting source stays a single read.
  */
-export function zip<A, B, R>(first: readonly A[], second: readonly B[], selector: (a: A, b: B) => R): R[] {
+export function zip<A, B, R>(
+  first: readonly A[],
+  second: readonly B[],
+  selector: (a: A, b: B) => R,
+): R[] {
   const length = Math.min(first.length, second.length);
   const result: R[] = new Array(length);
   for (let i = 0; i < length; i++) result[i] = selector(first[i], second[i]);

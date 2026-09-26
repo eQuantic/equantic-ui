@@ -82,7 +82,9 @@ public class BclSurfaceAuditTests
         if (type == typeof(bool)) return "true";
         if (type == typeof(char)) return "'a'";
         if (type == typeof(string)) return "\"a\"";
-        if (type == typeof(object)) return "\"a\"";
+        // Typed as object, or overload resolution picks the string overload beside it and the probe
+        // named `(Object)` measures `(String)` (found in review, #421).
+        if (type == typeof(object)) return "(object)\"a\"";
         if (type == typeof(StringComparison)) return "StringComparison.Ordinal";
         if (type == typeof(MidpointRounding)) return "MidpointRounding.ToEven";
         if (type == typeof(Guid)) return "Guid.NewGuid()";

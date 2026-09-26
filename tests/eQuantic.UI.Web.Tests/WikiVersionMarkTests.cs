@@ -111,11 +111,11 @@ public class WikiVersionMarkTests
         var root = RepoRoot();
         root.Should().NotBeNull();
 
-        var wiki = Path.Combine(Directory.GetParent(root!)!.FullName, "equantic-ui.wiki");
-        // The wiki is a SEPARATE repository, so this guard bites where the wiki is checked out —
-        // which is where the docs are written. It does not run in CI unless CI clones the wiki
-        // beside the repo; saying so here beats a green tick that checked nothing.
-        if (!Directory.Exists(wiki)) return;
+        // The wiki is a SEPARATE repository, so this guard bites where the wiki is checked out,
+        // which is where the docs are written: beside the repository, where CI clones it and where
+        // its absence fails, or in the worktree EQ_WIKI_DIR names (WikiClone).
+        if (WikiClone.Absent()) return;
+        var wiki = WikiClone.Location!;
 
         // Without tags every symbol reads as unreleased and the check passes having compared
         // nothing — the exact shape of green tick this guard exists to replace. A shallow CI
@@ -152,13 +152,13 @@ public class WikiVersionMarkTests
         // prevent — pointed at itself. The mark spelling changed once under exactly these feet;
         // counting what was compared is what turns that from a green tick into a red one.
         checkedMarks.Should().BeGreaterThan(0,
-            "the wiki has version marks; parsing none means the spelling moved and this guard did not");
+            $"the wiki has version marks; parsing none in {WikiClone.Describe()} means the spelling moved and this guard did not");
 
         // Every one of them, not the first: finding these one round trip at a time is how a docs
         // audit turns into an afternoon.
         string.Join("\n", wrong).Should().BeEmpty(
             "a version mark is the reader's answer to \"does my version have this\", and the site "
-            + "publishes it");
+            + $"publishes it. Read from {WikiClone.Describe()}");
     }
 
     /// <summary>
@@ -168,9 +168,8 @@ public class WikiVersionMarkTests
     [Fact]
     public void EveryVersionMark_SaysWhatItIsAbout()
     {
-        var root = RepoRoot();
-        var wiki = Path.Combine(Directory.GetParent(root!)!.FullName, "equantic-ui.wiki");
-        if (!Directory.Exists(wiki)) return;   // see above
+        if (WikiClone.Absent()) return;   // see above
+        var wiki = WikiClone.Location!;
 
         var unannotated = new List<string>();
         foreach (var page in Directory.GetFiles(wiki, "*.md"))
@@ -194,6 +193,6 @@ public class WikiVersionMarkTests
 
         string.Join("\n", unannotated).Should().BeEmpty(
             "a mark carries the symbol it claims — `<!-- eq:since … symbol=\"Foo\" -->` — or "
-            + "nothing can check it");
+            + $"nothing can check it. Read from {WikiClone.Describe()}");
     }
 }

@@ -78,7 +78,14 @@ import {
 import { asSingle, format, parseEnum, stringFormat, stringFormatInvariant } from './utils/format';
 import { nextTextElementLength, textElementStarts } from './utils/text-elements';
 import { unicodeCategory } from './utils/unicode-category';
-import { hasNonWhiteSpace, isWhiteSpace, splitOnWhiteSpace, trim, trimEnd, trimStart } from './utils/white-space';
+import {
+  hasNonWhiteSpace,
+  isWhiteSpace,
+  splitOnWhiteSpace,
+  trim,
+  trimEnd,
+  trimStart,
+} from './utils/white-space';
 import { str } from './utils/culture';
 import { dateTime, timeSpan, dateOnly, timeOnly, dateTimeOffset } from './utils/datetime';
 import { stringBuilder } from './utils/string-builder';
@@ -87,11 +94,15 @@ import {
   stack,
   linkedList,
   contains,
+  remove,
+  sameItem,
+  pairComparer,
   count,
   setAdd,
   zip,
 } from './utils/collections';
 import { dictionary } from './utils/dictionary';
+import { boolConvert, boolParse, boolTryParse } from './utils/boolean-text';
 import { sortedSet, sortedDictionary, sortedList } from './utils/sorted';
 import { liftArith, liftCmp, liftUnary } from './utils/nullable';
 import { equals } from './utils/equals';
@@ -299,7 +310,12 @@ export const $eq = {
     contains,
     count,
     setAdd,
+    remove,
+    sameItem,
+    pairComparer,
   },
+  /** `bool.Parse`, `bool.TryParse` and `Convert.ToBoolean(string)`, as .NET reads the text. */
+  bool: { parse: boolParse, tryParse: boolTryParse, convert: boolConvert },
   /** Nullable<T> lifted operators (null-propagating arithmetic, false-on-null relational). */
   nullable: { arith: liftArith, cmp: liftCmp, unary: liftUnary },
   /** `bool | bool` and `bool & bool`: both operands evaluated, a bool answered — see `or`. */

@@ -6,7 +6,8 @@ namespace eQuantic.UI.Compiler.CodeGen.Strategies.Primitives;
 
 /// <summary>
 /// <c>Parse</c> and <c>TryParse</c> on every numeric type: the eight integers, <c>float</c>,
-/// <c>double</c> and <c>decimal</c> (#358, #376). The runtime reads the text with .NET's grammar,
+/// <c>double</c> and <c>decimal</c> (#358, #376), and on <c>bool</c>, which reads its text through
+/// the same shape (#402): the text, and a TryParse whose <c>out</c> takes the value or false. The runtime reads the text with .NET's grammar,
 /// under the NumberStyles the call names or the type's own, holds the digits as the type does, and
 /// throws what .NET throws with its words. <c>parseInt</c> and <c>parseFloat</c> did none of it:
 /// they read the longest prefix that looked like a number, so "12abc" was 12 and "1,5" was 1, an int
@@ -23,6 +24,10 @@ public class NumberMethodStrategy : IExpressionIrStrategy
     private static readonly Dictionary<SpecialType, Reader> Readers = new()
     {
         [SpecialType.System_Decimal] = new(Eq.DecParse, Eq.DecTryParse, null, $"{Eq.Dec}(0)"),
+        // `String(s).trim().toLowerCase() === 'true'` was the whole of bool.Parse: it never threw,
+        // a null was the text "null", a trailing NUL (which .NET trims) made "true\0" false, and
+        // TryParse had no translation at all.
+        [SpecialType.System_Boolean] = new(Eq.BoolParse, Eq.BoolTryParse, null, "false"),
         [SpecialType.System_Double] = new(Eq.RealParse, Eq.RealTryParse, "double", "0"),
         [SpecialType.System_Single] = new(Eq.RealParse, Eq.RealTryParse, "single", "0"),
         [SpecialType.System_Byte] = Integer("byte"),
@@ -41,6 +46,7 @@ public class NumberMethodStrategy : IExpressionIrStrategy
     private static readonly Dictionary<string, SpecialType> Names = new()
     {
         ["decimal"] = SpecialType.System_Decimal, ["Decimal"] = SpecialType.System_Decimal,
+        ["bool"] = SpecialType.System_Boolean, ["Boolean"] = SpecialType.System_Boolean,
         ["double"] = SpecialType.System_Double, ["Double"] = SpecialType.System_Double,
         ["float"] = SpecialType.System_Single, ["Single"] = SpecialType.System_Single,
         ["byte"] = SpecialType.System_Byte, ["Byte"] = SpecialType.System_Byte,

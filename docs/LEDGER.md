@@ -730,6 +730,36 @@ record of a release, the wiki's Upgrading page is the distillate.
   words where it built an invalid date. 38 of the 44 conformance cases failed before the port.
   Measured and left to its own issue: `Add(TimeSpan)`, the operators, `AddMonths` and `AddYears`
   at the calendar's edge ([#424](https://github.com/eQuantic/equantic-ui/issues/424)).
+- **2026-09-26 · The wiki moves with its pull request**: CI cloned the wiki's master for every run, so
+  a pull request that added a diagnostic failed its own docs guard until its rows were published,
+  and every other pull request failed the same guard once they were: #386's EQ1007 rows went to
+  master early on 2026-09-24 and had to be taken back out, and #418 met the same wall with EQ1008
+  ([#406](https://github.com/eQuantic/equantic-ui/issues/406)). `scripts/checkout-wiki.sh` now reads
+  the wiki at the branch named like the pull request's own when there is one, and master otherwise,
+  failing rather than guessing when the branches cannot be listed; a `wiki-checkout` job runs its
+  self-test against a fixture wiki, and the Workflow section says the wiki branch merges into master
+  with its pull request. Locally every guard now finds the wiki through one locator, which reads
+  `EQ_WIKI_DIR` for a worktree of a pull request's wiki branch (checking a branch out in the shared
+  clone had made #354's guards fail on #418's rows), fails when the variable names no wiki, and names
+  the directory, branch and commit a failing guard read.
+
+- **2026-09-26 · List.Remove and a bool from text answer as .NET does**: `list.Remove(item)` assigned
+  an index nothing declared, so every call threw `ReferenceError: _idx is not defined` in the
+  browser and the documentation site's "you are here" never moved
+  ([#400](https://github.com/eQuantic/equantic-ui/issues/400)); `bool.Parse` was a comparison that
+  never threw, read a null as the text "null" and kept a trailing NUL, and `bool.TryParse` had no
+  translation ([#402](https://github.com/eQuantic/equantic-ui/issues/402)). Both go through the
+  runtime now: Remove answers a bool and compares as `EqualityComparer<T>.Default`, and a bool reads
+  as `Boolean.TryParse`, with .NET's trimming, its ASCII-only case fold and its exceptions. The
+  number reader uses the one white space list, and `Convert.ToBoolean(object)` is left to its family
+  ([#401](https://github.com/eQuantic/equantic-ui/issues/401)). From the review: every other
+  `Convert.ToBoolean` overload answers by the type C# binds (a false bool was true, and so was `0L`,
+  a BigInt here), a tuple in Remove compares element by element as `Contains` compares it, a
+  HashSet, a LinkedList, a SortedSet or a dictionary's pair reached through `ICollection<T>` removes
+  as it does directly, a pair compared half by half and a nullable tuple and an anonymous type by
+  value, a ToBoolean provider is evaluated in the order it is written (another `CultureInfo`
+  than the invariant or the current one is EQ2108, having no twin to evaluate), and the BCL
+  audit's `(Object)` probes call the object overload instead of the string one beside it.
 
 ## Retired documents
 
