@@ -20,5 +20,6 @@
 - [x] 3.2 Name the wiki branch in the wiki guard's message
 - [x] 3.3 Give every guard one locator that reads `EQ_WIKI_DIR`, fails when it names no wiki, and names what it read in a failure
 - [x] 3.4 Check: with no variable the guards read the clone beside the repository; with a worktree of #418's wiki branch the Diagnostics guard fails naming that worktree, branch and commit; with a missing directory, and with one that is not a wiki, all six fail
-- [x] 3.5 Add the `docs/LEDGER.md` line citing #406
-- [x] 3.6 Archive this change before the merge
+- [x] 3.5 Check, in a layout with a stale directory beside the repository: an empty `EQ_WIKI_DIR` and a sibling without `Home.md` fail all six, and no sibling skips off CI and fails under `GITHUB_ACTIONS`
+- [x] 3.6 Add the `docs/LEDGER.md` line citing #406
+- [x] 3.7 Archive this change before the merge

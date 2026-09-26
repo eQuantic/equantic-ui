@@ -45,9 +45,10 @@ listed, the checkout SHALL fail and leave nothing behind, rather than read the d
 
 Every test that reads the wiki SHALL find it through one locator: the directory `EQ_WIKI_DIR` names
 when the variable is set, and `equantic-ui.wiki` beside the repository otherwise. An `EQ_WIKI_DIR`
-that names no directory, or a directory that is not a checkout of the wiki, SHALL fail every guard
-rather than let it skip. A failing guard SHALL name the wiki it read: the directory, and the branch
-and commit checked out there.
+that is set and empty, that names no directory, or that names a directory that is not a checkout of
+the wiki, SHALL fail every guard rather than let it skip, and so SHALL a directory beside the
+repository that is not a checkout of the wiki. A failing guard SHALL name the wiki it read: the
+directory, and the branch and commit checked out there.
 
 #### Scenario: A local run against a pull request's wiki branch
 
@@ -56,8 +57,14 @@ and commit checked out there.
 
 #### Scenario: A typo in the variable
 
-- **WHEN** `EQ_WIKI_DIR` names a directory that does not exist, or one without the wiki's `Home.md`
+- **WHEN** `EQ_WIKI_DIR` is set and empty, names a directory that does not exist, or names one
+  without the wiki's `Home.md`
 - **THEN** every guard fails, saying what the variable names
+
+#### Scenario: A stale directory beside the repository
+
+- **WHEN** `EQ_WIKI_DIR` is unset and the directory beside the repository has no `Home.md`
+- **THEN** every guard fails instead of reading no page
 
 #### Scenario: A guard fails
 
