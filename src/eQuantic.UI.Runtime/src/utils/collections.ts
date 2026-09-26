@@ -351,11 +351,14 @@ function sameItem(item: unknown, value: unknown): boolean {
  * `List<T>.Remove`: takes out the FIRST item equal to the value and answers whether there was one
  * (#400). It was lowered to `((_idx = list.indexOf(x)) >= 0 && list.splice(_idx, 1))`, which assigned
  * a name nothing declared, so every call threw `ReferenceError: _idx is not defined` in a module, and
- * would have answered the spliced array where C# answers a bool.
+ * would have answered the spliced array where C# answers a bool. `same` is the comparison the
+ * compiler picks from the element type: the structural one for a tuple, a record or a struct, as
+ * `Contains` picks it (a tuple is an array here, which `sameItem` takes by reference), and
+ * `sameItem` for everything else.
  */
-export function remove<T>(list: T[], value: T): boolean {
+export function remove<T>(list: T[], value: T, same: (a: T, b: T) => boolean = sameItem): boolean {
   for (let index = 0; index < list.length; index++) {
-    if (sameItem(list[index], value)) {
+    if (same(list[index], value)) {
       list.splice(index, 1);
       return true;
     }

@@ -1,3 +1,4 @@
+using eQuantic.UI.Compiler.CodeGen.Extensions;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 
@@ -85,7 +86,8 @@ public class ListMethodStrategy : IConversionStrategy
             "AddRange" => args.Count > 0 ? $"{caller}.push(...{args[0]})" : caller,
             "Insert" => ConvertInsert(caller, args),
             "InsertRange" => ConvertInsertRange(caller, args),
-            "Remove" => ConvertRemove(caller, args, context),
+            "Remove" => ConvertRemove(caller, args, context,
+                context.SemanticHelper.GetType(memberAccess.Expression).GetEnumerableElementType()),
             "RemoveAt" => ConvertRemoveAt(caller, args),
             "RemoveRange" => ConvertRemoveRange(caller, args),
             "RemoveAll" => ConvertRemoveAll(caller, args),
@@ -127,13 +129,19 @@ public class ListMethodStrategy : IConversionStrategy
     /// <c>EqualityComparer&lt;T&gt;.Default</c> does (#400). It assigned an index nothing declared
     /// (<c>(_idx = list.indexOf(item)) &gt;= 0 &amp;&amp; list.splice(_idx, 1)</c>), so every call threw
     /// a ReferenceError in a module, and would have answered the spliced array. The list and the item
-    /// are each evaluated once, in the order C# evaluates them.
+    /// are each evaluated once, in the order C# evaluates them. A value-shaped element (a tuple, a
+    /// record, a struct) compares through the structural equality <c>Contains</c> uses, so the two
+    /// agree: a tuple is an array on this side, which the default comparison takes by reference (found
+    /// in review, #421).
     /// </summary>
-    private static string ConvertRemove(string caller, List<string> args, ConversionContext context)
+    private static string ConvertRemove(string caller, List<string> args, ConversionContext context,
+        ITypeSymbol? element)
     {
         if (args.Count == 0) return caller;
         context.UsedHelpers.Add(Eq.Import);
-        return $"{Eq.ListRemove}({caller}, {args[0]})";
+        return element.IsStructuralValueType()
+            ? $"{Eq.ListRemove}({caller}, {args[0]}, {Eq.Equals})"
+            : $"{Eq.ListRemove}({caller}, {args[0]})";
     }
 
     private string ConvertRemoveAt(string caller, List<string> args)

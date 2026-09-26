@@ -55,8 +55,9 @@ public class ConvertStrategy : IExpressionIrStrategy
                 ParseCulture.Check(invocation, providerExpr, context);
             return ToDecimal(argExpr, context);
         }
-        if (name == "ToBoolean" && ReadsText(invocation, argExpr, context))
+        if (name == "ToBoolean")
         {
+            if (!ReadsText(invocation, argExpr, context)) return ToBoolean(argExpr, context);
             // A bool reads its text the same in every culture, so the provider is not consulted, as
             // .NET does not consult it.
             context.UsedHelpers.Add(Eq.Import);
@@ -228,6 +229,39 @@ public class ConvertStrategy : IExpressionIrStrategy
         return type.IsIntegral() ? Call(Eq.Dec) : Call(Eq.DecConvert);
     }
 
+    /// <summary>
+    /// <c>Convert.ToBoolean</c> by the type of what it converts, as <see cref="ToDecimal"/> is (found in
+    /// review, #421): a bool is itself; a number is whether it is not zero, a NaN included and a
+    /// negative zero not, where a 64-bit integer is a BigInt and a decimal its twin, each compared with
+    /// its own zero; and a char or a DateTime has no conversion, which .NET throws after evaluating the
+    /// argument. Text reads as <c>bool.Parse</c> does before this. The lowering compared every value
+    /// with the number zero, so a false bool was true (<c>false !== 0</c>) and so was <c>0L</c>
+    /// (<c>0n !== 0</c>). An object is #401's: its type is the run time's to settle, and it still
+    /// compares with zero.
+    /// </summary>
+    private static JsExpr ToBoolean(ExpressionSyntax argument, ConversionContext context)
+    {
+        var value = context.Converter.ConvertIr(argument);
+        var type = context.SemanticHelper.GetType(argument);
+        JsExpr Template(string template) => JsExpr.Template(template, [value], context.TypeAnnotations);
+        switch (type?.SpecialType)
+        {
+            case SpecialType.System_Boolean:
+                return value;
+            case SpecialType.System_Int64 or SpecialType.System_UInt64:
+                return Template("(({0}) !== 0n)");
+            case SpecialType.System_Decimal:
+                context.UsedHelpers.Add(Eq.Import);
+                return Template($"!({{0}}).equals({Eq.Dec}(0))");
+            case SpecialType.System_Char or SpecialType.System_DateTime:
+                var from = type.SpecialType == SpecialType.System_Char ? "Char" : "DateTime";
+                var parameter = context.TypeAnnotations ? "(_: unknown)" : "(_)";
+                return Template($"({parameter} => {{ throw new Error(\"Invalid cast from '{from}' to 'Boolean'.\"); }})({{0}})");
+            default:
+                return Template("(({0}) !== 0)");
+        }
+    }
+
     private static string Converted(string name, ExpressionSyntax argExpr, ConversionContext context)
     {
         var value = context.Converter.ConvertExpression(argExpr);
@@ -258,7 +292,6 @@ public class ConvertStrategy : IExpressionIrStrategy
             // it reads as float.Parse and double.Parse do (TextReader).
             "ToSingle" => $"Math.fround(Number({value}))",
             "ToDouble" => $"Number({value})",
-            "ToBoolean" => $"(({value}) !== 0)",
             "ToChar" => $"String.fromCharCode({value})",
             _ => $"String({value})"
         };
