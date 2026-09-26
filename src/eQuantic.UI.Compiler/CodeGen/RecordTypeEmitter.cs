@@ -475,7 +475,7 @@ public class RecordTypeEmitter
         // Each body converts under its interface's file, where its names resolve.
         if (ModelFor(type) is { } typeModel && typeModel.GetDeclaredSymbol(type) is INamedTypeSymbol self)
         {
-            foreach (var (implementation, member) in DefaultInterfaceMembers.Of(self, typeModel.Compilation))
+            foreach (var (implementation, member, _) in DefaultInterfaceMembers.Of(self, typeModel.Compilation))
             {
                 if (member is not null && ModelFor(member) is { } memberModel
                     && DefaultInterfaceMembers.InterfaceStaticIn(member, memberModel) is { } reached)

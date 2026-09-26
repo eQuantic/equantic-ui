@@ -1875,7 +1875,7 @@ public class TypeScriptEmitter
         if (declaration is null || ModelFor(declaration) is not { } model
             || model.GetDeclaredSymbol(declaration) is not INamedTypeSymbol self)
             return;
-        foreach (var (implementation, member) in DefaultInterfaceMembers.Of(self, model.Compilation))
+        foreach (var (implementation, member, _) in DefaultInterfaceMembers.Of(self, model.Compilation))
         {
             if (member is not null && ModelFor(member) is { } memberModel
                 && DefaultInterfaceMembers.InterfaceStaticIn(member, memberModel) is { } reached)

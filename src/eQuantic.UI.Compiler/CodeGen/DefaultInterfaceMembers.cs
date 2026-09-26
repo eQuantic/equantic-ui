@@ -13,17 +13,21 @@ namespace eQuantic.UI.Compiler.CodeGen;
 /// </summary>
 internal static class DefaultInterfaceMembers
 {
-    /// <summary>A default member a class takes: the implementation that applies to it, and its
-    /// declaration where the compilation has one. An interface compiled into a referenced assembly
-    /// has none, and its body cannot be written.</summary>
-    internal readonly record struct Inherited(ISymbol Implementation, MemberDeclarationSyntax? Declaration);
+    /// <summary>A default member a class takes: the implementation that applies to it, its
+    /// declaration where the compilation has one, and the interface member it answers. An interface
+    /// compiled into a referenced assembly has no declaration, and its body cannot be written. A
+    /// private helper answers no interface member: no class implements it, so its contract is null.</summary>
+    internal readonly record struct Inherited(ISymbol Implementation, MemberDeclarationSyntax? Declaration, ISymbol? Contract);
 
     /// <summary>
     /// Every default member <paramref name="type"/> takes from an interface, in the order the
     /// interfaces and their members are declared. The implementation is the one the language picks
     /// for the class, so a derived interface's override of a base interface's member wins over the
-    /// base's default. A member some base class already takes is left to that base: its twin
-    /// carries the member, and the prototype chain hands it down.
+    /// base's default. A member whose implementation the base class takes too is left to the base:
+    /// its twin carries it, and the prototype chain hands it down. One the base answers with a LESS
+    /// specific default (the class lists an interface that overrides it) is the class's own, written
+    /// over the base's: skipping every interface the base implements dropped it, and the class
+    /// answered with its base's default (found in review, #418).
     /// </summary>
     public static IReadOnlyList<Inherited> Of(INamedTypeSymbol type, Compilation compilation)
     {
@@ -31,9 +35,6 @@ internal static class DefaultInterfaceMembers
         var seen = new HashSet<ISymbol>(SymbolEqualityComparer.Default);
         foreach (var contract in type.AllInterfaces)
         {
-            if (type.BaseType is { } baseType
-                && baseType.AllInterfaces.Contains(contract, SymbolEqualityComparer.Default))
-                continue;
             foreach (var member in contract.GetMembers())
             {
                 if (member.IsStatic || member is not (IPropertySymbol or IMethodSymbol { MethodKind: MethodKind.Ordinary }))
@@ -43,7 +44,10 @@ internal static class DefaultInterfaceMembers
                     || implementation.IsAbstract
                     || !seen.Add(implementation))
                     continue;
-                inherited.Add(new Inherited(implementation, DeclarationOf(implementation)));
+                if (type.BaseType?.FindImplementationForInterfaceMember(member) is { } based
+                    && SymbolEqualityComparer.Default.Equals(based, implementation))
+                    continue;
+                inherited.Add(new Inherited(implementation, DeclarationOf(implementation), member));
             }
         }
 
@@ -66,7 +70,7 @@ internal static class DefaultInterfaceMembers
                     || !seen.Add(helper))
                     continue;
                 var helperDeclaration = DeclarationOf(helper);
-                inherited.Add(new Inherited(helper, helperDeclaration));
+                inherited.Add(new Inherited(helper, helperDeclaration, Contract: null));
                 if (helperDeclaration is not null) pending.Enqueue(helperDeclaration);
             }
         }
