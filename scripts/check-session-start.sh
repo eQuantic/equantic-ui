@@ -35,6 +35,8 @@ container_home() {
     format = ssh
 [commit]
     gpgsign = true
+[tag]
+    gpgsign = true
 EOF
 }
 
@@ -80,6 +82,7 @@ session() {
 [ "$(session git config --get user.name)" = "Edgar Mesquita" ] && pass "user.name" || fail "user.name is not Edgar Mesquita"
 [ "$(session git config --get user.email)" = "edgar@equantic.tech" ] && pass "user.email" || fail "user.email is not edgar@equantic.tech"
 [ "$(session git config --get commit.gpgsign)" = "false" ] && pass "commit.gpgsign=false" || fail "commit signing is still on"
+[ "$(session git config --get tag.gpgsign)" = "false" ] && pass "tag.gpgsign=false" || fail "tag signing is still on"
 
 if session git commit --allow-empty -q -m "✅ test: the session-start fixture's commit"; then
     ident="$(session git log -1 --format='%an <%ae>|%cn <%ce>|%G?')"
@@ -88,6 +91,14 @@ if session git commit --allow-empty -q -m "✅ test: the session-start fixture's
         || fail "the commit reads '$ident'"
 else
     fail "a commit failed after the hook ran"
+fi
+
+# An annotated tag is signed when tag.gpgsign is on, and the container turns it on.
+if session git tag -a fixture-tag -m "the session-start fixture's tag" 2>/dev/null \
+    && [ "$(session git cat-file -p fixture-tag | grep -c 'BEGIN SSH SIGNATURE\|BEGIN PGP SIGNATURE')" = "0" ]; then
+    pass "an annotated tag is created, unsigned"
+else
+    fail "an annotated tag failed or carries a signature after the hook ran"
 fi
 
 sdk="$(session dotnet --version 2>/dev/null || true)"

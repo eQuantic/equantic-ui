@@ -23,7 +23,9 @@ command -v node >/dev/null 2>&1 || {
 want="$(P="$dir/package.json" node -p 'require(process.env.P).devDependencies["@fission-ai/openspec"]')"
 have="$(P="$dir/node_modules/@fission-ai/openspec/package.json" node -p 'try { require(process.env.P).version } catch { "" }')"
 
-if [ "$have" != "$want" ]; then
+# Healthy means the pinned version AND its executable: a partial node_modules can keep the
+# package.json and lose .bin/openspec, and the exec below would then fail instead of repairing.
+if [ "$have" != "$want" ] || [ ! -x "$dir/node_modules/.bin/openspec" ]; then
     # npm ci installs exactly what the lockfile names and fails on an integrity mismatch. Its output
     # goes to stderr so the CLI's own stdout stays the only stdout.
     npm ci --prefix "$dir" --no-audit --no-fund --loglevel=error >&2
