@@ -39,6 +39,34 @@ public class NumberFormatSpecifierConformanceTests
     [InlineData("return (1234.5).ToString(\"#,##0.00\") + \"|\" + (0.5).ToString(\"0.#\") + \"|\" + (1.005).ToString(\"0.00\") + \"|\" + (2.5).ToString(\"0\") + \"|\" + (2.5m).ToString(\"0\");")]
     // What is not a finite number prints as .NET prints it, under any specifier.
     [InlineData("return double.PositiveInfinity.ToString(\"N2\") + \"|\" + double.NaN.ToString(\"F1\") + \"|\" + double.NegativeInfinity.ToString(\"E2\");")]
+    // X and B write a negative integer as its two's complement at its type's width, and B is binary
+    // (found in review, #445): an int's -1 is FFFFFFFF and a short's FFFF, where JavaScript wrote -1.
+    [InlineData("return ((short)-1).ToString(\"X\") + \"|\" + ((sbyte)-2).ToString(\"x\") + \"|\" + (-255).ToString(\"X4\") + \"|\" + ((byte)255).ToString(\"X\") + \"|\" + 4294967295u.ToString(\"X\") + \"|\" + ((ushort)65535).ToString(\"x\");")]
+    [InlineData("short s = -1; sbyte b = -2; return $\"{s:X}\" + \"|\" + string.Format(\"{0:X4}|{1:x}\", b, s) + \"|\" + 42.ToString(\"B\") + \"|\" + s.ToString(\"B\") + \"|\" + 42.ToString(\"B8\") + \"|\" + (-2L).ToString(\"b\");")]
+    // D, X and B take an integer only: a fraction, a float and a decimal throw, as .NET throws; and so
+    // does a letter no number takes, and a precision past .NET's limit, whose leading zeros are allowed.
+    [InlineData("try { return (2.5).ToString(\"D\"); } catch (Exception e) { return e.Message; }")]
+    [InlineData("try { return (1.5f).ToString(\"X\"); } catch (Exception e) { return e.Message; }")]
+    [InlineData("try { return (42m).ToString(\"B\"); } catch (Exception e) { return e.Message; }")]
+    [InlineData("try { return (5).ToString(\"Z\"); } catch (Exception e) { return e.Message; }")]
+    [InlineData("try { return (1.5).ToString(\"F1000000000\"); } catch (Exception e) { return e.Message; }")]
+    [InlineData("return (1.5).ToString(\"F0000000002\");")]
+    // A precision past the 100 digits Intl writes after the point, which was cut to 100 (found in
+    // review, #445), rounded where the cut falls: inside the digits, at their first, and before it.
+    [InlineData("return (0.1).ToString(\"F101\") + \"|\" + (1.0 / 3.0).ToString(\"N105\") + \"|\" + (0.125).ToString(\"P101\");")]
+    [InlineData("return (1.0 / 3.0).ToString(\"E150\") + \"|\" + 42.ToString(\"D150\") + \"|\" + (1.5m).ToString(\"C101\") + \"|\" + (-0.5m).ToString(\"F102\") + \"|\" + (9.5).ToString(\"F101\");")]
+    [InlineData("return (5e-324).ToString(\"F330\") + \"|\" + (-1e-200).ToString(\"F150\") + \"|\" + (7e-102).ToString(\"F101\") + \"|\" + (3e-102).ToString(\"F101\") + \"|\" + (-7e-102).ToString(\"N101\");")]
+    // A custom picture is drawn as .NET draws it: percent and per mille, text quoted, escaped or as
+    // it stands, sections, scaling commas and exponents (found in review, #445).
+    [InlineData("return (0.25).ToString(\"0%\") + \"|\" + (0.0125).ToString(\"0.0‰\") + \"|\" + (12.5).ToString(\"0.0 'KB'\") + \"|\" + (12.5).ToString(\"0.0 KB\") + \"|\" + (5.0).ToString(\"\\\\#0\") + \"|\" + (0.5).ToString(\"# %\");")]
+    [InlineData("return (-1.0).ToString(\"0.00;(0.00)\") + \"|\" + (0.0).ToString(\"0.00;(0.00);'zero'\") + \"|\" + (0.001).ToString(\"0.00;(0.00);zero\") + \"|\" + (-0.001).ToString(\"0.00;(0.00);zero\") + \"|\" + (-5.0).ToString(\"0;\") + \"|\" + (-1234.5).ToString(\"#,##0.0;-#,##0.0\");")]
+    [InlineData("return (-0.001).ToString(\"0.00\") + \"|\" + (-0.0).ToString(\"0.00\") + \"|\" + (-0.001m).ToString(\"0.00\") + \"|\" + (-0.4).ToString(\"0\") + \"|\" + (-0.4).ToString(\"0;(0)\") + \"|\" + (-0.0).ToString(\"0;(0);z\") + \"|\" + (0.4).ToString(\"#\") + \"[\" + (-0.4).ToString(\"#\") + \"]\";")]
+    [InlineData("return (1234567.0).ToString(\"#,##0,\") + \"|\" + (1234567.0).ToString(\"#,##0,,\") + \"|\" + (1234567.0).ToString(\"0.00E+00\") + \"|\" + (0.000123).ToString(\"0.0e0\") + \"|\" + (1234567.0).ToString(\"##0.0E-0\") + \"|\" + (1e20).ToString(\"#,##0\");")]
+    [InlineData("return (5).ToString(\"Total\") + \"|\" + (-5).ToString(\"abc\") + \"|\" + (1.5).ToString(\"N2x\") + \"|\" + (0.1).ToString(\"#.##\") + \"|\" + (12345.6789).ToString(\"#,##0.00##\") + \"|\" + (12345678.9f).ToString(\"#,##0.00\") + \"|\" + 1234567.ToString(\"0,0\");")]
+    // G at the edges of its fixed notation, and R on a decimal, an int and a long, which .NET 10 takes
+    // (measured in review, #445: neither diverged).
+    [InlineData("return (1e15).ToString() + \"|\" + (1e16).ToString() + \"|\" + (1e17).ToString() + \"|\" + (0.00001).ToString() + \"|\" + (99.9).ToString(\"G2\") + \"|\" + (0.00001).ToString(\"G2\") + \"|\" + (123456.0).ToString(\"G5\") + \"|\" + (1e7f).ToString() + \"|\" + (1e16).ToString(\"G17\");")]
+    [InlineData("return (12.50m).ToString(\"R\") + \"|\" + 42.ToString(\"R\") + \"|\" + 42L.ToString(\"R\") + \"|\" + (1e15).ToString(\"R\") + \"|\" + 125.ToString(\"G2\");")]
     public void ANumber_PrintsThroughItsSpecifierAsDotNet(string statements)
     {
         Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");

@@ -1,10 +1,13 @@
 import { describe, it, expect } from 'vitest';
 import {
   exactOfBigInt,
+  exactOfDigits,
   exactOfDouble,
   exactOfScaled,
+  fromSignificant,
   isZero,
   plainText,
+  roundFraction,
   roundSignificant,
   scaled,
 } from './exact-decimal';
@@ -14,8 +17,11 @@ import {
 // reaches, a subnormal and the largest double among them.
 describe('exactOfDouble', () => {
   it('writes a double from its binary value, past the shortest text that reads back', () => {
-    expect(plainText(exactOfDouble(0.1))).toBe('0.1000000000000000055511151231257827021181583404541015625');
-    expect(plainText(exactOfDouble(1.2345678901234568e19))).toBe('12345678901234567168');
+    expect(plainText(exactOfDouble(0.1))).toBe(
+      '0.1000000000000000055511151231257827021181583404541015625',
+    );
+    // The shortest text that reads back, as a string: a literal with those digits would lose them.
+    expect(plainText(exactOfDouble(Number('1.2345678901234568e19')))).toBe('12345678901234567168');
   });
 
   it('keeps the sign of a negative zero, as .NET formatting does', () => {
@@ -41,7 +47,11 @@ describe('exactOfDouble', () => {
 
 describe('exactOfBigInt and exactOfScaled', () => {
   it('writes a long by its own digits', () => {
-    expect(exactOfBigInt(-9007199254740993n)).toEqual({ negative: true, digits: '9007199254740993', exponent: 0 });
+    expect(exactOfBigInt(-9007199254740993n)).toEqual({
+      negative: true,
+      digits: '9007199254740993',
+      exponent: 0,
+    });
   });
 
   it('writes a decimal as its mantissa over its scale, trailing zeros trimmed', () => {
@@ -74,7 +84,63 @@ describe('roundSignificant', () => {
   });
 
   it('pads a short value, and keeps zero at the power zero', () => {
-    expect(roundSignificant(exactOfBigInt(5n), 3, 'halfEven')).toEqual({ negative: false, digits: '500', scientific: 0 });
-    expect(roundSignificant(exactOfDouble(-0), 2, 'halfEven')).toEqual({ negative: true, digits: '00', scientific: 0 });
+    expect(roundSignificant(exactOfBigInt(5n), 3, 'halfEven')).toEqual({
+      negative: false,
+      digits: '500',
+      scientific: 0,
+    });
+    expect(roundSignificant(exactOfDouble(-0), 2, 'halfEven')).toEqual({
+      negative: true,
+      digits: '00',
+      scientific: 0,
+    });
+  });
+
+  it('gives its digits back as an exact decimal, without the padding', () => {
+    expect(fromSignificant(roundSignificant(exactOfBigInt(5n), 3, 'halfEven'))).toEqual(
+      exactOfBigInt(5n),
+    );
+    expect(plainText(fromSignificant(roundSignificant(exactOfDouble(9.99), 2, 'halfEven')))).toBe(
+      '10',
+    );
+  });
+});
+
+// Past the 100 digits Intl writes after the point, F, N, P and C round here (#445).
+describe('roundFraction', () => {
+  it('rounds inside the digits by the tie rule, and carries', () => {
+    expect(plainText(roundFraction(exactOfScaled(125n, 3), 2, 'halfEven'))).toBe('0.12');
+    expect(plainText(roundFraction(exactOfScaled(125n, 3), 2, 'halfExpand'))).toBe('0.13');
+    expect(plainText(roundFraction(exactOfScaled(9995n, 3), 2, 'halfEven'))).toBe('10');
+  });
+
+  it('leaves a value that already fits', () => {
+    expect(roundFraction(exactOfScaled(125n, 3), 3, 'halfEven')).toEqual(exactOfScaled(125n, 3));
+  });
+
+  it('rounds a value whose first digit is the one past the cut', () => {
+    // 0.0007 at three places is 0.001; 0.0003 is zero; an exact half goes by the tie, a zero kept being even.
+    expect(plainText(roundFraction(exactOfScaled(7n, 4), 3, 'halfEven'))).toBe('0.001');
+    expect(isZero(roundFraction(exactOfScaled(3n, 4), 3, 'halfEven'))).toBe(true);
+    expect(isZero(roundFraction(exactOfScaled(5n, 4), 3, 'halfEven'))).toBe(true);
+    expect(plainText(roundFraction(exactOfScaled(5n, 4), 3, 'halfExpand'))).toBe('0.001');
+    expect(plainText(roundFraction(exactOfScaled(51n, 5), 3, 'halfEven'))).toBe('0.001');
+  });
+
+  it('rounds to zero below the last place, keeping the sign for whoever shows it', () => {
+    const rounded = roundFraction(exactOfDouble(-1e-200), 150, 'halfEven');
+    expect(isZero(rounded)).toBe(true);
+    expect(rounded.negative).toBe(true);
+  });
+});
+
+describe('exactOfDigits', () => {
+  it('reads digits with zeros on either side into the canonical form', () => {
+    expect(exactOfDigits(false, '0012500', -3)).toEqual({
+      negative: false,
+      digits: '125',
+      exponent: -1,
+    });
+    expect(exactOfDigits(true, '000', -1)).toEqual({ negative: true, digits: '0', exponent: 0 });
   });
 });

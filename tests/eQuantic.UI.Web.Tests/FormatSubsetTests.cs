@@ -31,23 +31,31 @@ public class FormatSubsetTests
         "src", "eQuantic.UI.Runtime", "src", "shared", "__fixtures__", "format-subset.txt");
 
     /// <summary>The cultures the fixture covers: a comma-decimal one, a dot-decimal one, and one
-    /// whose group separator is the other's decimal point — the three ways a number can go wrong.</summary>
-    private static readonly string[] Cultures = ["en-US", "pt-BR", "de-DE"];
+    /// whose group separator is the other's decimal point — the three ways a number can go wrong —
+    /// then one whose data leaves a four-digit number ungrouped where .NET groups it (es-ES writes
+    /// 1.234, #445), and one whose minus sign is not a hyphen (sv-SE writes U+2212).</summary>
+    private static readonly string[] Cultures = ["en-US", "pt-BR", "de-DE", "es-ES", "sv-SE"];
 
-    private static readonly double[] Numbers = [1234.5, -1234.5, 0, 0.125, 1000000];
+    /// <summary>The values, the infinities and NaN among them: the culture's symbols, whatever the
+    /// specifier.</summary>
+    private static readonly double[] Numbers =
+        [1234.5, -1234.5, 0, 0.125, 1000000, double.PositiveInfinity, double.NegativeInfinity, double.NaN];
 
     // The empty spec is the one everybody writes — `{0}` — and it is NOT invariant in .NET: it
-    // calls ToString(IFormatProvider), so 1234.5 is "1234,5" in pt-BR. Pinned like the rest.
-    private static readonly string[] NumberSpecs = ["", "N0", "N2", "F2", "F0", "P1", "P0", "C2", "C0"];
+    // calls ToString(IFormatProvider), so 1234.5 is "1234,5" in pt-BR. Pinned like the rest. `E2` and
+    // the two pictures are drawn in the culture's symbols too (#445).
+    private static readonly string[] NumberSpecs =
+        ["", "N0", "N2", "F2", "F0", "P1", "P0", "C2", "C0", "E2", "#,##0.00", "0.0%"];
 
     /// <summary>`D` and `X` are INTEGER specifiers in .NET — <c>(1234.5).ToString("D5")</c> throws,
     /// and a subset that pretended otherwise would be promising something the server cannot do.</summary>
     private static readonly long[] Integers = [42, -42, 1000000];
 
     // No `X`: hex of a NEGATIVE value is two's complement at the C# type's width
-    // (`(-42).ToString("X4")` is 8 digits as an int, 16 as a long), and the browser sees one
-    // untyped number. Outside the subset by construction, and EQ2100 refuses it in a template
-    // rather than letting the two sides disagree.
+    // (`(-42).ToString("X4")` is 8 digits as an int, 16 as a long). The compiler passes that width
+    // with every integer it can type (#445), but an argument typed as an object still reaches the
+    // browser as one untyped number, so EQ2100 refuses it in a template until the subset is widened
+    // where the width is known (#456).
     private static readonly string[] IntegerSpecs = ["", "D5", "D", "N0"];
 
     /// <summary>One fixed instant, spelled as LOCAL parts on both sides — the fixture must not

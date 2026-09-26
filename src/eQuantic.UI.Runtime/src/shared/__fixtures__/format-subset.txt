@@ -8,6 +8,9 @@ num|en-US|1234.5|P1|123,450.0%
 num|en-US|1234.5|P0|123,450%
 num|en-US|1234.5|C2|$1,234.50
 num|en-US|1234.5|C0|$1,234
+num|en-US|1234.5|E2|1.23E+003
+num|en-US|1234.5|#,##0.00|1,234.50
+num|en-US|1234.5|0.0%|123450.0%
 num|en-US|-1234.5||-1234.5
 num|en-US|-1234.5|N0|-1,234
 num|en-US|-1234.5|N2|-1,234.50
@@ -17,6 +20,9 @@ num|en-US|-1234.5|P1|-123,450.0%
 num|en-US|-1234.5|P0|-123,450%
 num|en-US|-1234.5|C2|-$1,234.50
 num|en-US|-1234.5|C0|-$1,234
+num|en-US|-1234.5|E2|-1.23E+003
+num|en-US|-1234.5|#,##0.00|-1,234.50
+num|en-US|-1234.5|0.0%|-123450.0%
 num|en-US|0||0
 num|en-US|0|N0|0
 num|en-US|0|N2|0.00
@@ -26,6 +32,9 @@ num|en-US|0|P1|0.0%
 num|en-US|0|P0|0%
 num|en-US|0|C2|$0.00
 num|en-US|0|C0|$0
+num|en-US|0|E2|0.00E+000
+num|en-US|0|#,##0.00|0.00
+num|en-US|0|0.0%|0.0%
 num|en-US|0.125||0.125
 num|en-US|0.125|N0|0
 num|en-US|0.125|N2|0.12
@@ -35,6 +44,9 @@ num|en-US|0.125|P1|12.5%
 num|en-US|0.125|P0|12%
 num|en-US|0.125|C2|$0.12
 num|en-US|0.125|C0|$0
+num|en-US|0.125|E2|1.25E-001
+num|en-US|0.125|#,##0.00|0.13
+num|en-US|0.125|0.0%|12.5%
 num|en-US|1000000||1000000
 num|en-US|1000000|N0|1,000,000
 num|en-US|1000000|N2|1,000,000.00
@@ -44,6 +56,45 @@ num|en-US|1000000|P1|100,000,000.0%
 num|en-US|1000000|P0|100,000,000%
 num|en-US|1000000|C2|$1,000,000.00
 num|en-US|1000000|C0|$1,000,000
+num|en-US|1000000|E2|1.00E+006
+num|en-US|1000000|#,##0.00|1,000,000.00
+num|en-US|1000000|0.0%|100000000.0%
+num|en-US|Infinity||∞
+num|en-US|Infinity|N0|∞
+num|en-US|Infinity|N2|∞
+num|en-US|Infinity|F2|∞
+num|en-US|Infinity|F0|∞
+num|en-US|Infinity|P1|∞
+num|en-US|Infinity|P0|∞
+num|en-US|Infinity|C2|∞
+num|en-US|Infinity|C0|∞
+num|en-US|Infinity|E2|∞
+num|en-US|Infinity|#,##0.00|∞
+num|en-US|Infinity|0.0%|∞
+num|en-US|-Infinity||-∞
+num|en-US|-Infinity|N0|-∞
+num|en-US|-Infinity|N2|-∞
+num|en-US|-Infinity|F2|-∞
+num|en-US|-Infinity|F0|-∞
+num|en-US|-Infinity|P1|-∞
+num|en-US|-Infinity|P0|-∞
+num|en-US|-Infinity|C2|-∞
+num|en-US|-Infinity|C0|-∞
+num|en-US|-Infinity|E2|-∞
+num|en-US|-Infinity|#,##0.00|-∞
+num|en-US|-Infinity|0.0%|-∞
+num|en-US|NaN||NaN
+num|en-US|NaN|N0|NaN
+num|en-US|NaN|N2|NaN
+num|en-US|NaN|F2|NaN
+num|en-US|NaN|F0|NaN
+num|en-US|NaN|P1|NaN
+num|en-US|NaN|P0|NaN
+num|en-US|NaN|C2|NaN
+num|en-US|NaN|C0|NaN
+num|en-US|NaN|E2|NaN
+num|en-US|NaN|#,##0.00|NaN
+num|en-US|NaN|0.0%|NaN
 int|en-US|42||42
 int|en-US|42|D5|00042
 int|en-US|42|D|42
@@ -75,6 +126,9 @@ num|pt-BR|1234.5|P1|123.450,0%
 num|pt-BR|1234.5|P0|123.450%
 num|pt-BR|1234.5|C2|R$ 1.234,50
 num|pt-BR|1234.5|C0|R$ 1.234
+num|pt-BR|1234.5|E2|1,23E+003
+num|pt-BR|1234.5|#,##0.00|1.234,50
+num|pt-BR|1234.5|0.0%|123450,0%
 num|pt-BR|-1234.5||-1234,5
 num|pt-BR|-1234.5|N0|-1.234
 num|pt-BR|-1234.5|N2|-1.234,50
@@ -84,6 +138,9 @@ num|pt-BR|-1234.5|P1|-123.450,0%
 num|pt-BR|-1234.5|P0|-123.450%
 num|pt-BR|-1234.5|C2|-R$ 1.234,50
 num|pt-BR|-1234.5|C0|-R$ 1.234
+num|pt-BR|-1234.5|E2|-1,23E+003
+num|pt-BR|-1234.5|#,##0.00|-1.234,50
+num|pt-BR|-1234.5|0.0%|-123450,0%
 num|pt-BR|0||0
 num|pt-BR|0|N0|0
 num|pt-BR|0|N2|0,00
@@ -93,6 +150,9 @@ num|pt-BR|0|P1|0,0%
 num|pt-BR|0|P0|0%
 num|pt-BR|0|C2|R$ 0,00
 num|pt-BR|0|C0|R$ 0
+num|pt-BR|0|E2|0,00E+000
+num|pt-BR|0|#,##0.00|0,00
+num|pt-BR|0|0.0%|0,0%
 num|pt-BR|0.125||0,125
 num|pt-BR|0.125|N0|0
 num|pt-BR|0.125|N2|0,12
@@ -102,6 +162,9 @@ num|pt-BR|0.125|P1|12,5%
 num|pt-BR|0.125|P0|12%
 num|pt-BR|0.125|C2|R$ 0,12
 num|pt-BR|0.125|C0|R$ 0
+num|pt-BR|0.125|E2|1,25E-001
+num|pt-BR|0.125|#,##0.00|0,13
+num|pt-BR|0.125|0.0%|12,5%
 num|pt-BR|1000000||1000000
 num|pt-BR|1000000|N0|1.000.000
 num|pt-BR|1000000|N2|1.000.000,00
@@ -111,6 +174,45 @@ num|pt-BR|1000000|P1|100.000.000,0%
 num|pt-BR|1000000|P0|100.000.000%
 num|pt-BR|1000000|C2|R$ 1.000.000,00
 num|pt-BR|1000000|C0|R$ 1.000.000
+num|pt-BR|1000000|E2|1,00E+006
+num|pt-BR|1000000|#,##0.00|1.000.000,00
+num|pt-BR|1000000|0.0%|100000000,0%
+num|pt-BR|Infinity||∞
+num|pt-BR|Infinity|N0|∞
+num|pt-BR|Infinity|N2|∞
+num|pt-BR|Infinity|F2|∞
+num|pt-BR|Infinity|F0|∞
+num|pt-BR|Infinity|P1|∞
+num|pt-BR|Infinity|P0|∞
+num|pt-BR|Infinity|C2|∞
+num|pt-BR|Infinity|C0|∞
+num|pt-BR|Infinity|E2|∞
+num|pt-BR|Infinity|#,##0.00|∞
+num|pt-BR|Infinity|0.0%|∞
+num|pt-BR|-Infinity||-∞
+num|pt-BR|-Infinity|N0|-∞
+num|pt-BR|-Infinity|N2|-∞
+num|pt-BR|-Infinity|F2|-∞
+num|pt-BR|-Infinity|F0|-∞
+num|pt-BR|-Infinity|P1|-∞
+num|pt-BR|-Infinity|P0|-∞
+num|pt-BR|-Infinity|C2|-∞
+num|pt-BR|-Infinity|C0|-∞
+num|pt-BR|-Infinity|E2|-∞
+num|pt-BR|-Infinity|#,##0.00|-∞
+num|pt-BR|-Infinity|0.0%|-∞
+num|pt-BR|NaN||NaN
+num|pt-BR|NaN|N0|NaN
+num|pt-BR|NaN|N2|NaN
+num|pt-BR|NaN|F2|NaN
+num|pt-BR|NaN|F0|NaN
+num|pt-BR|NaN|P1|NaN
+num|pt-BR|NaN|P0|NaN
+num|pt-BR|NaN|C2|NaN
+num|pt-BR|NaN|C0|NaN
+num|pt-BR|NaN|E2|NaN
+num|pt-BR|NaN|#,##0.00|NaN
+num|pt-BR|NaN|0.0%|NaN
 int|pt-BR|42||42
 int|pt-BR|42|D5|00042
 int|pt-BR|42|D|42
@@ -142,6 +244,9 @@ num|de-DE|1234.5|P1|123.450,0 %
 num|de-DE|1234.5|P0|123.450 %
 num|de-DE|1234.5|C2|1.234,50 €
 num|de-DE|1234.5|C0|1.234 €
+num|de-DE|1234.5|E2|1,23E+003
+num|de-DE|1234.5|#,##0.00|1.234,50
+num|de-DE|1234.5|0.0%|123450,0%
 num|de-DE|-1234.5||-1234,5
 num|de-DE|-1234.5|N0|-1.234
 num|de-DE|-1234.5|N2|-1.234,50
@@ -151,6 +256,9 @@ num|de-DE|-1234.5|P1|-123.450,0 %
 num|de-DE|-1234.5|P0|-123.450 %
 num|de-DE|-1234.5|C2|-1.234,50 €
 num|de-DE|-1234.5|C0|-1.234 €
+num|de-DE|-1234.5|E2|-1,23E+003
+num|de-DE|-1234.5|#,##0.00|-1.234,50
+num|de-DE|-1234.5|0.0%|-123450,0%
 num|de-DE|0||0
 num|de-DE|0|N0|0
 num|de-DE|0|N2|0,00
@@ -160,6 +268,9 @@ num|de-DE|0|P1|0,0 %
 num|de-DE|0|P0|0 %
 num|de-DE|0|C2|0,00 €
 num|de-DE|0|C0|0 €
+num|de-DE|0|E2|0,00E+000
+num|de-DE|0|#,##0.00|0,00
+num|de-DE|0|0.0%|0,0%
 num|de-DE|0.125||0,125
 num|de-DE|0.125|N0|0
 num|de-DE|0.125|N2|0,12
@@ -169,6 +280,9 @@ num|de-DE|0.125|P1|12,5 %
 num|de-DE|0.125|P0|12 %
 num|de-DE|0.125|C2|0,12 €
 num|de-DE|0.125|C0|0 €
+num|de-DE|0.125|E2|1,25E-001
+num|de-DE|0.125|#,##0.00|0,13
+num|de-DE|0.125|0.0%|12,5%
 num|de-DE|1000000||1000000
 num|de-DE|1000000|N0|1.000.000
 num|de-DE|1000000|N2|1.000.000,00
@@ -178,6 +292,45 @@ num|de-DE|1000000|P1|100.000.000,0 %
 num|de-DE|1000000|P0|100.000.000 %
 num|de-DE|1000000|C2|1.000.000,00 €
 num|de-DE|1000000|C0|1.000.000 €
+num|de-DE|1000000|E2|1,00E+006
+num|de-DE|1000000|#,##0.00|1.000.000,00
+num|de-DE|1000000|0.0%|100000000,0%
+num|de-DE|Infinity||∞
+num|de-DE|Infinity|N0|∞
+num|de-DE|Infinity|N2|∞
+num|de-DE|Infinity|F2|∞
+num|de-DE|Infinity|F0|∞
+num|de-DE|Infinity|P1|∞
+num|de-DE|Infinity|P0|∞
+num|de-DE|Infinity|C2|∞
+num|de-DE|Infinity|C0|∞
+num|de-DE|Infinity|E2|∞
+num|de-DE|Infinity|#,##0.00|∞
+num|de-DE|Infinity|0.0%|∞
+num|de-DE|-Infinity||-∞
+num|de-DE|-Infinity|N0|-∞
+num|de-DE|-Infinity|N2|-∞
+num|de-DE|-Infinity|F2|-∞
+num|de-DE|-Infinity|F0|-∞
+num|de-DE|-Infinity|P1|-∞
+num|de-DE|-Infinity|P0|-∞
+num|de-DE|-Infinity|C2|-∞
+num|de-DE|-Infinity|C0|-∞
+num|de-DE|-Infinity|E2|-∞
+num|de-DE|-Infinity|#,##0.00|-∞
+num|de-DE|-Infinity|0.0%|-∞
+num|de-DE|NaN||NaN
+num|de-DE|NaN|N0|NaN
+num|de-DE|NaN|N2|NaN
+num|de-DE|NaN|F2|NaN
+num|de-DE|NaN|F0|NaN
+num|de-DE|NaN|P1|NaN
+num|de-DE|NaN|P0|NaN
+num|de-DE|NaN|C2|NaN
+num|de-DE|NaN|C0|NaN
+num|de-DE|NaN|E2|NaN
+num|de-DE|NaN|#,##0.00|NaN
+num|de-DE|NaN|0.0%|NaN
 int|de-DE|42||42
 int|de-DE|42|D5|00042
 int|de-DE|42|D|42
@@ -199,6 +352,242 @@ date|de-DE|2026-08-13T15:45:07|G|13.08.2026 15:45:07
 date|de-DE|2026-08-13T15:45:07|M|13. August
 date|de-DE|2026-08-13T15:45:07|Y|August 2026
 date|de-DE|2026-08-13T15:45:07|yyyy-MM-dd|2026-08-13
+culture es-ES EUR|d/M/yyyy|dddd, d 'de' MMMM 'de' yyyy|H:mm|H:mm:ss|d 'de' MMMM|MMMM 'de' yyyy
+num|es-ES|1234.5||1234,5
+num|es-ES|1234.5|N0|1.234
+num|es-ES|1234.5|N2|1.234,50
+num|es-ES|1234.5|F2|1234,50
+num|es-ES|1234.5|F0|1234
+num|es-ES|1234.5|P1|123.450,0 %
+num|es-ES|1234.5|P0|123.450 %
+num|es-ES|1234.5|C2|1.234,50 €
+num|es-ES|1234.5|C0|1.234 €
+num|es-ES|1234.5|E2|1,23E+003
+num|es-ES|1234.5|#,##0.00|1.234,50
+num|es-ES|1234.5|0.0%|123450,0%
+num|es-ES|-1234.5||-1234,5
+num|es-ES|-1234.5|N0|-1.234
+num|es-ES|-1234.5|N2|-1.234,50
+num|es-ES|-1234.5|F2|-1234,50
+num|es-ES|-1234.5|F0|-1234
+num|es-ES|-1234.5|P1|-123.450,0 %
+num|es-ES|-1234.5|P0|-123.450 %
+num|es-ES|-1234.5|C2|-1.234,50 €
+num|es-ES|-1234.5|C0|-1.234 €
+num|es-ES|-1234.5|E2|-1,23E+003
+num|es-ES|-1234.5|#,##0.00|-1.234,50
+num|es-ES|-1234.5|0.0%|-123450,0%
+num|es-ES|0||0
+num|es-ES|0|N0|0
+num|es-ES|0|N2|0,00
+num|es-ES|0|F2|0,00
+num|es-ES|0|F0|0
+num|es-ES|0|P1|0,0 %
+num|es-ES|0|P0|0 %
+num|es-ES|0|C2|0,00 €
+num|es-ES|0|C0|0 €
+num|es-ES|0|E2|0,00E+000
+num|es-ES|0|#,##0.00|0,00
+num|es-ES|0|0.0%|0,0%
+num|es-ES|0.125||0,125
+num|es-ES|0.125|N0|0
+num|es-ES|0.125|N2|0,12
+num|es-ES|0.125|F2|0,12
+num|es-ES|0.125|F0|0
+num|es-ES|0.125|P1|12,5 %
+num|es-ES|0.125|P0|12 %
+num|es-ES|0.125|C2|0,12 €
+num|es-ES|0.125|C0|0 €
+num|es-ES|0.125|E2|1,25E-001
+num|es-ES|0.125|#,##0.00|0,13
+num|es-ES|0.125|0.0%|12,5%
+num|es-ES|1000000||1000000
+num|es-ES|1000000|N0|1.000.000
+num|es-ES|1000000|N2|1.000.000,00
+num|es-ES|1000000|F2|1000000,00
+num|es-ES|1000000|F0|1000000
+num|es-ES|1000000|P1|100.000.000,0 %
+num|es-ES|1000000|P0|100.000.000 %
+num|es-ES|1000000|C2|1.000.000,00 €
+num|es-ES|1000000|C0|1.000.000 €
+num|es-ES|1000000|E2|1,00E+006
+num|es-ES|1000000|#,##0.00|1.000.000,00
+num|es-ES|1000000|0.0%|100000000,0%
+num|es-ES|Infinity||∞
+num|es-ES|Infinity|N0|∞
+num|es-ES|Infinity|N2|∞
+num|es-ES|Infinity|F2|∞
+num|es-ES|Infinity|F0|∞
+num|es-ES|Infinity|P1|∞
+num|es-ES|Infinity|P0|∞
+num|es-ES|Infinity|C2|∞
+num|es-ES|Infinity|C0|∞
+num|es-ES|Infinity|E2|∞
+num|es-ES|Infinity|#,##0.00|∞
+num|es-ES|Infinity|0.0%|∞
+num|es-ES|-Infinity||-∞
+num|es-ES|-Infinity|N0|-∞
+num|es-ES|-Infinity|N2|-∞
+num|es-ES|-Infinity|F2|-∞
+num|es-ES|-Infinity|F0|-∞
+num|es-ES|-Infinity|P1|-∞
+num|es-ES|-Infinity|P0|-∞
+num|es-ES|-Infinity|C2|-∞
+num|es-ES|-Infinity|C0|-∞
+num|es-ES|-Infinity|E2|-∞
+num|es-ES|-Infinity|#,##0.00|-∞
+num|es-ES|-Infinity|0.0%|-∞
+num|es-ES|NaN||NaN
+num|es-ES|NaN|N0|NaN
+num|es-ES|NaN|N2|NaN
+num|es-ES|NaN|F2|NaN
+num|es-ES|NaN|F0|NaN
+num|es-ES|NaN|P1|NaN
+num|es-ES|NaN|P0|NaN
+num|es-ES|NaN|C2|NaN
+num|es-ES|NaN|C0|NaN
+num|es-ES|NaN|E2|NaN
+num|es-ES|NaN|#,##0.00|NaN
+num|es-ES|NaN|0.0%|NaN
+int|es-ES|42||42
+int|es-ES|42|D5|00042
+int|es-ES|42|D|42
+int|es-ES|42|N0|42
+int|es-ES|-42||-42
+int|es-ES|-42|D5|-00042
+int|es-ES|-42|D|-42
+int|es-ES|-42|N0|-42
+int|es-ES|1000000||1000000
+int|es-ES|1000000|D5|1000000
+int|es-ES|1000000|D|1000000
+int|es-ES|1000000|N0|1.000.000
+date|es-ES|2026-08-13T15:45:07|d|13/8/2026
+date|es-ES|2026-08-13T15:45:07|D|jueves, 13 de agosto de 2026
+date|es-ES|2026-08-13T15:45:07|t|15:45
+date|es-ES|2026-08-13T15:45:07|T|15:45:07
+date|es-ES|2026-08-13T15:45:07|g|13/8/2026 15:45
+date|es-ES|2026-08-13T15:45:07|G|13/8/2026 15:45:07
+date|es-ES|2026-08-13T15:45:07|M|13 de agosto
+date|es-ES|2026-08-13T15:45:07|Y|agosto de 2026
+date|es-ES|2026-08-13T15:45:07|yyyy-MM-dd|2026-08-13
+culture sv-SE SEK|yyyy-MM-dd|dddd d MMMM yyyy|HH:mm|HH:mm:ss|d MMMM|MMMM yyyy
+num|sv-SE|1234.5||1234,5
+num|sv-SE|1234.5|N0|1 234
+num|sv-SE|1234.5|N2|1 234,50
+num|sv-SE|1234.5|F2|1234,50
+num|sv-SE|1234.5|F0|1234
+num|sv-SE|1234.5|P1|123 450,0 %
+num|sv-SE|1234.5|P0|123 450 %
+num|sv-SE|1234.5|C2|1 234,50 kr
+num|sv-SE|1234.5|C0|1 234 kr
+num|sv-SE|1234.5|E2|1,23E+003
+num|sv-SE|1234.5|#,##0.00|1 234,50
+num|sv-SE|1234.5|0.0%|123450,0%
+num|sv-SE|-1234.5||−1234,5
+num|sv-SE|-1234.5|N0|−1 234
+num|sv-SE|-1234.5|N2|−1 234,50
+num|sv-SE|-1234.5|F2|−1234,50
+num|sv-SE|-1234.5|F0|−1234
+num|sv-SE|-1234.5|P1|−123 450,0 %
+num|sv-SE|-1234.5|P0|−123 450 %
+num|sv-SE|-1234.5|C2|−1 234,50 kr
+num|sv-SE|-1234.5|C0|−1 234 kr
+num|sv-SE|-1234.5|E2|−1,23E+003
+num|sv-SE|-1234.5|#,##0.00|−1 234,50
+num|sv-SE|-1234.5|0.0%|−123450,0%
+num|sv-SE|0||0
+num|sv-SE|0|N0|0
+num|sv-SE|0|N2|0,00
+num|sv-SE|0|F2|0,00
+num|sv-SE|0|F0|0
+num|sv-SE|0|P1|0,0 %
+num|sv-SE|0|P0|0 %
+num|sv-SE|0|C2|0,00 kr
+num|sv-SE|0|C0|0 kr
+num|sv-SE|0|E2|0,00E+000
+num|sv-SE|0|#,##0.00|0,00
+num|sv-SE|0|0.0%|0,0%
+num|sv-SE|0.125||0,125
+num|sv-SE|0.125|N0|0
+num|sv-SE|0.125|N2|0,12
+num|sv-SE|0.125|F2|0,12
+num|sv-SE|0.125|F0|0
+num|sv-SE|0.125|P1|12,5 %
+num|sv-SE|0.125|P0|12 %
+num|sv-SE|0.125|C2|0,12 kr
+num|sv-SE|0.125|C0|0 kr
+num|sv-SE|0.125|E2|1,25E−001
+num|sv-SE|0.125|#,##0.00|0,13
+num|sv-SE|0.125|0.0%|12,5%
+num|sv-SE|1000000||1000000
+num|sv-SE|1000000|N0|1 000 000
+num|sv-SE|1000000|N2|1 000 000,00
+num|sv-SE|1000000|F2|1000000,00
+num|sv-SE|1000000|F0|1000000
+num|sv-SE|1000000|P1|100 000 000,0 %
+num|sv-SE|1000000|P0|100 000 000 %
+num|sv-SE|1000000|C2|1 000 000,00 kr
+num|sv-SE|1000000|C0|1 000 000 kr
+num|sv-SE|1000000|E2|1,00E+006
+num|sv-SE|1000000|#,##0.00|1 000 000,00
+num|sv-SE|1000000|0.0%|100000000,0%
+num|sv-SE|Infinity||∞
+num|sv-SE|Infinity|N0|∞
+num|sv-SE|Infinity|N2|∞
+num|sv-SE|Infinity|F2|∞
+num|sv-SE|Infinity|F0|∞
+num|sv-SE|Infinity|P1|∞
+num|sv-SE|Infinity|P0|∞
+num|sv-SE|Infinity|C2|∞
+num|sv-SE|Infinity|C0|∞
+num|sv-SE|Infinity|E2|∞
+num|sv-SE|Infinity|#,##0.00|∞
+num|sv-SE|Infinity|0.0%|∞
+num|sv-SE|-Infinity||−∞
+num|sv-SE|-Infinity|N0|−∞
+num|sv-SE|-Infinity|N2|−∞
+num|sv-SE|-Infinity|F2|−∞
+num|sv-SE|-Infinity|F0|−∞
+num|sv-SE|-Infinity|P1|−∞
+num|sv-SE|-Infinity|P0|−∞
+num|sv-SE|-Infinity|C2|−∞
+num|sv-SE|-Infinity|C0|−∞
+num|sv-SE|-Infinity|E2|−∞
+num|sv-SE|-Infinity|#,##0.00|−∞
+num|sv-SE|-Infinity|0.0%|−∞
+num|sv-SE|NaN||NaN
+num|sv-SE|NaN|N0|NaN
+num|sv-SE|NaN|N2|NaN
+num|sv-SE|NaN|F2|NaN
+num|sv-SE|NaN|F0|NaN
+num|sv-SE|NaN|P1|NaN
+num|sv-SE|NaN|P0|NaN
+num|sv-SE|NaN|C2|NaN
+num|sv-SE|NaN|C0|NaN
+num|sv-SE|NaN|E2|NaN
+num|sv-SE|NaN|#,##0.00|NaN
+num|sv-SE|NaN|0.0%|NaN
+int|sv-SE|42||42
+int|sv-SE|42|D5|00042
+int|sv-SE|42|D|42
+int|sv-SE|42|N0|42
+int|sv-SE|-42||−42
+int|sv-SE|-42|D5|−00042
+int|sv-SE|-42|D|−42
+int|sv-SE|-42|N0|−42
+int|sv-SE|1000000||1000000
+int|sv-SE|1000000|D5|1000000
+int|sv-SE|1000000|D|1000000
+int|sv-SE|1000000|N0|1 000 000
+date|sv-SE|2026-08-13T15:45:07|d|2026-08-13
+date|sv-SE|2026-08-13T15:45:07|D|torsdag 13 augusti 2026
+date|sv-SE|2026-08-13T15:45:07|t|15:45
+date|sv-SE|2026-08-13T15:45:07|T|15:45:07
+date|sv-SE|2026-08-13T15:45:07|g|2026-08-13 15:45
+date|sv-SE|2026-08-13T15:45:07|G|2026-08-13 15:45:07
+date|sv-SE|2026-08-13T15:45:07|M|13 augusti
+date|sv-SE|2026-08-13T15:45:07|Y|augusti 2026
+date|sv-SE|2026-08-13T15:45:07|yyyy-MM-dd|2026-08-13
 inv|1234.5||1234.5
 inv|1234.5|N0|1,234
 inv|1234.5|N2|1,234.50
@@ -234,3 +623,24 @@ inv|1000000|F2|1000000.00
 inv|1000000|F0|1000000
 inv|1000000|0.##|1000000
 inv|1000000|0.0|1000000.0
+inv|Infinity||Infinity
+inv|Infinity|N0|Infinity
+inv|Infinity|N2|Infinity
+inv|Infinity|F2|Infinity
+inv|Infinity|F0|Infinity
+inv|Infinity|0.##|Infinity
+inv|Infinity|0.0|Infinity
+inv|-Infinity||-Infinity
+inv|-Infinity|N0|-Infinity
+inv|-Infinity|N2|-Infinity
+inv|-Infinity|F2|-Infinity
+inv|-Infinity|F0|-Infinity
+inv|-Infinity|0.##|-Infinity
+inv|-Infinity|0.0|-Infinity
+inv|NaN||NaN
+inv|NaN|N0|NaN
+inv|NaN|N2|NaN
+inv|NaN|F2|NaN
+inv|NaN|F0|NaN
+inv|NaN|0.##|NaN
+inv|NaN|0.0|NaN
