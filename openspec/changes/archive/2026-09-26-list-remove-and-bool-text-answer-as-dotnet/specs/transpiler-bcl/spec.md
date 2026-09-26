@@ -41,7 +41,9 @@ leaves only when its key is there with an equal value.
 `Convert.ToBoolean` SHALL answer a bool as itself; a number of any width, a decimal included, as
 whether it is not zero, a NaN being not zero and a negative zero being zero; and SHALL throw .NET's
 InvalidCastException for a char and a DateTime, after evaluating the argument. A provider SHALL be
-evaluated in the order the arguments are written, though it is not consulted.
+evaluated in the order the arguments are written, though it is not consulted, except the invariant
+and the current culture and a null, which are reads with no effect; another `CultureInfo`, which has
+no twin to evaluate it, SHALL be refused with EQ2108.
 
 #### Scenario: A false bool and a zero long
 
