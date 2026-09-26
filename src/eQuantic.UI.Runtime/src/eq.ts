@@ -76,7 +76,7 @@ import {
   equals as stringEquals,
   joinRange,
 } from './utils/string-statics';
-import { asSingle, format, parseEnum, stringFormat, stringFormatInvariant } from './utils/format';
+import { asInteger, asSingle, format, parseEnum, stringFormat, stringFormatInvariant } from './utils/format';
 import { nextTextElementLength, textElementStarts } from './utils/text-elements';
 import { unicodeCategory } from './utils/unicode-category';
 import {
@@ -272,6 +272,7 @@ export const $eq = {
     stringFormat,
     stringFormatInvariant,
     asSingle,
+    asInteger,
     stringBuilder,
     substring,
     textElementStarts,
