@@ -37,6 +37,11 @@ public class ListRemoveConformanceTests
     [InlineData("var list = new List<(double, int)> { (double.NaN, 1) }; return list.Remove((double.NaN, 1)) + \"|\" + list.Count;")]        // "True|0"
     [InlineData("var list = new List<(Point, (int, int))> { (new Point(1, 2), (3, 4)) }; return list.Remove((new Point(1, 2), (3, 4))) + \"|\" + list.Count;")] // "True|0"
     [InlineData("var list = new List<Cell> { new Cell(1, 2) }; return list.Remove(new Cell(1, 2)) + \"|\" + list.Count;")]                   // "True|0"
+    // Through ICollection<T>, the value may be a HashSet or a LinkedList when the call runs, and each
+    // removes as it does when called directly (found in review, #421).
+    [InlineData("ICollection<int> c = new HashSet<int> { 1, 2 }; var removed = c.Remove(1); return removed + \"|\" + c.Count + \"|\" + c.Remove(5);")] // "True|1|False"
+    [InlineData("var linked = new LinkedList<int>(new[] { 1, 2, 1 }); ICollection<int> c = linked; var removed = c.Remove(1); return removed + \"|\" + linked.Count + \"|\" + linked.First.Value;")] // "True|2|2"
+    [InlineData("ICollection<int> c = new List<int> { 1, 2 }; return c.Remove(2) + \"|\" + c.Count;")]                                     // "True|1"
     public void ListRemove_AnswersAsDotNet(string statements)
     {
         Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
