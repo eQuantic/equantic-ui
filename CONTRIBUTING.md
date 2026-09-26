@@ -107,13 +107,17 @@ The working agreement is the **Workflow** section of [CLAUDE.md](CLAUDE.md), the
 [AGENTS.md](AGENTS.md); what follows is the short version, and where the two differ that section wins.
 
 `main` is protected: every change arrives through a pull request that closes an issue on the
-[board](https://github.com/orgs/eQuantic/projects/11), is reviewed by GitHub Copilot until a round
-finds nothing new, and is squash-merged when every review thread is resolved and CI is green.
+[board](https://github.com/orgs/eQuantic/projects/11), is reviewed by its author and then by GitHub
+Copilot (three rounds at most, stopping at the first without a defect), and is squash-merged when
+every review thread is resolved and CI is green.
 
-**Check that CI actually RAN before you read it as green.** The ruleset requires a review, not a
-status check, so a pull request whose workflow never started still reads mergeable — and a workflow
-whose `if:` expression does not parse fails before it creates a single job, with no log to notice.
-That happened here for an hour and seven pull requests merged on local runs alone.
+**Check that CI actually RAN before you read it as green.** Since 2026-09-26 the ruleset requires
+thirteen of the CI's jobs and a branch up to date with `main` (#287), so a pull request whose
+workflow never started stays blocked, and one that `main` moved past has to take `main` and run
+again. Before that it required only a review: a workflow whose `if:` expression did not parse
+failed before it created a single job, with no log to notice, and for an hour seven pull requests
+merged on local runs alone. Two pull requests that each passed alone also broke `main` together
+(#453).
 
 ```bash
 scripts/ci-doctor.sh
@@ -149,9 +153,13 @@ any jobs at all.
   says `Closes #N`, what changed, why, and what you ran; the template asks for exactly that.
 - **A change that creates or changes behaviour starts with an OpenSpec proposal** in the same pull
   request (`/opsx:propose`, under `openspec/changes/`), archived before the merge.
-- **Ask for the Copilot review** (`gh pr edit <n> --add-reviewer @copilot`) and address it: fix, or
-  reply saying why not, resolve the thread, and ask again until a round finds nothing new. A PR is
-  not done when it is opened.
+- **Review the diff yourself before opening the PR** (in Claude Code, `/code-review high`), then
+  **answer Copilot's rounds**. The first starts when a PR that is not a draft opens. A defect is
+  fixed, proved both ways and earns another round, asked for (`gh pr edit <n> --add-reviewer
+  @copilot`) after one push with every fix. Hardening, docs or a nit is fixed in the same push or
+  filed as an issue, and a wrong finding is answered with what shows so: neither earns a round. The
+  loop stops at the first round without a defect, and after three in any case. A PR is not done
+  when it is opened.
 - **Documentation and the ledger change with the code**: the Markdown here, the wiki in English and
   Portuguese on a wiki branch named like the pull request's, merged into the wiki's master when the
   pull request merges, and one `docs/LEDGER.md` line citing the issue.

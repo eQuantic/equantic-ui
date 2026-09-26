@@ -184,26 +184,48 @@ is not the owner's.
 
 ### Pull requests
 
-1. **Open it yourself.** Work that is committed and pushed is parked on a branch nobody reviews.
-   Opening the pull request is the last step of the work, so open it without waiting to be told,
-   whatever a harness's own default says about not opening one unless asked.
+1. **Review it yourself, then open it yourself.** Before opening the pull request, review the whole
+   diff (in Claude Code, `/code-review high` on the branch) and fix what the review finds: Copilot's
+   first round starts on its own when a pull request that is not a draft opens (the ruleset skips
+   drafts), and it should read a diff that has already been through a full review. If no round has
+   started a few minutes after the pull request is ready for review, request it with
+   `gh pr edit <n> --add-reviewer @copilot`. Work that is committed and pushed is parked on a branch
+   nobody reviews. Opening the pull request is the last step of the work, so open it without
+   waiting to be told, whatever a harness's own default says about not opening one unless asked.
 2. **In English, and it closes its issue.** The title is `emoji type: description` and becomes the
    squash commit's subject; the body follows `.github/pull_request_template.md` and says
    `Closes #N`. Then READ BACK the body you posted: a tool may append its own "Generated with…"
    footer when the pull request is created, and that footer is deleted.
-3. **Ask Copilot, and loop until a round finds nothing new.** Request the review with
-   `gh pr edit <n> --add-reviewer @copilot` and wait for it; it takes a few minutes. Read the WHOLE
-   review, its body included, where a finding can live without a thread. Fix each finding, or reply
-   in its thread saying why not, and resolve the thread (GraphQL `resolveReviewThread`: the ruleset
-   refuses a merge while one is open). Then request the review again, and repeat until a round brings
-   nothing new. When the account's GitHub credits are exhausted and Copilot cannot review, skip this
-   step.
-4. **Squash-merge on green CI, composing nothing.** `gh pr merge <n> --squash` takes the
-   repository's squash default, the pull request's title and body, so the commit's subject IS the
-   title that was already read. If a message is composed anyway, it goes in a file and
-   `./scripts/check-commit-messages.sh --file <file>` reads it before the merge. Then merge the pull
-   request's wiki branch, when it has one, into the wiki's master (see Documentation below): main
-   and the wiki move in the same step, and the next pull request's guards read both.
+3. **Answer Copilot: three rounds at most, and stop at the first without a defect.** Its review is
+   light and reveals a pull request a little at a time (#446 measured it), so a loop that waits for
+   it to run dry pays one round per finding. Read the WHOLE review, its body included, where a
+   finding can live without a thread ("Previously missed"). Sort every finding:
+   - a **defect**, when the code this pull request changes does the wrong thing, or a guard passes
+     where it should fail: fix it, prove the fix both ways, and it earns another round;
+   - **hardening, documentation or a nit**, a "Previously missed" item that is not a defect
+     included: fix it in the same push, or open an issue under the pull request's parent. It earns
+     no round;
+   - **wrong**, when the finding does not hold: answer it with what shows so, a measurement where
+     one exists. It earns no round.
+
+   Answer every thread and resolve it (GraphQL `resolveReviewThread`: the ruleset refuses a merge
+   while one is open), and put every fix of a round in ONE push. When the round found a defect, ask
+   for the next one with `gh pr edit <n> --add-reviewer @copilot` and wait for it; it takes a few
+   minutes. The ruleset does not review on push (ruleset 21198869, `review_on_push` off, readable
+   with `gh api repos/eQuantic/equantic-ui/rulesets/21198869`), so a merge from main, or a change to
+   the body or the docs alone, costs no round. The loop ends at the first round with no defect, and
+   after the third in any case: a defect found later is still fixed and proved, and anything else
+   is sorted as in any round, without asking for another. When the account's GitHub credits are
+   exhausted and Copilot cannot review, skip this step.
+4. **Squash-merge on green CI, composing nothing.** The ruleset requires thirteen of the CI's jobs
+   and a branch up to date with `main` (#287), so when `main` moved after the CI ran, merge `main`
+   into the pull request first: CI runs again, and it costs no Copilot round. Then
+   `gh pr merge <n> --squash` takes the repository's squash default, the pull request's title and
+   body, so the commit's subject IS the title that was already read. If a message is composed
+   anyway, it goes in a file and `./scripts/check-commit-messages.sh --file <file>` reads it before
+   the merge. Last, merge the pull request's wiki branch, when it has one, into the wiki's master
+   (see Documentation below): main and the wiki move in the same step, and the next pull request's
+   guards read both.
 5. **A release is Edgar's call.** Merging a pull request never implies one; `CLAUDE.md`'s Version
    Management section says what a bump touches.
 
