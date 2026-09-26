@@ -12,7 +12,7 @@ export class XmlLanguage {
         return 'XML';
     }
 
-    rules: CodeLanguageRules = new CodeLanguageRules(null, ['<!--', '-->'], [['<', '>'], ['(', ')'], ['[', ']']], ['"', '\''], ['>'], ['<'], 2);
+    rules: CodeLanguageRules = new CodeLanguageRules(undefined, ['<!--', '-->'], [['<', '>'], ['(', ')'], ['[', ']']], undefined, ['>'], ['<'], 2);
 
     tokenize(line: string, state: number, into: CodeToken[]) {
         let i = 0;
