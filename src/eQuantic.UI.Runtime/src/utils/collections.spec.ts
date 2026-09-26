@@ -1,12 +1,11 @@
 import { describe, it, expect } from 'vitest';
 import { sortedDictionary } from './sorted';
+import { dictionary } from './dictionary';
 import {
   Queue,
   queue,
   Stack,
   stack,
-  ValueMap,
-  valueMap,
   LinkedList,
   linkedList,
   remove,
@@ -89,78 +88,6 @@ describe('Stack<T> — LIFO', () => {
   });
 });
 
-describe('ValueMap<K, V> — structurally-keyed dictionary', () => {
-  // A record-like key: distinct object identity, equal by value.
-  const pt = (x: number, y: number) => ({ x, y });
-
-  it('keys by structural equality, not reference', () => {
-    const m = valueMap<{ x: number; y: number }, string>();
-    m.set(pt(1, 2), 'a');
-    expect(m.get(pt(1, 2))).toBe('a'); // different object, same value
-    expect(m.has(pt(1, 2))).toBe(true);
-    expect(m.has(pt(9, 9))).toBe(false);
-  });
-
-  it('overwrites an existing equal key instead of duplicating', () => {
-    const m = valueMap<{ x: number; y: number }, number>();
-    m.set(pt(1, 2), 10);
-    m.set(pt(1, 2), 20);
-    expect(m.size).toBe(1);
-    expect(m.get(pt(1, 2))).toBe(20);
-  });
-
-  it('get on an absent key is undefined (non-throwing)', () => {
-    expect(valueMap<{ x: number }, number>().get({ x: 5 })).toBeUndefined();
-  });
-
-  it('delete removes a structurally-equal key', () => {
-    const m = valueMap<{ x: number; y: number }, number>();
-    m.set(pt(1, 2), 1);
-    expect(m.delete(pt(1, 2))).toBe(true);
-    expect(m.delete(pt(1, 2))).toBe(false);
-    expect(m.size).toBe(0);
-  });
-
-  it('keys/values preserve insertion order', () => {
-    const m = valueMap<{ x: number; y: number }, number>();
-    m.set(pt(1, 1), 10);
-    m.set(pt(2, 2), 20);
-    expect(m.keys()).toEqual([pt(1, 1), pt(2, 2)]);
-    expect(m.values()).toEqual([10, 20]);
-  });
-
-  it('tuple (array) keys compare element-wise', () => {
-    const m = valueMap<[number, number], string>();
-    m.set([1, 2], 'a');
-    expect(m.get([1, 2])).toBe('a');
-    expect(m.get([2, 1])).toBeUndefined();
-  });
-
-  it('iterates KeyValuePair-shaped { key, value } entries', () => {
-    const m = valueMap<{ x: number }, number>();
-    m.set({ x: 1 }, 100);
-    m.set({ x: 2 }, 200);
-    const seen = [...m].map((kvp) => kvp.key.x + kvp.value);
-    expect(seen).toEqual([101, 202]);
-  });
-
-  it('clear empties the map', () => {
-    const m = valueMap<{ x: number }, number>();
-    m.set({ x: 1 }, 1);
-    m.clear();
-    expect(m.size).toBe(0);
-  });
-
-  it('seeds from an iterable of [key, value] pairs', () => {
-    const m = new ValueMap<{ x: number }, number>([
-      [{ x: 1 }, 10],
-      [{ x: 2 }, 20],
-    ]);
-    expect(m.size).toBe(2);
-    expect(m.get({ x: 2 })).toBe(20);
-  });
-});
-
 describe('LinkedList<T> — doubly-linked', () => {
   it('addLast / addFirst order and count', () => {
     const l = linkedList<number>();
@@ -223,12 +150,15 @@ describe('remove over a dictionary, as ICollection<KeyValuePair<K, V>> removes',
     expect(map.size).toBe(0);
   });
 
-  it('does the same on a plain object, which a primitive-keyed Dictionary is', () => {
-    const dict: Record<string, number> = { a: 1, b: 2 };
+  it("does the same on the runtime's dictionary, a pair it enumerates included", () => {
+    const dict = dictionary<string, number>([
+      ['a', 1],
+      ['b', 2],
+    ]);
     expect(remove(dict as never, { key: 'b', value: 3 } as never)).toBe(false);
     expect(remove(dict as never, { key: 'c', value: 2 } as never)).toBe(false);
-    expect(remove(dict as never, { key: 'b', value: 2 } as never)).toBe(true);
-    expect(Object.keys(dict)).toEqual(['a']);
+    expect(remove(dict as never, [...dict][1] as never)).toBe(true);
+    expect(dict.keys()).toEqual(['a']);
   });
 
   it('does the same on the sorted dictionary', () => {

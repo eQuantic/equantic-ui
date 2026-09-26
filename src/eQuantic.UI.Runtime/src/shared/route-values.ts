@@ -15,6 +15,8 @@
  * `core/*` and `shared/*` out of a cycle.
  */
 
+import { bagEntries, type Bag } from '../utils/dictionary';
+
 /**
  * A record with NO prototype, for keys that come from a URL.
  *
@@ -26,9 +28,9 @@
  * Reading was already safe (`hasOwnProperty.call`); it is the WRITE that loses the key, which is
  * why a lookup guard was not enough.
  */
-export function ownProperties(source?: Record<string, string> | null): Record<string, string> {
+export function ownProperties(source?: Bag<string> | null): Record<string, string> {
   const safe: Record<string, string> = Object.create(null);
-  if (source) for (const key of Object.keys(source)) safe[key] = source[key];
+  if (source) for (const [key, value] of bagEntries(source)) safe[key] = value;
   return safe;
 }
 
@@ -36,7 +38,8 @@ export class RouteValues {
   private readonly parameters: Readonly<Record<string, string>>;
   private readonly queries: Readonly<Record<string, string>>;
 
-  constructor(parameters?: Record<string, string> | null, query?: Record<string, string> | null) {
+  /** Each side a dictionary when transpiled C# builds one, as its C# type says, or a plain object. */
+  constructor(parameters?: Bag<string> | null, query?: Bag<string> | null) {
     // COPIED into prototype-less records rather than held: what a caller hands over may itself have
     // lost a key to the trap above, and holding it would also let a later mutation of the caller's
     // object change a route already handed to a page.

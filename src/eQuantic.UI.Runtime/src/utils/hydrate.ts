@@ -2,6 +2,8 @@ import { dec, Decimal } from './decimal';
 import { long } from './long';
 import { dateTime, timeSpan, dateOnly, timeOnly, dateTimeOffset } from './datetime';
 import { adoptMember } from './adopt-member';
+import { Dictionary } from './dictionary';
+import { SortedMap } from './sorted';
 
 /**
  * TYPED hydration — the boundary where a value from the server (SSR state, a Server Action result)
@@ -18,7 +20,9 @@ import { adoptMember } from './adopt-member';
  *    shortest text that names IT, which JavaScript reads as the nearest DOUBLE — so it rounds back
  *    to the single here, before any arithmetic sees the difference;
  *  - `[spec]` — a list whose every element hydrates by the inner spec;
- *  - `{ dict: spec }` — a dictionary (plain-object twin): keys stay strings, values hydrate;
+ *  - `{ dict: spec, key, byValue, sorted }` — a dictionary: the JSON object becomes the runtime's
+ *    `Dictionary` (a `SortedMap` when `sorted`), each property name turned into the key by `key` and
+ *    each value hydrated by `dict` (null when values arrive as they are);
  *  - a class reference — a record/struct twin: the plain JSON object is rebuilt on the class's
  *    prototype (so `instanceof`, `equals`, `with` survive the wire) and each member hydrates by
  *    the class's own static `$hydration` map.
@@ -38,6 +42,21 @@ export type HydrationTag =
   | 'timeOnly'
   | 'dateTimeOffset';
 
+/**
+ * How a JSON property name becomes a dictionary key: a number, a bool, or a compat scalar by its tag.
+ * A spec that names none keeps the name itself, which is the key of a string, a char, a `Guid` and an
+ * enum (its camelCase member name, the value transpiled code compares).
+ */
+export type HydrationKey = HydrationTag | 'number' | 'bool';
+
+/** A dictionary: how its values hydrate, how a property name becomes its key, and which class holds it. */
+export interface DictionarySpec {
+  readonly dict: HydrationSpec | null;
+  readonly key?: HydrationKey;
+  readonly byValue?: true | 'own';
+  readonly sorted?: true;
+}
+
 /** A record/struct twin: a prototype to rebuild on, and its own member specs. */
 export interface HydratableConstructor {
   readonly prototype: object;
@@ -47,7 +66,7 @@ export interface HydratableConstructor {
 export type HydrationSpec =
   | HydrationTag
   | readonly [HydrationSpec]
-  | { readonly dict: HydrationSpec }
+  | DictionarySpec
   | { readonly tuple: readonly (HydrationSpec | null)[] }
   | {
       readonly members: Readonly<Record<string, HydrationSpec>>;
@@ -94,15 +113,41 @@ export function hydrate(incoming: unknown, spec: HydrationSpec): unknown {
       );
     return result;
   }
-  if ('dict' in (spec as { dict?: HydrationSpec })) {
-    const inner = (spec as { dict: HydrationSpec }).dict;
-    if (typeof incoming !== 'object' || Array.isArray(incoming)) return incoming;
-    const source = incoming as Record<string, unknown>;
-    const values = {};
-    for (const key of Object.keys(source)) adoptMember(values, key, hydrate(source[key], inner));
-    return values;
-  }
+  if ('dict' in (spec as DictionarySpec)) return dictionary(incoming, spec as DictionarySpec);
   return incoming;
+}
+
+/**
+ * A dictionary from the JSON object System.Text.Json wrote for it, its entries in the order the parsed
+ * object holds them: every name but an integer-like one keeps the order it was written in (#437).
+ */
+function dictionary(incoming: unknown, spec: DictionarySpec): unknown {
+  if (incoming instanceof Dictionary || incoming instanceof SortedMap) return incoming;
+  if (typeof incoming !== 'object' || Array.isArray(incoming)) return incoming;
+  const source = incoming as Record<string, unknown>;
+  const entries = Object.keys(source).map(
+    (name) =>
+      [
+        spec.key === undefined ? name : dictionaryKey(name, spec.key),
+        spec.dict == null ? source[name] : hydrate(source[name], spec.dict),
+      ] as const,
+  );
+  return spec.sorted ? new SortedMap(entries) : new Dictionary(entries, spec.byValue ?? false);
+}
+
+/** A dictionary key from the property name System.Text.Json wrote for it. */
+function dictionaryKey(name: string, key: HydrationKey): unknown {
+  switch (key) {
+    case 'number':
+      return Number(name);
+    case 'single':
+      return Math.fround(Number(name));
+    // Written True or False, and read in any case, as System.Text.Json reads a bool key.
+    case 'bool':
+      return name.trim().toLowerCase() === 'true';
+    default:
+      return scalar(name, key);
+  }
 }
 
 /** A compat scalar from its wire form — pass-through when it already has the runtime type. */

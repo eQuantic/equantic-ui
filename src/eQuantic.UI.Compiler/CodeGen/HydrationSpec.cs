@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using Microsoft.CodeAnalysis;
+using eQuantic.UI.Compiler.CodeGen.Strategies.Types;
 
 namespace eQuantic.UI.Compiler.CodeGen;
 
@@ -15,11 +16,11 @@ namespace eQuantic.UI.Compiler.CodeGen;
 /// <para>
 /// The spec language mirrors <c>utils/hydrate.ts</c>: a tag (<c>'long'</c>, <c>'decimal'</c>,
 /// <c>'single'</c>, <c>'dateTime'</c>…) for a compat scalar, <c>[spec]</c> for a list,
-/// <c>{ dict: spec }</c> for a dictionary's values (the twin is a plain object — its keys are
-/// strings), and a bare class NAME for an in-source record/struct, whose emitted twin carries its
-/// own <c>static $hydration</c>.
+/// <c>{ dict: spec, key, byValue, sorted }</c> for a dictionary, and a bare class NAME for an
+/// in-source record/struct, whose emitted twin carries its own <c>static $hydration</c>.
 /// Null means IDENTITY: the JSON value is already what the runtime computes with, and no spec is
-/// emitted at all — the common case stays clean.
+/// emitted at all — the common case stays clean. A dictionary is never that case: it crosses as a
+/// JSON object and has to become the runtime's dictionary class.
 /// </para>
 /// </summary>
 public static class HydrationSpec
@@ -63,10 +64,10 @@ public static class HydrationSpec
 
         if (Scalar(named) is { } scalar) return scalar;
 
-        // A dictionary before the enumerable walk — it IS IEnumerable<KeyValuePair<,>>, but its
-        // twin is a plain object: keys stay strings, values hydrate.
-        if (DictionaryValueType(named) is { } valueType)
-            return Of(valueType, referenced, visiting) is { } value ? $"{{ dict: {value} }}" : null;
+        // A dictionary before the enumerable walk — it IS IEnumerable<KeyValuePair<,>>, but it
+        // crosses as a JSON object, which always has to become the runtime's dictionary class.
+        if (DictionaryTypes(named) is var (keyType, valueType))
+            return DictionarySpec(named, keyType, valueType, referenced, visiting);
 
         if (ElementType(named) is { } element)
             return List(element, referenced, visiting);
@@ -164,13 +165,58 @@ public static class HydrationSpec
     private static string? List(ITypeSymbol element, References referenced, HashSet<INamedTypeSymbol> visiting) =>
         Of(element, referenced, visiting) is { } inner ? $"[{inner}]" : null;
 
-    /// <summary>The value type of a dictionary-shaped type — itself or any interface it implements
-    /// constructed from <c>IDictionary&lt;,&gt;</c> / <c>IReadOnlyDictionary&lt;,&gt;</c>.</summary>
-    private static ITypeSymbol? DictionaryValueType(INamedTypeSymbol named) =>
+    /// <summary>The key and value types of a dictionary-shaped type — itself or any interface it
+    /// implements constructed from <c>IDictionary&lt;,&gt;</c> / <c>IReadOnlyDictionary&lt;,&gt;</c>.</summary>
+    private static (ITypeSymbol Key, ITypeSymbol Value)? DictionaryTypes(INamedTypeSymbol named) =>
         SelfAndInterfaces(named)
             .FirstOrDefault(i => i.Arity == 2 && IsSystemCollection(i)
                 && i.OriginalDefinition.MetadataName is "IDictionary`2" or "IReadOnlyDictionary`2")
-            ?.TypeArguments[1];
+            is { } dictionary
+                ? (dictionary.TypeArguments[0], dictionary.TypeArguments[1])
+                : null;
+
+    /// <summary>
+    /// <c>{ dict: values, key: tag, byValue: …, sorted: true }</c>: how each value hydrates (null
+    /// when it arrives as it is), how a property name becomes the key, and which class holds the
+    /// entries — a sorted one's own, or the runtime's <c>Dictionary</c>, finding its keys by value
+    /// or by their own equality where the key type's default comparer does
+    /// (<see cref="DictionaryStrategy.KeyEquality"/>).
+    /// </summary>
+    private static string DictionarySpec(INamedTypeSymbol dictionary, ITypeSymbol key, ITypeSymbol value,
+        References referenced, HashSet<INamedTypeSymbol> visiting)
+    {
+        var parts = new List<string> { $"dict: {Of(value, referenced, visiting) ?? "null"}" };
+        if (KeyTag(key) is { } tag) parts.Add($"key: {tag}");
+        if (dictionary.DictionaryFactory() is Eq.SortedDictionary or Eq.SortedList) parts.Add("sorted: true");
+        else if (DictionaryStrategy.KeyEquality(key) is { } equality) parts.Add($"byValue: {equality}");
+        return $"{{ {string.Join(", ", parts)} }}";
+    }
+
+    /// <summary>
+    /// How the property name System.Text.Json writes for a key of this type becomes the key (a
+    /// <c>HydrationKey</c> of <c>utils/hydrate.ts</c>): a number, a bool, or a compat scalar by its tag.
+    /// Null where the name IS the key: a string, a char, a <c>Guid</c>, an enum's camelCase name.
+    /// </summary>
+    private static string? KeyTag(ITypeSymbol key)
+    {
+        var type = key.UnwrapNullable() ?? key;
+        switch (type.SpecialType)
+        {
+            case SpecialType.System_Boolean:
+                return "'bool'";
+            case SpecialType.System_Decimal:
+                return "'decimal'";
+            case SpecialType.System_Int64 or SpecialType.System_UInt64:
+                return "'long'";
+            case SpecialType.System_Single:
+                return "'single'";
+            case SpecialType.System_SByte or SpecialType.System_Byte or SpecialType.System_Int16
+                or SpecialType.System_UInt16 or SpecialType.System_Int32 or SpecialType.System_UInt32
+                or SpecialType.System_Double:
+                return "'number'";
+        }
+        return type is INamedTypeSymbol named ? Scalar(named) : null;
+    }
 
     /// <summary>The element type of an enumerable — itself or any interface it implements
     /// constructed from <c>IEnumerable&lt;T&gt;</c>.</summary>

@@ -2,6 +2,7 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using eQuantic.UI.Compiler.CodeGen.Extensions;
 using eQuantic.UI.Compiler.CodeGen.Ir;
+using eQuantic.UI.Compiler.CodeGen.Strategies.Types;
 
 namespace eQuantic.UI.Compiler.CodeGen.Strategies.Primitives;
 
@@ -12,8 +13,7 @@ namespace eQuantic.UI.Compiler.CodeGen.Strategies.Primitives;
 /// collection expression's <c>with(capacity:)</c>). Symbol-first, table-driven, single-evaluation
 /// only — the WRITER binds a reused receiver, the templates just name it. Deliberately absent, and therefore still
 /// visible in the audit baseline: <c>double.Equals</c> (NaN.Equals(NaN) is true — <c>===</c>
-/// would lie), <c>decimal.Equals</c> (Decimal objects), value-keyed dictionaries (they lower to
-/// $eq.collections.valueMap, not a plain object).
+/// would lie) and <c>decimal.Equals</c> (Decimal objects).
 /// </summary>
 public class BclSurfaceTailStrategy : IExpressionIrStrategy
 {
@@ -92,19 +92,21 @@ public class BclSurfaceTailStrategy : IExpressionIrStrategy
 
         var definition = home.OriginalDefinition.ToDisplayString();
 
-        if (definition == "System.Collections.Generic.Dictionary<TKey, TValue>"
-            && home.IsDictionaryLike(out _))
+        // The runtime's dictionary classes answer TryAdd and ContainsValue themselves, each argument
+        // evaluated once and in its place; a value compares as the value type's default comparer
+        // compares it (DictionaryStrategy.KeyEquality).
+        if (home.IsDictionary() && home.TypeArguments is [_, var valueType])
         {
             return (name, argCount) switch
             {
-                ("TryAdd", 2) =>
-                    "(Object.prototype.hasOwnProperty.call({0}, {1}) ? false : ({0}[{1}] = {2}, true))",
-                ("ContainsValue", 1) => "Object.values({0}).includes({1})",
+                ("TryAdd", 2) => "{0}.tryAdd({1}, {2})",
+                ("ContainsValue", 1) => DictionaryStrategy.KeyEquality(valueType) is { } equality
+                    ? $"{{0}}.containsValue({{1}}, {equality})"
+                    : "{0}.containsValue({1})",
                 // Capacity hints have no JS meaning; EnsureCapacity ANSWERS a capacity, so the
                 // requested one is the honest value.
-                ("EnsureCapacity", 1) => "{1}",
-                ("TrimExcess", 0) => "void 0",
-                ("TrimExcess", 1) => "void 0",
+                ("EnsureCapacity", 1) when definition == "System.Collections.Generic.Dictionary<TKey, TValue>" => "{1}",
+                ("TrimExcess", 0 or 1) when definition == "System.Collections.Generic.Dictionary<TKey, TValue>" => "void 0",
                 _ => null,
             };
         }

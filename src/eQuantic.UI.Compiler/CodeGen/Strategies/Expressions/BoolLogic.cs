@@ -41,7 +41,7 @@ internal static class BoolLogic
     /// A COMPOUND assignment on a bool — <c>|=</c>, <c>&amp;=</c>, <c>^=</c> — written back as the
     /// logical operator, or null when it is not one. The TARGET is evaluated once, as C# evaluates it:
     /// <c>GetState().Flag |= Next()</c> calls <c>GetState()</c> a single time, and a dictionary entry
-    /// is read through the guard that throws for a missing key (<c>$eq.dictGet</c>) with its receiver
+    /// is read through the guard that throws for a missing key (<c>$eq.mapGet</c>) with its receiver
     /// and its key each evaluated once. The template's writer does the binding; a plain name or
     /// <c>this</c> is simply inlined.
     /// </summary>
@@ -52,10 +52,10 @@ internal static class BoolLogic
         context.UsedHelpers.Add(Eq.Import);
         var right = context.Converter.ConvertIr(assignment.Right);
 
-        if (DictionaryEntry.Of(assignment.Left, context) is { } found)
+        if (DictionaryEntry.Of(assignment.Left, context) is { } entry)
         {
-            var (entry, form) = found;
-            return JsExpr.Template($"({form.Write("{0}", "{1}", Combine(op, form.Read("{0}", "{1}"), "{2}"))})",
+            return JsExpr.Template(
+                $"({DictionaryEntry.Write("{0}", "{1}", Combine(op, DictionaryEntry.Read("{0}", "{1}"), "{2}"))})",
                 [context.Converter.ConvertIr(entry.Expression),
                  context.Converter.ConvertIr(entry.ArgumentList.Arguments[0].Expression),
                  right],

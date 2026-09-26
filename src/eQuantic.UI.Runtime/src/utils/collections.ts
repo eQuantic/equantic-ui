@@ -8,8 +8,6 @@
  */
 
 import { equals } from './equals';
-import { dec, Decimal } from './decimal';
-import { long } from './long';
 
 export class Queue<T> {
   private readonly items: T[];
@@ -95,94 +93,6 @@ export function queue<T>(initial?: Iterable<T>): Queue<T> {
 
 export function stack<T>(initial?: Iterable<T>): Stack<T> {
   return new Stack<T>(initial);
-}
-
-/**
- * .NET-compat `Dictionary<TKey, TValue>` whose KEY compares by VALUE (structural) equality — for keys
- * that are records, `struct`s or value tuples. A plain JS object can't key on those: it coerces the
- * key to a string via `toString`, so two structurally-equal-but-distinct keys collide (or, worse,
- * every record key collapses to `"[object Object]"`). The transpiler detects a value-typed key and
- * emits `$eq.collections.valueMap(...)`, routing the dictionary's operations (indexer, `ContainsKey`,
- * `Add`, `Remove`, `Keys`, `Values`, `Count`, `foreach`) here. String/number/enum keys keep the plain
- * object form — this class is only for the value-typed case.
- *
- * Entries are held in insertion order (matching .NET's enumeration order for a dictionary without
- * removals) and located by a linear scan with `$eq.equals`. Linear lookup is O(n), but key counts in
- * UI state are small and structural equality has no faithful O(1) hash without re-deriving the
- * member-by-member compare — correctness and simplicity win here over micro-optimisation.
- */
-export class ValueMap<K, V> implements Iterable<{ key: K; value: V }> {
-  private readonly entries: { key: K; value: V }[] = [];
-
-  constructor(initial?: Iterable<readonly [K, V]>) {
-    if (initial) {
-      for (const [k, v] of initial) this.set(k, v);
-    }
-  }
-
-  /** Number of entries — backs `.Count`. */
-  get size(): number {
-    return this.entries.length;
-  }
-
-  private indexOf(key: K): number {
-    for (let i = 0; i < this.entries.length; i++) {
-      if (equals(this.entries[i].key, key)) return i;
-    }
-    return -1;
-  }
-
-  /** `ContainsKey(key)`. */
-  has(key: K): boolean {
-    return this.indexOf(key) >= 0;
-  }
-
-  /** The value for `key`, `undefined` when absent. The indexer's read is `$eq.mapGet`, which throws
-   * for an absent key as .NET does; this is the lookup it and `TryGetValue` ask. */
-  get(key: K): V | undefined {
-    const i = this.indexOf(key);
-    return i >= 0 ? this.entries[i].value : undefined;
-  }
-
-  /** Indexer assignment and `Add` — overwrites an existing equal key (as the plain-object form does). */
-  set(key: K, value: V): this {
-    const i = this.indexOf(key);
-    if (i >= 0) this.entries[i].value = value;
-    else this.entries.push({ key, value });
-    return this;
-  }
-
-  /** `Remove(key)` — true when a matching key was present. */
-  delete(key: K): boolean {
-    const i = this.indexOf(key);
-    if (i < 0) return false;
-    this.entries.splice(i, 1);
-    return true;
-  }
-
-  /** `Clear()`. */
-  clear(): void {
-    this.entries.length = 0;
-  }
-
-  /** `Keys` — the key objects, in insertion order. */
-  keys(): K[] {
-    return this.entries.map((e) => e.key);
-  }
-
-  /** `Values` — the values, in insertion order. */
-  values(): V[] {
-    return this.entries.map((e) => e.value);
-  }
-
-  /** `KeyValuePair`-shaped entries (`{ key, value }`) for `foreach (var kvp in dict)`. */
-  [Symbol.iterator](): Iterator<{ key: K; value: V }> {
-    return this.entries.map((e) => ({ key: e.key, value: e.value }))[Symbol.iterator]();
-  }
-}
-
-export function valueMap<K, V>(initial?: Iterable<readonly [K, V]>): ValueMap<K, V> {
-  return new ValueMap<K, V>(initial);
 }
 
 /**
@@ -347,7 +257,7 @@ export function sameItem(item: unknown, value: unknown): boolean {
   return typeof own === 'function' && (own as (other: unknown) => boolean).call(item, value);
 }
 
-/** What a dictionary is here: a `Map`, or the runtime's sorted map, keyed by the pair's key. */
+/** What a dictionary is here: the runtime's `Dictionary` or sorted map, or a `Map`, keyed by the pair's key. */
 interface Dictionary<K, V> {
   has(key: K): boolean;
   get(key: K): V | undefined;
@@ -364,22 +274,6 @@ function isDictionary(collection: unknown): collection is Dictionary<unknown, un
     typeof shape.delete === 'function' &&
     !(collection instanceof Set)
   );
-}
-
-/** A primitive-keyed `Dictionary<K, V>`, which is a plain object here, its keys its property names. */
-function isPlainDictionary(collection: unknown): collection is Record<string, unknown> {
-  if (collection == null || typeof collection !== 'object' || Array.isArray(collection)) return false;
-  const prototype = Object.getPrototypeOf(collection);
-  return prototype === Object.prototype || prototype === null;
-}
-
-/** The plain object asked as a dictionary is asked: a key is there when it is an own property. */
-function plainDictionary(object: Record<string, unknown>): Dictionary<unknown, unknown> {
-  return {
-    has: (key) => Object.prototype.hasOwnProperty.call(object, key as PropertyKey),
-    get: (key) => object[key as string],
-    delete: (key) => delete object[key as string],
-  };
 }
 
 /**
@@ -425,7 +319,7 @@ export function pairComparer<K, V>(
  * call runs (found in review, #421), and each removes as it does when called directly, as `contains`
  * asks the value what it is: a Set (`HashSet<T>`) through `delete`, the way `set.Remove(x)` lowers; a
  * dictionary (`ICollection<KeyValuePair<K, V>>`) the pair whose key it holds with an equal value, as
- * .NET's does, whether it is a plain object (a primitive key), a `ValueMap` or a sorted map; and a twin
+ * .NET's does, the runtime's `Dictionary` and a sorted map alike; and a twin
  * with a `remove` of its own (`LinkedList<T>`, `SortedSet<T>`) through it. An
  * array stands for a `List<T>` and for a `T[]` alike, and .NET throws for the second, which this side
  * cannot tell apart.
@@ -437,7 +331,6 @@ export function remove<T>(
 ): boolean {
   if (list instanceof Set) return list.delete(value);
   if (isDictionary(list)) return removePair(list, value, same);
-  if (isPlainDictionary(list)) return removePair(plainDictionary(list), value, same);
   if (!Array.isArray(list)) return (list as { remove(value: T): boolean }).remove(value);
   for (let index = 0; index < list.length; index++) {
     if (same(list[index], value)) {
@@ -490,48 +383,4 @@ export function count(collection: unknown): number {
   if (typeof (collection as Iterable<unknown>)[Symbol.iterator] === 'function')
     for (const _ of collection as Iterable<unknown>) total++;
   return total;
-}
-
-/**
- * A transpiled C# `Dictionary` is a plain object — not iterable. This is what a `foreach` over
- * one (and a `new List<KeyValuePair<,>>(dict)`) compiles to: each pair DESTRUCTURES as
- * `[key, value]` and also answers `.key`/`.value` (both C# consumption shapes), and keys come back
- * as the KEY TYPE the compiler saw — Object.entries strings every key, and a stringified key turns
- * the next `key + 1` into concatenation. `true` restores plain numbers; `'long'` restores BigInt
- * and `'decimal'` the runtime Decimal (their object-key form is a string, but the C# key the loop
- * binds is the exact type).
- */
-type EntryKeyKind = boolean | 'long' | 'decimal';
-
-export function entries<V>(
-  dict: Record<string, V>,
-  keyKind: true,
-): Array<[number, V] & { key: number; value: V }>;
-export function entries<V>(
-  dict: Record<string, V>,
-  keyKind?: false,
-): Array<[string, V] & { key: string; value: V }>;
-export function entries<V>(
-  dict: Record<string, V>,
-  keyKind: 'long',
-): Array<[bigint, V] & { key: bigint; value: V }>;
-export function entries<V>(
-  dict: Record<string, V>,
-  keyKind: 'decimal',
-): Array<[Decimal, V] & { key: Decimal; value: V }>;
-export function entries<V>(
-  dict: Record<string, V>,
-  keyKind: EntryKeyKind = false,
-): Array<[unknown, V] & { key: unknown; value: V }> {
-  return Object.entries(dict).map(([rawKey, value]) => {
-    const key =
-      keyKind === 'long'
-        ? long(rawKey)
-        : keyKind === 'decimal'
-          ? dec(rawKey)
-          : keyKind
-            ? Number(rawKey)
-            : rawKey;
-    return Object.assign([key, value] as [unknown, V], { key, value });
-  });
 }

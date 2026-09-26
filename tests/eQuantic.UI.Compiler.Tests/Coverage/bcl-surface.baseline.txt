@@ -1,7 +1,7 @@
 # eqc BCL surface audit — the coverage DENOMINATOR, one verdict per probed member.
 # native = a strategy mapped it to plain JS · eq = routed through a $eq compat helper
 # fenced:EQxxxx = refused with that diagnostic · invalid-probe = the probe itself doesn't compile
-# totals: eq=188 · fenced=42 · invalid-probe=6 · native=727
+# totals: eq=188 · fenced=41 · invalid-probe=6 · native=728
 native         Array.MaxLength
 native         Boolean.CompareTo(Boolean)
 native         Boolean.CompareTo(Object)
@@ -672,7 +672,7 @@ native         SortedDictionary<String,Int32>.Add(String,Int32)
 native         SortedDictionary<String,Int32>.Clear()
 native         SortedDictionary<String,Int32>.Comparer
 native         SortedDictionary<String,Int32>.ContainsKey(String)
-fenced:EQ2004  SortedDictionary<String,Int32>.ContainsValue(Int32)
+native         SortedDictionary<String,Int32>.ContainsValue(Int32)
 native         SortedDictionary<String,Int32>.Count
 native         SortedDictionary<String,Int32>.Keys
 native         SortedDictionary<String,Int32>.Remove(String)

@@ -109,7 +109,8 @@ public static class PatternConverter
                     {
                         var propName = sp.NameColon?.Name.ToString() ?? sp.ExpressionColon?.Expression.ToString();
                         if (propName != null)
-                            CollectBindings(sp.Pattern, $"{access}.{Camel(propName)}", context, bindings);
+                            CollectBindings(sp.Pattern,
+                                $"{access}.{Camel(propName, PatternType(recursive, context) ?? accessType)}", context, bindings);
                     }
                 break;
 
@@ -156,7 +157,8 @@ public static class PatternConverter
             {
                 var propName = sp.NameColon?.Name.ToString() ?? sp.ExpressionColon?.Expression.ToString();
                 if (propName == null) continue;
-                var sub = BuildCondition(sp.Pattern, $"{access}.{Camel(propName)}", context);
+                var sub = BuildCondition(sp.Pattern,
+                    $"{access}.{Camel(propName, PatternType(recursive, context) ?? accessType)}", context);
                 if (sub != "true") checks.Add(sub);
             }
 
@@ -315,9 +317,11 @@ public static class PatternConverter
     /// collection's <c>Count</c> is <c>length</c>, a string's <c>Length</c> likewise. Lower-casing
     /// blindly emitted <c>actions.count</c> on a JS array — <c>undefined</c>, so
     /// <c>Actions is { Count: > 3 }</c> was quietly always false, with nothing to see at build time.
+    /// A dictionary's <c>Count</c> is its runtime class's <c>size</c>.
     /// </summary>
-    private static string Camel(string name) => name switch
+    private static string Camel(string name, ITypeSymbol? receiver) => name switch
     {
+        "Count" when receiver.IsDictionary() => "size",
         "Count" or "Length" => "length",
         _ => string.IsNullOrEmpty(name) ? name : char.ToLowerInvariant(name[0]) + name.Substring(1),
     };

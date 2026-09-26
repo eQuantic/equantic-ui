@@ -17,11 +17,11 @@ public class AdvancedLinqTests
     }
 
     [Fact]
-    public void ToDictionary_ConvertsToFromEntries()
+    public void ToDictionary_BuildsTheRuntimesDictionary()
     {
         var code = "list.ToDictionary(k => k.Id, v => v.Name)";
         var js = ConvertExpression(code);
-        Assert.StartsWith("Object.fromEntries(list.map", js);
+        Assert.StartsWith("$eq.linq.toDictionary(list, ", js);
     }
     
     [Fact]

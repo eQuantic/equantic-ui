@@ -8,12 +8,13 @@
 
 import type { EventHandler, HtmlNode } from './types';
 import { HtmlElement } from './types';
+import { bagEntries, type Bag } from '../utils/dictionary';
 
 interface DynamicElementConfig {
   tagName?: string;
   innerText?: string;
   className?: string;
-  customAttributes?: Record<string, string>;
+  customAttributes?: Bag<string>;
   children?: Array<{ render(): HtmlNode }>;
   onClick?: EventHandler;
 }
@@ -23,7 +24,8 @@ export class DynamicElement extends HtmlElement {
   key?: string;
   tagName = 'div';
   innerText?: string;
-  customAttributes?: Record<string, string>;
+  /** A dictionary when transpiled C# sets it, as its C# type says, and a plain object from the runtime. */
+  customAttributes?: Bag<string>;
   // className/onClick/children come typed from the HtmlElement base, which is where the DOM
   // surface lives — a component carries none of it (#245).
 
@@ -48,10 +50,11 @@ export class DynamicElement extends HtmlElement {
 
     const attributes: Record<string, string> = {};
     if (this.className) attributes['class'] = this.className;
+    // DEFINED, not assigned: a C# dictionary may hold "__proto__", and assigning it reached the
+    // prototype's setter and dropped the attribute.
     if (this.customAttributes) {
-      for (const key of Object.keys(this.customAttributes)) {
-        attributes[key] = this.customAttributes[key];
-      }
+      for (const [key, value] of bagEntries(this.customAttributes))
+        Object.defineProperty(attributes, key, { value, writable: true, enumerable: true, configurable: true });
     }
 
     const events: Record<string, EventHandler> = {};

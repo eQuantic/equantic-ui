@@ -269,9 +269,9 @@ public class BugHuntFixesTests
     }
 
     [Fact]
-    public void DictionaryCount_UsesObjectKeysLength()
+    public void DictionaryCount_IsTheClasssSize()
     {
-        // Found by the conformance harness: Dictionary.Count emitted `.length` (objects have none).
-        TestHelper.ConvertExpression("dict.Count").Should().Be("Object.keys(this.dict).length");
+        // Found by the conformance harness: Dictionary.Count emitted `.length`, which a dictionary has not.
+        TestHelper.ConvertExpression("dict.Count").Should().Be("this.dict.size");
     }
 }

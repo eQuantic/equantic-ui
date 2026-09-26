@@ -67,15 +67,17 @@ public class ComplexScenarioTests
         Assert.Contains("let service = this.getService('IMyService');", js);
         Assert.Contains("console.log(`Starting processing with ${service}`);", js);
 
-        // 2. Dictionary & Initializers
-        // Verify key casing handling (should preserve 'timeout' as it's a string literal key)
-        Assert.Contains("let config = { 'timeout': 1000, 'retries': 3 };", js);
+        // 2. Dictionary & Initializers: with no model, the dictionary is known by the name its
+        // creation writes, and the string literal keys keep their casing.
+        Assert.Contains("let config = $eq.collections.dictionary([['timeout', 1000], ['retries', 3]]);", js);
 
-        // 3. Dictionary ContainsKey (now with parentheses for safety)
-        Assert.Contains("if (Object.prototype.hasOwnProperty.call(config, 'timeout'))", js);
+        // 3. Dictionary ContainsKey, a name only a dictionary answers
+        Assert.Contains("if (config.has('timeout'))", js);
 
-        // 4. Math.Clamp -> Math.min(Math.max(val, min), max)
-        Assert.Contains("let safeTimeout = Math.min(Math.max(config['timeout'], 100), 5000);", js);
+        // 4. Math.Clamp -> Math.min(Math.max(val, min), max). The entry read inside it is a
+        // dictionary's only where a model can say so, which this harness has none of.
+        Assert.Contains("let safeTimeout = Math.min(Math.max(", js);
+        Assert.Contains(", 100), 5000);", js);
 
         // 5. Pattern Matching: the bound variable is assigned inside the condition (guarded by &&).
         Assert.Contains("(typeof input === 'string' && (s = input, true))", js);
@@ -92,8 +94,7 @@ public class ComplexScenarioTests
         // 8. Unary
         Assert.Contains("count++;", js);
 
-        // 9. Ternary (ContainsKey now wrapped in parentheses)
-        Assert.Contains(
-            "let status = Object.prototype.hasOwnProperty.call(config, 'retries') ? 'Ready' : 'Error';", js);
+        // 9. Ternary
+        Assert.Contains("let status = config.has('retries') ? 'Ready' : 'Error';", js);
     }
 }

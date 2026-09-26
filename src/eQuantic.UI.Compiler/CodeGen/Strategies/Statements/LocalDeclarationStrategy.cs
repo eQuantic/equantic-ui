@@ -97,12 +97,10 @@ public class LocalDeclarationStrategy : IStatementStrategy
                 return collection.Name == "HashSet" ? $": Set<{itemName}>" : $": {itemName}[]";
             }
 
-            // A string-keyed Dictionary lowers to a plain object, and an unannotated `{}` refuses
-            // string indexing under strict TS — `: Record<string, V>` is exactly what it is.
-            if (collection.Name == "Dictionary" && collection.TypeArguments.Length == 2
-                && collection.TypeArguments[0].SpecialType == SpecialType.System_String
-                && SimpleItemName(collection.TypeArguments[1]) is { } valueName)
-                return $": Record<string, {valueName}>";
+            // An empty dictionary is the runtime's class, which TypeScript would infer keyed and
+            // valued by `unknown` from a factory given nothing: every read out of it would then be
+            // refused. It degrades to `any`, as every dictionary annotation does.
+            if (collection.IsDictionary()) return ": any";
             return "";
         }
 

@@ -20,6 +20,35 @@ eQuantic.UI.Compiler.CodeGen.CSharpToJsConverter.DefaultOf(Microsoft.CodeAnalysi
 *REMOVED*static eQuantic.UI.Compiler.CodeGen.Strategies.DefaultValue.Of(Microsoft.CodeAnalysis.ITypeSymbol? type) -> string!
 *REMOVED*eQuantic.UI.Compiler.Models.PropertyDefinition.ImplicitDefaultJs.get -> string?
 *REMOVED*eQuantic.UI.Compiler.Models.PropertyDefinition.ImplicitDefaultJs.set -> void
+*REMOVED*eQuantic.UI.Compiler.CodeGen.Strategies.Types.MapBackedDictionaryStrategy
+*REMOVED*eQuantic.UI.Compiler.CodeGen.Strategies.Types.MapBackedDictionaryStrategy.MapBackedDictionaryStrategy() -> void
+*REMOVED*eQuantic.UI.Compiler.CodeGen.Strategies.Types.SortedDictionaryStrategy
+*REMOVED*eQuantic.UI.Compiler.CodeGen.Strategies.Types.SortedDictionaryStrategy.SortedDictionaryStrategy() -> void
+*REMOVED*eQuantic.UI.Compiler.CodeGen.Strategies.Types.ValueKeyedDictionaryStrategy
+*REMOVED*eQuantic.UI.Compiler.CodeGen.Strategies.Types.ValueKeyedDictionaryStrategy.ValueKeyedDictionaryStrategy() -> void
+*REMOVED*override eQuantic.UI.Compiler.CodeGen.Strategies.Types.MapBackedDictionaryStrategy.CanConvert(Microsoft.CodeAnalysis.SyntaxNode! node, eQuantic.UI.Compiler.CodeGen.ConversionContext! context) -> bool
+*REMOVED*override eQuantic.UI.Compiler.CodeGen.Strategies.Types.MapBackedDictionaryStrategy.Convert(Microsoft.CodeAnalysis.SyntaxNode! node, eQuantic.UI.Compiler.CodeGen.ConversionContext! context) -> string!
+*REMOVED*override eQuantic.UI.Compiler.CodeGen.Strategies.Types.MapBackedDictionaryStrategy.Priority.get -> int
+*REMOVED*override eQuantic.UI.Compiler.CodeGen.Strategies.Types.SortedDictionaryStrategy.FactoryFor(Microsoft.CodeAnalysis.ITypeSymbol? type) -> string!
+*REMOVED*override eQuantic.UI.Compiler.CodeGen.Strategies.Types.SortedDictionaryStrategy.Matches(Microsoft.CodeAnalysis.ITypeSymbol? type) -> bool
+*REMOVED*override eQuantic.UI.Compiler.CodeGen.Strategies.Types.ValueKeyedDictionaryStrategy.FactoryFor(Microsoft.CodeAnalysis.ITypeSymbol? type) -> string!
+*REMOVED*override eQuantic.UI.Compiler.CodeGen.Strategies.Types.ValueKeyedDictionaryStrategy.Matches(Microsoft.CodeAnalysis.ITypeSymbol? type) -> bool
+*REMOVED*static eQuantic.UI.Compiler.CodeGen.TypeSymbolExtensions.IsDictionaryLike(this Microsoft.CodeAnalysis.ITypeSymbol? type, out string! keyForm) -> bool
+*REMOVED*static eQuantic.UI.Compiler.CodeGen.TypeSymbolExtensions.IsSortedDictionary(this Microsoft.CodeAnalysis.ITypeSymbol? type) -> bool
+*REMOVED*static eQuantic.UI.Compiler.CodeGen.TypeSymbolExtensions.IsValueKeyedDictionary(this Microsoft.CodeAnalysis.ITypeSymbol? type) -> bool
+*REMOVED*static eQuantic.UI.Compiler.CodeGen.TypeSymbolExtensions.SortedDictionaryFactory(this Microsoft.CodeAnalysis.ITypeSymbol? type) -> string?
+*REMOVED*const eQuantic.UI.Compiler.CodeGen.Eq.DictGet = "$eq.dictGet" -> string!
+*REMOVED*const eQuantic.UI.Compiler.CodeGen.Eq.Entries = "$eq.entries" -> string!
+*REMOVED*const eQuantic.UI.Compiler.CodeGen.Eq.LinqToValueDictionary = "$eq.linq.toValueDictionary" -> string!
+*REMOVED*abstract eQuantic.UI.Compiler.CodeGen.Strategies.Types.MapBackedDictionaryStrategy.FactoryFor(Microsoft.CodeAnalysis.ITypeSymbol? type) -> string!
+*REMOVED*const eQuantic.UI.Compiler.CodeGen.Eq.ValueMap = "$eq.collections.valueMap" -> string!
+*REMOVED*eQuantic.UI.Compiler.CodeGen.Strategies.Invocation.DictionaryStrategy
+*REMOVED*eQuantic.UI.Compiler.CodeGen.Strategies.Invocation.DictionaryStrategy.CanConvert(Microsoft.CodeAnalysis.SyntaxNode! node, eQuantic.UI.Compiler.CodeGen.ConversionContext! context) -> bool
+*REMOVED*eQuantic.UI.Compiler.CodeGen.Strategies.Invocation.DictionaryStrategy.ConvertIr(Microsoft.CodeAnalysis.SyntaxNode! node, eQuantic.UI.Compiler.CodeGen.ConversionContext! context) -> eQuantic.UI.Compiler.CodeGen.Ir.JsExpr!
+*REMOVED*eQuantic.UI.Compiler.CodeGen.Strategies.Invocation.DictionaryStrategy.DictionaryStrategy() -> void
+*REMOVED*eQuantic.UI.Compiler.CodeGen.Strategies.Invocation.DictionaryStrategy.Priority.get -> int
+*REMOVED*abstract eQuantic.UI.Compiler.CodeGen.Strategies.Types.MapBackedDictionaryStrategy.Matches(Microsoft.CodeAnalysis.ITypeSymbol? type) -> bool
+const eQuantic.UI.Compiler.CodeGen.Eq.Dictionary = "$eq.collections.dictionary" -> string!
 *REMOVED*eQuantic.UI.Compiler.CodeGen.Strategies.Primitives.BooleanMethodStrategy
 *REMOVED*eQuantic.UI.Compiler.CodeGen.Strategies.Primitives.BooleanMethodStrategy.BooleanMethodStrategy() -> void
 *REMOVED*eQuantic.UI.Compiler.CodeGen.Strategies.Primitives.BooleanMethodStrategy.CanConvert(Microsoft.CodeAnalysis.SyntaxNode! node, eQuantic.UI.Compiler.CodeGen.ConversionContext! context) -> bool

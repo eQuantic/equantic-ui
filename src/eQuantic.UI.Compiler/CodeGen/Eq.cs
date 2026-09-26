@@ -113,11 +113,9 @@ public static class Eq
     /// <summary><c>string.Split()</c> with no separator: every white space character is one, and the
     /// empty entries between two of them stay.</summary>
     public const string SplitOnWhiteSpace = "$eq.text.splitOnWhiteSpace";
-    /// <summary>A dictionary read that throws for a key that is not there.</summary>
-    public const string DictGet = "$eq.dictGet";
-    /// <summary>The same read on a runtime map (a sorted or value-keyed dictionary).</summary>
+    /// <summary>A dictionary's indexer read, which throws for a key that is not there.</summary>
     public const string MapGet = "$eq.mapGet";
-    /// <summary>A runtime map's entry write, through its <c>set</c>, answering the value written.</summary>
+    /// <summary>A dictionary's indexer write, through its <c>set</c>, answering the value written.</summary>
     public const string MapSet = "$eq.mapSet";
     /// <summary>LINQ Zip — pairs stop with the shorter sequence.</summary>
     public const string Zip = "$eq.zip";
@@ -126,11 +124,9 @@ public static class Eq
     public const string LinqMax = "$eq.linq.max";
     /// <summary>LINQ <c>Min</c>, by the ordering of the type it answers: a NaN wins.</summary>
     public const string LinqMin = "$eq.linq.min";
-    /// <summary>LINQ <c>ToDictionary</c> into a plain object, refusing a null key and a key twice.</summary>
+    /// <summary>LINQ <c>ToDictionary</c> into the runtime's dictionary class, refusing a null key and a
+    /// key twice.</summary>
     public const string LinqToDictionary = "$eq.linq.toDictionary";
-    /// <summary>LINQ <c>ToDictionary</c> with a structural key (a record, a struct, a tuple), into the
-    /// value map such a dictionary is, with the same refusals.</summary>
-    public const string LinqToValueDictionary = "$eq.linq.toValueDictionary";
     /// <summary>Where each text element (an extended grapheme cluster, UAX #29) of a string begins:
     /// <c>StringInfo.ParseCombiningCharacters</c>, answered by the platform's segmenter.</summary>
     public const string TextElementStarts = "$eq.text.textElementStarts";
@@ -196,9 +192,6 @@ public static class Eq
     /// warning travelling to everyone who builds this assembly.</summary>
     public new const string Equals = "$eq.equals";
 
-    /// <summary>Dictionary enumeration (foreach / List copy): destructurable pairs with .key/.value.</summary>
-    public const string Entries = "$eq.entries";
-
     /// <summary>Membership over a collection whose runtime shape is not knowable statically —
     /// an <c>IReadOnlyCollection&lt;T&gt;</c> is a Set as readily as an array.</summary>
     public const string Contains = "$eq.collections.contains";
@@ -224,8 +217,9 @@ public static class Eq
     /// <summary>How many a collection holds, whichever shape it turned out to be.</summary>
     public const string Count = "$eq.collections.count";
 
-    /// <summary>Factory for a structurally-keyed dictionary (<c>Dictionary&lt;RecordKey, V&gt;</c>).</summary>
-    public const string ValueMap = "$eq.collections.valueMap";
+    /// <summary>Factory for a dictionary (<c>Dictionary&lt;K, V&gt;</c> and its interfaces), held by slot
+    /// as .NET's is, its keys found by value when its second argument says so.</summary>
+    public const string Dictionary = "$eq.collections.dictionary";
 
     /// <summary>Factory for a value-sorted set (<c>SortedSet&lt;T&gt;</c>).</summary>
     public const string SortedSet = "$eq.collections.sortedSet";

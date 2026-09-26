@@ -243,14 +243,13 @@ public class RealWorldUITests
 
         var result = TestHelper.ConvertCodeBlock(code);
 
-        // The object's OWN key, never `in`: `in` walks the prototype chain, so a cache with
-        // nothing in it answered true for "constructor" and handed Object's method back as a hit.
-        result.Should().Contain("!Object.prototype.hasOwnProperty.call(this.cache, this.key)");
-        result.Should().Contain("this.cache[");
+        // The dictionary class answers for its own keys, "constructor" among them.
+        result.Should().Contain("!this.cache.has(this.key)");
+        result.Should().Contain("this.cache.set(this.key, this.fetchData())");
         // TryGetValue names the receiver and the key twice, and both are properties here: each is
         // bound once, and a miss writes default(string) to the out.
         result.Should().Contain(
-            "(($0, $1) => (Object.prototype.hasOwnProperty.call($0, $1) ? ((result = $0[$1]), true) : ((result = null), false)))(this.cache, this.key)");
+            "(($0, $1) => ($0.has($1) ? ((result = $0.get($1)), true) : ((result = null), false)))(this.cache, this.key)");
     }
 
     // ============ Array Static Methods in Loops ============
@@ -398,7 +397,8 @@ public class RealWorldUITests
         // key that is not there, so the read goes through the guard and the result is written —
         // which cannot be written as `a ?? (a = b)`, because the guarded read is not a target.
         // The receiver and the key are each bound once, so neither is evaluated twice.
-        result.Should().Contain("$eq.dictGet($0, $1) ?? this.fetchValue(this.key)");
+        result.Should().Contain("this.cache ?? (this.cache = $eq.collections.dictionary())");
+        result.Should().Contain("$eq.mapSet($0, $1, $eq.mapGet($0, $1) ?? this.fetchValue(this.key))");
         result.Should().Contain("(this.cache, this.key)");
     }
 

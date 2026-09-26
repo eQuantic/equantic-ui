@@ -4,7 +4,7 @@ export class CodeEditorController {
     constructor(text: string = '', language: any = null, props?: any) {
         this._selection = new CodeRange();
         this._desiredCell = -1;
-        this._cells = {};
+        this._cells = $eq.collections.dictionary();
         this._widths = null;
         this._widthsTabs = 0;
         this._widest = 0;
@@ -24,7 +24,7 @@ export class CodeEditorController {
     _document: CodeDocument;
     _selection: CodeRange;
     _desiredCell: number;
-    _cells: Record<string, any>;
+    _cells: any;
     _widths: number[] | null;
     _widthsTabs: number;
     _widest: number;
@@ -158,9 +158,9 @@ export class CodeEditorController {
         let cells: any;
         let text = this._document.line(line);
         let tabSize = this.rules.indentWidth;
-        if ((($0: any) => (Object.prototype.hasOwnProperty.call($0, line) ? ((cells = $0[line]), true) : ((cells = null), false)))(this._cells) && cells.text === text && cells.tabSize === tabSize) return cells;
+        if ((($0: any) => ($0.has(line) ? ((cells = $0.get(line)), true) : ((cells = null), false)))(this._cells) && cells.text === text && cells.tabSize === tabSize) return cells;
         cells = new CodeLineCells(text, tabSize);
-        this._cells[line] = cells;
+        $eq.mapSet(this._cells, line, cells);
         return cells;
     }
 
