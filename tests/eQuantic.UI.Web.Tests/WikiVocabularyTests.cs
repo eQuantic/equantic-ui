@@ -94,25 +94,13 @@ public class WikiVocabularyTests
         ("Photon-pt-BR.md", "widget", "the same class name"),
     ];
 
-    private static readonly string? Wiki = LocateWiki();
-
-    /// <summary>CI clones the wiki beside the repo; a checkout without it there is a failed clone, not a choice.</summary>
-    private static readonly bool WikiExpected = Environment.GetEnvironmentVariable("GITHUB_ACTIONS") == "true";
-
-    /// <summary>True when the guard may skip: no wiki, and nobody promised one.</summary>
-    private static bool NoWikiHere()
-    {
-        if (Wiki is not null) return false;
-        WikiExpected.Should().BeFalse(
-            "CI clones equantic-ui.wiki beside this repository (ci.yml, 'Check out the wiki'), and it is not "
-            + "there — the clone failed, and these guards would pass having read no page");
-        return true;
-    }
+    /// <summary>True when the guard may skip: no wiki, and nobody promised one (<see cref="WikiClone"/>).</summary>
+    private static bool NoWikiHere() => WikiClone.Absent();
 
     private static IEnumerable<string> Pages() =>
-        Wiki is null
+        WikiClone.Location is not { } wiki
             ? []
-            : Directory.EnumerateFiles(Wiki, "*.md", SearchOption.AllDirectories)
+            : Directory.EnumerateFiles(wiki, "*.md", SearchOption.AllDirectories)
                 .Where(f => !Path.GetFileName(f).StartsWith('_'))
                 .Where(f => !f.Contains($"{Path.DirectorySeparatorChar}.git{Path.DirectorySeparatorChar}"))
                 .OrderBy(f => f, StringComparer.Ordinal);
@@ -139,7 +127,7 @@ public class WikiVocabularyTests
         }
 
         offences.Should().BeEmpty(
-            "a wiki page names something by a spelling the tree retired. Correct the page, in both "
+            $"a wiki page ({WikiClone.Describe()}) names something by a spelling the tree retired. Correct the page, in both "
             + $"languages, or allow it here with the reason:{Environment.NewLine}  "
             + string.Join(Environment.NewLine + "  ", offences) + Environment.NewLine);
     }
@@ -174,13 +162,4 @@ public class WikiVocabularyTests
         Allowed.Where(a => RetiredSpellings.All(r => r.Name != a.Name)).Should().BeEmpty("an allowance must name a listed spelling");
     }
 
-    private static string? LocateWiki()
-    {
-        var here = new DirectoryInfo(AppContext.BaseDirectory);
-        while (here is not null && !Directory.Exists(Path.Combine(here.FullName, "src", "eQuantic.UI.Runtime")))
-            here = here.Parent;
-        if (here is null) return null;
-        var wiki = Path.Combine(Directory.GetParent(here.FullName)!.FullName, "equantic-ui.wiki");
-        return Directory.Exists(wiki) ? wiki : null;
-    }
 }
