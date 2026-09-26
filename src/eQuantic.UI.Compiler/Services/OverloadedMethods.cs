@@ -145,6 +145,9 @@ internal static class OverloadedMethods
         {
             foreach (var member in InstanceMembers(current))
                 inherited.TryAdd(Lowered(member), new Holder($"'{current.Name}.{Shown(member)}', which it inherits", FromInterface: false, Contract: null));
+            foreach (var parameter in PrimaryParameters(current))
+                inherited.TryAdd(parameter.ToCamelCase(),
+                    new Holder($"'{current.Name}({parameter})', a primary constructor's parameter it inherits as a field", FromInterface: false, Contract: null));
             foreach (var (implementation, _, contract) in DefaultInterfaceMembers.Of(current, model.Compilation))
             {
                 var owner = contract is null
@@ -168,6 +171,20 @@ internal static class OverloadedMethods
             Refuse($"'{declared.Name}.{Shown(member)}' lowers to `{name}`, and so does {holder.Owner}. C# reaches "
                 + "that member only through its interface, and a JavaScript class chain has one member per name, so "
                 + $"'{declared.Name}.{Shown(member)}' would answer the interface's calls in its place. Give it its own name.");
+        }
+
+        // A primary constructor's parameter is a field of the twin, which the emitter always assigns
+        // (found in review, #418): `class C(int mark) : I` beside a default `I.Mark()` held `this.mark`
+        // over the prototype's `mark()`. A record's are its positional properties, counted above.
+        foreach (var parameter in PrimaryParameters(declared))
+        {
+            var name = parameter.ToCamelCase();
+            var shown = $"'{declared.Name}({parameter})', a primary constructor's parameter the twin holds as a field";
+            taken.TryAdd(name, shown);
+            if (!inherited.TryGetValue(name, out var holder) || !holder.FromInterface) continue;
+            Refuse($"{shown}, lowers to `{name}`, and so does {holder.Owner}. C# reaches that member only through its "
+                + "interface, and a JavaScript class chain has one member per name, so the field would answer the "
+                + "interface's calls in its place. Give it its own name.");
         }
 
         foreach (var (implementation, _, contract) in DefaultInterfaceMembers.Of(declared, model.Compilation))
@@ -194,6 +211,16 @@ internal static class OverloadedMethods
                 + "Give one of them its own name.");
         }
     }
+
+    /// <summary>The parameters of a class's or a struct's primary constructor, which the twin assigns
+    /// to fields of the same name. A record's are its positional properties, members already.</summary>
+    private static IEnumerable<string> PrimaryParameters(INamedTypeSymbol type) =>
+        type.IsRecord
+            ? []
+            : type.DeclaringSyntaxReferences.Select(reference => reference.GetSyntax())
+                .OfType<TypeDeclarationSyntax>()
+                .SelectMany(declaration => declaration.ParameterList?.Parameters ?? default)
+                .Select(parameter => parameter.Identifier.Text);
 
     /// <summary>A name along a twin's chain: who holds it, whether it came from an interface, and the
     /// interface member it answers (none for a member a class declares, or for a private helper).</summary>
