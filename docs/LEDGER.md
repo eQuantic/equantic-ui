@@ -831,6 +831,28 @@ record of a release, the wiki's Upgrading page is the distillate.
   main. The fixture is regenerated from the palette both sides now carry
   ([#453](https://github.com/eQuantic/equantic-ui/issues/453)).
 
+- **2026-09-26 · An expression variable is declared by its statement, with C#'s scope**: what a
+  pattern, an `out var` or a deconstruction declares had four rules. A method declared every `out
+  var` at its top, so a closure made in a loop read the last iteration's value (.NET 12, JavaScript
+  22) and a recursive local function overwrote its caller's; a getter, a setter, an initializer, a
+  record's members and a component's Build declared none; a deconstruction's elements were declared
+  by nothing; plain JavaScript carried `let n: any;`; and `@class` stayed a SyntaxError on eight
+  binding paths ([#466](https://github.com/eQuantic/equantic-ui/issues/466)). One owner,
+  `ExpressionVariableScanner`, now answers every statement with the scope Roslyn gives: in front of
+  an `if` or an expression statement, inside a loop or a `using`, in a `while`'s or a `for`'s own
+  head for a fresh variable every iteration, and in its own arrow for an initializer. The harness
+  had declared every `out var` itself, which is why none of it showed: 43 of the new class's 47
+  cases fail on main without that, and neither mode's modules load in the new emission test. Found
+  on the way: a static property on a plain class was an instance getter, and plain JavaScript
+  annotated a local declared as another type. Filed: two catch clauses do not parse and one ignores
+  its type and filter ([#474](https://github.com/eQuantic/equantic-ui/issues/474)), a lock drops its
+  expression ([#475](https://github.com/eQuantic/equantic-ui/issues/475)), a for's own variable is
+  one per iteration ([#476](https://github.com/eQuantic/equantic-ui/issues/476)), `fs[0]()` reads
+  off `this` ([#477](https://github.com/eQuantic/equantic-ui/issues/477)), `new object()` names no
+  class ([#478](https://github.com/eQuantic/equantic-ui/issues/478)), and a base written with its
+  namespace is extended as written ([#479](https://github.com/eQuantic/equantic-ui/issues/479)).
+  Proposed and archived through OpenSpec (`openspec/specs/transpiler-expression-variables`).
+
 ## Retired documents
 
 | document | what it was | where its substance lives now |

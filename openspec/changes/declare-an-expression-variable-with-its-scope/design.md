@@ -51,8 +51,11 @@ the references do.
 
 ## Not here
 
-- A `catch` clause ignores its exception type and its filter: its filter's variables have nothing
-  to declare until the filter runs (filed separately).
-- A lock's expression is evaluated only when it declares something the body may read; that it is
-  otherwise dropped is filed separately.
+- A `catch` clause ignores its exception type and its filter, and two clauses do not parse (#474):
+  a filter's variables have nothing to declare until the filter is converted.
+- A lock's expression runs only when it declares something the body may read; that it is otherwise
+  dropped is #475.
+- A `for` loop's own variable is one per loop in C# and one per iteration in the emitted `for`
+  (#476). The head's expression variables are the other way round, and this change gives them their
+  own iteration.
 - A constructor that chains with `: this(…)` is outside what the emitter lowers today.
