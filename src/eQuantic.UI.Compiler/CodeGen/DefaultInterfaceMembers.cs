@@ -82,12 +82,18 @@ internal static class DefaultInterfaceMembers
 
     /// <summary>
     /// Whether the runtime carries <paramref name="contract"/>'s defaults (the runtime's
-    /// <c>interface-defaults.ts</c>): the vocabulary's interfaces, which an app compiles against as
-    /// METADATA, so the twin of an app's theme, language or completion provider delegates to them.
-    /// <c>VocabularyInterfaceDefaultsTests</c> fails when a default of theirs has no copy there.
+    /// <c>interface-defaults.ts</c>): a public interface of one of the assemblies the runtime provides,
+    /// which an app compiles against as METADATA, so the twin of an app's theme, language or
+    /// completion provider delegates to it. <c>VocabularyInterfaceDefaultsTests</c> fails when a
+    /// default of theirs has no copy there. The assembly is asked, not only the namespace: another
+    /// assembly can declare an interface in the vocabulary's namespace, and its twin delegated to a
+    /// copy the runtime does not have (found in review, #418).
     /// </summary>
     public static bool RuntimeCarries(INamedTypeSymbol contract) =>
-        Services.RuntimeProvidedTypeScanner.IsRuntimeProvidedNamespace(contract.ContainingNamespace?.ToDisplayString() ?? "");
+        contract.DeclaredAccessibility == Accessibility.Public
+        && contract.ContainingAssembly?.Name is { } assembly
+        && Services.RuntimeProvidedTypeScanner.RuntimeAssemblies.Contains(assembly)
+        && Services.RuntimeProvidedTypeScanner.IsRuntimeProvidedNamespace(contract.ContainingNamespace?.ToDisplayString() ?? "");
 
     /// <summary>
     /// The member a twin delegates a vocabulary default with: its name, the parameters of a method,
@@ -121,6 +127,14 @@ internal static class DefaultInterfaceMembers
         + $"{reached.ContainingType.Name}.{reached.Name}, a static member of an interface, and an interface has no "
         + $"JavaScript form to hold it, so the default cannot be written into {type.Name}'s twin. Declare "
         + $"{implementation.Name} in {type.Name}, or keep {type.Name} out of client code.";
+
+    /// <summary>
+    /// The error for a default indexer: a twin has no form for an indexer, a class's own included
+    /// (#427), so the default would reach the browser's class as nothing (found in review, #418).
+    /// </summary>
+    public static string NoIndexer(INamedTypeSymbol type, ISymbol implementation) =>
+        $"{type.Name} relies on the default indexer of {implementation.ContainingType.Name}, and a twin has no form "
+        + $"for an indexer yet (#427), so the browser's {type.Name} would have none. Keep {type.Name} out of client code.";
 
     /// <summary>
     /// The error for a default whose body cannot be written and that the runtime does not carry:

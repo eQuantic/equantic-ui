@@ -477,6 +477,12 @@ public class RecordTypeEmitter
         {
             foreach (var (implementation, member, _) in DefaultInterfaceMembers.Of(self, typeModel.Compilation))
             {
+                if (implementation is IPropertySymbol { IsIndexer: true })
+                {
+                    _converter.Report(type, ConversionSeverity.Error, "EQ1008",
+                        DefaultInterfaceMembers.NoIndexer(self, implementation));
+                    continue;
+                }
                 if (member is not null && ModelFor(member) is { } memberModel
                     && DefaultInterfaceMembers.InterfaceStaticIn(member, memberModel) is { } reached)
                 {
@@ -554,12 +560,26 @@ public class RecordTypeEmitter
     /// <summary>
     /// The base record (if any) from a primary-constructor base clause (<c>record Dog(…) : Animal(Name)</c>):
     /// its name (generics erased), the JS <c>super(...)</c> arguments, and which members are passed to the
-    /// base (so they aren't re-assigned in the derived constructor). Interfaces / non-record bases yield none.
+    /// base (so they aren't re-assigned in the derived constructor). A base record named without
+    /// arguments (<c>record Dog : Animal;</c>) is extended with a bare <c>super()</c>, since it has a
+    /// constructor that takes none: it was dropped, and the derived twin had none of its base's
+    /// members, the defaults it takes included (found in review, #418). Only a base with a twin is
+    /// extended, or <c>extends</c> would name a module nothing writes (#428). Interfaces yield none.
     /// </summary>
     private (string? BaseName, string SuperArgs, HashSet<string> PassedToBase) BaseInfo(TypeDeclarationSyntax type)
     {
         var primary = type.BaseList?.Types.OfType<PrimaryConstructorBaseTypeSyntax>().FirstOrDefault();
-        if (primary == null) return (null, "", new HashSet<string>());
+        if (primary == null)
+        {
+            if (type.BaseList?.Types.FirstOrDefault() is SimpleBaseTypeSyntax simple
+                && ModelFor(simple)?.GetSymbolInfo(simple.Type).Symbol is INamedTypeSymbol { TypeKind: TypeKind.Class } baseType
+                && EmitsTwin(baseType))
+            {
+                var simpleName = simple.Type.ToString();
+                return (simpleName.Contains('<') ? simpleName[..simpleName.IndexOf('<')] : simpleName, "", new HashSet<string>());
+            }
+            return (null, "", new HashSet<string>());
+        }
 
         var baseName = primary.Type.ToString();
         if (baseName.Contains('<')) baseName = baseName[..baseName.IndexOf('<')]; // erase generics

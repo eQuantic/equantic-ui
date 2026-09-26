@@ -144,7 +144,7 @@ internal static class OverloadedMethods
              current = current.BaseType)
         {
             foreach (var member in InstanceMembers(current))
-                inherited.TryAdd(Lowered(member), new Holder($"'{current.Name}.{Simple(member.Name)}', which it inherits", FromInterface: false, Contract: null));
+                inherited.TryAdd(Lowered(member), new Holder($"'{current.Name}.{Shown(member)}', which it inherits", FromInterface: false, Contract: null));
             foreach (var (implementation, _, contract) in DefaultInterfaceMembers.Of(current, model.Compilation))
             {
                 var owner = contract is null
@@ -158,16 +158,16 @@ internal static class OverloadedMethods
         foreach (var member in InstanceMembers(declared))
         {
             var name = Lowered(member);
-            taken.TryAdd(name, $"'{declared.Name}.{Simple(member.Name)}'");
+            taken.TryAdd(name, $"'{declared.Name}.{Shown(member)}'");
             // On the name of what a base takes from an interface, the member answers the interface's
             // calls in its place, unless it IS what the interface reaches for this class.
             if (!inherited.TryGetValue(name, out var holder) || !holder.FromInterface
                 || (holder.Contract is { } contract
                     && SymbolEqualityComparer.Default.Equals(declared.FindImplementationForInterfaceMember(contract), member)))
                 continue;
-            Refuse($"'{declared.Name}.{Simple(member.Name)}' lowers to `{name}`, and so does {holder.Owner}. C# reaches "
+            Refuse($"'{declared.Name}.{Shown(member)}' lowers to `{name}`, and so does {holder.Owner}. C# reaches "
                 + "that member only through its interface, and a JavaScript class chain has one member per name, so "
-                + $"'{declared.Name}.{Simple(member.Name)}' would answer the interface's calls in its place. Give it its own name.");
+                + $"'{declared.Name}.{Shown(member)}' would answer the interface's calls in its place. Give it its own name.");
         }
 
         foreach (var (implementation, _, contract) in DefaultInterfaceMembers.Of(declared, model.Compilation))
@@ -205,18 +205,30 @@ internal static class OverloadedMethods
 
     private static string Lowered(ISymbol member) => Simple(member.Name).ToCamelCase();
 
+    /// <summary>How a member reads in a message: an explicit implementation by its interface and its
+    /// own name (<c>IOne.M</c>), which Roslyn names by the interface's full name.</summary>
+    private static string Shown(ISymbol member) => member switch
+    {
+        IMethodSymbol { ExplicitInterfaceImplementations: [var method, ..] } => $"{method.ContainingType.Name}.{method.Name}",
+        IPropertySymbol { ExplicitInterfaceImplementations: [var property, ..] } => $"{property.ContainingType.Name}.{property.Name}",
+        _ => member.Name,
+    };
+
     private static string Owner(ISymbol implementation) =>
         $"'{implementation.ContainingType.Name}.{Simple(implementation.Name)}'";
 
     /// <summary>
-    /// The members a twin writes on an instance or its prototype: fields, properties and ordinary
-    /// methods, and nothing the compiler declares itself. A field takes its name too:
-    /// <c>class C : I { public int Mark; }</c> beside a default <c>I.Mark()</c> gave the twin two
-    /// members named <c>mark</c> (found in review, #418).
+    /// The members a twin writes on an instance or its prototype: fields, properties and methods, an
+    /// explicit implementation under its member's own name, and nothing the compiler declares itself.
+    /// A field takes its name too: <c>class C : I { public int Mark; }</c> beside a default
+    /// <c>I.Mark()</c> gave the twin two members named <c>mark</c>, and so did an explicit
+    /// <c>IA.M()</c> beside a default <c>IB.M()</c> (both found in review, #418). An indexer is
+    /// written into no twin (#427), so it takes no name.
     /// </summary>
     private static IEnumerable<ISymbol> InstanceMembers(INamedTypeSymbol type) =>
         type.GetMembers().Where(member => !member.IsStatic && !member.IsImplicitlyDeclared
-            && member is IFieldSymbol or IPropertySymbol or IMethodSymbol { MethodKind: MethodKind.Ordinary });
+            && member is IFieldSymbol or IPropertySymbol { IsIndexer: false }
+                or IMethodSymbol { MethodKind: MethodKind.Ordinary or MethodKind.ExplicitInterfaceImplementation });
 
     /// <summary>
     /// A method whose name a BASE already takes (see the type's remarks): the first inherited method

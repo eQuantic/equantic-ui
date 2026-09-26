@@ -1877,6 +1877,12 @@ public class TypeScriptEmitter
             return;
         foreach (var (implementation, member, _) in DefaultInterfaceMembers.Of(self, model.Compilation))
         {
+            if (implementation is IPropertySymbol { IsIndexer: true })
+            {
+                _converter.Report(declaration, ConversionSeverity.Error, "EQ1008",
+                    DefaultInterfaceMembers.NoIndexer(self, implementation));
+                continue;
+            }
             if (member is not null && ModelFor(member) is { } memberModel
                 && DefaultInterfaceMembers.InterfaceStaticIn(member, memberModel) is { } reached)
             {
