@@ -13,7 +13,7 @@
  * a null key became the text "null", the key "__proto__" went to the prototype's setter instead of
  * the dictionary, and every record key was the same "[object Object]".
  */
-import { Dictionary, keyText } from './dictionary';
+import { Dictionary, keyText, type KeyEquality } from './dictionary';
 import { compare as compareStrings } from './string-statics';
 
 /**
@@ -128,15 +128,15 @@ export function min<T>(
 
 /**
  * `ToDictionary(keySelector)` and `ToDictionary(keySelector, elementSelector)` into the runtime's
- * {@link Dictionary}, the one a constructed dictionary is, its keys found by value when `byValue` says
- * so: each element selected before it is added, and a null key or a key twice refused with .NET's
+ * {@link Dictionary}, the one a constructed dictionary is, its keys found as `byValue` says
+ * ({@link KeyEquality}): each element selected before it is added, and a null key or a key twice refused with .NET's
  * words.
  */
 export function toDictionary<T, K, V = T>(
   source: Iterable<T>,
   keySelector: (item: T) => K,
   elementSelector?: ((item: T) => V) | null,
-  byValue = false,
+  byValue: KeyEquality = false,
 ): Dictionary<K, V> {
   const result = new Dictionary<K, V>(null, byValue);
   for (const item of source) {

@@ -176,10 +176,11 @@ public static class HydrationSpec
                 : null;
 
     /// <summary>
-    /// <c>{ dict: values, key: tag, byValue: true, sorted: true }</c>: how each value hydrates (null
+    /// <c>{ dict: values, key: tag, byValue: …, sorted: true }</c>: how each value hydrates (null
     /// when it arrives as it is), how a property name becomes the key, and which class holds the
     /// entries — a sorted one's own, or the runtime's <c>Dictionary</c>, finding its keys by value
-    /// where the key type's default comparer does (<see cref="DictionaryStrategy.EqualsByValue"/>).
+    /// or by their own equality where the key type's default comparer does
+    /// (<see cref="DictionaryStrategy.KeyEquality"/>).
     /// </summary>
     private static string DictionarySpec(INamedTypeSymbol dictionary, ITypeSymbol key, ITypeSymbol value,
         References referenced, HashSet<INamedTypeSymbol> visiting)
@@ -187,7 +188,7 @@ public static class HydrationSpec
         var parts = new List<string> { $"dict: {Of(value, referenced, visiting) ?? "null"}" };
         if (KeyTag(key) is { } tag) parts.Add($"key: {tag}");
         if (dictionary.DictionaryFactory() is Eq.SortedDictionary or Eq.SortedList) parts.Add("sorted: true");
-        else if (DictionaryStrategy.EqualsByValue(key)) parts.Add("byValue: true");
+        else if (DictionaryStrategy.KeyEquality(key) is { } equality) parts.Add($"byValue: {equality}");
         return $"{{ {string.Join(", ", parts)} }}";
     }
 

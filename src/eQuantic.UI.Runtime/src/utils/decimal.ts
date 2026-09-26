@@ -232,8 +232,9 @@ export class Decimal {
     return am < bm ? -1 : am > bm ? 1 : 0;
   }
 
-  equals(other: Decimal): boolean {
-    return this.compareTo(other) === 0;
+  /** `Equals(object)`: a decimal of the same value, whatever its scale, and nothing of another kind. */
+  equals(other: unknown): boolean {
+    return other instanceof Decimal && this.compareTo(other) === 0;
   }
 
   toString(): string {

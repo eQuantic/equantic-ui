@@ -19,6 +19,8 @@ public class DictionaryEnumerationConformanceTests
 {
     private const string Point = "public record Point(int X, int Y);";
 
+    private const string Keys = "public record Point(int X, int Y); public interface IKey { } public record Key(int V) : IKey;";
+
     [SkippableTheory]
     // Integer keys keep insertion order: Keys, Values, a foreach and a deconstructing foreach.
     [InlineData("var d = new Dictionary<int, int>(); d[3] = 30; d[1] = 10; return string.Join(\",\", d.Keys);")]
@@ -134,5 +136,28 @@ public class DictionaryEnumerationConformanceTests
     {
         Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
         ConformanceRunner.AssertStatementsSameAsDotNet(statements);
+    }
+
+    [SkippableTheory]
+    // A key of a type that does not decide is the value's to compare: `object`, an interface, a type
+    // parameter. They were found by identity, so two equal records were two keys (found in review).
+    [InlineData("var d = new Dictionary<object, int>(); d[new Point(1, 2)] = 1; d[new Point(1, 2)] = 2; return d.Count + \"|\" + d[new Point(1, 2)];")]
+    [InlineData("var d = new Dictionary<object, int>(); d[1.0m] = 1; d[1m] = 2; return d.Count + \"|\" + d[1.00m];")]
+    [InlineData("var d = new Dictionary<object, int>(); d[1] = 1; d[\"1\"] = 2; d[1] = 3; return d.Count + \"|\" + d[1];")]
+    [InlineData("var d = new Dictionary<object, string>(); d[new DateTime(2026, 1, 2)] = \"date\"; d[TimeSpan.FromDays(1)] = \"span\"; d[1m] = \"one\"; return d.Count + \"|\" + d[TimeSpan.FromDays(1)];")]
+    [InlineData("var d = new Dictionary<IKey, int>(); d[new Key(1)] = 1; d[new Key(1)] = 2; return d.Count.ToString();")]
+    [InlineData("int Count<T>(T a, T b) { var d = new Dictionary<T, int>(); d[a] = 1; d[b] = 2; return d.Count; } return Count(new Point(1, 2), new Point(1, 2)) + \"|\" + Count(1, 2);")]
+    [InlineData("var d = new Dictionary<object, int> { [new Point(1, 2)] = 1 }; var c = new Dictionary<object, int>(d); return c.ContainsKey(new Point(1, 2)).ToString();")]
+    // ToDictionary and ContainsValue take the same rule.
+    [InlineData("var d = new[] { new Point(1, 2), new Point(3, 4) }.ToDictionary(p => (object)p, p => p.X); return d.ContainsKey(new Point(1, 2)) + \"|\" + d[new Point(3, 4)];")]
+    [InlineData("try { new[] { new Point(1, 2), new Point(1, 2) }.ToDictionary(p => (object)p); return \"kept\"; } catch (ArgumentException) { return \"threw\"; }")]
+    [InlineData("var d = new Dictionary<int, object> { [1] = new Point(1, 2) }; return d.ContainsValue(new Point(1, 2)).ToString();")]
+    // A value equals only one of its own kind, as Equals(object) answers: a TimeSpan and a date share ticks.
+    [InlineData("object a = 1m; object b = new DateTime(2026, 1, 2); return a.Equals(b).ToString();")]
+    [InlineData("object s = TimeSpan.FromTicks(100); object t = new DateTime(100); return s.Equals(t) + \"|\" + t.Equals(s);")]
+    public void AKeyOfATypeThatDoesNotDecide_MatchesDotNet(string statements)
+    {
+        Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
+        ConformanceRunner.AssertStatementsSameAsDotNet(statements, Keys);
     }
 }

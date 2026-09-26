@@ -1,4 +1,15 @@
+import { sameItem } from './collections';
 import { equals } from './equals';
+
+/**
+ * How a dictionary finds a key, as .NET's default comparer for the key type does, which eqc says:
+ * `false` by IDENTITY, SameValueZero through a `Map`; `true` by VALUE, `$eq.equals` over the live
+ * slots; and `'own'` by what the key turns out to be, for a key type that does not decide (`object`,
+ * an interface, a type parameter, a class a subclass may override `Equals` in): its twin's own
+ * `equals`, a tuple's or an anonymous type's members, and identity for anything else, which keeps
+ * that majority in the `Map`.
+ */
+export type KeyEquality = boolean | 'own';
 
 /**
  * A pair a dictionary enumerates: it destructures as `[key, value]` and reads `.key` and `.value`,
@@ -21,22 +32,27 @@ export function pair<K, V>(key: K, value: V): Pair<K, V> {
  * `d`, enumerates `d, b, c`. The plain object this replaced listed integer keys ascending and turned
  * every key into a string, and a `Map` alone would append where .NET reuses the slot.
  *
- * A key is found as .NET's default comparer finds it, a choice eqc makes from the key type. By
- * IDENTITY, through a `Map` of key to slot: SameValueZero is .NET's equality for a number (NaN
- * included), a string, a char, a bool, a long, an enum's name, a Guid and a class that does not
- * override `Equals`. By VALUE, through `$eq.equals` over the live slots: a record, a struct, a tuple,
- * a decimal, a date, and a class that overrides `Equals`, whose twin carries its `equals`.
+ * A key is found as .NET's default comparer finds it, a choice eqc makes from the key type
+ * ({@link KeyEquality}). By IDENTITY, through a `Map` of key to slot: SameValueZero is .NET's equality
+ * for a number (NaN included), a string, a char, a bool, a long, an enum's name and a Guid. By VALUE,
+ * through `$eq.equals` over the live slots: a record, a struct, a tuple, a decimal and a date. And by
+ * the key's OWN equality where its type does not decide: a class, `object`, an interface, a type
+ * parameter, whose value may be a record, a decimal or an instance of a class overriding `Equals`.
  */
 export class Dictionary<K, V> implements Iterable<Pair<K, V>> {
   /** Entries by slot, a freed slot `undefined` until an insertion takes it back. */
   private readonly slots: ({ key: K; value: V } | undefined)[] = [];
   /** The slots removals freed, the last freed on top: .NET's free list is last in, first out. */
   private readonly freed: number[] = [];
-  /** Each key's slot when keys are found by identity, and null when they are found by value. */
+  /** Each slot of a key found by identity: every key, none when keys are found by value, and under
+   *  `'own'` every key but one with an equality of its own. */
   private readonly index: Map<K, number> | null;
+  /** How a key is found. */
+  private readonly byValue: KeyEquality;
 
-  constructor(entries?: Iterable<readonly [K, V]> | null, byValue = false) {
-    this.index = byValue ? null : new Map<K, number>();
+  constructor(entries?: Iterable<readonly [K, V]> | null, byValue: KeyEquality = false) {
+    this.byValue = byValue;
+    this.index = byValue === true ? null : new Map<K, number>();
     if (entries) for (const [key, value] of entries) this.set(key, value);
   }
 
@@ -48,12 +64,18 @@ export class Dictionary<K, V> implements Iterable<Pair<K, V>> {
   /** The key's slot, or -1. A null key is refused here, so every member refuses it as .NET's does. */
   private find(key: K): number {
     requireKey(key);
-    if (this.index) return this.index.get(key) ?? -1;
+    if (this.indexes(key)) return this.index!.get(key) ?? -1;
+    const same = this.byValue === 'own' ? sameKey : equals;
     for (let slot = 0; slot < this.slots.length; slot++) {
       const entry = this.slots[slot];
-      if (entry !== undefined && equals(entry.key, key)) return slot;
+      if (entry !== undefined && same(entry.key, key)) return slot;
     }
     return -1;
+  }
+
+  /** Whether the index holds this key's slot, rather than a walk over the slots finding it. */
+  private indexes(key: K): boolean {
+    return this.index !== null && !(this.byValue === 'own' && hasOwnEquality(key));
   }
 
   /** `ContainsKey`. */
@@ -79,7 +101,7 @@ export class Dictionary<K, V> implements Iterable<Pair<K, V>> {
     }
     const slot = this.freed.length > 0 ? this.freed.pop()! : this.slots.length;
     this.slots[slot] = { key, value };
-    this.index?.set(key, slot);
+    if (this.indexes(key)) this.index!.set(key, slot);
     return this;
   }
 
@@ -92,9 +114,9 @@ export class Dictionary<K, V> implements Iterable<Pair<K, V>> {
 
   /**
    * `ContainsValue`: whether a value is held, compared as .NET's default comparer compares the value
-   * type, by value when `byValue` says so and as SameValueZero otherwise.
+   * type ({@link KeyEquality}, which eqc says of the VALUE type here).
    */
-  containsValue(value: V, byValue = false): boolean {
+  containsValue(value: V, byValue: KeyEquality = false): boolean {
     return containsValue(this.slots, value, byValue);
   }
 
@@ -104,7 +126,7 @@ export class Dictionary<K, V> implements Iterable<Pair<K, V>> {
     if (slot < 0) return false;
     this.slots[slot] = undefined;
     this.freed.push(slot);
-    this.index?.delete(key);
+    if (this.indexes(key)) this.index!.delete(key);
     return true;
   }
 
@@ -175,18 +197,51 @@ export function requireKey(key: unknown): void {
   if (key == null) throw new Error("Value cannot be null. (Parameter 'key')");
 }
 
-/** Whether live entries hold `value`, by `$eq.equals` or by SameValueZero (NaN is NaN, as a double's Equals holds). */
+/**
+ * Whether live entries hold `value`, compared as {@link KeyEquality} says: by `$eq.equals`, by the
+ * value's own equality, or by SameValueZero (NaN is NaN, as a double's Equals holds).
+ */
 export function containsValue<V>(
   entries: Iterable<{ value: V } | undefined>,
   value: V,
-  byValue: boolean,
+  byValue: KeyEquality,
 ): boolean {
+  const same = byValue === true ? equals : byValue === 'own' ? sameKey : sameValueZero;
   for (const entry of entries) {
-    if (entry === undefined) continue;
-    const held = entry.value;
-    if (byValue ? equals(held, value) : held === value || (held !== held && value !== value)) return true;
+    if (entry !== undefined && same(entry.value, value)) return true;
   }
   return false;
+}
+
+/**
+ * .NET's `EqualityComparer<object>.Default` on the values two keys turned out to be: identity (NaN
+ * equal to NaN), a twin's own `equals` (a record, a struct, a decimal, a date, a class overriding
+ * `Equals`), and the members of a tuple or an anonymous type, which have no twin to carry one.
+ */
+export function sameKey(a: unknown, b: unknown): boolean {
+  return sameItem(a, b) || (isPlainValue(a) && equals(a, b));
+}
+
+/** SameValueZero, a `Map`'s equality: identity, and NaN equal to NaN. */
+function sameValueZero(a: unknown, b: unknown): boolean {
+  return a === b || (a !== a && b !== b);
+}
+
+/** A tuple (an array) or an anonymous type (a plain object): a value compared by its members. */
+function isPlainValue(value: unknown): boolean {
+  if (Array.isArray(value)) return true;
+  if (value === null || typeof value !== 'object') return false;
+  const prototype = Object.getPrototypeOf(value);
+  return prototype === Object.prototype || prototype === null;
+}
+
+/** Whether a key has an equality of its own, which under `'own'` a walk over the slots asks. */
+function hasOwnEquality(key: unknown): boolean {
+  return (
+    key !== null &&
+    typeof key === 'object' &&
+    (typeof (key as { equals?: unknown }).equals === 'function' || isPlainValue(key))
+  );
 }
 
 /** A key as .NET's messages write it, by its `ToString`: a bool as True or False. */
@@ -205,12 +260,13 @@ export function wireKey(key: unknown): string {
 }
 
 /**
- * A new dictionary, from `[key, value]` pairs or another dictionary, whose keys are found by value
- * when `byValue` says so. A copy enumerates compacted, in the order of what it copies, as .NET's does.
+ * A new dictionary, from `[key, value]` pairs or another dictionary, whose keys are found as
+ * `byValue` says ({@link KeyEquality}). A copy enumerates compacted, in the order of what it copies,
+ * as .NET's does.
  */
 export function dictionary<K, V>(
   entries?: Iterable<readonly [K, V]> | null,
-  byValue = false,
+  byValue: KeyEquality = false,
 ): Dictionary<K, V> {
   return new Dictionary<K, V>(entries, byValue);
 }

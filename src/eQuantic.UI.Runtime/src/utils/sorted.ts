@@ -10,7 +10,7 @@
  * of the string subsystem); pass simple/numeric keys for guaranteed .NET parity.
  */
 
-import { containsValue, pair, requireKey, wireObject, type Pair } from './dictionary';
+import { containsValue, pair, requireKey, wireObject, type KeyEquality, type Pair } from './dictionary';
 
 /** `Comparer<T>.Default`-style ordering: numeric for numbers/bigint, relational otherwise. */
 export function defaultCompare<T>(a: T, b: T): number {
@@ -173,7 +173,7 @@ export class SortedMap<K, V> implements Iterable<Pair<K, V>> {
   }
 
   /** `ContainsValue`, compared as the runtime's Dictionary compares one. */
-  containsValue(value: V, byValue = false): boolean {
+  containsValue(value: V, byValue: KeyEquality = false): boolean {
     return containsValue(this.entries, value, byValue);
   }
 

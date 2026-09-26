@@ -23,9 +23,10 @@ namespace eQuantic.UI.Compiler.CodeGen.Strategies.Types;
 /// </para>
 /// <para>
 /// A key is found as <c>EqualityComparer&lt;TKey&gt;.Default</c> finds it, which eqc decides from the
-/// key type, since a value alone cannot say: by identity, through the class's JavaScript Map, or by
-/// value (<see cref="EqualsByValue"/>), through <c>$eq.equals</c>, which the factory's second argument
-/// asks for. A comparer has no form here and is refused.
+/// key type (<see cref="KeyEquality"/>), the factory's second argument: by identity, through the
+/// class's JavaScript Map, by value, through <c>$eq.equals</c>, or, where the key type does not decide,
+/// by the key's own equality, which the runtime asks the value for. A comparer has no form here and
+/// is refused.
 /// </para>
 /// <para>
 /// Where the model cannot be asked (<see cref="ConversionContext.CanGuess"/>), a creation is known
@@ -76,28 +77,30 @@ internal sealed class DictionaryStrategy : IExpressionIrStrategy
     }
 
     /// <summary>
-    /// Whether <c>EqualityComparer&lt;T&gt;.Default</c> tells two values of <paramref name="type"/>
-    /// apart by VALUE where JavaScript's SameValueZero compares references: every type LINQ's keyed
-    /// operators compare by value (a record, a struct, a tuple, an anonymous type, a decimal, a date),
-    /// and a class that overrides <c>Equals</c>, whose twin carries it as <c>equals</c>. A number, a
-    /// string, a char, a bool, a long, an enum, a <c>Guid</c> and any other class are values or
-    /// references SameValueZero already compares as .NET does, and so are <c>object</c>, an interface
-    /// and a type parameter, as LINQ's keys take them.
+    /// How <c>EqualityComparer&lt;T&gt;.Default</c> tells two values of <paramref name="type"/> apart,
+    /// as the runtime's <c>KeyEquality</c> argument writes it. Null by IDENTITY: a number, a string, a
+    /// char, a bool, a long, an enum, a <c>Guid</c> and an array, which SameValueZero compares as .NET
+    /// does. <c>true</c> by VALUE, through <c>$eq.equals</c>: every type LINQ's keyed operators compare
+    /// so (a record, a struct, a tuple, an anonymous type, a decimal, a date). And <c>'own'</c> where
+    /// the type does not decide, because the value may be of a type that overrides <c>Equals</c>:
+    /// <c>object</c>, an interface, a type parameter, and a class, whose subclass may override it. The
+    /// runtime then asks the value for its own equality, and keeps a key with none in its Map. Those
+    /// were found by identity, so two equal records under <c>object</c> were two keys (found in
+    /// review, #443).
     /// </summary>
-    internal static bool EqualsByValue(ITypeSymbol? type)
+    internal static string? KeyEquality(ITypeSymbol? type)
     {
-        if (LinqKeys.ComparesByValue(type)) return true;
-        // A class of the app's or a library's, never a special one: `string` overrides Equals too,
-        // and is a primitive on this side, which SameValueZero compares by value already.
-        for (var current = (type.UnwrapNullable() ?? type) as INamedTypeSymbol;
-             current is { TypeKind: TypeKind.Class, SpecialType: SpecialType.None };
-             current = current.BaseType)
+        var unwrapped = type.UnwrapNullable() ?? type;
+        if (LinqKeys.ComparesByValue(unwrapped)) return "true";
+        return unwrapped switch
         {
-            if (current.GetMembers("Equals").OfType<IMethodSymbol>().Any(method =>
-                    method is { IsOverride: true, Parameters: [{ Type.SpecialType: SpecialType.System_Object }] }))
-                return true;
-        }
-        return false;
+            { SpecialType: SpecialType.System_Object or SpecialType.System_ValueType or SpecialType.System_Enum } => "'own'",
+            { TypeKind: TypeKind.Interface or TypeKind.TypeParameter or TypeKind.Dynamic } => "'own'",
+            // A class of the app's or a library's, never a special one: `string` overrides Equals too,
+            // and is a primitive on this side, which SameValueZero compares by value already.
+            { TypeKind: TypeKind.Class, SpecialType: SpecialType.None } => "'own'",
+            _ => null,
+        };
     }
 
     /// <summary>
@@ -160,16 +163,17 @@ internal sealed class DictionaryStrategy : IExpressionIrStrategy
         return Factory(FactoryOf(creation, context)!, type, pairs is { Count: > 0 } ? Pairs(source, pairs) : source);
     }
 
-    /// <summary><c>factory(seed)</c>, and <c>factory(seed, true)</c> when the keys are found by value.</summary>
+    /// <summary><c>factory(seed)</c>, and <c>factory(seed, equality)</c> when the keys are not found by
+    /// identity (<see cref="KeyEquality"/>).</summary>
     private static JsExpr Factory(string factory, ITypeSymbol? type, JsExpr? seed)
     {
         var arguments = new List<JsExpr>();
-        var byValue = factory == Eq.Dictionary
-            && type is INamedTypeSymbol { TypeArguments: [var key, _] }
-            && EqualsByValue(key);
+        var equality = factory == Eq.Dictionary && type is INamedTypeSymbol { TypeArguments: [var key, _] }
+            ? KeyEquality(key)
+            : null;
         if (seed is not null) arguments.Add(seed);
-        else if (byValue) arguments.Add(JsExpr.Literal("null"));
-        if (byValue) arguments.Add(JsExpr.Literal("true"));
+        else if (equality is not null) arguments.Add(JsExpr.Literal("null"));
+        if (equality is not null) arguments.Add(JsExpr.Literal(equality));
         return JsExpr.Call(JsExpr.Identifier(factory), arguments);
     }
 

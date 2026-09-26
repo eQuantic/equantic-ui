@@ -113,7 +113,7 @@ public class LinqTableStrategy : IExpressionIrStrategy
     /// <summary>
     /// <c>ToDictionary</c> by the runtime, which refuses a null key and a key twice as .NET does, into
     /// the dictionary class a constructed one is, its keys found by value where the key type's default
-    /// comparer finds them so (<see cref="DictionaryStrategy.EqualsByValue"/>). A comparer has no form
+    /// comparer finds them so (<see cref="DictionaryStrategy.KeyEquality"/>). A comparer has no form
     /// here and is refused, and so is an enum with aliases, whose two names for one value are two keys
     /// on this side. Null is a call no model binds, which keeps the table's shape.
     /// </summary>
@@ -127,8 +127,8 @@ public class LinqTableStrategy : IExpressionIrStrategy
         if ((key.UnwrapNullable() ?? key) is INamedTypeSymbol { TypeKind: TypeKind.Enum } keyEnum && LinqKeys.HasAliases(keyEnum))
             return (null, $"ToDictionary keyed by {key.ToDisplayString()}, an enum with aliases");
         var selectors = invocation.ArgumentList.Arguments.Count == 2 ? "{1}, {2}" : "{1}";
-        var byValue = DictionaryStrategy.EqualsByValue(key)
-            ? invocation.ArgumentList.Arguments.Count == 2 ? ", true" : ", null, true"
+        var byValue = DictionaryStrategy.KeyEquality(key) is { } equality
+            ? invocation.ArgumentList.Arguments.Count == 2 ? $", {equality}" : $", null, {equality}"
             : "";
         return ($"{Eq.LinqToDictionary}({{0}}, {selectors}{byValue})", null);
     }

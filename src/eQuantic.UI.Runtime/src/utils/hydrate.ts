@@ -53,7 +53,7 @@ export type HydrationKey = HydrationTag | 'number' | 'bool';
 export interface DictionarySpec {
   readonly dict: HydrationSpec | null;
   readonly key?: HydrationKey;
-  readonly byValue?: true;
+  readonly byValue?: true | 'own';
   readonly sorted?: true;
 }
 
@@ -132,7 +132,7 @@ function dictionary(incoming: unknown, spec: DictionarySpec): unknown {
         spec.dict == null ? source[name] : hydrate(source[name], spec.dict),
       ] as const,
   );
-  return spec.sorted ? new SortedMap(entries) : new Dictionary(entries, spec.byValue === true);
+  return spec.sorted ? new SortedMap(entries) : new Dictionary(entries, spec.byValue ?? false);
 }
 
 /** A dictionary key from the property name System.Text.Json wrote for it. */

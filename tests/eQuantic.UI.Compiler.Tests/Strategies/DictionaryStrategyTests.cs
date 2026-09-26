@@ -76,28 +76,41 @@ public class DictionaryStrategyTests
 
     /// <summary>
     /// A key is found as <c>EqualityComparer&lt;TKey&gt;.Default</c> finds it, which eqc says to the
-    /// factory: by value for a decimal, a date, a tuple, a record or a class that overrides Equals
-    /// (<c>Version</c> does), by identity, through the class's Map, for a string (which overrides
-    /// Equals, and is a primitive here), a number, an enum and a class that keeps object's Equals.
+    /// factory: by value for a decimal, a date, a tuple or a record, by identity, through the class's
+    /// Map, for a string (which overrides Equals, and is a primitive here), a number, an enum and a
+    /// Guid, and by the key's OWN equality where the type does not decide: a class, whose subclass may
+    /// override Equals (<c>Version</c> does itself), <c>object</c> and an interface, whose value may be
+    /// a record or a decimal (found in review, #443).
     /// </summary>
     [Theory]
-    [InlineData("decimal", true)]
-    [InlineData("DateTime", true)]
-    [InlineData("TimeSpan", true)]
-    [InlineData("(int, int)", true)]
-    [InlineData("Version", true)]
-    [InlineData("string", false)]
-    [InlineData("int", false)]
-    [InlineData("long", false)]
-    [InlineData("char", false)]
-    [InlineData("DayOfWeek", false)]
-    [InlineData("Guid", false)]
-    [InlineData("TestClass", false)]
-    [InlineData("object", false)]
-    public void AKey_IsFoundByValue_OnlyWhereItsDefaultComparerSaysSo(string key, bool byValue)
+    [InlineData("decimal", "$eq.collections.dictionary(null, true)")]
+    [InlineData("DateTime", "$eq.collections.dictionary(null, true)")]
+    [InlineData("TimeSpan", "$eq.collections.dictionary(null, true)")]
+    [InlineData("(int, int)", "$eq.collections.dictionary(null, true)")]
+    [InlineData("Version", "$eq.collections.dictionary(null, 'own')")]
+    [InlineData("string", "$eq.collections.dictionary()")]
+    [InlineData("int", "$eq.collections.dictionary()")]
+    [InlineData("long", "$eq.collections.dictionary()")]
+    [InlineData("char", "$eq.collections.dictionary()")]
+    [InlineData("DayOfWeek", "$eq.collections.dictionary()")]
+    [InlineData("Guid", "$eq.collections.dictionary()")]
+    [InlineData("TestClass", "$eq.collections.dictionary(null, 'own')")]
+    [InlineData("object", "$eq.collections.dictionary(null, 'own')")]
+    [InlineData("IComparable", "$eq.collections.dictionary(null, 'own')")]
+    public void AKey_IsFound_AsItsDefaultComparerFindsIt(string key, string factory)
     {
         var js = TestHelper.ConvertStatement($"var d = new Dictionary<{key}, int>();");
-        js.Should().Contain(byValue ? "$eq.collections.dictionary(null, true)" : "$eq.collections.dictionary()");
+        js.Should().Contain(factory);
+    }
+
+    /// <summary>A key of a type parameter is the value's to decide, as <c>object</c> is.</summary>
+    [Fact]
+    public void AKeyOfATypeParameter_IsFoundByItsOwnEquality()
+    {
+        var ts = TestHelper.ConvertClass("""
+            public int Count<T>(T a, T b) { var d = new Dictionary<T, int>(); d[a] = 1; d[b] = 2; return d.Count; }
+            """, "Keys");
+        ts.Should().Contain("$eq.collections.dictionary(null, 'own')");
     }
 
     [Theory]

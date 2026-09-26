@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { bagEntries, bagSize, Dictionary, dictionary, keyText, pair, wireKey } from './dictionary';
 import { dec } from './decimal';
-import { dateTime } from './datetime';
+import { dateTime, TimeSpan } from './datetime';
 import { equals } from './equals';
 
 // Every order below was measured on .NET 10: a dictionary enumerates by slot, and an insertion takes
@@ -183,6 +183,95 @@ describe('Dictionary — keys found by value', () => {
     expect(decimals.get(dec('1.5'))).toBe('d');
     const dates = dictionary<unknown, number>([[dateTime(2026, 1, 1), 1]], true);
     expect(dates.get(dateTime(2026, 1, 1))).toBe(1);
+  });
+});
+
+describe("Dictionary — keys found by their own equality ('own')", () => {
+  /** A record's twin: a class with its own `equals`. */
+  class Point {
+    constructor(
+      readonly x: number,
+      readonly y: number,
+    ) {}
+    equals(other: unknown): boolean {
+      return other instanceof Point && other.x === this.x && other.y === this.y;
+    }
+  }
+  /** A class that keeps object's Equals: no `equals` of its own. */
+  class Plain {
+    constructor(readonly v: number) {}
+  }
+
+  it('finds a key whose value has an equals by that equals, as object keys a record in .NET', () => {
+    const d = dictionary<unknown, string>(null, 'own');
+    d.set(new Point(1, 2), 'a');
+    d.set(new Point(1, 2), 'b');
+    expect(d.size).toBe(1);
+    expect(d.get(new Point(1, 2))).toBe('b');
+    expect(d.delete(new Point(1, 2))).toBe(true);
+    expect(d.size).toBe(0);
+  });
+
+  it('finds an instance with no equals of its own by reference', () => {
+    const d = dictionary<unknown, number>(null, 'own');
+    const first = new Plain(1);
+    d.set(first, 1);
+    d.set(new Plain(1), 2);
+    expect(d.size).toBe(2);
+    expect(d.get(first)).toBe(1);
+  });
+
+  it('keeps a primitive key in its own type, NaN found as NaN', () => {
+    const d = dictionary<unknown, number>(null, 'own');
+    d.set(1, 1);
+    d.set('1', 2);
+    d.set(NaN, 3);
+    expect(d.size).toBe(3);
+    expect(d.get(1)).toBe(1);
+    expect(d.get(NaN)).toBe(3);
+  });
+
+  it('finds a decimal and a date by their own equals', () => {
+    const d = dictionary<unknown, number>(null, 'own');
+    d.set(dec('1.0'), 1);
+    d.set(dec('1'), 2);
+    d.set(dateTime(2026, 1, 2), 3);
+    expect(d.size).toBe(2);
+    expect(d.get(dec('1.00'))).toBe(2);
+    expect(d.has(dateTime(2026, 1, 2))).toBe(true);
+  });
+
+  it("compares a tuple and an anonymous type by their members, having no twin to carry an equals", () => {
+    const d = dictionary<unknown, number>(null, 'own');
+    d.set([1, 'a'], 1);
+    d.set({ x: 1 }, 2);
+    expect(d.get([1, 'a'])).toBe(1);
+    expect(d.get({ x: 1 })).toBe(2);
+    expect(d.size).toBe(2);
+  });
+
+  it('tells a value from one of another kind, as Equals(object) does', () => {
+    const date = dateTime(2026, 1, 2);
+    const span = new TimeSpan(date.ticks);
+    expect(dec('1').equals(date)).toBe(false);
+    expect(span.equals(date)).toBe(false);
+    expect(date.equals(span)).toBe(false);
+    const d = dictionary<unknown, string>(null, 'own');
+    d.set(date, 'date');
+    d.set(span, 'span');
+    d.set(dec('1'), 'one');
+    expect(d.size).toBe(3);
+    expect(d.get(new TimeSpan(date.ticks))).toBe('span');
+  });
+
+  it('finds a value by its own equality when ContainsValue is asked so', () => {
+    const d = dictionary<string, unknown>([
+      ['p', new Point(1, 2)],
+      ['q', new Plain(1)],
+    ]);
+    expect(d.containsValue(new Point(1, 2), 'own')).toBe(true);
+    expect(d.containsValue(new Plain(1), 'own')).toBe(false);
+    expect(d.containsValue(new Point(1, 2))).toBe(false);
   });
 });
 
