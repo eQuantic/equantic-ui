@@ -813,6 +813,12 @@ record of a release, the wiki's Upgrading page is the distillate.
   travel ([#455](https://github.com/eQuantic/equantic-ui/issues/455)), and EQ2100's subset can widen
   ([#456](https://github.com/eQuantic/equantic-ui/issues/456)).
 
+- **2026-09-26 · main's runtime suite is green again**: the interface-defaults fixture pinned
+  PhotonTheme's dark code colours from before #354 re-solved the dark palette, and #418 merged after
+  #354 without a CI run on a main that had it, so `test-runtime` and the fixture's C# pin failed on
+  main. The fixture is regenerated from the palette both sides now carry
+  ([#453](https://github.com/eQuantic/equantic-ui/issues/453)).
+
 ## Retired documents
 
 | document | what it was | where its substance lives now |
