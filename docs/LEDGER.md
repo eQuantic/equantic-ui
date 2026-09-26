@@ -761,6 +761,13 @@ record of a release, the wiki's Upgrading page is the distillate.
   than the invariant or the current one is EQ2108, having no twin to evaluate), and the BCL
   audit's `(Object)` probes call the object overload instead of the string one beside it.
 
+- **2026-09-26 · The Copilot loop stops on its own**: waiting for Copilot's light review to run dry
+  cost about one round per finding (69 findings in 47 rounds on six pull requests, 14 rounds for
+  #354). The author now reviews the whole diff before opening a pull request, a finding earns
+  another round only when it is a defect, and the loop ends at the first round without one, after
+  three rounds in any case. The ruleset no longer reviews on push, so a round is asked for once per
+  push of fixes ([#446](https://github.com/eQuantic/equantic-ui/issues/446)).
+
 ## Retired documents
 
 | document | what it was | where its substance lives now |

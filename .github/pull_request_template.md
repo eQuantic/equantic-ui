@@ -40,5 +40,5 @@ Closes #
 - [ ] A broken contract has a line in the migration notes (we are in preview: break freely, hide nothing)
 - [ ] The documentation changed with the behaviour: this repository's Markdown here, and the wiki page in English AND Portuguese, in one commit on a branch of the [wiki repository](https://github.com/eQuantic/equantic-ui/wiki) named exactly like this pull request's branch, merged into the wiki's master when this merges (the twin lives at `locale/pt-BR/<Page>-pt-BR.md` there)
 - [ ] One `docs/LEDGER.md` line for this event, citing the issue
-- [ ] Copilot's review requested (`gh pr edit <n> --add-reviewer @copilot`), every finding fixed or answered in its thread, every thread resolved, and requested again until a round found nothing new
+- [ ] The diff reviewed by its author before the PR opened (in Claude Code, `/code-review high`); every Copilot thread answered and resolved; a new round asked for (`gh pr edit <n> --add-reviewer @copilot`) only after a defect, and three rounds at most
 - [ ] No "widget" in prose; the project's word is *component*
