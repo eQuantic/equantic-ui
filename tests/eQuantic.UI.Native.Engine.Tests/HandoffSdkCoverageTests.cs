@@ -198,6 +198,16 @@ public class HandoffSdkCoverageTests
             + "its own:" + List(overloaded));
     }
 
+    /// <summary>An exemption is a decision, and its reason IS the decision: an entry whose reason is
+    /// blank is the undocumented exception this suite exists to refuse (found in review).</summary>
+    [Fact]
+    public void EveryExemptionSaysWhy()
+    {
+        var blank = Exempt.Concat(NotTokenTypes).Where(entry => string.IsNullOrWhiteSpace(entry.Value))
+            .Select(entry => entry.Key).Order(StringComparer.Ordinal).ToArray();
+        blank.Should().BeEmpty("an exemption has to say why it is not a design value:" + List(blank));
+    }
+
     [Fact]
     public void EveryPublicTokenIsPublishedOrExempt()
     {
