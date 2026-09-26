@@ -19,10 +19,10 @@
 - [x] 3.1 Turn off every attribution in `.claude/settings.json`, and set `OPENSPEC_TELEMETRY=0`
 - [x] 3.2 Write the `SessionStart` hook, with the .NET SDK pinned by version and SHA-256
 - [x] 3.3 Write the fixture that runs the hook as a fresh cloud container and asserts its promises
-- [ ] 3.4 Check: CI's `session-start` job passes on a clean runner, with both controls biting
+- [x] 3.4 Check: CI's `session-start` job passes on a clean runner, with both controls biting
 
 ## 4. Documentation
 
 - [x] 4.1 Update `CONTRIBUTING.md` and the pull request template
 - [x] 4.2 Add the `docs/LEDGER.md` line citing #410
-- [ ] 4.3 Archive this change before the merge, so `openspec/specs` on main matches the code
+- [x] 4.3 Archive this change before the merge, so `openspec/specs` on main matches the code
