@@ -274,14 +274,14 @@ public class RecordTypeEmitter
             sb.Append($"if (arguments.length === {arity}) {{ ");
             // The alternate's parameters ARE the arguments that arrived, in the primary's slots.
             for (var i = 0; i < arity; i++)
-                sb.Append($"const {ctor.ParameterList.Parameters[i].Identifier.Text.ToJsIdentifier()} = {members[i].Js}; ");
+                sb.Append($"const {ctor.ParameterList.Parameters[i].Identifier.Text.ToJsIdentifier()} = {members[i].Js.ToJsIdentifier()}; ");
             // Evaluate first, assign after: an argument that reads a slot it also writes must see
             // the value that arrived, not the one this loop just put there.
             var args = chain.ArgumentList.Arguments;
             for (var i = 0; i < args.Count && i < members.Count; i++)
                 sb.Append($"const $c{i} = {_converter.ConvertExpression(args[i].Expression)}; ");
             for (var i = 0; i < args.Count && i < members.Count; i++)
-                sb.Append($"{members[i].Js} = $c{i}; ");
+                sb.Append($"{members[i].Js.ToJsIdentifier()} = $c{i}; ");
             sb.Append("} ");
         }
         return sb.ToString();
@@ -327,15 +327,17 @@ public class RecordTypeEmitter
         // members passed to the base record's primary constructor are assigned by `super`, not here.
         // TS mode annotates ctor params (`label: any = null`) — a bare `= null` default would make
         // TypeScript infer the param TYPE as `null`. Plain-JS mode stays annotation-free (.mjs).
+        // A parameter is bound under a legal JS name of the member's (ToJsIdentifier): a member may be
+        // a reserved word, `this.class` being fine where a parameter `class` is not.
         _converter.SetCurrentClass(name);
         var defaults = members.Select(m => DefaultFor(type, m)).ToList();
         sb.Append(tsTypeDeclarations
-            ? $"constructor({string.Join(", ", members.Select((m, i) => $"{m.Js}: any = {defaults[i]}"))}) {{ "
-            : $"constructor({string.Join(", ", members.Select((m, i) => $"{m.Js} = {defaults[i]}"))}) {{ ");
+            ? $"constructor({string.Join(", ", members.Select((m, i) => $"{m.Js.ToJsIdentifier()}: any = {defaults[i]}"))}) {{ "
+            : $"constructor({string.Join(", ", members.Select((m, i) => $"{m.Js.ToJsIdentifier()} = {defaults[i]}"))}) {{ ");
         if (baseName != null) sb.Append($"super({superArgs}); ");
         sb.Append(ChainedOverloads(type, members));
         foreach (var m in members)
-            if (!passedToBase.Contains(m.Display)) sb.Append($"this.{m.Js} = {m.Js}; ");
+            if (!passedToBase.Contains(m.Display)) sb.Append($"this.{m.Js} = {m.Js.ToJsIdentifier()}; ");
         sb.Append("} ");
 
         // VALUE semantics belong to records and structs. A plain class is IDENTITY: giving it a
@@ -609,7 +611,8 @@ public class RecordTypeEmitter
                 if (arg.Expression is IdentifierNameSyntax id)
                 {
                     passed.Add(id.Identifier.Text);                 // a member forwarded to the base
-                    superArgs.Add(id.Identifier.Text.ToCamelCase());
+                    // The derived constructor's own parameter for that member (the binding above).
+                    superArgs.Add(id.Identifier.ValueText.ToCamelCase().ToJsIdentifier());
                 }
                 else
                 {
@@ -709,14 +712,16 @@ public class RecordTypeEmitter
         // `any` at every one of them and quietly ended the checking on the way in. Only in the .ts
         // emission, though: the conformance harness runs the same class as plain `.mjs`, where an
         // annotation is a parse error rather than a type.
-        // An OPTIONAL parameter keeps its default, as the class emitter's does: a caller that omits
-        // it passes undefined, which runs the default, where `m(suffix)` handed the body undefined
-        // (found in review, #418).
+        // Each parameter under the name its body reads it by (ToJsIdentifier), as every other method
+        // path writes one: camel-cased here, `int Times(int Value) => N * Value` declared `value`
+        // beside a body reading `Value`, a ReferenceError at the first call. An OPTIONAL parameter
+        // keeps its default, as the class emitter's does: a caller that omits it passes undefined,
+        // which runs the default, where `m(suffix)` handed the body undefined (found in review, #418).
         _converter.SetCurrentClass(className);
         var pars = string.Join(", ", method.ParameterList.Parameters
             .Select(p => (tsTypeDeclarations
-                    ? $"{p.Identifier.Text.ToCamelCase()}: {TsTypeOf(p.Type)}"
-                    : p.Identifier.Text.ToCamelCase())
+                    ? $"{p.Identifier.Text.ToJsIdentifier()}: {TsTypeOf(p.Type)}"
+                    : p.Identifier.Text.ToJsIdentifier())
                 + (p.Default is { } optional ? $" = {_converter.ConvertExpression(optional.Value, p.Type?.ToString())}" : "")));
 
         string body;

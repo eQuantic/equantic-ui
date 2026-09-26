@@ -17,8 +17,22 @@ public class GenericNameStrategy : IConversionStrategy
     public bool CanConvert(SyntaxNode node, ConversionContext context) =>
         node is GenericNameSyntax;
 
-    public string Convert(SyntaxNode node, ConversionContext context) =>
-        ((GenericNameSyntax)node).Identifier.Text;
+    public string Convert(SyntaxNode node, ConversionContext context)
+    {
+        var name = (GenericNameSyntax)node;
+        // A generic LOCAL FUNCTION named with its type arguments, `Func<int, int> f = Id<int>`, is a
+        // method group of a function in scope and not a type: it takes the name its declaration took
+        // (LocalFunctionName), where the source text left `Id` beside a declared `id`.
+        var symbol = context.SemanticHelper.GetSymbol(name);
+        if (symbol is IMethodSymbol { MethodKind: MethodKind.LocalFunction } localFunction)
+            return LocalFunctionName.Of(localFunction);
+        // With no model, the same function found by the syntax. Not as a receiver: `Bucket<string>.Of`
+        // names a type.
+        var isReceiver = name.Parent is MemberAccessExpressionSyntax access && access.Expression == name;
+        if (symbol is null && !isReceiver && LocalFunctionName.InScope(name, name.Identifier.ValueText) is { } local)
+            return LocalFunctionName.Of(local, context);
+        return name.Identifier.Text;
+    }
 
     public int Priority => 5;
 }
