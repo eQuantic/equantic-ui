@@ -354,7 +354,7 @@ public class TypeScriptEmitter
                 // shared by every `Row` in every namespace, and alive only while no bundler minified
                 // identifiers (#278).
                 if (component.TypeIdentity.Length > 0)
-                    c.Field("$typeId", null, $"'{component.TypeIdentity.Replace("\\", "\\\\").Replace("'", "\\'")}'", null, isStatic: true);
+                    c.Field("$typeId", null, JsStringLiteral.Quote(component.TypeIdentity), null, isStatic: true);
 
                 // Component-level fields (static data / consts / instance fields), emitted at the top of
                 // the class. Skipped for primitives' INSTANCE fields, whose base ctor sets every prop via
@@ -2605,18 +2605,4 @@ public class TypeScriptEmitter
              _ => "null"
         };
     }
-    
-    private static string EscapeString(string s)
-    {
-        // Backslash MUST be escaped first, otherwise it would double-escape the
-        // sequences introduced below. Output is wrapped in single quotes by callers.
-        return s
-            .Replace("\\", "\\\\")
-            .Replace("'", "\\'")
-            .Replace("\"", "\\\"")
-            .Replace("\r", "\\r")
-            .Replace("\n", "\\n")
-            .Replace("\t", "\\t");
-    }
-    
 }

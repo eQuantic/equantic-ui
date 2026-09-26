@@ -36,6 +36,11 @@ public class RecordMethodConformanceTests
     // Methods coexist with value equality
     [InlineData("public record Point(int X, int Y) { public int Sum() => X + Y; }",
         "new Point(1, 2) == new Point(1, 2) && new Point(1, 2).Sum() == 3")] // true
+    // A declared default holding a line break, folded or written plain, and filled into a named call that
+    // skips it: the text was quoted with its backslashes and apostrophes escaped only, and a raw line break
+    // inside a JavaScript string literal is a syntax error that took the whole module with it.
+    [InlineData("public record Sep(string Joined = \"a\" + \"\\n\", char Line = '\\n', string Plain = \"\\r\\n\");", "new Sep().Joined + new Sep().Line + new Sep().Plain")]
+    [InlineData("public record Sep(string Joined = \"a\" + \"\\n\", char Line = '\\n', string Plain = \"\\r\\n\");", "new Sep(Plain: \"z\").Joined + new Sep(Plain: \"z\").Line")]
     public void RecordMethods_MatchDotNet(string prelude, string expression)
     {
         Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");

@@ -1,3 +1,4 @@
+using eQuantic.UI.Compiler.CodeGen.Ir;
 using System.Collections.Generic;
 using System.Linq;
 using Microsoft.CodeAnalysis;
@@ -105,7 +106,7 @@ public static class TypeDeclarationExtensions
             if (symbol is IFieldSymbol { HasConstantValue: true, ConstantValue: { } constant })
                 return constant switch
                 {
-                    string text => "'" + text.Replace("\\", "\\\\").Replace("'", "\\'") + "'",
+                    string text => JsStringLiteral.Quote(text),
                     bool flag => flag ? "true" : "false",
                     null => "null",
                     _ => System.Convert.ToString(constant, System.Globalization.CultureInfo.InvariantCulture) ?? "null",
@@ -129,8 +130,8 @@ public static class TypeDeclarationExtensions
     private static string? ConstantLiteral(object? value) => value switch
     {
         null => "null",
-        string text => "'" + text.Replace("\\", "\\\\").Replace("'", "\\'") + "'",
-        char character => "'" + character.ToString().Replace("\\", "\\\\").Replace("'", "\\'") + "'",
+        string text => JsStringLiteral.Quote(text),
+        char character => JsStringLiteral.Quote(character.ToString()),
         bool flag => flag ? "true" : "false",
         long or ulong or decimal => null,
         float single when float.IsNaN(single) => "NaN",
@@ -145,7 +146,7 @@ public static class TypeDeclarationExtensions
     private static string LiteralOf(ExpressionSyntax expression) => expression switch
     {
         LiteralExpressionSyntax literal when literal.IsKind(SyntaxKind.StringLiteralExpression) =>
-            "'" + literal.Token.ValueText.Replace("\\", "\\\\").Replace("'", "\\'") + "'",
+            JsStringLiteral.Quote(literal.Token.ValueText),
         LiteralExpressionSyntax literal when literal.IsKind(SyntaxKind.TrueLiteralExpression) => "true",
         LiteralExpressionSyntax literal when literal.IsKind(SyntaxKind.FalseLiteralExpression) => "false",
         LiteralExpressionSyntax literal when literal.IsKind(SyntaxKind.NumericLiteralExpression) =>
@@ -156,7 +157,7 @@ public static class TypeDeclarationExtensions
             when number.IsKind(SyntaxKind.NumericLiteralExpression) => "-" + number.Token.ValueText,
         // A char is a one-character STRING on the other side — the same thing `text[i]` gives back.
         LiteralExpressionSyntax literal when literal.IsKind(SyntaxKind.CharacterLiteralExpression) =>
-            "'" + literal.Token.ValueText.Replace("\\", "\\\\").Replace("'", "\\'") + "'",
+            JsStringLiteral.Quote(literal.Token.ValueText),
         // A collection expression default. `= []` is an empty array on both sides — and one WITH
         // elements is an array of them, which used to come out `null`: a member declared as a list
         // of bracket pairs arrived as nothing, and the first `foreach` over it threw "not iterable"
