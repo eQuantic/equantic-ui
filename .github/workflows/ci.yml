@@ -87,6 +87,21 @@ jobs:
       - name: Run the hook as a fresh cloud container, and assert what it promises
         run: ./scripts/check-session-start.sh
 
+  # The docs guards read the wiki at a pull request's own wiki branch when there is one, and master
+  # otherwise (#406), and the checkout that decides it is a script. This proves it against a fixture
+  # wiki, reading each run's page rather than its exit code: the branch it should read, a name that
+  # is only the tail of a branch, a wiki it cannot list (which must fail, not read master), and a
+  # branch name written to run, which must not.
+  wiki-checkout:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: The wiki checkout still discriminates
+        run: ./scripts/checkout-wiki.sh --self-test
+
   # The runtime's TypeScript, proven once: the command a developer runs, through the embedded bun
   # (bun.lock as pinned, tsc, vitest). It hands nothing on. The bundle an app runs is written by
   # the Server's own build, in every job that builds it, and a library build of the same sources
@@ -308,9 +323,13 @@ jobs:
       - name: Check out the wiki (for the docs guards)
         shell: bash
         continue-on-error: true
-        run: |
-          set -euo pipefail
-          git clone --depth 1 https://github.com/eQuantic/equantic-ui.wiki.git ../equantic-ui.wiki
+        env:
+          # A pull request that changes what the wiki must say carries its pages on a wiki branch
+          # named like its own, and the guards read that branch; anything else reads master (#406).
+          # Through the environment: a branch name is text someone else wrote, and `${{ }}`
+          # substitution happens before the shell ever sees it.
+          EQ_WIKI_BRANCH: ${{ github.head_ref }}
+        run: ./scripts/checkout-wiki.sh ../equantic-ui.wiki
 
       - name: Test
         shell: bash
@@ -412,9 +431,13 @@ jobs:
       - name: Check out the wiki (for the docs guards)
         shell: bash
         continue-on-error: true
-        run: |
-          set -euo pipefail
-          git clone --depth 1 https://github.com/eQuantic/equantic-ui.wiki.git ../equantic-ui.wiki
+        env:
+          # A pull request that changes what the wiki must say carries its pages on a wiki branch
+          # named like its own, and the guards read that branch; anything else reads master (#406).
+          # Through the environment: a branch name is text someone else wrote, and `${{ }}`
+          # substitution happens before the shell ever sees it.
+          EQ_WIKI_BRANCH: ${{ github.head_ref }}
+        run: ./scripts/checkout-wiki.sh ../equantic-ui.wiki
 
       - name: Test
         shell: bash
