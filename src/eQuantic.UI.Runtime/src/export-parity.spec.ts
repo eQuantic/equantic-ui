@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import * as indexExports from './index';
 import * as runtimeExports from './shared/runtime-exports';
 import * as vocabulary from './shared/vocabulary';
+import * as interfaceDefaults from './shared/interface-defaults';
 
 /**
  * The runtime has TWO public doors — `src/index.ts` (what the BOOT bundle, the embedded
@@ -30,5 +31,15 @@ describe('runtime export parity', () => {
       .map(([name]) => name);
     const missing = nodes.filter((name) => !(name in runtimeExports));
     expect(missing).toEqual([]);
+  });
+
+  it('every interface whose defaults the runtime carries is exported through both doors', () => {
+    // A twin that relies on a vocabulary default delegates to it by the interface's name
+    // (`ICodeLanguage.rules(this)`), from index in an app and from runtime-exports in an embedded
+    // twin; only index had them (found in review, #418).
+    const names = Object.keys(interfaceDefaults);
+    expect(names.length).toBeGreaterThan(0);
+    expect(names.filter((name) => !(name in runtimeExports))).toEqual([]);
+    expect(names.filter((name) => !(name in indexExports))).toEqual([]);
   });
 });
