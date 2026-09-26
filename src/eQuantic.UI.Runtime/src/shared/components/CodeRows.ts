@@ -93,6 +93,22 @@ export class CodeRows {
         return Math.max(0, Math.min(shown.line, this.lineCount - 1));
     }
 
+    linesIn(first: number, last: number): [number, number] {
+        return last < first ? [0, -1] : [this.lineAtRow(first), this.lineAtRow(last)];
+    }
+
+    sourceLinesIn(first: number, last: number): [number, number] {
+        let lowest = 2147483647;
+        let highest = -1;
+        for (let row = first; row <= last; row++) {
+            let shown = this.rowAt(row);
+            if (shown.kind !== 'filler' || shown.sourceLine < 0) continue;
+            lowest = Math.min(lowest, shown.sourceLine);
+            highest = Math.max(highest, shown.sourceLine);
+        }
+        return highest < 0 ? [0, -1] : [lowest, highest];
+    }
+
     segmentOfLine(line: number) {
         let low = 0;
         let high = this._kinds.length - 1;

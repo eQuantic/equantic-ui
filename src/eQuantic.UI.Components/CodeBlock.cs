@@ -636,12 +636,7 @@ public sealed class CodeBlock : StatelessComponent
 
     /// <summary>The first and last line of the document the rows from <paramref name="first"/> to
     /// <paramref name="last"/> hold: the lines anything is marked on.</summary>
-    private (int First, int Last) LinesIn(int first, int last)
-    {
-        if (Rows is not { } rows) return (first, last);
-        if (last < first) return (0, -1);
-        return (rows.LineAtRow(first), rows.LineAtRow(last));
-    }
+    private (int First, int Last) LinesIn(int first, int last) => Rows?.LinesIn(first, last) ?? (first, last);
 
     /// <summary>The first and last row this block builds (see <see cref="WindowOf"/>).</summary>
     private (int First, int Last) Window(float lineHeight) =>

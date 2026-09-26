@@ -282,10 +282,7 @@ export class CodeBlock extends StatelessComponent {
     }
 
     linesIn(first: number, last: number): [number, number] {
-        let rows: any; 
-        if (!((rows = this.rows) != null)) return [first, last];
-        if (last < first) return [0, -1];
-        return [rows.lineAtRow(first), rows.lineAtRow(last)];
+        return this.rows?.linesIn(first, last) ?? [first, last];
     }
 
     window(lineHeight: number): [number, number] {

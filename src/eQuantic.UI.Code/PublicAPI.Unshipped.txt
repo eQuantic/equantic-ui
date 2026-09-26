@@ -246,3 +246,5 @@ eQuantic.UI.Code.CodeRows.LineAtRow(int row) -> int
 eQuantic.UI.Code.CodeRows
 eQuantic.UI.Code.CodeRows.CodeRows(int lineCount, System.Collections.Generic.IReadOnlyList<eQuantic.UI.Code.CodeFiller>! fillers, System.Collections.Generic.IReadOnlyList<eQuantic.UI.Code.CodeCollapse>! collapses) -> void
 eQuantic.UI.Code.CodeDecorationKind.Line = 5 -> eQuantic.UI.Code.CodeDecorationKind
+eQuantic.UI.Code.CodeRows.LinesIn(int first, int last) -> (int First, int Last)
+eQuantic.UI.Code.CodeRows.SourceLinesIn(int first, int last) -> (int First, int Last)

@@ -160,6 +160,32 @@ public sealed class CodeRows
         return Math.Max(0, Math.Min(shown.Line, LineCount - 1));
     }
 
+    /// <summary>
+    /// The first and last line of the document the rows from <paramref name="first"/> to
+    /// <paramref name="last"/> hold: the lines a view marks anything on. (0, -1) for no rows.
+    /// </summary>
+    public (int First, int Last) LinesIn(int first, int last) =>
+        last < first ? (0, -1) : (LineAtRow(first), LineAtRow(last));
+
+    /// <summary>
+    /// The first and last line of the OTHER document the filler rows from <paramref name="first"/> to
+    /// <paramref name="last"/> draw (an inline diff's removed lines), for what is marked on them.
+    /// (0, -1) when none of them draws one.
+    /// </summary>
+    public (int First, int Last) SourceLinesIn(int first, int last)
+    {
+        var lowest = int.MaxValue;
+        var highest = -1;
+        for (var row = first; row <= last; row++)
+        {
+            var shown = RowAt(row);
+            if (shown.Kind != CodeRowKind.Filler || shown.SourceLine < 0) continue;
+            lowest = Math.Min(lowest, shown.SourceLine);
+            highest = Math.Max(highest, shown.SourceLine);
+        }
+        return highest < 0 ? (0, -1) : (lowest, highest);
+    }
+
     /// <summary>The segment that covers <paramref name="line"/>: the last one covering lines that
     /// starts at or before it.</summary>
     private int SegmentOfLine(int line)
