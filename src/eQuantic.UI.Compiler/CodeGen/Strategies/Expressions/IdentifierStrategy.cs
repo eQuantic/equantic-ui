@@ -27,11 +27,13 @@ public class IdentifierStrategy : IExpressionIrStrategy
         // ValueText strips the verbatim-identifier @ (C# `@checked` → JS `checked` — not reserved there).
         var name = identifier.Identifier.ValueText;
 
-        // Map 'Component' property (in State classes) to 'this._component'
-        if (name == "Component") return JsExpr.ThisMember("_component");
-
         // Priority: Semantic Check > String Check (Fallback)
         var symbol = context.SemanticHelper.GetSymbol(identifier);
+
+        // Map 'Component' property (in State classes) to 'this._component', but not a name bound in
+        // scope: a local, a parameter or a local function called `Component` is that binding, and
+        // mapped first it read the inherited value instead (Copilot's review of #399).
+        if (name == "Component" && !BoundInScope(symbol, identifier, name)) return JsExpr.ThisMember("_component");
 
         // If it's a type symbol, return as is (to allow EnumStrategy to work)
         if (symbol is ITypeSymbol || symbol is INamedTypeSymbol) return JsExpr.Identifier(name);
@@ -63,8 +65,9 @@ public class IdentifierStrategy : IExpressionIrStrategy
             // below then throws on `undefined` where the C# ran perfectly. Only the browser sees it
             // (the server runs the C#), which is the worst place for a difference to live.
             // InvocationStrategy already excludes local functions on three paths; this is the fourth.
-            if (symbol is IMethodSymbol { MethodKind: MethodKind.LocalFunction })
-                return JsExpr.Identifier(name.ToCamelCase().ToJsIdentifier());
+            // The name is the one its declaration takes, renamed where the member holds it already.
+            if (symbol is IMethodSymbol { MethodKind: MethodKind.LocalFunction } localFunction)
+                return JsExpr.Identifier(LocalFunctionName.Of(localFunction));
 
             if (symbol.Kind == SymbolKind.Field || symbol.Kind == SymbolKind.Property || symbol.Kind == SymbolKind.Method)
             {
@@ -113,6 +116,11 @@ public class IdentifierStrategy : IExpressionIrStrategy
             }
         }
 
+        // With no model to ask, a name can still be a local function a block around it declares,
+        // which C# finds before any member: its declaration's name, not a guessed `this.<name>`.
+        if (symbol == null && !isMemberName && LocalFunctionName.InScope(identifier, name) is { } local)
+            return JsExpr.Identifier(LocalFunctionName.Of(local, context));
+
         // A source-directory scan can prove that an otherwise-unbound PascalCase receiver is a
         // top-level static/runtime type. Preserve the type name so the emitter can route its import;
         // do not turn it into an instance member purely by casing.
@@ -136,6 +144,17 @@ public class IdentifierStrategy : IExpressionIrStrategy
 
         return JsExpr.Identifier(name.ToJsIdentifier());
     }
+
+    /// <summary>Whether <paramref name="name"/> reaches a binding of the scope it is read in, a local,
+    /// a parameter, a range variable or a local function, rather than a member.</summary>
+    private static bool BoundInScope(ISymbol? symbol, SyntaxNode at, string name) => symbol switch
+    {
+        null => LocalFunctionName.InScope(at, name) is not null,
+        IMethodSymbol { MethodKind: MethodKind.LocalFunction } => true,
+        { Kind: SymbolKind.Local or SymbolKind.RangeVariable } => true,
+        { Kind: SymbolKind.Parameter } => !symbol.IsPrimaryConstructorParameter(),
+        _ => false,
+    };
 
     public int Priority => 10;
 }
