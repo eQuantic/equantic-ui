@@ -56,13 +56,9 @@ sha256_of() {
 prepare_openspec() {
     local bin="$root/tools/openspec/node_modules/.bin"
     if ! command -v node >/dev/null 2>&1; then
-        # A laptop without Node can still build and test the SDK; a cloud container is expected to
-        # carry everything the Workflow section asks for.
-        if $cloud; then
-            required "the OpenSpec CLI" "OpenSpec: node is not on PATH, so the CLI is not installed (it needs Node >= 20.19)"
-        else
-            note "OpenSpec: node is not on PATH, so the CLI is not installed (it needs Node >= 20.19)"
-        fi
+        # The CLI is mandatory in every session, a laptop's included: without Node the person is told,
+        # even though building and testing the SDK need no Node at all.
+        required "the OpenSpec CLI" "OpenSpec: node is not on PATH, so the CLI is not installed (it needs Node >= 20.19)"
         return
     fi
     local version
@@ -85,11 +81,15 @@ configure_git() {
     persist "export GIT_AUTHOR_NAME=\"$OWNER_NAME\" GIT_AUTHOR_EMAIL=\"$OWNER_EMAIL\""
     persist "export GIT_COMMITTER_NAME=\"$OWNER_NAME\" GIT_COMMITTER_EMAIL=\"$OWNER_EMAIL\""
     # Report what git will actually use, which is what matters if something else overrides it.
-    local signing
-    signing="$(git -C "$root" config --get commit.gpgsign || echo unset)"
-    local summary
-    summary="git: $(git -C "$root" config --get user.name) <$(git -C "$root" config --get user.email)>, commit.gpgsign=$signing"
-    if [ "$signing" = "false" ]; then note "$summary"; else required "commit signing off" "$summary (something outranks the repository's config)"; fi
+    local commit_signing tag_signing summary
+    commit_signing="$(git -C "$root" config --get commit.gpgsign || echo unset)"
+    tag_signing="$(git -C "$root" config --get tag.gpgsign || echo unset)"
+    summary="git: $(git -C "$root" config --get user.name) <$(git -C "$root" config --get user.email)>, commit.gpgsign=$commit_signing, tag.gpgsign=$tag_signing"
+    if [ "$commit_signing" = "false" ] && [ "$tag_signing" = "false" ]; then
+        note "$summary"
+    else
+        required "commit and tag signing off" "$summary (something outranks the repository's config)"
+    fi
 }
 
 install_dotnet() {
