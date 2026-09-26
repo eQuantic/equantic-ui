@@ -14,7 +14,9 @@ namespace eQuantic.UI.Compiler.CodeGen;
 public static class PatternVariableScanner
 {
     /// <summary>`let a; let b;` for every pattern variable bound in <paramref name="expression"/>,
-    /// or an empty string when there is none.
+    /// or an empty string when there is none. Each is named as every reference to it is
+    /// (`ToJsIdentifier`): `o is R package` declared `package`, where its uses said `package_`
+    /// (found in review, #464).
     /// <para>
     /// <paramref name="typeAnnotations"/> has no default on purpose. The same converter also emits
     /// plain <c>.js</c> — for the conformance harness, the playground and the design host — and
@@ -63,14 +65,14 @@ public static class PatternVariableScanner
         switch (pattern)
         {
             case DeclarationPatternSyntax { Designation: SingleVariableDesignationSyntax d } when d.Identifier.Text != "_":
-                vars.Add(d.Identifier.ValueText);
+                vars.Add(d.Identifier.ValueText.ToJsIdentifier());
                 break;
             case VarPatternSyntax { Designation: SingleVariableDesignationSyntax v } when v.Identifier.Text != "_":
-                vars.Add(v.Identifier.ValueText);
+                vars.Add(v.Identifier.ValueText.ToJsIdentifier());
                 break;
             case RecursivePatternSyntax recursive:
                 if (recursive.Designation is SingleVariableDesignationSyntax r && r.Identifier.Text != "_")
-                    vars.Add(r.Identifier.ValueText);
+                    vars.Add(r.Identifier.ValueText.ToJsIdentifier());
                 if (recursive.PositionalPatternClause is { } positional)
                     foreach (var sub in positional.Subpatterns) Collect(sub.Pattern, vars);
                 if (recursive.PropertyPatternClause is { } property)

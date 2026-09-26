@@ -83,17 +83,20 @@ public static class PatternConverter
     {
         switch (pattern)
         {
+            // A binding is named as every use of it is (ToJsIdentifier): `o is R package` bound
+            // `package`, which a module does not parse, where its uses said `package_` (found in
+            // review, #464). PatternVariableScanner declares it under the same name.
             case VarPatternSyntax { Designation: SingleVariableDesignationSyntax v }:
-                bindings.Add((v.Identifier.Text, access));
+                bindings.Add((v.Identifier.ValueText.ToJsIdentifier(), access));
                 break;
 
             case DeclarationPatternSyntax { Designation: SingleVariableDesignationSyntax d }:
-                bindings.Add((d.Identifier.Text, access));
+                bindings.Add((d.Identifier.ValueText.ToJsIdentifier(), access));
                 break;
 
             case RecursivePatternSyntax recursive:
                 if (recursive.Designation is SingleVariableDesignationSyntax r)
-                    bindings.Add((r.Identifier.Text, access));
+                    bindings.Add((r.Identifier.ValueText.ToJsIdentifier(), access));
                 if (recursive.PositionalPatternClause != null)
                 {
                     // The pattern's OWN type decides the deconstruction names — the governing
