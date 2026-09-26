@@ -103,6 +103,6 @@ public class DefaultKeywordTests
     [InlineData("int? x = default;", "let x: number | null = null;")]   // a local that starts null crosses with its declared type
     public void Default_Literal_IsItsTargetsDefault(string statement, string expected)
     {
-        TestHelper.ConvertCodeBlock(statement).Should().Contain(expected);
+        TestHelper.ConvertCodeBlock(statement, typeAnnotations: true).Should().Contain(expected);
     }
 }

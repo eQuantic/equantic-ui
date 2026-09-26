@@ -57,6 +57,12 @@ public class LocalDeclarationStrategy : IStatementStrategy
     private static string Annotation(LocalDeclarationStatementSyntax decl, VariableDeclaratorSyntax variable,
         ConversionContext context)
     {
+        // Plain JavaScript carries no annotation, and every branch below writes one. The design host
+        // compiles with none and inlines the modules as one script, with nothing to strip a `: T`
+        // from it: `string? label = null` was written `let label: string | null = null`, and the
+        // preview did not load.
+        if (!context.TypeAnnotations) return "";
+
         // A local holding a vocabulary ENUM. TypeScript widens `command ? 'dataEdge' : 'cell'` to
         // `string`, and `string` is wider than the slot this local is on its way to — the keymaps
         // were the first to hit it, choosing a motion and handing it to the controller.
@@ -164,8 +170,7 @@ public class LocalDeclarationStrategy : IStatementStrategy
         else ts = CodeGen.TypeScriptEmitter.CSharpTypeToTypeScript(decl.Declaration.Type.ToString());
 
         if (ts is "any" or "void") return null;
-        if (!ts.EndsWith(" | null", StringComparison.Ordinal))
-            ts = ts.Contains("=>") ? $"({ts}) | null" : $"{ts} | null";
+        if (!ts.EndsWith(" | null", StringComparison.Ordinal)) ts = CodeGen.TypeScriptEmitter.OrNull(ts);
         // A decimal is the runtime's class, a name the C# never spells: the module imports it only
         // when something says so.
         if (System.Text.RegularExpressions.Regex.IsMatch(ts, @"(?<![\w$])Decimal(?![\w$])"))

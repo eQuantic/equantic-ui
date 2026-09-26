@@ -20,8 +20,10 @@ public class LocalTypeAnnotationTests
 {
     private readonly CSharpToJsConverter _converter = new();
 
-    private string Convert(string bodyCode)
+    private string Convert(string bodyCode, bool typeAnnotations = true)
     {
+        // The TypeScript a build writes, unless the test asks for plain JavaScript.
+        _converter.EmitTypeAnnotations(typeAnnotations);
         // A REAL semantic model: the widening rule compares the declared type against the
         // initializer's, and both have to resolve for the comparison to mean anything.
         var classCode = "class Base { } class A : Base { } class B : Base { }\n"
@@ -75,6 +77,21 @@ public class LocalTypeAnnotationTests
     public void ALocalThatStartsNull_CrossesWithItsDeclaredType(string csharp, string expected)
     {
         Assert.Contains(expected, Convert(csharp));
+    }
+
+    /// <summary>
+    /// Plain JavaScript carries no annotation, whatever the local: the design host compiles with none
+    /// and inlines what eqc writes as one script, so a <c>: T</c> in it is a syntax error that keeps
+    /// the preview from loading. A local that starts null was the common case, and a declared base
+    /// or an empty list was already written with its annotation there.
+    /// </summary>
+    [Theory]
+    [InlineData("string? path = null;", "let path = null;")]
+    [InlineData("Base found = new A();", "let found = new A();")]
+    [InlineData("var names = new System.Collections.Generic.List<string>();", "let names = [];")]
+    public void APlainJavaScriptLocal_CarriesNoAnnotation(string csharp, string expected)
+    {
+        Assert.Contains(expected, Convert(csharp, typeAnnotations: false));
     }
 
     /// <summary>
