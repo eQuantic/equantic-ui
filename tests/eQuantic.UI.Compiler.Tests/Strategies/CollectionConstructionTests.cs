@@ -15,7 +15,8 @@ namespace eQuantic.UI.Compiler.Tests.Strategies;
 /// </summary>
 public class CollectionConstructionTests
 {
-    private static string Convert(string body) => TestHelper.ConvertCodeBlock(body);
+    // The TypeScript a build writes: the annotations these pin are what keeps an empty list typed.
+    private static string Convert(string body) => TestHelper.ConvertCodeBlock(body, typeAnnotations: true);
 
     [Fact]
     public void ACapacityMakesAnEMPTYCollection()

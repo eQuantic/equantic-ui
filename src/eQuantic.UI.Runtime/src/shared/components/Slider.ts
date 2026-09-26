@@ -11,7 +11,7 @@ export class Slider extends StatelessComponent {
     }
 
     declare value: number;
-    declare onChanged: any;
+    declare onChanged: ((float: number) => void) | null;
     declare min: number;
     declare max: number;
     declare step: number;

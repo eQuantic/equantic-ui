@@ -7,7 +7,7 @@ export class Pagination extends StatelessComponent {
     static cell: number = 30;
     declare pageCount: number;
     declare currentPage: number;
-    declare onChanged: any;
+    declare onChanged: ((int: number) => void) | null;
 
     constructor(pageCount?: any, currentPage?: any, onChanged: any = null, props?: any) {
         super();

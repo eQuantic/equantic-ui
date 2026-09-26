@@ -193,6 +193,8 @@ export class CodeEditorController {
         let end = this._selection.end;
         for (let line = Math.max(start.line, first); line <= Math.min(end.line, last); line++) {
             let from = line === start.line ? start.column : 0;
+            let rows: any; 
+            if ((rows = this.grid.rows) != null && !rows.isVisible(line)) continue;
             let cells = this.cellsOf(line);
             let fromCell = cells.cellOf(from);
             let toCell = line === end.line ? cells.cellOf(end.column) : cells.width + 1;
@@ -213,8 +215,7 @@ export class CodeEditorController {
     }
 
     positionAt(point: Point) {
-        let line = (Math.trunc(Math.floor(Math.fround(Math.fround(point.y - this.grid.origin.y) / this.grid.cell.height))) | 0);
-        let target = this._document.clamp(new CodePosition(Math.max(0, line), 0)).line;
+        let target = this._document.clamp(new CodePosition(Math.max(0, this.grid.lineAt(point.y)), 0)).line;
         return new CodePosition(target, this.cellsOf(target).columnAt(Math.fround(Math.fround(point.x - this.grid.origin.x) / this.grid.cell.width)));
     }
 
@@ -302,6 +303,7 @@ export class CodeEditorController {
         switch (phase) {
             case 'down':
                 {
+                    if (this.onPlaceholder(position)) return false;
                     let at = this.positionAt(position);
                     if (clicks >= 3) this.selectLine(at.line); else if (clicks === 2) this.selectWord(at); else if ((modifiers & 1) !== 0) this.selection = new CodeRange(this._selection.anchor, at); else this.selection = new CodeRange(at);
                     this._dragging = clicks < 2;
@@ -309,7 +311,7 @@ export class CodeEditorController {
                 }
             case 'move':
                 {
-                    if (!this._dragging) return false;
+                    if (!this._dragging || this.onPlaceholder(position)) return false;
                     let at = this.positionAt(position);
                     if ($eq.equals(at, this._selection.focus)) return false;
                     this.selection = new CodeRange(this._selection.anchor, at);
@@ -321,6 +323,13 @@ export class CodeEditorController {
             default:
                 return false;
         }
+    }
+
+    onPlaceholder(point: Point) {
+        let rows: any; 
+        if (!((rows = this.grid.rows) != null)) return false;
+        let row = (Math.trunc(Math.floor(Math.fround(Math.fround(point.y - this.grid.origin.y) / this.grid.cell.height))) | 0);
+        return row >= 0 && row < rows.rowCount && rows.rowAt(row).kind === 'placeholder';
     }
 
     apply(range: CodeRange, text: string) {
@@ -598,13 +607,13 @@ export class CodeEditorController {
             case 'line':
                 {
                     if (this._desiredCell < 0) this._desiredCell = this.cellsOf(from.line).cellOf(from.column);
-                    let line = Math.min(Math.max(from.line + (forward ? 1 : -1), 0), this._document.lineCount - 1);
+                    let line = this.visibleLineFrom(from.line, forward ? 1 : -1);
                     return new CodePosition(line, this.cellsOf(line).columnAt(Math.fround(this._desiredCell)));
                 }
             case 'page':
                 {
                     if (this._desiredCell < 0) this._desiredCell = this.cellsOf(from.line).cellOf(from.column);
-                    let line = Math.min(Math.max(from.line + (forward ? pageLines : -pageLines), 0), this._document.lineCount - 1);
+                    let line = this.visibleLineFrom(from.line, forward ? pageLines : -pageLines);
                     return new CodePosition(line, this.cellsOf(line).columnAt(Math.fround(this._desiredCell)));
                 }
             case 'lineBoundary':
@@ -614,6 +623,21 @@ export class CodeEditorController {
                 this._desiredCell = -1;
                 return forward ? this._document.end : CodePosition.start;
         }
+    }
+
+    visibleLineFrom(line: number, steps: number) {
+        let last = this._document.lineCount - 1;
+        let rows: any; 
+        if (!((rows = this.grid.rows) != null)) return Math.min(Math.max(line + steps, 0), last);
+        let direction = steps < 0 ? -1 : 1;
+        let here = line;
+        let left = Math.abs(steps);
+        for (let next = line + direction; left > 0 && next >= 0 && next <= last; next += direction) {
+            if (!rows.isVisible(next)) continue;
+            here = next;
+            left--;
+        }
+        return here;
     }
 
     wordStep(from: CodePosition, forward: boolean) {
@@ -764,7 +788,7 @@ export class CodeEditorController {
         return low < matches.length ? matches[low] : matches[0];
     }
 
-    bracketAtCaret() {
+    bracketAtCaret(): [CodePosition, CodePosition] | null {
         let caret = this.caret;
         if (caret.column > 0) {
             let behind = $eq.withPatch(caret, { column: caret.column - 1 });

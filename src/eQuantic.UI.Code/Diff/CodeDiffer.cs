@@ -243,7 +243,7 @@ public static class CodeDiffer
     /// only removed or only added (the whole region is the change) or that is a rewrite too large to
     /// mark word by word.
     /// </summary>
-    private static IReadOnlyList<CodeInnerChange> InnerChanges(IReadOnlyList<string> original, int originalStart,
+    internal static IReadOnlyList<CodeInnerChange> InnerChanges(IReadOnlyList<string> original, int originalStart,
         int originalCount, IReadOnlyList<string> modified, int modifiedStart, int modifiedCount)
     {
         if (originalCount == 0 || modifiedCount == 0) return [];

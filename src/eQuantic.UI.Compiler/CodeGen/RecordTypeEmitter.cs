@@ -181,7 +181,6 @@ public class RecordTypeEmitter
                         Services.RuntimeProvidedTypeScanner.Collect(declaration, inheritedModel, runtimeProvided,
                             new HashSet<string>(), appTypes);
         }
-        runtimeProvided.Remove(type.Identifier.Text);
 
         // What the hydration map names, split by where it comes from: this compilation's own twins
         // are sibling modules, and the vocabulary's (`of: Rect`) join the runtime import.
@@ -200,9 +199,20 @@ public class RecordTypeEmitter
         // `import { $eq, Text }` beside `VisualNodeExtensions.centered(...)` — a qualified call to a
         // name the module never imports, which fails at LOAD rather than at the call.
         runtimeProvided.UnionWith(_converter.UsedRuntimeTypes);
+        // The one runtime name the TRANSLATION invents (`decimal` is `Decimal` on the other side), so
+        // no scan of the C# can see it: a member or a tuple return typed decimal named a class the
+        // module never imported, and the runtime's own build refused it. It is a candidate like the
+        // rest, kept only where the emitted text names it (TypeScriptEmitter.Annotate is the class
+        // path's twin).
+        runtimeProvided.Add(TypeScriptEmitter.Decimal);
         // A vocabulary enum member is annotated with its UNION, a name that exists only in the
         // emitted TypeScript — the scanner above walks C# syntax and could never have seen it.
         TypeScriptEmitter.SeedEnumUnions(body, ModelFor(type)?.Compilation, runtimeProvided);
+        // A module declares its own name and never imports it, whoever added it: struck here, after
+        // every set above has been merged in. It was struck right after the scan, and the names the
+        // conversion introduced put it back: a runtime-provided record calling its own static helper
+        // (`CodeDiffLayout.addGaps(…)`) imported itself, which TypeScript refuses as a conflict.
+        runtimeProvided.Remove(type.Identifier.Text);
         // Only what the emitted text actually NAMES: a type mentioned in the C# and erased on the
         // way out (an interface, an enum) would otherwise import a name nothing uses, which the
         // runtime's own build rejects.
@@ -735,6 +745,23 @@ public class RecordTypeEmitter
         }
 
         var isStatic = method.Modifiers.Any(m => m.IsKind(SyntaxKind.StaticKeyword)) ? "static " : "";
-        return $"{isStatic}{jsName}({pars}) {{ {body} }}";
+        var returns = tsTypeDeclarations ? TupleReturn(method.ReturnType) : "";
+        return $"{isStatic}{jsName}({pars}){returns} {{ {body} }}";
+    }
+
+    /// <summary>
+    /// The return annotation of a method that returns a TUPLE, and nothing for any other: a tuple
+    /// crosses as an array literal, which TypeScript reads as an array of the union of its elements,
+    /// so its type is said (TypeScriptEmitter.TupleReturn has the class path's twin). Each element
+    /// through the rule a member's type takes, so an enum among them is the member string it crosses
+    /// as, where the whole tuple's name wrote the enum's C# spelling, a type TypeScript does not have.
+    /// </summary>
+    private string TupleReturn(TypeSyntax returnType)
+    {
+        var tuple = returnType as TupleTypeSyntax ?? (returnType as NullableTypeSyntax)?.ElementType as TupleTypeSyntax;
+        if (tuple is null) return "";
+        var elements = "[" + string.Join(", ", tuple.Elements.Select(element =>
+            TypeDeclarationExtensions.TsTypeFor(element.Type, ModelFor(element.Type)))) + "]";
+        return ": " + (returnType is NullableTypeSyntax ? TypeScriptEmitter.OrNull(elements) : elements);
     }
 }

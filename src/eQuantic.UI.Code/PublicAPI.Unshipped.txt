@@ -1,4 +1,76 @@
 #nullable enable
+*REMOVED*eQuantic.UI.Code.CodeGrid.CodeGrid(eQuantic.UI.Primitives.Point Origin, eQuantic.UI.Primitives.Size Cell) -> void
+*REMOVED*eQuantic.UI.Code.CodeGrid.Deconstruct(out eQuantic.UI.Primitives.Point Origin, out eQuantic.UI.Primitives.Size Cell) -> void
+eQuantic.UI.Code.CodeDiffFold
+eQuantic.UI.Code.CodeDiffFold.CodeDiffFold() -> void
+eQuantic.UI.Code.CodeDiffFold.CodeDiffFold(int OriginalLine, int ModifiedLine, int Count) -> void
+eQuantic.UI.Code.CodeDiffFold.Deconstruct(out int OriginalLine, out int ModifiedLine, out int Count) -> void
+eQuantic.UI.Code.CodeDiffFold.Equals(eQuantic.UI.Code.CodeDiffFold other) -> bool
+override eQuantic.UI.Code.CodeDiffFold.GetHashCode() -> int
+static eQuantic.UI.Code.CodeDiffFold.operator !=(eQuantic.UI.Code.CodeDiffFold left, eQuantic.UI.Code.CodeDiffFold right) -> bool
+static eQuantic.UI.Code.CodeDiffFold.operator ==(eQuantic.UI.Code.CodeDiffFold left, eQuantic.UI.Code.CodeDiffFold right) -> bool
+~override eQuantic.UI.Code.CodeDiffFold.Equals(object obj) -> bool
+~override eQuantic.UI.Code.CodeDiffFold.ToString() -> string
+eQuantic.UI.Code.CodeDiffFold.OriginalLine.get -> int
+eQuantic.UI.Code.CodeDiffFold.OriginalLine.init -> void
+eQuantic.UI.Code.CodeDiffFold.ModifiedLine.get -> int
+eQuantic.UI.Code.CodeDiffFold.ModifiedLine.init -> void
+eQuantic.UI.Code.CodeDiffFold.Count.get -> int
+eQuantic.UI.Code.CodeDiffFold.Count.init -> void
+eQuantic.UI.Code.CodeDiffGap.ModifiedCount.get -> int
+eQuantic.UI.Code.CodeDiffGap.ModifiedCount.init -> void
+eQuantic.UI.Code.CodeDiffGap
+eQuantic.UI.Code.CodeDiffGap.CodeDiffGap() -> void
+eQuantic.UI.Code.CodeDiffGap.CodeDiffGap(int OriginalLine, int ModifiedLine, int OriginalCount, int ModifiedCount, string! Header) -> void
+eQuantic.UI.Code.CodeDiffGap.Deconstruct(out int OriginalLine, out int ModifiedLine, out int OriginalCount, out int ModifiedCount, out string! Header) -> void
+eQuantic.UI.Code.CodeDiffGap.Equals(eQuantic.UI.Code.CodeDiffGap other) -> bool
+override eQuantic.UI.Code.CodeDiffGap.GetHashCode() -> int
+static eQuantic.UI.Code.CodeDiffGap.operator !=(eQuantic.UI.Code.CodeDiffGap left, eQuantic.UI.Code.CodeDiffGap right) -> bool
+static eQuantic.UI.Code.CodeDiffGap.operator ==(eQuantic.UI.Code.CodeDiffGap left, eQuantic.UI.Code.CodeDiffGap right) -> bool
+~override eQuantic.UI.Code.CodeDiffGap.Equals(object obj) -> bool
+~override eQuantic.UI.Code.CodeDiffGap.ToString() -> string
+eQuantic.UI.Code.CodeDiffGap.OriginalLine.get -> int
+eQuantic.UI.Code.CodeDiffGap.OriginalLine.init -> void
+eQuantic.UI.Code.CodeDiffGap.ModifiedLine.get -> int
+eQuantic.UI.Code.CodeDiffGap.ModifiedLine.init -> void
+eQuantic.UI.Code.CodeDiffGap.OriginalCount.get -> int
+eQuantic.UI.Code.CodeDiffGap.OriginalCount.init -> void
+eQuantic.UI.Code.CodeDiffGap.Header.get -> string!
+eQuantic.UI.Code.CodeDiffGap.Header.init -> void
+eQuantic.UI.Code.CodeDiffLayout.FoldOfModified(int line) -> eQuantic.UI.Code.CodeDiffFold?
+eQuantic.UI.Code.CodeDiffLayout.FoldOfOriginal(int line) -> eQuantic.UI.Code.CodeDiffFold?
+eQuantic.UI.Code.CodeDiffLayout.Folds.get -> System.Collections.Generic.IReadOnlyList<eQuantic.UI.Code.CodeDiffFold>!
+eQuantic.UI.Code.CodeDiffLayout.Folds.init -> void
+eQuantic.UI.Code.CodeDiffLayout
+eQuantic.UI.Code.CodeDiffLayout.<Clone>$() -> eQuantic.UI.Code.CodeDiffLayout!
+eQuantic.UI.Code.CodeDiffLayout.CodeDiffLayout(eQuantic.UI.Code.CodeRows! Original, eQuantic.UI.Code.CodeRows! Modified, System.Collections.Generic.IReadOnlyList<eQuantic.UI.Code.CodeDiffFold>! Folds) -> void
+eQuantic.UI.Code.CodeDiffLayout.Deconstruct(out eQuantic.UI.Code.CodeRows! Original, out eQuantic.UI.Code.CodeRows! Modified, out System.Collections.Generic.IReadOnlyList<eQuantic.UI.Code.CodeDiffFold>! Folds) -> void
+eQuantic.UI.Code.CodeDiffLayout.Equals(eQuantic.UI.Code.CodeDiffLayout? other) -> bool
+override eQuantic.UI.Code.CodeDiffLayout.Equals(object? obj) -> bool
+override eQuantic.UI.Code.CodeDiffLayout.GetHashCode() -> int
+override eQuantic.UI.Code.CodeDiffLayout.ToString() -> string!
+static eQuantic.UI.Code.CodeDiffLayout.operator !=(eQuantic.UI.Code.CodeDiffLayout? left, eQuantic.UI.Code.CodeDiffLayout? right) -> bool
+static eQuantic.UI.Code.CodeDiffLayout.operator ==(eQuantic.UI.Code.CodeDiffLayout? left, eQuantic.UI.Code.CodeDiffLayout? right) -> bool
+eQuantic.UI.Code.CodeDiffLayout.Original.get -> eQuantic.UI.Code.CodeRows!
+eQuantic.UI.Code.CodeDiffLayout.Original.init -> void
+eQuantic.UI.Code.CodeDiffLayout.Modified.get -> eQuantic.UI.Code.CodeRows!
+eQuantic.UI.Code.CodeDiffLayout.Modified.init -> void
+const eQuantic.UI.Code.CodeDiffLayout.DefaultContext = 3 -> int
+static eQuantic.UI.Code.CodeDiffLayout.SideBySide(System.Collections.Generic.IReadOnlyList<eQuantic.UI.Code.CodeLineChange!>! changes, int originalLines, int modifiedLines, int context = 3, System.Collections.Generic.IReadOnlyCollection<int>? expanded = null, System.Collections.Generic.IReadOnlyList<eQuantic.UI.Code.CodeDiffGap>? gaps = null, System.Func<int, string!>? foldLabel = null) -> eQuantic.UI.Code.CodeDiffLayout!
+static eQuantic.UI.Code.CodeDiffLayout.Inline(System.Collections.Generic.IReadOnlyList<eQuantic.UI.Code.CodeLineChange!>! changes, int originalLines, int modifiedLines, int context = 3, System.Collections.Generic.IReadOnlyCollection<int>? expanded = null, System.Collections.Generic.IReadOnlyList<eQuantic.UI.Code.CodeDiffGap>? gaps = null, System.Func<int, string!>? foldLabel = null) -> eQuantic.UI.Code.CodeDiffLayout!
+static eQuantic.UI.Code.CodeDiffSource.FromPatch(eQuantic.UI.Code.CodePatchFile! file) -> eQuantic.UI.Code.CodeDiffSource!
+eQuantic.UI.Code.CodeDiffSource
+eQuantic.UI.Code.CodeDiffSource.Original.get -> eQuantic.UI.Code.CodeDocument!
+eQuantic.UI.Code.CodeDiffSource.Modified.get -> eQuantic.UI.Code.CodeDocument!
+eQuantic.UI.Code.CodeDiffSource.OriginalLineCount.get -> int
+eQuantic.UI.Code.CodeDiffSource.ModifiedLineCount.get -> int
+eQuantic.UI.Code.CodeDiffSource.Changes.get -> System.Collections.Generic.IReadOnlyList<eQuantic.UI.Code.CodeLineChange!>!
+eQuantic.UI.Code.CodeDiffSource.Gaps.get -> System.Collections.Generic.IReadOnlyList<eQuantic.UI.Code.CodeDiffGap>!
+eQuantic.UI.Code.CodeDiffSource.OriginalNumber(int line) -> int
+eQuantic.UI.Code.CodeDiffSource.ModifiedNumber(int line) -> int
+static eQuantic.UI.Code.CodeDiffSource.FromTexts(string! original, string! modified) -> eQuantic.UI.Code.CodeDiffSource!
+static eQuantic.UI.Code.CodeDiffSource.FromDocuments(eQuantic.UI.Code.CodeDocument! original, eQuantic.UI.Code.CodeDocument! modified) -> eQuantic.UI.Code.CodeDiffSource!
+eQuantic.UI.Code.CodeDiffSource.OriginalLineOf(int modifiedLine) -> int
 eQuantic.UI.Code.CodeDiffer
 static eQuantic.UI.Code.CodeDiffer.Compare(eQuantic.UI.Code.CodeDocument! original, eQuantic.UI.Code.CodeDocument! modified) -> System.Collections.Generic.IReadOnlyList<eQuantic.UI.Code.CodeLineChange!>!
 static eQuantic.UI.Code.CodeDiffer.CompareLines(System.Collections.Generic.IReadOnlyList<string!>! original, System.Collections.Generic.IReadOnlyList<string!>! modified) -> System.Collections.Generic.IReadOnlyList<eQuantic.UI.Code.CodeLineChange!>!
@@ -36,3 +108,143 @@ eQuantic.UI.Code.CodeLineChange.ModifiedCount.get -> int
 eQuantic.UI.Code.CodeLineChange.ModifiedCount.init -> void
 eQuantic.UI.Code.CodeLineChange.Inner.get -> System.Collections.Generic.IReadOnlyList<eQuantic.UI.Code.CodeInnerChange>!
 eQuantic.UI.Code.CodeLineChange.Inner.init -> void
+eQuantic.UI.Code.CodePatch
+static eQuantic.UI.Code.CodePatch.Parse(string! text) -> System.Collections.Generic.IReadOnlyList<eQuantic.UI.Code.CodePatchFile!>!
+eQuantic.UI.Code.CodePatchFile.Binary.get -> bool
+eQuantic.UI.Code.CodePatchFile.Binary.init -> void
+eQuantic.UI.Code.CodePatchFile.Hunks.get -> System.Collections.Generic.IReadOnlyList<eQuantic.UI.Code.CodePatchHunk!>!
+eQuantic.UI.Code.CodePatchFile.Hunks.init -> void
+eQuantic.UI.Code.CodePatchFile
+eQuantic.UI.Code.CodePatchFile.<Clone>$() -> eQuantic.UI.Code.CodePatchFile!
+eQuantic.UI.Code.CodePatchFile.CodePatchFile(string? OriginalPath, string? ModifiedPath, System.Collections.Generic.IReadOnlyList<eQuantic.UI.Code.CodePatchHunk!>! Hunks) -> void
+eQuantic.UI.Code.CodePatchFile.Deconstruct(out string? OriginalPath, out string? ModifiedPath, out System.Collections.Generic.IReadOnlyList<eQuantic.UI.Code.CodePatchHunk!>! Hunks) -> void
+eQuantic.UI.Code.CodePatchFile.Equals(eQuantic.UI.Code.CodePatchFile? other) -> bool
+override eQuantic.UI.Code.CodePatchFile.Equals(object? obj) -> bool
+override eQuantic.UI.Code.CodePatchFile.GetHashCode() -> int
+override eQuantic.UI.Code.CodePatchFile.ToString() -> string!
+static eQuantic.UI.Code.CodePatchFile.operator !=(eQuantic.UI.Code.CodePatchFile? left, eQuantic.UI.Code.CodePatchFile? right) -> bool
+static eQuantic.UI.Code.CodePatchFile.operator ==(eQuantic.UI.Code.CodePatchFile? left, eQuantic.UI.Code.CodePatchFile? right) -> bool
+eQuantic.UI.Code.CodePatchFile.OriginalPath.get -> string?
+eQuantic.UI.Code.CodePatchFile.OriginalPath.init -> void
+eQuantic.UI.Code.CodePatchFile.ModifiedPath.get -> string?
+eQuantic.UI.Code.CodePatchFile.ModifiedPath.init -> void
+eQuantic.UI.Code.CodePatchHunk
+eQuantic.UI.Code.CodePatchHunk.<Clone>$() -> eQuantic.UI.Code.CodePatchHunk!
+eQuantic.UI.Code.CodePatchHunk.CodePatchHunk(int OriginalStart, int OriginalCount, int ModifiedStart, int ModifiedCount, string! Section, System.Collections.Generic.IReadOnlyList<eQuantic.UI.Code.CodePatchLine>! Lines) -> void
+eQuantic.UI.Code.CodePatchHunk.Deconstruct(out int OriginalStart, out int OriginalCount, out int ModifiedStart, out int ModifiedCount, out string! Section, out System.Collections.Generic.IReadOnlyList<eQuantic.UI.Code.CodePatchLine>! Lines) -> void
+eQuantic.UI.Code.CodePatchHunk.Equals(eQuantic.UI.Code.CodePatchHunk? other) -> bool
+override eQuantic.UI.Code.CodePatchHunk.Equals(object? obj) -> bool
+override eQuantic.UI.Code.CodePatchHunk.GetHashCode() -> int
+override eQuantic.UI.Code.CodePatchHunk.ToString() -> string!
+static eQuantic.UI.Code.CodePatchHunk.operator !=(eQuantic.UI.Code.CodePatchHunk? left, eQuantic.UI.Code.CodePatchHunk? right) -> bool
+static eQuantic.UI.Code.CodePatchHunk.operator ==(eQuantic.UI.Code.CodePatchHunk? left, eQuantic.UI.Code.CodePatchHunk? right) -> bool
+eQuantic.UI.Code.CodePatchHunk.OriginalStart.get -> int
+eQuantic.UI.Code.CodePatchHunk.OriginalStart.init -> void
+eQuantic.UI.Code.CodePatchHunk.OriginalCount.get -> int
+eQuantic.UI.Code.CodePatchHunk.OriginalCount.init -> void
+eQuantic.UI.Code.CodePatchHunk.ModifiedStart.get -> int
+eQuantic.UI.Code.CodePatchHunk.ModifiedStart.init -> void
+eQuantic.UI.Code.CodePatchHunk.ModifiedCount.get -> int
+eQuantic.UI.Code.CodePatchHunk.ModifiedCount.init -> void
+eQuantic.UI.Code.CodePatchHunk.Section.get -> string!
+eQuantic.UI.Code.CodePatchHunk.Section.init -> void
+eQuantic.UI.Code.CodePatchHunk.Lines.get -> System.Collections.Generic.IReadOnlyList<eQuantic.UI.Code.CodePatchLine>!
+eQuantic.UI.Code.CodePatchHunk.Lines.init -> void
+eQuantic.UI.Code.CodePatchHunk.Header.get -> string!
+eQuantic.UI.Code.CodePatchHunk.Header.init -> void
+eQuantic.UI.Code.CodePatchLine
+eQuantic.UI.Code.CodePatchLine.CodePatchLine() -> void
+eQuantic.UI.Code.CodePatchLine.CodePatchLine(eQuantic.UI.Code.CodePatchLineKind Kind, string! Text) -> void
+eQuantic.UI.Code.CodePatchLine.Deconstruct(out eQuantic.UI.Code.CodePatchLineKind Kind, out string! Text) -> void
+eQuantic.UI.Code.CodePatchLine.Equals(eQuantic.UI.Code.CodePatchLine other) -> bool
+override eQuantic.UI.Code.CodePatchLine.GetHashCode() -> int
+static eQuantic.UI.Code.CodePatchLine.operator !=(eQuantic.UI.Code.CodePatchLine left, eQuantic.UI.Code.CodePatchLine right) -> bool
+static eQuantic.UI.Code.CodePatchLine.operator ==(eQuantic.UI.Code.CodePatchLine left, eQuantic.UI.Code.CodePatchLine right) -> bool
+~override eQuantic.UI.Code.CodePatchLine.Equals(object obj) -> bool
+~override eQuantic.UI.Code.CodePatchLine.ToString() -> string
+eQuantic.UI.Code.CodePatchLine.Kind.get -> eQuantic.UI.Code.CodePatchLineKind
+eQuantic.UI.Code.CodePatchLine.Kind.init -> void
+eQuantic.UI.Code.CodePatchLine.Text.get -> string!
+eQuantic.UI.Code.CodePatchLine.Text.init -> void
+eQuantic.UI.Code.CodePatchLineKind.Removed = 1 -> eQuantic.UI.Code.CodePatchLineKind
+eQuantic.UI.Code.CodePatchLineKind.Added = 2 -> eQuantic.UI.Code.CodePatchLineKind
+eQuantic.UI.Code.CodePatchLineKind
+eQuantic.UI.Code.CodePatchLineKind.Context = 0 -> eQuantic.UI.Code.CodePatchLineKind
+static eQuantic.UI.Code.CodeDocument.FromLines(System.Collections.Generic.IReadOnlyList<string!>! lines) -> eQuantic.UI.Code.CodeDocument!
+eQuantic.UI.Code.CodeCollapse.Label.get -> string?
+eQuantic.UI.Code.CodeCollapse.Label.init -> void
+eQuantic.UI.Code.CodeCollapse
+eQuantic.UI.Code.CodeCollapse.CodeCollapse() -> void
+eQuantic.UI.Code.CodeCollapse.CodeCollapse(int FirstLine, int LastLine, bool Placeholder = true, string? Label = null) -> void
+eQuantic.UI.Code.CodeCollapse.Deconstruct(out int FirstLine, out int LastLine, out bool Placeholder, out string? Label) -> void
+eQuantic.UI.Code.CodeCollapse.Equals(eQuantic.UI.Code.CodeCollapse other) -> bool
+override eQuantic.UI.Code.CodeCollapse.GetHashCode() -> int
+static eQuantic.UI.Code.CodeCollapse.operator !=(eQuantic.UI.Code.CodeCollapse left, eQuantic.UI.Code.CodeCollapse right) -> bool
+static eQuantic.UI.Code.CodeCollapse.operator ==(eQuantic.UI.Code.CodeCollapse left, eQuantic.UI.Code.CodeCollapse right) -> bool
+~override eQuantic.UI.Code.CodeCollapse.Equals(object obj) -> bool
+~override eQuantic.UI.Code.CodeCollapse.ToString() -> string
+eQuantic.UI.Code.CodeCollapse.FirstLine.get -> int
+eQuantic.UI.Code.CodeCollapse.FirstLine.init -> void
+eQuantic.UI.Code.CodeCollapse.LastLine.get -> int
+eQuantic.UI.Code.CodeCollapse.LastLine.init -> void
+eQuantic.UI.Code.CodeCollapse.Placeholder.get -> bool
+eQuantic.UI.Code.CodeCollapse.Placeholder.init -> void
+eQuantic.UI.Code.CodeFiller
+eQuantic.UI.Code.CodeFiller.CodeFiller() -> void
+eQuantic.UI.Code.CodeFiller.CodeFiller(int BeforeLine, int Rows, int SourceLine = -1, string? Label = null) -> void
+eQuantic.UI.Code.CodeFiller.Deconstruct(out int BeforeLine, out int Rows, out int SourceLine, out string? Label) -> void
+eQuantic.UI.Code.CodeFiller.Equals(eQuantic.UI.Code.CodeFiller other) -> bool
+override eQuantic.UI.Code.CodeFiller.GetHashCode() -> int
+static eQuantic.UI.Code.CodeFiller.operator !=(eQuantic.UI.Code.CodeFiller left, eQuantic.UI.Code.CodeFiller right) -> bool
+static eQuantic.UI.Code.CodeFiller.operator ==(eQuantic.UI.Code.CodeFiller left, eQuantic.UI.Code.CodeFiller right) -> bool
+~override eQuantic.UI.Code.CodeFiller.Equals(object obj) -> bool
+~override eQuantic.UI.Code.CodeFiller.ToString() -> string
+eQuantic.UI.Code.CodeFiller.BeforeLine.get -> int
+eQuantic.UI.Code.CodeFiller.BeforeLine.init -> void
+eQuantic.UI.Code.CodeFiller.Rows.get -> int
+eQuantic.UI.Code.CodeFiller.Rows.init -> void
+eQuantic.UI.Code.CodeFiller.SourceLine.get -> int
+eQuantic.UI.Code.CodeFiller.SourceLine.init -> void
+eQuantic.UI.Code.CodeFiller.Label.get -> string?
+eQuantic.UI.Code.CodeFiller.Label.init -> void
+eQuantic.UI.Code.CodeGrid.CodeGrid(eQuantic.UI.Primitives.Point Origin, eQuantic.UI.Primitives.Size Cell, eQuantic.UI.Code.CodeRows? Rows = null) -> void
+eQuantic.UI.Code.CodeGrid.Deconstruct(out eQuantic.UI.Primitives.Point Origin, out eQuantic.UI.Primitives.Size Cell, out eQuantic.UI.Code.CodeRows? Rows) -> void
+eQuantic.UI.Code.CodeGrid.Rows.get -> eQuantic.UI.Code.CodeRows?
+eQuantic.UI.Code.CodeGrid.Rows.init -> void
+eQuantic.UI.Code.CodeGrid.RowOf(int line) -> int
+eQuantic.UI.Code.CodeGrid.LineAt(float y) -> int
+eQuantic.UI.Code.CodeRow.Label.get -> string?
+eQuantic.UI.Code.CodeRow.Label.init -> void
+eQuantic.UI.Code.CodeRow
+eQuantic.UI.Code.CodeRow.CodeRow() -> void
+eQuantic.UI.Code.CodeRow.CodeRow(eQuantic.UI.Code.CodeRowKind Kind, int Line, int Count = 1, int SourceLine = -1, string? Label = null) -> void
+eQuantic.UI.Code.CodeRow.Deconstruct(out eQuantic.UI.Code.CodeRowKind Kind, out int Line, out int Count, out int SourceLine, out string? Label) -> void
+eQuantic.UI.Code.CodeRow.Equals(eQuantic.UI.Code.CodeRow other) -> bool
+override eQuantic.UI.Code.CodeRow.GetHashCode() -> int
+static eQuantic.UI.Code.CodeRow.operator !=(eQuantic.UI.Code.CodeRow left, eQuantic.UI.Code.CodeRow right) -> bool
+static eQuantic.UI.Code.CodeRow.operator ==(eQuantic.UI.Code.CodeRow left, eQuantic.UI.Code.CodeRow right) -> bool
+~override eQuantic.UI.Code.CodeRow.Equals(object obj) -> bool
+~override eQuantic.UI.Code.CodeRow.ToString() -> string
+eQuantic.UI.Code.CodeRow.Kind.get -> eQuantic.UI.Code.CodeRowKind
+eQuantic.UI.Code.CodeRow.Kind.init -> void
+eQuantic.UI.Code.CodeRow.Line.get -> int
+eQuantic.UI.Code.CodeRow.Line.init -> void
+eQuantic.UI.Code.CodeRow.Count.get -> int
+eQuantic.UI.Code.CodeRow.Count.init -> void
+eQuantic.UI.Code.CodeRow.SourceLine.get -> int
+eQuantic.UI.Code.CodeRow.SourceLine.init -> void
+eQuantic.UI.Code.CodeRowKind.Filler = 1 -> eQuantic.UI.Code.CodeRowKind
+eQuantic.UI.Code.CodeRowKind.Placeholder = 2 -> eQuantic.UI.Code.CodeRowKind
+eQuantic.UI.Code.CodeRowKind
+eQuantic.UI.Code.CodeRowKind.Line = 0 -> eQuantic.UI.Code.CodeRowKind
+eQuantic.UI.Code.CodeRows.LineCount.get -> int
+eQuantic.UI.Code.CodeRows.RowCount.get -> int
+eQuantic.UI.Code.CodeRows.RowOf(int line) -> int
+eQuantic.UI.Code.CodeRows.IsVisible(int line) -> bool
+eQuantic.UI.Code.CodeRows.RowAt(int row) -> eQuantic.UI.Code.CodeRow
+eQuantic.UI.Code.CodeRows.LineAtRow(int row) -> int
+eQuantic.UI.Code.CodeRows
+eQuantic.UI.Code.CodeRows.CodeRows(int lineCount, System.Collections.Generic.IReadOnlyList<eQuantic.UI.Code.CodeFiller>! fillers, System.Collections.Generic.IReadOnlyList<eQuantic.UI.Code.CodeCollapse>! collapses) -> void
+eQuantic.UI.Code.CodeDecorationKind.Line = 5 -> eQuantic.UI.Code.CodeDecorationKind
+eQuantic.UI.Code.CodeRows.LinesIn(int first, int last) -> (int First, int Last)
+eQuantic.UI.Code.CodeRows.SourceLinesIn(int first, int last) -> (int First, int Last)

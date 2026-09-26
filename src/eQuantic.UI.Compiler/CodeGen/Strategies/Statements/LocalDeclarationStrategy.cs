@@ -57,6 +57,12 @@ public class LocalDeclarationStrategy : IStatementStrategy
     private static string Annotation(LocalDeclarationStatementSyntax decl, VariableDeclaratorSyntax variable,
         ConversionContext context)
     {
+        // Plain JavaScript carries no annotation, and every branch below writes one. The design host
+        // compiles with none and inlines the modules as one script, with nothing to strip a `: T`
+        // from it: `string? label = null` was written `let label: string | null = null`, and the
+        // preview did not load.
+        if (!context.TypeAnnotations) return "";
+
         // A local holding a vocabulary ENUM. TypeScript widens `command ? 'dataEdge' : 'cell'` to
         // `string`, and `string` is wider than the slot this local is on its way to — the keymaps
         // were the first to hit it, choosing a motion and handing it to the controller.
@@ -106,9 +112,70 @@ public class LocalDeclarationStrategy : IStatementStrategy
             return "";
         }
 
+        if (!decl.Declaration.Type.IsVar && StartsNull(decl, variable, context)
+            && StartingNullAnnotation(decl, context) is { } startsNull)
+            return startsNull;
+
         if (decl.Declaration.Type.IsVar || variable.Initializer is null) return "";
 
         return DeclaredTypeAnnotation(decl, variable.Initializer.Value, context);
+    }
+
+    /// <summary>
+    /// Whether the local STARTS as null: initialized with <c>null</c>, or with <c>default</c> of a
+    /// type that holds a null, or declared nullable with no initializer (which this strategy writes
+    /// as <c>= null</c>). A local with no initializer and a type that holds no null is definitely
+    /// assigned before C# lets anything read it, and is not one.
+    /// </summary>
+    private static bool StartsNull(LocalDeclarationStatementSyntax decl, VariableDeclaratorSyntax variable,
+        ConversionContext context)
+    {
+        if (variable.Initializer is null) return decl.Declaration.Type is NullableTypeSyntax;
+        var value = variable.Initializer.Value;
+        if (value.IsKind(SyntaxKind.NullLiteralExpression)) return true;
+        if (!value.IsKind(SyntaxKind.DefaultLiteralExpression) && value is not DefaultExpressionSyntax) return false;
+        return context.SemanticHelper.GetType(decl.Declaration.Type) is { } type
+            && (type.IsReferenceType || type.OriginalDefinition.SpecialType == SpecialType.System_Nullable_T);
+    }
+
+    /// <summary>
+    /// The annotation of a local that starts as null (see <see cref="StartsNull"/>): its declared type,
+    /// with the null it holds. TypeScript has nothing to infer from a null: it types <c>let path =
+    /// null</c> as it goes, and a closure that reads it sees <c>any</c>, which the runtime's own build
+    /// refuses; the patch reader resets its paths from a local function and was the first to hit it.
+    /// Null, and no annotation, for a type TypeScript cannot name here: a type parameter, and what
+    /// maps to <c>any</c>. An enum crosses as the union its members lower to, the vocabulary's
+    /// named one when it has one.
+    /// </summary>
+    private static string? StartingNullAnnotation(LocalDeclarationStatementSyntax decl, ConversionContext context)
+    {
+        var declared = context.SemanticHelper.GetType(decl.Declaration.Type);
+        if (declared is null) return null;
+        var underlying = declared is INamedTypeSymbol { OriginalDefinition.SpecialType: SpecialType.System_Nullable_T } wrapper
+            ? wrapper.TypeArguments[0]
+            : declared;
+        if (underlying is ITypeParameterSymbol) return null;
+
+        string ts;
+        if (underlying is INamedTypeSymbol { TypeKind: TypeKind.Enum } enumType)
+        {
+            if (enumType.GetAttributes().Any(a => a.AttributeClass?.Name == "FlagsAttribute")) ts = "number";
+            else if (CodeGen.TypeScriptEmitter.VocabularyUnionFor(enumType) is { } union)
+            {
+                context.UsedRuntimeTypes.Add(union);
+                ts = union;
+            }
+            else ts = "string";
+        }
+        else ts = CodeGen.TypeScriptEmitter.CSharpTypeToTypeScript(decl.Declaration.Type.ToString());
+
+        if (ts is "any" or "void") return null;
+        if (!ts.EndsWith(" | null", StringComparison.Ordinal)) ts = CodeGen.TypeScriptEmitter.OrNull(ts);
+        // A decimal is the runtime's class, a name the C# never spells: the module imports it only
+        // when something says so.
+        if (System.Text.RegularExpressions.Regex.IsMatch(ts, @"(?<![\w$])Decimal(?![\w$])"))
+            context.UsedRuntimeTypes.Add("Decimal");
+        return $": {ts}";
     }
 
     /// <summary>The TS spelling of a SIMPLE item type, or null when TS has none to write.</summary>

@@ -268,7 +268,7 @@ public class FlutterParityPinTests
             && Has("Adjustable") && Has("Navigable"),
         ["RawGestureDetector"] = () => Nothing("RawGestureDetector"),
         ["FocusNode"] = () => HasMember("Pressable", "InitialFocus") && Nothing("FocusNode", "FocusScope"),
-        ["Shortcuts"] = () => Has("Shortcut") && Has("KeyChord"),
+        ["Shortcuts"] = () => Has("Shortcut") && Has("KeyChord") && HasMember("Shortcut", "FocusScoped"),
         // The controllers are shared; the protocol that drives them is a HOST method.
         ["TextEditingController"] = () => Has("CodeEditorController") && Has("SheetController")
             && HasMember("PhotonHost", "TextInput"),

@@ -167,7 +167,10 @@ public class InvocationStrategy : IExpressionIrStrategy
             // Handle delegate/action Invoke() calls
             if (methodName == "Invoke")
             {
-                return JsExpr.Call(callerIr, argIrs);
+                var proven = ProvenNotNull(context.SemanticHelper.GetSymbol(genAccess.Expression), genAccess.Expression, context);
+                return proven.Length == 0
+                    ? JsExpr.Call(callerIr, argIrs)
+                    : JsExpr.Callish($"{caller}{proven}({string.Join(", ", argIrs.Select(JsExprWriter.Write))})");
             }
 
             // EXTENSION METHOD in reduced form (`node.Also(x => …)`): JS has no extensions, so the
@@ -265,7 +268,7 @@ public class InvocationStrategy : IExpressionIrStrategy
             // ReferenceError the moment the callback runs — long after the page looked fine.
             if (delegateTarget.IsInScopeBinding())
                 return JsExpr.Callish($"{delegateIdentifier.Identifier.Text}({args})");
-            return JsExpr.Callish($"this.{delegateIdentifier.Identifier.Text.ToCamelCase()}({args})");
+            return JsExpr.Callish($"this.{delegateIdentifier.Identifier.Text.ToCamelCase()}{ProvenNotNull(delegateTarget, delegateIdentifier, context)}({args})");
         }
 
         // Direct invocation (Function() -> function())
@@ -455,5 +458,21 @@ public class InvocationStrategy : IExpressionIrStrategy
     /// Types the RUNTIME provides a hand-written twin for — the shared vocabulary. Same rule the
     /// object-creation and <c>with</c> paths use.
     /// </summary>
+    /// <summary>
+    /// A TypeScript non-null assertion for a nullable delegate MEMBER that C# proved not null where it
+    /// is called, and nothing otherwise. C#'s flow analysis reads a lambda with the state where the
+    /// lambda is written, and TypeScript does not carry a property's narrowing into a closure, so
+    /// <c>OnSelect is null ? null : () => OnSelect(i)</c> was a possibly-null call to one and a proved
+    /// one to the other. A parameter or a local TypeScript narrows itself, and plain JavaScript
+    /// carries no assertion.
+    /// </summary>
+    private static string ProvenNotNull(ISymbol? target, ExpressionSyntax read, ConversionContext context) =>
+        context.TypeAnnotations
+        && target is IPropertySymbol { NullableAnnotation: NullableAnnotation.Annotated }
+            or IFieldSymbol { NullableAnnotation: NullableAnnotation.Annotated }
+        && context.SemanticHelper.ProvedNotNull(read)
+            ? "!"
+            : "";
+
     public int Priority => 1; // Lowest priority (fallback)
 }

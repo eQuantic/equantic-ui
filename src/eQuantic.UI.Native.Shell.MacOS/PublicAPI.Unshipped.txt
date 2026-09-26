@@ -1,1 +1,4 @@
 #nullable enable
+static eQuantic.UI.Native.Shell.MacOS.MacKeys.NameOf(ushort keyCode, string! characters) -> string!
+static eQuantic.UI.Native.Shell.MacOS.MacKeys.IsFunctionKey(ushort keyCode) -> bool
+eQuantic.UI.Native.Shell.MacOS.MacKeys

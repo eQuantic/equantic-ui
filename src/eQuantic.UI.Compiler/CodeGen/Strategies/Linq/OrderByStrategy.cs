@@ -59,12 +59,16 @@ public class OrderByStrategy : IConversionStrategy
         var src = context.Converter.ConvertExpression(source);
         if (keys.Count == 0) return $"[...{src}].sort()";
 
+        // The key selector is typed through the comparator's own parameter, which the sorted array
+        // types. Alone in `const _k = (filler) => …` nothing gave the lambda a type, and the
+        // runtime's own build refused the implicit any; plain JavaScript carries no annotation.
+        var keyType = context.TypeAnnotations ? ": (x: typeof a) => any" : "";
         var body = new System.Text.StringBuilder();
         foreach (var (selector, descending) in keys)
         {
             var lt = descending ? "1" : "-1";
             var gt = descending ? "-1" : "1";
-            body.Append($"{{ const _k = {selector}; const _a = _k(a), _b = _k(b); ");
+            body.Append($"{{ const _k{keyType} = {selector}; const _a = _k(a), _b = _k(b); ");
             body.Append($"if (_a < _b) return {lt}; if (_a > _b) return {gt}; }} ");
         }
         body.Append("return 0;");

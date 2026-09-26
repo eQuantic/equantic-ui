@@ -4,7 +4,7 @@ export class RadioGroup extends StatelessComponent {
     static $typeId = 'eQuantic.UI.Components.RadioGroup';
     declare options: string[];
     declare selected: number;
-    declare onChanged: any;
+    declare onChanged: ((int: number) => void) | null;
     declare label: any;
     declare disabled: boolean;
 
@@ -35,12 +35,12 @@ export class RadioGroup extends StatelessComponent {
             let row = new Row(12, 'start', 'center', false, null, null, { cross: 'center', width: SizeValue.fill, height: 44 });
             row.add(circle);
             row.add(new Text(this.options[i], 'bodyM', this.disabled ? theme.textMuted : theme.textPrimary, 1));
-            options.add(new Pressable(row, this.disabled || this.onChanged == null || isSelected ? null : () => this.onChanged(index), { disabled: this.disabled, label: this.options[i], role: 'radio', selected: isSelected }));
+            options.add(new Pressable(row, this.disabled || this.onChanged == null || isSelected ? null : () => this.onChanged!(index), { disabled: this.disabled, label: this.options[i], role: 'radio', selected: isSelected }));
         }
         let group: VisualNode = options;
         if (!this.disabled && !(this.onChanged == null) && this.options.length > 0) {
             let count = this.options.length;
-            group = new Adjustable(options, (direction: number) => this.onChanged($eq.num.intRem(this.selected + direction + count, count)), { role: 'radiogroup', label: this.label ?? '' });
+            group = new Adjustable(options, (direction: number) => this.onChanged!($eq.num.intRem(this.selected + direction + count, count)), { role: 'radiogroup', label: this.label ?? '' });
         }
         let column = new Column(4, 'start', 'stretch', false, null, null, { width: SizeValue.fill });
         let groupLabel: any; 

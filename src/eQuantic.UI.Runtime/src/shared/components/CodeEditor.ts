@@ -22,7 +22,7 @@ export class CodeEditor extends StatefulComponent {
     declare initialCode: string;
     declare languageName: any;
     declare onChanged: ((string: string) => void) | null;
-    declare onSelectionChanged: any;
+    declare onSelectionChanged: ((codeRange: CodeRange) => void) | null;
     declare showLineNumbers: boolean;
     declare firstLineNumber: number;
     declare height: SizeValue;
@@ -37,7 +37,7 @@ export class CodeEditor extends StatefulComponent {
     declare matchBrackets: boolean;
     declare search: any;
     declare searchMatchCase: boolean;
-    declare onGutterPressed: any;
+    declare onGutterPressed: ((int: number) => void) | null;
 
     get editor() {
         return this._editor ?? (this._editor = this.create());
@@ -102,7 +102,6 @@ export class CodeEditor extends StatefulComponent {
             } }));
         }
         surface = new Box(new BoxStyle({ width: SizeValue.fill, height: bounded ? SizeValue.fill : SizeValue.hug, background: CodeBlock.surfaceFor(this.inverse, context.theme), cornerRadius: new CornerRadii(context.theme.shape('medium')), clip: true }), viewport);
-        surface = new Shortcut(surface, new KeyChord('f', 4), () => this.setState(() => this._findOpen = true));
         let capped = bounded && this.maxHeight > 0;
         let layers = new Stack('topStart', { width: SizeValue.fill, height: SizeValue.fill });
         layers.add(surface);
@@ -112,7 +111,8 @@ export class CodeEditor extends StatefulComponent {
             let found = this._findText.length > 0 ? matches : [];
             layers.add(new Positioned(new Shortcut(this.findBar(context, editor, found), KeyChord.escape, () => this.closeFind(editor)), 8, 8));
         }
-        return new Box(new BoxStyle({ width: SizeValue.fill, height: this.height, maxHeight: capped ? SizeValue.fixed(this.maxHeight) : SizeValue.hug }), layers);
+        let findable = new Shortcut(layers, new KeyChord('f', 4), () => this.setState(() => this._findOpen = true), { focusScoped: true });
+        return new Box(new BoxStyle({ width: SizeValue.fill, height: this.height, maxHeight: capped ? SizeValue.fixed(this.maxHeight) : SizeValue.hug }), findable);
     }
 
     create() {

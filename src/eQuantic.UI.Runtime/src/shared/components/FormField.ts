@@ -24,7 +24,7 @@ export class FormField {
     }
 
     get relevant(): boolean {
-        return this._relevantWhen == null || this._relevantWhen();
+        return this._relevantWhen == null || this._relevantWhen!();
     }
 
     declare error: string | null;

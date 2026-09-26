@@ -413,11 +413,6 @@ public sealed class CodeEditor : StatefulComponent
             Clip = true,
         }, viewport);
 
-        // ⌘F is UI, not a model command, so it is not in the keymap: it is a chord that is live
-        // because this subtree is on screen, which is what Shortcut already means.
-        surface = new Shortcut(surface, new KeyChord("f", KeyModifiers.Command),
-            () => SetState(() => _findOpen = true));
-
         // THE LAYERS, always: the code first, then its caption in the corner, then the find bar over
         // both. The code is the first layer whether or not anything is over it, so it keeps its place
         // in the tree. Opening find used to wrap it in a Stack it did not have before, which made it
@@ -442,12 +437,19 @@ public sealed class CodeEditor : StatefulComponent
             layers.Add(new Positioned(new Shortcut(FindBar(context, editor, found), KeyChord.Escape,
                 () => CloseFind(editor)), top: Space.S2, end: Space.S2));
         }
+        // ⌘F is UI, not a model command, so it is not in the keymap: a chord of this editor's own,
+        // answered while the keyboard is in it (the code, the caption or the bar), so that of two
+        // editors on one page the one in use opens its find. Page-wide, the last editor mounted took
+        // it wherever the keyboard was. Around the layers whether the bar is open or not, so
+        // nothing under it moves in the tree.
+        var findable = new Shortcut(layers, new KeyChord("f", KeyModifiers.Command),
+            () => SetState(() => _findOpen = true)) { FocusScoped = true };
         return new Box(new BoxStyle
         {
             Width = SizeValue.Fill,
             Height = Height,
             MaxHeight = capped ? SizeValue.Fixed(MaxHeight) : SizeValue.Hug,
-        }, layers);
+        }, findable);
     }
 
     /// <summary>Closes the bar and gives the code the keyboard back, which is where it came from

@@ -26,7 +26,8 @@ export type CodeCompletionKindValue =
   'text' | 'method' | 'function' | 'constructor' | 'field' | 'variable' | 'class' | 'interface'
   | 'module' | 'property' | 'enum' | 'keyword' | 'snippet' | 'file';
 
-export type CodeDecorationKindValue = 'highlight' | 'squiggle' | 'outline' | 'strike' | 'underline';
+export type CodeDecorationKindValue =
+  'highlight' | 'squiggle' | 'outline' | 'strike' | 'underline' | 'line';
 
 export type CodeDiagnosticSeverityValue = 'hint' | 'information' | 'warning' | 'error';
 
@@ -38,6 +39,10 @@ export type CodeGutterKindValue =
 
 export type CodeMotionValue =
   'character' | 'word' | 'line' | 'lineBoundary' | 'documentBoundary' | 'page';
+
+export type CodePatchLineKindValue = 'context' | 'removed' | 'added';
+
+export type CodeRowKindValue = 'line' | 'filler' | 'placeholder';
 
 export type CodeTokenKindValue =
   'plain' | 'keyword' | 'type' | 'string' | 'number' | 'comment' | 'operator' | 'punctuation'

@@ -4,7 +4,7 @@ export class Tabs extends StatelessComponent {
     static $typeId = 'eQuantic.UI.Components.Tabs';
     declare labels: string[];
     declare selected: number;
-    declare onSelect: any;
+    declare onSelect: ((int: number) => void) | null;
 
     constructor(labels?: any, selected?: any, onSelect: any = null, props?: any) {
         super();
@@ -31,11 +31,11 @@ export class Tabs extends StatelessComponent {
             let cell = new Column(0, 'start', 'stretch', false, null, null, { height: SizeValue.fill });
             cell.add(new Flexible(labelRow));
             cell.add(new Box(new BoxStyle({ width: SizeValue.fill, height: 3, padding: EdgeInsets.symmetric(16, 0) }), isActive ? new Box(new BoxStyle({ width: SizeValue.fill, height: 3, background: primary.base, cornerRadius: new CornerRadii(2, 2, 0, 0) })) : null));
-            row.add(new Flexible(new Pressable(cell, this.onSelect == null ? null : () => this.onSelect(index), { label: this.labels[i], pressedBackground: theme.surfaceSubtle, role: 'tab', selected: isActive })));
+            row.add(new Flexible(new Pressable(cell, this.onSelect == null ? null : () => this.onSelect!(index), { label: this.labels[i], pressedBackground: theme.surfaceSubtle, role: 'tab', selected: isActive })));
         }
         if (this.onSelect == null || this.labels.length === 0) return row;
         let count = this.labels.length;
-        return new Adjustable(row, (direction: number) => this.onSelect($eq.num.intRem(this.selected + direction + count, count)), { role: 'tablist' });
+        return new Adjustable(row, (direction: number) => this.onSelect!($eq.num.intRem(this.selected + direction + count, count)), { role: 'tablist' });
     }
 }
 

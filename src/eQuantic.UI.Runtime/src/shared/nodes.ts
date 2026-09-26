@@ -185,6 +185,8 @@ export interface ShortcutNode extends VisualNodeValue {
   child: VisualNodeValue;
   chord: KeyChordValue;
   onPressed?: (() => void) | null;
+  /** Only while the keyboard focus is inside this subtree (C# `Shortcut.FocusScoped`). */
+  focusScoped?: boolean;
 }
 
 /** Spec S4 — the 2D grid container (auto-flow, explicit column tracks). */

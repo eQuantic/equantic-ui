@@ -125,7 +125,7 @@ public class TypeScriptEmitter
     /// other runtime-backed type is spelled the same in both languages, so the type scan sees the
     /// name in the syntax and routes the import itself. This one the TRANSLATION invents, and a
     /// name no walk can see is a name no import covers.</summary>
-    private const string Decimal = "Decimal";
+    internal const string Decimal = "Decimal";
 
     /// <summary>Runtime names an ANNOTATION introduced — same contract as
     /// <see cref="_hydrationReferences"/>, and merged into the import candidates beside it.</summary>
@@ -354,7 +354,7 @@ public class TypeScriptEmitter
                 // shared by every `Row` in every namespace, and alive only while no bundler minified
                 // identifiers (#278).
                 if (component.TypeIdentity.Length > 0)
-                    c.Field("$typeId", null, $"'{component.TypeIdentity.Replace("\\", "\\\\").Replace("'", "\\'")}'", null, isStatic: true);
+                    c.Field("$typeId", null, JsStringLiteral.Quote(component.TypeIdentity), null, isStatic: true);
 
                 // Component-level fields (static data / consts / instance fields), emitted at the top of
                 // the class. Skipped for primitives' INSTANCE fields, whose base ctor sets every prop via
@@ -1378,10 +1378,13 @@ public class TypeScriptEmitter
         if (IntrinsicTsTypes.Contains(ts)) return true;
 
         // A composite (`(x: Foo) => void`, `Record<string, any>`): every identifier inside must resolve.
+        // A parameter's NAME inside a function type is a label and not a type, so a name followed by
+        // its colon is left out: `value` in `(value: Point) => string | null` resolved nothing, the
+        // whole parameter degraded to `any`, and every lambda passed to it was an implicit any.
         if (ts.Contains('<') || ts.Contains("=>") || ts.Contains('('))
         {
             var names = System.Text.RegularExpressions.Regex
-                .Matches(ts, @"[A-Za-z_][A-Za-z0-9_]*")
+                .Matches(ts, @"\b[A-Za-z_][A-Za-z0-9_]*\b(?!\s*\??:)")
                 .Select(m => m.Value)
                 .Where(n => n is not ("void" or "Record"));
             return names.All(n => IsResolvableTsName(component, n));
@@ -1838,7 +1841,7 @@ public class TypeScriptEmitter
         var mbody = MethodBody(m.Body, m.ExpressionBody?.Expression, isIterator, byReference, isAsync);
         var modifiers = (m.Modifiers.Any(Microsoft.CodeAnalysis.CSharp.SyntaxKind.StaticKeyword) || asStatic ? "static " : "")
             + (isAsync ? "async " : "");
-        c.Member(JsClassMember.Method(modifiers, mn, generics, pars, "", mbody), m);
+        c.Member(JsClassMember.Method(modifiers, mn, generics, pars, TupleReturn(m.ReturnType), mbody), m);
     }
 
     /// <summary>A vocabulary default the class takes from the interface's ASSEMBLY, where eqc has no
@@ -1999,7 +2002,7 @@ public class TypeScriptEmitter
                         if (method.Body == null && method.ExpressionBody == null) break;
                         var body = MethodBody(method.Body, method.ExpressionBody?.Expression, isIterator: false, [], isAsync);
                         c.Member(JsClassMember.Method("static " + (isAsync ? "async " : ""), method.Identifier.Text.ToCamelCase(), "",
-                            WithReceiver(pars), "", body), method);
+                            WithReceiver(pars), TupleReturn(method.ReturnType), body), method);
                         break;
                     }
 
@@ -2200,12 +2203,18 @@ public class TypeScriptEmitter
             null when echoed && !Resolvable(mapped) => "any",
             _ => mapped,
         };
-        // A function type has to be PARENTHESISED before a union, or the `| null` binds to its
-        // RETURN: `(e: Edit) => void | null` says the handler may return null, not that the
-        // handler itself may be absent.
         if (!nullable || core == "any") return core;
-        return core.Contains("=>") ? $"({core}) | null" : $"{core} | null";
+        return OrNull(core);
     }
+
+    /// <summary>
+    /// <paramref name="type"/> or null. A function type is PARENTHESISED before the union, or the
+    /// `| null` binds to its RETURN: `(e: Edit) => void | null` says the handler may return null, not
+    /// that the handler itself may be absent. Every emitter writes a nullable union through here: the
+    /// record path wrote its own, and a record's `Func&lt;int, string&gt;? foldLabel` came out a
+    /// function that returns null rather than a function that may be missing.
+    /// </summary>
+    internal static string OrNull(string type) => type.Contains("=>") ? $"({type}) | null" : $"{type} | null";
 
     /// <summary>
     /// A type and every type argument BELOW it, to any depth — `IReadOnlyList&lt;NavigableMove&gt;`
@@ -2522,8 +2531,8 @@ public class TypeScriptEmitter
             var body = MethodBody(method.SyntaxNode.Body, method.SyntaxNode.ExpressionBody?.Expression, isIterator, byReference, isAsync);
             var generics = method.TypeParameters is { } typeParameters && typeParameters.Any()
                 ? $"<{string.Join(", ", typeParameters)}>" : "";
-            c.Member(JsClassMember.Method((method.IsStatic ? "static " : "") + asyncPrefix, methodName, generics, parameters, "",
-                body), method.SyntaxNode);
+            c.Member(JsClassMember.Method((method.IsStatic ? "static " : "") + asyncPrefix, methodName, generics, parameters,
+                TupleReturn(method.SyntaxNode.ReturnType), body), method.SyntaxNode);
         }
         else
         {
@@ -2539,6 +2548,21 @@ public class TypeScriptEmitter
         }
     }
     
+    /// <summary>
+    /// The return annotation of a method that returns a TUPLE, and nothing for any other: a tuple
+    /// crosses as an array literal, which TypeScript reads as an array of the union of its elements,
+    /// so a pair of lists of different things destructured into two lists of either and the
+    /// runtime's own build refused every use of them. Every other return is left to inference,
+    /// which reads the value it returns right. A nullable tuple may be null. Written the way a
+    /// declared type is, which asks what each element IS: an enum among them crosses as its member
+    /// string, where the name alone wrote its C# spelling, a type TypeScript does not have.
+    /// </summary>
+    private string TupleReturn(TypeSyntax returnType) =>
+        TypeAnnotations && returnType is TupleTypeSyntax or NullableTypeSyntax { ElementType: TupleTypeSyntax }
+            && DeclaredType(returnType) is var annotation && annotation != "any"
+            ? $": {annotation}"
+            : "";
+
     /// <summary>
     /// Drops NAMESPACE qualification from a type name, keeping generics and arrays intact:
     /// <c>global::eQuantic.UI.Primitives.VisualNode</c> → <c>VisualNode</c>,
@@ -2592,7 +2616,7 @@ public class TypeScriptEmitter
                         text = text[..lastSpace];
                     return CSharpTypeToTypeScript(text.Trim());
                 });
-                return $"[{string.Join(", ", elements)}]" + string.Concat(Enumerable.Repeat("[]", arrayDepth));
+                return Nullable($"[{string.Join(", ", elements)}]" + string.Concat(Enumerable.Repeat("[]", arrayDepth)));
             }
         }
         
@@ -2609,7 +2633,7 @@ public class TypeScriptEmitter
                 arrayDepth++;
                 element = element[..^2].Trim();
             }
-            return CSharpTypeToTypeScript(element) + string.Concat(Enumerable.Repeat("[]", arrayDepth));
+            return Nullable(ArrayOf(CSharpTypeToTypeScript(element), arrayDepth));
         }
 
         if (baseType.StartsWith("Nullable<") && baseType.EndsWith(">"))
@@ -2652,7 +2676,7 @@ public class TypeScriptEmitter
         // and, worse, a lie in an app's editor.
         if (SequenceOf(tsType) is { } sequenceItem)
         {
-            tsType = $"{CSharpTypeToTypeScript(sequenceItem)}[]";
+            tsType = ArrayOf(CSharpTypeToTypeScript(sequenceItem), 1);
         }
         else if (SetOf(tsType) is { } setItem)
         {
@@ -2704,14 +2728,27 @@ public class TypeScriptEmitter
             tsType = "Record<string, any>";
         }
 
+        return Nullable(tsType);
+
         // A NULLABLE C# type is nullable in TypeScript too. The flag was computed and then dropped,
         // so `Action?` annotated as `() => void` and passing the null its own signature invites was
         // a type error. A function type needs the parentheses: `() => void | null` parses as a
-        // function RETURNING `void | null`.
-        if (isNullable && tsType is not ("any" or "void"))
-            tsType = tsType.Contains("=>") ? $"({tsType}) | null" : $"{tsType} | null";
+        // function RETURNING `void | null`. The tuple and array forms answer early, and answer
+        // through here too: `(int, int)?` was annotated as a tuple that is never null.
+        string Nullable(string mapped) =>
+            !isNullable || mapped is "any" or "void" ? mapped : OrNull(mapped);
+    }
 
-        return tsType;
+    /// <summary>
+    /// An array of <paramref name="element"/>, <paramref name="depth"/> deep. TypeScript binds `[]`
+    /// tighter than `|` and `=>`, so an element that is a union or a function is parenthesized:
+    /// `string | null[]` is a string or an array of nulls, and `() => void[]` a function returning an
+    /// array. A nullable element is the common case (<c>List&lt;string?&gt;</c>).
+    /// </summary>
+    private static string ArrayOf(string element, int depth)
+    {
+        var bound = element.Contains('|') || element.Contains("=>") ? $"({element})" : element;
+        return bound + string.Concat(Enumerable.Repeat("[]", depth));
     }
 
     /// <summary>Every C# name for an ordered sequence — all of them are a JS array.</summary>
@@ -2789,18 +2826,4 @@ public class TypeScriptEmitter
              _ => "null"
         };
     }
-    
-    private static string EscapeString(string s)
-    {
-        // Backslash MUST be escaped first, otherwise it would double-escape the
-        // sequences introduced below. Output is wrapped in single quotes by callers.
-        return s
-            .Replace("\\", "\\\\")
-            .Replace("'", "\\'")
-            .Replace("\"", "\\\"")
-            .Replace("\r", "\\r")
-            .Replace("\n", "\\n")
-            .Replace("\t", "\\t");
-    }
-    
 }
