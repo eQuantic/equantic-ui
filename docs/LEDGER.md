@@ -730,6 +730,18 @@ record of a release, the wiki's Upgrading page is the distillate.
   words where it built an invalid date. 38 of the 44 conformance cases failed before the port.
   Measured and left to its own issue: `Add(TimeSpan)`, the operators, `AddMonths` and `AddYears`
   at the calendar's edge ([#424](https://github.com/eQuantic/equantic-ui/issues/424)).
+- **2026-09-26 · The wiki moves with its pull request**: CI cloned the wiki's master for every run, so
+  a pull request that added a diagnostic failed its own docs guard until its rows were published,
+  and every other pull request failed the same guard once they were: #386's EQ1007 rows went to
+  master early on 2026-09-24 and had to be taken back out, and #418 met the same wall with EQ1008
+  ([#406](https://github.com/eQuantic/equantic-ui/issues/406)). `scripts/checkout-wiki.sh` now reads
+  the wiki at the branch named like the pull request's own when there is one, and master otherwise,
+  failing rather than guessing when the branches cannot be listed; a `wiki-checkout` job runs its
+  self-test against a fixture wiki, and the Workflow section says the wiki branch merges into master
+  with its pull request. Locally every guard now finds the wiki through one locator, which reads
+  `EQ_WIKI_DIR` for a worktree of a pull request's wiki branch (checking a branch out in the shared
+  clone had made #354's guards fail on #418's rows), fails when the variable names no wiki, and names
+  the directory, branch and commit a failing guard read.
 
 ## Retired documents
 

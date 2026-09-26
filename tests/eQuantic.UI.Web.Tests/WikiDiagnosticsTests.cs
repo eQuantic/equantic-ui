@@ -30,10 +30,11 @@ namespace eQuantic.UI.Web.Tests;
 /// </para>
 ///
 /// <para>
-/// The wiki is a separate repository, cloned beside this one by CI. On a developer's machine
-/// without it the guard skips; under <c>GITHUB_ACTIONS</c> the absence is the clone having failed,
-/// and a guard passing over nothing is the silence it exists to remove — the same rule its two
-/// siblings use.
+/// The wiki is a separate repository, found by <see cref="WikiClone"/>: CI clones it beside this
+/// one at the pull request's own wiki branch, and a local run may name a worktree in
+/// <c>EQ_WIKI_DIR</c>. On a developer's machine without it the guard skips; under
+/// <c>GITHUB_ACTIONS</c> the absence is the clone having failed, and a guard passing over nothing is
+/// the silence it exists to remove — the same rule its two siblings use.
 /// </para>
 /// </summary>
 public class WikiDiagnosticsTests
@@ -42,19 +43,6 @@ public class WikiDiagnosticsTests
     private static readonly Regex Row = new(@"(?m)^\|\s*`(?<code>EQ\d{4})`\s*\|", RegexOptions.Compiled);
 
     private static readonly string? Root = LocateRoot();
-    private static readonly string? Wiki = LocateWiki();
-
-    /// <summary>CI clones the wiki beside the repo; a checkout without it there is a failed clone, not a choice.</summary>
-    private static readonly bool WikiExpected = Environment.GetEnvironmentVariable("GITHUB_ACTIONS") == "true";
-
-    private static bool NoWikiHere()
-    {
-        if (Wiki is not null) return false;
-        WikiExpected.Should().BeFalse(
-            "CI clones equantic-ui.wiki beside this repository (ci.yml, 'Check out the wiki'), and it is not "
-            + "there — the clone failed, and this guard would pass having read no page");
-        return true;
-    }
 
     private static SortedSet<string> CodesIn(string path) =>
         new(Row.Matches(File.ReadAllText(path)).Select(m => m.Groups["code"].Value), StringComparer.Ordinal);
@@ -62,7 +50,8 @@ public class WikiDiagnosticsTests
     [Fact]
     public void TheWikisDiagnosticsPageCarriesEveryCodeTheDocsDo_InBothLanguages()
     {
-        if (NoWikiHere()) return;
+        if (WikiClone.Absent()) return;
+        var wiki = WikiClone.Location!;
 
         var documented = CodesIn(Path.Combine(Root!, "docs", "DIAGNOSTICS.md"));
         documented.Should().NotBeEmpty("docs/DIAGNOSTICS.md is the source this page mirrors");
@@ -71,8 +60,8 @@ public class WikiDiagnosticsTests
         // would otherwise leave the guard reading an empty set and reporting agreement.
         (string Language, string Path)[] pages =
         [
-            ("English", Path.Combine(Wiki!, "Diagnostics.md")),
-            ("pt-BR", Path.Combine(Wiki!, "locale", "pt-BR", "Diagnostics-pt-BR.md")),
+            ("English", Path.Combine(wiki, "Diagnostics.md")),
+            ("pt-BR", Path.Combine(wiki, "locale", "pt-BR", "Diagnostics-pt-BR.md")),
         ];
 
         var offences = new List<string>();
@@ -105,7 +94,8 @@ public class WikiDiagnosticsTests
         // the rule is that both change in one commit.
         string.Join("\n", offences).Should().BeEmpty(
             "the wiki's Diagnostics page is what a reader sees, and every wiki edit is EN + pt-BR in "
-            + "the same commit — mirror the row from docs/DIAGNOSTICS.md into both pages");
+            + "the same commit — mirror the row from docs/DIAGNOSTICS.md into both pages, on the wiki branch "
+            + $"named like this pull request's, which CI reads (#406). Read from {WikiClone.Describe()}");
     }
 
     private static string? LocateRoot()
@@ -116,10 +106,4 @@ public class WikiDiagnosticsTests
         return here?.FullName;
     }
 
-    private static string? LocateWiki()
-    {
-        if (Root is null) return null;
-        var wiki = Path.Combine(Directory.GetParent(Root)!.FullName, "equantic-ui.wiki");
-        return Directory.Exists(wiki) ? wiki : null;
-    }
 }
