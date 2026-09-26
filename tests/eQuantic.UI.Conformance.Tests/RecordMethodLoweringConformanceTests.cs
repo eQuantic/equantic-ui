@@ -85,6 +85,30 @@ public class RecordMethodLoweringConformanceTests
     [InlineData(
         "public record R(int V) { public T Echo<T>(T x) => x; }",
         "return new R(1).Echo(\"hi\");")]
+    // Found in review (#432): whether a method is async is asked of its return type's symbol, where
+    // the name alone made a method returning a type called TaskItem async. (The harness emits a
+    // prelude's records only; the class and component paths are held in the compiler suite.)
+    [InlineData(
+        "public record TaskItem(int N); public record R(int V) { public TaskItem First() => new TaskItem(V); "
+        + "public TaskItem Next(int d) { return new TaskItem(V + d); } }",
+        "var r = new R(4); return $\"{r.First().N}|{r.Next(2).N}\";")]
+    // A getter that yields fills its buffer, where it wrote `yield` outside a generator.
+    [InlineData(
+        "public record R(int V) { public IEnumerable<int> Items { get { yield return V; yield return V * 2; } } }",
+        "return string.Join(\",\", new R(3).Items);")]
+    // A conversion and a setter bind a pattern's variable too, in both forms.
+    [InlineData(
+        "public record RC(int V) { public static implicit operator int(RC r) => r is { V: var v } ? v * 10 : 0; "
+        + "public static explicit operator RC(string s) { return s is { Length: var n } ? new RC(n) : new RC(0); } "
+        + "public int Seen { get; private set; } "
+        + "public object Last { set => Seen = value is int n ? n : -1; } "
+        + "public object First { set { Seen = value is string t ? t.Length : -2; } } }",
+        "var r = new RC(2); int i = r; var e = (RC)\"abc\"; r.Last = 7; var a = r.Seen; r.First = \"hello\"; "
+        + "return $\"{i}|{e.V}|{a}|{r.Seen}\";")]
+    // A parameter the body never mentions takes the underscore, beside one named with it already.
+    [InlineData(
+        "public record R(int V) { public int Pick(int x, int _x) => V; public int Both(int y, int _y) => _y + V; }",
+        "var r = new R(1); return $\"{r.Pick(5, 6)}|{r.Both(2, 3)}\";")]
     public void ARecordsMember_RunsAsAClasssDoes(string prelude, string statements)
     {
         Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
