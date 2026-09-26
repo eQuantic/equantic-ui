@@ -223,6 +223,14 @@ describe('remove over a dictionary, as ICollection<KeyValuePair<K, V>> removes',
     expect(map.size).toBe(0);
   });
 
+  it('does the same on a plain object, which a primitive-keyed Dictionary is', () => {
+    const dict: Record<string, number> = { a: 1, b: 2 };
+    expect(remove(dict as never, { key: 'b', value: 3 } as never)).toBe(false);
+    expect(remove(dict as never, { key: 'c', value: 2 } as never)).toBe(false);
+    expect(remove(dict as never, { key: 'b', value: 2 } as never)).toBe(true);
+    expect(Object.keys(dict)).toEqual(['a']);
+  });
+
   it('does the same on the sorted dictionary', () => {
     const sorted = sortedDictionary<number, string>();
     sorted.set(1, 'a');

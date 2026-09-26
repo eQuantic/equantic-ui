@@ -45,6 +45,17 @@ public class ListRemoveConformanceTests
     // A SortedSet through its own remove (found in review, #421). A dictionary's pairs are held in the
     // runtime's own spec, since a KeyValuePair built by hand does not cross yet (#433).
     [InlineData("var sorted = new SortedSet<int>(); sorted.Add(3); sorted.Add(1); sorted.Add(2); ICollection<int> c = sorted; return c.Remove(2) + \"|\" + sorted.Count + \"|\" + sorted.Contains(2);")] // "True|2|False"
+    // A Dictionary with a primitive key is a plain object here, and through
+    // ICollection<KeyValuePair<K, V>> it removes the pair whose key it holds with an equal value, a
+    // tuple value compared by value (found in review, #421). Pairs come from a dictionary, since one
+    // built by hand does not cross yet (#433).
+    [InlineData("var dict = new Dictionary<string, int> { [\"a\"] = 1, [\"b\"] = 2 }; var pairs = new List<KeyValuePair<string, int>>(dict); ICollection<KeyValuePair<string, int>> c = dict; return c.Remove(pairs[1]) + \"|\" + dict.Count + \"|\" + dict.ContainsKey(\"b\");")] // "True|1|False"
+    [InlineData("var dict = new Dictionary<string, (int, int)> { [\"a\"] = (1, 2) }; var same = new List<KeyValuePair<string, (int, int)>>(new Dictionary<string, (int, int)> { [\"a\"] = (1, 2) }); var other = new List<KeyValuePair<string, (int, int)>>(new Dictionary<string, (int, int)> { [\"a\"] = (1, 3) }); ICollection<KeyValuePair<string, (int, int)>> c = dict; return c.Remove(other[0]) + \"|\" + c.Remove(same[0]) + \"|\" + dict.Count;")] // "False|True|0"
+    // A list of pairs compares each pair's key and value, as a pair's Equals does.
+    [InlineData("var pairs = new List<KeyValuePair<string, int>>(new Dictionary<string, int> { [\"a\"] = 1, [\"b\"] = 2 }); var copy = new List<KeyValuePair<string, int>>(new Dictionary<string, int> { [\"b\"] = 2, [\"c\"] = 2 }); return pairs.Remove(copy[1]) + \"|\" + pairs.Remove(copy[0]) + \"|\" + pairs.Count;")] // "False|True|1"
+    // A nullable tuple and an anonymous type compare by value too, as EqualityComparer<T>.Default does.
+    [InlineData("var list = new List<(int, int)?> { (1, 2), null }; return list.Remove((1, 2)) + \"|\" + list.Remove(null) + \"|\" + list.Count;")] // "True|True|0"
+    [InlineData("var list = new[] { new { X = 1 }, new { X = 2 } }.ToList(); return list.Remove(new { X = 2 }) + \"|\" + list.Count;")] // "True|1"
     public void ListRemove_AnswersAsDotNet(string statements)
     {
         Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");

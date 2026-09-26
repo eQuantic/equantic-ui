@@ -71,6 +71,9 @@ public class BooleanTextConformanceTests
     [InlineData("int n = 0; IFormatProvider P() { n++; return null; } object o = 1; var b = Convert.ToBoolean(o, P()); return b + \"|\" + n;")] // "True|1"
     [InlineData("var order = \"\"; string V() { order += \"v\"; return \"true\"; } IFormatProvider P() { order += \"p\"; return null; } Convert.ToBoolean(V(), P()); return order;")] // "vp"
     [InlineData("IFormatProvider P() => throw new InvalidOperationException(\"provider\"); try { return Convert.ToBoolean(\"true\", P()).ToString(); } catch (InvalidOperationException e) { return e.Message; }")] // "provider"
+    // In the order the arguments are written, which a named argument may reverse (found in review, #421).
+    [InlineData("var order = \"\"; string V() { order += \"v\"; return \"true\"; } IFormatProvider P() { order += \"p\"; return null; } Convert.ToBoolean(provider: P(), value: V()); return order;")] // "pv"
+    [InlineData("var order = \"\"; object O() { order += \"v\"; return 1; } IFormatProvider P() { order += \"p\"; return null; } var b = Convert.ToBoolean(provider: P(), value: O()); return order + b;")] // "pvTrue"
     public void ConvertToBoolean_TakesEachOverloadAsDotNet(string statements)
     {
         Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
