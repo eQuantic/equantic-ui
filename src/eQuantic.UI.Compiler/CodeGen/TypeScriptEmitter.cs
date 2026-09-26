@@ -2531,9 +2531,10 @@ public class TypeScriptEmitter
                 $"{(arguments.Count == 2 ? "value" : "arg" + (index + 1))}: {CSharpTypeToTypeScript(argument)}");
             tsType = $"({string.Join(", ", parameters)}) => {result}";
         }
-        // A dictionary is the runtime's dictionary class, which no `Record` describes; every
-        // dictionary type degrades to `any` alike, as an IDictionary already did.
-        else if (tsType.StartsWith("Dictionary<") && tsType.EndsWith(">"))
+        // A dictionary is the runtime's dictionary class, which no `Record` describes, so every
+        // name for one degrades to `any` alike: the interfaces and the sorted ones reached
+        // TypeScript verbatim, naming types that exist nowhere there.
+        else if (IsDictionaryName(tsType))
         {
             tsType = "any";
         }
@@ -2558,6 +2559,10 @@ public class TypeScriptEmitter
 
     /// <summary>The set family — a JS Set.</summary>
     private static string? SetOf(string tsType) => Unwrap(tsType, ["HashSet<", "ISet<", "IReadOnlySet<"]);
+
+    /// <summary>Every C# name for a dictionary: each is a runtime dictionary class on this side.</summary>
+    private static bool IsDictionaryName(string tsType) =>
+        Unwrap(tsType, ["Dictionary<", "IDictionary<", "IReadOnlyDictionary<", "SortedDictionary<", "SortedList<"]) is not null;
 
     private static string? Unwrap(string tsType, string[] prefixes)
     {

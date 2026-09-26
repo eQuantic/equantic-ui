@@ -116,6 +116,24 @@ public class DictionaryStrategyTests
         converted.Should().Contain(js);
     }
 
+    /// <summary>Every name for a dictionary annotates as `any`: the interfaces and the sorted ones
+    /// reached TypeScript verbatim, naming types that exist nowhere there (found in review, #443).</summary>
+    [Fact]
+    public void EveryDictionaryTypeName_AnnotatesAsAny()
+    {
+        var ts = TestHelper.ConvertClass("""
+            public IDictionary<string, int> A { get; set; } = new Dictionary<string, int>();
+            public IReadOnlyDictionary<string, int> B { get; set; } = new Dictionary<string, int>();
+            public SortedDictionary<string, int> C { get; set; } = new();
+            public SortedList<string, int> D { get; set; } = new();
+            public Dictionary<string, int> E { get; set; } = new();
+            public int Total(IReadOnlyDictionary<string, int> map, SortedList<string, int> sorted) => map.Count + sorted.Count;
+            """, "Holder");
+        foreach (var name in new[] { "IDictionary<", "IReadOnlyDictionary<", "SortedDictionary<", "SortedList<", "Dictionary<", "Record<" })
+            ts.Should().NotContain(name);
+        ts.Should().Contain("map: any").And.Contain("sorted: any");
+    }
+
     /// <summary>A comparer decides how keys compare, which the runtime classes take from eqc alone.</summary>
     [Fact]
     public void AComparer_IsRefused()
