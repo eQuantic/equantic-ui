@@ -21,3 +21,9 @@
 - [x] 4.1 Add the `docs/LEDGER.md` line citing #388
 - [x] 4.2 Update the wiki's SupportedFeatures page, English and Portuguese, on a wiki branch named like this pull request's
 - [x] 4.3 Archive this change before the merge
+
+## 5. Review
+
+- [x] 5.1 Route the short and long date and time strings to the formatter
+- [x] 5.2 Ask for the invariant culture's names with no culture in force, and build the fraction and the sortable parts only where they are written
+- [x] 5.3 File what the review found outside this change: #469, #470, #471, and a note on #454

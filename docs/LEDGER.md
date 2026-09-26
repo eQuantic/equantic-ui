@@ -837,7 +837,8 @@ record of a release, the wiki's Upgrading page is the distillate.
   number's does, its provider read through `NamedCulture`. Measured on the way, the formatter wrote the
   round-trip and sortable forms from `toISOString()`, UTC, so a page off UTC shifted the hour; it had no
   `R`, `u` or `U`; a custom picture replaced six tokens by text (`d/M/yyyy` printed `d/M/2026`); and with
-  no culture in force a date took `Intl`'s en-US presets. Each is fixed, and the cross-pinned fixture now
+  no culture in force a date took `Intl`'s en-US presets and the host's names. Each is fixed, the short
+  and long date and time strings go the same way, and the cross-pinned fixture now
   carries every date specifier the resx subset admits. A new conformance class fails all 10 of its cases
   on the base.
 

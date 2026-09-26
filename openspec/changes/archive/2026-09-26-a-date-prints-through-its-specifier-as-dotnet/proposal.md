@@ -25,8 +25,12 @@ replaced six tokens by text, so `d/M/yyyy` printed `d/M/2026` and `dd MMM yyyy` 
   names, and `U` from the value read as local time and moved to UTC.
 - **A custom picture is drawn as a culture's own patterns are**, with the fraction of a second
   (`f`, `F`, exact from a DateTime's ticks), `K`, `%` and quoted text.
+- **`ToShortDateString`, `ToLongDateString`, `ToShortTimeString` and `ToLongTimeString`** are the
+  specifiers `d`, `D`, `t` and `T` by another name, and go the same way; each was a call to a twin
+  method that does not exist (found in review).
 - **With no culture in force, a date takes the invariant patterns**, as a number's text does,
-  where `Intl`'s en-US presets printed `9/24/26`. And a year below 100 stays itself, where `Date`
+  where `Intl`'s en-US presets printed `9/24/26`, and the invariant names, where the host's locale
+  wrote a Portuguese machine's names into the invariant layout (found in review). And a year below 100 stays itself, where `Date`
   read it as 1900 plus it.
 
 ## Impact
