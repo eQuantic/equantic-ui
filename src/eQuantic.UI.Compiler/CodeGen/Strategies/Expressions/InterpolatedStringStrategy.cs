@@ -56,11 +56,13 @@ public class InterpolatedStringStrategy : IConversionStrategy
                         }
                         context.UsedHelpers.Add(Eq.Import);
                         var fmtArg = format != null ? $"'{format}'" : "null";
-                        // A float says it is one: its own digits are not the double's (#378).
-                        var single = context.SemanticHelper.GetType(interpolation.Expression).UnwrapNullable()
-                            is { SpecialType: SpecialType.System_Single };
-                        var alignArg = alignment != null ? $", {alignment}" : single ? ", undefined" : "";
-                        var kindArg = single ? ", undefined, 'single'" : "";
+                        // A float says it is one: its own digits are not the double's (#378). An
+                        // integer says so where a specifier is written, since it rounds a half away
+                        // from zero (#393); with none, its text is its digits whatever it is.
+                        var kind = FormatKind.Of(context.SemanticHelper.GetType(interpolation.Expression));
+                        if (kind == "integer" && format == null) kind = null;
+                        var alignArg = alignment != null ? $", {alignment}" : kind != null ? ", undefined" : "";
+                        var kindArg = kind != null ? $", undefined, '{kind}'" : "";
                         sb.Append($"{Eq.Format}({expr}, {fmtArg}{alignArg}{kindArg})");
                     }
                     else

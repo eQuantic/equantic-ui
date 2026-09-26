@@ -161,6 +161,10 @@ public static class Eq
     /// <summary>A float boxed for <c>string.Format</c>, with its kind: the formatter writes its own
     /// digits, not those of the double underneath.</summary>
     public const string AsSingle = "$eq.text.asSingle";
+
+    /// <summary>An int, a short, a byte or their unsigned twins on its way into <c>string.Format</c>, boxed
+    /// with its kind: it rounds a formatted half away from zero (#393).</summary>
+    public const string AsInteger = "$eq.text.asInteger";
     public const string StringBuilder = "$eq.text.stringBuilder";
     public const string DateTime = "$eq.time.dateTime";
     public const string TimeSpan = "$eq.time.timeSpan";

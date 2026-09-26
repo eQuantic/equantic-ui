@@ -242,8 +242,9 @@ public class StringStrategyTests
     [Fact]
     public void Format_WithSpecifier_PreservesFormatString()
     {
+        // An int beside a specifier says it is one: it rounds a formatted half away from zero (#393).
         var result = TestHelper.ConvertExpression("string.Format(\"{0:F2}\", Id)");
-        result.Should().Be("$eq.text.stringFormat('{0:F2}', this.id)");
+        result.Should().Be("$eq.text.stringFormat('{0:F2}', $eq.text.asInteger(this.id))");
     }
 
     /// <summary>
