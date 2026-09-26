@@ -109,6 +109,52 @@ public class DefaultInterfaceMemberEmissionTests
             public interface IConvert { int Convert(System.Func<Spacing, int> measure) => 0; }
             public sealed class Converter : IConvert { public int N; }
             """,
+        // Along the chain (found in review, #418): a derived field on the name of a default its base takes.
+        ["ChainDerived.cs"] = """
+            namespace App;
+            public interface IChained { string Mark() => "m"; }
+            public class ChainBase : IChained { public int N; }
+            public sealed class ChainDerived : ChainBase { public int Mark; }
+            """,
+        // A derived member that implements the default's interface member, because it lists the interface again.
+        ["Relisted.cs"] = """
+            namespace App;
+            public sealed class Relisted : ChainBase, IChained { public string Mark() => "r"; }
+            """,
+        // A default on the name of a member a base declares.
+        ["Labelled.cs"] = """
+            namespace App;
+            public class Holder { public int Label; }
+            public interface ILabel { string Label() => "l"; }
+            public sealed class Labelled : Holder, ILabel { public int Own; }
+            """,
+        // Two defaults of different interface members, one taken by the base and one by the derived class.
+        ["SecondDerived.cs"] = """
+            namespace App;
+            public interface IFirst { string Tag() => "1"; }
+            public interface ISecond { string Tag() => "2"; }
+            public class FirstBase : IFirst { public int N; }
+            public sealed class SecondDerived : FirstBase, ISecond { public int Own; }
+            """,
+        // A derived class that lists an interface overriding its base's default takes the more specific one.
+        ["LoudSpeaker.cs"] = """
+            namespace App;
+            public interface ISpeaker { string Speak() => "soft"; }
+            public interface ILoudSpeaker : ISpeaker { string ISpeaker.Speak() => "LOUD"; }
+            public class SoftSpeaker : ISpeaker { public int N; }
+            public sealed class LoudSpeaker : SoftSpeaker, ILoudSpeaker { public int Own; }
+            """,
+        // A derived field on the name of a helper its base takes with the default that calls it.
+        ["HelpedDerived.cs"] = """
+            namespace App;
+            public interface IHelped
+            {
+                string Show() => Wrap("x");
+                private string Wrap(string text) => "<" + text + ">";
+            }
+            public class HelpedBase : IHelped { public int N; }
+            public sealed class HelpedDerived : HelpedBase { public int Wrap; }
+            """,
         // Compiled into a referenced assembly below, not into this compilation.
         ["Voiced.cs"] = """
             namespace App;
@@ -289,6 +335,79 @@ public class DefaultInterfaceMemberEmissionTests
         var ts = Compile("Converter").TypeScript;
 
         ts.Should().Contain("import { Spacing } from \"./Spacing\"");
+    }
+
+    /// <summary>A derived member on the name of a default its base takes (found in review, #418): the
+    /// base's twin holds the default, and the derived field shadowed it for every call through the
+    /// interface.</summary>
+    [Fact]
+    public void ADerivedMemberOnABasesDefaultIsRefused()
+    {
+        var result = Compile("ChainDerived", succeeds: false);
+
+        result.Errors.Should().ContainSingle(error => error.Code == "EQ1007")
+            .Which.Message.Should().Contain("'ChainDerived.Mark' lowers to `mark`, and so does the default "
+                + "'IChained.Mark', which it inherits from 'ChainBase'");
+    }
+
+    /// <summary>A derived member that implements the default's interface member, because the class lists
+    /// the interface again, is what the interface reaches for it: over the base's default is right.</summary>
+    [Fact]
+    public void ADerivedMemberThatReimplementsTheInterfaceIsNoClash()
+    {
+        var result = Compile("Relisted");
+
+        result.Errors.Should().NotContain(error => error.Code == "EQ1007");
+        result.TypeScript.Should().MatchRegex(@"mark\(\)(: string)? \{\s*return 'r';");
+    }
+
+    /// <summary>A default on the name of a member a base declares (found in review, #418): the base's
+    /// field is set on the instance, over the default the derived prototype holds.</summary>
+    [Fact]
+    public void ADefaultOnABasesMemberIsRefused()
+    {
+        var result = Compile("Labelled", succeeds: false);
+
+        result.Errors.Should().ContainSingle(error => error.Code == "EQ1007")
+            .Which.Message.Should().Contain("'Labelled' takes the default 'ILabel.Label', which lowers to `label`, "
+                + "and so does 'Holder.Label', which it inherits");
+    }
+
+    /// <summary>Two defaults of different interface members along the chain (found in review, #418): the
+    /// derived class's would answer the calls through its base's interface.</summary>
+    [Fact]
+    public void TwoDefaultsAlongTheChainAreRefused()
+    {
+        var result = Compile("SecondDerived", succeeds: false);
+
+        result.Errors.Should().ContainSingle(error => error.Code == "EQ1007")
+            .Which.Message.Should().Contain("'SecondDerived' takes the default 'ISecond.Tag', which lowers to `tag`, "
+                + "and so does the default 'IFirst.Tag', which it inherits from 'FirstBase'");
+    }
+
+    /// <summary>A derived class that lists an interface overriding its base's default takes the more
+    /// specific default (found in review, #418): skipping every interface the base implements left it
+    /// out of the derived twin, which answered with the base's. Executed on both sides by
+    /// <c>DefaultInterfaceMemberConformanceTests</c>.</summary>
+    [Fact]
+    public void AMoreSpecificDefaultReachesTheDerivedTwin()
+    {
+        var result = Compile("LoudSpeaker");
+
+        result.Errors.Should().NotContain(error => error.Code == "EQ1007");
+        result.TypeScript.Should().MatchRegex(@"speak\(\)(: string)? \{\s*return 'LOUD';");
+    }
+
+    /// <summary>A derived member on the name of a private helper its base takes with the default that
+    /// calls it (found in review, #418): the default's call would reach the member.</summary>
+    [Fact]
+    public void ADerivedMemberOnABasesHelperIsRefused()
+    {
+        var result = Compile("HelpedDerived", succeeds: false);
+
+        result.Errors.Should().ContainSingle(error => error.Code == "EQ1007")
+            .Which.Message.Should().Contain("'HelpedDerived.Wrap' lowers to `wrap`, and so does 'IHelped.Wrap', "
+                + "which it inherits from 'HelpedBase' with the defaults that call it");
     }
 
     /// <summary>A default whose body is compiled into a referenced assembly the runtime does not

@@ -116,6 +116,18 @@ public class DefaultInterfaceMemberConformanceTests
         {
             public int Width { get; set; }
         }
+
+        public interface ISpeaker { string Speak() => "soft"; }
+        public interface ILoudSpeaker : ISpeaker { string ISpeaker.Speak() => "LOUD"; }
+        public record SoftSpeaker : ISpeaker;
+        public record LoudSpeaker : SoftSpeaker, ILoudSpeaker;
+
+        public interface IMarked { string Mark() => "m"; }
+        public record MarkedBase : IMarked;
+        public record Remarked : MarkedBase, IMarked
+        {
+            public string Mark() => "r";
+        }
         """;
 
     [SkippableTheory]
@@ -143,6 +155,11 @@ public class DefaultInterfaceMemberConformanceTests
     [InlineData("IMark m = new Marker(); return m.Mark() + m.Mark(\"#\") + new Marker().Tag();")] // "m!m#t?"
     // A default property writes through its setter.
     [InlineData("ISized s = new Panel(); s.Half = 5; return s.Width + \"|\" + s.Half;")]   // "10|5"
+    // A derived type that lists an interface overriding its base's default takes the more specific
+    // one, and the base keeps its own (found in review, #418).
+    [InlineData("ISpeaker l = new LoudSpeaker(); ISpeaker s = new SoftSpeaker(); return l.Speak() + s.Speak();")] // "LOUDsoft"
+    // A derived member that re-implements the interface answers it, over the base's default.
+    [InlineData("IMarked r = new Remarked(); IMarked b = new MarkedBase(); return r.Mark() + b.Mark();")]      // "rm"
     public void ADefaultInterfaceMember_ReachesTheTypesTwin(string statements)
     {
         Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
