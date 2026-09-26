@@ -706,6 +706,19 @@ record of a release, the wiki's Upgrading page is the distillate.
   lockfile and validated strictly in CI; and a `SessionStart` hook that gives a cloud container the
   owner's identity, no foreign signature and the pinned .NET SDK, asserted by CI's `session-start` job.
 
+- **2026-09-26 · A record member starts as its declaration says**: a record's field initializer went
+  nowhere, and the defaults that crossed were copied as literals into every construction site, so a
+  decimal, a long, a float or a `new()` came out as a plain number or as null
+  ([#385](https://github.com/eQuantic/equantic-ui/issues/385)). The twin's constructor now writes
+  every member's default from its declaration, converted like any expression, and a construction
+  that skips a member leaves it to the constructor; a default and a base clause read the primary
+  constructor's parameters as its own. From the review: a zero built member by member names a struct
+  no syntax of the class does, and every emitter now imports it, and a base clause that computed
+  from a parameter read `this` before `super()`. Measured and left to their own issues: an
+  initializer's side effect when an object initializer sets its member
+  ([#413](https://github.com/eQuantic/equantic-ui/issues/413)), and statics read before C# would have
+  zeroed them ([#417](https://github.com/eQuantic/equantic-ui/issues/417)).
+
 ## Retired documents
 
 | document | what it was | where its substance lives now |
