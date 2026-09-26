@@ -42,7 +42,7 @@ public static class TypeDeclarationExtensions
                     ? DefaultLiteral(declared.Value, model)
                     : DefaultOf(p.Type, model);
                 members.Add(new ValueMember(
-                    p.Identifier.Text, p.Identifier.Text.ToCamelCase(), fallback, TsTypeFor(p.Type, model)));
+                    p.Identifier.Text, p.Identifier.ValueText.ToCamelCase(), fallback, TsTypeFor(p.Type, model)));
             }
         }
 
@@ -60,7 +60,7 @@ public static class TypeDeclarationExtensions
                              && a.Body == null && a.ExpressionBody == null) == true:
                     members.Add(new ValueMember(
                         prop.Identifier.Text,
-                        prop.Identifier.Text.ToCamelCase(),
+                        prop.Identifier.ValueText.ToCamelCase(),
                         prop.Initializer is { } init ? DefaultLiteral(init.Value, model) : DefaultOf(prop.Type, model),
                         TsTypeFor(prop.Type, model)));
                     break;

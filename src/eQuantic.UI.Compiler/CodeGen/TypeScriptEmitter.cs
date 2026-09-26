@@ -676,13 +676,11 @@ public class TypeScriptEmitter
                     // emitted module's own type check rejects. Ask whichever half the method has.
                     // The parameter is named as C# named it, the name its body reads it by: `context`
                     // hard-coded left a `Build(ComponentContext ctx)` reading a `ctx` nothing declared.
-                    // Whether the body reads it is asked of the syntax, since a short name like `c` is
-                    // a substring of nearly any body.
+                    // It takes the underscore only where the body never reads it (ReadsParameter).
                     var buildParameterSyntax = component.BuildMethodNode?.ParameterList.Parameters.FirstOrDefault();
                     var buildParamName = component.BuildMethodNode is not { } buildNode || buildParameterSyntax is null
                         ? "context"
-                        : buildNode.DescendantNodes().OfType<IdentifierNameSyntax>()
-                            .Any(id => id.Identifier.ValueText == buildParameterSyntax.Identifier.ValueText)
+                        : ReadsParameter(buildNode, buildParameterSyntax)
                             ? buildParameterSyntax.Identifier.Text.ToJsIdentifier()
                             : "_" + buildParameterSyntax.Identifier.Text.ToJsIdentifier();
                     // The body converts straight to IR: a block as itself, an expression-bodied Build
@@ -715,8 +713,10 @@ public class TypeScriptEmitter
                 foreach (var action in component.ServerActions)
                 {
                     ClassBuilder = c;
-                    var paramsList = string.Join(", ", action.Parameters.Select(p => Param(p.Name, Annotate(p.Type))));
-                    var argsList = string.Join(", ", action.Parameters.Select(p => p.Name));
+                    // Each parameter under a legal JS name, the same one the invocation passes on:
+                    // `Run(int @class)` wrote `run(class)` and `[class]`, a module that did not parse.
+                    var paramsList = string.Join(", ", action.Parameters.Select(p => Param(p.Name.ToJsIdentifier(), Annotate(p.Type))));
+                    var argsList = string.Join(", ", action.Parameters.Select(p => p.Name.ToJsIdentifier()));
                     var returnType = Annotate(action.ReturnType);
 
                     // The action's RESULT crosses the typed boundary too: a Task<decimal> arrives
@@ -1914,6 +1914,27 @@ public class TypeScriptEmitter
                 .. superCall, .. initialisers, .. locals, .. body,
                 JsStatement.Raw($"if ({configName} && typeof {configName} === 'object') Object.assign(this, {configName});")])),
             ctor ?? (SyntaxNode)cls);
+    }
+
+    /// <summary>
+    /// Whether <paramref name="method"/> reads <paramref name="parameter"/>. Asked of the model where
+    /// there is one, since the name alone is a member's too (`this.ctx` beside a parameter `ctx`), and
+    /// of the syntax otherwise: a name that is not a member access's, a binding's or an initializer's.
+    /// A short name like `c` is a substring of nearly any body, so the text is never asked.
+    /// </summary>
+    private bool ReadsParameter(SyntaxNode method, ParameterSyntax parameter)
+    {
+        var name = parameter.Identifier.ValueText;
+        var named = method.DescendantNodes().OfType<IdentifierNameSyntax>()
+            .Where(id => id.Identifier.ValueText == name);
+        if (ModelFor(method) is { } model && model.GetDeclaredSymbol(parameter) is { } symbol)
+            return named.Any(id => SymbolEqualityComparer.Default.Equals(model.GetSymbolInfo(id).Symbol, symbol));
+        return named.Any(id => id.Parent switch
+        {
+            MemberAccessExpressionSyntax access => access.Expression == id,
+            MemberBindingExpressionSyntax or NameColonSyntax or NameEqualsSyntax => false,
+            _ => true,
+        });
     }
 
     /// <summary>

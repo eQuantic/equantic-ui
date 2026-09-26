@@ -45,6 +45,31 @@ public class LocalFunctionNameTests
     }
 
     [Fact]
+    public void AnUnusedParametersSpelling_IsNotAFunctionsToo()
+    {
+        // A parameter the body never reads goes out as `_` + its name, so `@class` unused is
+        // `_class$`, and a function `_class` took the same (Copilot's review of #399).
+        var ts = TestHelper.ConvertClass("public int M(int @class) { int _class() => 1; return _class(); }");
+
+        ts.Should().Contain("m(_class$").And.Contain("const _class$2 = ").And.Contain("return _class$2()");
+    }
+
+    [Fact]
+    public void WithNoModel_AComponentLocalIsThatLocal()
+    {
+        // `Component` maps to the component's `_component`, unless the name is bound in scope. With
+        // no model the lookup knew local functions only, so a local called `Component` read the
+        // inherited value (Copilot's review of #399).
+        var method = CSharpSyntaxTree.ParseText(
+                "class C { int M() { int Component = 4; return Component; } }", ParseDefaults.Options)
+            .GetRoot().DescendantNodes().OfType<MethodDeclarationSyntax>().Single();
+
+        var js = new CSharpToJsConverter().Convert(method.Body!);
+
+        js.Should().Contain("return Component").And.NotContain("_component");
+    }
+
+    [Fact]
     public void ANameNothingHolds_KeepsItsCasing()
     {
         // The rename is for a collision only: a function whose cased name is free reads as authored.

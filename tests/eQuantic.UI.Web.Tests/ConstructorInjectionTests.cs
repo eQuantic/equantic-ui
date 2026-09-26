@@ -265,6 +265,52 @@ public class ConstructorInjectionTests
     }
 
     [Fact]
+    public void ABuildParameterThatOnlyNamesAMember_IsUnread()
+    {
+        // `this.ctx` is the field, not the parameter: counted by its name alone it kept `ctx`, an
+        // unused parameter the module's noUnusedParameters check refuses (Copilot's review of #399).
+        var page = Transpile("""
+            using eQuantic.UI.Components;
+            using eQuantic.UI.Primitives;
+
+            namespace eQuantic.UI.Web.Tests.Fixtures;
+
+            public sealed class TickPage : StatelessComponent
+            {
+                private readonly string ctx = "field";
+
+                public override VisualNode Build(ComponentContext ctx) => new Text(this.ctx, TypeRole.BodyM);
+            }
+            """);
+
+        page.Should().Contain("build(_ctx: BuildContext)");
+    }
+
+    [Fact]
+    public void AServerActionParameter_IsRenamedInTheStubAndItsCall()
+    {
+        // The stub wrote `run(class)` and `[class]`, a module that did not parse (Copilot's review of
+        // #399): the signature and the call it forwards take the same legal name.
+        var page = Transpile("""
+            using System.Threading.Tasks;
+            using eQuantic.UI.Components;
+            using eQuantic.UI.Primitives;
+
+            namespace eQuantic.UI.Web.Tests.Fixtures;
+
+            public sealed class TickPage : StatefulComponent
+            {
+                [ServerAction]
+                public Task<int> Run(int @class) => Task.FromResult(@class);
+
+                public override VisualNode Build(ComponentContext context) => new Text("t", TypeRole.BodyM);
+            }
+            """);
+
+        page.Should().Contain("run(class$").And.Contain("[class$]").And.NotContain("run(class:");
+    }
+
+    [Fact]
     public void APassedParameter_IsBoundUnderTheNameTheBodyReads()
     {
         // The signature camel-cased it too: `constructor(label…)` beside a body reading `Label`.

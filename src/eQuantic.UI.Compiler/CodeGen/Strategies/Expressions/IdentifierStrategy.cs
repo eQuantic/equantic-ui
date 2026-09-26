@@ -121,6 +121,12 @@ public class IdentifierStrategy : IExpressionIrStrategy
         if (symbol == null && !isMemberName && LocalFunctionName.InScope(identifier, name) is { } local)
             return JsExpr.Identifier(LocalFunctionName.Of(local, context));
 
+        // ...and so is a local or a parameter the member declares, which the heuristics below would
+        // read as a member for its capital: `int Component = 4; return Component;` came out as
+        // `this.component` (Copilot's review of #399).
+        if (symbol == null && !isMemberName && LocalFunctionName.IsDeclaredAround(identifier, name))
+            return JsExpr.Identifier(name.ToJsIdentifier());
+
         // A source-directory scan can prove that an otherwise-unbound PascalCase receiver is a
         // top-level static/runtime type. Preserve the type name so the emitter can route its import;
         // do not turn it into an instance member purely by casing.
@@ -149,7 +155,9 @@ public class IdentifierStrategy : IExpressionIrStrategy
     /// a parameter, a range variable or a local function, rather than a member.</summary>
     private static bool BoundInScope(ISymbol? symbol, SyntaxNode at, string name) => symbol switch
     {
-        null => LocalFunctionName.InScope(at, name) is not null,
+        // With no model, a local or a parameter the member declares is as much a binding as a local
+        // function: `int Component = 4; return Component;` read the component's `_component`.
+        null => LocalFunctionName.IsDeclaredAround(at, name),
         IMethodSymbol { MethodKind: MethodKind.LocalFunction } => true,
         { Kind: SymbolKind.Local or SymbolKind.RangeVariable } => true,
         { Kind: SymbolKind.Parameter } => !symbol.IsPrimaryConstructorParameter(),

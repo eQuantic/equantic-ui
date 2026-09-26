@@ -92,6 +92,16 @@ internal static class LocalFunctionName
         return null;
     }
 
+    /// <summary>
+    /// Whether the member around <paramref name="at"/> declares <paramref name="name"/> at all: a
+    /// parameter, a local, a loop, catch or pattern variable, a local function. For a reference with
+    /// no model to ask, where it decides that the name is a binding and not a member.
+    /// </summary>
+    public static bool IsDeclaredAround(SyntaxNode at, string name) =>
+        MemberOf(at).DescendantNodes().Any(node =>
+            node is LocalFunctionStatementSyntax function ? function.Identifier.ValueText == name
+            : Declared(node) is { } declared && declared.ValueText == name);
+
     /// <summary>The name a reference to <paramref name="localFunction"/> reaches.</summary>
     public static string Of(IMethodSymbol localFunction) =>
         // The DEFINITION's syntax: a generic one is referenced constructed (`Id<int>`).
@@ -131,7 +141,14 @@ internal static class LocalFunctionName
         foreach (var node in member.DescendantNodes())
         {
             if (node is LocalFunctionStatementSyntax function) functions.Add(function);
-            else if (Declared(node) is { } name) taken.Add(name.ValueText.ToJsIdentifier());
+            else if (Declared(node) is { } name)
+            {
+                taken.Add(name.ValueText.ToJsIdentifier());
+                // A parameter the body never reads goes out with an underscore in front (the
+                // emitter's noUnusedParameters spelling), so `@class` unused is `_class$`, which a
+                // function `_class` would otherwise take.
+                if (node is ParameterSyntax) taken.Add("_" + name.ValueText.ToJsIdentifier());
+            }
             // An accessor that takes a value declares `value` without a syntax of its own, and the
             // emitter writes it as the setter's parameter: a `Value()` there was `const value`
             // beside it (Copilot's review of #399).

@@ -108,4 +108,21 @@ public class LocalNameConformanceTests
         Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
         ConformanceRunner.AssertStatementsSameAsDotNet(statements, prelude);
     }
+
+    [SkippableTheory]
+    // A record's method camel-cased its parameters where the body read them as written, so a
+    // PascalCase one was a ReferenceError and a verbatim keyword did not parse (Copilot's review
+    // of #399)...
+    [InlineData("public record Box(int N) { public int Times(int Value) => N * Value; }", "return new Box(3).Times(2);")] // 6
+    [InlineData("public record Box(int N) { public int Plus(int @class) => N + @class; }", "return new Box(3).Plus(4);")] // 7
+    // ...and a positional member named with the escape went out as `this.@class`, and its
+    // constructor's parameter and a derived record's call to `super` as `@class`.
+    [InlineData("public record A(int X); public record B(int @class, int Y) : A(@class);", "var b = new B(1, 2); return b.X + b.Y;")] // 3
+    // The usual derived record, which already passed, as a guard.
+    [InlineData("public record A(int X); public record B(int X, int Y) : A(X);", "var b = new B(1, 2); return b.X + b.Y;")] // 3
+    public void ARecordsParameter_IsDeclaredUnderTheNameItsBodyReads(string prelude, string statements)
+    {
+        Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
+        ConformanceRunner.AssertStatementsSameAsDotNet(statements, prelude);
+    }
 }
