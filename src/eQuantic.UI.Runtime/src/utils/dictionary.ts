@@ -45,7 +45,9 @@ export class Dictionary<K, V> implements Iterable<Pair<K, V>> {
     return this.slots.length - this.freed.length;
   }
 
+  /** The key's slot, or -1. A null key is refused here, so every member refuses it as .NET's does. */
   private find(key: K): number {
+    requireKey(key);
     if (this.index) return this.index.get(key) ?? -1;
     for (let slot = 0; slot < this.slots.length; slot++) {
       const entry = this.slots[slot];
@@ -83,7 +85,6 @@ export class Dictionary<K, V> implements Iterable<Pair<K, V>> {
 
   /** `TryAdd`: a key that is not there is added and answers true, one that is answers false and keeps its value. */
   tryAdd(key: K, value: V): boolean {
-    if (key == null) throw new Error("Value cannot be null. (Parameter 'key')");
     if (this.find(key) >= 0) return false;
     this.set(key, value);
     return true;
@@ -164,6 +165,14 @@ export function wireObject<K, V>(entries: Iterable<{ key: K; value: V } | undefi
     });
   }
   return json;
+}
+
+/**
+ * A dictionary refuses a null key in every member, `ContainsKey`, `TryGetValue` and `Remove`
+ * included, with .NET's words: a `Map` would have answered a miss, or filed an entry under null.
+ */
+export function requireKey(key: unknown): void {
+  if (key == null) throw new Error("Value cannot be null. (Parameter 'key')");
 }
 
 /** Whether live entries hold `value`, by `$eq.equals` or by SameValueZero (NaN is NaN, as a double's Equals holds). */

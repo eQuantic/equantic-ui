@@ -21,6 +21,15 @@ describe('DynamicElement', () => {
     ]);
   });
 
+  it('keeps an attribute named "__proto__" a dictionary holds, never the prototype', () => {
+    const node = new DynamicElement({
+      tagName: 'x-tag',
+      customAttributes: dictionary([['__proto__', 'kept']]),
+    }).render();
+    expect(Object.keys(node.attributes)).toEqual(['__proto__']);
+    expect(Object.getPrototypeOf(node.attributes)).toBe(Object.prototype);
+  });
+
   it('renders custom attributes from a plain object too', () => {
     const node = new DynamicElement({ tagName: 'my-tag', customAttributes: { slot: 'end' } }).render();
     expect(node.attributes).toEqual({ slot: 'end' });

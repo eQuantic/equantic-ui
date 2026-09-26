@@ -50,8 +50,11 @@ export class DynamicElement extends HtmlElement {
 
     const attributes: Record<string, string> = {};
     if (this.className) attributes['class'] = this.className;
+    // DEFINED, not assigned: a C# dictionary may hold "__proto__", and assigning it reached the
+    // prototype's setter and dropped the attribute.
     if (this.customAttributes) {
-      for (const [key, value] of bagEntries(this.customAttributes)) attributes[key] = value;
+      for (const [key, value] of bagEntries(this.customAttributes))
+        Object.defineProperty(attributes, key, { value, writable: true, enumerable: true, configurable: true });
     }
 
     const events: Record<string, EventHandler> = {};

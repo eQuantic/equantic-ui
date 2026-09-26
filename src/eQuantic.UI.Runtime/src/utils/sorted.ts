@@ -10,7 +10,7 @@
  * of the string subsystem); pass simple/numeric keys for guaranteed .NET parity.
  */
 
-import { containsValue, pair, wireObject, type Pair } from './dictionary';
+import { containsValue, pair, requireKey, wireObject, type Pair } from './dictionary';
 
 /** `Comparer<T>.Default`-style ordering: numeric for numbers/bigint, relational otherwise. */
 export function defaultCompare<T>(a: T, b: T): number {
@@ -126,8 +126,10 @@ export class SortedMap<K, V> implements Iterable<Pair<K, V>> {
     return this.entries.length;
   }
 
-  /** Index of `key`, or the bitwise-complement insertion point (`~i`) when absent. */
+  /** Index of `key`, or the bitwise-complement insertion point (`~i`) when absent. A null key is
+   * refused, as .NET's sorted dictionaries refuse one. */
   private indexOf(key: K): number {
+    requireKey(key);
     let lo = 0;
     let hi = this.entries.length - 1;
     while (lo <= hi) {
@@ -165,7 +167,6 @@ export class SortedMap<K, V> implements Iterable<Pair<K, V>> {
 
   /** `TryAdd`: a key that is not there is added and answers true, one that is answers false. */
   tryAdd(key: K, value: V): boolean {
-    if (key == null) throw new Error("Value cannot be null. (Parameter 'key')");
     if (this.indexOf(key) >= 0) return false;
     this.set(key, value);
     return true;

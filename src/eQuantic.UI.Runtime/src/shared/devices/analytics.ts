@@ -44,10 +44,14 @@ export class WebAnalytics {
     w[name] = w[name] || [];
 
     const entry: Record<string, unknown> = { event: eventName };
+    // Each field DEFINED, not assigned: a key the data holds may be "__proto__", which an assignment
+    // (and Object.assign) sends to the prototype's setter, dropping the field.
+    const put = (key: string, value: unknown) =>
+      Object.defineProperty(entry, key, { value, writable: true, enumerable: true, configurable: true });
     if (data instanceof Map || data instanceof Dictionary) {
-      for (const [key, value] of data) entry[key] = value;
+      for (const [key, value] of data) put(key, value);
     } else if (data) {
-      Object.assign(entry, data);
+      for (const key of Object.keys(data)) put(key, data[key]);
     }
     w[name].push(entry);
   }

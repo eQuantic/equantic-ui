@@ -85,6 +85,9 @@ public class DictionaryEnumerationConformanceTests
     // The entry reads and writes through the class.
     [InlineData("var d = new Dictionary<string, int> { [\"a\"] = 1 }; d[\"a\"] += 2; d[\"a\"]++; return d[\"a\"];")]
     [InlineData("Dictionary<string, int>? d = new(); d?[\"a\"] = 5; return d[\"a\"];")]
+    // A null key is refused by every member, in .NET's words (found in review, #443).
+    [InlineData("var d = new Dictionary<string, int> { [\"a\"] = 1 }; string k = null; var said = \"\"; try { d.ContainsKey(k); } catch (Exception e) { said += e.Message + \"|\"; } try { d.Remove(k); } catch (Exception e) { said += e.Message + \"|\"; } try { d.TryGetValue(k, out var v); } catch (Exception e) { said += e.Message + \"|\"; } try { d.Add(k, 2); } catch (Exception e) { said += e.Message + \"|\"; } try { d.TryAdd(k, 2); } catch (Exception e) { said += e.Message + \"|\"; } try { var x = d[k]; } catch (Exception e) { said += e.Message + \"|\"; } return said + d.Count;")]
+    [InlineData("var d = new SortedDictionary<string, int> { [\"a\"] = 1 }; string k = null; var said = \"\"; try { d.ContainsKey(k); } catch (Exception e) { said += e.Message + \"|\"; } try { d.Add(k, 2); } catch (Exception e) { said += e.Message + \"|\"; } return said + d.Count;")]
     // A property pattern reads the dictionary's count.
     [InlineData("var d = new Dictionary<string, int> { [\"a\"] = 1 }; return (d is { Count: > 0 }) + \"|\" + (d is { Count: 0 });")]
     public void Members_MatchDotNet(string statements)

@@ -54,6 +54,19 @@ describe('WebAnalytics (IAnalytics realization)', () => {
     ]);
   });
 
+  it('keeps a field named "__proto__" as a field, whatever shape the data crossed as', () => {
+    w.__EQ_ANALYTICS__ = {};
+    const analytics = new WebAnalytics();
+
+    analytics.track('a', dictionary<string, unknown>([['__proto__', 1]]));
+    analytics.track('b', JSON.parse('{"__proto__": 2}') as Record<string, unknown>);
+
+    const [first, second] = w.dataLayer as Record<string, unknown>[];
+    expect(Object.keys(first)).toEqual(['event', '__proto__']);
+    expect(Object.keys(second)).toEqual(['event', '__proto__']);
+    expect(Object.getPrototypeOf(first)).toBe(Object.prototype);
+  });
+
   it('a renamed dataLayer is honoured', () => {
     w.__EQ_ANALYTICS__ = { dataLayer: 'eqData' };
 

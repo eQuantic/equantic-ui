@@ -186,6 +186,22 @@ describe('Dictionary — keys found by value', () => {
   });
 });
 
+describe('Dictionary — a null key', () => {
+  it('is refused by every member, with .NET\'s words', () => {
+    const d = dictionary<string | null, number>([['a', 1]]);
+    const refusal = "Value cannot be null. (Parameter 'key')";
+    expect(() => d.has(null)).toThrow(refusal);
+    expect(() => d.get(null)).toThrow(refusal);
+    expect(() => d.set(null, 1)).toThrow(refusal);
+    expect(() => d.delete(null)).toThrow(refusal);
+    expect(() => d.tryAdd(null, 1)).toThrow(refusal);
+    expect(() => dictionary<string | null, number>([[null, 1]])).toThrow(refusal);
+    expect(dictionary<string | null, number>(null, true).has('a')).toBe(false);
+    expect(() => dictionary<string | null, number>(null, true).has(null)).toThrow(refusal);
+    expect(d.size).toBe(1);
+  });
+});
+
 describe('Dictionary — TryAdd and ContainsValue', () => {
   it('adds a key that is not there and keeps the value of one that is', () => {
     const d = dictionary<string, number>([['a', 1]]);
