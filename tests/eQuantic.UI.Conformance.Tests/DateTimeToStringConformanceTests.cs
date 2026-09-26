@@ -35,6 +35,8 @@ public class DateTimeToStringConformanceTests
         + "return $\"{d.ToString(\"HH:mm:ss.fff\")}|{d.ToString(\"HH:mm:ss.FFF\")}|{w.ToString(\"HH:mm:ss.FFF\")}|{d.ToString(\"'at' HH\\\\:mm\")}|{d.ToString(\"%d\")}\";")]
     // The first year: `Date` read a year below 100 as 1900 plus it.
     [InlineData("return $\"{DateTime.MinValue.ToString(\"yyyy-MM-dd\")}|{DateTime.MinValue.ToString(\"o\")}|{new DateTime(50, 6, 1).ToString(\"D\")}\";")]
+    // The short and long strings are the same specifiers by another name (found in review, #388).
+    [InlineData(Moment + "return $\"{d.ToShortDateString()}|{d.ToLongDateString()}|{d.ToShortTimeString()}|{d.ToLongTimeString()}\";")]
     // A null DateTime? writes nothing, and its conditional ToString is null.
     [InlineData("DateTime? n = null; return $\"[{n.ToString()}]|{n?.ToString(\"D\") ?? \"none\"}\";")]
     public void ADateTimesToString_PrintsAsDotNet(string statements)

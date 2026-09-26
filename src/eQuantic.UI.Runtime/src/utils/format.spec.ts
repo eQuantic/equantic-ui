@@ -1,4 +1,4 @@
-import { describe, it, expect, afterEach } from 'vitest';
+import { describe, it, expect, afterEach, vi } from 'vitest';
 import { parseEnum, format, stringFormat, stringFormatInvariant, asSingle } from './format';
 import { installCulture } from './culture';
 
@@ -252,5 +252,33 @@ describe('a precision past 100 digits, in a culture', () => {
     expect(format(0.125, 'P101')).toBe(`12,5${zeros(100)}%`);
     expect(folded(format(-1234.5, 'C101'))).toBe(`-R$ 1.234,5${zeros(100)}`);
     expect(format(-1234.5, 'N101')).toBe(`-1.234,5${zeros(100)}`);
+  });
+});
+
+// With no culture in force a date's patterns are the invariant culture's, and so are its names
+// (#388): `Intl` was asked in the host's default locale, which wrote a Portuguese machine's day and
+// month names into the invariant layout. The host here speaks English either way, so the proof is
+// the locale the formatter asks for.
+describe('a date with no culture in force', () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+    installCulture('', '', {});
+  });
+
+  it('asks for the invariant culture’s names, not the host’s', () => {
+    installCulture('', '', {});
+    const asked: (string | string[] | undefined)[] = [];
+    const DateTimeFormat = Intl.DateTimeFormat;
+    // A function, not an arrow: the formatter calls it with `new`.
+    vi.spyOn(Intl, 'DateTimeFormat').mockImplementation(function (
+      locale?: string | string[],
+      options?: Intl.DateTimeFormatOptions,
+    ) {
+      asked.push(locale);
+      return new DateTimeFormat(locale, options);
+    } as unknown as typeof Intl.DateTimeFormat);
+    expect(format(new Date(2026, 8, 24), 'D')).toBe('Thursday, 24 September 2026');
+    expect(asked.length).toBeGreaterThan(0);
+    expect(asked.every((locale) => locale === 'en-US')).toBe(true);
   });
 });
