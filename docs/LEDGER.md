@@ -794,6 +794,17 @@ record of a release, the wiki's Upgrading page is the distillate.
   value, a ToBoolean provider is evaluated in the order it is written (another `CultureInfo`
   than the invariant or the current one is EQ2108, having no twin to evaluate), and the BCL
   audit's `(Object)` probes call the object overload instead of the string one beside it.
+- **2026-09-26 · A record's and a struct's members lower as a class's do**: the record and struct
+  emitter lowered a method with its own copy of the class emitter's lowering, which handled none of
+  an async method, an iterator, an out or ref parameter, or the variable an expression body's
+  pattern binds ([#432](https://github.com/eQuantic/equantic-ui/issues/432)). The first two wrote a
+  module that does not parse, the last threw `m is not defined` in `o is SE m && m.V == V`, and
+  `List<SE>.Remove` threw with it through the twin's `equals`. One lowering now serves every type
+  with methods (`MethodLowering`): a record's and a struct's method, operator, conversion and
+  computed property go through the class emitter's own. On the way, a parameter is declared by the
+  name its uses have (`package` was declared as itself, which no module parses), and a verbatim C#
+  keyword that JavaScript reserves (`@class`) takes its underscore. A new conformance class fails 13
+  of its 15 cases on main.
 
 ## Retired documents
 
