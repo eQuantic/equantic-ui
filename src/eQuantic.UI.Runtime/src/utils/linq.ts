@@ -13,7 +13,7 @@
  * a null key became the text "null", the key "__proto__" went to the prototype's setter instead of
  * the dictionary, and every record key was the same "[object Object]".
  */
-import { valueMap, type ValueMap } from './collections';
+import { Dictionary, keyText } from './dictionary';
 import { compare as compareStrings } from './string-statics';
 
 /**
@@ -126,55 +126,22 @@ export function min<T>(
   return extreme(source, selector, ordering, nullable, -1);
 }
 
-/** A key as .NET's message writes it: a bool as True or False. */
-function keyText(key: unknown): string {
-  return typeof key === 'boolean' ? (key ? 'True' : 'False') : String(key);
-}
-
 /**
- * `ToDictionary(keySelector)` and `ToDictionary(keySelector, elementSelector)` into the plain object
- * a dictionary of primitive keys is on this side: each element selected before it is added, and a
- * null key or a key twice refused with .NET's words. Each entry is DEFINED, not assigned: an
- * assignment of "__proto__" goes to the prototype's setter and leaves no entry at all.
+ * `ToDictionary(keySelector)` and `ToDictionary(keySelector, elementSelector)` into the runtime's
+ * {@link Dictionary}, the one a constructed dictionary is, its keys found by value when `byValue` says
+ * so: each element selected before it is added, and a null key or a key twice refused with .NET's
+ * words.
  */
-export function toDictionary<T, V = T>(
-  source: Iterable<T>,
-  keySelector: (item: T) => unknown,
-  elementSelector?: (item: T) => V,
-): Record<string, V> {
-  const result: Record<string, V> = {};
-  for (const item of source) {
-    const key = keySelector(item);
-    const value = elementSelector === undefined ? (item as unknown as V) : elementSelector(item);
-    if (key == null) throw new Error("Value cannot be null. (Parameter 'key')");
-    const property = String(key);
-    if (Object.prototype.hasOwnProperty.call(result, property)) {
-      throw new Error(`An item with the same key has already been added. Key: ${keyText(key)}`);
-    }
-    Object.defineProperty(result, property, {
-      value,
-      writable: true,
-      enumerable: true,
-      configurable: true,
-    });
-  }
-  return result;
-}
-
-/**
- * `ToDictionary` whose key is a structural value (a record, a struct, a tuple): the value map such a
- * dictionary is on this side, which compares keys by value, with the same refusals as
- * {@link toDictionary}.
- */
-export function toValueDictionary<T, K, V = T>(
+export function toDictionary<T, K, V = T>(
   source: Iterable<T>,
   keySelector: (item: T) => K,
-  elementSelector?: (item: T) => V,
-): ValueMap<K, V> {
-  const result = valueMap<K, V>();
+  elementSelector?: ((item: T) => V) | null,
+  byValue = false,
+): Dictionary<K, V> {
+  const result = new Dictionary<K, V>(null, byValue);
   for (const item of source) {
     const key = keySelector(item);
-    const value = elementSelector === undefined ? (item as unknown as V) : elementSelector(item);
+    const value = elementSelector == null ? (item as unknown as V) : elementSelector(item);
     if (key == null) throw new Error("Value cannot be null. (Parameter 'key')");
     if (result.has(key)) {
       throw new Error(`An item with the same key has already been added. Key: ${keyText(key)}`);

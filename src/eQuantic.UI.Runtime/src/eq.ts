@@ -46,7 +46,6 @@ import {
 } from './utils/bits';
 import {
   checked,
-  dictGet,
   mapGet,
   mapSet,
   divRem,
@@ -68,7 +67,7 @@ import {
   realParse,
   realTryParse,
 } from './utils/number-parse';
-import { max, min, toDictionary, toValueDictionary } from './utils/linq';
+import { max, min, toDictionary } from './utils/linq';
 import {
   compare,
   compareRange,
@@ -86,14 +85,13 @@ import { stringBuilder } from './utils/string-builder';
 import {
   queue,
   stack,
-  valueMap,
   linkedList,
   contains,
   count,
   setAdd,
-  entries,
   zip,
 } from './utils/collections';
+import { dictionary } from './utils/dictionary';
 import { sortedSet, sortedDictionary, sortedList } from './utils/sorted';
 import { liftArith, liftCmp, liftUnary } from './utils/nullable';
 import { equals } from './utils/equals';
@@ -170,12 +168,10 @@ export const $eq = {
   /** A rewritten resx accessor (Track L D2): resolves against the installed culture catalog at
    * CALL time — the whole reason the compiler never inlines it. */
   str,
-  /** Dictionary enumeration for transpiled foreach/List-copy — see utils/collections. */
-  entries,
   /** LINQ Zip: pairs stop with the shorter sequence. */
   zip,
   /** LINQ's Max and Min by the type they answer, and ToDictionary with .NET's refusals. */
-  linq: { max, min, toDictionary, toValueDictionary },
+  linq: { max, min, toDictionary },
   /** C# `with` over a runtime value type — prototype preserved. */
   withPatch,
   /** C# range indexing whose endpoints count from the end — see `slice`. */
@@ -278,10 +274,8 @@ export const $eq = {
     trimEnd,
     splitOnWhiteSpace,
   },
-  /** A dictionary read that fails on a missing key, the way .NET does. */
-  dictGet,
-  /** The same read on a runtime map (a sorted or value-keyed dictionary), and its write, which
-   * answers the value written as C#'s assignment does. */
+  /** A dictionary's indexer read, which fails on a missing key the way .NET does, and its write,
+   * which answers the value written as C#'s assignment does. */
   mapGet,
   mapSet,
   /** Date and time, tick-precise. */
@@ -289,15 +283,15 @@ export const $eq = {
   /** Enum parsing (member-name string). */
   enums: { parse: parseEnum },
   /**
-   * Collections — Queue (FIFO), Stack (LIFO), ValueMap (structurally-keyed dictionary), LinkedList,
-   * and the sorted family (SortedSet / SortedDictionary / SortedList).
+   * Collections — Queue (FIFO), Stack (LIFO), Dictionary (by slot, as .NET's), LinkedList, and the
+   * sorted family (SortedSet / SortedDictionary / SortedList).
    */
   /** What a transpiled constructor resolves its dependencies through — see utils/services. */
   services: { resolve: resolveService },
   collections: {
     queue,
     stack,
-    valueMap,
+    dictionary,
     linkedList,
     sortedSet,
     sortedDictionary,

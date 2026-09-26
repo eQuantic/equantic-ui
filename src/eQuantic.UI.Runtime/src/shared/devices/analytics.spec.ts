@@ -6,6 +6,7 @@
 
 import { afterEach, describe, expect, it } from 'vitest';
 import { WebAnalytics } from './analytics';
+import { dictionary } from '../../utils/dictionary';
 
 interface AnalyticsWindow {
   __EQ_ANALYTICS__?: { dataLayer?: string };
@@ -44,10 +45,12 @@ describe('WebAnalytics (IAnalytics realization)', () => {
 
     analytics.track('purchase', new Map<string, unknown>([['value', 42]]));
     analytics.track('refund', { value: 7 });
+    analytics.track('share', dictionary<string, unknown>([['channel', 'mail']]));
 
     expect(w.dataLayer).toEqual([
       { event: 'purchase', value: 42 },
       { event: 'refund', value: 7 },
+      { event: 'share', channel: 'mail' },
     ]);
   });
 

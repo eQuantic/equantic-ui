@@ -10,6 +10,8 @@
  * of the string subsystem); pass simple/numeric keys for guaranteed .NET parity.
  */
 
+import { pair, wireObject, type Pair } from './dictionary';
+
 /** `Comparer<T>.Default`-style ordering: numeric for numbers/bigint, relational otherwise. */
 export function defaultCompare<T>(a: T, b: T): number {
   if (a === b) return 0;
@@ -103,10 +105,10 @@ export function sortedSet<T>(
 /**
  * Backing store for `SortedDictionary` and `SortedList` — a dictionary whose keys are kept sorted, so
  * the indexer/`ContainsKey`/`Add`/`Remove` work as usual while `Keys`/`Values`/`foreach` enumerate in
- * key order. Exposes the same surface as the plain-object dictionary path (`get`/`set`/`has`/`delete`/
- * `clear`/`keys`/`values`/`size` + a `{key,value}` iterator) so the compiler routes it identically.
+ * key order. Exposes the surface of the runtime's {@link Dictionary} (`get`/`set`/`has`/`delete`/
+ * `clear`/`keys`/`values`/`size`, the same pairs, the same JSON) so the compiler routes both alike.
  */
-export class SortedMap<K, V> implements Iterable<{ key: K; value: V }> {
+export class SortedMap<K, V> implements Iterable<Pair<K, V>> {
   private readonly entries: { key: K; value: V }[] = [];
   private readonly compare: (a: K, b: K) => number;
 
@@ -175,8 +177,19 @@ export class SortedMap<K, V> implements Iterable<{ key: K; value: V }> {
     return this.entries.map((e) => e.value);
   }
 
-  [Symbol.iterator](): Iterator<{ key: K; value: V }> {
-    return this.entries.map((e) => ({ key: e.key, value: e.value }))[Symbol.iterator]();
+  /** The pairs in key order, destructuring as `[key, value]` and answering `.key` and `.value`. */
+  *[Symbol.iterator](): Iterator<Pair<K, V>> {
+    for (const e of this.entries) yield pair(e.key, e.value);
+  }
+
+  /** A dictionary equals only itself, as .NET's does. */
+  equals(other: unknown): boolean {
+    return this === other;
+  }
+
+  /** The JSON object System.Text.Json writes for it, in key order. */
+  toJSON(): Record<string, V> {
+    return wireObject(this.entries);
   }
 }
 

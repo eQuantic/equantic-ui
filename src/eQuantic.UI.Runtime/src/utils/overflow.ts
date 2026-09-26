@@ -7,6 +7,7 @@
  * that needs a decision at run time — the checked context, where going out of range is an
  * OverflowException.
  */
+import { keyText } from './dictionary';
 
 const RANGES: Record<number, [min: number, max: number]> = {
   8: [-128, 127],
@@ -173,25 +174,8 @@ export function substring(value: string, start: number, length?: number): string
 }
 
 /**
- * A dictionary read: .NET throws for a key that is not there, rather than answering "nothing".
- * The key is whatever the compiler emitted — a string, a number, a char, an enum's member name, a
- * bigint — and a plain object keys by string, so it is stringified the way an index would.
- */
-export function dictGet<V>(map: Record<string, V>, key: unknown): V {
-  // .NET tells an ABSENT key from a null one, and so does this: a null key is a caller mistake,
-  // a missing one is a lookup that found nothing.
-  if (key === null || key === undefined) throw new Error("Value cannot be null. (Parameter 'key')");
-  const property = String(key);
-  if (!Object.prototype.hasOwnProperty.call(map, property)) {
-    throw new Error(`The given key '${property}' was not present in the dictionary.`);
-  }
-  return map[property];
-}
-
-/**
- * The same read on a RUNTIME MAP — a `SortedDictionary`, a `SortedList`, a dictionary keyed by a
- * value — whose own `get` answers undefined for a key that is not there, where .NET throws, exactly
- * as {@link dictGet} throws for the plain-object dictionary.
+ * A dictionary's indexer read, on the runtime's `Dictionary` or a `SortedDictionary` or `SortedList`,
+ * whose own `get` answers undefined for a key that is not there, where .NET throws.
  */
 export function mapGet<K, V>(map: { has(key: K): boolean; get(key: K): V | undefined }, key: K): V {
   if (key === null || key === undefined) throw new Error("Value cannot be null. (Parameter 'key')");
@@ -199,7 +183,7 @@ export function mapGet<K, V>(map: { has(key: K): boolean; get(key: K): V | undef
   // either a missing key or a stored undefined, and a value-keyed map finds a key by a linear scan.
   const value = map.get(key);
   if (value === undefined && !map.has(key)) {
-    throw new Error(`The given key '${String(key)}' was not present in the dictionary.`);
+    throw new Error(`The given key '${keyText(key)}' was not present in the dictionary.`);
   }
   return value as V;
 }

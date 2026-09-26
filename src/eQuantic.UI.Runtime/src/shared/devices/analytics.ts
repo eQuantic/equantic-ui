@@ -11,6 +11,8 @@
  * has all three.
  */
 
+import { Dictionary } from '../../utils/dictionary';
+
 /** What an installer (UseGtm) declares before boot. */
 interface AnalyticsConfig {
   /** The dataLayer global's NAME — 'dataLayer' unless the installer renamed it. */
@@ -25,11 +27,14 @@ declare global {
 
 export class WebAnalytics {
   /**
-   * The C# `Track(eventName, data)` twin. `data` arrives as whatever the transpiled Dictionary
-   * became — a Map or a plain object — and flattens into the event entry, the dataLayer's own
-   * shape.
+   * The C# `Track(eventName, data)` twin. `data` arrives as the runtime's `Dictionary` from
+   * transpiled C#, or as a Map or a plain object from hand-written code, and flattens into the event
+   * entry, the dataLayer's own shape.
    */
-  track(eventName: string, data?: Map<string, unknown> | Record<string, unknown> | null): void {
+  track(
+    eventName: string,
+    data?: Dictionary<string, unknown> | Map<string, unknown> | Record<string, unknown> | null,
+  ): void {
     if (typeof window === 'undefined') return;
     const config = window.__EQ_ANALYTICS__;
     if (!config) return;
@@ -39,7 +44,7 @@ export class WebAnalytics {
     w[name] = w[name] || [];
 
     const entry: Record<string, unknown> = { event: eventName };
-    if (data instanceof Map) {
+    if (data instanceof Map || data instanceof Dictionary) {
       for (const [key, value] of data) entry[key] = value;
     } else if (data) {
       Object.assign(entry, data);

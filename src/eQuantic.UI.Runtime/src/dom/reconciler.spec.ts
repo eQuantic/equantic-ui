@@ -3,6 +3,7 @@ import { Reconciler, UNMEASURED_MARK } from './reconciler';
 import { commitShortcuts, declareShortcut, resetShortcuts } from './shortcuts';
 import { RenderManager } from './renderer';
 import { EventHandler, HtmlNode } from '../core/types';
+import { dictionary } from '../utils/dictionary';
 
 /**
  * Helper to create HtmlNode (virtual DOM node)
@@ -222,6 +223,47 @@ describe('Reconciler dispose', () => {
     expect(clicks).toBe(1); // listener was removed, no further increments
 
     document.body.removeChild(btn);
+  });
+});
+
+describe('Reconciler over a node built in C#', () => {
+  // A consumer's HtmlElement builds its node in C#, where Attributes and Events are dictionaries,
+  // and the runtime's Dictionary is what arrives here.
+  const built = (attributes: [string, string][], click?: () => void): HtmlNode =>
+    ({
+      tag: 'button',
+      children: [],
+      attributes: dictionary(attributes),
+      events: dictionary<string, EventHandler>(click ? [['click', click]] : []),
+    }) as unknown as HtmlNode;
+
+  it('creates the element with its attributes and its listener', () => {
+    const reconciler = new Reconciler();
+    let clicks = 0;
+    const btn = reconciler.createDomElement(
+      built([['id', 'go'], ['title', 'Go']], () => clicks++),
+    ) as HTMLButtonElement;
+    btn.click();
+    expect(btn.id).toBe('go');
+    expect(btn.title).toBe('Go');
+    expect(clicks).toBe(1);
+    reconciler.dispose();
+  });
+
+  it('updates an attribute and a listener from one such node to the next', () => {
+    const reconciler = new Reconciler();
+    const container = document.createElement('div');
+    let first = 0;
+    let second = 0;
+    const before = built([['id', 'a'], ['title', 'x']], () => first++);
+    reconciler.reconcile(container, null, before);
+    reconciler.reconcile(container, before, built([['id', 'b']], () => second++), 0);
+    const btn = container.firstChild as HTMLButtonElement;
+    btn.click();
+    expect(btn.id).toBe('b');
+    expect(btn.hasAttribute('title')).toBe(false);
+    expect([first, second]).toEqual([0, 1]);
+    reconciler.dispose();
   });
 });
 

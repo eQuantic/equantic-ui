@@ -6,6 +6,7 @@
  */
 
 import { HtmlNode, EventHandler } from '../core/types';
+import { plainBag } from '../utils/dictionary';
 import { claimedByShortcut } from './shortcuts';
 
 /**
@@ -192,7 +193,7 @@ export class Reconciler {
 
       // Comment nodes
       if (newNode.tag === '#comment') {
-        const text = newNode.attributes?.text || '';
+        const text = plainBag(newNode.attributes).text || '';
         if (currentElement instanceof Comment) {
           if (currentElement.textContent !== text) {
             currentElement.textContent = text;
@@ -204,8 +205,9 @@ export class Reconciler {
       // Element nodes
       // Element (not HTMLElement) — SVG icons are SVGElement and must reconcile too.
       if (currentElement instanceof Element) {
-        this.updateAttributes(currentElement, oldNode.attributes || {}, newNode.attributes || {});
-        this.updateEventListeners(currentElement, oldNode.events || {}, newNode.events || {});
+        // `plainBag`: a node a consumer's C# built carries the runtime's Dictionary (types.ts).
+        this.updateAttributes(currentElement, plainBag(oldNode.attributes), plainBag(newNode.attributes));
+        this.updateEventListeners(currentElement, plainBag(oldNode.events), plainBag(newNode.events));
         this.reconcileChildren(currentElement, oldNode.children || [], newNode.children || []);
       }
     }
@@ -229,7 +231,7 @@ export class Reconciler {
 
     // Comment node
     if (node.tag === '#comment') {
-      return document.createComment(node.attributes?.text || '');
+      return document.createComment(plainBag(node.attributes).text || '');
     }
 
     // Create element. SVG tags must use the SVG namespace, otherwise the
@@ -240,7 +242,7 @@ export class Reconciler {
 
     // Set attributes
     if (node.attributes) {
-      for (const [key, value] of Object.entries(node.attributes)) {
+      for (const [key, value] of Object.entries(plainBag(node.attributes))) {
         if (value !== undefined && value !== null) {
           this.applyAttribute(element, key, value);
         }
@@ -249,7 +251,7 @@ export class Reconciler {
 
     // Attach event handlers
     if (node.events) {
-      this.attachEventListeners(element, node.events);
+      this.attachEventListeners(element, plainBag(node.events));
     }
 
     // Render children (pass this element as parent to propagate SVG context)
@@ -938,8 +940,9 @@ export class Reconciler {
 
     // Attach event listeners
     if (virtualNode.events) {
-      this.attachEventListeners(existingElement, virtualNode.events);
-      result.attachedListeners += Object.keys(virtualNode.events).length;
+      const events = plainBag(virtualNode.events);
+      this.attachEventListeners(existingElement, events);
+      result.attachedListeners += Object.keys(events).length;
     }
 
     // FRAMEWORK MARKERS adopt too. Hydration deliberately leaves the SSR markup alone, but
@@ -947,7 +950,7 @@ export class Reconciler {
     // them), not content — SSR cannot know the client-side identity, so without this the sweep
     // finds nothing until the first full re-render, which the sweep itself was meant to trigger.
     if (virtualNode.attributes) {
-      for (const [name, value] of Object.entries(virtualNode.attributes)) {
+      for (const [name, value] of Object.entries(plainBag(virtualNode.attributes))) {
         if (name.startsWith('data-eq-') && !existingElement.hasAttribute(name)) {
           existingElement.setAttribute(name, String(value));
         }
@@ -987,7 +990,7 @@ export class Reconciler {
 
   /** How many listeners a virtual subtree carries, counted the way the adopted path counts them. */
   private static listenersIn(node: HtmlNode): number {
-    let count = node.events ? Object.keys(node.events).length : 0;
+    let count = Object.keys(plainBag(node.events)).length;
     for (const child of node.children ?? []) count += Reconciler.listenersIn(child);
     return count;
   }

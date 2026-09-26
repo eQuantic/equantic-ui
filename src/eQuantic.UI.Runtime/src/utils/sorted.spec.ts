@@ -77,5 +77,16 @@ describe('SortedMap<K, V> — key-sorted dictionary (SortedDictionary / SortedLi
     m.set(2, 20);
     m.set(1, 10);
     expect([...m].map((kvp) => kvp.key * 100 + kvp.value)).toEqual([110, 220]);
+    expect([...m].map(([key, value]) => key * 100 + value)).toEqual([110, 220]);
+  });
+
+  it('writes the JSON object of its entries in key order, and equals only itself', () => {
+    const m = sortedDictionary<string, number>([
+      ['b', 2],
+      ['a', 1],
+    ]);
+    expect(JSON.stringify(m)).toBe('{"a":1,"b":2}');
+    expect(m.equals(m)).toBe(true);
+    expect(m.equals(sortedDictionary<string, number>([['a', 1], ['b', 2]]))).toBe(false);
   });
 });
