@@ -152,8 +152,11 @@ public sealed class CodeDiff : StatefulComponent
         {
             if (_original is not null && ReferenceEquals(patch, _openedPatch)) return;
             var source = CodeDiffSource.FromPatch(patch);
-            _original = new CodeEditorController(source.Original.Text, language) { ReadOnly = true };
-            _modified = new CodeEditorController(source.Modified.Text, language) { ReadOnly = true };
+            // The editors hold the documents the source measured, and never a reading of their text:
+            // a patch keeps a bare carriage return inside its line, which a text read again splits,
+            // and the editor then had a line more than the rows and the numbers were counted on.
+            _original = new CodeEditorController(language: language) { ReadOnly = true, Document = source.Original };
+            _modified = new CodeEditorController(language: language) { ReadOnly = true, Document = source.Modified };
             _openedPatch = patch;
             _source = source;
             _comparedOriginal = null;
@@ -267,9 +270,9 @@ public sealed class CodeDiff : StatefulComponent
         var added = theme.Colors(Variant.Success);
         var removed = theme.Colors(Variant.Destructive);
         var filler = theme.Border.WithOpacity(0.35f);
-        var modifiedLines = LinesOf(layout.Modified, first, last);
+        var modifiedLines = layout.Modified.LinesIn(first, last);
         // Inline, the removed lines are drawn from the original, between the lines that replaced them.
-        var fillerLines = inline ? SourceLinesOf(layout.Modified, first, last) : (First: 0, Last: -1);
+        var fillerLines = inline ? layout.Modified.SourceLinesIn(first, last) : (First: 0, Last: -1);
         var modifiedBlock = new CodeBlock("")
         {
             Document = modified.Document,
@@ -324,7 +327,7 @@ public sealed class CodeDiff : StatefulComponent
         }
         else
         {
-            var originalLines = LinesOf(layout.Original, first, last);
+            var originalLines = layout.Original.LinesIn(first, last);
             var originalBlock = new CodeBlock("")
             {
                 Document = original.Document,
@@ -482,13 +485,17 @@ public sealed class CodeDiff : StatefulComponent
     {
         if (_source is not { Changes.Count: > 0 } source || _modified is not { } modified || _original is not { } original)
             return;
+        // Where a change puts the caret: its first line, or the last one for a change that removed the
+        // end of the text and so starts past it. Compared where it is PUT: compared where it starts,
+        // that change stood after the caret the step had left on it, and every step stayed there.
+        int LineOf(CodeLineChange change) => Math.Min(change.ModifiedStart, modified.Document.LineCount - 1);
         var caret = modified.Caret.Line;
         var target = forward ? source.Changes[0] : source.Changes[source.Changes.Count - 1];
         if (forward)
         {
             foreach (var change in source.Changes)
             {
-                if (change.ModifiedStart <= caret) continue;
+                if (LineOf(change) <= caret) continue;
                 target = change;
                 break;
             }
@@ -497,45 +504,30 @@ public sealed class CodeDiff : StatefulComponent
         {
             for (var i = source.Changes.Count - 1; i >= 0; i--)
             {
-                if (source.Changes[i].ModifiedStart >= caret) continue;
+                if (LineOf(source.Changes[i]) >= caret) continue;
                 target = source.Changes[i];
                 break;
             }
         }
         SetState(() =>
         {
-            modified.Selection = new CodeRange(new CodePosition(Math.Min(target.ModifiedStart, modified.Document.LineCount - 1), 0));
+            modified.Selection = new CodeRange(new CodePosition(LineOf(target), 0));
             original.Selection = new CodeRange(new CodePosition(Math.Min(target.OriginalStart, original.Document.LineCount - 1), 0));
         });
     }
 
-    /// <summary>Opens the fold a press on either side's placeholder names, by its original line.</summary>
+    /// <summary>
+    /// Opens the fold a press on either side's placeholder names, by its original line, and gives that
+    /// side the keyboard. The row pressed is gone once the run opens, and on the web the focus fell
+    /// with it to the page, where the diff's own keys do not answer: F7 did nothing until the reader
+    /// clicked back into the code.
+    /// </summary>
     private void OpenFoldOf(int line, bool modifiedSide)
     {
         if (_layout is not { } layout) return;
         var fold = modifiedSide ? layout.FoldOfModified(line) : layout.FoldOfOriginal(line);
         if (fold is { } found) _expanded.Add(found.OriginalLine);
-    }
-
-    /// <summary>The lines of the document the rows from <paramref name="first"/> to
-    /// <paramref name="last"/> hold, for what is marked on them.</summary>
-    private static (int First, int Last) LinesOf(CodeRows rows, int first, int last) =>
-        last < first ? (0, -1) : (rows.LineAtRow(first), rows.LineAtRow(last));
-
-    /// <summary>The lines of the OTHER document the filler rows from <paramref name="first"/> to
-    /// <paramref name="last"/> draw, for what is marked on them.</summary>
-    private static (int First, int Last) SourceLinesOf(CodeRows rows, int first, int last)
-    {
-        var lowest = int.MaxValue;
-        var highest = -1;
-        for (var row = first; row <= last; row++)
-        {
-            var shown = rows.RowAt(row);
-            if (shown.Kind != CodeRowKind.Filler || shown.SourceLine < 0) continue;
-            lowest = Math.Min(lowest, shown.SourceLine);
-            highest = Math.Max(highest, shown.SourceLine);
-        }
-        return highest < 0 ? (0, -1) : (lowest, highest);
+        (modifiedSide ? _modified : _original)?.RequestFocus();
     }
 
     /// <summary>

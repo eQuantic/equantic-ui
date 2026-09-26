@@ -1,4 +1,4 @@
-import { $eq, Box, BoxStyle, BuildContext, Button, CodeBlock, CodeDecoration, CodeDiffLayout, CodeDiffSource, CodeEditorController, CodeGrid, CodeLanguages, CodePatchFile, CodePosition, CodeRange, CodeRow, CodeRows, CodeSurface, ColorToken, Column, CornerRadii, Flexible, Icon, IconButton, IconGlyph, KeyChord, Point, Row, ScrollView, SdkStrings, Shortcut, Size, SizeValue, SizeVariantValue, StatefulComponent, Text, UiComponent, VisualNode } from "../runtime-exports";
+import { $eq, Box, BoxStyle, BuildContext, Button, CodeBlock, CodeDecoration, CodeDiffLayout, CodeDiffSource, CodeEditorController, CodeGrid, CodeLanguages, CodeLineChange, CodePatchFile, CodePosition, CodeRange, CodeRow, CodeSurface, ColorToken, Column, CornerRadii, Flexible, Icon, IconButton, IconGlyph, KeyChord, Point, Row, ScrollView, SdkStrings, Shortcut, Size, SizeValue, SizeVariantValue, StatefulComponent, Text, UiComponent, VisualNode } from "../runtime-exports";
 
 export class CodeDiff extends StatefulComponent {
     static $typeId = 'eQuantic.UI.Components.CodeDiff';
@@ -109,8 +109,8 @@ export class CodeDiff extends StatefulComponent {
         let added = theme.colors('success');
         let removed = theme.colors('destructive');
         let filler = theme.border.withOpacity(Math.fround(0.35));
-        let modifiedLines = CodeDiff.linesOf(layout.modified, first, last);
-        let fillerLines = inline ? CodeDiff.sourceLinesOf(layout.modified, first, last) : [0, -1];
+        let modifiedLines = layout.modified.linesIn(first, last);
+        let fillerLines = inline ? layout.modified.sourceLinesIn(first, last) : [0, -1];
         let modifiedBlock = new CodeBlock('', null, { document: modified.document, language: modified.highlighter.language, highlighter: modified.highlighter, rows: layout.modified, decorations: CodeDiff.marksOf(source, true, modifiedLines[0], modifiedLines[1], added.subtle, added.base.withOpacity(CodeDiff.wordAlpha), modified.composition), fillerDocument: inline ? original.document : null, fillerHighlighter: inline ? original.highlighter : null, fillerDecorations: inline ? CodeDiff.marksOf(source, false, fillerLines[0], fillerLines[1], removed.subtle, removed.base.withOpacity(CodeDiff.wordAlpha), null) : [], fillerColor: filler, onPlaceholderPressed: (line: number) => this.setState(() => this.openFoldOf(line, true)), standalone: false, size: this.size, inverse: this.inverse, metrics: metrics, viewportOffset: this._offset, viewportHeight: this._viewport, viewportWidth: this._modifiedWidth, selectionBands: modified.selectionBandsIn(modifiedLines[0], modifiedLines[1]), widestLine: inline ? Math.max(modified.widestLine, original.widestLine) : modified.widestLine });
         let ink = CodeBlock.inkFor(this.inverse, theme);
         let modifiedSurface: VisualNode = new CodeSurface(modifiedBlock, modified, { label: this.modifiedCaption ?? SdkStrings.diffModified, caretColor: ink, onChanged: () => this.setState(() => this.notify()) });
@@ -124,7 +124,7 @@ export class CodeDiff extends StatefulComponent {
             body.add(modifiedBlock.gutter(context, (row) => row.kind === 'line' ? String(source.modifiedNumber(row.line)) : null));
             body.add(new Flexible(modifiedScroll));
         } else {
-            let originalLines = CodeDiff.linesOf(layout.original, first, last);
+            let originalLines = layout.original.linesIn(first, last);
             let originalBlock = new CodeBlock('', null, { document: original.document, language: original.highlighter.language, highlighter: original.highlighter, rows: layout.original, decorations: CodeDiff.marksOf(source, false, originalLines[0], originalLines[1], removed.subtle, removed.base.withOpacity(CodeDiff.wordAlpha), null), fillerColor: filler, onPlaceholderPressed: (line: number) => this.setState(() => this.openFoldOf(line, false)), standalone: false, size: this.size, inverse: this.inverse, metrics: metrics, viewportOffset: this._offset, viewportHeight: this._viewport, viewportWidth: this._originalWidth, selectionBands: original.selectionBandsIn(originalLines[0], originalLines[1]), widestLine: original.widestLine });
             let originalSurface: VisualNode = new CodeSurface(originalBlock, original, { label: this.originalCaption ?? SdkStrings.diffOriginal, caretColor: ink, onChanged: () => this.setState(() => {}) });
             let originalScroll = new ScrollView(originalSurface, 'horizontal', { width: SizeValue.fill, onViewportChanged: (width: number) => {
@@ -194,8 +194,8 @@ export class CodeDiff extends StatefulComponent {
         if ((patch = this.patch) != null) {
             if (!(this._original == null) && (patch === this._openedPatch)) return;
             let source = CodeDiffSource.fromPatch(patch);
-            this._original = new CodeEditorController(source.original.text, language, { readOnly: true });
-            this._modified = new CodeEditorController(source.modified.text, language, { readOnly: true });
+            this._original = new CodeEditorController('', language, { readOnly: true, document: source.original });
+            this._modified = new CodeEditorController('', language, { readOnly: true, document: source.modified });
             this._openedPatch = patch;
             this._source = source;
             this._comparedOriginal = null;
@@ -275,25 +275,28 @@ export class CodeDiff extends StatefulComponent {
     }
 
     stepTo(forward: boolean) {
+        const lineOf = (change: CodeLineChange) => {
+            return Math.min(change.modifiedStart, modified.document.lineCount - 1);
+        };
         let source: any; let modified: any; let original: any; 
         if (!(((this._source != null && this._source.changes != null && this._source.changes.length > 0) && (source = this._source, true))) || !((modified = this._modified) != null) || !((original = this._original) != null)) return;
         let caret = modified.caret.line;
         let target = forward ? source.changes[0] : source.changes[source.changes.length - 1];
         if (forward) {
             for (const change of source.changes) {
-                if (change.modifiedStart <= caret) continue;
+                if (lineOf(change) <= caret) continue;
                 target = change;
                 break;
             }
         } else {
             for (let i = source.changes.length - 1; i >= 0; i--) {
-                if (source.changes[i].modifiedStart >= caret) continue;
+                if (lineOf(source.changes[i]) >= caret) continue;
                 target = source.changes[i];
                 break;
             }
         }
         this.setState(() => {
-            modified.selection = new CodeRange(new CodePosition(Math.min(target.modifiedStart, modified.document.lineCount - 1), 0));
+            modified.selection = new CodeRange(new CodePosition(lineOf(target), 0));
             original.selection = new CodeRange(new CodePosition(Math.min(target.originalStart, original.document.lineCount - 1), 0));
         });
     }
@@ -304,22 +307,7 @@ export class CodeDiff extends StatefulComponent {
         let fold = modifiedSide ? layout.foldOfModified(line) : layout.foldOfOriginal(line);
         let found: any; 
         if ((found = fold) != null) $eq.collections.setAdd(this._expanded, found.originalLine);
-    }
-
-    static linesOf(rows: CodeRows, first: number, last: number): [number, number] {
-        return last < first ? [0, -1] : [rows.lineAtRow(first), rows.lineAtRow(last)];
-    }
-
-    static sourceLinesOf(rows: CodeRows, first: number, last: number): [number, number] {
-        let lowest = 2147483647;
-        let highest = -1;
-        for (let row = first; row <= last; row++) {
-            let shown = rows.rowAt(row);
-            if (shown.kind !== 'filler' || shown.sourceLine < 0) continue;
-            lowest = Math.min(lowest, shown.sourceLine);
-            highest = Math.max(highest, shown.sourceLine);
-        }
-        return highest < 0 ? [0, -1] : [lowest, highest];
+        (modifiedSide ? this._modified : this._original)?.requestFocus();
     }
 
     static marksOf(source: CodeDiffSource, modifiedSide: boolean, first: number, last: number, line: ColorToken, word: ColorToken, composition: any) {

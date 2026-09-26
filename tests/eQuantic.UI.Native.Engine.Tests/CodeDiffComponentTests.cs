@@ -91,22 +91,32 @@ public class CodeDiffComponentTests
         b.Bounds.X.Should().BeApproximately(x.Bounds.X, 0.5f, "in the same column");
     }
 
+    /// <summary>
+    /// A press on a folded run opens it on both sides and leaves the caret where it was: the press
+    /// was the row's, not the code's. The keyboard is then in the side pressed, so F7 still steps: the
+    /// row that held it is gone once the run opens, and on the web the focus fell to the page, where
+    /// the diff's own keys do not answer.
+    /// </summary>
     [Fact]
-    public void AFoldOpensOnAPress()
+    public void AFoldOpensOnAPress_AndLeavesTheKeyboardInTheDiff()
     {
         var original = Lines(100, i => $"line {i}");
         var modified = original.Replace("line 90", "changed 90");
-        var host = Host(new CodeDiff(original, modified, "plaintext"));
+        var diff = new CodeDiff(original, modified, "plaintext");
+        var host = Host(diff);
         var frame = Settle(host);
 
         Texts(frame, "line 10").Should().BeEmpty("the unchanged run before the change is folded");
-        var fold = frame.HitRegions.First(region => region.Node.Label == SdkStrings.UnchangedLines(87));
-        var caret = host.CodeTarget;
+        var fold = frame.HitRegions.Last(region => region.Node.Label == SdkStrings.UnchangedLines(87));
+        var caret = diff.Editor.Caret;
         Press(host, fold);
         frame = Settle(host);
 
         Texts(frame, "line 10").Should().HaveCount(2, "the run is open on both sides");
-        host.CodeTarget.Should().Be(caret, "the press was the row's, not the code's");
+        diff.Editor.Caret.Should().Be(caret, "the press was the row's, not the code's");
+        host.KeyDown("F7").Should().BeTrue("the diff's own keys still answer");
+        host.CodeTarget.Should().NotBeNull("the keyboard is in the side whose fold was pressed");
+        host.CodeTarget!.Model.Should().BeSameAs(diff.Editor);
     }
 
     [Fact]
@@ -127,6 +137,30 @@ public class CodeDiffComponentTests
         Press(host, frame.HitRegions.Single(region => region.Node.Label == SdkStrings.NextChange));
         Settle(host);
         diff.Editor.Caret.Line.Should().Be(10, "past the last change the step wraps to the first");
+    }
+
+    /// <summary>
+    /// A change that removed the end of the text starts past its last line, so the step puts the
+    /// caret on the last line: the next step still wraps to the first change. It found that change
+    /// after the caret it had left there, every time, and stayed on it.
+    /// </summary>
+    [Fact]
+    public void NextChange_WrapsPastAChangeThatRemovedTheEnd()
+    {
+        var original = Lines(40, i => $"line {i}");
+        var modified = Lines(30, i => i == 5 ? "first" : $"line {i}");
+        var diff = new CodeDiff(original, modified, "plaintext");
+        var host = Host(diff);
+        var frame = Settle(host);
+
+        diff.Editor.Caret.Line.Should().Be(5, "a diff opens at its first change");
+        Press(host, frame.HitRegions.Single(region => region.Node.Label == SdkStrings.NextChange));
+        frame = Settle(host);
+        diff.Editor.Caret.Line.Should().Be(29, "lines 30 to 39 are gone, after the last line left");
+
+        Press(host, frame.HitRegions.Single(region => region.Node.Label == SdkStrings.NextChange));
+        Settle(host);
+        diff.Editor.Caret.Line.Should().Be(5, "past the last change the step wraps to the first");
     }
 
     /// <summary>
@@ -207,6 +241,23 @@ public class CodeDiffComponentTests
         Texts(frame, "@@ -20,1 +20,1 @@ class Far").Should().HaveCount(2, "each side says what the patch says in its place");
         diff.Editor.ReadOnly.Should().BeTrue("a patch's lines are not the file, and editing them edits nothing");
         Texts(frame, "20").Should().NotBeEmpty("a line is numbered as its file numbers it");
+    }
+
+    /// <summary>
+    /// A patch's sides are the lines it quotes, and the editors hold THOSE lines: a line of a file with
+    /// mixed endings can hold a bare carriage return, which a patch keeps inside the line and a text
+    /// read again splits. Read again, the editor had a line more than the rows, the numbers and the
+    /// marks were counted on, and everything after it was drawn a line off.
+    /// </summary>
+    [Fact]
+    public void APatchsEditors_HoldTheLinesThePatchQuotes()
+    {
+        var file = CodePatch.Parse("--- a/f.txt\n+++ b/f.txt\n@@ -1,2 +1,2 @@\n keep\n-old\n+new\rpart\n")[0];
+        var diff = CodeDiff.OfPatch(file);
+        Settle(Host(diff));
+
+        diff.Editor.Document.LineCount.Should().Be(2, "the patch quotes two lines of the modified file");
+        diff.Editor.Document.Line(1).Should().Be("new\rpart");
     }
 
     [Fact]
