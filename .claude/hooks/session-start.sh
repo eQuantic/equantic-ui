@@ -42,7 +42,9 @@ required() { note "$2"; missing+=("$1"); }
 
 # Lines for the session's later Bash commands: Claude Code sources this file before each of them.
 persist() {
-    [ -n "$env_file" ] && printf '%s\n' "$1" >> "$env_file"
+    [ -n "$env_file" ] || return 0
+    # Once: a session that starts again (a resume, a clear, a compact) must not grow the file.
+    grep -qxF -- "$1" "$env_file" 2>/dev/null || printf '%s\n' "$1" >> "$env_file"
 }
 
 sha256_of() {
@@ -156,6 +158,12 @@ install_dotnet() {
     rm -rf "$staging"
     if ! "$dest/dotnet" --list-sdks 2>/dev/null | grep -q "^$DOTNET_VERSION "; then
         required "the .NET SDK" ".NET SDK: $dest does not answer SDK $DOTNET_VERSION after the install"
+        return
+    fi
+    # The pin is only right if global.json accepts it: from the repository root, `dotnet --version`
+    # resolves through global.json and fails when no installed SDK satisfies it.
+    if ! (cd "$root" && DOTNET_ROOT="$dest" "$dest/dotnet" --version >/dev/null 2>&1); then
+        required "the .NET SDK" ".NET SDK: $DOTNET_VERSION is installed but global.json does not accept it; update the pin with global.json"
         return
     fi
     persist "export DOTNET_ROOT=\"$dest\""

@@ -107,8 +107,12 @@ else
     fail "an annotated tag failed or carries a signature after the hook ran"
 fi
 
+want_sdk="$(P="$root/global.json" node -p 'require(process.env.P).sdk.version')"
+pinned_sdk="$(sed -n 's/^DOTNET_VERSION="\([^"]*\)"$/\1/p' "$root/.claude/hooks/session-start.sh")"
+[ "$pinned_sdk" = "$want_sdk" ] && pass "the hook pins the SDK global.json names ($want_sdk)" \
+    || fail "the hook pins SDK '$pinned_sdk' and global.json names '$want_sdk': change them in the same commit"
 sdk="$(session dotnet --version 2>/dev/null || true)"
-[ "$sdk" = "10.0.101" ] && pass ".NET SDK $sdk from the pinned archive" || fail "dotnet --version answered '$sdk'"
+[ "$sdk" = "$want_sdk" ] && pass ".NET SDK $sdk from the pinned archive" || fail "dotnet --version answered '$sdk', want $want_sdk"
 resolved="$(session bash -c 'command -v dotnet' 2>/dev/null || true)"
 [ "$resolved" = "$work/home/.dotnet/dotnet" ] \
     && pass "the session's dotnet is the one installed into HOME/.dotnet" \
