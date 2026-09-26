@@ -42,3 +42,22 @@ defect, once per push of fixes, and never after the third round.
 
 - **WHEN** a push only merges main, or only edits the pull request's body
 - **THEN** it starts no round, since the ruleset does not review on push
+
+### Requirement: A pull request merges on its own CI, against the current main
+
+The repository's ruleset SHALL require the CI's jobs (`test-runtime`, both `test` legs, `samples`, the
+three `build-platform-runtimes`, `build-packages`, `commit-messages`, `openspec`, `session-start`,
+`wiki-checkout` and `package-extension`) to pass on a pull request's head, and SHALL require that head
+to be up to date with main, so a pull request merges only on a CI run that saw the main it lands on.
+Every job in a dependency chain SHALL be required, since GitHub counts a job skipped for a failed
+dependency as passed.
+
+#### Scenario: main moved after the CI ran
+
+- **WHEN** a pull request passed CI, and another pull request merged into main after it
+- **THEN** GitHub refuses the merge until main is merged into the pull request and CI passes again
+
+#### Scenario: A workflow that never ran
+
+- **WHEN** a workflow fails before it creates a job
+- **THEN** the required checks never report, and the pull request stays blocked

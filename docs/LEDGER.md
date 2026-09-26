@@ -802,6 +802,12 @@ record of a release, the wiki's Upgrading page is the distillate.
   three rounds in any case. The ruleset no longer reviews on push, so a round is asked for once per
   push of fixes ([#446](https://github.com/eQuantic/equantic-ui/issues/446)).
 
+- **2026-09-26 · A pull request merges against the current main**: the ruleset requires thirteen of
+  the CI's jobs, the whole dependency chain since GitHub counts a job skipped for a failed dependency
+  as passed, and a head up to date with main. Before it required only a review, so a workflow that
+  never ran read mergeable, and two pull requests that each passed alone broke main together (#453)
+  ([#287](https://github.com/eQuantic/equantic-ui/issues/287)).
+
 ## Retired documents
 
 | document | what it was | where its substance lives now |

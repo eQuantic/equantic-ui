@@ -217,12 +217,15 @@ is not the owner's.
    after the third in any case: a defect found later is still fixed and proved, and anything else
    is sorted as in any round, without asking for another. When the account's GitHub credits are
    exhausted and Copilot cannot review, skip this step.
-4. **Squash-merge on green CI, composing nothing.** `gh pr merge <n> --squash` takes the
-   repository's squash default, the pull request's title and body, so the commit's subject IS the
-   title that was already read. If a message is composed anyway, it goes in a file and
-   `./scripts/check-commit-messages.sh --file <file>` reads it before the merge. Then merge the pull
-   request's wiki branch, when it has one, into the wiki's master (see Documentation below): main
-   and the wiki move in the same step, and the next pull request's guards read both.
+4. **Squash-merge on green CI, composing nothing.** The ruleset requires thirteen of the CI's jobs
+   and a branch up to date with `main` (#287), so when `main` moved after the CI ran, merge `main`
+   into the pull request first: CI runs again, and it costs no Copilot round. Then
+   `gh pr merge <n> --squash` takes the repository's squash default, the pull request's title and
+   body, so the commit's subject IS the title that was already read. If a message is composed
+   anyway, it goes in a file and `./scripts/check-commit-messages.sh --file <file>` reads it before
+   the merge. Last, merge the pull request's wiki branch, when it has one, into the wiki's master
+   (see Documentation below): main and the wiki move in the same step, and the next pull request's
+   guards read both.
 5. **A release is Edgar's call.** Merging a pull request never implies one; `CLAUDE.md`'s Version
    Management section says what a bump touches.
 

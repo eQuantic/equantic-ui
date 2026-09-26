@@ -52,8 +52,10 @@ check that could not STOP anything — the ruleset requires a review and Copilot
 check, so a pull request with zero CI jobs was `CLEAN` — and then a check that never ran. The
 structural fix is a repository setting, put to Edgar: required status checks on `main` for
 `build-packages` and the two `test` legs, so that an absent run blocks a merge instead of passing it
-by omission. The tell becomes a one-line doctor in the pull-request checklist and in the watchers
-that read a PR's state: ask GitHub what it calls the workflow.
+by omission. Applied on 2026-09-26 (#287): thirteen jobs, and the branch required up to date
+with `main`, after two pull requests that each passed alone broke `main` together (#453). The tell
+becomes a one-line doctor in the pull-request checklist and in the watchers that read a PR's
+state: ask GitHub what it calls the workflow.
 
 **When the suite did run on three runners, it reported one failure where there were nine**, and the
 count itself was the fourth instrument to fail: the test step was `find tests -name "*.csproj" |

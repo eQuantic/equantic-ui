@@ -111,10 +111,13 @@ The working agreement is the **Workflow** section of [CLAUDE.md](CLAUDE.md), the
 Copilot (three rounds at most, stopping at the first without a defect), and is squash-merged when
 every review thread is resolved and CI is green.
 
-**Check that CI actually RAN before you read it as green.** The ruleset requires a review, not a
-status check, so a pull request whose workflow never started still reads mergeable — and a workflow
-whose `if:` expression does not parse fails before it creates a single job, with no log to notice.
-That happened here for an hour and seven pull requests merged on local runs alone.
+**Check that CI actually RAN before you read it as green.** Since 2026-09-26 the ruleset requires
+thirteen of the CI's jobs and a branch up to date with `main` (#287), so a pull request whose
+workflow never started stays blocked, and one that `main` moved past has to take `main` and run
+again. Before that it required only a review: a workflow whose `if:` expression did not parse
+failed before it created a single job, with no log to notice, and for an hour seven pull requests
+merged on local runs alone. Two pull requests that each passed alone also broke `main` together
+(#453).
 
 ```bash
 scripts/ci-doctor.sh

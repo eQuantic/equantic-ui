@@ -1,6 +1,6 @@
 # Proposal
 
-Closes #446, a Task under #160 (Instruments that fail, not warn).
+Closes #446 and #287, two Tasks under #160 (Instruments that fail, not warn).
 
 ## Why
 
@@ -23,6 +23,9 @@ something else finds them first.
 - **A round is asked for on purpose**, once per push of fixes. The repository's ruleset no longer
   reviews on push (`review_on_push` off since 2026-09-26), so a merge from main or a change to the
   body alone costs no round.
+- **A pull request merges on its own CI, against the current main.** The ruleset requires thirteen
+  of the CI's jobs and a head up to date with main (#287), applied on 2026-09-26 after two pull
+  requests that each passed alone broke main together (#453).
 
 For a developer using the SDK nothing changes. The parts reached are the Workflow section of
 `CLAUDE.md` and `AGENTS.md`, `CONTRIBUTING.md` and the pull request template.
