@@ -355,8 +355,18 @@ function sameItem(item: unknown, value: unknown): boolean {
  * compiler picks from the element type: the structural one for a tuple, a record or a struct, as
  * `Contains` picks it (a tuple is an array here, which `sameItem` takes by reference), and
  * `sameItem` for everything else.
+ *
+ * The static type may be `ICollection<T>`, which can hold a `HashSet` or a `LinkedList` when the call
+ * runs (found in review, #421): a Set answers as `set.Remove(x)` lowers, through `delete`, and a
+ * twin with a `remove` of its own answers through it, as `contains` asks the value what it is.
  */
-export function remove<T>(list: T[], value: T, same: (a: T, b: T) => boolean = sameItem): boolean {
+export function remove<T>(
+  list: T[] | Set<T> | { remove(value: T): boolean },
+  value: T,
+  same: (a: T, b: T) => boolean = sameItem,
+): boolean {
+  if (list instanceof Set) return list.delete(value);
+  if (!Array.isArray(list)) return list.remove(value);
   for (let index = 0; index < list.length; index++) {
     if (same(list[index], value)) {
       list.splice(index, 1);
