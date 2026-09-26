@@ -226,7 +226,8 @@ Documentation changes with the behaviour it describes. This repository's Markdow
 same pull request. The wiki page changes in English AND Portuguese, in one commit on a branch of the
 wiki repository named exactly like the pull request's own branch. CI checks that branch out for the
 docs guards when it exists (`scripts/checkout-wiki.sh`), so the pull request is checked against the
-pages it brings, while every other one still reads master. When the pull request merges, its wiki
+pages it brings, while every other one still reads master, and so does a pull request from a fork,
+whose branch name can repeat one of this repository's. When the pull request merges, its wiki
 branch is merged into the wiki's master (rebased on master first if master has moved) and deleted.
 A page pushed to master before its change merges fails the wiki guards of every other pull request
 (#406). Locally the guards read `equantic-ui.wiki` beside the repository, which every local run

@@ -5,8 +5,9 @@
 ### Requirement: A pull request's docs guards read its own wiki pages
 
 CI SHALL check out the wiki for the documentation guards at the branch named exactly like the pull
-request's head branch when the wiki has one, and at the wiki's default branch otherwise. The branch
-name SHALL be read as data and never interpolated into a command. When the wiki's branches cannot be
+request's head branch when the wiki has one and the pull request comes from this repository, and at
+the wiki's default branch otherwise. The branch name SHALL be read as data and never interpolated
+into a command. When the wiki's branches cannot be
 listed, the checkout SHALL fail and leave nothing behind, rather than read the default branch.
 
 #### Scenario: A pull request that carries its wiki pages
@@ -18,6 +19,12 @@ listed, the checkout SHALL fail and leave nothing behind, rather than read the d
 
 - **WHEN** the wiki has no branch of that name, or the run is not a pull request
 - **THEN** the guards read the wiki's default branch
+
+#### Scenario: A pull request from a fork
+
+- **WHEN** a fork's pull request has a head branch named like one of the wiki's branches
+- **THEN** the guards read the wiki's default branch, since that wiki branch belongs to another
+  pull request
 
 #### Scenario: A name that is only the tail of a branch
 
