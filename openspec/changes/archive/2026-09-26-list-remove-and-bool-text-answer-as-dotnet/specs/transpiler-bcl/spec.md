@@ -10,7 +10,9 @@ What a BCL member answers in the browser, which is what it answers in .NET.
 
 `list.Remove(item)` SHALL remove the first item `EqualityComparer<T>.Default` finds equal to the value
 and answer whether it found one, evaluating the list and the item once each, in that order. A value
-tuple, a record and a struct SHALL compare by value, through the same equality `Contains` uses.
+tuple, a record and a struct SHALL compare by value, through the same equality `Contains` uses. Through
+`ICollection<T>`, a HashSet or a LinkedList held when the call runs SHALL remove as it does when
+called directly.
 
 #### Scenario: A present item and a missing one
 
@@ -26,6 +28,11 @@ tuple, a record and a struct SHALL compare by value, through the same equality `
 
 - **WHEN** a `List<(int, string)>` holding `(1, "a")` and `(2, "b")` removes `(2, "b")`
 - **THEN** it answers true, and one item is left
+
+#### Scenario: A HashSet through ICollection
+
+- **WHEN** `ICollection<int> c = new HashSet<int> { 1, 2 };` runs `c.Remove(1)` and then `c.Remove(5)`
+- **THEN** the calls answer true and false, and one item is left
 
 ### Requirement: Convert.ToBoolean answers by the overload C# binds
 
