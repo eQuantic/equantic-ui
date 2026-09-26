@@ -47,6 +47,23 @@ public class VocabularyInterfaceDefaultsTests
         .Distinct()
         .Order(StringComparer.Ordinal);
 
+    /// <summary>
+    /// `IAppTheme.Code` over the reference theme for every token kind, as `code|kind|light|dark`,
+    /// each colour its r,g,b,a. The runtime's copy is `codeTokenColor`, a hand transcription of the
+    /// default's switch, and one arm checked is not the switch checked. `PhotonTheme` declares no
+    /// `Code`, so this is the interface's default itself, and the runtime's `photonTheme` carries
+    /// the same palette.
+    /// </summary>
+    private static IEnumerable<string> CodeColors() => Enum.GetValues<eQuantic.UI.Primitives.CodeTokenKind>()
+        .Select(kind =>
+        {
+            var token = ((eQuantic.UI.Primitives.IAppTheme)eQuantic.UI.Primitives.PhotonTheme.Instance).Code(kind);
+            var name = kind.ToString();
+            return $"code|{char.ToLowerInvariant(name[0]) + name[1..]}|{Rgba(token.Light)}|{Rgba(token.Dark)}";
+        });
+
+    private static string Rgba(eQuantic.UI.Primitives.Color color) => $"{color.R},{color.G},{color.B},{color.A}";
+
     private static string JsName(MethodInfo method)
     {
         var name = method.IsSpecialName && (method.Name.StartsWith("get_") || method.Name.StartsWith("set_"))
@@ -58,7 +75,7 @@ public class VocabularyInterfaceDefaultsTests
     [Fact]
     public void EveryVocabularyDefault_IsInTheRuntimesList()
     {
-        var expected = string.Join('\n', Defaults()) + '\n';
+        var expected = string.Join('\n', Defaults().Concat(CodeColors())) + '\n';
         if (Environment.GetEnvironmentVariable("EQ_UPDATE_INTERFACE_DEFAULTS") == "1")
         {
             Directory.CreateDirectory(Path.GetDirectoryName(FixturePath)!);

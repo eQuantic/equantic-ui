@@ -64,6 +64,29 @@ public class DefaultInterfaceMemberEmissionTests
                 public int Tokenize(string line, int state, List<CodeToken> into) => state;
             }
             """,
+        // Two defaults that lower to one name: the twin holds one member per name.
+        ["Doubled.cs"] = """
+            namespace App;
+            public interface IAlpha { string Mark() => "a"; }
+            public interface IBeta { string Mark() => "b"; }
+            public sealed class Doubled : IAlpha, IBeta { public int N; }
+            """,
+        // A default that reaches a static of its interface, which has no JavaScript home.
+        ["Wrapped.cs"] = """
+            namespace App;
+            public interface IWrapping
+            {
+                string Show() => Wrap("x");
+                private static string Wrap(string text) => "<" + text + ">";
+            }
+            public sealed class Wrapped : IWrapping { public int N; }
+            """,
+        // A type named only in a default method's signature.
+        ["Canvas.cs"] = """
+            namespace App;
+            public interface IDraw { string Draw(Spacing gap) => "drawn"; }
+            public sealed class Canvas : IDraw { public int N; }
+            """,
         // Compiled into a referenced assembly below, not into this compilation.
         ["Voiced.cs"] = """
             namespace App;
@@ -85,7 +108,7 @@ public class DefaultInterfaceMemberEmissionTests
 
     /// <summary>Compiled the way eqc compiles an app, with <see cref="Library"/> as a referenced
     /// assembly: its interface has no syntax in the app's compilation, only metadata.</summary>
-    private static CompilationResult Compile(string component)
+    private static CompilationResult Compile(string component, bool succeeds = true)
     {
         var dir = Path.Combine(Path.GetTempPath(), "eq-default-members-" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(dir);
@@ -122,7 +145,7 @@ public class DefaultInterfaceMemberEmissionTests
             compiler.SetDependencyResolver(resolver);
             var result = compiler.CompileFile(Path.Combine(dir, component + ".cs"))
                 .Single(r => r.ComponentName == component);
-            result.Success.Should().BeTrue(string.Join("; ", result.Errors.Select(e => e.Message)));
+            if (succeeds) result.Success.Should().BeTrue(string.Join("; ", result.Errors.Select(e => e.Message)));
             return result;
         }
         finally
@@ -175,20 +198,55 @@ public class DefaultInterfaceMemberEmissionTests
 
         result.TypeScript.Should().MatchRegex(@"get rules\(\)(: \w+)? \{\s*return ICodeLanguage\.rules\(this\);");
         result.TypeScript.Should().MatchRegex(@"import \{[^}]*\bICodeLanguage\b[^}]*\} from ""@equantic/runtime""");
-        result.Warnings.Should().NotContain(warning => warning.Code == "EQ1008");
+        result.Errors.Should().NotContain(error => error.Code == "EQ1008");
+    }
+
+    /// <summary>Two defaults that lower to one name (found in review, #418): C# reaches each through
+    /// its interface, and the twin would keep one of them.</summary>
+    [Fact]
+    public void TwoDefaultsOnOneNameAreRefused()
+    {
+        var result = Compile("Doubled", succeeds: false);
+
+        result.Errors.Should().ContainSingle(error => error.Code == "EQ1007")
+            .Which.Message.Should().Contain("'Doubled' takes the default 'IBeta.Mark'")
+            .And.Contain("'IAlpha.Mark'");
+    }
+
+    /// <summary>A default that reaches a static member of its interface (found in review, #418): an
+    /// interface has no JavaScript form, so nothing would define the static it calls.</summary>
+    [Fact]
+    public void ADefaultReachingAnInterfaceStaticIsRefused()
+    {
+        var result = Compile("Wrapped", succeeds: false);
+
+        result.Errors.Should().ContainSingle(error => error.Code == "EQ1008")
+            .Which.Message.Should().Contain("IWrapping.Wrap, a static member of an interface")
+            .And.Contain("Declare Show in Wrapped");
+    }
+
+    /// <summary>A type named only in a default method's signature is imported, since the signature
+    /// annotates it (found in review, #418).</summary>
+    [Fact]
+    public void ATypeInADefaultsSignatureIsImported()
+    {
+        var ts = Compile("Canvas").TypeScript;
+
+        ts.Should().MatchRegex(@"draw\(_?gap(: Spacing)?\)");
+        ts.Should().Contain("import { Spacing } from \"./Spacing\"");
     }
 
     /// <summary>A default whose body is compiled into a referenced assembly the runtime does not
-    /// carry cannot be written, and the build says so instead of emitting a twin that answers
-    /// undefined.</summary>
+    /// carry cannot be written, and the build refuses the class instead of emitting a twin that
+    /// answers undefined, naming the two ways out.</summary>
     [Fact]
-    public void ADefaultFromAReferencedAssemblyIsSaid()
+    public void ADefaultFromAReferencedAssemblyIsRefused()
     {
-        var result = Compile("Voiced");
+        var result = Compile("Voiced", succeeds: false);
 
-        result.TypeScript.Should().NotMatchRegex(@"\bsay\(");
-        result.Warnings.Should().ContainSingle(warning => warning.Code == "EQ1008")
+        result.Success.Should().BeFalse();
+        result.Errors.Should().ContainSingle(error => error.Code == "EQ1008")
             .Which.Message.Should().Contain("Voiced relies on the default IVoice.Say")
-            .And.Contain("Declare Say in Voiced");
+            .And.Contain("Declare Say in Voiced, or keep Voiced out of client code");
     }
 }

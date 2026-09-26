@@ -13,10 +13,19 @@ import { describe, expect, it } from 'vitest';
 import * as defaults from './interface-defaults';
 import { photonTheme } from './design-system.generated';
 import { DataPalette } from './data-palette';
+import { codeTokenColor } from './value-types';
 
-const fixture = readFileSync('src/shared/__fixtures__/interface-defaults.txt', 'utf8')
+const lines = readFileSync('src/shared/__fixtures__/interface-defaults.txt', 'utf8')
   .split('\n')
   .filter((line) => line.length > 0);
+/** `Interface.member`: a default the runtime carries. */
+const fixture = lines.filter((line) => !line.startsWith('code|'));
+/** `code|kind|light|dark`: the C# default `Code` over the reference theme, for every token kind. */
+const codeColors = lines.filter((line) => line.startsWith('code|'));
+
+/** A colour's channels as the fixture writes them. */
+const rgba = (color: { r: number; g: number; b: number; a: number }): string =>
+  `${color.r},${color.g},${color.b},${color.a}`;
 
 describe('the vocabulary interface defaults (cross-pinned with VocabularyInterfaceDefaultsTests.cs)', () => {
   it('lists the defaults it is held to', () => {
@@ -32,7 +41,19 @@ describe('the vocabulary interface defaults (cross-pinned with VocabularyInterfa
     });
   }
 
-  it("answers each default as C# does", () => {
+  // `codeTokenColor` is a hand copy of `IAppTheme.Code`'s switch; every arm is held here, not one.
+  it('holds a colour for every token kind', () => {
+    expect(codeColors.length).toBeGreaterThanOrEqual(12);
+  });
+  for (const line of codeColors) {
+    const [, kind, light, dark] = line.split('|');
+    it(`colours ${kind} as C#'s default does`, () => {
+      const token = codeTokenColor(photonTheme, kind);
+      expect(`${rgba(token.light)}|${rgba(token.dark)}`).toBe(`${light}|${dark}`);
+    });
+  }
+
+  it('answers each default as C# does', () => {
     expect(defaults.ICodeLanguage.rules({}).indentWidth).toBe(4);
     expect(defaults.ICodeCompletionProvider.triggerCharacters({})).toEqual(['.']);
     // A new list per read, as a C# expression-bodied member builds one.
@@ -41,6 +62,8 @@ describe('the vocabulary interface defaults (cross-pinned with VocabularyInterfa
     );
     expect(defaults.IAppTheme.monoFamily(photonTheme)).toBeNull();
     expect(defaults.IAppTheme.data(photonTheme)).toBe(DataPalette.default);
-    expect(defaults.IAppTheme.code(photonTheme, 'keyword')).toEqual(photonTheme.colors('primary').base);
+    expect(defaults.IAppTheme.code(photonTheme, 'keyword')).toEqual(
+      photonTheme.colors('primary').base,
+    );
   });
 });

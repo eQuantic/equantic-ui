@@ -79,6 +79,34 @@ public class DefaultInterfaceMemberConformanceTests
         }
 
         public record Greeter(string Who) : IGreeter;
+
+        public interface IGreet
+        {
+            string Hello() => "hi";
+        }
+
+        public record Nobody : IGreet;
+
+        public interface IMark
+        {
+            string Mark(string suffix = "!") => "m" + suffix;
+        }
+
+        public record Marker : IMark
+        {
+            public string Tag(string suffix = "?") => "t" + suffix;
+        }
+
+        public interface ISized
+        {
+            int Width { get; set; }
+            int Half { get => Width / 2; set => Width = value * 2; }
+        }
+
+        public record Panel : ISized
+        {
+            public int Width { get; set; }
+        }
         """;
 
     [SkippableTheory]
@@ -98,6 +126,12 @@ public class DefaultInterfaceMemberConformanceTests
     [InlineData("ICounter k = new Tally(); k.Bump(); k.Bump(); return k.Count;")]     // 2
     // A default that calls a private member of its interface, which no type implements.
     [InlineData("IGreeter g = new Greeter(\"ana\"); return g.Greet();")]              // "<hi ana>"
+    // A record with no member of its own takes every member from its interface (found in review).
+    [InlineData("IGreet n = new Nobody(); return n.Hello();")]                        // "hi"
+    // An optional parameter keeps its default, on a default method and on the record's own.
+    [InlineData("IMark m = new Marker(); return m.Mark() + m.Mark(\"#\") + new Marker().Tag();")] // "m!m#t?"
+    // A default property writes through its setter.
+    [InlineData("ISized s = new Panel(); s.Half = 5; return s.Width + \"|\" + s.Half;")]   // "10|5"
     public void ADefaultInterfaceMember_ReachesTheTypesTwin(string statements)
     {
         Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
