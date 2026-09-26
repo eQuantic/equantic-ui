@@ -13,7 +13,7 @@ eQuantic.UI.Compiler.CodeGen.ValueMember.ValueMember(string! Display, string! Js
 *REMOVED*eQuantic.UI.Compiler.CodeGen.ValueMember.Default.get -> string!
 *REMOVED*eQuantic.UI.Compiler.CodeGen.ValueMember.Default.init -> void
 *REMOVED*eQuantic.UI.Compiler.CodeGen.ValueMember.ValueMember(string! Display, string! Js, string! Default, string! TsType) -> void
-eQuantic.UI.Compiler.CodeGen.CSharpToJsConverter.SetConstructorParametersInScope(bool inScope) -> void
+eQuantic.UI.Compiler.CodeGen.CSharpToJsConverter.WithConstructorParametersInScope<T>(System.Func<T>! convert) -> T
 eQuantic.UI.Compiler.CodeGen.ConversionContext.ConstructorParametersInScope.get -> bool
 eQuantic.UI.Compiler.CodeGen.ConversionContext.ConstructorParametersInScope.set -> void
 eQuantic.UI.Compiler.CodeGen.CSharpToJsConverter.DefaultOf(Microsoft.CodeAnalysis.ITypeSymbol? type) -> string!

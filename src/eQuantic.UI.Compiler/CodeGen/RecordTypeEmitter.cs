@@ -116,15 +116,8 @@ public class RecordTypeEmitter
         if (initializer is null) return declared is null ? "null" : DefaultOf(declared);
         // The default runs in the constructor's parameter list, where a positional parameter the
         // initializer reads (`Tag = "#" + Id`) is the parameter itself, and no member is set yet.
-        _converter.SetConstructorParametersInScope(true);
-        try
-        {
-            return _converter.ConvertExpression(initializer, declared?.ToString());
-        }
-        finally
-        {
-            _converter.SetConstructorParametersInScope(false);
-        }
+        return _converter.WithConstructorParametersInScope(
+            () => _converter.ConvertExpression(initializer, declared?.ToString()));
     }
 
     /// <summary>The type and the initializer a value member is declared with, found by its name
@@ -527,7 +520,10 @@ public class RecordTypeEmitter
                 }
                 else
                 {
-                    superArgs.Add(_converter.ConvertExpression(arg.Expression));
+                    // It runs before `super()`, where the parameters are the constructor's own and
+                    // `this` cannot be read: `: Base(X + 1)` wrote `super(this.x + 1)`, which threw.
+                    superArgs.Add(_converter.WithConstructorParametersInScope(
+                        () => _converter.ConvertExpression(arg.Expression)));
                 }
             }
         }

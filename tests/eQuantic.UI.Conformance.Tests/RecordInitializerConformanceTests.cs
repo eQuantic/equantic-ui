@@ -64,6 +64,13 @@ public class RecordInitializerConformanceTests
             public Meter() { }
         }
 
+        public record Measure(int Value);
+
+        public record Offset(int X) : Measure(X + 1)
+        {
+            public int Twice = X * 2;
+        }
+
         public record struct Reading(int Id)
         {
             public string Unit { get; init; } = "kg";
@@ -104,6 +111,8 @@ public class RecordInitializerConformanceTests
     [InlineData("return (new Zeroed().Total + 1.5m).ToString();")]                             // "1.5"
     // Each construction runs the initializer again: a collection is its own, never shared.
     [InlineData("var a = new Props(); var b = new Props(); a.Tags.Add(\"x\"); return b.Tags.Count;")] // 0
+    // A base clause reads the derived record's parameters, before any member of it is set.
+    [InlineData("var o = new Offset(3); return o.Value + \"|\" + o.X + \"|\" + o.Twice;")]       // "4|3|6"
     // `with` copies what the construction wrote, and changes only what it names.
     [InlineData("var f = new Fields() with { N = 1 }; return f.Log + f.N;")]                   // "x1"
     public void ARecordMember_StartsAsItsDeclarationSays(string statements)

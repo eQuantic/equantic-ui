@@ -76,7 +76,26 @@ public class CSharpToJsConverter
 
     /// <summary>Names the array an ITERATOR method is filling — null outside one.</summary>
     /// <summary>See <see cref="ConversionContext.ConstructorParametersInScope"/>.</summary>
-    public void SetConstructorParametersInScope(bool inScope) => _context.ConstructorParametersInScope = inScope;
+    /// <summary>
+    /// Converts with a constructor's parameters in scope as bare names (see
+    /// <see cref="ConversionContext.ConstructorParametersInScope"/>), and puts back the scope in
+    /// force before: a record's member defaults and its base clause both run where no member of the
+    /// instance is set yet, and a base clause runs before <c>super()</c>, where reading
+    /// <c>this</c> throws.
+    /// </summary>
+    public T WithConstructorParametersInScope<T>(Func<T> convert)
+    {
+        var previous = _context.ConstructorParametersInScope;
+        _context.ConstructorParametersInScope = true;
+        try
+        {
+            return convert();
+        }
+        finally
+        {
+            _context.ConstructorParametersInScope = previous;
+        }
+    }
 
     public void SetIteratorBuffer(string? buffer)
     {
