@@ -12,11 +12,13 @@ A constant of `decimal` reaches the browser as a name nothing defines. `return M
 
 The BCL audit graded no static member of `decimal`, which is why nothing noticed. A const declared in the component's own source keeps working, through the static its module declares.
 
-The author's review of this change, run before Copilot's, found three more on the same paths, each measured on both sides:
+The author's review of this change, run after Copilot's first round since the change predates #448, found three more on the same paths, each measured on both sides:
 
 - A decimal constant in a pattern or a case label compared by `===`, which never matches the runtime's Decimal, an object: `d is 1m` and `case 1m:` answered false on main, and `d is decimal.One` would have gone from a ReferenceError to the same silent false.
 - A constant whose TYPE is an enum was written as its underlying number (`Cal.First.ToString()` answered null), and a skipped default of a `[Flags]` enum as a member's name, where a flags enum is a number.
 - The writer's escaping left a lone surrogate raw, which UTF-8 cannot encode, so the module could not be written.
+
+Copilot's second round found one more: a char literal was written from its source text, which spells C#'s escapes, and JavaScript has no `\e`, no `\a` and a `\x` of exactly two digits, so `'\e'` read as "e".
 
 ## What Changes
 
@@ -28,12 +30,12 @@ The author's review of this change, run before Copilot's, found three more on th
 - A narrow integer (`byte`, `sbyte`, `short`, `ushort`, `uint`) and a `ulong` annotate in their JavaScript type, `number` and `bigint`, where each reached TypeScript verbatim in a constant's own static.
 - **A constant of an enum type** is the enum's representation, inlined or as a skipped default: a `[Flags]` enum's number, any other enum's camelCase member name.
 - **A decimal constant matches by value** in a constant pattern, a switch expression's arm and a switch statement's case label, which a decimal label turns into the if/else chain.
-- **A constant's text escapes** a lone surrogate, a control character other than the tab and a line separator, and a string literal takes the same writer.
+- **A constant's text escapes** a lone surrogate and every character with no glyph of its own, in the upper case C# source spells them in, and a string literal and a char literal take the same writer, from their value.
 - The BCL audit grades `decimal`'s static surface. Its nine translated members are proved on both sides: the five constants, `Parse` (already proved by `DecimalConversionConformanceTests`) and the three `Round` overloads. The 38 it fences stay fenced, left to #449.
 
-For a developer using the SDK: `decimal.MaxValue`, `MinValue`, `Zero`, `One` and `MinusOne` work, a `long` constant such as `TimeSpan.TicksPerSecond` mixes with longs, a decimal literal with digit separators works, a skipped parameter's default keeps its type, a decimal constant matches in a pattern or a `case`, and a constant of an enum type is that enum's. Nothing is written differently.
+For a developer using the SDK: `decimal.MaxValue`, `MinValue`, `Zero`, `One` and `MinusOne` work, a `long` constant such as `TimeSpan.TicksPerSecond` mixes with longs, a decimal literal with digit separators works, a skipped parameter's default keeps its type, a decimal constant matches in a pattern or a `case`, a constant of an enum type is that enum's, and a char literal is its value (`'\e'` is ESC). Nothing is written differently.
 
-The part reached is eqc, with its compiler and conformance tests and the audit's baseline. No runtime code changes, the six shared twins are unchanged, and the public surface of eqc does not move (`ConstantLiteral` and the changed signatures are internal).
+The part reached is eqc, with its compiler and conformance tests and the audit's baseline. No runtime code changes. The shared twins move only where a string held a raw tab, now `\t`, and a char literal was `'\0'`, now spelled as a `\u` escape: the same values, regenerated. The public surface of eqc does not move (`ConstantLiteral` and the changed signatures are internal).
 
 ## Capabilities
 
@@ -47,4 +49,4 @@ None.
 
 ## Impact
 
-`src/eQuantic.UI.Compiler` (the inlining strategy, the literal and unary strategies, the parameter default writer shared by creations and invocations, the pattern converter and the switch statement strategy, the primitive static strategy's table and the TypeScript type mapping), tests in the compiler and conformance suites, the BCL audit's baseline, `docs/LEDGER.md`, and the wiki's SupportedFeatures page in English and Portuguese.
+`src/eQuantic.UI.Compiler` (the inlining strategy, the literal and unary strategies, a string's and a char's quoting, the parameter default writer shared by creations and invocations, the pattern converter and the switch statement strategy, the primitive static strategy's table and the TypeScript type mapping), tests in the compiler and conformance suites, the shared twins the runtime carries, regenerated, the BCL audit's baseline, `docs/LEDGER.md`, and the wiki's SupportedFeatures page in English and Portuguese.

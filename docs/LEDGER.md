@@ -808,7 +808,7 @@ record of a release, the wiki's Upgrading page is the distillate.
   decimal constant in a pattern or a `case` compared by identity and never matched, a constant of
   an enum type was written as its number (and a flags default as a name), and a lone surrogate left
   the module unwritable, and Copilot's second round a char literal written from its source text,
-  whose `\e`, `\a` and `\x041` JavaScript reads as other characters. 43 of the 88 conformance
+  whose `\e`, `\a` and `\x041` JavaScript reads as other characters. 47 of the 92 conformance
   cases failed on main. The BCL audit grades
   `decimal`'s static surface: its nine translated members are proved, and the 38 it fences are left
   to their own issue ([#449](https://github.com/eQuantic/equantic-ui/issues/449)), as are an `is`
