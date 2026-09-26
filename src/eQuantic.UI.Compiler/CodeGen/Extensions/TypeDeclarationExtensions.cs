@@ -216,18 +216,21 @@ public static class TypeDeclarationExtensions
             : DefaultFor(type);
 
     /// <summary>JS literal for <c>default(T)</c> from the declared type syntax (name-based — the emitter
-    /// runs pre-symbol). Nullable and reference types default to <c>null</c>.</summary>
+    /// runs pre-symbol). Nullable and reference types default to <c>null</c>. A name qualified with
+    /// <c>System.</c> is the same type as its keyword, and a char's default is U+0000.</summary>
     internal static string DefaultFor(TypeSyntax? type)
     {
         var name = type?.ToString() ?? "";
         if (name.EndsWith("?")) return "null"; // Nullable<T> / nullable reference
+        if (name.StartsWith("System.", System.StringComparison.Ordinal)) name = name["System.".Length..];
 
         return name switch
         {
-            "int" or "Int32" or "short" or "Int16" or "byte" or "sbyte"
+            "int" or "Int32" or "short" or "Int16" or "byte" or "Byte" or "sbyte" or "SByte"
                 or "uint" or "UInt32" or "ushort" or "UInt16" => "0",
             "double" or "Double" or "float" or "Single" => "0",
             "bool" or "Boolean" => "false",
+            "char" or "Char" => "'\\0'",
             "decimal" or "Decimal" => "$eq.num.dec(0)",
             "long" or "Int64" or "ulong" or "UInt64" => "$eq.num.long(0)",
             _ => "null",
