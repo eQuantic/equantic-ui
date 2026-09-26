@@ -201,7 +201,9 @@ is not the owner's.
 4. **Squash-merge on green CI, composing nothing.** `gh pr merge <n> --squash` takes the
    repository's squash default, the pull request's title and body, so the commit's subject IS the
    title that was already read. If a message is composed anyway, it goes in a file and
-   `./scripts/check-commit-messages.sh --file <file>` reads it before the merge.
+   `./scripts/check-commit-messages.sh --file <file>` reads it before the merge. Then merge the pull
+   request's wiki branch, when it has one, into the wiki's master (see Documentation below): main
+   and the wiki move in the same step, and the next pull request's guards read both.
 5. **A release is Edgar's call.** Merging a pull request never implies one; `CLAUDE.md`'s Version
    Management section says what a bump touches.
 
@@ -221,10 +223,13 @@ workspace and pull request numbers repeat across them, so confirm the run's `rep
 ### Documentation and the ledger
 
 Documentation changes with the behaviour it describes. This repository's Markdown changes in the
-same pull request. The wiki page changes in English AND Portuguese, in one commit of the wiki
-repository, published when the pull request merges: a page published before its change merges fails
-the wiki guards of every other pull request (#406). `docs/LEDGER.md` keeps the history, one line per
-event, citing the issue.
+same pull request. The wiki page changes in English AND Portuguese, in one commit on a branch of the
+wiki repository named exactly like the pull request's own branch. CI checks that branch out for the
+docs guards when it exists (`scripts/checkout-wiki.sh`), so the pull request is checked against the
+pages it brings, while every other one still reads master. When the pull request merges, its wiki
+branch is merged into the wiki's master (rebased on master first if master has moved) and deleted.
+A page pushed to master before its change merges fails the wiki guards of every other pull request
+(#406). `docs/LEDGER.md` keeps the history, one line per event, citing the issue.
 
 ### OpenSpec
 

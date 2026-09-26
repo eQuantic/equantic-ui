@@ -105,7 +105,8 @@ public class WikiDiagnosticsTests
         // the rule is that both change in one commit.
         string.Join("\n", offences).Should().BeEmpty(
             "the wiki's Diagnostics page is what a reader sees, and every wiki edit is EN + pt-BR in "
-            + "the same commit — mirror the row from docs/DIAGNOSTICS.md into both pages");
+            + "the same commit — mirror the row from docs/DIAGNOSTICS.md into both pages, on the wiki branch "
+            + "named like this pull request's, which CI reads (#406)");
     }
 
     private static string? LocateRoot()

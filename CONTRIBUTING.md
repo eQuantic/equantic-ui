@@ -153,7 +153,8 @@ any jobs at all.
   reply saying why not, resolve the thread, and ask again until a round finds nothing new. A PR is
   not done when it is opened.
 - **Documentation and the ledger change with the code**: the Markdown here, the wiki in English and
-  Portuguese when the pull request merges, and one `docs/LEDGER.md` line citing the issue.
+  Portuguese on a wiki branch named like the pull request's, merged into the wiki's master when the
+  pull request merges, and one `docs/LEDGER.md` line citing the issue.
 - **Do not open thin PRs.** Group a coherent body of work — a slice, a family of fixes, a refactor and
   the test that proves it — so it can be reviewed as a unit.
 
@@ -163,7 +164,9 @@ The wiki is bilingual, and it is its own repository
 ([equantic-ui.wiki](https://github.com/eQuantic/equantic-ui/wiki), not a folder of this one). Every
 page has an English canonical file and a Portuguese twin under `locale/pt-BR/<Page>-pt-BR.md` there,
 edited in the **same wiki commit**; the documentation site fails its build
-when a translation is older than its canonical page. Version marks (`*Since **0.2.0-preview.N***`)
+when a translation is older than its canonical page. That commit goes on a wiki branch named exactly
+like the pull request's branch: CI reads it for the docs guards (`scripts/checkout-wiki.sh`), and it
+is merged into the wiki's master when the pull request merges. Version marks (`*Since **0.2.0-preview.N***`)
 are derived from git, never from memory. The project's word is *component* — never "widget".
 
 ## Reporting
