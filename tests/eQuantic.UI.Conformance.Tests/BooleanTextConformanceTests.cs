@@ -37,8 +37,35 @@ public class BooleanTextConformanceTests
     [InlineData("string s = null; return Convert.ToBoolean(s);")]                                                       // false
     [InlineData("return Convert.ToBoolean(\" False \") + \"|\" + Convert.ToBoolean(\"true\");")]                      // "False|True"
     [InlineData("try { return Convert.ToBoolean(\"abc\").ToString(); } catch (Exception e) { return e.Message; }")]
-    [InlineData("return Convert.ToBoolean(1) + \"|\" + Convert.ToBoolean(0);")]                                        // "True|False"
     public void ABoolFromText_ReadsAsDotNet(string statements)
+    {
+        Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
+        ConformanceRunner.AssertStatementsSameAsDotNet(statements);
+    }
+
+    /// <summary>
+    /// Every other overload of <c>Convert.ToBoolean</c>, by the type C# binds (found in review, #421):
+    /// the lowering compared any value with zero, so a false bool was true (<c>false !== 0</c>).
+    /// </summary>
+    [SkippableTheory]
+    // A bool is itself.
+    [InlineData("return Convert.ToBoolean(false) + \"|\" + Convert.ToBoolean(true);")]                                // "False|True"
+    [InlineData("bool b = false; return Convert.ToBoolean(b);")]                                                        // false
+    // A number is whether it is not zero, in every width.
+    [InlineData("return Convert.ToBoolean((byte)0) + \"|\" + Convert.ToBoolean((byte)7) + \"|\" + Convert.ToBoolean((sbyte)-1);")] // "False|True|True"
+    [InlineData("return Convert.ToBoolean((short)0) + \"|\" + Convert.ToBoolean((ushort)3);")]                         // "False|True"
+    [InlineData("return Convert.ToBoolean(1) + \"|\" + Convert.ToBoolean(0) + \"|\" + Convert.ToBoolean(0u);")]        // "True|False|False"
+    [InlineData("return Convert.ToBoolean(0L) + \"|\" + Convert.ToBoolean(long.MinValue) + \"|\" + Convert.ToBoolean(0UL) + \"|\" + Convert.ToBoolean(ulong.MaxValue);")] // "False|True|False|True"
+    // A NaN is not zero, and a negative zero is.
+    [InlineData("return Convert.ToBoolean(0.0) + \"|\" + Convert.ToBoolean(-0.0) + \"|\" + Convert.ToBoolean(double.NaN) + \"|\" + Convert.ToBoolean(0.25);")] // "False|False|True|True"
+    [InlineData("return Convert.ToBoolean(0f) + \"|\" + Convert.ToBoolean(float.NaN);")]                               // "False|True"
+    [InlineData("return Convert.ToBoolean(0m) + \"|\" + Convert.ToBoolean(0.00m) + \"|\" + Convert.ToBoolean(-0.5m);")] // "False|False|True"
+    // A char and a date have no bool, and .NET says so.
+    [InlineData("try { return Convert.ToBoolean('a').ToString(); } catch (InvalidCastException e) { return e.Message; }")]
+    [InlineData("try { return Convert.ToBoolean(new DateTime(2026, 1, 2)).ToString(); } catch (InvalidCastException e) { return e.Message; }")]
+    // Text with a provider reads as text without one.
+    [InlineData("return Convert.ToBoolean(\" TRUE \", System.Globalization.CultureInfo.InvariantCulture);")]          // true
+    public void ConvertToBoolean_TakesEachOverloadAsDotNet(string statements)
     {
         Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
         ConformanceRunner.AssertStatementsSameAsDotNet(statements);

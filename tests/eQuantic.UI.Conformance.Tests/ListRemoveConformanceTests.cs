@@ -14,6 +14,7 @@ public class ListRemoveConformanceTests
 {
     private const string Prelude = """
         public record Point(int X, int Y);
+        public record struct Cell(int Row, int Column);
         """;
 
     [SkippableTheory]
@@ -30,6 +31,12 @@ public class ListRemoveConformanceTests
     [InlineData("var list = new List<string> { \"a\", \"b\" }; return list.Remove(string.Concat(\"b\", \"\")) + \"|\" + list.Count;")]        // "True|1"
     [InlineData("var list = new List<double> { double.NaN, 1 }; return list.Remove(double.NaN) + \"|\" + list.Count;")]                     // "True|1"
     [InlineData("var list = new List<int>(); return list.Remove(0);")]                                                                     // false
+    // A value tuple compares element by element, as its Equals does, where the default comparison of
+    // two arrays would take them by reference (found in review, #421); a struct compares by value.
+    [InlineData("var list = new List<(int, string)> { (1, \"a\"), (2, \"b\") }; return list.Remove((2, \"b\")) + \"|\" + list.Count;")]     // "True|1"
+    [InlineData("var list = new List<(double, int)> { (double.NaN, 1) }; return list.Remove((double.NaN, 1)) + \"|\" + list.Count;")]        // "True|0"
+    [InlineData("var list = new List<(Point, (int, int))> { (new Point(1, 2), (3, 4)) }; return list.Remove((new Point(1, 2), (3, 4))) + \"|\" + list.Count;")] // "True|0"
+    [InlineData("var list = new List<Cell> { new Cell(1, 2) }; return list.Remove(new Cell(1, 2)) + \"|\" + list.Count;")]                   // "True|0"
     public void ListRemove_AnswersAsDotNet(string statements)
     {
         Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
