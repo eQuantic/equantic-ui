@@ -857,6 +857,14 @@ record of a release, the wiki's Upgrading page is the distillate.
   namespace is extended as written ([#479](https://github.com/eQuantic/equantic-ui/issues/479)), and a
   bare type pattern never matches ([#482](https://github.com/eQuantic/equantic-ui/issues/482)).
   Proposed and archived through OpenSpec (`openspec/specs/transpiler-expression-variables`).
+- **2026-09-26 · A name the transpiler changes lands on no name its scope holds**: a local function
+  was camel-cased onto a local that differed only by case, a module that did not load; a reserved
+  word took a trailing underscore that C# can also write; and a component's constructor bound its
+  parameters camel-cased while its body read them as written. `LocalFunctionName` owns a local
+  function's name, a reserved word takes a `$`, and every declaration and its readers use one
+  spelling. 29 of the 32 conformance cases failed on main before it
+  ([#465](https://github.com/eQuantic/equantic-ui/issues/465)). #396, #397, #398 and #400 are the
+  same question elsewhere, each with an issue of its own.
 
 ## Retired documents
 

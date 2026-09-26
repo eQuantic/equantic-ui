@@ -14,36 +14,43 @@ public static class StringExtensions
         string.IsNullOrEmpty(name) ? name : char.ToLowerInvariant(name[0]) + name[1..];
 
     /// <summary>
-    /// Identifiers JS refuses in a module (modules are always strict): every keyword, the
-    /// strict-mode and future reserved words, and the two names strict mode will not bind. The
-    /// keywords are here although C# reserves most of them too, because C#'s verbatim escape makes
-    /// every one of them a name (<c>@class</c>, <c>@new</c>, <c>@default</c>): the list once left
-    /// them out on the reasoning that they could never arrive, and <c>var @class = 5;</c> was
-    /// <c>let class = 5;</c>, a SyntaxError that cost the whole module. <c>undefined</c>, <c>NaN</c>
-    /// and <c>Infinity</c> are not reserved, but the emitted code compares against them, and a local
-    /// of that name would quietly answer for the global.
+    /// Identifiers JS refuses in a module (modules are always strict): the reserved words, the
+    /// strict-mode and FUTURE reserved words, and the literals. A C# author reaches every one of
+    /// them: the ones that are not C# keywords as plain names, and the ones that are through the
+    /// verbatim escape. `@class`, `@default` and `@this` are ordinary C#, and they arrived as
+    /// `class`, `default` and `this`, a module that did not parse, while this list held only the
+    /// first kind.
     /// </summary>
     private static readonly HashSet<string> JsReserved = new(StringComparer.Ordinal)
     {
-        "break", "case", "catch", "class", "const", "continue", "debugger", "default", "delete",
-        "do", "else", "export", "extends", "false", "finally", "for", "function", "if", "import",
-        "in", "instanceof", "new", "null", "return", "super", "switch", "this", "throw", "true",
-        "try", "typeof", "var", "void", "while", "with",
-        "let", "static", "yield", "implements", "interface", "package", "private", "protected",
-        "public", "enum", "await", "arguments", "eval", "of",
+        // Not C# keywords, so reached as they are.
+        "package", "implements", "let", "yield", "await", "arguments", "eval", "function", "var",
+        "delete", "debugger", "with", "export", "import", "extends", "super", "of",
+        // C# keywords, reached through `@`.
+        "break", "case", "catch", "class", "const", "continue", "default", "do", "else", "enum",
+        "false", "finally", "for", "if", "in", "instanceof", "interface", "new", "null", "private",
+        "protected", "public", "return", "static", "switch", "this", "throw", "true", "try",
+        "typeof", "void", "while",
+        // Not reserved at all, but the emitted code compares against them (a TryParse's
+        // `!== undefined`, `double.NaN`), and a local of that name would answer for the global.
         "undefined", "NaN", "Infinity",
     };
 
     /// <summary>
     /// A C# LOCAL/PARAMETER name as a legal JS identifier: the verbatim escape comes off first
     /// (`@checked` → `checked` — the `@` is C#'s keyword escape and a syntax error in JS), then a
-    /// reserved word takes a trailing underscore (`package` → `package_`). Renaming must be applied
+    /// reserved word takes a trailing `$` (`package` → `package$`). Renaming must be applied
     /// at BOTH the declaration and every reference — which is why it lives here, on the one path
     /// both go through. Anything else passes back unchanged, so ordinary names read as authored.
+    /// <para>
+    /// A `$` because no C# identifier can hold one, so the renamed name cannot land on another
+    /// name in its scope. The underscore it took before could: `package` and `package_` in one
+    /// scope were both `package_`, and the module did not parse.
+    /// </para>
     /// </summary>
     public static string ToJsIdentifier(this string name)
     {
         if (name.StartsWith('@')) name = name[1..];
-        return JsReserved.Contains(name) ? name + "_" : name;
+        return JsReserved.Contains(name) ? name + "$" : name;
     }
 }

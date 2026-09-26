@@ -73,7 +73,7 @@ public class AverageStrategy : IConversionStrategy
 
             if (selector is SimpleLambdaExpressionSyntax lambda)
             {
-                var param = lambda.Parameter.Identifier.Text;
+                var param = lambda.Parameter.Identifier.Text.ToJsIdentifier();
                 var body = context.Converter.ConvertExpression(lambda.Body as ExpressionSyntax ?? lambda.ExpressionBody!);
                 return Divide($"{caller}.reduce((_sum, {param}) => {Add("_sum", body)}, {seed})");
             }

@@ -23,11 +23,10 @@ public class LocalFunctionStatementStrategy : IStatementStrategy
     public JsStatement Convert(StatementSyntax node, ConversionContext context)
     {
         var localFn = (LocalFunctionStatementSyntax)node;
-        // The SAME pair of transformations the reference applies (IdentifierStrategy): camelCase,
-        // then the JS-identifier rename. Hand-lowercasing here is how the declaration and the
-        // reference drift — and a local function called `Delete` emitted `const delete = …`, which
-        // is not a name JS will take at all.
-        var name = localFn.Identifier.Text.ToCamelCase().ToJsIdentifier();
+        // The name every reference reaches too (LocalFunctionName): camel-cased, a legal JS
+        // identifier, and renamed where the member already holds it. Naming it here by hand is how
+        // the declaration and the references drifted.
+        var name = LocalFunctionName.Of(localFn, context);
         var parameters = string.Join(", ", localFn.ParameterList.Parameters
             .Select(p => Parameter(p, context)));
 

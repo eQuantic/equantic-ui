@@ -255,7 +255,7 @@ public class InvocationStrategy : IExpressionIrStrategy
         // Invoking a DELEGATE VALUE by bare name (`configure(node)`, `OnSelect(i)`): the invocation
         // symbol is the delegate's Invoke, so resolve what the NAME binds to. A parameter/local is
         // a plain callable in scope — spelled as its binding is (ToJsIdentifier: no casing rule,
-        // only the escape off and a reserved word renamed, so `@default()` calls `default_`);
+        // only the escape off and a reserved word renamed, so `@default()` calls `default$`);
         // a delegate-typed MEMBER is `this.<camel>(…)` like every other member access.
         if (symbol is { MethodKind: MethodKind.DelegateInvoke }
             && methodExpression is IdentifierNameSyntax delegateIdentifier)
@@ -264,8 +264,11 @@ public class InvocationStrategy : IExpressionIrStrategy
             // …but a PRIMARY-CONSTRUCTOR parameter is neither: Roslyn models it as a parameter and
             // it behaves like an instance field, so emitting it bare compiles and then throws a
             // ReferenceError the moment the callback runs — long after the page looked fine.
+            // The binding's name is the one its declaration took, the JS-identifier rename
+            // included: the source text called `Func<int> package` as `package()`, which a module
+            // refuses as a reserved word, beside the `package$` it had declared.
             if (delegateTarget.IsInScopeBinding())
-                return JsExpr.Callish($"{delegateIdentifier.Identifier.Text.ToJsIdentifier()}({args})");
+                return JsExpr.Callish($"{delegateIdentifier.Identifier.ValueText.ToJsIdentifier()}({args})");
             return JsExpr.Callish($"this.{delegateIdentifier.Identifier.Text.ToCamelCase()}({args})");
         }
 
@@ -322,6 +325,13 @@ public class InvocationStrategy : IExpressionIrStrategy
             }
         }
         
+        // With no model to ask, a bare call can still be a local function a block around it
+        // declares, which C# finds before any member: called by its declaration's name
+        // (LocalFunctionName), not guessed a member nor camel-cased by hand.
+        if (symbol == null && methodExpression is SimpleNameSyntax bareName
+            && LocalFunctionName.InScope(invocation, bareName.Identifier.ValueText) is { } local)
+            return JsExpr.Call(JsExpr.Identifier(LocalFunctionName.Of(local, context)), argIrs);
+
         // Heuristic fallback
         if (!needsThis && !string.IsNullOrEmpty(context.CurrentClassName))
         {
@@ -344,13 +354,11 @@ public class InvocationStrategy : IExpressionIrStrategy
         }
 
         ReportIfUntranslatable(symbol, methodName, invocation, context);
-        // A LOCAL function is called by the name its declaration takes (LocalFunctionStatementStrategy,
-        // IdentifierStrategy): camelCase, then the JS-identifier rename. camelCase alone called
-        // `@switch(2)` beside a `const switch_`, and `Delete()` a `delete` JavaScript will not parse.
-        var callee = symbol?.MethodKind == MethodKind.LocalFunction
-            ? methodName.ToCamelCase().ToJsIdentifier()
-            : methodName.ToCamelCase();
-        return JsExpr.Call(JsExpr.Identifier(callee), argIrs);
+        // A local function is called by the name its declaration took (LocalFunctionName). Cased
+        // here alone, a `Delete` was called as `delete()` beside the renamed name it declared.
+        if (symbol is { MethodKind: MethodKind.LocalFunction })
+            return JsExpr.Call(JsExpr.Identifier(LocalFunctionName.Of(symbol)), argIrs);
+        return JsExpr.Call(JsExpr.Identifier(methodName.ToCamelCase()), argIrs);
     }
 
     /// <summary>

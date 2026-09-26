@@ -83,9 +83,8 @@ public static class PatternConverter
     {
         switch (pattern)
         {
-            // Every name through ToJsIdentifier, as the declaration (ExpressionVariableScanner) and
-            // every reference (IdentifierStrategy) spell it: `is int @class` assigned `@class`, a
-            // SyntaxError, beside a declaration of `class`, another.
+            // Each binding under the name every reference reads it by (ToJsIdentifier): as source
+            // text, `is int @class` bound `@class` and `is int package` a reserved word.
             case VarPatternSyntax { Designation: SingleVariableDesignationSyntax v }:
                 bindings.Add((v.Identifier.Text.ToJsIdentifier(), access));
                 break;
