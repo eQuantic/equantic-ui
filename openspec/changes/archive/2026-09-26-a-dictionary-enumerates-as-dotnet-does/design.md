@@ -81,9 +81,9 @@ because the runtime's own nodes keep plain objects on the hot path.
 
 ### TypeScript annotations
 
-A dictionary member annotated `Record<string, any>` would not type-check against the class, and an
-`IDictionary` already degraded to `any`. Every dictionary annotation degrades to `any` alike, an empty
-local included, which TypeScript would otherwise infer keyed and valued by `unknown`. Reading one
+A dictionary member annotated `Record<string, any>` would not type-check against the class, and the
+interfaces and the sorted names reached TypeScript verbatim (found in review). Every dictionary
+annotation degrades to `any` alike, an empty local included, which TypeScript would otherwise infer keyed and valued by `unknown`. Reading one
 goes through `$eq.mapGet`, whose value type defaults to `any`: inference from an `any` map finds no
 candidate and would land on `unknown`, refusing every read in a twin, while a typed map still infers
 its value.
