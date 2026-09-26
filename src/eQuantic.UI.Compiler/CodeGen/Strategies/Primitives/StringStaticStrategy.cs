@@ -296,13 +296,24 @@ public class StringStaticStrategy : IConversionStrategy
         var passed = values.OrderBy(value => value.Slot).ToList();
         // A float is boxed with its kind wherever its static type is float: an argument, an element
         // written in place, and each element of a spread collection of floats.
+        // An integer is boxed with its kind too, where the template writes a specifier, since it rounds
+        // a formatted half away from zero where a double rounds it to even (#393).
+        var specified = MayWriteASpecifier(template, context);
+        // The call that boxes one value of the type, or null where the value goes as it is. An
+        // integer's box carries its kind, whose width is what X writes a negative one at.
+        Func<string, string>? BoxOf(ITypeSymbol? type) => FormatKind.Of(type) switch
+        {
+            "single" => text => $"{Eq.AsSingle}({text})",
+            { } integer when specified => text => $"{Eq.AsInteger}({text}, '{integer}')",
+            _ => null,
+        };
         string Passed((int Slot, ExpressionSyntax Value, bool Spread) value, string text) =>
             value.Spread
-                ? ElementTypeOf(context.SemanticHelper.GetType(value.Value)).UnwrapNullable() is { SpecialType: SpecialType.System_Single }
-                    ? $"...Array.from({text}, {Eq.AsSingle})"
+                ? BoxOf(ElementTypeOf(context.SemanticHelper.GetType(value.Value))) is { } spreadBox
+                    ? $"...Array.from({text}, (value) => {spreadBox("value")})"
                     : $"...{text}"
-                : Boxed(value.Value, context).UnwrapNullable() is { SpecialType: SpecialType.System_Single }
-                    ? $"{Eq.AsSingle}({text})"
+                : BoxOf(Boxed(value.Value, context)) is { } box
+                    ? box(text)
                     : text;
 
         // In the written order, the call is text as it always was. Out of it, the parts are the
@@ -382,6 +393,40 @@ public class StringStaticStrategy : IConversionStrategy
             }).ToList(),
         _ => null,
     };
+
+    /// <summary>
+    /// Whether the template may write a format specifier (<c>{0:E2}</c>), where an integer has to
+    /// say it is one (FormatKind). A constant template is read: a placeholder with a colon writes
+    /// one. Any other, a resx accessor included, may, and its integers are boxed.
+    /// </summary>
+    private static bool MayWriteASpecifier(ExpressionSyntax template, ConversionContext context) =>
+        !context.SemanticHelper.TryGetConstantValue(template, out var constant) || constant is not string text
+        || WritesASpecifier(text);
+
+    /// <summary>
+    /// Whether a composite format string has a placeholder with a specifier, read as
+    /// <c>string.Format</c> reads it, left to right: <c>{{</c> is an escaped brace, and anything else
+    /// that opens a brace opens a placeholder up to its <c>}</c>. A look-behind for a brace refused
+    /// the placeholder in <c>"{{{0:E1}}}"</c>, whose opening brace follows an escaped one (found in
+    /// review, #445).
+    /// </summary>
+    private static bool WritesASpecifier(string template)
+    {
+        for (var i = 0; i < template.Length; i++)
+        {
+            if (template[i] != '{') continue;
+            if (i + 1 < template.Length && template[i + 1] == '{')
+            {
+                i++;
+                continue;
+            }
+            var end = template.IndexOf('}', i);
+            if (end < 0) return false;
+            if (template.IndexOf(':', i, end - i) >= 0) return true;
+            i = end;
+        }
+        return false;
+    }
 
     /// <summary>The element type of a collection, for a spread: an array's, or the T of the
     /// <c>IEnumerable&lt;T&gt;</c> it implements; null where there is none.</summary>
