@@ -81,6 +81,11 @@ public class RecordMethodLoweringConformanceTests
     [InlineData(
         "public record R(int V) { public int Plus(int package) => package + V; public int Times(int @class) { return @class * V; } }",
         "var r = new R(2); return $\"{r.Plus(3)}|{r.Times(4)}\";")]
+    // So is a variable a pattern binds, declared by the name its uses have (found in review, #464).
+    [InlineData(
+        "public record R(int V) { public bool Same(object o) => o is R package && package.V == V; "
+        + "public bool Twin(object o) => o is R { V: var @class } && @class == V; }",
+        "var r = new R(2); return $\"{r.Same(new R(2))}{r.Twin(new R(3))}\";")]
     // A generic method runs as plain JavaScript, where a type parameter would be a syntax error.
     [InlineData(
         "public record R(int V) { public T Echo<T>(T x) => x; }",
@@ -109,7 +114,7 @@ public class RecordMethodLoweringConformanceTests
     [InlineData(
         "public record R(int V) { public int Pick(int x, int _x) => V; public int Both(int y, int _y) => _y + V; }",
         "var r = new R(1); return $\"{r.Pick(5, 6)}|{r.Both(2, 3)}\";")]
-    public void ARecordsMember_RunsAsAClasssDoes(string prelude, string statements)
+    public void ARecordsMember_RunsAsAClassMemberDoes(string prelude, string statements)
     {
         Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
         ConformanceRunner.AssertStatementsSameAsDotNet(statements, prelude);
