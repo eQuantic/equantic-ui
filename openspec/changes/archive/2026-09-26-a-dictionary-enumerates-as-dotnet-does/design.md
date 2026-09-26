@@ -33,11 +33,19 @@ long, an enum, a `Guid` and a class instance that does not override `Equals` are
 JavaScript `Map` of key to slot: its SameValueZero is .NET's default equality for each of them, NaN
 included. A record, a struct, a tuple, an anonymous type, a decimal, a date and a class that
 overrides `Equals` are found by `$eq.equals` over the live slots, which delegates to a twin's own
-`equals`. eqc knows the key type and passes the choice to the factory, so the runtime never guesses
-from a value. The rule is LINQ's for its keyed operators (`LinqKeys.ComparesByValue`) plus the
-`Equals` override, which LINQ's tuple equality must not take since a tuple's `==` is its elements'
-operators. `object`, an interface and a type parameter stay on the `Map`, as LINQ's keys do: a
-record behind one of them compares by reference, the limit GroupBy already has.
+`equals`. eqc knows the key type and passes the choice to the factory. The rule is LINQ's for its
+keyed operators (`LinqKeys.ComparesByValue`), for the types whose static type decides.
+
+Where it does not decide, eqc says so (`'own'`) and the runtime asks the value, as .NET's default
+comparer dispatches `Equals` on it: `object`, an interface, a type parameter, and a class, whose
+subclass may override `Equals`. A key with an `equals` of its own (a record, a struct, a decimal, a
+date, a class that overrides it) or with members to compare (a tuple, an anonymous type) is found by
+that equality over the live slots, and any other key through the `Map`, so a dictionary keyed by
+`object` and holding strings keeps its `Map` lookups. The first version kept these types on the
+`Map` as LINQ's keys do, and Copilot's third round measured the cost: two equal records under
+`object` were two keys. A compat value's `equals` answers false for a value of another kind, as
+`Equals(object)` does, since under `object` a decimal meets a date and a `TimeSpan` meets a
+`DateTime` of the same ticks.
 
 `ContainsValue` compares a value by the same rule, applied to the value type, and `TryAdd` and
 `ContainsValue` are methods of the class, so each argument is evaluated once and in its place.
@@ -91,12 +99,14 @@ its value.
 ## Risks / Trade-offs
 
 - [A lookup by value is a linear scan] → As the record-keyed dictionary always was; a key found by
-  identity is a `Map` lookup.
+  identity is a `Map` lookup, and under `'own'` only a key with an equality of its own is scanned.
 - [Hand-written JavaScript that indexed a transpiled dictionary as an object breaks] → Nothing in
   this repository does after this change; the migration line says what to write instead.
 
 ## Not here
 
+- A Guid keeps the text it was written in, so two cases of one Guid are two keys, as they are two
+  values to `==` (#459).
 - The JSON wire's order for integer keys (#437).
 - `HashSet<T>` reuses a removed slot the same way in .NET, and a JavaScript `Set` does not (#438).
 - LINQ over a dictionary as a sequence of pairs (`d.Where`, `d.Select`, `d.First()`) still reaches

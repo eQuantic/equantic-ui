@@ -15,6 +15,7 @@
 - [x] 2.4 `ToDictionary` keyed by comparison, and a hydration spec with keys for every dictionary
 - [x] 2.5 Dictionary annotations degrade to `any`, and a read from one is `any`
 - [x] 2.6 Check: conformance cases run on both sides over insertion order, removal and re-insertion, int and string keys, `Keys`, `Values`, `foreach`, `Count`, `ContainsKey`, `TryGetValue` and `ToDictionary`, 34 of 52 failing before
+- [x] 2.7 A key of a type that does not decide (`object`, an interface, a type parameter, a class) compares by the value's own equality, and a compat value's `equals` refuses another kind (found in Copilot's third round)
 
 ## 3. The DOM escape hatch and the other hand-written readers
 

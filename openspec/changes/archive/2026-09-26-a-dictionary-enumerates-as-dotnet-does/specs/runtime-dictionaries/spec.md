@@ -55,12 +55,18 @@ declares: a number for a numeric key, a `long` as a long, a char as a char.
 Two keys SHALL be the same key when .NET's default equality comparer for the key type says so: by
 value for a record, a struct, a tuple, a decimal, a date and a class that overrides `Equals`, by
 reference for a class that does not, and by value for a number (NaN equal to NaN), a string, a char,
-a bool, a long, an enum and a `Guid`.
+a bool, a long, an enum and a `Guid`. A key whose type does not decide (`object`, an interface, a
+type parameter) SHALL compare as the value it holds compares.
 
 #### Scenario: A date key
 
 - **WHEN** a `Dictionary<DateTime, int>` sets `d[new DateTime(2026, 1, 1)] = 1` and reads `d[new DateTime(2026, 1, 1)]`
 - **THEN** it answers 1, as in .NET
+
+#### Scenario: A record under object
+
+- **WHEN** a `Dictionary<object, int>` sets `d[new Point(1, 2)] = 1` and then `d[new Point(1, 2)] = 2`
+- **THEN** it holds one key, whose value is 2, as in .NET
 
 #### Scenario: A char key
 

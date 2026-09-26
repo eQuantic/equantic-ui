@@ -772,14 +772,18 @@ record of a release, the wiki's Upgrading page is the distillate.
   keys in their type, and the DOM escape hatch reads a dictionary or a plain object alike. Three
   paths that threw work: a key the plain path could not hold (a char, a `Guid`, a date), a
   deconstructing `foreach` over a record-keyed or sorted dictionary, and a copy, which was an alias.
-  34 of the 52 conformance cases failed before, and the served runtime grew 819 gzip bytes. Measured
+  A key whose type does not decide (`object`, an interface, a type parameter, a class) compares by
+  the value's own equality, which Copilot's third round found missing: two equal records under
+  `object` were two keys. 34 of the 52 conformance cases failed before, and the served runtime grew
+  819 gzip bytes. Measured
   and left to their own issues: integer keys across the JSON wire
   ([#437](https://github.com/eQuantic/equantic-ui/issues/437)), a `HashSet<T>`'s slot reuse
   ([#438](https://github.com/eQuantic/equantic-ui/issues/438)), LINQ over a dictionary's pairs
   ([#439](https://github.com/eQuantic/equantic-ui/issues/439)), `Add` of a key already there
   ([#440](https://github.com/eQuantic/equantic-ui/issues/440)), `string.Join` over bools, enums and
   floats ([#441](https://github.com/eQuantic/equantic-ui/issues/441)), and an enum key, which EqJson
-  refuses on the wire ([#442](https://github.com/eQuantic/equantic-ui/issues/442)).
+  refuses on the wire ([#442](https://github.com/eQuantic/equantic-ui/issues/442)), and a Guid,
+  which keeps the text it was written in ([#459](https://github.com/eQuantic/equantic-ui/issues/459)).
 
 ## Retired documents
 
