@@ -495,7 +495,7 @@ public class RecordTypeEmitter
                     case MethodDeclarationSyntax method when method.Body != null || method.ExpressionBody != null:
                         _converter.InFileOf(method, () => sb.Append(EmitMethod(method, name, tsTypeDeclarations)).Append(' '));
                         break;
-                    case PropertyDeclarationSyntax property when ComputedGetter(property) is not null:
+                    case PropertyDeclarationSyntax property when ComputedGetter(property) is not null || IsSetterOnly(property):
                         _converter.InFileOf(property, () => sb.Append(ComputedProperty(property, name)));
                         break;
                     // A vocabulary default from the interface's assembly, with no body to convert:
@@ -526,6 +526,19 @@ public class RecordTypeEmitter
         return sb.ToString();
     }
 
+    /// <summary>
+    /// A property with a setter body and no getter at all (<c>int Twice { set => Stored = value * 2; }</c>),
+    /// which a twin writes as a setter alone. It was dropped with every property whose getter had no
+    /// body, a default interface member included (found in review, #418). A property with an
+    /// automatic getter and a setter body is not one: its getter reads a backing field the value
+    /// members hold.
+    /// </summary>
+    private static bool IsSetterOnly(PropertyDeclarationSyntax property) =>
+        property.ExpressionBody is null
+        && property.AccessorList?.Accessors is { } accessors
+        && accessors.All(a => a.Keyword.Text is "set" or "init")
+        && accessors.Any(a => a.Body is not null || a.ExpressionBody is not null);
+
     /// <summary>A property's getter body, an expression or a block, when it has one.</summary>
     private static SyntaxNode? ComputedGetter(PropertyDeclarationSyntax property) =>
         (SyntaxNode?)property.ExpressionBody?.Expression
@@ -542,13 +555,16 @@ public class RecordTypeEmitter
     private string ComputedProperty(PropertyDeclarationSyntax property, string className)
     {
         var getter = ComputedGetter(property);
-        if (getter is null) return "";
+        if (getter is null && !IsSetterOnly(property)) return "";
         _converter.SetCurrentClass(className);
         var prefix = property.Modifiers.Any(m => m.IsKind(SyntaxKind.StaticKeyword)) ? "static " : "";
         var propertyName = property.Identifier.Text.ToCamelCase();
-        var text = getter is BlockSyntax block
-            ? $"{prefix}get {propertyName}() {{ {Unwrap(_converter.Convert(block))} }} "
-            : $"{prefix}get {propertyName}() {{ return {_converter.Convert(getter)}; }} ";
+        var text = getter switch
+        {
+            null => "",
+            BlockSyntax block => $"{prefix}get {propertyName}() {{ {Unwrap(_converter.Convert(block))} }} ",
+            _ => $"{prefix}get {propertyName}() {{ return {_converter.Convert(getter)}; }} ",
+        };
         var setter = property.AccessorList?.Accessors.FirstOrDefault(a => a.Keyword.Text is "set" or "init");
         if (setter?.ExpressionBody is { } arrow)
             text += $"{prefix}set {propertyName}(value) {{ {_converter.Convert(arrow.Expression)}; }} ";
