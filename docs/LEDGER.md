@@ -869,6 +869,21 @@ record of a release, the wiki's Upgrading page is the distillate.
   extended as written ([#479](https://github.com/eQuantic/equantic-ui/issues/479)), and a bare type
   pattern never matches ([#482](https://github.com/eQuantic/equantic-ui/issues/482)). Proposed and
   archived through OpenSpec (`openspec/specs/transpiler-expression-variables`).
+- **2026-09-27 · A lambda's block maps statement by statement**: since #382 every statement of a
+  member's body mapped to its own line, but a lambda's block reached the writer as text, laid out
+  where the lambda was converted, and its statements' marks were dropped with it
+  ([#384](https://github.com/eQuantic/equantic-ui/issues/384)). No line inside a lambda's block had a
+  segment, so a breakpoint there bound nowhere and a frame read as the line that holds the lambda.
+  The block is the statement IR now, with the layout and depth it is laid out at, so the text is what
+  it was. The expression writer composes every node's marks through the builder it now shares with
+  the statement writer, and List's own methods (`ForEach`, `Find`…) cross to the IR, which takes
+  `ListMethodStrategy` off the text baseline. Of the 13 new lines `StatementSourceMapTests` reads, none
+  had a segment on main, and a frame thrown inside a `ForEach` block now leads to its statement
+  through the composed map. Filed: a body with an `out` or `ref` parameter is wrapped as text
+  ([#487](https://github.com/eQuantic/equantic-ui/issues/487)), and List's `Sort`, `RemoveAll`,
+  `BinarySearch`, `CopyTo`, `Find` and `FindIndex` answer as a JavaScript array does
+  ([#488](https://github.com/eQuantic/equantic-ui/issues/488)). Proposed and archived through
+  OpenSpec (`openspec/specs/transpiler-source-maps`).
 
 ## Retired documents
 
