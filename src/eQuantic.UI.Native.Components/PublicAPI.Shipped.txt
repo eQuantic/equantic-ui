@@ -279,12 +279,14 @@ eQuantic.UI.Native.Components.SheetRegion.Surface.init -> void
 eQuantic.UI.Native.Components.ShortcutBinding
 eQuantic.UI.Native.Components.ShortcutBinding.Chord.get -> eQuantic.UI.Primitives.KeyChord
 eQuantic.UI.Native.Components.ShortcutBinding.Chord.init -> void
-eQuantic.UI.Native.Components.ShortcutBinding.Deconstruct(out eQuantic.UI.Primitives.KeyChord Chord, out System.Action! OnPressed) -> void
+eQuantic.UI.Native.Components.ShortcutBinding.Deconstruct(out eQuantic.UI.Primitives.KeyChord Chord, out System.Action! OnPressed, out string? Scope) -> void
 eQuantic.UI.Native.Components.ShortcutBinding.Equals(eQuantic.UI.Native.Components.ShortcutBinding other) -> bool
 eQuantic.UI.Native.Components.ShortcutBinding.OnPressed.get -> System.Action!
 eQuantic.UI.Native.Components.ShortcutBinding.OnPressed.init -> void
+eQuantic.UI.Native.Components.ShortcutBinding.Scope.get -> string?
+eQuantic.UI.Native.Components.ShortcutBinding.Scope.init -> void
 eQuantic.UI.Native.Components.ShortcutBinding.ShortcutBinding() -> void
-eQuantic.UI.Native.Components.ShortcutBinding.ShortcutBinding(eQuantic.UI.Primitives.KeyChord Chord, System.Action! OnPressed) -> void
+eQuantic.UI.Native.Components.ShortcutBinding.ShortcutBinding(eQuantic.UI.Primitives.KeyChord Chord, System.Action! OnPressed, string? Scope = null) -> void
 eQuantic.UI.Native.Components.TextRasterCache
 eQuantic.UI.Native.Components.TextRasterCache.Clear() -> void
 eQuantic.UI.Native.Components.TextRasterCache.Entry
