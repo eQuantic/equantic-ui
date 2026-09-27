@@ -254,7 +254,7 @@ export class CodeBlock extends StatelessComponent {
     }
 
     cellsOf(line: number) {
-        let cells: any;
+        let cells: any; 
         if ((($0: any) => (Object.prototype.hasOwnProperty.call($0, line) ? ((cells = $0[line]), true) : ((cells = null), false)))(this._cells)) return cells;
         cells = new CodeLineCells(this.document.line(line), this.tabSize);
         this._cells[line] = cells;
@@ -262,7 +262,7 @@ export class CodeBlock extends StatelessComponent {
     }
 
     fillerCellsOf(line: number) {
-        let cells: any;
+        let cells: any; 
         if ((($0: any) => (Object.prototype.hasOwnProperty.call($0, line) ? ((cells = $0[line]), true) : ((cells = null), false)))(this._fillerCells)) return cells;
         cells = new CodeLineCells((this.fillerDocument!).line(line), this.tabSize);
         this._fillerCells[line] = cells;
@@ -298,7 +298,7 @@ export class CodeBlock extends StatelessComponent {
     }
 
     static passOf(kind: CodeDecorationKindValue) {
-        return (() => { const _s = kind; if (_s === 'line') return CodeBlock.linePass; if (_s === 'highlight') return CodeBlock.highlightPass; return CodeBlock.outlinePass; })();
+        return (() => { const $s = kind; if ($s === 'line') return CodeBlock.linePass; if ($s === 'highlight') return CodeBlock.highlightPass; return CodeBlock.outlinePass; })();
     }
 
     addMarks(marks: Stack, pass: number, metrics: CodeMetrics, theme: any, first: number, last: number, firstLine: number, lastLine: number, width: number) {
@@ -354,13 +354,13 @@ export class CodeBlock extends StatelessComponent {
             let cells = cellsOf(line);
             let left = Math.fround(metrics.contentLeft + Math.fround(Math.fround(cells.cellOf(from)) * metrics.columnWidth));
             let width = Math.fround(Math.fround(cells.cellOf(to) - cells.cellOf(from)) * metrics.columnWidth);
-            _seq.push((() => { const _s = decoration.kind; if (_s === 'outline') return new Positioned(new Box(new BoxStyle({ width: width, height: metrics.lineHeight, borderWidth: 1, borderColor: color, cornerRadius: new CornerRadii(2) })), top, null, null, left); if (_s === 'squiggle') return new Positioned(new Box(new BoxStyle({ width: width, height: 2, background: color })), Math.fround(Math.fround(top + metrics.lineHeight) - 2), null, null, left); if (_s === 'strike') return new Positioned(new Box(new BoxStyle({ width: width, height: 1, background: color })), Math.fround(top + Math.fround(metrics.lineHeight / 2)), null, null, left); if (_s === 'underline') return new Positioned(new Box(new BoxStyle({ width: width, height: 1, background: color })), Math.fround(Math.fround(top + metrics.lineHeight) - 2), null, null, left); return new Positioned(new Box(new BoxStyle({ width: width, height: metrics.lineHeight, background: color, cornerRadius: new CornerRadii(2) })), top, null, null, left); })());
+            _seq.push((() => { const $s = decoration.kind; if ($s === 'outline') return new Positioned(new Box(new BoxStyle({ width: width, height: metrics.lineHeight, borderWidth: 1, borderColor: color, cornerRadius: new CornerRadii(2) })), top, null, null, left); if ($s === 'squiggle') return new Positioned(new Box(new BoxStyle({ width: width, height: 2, background: color })), Math.fround(Math.fround(top + metrics.lineHeight) - 2), null, null, left); if ($s === 'strike') return new Positioned(new Box(new BoxStyle({ width: width, height: 1, background: color })), Math.fround(top + Math.fround(metrics.lineHeight / 2)), null, null, left); if ($s === 'underline') return new Positioned(new Box(new BoxStyle({ width: width, height: 1, background: color })), Math.fround(Math.fround(top + metrics.lineHeight) - 2), null, null, left); return new Positioned(new Box(new BoxStyle({ width: width, height: metrics.lineHeight, background: color, cornerRadius: new CornerRadii(2) })), top, null, null, left); })());
         }
         return _seq;
     }
 
     defaultColor(kind: CodeDecorationKindValue, theme: any) {
-        return (() => { const _s = kind; if (_s === 'squiggle') return theme.colors('destructive').base; if (_s === 'outline') return theme.borderStrong; if (_s === 'strike') return theme.textMuted; if (_s === 'underline') return CodeBlock.inkFor(this.inverse, theme); if (_s === 'line') return theme.colors('primary').subtle; return theme.colors('warning').subtle; })();
+        return (() => { const $s = kind; if ($s === 'squiggle') return theme.colors('destructive').base; if ($s === 'outline') return theme.borderStrong; if ($s === 'strike') return theme.textMuted; if ($s === 'underline') return CodeBlock.inkFor(this.inverse, theme); if ($s === 'line') return theme.colors('primary').subtle; return theme.colors('warning').subtle; })();
     }
 
     static addSpan(code: Row, cells: CodeLineCells, from: number, to: number, color: ColorToken, style: TypeStyle, columnWidth: number) {
@@ -397,7 +397,7 @@ export class CodeBlock extends StatelessComponent {
     }
 
     static gutterToken(kind: CodeGutterKindValue, theme: any) {
-        return (() => { const _s = kind; if (_s === 'breakpoint') return theme.colors('destructive').base; if (_s === 'breakpointDisabled') return theme.borderStrong; if (_s === 'error') return theme.colors('destructive').base; if (_s === 'warning') return theme.colors('warning').base; if (_s === 'added') return theme.colors('success').base; if (_s === 'modified') return theme.colors('info').base; if (_s === 'removed') return theme.colors('destructive').subtle; return theme.colors('primary').base; })();
+        return (() => { const $s = kind; if ($s === 'breakpoint') return theme.colors('destructive').base; if ($s === 'breakpointDisabled') return theme.borderStrong; if ($s === 'error') return theme.colors('destructive').base; if ($s === 'warning') return theme.colors('warning').base; if ($s === 'added') return theme.colors('success').base; if ($s === 'modified') return theme.colors('info').base; if ($s === 'removed') return theme.colors('destructive').subtle; return theme.colors('primary').base; })();
     }
 
     static inkFor(inverse: boolean, theme: any) {

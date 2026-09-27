@@ -194,6 +194,10 @@ public static class PatternConverter
     private static void CollectListBindings(ListPatternSyntax list, string access,
         ConversionContext context, List<(string Name, string Access)> bindings)
     {
+        // The list ITSELF, when the pattern names it (`is [1, _] pair`): declared by the scanner,
+        // so it must be assigned here, or it reads undefined where C# reads the list.
+        if (list.Designation is SingleVariableDesignationSyntax whole)
+            bindings.Add((whole.Identifier.Text.ToJsIdentifier(), access));
         var (before, after, sliceIndex) = SliceShape(list);
         for (int i = 0; i < before; i++)
             CollectBindings(list.Patterns[i], $"{access}[{i}]", context, bindings);

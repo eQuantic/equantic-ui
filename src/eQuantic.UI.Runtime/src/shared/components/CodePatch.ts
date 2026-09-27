@@ -60,10 +60,10 @@ export class CodePatch {
     }
 
     static range(text: string): [number, number] | null {
-        let line: any, count: any;
         let comma = text.indexOf(',');
         let lineText = comma < 0 ? text : text.slice(0, comma);
         let countText = comma < 0 ? '1' : text.slice((comma + 1));
+        let line: any; let count: any; 
         if (!((line = $eq.num.intTryParse(lineText, 'int')) !== undefined || ((line = 0), false)) || !((count = $eq.num.intTryParse(countText, 'int')) !== undefined || ((count = 0), false))) return null;
         return [line, count];
     }

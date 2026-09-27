@@ -34,7 +34,7 @@ export class Mermaid extends StatelessComponent {
     static nodeView(placed: MermaidPlacedNode, theme: any) {
         let node = placed.node;
         if (node.shape === 'diamond') return Mermaid.diamondView(placed, theme);
-        let radius = (() => { const _s = node.shape; if (_s === 'circle') return Math.fround(placed.h / 2); if (_s === 'rounded') return Math.fround(placed.h / 2); return 6; })();
+        let radius = (() => { const $s = node.shape; if ($s === 'circle') return Math.fround(placed.h / 2); if ($s === 'rounded') return Math.fround(placed.h / 2); return 6; })();
         return new Box(new BoxStyle({ width: placed.w, height: placed.h, background: theme.surface, borderColor: theme.borderStrong, borderWidth: 1, cornerRadius: new CornerRadii(radius), padding: EdgeInsets.symmetric(8, 0) }), VisualNodeExtensions.centered(new Text(node.label, 'label', theme.textPrimary, 2, 'center')));
     }
 

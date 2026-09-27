@@ -157,8 +157,8 @@ public static class TestHelper
     /// Converts a multi-line code block with proper context
     /// SIMPLIFIED VERSION - for basic testing
     /// <para>
-    /// Plain JavaScript unless <paramref name="typeAnnotations"/> asks for the TypeScript eqc writes
-    /// for a build: a test that pins an annotation says so, since plain JavaScript carries none.
+    /// <paramref name="typeAnnotations"/> asks for the SDK's TypeScript rather than plain JavaScript,
+    /// for a test about an annotation: plain JavaScript carries none (PlainJavaScriptSyntaxTests).
     /// </para>
     /// </summary>
     public static string ConvertCodeBlock(string code, bool typeAnnotations = false)

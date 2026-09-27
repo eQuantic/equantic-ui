@@ -23,8 +23,7 @@ export class SheetDocument {
     }
 
     getCell(cell: CellRef) {
-        let value: any;
-        return (($0: any, $1: any) => (Object.prototype.hasOwnProperty.call($0, $1) ? ((value = $0[$1]), true) : ((value = null), false)))(this._cells, cell.key) ? value : '';
+        let value: any; return (($0: any, $1: any) => (Object.prototype.hasOwnProperty.call($0, $1) ? ((value = $0[$1]), true) : ((value = null), false)))(this._cells, cell.key) ? value : '';
     }
 
     setCell(cell: CellRef, value: string) {
@@ -32,13 +31,11 @@ export class SheetDocument {
     }
 
     rowHeight(row: number) {
-        let height: any;
-        return (($0: any) => (Object.prototype.hasOwnProperty.call($0, row) ? ((height = $0[row]), true) : ((height = 0), false)))(this._rowHeights) ? height : SheetDocument.defaultRowHeight;
+        let height: any; return (($0: any) => (Object.prototype.hasOwnProperty.call($0, row) ? ((height = $0[row]), true) : ((height = 0), false)))(this._rowHeights) ? height : SheetDocument.defaultRowHeight;
     }
 
     colWidth(col: number) {
-        let width: any;
-        return (($0: any) => (Object.prototype.hasOwnProperty.call($0, col) ? ((width = $0[col]), true) : ((width = 0), false)))(this._colWidths) ? width : SheetDocument.defaultColWidth;
+        let width: any; return (($0: any) => (Object.prototype.hasOwnProperty.call($0, col) ? ((width = $0[col]), true) : ((width = 0), false)))(this._colWidths) ? width : SheetDocument.defaultColWidth;
     }
 
     setRowHeight(row: number, height: number) {

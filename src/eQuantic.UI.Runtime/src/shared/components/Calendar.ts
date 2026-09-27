@@ -116,7 +116,7 @@ export class Calendar extends StatefulComponent {
 
     move(move: NavigableMoveValue) {
         let from = this._cursor ?? (this.selected ?? this.clampToRange(Calendar.today()));
-        let to = (() => { const _s = move; if (_s === 'previousItem') return from.addDays(-1); if (_s === 'nextItem') return from.addDays(1); if (_s === 'previousRow') return from.addDays(-7); if (_s === 'nextRow') return from.addDays(7); if (_s === 'previousPage') return from.addMonths(-1); if (_s === 'nextPage') return from.addMonths(1); if (_s === 'previousSection') return from.addYears(-1); if (_s === 'nextSection') return from.addYears(1); if (_s === 'rowStart') return from.addDays(-Calendar.dayInWeek(from)); if (_s === 'rowEnd') return from.addDays(6 - Calendar.dayInWeek(from)); return from; })();
+        let to = (() => { const $s = move; if ($s === 'previousItem') return from.addDays(-1); if ($s === 'nextItem') return from.addDays(1); if ($s === 'previousRow') return from.addDays(-7); if ($s === 'nextRow') return from.addDays(7); if ($s === 'previousPage') return from.addMonths(-1); if ($s === 'nextPage') return from.addMonths(1); if ($s === 'previousSection') return from.addYears(-1); if ($s === 'nextSection') return from.addYears(1); if ($s === 'rowStart') return from.addDays(-Calendar.dayInWeek(from)); if ($s === 'rowEnd') return from.addDays(6 - Calendar.dayInWeek(from)); return from; })();
         this.setState(() => {
             this._cursor = this.clampToRange(to);
             this._month = Calendar.firstOfMonth(this._cursor);

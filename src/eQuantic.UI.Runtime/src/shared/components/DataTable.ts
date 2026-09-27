@@ -102,7 +102,7 @@ export class DataTable extends StatelessComponent {
     }
 
     static cell(child: VisualNode, align: TextAlignmentValue) {
-        let row = new Row(0, 'start', 'center', false, null, null, { width: SizeValue.fill, height: SizeValue.fill, cross: 'center', main: (() => { const _s = align; if (_s === 'center') return 'center'; if (_s === 'end') return 'end'; return 'start'; })() });
+        let row = new Row(0, 'start', 'center', false, null, null, { width: SizeValue.fill, height: SizeValue.fill, cross: 'center', main: (() => { const $s = align; if ($s === 'center') return 'center'; if ($s === 'end') return 'end'; return 'start'; })() });
         row.add(child);
         return new Box(new BoxStyle({ width: SizeValue.fill, padding: EdgeInsets.symmetric(12, 8) }), row);
     }

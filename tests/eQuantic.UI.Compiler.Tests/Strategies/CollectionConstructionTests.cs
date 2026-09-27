@@ -15,7 +15,8 @@ namespace eQuantic.UI.Compiler.Tests.Strategies;
 /// </summary>
 public class CollectionConstructionTests
 {
-    // The TypeScript a build writes: the annotations these pin are what keeps an empty list typed.
+    // TypeScript: the element type an empty collection is annotated with is for the type checker,
+    // and plain JavaScript carries no annotation at all.
     private static string Convert(string body) => TestHelper.ConvertCodeBlock(body, typeAnnotations: true);
 
     [Fact]

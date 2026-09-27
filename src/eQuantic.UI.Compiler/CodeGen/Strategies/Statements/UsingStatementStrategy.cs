@@ -22,6 +22,11 @@ public class UsingStatementStrategy : IStatementStrategy
         var usingStmt = (UsingStatementSyntax)node;
         string resourceVar;
         JsExpr init;
+        // What the resource's expression declares (`using (var r = Open(out var size))`) is the
+        // statement's own — Roslyn scopes it there — and the block this lowering opens is exactly
+        // that scope.
+        var declared = ExpressionVariableScanner.Declarations(
+            usingStmt.Declaration?.Variables.First().Initializer?.Value ?? usingStmt.Expression, context.TypeAnnotations);
         if (usingStmt.Declaration != null)
         {
             // using (var x = new X()) { ... }
@@ -41,13 +46,13 @@ public class UsingStatementStrategy : IStatementStrategy
         var body = context.Converter.ConvertStatementIr(usingStmt.Statement);
         var dispose = UsingLowering.Dispose(resourceVar, usingStmt.AwaitKeyword.Value != null);
 
-        return JsStatement.Block(new[]
-        {
-            JsStatement.Const(resourceVar, init),
-            JsStatement.Try(body is JsBlock ? body : JsStatement.Block(new[] { body }),
-                Array.Empty<JsCatch>(),
-                JsStatement.Block(new[] { dispose })),
-        });
+        var statements = new List<JsStatement>();
+        if (declared.Length > 0) statements.Add(JsStatement.Raw(declared.TrimEnd()));
+        statements.Add(JsStatement.Const(resourceVar, init));
+        statements.Add(JsStatement.Try(body is JsBlock ? body : JsStatement.Block(new[] { body }),
+            Array.Empty<JsCatch>(),
+            JsStatement.Block(new[] { dispose })));
+        return JsStatement.Block(statements);
     }
 
     public int Priority => 0;

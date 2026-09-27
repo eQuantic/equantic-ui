@@ -20,10 +20,12 @@ public class LocalTypeAnnotationTests
 {
     private readonly CSharpToJsConverter _converter = new();
 
-    private string Convert(string bodyCode, bool typeAnnotations = true)
+    // TypeScript, which is what the annotation is for: plain JavaScript carries none, since the
+    // playground and the design host run it as written (PlainJavaScriptSyntaxTests).
+    public LocalTypeAnnotationTests() => _converter.EmitTypeAnnotations(true);
+
+    private string Convert(string bodyCode)
     {
-        // The TypeScript a build writes, unless the test asks for plain JavaScript.
-        _converter.EmitTypeAnnotations(typeAnnotations);
         // A REAL semantic model: the widening rule compares the declared type against the
         // initializer's, and both have to resolve for the comparison to mean anything.
         var classCode = "class Base { } class A : Base { } class B : Base { }\n"
@@ -83,7 +85,8 @@ public class LocalTypeAnnotationTests
     /// Plain JavaScript carries no annotation, whatever the local: the design host compiles with none
     /// and inlines what eqc writes as one script, so a <c>: T</c> in it is a syntax error that keeps
     /// the preview from loading. A local that starts null was the common case, and a declared base
-    /// or an empty list was already written with its annotation there.
+    /// or an empty list was already written with its annotation there. A type TypeScript spells in
+    /// lower case (`string | null`) is one PlainJavaScriptSyntaxTests' pattern does not look for.
     /// </summary>
     [Theory]
     [InlineData("string? path = null;", "let path = null;")]
@@ -91,7 +94,8 @@ public class LocalTypeAnnotationTests
     [InlineData("var names = new System.Collections.Generic.List<string>();", "let names = [];")]
     public void APlainJavaScriptLocal_CarriesNoAnnotation(string csharp, string expected)
     {
-        Assert.Contains(expected, Convert(csharp, typeAnnotations: false));
+        _converter.EmitTypeAnnotations(false);
+        Assert.Contains(expected, Convert(csharp));
     }
 
     /// <summary>
