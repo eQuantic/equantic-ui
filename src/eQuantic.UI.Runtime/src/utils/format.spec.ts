@@ -1,6 +1,7 @@
-import { describe, it, expect, afterEach } from 'vitest';
+import { describe, it, expect, afterEach, vi } from 'vitest';
 import { parseEnum, format, stringFormat, stringFormatInvariant, asSingle } from './format';
 import { installCulture } from './culture';
+import { dateTime } from './datetime';
 
 describe('parseEnum', () => {
   // String enum (TypeScript style)
@@ -252,5 +253,69 @@ describe('a precision past 100 digits, in a culture', () => {
     expect(format(0.125, 'P101')).toBe(`12,5${zeros(100)}%`);
     expect(folded(format(-1234.5, 'C101'))).toBe(`-R$ 1.234,5${zeros(100)}`);
     expect(format(-1234.5, 'N101')).toBe(`-1.234,5${zeros(100)}`);
+  });
+});
+
+// With no culture in force a date's patterns are the invariant culture's, and so are its names
+// (#388): `Intl` was asked in the host's default locale, which wrote a Portuguese machine's day and
+// month names into the invariant layout. The host here speaks English either way, so the proof is
+// the locale the formatter asks for.
+describe('a date with no culture in force', () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+    installCulture('', '', {});
+  });
+
+  it('asks for the invariant culture’s names, not the host’s', () => {
+    installCulture('', '', {});
+    const asked: (string | string[] | undefined)[] = [];
+    const DateTimeFormat = Intl.DateTimeFormat;
+    // A function, not an arrow: the formatter calls it with `new`.
+    vi.spyOn(Intl, 'DateTimeFormat').mockImplementation(function (
+      locale?: string | string[],
+      options?: Intl.DateTimeFormatOptions,
+    ) {
+      asked.push(locale);
+      return new DateTimeFormat(locale, options);
+    } as unknown as typeof Intl.DateTimeFormat);
+    expect(format(new Date(2026, 8, 24), 'D')).toBe('Thursday, 24 September 2026');
+    expect(asked.length).toBeGreaterThan(0);
+    expect(asked.every((locale) => locale === 'en-US')).toBe(true);
+  });
+});
+
+// A DateTime keeps no time zone (found in review, #472): its parts print as they are, where a local
+// Date built from them was normalised by the host's zone, and in New York's spring-forward gap 02:30
+// became 03:30. Only U reads the value as local time, as .NET does. The expected strings are .NET 10's
+// with TZ=America/New_York.
+describe('a date in a time zone that skips or repeats an hour', () => {
+  const zone = process.env.TZ;
+  afterEach(() => {
+    if (zone === undefined) delete process.env.TZ;
+    else process.env.TZ = zone;
+    installCulture('', '', {});
+  });
+
+  it('prints its own parts, and U moves it to UTC as .NET does', () => {
+    process.env.TZ = 'America/New_York';
+    installCulture('', '', {});
+    const gap = dateTime(2026, 3, 8, 2, 30, 0);
+    expect(format(gap, 'HH:mm')).toBe('02:30');
+    expect(format(gap, 's')).toBe('2026-03-08T02:30:00');
+    expect(format(gap, 'o')).toBe('2026-03-08T02:30:00.0000000');
+    expect(format(gap, 'F')).toBe('Sunday, 08 March 2026 02:30:00');
+    expect(format(gap, 'U')).toBe('Sunday, 08 March 2026 07:30:00');
+    expect(format(dateTime(2026, 7, 1, 12, 0, 0), 'U')).toBe('Wednesday, 01 July 2026 16:00:00');
+  });
+
+  // A repeated hour is standard time to .NET's ToUniversalTime, where the Date constructor took the
+  // daylight instant (found in Copilot's second round, #472). .NET 10's strings, TZ=America/New_York.
+  it('reads the hour a fall-back repeats as standard time for U, as .NET does', () => {
+    process.env.TZ = 'America/New_York';
+    installCulture('', '', {});
+    expect(format(dateTime(2026, 11, 1, 1, 30, 0), 'U')).toBe('Sunday, 01 November 2026 06:30:00');
+    expect(format(dateTime(2026, 11, 1, 0, 59, 59), 'U')).toBe('Sunday, 01 November 2026 04:59:59');
+    expect(format(dateTime(2026, 11, 1, 2, 0, 0), 'U')).toBe('Sunday, 01 November 2026 07:00:00');
+    expect(format(dateTime(2026, 11, 1, 1, 30, 0), 'HH:mm')).toBe('01:30');
   });
 });
