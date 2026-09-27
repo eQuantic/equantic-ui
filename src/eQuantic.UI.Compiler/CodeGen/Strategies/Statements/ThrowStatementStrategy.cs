@@ -15,9 +15,10 @@ public class ThrowStatementStrategy : IStatementStrategy
     public JsStatement Convert(StatementSyntax node, ConversionContext context)
     {
         var throwStmt = (ThrowStatementSyntax)node;
-        return JsStatement.Throw(throwStmt.Expression == null
-            ? null
-            : context.Converter.ConvertIr(throwStmt.Expression));
+        if (throwStmt.Expression == null) return JsStatement.Throw(null);
+        // What the expression declares is hoisted in front, as a return's is (enclosing block).
+        var declared = ExpressionVariableScanner.InFrontOf(throwStmt, throwStmt.Expression, context.TypeAnnotations);
+        return JsStatement.Hoisted(declared, JsStatement.Throw(context.Converter.ConvertIr(throwStmt.Expression)));
     }
 
     public int Priority => 0;

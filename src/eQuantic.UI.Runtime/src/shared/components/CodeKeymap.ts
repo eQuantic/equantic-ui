@@ -12,31 +12,33 @@ export class CodeKeymap {
         }
         if (key !== 'Tab' && !CodeKeymap.isModifierKey(key)) editor.tabMovesFocus = false;
         if (command && key.length === 1) {
-            switch (key[0].toLowerCase()) {
-                case 'a':
-                    editor.selectAll();
-                    return true;
-                case 'z':
-                    return shift ? editor.redo() : editor.undo();
-                case 'y':
-                    return editor.redo();
-                case 'c':
-                    if (clipboard == null) return false;
-                    clipboard.write(editor.copyText());
-                    return true;
-                case 'x':
-                    if (clipboard == null) return false;
-                    clipboard.write(editor.cut());
-                    return true;
-                case 'v':
-                    if (clipboard == null) return false;
-                    let pasted: any; 
-                    if (((clipboard.read() != null && clipboard.read().length > 0) && (pasted = clipboard.read(), true))) editor.paste(pasted);
-                    return true;
-                case '/':
-                    return editor.toggleLineComment();
-                default:
-                    return false;
+            {
+                let pasted: any;
+                switch (key[0].toLowerCase()) {
+                    case 'a':
+                        editor.selectAll();
+                        return true;
+                    case 'z':
+                        return shift ? editor.redo() : editor.undo();
+                    case 'y':
+                        return editor.redo();
+                    case 'c':
+                        if (clipboard == null) return false;
+                        clipboard.write(editor.copyText());
+                        return true;
+                    case 'x':
+                        if (clipboard == null) return false;
+                        clipboard.write(editor.cut());
+                        return true;
+                    case 'v':
+                        if (clipboard == null) return false;
+                        if (((clipboard.read() != null && clipboard.read().length > 0) && (pasted = clipboard.read(), true))) editor.paste(pasted);
+                        return true;
+                    case '/':
+                        return editor.toggleLineComment();
+                    default:
+                        return false;
+                }
             }
         }
         if (command && (key === '/' || key === 'Slash')) return editor.toggleLineComment();

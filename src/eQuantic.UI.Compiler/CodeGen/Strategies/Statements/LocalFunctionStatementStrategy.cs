@@ -31,13 +31,16 @@ public class LocalFunctionStatementStrategy : IStatementStrategy
             .Select(p => Parameter(p, context)));
 
         // An expression body becomes a block with one return, carrying the expression, so both
-        // forms read and map the same.
+        // forms read and map the same — and what the expression declares is declared in front of
+        // the return, inside the function, where each call has its own.
         var body = localFn.Body != null
             ? context.Converter.ConvertBlockIr(localFn.Body)
             : JsStatement.Block(new[]
             {
-                JsStatement.Return(context.Converter.InBlock(() => context.Converter.ConvertIr(localFn.ExpressionBody!.Expression)))
-                    with { Origin = localFn.ExpressionBody!.Expression },
+                JsStatement.Hoisted(
+                    ExpressionVariableScanner.Declarations(localFn.ExpressionBody!.Expression, context.TypeAnnotations),
+                    JsStatement.Return(context.Converter.InBlock(() => context.Converter.ConvertIr(localFn.ExpressionBody!.Expression)))
+                        with { Origin = localFn.ExpressionBody!.Expression }),
             });
 
         // The `async` has to cross. A C# local function that awaits becomes a JS arrow that

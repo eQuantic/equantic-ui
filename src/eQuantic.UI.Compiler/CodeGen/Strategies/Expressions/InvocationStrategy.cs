@@ -254,7 +254,8 @@ public class InvocationStrategy : IExpressionIrStrategy
 
         // Invoking a DELEGATE VALUE by bare name (`configure(node)`, `OnSelect(i)`): the invocation
         // symbol is the delegate's Invoke, so resolve what the NAME binds to. A parameter/local is
-        // a plain callable in scope — VERBATIM (it must match the binding, not our casing rules);
+        // a plain callable in scope — spelled as its binding is (ToJsIdentifier: no casing rule,
+        // only the escape off and a reserved word renamed, so `@default()` calls `default$`);
         // a delegate-typed MEMBER is `this.<camel>(…)` like every other member access.
         if (symbol is { MethodKind: MethodKind.DelegateInvoke }
             && methodExpression is IdentifierNameSyntax delegateIdentifier)

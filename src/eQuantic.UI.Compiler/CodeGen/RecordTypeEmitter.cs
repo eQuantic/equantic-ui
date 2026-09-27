@@ -20,6 +20,11 @@ public class RecordTypeEmitter
     private readonly CSharpToJsConverter _converter;
     private readonly Services.ComponentDependencyResolver? _modules;
 
+    /// <summary>Whether this emission writes TypeScript: set by <see cref="Emit"/>, read wherever the
+    /// variables an expression declares are declared, since <c>let n: any;</c> does not parse as
+    /// JavaScript.</summary>
+    private bool _annotations;
+
     /// <param name="converter">The converter the bodies go through.</param>
     /// <param name="modules">The per-app scan, which knows which of the app's own types became
     /// modules. Without one, no app type is imported — the rule the component and class paths hold,
@@ -119,8 +124,8 @@ public class RecordTypeEmitter
         if (initializer is null) return declared is null ? "null" : DefaultOf(declared);
         // The default runs in the constructor's parameter list, where a positional parameter the
         // initializer reads (`Tag = "#" + Id`) is the parameter itself, and no member is set yet.
-        return _converter.WithConstructorParametersInScope(
-            () => _converter.ConvertExpression(initializer, declared?.ToString()));
+        return ExpressionVariableScanner.Scoped(initializer, _converter.WithConstructorParametersInScope(
+            () => _converter.ConvertExpression(initializer, declared?.ToString())), _annotations);
     }
 
     /// <summary>The type and the initializer a value member is declared with, found by its name
@@ -309,6 +314,7 @@ public class RecordTypeEmitter
     public string Emit(TypeDeclarationSyntax type, bool tsTypeDeclarations = false)
     {
         _converter.EmitTypeAnnotations(tsTypeDeclarations);
+        _annotations = tsTypeDeclarations;
         var name = type.Identifier.Text;
         var members = type.ValueMembers(ModelFor(type));
         var (baseName, superArgs, passedToBase) = BaseInfo(type);
@@ -389,12 +395,9 @@ public class RecordTypeEmitter
                 .Select(p => tsTypeDeclarations
                     ? $"{p.Identifier.Text.ToJsIdentifier()}: {TsTypeOf(p.Type)}"
                     : p.Identifier.Text.ToJsIdentifier()));
-            // Hoisted locals first — `out var` inside an operator emits an assignment with nothing
-            // declaring the name, and an ES module is strict.
-            var body = OutParameters.HoistedLocals(op.Body ?? (SyntaxNode?)op.ExpressionBody)
-                + (op.ExpressionBody is { } expr
-                    ? $"return {_converter.ConvertExpression(expr.Expression)};"
-                    : op.Body is { } block ? Unwrap(_converter.Convert(block)) : "");
+            var body = op.ExpressionBody is { } expr
+                ? ExpressionBodyReturn(expr.Expression)
+                : op.Body is { } block ? Unwrap(_converter.Convert(block)) : "";
             sb.Append($"static {opName}({pars}) {{ {body} }} ");
         }
 
@@ -418,10 +421,9 @@ public class RecordTypeEmitter
             var par = tsTypeDeclarations
                 ? $"{parameter.Identifier.Text.ToJsIdentifier()}: {TsTypeOf(parameter.Type)}"
                 : parameter.Identifier.Text.ToJsIdentifier();
-            var body = OutParameters.HoistedLocals(conversion.Body ?? (SyntaxNode?)conversion.ExpressionBody)
-                + (conversion.ExpressionBody is { } expr
-                    ? $"return {_converter.ConvertExpression(expr.Expression)};"
-                    : conversion.Body is { } block ? Unwrap(_converter.Convert(block)) : "");
+            var body = conversion.ExpressionBody is { } expr
+                ? ExpressionBodyReturn(expr.Expression)
+                : conversion.Body is { } block ? Unwrap(_converter.Convert(block)) : "";
             sb.Append($"static {opName}({par}) {{ {body} }} ");
         }
 
@@ -447,7 +449,8 @@ public class RecordTypeEmitter
                     foreach (var variable in field.Declaration.Variables)
                     {
                         var fieldValue = variable.Initializer is { } init
-                            ? _converter.ConvertExpression(init.Value, field.Declaration.Type.ToString())
+                            ? ExpressionVariableScanner.Scoped(init.Value,
+                                _converter.ConvertExpression(init.Value, field.Declaration.Type.ToString()), _annotations)
                             : DefaultOf(field.Declaration.Type);
                         sb.Append($"static {variable.Identifier.Text.ToCamelCase()} = {fieldValue}; ");
                     }
@@ -459,7 +462,8 @@ public class RecordTypeEmitter
                 case PropertyDeclarationSyntax prop
                     when prop.Modifiers.Any(SyntaxKind.StaticKeyword) && IsPureAuto(prop):
                     var propValue = prop.Initializer is { } propInit
-                        ? _converter.ConvertExpression(propInit.Value, prop.Type.ToString())
+                        ? ExpressionVariableScanner.Scoped(propInit.Value,
+                            _converter.ConvertExpression(propInit.Value, prop.Type.ToString()), _annotations)
                         : DefaultOf(prop.Type);
                     sb.Append($"static {prop.Identifier.Text.ToCamelCase()} = {propValue}; ");
                     break;
@@ -565,11 +569,13 @@ public class RecordTypeEmitter
         {
             null => "",
             BlockSyntax block => $"{prefix}get {propertyName}() {{ {Unwrap(_converter.Convert(block))} }} ",
-            _ => $"{prefix}get {propertyName}() {{ return {_converter.Convert(getter)}; }} ",
+            ExpressionSyntax expression => $"{prefix}get {propertyName}() {{ {ExpressionBodyReturn(expression)} }} ",
+            _ => "",
         };
         var setter = property.AccessorList?.Accessors.FirstOrDefault(a => a.Keyword.Text is "set" or "init");
         if (setter?.ExpressionBody is { } arrow)
-            text += $"{prefix}set {propertyName}(value) {{ {_converter.Convert(arrow.Expression)}; }} ";
+            text += $"{prefix}set {propertyName}(value) {{ "
+                + $"{ExpressionVariableScanner.Declarations(arrow.Expression, _annotations)}{_converter.Convert(arrow.Expression)}; }} ";
         else if (setter?.Body is { } body)
             text += $"{prefix}set {propertyName}(value) {{ {Unwrap(_converter.Convert(body))} }} ";
         return text;
@@ -704,6 +710,11 @@ public class RecordTypeEmitter
         return trimmed.StartsWith('{') && trimmed.EndsWith('}') ? trimmed[1..^1].Trim() : trimmed;
     }
 
+    /// <summary>A concise body as <c>return …;</c>, with the variables it declares declared in front,
+    /// inside the member, where each call has its own (see ExpressionVariableScanner).</summary>
+    private string ExpressionBodyReturn(ExpressionSyntax expression) =>
+        $"{ExpressionVariableScanner.Declarations(expression, _annotations)}return {_converter.ConvertExpression(expression)};";
+
     private string EmitMethod(MethodDeclarationSyntax method, string className,
         bool tsTypeDeclarations)
     {
@@ -732,7 +743,7 @@ public class RecordTypeEmitter
         }
         else if (method.ExpressionBody != null)
         {
-            body = $"return {_converter.Convert(method.ExpressionBody.Expression)};";
+            body = ExpressionBodyReturn(method.ExpressionBody.Expression);
         }
         else
         {

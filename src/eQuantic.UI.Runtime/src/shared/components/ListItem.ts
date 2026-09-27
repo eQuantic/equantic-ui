@@ -57,7 +57,7 @@ export class ListItem extends StatelessComponent {
     }
 
     static slotWidth(leading: VisualNode, declared: number) {
-        return (() => { const _s = leading; if (_s instanceof Icon) { const icon = _s; return icon.size; } if (_s instanceof Avatar) { const avatar = _s; return Sizing.avatar(avatar.size); } return declared; })();
+        return (() => { const $s = leading; if ($s instanceof Icon) { const icon = $s; return icon.size; } if ($s instanceof Avatar) { const avatar = $s; return Sizing.avatar(avatar.size); } return declared; })();
     }
 }
 

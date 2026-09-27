@@ -15,7 +15,7 @@ public class ForStatementStrategy : IStatementStrategy
     public JsStatement Convert(StatementSyntax node, ConversionContext context)
     {
         var forStmt = (ForStatementSyntax)node;
-        var declaration = ConvertDeclaration(forStmt, context);
+        var declaration = ConvertDeclaration(forStmt, Declared(forStmt), context);
         var condition = forStmt.Condition != null
             ? context.Converter.ConvertExpression(forStmt.Condition)
             : "";
@@ -25,8 +25,29 @@ public class ForStatementStrategy : IStatementStrategy
         return JsStatement.Headed($"for ({declaration}; {condition}; {incrementors})", body);
     }
 
-    private static string ConvertDeclaration(ForStatementSyntax forStmt, ConversionContext context)
+    /// <summary>
+    /// The variables the head's expressions declare — <c>for (…; int.TryParse(xs[i], out var n); …)</c>.
+    /// They go in the head's own <c>let</c>, which is the only place with the loop's scope (Roslyn
+    /// keeps them inside the statement) and the only one JavaScript copies for each iteration, as
+    /// .NET gives the condition a fresh variable every time round: a closure made in the body keeps
+    /// its own iteration's value (.NET 12; one slot in front of the loop answered 22).
+    /// </summary>
+    private static IReadOnlyList<string> Declared(ForStatementSyntax forStmt) =>
+        (forStmt.Declaration?.Variables.Select(v => v.Initializer?.Value) ?? [])
+            .Concat(forStmt.Initializers)
+            .Append(forStmt.Condition)
+            .Concat(forStmt.Incrementors)
+            .SelectMany(ExpressionVariableScanner.Names)
+            .Distinct(StringComparer.Ordinal)
+            .ToList();
+
+    private static string ConvertDeclaration(ForStatementSyntax forStmt, IReadOnlyList<string> declared,
+        ConversionContext context)
     {
+        // Declared FIRST, so a declarator or an initializer that assigns one of them finds it bound
+        // rather than in its temporal dead zone.
+        var names = declared.Count == 0 ? "" : ExpressionVariableScanner.List(declared, context.TypeAnnotations);
+
         // for (int i = 0; ...)
         if (forStmt.Declaration != null)
         {
@@ -40,18 +61,52 @@ public class ForStatementStrategy : IStatementStrategy
                         : "undefined";
                     return $"{name} = {initializer}";
                 });
-            return $"let {string.Join(", ", variables)}";
+            return $"let {string.Join(", ", declared.Count == 0 ? variables : variables.Prepend(names))}";
         }
 
         // for (i = 0; ...)
         if (forStmt.Initializers.Count > 0)
         {
-            return string.Join(", ",
-                forStmt.Initializers.Select(i => context.Converter.ConvertExpression(i)));
+            var converted = forStmt.Initializers.Select(i => context.Converter.ConvertExpression(i)).ToList();
+            if (declared.Count == 0) return string.Join(", ", converted);
+
+            // A head holds a declaration OR expressions, never both, and the names need its `let`.
+            // A deconstruction that declares itself (`var (i, j) = (0, 3)`) comes back as a `let` of
+            // its own, which is one more declarator of the head's.
+            var deconstructions = forStmt.Initializers
+                .Select((initializer, i) => converted[i].StartsWith(LetPrefix, StringComparison.Ordinal)
+                    ? DeclaredDeconstruction(initializer)
+                    : null)
+                .ToList();
+            if (deconstructions.All(designation => designation is not null))
+                return $"let {names}, {string.Join(", ", converted.Select(text => text[LetPrefix.Length..]))}";
+
+            // Otherwise the initializers become the initializer of one more binding, which runs them
+            // once, in order, after the names exist: a deconstruction among them assigns names the
+            // head declares. `$` cannot begin a C# identifier, so the binding shadows nothing.
+            var assigned = declared
+                .Concat(deconstructions.Where(d => d is not null).SelectMany(d => ExpressionVariableScanner.Designated(d!)))
+                .Distinct(StringComparer.Ordinal)
+                .ToList();
+            var expressions = converted.Select((text, i) => deconstructions[i] is null ? text : $"({text[LetPrefix.Length..]})");
+            return $"let {ExpressionVariableScanner.List(assigned, context.TypeAnnotations)}, $init = void ({string.Join(", ", expressions)})";
         }
 
-        return "";
+        return declared.Count == 0 ? "" : $"let {names}";
     }
+
+    /// <summary>What a deconstruction declaration's assignment strategy writes in front of it.</summary>
+    private const string LetPrefix = "let ";
+
+    /// <summary>The designation of an initializer that is a deconstruction declaring its own names
+    /// (<c>var (i, j) = (0, 3)</c>), which converts to <c>let [i, j] = …</c>; null for any other.</summary>
+    private static VariableDesignationSyntax? DeclaredDeconstruction(ExpressionSyntax initializer) =>
+        initializer is AssignmentExpressionSyntax
+        {
+            Left: DeclarationExpressionSyntax { Designation: ParenthesizedVariableDesignationSyntax designation },
+        }
+            ? designation
+            : null;
 
     public int Priority => 0;
 }
