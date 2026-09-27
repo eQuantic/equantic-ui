@@ -599,6 +599,20 @@ public class CSharpToJsConverter
         }
     }
 
+    /// <summary>
+    /// A concise body (an expression-bodied lambda or local function) as the block it stands for:
+    /// what the expression declares in front of its return, both mapped to the expression, and the
+    /// expression converted at the depth of the block's statements, so what it lays out (a lambda's
+    /// block) indents as it would inside that block. The local function and the lambda each built
+    /// their own, and mapped the declarations two ways (found in review, #384).
+    /// </summary>
+    public JsStatement ConvertExpressionBodyIr(ExpressionSyntax expression) =>
+        JsStatement.Block([
+            JsStatement.Hoisted(
+                ExpressionVariableScanner.Declarations(expression, _context.TypeAnnotations),
+                JsStatement.Return(InBlock(() => ConvertIr(expression)))) with { Origin = expression },
+        ]);
+
     /// <summary>The block as text, laid out at the current depth — what a strategy still
     /// producing text splices for a nested body.</summary>
     public string ConvertBlock(BlockSyntax block) =>

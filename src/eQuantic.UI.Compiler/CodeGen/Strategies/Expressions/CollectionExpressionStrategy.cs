@@ -2,6 +2,7 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using System.Linq;
+using eQuantic.UI.Compiler.CodeGen.Ir;
 
 namespace eQuantic.UI.Compiler.CodeGen.Strategies.Expressions;
 
@@ -13,15 +14,19 @@ namespace eQuantic.UI.Compiler.CodeGen.Strategies.Expressions;
 /// - a SET target -> new Set([…]), because the elements are only half of what `[…]` means: the
 ///   TARGET TYPE says what is being built. `HashSet&lt;string&gt; _selected = ["#3841"]` lowered to a
 ///   plain array, and every `Add`/`Remove`/`Count` on it then threw at the first click.
+/// <para>
+/// Built as IR (#384): the elements are the lists a screen composes, `children: [ … ]`, and a
+/// lambda among them reaches the writer as an arrow whose block maps line by line.
+/// </para>
 /// </summary>
-public class CollectionExpressionStrategy : IConversionStrategy
+public class CollectionExpressionStrategy : IExpressionIrStrategy
 {
     public bool CanConvert(SyntaxNode node, ConversionContext context)
     {
         return node is CollectionExpressionSyntax;
     }
 
-    public string Convert(SyntaxNode node, ConversionContext context)
+    public JsExpr ConvertIr(SyntaxNode node, ConversionContext context)
     {
         var collection = (CollectionExpressionSyntax)node;
 
@@ -41,10 +46,10 @@ public class CollectionExpressionStrategy : IConversionStrategy
             }
         }
 
-        var elements = collection.Elements
+        var array = JsExpr.Array(collection.Elements
             .Where(element => element is not WithElementSyntax)
-            .Select(e => ConvertElement(e, context));
-        var array = $"[{string.Join(", ", elements)}]";
+            .Select(e => ConvertElement(e, context))
+            .ToList());
 
         // What the expression is CONVERTED to, not what it looks like: a collection expression takes
         // its shape from the target, exactly as it does in C#.
@@ -54,25 +59,22 @@ public class CollectionExpressionStrategy : IConversionStrategy
         if (definition.StartsWith("System.Collections.Generic.SortedSet"))
         {
             context.UsedHelpers.Add(Eq.Import);
-            return $"{Eq.SortedSet}({array})";
+            return JsExpr.Call(JsExpr.Identifier(Eq.SortedSet), array);
         }
         if (definition.StartsWith("System.Collections.Generic.HashSet")
             || definition.StartsWith("System.Collections.Generic.ISet")
             || definition.StartsWith("System.Collections.Generic.IReadOnlySet"))
-            return $"new Set({array})";
+            return JsExpr.Template("new Set({0})", array);
 
         return array;
     }
 
-    private string ConvertElement(CollectionElementSyntax element, ConversionContext context)
+    private static JsExpr ConvertElement(CollectionElementSyntax element, ConversionContext context) => element switch
     {
-        return element switch
-        {
-            ExpressionElementSyntax expr => context.Converter.ConvertExpression(expr.Expression),
-            SpreadElementSyntax spread => $"...{context.Converter.ConvertExpression(spread.Expression)}",
-            _ => context.Unhandled(element, "collection expression"),
-        };
-    }
+        ExpressionElementSyntax expr => context.Converter.ConvertIr(expr.Expression),
+        SpreadElementSyntax spread => JsExpr.Spread(context.Converter.ConvertIr(spread.Expression)),
+        _ => JsExpr.Opaque(context.Unhandled(element, "collection expression")),
+    };
 
     /// <summary>Whether every <c>with(…)</c> argument is a capacity-style hint (integral, or named
     /// <c>capacity</c>) that dropping cannot change behaviour. A comparer is never that.</summary>

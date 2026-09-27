@@ -24,8 +24,7 @@ public static class JsStatementWriter
     private const string Unit = "    ";
 
     /// <summary>The statement at the given depth (a block's contents sit one level deeper).</summary>
-    public static string Write(JsStatement statement, JsLayout layout, int depth = 0) =>
-        layout == JsLayout.Compact ? Compact(statement) : Pretty(statement, depth).Text;
+    public static string Write(JsStatement statement, JsLayout layout, int depth = 0) => Written(statement, layout, depth).Text;
 
     /// <summary>
     /// The same text, and into <paramref name="marks"/> where each statement in it that carries an
@@ -46,19 +45,10 @@ public static class JsStatementWriter
 
     // ── compact: the string world, reproduced ──────────────────────────────────────────────
 
-    private static string Compact(JsStatement statement) => statement switch
+    private static string Compact(JsStatement statement) => Line(statement)?.Text ?? statement switch
     {
-        JsRawStatement raw => raw.Text,
         JsStatements sequence => string.Concat(sequence.Statements.Select(Compact)),
         JsBlock block => "{" + string.Concat(block.Statements.Select(Compact)) + "}",
-        JsExpressionStatement expression => $"{JsExprWriter.Write(expression.Expr)};",
-        JsReturn { Value: null } => "return;",
-        JsReturn @return => $"return {JsExprWriter.Write(@return.Value!)};",
-        JsThrow { Value: null } => "throw;",
-        JsThrow @throw => $"throw {JsExprWriter.Write(@throw.Value!)};",
-        JsLet let => $"let {let.Name}{let.Annotation} = {JsExprWriter.Write(let.Initializer)};",
-        JsConst @const => $"const {@const.Name} = {JsExprWriter.Write(@const.Initializer)};",
-        JsConstArrow arrow => $"{ArrowHead(arrow)}{BracedCompact(arrow.Body)};",
         JsHeaded headed => $"{headed.Head} {BracedCompact(headed.Body)}",
         JsTry @try => $"try {Compact(@try.Body)}"
                       + string.Concat(@try.Catches.Select(c => $" catch{(c.Binding.Length == 0 ? "" : " " + c.Binding)} {Compact(c.Block)}"))
@@ -71,12 +61,30 @@ public static class JsStatementWriter
                     + (@if.Else is null ? "" : $" else {BracedCompact(@if.Else)}"),
         JsWhile @while => $"while ({JsExprWriter.Write(@while.Condition)}) {BracedCompact(@while.Body)}",
         JsDoWhile doWhile => $"do {BracedCompact(doWhile.Body)} while ({JsExprWriter.Write(doWhile.Condition)});",
-        JsBreak { Label: null } => "break;",
-        JsBreak @break => $"break {@break.Label};",
-        JsContinue { Label: null } => "continue;",
-        JsContinue @continue => $"continue {@continue.Label};",
-        JsEmpty => "",
         _ => throw new InvalidOperationException($"No writer for IR node {statement.GetType().Name}."),
+    };
+
+    /// <summary>
+    /// A statement that reads the same in either layout, its one line composed with the marks of
+    /// the expressions in it; null for one whose shape the layout decides. Each is written here and
+    /// only here, so the two layouts cannot drift apart.
+    /// </summary>
+    private static JsWritten? Line(JsStatement statement) => statement switch
+    {
+        JsRawStatement raw => JsWritten.Of(raw.Text),
+        JsExpressionStatement expression => new JsWrittenBuilder().Add(Expr(expression.Expr)).Add(";").Done(),
+        JsReturn { Value: null } => JsWritten.Of("return;"),
+        JsReturn { Value: { } value } => new JsWrittenBuilder().Add("return ").Add(Expr(value)).Add(";").Done(),
+        JsThrow { Value: null } => JsWritten.Of("throw;"),
+        JsThrow { Value: { } value } => new JsWrittenBuilder().Add("throw ").Add(Expr(value)).Add(";").Done(),
+        JsLet let => new JsWrittenBuilder().Add($"let {let.Name}{let.Annotation} = ").Add(Expr(let.Initializer)).Add(";").Done(),
+        JsConst @const => new JsWrittenBuilder().Add($"const {@const.Name} = ").Add(Expr(@const.Initializer)).Add(";").Done(),
+        JsBreak { Label: null } => JsWritten.Of("break;"),
+        JsBreak @break => JsWritten.Of($"break {@break.Label};"),
+        JsContinue { Label: null } => JsWritten.Of("continue;"),
+        JsContinue @continue => JsWritten.Of($"continue {@continue.Label};"),
+        JsEmpty => JsWritten.Of(""),
+        _ => null,
     };
 
 
@@ -96,9 +104,12 @@ public static class JsStatementWriter
     private static string BracedCompact(JsStatement statement) =>
         NeedsBraces(statement) ? Compact(JsStatement.Block(((JsStatements)statement).Statements)) : Compact(statement);
 
+    /// <remarks>The braces keep the sequence's origin: a body C# wrote without braces, braced here
+    /// because a declaration it hoists stands in front of it, handed both of its lines to the
+    /// construct around it (found in review, #384).</remarks>
     private static JsWritten BracedPretty(JsStatement statement, int depth, SyntaxNode? enclosing) =>
         NeedsBraces(statement)
-            ? Pretty(JsStatement.Block(((JsStatements)statement).Statements), depth, enclosing)
+            ? Pretty(JsStatement.Block(((JsStatements)statement).Statements) with { Origin = statement.Origin }, depth, enclosing)
             : Pretty(statement, depth, enclosing);
 
     /// <summary>A sequence of two or more is the only shape that leaks; one or none reads the same
@@ -126,20 +137,13 @@ public static class JsStatementWriter
     private static JsWritten Pretty(JsStatement statement, int depth, SyntaxNode? enclosing = null)
     {
         var owner = statement.Origin ?? enclosing;
-        var written = statement switch
+        var written = Line(statement) ?? statement switch
         {
-            JsRawStatement raw => JsWritten.Of(raw.Text),
             JsStatements sequence => Lines(sequence.Statements, depth, owner),
             JsBlock block => PrettyBlock(block, depth, owner),
-            JsExpressionStatement expression => new JsWrittenBuilder().Add(Expr(expression.Expr)).Add(";").Done(),
-            JsReturn { Value: { } value } => new JsWrittenBuilder().Add("return ").Add(Expr(value)).Add(";").Done(),
-            JsThrow { Value: { } value } => new JsWrittenBuilder().Add("throw ").Add(Expr(value)).Add(";").Done(),
-            JsLet let => new JsWrittenBuilder().Add($"let {let.Name}{let.Annotation} = ").Add(Expr(let.Initializer)).Add(";").Done(),
-            JsConst @const => new JsWrittenBuilder().Add($"const {@const.Name} = ").Add(Expr(@const.Initializer)).Add(";").Done(),
             JsIf @if => new JsWrittenBuilder().Add("if (").Add(Expr(@if.Condition)).Add(") ").Add(BracedPretty(@if.Then, depth, owner))
                 .AddIf(@if.Else is not null, () => new JsWrittenBuilder().Add(" else ").Add(BracedPretty(@if.Else!, depth, owner)).Done()).Done(),
             JsHeaded headed => new JsWrittenBuilder().Add($"{headed.Head} ").Add(BracedPretty(headed.Body, depth, owner)).Done(),
-            JsConstArrow arrow => new JsWrittenBuilder().Add(ArrowHead(arrow)).Add(BracedPretty(arrow.Body, depth, owner)).Add(";").Done(),
             JsTry @try => PrettyTry(@try, depth, owner),
             JsSwitch @switch => PrettySwitch(@switch, depth, owner),
             JsWhile @while => new JsWrittenBuilder().Add("while (").Add(Expr(@while.Condition)).Add(") ").Add(BracedPretty(@while.Body, depth, owner)).Done(),
@@ -148,16 +152,13 @@ public static class JsStatementWriter
             JsDoWhile doWhile => new JsWrittenBuilder().Add("do ").Add(BracedPretty(doWhile.Body, depth, owner)).Add(" ")
                 .Add(new JsWrittenBuilder().Add("while (").Add(Expr(doWhile.Condition)).Add(");").Done()
                     .MarkedAt(owner is DoStatementSyntax @do ? @do.Condition : owner)).Done(),
-            _ => JsWritten.Of(Compact(statement)),
+            _ => throw new InvalidOperationException($"No writer for IR node {statement.GetType().Name}."),
         };
         return written.Text.Length > 0 && statement is not (JsBlock or JsStatements) ? written.MarkedAt(owner) : written;
     }
 
     /// <summary>An expression as the statement places it, with the marks of any arrow's block in it.</summary>
     private static JsWritten Expr(JsExpr expression) => JsExprWriter.Written(expression);
-
-    private static string ArrowHead(JsConstArrow arrow) =>
-        $"const {arrow.Name} = {(arrow.IsAsync ? "async " : "")}({arrow.Parameters}) => ";
 
     private static JsWritten PrettyTry(JsTry @try, int depth, SyntaxNode? enclosing)
     {
@@ -169,18 +170,9 @@ public static class JsStatementWriter
     }
 
     /// <summary>Statements each on their own line at this depth; an empty one takes no line.</summary>
-    private static JsWritten Lines(IReadOnlyList<JsStatement> statements, int depth, SyntaxNode? enclosing)
-    {
-        var text = new JsWrittenBuilder();
-        var first = true;
-        foreach (var rendered in statements.Select(s => Pretty(s, depth, enclosing)).Where(written => written.Text.Length > 0))
-        {
-            if (!first) text.Add("\n" + Indent(depth));
-            text.Add(rendered);
-            first = false;
-        }
-        return text.Done();
-    }
+    private static JsWritten Lines(IReadOnlyList<JsStatement> statements, int depth, SyntaxNode? enclosing) =>
+        new JsWrittenBuilder().AddJoined("\n" + Indent(depth),
+            statements.Select(s => Pretty(s, depth, enclosing)).Where(written => written.Text.Length > 0)).Done();
 
     /// <summary>Labels one level in, their statements one level further.</summary>
     private static JsWritten PrettySwitch(JsSwitch @switch, int depth, SyntaxNode? enclosing)

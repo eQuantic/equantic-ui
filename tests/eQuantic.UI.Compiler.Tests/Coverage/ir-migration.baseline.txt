@@ -6,7 +6,6 @@ AsExpressionStrategy
 AverageStrategy
 CastStrategy
 CheckedExpressionStrategy
-CollectionExpressionStrategy
 CollectionMaterializationStrategy
 ConditionalAccessStrategy
 ConsoleStrategy

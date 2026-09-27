@@ -78,14 +78,21 @@ public abstract record JsExpr
     /// is an object literal — <c>() => ({ a: 1 })</c> — because the bare braces would read as a
     /// block, and the arrow would return undefined.</summary>
     public static JsExpr Arrow(string parameters, JsExpr body, bool isAsync = false) =>
-        new JsArrow(parameters, body, null, isAsync);
+        new JsArrow(parameters, body, isAsync);
 
     /// <summary>An arrow function with a block body, laid out in <paramref name="layout"/> at
     /// <paramref name="depth"/>: where the lambda stands in the C#, which the writer of a string seam
     /// that places it does not know. Its statements keep their origins, so each one maps to its own
     /// line wherever a writer places the arrow (#384).</summary>
     public static JsExpr ArrowBlock(string parameters, JsStatement block, JsLayout layout, int depth, bool isAsync = false) =>
-        new JsArrow(parameters, null, block, isAsync, layout, depth);
+        new JsArrowBlock(parameters, block, isAsync, layout, depth);
+
+    /// <summary>An array literal of <paramref name="elements"/>, a <see cref="JsSpread"/> among them
+    /// spreading a sequence in.</summary>
+    public static JsExpr Array(IReadOnlyList<JsExpr> elements) => new JsArray(elements);
+
+    /// <summary><c>...operand</c>, as an array's element or a call's argument.</summary>
+    public static JsExpr Spread(JsExpr operand) => new JsSpread(operand);
 
     public static JsExpr Binary(JsExpr left, string op, JsExpr right) => new JsBinary(left, op, right);
 
@@ -157,13 +164,10 @@ public sealed record JsTemplate(string Text, IReadOnlyList<JsExpr> Parts, bool A
     public override JsPrecedence Precedence => JsPrecedence.Call;
 }
 
-/// <summary>An arrow function: <c>(parameters) => body</c>. Exactly one of <see cref="Body"/>
-/// (an expression) and <see cref="Block"/> (a block, laid out in <see cref="Layout"/> at
-/// <see cref="Depth"/>, where the lambda was converted) is set. It binds at assignment level — the
-/// loosest expression there is — so any migrated parent that places one as an operand or a
-/// receiver fences it.</summary>
-public sealed record JsArrow(string Parameters, JsExpr? Body, JsStatement? Block, bool IsAsync,
-    JsLayout Layout = JsLayout.Compact, int Depth = 0) : JsExpr
+/// <summary>An arrow function with an expression body: <c>(parameters) => body</c>. One with a
+/// block is <see cref="JsArrowBlock"/>. It binds at assignment level — the loosest expression there
+/// is — so any migrated parent that places one as an operand or a receiver fences it.</summary>
+public sealed record JsArrow(string Parameters, JsExpr Body, bool IsAsync) : JsExpr
 {
     public override JsPrecedence Precedence => JsPrecedence.Assignment;
 }

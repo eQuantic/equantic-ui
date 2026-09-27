@@ -85,12 +85,18 @@ public class ListMethodStrategy : IExpressionIrStrategy
         var argsIr = invocation.ArgumentList.Arguments
             .Select(a => context.Converter.ConvertIr(a.Expression))
             .ToList();
+
+        // A call of the array's own method, as IR, so a lambda passed to it reaches the statement
+        // writer as an arrow whose block maps line by line (#384). `Sort` takes its comparison
+        // alone, the one argument the shape has.
+        if (ArrayMethod(methodName) is { } own)
+            return Method(callerIr, own, methodName == "Sort" ? argsIr.Take(1).ToList() : argsIr);
+
+        // The other shapes still splice their parts as text, written only here.
         var caller = JsExprWriter.Write(callerIr);
         var args = argsIr.Select(JsExprWriter.Write).ToList();
-
         return methodName switch
         {
-            "Add" => Method(callerIr, "push", argsIr),
             "AddRange" => args.Count > 0 ? $"{caller}.push(...{args[0]})" : caller,
             "Insert" => ConvertInsert(caller, args),
             "InsertRange" => ConvertInsertRange(caller, args),
@@ -100,24 +106,31 @@ public class ListMethodStrategy : IExpressionIrStrategy
             "RemoveRange" => ConvertRemoveRange(caller, args),
             "RemoveAll" => ConvertRemoveAll(caller, args),
             "Clear" => $"{caller}.splice(0)",
-            "IndexOf" => Method(callerIr, "indexOf", argsIr),
-            "LastIndexOf" => Method(callerIr, "lastIndexOf", argsIr),
-            "Find" => Method(callerIr, "find", argsIr),
-            "FindIndex" => Method(callerIr, "findIndex", argsIr),
-            "FindLast" => Method(callerIr, "findLast", argsIr),
-            "FindLastIndex" => Method(callerIr, "findLastIndex", argsIr),
-            "FindAll" => Method(callerIr, "filter", argsIr),
-            "Exists" => Method(callerIr, "some", argsIr),
-            "TrueForAll" => Method(callerIr, "every", argsIr),
-            // Its comparison alone, the one argument the shape has.
-            "Sort" => Method(callerIr, "sort", argsIr.Take(1).ToList()),
-            "ForEach" => Method(callerIr, "forEach", argsIr),
             "GetRange" => ConvertGetRange(caller, args),
             "CopyTo" => $"[...{caller}]",
             "BinarySearch" => ConvertBinarySearch(caller, args),
-            _ => Method(callerIr, methodName.ToCamelCase(), argsIr)
+            // CanConvert admits the names above and ArrayMethod's, and no other.
+            _ => throw new System.Diagnostics.UnreachableException($"List.{methodName} has no shape."),
         };
     }
+
+    /// <summary>The array method a List method is, where the call is the same call.</summary>
+    private static string? ArrayMethod(string name) => name switch
+    {
+        "Add" => "push",
+        "IndexOf" => "indexOf",
+        "LastIndexOf" => "lastIndexOf",
+        "Find" => "find",
+        "FindIndex" => "findIndex",
+        "FindLast" => "findLast",
+        "FindLastIndex" => "findLastIndex",
+        "FindAll" => "filter",
+        "Exists" => "some",
+        "TrueForAll" => "every",
+        "Sort" => "sort",
+        "ForEach" => "forEach",
+        _ => null,
+    };
 
     /// <summary>The array's own method, called with the arguments as they are.</summary>
     private static JsExpr Method(JsExpr caller, string name, IReadOnlyList<JsExpr> args) =>

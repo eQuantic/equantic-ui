@@ -61,8 +61,9 @@ public class LambdaExpressionStrategy : IExpressionIrStrategy
                 ? Block(param, simple.Block, isAsyncLambda, context)
                 : ExpressionBody(param, simple.ExpressionBody!, isAsyncLambda, context);
         }
-        
-        return JsExpr.ArrowBlock("", JsStatement.Block([]), context.Layout, context.Depth);
+
+        // A lambda's syntax is one of the two above; there is no third to write.
+        throw new System.Diagnostics.UnreachableException($"A lambda of kind {node.GetType().Name}.");
     }
 
     /// <summary>
@@ -86,16 +87,12 @@ public class LambdaExpressionStrategy : IExpressionIrStrategy
     /// </para>
     /// </summary>
     private static JsExpr ExpressionBody(string parameters, ExpressionSyntax expression, bool isAsync,
-        ConversionContext context)
-    {
-        var hoisted = ExpressionVariableScanner.Declarations(expression, context.TypeAnnotations);
-        var body = context.Converter.ConvertIr(expression);
-        if (hoisted.Length == 0) return JsExpr.Arrow(parameters, body, isAsync);
-
-        // The declarations and the return are the expression's own lowering, and map to it (#384).
-        var block = JsStatement.Block(new[] { JsStatement.Raw(hoisted), JsStatement.Return(body) }) with { Origin = expression };
-        return JsExpr.ArrowBlock(parameters, block, context.Layout, context.Depth, isAsync);
-    }
+        ConversionContext context) =>
+        // Asked before the expression is converted: converted, it is cached at the depth it was
+        // converted at, and the block's return sits one level deeper than the arrow.
+        ExpressionVariableScanner.Names(expression).Count == 0
+            ? JsExpr.Arrow(parameters, context.Converter.ConvertIr(expression), isAsync)
+            : JsExpr.ArrowBlock(parameters, context.Converter.ConvertExpressionBodyIr(expression), context.Layout, context.Depth, isAsync);
 
     /// <summary>The statements of a converted block, without its outer braces.</summary>
     private static string TrimBraces(string block)
