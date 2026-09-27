@@ -135,9 +135,10 @@ public class StatementSourceMapTests
         """;
 
     /// <summary>Statements inside a lambda's block, in each place an arrow reaches the writer: an
-    /// argument to a call the IR writes (<c>List.ForEach</c>), a hole of a LINQ template
-    /// (<c>Where</c>), a local's initializer, a <c>delegate</c>, an arrow inside an arrow, an async
-    /// one, and the block the emitter adds to a concise body that declares a variable (#384). Each
+    /// argument to a call the IR writes (<c>List.ForEach</c>, a method of the app's own), a hole of a
+    /// LINQ template (<c>Where</c>, <c>Select</c>), a local's initializer, a <c>delegate</c>, an arrow
+    /// inside an arrow, an async one, and the block the emitter adds to a concise body that declares
+    /// a variable (#384). Each
     /// one mapped to the line that holds the lambda, so a frame or a breakpoint inside the block
     /// landed on the call.</summary>
     private const string LambdaSource = """
@@ -218,6 +219,27 @@ public class StatementSourceMapTests
                 return parse(text);
             }
 
+            public int Applied(int seed)
+            {
+                return Apply(seed, value =>
+                {
+                    var bumped = value + 5;
+                    return bumped;
+                });
+            }
+
+            public int Doubled(int[] values)
+            {
+                var doubled = values.Select(value =>
+                {
+                    var twiceOver = value * 2;
+                    return twiceOver;
+                });
+                return doubled.Count();
+            }
+
+            private int Apply(int seed, Func<int, int> step) => step(seed);
+
             private int Twice(int x) => x * 2;
         }
         """;
@@ -291,6 +313,8 @@ public class StatementSourceMapTests
     [InlineData("seed = shown - 1;", "seed = shown - 1;")]
     [InlineData("sum += outer * inner;", "sum += outer * inner;")]
     [InlineData("count = values.length;", "count = values.Count;")]
+    [InlineData("let bumped = value + 5;", "var bumped = value + 5;")]
+    [InlineData("let twiceOver = value * 2;", "var twiceOver = value * 2;")]
     [InlineData("let number: any;", "int.TryParse(candidate, out var number) ? number : 0;")]
     [InlineData("return ((number = $eq.num.intTryParse(candidate", "int.TryParse(candidate, out var number) ? number : 0;")]
     public void AStatementInALambdasBlock_MapsToItsOwnCSharpLine(string emitted, string written) =>
