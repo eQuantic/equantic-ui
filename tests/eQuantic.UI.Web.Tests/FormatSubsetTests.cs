@@ -62,7 +62,10 @@ public class FormatSubsetTests
     /// depend on the machine's time zone, only on its culture data.</summary>
     private static readonly DateTime Moment = new(2026, 8, 13, 15, 45, 7);
 
-    private static readonly string[] DateSpecs = ["d", "D", "t", "T", "g", "G", "M", "Y", "yyyy-MM-dd"];
+    // Every date specifier the subset admits (FormatSubset.DateStandard): f, F, m, y and the three
+    // round-trip and sortable forms were admitted without a row, and `o` and `s` wrote UTC (#388).
+    private static readonly string[] DateSpecs =
+        ["d", "D", "t", "T", "f", "F", "g", "G", "M", "m", "Y", "y", "O", "o", "s", "yyyy-MM-dd"];
 
     /// <summary>
     /// The specifiers an INVARIANT conversion is written for: a number a machine reads — a CSS

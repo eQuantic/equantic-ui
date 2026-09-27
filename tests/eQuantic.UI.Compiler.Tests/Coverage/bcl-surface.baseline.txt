@@ -1,7 +1,7 @@
 # eqc BCL surface audit — the coverage DENOMINATOR, one verdict per probed member.
 # native = a strategy mapped it to plain JS · eq = routed through a $eq compat helper
 # fenced:EQxxxx = refused with that diagnostic · invalid-probe = the probe itself doesn't compile
-# totals: eq=188 · fenced=41 · invalid-probe=6 · native=728
+# totals: eq=194 · fenced=41 · invalid-probe=6 · native=722
 native         Array.MaxLength
 native         Boolean.CompareTo(Boolean)
 native         Boolean.CompareTo(Object)
@@ -171,13 +171,13 @@ native         DateTime.ToBinary()
 native         DateTime.ToFileTime()
 native         DateTime.ToFileTimeUtc()
 native         DateTime.ToLocalTime()
-native         DateTime.ToLongDateString()
-native         DateTime.ToLongTimeString()
+eq             DateTime.ToLongDateString()
+eq             DateTime.ToLongTimeString()
 native         DateTime.ToOADate()
-native         DateTime.ToShortDateString()
-native         DateTime.ToShortTimeString()
-native         DateTime.ToString()
-native         DateTime.ToString(String)
+eq             DateTime.ToShortDateString()
+eq             DateTime.ToShortTimeString()
+eq             DateTime.ToString()
+eq             DateTime.ToString(String)
 native         DateTime.ToUniversalTime()
 eq             DateTime.Today
 eq             DateTime.UnixEpoch

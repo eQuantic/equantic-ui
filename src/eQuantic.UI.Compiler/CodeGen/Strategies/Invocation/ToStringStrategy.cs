@@ -81,6 +81,21 @@ public class ToStringStrategy : IConversionStrategy
             }
         }
 
+        // A DATE goes through the formatter whatever it is given, as .NET formats it: a standard
+        // specifier from the culture's patterns, a custom picture drawn token by token, and with
+        // none, which is `G`, the current culture's general pattern, the current culture and a null
+        // being the call with none; the invariant culture writes the invariant patterns. With no
+        // specifier it wrote the twin's invariant text, where .NET writes the culture's (found in
+        // review, #472). A null DateTime? writes nothing (#388).
+        if (IsDateTime(receiverType))
+        {
+            context.UsedHelpers.Add(Eq.Import);
+            var specifier = formatArg is null ? "'G'" : DateSpecifier(formatArg.Expression, context);
+            return invariant
+                ? $"{Eq.Format}({caller}, {specifier}, undefined, true)"
+                : $"{Eq.Format}({caller}, {specifier})";
+        }
+
         if (formatArg is not null)
         {
             var fmt = context.Converter.ConvertExpression(formatArg.Expression);
@@ -143,6 +158,24 @@ public class ToStringStrategy : IConversionStrategy
 
         return $"String({caller})";
     }
+
+    /// <summary>
+    /// A DateTime's format as .NET reads it: a null or an empty one is <c>G</c>, the general pattern.
+    /// A constant says which at build time and a variable at run time, where the formatter took
+    /// either for no format at all and wrote the twin's invariant text (found in Copilot's second
+    /// round, #472).
+    /// </summary>
+    private static string DateSpecifier(ExpressionSyntax format, ConversionContext context)
+    {
+        if (context.SemanticHelper.IsNullConstant(format)) return "'G'";
+        if (context.SemanticHelper.TryGetConstantValue(format, out var constant) && constant is string text)
+            return text.Length == 0 ? "'G'" : context.Converter.ConvertExpression(format);
+        return JsExprWriter.Write(JsExpr.Binary(JsExpr.Group(context.Converter.ConvertIr(format)), "||", JsExpr.Literal("'G'")));
+    }
+
+    /// <summary>Whether the receiver is a DateTime, a nullable one's included.</summary>
+    private static bool IsDateTime(ITypeSymbol? type) =>
+        type.UnwrapNullable()?.ToDisplayString() == "System.DateTime";
 
     /// <summary>
     /// A float's or a double's text as .NET writes it, a nullable one's included, which is nothing
