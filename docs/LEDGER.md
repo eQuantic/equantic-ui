@@ -794,7 +794,52 @@ record of a release, the wiki's Upgrading page is the distillate.
   value, a ToBoolean provider is evaluated in the order it is written (another `CultureInfo`
   than the invariant or the current one is EQ2108, having no twin to evaluate), and the BCL
   audit's `(Object)` probes call the object overload instead of the string one beside it.
-- **2026-09-26 · The code diff view**: the view half of slice 2b of
+- **2026-09-26 · A number prints through its specifier as .NET prints it**: the resx subset admitted
+  the `E` specifier and the formatter had no branch for it, so `{0:E2}` passed the build and printed
+  `12345` ([#393](https://github.com/eQuantic/equantic-ui/issues/393)). Measured, every specifier
+  missed in the same way: .NET writes a double from its exact binary value, a long and a decimal from
+  every digit, and rounds a half by the type, and the formatter started from the shortest text with
+  one rule. It now formats from the exact decimal expansion (`utils/exact-decimal.ts`), writes `E` as
+  .NET does, and rounds an exact half to even for a double and a float and away from zero for a
+  decimal and an integer, which the compiler now names where a specifier is written (`FormatKind`,
+  `$eq.text.asInteger`). A new conformance class fails all fifteen of its cases on main. Found on the
+  way: `decimal`'s constants do not cross ([#444](https://github.com/eQuantic/equantic-ui/issues/444)).
+  Found in review ([#445](https://github.com/eQuantic/equantic-ui/pull/445)): `X` wrote a negative int
+  as `-1` and now writes it at its type's width, with `B` beside it; a custom picture read its digit
+  places alone and is now drawn as .NET draws it (sections, text, percent, exponents); a precision past
+  100 digits was cut, and a fraction under `D` printed where .NET throws; es-ES left `1234` ungrouped,
+  and sv-SE's minus sign was a hyphen. Left for later: a number's text outside a specifier ignores the
+  culture ([#454](https://github.com/eQuantic/equantic-ui/issues/454)), the guesses where a type did not
+  travel ([#455](https://github.com/eQuantic/equantic-ui/issues/455)), and EQ2100's subset can widen
+  ([#456](https://github.com/eQuantic/equantic-ui/issues/456)).
+
+- **2026-09-26 · The Copilot loop stops on its own**: waiting for Copilot's light review to run dry
+  cost about one round per finding (69 findings in 47 rounds on six pull requests, 14 rounds for
+  #354). The author now reviews the whole diff before opening a pull request, a finding earns
+  another round only when it is a defect, and the loop ends at the first round without one, after
+  three rounds in any case. The ruleset no longer reviews on push, so a round is asked for once per
+  push of fixes ([#446](https://github.com/eQuantic/equantic-ui/issues/446)).
+
+- **2026-09-26 · A pull request merges against the current main**: the ruleset requires thirteen of
+  the CI's jobs, the whole dependency chain since GitHub counts a job skipped for a failed dependency
+  as passed, and a head up to date with main. Before it required only a review, so a workflow that
+  never ran read mergeable, and two pull requests that each passed alone broke main together (#453)
+  ([#287](https://github.com/eQuantic/equantic-ui/issues/287)).
+- **2026-09-26 · main's runtime suite is green again**: the interface-defaults fixture pinned
+  PhotonTheme's dark code colours from before #354 re-solved the dark palette, and #418 merged after
+  #354 without a CI run on a main that had it, so `test-runtime` and the fixture's C# pin failed on
+  main. The fixture is regenerated from the palette both sides now carry
+  ([#453](https://github.com/eQuantic/equantic-ui/issues/453)).
+
+- **2026-09-26 · A name the transpiler changes lands on no name its scope holds**: a local function
+  was camel-cased onto a local that differed only by case, a module that did not load; a reserved
+  word took a trailing underscore that C# can also write; and a component's constructor bound its
+  parameters camel-cased while its body read them as written. `LocalFunctionName` owns a local
+  function's name, a reserved word takes a `$`, and every declaration and its readers use one
+  spelling. 29 of the 32 conformance cases failed on main before it
+  ([#465](https://github.com/eQuantic/equantic-ui/issues/465)). #396, #397, #398 and #400 are the
+  same question elsewhere, each with an issue of its own.
+- **2026-09-27 · The code diff view**: the view half of slice 2b of
   [`CODE-EDITOR-PLAN.md`](CODE-EDITOR-PLAN.md) ([#420](https://github.com/eQuantic/equantic-ui/issues/420), [#412](https://github.com/eQuantic/equantic-ui/pull/412)).
   `CodeDiff` draws two texts, or one file of a patch, side by side (the sides level at every change)
   or inline (the removed lines between the lines that replaced them), washes a changed line and

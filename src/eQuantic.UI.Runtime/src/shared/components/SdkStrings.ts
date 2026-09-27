@@ -134,15 +134,15 @@ export class SdkStrings {
     }
 
     static lineNumbered(number: number) {
-        return $eq.text.stringFormat($eq.str("SdkResources", "LineNumbered"), number);
+        return $eq.text.stringFormat($eq.str("SdkResources", "LineNumbered"), $eq.text.asInteger(number, 'int32'));
     }
 
     static unchangedLines(count: number) {
-        return count === 1 ? $eq.str("SdkResources", "UnchangedLine") : $eq.text.stringFormat($eq.str("SdkResources", "UnchangedLines"), count);
+        return count === 1 ? $eq.str("SdkResources", "UnchangedLine") : $eq.text.stringFormat($eq.str("SdkResources", "UnchangedLines"), $eq.text.asInteger(count, 'int32'));
     }
 
     static hiddenLines(count: number) {
-        return count === 1 ? $eq.str("SdkResources", "HiddenLine") : $eq.text.stringFormat($eq.str("SdkResources", "HiddenLines"), count);
+        return count === 1 ? $eq.str("SdkResources", "HiddenLine") : $eq.text.stringFormat($eq.str("SdkResources", "HiddenLines"), $eq.text.asInteger(count, 'int32'));
     }
 
     static hint(pattern: string, letters: string) {

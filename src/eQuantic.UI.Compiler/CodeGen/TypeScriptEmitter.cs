@@ -5,6 +5,7 @@ using eQuantic.UI.Compiler.CodeGen.Extensions;
 using eQuantic.UI.Compiler.Models;
 using eQuantic.UI.Compiler.Services;
 using eQuantic.UI.Compiler.CodeGen.Ir;
+using eQuantic.UI.Compiler.CodeGen.Strategies;
 
 namespace eQuantic.UI.Compiler.CodeGen;
 
@@ -419,7 +420,7 @@ public class TypeScriptEmitter
                     if (hasExplicitParams)
                     {
                         // Constructor has explicit params (e.g., Heading(content, level))
-                        var paramList = string.Join(", ", ctor!.Parameters.Select(p => Param(p.Name, "any")));
+                        var paramList = string.Join(", ", ctor!.Parameters.Select(p => Param(p.Name.ToJsIdentifier(), "any")));
                         jsParams = paramList;
                     }
                     else
@@ -439,7 +440,7 @@ public class TypeScriptEmitter
                     if (hasExplicitParams)
                     {
                         foreach (var param in ctor!.Parameters)
-                            ctorStatements.Add(Assign(JsExpr.ThisMember(param.Name.ToCamelCase()), JsExpr.Identifier(param.Name)));
+                            ctorStatements.Add(Assign(JsExpr.ThisMember(param.Name.ToCamelCase()), JsExpr.Identifier(param.Name.ToJsIdentifier())));
                     }
 
                     // Apply defaults for properties not provided in props (only if still undefined)
@@ -483,7 +484,7 @@ public class TypeScriptEmitter
                             .OfType<DeclarationExpressionSyntax>()
                             .Select(d => d.Designation)
                             .OfType<SingleVariableDesignationSyntax>()
-                            .Select(s => s.Identifier.Text)
+                            .Select(s => s.Identifier.Text.ToJsIdentifier())
                             .Distinct()
                             .ToList();
                         var renderStatements = outVars.Select(v => JsStatement.Raw($"let {v};")).ToList();
@@ -564,12 +565,23 @@ public class TypeScriptEmitter
                         var services = ctorParams.Where(p => p.IsService).ToList();
                         var passed = ctorParams.Where(p => !p.IsService).ToList();
 
+                        // Each parameter is bound under the name the constructor BODY reads it by, the one
+                        // IdentifierStrategy gives a parameter: as written, made a legal JS identifier.
+                        // Camel-cased here and read as written there, `string Label` was
+                        // `constructor(label…)` beside a body reading `Label` (a ReferenceError at `new`),
+                        // and `@default` bound `default`, a module that did not parse.
                         var paramList = string.Join(", ", passed.Select(p => p.DefaultValueNode != null
-                            ? $"{p.Name.ToCamelCase()}: any = {_converter.ConvertExpression(p.DefaultValueNode, p.Type)}"
-                            : $"{p.Name.ToCamelCase()}?: any"));
+                            ? $"{p.Name.ToJsIdentifier()}: any = {_converter.ConvertExpression(p.DefaultValueNode, p.Type)}"
+                            : $"{p.Name.ToJsIdentifier()}?: any"));
+                        // The trailing config object is `props`, unless the C# constructor already binds
+                        // that name: then `constructor(props, props)`, or a body's `let props` beside the
+                        // parameter, did not parse. A `$` in front is a name no C# binding and no renamed
+                        // local function can take.
+                        var config = ConfigParameter(ctorParams.Select(p => p.Name.ToJsIdentifier()),
+                            (SyntaxNode?)ctorDef?.BodyNode ?? ctorDef?.ExpressionBodyNode);
                         var signature = paramList.Length > 0
-                            ? $"{paramList}, {OptionalParam("props", "any")}"
-                            : OptionalParam("props", "any");
+                            ? $"{paramList}, {OptionalParam(config, "any")}"
+                            : OptionalParam(config, "any");
                         var statements = new List<JsStatement> { JsStatement.Expression(JsExpr.Call(JsExpr.Identifier("super"))) };
                         {
                             // The config object carries what a C# OBJECT INITIALIZER assigned, and in C#
@@ -594,7 +606,7 @@ public class TypeScriptEmitter
                                 // field undefined and the dependency unreachable from Build.
                                 var target = ctorDef!.IsPrimaryConstructor
                                     ? $"this.{service.Name.ToCamelCase()}"
-                                    : $"const {service.Name.ToCamelCase()}";
+                                    : $"const {service.Name.ToJsIdentifier()}";
                                 statements.Add(JsStatement.Raw($"{target} = {Eq.ResolveService}('{service.ServiceKey}');"));
 
                                 // The twin of CapabilityScope.Require: a component that declared it
@@ -605,8 +617,9 @@ public class TypeScriptEmitter
                                 // and the bug only exists there.
                                 if (service.IsRequiredService)
                                 {
-                                    var name = service.Name.ToCamelCase();
-                                    var read = ctorDef.IsPrimaryConstructor ? $"this.{name}" : name;
+                                    var read = ctorDef.IsPrimaryConstructor
+                                        ? $"this.{service.Name.ToCamelCase()}"
+                                        : service.Name.ToJsIdentifier();
                                     statements.Add(JsStatement.Raw($"if ({read} === undefined || {read} === null) throw new Error("
                                         + $"'{component.Name} needs {service.ServiceKey}, and this target has none. "
                                         + $"Register it with the host, or declare the parameter as {service.ServiceKey}? "
@@ -616,6 +629,7 @@ public class TypeScriptEmitter
                             foreach (var param in passed)
                             {
                                 var camelName = param.Name.ToCamelCase();
+                                var local = param.Name.ToJsIdentifier();
                                 var target = component.Properties
                                     .FirstOrDefault(pr => !pr.IsStatic && pr.Name.ToCamelCase() == camelName);
                                 // PRIMARY-constructor params are implicit fields — always assign. With an
@@ -632,8 +646,8 @@ public class TypeScriptEmitter
                                 // assignment there would lose the value instead of relocating it.
                                 if (hasCtorBody && target != null && !IsAssignableSlot(target)) continue;
                                 statements.Add(JsStatement.If(
-                                    JsExpr.Binary(JsExpr.Identifier(camelName), "!==", JsExpr.Identifier("undefined")),
-                                    Assign(JsExpr.ThisMember(camelName), JsExpr.Identifier(camelName)), null));
+                                    JsExpr.Binary(JsExpr.Identifier(local), "!==", JsExpr.Identifier("undefined")),
+                                    Assign(JsExpr.ThisMember(camelName), JsExpr.Identifier(local)), null));
                             }
                             _converter.SetCurrentClass(component.Name);
                             foreach (var p in autoDefaults)
@@ -649,7 +663,7 @@ public class TypeScriptEmitter
                             else if (ctorDef?.ExpressionBodyNode is { } ctorExpression)
                                 statements.Add(ExpressionBody(ctorExpression, returns: false));
                             // …and the initializer last, which is where C# runs it.
-                            statements.Add(JsStatement.Raw("if (props && typeof props === 'object') Object.assign(this, props);"));
+                            statements.Add(JsStatement.Raw($"if ({config} && typeof {config} === 'object') Object.assign(this, {config});"));
                             c.Member(JsClassMember.Constructor(signature, JsStatement.Block(statements)),
                                 bodySource: (SyntaxNode?)ctorDef?.BodyNode ?? ctorDef?.ExpressionBodyNode, bodyLine: bodyLine);
                         }
@@ -660,9 +674,15 @@ public class TypeScriptEmitter
                     // An EXPRESSION-bodied Build has no `Body`, so this read `null?.Contains(...)`,
                     // answered `context`, and emitted a parameter the body never uses — which the
                     // emitted module's own type check rejects. Ask whichever half the method has.
-                    var buildBodyText = component.BuildMethodNode?.Body?.ToString()
-                        ?? component.BuildMethodNode?.ExpressionBody?.ToString();
-                    var buildParamName = buildBodyText?.Contains("context") == false ? "_context" : "context";
+                    // The parameter is named as C# named it, the name its body reads it by: `context`
+                    // hard-coded left a `Build(ComponentContext ctx)` reading a `ctx` nothing declared.
+                    // It takes the underscore only where the body never reads it (ReadsParameter).
+                    var buildParameterSyntax = component.BuildMethodNode?.ParameterList.Parameters.FirstOrDefault();
+                    var buildParamName = component.BuildMethodNode is not { } buildNode || buildParameterSyntax is null
+                        ? "context"
+                        : ReadsParameter(buildNode, buildParameterSyntax)
+                            ? buildParameterSyntax.Identifier.Text.ToJsIdentifier()
+                            : "_" + buildParameterSyntax.Identifier.Text.ToJsIdentifier();
                     // The body converts straight to IR: a block as itself, an expression-bodied Build
                     // (`IComponent Build(ctx) => new Box {…};`) as a return, and nothing as the fallback.
                     _converter.SetCurrentClass(component.Name);
@@ -693,8 +713,10 @@ public class TypeScriptEmitter
                 foreach (var action in component.ServerActions)
                 {
                     ClassBuilder = c;
-                    var paramsList = string.Join(", ", action.Parameters.Select(p => Param(p.Name, Annotate(p.Type))));
-                    var argsList = string.Join(", ", action.Parameters.Select(p => p.Name));
+                    // Each parameter under a legal JS name, the same one the invocation passes on:
+                    // `Run(int @class)` wrote `run(class)` and `[class]`, a module that did not parse.
+                    var paramsList = string.Join(", ", action.Parameters.Select(p => Param(p.Name.ToJsIdentifier(), Annotate(p.Type))));
+                    var argsList = string.Join(", ", action.Parameters.Select(p => p.Name.ToJsIdentifier()));
                     var returnType = Annotate(action.ReturnType);
 
                     // The action's RESULT crosses the typed boundary too: a Task<decimal> arrives
@@ -2087,15 +2109,51 @@ public class TypeScriptEmitter
         // `new Editor(text) { ReadOnly = true }` — an object initialiser is an ordinary way to
         // construct one of these, and it arrives as a trailing config object exactly as it does for
         // a component. A constructor that did not take one made the emitted call arity-wrong.
-        var config = parameters.Length == 0 ? OptionalParam("props", "any") : $", {OptionalParam("props", "any")}";
+        var configName = ConfigParameter(ctor?.ParameterList.Parameters.Select(p => p.Identifier.Text.ToJsIdentifier()) ?? [],
+            ctor?.ParameterList);
+        var config = parameters.Length == 0 ? OptionalParam(configName, "any") : $", {OptionalParam(configName, "any")}";
         // A derived class must call super() before it touches `this`.
         JsStatement[] superCall = HasEmittedBase(cls) ? [JsStatement.Raw("super();")] : [];
         JsStatement[] locals = hoisted.Length == 0 ? [] : [JsStatement.Raw(hoisted.TrimEnd())];
         c.Member(JsClassMember.Constructor($"{parameters}{config}", JsStatement.Block([
                 .. superCall, .. initialisers, .. locals, .. body,
-                JsStatement.Raw("if (props && typeof props === 'object') Object.assign(this, props);")])),
+                JsStatement.Raw($"if ({configName} && typeof {configName} === 'object') Object.assign(this, {configName});")])),
             ctor ?? (SyntaxNode)cls);
     }
+
+    /// <summary>
+    /// Whether <paramref name="method"/> reads <paramref name="parameter"/>. Asked of the model where
+    /// there is one, since the name alone is a member's too (`this.ctx` beside a parameter `ctx`), and
+    /// of the syntax otherwise: a name that is not a member access's, a binding's or an initializer's.
+    /// A short name like `c` is a substring of nearly any body, so the text is never asked.
+    /// </summary>
+    private bool ReadsParameter(SyntaxNode method, ParameterSyntax parameter)
+    {
+        var name = parameter.Identifier.ValueText;
+        var named = method.DescendantNodes().OfType<IdentifierNameSyntax>()
+            .Where(id => id.Identifier.ValueText == name);
+        if (ModelFor(method) is { } model && model.GetDeclaredSymbol(parameter) is { } symbol)
+            return named.Any(id => SymbolEqualityComparer.Default.Equals(model.GetSymbolInfo(id).Symbol, symbol));
+        return named.Any(id => id.Parent switch
+        {
+            MemberAccessExpressionSyntax access => access.Expression == id,
+            MemberBindingExpressionSyntax or NameColonSyntax or NameEqualsSyntax => false,
+            _ => true,
+        });
+    }
+
+    /// <summary>
+    /// The name of the config object a constructor takes last: <c>props</c>, or <c>$props</c> where
+    /// the constructor already binds <c>props</c>, which no C# binding and no renamed local function
+    /// can be. Its parameters are asked, and every binding of the constructor <paramref name="inside"/>
+    /// belongs to: its body shares the parameters' block, so a local `props` beside the parameter was
+    /// "Identifier 'props' has already been declared".
+    /// </summary>
+    private static string ConfigParameter(IEnumerable<string> parameterNames, SyntaxNode? inside) =>
+        parameterNames.Contains("props", StringComparer.Ordinal)
+            || (inside is not null && LocalFunctionName.MemberDeclares(inside, "props"))
+            ? "$props"
+            : "props";
 
     /// <summary>
     /// A PLAIN class the developer wrote — not a record, not static, not a component: a bucket, a
@@ -2490,7 +2548,7 @@ public class TypeScriptEmitter
             .Select(entry =>
         {
             var (p, index) = entry;
-            var name = bodyText.Contains(p.Name) ? p.Name.ToJsIdentifier() : "_" + p.Name;
+            var name = bodyText.Contains(p.Name) ? p.Name.ToJsIdentifier() : "_" + p.Name.ToJsIdentifier();
             var defaultValue = syntaxParameters is { } list && index < list.Count
                 ? list[index].Default?.Value
                 : null;

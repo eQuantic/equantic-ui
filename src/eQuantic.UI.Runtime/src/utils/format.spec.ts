@@ -166,13 +166,17 @@ describe('stringFormat, as .NET writes its placeholders', () => {
     expect(stringFormatInvariant('{0}|{1}|{2}', 1e21, true, false)).toBe('1E+21|True|False');
   });
 
-  it("writes a float boxed for the call with its own digits, specifier or not", () => {
-    expect(stringFormatInvariant('{0}|{1:G}', asSingle(Math.fround(0.1)), asSingle(Math.fround(0.1)))).toBe('0.1|0.1');
+  it('writes a float boxed for the call with its own digits, specifier or not', () => {
+    expect(
+      stringFormatInvariant('{0}|{1:G}', asSingle(Math.fround(0.1)), asSingle(Math.fround(0.1))),
+    ).toBe('0.1|0.1');
     expect(asSingle(null)).toBeNull();
   });
 
   it('aligns a placeholder by its width, right for a positive one and left for a negative one', () => {
-    expect(stringFormatInvariant('[{0,5}][{0,-5}][{1,8:F2}]', 42, 3.14159)).toBe('[   42][42   ][    3.14]');
+    expect(stringFormatInvariant('[{0,5}][{0,-5}][{1,8:F2}]', 42, 3.14159)).toBe(
+      '[   42][42   ][    3.14]',
+    );
   });
 });
 
@@ -231,5 +235,22 @@ describe('an invariant conversion ignores the culture reading it', () => {
     reading();
     expect(stringFormatInvariant('{0:C}', 1.5)).toBe('¤1.50');
     expect(format(1.5, 'C', undefined, true)).toBe('¤1.50');
+  });
+});
+
+// Past the 100 digits Intl writes after the point, the value is rounded here and Intl lays out the
+// rest, a culture's currency and percent patterns included (#445). The expected strings are what
+// .NET 10 writes for the same value in pt-BR, its no-break spaces folded to a space.
+describe('a precision past 100 digits, in a culture', () => {
+  afterEach(() => installCulture('', '', {}));
+
+  const folded = (value: string): string => value.replace(/[\u00a0\u202f]/g, ' ');
+
+  it('keeps the culture’s currency and percent patterns around every digit', () => {
+    installCulture('pt-BR', 'pt-BR', { $currency: 'BRL' });
+    const zeros = (count: number): string => '0'.repeat(count);
+    expect(format(0.125, 'P101')).toBe(`12,5${zeros(100)}%`);
+    expect(folded(format(-1234.5, 'C101'))).toBe(`-R$ 1.234,5${zeros(100)}`);
+    expect(format(-1234.5, 'N101')).toBe(`-1.234,5${zeros(100)}`);
   });
 });

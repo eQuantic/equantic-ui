@@ -63,14 +63,14 @@ public static class PatternVariableScanner
         switch (pattern)
         {
             case DeclarationPatternSyntax { Designation: SingleVariableDesignationSyntax d } when d.Identifier.Text != "_":
-                vars.Add(d.Identifier.ValueText);
+                vars.Add(d.Identifier.ValueText.ToJsIdentifier());
                 break;
             case VarPatternSyntax { Designation: SingleVariableDesignationSyntax v } when v.Identifier.Text != "_":
-                vars.Add(v.Identifier.ValueText);
+                vars.Add(v.Identifier.ValueText.ToJsIdentifier());
                 break;
             case RecursivePatternSyntax recursive:
                 if (recursive.Designation is SingleVariableDesignationSyntax r && r.Identifier.Text != "_")
-                    vars.Add(r.Identifier.ValueText);
+                    vars.Add(r.Identifier.ValueText.ToJsIdentifier());
                 if (recursive.PositionalPatternClause is { } positional)
                     foreach (var sub in positional.Subpatterns) Collect(sub.Pattern, vars);
                 if (recursive.PropertyPatternClause is { } property)
