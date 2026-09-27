@@ -9,7 +9,7 @@ export class SwipeableRow extends StatelessComponent {
     declare onAction: (() => void) | null;
     declare actionVariant: VariantValue;
     declare open: boolean;
-    declare onOpenChanged: any;
+    declare onOpenChanged: ((bool: boolean) => void) | null;
 
     constructor(child?: any, actionLabel?: any, actionIcon?: any, onAction: any = null, props?: any) {
         super();

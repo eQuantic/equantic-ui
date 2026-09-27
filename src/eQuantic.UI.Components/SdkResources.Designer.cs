@@ -102,6 +102,61 @@ namespace eQuantic.UI.Components
             get { return ResourceManager.GetString("CodeEditor", Culture)!; }
         }
 
+        internal static string LineNumbered
+        {
+            get { return ResourceManager.GetString("LineNumbered", Culture)!; }
+        }
+
+        internal static string UnchangedLine
+        {
+            get { return ResourceManager.GetString("UnchangedLine", Culture)!; }
+        }
+
+        internal static string UnchangedLines
+        {
+            get { return ResourceManager.GetString("UnchangedLines", Culture)!; }
+        }
+
+        internal static string HiddenLine
+        {
+            get { return ResourceManager.GetString("HiddenLine", Culture)!; }
+        }
+
+        internal static string HiddenLines
+        {
+            get { return ResourceManager.GetString("HiddenLines", Culture)!; }
+        }
+
+        internal static string PreviousChange
+        {
+            get { return ResourceManager.GetString("PreviousChange", Culture)!; }
+        }
+
+        internal static string NextChange
+        {
+            get { return ResourceManager.GetString("NextChange", Culture)!; }
+        }
+
+        internal static string ShowInline
+        {
+            get { return ResourceManager.GetString("ShowInline", Culture)!; }
+        }
+
+        internal static string ShowSideBySide
+        {
+            get { return ResourceManager.GetString("ShowSideBySide", Culture)!; }
+        }
+
+        internal static string DiffOriginal
+        {
+            get { return ResourceManager.GetString("DiffOriginal", Culture)!; }
+        }
+
+        internal static string DiffModified
+        {
+            get { return ResourceManager.GetString("DiffModified", Culture)!; }
+        }
+
         internal static string Spreadsheet
         {
             get { return ResourceManager.GetString("Spreadsheet", Culture)!; }
