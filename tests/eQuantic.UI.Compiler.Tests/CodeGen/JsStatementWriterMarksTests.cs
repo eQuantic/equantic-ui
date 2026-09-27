@@ -95,23 +95,26 @@ public class JsStatementWriterMarksTests
         marks.Select(mark => (mark.Line, mark.Column)).Should().Equal((0, 0), (1, 0));
     }
 
+    /// <summary>A local function is a const bound to a block arrow, as any lambda's block is (#384):
+    /// its statements marked where they land, and its closing line handed back to the declaration.</summary>
     [Fact]
     public void ALocalFunctionsBody_IsMarkedStatementByStatement()
     {
-        var local = JsStatement.ConstArrow("twice", "x", isAsync: false, JsStatement.Block([
+        JsStatement Local(JsLayout layout) => JsStatement.Const("twice", JsExpr.ArrowBlock("x", JsStatement.Block([
             JsStatement.Raw("let doubled = x * 2;") with { Origin = Origin<LocalDeclarationStatementSyntax>() },
             JsStatement.Return(JsExpr.Identifier("doubled")) with { Origin = Origin<ReturnStatementSyntax>() },
-        ])) with { Origin = Origin<IfStatementSyntax>() };
+        ]), layout, 0)) with { Origin = Origin<IfStatementSyntax>() };
 
         var marks = new List<JsLineMark>();
-        var text = JsStatementWriter.WriteMarked(local, JsLayout.Pretty, 0, marks);
+        var text = JsStatementWriter.WriteMarked(Local(JsLayout.Pretty), JsLayout.Pretty, 0, marks);
 
         text.Should().Be("const twice = (x) => {\n    let doubled = x * 2;\n    return doubled;\n};");
-        JsStatementWriter.Write(local, JsLayout.Compact).Should().Be("const twice = (x) => {let doubled = x * 2;return doubled;};");
+        JsStatementWriter.Write(Local(JsLayout.Compact), JsLayout.Compact).Should().Be("const twice = (x) => {let doubled = x * 2;return doubled;};");
         marks.Select(mark => (mark.Line, mark.Column, mark.Origin)).Should().Equal(
             (0, 0, (SyntaxNode)Origin<IfStatementSyntax>()),
             (1, 4, Origin<LocalDeclarationStatementSyntax>()),
-            (2, 4, Origin<ReturnStatementSyntax>()));
+            (2, 4, Origin<ReturnStatementSyntax>()),
+            (3, 1, Origin<IfStatementSyntax>()));
     }
 
     [Fact]
@@ -176,7 +179,52 @@ public class JsStatementWriterMarksTests
         marks.Select(mark => (mark.Line, mark.Column, mark.Origin)).Should().Equal(
             (1, 4, (SyntaxNode)Origin<ExpressionStatementSyntax>()),
             (2, 8, Origin<LocalDeclarationStatementSyntax>()),
-            (3, 8, Origin<ReturnStatementSyntax>()));
+            (3, 8, Origin<ReturnStatementSyntax>()),
+            (4, 5, Origin<ExpressionStatementSyntax>()));
+    }
+
+    /// <summary>
+    /// What follows an arrow's block on its closing line is the statement's again (found in review,
+    /// #384): a mark at the brace hands the rest of the line back, so the call after it is not read as
+    /// the block's last statement. An arrow in an arrow resumes its own statement first.
+    /// </summary>
+    [Fact]
+    public void WhatFollowsAnArrowsBlock_IsMarkedAsTheStatementAgain()
+    {
+        var inner = JsExpr.ArrowBlock("y", JsStatement.Block([Call("second") with { Origin = Origin<ReturnStatementSyntax>() }]),
+            JsLayout.Pretty, 1);
+        var outer = JsExpr.ArrowBlock("x", JsStatement.Block([
+            JsStatement.Expression(JsExpr.Call(JsExpr.Identifier("each"), inner)) with { Origin = Origin<LocalDeclarationStatementSyntax>() }]),
+            JsLayout.Pretty, 0);
+        var statement = JsStatement.Expression(JsExpr.Binary(JsExpr.Call(JsExpr.Identifier("run"), outer), "+",
+            JsExpr.Call(JsExpr.Identifier("check")))) with { Origin = Origin<ExpressionStatementSyntax>() };
+
+        var marks = new List<JsLineMark>();
+        var text = JsStatementWriter.WriteMarked(statement, JsLayout.Pretty, 0, marks);
+
+        text.Should().Be("run((x) => {\n    each((y) => {\n        second();\n    });\n}) + check();");
+        marks.Select(mark => (mark.Line, mark.Column, mark.Origin)).Should().Equal(
+            (0, 0, (SyntaxNode)Origin<ExpressionStatementSyntax>()),
+            (1, 4, Origin<LocalDeclarationStatementSyntax>()),
+            (2, 8, Origin<ReturnStatementSyntax>()),
+            (3, 5, Origin<LocalDeclarationStatementSyntax>()),
+            (4, 1, Origin<ExpressionStatementSyntax>()));
+    }
+
+    /// <summary>A body C# wrote without braces keeps its own origin when a declaration it hoists
+    /// braces it: the braces handed both of its lines to the <c>if</c> (found in review, #384).</summary>
+    [Fact]
+    public void ABodyBracedForWhatItHoists_KeepsItsOwnOrigin()
+    {
+        var body = JsStatement.Sequence(JsStatement.Raw("let n;"), Call("use")) with { Origin = Origin<ExpressionStatementSyntax>() };
+        var @if = JsStatement.If(JsExpr.Identifier("ready"), body, null) with { Origin = Origin<IfStatementSyntax>() };
+
+        var marks = new List<JsLineMark>();
+        JsStatementWriter.WriteMarked(@if, JsLayout.Pretty, 0, marks).Should().Be("if (ready) {\n    let n;\n    use();\n}");
+        marks.Select(mark => (mark.Line, mark.Column, mark.Origin)).Should().Equal(
+            (0, 0, (SyntaxNode)Origin<IfStatementSyntax>()),
+            (1, 4, Origin<ExpressionStatementSyntax>()),
+            (2, 4, Origin<ExpressionStatementSyntax>()));
     }
 
     /// <summary>An arrow in a template's hole, the shape a LINQ operator writes, and one the

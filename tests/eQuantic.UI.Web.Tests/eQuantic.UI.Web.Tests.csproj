@@ -40,6 +40,9 @@
          declares the eQuantic.Console namespace, so inside eQuantic.* a bare `Console` names it
          rather than System.Console. -->
     <Compile Include="..\..\samples\DefaultUIDashboard\Screens\ConsoleShell.cs" Link="Samples\ConsoleShell.cs" />
+    <!-- The v3 mappings decoder the compiler's own map tests read with, for the shared components'
+         maps (LambdaStatementMapTests): one decoder, not a second copy of it. -->
+    <Compile Include="..\eQuantic.UI.Compiler.Tests\Services\SourceMapMappings.cs" Link="Services\SourceMapMappings.cs" />
   </ItemGroup>
 
 </Project>

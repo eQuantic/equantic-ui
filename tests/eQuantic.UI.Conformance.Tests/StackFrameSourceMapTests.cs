@@ -143,6 +143,40 @@ public class StackFrameSourceMapTests
         }
         """;
 
+    /// <summary>A frame in what follows a lambda's block, on its closing line: the statement that
+    /// holds the lambda, which the frame read as on main, and not the block's last statement, which
+    /// it read as once the block's statements carried marks and nothing marked the rest (found in
+    /// review, #384). The sum keeps the call out of tail position, as above.</summary>
+    private const string TailSource = """
+        using System;
+        using System.Collections.Generic;
+
+        namespace Demo;
+
+        public class Tail
+        {
+            public int Run(int count)
+            {
+                var values = new List<int> { count };
+                var kept = values.FindAll(value =>
+                {
+                    var doubled = value * 2;
+                    return doubled > 0;
+                }).Count + Check(count);
+                return kept;
+            }
+
+            public int Check(int value)
+            {
+                if (value > 0)
+                {
+                    throw new InvalidOperationException("tail");
+                }
+                return value;
+            }
+        }
+        """;
+
     /// <summary>The 1-based line of the first line of <paramref name="source"/> that contains <paramref name="text"/>.</summary>
     private static int LineOf(string source, string text) =>
         source.Split('\n').Select((line, index) => (line, index)).First(pair => pair.line.Contains(text)).index + 1;
@@ -181,6 +215,14 @@ public class StackFrameSourceMapTests
         var (stack, frames, map) = Throw(LambdaSource, "Walker", "new Walker().walk(1)");
         Resolve(map, frames[0]).Should().Be(("Walker.cs", LineOf(LambdaSource, "throw new InvalidOperationException")), $"the top frame is the throw:\n{stack}");
         Resolve(map, frames[1]).Should().Be(("Walker.cs", LineOf(LambdaSource, "total += Check(seen) + 1;")), $"the lambda's statement called it:\n{stack}");
+    }
+
+    [SkippableFact]
+    public void AFrameAfterALambdasBlock_LeadsToTheStatementThatHoldsIt()
+    {
+        var (stack, frames, map) = Throw(TailSource, "Tail", "new Tail().run(1)");
+        Resolve(map, frames[0]).Should().Be(("Tail.cs", LineOf(TailSource, "throw new InvalidOperationException")), $"the top frame is the throw:\n{stack}");
+        Resolve(map, frames[1]).Should().Be(("Tail.cs", LineOf(TailSource, "var kept = values.FindAll(value =>")), $"the statement's rest called it:\n{stack}");
     }
 
     /// <summary>

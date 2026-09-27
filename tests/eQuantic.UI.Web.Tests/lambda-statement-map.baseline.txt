@@ -1,0 +1,12 @@
+# Statements inside a lambda's block, per shared source, that map to no C# line of their own (#384).
+# The count may only shrink. Regenerate with EQ_UPDATE_LAMBDA_MAP_BASELINE=1.
+# total: 45
+src/eQuantic.UI.Charts/BarChart.cs 2
+src/eQuantic.UI.Components/Calendar.cs 7
+src/eQuantic.UI.Components/CodeEditor.cs 12
+src/eQuantic.UI.Components/FormInput.cs 2
+src/eQuantic.UI.Components/Menu.cs 3
+src/eQuantic.UI.Components/Select.cs 3
+src/eQuantic.UI.Components/TextInput.cs 2
+src/eQuantic.UI.Components/TimePicker.cs 3
+src/eQuantic.UI.Primitives/Forms/FormModel.cs 11

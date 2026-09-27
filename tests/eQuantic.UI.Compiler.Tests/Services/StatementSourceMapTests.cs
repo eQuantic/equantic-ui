@@ -238,6 +238,24 @@ public class StatementSourceMapTests
                 return doubled.Count();
             }
 
+            public int Tail(List<int> values)
+            {
+                var kept = values.FindAll(value =>
+                {
+                    var doubled = value * 2;
+                    return doubled > 0;
+                }).Count + Twice(values.Count);
+                return kept;
+            }
+
+            public int Guarded(bool ready, string text)
+            {
+                var total = 0;
+                if (ready)
+                    total += int.TryParse(text, out var parsed) ? parsed : 0;
+                return total;
+            }
+
             private int Apply(int seed, Func<int, int> step) => step(seed);
 
             private int Twice(int x) => x * 2;
@@ -318,6 +336,17 @@ public class StatementSourceMapTests
     [InlineData("let number: any;", "int.TryParse(candidate, out var number) ? number : 0;")]
     [InlineData("return ((number = $eq.num.intTryParse(candidate", "int.TryParse(candidate, out var number) ? number : 0;")]
     public void AStatementInALambdasBlock_MapsToItsOwnCSharpLine(string emitted, string written) =>
+        AssertMapped(Compile(LambdaSource, "Lambdas.cs"), emitted, written, LambdaSource);
+
+    /// <summary>What follows a lambda's block on its closing line belongs to the statement that
+    /// holds the lambda: nothing marked it again once the block's statements carried marks, so it
+    /// read, through the map, as the block's last statement (found in review, #384). And a body C#
+    /// writes without braces keeps its own line when a declaration it hoists braces it, where the
+    /// braces handed both lines to the `if` around them.</summary>
+    [Theory]
+    [InlineData("this.twice(values.length);", "var kept = values.FindAll(value =>")]
+    [InlineData("total += ((parsed", "total += int.TryParse(text, out var parsed) ? parsed : 0;")]
+    public void AStatementsRestAndABracedBody_MapToTheirOwnStatement(string emitted, string written) =>
         AssertMapped(Compile(LambdaSource, "Lambdas.cs"), emitted, written, LambdaSource);
 
     private static void AssertMapped(CompilationResult result, string emitted, string written, string source)
