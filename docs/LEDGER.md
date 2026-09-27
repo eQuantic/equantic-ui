@@ -841,7 +841,9 @@ record of a release, the wiki's Upgrading page is the distillate.
   and long date and time strings go the same way, and the cross-pinned fixture now
   carries every date specifier the resx subset admits. From Copilot's first round: a `ToString()` with no
   specifier writes the current culture's `G`, and no time zone moves a value's parts (a spring-forward
-  gap turned 02:30 into 03:30). A new conformance class fails all 11 of its cases on main.
+  gap turned 02:30 into 03:30). From its second round: a null or empty format is `G` too, and `U`
+  reads an hour a fall-back repeats as standard time (01:30 in New York printed 05:30 UTC, where
+  .NET prints 06:30). A new conformance class fails all 12 of its cases on main.
 
 - **2026-09-26 · A name the transpiler changes lands on no name its scope holds**: a local function
   was camel-cased onto a local that differed only by case, a module that did not load; a reserved

@@ -33,6 +33,11 @@ replaced six tokens by text, so `d/M/yyyy` printed `d/M/2026` and `dd MMM yyyy` 
 - **No time zone moves a value's parts but `U`'s**: the formatter reads a Date whose UTC fields are
   the wall-clock parts, where a local Date built from them was normalised by the host's zone, so in
   a spring-forward gap 02:30 became 03:30 (Copilot's first round).
+- **A null or empty format is `G` too**, a variable's at run time, where the formatter took either
+  for no format at all and wrote the twin's invariant text (Copilot's second round).
+- **`U` reads a time a transition skips or repeats as standard time**, as .NET's ToUniversalTime
+  does, where the Date constructor took the daylight instant of a repeated hour: 2026-11-01 01:30 in
+  New York printed 05:30 UTC, where .NET prints 06:30 (Copilot's second round).
 - **With no culture in force, a date takes the invariant patterns**, as a number's text does,
   where `Intl`'s en-US presets printed `9/24/26`, and the invariant names, where the host's locale
   wrote a Portuguese machine's names into the invariant layout (found in review). And a year below 100 stays itself, where `Date`

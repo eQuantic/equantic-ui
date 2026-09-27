@@ -32,4 +32,10 @@
 
 - [x] 6.1 Write `G` in the current culture for a ToString with no specifier, the current culture or a null
 - [x] 6.2 Read a date from a zone-free surrogate, so no time zone moves its parts but `U`'s
-- [x] 6.3 Check: `CultureCrossingTests` pins the four emissions, and a runtime spec runs New York's gap against .NET's strings; each fails with its fix reverted. The conformance class's 11 cases all fail on main
+- [x] 6.3 Check: `CultureCrossingTests` pins the four emissions, and a runtime spec runs New York's gap against .NET's strings; each fails with its fix reverted. The conformance class's 11 cases all fail on main (12 after 7.3)
+
+## 7. Copilot's second round
+
+- [x] 7.1 Write `G` for a null or an empty format, a variable's at run time
+- [x] 7.2 Read a time a transition skips or repeats as standard time for `U`, as .NET's ToUniversalTime reads it
+- [x] 7.3 Check: `CultureCrossingTests` pins five more emissions, and a runtime spec runs New York's repeated hour against .NET's strings; each fails with its fix reverted. The conformance class's twelfth case runs a variable's null format, and all 12 fail on main
