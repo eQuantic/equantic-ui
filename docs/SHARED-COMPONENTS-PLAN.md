@@ -388,9 +388,9 @@ rejected.)
    (the transition animator remains the documented fence, now consumer-ready). Compiler: `is`
    pattern bindings HOIST in every statement position (expression/return/local-declaration got
    the same `let` hoisting the if-statement had — `_snap = x is {} v && …` was a runtime
-   ReferenceError), via the shared PatternVariableScanner (lambda bodies excluded: their bindings
-   scope to the lambda; since #466 it is ExpressionVariableScanner, which also owns `out var` and
-   deconstruction elements). Native goldens pin the quarter-turn rosette in both modes.
+   ReferenceError), via the one shared scanner, `ExpressionVariableScanner` since #466, which owns
+   `out var` and deconstruction elements too (lambda bodies excluded: their bindings scope to the
+   lambda). Native goldens pin the quarter-turn rosette in both modes.
    THE MERGE ✅ (2026-07-05): `eQuantic.UI.Components.Shared` IS now `eQuantic.UI.Components` —
    folder, project, PackageId and namespace. The legacy web set moved to
    `eQuantic.UI.Web.Components` (assembly + namespace; satellites — icon packs, charts, Material,
