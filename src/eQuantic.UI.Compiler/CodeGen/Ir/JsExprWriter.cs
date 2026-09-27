@@ -7,20 +7,28 @@ namespace eQuantic.UI.Compiler.CodeGen.Ir;
 /// here, from precedence and associativity — never by a strategy guessing in an interpolated
 /// string, which is how a defensive <c>(…)</c> ended up around output that never needed one and
 /// how <c>f ?? g &amp;&amp; g</c> shipped as a SyntaxError.
+/// <para>
+/// Every piece it writes carries the marks of the statements inside it, which only an arrow's block
+/// has, so a statement that holds a lambda can map each line of the lambda's block (#384).
+/// </para>
 /// </summary>
 public static class JsExprWriter
 {
     /// <summary>The expression standing alone — no surrounding operator, so nothing to protect it from.</summary>
-    public static string Write(JsExpr expr) => Write(expr, JsPrecedence.Opaque, parentOperator: null);
+    public static string Write(JsExpr expr) => Write(expr, JsPrecedence.Opaque, parentOperator: null).Text;
 
     /// <summary>
     /// The expression placed where it must bind at least as tightly as <paramref name="required"/>.
     /// <see cref="JsPrecedence.Call"/> is the receiver position: <c>(a + b).toFixed()</c> needs the
     /// parentheses that <c>a.toFixed()</c> does not.
     /// </summary>
-    public static string WriteIn(JsExpr expr, JsPrecedence required) => Write(expr, required, null);
+    public static string WriteIn(JsExpr expr, JsPrecedence required) => Write(expr, required, null).Text;
 
-    private static string Write(JsExpr expr, JsPrecedence required, string? parentOperator)
+    /// <summary>The expression standing alone, with the marks of every statement of an arrow's block
+    /// in it, counted from the start of its text: what the statement writer places (#384).</summary>
+    internal static JsWritten Written(JsExpr expr) => Write(expr, JsPrecedence.Opaque, null);
+
+    private static JsWritten Write(JsExpr expr, JsPrecedence required, string? parentOperator)
     {
         // The author's parentheses. Where the surroundings are unknown (text handed to an
         // unmigrated consumer) or the inside is (opaque text), they stay exactly as written; where
@@ -37,30 +45,34 @@ public static class JsExprWriter
 
             var keep = required == JsPrecedence.Opaque || group.Inner.Precedence == JsPrecedence.Opaque;
             return keep
-                ? $"({Write(group.Inner, JsPrecedence.Opaque, null)})"
+                ? Parenthesized(Write(group.Inner, JsPrecedence.Opaque, null))
                 : Write(group.Inner, required, parentOperator);
         }
 
-        var text = Render(expr);
+        var written = Render(expr);
 
         // Text of unknown shape governs itself: it carries whatever parentheses the string world
         // gave it, and adding more would change output that is not ours to change yet.
-        if (expr.Precedence == JsPrecedence.Opaque) return text;
+        if (expr.Precedence == JsPrecedence.Opaque) return written;
 
         var mixes = parentOperator is not null && expr is JsBinary inner
                     && JsOperators.ForbiddenMix(parentOperator, inner.Operator);
 
-        return expr.Precedence < required || mixes ? $"({text})" : text;
+        return expr.Precedence < required || mixes ? Parenthesized(written) : written;
     }
 
-    private static string Render(JsExpr expr) => expr switch
+    private static JsWritten Parenthesized(JsWritten inner) =>
+        new JsWrittenBuilder().Add("(").Add(inner).Add(")").Done();
+
+    private static JsWritten Render(JsExpr expr) => expr switch
     {
-        JsOpaque opaque => opaque.Text,
-        JsIdentifier identifier => identifier.Name,
-        JsLiteral literal => literal.Text,
-        JsMember member => $"{Receiver(member.Target)}.{member.Name}",
-        JsIndex index => $"{Receiver(index.Target)}[{Write(index.IndexExpression)}]",
-        JsCall call => $"{Receiver(call.Target)}({string.Join(", ", call.Arguments.Select(Argument))})",
+        JsOpaque opaque => JsWritten.Of(opaque.Text),
+        JsIdentifier identifier => JsWritten.Of(identifier.Name),
+        JsLiteral literal => JsWritten.Of(literal.Text),
+        JsMember member => new JsWrittenBuilder().Add(Receiver(member.Target)).Add("." + member.Name).Done(),
+        JsIndex index => new JsWrittenBuilder().Add(Receiver(index.Target)).Add("[")
+            .Add(Write(index.IndexExpression, JsPrecedence.Opaque, null)).Add("]").Done(),
+        JsCall call => RenderCall(call),
         JsTemplate template => RenderTemplate(template),
         JsArrow arrow => RenderArrow(arrow),
         JsBinary binary => RenderBinary(binary),
@@ -69,16 +81,34 @@ public static class JsExprWriter
         _ => throw new InvalidOperationException($"No writer for IR node {expr.GetType().Name}."),
     };
 
-    private static string RenderArrow(JsArrow arrow)
+    private static JsWritten RenderCall(JsCall call)
+    {
+        var text = new JsWrittenBuilder().Add(Receiver(call.Target)).Add("(");
+        for (var i = 0; i < call.Arguments.Count; i++)
+        {
+            if (i > 0) text.Add(", ");
+            text.Add(Argument(call.Arguments[i]));
+        }
+        return text.Add(")").Done();
+    }
+
+    /// <summary>
+    /// The arrow's head and its body. A block is laid out as the lambda's place in the C# laid it
+    /// out, in the arrow's layout at its depth, and its statements carry their marks out with it.
+    /// </summary>
+    private static JsWritten RenderArrow(JsArrow arrow)
     {
         var head = $"{(arrow.IsAsync ? "async " : "")}({arrow.Parameters}) => ";
-        if (arrow.Block is not null) return head + arrow.Block;
+        if (arrow.Block is not null)
+            return new JsWrittenBuilder().Add(head).Add(JsStatementWriter.Written(arrow.Block, arrow.Layout, arrow.Depth)).Done();
 
         // An object literal as the body needs its own parentheses: `=> { a: 1 }` is a BLOCK with
         // a label in it, and the arrow returns undefined — the shape `Select(s => new { … })`
         // used to ship.
         var body = Write(arrow.Body!, JsPrecedence.Assignment, null);
-        return body.StartsWith('{') ? $"{head}({body})" : head + body;
+        return body.Text.StartsWith('{')
+            ? new JsWrittenBuilder().Add(head).Add(Parenthesized(body)).Done()
+            : new JsWrittenBuilder().Add(head).Add(body).Done();
     }
 
     private static readonly Regex Hole = new(@"\{(\d)\}", RegexOptions.Compiled);
@@ -92,7 +122,7 @@ public static class JsExprWriter
     /// then each argument). The fill is ONE pass — a part's text is never scanned for holes of its
     /// own.
     /// </summary>
-    private static string RenderTemplate(JsTemplate template)
+    private static JsWritten RenderTemplate(JsTemplate template)
     {
         var parts = template.Parts;
         var uses = new int[parts.Count];
@@ -132,17 +162,30 @@ public static class JsExprWriter
             last = Array.LastIndexOf(bound, true);
         }
 
-        var body = Hole.Replace(template.Text, match =>
+        // The fill is one pass over the template's own text: a part is placed where its hole is,
+        // and never scanned for holes of its own.
+        var body = new JsWrittenBuilder();
+        var from = 0;
+        foreach (Match match in Hole.Matches(template.Text))
         {
+            body.Add(template.Text[from..match.Index]);
             var index = int.Parse(match.Groups[1].Value);
-            return bound[index] ? "$" + index : Write(parts[index], PositionOf(template.Text, match), null);
-        });
-        if (last < 0) return body;
+            if (bound[index]) body.Add("$" + index);
+            else body.Add(Write(parts[index], PositionOf(template.Text, match), null));
+            from = match.Index + match.Length;
+        }
+        body.Add(template.Text[from..]);
+        if (last < 0) return body.Done();
 
         var indexes = Enumerable.Range(0, parts.Count).Where(i => bound[i]).ToArray();
         var names = string.Join(", ", indexes.Select(i => "$" + i + (template.Annotate ? ": any" : "")));
-        var arguments = string.Join(", ", indexes.Select(i => Write(parts[i], JsPrecedence.Opaque, null)));
-        return $"(({names}) => {body})({arguments})";
+        var call = new JsWrittenBuilder().Add($"(({names}) => ").Add(body.Done()).Add(")(");
+        for (var i = 0; i < indexes.Length; i++)
+        {
+            if (i > 0) call.Add(", ");
+            call.Add(Write(parts[indexes[i]], JsPrecedence.Opaque, null));
+        }
+        return call.Add(")").Done();
     }
 
     /// <summary>
@@ -179,15 +222,15 @@ public static class JsExprWriter
 
     /// <summary>A receiver must be at least call-shaped; a bare number additionally needs
     /// parentheses, because <c>1.toString()</c> reads the dot as a decimal point.</summary>
-    private static string Receiver(JsExpr target) =>
+    private static JsWritten Receiver(JsExpr target) =>
         target is JsLiteral { IsNumeric: true }
-            ? $"({Write(target, JsPrecedence.Opaque, null)})"
+            ? Parenthesized(Write(target, JsPrecedence.Opaque, null))
             : Write(target, JsPrecedence.Call, null);
 
     /// <summary>An argument is fenced by its commas; only a sequence expression would need more.</summary>
-    private static string Argument(JsExpr argument) => Write(argument, JsPrecedence.Assignment, null);
+    private static JsWritten Argument(JsExpr argument) => Write(argument, JsPrecedence.Assignment, null);
 
-    private static string RenderBinary(JsBinary binary)
+    private static JsWritten RenderBinary(JsBinary binary)
     {
         var precedence = binary.Precedence;
         // The side the operator groups AWAY from must bind strictly tighter, or the regrouping is
@@ -197,33 +240,34 @@ public static class JsExprWriter
             ? (looser, precedence)
             : (precedence, looser);
 
-        return $"{Write(binary.Left, left, binary.Operator)} {binary.Operator} "
-             + $"{Write(binary.Right, right, binary.Operator)}";
+        return new JsWrittenBuilder().Add(Write(binary.Left, left, binary.Operator)).Add($" {binary.Operator} ")
+            .Add(Write(binary.Right, right, binary.Operator)).Done();
     }
 
-    private static string RenderUnary(JsUnary unary)
+    private static JsWritten RenderUnary(JsUnary unary)
     {
-        if (!unary.IsPrefix) return $"{Write(unary.Operand, JsPrecedence.Postfix, null)}{unary.Operator}";
+        if (!unary.IsPrefix)
+            return new JsWrittenBuilder().Add(Write(unary.Operand, JsPrecedence.Postfix, null)).Add(unary.Operator).Done();
 
         var operand = Write(unary.Operand, JsPrecedence.Unary, null);
 
         // `-` in front of something that already starts with `-` would weld into the DECREMENT
         // operator (and `+ +x` into increment), turning a negation into a mutation.
-        if (unary.Operator is "-" or "+" && operand.StartsWith(unary.Operator, StringComparison.Ordinal))
-            return $"{unary.Operator}({operand})";
+        if (unary.Operator is "-" or "+" && operand.Text.StartsWith(unary.Operator, StringComparison.Ordinal))
+            return new JsWrittenBuilder().Add(unary.Operator).Add(Parenthesized(operand)).Done();
 
         // Word operators (`typeof`, `void`, `delete`) need the space their symbols do not.
         var separator = char.IsLetter(unary.Operator[^1]) ? " " : "";
-        return $"{unary.Operator}{separator}{operand}";
+        return new JsWrittenBuilder().Add(unary.Operator + separator).Add(operand).Done();
     }
 
-    private static string RenderConditional(JsConditional conditional)
+    private static JsWritten RenderConditional(JsConditional conditional)
     {
         // A condition must bind tighter than `?:` itself; the branches may be anything down to an
         // assignment, since the `?` and `:` already fence them.
-        var condition = Write(conditional.Condition, JsPrecedence.Coalesce, null);
-        var whenTrue = Write(conditional.WhenTrue, JsPrecedence.Assignment, null);
-        var whenFalse = Write(conditional.WhenFalse, JsPrecedence.Assignment, null);
-        return $"{condition} ? {whenTrue} : {whenFalse}";
+        return new JsWrittenBuilder()
+            .Add(Write(conditional.Condition, JsPrecedence.Coalesce, null)).Add(" ? ")
+            .Add(Write(conditional.WhenTrue, JsPrecedence.Assignment, null)).Add(" : ")
+            .Add(Write(conditional.WhenFalse, JsPrecedence.Assignment, null)).Done();
     }
 }

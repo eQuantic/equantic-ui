@@ -1,4 +1,5 @@
 using eQuantic.UI.Compiler.CodeGen.Extensions;
+using eQuantic.UI.Compiler.CodeGen.Ir;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 
@@ -27,8 +28,13 @@ namespace eQuantic.UI.Compiler.CodeGen.Strategies.Primitives;
 /// - ForEach(action) -> forEach(action)
 /// - CopyTo(array) -> [...list]
 /// - GetRange(index, count) -> slice(index, index + count)
+/// <para>
+/// A call of the array's own method is IR, so a lambda passed to it (<c>ForEach</c>, <c>Find</c>,
+/// <c>Exists</c>…) reaches the statement writer as an arrow whose block maps line by line (#384).
+/// The other shapes still splice their parts as text.
+/// </para>
 /// </summary>
-public class ListMethodStrategy : IConversionStrategy
+public class ListMethodStrategy : IExpressionIrStrategy
 {
     private static readonly HashSet<string> SupportedMethods = new()
     {
@@ -69,20 +75,22 @@ public class ListMethodStrategy : IConversionStrategy
         return false;
     }
 
-    public string Convert(SyntaxNode node, ConversionContext context)
+    public JsExpr ConvertIr(SyntaxNode node, ConversionContext context)
     {
         var invocation = (InvocationExpressionSyntax)node;
         var memberAccess = (MemberAccessExpressionSyntax)invocation.Expression;
         var methodName = memberAccess.Name.Identifier.Text;
 
-        var caller = context.Converter.ConvertExpression(memberAccess.Expression);
-        var args = invocation.ArgumentList.Arguments
-            .Select(a => context.Converter.ConvertExpression(a.Expression))
+        var callerIr = context.Converter.ConvertIr(memberAccess.Expression);
+        var argsIr = invocation.ArgumentList.Arguments
+            .Select(a => context.Converter.ConvertIr(a.Expression))
             .ToList();
+        var caller = JsExprWriter.Write(callerIr);
+        var args = argsIr.Select(JsExprWriter.Write).ToList();
 
         return methodName switch
         {
-            "Add" => $"{caller}.push({JoinArgs(args)})",
+            "Add" => Method(callerIr, "push", argsIr),
             "AddRange" => args.Count > 0 ? $"{caller}.push(...{args[0]})" : caller,
             "Insert" => ConvertInsert(caller, args),
             "InsertRange" => ConvertInsertRange(caller, args),
@@ -92,23 +100,28 @@ public class ListMethodStrategy : IConversionStrategy
             "RemoveRange" => ConvertRemoveRange(caller, args),
             "RemoveAll" => ConvertRemoveAll(caller, args),
             "Clear" => $"{caller}.splice(0)",
-            "IndexOf" => $"{caller}.indexOf({JoinArgs(args)})",
-            "LastIndexOf" => $"{caller}.lastIndexOf({JoinArgs(args)})",
-            "Find" => $"{caller}.find({JoinArgs(args)})",
-            "FindIndex" => $"{caller}.findIndex({JoinArgs(args)})",
-            "FindLast" => $"{caller}.findLast({JoinArgs(args)})",
-            "FindLastIndex" => $"{caller}.findLastIndex({JoinArgs(args)})",
-            "FindAll" => $"{caller}.filter({JoinArgs(args)})",
-            "Exists" => $"{caller}.some({JoinArgs(args)})",
-            "TrueForAll" => $"{caller}.every({JoinArgs(args)})",
-            "Sort" => ConvertSort(caller, args),
-            "ForEach" => $"{caller}.forEach({JoinArgs(args)})",
+            "IndexOf" => Method(callerIr, "indexOf", argsIr),
+            "LastIndexOf" => Method(callerIr, "lastIndexOf", argsIr),
+            "Find" => Method(callerIr, "find", argsIr),
+            "FindIndex" => Method(callerIr, "findIndex", argsIr),
+            "FindLast" => Method(callerIr, "findLast", argsIr),
+            "FindLastIndex" => Method(callerIr, "findLastIndex", argsIr),
+            "FindAll" => Method(callerIr, "filter", argsIr),
+            "Exists" => Method(callerIr, "some", argsIr),
+            "TrueForAll" => Method(callerIr, "every", argsIr),
+            // Its comparison alone, the one argument the shape has.
+            "Sort" => Method(callerIr, "sort", argsIr.Take(1).ToList()),
+            "ForEach" => Method(callerIr, "forEach", argsIr),
             "GetRange" => ConvertGetRange(caller, args),
             "CopyTo" => $"[...{caller}]",
             "BinarySearch" => ConvertBinarySearch(caller, args),
-            _ => $"{caller}.{methodName.ToCamelCase()}({JoinArgs(args)})"
+            _ => Method(callerIr, methodName.ToCamelCase(), argsIr)
         };
     }
+
+    /// <summary>The array's own method, called with the arguments as they are.</summary>
+    private static JsExpr Method(JsExpr caller, string name, IReadOnlyList<JsExpr> args) =>
+        JsExpr.Call(JsExpr.Member(caller, name), args);
 
     private string ConvertInsert(string caller, List<string> args)
     {
@@ -198,14 +211,6 @@ public class ListMethodStrategy : IConversionStrategy
         return $"((_removed = {caller}.filter({args[0]})).length, {caller}.length = 0, {caller}.push(...{caller}.filter(_x => !({args[0]})(_x))), _removed.length)";
     }
 
-    private string ConvertSort(string caller, List<string> args)
-    {
-        if (args.Count == 0)
-            return $"{caller}.sort()";
-        // Sort with comparison function
-        return $"{caller}.sort({args[0]})";
-    }
-
     private string ConvertGetRange(string caller, List<string> args)
     {
         if (args.Count >= 2)
@@ -223,8 +228,6 @@ public class ListMethodStrategy : IConversionStrategy
             return $"{caller}.findIndex(_x => _x === {args[0]})";
         return "-1";
     }
-
-    private string JoinArgs(List<string> args) => string.Join(", ", args);
 
     public int Priority => 15; // Higher than InvocationStrategy (1)
 }

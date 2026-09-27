@@ -1,4 +1,3 @@
-using System.Text;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 
@@ -35,11 +34,15 @@ public static class JsStatementWriter
     /// </summary>
     public static string WriteMarked(JsStatement statement, JsLayout layout, int depth, List<JsLineMark> marks)
     {
-        if (layout == JsLayout.Compact) return Compact(statement);
-        var written = Pretty(statement, depth);
+        var written = Written(statement, layout, depth);
         marks.AddRange(written.Marks);
         return written.Text;
     }
+
+    /// <summary>The statement written with its marks, which the compact layout never has: what the
+    /// expression writer composes an arrow's block from (#384).</summary>
+    internal static JsWritten Written(JsStatement statement, JsLayout layout, int depth) =>
+        layout == JsLayout.Compact ? JsWritten.Of(Compact(statement)) : Pretty(statement, depth);
 
     // ── compact: the string world, reproduced ──────────────────────────────────────────────
 
@@ -93,7 +96,7 @@ public static class JsStatementWriter
     private static string BracedCompact(JsStatement statement) =>
         NeedsBraces(statement) ? Compact(JsStatement.Block(((JsStatements)statement).Statements)) : Compact(statement);
 
-    private static Written BracedPretty(JsStatement statement, int depth, SyntaxNode? enclosing) =>
+    private static JsWritten BracedPretty(JsStatement statement, int depth, SyntaxNode? enclosing) =>
         NeedsBraces(statement)
             ? Pretty(JsStatement.Block(((JsStatements)statement).Statements), depth, enclosing)
             : Pretty(statement, depth, enclosing);
@@ -109,7 +112,8 @@ public static class JsStatementWriter
 
     /// <summary>
     /// A statement written, with the marks of the statements in it that carry an origin, one for
-    /// this statement first when it has one and writes anything.
+    /// this statement first when it has one and writes anything. The statements of an arrow's block
+    /// in one of its expressions are among them, where the expression writer placed them (#384).
     /// <para>
     /// A statement with no origin of its own belongs to the nearest one around it that has one. A
     /// strategy's LOWERING — the dispose in a <c>using</c>'s finally, the <c>const</c> a pattern
@@ -119,37 +123,45 @@ public static class JsStatementWriter
     /// the statements in it, the first of which begins where it does.
     /// </para>
     /// </summary>
-    private static Written Pretty(JsStatement statement, int depth, SyntaxNode? enclosing = null)
+    private static JsWritten Pretty(JsStatement statement, int depth, SyntaxNode? enclosing = null)
     {
         var owner = statement.Origin ?? enclosing;
         var written = statement switch
         {
-            JsRawStatement raw => Written.Of(raw.Text),
+            JsRawStatement raw => JsWritten.Of(raw.Text),
             JsStatements sequence => Lines(sequence.Statements, depth, owner),
             JsBlock block => PrettyBlock(block, depth, owner),
-            JsIf @if => new Text().Add($"if ({JsExprWriter.Write(@if.Condition)}) ").Add(BracedPretty(@if.Then, depth, owner))
-                .AddIf(@if.Else is not null, () => new Text().Add(" else ").Add(BracedPretty(@if.Else!, depth, owner)).Done()).Done(),
-            JsHeaded headed => new Text().Add($"{headed.Head} ").Add(BracedPretty(headed.Body, depth, owner)).Done(),
-            JsConstArrow arrow => new Text().Add(ArrowHead(arrow)).Add(BracedPretty(arrow.Body, depth, owner)).Add(";").Done(),
+            JsExpressionStatement expression => new JsWrittenBuilder().Add(Expr(expression.Expr)).Add(";").Done(),
+            JsReturn { Value: { } value } => new JsWrittenBuilder().Add("return ").Add(Expr(value)).Add(";").Done(),
+            JsThrow { Value: { } value } => new JsWrittenBuilder().Add("throw ").Add(Expr(value)).Add(";").Done(),
+            JsLet let => new JsWrittenBuilder().Add($"let {let.Name}{let.Annotation} = ").Add(Expr(let.Initializer)).Add(";").Done(),
+            JsConst @const => new JsWrittenBuilder().Add($"const {@const.Name} = ").Add(Expr(@const.Initializer)).Add(";").Done(),
+            JsIf @if => new JsWrittenBuilder().Add("if (").Add(Expr(@if.Condition)).Add(") ").Add(BracedPretty(@if.Then, depth, owner))
+                .AddIf(@if.Else is not null, () => new JsWrittenBuilder().Add(" else ").Add(BracedPretty(@if.Else!, depth, owner)).Done()).Done(),
+            JsHeaded headed => new JsWrittenBuilder().Add($"{headed.Head} ").Add(BracedPretty(headed.Body, depth, owner)).Done(),
+            JsConstArrow arrow => new JsWrittenBuilder().Add(ArrowHead(arrow)).Add(BracedPretty(arrow.Body, depth, owner)).Add(";").Done(),
             JsTry @try => PrettyTry(@try, depth, owner),
             JsSwitch @switch => PrettySwitch(@switch, depth, owner),
-            JsWhile @while => new Text().Add($"while ({JsExprWriter.Write(@while.Condition)}) ").Add(BracedPretty(@while.Body, depth, owner)).Done(),
+            JsWhile @while => new JsWrittenBuilder().Add("while (").Add(Expr(@while.Condition)).Add(") ").Add(BracedPretty(@while.Body, depth, owner)).Done(),
             // The condition runs on the loop's LAST line, which is a line of its own to stop on:
             // it maps to the C# condition, not to the `do` the loop's first line maps to.
-            JsDoWhile doWhile => new Text().Add("do ").Add(BracedPretty(doWhile.Body, depth, owner)).Add(" ")
-                .Add(Written.Of($"while ({JsExprWriter.Write(doWhile.Condition)});")
+            JsDoWhile doWhile => new JsWrittenBuilder().Add("do ").Add(BracedPretty(doWhile.Body, depth, owner)).Add(" ")
+                .Add(new JsWrittenBuilder().Add("while (").Add(Expr(doWhile.Condition)).Add(");").Done()
                     .MarkedAt(owner is DoStatementSyntax @do ? @do.Condition : owner)).Done(),
-            _ => Written.Of(Compact(statement)),
+            _ => JsWritten.Of(Compact(statement)),
         };
         return written.Text.Length > 0 && statement is not (JsBlock or JsStatements) ? written.MarkedAt(owner) : written;
     }
 
+    /// <summary>An expression as the statement places it, with the marks of any arrow's block in it.</summary>
+    private static JsWritten Expr(JsExpr expression) => JsExprWriter.Written(expression);
+
     private static string ArrowHead(JsConstArrow arrow) =>
         $"const {arrow.Name} = {(arrow.IsAsync ? "async " : "")}({arrow.Parameters}) => ";
 
-    private static Written PrettyTry(JsTry @try, int depth, SyntaxNode? enclosing)
+    private static JsWritten PrettyTry(JsTry @try, int depth, SyntaxNode? enclosing)
     {
-        var text = new Text().Add("try ").Add(Pretty(@try.Body, depth, enclosing));
+        var text = new JsWrittenBuilder().Add("try ").Add(Pretty(@try.Body, depth, enclosing));
         foreach (var @catch in @try.Catches)
             text.Add($" catch{(@catch.Binding.Length == 0 ? "" : " " + @catch.Binding)} ").Add(Pretty(@catch.Block, depth, enclosing));
         if (@try.Finally is not null) text.Add(" finally ").Add(Pretty(@try.Finally, depth, enclosing));
@@ -157,9 +169,9 @@ public static class JsStatementWriter
     }
 
     /// <summary>Statements each on their own line at this depth; an empty one takes no line.</summary>
-    private static Written Lines(IReadOnlyList<JsStatement> statements, int depth, SyntaxNode? enclosing)
+    private static JsWritten Lines(IReadOnlyList<JsStatement> statements, int depth, SyntaxNode? enclosing)
     {
-        var text = new Text();
+        var text = new JsWrittenBuilder();
         var first = true;
         foreach (var rendered in statements.Select(s => Pretty(s, depth, enclosing)).Where(written => written.Text.Length > 0))
         {
@@ -171,9 +183,9 @@ public static class JsStatementWriter
     }
 
     /// <summary>Labels one level in, their statements one level further.</summary>
-    private static Written PrettySwitch(JsSwitch @switch, int depth, SyntaxNode? enclosing)
+    private static JsWritten PrettySwitch(JsSwitch @switch, int depth, SyntaxNode? enclosing)
     {
-        var text = new Text().Add($"switch ({JsExprWriter.Write(@switch.Subject)}) {{");
+        var text = new JsWrittenBuilder().Add("switch (").Add(Expr(@switch.Subject)).Add(") {");
         foreach (var @case in @switch.Cases)
         {
             foreach (var label in @case.Labels)
@@ -184,64 +196,10 @@ public static class JsStatementWriter
         return text.Add("\n" + Indent(depth) + "}").Done();
     }
 
-    private static Written PrettyBlock(JsBlock block, int depth, SyntaxNode? enclosing)
+    private static JsWritten PrettyBlock(JsBlock block, int depth, SyntaxNode? enclosing)
     {
         var inside = Lines(block.Statements, depth + 1, enclosing);
-        if (inside.Text.Length == 0) return Written.Of("{}");
-        return new Text().Add("{\n" + Indent(depth + 1)).Add(inside).Add("\n" + Indent(depth) + "}").Done();
-    }
-
-    /// <summary>Text with its marks, each counted from the start of the text.</summary>
-    private sealed record Written(string Text, IReadOnlyList<JsLineMark> Marks)
-    {
-        public static Written Of(string text) => new(text, []);
-
-        /// <summary>The same text, marked as beginning the statement <paramref name="origin"/>
-        /// came from; no origin, no mark.</summary>
-        public Written MarkedAt(SyntaxNode? origin) =>
-            origin is null ? this : this with { Marks = [new JsLineMark(0, 0, origin), .. Marks] };
-    }
-
-    /// <summary>
-    /// The builder the pretty layout composes with: text appended piece by piece, and the marks of
-    /// every piece moved to where it landed. A mark on a piece's first line moves by the column the
-    /// piece started at; one further down keeps its column, since it begins a line of its own.
-    /// </summary>
-    private sealed class Text
-    {
-        private readonly StringBuilder _text = new();
-        private readonly List<JsLineMark> _marks = [];
-        private int _line;
-        private int _column;
-
-        public Text Add(string piece)
-        {
-            _text.Append(piece);
-            Advance(piece);
-            return this;
-        }
-
-        public Text Add(Written piece)
-        {
-            foreach (var mark in piece.Marks)
-                _marks.Add(mark with { Line = _line + mark.Line, Column = mark.Line == 0 ? _column + mark.Column : mark.Column });
-            return Add(piece.Text);
-        }
-
-        public Text AddIf(bool condition, Func<Written> piece) => condition ? Add(piece()) : this;
-
-        public Written Done() => new(_text.ToString(), _marks);
-
-        private void Advance(string piece)
-        {
-            var lastBreak = piece.LastIndexOf('\n');
-            if (lastBreak < 0)
-            {
-                _column += piece.Length;
-                return;
-            }
-            _line += piece.Count(c => c == '\n');
-            _column = piece.Length - lastBreak - 1;
-        }
+        if (inside.Text.Length == 0) return JsWritten.Of("{}");
+        return new JsWrittenBuilder().Add("{\n" + Indent(depth + 1)).Add(inside).Add("\n" + Indent(depth) + "}").Done();
     }
 }

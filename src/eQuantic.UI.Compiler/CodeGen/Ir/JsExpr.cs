@@ -80,9 +80,12 @@ public abstract record JsExpr
     public static JsExpr Arrow(string parameters, JsExpr body, bool isAsync = false) =>
         new JsArrow(parameters, body, null, isAsync);
 
-    /// <summary>An arrow function with a block body, already laid out at the depth it was built.</summary>
-    public static JsExpr ArrowBlock(string parameters, string block, bool isAsync = false) =>
-        new JsArrow(parameters, null, block, isAsync);
+    /// <summary>An arrow function with a block body, laid out in <paramref name="layout"/> at
+    /// <paramref name="depth"/>: where the lambda stands in the C#, which the writer of a string seam
+    /// that places it does not know. Its statements keep their origins, so each one maps to its own
+    /// line wherever a writer places the arrow (#384).</summary>
+    public static JsExpr ArrowBlock(string parameters, JsStatement block, JsLayout layout, int depth, bool isAsync = false) =>
+        new JsArrow(parameters, null, block, isAsync, layout, depth);
 
     public static JsExpr Binary(JsExpr left, string op, JsExpr right) => new JsBinary(left, op, right);
 
@@ -155,10 +158,12 @@ public sealed record JsTemplate(string Text, IReadOnlyList<JsExpr> Parts, bool A
 }
 
 /// <summary>An arrow function: <c>(parameters) => body</c>. Exactly one of <see cref="Body"/>
-/// (an expression) and <see cref="Block"/> (a block's text, laid out where it was built) is set.
-/// It binds at assignment level — the loosest expression there is — so any migrated parent that
-/// places one as an operand or a receiver fences it.</summary>
-public sealed record JsArrow(string Parameters, JsExpr? Body, string? Block, bool IsAsync) : JsExpr
+/// (an expression) and <see cref="Block"/> (a block, laid out in <see cref="Layout"/> at
+/// <see cref="Depth"/>, where the lambda was converted) is set. It binds at assignment level — the
+/// loosest expression there is — so any migrated parent that places one as an operand or a
+/// receiver fences it.</summary>
+public sealed record JsArrow(string Parameters, JsExpr? Body, JsStatement? Block, bool IsAsync,
+    JsLayout Layout = JsLayout.Compact, int Depth = 0) : JsExpr
 {
     public override JsPrecedence Precedence => JsPrecedence.Assignment;
 }

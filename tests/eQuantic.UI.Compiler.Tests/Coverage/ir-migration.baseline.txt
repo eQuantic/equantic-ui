@@ -38,7 +38,6 @@ InlinedConstantStrategy
 InterpolatedStringStrategy
 IsPatternStrategy
 LastStrategy
-ListMethodStrategy
 LookupIndexerStrategy
 MinMaxStrategy
 NameofStrategy

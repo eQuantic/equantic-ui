@@ -45,3 +45,17 @@ static eQuantic.UI.Compiler.CodeGen.ExpressionVariableScanner.Scoped(Microsoft.C
 static eQuantic.UI.Compiler.CodeGen.ExpressionVariableScanner.Names(Microsoft.CodeAnalysis.CSharp.Syntax.ExpressionSyntax? expression) -> System.Collections.Generic.IReadOnlyList<string!>!
 static eQuantic.UI.Compiler.CodeGen.ExpressionVariableScanner.InFrontOf(Microsoft.CodeAnalysis.CSharp.Syntax.StatementSyntax! statement, Microsoft.CodeAnalysis.CSharp.Syntax.ExpressionSyntax? expression, bool typeAnnotations) -> string!
 static eQuantic.UI.Compiler.CodeGen.ExpressionVariableScanner.BlockNames(Microsoft.CodeAnalysis.CSharp.Syntax.StatementSyntax! statement) -> System.Collections.Generic.IReadOnlyList<string!>!
+*REMOVED*eQuantic.UI.Compiler.CodeGen.Strategies.Primitives.ListMethodStrategy.Convert(Microsoft.CodeAnalysis.SyntaxNode! node, eQuantic.UI.Compiler.CodeGen.ConversionContext! context) -> string!
+*REMOVED*static eQuantic.UI.Compiler.CodeGen.Ir.JsExpr.ArrowBlock(string! parameters, string! block, bool isAsync = false) -> eQuantic.UI.Compiler.CodeGen.Ir.JsExpr!
+*REMOVED*eQuantic.UI.Compiler.CodeGen.Ir.JsArrow.Block.get -> string?
+*REMOVED*eQuantic.UI.Compiler.CodeGen.Ir.JsArrow.Deconstruct(out string! Parameters, out eQuantic.UI.Compiler.CodeGen.Ir.JsExpr? Body, out string? Block, out bool IsAsync) -> void
+*REMOVED*eQuantic.UI.Compiler.CodeGen.Ir.JsArrow.JsArrow(string! Parameters, eQuantic.UI.Compiler.CodeGen.Ir.JsExpr? Body, string? Block, bool IsAsync) -> void
+eQuantic.UI.Compiler.CodeGen.Ir.JsArrow.Deconstruct(out string! Parameters, out eQuantic.UI.Compiler.CodeGen.Ir.JsExpr? Body, out eQuantic.UI.Compiler.CodeGen.Ir.JsStatement? Block, out bool IsAsync, out eQuantic.UI.Compiler.CodeGen.Ir.JsLayout Layout, out int Depth) -> void
+eQuantic.UI.Compiler.CodeGen.Ir.JsArrow.JsArrow(string! Parameters, eQuantic.UI.Compiler.CodeGen.Ir.JsExpr? Body, eQuantic.UI.Compiler.CodeGen.Ir.JsStatement? Block, bool IsAsync, eQuantic.UI.Compiler.CodeGen.Ir.JsLayout Layout = eQuantic.UI.Compiler.CodeGen.Ir.JsLayout.Compact, int Depth = 0) -> void
+eQuantic.UI.Compiler.CodeGen.Ir.JsArrow.Block.get -> eQuantic.UI.Compiler.CodeGen.Ir.JsStatement?
+eQuantic.UI.Compiler.CodeGen.Ir.JsArrow.Layout.get -> eQuantic.UI.Compiler.CodeGen.Ir.JsLayout
+eQuantic.UI.Compiler.CodeGen.Ir.JsArrow.Layout.init -> void
+eQuantic.UI.Compiler.CodeGen.Ir.JsArrow.Depth.get -> int
+eQuantic.UI.Compiler.CodeGen.Ir.JsArrow.Depth.init -> void
+static eQuantic.UI.Compiler.CodeGen.Ir.JsExpr.ArrowBlock(string! parameters, eQuantic.UI.Compiler.CodeGen.Ir.JsStatement! block, eQuantic.UI.Compiler.CodeGen.Ir.JsLayout layout, int depth, bool isAsync = false) -> eQuantic.UI.Compiler.CodeGen.Ir.JsExpr!
+eQuantic.UI.Compiler.CodeGen.Strategies.Primitives.ListMethodStrategy.ConvertIr(Microsoft.CodeAnalysis.SyntaxNode! node, eQuantic.UI.Compiler.CodeGen.ConversionContext! context) -> eQuantic.UI.Compiler.CodeGen.Ir.JsExpr!

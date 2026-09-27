@@ -39,7 +39,7 @@ public class LambdaExpressionStrategy : IExpressionIrStrategy
                     : ExpressionVariableScanner.Declarations(parenthesized.ExpressionBody, context.TypeAnnotations)
                         + $"return {context.Converter.ConvertExpression(parenthesized.ExpressionBody!)};";
                 var wrapped = OutParameters.WrapBody(inner, byReference, isAsync);
-                return JsExpr.ArrowBlock(kept, $"{{ {wrapped} }}", isAsync);
+                return JsExpr.ArrowBlock(kept, JsStatement.Raw($"{{ {wrapped} }}"), context.Layout, context.Depth, isAsync);
             }
 
             // The parameter TYPES come from the semantic model: a lambda handed to a config object
@@ -49,7 +49,7 @@ public class LambdaExpressionStrategy : IExpressionIrStrategy
                 .Select(p => Typed(p.Identifier.Text.ToJsIdentifier(), p, context)));
             var isAsyncLambda = parenthesized.Modifiers.Any(Microsoft.CodeAnalysis.CSharp.SyntaxKind.AsyncKeyword);
             return parenthesized.Block != null
-                ? JsExpr.ArrowBlock(parameters, context.Converter.ConvertBlock(parenthesized.Block), isAsyncLambda)
+                ? Block(parameters, parenthesized.Block, isAsyncLambda, context)
                 : ExpressionBody(parameters, parenthesized.ExpressionBody!, isAsyncLambda, context);
         }
         
@@ -58,12 +58,20 @@ public class LambdaExpressionStrategy : IExpressionIrStrategy
             var param = Typed(simple.Parameter.Identifier.Text.ToJsIdentifier(), simple.Parameter, context);
             var isAsyncLambda = simple.Modifiers.Any(Microsoft.CodeAnalysis.CSharp.SyntaxKind.AsyncKeyword);
             return simple.Block != null
-                ? JsExpr.ArrowBlock(param, context.Converter.ConvertBlock(simple.Block), isAsyncLambda)
+                ? Block(param, simple.Block, isAsyncLambda, context)
                 : ExpressionBody(param, simple.ExpressionBody!, isAsyncLambda, context);
         }
         
-        return JsExpr.ArrowBlock("", "{}");
+        return JsExpr.ArrowBlock("", JsStatement.Block([]), context.Layout, context.Depth);
     }
+
+    /// <summary>
+    /// A lambda's block as the statement IR, laid out where the lambda stands: each statement keeps
+    /// the C# it came from, so wherever a writer places the arrow, its lines map to their own
+    /// (#384). As text, the block was laid out before any writer saw it, and its marks went with it.
+    /// </summary>
+    internal static JsExpr Block(string parameters, BlockSyntax block, bool isAsync, ConversionContext context) =>
+        JsExpr.ArrowBlock(parameters, context.Converter.ConvertBlockIr(block), context.Layout, context.Depth, isAsync);
 
     /// <summary>
     /// A concise lambda body, given a BLOCK when it declares variables.
@@ -84,8 +92,9 @@ public class LambdaExpressionStrategy : IExpressionIrStrategy
         var body = context.Converter.ConvertIr(expression);
         if (hoisted.Length == 0) return JsExpr.Arrow(parameters, body, isAsync);
 
-        var block = JsStatement.Block(new[] { JsStatement.Raw(hoisted), JsStatement.Return(body) });
-        return JsExpr.ArrowBlock(parameters, JsStatementWriter.Write(block, context.Layout, context.Depth), isAsync);
+        // The declarations and the return are the expression's own lowering, and map to it (#384).
+        var block = JsStatement.Block(new[] { JsStatement.Raw(hoisted), JsStatement.Return(body) }) with { Origin = expression };
+        return JsExpr.ArrowBlock(parameters, block, context.Layout, context.Depth, isAsync);
     }
 
     /// <summary>The statements of a converted block, without its outer braces.</summary>
