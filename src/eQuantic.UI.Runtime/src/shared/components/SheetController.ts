@@ -38,7 +38,7 @@ export class SheetController {
 
     move(dRow: number, dCol: number, motion: SheetMotionValue = 'cell', extend: boolean = false) {
         let from = this.activeCell;
-        let landed = (() => { const _s = motion; if (_s === 'dataEdge') return this.dataEdge(from, dRow, dCol); if (_s === 'rowBoundary') return new CellRef(from.row, dCol < 0 ? 0 : this.document.cols - 1); if (_s === 'sheetBoundary') return dRow < 0 || dCol < 0 ? new CellRef(0, 0) : new CellRef(this.document.rows - 1, this.document.cols - 1); return new CellRef(from.row + dRow, from.col + dCol); })();
+        let landed = (() => { const $s = motion; if ($s === 'dataEdge') return this.dataEdge(from, dRow, dCol); if ($s === 'rowBoundary') return new CellRef(from.row, dCol < 0 ? 0 : this.document.cols - 1); if ($s === 'sheetBoundary') return dRow < 0 || dCol < 0 ? new CellRef(0, 0) : new CellRef(this.document.rows - 1, this.document.cols - 1); return new CellRef(from.row + dRow, from.col + dCol); })();
         landed = this.document.clamp(landed);
         this._selection = extend ? new SheetRange(this._selection.anchor, landed) : new SheetRange(landed);
         this._active = landed;

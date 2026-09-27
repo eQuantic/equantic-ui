@@ -83,20 +83,19 @@ public static class PatternConverter
     {
         switch (pattern)
         {
-            // A binding is named as every use of it is (ToJsIdentifier): `o is R package` bound
-            // `package`, which a module does not parse, where its uses said `package_` (found in
-            // review, #464). PatternVariableScanner declares it under the same name.
+            // Each binding under the name every reference reads it by (ToJsIdentifier): as source
+            // text, `is int @class` bound `@class` and `is int package` a reserved word.
             case VarPatternSyntax { Designation: SingleVariableDesignationSyntax v }:
-                bindings.Add((v.Identifier.ValueText.ToJsIdentifier(), access));
+                bindings.Add((v.Identifier.Text.ToJsIdentifier(), access));
                 break;
 
             case DeclarationPatternSyntax { Designation: SingleVariableDesignationSyntax d }:
-                bindings.Add((d.Identifier.ValueText.ToJsIdentifier(), access));
+                bindings.Add((d.Identifier.Text.ToJsIdentifier(), access));
                 break;
 
             case RecursivePatternSyntax recursive:
                 if (recursive.Designation is SingleVariableDesignationSyntax r)
-                    bindings.Add((r.Identifier.ValueText.ToJsIdentifier(), access));
+                    bindings.Add((r.Identifier.Text.ToJsIdentifier(), access));
                 if (recursive.PositionalPatternClause != null)
                 {
                     // The pattern's OWN type decides the deconstruction names — the governing
@@ -190,6 +189,10 @@ public static class PatternConverter
     private static void CollectListBindings(ListPatternSyntax list, string access,
         ConversionContext context, List<(string Name, string Access)> bindings)
     {
+        // The list ITSELF, when the pattern names it (`is [1, _] pair`): declared by the scanner,
+        // so it must be assigned here, or it reads undefined where C# reads the list.
+        if (list.Designation is SingleVariableDesignationSyntax whole)
+            bindings.Add((whole.Identifier.Text.ToJsIdentifier(), access));
         var (before, after, sliceIndex) = SliceShape(list);
         for (int i = 0; i < before; i++)
             CollectBindings(list.Patterns[i], $"{access}[{i}]", context, bindings);

@@ -6,11 +6,15 @@ namespace eQuantic.UI.Compiler.CodeGen.Strategies.Statements;
 /// <summary>
 /// <c>switch</c> statements. Constant labels only → a native JavaScript <c>switch</c>. Any
 /// pattern label (<c>case int n when n > 3:</c>) → an if/else chain over the subject bound once
-/// (<c>const _s = …</c>), because JavaScript's switch has no patterns; the pattern's bindings are
+/// (<c>const $s = …</c>), because JavaScript's switch has no patterns; the pattern's bindings are
 /// hoisted once for the whole chain and assigned inside each arm's condition.
 /// </summary>
 public class SwitchStatementStrategy : IStatementStrategy
 {
+    /// <summary>The subject's name, the switch expression's own: a `$` no variable a section
+    /// declares can hold (SwitchExpressionStrategy.Subject).</summary>
+    private const string Subject = Expressions.SwitchExpressionStrategy.Subject;
+
     public bool CanConvert(StatementSyntax node, ConversionContext context)
     {
         return node is SwitchStatementSyntax;
@@ -19,15 +23,32 @@ public class SwitchStatementStrategy : IStatementStrategy
     public JsStatement Convert(StatementSyntax node, ConversionContext context)
     {
         var switchStmt = (SwitchStatementSyntax)node;
+        // What the governing expression declares lives on after the switch — Roslyn scopes it to
+        // the enclosing block, like an if's condition — so it is declared in front, outside the
+        // block the if-chain form opens.
+        var declared = ExpressionVariableScanner.InFrontOf(switchStmt, switchStmt.Expression, context.TypeAnnotations);
         var expr = context.Converter.ConvertIr(switchStmt.Expression);
         var usesPatterns = switchStmt.Sections
             .SelectMany(s => s.Labels)
             .Any(l => l is CasePatternSwitchLabelSyntax);
 
-        return usesPatterns
+        return JsStatement.Hoisted(declared, usesPatterns
             ? ConvertAsIfChain(switchStmt, expr, context)
-            : ConvertAsNativeSwitch(switchStmt, context, expr);
+            : ConvertAsNativeSwitch(switchStmt, context, expr));
     }
+
+    /// <summary>
+    /// What the statements of the sections declare into their block (<c>case 1: Parse(s, out var
+    /// n);</c>): C# scopes it to the whole switch block, so another section can assign and read it,
+    /// and those statements leave it to the switch (ExpressionVariableScanner.InFrontOf). Declared
+    /// in the section that wrote it, it was in its temporal dead zone for every other section.
+    /// </summary>
+    private static IReadOnlyList<string> SectionNames(SwitchStatementSyntax switchStmt) =>
+        switchStmt.Sections
+            .SelectMany(section => section.Statements)
+            .SelectMany(ExpressionVariableScanner.BlockNames)
+            .Distinct(StringComparer.Ordinal)
+            .ToList();
 
     private static JsStatement ConvertAsNativeSwitch(SwitchStatementSyntax switchStmt, ConversionContext context, JsExpr expr)
     {
@@ -38,7 +59,10 @@ public class SwitchStatementStrategy : IStatementStrategy
                 _ => "default",
             }).ToList(),
             section.Statements.Select(context.Converter.ConvertStatementIr).ToList())).ToList();
-        return JsStatement.Switch(expr, cases);
+        var switchStatement = JsStatement.Switch(expr, cases);
+        // The switch block's own declarations, in a block that is the switch's scope and no wider.
+        var declared = ExpressionVariableScanner.Declarations(SectionNames(switchStmt), context.TypeAnnotations);
+        return declared.Length == 0 ? switchStatement : JsStatement.Block([JsStatement.Raw(declared.TrimEnd()), switchStatement]);
     }
 
     private static JsStatement ConvertAsIfChain(SwitchStatementSyntax switchStmt, JsExpr expr, ConversionContext context)
@@ -47,6 +71,9 @@ public class SwitchStatementStrategy : IStatementStrategy
         var arms = new List<(string Condition, JsStatement Body, SwitchSectionSyntax Section)>();
         var hoist = new List<string>();   // distinct bound names, hoisted once for the whole chain
         var seen = new HashSet<string>();
+        // What the sections' statements declare belongs to the switch block too (see SectionNames).
+        foreach (var name in SectionNames(switchStmt))
+            if (seen.Add(name)) hoist.Add(name);
         SwitchSectionSyntax? defaultSection = null;
 
         foreach (var section in switchStmt.Sections)
@@ -63,13 +90,13 @@ public class SwitchStatementStrategy : IStatementStrategy
                 switch (label)
                 {
                     case CaseSwitchLabelSyntax constant:
-                        labelConditions.Add($"_s === {context.Converter.ConvertExpression(constant.Value)}");
+                        labelConditions.Add($"{Subject} === {context.Converter.ConvertExpression(constant.Value)}");
                         break;
 
                     case CasePatternSwitchLabelSyntax pat:
-                        var cond = PatternConverter.BuildCondition(pat.Pattern, "_s", context, governingType);
+                        var cond = PatternConverter.BuildCondition(pat.Pattern, Subject, context, governingType);
                         var bindings = new List<(string Name, string Access)>();
-                        PatternConverter.CollectBindings(pat.Pattern, "_s", context, bindings, governingType);
+                        PatternConverter.CollectBindings(pat.Pattern, Subject, context, bindings, governingType);
                         foreach (var b in bindings) if (seen.Add(b.Name)) hoist.Add(b.Name);
 
                         // Assign the pattern's bindings AND evaluate the when-clause inside the condition (a
@@ -79,6 +106,10 @@ public class SwitchStatementStrategy : IStatementStrategy
                         var whenExpr = pat.WhenClause != null
                             ? context.Converter.ConvertExpression(pat.WhenClause.Condition)
                             : null;
+                        // What the guard itself declares (`when int.TryParse(s, out var n)`) belongs
+                        // to the section, and the chain's one declaration covers every section.
+                        foreach (var name in ExpressionVariableScanner.Names(pat.WhenClause?.Condition))
+                            if (seen.Add(name)) hoist.Add(name);
                         if (bindings.Count > 0 || whenExpr != null)
                         {
                             var assigns = string.Concat(bindings.Select(b => $"{b.Name} = {b.Access}, "));
@@ -100,8 +131,10 @@ public class SwitchStatementStrategy : IStatementStrategy
             chain = JsStatement.If(JsExpr.Opaque(arms[i].Condition), arms[i].Body, chain) with { Origin = arms[i].Section };
 
         var statements = new List<JsStatement>();
-        if (hoist.Count > 0) statements.Add(JsStatement.Raw($"let {string.Join(", ", hoist)};"));
-        statements.Add(JsStatement.Const("_s", expr));
+        // Annotated in TypeScript, as every declaration the scanner writes is: a section's `out var`
+        // may be assigned inside an arrow (a dictionary's TryGetValue), which TypeScript cannot follow.
+        if (hoist.Count > 0) statements.Add(JsStatement.Raw($"let {ExpressionVariableScanner.List(hoist, context.TypeAnnotations)};"));
+        statements.Add(JsStatement.Const(Subject, expr));
         if (chain is not null) statements.Add(chain);
         return JsStatement.Block(statements);
     }

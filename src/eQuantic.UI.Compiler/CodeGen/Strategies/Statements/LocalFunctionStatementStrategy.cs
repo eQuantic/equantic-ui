@@ -23,22 +23,24 @@ public class LocalFunctionStatementStrategy : IStatementStrategy
     public JsStatement Convert(StatementSyntax node, ConversionContext context)
     {
         var localFn = (LocalFunctionStatementSyntax)node;
-        // The SAME pair of transformations the reference applies (IdentifierStrategy): camelCase,
-        // then the JS-identifier rename. Hand-lowercasing here is how the declaration and the
-        // reference drift — and a local function called `Delete` emitted `const delete = …`, which
-        // is not a name JS will take at all.
-        var name = localFn.Identifier.Text.ToCamelCase().ToJsIdentifier();
+        // The name every reference reaches too (LocalFunctionName): camel-cased, a legal JS
+        // identifier, and renamed where the member already holds it. Naming it here by hand is how
+        // the declaration and the references drifted.
+        var name = LocalFunctionName.Of(localFn, context);
         var parameters = string.Join(", ", localFn.ParameterList.Parameters
             .Select(p => Parameter(p, context)));
 
         // An expression body becomes a block with one return, carrying the expression, so both
-        // forms read and map the same.
+        // forms read and map the same — and what the expression declares is declared in front of
+        // the return, inside the function, where each call has its own.
         var body = localFn.Body != null
             ? context.Converter.ConvertBlockIr(localFn.Body)
             : JsStatement.Block(new[]
             {
-                JsStatement.Return(context.Converter.InBlock(() => context.Converter.ConvertIr(localFn.ExpressionBody!.Expression)))
-                    with { Origin = localFn.ExpressionBody!.Expression },
+                JsStatement.Hoisted(
+                    ExpressionVariableScanner.Declarations(localFn.ExpressionBody!.Expression, context.TypeAnnotations),
+                    JsStatement.Return(context.Converter.InBlock(() => context.Converter.ConvertIr(localFn.ExpressionBody!.Expression)))
+                        with { Origin = localFn.ExpressionBody!.Expression }),
             });
 
         // The `async` has to cross. A C# local function that awaits becomes a JS arrow that

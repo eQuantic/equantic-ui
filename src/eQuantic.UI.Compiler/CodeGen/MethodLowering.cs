@@ -120,9 +120,9 @@ internal sealed class MethodLowering
     }
 
     /// <summary>
-    /// An accessor's block as its body, lowered as a method's is: the locals an <c>out var</c>
-    /// declares lead it, and a getter that yields fills a buffer and returns it, where it wrote
-    /// <c>yield</c> outside a generator and the module did not parse (#432).
+    /// An accessor's block as its body, lowered as a method's is: a getter that yields fills a
+    /// buffer and returns it, where it wrote <c>yield</c> outside a generator and the module did
+    /// not parse (#432).
     /// </summary>
     public JsStatement AccessorBody(BlockSyntax block)
     {
@@ -135,13 +135,13 @@ internal sealed class MethodLowering
     /// A member's body as IR, so each statement reaches the class writer carrying the C# it came
     /// from and the source map leads a frame or a breakpoint to it (#293): converted as text, the
     /// body lost every origin before the writer saw it, and the map stopped at the method's first
-    /// line. The locals an <c>out var</c> declares lead the block. An iterator's buffer and an out
-    /// parameter's returned object still wrap the body's TEXT, so those two shapes stay text.
+    /// line. An iterator's buffer and an out parameter's returned object still wrap the body's
+    /// TEXT, so those two shapes stay text. The variables the body's expressions declare are each
+    /// statement's to declare (ExpressionVariableScanner, #484), with C#'s scope.
     /// </summary>
     public JsStatement Body(BlockSyntax? block, ExpressionSyntax? expressionBody, bool isIterator,
         IReadOnlyList<ParameterSyntax> byReference, bool isAsync)
     {
-        var hoisted = OutParameters.HoistedLocals(block ?? (SyntaxNode?)expressionBody);
         if (isIterator || byReference.Count > 0)
         {
             string text;
@@ -160,13 +160,13 @@ internal sealed class MethodLowering
             {
                 text = "{}";
             }
-            var body = hoisted + StripJsBraces(text);
+            var body = StripJsBraces(text);
             if (byReference.Count > 0) body = OutParameters.WrapBody(body, byReference, isAsync);
             return JsStatement.Raw(body);
         }
 
         // An expression body never reaches ReturnStatementStrategy, so nothing hoisted the `let` for
-        // a pattern variable bound in it: ExpressionBodyReturn declares it in front of the return.
+        // a variable declared in it: ExpressionBodyReturn declares it in front of the return.
         IReadOnlyList<JsStatement> statements = block != null
             ? _converter.ConvertBlockIr(block) switch
             {
@@ -176,9 +176,7 @@ internal sealed class MethodLowering
             : expressionBody != null
                 ? [_converter.InBlock(() => ExpressionBody(expressionBody, returns: true))]
                 : [];
-        return hoisted.Length == 0
-            ? JsStatement.Block(statements)
-            : JsStatement.Block([JsStatement.Raw(hoisted.TrimEnd()), .. statements]);
+        return JsStatement.Block(statements);
     }
 
     /// <summary>An expression body as the one statement of its member — a return, or a bare
@@ -189,11 +187,11 @@ internal sealed class MethodLowering
         JsStatement.Raw(returns ? ExpressionBodyReturn(expression) : ExpressionBodyStatement(expression)) with { Origin = expression };
 
     public string ExpressionBodyReturn(ExpressionSyntax expression) =>
-        $"{PatternVariableScanner.Declarations(expression, TypeAnnotations)}return {_converter.ConvertExpression(expression)};";
+        $"{ExpressionVariableScanner.Declarations(expression, TypeAnnotations)}return {_converter.ConvertExpression(expression)};";
 
     /// <summary>The same, in STATEMENT position (a setter) — no return to give it.</summary>
     public string ExpressionBodyStatement(ExpressionSyntax expression) =>
-        $"{PatternVariableScanner.Declarations(expression, TypeAnnotations)}{_converter.ConvertExpression(expression)};";
+        $"{ExpressionVariableScanner.Declarations(expression, TypeAnnotations)}{_converter.ConvertExpression(expression)};";
 
     /// <summary>One parameter in a hand-written signature: annotated in TypeScript mode, bare in
     /// plain-JavaScript mode.</summary>
