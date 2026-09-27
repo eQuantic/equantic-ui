@@ -28,6 +28,11 @@ replaced six tokens by text, so `d/M/yyyy` printed `d/M/2026` and `dd MMM yyyy` 
 - **`ToShortDateString`, `ToLongDateString`, `ToShortTimeString` and `ToLongTimeString`** are the
   specifiers `d`, `D`, `t` and `T` by another name, and go the same way; each was a call to a twin
   method that does not exist (found in review).
+- **`ToString()` with no specifier is `G` in the current culture**, as .NET's is, and so is one
+  given the current culture or a null; it wrote the twin's invariant text (Copilot's first round).
+- **No time zone moves a value's parts but `U`'s**: the formatter reads a Date whose UTC fields are
+  the wall-clock parts, where a local Date built from them was normalised by the host's zone, so in
+  a spring-forward gap 02:30 became 03:30 (Copilot's first round).
 - **With no culture in force, a date takes the invariant patterns**, as a number's text does,
   where `Intl`'s en-US presets printed `9/24/26`, and the invariant names, where the host's locale
   wrote a Portuguese machine's names into the invariant layout (found in review). And a year below 100 stays itself, where `Date`

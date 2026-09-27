@@ -27,3 +27,9 @@
 - [x] 5.1 Route the short and long date and time strings to the formatter
 - [x] 5.2 Ask for the invariant culture's names with no culture in force, and build the fraction and the sortable parts only where they are written
 - [x] 5.3 File what the review found outside this change: #469, #470, #471, and a note on #454
+
+## 6. Copilot's first round
+
+- [x] 6.1 Write `G` in the current culture for a ToString with no specifier, the current culture or a null
+- [x] 6.2 Read a date from a zone-free surrogate, so no time zone moves its parts but `U`'s
+- [x] 6.3 Check: `CultureCrossingTests` pins the four emissions, and a runtime spec runs New York's gap against .NET's strings; each fails with its fix reverted. The conformance class's 11 cases all fail on main

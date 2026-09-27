@@ -839,8 +839,9 @@ record of a release, the wiki's Upgrading page is the distillate.
   `R`, `u` or `U`; a custom picture replaced six tokens by text (`d/M/yyyy` printed `d/M/2026`); and with
   no culture in force a date took `Intl`'s en-US presets and the host's names. Each is fixed, the short
   and long date and time strings go the same way, and the cross-pinned fixture now
-  carries every date specifier the resx subset admits. A new conformance class fails all 10 of its cases
-  on the base.
+  carries every date specifier the resx subset admits. From Copilot's first round: a `ToString()` with no
+  specifier writes the current culture's `G`, and no time zone moves a value's parts (a spring-forward
+  gap turned 02:30 into 03:30). A new conformance class fails all 11 of its cases on main.
 
 - **2026-09-26 · A name the transpiler changes lands on no name its scope holds**: a local function
   was camel-cased onto a local that differed only by case, a module that did not load; a reserved
