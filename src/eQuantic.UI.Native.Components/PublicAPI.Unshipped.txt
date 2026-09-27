@@ -1,1 +1,7 @@
 #nullable enable
+*REMOVED*eQuantic.UI.Native.Components.ShortcutBinding.Deconstruct(out eQuantic.UI.Primitives.KeyChord Chord, out System.Action! OnPressed) -> void
+*REMOVED*eQuantic.UI.Native.Components.ShortcutBinding.ShortcutBinding(eQuantic.UI.Primitives.KeyChord Chord, System.Action! OnPressed) -> void
+eQuantic.UI.Native.Components.ShortcutBinding.Deconstruct(out eQuantic.UI.Primitives.KeyChord Chord, out System.Action! OnPressed, out string? Scope) -> void
+eQuantic.UI.Native.Components.ShortcutBinding.ShortcutBinding(eQuantic.UI.Primitives.KeyChord Chord, System.Action! OnPressed, string? Scope = null) -> void
+eQuantic.UI.Native.Components.ShortcutBinding.Scope.get -> string?
+eQuantic.UI.Native.Components.ShortcutBinding.Scope.init -> void

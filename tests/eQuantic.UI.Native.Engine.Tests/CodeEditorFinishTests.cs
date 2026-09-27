@@ -180,13 +180,49 @@ public class CodeEditorFinishTests
         var editor = new CodeEditor("searchable text", "csharp") { ShowLineNumbers = false };
         var (host, _) = Open(editor);
 
+        var region = host.RenderFrame(new DisplayListBuilder()).CodeRegions.Single();
         host.RenderFrame(new DisplayListBuilder()).TextRegions.Should().BeEmpty("no bar yet");
 
-        host.KeyDown("f", KeyModifiers.Command);
+        // ⌘F is the editor's own, so the keyboard has to be in it: in the code.
+        host.PressDown(region.Bounds.X + 4, region.Bounds.Y + 4);
+        host.PressUp(region.Bounds.X + 4, region.Bounds.Y + 4);
+        host.KeyDown("f", KeyModifiers.Command).Should().BeTrue();
         var frame = host.RenderFrame(new DisplayListBuilder());
 
         frame.TextRegions.Should().ContainSingle("the find field is the bar");
         frame.TextRegions.Single().Entry.Placeholder.Should().Be("Find");
+    }
+
+    /// <summary>
+    /// ⌘F is the editor's own: of two editors on one screen, the one the keyboard is in opens its
+    /// find, and with the keyboard in neither the chord is not taken, so a browser keeps it for its
+    /// own. Page-wide, the last editor mounted opened its bar wherever the keyboard was.
+    /// </summary>
+    [Fact]
+    public void CommandF_OpensTheFindOfTheEditorTheKeyboardIsIn()
+    {
+        var first = new CodeEditor("first text", "csharp") { ShowLineNumbers = false };
+        var second = new CodeEditor("second text", "csharp") { ShowLineNumbers = false };
+        var page = new Column(gap: Space.S4) { Width = SizeValue.Fill };
+        page.Add(first);
+        page.Add(second);
+        var host = new PhotonHost(page, PhotonTheme.Instance, ThemeMode.Light, 500, 400)
+        {
+            TextRasterizer = new FixedWidthRasterizer(),
+        };
+        var frame = host.RenderFrame(new DisplayListBuilder());
+
+        host.KeyDown("f", KeyModifiers.Command).Should().BeFalse("the keyboard is in neither editor");
+
+        var region = frame.CodeRegions.Single(r => ReferenceEquals(r.Surface.Model, first.Editor));
+        host.PressDown(region.Bounds.X + 4, region.Bounds.Y + 4);
+        host.PressUp(region.Bounds.X + 4, region.Bounds.Y + 4);
+        host.KeyDown("f", KeyModifiers.Command).Should().BeTrue();
+        frame = host.RenderFrame(new DisplayListBuilder());
+
+        var bar = frame.TextRegions.Should().ContainSingle("one editor opened its find").Subject;
+        var below = frame.CodeRegions.Single(r => ReferenceEquals(r.Surface.Model, second.Editor));
+        bar.Bounds.Bottom.Should().BeLessThan(below.Bounds.Y, "the bar is the first editor's, over its code");
     }
 
     // ---- virtualization --------------------------------------------------------------------------

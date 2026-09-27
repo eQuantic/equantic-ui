@@ -5,7 +5,7 @@ export class PageIndicator extends StatelessComponent {
     static maxDots: number = 8;
     declare count: number;
     declare currentIndex: number;
-    declare onSelected: any;
+    declare onSelected: ((int: number) => void) | null;
     declare variant: VariantValue;
 
     constructor(count?: any, currentIndex?: any, onSelected: any = null, props?: any) {
@@ -34,7 +34,7 @@ export class PageIndicator extends StatelessComponent {
             let index = i;
             let current = index === this.currentIndex;
             let dot = new Box(new BoxStyle({ width: current ? 18 : 6, height: 6, background: current ? active : theme.borderStrong, cornerRadius: new CornerRadii(theme.shape('full')), transition: TransitionSpec.of(1 | 32, Motion.state) }));
-            row.add(this.onSelected == null ? dot : new Pressable(PageIndicator.hitPadded(dot), () => this.onSelected(index), { label: `Page ${index + 1}`, selected: current }));
+            row.add(this.onSelected == null ? dot : new Pressable(PageIndicator.hitPadded(dot), () => this.onSelected!(index), { label: `Page ${index + 1}`, selected: current }));
         }
         return row;
     }

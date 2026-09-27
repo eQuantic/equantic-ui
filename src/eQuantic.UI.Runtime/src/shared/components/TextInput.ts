@@ -15,7 +15,7 @@ export class TextInput extends StatefulComponent {
     declare disabled: boolean;
     declare autofocus: boolean;
     declare obscure: boolean;
-    declare onFocusChanged: any;
+    declare onFocusChanged: ((bool: boolean) => void) | null;
 
     constructor(value?: any, onChanged: any = null, label: any = '', placeholder: any = null, helper: any = null, error: any = null, leading: any = null, size: any = 'large', trailing: any = null, props?: any) {
         super();

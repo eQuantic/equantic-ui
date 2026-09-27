@@ -839,7 +839,6 @@ record of a release, the wiki's Upgrading page is the distillate.
   spelling. 29 of the 32 conformance cases failed on main before it
   ([#465](https://github.com/eQuantic/equantic-ui/issues/465)). #396, #397, #398 and #400 are the
   same question elsewhere, each with an issue of its own.
-
 - **2026-09-26 · An expression variable is declared by its statement, with C#'s scope**: what a
   pattern, an `out var` or a deconstruction declares had four rules. A method declared every `out
   var` at its top, so a closure made in a loop read the last iteration's value (.NET 12, JavaScript
@@ -869,6 +868,25 @@ record of a release, the wiki's Upgrading page is the distillate.
   extended as written ([#479](https://github.com/eQuantic/equantic-ui/issues/479)), and a bare type
   pattern never matches ([#482](https://github.com/eQuantic/equantic-ui/issues/482)). Proposed and
   archived through OpenSpec (`openspec/specs/transpiler-expression-variables`).
+- **2026-09-27 · The code diff view**: the view half of slice 2b of
+  [`CODE-EDITOR-PLAN.md`](CODE-EDITOR-PLAN.md) ([#420](https://github.com/eQuantic/equantic-ui/issues/420), [#412](https://github.com/eQuantic/equantic-ui/pull/412)).
+  `CodeDiff` draws two texts, or one file of a patch, side by side (the sides level at every change)
+  or inline (the removed lines between the lines that replaced them), washes a changed line and
+  marks its changed words, folds an unchanged run into a row that opens on a press, steps through
+  the changes with F7 and the toolbar, and edits the modified side, compared again after every edit.
+  Under it the engine maps a view's lines to rows (`CodeRows`), `CodeDiffLayout` lays out each side
+  and `CodePatch` reads a unified diff, and `CodeBlock` draws the rows. On the way, eqc's twins of
+  this code were the first to cross an array of a union, a tuple return, a local starting null and a
+  function-typed parameter, and each crossed wrong (a negative declared default did too, and
+  [#409](https://github.com/eQuantic/equantic-ui/pull/409), above, settled it first); an extended
+  property pattern read `changes.Count`, which is undefined; a button drawn in a code surface never
+  heard its click on the web; a `Shortcut` answered for the whole page, so F7 in one diff stepped
+  another, and `FocusScoped` now makes a chord the subtree's own (FLUTTER-PARITY said SAME, and it
+  was not); and a Mac's function keys reached the host as the characters they type. The author's
+  review found six more, each fixed: a local annotated in the plain JavaScript the design host
+  inlines, a zero-context patch's gaps, F7 stuck past a removed end, the focus a fold's press
+  dropped on the web, a patch line's bare carriage return, and a tuple's enum named as in C#; the
+  find bar's Escape, still page-wide, is [#457](https://github.com/eQuantic/equantic-ui/issues/457).
 
 ## Retired documents
 

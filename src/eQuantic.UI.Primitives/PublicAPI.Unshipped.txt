@@ -1,1 +1,3 @@
 #nullable enable
+eQuantic.UI.Primitives.Shortcut.FocusScoped.get -> bool
+eQuantic.UI.Primitives.Shortcut.FocusScoped.init -> void

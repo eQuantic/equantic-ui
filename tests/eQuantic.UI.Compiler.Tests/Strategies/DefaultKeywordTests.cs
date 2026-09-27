@@ -100,9 +100,9 @@ public class DefaultKeywordTests
     [Theory]
     [InlineData("int x = default;", "let x = 0;")]
     [InlineData("long x = default;", "let x = 0n;")]      // a constant, folded to the BigInt it is
-    [InlineData("int? x = default;", "let x = null;")]
+    [InlineData("int? x = default;", "let x: number | null = null;")]   // a local that starts null crosses with its declared type
     public void Default_Literal_IsItsTargetsDefault(string statement, string expected)
     {
-        TestHelper.ConvertCodeBlock(statement).Should().Contain(expected);
+        TestHelper.ConvertCodeBlock(statement, typeAnnotations: true).Should().Contain(expected);
     }
 }

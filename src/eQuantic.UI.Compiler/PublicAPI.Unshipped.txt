@@ -7,6 +7,7 @@ const eQuantic.UI.Compiler.CodeGen.Eq.IsWhiteSpace = "$eq.text.isWhiteSpace" -> 
 const eQuantic.UI.Compiler.CodeGen.Eq.HasNonWhiteSpace = "$eq.text.hasNonWhiteSpace" -> string!
 eQuantic.UI.Compiler.Models.ComponentDefinition.ClassSyntax.get -> Microsoft.CodeAnalysis.CSharp.Syntax.ClassDeclarationSyntax?
 eQuantic.UI.Compiler.Models.ComponentDefinition.ClassSyntax.set -> void
+eQuantic.UI.Compiler.Services.SemanticHelper.ProvedNotNull(Microsoft.CodeAnalysis.CSharp.Syntax.ExpressionSyntax! expression) -> bool
 eQuantic.UI.Compiler.CodeGen.ValueMember.Deconstruct(out string! Display, out string! Js, out string! TsType) -> void
 eQuantic.UI.Compiler.CodeGen.ValueMember.ValueMember(string! Display, string! Js, string! TsType) -> void
 *REMOVED*eQuantic.UI.Compiler.CodeGen.ValueMember.Deconstruct(out string! Display, out string! Js, out string! Default, out string! TsType) -> void

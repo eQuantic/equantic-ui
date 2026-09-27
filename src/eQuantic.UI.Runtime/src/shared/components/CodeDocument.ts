@@ -35,6 +35,10 @@ export class CodeDocument {
         return new CodePosition(this._lines.length - 1, this._lines[this._lines.length - 1].length);
     }
 
+    static fromLines(lines: string[]) {
+        return new CodeDocument(lines.length === 0 ? [''] : lines);
+    }
+
     static fromText(text: string) {
         let lines: string[] = [];
         let current = $eq.text.stringBuilder();
