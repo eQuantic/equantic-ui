@@ -12,7 +12,7 @@
 
 ## 3. Checks
 
-- [x] 3.1 `DateTimeToStringConformanceTests`: every one-letter specifier with no provider, the invariant, the current and a null one, a provider alone, custom pictures, the first year and a null DateTime?; all 10 cases fail on the base
+- [x] 3.1 `DateTimeToStringConformanceTests`: every one-letter specifier with no provider, the invariant, the current and a null one, a provider alone, custom pictures, the first year and a null DateTime?; all 10 cases, the class as this step closed, fail on the base. 5.1 added the short and long strings and 7.3 a null format, and all 12 fail on main
 - [x] 3.2 The cross-pinned fixture carries every date specifier the subset admits; 5 of its 8 tests fail on the base
 - [x] 3.3 `CultureCrossingTests`: a DateTime's invariant provider stays in the build, and a named one is EQ2108
 
