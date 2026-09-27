@@ -20,6 +20,10 @@ public class LocalTypeAnnotationTests
 {
     private readonly CSharpToJsConverter _converter = new();
 
+    // TypeScript, which is what the annotation is for: plain JavaScript carries none, since the
+    // playground and the design host run it as written (PlainJavaScriptSyntaxTests).
+    public LocalTypeAnnotationTests() => _converter.EmitTypeAnnotations(true);
+
     private string Convert(string bodyCode)
     {
         // A REAL semantic model: the widening rule compares the declared type against the

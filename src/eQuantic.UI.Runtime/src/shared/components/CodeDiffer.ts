@@ -44,10 +44,10 @@ export class CodeDiffer {
     }
 
     static idsOf(items: string[], ids: Record<string, any>) {
-        let id: any;
         let result = new Array(items.length).fill(0);
         let next = Object.keys(ids).length;
         for (let i = 0; i < items.length; i++) {
+            let id: any; 
             if (!(($0: any, $1: any) => (Object.prototype.hasOwnProperty.call($0, $1) ? ((id = $0[$1]), true) : ((id = 0), false)))(ids, items[i])) {
                 id = next++;
                 ids[items[i]] = id;

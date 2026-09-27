@@ -842,6 +842,45 @@ record of a release, the wiki's Upgrading page is the distillate.
   carries every date specifier the resx subset admits. A new conformance class fails all 10 of its cases
   on the base.
 
+- **2026-09-26 · A name the transpiler changes lands on no name its scope holds**: a local function
+  was camel-cased onto a local that differed only by case, a module that did not load; a reserved
+  word took a trailing underscore that C# can also write; and a component's constructor bound its
+  parameters camel-cased while its body read them as written. `LocalFunctionName` owns a local
+  function's name, a reserved word takes a `$`, and every declaration and its readers use one
+  spelling. 29 of the 32 conformance cases failed on main before it
+  ([#465](https://github.com/eQuantic/equantic-ui/issues/465)). #396, #397, #398 and #400 are the
+  same question elsewhere, each with an issue of its own.
+
+- **2026-09-26 · An expression variable is declared by its statement, with C#'s scope**: what a
+  pattern, an `out var` or a deconstruction declares had four rules. A method declared every `out
+  var` at its top, so a closure made in a loop read the last iteration's value (.NET 12, JavaScript
+  22) and a recursive local function overwrote its caller's; a getter, a setter, an initializer, a
+  record's members and a component's Build declared none; a deconstruction's elements were declared
+  by nothing; and plain JavaScript carried `let n: any;`
+  ([#466](https://github.com/eQuantic/equantic-ui/issues/466)). One owner,
+  `ExpressionVariableScanner`, now answers every statement with the scope Roslyn gives: in front of
+  an `if` or an expression statement, or at the top of the switch whose section holds it, inside a
+  `foreach` or a `using`, in a `while`'s, a `do`'s or a `for`'s own head for a fresh variable every
+  iteration, and in its own arrow for an initializer, each spelled as #399 spells its readers. The
+  harness had declared every `out var` itself, which is why none of it showed: 43 of the new class's
+  first 47 cases fail on main without that, and neither mode's modules load in the new emission
+  test. The author's review found four more before the pull request opened: a section's variable
+  assigned by another section, two queries binding one name, a `for` initialized by a
+  deconstruction, and a `do`'s condition, each now a case. Found on the way: a static property on a
+  plain class was an instance getter (its `field` slot is still an instance one,
+  [#483](https://github.com/eQuantic/equantic-ui/issues/483)), plain JavaScript annotated a local
+  declared as another type, and a switch's subject is now `$s`, since a local `_s` could land on it
+  (a slice of [#397](https://github.com/eQuantic/equantic-ui/issues/397)). Filed: two catch clauses
+  do not parse and one ignores its type and filter
+  ([#474](https://github.com/eQuantic/equantic-ui/issues/474)), a lock drops its expression
+  ([#475](https://github.com/eQuantic/equantic-ui/issues/475)), a for's own variable is one per
+  iteration ([#476](https://github.com/eQuantic/equantic-ui/issues/476)), `fs[0]()` reads off
+  `this` ([#477](https://github.com/eQuantic/equantic-ui/issues/477)), `new object()` names no class
+  ([#478](https://github.com/eQuantic/equantic-ui/issues/478)), a base written with its namespace is
+  extended as written ([#479](https://github.com/eQuantic/equantic-ui/issues/479)), and a bare type
+  pattern never matches ([#482](https://github.com/eQuantic/equantic-ui/issues/482)). Proposed and
+  archived through OpenSpec (`openspec/specs/transpiler-expression-variables`).
+
 ## Retired documents
 
 | document | what it was | where its substance lives now |

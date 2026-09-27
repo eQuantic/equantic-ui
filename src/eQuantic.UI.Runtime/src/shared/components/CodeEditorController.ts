@@ -155,9 +155,9 @@ export class CodeEditorController {
     }
 
     cellsOf(line: number) {
-        let cells: any;
         let text = this._document.line(line);
         let tabSize = this.rules.indentWidth;
+        let cells: any; 
         if ((($0: any) => (Object.prototype.hasOwnProperty.call($0, line) ? ((cells = $0[line]), true) : ((cells = null), false)))(this._cells) && cells.text === text && cells.tabSize === tabSize) return cells;
         cells = new CodeLineCells(text, tabSize);
         this._cells[line] = cells;
@@ -270,10 +270,10 @@ export class CodeEditorController {
     }
 
     replaceUnrecorded(range: CodeRange, text: string) {
-        let caret: any;
         let ordered = new CodeRange(this._document.clamp(range.start), this._document.clamp(range.end));
         let removed = this._document.textIn(ordered);
         let before = this._selection;
+        let caret: any; 
         let next = ($o => (caret = $o.caret, $o.$))(this._document.replace(ordered, text));
         let line = ordered.start.line;
         let linesRemoved = ordered.end.line - ordered.start.line;
@@ -328,12 +328,12 @@ export class CodeEditorController {
     }
 
     edit(range: CodeRange, text: string, typed: boolean) {
-        let caret: any;
         if (this.readOnly) return false;
         let ordered = new CodeRange(this._document.clamp(range.start), this._document.clamp(range.end));
         let removed = this._document.textIn(ordered);
         if (removed.length === 0 && text.length === 0) return false;
         let before = this._selection;
+        let caret: any; 
         let next = ($o => (caret = $o.caret, $o.$))(this._document.replace(ordered, text));
         let line = ordered.start.line;
         let linesRemoved = ordered.end.line - ordered.start.line;
@@ -372,7 +372,7 @@ export class CodeEditorController {
         }
         let line = this._document.line(this.caret.line);
         let after = this.caret.column < line.length ? line[this.caret.column] : '\0';
-        for (const [_, close] of rules.brackets) {
+        for (const [, close] of rules.brackets) {
             if (c === close && after === close) {
                 this.selection = new CodeRange($eq.withPatch(this.caret, { column: this.caret.column + 1 }));
                 return true;
@@ -687,9 +687,9 @@ export class CodeEditorController {
     }
 
     undo() {
-        let selection: any, replaced: any, written: any;
         if (this.readOnly) return false;
         this.endComposition();
+        let selection: any; let replaced: any; let written: any; 
         let next = ($o => (selection = $o.selection, replaced = $o.replaced, written = $o.written, $o.$))(this.history.undo(this._document));
         if (next == null) return false;
         this._document = next;
@@ -707,9 +707,9 @@ export class CodeEditorController {
     }
 
     redo() {
-        let selection: any, replaced: any, written: any;
         if (this.readOnly) return false;
         this.endComposition();
+        let selection: any; let replaced: any; let written: any; 
         let next = ($o => (selection = $o.selection, replaced = $o.replaced, written = $o.written, $o.$))(this.history.redo(this._document));
         if (next == null) return false;
         this._document = next;
