@@ -109,6 +109,40 @@ public class StackFrameSourceMapTests
         }
         """;
 
+    /// <summary>A frame inside a lambda's block (#384): it read, through the map, as the line that
+    /// holds the lambda, whatever statement in the block had called. The sum keeps the call out of
+    /// tail position, as above.</summary>
+    private const string LambdaSource = """
+        using System;
+        using System.Collections.Generic;
+
+        namespace Demo;
+
+        public class Walker
+        {
+            public int Walk(int count)
+            {
+                var total = 0;
+                var values = new List<int> { count };
+                values.ForEach(value =>
+                {
+                    var seen = value * 10;
+                    total += Check(seen) + 1;
+                });
+                return total;
+            }
+
+            public int Check(int value)
+            {
+                if (value > 0)
+                {
+                    throw new InvalidOperationException("big");
+                }
+                return value;
+            }
+        }
+        """;
+
     /// <summary>The 1-based line of the first line of <paramref name="source"/> that contains <paramref name="text"/>.</summary>
     private static int LineOf(string source, string text) =>
         source.Split('\n').Select((line, index) => (line, index)).First(pair => pair.line.Contains(text)).index + 1;
@@ -139,6 +173,14 @@ public class StackFrameSourceMapTests
         Resolve(map, frames[0]).Should().Be(("Countdown.cs", LineOf(LoweredSource, "throw new InvalidOperationException")), $"the top frame is the throw:\n{stack}");
         Resolve(map, frames[1]).Should().Be(("Countdown.cs", LineOf(LoweredSource, "while (Check(n));")), $"the loop's condition called it:\n{stack}");
         Resolve(map, frames[2]).Should().Be(("Countdown.cs", LineOf(LoweredSource, "public int Size => Count(3) + 1;")), $"the getter called the loop:\n{stack}");
+    }
+
+    [SkippableFact]
+    public void AFrameInsideALambdasBlock_LeadsToTheStatementThatCalled()
+    {
+        var (stack, frames, map) = Throw(LambdaSource, "Walker", "new Walker().walk(1)");
+        Resolve(map, frames[0]).Should().Be(("Walker.cs", LineOf(LambdaSource, "throw new InvalidOperationException")), $"the top frame is the throw:\n{stack}");
+        Resolve(map, frames[1]).Should().Be(("Walker.cs", LineOf(LambdaSource, "total += Check(seen) + 1;")), $"the lambda's statement called it:\n{stack}");
     }
 
     /// <summary>

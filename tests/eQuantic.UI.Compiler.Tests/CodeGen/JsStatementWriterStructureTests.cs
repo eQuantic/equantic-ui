@@ -21,9 +21,15 @@ public class JsStatementWriterStructureTests
     }
 
     [Fact]
-    public void Arrow_BlockBody_IsPlacedVerbatim_AndBindsLoosest()
+    public void Arrow_BlockBody_IsLaidOutAtItsDepth_AndBindsLoosest()
     {
-        JsExprWriter.Write(JsExpr.ArrowBlock("a, b", "{\n    return a;\n}")).Should().Be("(a, b) => {\n    return a;\n}");
+        // The block is laid out where the lambda stands in the C#, which a writer placing the arrow
+        // through a string seam does not know (#384).
+        var body = Block(JsStatement.Return(Name("a")));
+        JsExprWriter.Write(JsExpr.ArrowBlock("a, b", body, JsLayout.Pretty, 0)).Should().Be("(a, b) => {\n    return a;\n}");
+        JsExprWriter.Write(JsExpr.ArrowBlock("a, b", body, JsLayout.Pretty, 1)).Should().Be("(a, b) => {\n        return a;\n    }");
+        JsExprWriter.Write(JsExpr.ArrowBlock("a, b", body, JsLayout.Compact, 1)).Should().Be("(a, b) => {return a;}");
+        JsExprWriter.Write(JsExpr.ArrowBlock("", Block(), JsLayout.Pretty, 2)).Should().Be("() => {}");
         // As an operand the arrow is fenced: its body would otherwise swallow the rest.
         JsExprWriter.Write(JsExpr.Binary(JsExpr.Arrow("x", Name("x")), "||", Name("f"))).Should().Be("((x) => x) || f");
         JsExprWriter.Write(JsExpr.Call(JsExpr.Member(JsExpr.Arrow("x", Name("x")), "call"))).Should().Be("((x) => x).call()");
@@ -35,7 +41,7 @@ public class JsStatementWriterStructureTests
         var stmt = JsStatement.Headed("for (const x of xs)", Block(Call("f")));
         JsStatementWriter.Write(stmt, JsLayout.Compact).Should().Be("for (const x of xs) {f();}");
         JsStatementWriter.Write(stmt, JsLayout.Pretty).Should().Be("for (const x of xs) {\n    f();\n}");
-        JsStatementWriter.Write(JsStatement.Const("row", JsExpr.ArrowBlock("i", "{\n    return i;\n}")), JsLayout.Pretty)
+        JsStatementWriter.Write(JsStatement.Const("row", JsExpr.ArrowBlock("i", Block(JsStatement.Return(Name("i"))), JsLayout.Pretty, 0)), JsLayout.Pretty)
             .Should().Be("const row = (i) => {\n    return i;\n};");
         JsStatementWriter.Write(JsStatement.Headed("outer:", JsStatement.Headed("while (c)", Block(JsStatement.Break("outer")))), JsLayout.Compact)
             .Should().Be("outer: while (c) {break outer;}");

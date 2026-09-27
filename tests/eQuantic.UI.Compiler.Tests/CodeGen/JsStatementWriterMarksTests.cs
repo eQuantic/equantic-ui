@@ -153,6 +153,63 @@ public class JsStatementWriterMarksTests
         marks.Select(mark => (mark.Line, mark.Column)).Should().Equal((1, 4), (2, 4));
     }
 
+    /// <summary>
+    /// A statement in an arrow's block is marked where the arrow landed (#384): after the text in
+    /// front of it on the statement's first line, and at its own column further down. As text, the
+    /// block was laid out before any writer saw it, and its lines carried no mark at all.
+    /// </summary>
+    [Fact]
+    public void AStatementInAnArrowsBlock_IsMarkedWhereTheArrowLanded()
+    {
+        var arrow = JsExpr.ArrowBlock("x", JsStatement.Block([
+            Call("first") with { Origin = Origin<LocalDeclarationStatementSyntax>() },
+            Call("second") with { Origin = Origin<ReturnStatementSyntax>() }]), JsLayout.Pretty, 1);
+        var statement = JsStatement.Block([
+            JsStatement.Expression(JsExpr.Call(JsExpr.Member(JsExpr.Identifier("xs"), "forEach"), arrow))
+                with { Origin = Origin<ExpressionStatementSyntax>() }]);
+
+        var marks = new List<JsLineMark>();
+        var text = JsStatementWriter.WriteMarked(statement, JsLayout.Pretty, 0, marks);
+
+        text.Should().Be(JsStatementWriter.Write(statement, JsLayout.Pretty), "marking a statement changes nothing the writer writes");
+        text.Should().Be("{\n    xs.forEach((x) => {\n        first();\n        second();\n    });\n}");
+        marks.Select(mark => (mark.Line, mark.Column, mark.Origin)).Should().Equal(
+            (1, 4, (SyntaxNode)Origin<ExpressionStatementSyntax>()),
+            (2, 8, Origin<LocalDeclarationStatementSyntax>()),
+            (3, 8, Origin<ReturnStatementSyntax>()));
+    }
+
+    /// <summary>An arrow in a template's hole, the shape a LINQ operator writes, and one the
+    /// template binds because it uses the part twice: each placed where the fill put it.</summary>
+    [Fact]
+    public void AStatementInAnArrowsBlock_IsMarkedWhereATemplatePlacedTheArrow()
+    {
+        JsExpr Arrow() => JsExpr.ArrowBlock("x", JsStatement.Block([
+            JsStatement.Return(JsExpr.Identifier("x")) with { Origin = Origin<ReturnStatementSyntax>() }]), JsLayout.Pretty, 0);
+
+        var filtered = JsStatement.Let("kept", "", JsExpr.Template("{0}.filter({1})", JsExpr.Identifier("xs"), Arrow()));
+        var marks = new List<JsLineMark>();
+        JsStatementWriter.WriteMarked(filtered, JsLayout.Pretty, 0, marks)
+            .Should().Be("let kept = xs.filter((x) => {\n    return x;\n});");
+        marks.Select(mark => (mark.Line, mark.Column)).Should().Equal((1, 4));
+
+        var twice = JsStatement.Expression(JsExpr.Template("{0}.some({1}) && {0}.every({1})", JsExpr.Call(JsExpr.Identifier("items")), Arrow()));
+        marks.Clear();
+        JsStatementWriter.WriteMarked(twice, JsLayout.Pretty, 0, marks)
+            .Should().Be("(($0, $1) => $0.some($1) && $0.every($1))(items(), (x) => {\n    return x;\n});");
+        marks.Select(mark => (mark.Line, mark.Column)).Should().Equal((1, 4));
+    }
+
+    [Fact]
+    public void AnArrowsBlock_InTheCompactLayout_MarksNothing()
+    {
+        var arrow = JsExpr.ArrowBlock("x", JsStatement.Block([Call("first") with { Origin = Origin<ReturnStatementSyntax>() }]), JsLayout.Compact, 0);
+        var marks = new List<JsLineMark>();
+        JsStatementWriter.WriteMarked(JsStatement.Expression(JsExpr.Call(JsExpr.Identifier("run"), arrow)), JsLayout.Compact, 0, marks)
+            .Should().Be("run((x) => {first();});");
+        marks.Should().BeEmpty("the compact layout puts a body on one line, which no debugger steps through");
+    }
+
     [Fact]
     public void AStatementEqualsTheSameStatementFromAnywhere()
     {

@@ -134,6 +134,94 @@ public class StatementSourceMapTests
         }
         """;
 
+    /// <summary>Statements inside a lambda's block, in each place an arrow reaches the writer: an
+    /// argument to a call the IR writes (<c>List.ForEach</c>), a hole of a LINQ template
+    /// (<c>Where</c>), a local's initializer, a <c>delegate</c>, an arrow inside an arrow, an async
+    /// one, and the block the emitter adds to a concise body that declares a variable (#384). Each
+    /// one mapped to the line that holds the lambda, so a frame or a breakpoint inside the block
+    /// landed on the call.</summary>
+    private const string LambdaSource = """
+        using System;
+        using System.Collections.Generic;
+        using System.Linq;
+        using System.Threading.Tasks;
+
+        namespace Demo;
+
+        public class Lambdas
+        {
+            public int Total(List<int> values)
+            {
+                var total = 0;
+                values.ForEach(value =>
+                {
+                    var twice = Twice(value);
+                    total += twice;
+                });
+                return total;
+            }
+
+            public int Kept(int[] values)
+            {
+                var kept = values.Where(value =>
+                {
+                    var half = value + 7;
+                    return half > 9;
+                });
+                return kept.Count();
+            }
+
+            public int Local(int seed)
+            {
+                Func<int, int> step = delta =>
+                {
+                    var next = seed + delta;
+                    return next * 3;
+                };
+                Action<int> report = delegate (int shown)
+                {
+                    seed = shown - 1;
+                };
+                report(step(1));
+                return seed;
+            }
+
+            public int Nested(List<int> values)
+            {
+                var sum = 0;
+                values.ForEach(outer =>
+                {
+                    values.ForEach(inner =>
+                    {
+                        sum += outer * inner;
+                    });
+                });
+                return sum;
+            }
+
+            public async Task<int> Later(List<int> values)
+            {
+                var count = 0;
+                Func<Task> run = async () =>
+                {
+                    await Task.Yield();
+                    count = values.Count;
+                };
+                await run();
+                return count;
+            }
+
+            public int Parsed(string text)
+            {
+                Func<string, int> parse = candidate =>
+                    int.TryParse(candidate, out var number) ? number : 0;
+                return parse(text);
+            }
+
+            private int Twice(int x) => x * 2;
+        }
+        """;
+
     private static CompilationResult Compile() => Compile(Source, "Tally.cs");
 
     private static CompilationResult Compile(string source, string path)
@@ -192,6 +280,21 @@ public class StatementSourceMapTests
     [InlineData("return x + 1;", "int Next(int x) => x + 1;")]
     public void ALineNoStatementWritesByItself_MapsToTheCSharpThatProducedIt(string emitted, string written) =>
         AssertMapped(Compile(LoweredSource, "Lowered.cs"), emitted, written, LoweredSource);
+
+    [Theory]
+    [InlineData("let twice = this.twice(value);", "var twice = Twice(value);")]
+    [InlineData("total += twice;", "total += twice;")]
+    [InlineData("let half = value + 7;", "var half = value + 7;")]
+    [InlineData("return half > 9;", "return half > 9;")]
+    [InlineData("let next = seed + delta;", "var next = seed + delta;")]
+    [InlineData("return next * 3;", "return next * 3;")]
+    [InlineData("seed = shown - 1;", "seed = shown - 1;")]
+    [InlineData("sum += outer * inner;", "sum += outer * inner;")]
+    [InlineData("count = values.length;", "count = values.Count;")]
+    [InlineData("let number: any;", "int.TryParse(candidate, out var number) ? number : 0;")]
+    [InlineData("return ((number = $eq.num.intTryParse(candidate", "int.TryParse(candidate, out var number) ? number : 0;")]
+    public void AStatementInALambdasBlock_MapsToItsOwnCSharpLine(string emitted, string written) =>
+        AssertMapped(Compile(LambdaSource, "Lambdas.cs"), emitted, written, LambdaSource);
 
     private static void AssertMapped(CompilationResult result, string emitted, string written, string source)
     {
