@@ -90,7 +90,7 @@ public class ToStringStrategy : IConversionStrategy
         if (IsDateTime(receiverType))
         {
             context.UsedHelpers.Add(Eq.Import);
-            var specifier = formatArg is null ? "'G'" : context.Converter.ConvertExpression(formatArg.Expression);
+            var specifier = formatArg is null ? "'G'" : DateSpecifier(formatArg.Expression, context);
             return invariant
                 ? $"{Eq.Format}({caller}, {specifier}, undefined, true)"
                 : $"{Eq.Format}({caller}, {specifier})";
@@ -157,6 +157,20 @@ public class ToStringStrategy : IConversionStrategy
         }
 
         return $"String({caller})";
+    }
+
+    /// <summary>
+    /// A DateTime's format as .NET reads it: a null or an empty one is <c>G</c>, the general pattern.
+    /// A constant says which at build time and a variable at run time, where the formatter took
+    /// either for no format at all and wrote the twin's invariant text (found in Copilot's second
+    /// round, #472).
+    /// </summary>
+    private static string DateSpecifier(ExpressionSyntax format, ConversionContext context)
+    {
+        if (context.SemanticHelper.IsNullConstant(format)) return "'G'";
+        if (context.SemanticHelper.TryGetConstantValue(format, out var constant) && constant is string text)
+            return text.Length == 0 ? "'G'" : context.Converter.ConvertExpression(format);
+        return JsExprWriter.Write(JsExpr.Binary(JsExpr.Group(context.Converter.ConvertIr(format)), "||", JsExpr.Literal("'G'")));
     }
 
     /// <summary>Whether the receiver is a DateTime, a nullable one's included.</summary>

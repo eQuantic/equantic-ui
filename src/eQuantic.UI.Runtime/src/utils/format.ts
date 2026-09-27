@@ -880,6 +880,24 @@ function sortableParts(value: Date): { date: string; time: string } {
   };
 }
 
+const DAY_MS = 86_400_000;
+
+/**
+ * The host zone's offset, in milliseconds east of UTC, for wall-clock parts held as a Date's UTC
+ * fields (`wall` is their time value), read as .NET's TimeZoneInfo.GetUtcOffset reads it: the
+ * one offset that names those parts, or, for a time a transition skips or repeats, the standard one,
+ * the smaller of the two around it. The Date constructor took the daylight instant of a repeated
+ * hour, so 2026-11-01 01:30 in New York printed 05:30 UTC where .NET prints 06:30 (found in
+ * Copilot's second round, #472).
+ */
+function localOffset(wall: number): number {
+  const offsetAt = (instant: number) => -new Date(instant).getTimezoneOffset() * 60_000;
+  const before = offsetAt(wall - DAY_MS);
+  const after = offsetAt(wall + DAY_MS);
+  const naming = [before, after].filter((offset) => offsetAt(wall - offset) === offset);
+  return naming.length === 1 ? naming[0] : Math.min(before, after);
+}
+
 /**
  * Formats a date through a standard specifier or a custom picture, as .NET formats a DateTime:
  * its kind is not tracked (a wall-clock value, .NET's `Unspecified`), so the round-trip, sortable
@@ -911,20 +929,10 @@ function formatDate(value: Date, format: string, fraction: () => string): string
     }
     case 'U': {
       // The full date and time of the value read as local time and moved to UTC, as .NET's
-      // ToUniversalTime moves an unspecified one: the local instant those parts name, whose UTC
-      // fields are then the parts to print. A time a spring-forward gap skips lands where .NET's
-      // does, the standard offset's instant.
-      const local = new Date(
-        value.getUTCFullYear(),
-        value.getUTCMonth(),
-        value.getUTCDate(),
-        value.getUTCHours(),
-        value.getUTCMinutes(),
-        value.getUTCSeconds(),
-        value.getUTCMilliseconds(),
-      );
-      local.setFullYear(value.getUTCFullYear());
-      return formatDate(new Date(local.getTime()), 'F', fraction);
+      // ToUniversalTime moves an unspecified one: the instant those parts name in the host's zone,
+      // whose UTC fields are then the parts to print.
+      const wall = value.getTime();
+      return formatDate(new Date(wall - localOffset(wall)), 'F', fraction);
     }
   }
 
