@@ -20,6 +20,11 @@ public class RecordTypeEmitter
     private readonly CSharpToJsConverter _converter;
     private readonly Services.ComponentDependencyResolver? _modules;
 
+    /// <summary>Whether this emission writes TypeScript: set by <see cref="Emit"/>, read wherever the
+    /// variables an expression declares are declared, since <c>let n: any;</c> does not parse as
+    /// JavaScript.</summary>
+    private bool _annotations;
+
     /// <param name="converter">The converter the bodies go through.</param>
     /// <param name="modules">The per-app scan, which knows which of the app's own types became
     /// modules. Without one, no app type is imported — the rule the component and class paths hold,
@@ -119,8 +124,8 @@ public class RecordTypeEmitter
         if (initializer is null) return declared is null ? "null" : DefaultOf(declared);
         // The default runs in the constructor's parameter list, where a positional parameter the
         // initializer reads (`Tag = "#" + Id`) is the parameter itself, and no member is set yet.
-        return _converter.WithConstructorParametersInScope(
-            () => _converter.ConvertExpression(initializer, declared?.ToString()));
+        return ExpressionVariableScanner.Scoped(initializer, _converter.WithConstructorParametersInScope(
+            () => _converter.ConvertExpression(initializer, declared?.ToString())), _annotations);
     }
 
     /// <summary>The type and the initializer a value member is declared with, found by its name
@@ -181,7 +186,6 @@ public class RecordTypeEmitter
                         Services.RuntimeProvidedTypeScanner.Collect(declaration, inheritedModel, runtimeProvided,
                             new HashSet<string>(), appTypes);
         }
-        runtimeProvided.Remove(type.Identifier.Text);
 
         // What the hydration map names, split by where it comes from: this compilation's own twins
         // are sibling modules, and the vocabulary's (`of: Rect`) join the runtime import.
@@ -200,9 +204,20 @@ public class RecordTypeEmitter
         // `import { $eq, Text }` beside `VisualNodeExtensions.centered(...)` — a qualified call to a
         // name the module never imports, which fails at LOAD rather than at the call.
         runtimeProvided.UnionWith(_converter.UsedRuntimeTypes);
+        // The one runtime name the TRANSLATION invents (`decimal` is `Decimal` on the other side), so
+        // no scan of the C# can see it: a member or a tuple return typed decimal named a class the
+        // module never imported, and the runtime's own build refused it. It is a candidate like the
+        // rest, kept only where the emitted text names it (TypeScriptEmitter.Annotate is the class
+        // path's twin).
+        runtimeProvided.Add(TypeScriptEmitter.Decimal);
         // A vocabulary enum member is annotated with its UNION, a name that exists only in the
         // emitted TypeScript — the scanner above walks C# syntax and could never have seen it.
         TypeScriptEmitter.SeedEnumUnions(body, ModelFor(type)?.Compilation, runtimeProvided);
+        // A module declares its own name and never imports it, whoever added it: struck here, after
+        // every set above has been merged in. It was struck right after the scan, and the names the
+        // conversion introduced put it back: a runtime-provided record calling its own static helper
+        // (`CodeDiffLayout.addGaps(…)`) imported itself, which TypeScript refuses as a conflict.
+        runtimeProvided.Remove(type.Identifier.Text);
         // Only what the emitted text actually NAMES: a type mentioned in the C# and erased on the
         // way out (an interface, an enum) would otherwise import a name nothing uses, which the
         // runtime's own build rejects.
@@ -274,14 +289,14 @@ public class RecordTypeEmitter
             sb.Append($"if (arguments.length === {arity}) {{ ");
             // The alternate's parameters ARE the arguments that arrived, in the primary's slots.
             for (var i = 0; i < arity; i++)
-                sb.Append($"const {ctor.ParameterList.Parameters[i].Identifier.Text.ToJsIdentifier()} = {members[i].Js}; ");
+                sb.Append($"const {ctor.ParameterList.Parameters[i].Identifier.Text.ToJsIdentifier()} = {members[i].Js.ToJsIdentifier()}; ");
             // Evaluate first, assign after: an argument that reads a slot it also writes must see
             // the value that arrived, not the one this loop just put there.
             var args = chain.ArgumentList.Arguments;
             for (var i = 0; i < args.Count && i < members.Count; i++)
                 sb.Append($"const $c{i} = {_converter.ConvertExpression(args[i].Expression)}; ");
             for (var i = 0; i < args.Count && i < members.Count; i++)
-                sb.Append($"{members[i].Js} = $c{i}; ");
+                sb.Append($"{members[i].Js.ToJsIdentifier()} = $c{i}; ");
             sb.Append("} ");
         }
         return sb.ToString();
@@ -309,6 +324,7 @@ public class RecordTypeEmitter
     public string Emit(TypeDeclarationSyntax type, bool tsTypeDeclarations = false)
     {
         _converter.EmitTypeAnnotations(tsTypeDeclarations);
+        _annotations = tsTypeDeclarations;
         var name = type.Identifier.Text;
         var members = type.ValueMembers(ModelFor(type));
         var (baseName, superArgs, passedToBase) = BaseInfo(type);
@@ -327,15 +343,17 @@ public class RecordTypeEmitter
         // members passed to the base record's primary constructor are assigned by `super`, not here.
         // TS mode annotates ctor params (`label: any = null`) — a bare `= null` default would make
         // TypeScript infer the param TYPE as `null`. Plain-JS mode stays annotation-free (.mjs).
+        // A parameter is bound under a legal JS name of the member's (ToJsIdentifier): a member may be
+        // a reserved word, `this.class` being fine where a parameter `class` is not.
         _converter.SetCurrentClass(name);
         var defaults = members.Select(m => DefaultFor(type, m)).ToList();
         sb.Append(tsTypeDeclarations
-            ? $"constructor({string.Join(", ", members.Select((m, i) => $"{m.Js}: any = {defaults[i]}"))}) {{ "
-            : $"constructor({string.Join(", ", members.Select((m, i) => $"{m.Js} = {defaults[i]}"))}) {{ ");
+            ? $"constructor({string.Join(", ", members.Select((m, i) => $"{m.Js.ToJsIdentifier()}: any = {defaults[i]}"))}) {{ "
+            : $"constructor({string.Join(", ", members.Select((m, i) => $"{m.Js.ToJsIdentifier()} = {defaults[i]}"))}) {{ ");
         if (baseName != null) sb.Append($"super({superArgs}); ");
         sb.Append(ChainedOverloads(type, members));
         foreach (var m in members)
-            if (!passedToBase.Contains(m.Display)) sb.Append($"this.{m.Js} = {m.Js}; ");
+            if (!passedToBase.Contains(m.Display)) sb.Append($"this.{m.Js} = {m.Js.ToJsIdentifier()}; ");
         sb.Append("} ");
 
         // VALUE semantics belong to records and structs. A plain class is IDENTITY: giving it a
@@ -387,12 +405,9 @@ public class RecordTypeEmitter
                 .Select(p => tsTypeDeclarations
                     ? $"{p.Identifier.Text.ToJsIdentifier()}: {TsTypeOf(p.Type)}"
                     : p.Identifier.Text.ToJsIdentifier()));
-            // Hoisted locals first — `out var` inside an operator emits an assignment with nothing
-            // declaring the name, and an ES module is strict.
-            var body = OutParameters.HoistedLocals(op.Body ?? (SyntaxNode?)op.ExpressionBody)
-                + (op.ExpressionBody is { } expr
-                    ? $"return {_converter.ConvertExpression(expr.Expression)};"
-                    : op.Body is { } block ? Unwrap(_converter.Convert(block)) : "");
+            var body = op.ExpressionBody is { } expr
+                ? ExpressionBodyReturn(expr.Expression)
+                : op.Body is { } block ? Unwrap(_converter.Convert(block)) : "";
             sb.Append($"static {opName}({pars}) {{ {body} }} ");
         }
 
@@ -416,10 +431,9 @@ public class RecordTypeEmitter
             var par = tsTypeDeclarations
                 ? $"{parameter.Identifier.Text.ToJsIdentifier()}: {TsTypeOf(parameter.Type)}"
                 : parameter.Identifier.Text.ToJsIdentifier();
-            var body = OutParameters.HoistedLocals(conversion.Body ?? (SyntaxNode?)conversion.ExpressionBody)
-                + (conversion.ExpressionBody is { } expr
-                    ? $"return {_converter.ConvertExpression(expr.Expression)};"
-                    : conversion.Body is { } block ? Unwrap(_converter.Convert(block)) : "");
+            var body = conversion.ExpressionBody is { } expr
+                ? ExpressionBodyReturn(expr.Expression)
+                : conversion.Body is { } block ? Unwrap(_converter.Convert(block)) : "";
             sb.Append($"static {opName}({par}) {{ {body} }} ");
         }
 
@@ -445,7 +459,8 @@ public class RecordTypeEmitter
                     foreach (var variable in field.Declaration.Variables)
                     {
                         var fieldValue = variable.Initializer is { } init
-                            ? _converter.ConvertExpression(init.Value, field.Declaration.Type.ToString())
+                            ? ExpressionVariableScanner.Scoped(init.Value,
+                                _converter.ConvertExpression(init.Value, field.Declaration.Type.ToString()), _annotations)
                             : DefaultOf(field.Declaration.Type);
                         sb.Append($"static {variable.Identifier.Text.ToCamelCase()} = {fieldValue}; ");
                     }
@@ -457,7 +472,8 @@ public class RecordTypeEmitter
                 case PropertyDeclarationSyntax prop
                     when prop.Modifiers.Any(SyntaxKind.StaticKeyword) && IsPureAuto(prop):
                     var propValue = prop.Initializer is { } propInit
-                        ? _converter.ConvertExpression(propInit.Value, prop.Type.ToString())
+                        ? ExpressionVariableScanner.Scoped(propInit.Value,
+                            _converter.ConvertExpression(propInit.Value, prop.Type.ToString()), _annotations)
                         : DefaultOf(prop.Type);
                     sb.Append($"static {prop.Identifier.Text.ToCamelCase()} = {propValue}; ");
                     break;
@@ -563,11 +579,13 @@ public class RecordTypeEmitter
         {
             null => "",
             BlockSyntax block => $"{prefix}get {propertyName}() {{ {Unwrap(_converter.Convert(block))} }} ",
-            _ => $"{prefix}get {propertyName}() {{ return {_converter.Convert(getter)}; }} ",
+            ExpressionSyntax expression => $"{prefix}get {propertyName}() {{ {ExpressionBodyReturn(expression)} }} ",
+            _ => "",
         };
         var setter = property.AccessorList?.Accessors.FirstOrDefault(a => a.Keyword.Text is "set" or "init");
         if (setter?.ExpressionBody is { } arrow)
-            text += $"{prefix}set {propertyName}(value) {{ {_converter.Convert(arrow.Expression)}; }} ";
+            text += $"{prefix}set {propertyName}(value) {{ "
+                + $"{ExpressionVariableScanner.Declarations(arrow.Expression, _annotations)}{_converter.Convert(arrow.Expression)}; }} ";
         else if (setter?.Body is { } body)
             text += $"{prefix}set {propertyName}(value) {{ {Unwrap(_converter.Convert(body))} }} ";
         return text;
@@ -609,7 +627,8 @@ public class RecordTypeEmitter
                 if (arg.Expression is IdentifierNameSyntax id)
                 {
                     passed.Add(id.Identifier.Text);                 // a member forwarded to the base
-                    superArgs.Add(id.Identifier.Text.ToCamelCase());
+                    // The derived constructor's own parameter for that member (the binding above).
+                    superArgs.Add(id.Identifier.ValueText.ToCamelCase().ToJsIdentifier());
                 }
                 else
                 {
@@ -701,6 +720,11 @@ public class RecordTypeEmitter
         return trimmed.StartsWith('{') && trimmed.EndsWith('}') ? trimmed[1..^1].Trim() : trimmed;
     }
 
+    /// <summary>A concise body as <c>return …;</c>, with the variables it declares declared in front,
+    /// inside the member, where each call has its own (see ExpressionVariableScanner).</summary>
+    private string ExpressionBodyReturn(ExpressionSyntax expression) =>
+        $"{ExpressionVariableScanner.Declarations(expression, _annotations)}return {_converter.ConvertExpression(expression)};";
+
     private string EmitMethod(MethodDeclarationSyntax method, string className,
         bool tsTypeDeclarations)
     {
@@ -709,14 +733,16 @@ public class RecordTypeEmitter
         // `any` at every one of them and quietly ended the checking on the way in. Only in the .ts
         // emission, though: the conformance harness runs the same class as plain `.mjs`, where an
         // annotation is a parse error rather than a type.
-        // An OPTIONAL parameter keeps its default, as the class emitter's does: a caller that omits
-        // it passes undefined, which runs the default, where `m(suffix)` handed the body undefined
-        // (found in review, #418).
+        // Each parameter under the name its body reads it by (ToJsIdentifier), as every other method
+        // path writes one: camel-cased here, `int Times(int Value) => N * Value` declared `value`
+        // beside a body reading `Value`, a ReferenceError at the first call. An OPTIONAL parameter
+        // keeps its default, as the class emitter's does: a caller that omits it passes undefined,
+        // which runs the default, where `m(suffix)` handed the body undefined (found in review, #418).
         _converter.SetCurrentClass(className);
         var pars = string.Join(", ", method.ParameterList.Parameters
             .Select(p => (tsTypeDeclarations
-                    ? $"{p.Identifier.Text.ToCamelCase()}: {TsTypeOf(p.Type)}"
-                    : p.Identifier.Text.ToCamelCase())
+                    ? $"{p.Identifier.Text.ToJsIdentifier()}: {TsTypeOf(p.Type)}"
+                    : p.Identifier.Text.ToJsIdentifier())
                 + (p.Default is { } optional ? $" = {_converter.ConvertExpression(optional.Value, p.Type?.ToString())}" : "")));
 
         string body;
@@ -727,7 +753,7 @@ public class RecordTypeEmitter
         }
         else if (method.ExpressionBody != null)
         {
-            body = $"return {_converter.Convert(method.ExpressionBody.Expression)};";
+            body = ExpressionBodyReturn(method.ExpressionBody.Expression);
         }
         else
         {
@@ -735,6 +761,23 @@ public class RecordTypeEmitter
         }
 
         var isStatic = method.Modifiers.Any(m => m.IsKind(SyntaxKind.StaticKeyword)) ? "static " : "";
-        return $"{isStatic}{jsName}({pars}) {{ {body} }}";
+        var returns = tsTypeDeclarations ? TupleReturn(method.ReturnType) : "";
+        return $"{isStatic}{jsName}({pars}){returns} {{ {body} }}";
+    }
+
+    /// <summary>
+    /// The return annotation of a method that returns a TUPLE, and nothing for any other: a tuple
+    /// crosses as an array literal, which TypeScript reads as an array of the union of its elements,
+    /// so its type is said (TypeScriptEmitter.TupleReturn has the class path's twin). Each element
+    /// through the rule a member's type takes, so an enum among them is the member string it crosses
+    /// as, where the whole tuple's name wrote the enum's C# spelling, a type TypeScript does not have.
+    /// </summary>
+    private string TupleReturn(TypeSyntax returnType)
+    {
+        var tuple = returnType as TupleTypeSyntax ?? (returnType as NullableTypeSyntax)?.ElementType as TupleTypeSyntax;
+        if (tuple is null) return "";
+        var elements = "[" + string.Join(", ", tuple.Elements.Select(element =>
+            TypeDeclarationExtensions.TsTypeFor(element.Type, ModelFor(element.Type)))) + "]";
+        return ": " + (returnType is NullableTypeSyntax ? TypeScriptEmitter.OrNull(elements) : elements);
     }
 }

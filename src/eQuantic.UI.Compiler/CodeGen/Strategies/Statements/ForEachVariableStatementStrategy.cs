@@ -23,31 +23,22 @@ public class ForEachVariableStatementStrategy : IStatementStrategy
     {
         var foreachStmt = (ForEachVariableStatementSyntax)node;
         var pattern = ConvertDesignation(foreachStmt.Variable);
+        var declared = ExpressionVariableScanner.Declarations(foreachStmt.Expression, context.TypeAnnotations);
         var collection = context.Converter.ConvertExpression(foreachStmt.Expression);
 
         var body = context.Converter.ConvertStatementIr(foreachStmt.Statement);
         var loopType = foreachStmt.AwaitKeyword.Value != null ? "for await" : "for";
-        return JsStatement.Headed($"{loopType} (const {pattern} of {collection})", body);
+        var loop = JsStatement.Headed($"{loopType} (const {pattern} of {collection})", body);
+        // What the collection expression declares is the loop's own (see ForEachStatementStrategy).
+        return declared.Length == 0 ? loop : JsStatement.Block([JsStatement.Raw(declared.TrimEnd()), loop]);
     }
 
     private static string ConvertDesignation(ExpressionSyntax variable) => variable switch
     {
-        DeclarationExpressionSyntax { Designation: ParenthesizedVariableDesignationSyntax parenthesized } =>
-            "[" + string.Join(", ", parenthesized.Variables.Select(ConvertVariableDesignation)) + "]",
-        DeclarationExpressionSyntax declaration => ConvertVariableDesignation(declaration.Designation),
+        DeclarationExpressionSyntax declaration => ExpressionVariableScanner.BindingPattern(declaration.Designation),
         TupleExpressionSyntax tuple =>
             "[" + string.Join(", ", tuple.Arguments.Select(a => ConvertDesignation(a.Expression))) + "]",
         _ => variable.ToString(),
-    };
-
-    private static string ConvertVariableDesignation(VariableDesignationSyntax designation) => designation switch
-    {
-        SingleVariableDesignationSyntax single => single.Identifier.Text,
-        ParenthesizedVariableDesignationSyntax nested =>
-            "[" + string.Join(", ", nested.Variables.Select(ConvertVariableDesignation)) + "]",
-        // A discard still needs a binding name in JS; it is scoped to the loop body and unused.
-        DiscardDesignationSyntax => "_",
-        _ => designation.ToString(),
     };
 
     public int Priority => 0;

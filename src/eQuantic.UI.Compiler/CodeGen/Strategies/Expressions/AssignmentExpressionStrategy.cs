@@ -36,7 +36,7 @@ public class AssignmentExpressionStrategy : IExpressionIrStrategy
                 for (var i = 0; i < vars.Count && i < fields.Count; i++)
                 {
                     if (vars[i] is SingleVariableDesignationSyntax s && s.Identifier.Text != "_")
-                        pairs.Add($"{fields[i]}: {s.Identifier.Text}");
+                        pairs.Add($"{fields[i]}: {s.Identifier.Text.ToJsIdentifier()}");
                 }
                 var rhsObj = context.Converter.ConvertExpression(assignment.Right);
                 return $"let {{ {string.Join(", ", pairs)} }} = {rhsObj}";

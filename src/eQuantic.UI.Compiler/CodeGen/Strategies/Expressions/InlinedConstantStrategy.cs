@@ -1,6 +1,7 @@
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using eQuantic.UI.Compiler.Services;
+using eQuantic.UI.Compiler.CodeGen.Ir;
 
 namespace eQuantic.UI.Compiler.CodeGen.Strategies.Expressions;
 
@@ -72,10 +73,10 @@ public class InlinedConstantStrategy : IConversionStrategy
                 literal = "null";
                 return true;
             case string text:
-                literal = $"'{Escape(text)}'";
+                literal = JsStringLiteral.Quote(text);
                 return true;
             case char character:
-                literal = $"'{Escape(character.ToString())}'";
+                literal = JsStringLiteral.Quote(character.ToString());
                 return true;
             case bool flag:
                 literal = flag ? "true" : "false";
@@ -105,9 +106,6 @@ public class InlinedConstantStrategy : IConversionStrategy
                 return false;
         }
     }
-
-    private static string Escape(string value) =>
-        value.Replace("\\", "\\\\").Replace("'", "\\'").Replace("\n", "\\n").Replace("\r", "\\r");
 
     /// <summary>The inlinable initializer for the accessed field, when this is an external constant
     /// of the write-once icon-glyph type with a reachable, side-effect-free value.</summary>

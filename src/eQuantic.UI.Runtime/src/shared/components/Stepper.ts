@@ -3,7 +3,7 @@ import { Box, BoxStyle, BuildContext, CornerRadii, Icon, IconGlyph, IconsValue, 
 export class Stepper extends StatelessComponent {
     static $typeId = 'eQuantic.UI.Components.Stepper';
     declare value: number;
-    declare onChanged: any;
+    declare onChanged: ((int: number) => void) | null;
     declare min: number;
     declare max: number;
     declare step: number;

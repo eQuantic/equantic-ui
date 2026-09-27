@@ -333,10 +333,10 @@ public class CSharpVersionCoverageTests
         // A bare type name in an arm PARSES as a constant pattern but BINDS as a type pattern:
         // `=== ClosedGate` compared the value to the class and the arm was dead. And a positional
         // pattern must test ITS type and deconstruct by the pattern type's names — `!= null` +
-        // `_s[0]` made the first arm always win and read undefined.
+        // `$s[0]` made the first arm always win and read undefined.
         Assert.Contains("instanceof ClosedGate", probe.TypeScript);
         Assert.Contains("instanceof OpenGate", probe.TypeScript);
-        Assert.Contains("_s.percent", probe.TypeScript);
+        Assert.Contains("$s.percent", probe.TypeScript);
     }
 
     [Fact]

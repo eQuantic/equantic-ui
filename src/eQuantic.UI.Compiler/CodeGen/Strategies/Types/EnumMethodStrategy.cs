@@ -77,7 +77,7 @@ public class EnumMethodStrategy : IConversionStrategy
             {
                 if (decl.Designation is SingleVariableDesignationSyntax single)
                 {
-                    varName = single.Identifier.Text;
+                    varName = single.Identifier.Text.ToJsIdentifier();
                 }
             }
             else

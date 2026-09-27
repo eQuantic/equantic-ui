@@ -19,22 +19,10 @@ public class DeclarationExpressionStrategy : IConversionStrategy
     public string Convert(SyntaxNode node, ConversionContext context)
     {
         var decl = (DeclarationExpressionSyntax)node;
-        
-        if (decl.Designation is ParenthesizedVariableDesignationSyntax deconstruction)
-        {
-            // Array destructuring (tuples). Discards (`_`) keep their slot as a hole so the remaining
-            // names still line up positionally: `var (_, y) = (5, 7)` -> `[, y]`.
-            var names = deconstruction.Variables.Select(v =>
-                v is SingleVariableDesignationSyntax s && s.Identifier.Text != "_" ? s.Identifier.Text : "");
-            return $"[{string.Join(", ", names)}]";
-        }
-        
-        if (decl.Designation is SingleVariableDesignationSyntax single)
-        {
-            return single.Identifier.Text;
-        }
-
-        return decl.Designation.ToString();
+        // Array destructuring (tuples), and the name of an `out var`: the binding the scanner
+        // declares, spelled as it spells it. A discard keeps its slot as a hole, so the remaining
+        // names still line up positionally: `var (_, y) = (5, 7)` -> `[, y]`.
+        return ExpressionVariableScanner.BindingPattern(decl.Designation);
     }
 
     public int Priority => 10;

@@ -44,10 +44,10 @@ export class CodeDiffer {
     }
 
     static idsOf(items: string[], ids: any) {
-        let id: any;
         let result = new Array(items.length).fill(0);
         let next = ids.size;
         for (let i = 0; i < items.length; i++) {
+            let id: any; 
             if (!(($0: any, $1: any) => ($0.has($1) ? ((id = $0.get($1)), true) : ((id = 0), false)))(ids, items[i])) {
                 id = next++;
                 $eq.mapSet(ids, items[i], id);

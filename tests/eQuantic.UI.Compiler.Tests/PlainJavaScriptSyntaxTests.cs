@@ -28,9 +28,18 @@ public class PlainJavaScriptSyntaxTests
         public sealed record Row(string Id, string Label);
 
         // A PRIMITIVE component (an HtmlElement) takes the generic props constructor, which is where
-        // the optional-parameter marker is written by hand.
+        // the optional-parameter marker is written by hand. Its Render once declared its `out var`s
+        // on a path of its own; it declares them as every body does now.
         public sealed class Marker : HtmlElement
         {
+            public string Label { get; set; } = "7";
+
+            public override HtmlNode Render()
+            {
+                int.TryParse(Label, out var count);
+                (var tens, var units) = (count / 10, count % 10);
+                return HtmlNode.Text(Label + tens + units);
+            }
         }
 
         public static class Catalogue
@@ -64,6 +73,10 @@ public class PlainJavaScriptSyntaxTests
                 get { return _label; }
                 set { if (value == _label) return; _label = value; }
             }
+
+            // An `out var` in a method: the method once declared it at its top, annotated in both
+            // modes.
+            public int Parse(string text) { int.TryParse(text, out var number); return number; }
         }
 
         public sealed class Probe : StatefulComponent
@@ -83,6 +96,9 @@ public class PlainJavaScriptSyntaxTests
                 var column = new Column(gap: Space.S2);
                 // C#'s null-forgiving `!` — an assertion that produces no code.
                 var first = _model!.Label;
+                // A local declared as a BASE type: TypeScript needs the annotation, JavaScript refuses it.
+                Shape shape = new Square();
+                column.Add(new Text(shape.Name, TypeRole.BodyM, context.Theme.TextPrimary));
                 column.Add(new Text(first, TypeRole.BodyM, context.Theme.TextPrimary));
                 if (_notice is { } notice) column.Add(new Text(notice, TypeRole.BodyM, context.Theme.TextPrimary));
                 column.Add(new Text(_model.Label, TypeRole.BodyM, context.Theme.TextPrimary));
@@ -111,7 +127,8 @@ public class PlainJavaScriptSyntaxTests
     [InlineData(@"^\s*static\s+_\w+\s*:", "an annotated lazy-static backing slot")]
     [InlineData(@"\bget\s+\w+\(\)\s*:", "an annotated getter")]
     [InlineData(@"\bset\s+\w+\(value\s*:", "an annotated setter")]
-    [InlineData(@"\blet\s+\w+\s*:\s*any\b", "an annotated hoisted pattern variable")]
+    [InlineData(@"\blet\s+\w+\s*:\s*any\b", "an annotated hoisted variable")]
+    [InlineData(@"\blet\s+\w+\s*:\s*[A-Z]\w*", "an annotated local declaration")]
     [InlineData(@"\w\?\s*:", "an optional-parameter marker")]
     [InlineData(@"\w!\s*[.);,]", "a null-forgiving assertion")]
     public void PlainJavaScript_CarriesNoTypeScriptOnlySyntax(string pattern, string what)
@@ -142,7 +159,8 @@ public class PlainJavaScriptSyntaxTests
                 (@"\bget\s+\w+\(\)\s*:", "an annotated getter"),
                 (@"\bset\s+\w+\(value\s*:", "an annotated setter"),
                 (@"^\s*static\s+_\w+\s*:", "an annotated lazy-static backing slot"),
-                (@"\blet\s+\w+\s*:\s*any\b", "an annotated hoisted pattern variable"),
+                (@"\blet\s+\w+\s*:\s*any\b", "an annotated hoisted variable"),
+                (@"\blet\s+\w+\s*:\s*[A-Z]\w*", "an annotated local declaration"),
                 (@"\bdeclare\s", "a type-only declared property"),
                 (@"\w\?\s*:", "an optional parameter"),
                 (@"\w!\s*[.);,]", "a null-forgiving assertion"),

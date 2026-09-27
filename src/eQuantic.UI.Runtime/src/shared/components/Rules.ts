@@ -25,9 +25,9 @@ export class Rules {
     }
 
     static range(min: number, max: number, message: string | null = null) {
-        let number: any;
         return new FieldRule(message ?? `Enter a number between ${$eq.num.double(min)} and ${$eq.num.double(max)}.`, (value: string) => {
             if (value.length === 0) return true;
+            let number: any; 
             return ((number = $eq.num.realTryParse(value, 'double', 511)) !== undefined || ((number = 0), false)) && number >= min && number <= max;
         });
     }

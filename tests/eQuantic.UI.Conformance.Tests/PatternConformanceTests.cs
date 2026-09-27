@@ -37,12 +37,32 @@ public class PatternConformanceTests
     [InlineData("(new Pt(0, 7)) switch { { X: 0, Y: var y } => y, _ => -1 }")]             // -> 7
     [InlineData("(new Pt(2, 9)) switch { { X: 0, Y: var y } => y, { X: var x } => x, _ => -1 }")] // -> 2
     // Positional pattern over a RECORD must read by Deconstruct member (`.x`/`.y`), not by index — a
-    // record is a plain object at runtime, so `_s[0]` would be undefined.
+    // record is a plain object at runtime, so `$s[0]` would be undefined.
     [InlineData("(new Pt(0, 7)) switch { (0, var y) => y, _ => -1 }")]                     // -> 7
     [InlineData("(new Pt(3, 4)) switch { (var a, var b) => a + b, _ => -1 }")]             // -> 7
     public void PropertyPatterns_MatchDotNet(string expression)
     {
         Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
         ConformanceRunner.AssertSameAsDotNet(expression, RecordPrelude);
+    }
+
+    private const string NestedPrelude = "record Pt(int X, int Y); record Bag(List<int> Items, Pt? Corner);";
+
+    /// <summary>
+    /// An EXTENDED property pattern, <c>{ Items.Count: &gt; 1 }</c>, is <c>{ Items: { Count: &gt; 1 } }</c>:
+    /// each member on the path is named as it would be alone, and a null on the way answers false, as
+    /// C#'s does. The whole path was lower-cased as one name, so the code diff's
+    /// <c>{ Changes.Count: &gt; 0 }</c> read <c>changes.Count</c>, undefined, and its step to the next
+    /// change did nothing; and a null member on the path threw.
+    /// </summary>
+    [SkippableTheory]
+    [InlineData("(new Bag(new List<int> { 1, 2 }, null)) switch { { Items.Count: > 1 } => 1, _ => 0 }")]                // -> 1
+    [InlineData("(new Bag(new List<int> { 1 }, null)) switch { { Corner.X: 0 } => 1, _ => 0 }")]                       // -> 0: a null on the path
+    [InlineData("(new Bag(new List<int>(), new Pt(0, 5))) switch { { Corner.X: 0, Corner.Y: var y } => y, _ => -1 }")] // -> 5
+    [InlineData("new Bag(new List<int> { 3 }, null) is { Items.Count: 1, Corner: null }")]                            // -> true
+    public void ExtendedPropertyPatterns_MatchDotNet(string expression)
+    {
+        Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
+        ConformanceRunner.AssertSameAsDotNet(expression, NestedPrelude);
     }
 }

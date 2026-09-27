@@ -5,6 +5,7 @@ using eQuantic.UI.Compiler.CodeGen.Extensions;
 using eQuantic.UI.Compiler.Models;
 using eQuantic.UI.Compiler.Services;
 using eQuantic.UI.Compiler.CodeGen.Ir;
+using eQuantic.UI.Compiler.CodeGen.Strategies;
 
 namespace eQuantic.UI.Compiler.CodeGen;
 
@@ -42,17 +43,6 @@ public class TypeScriptEmitter
     /// </summary>
     private string OptionalParam(string name, string type) => TypeAnnotations ? $"{name}?: {type}" : name;
 
-    /// <summary>
-    /// A concise body converted to <c>return …;</c>, with the <c>let</c> for any pattern variable it
-    /// binds already hoisted in front.
-    /// <para>
-    /// `x is { } y` converts to an assignment of `y` inside the converted condition, and an
-    /// expression body reaches none of the statement strategies that hoist it — so the name was
-    /// assigned and never declared, which in a module (strict mode) throws the first time that code
-    /// runs. It shipped in FOUR emission paths before this existed, one per place someone wrote the
-    /// same two lines by hand.
-    /// </para>
-    /// </summary>
     /// <summary><c>target = value;</c> as IR.</summary>
     private static JsStatement Assign(JsExpr target, JsExpr value) =>
         JsStatement.Expression(JsExpr.Binary(target, "=", value));
@@ -125,7 +115,7 @@ public class TypeScriptEmitter
     /// other runtime-backed type is spelled the same in both languages, so the type scan sees the
     /// name in the syntax and routes the import itself. This one the TRANSLATION invents, and a
     /// name no walk can see is a name no import covers.</summary>
-    private const string Decimal = "Decimal";
+    internal const string Decimal = "Decimal";
 
     /// <summary>Runtime names an ANNOTATION introduced — same contract as
     /// <see cref="_hydrationReferences"/>, and merged into the import candidates beside it.</summary>
@@ -182,13 +172,15 @@ public class TypeScriptEmitter
     /// A method's body as IR, so each statement reaches the class writer carrying the C# it came
     /// from and the source map leads a frame or a breakpoint to it (#293): converted as text, the
     /// body lost every origin before the writer saw it, and the map stopped at the method's first
-    /// line. The locals an <c>out var</c> declares lead the block. An iterator's buffer and an out
-    /// parameter's returned object still wrap the body's TEXT, so those two shapes stay text.
+    /// line. An iterator's buffer and an out parameter's returned object still wrap the body's
+    /// TEXT, so those two shapes stay text. The variables the body's expressions declare are each
+    /// statement's to declare (ExpressionVariableScanner), with C#'s scope; a <c>let</c> at the top
+    /// of the method once declared every <c>out var</c> in it, one slot for every iteration of a
+    /// loop and every call of a local function.
     /// </summary>
     private JsStatement MethodBody(BlockSyntax? block, ExpressionSyntax? expressionBody, bool isIterator,
         IReadOnlyList<ParameterSyntax> byReference, bool isAsync)
     {
-        var hoisted = OutParameters.HoistedLocals(block ?? (SyntaxNode?)expressionBody);
         if (isIterator || byReference.Count > 0)
         {
             string text;
@@ -207,13 +199,13 @@ public class TypeScriptEmitter
             {
                 text = "{}";
             }
-            var body = hoisted + StripJsBraces(text);
+            var body = StripJsBraces(text);
             if (byReference.Count > 0) body = OutParameters.WrapBody(body, byReference, isAsync);
             return JsStatement.Raw(body);
         }
 
         // An expression body never reaches ReturnStatementStrategy, so nothing hoisted the `let` for
-        // a pattern variable bound in it: ExpressionBodyReturn declares it in front of the return.
+        // a variable declared in it: ExpressionBodyReturn declares it in front of the return.
         IReadOnlyList<JsStatement> statements = block != null
             ? _converter.ConvertBlockIr(block) switch
             {
@@ -223,9 +215,7 @@ public class TypeScriptEmitter
             : expressionBody != null
                 ? [_converter.InBlock(() => ExpressionBody(expressionBody, returns: true))]
                 : [];
-        return hoisted.Length == 0
-            ? JsStatement.Block(statements)
-            : JsStatement.Block([JsStatement.Raw(hoisted.TrimEnd()), .. statements]);
+        return JsStatement.Block(statements);
     }
 
     /// <summary>An expression body as the one statement of its member — a return, or a bare
@@ -235,12 +225,29 @@ public class TypeScriptEmitter
     private JsStatement ExpressionBody(ExpressionSyntax expression, bool returns) =>
         JsStatement.Raw(returns ? ExpressionBodyReturn(expression) : ExpressionBodyStatement(expression)) with { Origin = expression };
 
+    /// <summary>
+    /// A concise body converted to <c>return …;</c>, with the <c>let</c> for every variable it
+    /// declares already hoisted in front.
+    /// <para>
+    /// `x is { } y` converts to an assignment of `y` inside the converted condition, and an
+    /// expression body reaches none of the statement strategies that hoist it — so the name was
+    /// assigned and never declared, which in a module (strict mode) throws the first time that code
+    /// runs. It shipped in FOUR emission paths before this existed, one per place someone wrote the
+    /// same two lines by hand.
+    /// </para>
+    /// </summary>
     private string ExpressionBodyReturn(ExpressionSyntax expression) =>
-        $"{PatternVariableScanner.Declarations(expression, TypeAnnotations)}return {_converter.ConvertExpression(expression)};";
+        $"{ExpressionVariableScanner.Declarations(expression, TypeAnnotations)}return {_converter.ConvertExpression(expression)};";
 
     /// <summary>The same, in STATEMENT position (a setter) — no return to give it.</summary>
     private string ExpressionBodyStatement(ExpressionSyntax expression) =>
-        $"{PatternVariableScanner.Declarations(expression, TypeAnnotations)}{_converter.ConvertExpression(expression)};";
+        $"{ExpressionVariableScanner.Declarations(expression, TypeAnnotations)}{_converter.ConvertExpression(expression)};";
+
+    /// <summary>An initializer's converted text, in an arrow that declares what it declares — see
+    /// <see cref="ExpressionVariableScanner.Scoped"/>. Every initializer the emitter writes goes
+    /// through here: a field's, a property's and a prop's default, in a constructor or on the class.</summary>
+    private string Initializer(ExpressionSyntax expression, string converted) =>
+        ExpressionVariableScanner.Scoped(expression, converted, TypeAnnotations);
 
     private string ParamWithDefault(string name, string type, string? convertedDefault,
         bool rest = false) =>
@@ -354,7 +361,7 @@ public class TypeScriptEmitter
                 // shared by every `Row` in every namespace, and alive only while no bundler minified
                 // identifiers (#278).
                 if (component.TypeIdentity.Length > 0)
-                    c.Field("$typeId", null, $"'{component.TypeIdentity.Replace("\\", "\\\\").Replace("'", "\\'")}'", null, isStatic: true);
+                    c.Field("$typeId", null, JsStringLiteral.Quote(component.TypeIdentity), null, isStatic: true);
 
                 // Component-level fields (static data / consts / instance fields), emitted at the top of
                 // the class. Skipped for primitives' INSTANCE fields, whose base ctor sets every prop via
@@ -368,7 +375,7 @@ public class TypeScriptEmitter
                         if (component.IsPrimitive && !field.IsStatic) continue;
                         var tsType = DeclarationType(component, field.Type);
                         var tsDefault = field.DefaultValueNode != null
-                            ? _converter.ConvertExpression(field.DefaultValueNode, field.Type)
+                            ? Initializer(field.DefaultValueNode, _converter.ConvertExpression(field.DefaultValueNode, field.Type))
                             : (field.DefaultValue != null ? ConvertToTsValue(field.DefaultValue, field.Type) : null);
                         // C# value types default without an initializer (`private int _count;` is 0);
                         // an uninitialized TS field is `undefined` and would poison arithmetic (NaN).
@@ -419,7 +426,7 @@ public class TypeScriptEmitter
                     if (hasExplicitParams)
                     {
                         // Constructor has explicit params (e.g., Heading(content, level))
-                        var paramList = string.Join(", ", ctor!.Parameters.Select(p => Param(p.Name, "any")));
+                        var paramList = string.Join(", ", ctor!.Parameters.Select(p => Param(p.Name.ToJsIdentifier(), "any")));
                         jsParams = paramList;
                     }
                     else
@@ -439,7 +446,7 @@ public class TypeScriptEmitter
                     if (hasExplicitParams)
                     {
                         foreach (var param in ctor!.Parameters)
-                            ctorStatements.Add(Assign(JsExpr.ThisMember(param.Name.ToCamelCase()), JsExpr.Identifier(param.Name)));
+                            ctorStatements.Add(Assign(JsExpr.ThisMember(param.Name.ToCamelCase()), JsExpr.Identifier(param.Name.ToJsIdentifier())));
                     }
 
                     // Apply defaults for properties not provided in props (only if still undefined)
@@ -452,7 +459,7 @@ public class TypeScriptEmitter
                         if (prop.DefaultValue is not { } declaredDefault) continue;
                         var camelName = prop.Name.ToCamelCase();
                         var tsDefault = prop.DefaultValueNode != null
-                            ? _converter.ConvertExpression(prop.DefaultValueNode, prop.Type)
+                            ? Initializer(prop.DefaultValueNode, _converter.ConvertExpression(prop.DefaultValueNode, prop.Type))
                             : ConvertToTsValue(declaredDefault, prop.Type);
                         // The default rides into the CONSTRUCTOR as text, past the converter's
                         // helper tracking — `$eq.num.long(0)` in a module that never imported $eq
@@ -475,23 +482,13 @@ public class TypeScriptEmitter
                     // Emit Render method for primitive - ONLY if defined or it's the base primitive
                     if (component.BuildMethodNode != null && component.BuildMethodNode.Body != null)
                     {
-                        // Discover `out var x` variables to hoist. Only single-variable designations:
-                        // parenthesised ones (`var (a, b) = …` deconstruction) are emitted as
-                        // `let { … } = …` by the assignment strategy, so hoisting them would yield
-                        // an invalid `let (a, b);`.
-                        var outVars = component.BuildMethodNode.Body.DescendantNodes()
-                            .OfType<DeclarationExpressionSyntax>()
-                            .Select(d => d.Designation)
-                            .OfType<SingleVariableDesignationSyntax>()
-                            .Select(s => s.Identifier.Text)
-                            .Distinct()
-                            .ToList();
-                        var renderStatements = outVars.Select(v => JsStatement.Raw($"let {v};")).ToList();
-
+                        // Each statement declares what its expressions declare, with C#'s scope
+                        // (ExpressionVariableScanner). This path once kept a copy of its own that
+                        // declared every `out var` by its source text (`let @class;`, a SyntaxError)
+                        // and no deconstruction element at all.
                         _converter.SetCurrentClass(component.Name);
-                        renderStatements.Add(Contents(component.BuildMethodNode.Body));
-                        c.Member(JsClassMember.Method("", "render", "", "", "", JsStatement.Block(renderStatements)),
-                            bodySource: component.BuildMethodNode.Body, bodyLine: outVars.Count + 1);
+                        c.Member(JsClassMember.Method("", "render", "", "", "", JsStatement.Block([Contents(component.BuildMethodNode.Body)])),
+                            bodySource: component.BuildMethodNode.Body);
                     }
                     else if (component.BaseClassName == "HtmlElement" || component.BaseClassName == null)
                     {
@@ -564,12 +561,23 @@ public class TypeScriptEmitter
                         var services = ctorParams.Where(p => p.IsService).ToList();
                         var passed = ctorParams.Where(p => !p.IsService).ToList();
 
+                        // Each parameter is bound under the name the constructor BODY reads it by, the one
+                        // IdentifierStrategy gives a parameter: as written, made a legal JS identifier.
+                        // Camel-cased here and read as written there, `string Label` was
+                        // `constructor(label…)` beside a body reading `Label` (a ReferenceError at `new`),
+                        // and `@default` bound `default`, a module that did not parse.
                         var paramList = string.Join(", ", passed.Select(p => p.DefaultValueNode != null
-                            ? $"{p.Name.ToCamelCase()}: any = {_converter.ConvertExpression(p.DefaultValueNode, p.Type)}"
-                            : $"{p.Name.ToCamelCase()}?: any"));
+                            ? $"{p.Name.ToJsIdentifier()}: any = {_converter.ConvertExpression(p.DefaultValueNode, p.Type)}"
+                            : $"{p.Name.ToJsIdentifier()}?: any"));
+                        // The trailing config object is `props`, unless the C# constructor already binds
+                        // that name: then `constructor(props, props)`, or a body's `let props` beside the
+                        // parameter, did not parse. A `$` in front is a name no C# binding and no renamed
+                        // local function can take.
+                        var config = ConfigParameter(ctorParams.Select(p => p.Name.ToJsIdentifier()),
+                            (SyntaxNode?)ctorDef?.BodyNode ?? ctorDef?.ExpressionBodyNode);
                         var signature = paramList.Length > 0
-                            ? $"{paramList}, {OptionalParam("props", "any")}"
-                            : OptionalParam("props", "any");
+                            ? $"{paramList}, {OptionalParam(config, "any")}"
+                            : OptionalParam(config, "any");
                         var statements = new List<JsStatement> { JsStatement.Expression(JsExpr.Call(JsExpr.Identifier("super"))) };
                         {
                             // The config object carries what a C# OBJECT INITIALIZER assigned, and in C#
@@ -594,7 +602,7 @@ public class TypeScriptEmitter
                                 // field undefined and the dependency unreachable from Build.
                                 var target = ctorDef!.IsPrimaryConstructor
                                     ? $"this.{service.Name.ToCamelCase()}"
-                                    : $"const {service.Name.ToCamelCase()}";
+                                    : $"const {service.Name.ToJsIdentifier()}";
                                 statements.Add(JsStatement.Raw($"{target} = {Eq.ResolveService}('{service.ServiceKey}');"));
 
                                 // The twin of CapabilityScope.Require: a component that declared it
@@ -605,8 +613,9 @@ public class TypeScriptEmitter
                                 // and the bug only exists there.
                                 if (service.IsRequiredService)
                                 {
-                                    var name = service.Name.ToCamelCase();
-                                    var read = ctorDef.IsPrimaryConstructor ? $"this.{name}" : name;
+                                    var read = ctorDef.IsPrimaryConstructor
+                                        ? $"this.{service.Name.ToCamelCase()}"
+                                        : service.Name.ToJsIdentifier();
                                     statements.Add(JsStatement.Raw($"if ({read} === undefined || {read} === null) throw new Error("
                                         + $"'{component.Name} needs {service.ServiceKey}, and this target has none. "
                                         + $"Register it with the host, or declare the parameter as {service.ServiceKey}? "
@@ -616,6 +625,7 @@ public class TypeScriptEmitter
                             foreach (var param in passed)
                             {
                                 var camelName = param.Name.ToCamelCase();
+                                var local = param.Name.ToJsIdentifier();
                                 var target = component.Properties
                                     .FirstOrDefault(pr => !pr.IsStatic && pr.Name.ToCamelCase() == camelName);
                                 // PRIMARY-constructor params are implicit fields — always assign. With an
@@ -632,15 +642,15 @@ public class TypeScriptEmitter
                                 // assignment there would lose the value instead of relocating it.
                                 if (hasCtorBody && target != null && !IsAssignableSlot(target)) continue;
                                 statements.Add(JsStatement.If(
-                                    JsExpr.Binary(JsExpr.Identifier(camelName), "!==", JsExpr.Identifier("undefined")),
-                                    Assign(JsExpr.ThisMember(camelName), JsExpr.Identifier(camelName)), null));
+                                    JsExpr.Binary(JsExpr.Identifier(local), "!==", JsExpr.Identifier("undefined")),
+                                    Assign(JsExpr.ThisMember(camelName), JsExpr.Identifier(local)), null));
                             }
                             _converter.SetCurrentClass(component.Name);
                             foreach (var p in autoDefaults)
                             {
                                 var cn = p.Name.ToCamelCase();
                                 var def = p.DefaultValueNode != null
-                                    ? _converter.ConvertExpression(p.DefaultValueNode, p.Type)
+                                    ? Initializer(p.DefaultValueNode, _converter.ConvertExpression(p.DefaultValueNode, p.Type))
                                     : ImplicitDefault(p)!;
                                 statements.Add(DefaultIfUndefined(cn, def));
                             }
@@ -649,7 +659,7 @@ public class TypeScriptEmitter
                             else if (ctorDef?.ExpressionBodyNode is { } ctorExpression)
                                 statements.Add(ExpressionBody(ctorExpression, returns: false));
                             // …and the initializer last, which is where C# runs it.
-                            statements.Add(JsStatement.Raw("if (props && typeof props === 'object') Object.assign(this, props);"));
+                            statements.Add(JsStatement.Raw($"if ({config} && typeof {config} === 'object') Object.assign(this, {config});"));
                             c.Member(JsClassMember.Constructor(signature, JsStatement.Block(statements)),
                                 bodySource: (SyntaxNode?)ctorDef?.BodyNode ?? ctorDef?.ExpressionBodyNode, bodyLine: bodyLine);
                         }
@@ -660,9 +670,15 @@ public class TypeScriptEmitter
                     // An EXPRESSION-bodied Build has no `Body`, so this read `null?.Contains(...)`,
                     // answered `context`, and emitted a parameter the body never uses — which the
                     // emitted module's own type check rejects. Ask whichever half the method has.
-                    var buildBodyText = component.BuildMethodNode?.Body?.ToString()
-                        ?? component.BuildMethodNode?.ExpressionBody?.ToString();
-                    var buildParamName = buildBodyText?.Contains("context") == false ? "_context" : "context";
+                    // The parameter is named as C# named it, the name its body reads it by: `context`
+                    // hard-coded left a `Build(ComponentContext ctx)` reading a `ctx` nothing declared.
+                    // It takes the underscore only where the body never reads it (ReadsParameter).
+                    var buildParameterSyntax = component.BuildMethodNode?.ParameterList.Parameters.FirstOrDefault();
+                    var buildParamName = component.BuildMethodNode is not { } buildNode || buildParameterSyntax is null
+                        ? "context"
+                        : ReadsParameter(buildNode, buildParameterSyntax)
+                            ? buildParameterSyntax.Identifier.Text.ToJsIdentifier()
+                            : "_" + buildParameterSyntax.Identifier.Text.ToJsIdentifier();
                     // The body converts straight to IR: a block as itself, an expression-bodied Build
                     // (`IComponent Build(ctx) => new Box {…};`) as a return, and nothing as the fallback.
                     _converter.SetCurrentClass(component.Name);
@@ -693,8 +709,10 @@ public class TypeScriptEmitter
                 foreach (var action in component.ServerActions)
                 {
                     ClassBuilder = c;
-                    var paramsList = string.Join(", ", action.Parameters.Select(p => Param(p.Name, Annotate(p.Type))));
-                    var argsList = string.Join(", ", action.Parameters.Select(p => p.Name));
+                    // Each parameter under a legal JS name, the same one the invocation passes on:
+                    // `Run(int @class)` wrote `run(class)` and `[class]`, a module that did not parse.
+                    var paramsList = string.Join(", ", action.Parameters.Select(p => Param(p.Name.ToJsIdentifier(), Annotate(p.Type))));
+                    var argsList = string.Join(", ", action.Parameters.Select(p => p.Name.ToJsIdentifier()));
                     var returnType = Annotate(action.ReturnType);
 
                     // The action's RESULT crosses the typed boundary too: a Task<decimal> arrives
@@ -1378,10 +1396,13 @@ public class TypeScriptEmitter
         if (IntrinsicTsTypes.Contains(ts)) return true;
 
         // A composite (`(x: Foo) => void`, `Record<string, any>`): every identifier inside must resolve.
+        // A parameter's NAME inside a function type is a label and not a type, so a name followed by
+        // its colon is left out: `value` in `(value: Point) => string | null` resolved nothing, the
+        // whole parameter degraded to `any`, and every lambda passed to it was an implicit any.
         if (ts.Contains('<') || ts.Contains("=>") || ts.Contains('('))
         {
             var names = System.Text.RegularExpressions.Regex
-                .Matches(ts, @"[A-Za-z_][A-Za-z0-9_]*")
+                .Matches(ts, @"\b[A-Za-z_][A-Za-z0-9_]*\b(?!\s*\??:)")
                 .Select(m => m.Value)
                 .Where(n => n is not ("void" or "Record"));
             return names.All(n => IsResolvableTsName(component, n));
@@ -1535,7 +1556,7 @@ public class TypeScriptEmitter
                 if (prop.IsStatic)
                 {
                     var def = prop.DefaultValueNode != null
-                        ? _converter.ConvertExpression(prop.DefaultValueNode, prop.Type)
+                        ? Initializer(prop.DefaultValueNode, _converter.ConvertExpression(prop.DefaultValueNode, prop.Type))
                         : (prop.DefaultValue != null ? ConvertToTsValue(prop.DefaultValue, prop.Type) : null);
                     c.Field(name, DeclarationType(component, prop.Type), def, node, isStatic: true);
                 }
@@ -1575,7 +1596,6 @@ public class TypeScriptEmitter
     private void EmitStaticMembers(ClassDeclarationSyntax cls, TypeScriptCodeBuilder.ClassBuilder c,
         bool asStatic = true)
     {
-        var qualifier = asStatic ? "static " : "";
         var name = cls.Identifier.Text;
         if (!asStatic) EmitInstanceConstructor(cls, c);
 
@@ -1584,7 +1604,7 @@ public class TypeScriptEmitter
                 foreach (var v in f.Declaration.Variables)
                 {
                     var def = v.Initializer != null
-                        ? _converter.ConvertExpression(v.Initializer.Value, f.Declaration.Type.ToString())
+                        ? Initializer(v.Initializer.Value, _converter.ConvertExpression(v.Initializer.Value, f.Declaration.Type.ToString()))
                         : null;
                     // The TYPE is emitted either way. Without it every field of a plain class is
                     // implicitly `any`, and the first thing that goes is the checking the whole
@@ -1635,9 +1655,15 @@ public class TypeScriptEmitter
                     continue;
                 }
                 var pn = p.Identifier.Text.ToCamelCase();
+                // The PROPERTY's own `static`, as a field's and an auto-property's already are: the
+                // class-level qualifier alone wrote `static int Count => …` on a plain class as an
+                // instance getter, and `Probe.count` read undefined.
+                var accessorQualifier = asStatic || p.Modifiers.Any(Microsoft.CodeAnalysis.CSharp.SyntaxKind.StaticKeyword)
+                    ? "static "
+                    : "";
                 if (p.ExpressionBody != null)
                 {
-                    EmitGetter(p, c, qualifier);
+                    EmitGetter(p, c, accessorQualifier);
                 }
                 else if (p.AccessorList != null)
                 {
@@ -1656,10 +1682,10 @@ public class TypeScriptEmitter
                             c.Field(slot, DeclaredType(p.Type), slotDefault, p);
                     }
 
-                    if (EmitGetter(p, c, qualifier)) { }
+                    if (EmitGetter(p, c, accessorQualifier)) { }
                     else if (p.Initializer != null)
                         c.Field(pn, DeclaredType(p.Type),
-                            _converter.ConvertExpression(p.Initializer.Value, p.Type.ToString()), p,
+                            Initializer(p.Initializer.Value, _converter.ConvertExpression(p.Initializer.Value, p.Type.ToString())), p,
                             isStatic: asStatic || p.Modifiers.Any(Microsoft.CodeAnalysis.CSharp.SyntaxKind.StaticKeyword));
                     // An AUTO-property — `{ get; set; }`, `{ get; private set; }`, `{ get; }` — is a
                     // field with a name. Emitting nothing for it left the class without the member
@@ -1681,7 +1707,7 @@ public class TypeScriptEmitter
                             c.Field(pn, DeclaredType(p.Type), defaulted, p, isStatic: isStaticProperty);
                     }
 
-                    EmitSetter(p, c, qualifier);
+                    EmitSetter(p, c, accessorQualifier);
                 }
             }
             // `event Action<T>? Changed;` — a member the model raises and a caller subscribes to.
@@ -1737,16 +1763,6 @@ public class TypeScriptEmitter
             EmitExtensionBlocks(cls, c);
     }
 
-    /// <summary>
-    /// An operator's body in either spelling, or null where it has neither — `extern`, or a
-    /// declaration in an interface — and there is nothing to write.
-    /// <para>
-    /// It is a method's body, built as one: each statement maps to its line (#293), and the hoisted
-    /// locals come first. `int.TryParse(s, out var n)` inside an operator emits `n = …`, and with
-    /// nothing declaring `n` in a strict ES module the operator threw a ReferenceError the first
-    /// time it ran instead of returning a value.
-    /// </para>
-    /// </summary>
     /// <summary>
     /// A property's getter where it has one with a body: its expression body, or its get
     /// accessor's. The RETURN type is emitted: a computed property is where a model's types cross
@@ -1838,7 +1854,7 @@ public class TypeScriptEmitter
         var mbody = MethodBody(m.Body, m.ExpressionBody?.Expression, isIterator, byReference, isAsync);
         var modifiers = (m.Modifiers.Any(Microsoft.CodeAnalysis.CSharp.SyntaxKind.StaticKeyword) || asStatic ? "static " : "")
             + (isAsync ? "async " : "");
-        c.Member(JsClassMember.Method(modifiers, mn, generics, pars, "", mbody), m);
+        c.Member(JsClassMember.Method(modifiers, mn, generics, pars, TupleReturn(m.ReturnType), mbody), m);
     }
 
     /// <summary>A vocabulary default the class takes from the interface's ASSEMBLY, where eqc has no
@@ -1914,6 +1930,16 @@ public class TypeScriptEmitter
         }
     }
 
+    /// <summary>
+    /// An operator's body in either spelling, or null where it has neither — `extern`, or a
+    /// declaration in an interface — and there is nothing to write.
+    /// <para>
+    /// It is a method's body, built as one: each statement maps to its line (#293) and declares
+    /// what its expressions declare. `int.TryParse(s, out var n)` inside an operator emits `n = …`,
+    /// and with nothing declaring `n` in a strict ES module the operator threw a ReferenceError the
+    /// first time it ran instead of returning a value.
+    /// </para>
+    /// </summary>
     private JsStatement? OperatorBody(BaseMethodDeclarationSyntax op) =>
         op.Body is null && op.ExpressionBody is null
             ? null
@@ -1999,7 +2025,7 @@ public class TypeScriptEmitter
                         if (method.Body == null && method.ExpressionBody == null) break;
                         var body = MethodBody(method.Body, method.ExpressionBody?.Expression, isIterator: false, [], isAsync);
                         c.Member(JsClassMember.Method("static " + (isAsync ? "async " : ""), method.Identifier.Text.ToCamelCase(), "",
-                            WithReceiver(pars), "", body), method);
+                            WithReceiver(pars), TupleReturn(method.ReturnType), body), method);
                         break;
                     }
 
@@ -2047,7 +2073,7 @@ public class TypeScriptEmitter
                 // component path has answered this from the type for a while (FieldDefaultTests);
                 // a plain class is the same C#.
                 var value = variable.Initializer is { } init
-                    ? _converter.InBlock(() => _converter.ConvertExpression(init.Value, field.Declaration.Type.ToString()))
+                    ? Initializer(init.Value, _converter.InBlock(() => _converter.ConvertExpression(init.Value, field.Declaration.Type.ToString())))
                     : ValueTypeDefault(field.Declaration.Type.ToString(), field.Declaration.Type);
                 if (value is null) continue;
                 if (value.Contains("$eq.")) _converter.UsedHelpers.Add(Eq.Import);
@@ -2076,23 +2102,56 @@ public class TypeScriptEmitter
                 var other => [other],
             }
             : ctor?.ExpressionBody is { } expression
-                ? [JsStatement.Raw($"{_converter.InBlock(() => _converter.ConvertExpression(expression.Expression))};") with { Origin = expression.Expression }]
+                ? [_converter.InBlock(() => ExpressionBody(expression.Expression, returns: false))]
                 : [];
-        // `out var x` at a call inside the body needs `x` to exist before the call.
-        var hoisted = OutParameters.HoistedLocals(ctor?.Body ?? (SyntaxNode?)ctor?.ExpressionBody);
 
         // `new Editor(text) { ReadOnly = true }` — an object initialiser is an ordinary way to
         // construct one of these, and it arrives as a trailing config object exactly as it does for
         // a component. A constructor that did not take one made the emitted call arity-wrong.
-        var config = parameters.Length == 0 ? OptionalParam("props", "any") : $", {OptionalParam("props", "any")}";
+        var configName = ConfigParameter(ctor?.ParameterList.Parameters.Select(p => p.Identifier.Text.ToJsIdentifier()) ?? [],
+            ctor?.ParameterList);
+        var config = parameters.Length == 0 ? OptionalParam(configName, "any") : $", {OptionalParam(configName, "any")}";
         // A derived class must call super() before it touches `this`.
         JsStatement[] superCall = HasEmittedBase(cls) ? [JsStatement.Raw("super();")] : [];
-        JsStatement[] locals = hoisted.Length == 0 ? [] : [JsStatement.Raw(hoisted.TrimEnd())];
         c.Member(JsClassMember.Constructor($"{parameters}{config}", JsStatement.Block([
-                .. superCall, .. initialisers, .. locals, .. body,
-                JsStatement.Raw("if (props && typeof props === 'object') Object.assign(this, props);")])),
+                .. superCall, .. initialisers, .. body,
+                JsStatement.Raw($"if ({configName} && typeof {configName} === 'object') Object.assign(this, {configName});")])),
             ctor ?? (SyntaxNode)cls);
     }
+
+    /// <summary>
+    /// Whether <paramref name="method"/> reads <paramref name="parameter"/>. Asked of the model where
+    /// there is one, since the name alone is a member's too (`this.ctx` beside a parameter `ctx`), and
+    /// of the syntax otherwise: a name that is not a member access's, a binding's or an initializer's.
+    /// A short name like `c` is a substring of nearly any body, so the text is never asked.
+    /// </summary>
+    private bool ReadsParameter(SyntaxNode method, ParameterSyntax parameter)
+    {
+        var name = parameter.Identifier.ValueText;
+        var named = method.DescendantNodes().OfType<IdentifierNameSyntax>()
+            .Where(id => id.Identifier.ValueText == name);
+        if (ModelFor(method) is { } model && model.GetDeclaredSymbol(parameter) is { } symbol)
+            return named.Any(id => SymbolEqualityComparer.Default.Equals(model.GetSymbolInfo(id).Symbol, symbol));
+        return named.Any(id => id.Parent switch
+        {
+            MemberAccessExpressionSyntax access => access.Expression == id,
+            MemberBindingExpressionSyntax or NameColonSyntax or NameEqualsSyntax => false,
+            _ => true,
+        });
+    }
+
+    /// <summary>
+    /// The name of the config object a constructor takes last: <c>props</c>, or <c>$props</c> where
+    /// the constructor already binds <c>props</c>, which no C# binding and no renamed local function
+    /// can be. Its parameters are asked, and every binding of the constructor <paramref name="inside"/>
+    /// belongs to: its body shares the parameters' block, so a local `props` beside the parameter was
+    /// "Identifier 'props' has already been declared".
+    /// </summary>
+    private static string ConfigParameter(IEnumerable<string> parameterNames, SyntaxNode? inside) =>
+        parameterNames.Contains("props", StringComparer.Ordinal)
+            || (inside is not null && LocalFunctionName.MemberDeclares(inside, "props"))
+            ? "$props"
+            : "props";
 
     /// <summary>
     /// A PLAIN class the developer wrote — not a record, not static, not a component: a bucket, a
@@ -2200,12 +2259,18 @@ public class TypeScriptEmitter
             null when echoed && !Resolvable(mapped) => "any",
             _ => mapped,
         };
-        // A function type has to be PARENTHESISED before a union, or the `| null` binds to its
-        // RETURN: `(e: Edit) => void | null` says the handler may return null, not that the
-        // handler itself may be absent.
         if (!nullable || core == "any") return core;
-        return core.Contains("=>") ? $"({core}) | null" : $"{core} | null";
+        return OrNull(core);
     }
+
+    /// <summary>
+    /// <paramref name="type"/> or null. A function type is PARENTHESISED before the union, or the
+    /// `| null` binds to its RETURN: `(e: Edit) => void | null` says the handler may return null, not
+    /// that the handler itself may be absent. Every emitter writes a nullable union through here: the
+    /// record path wrote its own, and a record's `Func&lt;int, string&gt;? foldLabel` came out a
+    /// function that returns null rather than a function that may be missing.
+    /// </summary>
+    internal static string OrNull(string type) => type.Contains("=>") ? $"({type}) | null" : $"{type} | null";
 
     /// <summary>
     /// A type and every type argument BELOW it, to any depth — `IReadOnlyList&lt;NavigableMove&gt;`
@@ -2481,7 +2546,7 @@ public class TypeScriptEmitter
             .Select(entry =>
         {
             var (p, index) = entry;
-            var name = bodyText.Contains(p.Name) ? p.Name.ToJsIdentifier() : "_" + p.Name;
+            var name = bodyText.Contains(p.Name) ? p.Name.ToJsIdentifier() : "_" + p.Name.ToJsIdentifier();
             var defaultValue = syntaxParameters is { } list && index < list.Count
                 ? list[index].Default?.Value
                 : null;
@@ -2522,8 +2587,8 @@ public class TypeScriptEmitter
             var body = MethodBody(method.SyntaxNode.Body, method.SyntaxNode.ExpressionBody?.Expression, isIterator, byReference, isAsync);
             var generics = method.TypeParameters is { } typeParameters && typeParameters.Any()
                 ? $"<{string.Join(", ", typeParameters)}>" : "";
-            c.Member(JsClassMember.Method((method.IsStatic ? "static " : "") + asyncPrefix, methodName, generics, parameters, "",
-                body), method.SyntaxNode);
+            c.Member(JsClassMember.Method((method.IsStatic ? "static " : "") + asyncPrefix, methodName, generics, parameters,
+                TupleReturn(method.SyntaxNode.ReturnType), body), method.SyntaxNode);
         }
         else
         {
@@ -2539,6 +2604,21 @@ public class TypeScriptEmitter
         }
     }
     
+    /// <summary>
+    /// The return annotation of a method that returns a TUPLE, and nothing for any other: a tuple
+    /// crosses as an array literal, which TypeScript reads as an array of the union of its elements,
+    /// so a pair of lists of different things destructured into two lists of either and the
+    /// runtime's own build refused every use of them. Every other return is left to inference,
+    /// which reads the value it returns right. A nullable tuple may be null. Written the way a
+    /// declared type is, which asks what each element IS: an enum among them crosses as its member
+    /// string, where the name alone wrote its C# spelling, a type TypeScript does not have.
+    /// </summary>
+    private string TupleReturn(TypeSyntax returnType) =>
+        TypeAnnotations && returnType is TupleTypeSyntax or NullableTypeSyntax { ElementType: TupleTypeSyntax }
+            && DeclaredType(returnType) is var annotation && annotation != "any"
+            ? $": {annotation}"
+            : "";
+
     /// <summary>
     /// Drops NAMESPACE qualification from a type name, keeping generics and arrays intact:
     /// <c>global::eQuantic.UI.Primitives.VisualNode</c> → <c>VisualNode</c>,
@@ -2592,7 +2672,7 @@ public class TypeScriptEmitter
                         text = text[..lastSpace];
                     return CSharpTypeToTypeScript(text.Trim());
                 });
-                return $"[{string.Join(", ", elements)}]" + string.Concat(Enumerable.Repeat("[]", arrayDepth));
+                return Nullable($"[{string.Join(", ", elements)}]" + string.Concat(Enumerable.Repeat("[]", arrayDepth)));
             }
         }
         
@@ -2609,7 +2689,7 @@ public class TypeScriptEmitter
                 arrayDepth++;
                 element = element[..^2].Trim();
             }
-            return CSharpTypeToTypeScript(element) + string.Concat(Enumerable.Repeat("[]", arrayDepth));
+            return Nullable(ArrayOf(CSharpTypeToTypeScript(element), arrayDepth));
         }
 
         if (baseType.StartsWith("Nullable<") && baseType.EndsWith(">"))
@@ -2652,7 +2732,7 @@ public class TypeScriptEmitter
         // and, worse, a lie in an app's editor.
         if (SequenceOf(tsType) is { } sequenceItem)
         {
-            tsType = $"{CSharpTypeToTypeScript(sequenceItem)}[]";
+            tsType = ArrayOf(CSharpTypeToTypeScript(sequenceItem), 1);
         }
         else if (SetOf(tsType) is { } setItem)
         {
@@ -2707,14 +2787,27 @@ public class TypeScriptEmitter
             tsType = "any";
         }
 
+        return Nullable(tsType);
+
         // A NULLABLE C# type is nullable in TypeScript too. The flag was computed and then dropped,
         // so `Action?` annotated as `() => void` and passing the null its own signature invites was
         // a type error. A function type needs the parentheses: `() => void | null` parses as a
-        // function RETURNING `void | null`.
-        if (isNullable && tsType is not ("any" or "void"))
-            tsType = tsType.Contains("=>") ? $"({tsType}) | null" : $"{tsType} | null";
+        // function RETURNING `void | null`. The tuple and array forms answer early, and answer
+        // through here too: `(int, int)?` was annotated as a tuple that is never null.
+        string Nullable(string mapped) =>
+            !isNullable || mapped is "any" or "void" ? mapped : OrNull(mapped);
+    }
 
-        return tsType;
+    /// <summary>
+    /// An array of <paramref name="element"/>, <paramref name="depth"/> deep. TypeScript binds `[]`
+    /// tighter than `|` and `=>`, so an element that is a union or a function is parenthesized:
+    /// `string | null[]` is a string or an array of nulls, and `() => void[]` a function returning an
+    /// array. A nullable element is the common case (<c>List&lt;string?&gt;</c>).
+    /// </summary>
+    private static string ArrayOf(string element, int depth)
+    {
+        var bound = element.Contains('|') || element.Contains("=>") ? $"({element})" : element;
+        return bound + string.Concat(Enumerable.Repeat("[]", depth));
     }
 
     /// <summary>Every C# name for an ordered sequence — all of them are a JS array.</summary>
@@ -2796,18 +2889,4 @@ public class TypeScriptEmitter
              _ => "null"
         };
     }
-    
-    private static string EscapeString(string s)
-    {
-        // Backslash MUST be escaped first, otherwise it would double-escape the
-        // sequences introduced below. Output is wrapped in single quotes by callers.
-        return s
-            .Replace("\\", "\\\\")
-            .Replace("'", "\\'")
-            .Replace("\"", "\\\"")
-            .Replace("\r", "\\r")
-            .Replace("\n", "\\n")
-            .Replace("\t", "\\t");
-    }
-    
 }
