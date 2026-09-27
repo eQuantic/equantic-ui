@@ -4,7 +4,7 @@ export class SegmentedControl extends StatelessComponent {
     static $typeId = 'eQuantic.UI.Components.SegmentedControl';
     declare segments: string[];
     declare selectedIndex: number;
-    declare onChanged: any;
+    declare onChanged: ((int: number) => void) | null;
     declare size: SizeVariantValue;
     declare disabled: boolean;
     declare stretch: boolean;
@@ -42,7 +42,7 @@ export class SegmentedControl extends StatelessComponent {
         let track = new Box(new BoxStyle({ width: this.stretch ? SizeValue.fill : SizeValue.hug, height: height, padding: EdgeInsets.all(inset), background: theme.surfaceSubtle, cornerRadius: new CornerRadii(trackRadius), opacity: this.disabled ? theme.disabledOpacity : 1 }), row);
         if (this.disabled || this.onChanged == null || this.segments.length === 0) return track;
         let count = this.segments.length;
-        return new Adjustable(track, (direction: number) => this.onChanged($eq.num.intRem(this.selectedIndex + direction + count, count)), { role: 'radiogroup' });
+        return new Adjustable(track, (direction: number) => this.onChanged!($eq.num.intRem(this.selectedIndex + direction + count, count)), { role: 'radiogroup' });
     }
 }
 

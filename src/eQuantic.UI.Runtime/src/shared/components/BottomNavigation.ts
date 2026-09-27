@@ -13,7 +13,7 @@ export class BottomNavigation extends StatelessComponent {
     }
 
     declare selected: number;
-    declare onSelect: any;
+    declare onSelect: ((int: number) => void) | null;
 
     constructor(items?: any, selected?: any, onSelect: any = null, props?: any) {
         super();
@@ -45,7 +45,7 @@ export class BottomNavigation extends StatelessComponent {
             let column = new Column(2, 'start', 'stretch', false, null, null, { height: SizeValue.fill, main: 'center', cross: 'center' });
             column.add(pill);
             column.add(new Text(item.label, 'caption', tint, 1, 'start', false, false, null, 0, { styleOverride: new TypeStyle(11, 14, 'bold', Math.fround(0.1), Math.fround(1.3)) }));
-            row.add(new Flexible(new Pressable(column, this.onSelect == null ? null : () => this.onSelect(index), { label: item.label, pressedBackground: theme.surfaceSubtle, role: 'destination', selected: isActive })));
+            row.add(new Flexible(new Pressable(column, this.onSelect == null ? null : () => this.onSelect!(index), { label: item.label, pressedBackground: theme.surfaceSubtle, role: 'destination', selected: isActive })));
         }
         return new Box(new BoxStyle({ width: SizeValue.fill, height: 56, background: theme.surface }), row);
     }

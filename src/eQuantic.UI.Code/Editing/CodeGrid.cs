@@ -12,8 +12,13 @@ namespace eQuantic.UI.Code;
 /// A point and a size rather than four floats, because the vocabulary has a word for each and a
 /// grid is neither a box nor a set of insets — it is an origin and a pitch, repeated.
 /// </para>
+/// <para>
+/// With <see cref="Rows"/> a line is placed on its ROW, which fillers and folded runs set apart
+/// from its index (docs/CODE-EDITOR-PLAN.md, the shape, §9): a diff's padding, a collapsed run of
+/// unchanged lines. Without it a row is a line.
+/// </para>
 /// </summary>
-public readonly record struct CodeGrid(Point Origin, Size Cell)
+public readonly record struct CodeGrid(Point Origin, Size Cell, CodeRows? Rows = null)
 {
     /// <summary>
     /// What a surface nobody has measured yet draws on: 8dp columns, 18dp lines, the content at the
@@ -27,7 +32,21 @@ public readonly record struct CodeGrid(Point Origin, Size Cell)
     /// </summary>
     public static CodeGrid Default => new(Point.Zero, new Size(8, 18));
 
+    /// <summary>The row <paramref name="line"/> is drawn on.</summary>
+    public int RowOf(int line) => Rows?.RowOf(line) ?? line;
+
     /// <summary>Where a caret before <paramref name="column"/> on <paramref name="line"/> sits.</summary>
     public Point PointOf(int line, int column) =>
-        new(Origin.X + column * Cell.Width, Origin.Y + line * Cell.Height);
+        new(Origin.X + column * Cell.Width, Origin.Y + RowOf(line) * Cell.Height);
+
+    /// <summary>
+    /// The line a point <paramref name="y"/> down the surface lands on: the line of its row, the line
+    /// a filler stands before, or the first line a placeholder hides. Not clamped to the document,
+    /// which the caller knows and the grid does not.
+    /// </summary>
+    public int LineAt(float y)
+    {
+        var row = (int)MathF.Floor((y - Origin.Y) / Cell.Height);
+        return Rows is { } rows ? rows.LineAtRow(Math.Max(0, row)) : row;
+    }
 }

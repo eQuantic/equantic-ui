@@ -67,6 +67,8 @@ public class CodeEditorComponentTests
         Frame(host);
     }
 
+    /// <summary>⌘F. The chord is the editor's own, so the keyboard has to be in the editor for it to
+    /// answer: every test puts it there first, as a person does.</summary>
     private static RealizeResult OpenFind(PhotonHost host) => Press(host, "f", KeyModifiers.Command);
 
     // ---- the find bar --------------------------------------------------------------------------
@@ -80,7 +82,9 @@ public class CodeEditorComponentTests
     public void OpeningFindLeavesTheCodeWhereItWas()
     {
         var host = Host(new CodeEditor("searchable text", "csharp") { ShowLineNumbers = false });
-        var before = Settle(host).CodeRegions.Single().Path;
+        var settled = Settle(host);
+        var before = settled.CodeRegions.Single().Path;
+        ClickInto(host, settled);
 
         var after = OpenFind(host);
 
@@ -124,7 +128,7 @@ public class CodeEditorComponentTests
     {
         var editor = new CodeEditor("one needle two", "csharp") { ShowLineNumbers = false };
         var host = Host(editor);
-        Settle(host);
+        ClickInto(host, Settle(host));
         OpenFind(host);
         ClickInto(host, Frame(host));
 
@@ -196,7 +200,7 @@ public class CodeEditorComponentTests
     {
         var editor = new CodeEditor("one two one", "csharp") { ShowLineNumbers = false, Search = "one" };
         var host = Host(editor);
-        Settle(host);
+        ClickInto(host, Settle(host));
 
         var opened = OpenFind(host);
         Count(opened.Root, node => node.Source is Text { Content: var text } && text.Contains('/')).Should().Be(0,
@@ -214,7 +218,7 @@ public class CodeEditorComponentTests
         {
             CultureInfo.CurrentUICulture = CultureInfo.GetCultureInfo("pt-BR");
             var host = Host(new CodeEditor("x", "csharp"));
-            Settle(host);
+            ClickInto(host, Settle(host));
 
             var frame = OpenFind(host);
 
@@ -438,7 +442,7 @@ public class CodeEditorComponentTests
     {
         var editor = new CodeEditor("fo x foo", "csharp") { ShowLineNumbers = false };
         var host = Host(editor);
-        Settle(host);
+        ClickInto(host, Settle(host));
         OpenFind(host);
         Type(host, "fo");
 

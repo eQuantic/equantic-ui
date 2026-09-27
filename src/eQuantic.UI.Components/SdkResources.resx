@@ -39,6 +39,39 @@
   <data name="CodeEditor" xml:space="preserve">
     <value>Code editor</value>
   </data>
+  <data name="LineNumbered" xml:space="preserve">
+    <value>Line {0}</value>
+  </data>
+  <data name="UnchangedLine" xml:space="preserve">
+    <value>1 unchanged line</value>
+  </data>
+  <data name="UnchangedLines" xml:space="preserve">
+    <value>{0} unchanged lines</value>
+  </data>
+  <data name="HiddenLine" xml:space="preserve">
+    <value>1 hidden line</value>
+  </data>
+  <data name="HiddenLines" xml:space="preserve">
+    <value>{0} hidden lines</value>
+  </data>
+  <data name="PreviousChange" xml:space="preserve">
+    <value>Previous change</value>
+  </data>
+  <data name="NextChange" xml:space="preserve">
+    <value>Next change</value>
+  </data>
+  <data name="ShowInline" xml:space="preserve">
+    <value>Show inline</value>
+  </data>
+  <data name="ShowSideBySide" xml:space="preserve">
+    <value>Show side by side</value>
+  </data>
+  <data name="DiffOriginal" xml:space="preserve">
+    <value>Original</value>
+  </data>
+  <data name="DiffModified" xml:space="preserve">
+    <value>Modified</value>
+  </data>
   <data name="Spreadsheet" xml:space="preserve">
     <value>Spreadsheet</value>
   </data>

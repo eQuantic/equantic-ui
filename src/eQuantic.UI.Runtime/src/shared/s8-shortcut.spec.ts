@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { lowerVisualNode } from './lowering';
 import { commitShortcuts, activeShortcuts, chordOf, resetShortcuts } from '../dom/shortcuts';
+import { Reconciler } from '../dom/reconciler';
 import { photonTheme } from './design-system.generated';
 import type { LoweringContext } from './lowering';
 import type { AdaptiveNodeValue, AnchoredNode, VisualNodeValue } from './nodes';
@@ -235,5 +236,57 @@ describe('S8 shortcuts inside adaptive arms', () => {
     pressFind();
 
     expect(fired).toBe(2);
+  });
+});
+
+/**
+ * A FOCUS-SCOPED shortcut is its subtree's own (C# `Shortcut.FocusScoped`, twin of
+ * PhotonHost.FocusIsWithin): of two that claim one chord, the one holding the keyboard answers, and
+ * with the keyboard in neither the browser keeps the key. Page-wide, the last one mounted answered
+ * wherever the keyboard was: F7 typed in the first code diff of a page stepped the second.
+ */
+describe('S8 focus-scoped shortcuts', () => {
+  beforeEach(() => resetShortcuts());
+
+  function scoped(label: string, onPressed: () => void): VisualNodeValue {
+    return {
+      nodeKind: 'shortcut',
+      child: { nodeKind: 'pressable', child: marker(), onPressed: () => {}, label },
+      chord: { key: 'F7' },
+      onPressed,
+      focusScoped: true,
+    } as unknown as VisualNodeValue;
+  }
+
+  function pressF7(): KeyboardEvent {
+    const event = new KeyboardEvent('keydown', { key: 'F7', cancelable: true });
+    window.dispatchEvent(event);
+    return event;
+  }
+
+  it('answers for the subtree the keyboard is in, and leaves the key alone outside every one', () => {
+    const fired: string[] = [];
+    const parent = document.createElement('div');
+    document.body.appendChild(parent);
+    try {
+      const column = {
+        nodeKind: 'column',
+        children: [scoped('first', () => fired.push('first')), scoped('second', () => fired.push('second'))],
+      } as unknown as VisualNodeValue;
+      new Reconciler().reconcile(parent, null, lowerVisualNode(column, ctx));
+      commitShortcuts();
+      const scopes = [...parent.querySelectorAll<HTMLElement>('[data-eq-focus-scope]')];
+      expect(scopes).toHaveLength(2);
+
+      expect(pressF7().defaultPrevented).toBe(false);
+      scopes[0].focus();
+      expect(pressF7().defaultPrevented).toBe(true);
+      scopes[1].focus();
+      pressF7();
+
+      expect(fired).toEqual(['first', 'second']);
+    } finally {
+      parent.remove();
+    }
   });
 });

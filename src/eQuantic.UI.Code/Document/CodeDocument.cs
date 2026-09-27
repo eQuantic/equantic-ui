@@ -25,6 +25,14 @@ public sealed class CodeDocument
 
     public static readonly CodeDocument Empty = new([string.Empty]);
 
+    /// <summary>
+    /// A document of <paramref name="lines"/> as they are, for text that is already lines: the lines
+    /// a patch quotes. None at all is one empty line, as an empty text is. A line is not split, so
+    /// one that holds a break is the caller's mistake to avoid.
+    /// </summary>
+    public static CodeDocument FromLines(IReadOnlyList<string> lines) =>
+        new(lines.Count == 0 ? [string.Empty] : lines.ToList());
+
     /// <summary>Parses text into lines, accepting CRLF, CR and LF alike.</summary>
     public static CodeDocument FromText(string text)
     {

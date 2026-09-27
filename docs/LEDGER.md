@@ -839,7 +839,6 @@ record of a release, the wiki's Upgrading page is the distillate.
   spelling. 29 of the 32 conformance cases failed on main before it
   ([#465](https://github.com/eQuantic/equantic-ui/issues/465)). #396, #397, #398 and #400 are the
   same question elsewhere, each with an issue of its own.
-
 - **2026-09-26 · An expression variable is declared by its statement, with C#'s scope**: what a
   pattern, an `out var` or a deconstruction declares had four rules. A method declared every `out
   var` at its top, so a closure made in a loop read the last iteration's value (.NET 12, JavaScript
@@ -869,21 +868,49 @@ record of a release, the wiki's Upgrading page is the distillate.
   extended as written ([#479](https://github.com/eQuantic/equantic-ui/issues/479)), and a bare type
   pattern never matches ([#482](https://github.com/eQuantic/equantic-ui/issues/482)). Proposed and
   archived through OpenSpec (`openspec/specs/transpiler-expression-variables`).
+- **2026-09-27 · The code diff view**: the view half of slice 2b of
+  [`CODE-EDITOR-PLAN.md`](CODE-EDITOR-PLAN.md) ([#420](https://github.com/eQuantic/equantic-ui/issues/420), [#412](https://github.com/eQuantic/equantic-ui/pull/412)).
+  `CodeDiff` draws two texts, or one file of a patch, side by side (the sides level at every change)
+  or inline (the removed lines between the lines that replaced them), washes a changed line and
+  marks its changed words, folds an unchanged run into a row that opens on a press, steps through
+  the changes with F7 and the toolbar, and edits the modified side, compared again after every edit.
+  Under it the engine maps a view's lines to rows (`CodeRows`), `CodeDiffLayout` lays out each side
+  and `CodePatch` reads a unified diff, and `CodeBlock` draws the rows. On the way, eqc's twins of
+  this code were the first to cross an array of a union, a tuple return, a local starting null and a
+  function-typed parameter, and each crossed wrong (a negative declared default did too, and
+  [#409](https://github.com/eQuantic/equantic-ui/pull/409), above, settled it first); an extended
+  property pattern read `changes.Count`, which is undefined; a button drawn in a code surface never
+  heard its click on the web; a `Shortcut` answered for the whole page, so F7 in one diff stepped
+  another, and `FocusScoped` now makes a chord the subtree's own (FLUTTER-PARITY said SAME, and it
+  was not); and a Mac's function keys reached the host as the characters they type. The author's
+  review found six more, each fixed: a local annotated in the plain JavaScript the design host
+  inlines, a zero-context patch's gaps, F7 stuck past a removed end, the focus a fold's press
+  dropped on the web, a patch line's bare carriage return, and a tuple's enum named as in C#; the
+  find bar's Escape, still page-wide, is [#457](https://github.com/eQuantic/equantic-ui/issues/457).
 - **2026-09-27 · A lambda's block maps statement by statement**: since #382 every statement of a
   member's body mapped to its own line, but a lambda's block reached the writer as text, laid out
   where the lambda was converted, and its statements' marks were dropped with it
   ([#384](https://github.com/eQuantic/equantic-ui/issues/384)). No line inside a lambda's block had a
   segment, so a breakpoint there bound nowhere and a frame read as the line that holds the lambda.
-  The block is the statement IR now, with the layout and depth it is laid out at, so the text is what
-  it was. The expression writer composes every node's marks through the builder it now shares with
-  the statement writer, and List's own methods (`ForEach`, `Find`…) cross to the IR, which takes
-  `ListMethodStrategy` off the text baseline. Of the 13 new lines `StatementSourceMapTests` reads, none
-  had a segment on main, and a frame thrown inside a `ForEach` block now leads to its statement
-  through the composed map. Filed: a body with an `out` or `ref` parameter is wrapped as text
-  ([#487](https://github.com/eQuantic/equantic-ui/issues/487)), and List's `Sort`, `RemoveAll`,
-  `BinarySearch`, `CopyTo`, `Find` and `FindIndex` answer as a JavaScript array does
-  ([#488](https://github.com/eQuantic/equantic-ui/issues/488)). Proposed and archived through
-  OpenSpec (`openspec/specs/transpiler-source-maps`).
+  A block arrow is its own node now (`JsArrowBlock`), its block the statement IR laid out where the
+  lambda stands, so the text is what it was, and the expression writer composes every node's marks
+  through the builder it shares with the statement writer. The author's review found the change's own
+  regression, fixed before it opened: what followed a block on its closing line read as the block's
+  last statement, where main read it as the statement, and now the statement takes the line back. The
+  review also found a braced body losing its origin to the `if` around it, retired `JsConstArrow` for a
+  `const` bound to a block arrow, and moved List's own methods and collection expressions to the IR,
+  both off the text baseline. Of the 13 lambda lines `StatementSourceMapTests` reads, none had a
+  segment on main. `LambdaStatementMapTests` now counts the shared components' lambda statements with
+  no segment against a baseline that may only shrink: 59, where main has 79 for the same sources, the
+  rest inside expression-bodied members and object creations
+  ([#492](https://github.com/eQuantic/equantic-ui/issues/492)). Filed: a body with an `out` or `ref`
+  parameter is wrapped as text ([#487](https://github.com/eQuantic/equantic-ui/issues/487)), List's
+  `Sort`, `RemoveAll`, `BinarySearch`, `CopyTo`, `Find` and `FindIndex` answer as a JavaScript array
+  does ([#488](https://github.com/eQuantic/equantic-ui/issues/488)), a default interface member maps
+  its lines into the implementing class's file
+  ([#490](https://github.com/eQuantic/equantic-ui/issues/490)), and a string holding U+2028 or U+2029
+  shifts the map's later lines ([#491](https://github.com/eQuantic/equantic-ui/issues/491)). Proposed
+  and archived through OpenSpec (`openspec/specs/transpiler-source-maps`).
 
 ## Retired documents
 

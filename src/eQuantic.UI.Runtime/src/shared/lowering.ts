@@ -778,11 +778,20 @@ function lowerCodeSurface(node: CodeSurfaceNode, context: LoweringContext, path:
   // `mousedown` arrives only AFTER the touch ended, so for those the press is the `pointerdown`.
   // The capture is taken on the `pointerdown` either way, since it names the pointer to capture.
   let pressedBy = 'mouse';
+  // A PRESSABLE drawn inside the surface takes its own press, as it does on Photon, where a press goes
+  // to what is drawn on top: a diff's folded run opens on a press on its row. The surface captured
+  // the pointer on every press, so the release went to the surface and the row's click never came.
+  const onPressable = (event: Event) => {
+    const surfaceElement = event.currentTarget as HTMLElement | null;
+    const pressed = (event.target as Element | null)?.closest?.('button, [role="button"]');
+    return pressed != null && pressed !== surfaceElement && surfaceElement?.contains?.(pressed) === true;
+  };
   const press = (event: MouseEvent, clicks: number) => {
     model.handlePointer('down', local(event), modifiersOf(event), clicks);
     changed();
   };
   surface.events['pointerdown'] = ((event: PointerEvent) => {
+    if (onPressable(event)) return;
     pressedBy = event.pointerType || 'mouse';
     (event.currentTarget as HTMLElement).setPointerCapture?.(event.pointerId);
     if (pressedBy !== 'mouse') {
@@ -791,6 +800,7 @@ function lowerCodeSurface(node: CodeSurfaceNode, context: LoweringContext, path:
     }
   }) as unknown as EventHandler;
   surface.events['mousedown'] = ((event: MouseEvent) => {
+    if (onPressable(event)) return;
     // Cancelled, whoever pressed: the browser's own reaction to a press is to move the focus to what
     // was pressed — the code's text, which cannot hold it — and that took it from the input the
     // keyboard types into, the moment it had been given.
@@ -3129,9 +3139,32 @@ function lowerShortcut(
   // C# twin: nested shortcuts share one child root, so the marker LISTS them.
   const existing = child.attributes['data-eq-shortcut'];
   child.attributes['data-eq-shortcut'] = existing ? `${existing} ${chord}` : chord;
-  if (node.onPressed)
-    declareShortcut({ chord, handler: node.onPressed, live: liveInEnclosingArms() });
+  if (node.onPressed) {
+    const arms = liveInEnclosingArms();
+    let live = arms;
+    if (node.focusScoped) {
+      // The chord is the subtree's own: it answers while the keyboard is inside it. Nested
+      // shortcuts share one child root, so the first stamps the scope and the rest read it. Only
+      // the client stamps it, as it does a scroll view's observer: hydration adds an attribute.
+      const scope = child.attributes[FOCUS_SCOPE] ?? path;
+      child.attributes[FOCUS_SCOPE] = scope;
+      live = () => focusWithin(scope) && (arms === undefined || arms());
+    }
+    declareShortcut({ chord, handler: node.onPressed, live });
+  }
   return child;
+}
+
+/** The attribute a focus-scoped shortcut's subtree carries, whose value names the scope. */
+const FOCUS_SCOPE = 'data-eq-focus-scope';
+
+/** Whether the keyboard focus is inside the element stamped with this scope. C# twin:
+ * PhotonHost.FocusIsWithin, over the focused path. */
+function focusWithin(scope: string): boolean {
+  if (typeof document === 'undefined') return false;
+  for (let at = document.activeElement; at; at = at.parentElement)
+    if (at.getAttribute(FOCUS_SCOPE) === scope) return true;
+  return false;
 }
 
 /** The chord's wire form — the C# WebRealizer.ChordId twin (fixed modifier order). */
