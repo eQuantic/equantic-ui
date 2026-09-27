@@ -37,6 +37,10 @@ public class DateTimeToStringConformanceTests
     [InlineData("return $\"{DateTime.MinValue.ToString(\"yyyy-MM-dd\")}|{DateTime.MinValue.ToString(\"o\")}|{new DateTime(50, 6, 1).ToString(\"D\")}\";")]
     // The short and long strings are the same specifiers by another name (found in review, #388).
     [InlineData(Moment + "return $\"{d.ToShortDateString()}|{d.ToLongDateString()}|{d.ToShortTimeString()}|{d.ToLongTimeString()}\";")]
+    // A null or empty format is G, a variable's at run time (found in Copilot's second round, #472).
+    // The harness runs the invariant culture, where the twin's text was G's too: this proves the
+    // call runs, and CultureCrossingTests what it asks for.
+    [InlineData(Moment + "string f = null; return $\"{d.ToString((string)null)}|{d.ToString(\"\")}|{d.ToString(f)}|{d.ToString(f, System.Globalization.CultureInfo.InvariantCulture)}\";")]
     // A null DateTime? writes nothing, and its conditional ToString is null.
     [InlineData("DateTime? n = null; return $\"[{n.ToString()}]|{n?.ToString(\"D\") ?? \"none\"}\";")]
     public void ADateTimesToString_PrintsAsDotNet(string statements)

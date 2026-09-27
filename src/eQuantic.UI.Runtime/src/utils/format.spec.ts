@@ -288,7 +288,7 @@ describe('a date with no culture in force', () => {
 // Date built from them was normalised by the host's zone, and in New York's spring-forward gap 02:30
 // became 03:30. Only U reads the value as local time, as .NET does. The expected strings are .NET 10's
 // with TZ=America/New_York.
-describe('a date in a time zone that skips an hour', () => {
+describe('a date in a time zone that skips or repeats an hour', () => {
   const zone = process.env.TZ;
   afterEach(() => {
     if (zone === undefined) delete process.env.TZ;
@@ -306,5 +306,16 @@ describe('a date in a time zone that skips an hour', () => {
     expect(format(gap, 'F')).toBe('Sunday, 08 March 2026 02:30:00');
     expect(format(gap, 'U')).toBe('Sunday, 08 March 2026 07:30:00');
     expect(format(dateTime(2026, 7, 1, 12, 0, 0), 'U')).toBe('Wednesday, 01 July 2026 16:00:00');
+  });
+
+  // A repeated hour is standard time to .NET's ToUniversalTime, where the Date constructor took the
+  // daylight instant (found in Copilot's second round, #472). .NET 10's strings, TZ=America/New_York.
+  it('reads the hour a fall-back repeats as standard time for U, as .NET does', () => {
+    process.env.TZ = 'America/New_York';
+    installCulture('', '', {});
+    expect(format(dateTime(2026, 11, 1, 1, 30, 0), 'U')).toBe('Sunday, 01 November 2026 06:30:00');
+    expect(format(dateTime(2026, 11, 1, 0, 59, 59), 'U')).toBe('Sunday, 01 November 2026 04:59:59');
+    expect(format(dateTime(2026, 11, 1, 2, 0, 0), 'U')).toBe('Sunday, 01 November 2026 07:00:00');
+    expect(format(dateTime(2026, 11, 1, 1, 30, 0), 'HH:mm')).toBe('01:30');
   });
 });

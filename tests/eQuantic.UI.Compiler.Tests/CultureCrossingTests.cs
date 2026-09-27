@@ -38,6 +38,7 @@ public class CultureCrossingTests
             public sealed class Readout : StatelessComponent
             {
                 private float _value = 0.55f;
+                private string? _pattern;
 
                 public override VisualNode Build(ComponentContext context) =>
                     new Text({{body}}, TypeRole.BodyM);
@@ -173,12 +174,19 @@ public class CultureCrossingTests
 
     /// <summary>A DateTime's ToString with no specifier is `G` in the current culture, as .NET's is,
     /// and so is one given the current culture or a null; with the invariant one it is the invariant
-    /// `G`. It wrote the twin's invariant text for the first three (found in review, #472).</summary>
+    /// `G`. It wrote the twin's invariant text for the first three (found in review, #472). A null or
+    /// an empty format is `G` too, a variable's at run time (found in Copilot's second round,
+    /// #472).</summary>
     [Theory]
     [InlineData("new DateTime(2026, 9, 24).ToString()", "'G')")]
     [InlineData("new DateTime(2026, 9, 24).ToString(CultureInfo.CurrentCulture)", "'G')")]
     [InlineData("new DateTime(2026, 9, 24).ToString((IFormatProvider)null)", "'G')")]
     [InlineData("new DateTime(2026, 9, 24).ToString(CultureInfo.InvariantCulture)", "'G', undefined, true)")]
+    [InlineData("new DateTime(2026, 9, 24).ToString((string)null)", "'G')")]
+    [InlineData("new DateTime(2026, 9, 24).ToString(\"\")", "'G')")]
+    [InlineData("new DateTime(2026, 9, 24).ToString((string)null, CultureInfo.InvariantCulture)", "'G', undefined, true)")]
+    [InlineData("new DateTime(2026, 9, 24).ToString(\"\", CultureInfo.CurrentCulture)", "'G')")]
+    [InlineData("new DateTime(2026, 9, 24).ToString(_pattern)", "this._pattern || 'G')")]
     public void ADateTimesToString_WithNoSpecifier_IsTheGeneralPattern(string body, string emitted)
     {
         var result = Compile(body);
