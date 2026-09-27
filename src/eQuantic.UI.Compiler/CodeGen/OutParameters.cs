@@ -56,30 +56,4 @@ internal static class OutParameters
         var call = isAsync ? $"await (async () => {{ {body} }})()" : $"(() => {{ {body} }})()";
         return $"{declaration}const $r = {call}; return {{ $: $r, {string.Join(", ", carried)} }};";
     }
-
-    /// <summary>
-    /// `let caret;` for every `out var caret` ANYWHERE in a body — including inside its lambdas,
-    /// which is where a JS `let` at method scope is exactly the right visibility. C# scopes these to
-    /// the enclosing block; one declaration per method is a superset of that and cannot collide,
-    /// since two blocks that each declare one never see each other's uses.
-    /// </summary>
-    public static string HoistedLocals(SyntaxNode? body)
-    {
-        if (body is null) return "";
-        var names = body.DescendantNodes()
-            .OfType<ArgumentSyntax>()
-            .Where(argument => argument.RefOrOutKeyword.IsKind(SyntaxKind.OutKeyword))
-            .Select(argument => argument.Expression)
-            .OfType<DeclarationExpressionSyntax>()
-            .Select(declaration => declaration.Designation)
-            .OfType<SingleVariableDesignationSyntax>()
-            .Select(designation => designation.Identifier.Text.ToJsIdentifier())
-            .Distinct(StringComparer.Ordinal)
-            .ToArray();
-
-        // `: any` rather than a bare `let`: TypeScript cannot see through the arrow that assigns
-        // these, so an untyped slot reads as "possibly undefined" at every later use. What the
-        // value actually is stays checked where it comes from — the callee's returned object.
-        return names.Length == 0 ? "" : $"let {string.Join(", ", names.Select(n => $"{n}: any"))}; ";
-    }
 }

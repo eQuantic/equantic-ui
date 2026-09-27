@@ -88,30 +88,11 @@ public static class Transpiler
             .First(m => m.Identifier.Text == "__Eval")
             .Body!;
 
-        var js = converter.Convert(body); // dispatches to ConvertBlock -> "{ … }"
-
-        // Hoist `out var` declarations to `let` at the top of the block, mirroring TypeScriptEmitter's
-        // render-method emission. Without this, a program that uses `out var` (e.g.
-        // `d.TryGetValue(k, out var v)`) assigns to an undeclared name, which throws under the ESM
-        // strict mode the harness runs the emitted JS in.
-        // Only single-variable `out var x` designations are hoisted. Parenthesised designations
-        // (`var (a, b) = …` deconstruction) are emitted as `let { … } = …` by the assignment strategy,
-        // so hoisting them here would produce an invalid `let (a, b);`.
-        var outVars = body.DescendantNodes()
-            .OfType<DeclarationExpressionSyntax>()
-            .Select(d => d.Designation)
-            .OfType<SingleVariableDesignationSyntax>()
-            .Select(s => s.Identifier.Text)
-            .Where(n => n != "_")
-            .Distinct()
-            .ToList();
-        if (outVars.Count == 0) return js;
-
-        var hoist = string.Join(" ", outVars.Select(v => $"let {v};"));
-        var trimmed = js.TrimStart();
-        return trimmed.StartsWith("{")
-            ? "{ " + hoist + " " + trimmed[1..]
-            : hoist + " " + js;
+        // No declarations of its own: every statement declares what its expressions declare, with
+        // C#'s scope (ExpressionVariableScanner). The harness once put a `let` for every `out var`
+        // at the top of the block, which is what the emitter did for a method and nothing else did:
+        // the cases passed while a getter, a loop and a deconstruction diverged.
+        return converter.Convert(body); // dispatches to ConvertBlock -> "{ … }"
     }
 
     private static (SyntaxTree Tree, CSharpToJsConverter Converter) Compile(string evalBody, string prelude)

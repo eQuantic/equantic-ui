@@ -41,7 +41,7 @@ export class CodeHistory {
     }
 
     undo(document: CodeDocument) {
-        let selection, replaced, written; const $r = (() => { let end: any; selection = new CodeRange();
+        let selection, replaced, written; const $r = (() => { selection = new CodeRange();
         replaced = new CodeRange();
         written = new CodeRange();
         if (this._past.length === 0) return null;
@@ -50,6 +50,7 @@ export class CodeHistory {
         this._future.push(edit);
         this.break();
         replaced = new CodeRange(document.clamp(edit.insertedRange.start), document.clamp(edit.insertedRange.end));
+        let end: any; 
         let next = ($o => (end = $o.caret, $o.$))(document.replace(replaced, edit.removedText));
         written = new CodeRange(replaced.start, end);
         selection = edit.selectionBefore;
@@ -57,7 +58,7 @@ export class CodeHistory {
     }
 
     redo(document: CodeDocument) {
-        let selection, replaced, written; const $r = (() => { let end: any; selection = new CodeRange();
+        let selection, replaced, written; const $r = (() => { selection = new CodeRange();
         replaced = new CodeRange();
         written = new CodeRange();
         if (this._future.length === 0) return null;
@@ -66,6 +67,7 @@ export class CodeHistory {
         this._past.push(edit);
         this.break();
         replaced = new CodeRange(document.clamp(edit.range.start), document.clamp(edit.range.end));
+        let end: any; 
         let next = ($o => (end = $o.caret, $o.$))(document.replace(replaced, edit.insertedText));
         written = new CodeRange(replaced.start, end);
         selection = edit.selectionAfter;

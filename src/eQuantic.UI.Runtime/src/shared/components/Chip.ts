@@ -31,8 +31,8 @@ export class Chip extends StatelessComponent {
         let theme = context.theme;
         let primary = theme.colors('primary');
         let tint = theme.colors(this.variant);
-        let fill = (() => { const _s = this.kind; if ((_s === 'filter') && (this.selected)) return primary.subtle; if (_s === 'filter') return theme.surfaceSubtle; if (_s === 'tag') return tint.subtle; return theme.surfaceSubtle; })();
-        let textColor = (() => { const _s = this.kind; if ((_s === 'filter') && (this.selected)) return primary.onSubtle; if (_s === 'tag') return tint.onSubtle; return theme.textSecondary; })();
+        let fill = (() => { const $s = this.kind; if (($s === 'filter') && (this.selected)) return primary.subtle; if ($s === 'filter') return theme.surfaceSubtle; if ($s === 'tag') return tint.subtle; return theme.surfaceSubtle; })();
+        let textColor = (() => { const $s = this.kind; if (($s === 'filter') && (this.selected)) return primary.onSubtle; if ($s === 'tag') return tint.onSubtle; return theme.textSecondary; })();
         let label = new Text(this.label, 'caption', textColor, 1, 'start', false, false, null, 0, { styleOverride: new TypeStyle(13, 16, 'semiBold', 0, Math.fround(1.3)) });
         let content = new Row(6, 'start', 'center', false, null, null, { main: 'center', height: SizeValue.fill });
         if (this.kind === 'filter' && this.selected) {

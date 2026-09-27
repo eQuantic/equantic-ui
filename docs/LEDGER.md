@@ -814,6 +814,24 @@ record of a release, the wiki's Upgrading page is the distillate.
   to their own issue ([#449](https://github.com/eQuantic/equantic-ui/issues/449)), as are an `is`
   over a named constant ([#451](https://github.com/eQuantic/equantic-ui/issues/451)) and an enum's
   `ToString` ([#452](https://github.com/eQuantic/equantic-ui/issues/452)).
+- **2026-09-26 · A number prints through its specifier as .NET prints it**: the resx subset admitted
+  the `E` specifier and the formatter had no branch for it, so `{0:E2}` passed the build and printed
+  `12345` ([#393](https://github.com/eQuantic/equantic-ui/issues/393)). Measured, every specifier
+  missed in the same way: .NET writes a double from its exact binary value, a long and a decimal from
+  every digit, and rounds a half by the type, and the formatter started from the shortest text with
+  one rule. It now formats from the exact decimal expansion (`utils/exact-decimal.ts`), writes `E` as
+  .NET does, and rounds an exact half to even for a double and a float and away from zero for a
+  decimal and an integer, which the compiler now names where a specifier is written (`FormatKind`,
+  `$eq.text.asInteger`). A new conformance class fails all fifteen of its cases on main. Found on the
+  way: `decimal`'s constants do not cross ([#444](https://github.com/eQuantic/equantic-ui/issues/444)).
+  Found in review ([#445](https://github.com/eQuantic/equantic-ui/pull/445)): `X` wrote a negative int
+  as `-1` and now writes it at its type's width, with `B` beside it; a custom picture read its digit
+  places alone and is now drawn as .NET draws it (sections, text, percent, exponents); a precision past
+  100 digits was cut, and a fraction under `D` printed where .NET throws; es-ES left `1234` ungrouped,
+  and sv-SE's minus sign was a hyphen. Left for later: a number's text outside a specifier ignores the
+  culture ([#454](https://github.com/eQuantic/equantic-ui/issues/454)), the guesses where a type did not
+  travel ([#455](https://github.com/eQuantic/equantic-ui/issues/455)), and EQ2100's subset can widen
+  ([#456](https://github.com/eQuantic/equantic-ui/issues/456)).
 
 - **2026-09-26 · The Copilot loop stops on its own**: waiting for Copilot's light review to run dry
   cost about one round per finding (69 findings in 47 rounds on six pull requests, 14 rounds for
@@ -832,6 +850,63 @@ record of a release, the wiki's Upgrading page is the distillate.
   #354 without a CI run on a main that had it, so `test-runtime` and the fixture's C# pin failed on
   main. The fixture is regenerated from the palette both sides now carry
   ([#453](https://github.com/eQuantic/equantic-ui/issues/453)).
+
+- **2026-09-26 · A name the transpiler changes lands on no name its scope holds**: a local function
+  was camel-cased onto a local that differed only by case, a module that did not load; a reserved
+  word took a trailing underscore that C# can also write; and a component's constructor bound its
+  parameters camel-cased while its body read them as written. `LocalFunctionName` owns a local
+  function's name, a reserved word takes a `$`, and every declaration and its readers use one
+  spelling. 29 of the 32 conformance cases failed on main before it
+  ([#465](https://github.com/eQuantic/equantic-ui/issues/465)). #396, #397, #398 and #400 are the
+  same question elsewhere, each with an issue of its own.
+- **2026-09-26 · An expression variable is declared by its statement, with C#'s scope**: what a
+  pattern, an `out var` or a deconstruction declares had four rules. A method declared every `out
+  var` at its top, so a closure made in a loop read the last iteration's value (.NET 12, JavaScript
+  22) and a recursive local function overwrote its caller's; a getter, a setter, an initializer, a
+  record's members and a component's Build declared none; a deconstruction's elements were declared
+  by nothing; and plain JavaScript carried `let n: any;`
+  ([#466](https://github.com/eQuantic/equantic-ui/issues/466)). One owner,
+  `ExpressionVariableScanner`, now answers every statement with the scope Roslyn gives: in front of
+  an `if` or an expression statement, or at the top of the switch whose section holds it, inside a
+  `foreach` or a `using`, in a `while`'s, a `do`'s or a `for`'s own head for a fresh variable every
+  iteration, and in its own arrow for an initializer, each spelled as #399 spells its readers. The
+  harness had declared every `out var` itself, which is why none of it showed: 43 of the new class's
+  first 47 cases fail on main without that, and neither mode's modules load in the new emission
+  test. The author's review found four more before the pull request opened: a section's variable
+  assigned by another section, two queries binding one name, a `for` initialized by a
+  deconstruction, and a `do`'s condition, each now a case. Found on the way: a static property on a
+  plain class was an instance getter (its `field` slot is still an instance one,
+  [#483](https://github.com/eQuantic/equantic-ui/issues/483)), plain JavaScript annotated a local
+  declared as another type, and a switch's subject is now `$s`, since a local `_s` could land on it
+  (a slice of [#397](https://github.com/eQuantic/equantic-ui/issues/397)). Filed: two catch clauses
+  do not parse and one ignores its type and filter
+  ([#474](https://github.com/eQuantic/equantic-ui/issues/474)), a lock drops its expression
+  ([#475](https://github.com/eQuantic/equantic-ui/issues/475)), a for's own variable is one per
+  iteration ([#476](https://github.com/eQuantic/equantic-ui/issues/476)), `fs[0]()` reads off
+  `this` ([#477](https://github.com/eQuantic/equantic-ui/issues/477)), `new object()` names no class
+  ([#478](https://github.com/eQuantic/equantic-ui/issues/478)), a base written with its namespace is
+  extended as written ([#479](https://github.com/eQuantic/equantic-ui/issues/479)), and a bare type
+  pattern never matches ([#482](https://github.com/eQuantic/equantic-ui/issues/482)). Proposed and
+  archived through OpenSpec (`openspec/specs/transpiler-expression-variables`).
+- **2026-09-27 · The code diff view**: the view half of slice 2b of
+  [`CODE-EDITOR-PLAN.md`](CODE-EDITOR-PLAN.md) ([#420](https://github.com/eQuantic/equantic-ui/issues/420), [#412](https://github.com/eQuantic/equantic-ui/pull/412)).
+  `CodeDiff` draws two texts, or one file of a patch, side by side (the sides level at every change)
+  or inline (the removed lines between the lines that replaced them), washes a changed line and
+  marks its changed words, folds an unchanged run into a row that opens on a press, steps through
+  the changes with F7 and the toolbar, and edits the modified side, compared again after every edit.
+  Under it the engine maps a view's lines to rows (`CodeRows`), `CodeDiffLayout` lays out each side
+  and `CodePatch` reads a unified diff, and `CodeBlock` draws the rows. On the way, eqc's twins of
+  this code were the first to cross an array of a union, a tuple return, a local starting null and a
+  function-typed parameter, and each crossed wrong (a negative declared default did too, and
+  [#409](https://github.com/eQuantic/equantic-ui/pull/409), above, settled it first); an extended
+  property pattern read `changes.Count`, which is undefined; a button drawn in a code surface never
+  heard its click on the web; a `Shortcut` answered for the whole page, so F7 in one diff stepped
+  another, and `FocusScoped` now makes a chord the subtree's own (FLUTTER-PARITY said SAME, and it
+  was not); and a Mac's function keys reached the host as the characters they type. The author's
+  review found six more, each fixed: a local annotated in the plain JavaScript the design host
+  inlines, a zero-context patch's gaps, F7 stuck past a removed end, the focus a fold's press
+  dropped on the web, a patch line's bare carriage return, and a tuple's enum named as in C#; the
+  find bar's Escape, still page-wide, is [#457](https://github.com/eQuantic/equantic-ui/issues/457).
 
 ## Retired documents
 

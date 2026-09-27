@@ -1,6 +1,6 @@
 using System.Globalization;
-using System.Text;
 using Microsoft.CodeAnalysis;
+using eQuantic.UI.Compiler.CodeGen.Ir;
 
 namespace eQuantic.UI.Compiler.CodeGen.Strategies;
 
@@ -19,7 +19,7 @@ namespace eQuantic.UI.Compiler.CodeGen.Strategies;
 /// <item>An ENUM's constant is the enum's own representation (EnumStrategy): a <c>[Flags]</c> enum's
 /// number, any other enum's camelCase member name. The value arrives as the underlying integer, and
 /// written as a number it read a name table at <c>[1]</c>, or reached a flags parameter as a name.</item>
-/// <item>A <c>char</c> and a <c>string</c> are quoted text, escaped (<see cref="Quote"/>).</item>
+/// <item>A <c>char</c> and a <c>string</c> are quoted text, escaped (<see cref="JsStringLiteral.Quote"/>).</item>
 /// </list>
 /// </summary>
 internal static class ConstantLiteral
@@ -45,9 +45,9 @@ internal static class ConstantLiteral
         switch (value)
         {
             case string text:
-                return Quote(text);
+                return JsStringLiteral.Quote(text);
             case char character:
-                return Quote(character.ToString());
+                return JsStringLiteral.Quote(character.ToString());
             case bool flag:
                 return flag ? "true" : "false";
             case decimal number:
@@ -64,56 +64,6 @@ internal static class ConstantLiteral
                 return null;
         }
     }
-
-    /// <summary>
-    /// <paramref name="text"/> as a single-quoted JavaScript string. What cannot stand for itself in the
-    /// module is escaped: the quote and the backslash, and every character with no glyph of its own (a
-    /// control, the tab and the line terminators included, a format character, a mark, a separator
-    /// other than the space, a code point unassigned or for private use) as <c>\uXXXX</c>, in the
-    /// upper case C# source spells them in. So is a LONE surrogate: UTF-8 has no bytes for one, so a
-    /// module holding it could not be written, a strict encoder throwing and a lenient one writing
-    /// U+FFFD, another character. A surrogate PAIR is one character, which UTF-8 writes as it is.
-    /// </summary>
-    public static string Quote(string text)
-    {
-        var quoted = new StringBuilder(text.Length + 2).Append('\'');
-        for (var i = 0; i < text.Length; i++)
-        {
-            var c = text[i];
-            if (char.IsHighSurrogate(c) && i + 1 < text.Length && char.IsLowSurrogate(text[i + 1]))
-            {
-                quoted.Append(c).Append(text[++i]);
-                continue;
-            }
-            switch (c)
-            {
-                case '\\': quoted.Append("\\\\"); break;
-                case '\'': quoted.Append("\\'"); break;
-                case '\n': quoted.Append("\\n"); break;
-                case '\r': quoted.Append("\\r"); break;
-                case '\t': quoted.Append("\\t"); break;
-                default:
-                    if (HasNoGlyph(c))
-                        quoted.Append("\\u").Append(((int)c).ToString("X4", CultureInfo.InvariantCulture));
-                    else
-                        quoted.Append(c);
-                    break;
-            }
-        }
-        return quoted.Append('\'').ToString();
-    }
-
-    /// <summary>Whether a character shows nothing of its own where it stands: raw in the module, it is
-    /// text no reader can see, and a lone surrogate is text UTF-8 cannot hold.</summary>
-    private static bool HasNoGlyph(char c) => CharUnicodeInfo.GetUnicodeCategory(c) switch
-    {
-        UnicodeCategory.Control or UnicodeCategory.Format or UnicodeCategory.NonSpacingMark
-            or UnicodeCategory.EnclosingMark or UnicodeCategory.LineSeparator
-            or UnicodeCategory.ParagraphSeparator or UnicodeCategory.PrivateUse
-            or UnicodeCategory.OtherNotAssigned or UnicodeCategory.Surrogate => true,
-        UnicodeCategory.SpaceSeparator => c != ' ',
-        _ => false,
-    };
 
     /// <summary>An enum's constant in the enum's representation: the number for <c>[Flags]</c>, whose
     /// members exist to be OR-combined, otherwise the camelCase name of the member holding the value.

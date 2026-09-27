@@ -116,17 +116,19 @@ public static class PatternConverter
     {
         switch (pattern)
         {
+            // Each binding under the name every reference reads it by (ToJsIdentifier): as source
+            // text, `is int @class` bound `@class` and `is int package` a reserved word.
             case VarPatternSyntax { Designation: SingleVariableDesignationSyntax v }:
-                bindings.Add((v.Identifier.Text, access));
+                bindings.Add((v.Identifier.Text.ToJsIdentifier(), access));
                 break;
 
             case DeclarationPatternSyntax { Designation: SingleVariableDesignationSyntax d }:
-                bindings.Add((d.Identifier.Text, access));
+                bindings.Add((d.Identifier.Text.ToJsIdentifier(), access));
                 break;
 
             case RecursivePatternSyntax recursive:
                 if (recursive.Designation is SingleVariableDesignationSyntax r)
-                    bindings.Add((r.Identifier.Text, access));
+                    bindings.Add((r.Identifier.Text.ToJsIdentifier(), access));
                 if (recursive.PositionalPatternClause != null)
                 {
                     // The pattern's OWN type decides the deconstruction names — the governing
@@ -139,11 +141,9 @@ public static class PatternConverter
                 }
                 if (recursive.PropertyPatternClause != null)
                     foreach (var sp in recursive.PropertyPatternClause.Subpatterns)
-                    {
-                        var propName = sp.NameColon?.Name.ToString() ?? sp.ExpressionColon?.Expression.ToString();
-                        if (propName != null)
-                            CollectBindings(sp.Pattern, $"{access}.{Camel(propName)}", context, bindings);
-                    }
+                        if (MemberPath(sp) is { } path)
+                            CollectBindings(sp.Pattern, access + string.Concat(path.Select(name => "." + Camel(name))),
+                                context, bindings);
                 break;
 
             case ListPatternSyntax list:
@@ -187,9 +187,16 @@ public static class PatternConverter
         if (recursive.PropertyPatternClause != null)
             foreach (var sp in recursive.PropertyPatternClause.Subpatterns)
             {
-                var propName = sp.NameColon?.Name.ToString() ?? sp.ExpressionColon?.Expression.ToString();
-                if (propName == null) continue;
-                var sub = BuildCondition(sp.Pattern, $"{access}.{Camel(propName)}", context);
+                if (MemberPath(sp) is not { } path) continue;
+                // `{ A.B: p }` is `{ A: { B: p } }`: every member before the last must be there, or
+                // the pattern answers false, as C#'s does, rather than reading through a null.
+                var at = access;
+                for (var i = 0; i < path.Count - 1; i++)
+                {
+                    at = $"{at}.{Camel(path[i])}";
+                    checks.Add($"{at} != null");
+                }
+                var sub = BuildCondition(sp.Pattern, $"{at}.{Camel(path[^1])}", context);
                 if (sub != "true") checks.Add(sub);
             }
 
@@ -220,6 +227,10 @@ public static class PatternConverter
     private static void CollectListBindings(ListPatternSyntax list, string access,
         ConversionContext context, List<(string Name, string Access)> bindings)
     {
+        // The list ITSELF, when the pattern names it (`is [1, _] pair`): declared by the scanner,
+        // so it must be assigned here, or it reads undefined where C# reads the list.
+        if (list.Designation is SingleVariableDesignationSyntax whole)
+            bindings.Add((whole.Identifier.Text.ToJsIdentifier(), access));
         var (before, after, sliceIndex) = SliceShape(list);
         for (int i = 0; i < before; i++)
             CollectBindings(list.Patterns[i], $"{access}[{i}]", context, bindings);
@@ -341,6 +352,28 @@ public static class PatternConverter
             }
         }
         return false;
+    }
+
+    /// <summary>
+    /// The members a subpattern names, outermost first: one for <c>{ X: … }</c>, the whole path for
+    /// the extended <c>{ A.B.C: … }</c>. The path was lower-cased as ONE name, so
+    /// <c>{ Changes.Count: > 0 }</c> read <c>changes.Count</c>, undefined, and was quietly always false.
+    /// </summary>
+    private static List<string>? MemberPath(SubpatternSyntax sp)
+    {
+        if (sp.NameColon is { } nameColon) return [nameColon.Name.Identifier.ValueText];
+        if (sp.ExpressionColon is not { } expressionColon) return null;
+        var path = new List<string>();
+        var at = expressionColon.Expression;
+        while (at is MemberAccessExpressionSyntax member)
+        {
+            path.Insert(0, member.Name.Identifier.ValueText);
+            at = member.Expression;
+        }
+        // C# accepts nothing else before the colon (CS8918): a name, then members of it.
+        if (at is not IdentifierNameSyntax first) return null;
+        path.Insert(0, first.Identifier.ValueText);
+        return path;
     }
 
     /// <summary>

@@ -167,7 +167,10 @@ public class InvocationStrategy : IExpressionIrStrategy
             // Handle delegate/action Invoke() calls
             if (methodName == "Invoke")
             {
-                return JsExpr.Call(callerIr, argIrs);
+                var proven = ProvenNotNull(context.SemanticHelper.GetSymbol(genAccess.Expression), genAccess.Expression, context);
+                return proven.Length == 0
+                    ? JsExpr.Call(callerIr, argIrs)
+                    : JsExpr.Callish($"{caller}{proven}({string.Join(", ", argIrs.Select(JsExprWriter.Write))})");
             }
 
             // EXTENSION METHOD in reduced form (`node.Also(x => …)`): JS has no extensions, so the
@@ -254,7 +257,8 @@ public class InvocationStrategy : IExpressionIrStrategy
 
         // Invoking a DELEGATE VALUE by bare name (`configure(node)`, `OnSelect(i)`): the invocation
         // symbol is the delegate's Invoke, so resolve what the NAME binds to. A parameter/local is
-        // a plain callable in scope — VERBATIM (it must match the binding, not our casing rules);
+        // a plain callable in scope — spelled as its binding is (ToJsIdentifier: no casing rule,
+        // only the escape off and a reserved word renamed, so `@default()` calls `default$`);
         // a delegate-typed MEMBER is `this.<camel>(…)` like every other member access.
         if (symbol is { MethodKind: MethodKind.DelegateInvoke }
             && methodExpression is IdentifierNameSyntax delegateIdentifier)
@@ -263,9 +267,12 @@ public class InvocationStrategy : IExpressionIrStrategy
             // …but a PRIMARY-CONSTRUCTOR parameter is neither: Roslyn models it as a parameter and
             // it behaves like an instance field, so emitting it bare compiles and then throws a
             // ReferenceError the moment the callback runs — long after the page looked fine.
+            // The binding's name is the one its declaration took, the JS-identifier rename
+            // included: the source text called `Func<int> package` as `package()`, which a module
+            // refuses as a reserved word, beside the `package$` it had declared.
             if (delegateTarget.IsInScopeBinding())
-                return JsExpr.Callish($"{delegateIdentifier.Identifier.Text}({args})");
-            return JsExpr.Callish($"this.{delegateIdentifier.Identifier.Text.ToCamelCase()}({args})");
+                return JsExpr.Callish($"{delegateIdentifier.Identifier.ValueText.ToJsIdentifier()}({args})");
+            return JsExpr.Callish($"this.{delegateIdentifier.Identifier.Text.ToCamelCase()}{ProvenNotNull(delegateTarget, delegateIdentifier, context)}({args})");
         }
 
         // Direct invocation (Function() -> function())
@@ -321,6 +328,13 @@ public class InvocationStrategy : IExpressionIrStrategy
             }
         }
         
+        // With no model to ask, a bare call can still be a local function a block around it
+        // declares, which C# finds before any member: called by its declaration's name
+        // (LocalFunctionName), not guessed a member nor camel-cased by hand.
+        if (symbol == null && methodExpression is SimpleNameSyntax bareName
+            && LocalFunctionName.InScope(invocation, bareName.Identifier.ValueText) is { } local)
+            return JsExpr.Call(JsExpr.Identifier(LocalFunctionName.Of(local, context)), argIrs);
+
         // Heuristic fallback
         if (!needsThis && !string.IsNullOrEmpty(context.CurrentClassName))
         {
@@ -343,6 +357,10 @@ public class InvocationStrategy : IExpressionIrStrategy
         }
 
         ReportIfUntranslatable(symbol, methodName, invocation, context);
+        // A local function is called by the name its declaration took (LocalFunctionName). Cased
+        // here alone, a `Delete` was called as `delete()` beside the renamed name it declared.
+        if (symbol is { MethodKind: MethodKind.LocalFunction })
+            return JsExpr.Call(JsExpr.Identifier(LocalFunctionName.Of(symbol)), argIrs);
         return JsExpr.Call(JsExpr.Identifier(methodName.ToCamelCase()), argIrs);
     }
 
@@ -455,5 +473,21 @@ public class InvocationStrategy : IExpressionIrStrategy
     /// Types the RUNTIME provides a hand-written twin for — the shared vocabulary. Same rule the
     /// object-creation and <c>with</c> paths use.
     /// </summary>
+    /// <summary>
+    /// A TypeScript non-null assertion for a nullable delegate MEMBER that C# proved not null where it
+    /// is called, and nothing otherwise. C#'s flow analysis reads a lambda with the state where the
+    /// lambda is written, and TypeScript does not carry a property's narrowing into a closure, so
+    /// <c>OnSelect is null ? null : () => OnSelect(i)</c> was a possibly-null call to one and a proved
+    /// one to the other. A parameter or a local TypeScript narrows itself, and plain JavaScript
+    /// carries no assertion.
+    /// </summary>
+    private static string ProvenNotNull(ISymbol? target, ExpressionSyntax read, ConversionContext context) =>
+        context.TypeAnnotations
+        && target is IPropertySymbol { NullableAnnotation: NullableAnnotation.Annotated }
+            or IFieldSymbol { NullableAnnotation: NullableAnnotation.Annotated }
+        && context.SemanticHelper.ProvedNotNull(read)
+            ? "!"
+            : "";
+
     public int Priority => 1; // Lowest priority (fallback)
 }

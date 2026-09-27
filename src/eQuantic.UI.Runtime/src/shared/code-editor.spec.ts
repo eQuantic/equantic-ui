@@ -575,6 +575,42 @@ describe('code surface pointer (the SAME model the native host drives)', () => {
     expect(editor.document.textIn(editor.selection)).toBe('two three');
   });
 
+  it('leaves a press on a pressable drawn inside it to the pressable, as Photon does', () => {
+    const { editor, lowered, changed } = surfaceFor('one\ntwo');
+    editor.selection = new CodeRange(new CodePosition(1, 2));
+    let captured = false;
+    const button = { tag: 'button' };
+    const surfaceElement = {
+      getBoundingClientRect: () => ({ left: 0, top: 0 }),
+      setPointerCapture: () => {
+        captured = true;
+      },
+      querySelector: () => ({ focus: () => {} }),
+      contains: (element: unknown) => element === button,
+    };
+    const event = {
+      clientX: 20,
+      clientY: 14,
+      currentTarget: surfaceElement,
+      target: { closest: () => button },
+      preventDefault: () => {},
+      pointerId: 1,
+      pointerType: 'mouse',
+      detail: 1,
+      buttons: 1,
+      shiftKey: false,
+      altKey: false,
+      metaKey: false,
+      ctrlKey: false,
+    };
+    (lowered.events['pointerdown'] as unknown as (e: unknown) => void)(event);
+    (lowered.events['mousedown'] as unknown as (e: unknown) => void)(event);
+
+    expect(captured, 'the release has to reach the pressable, so the surface must not capture it').toBe(false);
+    expect(editor.caret.line, 'the caret stays: the press was the pressable’s').toBe(1);
+    expect(changed()).toBe(0);
+  });
+
   it('two presses take the word, three the line — counted by the mousedown', () => {
     const { editor, lowered } = surfaceFor('one two three\nfour');
     pressAt(lowered, cell(0, 5), { clicks: 2 });

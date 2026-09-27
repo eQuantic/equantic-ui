@@ -12,8 +12,23 @@ public class LockStatementStrategy : IStatementStrategy
         return node is LockStatementSyntax;
     }
 
-    public JsStatement Convert(StatementSyntax node, ConversionContext context) =>
-        context.Converter.ConvertStatementIr(((LockStatementSyntax)node).Statement);
+    /// <summary>
+    /// The body alone: a page has one thread, so there is nothing to hold. Unless the expression
+    /// DECLARES something (<c>lock (Gate(out var held))</c>): Roslyn scopes that to the enclosing
+    /// block and the body may read it, so the expression runs, in front, where it is declared.
+    /// </summary>
+    public JsStatement Convert(StatementSyntax node, ConversionContext context)
+    {
+        var lockStmt = (LockStatementSyntax)node;
+        var body = context.Converter.ConvertStatementIr(lockStmt.Statement);
+        if (ExpressionVariableScanner.Names(lockStmt.Expression).Count == 0) return body;
+        var expression = JsStatement.Expression(context.Converter.ConvertIr(lockStmt.Expression));
+        // Declared in front, unless a switch declares them for the section this lock stands in.
+        var declared = ExpressionVariableScanner.InFrontOf(lockStmt, lockStmt.Expression, context.TypeAnnotations);
+        return declared.Length == 0
+            ? JsStatement.Sequence(expression, body)
+            : JsStatement.Sequence(JsStatement.Raw(declared.TrimEnd()), expression, body);
+    }
 
     public int Priority => 10;
 }

@@ -31,7 +31,7 @@ public static class TypeDeclarationExtensions
         if (type.ParameterList != null)
         {
             foreach (var p in type.ParameterList.Parameters)
-                members.Add(new ValueMember(p.Identifier.Text, p.Identifier.Text.ToCamelCase(), TsTypeFor(p.Type, model)));
+                members.Add(new ValueMember(p.Identifier.Text, p.Identifier.ValueText.ToCamelCase(), TsTypeFor(p.Type, model)));
         }
 
         foreach (var member in type.Members)
@@ -47,7 +47,7 @@ public static class TypeDeclarationExtensions
                          && prop.AccessorList?.Accessors.Any(a => a.IsKind(SyntaxKind.GetAccessorDeclaration)
                              && a.Body == null && a.ExpressionBody == null) == true:
                     members.Add(new ValueMember(
-                        prop.Identifier.Text, prop.Identifier.Text.ToCamelCase(), TsTypeFor(prop.Type, model)));
+                        prop.Identifier.Text, prop.Identifier.ValueText.ToCamelCase(), TsTypeFor(prop.Type, model)));
                     break;
 
                 // Public instance fields (common in plain structs).
@@ -124,7 +124,7 @@ public static class TypeDeclarationExtensions
         // nullable — a C# string's default IS null — so `string Header` was declared `string | null`
         // and every read of it looked unsafe to TypeScript. The declaration is type-only; the
         // constructor is what assigns, and the C# signature is the truth about what it assigns.
-        return ts != "any" && raw.EndsWith("?") ? $"{ts} | null" : ts;
+        return ts != "any" && raw.EndsWith("?") ? TypeScriptEmitter.OrNull(ts) : ts;
     }
 
     /// <summary>JS literal for <c>default(T)</c> from the declared type syntax (name-based — the emitter

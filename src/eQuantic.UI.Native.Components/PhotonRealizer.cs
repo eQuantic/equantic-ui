@@ -57,8 +57,10 @@ public readonly record struct DragRegion(Rect Bounds, string Path, VisualNode No
 public readonly record struct LinkRegion(Rect Bounds, string Destination, string Path);
 
 /// <summary>Spec S8: a keyboard binding that is live because its subtree is on screen — the host
-/// dispatches a key press to the LAST registered match (the dialog on top wins the chord).</summary>
-public readonly record struct ShortcutBinding(KeyChord Chord, Action OnPressed);
+/// dispatches a key press to the LAST registered match (the dialog on top wins the chord). A
+/// <see cref="Scope"/> is the path of the subtree a focus-scoped binding answers for: it is live
+/// only while the focus is inside it.</summary>
+public readonly record struct ShortcutBinding(KeyChord Chord, Action OnPressed, string? Scope = null);
 
 /// <summary>An editable field. A text entry is not a pressable — a click puts a CARET in it and the
 /// keys that follow belong to it — so it registers its own kind of region, and the host keeps the

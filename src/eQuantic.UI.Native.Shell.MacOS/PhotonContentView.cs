@@ -218,14 +218,18 @@ internal static class PhotonContentView
         if ((flags & (1UL << 20)) != 0) modifiers |= Primitives.KeyModifiers.Command;
 
         var text = FromNSString(Send(@event, Sel("characters"))) ?? "";
-        var name = NameOf(SendUShort(@event, Sel("keyCode")), text);
+        var keyCode = SendUShort(@event, Sel("keyCode"));
+        var name = MacKeys.NameOf(keyCode, text);
 
         // While a field holds the caret, the PLATFORM interprets the key: a dead key marks, "´"
         // then "a" arrives as one committed "á", and a CJK method composes over many keystrokes.
         // Command/Control chords keep the direct route — ⌘A/⌘C/⌘Z belong to the app, and handing
         // them to the input context would type them.
+        // A function key composes nothing either: F7 is a command, and the input context would take
+        // it and answer for it, so the app's own chord never heard it.
         var composing = HasTextFocus?.Invoke() == true
-            && (modifiers & (Primitives.KeyModifiers.Command | Primitives.KeyModifiers.Control)) == 0;
+            && (modifiers & (Primitives.KeyModifiers.Command | Primitives.KeyModifiers.Control)) == 0
+            && !MacKeys.IsFunctionKey(keyCode);
         if (composing)
         {
             var context = Send(self, Sel("inputContext"));
@@ -312,33 +316,9 @@ internal static class PhotonContentView
     }
 
     /// <summary>
-    /// The key's DOM name, taken from the KEY CODE rather than the character it produced. A layout
-    /// decides what a key types; it does not decide which key is Return — and a French keyboard's
-    /// arrows have to work as arrows.
-    /// </summary>
-    private static string NameOf(ushort keyCode, string characters) => keyCode switch
-    {
-        48 => "Tab",
-        36 or 76 => "Enter",
-        51 => "Backspace",
-        117 => "Delete",
-        53 => "Escape",
-        49 => " ",
-        123 => "ArrowLeft",
-        124 => "ArrowRight",
-        125 => "ArrowDown",
-        126 => "ArrowUp",
-        115 => "Home",
-        119 => "End",
-        // Everything else IS what it typed — that is the DOM's rule too, and it is what a chord
-        // like ⌘K is written against.
-        _ => characters.Length > 0 ? characters : "",
-    };
-
-    /// <summary>
     /// The text a key press should INSERT, which is not the same as the text it carries. A command
     /// chord carries a character too (⌘A is "a"), and inserting it would type into the field every
-    /// time someone selected all. Control characters are the keys handled by name above.
+    /// time someone selected all. Control characters are the keys <see cref="MacKeys"/> names.
     /// </summary>
     private static string TypedText(string characters, Primitives.KeyModifiers modifiers)
     {

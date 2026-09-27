@@ -993,6 +993,8 @@ export class Shortcut extends VisualNode {
   child: VisualChild;
   chord: KeyChord;
   onPressed: (() => void) | null;
+  /** Only while the keyboard focus is inside this subtree: a component's own chord. */
+  focusScoped = false;
 
   constructor(
     child: VisualChild,

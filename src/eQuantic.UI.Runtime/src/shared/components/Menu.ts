@@ -6,7 +6,7 @@ export class Menu extends StatefulComponent {
     _highlight: number = 0;
     declare trigger: VisualNode;
     declare items: MenuItem[];
-    declare onSelect: any;
+    declare onSelect: ((int: number) => void) | null;
     declare placement: AnchorPlacementValue;
 
     constructor(trigger?: any, items?: any, onSelect: any = null, props?: any) {

@@ -20,6 +20,7 @@ public class ForEachStatementStrategy : IStatementStrategy
     {
         var foreachStmt = (ForEachStatementSyntax)node;
         var item = foreachStmt.Identifier.Text.ToJsIdentifier();
+        var declared = ExpressionVariableScanner.Declarations(foreachStmt.Expression, context.TypeAnnotations);
         var collection = context.Converter.ConvertExpression(foreachStmt.Expression);
 
         // See ForEachVariableStatementStrategy: dictionaries enumerate through $eq.entries.
@@ -37,13 +38,23 @@ public class ForEachStatementStrategy : IStatementStrategy
         // `foreach (Money m in ints)` calls the type's conversion. The syntax shows none of it; the
         // bound tree reports the conversion (ForEachStatementInfo), and ValueFlow's table applies
         // it. A conversion that changes nothing on this side keeps the plain loop.
+        JsStatement loop;
         if (ElementConversion(foreachStmt, item, context) is { } converted)
         {
             var statements = new List<JsStatement> { JsStatement.Const(item, converted) };
             statements.AddRange(body is JsBlock block ? block.Statements : new[] { body });
-            return JsStatement.Headed($"{loopType} (const ${item} of {collection})", JsStatement.Block(statements));
+            loop = JsStatement.Headed($"{loopType} (const ${item} of {collection})", JsStatement.Block(statements));
         }
-        return JsStatement.Headed($"{loopType} (const {item} of {collection})", body);
+        else
+        {
+            loop = JsStatement.Headed($"{loopType} (const {item} of {collection})", body);
+        }
+
+        // What the collection expression declares (`foreach (var c in Parse(s, out var n) …)`) is
+        // the loop's own: Roslyn scopes it to the statement, so two sibling loops may repeat a name,
+        // and a block around the loop is where it is declared. The collection is read once, so one
+        // variable per loop is .NET's answer too.
+        return declared.Length == 0 ? loop : JsStatement.Block([JsStatement.Raw(declared.TrimEnd()), loop]);
     }
 
     private static JsExpr? ElementConversion(ForEachStatementSyntax foreachStmt, string item, ConversionContext context)

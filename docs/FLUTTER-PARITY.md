@@ -103,7 +103,7 @@ prose, and cannot go on claiming an absence that has ended.
 | `RawGestureDetector`, custom recognizers | — | **GAP** |
 | `FocusNode`, `FocusScope`, `FocusManager` | `InitialFocus`, the focus route, `Navigable` | **PARTIAL** — focus order and initial focus are expressible; there is no focus object to hold or move imperatively. |
 | `TextEditingController` + `EditableText` — the WIDGET owns the editing protocol; `TextInput` only bridges the platform's keyboard | `CodeEditorController` (in its own `eQuantic.UI.Code`) owns the code editor's protocol behind the vocabulary's `ICodeSurfaceModel`: what a key, a text or a pointer MEANS and where every caret and band is drawn are its answers, and both hosts only forward events and paint rectangles. `SheetController` is still driven by the HOST: `PhotonHost` and `lowering.ts` each carry the sheet's selection and editing | **PARTIAL.** The code editor took Flutter's road (docs/CODE-EDITOR-PLAN.md); the sheet has not yet, and the text field's IME and focus are still per host. |
-| `Shortcuts` / `Actions` | `Shortcut` + `KeyChord` | **SAME** |
+| `Shortcuts` / `Actions` | `Shortcut` + `KeyChord`; `Shortcut.FocusScoped` | **DIFFERENT.** Flutter's shortcuts answer for the focus: a key travels up from it, and an app-wide one sits at the root. Ours answer while mounted, wherever the focus is, which is what a dialog's Esc and a palette's ⌘K need without being placed anywhere in particular; `FocusScoped` is Flutter's kind, for a component's own chords (an editor's ⌘F, a diff's F7), which two instances on one screen must not both answer. There is no `Intent`/`Action` indirection: a chord calls its handler. |
 
 ---
 

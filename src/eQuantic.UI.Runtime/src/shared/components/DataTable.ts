@@ -13,11 +13,11 @@ export class DataTable extends StatelessComponent {
     declare rows: DataRow[];
     declare sortColumn: number;
     declare sortDirection: string;
-    declare onSort: any;
+    declare onSort: ((int: number) => void) | null;
     declare selection: any;
-    declare onToggleRow: any;
+    declare onToggleRow: ((dataRow: DataRow) => void) | null;
     declare onToggleAll: (() => void) | null;
-    declare onRowPressed: any;
+    declare onRowPressed: ((dataRow: DataRow) => void) | null;
     declare pendingRows: number;
     declare empty: any;
 
@@ -75,7 +75,7 @@ export class DataTable extends StatelessComponent {
                 label.add(new Icon(IconGlyph.fromIcons(this.sortDirection === 'ascending' ? 'chevronUp' : 'chevronDown'), 16, theme.textPrimary));
             }
             let index = i;
-            grid.add(column.sortable && !(this.onSort == null) ? new Pressable(DataTable.cell(label, column.align), () => this.onSort(index), { label: `Sort by ${column.header}` }) : DataTable.cell(label, column.align));
+            grid.add(column.sortable && !(this.onSort == null) ? new Pressable(DataTable.cell(label, column.align), () => this.onSort!(index), { label: `Sort by ${column.header}` }) : DataTable.cell(label, column.align));
         }
         return new Box(new BoxStyle({ width: SizeValue.fill, background: theme.surfaceSubtle, borderWidth: 1, borderColor: theme.border }), grid);
     }
@@ -89,7 +89,7 @@ export class DataTable extends StatelessComponent {
         }
         for (let i = 0; i < this.columns.length && i < row.cells.length; i++) grid.add(DataTable.cell(row.cells[i], this.columns[i].align));
         let box = new Box(new BoxStyle({ width: SizeValue.fill, minHeight: DataTable.rowHeight, background: selected ? theme.colors('primary').subtle : null, borderWidth: 1, borderColor: theme.border, hover: new StyleDiff({ background: theme.surfaceSubtle }), transition: TransitionSpec.of(1, Motion.press) }), grid, { key: row.key });
-        return this.onRowPressed == null ? box : new Pressable(box, () => this.onRowPressed(row));
+        return this.onRowPressed == null ? box : new Pressable(box, () => this.onRowPressed!(row));
     }
 
     pending(theme: any, tracks: GridTrack[], index: number) {
@@ -102,7 +102,7 @@ export class DataTable extends StatelessComponent {
     }
 
     static cell(child: VisualNode, align: TextAlignmentValue) {
-        let row = new Row(0, 'start', 'center', false, null, null, { width: SizeValue.fill, height: SizeValue.fill, cross: 'center', main: (() => { const _s = align; if (_s === 'center') return 'center'; if (_s === 'end') return 'end'; return 'start'; })() });
+        let row = new Row(0, 'start', 'center', false, null, null, { width: SizeValue.fill, height: SizeValue.fill, cross: 'center', main: (() => { const $s = align; if ($s === 'center') return 'center'; if ($s === 'end') return 'end'; return 'start'; })() });
         row.add(child);
         return new Box(new BoxStyle({ width: SizeValue.fill, padding: EdgeInsets.symmetric(12, 8) }), row);
     }

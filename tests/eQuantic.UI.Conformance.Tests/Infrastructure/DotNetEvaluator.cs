@@ -22,7 +22,11 @@ public static class DotNetEvaluator
             typeof(System.Linq.Enumerable).Assembly,
             typeof(System.Collections.Generic.List<>).Assembly,
             typeof(System.Collections.Generic.Stack<>).Assembly,
-            typeof(System.DateOnly).Assembly)
+            typeof(System.DateOnly).Assembly,
+            // The vocabulary a component is written in, so a case can hand the .NET side the SAME
+            // component source the emitter compiles (ExpressionVariableEmissionTests). A reference
+            // brings no name into scope: a case that wants it says `using eQuantic.UI.Primitives;`.
+            typeof(eQuantic.UI.Primitives.VisualNode).Assembly)
         // System.Threading.Tasks so an async case can NAME a Task: without it the .NET side fails
         // to compile while the JS side runs fine, which compares a compiler error to a value.
         .AddImports("System", "System.Linq", "System.Collections.Generic", "System.Text",

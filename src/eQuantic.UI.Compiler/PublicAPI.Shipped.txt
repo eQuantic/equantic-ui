@@ -7,7 +7,11 @@ abstract eQuantic.UI.Compiler.CodeGen.Strategies.ConversionStrategyBase.CanConve
 abstract eQuantic.UI.Compiler.CodeGen.Strategies.ConversionStrategyBase.Convert(Microsoft.CodeAnalysis.SyntaxNode! node, eQuantic.UI.Compiler.CodeGen.ConversionContext! context) -> string!
 abstract eQuantic.UI.Compiler.CodeGen.Strategies.Types.MapBackedDictionaryStrategy.FactoryFor(Microsoft.CodeAnalysis.ITypeSymbol? type) -> string!
 abstract eQuantic.UI.Compiler.CodeGen.Strategies.Types.MapBackedDictionaryStrategy.Matches(Microsoft.CodeAnalysis.ITypeSymbol? type) -> bool
+const eQuantic.UI.Compiler.CodeGen.Eq.AsInteger = "$eq.text.asInteger" -> string!
 const eQuantic.UI.Compiler.CodeGen.Eq.AsSingle = "$eq.text.asSingle" -> string!
+const eQuantic.UI.Compiler.CodeGen.Eq.BoolConvert = "$eq.bool.convert" -> string!
+const eQuantic.UI.Compiler.CodeGen.Eq.BoolParse = "$eq.bool.parse" -> string!
+const eQuantic.UI.Compiler.CodeGen.Eq.BoolTryParse = "$eq.bool.tryParse" -> string!
 const eQuantic.UI.Compiler.CodeGen.Eq.Checked = "$eq.num.checked" -> string!
 const eQuantic.UI.Compiler.CodeGen.Eq.CombineDelegate = "$eq.delegates.combine" -> string!
 const eQuantic.UI.Compiler.CodeGen.Eq.Contains = "$eq.collections.contains" -> string!
@@ -26,6 +30,7 @@ const eQuantic.UI.Compiler.CodeGen.Eq.Entries = "$eq.entries" -> string!
 const eQuantic.UI.Compiler.CodeGen.Eq.Equals = "$eq.equals" -> string!
 const eQuantic.UI.Compiler.CodeGen.Eq.Format = "$eq.text.format" -> string!
 const eQuantic.UI.Compiler.CodeGen.Eq.FromBase = "$eq.num.fromBase" -> string!
+const eQuantic.UI.Compiler.CodeGen.Eq.HasNonWhiteSpace = "$eq.text.hasNonWhiteSpace" -> string!
 const eQuantic.UI.Compiler.CodeGen.Eq.Hydrate = "$eq.hydrate" -> string!
 const eQuantic.UI.Compiler.CodeGen.Eq.Import = "$eq" -> string!
 const eQuantic.UI.Compiler.CodeGen.Eq.IntConvert = "$eq.num.intConvert" -> string!
@@ -33,6 +38,7 @@ const eQuantic.UI.Compiler.CodeGen.Eq.IntDiv = "$eq.num.intDiv" -> string!
 const eQuantic.UI.Compiler.CodeGen.Eq.IntParse = "$eq.num.intParse" -> string!
 const eQuantic.UI.Compiler.CodeGen.Eq.IntRem = "$eq.num.intRem" -> string!
 const eQuantic.UI.Compiler.CodeGen.Eq.IntTryParse = "$eq.num.intTryParse" -> string!
+const eQuantic.UI.Compiler.CodeGen.Eq.IsWhiteSpace = "$eq.text.isWhiteSpace" -> string!
 const eQuantic.UI.Compiler.CodeGen.Eq.LiftArith = "$eq.nullable.arith" -> string!
 const eQuantic.UI.Compiler.CodeGen.Eq.LiftCmp = "$eq.nullable.cmp" -> string!
 const eQuantic.UI.Compiler.CodeGen.Eq.LiftUnary = "$eq.nullable.unary" -> string!
@@ -40,6 +46,7 @@ const eQuantic.UI.Compiler.CodeGen.Eq.LinqMax = "$eq.linq.max" -> string!
 const eQuantic.UI.Compiler.CodeGen.Eq.LinqMin = "$eq.linq.min" -> string!
 const eQuantic.UI.Compiler.CodeGen.Eq.LinqToDictionary = "$eq.linq.toDictionary" -> string!
 const eQuantic.UI.Compiler.CodeGen.Eq.LinqToValueDictionary = "$eq.linq.toValueDictionary" -> string!
+const eQuantic.UI.Compiler.CodeGen.Eq.ListRemove = "$eq.collections.remove" -> string!
 const eQuantic.UI.Compiler.CodeGen.Eq.LogicAnd = "$eq.logic.and" -> string!
 const eQuantic.UI.Compiler.CodeGen.Eq.LogicOr = "$eq.logic.or" -> string!
 const eQuantic.UI.Compiler.CodeGen.Eq.Long = "$eq.num.long" -> string!
@@ -49,6 +56,7 @@ const eQuantic.UI.Compiler.CodeGen.Eq.MapGet = "$eq.mapGet" -> string!
 const eQuantic.UI.Compiler.CodeGen.Eq.MapSet = "$eq.mapSet" -> string!
 const eQuantic.UI.Compiler.CodeGen.Eq.NextTextElementLength = "$eq.text.nextTextElementLength" -> string!
 const eQuantic.UI.Compiler.CodeGen.Eq.Origin = "$eq.origin" -> string!
+const eQuantic.UI.Compiler.CodeGen.Eq.PairComparer = "$eq.collections.pairComparer" -> string!
 const eQuantic.UI.Compiler.CodeGen.Eq.ParseEnum = "$eq.enums.parse" -> string!
 const eQuantic.UI.Compiler.CodeGen.Eq.RealConvert = "$eq.num.realConvert" -> string!
 const eQuantic.UI.Compiler.CodeGen.Eq.RealParse = "$eq.num.realParse" -> string!
@@ -59,12 +67,14 @@ const eQuantic.UI.Compiler.CodeGen.Eq.Round = "$eq.math.round" -> string!
 const eQuantic.UI.Compiler.CodeGen.Eq.RoundSingle = "$eq.math.roundSingle" -> string!
 const eQuantic.UI.Compiler.CodeGen.Eq.RoundSingleWithMode = "$eq.math.roundSingleWithMode" -> string!
 const eQuantic.UI.Compiler.CodeGen.Eq.RoundWithMode = "$eq.math.roundWithMode" -> string!
+const eQuantic.UI.Compiler.CodeGen.Eq.SameItem = "$eq.collections.sameItem" -> string!
 const eQuantic.UI.Compiler.CodeGen.Eq.SetAdd = "$eq.collections.setAdd" -> string!
 const eQuantic.UI.Compiler.CodeGen.Eq.Single = "$eq.num.single" -> string!
 const eQuantic.UI.Compiler.CodeGen.Eq.SingleFromLong = "$eq.num.singleFromLong" -> string!
 const eQuantic.UI.Compiler.CodeGen.Eq.SortedDictionary = "$eq.collections.sortedDictionary" -> string!
 const eQuantic.UI.Compiler.CodeGen.Eq.SortedList = "$eq.collections.sortedList" -> string!
 const eQuantic.UI.Compiler.CodeGen.Eq.SortedSet = "$eq.collections.sortedSet" -> string!
+const eQuantic.UI.Compiler.CodeGen.Eq.SplitOnWhiteSpace = "$eq.text.splitOnWhiteSpace" -> string!
 const eQuantic.UI.Compiler.CodeGen.Eq.Str = "$eq.str" -> string!
 const eQuantic.UI.Compiler.CodeGen.Eq.StringBuilder = "$eq.text.stringBuilder" -> string!
 const eQuantic.UI.Compiler.CodeGen.Eq.StringCompare = "$eq.text.compare" -> string!
@@ -78,6 +88,9 @@ const eQuantic.UI.Compiler.CodeGen.Eq.Substring = "$eq.text.substring" -> string
 const eQuantic.UI.Compiler.CodeGen.Eq.TextElementStarts = "$eq.text.textElementStarts" -> string!
 const eQuantic.UI.Compiler.CodeGen.Eq.TimeSpan = "$eq.time.timeSpan" -> string!
 const eQuantic.UI.Compiler.CodeGen.Eq.ToBase = "$eq.num.toBase" -> string!
+const eQuantic.UI.Compiler.CodeGen.Eq.Trim = "$eq.text.trim" -> string!
+const eQuantic.UI.Compiler.CodeGen.Eq.TrimEnd = "$eq.text.trimEnd" -> string!
+const eQuantic.UI.Compiler.CodeGen.Eq.TrimStart = "$eq.text.trimStart" -> string!
 const eQuantic.UI.Compiler.CodeGen.Eq.UnicodeCategory = "$eq.text.unicodeCategory" -> string!
 const eQuantic.UI.Compiler.CodeGen.Eq.ValueMap = "$eq.collections.valueMap" -> string!
 const eQuantic.UI.Compiler.CodeGen.Eq.With = "$eq.withPatch" -> string!
@@ -94,10 +107,12 @@ eQuantic.UI.Compiler.CodeGen.CSharpToJsConverter.ConvertExpressionWithModel(Micr
 eQuantic.UI.Compiler.CodeGen.CSharpToJsConverter.ConvertIr(Microsoft.CodeAnalysis.CSharp.Syntax.ExpressionSyntax! expression, string? expectedType = null) -> eQuantic.UI.Compiler.CodeGen.Ir.JsExpr!
 eQuantic.UI.Compiler.CodeGen.CSharpToJsConverter.ConvertStatement(Microsoft.CodeAnalysis.CSharp.Syntax.StatementSyntax! stmt) -> string!
 eQuantic.UI.Compiler.CodeGen.CSharpToJsConverter.ConvertStatementIr(Microsoft.CodeAnalysis.CSharp.Syntax.StatementSyntax! stmt) -> eQuantic.UI.Compiler.CodeGen.Ir.JsStatement!
+eQuantic.UI.Compiler.CodeGen.CSharpToJsConverter.DefaultOf(Microsoft.CodeAnalysis.ITypeSymbol? type) -> string!
 eQuantic.UI.Compiler.CodeGen.CSharpToJsConverter.Diagnostics.get -> System.Collections.Generic.IReadOnlyList<eQuantic.UI.Compiler.CodeGen.ConversionDiagnostic!>!
 eQuantic.UI.Compiler.CodeGen.CSharpToJsConverter.EmitDesignOrigins(bool enabled) -> void
 eQuantic.UI.Compiler.CodeGen.CSharpToJsConverter.EmitTypeAnnotations(bool enabled) -> void
 eQuantic.UI.Compiler.CodeGen.CSharpToJsConverter.InBlock<T>(System.Func<T>! convert) -> T
+eQuantic.UI.Compiler.CodeGen.CSharpToJsConverter.InFileOf(Microsoft.CodeAnalysis.SyntaxNode! node, System.Action! convert) -> void
 eQuantic.UI.Compiler.CodeGen.CSharpToJsConverter.Layout.get -> eQuantic.UI.Compiler.CodeGen.Ir.JsLayout
 eQuantic.UI.Compiler.CodeGen.CSharpToJsConverter.Report(Microsoft.CodeAnalysis.SyntaxNode! node, eQuantic.UI.Compiler.CodeGen.ConversionSeverity severity, string! code, string! message) -> void
 eQuantic.UI.Compiler.CodeGen.CSharpToJsConverter.Reset() -> void
@@ -111,6 +126,7 @@ eQuantic.UI.Compiler.CodeGen.CSharpToJsConverter.SymbolsAreAuthoritative.set -> 
 eQuantic.UI.Compiler.CodeGen.CSharpToJsConverter.UsedAppTypes.get -> System.Collections.Generic.HashSet<string!>!
 eQuantic.UI.Compiler.CodeGen.CSharpToJsConverter.UsedHelpers.get -> System.Collections.Generic.HashSet<string!>!
 eQuantic.UI.Compiler.CodeGen.CSharpToJsConverter.UsedRuntimeTypes.get -> System.Collections.Generic.HashSet<string!>!
+eQuantic.UI.Compiler.CodeGen.CSharpToJsConverter.WithConstructorParametersInScope<T>(System.Func<T>! convert) -> T
 eQuantic.UI.Compiler.CodeGen.ComponentBaseKind
 eQuantic.UI.Compiler.CodeGen.ComponentBaseKind.ComponentState = 4 -> eQuantic.UI.Compiler.CodeGen.ComponentBaseKind
 eQuantic.UI.Compiler.CodeGen.ComponentBaseKind.HtmlElement = 3 -> eQuantic.UI.Compiler.CodeGen.ComponentBaseKind
@@ -120,6 +136,8 @@ eQuantic.UI.Compiler.CodeGen.ComponentBaseKind.StatelessComponent = 2 -> eQuanti
 eQuantic.UI.Compiler.CodeGen.ConversionContext
 eQuantic.UI.Compiler.CodeGen.ConversionContext.CanGuess(Microsoft.CodeAnalysis.SyntaxNode! node) -> bool
 eQuantic.UI.Compiler.CodeGen.ConversionContext.ClearDiagnostics() -> void
+eQuantic.UI.Compiler.CodeGen.ConversionContext.ConstructorParametersInScope.get -> bool
+eQuantic.UI.Compiler.CodeGen.ConversionContext.ConstructorParametersInScope.set -> void
 eQuantic.UI.Compiler.CodeGen.ConversionContext.ConversionContext() -> void
 eQuantic.UI.Compiler.CodeGen.ConversionContext.Converter.get -> eQuantic.UI.Compiler.CodeGen.CSharpToJsConverter!
 eQuantic.UI.Compiler.CodeGen.ConversionContext.Converter.set -> void
@@ -179,6 +197,7 @@ eQuantic.UI.Compiler.CodeGen.ConversionSeverity
 eQuantic.UI.Compiler.CodeGen.ConversionSeverity.Error = 1 -> eQuantic.UI.Compiler.CodeGen.ConversionSeverity
 eQuantic.UI.Compiler.CodeGen.ConversionSeverity.Warning = 0 -> eQuantic.UI.Compiler.CodeGen.ConversionSeverity
 eQuantic.UI.Compiler.CodeGen.Eq
+eQuantic.UI.Compiler.CodeGen.ExpressionVariableScanner
 eQuantic.UI.Compiler.CodeGen.Extensions.AttributeSyntaxExtensions
 eQuantic.UI.Compiler.CodeGen.Extensions.CollectionComparerExtensions
 eQuantic.UI.Compiler.CodeGen.Extensions.IteratorShapeExtensions
@@ -599,7 +618,6 @@ eQuantic.UI.Compiler.CodeGen.Ir.JsWhile.Equals(eQuantic.UI.Compiler.CodeGen.Ir.J
 eQuantic.UI.Compiler.CodeGen.Ir.JsWhile.JsWhile(eQuantic.UI.Compiler.CodeGen.Ir.JsExpr! Condition, eQuantic.UI.Compiler.CodeGen.Ir.JsStatement! Body) -> void
 eQuantic.UI.Compiler.CodeGen.ParameterSymbolExtensions
 eQuantic.UI.Compiler.CodeGen.PatternConverter
-eQuantic.UI.Compiler.CodeGen.PatternVariableScanner
 eQuantic.UI.Compiler.CodeGen.RecordTypeEmitter
 eQuantic.UI.Compiler.CodeGen.RecordTypeEmitter.Emit(Microsoft.CodeAnalysis.CSharp.Syntax.TypeDeclarationSyntax! type, bool tsTypeDeclarations = false) -> string!
 eQuantic.UI.Compiler.CodeGen.RecordTypeEmitter.EmitModule(Microsoft.CodeAnalysis.CSharp.Syntax.TypeDeclarationSyntax! type, bool tsTypeDeclarations = true) -> string!
@@ -1018,11 +1036,6 @@ eQuantic.UI.Compiler.CodeGen.Strategies.Primitives.BclSurfaceTailStrategy.BclSur
 eQuantic.UI.Compiler.CodeGen.Strategies.Primitives.BclSurfaceTailStrategy.CanConvert(Microsoft.CodeAnalysis.SyntaxNode! node, eQuantic.UI.Compiler.CodeGen.ConversionContext! context) -> bool
 eQuantic.UI.Compiler.CodeGen.Strategies.Primitives.BclSurfaceTailStrategy.ConvertIr(Microsoft.CodeAnalysis.SyntaxNode! node, eQuantic.UI.Compiler.CodeGen.ConversionContext! context) -> eQuantic.UI.Compiler.CodeGen.Ir.JsExpr!
 eQuantic.UI.Compiler.CodeGen.Strategies.Primitives.BclSurfaceTailStrategy.Priority.get -> int
-eQuantic.UI.Compiler.CodeGen.Strategies.Primitives.BooleanMethodStrategy
-eQuantic.UI.Compiler.CodeGen.Strategies.Primitives.BooleanMethodStrategy.BooleanMethodStrategy() -> void
-eQuantic.UI.Compiler.CodeGen.Strategies.Primitives.BooleanMethodStrategy.CanConvert(Microsoft.CodeAnalysis.SyntaxNode! node, eQuantic.UI.Compiler.CodeGen.ConversionContext! context) -> bool
-eQuantic.UI.Compiler.CodeGen.Strategies.Primitives.BooleanMethodStrategy.Convert(Microsoft.CodeAnalysis.SyntaxNode! node, eQuantic.UI.Compiler.CodeGen.ConversionContext! context) -> string!
-eQuantic.UI.Compiler.CodeGen.Strategies.Primitives.BooleanMethodStrategy.Priority.get -> int
 eQuantic.UI.Compiler.CodeGen.Strategies.Primitives.CharMethodStrategy
 eQuantic.UI.Compiler.CodeGen.Strategies.Primitives.CharMethodStrategy.CanConvert(Microsoft.CodeAnalysis.SyntaxNode! node, eQuantic.UI.Compiler.CodeGen.ConversionContext! context) -> bool
 eQuantic.UI.Compiler.CodeGen.Strategies.Primitives.CharMethodStrategy.CharMethodStrategy() -> void
@@ -1338,9 +1351,7 @@ eQuantic.UI.Compiler.CodeGen.TypeScriptEmitter.TypeAnnotations.set -> void
 eQuantic.UI.Compiler.CodeGen.TypeScriptEmitter.TypeScriptEmitter() -> void
 eQuantic.UI.Compiler.CodeGen.TypeSymbolExtensions
 eQuantic.UI.Compiler.CodeGen.ValueMember
-eQuantic.UI.Compiler.CodeGen.ValueMember.Deconstruct(out string! Display, out string! Js, out string! Default, out string! TsType) -> void
-eQuantic.UI.Compiler.CodeGen.ValueMember.Default.get -> string!
-eQuantic.UI.Compiler.CodeGen.ValueMember.Default.init -> void
+eQuantic.UI.Compiler.CodeGen.ValueMember.Deconstruct(out string! Display, out string! Js, out string! TsType) -> void
 eQuantic.UI.Compiler.CodeGen.ValueMember.Display.get -> string!
 eQuantic.UI.Compiler.CodeGen.ValueMember.Display.init -> void
 eQuantic.UI.Compiler.CodeGen.ValueMember.Equals(eQuantic.UI.Compiler.CodeGen.ValueMember other) -> bool
@@ -1349,7 +1360,7 @@ eQuantic.UI.Compiler.CodeGen.ValueMember.Js.init -> void
 eQuantic.UI.Compiler.CodeGen.ValueMember.TsType.get -> string!
 eQuantic.UI.Compiler.CodeGen.ValueMember.TsType.init -> void
 eQuantic.UI.Compiler.CodeGen.ValueMember.ValueMember() -> void
-eQuantic.UI.Compiler.CodeGen.ValueMember.ValueMember(string! Display, string! Js, string! Default, string! TsType) -> void
+eQuantic.UI.Compiler.CodeGen.ValueMember.ValueMember(string! Display, string! Js, string! TsType) -> void
 eQuantic.UI.Compiler.CompilationError
 eQuantic.UI.Compiler.CompilationError.Code.get -> string!
 eQuantic.UI.Compiler.CompilationError.Code.set -> void
@@ -1426,6 +1437,8 @@ eQuantic.UI.Compiler.Models.ComponentDefinition.BuildComesFromTheBase.get -> boo
 eQuantic.UI.Compiler.Models.ComponentDefinition.BuildComesFromTheBase.set -> void
 eQuantic.UI.Compiler.Models.ComponentDefinition.BuildMethodNode.get -> Microsoft.CodeAnalysis.CSharp.Syntax.MethodDeclarationSyntax?
 eQuantic.UI.Compiler.Models.ComponentDefinition.BuildMethodNode.set -> void
+eQuantic.UI.Compiler.Models.ComponentDefinition.ClassSyntax.get -> Microsoft.CodeAnalysis.CSharp.Syntax.ClassDeclarationSyntax?
+eQuantic.UI.Compiler.Models.ComponentDefinition.ClassSyntax.set -> void
 eQuantic.UI.Compiler.Models.ComponentDefinition.ComponentDefinition() -> void
 eQuantic.UI.Compiler.Models.ComponentDefinition.ComponentFields.get -> System.Collections.Generic.List<eQuantic.UI.Compiler.Models.StateField!>!
 eQuantic.UI.Compiler.Models.ComponentDefinition.ComponentFields.set -> void
@@ -1527,8 +1540,6 @@ eQuantic.UI.Compiler.Models.PropertyDefinition.DefaultValue.get -> string?
 eQuantic.UI.Compiler.Models.PropertyDefinition.DefaultValue.set -> void
 eQuantic.UI.Compiler.Models.PropertyDefinition.DefaultValueNode.get -> Microsoft.CodeAnalysis.CSharp.Syntax.ExpressionSyntax?
 eQuantic.UI.Compiler.Models.PropertyDefinition.DefaultValueNode.set -> void
-eQuantic.UI.Compiler.Models.PropertyDefinition.ImplicitDefaultJs.get -> string?
-eQuantic.UI.Compiler.Models.PropertyDefinition.ImplicitDefaultJs.set -> void
 eQuantic.UI.Compiler.Models.PropertyDefinition.IsPublic.get -> bool
 eQuantic.UI.Compiler.Models.PropertyDefinition.IsPublic.set -> void
 eQuantic.UI.Compiler.Models.PropertyDefinition.IsStatic.get -> bool
@@ -1632,6 +1643,7 @@ eQuantic.UI.Compiler.Services.SemanticHelper.MapSymbol(Microsoft.CodeAnalysis.Sy
 eQuantic.UI.Compiler.Services.SemanticHelper.MapSynthetic(Microsoft.CodeAnalysis.SyntaxNode! synthetic, Microsoft.CodeAnalysis.SyntaxNode! original) -> void
 eQuantic.UI.Compiler.Services.SemanticHelper.MapType(Microsoft.CodeAnalysis.SyntaxNode! synthetic, Microsoft.CodeAnalysis.ITypeSymbol? type) -> void
 eQuantic.UI.Compiler.Services.SemanticHelper.Original(Microsoft.CodeAnalysis.SyntaxNode! node) -> Microsoft.CodeAnalysis.SyntaxNode!
+eQuantic.UI.Compiler.Services.SemanticHelper.ProvedNotNull(Microsoft.CodeAnalysis.CSharp.Syntax.ExpressionSyntax! expression) -> bool
 eQuantic.UI.Compiler.Services.SemanticHelper.QueryOperator(Microsoft.CodeAnalysis.SyntaxNode! clauseOrOrdering) -> Microsoft.CodeAnalysis.IMethodSymbol?
 eQuantic.UI.Compiler.Services.SemanticHelper.SemanticHelper(Microsoft.CodeAnalysis.SemanticModel? semanticModel) -> void
 eQuantic.UI.Compiler.Services.SemanticHelper.TryGetConstantValue(Microsoft.CodeAnalysis.SyntaxNode! node, out object? value) -> bool
@@ -1941,6 +1953,14 @@ override sealed eQuantic.UI.Compiler.CodeGen.Ir.JsUnary.Equals(eQuantic.UI.Compi
 override sealed eQuantic.UI.Compiler.CodeGen.Ir.JsWhile.Equals(eQuantic.UI.Compiler.CodeGen.Ir.JsStatement? other) -> bool
 static eQuantic.UI.Compiler.CodeGen.ConversionDiagnostic.operator !=(eQuantic.UI.Compiler.CodeGen.ConversionDiagnostic? left, eQuantic.UI.Compiler.CodeGen.ConversionDiagnostic? right) -> bool
 static eQuantic.UI.Compiler.CodeGen.ConversionDiagnostic.operator ==(eQuantic.UI.Compiler.CodeGen.ConversionDiagnostic? left, eQuantic.UI.Compiler.CodeGen.ConversionDiagnostic? right) -> bool
+static eQuantic.UI.Compiler.CodeGen.ExpressionVariableScanner.BindingPattern(Microsoft.CodeAnalysis.CSharp.Syntax.VariableDesignationSyntax! designation) -> string!
+static eQuantic.UI.Compiler.CodeGen.ExpressionVariableScanner.BlockNames(Microsoft.CodeAnalysis.CSharp.Syntax.StatementSyntax! statement) -> System.Collections.Generic.IReadOnlyList<string!>!
+static eQuantic.UI.Compiler.CodeGen.ExpressionVariableScanner.Declarations(Microsoft.CodeAnalysis.CSharp.Syntax.ExpressionSyntax? expression, bool typeAnnotations) -> string!
+static eQuantic.UI.Compiler.CodeGen.ExpressionVariableScanner.Declarations(System.Collections.Generic.IEnumerable<string!>! names, bool typeAnnotations) -> string!
+static eQuantic.UI.Compiler.CodeGen.ExpressionVariableScanner.InFrontOf(Microsoft.CodeAnalysis.CSharp.Syntax.StatementSyntax! statement, Microsoft.CodeAnalysis.CSharp.Syntax.ExpressionSyntax? expression, bool typeAnnotations) -> string!
+static eQuantic.UI.Compiler.CodeGen.ExpressionVariableScanner.List(System.Collections.Generic.IEnumerable<string!>! names, bool typeAnnotations) -> string!
+static eQuantic.UI.Compiler.CodeGen.ExpressionVariableScanner.Names(Microsoft.CodeAnalysis.CSharp.Syntax.ExpressionSyntax? expression) -> System.Collections.Generic.IReadOnlyList<string!>!
+static eQuantic.UI.Compiler.CodeGen.ExpressionVariableScanner.Scoped(Microsoft.CodeAnalysis.CSharp.Syntax.ExpressionSyntax? expression, string! converted, bool typeAnnotations) -> string!
 static eQuantic.UI.Compiler.CodeGen.Extensions.AttributeSyntaxExtensions.IsNamed(this Microsoft.CodeAnalysis.CSharp.Syntax.AttributeSyntax! attribute, string! simpleName) -> bool
 static eQuantic.UI.Compiler.CodeGen.Extensions.CollectionComparerExtensions.ReportUntranslatableComparer(this Microsoft.CodeAnalysis.CSharp.Syntax.BaseObjectCreationExpressionSyntax! creation, eQuantic.UI.Compiler.CodeGen.ConversionContext! context) -> void
 static eQuantic.UI.Compiler.CodeGen.Extensions.IteratorShapeExtensions.FindEndlessYieldLoop(this Microsoft.CodeAnalysis.CSharp.Syntax.BlockSyntax? body) -> Microsoft.CodeAnalysis.SyntaxNode?
@@ -2100,14 +2120,12 @@ static eQuantic.UI.Compiler.CodeGen.ParameterSymbolExtensions.IsPrimaryConstruct
 static eQuantic.UI.Compiler.CodeGen.PatternConverter.BuildCondition(Microsoft.CodeAnalysis.CSharp.Syntax.PatternSyntax! pattern, string! access, eQuantic.UI.Compiler.CodeGen.ConversionContext! context, Microsoft.CodeAnalysis.ITypeSymbol? accessType = null) -> string!
 static eQuantic.UI.Compiler.CodeGen.PatternConverter.CollectBindings(Microsoft.CodeAnalysis.CSharp.Syntax.PatternSyntax! pattern, string! access, eQuantic.UI.Compiler.CodeGen.ConversionContext! context, System.Collections.Generic.List<(string! Name, string! Access)>! bindings, Microsoft.CodeAnalysis.ITypeSymbol? accessType = null) -> void
 static eQuantic.UI.Compiler.CodeGen.PatternConverter.TypeCheck(Microsoft.CodeAnalysis.CSharp.Syntax.TypeSyntax! typeSyntax, string! access, eQuantic.UI.Compiler.CodeGen.ConversionContext! context) -> string!
-static eQuantic.UI.Compiler.CodeGen.PatternVariableScanner.Declarations(Microsoft.CodeAnalysis.CSharp.Syntax.ExpressionSyntax? expression, bool typeAnnotations) -> string!
 static eQuantic.UI.Compiler.CodeGen.RecordTypeEmitter.CanEmit(Microsoft.CodeAnalysis.CSharp.Syntax.TypeDeclarationSyntax! type) -> bool
 static eQuantic.UI.Compiler.CodeGen.RecordTypeEmitter.EmitsTwin(Microsoft.CodeAnalysis.INamedTypeSymbol! type) -> bool
 static eQuantic.UI.Compiler.CodeGen.Strategies.ArithmeticContext.Of(Microsoft.CodeAnalysis.SyntaxNode! node, eQuantic.UI.Compiler.CodeGen.ConversionContext! context) -> eQuantic.UI.Compiler.CodeGen.Strategies.ArithmeticContext
 static eQuantic.UI.Compiler.CodeGen.Strategies.ArithmeticContext.operator !=(eQuantic.UI.Compiler.CodeGen.Strategies.ArithmeticContext left, eQuantic.UI.Compiler.CodeGen.Strategies.ArithmeticContext right) -> bool
 static eQuantic.UI.Compiler.CodeGen.Strategies.ArithmeticContext.operator ==(eQuantic.UI.Compiler.CodeGen.Strategies.ArithmeticContext left, eQuantic.UI.Compiler.CodeGen.Strategies.ArithmeticContext right) -> bool
 static eQuantic.UI.Compiler.CodeGen.Strategies.ConversionStrategyBase.ConvertArgs(Microsoft.CodeAnalysis.CSharp.Syntax.ArgumentListSyntax? argumentList, eQuantic.UI.Compiler.CodeGen.ConversionContext! context) -> string!
-static eQuantic.UI.Compiler.CodeGen.Strategies.DefaultValue.Of(Microsoft.CodeAnalysis.ITypeSymbol? type) -> string!
 static eQuantic.UI.Compiler.CodeGen.Strategies.DefaultValue.Of(Microsoft.CodeAnalysis.ITypeSymbol? type, eQuantic.UI.Compiler.CodeGen.ConversionContext! context) -> string!
 static eQuantic.UI.Compiler.CodeGen.Strategies.DefaultValue.OfElement(Microsoft.CodeAnalysis.ITypeSymbol? sequence, eQuantic.UI.Compiler.CodeGen.ConversionContext! context) -> string!
 static eQuantic.UI.Compiler.CodeGen.Strategies.Expressions.FieldExpressionStrategy.BackingSlot(Microsoft.CodeAnalysis.CSharp.Syntax.PropertyDeclarationSyntax! property) -> string!
@@ -2205,6 +2223,7 @@ static readonly eQuantic.UI.Compiler.CodeGen.Ir.JsExpr.This -> eQuantic.UI.Compi
 static readonly eQuantic.UI.Compiler.CodeGen.Ir.JsStatement.Empty -> eQuantic.UI.Compiler.CodeGen.Ir.JsStatement!
 static readonly eQuantic.UI.Compiler.Services.ParseDefaults.Options -> Microsoft.CodeAnalysis.CSharp.CSharpParseOptions!
 static readonly eQuantic.UI.Compiler.Services.RuntimeProvidedTypeScanner.ComponentModelMemberNames -> System.Collections.Generic.HashSet<string!>!
+static readonly eQuantic.UI.Compiler.Services.RuntimeProvidedTypeScanner.RuntimeAssemblies -> System.Collections.Generic.IReadOnlyList<string!>!
 static readonly eQuantic.UI.Compiler.Services.RuntimeProvidedTypeScanner.VocabularyNamespaces -> System.Collections.Generic.IReadOnlyList<string!>!
 virtual eQuantic.UI.Compiler.CodeGen.Ir.JsClassMember.EqualityContract.get -> System.Type!
 virtual eQuantic.UI.Compiler.CodeGen.Ir.JsClassMember.Equals(eQuantic.UI.Compiler.CodeGen.Ir.JsClassMember? other) -> bool

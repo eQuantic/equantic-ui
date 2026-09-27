@@ -22,11 +22,11 @@ public class LiteralExpressionStrategy : IExpressionIrStrategy
         var literal = (LiteralExpressionSyntax)node;
         return literal.Kind() switch
         {
-            // Its VALUE, quoted by the one writer every constant's text goes through.
-            SyntaxKind.StringLiteralExpression => JsExpr.Literal(ConstantLiteral.Quote(literal.Token.ValueText)),
+            // Its VALUE, quoted by the one writer every string's text goes through.
+            SyntaxKind.StringLiteralExpression => JsExpr.Literal(JsStringLiteral.Quote(literal.Token.ValueText)),
             // A char too: its source text spelled C#'s escapes, and `'\e'`, `'\a'` and `'\x041'` read
             // as another character in JavaScript, which has none of them (found in review, #450).
-            SyntaxKind.CharacterLiteralExpression => JsExpr.Literal(ConstantLiteral.Quote(literal.Token.ValueText)),
+            SyntaxKind.CharacterLiteralExpression => JsExpr.Literal(JsStringLiteral.Quote(literal.Token.ValueText)),
             SyntaxKind.TrueLiteralExpression => JsExpr.Literal("true"),
             SyntaxKind.FalseLiteralExpression => JsExpr.Literal("false"),
             SyntaxKind.NullLiteralExpression => JsExpr.Literal("null"),
