@@ -16,6 +16,11 @@ lowered their bodies with the same kind of copy. And a parameter was declared by
 where every reference in the body names it by its JavaScript identifier: `package` was declared as
 itself, which no module parses.
 
+Before this change merged, #484 and #399 fixed the last two in the copy, the pattern variables and
+the reserved parameter names, and this change takes both from main. What it still fixes is the rest:
+against main at a4112476, every async, iterator, out and ref case fails, and so does a getter that
+yields.
+
 ## What Changes
 
 - **One lowering for every type with methods** (`MethodLowering`): a method's signature and body,
@@ -26,15 +31,12 @@ itself, which no module parses.
   a component, a record and an extension member alike: the name alone made a method returning a
   type called `TaskItem` async, and its callers read a Promise.
 - **An accessor's block is lowered as a method's body**, so a getter that yields fills its buffer
-  and a block declares the locals its `out var` binds, in a record, a class and a component (found
-  in review), and **a C# 14 extension member** goes through the same method lowering, its receiver in
-  front, where a third copy wrote `yield` outside a generator.
-- **A verbatim C# keyword that JavaScript reserves is renamed.** `@class` and `@new` are legal names,
-  and with the `@` taken off they were declared as `class` and `new`. They now take the underscore
-  the other reserved words take, at the declaration and at every use, in every emitter.
+  and a block declares the locals its `out var` binds (on main first with #484), in a record, a
+  class and a component (found in review), and **a C# 14 extension member** goes through the same
+  method lowering, its receiver in front, where a third copy wrote `yield` outside a generator.
 
 ## Impact
 
-- The compiler: `CodeGen/MethodLowering.cs` (new), `TypeScriptEmitter`, `RecordTypeEmitter`, and
-  `StringExtensions.ToJsIdentifier`.
-- No public signature moves, and no transpiled pin moves: a class's members are written as they were.
+- The compiler: `CodeGen/MethodLowering.cs` (new), `TypeScriptEmitter` and `RecordTypeEmitter`.
+- No public signature moves. A class's members are written as they were, every transpiled pin in the
+  compiler suite holds, and the shared components' twelve transpiled records move in whitespace alone.

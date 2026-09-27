@@ -199,7 +199,8 @@ public class CSharpVersionCoverageTests
     public void AnAccessorBlock_DeclaresTheLocalItsOutVarBinds()
     {
         // An accessor's block is lowered as a method's (#432): the local an `out var` binds is
-        // declared in front, where a class's getter converted the block alone.
+        // declared in front. A class's getter converted the block alone until #484 declared each
+        // statement's own variables, and the shared lowering keeps it.
         var results = Compile(Head + """
             public class Bucket
             {

@@ -6,10 +6,13 @@ namespace eQuantic.UI.Conformance.Tests;
 /// <summary>
 /// A record's and a struct's members lower as a class's do (#432). The record and struct emitter
 /// lowered a method with a copy of the class emitter's lowering that handled none of an async
-/// method, an iterator, an out or ref parameter, or the variable an expression body's pattern binds:
-/// the first two wrote a module that does not parse, and the others a method that throws. Each shape
-/// is held in both of its forms, an expression body and a block, for a record's own member, a
-/// struct's, and a default an interface supplies, because a case written in one form proves one.
+/// method, an iterator, or an out or ref parameter: the first two wrote a module that does not
+/// parse, and an out or ref value never came back. The copy also read the variable an expression
+/// body's pattern binds before anything declared it, and declared a reserved parameter by its C#
+/// name. #484 and #399 fixed those two in the copy first, so their cases pass on main and stay here
+/// as the pins that one lowering keeps them. Each shape is held in both of its forms, an expression
+/// body and a block, for a record's own member, a struct's, and a default an interface supplies,
+/// because a case written in one form proves one.
 /// </summary>
 public class RecordMethodLoweringConformanceTests
 {
@@ -77,11 +80,12 @@ public class RecordMethodLoweringConformanceTests
         "var xs = new List<SE> { new SE(1), new SE(2) }; var removed = xs.Remove(new SE(1)); "
         + "return $\"{removed}{xs.Count}{xs.Contains(new SE(2))}\";")]
     // A parameter is declared by its JavaScript name, as every reference names it: a reserved word
-    // takes its underscore at the declaration too, where the copy declared `package` itself.
+    // takes its `$` at the declaration too (#399), where the copy once declared `package` itself.
     [InlineData(
         "public record R(int V) { public int Plus(int package) => package + V; public int Times(int @class) { return @class * V; } }",
         "var r = new R(2); return $\"{r.Plus(3)}|{r.Times(4)}\";")]
-    // So is a variable a pattern binds, declared by the name its uses have (found in review, #464).
+    // So is a variable a pattern binds, declared by the name its uses have (found in Copilot's review
+    // of #464, and fixed on main first by #399).
     [InlineData(
         "public record R(int V) { public bool Same(object o) => o is R package && package.V == V; "
         + "public bool Twin(object o) => o is R { V: var @class } && @class == V; }",

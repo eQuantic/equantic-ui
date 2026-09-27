@@ -796,19 +796,18 @@ record of a release, the wiki's Upgrading page is the distillate.
   audit's `(Object)` probes call the object overload instead of the string one beside it.
 - **2026-09-26 · A record's and a struct's members lower as a class's do**: the record and struct
   emitter lowered a method with its own copy of the class emitter's lowering, which handled none of
-  an async method, an iterator, an out or ref parameter, or the variable an expression body's
-  pattern binds ([#432](https://github.com/eQuantic/equantic-ui/issues/432)). The first two wrote a
-  module that does not parse, the last threw `m is not defined` in `o is SE m && m.V == V`, and
-  `List<SE>.Remove` threw with it through the twin's `equals`. One lowering now serves every type
-  with methods (`MethodLowering`): a record's and a struct's method, operator, conversion and
-  computed property go through the class emitter's own. On the way, a parameter is declared by the
-  name its uses have (`package` was declared as itself, which no module parses), and a verbatim C#
-  keyword that JavaScript reserves (`@class`) takes its underscore. From the review: whether a method
-  is async is asked of its return type's symbol (a method returning `TaskItem` was made async by the
-  name), a getter that yields fills its buffer in every emitter, and a C# 14 extension member takes the
-  same lowering, and a variable a pattern binds is declared by the name its uses have (the other
-  declarations that skip it are [#467](https://github.com/eQuantic/equantic-ui/issues/467)). A new
-  conformance class fails 15 of its first 19 cases on main.
+  an async method, an iterator, or an out or ref parameter
+  ([#432](https://github.com/eQuantic/equantic-ui/issues/432)). The first two wrote a module that
+  does not parse, and an out or ref value never came back. One lowering now serves every type with
+  methods (`MethodLowering`): a record's and a struct's method, operator, conversion and computed
+  property go through the class emitter's own, so what the class path learns reaches them too. From
+  the review: whether a method is async is asked of its return type's symbol (a method returning
+  `TaskItem` was made async by the name), a getter that yields fills its buffer in every emitter, and
+  a C# 14 extension member takes the same lowering. The copy's pattern variables and reserved
+  parameter names, which this change fixed too, were fixed on main first by #484 and #399 (the
+  declarations that still skip `ToJsIdentifier` are
+  [#467](https://github.com/eQuantic/equantic-ui/issues/467)). A new conformance class fails 9 of its
+  20 cases on main: every async, iterator, out and ref case, and the getter that yields.
 - **2026-09-26 · A number prints through its specifier as .NET prints it**: the resx subset admitted
   the `E` specifier and the formatter had no branch for it, so `{0:E2}` passed the build and printed
   `12345` ([#393](https://github.com/eQuantic/equantic-ui/issues/393)). Measured, every specifier

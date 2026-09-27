@@ -81,4 +81,4 @@ by the type's name, and a getter that yields SHALL return its sequence.
 #### Scenario: A reserved parameter name
 
 - **WHEN** a record's method takes `int package` or `int @class`
-- **THEN** it runs, the parameter declared as `package_` or `class_`, the name every use of it has
+- **THEN** it runs, the parameter declared as `package$` or `class$`, the name every use of it has

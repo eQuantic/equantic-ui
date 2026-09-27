@@ -288,8 +288,9 @@ public class AuthoringCoverageTests
     public void AVerbatimKeywordThatJsReserves_IsRenamedAtTheDeclarationAndEveryUse()
     {
         // `@class` and `@new` are legal C# names, and with the `@` taken off they are JavaScript's
-        // reserved words: declared as `class`, no module parses (found in #432). A method's
-        // parameter goes through the shared lowering, and takes the `$` every reserved word takes (#399).
+        // reserved words: declared as `class`, no module parses (found in #432, fixed on main first by
+        // #399). A method's parameter goes through the shared lowering, and keeps the `$` every
+        // reserved word takes.
         var ts = Ts("public class C : StatelessComponent { " +
                     "  private string Label(string @class) => @class.Trim(); " +
                     "  public override IComponent Build(RenderContext c) { var @new = Label(\" x \"); return new Text(@new); } }");
