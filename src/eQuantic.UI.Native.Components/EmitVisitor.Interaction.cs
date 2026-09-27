@@ -96,10 +96,12 @@ internal sealed partial class EmitVisitor
     }
 
     // Spec S8: being on screen IS the subscription — the binding lives for exactly as long
-    // as this frame, so an unmounted dialog's Esc stops firing with no bookkeeping.
+    // as this frame, so an unmounted dialog's Esc stops firing with no bookkeeping. A focus-scoped
+    // one answers for its own subtree, which its path names.
     private void EmitShortcut(Shortcut shortcut, EmitState s)
     {
-        s.Input.Add(new ShortcutBinding(shortcut.Chord, shortcut.OnPressed));
+        s.Input.Add(new ShortcutBinding(shortcut.Chord, shortcut.OnPressed,
+            shortcut.FocusScoped ? s.Node.Path ?? "" : null));
     }
 
     private void EmitLink(Link link, EmitState s)

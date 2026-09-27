@@ -1,4 +1,4 @@
-import { $eq, BuildContext, DateOnly, DatePicker, Flexible, Row, SizeValue, StatefulComponent, TimeOnly, TimePicker, UiComponent } from "../runtime-exports";
+import { $eq, BuildContext, DateOnly, DatePicker, DateTime, Flexible, Row, SizeValue, StatefulComponent, TimeOnly, TimePicker, UiComponent } from "../runtime-exports";
 
 export class DateTimePicker extends StatefulComponent {
     static $typeId = 'eQuantic.UI.Components.DateTimePicker';
@@ -10,7 +10,7 @@ export class DateTimePicker extends StatefulComponent {
     }
 
     declare selected: any;
-    declare onChanged: any;
+    declare onChanged: ((dateTime: DateTime) => void) | null;
     declare min: any;
     declare max: any;
     declare stepMinutes: number;

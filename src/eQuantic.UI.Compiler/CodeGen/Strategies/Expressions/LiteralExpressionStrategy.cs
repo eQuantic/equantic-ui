@@ -22,7 +22,7 @@ public class LiteralExpressionStrategy : IExpressionIrStrategy
         var literal = (LiteralExpressionSyntax)node;
         return literal.Kind() switch
         {
-            SyntaxKind.StringLiteralExpression => JsExpr.Literal($"'{EscapeString(literal.Token.ValueText)}'"),
+            SyntaxKind.StringLiteralExpression => JsExpr.Literal(JsStringLiteral.Quote(literal.Token.ValueText)),
             SyntaxKind.TrueLiteralExpression => JsExpr.Literal("true"),
             SyntaxKind.FalseLiteralExpression => JsExpr.Literal("false"),
             SyntaxKind.NullLiteralExpression => JsExpr.Literal("null"),
@@ -73,14 +73,6 @@ public class LiteralExpressionStrategy : IExpressionIrStrategy
         }
 
         return JsExpr.Literal(noSuffix);
-    }
-
-    private static string EscapeString(string s)
-    {
-        return s.Replace("\\", "\\\\")
-                .Replace("'", "\\'")
-                .Replace("\n", "\\n")
-                .Replace("\r", "\\r");
     }
 
     public int Priority => 10;

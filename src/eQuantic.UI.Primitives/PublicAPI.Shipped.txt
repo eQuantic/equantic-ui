@@ -1566,6 +1566,8 @@ eQuantic.UI.Primitives.SheetSurface.SheetSurface(eQuantic.UI.Primitives.VisualNo
 eQuantic.UI.Primitives.Shortcut
 eQuantic.UI.Primitives.Shortcut.Chord.get -> eQuantic.UI.Primitives.KeyChord
 eQuantic.UI.Primitives.Shortcut.Chord.init -> void
+eQuantic.UI.Primitives.Shortcut.FocusScoped.get -> bool
+eQuantic.UI.Primitives.Shortcut.FocusScoped.init -> void
 eQuantic.UI.Primitives.Shortcut.OnPressed.get -> System.Action!
 eQuantic.UI.Primitives.Shortcut.OnPressed.init -> void
 eQuantic.UI.Primitives.Shortcut.Shortcut(eQuantic.UI.Primitives.VisualNode! child, eQuantic.UI.Primitives.KeyChord chord, System.Action! onPressed) -> void

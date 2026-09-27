@@ -62,6 +62,54 @@ public class LocalTypeAnnotationTests
         Assert.Contains("let same = new A();", js);
     }
 
+    /// <summary>
+    /// A local that STARTS as null has nothing for TypeScript to infer from: <c>let path = null</c>
+    /// is typed as it goes, and a closure that reads it sees <c>any</c>, which the runtime's own
+    /// build refuses. The patch reader resets its paths from a local function, and was the first to
+    /// hit it. The declared type crosses, with the null it starts as.
+    /// </summary>
+    [Theory]
+    [InlineData("string? path = null;", "let path: string | null = null;")]
+    [InlineData("int? count = null;", "let count: number | null = null;")]
+    [InlineData("string? later;", "let later: string | null = null;")]
+    [InlineData("Base? found = null;", "let found: Base | null = null;")]
+    [InlineData("System.Action? done = null;", "let done: (() => void) | null = null;")]
+    [InlineData("string plain = null;", "let plain: string | null = null;")]
+    [InlineData("System.Collections.Generic.List<string?>? names = null;", "let names: (string | null)[] | null = null;")]
+    public void ALocalThatStartsNull_CrossesWithItsDeclaredType(string csharp, string expected)
+    {
+        Assert.Contains(expected, Convert(csharp));
+    }
+
+    /// <summary>
+    /// Plain JavaScript carries no annotation, whatever the local: the design host compiles with none
+    /// and inlines what eqc writes as one script, so a <c>: T</c> in it is a syntax error that keeps
+    /// the preview from loading. A local that starts null was the common case, and a declared base
+    /// or an empty list was already written with its annotation there. A type TypeScript spells in
+    /// lower case (`string | null`) is one PlainJavaScriptSyntaxTests' pattern does not look for.
+    /// </summary>
+    [Theory]
+    [InlineData("string? path = null;", "let path = null;")]
+    [InlineData("Base found = new A();", "let found = new A();")]
+    [InlineData("var names = new System.Collections.Generic.List<string>();", "let names = [];")]
+    public void APlainJavaScriptLocal_CarriesNoAnnotation(string csharp, string expected)
+    {
+        _converter.EmitTypeAnnotations(false);
+        Assert.Contains(expected, Convert(csharp));
+    }
+
+    /// <summary>
+    /// A local with no initializer and a type that holds no null is definitely assigned before C#
+    /// lets anything read it. Annotated <c>number | null</c>, every read after a branch would be a
+    /// possible null to TypeScript, so it stays as it was.
+    /// </summary>
+    [Fact]
+    public void ALocalWithNoStartOfANonNullableType_StaysBare()
+    {
+        var js = Convert("float x0; if (flag) x0 = 1; else x0 = 2;");
+        Assert.Contains("let x0 = null;", js);
+    }
+
     [Fact]
     public void ANullableBase_CrossesAsTheUnionItIs()
     {

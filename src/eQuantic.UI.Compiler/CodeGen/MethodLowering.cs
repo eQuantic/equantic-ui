@@ -57,8 +57,11 @@ internal sealed class MethodLowering
     /// <param name="declaredType">The emitter's annotation for a parameter's declared type.</param>
     /// <param name="withReceiver">For a C# 14 extension member, what puts its receiver in front of
     /// the parameters: the member lowers to a static that takes the receiver first.</param>
+    /// <param name="returns">The emitter's return annotation for the method's declared return type:
+    /// a tuple's is said, since a tuple crosses as an array literal that TypeScript would read as an
+    /// array of the union of its elements (#412).</param>
     public JsClassMember? Method(MethodDeclarationSyntax method, bool asStatic, Func<TypeSyntax?, string> declaredType,
-        Func<string, string>? withReceiver = null)
+        Func<string, string>? withReceiver = null, Func<TypeSyntax, string>? returns = null)
     {
         if (method.Modifiers.Any(SyntaxKind.AbstractKeyword)) return null;
         if (method.Body == null && method.ExpressionBody == null) return null;
@@ -97,7 +100,8 @@ internal sealed class MethodLowering
         var body = Body(method.Body, method.ExpressionBody?.Expression, isIterator, byReference, isAsync);
         var modifiers = (method.Modifiers.Any(SyntaxKind.StaticKeyword) || asStatic ? "static " : "")
             + (isAsync ? "async " : "");
-        return JsClassMember.Method(modifiers, method.Identifier.Text.ToCamelCase(), generics, parameters, "", body);
+        return JsClassMember.Method(modifiers, method.Identifier.Text.ToCamelCase(), generics, parameters,
+            returns?.Invoke(method.ReturnType) ?? "", body);
     }
 
     /// <summary>
