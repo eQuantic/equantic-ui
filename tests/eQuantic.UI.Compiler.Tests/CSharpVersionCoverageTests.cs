@@ -120,6 +120,100 @@ public class CSharpVersionCoverageTests
     }
 
     [Fact]
+    public void AnExtensionMember_LowersAsAnyMethod_AnIteratorAndATaskIncluded()
+    {
+        // One method lowering for an extension member too (#432): an iterator wrote `yield` outside a
+        // generator, and a method returning a type named TaskItem was made async by the name alone.
+        var results = Compile(Head + """
+            using System.Threading.Tasks;
+
+            public sealed record TaskItem(int N);
+
+            public static class CountExtensions
+            {
+                extension(int count)
+                {
+                    public IEnumerable<int> Upto() { for (var i = 0; i < count; i++) yield return i; }
+                    public TaskItem Item() => new TaskItem(count);
+                    public Task<int> Later() => Task.FromResult(count);
+                }
+            }
+
+            public sealed class Probe : StatelessComponent
+            {
+                public override VisualNode Build(ComponentContext context) =>
+                    new Text($"{string.Join(",", 3.Upto())} {3.Item().N}", TypeRole.BodyM, null);
+            }
+            """);
+
+        var extensions = results.Single(r => r.ComponentName == "CountExtensions").TypeScript;
+        Assert.Contains("const _seq = [];", extensions);
+        Assert.DoesNotContain("yield", extensions);
+        Assert.Contains("static item(count", extensions);
+        Assert.DoesNotContain("async item(", extensions);
+        Assert.Contains("static async later(count", extensions);
+    }
+
+    [Fact]
+    public void AClassAndAComponent_AskTheReturnTypeWhetherAMethodIsAsync_AndAGetterMayYield()
+    {
+        // Found in review (#432): a method returning a type called TaskItem was made async by its
+        // name, in a class and in a component, and a getter that yields wrote `yield` outside a
+        // generator in both.
+        var results = Compile(Head + """
+            using System.Threading.Tasks;
+
+            public sealed record TaskItem(int N);
+
+            public class Bucket
+            {
+                public TaskItem Make(int n) => new TaskItem(n);
+                public Task<int> Later() => Task.FromResult(1);
+                public IEnumerable<int> Items { get { yield return 1; yield return 2; } }
+            }
+
+            public sealed class Probe : StatelessComponent
+            {
+                private TaskItem Make(int n) => new TaskItem(n);
+                private IEnumerable<int> Numbers { get { yield return 3; } }
+                public override VisualNode Build(ComponentContext context) =>
+                    new Text($"{Make(1).N} {new Bucket().Make(2).N} {string.Join(",", Numbers)}", TypeRole.BodyM, null);
+            }
+            """);
+
+        var bucket = results.Single(r => r.ComponentName == "Bucket").TypeScript;
+        Assert.Contains("make(n", bucket);
+        Assert.DoesNotContain("async make(", bucket);
+        Assert.Contains("async later(", bucket);
+        Assert.Contains("const _seq = [];", bucket);
+        Assert.DoesNotContain("yield", bucket);
+
+        var probe = results.Single(r => r.ComponentName == "Probe").TypeScript;
+        Assert.Contains("make(n", probe);
+        Assert.DoesNotContain("async make(", probe);
+        Assert.Contains("const _seq = [];", probe);
+        Assert.DoesNotContain("yield", probe);
+    }
+
+    [Fact]
+    public void AnAccessorBlock_DeclaresTheLocalItsOutVarBinds()
+    {
+        // An accessor's block is lowered as a method's (#432): the local an `out var` binds is
+        // declared in front. A class's getter converted the block alone until #484 declared each
+        // statement's own variables, and the shared lowering keeps it.
+        var results = Compile(Head + """
+            public class Bucket
+            {
+                public string Text { get; set; } = "7";
+                public int Parsed { get { return int.TryParse(Text, out var parsed) ? parsed : -1; } }
+            }
+            """);
+
+        var bucket = results.Single(r => r.ComponentName == "Bucket").TypeScript;
+        Assert.Matches(@"get parsed\(\)[^{]*\{\s*let parsed", bucket);
+    }
+
+    [Fact]
     public void OutLambda_HonoursTheCalleeContract()
     {
         var probe = One(Head + """
