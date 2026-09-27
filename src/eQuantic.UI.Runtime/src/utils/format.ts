@@ -57,15 +57,27 @@ import {
 import { drawPicture, type PictureNumber, type PictureSymbols } from './number-picture';
 
 /**
- * The compat `DateTime` (tick-based, what `new DateTime(…)` transpiles to), as a native Date in
- * LOCAL parts — so one formatter serves both shapes. Without this, `{Moment:d}` over a compat
- * value fell through to `String(value)`, which is the INVARIANT default: the one date format on
- * the page that ignored the culture was the one written most naturally.
+ * A date as the formatter reads it: a native Date whose UTC fields ARE the wall-clock parts to
+ * print, so no time zone can move them. The compat `DateTime` (tick-based, what `new DateTime(…)`
+ * transpiles to) keeps no zone, and a LOCAL Date built from its parts was normalised by the host's:
+ * in a spring-forward gap, 2026-03-08 02:30 in New York became 03:30 (found in review, #472). A
+ * native Date is an instant, and its local parts are the ones it always printed. Every reader
+ * below asks the UTC fields, and `Intl` is told the zone is UTC. Without this, `{Moment:d}` over a
+ * compat value fell through to `String(value)`, the invariant default.
  */
 function asJsDate(value: unknown): Date | null {
-  if (value instanceof Date) return value;
-  if (value instanceof DotNetDateTime) {
-    const date = new Date(
+  if (value instanceof Date)
+    return wallClock(
+      value.getFullYear(),
+      value.getMonth(),
+      value.getDate(),
+      value.getHours(),
+      value.getMinutes(),
+      value.getSeconds(),
+      value.getMilliseconds(),
+    );
+  if (value instanceof DotNetDateTime)
+    return wallClock(
       value.year,
       value.month - 1,
       value.day,
@@ -74,11 +86,23 @@ function asJsDate(value: unknown): Date | null {
       value.second,
       value.millisecond,
     );
-    // `Date` reads a year from 0 to 99 as 1900 plus it: DateTime.MinValue printed 1901.
-    date.setFullYear(value.year);
-    return date;
-  }
   return null;
+}
+
+/** The wall-clock parts as a Date's UTC fields. `Date.UTC` reads a year from 0 to 99 as 1900 plus
+ * it, so the year is set again: DateTime.MinValue printed 1901. */
+function wallClock(
+  year: number,
+  month: number,
+  day: number,
+  hour: number,
+  minute: number,
+  second: number,
+  millisecond: number,
+): Date {
+  const date = new Date(Date.UTC(year, month, day, hour, minute, second, millisecond));
+  date.setUTCFullYear(year);
+  return date;
 }
 
 const TICKS_PER_SECOND = 10_000_000n;
@@ -90,7 +114,7 @@ const TICKS_PER_SECOND = 10_000_000n;
 function fractionOf(value: unknown, date: Date): string {
   if (value instanceof DotNetDateTime)
     return (value.ticks % TICKS_PER_SECOND).toString().padStart(7, '0');
-  return String(date.getMilliseconds()).padStart(3, '0') + '0000';
+  return String(date.getUTCMilliseconds()).padStart(3, '0') + '0000';
 }
 
 /** Which C# number a JavaScript number stands for, by the name of its .NET type. A number cannot
@@ -688,7 +712,9 @@ function namePart(value: Date, options: Intl.DateTimeFormatOptions, type: string
   // With no culture in force the names are the invariant culture's, as the patterns are: the
   // host's own locale wrote `quinta-feira` into an invariant layout on a Portuguese machine.
   const locale = formatLocale() === undefined ? INVARIANT_LOCALE : activeFormatLocale();
-  const parts = new Intl.DateTimeFormat(locale, options).formatToParts(value);
+  const parts = new Intl.DateTimeFormat(locale, { ...options, timeZone: 'UTC' }).formatToParts(
+    value,
+  );
   return parts.find((part) => part.type === type)?.value ?? '';
 }
 
@@ -700,7 +726,7 @@ function namePart(value: Date, options: Intl.DateTimeFormatOptions, type: string
  * unrecognized is a literal too.
  */
 function renderPattern(value: Date, pattern: string, fraction: () => string): string {
-  const hours24 = value.getHours();
+  const hours24 = value.getUTCHours();
   const hours12 = hours24 % 12 === 0 ? 12 : hours24 % 12;
   const out: string[] = [];
 
@@ -760,10 +786,10 @@ function renderPattern(value: Date, pattern: string, fraction: () => string): st
         out.push(namePart(value, { weekday: 'short' }, 'weekday'));
         break;
       case 'dd':
-        out.push(String(value.getDate()).padStart(2, '0'));
+        out.push(String(value.getUTCDate()).padStart(2, '0'));
         break;
       case 'd':
-        out.push(String(value.getDate()));
+        out.push(String(value.getUTCDate()));
         break;
       case 'MMMM':
         out.push(namePart(value, { month: 'long' }, 'month'));
@@ -772,22 +798,22 @@ function renderPattern(value: Date, pattern: string, fraction: () => string): st
         out.push(namePart(value, { month: 'short' }, 'month'));
         break;
       case 'MM':
-        out.push(String(value.getMonth() + 1).padStart(2, '0'));
+        out.push(String(value.getUTCMonth() + 1).padStart(2, '0'));
         break;
       case 'M':
-        out.push(String(value.getMonth() + 1));
+        out.push(String(value.getUTCMonth() + 1));
         break;
       case 'yyyy':
-        out.push(String(value.getFullYear()).padStart(4, '0'));
+        out.push(String(value.getUTCFullYear()).padStart(4, '0'));
         break;
       case 'yyy':
-        out.push(String(value.getFullYear()).padStart(3, '0'));
+        out.push(String(value.getUTCFullYear()).padStart(3, '0'));
         break;
       case 'yy':
-        out.push(String(value.getFullYear() % 100).padStart(2, '0'));
+        out.push(String(value.getUTCFullYear() % 100).padStart(2, '0'));
         break;
       case 'y':
-        out.push(String(value.getFullYear() % 100));
+        out.push(String(value.getUTCFullYear() % 100));
         break;
       case 'HH':
         out.push(String(hours24).padStart(2, '0'));
@@ -802,16 +828,16 @@ function renderPattern(value: Date, pattern: string, fraction: () => string): st
         out.push(String(hours12));
         break;
       case 'mm':
-        out.push(String(value.getMinutes()).padStart(2, '0'));
+        out.push(String(value.getUTCMinutes()).padStart(2, '0'));
         break;
       case 'm':
-        out.push(String(value.getMinutes()));
+        out.push(String(value.getUTCMinutes()));
         break;
       case 'ss':
-        out.push(String(value.getSeconds()).padStart(2, '0'));
+        out.push(String(value.getUTCSeconds()).padStart(2, '0'));
         break;
       case 's':
-        out.push(String(value.getSeconds()));
+        out.push(String(value.getUTCSeconds()));
         break;
       case 'tt':
         out.push(namePart(value, { hour: 'numeric', hour12: true }, 'dayPeriod'));
@@ -849,8 +875,8 @@ const INVARIANT_MONTHS = [
 function sortableParts(value: Date): { date: string; time: string } {
   const two = (part: number): string => String(part).padStart(2, '0');
   return {
-    date: `${String(value.getFullYear()).padStart(4, '0')}-${two(value.getMonth() + 1)}-${two(value.getDate())}`,
-    time: `${two(value.getHours())}:${two(value.getMinutes())}:${two(value.getSeconds())}`,
+    date: `${String(value.getUTCFullYear()).padStart(4, '0')}-${two(value.getUTCMonth() + 1)}-${two(value.getUTCDate())}`,
+    time: `${two(value.getUTCHours())}:${two(value.getUTCMinutes())}:${two(value.getUTCSeconds())}`,
   };
 }
 
@@ -881,12 +907,14 @@ function formatDate(value: Date, format: string, fraction: () => string): string
     case 'R':
     case 'r': {
       const { date, time } = sortableParts(value);
-      return `${INVARIANT_DAYS[value.getDay()]}, ${date.slice(8)} ${INVARIANT_MONTHS[value.getMonth()]} ${date.slice(0, 4)} ${time} GMT`;
+      return `${INVARIANT_DAYS[value.getUTCDay()]}, ${date.slice(8)} ${INVARIANT_MONTHS[value.getUTCMonth()]} ${date.slice(0, 4)} ${time} GMT`;
     }
     case 'U': {
       // The full date and time of the value read as local time and moved to UTC, as .NET's
-      // ToUniversalTime moves an unspecified one.
-      const universal = new Date(
+      // ToUniversalTime moves an unspecified one: the local instant those parts name, whose UTC
+      // fields are then the parts to print. A time a spring-forward gap skips lands where .NET's
+      // does, the standard offset's instant.
+      const local = new Date(
         value.getUTCFullYear(),
         value.getUTCMonth(),
         value.getUTCDate(),
@@ -895,8 +923,8 @@ function formatDate(value: Date, format: string, fraction: () => string): string
         value.getUTCSeconds(),
         value.getUTCMilliseconds(),
       );
-      universal.setFullYear(value.getUTCFullYear());
-      return formatDate(universal, 'F', fraction);
+      local.setFullYear(value.getUTCFullYear());
+      return formatDate(new Date(local.getTime()), 'F', fraction);
     }
   }
 
@@ -905,7 +933,10 @@ function formatDate(value: Date, format: string, fraction: () => string): string
     // Every role must have travelled; a half-known composite would print half a date.
     if (patterns.every((pattern) => pattern !== null))
       return patterns.map((pattern) => renderPattern(value, pattern as string, fraction)).join(' ');
-    return new Intl.DateTimeFormat(activeFormatLocale(), DATE_STYLES[format]).format(value);
+    return new Intl.DateTimeFormat(activeFormatLocale(), {
+      ...DATE_STYLES[format],
+      timeZone: 'UTC',
+    }).format(value);
   }
 
   // A custom picture — `yyyy-MM-dd HH:mm`, `dd MMM yyyy`, `HH:mm:ss.fff` — drawn token by token as

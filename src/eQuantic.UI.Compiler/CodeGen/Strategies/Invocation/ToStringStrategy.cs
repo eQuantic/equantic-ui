@@ -83,12 +83,14 @@ public class ToStringStrategy : IConversionStrategy
 
         // A DATE goes through the formatter whatever it is given, as .NET formats it: a standard
         // specifier from the culture's patterns, a custom picture drawn token by token, and with
-        // none, or with the current culture or a null, the call with none; the invariant culture
-        // writes the invariant patterns. A null DateTime? writes nothing (#388).
+        // none, which is `G`, the current culture's general pattern, the current culture and a null
+        // being the call with none; the invariant culture writes the invariant patterns. With no
+        // specifier it wrote the twin's invariant text, where .NET writes the culture's (found in
+        // review, #472). A null DateTime? writes nothing (#388).
         if (IsDateTime(receiverType))
         {
             context.UsedHelpers.Add(Eq.Import);
-            var specifier = formatArg is null ? "null" : context.Converter.ConvertExpression(formatArg.Expression);
+            var specifier = formatArg is null ? "'G'" : context.Converter.ConvertExpression(formatArg.Expression);
             return invariant
                 ? $"{Eq.Format}({caller}, {specifier}, undefined, true)"
                 : $"{Eq.Format}({caller}, {specifier})";
