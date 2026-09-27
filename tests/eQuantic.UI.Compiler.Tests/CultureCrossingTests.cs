@@ -171,6 +171,21 @@ public class CultureCrossingTests
         Assert.Single(refused.Errors, e => e.Code == "EQ2108");
     }
 
+    /// <summary>A DateTime's ToString with no specifier is `G` in the current culture, as .NET's is,
+    /// and so is one given the current culture or a null; with the invariant one it is the invariant
+    /// `G`. It wrote the twin's invariant text for the first three (found in review, #472).</summary>
+    [Theory]
+    [InlineData("new DateTime(2026, 9, 24).ToString()", "'G')")]
+    [InlineData("new DateTime(2026, 9, 24).ToString(CultureInfo.CurrentCulture)", "'G')")]
+    [InlineData("new DateTime(2026, 9, 24).ToString((IFormatProvider)null)", "'G')")]
+    [InlineData("new DateTime(2026, 9, 24).ToString(CultureInfo.InvariantCulture)", "'G', undefined, true)")]
+    public void ADateTimesToString_WithNoSpecifier_IsTheGeneralPattern(string body, string emitted)
+    {
+        var result = Compile(body);
+        Assert.True(result.Success, string.Join("; ", result.Errors.Select(e => e.Message)));
+        Assert.Contains(emitted, result.TypeScript);
+    }
+
     /// <summary>A provider the subset cannot honour is refused where the developer can see it,
     /// which is the whole reason this file exists.</summary>
     [Fact]

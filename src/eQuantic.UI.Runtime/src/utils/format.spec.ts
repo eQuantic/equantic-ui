@@ -1,6 +1,7 @@
 import { describe, it, expect, afterEach, vi } from 'vitest';
 import { parseEnum, format, stringFormat, stringFormatInvariant, asSingle } from './format';
 import { installCulture } from './culture';
+import { dateTime } from './datetime';
 
 describe('parseEnum', () => {
   // String enum (TypeScript style)
@@ -280,5 +281,30 @@ describe('a date with no culture in force', () => {
     expect(format(new Date(2026, 8, 24), 'D')).toBe('Thursday, 24 September 2026');
     expect(asked.length).toBeGreaterThan(0);
     expect(asked.every((locale) => locale === 'en-US')).toBe(true);
+  });
+});
+
+// A DateTime keeps no time zone (found in review, #472): its parts print as they are, where a local
+// Date built from them was normalised by the host's zone, and in New York's spring-forward gap 02:30
+// became 03:30. Only U reads the value as local time, as .NET does. The expected strings are .NET 10's
+// with TZ=America/New_York.
+describe('a date in a time zone that skips an hour', () => {
+  const zone = process.env.TZ;
+  afterEach(() => {
+    if (zone === undefined) delete process.env.TZ;
+    else process.env.TZ = zone;
+    installCulture('', '', {});
+  });
+
+  it('prints its own parts, and U moves it to UTC as .NET does', () => {
+    process.env.TZ = 'America/New_York';
+    installCulture('', '', {});
+    const gap = dateTime(2026, 3, 8, 2, 30, 0);
+    expect(format(gap, 'HH:mm')).toBe('02:30');
+    expect(format(gap, 's')).toBe('2026-03-08T02:30:00');
+    expect(format(gap, 'o')).toBe('2026-03-08T02:30:00.0000000');
+    expect(format(gap, 'F')).toBe('Sunday, 08 March 2026 02:30:00');
+    expect(format(gap, 'U')).toBe('Sunday, 08 March 2026 07:30:00');
+    expect(format(dateTime(2026, 7, 1, 12, 0, 0), 'U')).toBe('Wednesday, 01 July 2026 16:00:00');
   });
 });
