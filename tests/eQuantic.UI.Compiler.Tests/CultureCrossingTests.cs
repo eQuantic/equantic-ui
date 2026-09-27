@@ -38,6 +38,7 @@ public class CultureCrossingTests
             public sealed class Readout : StatelessComponent
             {
                 private float _value = 0.55f;
+                private string? _pattern;
 
                 public override VisualNode Build(ComponentContext context) =>
                     new Text({{body}}, TypeRole.BodyM);
@@ -154,6 +155,43 @@ public class CultureCrossingTests
         {
             Assert.Single(result.Errors, e => e.Code == "EQ2108");
         }
+    }
+
+    /// <summary>A DateTime's ToString takes its provider as a number's does (#388): the invariant
+    /// culture writes the invariant patterns, and a named one is refused at the build, where it
+    /// crossed to the browser as a name no browser defines.</summary>
+    [Fact]
+    public void ADateTimesProvider_CrossesAsANumbersDoes()
+    {
+        var invariant = Compile("new DateTime(2026, 9, 24).ToString(\"D\", CultureInfo.InvariantCulture)");
+        Assert.True(invariant.Success, string.Join("; ", invariant.Errors.Select(e => e.Message)));
+        Assert.Contains("'D', undefined, true)", invariant.TypeScript);
+        Assert.DoesNotContain("CultureInfo", invariant.TypeScript);
+
+        var refused = Compile("new DateTime(2026, 9, 24).ToString(\"D\", CultureInfo.GetCultureInfo(\"de-DE\"))");
+        Assert.Single(refused.Errors, e => e.Code == "EQ2108");
+    }
+
+    /// <summary>A DateTime's ToString with no specifier is `G` in the current culture, as .NET's is,
+    /// and so is one given the current culture or a null; with the invariant one it is the invariant
+    /// `G`. It wrote the twin's invariant text for the first three (found in review, #472). A null or
+    /// an empty format is `G` too, a variable's at run time (found in Copilot's second round,
+    /// #472).</summary>
+    [Theory]
+    [InlineData("new DateTime(2026, 9, 24).ToString()", "'G')")]
+    [InlineData("new DateTime(2026, 9, 24).ToString(CultureInfo.CurrentCulture)", "'G')")]
+    [InlineData("new DateTime(2026, 9, 24).ToString((IFormatProvider)null)", "'G')")]
+    [InlineData("new DateTime(2026, 9, 24).ToString(CultureInfo.InvariantCulture)", "'G', undefined, true)")]
+    [InlineData("new DateTime(2026, 9, 24).ToString((string)null)", "'G')")]
+    [InlineData("new DateTime(2026, 9, 24).ToString(\"\")", "'G')")]
+    [InlineData("new DateTime(2026, 9, 24).ToString((string)null, CultureInfo.InvariantCulture)", "'G', undefined, true)")]
+    [InlineData("new DateTime(2026, 9, 24).ToString(\"\", CultureInfo.CurrentCulture)", "'G')")]
+    [InlineData("new DateTime(2026, 9, 24).ToString(_pattern)", "this._pattern || 'G')")]
+    public void ADateTimesToString_WithNoSpecifier_IsTheGeneralPattern(string body, string emitted)
+    {
+        var result = Compile(body);
+        Assert.True(result.Success, string.Join("; ", result.Errors.Select(e => e.Message)));
+        Assert.Contains(emitted, result.TypeScript);
     }
 
     /// <summary>A provider the subset cannot honour is refused where the developer can see it,

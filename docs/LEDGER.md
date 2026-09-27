@@ -844,6 +844,20 @@ record of a release, the wiki's Upgrading page is the distillate.
   #354 without a CI run on a main that had it, so `test-runtime` and the fixture's C# pin failed on
   main. The fixture is regenerated from the palette both sides now carry
   ([#453](https://github.com/eQuantic/equantic-ui/issues/453)).
+- **2026-09-26 · A date prints through its specifier as .NET prints it**: a `DateTime`'s own
+  `ToString` reached the twin's `toString(pattern)`, which knew custom tokens only, so `d.ToString("D")`
+  printed `D`, and a provider crossed as a name no browser defines
+  ([#388](https://github.com/eQuantic/equantic-ui/issues/388)). It now goes through the formatter, as a
+  number's does, its provider read through `NamedCulture`. Measured on the way, the formatter wrote the
+  round-trip and sortable forms from `toISOString()`, UTC, so a page off UTC shifted the hour; it had no
+  `R`, `u` or `U`; a custom picture replaced six tokens by text (`d/M/yyyy` printed `d/M/2026`); and with
+  no culture in force a date took `Intl`'s en-US presets and the host's names. Each is fixed, the short
+  and long date and time strings go the same way, and the cross-pinned fixture now
+  carries every date specifier the resx subset admits. From Copilot's first round: a `ToString()` with no
+  specifier writes the current culture's `G`, and no time zone moves a value's parts (a spring-forward
+  gap turned 02:30 into 03:30). From its second round: a null or empty format is `G` too, and `U`
+  reads an hour a fall-back repeats as standard time (01:30 in New York printed 05:30 UTC, where
+  .NET prints 06:30). A new conformance class fails all 12 of its cases on main.
 
 - **2026-09-26 · A name the transpiler changes lands on no name its scope holds**: a local function
   was camel-cased onto a local that differed only by case, a module that did not load; a reserved

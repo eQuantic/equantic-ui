@@ -111,10 +111,17 @@ date|en-US|2026-08-13T15:45:07|d|8/13/2026
 date|en-US|2026-08-13T15:45:07|D|Thursday, August 13, 2026
 date|en-US|2026-08-13T15:45:07|t|3:45 PM
 date|en-US|2026-08-13T15:45:07|T|3:45:07 PM
+date|en-US|2026-08-13T15:45:07|f|Thursday, August 13, 2026 3:45 PM
+date|en-US|2026-08-13T15:45:07|F|Thursday, August 13, 2026 3:45:07 PM
 date|en-US|2026-08-13T15:45:07|g|8/13/2026 3:45 PM
 date|en-US|2026-08-13T15:45:07|G|8/13/2026 3:45:07 PM
 date|en-US|2026-08-13T15:45:07|M|August 13
+date|en-US|2026-08-13T15:45:07|m|August 13
 date|en-US|2026-08-13T15:45:07|Y|August 2026
+date|en-US|2026-08-13T15:45:07|y|August 2026
+date|en-US|2026-08-13T15:45:07|O|2026-08-13T15:45:07.0000000
+date|en-US|2026-08-13T15:45:07|o|2026-08-13T15:45:07.0000000
+date|en-US|2026-08-13T15:45:07|s|2026-08-13T15:45:07
 date|en-US|2026-08-13T15:45:07|yyyy-MM-dd|2026-08-13
 culture pt-BR BRL|dd/MM/yyyy|dddd, d 'de' MMMM 'de' yyyy|HH:mm|HH:mm:ss|d 'de' MMMM|MMMM 'de' yyyy
 num|pt-BR|1234.5||1234,5
@@ -229,10 +236,17 @@ date|pt-BR|2026-08-13T15:45:07|d|13/08/2026
 date|pt-BR|2026-08-13T15:45:07|D|quinta-feira, 13 de agosto de 2026
 date|pt-BR|2026-08-13T15:45:07|t|15:45
 date|pt-BR|2026-08-13T15:45:07|T|15:45:07
+date|pt-BR|2026-08-13T15:45:07|f|quinta-feira, 13 de agosto de 2026 15:45
+date|pt-BR|2026-08-13T15:45:07|F|quinta-feira, 13 de agosto de 2026 15:45:07
 date|pt-BR|2026-08-13T15:45:07|g|13/08/2026 15:45
 date|pt-BR|2026-08-13T15:45:07|G|13/08/2026 15:45:07
 date|pt-BR|2026-08-13T15:45:07|M|13 de agosto
+date|pt-BR|2026-08-13T15:45:07|m|13 de agosto
 date|pt-BR|2026-08-13T15:45:07|Y|agosto de 2026
+date|pt-BR|2026-08-13T15:45:07|y|agosto de 2026
+date|pt-BR|2026-08-13T15:45:07|O|2026-08-13T15:45:07.0000000
+date|pt-BR|2026-08-13T15:45:07|o|2026-08-13T15:45:07.0000000
+date|pt-BR|2026-08-13T15:45:07|s|2026-08-13T15:45:07
 date|pt-BR|2026-08-13T15:45:07|yyyy-MM-dd|2026-08-13
 culture de-DE EUR|dd.MM.yyyy|dddd, d. MMMM yyyy|HH:mm|HH:mm:ss|d. MMMM|MMMM yyyy
 num|de-DE|1234.5||1234,5
@@ -347,10 +361,17 @@ date|de-DE|2026-08-13T15:45:07|d|13.08.2026
 date|de-DE|2026-08-13T15:45:07|D|Donnerstag, 13. August 2026
 date|de-DE|2026-08-13T15:45:07|t|15:45
 date|de-DE|2026-08-13T15:45:07|T|15:45:07
+date|de-DE|2026-08-13T15:45:07|f|Donnerstag, 13. August 2026 15:45
+date|de-DE|2026-08-13T15:45:07|F|Donnerstag, 13. August 2026 15:45:07
 date|de-DE|2026-08-13T15:45:07|g|13.08.2026 15:45
 date|de-DE|2026-08-13T15:45:07|G|13.08.2026 15:45:07
 date|de-DE|2026-08-13T15:45:07|M|13. August
+date|de-DE|2026-08-13T15:45:07|m|13. August
 date|de-DE|2026-08-13T15:45:07|Y|August 2026
+date|de-DE|2026-08-13T15:45:07|y|August 2026
+date|de-DE|2026-08-13T15:45:07|O|2026-08-13T15:45:07.0000000
+date|de-DE|2026-08-13T15:45:07|o|2026-08-13T15:45:07.0000000
+date|de-DE|2026-08-13T15:45:07|s|2026-08-13T15:45:07
 date|de-DE|2026-08-13T15:45:07|yyyy-MM-dd|2026-08-13
 culture es-ES EUR|d/M/yyyy|dddd, d 'de' MMMM 'de' yyyy|H:mm|H:mm:ss|d 'de' MMMM|MMMM 'de' yyyy
 num|es-ES|1234.5||1234,5
@@ -465,10 +486,17 @@ date|es-ES|2026-08-13T15:45:07|d|13/8/2026
 date|es-ES|2026-08-13T15:45:07|D|jueves, 13 de agosto de 2026
 date|es-ES|2026-08-13T15:45:07|t|15:45
 date|es-ES|2026-08-13T15:45:07|T|15:45:07
+date|es-ES|2026-08-13T15:45:07|f|jueves, 13 de agosto de 2026 15:45
+date|es-ES|2026-08-13T15:45:07|F|jueves, 13 de agosto de 2026 15:45:07
 date|es-ES|2026-08-13T15:45:07|g|13/8/2026 15:45
 date|es-ES|2026-08-13T15:45:07|G|13/8/2026 15:45:07
 date|es-ES|2026-08-13T15:45:07|M|13 de agosto
+date|es-ES|2026-08-13T15:45:07|m|13 de agosto
 date|es-ES|2026-08-13T15:45:07|Y|agosto de 2026
+date|es-ES|2026-08-13T15:45:07|y|agosto de 2026
+date|es-ES|2026-08-13T15:45:07|O|2026-08-13T15:45:07.0000000
+date|es-ES|2026-08-13T15:45:07|o|2026-08-13T15:45:07.0000000
+date|es-ES|2026-08-13T15:45:07|s|2026-08-13T15:45:07
 date|es-ES|2026-08-13T15:45:07|yyyy-MM-dd|2026-08-13
 culture sv-SE SEK|yyyy-MM-dd|dddd d MMMM yyyy|HH:mm|HH:mm:ss|d MMMM|MMMM yyyy
 num|sv-SE|1234.5||1234,5
@@ -583,10 +611,17 @@ date|sv-SE|2026-08-13T15:45:07|d|2026-08-13
 date|sv-SE|2026-08-13T15:45:07|D|torsdag 13 augusti 2026
 date|sv-SE|2026-08-13T15:45:07|t|15:45
 date|sv-SE|2026-08-13T15:45:07|T|15:45:07
+date|sv-SE|2026-08-13T15:45:07|f|torsdag 13 augusti 2026 15:45
+date|sv-SE|2026-08-13T15:45:07|F|torsdag 13 augusti 2026 15:45:07
 date|sv-SE|2026-08-13T15:45:07|g|2026-08-13 15:45
 date|sv-SE|2026-08-13T15:45:07|G|2026-08-13 15:45:07
 date|sv-SE|2026-08-13T15:45:07|M|13 augusti
+date|sv-SE|2026-08-13T15:45:07|m|13 augusti
 date|sv-SE|2026-08-13T15:45:07|Y|augusti 2026
+date|sv-SE|2026-08-13T15:45:07|y|augusti 2026
+date|sv-SE|2026-08-13T15:45:07|O|2026-08-13T15:45:07.0000000
+date|sv-SE|2026-08-13T15:45:07|o|2026-08-13T15:45:07.0000000
+date|sv-SE|2026-08-13T15:45:07|s|2026-08-13T15:45:07
 date|sv-SE|2026-08-13T15:45:07|yyyy-MM-dd|2026-08-13
 inv|1234.5||1234.5
 inv|1234.5|N0|1,234

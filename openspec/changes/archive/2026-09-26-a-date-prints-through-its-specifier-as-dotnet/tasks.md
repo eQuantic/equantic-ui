@@ -1,0 +1,41 @@
+# Tasks
+
+## 1. The compiler
+
+- [x] 1.1 Leave a DateTime's ToString to ToStringStrategy, which routes it to the formatter with its provider read through NamedCulture
+
+## 2. The runtime
+
+- [x] 2.1 Write o, s, u and R from a date's own parts, R in the invariant names, and U read as local and moved to UTC
+- [x] 2.2 Draw a custom date picture through renderPattern, with f, F, K, % and quoted text
+- [x] 2.3 Take the invariant patterns with no culture in force, and keep a year below 100
+
+## 3. Checks
+
+- [x] 3.1 `DateTimeToStringConformanceTests`: every one-letter specifier with no provider, the invariant, the current and a null one, a provider alone, custom pictures, the first year and a null DateTime?; all 10 cases, the class as this step closed, fail on the base. 5.1 added the short and long strings and 7.3 a null format, and all 12 fail on main
+- [x] 3.2 The cross-pinned fixture carries every date specifier the subset admits; 5 of its 8 tests fail on the base
+- [x] 3.3 `CultureCrossingTests`: a DateTime's invariant provider stays in the build, and a named one is EQ2108
+
+## 4. Documentation
+
+- [x] 4.1 Add the `docs/LEDGER.md` line citing #388
+- [x] 4.2 Update the wiki's SupportedFeatures page, English and Portuguese, on a wiki branch named like this pull request's
+- [x] 4.3 Archive this change before the merge
+
+## 5. Review
+
+- [x] 5.1 Route the short and long date and time strings to the formatter
+- [x] 5.2 Ask for the invariant culture's names with no culture in force, and build the fraction and the sortable parts only where they are written
+- [x] 5.3 File what the review found outside this change: #469, #470, #471, and a note on #454
+
+## 6. Copilot's first round
+
+- [x] 6.1 Write `G` in the current culture for a ToString with no specifier, the current culture or a null
+- [x] 6.2 Read a date from a zone-free surrogate, so no time zone moves its parts but `U`'s
+- [x] 6.3 Check: `CultureCrossingTests` pins the four emissions, and a runtime spec runs New York's gap against .NET's strings; each fails with its fix reverted. The conformance class's 11 cases all fail on main (12 after 7.3)
+
+## 7. Copilot's second round
+
+- [x] 7.1 Write `G` for a null or an empty format, a variable's at run time
+- [x] 7.2 Read a time a transition skips or repeats as standard time for `U`, as .NET's ToUniversalTime reads it
+- [x] 7.3 Check: `CultureCrossingTests` pins five more emissions, and a runtime spec runs New York's repeated hour against .NET's strings; each fails with its fix reverted. The conformance class's twelfth case runs a variable's null format, and all 12 fail on main
