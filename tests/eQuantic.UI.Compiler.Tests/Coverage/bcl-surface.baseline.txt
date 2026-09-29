@@ -1,7 +1,7 @@
 # eqc BCL surface audit — the coverage DENOMINATOR, one verdict per probed member.
 # native = a strategy mapped it to plain JS · eq = routed through a $eq compat helper
 # fenced:EQxxxx = refused with that diagnostic · invalid-probe = the probe itself doesn't compile
-# totals: eq=197 · fenced=80 · invalid-probe=6 · native=727
+# totals: eq=203 · fenced=79 · invalid-probe=6 · native=722
 native         Array.MaxLength
 native         Boolean.CompareTo(Boolean)
 native         Boolean.CompareTo(Object)
@@ -171,13 +171,13 @@ native         DateTime.ToBinary()
 native         DateTime.ToFileTime()
 native         DateTime.ToFileTimeUtc()
 native         DateTime.ToLocalTime()
-native         DateTime.ToLongDateString()
-native         DateTime.ToLongTimeString()
+eq             DateTime.ToLongDateString()
+eq             DateTime.ToLongTimeString()
 native         DateTime.ToOADate()
-native         DateTime.ToShortDateString()
-native         DateTime.ToShortTimeString()
-native         DateTime.ToString()
-native         DateTime.ToString(String)
+eq             DateTime.ToShortDateString()
+eq             DateTime.ToShortTimeString()
+eq             DateTime.ToString()
+eq             DateTime.ToString(String)
 native         DateTime.ToUniversalTime()
 eq             DateTime.Today
 eq             DateTime.UnixEpoch
@@ -719,7 +719,7 @@ native         SortedDictionary<String,Int32>.Add(String,Int32)
 native         SortedDictionary<String,Int32>.Clear()
 native         SortedDictionary<String,Int32>.Comparer
 native         SortedDictionary<String,Int32>.ContainsKey(String)
-fenced:EQ2004  SortedDictionary<String,Int32>.ContainsValue(Int32)
+native         SortedDictionary<String,Int32>.ContainsValue(Int32)
 native         SortedDictionary<String,Int32>.Count
 native         SortedDictionary<String,Int32>.Keys
 native         SortedDictionary<String,Int32>.Remove(String)

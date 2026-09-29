@@ -27,15 +27,14 @@ public class NullCoalescingAssignmentStrategy : IExpressionIrStrategy
         // there — `m[k] ??= v` on a missing key is a KeyNotFoundException, not an insert. The
         // guarded read cannot stand in `a ?? (a = b)`, so it is lowered the way the compound
         // assignment is: read through the guard, write the result. Writing back a value that was
-        // already there is not observable on a plain object, and `??` still short-circuits the
-        // right-hand side. The template binds the receiver and key once each.
-        // Parenthesized like every template, which the writer places without fencing: an entry's
-        // write is an assignment on a plain object, and `(d[k] ??= v).Length` read the length of v.
-        if (DictionaryEntry.Of(assignment.Left, context) is { } found)
+        // already there keeps its key's slot, and `??` still short-circuits the right-hand side.
+        // The template binds the receiver and key once each.
+        // Parenthesized like every template, which the writer places without fencing.
+        if (DictionaryEntry.Of(assignment.Left, context) is { } target)
         {
-            var (target, form) = found;
             context.UsedHelpers.Add(Eq.Import);
-            return JsExpr.Template($"({form.Write("{0}", "{1}", $"{form.Read("{0}", "{1}")} ?? {{2}}")})",
+            return JsExpr.Template(
+                $"({DictionaryEntry.Write("{0}", "{1}", $"{DictionaryEntry.Read("{0}", "{1}")} ?? {{2}}")})",
                 context.Converter.ConvertIr(target.Expression),
                 context.Converter.ConvertIr(target.ArgumentList.Arguments[0].Expression),
                 context.Converter.ConvertIr(assignment.Right));

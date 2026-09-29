@@ -14,6 +14,7 @@
 import { adoptServerStateFor, componentIdentity, nextComponentKey, runLoweringWalk } from '../core/component';
 import { assertNever } from '../utils/assert-never';
 import { round as dotnetRound } from '../utils/dotnet-math';
+import { Dictionary, plainBag } from '../utils/dictionary';
 import { PINNED_MARKER } from './markers';
 import type { EventHandler, HtmlNode } from '../core/types';
 import { CanvasPointer } from './canvas-pointer';
@@ -317,6 +318,17 @@ function lowerNode(
   return lowered;
 }
 
+/**
+ * A node a component rendered for itself, its own bags as plain objects. A consumer's `HtmlElement`
+ * builds its node in C#, whose attributes and events are the runtime's `Dictionary`, and every pass
+ * after this one reads or writes the node's attributes by name: a bookmark's id, the origin stamp, a
+ * drag handle, a child's alignment. The node the realizer builds passes through untouched.
+ */
+function plainNode(node: HtmlNode): HtmlNode {
+  if (!(node.attributes instanceof Dictionary) && !(node.events instanceof Dictionary)) return node;
+  return { ...node, attributes: plainBag(node.attributes), events: plainBag(node.events) };
+}
+
 function lowerNodeKind(
   node: VisualNodeValue,
   context: LoweringContext,
@@ -335,7 +347,7 @@ function lowerNodeKind(
     // render() takes its key — the same key the C# realizer consumed by entering it. An
     // HtmlElement arriving here has no such render and takes none, which is right: the realizer
     // does not enter one either.
-    return typeof foreign.render === 'function' ? foreign.render() : null;
+    return typeof foreign.render === 'function' ? plainNode(foreign.render()) : null;
   }
 
   switch (node.nodeKind) {

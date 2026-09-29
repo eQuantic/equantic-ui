@@ -8,6 +8,7 @@
 
 import { describe, expect, it } from 'vitest';
 import { RouteValues } from './route-values';
+import { dictionary } from '../utils/dictionary';
 
 describe('RouteValues query policy', () => {
   it('a repeated key means its first value', () => {
@@ -56,6 +57,12 @@ describe('RouteValues query policy', () => {
     captured['slug'] = 'second';
 
     expect(route.param('slug')).toBe('first');
+  });
+
+  it('takes the dictionaries transpiled C# hands to its constructor', () => {
+    const route = new RouteValues(dictionary([['slug', 'intro']]), dictionary([['page', '2']]));
+    expect(route.param('slug')).toBe('intro');
+    expect(route.query('page')).toBe('2');
   });
 
   it('route parameters come through as they are', () => {

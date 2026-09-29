@@ -169,6 +169,40 @@ public class HydrationSpecEmissionTests
         Assert.Contains("static get $hydration() { return { value: 'single' }; }", reading);
     }
 
+    /// <summary>
+    /// A dictionary field hydrates into the runtime's dictionary class only where the lowering reads
+    /// it as one: the five dictionaries of System.Collections.Generic. Another shape that implements
+    /// IDictionary (a ReadOnlyDictionary here) is read by a plain index, which a Dictionary instance
+    /// answers with undefined, so it arrives as the plain object JSON made of it (found in review,
+    /// #443). A key whose type does not decide carries <c>byValue: 'own'</c>.
+    /// </summary>
+    [Fact]
+    public void ADictionaryField_HydratesIntoTheClassTheLoweringReads()
+    {
+        const string source = """
+            using System.Collections.Generic;
+            using System.Collections.ObjectModel;
+            using eQuantic.UI.Primitives;
+
+            [Page("/shapes")]
+            public sealed class Shapes : StatefulComponent
+            {
+                private IReadOnlyDictionary<string, int> _read = new Dictionary<string, int>();
+                private ReadOnlyDictionary<string, int>? _wrapped;
+                private Dictionary<object, int> _any = new();
+
+                public override VisualNode Build(ComponentContext context)
+                    => new Text("", TypeRole.BodyM, context.Theme.TextPrimary);
+            }
+            """;
+        var page = new ComponentCompiler().CompileSource(source, "Shapes.cs").Single(r => r.ComponentName == "Shapes");
+        Assert.True(page.Success, string.Join("\n", page.Errors.Select(e => e.Message)));
+        var map = page.TypeScript.Substring(page.TypeScript.IndexOf("$hydration"));
+        Assert.Contains("_read: { dict: null }", map);
+        Assert.Contains("_any: { dict: null, byValue: 'own' }", map);
+        Assert.DoesNotContain("_wrapped:", map);
+    }
+
     private static string Compile()
     {
         var compiler = new ComponentCompiler();

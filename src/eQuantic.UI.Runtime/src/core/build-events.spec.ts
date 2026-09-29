@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { HtmlElement, type EventHandler, type HtmlNode } from './types';
+import { Dictionary, dictionary } from '../utils/dictionary';
 
 /**
  * Concrete probe that exposes the protected buildEvents() for assertions — on `HtmlElement`,
@@ -11,7 +12,10 @@ class Probe extends HtmlElement {
     return { tag: 'div', attributes: {}, events: this.events(), children: [] };
   }
   events(): Record<string, EventHandler> {
-    return this.buildEvents();
+    return Object.fromEntries(this.buildEvents());
+  }
+  built(): { attributes: Dictionary<string, string | undefined>; events: Dictionary<string, EventHandler> } {
+    return { attributes: this.buildAttributes(), events: this.buildEvents() };
   }
 }
 
@@ -43,6 +47,27 @@ describe('HtmlElement.buildEvents', () => {
     const custom = () => {};
     const p = new Probe({ onClick: native, customEvents: { click: custom } });
     expect(p.events().click).toBe(custom);
+  });
+
+  it('reads forwarded customEvents a transpiled dictionary carries', () => {
+    const handler = () => {};
+    const p = new Probe({ customEvents: dictionary([['click', handler]]) });
+    expect(p.events()).toEqual({ click: handler });
+  });
+
+  it('answers the runtime dictionary from both builders, as their C# signatures say', () => {
+    const fn = () => {};
+    const p = new Probe({
+      id: 'x',
+      onClick: fn,
+      dataAttributes: dictionary([['role', 'tab']]),
+      ariaAttributes: { label: 'Tab' },
+    });
+    const { attributes, events } = p.built();
+    expect(attributes).toBeInstanceOf(Dictionary);
+    expect(Object.fromEntries(attributes)).toEqual({ id: 'x', 'data-role': 'tab', 'aria-label': 'Tab' });
+    expect(events).toBeInstanceOf(Dictionary);
+    expect(events.get('click')).toBe(fn);
   });
 
   it('ignores non-function custom entries', () => {

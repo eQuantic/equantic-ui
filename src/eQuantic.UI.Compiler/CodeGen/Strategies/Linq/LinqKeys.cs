@@ -32,29 +32,9 @@ internal static class LinqKeys
     public static string Matches(ITypeSymbol? key, string groupKey, string sought) =>
         ComparesByValue(key) ? $"{Eq.Equals}({groupKey}, {sought})" : $"{groupKey} === {sought}";
 
-    /// <summary>
-    /// Whether a plain object, the shape a dictionary of such keys is on this side, holds a key of
-    /// this type faithfully: its text names one value, and two equal keys write the same text. A
-    /// string, a char, a bool, a number, a Guid (text on this side), a DateOnly and a TimeSpan (whose
-    /// text keeps every tick) do, and so does an enum whose members each have a value of their own.
-    /// A DateTime's text drops its ticks and a TimeOnly's its seconds, a decimal writes 1.0 and 1.00
-    /// apart where .NET has one key, an enum with aliases has two names for one key, and every class
-    /// instance is the same "[object Object]" where .NET keys each by identity.
-    /// </summary>
-    public static bool HeldAsText(ITypeSymbol key)
-    {
-        var type = key.UnwrapNullable() ?? key;
-        if (type is INamedTypeSymbol { TypeKind: TypeKind.Enum } enumType) return !HasAliases(enumType);
-        return type.SpecialType is SpecialType.System_String or SpecialType.System_Char
-                or SpecialType.System_Boolean or SpecialType.System_SByte or SpecialType.System_Byte
-                or SpecialType.System_Int16 or SpecialType.System_UInt16 or SpecialType.System_Int32
-                or SpecialType.System_UInt32 or SpecialType.System_Int64 or SpecialType.System_UInt64
-                or SpecialType.System_Single or SpecialType.System_Double
-            || type.IsNamed("System.Guid") || type.IsNamed("System.DateOnly") || type.IsNamed("System.TimeSpan");
-    }
-
-    /// <summary>Two members of the enum with one value, which .NET reads as one key.</summary>
-    private static bool HasAliases(INamedTypeSymbol enumType) =>
+    /// <summary>Two members of the enum with one value, which .NET reads as one key and this side,
+    /// where an enum is its member's name, as two.</summary>
+    public static bool HasAliases(INamedTypeSymbol enumType) =>
         enumType.GetMembers().OfType<IFieldSymbol>()
             .Where(field => field.HasConstantValue)
             .GroupBy(field => field.ConstantValue)

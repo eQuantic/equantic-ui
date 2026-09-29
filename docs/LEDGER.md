@@ -814,6 +814,49 @@ record of a release, the wiki's Upgrading page is the distillate.
   to their own issue ([#449](https://github.com/eQuantic/equantic-ui/issues/449)), as are an `is`
   over a named constant ([#451](https://github.com/eQuantic/equantic-ui/issues/451)) and an enum's
   `ToString` ([#452](https://github.com/eQuantic/equantic-ui/issues/452)).
+- **2026-09-26 · A dictionary enumerates as .NET's does**: a `Dictionary<K, V>` with a primitive key
+  was a plain object, which listed integer-like keys ascending and handed every key back as a
+  string, so `d[3] = 30; d[1] = 10;` enumerated `1,3` where .NET enumerates `3,1`
+  ([#435](https://github.com/eQuantic/equantic-ui/issues/435)). Every dictionary is the runtime's
+  dictionary class now, which holds its entries by slot as .NET's does (a removed entry's slot is the
+  next one reused, the last freed first) and keeps each key in its type, found through a `Map` by
+  identity or by `$eq.equals` where the key type's default comparer finds it by value. One strategy
+  owns every dictionary, sorted ones included, `ToDictionary` builds the same class and no longer
+  refuses a date or a class key, every dictionary field and result revives from the wire with its
+  keys in their type, and the DOM escape hatch reads a dictionary or a plain object alike. Three
+  paths that threw work: a key the plain path could not hold (a char, a `Guid`, a date), a
+  deconstructing `foreach` over a record-keyed or sorted dictionary, and a copy, which was an alias.
+  A key whose type does not decide (`object`, an interface, a type parameter, a class) compares by
+  the value's own equality, which Copilot's third round found missing: two equal records under
+  `object` were two keys. The author's review found that a key added while the pairs are walked was
+  visited in turn, so a loop that added as it went never ended: it ends now as .NET's enumerator
+  ends it, with an InvalidOperationException. 34 of the 52 conformance cases failed before, and
+  the served runtime grew 819 gzip bytes. Measured
+  and left to their own issues: integer keys across the JSON wire
+  ([#437](https://github.com/eQuantic/equantic-ui/issues/437)), a `HashSet<T>`'s slot reuse
+  ([#438](https://github.com/eQuantic/equantic-ui/issues/438)), LINQ over a dictionary's pairs
+  ([#439](https://github.com/eQuantic/equantic-ui/issues/439)), `Add` of a key already there
+  ([#440](https://github.com/eQuantic/equantic-ui/issues/440)), `string.Join` over bools, enums and
+  floats ([#441](https://github.com/eQuantic/equantic-ui/issues/441)), and an enum key, which EqJson
+  refuses on the wire ([#442](https://github.com/eQuantic/equantic-ui/issues/442)), and a Guid,
+  which keeps the text it was written in ([#459](https://github.com/eQuantic/equantic-ui/issues/459)),
+  a nested initializer that replaces a member's collection
+  ([#462](https://github.com/eQuantic/equantic-ui/issues/462)), and live `Keys` and `Values` with
+  .NET's capacity ([#463](https://github.com/eQuantic/equantic-ui/issues/463)).
+- **2026-09-26 · A record's and a struct's members lower as a class's do**: the record and struct
+  emitter lowered a method with its own copy of the class emitter's lowering, which handled none of
+  an async method, an iterator, or an out or ref parameter
+  ([#432](https://github.com/eQuantic/equantic-ui/issues/432)). The first two wrote a module that
+  does not parse, and an out or ref value never came back. One lowering now serves every type with
+  methods (`MethodLowering`): a record's and a struct's method, operator, conversion and computed
+  property go through the class emitter's own, so what the class path learns reaches them too. From
+  the review: whether a method is async is asked of its return type's symbol (a method returning
+  `TaskItem` was made async by the name), a getter that yields fills its buffer in every emitter, and
+  a C# 14 extension member takes the same lowering. The copy's pattern variables and reserved
+  parameter names, which this change fixed too, were fixed on main first by #484 and #399 (the
+  declarations that still skip `ToJsIdentifier` are
+  [#467](https://github.com/eQuantic/equantic-ui/issues/467)). A new conformance class fails 9 of its
+  20 cases on main: every async, iterator, out and ref case, and the getter that yields.
 - **2026-09-26 · A number prints through its specifier as .NET prints it**: the resx subset admitted
   the `E` specifier and the formatter had no branch for it, so `{0:E2}` passed the build and printed
   `12345` ([#393](https://github.com/eQuantic/equantic-ui/issues/393)). Measured, every specifier
@@ -850,6 +893,20 @@ record of a release, the wiki's Upgrading page is the distillate.
   #354 without a CI run on a main that had it, so `test-runtime` and the fixture's C# pin failed on
   main. The fixture is regenerated from the palette both sides now carry
   ([#453](https://github.com/eQuantic/equantic-ui/issues/453)).
+- **2026-09-26 · A date prints through its specifier as .NET prints it**: a `DateTime`'s own
+  `ToString` reached the twin's `toString(pattern)`, which knew custom tokens only, so `d.ToString("D")`
+  printed `D`, and a provider crossed as a name no browser defines
+  ([#388](https://github.com/eQuantic/equantic-ui/issues/388)). It now goes through the formatter, as a
+  number's does, its provider read through `NamedCulture`. Measured on the way, the formatter wrote the
+  round-trip and sortable forms from `toISOString()`, UTC, so a page off UTC shifted the hour; it had no
+  `R`, `u` or `U`; a custom picture replaced six tokens by text (`d/M/yyyy` printed `d/M/2026`); and with
+  no culture in force a date took `Intl`'s en-US presets and the host's names. Each is fixed, the short
+  and long date and time strings go the same way, and the cross-pinned fixture now
+  carries every date specifier the resx subset admits. From Copilot's first round: a `ToString()` with no
+  specifier writes the current culture's `G`, and no time zone moves a value's parts (a spring-forward
+  gap turned 02:30 into 03:30). From its second round: a null or empty format is `G` too, and `U`
+  reads an hour a fall-back repeats as standard time (01:30 in New York printed 05:30 UTC, where
+  .NET prints 06:30). A new conformance class fails all 12 of its cases on main.
 
 - **2026-09-26 · A name the transpiler changes lands on no name its scope holds**: a local function
   was camel-cased onto a local that differed only by case, a module that did not load; a reserved

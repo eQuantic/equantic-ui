@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { HtmlNode } from '../core/types';
 import type { VisualNodeValue } from './nodes';
 import { lowerVisualNode } from './lowering';
+import { dictionary } from '../utils/dictionary';
 
 /**
  * The browser's half of "one door per node".
@@ -25,6 +26,24 @@ describe('the mixing seam, now ahead of the switch', () => {
     const webComponent = { render: () => own } as unknown as VisualNodeValue;
 
     expect(lowerVisualNode(webComponent, context)).toBe(own);
+  });
+
+  it("takes a node built in C# with its bags as plain objects, which every later pass writes by name", () => {
+    // A consumer's HtmlElement builds its node in C#, where Attributes and Events are dictionaries.
+    // The passes after the seam stamp a bookmark, an origin, a drag handle or an alignment onto the
+    // node's attributes by name, which a dictionary would have taken as a stray property.
+    const click = () => {};
+    const built = {
+      tag: 'aside',
+      attributes: dictionary([['id', 'mine']]),
+      events: dictionary([['click', click]]),
+      children: [],
+    } as unknown as HtmlNode;
+    const webComponent = { render: () => built } as unknown as VisualNodeValue;
+
+    const lowered = lowerVisualNode(webComponent, context);
+    expect(lowered.attributes).toEqual({ id: 'mine' });
+    expect(lowered.events).toEqual({ click });
   });
 
   it('answers nothing for a foreign object that cannot render either', () => {

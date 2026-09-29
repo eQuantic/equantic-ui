@@ -323,22 +323,24 @@ public class LinqStrategyTests
     }
 
     [Fact]
-    public void ToDictionary_KeyedByWhatAPlainObjectCannotHold_IsRefused()
+    public void ToDictionary_BuildsTheDictionaryClass_AndRefusesAnEnumWithAliases()
     {
-        // A DateTime's text drops its ticks, a class instance is "[object Object]", and an enum with
-        // aliases has two names for one key: none keeps .NET's equality as a plain object's text.
-        TestHelper.DiagnosticsFor("var r = Orders.ToDictionary(o => new DateTime(2026, 1, o.Id))")
-            .Should().Contain(d => d.Code == "EQ1004" && d.Message.Contains("ToDictionary keyed by System.DateTime"));
-        TestHelper.DiagnosticsFor("var r = Orders.ToDictionary(o => o)")
-            .Should().Contain(d => d.Code == "EQ1004" && d.Message.Contains("ToDictionary keyed by Order"));
-        TestHelper.DiagnosticsFor("var r = Orders.ToDictionary(o => Environment.SpecialFolder.Personal)")
-            .Should().Contain(d => d.Code == "EQ1004" && d.Message.Contains("ToDictionary keyed by System.Environment.SpecialFolder"));
-
-        foreach (var held in new[] { "o => o.Id", "o => new DateOnly(2026, 1, o.Id)", "o => Size.Small", "o => o.Id.ToString()" })
+        // A date and a class were refused while the result was a plain object, which held a key by
+        // its text; the runtime's dictionary finds a date by value and a class instance by reference.
+        foreach (var key in new[] { "o => new DateTime(2026, 1, o.Id)", "o => o", "o => o.Id",
+                     "o => new DateOnly(2026, 1, o.Id)", "o => Size.Small", "o => o.Id.ToString()" })
         {
-            TestHelper.DiagnosticsFor($"var r = Orders.ToDictionary({held})")
-                .Should().NotContain(d => d.Code == "EQ1004", $"a plain object holds the key of `{held}` by its text");
+            TestHelper.DiagnosticsFor($"var r = Orders.ToDictionary({key})")
+                .Should().NotContain(d => d.Code == "EQ1004", $"the dictionary class holds the key of `{key}`");
         }
+        TestHelper.ConvertStatement("var r = Orders.ToDictionary(o => new DateTime(2026, 1, o.Id));")
+            .Should().Contain("$eq.linq.toDictionary(").And.Contain(", null, true)");
+        TestHelper.ConvertStatement("var r = Orders.ToDictionary(o => o.Id, o => o);")
+            .Should().Contain("$eq.linq.toDictionary(").And.NotContain("true)");
+
+        // An enum with aliases has two names for one value, which are two keys on this side.
+        TestHelper.DiagnosticsFor("var r = Orders.ToDictionary(o => Environment.SpecialFolder.Personal)")
+            .Should().Contain(d => d.Code == "EQ1004" && d.Message.Contains("ToDictionary keyed by System.Environment.SpecialFolder, an enum with aliases"));
     }
 
     [Fact]
