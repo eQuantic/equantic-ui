@@ -15,9 +15,9 @@ namespace eQuantic.UI.Compiler.CodeGen.Strategies.Types;
 /// underlying type (0 / false / <c>$eq.num.dec(0)</c> / the enum's zero-member, …)</item>
 /// <item><c>x.GetValueOrDefault(fallback)</c> → <c>(x ?? fallback)</c></item>
 /// </list>
-/// Priority 25 — above <see cref="Invocation.DictionaryStrategy"/> (20), which also matches the
-/// <c>GetValueOrDefault</c> name; the semantic gate here (receiver is <c>Nullable&lt;T&gt;</c>) keeps
-/// the two from colliding. Lifted operators (<c>+ - * / &lt; &gt; …</c>) are handled by
+/// Priority 25, like <see cref="DictionaryStrategy"/>, which also answers a <c>GetValueOrDefault</c>;
+/// the semantic gates (a <c>Nullable&lt;T&gt;</c> receiver here, a dictionary there) keep the two
+/// from colliding. Lifted operators (<c>+ - * / &lt; &gt; …</c>) are handled by
 /// BinaryExpressionStrategy.
 /// </summary>
 public class NullableStrategy : IConversionStrategy

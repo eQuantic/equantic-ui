@@ -13,7 +13,6 @@ namespace eQuantic.UI.Compiler.CodeGen.Strategies.Expressions;
 /// Strategy for object creation (new T() or new()).
 /// Handles:
 /// - <c>List&lt;T&gt;</c> -> []
-/// - <c>Dictionary&lt;K,V&gt;</c> -> {}
 /// - HtmlNode -> {} (UI config)
 /// - UI Components -> new Component(config) or just config
 /// </summary>
@@ -187,24 +186,9 @@ public class ObjectCreationStrategy : IConversionStrategy
         {
             if (string.IsNullOrEmpty(arguments) || arguments == "{}") return "[]";
             if (IsCapacityArgument(creation, context)) return "[]";
+            // A copy of the source, not an alias of it; a dictionary spreads into its pairs.
             if (creation.Initializer == null && creation.ArgumentList?.Arguments.Count == 1)
-            {
-                // A Dictionary SOURCE is a plain object — spreading it yields nothing. Its
-                // entries (as .key/.value pairs) are what `new List<KeyValuePair<,>>(dict)` means.
-                var sourceType = context.SemanticHelper.GetType(creation.ArgumentList.Arguments[0].Expression);
-                if (sourceType.IsDictionaryLike(out var keyForm))
-                {
-                    context.UsedHelpers.Add(Eq.Import);
-                    return $"$eq.entries({arguments}, {keyForm})";
-                }
-                return $"[...{arguments}]";     // a copy of the source, not an alias of it
-            }
-            return arguments;
-        }
-        if (typeName.StartsWith("Dictionary<") || typeName.Contains(".Dictionary<"))
-        {
-            if (string.IsNullOrEmpty(arguments) || arguments == "[]") return "{}";
-            if (IsCapacityArgument(creation, context)) return "{}";
+                return $"[...{arguments}]";
             return arguments;
         }
         
@@ -247,7 +231,6 @@ public class ObjectCreationStrategy : IConversionStrategy
     private static bool IsCollectionLikeTypeName(string typeName) =>
         typeName.StartsWith("List<") || typeName.Contains(".List<")
         || typeName.StartsWith("IEnumerable<") || typeName.Contains(".IEnumerable<")
-        || typeName.StartsWith("Dictionary<") || typeName.Contains(".Dictionary<")
         || typeName.StartsWith("HashSet<") || typeName.Contains(".HashSet<")
         || typeName.Contains("Collection<");
 
@@ -626,7 +609,7 @@ public class ObjectCreationStrategy : IConversionStrategy
                 return $"new Set({context.Converter.ConvertExpression(creation.Initializer)})";
 
             if (target is { SpecialType: SpecialType.None, TypeKind: TypeKind.Class }
-                && !typeDisplay.Contains("List<") && !typeDisplay.Contains("Dictionary<")
+                && !typeDisplay.Contains("List<")
                 && !typeDisplay.Contains("IEnumerable<") && !typeDisplay.Contains("Collection<"))
             {
                 var ctorArgs = creation.ArgumentList is { Arguments.Count: > 0 }
@@ -645,20 +628,16 @@ public class ObjectCreationStrategy : IConversionStrategy
                 return $"new {target.Name}({string.Join(", ", ctorArgs)})";
             }
 
-            // `new() { … }` / `new() { [k]=v }` on collections/dictionaries (or with no resolvable
-            // named target) → the initializer IS the value (array / object / dictionary literal).
+            // `new() { … }` on a collection (or with no resolvable named target) → the initializer IS
+            // the value. A dictionary target is DictionaryStrategy's.
             return context.Converter.ConvertExpression(creation.Initializer);
         }
 
-        // Collection / dictionary target with no initializer → empty literal.
+        // Collection target with no initializer → empty literal.
         if (typeDisplay.Contains("List<") || typeDisplay.Contains("IEnumerable<") ||
             typeDisplay.Contains("Collection<") || typeDisplay.TrimEnd('?').EndsWith("[]"))
         {
             return "[]";
-        }
-        if (typeDisplay.Contains("Dictionary<") || typeDisplay.Contains("IDictionary<"))
-        {
-            return "{}";
         }
         // Bare `new()` on a HashSet target — the runtime representation is a JS Set.
         if (typeDisplay.Contains("HashSet<"))

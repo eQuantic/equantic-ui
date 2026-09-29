@@ -1,6 +1,7 @@
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using eQuantic.UI.Compiler.CodeGen.Ir;
+using eQuantic.UI.Compiler.CodeGen.Strategies.Types;
 
 namespace eQuantic.UI.Compiler.CodeGen.Strategies.Linq;
 
@@ -110,14 +111,11 @@ public class LinqTableStrategy : IExpressionIrStrategy
     }
 
     /// <summary>
-    /// <c>ToDictionary</c> by the runtime, which refuses a null key and a key twice as .NET does:
-    /// <c>Object.fromEntries</c> kept the last of two and wrote a null as "null". Into the plain object
-    /// a dictionary of primitive keys is on this side, or, for a structural key (a record, a struct, a
-    /// tuple), into the value map such a dictionary is, which compares keys by value: a plain object
-    /// wrote every record as the same "[object Object]". A key neither holds faithfully (a DateTime,
-    /// a decimal, a class, an enum with aliases, see <see cref="LinqKeys.HeldAsText"/>) is refused, and
-    /// so is a comparer, which has no form here. Null is a call no model binds, which keeps the table's
-    /// shape.
+    /// <c>ToDictionary</c> by the runtime, which refuses a null key and a key twice as .NET does, into
+    /// the dictionary class a constructed one is, its keys found by value where the key type's default
+    /// comparer finds them so (<see cref="DictionaryStrategy.KeyEquality"/>). A comparer has no form
+    /// here and is refused, and so is an enum with aliases, whose two names for one value are two keys
+    /// on this side. Null is a call no model binds, which keeps the table's shape.
     /// </summary>
     private static (string? Template, string? Refusal)? ToDictionary(InvocationExpressionSyntax invocation,
         ConversionContext context)
@@ -126,13 +124,13 @@ public class LinqTableStrategy : IExpressionIrStrategy
             return null;
         if (method.Parameters.Any(parameter => parameter.Type.Name == "IEqualityComparer"))
             return (null, "ToDictionary with a comparer");
-        var structural = key.IsStructuralValueType();
-        if (!structural && !LinqKeys.HeldAsText(key))
-            return (null, $"ToDictionary keyed by {key.ToDisplayString()}");
-        var helper = structural ? Eq.LinqToValueDictionary : Eq.LinqToDictionary;
-        return (invocation.ArgumentList.Arguments.Count == 2
-            ? $"{helper}({{0}}, {{1}}, {{2}})"
-            : $"{helper}({{0}}, {{1}})", null);
+        if ((key.UnwrapNullable() ?? key) is INamedTypeSymbol { TypeKind: TypeKind.Enum } keyEnum && LinqKeys.HasAliases(keyEnum))
+            return (null, $"ToDictionary keyed by {key.ToDisplayString()}, an enum with aliases");
+        var selectors = invocation.ArgumentList.Arguments.Count == 2 ? "{1}, {2}" : "{1}";
+        var byValue = DictionaryStrategy.KeyEquality(key) is { } equality
+            ? invocation.ArgumentList.Arguments.Count == 2 ? $", {equality}" : $", null, {equality}"
+            : "";
+        return ($"{Eq.LinqToDictionary}({{0}}, {selectors}{byValue})", null);
     }
 
     private static bool IsToDictionaryWithAComparer(string name, int argCount) => name == "ToDictionary" && argCount == 3;
@@ -166,8 +164,8 @@ public class LinqTableStrategy : IExpressionIrStrategy
         // A key wins by comparing the SELECTED value; reduce keeps the first of equals, as .NET does.
         ("MaxBy", 1) => "{0}.reduce((_a, _b) => (({1})(_b) > ({1})(_a) ? _b : _a))",
         ("MinBy", 1) => "{0}.reduce((_a, _b) => (({1})(_b) < ({1})(_a) ? _b : _a))",
-        ("ToDictionary", 2) => "Object.fromEntries({0}.map(x => [({1})(x), ({2})(x)]))",
-        ("ToDictionary", 1) => "Object.fromEntries({0}.map(x => [({1})(x), (x => x)(x)]))",
+        ("ToDictionary", 2) => $"{Eq.LinqToDictionary}({{0}}, {{1}}, {{2}})",
+        ("ToDictionary", 1) => $"{Eq.LinqToDictionary}({{0}}, {{1}})",
         // Partitioning by predicate: neither has an array method, so each is a loop that stops.
         ("TakeWhile", 1) =>
             "(function(arr) { const res = []; for(const x of arr) { if(({1})(x)) res.push(x); else break; } return res; })({0})",

@@ -95,11 +95,14 @@ Design notes:
   copied); IGrouping ✅ (each group is the items array + a `key` prop — iterable, `g.Key`, `g.Sum()`,
   etc., first-occurrence order); **ILookup `[key]` indexer ✅** (returns the group for a key, or an empty
   sequence for an absent key — never throws).
-- **Collections**: List ✅, Dictionary ✅ (string/number/enum keys → plain object; **record/struct/tuple
-  keys → `$eq.collections.valueMap`**, a structurally-keyed map so two equal-by-value keys collide as in
-  .NET — construction, `d[k]` get/set, `ContainsKey`/`Add`/`Remove`/`Clear`/`TryGetValue`/
-  `GetValueOrDefault`, `Keys`/`Values`/`Count`, `foreach` over `{key,value}` all routed; the plain-object
-  path is untouched), HashSet ✅, Queue ✅, Stack ✅, **LinkedList ✅** (doubly-linked, `First`/`Last`
+- **Collections**: List ✅, Dictionary ✅ (every `Dictionary`/`IDictionary`/`IReadOnlyDictionary` →
+  **`$eq.collections.dictionary`**, the runtime's dictionary class, which holds entries by slot as
+  .NET's does, so it enumerates in insertion order and reuses a removed entry's slot first; each key
+  keeps its type, found by identity or, where the key type's default comparer compares by value (a
+  record, a struct, a tuple, a decimal, a date, a class that overrides `Equals`), by `$eq.equals` —
+  construction and copy, `d[k]` get/set, `ContainsKey`/`Add`/`Remove`/`Clear`/`TryGetValue`/
+  `GetValueOrDefault`/`TryAdd`/`ContainsValue`, `Keys`/`Values`/`Count`, `foreach` over destructuring
+  pairs all routed, #435), HashSet ✅, Queue ✅, Stack ✅, **LinkedList ✅** (doubly-linked, `First`/`Last`
   nodes), **sorted collections ✅** (`SortedSet`, `SortedDictionary`, `SortedList` → key-sorted
   enumeration via `$eq.collections.sorted*`; default comparer — culture-sensitive string ordering out of
   scope) — all compat types.
@@ -128,8 +131,8 @@ Design notes:
   with per-member defaults). Record inheritance (`record Dog(…) : Animal(Name)` → `class Dog extends
   Animal` with a `super(…)` call, only own members re-assigned) and generic records (`record Box<T>` —
   type args erased) are covered too. **Record-keyed dictionaries** ✅ (`Dictionary<RecordKey,V>` →
-  `$eq.collections.valueMap`, structural-equality keys) and **semantic (base-walk) component detection**
-  ✅ are both landed.
+  `$eq.collections.dictionary(…, true)`, structural-equality keys) and **semantic (base-walk) component
+  detection** ✅ are both landed.
 - **Control flow**: expression-level ✅; statement-level ✅ — the harness now runs statement blocks
   (if/else, for, foreach, while, do-while, switch, break/continue, nested loops, try/catch/finally,
   local functions) in an IIFE and compares the returned value to .NET. (Found & fixed: local-function

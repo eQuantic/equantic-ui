@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { checked, intDiv, intRem, longDiv, longRem, mapGet, mapSet } from './overflow';
 import { single } from './real-text';
 import { sortedDictionary } from './sorted';
-import { valueMap } from './collections';
+import { dictionary } from './dictionary';
 
 describe('checked arithmetic', () => {
   it('hands a value in range back, and throws past the edge', () => {
@@ -90,13 +90,18 @@ describe('mapGet / mapSet — a runtime map entry, read and written as .NET does
     expect(() => mapGet(m, 'z')).toThrow("The given key 'z' was not present in the dictionary.");
   });
 
+  it('names a missing key by its ToString, a bool as True', () => {
+    const m = dictionary<boolean, number>([[false, 0]]);
+    expect(() => mapGet(m, true)).toThrow("The given key 'True' was not present in the dictionary.");
+  });
+
   it('throws for a null key, as .NET does', () => {
-    const m = valueMap<unknown, number>();
+    const m = dictionary<unknown, number>();
     expect(() => mapGet(m, null)).toThrow("Value cannot be null. (Parameter 'key')");
   });
 
   it('writes through set and answers the value written, not the map', () => {
-    const m = valueMap<string, number>();
+    const m = dictionary<string, number>();
     expect(mapSet(m, 'a', 5)).toBe(5);
     expect(m.get('a')).toBe(5);
   });

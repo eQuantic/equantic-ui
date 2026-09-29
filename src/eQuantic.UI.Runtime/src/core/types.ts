@@ -1,6 +1,7 @@
 /**
  * eQuantic.UI Runtime - Core types and interfaces
  */
+import { bagEntries, dictionary, type Bag, type Dictionary } from '../utils/dictionary';
 
 /**
  * What a component IS to this runtime: a subtree it can render, and the children it holds.
@@ -18,6 +19,12 @@ export interface IComponent {
   render(): HtmlNode;
 }
 
+/**
+ * A node of the virtual tree. Its `attributes` and `events` are plain objects in every node the
+ * runtime builds. A node a consumer's C# builds (an `HtmlElement` subclass's own `Render`) carries
+ * the runtime's `Dictionary` there instead, as its C# type says, and the two places that take such a
+ * node read either form: the reconciler, and the lowering where a component renders itself.
+ */
 export interface HtmlNode {
   key?: string;
   tag: string;
@@ -133,8 +140,8 @@ export abstract class HtmlElement extends Component {
   declare title?: string;
   declare hidden?: boolean;
   declare tabIndex?: number;
-  declare dataAttributes?: Record<string, string>;
-  declare ariaAttributes?: Record<string, string>;
+  declare dataAttributes?: Bag<string>;
+  declare ariaAttributes?: Bag<string>;
   // Common Events
   declare onClick?: Action;
   declare onDoubleClick?: Action;
@@ -153,44 +160,47 @@ export abstract class HtmlElement extends Component {
   // transpiled world produces null wherever C# produced null — so the base accepts null too.
   declare onSubmit?: Action<any> | null;
 
-  protected buildAttributes(): Record<string, string | undefined> {
-    const attrs: Record<string, string | undefined> = {};
+  // Both builders answer the runtime's `Dictionary`, as their C# signatures say: the caller is a
+  // consumer's own subclass, whose transpiled code writes an entry with `$eq.mapSet` and reads one
+  // with `$eq.mapGet`. The bags they read arrive in either form, a dictionary from transpiled C# and
+  // a plain object from the runtime's own code.
+  protected buildAttributes(): Dictionary<string, string | undefined> {
+    const attrs = dictionary<string, string | undefined>();
 
-    if (this.id) attrs['id'] = this.id;
-    if (this.title) attrs['title'] = this.title;
-    if (this.hidden) attrs['hidden'] = 'true';
-    if (this.tabIndex !== undefined) attrs['tabindex'] = this.tabIndex.toString();
+    if (this.id) attrs.set('id', this.id);
+    if (this.title) attrs.set('title', this.title);
+    if (this.hidden) attrs.set('hidden', 'true');
+    if (this.tabIndex !== undefined) attrs.set('tabindex', this.tabIndex.toString());
 
     const classNames: string[] = [];
     if (this.className) classNames.push(this.className);
-    if (classNames.length > 0) attrs['class'] = classNames.join(' ');
+    if (classNames.length > 0) attrs.set('class', classNames.join(' '));
 
     // Style
     if (this.style) {
-      attrs['style'] = Object.entries(this.style)
-        .map(([k, v]) => `${k}: ${v}`)
-        .join('; ');
+      attrs.set(
+        'style',
+        Object.entries(this.style)
+          .map(([k, v]) => `${k}: ${v}`)
+          .join('; '),
+      );
     }
 
     // Data attributes
     if (this.dataAttributes) {
-      for (const [key, value] of Object.entries(this.dataAttributes)) {
-        attrs[`data-${key}`] = value;
-      }
+      for (const [key, value] of bagEntries(this.dataAttributes)) attrs.set(`data-${key}`, value);
     }
 
     // ARIA attributes
     if (this.ariaAttributes) {
-      for (const [key, value] of Object.entries(this.ariaAttributes)) {
-        attrs[`aria-${key}`] = value;
-      }
+      for (const [key, value] of bagEntries(this.ariaAttributes)) attrs.set(`aria-${key}`, value);
     }
 
     return attrs;
   }
 
-  protected buildEvents(): Record<string, EventHandler> {
-    const events: Record<string, EventHandler> = {};
+  protected buildEvents(): Dictionary<string, EventHandler> {
+    const events = dictionary<string, EventHandler>();
 
     // Dynamic discovery of events (all props starting with 'on')
     for (const prop of Object.keys(this)) {
@@ -202,7 +212,7 @@ export abstract class HtmlElement extends Component {
 
         const handler = (this as any)[prop];
         if (handler && typeof handler === 'function') {
-          events[eventName] = handler as EventHandler;
+          events.set(eventName, handler as EventHandler);
         }
       }
     }
@@ -211,13 +221,11 @@ export abstract class HtmlElement extends Component {
     // Button forward their resolved handler set to a child element via `customEvents`; without this
     // merge the child's render would rebuild events from its own (absent) on* props and silently drop
     // the handler. Mirrors HtmlElement.BuildEvents() in C# (eQuantic.UI.Core).
-    const custom = (this as Record<string, unknown>).customEvents as
-      | Record<string, EventHandler>
-      | undefined;
+    const custom = (this as Record<string, unknown>).customEvents as Bag<EventHandler> | undefined;
     if (custom) {
-      for (const [eventName, handler] of Object.entries(custom)) {
+      for (const [eventName, handler] of bagEntries(custom)) {
         if (handler && typeof handler === 'function') {
-          events[eventName] = handler;
+          events.set(eventName, handler);
         }
       }
     }

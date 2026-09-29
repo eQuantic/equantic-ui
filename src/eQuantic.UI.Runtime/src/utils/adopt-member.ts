@@ -1,7 +1,8 @@
 /**
  * How a member that arrived from the WIRE becomes a property of the value built from it: one rule
  * for every path that rebuilds a value from a payload (a typed spec, a record twin, the witness
- * path, a dictionary, a component's own fields).
+ * path, a dictionary, a component's own fields), and for every object built from keys a caller
+ * chose (a dictionary's JSON, the DOM attributes and the analytics entry a C# dictionary fills).
  *
  * `target[key] = value` was wrong twice for a key the payload chose:
  * - The server writes every public property, the COMPUTED ones too, so a `Rect` arrives with

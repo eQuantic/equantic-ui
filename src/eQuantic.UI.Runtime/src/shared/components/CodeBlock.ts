@@ -3,8 +3,8 @@ import { $eq, Box, BoxStyle, BuildContext, CodeDecoration, CodeDecorationKindVal
 export class CodeBlock extends StatelessComponent {
     static $typeId = 'eQuantic.UI.Components.CodeBlock';
     static selectionAlpha: number = Math.fround(0.28);
-    _cells: Record<string, any> = {};
-    _fillerCells: Record<string, any> = {};
+    _cells: any = $eq.collections.dictionary();
+    _fillerCells: any = $eq.collections.dictionary();
     static linePass: number = 0;
     static highlightPass: number = 1;
     static outlinePass: number = 2;
@@ -14,7 +14,7 @@ export class CodeBlock extends StatelessComponent {
     static codeSlabActive: ColorToken = new ColorToken(Color.fromRgba(0x1B, 0x22, 0x2B, 0xFF));
 
     static get $hydration() {
-        return { maxHeight: 'single', selectionBands: [{ of: Rect, members: { x: 'single', y: 'single', width: 'single', height: 'single' } }], metrics: CodeMetrics, viewportOffset: 'single', viewportHeight: 'single', viewportWidth: 'single' };
+        return { _cells: { dict: null, key: 'number' }, _fillerCells: { dict: null, key: 'number' }, maxHeight: 'single', selectionBands: [{ of: Rect, members: { x: 'single', y: 'single', width: 'single', height: 'single' } }], metrics: CodeMetrics, viewportOffset: 'single', viewportHeight: 'single', viewportWidth: 'single' };
     }
 
     declare document: CodeDocument;
@@ -255,17 +255,17 @@ export class CodeBlock extends StatelessComponent {
 
     cellsOf(line: number) {
         let cells: any; 
-        if ((($0: any) => (Object.prototype.hasOwnProperty.call($0, line) ? ((cells = $0[line]), true) : ((cells = null), false)))(this._cells)) return cells;
+        if ((($0: any) => ($0.has(line) ? ((cells = $0.get(line)), true) : ((cells = null), false)))(this._cells)) return cells;
         cells = new CodeLineCells(this.document.line(line), this.tabSize);
-        this._cells[line] = cells;
+        $eq.mapSet(this._cells, line, cells);
         return cells;
     }
 
     fillerCellsOf(line: number) {
         let cells: any; 
-        if ((($0: any) => (Object.prototype.hasOwnProperty.call($0, line) ? ((cells = $0[line]), true) : ((cells = null), false)))(this._fillerCells)) return cells;
+        if ((($0: any) => ($0.has(line) ? ((cells = $0.get(line)), true) : ((cells = null), false)))(this._fillerCells)) return cells;
         cells = new CodeLineCells((this.fillerDocument!).line(line), this.tabSize);
-        this._fillerCells[line] = cells;
+        $eq.mapSet(this._fillerCells, line, cells);
         return cells;
     }
 

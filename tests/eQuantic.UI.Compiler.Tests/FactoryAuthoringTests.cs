@@ -468,9 +468,10 @@ public class FactoryAuthoringTests
     }
 
     /// <summary>
-    /// `in` walks the PROTOTYPE chain, so an empty dictionary answered true for "constructor",
-    /// "toString" and every other Object.prototype member — and TryGetValue handed back Object's
-    /// method as the value. A key that comes from user data is exactly where that bites.
+    /// `in` walks the PROTOTYPE chain, so an empty plain-object dictionary answered true for
+    /// "constructor", "toString" and every other Object.prototype member, and TryGetValue handed back
+    /// Object's method as the value. The dictionary class asks its own keys, and the key that comes
+    /// from user data is exactly where that bites.
     /// </summary>
     [Fact]
     public void WithRefs_ADictionaryLookup_AsksForItsOwnKeys()
@@ -483,9 +484,9 @@ public class FactoryAuthoringTests
             """));
 
         Assert.True(result.Success, string.Join("\n", result.Errors.Select(e => e.Message)));
-        Assert.Contains("Object.prototype.hasOwnProperty.call(m, 'constructor')", result.TypeScript);
+        Assert.Contains("m.has('constructor')", result.TypeScript);
         Assert.DoesNotContain("'constructor' in m", result.TypeScript);
-        Assert.Contains("Object.prototype.hasOwnProperty.call(m, 'toString')", result.TypeScript);
+        Assert.Contains("m.has('toString')", result.TypeScript);
     }
 
     /// <summary>

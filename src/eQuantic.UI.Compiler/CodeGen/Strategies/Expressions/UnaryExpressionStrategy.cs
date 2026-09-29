@@ -114,8 +114,8 @@ public class UnaryExpressionStrategy : IExpressionIrStrategy
         var answerOld = node is PostfixUnaryExpressionSyntax && ValueUsed(node);
         var entry = DictionaryEntry.Of(operandSyntax, context);
         JsExpr Stepped(Func<JsExpr, JsExpr> next) => entry is { } found
-            ? ReadModifyWrite.AssignEntry(found.Entry, context.Converter.ConvertIr(found.Access.Expression),
-                context.Converter.ConvertIr(found.Access.ArgumentList.Arguments[0].Expression), [], (current, _) => next(current),
+            ? ReadModifyWrite.AssignEntry(context.Converter.ConvertIr(found.Expression),
+                context.Converter.ConvertIr(found.ArgumentList.Arguments[0].Expression), [], (current, _) => next(current),
                 answerOld, context)
             : ReadModifyWrite.Assign(context.Converter.ConvertIr(operandSyntax), [], (current, _) => next(current),
                 answerOld, context);

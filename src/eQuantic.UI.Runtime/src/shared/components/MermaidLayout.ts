@@ -48,8 +48,8 @@ export class MermaidLayout {
 
     static solveFlowchart(graph: MermaidGraph) {
         let count = graph.nodes.length;
-        let index: Record<string, number> = {};
-        for (let i = 0; i < count; i++) index[graph.nodes[i].id] = i;
+        let index: any = $eq.collections.dictionary();
+        for (let i = 0; i < count; i++) $eq.mapSet(index, graph.nodes[i].id, i);
         let back = MermaidLayout.markBackEdges(graph, index, count);
         let rank = new Array(count).fill(0);
         for (let pass = 0; pass < count; pass++) {
@@ -57,8 +57,8 @@ export class MermaidLayout {
             for (let e = 0; e < graph.edges.length; e++) {
                 if (back[e]) continue;
                 let edge = graph.edges[e];
-                let from = $eq.dictGet(index, edge.from);
-                let to = $eq.dictGet(index, edge.to);
+                let from = $eq.mapGet(index, edge.from);
+                let to = $eq.mapGet(index, edge.to);
                 if (from === to) continue;
                 if (rank[to] < rank[from] + 1) {
                     rank[to] = rank[from] + 1;
@@ -108,8 +108,8 @@ export class MermaidLayout {
         if (!graph.vertical) {
             for (const edge of graph.edges) {
                 if (edge.label.length === 0) continue;
-                let fromRank = rank[$eq.dictGet(index, edge.from)];
-                let toRank = rank[$eq.dictGet(index, edge.to)];
+                let fromRank = rank[$eq.mapGet(index, edge.from)];
+                let toRank = rank[$eq.mapGet(index, edge.to)];
                 let lower = fromRank < toRank ? fromRank : toRank;
                 let needed = Math.fround(MermaidLayout.labelChipWidth(edge.label) + 24);
                 if (lower >= 0 && lower < rankCount && gapAfter[lower] < needed) gapAfter[lower] = needed;
@@ -141,8 +141,8 @@ export class MermaidLayout {
             scene.nodes.push(new MermaidPlacedNode({ node: node, x: x, y: y, w: w, h: h }));
         }
         for (const edge of graph.edges) {
-            let from = scene.nodes[$eq.dictGet(index, edge.from)];
-            let to = scene.nodes[$eq.dictGet(index, edge.to)];
+            let from = scene.nodes[$eq.mapGet(index, edge.from)];
+            let to = scene.nodes[$eq.mapGet(index, edge.to)];
             MermaidLayout.routeFlowEdge(scene, graph.vertical, from, to, edge);
         }
         let mainExtent = Math.fround(Math.fround(cursor - gapAfter[rankCount - 1]) + MermaidLayout.margin);
@@ -151,14 +151,14 @@ export class MermaidLayout {
         return scene;
     }
 
-    static markBackEdges(graph: MermaidGraph, index: Record<string, any>, count: number) {
+    static markBackEdges(graph: MermaidGraph, index: any, count: number) {
         let back = new Array(graph.edges.length).fill(false);
         let outgoing: number[][] = [];
         for (let i = 0; i < count; i++) outgoing.push([]);
         for (let e = 0; e < graph.edges.length; e++) {
             let edge = graph.edges[e];
-            let from = $eq.dictGet(index, edge.from);
-            if (from === $eq.dictGet(index, edge.to)) back[e] = true; else outgoing[from].push(e);
+            let from = $eq.mapGet(index, edge.from);
+            if (from === $eq.mapGet(index, edge.to)) back[e] = true; else outgoing[from].push(e);
         }
         let state = new Array(count).fill(0);
         let stackNode: number[] = [];
@@ -179,7 +179,7 @@ export class MermaidLayout {
                 }
                 stackNext[stackNext.length - 1] = next + 1;
                 let e = outgoing[node][next];
-                let to = $eq.dictGet(index, graph.edges[e].to);
+                let to = $eq.mapGet(index, graph.edges[e].to);
                 if (state[to] === 1) back[e] = true; else if (state[to] === 0) {
                     state[to] = 1;
                     stackNode.push(to);
@@ -194,7 +194,7 @@ export class MermaidLayout {
         for (let k = 0; k < rankOrder.length; k++) position[rankOrder[k]] = k;
     }
 
-    static sortByNeighbors(rankOrder: number[], graph: MermaidGraph, index: Record<string, any>, position: number[], byPredecessors: boolean) {
+    static sortByNeighbors(rankOrder: number[], graph: MermaidGraph, index: any, position: number[], byPredecessors: boolean) {
         let sums = new Array(rankOrder.length).fill(0);
         let counts = new Array(rankOrder.length).fill(0);
         for (let k = 0; k < rankOrder.length; k++) {
@@ -202,8 +202,8 @@ export class MermaidLayout {
             let sum = 0;
             let n = 0;
             for (const edge of graph.edges) {
-                let from = $eq.dictGet(index, edge.from);
-                let to = $eq.dictGet(index, edge.to);
+                let from = $eq.mapGet(index, edge.from);
+                let to = $eq.mapGet(index, edge.to);
                 let neighbor = -1;
                 if (byPredecessors && to === node) neighbor = from;
                 if (!byPredecessors && from === node) neighbor = to;
@@ -306,12 +306,12 @@ export class MermaidLayout {
 
     static solveSequence(graph: MermaidGraph) {
         let scene = new MermaidScene();
-        let centers: Record<string, number> = {};
+        let centers: any = $eq.collections.dictionary();
         let at = MermaidLayout.margin;
         for (const participant of graph.nodes) {
             let w = MermaidLayout.labelWidth(participant.label, 28, 80, 220);
             scene.nodes.push(new MermaidPlacedNode({ node: participant, x: at, y: MermaidLayout.margin, w: w, h: MermaidLayout.nodeHeight }));
-            centers[participant.id] = Math.fround(at + Math.fround(w / 2));
+            $eq.mapSet(centers, participant.id, Math.fround(at + Math.fround(w / 2)));
             at = Math.fround(at + Math.fround(w + MermaidLayout.participantGap));
         }
         let bottom = Math.fround(Math.fround(Math.fround(MermaidLayout.margin + MermaidLayout.lifelineTop) + Math.fround(Math.fround(graph.messages.length) * MermaidLayout.messageGap)) + MermaidLayout.margin);
@@ -321,8 +321,8 @@ export class MermaidLayout {
         }
         let y = Math.fround(Math.fround(MermaidLayout.margin + MermaidLayout.lifelineTop) + Math.fround(MermaidLayout.messageGap / 2));
         for (const message of graph.messages) {
-            let x0 = $eq.dictGet(centers, message.from);
-            let x1 = $eq.dictGet(centers, message.to);
+            let x0 = $eq.mapGet(centers, message.from);
+            let x1 = $eq.mapGet(centers, message.to);
             if (x0 === x1) {
                 MermaidLayout.addSegment(scene, x0, Math.fround(y - 12), Math.fround(x0 + 36), Math.fround(y - 12));
                 MermaidLayout.addSegment(scene, Math.fround(x0 + 36), Math.fround(y - 12), Math.fround(x0 + 36), y);

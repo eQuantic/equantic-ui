@@ -77,5 +77,57 @@ describe('SortedMap<K, V> — key-sorted dictionary (SortedDictionary / SortedLi
     m.set(2, 20);
     m.set(1, 10);
     expect([...m].map((kvp) => kvp.key * 100 + kvp.value)).toEqual([110, 220]);
+    expect([...m].map(([key, value]) => key * 100 + value)).toEqual([110, 220]);
+  });
+
+  it('refuses a null key in every member, as .NET\'s sorted dictionaries do', () => {
+    const m = sortedDictionary<string | null, number>([['a', 1]]);
+    const refusal = "Value cannot be null. (Parameter 'key')";
+    expect(() => m.has(null)).toThrow(refusal);
+    expect(() => m.set(null, 1)).toThrow(refusal);
+    expect(() => m.delete(null)).toThrow(refusal);
+    expect(m.size).toBe(1);
+  });
+
+  it('writes the JSON object of its entries in key order, and equals only itself', () => {
+    const m = sortedDictionary<string, number>([
+      ['b', 2],
+      ['a', 1],
+    ]);
+    expect(JSON.stringify(m)).toBe('{"a":1,"b":2}');
+    expect(m.equals(m)).toBe(true);
+    expect(m.equals(sortedDictionary<string, number>([['a', 1], ['b', 2]]))).toBe(false);
+  });
+});
+
+describe('SortedMap — a change while its pairs are walked', () => {
+  const modified = 'Collection was modified; enumeration operation may not execute.';
+  const two = () =>
+    sortedDictionary<number, number>([
+      [1, 1],
+      [2, 2],
+    ]);
+
+  it('ends the walk any change breaks into, as a sorted dictionary\'s enumerator does', () => {
+    const added = two();
+    let steps = 0;
+    expect(() => {
+      for (const [key] of added) {
+        added.set(key + 10, 0);
+        if (++steps > 50) break;
+      }
+    }).toThrow(modified);
+    const overwritten = two();
+    expect(() => {
+      for (const [key] of overwritten) overwritten.set(key, 5);
+    }).toThrow(modified);
+    const removed = two();
+    expect(() => {
+      for (const [key] of removed) removed.delete(key);
+    }).toThrow(modified);
+    const cleared = two();
+    expect(() => {
+      for (const _ of cleared) cleared.clear();
+    }).toThrow(modified);
   });
 });

@@ -61,12 +61,11 @@ export {
   // CollectionStack and through $eq.collections (the form emitted code actually uses).
   Stack as CollectionStack,
   stack,
-  ValueMap,
-  valueMap,
   LinkedList,
   LinkedListNode,
   linkedList,
 } from './utils/collections';
+export { Dictionary, dictionary, type Pair } from './utils/dictionary';
 export {
   SortedSet,
   sortedSet,
