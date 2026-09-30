@@ -130,8 +130,9 @@ export class TimeSpan {
   compareTo(other: TimeSpan): number {
     return this.ticks < other.ticks ? -1 : this.ticks > other.ticks ? 1 : 0;
   }
-  equals(other: TimeSpan): boolean {
-    return this.ticks === other.ticks;
+  /** `Equals(object)`: a TimeSpan of the same ticks, and nothing of another kind (a date has ticks too). */
+  equals(other: unknown): boolean {
+    return other instanceof TimeSpan && this.ticks === other.ticks;
   }
 
   /** .NET "c" (constant) format: `[-][d.]hh:mm:ss[.fffffff]`. */
@@ -431,8 +432,9 @@ export class DateTime {
   compareTo(other: DateTime): number {
     return this.ticks < other.ticks ? -1 : this.ticks > other.ticks ? 1 : 0;
   }
-  equals(other: DateTime): boolean {
-    return this.ticks === other.ticks;
+  /** `Equals(object)`: a DateTime of the same ticks, and nothing of another kind. */
+  equals(other: unknown): boolean {
+    return other instanceof DateTime && this.ticks === other.ticks;
   }
 
   /** .NET invariant default: `MM/dd/yyyy HH:mm:ss`. With a pattern, see {@link format}. */
@@ -624,8 +626,9 @@ export class DateOnly {
   compareTo(other: DateOnly): number {
     return this.dayNumber < other.dayNumber ? -1 : this.dayNumber > other.dayNumber ? 1 : 0;
   }
-  equals(other: DateOnly): boolean {
-    return this.dayNumber === other.dayNumber;
+  /** `Equals(object)`: a DateOnly of the same day, and nothing of another kind. */
+  equals(other: unknown): boolean {
+    return other instanceof DateOnly && this.dayNumber === other.dayNumber;
   }
 
   /** .NET invariant short date: `MM/dd/yyyy`. */
@@ -780,8 +783,9 @@ export class TimeOnly {
   compareTo(other: TimeOnly): number {
     return this.ticks < other.ticks ? -1 : this.ticks > other.ticks ? 1 : 0;
   }
-  equals(other: TimeOnly): boolean {
-    return this.ticks === other.ticks;
+  /** `Equals(object)`: a TimeOnly of the same ticks, and nothing of another kind. */
+  equals(other: unknown): boolean {
+    return other instanceof TimeOnly && this.ticks === other.ticks;
   }
 
   /** .NET invariant short time: `HH:mm`. */
@@ -967,8 +971,9 @@ export class DateTimeOffset {
   compareTo(other: DateTimeOffset): number {
     return this.utcTicks < other.utcTicks ? -1 : this.utcTicks > other.utcTicks ? 1 : 0;
   }
-  equals(other: DateTimeOffset): boolean {
-    return this.utcTicks === other.utcTicks;
+  /** `Equals(object)`: a DateTimeOffset of the same instant, and nothing of another kind. */
+  equals(other: unknown): boolean {
+    return other instanceof DateTimeOffset && this.utcTicks === other.utcTicks;
   }
 
   toUnixTimeSeconds(): number {

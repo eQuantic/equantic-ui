@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { max, min, toDictionary, toValueDictionary } from './linq';
+import { max, min, toDictionary } from './linq';
+import { Dictionary } from './dictionary';
 
 // Every answer below was measured on .NET 10; the conformance suite runs the same calls on both sides.
 describe('max and min (LINQ Max/Min)', () => {
@@ -34,36 +35,43 @@ describe('max and min (LINQ Max/Min)', () => {
 });
 
 describe('toDictionary (LINQ ToDictionary)', () => {
-  it('maps each element', () => {
-    expect(
-      toDictionary(
-        [1, 2],
-        (x) => x,
-        (x) => x * 10,
-      ),
-    ).toEqual({ 1: 10, 2: 20 });
+  it('maps each element into the dictionary class, in the order of its source', () => {
+    const d = toDictionary(
+      [3, 1, 2],
+      (x) => x,
+      (x) => x * 10,
+    );
+    expect(d).toBeInstanceOf(Dictionary);
+    expect(d.keys()).toEqual([3, 1, 2]);
+    expect(d.values()).toEqual([30, 10, 20]);
   });
 
   it('holds "__proto__" as an entry of its own', () => {
     const d = toDictionary(['__proto__', 'a'], (x) => x);
-    expect(Object.keys(d)).toEqual(['__proto__', 'a']);
-    expect(Object.getPrototypeOf(d)).toBe(Object.prototype);
+    expect(d.keys()).toEqual(['__proto__', 'a']);
     expect(() => toDictionary(['__proto__', '__proto__'], (x) => x)).toThrow(
       'An item with the same key has already been added. Key: __proto__',
     );
   });
 
-  it('keys a structural value by its value', () => {
+  it('keys a structural value by its value when asked to', () => {
     const point = (x: number, y: number) => ({ x, y });
-    const d = toValueDictionary(
+    const d = toDictionary(
       [point(1, 2), point(3, 4)],
       (p) => p,
       (p) => p.x,
+      true,
     );
     expect(d.size).toBe(2);
     expect(d.get(point(3, 4))).toBe(3);
-    expect(() => toValueDictionary([point(1, 2), point(1, 2)], (p) => p)).toThrow(
+    expect(() => toDictionary([point(1, 2), point(1, 2)], (p) => p, null, true)).toThrow(
       'An item with the same key has already been added.',
+    );
+  });
+
+  it('writes a bool key in its message as .NET does', () => {
+    expect(() => toDictionary([true, true], (x) => x)).toThrow(
+      'An item with the same key has already been added. Key: True',
     );
   });
 

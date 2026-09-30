@@ -14,7 +14,8 @@ namespace eQuantic.UI.Server.Tests;
 /// <c>right</c>, <c>center</c> and <c>isEmpty</c> beside its four fields. The twin declares those
 /// as getters, and assigning a member that only has a getter throws in a module: the clean payload
 /// passed and the real one failed hydration. A dictionary keyed by a page's own data can also carry
-/// the key <c>__proto__</c>, which JSON keeps as an entry and an assignment turned into a prototype.
+/// the key <c>__proto__</c>, which JSON keeps as an entry and an assignment turned into a prototype,
+/// and each dictionary key arrives as the text System.Text.Json writes for its type.
 /// </para>
 /// <para>
 /// The file is one line of wire JSON, the bytes a page receives. It is compared, never rewritten in
@@ -37,6 +38,14 @@ public class ServerPayloadFixtureTests
             // A long past 2^53, so the dictionary spec has an entry to convert, under a key a
             // page's data is free to hold.
             balances = new Dictionary<string, long> { ["__proto__"] = 9007199254740993L, ["a"] = 2L },
+            // A key of each form the dictionary spec turns back into its type, integer keys written
+            // out of order, so the client reads what JSON.parse does to them (#437).
+            scores = new Dictionary<int, string> { [3] = "c", [1] = "a" },
+            flags = new Dictionary<bool, int> { [true] = 1, [false] = 0 },
+            big = new Dictionary<long, string> { [9007199254740993L] = "x" },
+            prices = new Dictionary<decimal, int> { [1.50m] = 1 },
+            days = new Dictionary<DateOnly, int> { [new DateOnly(2026, 1, 2)] = 1 },
+            names = new Dictionary<string, int> { ["b"] = 2, ["a"] = 1 },
         }, EqJson.Options) + "\n";
 
         var path = Path.Combine(RepoRoot(), Fixture);

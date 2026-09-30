@@ -109,8 +109,12 @@ public static class PatternConverter
                 if (recursive.PropertyPatternClause != null)
                     foreach (var sp in recursive.PropertyPatternClause.Subpatterns)
                         if (MemberPath(sp) is { } path)
-                            CollectBindings(sp.Pattern, access + string.Concat(path.Select(name => "." + Camel(name))),
+                        {
+                            var receivers = ReceiverTypes(sp, PatternType(recursive, context) ?? accessType, context);
+                            CollectBindings(sp.Pattern,
+                                access + string.Concat(path.Select((name, i) => "." + Camel(name, receivers[i]))),
                                 context, bindings);
+                        }
                 break;
 
             case ListPatternSyntax list:
@@ -155,15 +159,16 @@ public static class PatternConverter
             foreach (var sp in recursive.PropertyPatternClause.Subpatterns)
             {
                 if (MemberPath(sp) is not { } path) continue;
+                var receivers = ReceiverTypes(sp, PatternType(recursive, context) ?? accessType, context);
                 // `{ A.B: p }` is `{ A: { B: p } }`: every member before the last must be there, or
                 // the pattern answers false, as C#'s does, rather than reading through a null.
                 var at = access;
                 for (var i = 0; i < path.Count - 1; i++)
                 {
-                    at = $"{at}.{Camel(path[i])}";
+                    at = $"{at}.{Camel(path[i], receivers[i])}";
                     checks.Add($"{at} != null");
                 }
-                var sub = BuildCondition(sp.Pattern, $"{at}.{Camel(path[^1])}", context);
+                var sub = BuildCondition(sp.Pattern, $"{at}.{Camel(path[^1], receivers[^1])}", context);
                 if (sub != "true") checks.Add(sub);
             }
 
@@ -344,13 +349,32 @@ public static class PatternConverter
     }
 
     /// <summary>
+    /// The type each member of a subpattern's path is read from, aligned with <see cref="MemberPath"/>:
+    /// the pattern's own type for the first, and the member before it for each one after, so
+    /// <c>{ Map.Count: > 0 }</c> reads a dictionary's <c>size</c> as <c>{ Count: > 0 }</c> does. A type
+    /// the model cannot give is null, and the member takes its plain camelCase name.
+    /// </summary>
+    private static List<ITypeSymbol?> ReceiverTypes(SubpatternSyntax sp, ITypeSymbol? first, ConversionContext context)
+    {
+        var receivers = new List<ITypeSymbol?> { first };
+        if (sp.ExpressionColon is not { } expressionColon) return receivers;
+        var prefixes = new List<ExpressionSyntax>();
+        for (var at = expressionColon.Expression; at is MemberAccessExpressionSyntax member; at = member.Expression)
+            prefixes.Insert(0, member.Expression);
+        foreach (var prefix in prefixes) receivers.Add(context.SemanticHelper.GetType(prefix));
+        return receivers;
+    }
+
+    /// <summary>
     /// A property pattern names a MEMBER, and a member's JS name is not always its camelCase: a
     /// collection's <c>Count</c> is <c>length</c>, a string's <c>Length</c> likewise. Lower-casing
     /// blindly emitted <c>actions.count</c> on a JS array — <c>undefined</c>, so
     /// <c>Actions is { Count: > 3 }</c> was quietly always false, with nothing to see at build time.
+    /// A dictionary's <c>Count</c> is its runtime class's <c>size</c>.
     /// </summary>
-    private static string Camel(string name) => name switch
+    private static string Camel(string name, ITypeSymbol? receiver) => name switch
     {
+        "Count" when receiver.IsDictionary() => "size",
         "Count" or "Length" => "length",
         _ => string.IsNullOrEmpty(name) ? name : char.ToLowerInvariant(name[0]) + name.Substring(1),
     };

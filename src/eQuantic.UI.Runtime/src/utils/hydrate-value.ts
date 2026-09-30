@@ -1,6 +1,9 @@
 import { Decimal, dec } from './decimal';
 import { long } from './long';
 import { adoptMember } from './adopt-member';
+import { Dictionary } from './dictionary';
+import { SortedMap } from './sorted';
+import { hydrate } from './hydrate';
 import {
   DateTime,
   dateTime,
@@ -76,12 +79,19 @@ export function hydrateValue(current: unknown, incoming: unknown): unknown {
     return dateTimeOffset.parse(incoming);
   }
 
+  // A dictionary field the compiler gave no spec: rebuilt as its class, never on its prototype, which
+  // would be an instance with no entries to hold. Nothing here says the key type, so a key stays the
+  // property name; every field the compiler types carries `{ dict, key }` and never reaches this.
+  if (current instanceof Dictionary || current instanceof SortedMap) {
+    return hydrate(incoming, current instanceof SortedMap ? { dict: null, sorted: true } : { dict: null });
+  }
+
   // Record/struct field: SSR sends the value as a plain JSON object, which loses the class prototype
   // (so its instance methods and `instanceof` would be gone). Rebuild it on the right prototype, taken
   // from the field's default (a record instance), and hydrate each member recursively using the
   // default's corresponding member as the witness — so nested records and compat-typed members (a
-  // Decimal/DateTime inside the record) are restored too. Plain objects (Dictionary/anonymous) keep
-  // the `Object.prototype` and are left untouched; arrays are handled by their element witnesses.
+  // Decimal/DateTime inside the record) are restored too. Plain objects (anonymous types) keep the
+  // `Object.prototype` and are left untouched; arrays are handled by their element witnesses.
   if (
     typeof current === 'object' &&
     current !== null &&

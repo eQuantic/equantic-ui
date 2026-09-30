@@ -6,9 +6,9 @@ namespace eQuantic.UI.Conformance.Tests;
 
 /// <summary>
 /// Conformance for dictionaries keyed by a structural value type — <c>Dictionary&lt;Point, V&gt;</c>
-/// with <c>record Point(int X, int Y)</c>. These route to the runtime <c>$eq.collections.valueMap</c>
-/// (structural-equality keys) instead of the plain-object form, so two equal-but-distinct keys collide
-/// exactly as in .NET. Also guards that the common string/number-keyed dictionary is left untouched.
+/// with <c>record Point(int X, int Y)</c>. The runtime's dictionary finds such a key by value
+/// (<c>$eq.equals</c>) where a primitive key is found by identity, so two equal-but-distinct keys
+/// collide exactly as in .NET.
 /// </summary>
 public class RecordKeyedDictionaryConformanceTests
 {
@@ -83,27 +83,27 @@ public class RecordKeyedDictionaryConformanceTests
     }
 
     /// <summary>
-    /// Emit-shape guards: a value-typed key routes to <c>$eq.collections.valueMap</c>, while the common
-    /// string/number key stays a plain object indexer — proving the new path doesn't disturb it.
+    /// Emit-shape guards: every dictionary is the runtime's class, and only a key compared by value
+    /// asks the factory for it — a primitive key stays on the class's Map, found by identity.
     /// </summary>
     [Fact]
-    public void EmitShape_ValueKeyRoutesToValueMap_StringKeyStaysPlainObject()
+    public void EmitShape_EveryDictionaryIsTheClass_OnlyAValueKeyIsFoundByValue()
     {
         var recordKeyed = Transpiler.TranspileStatements(
             "var d = new Dictionary<Point, int>(); d[new Point(1, 2)] = 10; return d.Count;", Point);
-        recordKeyed.Should().Contain("$eq.collections.valueMap");
-        // The entry is written through the map's set, by the helper that answers the value written.
+        recordKeyed.Should().Contain("$eq.collections.dictionary(null, true)");
+        // The entry is written through the class's set, by the helper that answers the value written.
         recordKeyed.Should().Contain("$eq.mapSet(");
         recordKeyed.Should().Contain(".size");
 
         var stringKeyed = Transpiler.TranspileExpression(
             "new Dictionary<string, int> { { \"a\", 1 }, { \"b\", 2 } }[\"a\"]");
-        stringKeyed.Should().NotContain("valueMap");
-        stringKeyed.Should().NotContain(".get(");
+        stringKeyed.Should().Contain("$eq.mapGet($eq.collections.dictionary([['a', 1], ['b', 2]]), 'a')");
 
         var intKeyed = Transpiler.TranspileStatements(
             "var d = new Dictionary<int, int>(); d[1] = 10; return d.Count;");
-        intKeyed.Should().NotContain("valueMap");
-        intKeyed.Should().Contain("Object.keys"); // .Count on a plain-object dictionary
+        intKeyed.Should().Contain("$eq.collections.dictionary()");
+        intKeyed.Should().Contain(".size");
+        intKeyed.Should().NotContain("Object.keys");
     }
 }

@@ -794,6 +794,35 @@ record of a release, the wiki's Upgrading page is the distillate.
   value, a ToBoolean provider is evaluated in the order it is written (another `CultureInfo`
   than the invariant or the current one is EQ2108, having no twin to evaluate), and the BCL
   audit's `(Object)` probes call the object overload instead of the string one beside it.
+- **2026-09-26 · A dictionary enumerates as .NET's does**: a `Dictionary<K, V>` with a primitive key
+  was a plain object, which listed integer-like keys ascending and handed every key back as a
+  string, so `d[3] = 30; d[1] = 10;` enumerated `1,3` where .NET enumerates `3,1`
+  ([#435](https://github.com/eQuantic/equantic-ui/issues/435)). Every dictionary is the runtime's
+  dictionary class now, which holds its entries by slot as .NET's does (a removed entry's slot is the
+  next one reused, the last freed first) and keeps each key in its type, found through a `Map` by
+  identity or by `$eq.equals` where the key type's default comparer finds it by value. One strategy
+  owns every dictionary, sorted ones included, `ToDictionary` builds the same class and no longer
+  refuses a date or a class key, every dictionary field and result revives from the wire with its
+  keys in their type, and the DOM escape hatch reads a dictionary or a plain object alike. Three
+  paths that threw work: a key the plain path could not hold (a char, a `Guid`, a date), a
+  deconstructing `foreach` over a record-keyed or sorted dictionary, and a copy, which was an alias.
+  A key whose type does not decide (`object`, an interface, a type parameter, a class) compares by
+  the value's own equality, which Copilot's third round found missing: two equal records under
+  `object` were two keys. The author's review found that a key added while the pairs are walked was
+  visited in turn, so a loop that added as it went never ended: it ends now as .NET's enumerator
+  ends it, with an InvalidOperationException. 34 of the 52 conformance cases failed before, and
+  the served runtime grew 819 gzip bytes. Measured
+  and left to their own issues: integer keys across the JSON wire
+  ([#437](https://github.com/eQuantic/equantic-ui/issues/437)), a `HashSet<T>`'s slot reuse
+  ([#438](https://github.com/eQuantic/equantic-ui/issues/438)), LINQ over a dictionary's pairs
+  ([#439](https://github.com/eQuantic/equantic-ui/issues/439)), `Add` of a key already there
+  ([#440](https://github.com/eQuantic/equantic-ui/issues/440)), `string.Join` over bools, enums and
+  floats ([#441](https://github.com/eQuantic/equantic-ui/issues/441)), and an enum key, which EqJson
+  refuses on the wire ([#442](https://github.com/eQuantic/equantic-ui/issues/442)), and a Guid,
+  which keeps the text it was written in ([#459](https://github.com/eQuantic/equantic-ui/issues/459)),
+  a nested initializer that replaces a member's collection
+  ([#462](https://github.com/eQuantic/equantic-ui/issues/462)), and live `Keys` and `Values` with
+  .NET's capacity ([#463](https://github.com/eQuantic/equantic-ui/issues/463)).
 - **2026-09-26 · A record's and a struct's members lower as a class's do**: the record and struct
   emitter lowered a method with its own copy of the class emitter's lowering, which handled none of
   an async method, an iterator, or an out or ref parameter

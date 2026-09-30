@@ -3,7 +3,9 @@ import { describe, expect, it } from 'vitest';
 import { hydrate, type HydrationSpec } from './hydrate';
 import { hydrateValue } from './hydrate-value';
 import { Decimal, dec } from './decimal';
-import { DateTime, TimeSpan } from './datetime';
+import { DateOnly, DateTime, TimeSpan, dateOnly } from './datetime';
+import { Dictionary, dictionary } from './dictionary';
+import { SortedMap, sortedDictionary } from './sorted';
 import { Rect } from '../shared/value-types';
 
 describe('typed hydration', () => {
@@ -59,10 +61,28 @@ describe('typed hydration', () => {
     expect(nested[1][0].toString()).toBe('0.3');
   });
 
-  it("hydrates a dictionary's values and leaves its keys", () => {
-    const result = hydrate({ a: '1', b: '2' }, { dict: 'long' }) as Record<string, bigint>;
-    expect(result.a).toBe(1n);
-    expect(result.b).toBe(2n);
+  it("hydrates a dictionary's values into the dictionary class, its keys the property names", () => {
+    const result = hydrate({ a: '1', b: '2' }, { dict: 'long' }) as Dictionary<string, bigint>;
+    expect(result).toBeInstanceOf(Dictionary);
+    expect(result.get('a')).toBe(1n);
+    expect(result.get('b')).toBe(2n);
+  });
+
+  it('builds a sorted dictionary as its own class, and passes a dictionary through', () => {
+    const sorted = hydrate({ b: 2, a: 1 }, { dict: null, sorted: true }) as SortedMap<string, number>;
+    expect(sorted).toBeInstanceOf(SortedMap);
+    expect(sorted.keys()).toEqual(['a', 'b']);
+    const d = dictionary<string, number>([['a', 1]]);
+    expect(hydrate(d, { dict: null })).toBe(d);
+    expect(hydrate('nope', { dict: null })).toBe('nope');
+  });
+
+  it('rebuilds a dictionary the witness path meets as its class, never on its prototype', () => {
+    const rebuilt = hydrateValue(dictionary<string, number>(), { b: 2, a: 1 }) as Dictionary<string, number>;
+    expect(rebuilt).toBeInstanceOf(Dictionary);
+    expect(rebuilt.keys()).toEqual(['b', 'a']);
+    expect(rebuilt.get('a')).toBe(1);
+    expect(hydrateValue(sortedDictionary<string, number>(), { b: 2, a: 1 })).toBeInstanceOf(SortedMap);
   });
 
   it('rebuilds a record twin on its prototype and hydrates its spec-named members', () => {
@@ -160,6 +180,12 @@ describe('a tuple', () => {
 const wire = JSON.parse(readFileSync('src/utils/__fixtures__/server-payload.json', 'utf8')) as {
   rect: { right: number; bottom: number; center: { x: number; y: number } };
   balances: Record<string, string>;
+  scores: Record<string, string>;
+  flags: Record<string, number>;
+  big: Record<string, string>;
+  prices: Record<string, number>;
+  days: Record<string, number>;
+  names: Record<string, number>;
 };
 
 describe('a payload the server writes', () => {
@@ -187,11 +213,45 @@ describe('a payload the server writes', () => {
   });
 
   it('keeps a dictionary entry keyed __proto__ as an entry, never as a prototype', () => {
-    const balances = hydrate(wire.balances, { dict: 'long' }) as Record<string, bigint>;
+    const balances = hydrate(wire.balances, { dict: 'long' }) as Dictionary<string, bigint>;
 
-    expect(Object.getPrototypeOf(balances)).toBe(Object.prototype);
-    expect(Object.keys(balances)).toEqual(['__proto__', 'a']);
-    expect(Object.getOwnPropertyDescriptor(balances, '__proto__')?.value).toBe(9007199254740993n);
+    expect(balances).toBeInstanceOf(Dictionary);
+    expect(balances.keys()).toEqual(['__proto__', 'a']);
+    expect(balances.get('__proto__')).toBe(9007199254740993n);
+  });
+
+  it('turns each property name the server wrote into a key of its type', () => {
+    const scores = hydrate(wire.scores, { dict: null, key: 'number' }) as Dictionary<number, string>;
+    // The server wrote 3 before 1, and JSON.parse lists integer-like names ascending (#437).
+    expect(scores.keys()).toEqual([1, 3]);
+    expect(scores.get(3)).toBe('c');
+    const flags = hydrate(wire.flags, { dict: null, key: 'bool' }) as Dictionary<boolean, number>;
+    expect(flags.keys()).toEqual([true, false]);
+    const big = hydrate(wire.big, { dict: null, key: 'long' }) as Dictionary<bigint, string>;
+    expect(big.get(9007199254740993n)).toBe('x');
+    const prices = hydrate(wire.prices, { dict: null, key: 'decimal', byValue: true }) as Dictionary<
+      Decimal,
+      number
+    >;
+    expect(prices.get(dec('1.5'))).toBe(1);
+    const days = hydrate(wire.days, { dict: null, key: 'dateOnly', byValue: true }) as Dictionary<
+      DateOnly,
+      number
+    >;
+    expect(days.get(dateOnly(2026, 1, 2))).toBe(1);
+    const names = hydrate(wire.names, { dict: null }) as Dictionary<string, number>;
+    expect(names.keys()).toEqual(['b', 'a']);
+  });
+
+  it('writes back the JSON the server wrote', () => {
+    for (const [value, spec] of [
+      [wire.names, { dict: null }],
+      [wire.flags, { dict: null, key: 'bool' }],
+      [wire.big, { dict: null, key: 'long' }],
+      [wire.prices, { dict: null, key: 'decimal', byValue: true }],
+      [wire.days, { dict: null, key: 'dateOnly', byValue: true }],
+    ] as const)
+      expect(JSON.stringify(hydrate(value, spec))).toBe(JSON.stringify(value));
   });
 
   it('never lets a member replace the prototype of the value rebuilt from it', () => {

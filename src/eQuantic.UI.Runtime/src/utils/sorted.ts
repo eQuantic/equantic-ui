@@ -10,6 +10,16 @@
  * of the string subsystem); pass simple/numeric keys for guaranteed .NET parity.
  */
 
+import {
+  collectionModified,
+  containsValue,
+  pair,
+  requireKey,
+  wireObject,
+  type KeyEquality,
+  type Pair,
+} from './dictionary';
+
 /** `Comparer<T>.Default`-style ordering: numeric for numbers/bigint, relational otherwise. */
 export function defaultCompare<T>(a: T, b: T): number {
   if (a === b) return 0;
@@ -103,12 +113,14 @@ export function sortedSet<T>(
 /**
  * Backing store for `SortedDictionary` and `SortedList` — a dictionary whose keys are kept sorted, so
  * the indexer/`ContainsKey`/`Add`/`Remove` work as usual while `Keys`/`Values`/`foreach` enumerate in
- * key order. Exposes the same surface as the plain-object dictionary path (`get`/`set`/`has`/`delete`/
- * `clear`/`keys`/`values`/`size` + a `{key,value}` iterator) so the compiler routes it identically.
+ * key order. Exposes the surface of the runtime's {@link Dictionary} (`get`/`set`/`has`/`delete`/
+ * `clear`/`keys`/`values`/`size`, the same pairs, the same JSON) so the compiler routes both alike.
  */
-export class SortedMap<K, V> implements Iterable<{ key: K; value: V }> {
+export class SortedMap<K, V> implements Iterable<Pair<K, V>> {
   private readonly entries: { key: K; value: V }[] = [];
   private readonly compare: (a: K, b: K) => number;
+  /** Bumped by every change, each of which .NET's sorted enumerators refuse. */
+  private version = 0;
 
   constructor(
     initial?: Iterable<readonly [K, V]>,
@@ -124,8 +136,10 @@ export class SortedMap<K, V> implements Iterable<{ key: K; value: V }> {
     return this.entries.length;
   }
 
-  /** Index of `key`, or the bitwise-complement insertion point (`~i`) when absent. */
+  /** Index of `key`, or the bitwise-complement insertion point (`~i`) when absent. A null key is
+   * refused, as .NET's sorted dictionaries refuse one. */
   private indexOf(key: K): number {
+    requireKey(key);
     let lo = 0;
     let hi = this.entries.length - 1;
     while (lo <= hi) {
@@ -151,6 +165,7 @@ export class SortedMap<K, V> implements Iterable<{ key: K; value: V }> {
     const i = this.indexOf(key);
     if (i >= 0) this.entries[i].value = value;
     else this.entries.splice(~i, 0, { key, value });
+    this.version++;
     return this;
   }
 
@@ -158,11 +173,25 @@ export class SortedMap<K, V> implements Iterable<{ key: K; value: V }> {
     const i = this.indexOf(key);
     if (i < 0) return false;
     this.entries.splice(i, 1);
+    this.version++;
     return true;
+  }
+
+  /** `TryAdd`: a key that is not there is added and answers true, one that is answers false. */
+  tryAdd(key: K, value: V): boolean {
+    if (this.indexOf(key) >= 0) return false;
+    this.set(key, value);
+    return true;
+  }
+
+  /** `ContainsValue`, compared as the runtime's Dictionary compares one. */
+  containsValue(value: V, byValue: KeyEquality = false): boolean {
+    return containsValue(this.entries, value, byValue);
   }
 
   clear(): void {
     this.entries.length = 0;
+    this.version++;
   }
 
   /** Keys in sorted order. */
@@ -175,8 +204,28 @@ export class SortedMap<K, V> implements Iterable<{ key: K; value: V }> {
     return this.entries.map((e) => e.value);
   }
 
-  [Symbol.iterator](): Iterator<{ key: K; value: V }> {
-    return this.entries.map((e) => ({ key: e.key, value: e.value }))[Symbol.iterator]();
+  /**
+   * The pairs in key order, destructuring as `[key, value]` and answering `.key` and `.value`. Any
+   * change while they are walked ends the walk with .NET's InvalidOperationException, as a sorted
+   * dictionary's and a sorted list's enumerators end it (measured): an addition, an overwrite, a
+   * removal, `Clear`.
+   */
+  *[Symbol.iterator](): Iterator<Pair<K, V>> {
+    const version = this.version;
+    for (const e of this.entries) {
+      yield pair(e.key, e.value);
+      if (this.version !== version) throw collectionModified();
+    }
+  }
+
+  /** A dictionary equals only itself, as .NET's does. */
+  equals(other: unknown): boolean {
+    return this === other;
+  }
+
+  /** The JSON object System.Text.Json writes for it, in key order. */
+  toJSON(): Record<string, V> {
+    return wireObject(this.entries);
   }
 }
 

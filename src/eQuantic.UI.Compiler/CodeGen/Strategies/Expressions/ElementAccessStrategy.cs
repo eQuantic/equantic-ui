@@ -36,16 +36,15 @@ public class ElementAccessStrategy : IExpressionIrStrategy
         }
 
         // Each indexer argument is one subscript.
-        // A DICTIONARY READ fails for a key that is not there. A plain object answers `undefined`,
-        // so the absence spread through the program instead of stopping it where .NET stops it —
-        // and an undefined reaching a render is a blank, not an error anyone can trace. Only a
-        // READ: the same syntax on the left of an assignment is how a key is ADDED.
-        if (!IsAssignmentTarget(elementAccess) && DictionaryEntry.Of(elementAccess, context) is { Entry: var entry })
+        // A DICTIONARY READ fails for a key that is not there, where the class's own `get` answers
+        // `undefined`, so the absence would spread through the program instead of stopping it where
+        // .NET stops it. Only a READ: the same syntax on the left of an assignment is how a key is
+        // ADDED.
+        if (!IsAssignmentTarget(elementAccess) && DictionaryEntry.Of(elementAccess, context) is not null)
         {
             context.UsedHelpers.Add(Eq.Import);
-            var map = context.Converter.ConvertExpression(elementAccess.Expression);
-            var key = context.Converter.ConvertExpression(elementAccess.ArgumentList.Arguments[0].Expression);
-            return JsExpr.Callish(entry.Read(map, key));
+            return DictionaryEntry.Read(context.Converter.ConvertIr(elementAccess.Expression),
+                context.Converter.ConvertIr(elementAccess.ArgumentList.Arguments[0].Expression));
         }
 
         var indexed = context.Converter.ConvertIr(elementAccess.Expression);
@@ -66,7 +65,7 @@ public class ElementAccessStrategy : IExpressionIrStrategy
     private static bool IsAssignmentTarget(ElementAccessExpressionSyntax access)
     {
         // Parentheses are not a context: `(m[k]) = v` is still the target of that assignment, and
-        // reading through them would emit `($eq.dictGet(…)) = v`, which does not even parse.
+        // reading through them would emit `($eq.mapGet(…)) = v`, which does not even parse.
         SyntaxNode node = access;
         while (node.Parent is ParenthesizedExpressionSyntax parenthesized) node = parenthesized;
 
@@ -77,7 +76,7 @@ public class ElementAccessStrategy : IExpressionIrStrategy
             AssignmentExpressionSyntax assignment =>
                 assignment.Left == node && assignment.IsKind(SyntaxKind.SimpleAssignmentExpression),
             // ++ and -- also read first, and .NET throws for a key that is not there — but the
-            // guarded read cannot BE the target (`$eq.dictGet(…)++` does not parse), so the target
+            // guarded read cannot BE the target (`$eq.mapGet(…)++` does not parse), so the target
             // stays plain and the unary strategy reads it through the guard (ReadModifyWrite).
             PrefixUnaryExpressionSyntax prefix =>
                 prefix.IsKind(SyntaxKind.PreIncrementExpression) || prefix.IsKind(SyntaxKind.PreDecrementExpression),

@@ -65,15 +65,14 @@ public static class ReadModifyWrite
     /// The same write to a dictionary ENTRY. .NET reads it first and throws for a key that is not
     /// there, where JavaScript reads undefined and computes on: <c>m[k]++</c> made NaN and created
     /// the key, and a nullable entry's lift made null of it. So the current value is read through
-    /// the guard that throws, and written back as <paramref name="entry"/>'s representation writes
-    /// an entry (<see cref="DictionaryEntry"/>), the receiver and the key bound once each as any
-    /// target's are.
+    /// the guard that throws, and written back as a dictionary writes an entry
+    /// (<see cref="DictionaryEntry"/>), the receiver and the key bound once each as any target's are.
     /// </summary>
-    internal static JsExpr AssignEntry(DictionaryEntry entry, JsExpr receiver, JsExpr key, IReadOnlyList<JsExpr> operands,
+    internal static JsExpr AssignEntry(JsExpr receiver, JsExpr key, IReadOnlyList<JsExpr> operands,
         Func<JsExpr, IReadOnlyList<JsExpr>, JsExpr> next, bool answerOld, ConversionContext context)
     {
         context.UsedHelpers.Add(Eq.Import);
-        return Spelled([receiver, key], value => entry.Write("{0}", "{1}", value), entry.Read("{0}", "{1}"),
+        return Spelled([receiver, key], value => DictionaryEntry.Write("{0}", "{1}", value), DictionaryEntry.Read("{0}", "{1}"),
             operands, next, answerOld, context);
     }
 
