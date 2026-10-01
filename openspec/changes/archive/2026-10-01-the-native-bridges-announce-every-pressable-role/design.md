@@ -49,6 +49,14 @@ Its state rides `Checked`, as the web's `aria-checked` does, which is `AXValue` 
 `isChecked` on Android, both the radio's own contract. A tab's and an option's ride `Selected`, the
 web's `aria-selected`, which Core-AAM maps to `AXSelected`.
 
+### UIKit hears a radio's check as Selected
+
+Found in review: the iOS bridge turns a check into the element's value, "1" or "0", a toggle's own
+contract, and a radio sent that way would have reached VoiceOver as a button followed by a number.
+UIKit says which choice of a set is chosen with the Selected trait, as its segmented controls do,
+so a `UIKitCheckAsSelected` column, true for a radio alone, tells the bridge to say the check that
+way. AppKit and Android read a radio's check as a checkbox's.
+
 ### The switch has no default arm
 
 The catch-all is what made the five invisible. Like `NativeRole.Of`, the walk's switch names every

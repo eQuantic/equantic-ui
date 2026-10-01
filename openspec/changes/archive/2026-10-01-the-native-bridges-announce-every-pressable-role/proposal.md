@@ -27,8 +27,10 @@ members.
   `android.view.MenuItem`. An option is `AXMenuItem`, departing from Core-AAM's `AXStaticText`,
   which would read a control as a paragraph, and a destination keeps a button's words on all three.
   UIKit has a role for none of them and keeps the button trait, with the Selected trait for what
-  is picked or current.
-- **`NativeRole` gains an `AppKitSubrole` column**, which the macOS bridge sets.
+  is picked or current, and for a chosen radio: UIKit hears a radio's check as Selected, the way
+  its segmented controls say which segment is chosen, rather than as a toggle's "1" or "0".
+- **`NativeRole` gains two columns**: `AppKitSubrole`, which the macOS bridge sets, and
+  `UIKitCheckAsSelected`, which the iOS bridge reads for a radio's check.
 - **The macOS bridge reaches its classes through `AppKit.Class`**, the shell's own door, which
   loads AppKit first. `objc_getClass` answered nil wherever no window had loaded it, and building
   these elements outside a running app hung on a root class that answered nothing.
@@ -38,10 +40,11 @@ members.
 - **Developer surface:** none. An app writes the same `Pressable { Role = … }`, and its menus,
   selects, time pickers, navigation bars and rails are announced in each platform's words.
 - **Public surface:** five `SemanticRole` members (additions), and `NativeRole`'s constructor and
-  `Deconstruct` widened by `AppKitSubrole`, the old shapes retired as `*REMOVED*`. Nothing an app
+  `Deconstruct` widened by `AppKitSubrole` and `UIKitCheckAsSelected`, the old shapes retired as
+  `*REMOVED*`. Nothing an app
   writes constructs a `NativeRole`, so no migration line is owed.
 - **Parts reached:** Primitives (the enum), Native.Components (the walk and the table), the macOS
-  shell (the subrole and the class lookups). The iOS and Android bridges read the table and do not
-  change.
+  shell (the subrole and the class lookups), and the iOS shell (a radio's check as Selected). The
+  Android bridge reads the table and does not change.
 - **The handoff:** `docs/design/status.json` marks `native-roles` partial, five of its seven
   members shipped; a combobox and a dialog are still to come.

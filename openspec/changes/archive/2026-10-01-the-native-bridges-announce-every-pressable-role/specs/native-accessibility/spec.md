@@ -33,7 +33,8 @@ taken from the W3C Core-AAM for the same ARIA role unless the row says why not: 
 `AXRadioButton` and `android.widget.RadioButton`; a tab as `AXRadioButton` with the `AXTabButton`
 subrole and `android.view.View`; a menu item as `AXMenuItem` and `android.view.MenuItem`; an option
 as `AXMenuItem` and `android.view.View`; a destination as `AXButton` and `android.widget.Button`. On
-UIKit each SHALL carry the button trait, with the Selected trait for what is picked or current. No
+UIKit each SHALL carry the button trait, with the Selected trait for what is picked or current, and
+for a chosen radio, whose check UIKit SHALL hear as Selected rather than as a toggle's value. No
 pressable role SHALL be announced as static text on any platform.
 
 #### Scenario: A tab on macOS
@@ -47,3 +48,9 @@ pressable role SHALL be announced as static text on any platform.
 - **WHEN** the Android bridge describes a `SemanticRole.Radio` node
 - **THEN** its class name is `android.widget.RadioButton`, which TalkBack names a radio button, and
   it is checkable and checked as the radio is
+
+#### Scenario: A chosen radio on iOS
+
+- **WHEN** the iOS bridge describes a `SemanticRole.Radio` node whose check is `On`
+- **THEN** `NativeRole` asks UIKit for the Selected trait and no value, so VoiceOver says the radio is
+  selected rather than reading a "1"

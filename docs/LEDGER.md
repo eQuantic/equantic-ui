@@ -978,7 +978,8 @@ record of a release, the wiki's Upgrading page is the distillate.
   W3C Core-AAM for the same ARIA role, with an `AppKitSubrole` column for the tab's `AXTabButton`;
   an option is `AXMenuItem` rather than Core-AAM's `AXStaticText`, and a destination keeps a
   button's words, since a `ListItem` is one only while it is the current row. A radio carries its
-  check, as `aria-checked` does. Building the macOS elements in a test found the bridge reaching its
+  check, as `aria-checked` does, which UIKit hears as Selected rather than as a toggle's value, the
+  review's find, in a `UIKitCheckAsSelected` column. Building the macOS elements in a test found the bridge reaching its
   classes through `objc_getClass`, which answers nil where no window has loaded AppKit, and hung;
   it goes through `AppKit.Class` now, and `AppKitAccessibilityTests` reads each role and subrole
   back from AppKit. The handoff's `native-roles` request is partial: a combobox trigger and a dialog

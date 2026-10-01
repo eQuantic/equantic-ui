@@ -9,8 +9,9 @@
 ## 2. The bridges
 
 - [x] 2.1 Give `NativeRole` an `AppKitSubrole` column and a row per new role, AppKit's and Android's words from Core-AAM
-- [x] 2.2 Set the subrole in the macOS bridge, and reach its classes through `AppKit.Class`
-- [x] 2.3 Check: `AppKitAccessibilityTests` builds the elements through the real dispatch on a Mac and reads each role and subrole back from AppKit, failing without the subrole; `NativeRoleTests` pins the rows and proves every control the frame makes reachable affords what it advertises
+- [x] 2.2 Set the subrole in the macOS bridge, and reach its classes through `AppKit.Class`, once a build
+- [x] 2.3 Give `NativeRole` a `UIKitCheckAsSelected` column, true for a radio, which the iOS bridge reads for the trait and the value (found in review)
+- [x] 2.4 Check: `AppKitAccessibilityTests` builds the elements through the real dispatch on a Mac and reads each role and subrole back from AppKit, failing without the subrole; `NativeRoleTests` pins the rows and proves every control the frame makes reachable affords what it advertises
 
 ## 3. The handoff
 
