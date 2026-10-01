@@ -968,6 +968,25 @@ record of a release, the wiki's Upgrading page is the distillate.
   ([#490](https://github.com/eQuantic/equantic-ui/issues/490)), and a string holding U+2028 or U+2029
   shifts the map's later lines ([#491](https://github.com/eQuantic/equantic-ui/issues/491)). Proposed
   and archived through OpenSpec (`openspec/specs/transpiler-source-maps`).
+- **2026-10-01 · A radio, a tab, a menu item, an option and a destination are themselves on Photon**:
+  the native semantics walk knew three of the nine pressable roles and sent the rest to
+  `_ => Button`, so VoiceOver and TalkBack announced all five as buttons where the web said `radio`,
+  `tab`, `menuitem`, `option` and `aria-current`
+  ([#338](https://github.com/eQuantic/equantic-ui/issues/338)). `SemanticRole` gains the five,
+  appended at 12 to 16, and the walk's switch has no default arm, so an appended pressable role fails
+  the build. `NativeRole` speaks each in the platform's own words, AppKit's and Android's from the
+  W3C Core-AAM for the same ARIA role, with an `AppKitSubrole` column for the tab's `AXTabButton`;
+  an option is `AXMenuItem` rather than Core-AAM's `AXStaticText`, and a destination keeps a
+  button's words, since a `ListItem` is one only while it is the current row. A radio carries its
+  check, as `aria-checked` does. Building the macOS elements in a test found the bridge reaching its
+  classes through `objc_getClass`, which answers nil where no window has loaded AppKit, and hung;
+  it goes through `AppKit.Class` now, and `AppKitAccessibilityTests` reads each role and subrole
+  back from AppKit. The handoff's `native-roles` request is partial: a combobox trigger and a dialog
+  ([#501](https://github.com/eQuantic/equantic-ui/issues/501)). Measured on the way: a `Tabs` and a
+  `RadioGroup` reach every bridge as an unnamed slider
+  ([#500](https://github.com/eQuantic/equantic-ui/issues/500)), and no item says where it sits in
+  its set ([#502](https://github.com/eQuantic/equantic-ui/issues/502)). Proposed and archived
+  through OpenSpec (`openspec/specs/native-accessibility`).
 
 ## Retired documents
 
