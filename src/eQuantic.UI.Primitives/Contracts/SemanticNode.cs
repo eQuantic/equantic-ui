@@ -60,6 +60,29 @@ public enum SemanticRole : byte
     /// </para>
     /// </summary>
     Group,
+
+    /// <summary>
+    /// One choice of an exclusive set. Its state is CHECKED-ness and rides
+    /// <see cref="SemanticNode.Checked"/>, as the web's <c>aria-checked</c> says it — the state a
+    /// radio button has on every platform, which is not the picked-ness of a tab.
+    /// <para>
+    /// This and the three after it arrived together (#338): until then a radio, a tab, a menu item
+    /// and a list option all reached the bridges as <see cref="Button"/>, because the semantics walk
+    /// knew three pressable roles and sent the rest to a catch-all. Appended, by the rule above.
+    /// </para>
+    /// </summary>
+    Radio,
+
+    /// <summary>One tab of a set. Its picked-ness rides <see cref="SemanticNode.Selected"/>, as the
+    /// web's <c>aria-selected</c> says it.</summary>
+    Tab,
+
+    /// <summary>One action in a menu: it is run, never picked, so it carries no state.</summary>
+    MenuItem,
+
+    /// <summary>One choice in a list of them, a select's or a time picker's. Its picked-ness rides
+    /// <see cref="SemanticNode.Selected"/>, as the web's <c>aria-selected</c> says it.</summary>
+    Option,
 }
 
 /// <summary>A check's state, in ARIA's own three words. Mixed exists for checkboxes and nothing

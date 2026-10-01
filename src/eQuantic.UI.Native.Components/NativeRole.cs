@@ -56,8 +56,17 @@ namespace eQuantic.UI.Native.Components;
 /// them — so an Adjustable was unreachable to TalkBack while macOS wired increment/decrement and
 /// iOS carried the trait.
 /// </param>
+/// <param name="AppKitSubrole">
+/// The second word AppKit needs for a role it names with two, or null for the many it names with
+/// one. A tab is the reason it exists: AppKit has no tab role, and what NSTabView's own tabs report
+/// is a radio button whose subrole is <c>AXTabButton</c> — the pair VoiceOver reads as "tab". It is
+/// a column rather than a special case in the bridge for the reason the names are: a bridge that
+/// knew which roles carry a subrole would be a second table, and the first one the compiler could
+/// not see.
+/// </param>
 public readonly record struct NativeRole(
-    string AppKit, string Android, UIKitTrait UIKit, bool Activatable, bool Adjustable)
+    string AppKit, string Android, UIKitTrait UIKit, bool Activatable, bool Adjustable,
+    string? AppKitSubrole = null)
 {
     /// <summary>
     /// The row for a role. Every arm is written out, including
@@ -140,6 +149,44 @@ public readonly record struct NativeRole(
         SemanticRole.Group =>
             new("AXGroup", "android.view.ViewGroup", UIKitTrait.None,
                 Activatable: false, Adjustable: false),
+
+        // THE FOUR PRESSABLE ROLES that reached every bridge as Button until #338. AppKit's and
+        // Android's words below are the ones the W3C's Core-AAM gives for the same ARIA role, which
+        // is what WebKit and Chrome expose for the web half of the same component; where this table
+        // departs from it, the row says why. UIKit has none of the four: Apple's own segmented
+        // controls, tab bars and menus report the button trait, and what is picked carries the
+        // Selected trait, which the bridge already adds from SemanticNode.Selected.
+
+        // One choice of an exclusive set. AXRadioButton reads its state from AXValue, the 0/1 a check
+        // carries too, and RadioButton is the one class TalkBack names "radio button" from.
+        SemanticRole.Radio =>
+            new("AXRadioButton", "android.widget.RadioButton", UIKitTrait.Button,
+                Activatable: true, Adjustable: false),
+
+        // One tab: a radio button whose SUBROLE says it is a tab, which is what NSTabView's own tabs
+        // report and what VoiceOver reads as "tab". Android has no class for a single tab: TalkBack
+        // knows the tab BAR (TabWidget) and nothing inside it, and the toolkits say "tab" through a
+        // role description they ship as words — which this framework does not ship. So the class is
+        // the plain View Core-AAM gives, which claims nothing, and the state says the rest.
+        SemanticRole.Tab =>
+            new("AXRadioButton", "android.view.View", UIKitTrait.Button,
+                Activatable: true, Adjustable: false, AppKitSubrole: "AXTabButton"),
+
+        // One action in a menu. MenuItem is not a View on Android, and that is Core-AAM's answer on
+        // purpose: TalkBack names nothing from it, which is how Android's own menus sound — the
+        // item's words, then the activate hint — rather than "button".
+        SemanticRole.MenuItem =>
+            new("AXMenuItem", "android.view.MenuItem", UIKitTrait.Button,
+                Activatable: true, Adjustable: false),
+
+        // One choice in a list of them. The ONE departure from Core-AAM, whose AppKit answer is
+        // AXStaticText: that is the sound this table exists to stop (a control read as a paragraph),
+        // and the list WebKit hangs it from (AXList) is no node here. A choice in a popup is what
+        // NSPopUpButton's own items are, and those are AXMenuItem — the same AppKit word as a menu's
+        // action, the way both checks are AXCheckBox: the difference rides the state, picked or not.
+        SemanticRole.Option =>
+            new("AXMenuItem", "android.view.View", UIKitTrait.Button,
+                Activatable: true, Adjustable: false),
     };
 #pragma warning restore CS8524
 }
