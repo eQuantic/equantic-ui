@@ -99,6 +99,22 @@ public class NativeRoleTests
     }
 
     /// <summary>
+    /// How UIKit hears a CHECK, the one column where a radio and a toggle part (#338, found in
+    /// review). A toggle's state is its value there, "1" or "0", a UISwitch's own contract; a radio's
+    /// is the Selected trait, which is how a segmented control says which segment is chosen, and a
+    /// radio sent the toggle's way would be a button followed by a number.
+    /// </summary>
+    [Fact]
+    public void OnlyARadioIsHeardOnUIKitAsSelectedRatherThanAsAValue()
+    {
+        AllRoles.Where(role => NativeRole.Of(role).UIKitCheckAsSelected)
+            .Should().Equal([SemanticRole.Radio],
+                "a check reads as a value on UIKit, a toggle's contract, unless it is one choice of a set");
+        NativeRole.Of(SemanticRole.Checkbox).UIKitCheckAsSelected.Should().BeFalse();
+        NativeRole.Of(SemanticRole.Switch).UIKitCheckAsSelected.Should().BeFalse();
+    }
+
+    /// <summary>
     /// The columns that are not names, tied to the frame instead of to an opinion: for every control
     /// the realizer made REACHABLE — a tap lands on it, or Tab does — the role it announces has to
     /// afford the same thing to a screen reader, AND the action it advertises has to actually run.

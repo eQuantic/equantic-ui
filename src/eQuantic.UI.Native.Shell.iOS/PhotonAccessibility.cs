@@ -105,16 +105,20 @@ internal sealed class PhotonAccessibility
 
     /// <summary>
     /// What VoiceOver says the element IS. A check does not get the Selected trait: its state is
-    /// its VALUE here (see <see cref="ValueOf"/>), and setting both would announce the state twice.
+    /// its VALUE here (see <see cref="ValueOf"/>), and setting both would announce the state twice —
+    /// except where the role's row says UIKit hears its check as Selected, which is a radio's (#338).
     /// </summary>
     private static UIAccessibilityTrait TraitsOf(SemanticNode node)
     {
-        var traits = Trait(NativeRole.Of(node.Role).UIKit);
+        var native = NativeRole.Of(node.Role);
+        var traits = Trait(native.UIKit);
         if (node.Disabled) traits |= UIAccessibilityTrait.NotEnabled;
         // The destination the user is ON, or the one of a set that is PICKED (a tab, an option, a
         // calendar day) — UIKit has one trait for both. A check never gets it (its state is its
         // VALUE), which is why the flag is separate from Checked rather than another value of it.
-        if (node.Current || node.Selected == true) traits |= UIAccessibilityTrait.Selected;
+        if (node.Current || node.Selected == true
+            || (native.UIKitCheckAsSelected && node.Checked == SemanticCheck.On))
+            traits |= UIAccessibilityTrait.Selected;
         // A heading is still static text with a trait ON TOP, which is what the rotor's "Headings"
         // setting walks. UIKit carries no LEVEL, so the depth is the outline's business and this
         // reports only that the element is one.
@@ -150,13 +154,18 @@ internal sealed class PhotonAccessibility
     /// Fence: iOS has no third state. A mixed checkbox announces its name and role and stops,
     /// rather than claiming to be on or off.
     /// </para>
+    /// <para>
+    /// A radio's check is no value: beside the button trait a "1" is read out as a number, and UIKit
+    /// says which choice of a set is chosen with the Selected trait (<see cref="TraitsOf"/>).
+    /// </para>
     /// </summary>
-    private static string? ValueOf(SemanticNode node) => node.Value ?? node.Checked switch
-    {
-        SemanticCheck.On => "1",
-        SemanticCheck.Off => "0",
-        _ => null,
-    };
+    private static string? ValueOf(SemanticNode node) =>
+        node.Value ?? (NativeRole.Of(node.Role).UIKitCheckAsSelected ? null : node.Checked switch
+        {
+            SemanticCheck.On => "1",
+            SemanticCheck.Off => "0",
+            _ => null,
+        });
 
     /// <summary>Two trees are the same when every node is — the record struct's own equality, which
     /// covers role, path, bounds, label, value and state.</summary>

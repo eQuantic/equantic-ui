@@ -63,8 +63,10 @@ public enum SemanticRole : byte
 
     /// <summary>
     /// One choice of an exclusive set. Its state is CHECKED-ness and rides
-    /// <see cref="SemanticNode.Checked"/>, as the web's <c>aria-checked</c> says it — the state a
-    /// radio button has on every platform, which is not the picked-ness of a tab.
+    /// <see cref="SemanticNode.Checked"/>, as the web's <c>aria-checked</c> says it and as AppKit's
+    /// AXValue and Android's <c>isChecked</c> read it, which is not the picked-ness of a tab. UIKit
+    /// has no checked radio and says the chosen one with the Selected trait; <c>NativeRole</c>
+    /// carries that difference.
     /// <para>
     /// This and the four after it arrived together (#338): until then a radio, a tab, a menu item,
     /// a list option and a navigation destination all reached the bridges as <see cref="Button"/>, because the semantics walk

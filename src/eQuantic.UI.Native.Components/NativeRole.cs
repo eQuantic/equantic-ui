@@ -64,9 +64,16 @@ namespace eQuantic.UI.Native.Components;
 /// knew which roles carry a subrole would be a second table, and the first one the compiler could
 /// not see.
 /// </param>
+/// <param name="UIKitCheckAsSelected">
+/// Whether UIKit hears a CHECK as the Selected trait rather than as the element's value. A toggle's
+/// state is its value there ("1" or "0", a UISwitch's own contract); a radio is one choice of a set,
+/// which UIKit says the way its segmented controls say which segment is chosen. AppKit and Android
+/// read a radio's check as they read a checkbox's, AXValue and isChecked, so the difference is
+/// UIKit's alone, and a row rather than a role the iOS bridge would have to know (#338).
+/// </param>
 public readonly record struct NativeRole(
     string AppKit, string Android, UIKitTrait UIKit, bool Activatable, bool Adjustable,
-    string? AppKitSubrole = null)
+    string? AppKitSubrole = null, bool UIKitCheckAsSelected = false)
 {
     /// <summary>
     /// The row for a role. Every arm is written out, including
@@ -154,14 +161,17 @@ public readonly record struct NativeRole(
         // Android's words below are the ones the W3C's Core-AAM gives for the same ARIA role, which
         // is what WebKit and Chrome expose for the web half of the same component; where this table
         // departs from it, the row says why. UIKit has none of the five: Apple's own segmented
-        // controls, tab bars and menus report the button trait, and what is picked carries the
-        // Selected trait, which the bridge already adds from SemanticNode.Selected.
+        // controls, tab bars and menus report the button trait, and what is picked or current carries
+        // the Selected trait, which the bridge adds from SemanticNode.Selected and Current — and from a
+        // radio's check, which its row asks for.
 
         // One choice of an exclusive set. AXRadioButton reads its state from AXValue, the 0/1 a check
-        // carries too, and RadioButton is the one class TalkBack names "radio button" from.
+        // carries too, and RadioButton is the one class TalkBack names "radio button" from. UIKit
+        // hears the chosen one as Selected, the way a segmented control's segment says it, and not
+        // as a toggle's "1" or "0", which beside the button trait would be read out as a number.
         SemanticRole.Radio =>
             new("AXRadioButton", "android.widget.RadioButton", UIKitTrait.Button,
-                Activatable: true, Adjustable: false),
+                Activatable: true, Adjustable: false, UIKitCheckAsSelected: true),
 
         // One tab: a radio button whose SUBROLE says it is a tab, which is what NSTabView's own tabs
         // report and what VoiceOver reads as "tab". Android has no class for a single tab: TalkBack

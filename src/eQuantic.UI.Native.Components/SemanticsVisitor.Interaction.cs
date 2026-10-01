@@ -26,11 +26,13 @@ internal sealed partial class SemanticsVisitor
         // aria-checked. Mixed is checkbox-only, ARIA's own rule.
         //
         // Every role is written out and there is no default arm (#338). This switch ended in
-        // `_ => Button` while it knew three of the nine roles, so a radio, a tab, a menu item and a
-        // list option reached VoiceOver and TalkBack as buttons — and a role appended to
-        // PressableRole would have joined them without a word. Now that append fails the BUILD and
-        // names the role (CS8509), the question NativeRole.Of asks of SemanticRole. CS8524 is the
-        // UNNAMED value only a cast produces, waived as narrowly there.
+        // `_ => Button` while it knew three of the nine roles, so a radio, a tab, a menu item, a list
+        // option and a navigation destination reached VoiceOver and TalkBack as buttons — and a role
+        // appended to PressableRole would have joined them without a word. Now that append fails the
+        // BUILD and names the role (CS8509), the question NativeRole.Of asks of SemanticRole.
+        // CS8524 is the UNNAMED value, which here only an author's cast of an integer can make — a
+        // role the vocabulary does not offer — and it throws rather than pass for a button: the
+        // compiler's question about every NAMED role is worth more than a guess about the rest.
 #pragma warning disable CS8524
         var (role, check) = node.Role switch
         {
