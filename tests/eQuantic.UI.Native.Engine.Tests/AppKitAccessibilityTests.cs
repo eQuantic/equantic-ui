@@ -33,7 +33,8 @@ public class AppKitAccessibilityTests
             NodeOf(SemanticRole.Tab, "Overview", 1),
             NodeOf(SemanticRole.MenuItem, "Rename", 2),
             NodeOf(SemanticRole.Option, "Lisbon", 3),
-            NodeOf(SemanticRole.Button, "Save", 4),
+            NodeOf(SemanticRole.Destination, "Inbox", 4),
+            NodeOf(SemanticRole.Button, "Save", 5),
         ];
 
         var previous = PhotonAccessibility.Source;
@@ -59,6 +60,7 @@ public class AppKitAccessibilityTests
                 "a tab is a radio button until its subrole says otherwise, and the subrole is what VoiceOver reads as \"tab\"");
             said["Rename"].Should().Be(("AXMenuItem", null));
             said["Lisbon"].Should().Be(("AXMenuItem", null));
+            said["Inbox"].Should().Be(("AXButton", null), "a destination is named as a button, where the user is rides AXSelected");
             said["Save"].Should().Be(("AXButton", null),
                 "the control: a role with no subrole in the table gets none from the bridge either");
         }

@@ -46,11 +46,8 @@ internal sealed partial class SemanticsVisitor
             PressableRole.Tab => (SemanticRole.Tab, (SemanticCheck?)null),
             PressableRole.MenuItem => (SemanticRole.MenuItem, (SemanticCheck?)null),
             PressableRole.Option => (SemanticRole.Option, (SemanticCheck?)null),
-            // A destination is a BUTTON that says where you are — the web's own reading,
-            // `<button aria-current="page">`, and the only one a ListItem survives: it is a
-            // Destination exactly while it is the current row, so a role of its own would rename the
-            // row the moment it was picked. Where you are rides Current, below.
-            PressableRole.Destination => (SemanticRole.Button, (SemanticCheck?)null),
+            // Where the user IS rides Current, below, not a check and not a pick.
+            PressableRole.Destination => (SemanticRole.Destination, (SemanticCheck?)null),
             PressableRole.GridCell => (SemanticRole.GridCell, (SemanticCheck?)null),
         };
 #pragma warning restore CS8524

@@ -12,8 +12,9 @@ namespace eQuantic.UI.Native.Engine.Tests;
 /// puts it (#338).
 /// <para>
 /// The walk knew three of the nine roles and sent the rest to a catch-all, so a radio, a tab, a menu
-/// item and a list option all reached VoiceOver and TalkBack as buttons, while the web said
-/// <c>radio</c>, <c>tab</c>, <c>menuitem</c> and <c>option</c> for the same components. The switch
+/// item, a list option and a navigation destination all reached VoiceOver and TalkBack as buttons,
+/// while the web said <c>radio</c>, <c>tab</c>, <c>menuitem</c>, <c>option</c> and
+/// <c>aria-current</c> for the same components. The switch
 /// has no default arm now, and this enumerates the vocabulary rather than listing it: a role
 /// appended to <see cref="PressableRole"/> fails here by name until somebody says what the tree
 /// calls it.
@@ -21,9 +22,7 @@ namespace eQuantic.UI.Native.Engine.Tests;
 /// </summary>
 public class PressableRoleSemanticsTests
 {
-    /// <summary>What the tree calls each pressable role. A destination is the one that is not its
-    /// own: it is a button that says where you are, which is what the web's
-    /// <c>&lt;button aria-current="page"&gt;</c> says too.</summary>
+    /// <summary>What the tree calls each pressable role: its own, every one.</summary>
     private static readonly Dictionary<PressableRole, SemanticRole> Expected = new()
     {
         [PressableRole.Button] = SemanticRole.Button,
@@ -33,7 +32,7 @@ public class PressableRoleSemanticsTests
         [PressableRole.Tab] = SemanticRole.Tab,
         [PressableRole.MenuItem] = SemanticRole.MenuItem,
         [PressableRole.Option] = SemanticRole.Option,
-        [PressableRole.Destination] = SemanticRole.Button,
+        [PressableRole.Destination] = SemanticRole.Destination,
         [PressableRole.GridCell] = SemanticRole.GridCell,
     };
 
@@ -103,13 +102,16 @@ public class PressableRoleSemanticsTests
     }
 
     /// <summary>A destination says WHERE YOU ARE through <see cref="SemanticNode.Current"/>, which the
-    /// bridges read as AXSelected, the Selected trait and Android's selected state.</summary>
+    /// bridges read as AXSelected, the Selected trait and Android's selected state — the web's
+    /// <c>aria-current</c>, and neither a check nor a pick.</summary>
     [Fact]
-    public void ADestinationIsAButtonThatSaysWhereYouAre()
+    public void ADestinationSaysWhereYouAre()
     {
         var here = NodeOf(PressableRole.Destination, selected: true);
-        here.Role.Should().Be(SemanticRole.Button);
+        here.Role.Should().Be(SemanticRole.Destination);
         here.Current.Should().BeTrue();
+        here.Selected.Should().BeNull();
+        here.Checked.Should().BeNull();
 
         NodeOf(PressableRole.Destination, selected: false).Current.Should().BeFalse();
     }

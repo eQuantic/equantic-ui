@@ -150,10 +150,10 @@ public readonly record struct NativeRole(
             new("AXGroup", "android.view.ViewGroup", UIKitTrait.None,
                 Activatable: false, Adjustable: false),
 
-        // THE FOUR PRESSABLE ROLES that reached every bridge as Button until #338. AppKit's and
+        // THE FIVE PRESSABLE ROLES that reached every bridge as Button until #338. AppKit's and
         // Android's words below are the ones the W3C's Core-AAM gives for the same ARIA role, which
         // is what WebKit and Chrome expose for the web half of the same component; where this table
-        // departs from it, the row says why. UIKit has none of the four: Apple's own segmented
+        // departs from it, the row says why. UIKit has none of the five: Apple's own segmented
         // controls, tab bars and menus report the button trait, and what is picked carries the
         // Selected trait, which the bridge already adds from SemanticNode.Selected.
 
@@ -186,6 +186,17 @@ public readonly record struct NativeRole(
         // action, the way both checks are AXCheckBox: the difference rides the state, picked or not.
         SemanticRole.Option =>
             new("AXMenuItem", "android.view.View", UIKitTrait.Button,
+                Activatable: true, Adjustable: false),
+
+        // One place a navigation bar, a rail or a list leads to, in a BUTTON's words on all three,
+        // and on purpose. The web says the same, `<button aria-current="page">`, and no platform has
+        // a word of its own for it: UIKit says "tab" only inside a container with the tab-bar trait,
+        // and Material and Compose say it through a role description they ship as words. A
+        // ListItem settles it: it is a Destination exactly while it is the current row, so any other
+        // word would rename the row the moment it was picked. The ROLE is still its own, which is
+        // what lets a bridge or a fixture tell it apart, and where the user is rides Current.
+        SemanticRole.Destination =>
+            new("AXButton", "android.widget.Button", UIKitTrait.Button,
                 Activatable: true, Adjustable: false),
     };
 #pragma warning restore CS8524

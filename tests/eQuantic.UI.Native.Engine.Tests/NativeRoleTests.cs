@@ -71,17 +71,19 @@ public class NativeRoleTests
     }
 
     /// <summary>
-    /// The four pressable roles that reached every bridge as a button until #338, pinned to the
+    /// The five pressable roles that reached every bridge as a button until #338, pinned to the
     /// sources that decided them rather than to an opinion: AppKit's and Android's words are the W3C
     /// Core-AAM's for the same ARIA role, which is what WebKit and Chrome expose for the web half of
     /// the same component, and TalkBack names "radio button" from RadioButton and nothing from the
-    /// other three. The one departure, an option's AXMenuItem, is argued in the row itself.
+    /// others. The two departures, an option's AXMenuItem and a destination's button words, are
+    /// argued in their rows.
     /// </summary>
     [Theory]
     [InlineData(SemanticRole.Radio, "AXRadioButton", null, "android.widget.RadioButton")]
     [InlineData(SemanticRole.Tab, "AXRadioButton", "AXTabButton", "android.view.View")]
     [InlineData(SemanticRole.MenuItem, "AXMenuItem", null, "android.view.MenuItem")]
     [InlineData(SemanticRole.Option, "AXMenuItem", null, "android.view.View")]
+    [InlineData(SemanticRole.Destination, "AXButton", null, "android.widget.Button")]
     public void ThePressableRolesSpeakEachPlatformsOwnWords(
         SemanticRole role, string appKit, string? appKitSubrole, string android)
     {
@@ -125,7 +127,7 @@ public class NativeRoleTests
             { Label = "Wi-Fi", Role = PressableRole.Switch });
         page.Add(new Pressable(new Text("c", TypeRole.Label), () => { })
             { Label = "Agree", Role = PressableRole.Checkbox });
-        // The four that reached every bridge as a button until #338, each standing alone: inside a
+        // The five that reached every bridge as a button until #338, each standing alone: inside a
         // Tabs or a RadioGroup the Adjustable around them is the one stop and they are not read.
         page.Add(new Pressable(new Text("r", TypeRole.Label), () => { })
             { Label = "Express", Role = PressableRole.Radio, Selected = true });
@@ -135,6 +137,8 @@ public class NativeRoleTests
             { Label = "Rename", Role = PressableRole.MenuItem });
         page.Add(new Pressable(new Text("o", TypeRole.Label), () => { })
             { Label = "Lisbon", Role = PressableRole.Option, Selected = false });
+        page.Add(new Pressable(new Text("d", TypeRole.Label), () => { })
+            { Label = "Inbox", Role = PressableRole.Destination, Selected = true });
         // Both editable SURFACES, because both announce as CodeField and they register different
         // kinds of stop — a sample holding only one of them cannot see the other go unanswered.
         page.Add(new CodeSurface(new Text("code", TypeRole.BodyM), new CodeEditorController("x"))
@@ -154,7 +158,7 @@ public class NativeRoleTests
             [SemanticRole.Button, SemanticRole.TextField, SemanticRole.Slider,
              SemanticRole.GridCell, SemanticRole.Switch, SemanticRole.Checkbox,
              SemanticRole.CodeField, SemanticRole.Radio, SemanticRole.Tab,
-             SemanticRole.MenuItem, SemanticRole.Option],
+             SemanticRole.MenuItem, SemanticRole.Option, SemanticRole.Destination],
             "the sample really does put one of each within reach");
         reached.Count(node => node.Role == SemanticRole.CodeField).Should().Be(2,
             "BOTH surfaces that announce as one are in the sample, not just the first");
