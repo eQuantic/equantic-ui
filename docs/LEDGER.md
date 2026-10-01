@@ -944,6 +944,30 @@ record of a release, the wiki's Upgrading page is the distillate.
   inlines, a zero-context patch's gaps, F7 stuck past a removed end, the focus a fold's press
   dropped on the web, a patch line's bare carriage return, and a tuple's enum named as in C#; the
   find bar's Escape, still page-wide, is [#457](https://github.com/eQuantic/equantic-ui/issues/457).
+- **2026-09-27 · A lambda's block maps statement by statement**: since #382 every statement of a
+  member's body mapped to its own line, but a lambda's block reached the writer as text, laid out
+  where the lambda was converted, and its statements' marks were dropped with it
+  ([#384](https://github.com/eQuantic/equantic-ui/issues/384)). No line inside a lambda's block had a
+  segment, so a breakpoint there bound nowhere and a frame read as the line that holds the lambda.
+  A block arrow is its own node now (`JsArrowBlock`), its block the statement IR laid out where the
+  lambda stands, so the text is what it was, and the expression writer composes every node's marks
+  through the builder it shares with the statement writer. The author's review found the change's own
+  regression, fixed before it opened: what followed a block on its closing line read as the block's
+  last statement, where main read it as the statement, and now the statement takes the line back. The
+  review also found a braced body losing its origin to the `if` around it, retired `JsConstArrow` for a
+  `const` bound to a block arrow, and moved List's own methods and collection expressions to the IR,
+  both off the text baseline. Of the 13 lambda lines `StatementSourceMapTests` reads, none had a
+  segment on main. `LambdaStatementMapTests` now counts the shared components' lambda statements with
+  no segment against a baseline that may only shrink: 59, where main has 79 for the same sources, the
+  rest inside expression-bodied members and object creations
+  ([#492](https://github.com/eQuantic/equantic-ui/issues/492)). Filed: a body with an `out` or `ref`
+  parameter is wrapped as text ([#487](https://github.com/eQuantic/equantic-ui/issues/487)), List's
+  `Sort`, `RemoveAll`, `BinarySearch`, `CopyTo`, `Find` and `FindIndex` answer as a JavaScript array
+  does ([#488](https://github.com/eQuantic/equantic-ui/issues/488)), a default interface member maps
+  its lines into the implementing class's file
+  ([#490](https://github.com/eQuantic/equantic-ui/issues/490)), and a string holding U+2028 or U+2029
+  shifts the map's later lines ([#491](https://github.com/eQuantic/equantic-ui/issues/491)). Proposed
+  and archived through OpenSpec (`openspec/specs/transpiler-source-maps`).
 
 ## Retired documents
 

@@ -134,6 +134,134 @@ public class StatementSourceMapTests
         }
         """;
 
+    /// <summary>Statements inside a lambda's block, in each place an arrow reaches the writer: an
+    /// argument to a call the IR writes (<c>List.ForEach</c>, a method of the app's own), a hole of a
+    /// LINQ template (<c>Where</c>, <c>Select</c>), a local's initializer, a <c>delegate</c>, an arrow
+    /// inside an arrow, an async one, and the block the emitter adds to a concise body that declares
+    /// a variable (#384). Each
+    /// one mapped to the line that holds the lambda, so a frame or a breakpoint inside the block
+    /// landed on the call.</summary>
+    private const string LambdaSource = """
+        using System;
+        using System.Collections.Generic;
+        using System.Linq;
+        using System.Threading.Tasks;
+
+        namespace Demo;
+
+        public class Lambdas
+        {
+            public int Total(List<int> values)
+            {
+                var total = 0;
+                values.ForEach(value =>
+                {
+                    var twice = Twice(value);
+                    total += twice;
+                });
+                return total;
+            }
+
+            public int Kept(int[] values)
+            {
+                var kept = values.Where(value =>
+                {
+                    var half = value + 7;
+                    return half > 9;
+                });
+                return kept.Count();
+            }
+
+            public int Local(int seed)
+            {
+                Func<int, int> step = delta =>
+                {
+                    var next = seed + delta;
+                    return next * 3;
+                };
+                Action<int> report = delegate (int shown)
+                {
+                    seed = shown - 1;
+                };
+                report(step(1));
+                return seed;
+            }
+
+            public int Nested(List<int> values)
+            {
+                var sum = 0;
+                values.ForEach(outer =>
+                {
+                    values.ForEach(inner =>
+                    {
+                        sum += outer * inner;
+                    });
+                });
+                return sum;
+            }
+
+            public async Task<int> Later(List<int> values)
+            {
+                var count = 0;
+                Func<Task> run = async () =>
+                {
+                    await Task.Yield();
+                    count = values.Count;
+                };
+                await run();
+                return count;
+            }
+
+            public int Parsed(string text)
+            {
+                Func<string, int> parse = candidate =>
+                    int.TryParse(candidate, out var number) ? number : 0;
+                return parse(text);
+            }
+
+            public int Applied(int seed)
+            {
+                return Apply(seed, value =>
+                {
+                    var bumped = value + 5;
+                    return bumped;
+                });
+            }
+
+            public int Doubled(int[] values)
+            {
+                var doubled = values.Select(value =>
+                {
+                    var twiceOver = value * 2;
+                    return twiceOver;
+                });
+                return doubled.Count();
+            }
+
+            public int Tail(List<int> values)
+            {
+                var kept = values.FindAll(value =>
+                {
+                    var doubled = value * 2;
+                    return doubled > 0;
+                }).Count + Twice(values.Count);
+                return kept;
+            }
+
+            public int Guarded(bool ready, string text)
+            {
+                var total = 0;
+                if (ready)
+                    total += int.TryParse(text, out var parsed) ? parsed : 0;
+                return total;
+            }
+
+            private int Apply(int seed, Func<int, int> step) => step(seed);
+
+            private int Twice(int x) => x * 2;
+        }
+        """;
+
     private static CompilationResult Compile() => Compile(Source, "Tally.cs");
 
     private static CompilationResult Compile(string source, string path)
@@ -192,6 +320,34 @@ public class StatementSourceMapTests
     [InlineData("return x + 1;", "int Next(int x) => x + 1;")]
     public void ALineNoStatementWritesByItself_MapsToTheCSharpThatProducedIt(string emitted, string written) =>
         AssertMapped(Compile(LoweredSource, "Lowered.cs"), emitted, written, LoweredSource);
+
+    [Theory]
+    [InlineData("let twice = this.twice(value);", "var twice = Twice(value);")]
+    [InlineData("total += twice;", "total += twice;")]
+    [InlineData("let half = value + 7;", "var half = value + 7;")]
+    [InlineData("return half > 9;", "return half > 9;")]
+    [InlineData("let next = seed + delta;", "var next = seed + delta;")]
+    [InlineData("return next * 3;", "return next * 3;")]
+    [InlineData("seed = shown - 1;", "seed = shown - 1;")]
+    [InlineData("sum += outer * inner;", "sum += outer * inner;")]
+    [InlineData("count = values.length;", "count = values.Count;")]
+    [InlineData("let bumped = value + 5;", "var bumped = value + 5;")]
+    [InlineData("let twiceOver = value * 2;", "var twiceOver = value * 2;")]
+    [InlineData("let number: any;", "int.TryParse(candidate, out var number) ? number : 0;")]
+    [InlineData("return ((number = $eq.num.intTryParse(candidate", "int.TryParse(candidate, out var number) ? number : 0;")]
+    public void AStatementInALambdasBlock_MapsToItsOwnCSharpLine(string emitted, string written) =>
+        AssertMapped(Compile(LambdaSource, "Lambdas.cs"), emitted, written, LambdaSource);
+
+    /// <summary>What follows a lambda's block on its closing line belongs to the statement that
+    /// holds the lambda: nothing marked it again once the block's statements carried marks, so it
+    /// read, through the map, as the block's last statement (found in review, #384). And a body C#
+    /// writes without braces keeps its own line when a declaration it hoists braces it, where the
+    /// braces handed both lines to the `if` around them.</summary>
+    [Theory]
+    [InlineData("this.twice(values.length);", "var kept = values.FindAll(value =>")]
+    [InlineData("total += ((parsed", "total += int.TryParse(text, out var parsed) ? parsed : 0;")]
+    public void AStatementsRestAndABracedBody_MapToTheirOwnStatement(string emitted, string written) =>
+        AssertMapped(Compile(LambdaSource, "Lambdas.cs"), emitted, written, LambdaSource);
 
     private static void AssertMapped(CompilationResult result, string emitted, string written, string source)
     {

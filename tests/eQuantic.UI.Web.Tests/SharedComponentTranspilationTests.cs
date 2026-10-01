@@ -154,6 +154,15 @@ public class SharedComponentTranspilationTests
 
     private static Dictionary<string, string> TranspileSharedComponents()
     {
+        var modules = new Dictionary<string, string>();
+        foreach (var (_, result) in TranspiledSharedComponents()) modules[result.ComponentName] = result.TypeScript;
+        return modules;
+    }
+
+    /// <summary>Every shared module the pipeline writes, with the C# file it came from: what a test
+    /// that reads a module's map needs beside its text (LambdaStatementMapTests).</summary>
+    internal static IReadOnlyList<(string SourcePath, CompilationResult Result)> TranspiledSharedComponents()
+    {
         var root = RepoRoot();
         var sourcePaths = SharedModelSources()
             .Concat(SharedSources())
@@ -196,17 +205,20 @@ public class SharedComponentTranspilationTests
         var compiler = new ComponentCompiler { SymbolsAreAuthoritative = false };
         compiler.SetProjectCompilation(compilation);
 
-        var modules = new Dictionary<string, string>();
+        var modules = new List<(string, CompilationResult)>();
         var compilations = sourcePaths
-            .Select(path => compiler.CompileFile(path))
-            .Append(compiler.CompileSource(SharedCounterSource, counterPath))
-            .Append(compiler.CompileSource(NestedReconcilerSource, nestedPath));
-        foreach (var result in compilations.SelectMany(results => results))
+            .Select(path => (Path: path, Results: compiler.CompileFile(path)))
+            .Append((counterPath, compiler.CompileSource(SharedCounterSource, counterPath)))
+            .Append((nestedPath, compiler.CompileSource(NestedReconcilerSource, nestedPath)));
+        foreach (var (path, results) in compilations)
         {
-            result.Success.Should().BeTrue(
-                $"{result.ComponentName} must transpile cleanly: " +
-                string.Join("; ", result.Errors.Select(e => e.Message)));
-            modules[result.ComponentName] = result.TypeScript;
+            foreach (var result in results)
+            {
+                result.Success.Should().BeTrue(
+                    $"{result.ComponentName} must transpile cleanly: " +
+                    string.Join("; ", result.Errors.Select(e => e.Message)));
+                modules.Add((path, result));
+            }
         }
         return modules;
     }
