@@ -157,14 +157,14 @@ the pill's 40 down.
 
 - **Component**: `src/eQuantic.UI.Native.Components/SemanticsVisitor.Text.cs`
 - **Handoff**: Semantics — "StaticText — the run's text is its accessible value." / A11y — "Role: static text; label = full untruncated string (readers speak past the ellipsis)."
-- **Code**: Filed against a `Content`-only guard that is no longer there. Both readers take `PlainContent`, which concatenates the runs: the Text arm announces a rich-run paragraph (SemanticsVisitor.Text.cs:16-20 SemanticsVisitor), and the derived name of a label-less control gathers the same field (SemanticsVisitor.Interaction.cs:178-197 TextWithin). A Markdown paragraph with bold/code/link runs — the shape that produced nothing at all — announces its whole string on Photon. What the row asked for is what the code does; the READ remains untruncated (PlainContent is the full string, not the ellipsised line), which is the second half of the handoff's claim.
+- **Code**: Filed against a `Content`-only guard that is no longer there. Both readers take `PlainContent`, which concatenates the runs: the Text arm announces a rich-run paragraph (SemanticsVisitor.Text.cs:16-20 SemanticsVisitor), and the derived name of a label-less control gathers the same field (SemanticsVisitor.Interaction.cs:180-199 TextWithin). A Markdown paragraph with bold/code/link runs — the shape that produced nothing at all — announces its whole string on Photon. What the row asked for is what the code does; the READ remains untruncated (PlainContent is the full string, not the ellipsised line), which is the second half of the handoff's claim.
 - **Evidence**:
 
   ```
   src/eQuantic.UI.Native.Components/SemanticsVisitor.Text.cs:16-20 —
       public bool Visit(Text node, LayoutNode laidOut) =>
           node.PlainContent.Length > 0
-  src/eQuantic.UI.Native.Components/SemanticsVisitor.Interaction.cs:193  if (node.Source is Text { PlainContent.Length: > 0 } text) parts.Add(text.PlainContent);
+  src/eQuantic.UI.Native.Components/SemanticsVisitor.Interaction.cs:195  if (node.Source is Text { PlainContent.Length: > 0 } text) parts.Add(text.PlainContent);
   src/eQuantic.UI.Components/Markdown.cs:167  return new Text("", style.Body, theme.TextSecondary, maxLines: 0) { Spans = spans };
   ```
 
@@ -480,7 +480,7 @@ the pill's 40 down.
   ProgressBar.cs:128                Value = new RangeValue(filledWeight / 1000f, 0, 1),
   ProgressBar.cs:129                ValueText = ValueText,
   WebLoweringVisitor.Interaction.cs:200  RawAttributes = new Dictionary<string, string> { ["role"] = "progressbar" },
-  SemanticsVisitor.Interaction.cs:110         Announce(new(SemanticRole.ProgressIndicator, laidOut.Path ?? "", laidOut.Bounds,
+  SemanticsVisitor.Interaction.cs:112         Announce(new(SemanticRole.ProgressIndicator, laidOut.Path ?? "", laidOut.Bounds,
   ```
 
 ### B18 Banner · semantics · **CONFIRMED**
@@ -3311,8 +3311,8 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  SemanticsVisitor.Interaction.cs:39 — `PressableRole.Radio => (SemanticRole.Radio,` (the arm #338 added)
-  SemanticsVisitor.Interaction.cs:89 — `Announce(new(SemanticRole.Slider, laidOut.Path ?? "", laidOut.Bounds,` (the RadioGroup's one stop)
+  SemanticsVisitor.Interaction.cs:41 — `PressableRole.Radio => (SemanticRole.Radio,` (the arm #338 added)
+  SemanticsVisitor.Interaction.cs:91 — `Announce(new(SemanticRole.Slider, laidOut.Path ?? "", laidOut.Bounds,` (the RadioGroup's one stop)
   ```
 
 ### B14 ProgressBar · documented-deviation · **REFUTED**
