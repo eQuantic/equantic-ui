@@ -356,13 +356,6 @@ export interface AtomizedStyle {
 }
 
 /**
- * Convert a style-entries object into atomic classes (rules ensured in the registry) plus the
- * inline custom-property residue. Values are rewritten against the ACTIVE theme's variable map, so
- * the generated rules match the SSR ones for theme-sourced colors.
- */
-/** Spec S5: pseudo-variant rules of the same atomic family — `.eq-x:hover{decl}`; the pseudo is
- * part of the hash so hover/base variants of one declaration are distinct classes. */
-/**
  * A class goes on the element once. The two spellings of a vendor pair hash to ONE class (see
  * `declarationFor`), and the element listed it twice, once per spelling. The C# twin is
  * `StyleAtomizer.AddOnce`; the attribute is compared as one string when the page hydrates.
@@ -371,6 +364,8 @@ function addOnce(classes: string[], className: string): void {
   if (!classes.includes(className)) classes.push(className);
 }
 
+/** Spec S5: pseudo-variant rules of the same atomic family — `.eq-x:hover{decl}`; the pseudo is
+ * part of the hash so hover/base variants of one declaration are distinct classes. */
 export function atomizePseudo(pseudo: string, entries: Record<string, string | undefined>): string {
   const vars = varMapFor(getPhotonTheme());
   const classes: string[] = [];
@@ -473,6 +468,11 @@ export function declarationFor(name: string, value: string): string {
   return `${prefixed}:${value};${standard}:${value}`;
 }
 
+/**
+ * Convert a style-entries object into atomic classes (rules ensured in the registry) plus the
+ * inline custom-property residue. Values are rewritten against the ACTIVE theme's variable map, so
+ * the generated rules match the SSR ones for theme-sourced colors.
+ */
 export function atomizeEntries(entries: Record<string, string | undefined>): AtomizedStyle {
   const vars = varMapFor(getPhotonTheme());
   const classes: string[] = [];
