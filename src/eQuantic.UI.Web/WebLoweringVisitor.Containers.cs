@@ -796,6 +796,8 @@ internal sealed partial class WebLoweringVisitor
     /// </summary>
     private string? ShadowList(int elevation, ShadowSpec? shadow, IReadOnlyList<ShadowSpec>? shadows, ColorToken? inset)
     {
+        // Most boxes have no shadow at all, and every box asks.
+        if (elevation <= 0 && shadow is null && shadows is not { Count: > 0 } && inset is null) return null;
         var parts = new List<string>();
         if (elevation > 0 && _context.Theme.Elevation(elevation) is { IsNone: false } depth)
             parts.Add(TokenCss.Shadow(depth));

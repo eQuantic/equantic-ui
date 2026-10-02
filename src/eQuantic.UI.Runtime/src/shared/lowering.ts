@@ -2437,6 +2437,8 @@ function shadowList(
   shadows: ShadowSpecValue[] | null | undefined,
   inset: ColorTokenValue | null | undefined,
 ): string | undefined {
+  // Most boxes have no shadow at all, and every box asks (C# twin).
+  if (elevation <= 0 && !shadow && !(shadows && shadows.length > 0) && !inset) return undefined;
   const parts: string[] = [];
   if (elevation > 0) {
     const spec = getPhotonTheme().elevation(elevation);
