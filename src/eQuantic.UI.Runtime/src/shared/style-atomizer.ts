@@ -362,6 +362,15 @@ export interface AtomizedStyle {
  */
 /** Spec S5: pseudo-variant rules of the same atomic family — `.eq-x:hover{decl}`; the pseudo is
  * part of the hash so hover/base variants of one declaration are distinct classes. */
+/**
+ * A class goes on the element once. The two spellings of a vendor pair hash to ONE class (see
+ * `declarationFor`), and the element listed it twice, once per spelling. The C# twin is
+ * `StyleAtomizer.AddOnce`; the attribute is compared as one string when the page hydrates.
+ */
+function addOnce(classes: string[], className: string): void {
+  if (!classes.includes(className)) classes.push(className);
+}
+
 export function atomizePseudo(pseudo: string, entries: Record<string, string | undefined>): string {
   const vars = varMapFor(getPhotonTheme());
   const classes: string[] = [];
@@ -393,7 +402,7 @@ export function atomizePseudo(pseudo: string, entries: Record<string, string | u
     } else {
       ruleTexts.set(className, `${pseudo}\u0001${declaration}`);
     }
-    classes.push(className);
+    addOnce(classes, className);
   }
   classes.sort();
   return classes.join(' ');
@@ -433,7 +442,7 @@ export function atomizeScrolled(entries: Record<string, string | undefined>): st
     } else {
       ruleTexts.set(className, tagged);
     }
-    classes.push(className);
+    addOnce(classes, className);
   }
   classes.sort();
   return classes.join(' ');
@@ -480,7 +489,7 @@ export function atomizeEntries(entries: Record<string, string | undefined>): Ato
     const declaration = declarationFor(name, rewritten);
     const className = `eq-${hashDeclaration(declaration)}`;
     ensureRule(className, declaration);
-    classes.push(className);
+    addOnce(classes, className);
   }
 
   classes.sort();
