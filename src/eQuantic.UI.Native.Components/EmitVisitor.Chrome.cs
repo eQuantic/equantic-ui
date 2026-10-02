@@ -291,7 +291,7 @@ internal sealed partial class EmitVisitor
     /// shadows replace BOTH of the base's (<c>Shadow</c> and <c>Shadows</c>), as on the web, where
     /// the state writes the box-shadow list again from the same parts.
     /// </summary>
-    internal static BoxStyle Over(in BoxStyle style, in StyleDiff diff) => style with
+    internal static BoxStyle Over(in BoxStyle style, StyleDiff diff) => style with
     {
         Background = diff.Background ?? style.Background,
         BorderColor = diff.BorderColor ?? style.BorderColor,

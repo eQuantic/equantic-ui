@@ -8,3 +8,4 @@ eQuantic.UI.Primitives.StyleDiff.Transform.get -> eQuantic.UI.Primitives.Transfo
 eQuantic.UI.Primitives.StyleDiff.Transform.init -> void
 eQuantic.UI.Primitives.StyleDiff.Shadows.get -> System.Collections.Generic.IReadOnlyList<eQuantic.UI.Primitives.ShadowSpec>?
 eQuantic.UI.Primitives.StyleDiff.Shadows.init -> void
+eQuantic.UI.Primitives.StyleDiff.<Clone>$() -> eQuantic.UI.Primitives.StyleDiff!

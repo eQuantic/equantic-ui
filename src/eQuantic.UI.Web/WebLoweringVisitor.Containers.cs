@@ -815,7 +815,7 @@ internal sealed partial class WebLoweringVisitor
     /// The state's custom shadows replace BOTH of the base's (<c>Shadow</c> and <c>Shadows</c>).
     /// "none" when the state leaves nothing to draw, which is how a hover drops a shadow.
     /// </summary>
-    private string? StateShadowList(in BoxStyle style, in StyleDiff diff)
+    private string? StateShadowList(in BoxStyle style, StyleDiff diff)
     {
         if (diff.Elevation is null && diff.Shadows is null) return null;
         var elevation = diff.Elevation ?? style.Elevation;
@@ -831,7 +831,7 @@ internal sealed partial class WebLoweringVisitor
     /// A list the base composes (the shadows, the background layers) is composed again from the
     /// state's members and the base's, since CSS replaces the property whole (#504).
     /// </summary>
-    private List<(string Property, string Value)> DiffDeclarations(in StyleDiff diff, in BoxStyle style)
+    private List<(string Property, string Value)> DiffDeclarations(StyleDiff diff, in BoxStyle style)
     {
         var declarations = new List<(string, string)>();
         if (diff.Background is { } bg) declarations.Add(("background-color", TokenCss.Value(bg)));
@@ -862,7 +862,7 @@ internal sealed partial class WebLoweringVisitor
     /// <see cref="DiffDeclarations"/>'s, the ones a real hover writes as a pseudo-class, so a
     /// preview shows the declarations a real hover would produce rather than an approximation.
     /// </summary>
-    private void ApplyDiff(HtmlStyle? style, in StyleDiff diff, in BoxStyle boxStyle)
+    private void ApplyDiff(HtmlStyle? style, StyleDiff diff, in BoxStyle boxStyle)
     {
         if (style is null) return;
         foreach (var (property, value) in DiffDeclarations(diff, boxStyle))
@@ -886,7 +886,7 @@ internal sealed partial class WebLoweringVisitor
     }
 
     /// <summary>Spec S5: a StyleDiff's set members as pseudo-state declarations (base values keep).</summary>
-    private void AppendDiff(RealizedElement element, string pseudo, in StyleDiff diff, in BoxStyle style)
+    private void AppendDiff(RealizedElement element, string pseudo, StyleDiff diff, in BoxStyle style)
     {
         foreach (var (property, value) in DiffDeclarations(diff, style))
             element.PseudoDeclarations.Add((pseudo, property, value));

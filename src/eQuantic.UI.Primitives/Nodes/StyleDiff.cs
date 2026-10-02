@@ -5,8 +5,18 @@ namespace eQuantic.UI.Primitives;
 /// declarative twin of CSS pseudo-classes: no event handlers in app code, each realizer implements
 /// the state natively (pseudo-class rules on web — zero JS; the interaction system on Photon).
 /// Only the set members override; everything else keeps the base value.
+/// <para>
+/// A CLASS, where most of the style vocabulary is structs, because of where it lives: a
+/// <see cref="BoxStyle"/> carries two of them (<see cref="BoxStyle.Hover"/> and
+/// <see cref="BoxStyle.Focus"/>) and every box carries a <c>BoxStyle</c>, rebuilt each frame. As a
+/// struct the pair was 184 of a <c>BoxStyle</c>'s 504 bytes, paid by the boxes that declare no state
+/// as much as by the ones that do, and adding <see cref="Transform"/> and <see cref="Shadows"/> took
+/// it to 256 (measured with <c>Unsafe.SizeOf</c>, #507). As a reference the pair is 16 bytes, and
+/// only a box that declares a state pays for one, so a member added here costs nothing to the boxes
+/// that never use it.
+/// </para>
 /// </summary>
-public readonly record struct StyleDiff
+public sealed record StyleDiff
 {
     public ColorToken? Background { get; init; }
     public ColorToken? BorderColor { get; init; }
