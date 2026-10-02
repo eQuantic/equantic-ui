@@ -93,6 +93,33 @@ public class S5StateNativeTests
         lifted.M31.Should().Be(resting.M31);
     }
 
+    /// <summary>The glide reads the effective style too: a lift declared with a Transition moves
+    /// the box over the transition's duration, as the browser glides the :hover rule, rather than
+    /// snapping to it.</summary>
+    [Fact]
+    public void AHoverLift_GlidesUnderTheBoxsTransition()
+    {
+        var box = new Box(new BoxStyle
+        {
+            Width = 40, Height = 40, Background = Fill,
+            Transition = new TransitionSpec(StyleChannels.Transform, 100),
+            Hover = new StyleDiff { Transform = Transform2D.Translate(0, -2) },
+        });
+        var host = new PhotonHost(box, PhotonTheme.Instance, ThemeMode.Light, 40, 40);
+        float LiftAt(float timeMs)
+        {
+            var builder = new DisplayListBuilder();
+            host.RenderFrame(builder, timeMs);
+            return FillOf(builder.Build()).Transform.M32;
+        }
+
+        var rest = LiftAt(0);
+        host.SetHovered(box);
+        (LiftAt(1000) - rest).Should().Be(0, "the glide starts from where the box is drawn");
+        (LiftAt(1050) - rest).Should().BeInRange(-1.99f, -0.01f, "halfway in time, the box is on its way up");
+        (LiftAt(1100) - rest).Should().Be(-2, "settled once the transition's 100 ms are over");
+    }
+
     [Fact]
     public void AHoverTransform_ReplacesTheRestingOne()
     {
