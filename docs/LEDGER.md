@@ -1009,8 +1009,11 @@ record of a release, the wiki's Upgrading page is the distillate.
   shadow that snaps on Photon where the browser glides it
   ([#508](https://github.com/eQuantic/equantic-ui/issues/508)); and, from the review, a draggable's
   resting offset and its box's own transform taking the same CSS property, so a hover lift closes an
-  open row on the web ([#511](https://github.com/eQuantic/equantic-ui/issues/511)). Proposed and
-  archived through OpenSpec (`openspec/specs/interaction-states`).
+  open row on the web ([#511](https://github.com/eQuantic/equantic-ui/issues/511)), and, from
+  Copilot's, Photon hit-testing a transformed box where it was laid out rather than where it is
+  drawn, which the base transform always did and a lift now shows
+  ([#513](https://github.com/eQuantic/equantic-ui/issues/513)). Proposed and archived through
+  OpenSpec (`openspec/specs/interaction-states`).
 
 ## Retired documents
 
