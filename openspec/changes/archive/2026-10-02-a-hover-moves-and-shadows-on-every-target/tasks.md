@@ -17,6 +17,6 @@
 
 ## 4. Documentation
 
-- [ ] 4.1 The wiki's styling section, English and Portuguese
-- [ ] 4.2 `docs/FLUTTER-PARITY.md` rows for `Transform` and state-resolved styles, with their probes
-- [ ] 4.3 One `docs/LEDGER.md` line citing the issue
+- [x] 4.1 The wiki's styling section, English and Portuguese
+- [x] 4.2 `docs/FLUTTER-PARITY.md` rows for `Transform` and state-resolved styles, with their probes
+- [x] 4.3 One `docs/LEDGER.md` line citing the issue
