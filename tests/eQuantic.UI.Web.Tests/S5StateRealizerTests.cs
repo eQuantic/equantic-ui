@@ -55,6 +55,121 @@ public class S5StateRealizerTests
         sink.Css.Should().Contain($":focus-visible{{border:2px solid var(--eq-color-focus, {TokenCss.Value(Theme.FocusRing)})}}");
     }
 
+    // ---- #504: a state writes every member of its diff, and the lists it shares with the base ---
+
+    // Colours outside the theme, so the atomizer leaves them as written and the CSS can be read
+    // back with the same TokenCss calls that wrote it.
+    private static readonly ColorToken Glow = new(Color.FromRgb(0x44, 0x88, 0xFF));
+    private static readonly ColorToken Halo = new(Color.FromRgb(0x10, 0x20, 0x30));
+    private static readonly ColorToken Highlight = new(Color.FromRgb(0xFF, 0xFF, 0xFF));
+
+    private static string Css(BoxStyle style)
+    {
+        var sink = new StyleSink();
+        WebRealizer.Lower(new Primitives.Box(style with { Width = 10, Height = 10 }), Theme, 1f, sink);
+        return sink.Css;
+    }
+
+    private static string Inset => $"inset 0 1px 0 {TokenCss.Value(Highlight)}";
+
+    /// <summary>CSS replaces box-shadow whole: a hover that only raised the elevation used to write
+    /// the elevation's shadow alone, and the glow and the inset highlight went out under the pointer.</summary>
+    [Fact]
+    public void AHoverThatRaisesTheElevation_KeepsTheGlowAndTheInset()
+    {
+        var css = Css(new BoxStyle
+        {
+            Elevation = 1,
+            Shadow = new ShadowSpec(0, 24, 0, Glow),
+            InsetHighlight = Highlight,
+            Hover = new StyleDiff { Elevation = 3 },
+        });
+
+        css.Should().Contain(
+            $":hover{{box-shadow:{TokenCss.Shadow(Theme.Elevation(3))}, {TokenCss.Shadow(new ShadowSpec(0, 24, 0, Glow))}, {Inset}}}");
+    }
+
+    [Fact]
+    public void AHoversShadows_ReplaceBothOfTheBasesCustomShadows()
+    {
+        var css = Css(new BoxStyle
+        {
+            Elevation = 1,
+            Shadow = new ShadowSpec(0, 24, 0, Glow),
+            Shadows = [new ShadowSpec(2, 4, 0, Halo)],
+            InsetHighlight = Highlight,
+            Hover = new StyleDiff { Shadows = [new ShadowSpec(4, 32, 2, Glow)] },
+        });
+
+        css.Should().Contain(
+            $":hover{{box-shadow:{TokenCss.Shadow(Theme.Elevation(1))}, {TokenCss.Shadow(new ShadowSpec(4, 32, 2, Glow))}, {Inset}}}");
+    }
+
+    [Fact]
+    public void AStateThatLeavesNothingToDraw_WritesNone()
+    {
+        var css = Css(new BoxStyle { Elevation = 2, Hover = new StyleDiff { Elevation = 0 } });
+
+        css.Should().Contain(":hover{box-shadow:none}",
+            "a hover that drops the shadow has to say so: leaving the property out keeps the base's");
+    }
+
+    [Fact]
+    public void AStateTransform_ReplacesTheBasesTransform()
+    {
+        var css = Css(new BoxStyle
+        {
+            Transform = Transform2D.Rotate(2),
+            Hover = new StyleDiff { Transform = Transform2D.Translate(0, -2) },
+            Focus = new StyleDiff { Transform = Transform2D.Scale(1) },
+        });
+
+        css.Should().Contain(":hover{transform:translate(0, -2px)}");
+        css.Should().Contain(":focus-visible{transform:none}", "an identity transform undoes the base's");
+    }
+
+    /// <summary>The gradient is the first of the background's layers: a hover that wrote it alone
+    /// took the pattern (and the glow) away, and left their sizes on the gradient.</summary>
+    [Fact]
+    public void AHoverGradient_KeepsTheBasesOtherLayers()
+    {
+        var pattern = new GridPattern(16, Halo);
+        var gradient = new LinearGradient(Glow, Halo);
+        var css = Css(new BoxStyle { Pattern = pattern, Hover = new StyleDiff { Gradient = gradient } });
+
+        css.Should().Contain($":hover{{background-image:{TokenCss.Gradient(gradient)}, {TokenCss.GridPattern(pattern)}}}");
+        css.Should().Contain($":hover{{background-size:auto, {TokenCss.GridPatternSize(pattern)}}}");
+    }
+
+    [Fact]
+    public void AHoverBackdropBlur_IsWritten_AsOneClass()
+    {
+        var sink = new StyleSink();
+        var element = WebRealizer.Lower(new Primitives.Box(new BoxStyle
+        {
+            Width = 10, Height = 10,
+            Hover = new StyleDiff { BackdropBlur = 8 },
+        }), Theme, 1f, sink);
+
+        sink.Css.Should().Contain(":hover{-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px)}");
+        element.ClassName!.Split(' ').Should().OnlyHaveUniqueItems(
+            "both spellings are one declaration and one class, which goes on the element once");
+    }
+
+    /// <summary>A shadow with no geometry draws nothing. Written, it was a <c>none</c> inside the
+    /// list, and CSS drops a list with a <c>none</c> in it whole, the shadows that did draw too.</summary>
+    [Fact]
+    public void ACustomShadowWithNoGeometry_IsLeftOutOfTheList()
+    {
+        var css = Css(new BoxStyle
+        {
+            Shadows = [new ShadowSpec(0, 0, 0, Glow), new ShadowSpec(2, 4, 0, Halo)],
+        });
+
+        css.Should().Contain($"{{box-shadow:{TokenCss.Shadow(new ShadowSpec(2, 4, 0, Halo))}}}")
+            .And.NotContain("none, ").And.NotContain(", none");
+    }
+
     [Fact]
     public void PseudoAndBaseVariants_OfTheSameDeclaration_AreDistinctClasses()
     {

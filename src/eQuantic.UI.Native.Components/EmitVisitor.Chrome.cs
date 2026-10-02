@@ -12,13 +12,16 @@ internal sealed partial class EmitVisitor
 {
     private void EmitBoxChrome(Box box, EmitState s)
     {
-        if (box.Style.Cursor != PointerCursor.Default)
-            s.Input.Add(new CursorRegion(s.Node.Bounds, box.Style.Cursor));
+        // Everything below paints the EFFECTIVE style: the box's own, with its Hover diff over it
+        // while it is hovered — every member of the diff, not the colours alone (#504).
+        var style = EffectiveStyle(box, s);
+        if (style.Cursor != PointerCursor.Default)
+            s.Input.Add(new CursorRegion(s.Node.Bounds, style.Cursor));
 
         // Spec S3 frosted glass: the backdrop blurs FIRST — under the shadow and the box's
         // own translucent fill (the engine consumes this as a pass split).
-        if (box.Style.BackdropBlur > 0)
-            s.Builder.BackdropBlur(new RRect(s.Node.Bounds, box.Style.CornerRadius), box.Style.BackdropBlur);
+        if (style.BackdropBlur > 0)
+            s.Builder.BackdropBlur(new RRect(s.Node.Bounds, style.CornerRadius), style.BackdropBlur);
 
         // Spec S6 — honoured: `BoxStyle.Transition` glides colours, opacity, transform and
         // shadow under the box's own spec (the Anchored/Pinned/Text siblings still snap, and
@@ -27,7 +30,7 @@ internal sealed partial class EmitVisitor
         // stops, so native paints From→To until the 3-stop paint lands.
 
         // §05: the analytic shadow draws under the fill (one per node, theme-resolved).
-        if (TransitionStore.Only(box.Style.Transition, StyleChannels.Shadow) is { } shadowSpec
+        if (TransitionStore.Only(style.Transition, StyleChannels.Shadow) is { } shadowSpec
             && s.Motion.Transitions is { } st)
         {
             // The elevation's shadow glides as its resolved components, so a card that lifts
@@ -37,7 +40,7 @@ internal sealed partial class EmitVisitor
             // no special case to write: asking the theme for the level the box declares
             // gives the right target every time, and the alpha fades with the geometry the
             // way `box-shadow: none` interpolates in CSS.
-            var target = s.Theme.Elevation(box.Style.Elevation);
+            var target = s.Theme.Elevation(style.Elevation);
             var sp = (s.Node.Path ?? "") + ":elev";
             var offsetY = st.Resolve(sp + ".y", target.OffsetY, s.Motion.TimeMs, shadowSpec, s.Motion.Reduced);
             var blur = st.Resolve(sp + ".b", target.Blur, s.Motion.TimeMs, shadowSpec, s.Motion.Reduced);
@@ -46,62 +49,52 @@ internal sealed partial class EmitVisitor
                 s.Motion.TimeMs, shadowSpec, s.Motion.Reduced);
             if (blur > 0 || offsetY != 0 || spread != 0)
             {
-                s.Builder.ShadowRRect(new RRect(s.Node.Bounds, box.Style.CornerRadius),
+                s.Builder.ShadowRRect(new RRect(s.Node.Bounds, style.CornerRadius),
                     offsetY, blur, spread, shadowColor);
             }
         }
-        else if (box.Style.Elevation > 0)
+        else if (style.Elevation > 0)
         {
             // The plain path, byte-for-byte what it was: no transition, no tracks, no strings.
-            var spec = s.Theme.Elevation(box.Style.Elevation);
+            var spec = s.Theme.Elevation(style.Elevation);
             if (!spec.IsNone)
             {
-                s.Builder.ShadowRRect(new RRect(s.Node.Bounds, box.Style.CornerRadius),
+                s.Builder.ShadowRRect(new RRect(s.Node.Bounds, style.CornerRadius),
                     spec.OffsetY, spec.Blur, spec.Spread, spec.Color.Resolve(s.Mode));
             }
         }
 
         // CUSTOM shadow (glows, halos): the same analytic rrect shadow with the caller's
-        // full spec — composes with the neutral elevation above. Lists draw in order.
-        if (box.Style.Shadow is { } custom)
+        // full spec — composes with the neutral elevation above. Lists draw in order. A shadow
+        // with no geometry draws nothing, and the web leaves it out of its list the same way.
+        if (style.Shadow is { IsNone: false } custom)
         {
-            s.Builder.ShadowRRect(new RRect(s.Node.Bounds, box.Style.CornerRadius),
+            s.Builder.ShadowRRect(new RRect(s.Node.Bounds, style.CornerRadius),
                 custom.OffsetY, custom.Blur, custom.Spread, custom.Color.Resolve(s.Mode));
         }
-        if (box.Style.Shadows is { Count: > 0 } customList)
+        if (style.Shadows is { Count: > 0 } customList)
         {
             foreach (var entry in customList)
-                s.Builder.ShadowRRect(new RRect(s.Node.Bounds, box.Style.CornerRadius),
+            {
+                if (entry.IsNone) continue;
+                s.Builder.ShadowRRect(new RRect(s.Node.Bounds, style.CornerRadius),
                     entry.OffsetY, entry.Blur, entry.Spread, entry.Color.Resolve(s.Mode));
+            }
         }
 
-        // Whether THIS box consumed the pressed swap must be decided before the consume
-        // nulls it — checking PendingFill afterwards reads null on exactly the box that
-        // took it, and the hover diff below would repaint over the pressed fill (§10:
-        // pressed beats hover).
-        var pressedHere = s.Press.PendingFill is not null;
-        var fill = s.Press.PendingFill ?? box.Style.Background;
+        // The pressed swap beats the hover's fill (§10): the hover diff is already in the effective
+        // style, and a pending press replaces whatever fill that left.
+        var fill = s.Press.PendingFill ?? style.Background;
         s.Press.PendingFill = null;
-        var borderColor = box.Style.BorderColor;
-        var borderWidth = box.Style.BorderWidth;
+        var borderColor = style.BorderColor;
+        var borderWidth = style.BorderWidth;
         // Spec S5: hover-reactive boxes register for the host's pointer tracking.
         if (box.Style.Hover is { IsEmpty: false })
             s.Input.Add(new HoverRegion(s.Node.Bounds, box, s.Node.Path ?? ""));
 
-        // Spec S5: the hovered Box applies its Hover diff (pressed still wins on fill).
-        // Tracked BY PATH like the press: a component rebuild replaces every instance,
-        // and a hover that only knew the old reference would paint exactly one frame.
-        if ((s.Press.IsHovered(s.Node, s.Node.Source)
-                || (s.Press.Simulated & SimulatedState.Hovered) != 0)
-            && box.Style.Hover is { IsEmpty: false } hover)
-        {
-            if (!pressedHere && hover.Background is { } hoverFill) fill = hoverFill;
-            if (hover.BorderColor is { } hoverBorder) borderColor = hoverBorder;
-            if (hover.BorderWidth is { } hoverWidth) borderWidth = hoverWidth;
-        }
         // Colours glide as resolved sRGB (what CSS does), wrapped back into a token that
         // resolves the same in both modes — the interpolation already picked the mode.
-        if (TransitionStore.Only(box.Style.Transition, StyleChannels.Colors) is { } colorSpec
+        if (TransitionStore.Only(style.Transition, StyleChannels.Colors) is { } colorSpec
             && s.Motion.Transitions is { } colorStore)
         {
             var cp = s.Node.Path ?? "";
@@ -110,9 +103,9 @@ internal sealed partial class EmitVisitor
             borderColor = new ColorToken(colorStore.ResolveColor(cp + ":bd", borderColor.Resolve(s.Mode), s.Motion.TimeMs, colorSpec, s.Motion.Reduced));
         }
 
-        EmitChrome(s.Node.Bounds, fill, box.Style.CornerRadius,
+        EmitChrome(s.Node.Bounds, fill, style.CornerRadius,
             borderColor, borderWidth, s.Theme, s.Mode, s.Builder,
-            box.Style.Gradient, box.Style.Pattern, box.Style.Glow, box.Style.BorderSides);
+            style.Gradient, style.Pattern, style.Glow, style.BorderSides);
 
         // Focus double ring (spec §01): 2dp Surface gap + 2dp FocusRing OUTSIDE the control,
         // following the control's own radius — the first Box under the focused Pressable
@@ -278,6 +271,39 @@ internal sealed partial class EmitVisitor
     /// every box that declared no transform at zero size: an empty golden, found by 81 of them.
     /// </summary>
     private static readonly Transform2D IdentityTransform = new(ScaleX: 1, ScaleY: 1);
+
+    /// <summary>
+    /// The style a box paints with this frame: its own, with its Hover diff over it while the
+    /// pointer is on it or a <see cref="Simulated"/> node pictures it hovered (#504). One answer for
+    /// both halves of the box, the wrapper that fades and moves it and the chrome that fills,
+    /// borders and shadows it, so the two cannot disagree about whether the box is hovered. Tracked
+    /// BY PATH like the press: a component rebuild replaces every instance, and a hover that only
+    /// knew the old reference would paint exactly one frame.
+    /// </summary>
+    private static BoxStyle EffectiveStyle(Box box, in EmitState s) =>
+        box.Style.Hover is { IsEmpty: false } hover
+            && (s.Press.IsHovered(s.Node, box) || (s.Press.Simulated & SimulatedState.Hovered) != 0)
+            ? Over(box.Style, hover)
+            : box.Style;
+
+    /// <summary>
+    /// A state's diff over the base: each member the diff sets replaces the base's, and its custom
+    /// shadows replace BOTH of the base's (<c>Shadow</c> and <c>Shadows</c>), as on the web, where
+    /// the state writes the box-shadow list again from the same parts.
+    /// </summary>
+    internal static BoxStyle Over(in BoxStyle style, StyleDiff diff) => style with
+    {
+        Background = diff.Background ?? style.Background,
+        BorderColor = diff.BorderColor ?? style.BorderColor,
+        BorderWidth = diff.BorderWidth ?? style.BorderWidth,
+        Elevation = diff.Elevation ?? style.Elevation,
+        Opacity = diff.Opacity ?? style.Opacity,
+        Gradient = diff.Gradient ?? style.Gradient,
+        BackdropBlur = diff.BackdropBlur ?? style.BackdropBlur,
+        Transform = diff.Transform ?? style.Transform,
+        Shadow = diff.Shadows is null ? style.Shadow : null,
+        Shadows = diff.Shadows ?? style.Shadows,
+    };
 
     /// <summary>The five components of a transform, each its own track — so a rotate-and-scale
     /// hover glides both together under one spec, and removing the transform glides back to identity.</summary>

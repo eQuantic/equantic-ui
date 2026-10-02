@@ -5,8 +5,18 @@ namespace eQuantic.UI.Primitives;
 /// declarative twin of CSS pseudo-classes: no event handlers in app code, each realizer implements
 /// the state natively (pseudo-class rules on web — zero JS; the interaction system on Photon).
 /// Only the set members override; everything else keeps the base value.
+/// <para>
+/// A CLASS, where most of the style vocabulary is structs, because of where it lives: a
+/// <see cref="BoxStyle"/> carries two of them (<see cref="BoxStyle.Hover"/> and
+/// <see cref="BoxStyle.Focus"/>) and every box carries a <c>BoxStyle</c>, rebuilt each frame. As a
+/// struct the pair was 184 of a <c>BoxStyle</c>'s 504 bytes, paid by the boxes that declare no state
+/// as much as by the ones that do, and adding <see cref="Transform"/> and <see cref="Shadows"/> took
+/// it to 256 (measured with <c>Unsafe.SizeOf</c>, #507). As a reference the pair is 16 bytes, and
+/// only a box that declares a state pays for one, so a member added here costs nothing to the boxes
+/// that never use it.
+/// </para>
 /// </summary>
-public readonly record struct StyleDiff
+public sealed record StyleDiff
 {
     public ColorToken? Background { get; init; }
     public ColorToken? BorderColor { get; init; }
@@ -24,7 +34,23 @@ public readonly record struct StyleDiff
     /// <c>null</c> = keep the base.</summary>
     public float? BackdropBlur { get; init; }
 
+    /// <summary>
+    /// The transform while active, REPLACING the base's <see cref="BoxStyle.Transform"/> the way a
+    /// CSS rule replaces <c>transform</c>: a box rotated at rest and lifted on hover says both here.
+    /// Center-anchored and paint-only, like the base's. <c>null</c> = keep the base (#504).
+    /// </summary>
+    public Transform2D? Transform { get; init; }
+
+    /// <summary>
+    /// The custom shadows while active, REPLACING the base's <see cref="BoxStyle.Shadow"/> and
+    /// <see cref="BoxStyle.Shadows"/>: a glow that deepens under the pointer. The elevation's shadow
+    /// and the inset highlight stay in the list either way, in the base's order. <c>null</c> = keep
+    /// the base (#504).
+    /// </summary>
+    public IReadOnlyList<ShadowSpec>? Shadows { get; init; }
+
     public bool IsEmpty =>
         Background is null && BorderColor is null && BorderWidth is null
-        && Elevation is null && Opacity is null && Gradient is null && BackdropBlur is null;
+        && Elevation is null && Opacity is null && Gradient is null && BackdropBlur is null
+        && Transform is null && Shadows is null;
 }

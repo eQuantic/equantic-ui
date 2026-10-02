@@ -657,15 +657,7 @@ internal sealed partial class WebLoweringVisitor
                 BorderRadius = style.CornerRadius.IsZero ? null : TokenCss.Radius(style.CornerRadius),
                 // Depth (Elevation), the CUSTOM shadow and the inset highlight compose as one
                 // box-shadow list — the design stacks glows on elevated glossy cards.
-                BoxShadow = ComposeShadows(
-                    style.Elevation > 0 && !_context.Theme.Elevation(style.Elevation).IsNone
-                        ? TokenCss.Shadow(_context.Theme.Elevation(style.Elevation))
-                        : null,
-                    style.Shadow is { } shadow ? TokenCss.Shadow(shadow) : null,
-                    style.Shadows is { Count: > 0 } shadows
-                        ? string.Join(", ", shadows.Select(TokenCss.Shadow))
-                        : null,
-                    style.InsetHighlight is { } inset ? $"inset 0 1px 0 {TokenCss.Value(inset)}" : null),
+                BoxShadow = ShadowList(style.Elevation, style.Shadow, style.Shadows, style.InsetHighlight),
                 // The shorthand for a full border (one declaration, one atomic class); per-side
                 // widths when the box draws only some edges — a section rule, an accent bar, a
                 // table cell sharing its neighbour's line.
@@ -729,13 +721,13 @@ internal sealed partial class WebLoweringVisitor
         var simulated = _simulated;
         if (box.Style.Hover is { IsEmpty: false } hover)
         {
-            if (simulated.HasFlag(SimulatedState.Hovered)) ApplyDiff(element.Style, hover);
-            else AppendDiff(element, ":hover", hover);
+            if (simulated.HasFlag(SimulatedState.Hovered)) ApplyDiff(element.Style, hover, box.Style);
+            else AppendDiff(element, ":hover", hover, box.Style);
         }
         if (box.Style.Focus is { IsEmpty: false } focus)
         {
-            if (simulated.HasFlag(SimulatedState.Focused)) ApplyDiff(element.Style, focus);
-            else AppendDiff(element, ":focus-visible", focus);
+            if (simulated.HasFlag(SimulatedState.Focused)) ApplyDiff(element.Style, focus, box.Style);
+            else AppendDiff(element, ":focus-visible", focus, box.Style);
         }
 
         if (box.Child is not null && Lower(box.Child, horizontalAxis: null) is { } child)
@@ -794,46 +786,112 @@ internal sealed partial class WebLoweringVisitor
         return $"{Edge(BorderSides.Top)} {Edge(BorderSides.End)} {Edge(BorderSides.Bottom)} {Edge(BorderSides.Start)}";
     }
 
-    /// <summary>One box-shadow list from the optional parts (null when none are set).</summary>
-    private string? ComposeShadows(params string?[] parts)
+    /// <summary>
+    /// The ONE box-shadow list of a box, in the order the base has always written it: the elevation's
+    /// shadow, the custom shadow, the custom list, then the inset highlight (null when none). A shadow
+    /// with no geometry draws nothing and is left out, as the elevation's always was: written, it was
+    /// a <c>none</c> inside a list, which CSS rejects with the whole declaration. The TypeScript twin
+    /// is <c>shadowList</c>, and the two must write the same string, because the class a declaration
+    /// hashes to is how hydration recognises the server's markup.
+    /// </summary>
+    private string? ShadowList(int elevation, ShadowSpec? shadow, IReadOnlyList<ShadowSpec>? shadows, ColorToken? inset)
     {
-        var present = parts.Where(part => part != null).ToList();
-        return present.Count == 0 ? null : string.Join(", ", present);
+        // Most boxes have no shadow at all, and every box asks.
+        if (elevation <= 0 && shadow is null && shadows is not { Count: > 0 } && inset is null) return null;
+        var parts = new List<string>();
+        if (elevation > 0 && _context.Theme.Elevation(elevation) is { IsNone: false } depth)
+            parts.Add(TokenCss.Shadow(depth));
+        if (shadow is { IsNone: false } one) parts.Add(TokenCss.Shadow(one));
+        if (shadows is not null)
+            foreach (var entry in shadows)
+                if (!entry.IsNone) parts.Add(TokenCss.Shadow(entry));
+        if (inset is { } highlight) parts.Add($"inset 0 1px 0 {TokenCss.Value(highlight)}");
+        return parts.Count == 0 ? null : string.Join(", ", parts);
     }
 
     /// <summary>
-    /// The same members, written over the BASE style — what a simulated state does. The pairs here
-    /// mirror <see cref="AppendDiff"/> exactly, so a preview shows the declarations a real hover
-    /// would produce rather than an approximation of them.
+    /// The box-shadow list while a state is active, or null when the state changes no shadow and the
+    /// base's list stands (#504). CSS replaces <c>box-shadow</c> whole, so a state that changes one
+    /// part writes every part again: a hover that only raised the elevation used to write the
+    /// elevation's shadow alone and took the glow and the inset highlight away under the pointer.
+    /// The state's custom shadows replace BOTH of the base's (<c>Shadow</c> and <c>Shadows</c>).
+    /// "none" when the state leaves nothing to draw, which is how a hover drops a shadow.
     /// </summary>
-    private void ApplyDiff(HtmlStyle? style, in StyleDiff diff)
+    private string? StateShadowList(in BoxStyle style, StyleDiff diff)
+    {
+        if (diff.Elevation is null && diff.Shadows is null) return null;
+        var elevation = diff.Elevation ?? style.Elevation;
+        var list = diff.Shadows is { } replaced
+            ? ShadowList(elevation, null, replaced, style.InsetHighlight)
+            : ShadowList(elevation, style.Shadow, style.Shadows, style.InsetHighlight);
+        return list ?? "none";
+    }
+
+    /// <summary>
+    /// The declarations a state's diff carries, over the base it changes — ONE builder for the
+    /// pseudo-class path and the simulated one, so a preview shows exactly what a real hover writes.
+    /// A list the base composes (the shadows, the background layers) is composed again from the
+    /// state's members and the base's, since CSS replaces the property whole (#504).
+    /// </summary>
+    private List<(string Property, string Value)> DiffDeclarations(StyleDiff diff, in BoxStyle style)
+    {
+        var declarations = new List<(string, string)>();
+        if (diff.Background is { } bg) declarations.Add(("background-color", TokenCss.Value(bg)));
+        if (diff is { BorderWidth: { } bw, BorderColor: { } bc })
+            declarations.Add(("border", $"{TokenCss.Px(bw)} solid {TokenCss.Value(bc)}"));
+        else if (diff.BorderColor is { } onlyColor) declarations.Add(("border-color", TokenCss.Value(onlyColor)));
+        if (StateShadowList(style, diff) is { } shadows) declarations.Add(("box-shadow", shadows));
+        if (diff.Opacity is { } alpha) declarations.Add(("opacity", TokenCss.Number(alpha)));
+        if (diff.Gradient is { } gradient)
+        {
+            var layered = style with { Gradient = gradient };
+            declarations.Add(("background-image", BackgroundLayers(layered)!));
+            if (BackgroundLayerSizes(layered) is { } sizes) declarations.Add(("background-size", sizes));
+        }
+        if (diff.BackdropBlur is { } blur)
+        {
+            var filter = blur > 0 ? $"blur({TokenCss.Px(blur)})" : "none";
+            declarations.Add(("backdrop-filter", filter));
+            declarations.Add(("-webkit-backdrop-filter", filter));
+        }
+        // An identity transform is "none": it is how a state undoes the base's transform.
+        if (diff.Transform is { } transform) declarations.Add(("transform", TokenCss.Transform(transform) ?? "none"));
+        return declarations;
+    }
+
+    /// <summary>
+    /// The same members, written over the BASE style — what a simulated state does. They are
+    /// <see cref="DiffDeclarations"/>'s, the ones a real hover writes as a pseudo-class, so a
+    /// preview shows the declarations a real hover would produce rather than an approximation.
+    /// </summary>
+    private void ApplyDiff(HtmlStyle? style, StyleDiff diff, in BoxStyle boxStyle)
     {
         if (style is null) return;
-        if (diff.Background is { } bg) style.BackgroundColor = TokenCss.Value(bg);
-        if (diff is { BorderWidth: { } bw, BorderColor: { } bc })
-            style.Border = $"{TokenCss.Px(bw)} solid {TokenCss.Value(bc)}";
-        else if (diff.BorderColor is { } onlyColor) style.BorderColor = TokenCss.Value(onlyColor);
-        if (diff.Elevation is { } level && !_context.Theme.Elevation(level).IsNone)
-            style.BoxShadow = TokenCss.Shadow(_context.Theme.Elevation(level));
-        if (diff.Opacity is { } alpha) style.Opacity = TokenCss.Number(alpha);
-        if (diff.Gradient is { } gradient) style.BackgroundImage = TokenCss.Gradient(gradient);
+        foreach (var (property, value) in DiffDeclarations(diff, boxStyle))
+        {
+            switch (property)
+            {
+                case "background-color": style.BackgroundColor = value; break;
+                case "border": style.Border = value; break;
+                case "border-color": style.BorderColor = value; break;
+                case "box-shadow": style.BoxShadow = value; break;
+                case "opacity": style.Opacity = value; break;
+                case "background-image": style.BackgroundImage = value; break;
+                case "background-size": style.BackgroundSize = value; break;
+                // HtmlStyle writes both spellings from the one property.
+                case "backdrop-filter": style.BackdropFilter = value; break;
+                case "-webkit-backdrop-filter": break;
+                case "transform": style.Transform = value; break;
+                default: throw new InvalidOperationException($"A state declaration with no HtmlStyle property: {property}.");
+            }
+        }
     }
 
     /// <summary>Spec S5: a StyleDiff's set members as pseudo-state declarations (base values keep).</summary>
-    private void AppendDiff(RealizedElement element, string pseudo, in StyleDiff diff)
+    private void AppendDiff(RealizedElement element, string pseudo, StyleDiff diff, in BoxStyle style)
     {
-        if (diff.Background is { } bg)
-            element.PseudoDeclarations.Add((pseudo, "background-color", TokenCss.Value(bg)));
-        if (diff is { BorderWidth: { } bw, BorderColor: { } bc })
-            element.PseudoDeclarations.Add((pseudo, "border", $"{TokenCss.Px(bw)} solid {TokenCss.Value(bc)}"));
-        else if (diff.BorderColor is { } onlyColor)
-            element.PseudoDeclarations.Add((pseudo, "border-color", TokenCss.Value(onlyColor)));
-        if (diff.Elevation is { } level && !_context.Theme.Elevation(level).IsNone)
-            element.PseudoDeclarations.Add((pseudo, "box-shadow", TokenCss.Shadow(_context.Theme.Elevation(level))));
-        if (diff.Opacity is { } alpha)
-            element.PseudoDeclarations.Add((pseudo, "opacity", TokenCss.Number(alpha)));
-        if (diff.Gradient is { } gradient)
-            element.PseudoDeclarations.Add((pseudo, "background-image", TokenCss.Gradient(gradient)));
+        foreach (var (property, value) in DiffDeclarations(diff, style))
+            element.PseudoDeclarations.Add((pseudo, property, value));
     }
     private HtmlElement LowerFlex(FlexNode flex)
     {

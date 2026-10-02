@@ -117,7 +117,7 @@ public class ConsoleComponentTests
         var tree = (Column)new DataTable(Columns, [Row("a")]).Build(Ctx);
         var row = (Box)tree.Children[1];
         row.Style.Hover.Should().NotBeNull("a hover that re-rendered the table would stutter");
-        row.Style.Hover!.Value.Background.Should().Be(PhotonTheme.Instance.SurfaceSubtle);
+        row.Style.Hover!.Background.Should().Be(PhotonTheme.Instance.SurfaceSubtle);
     }
 
     [Fact]

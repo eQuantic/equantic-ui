@@ -97,6 +97,7 @@ import type {
   AnchoredNode,
   SafeAreaNode,
   PinnedNode,
+  ShadowSpecValue,
   StyleDiffValue,
   TextEntryNode,
   TextNode,
@@ -2304,31 +2305,9 @@ function lowerBox(box: BoxNode, context: LoweringContext, path: string): HtmlNod
       style.cornerRadius && !isZeroRadii(style.cornerRadius)
         ? radiusValue(style.cornerRadius)
         : undefined,
-    'box-shadow': (() => {
-      // Depth (elevation) and the colored HALO compose as one list — the C# twin's rule.
-      const parts: string[] = [];
-      if (style.elevation && style.elevation > 0) {
-        const spec = getPhotonTheme().elevation(style.elevation);
-        if (spec && (spec.blur !== 0 || spec.offsetY !== 0 || spec.spread !== 0))
-          parts.push(
-            `0 ${px(spec.offsetY)} ${px(spec.blur)} ${px(spec.spread)} ${tokenValue(spec.color)}`,
-          );
-      }
-      if (style.shadows && style.shadows.length > 0)
-        for (const entry of style.shadows)
-          parts.push(
-            `0 ${px(entry.offsetY)} ${px(entry.blur)} ${px(entry.spread)} ${tokenValue(entry.color)}`.replace(
-              '0 0px',
-              '0 0',
-            ),
-          );
-      if (style.shadow)
-        parts.push(
-          `0 ${px(style.shadow.offsetY)} ${px(style.shadow.blur)} ${px(style.shadow.spread)} ${tokenValue(style.shadow.color)}`,
-        );
-      if (style.insetHighlight) parts.push(`inset 0 1px 0 ${tokenValue(style.insetHighlight)}`);
-      return parts.length > 0 ? parts.join(', ') : undefined;
-    })(),
+    // Depth (elevation), the custom shadows and the inset highlight compose as one list — the C#
+    // twin's ShadowList, in its order.
+    'box-shadow': shadowList(style.elevation ?? 0, style.shadow, style.shadows, style.insetHighlight),
     // The shorthand for a full border; per-side widths when the box draws only some edges —
     // a section rule, an accent bar, a table cell sharing its neighbour's line (C# twin).
     border:
@@ -2384,15 +2363,15 @@ function lowerBox(box: BoxNode, context: LoweringContext, path: string): HtmlNod
   // A SIMULATED state REPLACES the base declarations, before they are atomized. Adding a second
   // class for the same property instead would leave the winner to stylesheet insertion order —
   // every atomic class has equal specificity — and would emit a class set the C# side does not.
-  if (style.hover && simulatedState & SIMULATED_HOVERED) applyDiff(entries, style.hover);
-  if (style.focus && simulatedState & SIMULATED_FOCUSED) applyDiff(entries, style.focus);
+  if (style.hover && simulatedState & SIMULATED_HOVERED) applyDiff(entries, style.hover, style);
+  if (style.focus && simulatedState & SIMULATED_FOCUSED) applyDiff(entries, style.focus, style);
 
   const result = element('div', entries);
 
   if (style.hover && !(simulatedState & SIMULATED_HOVERED))
-    appendDiff(result, ':hover', style.hover);
+    appendDiff(result, ':hover', style.hover, style);
   if (style.focus && !(simulatedState & SIMULATED_FOCUSED))
-    appendDiff(result, ':focus-visible', style.focus);
+    appendDiff(result, ':focus-visible', style.focus, style);
 
   if (box.child) {
     const child = lowerNode(box.child, context, null, path + '/0');
@@ -2437,23 +2416,77 @@ function appendAtomic(node: HtmlNode, entries: StyleEntries): void {
   node.attributes['class'] = existing ? `${existing} ${atomized.class}` : atomized.class;
 }
 
-/** Spec S5 mirror of the C# AppendDiff — identical declaration strings, pseudo-hashed classes. */
-/** A StyleDiff's set members, written over the given entries — what a simulated state does. */
-function applyDiff(entries: Record<string, string | undefined>, diff: StyleDiffValue): void {
-  Object.assign(entries, diffEntries(diff));
+/** One shadow in the C# `TokenCss.Shadow` spelling. */
+function shadowValue(spec: ShadowSpecValue): string {
+  return `0 ${px(spec.offsetY)} ${px(spec.blur)} ${px(spec.spread)} ${tokenValue(spec.color)}`;
 }
 
-function appendDiff(node: HtmlNode, pseudo: string, diff: StyleDiffValue): void {
-  const classes = atomizePseudo(pseudo, diffEntries(diff));
+/** The C# `ShadowSpec.IsNone`: no offset, no blur, no spread, so nothing to draw. */
+function isNoShadow(spec: ShadowSpecValue): boolean {
+  return spec.blur === 0 && spec.offsetY === 0 && spec.spread === 0;
+}
+
+/**
+ * The C# `ShadowList`: the elevation's shadow, the custom shadow, the custom list, then the inset
+ * highlight, in that order, skipping a shadow with nothing to draw. Both producers write the same
+ * string, because the class a declaration hashes to is how hydration recognises the server's markup.
+ */
+function shadowList(
+  elevation: number,
+  shadow: ShadowSpecValue | null | undefined,
+  shadows: ShadowSpecValue[] | null | undefined,
+  inset: ColorTokenValue | null | undefined,
+): string | undefined {
+  // Most boxes have no shadow at all, and every box asks (C# twin).
+  if (elevation <= 0 && !shadow && !(shadows && shadows.length > 0) && !inset) return undefined;
+  const parts: string[] = [];
+  if (elevation > 0) {
+    const spec = getPhotonTheme().elevation(elevation);
+    if (spec && !isNoShadow(spec)) parts.push(shadowValue(spec));
+  }
+  if (shadow && !isNoShadow(shadow)) parts.push(shadowValue(shadow));
+  if (shadows) for (const entry of shadows) if (!isNoShadow(entry)) parts.push(shadowValue(entry));
+  if (inset) parts.push(`inset 0 1px 0 ${tokenValue(inset)}`);
+  return parts.length > 0 ? parts.join(', ') : undefined;
+}
+
+/**
+ * The C# `StateShadowList`: the list while a state is active, or undefined when the state changes no
+ * shadow and the base's stands. CSS replaces box-shadow whole, so a state that changes one part
+ * writes every part again; its custom shadows replace both of the base's. "none" when nothing is
+ * left to draw (#504).
+ */
+function stateShadowList(style: BoxStyleValue, diff: StyleDiffValue): string | undefined {
+  if (diff.elevation == null && diff.shadows == null) return undefined;
+  const elevation = diff.elevation ?? style.elevation ?? 0;
+  const list =
+    diff.shadows != null
+      ? shadowList(elevation, null, diff.shadows, style.insetHighlight)
+      : shadowList(elevation, style.shadow, style.shadows, style.insetHighlight);
+  return list ?? 'none';
+}
+
+/** A StyleDiff's set members, written over the given entries — what a simulated state does. */
+function applyDiff(
+  entries: Record<string, string | undefined>,
+  diff: StyleDiffValue,
+  style: BoxStyleValue,
+): void {
+  Object.assign(entries, diffEntries(diff, style));
+}
+
+/** Spec S5 mirror of the C# AppendDiff — identical declaration strings, pseudo-hashed classes. */
+function appendDiff(node: HtmlNode, pseudo: string, diff: StyleDiffValue, style: BoxStyleValue): void {
+  const classes = atomizePseudo(pseudo, diffEntries(diff, style));
   if (classes) {
     const existing = node.attributes['class'];
     node.attributes['class'] = existing ? `${existing} ${classes}` : classes;
   }
 }
 
-/** The declarations a StyleDiff carries — one builder, so the pseudo path and the simulated path
- * cannot drift into showing different things for the same diff. */
-function diffEntries(diff: StyleDiffValue): Record<string, string | undefined> {
+/** The C# `DiffDeclarations`: the declarations a state's diff carries over the base it changes, in
+ * the same order — one builder, so the pseudo path and the simulated path cannot drift apart. */
+function diffEntries(diff: StyleDiffValue, style: BoxStyleValue): Record<string, string | undefined> {
   const entries: Record<string, string | undefined> = {};
   if (diff.background) entries['background-color'] = tokenValue(diff.background);
   if (diff.borderWidth != null && diff.borderColor) {
@@ -2461,15 +2494,22 @@ function diffEntries(diff: StyleDiffValue): Record<string, string | undefined> {
   } else if (diff.borderColor) {
     entries['border-color'] = tokenValue(diff.borderColor);
   }
-  if (diff.elevation != null) {
-    const spec = getPhotonTheme().elevation(diff.elevation);
-    if (spec && (spec.blur !== 0 || spec.offsetY !== 0 || spec.spread !== 0)) {
-      entries['box-shadow'] =
-        `0 ${px(spec.offsetY)} ${px(spec.blur)} ${px(spec.spread)} ${tokenValue(spec.color)}`;
-    }
-  }
+  const shadows = stateShadowList(style, diff);
+  if (shadows !== undefined) entries['box-shadow'] = shadows;
   if (diff.opacity != null) entries['opacity'] = num(diff.opacity);
-  if (diff.gradient) entries['background-image'] = gradientValue(diff.gradient);
+  if (diff.gradient) {
+    const layered: BoxStyleValue = { ...style, gradient: diff.gradient };
+    entries['background-image'] = backgroundLayers(layered);
+    const sizes = backgroundLayerSizes(layered);
+    if (sizes !== undefined) entries['background-size'] = sizes;
+  }
+  if (diff.backdropBlur != null) {
+    const filter = diff.backdropBlur > 0 ? `blur(${px(diff.backdropBlur)})` : 'none';
+    entries['backdrop-filter'] = filter;
+    entries['-webkit-backdrop-filter'] = filter;
+  }
+  // An identity transform is "none": it is how a state undoes the base's transform.
+  if (diff.transform) entries['transform'] = transformValue(diff.transform) ?? 'none';
   return entries;
 }
 
