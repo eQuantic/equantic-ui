@@ -45,7 +45,11 @@ internal static class PhotonAccessibility
     private static IntPtr ElementClass()
     {
         if (_elementClass != IntPtr.Zero) return _elementClass;
-        _elementClass = objc_allocateClassPair(objc_getClass("NSAccessibilityElement"), "EQAXElement", 0);
+        // Through AppKit.Class, which loads the framework first, like every class this shell reaches
+        // for. objc_getClass alone answers nil wherever no window has loaded AppKit yet, and a pair
+        // allocated over nil is a ROOT class that answers no message at all: the suite's first build
+        // of these elements outside a running app hung there rather than failing (#338).
+        _elementClass = objc_allocateClassPair(AppKit.Class("NSAccessibilityElement"), "EQAXElement", 0);
         _performPress = OnPerformPress;
         class_addMethod(_elementClass, sel_registerName("accessibilityPerformPress"),
             Marshal.GetFunctionPointerForDelegate(_performPress), "B@:");
@@ -80,12 +84,20 @@ internal static class PhotonAccessibility
 
         if (_children != IntPtr.Zero) SendVoid(_children, Sel("release"));
         Paths.Clear();
-        _children = Send(Send(objc_getClass("NSMutableArray"), Sel("alloc")), Sel("init"));
+        _children = Send(Send(AppKit.Class("NSMutableArray"), Sel("alloc")), Sel("init"));
+        // Once per build rather than per value: AppKit.Class loads the framework before it looks, and
+        // a screen asks for a number up to four times a node, on every query VoiceOver makes.
+        var number = AppKit.Class("NSNumber");
 
         foreach (var node in semantics)
         {
             var element = Send(Send(ElementClass(), Sel("alloc")), Sel("init"));
-            SendVoid(element, Sel("setAccessibilityRole:"), NSString(NativeRole.Of(node.Role).AppKit));
+            var native = NativeRole.Of(node.Role);
+            SendVoid(element, Sel("setAccessibilityRole:"), NSString(native.AppKit));
+            // The second word, for a role AppKit names with two: a tab is AXRadioButton until its
+            // subrole says AXTabButton, which is what VoiceOver reads as "tab" (#338).
+            if (native.AppKitSubrole is { } subrole)
+                SendVoid(element, Sel("setAccessibilitySubrole:"), NSString(subrole));
             SendVoid(element, Sel("setAccessibilityLabel:"), NSString(node.Label));
             if (node.Value is { } value)
                 SendVoid(element, Sel("setAccessibilityValue:"), NSString(value));
@@ -101,9 +113,9 @@ internal static class PhotonAccessibility
             if (node.Range is { } range)
             {
                 SendVoid(element, Sel("setAccessibilityMinValue:"),
-                    Send(objc_getClass("NSNumber"), Sel("numberWithDouble:"), (double)range.Min));
+                    Send(number, Sel("numberWithDouble:"), (double)range.Min));
                 SendVoid(element, Sel("setAccessibilityMaxValue:"),
-                    Send(objc_getClass("NSNumber"), Sel("numberWithDouble:"), (double)range.Max));
+                    Send(number, Sel("numberWithDouble:"), (double)range.Max));
                 // The value as a NUMBER only when nothing spoke for it — otherwise the words above
                 // are the announcement and replacing them with "0.45" is the loss this exists to
                 // prevent.
@@ -116,13 +128,13 @@ internal static class PhotonAccessibility
                 // precisely when nothing replaced the number.
                 if (node.Value is null || node.Value == range.Number)
                     SendVoid(element, Sel("setAccessibilityValue:"),
-                        Send(objc_getClass("NSNumber"), Sel("numberWithDouble:"), (double)range.Now));
+                        Send(number, Sel("numberWithDouble:"), (double)range.Now));
             }
             // A check's value is a NUMBER (0/1/2 — off/on/mixed): AXCheckBox's own contract, and
             // what VoiceOver reads as "checked"/"unchecked"/"mixed" without the label saying it.
             if (node.Checked is { } check)
                 SendVoid(element, Sel("setAccessibilityValue:"),
-                    Send(objc_getClass("NSNumber"), Sel("numberWithLong:"), (long)check));
+                    Send(number, Sel("numberWithLong:"), (long)check));
             // Disclosure state — VoiceOver reads "expanded"/"collapsed" after the name.
             if (node.Expanded is { } isOpen)
                 SendVoid(element, Sel("setAccessibilityExpanded:"), isOpen);

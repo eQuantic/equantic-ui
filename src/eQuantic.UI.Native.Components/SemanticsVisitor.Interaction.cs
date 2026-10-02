@@ -24,16 +24,35 @@ internal sealed partial class SemanticsVisitor
     {
         // A check states its state beside the name, never inside it — the exact mirror of the web's
         // aria-checked. Mixed is checkbox-only, ARIA's own rule.
+        //
+        // Every role is written out and there is no default arm (#338). This switch ended in
+        // `_ => Button` while it knew three of the nine roles, so a radio, a tab, a menu item, a list
+        // option and a navigation destination reached VoiceOver and TalkBack as buttons — and a role
+        // appended to PressableRole would have joined them without a word. Now that append fails the
+        // BUILD and names the role (CS8509), the question NativeRole.Of asks of SemanticRole.
+        // CS8524 is the UNNAMED value, which here only an author's cast of an integer can make — a
+        // role the vocabulary does not offer — and it throws rather than pass for a button: the
+        // compiler's question about every NAMED role is worth more than a guess about the rest.
+#pragma warning disable CS8524
         var (role, check) = node.Role switch
         {
+            PressableRole.Button => (SemanticRole.Button, (SemanticCheck?)null),
+            // Checked, not picked — the web's aria-checked, and AXValue and RadioButton's own state.
+            PressableRole.Radio => (SemanticRole.Radio,
+                (SemanticCheck?)(node.Selected == true ? SemanticCheck.On : SemanticCheck.Off)),
             PressableRole.Checkbox => (SemanticRole.Checkbox,
                 (SemanticCheck?)(node.Mixed ? SemanticCheck.Mixed
                     : node.Selected == true ? SemanticCheck.On : SemanticCheck.Off)),
             PressableRole.Switch => (SemanticRole.Switch,
                 (SemanticCheck?)(node.Selected == true ? SemanticCheck.On : SemanticCheck.Off)),
+            PressableRole.Tab => (SemanticRole.Tab, (SemanticCheck?)null),
+            PressableRole.MenuItem => (SemanticRole.MenuItem, (SemanticCheck?)null),
+            PressableRole.Option => (SemanticRole.Option, (SemanticCheck?)null),
+            // Where the user IS rides Current, below, not a check and not a pick.
+            PressableRole.Destination => (SemanticRole.Destination, (SemanticCheck?)null),
             PressableRole.GridCell => (SemanticRole.GridCell, (SemanticCheck?)null),
-            _ => (SemanticRole.Button, null),
         };
+#pragma warning restore CS8524
         // PICKED-ness, for the three roles that have it. Before the Selected field existed a Tab and
         // an Option arrived here as plain Buttons whose selection was paint only.
         bool? selected = node.Role is PressableRole.Tab or PressableRole.Option or PressableRole.GridCell

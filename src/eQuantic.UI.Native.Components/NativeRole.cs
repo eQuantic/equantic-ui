@@ -56,8 +56,24 @@ namespace eQuantic.UI.Native.Components;
 /// them — so an Adjustable was unreachable to TalkBack while macOS wired increment/decrement and
 /// iOS carried the trait.
 /// </param>
+/// <param name="AppKitSubrole">
+/// The second word AppKit needs for a role it names with two, or null for the many it names with
+/// one. A tab is the reason it exists: AppKit has no tab role, and what NSTabView's own tabs report
+/// is a radio button whose subrole is <c>AXTabButton</c> — the pair VoiceOver reads as "tab". It is
+/// a column rather than a special case in the bridge for the reason the names are: a bridge that
+/// knew which roles carry a subrole would be a second table, and the first one the compiler could
+/// not see.
+/// </param>
+/// <param name="UIKitCheckAsSelected">
+/// Whether UIKit hears a CHECK as the Selected trait rather than as the element's value. A toggle's
+/// state is its value there ("1" or "0", a UISwitch's own contract); a radio is one choice of a set,
+/// which UIKit says the way its segmented controls say which segment is chosen. AppKit and Android
+/// read a radio's check as they read a checkbox's, AXValue and isChecked, so the difference is
+/// UIKit's alone, and a row rather than a role the iOS bridge would have to know (#338).
+/// </param>
 public readonly record struct NativeRole(
-    string AppKit, string Android, UIKitTrait UIKit, bool Activatable, bool Adjustable)
+    string AppKit, string Android, UIKitTrait UIKit, bool Activatable, bool Adjustable,
+    string? AppKitSubrole = null, bool UIKitCheckAsSelected = false)
 {
     /// <summary>
     /// The row for a role. Every arm is written out, including
@@ -140,6 +156,58 @@ public readonly record struct NativeRole(
         SemanticRole.Group =>
             new("AXGroup", "android.view.ViewGroup", UIKitTrait.None,
                 Activatable: false, Adjustable: false),
+
+        // THE FIVE PRESSABLE ROLES that reached every bridge as Button until #338. AppKit's and
+        // Android's words below are the ones the W3C's Core-AAM gives for the same ARIA role, which
+        // is what WebKit and Chrome expose for the web half of the same component; where this table
+        // departs from it, the row says why. UIKit has none of the five: Apple's own segmented
+        // controls, tab bars and menus report the button trait, and what is picked or current carries
+        // the Selected trait, which the bridge adds from SemanticNode.Selected and Current — and from a
+        // radio's check, which its row asks for.
+
+        // One choice of an exclusive set. AXRadioButton reads its state from AXValue, the 0/1 a check
+        // carries too, and RadioButton is the one class TalkBack names "radio button" from. UIKit
+        // hears the chosen one as Selected, the way a segmented control's segment says it, and not
+        // as a toggle's "1" or "0", which beside the button trait would be read out as a number.
+        SemanticRole.Radio =>
+            new("AXRadioButton", "android.widget.RadioButton", UIKitTrait.Button,
+                Activatable: true, Adjustable: false, UIKitCheckAsSelected: true),
+
+        // One tab: a radio button whose SUBROLE says it is a tab, which is what NSTabView's own tabs
+        // report and what VoiceOver reads as "tab". Android has no class for a single tab: TalkBack
+        // knows the tab BAR (TabWidget) and nothing inside it, and the toolkits say "tab" through a
+        // role description they ship as words — which this framework does not ship. So the class is
+        // the plain View Core-AAM gives, which claims nothing, and the state says the rest.
+        SemanticRole.Tab =>
+            new("AXRadioButton", "android.view.View", UIKitTrait.Button,
+                Activatable: true, Adjustable: false, AppKitSubrole: "AXTabButton"),
+
+        // One action in a menu. MenuItem is not a View on Android, and that is Core-AAM's answer on
+        // purpose: TalkBack names nothing from it, which is how Android's own menus sound — the
+        // item's words, then the activate hint — rather than "button".
+        SemanticRole.MenuItem =>
+            new("AXMenuItem", "android.view.MenuItem", UIKitTrait.Button,
+                Activatable: true, Adjustable: false),
+
+        // One choice in a list of them. The ONE departure from Core-AAM, whose AppKit answer is
+        // AXStaticText: that is the sound this table exists to stop (a control read as a paragraph),
+        // and the list WebKit hangs it from (AXList) is no node here. A choice in a popup is what
+        // NSPopUpButton's own items are, and those are AXMenuItem — the same AppKit word as a menu's
+        // action, the way both checks are AXCheckBox: the difference rides the state, picked or not.
+        SemanticRole.Option =>
+            new("AXMenuItem", "android.view.View", UIKitTrait.Button,
+                Activatable: true, Adjustable: false),
+
+        // One place a navigation bar, a rail or a list leads to, in a BUTTON's words on all three,
+        // and on purpose. The web says the same, `<button aria-current="page">`, and no platform has
+        // a word of its own for it: UIKit says "tab" only inside a container with the tab-bar trait,
+        // and Material and Compose say it through a role description they ship as words. A
+        // ListItem settles it: it is a Destination exactly while it is the current row, so any other
+        // word would rename the row the moment it was picked. The ROLE is still its own, which is
+        // what lets a bridge or a fixture tell it apart, and where the user is rides Current.
+        SemanticRole.Destination =>
+            new("AXButton", "android.widget.Button", UIKitTrait.Button,
+                Activatable: true, Adjustable: false),
     };
 #pragma warning restore CS8524
 }

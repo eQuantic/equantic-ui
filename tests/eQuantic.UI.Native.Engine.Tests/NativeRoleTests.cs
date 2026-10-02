@@ -65,7 +65,53 @@ public class NativeRoleTests
 
             native.AppKit.Should().StartWith("AX", $"{role}'s NSAccessibility role is an AX constant");
             native.Android.Should().Contain(".", $"{role}'s Android class is a fully qualified name");
+            if (native.AppKitSubrole is { } subrole)
+                subrole.Should().StartWith("AX", $"{role}'s NSAccessibility subrole is an AX constant");
         }
+    }
+
+    /// <summary>
+    /// The five pressable roles that reached every bridge as a button until #338, pinned to the
+    /// sources that decided them rather than to an opinion: AppKit's and Android's words are the W3C
+    /// Core-AAM's for the same ARIA role, which is what WebKit and Chrome expose for the web half of
+    /// the same component, and TalkBack names "radio button" from RadioButton and nothing from the
+    /// others. The two departures, an option's AXMenuItem and a destination's button words, are
+    /// argued in their rows.
+    /// </summary>
+    [Theory]
+    [InlineData(SemanticRole.Radio, "AXRadioButton", null, "android.widget.RadioButton")]
+    [InlineData(SemanticRole.Tab, "AXRadioButton", "AXTabButton", "android.view.View")]
+    [InlineData(SemanticRole.MenuItem, "AXMenuItem", null, "android.view.MenuItem")]
+    [InlineData(SemanticRole.Option, "AXMenuItem", null, "android.view.View")]
+    [InlineData(SemanticRole.Destination, "AXButton", null, "android.widget.Button")]
+    public void ThePressableRolesSpeakEachPlatformsOwnWords(
+        SemanticRole role, string appKit, string? appKitSubrole, string android)
+    {
+        var native = NativeRole.Of(role);
+
+        native.AppKit.Should().Be(appKit);
+        native.AppKitSubrole.Should().Be(appKitSubrole);
+        native.Android.Should().Be(android);
+        native.UIKit.Should().Be(UIKitTrait.Button,
+            "UIKit has a role for none of them, and Apple's own segmented controls, tab bars and menus report the button trait");
+        native.Activatable.Should().BeTrue($"a {role} is pressed");
+        native.Adjustable.Should().BeFalse();
+    }
+
+    /// <summary>
+    /// How UIKit hears a CHECK, the one column where a radio and a toggle part (#338, found in
+    /// review). A toggle's state is its value there, "1" or "0", a UISwitch's own contract; a radio's
+    /// is the Selected trait, which is how a segmented control says which segment is chosen, and a
+    /// radio sent the toggle's way would be a button followed by a number.
+    /// </summary>
+    [Fact]
+    public void OnlyARadioIsHeardOnUIKitAsSelectedRatherThanAsAValue()
+    {
+        AllRoles.Where(role => NativeRole.Of(role).UIKitCheckAsSelected)
+            .Should().Equal([SemanticRole.Radio],
+                "a check reads as a value on UIKit, a toggle's contract, unless it is one choice of a set");
+        NativeRole.Of(SemanticRole.Checkbox).UIKitCheckAsSelected.Should().BeFalse();
+        NativeRole.Of(SemanticRole.Switch).UIKitCheckAsSelected.Should().BeFalse();
     }
 
     /// <summary>
@@ -97,6 +143,18 @@ public class NativeRoleTests
             { Label = "Wi-Fi", Role = PressableRole.Switch });
         page.Add(new Pressable(new Text("c", TypeRole.Label), () => { })
             { Label = "Agree", Role = PressableRole.Checkbox });
+        // The five that reached every bridge as a button until #338, each standing alone: inside a
+        // Tabs or a RadioGroup the Adjustable around them is the one stop and they are not read.
+        page.Add(new Pressable(new Text("r", TypeRole.Label), () => { })
+            { Label = "Express", Role = PressableRole.Radio, Selected = true });
+        page.Add(new Pressable(new Text("t", TypeRole.Label), () => { })
+            { Label = "Overview", Role = PressableRole.Tab, Selected = true });
+        page.Add(new Pressable(new Text("m", TypeRole.Label), () => { })
+            { Label = "Rename", Role = PressableRole.MenuItem });
+        page.Add(new Pressable(new Text("o", TypeRole.Label), () => { })
+            { Label = "Lisbon", Role = PressableRole.Option, Selected = false });
+        page.Add(new Pressable(new Text("d", TypeRole.Label), () => { })
+            { Label = "Inbox", Role = PressableRole.Destination, Selected = true });
         // Both editable SURFACES, because both announce as CodeField and they register different
         // kinds of stop — a sample holding only one of them cannot see the other go unanswered.
         page.Add(new CodeSurface(new Text("code", TypeRole.BodyM), new CodeEditorController("x"))
@@ -115,7 +173,8 @@ public class NativeRoleTests
         reached.Select(node => node.Role).Should().Contain(
             [SemanticRole.Button, SemanticRole.TextField, SemanticRole.Slider,
              SemanticRole.GridCell, SemanticRole.Switch, SemanticRole.Checkbox,
-             SemanticRole.CodeField],
+             SemanticRole.CodeField, SemanticRole.Radio, SemanticRole.Tab,
+             SemanticRole.MenuItem, SemanticRole.Option, SemanticRole.Destination],
             "the sample really does put one of each within reach");
         reached.Count(node => node.Role == SemanticRole.CodeField).Should().Be(2,
             "BOTH surfaces that announce as one are in the sample, not just the first");
