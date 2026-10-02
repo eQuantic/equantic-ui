@@ -24,7 +24,23 @@ public readonly record struct StyleDiff
     /// <c>null</c> = keep the base.</summary>
     public float? BackdropBlur { get; init; }
 
+    /// <summary>
+    /// The transform while active, REPLACING the base's <see cref="BoxStyle.Transform"/> the way a
+    /// CSS rule replaces <c>transform</c>: a box rotated at rest and lifted on hover says both here.
+    /// Center-anchored and paint-only, like the base's. <c>null</c> = keep the base (#504).
+    /// </summary>
+    public Transform2D? Transform { get; init; }
+
+    /// <summary>
+    /// The custom shadows while active, REPLACING the base's <see cref="BoxStyle.Shadow"/> and
+    /// <see cref="BoxStyle.Shadows"/>: a glow that deepens under the pointer. The elevation's shadow
+    /// and the inset highlight stay in the list either way, in the base's order. <c>null</c> = keep
+    /// the base (#504).
+    /// </summary>
+    public IReadOnlyList<ShadowSpec>? Shadows { get; init; }
+
     public bool IsEmpty =>
         Background is null && BorderColor is null && BorderWidth is null
-        && Elevation is null && Opacity is null && Gradient is null && BackdropBlur is null;
+        && Elevation is null && Opacity is null && Gradient is null && BackdropBlur is null
+        && Transform is null && Shadows is null;
 }
