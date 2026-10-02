@@ -31,14 +31,29 @@ base's order, and Photon draws the same list.
 ### One effective style on Photon
 
 The hover was applied inside the box's chrome, member by member, and three members made it there.
-Photon now computes the box's effective style once, the base with the active state's members laid
-over it, in the emit visitor's entry (where the opacity layer and the transform wrap the box) and
-hands it to the chrome, so every paint reads the same values and a member added to `StyleDiff`
-has one place to land. It allocates only while a box is in a state whose diff is non-empty. The
-pressed fill still beats the hover's (§10).
+Photon now answers the box's effective style in ONE method, the base with the active state's
+members laid over it, and both halves of the box ask it: the emit visitor's entry, where the
+opacity layer and the transform wrap the box, and the chrome, which fills, borders and shadows it.
+Every paint reads the same values, the two halves cannot disagree about whether the box is
+hovered, and a member added to `StyleDiff` has one place to land. It allocates nothing: the style
+is a struct, copied only while the box is hovered. The pressed fill still beats the hover's (§10).
+
+### One list on both web producers
+
+The class an atomic declaration hashes to is how a hydrating page recognises the server's markup, so
+the two producers must write the same text. They did not for the base's custom shadows: C# wrote
+`Shadow` before `Shadows` and TypeScript the reverse, and a shadow with no geometry was `none` in
+C#, inside a comma list, where CSS rejects the whole declaration. Both now build the list in one
+helper each (`ShadowList`, `shadowList`) in the C# order, leaving out a shadow that draws nothing,
+and the component parity fixture compares them on a box that sets every part.
 
 ### What stays out
 
 - The focus diff on Photon, which no component uses yet, and the pressed state: both are the state
   of the CONTROL around the box rather than of the box under the pointer, and they land together
-  in the next slice, with the group hover and #498's foreground.
+  in the next slice (#508), with the group hover and #498's foreground.
+- Gliding a state's custom shadows on Photon. The elevation's shadow glides under
+  `Transition(Shadow)` as before; a custom shadow snaps there, where the browser glides the list.
+  #508 carries it.
+- A pinned header's scrolled style, the other `StyleDiff` in the vocabulary, which the web writes
+  four members of and Photon does not draw: #506.

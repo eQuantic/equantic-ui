@@ -2,18 +2,18 @@
 
 ## 1. The vocabulary
 
-- [ ] 1.1 Add `Transform` and `Shadows` to `StyleDiff`, and to its runtime twin and wire shape
-- [ ] 1.2 Check: `VocabularyMirrorShapeTests` holds the twin to the record
+- [x] 1.1 Add `Transform` and `Shadows` to `StyleDiff`, and to its runtime twin and wire shape
+- [x] 1.2 Check: `VocabularyMirrorShapeTests` holds the twin to the record
 
 ## 2. The web
 
-- [ ] 2.1 Write a state's transform, backdrop blur and composed shadow list in the C# realizer and its TypeScript twin, the same strings on both
-- [ ] 2.2 Check: the realizer tests pin the declarations, and the twin's spec writes the same ones
+- [x] 2.1 Write a state's transform, backdrop blur and composed shadow list in the C# realizer and its TypeScript twin, the same strings on both
+- [x] 2.2 Check: the realizer tests pin the declarations, and the twin's spec writes the same ones
 
 ## 3. Photon
 
-- [ ] 3.1 Compute a hovered box's effective style once and paint every member from it, gliding under the box's `Transition`
-- [ ] 3.2 Check: the display list of a hovered box carries its transform, its elevation, its custom shadows, its opacity layer, its gradient and its backdrop blur, each failing without the change
+- [x] 3.1 Compute a hovered box's effective style once and paint every member from it, gliding under the box's `Transition`
+- [x] 3.2 Check: the display list of a hovered box carries its transform, its elevation, its custom shadows, its opacity layer, its gradient and its backdrop blur, each failing without the change
 
 ## 4. Documentation
 

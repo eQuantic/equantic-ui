@@ -12,7 +12,7 @@ custom shadows. A member the diff leaves unset SHALL keep the base value.
 
 - **WHEN** a box declares `Hover = new StyleDiff { Transform = Transform2D.Translate(0, -2) }` and the
   pointer is over it
-- **THEN** the web writes `transform: translate(0px, -2px)` under the box's `:hover` class, and Photon
+- **THEN** the web writes `transform: translate(0, -2px)` under the box's `:hover` class, and Photon
   draws the box translated two units up
 
 #### Scenario: A hover that raises the elevation, on Photon
@@ -31,3 +31,39 @@ one keeps the others.
 - **WHEN** a box with a custom glow and an inset highlight declares `Hover = new StyleDiff { Elevation = 3 }`
 - **THEN** the web's `:hover` `box-shadow` lists elevation 3's shadow, the glow and the inset highlight,
   where it listed elevation 3's shadow alone
+
+#### Scenario: A hover that drops the shadow
+
+- **WHEN** a box whose only shadow is elevation 2 declares `Hover = new StyleDiff { Elevation = 0 }`
+- **THEN** the web's `:hover` writes `box-shadow: none`, so the base's shadow does not show through
+
+### Requirement: A state's background layers compose the way the base's do
+
+While a state sets a gradient, the box's background SHALL be the state's gradient over the base's
+glow and grid pattern, with one size per layer, as the base writes them.
+
+#### Scenario: A hover gradient over a patterned box
+
+- **WHEN** a box with a grid pattern declares `Hover = new StyleDiff { Gradient = … }`
+- **THEN** the web's `:hover` writes the gradient and the pattern as `background-image`, and `auto`
+  and the pattern's size as `background-size`
+
+### Requirement: A shadow with no geometry is not drawn
+
+A shadow whose offset, blur and spread are all zero SHALL draw nothing on either target, and the
+web SHALL leave it out of the `box-shadow` list, on both of its producers.
+
+#### Scenario: A list with a zero shadow in it
+
+- **WHEN** a box declares `Shadows = [new ShadowSpec(0, 0, 0, c), new ShadowSpec(2, 4, 0, c)]`
+- **THEN** the web's `box-shadow` lists the second shadow alone, and Photon draws one shadow
+
+### Requirement: An element carries each atomic class once
+
+An element's class attribute SHALL name each atomic class once, on both web producers, including
+the one class the two spellings of a vendor-prefixed property share.
+
+#### Scenario: A backdrop blur
+
+- **WHEN** a box declares a backdrop blur, at rest or under a state
+- **THEN** its class attribute names the blur's class once

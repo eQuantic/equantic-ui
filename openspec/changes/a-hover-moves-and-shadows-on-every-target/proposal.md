@@ -1,9 +1,9 @@
 # Proposal
 
-Part of #504, a Feature under #190 (Flutter parity: the gaps that are work). This is its first
-slice: a hover can move a box and change its shadow, on the web and on Photon. The second slice,
-the pressed state, the focus diff on Photon and the group hover (with #498's foreground), follows
-in its own pull request.
+#507, the first slice of #504, a Feature under #190 (Flutter parity: the gaps that are work): a
+hover can move a box and change its shadow, on the web and on Photon. The second slice, #508 (the
+pressed state, the focus diff on Photon and the group hover, with #498's foreground), follows in
+its own pull request.
 
 ## Why
 
@@ -33,6 +33,16 @@ where it existed:
 - **A state's shadow composes the way the base does.** The shadow list while a state is active is
   the state's elevation (or the base's), then its custom shadows (or the base's), then the base's
   inset highlight, so a hover that deepens one keeps the others, on the web as on Photon.
+- **A state's background layers compose too.** A hover gradient is the first of the box's layers,
+  so the base's glow and pattern stay under it, with their sizes, where the hover used to write
+  the gradient alone.
+- **The base list is one list on both web producers.** The C# realizer and its TypeScript twin
+  wrote the custom `Shadow` and `Shadows` in opposite orders, and a shadow with no geometry was a
+  `none` inside the list in C# (which CSS rejects with the whole declaration) and a zero shadow in
+  TypeScript. Both now write the C# order and leave such a shadow out, as Photon draws nothing for
+  it.
+- **An element carries each atomic class once.** The two spellings of `backdrop-filter` hash to one
+  class, and the element listed it twice.
 
 What a developer writes:
 
@@ -40,7 +50,7 @@ What a developer writes:
 new BoxStyle
 {
     Shadows = [new ShadowSpec(12, 30, -12, Brand.Glow)],
-    Transition = TransitionSpec.Colors() with { Channels = StyleChannels.Transform | StyleChannels.Shadow },
+    Transition = new TransitionSpec(StyleChannels.Transform | StyleChannels.Shadow),
     Hover = new StyleDiff
     {
         Transform = Transform2D.Translate(0, -1),
@@ -54,7 +64,10 @@ new BoxStyle
 - **Developer surface:** none outside C#.
 - **Public surface:** `StyleDiff.Transform` and `StyleDiff.Shadows` (additions). Nothing goes.
 - **Parts reached:** Primitives (the record), the web realizer and its TypeScript twin (the hover's
-  declarations, the same strings on both producers), the runtime's vocabulary twin and wire shape,
-  and Photon's emit visitor (the effective style).
+  declarations, the same strings on both producers), the two style atomizers, the runtime's
+  vocabulary twin and wire shape, and Photon's emit visitor (the effective style).
+- **Markup:** an element with a backdrop blur loses the duplicate of its blur class, and a box
+  whose `Shadow` and `Shadows` are both set lowers its list in the C# order in the browser too.
+  Server and browser change together, so hydration still meets the classes it expects.
 - **Docs:** the wiki's styling section, English and Portuguese, and `docs/FLUTTER-PARITY.md`, which
   gains the rows for `Transform` and for state-resolved styles.
