@@ -47,6 +47,26 @@ public class SimulatedStateTests
     }
 
     /// <summary>
+    /// The pictured hover writes what the real one does, the composed lists included: the raised
+    /// elevation keeps the glow beside it, and the lift moves the box (#504).
+    /// </summary>
+    [Fact]
+    public void AHoveredSubtree_DrawsEveryMemberOfTheDiff()
+    {
+        var glow = new ShadowSpec(0, 24, 0, new ColorToken(Color.FromRgb(0x44, 0x88, 0xFF)));
+        var (_, css) = Render(new Simulated(SimulatedState.Hovered, new Primitives.Box(new BoxStyle
+        {
+            Elevation = 1,
+            Shadow = glow,
+            Hover = new StyleDiff { Elevation = 3, Transform = Transform2D.Translate(0, -2) },
+        }, new Text("x", TypeRole.BodyM))));
+
+        css.Should().Contain($"{{box-shadow:{TokenCss.Shadow(Theme.Elevation(3))}, {TokenCss.Shadow(glow)}}}");
+        css.Should().Contain("{transform:translate(0, -2px)}");
+        css.Should().NotContain(":hover");
+    }
+
+    /// <summary>
     /// ONE declaration per property, not two. Every atomic class has equal specificity, so an
     /// element carrying both the base and the simulated colour would be decided by stylesheet
     /// insertion order — by whatever the rest of the page happened to emit first.

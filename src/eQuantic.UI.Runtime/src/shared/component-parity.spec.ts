@@ -20,8 +20,22 @@ import { photonTheme } from './design-system.generated';
 import { lowerVisualNode } from './lowering';
 import { setPhotonTheme } from './photon-context';
 import type { HtmlNode } from '../core/types';
-import { Box, BoxStyle, Column, GridTrack, Icon, IconGlyph, ScrollView, Text } from './vocabulary';
-import { SizeValue } from './value-types';
+import {
+  Box,
+  BoxStyle,
+  Column,
+  GridPattern,
+  GridTrack,
+  Icon,
+  IconGlyph,
+  LinearGradient,
+  ScrollView,
+  ShadowSpec,
+  Simulated,
+  StyleDiff,
+  Text,
+} from './vocabulary';
+import { SizeValue, Transform2D } from './value-types';
 import { Accordion } from './components/Accordion';
 import { AccordionItem } from './components/AccordionItem';
 import { Badge } from './components/Badge';
@@ -87,6 +101,31 @@ function cases(): Record<string, { node: unknown; presses: number[] }> {
     return node;
   };
   const still = (node: unknown) => ({ node, presses: [] });
+  // The C# HoverLift: every shadow part, a pattern layer and a resting transform at its base, and
+  // a hover and a focus that change each of them (#504).
+  const hoverLift = () =>
+    new Box(
+      new BoxStyle({
+        width: 40,
+        height: 40,
+        background: photonTheme.surface,
+        elevation: 1,
+        shadow: new ShadowSpec(0, 24, 0, photonTheme.focusRing),
+        shadows: [new ShadowSpec(2, 4, 0, photonTheme.border), new ShadowSpec(0, 0, 0, photonTheme.border)],
+        insetHighlight: photonTheme.surfaceSubtle,
+        pattern: new GridPattern(16, photonTheme.border),
+        transform: Transform2D.rotate(2),
+        hover: new StyleDiff({
+          elevation: 3,
+          shadows: [new ShadowSpec(4, 32, 2, photonTheme.focusRing)],
+          transform: Transform2D.translate(0, -2),
+          gradient: new LinearGradient(photonTheme.surfaceSubtle, photonTheme.surface),
+          backdropBlur: 8,
+          opacity: 0.9,
+        }),
+        focus: new StyleDiff({ elevation: 0, transform: Transform2D.scale(1) }),
+      }),
+    );
   return {
     text: still(new Text('hello', 'bodyM', photonTheme.textPrimary)),
     'button-primary': still(new Button('Save')),
@@ -114,6 +153,14 @@ function cases(): Record<string, { node: unknown; presses: number[] }> {
             new Text('two', 'bodyM', photonTheme.textPrimary),
           ),
         ),
+      ),
+    ),
+    'box-hover-lift': still(hoverLift()),
+    // SimulatedState.Hovered | SimulatedState.Focused
+    'box-hover-lift-simulated': still(new Simulated(1 | 4, hoverLift())),
+    'box-hover-drops-shadow': still(
+      new Box(
+        new BoxStyle({ width: 40, height: 40, elevation: 2, hover: new StyleDiff({ elevation: 0 }) }),
       ),
     ),
     badge: still(new Badge(7)),

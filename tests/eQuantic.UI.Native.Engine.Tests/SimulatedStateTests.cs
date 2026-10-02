@@ -50,6 +50,31 @@ public class SimulatedStateTests
             .Should().BeTrue("the picture says it is");
     }
 
+    /// <summary>The wrapper that moves and fades a box reads the same state the chrome does: a
+    /// pictured hover lifts the card as a real one would (#504).</summary>
+    [Fact]
+    public void AHoveredSubtree_MovesByItsHoverTransform()
+    {
+        Box Lifting() => new(new BoxStyle
+        {
+            Width = 100,
+            Height = 40,
+            Background = Theme.Surface,
+            Hover = new StyleDiff { Transform = Transform2D.Translate(0, -2) },
+        }, null);
+        static Matrix2D FillTransform(DisplayList list)
+        {
+            foreach (var command in list.Commands)
+                if (command.Kind == DrawCommandKind.FillRRect) return command.Transform;
+            throw new InvalidOperationException("the box painted no fill");
+        }
+
+        var rest = FillTransform(Draw(Lifting()));
+        var pictured = FillTransform(Draw(new Simulated(SimulatedState.Hovered, Lifting())));
+
+        (pictured.M32 - rest.M32).Should().Be(-2);
+    }
+
     [Fact]
     public void APressedSubtree_PaintsItsPressedFill()
     {

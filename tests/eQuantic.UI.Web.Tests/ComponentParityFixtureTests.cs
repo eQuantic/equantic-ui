@@ -56,6 +56,22 @@ public class ComponentParityFixtureTests
         ("capped-scroller", new Box(new BoxStyle { Width = SizeValue.Fill, MaxHeight = 120 },
             new ScrollView(Stack(Space.S2, new Text("one", TypeRole.BodyM, Theme.TextPrimary),
                 new Text("two", TypeRole.BodyM, Theme.TextPrimary)))), NoPresses),
+        // A hover that LIFTS a card, with every member a state can set (#504). CSS replaces
+        // box-shadow whole, so the state writes the list again from its parts and the base's —
+        // the elevation, the custom shadows, the inset highlight — and the background layers the
+        // same way. Both sides must compose the same strings, or the hashes differ and hydration
+        // does not recognise the server's classes. Simulated, the same diff lands on the base
+        // declarations instead of under a pseudo-class, and the fixture pins that path too.
+        ("box-hover-lift", HoverLift(), NoPresses),
+        ("box-hover-lift-simulated",
+            new Simulated(SimulatedState.Hovered | SimulatedState.Focused, HoverLift()), NoPresses),
+        // A state that leaves nothing to draw writes "none": a hover that sets the elevation to 0
+        // over a box whose only shadow was its elevation.
+        ("box-hover-drops-shadow", new Box(new BoxStyle
+        {
+            Width = 40, Height = 40, Elevation = 2,
+            Hover = new StyleDiff { Elevation = 0 },
+        }), NoPresses),
 
         // A BROAD sweep of the library. Every one of these has a twin whose constructor mirrors
         // the C# one parameter for parameter, so the same arguments build the same component on
@@ -130,6 +146,31 @@ public class ComponentParityFixtureTests
 
     /// <summary>A component that is only lowered, never driven.</summary>
     private static readonly int[] NoPresses = [];
+
+    /// <summary>The card of the hover-lift cases: every shadow part, a pattern layer and a resting
+    /// transform at its base, and a hover and a focus that change each of them.</summary>
+    private static Box HoverLift() => new(new BoxStyle
+    {
+        Width = 40,
+        Height = 40,
+        Background = Theme.Surface,
+        Elevation = 1,
+        Shadow = new ShadowSpec(0, 24, 0, Theme.FocusRing),
+        Shadows = [new ShadowSpec(2, 4, 0, Theme.Border), new ShadowSpec(0, 0, 0, Theme.Border)],
+        InsetHighlight = Theme.SurfaceSubtle,
+        Pattern = new GridPattern(16, Theme.Border),
+        Transform = Transform2D.Rotate(2),
+        Hover = new StyleDiff
+        {
+            Elevation = 3,
+            Shadows = [new ShadowSpec(4, 32, 2, Theme.FocusRing)],
+            Transform = Transform2D.Translate(0, -2),
+            Gradient = new LinearGradient(Theme.SurfaceSubtle, Theme.Surface),
+            BackdropBlur = 8,
+            Opacity = 0.9f,
+        },
+        Focus = new StyleDiff { Elevation = 0, Transform = Transform2D.Scale(1) },
+    });
 
     private static VisualNode Stack(float gap, params VisualNode[] children)
     {
