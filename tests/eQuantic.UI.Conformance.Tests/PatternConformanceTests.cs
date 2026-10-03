@@ -88,6 +88,23 @@ public class PatternConformanceTests
     }
 
     /// <summary>
+    /// A collection's <c>Count</c> in a property pattern reads as the collection's class answers it: a
+    /// Set's <c>size</c>, the runtime queue's <c>count</c>, and an open face's helper. It read
+    /// <c>length</c> on each, undefined, so the pattern was false in the browser alone (#516).
+    /// </summary>
+    [SkippableTheory]
+    [InlineData("var s = new HashSet<int> { 1, 2 }; return s is { Count: > 1 };")]                                  // -> true
+    [InlineData("var q = new Queue<int>(new[] { 7 }); return q is { Count: 1 };")]                                  // -> true
+    [InlineData("var t = new Stack<int>(new[] { 1, 2, 3 }); return t is { Count: 3 } ? t.Peek() : -1;")]            // -> 3
+    [InlineData("ICollection<int> c = new HashSet<int> { 4 }; return c is { Count: 1 };")]                          // -> true
+    [InlineData("var d = new SortedSet<int> { 2, 1 }; return d is { Count: 2, Min: 1 };")]                          // -> true
+    public void ACollectionsCountInAPattern_ReadsAsItsClassAnswersIt(string statements)
+    {
+        Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
+        ConformanceRunner.AssertStatementsSameAsDotNet(statements);
+    }
+
+    /// <summary>
     /// <c>x is Limits.Max</c> parses as the type test and binds as a constant pattern: it was
     /// answered <c>x != null</c>, true for every number (#451). An enum's member is the member.
     /// </summary>

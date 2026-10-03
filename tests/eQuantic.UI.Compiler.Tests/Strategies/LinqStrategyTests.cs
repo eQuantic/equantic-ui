@@ -229,12 +229,18 @@ public class LinqStrategyTests
     }
 
     [Fact]
-    public void MaxMin_WithNoFaithfulOrder_AreRefused()
+    public void MaxMin_OverAnEnum_OrdersByItsMembersValues()
     {
         // An enum's values cross as member NAMES, which order alphabetically where .NET orders by
-        // value, and a comparer has no form to call: each is refused where it was ordered wrongly.
-        TestHelper.DiagnosticsFor("var r = new[] { Size.Small, Size.Large }.Max()")
-            .Should().Contain(d => d.Code == "EQ1004" && d.Message.Contains("LINQ Max/Min over Size"));
+        // value, so the call carries its members' values (it was refused until it did).
+        TestHelper.ConvertExpression("new[] { Size.Small, Size.Large }.Max()")
+            .Should().Be("$eq.linq.max(['small', 'large'], undefined, { 'small': 0, 'medium': 1, 'large': 2 }, false)");
+    }
+
+    [Fact]
+    public void MaxMin_WithNoFaithfulOrder_AreRefused()
+    {
+        // A comparer has no form to call: it is refused where it was ordered wrongly.
         TestHelper.DiagnosticsFor("var r = numbers.Min(Comparer<int>.Default)")
             .Should().Contain(d => d.Code == "EQ1004" && d.Message.Contains("LINQ Max/Min with a comparer"));
         TestHelper.DiagnosticsFor("var r = numbers.Max()")

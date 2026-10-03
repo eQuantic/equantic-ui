@@ -112,6 +112,7 @@ eQuantic.UI.Compiler.CodeGen.Strategies.Expressions.CollectionExpressionStrategy
 *REMOVED*eQuantic.UI.Compiler.CodeGen.Strategies.Invocation.DictionaryStrategy.Priority.get -> int
 *REMOVED*abstract eQuantic.UI.Compiler.CodeGen.Strategies.Types.MapBackedDictionaryStrategy.Matches(Microsoft.CodeAnalysis.ITypeSymbol? type) -> bool
 const eQuantic.UI.Compiler.CodeGen.Eq.Dictionary = "$eq.collections.dictionary" -> string!
+const eQuantic.UI.Compiler.CodeGen.Eq.RecordText = "$eq.text.record" -> string!
 *REMOVED*eQuantic.UI.Compiler.Models.PropertyDefinition.DefaultValue.get -> string?
 *REMOVED*eQuantic.UI.Compiler.Models.PropertyDefinition.DefaultValue.set -> void
 *REMOVED*eQuantic.UI.Compiler.Models.StateField.DefaultValue.get -> string?

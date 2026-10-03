@@ -4,6 +4,7 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Operations;
+using eQuantic.UI.Compiler.CodeGen.Ir;
 
 namespace eQuantic.UI.Compiler.CodeGen;
 
@@ -119,7 +120,8 @@ public static class PatternConverter
                         {
                             var receivers = ReceiverTypes(sp, PatternType(recursive, context) ?? accessType, context);
                             CollectBindings(sp.Pattern,
-                                access + string.Concat(path.Select((name, i) => "." + Camel(name, receivers[i]))),
+                                path.Select((name, i) => (name, i))
+                                    .Aggregate(access, (at, step) => Access(at, step.name, receivers[step.i], context)),
                                 context, bindings);
                         }
                 break;
@@ -172,10 +174,10 @@ public static class PatternConverter
                 var at = access;
                 for (var i = 0; i < path.Count - 1; i++)
                 {
-                    at = $"{at}.{Camel(path[i], receivers[i])}";
+                    at = Access(at, path[i], receivers[i], context);
                     checks.Add($"{at} != null");
                 }
-                var sub = BuildCondition(sp.Pattern, $"{at}.{Camel(path[^1], receivers[^1])}", context);
+                var sub = BuildCondition(sp.Pattern, Access(at, path[^1], receivers[^1], context), context);
                 if (sub != "true") checks.Add(sub);
             }
 
@@ -442,12 +444,14 @@ public static class PatternConverter
     /// collection's <c>Count</c> is <c>length</c>, a string's <c>Length</c> likewise. Lower-casing
     /// blindly emitted <c>actions.count</c> on a JS array — <c>undefined</c>, so
     /// <c>Actions is { Count: > 3 }</c> was quietly always false, with nothing to see at build time.
-    /// A dictionary's <c>Count</c> is its runtime class's <c>size</c>.
+    /// A <c>Count</c> reads as a member access reads it (<see cref="Strategies.CountSpelling"/>, one
+    /// table for both): <c>{ Roles.Count: > 0 }</c> over a set read <c>length</c>, and was false in the
+    /// browser where the server had drawn the other branch (#516).
     /// </summary>
-    private static string Camel(string name, ITypeSymbol? receiver) => name switch
+    private static string Access(string at, string name, ITypeSymbol? receiver, ConversionContext context) => name switch
     {
-        "Count" when receiver.IsDictionary() => "size",
-        "Count" or "Length" => "length",
-        _ => string.IsNullOrEmpty(name) ? name : char.ToLowerInvariant(name[0]) + name.Substring(1),
+        "Count" => JsExprWriter.Write(Strategies.CountSpelling.Read(JsExpr.Opaque(at), receiver, context)),
+        "Length" => $"{at}.length",
+        _ => $"{at}.{TwinName.Of(name)}",
     };
 }
