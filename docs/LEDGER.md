@@ -1010,6 +1010,19 @@ record of a release, the wiki's Upgrading page is the distillate.
   simple name share one entry of the page index
   ([#514](https://github.com/eQuantic/equantic-ui/issues/514)). Proposed and archived through OpenSpec
   (`openspec/specs/hydration-contract`).
+- **2026-10-03 · Patterns, locks, loops and deconstruction run as C# runs them**: a type pattern with
+  nothing bound tested false and a long was never one
+  ([#482](https://github.com/eQuantic/equantic-ui/issues/482)), `x is Limits.Max` was a null check
+  ([#451](https://github.com/eQuantic/equantic-ui/issues/451)), a lock's expression ran nowhere
+  ([#475](https://github.com/eQuantic/equantic-ui/issues/475)), `new object()` named a class JavaScript
+  does not have ([#478](https://github.com/eQuantic/equantic-ui/issues/478)), a for loop gave each
+  iteration its own variable ([#476](https://github.com/eQuantic/equantic-ui/issues/476)), a delegate
+  called from a list was read off `this` ([#477](https://github.com/eQuantic/equantic-ui/issues/477)),
+  a record deconstructed into existing variables was array destructuring
+  ([#486](https://github.com/eQuantic/equantic-ui/issues/486)), and a static `field` store lived on the
+  instance or, in a record, nowhere ([#483](https://github.com/eQuantic/equantic-ui/issues/483)). Each
+  is a conformance case on both sides that failed against main. Proposed and archived through
+  OpenSpec (`openspec/specs/transpiler-statements`, `transpiler-expressions`, `transpiler-records`).
 - **2026-10-03 · A string or a char keeps its value in its module**: eqc wrote C# string and char
   values in spellings that lost them ([#520](https://github.com/eQuantic/equantic-ui/issues/520)).
   A surrogate that is not half of a pair has no UTF-8 encoding, so a page holding `"x\uD83D"` stopped
