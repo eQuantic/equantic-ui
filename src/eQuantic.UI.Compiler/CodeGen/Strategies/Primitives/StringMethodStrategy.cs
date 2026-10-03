@@ -1,5 +1,7 @@
+using System.Text.RegularExpressions;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using eQuantic.UI.Compiler.CodeGen.Ir;
 
 namespace eQuantic.UI.Compiler.CodeGen.Strategies.Primitives;
 
@@ -17,6 +19,8 @@ namespace eQuantic.UI.Compiler.CodeGen.Strategies.Primitives;
 /// - PadLeft(width, char?) -> padStart(width, char)
 /// - PadRight(width, char?) -> padEnd(width, char)
 /// - Trim(), TrimStart(), TrimEnd() -> $eq.text.trim/trimStart/trimEnd, .NET's white space
+/// - an overload that compares (a StringComparison, a CultureInfo) and Replace(string, string) ->
+///   the runtime's searches, chosen by the bound method
 /// </summary>
 public class StringMethodStrategy : IConversionStrategy
 {
@@ -63,20 +67,15 @@ public class StringMethodStrategy : IConversionStrategy
         var memberAccess = (MemberAccessExpressionSyntax)invocation.Expression;
         var methodName = memberAccess.Name.Identifier.Text;
 
+        // An overload that compares goes to the runtime, chosen by the BOUND method and handed the
+        // comparison as the value it is, its member's name, so one held in a variable is the one it
+        // holds. It was read from its SPELLING and both sides were lower-cased: the Kelvin sign
+        // matched a k, a comparison in a variable was dropped, and so was Replace's (#528).
+        if (ComparingShape(invocation, methodName, context) is { } shape)
+            return ComparingCall(invocation, methodName, shape, context);
+
         var caller = context.Converter.ConvertExpression(memberAccess.Expression);
-        var rawArgs = invocation.ArgumentList.Arguments;
-
-        // A trailing StringComparison argument selects the comparison mode. JS string ops have no such
-        // parameter, so we strip it: case-sensitive (Ordinal/InvariantCulture) maps to the plain op;
-        // an IgnoreCase variant lower-cases both operands first.
-        var hasComparison = rawArgs.Count > 0 && IsStringComparison(rawArgs[^1], context);
-        var ignoreCase = hasComparison && rawArgs[^1].Expression.ToString().Contains("IgnoreCase");
-        var argNodes = hasComparison ? rawArgs.Take(rawArgs.Count - 1) : rawArgs;
-        var args = argNodes.Select(a => context.Converter.ConvertExpression(a.Expression)).ToList();
-
-        // Receiver / operand with optional case folding for IgnoreCase comparisons.
-        var lhs = ignoreCase ? $"{caller}.toLowerCase()" : caller;
-        string Fold(string a) => ignoreCase ? $"{a}.toLowerCase()" : a;
+        var args = invocation.ArgumentList.Arguments.Select(a => context.Converter.ConvertExpression(a.Expression)).ToList();
         // IndexOf/LastIndexOf may carry a trailing startIndex after the search value.
         var extraArgs = args.Count > 1 ? ", " + string.Join(", ", args.Skip(1)) : "";
 
@@ -84,13 +83,13 @@ public class StringMethodStrategy : IConversionStrategy
         {
             "Split" => ConvertSplit(caller, args, context),
             "Replace" => ConvertReplace(caller, args),
-            "StartsWith" => $"{lhs}.startsWith({Fold(args[0])})",
-            "EndsWith" => $"{lhs}.endsWith({Fold(args[0])})",
-            "Contains" => $"{lhs}.includes({Fold(args[0])})",
-            "Equals" => $"({Fold(caller)} === {Fold(args[0])})",
+            "StartsWith" => $"{caller}.startsWith({args[0]})",
+            "EndsWith" => $"{caller}.endsWith({args[0]})",
+            "Contains" => $"{caller}.includes({args[0]})",
+            "Equals" => $"({caller} === {args[0]})",
             "Substring" => ConvertSubstring(caller, args, context),
-            "IndexOf" => $"{lhs}.indexOf({Fold(args[0])}{extraArgs})",
-            "LastIndexOf" => $"{lhs}.lastIndexOf({Fold(args[0])}{extraArgs})",
+            "IndexOf" => $"{caller}.indexOf({args[0]}{extraArgs})",
+            "LastIndexOf" => $"{caller}.lastIndexOf({args[0]}{extraArgs})",
             "PadLeft" => ConvertPadLeft(caller, args),
             "PadRight" => ConvertPadRight(caller, args),
             "TrimStart" => ConvertTrim(caller, args, "start", context),
@@ -107,10 +106,100 @@ public class StringMethodStrategy : IConversionStrategy
         };
     }
 
-    /// <summary>True when the argument is a <c>System.StringComparison</c> value.</summary>
-    private static bool IsStringComparison(ArgumentSyntax arg, ConversionContext context) =>
-        context.SemanticHelper.GetType(arg.Expression).IsNamed("System.StringComparison")
-        || arg.Expression.ToString().Contains("StringComparison"); // syntax fallback (no semantic model)
+    /// <summary>
+    /// The shape of an overload that compares, one letter per parameter (s a string, c a char, i an
+    /// int, b a bool, k a <c>StringComparison</c>, u a <c>CultureInfo</c>), or null for one that does
+    /// not. <c>Replace(string, string)</c> is one: it is ordinal, and <c>replaceAll</c> read
+    /// <c>$&amp;</c> in its replacement as a pattern and wrote a null one as "null". The bound method
+    /// says which overload it is; with no model to ask, a comparison spelled as the last argument and
+    /// the count of the arguments are the only evidence there is.
+    /// </summary>
+    private static string? ComparingShape(InvocationExpressionSyntax invocation, string methodName, ConversionContext context)
+    {
+        if (context.SemanticHelper.GetSymbol(invocation) is IMethodSymbol method)
+        {
+            var shape = string.Join(",", method.Parameters.Select(parameter => parameter.Type switch
+            {
+                { SpecialType: SpecialType.System_String } => "s",
+                { SpecialType: SpecialType.System_Char } => "c",
+                { SpecialType: SpecialType.System_Int32 } => "i",
+                { SpecialType: SpecialType.System_Boolean } => "b",
+                var type when type.IsNamed("System.StringComparison") => "k",
+                var type when type.IsNamed("System.Globalization.CultureInfo") => "u",
+                _ => "?",
+            }));
+            // A CultureInfo makes a COMPARING overload of these three, and nothing else's: ToUpper's
+            // and ToLower's culture is their casing, which is theirs to read.
+            var comparing = shape.Contains('k')
+                || (shape.Contains('u') && methodName is "StartsWith" or "EndsWith" or "Replace")
+                || (methodName == "Replace" && shape == "s,s");
+            return comparing ? shape : null;
+        }
+
+        var arguments = invocation.ArgumentList.Arguments;
+        if (arguments.Count == 0 || !arguments[^1].Expression.ToString().Contains("StringComparison")) return null;
+        return (methodName, arguments.Count) switch
+        {
+            ("Equals" or "StartsWith" or "EndsWith" or "Contains" or "IndexOf" or "LastIndexOf", 2) => "s,k",
+            ("IndexOf" or "LastIndexOf", 3) => "s,i,k",
+            ("IndexOf" or "LastIndexOf", 4) => "s,i,i,k",
+            ("Replace", 3) => "s,s,k",
+            _ => null,
+        };
+    }
+
+    /// <summary>
+    /// The runtime's search for an overload that compares, its holes the parameters' and <c>{R}</c>
+    /// the receiver, which C# evaluates first. Equals compares two whole strings, as the static does
+    /// by the same comparison; a SEARCH by a culture comparison has no JavaScript form (.NET searches
+    /// with ICU's collation, and the platform's collator searches nothing), so a constant one is
+    /// refused here and one in a variable throws in the runtime. A <c>CultureInfo</c> has no form this
+    /// side reads.
+    /// </summary>
+    private static string ComparingCall(InvocationExpressionSyntax invocation, string methodName, string shape, ConversionContext context)
+    {
+        var template = (methodName, shape) switch
+        {
+            ("Equals", "s,k") => $"{Eq.StringInstanceEquals}({{R}}, {{0}}, {{1}})",
+            ("StartsWith", "s,k") => $"{Eq.StringStartsWith}({{R}}, {{0}}, {{1}})",
+            ("EndsWith", "s,k") => $"{Eq.StringEndsWith}({{R}}, {{0}}, {{1}})",
+            ("Contains", "s,k" or "c,k") => $"{Eq.StringContains}({{R}}, {{0}}, {{1}})",
+            ("IndexOf", "s,k" or "c,k") => $"{Eq.StringIndexOf}({{R}}, {{0}}, {{1}})",
+            ("IndexOf", "s,i,k") => $"{Eq.StringIndexOf}({{R}}, {{0}}, {{2}}, {{1}})",
+            ("IndexOf", "s,i,i,k") => $"{Eq.StringIndexOf}({{R}}, {{0}}, {{3}}, {{1}}, {{2}})",
+            ("LastIndexOf", "s,k") => $"{Eq.StringLastIndexOf}({{R}}, {{0}}, {{1}})",
+            ("LastIndexOf", "s,i,k") => $"{Eq.StringLastIndexOf}({{R}}, {{0}}, {{2}}, {{1}})",
+            ("LastIndexOf", "s,i,i,k") => $"{Eq.StringLastIndexOf}({{R}}, {{0}}, {{3}}, {{1}}, {{2}})",
+            ("Replace", "s,s,k") => $"{Eq.StringReplace}({{R}}, {{0}}, {{1}}, {{2}})",
+            ("Replace", "s,s") => $"{Eq.StringReplace}({{R}}, {{0}}, {{1}}, 'ordinal')",
+            _ => null,
+        };
+        if (template is null)
+            return context.Unhandled(invocation, $"string.{methodName} with a CultureInfo");
+        if (methodName != "Equals" && shape.EndsWith('k') && IsCultureConstant(invocation.ArgumentList.Arguments[^1], context))
+            return context.Unhandled(invocation, $"string.{methodName} by a culture comparison, which has no search in the browser,");
+
+        context.UsedHelpers.Add(Eq.Import);
+        var access = (MemberAccessExpressionSyntax)invocation.Expression;
+        var parts = new List<JsExpr> { context.Converter.ConvertIr(access.Expression) };
+        parts.AddRange(invocation.ArgumentList.Arguments.Select(argument => context.Converter.ConvertIr(argument.Expression)));
+        if (context.SemanticHelper.GetSymbol(invocation) is IMethodSymbol bound)
+            template = PrimitiveStaticStrategy.BindNamedArguments(template, invocation, bound);
+        // The holes now name WRITTEN arguments; the receiver is the first part, so each moves by one.
+        template = Regex.Replace(template, @"\{(\d)\}", hole => "{" + (int.Parse(hole.Groups[1].Value) + 1) + "}")
+            .Replace("{R}", "{0}");
+        return JsExprWriter.Write(JsExpr.Template(template, parts, context.TypeAnnotations));
+    }
+
+    /// <summary>Whether the comparison is a constant one of the four culture members, the only ones
+    /// below <c>Ordinal</c> (4).</summary>
+    private static bool IsCultureConstant(ArgumentSyntax argument, ConversionContext context)
+    {
+        if (context.SemanticHelper.TryGetConstantValue(argument.Expression, out var value))
+            return value is int member && member < 4;
+        var spelled = argument.Expression.ToString();
+        return spelled.Contains("StringComparison.CurrentCulture") || spelled.Contains("StringComparison.InvariantCulture");
+    }
 
     private string ConvertTrim(string caller, List<string> args, string mode, ConversionContext context)
     {
