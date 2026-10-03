@@ -102,11 +102,11 @@ public class FailOnUnsupportedTests
 
         var compilation = CSharpCompilation.Create("T", new[] { tree }, new[]
         {
-            MetadataReference.CreateFromFile(typeof(object).Assembly.Location),
-            MetadataReference.CreateFromFile(typeof(System.Net.Http.HttpClient).Assembly.Location),
-            MetadataReference.CreateFromFile(typeof(System.IO.File).Assembly.Location),
-            MetadataReference.CreateFromFile(typeof(System.Threading.Tasks.Task).Assembly.Location),
-            MetadataReference.CreateFromFile(System.Reflection.Assembly.Load("System.Runtime").Location),
+            TestReferences.Of(typeof(object).Assembly.Location),
+            TestReferences.Of(typeof(System.Net.Http.HttpClient).Assembly.Location),
+            TestReferences.Of(typeof(System.IO.File).Assembly.Location),
+            TestReferences.Of(typeof(System.Threading.Tasks.Task).Assembly.Location),
+            TestReferences.Of(System.Reflection.Assembly.Load("System.Runtime").Location),
         });
 
         return (compilation.GetSemanticModel(tree), tree);

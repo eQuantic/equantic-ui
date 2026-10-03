@@ -85,10 +85,10 @@ public class EmittedTypePatternTests
         var references = ((string)AppContext.GetData("TRUSTED_PLATFORM_ASSEMBLIES")!)
             .Split(Path.PathSeparator)
             .Where(p => p.EndsWith(".dll", StringComparison.OrdinalIgnoreCase))
-            .Select(p => (Microsoft.CodeAnalysis.MetadataReference)Microsoft.CodeAnalysis.MetadataReference.CreateFromFile(p))
-            .Append(Microsoft.CodeAnalysis.MetadataReference.CreateFromFile(typeof(eQuantic.UI.Primitives.VisualNode).Assembly.Location))
-            .Append(Microsoft.CodeAnalysis.MetadataReference.CreateFromFile(typeof(eQuantic.UI.Code.CodeEditorController).Assembly.Location))
-            .Append(Microsoft.CodeAnalysis.MetadataReference.CreateFromFile(typeof(eQuantic.UI.Components.Crumb).Assembly.Location));
+            .Select(p => (Microsoft.CodeAnalysis.MetadataReference)TestReferences.Of(p))
+            .Append(TestReferences.Of(typeof(eQuantic.UI.Primitives.VisualNode).Assembly.Location))
+            .Append(TestReferences.Of(typeof(eQuantic.UI.Code.CodeEditorController).Assembly.Location))
+            .Append(TestReferences.Of(typeof(eQuantic.UI.Components.Crumb).Assembly.Location));
         var compilation = Microsoft.CodeAnalysis.CSharp.CSharpCompilation.Create("Probe", [tree], references,
             new Microsoft.CodeAnalysis.CSharp.CSharpCompilationOptions(Microsoft.CodeAnalysis.OutputKind.DynamicallyLinkedLibrary,
                 nullableContextOptions: Microsoft.CodeAnalysis.NullableContextOptions.Enable));

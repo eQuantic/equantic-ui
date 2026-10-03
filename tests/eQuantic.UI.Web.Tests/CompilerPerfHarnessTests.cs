@@ -62,7 +62,7 @@ public class CompilerPerfHarnessTests(ITestOutputHelper output)
         var references = ((string)AppContext.GetData("TRUSTED_PLATFORM_ASSEMBLIES")!)
             .Split(Path.PathSeparator)
             .Where(path => path.EndsWith(".dll", StringComparison.OrdinalIgnoreCase))
-            .Select(path => (MetadataReference)MetadataReference.CreateFromFile(path))
+            .Select(path => (MetadataReference)TestReferences.Of(path))
             .ToList();
         var compilation = CSharpCompilation.Create("Perf", trees, references,
             new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary,

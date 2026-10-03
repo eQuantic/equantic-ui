@@ -355,7 +355,7 @@ public class ForeignRecordHydrationTests
             .Distinct()
             .ToList();
         var processRefs = named
-            .Select(path => Microsoft.CodeAnalysis.MetadataReference.CreateFromFile(path))
+            .Select(path => TestReferences.Of(path))
             .Cast<Microsoft.CodeAnalysis.MetadataReference>()
             .ToList();
         var domainPath = Path.Combine(Path.GetTempPath(), $"acme-domain-{Guid.NewGuid():N}.dll");
