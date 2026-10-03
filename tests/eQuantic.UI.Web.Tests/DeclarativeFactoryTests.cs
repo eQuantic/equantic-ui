@@ -58,7 +58,7 @@ public class DeclarativeFactoryTests
                 .Where(a => !a.IsDynamic && !string.IsNullOrEmpty(a.Location))
                 .Select(a => a.Location)
                 .Distinct()
-                .Select(location => (MetadataReference)MetadataReference.CreateFromFile(location));
+                .Select(location => (MetadataReference)TestReferences.Of(location));
             compiler.SetProjectCompilation(CSharpCompilation.Create("Probe",
                 [CSharpSyntaxTree.ParseText(Page, path: "HomePage.cs")], references,
                 new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary)));

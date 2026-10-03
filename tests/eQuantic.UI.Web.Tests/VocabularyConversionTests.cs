@@ -62,7 +62,7 @@ public class VocabularyConversionTests
             .Where(path => path.EndsWith(".dll", StringComparison.OrdinalIgnoreCase))
             .Concat(Directory.GetFiles(directory, "eQuantic.UI.*.dll"))
             .Distinct(StringComparer.OrdinalIgnoreCase)
-            .Select(path => (MetadataReference)MetadataReference.CreateFromFile(path))
+            .Select(path => (MetadataReference)TestReferences.Of(path))
             .ToList();
         var compilation = CSharpCompilation.Create("VocabularyConversions", references: references);
 

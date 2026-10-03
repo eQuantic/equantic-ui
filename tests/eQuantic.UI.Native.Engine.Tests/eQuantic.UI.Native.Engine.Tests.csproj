@@ -69,4 +69,9 @@
     <Compile Include="..\eQuantic.UI.Web.Tests\NodePlacements.cs" Link="Shared\NodePlacements.cs" />
   </ItemGroup>
 
+  <ItemGroup>
+    <!-- One metadata reference per assembly for the whole test process, shared by every compilation
+         a test creates: a new one per compilation held tens of gigabytes (#481). -->
+    <Compile Include="..\Shared\TestReferences.cs" Link="Shared\TestReferences.cs" />
+  </ItemGroup>
 </Project>
