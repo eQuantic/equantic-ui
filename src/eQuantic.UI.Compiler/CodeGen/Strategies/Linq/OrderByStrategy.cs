@@ -56,7 +56,9 @@ public class OrderByStrategy : IConversionStrategy
             if (!method.StartsWith("ThenBy", StringComparison.Ordinal)) break;
         }
 
-        var src = context.Converter.ConvertExpression(source);
+        // Through the one place every operator reads its source: a string spread by code point, and
+        // it was spread here, where .NET sorts its chars.
+        var src = LinqSource.Text(source, context);
         if (keys.Count == 0) return $"[...{src}].sort()";
 
         // The key selector is typed through the comparator's own parameter, which the sorted array
