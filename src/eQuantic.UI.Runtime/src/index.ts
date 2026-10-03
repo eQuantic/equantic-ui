@@ -37,7 +37,7 @@ export {
 export type { ServerActionResponse } from './core/server-actions';
 
 // Utils
-export { format, stringFormat, parseEnum } from './utils/format';
+export { format, stringFormat } from './utils/format';
 export { round } from './utils/dotnet-math';
 export { Decimal, dec } from './utils/decimal';
 export { long } from './utils/long';
