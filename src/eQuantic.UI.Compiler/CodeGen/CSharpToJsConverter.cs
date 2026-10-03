@@ -337,6 +337,7 @@ public class CSharpToJsConverter
         _strategyRegistry.Register<ThisExpressionStrategy>();
         _strategyRegistry.Register<MemberAccessStrategy>();
         _strategyRegistry.Register<ElementAccessStrategy>();
+        _strategyRegistry.Register<ExceptionCreationStrategy>(); // an exception, by its symbol, ahead of every other creation
         _strategyRegistry.Register<ObjectCreationStrategy>();
         _strategyRegistry.Register<AnonymousObjectCreationStrategy>();
         _strategyRegistry.Register<BinaryExpressionStrategy>();
@@ -669,7 +670,7 @@ public class CSharpToJsConverter
             var disposes = usingDecl.Declaration.Variables.Reverse()
                 .Select(variable => Strategies.Statements.UsingLowering.Dispose(variable.Identifier.Text.ToJsIdentifier(), isAsync))
                 .ToList();
-            result.Add(JsStatement.Try(JsStatement.Block(rest), Array.Empty<JsCatch>(), JsStatement.Block(disposes)) with { Origin = usingDecl });
+            result.Add(JsStatement.Try(JsStatement.Block(rest), null, JsStatement.Block(disposes)) with { Origin = usingDecl });
             return result;
         }
         return result;

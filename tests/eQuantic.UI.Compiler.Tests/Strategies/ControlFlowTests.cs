@@ -116,6 +116,7 @@ public class ControlFlowTests
             }";
 
         var result = TestHelper.ConvertExpression(code).Replace("\r\n", "\n");
-        result.Should().Contain("throw new Error('Invalid value');");
+        // The exception carries its .NET type, so a typed catch can tell it from another (#474).
+        result.Should().Contain("throw $eq.exceptions.create(['System.Exception'], 'Invalid value');");
     }
 }

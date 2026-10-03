@@ -1,4 +1,4 @@
-import { Badge, Box, BoxStyle, BuildContext, Column, CornerRadii, Flexible, Icon, IconGlyph, IconsValue, NavItem, Pressable, Row, SizeValue, StatelessComponent, Text, TypeStyle, VisualNodeExtensions } from "../runtime-exports";
+import { $eq, Badge, Box, BoxStyle, BuildContext, Column, CornerRadii, Flexible, Icon, IconGlyph, IconsValue, NavItem, Pressable, Row, SizeValue, StatelessComponent, Text, TypeStyle, VisualNodeExtensions } from "../runtime-exports";
 
 export class BottomNavigation extends StatelessComponent {
     static $typeId = 'eQuantic.UI.Components.BottomNavigation';
@@ -9,7 +9,7 @@ export class BottomNavigation extends StatelessComponent {
     }
 
     set items(value) {
-        this.$items = (value.length < 3 || value.length > 5) ? (() => { throw new Error('BottomNavigation takes 3-5 destinations (spec B4): 2 → Tabs, 6+ → Drawer.'); })() : value;
+        this.$items = (value.length < 3 || value.length > 5) ? $eq.exceptions.raise($eq.exceptions.create(['System.ArgumentException', 'System.SystemException', 'System.Exception'], 'BottomNavigation takes 3-5 destinations (spec B4): 2 → Tabs, 6+ → Drawer.')) : value;
     }
 
     declare selected: number;

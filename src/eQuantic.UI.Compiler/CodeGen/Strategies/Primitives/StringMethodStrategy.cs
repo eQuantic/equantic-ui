@@ -112,30 +112,31 @@ public class StringMethodStrategy : IConversionStrategy
         context.SemanticHelper.GetType(arg.Expression).IsNamed("System.StringComparison")
         || arg.Expression.ToString().Contains("StringComparison"); // syntax fallback (no semantic model)
 
+    /// <summary>
+    /// Trim and its two halves, through the runtime: with no argument, .NET's white space, which
+    /// JavaScript's <c>trim</c> is not (it leaves U+0085 NEXT LINE and takes U+FEFF); with characters,
+    /// those, one char or an array of them, where a null or an empty array is white space again. The
+    /// string and the characters go in as ARGUMENTS, evaluated once where C# evaluates them, the string
+    /// first. The characters were written inside an arrow around the string, which an <c>await</c>
+    /// among them could not parse in (#539).
+    /// </summary>
     private string ConvertTrim(string caller, List<string> args, string mode, ConversionContext context)
     {
-        // No argument trims .NET's white space, which JavaScript's `trim` is not: it leaves U+0085
-        // NEXT LINE and takes U+FEFF. The runtime keeps the one list (utils/white-space).
-        if (args.Count == 0)
+        context.UsedHelpers.Add(Eq.Import);
+        var helper = mode switch
         {
-            context.UsedHelpers.Add(Eq.Import);
-            return mode switch
-            {
-                "start" => $"{Eq.TrimStart}({caller})",
-                "end" => $"{Eq.TrimEnd}({caller})",
-                _ => $"{Eq.Trim}({caller})"
-            };
-        }
-
-        // Trim specific characters. Char args are JS strings; concatenated they form the trim set
-        // (.includes works for the resulting string or an array arg). No regex escaping needed.
-        var chars = string.Join(" + ", args);
-        return mode switch
-        {
-            "start" => $"(_s => {{ const _c = {chars}; let _i = 0; while (_i < _s.length && _c.includes(_s[_i])) _i++; return _s.slice(_i); }})({caller})",
-            "end" => $"(_s => {{ const _c = {chars}; let _e = _s.length; while (_e > 0 && _c.includes(_s[_e - 1])) _e--; return _s.slice(0, _e); }})({caller})",
-            _ => $"(_s => {{ const _c = {chars}; let _i = 0, _e = _s.length; while (_i < _e && _c.includes(_s[_i])) _i++; while (_e > _i && _c.includes(_s[_e - 1])) _e--; return _s.slice(_i, _e); }})({caller})"
+            "start" => Eq.TrimStart,
+            "end" => Eq.TrimEnd,
+            _ => Eq.Trim,
         };
+        // Several chars are C#'s params array, written out: `Trim('a', 'b')` is `Trim(new[] { 'a', 'b' })`.
+        var chars = args.Count switch
+        {
+            0 => "",
+            1 => ", " + args[0],
+            _ => ", [" + string.Join(", ", args) + "]",
+        };
+        return $"{helper}({caller}{chars})";
     }
 
     private string ConvertSplit(string caller, List<string> args, ConversionContext context)

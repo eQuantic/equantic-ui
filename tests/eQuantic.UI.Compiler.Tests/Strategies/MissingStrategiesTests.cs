@@ -20,15 +20,17 @@ public class MissingStrategiesTests
             .Should().Contain(d => d.Code == "EQ2004");
     }
 
+    /// <summary>
+    /// The exception goes to the runtime as an ARGUMENT, evaluated where C# evaluates it: it was an
+    /// arrow invoked in place, and an `await` in the exception landed in an arrow that is not async
+    /// (#539).
+    /// </summary>
     [Fact]
-    public void ThrowExpression_ConvertsToIIFE()
+    public void ThrowExpression_RaisesItsExceptionAsAnArgument()
     {
-        var code = "x ?? throw new Exception()";
-        // Assuming NullCoalescingStrategy works and delegates
-        // convert(x) ?? convert(throw)
-        // Null coalescing in JS is ??
-        var js = ConvertExpression(code);
-        Assert.Contains("(() => { throw new Error(); })()", js);
+        var js = ConvertExpression("x ?? throw new Exception()");
+        Assert.Contains("x ?? $eq.exceptions.raise($eq.exceptions.create(['System.Exception']))", js);
+        Assert.DoesNotContain("=>", js);
     }
 
     [Fact]

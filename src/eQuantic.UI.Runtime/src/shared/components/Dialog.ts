@@ -1,4 +1,4 @@
-import { Box, BoxStyle, BuildContext, Button, Column, CornerRadii, DialogAction, EdgeInsets, KeyChord, Overlay, Presence, Pressable, Row, SdkStrings, Shortcut, SizeValue, Stack, StatelessComponent, Text } from "../runtime-exports";
+import { $eq, Box, BoxStyle, BuildContext, Button, Column, CornerRadii, DialogAction, EdgeInsets, KeyChord, Overlay, Presence, Pressable, Row, SdkStrings, Shortcut, SizeValue, Stack, StatelessComponent, Text } from "../runtime-exports";
 
 export class Dialog extends StatelessComponent {
     static $typeId = 'eQuantic.UI.Components.Dialog';
@@ -16,7 +16,7 @@ export class Dialog extends StatelessComponent {
         if (dismissible !== undefined) this.dismissible = dismissible;
         if (onDismiss !== undefined) this.onDismiss = onDismiss;
         if (this.dismissible === undefined) this.dismissible = false;
-        if ((actions.length === 0 || actions.length > 2)) throw new Error('A Dialog carries 1-2 actions — a third means an ActionSheet or a screen (spec C2).');
+        if ((actions.length === 0 || actions.length > 2)) throw $eq.exceptions.create(['System.ArgumentOutOfRangeException', 'System.ArgumentException', 'System.SystemException', 'System.Exception'], 'A Dialog carries 1-2 actions — a third means an ActionSheet or a screen (spec C2).');
         this.title = title;
         this.body = body;
         this.actions = actions;
