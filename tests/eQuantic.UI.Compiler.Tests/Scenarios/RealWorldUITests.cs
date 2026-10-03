@@ -199,11 +199,9 @@ public class RealWorldUITests
 
         var result = TestHelper.ConvertExpression(code);
 
-        // Trim is .NET's through the runtime, so the chain is guarded by binding its receiver once
-        // rather than by `?.`, which only reads a JavaScript member.
-        result.Should().Contain("$r == null ? null : $eq.text.trim($r)");
-        result.Should().Contain("toLowerCase()");
-        result.Should().Contain("replaceAll");
+        // Trim and Replace are .NET's through the runtime, so the chain is guarded by binding its
+        // receiver once rather than by `?.`, which only reads a JavaScript member.
+        result.Should().Contain("$r == null ? null : $eq.text.replace($eq.text.trim($r).toLowerCase(), ' ', '-', 'ordinal')");
         result.Should().Contain("?? null");
     }
 

@@ -121,9 +121,12 @@ public static class TypeSymbolExtensions
         return type;
     }
 
-    /// <summary>Full-name match (e.g. <c>"System.DateTime"</c>), transparently unwrapping <c>Nullable&lt;T&gt;</c>.</summary>
+    /// <summary>Full-name match (e.g. <c>"System.DateTime"</c>), transparently unwrapping <c>Nullable&lt;T&gt;</c>.
+    /// A reference type's nullable annotation is not part of its name either: the display string
+    /// carries it, so a <c>CultureInfo?</c> parameter never matched <c>"System.Globalization.CultureInfo"</c>
+    /// (#528).</summary>
     public static bool IsNamed(this ITypeSymbol? type, string fullName) =>
-        type.UnwrapNullable()?.ToDisplayString() == fullName;
+        type.UnwrapNullable()?.WithNullableAnnotation(NullableAnnotation.NotAnnotated).ToDisplayString() == fullName;
 
     /// <summary>An integral type (signed/unsigned 8–64 bit), unwrapping <c>Nullable&lt;T&gt;</c>.</summary>
     public static bool IsIntegral(this ITypeSymbol? type)

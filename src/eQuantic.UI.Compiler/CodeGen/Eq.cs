@@ -151,6 +151,26 @@ public static class Eq
     public const string StringEquals = "$eq.text.equals";
     /// <summary><c>string.Join(separator, value, startIndex, count)</c>: the range, checked.</summary>
     public const string StringJoinRange = "$eq.text.joinRange";
+    /// <summary>A string's own <c>StartsWith(value, comparisonType)</c>.</summary>
+    public const string StringStartsWith = "$eq.text.startsWith";
+    /// <summary>A string's own <c>EndsWith(value, comparisonType)</c>.</summary>
+    public const string StringEndsWith = "$eq.text.endsWith";
+    /// <summary>A string's own <c>IndexOf</c> by a comparison, with its start and count, and the char
+    /// overload: the range checked as .NET checks it.</summary>
+    public const string StringIndexOf = "$eq.text.indexOf";
+    /// <summary>A string's own <c>LastIndexOf</c> by a comparison, with its start and count,
+    /// normalized as .NET's <c>CompareInfo</c> normalizes them.</summary>
+    public const string StringLastIndexOf = "$eq.text.lastIndexOf";
+    /// <summary>A string's own <c>Contains(value, comparisonType)</c>, and the char overload.</summary>
+    public const string StringContains = "$eq.text.contains";
+    /// <summary>A string's own <c>Replace(oldValue, newValue[, comparisonType])</c>: the replacement
+    /// is text, never a pattern.</summary>
+    public const string StringReplace = "$eq.text.replace";
+    /// <summary>A string's own <c>Equals(value, comparisonType)</c>: the static's rule, on an instance
+    /// that must exist.</summary>
+    public const string StringInstanceEquals = "$eq.text.instanceEquals";
+    /// <summary>A string's own <c>CompareTo(strB)</c>: the current culture's comparison.</summary>
+    public const string StringCompareTo = "$eq.text.compareTo";
     /// <summary><c>string.Format(CultureInfo.InvariantCulture, …)</c>: every placeholder in the
     /// invariant culture.</summary>
     public const string StringFormatInvariant = "$eq.text.stringFormatInvariant";
