@@ -26,10 +26,11 @@ text.
 
 ### Requirement: The statics of Enum read the enum's shape
 
-`Enum.Parse`, `TryParse`, `GetNames`, `GetValues` and `IsDefined` SHALL answer in the browser what they
-answer in .NET, for the enum their type argument or their `typeof` names: `Parse` reads a name, names
+`Enum.Parse`, `TryParse`, `GetName`, `GetNames`, `GetValues` and `IsDefined` SHALL answer in the
+browser what they answer in .NET, for the enum their type argument or their `typeof` names: `Parse` reads a name, names
 joined by commas and a number, keeps the case unless told not to, and throws where .NET throws;
 `TryParse` leaves the enum's default on a failure, and the overload that takes a `Type` leaves null;
+`GetName` answers the name of the member with the value, or null where none has it;
 `GetNames` and `GetValues` follow the values; `IsDefined` reads its argument as the enum, a number, a
 declared name, or an `object` holding any of them.
 

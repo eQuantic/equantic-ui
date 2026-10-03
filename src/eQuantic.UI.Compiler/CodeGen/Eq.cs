@@ -184,6 +184,11 @@ public static class Eq
     /// <summary><c>Enum.GetNames</c>.</summary>
     public const string EnumNames = "$eq.enums.names";
 
+
+    /// <summary><c>Enum.GetName</c>: the member's name for a value, or null.</summary>
+
+    public const string EnumName = "$eq.enums.name";
+
     /// <summary><c>Enum.GetValues</c>.</summary>
     public const string EnumValues = "$eq.enums.values";
 

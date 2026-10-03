@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { declaredNames, isDefined, parse, text, tryParse, values, zero } from './enums';
+import { declaredNames, isDefined, name, parse, text, tryParse, values, zero } from './enums';
 
 /** The shapes the compiler writes for `enum Rank { Zeta, Alpha, Mid = 5 }` and a flags enum. */
 const rank = { names: ['Zeta', 'Alpha', 'Mid'], keys: ['zeta', 'alpha', 'mid'], values: [0, 1, 5], flags: false, digits: 8 };
@@ -44,6 +44,13 @@ describe('an enum as .NET reads it', () => {
     expect(() => parse('mid', rank)).toThrow("Requested value 'mid' was not found.");
     expect(tryParse('nope', rank)).toBeUndefined();
     expect(zero(rank)).toBe('zeta');
+  });
+
+  it('names the member with a value, and nothing for a value none has', () => {
+    expect(name('mid', rank, 'held')).toBe('Mid');
+    expect(name(5, rank, 'number')).toBe('Mid');
+    expect(name(7, rank, 'object')).toBeNull();
+    expect(name(3, perm, 'held')).toBeNull();
   });
 
   it('lists names and values in the order of the values', () => {

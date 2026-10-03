@@ -6,7 +6,7 @@ using eQuantic.UI.Compiler.CodeGen.Ir;
 namespace eQuantic.UI.Compiler.CodeGen.Strategies.Types;
 
 /// <summary>
-/// <c>Enum.Parse</c>, <c>TryParse</c>, <c>GetNames</c>, <c>GetValues</c> and <c>IsDefined</c>, each
+/// <c>Enum.Parse</c>, <c>TryParse</c>, <c>GetName</c>, <c>GetNames</c>, <c>GetValues</c> and <c>IsDefined</c>, each
 /// a call of the runtime's enum functions (<c>utils/enums.ts</c>) with the enum's shape written
 /// inline (<see cref="EnumShape"/>): an enum has no object of its own in the browser, and these named
 /// one after it, <c>Status</c>, which no module declares, so every one of them threw (#480). The enum
@@ -21,7 +21,7 @@ public class EnumMethodStrategy : IConversionStrategy
         if (invocation.Expression is not MemberAccessExpressionSyntax memberAccess) return false;
 
         var name = memberAccess.Name.Identifier.Text;
-        if (name is not ("Parse" or "TryParse" or "GetValues" or "GetNames" or "IsDefined")) return false;
+        if (name is not ("Parse" or "TryParse" or "GetValues" or "GetNames" or "GetName" or "IsDefined")) return false;
 
         return context.ReceiverIsType(memberAccess.Expression,
             named => named.SpecialType == SpecialType.System_Enum,
@@ -72,6 +72,20 @@ public class EnumMethodStrategy : IConversionStrategy
                 return $"{Eq.EnumValues}({shape})";
             case "Parse" when holes.TryGetValue("value", out var text):
                 return Write($"{Eq.EnumParse}({text.Hole}, {shape}{IgnoreCase()})");
+            case "GetName" when holes.TryGetValue("value", out var named):
+            {
+                // Given as the enum, as a number, or as an `object` holding either; a flags
+                // combination has no name, as no member has its value.
+                var kind = context.SemanticHelper.GetType(named.Value) switch
+                {
+                    INamedTypeSymbol { TypeKind: TypeKind.Enum } => "held",
+                    { SpecialType: SpecialType.System_SByte or SpecialType.System_Byte or SpecialType.System_Int16
+                        or SpecialType.System_UInt16 or SpecialType.System_Int32 or SpecialType.System_UInt32
+                        or SpecialType.System_Int64 or SpecialType.System_UInt64 } => "number",
+                    _ => "object",
+                };
+                return Write($"{Eq.EnumName}({named.Hole}, {shape}, '{kind}')");
+            }
             case "IsDefined" when holes.TryGetValue("value", out var given):
                 // Given as the enum, as a number, or by its declared name: the argument's own type
                 // says which, since a member's camelCase key and its name are both strings here. An

@@ -165,6 +165,16 @@ function byValue(shape: EnumShape): number[] {
     });
 }
 
+/**
+ * `GetName`: the name of the member with this value, given as the enum (`held`), as a number, or as an
+ * `object` holding either, or null where no member has it, a flags combination included.
+ */
+export function name(given: unknown, shape: EnumShape, as: 'held' | 'number' | 'object'): string | null {
+  const value = as === 'number' || typeof given === 'number' ? Number(given) : valueOf(given, shape);
+  const at = shape.values.indexOf(value);
+  return at < 0 ? null : shape.names[at];
+}
+
 /** `GetNames`: the declared names, in the order of their values. */
 export function declaredNames(shape: EnumShape): string[] {
   return byValue(shape).map((at) => shape.names[at]);

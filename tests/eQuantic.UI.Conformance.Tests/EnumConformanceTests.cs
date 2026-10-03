@@ -171,6 +171,7 @@ public class EnumConformanceTests
     [InlineData("return Enum.IsDefined(Rank.Mid) && !Enum.IsDefined((Rank)3);")]                                 // true
     [InlineData("return Enum.IsDefined(typeof(Rank), 5) && !Enum.IsDefined(typeof(Rank), 2);")]                   // true
     [InlineData("return Enum.IsDefined(typeof(Status), \"Pending\") && !Enum.IsDefined(typeof(Status), \"pending\");")] // true
+    [InlineData("return Enum.GetName(Status.Pending) + \",\" + (Enum.GetName(typeof(Status), 7) ?? \"null\") + \",\" + Enum.GetName(typeof(Status), 2) + \",\" + (Enum.GetName(Perm.Read | Perm.Write) ?? \"none\");")] // "Pending,null,Inactive,none"
     [InlineData("object o = Status.Pending; object n = \"Inactive\"; object m = 7; return Enum.IsDefined(typeof(Status), o) + \":\" + Enum.IsDefined(typeof(Status), n) + \":\" + Enum.IsDefined(typeof(Status), m);")] // "True:True:False"
     [InlineData("var ok = Enum.TryParse(typeof(Status), \"nope\", out object? r); return ok + \":\" + (r == null);")] // "False:True"
     [InlineData("var ok = Enum.TryParse(typeof(Status), \"inactive\", true, out object? r); return ok + \":\" + ((Status)r! == Status.Inactive);")] // "True:True"
