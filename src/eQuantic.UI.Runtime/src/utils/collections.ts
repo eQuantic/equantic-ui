@@ -34,8 +34,9 @@ export class Queue<T> {
     return this.items[0];
   }
 
+  /** By `EqualityComparer<T>.Default`, as .NET's does: a decimal, a date or a record by its value. */
   contains(item: T): boolean {
-    return this.items.includes(item);
+    return this.items.some((held) => equals(held, item));
   }
 
   clear(): void {
@@ -73,8 +74,9 @@ export class Stack<T> {
     return this.items[this.items.length - 1];
   }
 
+  /** By `EqualityComparer<T>.Default`, as .NET's does: a decimal, a date or a record by its value. */
   contains(item: T): boolean {
-    return this.items.includes(item);
+    return this.items.some((held) => equals(held, item));
   }
 
   clear(): void {
