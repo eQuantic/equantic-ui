@@ -472,6 +472,19 @@ public class RecordTypeEmitter
                         : DefaultOf(prop.Type);
                     sb.Append($"static {prop.Identifier.Text.ToCamelCase()} = {propValue}; ");
                     break;
+
+                // A static property that guards its own store with `field`: the store, named as the
+                // accessors name it, in declaration order with the other statics. Its accessors come
+                // with the properties below. It was neither, so the type had no such property (#483).
+                case PropertyDeclarationSyntax backed
+                    when backed.Modifiers.Any(SyntaxKind.StaticKeyword)
+                        && Strategies.Expressions.FieldExpressionStrategy.UsesBackingField(backed):
+                    var slotValue = backed.Initializer is { } slotInit
+                        ? ExpressionVariableScanner.Scoped(slotInit.Value,
+                            _converter.ConvertExpression(slotInit.Value, backed.Type.ToString()), _annotations)
+                        : DefaultOf(backed.Type);
+                    sb.Append($"static {Strategies.Expressions.FieldExpressionStrategy.BackingSlot(backed)} = {slotValue}; ");
+                    break;
             }
         }
 
@@ -566,7 +579,12 @@ public class RecordTypeEmitter
     private string ComputedProperty(PropertyDeclarationSyntax property, string className)
     {
         var getter = ComputedGetter(property);
-        if (getter is null && !IsSetterOnly(property)) return "";
+        // A static `field` store's automatic getter reads the store (#483). An instance one is part
+        // of the value, which the value members hold.
+        var readsItsStore = getter is null
+            && property.Modifiers.Any(m => m.IsKind(SyntaxKind.StaticKeyword))
+            && Strategies.Expressions.FieldExpressionStrategy.UsesBackingField(property);
+        if (getter is null && !IsSetterOnly(property) && !readsItsStore) return "";
         _converter.SetCurrentClass(className);
         var prefix = property.Modifiers.Any(m => m.IsKind(SyntaxKind.StaticKeyword)) ? "static " : "";
         var propertyName = property.Identifier.Text.ToCamelCase();
@@ -574,6 +592,8 @@ public class RecordTypeEmitter
         // pattern binds is declared in front of its use, as it is in a class.
         var text = getter switch
         {
+            null when readsItsStore => Written(JsClassMember.Getter(prefix, propertyName, "",
+                JsStatement.Return(JsExpr.ThisMember(Strategies.Expressions.FieldExpressionStrategy.BackingSlot(property))))),
             null => "",
             BlockSyntax block => Written(JsClassMember.Getter(prefix, propertyName, "", _lowering.AccessorBody(block))),
             _ => Written(JsClassMember.Getter(prefix, propertyName, "",

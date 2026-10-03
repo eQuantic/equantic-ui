@@ -3,6 +3,8 @@ using System.Linq;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using Microsoft.CodeAnalysis.Operations;
+using eQuantic.UI.Compiler.CodeGen.Ir;
 
 namespace eQuantic.UI.Compiler.CodeGen.Strategies.Expressions;
 
@@ -44,9 +46,13 @@ public class IsPatternStrategy : IConversionStrategy
             // Deconstruct-aware positional access, list patterns, nested var bindings). A bound `is` pattern
             // assigns its variables — to slots IfStatementStrategy hoisted (`let x;`) — inside the condition
             // via a comma sequence, guarded by `&&` so the reads only run once the pattern has matched.
-            var condition = PatternConverter.BuildCondition(pattern, expr, context, exprType);
+            // A subject that is not a plain path (a call, an element, an await) is read ONCE, as C#
+            // reads it (see Once).
+            var once = IsPath(expr) ? null : $"$v{isPattern.SpanStart}";
+            var access = once ?? expr;
+            var condition = PatternConverter.BuildCondition(pattern, access, context, exprType);
             var bindings = new List<(string Name, string Access)>();
-            PatternConverter.CollectBindings(pattern, expr, context, bindings, exprType);
+            PatternConverter.CollectBindings(pattern, access, context, bindings, exprType);
 
             // `x is { } y` over a CALL — the shape that reads "if this returns something, name it".
             // The subject appears in the condition and again in the binding, so it used to run
@@ -58,16 +64,17 @@ public class IsPatternStrategy : IConversionStrategy
             // replaces expected `x != null` and BuildCondition produces `(x != null)`, so the
             // optimisation never once ran — the call kept being evaluated twice, which is wasted
             // work when it is pure and a different answer when it is not.
-            if (bindings.Count == 1 && bindings[0].Access == expr && IsPresenceOnly(pattern))
+            if (bindings.Count == 1 && bindings[0].Access == access && IsPresenceOnly(pattern))
             {
-                var once = $"({bindings[0].Name} = {expr}) != null";
-                return negated ? $"!({once})" : once;
+                var assigned = $"({bindings[0].Name} = {expr}) != null";
+                return negated ? $"!({assigned})" : assigned;
             }
 
             var bound = bindings.Count == 0
                 ? condition
                 : $"({condition} && ({string.Concat(bindings.Select(b => $"{b.Name} = {b.Access}, "))}true))";
-            return negated ? $"!({bound})" : bound;
+            var tested = negated ? $"!({bound})" : bound;
+            return once is null ? tested : Once(tested, once, expr);
         }
 
         if (node is BinaryExpressionSyntax binary)
@@ -77,15 +84,80 @@ public class IsPatternStrategy : IConversionStrategy
             // from the same place. It used to carry a copy of the rule that stopped at the
             // primitives and answered `!= null` for everything else — so `node is Icon` was true for
             // any non-null node, silently.
-            if (binary.Right is TypeSyntax typeSyntax)
-                return PatternConverter.TypeCheck(typeSyntax, expr, context);
-            return $"{expr} != null";
+            // …unless it BINDS as a constant: `x is Limits.Max` parses as the type test and binds as a
+            // constant pattern over the const, and was answered `x != null` (#451).
+            var once = IsPath(expr) ? null : $"$v{binary.SpanStart}";
+            var access = once ?? expr;
+            string tested;
+            if (context.SemanticHelper.GetOperation(binary) is IIsPatternOperation { Pattern: IConstantPatternOperation constant })
+                tested = PatternConverter.ConstantTest(access, ConstantOf(constant.Value, binary.Right, context), constant.Value, context);
+            else if (binary.Right is TypeSyntax typeSyntax)
+                tested = PatternConverter.TypeCheck(typeSyntax, access, context);
+            else
+                tested = $"{access} != null";
+            return once is null ? tested : Once(tested, once, expr);
         }
 
         throw new InvalidOperationException($"Invalid node type for IsPatternStrategy: {node.GetType().Name}");
     }
 
+    /// <summary>
+    /// A constant a pattern names, as JavaScript writes it, from its bound value: an enum's member as
+    /// the value the twin holds (its camelCase name, or a flags enum's number), a decimal as the
+    /// runtime's Decimal, and any other constant as its literal. The name parsed as a TYPE
+    /// (<c>Limits.Max</c> is a qualified name there), so converting the syntax wrote it as it was
+    /// spelled, a class nothing defines.
+    /// </summary>
+    private static string ConstantOf(IOperation converted, ExpressionSyntax spelled, ConversionContext context)
+    {
+        // The constant as the pattern compares it is the CONVERTED one: `long x; x is Limits.Max`
+        // over an int const compares with 5L, a BigInt, where the const's own value wrote 5. What it
+        // converts from names an enum's member.
+        var value = converted;
+        while (value is IConversionOperation conversion) value = conversion.Operand;
+        if (value is IFieldReferenceOperation { Field: { ContainingType.TypeKind: TypeKind.Enum, HasConstantValue: true } member })
+        {
+            return member.ContainingType.IsFlagsEnum()
+                ? System.Convert.ToDecimal(member.ConstantValue, System.Globalization.CultureInfo.InvariantCulture)
+                    .ToString(System.Globalization.CultureInfo.InvariantCulture)
+                : $"'{member.Name.ToCamelCase()}'";
+        }
+        // An enum's value reached otherwise (`x is (Level)1`) is the member that holds it.
+        if (value.Type is INamedTypeSymbol { TypeKind: TypeKind.Enum } enumType && !enumType.IsFlagsEnum()
+            && value.ConstantValue is { HasValue: true } enumValue
+            && enumType.GetMembers().OfType<IFieldSymbol>().FirstOrDefault(field =>
+                field.HasConstantValue && Equals(field.ConstantValue, enumValue.Value)) is { } named)
+            return $"'{named.Name.ToCamelCase()}'";
+        var constant = converted.ConstantValue.HasValue ? converted.ConstantValue : value.ConstantValue;
+        if (constant is { HasValue: true, Value: decimal exact })
+        {
+            context.UsedHelpers.Add(Eq.Import);
+            return $"{Eq.Dec}({JsStringLiteral.Quote(exact.ToString(System.Globalization.CultureInfo.InvariantCulture))})";
+        }
+        if (constant is { HasValue: true } known && InlinedConstantStrategy.LiteralOf(known.Value) is { } literal)
+            return literal;
+        return context.Converter.ConvertExpression(spelled);
+    }
+
     public int Priority => 10;
+
+    /// <summary>
+    /// A test written over <paramref name="subject"/>, a placeholder for <paramref name="expr"/>,
+    /// with the subject read ONCE, as C# reads it: bound by an arrow when the test, a subpattern or a
+    /// binding names it more than once (`Read() is char` called Read twice, and the second answer
+    /// could be another one), and written in its place when it names it once.
+    /// </summary>
+    private static string Once(string tested, string subject, string expr)
+    {
+        var uses = System.Text.RegularExpressions.Regex.Matches(tested,
+            System.Text.RegularExpressions.Regex.Escape(subject) + @"(?![\w$])").Count;
+        return uses > 1 ? $"(({subject}) => {tested})({expr})" : tested.Replace(subject, expr);
+    }
+
+    /// <summary>A name, or names joined by dots (<c>this.items</c>): read again, it reads the same
+    /// thing, as the conversion has always assumed of a path.</summary>
+    private static bool IsPath(string converted) =>
+        System.Text.RegularExpressions.Regex.IsMatch(converted, @"^[A-Za-z_$][\w$]*(\.[A-Za-z_$][\w$]*)*$");
 
     /// <summary>
     /// Whether the pattern is `{ } name` — no type, no positional or property subpatterns, one

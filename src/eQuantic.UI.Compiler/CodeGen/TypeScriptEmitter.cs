@@ -78,6 +78,15 @@ public class TypeScriptEmitter
     private ITypeSymbol? BindType(TypeSyntax? type) =>
         type is null ? null : ModelFor(type)?.GetTypeInfo(type).Type;
 
+    /// <summary>
+    /// The default of a declared type, asked of the SYMBOL where a model can say, as the record
+    /// emitter asks it: the syntax alone cannot see through a name, and answered null for an enum, a
+    /// char and every struct, so a property of an enum type read undefined where C# reads its zero
+    /// member (#483).
+    /// </summary>
+    private string DefaultOf(TypeSyntax type) =>
+        BindType(type) is { } symbol ? _converter.DefaultOf(symbol) : TypeDeclarationExtensions.DefaultFor(type);
+
     /// <summary>The VALUE a [ServerAction] resolves to on the client: its return type with the
     /// task unwrapped — <c>Task&lt;List&lt;Todo&gt;&gt;</c> is <c>List&lt;Todo&gt;</c>; void and a
     /// bare Task carry nothing.</summary>
@@ -424,7 +433,9 @@ public class TypeScriptEmitter
                     }
 
                     // Apply defaults for properties not provided in props (only if still undefined)
-                    foreach (var prop in component.Properties.Where(p => p.IsPublic))
+                    // A STATIC property's is on the class (StaticInitial): written here, it became
+                    // an own property of each instance that nothing reads.
+                    foreach (var prop in component.Properties.Where(p => p.IsPublic && !p.IsStatic))
                     {
                         // Read ONCE into a local: it is a mutable property, so nothing says it is
                         // still non-null at a second read a line later.
@@ -1476,7 +1487,14 @@ public class TypeScriptEmitter
                     if (Strategies.Expressions.FieldExpressionStrategy.UsesBackingField(node))
                     {
                         var slot = Strategies.Expressions.FieldExpressionStrategy.BackingSlot(node);
-                        c.Field(slot, DeclarationType(component, prop.Type), null, node, isDeclare: true);
+                        // A static one's store is the class's, where its accessors' `this` is, and
+                        // holds its initializer or its type's default from the start, as a static
+                        // auto-property's does: declared on the instance, the slot they wrote did not
+                        // exist, and declared alone it read undefined until the first write (#483).
+                        if (prop.IsStatic && StaticInitial(component, prop) is { } initial)
+                            c.Field(slot, DeclarationType(component, prop.Type), initial, node, isStatic: true);
+                        else
+                            c.Field(slot, DeclarationType(component, prop.Type), null, node, isStatic: prop.IsStatic, isDeclare: true);
                         if (!getterHasBody && getter != null)
                             c.Member(JsClassMember.Getter(stat, name, "", JsStatement.Return(JsExpr.ThisMember(slot))), getter);
                     }
@@ -1506,10 +1524,7 @@ public class TypeScriptEmitter
                 _converter.SetCurrentClass(component.Name);
                 if (prop.IsStatic)
                 {
-                    var def = prop.DefaultValueNode != null
-                        ? Initializer(prop.DefaultValueNode, _converter.ConvertExpression(prop.DefaultValueNode, prop.Type))
-                        : null;
-                    c.Field(name, DeclarationType(component, prop.Type), def, node, isStatic: true);
+                    c.Field(name, DeclarationType(component, prop.Type), StaticInitial(component, prop), node, isStatic: true);
                 }
                 else
                 {
@@ -1517,6 +1532,21 @@ public class TypeScriptEmitter
                 }
             }
         }
+    }
+
+    /// <summary>
+    /// What a static property's store holds before anything writes it: its initializer, or its
+    /// type's default (a number's 0, an enum's zero member). Null for a reference type with neither,
+    /// whose C# default is null. No constructor runs for a static, so the value has to be on the
+    /// declaration: <c>static int Count { get; set; }</c> read undefined, where C# reads 0.
+    /// </summary>
+    private string? StaticInitial(ComponentDefinition component, PropertyDefinition prop)
+    {
+        var initial = prop.DefaultValueNode != null
+            ? Initializer(prop.DefaultValueNode, _converter.ConvertExpression(prop.DefaultValueNode, prop.Type))
+            : ValueTypeDefault(prop.Type, prop.Node?.Type);
+        if (initial is not null && initial.Contains("$eq.")) component.UsedHelpers.Add(Eq.Import);
+        return initial;
     }
 
     /// <summary>
@@ -1621,19 +1651,36 @@ public class TypeScriptEmitter
                     // C# 14 `field`: the property keeps its own store and the accessors guard it.
                     // The slot has to exist before the getter names it — see FieldExpressionStrategy
                     // for why it is called `$name` (a name no C# field can take).
-                    if (Strategies.Expressions.FieldExpressionStrategy.UsesBackingField(p))
+                    var backed = Strategies.Expressions.FieldExpressionStrategy.UsesBackingField(p);
+                    if (backed)
                     {
                         var slot = Strategies.Expressions.FieldExpressionStrategy.BackingSlot(p);
-                        var slotDefault = TypeDeclarationExtensions.DefaultFor(p.Type);
+                        // The store starts as the property's initializer, which C# writes into it
+                        // directly, or as its type's default. The initializer was dropped: the
+                        // accessors are emitted, so nothing below writes it (#483).
+                        var slotDefault = p.Initializer != null
+                            ? Initializer(p.Initializer.Value, _converter.ConvertExpression(p.Initializer.Value, p.Type.ToString()))
+                            : DefaultOf(p.Type);
+                        // On the class for a static property, where its accessors' `this` is the
+                        // class: on the instance, a static `field` read undefined (#483).
+                        var slotIsStatic = accessorQualifier.Length > 0;
                         if (slotDefault == "null")
                         {
-                            if (CanDeclareTypeOnly) c.Member(JsClassMember.Field("declare ", slot, $": {DeclaredType(p.Type)}"), p);
+                            if (CanDeclareTypeOnly)
+                                c.Member(JsClassMember.Field(slotIsStatic ? "declare static " : "declare ", slot, $": {DeclaredType(p.Type)}"), p);
                         }
                         else
-                            c.Field(slot, DeclaredType(p.Type), slotDefault, p);
+                            c.Field(slot, DeclaredType(p.Type), slotDefault, p, isStatic: slotIsStatic);
+                        // An automatic getter reads the store. Without one the class fell to the
+                        // auto-property's field below, named like the property, which shadows the
+                        // setter: a write skipped it, and `Total = 3` read back 3 where C# reads 6.
+                        if (p.AccessorList.Accessors.FirstOrDefault(a => a.Keyword.Text == "get") is { Body: null, ExpressionBody: null })
+                            c.Member(JsClassMember.Getter(accessorQualifier, pn, Annotation(DeclaredType(p.Type)),
+                                JsStatement.Return(JsExpr.ThisMember(slot))), p);
                     }
 
-                    if (EmitGetter(p, c, accessorQualifier)) { }
+                    // A property guarding a store has its accessors, and no field of its name.
+                    if (EmitGetter(p, c, accessorQualifier) || backed) { }
                     else if (p.Initializer != null)
                         c.Field(pn, DeclaredType(p.Type),
                             Initializer(p.Initializer.Value, _converter.ConvertExpression(p.Initializer.Value, p.Type.ToString())), p,
@@ -1647,7 +1694,7 @@ public class TypeScriptEmitter
                         // IS false before anyone assigns it, and leaving it undefined is not false
                         // to `===`. A reference type is DECLARED only: its C# default is null, but
                         // the declared type is non-nullable and the constructor is what assigns.
-                        var defaulted = TypeDeclarationExtensions.DefaultFor(p.Type);
+                        var defaulted = DefaultOf(p.Type);
                         var isStaticProperty = asStatic
                             || p.Modifiers.Any(Microsoft.CodeAnalysis.CSharp.SyntaxKind.StaticKeyword);
                         if (defaulted == "null" && !isStaticProperty)

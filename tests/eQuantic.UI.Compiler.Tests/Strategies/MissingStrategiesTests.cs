@@ -55,7 +55,11 @@ public class MissingStrategiesTests
         // Should preserve block structure (layout aside: the writer puts statements on lines)
         var expected = "{x=1;}";
         Assert.Contains(expected, System.Text.RegularExpressions.Regex.Replace(js, @"\s+", ""));
-        Assert.DoesNotContain("lock", js);
+        // The gate is evaluated, once, and refused when null, as Monitor.Enter refuses it; nothing is
+        // held, so no `lock` remains.
+        Assert.Contains("$eq.lockGate(", js);
+        Assert.DoesNotContain("lock(", js);
+        Assert.DoesNotContain("lock (", js);
     }
     
     [Fact]
