@@ -266,8 +266,8 @@ public class BinaryExpressionStrategy : IExpressionIrStrategy
             leftIr = EnumValue(binary.Left, leftIr, context);
             rightIr = EnumValue(binary.Right, rightIr, context);
             var computed = JsExpr.Binary(leftIr, op, rightIr);
-            return resultType is INamedTypeSymbol { TypeKind: TypeKind.Enum } resultEnum && !resultEnum.IsFlagsEnum()
-                ? JsExpr.Callish($"({CastExpressionStrategy.BuildValueToNameMap(resultEnum)})[{JsExprWriter.Write(computed)}]")
+            return resultType is INamedTypeSymbol { TypeKind: TypeKind.Enum } resultEnum
+                ? Types.EnumShape.Held(resultEnum, computed, context)
                 : computed;
         }
 
@@ -315,9 +315,7 @@ public class BinaryExpressionStrategy : IExpressionIrStrategy
 
     /// <summary>An enum operand as its underlying value; anything else as itself.</summary>
     internal static JsExpr EnumValue(ExpressionSyntax operand, JsExpr converted, ConversionContext context) =>
-        EnumOperand(operand, context) is { } type
-            ? JsExpr.Callish($"({CastExpressionStrategy.BuildNameToValueMap(type)})[{JsExprWriter.Write(converted)}]")
-            : converted;
+        EnumOperand(operand, context) is { } type ? Types.EnumShape.ValueOf(type, converted, context) : converted;
 
     /// <summary>
     /// C#'s own operator over Nullable&lt;T&gt; operands, for any number T (#372). The decimal and long

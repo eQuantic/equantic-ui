@@ -42,12 +42,9 @@ public class CastExpressionStrategy : IExpressionIrStrategy
             if (context.SemanticHelper.TryGetConstantValue(cast.Expression, out var constant))
                 return JsExpr.Literal(ToLong(constant).ToString(CultureInfo.InvariantCulture));
 
-            var operandIr = context.Converter.ConvertIr(cast.Expression);
             // A [Flags] enum is already numeric at runtime — the cast is the identity. A normal (string)
             // enum needs its member-name string mapped back to the underlying value.
-            return enumOperand.IsFlagsEnum()
-                ? operandIr
-                : JsExpr.Callish($"({BuildNameToValueMap(enumOperand)})[{JsExprWriter.Write(operandIr)}]");
+            return Types.EnumShape.ValueOf(enumOperand, context.Converter.ConvertIr(cast.Expression), context);
         }
 
         // (EnumType)int → a value of the enum.
@@ -58,16 +55,25 @@ public class CastExpressionStrategy : IExpressionIrStrategy
             {
                 // Flags enums are numeric — keep the literal value. Normal enums map the value to the
                 // member-name string (so it stays comparable to other enum members).
-                if (flags) return JsExpr.Literal(ToLong(constant).ToString(CultureInfo.InvariantCulture));
-                var name = MemberNameForValue(enumTarget, ToLong(constant));
-                if (name != null) return JsExpr.Literal($"'{name.ToCamelCase()}'");
+                // A value no member names is held as its number.
+                var number = System.Convert.ToDecimal(constant, CultureInfo.InvariantCulture);
+                var key = flags ? null : Types.EnumShape.KeyOf(enumTarget, number);
+                return JsExpr.Literal(key != null ? $"'{key}'" : number.ToString(CultureInfo.InvariantCulture));
             }
 
             var operandIr = context.Converter.ConvertIr(cast.Expression);
+            // An object holding the enum (`(Status)Enum.Parse(typeof(Status), text)`) already holds
+            // what the browser holds for it, and so does the enum itself: neither is a number to map,
+            // and the value→key table answered undefined for both.
+            if (operandType is not null && !IsNumeric(operandType)
+                && operandType is not INamedTypeSymbol { TypeKind: TypeKind.Enum }
+                || SymbolEqualityComparer.Default.Equals(operandType, enumTarget))
+                return operandIr;
+            // Another enum's value: its own table gives the number, and this one's gives the key.
+            if (operandType is INamedTypeSymbol { TypeKind: TypeKind.Enum } sourceEnum)
+                operandIr = Types.EnumShape.ValueOf(sourceEnum, operandIr, context);
             // Flags: the int IS the runtime value (identity). Normal: map value → member-name string.
-            return flags
-                ? operandIr
-                : JsExpr.Callish($"({BuildValueToNameMap(enumTarget)})[{JsExprWriter.Write(operandIr)}]");
+            return Types.EnumShape.Held(enumTarget, operandIr, context);
         }
 
         // The bound tree names the conversion — user-defined operator, numeric with its widths and
@@ -117,23 +123,11 @@ public class CastExpressionStrategy : IExpressionIrStrategy
         SpecialType.System_Byte or SpecialType.System_SByte or SpecialType.System_UInt16 or
         SpecialType.System_UInt32 or SpecialType.System_UInt64;
 
+    private static bool IsNumeric(ITypeSymbol type) => IsIntegral(type)
+        || type.SpecialType is SpecialType.System_Single or SpecialType.System_Double or SpecialType.System_Decimal
+            or SpecialType.System_Char;
+
     private static long ToLong(object? value) => System.Convert.ToInt64(value, CultureInfo.InvariantCulture);
-
-    // { 'low': 0, 'medium': 5, 'high': 10 } — member-name string → underlying value.
-    internal static string BuildNameToValueMap(INamedTypeSymbol enumType)
-        => "{ " + string.Join(", ", EnumMembers(enumType)
-            .Select(f => $"'{f.Name.ToCamelCase()}': {ToLong(f.ConstantValue).ToString(CultureInfo.InvariantCulture)}")) + " }";
-
-    // { 0: 'low', 5: 'medium', 10: 'high' } — underlying value → member-name string.
-    internal static string BuildValueToNameMap(INamedTypeSymbol enumType)
-        => "{ " + string.Join(", ", EnumMembers(enumType)
-            .Select(f => $"{ToLong(f.ConstantValue).ToString(CultureInfo.InvariantCulture)}: '{f.Name.ToCamelCase()}'")) + " }";
-
-    private static string? MemberNameForValue(INamedTypeSymbol enumType, long value)
-        => EnumMembers(enumType).FirstOrDefault(f => ToLong(f.ConstantValue) == value)?.Name;
-
-    private static IEnumerable<IFieldSymbol> EnumMembers(INamedTypeSymbol enumType)
-        => enumType.GetMembers().OfType<IFieldSymbol>().Where(f => f.HasConstantValue);
 
     public int Priority => 10;
 }

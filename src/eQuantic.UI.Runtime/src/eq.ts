@@ -115,7 +115,7 @@ import { liftArith, liftCmp, liftUnary } from './utils/nullable';
 import { equals } from './utils/equals';
 import {
   isDefined as enumIsDefined,
-  names as enumNames,
+  declaredNames as enumNames,
   parse as enumParse,
   text as enumText,
   tryParse as enumTryParse,

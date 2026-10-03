@@ -4,10 +4,9 @@ using Xunit;
 namespace eQuantic.UI.Conformance.Tests;
 
 /// <summary>
-/// Conformance for enums (regression for #13). Enum members compile to their member-name string,
-/// so equality/switch/ternary behave identically to .NET. (enum.ToString() is intentionally not
-/// asserted: the transpiler emits a camelCase name while .NET returns the PascalCase name — a
-/// documented representation choice, not a conformance target.)
+/// Conformance for enums (regression for #13). An enum member is held in the browser as its camelCase
+/// name, or its number for a [Flags] enum, so equality, switch and ternary behave as in .NET, and its
+/// text, its formats and the statics of <c>Enum</c> read that back to what .NET writes (#452, #480).
 /// </summary>
 public class EnumConformanceTests
 {
@@ -92,6 +91,13 @@ public class EnumConformanceTests
     [InlineData("var x = Rank.Mid; return \",\" + x;")]                                    // ",Mid"
     [InlineData("var r = \"\"; foreach (var x in new[] { Rank.Mid, Rank.Zeta }) r += \",\" + x; return r;")] // ",Mid,Zeta"
     [InlineData("var p = Perm.Write; return \"p=\" + p;")]                                 // "p=Write"
+    [InlineData("return Status.Pending.ToString(\"D\");")]                                // "1"
+    [InlineData("var r = Rank.Mid; return r.ToString(\"X\") + \"|\" + r.ToString(\"d\");")]  // "00000005|5"
+    [InlineData("var s = (Status)3; return s.ToString(\"F\") + \"|\" + s.ToString(\"G\");")] // "Pending, Inactive|3"
+    [InlineData("var f = \"D\"; return Rank.Mid.ToString(f) + Rank.Alpha.ToString(\"g\");")]  // "5Alpha"
+    [InlineData("try { Rank.Mid.ToString(\"Q\"); return \"ok\"; } catch { return \"refused\"; }")] // "refused"
+    [InlineData("var r = Rank.Mid; return $\"{r:D}|{r,6}|{r,-6:X}|\";")]                  // "5|   Mid|00000005|"
+    [InlineData("Status? s = Status.Pending; Status? n = null; return $\"[{s,10}][{n,3}][{s:D}]\";")] // "[   Pending][   ][1]"
     public void AnEnumsText_IsDotNets(string statements)
     {
         Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
@@ -102,8 +108,9 @@ public class EnumConformanceTests
     /// Enum's statics read the enum's shape, written inline: they named an object after the enum,
     /// which no module declares, and threw (#480). Parse reads a name, names joined by commas and a
     /// number, keeps case unless told not to, and throws where .NET throws; TryParse leaves the
-    /// enum's default when it fails; GetNames and GetValues follow the values; IsDefined reads its
-    /// argument as the enum, a number or a declared name.
+    /// enum's default when it fails, and the overload that takes a Type null; GetNames and GetValues
+    /// follow the values; IsDefined reads its argument as the enum, a number, a declared name, or an
+    /// object holding any of them; and an object holding an enum casts back to it.
     /// </summary>
     [SkippableTheory]
     [InlineData("return Enum.Parse<Status>(\"Pending\") == Status.Pending;")]                                   // true
@@ -123,6 +130,11 @@ public class EnumConformanceTests
     [InlineData("return Enum.IsDefined(Rank.Mid) && !Enum.IsDefined((Rank)3);")]                                 // true
     [InlineData("return Enum.IsDefined(typeof(Rank), 5) && !Enum.IsDefined(typeof(Rank), 2);")]                   // true
     [InlineData("return Enum.IsDefined(typeof(Status), \"Pending\") && !Enum.IsDefined(typeof(Status), \"pending\");")] // true
+    [InlineData("object o = Status.Pending; object n = \"Inactive\"; object m = 7; return Enum.IsDefined(typeof(Status), o) + \":\" + Enum.IsDefined(typeof(Status), n) + \":\" + Enum.IsDefined(typeof(Status), m);")] // "True:True:False"
+    [InlineData("var ok = Enum.TryParse(typeof(Status), \"nope\", out object? r); return ok + \":\" + (r == null);")] // "False:True"
+    [InlineData("var ok = Enum.TryParse(typeof(Status), \"inactive\", true, out object? r); return ok + \":\" + ((Status)r! == Status.Inactive);")] // "True:True"
+    [InlineData("return ((Status)Enum.Parse(typeof(Status), \"Pending\")).ToString();")]  // "Pending"
+    [InlineData("var s = Status.Inactive; return ((Rank)s).ToString() + \"|\" + (Status)Rank.Alpha;")] // "2|Pending"
     public void EnumsStatics_ReadTheEnumsShape(string statements)
     {
         Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");

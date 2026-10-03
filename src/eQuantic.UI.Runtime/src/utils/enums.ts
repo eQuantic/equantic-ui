@@ -6,19 +6,26 @@
 export interface EnumShape {
   /** The declared names, in declaration order. */
   readonly names: readonly string[];
-  /** What the browser holds for each member, by position: its camelCase name, or for a flags enum
-   * its number. */
-  readonly keys: readonly (string | number)[];
+  /** What the browser holds for each member, by position: its camelCase name. A flags enum writes
+   * none, since what it holds is the member's value. */
+  readonly keys?: readonly string[];
   /** Each member's value, by position. */
   readonly values: readonly number[];
   /** A [Flags] enum, whose value is its number and whose text names its set flags. */
   readonly flags: boolean;
+  /** The hex digits the `X` format writes: twice the underlying type's size in bytes. */
+  readonly digits: number;
+}
+
+/** What the browser holds for each member: its key, or, for a flags enum, its value. */
+function keys(shape: EnumShape): readonly (string | number)[] {
+  return shape.keys ?? shape.values;
 }
 
 /** The value .NET holds, from what the browser holds: a key's member's value, or a number as it is. */
 function valueOf(held: unknown, shape: EnumShape): number {
   if (typeof held === 'number') return held;
-  const at = shape.keys.indexOf(held as string);
+  const at = keys(shape).indexOf(held as string);
   return at < 0 ? Number(held) : shape.values[at];
 }
 
@@ -26,21 +33,43 @@ function valueOf(held: unknown, shape: EnumShape): number {
 function hold(value: number, shape: EnumShape): string | number {
   if (shape.flags) return value;
   const at = shape.values.indexOf(value);
-  return at < 0 ? value : shape.keys[at];
+  return at < 0 ? value : keys(shape)[at];
 }
 
 /**
  * `ToString()`: an exact member's name; for a flags enum, the names of its set flags, highest first
  * in the search and joined in ascending order, as .NET writes them, or the number when a bit is no
  * member's; a value no member names as its number; and a null, which only a nullable enum holds, as
- * the empty string.
+ * the empty string. A format says otherwise: `D` the number, `X` its hex in the underlying type's
+ * width, `F` the set flags whether or not the enum is a flags one, and `G` (or none) the rest.
  */
-export function text(held: unknown, shape: EnumShape): string {
+export function text(held: unknown, shape: EnumShape, format?: string | null): string {
   if (held == null) return '';
+  // A string no member's key matches crossed with another spelling: it reads as itself, not NaN.
+  if (typeof held === 'string' && !keys(shape).includes(held)) return held;
   const value = valueOf(held, shape);
+  switch ((format ?? '').toUpperCase()) {
+    case 'D':
+      return String(value);
+    case 'X': {
+      const width = 2 ** (4 * shape.digits);
+      return (value < 0 ? width + value : value).toString(16).toUpperCase().padStart(shape.digits, '0');
+    }
+    case 'F':
+      return names(shape, value, true);
+    case '':
+    case 'G':
+      return names(shape, value, shape.flags);
+    default:
+      throw new Error('Format string can be only "G", "g", "X", "x", "F", "f", "D" or "d".');
+  }
+}
+
+/** The name or names `value` has: an exact member's, then, when `flags`, its set flags'. */
+function names(shape: EnumShape, value: number, flags: boolean): string {
   const exact = shape.values.indexOf(value);
   if (exact >= 0) return shape.names[exact];
-  if (!shape.flags || value === 0) return String(value);
+  if (!flags || value === 0) return String(value);
   const order = shape.values
     .map((member, at) => ({ member, at }))
     .filter(({ member }) => member !== 0)
@@ -108,7 +137,7 @@ function byValue(shape: EnumShape): number[] {
 }
 
 /** `GetNames`: the declared names, in the order of their values. */
-export function names(shape: EnumShape): string[] {
+export function declaredNames(shape: EnumShape): string[] {
   return byValue(shape).map((at) => shape.names[at]);
 }
 
@@ -118,10 +147,15 @@ export function values(shape: EnumShape): (string | number)[] {
 }
 
 /**
- * `IsDefined`: whether a member has this value, given as the enum (`held`), as a number, or by its
- * declared name, which is matched as it is written.
+ * `IsDefined`: whether a member has this value, given as the enum (`held`), as a number, by its
+ * declared name, which is matched as it is written, or as an `object`, which may be any of them: a
+ * string is a name, or the key of a boxed member, and a number is a value.
  */
-export function isDefined(given: unknown, shape: EnumShape, as: 'held' | 'number' | 'name'): boolean {
+export function isDefined(given: unknown, shape: EnumShape, as: 'held' | 'number' | 'name' | 'object'): boolean {
+  if (as === 'object') {
+    if (typeof given === 'string') return shape.names.includes(given) || keys(shape).includes(given);
+    return shape.values.includes(Number(given));
+  }
   if (as === 'name') return shape.names.includes(given as string);
   const value = as === 'number' ? Number(given) : valueOf(given, shape);
   return shape.values.includes(value);

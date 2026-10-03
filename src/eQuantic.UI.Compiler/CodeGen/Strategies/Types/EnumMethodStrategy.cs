@@ -54,34 +54,42 @@ public class EnumMethodStrategy : IConversionStrategy
                 return $"{Eq.EnumParse}({Converted(text)}, {shape}{IgnoreCase()})";
             case "IsDefined" when Argument("value") is { } value:
                 // Given as the enum, as a number, or by its declared name: the argument's own type
-                // says which, since a member's camelCase key and its name are both strings here.
-                var given = context.SemanticHelper.GetType(value);
-                var mode = given?.SpecialType == SpecialType.System_String
-                    ? "name"
-                    : given is INamedTypeSymbol { TypeKind: TypeKind.Enum } ? "held" : "number";
+                // says which, since a member's camelCase key and its name are both strings here. An
+                // `object` may hold any of the three, and the runtime asks the value.
+                var mode = context.SemanticHelper.GetType(value) switch
+                {
+                    { SpecialType: SpecialType.System_String } => "name",
+                    INamedTypeSymbol { TypeKind: TypeKind.Enum } => "held",
+                    { SpecialType: SpecialType.System_SByte or SpecialType.System_Byte or SpecialType.System_Int16
+                        or SpecialType.System_UInt16 or SpecialType.System_Int32 or SpecialType.System_UInt32
+                        or SpecialType.System_Int64 or SpecialType.System_UInt64 } => "number",
+                    _ => "object",
+                };
                 return $"{Eq.EnumIsDefined}({Converted(value)}, {shape}, '{mode}')";
             case "TryParse" when Argument("value") is { } input
                 && call.Arguments.FirstOrDefault(argument => argument.Parameter?.RefKind == RefKind.Out)?.Syntax
                     is ArgumentSyntax result:
-                return TryParse(input, result, $"{Eq.EnumTryParse}({{0}}, {shape}{IgnoreCase()})", shape, context);
+                // A failed TryParse leaves the generic overload's result the enum's default, and the
+                // one that takes a Type its object result null.
+                var failed = call.TargetMethod.IsGenericMethod ? $"{Eq.EnumZero}({shape})" : "null";
+                return TryParse(input, result, $"{Eq.EnumTryParse}({{0}}, {shape}{IgnoreCase()})", failed, context);
             default:
                 return context.Unhandled(invocation, $"Enum.{name}");
         }
     }
 
     /// <summary>
-    /// <c>Enum.TryParse</c>: true with the value in its out argument, or false with the enum's default
-    /// there, as .NET leaves it. The out argument is the shared one's (<see cref="OutArgument"/>): a
-    /// discard receives nothing, and a target with an effect of its own is written once.
+    /// <c>Enum.TryParse</c>: true with the value in its out argument, or false with what .NET leaves
+    /// there, <paramref name="zero"/>. The out argument is the shared one's (<see cref="OutArgument"/>):
+    /// a discard receives nothing, and a target with an effect of its own is written once.
     /// </summary>
-    private static string TryParse(ExpressionSyntax input, ArgumentSyntax result, string parse, string shape,
+    private static string TryParse(ExpressionSyntax input, ArgumentSyntax result, string parse, string zero,
         ConversionContext context)
     {
         var text = context.Converter.ConvertIr(input);
         if (OutArgument.IsDiscard(result, context))
             return JsExprWriter.Write(JsExpr.Template($"({parse} !== undefined)", [text], context.TypeAnnotations));
         var target = OutArgument.Target(result, context);
-        var zero = $"{Eq.EnumZero}({shape})";
         if (OutArgument.IsBareName(target))
             return JsExprWriter.Write(JsExpr.Template(
                 $"(({target} = {parse}) !== undefined || (({target} = {zero}), false))", [text], context.TypeAnnotations));

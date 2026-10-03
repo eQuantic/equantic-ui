@@ -166,4 +166,22 @@ public class EqJsonTests
         JsonSerializer.Deserialize<Dictionary<Shelf, int>>(shelfJson, EqJson.Options).Should().Equal(byShelf);
         JsonSerializer.Deserialize<Dictionary<Channels, int>>(channelsJson, EqJson.Options).Should().Equal(byChannels);
     }
+
+    /// <summary>
+    /// A name no member has is refused, as System.Text.Json's own enum converter refuses it: read as
+    /// the default, a stale or forged value became the enum's first member, and two such keys of a
+    /// dictionary collapsed into one, or failed on a duplicate key that named neither.
+    /// </summary>
+    [Fact]
+    public void AnEnumTextNoMemberHas_IsRefused_AsAValueAndAsAKey()
+    {
+        var asValue = () => JsonSerializer.Deserialize<Shelf>("\"gone\"", EqJson.Options);
+        var asKey = () => JsonSerializer.Deserialize<Dictionary<Shelf, int>>("{\"gone\":1,\"old\":2}", EqJson.Options);
+        var asFlagsKey = () => JsonSerializer.Deserialize<Dictionary<Channels, int>>("{\"Nope\":1}", EqJson.Options);
+
+        asValue.Should().Throw<JsonException>().WithMessage("*'gone'*");
+        asKey.Should().Throw<JsonException>().WithMessage("*'gone'*");
+        asFlagsKey.Should().Throw<JsonException>().WithMessage("*'Nope'*");
+        JsonSerializer.Deserialize<Shelf>("\"DataAccess\"", EqJson.Options).Should().Be(Shelf.DataAccess);
+    }
 }

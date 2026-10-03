@@ -39,7 +39,7 @@ describe('$eq namespace', () => {
   });
 
   it('enums — a name, its text and its default, from the shape the compiler writes', () => {
-    const shape = { names: ['Active', 'Pending'], keys: ['active', 'pending'], values: [0, 1], flags: false };
+    const shape = { names: ['Active', 'Pending'], keys: ['active', 'pending'], values: [0, 1], flags: false, digits: 8 };
     expect($eq.enums.parse('Pending', shape)).toBe('pending');
     expect($eq.enums.text('pending', shape)).toBe('Pending');
     expect($eq.enums.zero(shape)).toBe('active');

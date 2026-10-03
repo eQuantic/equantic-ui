@@ -48,7 +48,9 @@ public static class EqJson
     /// against (`PackageCategory.Data` is the string `'data'` in the browser). A JSON number would
     /// silently fail every comparison the client makes, ANYWHERE in the payload: SSR state, Server
     /// Action arguments and results alike. Reads accept the name (either casing) or the ordinal, so
-    /// a client that still sends a number keeps working.
+    /// a client that still sends a number keeps working, and refuse a name no member has, as
+    /// System.Text.Json's own enum converter does: read as the enum's default, a stale or forged value
+    /// became its first member, and two such keys of a dictionary collapsed into one.
     /// <para>Flags enums are the exception the transpiler already carves out — they are numeric on
     /// both sides (a combination has no member name), so they stay numbers here too.</para>
     /// </summary>
@@ -91,15 +93,14 @@ public static class EqJson
             return name.Length == 0 ? name : char.ToLowerInvariant(name[0]) + name[1..];
         }
 
-        private static TEnum Parse(string? name) =>
-            Enum.TryParse<TEnum>(name, ignoreCase: true, out var value) ? value : default;
+        private static TEnum Parse(string? name) => ParseOrRefuse<TEnum>(name);
     }
 
     /// <summary>
     /// A <c>[Flags]</c> enum crosses as its NUMBER, which the transpiled side holds, a dictionary's key
     /// included. System.Text.Json's own converter already writes the value as a number, but it writes a
     /// key by the member names (<c>"Read, Write"</c>), which the browser does not hold (#442). Reads
-    /// take the number, as a number or as text, or the names.
+    /// take the number, as a number or as text, or the names, and refuse anything else.
     /// </summary>
     private sealed class FlagsEnumConverter : JsonConverterFactory
     {
@@ -135,9 +136,15 @@ public static class EqJson
             Parse(reader.GetString());
 
         // A number's text and a name both parse, as Enum.Parse reads them.
-        private static TEnum Parse(string? text) =>
-            Enum.TryParse<TEnum>(text, ignoreCase: true, out var value) ? value : default;
+        private static TEnum Parse(string? text) => ParseOrRefuse<TEnum>(text);
     }
+
+    /// <summary>An enum's value from its text, a name in either casing or a number, as
+    /// <c>Enum.Parse</c> reads it, or a <see cref="JsonException"/> for text that names no member.</summary>
+    private static TEnum ParseOrRefuse<TEnum>(string? text) where TEnum : struct, Enum =>
+        Enum.TryParse<TEnum>(text, ignoreCase: true, out var value)
+            ? value
+            : throw new JsonException($"'{text}' is not a value of {typeof(TEnum).Name}.");
 
     private sealed class Int64StringConverter : JsonConverter<long>
     {

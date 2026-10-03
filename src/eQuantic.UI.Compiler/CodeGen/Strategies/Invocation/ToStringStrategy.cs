@@ -68,6 +68,21 @@ public class ToStringStrategy : IConversionStrategy
         var provider = args.FirstOrDefault(argument => IsFormatProvider(argument.Expression, context));
         var formatArg = args.FirstOrDefault(argument => argument != provider);
 
+        // An ENUM crosses as its camelCase key (`Kind.B` → 'b'), or its number for a flags enum, so
+        // String() handed back what the BROWSER holds where the server writes the member's name, a
+        // word that changed by itself at hydration. It writes its name, or what its format asks for
+        // (`D` its number, `X` its hex, `F` its set flags), and a nullable one nothing for null. Its
+        // provider is unused, as in .NET, where both overloads that take one are obsolete for that.
+        if (receiverType.UnwrapNullable() is INamedTypeSymbol { TypeKind: TypeKind.Enum } enumType)
+        {
+            if (formatArg is not null && !IsGeneralFormat(formatArg.Expression, context))
+                return Types.EnumShape.Text(enumType, caller, context,
+                    context.Converter.ConvertExpression(formatArg.Expression));
+            return receiverType is INamedTypeSymbol { TypeKind: TypeKind.Enum }
+                ? EnumNameLookup(enumType, memberAccess.Expression, caller, context)
+                : Types.EnumShape.Text(enumType, caller, context);
+        }
+
         var invariant = false;
         if (provider is not null)
         {
@@ -152,23 +167,6 @@ public class ToStringStrategy : IConversionStrategy
         if (invocation.ArgumentList.Arguments.Count == 0 && RealText(memberAccess.Expression, context) is { } real)
             return real;
 
-        // An ENUM crosses as a lowercase string (`Kind.B` → 'b'), so String() hands back the WIRE
-        // value while the server hands back the C# member name. Any text printing an enum then
-        // reads one way in the SSR markup and another after hydration — a word that changes by
-        // itself, which nobody attributes to the compiler.
-        if (context.SemanticHelper.GetType(memberAccess.Expression) is INamedTypeSymbol
-            { TypeKind: TypeKind.Enum } enumType)
-        {
-            return EnumNameLookup(enumType, memberAccess.Expression, caller, context);
-        }
-        // A NULLABLE enum prints its value's name, and nothing for null: written by String(), it
-        // printed the camelCase name the browser holds (#452).
-        if (context.SemanticHelper.GetType(memberAccess.Expression).UnwrapNullable() is INamedTypeSymbol
-            { TypeKind: TypeKind.Enum } nullableEnum)
-        {
-            return Types.EnumShape.Text(nullableEnum, caller, context);
-        }
-
         return $"String({caller})";
     }
 
@@ -185,6 +183,15 @@ public class ToStringStrategy : IConversionStrategy
             return text.Length == 0 ? "'G'" : context.Converter.ConvertExpression(format);
         return JsExprWriter.Write(JsExpr.Binary(JsExpr.Group(context.Converter.ConvertIr(format)), "||", JsExpr.Literal("'G'")));
     }
+
+    /// <summary>
+    /// Whether an enum's format is the general one, which writes what no format writes: a null, an
+    /// empty string, <c>G</c> or <c>g</c>, known at build time. Any other, a variable's included, is
+    /// read by the runtime, which throws for one .NET refuses.
+    /// </summary>
+    internal static bool IsGeneralFormat(ExpressionSyntax format, ConversionContext context) =>
+        context.SemanticHelper.IsNullConstant(format)
+        || context.SemanticHelper.TryGetConstantValue(format, out var constant) && constant is "" or "G" or "g";
 
     /// <summary>Whether the receiver is a DateTime, a nullable one's included.</summary>
     private static bool IsDateTime(ITypeSymbol? type) =>
@@ -204,37 +211,18 @@ public class ToStringStrategy : IConversionStrategy
     }
 
     /// <summary>
-    /// The C# member NAME for an enum value. A literal member folds to its name; anything else gets
-    /// the wire→name map inline, because no enum object is emitted to hold one — the members are
-    /// converted to string literals at their use sites and nothing survives to look up.
+    /// The C# member NAME for an enum value. A member named in the source folds to its name
+    /// (`Kind.B.ToString()`: the value is known here, so say it), the member the model binds, never a
+    /// property that shares a member's name (`settings.Default`); anything else is the runtime's text,
+    /// read from the enum's shape: a member's name, a flags combination's set flags, and a value no
+    /// member names as its number. A key→name table answered undefined for the last two (#452).
     /// </summary>
     internal static string EnumNameLookup(INamedTypeSymbol enumType, ExpressionSyntax expression,
-        string caller, ConversionContext context)
-    {
-        // A FLAGS enum is its number, which the name table cannot index: its text names its set
-        // flags, as .NET writes them (#452).
-        if (enumType.IsFlagsEnum()
-            && !(expression is MemberAccessExpressionSyntax { Name.Identifier.ValueText: var flag }
-                && enumType.GetMembers(flag).OfType<IFieldSymbol>().Any(field => field.HasConstantValue)))
-            return Types.EnumShape.Text(enumType, caller, context);
-
-        var members = enumType.GetMembers()
-            .OfType<IFieldSymbol>()
-            .Where(f => f.ConstantValue is not null)
-            .Select(f => f.Name)
-            .ToList();
-        if (members.Count == 0) return $"String({caller})";
-
-        // `Kind.B.ToString()` — the value is known here, so say it.
-        if (expression is MemberAccessExpressionSyntax { Name.Identifier.ValueText: var literal }
-            && members.Contains(literal))
-        {
-            return $"'{literal}'";
-        }
-
-        var map = string.Join(", ", members.Select(m => $"{Wire(m)}: '{m}'"));
-        return $"({{{map}}})[{caller}]";
-    }
+        string caller, ConversionContext context) =>
+        context.SemanticHelper.GetSymbol(expression) is IFieldSymbol { HasConstantValue: true } member
+            && SymbolEqualityComparer.Default.Equals(member.ContainingType, enumType)
+            ? $"'{member.Name}'"
+            : Types.EnumShape.Text(enumType, caller, context);
 
     /// <summary>
     /// Is this argument the PROVIDER rather than the format? Asked of the model, because the two
@@ -251,11 +239,6 @@ public class ToStringStrategy : IConversionStrategy
 
         return expression is MemberAccessExpressionSyntax { Expression: IdentifierNameSyntax { Identifier.Text: "CultureInfo" } };
     }
-
-    /// <summary>The wire spelling of a member — the same camelCase the member access converts to,
-    /// so the map's keys match the values that will be looked up in it.</summary>
-    private static string Wire(string member) =>
-        $"'{char.ToLowerInvariant(member[0])}{member[1..]}'";
 
     public int Priority => 10;
 }

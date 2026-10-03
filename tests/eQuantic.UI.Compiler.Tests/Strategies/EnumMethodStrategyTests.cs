@@ -11,7 +11,7 @@ namespace eQuantic.UI.Compiler.Tests.Strategies;
 /// </summary>
 public class EnumMethodStrategyTests
 {
-    private const string Shape = "{ names: ['Small', 'Medium', 'Large'], keys: ['small', 'medium', 'large'], values: [0, 1, 2], flags: false }";
+    private const string Shape = "{ names: ['Small', 'Medium', 'Large'], keys: ['small', 'medium', 'large'], values: [0, 1, 2], flags: false, digits: 8 }";
 
     [Fact]
     public void EnumParse_ReadsTheEnumsShape()
@@ -56,10 +56,18 @@ public class EnumMethodStrategyTests
     }
 
     [Fact]
-    public void EnumIsDefined_ReadsItsArgument_AsTheEnum_ANumber_OrAName()
+    public void EnumIsDefined_ReadsItsArgument_AsTheEnum_ANumber_AName_OrAnObject()
     {
         TestHelper.ConvertExpression("Enum.IsDefined(Size.Large)").Should().Be($"$eq.enums.isDefined('large', {Shape}, 'held')");
         TestHelper.ConvertExpression("Enum.IsDefined(typeof(Size), 2)").Should().Be($"$eq.enums.isDefined(2, {Shape}, 'number')");
         TestHelper.ConvertExpression("Enum.IsDefined(typeof(Size), \"Large\")").Should().Be($"$eq.enums.isDefined('Large', {Shape}, 'name')");
+        TestHelper.ConvertExpression("Enum.IsDefined(typeof(Size), (object)2)").Should().Be($"$eq.enums.isDefined(2, {Shape}, 'object')");
+    }
+
+    [Fact]
+    public void EnumTryParse_ByItsType_LeavesNullWhenItFails()
+    {
+        TestHelper.ConvertExpression("Enum.TryParse(typeof(Size), \"Large\", out var size)")
+            .Should().Be($"((size = $eq.enums.tryParse('Large', {Shape})) !== undefined || ((size = null), false))");
     }
 }

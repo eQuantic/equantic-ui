@@ -48,11 +48,7 @@ internal static class ValueOrdering
     private static string OfEnum(INamedTypeSymbol enumeration)
     {
         if (enumeration.IsFlagsEnum()) return "'value'";
-        var members = enumeration.GetMembers().OfType<IFieldSymbol>()
-            .Where(field => field.HasConstantValue)
-            .Select(field => $"'{field.Name.ToCamelCase()}': "
-                + System.Convert.ToDecimal(field.ConstantValue, CultureInfo.InvariantCulture).ToString(CultureInfo.InvariantCulture));
-        return $"{{ {string.Join(", ", members)} }}";
+        return Types.EnumShape.KeyToValue(enumeration);
     }
 
     /// <summary>

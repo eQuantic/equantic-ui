@@ -463,8 +463,7 @@ public class FactoryAuthoringTests
         var result = CompileWithRefs(Emit("""var k = Kind.B; return k.ToString();"""));
 
         Assert.True(result.Success, string.Join("\n", result.Errors.Select(e => e.Message)));
-        Assert.Contains("'a': 'A'", result.TypeScript);
-        Assert.Contains("'b': 'B'", result.TypeScript);
+        Assert.Contains("names: ['A', 'B'], keys: ['a', 'b']", result.TypeScript);
     }
 
     /// <summary>
