@@ -177,6 +177,37 @@ public class StackFrameSourceMapTests
         }
         """;
 
+    /// <summary>Strings holding U+2028 and U+2029 before the call (#491): JavaScript reads either as a
+    /// line break when it counts positions, Bun among them, and eqc's map counts only line feeds, so a
+    /// raw one moved every mapping after it a line down. String literals escaped them since #412; an
+    /// interpolated string's text kept them raw until #520. The sum keeps the call out of tail
+    /// position, as above.</summary>
+    private const string SeparatorSource = """
+        using System;
+
+        namespace Demo;
+
+        public class Separated
+        {
+            public int Run(int count)
+            {
+                var plain = "a\u2028b";
+                var text = $"{plain}\u2029{count}\u2028";
+                var result = Check(text.Length + count);
+                return result + 1;
+            }
+
+            public int Check(int value)
+            {
+                if (value > 0)
+                {
+                    throw new InvalidOperationException("separated");
+                }
+                return value;
+            }
+        }
+        """;
+
     /// <summary>The 1-based line of the first line of <paramref name="source"/> that contains <paramref name="text"/>.</summary>
     private static int LineOf(string source, string text) =>
         source.Split('\n').Select((line, index) => (line, index)).First(pair => pair.line.Contains(text)).index + 1;
@@ -223,6 +254,14 @@ public class StackFrameSourceMapTests
         var (stack, frames, map) = Throw(TailSource, "Tail", "new Tail().run(1)");
         Resolve(map, frames[0]).Should().Be(("Tail.cs", LineOf(TailSource, "throw new InvalidOperationException")), $"the top frame is the throw:\n{stack}");
         Resolve(map, frames[1]).Should().Be(("Tail.cs", LineOf(TailSource, "var kept = values.FindAll(value =>")), $"the statement's rest called it:\n{stack}");
+    }
+
+    [SkippableFact]
+    public void AFrameAfterAStringHoldingALineSeparator_LeadsToItsOwnLine()
+    {
+        var (stack, frames, map) = Throw(SeparatorSource, "Separated", "new Separated().run(1)");
+        Resolve(map, frames[0]).Should().Be(("Separated.cs", LineOf(SeparatorSource, "throw new InvalidOperationException")), $"the top frame is the throw:\n{stack}");
+        Resolve(map, frames[1]).Should().Be(("Separated.cs", LineOf(SeparatorSource, "var result = Check(text.Length + count);")), $"the next frame is the call, after the strings:\n{stack}");
     }
 
     /// <summary>

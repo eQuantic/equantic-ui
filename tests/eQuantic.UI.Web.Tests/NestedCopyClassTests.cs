@@ -78,7 +78,7 @@ public class NestedCopyClassTests
     {
         var section = Transpile(Localized);
 
-        section.Should().Contain("$eq.str(\"Strings\", \"About\")");
+        section.Should().Contain("$eq.str('Strings', 'About')");
         section.Should().MatchRegex(@"import \{[^}]*\$eq[^}]*\} from ""@equantic/runtime""",
             "a module that says $eq has to import it, or it fails to load whole");
     }

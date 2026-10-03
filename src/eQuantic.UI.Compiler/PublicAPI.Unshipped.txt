@@ -120,3 +120,7 @@ const eQuantic.UI.Compiler.CodeGen.Eq.StringInstanceEquals = "$eq.text.instanceE
 const eQuantic.UI.Compiler.CodeGen.Eq.StringLastIndexOf = "$eq.text.lastIndexOf" -> string!
 const eQuantic.UI.Compiler.CodeGen.Eq.StringReplace = "$eq.text.replace" -> string!
 const eQuantic.UI.Compiler.CodeGen.Eq.StringStartsWith = "$eq.text.startsWith" -> string!
+*REMOVED*eQuantic.UI.Compiler.Models.PropertyDefinition.DefaultValue.get -> string?
+*REMOVED*eQuantic.UI.Compiler.Models.PropertyDefinition.DefaultValue.set -> void
+*REMOVED*eQuantic.UI.Compiler.Models.StateField.DefaultValue.get -> string?
+*REMOVED*eQuantic.UI.Compiler.Models.StateField.DefaultValue.set -> void

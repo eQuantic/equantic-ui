@@ -75,7 +75,7 @@ export class XmlLanguage {
 
     static nextNonSpace(line: string, from: number) {
         for (let i = from; i < line.length; i++) if (!$eq.text.isWhiteSpace(line[i])) return line[i];
-        return '\0';
+        return '\u0000';
     }
 }
 

@@ -57,7 +57,7 @@ public class PlainClassFieldDefaultTests
         ts.Should().Contain("this._scale = 0;");
         ts.Should().Contain("this._ticks = $eq.num.long(0);");
         ts.Should().Contain("this._total = $eq.num.dec(0);");
-        ts.Should().Contain("this._last = '\\0';");
+        ts.Should().Contain("this._last = '\\u0000';");
         // An enum is its member NAME at runtime: the default is the zero member.
         ts.Should().Contain("this._mode = 'idle';");
     }

@@ -3,6 +3,7 @@ using System.Linq;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using eQuantic.UI.Compiler.CodeGen.Ir;
 
 namespace eQuantic.UI.Compiler.CodeGen;
 
@@ -142,7 +143,7 @@ public static class TypeDeclarationExtensions
                 or "uint" or "UInt32" or "ushort" or "UInt16" => "0",
             "double" or "Double" or "float" or "Single" => "0",
             "bool" or "Boolean" => "false",
-            "char" or "Char" => "'\\0'",
+            "char" or "Char" => JsStringLiteral.Quote("\0"),
             "decimal" or "Decimal" => "$eq.num.dec(0)",
             "long" or "Int64" or "ulong" or "UInt64" => "$eq.num.long(0)",
             _ => "null",

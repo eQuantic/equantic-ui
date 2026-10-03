@@ -380,7 +380,7 @@ export class CodeEditorController {
             }
         }
         let line = this._document.line(this.caret.line);
-        let after = this.caret.column < line.length ? line[this.caret.column] : '\0';
+        let after = this.caret.column < line.length ? line[this.caret.column] : '\u0000';
         for (const [, close] of rules.brackets) {
             if (c === close && after === close) {
                 this.selection = new CodeRange($eq.withPatch(this.caret, { column: this.caret.column + 1 }));
@@ -395,7 +395,7 @@ export class CodeEditorController {
         }
         for (const [open, close] of rules.brackets) {
             if (c !== open) continue;
-            if (after === '\0' || $eq.text.isWhiteSpace(after) || rules.brackets.some((p) => p[1] === after)) {
+            if (after === '\u0000' || $eq.text.isWhiteSpace(after) || rules.brackets.some((p) => p[1] === after)) {
                 if (!this.edit(this._selection, `${open}${close}`, true)) return false;
                 this.selection = new CodeRange($eq.withPatch(this.caret, { column: this.caret.column - 1 }));
                 return true;
@@ -403,9 +403,9 @@ export class CodeEditorController {
         }
         for (const quote of rules.quotes) {
             if (c !== quote) continue;
-            let before = this.caret.column > 0 ? line[this.caret.column - 1] : '\0';
+            let before = this.caret.column > 0 ? line[this.caret.column - 1] : '\u0000';
             if (CodeDocument.isWordChar(before) || CodeDocument.isWordChar(after)) break;
-            if (after === '\0' || $eq.text.isWhiteSpace(after)) {
+            if (after === '\u0000' || $eq.text.isWhiteSpace(after)) {
                 if (!this.edit(this._selection, `${quote}${quote}`, true)) return false;
                 this.selection = new CodeRange($eq.withPatch(this.caret, { column: this.caret.column - 1 }));
                 return true;
@@ -426,7 +426,7 @@ export class CodeEditorController {
         let rules = this.rules;
         let line = this._document.line(this.caret.line);
         let indent = this._document.indentOf(this.caret.line);
-        let step = rules.insertSpaces ? ' '.repeat(rules.indentWidth) : '	';
+        let step = rules.insertSpaces ? ' '.repeat(rules.indentWidth) : '\t';
         let beforeCaret = $eq.text.trimEnd(line.slice(0, Math.min(this.caret.column, line.length)));
         let afterCaret = this.caret.column < line.length ? $eq.text.trimStart(line.slice(this.caret.column)) : '';
         let opens = beforeCaret.length > 0 && rules.indentAfter.includes(beforeCaret[beforeCaret.length - 1]);
@@ -478,7 +478,7 @@ export class CodeEditorController {
     indent() {
         if (this.readOnly) return false;
         if (this._selection.isEmpty) {
-            if (!this.rules.insertSpaces) return this.apply(this._selection, '	');
+            if (!this.rules.insertSpaces) return this.apply(this._selection, '\t');
             let width = this.rules.indentWidth;
             let cell = this.cellsOf(this.caret.line).cellOf(this.caret.column);
             return this.apply(this._selection, ' '.repeat(width - $eq.num.intRem(cell, width)));
@@ -491,7 +491,7 @@ export class CodeEditorController {
     }
 
     shiftLines(add: boolean) {
-        let step = this.rules.insertSpaces ? ' '.repeat(this.rules.indentWidth) : '	';
+        let step = this.rules.insertSpaces ? ' '.repeat(this.rules.indentWidth) : '\t';
         let first = this._selection.start.line;
         let last = this._selection.end.line;
         if (last > first && this._selection.end.column === 0) last--;

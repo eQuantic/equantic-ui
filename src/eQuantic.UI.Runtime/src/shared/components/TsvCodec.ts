@@ -6,7 +6,7 @@ export class TsvCodec {
         for (let row = range.topRow; row <= range.bottomRow; row++) {
             let cells: string[] = [];
             for (let col = range.leftCol; col <= range.rightCol; col++) cells.push(TsvCodec.escape(document.getCell(new CellRef(row, col))));
-            rows.push(cells.join('	'));
+            rows.push(cells.join('\t'));
         }
         return rows.join('\n');
     }

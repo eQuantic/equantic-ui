@@ -356,7 +356,7 @@ public class TypeScriptEmitter
                         var tsType = DeclarationType(component, field.Type);
                         var tsDefault = field.DefaultValueNode != null
                             ? Initializer(field.DefaultValueNode, _converter.ConvertExpression(field.DefaultValueNode, field.Type))
-                            : (field.DefaultValue != null ? ConvertToTsValue(field.DefaultValue, field.Type) : null);
+                            : null;
                         // C# value types default without an initializer (`private int _count;` is 0);
                         // an uninitialized TS field is `undefined` and would poison arithmetic (NaN).
                         tsDefault ??= ValueTypeDefault(field.Type, field.TypeNode);
@@ -426,15 +426,11 @@ public class TypeScriptEmitter
                     // Apply defaults for properties not provided in props (only if still undefined)
                     foreach (var prop in component.Properties.Where(p => p.IsPublic))
                     {
-                        // Read ONCE into a local. The filter used to carry `DefaultValue != null`,
-                        // which is true and unprovable: it is a mutable property, so nothing says it
-                        // is still non-null at the read a line later, and ConvertToTsValue derefs it
-                        // immediately.
-                        if (prop.DefaultValue is not { } declaredDefault) continue;
+                        // Read ONCE into a local: it is a mutable property, so nothing says it is
+                        // still non-null at a second read a line later.
+                        if (prop.DefaultValueNode is not { } declaredDefault) continue;
                         var camelName = prop.Name.ToCamelCase();
-                        var tsDefault = prop.DefaultValueNode != null
-                            ? Initializer(prop.DefaultValueNode, _converter.ConvertExpression(prop.DefaultValueNode, prop.Type))
-                            : ConvertToTsValue(declaredDefault, prop.Type);
+                        var tsDefault = Initializer(declaredDefault, _converter.ConvertExpression(declaredDefault, prop.Type));
                         // The default rides into the CONSTRUCTOR as text, past the converter's
                         // helper tracking — `$eq.num.long(0)` in a module that never imported $eq
                         // was "ReferenceError: $eq is not defined" at `new`, containing the
@@ -1512,7 +1508,7 @@ public class TypeScriptEmitter
                 {
                     var def = prop.DefaultValueNode != null
                         ? Initializer(prop.DefaultValueNode, _converter.ConvertExpression(prop.DefaultValueNode, prop.Type))
-                        : (prop.DefaultValue != null ? ConvertToTsValue(prop.DefaultValue, prop.Type) : null);
+                        : null;
                     c.Field(name, DeclarationType(component, prop.Type), def, node, isStatic: true);
                 }
                 else
@@ -2745,36 +2741,5 @@ public class TypeScriptEmitter
         }
         parts.Add(text[start..]);
         return parts;
-    }
-
-    private static string ConvertToTsValue(string value, string type)
-    {
-        if (value.Contains("new()") || value.Contains("new List"))
-        {
-            var tsType = CSharpTypeToTypeScript(type);
-            if (tsType.EndsWith("[]"))
-            {
-                return "[]";
-            }
-        }
-        
-        return type.ToLowerInvariant() switch
-        {
-            "string" => $"\"{value.Trim('"')}\"",
-            "int" or "double" or "float" => value,
-            "bool" or "boolean" => value.ToLower(),
-             _ => value
-        };
-    }
-    
-    private static string GetDefaultForType(string type)
-    {
-        return type.ToLowerInvariant() switch
-        {
-            "string" => "\"\"",
-            "int" or "double" or "float" => "0",
-            "bool" or "boolean" => "false",
-             _ => "null"
-        };
     }
 }
