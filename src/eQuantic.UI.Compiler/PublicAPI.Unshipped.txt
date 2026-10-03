@@ -130,3 +130,7 @@ const eQuantic.UI.Compiler.CodeGen.Eq.GuidTryParse = "$eq.guid.tryParse" -> stri
 eQuantic.UI.Compiler.CodeGen.Strategies.Types.GuidTypeStrategy.ConvertIr(Microsoft.CodeAnalysis.SyntaxNode! node, eQuantic.UI.Compiler.CodeGen.ConversionContext! context) -> eQuantic.UI.Compiler.CodeGen.Ir.JsExpr!
 *REMOVED*eQuantic.UI.Compiler.CodeGen.Strategies.Types.GuidTypeStrategy.Convert(Microsoft.CodeAnalysis.SyntaxNode! node, eQuantic.UI.Compiler.CodeGen.ConversionContext! context) -> string!
 const eQuantic.UI.Compiler.CodeGen.Eq.HashFields = "$eq.hash.fields" -> string!
+const eQuantic.UI.Compiler.CodeGen.Eq.LinqSeq = "$eq.linq.seq" -> string!
+const eQuantic.UI.Compiler.CodeGen.Eq.LinqToArray = "$eq.linq.toArray" -> string!
+const eQuantic.UI.Compiler.CodeGen.Eq.TextChars = "$eq.text.chars" -> string!
+const eQuantic.UI.Compiler.CodeGen.Eq.LinqEnumerable = "$eq.linq.enumerable" -> string!

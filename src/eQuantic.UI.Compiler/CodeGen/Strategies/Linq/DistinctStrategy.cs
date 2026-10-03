@@ -42,7 +42,7 @@ public class DistinctStrategy : IConversionStrategy
         var invocation = (InvocationExpressionSyntax)node;
         var memberAccess = (MemberAccessExpressionSyntax)invocation.Expression;
 
-        var caller = context.Converter.ConvertExpression(memberAccess.Expression);
+        var caller = LinqSource.Text(memberAccess.Expression, context);
 
         // JS Set dedups by SameValueZero, which matches C# Distinct for primitives, strings,
         // enums AND plain reference types (reference equality). Only records and structs use

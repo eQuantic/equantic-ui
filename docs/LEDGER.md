@@ -1098,6 +1098,30 @@ record of a release, the wiki's Upgrading page is the distillate.
   registered, and the conformance suite caught it: `StrategyRegistrationTests` now fails for any
   strategy the converter does not register. Proposed and archived through OpenSpec
   (`openspec/specs/transpiler-bcl`).
+- **2026-10-03 · A test compilation shares its references**: the suites turned the .NET framework into
+  new metadata references for every compilation they created, and `MetadataReference.CreateFromFile`
+  copies an assembly into native memory the GC does not count, so one test host held tens of
+  gigabytes ([#481](https://github.com/eQuantic/equantic-ui/issues/481)). One owner,
+  `tests/Shared/TestReferences.cs`, keeps one reference per assembly for the process, and a guard
+  fails on a `CreateFromFile` anywhere else under `tests/`. Measured with a sampler reading every test
+  host once a second, each suite alone: the compiler suite's peak went from 25 to 35 GB to 6.1 GB and
+  its run from 20 to 47 seconds to 4, the conformance suite's from 34 GB to 5.6 GB, and the web
+  suite's from 3 to 5 GB to 1.2 GB. Under load, with the conformance suite alongside, 12 runs of the
+  compiler suite in a row completed, where one on a branch without the change aborted the same day
+  ([#473](https://github.com/eQuantic/equantic-ui/issues/473)).
+- **2026-10-03 · LINQ reads any sequence**: every operator was an array method on its receiver as
+  converted, so a `HashSet`, the runtime's sorted set, queue, stack and linked list, and a sorted
+  dictionary or list threw on their first one, `queue.First()` called a `first` the queue does not have
+  ([#434](https://github.com/eQuantic/equantic-ui/issues/434)), a dictionary read as its pairs met the
+  same templates ([#439](https://github.com/eQuantic/equantic-ui/issues/439)), and a string read as a
+  sequence threw on `Count`, `Where` and `Select`, was iterated by code point by `foreach` and
+  `ToCharArray`, could not be built from chars, and refused `Count(char.IsDigit)`
+  ([#524](https://github.com/eQuantic/equantic-ui/issues/524)). One place reads an operator's source
+  (`LinqSource`, `$eq.linq.seq`), `ToList` and `ToArray` always copy, and the queue and the stack
+  enumerate in .NET's order. The local review found the copy trusting operators that hand their source
+  back (`Cast`, `DefaultIfEmpty`) and a read-only face hiding a list, and both copy now. Each is a
+  conformance case on both sides that failed against main. Proposed and archived through OpenSpec
+  (`openspec/specs/transpiler-sequences`).
 
 ## Retired documents
 

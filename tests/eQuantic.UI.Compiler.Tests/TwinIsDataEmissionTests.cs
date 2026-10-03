@@ -74,9 +74,9 @@ public class TwinIsDataEmissionTests
             var references = ((string)AppContext.GetData("TRUSTED_PLATFORM_ASSEMBLIES")!)
                 .Split(Path.PathSeparator)
                 .Where(p => p.EndsWith(".dll", StringComparison.OrdinalIgnoreCase))
-                .Select(p => (MetadataReference)MetadataReference.CreateFromFile(p))
-                .Append(MetadataReference.CreateFromFile(typeof(eQuantic.UI.Primitives.VisualNode).Assembly.Location))
-                .Append(MetadataReference.CreateFromFile(typeof(eQuantic.UI.Components.CodeEditor).Assembly.Location));
+                .Select(p => (MetadataReference)TestReferences.Of(p))
+                .Append(TestReferences.Of(typeof(eQuantic.UI.Primitives.VisualNode).Assembly.Location))
+                .Append(TestReferences.Of(typeof(eQuantic.UI.Components.CodeEditor).Assembly.Location));
             var compilation = CSharpCompilation.Create("App", [CSharpSyntaxTree.ParseText(source, path: path)], references,
                 new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
             compilation.GetDiagnostics().Where(d => d.Severity == DiagnosticSeverity.Error).Should().BeEmpty();
