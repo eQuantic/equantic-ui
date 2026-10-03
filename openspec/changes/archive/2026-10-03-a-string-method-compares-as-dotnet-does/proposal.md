@@ -63,7 +63,8 @@ None.
 - `transpiler-bcl`: a string's own comparing methods and `CompareTo` answer as .NET does, and a
   search by a culture comparison is refused.
 - `transpiler-expressions`: a null-conditional call whose translation is a helper awaits an
-  argument that awaits, where the arrow that binds its receiver made the module unparsable.
+  argument that awaits in the method it is written in, where the arrow that bound its receiver made
+  the module unparsable; a receiver that is not a local refuses such a tail until #539.
 
 ## Impact
 

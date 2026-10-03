@@ -1051,10 +1051,14 @@ record of a release, the wiki's Upgrading page is the distillate.
   written, so a named start was refused as a culture comparison, and a conditional refused for the
   culture member it spells, though it is no constant. Its second round found an argument that awaits
   behind a null-conditional call that goes to a helper, wrapped in an arrow that was not async, so
-  the module did not parse (`s?.Substring(await f())` too, on main); that arrow is now async when
-  the tail awaits. 28 of the 48 conformance cases fail on main, and the dashboard sample's payment
-  filter, code editor, Markdown, Mermaid and diff pages were checked in a browser. Filed on the way:
-  the overloads without a comparison search by the current culture in .NET
+  the module did not parse (`s?.Substring(await f())` too, on main); and its third, that the async
+  arrow which first fixed it suspended where C# does not and handed back the result of a task the
+  call returned. A local, a parameter or `this` is now guarded by a conditional with no function
+  around the tail, and any other receiver refuses a tail that awaits, until a lowering binds it in
+  the enclosing function ([#539](https://github.com/eQuantic/equantic-ui/issues/539)). 28 of the 48
+  conformance cases fail on main, and the dashboard sample's payment filter, code editor, Markdown,
+  Mermaid and diff pages were checked in a browser. Filed on the way: the overloads without a
+  comparison search by the current culture in .NET
   ([#532](https://github.com/eQuantic/equantic-ui/issues/532)), a culture comparison that ignores
   case equates widths and kana types .NET keeps apart
   ([#533](https://github.com/eQuantic/equantic-ui/issues/533)), and a char search with a start

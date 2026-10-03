@@ -16,7 +16,7 @@
 - [x] 3.1 The write-once components' pins regenerated: their ordinal searches and `Replace` call the runtime, with no arrow function around a call with a range; check: `SharedComponentTranspilationTests`, and the dashboard sample in a browser (the payments filter by `OrdinalIgnoreCase`, the code editor's block comment, the Markdown, Mermaid and diff pages)
 - [x] 3.2 The BCL audit baseline: fifteen overloads move from native to the runtime, and `CompareTo(object)` is fenced; check: `BclSurfaceAuditTests`
 - [x] 3.3 The follow-ups filed under #164: #532, #533 and #534
-- [x] 3.4 A null-conditional call that awaits an argument runs in an async arrow when its translation is a helper; check: `AnAwaitBehindANullConditionalHelper_RunsAsTheGuardSays`, both receiver states on both sides, failing before
+- [x] 3.4 A null-conditional call on a local, a parameter or `this` is guarded by a conditional with no function around its tail, and one on any other receiver refuses a tail that awaits; check: `AnAwaitBehindANullConditionalHelper_RunsAsTheGuardSays` (both receiver states, the awaited calls counted, and a null receiver that does not suspend) on both sides, and `NullConditionalTailTests`, failing before
 
 ## 4. Documentation
 
