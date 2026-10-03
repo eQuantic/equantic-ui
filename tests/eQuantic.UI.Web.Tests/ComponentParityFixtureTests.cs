@@ -126,7 +126,36 @@ public class ComponentParityFixtureTests
         // a twin whose state moved differently shows. Index 2 is the first day CELL — the two
         // chevrons come first in tree order — so this picks July 1st over the 17th.
         ("calendar-picks-a-day", new eQuantic.UI.Components.Calendar(new DateOnly(2026, 7, 17)), [2]),
+
+        // LINKS UNDER A LANGUAGE (LinkLanguages): a Link and a run that links each carry the active
+        // language on an app-internal href and warm it on hover, and leave somebody else's alone,
+        // a protocol-relative one included. The run took its destination as written (#505).
+        ("links-in-portuguese", Stack(Space.S2,
+            new Link("/", new Text("home", TypeRole.BodyM, Theme.TextPrimary)),
+            new Link("//cdn.example.com/x", new Text("cdn", TypeRole.BodyM, Theme.TextPrimary)),
+            new Text("", TypeRole.BodyM, Theme.TextPrimary)
+            {
+                Spans =
+                [
+                    new TextRun("Read the "),
+                    new TextRun("terms") { Destination = "/terms" },
+                    new TextRun(", the "),
+                    new TextRun("docs") { Destination = "https://example.com/docs" },
+                    new TextRun(" and the "),
+                    new TextRun("cdn") { Destination = "//cdn.example.com/x" },
+                ],
+            }), NoPresses),
     ];
+
+    /// <summary>
+    /// The language a case's links are lowered in, by case name, as an app with language prefixes
+    /// serves a page in Portuguese. The twin declares the same table, so a case lowered in another
+    /// language on one side shows as a different href.
+    /// </summary>
+    private static readonly Dictionary<string, string> LinkLanguages = new()
+    {
+        ["links-in-portuguese"] = "pt-BR",
+    };
 
     /// <summary>A component that is only lowered, never driven.</summary>
     private static readonly int[] NoPresses = [];
@@ -154,10 +183,16 @@ public class ComponentParityFixtureTests
         try
         {
             foreach (var (name, node, presses) in Cases())
+            {
+                RenderContext.SetLinkPolicy(LinkLanguages.TryGetValue(name, out var language)
+                    ? path => path == "/" ? $"/{language}" : $"/{language}{path}"
+                    : null);
                 json[name] = JsonValue.List(Frames(node, presses).Select(Canonical));
+            }
         }
         finally
         {
+            RenderContext.SetLinkPolicy(null);
             CultureInfo.CurrentCulture = previousCulture;
             CultureInfo.CurrentUICulture = previousUiCulture;
         }
