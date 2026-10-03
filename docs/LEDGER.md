@@ -1010,6 +1010,16 @@ record of a release, the wiki's Upgrading page is the distillate.
   simple name share one entry of the page index
   ([#514](https://github.com/eQuantic/equantic-ui/issues/514)). Proposed and archived through OpenSpec
   (`openspec/specs/hydration-contract`).
+- **2026-10-03 · A route's title reaches the document**: `[Page(Title = …)]` applied only when the
+  page's metadata had no title, which the app's default always filled, so no page ever got it, and a
+  client navigation answered with the app's title over the one the router had set
+  ([#416](https://github.com/eQuantic/equantic-ui/issues/416)); the client's configuration quoted its
+  strings by hand, so a title holding a line break stopped the client of every page
+  ([#526](https://github.com/eQuantic/equantic-ui/issues/526)). Each route hands its declaration to
+  both doors, one builder writes a document's metadata (the app's, the route's, then the page's own),
+  and the configuration is serialized as JSON. `PageTitleTests` runs both doors, and the dashboard
+  sample's titles were measured in a browser against main. Proposed and archived through OpenSpec
+  (`openspec/specs/document-metadata`).
 
 ## Retired documents
 
