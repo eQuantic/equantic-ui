@@ -28,6 +28,10 @@
     <ProjectReference Include="..\..\src\eQuantic.UI.Server\eQuantic.UI.Server.csproj" />
     <ProjectReference Include="..\..\src\eQuantic.UI.Gtm\eQuantic.UI.Gtm.csproj" />
     <ProjectReference Include="..\..\src\eQuantic.UI.Material\eQuantic.UI.Material.csproj" />
+    <!-- As the SDK adds it to an app: the generator writes the hydration manifest the server reads
+         to know what each fixture page carries to the browser. -->
+    <ProjectReference Include="..\..\src\eQuantic.UI.Generators\eQuantic.UI.Generators.csproj"
+                      OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
   </ItemGroup>
 
 </Project>

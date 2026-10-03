@@ -44,9 +44,6 @@ public sealed class AppFactorySurfaceGenerator : IIncrementalGenerator
             SymbolDisplayFormat.FullyQualifiedFormat.MiscellaneousOptions
             | SymbolDisplayMiscellaneousOptions.IncludeNullableReferenceTypeModifier);
 
-    private const string FactoryAttribute = "UiFactoryAttribute";
-    private const string PageAttribute = "PageAttribute";
-
     internal static readonly DiagnosticDescriptor AmbiguousElection = new(
         "EQ3101", "A component elects more than one factory constructor",
         "'{0}' marks {1} constructors with [UiFactory]. A component gets ONE factory — the twin is "
@@ -178,28 +175,10 @@ public sealed class AppFactorySurfaceGenerator : IIncrementalGenerator
     private static Component? Describe(GeneratorSyntaxContext ctx, System.Threading.CancellationToken token)
     {
         if (ctx.SemanticModel.GetDeclaredSymbol(ctx.Node, token) is not INamedTypeSymbol symbol) return null;
-        if (symbol.IsAbstract || symbol.IsGenericType) return null;
-        if (symbol.DeclaredAccessibility != Accessibility.Public) return null;
-        if (symbol.ContainingNamespace.IsGlobalNamespace) return null;
-
-        if (!IsComponent(symbol)) return null;
-        // A PAGE is reached by its route, never composed by hand — a factory for one would be an
-        // offer to do the wrong thing.
-        if (symbol.GetAttributes().Any(a => a.AttributeClass?.Name == PageAttribute)) return null;
-
-        var constructors = symbol.InstanceConstructors
-            .Where(c => c.DeclaredAccessibility == Accessibility.Public && !c.IsStatic)
-            .ToList();
-        if (constructors.Count == 0) return null;
-
-        var elected = constructors
-            .Where(c => c.GetAttributes().Any(a => a.AttributeClass?.Name == FactoryAttribute))
-            .ToList();
+        if (!FactorySurface.HasFactory(symbol)) return null;
 
         // WIDEST by default — the rule the emitter already applies to overloads — or the elected one.
-        var chosen = elected.Count == 1
-            ? elected[0]
-            : constructors.OrderByDescending(c => c.Parameters.Length).First();
+        if (FactorySurface.Elect(symbol, out var elected) is not { } chosen) return null;
 
         var parameters = chosen.Parameters
             .Select(p => (
@@ -214,17 +193,9 @@ public sealed class AppFactorySurfaceGenerator : IIncrementalGenerator
             symbol.ContainingNamespace.ToDisplayString(),
             symbol.Name,
             symbol.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat),
-            elected.Count,
+            elected,
             parameters,
             symbol.Locations.FirstOrDefault() ?? Location.None);
-    }
-
-    private static bool IsComponent(INamedTypeSymbol symbol)
-    {
-        for (var b = symbol.BaseType; b is not null; b = b.BaseType)
-            if (b.Name is "StatelessComponent" or "StatefulComponent" or "UiComponent")
-                return true;
-        return false;
     }
 
     /// <summary>

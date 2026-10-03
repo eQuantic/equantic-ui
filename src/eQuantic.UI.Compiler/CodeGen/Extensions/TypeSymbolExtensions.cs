@@ -230,31 +230,20 @@ public static class TypeSymbolExtensions
     /// True when <paramref name="type"/> is one of the dictionaries of System.Collections.Generic:
     /// <c>Dictionary</c>, <c>IDictionary</c>, <c>IReadOnlyDictionary</c>, <c>SortedDictionary</c> or
     /// <c>SortedList</c>. Each is a runtime class on this side, the runtime's <c>Dictionary</c> or its
-    /// <c>SortedMap</c>, and <see cref="DictionaryFactory"/> names the factory that constructs it.
-    /// Matched on name, namespace and arity rather than a display-string prefix, which
-    /// <c>Dictionary&lt;,&gt;.KeyCollection</c> shares.
+    /// <c>SortedMap</c>, and <see cref="DictionaryFactory"/> names the factory that constructs it. The
+    /// list is <see cref="BoundaryShape"/>'s, which the source generator reads too.
     /// </summary>
-    internal static bool IsDictionary(this ITypeSymbol? type) => DictionaryName(type) is not null;
+    internal static bool IsDictionary(this ITypeSymbol? type) => BoundaryShape.DictionaryName(type) is not null;
 
     /// <summary>The runtime factory a dictionary of this type is constructed by: a sorted one's own,
     /// or the runtime's <c>Dictionary</c>; null when the type is not a dictionary.</summary>
-    internal static string? DictionaryFactory(this ITypeSymbol? type) => DictionaryName(type) switch
+    internal static string? DictionaryFactory(this ITypeSymbol? type) => BoundaryShape.DictionaryName(type) switch
     {
         null => null,
         "SortedDictionary" => Eq.SortedDictionary,
         "SortedList" => Eq.SortedList,
         _ => Eq.Dictionary,
     };
-
-    private static string? DictionaryName(ITypeSymbol? type)
-    {
-        if (type is not INamedTypeSymbol { TypeArguments.Length: 2 } named) return null;
-        var definition = named.OriginalDefinition;
-        if (definition.ContainingNamespace?.ToDisplayString() != "System.Collections.Generic") return null;
-        return definition.Name is "Dictionary" or "IDictionary" or "IReadOnlyDictionary" or "SortedDictionary" or "SortedList"
-            ? definition.Name
-            : null;
-    }
 
     /// <summary>
     /// Whether a receiver's STATIC type leaves its runtime shape open. An array, a List or a string

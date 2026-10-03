@@ -6,11 +6,6 @@ export class Calendar extends StatefulComponent {
     _cursor: any = null;
     static cellSize: number = 44;
     static headerHeight: number = 28;
-
-    static get $hydration() {
-        return { _month: 'dateOnly', _cursor: 'dateOnly', selected: 'dateOnly', min: 'dateOnly', max: 'dateOnly' };
-    }
-
     declare selected: any;
     declare onChanged: ((dateOnly: DateOnly) => void) | null;
     declare min: any;

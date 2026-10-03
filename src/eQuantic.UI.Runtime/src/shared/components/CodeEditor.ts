@@ -14,11 +14,6 @@ export class CodeEditor extends StatefulComponent {
     _matchedIn: any = null;
     _matchedFor: any = null;
     _matchedCase: boolean = false;
-
-    static get $hydration() {
-        return { _offset: 'single', _viewport: 'single', _viewportWidth: 'single', height: { of: SizeValue, members: { value: 'single' } }, maxHeight: 'single' };
-    }
-
     declare initialCode: string;
     declare languageName: any;
     declare onChanged: ((string: string) => void) | null;
