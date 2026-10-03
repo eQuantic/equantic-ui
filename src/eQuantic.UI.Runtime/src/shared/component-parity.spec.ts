@@ -20,7 +20,7 @@ import { photonTheme } from './design-system.generated';
 import { lowerVisualNode } from './lowering';
 import { setPhotonTheme } from './photon-context';
 import type { HtmlNode } from '../core/types';
-import { Box, BoxStyle, Column, GridTrack, Icon, IconGlyph, ScrollView, Text } from './vocabulary';
+import { Box, BoxStyle, Column, GridTrack, Icon, IconGlyph, Link, ScrollView, Text, TextRun } from './vocabulary';
 import { SizeValue } from './value-types';
 import { Accordion } from './components/Accordion';
 import { AccordionItem } from './components/AccordionItem';
@@ -206,7 +206,45 @@ function cases(): Record<string, { node: unknown; presses: number[] }> {
     ),
     // Driven: index 2 is the first day CELL (the two chevrons come first in tree order).
     'calendar-picks-a-day': { node: new Calendar(dateOnly(2026, 7, 17)), presses: [2] },
+    'links-in-portuguese': still(
+      column(
+        8,
+        new Link('/', new Text('home', 'bodyM', photonTheme.textPrimary)),
+        new Link('//cdn.example.com/x', new Text('cdn', 'bodyM', photonTheme.textPrimary)),
+        new Text('', 'bodyM', photonTheme.textPrimary, 0, {
+          spans: [
+            new TextRun('Read the '),
+            new TextRun('terms', null, false, { destination: '/terms' }),
+            new TextRun(', the '),
+            new TextRun('docs', null, false, { destination: 'https://example.com/docs' }),
+            new TextRun(' and the '),
+            new TextRun('cdn', null, false, { destination: '//cdn.example.com/x' }),
+          ],
+        }),
+      ),
+    ),
   };
+}
+
+/**
+ * The language a case's links are lowered in, by case name (C# twin: `LinkLanguages`): the app
+ * declares its language prefixes and the reader is in that language while the case lowers.
+ */
+const LINK_LANGUAGES: Record<string, string> = { 'links-in-portuguese': 'pt-BR' };
+
+/** Runs `lower` with the reader in a case's link language, and the app's own language after. */
+function inLinkLanguage<T>(name: string, lower: () => T): T {
+  const language = LINK_LANGUAGES[name];
+  if (language === undefined) return lower();
+  const host = globalThis as { __EQ_CONFIG?: unknown };
+  host.__EQ_CONFIG = { cultureRoutes: { default: 'en-US', prefixed: [language] } };
+  installCulture(language, 'en-US', {}, calendarNames['en-US']);
+  try {
+    return lower();
+  } finally {
+    delete host.__EQ_CONFIG;
+    installCulture('en-US', 'en-US', {}, calendarNames['en-US']);
+  }
 }
 
 /**
@@ -343,7 +381,7 @@ describe('component parity: the twin lowers to the tree C# lowers to', () => {
   for (const [name, { node, presses }] of Object.entries(built)) {
     const known = KNOWN_DIVERGENCES.has(name);
     it(`${name} lowers identically${presses.length > 0 ? ' through its presses' : ''}${known ? ' (known divergence)' : ''}`, () => {
-      const actual = frames(node, presses);
+      const actual = inLinkLanguage(name, () => frames(node, presses));
       // A structural mismatch reads as "expected {…} to deeply equal {…}" and tells you nothing
       // about WHERE. EQ_PARITY_DIFF=1 prints both trees so the differing attribute is visible.
       if (process.env.EQ_PARITY_DIFF && JSON.stringify(actual) !== JSON.stringify(pinned[name])) {

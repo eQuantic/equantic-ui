@@ -1022,6 +1022,14 @@ record of a release, the wiki's Upgrading page is the distillate.
   configuration is serialized as JSON. `PageTitleTests` runs both doors, and the dashboard
   sample's titles were measured in a browser against main. Proposed and archived through OpenSpec
   (`openspec/specs/document-metadata`).
+- **2026-10-03 · A run that links follows the language**: a `TextRun` with a `Destination` lowered to
+  an anchor holding the destination as written, on both producers, so with language prefixes on a run
+  to `/terms` on a Portuguese page led to the English one, and a Markdown page's internal links did
+  the same; it carried no `data-prefetch` either
+  ([#505](https://github.com/eQuantic/equantic-ui/issues/505)). It lowers as a `Link` does now, and
+  one rule decides what warms on hover for both, which no longer marks a protocol-relative URL. The
+  component parity fixture lowers both under `pt-BR` on each side and compares them. Proposed and
+  archived through OpenSpec (`openspec/specs/links`).
 - **2026-10-03 · A value reaches the browser as its code reads it**: `Color` is the one vocabulary
   value type the browser holds as plain data, and eqc emitted its instance members as methods of the
   value, so `Color.FromRgb(…).WithOpacity(0.8f)` rendered on the server and threw once the page
