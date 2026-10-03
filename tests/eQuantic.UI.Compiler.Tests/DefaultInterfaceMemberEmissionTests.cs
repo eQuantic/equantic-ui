@@ -268,7 +268,7 @@ public class DefaultInterfaceMemberEmissionTests
             var platform = ((string)AppContext.GetData("TRUSTED_PLATFORM_ASSEMBLIES")!)
                 .Split(Path.PathSeparator)
                 .Where(p => p.EndsWith(".dll", StringComparison.OrdinalIgnoreCase))
-                .Select(p => (MetadataReference)MetadataReference.CreateFromFile(p))
+                .Select(p => (MetadataReference)TestReferences.Of(p))
                 .ToList();
             var library = CSharpCompilation.Create("Lib", [CSharpSyntaxTree.ParseText(Library)], platform,
                 new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
@@ -283,9 +283,9 @@ public class DefaultInterfaceMemberEmissionTests
             }).ToList();
             var references = platform
                 .Append(MetadataReference.CreateFromImage(image.ToArray()))
-                .Append(MetadataReference.CreateFromFile(typeof(eQuantic.UI.Primitives.VisualNode).Assembly.Location))
-                .Append(MetadataReference.CreateFromFile(typeof(eQuantic.UI.Components.CodeEditor).Assembly.Location))
-                .Append(MetadataReference.CreateFromFile(typeof(eQuantic.UI.Code.ICodeLanguage).Assembly.Location));
+                .Append(TestReferences.Of(typeof(eQuantic.UI.Primitives.VisualNode).Assembly.Location))
+                .Append(TestReferences.Of(typeof(eQuantic.UI.Components.CodeEditor).Assembly.Location))
+                .Append(TestReferences.Of(typeof(eQuantic.UI.Code.ICodeLanguage).Assembly.Location));
             var compilation = CSharpCompilation.Create("App", trees, references,
                 new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
 

@@ -44,7 +44,7 @@ public class MinMaxStrategy : IConversionStrategy
             return Extreme(invocation, memberAccess, method, methodName == "Min" ? Eq.LinqMin : Eq.LinqMax, context);
 
         // No model to ask what the call answers: the numeric shape it always had.
-        var caller = context.Converter.ConvertExpression(memberAccess.Expression);
+        var caller = LinqSource.Text(memberAccess.Expression, context);
         var args = invocation.ArgumentList.Arguments;
         var mathFunc = methodName == "Min" ? "Math.min" : "Math.max";
 
@@ -95,7 +95,7 @@ public class MinMaxStrategy : IConversionStrategy
             var parts = arguments.Select(argument => context.Converter.ConvertIr(argument.Expression)).ToArray();
             return JsExprWriter.Write(JsExpr.Template(template, parts, context.TypeAnnotations));
         }
-        var source = context.Converter.ConvertExpression(access.Expression);
+        var source = LinqSource.Text(access.Expression, context);
         var projection = arguments.Count > 0 ? context.Converter.ConvertExpression(arguments[0].Expression) : "undefined";
         return $"{helper}({source}, {projection}, {how})";
     }

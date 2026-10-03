@@ -18,12 +18,12 @@ public class ZipStrategy : IConversionStrategy
     {
         var invocation = (InvocationExpressionSyntax)node;
         var memberAccess = (MemberAccessExpressionSyntax)invocation.Expression;
-        var source = context.Converter.ConvertExpression(memberAccess.Expression);
+        var source = LinqSource.Text(memberAccess.Expression, context);
         var args = invocation.ArgumentList.Arguments;
         
         if (args.Count >= 2)
         {
-            var second = context.Converter.ConvertExpression(args[0].Expression);
+            var second = Ir.JsExprWriter.Write(LinqSource.Argument(args[0], invocation, context));
             var resultSelector = context.Converter.ConvertExpression(args[1].Expression);
             
             // A map over the receiver walks the LONGER sequence and hands the selector undefined

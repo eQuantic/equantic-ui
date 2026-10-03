@@ -21,7 +21,7 @@ public class ElementAtStrategy : IConversionStrategy
     {
         var invocation = (InvocationExpressionSyntax)node;
         var memberAccess = (MemberAccessExpressionSyntax)invocation.Expression;
-        var caller = context.Converter.ConvertExpression(memberAccess.Expression);
+        var caller = LinqSource.Text(memberAccess.Expression, context);
         var args = invocation.ArgumentList.Arguments;
 
         if (args.Count == 1)

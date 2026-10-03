@@ -26,7 +26,7 @@ public class LocalFunctionParameterTests
         var classCode = $"class Wrapper {{ void Method() {{ {bodyCode} }} }}";
         var tree = CSharpSyntaxTree.ParseText(classCode);
         var compilation = CSharpCompilation.Create("probe", [tree],
-            [MetadataReference.CreateFromFile(typeof(object).Assembly.Location)]);
+            [TestReferences.Of(typeof(object).Assembly.Location)]);
         _converter.SetSemanticModel(compilation.GetSemanticModel(tree));
         _converter.EmitTypeAnnotations(annotations);
 
