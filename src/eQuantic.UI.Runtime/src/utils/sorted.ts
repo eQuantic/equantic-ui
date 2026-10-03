@@ -21,6 +21,7 @@ import {
   type Pair,
 } from './dictionary';
 import { comparerOf, type Ordering } from './ordering';
+import { identityHash } from './hash';
 
 /** The order of a collection built with no ordering named: numeric for numbers/bigint, relational otherwise. */
 export function defaultCompare<T>(a: T, b: T): number {
@@ -229,6 +230,11 @@ export class SortedMap<K, V> implements Iterable<Pair<K, V>> {
   /** A dictionary equals only itself, as .NET's does. */
   equals(other: unknown): boolean {
     return this === other;
+  }
+
+  /** `GetHashCode()`: its identity's, as `equals` reads it. */
+  getHashCode(): number {
+    return identityHash(this);
   }
 
   /** The JSON object System.Text.Json writes for it, in key order. */

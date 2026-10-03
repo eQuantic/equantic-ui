@@ -98,6 +98,15 @@ public class AssignmentExpressionStrategy : IExpressionIrStrategy
                 JsExprWriter.Write(current), JsExprWriter.Write(operand))!);
 
         var leftType = context.SemanticHelper.GetType(assignment.Left);
+
+        // A COMPOUND over a date, an offset or a time span: their operators are methods of the
+        // runtime's twins, which JavaScript's `op=` cannot call, so `d -= span` subtracted two objects
+        // into NaN and never refused a date leaving the calendar (#424).
+        if (op is "+=" or "-="
+            && BinaryExpressionStrategy.ConvertDateTimeOrTimeSpan("{0}", "{1}", op[..^1], leftType,
+                context.SemanticHelper.GetType(assignment.Right)) is { } compat)
+            return Compound((current, operand) => JsExpr.Template(compat, [current, operand]));
+
         if (op.Length >= 2 && op[^1] == '=' && op is not ("==" or "!=" or "<=" or ">=" or "??="))
         {
             var binaryOp = op[..^1];

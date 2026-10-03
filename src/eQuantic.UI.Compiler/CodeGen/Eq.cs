@@ -200,6 +200,22 @@ public static class Eq
     /// warning travelling to everyone who builds this assembly.</summary>
     public new const string Equals = "$eq.equals";
 
+    /// <summary><c>GetHashCode()</c> by .NET's contract: values <see cref="Equals"/> finds equal hash
+    /// equal, and a value with its own <c>getHashCode</c> answers it.</summary>
+    public const string Hash = "$eq.hash.of";
+
+    /// <summary><c>HashCode.Combine(…)</c>: the values' hashes, combined in order.</summary>
+    public const string HashCombine = "$eq.hash.combine";
+
+    /// <summary><c>object.GetHashCode()</c> for a class that does not override it: its identity's.</summary>
+    public const string HashIdentity = "$eq.hash.identity";
+
+    /// <summary><c>Guid.Parse</c> and <c>new Guid(string)</c>: the canonical text, or .NET's refusal.</summary>
+    public const string GuidParse = "$eq.guid.parse";
+
+    /// <summary><c>Guid.TryParse</c>: the canonical text, or undefined where .NET answers false.</summary>
+    public const string GuidTryParse = "$eq.guid.tryParse";
+
     /// <summary>Membership over a collection whose runtime shape is not knowable statically —
     /// an <c>IReadOnlyCollection&lt;T&gt;</c> is a Set as readily as an array.</summary>
     public const string Contains = "$eq.collections.contains";

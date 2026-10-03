@@ -114,6 +114,8 @@ import { boolConvert, boolParse, boolTryParse } from './utils/boolean-text';
 import { sortedSet, sortedDictionary, sortedList } from './utils/sorted';
 import { liftArith, liftCmp, liftUnary } from './utils/nullable';
 import { equals } from './utils/equals';
+import { hash, hashCombine, identityHash } from './utils/hash';
+import { guidParse, guidTryParse } from './utils/guid';
 import { resolveService } from './utils/services';
 import { StyleBuilder } from './utils/style-builder';
 import { ClassBuilder, joinClasses, whenClass } from './utils/class-builder';
@@ -337,6 +339,13 @@ export const $eq = {
   delegates: { combine: combineDelegate, remove: removeDelegate },
   /** Structural (value) equality for records/structs/tuples — backs ==, Contains, Distinct. */
   equals,
+  /**
+   * `GetHashCode` by .NET's contract, values `equals` finds equal hashing equal (`hash`),
+   * `HashCode.Combine` (`combine`), and `object.GetHashCode`'s identity (`identity`).
+   */
+  hash: { of: hash, combine: hashCombine, identity: identityHash },
+  /** A Guid's canonical text, the lowercase `D` format, from any format .NET reads. */
+  guid: { parse: guidParse, tryParse: guidTryParse },
   /** CSS class composition (the styling subsystem). */
   css: { styleBuilder: StyleBuilder, classBuilder: ClassBuilder, joinClasses, whenClass },
 } as const;

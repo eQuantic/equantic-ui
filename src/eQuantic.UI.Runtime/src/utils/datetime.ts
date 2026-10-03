@@ -16,6 +16,7 @@
  */
 
 import { activePattern } from './culture';
+import { hash } from './hash';
 
 const TICKS_PER_MICROSECOND = 10n;
 const TICKS_PER_MILLISECOND = 10_000n;
@@ -133,6 +134,11 @@ export class TimeSpan {
   /** `Equals(object)`: a TimeSpan of the same ticks, and nothing of another kind (a date has ticks too). */
   equals(other: unknown): boolean {
     return other instanceof TimeSpan && this.ticks === other.ticks;
+  }
+
+  /** `GetHashCode()`: its ticks', as `equals` reads them. */
+  getHashCode(): number {
+    return hash(this.ticks);
   }
 
   /** .NET "c" (constant) format: `[-][d.]hh:mm:ss[.fffffff]`. */
@@ -289,9 +295,18 @@ timeSpan.maxValue = () => new TimeSpan(9_223_372_036_854_775_807n);
 
 /** A count past what a date can move by, as `DateTime.AddUnits` refuses one. */
 const ADD_OUT_OF_RANGE = "Value to add was out of range. (Parameter 'value')";
-/** A result outside 0001-01-01 to 9999-12-31, as `DateTime.AddTicks` refuses one. */
-const UNREPRESENTABLE =
-  "The added or subtracted value results in an un-representable DateTime. (Parameter 'value')";
+/**
+ * A result outside 0001-01-01 to 9999-12-31, as .NET refuses one, naming the parameter the member
+ * refusing it declares: `value` for `Add` and `AddYears`, `months` for `AddMonths`, `t` for the
+ * operators.
+ */
+function unrepresentable(parameter = 'value'): string {
+  return `The added or subtracted value results in an un-representable DateTime. (Parameter '${parameter}')`;
+}
+/** A count of months past what a date can move by, as `AddMonths` refuses one. */
+const BAD_MONTHS = "Months value must be between +/-120000. (Parameter 'months')";
+/** A count of years past what a date can move by, as `AddYears` refuses one. */
+const BAD_YEARS = "Years value must be between +/-10000. (Parameter 'value')";
 /** A `DateTimeOffset` whose UTC time leaves the calendar, as its `ValidateDate` refuses one. */
 const UTC_OUT_OF_RANGE =
   "The UTC time represented when the offset is applied must be between year 0 and 10,000. (Parameter 'offset')";
@@ -322,9 +337,9 @@ function unitTicks(value: number, ticksPerUnit: bigint): bigint {
   return toLong(integral) * ticksPerUnit + toLong((value - integral) * Number(ticksPerUnit));
 }
 
-/** Ticks inside the calendar, or `DateTime.AddTicks`'s refusal. */
-function calendarTicks(ticks: bigint): bigint {
-  if (ticks < 0n || ticks > MAX_DATETIME_TICKS) throw new Error(UNREPRESENTABLE);
+/** Ticks inside the calendar, or the refusal of the member that computed them. */
+function calendarTicks(ticks: bigint, parameter = 'value'): bigint {
+  if (ticks < 0n || ticks > MAX_DATETIME_TICKS) throw new Error(unrepresentable(parameter));
   return ticks;
 }
 
@@ -397,7 +412,9 @@ export class DateTime {
     return this.addTicks(unitTicks(value, TICKS_PER_MICROSECOND));
   }
 
-  addMonths(months: number): DateTime {
+  /** `AddMonths`: refused past 120000 months either way, or where the result leaves the calendar. */
+  addMonths(months: number, parameter = 'months'): DateTime {
+    if (months < -120000 || months > 120000) throw new Error(BAD_MONTHS);
     const c = this.civil();
     const i = c.month - 1 + months;
     let year: number, month: number;
@@ -408,25 +425,29 @@ export class DateTime {
       month = 12 + ((i + 1) % 12);
       year = c.year + idiv(i - 11, 12);
     }
+    if (year < 1 || year > 9999) throw new Error(unrepresentable(parameter));
     const day = Math.min(c.day, daysInMonth(year, month));
     const datePart = BigInt(daysFromCivil(year, month, day)) * TICKS_PER_DAY;
     return new DateTime(datePart + (this.ticks % TICKS_PER_DAY));
   }
+  /** `AddYears`: refused past 10000 years either way, and where the result leaves the calendar in
+   * its own parameter's name. */
   addYears(years: number): DateTime {
-    return this.addMonths(years * 12);
+    if (years < -10000 || years > 10000) throw new Error(BAD_YEARS);
+    return this.addMonths(years * 12, 'value');
   }
 
   /** DateTime - DateTime -> TimeSpan. */
   diff(other: DateTime): TimeSpan {
     return new TimeSpan(this.ticks - other.ticks);
   }
-  /** DateTime + TimeSpan -> DateTime. */
-  add(span: TimeSpan): DateTime {
-    return new DateTime(this.ticks + span.ticks);
+  /** `Add(TimeSpan)`, and the `+` operator, which names its parameter `t`: refused off the calendar. */
+  add(span: TimeSpan, parameter = 'value'): DateTime {
+    return new DateTime(calendarTicks(this.ticks + span.ticks, parameter));
   }
-  /** DateTime - TimeSpan -> DateTime. */
-  subtract(span: TimeSpan): DateTime {
-    return new DateTime(this.ticks - span.ticks);
+  /** `Subtract(TimeSpan)`, and the `-` operator, which names its parameter `t`. */
+  subtract(span: TimeSpan, parameter = 'value'): DateTime {
+    return new DateTime(calendarTicks(this.ticks - span.ticks, parameter));
   }
 
   compareTo(other: DateTime): number {
@@ -435,6 +456,11 @@ export class DateTime {
   /** `Equals(object)`: a DateTime of the same ticks, and nothing of another kind. */
   equals(other: unknown): boolean {
     return other instanceof DateTime && this.ticks === other.ticks;
+  }
+
+  /** `GetHashCode()`: its ticks', as `equals` reads them. */
+  getHashCode(): number {
+    return hash(this.ticks);
   }
 
   /** .NET invariant default: `MM/dd/yyyy HH:mm:ss`. With a pattern, see {@link format}. */
@@ -631,6 +657,11 @@ export class DateOnly {
     return other instanceof DateOnly && this.dayNumber === other.dayNumber;
   }
 
+  /** `GetHashCode()`: its day's, as `equals` reads it. */
+  getHashCode(): number {
+    return hash(this.dayNumber);
+  }
+
   /** .NET invariant short date: `MM/dd/yyyy`. */
   toString(pattern?: string): string {
     const c = this.civil();
@@ -788,6 +819,11 @@ export class TimeOnly {
     return other instanceof TimeOnly && this.ticks === other.ticks;
   }
 
+  /** `GetHashCode()`: its ticks', as `equals` reads them. */
+  getHashCode(): number {
+    return hash(this.ticks);
+  }
+
   /** .NET invariant short time: `HH:mm`. */
   toString(): string {
     return `${pad(this.hour, 2)}:${pad(this.minute, 2)}`;
@@ -919,8 +955,8 @@ export class DateTimeOffset {
   }
 
   /** Moves the clock time within the calendar, then checks the UTC time, as .NET's `Add` does. */
-  addTicks(t: bigint): DateTimeOffset {
-    const local = calendarTicks(this.localTicks + t);
+  addTicks(t: bigint, parameter = 'value'): DateTimeOffset {
+    const local = calendarTicks(this.localTicks + t, parameter);
     const utc = local - this.offsetTicks;
     if (utc < 0n || utc > MAX_DATETIME_TICKS) throw new Error(UTC_OUT_OF_RANGE);
     return new DateTimeOffset(local, this.offsetTicks);
@@ -961,11 +997,13 @@ export class DateTimeOffset {
   diff(other: DateTimeOffset): TimeSpan {
     return new TimeSpan(this.utcTicks - other.utcTicks);
   }
-  add(span: TimeSpan): DateTimeOffset {
-    return this.addTicks(span.ticks);
+  /** `Add(TimeSpan)`, and the `+` operator, which names its parameter `t`, as its clock time's does. */
+  add(span: TimeSpan, parameter = 'value'): DateTimeOffset {
+    return this.addTicks(span.ticks, parameter);
   }
-  subtract(span: TimeSpan): DateTimeOffset {
-    return this.addTicks(-span.ticks);
+  /** `Subtract(TimeSpan)`, and the `-` operator, which names its parameter `t`. */
+  subtract(span: TimeSpan, parameter = 'value'): DateTimeOffset {
+    return this.addTicks(-span.ticks, parameter);
   }
 
   compareTo(other: DateTimeOffset): number {
@@ -974,6 +1012,11 @@ export class DateTimeOffset {
   /** `Equals(object)`: a DateTimeOffset of the same instant, and nothing of another kind. */
   equals(other: unknown): boolean {
     return other instanceof DateTimeOffset && this.utcTicks === other.utcTicks;
+  }
+
+  /** `GetHashCode()`: its instant's, as `equals` reads it. */
+  getHashCode(): number {
+    return hash(this.utcTicks);
   }
 
   toUnixTimeSeconds(): number {

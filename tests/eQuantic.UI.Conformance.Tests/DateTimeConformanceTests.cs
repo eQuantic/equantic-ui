@@ -79,4 +79,28 @@ public class DateTimeConformanceTests
         Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
         ConformanceRunner.AssertStatementsSameAsDotNet(statements);
     }
+
+    /// <summary>
+    /// Every arithmetic that leaves the calendar is refused in .NET's words, naming the parameter of
+    /// the member that refuses it: <c>value</c> for <c>Add</c>, <c>Subtract</c> and <c>AddYears</c>,
+    /// <c>months</c> for <c>AddMonths</c>, and <c>t</c> for the operators. The twin built the invalid
+    /// date without a word (#424).
+    /// </summary>
+    [SkippableTheory]
+    [InlineData("try { DateTime.MaxValue.Add(TimeSpan.FromTicks(1)); return \"no\"; } catch (Exception e) { return e.Message; }")]      // "...un-representable DateTime. (Parameter 'value')"
+    [InlineData("try { DateTime.MinValue.Subtract(TimeSpan.FromTicks(1)); return \"no\"; } catch (Exception e) { return e.Message; }")] // "...(Parameter 'value')"
+    [InlineData("try { var d = DateTime.MaxValue + TimeSpan.FromTicks(1); return \"no\"; } catch (Exception e) { return e.Message; }")] // "...(Parameter 't')"
+    [InlineData("try { var d = DateTime.MinValue; d -= TimeSpan.FromTicks(1); return \"no\"; } catch (Exception e) { return e.Message; }")] // "...(Parameter 't')"
+    [InlineData("try { DateTime.MaxValue.AddMonths(1); return \"no\"; } catch (Exception e) { return e.Message; }")]                     // "...(Parameter 'months')"
+    [InlineData("try { DateTime.MaxValue.AddYears(1); return \"no\"; } catch (Exception e) { return e.Message; }")]                      // "...(Parameter 'value')"
+    [InlineData("try { new DateTime(2026, 1, 1).AddMonths(120001); return \"no\"; } catch (Exception e) { return e.Message; }")]        // "Months value must be between +/-120000. (Parameter 'months')"
+    [InlineData("try { new DateTime(2026, 1, 1).AddYears(-10001); return \"no\"; } catch (Exception e) { return e.Message; }")]         // "Years value must be between +/-10000. (Parameter 'value')"
+    [InlineData("try { var o = DateTimeOffset.MaxValue + TimeSpan.FromTicks(1); return \"no\"; } catch (Exception e) { return e.Message; }")] // "...(Parameter 't')"
+    [InlineData("try { DateTimeOffset.MaxValue.Add(TimeSpan.FromTicks(1)); return \"no\"; } catch (Exception e) { return e.Message; }")] // "...(Parameter 'value')"
+    [InlineData("return new DateTime(2026, 1, 31).AddMonths(1).Day + \",\" + new DateTime(2024, 2, 29).AddYears(1).Day;")]             // "28,28"
+    public void DateArithmetic_LeavingTheCalendar_IsRefusedAsDotNetRefusesIt(string statements)
+    {
+        Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
+        ConformanceRunner.AssertStatementsSameAsDotNet(statements);
+    }
 }

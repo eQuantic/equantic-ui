@@ -28,7 +28,6 @@ FieldExpressionStrategy
 FirstStrategy
 GenericNameStrategy
 GroupByStrategy
-GuidTypeStrategy
 HashSetStrategy
 HtmlNodeStrategy
 IndexFromEndStrategy

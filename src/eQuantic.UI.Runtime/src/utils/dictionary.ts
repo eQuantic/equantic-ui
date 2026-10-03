@@ -1,6 +1,7 @@
 import { adoptMember } from './adopt-member';
 import { sameItem } from './collections';
 import { equals } from './equals';
+import { identityHash } from './hash';
 
 /**
  * How a dictionary finds a key, as .NET's default comparer for the key type does, which eqc says:
@@ -173,6 +174,11 @@ export class Dictionary<K, V> implements Iterable<Pair<K, V>> {
   /** A dictionary equals only itself, as .NET's does: `$eq.equals` asks a value's own `equals`. */
   equals(other: unknown): boolean {
     return this === other;
+  }
+
+  /** `GetHashCode()`: its identity's, as `equals` reads it. */
+  getHashCode(): number {
+    return identityHash(this);
   }
 
   /**
