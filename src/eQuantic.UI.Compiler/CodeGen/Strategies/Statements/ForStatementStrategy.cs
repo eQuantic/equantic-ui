@@ -65,17 +65,28 @@ public class ForStatementStrategy : IStatementStrategy
     }
 
     /// <summary>Whether a lambda, an anonymous method or a local function anywhere in the loop reads
-    /// a variable its declaration declares, which the bound tree answers by symbol.</summary>
+    /// a variable that is one for the whole loop: what its declaration declares, and what that
+    /// declaration's initializers declare (<c>out var n</c>), which the bound tree answers by symbol.
+    /// One only the initializer declared, captured alone, was left in the head, a copy per
+    /// iteration.</summary>
     private static bool CapturesALoopVariable(ForStatementSyntax forStmt, ConversionContext context)
     {
         var declaration = forStmt.Declaration!;
-        var loopVariables = declaration.Variables
-            .Select(v => context.SemanticHelper.GetDeclaredSymbol(v))
+        var declarators = declaration.Variables
+            .Select(v => ((SyntaxNode)v, v.Identifier.ValueText))
+            .Concat(declaration.Variables
+                .Where(v => v.Initializer is not null)
+                .SelectMany(v => v.Initializer!.Value.DescendantNodesAndSelf(node => node is not AnonymousFunctionExpressionSyntax))
+                .OfType<SingleVariableDesignationSyntax>()
+                .Select(designation => ((SyntaxNode)designation, designation.Identifier.ValueText)))
+            .ToList();
+        var loopVariables = declarators
+            .Select(declarator => context.SemanticHelper.GetDeclaredSymbol(declarator.Item1))
             .Where(symbol => symbol is not null)
             .ToHashSet(SymbolEqualityComparer.Default);
         if (loopVariables.Count == 0) return false;
         // Only a name spelled like one of them can read one, so the model is asked about those alone.
-        var names = declaration.Variables.Select(v => v.Identifier.ValueText).ToHashSet(StringComparer.Ordinal);
+        var names = declarators.Select(declarator => declarator.ValueText).ToHashSet(StringComparer.Ordinal);
         return forStmt.DescendantNodes()
             .Where(n => n is AnonymousFunctionExpressionSyntax or LocalFunctionStatementSyntax)
             .SelectMany(function => function.DescendantNodes().OfType<IdentifierNameSyntax>())

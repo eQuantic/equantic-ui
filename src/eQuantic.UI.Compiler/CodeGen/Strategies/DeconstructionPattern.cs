@@ -11,11 +11,12 @@ namespace eQuantic.UI.Compiler.CodeGen.Strategies;
 /// (<c>foreach (var (a, b) in ps)</c>). A tuple, and a dictionary's pair, are arrays here and
 /// destructure by position. Anything else deconstructs through the <c>Deconstruct</c> the bound
 /// tree says each level calls. A record's own, and a BCL type's, read the members its out
-/// parameters name (a record's positional properties). One the app wrote is CALLED, at the top
-/// level, and its outs come back as the object every method with outs returns
-/// (<see cref="OutParameters"/>), so a <c>Deconstruct</c> that computes a part, or names it
-/// differently from a member, still answers as it does in .NET. A nested deconstruction nests the
-/// two kinds, each part by its own type.
+/// parameters name (a record's positional properties). One the app wrote is CALLED, and its outs
+/// come back as the object every method with outs returns (<see cref="OutParameters"/>), so a
+/// <c>Deconstruct</c> that computes a part, or names it differently from a member, still answers as
+/// it does in .NET. A nested deconstruction nests the two kinds, each part by its own type; a nested
+/// level whose <c>Deconstruct</c> the app wrote is a <see cref="Step"/> of its own, since a pattern
+/// cannot call one.
 /// <para>
 /// Only the declaration had it, from the type's first <c>Deconstruct</c> whatever its arity: the
 /// assignment and the loop wrote array destructuring, and a record is not iterable, so
@@ -26,21 +27,47 @@ namespace eQuantic.UI.Compiler.CodeGen.Strategies;
 internal static class DeconstructionPattern
 {
     /// <summary>
-    /// The destructuring pattern of <paramref name="left"/> (an assignment's tuple, a declaration's
-    /// designation, a loop's variable) from a value of <paramref name="type"/>, and the
-    /// <c>Deconstruct</c> its value goes through first when the app wrote it. Null when no level of
-    /// it deconstructs through a <c>Deconstruct</c>, tuples all the way down, which the array
-    /// destructuring every caller already writes is right for.
+    /// A level a pattern cannot reach: a part whose <c>Deconstruct</c> the app wrote, bound to
+    /// <paramref name="Temporary"/> in its parent's pattern, then destructured by
+    /// <paramref name="Pattern"/> from what <paramref name="Called"/> hands back. A step comes after
+    /// the one that binds its temporary.
     /// </summary>
-    internal static (string Pattern, IMethodSymbol? Called)? Of(SyntaxNode left, DeconstructionInfo? info,
-        ITypeSymbol? type, ConversionContext context)
+    internal sealed record Step(string Temporary, string Pattern, IMethodSymbol Called);
+
+    /// <summary>
+    /// A deconstruction's destructuring: the top level's <paramref name="Pattern"/>, the
+    /// <c>Deconstruct</c> of the app's its value goes through first, if any, the nested levels that
+    /// need a call of their own, and, written with temporaries, the temporaries every part was bound
+    /// to, each with the target it assigns (none for a discard), and the tuple they make, which is
+    /// the value of an assignment.
+    /// </summary>
+    internal sealed record Lowered(
+        string Pattern,
+        IMethodSymbol? Called,
+        IReadOnlyList<Step> Steps,
+        IReadOnlyList<string> Temporaries,
+        IReadOnlyList<(string Temporary, string Target)> Assignments,
+        string Tuple);
+
+    /// <summary>
+    /// The destructuring of <paramref name="left"/> (an assignment's tuple, a declaration's
+    /// designation, a loop's variable) from a value of <paramref name="type"/>. Null when no level of
+    /// it deconstructs through a <c>Deconstruct</c>, tuples all the way down, which the array
+    /// destructuring every caller already writes is right for. <paramref name="temporaries"/> binds
+    /// every part to a temporary instead of its target, for an assignment whose value is read or
+    /// that has a step: the targets are then assigned from them, and the tuple built of them.
+    /// </summary>
+    internal static Lowered? Of(SyntaxNode left, DeconstructionInfo? info, ITypeSymbol? type,
+        ConversionContext context, bool temporaries = false)
     {
         if (Parts(left) is not { } parts) return null;
-        var deconstructs = false;
+        var walk = new Walk(context, temporaries, $"$d{left.SpanStart}_");
         var top = Positional(type) ? null : Deconstruct(info, type);
         var called = top is not null && IsTheApps(top) ? top : null;
-        var pattern = Composite(parts, info, type, called is not null, context, ref deconstructs);
-        return deconstructs ? (pattern, called) : null;
+        var (pattern, tuple) = walk.Composite(parts, info, type, called is not null);
+        return walk.Deconstructs
+            ? new Lowered(pattern, called, walk.Steps, walk.Temporaries, walk.Assignments, tuple)
+            : null;
     }
 
     /// <summary>The value a deconstruction reads, through the <c>Deconstruct</c> the app wrote: an
@@ -61,6 +88,15 @@ internal static class DeconstructionPattern
         return JsExpr.Call(JsExpr.Member(value, name));
     }
 
+    /// <summary>
+    /// The declarators after the top one, one per step, each destructuring what its
+    /// <c>Deconstruct</c> hands back: <c>, { celsius: c } = $d12_0.deconstruct()</c>, which a
+    /// declaration appends to its own <c>let</c> or <c>const</c>.
+    /// </summary>
+    internal static string StepDeclarators(Lowered lowered, ConversionContext context) =>
+        string.Concat(lowered.Steps.Select(step =>
+            $", {step.Pattern} = {JsExprWriter.Write(Through(step.Called, JsExpr.Identifier(step.Temporary), context))}"));
+
     /// <summary>The parts a target splits into, or null for a target that is one part.</summary>
     private static IReadOnlyList<SyntaxNode>? Parts(SyntaxNode target) => target switch
     {
@@ -70,54 +106,6 @@ internal static class DeconstructionPattern
         ParenthesizedVariableDesignationSyntax designation => designation.Variables.Cast<SyntaxNode>().ToList(),
         _ => null,
     };
-
-    /// <summary>
-    /// One level: its parts by position, for a tuple, a pair and a value with no
-    /// <c>Deconstruct</c>; otherwise by the names its <c>Deconstruct</c>'s outs carry, which a
-    /// called one hands back under their own names and a read one finds on the members, in
-    /// camelCase. A discard takes nothing: a hole by position, no entry by name.
-    /// </summary>
-    private static string Composite(IReadOnlyList<SyntaxNode> parts, DeconstructionInfo? info, ITypeSymbol? type,
-        bool called, ConversionContext context, ref bool deconstructs)
-    {
-        var deconstruct = Positional(type) ? null : Deconstruct(info, type);
-        if (deconstruct is null)
-        {
-            var elements = new List<string>();
-            for (var i = 0; i < parts.Count; i++)
-                elements.Add(Part(parts[i], Nested(info, i), ElementType(type, i), context, ref deconstructs) ?? "");
-            return $"[{string.Join(", ", elements)}]";
-        }
-
-        deconstructs = true;
-        var outs = deconstruct.Parameters.Where(parameter => parameter.RefKind == RefKind.Out).ToList();
-        var members = new List<string>();
-        for (var i = 0; i < parts.Count && i < outs.Count; i++)
-        {
-            if (Part(parts[i], Nested(info, i), outs[i].Type, context, ref deconstructs) is not { } bound) continue;
-            var key = called ? outs[i].Name.ToJsIdentifier() : outs[i].Name.ToCamelCase();
-            members.Add($"{key}: {bound}");
-        }
-        return members.Count == 0 ? "{}" : $"{{ {string.Join(", ", members)} }}";
-    }
-
-    /// <summary>
-    /// One part: the name a declaration binds, the target an assignment writes (converted as any
-    /// target is), a level of its own when it splits again, and null for a discard. Below the top
-    /// level a <c>Deconstruct</c> is read and never called, since a pattern cannot call one.
-    /// </summary>
-    private static string? Part(SyntaxNode target, DeconstructionInfo? info, ITypeSymbol? type,
-        ConversionContext context, ref bool deconstructs)
-    {
-        if (target is DeclarationExpressionSyntax declaration) target = declaration.Designation;
-        if (target is DiscardDesignationSyntax) return null;
-        if (target is SingleVariableDesignationSyntax single) return single.Identifier.Text.ToJsIdentifier();
-        if (target is IdentifierNameSyntax { Identifier.ValueText: "_" } discard
-            && context.SemanticHelper.GetSymbol(discard) is null or IDiscardSymbol)
-            return null;
-        if (Parts(target) is { } nested) return Composite(nested, info, type, called: false, context, ref deconstructs);
-        return target is ExpressionSyntax assigned ? context.Converter.ConvertExpression(assigned) : null;
-    }
 
     /// <summary>
     /// The <c>Deconstruct</c> a level calls: the bound tree's, which is none for a tuple's level.
@@ -152,4 +140,110 @@ internal static class DeconstructionPattern
             pair.TypeArguments[index],
         _ => null,
     };
+
+    /// <summary>One deconstruction's walk: the steps, and with temporaries, what each part binds.</summary>
+    private sealed class Walk(ConversionContext context, bool temporaries, string prefix)
+    {
+        public bool Deconstructs { get; private set; }
+        public List<Step> Steps { get; } = [];
+        public List<string> Temporaries { get; } = [];
+        public List<(string Temporary, string Target)> Assignments { get; } = [];
+
+        private string Fresh()
+        {
+            var name = prefix + Temporaries.Count;
+            Temporaries.Add(name);
+            return name;
+        }
+
+        /// <summary>
+        /// One level's pattern and the tuple of its parts: by position, for a tuple, a pair and a
+        /// value with no <c>Deconstruct</c>; otherwise by the names its <c>Deconstruct</c>'s outs
+        /// carry, which a called one hands back under their own names and a read one finds on the
+        /// members, in camelCase. A discard takes nothing: a hole by position, no entry by name,
+        /// unless temporaries keep its value for the tuple.
+        /// </summary>
+        public (string Pattern, string Tuple) Composite(IReadOnlyList<SyntaxNode> parts, DeconstructionInfo? info,
+            ITypeSymbol? type, bool called)
+        {
+            var deconstruct = Positional(type) ? null : Deconstruct(info, type);
+            var tuple = new List<string>();
+            if (deconstruct is null)
+            {
+                var elements = new List<string>();
+                for (var i = 0; i < parts.Count; i++)
+                {
+                    var (bound, value) = Part(parts[i], Nested(info, i), ElementType(type, i));
+                    elements.Add(bound ?? "");
+                    tuple.Add(value);
+                }
+                return ($"[{string.Join(", ", elements)}]", $"[{string.Join(", ", tuple)}]");
+            }
+
+            Deconstructs = true;
+            var outs = deconstruct.Parameters.Where(parameter => parameter.RefKind == RefKind.Out).ToList();
+            var members = new List<string>();
+            for (var i = 0; i < parts.Count && i < outs.Count; i++)
+            {
+                var (bound, value) = Part(parts[i], Nested(info, i), outs[i].Type);
+                tuple.Add(value);
+                if (bound is null) continue;
+                var key = called ? outs[i].Name.ToJsIdentifier() : outs[i].Name.ToCamelCase();
+                members.Add($"{key}: {bound}");
+            }
+            var pattern = members.Count == 0 ? "{}" : $"{{ {string.Join(", ", members)} }}";
+            return (pattern, $"[{string.Join(", ", tuple)}]");
+        }
+
+        /// <summary>
+        /// One part: what it binds in its parent's pattern (the name a declaration binds, the target an
+        /// assignment writes, a temporary, or null for a discard), and its value in the tuple.
+        /// </summary>
+        private (string? Bound, string Value) Part(SyntaxNode target, DeconstructionInfo? info, ITypeSymbol? type)
+        {
+            if (target is DeclarationExpressionSyntax declaration) target = declaration.Designation;
+            if (Parts(target) is { } nested) return Level(nested, info, type);
+
+            var discard = target is DiscardDesignationSyntax
+                || target is IdentifierNameSyntax { Identifier.ValueText: "_" } underscore
+                    && context.SemanticHelper.GetSymbol(underscore) is null or IDiscardSymbol;
+            var written = discard
+                ? null
+                : target switch
+                {
+                    SingleVariableDesignationSyntax single => single.Identifier.Text.ToJsIdentifier(),
+                    ExpressionSyntax assigned => context.Converter.ConvertExpression(assigned),
+                    _ => null,
+                };
+            if (temporaries)
+            {
+                var temporary = Fresh();
+                if (written is not null) Assignments.Add((temporary, written));
+                return (temporary, temporary);
+            }
+            return (written, written ?? "undefined");
+        }
+
+        /// <summary>
+        /// A part that splits again. A level whose <c>Deconstruct</c> the app wrote cannot be called
+        /// from inside a pattern: its value is bound to a temporary there, and a <see cref="Step"/>
+        /// destructures what its <c>Deconstruct</c> hands back, after the level that binds it.
+        /// </summary>
+        private (string? Bound, string Value) Level(IReadOnlyList<SyntaxNode> parts, DeconstructionInfo? info,
+            ITypeSymbol? type)
+        {
+            var deconstruct = Positional(type) ? null : Deconstruct(info, type);
+            if (deconstruct is null || !IsTheApps(deconstruct))
+            {
+                var (pattern, tuple) = Composite(parts, info, type, called: false);
+                return (pattern, tuple);
+            }
+            var temporary = Fresh();
+            var at = Steps.Count;
+            Steps.Add(null!);
+            var (stepPattern, stepTuple) = Composite(parts, info, type, called: true);
+            Steps[at] = new Step(temporary, stepPattern, deconstruct);
+            return (temporary, stepTuple);
+        }
+    }
 }

@@ -134,6 +134,8 @@ public class StatementConformanceTests
     [SkippableTheory]
     [InlineData("int n = 0; object Gate() { n++; return new object(); } lock (Gate()) { n *= 10; } return n;")] // 10
     [InlineData("var gate = new object(); int n = 1; lock (gate) { n++; } return n;")]                        // 2
+    [InlineData("object gate = null; try { lock (gate) { return 1; } } catch { return 2; }")]                  // 2
+    [InlineData("object Gate() => null; try { lock (Gate()) { return 1; } } catch { return 2; }")]             // 2
     public void ALocksExpression_Runs(string statements)
     {
         Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
@@ -145,6 +147,10 @@ public class StatementConformanceTests
     [SkippableTheory]
     [InlineData("var a = new object(); var b = new object(); return a == b;")]  // false
     [InlineData("var a = new object(); var b = a; return a == b;")]             // true
+    [InlineData("var a = new object(); var b = new object(); return a.Equals(b);")]  // false
+    [InlineData("var a = new object(); return a.Equals(a);")]                   // true
+    [InlineData("var d = new Dictionary<object, int>(); d[new object()] = 1; d[new object()] = 2; return d.Count;")] // 2
+    [InlineData("return new object().ToString();")]                              // "System.Object"
     public void ANewObject_IsAValueOfItsOwn(string statements)
     {
         Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
@@ -219,12 +225,30 @@ public class StatementConformanceTests
     /// <summary>What a for loop's initializer declares is one variable for the whole loop, as the
     /// loop's own are, and stays declared before what assigns it when a closure moves the loop's
     /// variables in front of it (#476).</summary>
-    [SkippableFact]
-    public void AnInitializersOutVariable_IsOnePerLoop_WhenTheLoopIsHoisted()
+    [SkippableTheory]
+    [InlineData("for (int i = Seed(out var n); i < n; i++) fs.Add(() => i * 10 + n); return fs[0]() + fs[1]();")] // 44
+    [InlineData("for (int i = Seed(out var n); i < 2; i++) fs.Add(() => n++); return fs[0]() * 10 + fs[1]();")]   // 23
+    public void AnInitializersOutVariable_IsOnePerLoop_WhenTheLoopIsHoisted(string loop)
     {
         Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
         ConformanceRunner.AssertStatementsSameAsDotNet(
-            "int Seed(out int limit) { limit = 2; return 0; } var fs = new List<Func<int>>(); "
-            + "for (int i = Seed(out var n); i < n; i++) fs.Add(() => i * 10 + n); return fs[0]() + fs[1]();"); // 44
+            "int Seed(out int limit) { limit = 2; return 0; } var fs = new List<Func<int>>(); " + loop);
+    }
+
+    /// <summary>A lock's gate written through a conversion the app wrote runs that conversion, as C#
+    /// evaluates the gate before it takes the lock.</summary>
+    [SkippableFact]
+    public void ALocksGate_RunsItsConversion()
+    {
+        Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
+        ConformanceRunner.AssertStatementsSameAsDotNet(
+            "var token = new Token(1); lock ((Gate)token) { } return Gate.Made;", // 1
+            """
+            public sealed record Gate(int N) { public static int Made; }
+            public readonly record struct Token(int N)
+            {
+                public static explicit operator Gate(Token token) { Gate.Made++; return new Gate(token.N); }
+            }
+            """);
     }
 }

@@ -34,11 +34,13 @@ public class ForEachVariableStatementStrategy : IStatementStrategy
 
         var body = context.Converter.ConvertStatementIr(foreachStmt.Statement);
         var loopType = foreachStmt.AwaitKeyword.Value != null ? "for await" : "for";
-        // `$` cannot begin a C# identifier, so the element's name shadows nothing the body reads.
-        var loop = deconstruction?.Called is { } called
+        // Through a Deconstruct the app wrote, at the top or at a nested level, each element is named
+        // and destructured in the body. `$` cannot begin a C# identifier, so the element's name
+        // shadows nothing the body reads.
+        var loop = deconstruction is { } lowered && (lowered.Called is not null || lowered.Steps.Count > 0)
             ? JsStatement.Headed($"{loopType} (const $element of {collection})", JsStatement.Block(
             [
-                JsStatement.Raw($"const {pattern} = {JsExprWriter.Write(DeconstructionPattern.Through(called, JsExpr.Identifier("$element"), context))};"),
+                JsStatement.Raw($"const {pattern} = {JsExprWriter.Write(lowered.Called is { } called ? DeconstructionPattern.Through(called, JsExpr.Identifier("$element"), context) : JsExpr.Identifier("$element"))}{DeconstructionPattern.StepDeclarators(lowered, context)};"),
                 body,
             ]))
             : JsStatement.Headed($"{loopType} (const {pattern} of {collection})", body);

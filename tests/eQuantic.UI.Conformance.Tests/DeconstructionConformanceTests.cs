@@ -85,4 +85,22 @@ public class DeconstructionConformanceTests
         Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
         ConformanceRunner.AssertStatementsSameAsDotNet(statements, Shapes);
     }
+
+    /// <summary>
+    /// A nested level whose <c>Deconstruct</c> the app wrote is called too, in a declaration, an
+    /// assignment and a loop: a pattern cannot call one, and it read the members its outs name,
+    /// which a computed part is not. And an assignment's value is the tuple of its parts, as C#
+    /// gives it, where the destructuring answered its right-hand side.
+    /// </summary>
+    [SkippableTheory]
+    [InlineData("var ((c, f), n) = (new Temperature(100), 1); return c + f + n;")]                                     // 313
+    [InlineData("double c, f; int n; ((c, f), n) = (new Temperature(0), 2); return c + f + n;")]                       // 34
+    [InlineData("var s = 0.0; foreach (var ((c, f), n) in new[] { (new Temperature(0), 1), (new Temperature(100), 2) }) s += f * n; return s;")] // 456
+    [InlineData("int a, b; var result = ((a, b) = new Point(1, 2)); return result.Item1 * 10 + result.Item2;")]        // 12
+    [InlineData("int b; var r = ((_, b) = new Point(5, 6)); return r.Item1 + r.Item2;")]                               // 11
+    public void ANestedDeconstructOfTheApps_IsCalled_AndAnAssignmentAnswersItsTuple(string statements)
+    {
+        Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
+        ConformanceRunner.AssertStatementsSameAsDotNet(statements, Shapes);
+    }
 }

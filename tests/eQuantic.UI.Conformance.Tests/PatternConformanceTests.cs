@@ -138,11 +138,15 @@ public class PatternConformanceTests
     [InlineData("string s = null; return s is Limits.Nothing;")]                           // true
     [InlineData("object o = \"hello\"; return o switch { char => 1, string => 2, _ => 3 };")] // 2
     [InlineData("object o = 'h'; return o switch { char => 1, string => 2, _ => 3 };")]      // 1
+    [InlineData("long x = 5; return x is Limits.Small;")]                                  // true
+    [InlineData("decimal d = 5m; return d is Limits.Small;")]                              // true
+    [InlineData("int calls = 0; object Read() { calls++; return \"xy\"; } var isChar = Read() is char; return calls * 10 + (isChar ? 1 : 0);")] // 10
+    [InlineData("int calls = 0; object Read() { calls++; return 7; } return (Read() is int n ? n : 0) * 10 + calls;")]                         // 71
     public void AConstantInAPattern_IsTestedByItsValue(string statements)
     {
         Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
         ConformanceRunner.AssertStatementsSameAsDotNet(statements,
             "public static class Limits { public const long Five = 5; public const decimal Rate = 1.5m; "
-            + "public const double NotANumber = double.NaN; public const string Nothing = null; }");
+            + "public const double NotANumber = double.NaN; public const string Nothing = null; public const int Small = 5; }");
     }
 }

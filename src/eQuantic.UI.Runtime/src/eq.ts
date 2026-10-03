@@ -114,6 +114,7 @@ import { boolConvert, boolParse, boolTryParse } from './utils/boolean-text';
 import { sortedSet, sortedDictionary, sortedList } from './utils/sorted';
 import { liftArith, liftCmp, liftUnary } from './utils/nullable';
 import { equals } from './utils/equals';
+import { lockGate, newObject } from './utils/net-object';
 import { resolveService } from './utils/services';
 import { StyleBuilder } from './utils/style-builder';
 import { ClassBuilder, joinClasses, whenClass } from './utils/class-builder';
@@ -193,6 +194,9 @@ export const $eq = {
   linq: { max, min, toDictionary },
   /** C# `with` over a runtime value type — prototype preserved. */
   withPatch,
+  /** `new object()`, an identity of its own, and a `lock` statement's gate, refused when null. */
+  newObject,
+  lockGate,
   /** C# range indexing whose endpoints count from the end — see `slice`. */
   slice,
   /** Design mode only: the source span that constructed a node — see `origin`. */

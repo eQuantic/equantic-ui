@@ -1642,7 +1642,8 @@ public class TypeScriptEmitter
                     // C# 14 `field`: the property keeps its own store and the accessors guard it.
                     // The slot has to exist before the getter names it — see FieldExpressionStrategy
                     // for why it is called `$name` (a name no C# field can take).
-                    if (Strategies.Expressions.FieldExpressionStrategy.UsesBackingField(p))
+                    var backed = Strategies.Expressions.FieldExpressionStrategy.UsesBackingField(p);
+                    if (backed)
                     {
                         var slot = Strategies.Expressions.FieldExpressionStrategy.BackingSlot(p);
                         // The store starts as the property's initializer, which C# writes into it
@@ -1661,9 +1662,16 @@ public class TypeScriptEmitter
                         }
                         else
                             c.Field(slot, DeclaredType(p.Type), slotDefault, p, isStatic: slotIsStatic);
+                        // An automatic getter reads the store. Without one the class fell to the
+                        // auto-property's field below, named like the property, which shadows the
+                        // setter: a write skipped it, and `Total = 3` read back 3 where C# reads 6.
+                        if (p.AccessorList.Accessors.FirstOrDefault(a => a.Keyword.Text == "get") is { Body: null, ExpressionBody: null })
+                            c.Member(JsClassMember.Getter(accessorQualifier, pn, Annotation(DeclaredType(p.Type)),
+                                JsStatement.Return(JsExpr.ThisMember(slot))), p);
                     }
 
-                    if (EmitGetter(p, c, accessorQualifier)) { }
+                    // A property guarding a store has its accessors, and no field of its name.
+                    if (EmitGetter(p, c, accessorQualifier) || backed) { }
                     else if (p.Initializer != null)
                         c.Field(pn, DeclaredType(p.Type),
                             Initializer(p.Initializer.Value, _converter.ConvertExpression(p.Initializer.Value, p.Type.ToString())), p,

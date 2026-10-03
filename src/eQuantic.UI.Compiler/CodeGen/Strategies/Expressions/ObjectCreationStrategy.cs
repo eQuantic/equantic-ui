@@ -33,11 +33,15 @@ public class ObjectCreationStrategy : IConversionStrategy
             return "{}";
 
         // `new object()` — a value with nothing but its identity, the gate a `lock` takes or a
-        // sentinel. A fresh plain object is that here; `new object()` named a class JavaScript does
-        // not have, and threw where it ran (#478).
+        // sentinel: the runtime's, since a plain `{}` is an anonymous type here, compared by its
+        // members, so two of them were Equal and one dictionary key. `new object()` named a class
+        // JavaScript does not have, and threw where it ran (#478).
         if (context.SemanticHelper.GetType(node) is { SpecialType: SpecialType.System_Object }
             && node is BaseObjectCreationExpressionSyntax { Initializer: null })
-            return "({})";
+        {
+            context.UsedHelpers.Add(Eq.Import);
+            return $"{Eq.NewObject}()";
+        }
 
         if (node is ObjectCreationExpressionSyntax objCreation)
         {

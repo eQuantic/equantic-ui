@@ -20,6 +20,48 @@ public class AssignmentExpressionStrategy : IExpressionIrStrategy
         return node is AssignmentExpressionSyntax;
     }
 
+    /// <summary>
+    /// A deconstruction a record, a struct or any type with a Deconstruct takes part in, or null for
+    /// one of tuples alone. A declaration is one <c>let</c>, a level whose <c>Deconstruct</c> the app
+    /// wrote one more declarator of it. An assignment is one destructuring when nothing reads its
+    /// value and no level needs a call; otherwise each part is bound to a temporary, inside an arrow
+    /// that runs any such call, assigns the targets, and answers the tuple of the parts, which is the
+    /// value C# gives it (an assignment's destructuring answered its right-hand side, a record).
+    /// </summary>
+    private static string? Deconstruction(AssignmentExpressionSyntax assignment, ConversionContext context)
+    {
+        var info = context.SemanticHelper.GetDeconstructionInfo(assignment);
+        var type = context.SemanticHelper.GetType(assignment.Right);
+        if (DeconstructionPattern.Of(assignment.Left, info, type, context) is not { } lowered) return null;
+        var value = context.Converter.ConvertIr(assignment.Right);
+        if (lowered.Called is { } called) value = DeconstructionPattern.Through(called, value, context);
+        var written = JsExprWriter.Write(value);
+        if (assignment.Left is DeclarationExpressionSyntax)
+            return $"let {lowered.Pattern} = {written}{DeconstructionPattern.StepDeclarators(lowered, context)}";
+        if (lowered.Steps.Count == 0 && !ValueIsRead(assignment))
+            return $"({lowered.Pattern} = {written})";
+
+        var bound = DeconstructionPattern.Of(assignment.Left, info, type, context, temporaries: true)!;
+        var subject = $"$v{assignment.SpanStart}";
+        var body = new System.Text.StringBuilder();
+        body.Append($"let {ExpressionVariableScanner.List(bound.Temporaries, context.TypeAnnotations)}; ");
+        body.Append($"({bound.Pattern} = {subject}); ");
+        foreach (var step in bound.Steps)
+            body.Append($"({step.Pattern} = {JsExprWriter.Write(DeconstructionPattern.Through(step.Called, JsExpr.Identifier(step.Temporary), context))}); ");
+        foreach (var (temporary, target) in bound.Assignments) body.Append($"{target} = {temporary}; ");
+        body.Append($"return {bound.Tuple}; ");
+        return $"(({subject}) => {{ {body}}})({written})";
+    }
+
+    /// <summary>Whether something reads an assignment's value: anything but a statement of its own
+    /// and a for loop's initializer or incrementor.</summary>
+    private static bool ValueIsRead(AssignmentExpressionSyntax assignment) => assignment.Parent switch
+    {
+        ExpressionStatementSyntax => false,
+        ForStatementSyntax loop => !(loop.Incrementors.Contains(assignment) || loop.Initializers.Contains(assignment)),
+        _ => true,
+    };
+
     public JsExpr ConvertIr(SyntaxNode node, ConversionContext context)
     {
         var assignment = (AssignmentExpressionSyntax)node;
@@ -30,16 +72,8 @@ public class AssignmentExpressionStrategy : IExpressionIrStrategy
         // itself). One made of tuples alone keeps the array destructuring below. See
         // DeconstructionPattern, which the foreach goes through too (#486).
         if (assignment.Left is TupleExpressionSyntax or DeclarationExpressionSyntax { Designation: ParenthesizedVariableDesignationSyntax }
-            && DeconstructionPattern.Of(assignment.Left, context.SemanticHelper.GetDeconstructionInfo(assignment),
-                context.SemanticHelper.GetType(assignment.Right), context) is { } deconstruction)
-        {
-            var value = context.Converter.ConvertIr(assignment.Right);
-            if (deconstruction.Called is { } called) value = DeconstructionPattern.Through(called, value, context);
-            var written = JsExprWriter.Write(value);
-            return assignment.Left is DeclarationExpressionSyntax
-                ? $"let {deconstruction.Pattern} = {written}"
-                : $"({deconstruction.Pattern} = {written})";
-        }
+            && Deconstruction(assignment, context) is { } deconstruction)
+            return deconstruction;
 
         // `flag |= Next()` on a bool: the logical operator, both sides evaluated, the bool written
         // back — never JavaScript's `|=`, which stores a NUMBER. FIRST, ahead of the dictionary path
