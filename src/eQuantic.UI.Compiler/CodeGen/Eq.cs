@@ -243,6 +243,13 @@ public static class Eq
     /// <summary><c>Guid.TryParse</c>: the canonical text, or undefined where .NET answers false.</summary>
     public const string GuidTryParse = "$eq.guid.tryParse";
 
+    /// <summary><c>new object()</c>: an identity of its own, which a plain <c>{}</c> is not here, being
+    /// an anonymous type compared by its members.</summary>
+    public const string NewObject = "$eq.newObject";
+
+    /// <summary>A <c>lock</c> statement's gate, evaluated once and refused when null.</summary>
+    public const string LockGate = "$eq.lockGate";
+
     /// <summary>Membership over a collection whose runtime shape is not knowable statically —
     /// an <c>IReadOnlyCollection&lt;T&gt;</c> is a Set as readily as an array.</summary>
     public const string Contains = "$eq.collections.contains";

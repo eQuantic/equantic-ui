@@ -5,7 +5,7 @@ export class MarkdownBlock {
         if (props && typeof props === 'object') Object.assign(this, props);
     }
 
-    declare kind: string;
+    kind: string = 'paragraph';
     level: number = 0;
     text: string = '';
     id: string = '';

@@ -20,28 +20,66 @@ public class AssignmentExpressionStrategy : IExpressionIrStrategy
         return node is AssignmentExpressionSyntax;
     }
 
+    /// <summary>
+    /// A deconstruction a record, a struct or any type with a Deconstruct takes part in, or one whose
+    /// targets capture (<see cref="DeconstructionPattern.Captures"/>), or null for any other of tuples
+    /// alone. A declaration is one <c>let</c>, a level whose <c>Deconstruct</c> the app wrote one more
+    /// declarator of it. An assignment is one destructuring when nothing reads its value, no level
+    /// needs a call and no target captures; otherwise each part is bound to a temporary, inside an
+    /// arrow that runs any such call, assigns the targets, and answers the tuple of the parts, which is
+    /// the value C# gives it (an assignment's destructuring answered its right-hand side, a record).
+    /// What the targets capture is its first arguments, evaluated before the value, as C# evaluates
+    /// them.
+    /// </summary>
+    private static string? Deconstruction(AssignmentExpressionSyntax assignment, ConversionContext context)
+    {
+        var info = context.SemanticHelper.GetDeconstructionInfo(assignment);
+        var type = context.SemanticHelper.GetType(assignment.Right);
+        var captures = assignment.Left is TupleExpressionSyntax && DeconstructionPattern.Captures(assignment.Left);
+        if (DeconstructionPattern.Of(assignment.Left, info, type, context, capture: captures) is not { } lowered) return null;
+        var value = context.Converter.ConvertIr(assignment.Right);
+        if (lowered.Called is { } called) value = DeconstructionPattern.Through(called, value, context);
+        var written = JsExprWriter.Write(value);
+        if (assignment.Left is DeclarationExpressionSyntax)
+            return $"let {lowered.Pattern} = {written}{DeconstructionPattern.StepDeclarators(lowered, context)}";
+        if (lowered.Steps.Count == 0 && !ValueIsRead(assignment) && !captures)
+            return $"({lowered.Pattern} = {written})";
+
+        var bound = DeconstructionPattern.Of(assignment.Left, info, type, context, temporaries: true, capture: captures)!;
+        var subject = $"$v{assignment.SpanStart}";
+        var body = new System.Text.StringBuilder();
+        body.Append($"let {ExpressionVariableScanner.List(bound.Temporaries, context.TypeAnnotations)}; ");
+        body.Append($"({bound.Pattern} = {subject}); ");
+        foreach (var step in bound.Steps)
+            body.Append($"({step.Pattern} = {DeconstructionPattern.StepValue(step, context)}); ");
+        foreach (var (temporary, target) in bound.Assignments) body.Append($"{target} = {temporary}; ");
+        body.Append($"return {bound.Tuple}; ");
+        var parameters = bound.Captures.Select(capture => capture.Name).Append(subject);
+        var arguments = bound.Captures.Select(capture => capture.Value).Append(written);
+        return $"(({string.Join(", ", parameters)}) => {{ {body}}})({string.Join(", ", arguments)})";
+    }
+
+    /// <summary>Whether something reads an assignment's value: anything but a statement of its own
+    /// and a for loop's initializer or incrementor.</summary>
+    private static bool ValueIsRead(AssignmentExpressionSyntax assignment) => assignment.Parent switch
+    {
+        ExpressionStatementSyntax => false,
+        ForStatementSyntax loop => !(loop.Incrementors.Contains(assignment) || loop.Initializers.Contains(assignment)),
+        _ => true,
+    };
+
     public JsExpr ConvertIr(SyntaxNode node, ConversionContext context)
     {
         var assignment = (AssignmentExpressionSyntax)node;
 
-        // Deconstructing a record/struct (a plain object, not a tuple array) -> object destructuring
-        // keyed by the type's Deconstruct order: `var (a, b) = point` -> `let { x: a, y: b } = point`.
-        if (assignment.Left is DeclarationExpressionSyntax { Designation: ParenthesizedVariableDesignationSyntax design })
-        {
-            var rhsType = context.SemanticHelper.GetType(assignment.Right);
-            if (rhsType is { IsTupleType: false } && rhsType.DeconstructElementNames() is { } fields)
-            {
-                var vars = design.Variables.ToList();
-                var pairs = new List<string>();
-                for (var i = 0; i < vars.Count && i < fields.Count; i++)
-                {
-                    if (vars[i] is SingleVariableDesignationSyntax s && s.Identifier.Text != "_")
-                        pairs.Add($"{fields[i]}: {s.Identifier.Text.ToJsIdentifier()}");
-                }
-                var rhsObj = context.Converter.ConvertExpression(assignment.Right);
-                return $"let {{ {string.Join(", ", pairs)} }} = {rhsObj}";
-            }
-        }
+        // A deconstruction a record, a struct or any type with a Deconstruct takes part in, declared
+        // (`var (a, b) = point` -> `let { x: a, y: b } = point`) or assigned (`(a, b) = point`,
+        // `(var a, b) = point` -> `({ x: a, y: b } = point)`, what the statement declares in front of
+        // itself). One made of tuples alone keeps the array destructuring below. See
+        // DeconstructionPattern, which the foreach goes through too (#486).
+        if (assignment.Left is TupleExpressionSyntax or DeclarationExpressionSyntax { Designation: ParenthesizedVariableDesignationSyntax }
+            && Deconstruction(assignment, context) is { } deconstruction)
+            return deconstruction;
 
         // `flag |= Next()` on a bool: the logical operator, both sides evaluated, the bool written
         // back — never JavaScript's `|=`, which stores a NUMBER. FIRST, ahead of the dictionary path

@@ -1010,6 +1010,29 @@ record of a release, the wiki's Upgrading page is the distillate.
   simple name share one entry of the page index
   ([#514](https://github.com/eQuantic/equantic-ui/issues/514)). Proposed and archived through OpenSpec
   (`openspec/specs/hydration-contract`).
+- **2026-10-03 · Patterns, locks, loops and deconstruction run as C# runs them**: a type pattern with
+  nothing bound tested false and a long was never one
+  ([#482](https://github.com/eQuantic/equantic-ui/issues/482)), `x is Limits.Max` was a null check
+  ([#451](https://github.com/eQuantic/equantic-ui/issues/451)), a lock's expression ran nowhere
+  ([#475](https://github.com/eQuantic/equantic-ui/issues/475)), `new object()` named a class JavaScript
+  does not have ([#478](https://github.com/eQuantic/equantic-ui/issues/478)), a for loop gave each
+  iteration its own variable ([#476](https://github.com/eQuantic/equantic-ui/issues/476)), a delegate
+  called from a list was read off `this` ([#477](https://github.com/eQuantic/equantic-ui/issues/477)),
+  a record deconstructed into existing variables was array destructuring
+  ([#486](https://github.com/eQuantic/equantic-ui/issues/486)), and a static `field` store lived on the
+  instance or, in a record, nowhere ([#483](https://github.com/eQuantic/equantic-ui/issues/483)). Each
+  is a conformance case on both sides that failed against main. The local review found the first cut
+  short, and widened it: every deconstruction, declared, assigned or in a `foreach`, nested or through
+  a struct's own `Deconstruct`, goes through one lowering read from the bound tree; a long constant
+  is a BigInt, and a constant in a pattern is tested by its value (a decimal, a NaN, a null); a char
+  is one code unit; a static store starts as its initializer; and a local function's `out` reaches
+  its caller ([#541](https://github.com/eQuantic/equantic-ui/issues/541)). Copilot's third round found
+  four more, each fixed and run on both sides: a deconstruction's targets are evaluated before its
+  value, a for loop's head of expressions is one variable for the loop, `new object() { }` is an
+  object, and a property of an enum type starts as its zero member. A deconstruction into an
+  indexer or a wider type is left to [#542](https://github.com/eQuantic/equantic-ui/issues/542).
+  Proposed and archived through OpenSpec (`openspec/specs/transpiler-statements`,
+  `transpiler-expressions`, `transpiler-records`).
 - **2026-10-03 · A route's title reaches the document**: `[Page(Title = …)]` applied only when the
   page's metadata had no title, which the app's default always filled, so no page ever got it, and a
   client navigation answered with the app's title over the one the router had set

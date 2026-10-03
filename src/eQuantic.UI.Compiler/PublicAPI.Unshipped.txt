@@ -132,6 +132,9 @@ eQuantic.UI.Compiler.CodeGen.Strategies.Types.GuidTypeStrategy.ConvertIr(Microso
 *REMOVED*eQuantic.UI.Compiler.CodeGen.Strategies.Types.GuidTypeStrategy.Convert(Microsoft.CodeAnalysis.SyntaxNode! node, eQuantic.UI.Compiler.CodeGen.ConversionContext! context) -> string!
 const eQuantic.UI.Compiler.CodeGen.Eq.HashFields = "$eq.hash.fields" -> string!
 const eQuantic.UI.Compiler.CodeGen.Eq.HashGroup = "$eq.hash.group" -> string!
+eQuantic.UI.Compiler.Services.SemanticHelper.GetDeconstructionInfo(Microsoft.CodeAnalysis.SyntaxNode! node) -> Microsoft.CodeAnalysis.CSharp.DeconstructionInfo?
+const eQuantic.UI.Compiler.CodeGen.Eq.LockGate = "$eq.lockGate" -> string!
+const eQuantic.UI.Compiler.CodeGen.Eq.NewObject = "$eq.newObject" -> string!
 const eQuantic.UI.Compiler.CodeGen.Eq.LinqSeq = "$eq.linq.seq" -> string!
 const eQuantic.UI.Compiler.CodeGen.Eq.LinqToArray = "$eq.linq.toArray" -> string!
 const eQuantic.UI.Compiler.CodeGen.Eq.TextChars = "$eq.text.chars" -> string!
