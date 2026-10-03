@@ -27,6 +27,13 @@ public class HashConformanceTests
             public int X;
             public override int GetHashCode() => base.GetHashCode() ^ 1;
         }
+        public record Base1(int X) { public override int GetHashCode() => 10; }
+        public record Derived1(int X) : Base1(X)
+        {
+            public override int GetHashCode() => 20;
+            public int BaseHash() { Func<int> f = base.GetHashCode; return f(); }
+        }
+        public struct Hider { public int X; public new string GetHashCode() => "key"; }
         public record Base0(int X);
         public record Derived0(int X) : Base0(X)
         {
@@ -60,6 +67,8 @@ public class HashConformanceTests
     [InlineData("int n = 42; Func<int> f = n.GetHashCode; n = 7; return f() == 42.GetHashCode();")]                     // true: a method group takes its receiver once
     [InlineData("try { string s = null; Func<int> f = s.GetHashCode; return \"made\"; } catch { return \"refused\"; }")] // "refused": where the delegate is made
     [InlineData("return HashCode.Combine(value2: 2, value1: 1) == HashCode.Combine(1, 2);")]                          // true: by parameter
+    [InlineData("return new Derived1(1).BaseHash() + new Derived1(1).GetHashCode();")]                                  // 30: a base group runs the base's
+    [InlineData("return new Hider().GetHashCode();")]                                                                    // "key": a hiding method is the app's own
     [InlineData("var log = \"\"; Func<int> a = () => { log += \"a\"; return 1; }; Func<int> b = () => { log += \"b\"; return 2; }; HashCode.Combine(value2: b(), value1: a()); return log;")] // "ba": evaluated as written
     public void AHash_AgreesWithEquals(string statements)
     {
@@ -81,6 +90,8 @@ public class HashConformanceTests
     [InlineData("try { Guid.Parse(\"nope\"); return \"parsed\"; } catch { return \"refused\"; }")]                                          // "refused"
     [InlineData("return Guid.Parse(\"A0000000-0000-0000-0000-000000000000\").GetHashCode() == Guid.Parse(\"a0000000-0000-0000-0000-000000000000\").GetHashCode();")] // true
     [InlineData("return new Guid() == Guid.Empty;")]                                                                            // true
+    [InlineData("return Guid.Parse(\"\\u0085 0f8fad5b-d9cb-469f-a165-70867728950a\\u0085\").ToString();")]                        // .NET's white space around it
+    [InlineData("try { Guid.Parse(\"\\uFEFF0f8fad5b-d9cb-469f-a165-70867728950a\"); return \"parsed\"; } catch { return \"refused\"; }")] // "refused": U+FEFF is none
     [InlineData("return string.Join(\",\", new[] { \"A0000000-0000-0000-0000-000000000000\" }.Select(Guid.Parse));")]          // "a0000000-0000-0000-0000-000000000000"
     public void AGuid_IsItsCanonicalText(string statements)
     {

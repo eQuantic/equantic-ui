@@ -491,8 +491,6 @@ public class BinaryExpressionStrategy : IExpressionIrStrategy
             };
         }
 
-        if (lTs && rDt && op == "+") return $"{right}.add({left})"; // TimeSpan + DateTime (commutative)
-
         // DateTimeOffset: like DateTime — DTO - DTO -> TimeSpan, DTO ± TimeSpan -> DTO, comparisons by instant.
         bool lDto = lt.IsNamed("System.DateTimeOffset"), rDto = rt.IsNamed("System.DateTimeOffset");
         if (lDto && rDto)

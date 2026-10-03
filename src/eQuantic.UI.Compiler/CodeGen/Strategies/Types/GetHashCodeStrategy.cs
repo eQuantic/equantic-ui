@@ -37,7 +37,8 @@ public class GetHashCodeStrategy : IExpressionIrStrategy
     public JsExpr ConvertIr(SyntaxNode node, ConversionContext context)
     {
         context.UsedHelpers.Add(Eq.Import);
-        if (node is MemberAccessExpressionSyntax group) return Group(group, context);
+        if (node is MemberAccessExpressionSyntax group)
+            return Group(group, (IMethodSymbol)context.SemanticHelper.GetSymbol(group)!, context);
 
         var invocation = (InvocationExpressionSyntax)node;
         var method = (IMethodSymbol)context.SemanticHelper.GetSymbol(invocation)!;
@@ -89,13 +90,13 @@ public class GetHashCodeStrategy : IExpressionIrStrategy
     /// <summary>
     /// The method group: a delegate over the receiver as it is when the delegate is made, refused
     /// there when the receiver is null, as .NET refuses it, an empty <c>Nullable&lt;T&gt;</c> included
-    /// (it boxes to null). An array's answers its identity's.
+    /// (it boxes to null). An array's answers its identity's. <c>base.GetHashCode</c> binds to the
+    /// base's method, never back to the override, so its delegate runs what a base call runs.
     /// </summary>
-    private static JsExpr Group(MemberAccessExpressionSyntax group, ConversionContext context)
+    private static JsExpr Group(MemberAccessExpressionSyntax group, IMethodSymbol method, ConversionContext context)
     {
-        var receiver = group.Expression is BaseExpressionSyntax
-            ? JsExpr.Identifier("this")
-            : context.Converter.ConvertIr(group.Expression);
+        if (group.Expression is BaseExpressionSyntax) return JsExpr.Arrow("", Base(method, JsExpr.Identifier("this")));
+        var receiver = context.Converter.ConvertIr(group.Expression);
         return context.SemanticHelper.GetType(group.Expression) is IArrayTypeSymbol
             ? JsExpr.Call(JsExpr.Identifier(Eq.HashGroup), receiver, JsExpr.Literal("true"))
             : JsExpr.Call(JsExpr.Identifier(Eq.HashGroup), receiver);
@@ -105,9 +106,18 @@ public class GetHashCodeStrategy : IExpressionIrStrategy
     private static bool IsCalled(MemberAccessExpressionSyntax access) =>
         access.Parent is InvocationExpressionSyntax invocation && invocation.Expression == access;
 
-    /// <summary>An instance <c>GetHashCode()</c>, object's or any override of it.</summary>
-    private static bool IsGetHashCode(IMethodSymbol method) =>
-        method is { Name: "GetHashCode", IsStatic: false, Parameters.Length: 0 };
+    /// <summary>
+    /// An instance <c>GetHashCode()</c> that is object's or overrides it. A method that HIDES it
+    /// (<c>public new string GetHashCode()</c>) is the app's own, whatever it answers, and is called as
+    /// any other method is.
+    /// </summary>
+    private static bool IsGetHashCode(IMethodSymbol method)
+    {
+        if (method is not { Name: "GetHashCode", IsStatic: false, Parameters.Length: 0 }) return false;
+        for (var at = method.OriginalDefinition; at is not null; at = at.OverriddenMethod)
+            if (at.ContainingType.SpecialType == SpecialType.System_Object) return true;
+        return false;
+    }
 
     /// <summary><c>System.HashCode.Combine</c>, of any arity.</summary>
     private static bool IsCombine(IMethodSymbol method) =>

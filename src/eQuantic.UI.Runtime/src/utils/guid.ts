@@ -6,22 +6,34 @@
  * the canonical text, and a Guid from the wire arrives in it already, as System.Text.Json writes it.
  */
 
+import { isWhiteSpace, trim } from './white-space';
+
 const D = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const N = /^[0-9a-f]{32}$/i;
 const X = /^\{0x([0-9a-f]{1,8}),0x([0-9a-f]{1,4}),0x([0-9a-f]{1,4}),\{((?:0x[0-9a-f]{1,2},){7}0x[0-9a-f]{1,2})\}\}$/i;
 
-/** The canonical text of a Guid written in any format .NET reads, or undefined for any other text. */
+/**
+ * The canonical text of a Guid written in any format .NET reads, or undefined for any other text. The
+ * white space around it, and inside the `X` format, is .NET's own set (`char.IsWhiteSpace`), which
+ * JavaScript's differs from: .NET skips U+0085 and keeps U+FEFF.
+ */
 function read(text: string): string | undefined {
-  const trimmed = text.trim();
+  const trimmed = trim(text);
   if (D.test(trimmed)) return trimmed.toLowerCase();
   if (N.test(trimmed)) return dashed(trimmed);
   const inner = trimmed.slice(1, -1);
   if (((trimmed.startsWith('{') && trimmed.endsWith('}')) || (trimmed.startsWith('(') && trimmed.endsWith(')'))) && D.test(inner))
     return inner.toLowerCase();
-  const hex = X.exec(trimmed.replace(/\s+/g, ''));
+  const hex = X.exec(withoutWhiteSpace(trimmed));
   if (hex === null) return undefined;
   const bytes = hex[4].split(',').map((part) => part.slice(2).padStart(2, '0'));
   return dashed(hex[1].padStart(8, '0') + hex[2].padStart(4, '0') + hex[3].padStart(4, '0') + bytes.join(''));
+}
+
+function withoutWhiteSpace(text: string): string {
+  let kept = '';
+  for (const character of text) if (!isWhiteSpace(character)) kept += character;
+  return kept;
 }
 
 function dashed(digits: string): string {
