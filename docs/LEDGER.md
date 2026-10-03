@@ -1017,8 +1017,9 @@ record of a release, the wiki's Upgrading page is the distillate.
   strings by hand, so a title holding a line break stopped the client of every page
   ([#526](https://github.com/eQuantic/equantic-ui/issues/526)). Each route hands its declaration to
   both doors, one builder writes a document's metadata (the app's, the route's, then the page's own),
-  a navigation replaces the head's metadata as a marked set, and the configuration is serialized as
-  JSON. `PageTitleTests` runs both doors, and the dashboard
+  a navigation replaces the head's metadata as a marked set, a page answering with a status of its
+  own (a 404 through `IHandleStatus`) still hands a navigation its marked payload, and the
+  configuration is serialized as JSON. `PageTitleTests` runs both doors, and the dashboard
   sample's titles were measured in a browser against main. Proposed and archived through OpenSpec
   (`openspec/specs/document-metadata`).
 - **2026-10-03 · A value reaches the browser as its code reads it**: `Color` is the one vocabulary
