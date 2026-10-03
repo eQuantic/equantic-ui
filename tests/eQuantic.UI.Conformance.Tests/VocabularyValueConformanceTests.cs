@@ -1,0 +1,159 @@
+using System.Reflection;
+using eQuantic.UI.Conformance.Tests.Infrastructure;
+using eQuantic.UI.Primitives;
+using FluentAssertions;
+using Xunit;
+
+namespace eQuantic.UI.Conformance.Tests;
+
+/// <summary>
+/// A member of a vocabulary value type the browser holds as plain data (<c>[TwinIsData]</c>,
+/// <c>Color</c>) answers in the browser what it answers in .NET (#494). eqc emitted an instance
+/// method as a method of the value, which a plain <c>{ r, g, b, a }</c> does not have, so
+/// <c>Color.FromRgb(…).WithOpacity(0.8f)</c> rendered on the server and threw in the browser, and
+/// the value's text was <c>[object Object]</c>.
+/// <para>
+/// The members are enumerated by reflection, so a method added to such a type without its
+/// companion static fails here, by name, before a page meets it.
+/// </para>
+/// </summary>
+public class VocabularyValueConformanceTests
+{
+    [SkippableTheory]
+    // ---- an instance method goes to the companion, value first ----
+    [InlineData("return Color.FromRgb(0xF8, 0x71, 0x71).WithOpacity(0.8f);")]
+    [InlineData("return Color.FromRgb(0, 0, 0).MidpointWith(Color.White);")]
+    [InlineData("var brand = Color.FromRgb(0xF8, 0x71, 0x71); return brand.WithOpacity(0.5f).MidpointWith(brand);")]
+    [InlineData("Color? maybe = Color.White; return maybe?.WithOpacity(0.25f);")]
+    [InlineData("Func<float, Color> fade = Color.White.WithOpacity; return fade(0.5f);")]
+    [InlineData("var brand = Color.FromRgb(1, 2, 3); Func<Color, Color> mix = brand.MidpointWith; return mix(Color.White);")]
+    // ---- its text is the record text .NET writes ----
+    [InlineData("return Color.FromRgba(1, 2, 3, 4).ToString();")]
+    [InlineData("return $\"{Color.FromRgba(1, 2, 3, 4)}\";")]
+    [InlineData("return \"c=\" + Color.FromRgba(1, 2, 3, 4);")]
+    [InlineData("Color? none = null; return $\"[{none}]\";")]
+    // ---- a construction and a default build the data ----
+    [InlineData("return new Color(1, 2, 3, 4);")]
+    [InlineData("return new Color(1, 2, 3, 4) { A = 9 };")]
+    [InlineData("Color c = new(5, 6, 7, 8); return c;")]
+    [InlineData("return new Color();")]
+    [InlineData("return default(Color);")]
+    [InlineData("return new Color(B: 3, A: 4, R: 1, G: 2);")]
+    // ---- the arguments run in the order they are written, every one of them ----
+    [InlineData("int n = 0; byte Next() => (byte)++n; var c = new Color(B: Next(), R: Next(), G: 0, A: 0); return c.R * 10 + c.B;")]
+    [InlineData("int n = 0; byte Next() => (byte)++n; var c = new Color(1, 2, 3, Next()) { A = 9 }; return n * 100 + c.A;")]
+    // ---- what already answered keeps answering ----
+    [InlineData("return new Color(1, 2, 3, 4) == Color.FromRgba(1, 2, 3, 4);")]
+    [InlineData("return new Color(1, 2, 3, 4) with { A = 9 };")]
+    [InlineData("var (r, g, b, a) = Color.FromRgba(1, 2, 3, 4); return r + g + b + a;")]
+    public void AColorAnswersAsInDotNet(string statements)
+    {
+        Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
+        ConformanceRunner.AssertVocabularyStatementsSameAsDotNet(statements);
+    }
+
+    [SkippableFact]
+    public void AnAppsOwnColor_IsTheAppsOwn()
+    {
+        // It was recognized by NAME, so a three-argument construction became the vocabulary's.
+        Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
+        ConformanceRunner.AssertStatementsSameAsDotNet(
+            "return new Color(\"brand\", 10, 50).Name;",
+            "public sealed record Color(string Name, int Hue, int Light);");
+    }
+
+    [SkippableTheory]
+    [MemberData(nameof(EveryMemberOfEveryDataTwin))]
+    public void EveryMemberOfEveryValueTheBrowserHoldsAsData_AnswersAsInDotNet(string member, string statements)
+    {
+        Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
+        member.Should().NotBeNullOrEmpty();
+        ConformanceRunner.AssertVocabularyStatementsSameAsDotNet(statements);
+    }
+
+    [SkippableFact]
+    public void EveryValueTypeOfTheVocabulary_IsDataInTheBrowser_ExactlyWhenItSaysSo()
+    {
+        Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
+        var exports = ConformanceRunner.RuntimeExports.Value.ToHashSet(StringComparer.Ordinal);
+        var values = typeof(VisualNode).Assembly.GetTypes()
+            .Where(type => type is { IsPublic: true, IsValueType: true, IsEnum: false, Namespace: { } space }
+                && (space == "eQuantic.UI.Primitives" || space.StartsWith("eQuantic.UI.Primitives.", StringComparison.Ordinal)))
+            .ToList();
+        var marked = values.Where(IsData).ToList();
+        marked.Should().NotBeEmpty("Color is plain data in the browser");
+        marked.Select(type => type.Name).Should().BeSubsetOf(exports, "a value the browser holds as data has a companion to call");
+
+        var shipped = values.Where(type => exports.Contains(type.Name) && !NotYetOneShape.ContainsKey(type.Name)).ToList();
+        var kinds = ConformanceRunner.RuntimeExportKinds(shipped.Select(type => type.Name));
+        foreach (var type in shipped)
+            (kinds[type.Name] == "object").Should().Be(IsData(type),
+                $"{type.Name}'s twin is a runtime {(kinds[type.Name] == "object" ? "object" : "class")}, "
+                + "and [TwinIsData] has to say exactly that, or eqc lowers its members to the wrong shape");
+    }
+
+    /// <summary>
+    /// The value types whose browser twin is neither a class nor the record's data, each with why and
+    /// the issue that gives it one shape. The list may only shrink: a type leaves it when it does.
+    /// </summary>
+    private static readonly Dictionary<string, string> NotYetOneShape = new()
+    {
+        ["Curve"] = "a preset is an array in the design system and a name in MotionSpec (#518)",
+    };
+
+    public static TheoryData<string, string> EveryMemberOfEveryDataTwin()
+    {
+        var cases = new TheoryData<string, string>();
+        foreach (var type in typeof(VisualNode).Assembly.GetTypes().Where(IsData))
+        {
+            var sample = Sample(type, 0);
+            foreach (var method in type.GetMethods(BindingFlags.Instance | BindingFlags.Public | BindingFlags.DeclaredOnly)
+                         .Where(method => !method.IsSpecialName && !RecordMembers.Contains(method.Name)))
+            {
+                var arguments = method.GetParameters().Select((parameter, i) => SampleOf(parameter.ParameterType, type, i + 1));
+                cases.Add($"{type.Name}.{method.Name}", $"return {sample}.{method.Name}({string.Join(", ", arguments)});");
+            }
+            cases.Add($"{type.Name}.ToString", $"return {sample}.ToString();");
+            // A property is data the value stores or a value it computes, and both are read here: a
+            // computed one is never written into the data, so it has to answer through the companion.
+            foreach (var property in type.GetProperties(BindingFlags.Instance | BindingFlags.Public | BindingFlags.DeclaredOnly)
+                         .Where(property => property.GetIndexParameters().Length == 0 && property.Name != "EqualityContract"))
+                cases.Add($"{type.Name}.{property.Name}", $"return {sample}.{property.Name};");
+        }
+        return cases;
+    }
+
+    /// <summary>What the record writes for itself: equality and deconstruction answer through the
+    /// runtime's own helpers, its text is a case of its own above, and GetHashCode has no lowering
+    /// for any type yet.</summary>
+    private static readonly HashSet<string> RecordMembers = ["ToString", "GetHashCode", "Equals", "Deconstruct", "PrintMembers"];
+
+    private static bool IsData(Type type) => type.GetCustomAttribute<TwinIsDataAttribute>() is not null;
+
+    /// <summary>A value of a data twin, from its widest public constructor.</summary>
+    private static string Sample(Type type, int seed)
+    {
+        var constructor = type.GetConstructors().OrderByDescending(c => c.GetParameters().Length).First();
+        var arguments = constructor.GetParameters().Select((parameter, i) => SampleOf(parameter.ParameterType, type, seed * 7 + i + 1));
+        return $"new {type.Name}({string.Join(", ", arguments)})";
+    }
+
+    private static string Fraction(int seed) =>
+        (seed % 9 / 10.0 + 0.05).ToString("0.00", System.Globalization.CultureInfo.InvariantCulture);
+
+    /// <summary>A sample argument of a parameter type, or a failure naming it, so a member nobody
+    /// can call here is never skipped in silence.</summary>
+    private static string SampleOf(Type parameter, Type owner, int seed) => parameter switch
+    {
+        _ when parameter == typeof(float) => Fraction(seed) + "f",
+        _ when parameter == typeof(double) => Fraction(seed),
+        _ when parameter == typeof(byte) => $"(byte){(seed * 53) % 256}",
+        _ when parameter == typeof(int) => $"{seed}",
+        _ when parameter == typeof(bool) => seed % 2 == 0 ? "true" : "false",
+        _ when parameter == typeof(string) => $"\"s{seed}\"",
+        _ when parameter == owner => Sample(owner, seed),
+        _ => throw new InvalidOperationException(
+            $"{owner.Name} has a member taking a {parameter.Name}, which this suite has no sample of. "
+            + "Add one, so the member is executed on both sides."),
+    };
+}

@@ -38,6 +38,12 @@ public class ToStringStrategy : IConversionStrategy
         var args = invocation.ArgumentList.Arguments;
         var receiverType = context.SemanticHelper.GetType(memberAccess.Expression);
 
+        // A value the browser holds as DATA reads as its record text, which is what a concatenation
+        // already writes it as (StringConversion).
+        if (args.Count == 0 && receiverType.UnwrapNullable() is INamedTypeSymbol data && data.TwinIsData())
+            return JsExprWriter.Write(StringConversion.ToDotNetString(memberAccess.Expression,
+                context.Converter.ConvertIr(memberAccess.Expression), context));
+
         // A BOOL writes True or False, what a concatenation already writes it as (StringConversion):
         // `String(b)` lowercased it (#381). Its provider changes nothing, and a null bool? is empty.
         // C# still evaluates the provider, after the receiver: one that could have an effect runs,
