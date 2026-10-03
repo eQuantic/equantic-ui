@@ -347,7 +347,7 @@ public class ForeignRecordHydrationTests
         // exactly as a page library's consumer builds.
         var processRefs = AppDomain.CurrentDomain.GetAssemblies()
             .Where(a => !a.IsDynamic && !string.IsNullOrEmpty(a.Location))
-            .Select(a => Microsoft.CodeAnalysis.MetadataReference.CreateFromFile(a.Location))
+            .Select(a => TestReferences.Of(a.Location))
             .Cast<Microsoft.CodeAnalysis.MetadataReference>()
             .ToList();
         var domainPath = Path.Combine(Path.GetTempPath(), $"acme-domain-{Guid.NewGuid():N}.dll");

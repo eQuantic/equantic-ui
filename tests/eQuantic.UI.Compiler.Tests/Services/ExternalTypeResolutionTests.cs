@@ -74,8 +74,8 @@ public class ExternalTypeResolutionTests
             new[] { userTree, componentTree },
             new[]
             {
-                MetadataReference.CreateFromFile(typeof(object).Assembly.Location),
-                MetadataReference.CreateFromFile(Assembly.Load("System.Runtime").Location)
+                TestReferences.Of(typeof(object).Assembly.Location),
+                TestReferences.Of(Assembly.Load("System.Runtime").Location)
             },
             new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
 
@@ -124,9 +124,9 @@ public class ExternalTypeResolutionTests
             new[] { userTree, componentTree },
             new[]
             {
-                MetadataReference.CreateFromFile(typeof(object).Assembly.Location),
-                MetadataReference.CreateFromFile(typeof(Enumerable).Assembly.Location),
-                MetadataReference.CreateFromFile(Assembly.Load("System.Runtime").Location)
+                TestReferences.Of(typeof(object).Assembly.Location),
+                TestReferences.Of(typeof(Enumerable).Assembly.Location),
+                TestReferences.Of(Assembly.Load("System.Runtime").Location)
             },
             new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
 
