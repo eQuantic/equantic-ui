@@ -1033,6 +1033,27 @@ record of a release, the wiki's Upgrading page is the distillate.
   stops the client of every page ([#526](https://github.com/eQuantic/equantic-ui/issues/526)).
   Proposed and archived through OpenSpec (`openspec/specs/transpiler-expressions`,
   `openspec/specs/transpiler-source-maps`).
+- **2026-10-03 · A string's own search compares as .NET does**: a string's methods that take a
+  `StringComparison` read it from its spelling and lower-cased both sides
+  ([#528](https://github.com/eQuantic/equantic-ui/issues/528)): the Kelvin sign matched a k under
+  `OrdinalIgnoreCase`, a comparison held in a variable was dropped, `Replace` dropped its own and
+  read `$&` in its replacement as a pattern, a start past the end clamped where .NET throws, and a
+  sort written with `CompareTo` put every capital first. They now reach the runtime's `$eq.text`,
+  chosen by the bound method and handed the comparison as the value it is: an ordinal search that
+  ignores case ports .NET 10's `Ordinal` and `OrdinalCasing`, a start and a count are checked in
+  .NET's words, `CompareTo` is the current culture's comparison, and a search by a culture
+  comparison, which the browser has no form for, fails the build with EQ1004, or throws when the
+  comparison arrives in a variable. On the way, an overload taking a `CultureInfo` slipped through
+  (its parameter is `CultureInfo?`, which a full-name match never saw), and the components' pins
+  showed every call with a range bound in an arrow function to keep C#'s order, so the runtime now
+  takes the arguments in the order C# writes them. 26 of the 43 conformance cases fail on main, and
+  the dashboard sample's payment filter, code editor, Markdown, Mermaid and diff pages were checked
+  in a browser. Filed on the way: the overloads without a comparison search by the current culture
+  in .NET ([#532](https://github.com/eQuantic/equantic-ui/issues/532)), a culture comparison that
+  ignores case equates widths and kana types .NET keeps apart
+  ([#533](https://github.com/eQuantic/equantic-ui/issues/533)), and a char search with a start
+  clamps and drops its count ([#534](https://github.com/eQuantic/equantic-ui/issues/534)). Proposed
+  and archived through OpenSpec (`openspec/specs/transpiler-bcl`).
 
 ## Retired documents
 
