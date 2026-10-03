@@ -1,6 +1,6 @@
 # Proposal
 
-Closes #479 and #485, both sub-issues of #164 ("The transpiler's fences hold on every path", under
+Closes #479, #485 and #517, sub-issues of #164 ("The transpiler's fences hold on every path", under
 the epic #157).
 
 ## Why
@@ -16,6 +16,8 @@ symbol, and both failed only in the browser.
   called `String.join`, each a member of a class nothing defines. `Round(x)` called JavaScript's
   `Math.round`, which sends a half up where .NET sends it to even (#485). An enum's member reached
   bare read `Level.high` where the member is `'high'`.
+- A type's own `Count` was read as an array's `.length` unless the type was in the app's source, so
+  the domain model of a library the app references counted `undefined` (#517).
 
 ## What Changes
 
@@ -25,6 +27,7 @@ symbol, and both failed only in the browser.
   constant inlines, `Math` and `string` members and the primitives' statics go through the same
   tables, and an enum's member is the member. One that no translation covers fails the build with
   EQ2004, never a camel-cased guess.
+- A type that is not one of .NET's collections reads its own `Count`, wherever it is declared.
 - Nothing a developer writes changes. Code that compiled and failed in the browser now either runs
   as on the server or fails the build, naming the member.
 

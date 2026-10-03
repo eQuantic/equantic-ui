@@ -1015,9 +1015,12 @@ record of a release, the wiki's Upgrading page is the distillate.
   module failed when it loaded ([#479](https://github.com/eQuantic/equantic-ui/issues/479)); and a .NET
   member reached bare through `using static` fell to the rule for an app's own statics, so `NaN` read
   `Double.naN`, `Join` called `String.join` and `Round` sent a half up where .NET sends it to even
-  ([#485](https://github.com/eQuantic/equantic-ui/issues/485)). A base is named after its twin from its
-  symbol, and a bare member goes through the translation its qualified spelling reaches, or fails the
-  build with EQ2004. `UsingStaticConformanceTests` executes each case on both sides. Proposed and
+  ([#485](https://github.com/eQuantic/equantic-ui/issues/485)); and a type's own `Count` was read as an
+  array's `length` unless the app declared the type, so a library's domain model counted `undefined`
+  ([#517](https://github.com/eQuantic/equantic-ui/issues/517)). A base is named after its twin from its
+  symbol, a bare member goes through the translation its qualified spelling reaches, or fails the
+  build with EQ2004, and a `Count` is spelled by the receiver's symbol. `UsingStaticConformanceTests`
+  executes each case on both sides. Proposed and
   archived through OpenSpec (`openspec/specs/transpiler-names`, `openspec/specs/transpiler-bcl`).
 - **2026-10-03 · A route's title reaches the document**: `[Page(Title = …)]` applied only when the
   page's metadata had no title, which the app's default always filled, so no page ever got it, and a
