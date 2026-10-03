@@ -36,17 +36,9 @@ internal static class CountSpelling
         // A type of the app's or of a library it references has a `Count` of its own: its property
         // emits as `get count()`, and EqJson writes it as `count`. Asked of the source alone, a
         // library's domain model read its `Count` as `.length`, undefined (#517).
-        if (type is not null && !IsDotNets(type))
+        if (type is not null and not IArrayTypeSymbol && !BoundaryShape.IsPlatform(type))
             return JsExpr.Member(receiver, "count");
 
         return JsExpr.Member(receiver, "length");
     }
-
-    /// <summary>An array, or a type of .NET's own namespaces (<c>System</c>, <c>Microsoft</c>), which
-    /// the browser holds as an array unless an earlier rule named its class: a list, a lookup.</summary>
-    private static bool IsDotNets(ITypeSymbol type) =>
-        type is IArrayTypeSymbol
-        || type.OriginalDefinition.ContainingNamespace?.ToDisplayString() is { } space
-            && (space == "System" || space.StartsWith("System.", System.StringComparison.Ordinal)
-                || space.StartsWith("Microsoft.", System.StringComparison.Ordinal));
 }

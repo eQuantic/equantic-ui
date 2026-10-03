@@ -61,18 +61,23 @@ public class MathStrategy : IExpressionIrStrategy
             .Select(a => context.Converter.ConvertExpression(a.Expression))
             .ToList();
 
-        // Below, no model bound the call. The class still says which numbers it computes on —
-        // `MathF` on singles, `Math` on doubles — so everything but Round is answered by the SAME
-        // table, by name: a fallback of its own guessed `Math.copySign`, `Math.bitIncrement` and a
-        // `Math.log` that dropped its base, none of which JavaScript has.
-        var single = memberAccess?.Expression.ToString() is "MathF" or "System.MathF";
+        // Below, the table did not answer the bound method, or no model bound the call. The class
+        // still says which numbers it computes on — `MathF` on singles, `Math` on doubles — so
+        // everything but Round is answered by the SAME table, by name: a fallback of its own guessed
+        // `Math.copySign`, `Math.bitIncrement` and a `Math.log` that dropped its base, none of which
+        // JavaScript has. The class is the bound method's where there is one, since a call written
+        // bare under `using static System.MathF;` spells no class at all, and the receiver as
+        // written only where no model can be asked.
+        var bound = context.SemanticHelper.GetSymbol(invocation) as IMethodSymbol;
+        var single = bound is not null
+            ? bound.ContainingType is { Name: "MathF", ContainingNamespace: { Name: "System", ContainingNamespace.IsGlobalNamespace: true } }
+            : memberAccess?.Expression.ToString() is "MathF" or "System.MathF";
         var home = single ? SpecialType.System_Single : SpecialType.System_Double;
         if (PrimitiveStaticStrategy.TemplateByName(methodName, home, arguments.Count) is { } byName)
         {
             // A NAMED argument takes its parameter's slot, and only a bound method names the slots.
             // In written order, `Math.Log(newBase: 2, a: x)` put the base where the value goes: with
             // no method to ask, a named argument is a build error rather than a guessed placement.
-            var bound = context.SemanticHelper.GetSymbol(invocation) as IMethodSymbol;
             if (bound is null && arguments.Any(argument => argument.NameColon is not null))
                 return JsExpr.Opaque(context.Unhandled(node, "Math"));
             if (byName.Contains("$eq.")) context.UsedHelpers.Add(Eq.Import);

@@ -53,6 +53,30 @@ public class UsingStaticFenceTests
         result.TypeScript.Should().NotContain("String.").And.NotContain("Math.pI").And.Contain("3.141592653589793");
     }
 
+    [Fact]
+    public void AFlagsMemberPastLongsRange_IsItsValue_BareAndQualified()
+    {
+        // Read through long, a ulong member past long's range crashed the compile, on the qualified
+        // path and, since #485, on the bare one too.
+        var result = Compile("""
+            using static App.Wide;
+            using eQuantic.UI.Primitives;
+            namespace App;
+            [System.Flags] public enum Wide : ulong { None = 0, Top = 1UL << 63 }
+            public sealed class Widest : StatelessComponent
+            {
+                public override VisualNode Build(ComponentContext context)
+                {
+                    var both = Top | Wide.Top;
+                    return new Text(both == Wide.None ? "none" : "some", TypeRole.BodyM);
+                }
+            }
+            """, "Widest");
+
+        result.Errors.Should().BeEmpty();
+        result.TypeScript.Should().Contain("9223372036854775808 | 9223372036854775808");
+    }
+
     private static CompilationResult Compile(string source, string component)
     {
         var references = ((string)AppContext.GetData("TRUSTED_PLATFORM_ASSEMBLIES")!)

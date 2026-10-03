@@ -88,16 +88,9 @@ public class IdentifierStrategy : IExpressionIrStrategy
                         return JsExpr.Literal(Types.EnumStrategy.MemberLiteral(enumMember));
 
                     // A .NET type's member reached bare that no strategy claimed has no translation:
-                    // the class-static rule below is for the types the transpiler EMITS, and
-                    // `Double.naN` named a class nothing defines, with no diagnostic (#485).
-                    if (!isMemberName && BoundaryShape.IsPlatform(symbol.ContainingType))
-                    {
-                        context.Report(identifier, ConversionSeverity.Error, "EQ2004",
-                            $"'{symbol.ContainingType.ToDisplayString()}.{symbol.Name}', reached through `using static`, "
-                            + "has no JavaScript translation: nothing emits that class. Write it qualified where its "
-                            + "qualified form translates, or keep it on the server.");
+                    // the class-static rule below is for the types the transpiler EMITS (#485).
+                    if (!isMemberName && symbol.ReportIfPlatformReachedBare(identifier, context))
                         return JsExpr.Literal("undefined");
-                    }
                     return isMemberName
                         ? JsExpr.Identifier(name.ToCamelCase())
                         : JsExpr.Member(JsExpr.Identifier(symbol.ContainingType.Name), name.ToCamelCase());

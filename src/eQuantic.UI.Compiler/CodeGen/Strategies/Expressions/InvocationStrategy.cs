@@ -306,16 +306,9 @@ public class InvocationStrategy : IExpressionIrStrategy
             // call does, and this branch returns before the fence below ever runs.
             symbol.ReportIfHostOnly(invocation, context);
             // A .NET type's method reached bare that no strategy claimed has no translation: the
-            // class-static rule below is for the types the transpiler EMITS, and
-            // `String.join(",", ...parts)` called a class nothing defines, with no diagnostic (#485).
-            if (BoundaryShape.IsPlatform(declaring))
-            {
-                context.Report(invocation, ConversionSeverity.Error, "EQ2004",
-                    $"'{declaring.ToDisplayString()}.{symbol.Name}', reached through `using static`, has no "
-                    + "JavaScript translation: nothing emits that class. Write it qualified where its "
-                    + "qualified form translates, or keep it on the server.");
+            // class-static rule below is for the types the transpiler EMITS (#485).
+            if (symbol.ReportIfPlatformReachedBare(invocation, context))
                 return JsExpr.Literal("undefined");
-            }
             var declaringNamespace = declaring.ContainingNamespace?.ToDisplayString() ?? string.Empty;
             if (RuntimeProvidedTypeScanner.IsRuntimeProvidedNamespace(declaringNamespace))
                 context.UsedRuntimeTypes.Add(declaring.Name);
