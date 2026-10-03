@@ -1,6 +1,7 @@
 import { adoptMember } from './adopt-member';
 import { sameItem } from './collections';
 import { equals } from './equals';
+import { exception } from './exceptions';
 
 /**
  * How a dictionary finds a key, as .NET's default comparer for the key type does, which eqc says:
@@ -197,7 +198,10 @@ export function wireObject<K, V>(entries: Iterable<{ key: K; value: V } | undefi
 
 /** .NET's InvalidOperationException for a collection changed under a walk over it. */
 export function collectionModified(): Error {
-  return new Error('Collection was modified; enumeration operation may not execute.');
+  return exception(
+    'System.InvalidOperationException',
+    'Collection was modified; enumeration operation may not execute.',
+  );
 }
 
 /**
@@ -205,7 +209,7 @@ export function collectionModified(): Error {
  * included, with .NET's words: a `Map` would have answered a miss, or filed an entry under null.
  */
 export function requireKey(key: unknown): void {
-  if (key == null) throw new Error("Value cannot be null. (Parameter 'key')");
+  if (key == null) throw exception('System.ArgumentNullException', "Value cannot be null. (Parameter 'key')");
 }
 
 /**

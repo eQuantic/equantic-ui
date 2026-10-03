@@ -14,6 +14,7 @@
  * the dictionary, and every record key was the same "[object Object]".
  */
 import { Dictionary, keyText, type KeyEquality } from './dictionary';
+import { exception } from './exceptions';
 import { comparerOf, type Ordering } from './ordering';
 
 /**
@@ -63,7 +64,7 @@ function extreme<T>(
   }
   if (found) return value;
   if (nullable) return null;
-  throw new Error(NO_ELEMENTS);
+  throw exception('System.InvalidOperationException', NO_ELEMENTS);
 }
 
 /** `Max()` and `Max(selector)`. */
@@ -126,9 +127,12 @@ export function toDictionary<T, K, V = T>(
   for (const item of source) {
     const key = keySelector(item);
     const value = elementSelector == null ? (item as unknown as V) : elementSelector(item);
-    if (key == null) throw new Error("Value cannot be null. (Parameter 'key')");
+    if (key == null) throw exception('System.ArgumentNullException', "Value cannot be null. (Parameter 'key')");
     if (result.has(key)) {
-      throw new Error(`An item with the same key has already been added. Key: ${keyText(key)}`);
+      throw exception(
+        'System.ArgumentException',
+        `An item with the same key has already been added. Key: ${keyText(key)}`,
+      );
     }
     result.set(key, value);
   }

@@ -17,6 +17,7 @@
  * orders after anything that is not a pair, whatever the code units say.
  */
 import { formatLocale } from './culture';
+import { exception } from './exceptions';
 
 /** `StringComparison`, as its members cross: by name. */
 export type StringComparison =
@@ -44,13 +45,13 @@ const NOT_SUPPORTED =
  * so the statics take any string and this says which are comparisons, as .NET's own check does.
  */
 function requireComparison(comparison: string): asserts comparison is StringComparison {
-  if (!COMPARISONS.has(comparison)) throw new Error(NOT_SUPPORTED);
+  if (!COMPARISONS.has(comparison)) throw exception('System.ArgumentException', NOT_SUPPORTED);
 }
 
 /** An `ArgumentOutOfRangeException`'s words; .NET writes the actual value on a line of its own. */
 function outOfRange(parameter: string, message: string, actual?: number): Error {
   const value = actual === undefined ? '' : `\nActual value was ${actual}.`;
-  return new Error(`${message} (Parameter '${parameter}')${value}`);
+  return exception('System.ArgumentOutOfRangeException', `${message} (Parameter '${parameter}')${value}`);
 }
 
 function requireNonNegative(parameter: string, value: number): void {
@@ -302,7 +303,7 @@ export function joinRange(
   startIndex: number,
   count: number,
 ): string {
-  if (value == null) throw new Error("Value cannot be null. (Parameter 'value')");
+  if (value == null) throw exception('System.ArgumentNullException', "Value cannot be null. (Parameter 'value')");
   requireNonNegative('startIndex', startIndex);
   requireNonNegative('count', count);
   if (startIndex > value.length - count) {

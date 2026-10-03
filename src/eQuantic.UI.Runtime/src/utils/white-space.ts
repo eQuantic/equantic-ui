@@ -33,24 +33,44 @@ export function isWhiteSpace(character: string): boolean {
   return character.length === 1 && isWhiteUnit(character.charCodeAt(0));
 }
 
-/** `string.TrimStart()`. A loop, not a pattern: a pattern anchored at the end backtracks over every
- * run of white space it meets, which is quadratic in a long line of them. */
-export function trimStart(value: string): string {
+/**
+ * The characters a `Trim(chars)` takes off: one char, which is a string of one here, or the array of
+ * them. A null or an empty set is .NET's white space, as `"  a ".Trim(new char[0])` trims it.
+ */
+export type TrimChars = string | readonly string[] | null | undefined;
+
+/** Whether the unit at `index` is one `chars` takes off. */
+function trimmer(chars: TrimChars): (value: string, index: number) => boolean {
+  if (chars == null || chars.length === 0) {
+    return (value, index) => isWhiteUnit(value.charCodeAt(index));
+  }
+  return (value, index) => chars.includes(value[index]);
+}
+
+/** `string.TrimStart()` and `TrimStart(chars)`. A loop, not a pattern: a pattern anchored at the end
+ * backtracks over every run of white space it meets, which is quadratic in a long line of them. */
+export function trimStart(value: string, chars?: TrimChars): string {
+  const takes = trimmer(chars);
   let start = 0;
-  while (start < value.length && isWhiteUnit(value.charCodeAt(start))) start++;
+  while (start < value.length && takes(value, start)) start++;
   return start === 0 ? value : value.slice(start);
 }
 
-/** `string.TrimEnd()`. */
-export function trimEnd(value: string): string {
+/** `string.TrimEnd()` and `TrimEnd(chars)`. */
+export function trimEnd(value: string, chars?: TrimChars): string {
+  const takes = trimmer(chars);
   let end = value.length;
-  while (end > 0 && isWhiteUnit(value.charCodeAt(end - 1))) end--;
+  while (end > 0 && takes(value, end - 1)) end--;
   return end === value.length ? value : value.slice(0, end);
 }
 
-/** `string.Trim()`. */
-export function trim(value: string): string {
-  return trimEnd(trimStart(value));
+/**
+ * `string.Trim()` and `Trim(chars)`. The string and the characters arrive as arguments, each
+ * evaluated once where C# evaluates it, the receiver first: the transpiler wrote this one as an
+ * arrow around the characters' C#, which an `await` among them could not parse in.
+ */
+export function trim(value: string, chars?: TrimChars): string {
+  return trimEnd(trimStart(value, chars), chars);
 }
 
 /** `string.Split()` with no separator: every white space character is one, and the empty entries

@@ -6,6 +6,7 @@
  * point, a character, or a string and an index, where a surrogate pair is read whole and an index
  * outside the string throws, as .NET's does.
  */
+import { exception } from './exceptions';
 
 const CATEGORIES: [string, RegExp][] = [
   ['uppercaseLetter', 'Lu'], ['lowercaseLetter', 'Ll'], ['titlecaseLetter', 'Lt'],
@@ -27,7 +28,10 @@ export function unicodeCategory(value: number | string, index?: number): string 
     character = value;
   } else {
     if (index < 0 || index >= value.length) {
-      throw new RangeError('Index was out of range. Must be non-negative and less than the size of the collection.');
+      throw exception(
+        'System.ArgumentOutOfRangeException',
+        'Index was out of range. Must be non-negative and less than the size of the collection.',
+      );
     }
     character = String.fromCodePoint(value.codePointAt(index)!);
   }
