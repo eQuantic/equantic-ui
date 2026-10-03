@@ -1094,6 +1094,23 @@ record of a release, the wiki's Upgrading page is the distillate.
   back (`Cast`, `DefaultIfEmpty`) and a read-only face hiding a list, and both copy now. Each is a
   conformance case on both sides that failed against main. Proposed and archived through OpenSpec
   (`openspec/specs/transpiler-sequences`).
+- **2026-10-03 · A catch tests its type and its filter**: each catch clause was a JavaScript catch of
+  its own, so two clauses were a SyntaxError that cost the module, and one took every exception, its
+  type never tested and its filter dropped ([#474](https://github.com/eQuantic/equantic-ui/issues/474));
+  an exception carried no type at all, so a type pattern over one was a null check, and `throw;` was a
+  SyntaxError too. A .NET exception is now an Error carrying its .NET types (`$eq.exceptions`), built
+  by `new T(…)` from T's symbol and thrown with .NET's type by every .NET twin of the runtime, a spec
+  refusing a new untyped throw there and a conformance test comparing the runtime's table with
+  .NET's hierarchy. The clauses are one catch that tries each by its type and its filter, a filter
+  that throws answering false, and `throw;` rethrows the exception caught. Five lowerings wrote a
+  JavaScript function around C#, so an await in `checked`, a throw expression, `Trim`'s characters,
+  `Range` or `Repeat` did not parse, and `Range(Start(), 3)` called `Start` three times
+  ([#539](https://github.com/eQuantic/equantic-ui/issues/539)): each takes its C# as arguments now,
+  and `IntroducedFunctionsCoverageTests` counts the functions the lowerings still write by hand, per
+  file, against a baseline that may only shrink. 51 of the 62 conformance cases fail on main. One
+  difference stays, the platform's: .NET runs a filter before the `finally` blocks it unwinds, and
+  JavaScript after. Proposed and archived through OpenSpec (`openspec/specs/transpiler-exceptions`,
+  `openspec/specs/transpiler-expressions`).
 
 ## Retired documents
 
