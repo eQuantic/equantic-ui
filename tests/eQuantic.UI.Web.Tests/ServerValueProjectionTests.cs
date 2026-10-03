@@ -63,7 +63,7 @@ public class ServerValueProjectionTests
         public IEnumerable<Diagnostic> Escapes => Reported.Where(d => d.Id == "EQ2114");
     }
 
-    private static Generated Run(string pages, string? another = null)
+    private static Generated Run(string pages, string? another = null, MetadataReference? referenced = null)
     {
         var source = $$"""
             using System;
@@ -81,7 +81,8 @@ public class ServerValueProjectionTests
             .Split(Path.PathSeparator)
             .Where(p => p.EndsWith(".dll", StringComparison.OrdinalIgnoreCase))
             .Select(p => (MetadataReference)MetadataReference.CreateFromFile(p))
-            .Append(MetadataReference.CreateFromFile(typeof(eQuantic.UI.Primitives.VisualNode).Assembly.Location));
+            .Append(MetadataReference.CreateFromFile(typeof(eQuantic.UI.Primitives.VisualNode).Assembly.Location))
+            .Concat(referenced is null ? [] : [referenced]);
         var trees = new List<SyntaxTree> { CSharpSyntaxTree.ParseText(source, path: "Shop.cs") };
         if (another is not null) trees.Add(CSharpSyntaxTree.ParseText(another, path: "Another.cs"));
         var compilation = CSharpCompilation.Create("Shop", trees, references,
@@ -514,6 +515,113 @@ public class ServerValueProjectionTests
 
         generated.Escapes.Should().ContainSingle().Which.GetMessage().Should().Contain("which runs on the server");
         generated.Manifest.Should().NotContain("Authority");
+    }
+
+    [Fact]
+    public void AStructThatHandsOutAnObjectThroughAGetter_IsReadIntoNotWrittenWhole()
+    {
+        // Written whole, the struct would carry its public properties, the identity among them.
+        var generated = Run("""
+            public struct Summary
+            {
+                public string Title => "summary";
+                public SiteIdentity Identity => new();
+            }
+
+            public sealed class Report
+            {
+                public Summary Summary { get; set; }
+            }
+
+            [Page("/report")]
+            public sealed class ReportPage(Report report) : StatelessComponent
+            {
+                public override VisualNode Build(ComponentContext context) => new Text(report.Summary.Title, TypeRole.BodyM);
+            }
+            """);
+
+        generated.Reported.Should().BeEmpty();
+        generated.Manifest.Should().Contain(Projected("ReportPage", "report", "CapturedParameter", "Summary.Title"));
+    }
+
+    [Fact]
+    public void AReferencedStructThatKeepsAnObjectInAPrivateField_IsReadIntoNotWrittenWhole()
+    {
+        // A struct from metadata shows no private field, so only its public getter says what it holds.
+        var library = CSharpCompilation.Create("Sessions",
+            [CSharpSyntaxTree.ParseText("""
+                namespace Sessions;
+
+                public sealed class Account
+                {
+                    public string Secret { get; set; } = "";
+                }
+
+                public readonly struct Session
+                {
+                    private readonly Account _account;
+                    public Session(Account account) { _account = account; }
+                    public Account Account => _account;
+                    public string Title => "session";
+                }
+
+                public sealed class SessionStore
+                {
+                    public Session Current { get; set; }
+                }
+                """)],
+            ((string)AppContext.GetData("TRUSTED_PLATFORM_ASSEMBLIES")!).Split(Path.PathSeparator)
+                .Where(p => p.EndsWith(".dll", StringComparison.OrdinalIgnoreCase))
+                .Select(p => (MetadataReference)MetadataReference.CreateFromFile(p)),
+            new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
+        using var image = new MemoryStream();
+        library.Emit(image).Success.Should().BeTrue();
+
+        var generated = Run("""
+            [Page("/session")]
+            public sealed class SessionPage(Sessions.SessionStore store) : StatelessComponent
+            {
+                public override VisualNode Build(ComponentContext context) => new Text(store.Current.Title, TypeRole.BodyM);
+            }
+            """, referenced: MetadataReference.CreateFromImage(image.ToArray()));
+
+        generated.Errors.Should().BeEmpty();
+        generated.Reported.Should().BeEmpty();
+        generated.Manifest.Should().Contain(Projected("SessionPage", "store", "CapturedParameter", "Current.Title"));
+    }
+
+    [Theory]
+    [InlineData("identity is SiteIdentity")]
+    [InlineData("identity is SiteIdentity found && found.IsAdmin")]
+    [InlineData("identity is SiteIdentity { IsAdmin: true }")]
+    public void ATestForAType_FailsTheBuild_SinceWhatCrossesIsAPlainCopy(string test)
+    {
+        // The twin tests a type with instanceof, which a projection, built as no class, never passes.
+        var generated = Run($$"""
+            [Page("/typed")]
+            public sealed class TypedPage(SiteIdentity? identity) : StatelessComponent
+            {
+                public override VisualNode Build(ComponentContext context) => new Text({{test}} ? "a" : "b", TypeRole.BodyM);
+            }
+            """);
+
+        generated.Escapes.Should().ContainSingle().Which.GetMessage().Should().Contain("tested for a type");
+    }
+
+    [Fact]
+    public void AnEmptyPropertyPattern_AndAVarPattern_AskOnlyWhetherItIsThere()
+    {
+        var generated = Run("""
+            [Page("/there")]
+            public sealed class TherePage(SiteIdentity? identity) : StatelessComponent
+            {
+                public override VisualNode Build(ComponentContext context) =>
+                    new Text(identity is { } ? "here" : identity is var none && none is null ? "none" : "?", TypeRole.BodyM);
+            }
+            """);
+
+        generated.Reported.Should().BeEmpty();
+        generated.Manifest.Should().Contain(Projected("TherePage", "identity", "CapturedParameter", ""));
     }
 
     [Fact]

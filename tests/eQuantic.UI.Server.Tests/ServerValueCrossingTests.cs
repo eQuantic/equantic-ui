@@ -59,6 +59,24 @@ public class ServerValueCrossingTests
         public override VisualNode Build(ComponentContext context) => new Text(_options.Title, TypeRole.BodyM);
     }
 
+    public class BaseOptions
+    {
+        public string Title { get; init; } = "";
+    }
+
+    /// <summary>Hides the base's title with a member of its own, which C# reading a BaseOptions never binds.</summary>
+    public sealed class BrandedOptions : BaseOptions
+    {
+        public new string Title { get; init; } = "";
+    }
+
+    /// <summary>Reads the title of options declared as the base type.</summary>
+    [Page("/based")]
+    public sealed class BasedPage(BaseOptions options) : StatelessComponent
+    {
+        public override VisualNode Build(ComponentContext context) => new Text(options.Title, TypeRole.BodyM);
+    }
+
     /// <summary>A prefetch that keeps a service behind a member typed object, which the build cannot see into.</summary>
     [Page("/held-service")]
     public sealed class HeldServicePage : StatelessComponent, IServerPrefetch
@@ -82,6 +100,7 @@ public class ServerValueCrossingTests
         builder.WebHost.UseTestServer();
         if (signedIn) builder.Services.AddSingleton(new SiteIdentity { Authority = Authority, DisplayName = "Ada" });
         builder.Services.AddSingleton(new SiteOptions { Title = "The Docs", ApiKey = ApiKey });
+        builder.Services.AddSingleton<BaseOptions>(new BrandedOptions { Title = "the brand's" });
         builder.Services.AddUI(options => options.ScanAssembly(Assembly.GetExecutingAssembly()));
         var app = builder.Build();
         app.MapUI();
@@ -154,6 +173,21 @@ public class ServerValueCrossingTests
         text.Should().NotContain(ApiKey);
         var state = JsonDocument.Parse(text).RootElement.GetProperty("state");
         EntryOf(state, typeof(OptionsPage)).GetProperty("_options").GetProperty("title").GetString().Should().Be("The Docs");
+    }
+
+    [Fact]
+    public async Task AProjectedRead_IsTheMemberCSharpBound_NotOneTheRuntimeTypeHides()
+    {
+        // The page reads BaseOptions.Title, which the container's BrandedOptions hides with a title of
+        // its own. The server draws the base's, so that is the one the browser must be sent.
+        var (app, client) = await StartAsync();
+        await using var _ = app;
+
+        var html = await client.GetStringAsync("/based");
+
+        html.Should().NotContain("the brand's");
+        EntryOf(PayloadIn(html), typeof(BasedPage)).GetProperty("options").GetProperty("title").GetString()
+            .Should().Be("");
     }
 
     [Fact]

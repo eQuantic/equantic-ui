@@ -20,31 +20,34 @@ internal static class HydrationProjection
     private const BindingFlags Declared =
         BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.DeclaredOnly;
 
-    private static readonly ConcurrentDictionary<(Type Type, string Member), Func<object, object?>?> Readers = new();
+    private static readonly ConcurrentDictionary<(Type Type, string Member), (Func<object, object?> Read, Type Type)?> Members = new();
 
-    public static object? Of(object? value, string projection)
+    /// <param name="value">The value the manifest's entry holds.</param>
+    /// <param name="projection">The reads the browser makes of it.</param>
+    /// <param name="declared">The type the entry's member is declared as, which the reads are bound against.</param>
+    public static object? Of(object? value, string projection, Type declared)
     {
         if (value is null) return null;
         var projected = new Dictionary<string, object?>(StringComparer.Ordinal);
         foreach (var read in projection.Split(',', StringSplitOptions.RemoveEmptyEntries))
-            Write(projected, value, read);
+            Write(projected, value, declared, read);
         return projected;
     }
 
-    private static void Write(Dictionary<string, object?> into, object value, string read)
+    private static void Write(Dictionary<string, object?> into, object value, Type declared, string read)
     {
         var presence = read.EndsWith('?');
         var segments = (presence ? read[..^1] : read).Split('.');
         var target = into;
         var current = value;
+        var type = declared;
         for (var i = 0; i < segments.Length; i++)
         {
             var name = TwinName.Of(segments[i]);
-            var next = Reader(current.GetType(), segments[i]) is { } reader
-                ? reader(current)
-                : throw new InvalidOperationException(
-                    $"{current.GetType().FullName} has no member '{segments[i]}', which the hydration manifest "
-                    + "reads. Rebuild the assembly so its manifest is written again.");
+            var member = Member(type, segments[i]) ?? throw new InvalidOperationException(
+                $"{type.FullName} has no member '{segments[i]}', which the hydration manifest reads. Rebuild "
+                + "the assembly so its manifest is written again.");
+            var next = member.Read(current);
 
             if (i == segments.Length - 1)
             {
@@ -63,21 +66,35 @@ internal static class HydrationProjection
                 target[name] = child = new Dictionary<string, object?>(StringComparer.Ordinal);
             target = child;
             current = next;
+            type = member.Type;
         }
     }
 
-    /// <summary>The member a read names, as C# declares it on the value's type or one it derives from.</summary>
-    private static Func<object, object?>? Reader(Type type, string member) =>
-        Readers.GetOrAdd((type, member), static key =>
+    /// <summary>
+    /// The member a read names, bound as C# binds it: on the type the value is declared as, then the types
+    /// it derives from (or, for an interface, the interfaces it extends). The value's run-time type is not
+    /// asked, so a member a derived type hides with <c>new</c> is not the one read, while a virtual one
+    /// still answers with its override, and an interface's member with its implementation.
+    /// </summary>
+    private static (Func<object, object?> Read, Type Type)? Member(Type declared, string member) =>
+        Members.GetOrAdd((declared, member), static key =>
         {
-            for (var declaring = key.Type; declaring is not null; declaring = declaring.BaseType)
+            foreach (var type in Bound(key.Type))
             {
-                if (declaring.GetProperty(key.Member, Declared) is { CanRead: true } property
+                if (type.GetProperty(key.Member, Declared) is { CanRead: true } property
                     && property.GetIndexParameters().Length == 0)
-                    return property.GetValue;
-                if (declaring.GetField(key.Member, Declared) is { } field)
-                    return field.GetValue;
+                    return (property.GetValue, property.PropertyType);
+                if (type.GetField(key.Member, Declared) is { } field)
+                    return (field.GetValue, field.FieldType);
             }
             return null;
         });
+
+    private static IEnumerable<Type> Bound(Type declared)
+    {
+        if (declared.IsInterface) return declared.GetInterfaces().Prepend(declared);
+        var chain = new List<Type>();
+        for (var type = declared; type is not null; type = type.BaseType) chain.Add(type);
+        return chain;
+    }
 }

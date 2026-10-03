@@ -46,6 +46,13 @@ internal sealed class ServerValueAnalysis
         "it is checked while the page is constructed, where the browser has no value and the check throws "
         + "(the container already refuses to build the page without it)";
 
+    /// <summary>
+    /// A test that names a type, even the one the value is declared as: the twin tests it with
+    /// <c>instanceof</c>, and what crosses is a plain copy no class constructed.
+    /// </summary>
+    private const string TestedForAType =
+        "it is tested for a type, and what crosses to the browser is a plain copy of no type (test it against null)";
+
     private const string WalkedThroughItself =
         "it is walked through a chain of its own members, which the build cannot bound";
 
@@ -179,7 +186,7 @@ internal sealed class ServerValueAnalysis
                 Pattern(test.Pattern, root, path, instance);
                 return;
             case IIsTypeOperation test when test.ValueOperand == child:
-                TypeTest(test, child.Type, test.TypeOperand, root, path);
+                Stop(test, root, TestedForAType);
                 return;
             case ISwitchExpressionOperation choice when choice.Value == child:
                 foreach (var arm in choice.Arms) Pattern(arm.Pattern, root, path, instance);
@@ -287,15 +294,26 @@ internal sealed class ServerValueAnalysis
                 return;
             case IDiscardPatternOperation:
                 return;
-            case ITypePatternOperation type:
-                TypeTest(pattern, pattern.InputType, type.MatchedType, root, path);
+            case ITypePatternOperation:
+                Stop(pattern, root, TestedForAType);
                 return;
             case IDeclarationPatternOperation declaration:
-                TypeTest(pattern, pattern.InputType, declaration.MatchedType, root, path);
+                // `is var x` names no type and matches null too; `is SiteIdentity x` tests the type.
+                if (!declaration.MatchesNull)
+                {
+                    Stop(pattern, root, TestedForAType);
+                    return;
+                }
                 if (declaration.DeclaredSymbol is ILocalSymbol bound) FollowLocal(bound, pattern, root, path, instance);
                 return;
             case IRecursivePatternOperation recursive:
-                TypeTest(pattern, pattern.InputType, recursive.MatchedType, root, path);
+                // `{ … }` asks whether it is there; `SiteIdentity { … }` tests the type as well.
+                if (recursive.Syntax is RecursivePatternSyntax { Type: not null })
+                {
+                    Stop(pattern, root, TestedForAType);
+                    return;
+                }
+                Read(root).Presence(path);
                 if (recursive.DeconstructionSubpatterns.Length > 0)
                 {
                     Stop(pattern, root, "it is deconstructed");
@@ -350,19 +368,6 @@ internal sealed class ServerValueAnalysis
                 Stop(clause, root, "it is matched in a way the build cannot follow");
                 return;
         }
-    }
-
-    /// <summary>
-    /// A test for the type it already has, or one it derives from, asks only whether it is null. A test
-    /// for a type it may not be asks the server's object something its projection cannot answer.
-    /// </summary>
-    private void TypeTest(IOperation at, ITypeSymbol? input, ITypeSymbol? matched, ISymbol root, string path)
-    {
-        if (input is null || matched is null
-            || _compilation.ClassifyCommonConversion(input, matched) is { IsIdentity: true } or { IsImplicit: true, IsReference: true })
-            Read(root).Presence(path);
-        else
-            Stop(at, root, "it is tested for a type it may not be");
     }
 
     private void Store(ISimpleAssignmentOperation assignment, ISymbol root, string path, INamedTypeSymbol instance)

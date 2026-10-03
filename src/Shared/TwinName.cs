@@ -17,4 +17,11 @@ internal static class TwinName
     /// <summary>The twin's name for <paramref name="name"/>. Empty or null comes back unchanged.</summary>
     public static string Of(string name) =>
         string.IsNullOrEmpty(name) ? name : char.ToLowerInvariant(name[0]) + name.Substring(1);
+
+    /// <summary>
+    /// The slot a twin keeps a property's own store in when its accessors read or write it through C#'s
+    /// <c>field</c>: the property's twin name after a <c>$</c>, which no C# identifier can start with, so
+    /// the slot never meets a member the author declared.
+    /// </summary>
+    public static string BackingSlot(string property) => "$" + Of(property);
 }

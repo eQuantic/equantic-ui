@@ -744,7 +744,7 @@ public class ServerRenderingService : IServerRenderingService
                 {
                     try
                     {
-                        stateDict[hydrated.Name] = HydrationProjection.Of(value, projection);
+                        stateDict[hydrated.Name] = HydrationProjection.Of(value, projection, hydrated.Declared);
                     }
                     catch (Exception ex)
                     {

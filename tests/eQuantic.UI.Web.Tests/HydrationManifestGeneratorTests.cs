@@ -163,6 +163,36 @@ public class HydrationManifestGeneratorTests
     }
 
     [Fact]
+    public void APropertyThatKeepsItsStoreThroughField_IsDescribedAsTheStore()
+    {
+        // Its setter halves what it is given, so hydrating through the setter would halve the value the
+        // getter answered again: the store crosses, and a pure auto-property stays a property.
+        var (source, errors) = Run("""
+            using System;
+            using System.Threading;
+            using System.Threading.Tasks;
+            using eQuantic.UI.Primitives;
+
+            namespace App;
+
+            public sealed class Halves : StatelessComponent, IServerPrefetch
+            {
+                public int Half { get; set => field = value / 2; }
+                public int Whole { get; set; }
+
+                public Task PrefetchAsync(IServiceProvider services, CancellationToken cancellationToken)
+                { Half = 84; Whole = 84; return Task.CompletedTask; }
+
+                public override VisualNode Build(ComponentContext context) => null!;
+            }
+            """);
+
+        errors.Should().BeEmpty();
+        source.Should().Contain(Entry("Halves", "Halves", "Half", "BackingField"))
+            .And.Contain(Entry("Halves", "Halves", "Whole", "Property"));
+    }
+
+    [Fact]
     public void AnythingThatPrefetches_IsDescribed_WhateverItDerivesFrom()
     {
         // An escape-hatch page prefetches without being a write-once component; its state crosses all

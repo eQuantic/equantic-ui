@@ -65,8 +65,8 @@ internal sealed class HydrationContract
         var unresolved = new List<string>();
         foreach (var entry in manifest[key])
         {
-            if (Reader(component, entry) is { } read)
-                values.Add(new HydratedValue(TwinName.Of(entry.Member), read, entry.Projection));
+            if (Reader(component, entry) is var (read, declared) && read is not null)
+                values.Add(new HydratedValue(NameOf(entry), read, entry.Projection, declared!));
             else
                 unresolved.Add($"{entry.DeclaringType}.{entry.Member} ({entry.Kind})");
         }
@@ -74,20 +74,34 @@ internal sealed class HydrationContract
         return new HydrationContract(values, unresolved);
     }
 
-    private static Func<object, object?>? Reader(Type component, HydratedMemberAttribute entry)
+    /// <summary>
+    /// The name a value crosses under: the twin's name for the member, or for a property that keeps its
+    /// store through <c>field</c>, the slot the twin keeps that store in.
+    /// </summary>
+    private static string NameOf(HydratedMemberAttribute entry) => entry.Kind == HydratedMemberKind.BackingField
+        ? TwinName.BackingSlot(entry.Member)
+        : TwinName.Of(entry.Member);
+
+    /// <summary>How to read an entry off the live component, and the type the member is declared as.</summary>
+    private static (Func<object, object?>? Read, Type? Declared) Reader(Type component, HydratedMemberAttribute entry)
     {
-        if (Declaring(component, entry.DeclaringType) is not { } declaring) return null;
-        return entry.Kind switch
+        if (Declaring(component, entry.DeclaringType) is not { } declaring) return (null, null);
+        var field = entry.Kind switch
         {
-            HydratedMemberKind.Property =>
-                declaring.GetProperty(entry.Member, Declared) is { CanRead: true } property ? property.GetValue : null,
-            // THE C# COMPILER'S NAME for a captured primary-constructor parameter's storage. It is the
-            // one name the server keeps, pinned by a test over a real primary constructor so a compiler
-            // that names it differently fails there rather than here.
-            HydratedMemberKind.CapturedParameter =>
-                declaring.GetField($"<{entry.Member}>P", Declared) is { } captured ? captured.GetValue : null,
-            _ => declaring.GetField(entry.Member, Declared) is { } field ? field.GetValue : null,
+            HydratedMemberKind.Property => null,
+            // THE C# COMPILER'S NAMES for the storage it synthesizes: a captured primary-constructor
+            // parameter's, and the store of a property whose accessors use `field`. They are the names the
+            // server keeps, each pinned by a test over what the compiler built, so a compiler that names
+            // them differently fails there rather than here.
+            HydratedMemberKind.CapturedParameter => declaring.GetField($"<{entry.Member}>P", Declared),
+            HydratedMemberKind.BackingField => declaring.GetField($"<{entry.Member}>k__BackingField", Declared),
+            _ => declaring.GetField(entry.Member, Declared),
         };
+        if (field is not null) return (field.GetValue, field.FieldType);
+        return entry.Kind == HydratedMemberKind.Property
+            && declaring.GetProperty(entry.Member, Declared) is { CanRead: true } property
+            ? (property.GetValue, property.PropertyType)
+            : (null, null);
     }
 
     /// <summary>The type on the component's chain the manifest names, closed as the component closes it.</summary>

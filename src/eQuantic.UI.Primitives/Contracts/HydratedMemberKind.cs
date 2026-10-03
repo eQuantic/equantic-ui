@@ -22,4 +22,11 @@ public enum HydratedMemberKind
     /// synthesizes for it.
     /// </summary>
     CapturedParameter = 2,
+
+    /// <summary>
+    /// The store a property keeps through C#'s <c>field</c>, its accessors guarding what goes in and out.
+    /// It crosses as the store itself, into the slot the twin keeps for it, since a setter that transforms
+    /// what it is given would not give back what its getter answered.
+    /// </summary>
+    BackingField = 3,
 }

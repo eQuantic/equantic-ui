@@ -13,6 +13,7 @@ eQuantic.UI.Primitives.HydratedMemberKind
 eQuantic.UI.Primitives.HydratedMemberKind.Field = 0 -> eQuantic.UI.Primitives.HydratedMemberKind
 eQuantic.UI.Primitives.HydratedMemberKind.Property = 1 -> eQuantic.UI.Primitives.HydratedMemberKind
 eQuantic.UI.Primitives.HydratedMemberKind.CapturedParameter = 2 -> eQuantic.UI.Primitives.HydratedMemberKind
+eQuantic.UI.Primitives.HydratedMemberKind.BackingField = 3 -> eQuantic.UI.Primitives.HydratedMemberKind
 eQuantic.UI.Primitives.HydratedMemberAttribute.HydratedMemberAttribute(string! component, string! declaringType, string! member, eQuantic.UI.Primitives.HydratedMemberKind kind) -> void
 eQuantic.UI.Primitives.HydratedMemberAttribute.Component.get -> string!
 eQuantic.UI.Primitives.HydratedMemberAttribute.DeclaringType.get -> string!

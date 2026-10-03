@@ -76,6 +76,29 @@ public class HydrationCrossingTests(CrossingTwins twins) : IClassFixture<Crossin
         drawn[1].Should().Be(drawn[0]);
     }
 
+    [Fact]
+    public async Task APropertyThatKeepsItsStoreThroughField_DrawsWhatTheServerDrew()
+    {
+        // Through its setter, the store would be halved a second time in the browser.
+        var (html, drawn) = await CrossAsync("/crossing-halves", nameof(CrossingHalvesPage));
+
+        html.Should().Contain("half 42");
+        drawn[0].Should().Be("half 42");
+        drawn[1].Should().Be(drawn[0]);
+    }
+
+    [Fact]
+    public async Task AMemberTheRuntimeTypeHides_CrossesAsTheOneCSharpRead()
+    {
+        // The page reads CrossingBaseOptions.Title; the container hands it a CrossingBrandedOptions whose
+        // own Title hides it, and which the page never reads.
+        var (html, drawn) = await CrossAsync("/crossing-branded", nameof(CrossingBrandedPage));
+
+        html.Should().Contain("brand bound").And.NotContain("hidden");
+        drawn[0].Should().Be("brand bound");
+        drawn[1].Should().Be(drawn[0]);
+    }
+
     /// <summary>
     /// The page served for a load, and what its twin draws on the payload of that load and on the state
     /// a navigation to it receives.
@@ -88,6 +111,9 @@ public class HydrationCrossingTests(CrossingTwins twins) : IClassFixture<Crossin
         builder.WebHost.UseTestServer();
         builder.Services.AddSingleton(new CrossingIdentity { Authority = Authority, DisplayName = "Ada" });
         builder.Services.AddSingleton(new CrossingOptions { Title = "The Docs", ApiKey = ApiKey });
+        var branded = new CrossingBrandedOptions { Title = "hidden" };
+        ((CrossingBaseOptions)branded).Title = "bound";
+        builder.Services.AddSingleton<CrossingBaseOptions>(branded);
         builder.Services.AddUI(options => options.ScanAssembly(typeof(CrossingPage).Assembly));
         var app = builder.Build();
         app.MapUI();

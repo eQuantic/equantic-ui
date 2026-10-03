@@ -208,9 +208,23 @@ public sealed class HydrationManifestGenerator : IIncrementalGenerator
     private static string KindOf(ISymbol storage) => storage switch
     {
         IParameterSymbol => "CapturedParameter",
+        IPropertySymbol property when KeepsItsOwnStore(property) => "BackingField",
         IPropertySymbol => "Property",
         _ => "Field",
     };
+
+    /// <summary>
+    /// Whether a property keeps its store through C#'s <c>field</c>: it has one the compiler declares, as
+    /// an auto-property does, and accessors of its own that read or write it.
+    /// </summary>
+    private static bool KeepsItsOwnStore(IPropertySymbol property) =>
+        property.ContainingType.GetMembers().OfType<IFieldSymbol>()
+            .Any(field => field.IsImplicitlyDeclared && SymbolEqualityComparer.Default.Equals(field.AssociatedSymbol, property))
+        && property.DeclaringSyntaxReferences
+            .Select(reference => reference.GetSyntax())
+            .OfType<PropertyDeclarationSyntax>()
+            .Any(declaration => declaration.ExpressionBody is not null
+                || declaration.AccessorList?.Accessors.Any(a => a.Body is not null || a.ExpressionBody is not null) == true);
 
     /// <summary>Every member a prefetching component holds, which crosses whole.</summary>
     private static List<Entry> Crossing(
@@ -227,11 +241,12 @@ public sealed class HydrationManifestGenerator : IIncrementalGenerator
                 if (Excluded(field.Type)) continue;
 
                 // An auto-property's storage is a field the compiler declares for it: the property is
-                // what crosses, read through its getter.
+                // what crosses, read through its getter. One whose accessors guard that store through
+                // `field` crosses as the store, since its setter need not give back what its getter read.
                 if (field.IsImplicitlyDeclared)
                 {
                     if (field.AssociatedSymbol is IPropertySymbol { IsStatic: false } property)
-                        entries.Add(new Entry(component, declaring, property.Name, "Property"));
+                        entries.Add(new Entry(component, declaring, property.Name, KindOf(property)));
                     continue;
                 }
 

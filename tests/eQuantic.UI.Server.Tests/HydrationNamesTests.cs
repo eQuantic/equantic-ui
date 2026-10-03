@@ -80,6 +80,21 @@ public class HydrationNamesTests
         }
     }
 
+    /// <summary>A property that halves what it is given, keeping its store through C#'s <c>field</c>.</summary>
+    [Page("/hydration-halves")]
+    public sealed class HalvesPage : StatelessComponent, IServerPrefetch
+    {
+        public int Half { get; set => field = value / 2; }
+
+        public Task PrefetchAsync(IServiceProvider services, CancellationToken cancellationToken)
+        {
+            Half = 84;
+            return Task.CompletedTask;
+        }
+
+        public override VisualNode Build(ComponentContext context) => new Text($"half {Half}", TypeRole.BodyM);
+    }
+
     /// <summary>A primary-constructor parameter a member reads, so the C# compiler gives it a field.</summary>
     public sealed class CapturedProbe(string symbol)
     {
@@ -135,6 +150,26 @@ public class HydrationNamesTests
         // names it differently fails here, by name, instead of every captured value going missing.
         typeof(CapturedProbe).GetField("<symbol>P", BindingFlags.Instance | BindingFlags.NonPublic)
             .Should().NotBeNull("HydrationContract reads a captured parameter from the field <name>P");
+    }
+
+    [Fact]
+    public async Task APropertyThatKeepsItsStoreThroughField_CrossesAsTheStore_IntoTheTwinsSlot()
+    {
+        // Through the setter, the 42 the getter answers would land as 21: the store crosses instead.
+        var state = await PayloadOf("/hydration-halves");
+        var page = state.GetProperty(eQuantic.UI.Web.ComponentIdentity.Key(typeof(HalvesPage), 0));
+
+        Names(page).Should().Equal(["$half"]);
+        page.GetProperty("$half").GetInt32().Should().Be(42);
+    }
+
+    [Fact]
+    public void AFieldBackedProperty_IsStoredInTheFieldTheServerReads()
+    {
+        // The C# compiler's name for the store of a property whose accessors use `field`, read off a
+        // type it built, as the captured parameter's is above.
+        typeof(HalvesPage).GetField("<Half>k__BackingField", BindingFlags.Instance | BindingFlags.NonPublic)
+            .Should().NotBeNull("HydrationContract reads a field-backed property's store from <Name>k__BackingField");
     }
 
     [Fact]

@@ -39,10 +39,26 @@ internal static class HydrationManifest
                 .Where(argument => argument.Key == "Projection")
                 .Select(argument => argument.Value.Value as string)
                 .FirstOrDefault();
-            carried.Add((member.ToCamelCase(), TypeOf(compilation.GetTypeByMetadataName(declaringName), member, kind), projection));
+            // HydratedMemberKind.BackingField crosses into the slot the twin keeps the property's store in.
+            var key = kind == 3 ? eQuantic.UI.TwinName.BackingSlot(member) : member.ToCamelCase();
+            carried.Add((key, TypeOf(OnChain(component, compilation.GetTypeByMetadataName(declaringName)), member, kind), projection));
         }
 
         return carried;
+    }
+
+    /// <summary>
+    /// The type the manifest names, as the component's chain constructs it: an inherited member of
+    /// <c>LoadingPage&lt;long&gt;</c> is a <c>List&lt;long&gt;</c>, where the definition the manifest's name resolves
+    /// to declares a <c>List&lt;T&gt;</c>, which no spec can say how to coerce.
+    /// </summary>
+    private static INamedTypeSymbol? OnChain(INamedTypeSymbol component, INamedTypeSymbol? definition)
+    {
+        if (definition is null) return null;
+        for (var type = component; type is not null; type = type.BaseType)
+            if (SymbolEqualityComparer.Default.Equals(type.OriginalDefinition, definition.OriginalDefinition))
+                return type;
+        return definition;
     }
 
     /// <summary>The C# type of the member an entry names, by the kind it was declared with.</summary>
@@ -50,8 +66,8 @@ internal static class HydrationManifest
     {
         // HydratedMemberKind.Field
         0 => declaring?.GetMembers(member).OfType<IFieldSymbol>().FirstOrDefault()?.Type,
-        // HydratedMemberKind.Property
-        1 => declaring?.GetMembers(member).OfType<IPropertySymbol>().FirstOrDefault()?.Type,
+        // HydratedMemberKind.Property, and HydratedMemberKind.BackingField, whose store is of the property's type
+        1 or 3 => declaring?.GetMembers(member).OfType<IPropertySymbol>().FirstOrDefault()?.Type,
         // HydratedMemberKind.CapturedParameter: a parameter of the primary constructor.
         2 => declaring?.InstanceConstructors
             .SelectMany(constructor => constructor.Parameters)
