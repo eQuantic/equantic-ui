@@ -18,4 +18,4 @@
 
 - [x] 3.1 Update the wiki page that describes how vocabulary values reach the browser, in English and Portuguese, in one commit on a wiki branch named like this one. Verify: the docs guards pass with `EQ_WIKI_DIR` on that branch
 - [x] 3.2 Add one `docs/LEDGER.md` line citing #494, and file the `GetHashCode` gap as its own issue under #164. Verify: `./scripts/check-openspec.sh` passes and the issue is on the board
-- [ ] 3.3 Run the suites each alone and read their exit codes (Compiler, Web, Server, Conformance, the runtime's `TestRuntime`), and `dotnet build samples/DefaultUIDashboard`. Verify: every one exits 0
+- [x] 3.3 Run the suites each alone and read their exit codes (Compiler, Web, Server, Conformance, the runtime's `TestRuntime`), and `dotnet build samples/DefaultUIDashboard`. Verify: every one exits 0
