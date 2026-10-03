@@ -19,9 +19,19 @@ namespace eQuantic.UI.Compiler.CodeGen.Strategies.Expressions;
 /// </summary>
 public class InlinedConstantStrategy : IConversionStrategy
 {
-    public bool CanConvert(SyntaxNode node, ConversionContext context) =>
-        node is MemberAccessExpressionSyntax
-        && (TryResolveConstant(node, context, out _) || TryResolveInlinable(node, context, out _, out _));
+    public bool CanConvert(SyntaxNode node, ConversionContext context) => node switch
+    {
+        MemberAccessExpressionSyntax =>
+            TryResolveConstant(node, context, out _) || TryResolveInlinable(node, context, out _, out _),
+        // `using static System.Math;` then a bare `PI` reads the constant `Math.PI` reads, so it inlines
+        // as that one does: it fell to the rule for the app's own statics and read `Math.pI` (#485).
+        // Only a constant this compilation does not declare: an app's own, reached by its simple
+        // name, stays its twin's static.
+        IdentifierNameSyntax name when name.StandsAlone()
+            && context.SemanticHelper.GetSymbol(name) is IFieldSymbol { IsConst: true, ContainingType: { } owner }
+            && !owner.Locations.Any(location => location.IsInSource) => TryResolveConstant(node, context, out _),
+        _ => false,
+    };
 
     public string Convert(SyntaxNode node, ConversionContext context)
     {
