@@ -30,13 +30,18 @@ internal sealed class Projection
     /// </summary>
     public override string ToString()
     {
-        var read = _values.ToList();
+        // A value crossing whole carries everything beneath it, so nothing beneath it is written again:
+        // written after it, a deeper read would replace the whole value with the one member it reads.
+        bool Beneath(string path) => _values.Any(value =>
+            path.Length > value.Length && path.StartsWith(value + ".", System.StringComparison.Ordinal));
+
+        var read = _values.Where(value => !Beneath(value)).ToList();
         foreach (var presence in _presences)
         {
-            if (presence.Length == 0) continue;
+            if (presence.Length == 0 || Beneath(presence) || _values.Contains(presence)) continue;
             var deeper = _values.Concat(_presences)
                 .Any(other => other.Length > presence.Length && other.StartsWith(presence + ".", System.StringComparison.Ordinal));
-            if (!deeper && !_values.Contains(presence)) read.Add(presence + "?");
+            if (!deeper) read.Add(presence + "?");
         }
         return string.Join(",", read.OrderBy(path => path, System.StringComparer.Ordinal));
     }

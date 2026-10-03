@@ -105,8 +105,9 @@ server in `PrefetchAsync` or a `[ServerOnly]` member and keeping the result in a
 ### Requirement: The payload carries only what the build described
 
 The server SHALL write a component's state only as the build described it. A component whose type the
-build did not describe SHALL carry no state, and a value whose type the server's container registers as
-a service SHALL never be written whole, whatever the description says.
+build did not describe SHALL carry no state, and a value the server's container hands out as a service,
+registered as its own type or as an interface or a base type it derives from outside `System`, SHALL never
+be written whole, whatever the description says.
 
 #### Scenario: A service behind a field typed object
 
@@ -114,3 +115,9 @@ a service SHALL never be written whole, whatever the description says.
   it holds an instance of a type the container registers as a service
 - **THEN** the served HTML carries nothing for that field, and the server logs which field it left out
   and why
+
+#### Scenario: A service registered under an interface it implements
+
+- **WHEN** that field holds an instance the container hands out only under an interface its type
+  implements, as `AddSingleton<IAccountView, AccountSecrets>()` registers it
+- **THEN** the served HTML carries nothing for that field, and the server's log names the interface

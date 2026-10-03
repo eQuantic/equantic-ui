@@ -624,6 +624,148 @@ public class ServerValueProjectionTests
         generated.Manifest.Should().Contain(Projected("TherePage", "identity", "CapturedParameter", ""));
     }
 
+    private const string Report = """
+        public struct Totals
+        {
+            public long Seed { get; set; }
+            public long Count => Seed * 6;
+        }
+
+        public struct Position
+        {
+            public int X;
+        }
+
+        public sealed class Report
+        {
+            public Totals Totals { get; set; }
+            public Totals? Maybe { get; set; }
+            public Position Position { get; set; }
+            public byte[] Bytes { get; set; } = [];
+            public System.Collections.Generic.List<string> Tags { get; set; } = new();
+        }
+        """;
+
+    [Fact]
+    public void AStructIsReadDownToItsScalars_SinceWhatTheSerializerWritesOfOneIsNotWhatItHolds()
+    {
+        // Whole, the computed long would cross untyped, the public field not at all, and the bytes as
+        // base64 text: each read reaches a scalar instead, coerced by its own type.
+        var generated = Run(Report + """
+
+            [Page("/report")]
+            public sealed class ReportPage(Report report) : StatelessComponent
+            {
+                public override VisualNode Build(ComponentContext context) =>
+                    new Text($"{report.Totals.Count * 2} {report.Position.X} {report.Bytes.Length}", TypeRole.BodyM);
+            }
+            """);
+
+        generated.Reported.Should().BeEmpty();
+        generated.Manifest.Should().Contain(Projected("ReportPage", "report", "CapturedParameter", "Bytes.Length,Position.X,Totals.Count"));
+    }
+
+    [Fact]
+    public void AValueCrossingWhole_CarriesWhatAPatternReadsBeneathIt()
+    {
+        // Tags crosses whole for the index, and `{ Tags.Count: > 0 }` meets the same leaf first: Roslyn
+        // shapes it as `{ Tags: { Count: > 0 } }`. A deeper path would replace the list with its count.
+        var generated = Run(Report + """
+
+            [Page("/tags")]
+            public sealed class TagsPage(Report report) : StatelessComponent
+            {
+                public override VisualNode Build(ComponentContext context) =>
+                    new Text(report is { Tags.Count: > 0 } ? report.Tags[0] : "", TypeRole.BodyM);
+            }
+            """);
+
+        generated.Reported.Should().BeEmpty();
+        generated.Manifest.Should().Contain(Projected("TagsPage", "report", "CapturedParameter", "Tags"));
+    }
+
+    [Fact]
+    public void ANullableStructsValue_IsTheStructItself_AndHasValueAsksWhetherItIsThere()
+    {
+        var generated = Run(Report + """
+
+            [Page("/maybe")]
+            public sealed class MaybePage(Report report) : StatelessComponent
+            {
+                public override VisualNode Build(ComponentContext context) =>
+                    new Text(report.Maybe.HasValue ? $"{report.Maybe.Value.Count}" : "none", TypeRole.BodyM);
+            }
+            """);
+
+        generated.Reported.Should().BeEmpty();
+        generated.Manifest.Should().Contain(Projected("MaybePage", "report", "CapturedParameter", "Maybe.Count"));
+    }
+
+    [Fact]
+    public void ANullableStructMatchedByAPattern_IsReadAsTheStruct()
+    {
+        // A pattern over a nullable reads the struct's own members: C# refuses `{ Maybe.Value.Count: … }`.
+        var generated = Run(Report + """
+
+            [Page("/matched")]
+            public sealed class MatchedPage(Report report) : StatelessComponent
+            {
+                public override VisualNode Build(ComponentContext context) =>
+                    new Text(report is { Maybe.Count: > 0 } || report.Maybe is { Seed: > 0 } ? "some" : "none", TypeRole.BodyM);
+            }
+            """);
+
+        generated.Reported.Should().BeEmpty();
+        generated.Manifest.Should().Contain(Projected("MatchedPage", "report", "CapturedParameter", "Maybe.Count,Maybe.Seed"));
+    }
+
+    [Fact]
+    public void AReadThroughABaseTheDeclaredTypeHides_FailsTheBuild()
+    {
+        // The page holds a BrandedOptions, so the server binds `Title` there, to the member that hides
+        // the one the local's type reads.
+        var generated = Run("""
+            public class BaseOptions { public string Title { get; set; } = ""; }
+            public sealed class BrandedOptions : BaseOptions { public new string Title { get; set; } = ""; }
+
+            [Page("/branded")]
+            public sealed class BrandedPage(BrandedOptions options) : StatelessComponent
+            {
+                public override VisualNode Build(ComponentContext context)
+                {
+                    BaseOptions view = options;
+                    return new Text(view.Title, TypeRole.BodyM);
+                }
+            }
+            """);
+
+        generated.Escapes.Should().ContainSingle().Which.GetMessage().Should().Contain("binds a member the declared type hides");
+    }
+
+    [Fact]
+    public void AReadThroughAnInterfaceOrAnOverride_BindsTheSameMember()
+    {
+        var generated = Run("""
+            public interface ITitled { string Title { get; } }
+            public class BaseOptions : ITitled { public virtual string Title { get; set; } = ""; }
+            public sealed class BrandedOptions : BaseOptions { public override string Title { get; set; } = ""; }
+
+            [Page("/titled")]
+            public sealed class TitledPage(BrandedOptions options) : StatelessComponent
+            {
+                public override VisualNode Build(ComponentContext context)
+                {
+                    ITitled titled = options;
+                    BaseOptions view = options;
+                    return new Text($"{titled.Title} {view.Title}", TypeRole.BodyM);
+                }
+            }
+            """);
+
+        generated.Reported.Should().BeEmpty();
+        generated.Manifest.Should().Contain(Projected("TitledPage", "options", "CapturedParameter", "Title"));
+    }
+
     [Fact]
     public void AComponentThatIsNoPage_ReceivesWhatItsParentPasses_AndIsNotRefused()
     {

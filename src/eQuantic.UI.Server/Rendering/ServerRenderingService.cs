@@ -689,7 +689,25 @@ public class ServerRenderingService : IServerRenderingService
     /// <summary>What the container registered, which a value it hands out is never written whole for.</summary>
     private readonly IServiceProviderIsService? _isService;
 
-    private bool IsService(Type type) => _isService?.IsService(type) == true;
+    /// <summary>
+    /// The type the container hands this one out as, or null: itself, or an interface it implements or a
+    /// base it derives from, which is how a registration such as <c>AddSingleton&lt;IIdentity, SiteIdentity&gt;()</c>
+    /// is keyed. Outside <c>System</c> only, where an app's contracts live: the container answers yes for
+    /// <c>IEnumerable&lt;T&gt;</c> of anything, and every list would read as a service.
+    /// </summary>
+    private Type? ServiceContract(Type type)
+    {
+        if (_isService is null) return null;
+        if (_isService.IsService(type)) return type;
+        foreach (var contract in type.GetInterfaces())
+            if (IsAppContract(contract) && _isService.IsService(contract)) return contract;
+        for (var baseType = type.BaseType; baseType is not null; baseType = baseType.BaseType)
+            if (IsAppContract(baseType) && _isService.IsService(baseType)) return baseType;
+        return null;
+    }
+
+    private static bool IsAppContract(Type type) =>
+        type.Namespace is not { } space || !(space == "System" || space.StartsWith("System.", StringComparison.Ordinal));
 
     /// <summary>
     /// Whether a component's state crosses although it asked for no data: a page holding a value from the
@@ -765,14 +783,14 @@ public class ServerRenderingService : IServerRenderingService
                 // NOR A SERVICE, whatever the build said. The build follows the types it can see, and a
                 // member typed `object` that holds a service at run time is the one shape it cannot: the
                 // container knows what it registered, so it has the last word.
-                if (value is not null && IsService(value.GetType()))
+                if (value is not null && ServiceContract(value.GetType()) is { } service)
                 {
                     if (_reportedServices.TryAdd((type, hydrated.Name), 0))
                         _logger.LogWarning(
-                            "[SSR Hydration] {Component}.{Member} holds a {Service}, which the container registers "
-                            + "as a service, so it is left out of the page. A value the browser needs crosses as "
-                            + "what it reads of it when the page declares it with that type.",
-                            type.FullName, hydrated.Name, value.GetType().FullName);
+                            "[SSR Hydration] {Component}.{Member} holds a {Value}, which the container hands out as "
+                            + "the service {Service}, so it is left out of the page. A value the browser needs "
+                            + "crosses as what it reads of it when the page declares it with that type.",
+                            type.FullName, hydrated.Name, value.GetType().FullName, service.FullName);
                     continue;
                 }
 

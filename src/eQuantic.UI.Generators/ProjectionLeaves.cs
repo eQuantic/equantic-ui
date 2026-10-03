@@ -5,28 +5,33 @@ using Microsoft.CodeAnalysis;
 namespace eQuantic.UI.Generators;
 
 /// <summary>
-/// Where a projection stops following a value: at a LEAF, plain data that crosses as it is. A number,
-/// a boolean, an enum, a date or a time, a string, a URI, a struct made of leaves, and a collection of
-/// leaves. Anything else is an object whose members the browser may read one at a time, and only those
-/// cross.
+/// Where a projection stops following a value: at a LEAF, a scalar that crosses as it is. A number, a
+/// boolean, a char, an enum, a date or a time, a GUID, a string, a URI, and a collection or a dictionary
+/// of those. Everything else, a struct included, is read member by member, and only those reads cross,
+/// each coerced in the browser by its own type.
 /// <para>
-/// A leaf is written whole, so it is judged by what writing it whole sends: the server's serializer
-/// writes a struct's public properties, the computed ones included. A struct is a leaf only when every
-/// one of those, and every field it shows, is a leaf too. Its fields alone would pass a struct with no
-/// fields that hands out an object through a getter, and every struct a referenced assembly keeps its
-/// fields private in.
+/// A struct is never written whole. What the server's serializer writes of one is not what it holds:
+/// it drops public fields, writes a <c>byte[]</c> as base64, and writes a computed property the
+/// browser's spec does not type, so a long crossed as a string. Reads down to scalars have none of
+/// those gaps, and a use that needs the struct itself fails the build where the analysis stops.
 /// </para>
 /// </summary>
 internal static class ProjectionLeaves
 {
-    public static bool IsLeaf(ITypeSymbol type) =>
-        IsLeaf(type, new HashSet<ITypeSymbol>(SymbolEqualityComparer.Default));
-
-    /// <summary>The value types whose own members say nothing about what crosses: they cross as a value.</summary>
+    /// <summary>The value types that cross as a value.</summary>
     private static readonly HashSet<string> Scalars = new()
     {
         "System.TimeSpan", "System.DateTimeOffset", "System.DateOnly", "System.TimeOnly", "System.Guid",
     };
+
+    /// <summary>The byte containers the serializer writes as base64 text, which no spec turns back into bytes.</summary>
+    private static readonly HashSet<string> Base64 = new()
+    {
+        "System.Memory<byte>", "System.ReadOnlyMemory<byte>",
+    };
+
+    public static bool IsLeaf(ITypeSymbol type) =>
+        IsLeaf(type, new HashSet<ITypeSymbol>(SymbolEqualityComparer.Default));
 
     private static bool IsLeaf(ITypeSymbol type, HashSet<ITypeSymbol> visiting)
     {
@@ -38,27 +43,19 @@ internal static class ProjectionLeaves
             or SpecialType.System_IntPtr or SpecialType.System_UIntPtr or SpecialType.System_DateTime) return true;
         var name = type.ToDisplayString();
         if (name == "System.Uri" || Scalars.Contains(name)) return true;
-        if (type is IArrayTypeSymbol array) return IsLeaf(array.ElementType, visiting);
+        if (Base64.Contains(name)) return false;
+        if (type is IArrayTypeSymbol array)
+            return array.ElementType.SpecialType != SpecialType.System_Byte && IsLeaf(array.ElementType, visiting);
         if (type is not INamedTypeSymbol named) return false;
-        // A cycle answers yes, so the members around it decide.
-        if (!visiting.Add(named)) return true;
+        // A cycle answers no: a collection of itself is no scalar.
+        if (!visiting.Add(named)) return false;
 
-        var definition = named.OriginalDefinition.ToDisplayString();
         if (named.OriginalDefinition.SpecialType == SpecialType.System_Nullable_T)
             return IsLeaf(named.TypeArguments[0], visiting);
-        // Its two fields are private, so the field rule below would not see what it holds.
-        if (definition == "System.Collections.Generic.KeyValuePair<TKey, TValue>")
+        // A dictionary's entry: a key and a value, each a leaf.
+        if (named.OriginalDefinition.ToDisplayString() == "System.Collections.Generic.KeyValuePair<TKey, TValue>")
             return IsLeaf(named.TypeArguments[0], visiting) && IsLeaf(named.TypeArguments[1], visiting);
-
-        if (Element(named) is { } element) return IsLeaf(element, visiting);
-        // A struct is copied by value, so it is data when what writing it sends is: its public
-        // properties, and every field it shows.
-        return named.IsValueType
-            && named.GetMembers().OfType<IPropertySymbol>()
-                .Where(p => !p.IsStatic && !p.IsIndexer && p.GetMethod is not null
-                    && p.DeclaredAccessibility == Accessibility.Public)
-                .All(p => IsLeaf(p.Type, visiting))
-            && named.GetMembers().OfType<IFieldSymbol>().Where(f => !f.IsStatic).All(f => IsLeaf(f.Type, visiting));
+        return Element(named) is { } element && IsLeaf(element, visiting);
     }
 
     /// <summary>The element a collection enumerates, when it enumerates exactly one kind.</summary>

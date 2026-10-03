@@ -77,6 +77,35 @@ public class ServerValueCrossingTests
         public override VisualNode Build(ComponentContext context) => new Text(options.Title, TypeRole.BodyM);
     }
 
+    /// <summary>A contract an app registers its service under, as the container keys it.</summary>
+    public interface IAccountView
+    {
+        string Name { get; }
+    }
+
+    public sealed class AccountSecrets : IAccountView
+    {
+        public string Name => "Ada";
+        public string Token { get; init; } = "";
+    }
+
+    /// <summary>Keeps a service registered under its interface behind a member typed object.</summary>
+    [Page("/held-view")]
+    public sealed class HeldViewPage : StatelessComponent, IServerPrefetch
+    {
+        private object? _held;
+        private string _status = "";
+
+        public Task PrefetchAsync(IServiceProvider services, CancellationToken cancellationToken)
+        {
+            _held = services.GetRequiredService<IAccountView>();
+            _status = "ready";
+            return Task.CompletedTask;
+        }
+
+        public override VisualNode Build(ComponentContext context) => new Text(_status, TypeRole.BodyM);
+    }
+
     /// <summary>A prefetch that keeps a service behind a member typed object, which the build cannot see into.</summary>
     [Page("/held-service")]
     public sealed class HeldServicePage : StatelessComponent, IServerPrefetch
@@ -101,6 +130,7 @@ public class ServerValueCrossingTests
         if (signedIn) builder.Services.AddSingleton(new SiteIdentity { Authority = Authority, DisplayName = "Ada" });
         builder.Services.AddSingleton(new SiteOptions { Title = "The Docs", ApiKey = ApiKey });
         builder.Services.AddSingleton<BaseOptions>(new BrandedOptions { Title = "the brand's" });
+        builder.Services.AddSingleton<IAccountView>(new AccountSecrets { Token = "tok-0123456789" });
         builder.Services.AddUI(options => options.ScanAssembly(Assembly.GetExecutingAssembly()));
         var app = builder.Build();
         app.MapUI();
@@ -188,6 +218,22 @@ public class ServerValueCrossingTests
         html.Should().NotContain("the brand's");
         EntryOf(PayloadIn(html), typeof(BasedPage)).GetProperty("options").GetProperty("title").GetString()
             .Should().Be("");
+    }
+
+    [Fact]
+    public async Task AServiceRegisteredUnderItsInterface_IsLeftOut_TooWhateverTheBuildSaid()
+    {
+        // The container keys the registration by IAccountView, so asking it about AccountSecrets alone
+        // answers no.
+        var (app, client) = await StartAsync();
+        await using var _ = app;
+
+        var html = await client.GetStringAsync("/held-view");
+
+        html.Should().NotContain("tok-0123456789");
+        var entry = EntryOf(PayloadIn(html), typeof(HeldViewPage));
+        entry.TryGetProperty("_held", out var _).Should().BeFalse("the container hands it out under an interface it implements");
+        entry.GetProperty("_status").GetString().Should().Be("ready");
     }
 
     [Fact]

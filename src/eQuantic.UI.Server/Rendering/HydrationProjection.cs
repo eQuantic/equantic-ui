@@ -62,7 +62,9 @@ internal static class HydrationProjection
                 target[name] = null;
                 return;
             }
-            if (!target.TryGetValue(name, out var nested) || nested is not Dictionary<string, object?> child)
+            if (target.TryGetValue(name, out var nested) && nested is not Dictionary<string, object?>)
+                return;   // already crossing whole, which carries this read too
+            if (nested is not Dictionary<string, object?> child)
                 target[name] = child = new Dictionary<string, object?>(StringComparer.Ordinal);
             target = child;
             current = next;
@@ -92,6 +94,8 @@ internal static class HydrationProjection
 
     private static IEnumerable<Type> Bound(Type declared)
     {
+        // A nullable struct's value arrives as the struct itself, whose members are the ones read.
+        declared = Nullable.GetUnderlyingType(declared) ?? declared;
         if (declared.IsInterface) return declared.GetInterfaces().Prepend(declared);
         var chain = new List<Type>();
         for (var type = declared; type is not null; type = type.BaseType) chain.Add(type);

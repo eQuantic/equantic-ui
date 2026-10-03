@@ -99,6 +99,19 @@ public class HydrationCrossingTests(CrossingTwins twins) : IClassFixture<Crossin
         drawn[1].Should().Be(drawn[0]);
     }
 
+    [Fact]
+    public async Task AServiceIsReadDownToItsScalars_EachLandingAsTheServerReadIt()
+    {
+        // A struct's computed long, a struct's public field, bytes, a nullable struct with and without a
+        // value, and a list a pattern reads beneath: whole, each one crossed wrong or not at all.
+        var (html, drawn) = await CrossAsync("/crossing-report", nameof(CrossingReportPage));
+
+        var expected = "count 84 | count is 42 | x 5 | bytes 3 | maybe 42 | never none | tag a".Split(" | ");
+        foreach (var line in expected) html.Should().Contain(line);
+        drawn[0].Split(" | ").Should().Equal(expected);
+        drawn[1].Should().Be(drawn[0]);
+    }
+
     /// <summary>
     /// The page served for a load, and what its twin draws on the payload of that load and on the state
     /// a navigation to it receives.
@@ -114,6 +127,14 @@ public class HydrationCrossingTests(CrossingTwins twins) : IClassFixture<Crossin
         var branded = new CrossingBrandedOptions { Title = "hidden" };
         ((CrossingBaseOptions)branded).Title = "bound";
         builder.Services.AddSingleton<CrossingBaseOptions>(branded);
+        builder.Services.AddSingleton(new CrossingReport
+        {
+            Totals = new CrossingTotals(7),
+            Maybe = new CrossingTotals(7),
+            Position = new CrossingPosition { X = 5 },
+            Bytes = [1, 2, 3],
+            Tags = ["a", "b"],
+        });
         builder.Services.AddUI(options => options.ScanAssembly(typeof(CrossingPage).Assembly));
         var app = builder.Build();
         app.MapUI();

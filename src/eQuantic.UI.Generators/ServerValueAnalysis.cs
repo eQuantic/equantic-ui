@@ -53,6 +53,14 @@ internal sealed class ServerValueAnalysis
     private const string TestedForAType =
         "it is tested for a type, and what crosses to the browser is a plain copy of no type (test it against null)";
 
+    /// <summary>
+    /// A read the server would bind to another member: it binds each read on the type the value is
+    /// declared as, and a value read through a base type whose member a derived one hides with <c>new</c>
+    /// names, there, the derived one.
+    /// </summary>
+    private const string BoundElsewhere =
+        "it is read through another type than it is declared as, where the name binds a member the declared type hides";
+
     private const string WalkedThroughItself =
         "it is walked through a chain of its own members, which the build cannot bound";
 
@@ -268,10 +276,25 @@ internal sealed class ServerValueAnalysis
             return;
         }
 
+        // A nullable struct's `.Value` is the struct itself, which the twin reads without it, and
+        // `.HasValue` asks whether it is there.
+        if (member.Member.ContainingType?.OriginalDefinition.SpecialType == SpecialType.System_Nullable_T)
+        {
+            if (member.Member.Name == "HasValue") Read(root).Presence(path);
+            else if (member.Member.Name == "Value") Use(member, root, path, instance);
+            else Stop(member, root, "the build cannot follow what is done with it");
+            return;
+        }
+
         var next = Combine(path, member.Member.Name);
         if (Depth(next) > MaxDepth)
         {
             Stop(member, root, "it is read through more members than the build follows");
+            return;
+        }
+        if (!Agrees(member.Member, ServerBinds(root, next)))
+        {
+            Stop(member, root, BoundElsewhere);
             return;
         }
         if (ProjectionLeaves.IsLeaf(type)) Read(root).Value(next);
@@ -328,24 +351,29 @@ internal sealed class ServerValueAnalysis
         }
     }
 
-    /// <summary><c>{ DisplayName: "x" }</c> reads <c>DisplayName</c>, and <c>{ Profile.Name: var n }</c> reads <c>Profile.Name</c>.</summary>
+    /// <summary>
+    /// <c>{ DisplayName: "x" }</c> reads <c>DisplayName</c>. Roslyn shapes the extended
+    /// <c>{ Profile.Name: var n }</c> as <c>{ Profile: { Name: var n } }</c>, so each subpattern names one
+    /// member, and a leaf on the way is met, and read whole, before anything beneath it.
+    /// </summary>
     private void Subpattern(IPropertySubpatternOperation property, ISymbol root, string path, INamedTypeSymbol instance)
     {
-        var names = new List<string>();
-        for (var member = property.Member as IMemberReferenceOperation;
-             member is not null and not IMethodReferenceOperation;
-             member = member.Instance as IMemberReferenceOperation)
-            names.Insert(0, member.Member.Name);
-        if (names.Count == 0 || property.Member.Type is not { } type)
+        if (property.Member is not IMemberReferenceOperation member
+            || member is IMethodReferenceOperation
+            || member.Type is not { } type)
         {
             Stop(property, root, "it is matched in a way the build cannot follow");
             return;
         }
-
-        var next = Combine(path, string.Join(".", names));
+        var next = Combine(path, member.Member.Name);
         if (Depth(next) > MaxDepth)
         {
             Stop(property, root, "it is read through more members than the build follows");
+            return;
+        }
+        if (!Agrees(member.Member, ServerBinds(root, next)))
+        {
+            Stop(property, root, BoundElsewhere);
             return;
         }
         if (ProjectionLeaves.IsLeaf(type)) Read(root).Value(next);
@@ -837,6 +865,89 @@ internal sealed class ServerValueAnalysis
     }
 
     private static int Depth(string path) => path.Length == 0 ? 0 : path.Count(c => c == '.') + 1;
+
+    /// <summary>The type a stored value is declared as, where the server starts binding its reads.</summary>
+    private static ITypeSymbol? DeclaredType(ISymbol root) => root switch
+    {
+        IParameterSymbol parameter => parameter.Type,
+        IFieldSymbol field => field.Type,
+        IPropertySymbol property => property.Type,
+        _ => null,
+    };
+
+    /// <summary>
+    /// The member the server binds the read at <paramref name="path"/> to, as <c>HydrationProjection</c>
+    /// does: each segment by name on the type the previous one is declared as, then the types it derives
+    /// from (or, on an interface, the interfaces it extends), a nullable struct read as the struct.
+    /// </summary>
+    private static ISymbol? ServerBinds(ISymbol root, string path)
+    {
+        var type = DeclaredType(root);
+        ISymbol? bound = null;
+        foreach (var segment in path.Split('.'))
+        {
+            if (type is null) return null;
+            bound = Lookup(Unwrapped(type), segment);
+            type = bound switch
+            {
+                IPropertySymbol property => property.Type,
+                IFieldSymbol field => field.Type,
+                _ => null,
+            };
+        }
+        return bound;
+    }
+
+    private static ITypeSymbol Unwrapped(ITypeSymbol type) =>
+        type is INamedTypeSymbol { OriginalDefinition.SpecialType: SpecialType.System_Nullable_T } nullable
+            ? nullable.TypeArguments[0]
+            : type;
+
+    private static ISymbol? Lookup(ITypeSymbol type, string name)
+    {
+        IEnumerable<ITypeSymbol> bound = type.TypeKind == TypeKind.Interface
+            ? new[] { type }.Concat(type.AllInterfaces)
+            : Bases(type);
+        foreach (var candidate in bound)
+        foreach (var member in candidate.GetMembers(name))
+            if (member is IPropertySymbol { IsStatic: false, IsIndexer: false, GetMethod: not null }
+                or IFieldSymbol { IsStatic: false })
+                return member;
+        return null;
+    }
+
+    private static IEnumerable<ITypeSymbol> Bases(ITypeSymbol type)
+    {
+        for (var current = type; current is not null; current = current.BaseType)
+            yield return current;
+    }
+
+    /// <summary>
+    /// Whether the member C# bound and the one the server binds answer the same on one object: the
+    /// same member, one overriding the other, or the implementation of the interface member C# bound.
+    /// </summary>
+    private static bool Agrees(ISymbol bound, ISymbol? server)
+    {
+        if (server is null) return false;
+        // An interface's member answers with what implements it on the type the server binds on, and a
+        // virtual one with whichever override that type reaches: one chain of overrides, read either way.
+        if (bound.ContainingType is { TypeKind: TypeKind.Interface }
+            && server.ContainingType?.TypeKind != TypeKind.Interface)
+        {
+            if (server.ContainingType?.FindImplementationForInterfaceMember(bound) is not { } implementation)
+                return false;
+            bound = implementation;
+        }
+        return Same(bound, server) || Overrides(server, bound) || Overrides(bound, server);
+    }
+
+    /// <summary>Whether <paramref name="member"/> overrides <paramref name="ancestor"/>, directly or further down its chain.</summary>
+    private static bool Overrides(ISymbol member, ISymbol ancestor)
+    {
+        for (var overridden = (member as IPropertySymbol)?.OverriddenProperty; overridden is not null; overridden = overridden.OverriddenProperty)
+            if (Same(overridden, ancestor)) return true;
+        return false;
+    }
 
     private static string Key(ISymbol symbol)
     {

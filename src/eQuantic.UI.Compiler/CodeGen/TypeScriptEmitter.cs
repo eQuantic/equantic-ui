@@ -201,6 +201,9 @@ public class TypeScriptEmitter
     /// <summary>The C# type of the member a projection reads, as the value's type or one it derives from declares it.</summary>
     private static ITypeSymbol? MemberType(ITypeSymbol? type, string name)
     {
+        // A nullable struct's members are the struct's: its `.Value` never reaches a projection's path.
+        if (type is INamedTypeSymbol { OriginalDefinition.SpecialType: SpecialType.System_Nullable_T } nullable)
+            type = nullable.TypeArguments[0];
         for (var current = type; current is not null; current = current.BaseType)
         {
             foreach (var member in current.GetMembers(name))
