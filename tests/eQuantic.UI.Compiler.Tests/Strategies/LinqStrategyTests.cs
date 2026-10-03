@@ -144,15 +144,16 @@ public class LinqStrategyTests
     [Fact]
     public void Last_NoPredicate_MapsToLastElement()
     {
+        // The source read ONCE, as C# reads it: a member is bound, where it was written twice.
         var result = TestHelper.ConvertExpression("list.Last()");
-        result.Should().Be("(this.list[this.list.length - 1])");
+        result.Should().Be("(($0) => ($0[$0.length - 1]))(this.list)");
     }
 
     [Fact]
     public void LastOrDefault_NoPredicate_MapsWithNullCoalescing()
     {
         var result = TestHelper.ConvertExpression("list.LastOrDefault()");
-        result.Should().Be("(this.list[this.list.length - 1] ?? null)");
+        result.Should().Be("(($0) => ($0[$0.length - 1] ?? null))(this.list)");
     }
 
     [Fact]

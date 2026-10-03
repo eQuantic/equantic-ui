@@ -80,37 +80,47 @@ public class ContainsStrategy : IConversionStrategy
         var invocation = (InvocationExpressionSyntax)node;
         invocation.TryGetInstanceCall(out var receiverExpression, out _);
 
-        var caller = context.Converter.ConvertExpression(receiverExpression);
+        // LINQ's Contains reads its source as every operator does (LinqSource): a dictionary as its
+        // pairs, which the runtime's class enumerates and has no `some` or `includes` for. A
+        // collection's own Contains (a list's, a string's) stays its own.
+        var linq = context.SemanticHelper.GetSymbol(invocation) is IMethodSymbol bound
+            && context.SemanticHelper.IsLinqExtension(bound.ContainingType);
+        string Caller() => linq
+            ? LinqSource.Text(receiverExpression, context)
+            : context.Converter.ConvertExpression(receiverExpression);
         var args = invocation.ArgumentList.Arguments;
+        var receiverType = context.SemanticHelper.GetType(receiverExpression);
 
         if (args.Count > 0)
         {
-            var item = context.Converter.ConvertExpression(args[0].Expression);
-
             // Records / structs / tuples compare by VALUE — `includes` (SameValueZero) would miss
             // equal-but-distinct instances. Walk with the structural equality helper instead.
-            var elementType = context.SemanticHelper.GetType(receiverExpression).GetEnumerableElementType();
-            if (elementType.IsStructuralValueType())
+            if (receiverType.GetEnumerableElementType().IsStructuralValueType())
             {
+                var caller = Caller();
                 context.UsedHelpers.Add(Eq.Import);
-                return $"{caller}.some(_x => {Eq.Equals}(_x, {item}))";
+                return $"{caller}.some(_x => {Eq.Equals}(_x, {context.Converter.ConvertExpression(args[0].Expression)}))";
             }
 
             // Anything whose static type is a mere COLLECTION could be a HashSet at run time, and
             // a Set has no `includes` — the call returns undefined and the selection silently never
-            // matches. The helper asks the value what it is. (Under a `?.` this call arrives on the
-            // conditional-access strategy's `$r` placeholder, and that strategy wraps the helper in
-            // its own null-answering arrow — nothing guarded reaches here in binding shape.)
-            if (context.SemanticHelper.GetType(receiverExpression).HasOpenCollectionShape())
+            // matches. The helper asks the value what it is, so it takes the value as it is, a LINQ
+            // call's included: `Enumerable.Contains` asks a collection its own Contains first too.
+            // (Under a `?.` this call arrives on the conditional-access strategy's `$r` placeholder,
+            // and that strategy wraps the helper in its own null-answering arrow — nothing guarded
+            // reaches here in binding shape.)
+            if (receiverType.HasOpenCollectionShape())
             {
+                var value = context.Converter.ConvertExpression(receiverExpression);
                 context.UsedHelpers.Add(Eq.Import);
-                return $"{Eq.Contains}({caller}, {item})";
+                return $"{Eq.Contains}({value}, {context.Converter.ConvertExpression(args[0].Expression)})";
             }
 
-            return $"{caller}.includes({item})";
+            var source = Caller();
+            return $"{source}.includes({context.Converter.ConvertExpression(args[0].Expression)})";
         }
 
-        return $"{caller}.includes(undefined)";
+        return $"{Caller()}.includes(undefined)";
     }
 
     public int Priority => 10;

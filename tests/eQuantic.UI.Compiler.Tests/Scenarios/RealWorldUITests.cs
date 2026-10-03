@@ -378,7 +378,7 @@ public class RealWorldUITests
         var result = TestHelper.ConvertCodeBlock(code);
 
         result.Should().Contain("[0]");
-        result.Should().Contain("[this.items.length - 1]");
+        result.Should().Contain("($0[$0.length - 1] ?? null))(this.items)");
         result.Should().Contain("length > 0");
         result.Should().Contain("?? 0");
     }

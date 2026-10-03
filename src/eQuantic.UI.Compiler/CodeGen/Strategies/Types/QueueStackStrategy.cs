@@ -113,6 +113,10 @@ public class QueueStackStrategy : ConversionStrategyBase
 
     private static bool IsMember(MemberAccessExpressionSyntax ma, ConversionContext context)
     {
+        // The type's OWN members. A LINQ operator is an extension, which the LINQ strategies lower:
+        // claimed here, `queue.First()` called a `first` the queue does not have.
+        if (context.SemanticHelper.GetSymbol(ma) is IMethodSymbol { IsExtensionMethod: true } or IMethodSymbol { ReducedFrom: not null })
+            return false;
         // The receiver's TYPE is the reliable signal (a local Queue/Stack variable). The member symbol's
         // ContainingType can resolve to a LINQ extension or interface (ToArray/Contains/Count on Stack),
         // which would miss — so check the receiver type first.
