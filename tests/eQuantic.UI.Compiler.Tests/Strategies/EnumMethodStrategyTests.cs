@@ -3,92 +3,63 @@ using Xunit;
 
 namespace eQuantic.UI.Compiler.Tests.Strategies;
 
+/// <summary>
+/// Enum's statics call the runtime's enum functions with the enum's shape written inline: an enum has
+/// no object of its own in the browser, and these named one after it (<c>Object.values(Status)</c>,
+/// <c>$eq.enums.parse(text, Status)</c>), which no module declares, so each threw (#480). The
+/// behaviour runs on both sides in EnumConformanceTests; these pin the spelling.
+/// </summary>
 public class EnumMethodStrategyTests
 {
-    // ============ Enum.Parse<T> ============
+    private const string Shape = "{ names: ['Small', 'Medium', 'Large'], keys: ['small', 'medium', 'large'], values: [0, 1, 2], flags: false }";
 
     [Fact]
-    public void EnumParse_WithGeneric_MapsToParseEnumHelper()
+    public void EnumParse_ReadsTheEnumsShape()
     {
-        var result = TestHelper.ConvertExpression("Enum.Parse<Status>(str)");
-        result.Should().Be("$eq.enums.parse(this.str, Status)");
+        TestHelper.ConvertExpression("Enum.Parse<Size>(\"Medium\")")
+            .Should().Be($"$eq.enums.parse('Medium', {Shape})");
     }
 
     [Fact]
-    public void EnumParse_WithLiteral_MapsToParseEnumHelper()
+    public void EnumParse_WithItsCase_PassesIt()
     {
-        var result = TestHelper.ConvertExpression("Enum.Parse<OrderStatus>(\"active\")");
-        result.Should().Be("$eq.enums.parse('active', OrderStatus)");
-    }
-
-    // ============ Enum.TryParse<T> ============
-
-    [Fact]
-    public void EnumTryParse_WithOutVar_MapsToParseEnumWithCheck()
-    {
-        var result = TestHelper.ConvertExpression("Enum.TryParse<Status>(str, out var result)");
-        result.Should().Be("(result = $eq.enums.parse(this.str, Status), result !== undefined)");
+        TestHelper.ConvertExpression("Enum.Parse<Size>(\"medium\", true)")
+            .Should().Be($"$eq.enums.parse('medium', {Shape}, true)");
     }
 
     [Fact]
-    public void EnumTryParse_WithOutExisting_MapsToParseEnumWithCheck()
+    public void EnumTryParse_WritesItsOut_AndTheDefaultWhenItFails()
     {
-        var result = TestHelper.ConvertExpression("Enum.TryParse<Status>(\"pending\", out var status)");
-        result.Should().Be("(status = $eq.enums.parse('pending', Status), status !== undefined)");
-    }
-
-    // ============ Enum.GetValues<T> ============
-
-    [Fact]
-    public void EnumGetValues_Generic_MapsToObjectValues()
-    {
-        var result = TestHelper.ConvertExpression("Enum.GetValues<Status>()");
-        result.Should().Be("Object.values(Status)");
+        TestHelper.ConvertExpression("Enum.TryParse<Size>(\"Large\", out var size)")
+            .Should().Be($"((size = $eq.enums.tryParse('Large', {Shape})) !== undefined || ((size = $eq.enums.zero({Shape})), false))");
     }
 
     [Fact]
-    public void EnumGetValues_WithTypeof_MapsToObjectValues()
+    public void EnumTryParse_IntoADiscard_OnlyTests()
     {
-        var result = TestHelper.ConvertExpression("Enum.GetValues(typeof(OrderStatus))");
-        result.Should().Be("Object.values(OrderStatus)");
-    }
-
-    // ============ Enum.GetNames<T> ============
-
-    [Fact]
-    public void EnumGetNames_Generic_MapsToObjectKeys()
-    {
-        var result = TestHelper.ConvertExpression("Enum.GetNames<Status>()");
-        result.Should().Be("Object.keys(Status)");
+        TestHelper.ConvertExpression("Enum.TryParse<Size>(\"Large\", out _)")
+            .Should().Be($"($eq.enums.tryParse('Large', {Shape}) !== undefined)");
     }
 
     [Fact]
-    public void EnumGetNames_WithTypeof_MapsToObjectKeys()
+    public void EnumGetValues_ByTheTypeArgument_OrTheTypeof()
     {
-        var result = TestHelper.ConvertExpression("Enum.GetNames(typeof(OrderStatus))");
-        result.Should().Be("Object.keys(OrderStatus)");
-    }
-
-    // ============ Enum.IsDefined ============
-
-    [Fact]
-    public void EnumIsDefined_WithString_MapsToUndefinedCheck()
-    {
-        var result = TestHelper.ConvertExpression("Enum.IsDefined(typeof(Status), \"active\")");
-        result.Should().Be("(Status['active'] !== undefined)");
+        TestHelper.ConvertExpression("Enum.GetValues<Size>()").Should().Be($"$eq.enums.values({Shape})");
+        TestHelper.ConvertExpression("Enum.GetValues(typeof(Size))").Should().Be($"$eq.enums.values({Shape})");
     }
 
     [Fact]
-    public void EnumIsDefined_WithVariable_MapsToUndefinedCheck()
+    public void EnumGetNames_ByTheTypeArgument_OrTheTypeof()
     {
-        var result = TestHelper.ConvertExpression("Enum.IsDefined(typeof(Status), str)");
-        result.Should().Be("(Status[this.str] !== undefined)");
+        TestHelper.ConvertExpression("Enum.GetNames<Size>()").Should().Be($"$eq.enums.names({Shape})");
+        TestHelper.ConvertExpression("Enum.GetNames(typeof(Size))").Should().Be($"$eq.enums.names({Shape})");
     }
 
     [Fact]
-    public void EnumIsDefined_WithNumber_MapsToUndefinedCheck()
+    public void EnumIsDefined_ReadsItsArgument_AsTheEnum_ANumber_OrAName()
     {
-        var result = TestHelper.ConvertExpression("Enum.IsDefined(typeof(Status), 1)");
-        result.Should().Be("(Status[1] !== undefined)");
+        TestHelper.ConvertExpression("Enum.IsDefined(Size.Large)").Should().Be($"$eq.enums.isDefined('large', {Shape}, 'held')");
+        TestHelper.ConvertExpression("Enum.IsDefined(typeof(Size), 2)").Should().Be($"$eq.enums.isDefined(2, {Shape}, 'number')");
+        TestHelper.ConvertExpression("Enum.IsDefined(typeof(Size), \"Large\")").Should().Be($"$eq.enums.isDefined('Large', {Shape}, 'name')");
     }
 }

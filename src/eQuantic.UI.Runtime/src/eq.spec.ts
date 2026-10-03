@@ -38,8 +38,10 @@ describe('$eq namespace', () => {
     expect($eq.time.timeSpan.fromHours(25).toString()).toBe('1.01:00:00');
   });
 
-  it('enums.parse — member name to value', () => {
-    const map = { active: 'active', pending: 'pending' };
-    expect($eq.enums.parse('active', map)).toBe('active');
+  it('enums — a name, its text and its default, from the shape the compiler writes', () => {
+    const shape = { names: ['Active', 'Pending'], keys: ['active', 'pending'], values: [0, 1], flags: false };
+    expect($eq.enums.parse('Pending', shape)).toBe('pending');
+    expect($eq.enums.text('pending', shape)).toBe('Pending');
+    expect($eq.enums.zero(shape)).toBe('active');
   });
 });
