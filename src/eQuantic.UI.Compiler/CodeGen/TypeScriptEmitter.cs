@@ -424,7 +424,9 @@ public class TypeScriptEmitter
                     }
 
                     // Apply defaults for properties not provided in props (only if still undefined)
-                    foreach (var prop in component.Properties.Where(p => p.IsPublic))
+                    // A STATIC property's is on the class (StaticInitial): written here, it became
+                    // an own property of each instance that nothing reads.
+                    foreach (var prop in component.Properties.Where(p => p.IsPublic && !p.IsStatic))
                     {
                         // Read ONCE into a local: it is a mutable property, so nothing says it is
                         // still non-null at a second read a line later.
@@ -1476,9 +1478,14 @@ public class TypeScriptEmitter
                     if (Strategies.Expressions.FieldExpressionStrategy.UsesBackingField(node))
                     {
                         var slot = Strategies.Expressions.FieldExpressionStrategy.BackingSlot(node);
-                        // On the class for a static property, where its accessors' `this` is the
-                        // class: declared on the instance, the slot they write did not exist (#483).
-                        c.Field(slot, DeclarationType(component, prop.Type), null, node, isStatic: prop.IsStatic, isDeclare: true);
+                        // A static one's store is the class's, where its accessors' `this` is, and
+                        // holds its initializer or its type's default from the start, as a static
+                        // auto-property's does: declared on the instance, the slot they wrote did not
+                        // exist, and declared alone it read undefined until the first write (#483).
+                        if (prop.IsStatic && StaticInitial(component, prop) is { } initial)
+                            c.Field(slot, DeclarationType(component, prop.Type), initial, node, isStatic: true);
+                        else
+                            c.Field(slot, DeclarationType(component, prop.Type), null, node, isStatic: prop.IsStatic, isDeclare: true);
                         if (!getterHasBody && getter != null)
                             c.Member(JsClassMember.Getter(stat, name, "", JsStatement.Return(JsExpr.ThisMember(slot))), getter);
                     }
@@ -1508,10 +1515,7 @@ public class TypeScriptEmitter
                 _converter.SetCurrentClass(component.Name);
                 if (prop.IsStatic)
                 {
-                    var def = prop.DefaultValueNode != null
-                        ? Initializer(prop.DefaultValueNode, _converter.ConvertExpression(prop.DefaultValueNode, prop.Type))
-                        : null;
-                    c.Field(name, DeclarationType(component, prop.Type), def, node, isStatic: true);
+                    c.Field(name, DeclarationType(component, prop.Type), StaticInitial(component, prop), node, isStatic: true);
                 }
                 else
                 {
@@ -1519,6 +1523,21 @@ public class TypeScriptEmitter
                 }
             }
         }
+    }
+
+    /// <summary>
+    /// What a static property's store holds before anything writes it: its initializer, or its
+    /// type's default (a number's 0, an enum's zero member). Null for a reference type with neither,
+    /// whose C# default is null. No constructor runs for a static, so the value has to be on the
+    /// declaration: <c>static int Count { get; set; }</c> read undefined, where C# reads 0.
+    /// </summary>
+    private string? StaticInitial(ComponentDefinition component, PropertyDefinition prop)
+    {
+        var initial = prop.DefaultValueNode != null
+            ? Initializer(prop.DefaultValueNode, _converter.ConvertExpression(prop.DefaultValueNode, prop.Type))
+            : ValueTypeDefault(prop.Type, prop.Node?.Type);
+        if (initial is not null && initial.Contains("$eq.")) component.UsedHelpers.Add(Eq.Import);
+        return initial;
     }
 
     /// <summary>
@@ -1626,7 +1645,12 @@ public class TypeScriptEmitter
                     if (Strategies.Expressions.FieldExpressionStrategy.UsesBackingField(p))
                     {
                         var slot = Strategies.Expressions.FieldExpressionStrategy.BackingSlot(p);
-                        var slotDefault = TypeDeclarationExtensions.DefaultFor(p.Type);
+                        // The store starts as the property's initializer, which C# writes into it
+                        // directly, or as its type's default. The initializer was dropped: the
+                        // accessors are emitted, so nothing below writes it (#483).
+                        var slotDefault = p.Initializer != null
+                            ? Initializer(p.Initializer.Value, _converter.ConvertExpression(p.Initializer.Value, p.Type.ToString()))
+                            : TypeDeclarationExtensions.DefaultFor(p.Type);
                         // On the class for a static property, where its accessors' `this` is the
                         // class: on the instance, a static `field` read undefined (#483).
                         var slotIsStatic = accessorQualifier.Length > 0;

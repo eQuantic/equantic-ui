@@ -98,8 +98,40 @@ public class CSharpVersionCoverageTests
             """, "Probe");
 
         Assert.True(probe.Success, string.Join("\n", probe.Errors.Select(e => e.Message)));
-        Assert.Contains("declare static $total", probe.TypeScript);
+        Assert.Contains("static $total: number = 0;", probe.TypeScript);
+        Assert.DoesNotContain("declare static $total", probe.TypeScript);
         Assert.Contains("static set total(value) {\n        this.$total = value * 2;\n    }", probe.TypeScript);
+    }
+
+    [Fact]
+    public void AStaticStore_StartsAsItsInitializerOrItsTypesDefault()
+    {
+        // No constructor runs for a static, so its store starts on the declaration, as C# starts it:
+        // the initializer, written into the store directly, or the type's default. A component's was
+        // declared alone and read undefined until the first write, a plain class dropped the
+        // initializer, and a static auto-property with none read undefined where C# reads 0 (#483).
+        var component = One(Head + """
+            public sealed class Probe : StatelessComponent
+            {
+                public static int Limit { get; set => field = value * 2; } = 5;
+                public static string Label { get; set => field = value.Trim(); }
+                public static int Hits { get; set; }
+                public override VisualNode Build(ComponentContext context) => new Text(Label + Limit + Hits, TypeRole.BodyM, null);
+            }
+            """, "Probe");
+        var plain = One(Head + """
+            public static class Counter
+            {
+                public static int Total { get; set => field = value * 2; } = 5;
+            }
+            """, "Counter");
+
+        Assert.True(component.Success, string.Join("\n", component.Errors.Select(e => e.Message)));
+        Assert.Contains("static $limit: number = 5;", component.TypeScript);
+        Assert.Contains("declare static $label: string;", component.TypeScript);
+        Assert.Contains("static hits: number = 0;", component.TypeScript);
+        Assert.True(plain.Success, string.Join("\n", plain.Errors.Select(e => e.Message)));
+        Assert.Contains("static $total: number = 5;", plain.TypeScript);
     }
 
     [Fact]
