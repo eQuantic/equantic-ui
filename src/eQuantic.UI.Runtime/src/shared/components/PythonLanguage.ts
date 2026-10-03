@@ -36,7 +36,7 @@ export class PythonLanguage {
         let i = 0;
         if (state !== PythonLanguage.normal) {
             let marker = state === PythonLanguage.tripleDouble ? '"""' : '\'\'\'';
-            let close = line.indexOf(marker);
+            let close = $eq.text.indexOf(line, marker, 'ordinal');
             if (close < 0) {
                 PythonLanguage.add(into, 0, line.length, 'string');
                 return state;
@@ -57,7 +57,7 @@ export class PythonLanguage {
             if (PythonLanguage.tripleAt(line, i, '"') || PythonLanguage.tripleAt(line, i, '\'')) {
                 let quote = line[i];
                 let marker = quote === '"' ? '"""' : '\'\'\'';
-                let close = line.indexOf(marker, i + 3);
+                let close = $eq.text.indexOf(line, marker, i + 3, 'ordinal');
                 if (close < 0) {
                     PythonLanguage.add(into, i, line.length - i, 'string');
                     return quote === '"' ? PythonLanguage.tripleDouble : PythonLanguage.tripleSingle;
