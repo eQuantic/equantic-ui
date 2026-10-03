@@ -34,12 +34,9 @@ public class LambdaExpressionStrategy : IExpressionIrStrategy
                     .Where(p => !OutParameters.IsOut(p))
                     .Select(p => Typed(p.Identifier.Text.ToJsIdentifier(), p, context)));
                 var isAsync = parenthesized.Modifiers.Any(Microsoft.CodeAnalysis.CSharp.SyntaxKind.AsyncKeyword);
-                var inner = parenthesized.Block != null
-                    ? TrimBraces(context.Converter.ConvertBlock(parenthesized.Block))
-                    : ExpressionVariableScanner.Declarations(parenthesized.ExpressionBody, context.TypeAnnotations)
-                        + $"return {context.Converter.ConvertExpression(parenthesized.ExpressionBody!)};";
-                var wrapped = OutParameters.WrapBody(inner, byReference, isAsync);
-                return JsExpr.ArrowBlock(kept, JsStatement.Raw($"{{ {wrapped} }}"), context.Layout, context.Depth, isAsync);
+                return JsExpr.ArrowBlock(kept,
+                    OutParameters.ArrowBody(parenthesized.Block, parenthesized.ExpressionBody, byReference, isAsync, context),
+                    context.Layout, context.Depth, isAsync);
             }
 
             // The parameter TYPES come from the semantic model: a lambda handed to a config object
@@ -93,15 +90,6 @@ public class LambdaExpressionStrategy : IExpressionIrStrategy
         ExpressionVariableScanner.Names(expression).Count == 0
             ? JsExpr.Arrow(parameters, context.Converter.ConvertIr(expression), isAsync)
             : JsExpr.ArrowBlock(parameters, context.Converter.ConvertExpressionBodyIr(expression), context.Layout, context.Depth, isAsync);
-
-    /// <summary>The statements of a converted block, without its outer braces.</summary>
-    private static string TrimBraces(string block)
-    {
-        var trimmed = block.Trim();
-        return trimmed.StartsWith('{') && trimmed.EndsWith('}')
-            ? trimmed[1..^1].Trim()
-            : trimmed;
-    }
 
     /// <summary>A parameter with its TS type, resolved through the model. Falls back to the bare
     /// name when nothing can be said — an untyped parameter beats a wrong one.</summary>

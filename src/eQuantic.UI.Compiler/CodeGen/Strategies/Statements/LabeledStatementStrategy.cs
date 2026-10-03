@@ -16,11 +16,12 @@ public class LabeledStatementStrategy : IStatementStrategy
         var label = $"{labeled.Identifier.Text}:";
         var inner = context.Converter.ConvertStatementIr(labeled.Statement);
         // A foreach whose collection declares a variable comes back as a BLOCK that declares it and
-        // then runs the loop (ForEachStatementStrategy), since the variable is the loop's own. The
-        // label goes on the loop, inside that block: on the block, a `continue label` is a
-        // SyntaxError that costs the module, and a `break label` means the same either way, the loop
-        // being the block's last statement.
-        if (labeled.Statement is CommonForEachStatementSyntax
+        // then runs the loop (ForEachStatementStrategy), since the variable is the loop's own, and so
+        // does a for whose variable a closure captures (ForStatementStrategy). The label goes on the
+        // loop, inside that block: on the block, a `continue label` is a SyntaxError that costs the
+        // module, and a `break label` means the same either way, the loop being the block's last
+        // statement.
+        if (labeled.Statement is CommonForEachStatementSyntax or ForStatementSyntax
             && inner is JsBlock { Statements.Count: > 1 } scoped)
             return JsStatement.Block([.. scoped.Statements.Take(scoped.Statements.Count - 1),
                 JsStatement.Headed(label, scoped.Statements[^1])]);

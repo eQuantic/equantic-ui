@@ -3,6 +3,7 @@ using System.Linq;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using Microsoft.CodeAnalysis.Operations;
 using eQuantic.UI.Compiler.CodeGen.Ir;
 using eQuantic.UI.Compiler.CodeGen.Strategies;
 
@@ -42,13 +43,19 @@ public static class PatternConverter
                 if (constant.Expression is TypeSyntax bareType
                     && context.SemanticHelper.GetSymbol(constant.Expression) is INamedTypeSymbol)
                     return TypeCheck(bareType, access, context);
-                return $"{access} === {context.Converter.ConvertExpression(constant.Expression)}";
+                return ConstantTest(access, context.Converter.ConvertExpression(constant.Expression),
+                    (context.SemanticHelper.GetOperation(constant) as IConstantPatternOperation)?.Value, context);
 
             case RelationalPatternSyntax relational:
                 return $"{access} {relational.OperatorToken.Text} {context.Converter.ConvertExpression(relational.Expression)}";
 
             case DeclarationPatternSyntax declaration:
                 return TypeCheck(declaration.Type, access, context);
+
+            // `o is int or long`, `int => …`, `case int:` — a type with nothing bound (C# 9). It had
+            // no case here, so it fell to the default below and every such test was `false` (#482).
+            case TypePatternSyntax typePattern:
+                return TypeCheck(typePattern.Type, access, context);
 
             case RecursivePatternSyntax recursive:
                 return BuildRecursive(recursive, access, context, accessType);
@@ -244,11 +251,17 @@ public static class PatternConverter
     /// </summary>
     public static string TypeCheck(TypeSyntax typeSyntax, string access, ConversionContext context)
     {
+        // A type the platform represents by a value of its own, read off the SYMBOL: the spelling
+        // missed `Int32` and `System.Int64`, and asked a long, which is a BigInt here, whether it was
+        // a number, so `o is long` was false for every long.
+        if (context.SemanticHelper.GetSymbol(typeSyntax) is INamedTypeSymbol known && ScalarCheck(known, access, context) is { } scalar)
+            return scalar;
         switch (typeSyntax.ToString())
         {
             case "string": return $"typeof {access} === 'string'";
-            case "int" or "double" or "float" or "long" or "decimal" or "number":
+            case "int" or "double" or "float" or "decimal" or "number":
                 return $"typeof {access} === 'number'";
+            case "long": return $"typeof {access} === 'bigint'";
             case "bool" or "boolean": return $"typeof {access} === 'boolean'";
         }
 
@@ -293,6 +306,65 @@ public static class PatternConverter
         }
 
         return $"{access} != null";
+    }
+
+    /// <summary>
+    /// The test that a value IS a constant, as a constant pattern asks it, by the constant's bound
+    /// value. A null is any absence, as <c>is null</c> is. A decimal is an object on this side and
+    /// compares by value, and so does a NaN, which a pattern matches where <c>===</c> never does.
+    /// Anything else is <c>===</c> its literal. One rule for <c>x is 5</c>, <c>case Limits.Max:</c>
+    /// and the binary <c>x is Limits.Max</c>, which parses as a type test and binds as a constant
+    /// (#451).
+    /// </summary>
+    internal static string ConstantTest(string access, string constant, IOperation? value, ConversionContext context)
+    {
+        if (value?.ConstantValue is { HasValue: true } known)
+        {
+            if (known.Value is null) return $"{access} == null";
+            if (known.Value is decimal or double.NaN or float.NaN)
+            {
+                context.UsedHelpers.Add(Eq.Import);
+                return $"{Eq.Equals}({access}, {constant})";
+            }
+        }
+        return $"{access} === {constant}";
+    }
+
+    /// <summary>
+    /// The test for a type the browser holds as a value of its own: a string (a char is one too), a
+    /// bool, a long as a BigInt, an integer as a whole number, a real as any number, and a decimal and
+    /// the dates as the runtime's classes. Null for every other type. A boxed double holding a whole
+    /// number still tests as an int, since both are one JavaScript number.
+    /// </summary>
+    private static string? ScalarCheck(INamedTypeSymbol type, string access, ConversionContext context)
+    {
+        switch (type.SpecialType)
+        {
+            case SpecialType.System_String:
+                return $"typeof {access} === 'string'";
+            // A char is one UTF-16 code unit, a string of one here: any longer string is not one.
+            case SpecialType.System_Char:
+                return $"typeof {access} === 'string' && {access}.length === 1";
+            case SpecialType.System_Boolean:
+                return $"typeof {access} === 'boolean'";
+            case SpecialType.System_Int64 or SpecialType.System_UInt64:
+                return $"typeof {access} === 'bigint'";
+            case SpecialType.System_Int32 or SpecialType.System_Int16 or SpecialType.System_SByte
+                or SpecialType.System_Byte or SpecialType.System_UInt16 or SpecialType.System_UInt32:
+                return $"Number.isInteger({access})";
+            case SpecialType.System_Double or SpecialType.System_Single:
+                return $"typeof {access} === 'number'";
+            case SpecialType.System_Decimal or SpecialType.System_DateTime:
+                context.UsedRuntimeTypes.Add(type.Name);
+                return $"{access} instanceof {type.Name}";
+        }
+        if (type.ContainingNamespace?.ToDisplayString() == "System"
+            && type.Name is "TimeSpan" or "DateOnly" or "TimeOnly" or "DateTimeOffset")
+        {
+            context.UsedRuntimeTypes.Add(type.Name);
+            return $"{access} instanceof {type.Name}";
+        }
+        return null;
     }
 
     /// <summary>

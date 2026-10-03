@@ -124,6 +124,7 @@ import {
   is as isException,
   raise,
 } from './utils/exceptions';
+import { lockGate, newObject } from './utils/net-object';
 import { resolveService } from './utils/services';
 import { StyleBuilder } from './utils/style-builder';
 import { ClassBuilder, joinClasses, whenClass } from './utils/class-builder';
@@ -204,6 +205,9 @@ export const $eq = {
   linq: { enumerable, max, min, seq, toArray, toDictionary, range, repeat },
   /** C# `with` over a runtime value type — prototype preserved. */
   withPatch,
+  /** `new object()`, an identity of its own, and a `lock` statement's gate, refused when null. */
+  newObject,
+  lockGate,
   /** C# range indexing whose endpoints count from the end — see `slice`. */
   slice,
   /** Design mode only: the source span that constructed a node — see `origin`. */
