@@ -29,9 +29,17 @@ internal sealed partial class SemanticsVisitor
         // role here decided by where the pressable SITS rather than by what it says it is. Its state
         // is whether the list is open, never a check or a pick. Until #501 a Select's field reached
         // every bridge as a button that happened to expand.
+        //
+        // Its NAME is the author's label where there is one, and then what the field SHOWS is its
+        // value, as a select-only combobox's content is on the web: "Country, Brazil". With no label,
+        // what it shows is the name, the way a Select's own field reads.
         if (AnchorsAListbox(laidOut))
+        {
+            var shown = TextWithin(laidOut);
             return Announce(new(SemanticRole.ComboBox, laidOut.Path ?? "", laidOut.Bounds,
-                node.Label ?? TextWithin(laidOut), null, node.Disabled, Expanded: node.Expanded));
+                node.Label ?? shown, node.Label is null || shown.Length == 0 ? null : shown,
+                node.Disabled, Expanded: node.Expanded));
+        }
 
         // A check states its state beside the name, never inside it — the exact mirror of the web's
         // aria-checked. Mixed is checkbox-only, ARIA's own rule.
@@ -85,17 +93,18 @@ internal sealed partial class SemanticsVisitor
     /// <para>
     /// What holds only the pressable is not a thing a reader meets in its place, so it is walked
     /// through: a component that BUILT the pressable, the way the web reaches the element a
-    /// component lowers to, and a wrapper an author put around it, a box that sizes it or a shortcut
-    /// that binds a key to it. An ancestor that holds something else as well, a row of two
-    /// pressables, means this one sits inside the anchor rather than being it, and nothing in there
-    /// is the combobox.
+    /// component lowers to, and a wrapper an author put around it, a box that sizes it, a shortcut
+    /// that binds a key to it, or a tooltip, whose own <see cref="Anchored"/> hangs no panel a reader
+    /// walks into. An ancestor that holds something else as well, a row of two pressables, means
+    /// this one sits inside the anchor rather than being it, and nothing in there is the combobox.
     /// </para>
     /// </summary>
     private static bool AnchorsAListbox(LayoutNode laidOut)
     {
         for (var node = laidOut; node.Parent is { } parent; node = parent)
         {
-            if (parent.Source is Anchored anchored) return anchored.PanelRole == AnchorPanelRole.Listbox;
+            if (parent.Source is Anchored { PanelRole: not AnchorPanelRole.None } anchored)
+                return anchored.PanelRole == AnchorPanelRole.Listbox;
             if (parent.Children.Count != 1) return false;
         }
         return false;

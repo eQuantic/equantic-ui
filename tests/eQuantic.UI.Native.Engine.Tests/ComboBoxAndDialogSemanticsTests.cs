@@ -194,5 +194,33 @@ public class ComboBoxAndDialogSemanticsTests
         var menu = Render(new Anchored(new Pressable(new Text("Menu", TypeRole.Label), () => { }) { Expanded = false },
             list) { PanelRole = AnchorPanelRole.Menu });
         menu.Semantics().Should().ContainSingle().Which.Role.Should().Be(SemanticRole.Button);
+
+        var tipped = Render(new Anchored(
+            new Tooltip(new Pressable(new Text("Size", TypeRole.Label), () => { }) { Expanded = false }, "Choose a size"),
+            list) { PanelRole = AnchorPanelRole.Listbox });
+        tipped.Semantics().Should().ContainSingle(node => node.Role == SemanticRole.ComboBox,
+            "a tooltip's own Anchored hangs no panel a reader walks into, so it wraps the trigger like a box");
+    }
+
+    /// <summary>
+    /// A combobox an author LABELLED is named by the label, and what its field shows is its value,
+    /// as a select-only combobox's content is on the web: "Country, Brazil", never "Country" alone.
+    /// Unlabelled, what it shows is its name, the way a Select's own field reads.
+    /// </summary>
+    [Fact]
+    public void ALabelledComboBoxSaysTheChoiceItShowsAsItsValue()
+    {
+        var list = new Text("the list", TypeRole.BodyM);
+        var host = Render(new Anchored(
+            new Pressable(new Text("Brazil", TypeRole.Label), () => { }) { Label = "Country", Expanded = false },
+            list) { PanelRole = AnchorPanelRole.Listbox });
+
+        host.Semantics().Should().ContainSingle()
+            .Which.Should().Match<SemanticNode>(field => field.Role == SemanticRole.ComboBox
+                && field.Label == "Country" && field.Value == "Brazil");
+
+        Render(new Select(["Lisbon", "Porto"], 0, _ => { })).Semantics().Should().ContainSingle()
+            .Which.Should().Match<SemanticNode>(field => field.Label == "Lisbon" && field.Value == null,
+                "unlabelled, the choice it shows is its name and is not read twice");
     }
 }
