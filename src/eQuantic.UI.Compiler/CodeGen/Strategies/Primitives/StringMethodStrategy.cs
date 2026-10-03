@@ -138,7 +138,17 @@ public class StringMethodStrategy : IConversionStrategy
         }
 
         var arguments = invocation.ArgumentList.Arguments;
-        if (methodName == "Replace" && arguments.Count == 2) return "s,s";
+        switch (methodName, arguments.Count)
+        {
+            case ("Replace", 2):
+                return "s,s";
+            // The overloads that take a CultureInfo are the only ones of these arities, refused below
+            // as they are with a model.
+            case ("StartsWith" or "EndsWith", 3):
+                return "s,b,u";
+            case ("Replace", 4):
+                return "s,s,b,u";
+        }
         if (arguments.Count == 0 || !arguments[^1].Expression.ToString().Contains("StringComparison")) return null;
         return (methodName, arguments.Count) switch
         {
@@ -216,14 +226,21 @@ public class StringMethodStrategy : IConversionStrategy
     /// <summary>Whether the comparison is a constant one of the four culture members, the only ones
     /// below <c>Ordinal</c> (4). Where the model can be asked its answer stands: a comparison that is
     /// not a constant, a variable or a conditional between two, reaches the runtime, which throws for
-    /// a culture one when it arrives. Only with no model is a culture member spelled there read.</summary>
+    /// a culture one when it arrives. With no model, only a culture member written as the argument
+    /// itself is one; a conditional that names one in an arm is not.</summary>
     private static bool IsCultureConstant(ArgumentSyntax argument, ConversionContext context)
     {
         if (context.SemanticHelper.KnowsOrMapped(argument.Expression))
             return context.SemanticHelper.TryGetConstantValue(argument.Expression, out var value)
                 && value is int and >= 0 and < 4;
-        var spelled = argument.Expression.ToString();
-        return spelled.Contains("StringComparison.CurrentCulture") || spelled.Contains("StringComparison.InvariantCulture");
+        var expression = argument.Expression;
+        while (expression is ParenthesizedExpressionSyntax parenthesized) expression = parenthesized.Expression;
+        return expression is MemberAccessExpressionSyntax
+        {
+            Name.Identifier.ValueText: "CurrentCulture" or "CurrentCultureIgnoreCase" or "InvariantCulture" or "InvariantCultureIgnoreCase",
+            Expression: IdentifierNameSyntax { Identifier.ValueText: "StringComparison" }
+                or MemberAccessExpressionSyntax { Name.Identifier.ValueText: "StringComparison" },
+        };
     }
 
     private string ConvertTrim(string caller, List<string> args, string mode, ConversionContext context)

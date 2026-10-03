@@ -100,6 +100,40 @@ public class StringComparisonOverloadTests
     public void WithNoModel_ATwoArgumentReplace_IsTheOrdinalReplace(string code, string expected) =>
         new CSharpToJsConverter().ConvertExpression(SyntaxFactory.ParseExpression(code)).Should().Be(expected);
 
+    [Theory]
+    [InlineData("a.StartsWith(b, true, CultureInfo.InvariantCulture)")]
+    [InlineData("a.EndsWith(b, false, null)")]
+    [InlineData("a.Replace(b, c, true, null)")]
+    public void WithNoModel_ACultureInfoOverload_IsRefused(string code)
+    {
+        // Their arities are theirs alone, so the count says which overload it is.
+        var converter = new CSharpToJsConverter();
+        converter.ConvertExpression(SyntaxFactory.ParseExpression(code));
+        converter.Diagnostics.Should().Contain(d => d.Code == "EQ1004" && d.Message.Contains("a CultureInfo has no search"));
+    }
+
+    [Theory]
+    [InlineData("a.StartsWith(b, StringComparison.CurrentCulture)")]
+    [InlineData("a.StartsWith(b, (StringComparison.InvariantCulture))")]
+    [InlineData("a.IndexOf(b, System.StringComparison.InvariantCultureIgnoreCase)")]
+    public void WithNoModel_ACultureMemberWrittenAsTheComparison_IsRefused(string code)
+    {
+        var converter = new CSharpToJsConverter();
+        converter.ConvertExpression(SyntaxFactory.ParseExpression(code));
+        converter.Diagnostics.Should().Contain(d => d.Code == "EQ1004" && d.Message.Contains("a culture comparison has no search"));
+    }
+
+    [Fact]
+    public void WithNoModel_AConditionalComparison_ReachesTheRuntime()
+    {
+        // An arm that names a culture member does not make the conditional a constant.
+        var converter = new CSharpToJsConverter();
+        converter.ConvertExpression(SyntaxFactory.ParseExpression(
+                "a.StartsWith(b, active ? StringComparison.Ordinal : StringComparison.CurrentCulture)"))
+            .Should().Be("$eq.text.startsWith(a, b, active ? 'ordinal' : 'currentCulture')");
+        converter.Diagnostics.Should().BeEmpty();
+    }
+
     [Fact]
     public void WithNoModel_AComparisonSpelledLast_StillReachesTheRuntime()
     {
