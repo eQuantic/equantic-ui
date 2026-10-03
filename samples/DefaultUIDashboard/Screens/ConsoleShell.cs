@@ -86,6 +86,9 @@ public static class ConsoleShell
         // A page with no state of its own, hosting a component that has a clock — the shape whose
         // teardown the framework used to skip.
         new(Icons.Refresh, "Ticker", "/ticker"),
+        // Values a prefetch loaded on the server, which the browser has to show after it hydrates and
+        // after a client navigation brings them.
+        new(Icons.Info, "Server data", "/server-data"),
     ];
 
     /// <summary>
