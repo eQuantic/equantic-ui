@@ -305,8 +305,15 @@ internal sealed partial class WebLoweringVisitor
                             : null,
                     },
                 };
-                if (run.Destination is { Length: > 0 } destination)
+                if (run.Destination is { Length: > 0 } written)
+                {
+                    // A run that links is a link: the language rides its href and an app-internal one
+                    // warms on hover, as a Link's does. It took the destination as written, so on
+                    // /pt-BR/login a run to /terms led to the English page (#505).
+                    var destination = RenderContext.ResolveDestination(written);
                     runElement.RawAttributes = new Dictionary<string, string> { ["href"] = destination };
+                    if (WarmsOnHover(destination)) runElement.RawAttributes["data-prefetch"] = "";
+                }
                 element.Children.Add(runElement);
             }
         }
