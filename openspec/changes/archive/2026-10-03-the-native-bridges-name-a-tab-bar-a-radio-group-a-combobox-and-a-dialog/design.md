@@ -42,11 +42,13 @@ dialog role alone would leave the Dialog component's own spec ("alertdialog role
 ### The combobox is the anchor's pressable, found by where it sits
 
 The web puts `role="combobox"` on the root of a listbox panel's anchor (`LowerAnchored`). The walk
-does the same from the laid-out tree, which knows its parent: a pressable whose nearest ancestor that
-is on screen is an `Anchored` with a `Listbox` panel is the combobox. Component seams are walked
-through, so an anchor written as a component reaches the pressable it builds, the way the web reaches
-the element it lowered to. A pressable inside an anchor that is a row stays a button, and a menu's
-trigger stays a button, as on the web.
+does the same from the laid-out tree, which knows its parent: a pressable is the combobox when every
+ancestor up to an `Anchored` with a `Listbox` panel holds it and nothing else. What holds only the
+pressable is not a thing a reader meets in its place, so it is walked through: a component that built
+it, the way the web reaches the element a component lowers to, and a wrapper an author put around it,
+a box that sizes it. A pressable that shares an ancestor with something else, one of two in a row,
+sits inside the anchor rather than being it and stays a button, and a menu's trigger stays a button,
+as on the web.
 
 ### A select-only combobox speaks each platform's drop-down
 

@@ -23,8 +23,9 @@ and the dialog.
   so every tab and radio is a stop of its own with #338's role and its state. The keyboard does not
   move: the bar is still the one Tab stop and its arrows still step the pick.
 - **The pressable a listbox panel hangs from is the `ComboBox`**, the web's rule (`LowerAnchored`
-  puts `role="combobox"` on the anchor's root), reached through component seams, with `Expanded`
-  saying whether the list is open. A menu's trigger stays a button, as on the web.
+  puts `role="combobox"` on the anchor's root), through a component or a wrapper that holds only
+  it, with `Expanded` saying whether the list is open. A menu's trigger stays a button, as on the
+  web.
 - **An open modal layer is a `Dialog`**, or an `AlertDialog` when it interrupts (the destructive
   confirm), named by its label, as the web's `role="dialog"` and `role="alertdialog"` are.
 - **The layer Photon opens for an anchored panel is a dialog only when the panel is one**, the date

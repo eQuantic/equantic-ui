@@ -77,24 +77,26 @@ internal sealed partial class SemanticsVisitor
     }
 
     /// <summary>
-    /// Whether this pressable is the ROOT of a listbox panel's anchor: its nearest ancestor that is a
-    /// thing on screen is an <see cref="Anchored"/> whose panel is a
-    /// <see cref="AnchorPanelRole.Listbox"/>. The ANCHOR becomes the combobox, the vocabulary's own
-    /// words for that role (<see cref="Anchored.PanelRole"/>), and the panel never lays out under it
-    /// here: it is an overlay root of its own.
+    /// Whether this pressable IS a listbox panel's anchor: every ancestor up to an
+    /// <see cref="Anchored"/> whose panel is a <see cref="AnchorPanelRole.Listbox"/> holds this
+    /// pressable and nothing else. The ANCHOR becomes the combobox, the vocabulary's own words for
+    /// that role (<see cref="Anchored.PanelRole"/>), and the panel never lays out under it here: it
+    /// is an overlay root of its own.
     /// <para>
-    /// Component seams are walked through, because a component is not on screen, it BUILT what is:
-    /// an anchor written as a component reaches its pressable the way the web reaches the element it
-    /// lowered to. Anything else in between, a row holding two pressables, means this one sits
-    /// inside the anchor rather than being it.
+    /// What holds only the pressable is not a thing a reader meets in its place, so it is walked
+    /// through: a component that BUILT the pressable, the way the web reaches the element a
+    /// component lowers to, and a wrapper an author put around it, a box that sizes it or a shortcut
+    /// that binds a key to it. An ancestor that holds something else as well, a row of two
+    /// pressables, means this one sits inside the anchor rather than being it, and nothing in there
+    /// is the combobox.
     /// </para>
     /// </summary>
     private static bool AnchorsAListbox(LayoutNode laidOut)
     {
-        for (var parent = laidOut.Parent; parent is not null; parent = parent.Parent)
+        for (var node = laidOut; node.Parent is { } parent; node = parent)
         {
-            if (parent.Source is UiComponent) continue;
-            return parent.Source is Anchored { PanelRole: AnchorPanelRole.Listbox };
+            if (parent.Source is Anchored anchored) return anchored.PanelRole == AnchorPanelRole.Listbox;
+            if (parent.Children.Count != 1) return false;
         }
         return false;
     }

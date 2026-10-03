@@ -165,8 +165,9 @@ public class ComboBoxAndDialogSemanticsTests
     /// <summary>
     /// Only the pressable the anchor IS becomes the combobox, the web's rule too: the role rides the
     /// anchor's ROOT. A component written as the anchor reaches the pressable it builds, the way the
-    /// web reaches the element it lowers to; a pressable INSIDE an anchor that is a row stays a
-    /// button; and an anchor whose panel is a menu is a button that expands.
+    /// web reaches the element it lowers to, and so does a wrapper that holds only the pressable; a
+    /// pressable INSIDE an anchor that is a row of two stays a button; and an anchor whose panel is a
+    /// menu is a button that expands.
     /// </summary>
     [Fact]
     public void OnlyThePressableAnAnchorIsBecomesTheComboBox()
@@ -176,6 +177,13 @@ public class ComboBoxAndDialogSemanticsTests
         var asComponent = Render(new Anchored(new Button("Pick"), list) { PanelRole = AnchorPanelRole.Listbox });
         asComponent.Semantics().Should().ContainSingle(node => node.Role == SemanticRole.ComboBox)
             .Which.Label.Should().Be("Pick");
+
+        var sized = new Box(new BoxStyle { Width = 200 },
+            new Pressable(new Text("Size", TypeRole.Label), () => { }) { Expanded = false });
+        var wrapped = Render(new Anchored(sized, list) { PanelRole = AnchorPanelRole.Listbox });
+        wrapped.Semantics().Should().ContainSingle()
+            .Which.Should().Match<SemanticNode>(field => field.Role == SemanticRole.ComboBox && field.Label == "Size",
+                "a box that only sizes the trigger is not what a reader meets in its place");
 
         var row = new Row(gap: Space.S2);
         row.Add(new Pressable(new Text("A", TypeRole.Label), () => { }));

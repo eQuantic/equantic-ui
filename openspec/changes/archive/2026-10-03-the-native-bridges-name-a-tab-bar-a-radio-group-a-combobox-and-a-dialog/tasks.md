@@ -4,7 +4,7 @@
 
 - [x] 1.1 Append `TabBar`, `RadioGroup`, `ComboBox`, `Dialog` and `AlertDialog` to `SemanticRole`, 17 to 21, and refresh the enum pin and the runtime's generated union
 - [x] 1.2 Map every `AdjustableRole` in the walk with no default arm: a slider stays one stop with its value, a tab list and a radio group announce their container and keep walking
-- [x] 1.3 Announce the pressable a listbox panel hangs from as the combobox, through component seams, and an open modal layer as a dialog or an alert dialog
+- [x] 1.3 Announce the pressable a listbox panel hangs from as the combobox, through a component or a wrapper that holds only it, and an open modal layer as a dialog or an alert dialog
 - [x] 1.4 Mark the layer the realizer opens for an anchored panel modal only when its panel is a dialog
 - [x] 1.5 Check: `GroupRoleSemanticsTests` and `ComboBoxAndDialogSemanticsTests` read the tree a real `Tabs`, `RadioGroup`, `SegmentedControl`, `Select`, `TimePicker`, `Menu`, `DatePicker` and `Dialog` produce, roles, names, states and order, and fail against the old walk; the tests that pinned a slider and a group now pin the new roles
 
