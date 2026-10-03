@@ -47,6 +47,11 @@ export class Queue<T> {
   toArray(): T[] {
     return this.items.slice();
   }
+
+  /** Enumerates front to back, as .NET's does, for a `foreach` and LINQ alike. */
+  [Symbol.iterator](): Iterator<T> {
+    return this.items.slice()[Symbol.iterator]();
+  }
 }
 
 export class Stack<T> {
@@ -86,6 +91,11 @@ export class Stack<T> {
   /** Top-to-bottom order (LIFO), matching .NET `Stack<T>.ToArray()`. */
   toArray(): T[] {
     return this.items.slice().reverse();
+  }
+
+  /** Enumerates from the top, as .NET's does, for a `foreach` and LINQ alike. */
+  [Symbol.iterator](): Iterator<T> {
+    return this.items.slice().reverse()[Symbol.iterator]();
   }
 }
 
