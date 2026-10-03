@@ -42,8 +42,7 @@ public class HydrationManifestGeneratorTests
     }
 
     private static string Entry(string component, string declaringType, string member, string kind) =>
-        $"[assembly: {Attribute}(typeof(global::App.{component}), typeof(global::App.{declaringType}), "
-        + $"\"{member}\", {Kind}.{kind})]";
+        $"[assembly: {Attribute}(\"App.{component}\", \"App.{declaringType}\", \"{member}\", {Kind}.{kind})]";
 
     private const string Prices = """
         using System;
@@ -129,6 +128,61 @@ public class HydrationManifestGeneratorTests
     {
         var (source, _) = Run(Prices);
 
-        source.Should().NotContain("typeof(global::App.Badge)");
+        source.Should().NotContain("\"App.Badge\"");
+    }
+
+    [Fact]
+    public void APrivateNestedComponent_IsNamedAsTheRuntimeNamesIt()
+    {
+        // An assembly attribute cannot reach a private nested type with typeof, and a component may be
+        // one, so a type is named by the name Type.FullName gives it.
+        var (source, errors) = Run("""
+            using System;
+            using System.Threading;
+            using System.Threading.Tasks;
+            using eQuantic.UI.Primitives;
+
+            namespace App;
+
+            public sealed class Shell : StatelessComponent
+            {
+                public override VisualNode Build(ComponentContext context) => null!;
+
+                private sealed class Summary : StatelessComponent, IServerPrefetch
+                {
+                    private int _count;
+                    public Task PrefetchAsync(IServiceProvider services, CancellationToken cancellationToken)
+                    { _count = 3; return Task.CompletedTask; }
+                    public override VisualNode Build(ComponentContext context) => null!;
+                }
+            }
+            """);
+
+        errors.Should().BeEmpty();
+        source.Should().Contain(Entry("Shell+Summary", "Shell+Summary", "_count", "Field"));
+    }
+
+    [Fact]
+    public void AnythingThatPrefetches_IsDescribed_WhateverItDerivesFrom()
+    {
+        // An escape-hatch page prefetches without being a write-once component; its state crosses all
+        // the same, so what decides is the prefetch, not the base.
+        var (source, _) = Run("""
+            using System;
+            using System.Threading;
+            using System.Threading.Tasks;
+            using eQuantic.UI.Primitives;
+
+            namespace App;
+
+            public class Loader : IServerPrefetch
+            {
+                private string _loaded = "";
+                public Task PrefetchAsync(IServiceProvider services, CancellationToken cancellationToken)
+                { _loaded = "x"; return Task.CompletedTask; }
+            }
+            """);
+
+        source.Should().Contain(Entry("Loader", "Loader", "_loaded", "Field"));
     }
 }

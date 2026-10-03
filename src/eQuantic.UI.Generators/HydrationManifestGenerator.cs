@@ -19,10 +19,11 @@ namespace eQuantic.UI.Generators;
 /// once, and the server and eqc both read it.
 /// </para>
 /// <para>
-/// A component is described when its state can cross: when it prefetches. Every member it and its
-/// app-declared bases hold crosses, except a delegate (the browser builds its own handlers) and a
-/// dependency the browser resolves for itself (<see cref="CapabilityRule"/>, the rule the factory
-/// surface and eqc already share).
+/// A type is described when its state can cross: when it prefetches, whatever it derives from (a
+/// write-once component or an escape-hatch page alike). Every member it and its app-declared bases hold
+/// crosses, except a delegate (the browser builds its own handlers) and a dependency the browser
+/// resolves for itself (<see cref="CapabilityRule"/>, the rule the factory surface and eqc already
+/// share). A type is named by its metadata name, so a private nested component is described too.
 /// </para>
 /// </summary>
 [Generator]
@@ -75,7 +76,7 @@ public sealed class HydrationManifestGenerator : IIncrementalGenerator
         source.AppendLine("// state from these entries alone, and eqc writes each twin's adoption from them.");
         foreach (var entry in entries)
             source.AppendLine(
-                $"[assembly: {Attribute}(typeof({entry.Component}), typeof({entry.DeclaringType}), "
+                $"[assembly: {Attribute}(\"{entry.Component}\", \"{entry.DeclaringType}\", "
                 + $"\"{entry.Member}\", {Kind}.{entry.Kind})]");
 
         spc.AddSource("HydrationManifest.g.cs", source.ToString());
@@ -85,15 +86,13 @@ public sealed class HydrationManifestGenerator : IIncrementalGenerator
     {
         if (ctx.SemanticModel.GetDeclaredSymbol(ctx.Node, token) is not INamedTypeSymbol symbol) return null;
         if (symbol.IsAbstract || symbol.IsStatic) return null;
-        if (!IsComponent(symbol) || !Prefetches(symbol)) return null;
-        // An assembly attribute can only name a type every file of the assembly can see.
-        if (!IsNameableFromTheAssembly(symbol)) return null;
+        if (!Prefetches(symbol)) return null;
 
-        var component = Typeof(symbol);
+        var component = MetadataName(symbol);
         var entries = new List<Entry>();
         for (var type = symbol; type is not null && IsDeclaredInSource(type); type = type.BaseType)
         {
-            var declaring = Typeof(type);
+            var declaring = MetadataName(type);
             foreach (var member in type.GetMembers())
             {
                 token.ThrowIfCancellationRequested();
@@ -182,14 +181,6 @@ public sealed class HydrationManifestGenerator : IIncrementalGenerator
         return false;
     }
 
-    private static bool IsComponent(INamedTypeSymbol symbol)
-    {
-        for (var b = symbol.BaseType; b is not null; b = b.BaseType)
-            if (b.Name is "StatelessComponent" or "StatefulComponent" or "UiComponent")
-                return true;
-        return false;
-    }
-
     private static bool Prefetches(INamedTypeSymbol symbol) =>
         symbol.AllInterfaces.Any(i => i.ToDisplayString() == PrefetchInterface);
 
@@ -200,17 +191,17 @@ public sealed class HydrationManifestGenerator : IIncrementalGenerator
     private static bool IsDeclaredInSource(INamedTypeSymbol type) =>
         type.Locations.Any(location => location.IsInSource);
 
-    private static bool IsNameableFromTheAssembly(INamedTypeSymbol symbol)
+    /// <summary>
+    /// The name the runtime gives the type's definition (<see cref="System.Type.FullName"/>): its
+    /// namespace, its containing types joined by <c>+</c>, and the arity a generic one carries
+    /// (<c>Shop.Grid`1</c>).
+    /// </summary>
+    private static string MetadataName(INamedTypeSymbol type)
     {
-        for (var type = symbol; type is not null; type = type.ContainingType)
-            if (type.DeclaredAccessibility is Accessibility.Private or Accessibility.Protected
-                or Accessibility.ProtectedAndInternal)
-                return false;
-        return true;
+        var name = type.MetadataName;
+        for (var outer = type.ContainingType; outer is not null; outer = outer.ContainingType)
+            name = outer.MetadataName + "+" + name;
+        var space = type.ContainingNamespace;
+        return space is null || space.IsGlobalNamespace ? name : space.ToDisplayString() + "." + name;
     }
-
-    /// <summary>The type as <c>typeof</c> names it, a generic one unbound.</summary>
-    private static string Typeof(INamedTypeSymbol type) =>
-        (type.IsGenericType ? type.ConstructUnboundGenericType() : type)
-            .ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
 }

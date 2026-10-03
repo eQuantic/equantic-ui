@@ -13,6 +13,12 @@ namespace eQuantic.UI.Primitives;
 /// them apply, which is why an entry records no name.
 /// </para>
 /// <para>
+/// A type is named by its metadata name, the one <see cref="Type.FullName"/> answers
+/// (<c>Shop.Pages.Cart+Summary</c> for a nested type, <c>Shop.Grid`1</c> for a generic one), and not by
+/// <c>typeof</c>: an assembly attribute cannot reach a private nested type through <c>typeof</c>, and a
+/// component may be one.
+/// </para>
+/// <para>
 /// <see cref="Projection"/> says what of the value crosses. <c>null</c> means the value crosses whole.
 /// An empty string means only whether it is null: the server writes <c>null</c>, or an empty object.
 /// Otherwise it is a comma-separated list of paths on the value, each a chain of C# member names joined
@@ -25,11 +31,11 @@ namespace eQuantic.UI.Primitives;
 [EditorBrowsable(EditorBrowsableState.Never)]
 public sealed class HydratedMemberAttribute : Attribute
 {
-    /// <param name="component">The component whose state carries the value.</param>
-    /// <param name="declaringType">The type that declares the member: the component or one of its bases.</param>
+    /// <param name="component">The metadata name of the component whose state carries the value.</param>
+    /// <param name="declaringType">The metadata name of the type that declares the member: the component or one of its bases.</param>
     /// <param name="member">The member's name as C# declares it.</param>
     /// <param name="kind">How C# declares it, which is how the server reads it.</param>
-    public HydratedMemberAttribute(Type component, Type declaringType, string member, HydratedMemberKind kind)
+    public HydratedMemberAttribute(string component, string declaringType, string member, HydratedMemberKind kind)
     {
         Component = component;
         DeclaringType = declaringType;
@@ -37,11 +43,11 @@ public sealed class HydratedMemberAttribute : Attribute
         Kind = kind;
     }
 
-    /// <summary>The component whose state carries the value.</summary>
-    public Type Component { get; }
+    /// <summary>The metadata name of the component whose state carries the value.</summary>
+    public string Component { get; }
 
-    /// <summary>The type that declares the member: the component or one of its bases.</summary>
-    public Type DeclaringType { get; }
+    /// <summary>The metadata name of the type that declares the member: the component or one of its bases.</summary>
+    public string DeclaringType { get; }
 
     /// <summary>The member's name as C# declares it.</summary>
     public string Member { get; }

@@ -666,85 +666,53 @@ public class ServerRenderingService : IServerRenderingService
     }
 
     /// <summary>
-    /// An interface from anywhere but System — the SAME rule the compiler applies when it decides
-    /// a constructor parameter is a capability to resolve rather than a value to pass. The
-    /// normative statement is <c>CapabilityRule.IsDependency</c> in <c>src/Shared</c>; it reads a
-    /// Roslyn <c>ITypeSymbol</c> and cannot be called here, so the two must be kept saying the
-    /// same thing.
-    /// <para>
-    /// The System exclusion is the whole point and the comment on the shared rule says why: the
-    /// first version of it dropped <c>IReadOnlyList&lt;AccordionItem&gt;</c>, which is how a
-    /// component RECEIVES its items. Treating that as a dependency here would silently delete
-    /// state from the payload — the exact failure this method exists to stop, arriving from the
-    /// other side.
-    /// </para>
+    /// Component types whose missing or stale description has been logged, so a page served a thousand
+    /// times says it once.
     /// </summary>
-    private static bool IsDependency(Type type) =>
-        type.IsInterface
-        && type.Namespace is { } space
-        && !space.StartsWith("System", StringComparison.Ordinal);
+    private readonly System.Collections.Concurrent.ConcurrentDictionary<Type, byte> _reportedContracts = new();
 
     /// <summary>
-    /// Serializes component state to JSON for client-side hydration.
-    /// </summary>
-    /// <summary>
-    /// ONE component's fields as the payload carries them — and as the discovery loop restores them
-    /// onto the next round's fresh instance, which is the same question asked twice.
+    /// ONE component's state as the wire carries it: in the page's payload and in the navigation payload.
+    /// <para>
+    /// WHAT THE BUILD DESCRIBED, AND NOTHING ELSE. The hydration manifest the source generator writes
+    /// into the component's assembly says which members cross (<see cref="Rendering.HydrationContract"/>),
+    /// and each goes out under the name the twin reads it by. This used to be decided here, by walking
+    /// the fields: a member was named after the field the C# compiler synthesized and kept unless its
+    /// type was an interface, so an auto-property and a public field in Pascal case crossed under a name
+    /// the twin does not declare, and never landed.
+    /// </para>
     /// </summary>
     private IReadOnlyDictionary<string, object?> Snapshot(object state)
     {
         try
         {
-            // Use reflection to extract all fields (including private) into a dictionary
             var stateDict = new Dictionary<string, object?>();
 
-            // ITS BASES INCLUDED. GetFields alone does not return a base type's PRIVATE fields, so
-            // a page keeping its loaded value in a private field on a base class had it dropped
-            // from the payload in silence — the value drew and then vanished on hydration, the same
-            // symptom the dependency guard below describes. Unreachable until a component over an
-            // app-owned base became usable at all; reachable now, so it is fixed here.
-            var fields = Web.ComponentExpansionScope.FieldsOf(state.GetType());
-            
-            foreach (var field in fields)
+            var type = state.GetType();
+            var contract = Rendering.HydrationContract.For(type);
+            if (contract is null)
             {
-                // A DEPENDENCY, not data. A constructor parameter whose type is a dependency is
-                // captured as a field, and the client resolves it for itself — the emitter writes
-                // `this.clock = $eq.services.resolve('IClock')` for exactly these — so it must
-                // never ride the payload. It also cannot: serializing an IMediator threw inside
-                // the single Serialize below, and the catch dropped the WHOLE page's state.
-                //
-                // The symptom was the worst kind. The server rendered correctly, hydration rebuilt
-                // from an empty payload, and what the prefetch had loaded vanished in front of the
-                // reader a moment after the page appeared. `curl` sees perfect HTML; only a
-                // browser shows it.
-                if (IsDependency(field.FieldType))
-                {
-                    _logger.LogDebug(
-                        "[SSR Hydration] Skipping {FieldName}: a {TypeName} is a dependency the "
-                        + "client resolves, not state to carry", field.Name, field.FieldType.Name);
-                    continue;
-                }
+                if (_reportedContracts.TryAdd(type, 0))
+                    _logger.LogWarning(
+                        "[SSR Hydration] {Component} carries no state to the browser: its assembly has no "
+                        + "hydration manifest for it. The SDK's source generator writes one for every component "
+                        + "that prefetches.", type.FullName);
+                return stateDict;
+            }
 
-                var fieldName = field.Name;
-                
-                // For auto-properties, the backing field name is typically <PropertyName>k__BackingField
-                // We want to use the PropertyName as the key in the JSON
-                if (fieldName.StartsWith("<") && fieldName.Contains(">k__BackingField"))
-                {
-                    fieldName = fieldName.Substring(1, fieldName.IndexOf(">") - 1);
-                }
-                else if (fieldName.StartsWith("_"))
-                {
-                    // but we can strip the underscore to be more consistent with JS if needed.
-                    // Actually, let's keep them so the JS side can match the field name if it's there.
-                }
+            if (contract.Unresolved.Count > 0 && _reportedContracts.TryAdd(type, 0))
+                _logger.LogWarning(
+                    "[SSR Hydration] {Component}'s hydration manifest names members it does not declare, which "
+                    + "are left out: {Members}. Rebuild the assembly so its manifest is written again.",
+                    type.FullName, string.Join(", ", contract.Unresolved));
 
-                var value = field.GetValue(state);
+            foreach (var hydrated in contract.Values)
+            {
+                var value = hydrated.Read(state);
 
-                // A HANDLER NEVER TRAVELS — the client builds its own. Read off the FIELD's type as
-                // well as the value's, because a value says nothing about its type when it is null,
-                // and a null ships now.
-                if (typeof(Delegate).IsAssignableFrom(field.FieldType) || value is Delegate)
+                // A HANDLER NEVER TRAVELS, since the client builds its own. The manifest leaves out a
+                // member DECLARED as a delegate; this catches one held behind a wider type.
+                if (value is Delegate)
                 {
                     continue;
                 }
@@ -757,7 +725,7 @@ public class ServerRenderingService : IServerRenderingService
                 // the one shape that looks like absence.
                 if (value is null)
                 {
-                    stateDict[fieldName] = null;
+                    stateDict[hydrated.Name] = null;
                     continue;
                 }
 
@@ -765,21 +733,21 @@ public class ServerRenderingService : IServerRenderingService
                 if (value.GetType().IsEnum)
                 {
                     var enumName = value.ToString() ?? "";
-                    _logger.LogDebug("[SSR Enum] Converting enum {FieldName}: {Value} -> '{EnumName}'", fieldName, value, enumName);
+                    _logger.LogDebug("[SSR Enum] Converting enum {FieldName}: {Value} -> '{EnumName}'", hydrated.Name, value, enumName);
 
                     if (!string.IsNullOrEmpty(enumName))
                     {
                         var jsEnumValue = char.ToLowerInvariant(enumName[0]) + enumName.Substring(1);
-                        stateDict[fieldName] = jsEnumValue;
+                        stateDict[hydrated.Name] = jsEnumValue;
                     }
                     else
                     {
-                        stateDict[fieldName] = "0";
+                        stateDict[hydrated.Name] = "0";
                     }
                 }
                 else
                 {
-                    stateDict[fieldName] = value;
+                    stateDict[hydrated.Name] = value;
                 }
             }
 
@@ -787,10 +755,9 @@ public class ServerRenderingService : IServerRenderingService
             // client BigInt-backed `long` runtime (matches the Server Action wire protocol).
             var options = eQuantic.UI.Server.Json.EqJson.Options;
 
-            // FIELD BY FIELD, so one value that cannot be written does not take the rest with it.
-            // The interface guard above catches the common case by design; this catches the rest
-            // by construction — a concrete type nobody thought of stays a missing field instead of
-            // an empty page, and says so in the log rather than in silence.
+            // FIELD BY FIELD, so one value that cannot be written does not take the rest with it: a
+            // concrete type nobody thought of stays a missing field instead of an empty page, and
+            // says so in the log rather than in silence.
             foreach (var (key, value) in stateDict.ToList())
             {
                 try
