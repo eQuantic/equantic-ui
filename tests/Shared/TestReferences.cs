@@ -21,11 +21,14 @@ namespace eQuantic.UI.Tests;
 /// </summary>
 internal static class TestReferences
 {
-    private static readonly ConcurrentDictionary<string, MetadataReference> Cache = new(StringComparer.Ordinal);
+    /// <summary>One reference per path. A <see cref="Lazy{T}"/> per entry, because two tests asking for
+    /// the same assembly at once may both run <c>GetOrAdd</c>'s factory: the loser's wrapper is
+    /// dropped, and only the winner's <c>Value</c> ever reads the file.</summary>
+    private static readonly ConcurrentDictionary<string, Lazy<MetadataReference>> Cache = new(StringComparer.Ordinal);
 
     /// <summary>The assembly at <paramref name="path"/>, read once.</summary>
     public static MetadataReference Of(string path) =>
-        Cache.GetOrAdd(path, static file => MetadataReference.CreateFromFile(file));
+        Cache.GetOrAdd(path, static file => new Lazy<MetadataReference>(() => MetadataReference.CreateFromFile(file))).Value;
 
     /// <summary>The assembly that declares <paramref name="type"/>.</summary>
     public static MetadataReference Of(Type type) => Of(type.Assembly.Location);
