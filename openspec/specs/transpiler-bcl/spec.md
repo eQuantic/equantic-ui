@@ -170,8 +170,10 @@ a decimal, a date, a record and a type that overrides `Equals` by its value.
 ### Requirement: A member reached through using static answers as its qualified spelling
 
 A .NET member reached by its simple name through `using static` SHALL answer in the browser what
-its qualified spelling answers, and one that no translation covers SHALL fail the build with EQ2004
-rather than be emitted as a member of its class.
+its qualified spelling answers where the bare spelling reaches that translation: a `Math` and `MathF`
+member, a `string` static, an inlined constant and an enum's member. Any other platform member reached
+bare SHALL fail the build with EQ2004 rather than be emitted as a member of its class, even where its
+qualified spelling translates (`DateTime.Now`), until the bare spelling reaches that translation too.
 
 #### Scenario: Constants and methods
 

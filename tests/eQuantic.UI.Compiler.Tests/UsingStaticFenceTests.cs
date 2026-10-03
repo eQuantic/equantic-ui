@@ -57,7 +57,9 @@ public class UsingStaticFenceTests
     public void AFlagsMemberPastLongsRange_IsItsValue_BareAndQualified()
     {
         // Read through long, a ulong member past long's range crashed the compile, on the qualified
-        // path and, since #485, on the bare one too.
+        // path and, since #485, on the bare one too. The value is written as it is. Combining such
+        // members with `|` is a 64-bit operation JavaScript's own operator does not do, the same gap
+        // a long flags enum's members past 32 bits have (#555), so this case only reads the member.
         var result = Compile("""
             using static App.Wide;
             using eQuantic.UI.Primitives;
@@ -67,14 +69,14 @@ public class UsingStaticFenceTests
             {
                 public override VisualNode Build(ComponentContext context)
                 {
-                    var both = Top | Wide.Top;
-                    return new Text(both == Wide.None ? "none" : "some", TypeRole.BodyM);
+                    var top = Top;
+                    return new Text(top == Wide.Top ? "top" : "other", TypeRole.BodyM);
                 }
             }
             """, "Widest");
 
         result.Errors.Should().BeEmpty();
-        result.TypeScript.Should().Contain("9223372036854775808 | 9223372036854775808");
+        result.TypeScript.Should().Contain("let top = 9223372036854775808;").And.Contain("top === 9223372036854775808");
     }
 
     private static CompilationResult Compile(string source, string component)

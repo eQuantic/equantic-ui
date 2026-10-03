@@ -71,13 +71,19 @@ public class QualifiedBaseEmissionTests
     [Theory]
     [InlineData("Tag", "HtmlElement")]
     [InlineData("Card", "StatelessComponent")]
-    public void AQualifiedBase_ExtendsItsTwin_WithoutAModel(string type, string twin)
+    [InlineData("Badge", "StatelessComponent")]
+    [InlineData("Square", "Shape")]
+    public void AQualifiedOrAliasedBase_ExtendsItsTwin_WithoutAModel(string type, string twin)
     {
-        // A host with no project compilation reads the spelling, and the rightmost name is the twin's.
+        // A host with no project compilation reads the spelling: an alias through the directive the
+        // file declares, and then the rightmost name, which is the twin's. A plain class is not here:
+        // with no model it extends only a name the module knows it emits, which this one-file host
+        // has not been told.
         var ts = Compile(withModel: false, type);
 
         ts.Should().MatchRegex($@"class {type} extends {twin}\b");
-        ts.Should().NotContain("extends eQuantic").And.NotContain("extends global");
+        ts.Should().NotContain("extends eQuantic").And.NotContain("extends global").And.NotContain("extends App.")
+            .And.NotContain("extends UiBase").And.NotContain("extends Pail");
     }
 
     private static string Compile(bool withModel, string type)
