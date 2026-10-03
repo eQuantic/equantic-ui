@@ -1,5 +1,6 @@
 using System.Text;
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using eQuantic.UI.Compiler.CodeGen.Ir;
 
@@ -28,10 +29,9 @@ public class InterpolatedStringStrategy : IConversionStrategy
             switch (content)
             {
                 case InterpolatedStringTextSyntax text:
-                    // Use the DECODED value, not the raw source: this collapses doubled braces ({{ -> {,
-                    // }} -> }), unescapes verbatim "" -> ", and processes regular escapes — matching .NET's
-                    // string value. Then re-escape only what a JS template literal treats specially.
-                    sb.Append(EscapeForTemplate(text.TextToken.ValueText));
+                    // The DECODED value, not the raw source: escapes processed and verbatim "" read as
+                    // ", matching .NET's string value, then spelled as a template's text.
+                    sb.Append(JsStringLiteral.TemplateText(Unbraced(text.TextToken.ValueText, interpolated)));
                     break;
                 case InterpolationSyntax interpolation:
                     sb.Append("${");
@@ -55,7 +55,9 @@ public class InterpolatedStringStrategy : IConversionStrategy
                                 enumType, interpolation.Expression, expr);
                         }
                         context.UsedHelpers.Add(Eq.Import);
-                        var fmtArg = format != null ? $"'{format}'" : "null";
+                        // The format is a string like any other: `dd 'de' MMMM` closed the quotes it
+                        // was written between, and Bun refused the module (#520).
+                        var fmtArg = format != null ? JsStringLiteral.Quote(format) : "null";
                         // A float says it is one: its own digits are not the double's (#378). An
                         // integer says so where a specifier is written, since it rounds a half away
                         // from zero (#393); with none, its text is its digits whatever it is.
@@ -80,18 +82,18 @@ public class InterpolatedStringStrategy : IConversionStrategy
     }
 
     /// <summary>
-    /// Prepare decoded interpolated-string text for a JS template literal. First collapse the doubled
-    /// braces that escape a literal brace in C# interpolation (<c>{{</c> -> <c>{</c>, <c>}}</c> -> <c>}</c>) —
-    /// <c>ValueText</c> leaves these doubled. Then escape what a template literal treats specially: backslash
-    /// (first, so we don't double-escape), backtick, and the <c>${</c> opener (done last so a <c>${</c>
-    /// produced by the brace collapse, e.g. from <c>$"${{x}}"</c>, is also neutralised). Line
-    /// breaks become escapes too: a template literal would take them raw, but then the emitted
-    /// line is no longer one line, and nothing that lays code out by lines could touch it.
+    /// The text's value, from <c>ValueText</c>, which keeps a doubled brace doubled. In a regular or a
+    /// verbatim interpolated string a doubled brace IS one brace (<c>{{</c> is <c>{</c>, <c>}}</c> is
+    /// <c>}</c>). In a raw one it is not: a brace is text unless as many of them as the string has
+    /// dollars open a hole, so <c>$$$"""a{{b}}"""</c> is <c>a{{b}}</c>, and collapsing it there
+    /// wrote <c>a{b}</c> (#520). A <c>${</c> the collapse produces (<c>$"${{x}}"</c>) is text, and
+    /// the template's writer escapes it.
     /// </summary>
-    private static string EscapeForTemplate(string s) =>
-        s.Replace("{{", "{").Replace("}}", "}")
-         .Replace("\\", "\\\\").Replace("`", "\\`").Replace("${", "\\${")
-         .Replace("\r", "\\r").Replace("\n", "\\n");
+    private static string Unbraced(string text, InterpolatedStringExpressionSyntax interpolated) =>
+        interpolated.StringStartToken.Kind() is SyntaxKind.InterpolatedSingleLineRawStringStartToken
+            or SyntaxKind.InterpolatedMultiLineRawStringStartToken
+            ? text
+            : text.Replace("{{", "{").Replace("}}", "}");
 
     public int Priority => 10;
 }

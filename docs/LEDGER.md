@@ -1019,6 +1019,77 @@ record of a release, the wiki's Upgrading page is the distillate.
   symbol, and a bare member goes through the translation its qualified spelling reaches, or fails the
   build with EQ2004. `UsingStaticConformanceTests` executes each case on both sides. Proposed and
   archived through OpenSpec (`openspec/specs/transpiler-names`, `openspec/specs/transpiler-bcl`).
+- **2026-10-03 · A route's title reaches the document**: `[Page(Title = …)]` applied only when the
+  page's metadata had no title, which the app's default always filled, so no page ever got it, and a
+  client navigation answered with the app's title over the one the router had set
+  ([#416](https://github.com/eQuantic/equantic-ui/issues/416)); the client's configuration quoted its
+  strings by hand, so a title holding a line break stopped the client of every page
+  ([#526](https://github.com/eQuantic/equantic-ui/issues/526)). Each route hands its declaration to
+  both doors, one builder writes a document's metadata (the app's, the route's, then the page's own),
+  a navigation replaces the head's metadata as a marked set, a page answering with a status of its
+  own (a 404 through `IHandleStatus`) still hands a navigation its marked payload, and the
+  configuration is serialized as JSON. `PageTitleTests` runs both doors, and the dashboard
+  sample's titles were measured in a browser against main. Proposed and archived through OpenSpec
+  (`openspec/specs/document-metadata`).
+- **2026-10-03 · A run that links follows the language**: a `TextRun` with a `Destination` lowered to
+  an anchor holding the destination as written, on both producers, so with language prefixes on a run
+  to `/terms` on a Portuguese page led to the English one, and a Markdown page's internal links did
+  the same; it carried no `data-prefetch` either
+  ([#505](https://github.com/eQuantic/equantic-ui/issues/505)). It lowers as a `Link` does now, and
+  one rule decides what warms on hover for both, which no longer marks a protocol-relative URL. The
+  component parity fixture lowers both under `pt-BR` on each side and compares them. Proposed and
+  archived through OpenSpec (`openspec/specs/links`).
+- **2026-10-03 · A value reaches the browser as its code reads it**: `Color` is the one vocabulary
+  value type the browser holds as plain data, and eqc emitted its instance members as methods of the
+  value, so `Color.FromRgb(…).WithOpacity(0.8f)` rendered on the server and threw once the page
+  hydrated, its text read `[object Object]`, and `new Color(…)` was recognized by its name, building an
+  app's own `Color` as the vocabulary's ([#494](https://github.com/eQuantic/equantic-ui/issues/494)).
+  `[TwinIsData]` says so by symbol now, every member lowers to the runtime's companion and the text to
+  the record text .NET writes. A `HashSet`, and the runtime's sorted set, queue, stack and linked
+  list, crossed hydration as the array the server writes
+  ([#516](https://github.com/eQuantic/equantic-ui/issues/516)): each is rebuilt as its class, a stack
+  with its top coming off first, a server value's projection takes a set of scalars whole, and a set
+  or a dictionary the browser's copy would answer differently, by a comparer of its own or an equality
+  nothing can read, stays out of the page, the rest of a projected value still crossing. Every sorted
+  collection the browser built or rebuilt ordered by `<`, so strings ignored the culture and decimals
+  compared their text: one table (`ValueOrdering`, `utils/ordering.ts`) now names how a type orders,
+  an enum by its value included, read by `Max`/`Min`, by every sorted collection eqc builds and by
+  every one a hydration rebuilds, and a queue or a stack finds a member by value. On
+  the way, a property pattern counted a set or a runtime collection as an array, and a `SortedSet`
+  dropped its collection initializer. `VocabularyValueConformanceTests` executes every member of every type
+  `[TwinIsData]` marks on both sides and checks each vocabulary value type's export against the
+  attribute, which found `Curve` in two shapes
+  ([#518](https://github.com/eQuantic/equantic-ui/issues/518)); the dashboard sample's Colors screen
+  was measured in a browser against main. Filed on the way: `GetHashCode` has no lowering
+  ([#519](https://github.com/eQuantic/equantic-ui/issues/519)), and a `HashSet` finds a date, a
+  decimal or a record by reference ([#531](https://github.com/eQuantic/equantic-ui/issues/531)). The
+  `SortedSet` initializer half of [#434](https://github.com/eQuantic/equantic-ui/issues/434) is fixed
+  here, and its LINQ half stays open. Proposed
+  and archived through OpenSpec (`openspec/specs/transpiler-vocabulary-values`,
+  `openspec/specs/hydration-contract`, `openspec/specs/transpiler-bcl`).
+- **2026-10-03 · A string or a char keeps its value in its module**: eqc wrote C# string and char
+  values in spellings that lost them ([#520](https://github.com/eQuantic/equantic-ui/issues/520)).
+  A surrogate that is not half of a pair has no UTF-8 encoding, so a page holding `"x\uD83D"` stopped
+  the dashboard sample's build with `EQ0001: Compilation crash`, naming no file; a char literal
+  crossed in its C# spelling, so `'\a'` and `'\e'` were `'a'` and `'e'` and `'\x1'` a syntax error;
+  and `$"{date:dd 'de' MMMM}"` closed its own quotes and Bun refused the module. One writer,
+  `JsStringLiteral`, now spells every string the transpiler writes from a value, a template's text,
+  an interpolation's format, a skipped parameter's default, a resource lookup and `nameof` among
+  them, escaping each code unit that does not show as itself, and a char literal and `nameof` are
+  their value. The review found a raw interpolated string's doubled braces collapsed
+  (`$$$"""a{{b}}"""` was `a{b}`), a UTF-8 literal spliced into the module as C# (refused with EQ1004
+  now), and the C# 13 escape's test reading ESC culture-aware, which finds a control at position 0
+  of anything. 31 of the 41 conformance cases fail on main, and a frame thrown after an interpolated
+  string holding U+2028 leads to its own line, where main led it two lines down
+  ([#491](https://github.com/eQuantic/equantic-ui/issues/491)). Filed on the way: a constant written
+  outside a literal loses its type's representation
+  ([#523](https://github.com/eQuantic/equantic-ui/issues/523)), a string read as a sequence is
+  treated as an array ([#524](https://github.com/eQuantic/equantic-ui/issues/524)), a control in a
+  C# file makes its source map invalid JSON
+  ([#525](https://github.com/eQuantic/equantic-ui/issues/525)), and a page title holding a line break
+  stops the client of every page ([#526](https://github.com/eQuantic/equantic-ui/issues/526)).
+  Proposed and archived through OpenSpec (`openspec/specs/transpiler-expressions`,
+  `openspec/specs/transpiler-source-maps`).
 
 ## Retired documents
 

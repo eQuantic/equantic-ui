@@ -767,9 +767,10 @@ public class ServerValueProjectionTests
     }
 
     [Fact]
-    public void ASetIsNoLeaf_AndReadingItFailsTheBuild()
+    public void ASetOfScalars_CrossesWhole_AndItsCodeReadsItAsASet()
     {
-        // Whole, it crossed as an array into a twin that asks a Set for `size` and `has`.
+        // The boundary rebuilds the browser's Set from the array the server writes (#516), so the set
+        // crosses whole as a list does, and its Count and Contains run in the browser.
         var generated = Run(Shelf + """
 
             [Page("/roles")]
@@ -781,9 +782,8 @@ public class ServerValueProjectionTests
             """);
 
         generated.Errors.Should().BeEmpty();
-        generated.Escapes.Select(stop => stop.GetMessage()).Should().HaveCount(2)
-            .And.Contain(message => message.Contains("a member of a .NET type"))
-            .And.Contain(message => message.Contains("a method is called on it"));
+        generated.Reported.Should().BeEmpty();
+        generated.Manifest.Should().Contain(Projected("RolesPage", "shelf", "CapturedParameter", "Roles"));
     }
 
     [Fact]

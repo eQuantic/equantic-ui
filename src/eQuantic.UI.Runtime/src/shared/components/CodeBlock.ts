@@ -1,4 +1,4 @@
-import { $eq, Box, BoxStyle, BuildContext, CodeDecoration, CodeDecorationKindValue, CodeDocument, CodeGutterKindValue, CodeGutterMarker, CodeHighlighter, CodeLanguages, CodeLineCells, CodeMetrics, CodeRow, CodeTokenKindValue, Color, ColorToken, Column, CornerRadii, EdgeInsets, Flexible, Icon, IconButton, IconGlyph, Positioned, Pressable, Rect, Row, ScrollView, SdkStrings, SizeValue, SizeVariantValue, Sizing, Spacer, Stack, StatelessComponent, Text, TypeStyle, VisualNode } from "../runtime-exports";
+import { $eq, Box, BoxStyle, BuildContext, CodeDecoration, CodeDecorationKindValue, CodeDocument, CodeGutterKindValue, CodeGutterMarker, CodeHighlighter, CodeLanguages, CodeLineCells, CodeMetrics, CodeRow, CodeTokenKindValue, ColorToken, Column, CornerRadii, EdgeInsets, Flexible, Icon, IconButton, IconGlyph, Positioned, Pressable, Rect, Row, ScrollView, SdkStrings, SizeValue, SizeVariantValue, Sizing, Spacer, Stack, StatelessComponent, Text, TypeStyle, VisualNode } from "../runtime-exports";
 
 export class CodeBlock extends StatelessComponent {
     static $typeId = 'eQuantic.UI.Components.CodeBlock';
@@ -8,10 +8,10 @@ export class CodeBlock extends StatelessComponent {
     static linePass: number = 0;
     static highlightPass: number = 1;
     static outlinePass: number = 2;
-    static codeSlab: ColorToken = new ColorToken(Color.fromRgba(0x10, 0x14, 0x18, 0xFF));
-    static codeInk: ColorToken = new ColorToken(Color.fromRgba(0xC9, 0xD4, 0xDE, 0xFF));
-    static codeInkMuted: ColorToken = new ColorToken(Color.fromRgba(0x7C, 0x8A, 0x99, 0xFF));
-    static codeSlabActive: ColorToken = new ColorToken(Color.fromRgba(0x1B, 0x22, 0x2B, 0xFF));
+    static codeSlab: ColorToken = new ColorToken({ r: 0x10, g: 0x14, b: 0x18, a: 0xFF });
+    static codeInk: ColorToken = new ColorToken({ r: 0xC9, g: 0xD4, b: 0xDE, a: 0xFF });
+    static codeInkMuted: ColorToken = new ColorToken({ r: 0x7C, g: 0x8A, b: 0x99, a: 0xFF });
+    static codeSlabActive: ColorToken = new ColorToken({ r: 0x1B, g: 0x22, b: 0x2B, a: 0xFF });
     declare document: CodeDocument;
     declare language: any;
     declare showLineNumbers: boolean;
@@ -366,7 +366,7 @@ export class CodeBlock extends StatelessComponent {
             if (element.start >= to) break;
             if (element.start < from) continue;
             let text = $eq.text.substring(cells.text, element.start, element.end - element.start);
-            if (text === '	') {
+            if (text === '\t') {
                 for (let space = 0; space < element.width; space++) run += ' ';
             } else if (element.width === 2) {
                 if (run.length > 0) code.add(CodeBlock.run(run, color, style));

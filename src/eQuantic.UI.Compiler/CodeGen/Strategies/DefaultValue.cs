@@ -1,6 +1,7 @@
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using eQuantic.UI.Compiler.CodeGen.Ir;
 
 namespace eQuantic.UI.Compiler.CodeGen.Strategies;
 
@@ -53,7 +54,7 @@ public static class DefaultValue
             case SpecialType.System_Decimal:
                 return $"{Eq.Dec}(0)";
             case SpecialType.System_Char:
-                return "'\\0'";
+                return JsStringLiteral.Quote("\0");
             case SpecialType.System_String or SpecialType.System_Object:
                 return "null";
             case SpecialType.System_DateTime:
@@ -89,6 +90,11 @@ public static class DefaultValue
                 .FirstOrDefault(field => field.HasConstantValue && IsZero(field.ConstantValue));
             return zero is null ? "0" : $"'{zero.Name.ToCamelCase()}'";
         }
+
+        // A value the browser holds as DATA (`[TwinIsData]`) is its members, so its zero is each
+        // member's zero written out, `{ r: 0, g: 0, b: 0, a: 0 }` for a `Color`, with no twin to build.
+        if (type is INamedTypeSymbol data && data.TwinIsData())
+            return TwinData.Literal(data, _ => null, member => Of(member, named));
 
         // A STRUCT's default is its zero instance, and C# never has a null one. The twin can build
         // it when its bare constructor zeroes every component: a struct the compiler EMITS (one of

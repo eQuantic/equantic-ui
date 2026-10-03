@@ -71,35 +71,9 @@ public class MemberAccessStrategy : IExpressionIrStrategy
         if (expr == "Guid" && name == "Empty") return JsExpr.Literal("''");
         if ((expr == "string" || expr == "String") && name == "Empty") return JsExpr.Literal("''");
 
-        // .Count is type-dependent: Set -> .size, List/array/ICollection -> .length. A dictionary's
-        // is DictionaryStrategy's, which answers `size`.
+        // .Count is type-dependent, and one table answers it for a member access and a pattern alike.
         if (name == "Count")
-        {
-            var def = context.SemanticHelper.GetType(memberAccess.Expression)?.OriginalDefinition?.ToString() ?? "";
-            if (def.StartsWith("System.Collections.Generic.HashSet") ||
-                def.StartsWith("System.Collections.Generic.ISet") ||
-                def.StartsWith("System.Collections.Generic.IReadOnlySet"))
-                return JsExpr.Member(receiver, "size");
-
-            // Same coin toss as `Contains`: a receiver typed only as a collection may be a Set at
-            // run time, whose count is `size`. `.length` on one is undefined — and `undefined > 0`
-            // is false, so the header checkbox simply never noticed a selection.
-            if (context.SemanticHelper.GetType(memberAccess.Expression).HasOpenCollectionShape())
-            {
-                context.UsedHelpers.Add(Eq.Import);
-                return JsExpr.Call(JsExpr.Identifier(Eq.Count), receiver);
-            }
-
-            // A USER type with its own `Count` is not a collection — its property emits as
-            // `get count()`, and rewriting the read to `.length` returned undefined. `.length` stays
-            // the answer for every real sequence, and for an unresolved receiver (untyped code,
-            // where guessing array is the useful default).
-            var receiverType = context.SemanticHelper.GetType(memberAccess.Expression);
-            if (receiverType is not null && receiverType.Locations.Any(location => location.IsInSource))
-                return JsExpr.Member(receiver, name.ToCamelCase());
-
-            return JsExpr.Member(receiver, "length");
-        }
+            return CountSpelling.Read(receiver, context.SemanticHelper.GetType(memberAccess.Expression), context);
 
         // The camelCase guess below is exactly the invocation fallback's story (EQ2006): an
         // in-tree access an AUTHORITATIVE model could not bind is missing references or code that
@@ -127,12 +101,23 @@ public class MemberAccessStrategy : IExpressionIrStrategy
         var member = JsExpr.Member(receiver, name);
 
         // A method REFERENCE (not being called) is a method group: bind it to its receiver.
-        if (symbol is IMethodSymbol)
+        if (symbol is IMethodSymbol method)
         {
             var isDirectInvocation = memberAccess.Parent is InvocationExpressionSyntax invocation &&
                                   invocation.Expression == memberAccess;
             if (!isDirectInvocation)
+            {
+                // A method of a value the browser holds as DATA lives on its companion, value first,
+                // so the group binds the value there, read once, as C# copies the receiver into the
+                // delegate when it is made: `Color.withOpacity.bind(Color, value)`.
+                if (!method.IsStatic && method.ContainingType is { } dataType && dataType.TwinIsData())
+                {
+                    dataType.RegisterIntroduced(context);
+                    var home = JsExpr.Identifier(dataType.Name);
+                    return JsExpr.Call(JsExpr.Member(JsExpr.Member(home, name), "bind"), home, receiver);
+                }
                 return JsExpr.Call(JsExpr.Member(member, "bind"), receiver);
+            }
         }
 
         return member;

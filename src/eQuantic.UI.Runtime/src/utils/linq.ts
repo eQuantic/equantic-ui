@@ -14,32 +14,16 @@
  * the dictionary, and every record key was the same "[object Object]".
  */
 import { Dictionary, keyText, type KeyEquality } from './dictionary';
-import { compare as compareStrings } from './string-statics';
+import { comparerOf, type Ordering } from './ordering';
 
 /**
- * How the values a `Max` or `Min` answers are ordered: `value` by `<` (an integer, a long, a char, a
- * bool), `real` by `<` with .NET's rules for NaN (a double, a float), `text` in the current
- * culture (a string, as `Comparer<string>.Default` orders one), and `comparable` by the value's own
- * `compareTo` (a decimal, a date, a type that implements `IComparable`).
+ * How the values a `Max` or `Min` answers are ordered, the table every ordering of the runtime reads
+ * ({@link comparerOf}). A real is the exception here: `Max` and `Min` pass a NaN over by .NET's own
+ * rules for them, below, rather than order it first.
  */
-export type Ordering = 'value' | 'real' | 'text' | 'comparable';
+export type { Ordering };
 
 const NO_ELEMENTS = 'Sequence contains no elements';
-
-interface Comparable {
-  compareTo(other: unknown): number;
-}
-
-function comparer(ordering: Ordering): (a: unknown, b: unknown) => number {
-  switch (ordering) {
-    case 'text':
-      return (a, b) => compareStrings(a as string, b as string, 'currentCulture');
-    case 'comparable':
-      return (a, b) => (a as Comparable).compareTo(b);
-    default:
-      return (a, b) => ((a as number) < (b as number) ? -1 : (a as number) > (b as number) ? 1 : 0);
-  }
-}
 
 /**
  * The largest (`direction` 1) or smallest (-1) value, by .NET's `MaxFloat`/`MinFloat` for a real
@@ -53,7 +37,7 @@ function extreme<T>(
   nullable: boolean,
   direction: 1 | -1,
 ): unknown {
-  const compare = comparer(ordering);
+  const compare = comparerOf(ordering);
   let found = false;
   let value: unknown = null;
   for (const item of source) {

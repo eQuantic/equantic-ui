@@ -6,9 +6,10 @@ using eQuantic.UI.Compiler.CodeGen.Ir;
 namespace eQuantic.UI.Compiler.CodeGen.Strategies.Expressions;
 
 /// <summary>
-/// Literals in their JavaScript spelling: single-quoted strings, <c>true</c>/<c>false</c>/<c>null</c>,
-/// numbers with the C# type suffixes stripped (<c>L</c> becomes a BigInt literal, <c>m</c> an exact
-/// Decimal through the runtime helper).
+/// Literals in their JavaScript spelling: a string or a char as a single-quoted string written from
+/// its value (<see cref="JsStringLiteral"/>), <c>true</c>/<c>false</c>/<c>null</c>, numbers with the
+/// C# type suffixes stripped (<c>L</c> becomes a BigInt literal, <c>m</c> an exact Decimal through the
+/// runtime helper). A literal that JavaScript has no spelling for is refused (EQ1004).
 /// </summary>
 public class LiteralExpressionStrategy : IExpressionIrStrategy
 {
@@ -22,12 +23,18 @@ public class LiteralExpressionStrategy : IExpressionIrStrategy
         var literal = (LiteralExpressionSyntax)node;
         return literal.Kind() switch
         {
-            SyntaxKind.StringLiteralExpression => JsExpr.Literal(JsStringLiteral.Quote(literal.Token.ValueText)),
+            // A char is written from its VALUE, as a string is. Its token text is the C# spelling,
+            // and JavaScript reads the escapes only C# has its own way: '\a' and '\e' were 'a' and
+            // 'e', '\U00000041' nine characters, '\x041' two, and '\x1' a syntax error (#520).
+            SyntaxKind.StringLiteralExpression or SyntaxKind.CharacterLiteralExpression
+                => JsExpr.Literal(JsStringLiteral.Quote(literal.Token.ValueText)),
             SyntaxKind.TrueLiteralExpression => JsExpr.Literal("true"),
             SyntaxKind.FalseLiteralExpression => JsExpr.Literal("false"),
             SyntaxKind.NullLiteralExpression => JsExpr.Literal("null"),
             SyntaxKind.NumericLiteralExpression => ConvertNumericLiteral(literal.Token, context),
-            _ => JsExpr.Literal(literal.Token.Text)
+            // A UTF-8 literal ("ab"u8) or __arglist: its C# text was spliced into the module as it
+            // stood, a syntax error Bun reported against no C# line.
+            _ => JsExpr.Opaque(context.Unhandled(literal, "literal")),
         };
     }
 

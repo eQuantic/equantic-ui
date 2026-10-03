@@ -17,6 +17,8 @@ public sealed class CrossingReportPage(CrossingReport report) : StatelessCompone
         page.Add(new Text(report is { Tags.Count: > 0 } ? $"tag {report.Tags[0]}" : "no tags", TypeRole.BodyM));
         page.Add(new Text($"price {report.Prices["a"] * 2}", TypeRole.BodyM));
         page.Add(new Text($"scores {report.Scores.Count} first {report.Scores[0] + 1}", TypeRole.BodyM));
+        page.Add(new Text(report is { Roles.Count: > 0 } && report.Roles.Contains("admin")
+            ? $"roles admin of {report.Roles.Count}" : "roles none", TypeRole.BodyM));
         return page;
     }
 }

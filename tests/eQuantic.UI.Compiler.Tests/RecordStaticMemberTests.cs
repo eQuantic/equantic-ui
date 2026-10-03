@@ -255,7 +255,7 @@ public class RecordStaticMemberTests
 
         // A syntax-only default cannot see through a NAME: it answers null for both, where .NET
         // gives '\0' and the zero-valued member. The symbol can, and the server would have said so.
-        twin.Should().Contain(@"static sep = '\0'");
+        twin.Should().Contain(@"static sep = '\u0000'");
         twin.Should().Contain("static level = 'low'");
     }
 

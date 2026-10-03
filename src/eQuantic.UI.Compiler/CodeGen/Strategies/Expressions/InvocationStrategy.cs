@@ -173,6 +173,17 @@ public class InvocationStrategy : IExpressionIrStrategy
                     : JsExpr.Callish($"{caller}{proven}({string.Join(", ", argIrs.Select(JsExprWriter.Write))})");
             }
 
+            // A VALUE THE BROWSER HOLDS AS DATA (`[TwinIsData]`, `Color`) carries no methods: an
+            // instance method goes to the companion of its type's name with the value first,
+            // `Color.withOpacity(value, 0.8)`, the shape an extension member goes home in below.
+            if (symbol is { IsStatic: false, MethodKind: MethodKind.Ordinary, ContainingType: { } dataType }
+                && dataType.TwinIsData())
+            {
+                dataType.RegisterIntroduced(context);
+                var valueFirst = string.IsNullOrEmpty(args) ? caller : $"{caller}, {args}";
+                return JsExpr.Callish($"{dataType.Name}.{methodName.ToCamelCase()}({valueFirst})");
+            }
+
             // EXTENSION METHOD in reduced form (`node.Also(x => …)`): JS has no extensions, so the
             // call goes back to its static home with the receiver as the first argument —
             // `NodeExtensions.also(node, x => …)`. The declaring static class is emitted as its own

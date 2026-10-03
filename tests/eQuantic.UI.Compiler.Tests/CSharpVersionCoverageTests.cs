@@ -290,8 +290,11 @@ public class CSharpVersionCoverageTests
         Assert.True(probe.Success);
         Assert.Contains("= {};", probe.TypeScript);
         Assert.DoesNotContain("new Lock()", probe.TypeScript);
-        // C# 13 `\e` folds to the real ESC character in the emitted literal.
-        Assert.Contains("[0m", probe.TypeScript);
+        // C# 13 `\e` is the ESC character, written as an escape: a control is invisible in the
+        // module, so none is written raw (#520). The char overload compares ordinally; a string's
+        // is culture-aware, and ICU ignores a control, so it finds one at position 0 of anything.
+        Assert.Contains(@"'\u001B[0m'", probe.TypeScript);
+        Assert.DoesNotContain('\u001B', probe.TypeScript);
     }
 
     [Fact]
