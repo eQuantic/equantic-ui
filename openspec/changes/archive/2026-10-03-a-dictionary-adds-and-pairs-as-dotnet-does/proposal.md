@@ -37,7 +37,9 @@ Closes #440, #395 and #433, sub-issues of #164 (the transpiler's fences hold on 
 
 - **eqc**: `DictionaryStrategy` (`Add`, the two initializer forms), a new `KeyValuePairStrategy`,
   `DefaultValue`, and `Eq.Pair`.
-- **Runtime**: `Dictionary` and `SortedMap` gain `add` and `assign`, their constructors add, and
-  `$eq.collections.pair` is exported.
+- **Runtime**: `Dictionary` and `SortedMap` gain an `add` that answers the dictionary, so an
+  initializer chains one call per entry (`add`, or the indexer's existing `set`), their constructors
+  add, a sorted one knows which of the two it is through hydration, and `$eq.collections.pair` is
+  exported.
 - **Break**: a dictionary built with a key twice by `Add`, a collection initializer or the pairs
   constructor now throws, as it does on the server.

@@ -2,8 +2,8 @@
 
 ## 1. Add refuses a key already there (#440, #395)
 
-- [x] 1.1 Give the runtime's dictionaries an `add` that refuses in each collection's measured words, seed the constructors through it, and write an object initializer's entries through `assign`. Verify: `dictionary.spec.ts`, and `DictionaryAddConformanceTests.Add_RefusesAKeyAlreadyThere_TheIndexerReplaces` on both sides, failing against main
-- [x] 1.2 Lower `Add` to `add`, and keep a collection initializer (added) apart from an object initializer (assigned). Verify: the same cases
+- [x] 1.1 Give the runtime's dictionaries an `add` that refuses in each collection's measured words and answers the dictionary, seed the constructors through it, and write an initializer's entries one call each, `add` for a collection initializer and the indexer's `set` for an object initializer, so a refused entry stops the ones after it. Verify: `dictionary.spec.ts`, and `DictionaryAddConformanceTests.Add_RefusesAKeyAlreadyThere_TheIndexerReplaces` on both sides, failing against main
+- [x] 1.2 Lower `Add` to `add`, and keep a collection initializer (added) apart from an object initializer (set by the indexer). Verify: the same cases, and the two evaluation-order cases, failing against the previous head
 
 ## 2. A pair built by the app (#433)
 
