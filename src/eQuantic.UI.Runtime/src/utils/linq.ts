@@ -153,6 +153,16 @@ export function seq<T>(source: Iterable<T> | string): T[] {
 }
 
 /**
+ * A sequence as a `foreach` enumerates it, when its static type does not say whether it is a string
+ * (`object`, `IEnumerable`, `IEnumerable<char>`): a string by its chars, the UTF-16 code units, and
+ * anything else as it is, by its own iterator, which a dictionary's keeps watching for changes.
+ * JavaScript iterates a string by code point, so a pair behind an interface was one char.
+ */
+export function enumerable<T>(source: Iterable<T> | string): Iterable<T> {
+  return typeof source === 'string' ? (source.split('') as unknown as T[]) : source;
+}
+
+/**
  * A NEW array of a sequence's elements, as `ToList` and `ToArray` make one: an array is copied too, so
  * the copy and its source are two arrays, as in .NET, whatever the static type hid it behind.
  */

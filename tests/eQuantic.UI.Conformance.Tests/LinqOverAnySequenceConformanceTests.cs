@@ -76,6 +76,10 @@ public class LinqOverAnySequenceConformanceTests
     [InlineData("return new[] { 'a', 'b' }.SequenceEqual(\"ab\");")]                                                           // true
     [InlineData("return new[] { 1 }.Concat(new HashSet<int> { 2, 3 }).Count();")]                                             // 3
     [InlineData("return \"a\\uD83D\\uDE00\".OrderBy(c => c).Count();")]                                                     // 3
+    [InlineData("var d = new Dictionary<string, int> { [\"a\"] = 1 }; var p = d.First(); return d.Contains(p);")]             // true
+    [InlineData("var d = new SortedDictionary<string, int> { [\"a\"] = 1 }; return d.Contains(d.Last());")]                   // true
+    [InlineData("System.Collections.IEnumerable s = \"a\\uD83D\\uDE00\"; var n = 0; foreach (var c in s) n++; return n;")]   // 3
+    [InlineData("IEnumerable<char> s = \"x\\uD83D\\uDE00\"; var n = 0; foreach (var c in s) n++; return n;")]               // 3
     public void ASequenceArgument_IsASequenceToo(string statements)
     {
         Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");

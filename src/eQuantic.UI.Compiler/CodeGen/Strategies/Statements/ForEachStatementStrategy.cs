@@ -21,12 +21,16 @@ public class ForEachStatementStrategy : IStatementStrategy
         var item = foreachStmt.Identifier.Text.ToJsIdentifier();
         var declared = ExpressionVariableScanner.Declarations(foreachStmt.Expression, context.TypeAnnotations);
         // A string enumerates its chars, the UTF-16 code units, where JavaScript's iterator gives code
-        // points: `foreach (var c in "a😀b")` counted three where .NET counts four (#524).
+        // points: `foreach (var c in "a😀b")` counted three where .NET counts four (#524). A type that
+        // may hold one (`object`, `IEnumerable`, `IEnumerable<char>`) asks the value what it is.
         var source = context.Converter.ConvertIr(foreachStmt.Expression);
-        var collection = JsExprWriter.Write(
-            context.SemanticHelper.GetType(foreachStmt.Expression) is { SpecialType: SpecialType.System_String }
-                ? JsExpr.Call(JsExpr.Member(source, "split"), JsExpr.Literal("''"))
-                : source);
+        var sourceType = context.SemanticHelper.GetType(foreachStmt.Expression);
+        var collection = JsExprWriter.Write(sourceType switch
+        {
+            { SpecialType: SpecialType.System_String } => JsExpr.Call(JsExpr.Member(source, "split"), JsExpr.Literal("''")),
+            _ when MayHoldAString(sourceType) => Enumerable(source, context),
+            _ => source,
+        });
 
         var body = context.Converter.ConvertStatementIr(foreachStmt.Statement);
         var loopType = foreachStmt.AwaitKeyword.Value != null ? "for await" : "for";
@@ -65,6 +69,23 @@ public class ForEachStatementStrategy : IStatementStrategy
         var element = JsExpr.Identifier("$" + item);
         var applied = ValueFlow.Apply(conversion, info.ElementType, variable.Type, null, null, element, context);
         return JsExprWriter.Write(applied) == "$" + item ? null : applied;
+    }
+
+    /// <summary>Whether a value of this static type may be a string: <c>object</c>, <c>dynamic</c>,
+    /// the non-generic <c>IEnumerable</c>, and <c>IEnumerable&lt;char&gt;</c>.</summary>
+    private static bool MayHoldAString(ITypeSymbol? type) => type switch
+    {
+        { SpecialType: SpecialType.System_Object or SpecialType.System_Collections_IEnumerable } => true,
+        { TypeKind: TypeKind.Dynamic } => true,
+        INamedTypeSymbol { OriginalDefinition.SpecialType: SpecialType.System_Collections_Generic_IEnumerable_T } sequence =>
+            sequence.TypeArguments[0].SpecialType == SpecialType.System_Char,
+        _ => false,
+    };
+
+    private static JsExpr Enumerable(JsExpr source, ConversionContext context)
+    {
+        context.UsedHelpers.Add(Eq.Import);
+        return JsExpr.Call(JsExpr.Identifier(Eq.LinqEnumerable), source);
     }
 
     public int Priority => 0;

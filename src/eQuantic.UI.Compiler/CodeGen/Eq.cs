@@ -135,6 +135,10 @@ public static class Eq
     /// <c>new string(char[], int, int)</c> and <c>ToCharArray(int, int)</c>.</summary>
     public const string TextChars = "$eq.text.chars";
 
+    /// <summary>A sequence as a <c>foreach</c> enumerates it where its static type may hide a
+    /// string: a string by its code units, anything else as it is.</summary>
+    public const string LinqEnumerable = "$eq.linq.enumerable";
+
     /// <summary>A NEW array of a sequence's elements, as <c>ToList</c> and <c>ToArray</c> make.</summary>
     public const string LinqToArray = "$eq.linq.toArray";
     /// <summary>Where each text element (an extended grapheme cluster, UAX #29) of a string begins:
