@@ -52,7 +52,7 @@ public class InterpolatedStringStrategy : IConversionStrategy
                             is INamedTypeSymbol { TypeKind: TypeKind.Enum } enumType)
                         {
                             expr = Invocation.ToStringStrategy.EnumNameLookup(
-                                enumType, interpolation.Expression, expr);
+                                enumType, interpolation.Expression, expr, context);
                         }
                         context.UsedHelpers.Add(Eq.Import);
                         // The format is a string like any other: `dd 'de' MMMM` closed the quotes it

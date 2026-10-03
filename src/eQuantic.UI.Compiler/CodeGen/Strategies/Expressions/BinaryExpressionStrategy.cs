@@ -255,9 +255,12 @@ public class BinaryExpressionStrategy : IExpressionIrStrategy
         }
 
         // ENUM ARITHMETIC: an enum crosses as its member NAME, so `day + 1` needs the value behind
-        // the name and, when the result is the enum again, the name behind the value.
+        // the name and, when the result is the enum again, the name behind the value. Not a string
+        // concatenation, where the enum is boxed and printed by its name (StringConversion): its text
+        // indexed the value table, and `"," + rank` wrote `,undefined` (#535).
         var resultType = context.SemanticHelper.GetType(binary);
         if (op is "+" or "-" or "*" or "/" or "%" or "<" or ">" or "<=" or ">="
+            && resultType?.SpecialType != SpecialType.System_String
             && (EnumOperand(binary.Left, context) is not null || EnumOperand(binary.Right, context) is not null))
         {
             leftIr = EnumValue(binary.Left, leftIr, context);

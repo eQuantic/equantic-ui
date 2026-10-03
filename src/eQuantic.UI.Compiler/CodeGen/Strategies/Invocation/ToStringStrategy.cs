@@ -159,7 +159,14 @@ public class ToStringStrategy : IConversionStrategy
         if (context.SemanticHelper.GetType(memberAccess.Expression) is INamedTypeSymbol
             { TypeKind: TypeKind.Enum } enumType)
         {
-            return EnumNameLookup(enumType, memberAccess.Expression, caller);
+            return EnumNameLookup(enumType, memberAccess.Expression, caller, context);
+        }
+        // A NULLABLE enum prints its value's name, and nothing for null: written by String(), it
+        // printed the camelCase name the browser holds (#452).
+        if (context.SemanticHelper.GetType(memberAccess.Expression).UnwrapNullable() is INamedTypeSymbol
+            { TypeKind: TypeKind.Enum } nullableEnum)
+        {
+            return Types.EnumShape.Text(nullableEnum, caller, context);
         }
 
         return $"String({caller})";
@@ -202,8 +209,15 @@ public class ToStringStrategy : IConversionStrategy
     /// converted to string literals at their use sites and nothing survives to look up.
     /// </summary>
     internal static string EnumNameLookup(INamedTypeSymbol enumType, ExpressionSyntax expression,
-        string caller)
+        string caller, ConversionContext context)
     {
+        // A FLAGS enum is its number, which the name table cannot index: its text names its set
+        // flags, as .NET writes them (#452).
+        if (enumType.IsFlagsEnum()
+            && !(expression is MemberAccessExpressionSyntax { Name.Identifier.ValueText: var flag }
+                && enumType.GetMembers(flag).OfType<IFieldSymbol>().Any(field => field.HasConstantValue)))
+            return Types.EnumShape.Text(enumType, caller, context);
+
         var members = enumType.GetMembers()
             .OfType<IFieldSymbol>()
             .Where(f => f.ConstantValue is not null)

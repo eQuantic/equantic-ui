@@ -79,7 +79,6 @@ import {
   asInteger,
   asSingle,
   format,
-  parseEnum,
   recordText,
   stringFormat,
   stringFormatInvariant,
@@ -114,6 +113,15 @@ import { boolConvert, boolParse, boolTryParse } from './utils/boolean-text';
 import { sortedSet, sortedDictionary, sortedList } from './utils/sorted';
 import { liftArith, liftCmp, liftUnary } from './utils/nullable';
 import { equals } from './utils/equals';
+import {
+  isDefined as enumIsDefined,
+  names as enumNames,
+  parse as enumParse,
+  text as enumText,
+  tryParse as enumTryParse,
+  values as enumValues,
+  zero as enumZero,
+} from './utils/enums';
 import { resolveService } from './utils/services';
 import { StyleBuilder } from './utils/style-builder';
 import { ClassBuilder, joinClasses, whenClass } from './utils/class-builder';
@@ -301,8 +309,9 @@ export const $eq = {
   mapSet,
   /** Date and time, tick-precise. */
   time: { dateTime, timeSpan, dateOnly, timeOnly, dateTimeOffset },
-  /** Enum parsing (member-name string). */
-  enums: { parse: parseEnum },
+  /** An enum as .NET reads it, from the shape the compiler writes: its text, Parse and TryParse,
+   * its default, GetNames, GetValues and IsDefined. */
+  enums: { text: enumText, parse: enumParse, tryParse: enumTryParse, zero: enumZero, names: enumNames, values: enumValues, isDefined: enumIsDefined },
   /**
    * Collections — Queue (FIFO), Stack (LIFO), Dictionary (by slot, as .NET's), LinkedList, and the
    * sorted family (SortedSet / SortedDictionary / SortedList).

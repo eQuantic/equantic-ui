@@ -40,6 +40,7 @@ public static class EqJson
         options.Converters.Add(new UInt64StringConverter());
         options.Converters.Add(new DecimalStringConverter());
         options.Converters.Add(new CamelCaseEnumConverter());
+        options.Converters.Add(new FlagsEnumConverter());
     }
 
     /// <summary>
@@ -67,15 +68,75 @@ public static class EqJson
         {
             if (reader.TokenType == JsonTokenType.Number)
                 return (TEnum)Enum.ToObject(typeof(TEnum), reader.GetInt64());
-            var name = reader.GetString();
-            return Enum.TryParse<TEnum>(name, ignoreCase: true, out var value) ? value : default;
+            return Parse(reader.GetString());
         }
+
+        public override void Write(Utf8JsonWriter writer, TEnum value, JsonSerializerOptions options) =>
+            writer.WriteStringValue(Name(value));
+
+        /// <summary>
+        /// A dictionary's key, which is the same camelCase name as a property name. System.Text.Json
+        /// writes a key only through a converter that says how, and this one did not, so a dictionary
+        /// keyed by an enum was refused both ways (#442).
+        /// </summary>
+        public override void WriteAsPropertyName(Utf8JsonWriter writer, TEnum value, JsonSerializerOptions options) =>
+            writer.WritePropertyName(Name(value));
+
+        public override TEnum ReadAsPropertyName(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options) =>
+            Parse(reader.GetString());
+
+        private static string Name(TEnum value)
+        {
+            var name = value.ToString();
+            return name.Length == 0 ? name : char.ToLowerInvariant(name[0]) + name[1..];
+        }
+
+        private static TEnum Parse(string? name) =>
+            Enum.TryParse<TEnum>(name, ignoreCase: true, out var value) ? value : default;
+    }
+
+    /// <summary>
+    /// A <c>[Flags]</c> enum crosses as its NUMBER, which the transpiled side holds, a dictionary's key
+    /// included. System.Text.Json's own converter already writes the value as a number, but it writes a
+    /// key by the member names (<c>"Read, Write"</c>), which the browser does not hold (#442). Reads
+    /// take the number, as a number or as text, or the names.
+    /// </summary>
+    private sealed class FlagsEnumConverter : JsonConverterFactory
+    {
+        public override bool CanConvert(Type typeToConvert) =>
+            typeToConvert.IsEnum && typeToConvert.IsDefined(typeof(FlagsAttribute), inherit: false);
+
+        public override JsonConverter CreateConverter(Type typeToConvert, JsonSerializerOptions options) =>
+            (JsonConverter)Activator.CreateInstance(
+                typeof(FlagsEnumConverter<>).MakeGenericType(typeToConvert))!;
+    }
+
+    private sealed class FlagsEnumConverter<TEnum> : JsonConverter<TEnum> where TEnum : struct, Enum
+    {
+        private static readonly bool Unsigned = Enum.GetUnderlyingType(typeof(TEnum)) == typeof(ulong);
+
+        public override TEnum Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options) =>
+            reader.TokenType == JsonTokenType.Number
+                ? (TEnum)(Unsigned ? Enum.ToObject(typeof(TEnum), reader.GetUInt64()) : Enum.ToObject(typeof(TEnum), reader.GetInt64()))
+                : Parse(reader.GetString());
 
         public override void Write(Utf8JsonWriter writer, TEnum value, JsonSerializerOptions options)
         {
-            var name = value.ToString();
-            writer.WriteStringValue(name.Length == 0 ? name : char.ToLowerInvariant(name[0]) + name[1..]);
+            if (Unsigned) writer.WriteNumberValue(Convert.ToUInt64(value, CultureInfo.InvariantCulture));
+            else writer.WriteNumberValue(Convert.ToInt64(value, CultureInfo.InvariantCulture));
         }
+
+        public override void WriteAsPropertyName(Utf8JsonWriter writer, TEnum value, JsonSerializerOptions options) =>
+            writer.WritePropertyName(Unsigned
+                ? Convert.ToUInt64(value, CultureInfo.InvariantCulture).ToString(CultureInfo.InvariantCulture)
+                : Convert.ToInt64(value, CultureInfo.InvariantCulture).ToString(CultureInfo.InvariantCulture));
+
+        public override TEnum ReadAsPropertyName(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options) =>
+            Parse(reader.GetString());
+
+        // A number's text and a name both parse, as Enum.Parse reads them.
+        private static TEnum Parse(string? text) =>
+            Enum.TryParse<TEnum>(text, ignoreCase: true, out var value) ? value : default;
     }
 
     private sealed class Int64StringConverter : JsonConverter<long>
