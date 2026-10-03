@@ -153,3 +153,7 @@ eQuantic.UI.Compiler.CodeGen.Ir.JsTry.Catch.get -> eQuantic.UI.Compiler.CodeGen.
 eQuantic.UI.Compiler.CodeGen.Ir.JsTry.Catch.init -> void
 eQuantic.UI.Compiler.CodeGen.Ir.JsTry.Deconstruct(out eQuantic.UI.Compiler.CodeGen.Ir.JsStatement! Body, out eQuantic.UI.Compiler.CodeGen.Ir.JsCatch? Catch, out eQuantic.UI.Compiler.CodeGen.Ir.JsStatement? Finally) -> void
 eQuantic.UI.Compiler.CodeGen.Ir.JsTry.JsTry(eQuantic.UI.Compiler.CodeGen.Ir.JsStatement! Body, eQuantic.UI.Compiler.CodeGen.Ir.JsCatch? Catch, eQuantic.UI.Compiler.CodeGen.Ir.JsStatement? Finally) -> void
+const eQuantic.UI.Compiler.CodeGen.Eq.LinqSeq = "$eq.linq.seq" -> string!
+const eQuantic.UI.Compiler.CodeGen.Eq.LinqToArray = "$eq.linq.toArray" -> string!
+const eQuantic.UI.Compiler.CodeGen.Eq.TextChars = "$eq.text.chars" -> string!
+const eQuantic.UI.Compiler.CodeGen.Eq.LinqEnumerable = "$eq.linq.enumerable" -> string!

@@ -42,7 +42,7 @@ public class SingleStrategy : IConversionStrategy
         var memberAccess = (MemberAccessExpressionSyntax)invocation.Expression;
         var methodName = memberAccess.Name.Identifier.Text;
 
-        var caller = context.Converter.ConvertExpression(memberAccess.Expression);
+        var caller = LinqSource.Text(memberAccess.Expression, context);
         var args = invocation.ArgumentList.Arguments;
         // The default of the ELEMENT — `new int[0].SingleOrDefault()` is 0 in .NET, not null.
         var isOrDefault = methodName == "SingleOrDefault";

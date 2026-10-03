@@ -4,8 +4,9 @@ using Microsoft.CodeAnalysis.CSharp.Syntax;
 namespace eQuantic.UI.Compiler.CodeGen.Strategies.Invocation;
 
 /// <summary>
-/// Strategy for removing LINQ materialization calls that are redundant in JS.
-/// Handles: ToList(), ToArray() → passthrough
+/// <c>ToList()</c> and <c>ToArray()</c>, LINQ's and a list's own: a new array of the source's elements
+/// (<see cref="Linq.LinqSource.Copy"/>). They were a passthrough, so a copy and its source were one
+/// array, and a set, a dictionary or a string stayed what it was.
 /// </summary>
 public class CollectionMaterializationStrategy : IConversionStrategy
 {
@@ -18,7 +19,17 @@ public class CollectionMaterializationStrategy : IConversionStrategy
             return false;
 
         var methodName = memberAccess.Name.Identifier.Text;
-        return methodName is "ToList" or "ToArray";
+        if (methodName is not ("ToList" or "ToArray")) return false;
+        // LINQ's, or a BCL collection's own (a list's, a queue's, an immutable array's): each answers a
+        // new array of its elements in the order it enumerates them, which the runtime's twins and
+        // arrays give by iteration. A type of the app's own keeps the method it wrote.
+        return context.SemanticHelper.GetSymbol(invocation) switch
+        {
+            IMethodSymbol method => context.SemanticHelper.IsLinqExtension(method.ContainingType)
+                || method.ContainingType.ContainingNamespace?.ToDisplayString() is { } space
+                    && (space == "System" || space.StartsWith("System.", System.StringComparison.Ordinal)),
+            _ => context.CanGuess(node),
+        };
     }
 
     public string Convert(SyntaxNode node, ConversionContext context)
@@ -26,9 +37,7 @@ public class CollectionMaterializationStrategy : IConversionStrategy
         var invocation = (InvocationExpressionSyntax)node;
         var memberAccess = (MemberAccessExpressionSyntax)invocation.Expression;
         
-        // Passthrough: just convert the expression on which ToList/ToArray was called
-        // Since our LINQ strategies (Select, Where) return arrays/iterables that work fine in JS
-        return context.Converter.ConvertExpression(memberAccess.Expression);
+        return Ir.JsExprWriter.Write(Linq.LinqSource.Copy(memberAccess.Expression, context));
     }
 
     public int Priority => 10;

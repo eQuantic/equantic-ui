@@ -119,13 +119,15 @@ describe('a throw expression and an exception filter', () => {
  * reason it is no .NET exception.
  */
 describe('every throw of the .NET twins carries its .NET type', () => {
-  const notDotNet: Record<string, string> = {
-    'exceptions.ts': 'where every .NET exception is made, its type with it',
-    'assert-never.ts': 'a case the code never reaches; reaching it is a defect of the runtime',
-    'decimal.ts': 'a decimal literal the compiler wrote, which is valid by construction',
-  };
+  /** The untyped errors there are, each by its file and its words, and why it is no .NET exception. */
+  const notDotNet: { file: string; words: string; why: string }[] = [
+    { file: 'exceptions.ts', words: 'new Error(message', why: 'where every .NET exception is made, its type with it' },
+    { file: 'assert-never.ts', words: 'Unhandled', why: 'a case the code never reaches; reaching it is a defect of the runtime' },
+    { file: 'decimal.ts', words: 'Invalid decimal literal', why: 'a literal the compiler wrote, valid by construction' },
+    { file: 'linq.ts', words: 'A sequence was expected', why: 'a value that crossed as a plain object where C# holds a sequence' },
+  ];
 
-  it('throws no untyped error outside the files that say why', () => {
+  it('throws no untyped error but the ones that say why', () => {
     const untyped = readdirSync('src/utils')
       .filter((file) => file.endsWith('.ts') && !file.endsWith('.spec.ts'))
       .flatMap((file) =>
@@ -134,9 +136,13 @@ describe('every throw of the .NET twins carries its .NET type', () => {
           .map((line, index) => ({ file, line: index + 1, text: line }))
           .filter(({ text }) => /new (Range|Type)?Error\(/.test(text)),
       );
-    const unexplained = untyped.filter(({ file }) => !(file in notDotNet));
-    expect(unexplained).toEqual([]);
-    // An explained file keeps exactly the throw it explains: one more would hide behind its reason.
-    expect(untyped.map(({ file }) => file).sort()).toEqual(Object.keys(notDotNet).sort());
+    const explained = (found: { file: string; text: string }) =>
+      notDotNet.some(({ file, words }) => file === found.file && found.text.includes(words));
+    expect(untyped.filter((found) => !explained(found))).toEqual([]);
+    // Each reason still explains a throw that is there: one left standing after its throw went would
+    // explain the next one written in its place.
+    for (const reason of notDotNet) {
+      expect(untyped.some(({ file, text }) => file === reason.file && text.includes(reason.words)), reason.file).toBe(true);
+    }
   });
 });

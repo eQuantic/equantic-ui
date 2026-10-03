@@ -138,3 +138,42 @@ export function toDictionary<T, K, V = T>(
   }
   return result;
 }
+
+/**
+ * A sequence as C# enumerates it, as the array the lowered operators call array methods on: an array
+ * as it is, a string by its chars (UTF-16 code units, where a spread gives code points), and anything
+ * else by its own iterator (a `Set`, a dictionary's pairs, the runtime's sorted set, queue, stack and
+ * linked list). LINQ over any of these called an array method the receiver does not have, and threw.
+ */
+export function seq<T>(source: Iterable<T> | string): T[] {
+  if (Array.isArray(source)) return source;
+  if (typeof source === 'string') return source.split('') as unknown as T[];
+  // A null source is .NET's ArgumentNullException, every LINQ operator's first check.
+  if (source == null) {
+    throw exception('System.ArgumentNullException', "Value cannot be null. (Parameter 'source')");
+  }
+  // Array.from reads an object that is not iterable as an EMPTY array: a value that crossed as a plain
+  // object where C# holds a sequence would count nothing, in silence. It says so instead.
+  if (typeof (source as { [Symbol.iterator]?: unknown })[Symbol.iterator] !== 'function') {
+    throw new TypeError(`A sequence was expected: ${Object.prototype.toString.call(source)}`);
+  }
+  return Array.from(source);
+}
+
+/**
+ * A sequence as a `foreach` enumerates it, when its static type does not say whether it is a string
+ * (`object`, `IEnumerable`, `IEnumerable<char>`): a string by its chars, the UTF-16 code units, and
+ * anything else as it is, by its own iterator, which a dictionary's keeps watching for changes.
+ * JavaScript iterates a string by code point, so a pair behind an interface was one char.
+ */
+export function enumerable<T>(source: Iterable<T> | string): Iterable<T> {
+  return typeof source === 'string' ? (source.split('') as unknown as T[]) : source;
+}
+
+/**
+ * A NEW array of a sequence's elements, as `ToList` and `ToArray` make one: an array is copied too, so
+ * the copy and its source are two arrays, as in .NET, whatever the static type hid it behind.
+ */
+export function toArray<T>(source: Iterable<T> | string): T[] {
+  return Array.isArray(source) ? source.slice() : seq(source);
+}
