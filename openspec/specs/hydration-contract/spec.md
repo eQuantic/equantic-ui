@@ -152,7 +152,9 @@ A component's value of a collection type the browser holds as one of its own cla
 browser's code as that class, whatever the server's serializer wrote: a `HashSet`, an `ISet` or an
 `IReadOnlySet` as a set, and a `SortedSet`, a `Queue`, a `Stack` and a `LinkedList` as the
 runtime's. Each element SHALL be hydrated by its own type, and the collection SHALL enumerate and
-take its elements in the order it does on the server.
+take its elements in the order it does on the server. A collection holding a comparer other than
+its element type's default, or the ordinal one for a string, SHALL NOT cross, since the browser's
+copy compares with the default: the server SHALL leave it out and log the member.
 
 #### Scenario: A set a prefetch loaded
 
@@ -165,6 +167,12 @@ take its elements in the order it does on the server.
 
 - **WHEN** a prefetch pushes 1, 2 and 3 onto a `Stack<int>` field, and the page writes `_stack.Peek()`
 - **THEN** the browser writes `3`, as the server did
+
+#### Scenario: A set with its own comparer
+
+- **WHEN** a prefetch sets a `HashSet<string>` field to one made with `StringComparer.OrdinalIgnoreCase`,
+  or a container-provided value holds one that the page reads
+- **THEN** the served payload carries nothing of that set, and the server's log names the member
 
 #### Scenario: A queue of longs
 

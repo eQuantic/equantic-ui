@@ -233,19 +233,6 @@ public static class ConformanceRunner
     }
 
     /// <summary>
-    /// The line that runs the block and prints its result.
-    /// <para>
-    /// A block that AWAITS cannot run inside a plain arrow — `await` there is a SyntaxError and bun
-    /// exits before printing anything, which reads as a translation failure and is not one. So the
-    /// awaiting shape gets an async IIFE and prints from inside it, rather than a top-level await:
-    /// the harness writes a bare script, and top-level await needs a module.
-    /// </para>
-    /// <para>
-    /// Conditional ON PURPOSE. Every non-awaiting case keeps the exact program it had, byte for
-    /// byte, so a thousand green conformance cases are not quietly re-run through a new shape.
-    /// </para>
-    /// </summary>
-    /// <summary>
     /// As <see cref="AssertStatementsSameAsDotNet"/> for a case written against the VOCABULARY: both
     /// sides read <c>using eQuantic.UI.Primitives;</c>, and the program imports from the served
     /// bundle every runtime export the translation names (a vocabulary value type's companion, such
@@ -291,6 +278,19 @@ public static class ConformanceRunner
         return System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, string>>(json)!;
     }
 
+    /// <summary>
+    /// The line that runs the block and prints its result.
+    /// <para>
+    /// A block that AWAITS cannot run inside a plain arrow — `await` there is a SyntaxError and bun
+    /// exits before printing anything, which reads as a translation failure and is not one. So the
+    /// awaiting shape gets an async IIFE and prints from inside it, rather than a top-level await:
+    /// the harness writes a bare script, and top-level await needs a module.
+    /// </para>
+    /// <para>
+    /// Conditional ON PURPOSE. Every non-awaiting case keeps the exact program it had, byte for
+    /// byte, so a thousand green conformance cases are not quietly re-run through a new shape.
+    /// </para>
+    /// </summary>
     private static string Log(string jsBlock)
     {
         const string canonical = "((v) => v === undefined ? null : v)";

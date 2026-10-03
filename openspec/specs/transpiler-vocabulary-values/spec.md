@@ -9,8 +9,9 @@ twin and eqc only calls it: every member a component can use answers what it ans
 ### Requirement: An instance member of a value the browser holds as data answers as in .NET
 
 A call of a public instance method on a vocabulary value type the browser holds as plain data
-SHALL answer in the browser what it answers in .NET, for every such method the type declares, and
-the build SHALL NOT emit the call as a method of the value.
+SHALL answer in the browser what it answers in .NET, for every such method the type declares except
+`GetHashCode`, which no type lowers yet (#519), and the build SHALL NOT emit the call as a method of
+the value.
 
 #### Scenario: WithOpacity
 
@@ -24,8 +25,8 @@ the build SHALL NOT emit the call as a method of the value.
 
 #### Scenario: Every method of every such type
 
-- **WHEN** the coverage suite enumerates the public instance methods of every vocabulary value type
-  the browser holds as plain data
+- **WHEN** the coverage suite enumerates the public instance methods and properties of every
+  vocabulary value type the browser holds as plain data, `GetHashCode` excepted
 - **THEN** each one is executed on both sides, and the browser's answer equals .NET's
 
 ### Requirement: The text of a value the browser holds as data is .NET's

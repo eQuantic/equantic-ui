@@ -1019,7 +1019,9 @@ record of a release, the wiki's Upgrading page is the distillate.
   the record text .NET writes. A `HashSet`, and the runtime's sorted set, queue, stack and linked
   list, crossed hydration as the array the server writes
   ([#516](https://github.com/eQuantic/equantic-ui/issues/516)): each is rebuilt as its class, a stack
-  with its top coming off first, and a server value's projection takes a set of scalars whole. On the
+  with its top coming off first, a server value's projection takes a set of scalars whole, and one
+  holding a comparer of its own stays out of the page, since the browser's copy compares with the
+  default. On the
   way, a property pattern counted a set or a runtime collection as an array, and a `SortedSet` dropped
   its collection initializer. `VocabularyValueConformanceTests` executes every member of every type
   `[TwinIsData]` marks on both sides and checks each vocabulary value type's export against the

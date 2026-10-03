@@ -822,6 +822,19 @@ public class ServerRenderingService : IServerRenderingService
                         stateDict[hydrated.Name] = "0";
                     }
                 }
+                // A COLLECTION WITH ITS OWN COMPARER does not cross either: the wire carries its
+                // elements, and the browser rebuilds it with the element type's default equality or
+                // order, so a case-insensitive set would answer differently there.
+                else if (ForeignComparer.Of(value) is { } comparer)
+                {
+                    if (_reportedServices.TryAdd((type, hydrated.Name), 0))
+                        _logger.LogWarning(
+                            "[SSR Hydration] {Component}.{Member} holds a {Collection} with a {Comparer}, which the "
+                            + "browser's copy would not keep, since it compares with the element type's default, so "
+                            + "it is left out of the page. Build it with the default comparer, or decide on the server "
+                            + "and keep the result.",
+                            type.FullName, hydrated.Name, value.GetType().Name, comparer.GetType().Name);
+                }
                 else
                 {
                     stateDict[hydrated.Name] = value;

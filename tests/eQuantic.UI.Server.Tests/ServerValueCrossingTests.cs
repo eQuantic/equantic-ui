@@ -106,6 +106,36 @@ public class ServerValueCrossingTests
         public override VisualNode Build(ComponentContext context) => new Text(_status, TypeRole.BodyM);
     }
 
+    /// <summary>A service holding a set whose equality is its own, which the browser's copy would not keep.</summary>
+    public sealed class Roster
+    {
+        public HashSet<string> Roles { get; init; } = new();
+    }
+
+    [Page("/roster")]
+    public sealed class RosterPage(Roster roster) : StatelessComponent
+    {
+        public override VisualNode Build(ComponentContext context) =>
+            new Text(roster.Roles.Contains("ADMIN") ? "admin" : "member", TypeRole.BodyM);
+    }
+
+    /// <summary>A prefetch keeping one set with its own comparer and one with the default.</summary>
+    [Page("/kept-roles")]
+    public sealed class KeptRolesPage : StatelessComponent, IServerPrefetch
+    {
+        private HashSet<string> _roles = new();
+        private HashSet<string> _plain = new();
+
+        public Task PrefetchAsync(IServiceProvider services, CancellationToken cancellationToken)
+        {
+            _roles = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "admin" };
+            _plain = new HashSet<string> { "admin" };
+            return Task.CompletedTask;
+        }
+
+        public override VisualNode Build(ComponentContext context) => new Text($"{_roles.Count},{_plain.Count}", TypeRole.BodyM);
+    }
+
     /// <summary>A prefetch that keeps a service behind a member typed object, which the build cannot see into.</summary>
     [Page("/held-service")]
     public sealed class HeldServicePage : StatelessComponent, IServerPrefetch
@@ -131,6 +161,7 @@ public class ServerValueCrossingTests
         builder.Services.AddSingleton(new SiteOptions { Title = "The Docs", ApiKey = ApiKey });
         builder.Services.AddSingleton<BaseOptions>(new BrandedOptions { Title = "the brand's" });
         builder.Services.AddSingleton<IAccountView>(new AccountSecrets { Token = "tok-0123456789" });
+        builder.Services.AddSingleton(new Roster { Roles = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "admin" } });
         builder.Services.AddUI(options => options.ScanAssembly(Assembly.GetExecutingAssembly()));
         var app = builder.Build();
         app.MapUI();
@@ -234,6 +265,36 @@ public class ServerValueCrossingTests
         var entry = EntryOf(PayloadIn(html), typeof(HeldViewPage));
         entry.TryGetProperty("_held", out var _).Should().BeFalse("the container hands it out under an interface it implements");
         entry.GetProperty("_status").GetString().Should().Be("ready");
+    }
+
+    [Fact]
+    public async Task ASetWithItsOwnComparer_DoesNotCross_SinceTheBrowsersCopyWouldNotKeepIt()
+    {
+        // Case-insensitive on the server, where `Contains("ADMIN")` is true; a browser Set compares by
+        // code units and would answer false.
+        var (app, client) = await StartAsync();
+        await using var _ = app;
+
+        var html = await client.GetStringAsync("/roster");
+
+        html.Should().Contain("admin");
+        var state = PayloadIn(html);
+        var key = eQuantic.UI.Web.ComponentIdentity.Key(typeof(RosterPage), 0);
+        if (state.TryGetProperty(key, out var entry))
+            entry.TryGetProperty("roster", out var __).Should().BeFalse("its set's equality is its own");
+    }
+
+    [Fact]
+    public async Task APrefetchedSetWithItsOwnComparer_IsLeftOut_AndOneWithTheDefaultCrosses()
+    {
+        var (app, client) = await StartAsync();
+        await using var _ = app;
+
+        var html = await client.GetStringAsync("/kept-roles");
+
+        var entry = EntryOf(PayloadIn(html), typeof(KeptRolesPage));
+        entry.TryGetProperty("_roles", out var __).Should().BeFalse("a case-insensitive set would answer differently in the browser");
+        entry.GetProperty("_plain").EnumerateArray().Select(role => role.GetString()).Should().Equal(["admin"]);
     }
 
     [Fact]

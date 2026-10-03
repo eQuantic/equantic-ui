@@ -229,7 +229,6 @@ function formatCore(
   return pad(result, alignment);
 }
 
-/** Text in a field of `|alignment|` characters: a positive width aligns right, a negative left. */
 /**
  * The text .NET writes for a record, `Name { A = 1, B = x }` as `PrintMembers` lists it, for a value
  * the browser holds as plain data (`[TwinIsData]`), whose own string would be `[object Object]`. The
@@ -246,6 +245,7 @@ export function recordText(value: unknown, name: string, members: readonly strin
   return written.length === 0 ? `${name} { }` : `${name} { ${written.join(', ')} }`;
 }
 
+/** Text in a field of `|alignment|` characters: a positive width aligns right, a negative left. */
 function pad(result: string, alignment?: number): string {
   if (alignment) {
     const width = Math.abs(alignment);

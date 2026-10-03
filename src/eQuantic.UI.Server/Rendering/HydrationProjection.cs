@@ -51,6 +51,13 @@ internal static class HydrationProjection
 
             if (i == segments.Length - 1)
             {
+                // A collection crossing whole carries its elements and never its comparer, which the
+                // browser's copy would not keep, so it does not cross at all.
+                if (!presence && next is not null && ForeignComparer.Of(next) is { } comparer)
+                    throw new InvalidOperationException(
+                        $"{type.FullName}.{segments[i]} holds a {comparer.GetType().Name}, an equality or an order the "
+                        + "browser's copy would not keep, since it compares with the element type's default. Build "
+                        + "the collection with the default comparer, or decide on the server and keep the result.");
                 target[name] = !presence ? next
                     : next is null ? null
                     : target.TryGetValue(name, out var already) && already is Dictionary<string, object?> ? already
