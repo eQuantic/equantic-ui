@@ -52,6 +52,9 @@ public class InstanceStringComparisonConformanceTests
     [InlineData("try { return \"abc\".IndexOf(\"b\", 4, StringComparison.Ordinal).ToString(); } catch (ArgumentOutOfRangeException e) { return e.Message; }")] // startIndex
     [InlineData("try { return \"abcb\".IndexOf(\"B\", 2, 5, StringComparison.OrdinalIgnoreCase).ToString(); } catch (ArgumentOutOfRangeException e) { return e.Message; }")] // count
     [InlineData("return \"abc\".LastIndexOf(\"b\", 3, StringComparison.OrdinalIgnoreCase);")] // 1: one past the end steps back
+    [InlineData("return \"abcb\".LastIndexOf(\"B\", 3, 2, StringComparison.OrdinalIgnoreCase);")] // 3
+    [InlineData("return \"abcb\".LastIndexOf(\"b\", 2, 2, StringComparison.Ordinal);")] // 1: the count ends the search back
+    [InlineData("try { return \"abc\".LastIndexOf(\"b\", 2, 4, StringComparison.Ordinal).ToString(); } catch (ArgumentOutOfRangeException e) { return e.Message; }")] // count
     [InlineData("try { return \"abc\".LastIndexOf(\"b\", 4, StringComparison.Ordinal).ToString(); } catch (ArgumentOutOfRangeException e) { return e.Message; }")] // startIndex
     [InlineData("return \"abc\".LastIndexOf(\"\", 1, StringComparison.OrdinalIgnoreCase);")] // 2
     [InlineData("return \"\".LastIndexOf(\"\", StringComparison.Ordinal);")] // 0
