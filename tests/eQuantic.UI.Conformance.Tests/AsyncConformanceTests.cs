@@ -92,7 +92,9 @@ public class AsyncConformanceTests
     /// receiver once, and an argument that awaits was inside a plain one: a module JavaScript
     /// refuses to parse (#536). Both receiver states, the count of the awaited calls, which a null
     /// receiver skips, and WHEN the method goes on: with a null receiver C# runs no await, so the
-    /// method finishes before it returns to its caller, which an async arrow awaited did not.
+    /// method finishes before it returns to its caller, which an async arrow awaited did not. The
+    /// same read behind a receiver that is not null has no case: there .NET runs the continuation of
+    /// the yield on another thread, which races the read and answers either way.
     /// </summary>
     [SkippableTheory]
     [InlineData("string s = \"abc\"; var calls = 0; async Task<string> Needle() { calls++; await Task.Yield(); return \"a\"; } "
@@ -104,9 +106,6 @@ public class AsyncConformanceTests
     [InlineData("string s = null; var finished = false; async Task<string> Needle() { await Task.Yield(); return \"a\"; } "
         + "async Task Run() { var r = s?.StartsWith(await Needle(), StringComparison.Ordinal); finished = true; } "
         + "var t = Run(); var seen = finished; await t; return $\"{seen} {finished}\";")] // True True: no await ran
-    [InlineData("string s = \"abc\"; var finished = false; async Task<string> Needle() { await Task.Yield(); return \"a\"; } "
-        + "async Task Run() { var r = s?.StartsWith(await Needle(), StringComparison.Ordinal); finished = true; } "
-        + "var t = Run(); var seen = finished; await t; return $\"{seen} {finished}\";")] // False True: the await suspended
     public void AnAwaitBehindANullConditionalHelper_RunsAsTheGuardSays(string program)
     {
         Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
