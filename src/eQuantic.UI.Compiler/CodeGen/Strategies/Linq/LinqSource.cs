@@ -49,15 +49,19 @@ internal static class LinqSource
     }
 
     /// <summary>
-    /// An argument of a LINQ call, read as a source when the parameter it binds to is a sequence
-    /// (<c>Intersect</c>'s, <c>Except</c>'s, <c>Zip</c>'s second, <c>Concat</c>'s, or the span an
-    /// array's <c>SequenceEqual</c> binds through <c>MemoryExtensions</c>): a set or a queue there was
-    /// handed to <c>includes</c> or spread as a string by code point, as the receiver was before it
-    /// went through here. Any other argument converts as it always did.
+    /// An argument of a LINQ call, read as a source when the parameter it binds to is DECLARED a
+    /// sequence (<c>Intersect</c>'s, <c>Except</c>'s, <c>Zip</c>'s second, <c>Concat</c>'s, or the span
+    /// an array's <c>SequenceEqual</c> binds through <c>MemoryExtensions</c>): a set or a queue there
+    /// was handed to <c>includes</c> or spread as a string by code point, as the receiver was before it
+    /// went through here. The declaration decides, not the type the call substitutes: <c>Append</c>'s
+    /// element is a <c>TSource</c>, which is a sequence when the source holds sequences, and a queue
+    /// appended there was read into an array instead of being the element. Any other argument
+    /// converts as it always did.
     /// </summary>
     internal static JsExpr Argument(ArgumentSyntax argument, InvocationExpressionSyntax invocation, ConversionContext context) =>
         context.SemanticHelper.GetOperation(invocation) is Microsoft.CodeAnalysis.Operations.IInvocationOperation call
-        && call.Arguments.FirstOrDefault(bound => bound.Syntax == argument)?.Parameter?.Type is INamedTypeSymbol parameter
+        && call.Arguments.FirstOrDefault(bound => bound.Syntax == argument)?.Parameter?.OriginalDefinition.Type
+            is INamedTypeSymbol parameter
         && IsSequence(parameter)
             ? Ir(argument.Expression, context)
             : context.Converter.ConvertIr(argument.Expression);

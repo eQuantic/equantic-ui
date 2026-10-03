@@ -124,4 +124,19 @@ public class LinqOverAnySequenceConformanceTests
         Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
         ConformanceRunner.AssertStatementsSameAsDotNet(statements);
     }
+
+    /// <summary>
+    /// An argument is read as a sequence only where its parameter is DECLARED one: <c>Append</c>'s
+    /// element is a <c>TSource</c>, a sequence when the source holds sequences, and the queue appended
+    /// there was read into an array, so it no longer saw what was queued after. And a string built
+    /// from named arguments evaluates them in the order they are written, as C# does.
+    /// </summary>
+    [SkippableTheory]
+    [InlineData("IEnumerable<IEnumerable<int>> lists = new List<IEnumerable<int>>(); var q = new Queue<int>(); q.Enqueue(1); var all = lists.Append(q).ToList(); q.Enqueue(2); return all[0].Count();")] // 2
+    [InlineData("var order = \"\"; char[] Chars() { order += \"v\"; return new[] { 'a', 'b', 'c' }; } int Start() { order += \"s\"; return 0; } int Len() { order += \"l\"; return 2; } var s = new string(length: Len(), startIndex: Start(), value: Chars()); return s + order;")] // "ablsv"
+    public void AnArgument_IsReadAsItsParameterIsDeclared_AndInTheOrderItIsWritten(string statements)
+    {
+        Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
+        ConformanceRunner.AssertStatementsSameAsDotNet(statements);
+    }
 }

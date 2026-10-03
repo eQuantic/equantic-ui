@@ -54,7 +54,9 @@ public class ObjectCreationStrategy : IConversionStrategy
     /// The text a string constructor builds: its chars joined (none for a null array, as .NET's
     /// <c>new string((char[])null)</c> is empty), a char repeated, or a range of chars joined. Null
     /// for an overload with no such reading here (a span, a pointer). Each argument is placed by the
-    /// parameter it binds to, so a named argument written out of order fills its own.
+    /// parameter it binds to, so a named argument written out of order fills its own, and the parts
+    /// keep their written order, the order C# evaluates them in, which the template writer preserves
+    /// where the holes follow another.
     /// </summary>
     private static string? NewString(Microsoft.CodeAnalysis.Operations.IObjectCreationOperation creation,
         ConversionContext context)
@@ -71,13 +73,17 @@ public class ObjectCreationStrategy : IConversionStrategy
         };
         if (template is null || creation.Arguments.Length != constructor.Parameters.Length) return null;
         if (template.Contains("$eq.")) context.UsedHelpers.Add(Eq.Import);
-        var parts = new Ir.JsExpr[constructor.Parameters.Length];
+        var parts = new List<Ir.JsExpr>();
+        var slots = new int[constructor.Parameters.Length];
         foreach (var argument in creation.Arguments)
         {
             if (argument.Parameter is not { } parameter || argument.Value.Syntax is not ExpressionSyntax value) return null;
-            parts[parameter.Ordinal] = context.Converter.ConvertIr(value);
+            slots[parameter.Ordinal] = parts.Count;
+            parts.Add(context.Converter.ConvertIr(value));
         }
-        return Ir.JsExprWriter.Write(Ir.JsExpr.Template(template, parts, context.TypeAnnotations));
+        var placed = System.Text.RegularExpressions.Regex.Replace(template, @"\{(\d)\}",
+            hole => $"{{{slots[hole.Groups[1].Value[0] - '0']}}}");
+        return Ir.JsExprWriter.Write(Ir.JsExpr.Template(placed, parts, context.TypeAnnotations));
     }
 
     private string ConvertExplicit(ObjectCreationExpressionSyntax creation, ConversionContext context)
