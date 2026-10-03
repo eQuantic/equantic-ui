@@ -125,7 +125,9 @@ public class StringMethodStrategy : IConversionStrategy
                 { SpecialType: SpecialType.System_Int32 } => "i",
                 { SpecialType: SpecialType.System_Boolean } => "b",
                 var type when type.IsNamed("System.StringComparison") => "k",
-                var type when type.IsNamed("System.Globalization.CultureInfo") => "u",
+                // By name and namespace: the parameter is a CultureInfo?, whose display name carries
+                // the annotation, so a full-name match never saw it.
+                { Name: "CultureInfo", ContainingNamespace: { Name: "Globalization", ContainingNamespace.Name: "System" } } => "u",
                 _ => "?",
             }));
             // A CultureInfo makes a COMPARING overload of these three, and nothing else's: ToUpper's
@@ -149,37 +151,35 @@ public class StringMethodStrategy : IConversionStrategy
     }
 
     /// <summary>
-    /// The runtime's search for an overload that compares, its holes the parameters' and <c>{R}</c>
-    /// the receiver, which C# evaluates first. Equals compares two whole strings, as the static does
-    /// by the same comparison; a SEARCH by a culture comparison has no JavaScript form (.NET searches
-    /// with ICU's collation, and the platform's collator searches nothing), so a constant one is
-    /// refused here and one in a variable throws in the runtime. A <c>CultureInfo</c> has no form this
-    /// side reads.
+    /// The runtime's search for an overload that compares. It takes the overload's arguments as C#
+    /// lists them, the receiver first, so a call binds nothing to keep them in the order they run;
+    /// <c>Replace(string, string)</c> is the ordinal one. Equals compares two whole strings, as the
+    /// static does by the same comparison; a SEARCH by a culture comparison has no JavaScript form
+    /// (.NET searches with ICU's collation, and the platform's collator searches nothing), so a
+    /// constant one is refused here and one in a variable throws in the runtime. A <c>CultureInfo</c>
+    /// has no form this side reads.
     /// </summary>
     private static string ComparingCall(InvocationExpressionSyntax invocation, string methodName, string shape, ConversionContext context)
     {
-        var template = (methodName, shape) switch
+        var helper = (methodName, shape) switch
         {
-            ("Equals", "s,k") => $"{Eq.StringInstanceEquals}({{R}}, {{0}}, {{1}})",
-            ("StartsWith", "s,k") => $"{Eq.StringStartsWith}({{R}}, {{0}}, {{1}})",
-            ("EndsWith", "s,k") => $"{Eq.StringEndsWith}({{R}}, {{0}}, {{1}})",
-            ("Contains", "s,k" or "c,k") => $"{Eq.StringContains}({{R}}, {{0}}, {{1}})",
-            ("IndexOf", "s,k" or "c,k") => $"{Eq.StringIndexOf}({{R}}, {{0}}, {{1}})",
-            ("IndexOf", "s,i,k") => $"{Eq.StringIndexOf}({{R}}, {{0}}, {{2}}, {{1}})",
-            ("IndexOf", "s,i,i,k") => $"{Eq.StringIndexOf}({{R}}, {{0}}, {{3}}, {{1}}, {{2}})",
-            ("LastIndexOf", "s,k") => $"{Eq.StringLastIndexOf}({{R}}, {{0}}, {{1}})",
-            ("LastIndexOf", "s,i,k") => $"{Eq.StringLastIndexOf}({{R}}, {{0}}, {{2}}, {{1}})",
-            ("LastIndexOf", "s,i,i,k") => $"{Eq.StringLastIndexOf}({{R}}, {{0}}, {{3}}, {{1}}, {{2}})",
-            ("Replace", "s,s,k") => $"{Eq.StringReplace}({{R}}, {{0}}, {{1}}, {{2}})",
-            ("Replace", "s,s") => $"{Eq.StringReplace}({{R}}, {{0}}, {{1}}, 'ordinal')",
+            ("Equals", "s,k") => Eq.StringInstanceEquals,
+            ("StartsWith", "s,k") => Eq.StringStartsWith,
+            ("EndsWith", "s,k") => Eq.StringEndsWith,
+            ("Contains", "s,k" or "c,k") => Eq.StringContains,
+            ("IndexOf", "s,k" or "c,k" or "s,i,k" or "s,i,i,k") => Eq.StringIndexOf,
+            ("LastIndexOf", "s,k" or "s,i,k" or "s,i,i,k") => Eq.StringLastIndexOf,
+            ("Replace", "s,s,k" or "s,s") => Eq.StringReplace,
             _ => null,
         };
-        if (template is null)
+        if (helper is null)
             return context.Unhandled(invocation, $"string.{methodName} with a CultureInfo");
         if (methodName != "Equals" && shape.EndsWith('k') && IsCultureConstant(invocation.ArgumentList.Arguments[^1], context))
             return context.Unhandled(invocation, $"string.{methodName} by a culture comparison, which has no search in the browser,");
 
         context.UsedHelpers.Add(Eq.Import);
+        var parameters = Enumerable.Range(0, shape.Split(',').Length).Select(slot => $"{{{slot}}}");
+        var template = $"{helper}({{R}}, {string.Join(", ", parameters)}{(shape == "s,s" ? ", 'ordinal'" : "")})";
         var access = (MemberAccessExpressionSyntax)invocation.Expression;
         var parts = new List<JsExpr> { context.Converter.ConvertIr(access.Expression) };
         parts.AddRange(invocation.ArgumentList.Arguments.Select(argument => context.Converter.ConvertIr(argument.Expression)));
