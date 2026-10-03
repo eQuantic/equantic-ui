@@ -1032,8 +1032,10 @@ record of a release, the wiki's Upgrading page is the distillate.
   ([#518](https://github.com/eQuantic/equantic-ui/issues/518)); the dashboard sample's Colors screen
   was measured in a browser against main. Filed on the way: `GetHashCode` has no lowering
   ([#519](https://github.com/eQuantic/equantic-ui/issues/519)), `string.Join` reads only an array
-  ([#529](https://github.com/eQuantic/equantic-ui/issues/529)), and LINQ over a set or a runtime
-  collection calls array methods ([#530](https://github.com/eQuantic/equantic-ui/issues/530)). Proposed
+  ([#529](https://github.com/eQuantic/equantic-ui/issues/529)), LINQ over a set or a runtime
+  collection calls array methods ([#530](https://github.com/eQuantic/equantic-ui/issues/530)), and a
+  `HashSet` finds a date, a decimal or a record by reference
+  ([#531](https://github.com/eQuantic/equantic-ui/issues/531)). Proposed
   and archived through OpenSpec (`openspec/specs/transpiler-vocabulary-values`,
   `openspec/specs/hydration-contract`, `openspec/specs/transpiler-bcl`).
 

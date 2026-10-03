@@ -768,10 +768,10 @@ public class ServerRenderingService : IServerRenderingService
                                 if (_reportedServices.TryAdd((type, $"{hydrated.Name}.{read}"), 0))
                                     _logger.LogWarning(
                                         "[SSR Hydration] {Component}.{Member}.{Read} holds {Foreign}: the browser's copy "
-                                        + "would not find or order its elements as it does, so it is left out of the page, "
-                                        + "and the rest of {Member} crosses. Build it with the default comparer, or decide "
-                                        + "on the server and keep the result.",
-                                        type.FullName, hydrated.Name, read, foreign, hydrated.Name);
+                                        + "would not find or order its elements as it does, so that read is left out of the "
+                                        + "page and the rest of the value crosses. Build it with the default comparer, or "
+                                        + "decide on the server and keep the result.",
+                                        type.FullName, hydrated.Name, read, foreign);
                             });
                     }
                     catch (Exception ex)
