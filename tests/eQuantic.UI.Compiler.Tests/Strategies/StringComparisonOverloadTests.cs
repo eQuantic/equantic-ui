@@ -70,9 +70,35 @@ public class StringComparisonOverloadTests
         TestHelper.DiagnosticsFor(code).Should().NotContain(d => d.Code == "EQ1004");
 
     [Fact]
+    public void ANamedComparison_IsFoundByItsParameter()
+    {
+        // The start, written last, was read as the comparison and refused as a culture one (#536).
+        TestHelper.DiagnosticsFor("var r = a.IndexOf(value: b, comparisonType: StringComparison.Ordinal, startIndex: 1)")
+            .Should().NotContain(d => d.Code == "EQ1004");
+        TestHelper.DiagnosticsFor("var r = a.StartsWith(comparisonType: StringComparison.InvariantCulture, value: b)")
+            .Should().Contain(d => d.Code == "EQ1004" && d.Message.Contains("a culture comparison has no search"));
+    }
+
+    [Fact]
+    public void AComparisonThatIsNotAConstant_ReachesTheRuntime()
+    {
+        // The model says it is no constant; its spelling naming a culture member does not refuse it.
+        const string code = "var r = a.StartsWith(b, Active ? StringComparison.Ordinal : StringComparison.CurrentCulture)";
+        TestHelper.DiagnosticsFor(code).Should().NotContain(d => d.Code == "EQ1004");
+        TestHelper.ConvertExpression(code)
+            .Should().Contain("$eq.text.startsWith(this.a, this.b, this.active ? 'ordinal' : 'currentCulture')");
+    }
+
+    [Fact]
     public void CompareToAnObject_IsRefused() =>
         TestHelper.DiagnosticsFor("var r = a.CompareTo((object)b)")
             .Should().Contain(d => d.Code == "EQ1004" && d.Message.Contains("string.CompareTo(object)"));
+
+    [Theory]
+    [InlineData("a.Replace(\"x\", \"$&\")", "$eq.text.replace(a, 'x', '$&', 'ordinal')")]
+    [InlineData("a.Replace('x', 'y')", "$eq.text.replace(a, 'x', 'y', 'ordinal')")]
+    public void WithNoModel_ATwoArgumentReplace_IsTheOrdinalReplace(string code, string expected) =>
+        new CSharpToJsConverter().ConvertExpression(SyntaxFactory.ParseExpression(code)).Should().Be(expected);
 
     [Fact]
     public void WithNoModel_AComparisonSpelledLast_StillReachesTheRuntime()

@@ -112,7 +112,8 @@ public class StringMethodStrategy : IConversionStrategy
     /// not. <c>Replace(string, string)</c> is one: it is ordinal, and <c>replaceAll</c> read
     /// <c>$&amp;</c> in its replacement as a pattern and wrote a null one as "null". The bound method
     /// says which overload it is; with no model to ask, a comparison spelled as the last argument and
-    /// the count of the arguments are the only evidence there is.
+    /// the count of the arguments are the only evidence there is, and a Replace of two arguments is
+    /// the ordinal one whether they are strings or chars, which it answers alike.
     /// </summary>
     private static string? ComparingShape(InvocationExpressionSyntax invocation, string methodName, ConversionContext context)
     {
@@ -137,6 +138,7 @@ public class StringMethodStrategy : IConversionStrategy
         }
 
         var arguments = invocation.ArgumentList.Arguments;
+        if (methodName == "Replace" && arguments.Count == 2) return "s,s";
         if (arguments.Count == 0 || !arguments[^1].Expression.ToString().Contains("StringComparison")) return null;
         return (methodName, arguments.Count) switch
         {
@@ -174,7 +176,9 @@ public class StringMethodStrategy : IConversionStrategy
         if (helper is null)
             return context.Unhandled(invocation,
                 $"string.{methodName} (a CultureInfo has no search in the browser: pass StringComparison.Ordinal or OrdinalIgnoreCase)");
-        if (methodName != "Equals" && shape.EndsWith('k') && IsCultureConstant(invocation.ArgumentList.Arguments[^1], context))
+        var bound = context.SemanticHelper.GetSymbol(invocation) as IMethodSymbol;
+        if (methodName != "Equals" && shape.EndsWith('k')
+            && ComparisonArgument(invocation, bound) is { } comparison && IsCultureConstant(comparison, context))
             return context.Unhandled(invocation,
                 $"string.{methodName} (a culture comparison has no search in the browser: search by Ordinal or OrdinalIgnoreCase)");
 
@@ -184,7 +188,7 @@ public class StringMethodStrategy : IConversionStrategy
         var access = (MemberAccessExpressionSyntax)invocation.Expression;
         var parts = new List<JsExpr> { context.Converter.ConvertIr(access.Expression) };
         parts.AddRange(invocation.ArgumentList.Arguments.Select(argument => context.Converter.ConvertIr(argument.Expression)));
-        if (context.SemanticHelper.GetSymbol(invocation) is IMethodSymbol bound)
+        if (bound is not null)
             template = PrimitiveStaticStrategy.BindNamedArguments(template, invocation, bound);
         // The holes now name WRITTEN arguments; the receiver is the first part, so each moves by one.
         template = Regex.Replace(template, @"\{(\d)\}", hole => "{" + (int.Parse(hole.Groups[1].Value) + 1) + "}")
@@ -192,12 +196,32 @@ public class StringMethodStrategy : IConversionStrategy
         return JsExprWriter.Write(JsExpr.Template(template, parts, context.TypeAnnotations));
     }
 
+    /// <summary>The written argument bound to the comparison parameter. A named one may be written
+    /// anywhere, so the last argument is not it: <c>IndexOf(value: b, comparisonType: c, startIndex: 1)</c>
+    /// read the start as the comparison. With no model, the comparison is the one spelled last.</summary>
+    private static ArgumentSyntax? ComparisonArgument(InvocationExpressionSyntax invocation, IMethodSymbol? method)
+    {
+        var arguments = invocation.ArgumentList.Arguments;
+        if (method is null) return arguments.Count > 0 ? arguments[^1] : null;
+        var parameter = method.Parameters.FirstOrDefault(p => p.Type.IsNamed("System.StringComparison"));
+        if (parameter is null) return null;
+        for (var i = 0; i < arguments.Count; i++)
+        {
+            var name = arguments[i].NameColon?.Name.Identifier.ValueText;
+            if (name is null ? i == parameter.Ordinal : name == parameter.Name) return arguments[i];
+        }
+        return null;
+    }
+
     /// <summary>Whether the comparison is a constant one of the four culture members, the only ones
-    /// below <c>Ordinal</c> (4).</summary>
+    /// below <c>Ordinal</c> (4). Where the model can be asked its answer stands: a comparison that is
+    /// not a constant, a variable or a conditional between two, reaches the runtime, which throws for
+    /// a culture one when it arrives. Only with no model is a culture member spelled there read.</summary>
     private static bool IsCultureConstant(ArgumentSyntax argument, ConversionContext context)
     {
-        if (context.SemanticHelper.TryGetConstantValue(argument.Expression, out var value))
-            return value is int and >= 0 and < 4;
+        if (context.SemanticHelper.KnowsOrMapped(argument.Expression))
+            return context.SemanticHelper.TryGetConstantValue(argument.Expression, out var value)
+                && value is int and >= 0 and < 4;
         var spelled = argument.Expression.ToString();
         return spelled.Contains("StringComparison.CurrentCulture") || spelled.Contains("StringComparison.InvariantCulture");
     }

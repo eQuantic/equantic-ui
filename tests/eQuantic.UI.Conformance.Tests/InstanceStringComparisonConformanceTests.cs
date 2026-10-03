@@ -39,6 +39,8 @@ public class InstanceStringComparisonConformanceTests
     [InlineData("StringComparison c = StringComparison.OrdinalIgnoreCase; return \"aBcB\".LastIndexOf(\"b\", 2, c);")] // 1
     [InlineData("var c = StringComparison.OrdinalIgnoreCase; return \"aBc\".Replace(\"b\", \"x\", c);")] // "axc"
     [InlineData("var c = (StringComparison)9; try { return \"abc\".StartsWith(\"a\", c).ToString(); } catch (ArgumentException e) { return e.Message; }")] // not supported
+    [InlineData("var active = true; return \"aB\".StartsWith(\"ab\", active ? StringComparison.OrdinalIgnoreCase : StringComparison.CurrentCulture);")] // true: no constant, so the runtime decides
+    [InlineData("return \"abcb\".IndexOf(value: \"b\", comparisonType: StringComparison.Ordinal, startIndex: 2);")] // 3: the comparison found by its parameter
     public void AComparisonHeldInAVariable_IsTheOneItHolds(string statements)
     {
         Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
