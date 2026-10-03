@@ -17,16 +17,22 @@ public class PlainClassStoreConformanceTests
             public static int Total { get; set => field = value * 2; } = 5;
         }
 
+        public enum Level { Low, High }
+
         public class Tally
         {
             public static int Count { get; set => field = value + 1; }
+            public static Level Mode { get; set => field = value; }
+            public Level Kind { get; set; }
         }
         """;
 
     /// <summary>
     /// The store starts as the initializer, or the type's default, and a write goes through the
     /// setter: the class wrote a field named like the property beside the setter, which shadowed it,
-    /// so `Total = 3` read back 3 where C# reads 6. .NET answers 5, 6, 0 and 2.
+    /// so `Total = 3` read back 3 where C# reads 6. .NET answers 5, 6, 0 and 2. A property of an enum
+    /// type starts as its zero member, held as its camelCase name: the default was read from the
+    /// syntax alone, which cannot see an enum through its name, and the property read undefined.
     /// </summary>
     [SkippableFact]
     public void AStaticFieldBackedProperty_StartsAsItsInitializer_AndWritesThroughItsSetter()
@@ -44,9 +50,9 @@ public class PlainClassStoreConformanceTests
             Counter.total = 3;
             const count = Tally.count;
             Tally.count = 1;
-            console.log(JSON.stringify([total, Counter.total, count, Tally.count]));
+            console.log(JSON.stringify([total, Counter.total, count, Tally.count, Tally.mode, new Tally().kind]));
             """;
 
-        Assert.Equal("[5,6,0,2]", JsExecutor.Run(program));
+        Assert.Equal("[5,6,0,2,\"low\",\"low\"]", JsExecutor.Run(program));
     }
 }

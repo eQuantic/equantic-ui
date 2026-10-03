@@ -103,4 +103,21 @@ public class DeconstructionConformanceTests
         Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
         ConformanceRunner.AssertStatementsSameAsDotNet(statements, Shapes);
     }
+
+    /// <summary>
+    /// A deconstruction evaluates its targets' receivers and indices first, then its value, then
+    /// writes, as C# does: destructuring evaluated the value first and each target as it wrote it, so
+    /// <c>(xs[i++], xs[i++]) = new Point(i, i)</c> stored [0, 0] where .NET stores [2, 2].
+    /// </summary>
+    [SkippableTheory]
+    [InlineData("var xs = new int[2]; int i = 0; (xs[i++], xs[i++]) = new Point(i, i); return xs[0] + \",\" + xs[1];")]   // "2,2"
+    [InlineData("var xs = new int[2]; int i = 0; (xs[i++], xs[i++]) = (i, i); return xs[0] + \",\" + xs[1];")]           // "2,2"
+    [InlineData("var rows = new[] { new int[1], new int[1] }; int i = 0; (rows[i++][0], rows[i++][0]) = (i, i); return rows[0][0] + \",\" + rows[1][0];")] // "2,2"
+    [InlineData("var xs = new List<int> { 0, 0 }; int i = 0; (xs[i++], xs[i]) = (i, i); return xs[0] + \",\" + xs[1];")] // "1,1"
+    [InlineData("var xs = new int[2]; int i = 0; var r = ((xs[i++], xs[i++]) = new Point(i, 5)); return xs[0] + \",\" + xs[1] + \",\" + r.Item2;")] // "2,5,5"
+    public void ADeconstructionsTargets_AreEvaluatedBeforeItsValue(string statements)
+    {
+        Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
+        ConformanceRunner.AssertStatementsSameAsDotNet(statements, Shapes);
+    }
 }

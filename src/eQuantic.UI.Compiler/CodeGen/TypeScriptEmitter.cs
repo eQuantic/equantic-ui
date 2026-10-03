@@ -78,6 +78,15 @@ public class TypeScriptEmitter
     private ITypeSymbol? BindType(TypeSyntax? type) =>
         type is null ? null : ModelFor(type)?.GetTypeInfo(type).Type;
 
+    /// <summary>
+    /// The default of a declared type, asked of the SYMBOL where a model can say, as the record
+    /// emitter asks it: the syntax alone cannot see through a name, and answered null for an enum, a
+    /// char and every struct, so a property of an enum type read undefined where C# reads its zero
+    /// member (#483).
+    /// </summary>
+    private string DefaultOf(TypeSyntax type) =>
+        BindType(type) is { } symbol ? _converter.DefaultOf(symbol) : TypeDeclarationExtensions.DefaultFor(type);
+
     /// <summary>The VALUE a [ServerAction] resolves to on the client: its return type with the
     /// task unwrapped — <c>Task&lt;List&lt;Todo&gt;&gt;</c> is <c>List&lt;Todo&gt;</c>; void and a
     /// bare Task carry nothing.</summary>
@@ -1651,7 +1660,7 @@ public class TypeScriptEmitter
                         // accessors are emitted, so nothing below writes it (#483).
                         var slotDefault = p.Initializer != null
                             ? Initializer(p.Initializer.Value, _converter.ConvertExpression(p.Initializer.Value, p.Type.ToString()))
-                            : TypeDeclarationExtensions.DefaultFor(p.Type);
+                            : DefaultOf(p.Type);
                         // On the class for a static property, where its accessors' `this` is the
                         // class: on the instance, a static `field` read undefined (#483).
                         var slotIsStatic = accessorQualifier.Length > 0;
@@ -1685,7 +1694,7 @@ public class TypeScriptEmitter
                         // IS false before anyone assigns it, and leaving it undefined is not false
                         // to `===`. A reference type is DECLARED only: its C# default is null, but
                         // the declared type is non-nullable and the constructor is what assigns.
-                        var defaulted = TypeDeclarationExtensions.DefaultFor(p.Type);
+                        var defaulted = DefaultOf(p.Type);
                         var isStaticProperty = asStatic
                             || p.Modifiers.Any(Microsoft.CodeAnalysis.CSharp.SyntaxKind.StaticKeyword);
                         if (defaulted == "null" && !isStaticProperty)

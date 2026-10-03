@@ -35,9 +35,10 @@ public class ObjectCreationStrategy : IConversionStrategy
         // `new object()` — a value with nothing but its identity, the gate a `lock` takes or a
         // sentinel: the runtime's, since a plain `{}` is an anonymous type here, compared by its
         // members, so two of them were Equal and one dictionary key. `new object()` named a class
-        // JavaScript does not have, and threw where it ran (#478).
+        // JavaScript does not have, and threw where it ran (#478). An empty initializer, the only one
+        // an object can take, changes nothing: `new object() { }` and `new() { }` are the same value.
         if (context.SemanticHelper.GetType(node) is { SpecialType: SpecialType.System_Object }
-            && node is BaseObjectCreationExpressionSyntax { Initializer: null })
+            && node is BaseObjectCreationExpressionSyntax { Initializer: null or { Expressions.Count: 0 } })
         {
             context.UsedHelpers.Add(Eq.Import);
             return $"{Eq.NewObject}()";

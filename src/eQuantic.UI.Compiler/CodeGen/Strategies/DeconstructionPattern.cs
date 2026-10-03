@@ -39,8 +39,9 @@ internal static class DeconstructionPattern
     /// A deconstruction's destructuring: the top level's <paramref name="Pattern"/>, the
     /// <c>Deconstruct</c> of the app's its value goes through first, if any, the nested levels that
     /// need a call of their own, and, written with temporaries, the temporaries every part was bound
-    /// to, each with the target it assigns (none for a discard), and the tuple they make, which is
-    /// the value of an assignment.
+    /// to, each with the target it assigns (none for a discard), the tuple they make, which is the
+    /// value of an assignment, and what the targets <paramref name="Captures"/>: each name, with the
+    /// receiver or the index it holds, evaluated before the value.
     /// </summary>
     internal sealed record Lowered(
         string Pattern,
@@ -48,18 +49,20 @@ internal static class DeconstructionPattern
         IReadOnlyList<Step> Steps,
         IReadOnlyList<string> Temporaries,
         IReadOnlyList<(string Temporary, string Target)> Assignments,
-        string Tuple);
+        string Tuple,
+        IReadOnlyList<(string Name, string Value)> Captures);
 
     /// <summary>
     /// The destructuring of <paramref name="left"/> (an assignment's tuple, a declaration's
     /// designation, a loop's variable) from a value of <paramref name="type"/>. Null when no level of
     /// it deconstructs through a <c>Deconstruct</c>, tuples all the way down, which the array
-    /// destructuring every caller already writes is right for. <paramref name="temporaries"/> binds
-    /// every part to a temporary instead of its target, for an assignment whose value is read or
-    /// that has a step: the targets are then assigned from them, and the tuple built of them.
+    /// destructuring every caller already writes is right for, unless its targets
+    /// <paramref name="capture"/>. <paramref name="temporaries"/> binds every part to a temporary
+    /// instead of its target, for an assignment whose value is read, that has a step or whose targets
+    /// capture: the targets are then assigned from them, and the tuple built of them.
     /// </summary>
     internal static Lowered? Of(SyntaxNode left, DeconstructionInfo? info, ITypeSymbol? type,
-        ConversionContext context, bool temporaries = false)
+        ConversionContext context, bool temporaries = false, bool capture = false)
     {
         if (Parts(left) is not { } parts) return null;
         var top = Positional(type) ? null : Deconstruct(info, type);
@@ -74,10 +77,21 @@ internal static class DeconstructionPattern
             walk = new Walk(context, temporaries, $"$d{left.SpanStart}_", stepsAll: true);
             (pattern, tuple) = walk.Composite(parts, info, type, called is not null);
         }
-        return walk.Deconstructs
-            ? new Lowered(pattern, called, walk.Steps, walk.Temporaries, walk.Assignments, tuple)
+        return walk.Deconstructs || capture
+            ? new Lowered(pattern, called, walk.Steps, walk.Temporaries, walk.Assignments, tuple, walk.Captures)
             : null;
     }
+
+    /// <summary>
+    /// Whether an assignment's targets hold something C# evaluates before the value: an element's
+    /// receiver and index, a member's receiver other than <c>this</c>. C# evaluates the targets, then
+    /// the value, then writes, where destructuring evaluates the value first and each target as it
+    /// writes it: <c>(xs[i++], xs[i++]) = new Point(i, i)</c> stored [2, 2] in .NET and [0, 0] here.
+    /// </summary>
+    internal static bool Captures(SyntaxNode left) => Parts(left) is { } parts && parts.Any(part =>
+        part is ElementAccessExpressionSyntax
+            or MemberAccessExpressionSyntax { Expression: not (ThisExpressionSyntax or BaseExpressionSyntax) }
+        || Captures(part));
 
     /// <summary>The value a deconstruction reads, through the <c>Deconstruct</c> the app wrote: an
     /// instance method on the value, or an extension's static with the value first.</summary>
@@ -162,12 +176,46 @@ internal static class DeconstructionPattern
         public List<Step> Steps { get; } = [];
         public List<string> Temporaries { get; } = [];
         public List<(string Temporary, string Target)> Assignments { get; } = [];
+        public List<(string Name, string Value)> Captures { get; } = [];
 
         private string Fresh()
         {
             var name = prefix + Temporaries.Count;
             Temporaries.Add(name);
             return name;
+        }
+
+        private string Capture(string value)
+        {
+            var name = $"{prefix}c{Captures.Count}";
+            Captures.Add((name, value));
+            return name;
+        }
+
+        /// <summary>
+        /// A target written through what it captures, with temporaries: an element as its captured
+        /// receiver indexed by its captured index, a member read off its captured receiver. Null for
+        /// any other target, and for an element whose indexer is a call (a dictionary's), which
+        /// destructuring cannot write at all (#542).
+        /// </summary>
+        private string? Captured(ExpressionSyntax target)
+        {
+            if (!temporaries) return null;
+            if (target is ElementAccessExpressionSyntax { ArgumentList.Arguments: [var argument] } element)
+            {
+                var receiver = context.Converter.ConvertExpression(element.Expression);
+                var index = context.Converter.ConvertExpression(argument.Expression);
+                if (context.Converter.ConvertExpression(element) != $"{receiver}[{index}]") return null;
+                return $"{Capture(receiver)}[{Capture(index)}]";
+            }
+            if (target is MemberAccessExpressionSyntax { Expression: not (ThisExpressionSyntax or BaseExpressionSyntax) } member)
+            {
+                var receiver = context.Converter.ConvertExpression(member.Expression);
+                var written = context.Converter.ConvertExpression(member);
+                if (!written.StartsWith(receiver + ".", StringComparison.Ordinal)) return null;
+                return Capture(receiver) + written[receiver.Length..];
+            }
+            return null;
         }
 
         /// <summary>
@@ -226,7 +274,7 @@ internal static class DeconstructionPattern
                 : target switch
                 {
                     SingleVariableDesignationSyntax single => single.Identifier.Text.ToJsIdentifier(),
-                    ExpressionSyntax assigned => context.Converter.ConvertExpression(assigned),
+                    ExpressionSyntax assigned => Captured(assigned) ?? context.Converter.ConvertExpression(assigned),
                     _ => null,
                 };
             if (temporaries)

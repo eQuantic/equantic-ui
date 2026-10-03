@@ -15,7 +15,7 @@ public class ForStatementStrategy : IStatementStrategy
     public JsStatement Convert(StatementSyntax node, ConversionContext context)
     {
         var forStmt = (ForStatementSyntax)node;
-        if (forStmt.Declaration is not null && CapturesALoopVariable(forStmt, context))
+        if (CapturesALoopVariable(forStmt, context))
             return HoistedLoop(forStmt, context);
         var declaration = ConvertDeclaration(forStmt, Declared(forStmt), context);
         var condition = forStmt.Condition != null
@@ -34,49 +34,65 @@ public class ForStatementStrategy : IStatementStrategy
     /// closures over <c>i</c> answered 0, 1 and 2 where .NET answers 3, 3 and 3 (#476). When a closure
     /// captures one, the declaration moves in front of the loop, in a block of its own so a second
     /// loop declaring the same name stays legal. What its initializers declare (<c>out var n</c>)
-    /// goes with it, declared first as the head declares it, being one for the whole loop as well.
-    /// The head keeps what its condition and incrementors declare, which .NET does give a fresh
-    /// variable each time round.
+    /// goes with it, declared first as the head declares it, being one for the whole loop as well. A
+    /// head of expressions (<c>for (var (i, j) = (0, 3); …)</c>, <c>for (Seed(out var n); …)</c>)
+    /// runs them there once, after what they declare, a deconstruction declaring its own. The head
+    /// keeps what its condition and incrementors declare, which .NET does give a fresh variable each
+    /// time round.
     /// </summary>
     private static JsStatement HoistedLoop(ForStatementSyntax forStmt, ConversionContext context)
     {
-        var declaration = forStmt.Declaration!;
-        var once = declaration.Variables
-            .Select(v => v.Initializer?.Value)
-            .SelectMany(ExpressionVariableScanner.Names)
-            .Distinct(StringComparer.Ordinal)
-            .ToList();
-        var variables = declaration.Variables.Select(v =>
-            $"{v.Identifier.Text.ToJsIdentifier()} = "
-            + (v.Initializer != null ? context.Converter.ConvertExpression(v.Initializer.Value) : "undefined"));
-        var hoisted = once.Count == 0
-            ? variables
-            : variables.Prepend(ExpressionVariableScanner.List(once, context.TypeAnnotations));
+        var statements = new List<JsStatement>();
+        IReadOnlyList<string> once;
+        if (forStmt.Declaration is { } declaration)
+        {
+            once = declaration.Variables
+                .Select(v => v.Initializer?.Value)
+                .SelectMany(ExpressionVariableScanner.Names)
+                .Distinct(StringComparer.Ordinal)
+                .ToList();
+            var variables = declaration.Variables.Select(v =>
+                $"{v.Identifier.Text.ToJsIdentifier()} = "
+                + (v.Initializer != null ? context.Converter.ConvertExpression(v.Initializer.Value) : "undefined"));
+            var hoisted = once.Count == 0
+                ? variables
+                : variables.Prepend(ExpressionVariableScanner.List(once, context.TypeAnnotations));
+            statements.Add(JsStatement.Raw($"let {string.Join(", ", hoisted)};"));
+        }
+        else
+        {
+            once = forStmt.Initializers
+                .SelectMany(ExpressionVariableScanner.Names)
+                .Distinct(StringComparer.Ordinal)
+                .ToList();
+            if (once.Count > 0)
+                statements.Add(JsStatement.Raw($"let {ExpressionVariableScanner.List(once, context.TypeAnnotations)};"));
+            statements.AddRange(forStmt.Initializers.Select(initializer =>
+                JsStatement.Raw($"{context.Converter.ConvertExpression(initializer)};")));
+        }
         var eachTime = Declared(forStmt).Except(once, StringComparer.Ordinal).ToList();
         var head = eachTime.Count == 0 ? "" : $"let {ExpressionVariableScanner.List(eachTime, context.TypeAnnotations)}";
         var condition = forStmt.Condition != null ? context.Converter.ConvertExpression(forStmt.Condition) : "";
         var incrementors = string.Join(", ", forStmt.Incrementors.Select(i => context.Converter.ConvertExpression(i)));
         var body = context.Converter.ConvertStatementIr(forStmt.Statement);
-        return JsStatement.Block(
-        [
-            JsStatement.Raw($"let {string.Join(", ", hoisted)};"),
-            JsStatement.Headed($"for ({head}; {condition}; {incrementors})", body),
-        ]);
+        statements.Add(JsStatement.Headed($"for ({head}; {condition}; {incrementors})", body));
+        return JsStatement.Block(statements);
     }
 
     /// <summary>Whether a lambda, an anonymous method or a local function anywhere in the loop reads
     /// a variable that is one for the whole loop: what its declaration declares, and what that
-    /// declaration's initializers declare (<c>out var n</c>), which the bound tree answers by symbol.
-    /// One only the initializer declared, captured alone, was left in the head, a copy per
-    /// iteration.</summary>
+    /// declaration's initializers or the head's own expressions declare (<c>out var n</c>,
+    /// <c>var (i, j) = …</c>), which the bound tree answers by symbol. One only an initializer
+    /// declared, captured alone, was left in the head, a copy per iteration.</summary>
     private static bool CapturesALoopVariable(ForStatementSyntax forStmt, ConversionContext context)
     {
-        var declaration = forStmt.Declaration!;
-        var declarators = declaration.Variables
+        var variables = forStmt.Declaration?.Variables.ToList() ?? [];
+        var initializing = variables.Where(v => v.Initializer is not null).Select(v => v.Initializer!.Value)
+            .Concat(forStmt.Initializers);
+        var declarators = variables
             .Select(v => ((SyntaxNode)v, v.Identifier.ValueText))
-            .Concat(declaration.Variables
-                .Where(v => v.Initializer is not null)
-                .SelectMany(v => v.Initializer!.Value.DescendantNodesAndSelf(node => node is not AnonymousFunctionExpressionSyntax))
+            .Concat(initializing
+                .SelectMany(expression => expression.DescendantNodesAndSelf(node => node is not AnonymousFunctionExpressionSyntax))
                 .OfType<SingleVariableDesignationSyntax>()
                 .Select(designation => ((SyntaxNode)designation, designation.Identifier.ValueText)))
             .ToList();

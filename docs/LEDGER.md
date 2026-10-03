@@ -1026,7 +1026,10 @@ record of a release, the wiki's Upgrading page is the distillate.
   a struct's own `Deconstruct`, goes through one lowering read from the bound tree; a long constant
   is a BigInt, and a constant in a pattern is tested by its value (a decimal, a NaN, a null); a char
   is one code unit; a static store starts as its initializer; and a local function's `out` reaches
-  its caller ([#541](https://github.com/eQuantic/equantic-ui/issues/541)). A deconstruction into an
+  its caller ([#541](https://github.com/eQuantic/equantic-ui/issues/541)). Copilot's third round found
+  four more, each fixed and run on both sides: a deconstruction's targets are evaluated before its
+  value, a for loop's head of expressions is one variable for the loop, `new object() { }` is an
+  object, and a property of an enum type starts as its zero member. A deconstruction into an
   indexer or a wider type is left to [#542](https://github.com/eQuantic/equantic-ui/issues/542).
   Proposed and archived through OpenSpec (`openspec/specs/transpiler-statements`,
   `transpiler-expressions`, `transpiler-records`).
