@@ -268,3 +268,37 @@ describe('a payload the server writes', () => {
     }
   });
 });
+
+describe('a collection the browser holds as its own class', () => {
+  it('becomes a Set, its elements hydrated', () => {
+    const roles = hydrate(['admin', 'editor'], { collection: 'set', of: null }) as Set<string>;
+    expect(roles).toBeInstanceOf(Set);
+    expect(roles.has('admin')).toBe(true);
+    expect(roles.size).toBe(2);
+    const ids = hydrate(['9007199254740993'], { collection: 'set', of: 'long' }) as Set<bigint>;
+    expect(ids.has(9007199254740993n)).toBe(true);
+  });
+
+  it('becomes the runtime class, a stack with its top coming off first', async () => {
+    const { Queue, Stack, LinkedList } = await import('./collections');
+    const { SortedSet } = await import('./sorted');
+    // System.Text.Json writes a stack of 1, 2, 3 as [3, 2, 1]: its top first.
+    const stack = hydrate([3, 2, 1], { collection: 'stack', of: null }) as InstanceType<typeof Stack<number>>;
+    expect(stack).toBeInstanceOf(Stack);
+    expect(stack.pop()).toBe(3);
+    expect(stack.pop()).toBe(2);
+    const queue = hydrate(['1', '2'], { collection: 'queue', of: 'long' }) as InstanceType<typeof Queue<bigint>>;
+    expect(queue).toBeInstanceOf(Queue);
+    expect(queue.dequeue()).toBe(1n);
+    expect(hydrate(['a', 'b'], { collection: 'linkedList', of: null })).toBeInstanceOf(LinkedList);
+    const sorted = hydrate([3, 1, 2], { collection: 'sortedSet', of: null }) as InstanceType<typeof SortedSet<number>>;
+    expect(sorted).toBeInstanceOf(SortedSet);
+    expect(sorted.min).toBe(1);
+  });
+
+  it('passes a value that is already its class, so hydrating twice is harmless', () => {
+    const once = hydrate(['a'], { collection: 'set', of: null });
+    expect(hydrate(once, { collection: 'set', of: null })).toBe(once);
+    expect(hydrate(null, { collection: 'set', of: null })).toBeNull();
+  });
+});

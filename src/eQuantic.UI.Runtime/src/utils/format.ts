@@ -230,6 +230,22 @@ function formatCore(
 }
 
 /** Text in a field of `|alignment|` characters: a positive width aligns right, a negative left. */
+/**
+ * The text .NET writes for a record, `Name { A = 1, B = x }` as `PrintMembers` lists it, for a value
+ * the browser holds as plain data (`[TwinIsData]`), whose own string would be `[object Object]`. The
+ * compiler passes the members .NET prints, in its order, by their C# names, and each is read under
+ * its twin's name and written as an interpolation hole writes it. A null value is the empty string,
+ * as `$"{value}"` is.
+ */
+export function recordText(value: unknown, name: string, members: readonly string[]): string {
+  if (value === null || value === undefined) return '';
+  const data = value as Record<string, unknown>;
+  const written = members.map(
+    (member) => `${member} = ${format(data[member.charAt(0).toLowerCase() + member.slice(1)], null)}`,
+  );
+  return written.length === 0 ? `${name} { }` : `${name} { ${written.join(', ')} }`;
+}
+
 function pad(result: string, alignment?: number): string {
   if (alignment) {
     const width = Math.abs(alignment);

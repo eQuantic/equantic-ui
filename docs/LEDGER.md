@@ -1010,6 +1010,24 @@ record of a release, the wiki's Upgrading page is the distillate.
   simple name share one entry of the page index
   ([#514](https://github.com/eQuantic/equantic-ui/issues/514)). Proposed and archived through OpenSpec
   (`openspec/specs/hydration-contract`).
+- **2026-10-03 · A value reaches the browser as its code reads it**: `Color` is the one vocabulary
+  value type the browser holds as plain data, and eqc emitted its instance members as methods of the
+  value, so `Color.FromRgb(…).WithOpacity(0.8f)` rendered on the server and threw once the page
+  hydrated, its text read `[object Object]`, and `new Color(…)` was recognized by its name, building an
+  app's own `Color` as the vocabulary's ([#494](https://github.com/eQuantic/equantic-ui/issues/494)).
+  `[TwinIsData]` says so by symbol now, every member lowers to the runtime's companion and the text to
+  the record text .NET writes. A `HashSet`, and the runtime's sorted set, queue, stack and linked
+  list, crossed hydration as the array the server writes
+  ([#516](https://github.com/eQuantic/equantic-ui/issues/516)): each is rebuilt as its class, a stack
+  with its top coming off first, and a server value's projection takes a set of scalars whole. On the
+  way, a property pattern counted a set or a runtime collection as an array, and a `SortedSet` dropped
+  its collection initializer. `VocabularyValueConformanceTests` executes every member of every type
+  `[TwinIsData]` marks on both sides and checks each vocabulary value type's export against the
+  attribute, which found `Curve` in two shapes
+  ([#518](https://github.com/eQuantic/equantic-ui/issues/518)); the dashboard sample's Colors screen
+  was measured in a browser against main. Filed on the way: `GetHashCode` has no lowering
+  ([#519](https://github.com/eQuantic/equantic-ui/issues/519)). Proposed and archived through OpenSpec
+  (`openspec/specs/transpiler-vocabulary-values`, `openspec/specs/hydration-contract`).
 
 ## Retired documents
 

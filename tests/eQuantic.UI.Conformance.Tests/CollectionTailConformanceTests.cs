@@ -38,6 +38,9 @@ public class CollectionTailConformanceTests
     [InlineData("var s = new SortedSet<int>(); s.Add(3); s.Add(1); s.Add(2); return s.Min * 100 + s.Max;")]   // 103
     [InlineData("var s = new SortedSet<int>(new[]{5,5,1}); return s.Count;")]                                  // 2
     [InlineData("var s = new SortedSet<int>(new[]{4,2,8,1}); var r = \"\"; foreach (var x in s) r += x; return r;")] // "1248"
+    // A collection initializer is one Add per element: it was dropped, and the set began empty (#516).
+    [InlineData("var s = new SortedSet<int> { 3, 1, 2, 1 }; var r = \"\"; foreach (var x in s) r += x; return r + \"|\" + s.Count;")] // "123|3"
+    [InlineData("var s = new SortedSet<int>(new[] { 9 }) { 4 }; return s.Min * 10 + s.Max;")]                   // 49
     [InlineData("var s = new SortedSet<int>(new[]{1,2,3}); s.Remove(2); return s.Count;")]                     // 2
     // SortedDictionary / SortedList — Keys/Values/iteration in key order.
     [InlineData("var d = new SortedDictionary<int,string>(); d[3]=\"c\"; d[1]=\"a\"; d[2]=\"b\"; var r = \"\"; foreach (var k in d.Keys) r += k; return r;")] // "123"

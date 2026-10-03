@@ -16,7 +16,8 @@ namespace eQuantic.UI.Compiler.CodeGen;
 /// <para>
 /// The spec language mirrors <c>utils/hydrate.ts</c>: a tag (<c>'long'</c>, <c>'decimal'</c>,
 /// <c>'single'</c>, <c>'dateTime'</c>…) for a compat scalar, <c>[spec]</c> for a list,
-/// <c>{ dict: spec, key, byValue, sorted }</c> for a dictionary, and a bare class NAME for an
+/// <c>{ dict: spec, key, byValue, sorted }</c> for a dictionary, <c>{ collection, of }</c> for a
+/// collection the browser holds as its own class (a set, a queue…), and a bare class NAME for an
 /// in-source record/struct, whose emitted twin carries its own <c>static $hydration</c>.
 /// Null means IDENTITY: the JSON value is already what the runtime computes with, and no spec is
 /// emitted at all — the common case stays clean. A dictionary is never that case: it crosses as a
@@ -72,6 +73,14 @@ public static class HydrationSpec
         if (named.IsDictionary())
             return DictionarySpec(named, named.TypeArguments[0], named.TypeArguments[1], referenced, visiting);
 
+        // A collection the browser holds as one of its OWN classes crosses as the array the server
+        // writes, which always has to become that class, as a dictionary's object does: a HashSet is a
+        // JavaScript Set (HashSetStrategy), a SortedSet, a Queue, a Stack and a LinkedList the
+        // runtime's. It crossed as the array, which no read of a Set answers (#516). The names are
+        // BoundaryShape's, which the generator's projection reads too.
+        if (BoundaryShape.CollectionClass(named) is { } collection)
+            return $"{{ collection: '{collection}', of: {Of(named.TypeArguments[0], referenced, visiting) ?? "null"} }}";
+
         if (ElementType(named) is { } element)
             return List(element, referenced, visiting);
 
@@ -116,7 +125,9 @@ public static class HydrationSpec
             // of the same foreign record silently got no spec at all.
             try
             {
-                return MembersSpec(named, referenced, visiting, twin: named.IsRuntimeProvided() ? named.Name : null);
+                // A data twin's export is a companion of functions, never a prototype to build on.
+                return MembersSpec(named, referenced, visiting,
+                    twin: named.IsRuntimeProvided() && !named.TwinIsData() ? named.Name : null);
             }
             finally
             {

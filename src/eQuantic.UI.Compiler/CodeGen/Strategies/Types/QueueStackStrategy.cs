@@ -54,7 +54,12 @@ public class QueueStackStrategy : ConversionStrategyBase
                         ? KindOfName(named.Type.ToString())
                         : null)
                     ?? "queue";
-                return $"$eq.collections.{kind}({ConvertArgs(oc.ArgumentList, context)})";
+                var construction = $"$eq.collections.{kind}({ConvertArgs(oc.ArgumentList, context)})";
+                // `new SortedSet<int> { 2, 1 }` is a construction and then one Add per element, as
+                // C# runs it. The initializer was dropped, so the set began empty in the browser alone.
+                return oc.Initializer is { } initializer && initializer.Expressions.Count > 0
+                    ? Expressions.ObjectCreationStrategy.AddPerElementConstruction(initializer, construction, context)
+                    : construction;
             }
 
             case InvocationExpressionSyntax { Expression: MemberAccessExpressionSyntax ma } inv:

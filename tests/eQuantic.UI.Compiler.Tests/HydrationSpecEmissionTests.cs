@@ -230,6 +230,49 @@ public class HydrationSpecEmissionTests
         Assert.Contains("_wrapped: 'declared'", map);
     }
 
+    [Fact]
+    public void ACollectionField_HydratesIntoTheClassItsCodeReads()
+    {
+        // Each one crossed as the array the server writes, into code that asks a Set for `has` or a
+        // Queue for `dequeue` (#516).
+        const string source = """
+            using System;
+            using System.Collections.Generic;
+            using eQuantic.UI.Primitives;
+
+            [Page("/kept")]
+            public sealed class Kept : StatefulComponent, IServerPrefetch
+            {
+                [ServerOnly]
+                public System.Threading.Tasks.Task PrefetchAsync(System.IServiceProvider services, System.Threading.CancellationToken cancellationToken)
+                    => System.Threading.Tasks.Task.CompletedTask;
+
+                private HashSet<string> _roles = new();
+                private HashSet<long> _ids = new();
+                private IReadOnlySet<DateTime> _days = new HashSet<DateTime>();
+                private Stack<int> _stack = new();
+                private Queue<decimal> _queue = new();
+                private LinkedList<string> _list = new();
+                private SortedSet<int> _sorted = new();
+
+                public override VisualNode Build(ComponentContext context)
+                    => new Text("", TypeRole.BodyM, context.Theme.TextPrimary);
+            }
+            """;
+        var compiler = new ComponentCompiler();
+        compiler.SetProjectCompilation(GeneratedProject.Of(source, "Kept.cs"));
+        var page = compiler.CompileSource(source, "Kept.cs").Single(r => r.ComponentName == "Kept");
+        Assert.True(page.Success, string.Join("\n", page.Errors.Select(e => e.Message)));
+        var map = page.TypeScript.Substring(page.TypeScript.IndexOf("$hydration"));
+        Assert.Contains("_roles: { collection: 'set', of: null }", map);
+        Assert.Contains("_ids: { collection: 'set', of: 'long' }", map);
+        Assert.Contains("_days: { collection: 'set', of: 'dateTime' }", map);
+        Assert.Contains("_stack: { collection: 'stack', of: null }", map);
+        Assert.Contains("_queue: { collection: 'queue', of: 'decimal' }", map);
+        Assert.Contains("_list: { collection: 'linkedList', of: null }", map);
+        Assert.Contains("_sorted: { collection: 'sortedSet', of: null }", map);
+    }
+
     private static string Compile()
     {
         var compiler = new ComponentCompiler();

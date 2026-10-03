@@ -3,7 +3,8 @@ import { long } from './long';
 import { dateTime, timeSpan, dateOnly, timeOnly, dateTimeOffset } from './datetime';
 import { adoptMember } from './adopt-member';
 import { Dictionary } from './dictionary';
-import { SortedMap } from './sorted';
+import { SortedMap, SortedSet } from './sorted';
+import { LinkedList, Queue, Stack } from './collections';
 
 /**
  * TYPED hydration — the boundary where a value from the server (SSR state, a Server Action result)
@@ -20,6 +21,9 @@ import { SortedMap } from './sorted';
  *    shortest text that names IT, which JavaScript reads as the nearest DOUBLE — so it rounds back
  *    to the single here, before any arithmetic sees the difference;
  *  - `[spec]` — a list whose every element hydrates by the inner spec;
+ *  - `{ collection, of }` — a collection the browser holds as its own class: the JSON array becomes
+ *    a `Set`, or the runtime's `SortedSet`, `Queue`, `Stack` or `LinkedList`, each element hydrated
+ *    by `of` (null when elements arrive as they are);
  *  - `{ dict: spec, key, byValue, sorted }` — a dictionary: the JSON object becomes the runtime's
  *    `Dictionary` (a `SortedMap` when `sorted`), each property name turned into the key by `key` and
  *    each value hydrated by `dict` (null when values arrive as they are);
@@ -57,6 +61,12 @@ export interface DictionarySpec {
   readonly sorted?: true;
 }
 
+/** A collection the browser holds as one of its own classes, and how each element hydrates. */
+export interface CollectionSpec {
+  readonly collection: 'set' | 'sortedSet' | 'queue' | 'stack' | 'linkedList';
+  readonly of: HydrationSpec | null;
+}
+
 /** A record/struct twin: a prototype to rebuild on, and its own member specs. */
 export interface HydratableConstructor {
   readonly prototype: object;
@@ -67,6 +77,7 @@ export type HydrationSpec =
   | HydrationTag
   | readonly [HydrationSpec]
   | DictionarySpec
+  | CollectionSpec
   | { readonly tuple: readonly (HydrationSpec | null)[] }
   | {
       readonly members: Readonly<Record<string, HydrationSpec>>;
@@ -114,7 +125,31 @@ export function hydrate(incoming: unknown, spec: HydrationSpec): unknown {
     return result;
   }
   if ('dict' in (spec as DictionarySpec)) return dictionary(incoming, spec as DictionarySpec);
+  if ('collection' in (spec as CollectionSpec)) return collection(incoming, spec as CollectionSpec);
   return incoming;
+}
+
+/**
+ * A collection from the array System.Text.Json wrote for it, in the order the collection enumerates
+ * on the server. A stack enumerates from its top, which the runtime's `Stack` keeps at the END of its
+ * items, so it is built from the reversed array and its top still comes off first. A value that is
+ * already its class is not an array, and passes through.
+ */
+function collection(incoming: unknown, spec: CollectionSpec): unknown {
+  if (!Array.isArray(incoming)) return incoming;
+  const items = spec.of == null ? incoming : incoming.map((element) => hydrate(element, spec.of!));
+  switch (spec.collection) {
+    case 'set':
+      return new Set(items);
+    case 'sortedSet':
+      return new SortedSet(items);
+    case 'queue':
+      return new Queue(items);
+    case 'stack':
+      return new Stack(items.slice().reverse());
+    case 'linkedList':
+      return new LinkedList(items);
+  }
 }
 
 /**

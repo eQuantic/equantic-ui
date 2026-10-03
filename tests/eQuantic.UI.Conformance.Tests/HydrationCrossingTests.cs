@@ -107,8 +107,20 @@ public class HydrationCrossingTests(CrossingTwins twins) : IClassFixture<Crossin
         // dictionary and a list of longs, which cross whole and are rebuilt as the browser's own.
         var (html, drawn) = await CrossAsync("/crossing-report", nameof(CrossingReportPage));
 
-        var expected = ("count 84 | count is 42 | x 5 | maybe 42 | never none | tag a | price 84 | scores 2 first 43")
-            .Split(" | ");
+        var expected = ("count 84 | count is 42 | x 5 | maybe 42 | never none | tag a | price 84 | scores 2 first 43"
+                + " | roles admin of 2").Split(" | ");
+        foreach (var line in expected) html.Should().Contain(line);
+        drawn[0].Split(" | ").Should().Equal(expected);
+        drawn[1].Should().Be(drawn[0]);
+    }
+
+    [Fact]
+    public async Task ACollectionAPrefetchFilled_DrawsAsTheClassItsCodeReads()
+    {
+        // A set, a stack, a queue of longs, a linked list and a sorted set: each crossed as an array.
+        var (html, drawn) = await CrossAsync("/crossing-collections", nameof(CrossingCollectionsPage));
+
+        var expected = "roles True 2 | top 3 | next 9007199254740994 | list 2 True | sorted 1 3".Split(" | ");
         foreach (var line in expected) html.Should().Contain(line);
         drawn[0].Split(" | ").Should().Equal(expected);
         drawn[1].Should().Be(drawn[0]);
@@ -137,6 +149,7 @@ public class HydrationCrossingTests(CrossingTwins twins) : IClassFixture<Crossin
             Tags = ["a", "b"],
             Prices = new() { ["a"] = 42 },
             Scores = [42, 7],
+            Roles = ["admin", "editor"],
         });
         builder.Services.AddUI(options => options.ScanAssembly(typeof(CrossingPage).Assembly));
         var app = builder.Build();
