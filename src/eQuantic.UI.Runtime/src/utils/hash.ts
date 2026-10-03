@@ -11,9 +11,12 @@
  *  - a number as a double hashes, NaN with NaN and -0 with 0, as Equals holds them, and an int is its
  *    own hash, as in .NET; a long by its two halves; a string and a char by their UTF-16 code units;
  *    a bool as 1 or 0; null as 0;
- *  - a value tuple, an array here, element by element, in order;
+ *  - a value tuple, an array here, element by element, in order, and an array that holds itself, at
+ *    any depth, by its identity where it recurs, so the walk ends. A C# array the compiler can see is
+ *    one is hashed by its identity before it gets here, as .NET hashes it;
  *  - a record's and a struct's twin by the `getHashCode` eqc writes from the members its `equals` reads,
- *    and an anonymous value, plain data here, member by member, in any order;
+ *    a vocabulary value type's hand-written twin (`Point`, `TypeStyle`, registered with
+ *    {@link hashesByValue}) and an anonymous value, plain data here, member by member, in any order;
  *  - an instance of any other class by its identity, as `object.GetHashCode` is.
  */
 export function hash(value: unknown): number {
@@ -47,6 +50,34 @@ function ordered(values: Iterable<unknown>): number {
   return combined;
 }
 
+/** The arrays whose items are being walked, so one that holds itself is not walked again. */
+const walking = new Set<unknown[]>();
+
+/** A value tuple's hash, its items' in order. An array met again inside its own walk (`object[] a`
+ * holding `a`) answers its identity's there, where the walk would otherwise never end. */
+function arrayHash(items: unknown[]): number {
+  if (walking.has(items)) return identityHash(items);
+  walking.add(items);
+  try {
+    return ordered(items);
+  } finally {
+    walking.delete(items);
+  }
+}
+
+/** .NET's refusal of an instance call on null, the message its `NullReferenceException` carries. */
+const NULL_RECEIVER = 'Object reference not set to an instance of an object.';
+
+/**
+ * An instance `GetHashCode()` call on a receiver that may be null: its hash, and .NET's refusal
+ * where it is null. `hash` itself answers 0 for null, as `HashCode.Combine` hashes a null argument
+ * and an empty `Nullable<T>` answers, and the compiler sends those two there.
+ */
+export function instanceHash(value: unknown): number {
+  if (value == null) throw new TypeError(NULL_RECEIVER);
+  return hash(value);
+}
+
 /**
  * A value's members, hashed in any order, without asking its own `getHashCode`: plain data's hash, and
  * `ValueType.GetHashCode`, which a struct's override reaches through `base` and which must not call
@@ -65,7 +96,8 @@ let lastIdentity = 0;
  * `object.GetHashCode` for a class that does not override it: the identity's, the same for as long as
  * the object lives, and spread so that two objects seldom share one.
  */
-export function identityHash(value: object): number {
+export function identityHash(value: object | null | undefined): number {
+  if (value == null) throw new TypeError(NULL_RECEIVER);
   let identity = identities.get(value);
   if (identity === undefined) {
     lastIdentity = (lastIdentity + 0x9e3779b9) | 0;
@@ -94,10 +126,38 @@ function stringHash(text: string): number {
 function objectHash(value: object): number {
   const own = (value as { getHashCode?: unknown }).getHashCode;
   if (typeof own === 'function') return Number((own as () => unknown).call(value)) | 0;
-  if (Array.isArray(value)) return ordered(value);
-  // Plain data (an anonymous value) by its members, in any order, as `equals` matches them by name.
-  // A record's and a struct's twin answer above, from the members their `equals` reads; any other
-  // class, the runtime's included, is its identity unless it says otherwise.
+  if (Array.isArray(value)) return arrayHash(value);
+  // Plain data (an anonymous value) and a vocabulary value type's hand-written twin by their members,
+  // in any order, as `equals` matches them by name. A record's and a struct's twin answer above, from
+  // the members their `equals` reads; any other class, the runtime's included, is its identity unless
+  // it says otherwise.
   const prototype = Object.getPrototypeOf(value);
-  return prototype === Object.prototype || prototype === null ? hashFields(value) : identityHash(value);
+  return prototype === Object.prototype || prototype === null || byValue.has(prototype)
+    ? hashFields(value)
+    : identityHash(value);
+}
+
+/**
+ * The method group `value.GetHashCode`, `Func<int> f = n.GetHashCode`: a delegate over the receiver as
+ * it is when the delegate is made, refused there when the receiver is null, as .NET refuses it, an
+ * empty `Nullable<T>` included, which boxes to null. `byIdentity` hashes an array as .NET does.
+ */
+export function hashGroup(value: unknown, byIdentity = false): () => number {
+  if (value == null) throw new TypeError(NULL_RECEIVER);
+  return byIdentity ? () => identityHash(value as object) : () => hash(value);
+}
+
+/** The prototypes of the classes registered with {@link hashesByValue}. */
+const byValue = new WeakSet<object>();
+
+/**
+ * Registers the runtime classes that twin a .NET value type by hand: a record or a struct of the
+ * vocabulary (`Point`, `TypeStyle`). `equals` compares an instance member by member, so its hash is
+ * its members' too, where an unregistered class hashes by its identity, as a .NET class does. A twin
+ * eqc emits carries its own `getHashCode` and needs none of this. Each mirror file registers its own,
+ * and `VocabularyMirrorShapeTests` fails on a value type's twin left out and on a class registered
+ * that is not one.
+ */
+export function hashesByValue(...types: { readonly prototype: object }[]): void {
+  for (const type of types) byValue.add(type.prototype);
 }

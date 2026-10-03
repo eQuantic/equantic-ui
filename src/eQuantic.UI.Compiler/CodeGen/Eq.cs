@@ -218,6 +218,15 @@ public static class Eq
     /// equal, and a value with its own <c>getHashCode</c> answers it.</summary>
     public const string Hash = "$eq.hash.of";
 
+    /// <summary>An instance <c>GetHashCode()</c> on a receiver that may be null: its hash, and the
+    /// refusal .NET's <c>NullReferenceException</c> is where it is null.</summary>
+    public const string HashInstance = "$eq.hash.instance";
+
+    /// <summary>The method group <c>value.GetHashCode</c>: a delegate over the receiver, refused where
+    /// the delegate is made when the receiver is null; a second argument of <c>true</c> hashes an
+    /// array's identity.</summary>
+    public const string HashGroup = "$eq.hash.group";
+
     /// <summary><c>HashCode.Combine(…)</c>: the values' hashes, combined in order.</summary>
     public const string HashCombine = "$eq.hash.combine";
 

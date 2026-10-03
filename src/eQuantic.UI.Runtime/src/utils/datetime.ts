@@ -27,6 +27,8 @@ const TICKS_PER_DAY = 864_000_000_000n;
 
 // Ticks of 9999-12-31 23:59:59.9999999 — .NET DateTime.MaxValue.
 const MAX_DATETIME_TICKS = 3_155_378_975_999_999_999n;
+/** 9999-12-31's day number, the last day a `DateOnly` holds. */
+const MAX_DAY_NUMBER = 3_652_058;
 
 // Days from 0001-01-01 to 1970-01-01 (Hinnant's algorithm is epoch-relative to 1970).
 const DAYS_0001_TO_1970 = 719_162;
@@ -629,24 +631,22 @@ export class DateOnly {
     return this.dayNumber - daysFromCivil(this.civil().year, 1, 1) + 1;
   }
 
+  /** `AddDays`: refused where the day leaves 0001-01-01 to 9999-12-31, as .NET refuses it. */
   addDays(value: number): DateOnly {
-    return new DateOnly(this.dayNumber + Math.trunc(value));
+    const day = this.dayNumber + Math.trunc(value);
+    if (day < 0 || day > MAX_DAY_NUMBER) throw new Error(ADD_OUT_OF_RANGE);
+    return new DateOnly(day);
   }
+  /** `AddMonths` and `AddYears`: the date's `DateTime` moved, so a count and a result past the
+   * calendar are refused in the same words and parameter names .NET's `DateOnly` uses. */
   addMonths(months: number): DateOnly {
-    const c = this.civil();
-    const i = c.month - 1 + months;
-    let year: number, month: number;
-    if (i >= 0) {
-      month = (i % 12) + 1;
-      year = c.year + idiv(i, 12);
-    } else {
-      month = 12 + ((i + 1) % 12);
-      year = c.year + idiv(i - 11, 12);
-    }
-    return dateOnly(year, month, Math.min(c.day, daysInMonth(year, month)));
+    return dateOnly.fromDateTime(this.atMidnight().addMonths(months));
   }
   addYears(years: number): DateOnly {
-    return this.addMonths(years * 12);
+    return dateOnly.fromDateTime(this.atMidnight().addYears(years));
+  }
+  private atMidnight(): DateTime {
+    return new DateTime(BigInt(this.dayNumber) * TICKS_PER_DAY);
   }
 
   compareTo(other: DateOnly): number {
@@ -956,7 +956,11 @@ export class DateTimeOffset {
 
   /** Moves the clock time within the calendar, then checks the UTC time, as .NET's `Add` does. */
   addTicks(t: bigint, parameter = 'value'): DateTimeOffset {
-    const local = calendarTicks(this.localTicks + t, parameter);
+    return this.atClock(calendarTicks(this.localTicks + t, parameter));
+  }
+  /** A new clock time at this offset, refused where its UTC time leaves the calendar, as .NET's
+   * `ValidateDate` refuses it after every move of the clock. */
+  private atClock(local: bigint): DateTimeOffset {
     const utc = local - this.offsetTicks;
     if (utc < 0n || utc > MAX_DATETIME_TICKS) throw new Error(UTC_OUT_OF_RANGE);
     return new DateTimeOffset(local, this.offsetTicks);
@@ -979,14 +983,13 @@ export class DateTimeOffset {
   addMicroseconds(v: number): DateTimeOffset {
     return this.addTicks(unitTicks(v, TICKS_PER_MICROSECOND));
   }
+  /** `AddMonths` and `AddYears` move the clock time as its `DateTime`'s do, refusing a count and a
+   * result in their own parameter's name, then check the UTC time. */
   addMonths(months: number): DateTimeOffset {
-    return new DateTimeOffset(
-      new DateTime(this.localTicks).addMonths(months).ticks,
-      this.offsetTicks,
-    );
+    return this.atClock(new DateTime(this.localTicks).addMonths(months).ticks);
   }
   addYears(years: number): DateTimeOffset {
-    return this.addMonths(years * 12);
+    return this.atClock(new DateTime(this.localTicks).addYears(years).ticks);
   }
 
   /** Same instant, expressed at a different offset. */

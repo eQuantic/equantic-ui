@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { hash, hashCombine, hashFields, identityHash } from './hash';
+import { hash, hashCombine, hashFields, hashGroup, identityHash, instanceHash } from './hash';
+import { Point, Rect, TypeStyle } from '../shared/value-types';
 import { dec } from './decimal';
 import { dateTime } from './datetime';
 import { equals } from './equals';
@@ -67,6 +68,33 @@ describe('a hash agrees with equals ($eq.hash)', () => {
     expect(hash(gate)).toBe(identityHash(gate));
     expect(hash(gate)).not.toBe(hash(new Gate()));
     expect(hashFields({ x: 1, y: 2 })).toBe(hash({ y: 2, x: 1 }));
+  });
+
+  it("hashes a vocabulary value type's hand-written twin by its members, as equals compares it", () => {
+    hashesAlike(new Point(1, 2), new Point(1, 2));
+    expect(hash(new Point(1, 2))).not.toBe(hash(new Point(2, 1)));
+    hashesAlike(new Rect(0, 0, 4, 3), new Rect(0, 0, 4, 3));
+    hashesAlike(new TypeStyle(15, 20, 'semiBold', 0.1, 1.3), new TypeStyle(15, 20, 'semiBold', 0.1, 1.3));
+    hashesAlike({ at: new Point(1, 2) }, { at: new Point(1, 2) });
+    hashesAlike([new Point(1, 2), 1], [new Point(1, 2), 1]);
+  });
+
+  it('walks an array that holds itself to an end', () => {
+    const looped: unknown[] = [1];
+    looped.push(looped);
+    expect(hash(looped)).toBe(hash(looped));
+  });
+
+  it('refuses a null receiver where .NET throws, and a method group where its delegate is made', () => {
+    expect(() => instanceHash(null)).toThrow('Object reference not set to an instance of an object.');
+    expect(() => identityHash(null)).toThrow(TypeError);
+    expect(() => hashGroup(undefined)).toThrow(TypeError);
+    expect(instanceHash('abc')).toBe(hash('abc'));
+    expect(hashGroup(42)()).toBe(42);
+    const items = [1];
+    const group = hashGroup(items, true);
+    items[0] = 2;
+    expect(group()).toBe(identityHash(items));
   });
 
   it('combines in order, as HashCode.Combine does', () => {

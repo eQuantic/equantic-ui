@@ -171,10 +171,15 @@ a decimal, a date, a record and a type that overrides `Equals` by its value.
 
 `GetHashCode()` SHALL answer in the browser by .NET's contract: two values `Equals` finds equal SHALL
 hash equal, whatever their type, a string, a number, a long, a bool, a value tuple, a record, a
-struct, a decimal of any scale, a date and a value under `object` included. A type that overrides
-`GetHashCode` SHALL answer its own, an instance of a class that does not SHALL hash by its identity,
-`base.GetHashCode()` SHALL call the base's override where the app wrote one, and
-`HashCode.Combine(…)` SHALL combine its values' hashes in order.
+struct, a decimal of any scale, a date, a vocabulary value type (`Point`, `TypeStyle`) and a value
+under `object` included. A type that overrides `GetHashCode` SHALL answer its own, an instance of a
+class that does not SHALL hash by its identity, and so SHALL an array, however its items change.
+`base.GetHashCode()` SHALL call the base's override where the app wrote one or a record's is
+synthesized, and `HashCode.Combine(…)` SHALL combine its values' hashes in its parameters' order,
+evaluating its arguments as written. An instance call on a null reference SHALL be refused, as .NET
+throws `NullReferenceException`, while an empty `Nullable<T>` answers 0, and the method group
+`value.GetHashCode` SHALL take its receiver once, where the delegate is made, refusing a null one
+there.
 
 #### Scenario: Equal values hash equal
 
@@ -187,6 +192,12 @@ struct, a decimal of any scale, a date and a value under `object` included. A ty
 - **WHEN** browser-side code calls `new Weighted(3).GetHashCode()` for
   `record Weighted(int X) { public override int GetHashCode() => X * 7; }`
 - **THEN** it answers `21`, as in .NET
+
+#### Scenario: An array is its identity, and a null receiver is refused
+
+- **WHEN** browser-side code hashes `var a = new[] { 1 }`, sets `a[0] = 2` and hashes it again, and
+  calls `GetHashCode()` on a null `object`
+- **THEN** the two hashes are equal and the call on null throws, as in .NET
 
 ### Requirement: A Guid is its canonical text
 
@@ -209,7 +220,9 @@ A `DateTime`'s and a `DateTimeOffset`'s `Add`, `Subtract`, `AddMonths`, `AddYear
 operators with a `TimeSpan`, their compound forms included, SHALL refuse a result outside the calendar
 with .NET's message, naming the parameter of the member that refuses it: `value` for `Add`, `Subtract`
 and `AddYears`, `months` for `AddMonths`, and `t` for the operators. `AddMonths` SHALL refuse a count
-past 120000 either way, and `AddYears` one past 10000, in .NET's words.
+past 120000 either way, and `AddYears` one past 10000, in .NET's words. A `DateTimeOffset`'s
+`AddMonths` and `AddYears` SHALL then refuse a UTC time outside the calendar, and a `DateOnly`'s
+`AddDays`, `AddMonths` and `AddYears` SHALL refuse a day outside it, each in .NET's words.
 
 #### Scenario: The operator names its own parameter
 

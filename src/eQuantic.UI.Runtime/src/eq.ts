@@ -115,7 +115,7 @@ import { boolConvert, boolParse, boolTryParse } from './utils/boolean-text';
 import { sortedSet, sortedDictionary, sortedList } from './utils/sorted';
 import { liftArith, liftCmp, liftUnary } from './utils/nullable';
 import { equals } from './utils/equals';
-import { hash, hashCombine, hashFields, identityHash } from './utils/hash';
+import { hash, hashCombine, hashFields, hashGroup, identityHash, instanceHash } from './utils/hash';
 import { guidParse, guidTryParse } from './utils/guid';
 import { resolveService } from './utils/services';
 import { StyleBuilder } from './utils/style-builder';
@@ -343,11 +343,19 @@ export const $eq = {
   /** Structural (value) equality for records/structs/tuples — backs ==, Contains, Distinct. */
   equals,
   /**
-   * `GetHashCode` by .NET's contract, values `equals` finds equal hashing equal (`hash`),
-   * `HashCode.Combine` (`combine`), `object.GetHashCode`'s identity (`identity`), and
-   * `ValueType.GetHashCode`'s members (`fields`), which a struct reaches through `base`.
+   * `GetHashCode` by .NET's contract, values `equals` finds equal hashing equal (`hash`), an instance
+   * call refused on null (`instance`), the method group (`group`), `HashCode.Combine` (`combine`),
+   * `object.GetHashCode`'s identity (`identity`), and `ValueType.GetHashCode`'s members (`fields`),
+   * which a struct reaches through `base`.
    */
-  hash: { of: hash, combine: hashCombine, identity: identityHash, fields: hashFields },
+  hash: {
+    of: hash,
+    instance: instanceHash,
+    group: hashGroup,
+    combine: hashCombine,
+    identity: identityHash,
+    fields: hashFields,
+  },
   /** A Guid's canonical text, the lowercase `D` format, from any format .NET reads. */
   guid: { parse: guidParse, tryParse: guidTryParse },
   /** CSS class composition (the styling subsystem). */

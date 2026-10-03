@@ -28,6 +28,7 @@ import { lowerVisualNode } from './lowering';
 import { ambientLoweringContext } from './photon-context';
 import { CornerRadii, EdgeInsets, SizeValue, StyleChannels, WebContent } from './value-types';
 import { Curve, Motion } from './design-system.generated';
+import { hashesByValue } from '../utils/hash';
 
 export { StyleChannels } from './value-types';
 
@@ -1886,3 +1887,25 @@ export class Spacer extends VisualNode {
     return spacer;
   }
 }
+
+/** The twins of the vocabulary's records and structs: each hashes by its members, as `equals`
+ * compares it (`ValueTwinHashTests` holds this list to the C#). */
+hashesByValue(
+  StyleDiff,
+  TextRun,
+  ShadowSpec,
+  BoxStyle,
+  GridTrack,
+  KeyChord,
+  LinearGradient,
+  TransitionSpec,
+  RadialGradient,
+  GridPattern,
+  RangeValue,
+  IconGlyph,
+  VectorStop,
+  VectorGradient,
+  VectorPaint,
+  VectorShape,
+  VectorDrawing,
+);

@@ -97,6 +97,15 @@ public class DateTimeConformanceTests
     [InlineData("try { new DateTime(2026, 1, 1).AddYears(-10001); return \"no\"; } catch (Exception e) { return e.Message; }")]         // "Years value must be between +/-10000. (Parameter 'value')"
     [InlineData("try { var o = DateTimeOffset.MaxValue + TimeSpan.FromTicks(1); return \"no\"; } catch (Exception e) { return e.Message; }")] // "...(Parameter 't')"
     [InlineData("try { DateTimeOffset.MaxValue.Add(TimeSpan.FromTicks(1)); return \"no\"; } catch (Exception e) { return e.Message; }")] // "...(Parameter 'value')"
+    [InlineData("try { DateTimeOffset.MaxValue.AddYears(1); return \"no\"; } catch (Exception e) { return e.Message; }")]              // "...(Parameter 'value')": the offset's years are its clock's
+    [InlineData("try { new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero).AddYears(10001); return \"no\"; } catch (Exception e) { return e.Message; }")] // "Years value must be between +/-10000. (Parameter 'value')"
+    [InlineData("try { DateTimeOffset.MaxValue.AddMonths(1); return \"no\"; } catch (Exception e) { return e.Message; }")]             // "...(Parameter 'months')"
+    [InlineData("try { new DateTimeOffset(9998, 12, 31, 23, 0, 0, TimeSpan.FromHours(-2)).AddYears(1); return \"no\"; } catch (Exception e) { return e.Message; }")] // "The UTC time represented when the offset is applied must be between year 0 and 10,000. (Parameter 'offset')"
+    [InlineData("try { DateOnly.MaxValue.AddDays(1); return \"no\"; } catch (Exception e) { return e.Message; }")]                     // "Value to add was out of range. (Parameter 'value')"
+    [InlineData("try { DateOnly.MaxValue.AddMonths(1); return \"no\"; } catch (Exception e) { return e.Message; }")]                   // "...(Parameter 'months')"
+    [InlineData("try { DateOnly.MinValue.AddYears(-1); return \"no\"; } catch (Exception e) { return e.Message; }")]                   // "...(Parameter 'value')"
+    [InlineData("try { new DateOnly(2026, 1, 1).AddMonths(-120001); return \"no\"; } catch (Exception e) { return e.Message; }")]      // "Months value must be between +/-120000. (Parameter 'months')"
+    [InlineData("return new DateOnly(2024, 2, 29).AddYears(1) + \",\" + new DateOnly(2026, 1, 31).AddMonths(1);")]                       // "02/28/2025,02/28/2026"
     [InlineData("return new DateTime(2026, 1, 31).AddMonths(1).Day + \",\" + new DateTime(2024, 2, 29).AddYears(1).Day;")]             // "28,28"
     [InlineData("DateTime? d = null; d += TimeSpan.FromDays(1); DateTime? e = new DateTime(2026, 1, 1); e += TimeSpan.FromDays(1); return (d == null) + \",\" + e.Value.Day;")] // "True,2": a nullable is lifted
     public void DateArithmetic_LeavingTheCalendar_IsRefusedAsDotNetRefusesIt(string statements)

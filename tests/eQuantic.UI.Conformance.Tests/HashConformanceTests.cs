@@ -27,6 +27,11 @@ public class HashConformanceTests
             public int X;
             public override int GetHashCode() => base.GetHashCode() ^ 1;
         }
+        public record Base0(int X);
+        public record Derived0(int X) : Base0(X)
+        {
+            public override int GetHashCode() => base.GetHashCode();
+        }
         """;
 
     [SkippableTheory]
@@ -45,6 +50,17 @@ public class HashConformanceTests
     [InlineData("var a = new Pt { X = 1, Y = 2 }; var b = new Pt { X = 1, Y = 2 }; return a.GetHashCode() == b.GetHashCode();")] // true: a struct
     [InlineData("var a = new Tilted { X = 3 }; var b = new Tilted { X = 3 }; return a.GetHashCode() == b.GetHashCode();")]         // true: base in a struct
     [InlineData("var xs = new int[200000]; return (xs, 1).GetHashCode() == (xs, 1).GetHashCode();")]                   // true: a large array
+    [InlineData("return new Derived0(1).GetHashCode() == new Derived0(1).GetHashCode();")]                             // true: a record's synthesized base hash
+    [InlineData("var a = new[] { 1 }; var h = a.GetHashCode(); a[0] = 2; return h == a.GetHashCode();")]               // true: an array is its identity
+    [InlineData("object[] a = new object[1]; a[0] = a; object o = a; return o.GetHashCode() == o.GetHashCode();")]       // true: an array that holds itself
+    [InlineData("int? n = null; return n.GetHashCode();")]                                                              // 0: an empty Nullable<T>
+    [InlineData("try { object o = null; return o.GetHashCode().ToString(); } catch { return \"refused\"; }")]          // "refused": NullReferenceException
+    [InlineData("try { string s = null; return s.GetHashCode().ToString(); } catch { return \"refused\"; }")]          // "refused"
+    [InlineData("string s = null; return s?.GetHashCode() == null;")]                                                   // true
+    [InlineData("int n = 42; Func<int> f = n.GetHashCode; n = 7; return f() == 42.GetHashCode();")]                     // true: a method group takes its receiver once
+    [InlineData("try { string s = null; Func<int> f = s.GetHashCode; return \"made\"; } catch { return \"refused\"; }")] // "refused": where the delegate is made
+    [InlineData("return HashCode.Combine(value2: 2, value1: 1) == HashCode.Combine(1, 2);")]                          // true: by parameter
+    [InlineData("var log = \"\"; Func<int> a = () => { log += \"a\"; return 1; }; Func<int> b = () => { log += \"b\"; return 2; }; HashCode.Combine(value2: b(), value1: a()); return log;")] // "ba": evaluated as written
     public void AHash_AgreesWithEquals(string statements)
     {
         Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
