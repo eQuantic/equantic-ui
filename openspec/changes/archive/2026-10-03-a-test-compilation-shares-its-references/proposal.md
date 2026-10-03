@@ -14,7 +14,7 @@ reference also makes Roslyn build that assembly's symbols again for each compila
 ## What Changes
 
 - One owner, `tests/Shared/TestReferences.cs`, keeps one reference per assembly for the whole test
-  process (`TestReferences.Of`, `TestReferences.Framework`), linked into the four test projects that
+  process (`TestReferences.Of`), linked into the four test projects that
   compile C#, and every test compilation reads its references there.
 - A guard, `TestReferencesGuardTests`, fails on a `CreateFromFile` anywhere else under `tests/`, and
   names the owner.

@@ -23,13 +23,6 @@ internal static class TestReferences
 {
     private static readonly ConcurrentDictionary<string, MetadataReference> Cache = new(StringComparer.Ordinal);
 
-    private static readonly Lazy<IReadOnlyList<MetadataReference>> AllOfTheFramework = new(() =>
-        ((string)AppContext.GetData("TRUSTED_PLATFORM_ASSEMBLIES")!)
-            .Split(Path.PathSeparator)
-            .Where(path => path.EndsWith(".dll", StringComparison.OrdinalIgnoreCase))
-            .Select(Of)
-            .ToList());
-
     /// <summary>The assembly at <paramref name="path"/>, read once.</summary>
     public static MetadataReference Of(string path) =>
         Cache.GetOrAdd(path, static file => MetadataReference.CreateFromFile(file));
@@ -39,8 +32,4 @@ internal static class TestReferences
 
     /// <summary>The assembly itself.</summary>
     public static MetadataReference Of(Assembly assembly) => Of(assembly.Location);
-
-    /// <summary>Every assembly of the framework the tests run on, as <c>TRUSTED_PLATFORM_ASSEMBLIES</c>
-    /// lists them.</summary>
-    public static IReadOnlyList<MetadataReference> Framework => AllOfTheFramework.Value;
 }

@@ -40,7 +40,7 @@ public class TestReferencesGuardTests
             .ToList();
 
         copies.Should().BeEmpty(
-            $"a test reads an assembly through {Owner} (TestReferences.Of, TestReferences.Framework), which "
+            $"a test reads an assembly through {Owner} (TestReferences.Of), which "
             + "keeps one reference per assembly for the process, never through MetadataReference.CreateFromFile, "
             + "which copies the assembly into native memory for every call (#481)");
         File.Exists(Path.Combine(root, Owner)).Should().BeTrue("the guard names the owner it protects");
