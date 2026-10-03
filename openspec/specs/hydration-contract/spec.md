@@ -37,7 +37,10 @@ parameter, for a server render and a client navigation alike.
 A value a page receives from the server's container SHALL NOT be written into the page whole. What
 crosses SHALL be its projection: null when it is null, and otherwise only the members the page's
 browser-side code reads, each in the same shape. This holds when the page reads the service directly,
-through a member the page assigned it to, and through a child component it passes the service to.
+through a member the page assigned it to, and through a child component it passes the service to. A
+read SHALL end at a value that crosses whole: a scalar, or a list or a dictionary of scalars, which the
+browser rebuilds as its own collection. Any other value, a struct, a set or a pair included, SHALL be
+read member by member.
 
 #### Scenario: Only whether it is null
 
@@ -57,6 +60,13 @@ through a member the page assigned it to, and through a child component it passe
   with `Title` and `ApiKey`, and its `Build` writes `_options.Title`
 - **THEN** the served HTML carries the title and not the API key, and the browser's first build writes
   the title
+
+#### Scenario: A dictionary of longs
+
+- **WHEN** a page writes `report.Prices["a"] * 2`, where the container-provided `report` holds a
+  `Dictionary<string, long>` as `Prices`
+- **THEN** the dictionary crosses whole, and the browser's first build writes the number the server
+  wrote
 
 #### Scenario: Read by a child component
 
@@ -79,7 +89,9 @@ browser resolves its own implementation of it.
 
 The build SHALL refuse with EQ2114, an error, a page whose browser-side code uses a value from the
 server's container in a way the projection cannot follow: a method of it called with an argument that changes in
-the browser, or the value passed where the analysis cannot see what is read of it. The message SHALL
+the browser, the value passed where the analysis cannot see what is read of it, or a member a .NET type
+declares read on it (a list's `Count`, a set's, a pair's `Value`), which the browser answers from its
+own form of that type. The message SHALL
 name the page, the value, the expression where the analysis stopped, and the way out: deciding on the
 server in `PrefetchAsync` or a `[ServerOnly]` member and keeping the result in a field, or a
 `[ServerAction]` when the browser's state is an input.
@@ -89,6 +101,12 @@ server in `PrefetchAsync` or a `[ServerOnly]` member and keeping the result in a
 - **WHEN** a page takes `ProductRepository repository` from the container and a handler calls
   `repository.Find(_selectedId)`
 - **THEN** the build fails with EQ2114 naming the page, `repository` and `repository.Find(_selectedId)`
+
+#### Scenario: The count of a list of objects
+
+- **WHEN** a page writes `report.Items.Count`, where the container-provided `report` holds a
+  `List<Product>` as `Items`
+- **THEN** the build fails with EQ2114 naming `report.Items.Count`
 
 #### Scenario: A value the analysis cannot follow
 

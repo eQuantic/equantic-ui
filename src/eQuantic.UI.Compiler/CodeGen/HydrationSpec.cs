@@ -108,7 +108,7 @@ public static class HydrationSpec
         // Outside System/Microsoft only: the BCL's data shapes are either scalars handled above or
         // types whose members are not payload.
         if (!named.Locations.Any(location => location.IsInSource)
-            && !IsPlatformNamespace(named)
+            && !BoundaryShape.IsPlatform(named)
             && visiting.Add(named))
         {
             // A recursion STACK, not a memo: the mark exists so a self-referential foreign type
@@ -145,13 +145,6 @@ public static class HydrationSpec
         if (twin is null) return $"{{ members: {{ {string.Join(", ", entries)} }} }}";
         referenced.Runtime.Add(twin);
         return $"{{ of: {twin}, members: {{ {string.Join(", ", entries)} }} }}";
-    }
-
-    private static bool IsPlatformNamespace(INamedTypeSymbol named)
-    {
-        var space = named.ContainingNamespace?.ToDisplayString() ?? string.Empty;
-        return space == "System" || space.StartsWith("System.", System.StringComparison.Ordinal)
-            || space == "Microsoft" || space.StartsWith("Microsoft.", System.StringComparison.Ordinal);
     }
 
     /// <summary>The date/time compat scalars, by their one full name each.</summary>

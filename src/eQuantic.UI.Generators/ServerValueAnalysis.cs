@@ -61,6 +61,14 @@ internal sealed class ServerValueAnalysis
     private const string BoundElsewhere =
         "it is read through another type than it is declared as, where the name binds a member the declared type hides";
 
+    /// <summary>
+    /// A member a .NET type declares: eqc lowers it to the browser's own form of that type (a list's
+    /// <c>Count</c> is an array's <c>length</c>, a set's is a Set's <c>size</c>), which a projected copy
+    /// is not.
+    /// </summary>
+    private const string PlatformMember =
+        "it is read through a member of a .NET type, which the browser answers from its own form of that type rather than from a copy";
+
     private const string WalkedThroughItself =
         "it is walked through a chain of its own members, which the build cannot bound";
 
@@ -286,6 +294,11 @@ internal sealed class ServerValueAnalysis
             return;
         }
 
+        if (BoundaryShape.IsPlatform(member.Member.ContainingType))
+        {
+            Stop(member, root, PlatformMember);
+            return;
+        }
         var next = Combine(path, member.Member.Name);
         if (Depth(next) > MaxDepth)
         {
@@ -363,6 +376,11 @@ internal sealed class ServerValueAnalysis
             || member.Type is not { } type)
         {
             Stop(property, root, "it is matched in a way the build cannot follow");
+            return;
+        }
+        if (BoundaryShape.IsPlatform(member.Member.ContainingType))
+        {
+            Stop(property, root, PlatformMember);
             return;
         }
         var next = Combine(path, member.Member.Name);

@@ -649,20 +649,38 @@ public class ServerValueProjectionTests
     [Fact]
     public void AStructIsReadDownToItsScalars_SinceWhatTheSerializerWritesOfOneIsNotWhatItHolds()
     {
-        // Whole, the computed long would cross untyped, the public field not at all, and the bytes as
-        // base64 text: each read reaches a scalar instead, coerced by its own type.
+        // Whole, the computed long would cross untyped and the public field not at all: each read
+        // reaches a scalar instead, coerced by its own type.
         var generated = Run(Report + """
 
             [Page("/report")]
             public sealed class ReportPage(Report report) : StatelessComponent
             {
                 public override VisualNode Build(ComponentContext context) =>
-                    new Text($"{report.Totals.Count * 2} {report.Position.X} {report.Bytes.Length}", TypeRole.BodyM);
+                    new Text($"{report.Totals.Count * 2} {report.Position.X}", TypeRole.BodyM);
             }
             """);
 
         generated.Reported.Should().BeEmpty();
-        generated.Manifest.Should().Contain(Projected("ReportPage", "report", "CapturedParameter", "Bytes.Length,Position.X,Totals.Count"));
+        generated.Manifest.Should().Contain(Projected("ReportPage", "report", "CapturedParameter", "Position.X,Totals.Count"));
+    }
+
+    [Fact]
+    public void AByteArray_NeitherCrossesWholeNorHasItsLengthRead()
+    {
+        // Whole, the bytes crossed as base64 text, whose length is not theirs; and an array's Length is
+        // a .NET member, which the browser reads from its own array.
+        var generated = Run(Report + """
+
+            [Page("/bytes")]
+            public sealed class BytesPage(Report report) : StatelessComponent
+            {
+                public override VisualNode Build(ComponentContext context) =>
+                    new Text($"{report.Bytes.Length}", TypeRole.BodyM);
+            }
+            """);
+
+        generated.Escapes.Should().ContainSingle().Which.GetMessage().Should().Contain("a member of a .NET type");
     }
 
     [Fact]
@@ -717,6 +735,92 @@ public class ServerValueProjectionTests
 
         generated.Reported.Should().BeEmpty();
         generated.Manifest.Should().Contain(Projected("MatchedPage", "report", "CapturedParameter", "Maybe.Count,Maybe.Seed"));
+    }
+
+    private const string Shelf = """
+        public sealed class Shelf
+        {
+            public System.Collections.Generic.KeyValuePair<string, long> Pair { get; set; }
+            public System.Collections.Generic.HashSet<string> Roles { get; set; } = new();
+            public System.Collections.Generic.List<Product> Items { get; set; } = new();
+            public System.Collections.Generic.Dictionary<string, long> Prices { get; set; } = new();
+            public System.Collections.Generic.IReadOnlyList<long> Scores { get; set; } = [];
+        }
+        """;
+
+    [Fact]
+    public void APairIsNoLeaf_AndReadingItsValueFailsTheBuild()
+    {
+        // Whole, the pair's long crossed as the string no spec coerces, into BigInt arithmetic.
+        var generated = Run(Shelf + """
+
+            [Page("/pair")]
+            public sealed class PairPage(Shelf shelf) : StatelessComponent
+            {
+                public override VisualNode Build(ComponentContext context) =>
+                    new Text($"{shelf.Pair.Value * 2}", TypeRole.BodyM);
+            }
+            """);
+
+        generated.Errors.Should().BeEmpty();
+        generated.Escapes.Should().ContainSingle().Which.GetMessage().Should().Contain("a member of a .NET type");
+    }
+
+    [Fact]
+    public void ASetIsNoLeaf_AndReadingItFailsTheBuild()
+    {
+        // Whole, it crossed as an array into a twin that asks a Set for `size` and `has`.
+        var generated = Run(Shelf + """
+
+            [Page("/roles")]
+            public sealed class RolesPage(Shelf shelf) : StatelessComponent
+            {
+                public override VisualNode Build(ComponentContext context) =>
+                    new Text(shelf.Roles.Count > 0 && shelf.Roles.Contains("admin") ? "admin" : "user", TypeRole.BodyM);
+            }
+            """);
+
+        generated.Errors.Should().BeEmpty();
+        generated.Escapes.Select(stop => stop.GetMessage()).Should().HaveCount(2)
+            .And.Contain(message => message.Contains("a member of a .NET type"))
+            .And.Contain(message => message.Contains("a method is called on it"));
+    }
+
+    [Fact]
+    public void TheCountOfAListOfObjects_FailsTheBuild_ReadOrMatched()
+    {
+        // Projected, it crossed as `{ count: 3 }` into a twin that reads an array's `length`.
+        var generated = Run(Shelf + """
+
+            [Page("/items")]
+            public sealed class ItemsPage(Shelf shelf) : StatelessComponent
+            {
+                public override VisualNode Build(ComponentContext context) =>
+                    new Text(shelf.Items.Count > 0 || shelf is { Items.Count: > 1 } ? "some" : "none", TypeRole.BodyM);
+            }
+            """);
+
+        generated.Errors.Should().BeEmpty();
+        generated.Escapes.Select(stop => stop.GetMessage()).Should().HaveCount(2)
+            .And.OnlyContain(message => message.Contains("a member of a .NET type"));
+    }
+
+    [Fact]
+    public void ADictionaryAndASequenceOfScalars_CrossWhole()
+    {
+        var generated = Run(Shelf + """
+
+            [Page("/prices")]
+            public sealed class PricesPage(Shelf shelf) : StatelessComponent
+            {
+                public override VisualNode Build(ComponentContext context) =>
+                    new Text($"{shelf.Prices["a"] * 2} {shelf.Scores.Count} {shelf.Scores[0]}", TypeRole.BodyM);
+            }
+            """);
+
+        generated.Errors.Should().BeEmpty();
+        generated.Reported.Should().BeEmpty();
+        generated.Manifest.Should().Contain(Projected("PricesPage", "shelf", "CapturedParameter", "Prices,Scores"));
     }
 
     [Fact]

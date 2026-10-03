@@ -102,11 +102,13 @@ public class HydrationCrossingTests(CrossingTwins twins) : IClassFixture<Crossin
     [Fact]
     public async Task AServiceIsReadDownToItsScalars_EachLandingAsTheServerReadIt()
     {
-        // A struct's computed long, a struct's public field, bytes, a nullable struct with and without a
-        // value, and a list a pattern reads beneath: whole, each one crossed wrong or not at all.
+        // A struct's computed long, a struct's public field and a nullable struct with and without a
+        // value, which whole crossed wrong or not at all; and a list a pattern reads beneath, a
+        // dictionary and a list of longs, which cross whole and are rebuilt as the browser's own.
         var (html, drawn) = await CrossAsync("/crossing-report", nameof(CrossingReportPage));
 
-        var expected = "count 84 | count is 42 | x 5 | bytes 3 | maybe 42 | never none | tag a".Split(" | ");
+        var expected = ("count 84 | count is 42 | x 5 | maybe 42 | never none | tag a | price 84 | scores 2 first 43")
+            .Split(" | ");
         foreach (var line in expected) html.Should().Contain(line);
         drawn[0].Split(" | ").Should().Equal(expected);
         drawn[1].Should().Be(drawn[0]);
@@ -132,8 +134,9 @@ public class HydrationCrossingTests(CrossingTwins twins) : IClassFixture<Crossin
             Totals = new CrossingTotals(7),
             Maybe = new CrossingTotals(7),
             Position = new CrossingPosition { X = 5 },
-            Bytes = [1, 2, 3],
             Tags = ["a", "b"],
+            Prices = new() { ["a"] = 42 },
+            Scores = [42, 7],
         });
         builder.Services.AddUI(options => options.ScanAssembly(typeof(CrossingPage).Assembly));
         var app = builder.Build();
