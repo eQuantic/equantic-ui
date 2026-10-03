@@ -495,10 +495,12 @@ async function fetchPageState(url?: string): Promise<PageStatePayload | null> {
  * Hands the payload to the two places that read it: the hydration door the SSR state comes through,
  * and the document head.
  *
- * The head is patched by IDENTITY, not by appending — a canonical is one statement about one
- * document, and a second one left over from the previous page tells a crawler the two URLs are the
- * same page. Matching on the attribute that names the tag (`name`, `property`, `rel`) is what lets
- * the SSR-rendered tags of the FIRST page be replaced rather than duplicated.
+ * The head's METADATA is replaced as a set. Every tag the server's metadata writes carries
+ * `data-eq-meta`, on a full load and in a navigation's payload alike, so the previous page's set is
+ * removed whole and the next page's written in its place: a canonical is one statement about one
+ * document, and a description, a canonical or a translation group the next page does not have was
+ * left standing when tags were matched by name alone. A tag without the marker is still patched by
+ * IDENTITY (the attribute that names it), so nothing is duplicated.
  */
 function applyPageState(payload: PageStatePayload | null): void {
   // REPLACED, INCLUDING WITH NOTHING. The payload used to be deleted by whoever read it, so a
@@ -516,12 +518,15 @@ function applyPageState(payload: PageStatePayload | null): void {
   if (typeof payload.title === 'string' && payload.title.length > 0) {
     document.title = payload.title;
   }
-  if (typeof payload.head !== 'string' || payload.head.length === 0) return;
+  if (typeof payload.head !== 'string') return;
 
+  // Removed even when the next page writes none: an empty set is still the next page's set.
+  for (const stale of Array.from(document.head.querySelectorAll('[data-eq-meta]'))) stale.remove();
+  if (payload.head.length === 0) return;
   const template = document.createElement('template');
   template.innerHTML = payload.head;
   for (const incoming of Array.from(template.content.children)) {
-    const selector = headSelectorFor(incoming);
+    const selector = incoming.hasAttribute('data-eq-meta') ? null : headSelectorFor(incoming);
     const existing = selector ? document.head.querySelector(selector) : null;
     if (existing) existing.replaceWith(incoming);
     else document.head.appendChild(incoming);
