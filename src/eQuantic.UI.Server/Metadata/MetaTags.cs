@@ -15,7 +15,7 @@ public class NameMetaTag : MetaTag
         Content = content;
     }
 
-    public override string Render() => $"<meta name=\"{HttpUtility.HtmlAttributeEncode(Name)}\" content=\"{HttpUtility.HtmlAttributeEncode(Content)}\">";
+    public override string Render() => $"<meta name=\"{HttpUtility.HtmlAttributeEncode(Name)}\" content=\"{HttpUtility.HtmlAttributeEncode(Content)}\" {Managed}>";
 }
 
 public class PropertyMetaTag : MetaTag
@@ -31,7 +31,7 @@ public class PropertyMetaTag : MetaTag
         Content = content;
     }
 
-    public override string Render() => $"<meta property=\"{HttpUtility.HtmlAttributeEncode(Property)}\" content=\"{HttpUtility.HtmlAttributeEncode(Content)}\">";
+    public override string Render() => $"<meta property=\"{HttpUtility.HtmlAttributeEncode(Property)}\" content=\"{HttpUtility.HtmlAttributeEncode(Content)}\" {Managed}>";
 }
 
 public class LinkTag : MetaTag
@@ -71,6 +71,6 @@ public class LinkTag : MetaTag
             ? ""
             : $" hreflang=\"{HttpUtility.HtmlAttributeEncode(Hreflang)}\"";
         return $"<link rel=\"{HttpUtility.HtmlAttributeEncode(Rel)}\"{langAttr} "
-            + $"href=\"{HttpUtility.HtmlAttributeEncode(Href)}\"{typeAttr}>";
+            + $"href=\"{HttpUtility.HtmlAttributeEncode(Href)}\"{typeAttr} {Managed}>";
     }
 }

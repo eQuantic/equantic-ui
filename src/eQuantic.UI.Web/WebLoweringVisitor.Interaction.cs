@@ -635,6 +635,16 @@ internal sealed partial class WebLoweringVisitor
     }
 
     /// <summary>
+    /// Whether the router warms a destination on hover: an app-internal path, rooted and not
+    /// protocol-relative, which is the line <see cref="RenderContext.ResolveDestination"/> draws too.
+    /// <c>//cdn.example.com</c> starts with a slash and is somebody else's server, and it was warmed.
+    /// One rule for a <see cref="Link"/> and a run that links, and its TypeScript twin
+    /// (<c>warmsOnHover</c> in <c>lowering.ts</c>) answers the same.
+    /// </summary>
+    private static bool WarmsOnHover(string destination) =>
+        destination.StartsWith('/') && !destination.StartsWith("//", StringComparison.Ordinal);
+
+    /// <summary>
     /// Navigation semantics: a REAL <c>&lt;a href&gt;</c> (SSR-crawlable, router-intercepted) whose
     /// UA chrome is neutralized — the child owns all visuals, exactly the Pressable contract. A Fill
     /// child gets the 100% pass-through chain the same way.
@@ -671,7 +681,7 @@ internal sealed partial class WebLoweringVisitor
         // worst case is the work the click was going to do anyway, done slightly earlier.
         //
         // App-internal destinations only: an absolute URL belongs to somebody else's server.
-        if (destination.StartsWith('/')) element.RawAttributes["data-prefetch"] = "";
+        if (WarmsOnHover(destination)) element.RawAttributes["data-prefetch"] = "";
         // The page you are ON. Only the current link carries it — aria-current="false" on the other
         // nine is legal, useless, and read out loud.
         if (link.Current) element.AriaCurrent = "page";

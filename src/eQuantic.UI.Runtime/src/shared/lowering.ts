@@ -1022,6 +1022,15 @@ function mark(
   };
 }
 
+/**
+ * Whether the router warms a destination on hover: an app-internal path, rooted and not
+ * protocol-relative (C# twin: `WebLoweringVisitor.WarmsOnHover`). `//cdn.example.com` starts with a
+ * slash and is somebody else's server. One rule for a Link and a run that links.
+ */
+function warmsOnHover(destination: string): boolean {
+  return destination.startsWith('/') && !destination.startsWith('//');
+}
+
 function lowerLink(node: LinkNode, context: LoweringContext, path: string): HtmlNode {
   // The active language rides the href (C# twin: RenderContext.ResolveDestination). An author
   // writes `/pricing` once and the link is right in every language — including after a
@@ -1052,7 +1061,7 @@ function lowerLink(node: LinkNode, context: LoweringContext, path: string): Html
   // that is what the router's one delegated click listener meets.
   if (node.keepsPosition) anchor.attributes['data-eq-keep-position'] = '';
   // WARM ON HOVER (C# twin): app-internal destinations only — an absolute URL is somebody else's.
-  if (destination.startsWith('/')) anchor.attributes['data-prefetch'] = '';
+  if (warmsOnHover(destination)) anchor.attributes['data-prefetch'] = '';
   // The page you are ON (C# twin): only the current link says so.
   if (node.current === true) anchor.attributes['aria-current'] = 'page';
   const child = lowerNode(node.child, context, null, path + '/0');
@@ -2714,8 +2723,13 @@ function lowerText(text: TextNode, context: LoweringContext): HtmlNode {
             },
             [textLeaf(run.content)],
           );
-          if (run.destination)
-            runNode.attributes = { ...runNode.attributes, href: run.destination };
+          if (run.destination) {
+            // A run that links is a link (C# twin): the language rides its href and an
+            // app-internal one warms on hover, as a Link's does (#505).
+            const destination = localizeDestination(run.destination);
+            runNode.attributes = { ...runNode.attributes, href: destination };
+            if (warmsOnHover(destination)) runNode.attributes['data-prefetch'] = '';
+          }
           return runNode;
         })
       : [textLeaf(text.content)];
