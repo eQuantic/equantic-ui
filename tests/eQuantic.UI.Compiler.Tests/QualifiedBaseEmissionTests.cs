@@ -114,7 +114,7 @@ public class QualifiedBaseEmissionTests
         ((string)AppContext.GetData("TRUSTED_PLATFORM_ASSEMBLIES")!)
             .Split(Path.PathSeparator)
             .Where(p => p.EndsWith(".dll", StringComparison.OrdinalIgnoreCase))
-            .Select(p => (MetadataReference)MetadataReference.CreateFromFile(p))
-            .Append(MetadataReference.CreateFromFile(typeof(eQuantic.UI.Primitives.VisualNode).Assembly.Location))
-            .Append(MetadataReference.CreateFromFile(typeof(eQuantic.UI.Web.HtmlElement).Assembly.Location));
+            .Select(TestReferences.Of)
+            .Append(TestReferences.Of(typeof(eQuantic.UI.Primitives.VisualNode)))
+            .Append(TestReferences.Of(typeof(eQuantic.UI.Web.HtmlElement)));
 }

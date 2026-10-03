@@ -52,7 +52,7 @@ public class ServerOnlyAcrossPartialsTests
             var project = CSharpCompilation.Create(
                 "PartialsProbe",
                 files.Select(f => CSharpSyntaxTree.ParseText(File.ReadAllText(f), path: f)),
-                new[] { MetadataReference.CreateFromFile(typeof(object).Assembly.Location) });
+                new[] { TestReferences.Of(typeof(object).Assembly.Location) });
 
             var compiler = new ComponentCompiler();
             compiler.SetProjectCompilation(project);

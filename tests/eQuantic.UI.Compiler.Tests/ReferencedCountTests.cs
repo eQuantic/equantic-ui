@@ -62,7 +62,7 @@ public class ReferencedCountTests
             var platform = ((string)AppContext.GetData("TRUSTED_PLATFORM_ASSEMBLIES")!)
                 .Split(Path.PathSeparator)
                 .Where(p => p.EndsWith(".dll", StringComparison.OrdinalIgnoreCase))
-                .Select(p => (MetadataReference)MetadataReference.CreateFromFile(p))
+                .Select(TestReferences.Of)
                 .ToList();
             var library = CSharpCompilation.Create("Lib", [CSharpSyntaxTree.ParseText(Library)], platform,
                 new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
@@ -73,7 +73,7 @@ public class ReferencedCountTests
             File.WriteAllText(path, Component);
             var references = platform
                 .Append(MetadataReference.CreateFromImage(image.ToArray()))
-                .Append(MetadataReference.CreateFromFile(typeof(eQuantic.UI.Primitives.VisualNode).Assembly.Location));
+                .Append(TestReferences.Of(typeof(eQuantic.UI.Primitives.VisualNode)));
             var compilation = CSharpCompilation.Create("App", [CSharpSyntaxTree.ParseText(Component, path: path)],
                 references, new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
 

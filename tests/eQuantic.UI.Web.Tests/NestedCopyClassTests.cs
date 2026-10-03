@@ -24,7 +24,7 @@ public class NestedCopyClassTests
         var references = ((string)AppContext.GetData("TRUSTED_PLATFORM_ASSEMBLIES")!)
             .Split(Path.PathSeparator)
             .Where(path => path.EndsWith(".dll", StringComparison.OrdinalIgnoreCase))
-            .Select(path => (MetadataReference)MetadataReference.CreateFromFile(path));
+            .Select(path => (MetadataReference)TestReferences.Of(path));
 
         var compilation = CSharpCompilation.Create("Nested", [tree, usings], references,
             new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary,

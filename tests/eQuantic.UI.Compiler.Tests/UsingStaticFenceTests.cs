@@ -82,9 +82,9 @@ public class UsingStaticFenceTests
         var references = ((string)AppContext.GetData("TRUSTED_PLATFORM_ASSEMBLIES")!)
             .Split(Path.PathSeparator)
             .Where(p => p.EndsWith(".dll", StringComparison.OrdinalIgnoreCase))
-            .Select(p => (MetadataReference)MetadataReference.CreateFromFile(p))
-            .Append(MetadataReference.CreateFromFile(typeof(eQuantic.UI.Primitives.VisualNode).Assembly.Location))
-            .Append(MetadataReference.CreateFromFile(typeof(eQuantic.UI.Components.CodeEditor).Assembly.Location));
+            .Select(TestReferences.Of)
+            .Append(TestReferences.Of(typeof(eQuantic.UI.Primitives.VisualNode)))
+            .Append(TestReferences.Of(typeof(eQuantic.UI.Components.CodeEditor)));
         var compilation = CSharpCompilation.Create("App",
             [CSharpSyntaxTree.ParseText(source, eQuantic.UI.Compiler.Services.ParseDefaults.Options, component + ".cs")],
             references, new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
