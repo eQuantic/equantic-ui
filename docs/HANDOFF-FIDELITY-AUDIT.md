@@ -1079,7 +1079,7 @@ the pill's 40 down.
   ```
   Select.cs:27-28  public Select(IReadOnlyList<string> options, int selectedIndex = -1,
           Action<int>? onChanged = null, string? placeholder = null)
-  Select.cs:123  : (VisualNode)new Pressable(field, Toggle) { Expanded = _open };
+  Select.cs:123  var trigger = new Pressable(field, Disabled ? null : Toggle) { Disabled = Disabled, Expanded = _open && !Disabled };
   ```
 
 ### C14 Select · missing-feature · **unverified**
