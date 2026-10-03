@@ -191,7 +191,7 @@ public class SharedComponentTranspilationTests
         var references = ((string)AppContext.GetData("TRUSTED_PLATFORM_ASSEMBLIES")!)
             .Split(Path.PathSeparator)
             .Where(path => path.EndsWith(".dll", StringComparison.OrdinalIgnoreCase))
-            .Select(path => (MetadataReference)MetadataReference.CreateFromFile(path))
+            .Select(path => (MetadataReference)TestReferences.Of(path))
             .ToList();
         var compilation = CSharpCompilation.Create("SharedComponents", trees, references,
             new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary,
@@ -452,7 +452,7 @@ public class SharedComponentTranspilationTests
         var references = ((string)AppContext.GetData("TRUSTED_PLATFORM_ASSEMBLIES")!)
             .Split(Path.PathSeparator)
             .Where(dll => dll.EndsWith(".dll", StringComparison.OrdinalIgnoreCase))
-            .Select(dll => (MetadataReference)MetadataReference.CreateFromFile(dll))
+            .Select(dll => (MetadataReference)TestReferences.Of(dll))
             .ToList();
         return CSharpCompilation.Create("BoundProbe",
             [
@@ -609,7 +609,7 @@ public class SharedComponentTranspilationTests
         var references = ((string)AppContext.GetData("TRUSTED_PLATFORM_ASSEMBLIES")!)
             .Split(Path.PathSeparator)
             .Where(path => path.EndsWith(".dll", StringComparison.OrdinalIgnoreCase))
-            .Select(path => (MetadataReference)MetadataReference.CreateFromFile(path))
+            .Select(path => (MetadataReference)TestReferences.Of(path))
             .ToList();
         var compilation = CSharpCompilation.Create("BridgePage", trees, references,
             new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary,
@@ -641,7 +641,7 @@ public class SharedComponentTranspilationTests
         var references = ((string)AppContext.GetData("TRUSTED_PLATFORM_ASSEMBLIES")!)
             .Split(Path.PathSeparator)
             .Where(path => path.EndsWith(".dll", StringComparison.OrdinalIgnoreCase))
-            .Select(path => (MetadataReference)MetadataReference.CreateFromFile(path))
+            .Select(path => (MetadataReference)TestReferences.Of(path))
             .ToList();
         var compilation = CSharpCompilation.Create("PageProbe", trees, references,
             new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary,

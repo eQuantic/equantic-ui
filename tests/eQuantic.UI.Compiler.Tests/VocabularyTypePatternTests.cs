@@ -45,7 +45,7 @@ public class VocabularyTypePatternTests
             + $"\nclass Wrapper {{ object Method(VisualNode node, object any) {{ {bodyCode} }} }}\n}}";
         var tree = CSharpSyntaxTree.ParseText(code);
         var compilation = CSharpCompilation.Create("probe", [tree],
-            [MetadataReference.CreateFromFile(typeof(object).Assembly.Location)]);
+            [TestReferences.Of(typeof(object).Assembly.Location)]);
         _converter.SetSemanticModel(compilation.GetSemanticModel(tree));
 
         var method = tree.GetRoot().DescendantNodes().OfType<MethodDeclarationSyntax>().First();

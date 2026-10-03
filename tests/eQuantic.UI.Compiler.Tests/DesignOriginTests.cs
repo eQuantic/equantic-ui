@@ -69,7 +69,7 @@ public class DesignOriginTests
             .Where(a => !a.IsDynamic && !string.IsNullOrEmpty(a.Location))
             .Select(a => a.Location)
             .Distinct(StringComparer.OrdinalIgnoreCase)
-            .Select(location => (MetadataReference)MetadataReference.CreateFromFile(location))
+            .Select(location => (MetadataReference)TestReferences.Of(location))
             .ToArray();
 
     /// <summary>
