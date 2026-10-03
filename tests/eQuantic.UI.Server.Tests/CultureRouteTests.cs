@@ -186,8 +186,12 @@ public class CultureRouteTests
 
         // The browser matches the literal prefixes (its matcher would accept any segment for a
         // constraint it does not know), and learns the map to prefix hrefs it lowers itself.
-        html.Should().Contain("'/pt-BR/pricing'").And.Contain("'/es/pricing'");
-        html.Should().Contain("cultureRoutes: { default: 'en', prefixed: ['pt-BR','es'] }");
+        var config = ShellConfig.In(html);
+        config.GetProperty("routes").EnumerateArray().Select(route => route.GetProperty("pattern").GetString())
+            .Should().Contain(["/pt-BR/pricing", "/es/pricing"]);
+        config.GetProperty("cultureRoutes").GetProperty("default").GetString().Should().Be("en");
+        config.GetProperty("cultureRoutes").GetProperty("prefixed").EnumerateArray().Select(prefix => prefix.GetString())
+            .Should().Equal(["pt-BR", "es"]);
         // hreflang from the same map, with no separate policy declared.
         html.Should().Contain("hreflang=\"pt-BR\" href=\"http://localhost/pt-BR/pricing\"");
         html.Should().Contain("hreflang=\"en\" href=\"http://localhost/pricing\"");

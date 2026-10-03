@@ -9,6 +9,7 @@ using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
 using eQuantic.UI.Server.Assets;
+using eQuantic.UI.Server.Client;
 using eQuantic.UI.Server.Metadata;
 using eQuantic.UI.Server.Authorization;
 using eQuantic.UI.Server.Rendering;
@@ -238,7 +239,7 @@ public static class UIExtensions
 
         // The same two endpoints a [Page] gets — the route, and its language-prefixed twin.
         foreach (var pattern in CultureEndpointPatterns(options, route))
-            endpoints.MapGet(pattern, async context => await ServeAppShell(context, pageType.Name));
+            endpoints.MapGet(pattern, async context => await ServeAppShell(context, pageType.Name, new DeclaredPage(title, null)));
         return endpoints;
     }
 
@@ -291,10 +292,11 @@ public static class UIExtensions
                 foreach (var pageAttr in pageAttrs) 
                 {
                     // The bare route, plus the constrained one when the app declared languages.
+                    var declared = new DeclaredPage(pageAttr.Title, pageAttr.Description);
                     foreach (var route in CultureEndpointPatterns(options, pageAttr.Route))
                     {
                         var name = pageType.Name;
-                        endpoints.MapGet(route, async context => await ServeAppShell(context, name));
+                        endpoints.MapGet(route, async context => await ServeAppShell(context, name, declared));
                     }
                 }
             }
@@ -447,7 +449,7 @@ public static class UIExtensions
             // ScanAssembly when the app declares a `[Page("/404")]`) and boots that page as the
             // content; absent one, the shell boots and the runtime paints its styled default.
             context.Response.StatusCode = 404;
-            await ServeAppShell(context, null);
+            await ServeAppShell(context, null, null);
         });
 
         return endpoints;
@@ -502,7 +504,36 @@ public static class UIExtensions
     /// link would cost more than the round trip it saves.
     /// </para>
     /// </summary>
-    private static async Task ServePageState(HttpContext context, string? pageName)
+    /// <summary>
+    /// What a route's document says about its page before the page speaks, the same for a full load
+    /// and a client navigation: the app's defaults, then what the route declares, each winning over the
+    /// one before by key. What the page says itself (<see cref="AdoptPageMetadata"/>) goes on top.
+    /// <para>
+    /// The route's title used to be applied after the page, and only when the metadata had none, which
+    /// the app's default title always filled, so no page ever got it; and a navigation never looked at
+    /// it, answering with the app's title over the one the client had just set from its route table.
+    /// </para>
+    /// </summary>
+    private static MetadataCollection PageMetadata(UIOptions options, DeclaredPage? declared)
+    {
+        var shell = options.HtmlShell;
+        var metadata = new MetadataCollection { Title = shell.Title };
+        foreach (var tag in shell.DefaultMetadata.Tags) metadata.AddOrUpdate(tag);
+        var seo = new SeoBuilder(metadata);
+        if (!string.IsNullOrEmpty(declared?.Title)) seo.Title(declared.Title);
+        if (!string.IsNullOrEmpty(declared?.Description)) seo.Description(declared.Description);
+        return metadata;
+    }
+
+    /// <summary>What the page says of itself (<c>IHandleMetadata</c>), over everything before it.</summary>
+    private static void AdoptPageMetadata(MetadataCollection metadata, MetadataCollection? page)
+    {
+        if (page is null) return;
+        if (!string.IsNullOrEmpty(page.Title)) metadata.Title = page.Title;
+        foreach (var tag in page.Tags) metadata.AddOrUpdate(tag);
+    }
+
+    private static async Task ServePageState(HttpContext context, string? pageName, DeclaredPage? declared)
     {
         context.Response.ContentType = "application/json; charset=utf-8";
         // Never cached: this is the page's data, and the next visitor's is not this one's.
@@ -542,17 +573,15 @@ public static class UIExtensions
         if (result.StatusCode != StatusCodes.Status200OK)
             context.Response.StatusCode = result.StatusCode;
 
-        var head = new StringBuilder();
-        var title = options.HtmlShell.Title;
-        if (result.Metadata is { } metadata)
-        {
-            if (!string.IsNullOrEmpty(metadata.Title)) title = metadata.Title;
-            head.Append(metadata.RenderTags());
-        }
+        // The same metadata a full load of this route writes, minus the alternate languages, whose
+        // links the client matches by `rel` alone and would collapse into one.
+        var metadata = PageMetadata(options, declared);
+        AdoptPageMetadata(metadata, result.Metadata);
+        LocalizeCanonical(context, options, metadata);
 
         var payload = new StringBuilder("{");
-        payload.Append("\"title\":").Append(JsonSerializer.Serialize(title));
-        payload.Append(",\"head\":").Append(JsonSerializer.Serialize(head.ToString()));
+        payload.Append("\"title\":").Append(JsonSerializer.Serialize(metadata.Title));
+        payload.Append(",\"head\":").Append(JsonSerializer.Serialize(metadata.RenderTags()));
         if (result.SerializedState is { Length: > 0 } state)
             payload.Append(",\"state\":").Append(state);
         payload.Append('}');
@@ -587,12 +616,12 @@ public static class UIExtensions
         return true;
     }
 
-    private static async Task ServeAppShell(HttpContext context, string? pageName)
+    private static async Task ServeAppShell(HttpContext context, string? pageName, DeclaredPage? declared)
     {
         // A client navigation asks the same route for the page's data instead of a document.
         if (context.Request.Headers.ContainsKey(NavigationHeader))
         {
-            await ServePageState(context, pageName);
+            await ServePageState(context, pageName, declared);
             return;
         }
 
@@ -603,7 +632,6 @@ public static class UIExtensions
         // Per-request copy of the head tags. The HtmlShell is a singleton, so mutating
         // shell.HeadTags directly is not thread-safe and leaks tags across requests.
         var headTags = new List<string>(shell.HeadTags);
-        var pageValue = pageName != null ? $"'{pageName}'" : "null";
 
         // Write-once theme selection (options.UseTheme): emit the selected theme's NORMATIVE token
         // stylesheet, and serialize it into window.__EQ_THEME__ so boot can setPhotonTheme before
@@ -640,11 +668,7 @@ public static class UIExtensions
         // handing back the work we just took.
         headTags.AddRange(GeneratedIconTags(context));
 
-        // Initialize Metadata
-        var metadata = new MetadataCollection { Title = shell.Title };
-        // The app's defaults FIRST, so the page's own (merged below) overrides them by key instead
-        // of landing beside them as a duplicate tag.
-        foreach (var tag in shell.DefaultMetadata.Tags) metadata.AddOrUpdate(tag);
+        var metadata = PageMetadata(options, declared);
         var seo = new SeoBuilder(metadata);
 
         // The translation group, BEFORE the page speaks: an app-wide policy is a default, and a
@@ -672,14 +696,7 @@ public static class UIExtensions
             ssrEnabled = true;
             serializedState = adopted.SerializedState;
 
-            if (adopted.Metadata != null)
-            {
-                if (!string.IsNullOrEmpty(adopted.Metadata.Title))
-                    metadata.Title = adopted.Metadata.Title;
-
-                foreach (var tag in adopted.Metadata.Tags)
-                    metadata.AddOrUpdate(tag);
-            }
+            AdoptPageMetadata(metadata, adopted.Metadata);
 
             // The page's atomic CSS rides here. Without it the fallback served the right markup
             // with none of its classes defined.
@@ -724,31 +741,13 @@ public static class UIExtensions
             }
         }
 
-        // Apply PageAttribute metadata if not already set by SSR
-        if (pageName != null)
-        {
-            var pageType = options.AssembliesToScan
-                .SelectMany(a => a.GetTypes())
-                .FirstOrDefault(t => t.Name == pageName && t.GetCustomAttributes<PageAttribute>().Any());
-
-            if (pageType != null)
-            {
-                var attr = pageType.GetCustomAttributes<PageAttribute>().FirstOrDefault()!;
-                if (!string.IsNullOrEmpty(attr.Title) && string.IsNullOrEmpty(metadata.Title))
-                    seo.Title(attr.Title);
-
-                if (!string.IsNullOrEmpty(attr.Description) && !metadata.Tags.Any(t => t.Key == "name:description"))
-                    seo.Description(attr.Description);
-            }
-        }
-        else
+        if (pageName == null)
         {
             // 404 Not Found Handling — the fallback endpoint already set the status; here the
             // app's registered /404 page (if any) takes over the CONTENT.
             if (options.NotFoundPageType != null)
             {
                 pageName = options.NotFoundPageType.Name;
-                pageValue = $"'{pageName}'";
                 
                 // Try to render the 404 page via SSR
                 if (options.EnableSsr)
@@ -810,8 +809,7 @@ public static class UIExtensions
                          {
                              context.Response.StatusCode = 500;
                              pageName = errorPageName;
-                             pageValue = $"'{pageName}'";
-                             // The THIRD door to a rendered page, and it was drifting like the other
+                                          // The THIRD door to a rendered page, and it was drifting like the other
                              // two: an error page that loads its own branding kept none of it.
                              AdoptSsr(result);
                          }
@@ -830,7 +828,6 @@ public static class UIExtensions
 
         // Client route table from [Page] attributes — lets the runtime resolve URLs to page bundles
         // for client-side (SPA) navigation without a server round-trip.
-        static string JsStr(string s) => s.Replace("\\", "\\\\").Replace("'", "\\'");
         var routeEntries = options.AssembliesToScan
             .SelectMany(a => a.GetTypes())
             .SelectMany(t => t.GetCustomAttributes<PageAttribute>()
@@ -843,37 +840,30 @@ public static class UIExtensions
                 .Select(pattern => (Pattern: pattern, r.Page, r.Title)))
             .Distinct()
             .ToList();
-        var routesJson = "[" + string.Join(",", routeEntries.Select(r =>
-        {
-            var title = string.IsNullOrEmpty(r.Title) ? "" : $",title:'{JsStr(r.Title)}'";
-            return $"{{pattern:'{JsStr(r.Pattern)}',page:'{JsStr(r.Page)}'{title}}}";
-        })) + "]";
-
-        // Inject configuration object
-        // The cookie config crosses to the browser because the browser is what WRITES it while the
-        // server READS it. Two places to configure would drift, and a drifted name fails silently:
-        // the server reads a cookie nobody writes, so persistence stops while everything still
-        // looks right. `false` is the app having turned it off.
-        var themeCookieJson = options.ThemeCookie is { } cookie
-            ? $"{{ name: '{cookie.Name}', days: {cookie.Days} }}"
-            : "false";
-
-        // The language-prefix policy crosses because the browser has to APPLY it: an href lowered
-        // after hydration, and the switcher's own navigation, both need to know which segments are
-        // languages. Guessing by shape would call a page named `pt` a language.
-        var cultureRoutesJson = options.CultureRoutes is { } cultureMap
-            ? $"{{ default: '{JsStr(cultureMap.Default)}', prefixed: ["
-              + string.Join(",", cultureMap.Prefixed.Select(p => $"'{JsStr(p)}'")) + "] }"
-            : "null";
-
-        var configJson = $@"{{
-            page: {pageValue},
-            version: '{BuildId}',
-            ssr: {ssrEnabled.ToString().ToLowerInvariant()},
-            themeCookie: {themeCookieJson},
-            cultureRoutes: {cultureRoutesJson},
-            routes: {routesJson}
-        }}";
+        // The client's configuration, written by System.Text.Json and nothing else. Its strings were
+        // quoted by hand, escaping the backslash and the quote, so a route title holding a line break
+        // was a syntax error in a script every page carries, and stopped the client of the whole app
+        // (#526); a `</script>` closed the element, and the theme cookie's name went in raw. The
+        // serializer's default encoder escapes every code unit a script cannot carry, `<` among them,
+        // and JSON is a JavaScript expression.
+        var configJson = JsonSerializer.Serialize(new ClientConfig(
+            Page: pageName,
+            Version: BuildId,
+            Ssr: ssrEnabled,
+            // The cookie config crosses to the browser because the browser is what WRITES it while the
+            // server READS it. Two places to configure would drift, and a drifted name fails silently:
+            // the server reads a cookie nobody writes, so persistence stops while everything still
+            // looks right. `false` is the app having turned it off.
+            ThemeCookie: options.ThemeCookie is { } cookie ? new ClientThemeCookie(cookie.Name, cookie.Days) : false,
+            // The language-prefix policy crosses because the browser has to APPLY it: an href lowered
+            // after hydration, and the switcher's own navigation, both need to know which segments are
+            // languages. Guessing by shape would call a page named `pt` a language.
+            CultureRoutes: options.CultureRoutes is { } cultureMap
+                ? new ClientCultureRoutes(cultureMap.Default, cultureMap.Prefixed.ToList())
+                : null,
+            Routes: routeEntries
+                .Select(r => new ClientRoute(r.Pattern, r.Page, string.IsNullOrEmpty(r.Title) ? null : r.Title))
+                .ToList()), ClientConfig.Json);
 
         // Render HTML using template engine with conditionals
         var isDevelopment = context.RequestServices.GetRequiredService<IWebHostEnvironment>().IsDevelopment();
@@ -890,7 +880,7 @@ public static class UIExtensions
             // Variables
             ctx.Set("HtmlClass", shell.HtmlClass)
                .Set("HtmlLang", htmlLang)
-               .Set("Title", System.Web.HttpUtility.HtmlEncode(metadata.Title))
+               .Set("Title", System.Web.HttpUtility.HtmlEncode(metadata.Title ?? string.Empty))
                .Set("MetadataTags", metadata.RenderTags())
                .Set("BuildId", BuildId)
                .SetOrEmpty("BaseStyles", shell.BaseStyles)
