@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { hash, hashCombine, identityHash } from './hash';
+import { hash, hashCombine, hashFields, identityHash } from './hash';
 import { dec } from './decimal';
 import { dateTime } from './datetime';
 import { equals } from './equals';
@@ -53,6 +53,20 @@ describe('a hash agrees with equals ($eq.hash)', () => {
     expect(hash(one)).toBe(hash(one));
     expect(hash(one)).toBe(identityHash(one));
     expect(hash(one)).not.toBe(hash(new Plain(1)));
+  });
+
+  it('hashes a large array by walking it, and a class with an identity equals by its identity', () => {
+    const large = new Array(300_000).fill(1);
+    expect(hash(large)).toBe(hash(new Array(300_000).fill(1)));
+    class Gate {
+      equals(other: unknown): boolean {
+        return this === other;
+      }
+    }
+    const gate = new Gate();
+    expect(hash(gate)).toBe(identityHash(gate));
+    expect(hash(gate)).not.toBe(hash(new Gate()));
+    expect(hashFields({ x: 1, y: 2 })).toBe(hash({ y: 2, x: 1 }));
   });
 
   it('combines in order, as HashCode.Combine does', () => {

@@ -376,6 +376,15 @@ public class RecordTypeEmitter
             sb.Append(string.Join(", ", members.Select(m => $"('{m.Js}' in patch ? patch.{m.Js} : this.{m.Js})")));
             sb.Append("); } ");
 
+            // getHashCode: the members `equals` reads, combined, as the record's synthesized GetHashCode
+            // and a struct's ValueType.GetHashCode hash them, so two values `equals` finds equal hash
+            // alike by construction (#519). One the app wrote is its own, emitted with its methods.
+            if (!type.Members.OfType<MethodDeclarationSyntax>()
+                    .Any(method => method.Identifier.Text == "GetHashCode" && method.ParameterList.Parameters.Count == 0))
+                sb.Append(tsTypeDeclarations ? "getHashCode(): number { return $eq.hash.combine(" : "getHashCode() { return $eq.hash.combine(")
+                    .Append(string.Join(", ", members.Select(m => $"this.{m.Js}")))
+                    .Append("); } ");
+
             // The twin's own TYPED BOUNDARY: which members hydrate off the wire, and as what —
             // `$eq.hydrate` rebuilds a payload object on this prototype and coerces by this map.
             if (ModelFor(type)?.GetDeclaredSymbol(type) is INamedTypeSymbol symbol

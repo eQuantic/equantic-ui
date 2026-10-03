@@ -1085,7 +1085,8 @@ record of a release, the wiki's Upgrading page is the distillate.
   defines, for a string, a number and a record alike, and threw in the browser, and `HashCode.Combine`
   named a class nothing defines ([#519](https://github.com/eQuantic/equantic-ui/issues/519)). The
   runtime's hash (`$eq.hash`) agrees with `$eq.equals` case by case, so values `Equals` finds equal
-  hash equal, a decimal of any scale and a date by its ticks included; a type that overrides
+  hash equal, a decimal of any scale and a date by its ticks included; a record's and a struct's
+  twin carry a `getHashCode` written from the members their `equals` reads, a type that overrides
   `GetHashCode` answers its own, and a class that does not is hashed by its identity. .NET's own
   numbers are not stable across processes, so the browser keeps the contract and never the server's
   number. A Guid made from text is its canonical text, the lowercase `D` format, so two spellings

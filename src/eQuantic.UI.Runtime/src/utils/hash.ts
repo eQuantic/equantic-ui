@@ -6,14 +6,14 @@
  *
  * The hash follows `$eq.equals` (utils/equals.ts) case by case, so `equals(a, b)` implies
  * `hash(a) === hash(b)`:
- *  - a value with its own `getHashCode` answers it: a class or a record that overrides GetHashCode,
- *    and the runtime's own types (a decimal, the dates, a dictionary);
+ *  - a value with its own `getHashCode` answers it: a class or a record that overrides GetHashCode, a
+ *    record's or a struct's twin, and the runtime's own types (a decimal, the dates, a dictionary);
  *  - a number as a double hashes, NaN with NaN and -0 with 0, as Equals holds them, and an int is its
  *    own hash, as in .NET; a long by its two halves; a string and a char by their UTF-16 code units;
  *    a bool as 1 or 0; null as 0;
  *  - a value tuple, an array here, element by element, in order;
- *  - a record, a struct or an anonymous type, a value that compares by `equals` or plain data, member
- *    by member, in any order, as `equals` reads them by name;
+ *  - a record's and a struct's twin by the `getHashCode` eqc writes from the members its `equals` reads,
+ *    and an anonymous value, plain data here, member by member, in any order;
  *  - an instance of any other class by its identity, as `object.GetHashCode` is.
  */
 export function hash(value: unknown): number {
@@ -36,9 +36,26 @@ export function hash(value: unknown): number {
 
 /** `HashCode.Combine`: the values' hashes, combined in the order they are given. */
 export function hashCombine(...values: unknown[]): number {
+  return ordered(values);
+}
+
+/** The hashes of a sequence's items, combined in order: a walk, not a spread, so a large array is no
+ * call's argument list. */
+function ordered(values: Iterable<unknown>): number {
   let combined = 17;
   for (const value of values) combined = (Math.imul(combined, 31) + hash(value)) | 0;
   return combined;
+}
+
+/**
+ * A value's members, hashed in any order, without asking its own `getHashCode`: plain data's hash, and
+ * `ValueType.GetHashCode`, which a struct's override reaches through `base` and which must not call
+ * the override back.
+ */
+export function hashFields(value: object): number {
+  let result = 0;
+  for (const [key, member] of Object.entries(value)) result = (result + (Math.imul(stringHash(key), 31) ^ hash(member))) | 0;
+  return result;
 }
 
 const identities = new WeakMap<object, number>();
@@ -77,12 +94,10 @@ function stringHash(text: string): number {
 function objectHash(value: object): number {
   const own = (value as { getHashCode?: unknown }).getHashCode;
   if (typeof own === 'function') return Number((own as () => unknown).call(value)) | 0;
-  if (Array.isArray(value)) return hashCombine(...value);
+  if (Array.isArray(value)) return ordered(value);
+  // Plain data (an anonymous value) by its members, in any order, as `equals` matches them by name.
+  // A record's and a struct's twin answer above, from the members their `equals` reads; any other
+  // class, the runtime's included, is its identity unless it says otherwise.
   const prototype = Object.getPrototypeOf(value);
-  const data = prototype === Object.prototype || prototype === null;
-  if (!data && typeof (value as { equals?: unknown }).equals !== 'function') return identityHash(value);
-  // In any order: `equals` matches the members by name, whatever order each value was built in.
-  let result = 0;
-  for (const [key, member] of Object.entries(value)) result = (result + (Math.imul(stringHash(key), 31) ^ hash(member))) | 0;
-  return result;
+  return prototype === Object.prototype || prototype === null ? hashFields(value) : identityHash(value);
 }

@@ -210,6 +210,10 @@ public static class Eq
     /// <summary><c>object.GetHashCode()</c> for a class that does not override it: its identity's.</summary>
     public const string HashIdentity = "$eq.hash.identity";
 
+    /// <summary><c>ValueType.GetHashCode()</c>, a struct's members, which its override reaches through
+    /// <c>base</c> without calling itself back.</summary>
+    public const string HashFields = "$eq.hash.fields";
+
     /// <summary><c>Guid.Parse</c> and <c>new Guid(string)</c>: the canonical text, or .NET's refusal.</summary>
     public const string GuidParse = "$eq.guid.parse";
 

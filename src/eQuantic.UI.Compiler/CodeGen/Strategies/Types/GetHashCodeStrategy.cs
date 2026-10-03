@@ -32,10 +32,12 @@ public class GetHashCodeStrategy : IExpressionIrStrategy
         var self = JsExpr.Identifier("this");
         if (invocation.Expression is MemberAccessExpressionSyntax { Expression: BaseExpressionSyntax })
         {
-            // The base's own override where the app wrote one, and object's, the identity's, otherwise.
+            // The base's own override where the app wrote one; ValueType's, a struct's members, without
+            // calling the override back; and object's, the identity's, otherwise.
             var declared = !method.IsImplicitlyDeclared && method.Locations.Any(location => location.IsInSource);
-            return declared
-                ? JsExpr.Call(JsExpr.Member(JsExpr.Identifier("super"), "getHashCode"))
+            if (declared) return JsExpr.Call(JsExpr.Member(JsExpr.Identifier("super"), "getHashCode"));
+            return method.ContainingType.SpecialType == SpecialType.System_ValueType
+                ? JsExpr.Call(JsExpr.Identifier(Eq.HashFields), self)
                 : JsExpr.Call(JsExpr.Identifier(Eq.HashIdentity), self);
         }
 

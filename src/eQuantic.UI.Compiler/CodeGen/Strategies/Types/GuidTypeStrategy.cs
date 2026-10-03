@@ -25,7 +25,7 @@ public class GuidTypeStrategy : IExpressionIrStrategy
         BaseObjectCreationExpressionSyntax creation => context.SemanticHelper.GetType(creation).IsNamed("System.Guid")
             && context.SemanticHelper.GetOperation(creation) is IObjectCreationOperation
             {
-                Constructor.Parameters: [{ Type.SpecialType: SpecialType.System_String }],
+                Constructor.Parameters: [] or [{ Type.SpecialType: SpecialType.System_String }],
             },
         _ => false,
     };
@@ -39,11 +39,21 @@ public class GuidTypeStrategy : IExpressionIrStrategy
 
     public JsExpr ConvertIr(SyntaxNode node, ConversionContext context)
     {
+        // `new Guid()` is Guid.Empty, as a struct's parameterless constructor is its zero.
         if (node is BaseObjectCreationExpressionSyntax creation)
-            return Parsed(creation.ArgumentList!.Arguments[0].Expression, context);
+            return creation.ArgumentList is { Arguments.Count: 1 } list
+                ? Parsed(list.Arguments[0].Expression, context)
+                : JsExpr.Literal(Empty);
 
         if (node is MemberAccessExpressionSyntax { Name.Identifier.Text: "Empty" })
             return JsExpr.Literal(Empty);
+
+        // `Guid.Parse` handed on as a function (`texts.Select(Guid.Parse)`) is the runtime's reader.
+        if (node is MemberAccessExpressionSyntax { Name.Identifier.Text: "Parse" })
+        {
+            context.UsedHelpers.Add(Eq.Import);
+            return JsExpr.Identifier(Eq.GuidParse);
+        }
 
         if (node is InvocationExpressionSyntax { Expression: MemberAccessExpressionSyntax method } invocation)
         {

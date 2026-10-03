@@ -129,3 +129,4 @@ const eQuantic.UI.Compiler.CodeGen.Eq.GuidParse = "$eq.guid.parse" -> string!
 const eQuantic.UI.Compiler.CodeGen.Eq.GuidTryParse = "$eq.guid.tryParse" -> string!
 eQuantic.UI.Compiler.CodeGen.Strategies.Types.GuidTypeStrategy.ConvertIr(Microsoft.CodeAnalysis.SyntaxNode! node, eQuantic.UI.Compiler.CodeGen.ConversionContext! context) -> eQuantic.UI.Compiler.CodeGen.Ir.JsExpr!
 *REMOVED*eQuantic.UI.Compiler.CodeGen.Strategies.Types.GuidTypeStrategy.Convert(Microsoft.CodeAnalysis.SyntaxNode! node, eQuantic.UI.Compiler.CodeGen.ConversionContext! context) -> string!
+const eQuantic.UI.Compiler.CodeGen.Eq.HashFields = "$eq.hash.fields" -> string!

@@ -98,6 +98,7 @@ public class DateTimeConformanceTests
     [InlineData("try { var o = DateTimeOffset.MaxValue + TimeSpan.FromTicks(1); return \"no\"; } catch (Exception e) { return e.Message; }")] // "...(Parameter 't')"
     [InlineData("try { DateTimeOffset.MaxValue.Add(TimeSpan.FromTicks(1)); return \"no\"; } catch (Exception e) { return e.Message; }")] // "...(Parameter 'value')"
     [InlineData("return new DateTime(2026, 1, 31).AddMonths(1).Day + \",\" + new DateTime(2024, 2, 29).AddYears(1).Day;")]             // "28,28"
+    [InlineData("DateTime? d = null; d += TimeSpan.FromDays(1); DateTime? e = new DateTime(2026, 1, 1); e += TimeSpan.FromDays(1); return (d == null) + \",\" + e.Value.Day;")] // "True,2": a nullable is lifted
     public void DateArithmetic_LeavingTheCalendar_IsRefusedAsDotNetRefusesIt(string statements)
     {
         Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");

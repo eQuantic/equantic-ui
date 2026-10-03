@@ -17,6 +17,16 @@ public class HashConformanceTests
         {
             public override int GetHashCode() => X * 7;
         }
+        public record Keyed(int A, string B)
+        {
+            public override int GetHashCode() => HashCode.Combine(A, B);
+        }
+        public struct Pt { public int X; public int Y; }
+        public struct Tilted
+        {
+            public int X;
+            public override int GetHashCode() => base.GetHashCode() ^ 1;
+        }
         """;
 
     [SkippableTheory]
@@ -31,6 +41,10 @@ public class HashConformanceTests
     [InlineData("return (1, \"a\").GetHashCode() == (1, \"a\").GetHashCode();")]                                    // true
     [InlineData("return new Weighted(3).GetHashCode();")]                                                            // 21
     [InlineData("return HashCode.Combine(1, \"a\") == HashCode.Combine(1, \"a\");")]                                // true
+    [InlineData("return new Keyed(1, \"x\").GetHashCode() == new Keyed(1, \"x\").GetHashCode();")]                    // true: Combine inside an override
+    [InlineData("var a = new Pt { X = 1, Y = 2 }; var b = new Pt { X = 1, Y = 2 }; return a.GetHashCode() == b.GetHashCode();")] // true: a struct
+    [InlineData("var a = new Tilted { X = 3 }; var b = new Tilted { X = 3 }; return a.GetHashCode() == b.GetHashCode();")]         // true: base in a struct
+    [InlineData("var xs = new int[200000]; return (xs, 1).GetHashCode() == (xs, 1).GetHashCode();")]                   // true: a large array
     public void AHash_AgreesWithEquals(string statements)
     {
         Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
@@ -50,6 +64,8 @@ public class HashConformanceTests
     [InlineData("var ok = Guid.TryParse(\"nope\", out var g); return ok + \":\" + g;")]                                                     // "False:00000000-0000-0000-0000-000000000000"
     [InlineData("try { Guid.Parse(\"nope\"); return \"parsed\"; } catch { return \"refused\"; }")]                                          // "refused"
     [InlineData("return Guid.Parse(\"A0000000-0000-0000-0000-000000000000\").GetHashCode() == Guid.Parse(\"a0000000-0000-0000-0000-000000000000\").GetHashCode();")] // true
+    [InlineData("return new Guid() == Guid.Empty;")]                                                                            // true
+    [InlineData("return string.Join(\",\", new[] { \"A0000000-0000-0000-0000-000000000000\" }.Select(Guid.Parse));")]          // "a0000000-0000-0000-0000-000000000000"
     public void AGuid_IsItsCanonicalText(string statements)
     {
         Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
