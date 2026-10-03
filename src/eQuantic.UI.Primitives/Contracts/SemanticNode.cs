@@ -52,11 +52,12 @@ public enum SemanticRole : byte
     /// <para>
     /// It exists because every role before it is a LEAF: announcing consumes the subtree, which is
     /// right for a button whose inner text is its name and catastrophic for a navigable grid, whose
-    /// every row would vanish. <see cref="Navigable"/> was declining on Photon for exactly that
-    /// reason while the web honoured it (#187), and a live region could not have existed at all
-    /// without it. The containers appended since say WHAT they group — <see cref="TabBar"/>,
-    /// <see cref="RadioGroup"/>, <see cref="Dialog"/>, <see cref="AlertDialog"/> — and keep walking
-    /// the same way.
+    /// every row would vanish. <see cref="Navigable"/> and <see cref="Overlay"/> were both declining
+    /// on Photon for exactly that reason while the web honoured them (#187), and a live region could
+    /// not have existed at all without it. The containers appended since say WHAT they group —
+    /// <see cref="TabBar"/>, <see cref="RadioGroup"/>, and the <see cref="Dialog"/> or
+    /// <see cref="AlertDialog"/> an open modal overlay is now (#501) — and keep walking the same
+    /// way.
     /// </para>
     /// <para>
     /// The platforms all have it: AXGroup on macOS, <c>android.view.ViewGroup</c> with screen-reader
