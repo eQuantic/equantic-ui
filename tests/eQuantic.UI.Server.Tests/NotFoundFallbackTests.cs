@@ -91,7 +91,7 @@ public class NotFoundFallbackTests
         response.StatusCode.Should().Be(HttpStatusCode.NotFound);
         // The shell still serves (the runtime paints the styled default), with no page to boot.
         var html = await response.Content.ReadAsStringAsync();
-        html.Should().Contain("page: null");
+        ShellConfig.In(html).GetProperty("page").ValueKind.Should().Be(System.Text.Json.JsonValueKind.Null);
     }
 
     [Fact]
@@ -105,7 +105,7 @@ public class NotFoundFallbackTests
         // Still a TRUE 404 — a branded page changes the pixels, not the status.
         response.StatusCode.Should().Be(HttpStatusCode.NotFound);
         var html = await response.Content.ReadAsStringAsync();
-        html.Should().Contain("page: 'BrandedNotFound'");
+        ShellConfig.In(html).GetProperty("page").GetString().Should().Be("BrandedNotFound");
     }
 
     [Fact]
