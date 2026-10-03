@@ -85,7 +85,15 @@ import {
   replace,
   startsWith,
 } from './utils/string-search';
-import { asInteger, asSingle, format, parseEnum, stringFormat, stringFormatInvariant } from './utils/format';
+import {
+  asInteger,
+  asSingle,
+  format,
+  parseEnum,
+  recordText,
+  stringFormat,
+  stringFormatInvariant,
+} from './utils/format';
 import { nextTextElementLength, textElementStarts } from './utils/text-elements';
 import { unicodeCategory } from './utils/unicode-category';
 import {
@@ -275,6 +283,7 @@ export const $eq = {
    * ranged join, a string's own searches by a comparison, and .NET's white space. */
   text: {
     format,
+    record: recordText,
     stringFormat,
     stringFormatInvariant,
     asSingle,

@@ -335,6 +335,57 @@ public static class TypeSymbolExtensions
             type.ContainingNamespace?.ToDisplayString() ?? string.Empty)
         || type.GetAttributes().Any(a => a.AttributeClass?.Name == "RuntimeProvidedAttribute");
 
+    /// <summary>
+    /// A vocabulary value type whose browser twin is its data alone, as <c>[TwinIsData]</c> declares
+    /// (<c>Color</c>): a plain object of its positional members, with its statics and each of its
+    /// instance methods, value first, on a companion of its name. Asked of the SYMBOL, so an app's own
+    /// type of the same name is the app's, and only of a type the runtime ships.
+    /// </summary>
+    internal static bool TwinIsData(this ITypeSymbol? type) =>
+        type is INamedTypeSymbol named
+        && named.IsRuntimeProvided()
+        && named.GetAttributes().Any(attribute => attribute.AttributeClass is
+            { Name: "TwinIsDataAttribute", ContainingNamespace: { } space }
+            && space.ToDisplayString() == "eQuantic.UI.Primitives");
+
+    /// <summary>
+    /// The members .NET writes in a record's text: the public instance fields and readable properties,
+    /// as <c>PrintMembers</c> lists them, a positional record's own first and in its parameters'
+    /// order. A type from metadata does not record where a field sits among the properties, so the
+    /// rest follow in metadata order, and the conformance suite compares each marked type's text with
+    /// .NET's.
+    /// </summary>
+    internal static IReadOnlyList<ISymbol> PrintedMembers(this INamedTypeSymbol type)
+    {
+        var printed = type.GetMembers()
+            .Where(member => member is IFieldSymbol { IsStatic: false, DeclaredAccessibility: Accessibility.Public }
+                or IPropertySymbol { IsStatic: false, DeclaredAccessibility: Accessibility.Public, IsIndexer: false, GetMethod: not null })
+            .ToList();
+        var positional = PositionalNames(type);
+        return printed.OrderBy(member => positional.IndexOf(member.Name) is var at && at >= 0 ? at : positional.Count).ToList();
+    }
+
+    /// <summary>
+    /// The members a value of a data twin STORES, which its plain object holds: a positional record's
+    /// parameters and the public instance fields. A computed property is not one of them, so it is
+    /// never written into the data.
+    /// </summary>
+    internal static IReadOnlyList<ISymbol> DataMembers(this INamedTypeSymbol type)
+    {
+        var positional = PositionalNames(type);
+        return type.PrintedMembers()
+            .Where(member => member is IFieldSymbol || positional.Contains(member.Name))
+            .ToList();
+    }
+
+    /// <summary>The parameters of a record's widest constructor that is not its copy constructor, by name.</summary>
+    private static List<string> PositionalNames(INamedTypeSymbol type) =>
+        type.InstanceConstructors
+            .Where(constructor => !(constructor.Parameters.Length == 1
+                && SymbolEqualityComparer.Default.Equals(constructor.Parameters[0].Type, type)))
+            .OrderByDescending(constructor => constructor.Parameters.Length)
+            .FirstOrDefault()?.Parameters.Select(parameter => parameter.Name).ToList() ?? new List<string>();
+
     /// <summary>A vocabulary type the runtime ships NO export for: declared <c>[ServerOnly]</c>
     /// outside this compilation. Its name must reach no emitted module, not even a hydration map,
     /// and naming it in a component's shape is EQ2010. One definition, read by the import scanner

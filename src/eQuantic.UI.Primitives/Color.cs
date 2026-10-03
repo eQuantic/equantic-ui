@@ -6,6 +6,7 @@ namespace eQuantic.UI.Primitives;
 /// the web realizer formats CSS values; the Photon engine decodes to linear premultiplied for
 /// blending (its color model mirrors GPU behavior with an sRGB render target).
 /// </summary>
+[TwinIsData("The browser makes a colour as { r, g, b, a } in the runtime's styles and themes, in the generated design system and in a hydration payload, and none of them constructs one.")]
 public readonly record struct Color(byte R, byte G, byte B, byte A)
 {
     public static Color FromRgb(byte r, byte g, byte b) => new(r, g, b, 255);
