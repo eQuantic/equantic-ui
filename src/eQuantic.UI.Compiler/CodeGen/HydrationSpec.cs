@@ -83,7 +83,7 @@ public static class HydrationSpec
         {
             // A sorted set orders as its element type does (ValueOrdering), as one eqc builds does.
             var order = collection == "sortedSet" && ValueOrdering.Of(named.TypeArguments[0]) is { } ordering
-                ? $", order: '{ordering}'"
+                ? $", order: {ordering}"
                 : "";
             return $"{{ collection: '{collection}', of: {Of(named.TypeArguments[0], referenced, visiting) ?? "null"}{order} }}";
         }
@@ -195,7 +195,7 @@ public static class HydrationSpec
         if (dictionary.DictionaryFactory() is Eq.SortedDictionary or Eq.SortedList)
         {
             parts.Add("sorted: true");
-            if (ValueOrdering.Of(key) is { } ordering) parts.Add($"order: '{ordering}'");
+            if (ValueOrdering.Of(key) is { } ordering) parts.Add($"order: {ordering}");
         }
         else if (DictionaryStrategy.KeyEquality(key) is { } equality) parts.Add($"byValue: {equality}");
         return $"{{ {string.Join(", ", parts)} }}";

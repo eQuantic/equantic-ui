@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Linq;
 using Microsoft.CodeAnalysis;
 using eQuantic.UI.Compiler.CodeGen.Extensions;
@@ -5,9 +6,9 @@ using eQuantic.UI.Compiler.CodeGen.Extensions;
 namespace eQuantic.UI.Compiler.CodeGen.Strategies;
 
 /// <summary>
-/// How the browser orders a value of a type as .NET's <c>Comparer&lt;T&gt;.Default</c> does: the name
-/// of an <c>Ordering</c> of <c>utils/ordering.ts</c>, or null where the values have no faithful order
-/// on that side.
+/// How the browser orders a value of a type as .NET's <c>Comparer&lt;T&gt;.Default</c> does: an
+/// <c>Ordering</c> of <c>utils/ordering.ts</c>, written as the JavaScript that names it, or null where
+/// the values have no faithful order on that side.
 /// <para>
 /// ONE table, read wherever the browser orders by a type: <c>Max</c> and <c>Min</c>, a sorted
 /// collection eqc builds, and one a hydration rebuilds. A value alone cannot say how it orders: a C#
@@ -20,21 +21,38 @@ namespace eQuantic.UI.Compiler.CodeGen.Strategies;
 internal static class ValueOrdering
 {
     /// <summary>The ordering of a value of <paramref name="type"/>, a <c>Nullable&lt;T&gt;</c> read
-    /// as its <c>T</c>; null where it has no faithful order in the browser.</summary>
+    /// as its <c>T</c>, as the JavaScript that names it (<c>'text'</c>, or an enum's members); null
+    /// where it has no faithful order in the browser.</summary>
     internal static string? Of(ITypeSymbol type)
     {
         var value = type.UnwrapNullable() ?? type;
+        if (value is INamedTypeSymbol { TypeKind: TypeKind.Enum } enumeration) return OfEnum(enumeration);
         return value.SpecialType switch
         {
-            SpecialType.System_Double or SpecialType.System_Single => "real",
+            SpecialType.System_Double or SpecialType.System_Single => "'real'",
             SpecialType.System_Int32 or SpecialType.System_Int64 or SpecialType.System_Int16
                 or SpecialType.System_Byte or SpecialType.System_SByte or SpecialType.System_UInt16
                 or SpecialType.System_UInt32 or SpecialType.System_UInt64 or SpecialType.System_Char
-                or SpecialType.System_Boolean => "value",
-            SpecialType.System_String => "text",
-            _ when CarriesCompareTo(value) => "comparable",
+                or SpecialType.System_Boolean => "'value'",
+            SpecialType.System_String => "'text'",
+            _ when CarriesCompareTo(value) => "'comparable'",
             _ => null,
         };
+    }
+
+    /// <summary>
+    /// An enum orders by its value, as .NET's comparer orders it. A flags enum is that value already
+    /// in the browser, so it orders as a number. Any other crosses as its member's camelCase name,
+    /// which ordered alphabetically, so its members are written out with their values.
+    /// </summary>
+    private static string OfEnum(INamedTypeSymbol enumeration)
+    {
+        if (enumeration.IsFlagsEnum()) return "'value'";
+        var members = enumeration.GetMembers().OfType<IFieldSymbol>()
+            .Where(field => field.HasConstantValue)
+            .Select(field => $"'{field.Name.ToCamelCase()}': "
+                + System.Convert.ToDecimal(field.ConstantValue, CultureInfo.InvariantCulture).ToString(CultureInfo.InvariantCulture));
+        return $"{{ {string.Join(", ", members)} }}";
     }
 
     /// <summary>

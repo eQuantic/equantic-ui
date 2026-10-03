@@ -108,7 +108,7 @@ public class QueueStackStrategy : ConversionStrategyBase
         }
         return ordering is null
             ? $"$eq.collections.sortedSet({source})"
-            : $"$eq.collections.sortedSet({source ?? "null"}, '{ordering}')";
+            : $"$eq.collections.sortedSet({source ?? "null"}, {ordering})";
     }
 
     private static bool IsMember(MemberAccessExpressionSyntax ma, ConversionContext context)

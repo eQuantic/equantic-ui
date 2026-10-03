@@ -114,7 +114,8 @@ export function sortedSet<T>(
 
 /** The comparer a factory was handed: a function as it is, an {@link Ordering} by its comparer. */
 function orderOf<T>(compare: ((a: T, b: T) => number) | Ordering | undefined): (a: T, b: T) => number {
-  return typeof compare === 'string' ? comparerOf(compare) : (compare ?? defaultCompare);
+  if (typeof compare === 'function') return compare;
+  return compare === undefined ? defaultCompare : comparerOf(compare);
 }
 
 /**

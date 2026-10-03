@@ -121,7 +121,7 @@ public class HydrationCrossingTests(CrossingTwins twins) : IClassFixture<Crossin
         var (html, drawn) = await CrossAsync("/crossing-collections", nameof(CrossingCollectionsPage));
 
         var expected = ("roles True 2 | top 3 | next 9007199254740994 | list 2 True | sorted 1 3 | names ,a,b,B"
-            + " | prices ,1,9,10 3 | index ,a,b,B").Split(" | ");
+            + " | prices ,1,9,10 3 | index ,a,b,B | ranks ,Zeta,Alpha,Mid | amounts True").Split(" | ");
         foreach (var line in expected) html.Should().Contain(line);
         drawn[0].Split(" | ").Should().Equal(expected);
         drawn[1].Should().Be(drawn[0]);

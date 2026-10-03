@@ -70,7 +70,7 @@ public static class CollectionComparerExtensions
     /// </summary>
     internal static string? OrderingAskedFor(this IOperation comparer, ITypeSymbol element) => Asked(comparer) switch
     {
-        Ask.Ordinal => "value",
+        Ask.Ordinal => "'value'",
         Ask.Default => Strategies.ValueOrdering.Of(element),
         _ => null,
     };

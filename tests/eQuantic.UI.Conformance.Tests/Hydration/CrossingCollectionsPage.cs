@@ -23,6 +23,8 @@ public sealed class CrossingCollectionsPage : StatefulComponent, IServerPrefetch
     private readonly SortedSet<string> _names = new();
     private readonly SortedSet<decimal> _prices = new();
     private readonly SortedDictionary<string, int> _index = new();
+    private readonly SortedSet<CrossingRank> _ranks = new();
+    private readonly Queue<decimal> _amounts = new();
 
     [ServerOnly]
     public Task PrefetchAsync(IServiceProvider services, CancellationToken cancellationToken)
@@ -44,6 +46,8 @@ public sealed class CrossingCollectionsPage : StatefulComponent, IServerPrefetch
         _index["b"] = 1;
         _index["B"] = 2;
         _index["a"] = 3;
+        foreach (var rank in new[] { CrossingRank.Mid, CrossingRank.Alpha, CrossingRank.Zeta }) _ranks.Add(rank);
+        _amounts.Enqueue(1m);
         return Task.CompletedTask;
     }
 
@@ -57,6 +61,9 @@ public sealed class CrossingCollectionsPage : StatefulComponent, IServerPrefetch
         foreach (var price in _prices) prices += "," + (int)price;
         var index = "";
         foreach (var key in _index.Keys) index += "," + key;
+        var ranks = "";
+        // By interpolation: `"," + rank` writes undefined (#535).
+        foreach (var rank in _ranks) ranks += $",{rank}";
 
         var page = new Column();
         page.Add(new Text($"roles {_roles.Contains("admin")} {_roles.Count}", TypeRole.BodyM));
@@ -67,6 +74,8 @@ public sealed class CrossingCollectionsPage : StatefulComponent, IServerPrefetch
         page.Add(new Text($"names {names}", TypeRole.BodyM));
         page.Add(new Text($"prices {prices} {_prices.Count}", TypeRole.BodyM));
         page.Add(new Text($"index {index}", TypeRole.BodyM));
+        page.Add(new Text($"ranks {ranks}", TypeRole.BodyM));
+        page.Add(new Text($"amounts {_amounts.Contains(1.00m)}", TypeRole.BodyM));
         return page;
     }
 }

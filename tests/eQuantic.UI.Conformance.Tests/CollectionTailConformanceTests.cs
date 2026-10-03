@@ -90,6 +90,37 @@ public class CollectionTailConformanceTests
         ConformanceRunner.AssertStatementsSameAsDotNet(statements);
     }
 
+    /// <summary>
+    /// An enum orders by its value, as .NET's comparer orders it, where its members cross as names:
+    /// ordered by <c>&lt;</c>, <c>Alpha</c> came before <c>Zeta</c> whatever their values said, and
+    /// <c>Max</c> refused it. Written out by interpolation: <c>"," + x</c> writes undefined (#535).
+    /// </summary>
+    [SkippableTheory]
+    [InlineData("var s = new SortedSet<Rank> { Rank.Mid, Rank.Alpha, Rank.Zeta, Rank.Alpha }; var r = \"\"; foreach (var x in s) r += $\",{x}\"; return r + \"|\" + s.Count;")] // ",Zeta,Alpha,Mid|3"
+    [InlineData("var d = new SortedDictionary<Rank, int> { [Rank.Mid] = 1, [Rank.Zeta] = 2 }; var r = \"\"; foreach (var k in d.Keys) r += $\",{k}\"; return r;")] // ",Zeta,Mid"
+    [InlineData("return new[] { Rank.Zeta, Rank.Mid, Rank.Alpha }.Max().ToString();")]          // "Mid"
+    [InlineData("return new[] { Rank.Alpha, Rank.Zeta }.Min().ToString();")]                    // "Zeta"
+    [InlineData("Rank? none = null; return new Rank?[] { Rank.Alpha, none, Rank.Zeta }.Max().Value.ToString();")] // "Alpha"
+    [InlineData("var s = new SortedSet<Access> { Access.Write, Access.Read }; var r = 0; foreach (var x in s) r = r * 10 + (int)x; return r;")] // 12
+    public void AnEnum_OrdersByItsValue(string statements)
+    {
+        Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
+        ConformanceRunner.AssertStatementsSameAsDotNet(statements,
+            "public enum Rank { Zeta, Alpha, Mid = 5 }\n[System.Flags] public enum Access { None = 0, Read = 1, Write = 2 }");
+    }
+
+    /// <summary>A queue and a stack find a member as <c>EqualityComparer&lt;T&gt;.Default</c> does: a
+    /// decimal and a date by their value, where they compared references.</summary>
+    [SkippableTheory]
+    [InlineData("var q = new Queue<decimal>(); q.Enqueue(1m); return q.Contains(1.00m);")]                                  // true
+    [InlineData("var s = new Stack<DateTime>(); s.Push(new DateTime(2026, 1, 1)); return s.Contains(new DateTime(2026, 1, 1));")] // true
+    [InlineData("var q = new Queue<int>(); q.Enqueue(1); return q.Contains(2);")]                                           // false
+    public void AQueueOrAStack_FindsAMemberByItsValue(string statements)
+    {
+        Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
+        ConformanceRunner.AssertStatementsSameAsDotNet(statements);
+    }
+
     [SkippableFact]
     public void ASortedSetOfAComparableTypeOfTheAppsOwn_OrdersByItsCompareTo()
     {

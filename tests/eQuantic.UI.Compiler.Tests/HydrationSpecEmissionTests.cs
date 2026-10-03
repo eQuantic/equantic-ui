@@ -277,11 +277,11 @@ public class HydrationSpecEmissionTests
         Assert.Contains("_queue: { collection: 'queue', of: 'decimal' }", map);
         Assert.Contains("_list: { collection: 'linkedList', of: null }", map);
         // A sorted one says how its element type orders, which the browser cannot tell from a value: a
-        // string in the culture, a decimal by its compareTo. An enum has no order there, and says none.
+        // string in the culture, a decimal by its compareTo, an enum by the values of its members.
         Assert.Contains("_sorted: { collection: 'sortedSet', of: null, order: 'value' }", map);
         Assert.Contains("_names: { collection: 'sortedSet', of: null, order: 'text' }", map);
         Assert.Contains("_prices: { collection: 'sortedSet', of: 'decimal', order: 'comparable' }", map);
-        Assert.Contains("_levels: { collection: 'sortedSet', of: null }", map);
+        Assert.Contains("_levels: { collection: 'sortedSet', of: null, order: { 'low': 0, 'high': 1 } }", map);
         Assert.Contains("_index: { dict: null, sorted: true, order: 'text' }", map);
     }
 

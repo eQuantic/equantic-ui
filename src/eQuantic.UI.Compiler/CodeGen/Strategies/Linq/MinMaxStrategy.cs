@@ -64,11 +64,11 @@ public class MinMaxStrategy : IConversionStrategy
     /// whether the answer may be null (a reference type or a <c>Nullable&lt;T&gt;</c>, which pass a
     /// null over and answer null for a sequence with no value; anything else throws for an empty one).
     /// <c>Math.max</c> over the values answered -Infinity for an empty list, let a NaN win a
-    /// <c>Max</c>, and made NaN of two strings and a TypeError of two longs. An enum is refused: its
-    /// values cross as member NAMES, which order alphabetically where .NET orders by value; and so is
-    /// a Guid, which .NET orders by its fields and this side rides as text, and every other type with
-    /// no <c>compareTo</c> to call here (<see cref="ValueOrdering"/>). A comparer argument has no
-    /// JavaScript form to call.
+    /// <c>Max</c>, and made NaN of two strings and a TypeError of two longs. An enum orders by its
+    /// value, its members written out beside the call since its values cross as member NAMES. A Guid
+    /// is refused, which .NET orders by its fields and this side rides as text, and so is every other
+    /// type with no <c>compareTo</c> to call here (<see cref="ValueOrdering"/>). A comparer argument
+    /// has no JavaScript form to call.
     /// </summary>
     private static string Extreme(InvocationExpressionSyntax invocation, MemberAccessExpressionSyntax access,
         IMethodSymbol method, string helper, ConversionContext context)
@@ -85,7 +85,7 @@ public class MinMaxStrategy : IConversionStrategy
             return context.Unhandled(invocation, $"LINQ Max/Min over {method.ReturnType.ToDisplayString()}");
 
         context.UsedHelpers.Add(Eq.Import);
-        var how = $"'{ordering}', {(nullable ? "true" : "false")}";
+        var how = $"{ordering}, {(nullable ? "true" : "false")}";
         if (staticForm)
         {
             // Each argument in its parameter's place, and all of them run in the order they were

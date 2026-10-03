@@ -172,7 +172,7 @@ internal sealed class DictionaryStrategy : IExpressionIrStrategy
         var key = type is INamedTypeSymbol { TypeArguments: [var keyType, _] } ? keyType : null;
         var second = key is null ? null
             : factory == Eq.Dictionary ? KeyEquality(key)
-            : ValueOrdering.Of(key) is { } ordering ? $"'{ordering}'"
+            : ValueOrdering.Of(key) is { } ordering ? ordering
             : null;
         if (seed is not null) arguments.Add(seed);
         else if (second is not null) arguments.Add(JsExpr.Literal("null"));
