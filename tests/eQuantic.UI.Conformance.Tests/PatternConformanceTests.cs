@@ -104,4 +104,28 @@ public class PatternConformanceTests
         ConformanceRunner.AssertStatementsSameAsDotNet(statements,
             "public static class Limits { public const int Max = 10; public const string Label = \"on\"; }\npublic enum Level { Low, High }");
     }
+
+    /// <summary>
+    /// A constant in a pattern is tested as a constant pattern tests it, by its value, in either
+    /// spelling: a long is a BigInt, a decimal an object compared by value, a NaN matches a NaN, and
+    /// a null any absence. A char is one code unit, so a longer string is no char.
+    /// </summary>
+    [SkippableTheory]
+    [InlineData("long x = 5; return x is Limits.Five;")]                                   // true
+    [InlineData("object o = 5L; return o is Limits.Five;")]                                // true
+    [InlineData("object o = 1.5m; return o is Limits.Rate;")]                              // true
+    [InlineData("object o = 1.50m; return o is 1.5m;")]                                    // true
+    [InlineData("object o = 2.5m; return o is Limits.Rate;")]                              // false
+    [InlineData("double d = double.NaN; return d is Limits.NotANumber;")]                  // true
+    [InlineData("double d = double.NaN; return d is double.NaN;")]                         // true
+    [InlineData("string s = null; return s is Limits.Nothing;")]                           // true
+    [InlineData("object o = \"hello\"; return o switch { char => 1, string => 2, _ => 3 };")] // 2
+    [InlineData("object o = 'h'; return o switch { char => 1, string => 2, _ => 3 };")]      // 1
+    public void AConstantInAPattern_IsTestedByItsValue(string statements)
+    {
+        Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
+        ConformanceRunner.AssertStatementsSameAsDotNet(statements,
+            "public static class Limits { public const long Five = 5; public const decimal Rate = 1.5m; "
+            + "public const double NotANumber = double.NaN; public const string Nothing = null; }");
+    }
 }

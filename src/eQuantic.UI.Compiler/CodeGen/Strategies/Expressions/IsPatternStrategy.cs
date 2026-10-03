@@ -3,6 +3,8 @@ using System.Linq;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using Microsoft.CodeAnalysis.Operations;
+using eQuantic.UI.Compiler.CodeGen.Ir;
 
 namespace eQuantic.UI.Compiler.CodeGen.Strategies.Expressions;
 
@@ -79,13 +81,8 @@ public class IsPatternStrategy : IConversionStrategy
             // any non-null node, silently.
             // …unless it BINDS as a constant: `x is Limits.Max` parses as the type test and binds as a
             // constant pattern over the const, and was answered `x != null` (#451).
-            if (context.SemanticHelper.GetOperation(binary) is Microsoft.CodeAnalysis.Operations.IIsPatternOperation
-                {
-                    Pattern: Microsoft.CodeAnalysis.Operations.IConstantPatternOperation constant,
-                })
-            {
-                return $"{expr} === {ConstantOf(constant.Value, binary.Right, context)}";
-            }
+            if (context.SemanticHelper.GetOperation(binary) is IIsPatternOperation { Pattern: IConstantPatternOperation constant })
+                return PatternConverter.ConstantTest(expr, ConstantOf(constant.Value, binary.Right, context), constant.Value, context);
             if (binary.Right is TypeSyntax typeSyntax)
                 return PatternConverter.TypeCheck(typeSyntax, expr, context);
             return $"{expr} != null";
@@ -95,23 +92,19 @@ public class IsPatternStrategy : IConversionStrategy
     }
 
     /// <summary>
-    /// A constant a pattern names, as JavaScript writes it: an enum's member as the value the twin
-    /// holds (its camelCase name, or a flags enum's number), any other constant as its literal, and
-    /// what has no exact literal (a decimal, a long past 2^53) as its expression converts. The name
-    /// parsed as a TYPE (`Limits.Max` is a qualified name there), so converting the syntax wrote it
-    /// as it was spelled, a class nothing defines.
+    /// A constant a pattern names, as JavaScript writes it, from its bound value: an enum's member as
+    /// the value the twin holds (its camelCase name, or a flags enum's number), a decimal as the
+    /// runtime's Decimal, and any other constant as its literal. The name parsed as a TYPE
+    /// (<c>Limits.Max</c> is a qualified name there), so converting the syntax wrote it as it was
+    /// spelled, a class nothing defines.
     /// </summary>
-    private static string ConstantOf(Microsoft.CodeAnalysis.IOperation value, ExpressionSyntax spelled,
-        ConversionContext context)
+    private static string ConstantOf(IOperation value, ExpressionSyntax spelled, ConversionContext context)
     {
-        while (value is Microsoft.CodeAnalysis.Operations.IConversionOperation conversion) value = conversion.Operand;
-        if (value is Microsoft.CodeAnalysis.Operations.IFieldReferenceOperation
-            {
-                Field: { ContainingType.TypeKind: TypeKind.Enum, HasConstantValue: true } member,
-            })
+        while (value is IConversionOperation conversion) value = conversion.Operand;
+        if (value is IFieldReferenceOperation { Field: { ContainingType.TypeKind: TypeKind.Enum, HasConstantValue: true } member })
         {
             return member.ContainingType.IsFlagsEnum()
-                ? System.Convert.ToInt64(member.ConstantValue, System.Globalization.CultureInfo.InvariantCulture)
+                ? System.Convert.ToDecimal(member.ConstantValue, System.Globalization.CultureInfo.InvariantCulture)
                     .ToString(System.Globalization.CultureInfo.InvariantCulture)
                 : $"'{member.Name.ToCamelCase()}'";
         }
@@ -121,6 +114,11 @@ public class IsPatternStrategy : IConversionStrategy
             && enumType.GetMembers().OfType<IFieldSymbol>().FirstOrDefault(field =>
                 field.HasConstantValue && Equals(field.ConstantValue, enumValue.Value)) is { } named)
             return $"'{named.Name.ToCamelCase()}'";
+        if (value.ConstantValue is { HasValue: true, Value: decimal exact })
+        {
+            context.UsedHelpers.Add(Eq.Import);
+            return $"{Eq.Dec}({JsStringLiteral.Quote(exact.ToString(System.Globalization.CultureInfo.InvariantCulture))})";
+        }
         if (value.ConstantValue is { HasValue: true } known && InlinedConstantStrategy.LiteralOf(known.Value) is { } literal)
             return literal;
         return context.Converter.ConvertExpression(spelled);

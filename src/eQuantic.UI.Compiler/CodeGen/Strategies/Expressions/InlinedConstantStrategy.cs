@@ -73,8 +73,8 @@ public class InlinedConstantStrategy : IConversionStrategy
     }
 
     /// <summary>
-    /// The JavaScript literal of a constant's value, or null where none is exact: a decimal, an
-    /// integer past 2^53, and anything that is no literal.
+    /// The JavaScript literal of a constant's value, or null where none is exact: a decimal, and
+    /// anything that is no literal.
     /// </summary>
     internal static string? LiteralOf(object? value)
     {
@@ -88,15 +88,17 @@ public class InlinedConstantStrategy : IConversionStrategy
                 return JsStringLiteral.Quote(character.ToString());
             case bool flag:
                 return flag ? "true" : "false";
-            // EXACTNESS FIRST: only values a JS number represents exactly are inlined. `long.MaxValue`
-            // as a literal becomes 9223372036854776000 — the dedicated long/decimal strategies keep
-            // those in their compat types, so leave them alone.
+            // EXACTNESS FIRST: a decimal has no literal, and its own strategy keeps it a Decimal.
             case decimal:
                 return null;
-            case long or ulong or int or uint or short or ushort or byte or sbyte:
-                var integral = System.Convert.ToDecimal(value);
-                if (System.Math.Abs(integral) > 9007199254740991m) return null;
-                return integral.ToString(System.Globalization.CultureInfo.InvariantCulture);
+            // A long or a ulong is a BigInt here, as its literal is (`5L` is `5n`), so its constant
+            // is one too, and exact at any size. Written as a number, `long n = Limits.Five` held 5
+            // where every long holds 5n: `n is Limits.Five` compared 5n with 5, and the first
+            // arithmetic with another long threw, `ticks / TimeSpan.TicksPerDay` among them.
+            case long or ulong:
+                return System.Convert.ToString(value, System.Globalization.CultureInfo.InvariantCulture) + "n";
+            case int or uint or short or ushort or byte or sbyte:
+                return System.Convert.ToString(value, System.Globalization.CultureInfo.InvariantCulture);
             // A FLOAT constant is written as the DOUBLE it is. Its own shortest text names the single
             // to .NET and a different number to JavaScript: `float.E` printed as "2.7182817" is read
             // back as 2.7182817000000001, not 2.7182817459106445 — so a design token like `0.38f`

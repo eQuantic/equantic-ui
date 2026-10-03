@@ -3,6 +3,7 @@ using System.Linq;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using Microsoft.CodeAnalysis.Operations;
 
 namespace eQuantic.UI.Compiler.CodeGen;
 
@@ -40,7 +41,8 @@ public static class PatternConverter
                 if (constant.Expression is TypeSyntax bareType
                     && context.SemanticHelper.GetSymbol(constant.Expression) is INamedTypeSymbol)
                     return TypeCheck(bareType, access, context);
-                return $"{access} === {context.Converter.ConvertExpression(constant.Expression)}";
+                return ConstantTest(access, context.Converter.ConvertExpression(constant.Expression),
+                    (context.SemanticHelper.GetOperation(constant) as IConstantPatternOperation)?.Value, context);
 
             case RelationalPatternSyntax relational:
                 return $"{access} {relational.OperatorToken.Text} {context.Converter.ConvertExpression(relational.Expression)}";
@@ -299,6 +301,28 @@ public static class PatternConverter
     }
 
     /// <summary>
+    /// The test that a value IS a constant, as a constant pattern asks it, by the constant's bound
+    /// value. A null is any absence, as <c>is null</c> is. A decimal is an object on this side and
+    /// compares by value, and so does a NaN, which a pattern matches where <c>===</c> never does.
+    /// Anything else is <c>===</c> its literal. One rule for <c>x is 5</c>, <c>case Limits.Max:</c>
+    /// and the binary <c>x is Limits.Max</c>, which parses as a type test and binds as a constant
+    /// (#451).
+    /// </summary>
+    internal static string ConstantTest(string access, string constant, IOperation? value, ConversionContext context)
+    {
+        if (value?.ConstantValue is { HasValue: true } known)
+        {
+            if (known.Value is null) return $"{access} == null";
+            if (known.Value is decimal or double.NaN or float.NaN)
+            {
+                context.UsedHelpers.Add(Eq.Import);
+                return $"{Eq.Equals}({access}, {constant})";
+            }
+        }
+        return $"{access} === {constant}";
+    }
+
+    /// <summary>
     /// The test for a type the browser holds as a value of its own: a string (a char is one too), a
     /// bool, a long as a BigInt, an integer as a whole number, a real as any number, and a decimal and
     /// the dates as the runtime's classes. Null for every other type. A boxed double holding a whole
@@ -308,8 +332,11 @@ public static class PatternConverter
     {
         switch (type.SpecialType)
         {
-            case SpecialType.System_String or SpecialType.System_Char:
+            case SpecialType.System_String:
                 return $"typeof {access} === 'string'";
+            // A char is one UTF-16 code unit, a string of one here: any longer string is not one.
+            case SpecialType.System_Char:
+                return $"typeof {access} === 'string' && {access}.length === 1";
             case SpecialType.System_Boolean:
                 return $"typeof {access} === 'boolean'";
             case SpecialType.System_Int64 or SpecialType.System_UInt64:
