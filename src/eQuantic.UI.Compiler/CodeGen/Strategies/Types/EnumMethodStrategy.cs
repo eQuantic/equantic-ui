@@ -1,16 +1,17 @@
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using Microsoft.CodeAnalysis.Operations;
+using eQuantic.UI.Compiler.CodeGen.Ir;
 
 namespace eQuantic.UI.Compiler.CodeGen.Strategies.Types;
 
 /// <summary>
-/// Strategy for Enum static methods.
-/// Handles:
-/// - Enum.Parse&lt;T&gt;(string) -> parseEnum(string, EnumType)
-/// - Enum.TryParse&lt;T&gt;(string, out T) -> tryParseEnum(string, EnumType, out result)
-/// - Enum.GetValues&lt;T&gt;() -> Object.values(EnumType)
-/// - Enum.GetNames&lt;T&gt;() -> Object.keys(EnumType)
-/// - Enum.IsDefined(type, value) -> EnumType[value] !== undefined
+/// <c>Enum.Parse</c>, <c>TryParse</c>, <c>GetName</c>, <c>GetNames</c>, <c>GetValues</c> and <c>IsDefined</c>, each
+/// a call of the runtime's enum functions (<c>utils/enums.ts</c>) with the enum's shape written
+/// inline (<see cref="EnumShape"/>): an enum has no object of its own in the browser, and these named
+/// one after it, <c>Status</c>, which no module declares, so every one of them threw (#480). The enum
+/// is the one the bound call names, by its type argument or by its <c>typeof</c>, and each argument
+/// is the parameter it binds to, so a named one written out of order fills its own.
 /// </summary>
 public class EnumMethodStrategy : IConversionStrategy
 {
@@ -20,7 +21,7 @@ public class EnumMethodStrategy : IConversionStrategy
         if (invocation.Expression is not MemberAccessExpressionSyntax memberAccess) return false;
 
         var name = memberAccess.Name.Identifier.Text;
-        if (name is not ("Parse" or "TryParse" or "GetValues" or "GetNames" or "IsDefined")) return false;
+        if (name is not ("Parse" or "TryParse" or "GetValues" or "GetNames" or "GetName" or "IsDefined")) return false;
 
         return context.ReceiverIsType(memberAccess.Expression,
             named => named.SpecialType == SpecialType.System_Enum,
@@ -30,134 +31,137 @@ public class EnumMethodStrategy : IConversionStrategy
     public string Convert(SyntaxNode node, ConversionContext context)
     {
         var invocation = (InvocationExpressionSyntax)node;
-        var memberAccess = (MemberAccessExpressionSyntax)invocation.Expression;
-        var name = memberAccess.Name.Identifier.Text;
-        var args = invocation.ArgumentList.Arguments;
+        var name = ((MemberAccessExpressionSyntax)invocation.Expression).Name.Identifier.Text;
+        if (context.SemanticHelper.GetOperation(invocation) is not IInvocationOperation call
+            || EnumOf(call, context) is not { } enumType)
+            return context.Unhandled(invocation, $"Enum.{name} over an enum the model cannot name");
 
-        // Extract generic type argument if present
-        string? enumTypeName = null;
-        if (memberAccess.Name is GenericNameSyntax genericName)
+        var shape = EnumShape.Of(enumType);
+        context.UsedHelpers.Add(Eq.Import);
+
+        // Each argument converts once, in the order it is written, which is the order C# evaluates
+        // it in, and its hole names the parameter it binds to: `Parse(ignoreCase: NextBool(), value:
+        // NextText())` runs NextBool first, where placing the value first ran it second. The template
+        // writer keeps the parts in that order wherever the holes follow another.
+        var parts = new List<JsExpr>();
+        var holes = new Dictionary<string, (string Hole, ExpressionSyntax Value)>(StringComparer.Ordinal);
+        ArgumentSyntax? result = null;
+        foreach (var argument in call.Arguments
+                     .Where(argument => argument.ArgumentKind == ArgumentKind.Explicit && argument.Parameter is not null)
+                     .OrderBy(argument => argument.Syntax.SpanStart))
         {
-            var typeArg = genericName.TypeArgumentList.Arguments.FirstOrDefault();
-            if (typeArg != null)
+            var parameter = argument.Parameter!;
+            if (parameter.Name == "enumType") continue; // a typeof, which runs nothing
+            if (parameter.RefKind == RefKind.Out)
             {
-                enumTypeName = typeArg.ToString();
+                result = argument.Syntax as ArgumentSyntax;
+                continue;
             }
+            if (argument.Value.Syntax is not ExpressionSyntax value) continue;
+            holes[parameter.Name] = ($"{{{parts.Count}}}", value);
+            parts.Add(context.Converter.ConvertIr(value));
         }
+        string IgnoreCase() => holes.TryGetValue("ignoreCase", out var ignoreCase) ? $", {ignoreCase.Hole}" : "";
+        string Write(string template) => JsExprWriter.Write(JsExpr.Template(template, parts, context.TypeAnnotations));
 
-        if (name == "Parse")
+        switch (name)
         {
-            // Enum.Parse<Status>("active") -> Status['active'] || 'active'
-            // Fallback: Try to match enum member, otherwise return string
-            if (args.Count == 0) return "undefined";
-
-            var value = context.Converter.ConvertExpression(args[0].Expression);
-
-            if (enumTypeName != null)
+            case "GetNames":
+                return $"{Eq.EnumNames}({shape})";
+            case "GetValues":
+                return $"{Eq.EnumValues}({shape})";
+            case "Parse" when holes.TryGetValue("value", out var text):
+                return Write($"{Eq.EnumParse}({text.Hole}, {shape}{IgnoreCase()})");
+            case "GetName" when holes.TryGetValue("value", out var named):
             {
-                // Use helper that tries to match case-insensitively
-                context.UsedHelpers.Add(Eq.Import);
-                return $"{Eq.ParseEnum}({value}, {enumTypeName})";
-            }
-
-            return value; // Fallback
-        }
-
-        if (name == "TryParse")
-        {
-            // Enum.TryParse<Status>(str, out var result)
-            // -> (result = parseEnum(str, Status), result !== undefined)
-            if (args.Count < 2) return "false";
-
-            var input = context.Converter.ConvertExpression(args[0].Expression);
-            var outArg = args[1];
-
-            string varName = "";
-            if (outArg.Expression is DeclarationExpressionSyntax decl)
-            {
-                if (decl.Designation is SingleVariableDesignationSyntax single)
+                // Given as the enum, as a number, or as an `object` holding either; a flags
+                // combination has no name, as no member has its value.
+                var kind = context.SemanticHelper.GetType(named.Value) switch
                 {
-                    varName = single.Identifier.Text.ToJsIdentifier();
-                }
+                    INamedTypeSymbol { TypeKind: TypeKind.Enum } => "held",
+                    { SpecialType: SpecialType.System_SByte or SpecialType.System_Byte or SpecialType.System_Int16
+                        or SpecialType.System_UInt16 or SpecialType.System_Int32 or SpecialType.System_UInt32
+                        or SpecialType.System_Int64 or SpecialType.System_UInt64 } => "number",
+                    _ => "object",
+                };
+                return Write($"{Eq.EnumName}({named.Hole}, {shape}, '{kind}')");
             }
-            else
-            {
-                varName = context.Converter.ConvertExpression(outArg.Expression);
-            }
-
-            if (enumTypeName != null)
-            {
-                context.UsedHelpers.Add(Eq.Import);
-                return $"({varName} = {Eq.ParseEnum}({input}, {enumTypeName}), {varName} !== undefined)";
-            }
-
-            return "false";
-        }
-
-        if (name == "GetValues")
-        {
-            // Enum.GetValues<Status>() -> Object.values(Status)
-            // Returns array of enum values
-            if (enumTypeName != null)
-            {
-                return $"Object.values({enumTypeName})";
-            }
-
-            // Fallback: Enum.GetValues(typeof(Status))
-            if (args.Count > 0)
-            {
-                var typeofArg = args[0].Expression;
-                if (typeofArg is TypeOfExpressionSyntax typeofExpr)
+            case "IsDefined" when holes.TryGetValue("value", out var given):
+                // Given as the enum, as a number, or by its declared name: the argument's own type
+                // says which, since a member's camelCase key and its name are both strings here. An
+                // `object` may hold any of the three, and the runtime asks the value.
+                var mode = context.SemanticHelper.GetType(given.Value) switch
                 {
-                    var typeName = typeofExpr.Type.ToString();
-                    return $"Object.values({typeName})";
-                }
-            }
-
-            return "[]";
-        }
-
-        if (name == "GetNames")
-        {
-            // Enum.GetNames<Status>() -> Object.keys(Status)
-            // Returns array of enum member names
-            if (enumTypeName != null)
+                    { SpecialType: SpecialType.System_String } => "name",
+                    INamedTypeSymbol { TypeKind: TypeKind.Enum } => "held",
+                    { SpecialType: SpecialType.System_SByte or SpecialType.System_Byte or SpecialType.System_Int16
+                        or SpecialType.System_UInt16 or SpecialType.System_Int32 or SpecialType.System_UInt32
+                        or SpecialType.System_Int64 or SpecialType.System_UInt64 } => "number",
+                    _ => "object",
+                };
+                return Write($"{Eq.EnumIsDefined}({given.Hole}, {shape}, '{mode}')");
+            case "TryParse" when holes.TryGetValue("value", out var input) && result is not null:
             {
-                return $"Object.keys({enumTypeName})";
-            }
+                // True with the value in the out argument, or false with what .NET leaves there: the
+                // generic overload's default, and null for the one that takes a Type. A discard
+                // receives nothing, and a bare name is assigned in place.
+                var failed = call.TargetMethod.IsGenericMethod ? $"{Eq.EnumZero}({shape})" : "null";
+                var parse = JsExpr.Template($"{Eq.EnumTryParse}({input.Hole}, {shape}{IgnoreCase()})", parts,
+                    context.TypeAnnotations);
+                string Answer(string template, List<JsExpr> answerParts) =>
+                    JsExprWriter.Write(JsExpr.Template(template, answerParts, context.TypeAnnotations));
+                if (OutArgument.IsDiscard(result, context)) return Answer("({0} !== undefined)", [parse]);
+                var target = OutArgument.Target(result, context);
+                if (OutArgument.IsBareName(target))
+                    return Answer($"(({target} = {{0}}) !== undefined || (({target} = {failed}), false))", [parse]);
 
-            // Fallback: Enum.GetNames(typeof(Status))
-            if (args.Count > 0)
-            {
-                var typeofArg = args[0].Expression;
-                if (typeofArg is TypeOfExpressionSyntax typeofExpr)
+                // A place that reads parts of its own (`slots[i]`) reads them where it is written, among
+                // the other arguments: every argument and every part of the place is bound to a
+                // parameter of an arrow, in the order C# evaluates them, so `result: out arr[i]` written
+                // first reads `i` before a value written after it changes it, and one written between
+                // the value and `ignoreCase` reads it between them.
+                var bound = new List<JsExpr>();
+                string? text = null, ignoreCase = null, place = null;
+                foreach (var argument in call.Arguments
+                             .Where(argument => argument.ArgumentKind == ArgumentKind.Explicit && argument.Parameter is { Name: not "enumType" })
+                             .OrderBy(argument => argument.Syntax.SpanStart))
                 {
-                    var typeName = typeofExpr.Type.ToString();
-                    return $"Object.keys({typeName})";
+                    if (argument.Parameter!.RefKind == RefKind.Out)
+                    {
+                        place = OutArgument.Place(result, context, part =>
+                        {
+                            bound.Add(part);
+                            return $"${bound.Count - 1}";
+                        });
+                        continue;
+                    }
+                    bound.Add(context.Converter.ConvertIr((ExpressionSyntax)argument.Value.Syntax));
+                    if (argument.Parameter.Name == "value") text = $"${bound.Count - 1}";
+                    else if (argument.Parameter.Name == "ignoreCase") ignoreCase = $"${bound.Count - 1}";
                 }
+                var annotate = context.TypeAnnotations ? ": any" : "";
+                var parameters = string.Join(", ", bound.Select((_, at) => $"${at}{annotate}"));
+                var arguments = string.Join(", ", bound.Select((_, at) => $"{{{at}}}"));
+                var read = $"{Eq.EnumTryParse}({text}, {shape}{(ignoreCase is null ? "" : $", {ignoreCase}")})";
+                return Answer(
+                    $"(({parameters}) => (($r{annotate}) => ($r !== undefined ? (({place} = $r), true) : (({place} = {failed}), false)))({read}))({arguments})",
+                    bound);
             }
-
-            return "[]";
+            default:
+                return context.Unhandled(invocation, $"Enum.{name}");
         }
+    }
 
-        if (name == "IsDefined")
-        {
-            // Enum.IsDefined(typeof(Status), value) -> Status[value] !== undefined
-            if (args.Count < 2) return "false";
-
-            var typeofArg = args[0].Expression;
-            var value = context.Converter.ConvertExpression(args[1].Expression);
-
-            if (typeofArg is TypeOfExpressionSyntax typeofExpr)
-            {
-                var typeName = typeofExpr.Type.ToString();
-                return $"({typeName}[{value}] !== undefined)";
-            }
-
-            return "false";
-        }
-
-        return context.Unhandled(node, "Enum");
+    /// <summary>The enum a call names: its type argument (<c>Parse&lt;Status&gt;</c>), or the type its
+    /// <c>Type</c> argument is the <c>typeof</c> of (<c>Parse(typeof(Status), text)</c>).</summary>
+    private static INamedTypeSymbol? EnumOf(IInvocationOperation call, ConversionContext context)
+    {
+        if (call.TargetMethod.TypeArguments is [INamedTypeSymbol { TypeKind: TypeKind.Enum } generic, ..])
+            return generic;
+        return call.Arguments.FirstOrDefault(argument => argument.Parameter?.Name == "enumType")?.Value
+            is ITypeOfOperation { TypeOperand: INamedTypeSymbol { TypeKind: TypeKind.Enum } named }
+            ? named
+            : null;
     }
 
     public int Priority => 10;

@@ -127,6 +127,19 @@ public class HydrationCrossingTests(CrossingTwins twins) : IClassFixture<Crossin
         drawn[1].Should().Be(drawn[0]);
     }
 
+    [Fact]
+    public async Task ADictionaryKeyedByAnEnum_CrossesAsTheBrowserHoldsItsKeys()
+    {
+        // A member's camelCase name, and a flags enum's number: EqJson refused the first both ways
+        // and wrote the second by its names (#442).
+        var (html, drawn) = await CrossAsync("/crossing-enum-keys", nameof(CrossingEnumKeysPage));
+
+        var expected = "ranks ,Mid=5,Zeta=1 | rank True 5 | access 3 True 2".Split(" | ");
+        foreach (var line in expected) html.Should().Contain(line);
+        drawn[0].Split(" | ").Should().Equal(expected);
+        drawn[1].Should().Be(drawn[0]);
+    }
+
     /// <summary>
     /// The page served for a load, and what its twin draws on the payload of that load and on the state
     /// a navigation to it receives.
