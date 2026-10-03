@@ -70,7 +70,27 @@ public class EnumConformanceTests
         public enum Rank { Zeta, Alpha, Mid = 5 }
         [System.Flags] public enum Perm { None = 0, Read = 1, Write = 2, Exec = 4 }
         [System.Flags] public enum Bare { A = 1, B = 2 }
+        public enum Level { Low = 1, High = 2 }
         """;
+
+    /// <summary>
+    /// A value no member names is legal C#, and is held as its number: it went through the cast's
+    /// name↔value tables, had no entry in either, and was undefined, so two different ones were equal
+    /// and every one printed "undefined" (#404).
+    /// </summary>
+    [SkippableTheory]
+    [InlineData("Level l = default; return (int)l;")]                     // 0
+    [InlineData("return ((Level)0).ToString();")]                         // "0"
+    [InlineData("int n = 7; return ((Level)n).ToString();")]              // "7"
+    [InlineData("int n = 7; return (int)(Level)n;")]                      // 7
+    [InlineData("return ((Level)7).ToString();")]                         // "7"
+    [InlineData("int a = 7, b = 8; return (Level)a == (Level)b;")]        // false
+    [InlineData("int a = 1; return (Level)a == Level.Low;")]              // true
+    public void AValueNoMemberNames_IsItsNumber(string statements)
+    {
+        Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
+        ConformanceRunner.AssertStatementsSameAsDotNet(statements, Enums);
+    }
 
     /// <summary>
     /// An enum's text is .NET's in every shape: a flags member, a combination, zero with a None and
