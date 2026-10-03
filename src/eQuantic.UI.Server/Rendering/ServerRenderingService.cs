@@ -721,9 +721,10 @@ public class ServerRenderingService : IServerRenderingService
             {
                 if (_reportedContracts.TryAdd(type, 0))
                     _logger.LogWarning(
-                        "[SSR Hydration] {Component} carries no state to the browser: its assembly has no "
-                        + "hydration manifest for it. The SDK's source generator writes one for every component "
-                        + "that prefetches.", type.FullName);
+                        "[SSR Hydration] {Component} carries no state to the browser: its assembly's hydration "
+                        + "manifest describes nothing of it. The SDK's source generator describes every component "
+                        + "that prefetches and every page holding a value from the container, so either it holds "
+                        + "nothing that crosses, or its assembly was built without the generator.", type.FullName);
                 return stateDict;
             }
 

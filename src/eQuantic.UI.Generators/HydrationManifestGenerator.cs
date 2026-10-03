@@ -37,6 +37,7 @@ public sealed class HydrationManifestGenerator : IIncrementalGenerator
 {
     private const string PrefetchInterface = "eQuantic.UI.Primitives.IServerPrefetch";
     private const string RouteExtensions = "eQuantic.UI.Server.UIExtensions";
+    private const string WebComponent = "eQuantic.UI.Web.IComponent";
     private const string Attribute = "global::eQuantic.UI.Primitives.HydratedMember";
     private const string Kind = "global::eQuantic.UI.Primitives.HydratedMemberKind";
 
@@ -172,8 +173,9 @@ public sealed class HydrationManifestGenerator : IIncrementalGenerator
         if (symbol.IsAbstract || symbol.IsStatic) return null;
 
         var prefetches = Prefetches(symbol);
-        // Read only where it can matter: a type whose constructor takes a value the browser cannot build.
-        var servers = symbol.InstanceConstructors
+        // Read only where it can matter: a type that can be a page, whose constructor takes a value the
+        // browser cannot build. A service that takes one is no page, and reading it would be work thrown away.
+        var servers = CanBePage(symbol) && symbol.InstanceConstructors
             .Any(c => !c.IsImplicitlyDeclared && c.Parameters.Any(p => ServerValueAnalysis.IsServerValue(p.Type)))
             ? ServerValueAnalysis.Of(symbol, ctx.SemanticModel.Compilation, token)
             : null;
@@ -196,6 +198,12 @@ public sealed class HydrationManifestGenerator : IIncrementalGenerator
         return new Described(component, FactorySurface.IsPage(symbol), entries, projected, server,
             servers?.Stops ?? (IReadOnlyList<BoundaryStop>)new List<BoundaryStop>());
     }
+
+    /// <summary>What <c>MapPage&lt;T&gt;</c> accepts, and what carries <c>[Page]</c>: a component of either kind.</summary>
+    private static bool CanBePage(INamedTypeSymbol symbol) =>
+        FactorySurface.IsPage(symbol)
+        || FactorySurface.IsComponent(symbol)
+        || symbol.AllInterfaces.Any(i => i.ToDisplayString() == WebComponent);
 
     private static string KindOf(ISymbol storage) => storage switch
     {

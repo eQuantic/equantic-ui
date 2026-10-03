@@ -374,6 +374,149 @@ public class ServerValueProjectionTests
     }
 
     [Fact]
+    public void ANullCheckWhileThePageIsConstructed_FailsTheBuild_AtTheCheck()
+    {
+        // The browser constructs the page with no arguments, so the check throws there before any value
+        // arrives. The nameof in it reads nothing.
+        var generated = Run("""
+            [Page("/guarded")]
+            public sealed class GuardedPage : StatelessComponent
+            {
+                private readonly SiteOptions _options;
+
+                public GuardedPage(SiteOptions options)
+                {
+                    _options = options ?? throw new ArgumentNullException(nameof(options));
+                }
+
+                public override VisualNode Build(ComponentContext context) => new Text(_options.Title, TypeRole.BodyM);
+            }
+            """);
+
+        var message = generated.Escapes.Should().ContainSingle().Subject.GetMessage();
+        message.Should().Contain("checked while the page is constructed")
+            .And.Contain("options ?? throw new ArgumentNullException(nameof(options))");
+    }
+
+    [Fact]
+    public void AChildsNullCheck_StoresTheValue_SinceItArrivesWithTheChild()
+    {
+        var generated = Run("""
+            public sealed class NameTag : StatelessComponent
+            {
+                private readonly SiteIdentity _identity;
+
+                public NameTag(SiteIdentity identity)
+                {
+                    _identity = identity ?? throw new ArgumentNullException(nameof(identity));
+                }
+
+                public override VisualNode Build(ComponentContext context) => new Text(_identity.DisplayName, TypeRole.BodyM);
+            }
+
+            [Page("/tag")]
+            public sealed class TagPage(SiteIdentity identity) : StatelessComponent
+            {
+                public override VisualNode Build(ComponentContext context) => new NameTag(identity);
+            }
+            """);
+
+        generated.Reported.Should().BeEmpty();
+        generated.Manifest.Should().Contain(Projected("TagPage", "identity", "CapturedParameter", "DisplayName"));
+    }
+
+    [Fact]
+    public void AValueWalkedThroughItsOwnMembers_FailsTheBuild_InsteadOfBeingFollowedForever()
+    {
+        var generated = Run("""
+            public sealed class Step
+            {
+                public Step? Next { get; set; }
+                public string Name { get; set; } = "";
+            }
+
+            [Page("/walk")]
+            public sealed class WalkPage : StatefulComponent
+            {
+                private Step _step;
+
+                public WalkPage(Step step) { _step = step; }
+
+                private void Advance() => SetState(() => { if (_step.Next is not null) _step = _step.Next; });
+
+                public override VisualNode Build(ComponentContext context) => new Text(_step.Name, TypeRole.BodyM);
+            }
+            """);
+
+        generated.Escapes.Should().ContainSingle().Which.GetMessage().Should().Contain("walked through a chain");
+    }
+
+    [Fact]
+    public void AValueHandedToTheBasesConstructor_IsFollowedThere()
+    {
+        var generated = Run("""
+            public abstract class SecurePage(SiteIdentity? identity) : StatelessComponent
+            {
+                protected string Greeting => identity is null ? "guest" : identity.DisplayName;
+            }
+
+            [Page("/secure")]
+            public sealed class SecureAccountPage(SiteIdentity? identity) : SecurePage(identity)
+            {
+                public override VisualNode Build(ComponentContext context) => new Text(Greeting, TypeRole.BodyM);
+            }
+            """);
+
+        generated.Errors.Should().BeEmpty();
+        generated.Reported.Should().BeEmpty();
+        generated.Manifest.Should().Contain(
+            $"[assembly: {Attribute}(\"Shop.SecureAccountPage\", \"Shop.SecurePage\", \"identity\", {Kind}.CapturedParameter, Projection = \"DisplayName\")]");
+    }
+
+    [Fact]
+    public void ACoalesce_ATernary_AndReferenceEquals_AreFollowed()
+    {
+        var generated = Run("""
+            [Page("/guest")]
+            public sealed class GuestPage(SiteIdentity? identity) : StatelessComponent
+            {
+                private static readonly SiteIdentity Guest = new() { DisplayName = "guest" };
+
+                public override VisualNode Build(ComponentContext context)
+                {
+                    var who = identity ?? Guest;
+                    var shown = ReferenceEquals(identity, null) ? Guest : identity;
+                    return new Text($"{who.DisplayName} {shown.IsAdmin}", TypeRole.BodyM);
+                }
+            }
+            """);
+
+        generated.Reported.Should().BeEmpty();
+        generated.Manifest.Should().Contain(Projected("GuestPage", "identity", "CapturedParameter", "DisplayName,IsAdmin"));
+    }
+
+    [Fact]
+    public void AValuePassedToAServerOnlyClass_FailsTheBuild()
+    {
+        var generated = Run("""
+            [ServerOnly]
+            public static class Audit
+            {
+                public static string Who(SiteIdentity identity) => identity.Authority;
+            }
+
+            [Page("/audit")]
+            public sealed class AuditPage(SiteIdentity identity) : StatelessComponent
+            {
+                public override VisualNode Build(ComponentContext context) => new Text(Audit.Who(identity), TypeRole.BodyM);
+            }
+            """);
+
+        generated.Escapes.Should().ContainSingle().Which.GetMessage().Should().Contain("which runs on the server");
+        generated.Manifest.Should().NotContain("Authority");
+    }
+
+    [Fact]
     public void AComponentThatIsNoPage_ReceivesWhatItsParentPasses_AndIsNotRefused()
     {
         var generated = Run("""
@@ -398,14 +541,12 @@ public class ServerValueProjectionTests
                     new Text(identity is null ? "sign in" : "account", TypeRole.BodyM);
             }
 
-            public static class Routes
-            {
-                public static void Map(eQuantic.UI.Server.Endpoints endpoints) =>
-                    eQuantic.UI.Server.UIExtensions.MapPage<AccountView>(endpoints, "/account");
-            }
             """,
-            // The route extension as the Server declares it, which this compilation does not reference.
+            // The route extension as the Server declares it, which this compilation does not reference,
+            // called the way an app's Program does.
             """
+            using Shop;
+
             namespace eQuantic.UI.Server;
 
             public sealed class Endpoints { }
@@ -413,6 +554,11 @@ public class ServerValueProjectionTests
             public static class UIExtensions
             {
                 public static Endpoints MapPage<TPage>(this Endpoints endpoints, string route) => endpoints;
+            }
+
+            public static class Routes
+            {
+                public static void Map(Endpoints endpoints) => endpoints.MapPage<AccountView>("/account");
             }
             """);
 

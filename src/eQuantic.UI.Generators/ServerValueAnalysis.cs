@@ -42,6 +42,20 @@ internal sealed class ServerValueAnalysis
     private const string ReadWhileConstructed =
         "it is read while the page is constructed, and the browser constructs the page without it";
 
+    private const string CheckedWhileConstructed =
+        "it is checked while the page is constructed, where the browser has no value and the check throws "
+        + "(the container already refuses to build the page without it)";
+
+    private const string WalkedThroughItself =
+        "it is walked through a chain of its own members, which the build cannot bound";
+
+    /// <summary>
+    /// How many members deep a read is followed. A cycle is caught where it closes; this is the bound for
+    /// any other growth, so the analysis always ends.
+    /// </summary>
+    private const int MaxDepth = 16;
+
+
     private readonly INamedTypeSymbol _page;
     private readonly Compilation _compilation;
     private readonly CancellationToken _token;
@@ -50,6 +64,8 @@ internal sealed class ServerValueAnalysis
     private readonly List<BoundaryStop> _stops = new();
     private readonly HashSet<string> _stopped = new(System.StringComparer.Ordinal);
     private readonly HashSet<string> _followed = new(System.StringComparer.Ordinal);
+    private readonly HashSet<string> _active = new(System.StringComparer.Ordinal);
+    private readonly HashSet<IParameterSymbol> _roots = new(SymbolEqualityComparer.Default);
     private readonly Dictionary<SyntaxTree, SemanticModel> _models = new();
 
     private ServerValueAnalysis(INamedTypeSymbol page, Compilation compilation, CancellationToken token)
@@ -91,26 +107,39 @@ internal sealed class ServerValueAnalysis
             .Where(parameter => IsServerValue(parameter.Type))
             .ToList();
 
-        foreach (var parameter in parameters)
+        foreach (var parameter in parameters) Root(parameter);
+    }
+
+    /// <summary>A constructor parameter of the page, or of a base the page hands one to, holding a server value.</summary>
+    private void Root(IParameterSymbol parameter)
+    {
+        if (!_roots.Add(parameter)) return;
+        // Never whole, read by the browser or not: one only a [ServerOnly] member reads is captured all
+        // the same, and crossed whole before.
+        _storage.Add(parameter);
+        foreach (var (reference, construction) in References(_page, parameter))
         {
-            // Never whole, read by the browser or not: one only a [ServerOnly] member reads is captured
-            // all the same, and crossed whole before.
-            _storage.Add(parameter);
-            foreach (var (reference, construction) in References(_page, parameter))
+            if (!construction)
             {
-                if (!construction)
-                {
-                    // Captured: a member reads it from the field the C# compiler gives it.
-                    Use(reference, parameter, "", _page);
-                }
-                else if (StoredInto(reference) is { } member)
-                {
-                    if (_storage.Add(member)) FollowMember(member, member, "", Construction.Refused, _page);
-                }
-                else
-                {
-                    Stop(reference, parameter, ReadWhileConstructed);
-                }
+                // Captured: a member reads it from the field the C# compiler gives it.
+                Use(reference, parameter, "", _page);
+            }
+            else if (HandedOn(reference) is { } next)
+            {
+                // To the base's constructor, or another of the page's: the same object keeps it.
+                Root(next);
+            }
+            else if (StoredInto(reference, guarded: false) is { } member)
+            {
+                if (_storage.Add(member)) FollowMember(member, member, "", Construction.Refused, _page, reference);
+            }
+            else if (Guard(reference) is { } check)
+            {
+                Stop(check, parameter, CheckedWhileConstructed);
+            }
+            else
+            {
+                Stop(reference, parameter, ReadWhileConstructed);
             }
         }
     }
@@ -187,9 +216,15 @@ internal sealed class ServerValueAnalysis
             case ICollectionExpressionOperation:
                 Stop(parent, root, "it is stored in a collection");
                 return;
-            case ICoalesceOperation:
-            case IConditionalOperation:
-                Stop(parent, root, "it is chosen as a whole value");
+            case ICoalesceOperation coalesce when coalesce.Value == child:
+                // `identity ?? guest`: whether it is null decides, and the result is it when it is not.
+                Read(root).Presence(path);
+                Use(coalesce, root, path, instance);
+                return;
+            case ICoalesceOperation coalesce when coalesce.WhenNull == child:
+            case IConditionalOperation choice when choice.WhenTrue == child || choice.WhenFalse == child:
+                // The result is this value or the other one, and what is read of it is read of this.
+                Use(parent, root, path, instance);
                 return;
             case IInvalidOperation invalid:
                 Unbound(invalid, child, root, path);
@@ -227,6 +262,11 @@ internal sealed class ServerValueAnalysis
         }
 
         var next = Combine(path, member.Member.Name);
+        if (Depth(next) > MaxDepth)
+        {
+            Stop(member, root, "it is read through more members than the build follows");
+            return;
+        }
         if (ProjectionLeaves.IsLeaf(type)) Read(root).Value(next);
         else Use(member, root, next, instance);
     }
@@ -285,6 +325,11 @@ internal sealed class ServerValueAnalysis
         }
 
         var next = Combine(path, string.Join(".", names));
+        if (Depth(next) > MaxDepth)
+        {
+            Stop(property, root, "it is read through more members than the build follows");
+            return;
+        }
         if (ProjectionLeaves.IsLeaf(type)) Read(root).Value(next);
         else Pattern(property.Pattern, root, next, instance);
     }
@@ -333,7 +378,7 @@ internal sealed class ServerValueAnalysis
         if (MemberOfThis(assignment.Target) is { } member && IsInSource(member.ContainingType))
         {
             FollowMember(member, root, path,
-                InConstruction(assignment) ? Construction.Followed : Construction.Ignored, instance);
+                InConstruction(assignment) ? Construction.Followed : Construction.Ignored, instance, assignment);
             return;
         }
         Stop(assignment, root, "it is stored where the build cannot follow it");
@@ -363,18 +408,27 @@ internal sealed class ServerValueAnalysis
             return;
         }
 
+        // `ReferenceEquals(identity, null)` asks only whether it is there.
+        if (target is { Name: "ReferenceEquals", ContainingType.SpecialType: SpecialType.System_Object }
+            && argument.Parent is IInvocationOperation equality
+            && equality.Arguments.Any(other => other != argument && IsNull(other.Value)))
+        {
+            Read(root).Presence(path);
+            return;
+        }
+
         var definition = target.OriginalDefinition;
         if (definition.DeclaringSyntaxReferences.Length == 0)
         {
             Stop(at, root, $"it is passed to {Describe(definition)}, whose source the build does not have");
             return;
         }
-        if (RunsOnTheServer(definition))
+        if (RunsOnTheServer(definition) || RunsOnTheServer(definition.ContainingType))
         {
             Stop(at, root, $"it is passed to {Describe(definition)}, which runs on the server");
             return;
         }
-        FollowParameter(argument.Parameter.OriginalDefinition, root, path, created);
+        FollowParameter(argument.Parameter.OriginalDefinition, root, path, created, at);
     }
 
     /// <summary>
@@ -388,7 +442,7 @@ internal sealed class ServerValueAnalysis
             && FactorySurface.Elect(component, out _) is { } constructor
             && ParameterOf(call, child.Syntax, FactorySurface.Parameters(constructor)) is { } parameter)
         {
-            FollowParameter(parameter, root, path, component);
+            FollowParameter(parameter, root, path, component, invalid);
             return;
         }
         Stop(invalid, root, "the call it is passed to does not bind");
@@ -402,14 +456,21 @@ internal sealed class ServerValueAnalysis
             case { MethodKind: MethodKind.PropertyGet, AssociatedSymbol: IPropertySymbol property }:
                 FollowMember(property, root, path,
                     SymbolEqualityComparer.Default.Equals(instance, _page) ? Construction.Refused : Construction.Followed,
-                    instance);
+                    instance, returned);
                 return;
             case { MethodKind: MethodKind.Ordinary } method:
-                if (!Once("returns", root, method, path)) return;
-                foreach (var (body, _) in Chain(instance).SelectMany(Bodies))
-                foreach (var call in body.DescendantsAndSelf().OfType<IInvocationOperation>())
-                    if (Same(call.TargetMethod, method))
-                        Use(call, root, path, instance);
+                if (Enter("returns", root, method, path, returned) is not { } calls) return;
+                try
+                {
+                    foreach (var (body, _) in Chain(instance).SelectMany(Bodies))
+                    foreach (var call in body.DescendantsAndSelf().OfType<IInvocationOperation>())
+                        if (Same(call.TargetMethod, method))
+                            Use(call, root, path, instance);
+                }
+                finally
+                {
+                    _active.Remove(calls);
+                }
                 return;
             default:
                 Stop(returned, root, "it is returned where the build cannot follow it");
@@ -419,27 +480,42 @@ internal sealed class ServerValueAnalysis
 
     private void FollowLocal(ILocalSymbol local, IOperation near, ISymbol root, string path, INamedTypeSymbol instance)
     {
-        if (!Once("local", root, local, path)) return;
-        var body = near;
-        while (body.Parent is not null) body = body.Parent;
-        foreach (var reference in ReferencesIn(body, local))
-            if (!IsWritten(reference))
-                Use(reference, root, path, instance);
+        if (Enter("local", root, local, path, near) is not { } following) return;
+        try
+        {
+            var body = near;
+            while (body.Parent is not null) body = body.Parent;
+            foreach (var reference in ReferencesIn(body, local))
+                if (!IsWritten(reference))
+                    Use(reference, root, path, instance);
+        }
+        finally
+        {
+            _active.Remove(following);
+        }
     }
 
-    private void FollowMember(ISymbol member, ISymbol root, string path, Construction construction, INamedTypeSymbol instance)
+    private void FollowMember(
+        ISymbol member, ISymbol root, string path, Construction construction, INamedTypeSymbol instance, IOperation at)
     {
-        if (!Once("member", root, member, path)) return;
-        foreach (var (reference, constructing) in References(instance, member))
+        if (Enter("member", root, member, path, at) is not { } following) return;
+        try
         {
-            if (IsWritten(reference)) continue;
-            if (constructing && construction == Construction.Ignored) continue;
-            if (constructing && construction == Construction.Refused)
+            foreach (var (reference, constructing) in References(instance, member))
             {
-                Stop(reference, root, ReadWhileConstructed);
-                continue;
+                if (IsWritten(reference)) continue;
+                if (constructing && construction == Construction.Ignored) continue;
+                if (constructing && construction == Construction.Refused)
+                {
+                    Stop(reference, root, ReadWhileConstructed);
+                    continue;
+                }
+                Use(reference, root, path, instance);
             }
-            Use(reference, root, path, instance);
+        }
+        finally
+        {
+            _active.Remove(following);
         }
     }
 
@@ -448,11 +524,23 @@ internal sealed class ServerValueAnalysis
     /// parameter is what the browser reads of the value. A constructor's object holds it from then on,
     /// so the members it is stored in are followed through the type constructed and its bases.
     /// </summary>
-    private void FollowParameter(IParameterSymbol parameter, ISymbol root, string path, INamedTypeSymbol? created)
+    private void FollowParameter(
+        IParameterSymbol parameter, ISymbol root, string path, INamedTypeSymbol? created, IOperation at)
     {
         if (parameter.ContainingSymbol is not IMethodSymbol method) return;
-        if (!Once("parameter", root, parameter, path)) return;
+        if (Enter("parameter", root, parameter, path, at) is not { } following) return;
+        try
+        {
+            Follow(parameter, method, root, path, created);
+        }
+        finally
+        {
+            _active.Remove(following);
+        }
+    }
 
+    private void Follow(IParameterSymbol parameter, IMethodSymbol method, ISymbol root, string path, INamedTypeSymbol? created)
+    {
         if (method.MethodKind == MethodKind.Constructor)
         {
             var type = created ?? method.ContainingType;
@@ -465,7 +553,9 @@ internal sealed class ServerValueAnalysis
                 if (body is null) continue;
                 foreach (var reference in ReferencesIn(body, parameter))
                 {
-                    if (StoredInto(reference) is { } member) FollowMember(member, root, path, Construction.Followed, type);
+                    // The value arrives with the object, so a check against null passes in the browser too.
+                    if (StoredInto(reference, guarded: true) is { } member)
+                        FollowMember(member, root, path, Construction.Followed, type, reference);
                     else Use(reference, root, path, type);
                 }
             }
@@ -480,12 +570,15 @@ internal sealed class ServerValueAnalysis
         }
     }
 
-    /// <summary>The member of <c>this</c> a constructing reference is stored in, whole.</summary>
-    private static ISymbol? StoredInto(IOperation reference)
+    /// <summary>
+    /// The member of <c>this</c> a constructing reference is stored in, whole. With <paramref name="guarded"/>,
+    /// <c>options ?? throw new ArgumentNullException(…)</c> stores options, which is true where the value
+    /// arrives with the object, and not for a page, whose browser half is constructed without it.
+    /// </summary>
+    private static ISymbol? StoredInto(IOperation reference, bool guarded)
     {
         var (parent, child) = Climb(reference);
-        // `options ?? throw new ArgumentNullException(…)` stores options.
-        while (parent is ICoalesceOperation coalesce && coalesce.Value == child && Unwrap(coalesce.WhenNull) is IThrowOperation)
+        while (guarded && parent is ICoalesceOperation coalesce && coalesce.Value == child && Unwrap(coalesce.WhenNull) is IThrowOperation)
             (parent, child) = Climb(coalesce);
         return parent switch
         {
@@ -497,6 +590,25 @@ internal sealed class ServerValueAnalysis
             _ => null,
         };
     }
+
+    /// <summary>The check a constructing reference is the subject of: <c>options ?? throw …</c>.</summary>
+    private static IOperation? Guard(IOperation reference) =>
+        Climb(reference) is (ICoalesceOperation coalesce, var child) && coalesce.Value == child
+            && Unwrap(coalesce.WhenNull) is IThrowOperation
+            ? coalesce
+            : null;
+
+    /// <summary>The parameter of a constructor of the same object a constructing reference is handed to.</summary>
+    private static IParameterSymbol? HandedOn(IOperation reference) =>
+        Climb(reference) is (IArgumentOperation
+            {
+                Parent: IInvocationOperation { TargetMethod.MethodKind: MethodKind.Constructor } call,
+                Parameter: { } parameter,
+                ArgumentKind: not ArgumentKind.ParamArray,
+            }, _)
+        && call.TargetMethod.OriginalDefinition.DeclaringSyntaxReferences.Length > 0
+            ? parameter.OriginalDefinition
+            : null;
 
     private static ISymbol? MemberOfThis(IOperation target) => target switch
     {
@@ -516,7 +628,7 @@ internal sealed class ServerValueAnalysis
     }
 
     private static IEnumerable<IOperation> ReferencesIn(IOperation body, ISymbol symbol) =>
-        body.DescendantsAndSelf().Where(operation => operation switch
+        body.DescendantsAndSelf().Where(operation => operation.Parent is not INameOfOperation && operation switch
         {
             IParameterReferenceOperation parameter => Same(parameter.Parameter, symbol),
             ILocalReferenceOperation local => Same(local.Local, symbol),
@@ -701,8 +813,25 @@ internal sealed class ServerValueAnalysis
         return text.Length <= 80 ? text : text.Substring(0, 77) + "...";
     }
 
-    private bool Once(string what, ISymbol root, ISymbol symbol, string path) =>
-        _followed.Add($"{what}|{Key(root)}|{Key(symbol)}|{path}");
+    /// <summary>
+    /// Starts following <paramref name="symbol"/> for a value at <paramref name="path"/>, and answers the
+    /// key to release when done, or null. Not again at a path already followed; and a stop where the value
+    /// reaches the symbol again while it is still being followed, as a walk down a chain does
+    /// (<c>_node = _node.Next</c>) and a method calling itself with a member does, since neither has an end.
+    /// </summary>
+    private string? Enter(string what, ISymbol root, ISymbol symbol, string path, IOperation at)
+    {
+        var key = $"{what}|{Key(root)}|{Key(symbol)}";
+        if (!_followed.Add($"{key}|{path}")) return null;
+        if (!_active.Add(key))
+        {
+            Stop(at, root, WalkedThroughItself);
+            return null;
+        }
+        return key;
+    }
+
+    private static int Depth(string path) => path.Length == 0 ? 0 : path.Count(c => c == '.') + 1;
 
     private static string Key(ISymbol symbol)
     {
