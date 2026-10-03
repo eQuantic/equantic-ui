@@ -20,6 +20,8 @@ public class DictionaryAddConformanceTests
     [InlineData("var d = new SortedDictionary<int, string>(); d.Add(2, \"b\"); try { d.Add(2, \"c\"); return \"added\"; } catch (Exception e) { return e.Message; }")] // "...Key: 2"
     [InlineData("var d = new SortedList<int, string>(); d.Add(2, \"b\"); try { d.Add(2, \"c\"); return \"added\"; } catch (Exception e) { return e.Message; }")]      // "...Key: 2 (Parameter 'key')"
     [InlineData("var d = new SortedList<int, string> { [1] = \"a\", [1] = \"b\" }; return d[1];")]                                                         // "b"
+    [InlineData("var log = \"\"; Func<string, string> k = s => { log += s; return s; }; try { var d = new Dictionary<string, int> { { k(\"a\"), 1 }, { k(\"a\"), 2 }, { k(\"b\"), 3 } }; } catch (Exception) { } return log;")] // "aa": the third entry never runs
+    [InlineData("var log = \"\"; Func<string, string> k = s => { log += s; return s; }; try { var d = new SortedDictionary<string, int> { [k(null)] = 1, [k(\"b\")] = 2 }; } catch (Exception) { } return log;")] // "": a null key stops the rest
     public void Add_RefusesAKeyAlreadyThere_TheIndexerReplaces(string statements)
     {
         Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");

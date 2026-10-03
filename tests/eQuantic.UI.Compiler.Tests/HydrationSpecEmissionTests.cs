@@ -258,6 +258,7 @@ public class HydrationSpecEmissionTests
                 private SortedSet<decimal?> _prices = new();
                 private SortedSet<Level> _levels = new();
                 private SortedDictionary<string, int> _index = new();
+                private SortedList<string, int> _ranks = new();
 
                 public override VisualNode Build(ComponentContext context)
                     => new Text("", TypeRole.BodyM, context.Theme.TextPrimary);
@@ -282,7 +283,9 @@ public class HydrationSpecEmissionTests
         Assert.Contains("_names: { collection: 'sortedSet', of: null, order: 'text' }", map);
         Assert.Contains("_prices: { collection: 'sortedSet', of: 'decimal', order: 'comparable' }", map);
         Assert.Contains("_levels: { collection: 'sortedSet', of: null, order: { 'low': 0, 'high': 1 } }", map);
-        Assert.Contains("_index: { dict: null, sorted: true, order: 'text' }", map);
+        // And which of the two it is: a SortedList refuses a repeated key in its own words.
+        Assert.Contains("_index: { dict: null, sorted: 'dictionary', order: 'text' }", map);
+        Assert.Contains("_ranks: { dict: null, sorted: 'list', order: 'text' }", map);
     }
 
     private static string Compile()

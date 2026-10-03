@@ -62,16 +62,14 @@ export class Dictionary<K, V> implements Iterable<Pair<K, V>> {
     if (entries) for (const [key, value] of entries) this.add(key, value);
   }
 
-  /** `Add`: a new key, or .NET's refusal of one already there. The indexer's write replaces instead. */
-  add(key: K, value: V): void {
+  /**
+   * `Add`: a new key, or .NET's refusal of one already there. The indexer's write replaces instead. It
+   * answers the dictionary, so a collection initializer chains one call per entry and an entry that
+   * throws stops the ones after it.
+   */
+  add(key: K, value: V): this {
     if (this.find(key) >= 0) throw new Error(`An item with the same key has already been added. Key: ${keyText(key)}`);
-    this.set(key, value);
-  }
-
-  /** An object initializer's `[key] = value` entries, written by the indexer, in order. */
-  assign(entries: Iterable<readonly [K, V]>): this {
-    for (const [key, value] of entries) this.set(key, value);
-    return this;
+    return this.set(key, value);
   }
 
   /** `Count`. */

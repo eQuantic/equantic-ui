@@ -110,20 +110,39 @@ internal sealed class DictionaryStrategy : IExpressionIrStrategy
     internal static JsExpr Seeded(ITypeSymbol type, InitializerExpressionSyntax initializer, ConversionContext context)
     {
         context.UsedHelpers.Add(Eq.Import);
-        var (pairs, assigned) = Entries(initializer, context);
-        return Seed(Factory(type.DictionaryFactory()!, type, !assigned && pairs is { Count: > 0 } ? Pairs(null, pairs) : null),
-            assigned ? pairs : null);
+        return Initialized(Factory(type.DictionaryFactory()!, type, null), initializer, context);
     }
 
     /// <summary>
-    /// The dictionary with an object initializer's <c>[key] = value</c> entries written by the indexer,
-    /// which replaces a key already there, where a constructor and a collection initializer add, which
-    /// refuses one (#440). C# takes one kind of initializer or the other, never both.
+    /// The dictionary with its initializer's entries, one call each, in the order C# makes them: a
+    /// collection initializer's <c>{ key, value }</c> by <c>add</c>, which refuses a key already there,
+    /// and an object initializer's <c>[key] = value</c> by the indexer's <c>set</c>, which replaces it
+    /// (#440). One call per entry, chained, so an entry that throws stops the ones after it before
+    /// their keys and values are evaluated, as C# stops them: listed as one array, they all ran first.
     /// </summary>
-    private static JsExpr Seed(JsExpr dictionary, List<string>? assigned) =>
-        assigned is { Count: > 0 }
-            ? JsExpr.Call(JsExpr.Member(dictionary, "assign"), JsExpr.Literal($"[{string.Join(", ", assigned)}]"))
-            : dictionary;
+    private static JsExpr Initialized(JsExpr dictionary, InitializerExpressionSyntax? initializer, ConversionContext context)
+    {
+        if (initializer is null) return dictionary;
+        var member = initializer.IsKind(SyntaxKind.ObjectInitializerExpression) ? "set" : "add";
+        foreach (var element in initializer.Expressions)
+        {
+            switch (element)
+            {
+                case InitializerExpressionSyntax { Expressions.Count: 2 } pair:
+                    dictionary = JsExpr.Call(JsExpr.Member(dictionary, member),
+                        context.Converter.ConvertIr(pair.Expressions[0]), context.Converter.ConvertIr(pair.Expressions[1]));
+                    break;
+                case AssignmentExpressionSyntax { Left: ImplicitElementAccessSyntax { ArgumentList.Arguments.Count: 1 } key } assignment:
+                    dictionary = JsExpr.Call(JsExpr.Member(dictionary, member),
+                        context.Converter.ConvertIr(key.ArgumentList.Arguments[0].Expression), context.Converter.ConvertIr(assignment.Right));
+                    break;
+                default:
+                    context.Unhandled(element, "Dictionary initializer");
+                    break;
+            }
+        }
+        return dictionary;
+    }
 
     /// <summary>The factory a creation constructs by: its type's, where the model knows the type, and
     /// the one the name it writes says only where the model cannot be asked.</summary>
@@ -148,8 +167,8 @@ internal sealed class DictionaryStrategy : IExpressionIrStrategy
 
     /// <summary>
     /// <c>new Dictionary&lt;K, V&gt;(…) { … }</c>: the factory, seeded by the dictionary or the pairs the
-    /// constructor copies and then the initializer's pairs, in the order C# evaluates them. A capacity
-    /// has no meaning here, and a comparer has no form.
+    /// constructor copies, and then the initializer's entries, one call each. A capacity has no meaning
+    /// here, and a comparer has no form.
     /// </summary>
     private static JsExpr Construction(BaseObjectCreationExpressionSyntax creation, ConversionContext context)
     {
@@ -170,9 +189,7 @@ internal sealed class DictionaryStrategy : IExpressionIrStrategy
             source = context.Converter.ConvertIr(arguments[i].Expression);
         }
 
-        var (pairs, assigned) = Entries(creation.Initializer, context);
-        return Seed(Factory(FactoryOf(creation, context)!, type,
-            !assigned && pairs is { Count: > 0 } ? Pairs(source, pairs) : source), assigned ? pairs : null);
+        return Initialized(Factory(FactoryOf(creation, context)!, type, source), creation.Initializer, context);
     }
 
     /// <summary><c>factory(seed)</c>, and <c>factory(seed, equality)</c> when the keys are not found by
@@ -190,43 +207,6 @@ internal sealed class DictionaryStrategy : IExpressionIrStrategy
         else if (second is not null) arguments.Add(JsExpr.Literal("null"));
         if (second is not null) arguments.Add(JsExpr.Literal(second));
         return JsExpr.Call(JsExpr.Identifier(factory), arguments);
-    }
-
-    /// <summary>The pairs a constructor seeds with: what it copies, spread, then the initializer's own.</summary>
-    private static JsExpr Pairs(JsExpr? source, IReadOnlyList<string> pairs)
-    {
-        var copied = source is null ? "" : $"...{JsExprWriter.Write(source)}, ";
-        return JsExpr.Literal($"[{copied}{string.Join(", ", pairs)}]");
-    }
-
-    /// <summary>
-    /// The <c>[key, value]</c> pairs an initializer lists, in order: <c>{ key, value }</c> elements of a
-    /// collection initializer, which ADD, or <c>[key] = value</c> ones of an object initializer, which are
-    /// ASSIGNED by the indexer. Null for none.
-    /// </summary>
-    private static (List<string>? Pairs, bool Assigned) Entries(InitializerExpressionSyntax? initializer, ConversionContext context)
-    {
-        if (initializer is null) return (null, false);
-        var assigned = initializer.IsKind(SyntaxKind.ObjectInitializerExpression);
-        var pairs = new List<string>();
-        foreach (var element in initializer.Expressions)
-        {
-            switch (element)
-            {
-                case InitializerExpressionSyntax { Expressions.Count: 2 } pair:
-                    pairs.Add($"[{context.Converter.ConvertExpression(pair.Expressions[0])}, "
-                        + $"{context.Converter.ConvertExpression(pair.Expressions[1])}]");
-                    break;
-                case AssignmentExpressionSyntax { Left: ImplicitElementAccessSyntax { ArgumentList.Arguments.Count: 1 } key } assignment:
-                    pairs.Add($"[{context.Converter.ConvertExpression(key.ArgumentList.Arguments[0].Expression)}, "
-                        + $"{context.Converter.ConvertExpression(assignment.Right)}]");
-                    break;
-                default:
-                    context.Unhandled(element, "Dictionary initializer");
-                    break;
-            }
-        }
-        return (pairs, assigned);
     }
 
     /// <summary>The call a dictionary answers, or null when this invocation is not one.</summary>

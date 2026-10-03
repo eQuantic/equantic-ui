@@ -180,7 +180,7 @@ public static class HydrationSpec
         Of(element, referenced, visiting) is { } inner ? $"[{inner}]" : null;
 
     /// <summary>
-    /// <c>{ dict: values, key: tag, byValue: …, sorted: true, order: … }</c>: how each value hydrates
+    /// <c>{ dict: values, key: tag, byValue: …, sorted: 'dictionary' | 'list', order: … }</c>: how each value hydrates
     /// (null when it arrives as it is), how a property name becomes the key, and which class holds the
     /// entries — a sorted one's own, in its key type's order (<see cref="ValueOrdering"/>), or the
     /// runtime's <c>Dictionary</c>, finding its keys by value
@@ -194,7 +194,8 @@ public static class HydrationSpec
         if (KeyTag(key) is { } tag) parts.Add($"key: {tag}");
         if (dictionary.DictionaryFactory() is Eq.SortedDictionary or Eq.SortedList)
         {
-            parts.Add("sorted: true");
+            // Which of the two: a SortedList refuses a key already there in its own words.
+            parts.Add(dictionary.DictionaryFactory() == Eq.SortedList ? "sorted: 'list'" : "sorted: 'dictionary'");
             if (ValueOrdering.Of(key) is { } ordering) parts.Add($"order: {ordering}");
         }
         else if (DictionaryStrategy.KeyEquality(key) is { } equality) parts.Add($"byValue: {equality}");

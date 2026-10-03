@@ -117,8 +117,8 @@ public class DictionaryStrategyTests
     // A capacity has no meaning here; a copy copies; an initializer seeds after what is copied.
     [InlineData("new Dictionary<string, string>(16)", "$eq.collections.dictionary()")]
     [InlineData("new Dictionary<string, string>(dict)", "$eq.collections.dictionary(this.dict)")]
-    [InlineData("new Dictionary<string, string>(dict) { [\"a\"] = \"b\" }", "$eq.collections.dictionary(this.dict).assign([['a', 'b']])")]  // an indexer overwrites what the copy has
-    [InlineData("new Dictionary<string, int> { { \"a\", 1 }, { \"b\", 2 } }", "$eq.collections.dictionary([['a', 1], ['b', 2]])")]
+    [InlineData("new Dictionary<string, string>(dict) { [\"a\"] = \"b\" }", "$eq.collections.dictionary(this.dict).set('a', 'b')")]  // an indexer overwrites what the copy has
+    [InlineData("new Dictionary<string, int> { { \"a\", 1 }, { \"b\", 2 } }", "$eq.collections.dictionary().add('a', 1).add('b', 2)")]  // one Add per entry, in order
     [InlineData("new SortedDictionary<int, string>()", "$eq.collections.sortedDictionary(null, 'value')")]
     [InlineData("new SortedList<int, string>(dictionaryOfInts)", "$eq.collections.sortedList(dictionaryOfInts, 'value')")]
     [InlineData("new SortedDictionary<string, int>()", "$eq.collections.sortedDictionary(null, 'text')")]
