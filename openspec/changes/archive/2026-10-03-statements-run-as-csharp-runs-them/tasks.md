@@ -18,4 +18,4 @@
 ## 4. Documentation and the suites
 
 - [x] 4.1 The wiki's SupportedFeatures page (EN + pt-BR) on a branch named like this one. Verify: the wiki guards pass with `EQ_WIKI_DIR` on it
-- [ ] 4.2 The suites, each alone and read by its exit code. Verify: Compiler, Web, Server, Conformance and the runtime's `TestRuntime` exit 0
+- [x] 4.2 The suites, each alone and read by its exit code. Verify: Compiler, Web, Server, Conformance and the runtime's `TestRuntime` exit 0
