@@ -26,7 +26,7 @@ public static class TestHelper
             ((string)AppContext.GetData("TRUSTED_PLATFORM_ASSEMBLIES")!)
                 .Split(Path.PathSeparator)
                 .Where(path => path.EndsWith(".dll", StringComparison.OrdinalIgnoreCase))
-                .Select(path => (MetadataReference)MetadataReference.CreateFromFile(path)),
+                .Select(path => (MetadataReference)TestReferences.Of(path)),
             new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
 
         var declaration = tree.GetRoot().DescendantNodes().OfType<ClassDeclarationSyntax>().First();
@@ -120,14 +120,14 @@ public static class TestHelper
             
         var compilation = CSharpCompilation.Create("TestAssembly", new[] { tree }, 
             new[] { 
-                MetadataReference.CreateFromFile(typeof(object).Assembly.Location),
-                MetadataReference.CreateFromFile(typeof(Enumerable).Assembly.Location),
-                MetadataReference.CreateFromFile(typeof(Console).Assembly.Location),
-                MetadataReference.CreateFromFile(typeof(List<>).Assembly.Location), // Collections
-                MetadataReference.CreateFromFile(Assembly.Load("System.Runtime").Location), // Core Runtime
+                TestReferences.Of(typeof(object).Assembly.Location),
+                TestReferences.Of(typeof(Enumerable).Assembly.Location),
+                TestReferences.Of(typeof(Console).Assembly.Location),
+                TestReferences.Of(typeof(List<>).Assembly.Location), // Collections
+                TestReferences.Of(Assembly.Load("System.Runtime").Location), // Core Runtime
                 // Where System.Linq's metadata says Dictionary<,> lives: without it, no ToDictionary
                 // binds here, and a test of one met EQ2006 before any strategy saw the call.
-                MetadataReference.CreateFromFile(Assembly.Load("System.Collections").Location)
+                TestReferences.Of(Assembly.Load("System.Collections").Location)
             });
             
         var semanticModel = compilation.GetSemanticModel(tree);
@@ -236,12 +236,12 @@ public static class TestHelper
             "TestAssembly",
             new[] { tree },
             new[] {
-                MetadataReference.CreateFromFile(typeof(object).Assembly.Location),
-                MetadataReference.CreateFromFile(typeof(Enumerable).Assembly.Location),
-                MetadataReference.CreateFromFile(typeof(Console).Assembly.Location),
-                MetadataReference.CreateFromFile(typeof(List<>).Assembly.Location),
-                MetadataReference.CreateFromFile(Assembly.Load("System.Runtime").Location),
-                MetadataReference.CreateFromFile(Assembly.Load("System.Collections").Location)
+                TestReferences.Of(typeof(object).Assembly.Location),
+                TestReferences.Of(typeof(Enumerable).Assembly.Location),
+                TestReferences.Of(typeof(Console).Assembly.Location),
+                TestReferences.Of(typeof(List<>).Assembly.Location),
+                TestReferences.Of(Assembly.Load("System.Runtime").Location),
+                TestReferences.Of(Assembly.Load("System.Collections").Location)
             },
             new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
 

@@ -319,8 +319,8 @@ public class StackFrameSourceMapTests
         var references = ((string)AppContext.GetData("TRUSTED_PLATFORM_ASSEMBLIES")!)
             .Split(Path.PathSeparator)
             .Where(file => file.EndsWith(".dll", StringComparison.OrdinalIgnoreCase))
-            .Select(file => (MetadataReference)MetadataReference.CreateFromFile(file))
-            .Append(MetadataReference.CreateFromFile(typeof(eQuantic.UI.Primitives.VisualNode).Assembly.Location));
+            .Select(file => (MetadataReference)TestReferences.Of(file))
+            .Append(TestReferences.Of(typeof(eQuantic.UI.Primitives.VisualNode).Assembly.Location));
         var tree = CSharpSyntaxTree.ParseText(source, path: path);
         var compilation = CSharpCompilation.Create("Stack", [tree], references,
             new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));

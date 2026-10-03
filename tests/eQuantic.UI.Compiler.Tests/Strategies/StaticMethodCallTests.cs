@@ -52,8 +52,8 @@ public class StaticMethodCallTests
 
         var compilation = CSharpCompilation.Create("StaticMethodTest", new[] { tree }, new[]
         {
-            MetadataReference.CreateFromFile(typeof(object).Assembly.Location),
-            MetadataReference.CreateFromFile(Assembly.Load("System.Runtime").Location),
+            TestReferences.Of(typeof(object).Assembly.Location),
+            TestReferences.Of(Assembly.Load("System.Runtime").Location),
         });
 
         var converter = new CSharpToJsConverter();

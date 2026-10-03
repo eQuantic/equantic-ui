@@ -60,8 +60,8 @@ public class LambdaAndLocalFunctionEmissionTests
         var references = ((string)AppContext.GetData("TRUSTED_PLATFORM_ASSEMBLIES")!)
             .Split(Path.PathSeparator)
             .Where(p => p.EndsWith(".dll", StringComparison.OrdinalIgnoreCase))
-            .Select(p => (MetadataReference)MetadataReference.CreateFromFile(p))
-            .Append(MetadataReference.CreateFromFile(typeof(eQuantic.UI.Primitives.VisualNode).Assembly.Location));
+            .Select(p => (MetadataReference)TestReferences.Of(p))
+            .Append(TestReferences.Of(typeof(eQuantic.UI.Primitives.VisualNode).Assembly.Location));
         var compiler = new ComponentCompiler();
         compiler.SetProjectCompilation(CSharpCompilation.Create("Probe", [tree], references,
             new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary)));

@@ -47,9 +47,9 @@ public class HostOnlyInASignatureTests
         var references = ((string)AppContext.GetData("TRUSTED_PLATFORM_ASSEMBLIES")!)
             .Split(Path.PathSeparator)
             .Where(path => path.EndsWith(".dll", StringComparison.OrdinalIgnoreCase))
-            .Select(path => (MetadataReference)MetadataReference.CreateFromFile(path))
-            .Append(MetadataReference.CreateFromFile(typeof(Primitives.VisualNode).Assembly.Location))
-            .Append(MetadataReference.CreateFromFile(typeof(Components.Button).Assembly.Location));
+            .Select(path => (MetadataReference)TestReferences.Of(path))
+            .Append(TestReferences.Of(typeof(Primitives.VisualNode).Assembly.Location))
+            .Append(TestReferences.Of(typeof(Components.Button).Assembly.Location));
         var compilation = CSharpCompilation.Create("SignatureProbe", [tree], references,
             new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary,
                 nullableContextOptions: NullableContextOptions.Enable));
