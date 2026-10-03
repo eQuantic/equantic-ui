@@ -17,4 +17,4 @@
 
 - [x] 4.1 The wiki's SupportedFeatures and Diagnostics pages (EN + pt-BR) and `docs/DIAGNOSTICS.md`'s EQ2004 row, on a wiki branch named like this one. Verify: the docs guards pass with `EQ_WIKI_DIR` on that branch
 - [x] 4.2 One `docs/LEDGER.md` line citing #479, #485 and #517. Verify: `./scripts/check-openspec.sh` passes
-- [ ] 4.3 The suites, each alone and read by its exit code. Verify: Compiler, Web, Server, Conformance and the runtime's `TestRuntime` all exit 0
+- [x] 4.3 The suites, each alone and read by its exit code. Verify: Compiler, Web, Server, Conformance and the runtime's `TestRuntime` all exit 0
