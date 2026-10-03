@@ -16,4 +16,5 @@ public sealed class CrossingReport
     public List<string> Tags { get; init; } = new();
     public Dictionary<string, long> Prices { get; init; } = new();
     public List<long> Scores { get; init; } = new();
+    public HashSet<string> Roles { get; init; } = new();
 }
