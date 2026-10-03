@@ -24,5 +24,5 @@
 
 ## 4. Integration
 
-- [ ] 4.1 Run the Compiler, Web, Server and Conformance suites and the runtime's `-t:TestRuntime`, each with no other test host running and each read from its exit code and its `Test Run Aborted` line, not from `Passed!`; verify every one exits 0 with its full count
-- [ ] 4.2 Validate and archive the change before the merge with `./scripts/check-openspec.sh` and `./scripts/openspec.sh archive derive-the-hydration-contract --yes`; verify the archive lands under `openspec/changes/archive/` and `openspec/specs/hydration-contract/spec.md` exists
+- [x] 4.1 Run the Compiler, Web, Server and Conformance suites and the runtime's `-t:TestRuntime`, each with no other test host running and each read from its exit code and its `Test Run Aborted` line, not from `Passed!`; verify every one exits 0 with its full count
+- [x] 4.2 Validate and archive the change before the merge with `./scripts/check-openspec.sh` and `./scripts/openspec.sh archive derive-the-hydration-contract --yes`; verify the archive lands under `openspec/changes/archive/` and `openspec/specs/hydration-contract/spec.md` exists
