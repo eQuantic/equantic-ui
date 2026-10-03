@@ -18,10 +18,13 @@ internal static class HydrationManifest
 {
     private const string AttributeName = "eQuantic.UI.Primitives.HydratedMemberAttribute";
 
-    /// <summary>Each value <paramref name="component"/> carries: the twin's name for it, and its C# type.</summary>
-    public static IReadOnlyList<(string Key, ITypeSymbol? Type)> Of(INamedTypeSymbol component, Compilation compilation)
+    /// <summary>
+    /// Each value <paramref name="component"/> carries: the twin's name for it, its C# type, and the
+    /// projection it crosses as when it is a server value (null when it crosses whole).
+    /// </summary>
+    public static IReadOnlyList<(string Key, ITypeSymbol? Type, string? Projection)> Of(INamedTypeSymbol component, Compilation compilation)
     {
-        var carried = new List<(string Key, ITypeSymbol? Type)>();
+        var carried = new List<(string Key, ITypeSymbol? Type, string? Projection)>();
         foreach (var attribute in compilation.Assembly.GetAttributes())
         {
             if (attribute.AttributeClass?.ToDisplayString() != AttributeName) continue;
@@ -32,7 +35,11 @@ internal static class HydrationManifest
                     compilation.GetTypeByMetadataName(componentName), component.OriginalDefinition))
                 continue;
 
-            carried.Add((member.ToCamelCase(), TypeOf(compilation.GetTypeByMetadataName(declaringName), member, kind)));
+            var projection = attribute.NamedArguments
+                .Where(argument => argument.Key == "Projection")
+                .Select(argument => argument.Value.Value as string)
+                .FirstOrDefault();
+            carried.Add((member.ToCamelCase(), TypeOf(compilation.GetTypeByMetadataName(declaringName), member, kind), projection));
         }
 
         return carried;

@@ -512,6 +512,50 @@ describe('server-state adoption by the hydration manifest', () => {
     expect(draft._text).toBe('typed here');
   });
 
+  it('adopts a projection as plain data, never rebuilt into the twin of its class', () => {
+    // A server value crosses as only the members the browser reads. The class it was on the server has
+    // a twin whose getters compute from members that never crossed, so the projection stays plain.
+    class SiteOptions {
+      title = '';
+      maxUpload = 0n;
+      get display() {
+        return this.title.toUpperCase();
+      }
+      static get $hydration() {
+        return { maxUpload: 'long' as const };
+      }
+    }
+    class AboutPage {
+      _options: unknown = undefined;
+      static get $hydration() {
+        return { _options: { members: { maxUpload: 'long' as const } } };
+      }
+    }
+    const page = new AboutPage();
+    win.__INITIAL_STATE__ = { 'AboutPage#0': { _options: { title: 'Docs', maxUpload: '9007199254740993' } } };
+
+    runComponentWalk(page, true, () => undefined);
+
+    expect(page._options).not.toBeInstanceOf(SiteOptions);
+    expect(Object.getPrototypeOf(page._options)).toBe(Object.prototype);
+    expect(page._options).toEqual({ title: 'Docs', maxUpload: 9007199254740993n });
+  });
+
+  it('adopts a null server value as null', () => {
+    class LoginPage {
+      declare identity: unknown;
+      static get $hydration() {
+        return { identity: { members: {} } };
+      }
+    }
+    const page = new LoginPage();
+    win.__INITIAL_STATE__ = { 'LoginPage#0': { identity: null } };
+
+    runComponentWalk(page, true, () => undefined);
+
+    expect(page.identity).toBeNull();
+  });
+
   it('adopts nothing into a class without a map, which the build described no state for', () => {
     class Undescribed {
       _count = 1;

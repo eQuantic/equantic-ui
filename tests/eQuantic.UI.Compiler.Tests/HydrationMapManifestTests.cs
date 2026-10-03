@@ -95,4 +95,67 @@ public class HydrationMapManifestTests
         // The server carries nothing to it, so there is nothing for its twin to adopt.
         Assert.DoesNotContain("$hydration", Twin("Badge"));
     }
+
+    private const string ServerValues = """
+        using eQuantic.UI.Primitives;
+
+        namespace Shop;
+
+        public sealed class SiteOptions
+        {
+            public string Title { get; set; } = "";
+            public long MaxUpload { get; set; }
+            public string ApiKey { get; set; } = "";
+            public string Display => Title.ToUpperInvariant();
+        }
+
+        public sealed class SiteIdentity
+        {
+            public string Authority { get; set; } = "";
+        }
+
+        [Page("/about")]
+        public sealed class AboutPage : StatelessComponent
+        {
+            private readonly SiteOptions _options;
+
+            public AboutPage(SiteOptions options) { _options = options; }
+
+            public override VisualNode Build(ComponentContext context) =>
+                new Text($"{_options.Title} {_options.MaxUpload}", TypeRole.BodyM);
+        }
+
+        [Page("/login")]
+        public sealed class LoginPage(SiteIdentity? identity) : StatelessComponent
+        {
+            public override VisualNode Build(ComponentContext context) =>
+                new Text(identity is null ? "sign in" : "account", TypeRole.BodyM);
+        }
+        """;
+
+    private static string ServerTwin(string component)
+    {
+        var compiler = new ComponentCompiler();
+        compiler.SetProjectCompilation(GeneratedProject.Of(ServerValues, "Server.cs"));
+        var result = compiler.CompileSource(ServerValues, "Server.cs").Single(r => r.ComponentName == component);
+        Assert.True(result.Success, string.Join("\n", result.Errors.Select(e => e.Message)));
+        return result.TypeScript;
+    }
+
+    [Fact]
+    public void AServerValue_IsAdoptedAsItsPlainProjection_WithTheLeavesItReadsCoerced()
+    {
+        // A plain object and never the class's twin: SiteOptions has one, whose getters would compute
+        // from members that did not cross. The long it reads crosses as a string, so it is coerced.
+        var twin = ServerTwin("AboutPage");
+
+        Assert.Contains("return { _options: { members: { maxUpload: 'long' } } };", twin);
+        Assert.DoesNotContain("_options: SiteOptions", twin);
+    }
+
+    [Fact]
+    public void AServerValueReadOnlyForItsPresence_IsAnEmptyPlainProjection()
+    {
+        Assert.Contains("return { identity: { members: {} } };", ServerTwin("LoginPage"));
+    }
 }
