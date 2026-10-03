@@ -131,6 +131,9 @@ public class __Conformance
                 MetadataReference.CreateFromFile(typeof(System.DateOnly).Assembly.Location),
                 MetadataReference.CreateFromFile(Assembly.Load("System.Runtime").Location),
                 MetadataReference.CreateFromFile(Assembly.Load("System.Collections").Location),
+                // The vocabulary, as the .NET side references it: a reference brings no name into
+                // scope, so only a case that says `using eQuantic.UI.Primitives;` reads it.
+                MetadataReference.CreateFromFile(typeof(eQuantic.UI.Primitives.VisualNode).Assembly.Location),
             },
             new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
 

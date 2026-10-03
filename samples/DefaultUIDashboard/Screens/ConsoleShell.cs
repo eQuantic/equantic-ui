@@ -91,6 +91,8 @@ public static class ConsoleShell
         new(Icons.Info, "Server data", "/server-data"),
         // A service the container hands the page, which crosses as only what the page reads of it.
         new(Icons.Person, "Identity", "/identity"),
+        // Colours a component derives in its browser-side code, which the browser holds as data.
+        new(Icons.Copy, "Colors", "/colors"),
     ];
 
     /// <summary>

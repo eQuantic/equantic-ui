@@ -137,6 +137,9 @@ public static class Eq
     /// <c>CharUnicodeInfo.GetUnicodeCategory</c> and <c>char.GetUnicodeCategory</c>.</summary>
     public const string UnicodeCategory = "$eq.text.unicodeCategory";
     public const string Format = "$eq.text.format";
+    /// <summary>The record text .NET writes (<c>Color { R = 1, G = 2, B = 3, A = 4 }</c>) for a value the
+    /// browser holds as plain data, and the empty string for a null one.</summary>
+    public const string RecordText = "$eq.text.record";
     public const string StringFormat = "$eq.text.stringFormat";
     /// <summary><c>string.Compare</c> by a <c>StringComparison</c>: a null first, a culture comparison
     /// by the platform's collator, an ordinal one answering .NET's difference.</summary>
