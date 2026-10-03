@@ -70,15 +70,15 @@ as `DateTime.Now` in a `Build` (S4).
 ## Impact
 
 - **eQuantic.UI.Generators**: a new analysis over the bound tree of each component's browser-side
-  members, and the manifest it writes.
+  members, the manifest it writes, and EQ2114, which it reports.
 - **eQuantic.UI.Primitives**: the manifest's attribute types. The public surface grows; nothing is
   retired.
 - **eQuantic.UI.Server**: `ServerRenderingService` reads the manifest at startup and writes each payload
   from it, for the page render and the navigation payload alike. The reflection naming and
   `IsDependency` go. As a second line of defence, a value whose type the container registers as a
   service is never written whole.
-- **eqc (eQuantic.UI.Compiler)**: reads the manifest from the generated sources, emits the twin's
-  adoption from it, and reports EQ2114.
+- **eqc (eQuantic.UI.Compiler)**: reads the manifest from the generated sources and emits the twin's
+  adoption from it.
 - **The runtime**: a projection is adopted as plain data and never rebuilt into a class twin.
 - **The SDK and the templates**: nothing an app writes changes. The developer surface does not move.
 - **Documentation**: `docs/DIAGNOSTICS.md` (EQ2114), the wiki's ServerIntegration and Diagnostics pages

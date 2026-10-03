@@ -2,7 +2,7 @@
 
 ## 1. One rule names a twin's member
 
-- [ ] 1.1 Move the member-naming rule eqc applies (`ToCamelCase`) into `src/Shared`, compile it into the generators, and make eqc's naming call it; verify the compiler suite passes and `EQ_UPDATE_TRANSPILED=1` rewrites no pin
+- [x] 1.1 Move the member-naming rule eqc applies (`ToCamelCase`) into `src/Shared`, compile it into the generators, and make eqc's naming call it; verify the compiler suite passes and `EQ_UPDATE_TRANSPILED=1` rewrites no pin
 
 ## 2. The manifest names what crosses (S1)
 
