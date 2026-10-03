@@ -202,6 +202,19 @@ public class ComboBoxAndDialogSemanticsTests
             "a tooltip's own Anchored hangs no panel a reader walks into, so it wraps the trigger like a box");
     }
 
+    /// <summary>A DISABLED Select or TimePicker is still the combobox, one that says it is disabled
+    /// and closed: its field was a plain box, static text to every reader, its role and state gone.</summary>
+    [Fact]
+    public void ADisabledSelectAndTimePickerStayComboBoxesThatSayTheyAreDisabled()
+    {
+        Render(new Select(["Lisbon", "Porto"], 0, _ => { }) { Disabled = true }).Semantics().Should().ContainSingle()
+            .Which.Should().Match<SemanticNode>(field => field.Role == SemanticRole.ComboBox
+                && field.Disabled && field.Expanded == false && field.Label == "Lisbon");
+        Render(new TimePicker(new TimeOnly(9, 30), _ => { }, label: "Arrival") { Disabled = true }).Semantics()
+            .Should().ContainSingle(node => node.Role == SemanticRole.ComboBox)
+            .Which.Should().Match<SemanticNode>(field => field.Disabled && field.Label == "Arrival");
+    }
+
     /// <summary>
     /// A combobox an author LABELLED is named by the label, and what its field shows is its value,
     /// as a select-only combobox's content is on the web: "Country, Brazil", never "Country" alone.
