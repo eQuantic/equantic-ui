@@ -37,8 +37,10 @@ internal static class EnumShape
 
     /// <summary>
     /// The shape's JavaScript object literal: the names, what the browser holds for each member (a
-    /// flags enum writes none, since it holds the values), the values, whether it is a flags enum, and
-    /// the hex digits the <c>X</c> format writes, twice the underlying type's size in bytes.
+    /// flags enum writes none, since it holds the values), the values, whether it is a flags enum, the
+    /// hex digits the <c>X</c> format writes, twice the underlying type's size in bytes, and, for an
+    /// unsigned underlying type alone, that it is one: the width and the sign bound a number
+    /// <c>Parse</c> reads and place a uint's high bit.
     /// </summary>
     internal static string Of(INamedTypeSymbol enumType)
     {
@@ -47,7 +49,9 @@ internal static class EnumShape
         var names = string.Join(", ", members.Select(member => JsStringLiteral.Quote(member.Name)));
         var keys = flags ? "" : $"keys: [{string.Join(", ", members.Select(member => JsStringLiteral.Quote(member.Key)))}], ";
         var values = string.Join(", ", members.Select(member => member.Number));
-        return $"{{ names: [{names}], {keys}values: [{values}], flags: {(flags ? "true" : "false")}, digits: {Digits(enumType)} }}";
+        var unsigned = enumType.EnumUnderlyingType?.SpecialType is SpecialType.System_Byte or SpecialType.System_UInt16
+            or SpecialType.System_UInt32 or SpecialType.System_UInt64 ? ", unsigned: true" : "";
+        return $"{{ names: [{names}], {keys}values: [{values}], flags: {(flags ? "true" : "false")}, digits: {Digits(enumType)}{unsigned} }}";
     }
 
     /// <summary>Each member's key to its value: <c>{ 'low': 0, 'medium': 5 }</c>, what a cast to a

@@ -53,9 +53,7 @@ public class ToStringStrategy : IConversionStrategy
         if (receiverType.UnwrapNullable() is { SpecialType: SpecialType.System_Boolean })
         {
             var ignored = args.FirstOrDefault(argument => IsFormatProvider(argument.Expression, context))?.Expression;
-            if (ignored is null || ignored is LiteralExpressionSyntax
-                || ignored is IdentifierNameSyntax && context.SemanticHelper.GetSymbol(ignored) is ILocalSymbol or IParameterSymbol or IFieldSymbol
-                || NamedCulture.IsInvariant(ignored, context) || NamedCulture.IsCurrent(ignored, context))
+            if (ignored is null || IsInert(ignored, context))
                 return JsExprWriter.Write(StringConversion.ToDotNetString(memberAccess.Expression,
                     context.Converter.ConvertIr(memberAccess.Expression), context));
             // `$value`: no C# name can take it, so nothing the provider names is shadowed.
@@ -72,15 +70,32 @@ public class ToStringStrategy : IConversionStrategy
         // String() handed back what the BROWSER holds where the server writes the member's name, a
         // word that changed by itself at hydration. It writes its name, or what its format asks for
         // (`D` its number, `X` its hex, `F` its set flags), and a nullable one nothing for null. Its
-        // provider is unused, as in .NET, where both overloads that take one are obsolete for that.
+        // provider is unused, as in .NET, where both overloads that take one are obsolete for that,
+        // but C# still evaluates it, after the receiver, in the order the arguments are written: one
+        // that could have an effect runs there, and one that could not is left out, as a bool's is.
         if (receiverType.UnwrapNullable() is INamedTypeSymbol { TypeKind: TypeKind.Enum } enumType)
         {
-            if (formatArg is not null && !IsGeneralFormat(formatArg.Expression, context))
-                return Types.EnumShape.Text(enumType, caller, context,
-                    context.Converter.ConvertExpression(formatArg.Expression));
-            return receiverType is INamedTypeSymbol { TypeKind: TypeKind.Enum }
-                ? EnumNameLookup(enumType, memberAccess.Expression, caller, context)
-                : Types.EnumShape.Text(enumType, caller, context);
+            var special = formatArg is not null && !IsGeneralFormat(formatArg.Expression, context);
+            string Text(string held, string? format) =>
+                format is not null ? Types.EnumShape.Text(enumType, held, context, format)
+                : receiverType is INamedTypeSymbol { TypeKind: TypeKind.Enum }
+                    ? EnumNameLookup(enumType, memberAccess.Expression, held, context)
+                    : Types.EnumShape.Text(enumType, held, context);
+            if (provider is null || IsInert(provider.Expression, context))
+                return Text(caller, special ? context.Converter.ConvertExpression(formatArg!.Expression) : null);
+
+            var parts = new List<JsExpr> { context.Converter.ConvertIr(memberAccess.Expression) };
+            string? formatHole = null;
+            var providerHole = "";
+            foreach (var argument in args.OrderBy(argument => argument.SpanStart))
+            {
+                if (argument == provider) providerHole = $"{{{parts.Count}}}";
+                else if (special) formatHole = $"{{{parts.Count}}}";
+                else continue;
+                parts.Add(context.Converter.ConvertIr(argument.Expression));
+            }
+            return JsExprWriter.Write(JsExpr.Template($"({providerHole}, {Text("{0}", formatHole)})", parts,
+                context.TypeAnnotations));
         }
 
         var invariant = false;
@@ -192,6 +207,16 @@ public class ToStringStrategy : IConversionStrategy
     internal static bool IsGeneralFormat(ExpressionSyntax format, ConversionContext context) =>
         context.SemanticHelper.IsNullConstant(format)
         || context.SemanticHelper.TryGetConstantValue(format, out var constant) && constant is "" or "G" or "g";
+
+    /// <summary>
+    /// Whether a provider an overload ignores can be left out: nothing in it can have an effect. A
+    /// literal, a null, a named culture, or a name bound to a local, a parameter or a field; a bare
+    /// name can be a PROPERTY, whose getter may have one.
+    /// </summary>
+    private static bool IsInert(ExpressionSyntax provider, ConversionContext context) =>
+        provider is LiteralExpressionSyntax
+        || provider is IdentifierNameSyntax && context.SemanticHelper.GetSymbol(provider) is ILocalSymbol or IParameterSymbol or IFieldSymbol
+        || NamedCulture.IsInvariant(provider, context) || NamedCulture.IsCurrent(provider, context);
 
     /// <summary>Whether the receiver is a DateTime, a nullable one's included.</summary>
     private static bool IsDateTime(ITypeSymbol? type) =>

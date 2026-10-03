@@ -15,6 +15,20 @@ export interface EnumShape {
   readonly flags: boolean;
   /** The hex digits the `X` format writes: twice the underlying type's size in bytes. */
   readonly digits: number;
+  /** An unsigned underlying type (byte, ushort, uint, ulong); a signed one writes nothing. */
+  readonly unsigned?: boolean;
+}
+
+/** The underlying type's width in bits, which bounds a number `Parse` reads. */
+function bits(shape: EnumShape): bigint {
+  return BigInt(shape.digits * 4);
+}
+
+/** Whether a number fits the underlying type, as `Enum.Parse` requires of one it reads. */
+function fits(value: bigint, shape: EnumShape): boolean {
+  const width = bits(shape);
+  if (shape.unsigned) return value >= 0n && value < 1n << width;
+  return value >= -(1n << (width - 1n)) && value < 1n << (width - 1n);
 }
 
 /** What the browser holds for each member: its key, or, for a flags enum, its value. */
@@ -51,10 +65,8 @@ export function text(held: unknown, shape: EnumShape, format?: string | null): s
   switch ((format ?? '').toUpperCase()) {
     case 'D':
       return String(value);
-    case 'X': {
-      const width = 2 ** (4 * shape.digits);
-      return (value < 0 ? width + value : value).toString(16).toUpperCase().padStart(shape.digits, '0');
-    }
+    case 'X':
+      return BigInt.asUintN(Number(bits(shape)), BigInt(value)).toString(16).toUpperCase().padStart(shape.digits, '0');
     case 'F':
       return names(shape, value, true);
     case '':
@@ -65,25 +77,34 @@ export function text(held: unknown, shape: EnumShape, format?: string | null): s
   }
 }
 
-/** The name or names `value` has: an exact member's, then, when `flags`, its set flags'. */
+/**
+ * The name or names `value` has: an exact member's, then, when `flags`, its set flags', searched from
+ * the highest value as .NET searches them. The bits are BigInt's, which a 32-bit operator would cut:
+ * a uint's high bit read negative, and a long's flags above bit 31 vanished.
+ */
 function names(shape: EnumShape, value: number, flags: boolean): string {
   const exact = shape.values.indexOf(value);
   if (exact >= 0) return shape.names[exact];
   if (!flags || value === 0) return String(value);
   const order = shape.values
-    .map((member, at) => ({ member, at }))
-    .filter(({ member }) => member !== 0)
-    .sort((a, b) => b.member - a.member);
-  let rest = value;
+    .map((member, at) => ({ member: BigInt(member), at }))
+    .filter(({ member }) => member !== 0n)
+    .sort((a, b) => (unsigned(b.member) > unsigned(a.member) ? 1 : unsigned(b.member) < unsigned(a.member) ? -1 : 0));
+  let rest = BigInt(value);
   const found: string[] = [];
   for (const { member, at } of order) {
     if ((rest & member) === member) {
       found.push(shape.names[at]);
       rest &= ~member;
-      if (rest === 0) break;
+      if (rest === 0n) break;
     }
   }
-  return rest === 0 ? found.reverse().join(', ') : String(value);
+  return rest === 0n ? found.reverse().join(', ') : String(value);
+}
+
+/** A value as .NET orders an enum's: its bits read unsigned, so a negative member comes last. */
+function unsigned(value: bigint): bigint {
+  return BigInt.asUintN(64, value);
 }
 
 /**
@@ -94,17 +115,20 @@ function names(shape: EnumShape, value: number, flags: boolean): string {
 function read(input: string, shape: EnumShape, ignoreCase: boolean): number | undefined {
   const trimmed = input.trim();
   if (trimmed.length === 0) return undefined;
-  if (/^[+-]?\d+$/.test(trimmed)) return Number(trimmed);
-  let value = 0;
+  if (/^[+-]?\d+$/.test(trimmed)) {
+    const number = BigInt(trimmed);
+    return fits(number, shape) ? Number(number) : undefined;
+  }
+  let value = 0n;
   for (const part of trimmed.split(',')) {
     const name = part.trim();
     const at = shape.names.findIndex((member) =>
       ignoreCase ? member.toLowerCase() === name.toLowerCase() : member === name,
     );
     if (at < 0) return undefined;
-    value |= shape.values[at];
+    value |= BigInt(shape.values[at]);
   }
-  return value;
+  return Number(value);
 }
 
 /** `Enum.Parse`: the value text names, which throws where .NET throws. */
@@ -132,8 +156,13 @@ export function zero(shape: EnumShape): string | number {
 
 /** The members by value, as `GetNames` and `GetValues` order them: unsigned, so a negative last. */
 function byValue(shape: EnumShape): number[] {
-  const unsigned = (value: number) => (value < 0 ? 2 ** 64 + value : value);
-  return shape.values.map((_, at) => at).sort((a, b) => unsigned(shape.values[a]) - unsigned(shape.values[b]));
+  return shape.values
+    .map((_, at) => at)
+    .sort((a, b) => {
+      const left = unsigned(BigInt(shape.values[a]));
+      const right = unsigned(BigInt(shape.values[b]));
+      return left < right ? -1 : left > right ? 1 : 0;
+    });
 }
 
 /** `GetNames`: the declared names, in the order of their values. */

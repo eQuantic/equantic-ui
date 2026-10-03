@@ -71,7 +71,28 @@ public class EnumConformanceTests
         [System.Flags] public enum Perm { None = 0, Read = 1, Write = 2, Exec = 4 }
         [System.Flags] public enum Bare { A = 1, B = 2 }
         public enum Level { Low = 1, High = 2 }
+        public enum U : uint { Low = 1, High = 0x80000000 }
+        [System.Flags] public enum Wide : long { None = 0, A = 1, B = 1L << 40 }
         """;
+
+    /// <summary>
+    /// An enum reads with its underlying type's width and sign, and its arguments run in the order
+    /// they are written, a provider it ignores included: a 32-bit operator read a uint's high bit
+    /// negative and dropped a long's flags above bit 31, a named argument ran in its parameter's
+    /// place, and an ignored provider never ran at all.
+    /// </summary>
+    [SkippableTheory]
+    [InlineData("return Enum.Parse<U>(\"High\") == U.High;")]                                                         // true
+    [InlineData("return U.High.ToString(\"X\") + Enum.Parse<Wide>(\"A, B\").ToString();")]                          // "80000000A, B"
+    [InlineData("try { Enum.Parse<U>(\"4294967296\"); return \"parsed\"; } catch { return \"refused\"; }")]          // "refused"
+    [InlineData("var order = \"\"; bool B() { order += \"b\"; return true; } string T() { order += \"t\"; return \"pending\"; } var s = Enum.Parse<Status>(ignoreCase: B(), value: T()); return s + order;")] // "Pendingbt"
+    [InlineData("var arr = new Status[2]; int i = 0; string T() { i = 1; return \"Inactive\"; } Enum.TryParse<Status>(result: out arr[i], value: T()); return arr[0] + \",\" + arr[1];")] // "Inactive,Active"
+    [InlineData("int calls = 0; IFormatProvider P() { calls++; return null; } var st = Status.Inactive; return Status.Pending.ToString(P()) + st.ToString(\"D\", P()) + calls;")] // "Pending22"
+    public void AnEnum_ReadsItsWidth_AndRunsItsArgumentsInOrder(string statements)
+    {
+        Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
+        ConformanceRunner.AssertStatementsSameAsDotNet(statements, Enums);
+    }
 
     /// <summary>
     /// A value no member names is legal C#, and is held as its number: it went through the cast's

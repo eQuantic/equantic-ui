@@ -16,6 +16,18 @@ describe('an enum as .NET reads it', () => {
     expect(text('Pending', rank)).toBe('Pending');
   });
 
+  it('reads a uint\'s high bit and a long\'s wide flags, and refuses a number past the type', () => {
+    const wide = { names: ['A', 'High'], keys: ['a', 'high'], values: [1, 2147483648], flags: false, digits: 8, unsigned: true };
+    const longFlags = { names: ['A', 'B'], values: [1, 2 ** 40], flags: true, digits: 16 };
+    expect(parse('High', wide)).toBe('high');
+    expect(text('high', wide, 'X')).toBe('80000000');
+    expect(parse('A, B', longFlags)).toBe(2 ** 40 + 1);
+    expect(text(2 ** 40 + 1, longFlags)).toBe('A, B');
+    expect(tryParse('4294967296', wide)).toBeUndefined();
+    expect(tryParse('-1', wide)).toBeUndefined();
+    expect(text(-1, rank, 'X')).toBe('FFFFFFFF');
+  });
+
   it('writes a format as .NET does: D the number, X the hex, F the set flags', () => {
     expect(text('mid', rank, 'D')).toBe('5');
     expect(text('mid', rank, 'X')).toBe('00000005');
