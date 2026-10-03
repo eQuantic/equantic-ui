@@ -245,7 +245,7 @@ public class RealWorldUITests
 
         // The dictionary class answers for its own keys, "constructor" among them.
         result.Should().Contain("!this.cache.has(this.key)");
-        result.Should().Contain("this.cache.set(this.key, this.fetchData())");
+        result.Should().Contain("this.cache.add(this.key, this.fetchData())");
         // TryGetValue names the receiver and the key twice, and both are properties here: each is
         // bound once, and a miss writes default(string) to the out.
         result.Should().Contain(

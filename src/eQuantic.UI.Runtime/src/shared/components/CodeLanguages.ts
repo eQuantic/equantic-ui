@@ -40,7 +40,7 @@ export class CodeLanguages {
     static _known: any | undefined;
 
     static get known(): any {
-        return CodeLanguages._known ??= $eq.collections.dictionary([['c#', CodeLanguages.cSharp], ['csharp', CodeLanguages.cSharp], ['cs', CodeLanguages.cSharp], ['typescript', CodeLanguages.typeScript], ['ts', CodeLanguages.typeScript], ['javascript', CodeLanguages.typeScript], ['js', CodeLanguages.typeScript], ['tsx', CodeLanguages.typeScript], ['jsx', CodeLanguages.typeScript], ['python', CodeLanguages.python], ['py', CodeLanguages.python], ['json', CodeLanguages.json], ['xml', CodeLanguages.xml], ['csproj', CodeLanguages.xml], ['html', CodeLanguages.xml], ['plist', CodeLanguages.xml], ['text', CodeLanguages.plainText], ['txt', CodeLanguages.plainText], ['plain', CodeLanguages.plainText]]);
+        return CodeLanguages._known ??= $eq.collections.dictionary().assign([['c#', CodeLanguages.cSharp], ['csharp', CodeLanguages.cSharp], ['cs', CodeLanguages.cSharp], ['typescript', CodeLanguages.typeScript], ['ts', CodeLanguages.typeScript], ['javascript', CodeLanguages.typeScript], ['js', CodeLanguages.typeScript], ['tsx', CodeLanguages.typeScript], ['jsx', CodeLanguages.typeScript], ['python', CodeLanguages.python], ['py', CodeLanguages.python], ['json', CodeLanguages.json], ['xml', CodeLanguages.xml], ['csproj', CodeLanguages.xml], ['html', CodeLanguages.xml], ['plist', CodeLanguages.xml], ['text', CodeLanguages.plainText], ['txt', CodeLanguages.plainText], ['plain', CodeLanguages.plainText]]);
     }
 
     static register(name: string, language: any) {

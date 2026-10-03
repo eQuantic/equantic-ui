@@ -45,8 +45,8 @@ public class DictionaryStrategyTests
     }
 
     [Theory]
-    [InlineData("dict.Add(\"key\", \"value\")", "this.dict.set('key', 'value')")]
-    [InlineData("dict.Add(str, str)", "this.dict.set(this.str, this.str)")]
+    [InlineData("dict.Add(\"key\", \"value\")", "this.dict.add('key', 'value')")]  // Add refuses a key already there (#440)
+    [InlineData("dict.Add(str, str)", "this.dict.add(this.str, this.str)")]
     [InlineData("dict.Remove(\"key\")", "this.dict.delete('key')")]
     [InlineData("dict.Clear()", "this.dict.clear()")]
     [InlineData("dict.Keys", "this.dict.keys()")]
@@ -117,7 +117,7 @@ public class DictionaryStrategyTests
     // A capacity has no meaning here; a copy copies; an initializer seeds after what is copied.
     [InlineData("new Dictionary<string, string>(16)", "$eq.collections.dictionary()")]
     [InlineData("new Dictionary<string, string>(dict)", "$eq.collections.dictionary(this.dict)")]
-    [InlineData("new Dictionary<string, string>(dict) { [\"a\"] = \"b\" }", "$eq.collections.dictionary([...this.dict, ['a', 'b']])")]
+    [InlineData("new Dictionary<string, string>(dict) { [\"a\"] = \"b\" }", "$eq.collections.dictionary(this.dict).assign([['a', 'b']])")]  // an indexer overwrites what the copy has
     [InlineData("new Dictionary<string, int> { { \"a\", 1 }, { \"b\", 2 } }", "$eq.collections.dictionary([['a', 1], ['b', 2]])")]
     [InlineData("new SortedDictionary<int, string>()", "$eq.collections.sortedDictionary(null, 'value')")]
     [InlineData("new SortedList<int, string>(dictionaryOfInts)", "$eq.collections.sortedList(dictionaryOfInts, 'value')")]
