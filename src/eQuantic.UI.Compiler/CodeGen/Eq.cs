@@ -183,7 +183,35 @@ public static class Eq
     public const string DateTime = "$eq.time.dateTime";
     public const string TimeSpan = "$eq.time.timeSpan";
     public const string DateTimeOffset = "$eq.time.dateTimeOffset";
-    public const string ParseEnum = "$eq.enums.parse";
+    /// <summary>An enum's text, as .NET writes it: a flags enum's set flags, a nullable one's null.</summary>
+    public const string EnumText = "$eq.enums.text";
+
+    /// <summary><c>Enum.Parse</c>, from the enum's shape (<c>utils/enums.ts</c>).</summary>
+    public const string EnumParse = "$eq.enums.parse";
+
+    /// <summary><c>Enum.TryParse</c>: the value, or undefined where .NET answers false.</summary>
+    public const string EnumTryParse = "$eq.enums.tryParse";
+
+    /// <summary><c>default(TEnum)</c>, as the browser holds it.</summary>
+    public const string EnumZero = "$eq.enums.zero";
+
+    /// <summary><c>Enum.GetNames</c>.</summary>
+    public const string EnumNames = "$eq.enums.names";
+
+
+    /// <summary><c>Enum.GetName</c>: the member's name for a value, or null.</summary>
+
+    public const string EnumName = "$eq.enums.name";
+
+    /// <summary>A cast from <c>object</c> to an enum: the boxed member, a boxed number's member, or
+    /// .NET's refusal.</summary>
+    public const string EnumUnbox = "$eq.enums.unbox";
+
+    /// <summary><c>Enum.GetValues</c>.</summary>
+    public const string EnumValues = "$eq.enums.values";
+
+    /// <summary><c>Enum.IsDefined</c>.</summary>
+    public const string EnumIsDefined = "$eq.enums.isDefined";
 
     /// <summary>C# multicast delegates: `+=` composes an invocation list, `-=` drops the last
     /// occurrence. JavaScript has neither, and `+=` emitted literally is string concatenation.</summary>

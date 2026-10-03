@@ -80,7 +80,6 @@ import {
   asInteger,
   asSingle,
   format,
-  parseEnum,
   recordText,
   stringFormat,
   stringFormatInvariant,
@@ -117,6 +116,17 @@ import { liftArith, liftCmp, liftUnary } from './utils/nullable';
 import { equals } from './utils/equals';
 import { hash, hashCombine, hashFields, hashGroup, identityHash, instanceHash } from './utils/hash';
 import { guidParse, guidTryParse } from './utils/guid';
+import {
+  isDefined as enumIsDefined,
+  declaredNames as enumNames,
+  name as enumName,
+  parse as enumParse,
+  text as enumText,
+  tryParse as enumTryParse,
+  unbox as enumUnbox,
+  values as enumValues,
+  zero as enumZero,
+} from './utils/enums';
 import { lockGate, newObject } from './utils/net-object';
 import { resolveService } from './utils/services';
 import { StyleBuilder } from './utils/style-builder';
@@ -310,8 +320,9 @@ export const $eq = {
   mapSet,
   /** Date and time, tick-precise. */
   time: { dateTime, timeSpan, dateOnly, timeOnly, dateTimeOffset },
-  /** Enum parsing (member-name string). */
-  enums: { parse: parseEnum },
+  /** An enum as .NET reads it, from the shape the compiler writes: its text, Parse and TryParse,
+   * its default, GetNames, GetValues and IsDefined. */
+  enums: { text: enumText, parse: enumParse, tryParse: enumTryParse, zero: enumZero, name: enumName, names: enumNames, values: enumValues, unbox: enumUnbox, isDefined: enumIsDefined },
   /**
    * Collections — Queue (FIFO), Stack (LIFO), Dictionary (by slot, as .NET's), LinkedList, and the
    * sorted family (SortedSet / SortedDictionary / SortedList).

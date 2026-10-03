@@ -1121,6 +1121,23 @@ record of a release, the wiki's Upgrading page is the distillate.
   registered, and the conformance suite caught it: `StrategyRegistrationTests` now fails for any
   strategy the converter does not register. Proposed and archived through OpenSpec
   (`openspec/specs/transpiler-bcl`).
+- **2026-10-03 · An enum reads as .NET reads it**: an enum has no object of its own in the browser,
+  a member being held as its camelCase name and a `[Flags]` one as its number, and every place that
+  turned that back into what .NET answers did it on its own, or not at all. A flags enum's
+  `ToString()` answered null and a nullable enum's printed the camelCase name
+  ([#452](https://github.com/eQuantic/equantic-ui/issues/452)), `"," + rank` wrote `,undefined`
+  ([#535](https://github.com/eQuantic/equantic-ui/issues/535)), the statics of `Enum` named an object
+  no module declares and threw ([#480](https://github.com/eQuantic/equantic-ui/issues/480)), and a
+  dictionary keyed by an enum was refused by EqJson both ways
+  ([#442](https://github.com/eQuantic/equantic-ui/issues/442)). The runtime's enum functions
+  (`$eq.enums`) read the enum's shape, which eqc writes at the call from one member table
+  (`EnumShape`), the one the casts, the arithmetic and the ordering read too. The review found the
+  formats ignored (`ToString("D")` wrote the name), `IsDefined` over an `object`, the `TryParse` that
+  takes a `Type` leaving the default where .NET leaves null, a cast from an `object` holding the enum
+  answering undefined, a value no member names printing `undefined`, and an unknown name read as the
+  enum's first member, each fixed and run on both sides. Filed on the way: an enum's table is built
+  at every call instead of once per module ([#547](https://github.com/eQuantic/equantic-ui/issues/547)).
+  Proposed and archived through OpenSpec (`openspec/specs/transpiler-bcl`).
 - **2026-10-03 · A test compilation shares its references**: the suites turned the .NET framework into
   new metadata references for every compilation they created, and `MetadataReference.CreateFromFile`
   copies an assembly into native memory the GC does not count, so one test host held tens of
