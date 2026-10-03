@@ -1024,7 +1024,8 @@ record of a release, the wiki's Upgrading page is the distillate.
   nothing can read, stays out of the page, the rest of a projected value still crossing. Every sorted
   collection the browser built or rebuilt ordered by `<`, so strings ignored the culture and decimals
   compared their text: one table (`ValueOrdering`, `utils/ordering.ts`) now names how a type orders,
-  read by `Max`/`Min`, by every sorted collection eqc builds and by every one a hydration rebuilds. On
+  an enum by its value included, read by `Max`/`Min`, by every sorted collection eqc builds and by
+  every one a hydration rebuilds, and a queue or a stack finds a member by value. On
   the way, a property pattern counted a set or a runtime collection as an array, and a `SortedSet`
   dropped its collection initializer. `VocabularyValueConformanceTests` executes every member of every type
   `[TwinIsData]` marks on both sides and checks each vocabulary value type's export against the
