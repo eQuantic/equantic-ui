@@ -635,11 +635,6 @@ internal sealed partial class WebLoweringVisitor
     }
 
     /// <summary>
-    /// Navigation semantics: a REAL <c>&lt;a href&gt;</c> (SSR-crawlable, router-intercepted) whose
-    /// UA chrome is neutralized — the child owns all visuals, exactly the Pressable contract. A Fill
-    /// child gets the 100% pass-through chain the same way.
-    /// </summary>
-    /// <summary>
     /// Whether the router warms a destination on hover: an app-internal path, rooted and not
     /// protocol-relative, which is the line <see cref="RenderContext.ResolveDestination"/> draws too.
     /// <c>//cdn.example.com</c> starts with a slash and is somebody else's server, and it was warmed.
@@ -649,6 +644,11 @@ internal sealed partial class WebLoweringVisitor
     private static bool WarmsOnHover(string destination) =>
         destination.StartsWith('/') && !destination.StartsWith("//", StringComparison.Ordinal);
 
+    /// <summary>
+    /// Navigation semantics: a REAL <c>&lt;a href&gt;</c> (SSR-crawlable, router-intercepted) whose
+    /// UA chrome is neutralized — the child owns all visuals, exactly the Pressable contract. A Fill
+    /// child gets the 100% pass-through chain the same way.
+    /// </summary>
     private HtmlElement LowerLink(Link link)
     {
         var fills = Fills(link.Child);
