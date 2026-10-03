@@ -33,6 +33,14 @@ public class CultureRouteTests
         public override VisualNode Build(ComponentContext context) => new Text("Home", TypeRole.Heading);
     }
 
+    /// <summary>A page stating its canonical once, in the default language's spelling.</summary>
+    private sealed class TermsPage : StatelessComponent, eQuantic.UI.Server.Metadata.IHandleMetadata
+    {
+        public void ConfigureMetadata(eQuantic.UI.Server.Metadata.SeoBuilder seo) => seo.Canonical("https://site.test/terms");
+
+        public override VisualNode Build(ComponentContext context) => new Text("Terms", TypeRole.Heading);
+    }
+
     private static async Task<(WebApplication App, HttpClient Client)> StartAppAsync(bool lambdaOverload = false)
     {
         var builder = WebApplication.CreateBuilder(new WebApplicationOptions
@@ -55,6 +63,7 @@ public class CultureRouteTests
         app.MapPage<HomePage>("/", title: "Home");
         app.MapPage<PricingPage>("/pricing", title: "Pricing");
         app.MapPage<AboutPage>("/about", title: "About");
+        app.MapPage<TermsPage>("/terms", title: "Terms");
         app.MapUI();
         await app.StartAsync();
         var client = app.GetTestClient();
@@ -186,8 +195,12 @@ public class CultureRouteTests
 
         // The browser matches the literal prefixes (its matcher would accept any segment for a
         // constraint it does not know), and learns the map to prefix hrefs it lowers itself.
-        html.Should().Contain("'/pt-BR/pricing'").And.Contain("'/es/pricing'");
-        html.Should().Contain("cultureRoutes: { default: 'en', prefixed: ['pt-BR','es'] }");
+        var config = ShellConfig.In(html);
+        config.GetProperty("routes").EnumerateArray().Select(route => route.GetProperty("pattern").GetString())
+            .Should().Contain(["/pt-BR/pricing", "/es/pricing"]);
+        config.GetProperty("cultureRoutes").GetProperty("default").GetString().Should().Be("en");
+        config.GetProperty("cultureRoutes").GetProperty("prefixed").EnumerateArray().Select(prefix => prefix.GetString())
+            .Should().Equal(["pt-BR", "es"]);
         // hreflang from the same map, with no separate policy declared.
         html.Should().Contain("hreflang=\"pt-BR\" href=\"http://localhost/pt-BR/pricing\"");
         html.Should().Contain("hreflang=\"en\" href=\"http://localhost/pricing\"");
@@ -205,5 +218,26 @@ public class CultureRouteTests
         map.PathFor("pt-BR", "/").Should().Be("/pt-BR");
         map.Split("/PT-br/about").Should().Be(("pt-BR", "/about"));
         map.Split("/about").Should().Be(("en", "/about"));
+    }
+
+    [Fact]
+    public async Task AMappedRoutesTitle_AndAPagesCanonical_FollowTheLanguage_OnANavigationToo()
+    {
+        var (app, client) = await StartAppAsync();
+        await using var _ = app;
+
+        // A title MapPage declares reaches the document, as [Page(Title)] does (#416).
+        (await client.GetStringAsync("/pt-BR/pricing")).Should().Contain("<title>Pricing</title>");
+
+        // A navigation's head carries the canonical a full load writes, in the request's language:
+        // it went out as the page wrote it, so a Portuguese page told a crawler it was the English one.
+        using var request = new HttpRequestMessage(HttpMethod.Get, "/pt-BR/terms");
+        request.Headers.Add("X-EQ-Navigate", "1");
+        var response = await client.SendAsync(request);
+        var payload = System.Text.Json.JsonDocument.Parse(await response.Content.ReadAsStringAsync()).RootElement;
+        payload.GetProperty("title").GetString().Should().Be("Terms");
+        payload.GetProperty("head").GetString().Should().Contain("href=\"https://site.test/pt-BR/terms\"");
+        // And the translation group a full load writes, which the client now replaces as a set.
+        payload.GetProperty("head").GetString().Should().Contain("hreflang=\"es\"").And.Contain("hreflang=\"x-default\"");
     }
 }
