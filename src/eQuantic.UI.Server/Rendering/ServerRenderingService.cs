@@ -33,6 +33,7 @@ public class ServerRenderingService : IServerRenderingService
         _serviceProvider = serviceProvider;
         _options = options;
         _logger = logger;
+        _isService = serviceProvider.GetService<IServiceProviderIsService>();
 
         // Scan assemblies for page types
         ScanPageTypes();
@@ -351,36 +352,40 @@ public class ServerRenderingService : IServerRenderingService
                 // same field names — so the payload crosses by name.
                 // EVERY component that prefetched, read off the instances that actually DREW —
                 // renderScope holds those, so the payload cannot disagree with the markup beside it.
+                // AND every component holding a value from the container, prefetching or not: it
+                // crosses as what the browser reads of it, or the browser draws the branch the server
+                // did not.
                 string? serializedState = null;
-                if (asked.Count > 0)
+                var payload = new Dictionary<string, IReadOnlyDictionary<string, object?>>(StringComparer.Ordinal);
+
+                // A Core root is in no scope's Expanded — it never passes through the realizer's
+                // component visit — but it IS the instance that drew: the pipeline renders that object
+                // and never rebuilds it. Read here rather than beside the load, so what ships is the
+                // state the markup left. Its ordinal is 0 by construction.
+                if (metadataSource is not Primitives.UiComponent && (coreRoot is not null || CarriesProjection(metadataSource)))
                 {
-                    var payload = new Dictionary<string, IReadOnlyDictionary<string, object?>>(StringComparer.Ordinal);
-                    foreach (var key in asked)
+                    payload[coreRootKey ?? Web.ComponentIdentity.Key(metadataSource.GetType(), 0)] = Snapshot(metadataSource);
+                }
+
+                if (renderScope is not null)
+                {
+                    // OFF THE INSTANCE THAT DREW, or not at all. A component discovered in an earlier
+                    // round but absent from the final tree has nothing on the page for its state to
+                    // belong to, and shipping it would hand the client a key its own walk never reaches.
+                    foreach (var (key, drew) in renderScope.Expanded)
                     {
-                        // OFF THE INSTANCE THAT DREW, or not at all. A component discovered in an
-                        // earlier round but absent from the final tree has nothing on the page for
-                        // its state to belong to, and shipping it would hand the client a key its
-                        // own walk never reaches.
-                        if (key == coreRootKey && coreRoot is not null)
-                        {
-                            // A Core root is in no scope's Expanded — it never passes through the
-                            // realizer's component visit — but it IS the instance that drew: the
-                            // pipeline renders that object and never rebuilds it. Read here rather
-                            // than beside the load, so what ships is the state the markup left.
-                            payload[key] = Snapshot(coreRoot);
-                        }
-                        else if (renderScope is not null && renderScope.Expanded.TryGetValue(key, out var drew))
-                        {
-                            payload[key] = Snapshot(drew);
-                        }
-                        else if (navigationPayload is not null
-                            && navigationPayload.TryGetValue(key, out var loaded))
-                        {
-                            // A navigation draws nothing, so there is no rendered instance to read —
-                            // the walk kept the wire form of each component as it loaded.
-                            payload[key] = loaded;
-                        }
+                        if (asked.Contains(key) || CarriesProjection(drew)) payload[key] = Snapshot(drew);
                     }
+                }
+                else if (navigationPayload is not null)
+                {
+                    // A navigation draws nothing, so there is no rendered instance to read — the walk
+                    // kept the wire form of each component as it went.
+                    foreach (var (key, loaded) in navigationPayload) payload[key] = loaded;
+                }
+
+                if (payload.Count > 0)
+                {
                     serializedState = SerializeState(payload);
                 }
 
@@ -512,6 +517,13 @@ public class ServerRenderingService : IServerRenderingService
             foreach (var stale in wire.Keys.Where(key => !settled.Expanded.ContainsKey(key)).ToList())
             {
                 wire.Remove(stale);
+            }
+
+            // And a component holding a value from the container, which asked for nothing: what the
+            // browser reads of it travels with the navigation as it does with the page.
+            foreach (var (key, instance) in settled.Expanded)
+            {
+                if (!wire.ContainsKey(key) && CarriesProjection(instance)) wire[key] = Snapshot(instance);
             }
         }
 
@@ -671,6 +683,21 @@ public class ServerRenderingService : IServerRenderingService
     /// </summary>
     private readonly System.Collections.Concurrent.ConcurrentDictionary<Type, byte> _reportedContracts = new();
 
+    /// <summary>Members left out because they held a service, so a page served a thousand times says it once.</summary>
+    private readonly System.Collections.Concurrent.ConcurrentDictionary<(Type, string), byte> _reportedServices = new();
+
+    /// <summary>What the container registered, which a value it hands out is never written whole for.</summary>
+    private readonly IServiceProviderIsService? _isService;
+
+    private bool IsService(Type type) => _isService?.IsService(type) == true;
+
+    /// <summary>
+    /// Whether a component's state crosses although it asked for no data: a page holding a value from the
+    /// container, which crosses as what the browser reads of it.
+    /// </summary>
+    private static bool CarriesProjection(object component) =>
+        Rendering.HydrationContract.For(component.GetType()) is { HasProjection: true };
+
     /// <summary>
     /// ONE component's state as the wire carries it: in the page's payload and in the navigation payload.
     /// <para>
@@ -710,10 +737,41 @@ public class ServerRenderingService : IServerRenderingService
             {
                 var value = hydrated.Read(state);
 
+                // A SERVER VALUE crosses as what the browser reads of it, which the build worked out
+                // from the code the browser runs: whether it is null, and the members it reads.
+                if (hydrated.Projection is { } projection)
+                {
+                    try
+                    {
+                        stateDict[hydrated.Name] = HydrationProjection.Of(value, projection);
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogWarning(ex,
+                            "[SSR Hydration] {Component}.{Member} could not be projected and is left out: {Message}",
+                            type.FullName, hydrated.Name, ex.Message);
+                    }
+                    continue;
+                }
+
                 // A HANDLER NEVER TRAVELS, since the client builds its own. The manifest leaves out a
                 // member DECLARED as a delegate; this catches one held behind a wider type.
                 if (value is Delegate)
                 {
+                    continue;
+                }
+
+                // NOR A SERVICE, whatever the build said. The build follows the types it can see, and a
+                // member typed `object` that holds a service at run time is the one shape it cannot: the
+                // container knows what it registered, so it has the last word.
+                if (value is not null && IsService(value.GetType()))
+                {
+                    if (_reportedServices.TryAdd((type, hydrated.Name), 0))
+                        _logger.LogWarning(
+                            "[SSR Hydration] {Component}.{Member} holds a {Service}, which the container registers "
+                            + "as a service, so it is left out of the page. A value the browser needs crosses as "
+                            + "what it reads of it when the page declares it with that type.",
+                            type.FullName, hydrated.Name, value.GetType().FullName);
                     continue;
                 }
 

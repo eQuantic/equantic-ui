@@ -37,6 +37,9 @@ internal sealed class HydrationContract
     /// <summary>The values that cross, each under the twin's name for it.</summary>
     public IReadOnlyList<HydratedValue> Values { get; }
 
+    /// <summary>Whether one of them is a server value crossing as its projection.</summary>
+    public bool HasProjection => Values.Any(value => value.Projection is not null);
+
     /// <summary>
     /// Entries the type no longer declares as the manifest says, which only a manifest out of step with
     /// the assembly that carries it can produce. They are left out and reported.
