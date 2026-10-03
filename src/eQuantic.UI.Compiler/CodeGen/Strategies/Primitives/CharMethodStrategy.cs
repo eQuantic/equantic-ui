@@ -12,9 +12,17 @@ public class CharMethodStrategy : IExpressionIrStrategy
 {
     public bool CanConvert(SyntaxNode node, ConversionContext context)
     {
-        // `"a1b2".Count(char.IsDigit)`: the method handed over as a delegate, a method GROUP.
-        if (node is MemberAccessExpressionSyntax group) return Group(group, context) is not null;
+        // `"a1b2".Count(char.IsDigit)`: the method handed over as a delegate, a method GROUP, spelled
+        // through its type or, under `using static System.Char`, by its name alone.
+        if (node is MemberAccessExpressionSyntax or IdentifierNameSyntax)
+            return Group((ExpressionSyntax)node, context) is not null;
         if (node is not InvocationExpressionSyntax invocation) return false;
+        // `IsDigit(c)` under `using static System.Char`: the model names the method.
+        if (invocation.Expression is IdentifierNameSyntax)
+            return context.SemanticHelper.GetSymbol(invocation) is IMethodSymbol
+            {
+                IsStatic: true, ContainingType.SpecialType: SpecialType.System_Char,
+            } called && Lowers(called.Name);
         if (invocation.Expression is not MemberAccessExpressionSyntax memberAccess) return false;
 
         if (!context.ReceiverIsType(memberAccess.Expression,
@@ -34,10 +42,19 @@ public class CharMethodStrategy : IExpressionIrStrategy
         or "IsWhiteSpace" or "IsUpper" or "IsLower" or "IsNumber" or "IsPunctuation"
         or "IsSeparator" or "IsSymbol" or "IsControl" or "IsAscii";
 
-    /// <summary>The method a member access names WITHOUT calling it, when it is one of the char
-    /// statics this strategy lowers; null for anything else, a call included.</summary>
-    private static IMethodSymbol? Group(MemberAccessExpressionSyntax access, ConversionContext context) =>
-        access.Parent is InvocationExpressionSyntax call && call.Expression == access
+    /// <summary>The method a name or a member access names WITHOUT calling it, when it is one of the
+    /// char statics this strategy lowers; null for anything else, a call included, and the name that
+    /// is a member access's own right-hand side.</summary>
+    private static IMethodSymbol? Group(ExpressionSyntax access, ConversionContext context) =>
+        // The name first, which costs nothing: every identifier in a module is asked.
+        !Lowers(access switch
+        {
+            MemberAccessExpressionSyntax member => member.Name.Identifier.ValueText,
+            IdentifierNameSyntax name => name.Identifier.ValueText,
+            _ => "",
+        })
+        || access.Parent is InvocationExpressionSyntax call && call.Expression == access
+        || access.Parent is MemberAccessExpressionSyntax owner && owner.Name == access
             ? null
             : context.SemanticHelper.GetSymbol(access) is IMethodSymbol
                 {
@@ -51,7 +68,7 @@ public class CharMethodStrategy : IExpressionIrStrategy
         // A method GROUP is an arrow over the method's own parameters, its body the call as it is
         // lowered when written out. It was EQ1001: the `char` it names was converted as a value
         // (#524). Typed, since nothing may type it from outside (`Func<char, bool> f = char.IsDigit`).
-        if (node is MemberAccessExpressionSyntax group && Group(group, context) is { } named)
+        if (node is MemberAccessExpressionSyntax or IdentifierNameSyntax && Group((ExpressionSyntax)node, context) is { } named)
         {
             var parameters = named.Parameters.Select(p => p.Name.ToJsIdentifier()).ToArray();
             var typed = named.Parameters.Select((p, i) => context.TypeAnnotations
@@ -124,5 +141,7 @@ public class CharMethodStrategy : IExpressionIrStrategy
     /// <summary>A pattern tested against the character, which is an argument of the test.</summary>
     private static string Test(string pattern, string c) => $"({pattern}.test({c}))";
 
-    public int Priority => 10;
+    // Ahead of IdentifierStrategy's 10, which writes a bare static method's name through its class:
+    // `IsDigit` under `using static System.Char` was `Char.isDigit`, a class nothing defines.
+    public int Priority => 11;
 }

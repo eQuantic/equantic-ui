@@ -69,7 +69,7 @@ export class CodeLineCells {
     static widthOf(text: string, tabSize: number) {
         let stop = Math.max(1, tabSize);
         let cell = 0;
-        for (const c of text) {
+        for (const c of text.split('')) {
             if (c === '\t') cell += stop - $eq.num.intRem(cell, stop); else if (c < String.fromCharCode(0x80)) cell++; else return new CodeLineCells(text, tabSize).width;
         }
         return cell;

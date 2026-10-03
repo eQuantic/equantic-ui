@@ -55,16 +55,35 @@ public class LinqOverAnySequenceConformanceTests
     [InlineData("return new string(new[] { 'a', 'b', 'c', 'd' }, 1, 2);")]                     // "bc"
     [InlineData("return new string('-', 3);")]                                                 // "---"
     [InlineData("return \"abc\".Reverse().First().ToString();")]                               // "c"
+    [InlineData("return new string(\"abcdef\".ToCharArray(1, 3));")]                            // "bcd"
+    [InlineData("return new string(length: 2, startIndex: 1, value: new[] { 'a', 'b', 'c' });")]   // "bc"
+    [InlineData("char[] none = null; return new string(none).Length;")]                           // 0
     public void AString_IsASequenceOfCodeUnits(string statements)
     {
         Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
         ConformanceRunner.AssertStatementsSameAsDotNet(statements);
     }
 
+    /// <summary>A char static reached by its name alone, under <c>using static System.Char</c>, is the
+    /// same call and the same group as through its type.</summary>
+    [SkippableTheory]
+    [InlineData("return \"a1b2\".Count(IsDigit);")]           // 2
+    [InlineData("return IsLetter('x') && !IsDigit('x');")]    // true
+    public void AUsingStaticChar_IsTheSameMethod(string statements)
+    {
+        Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
+        ConformanceRunner.AssertStatementsSameAsDotNet(statements, "using static System.Char;");
+    }
+
     [SkippableTheory]
     [InlineData("var a = new List<int> { 3, 1 }; var b = a.ToList(); b.Add(9); return a.Count;")]   // 2
     [InlineData("var a = new List<int> { 3, 1 }; var b = a.ToArray(); b[0] = 7; return a[0];")]   // 3
     [InlineData("var a = new List<int> { 3, 1 }; var b = a.ToList(); b.Sort(); return a[0];")]    // 3
+    [InlineData("var a = new List<int> { 3, 1 }; IReadOnlyCollection<int> r = a; var b = r.ToList(); b.Sort(); return a[0];")] // 3
+    [InlineData("var a = new List<object> { 3 }; var b = a.Cast<object>().ToList(); b.Add(4); return a.Count;")]              // 1
+    [InlineData("var a = new List<int> { 3 }; var b = a.DefaultIfEmpty().ToList(); b.Add(4); return a.Count;")]              // 1
+    [InlineData("var q = new Queue<int>(new[] { 1, 2 }); var b = q.ToArray(); return b[0] * 10 + b[1];")]                      // 12
+    [InlineData("var s = new HashSet<int> { 1, 2, 3 }; return s.Last() + s.DefaultIfEmpty().Count();")]                       // 6
     public void WhatLinqMaterializes_IsACopy(string statements)
     {
         Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");

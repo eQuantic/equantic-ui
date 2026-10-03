@@ -31,15 +31,21 @@ internal static class LinqSource
     /// <summary>
     /// A NEW array of the source's elements, as <c>ToList</c> and <c>ToArray</c> make: the source was
     /// handed back as it was, so the copy and the original were one array, and sorting or adding to the
-    /// copy changed the original. A LINQ operator's result is a fresh array already and passes; an
-    /// array or a list is sliced; anything else is read into one.
+    /// copy changed the original. An array or a list is sliced, and anything else is read into a new
+    /// array by <c>$eq.linq.toArray</c>, which copies an array too: an <c>IEnumerable</c> or an
+    /// <c>IReadOnlyCollection</c> may hold a list, and <c>seq</c> hands an array back as it is. Always,
+    /// even after an operator that builds its result anew: <c>Cast</c>, <c>AsEnumerable</c> and
+    /// <c>DefaultIfEmpty</c> hand their source back, and a list of the ones that do not is a list.
     /// </summary>
     internal static JsExpr Copy(ExpressionSyntax source, ConversionContext context)
     {
-        if (IsOperatorResult(source, context)) return context.Converter.ConvertIr(source);
-        if (IsArray(source, context))
-            return JsExpr.Call(JsExpr.Member(context.Converter.ConvertIr(source), "slice"));
-        return Ir(source, context);
+        var converted = context.Converter.ConvertIr(source);
+        // With no model to ask, the source as every operator always took it: whether it is a fresh
+        // array already cannot be told, and copying every operator's result would be the price.
+        if (context.SemanticHelper.GetType(source) is null) return converted;
+        if (IsArray(source, context)) return JsExpr.Call(JsExpr.Member(converted, "slice"));
+        context.UsedHelpers.Add(Eq.Import);
+        return JsExpr.Call(JsExpr.Identifier(Eq.LinqToArray), converted);
     }
 
     /// <summary>The source as text, for the strategies that still write it.</summary>
@@ -60,8 +66,8 @@ internal static class LinqSource
         return IsOperatorResult(source, context);
     }
 
-    /// <summary>A LINQ operator's own result, a fresh array here: every operator but AsEnumerable,
-    /// which hands its source back.</summary>
+    /// <summary>A LINQ operator's own result, an array here, since every operator reads its source
+    /// through <see cref="Ir"/>: every operator but AsEnumerable, which hands its source back.</summary>
     private static bool IsOperatorResult(ExpressionSyntax source, ConversionContext context) =>
         source is InvocationExpressionSyntax
         && context.SemanticHelper.GetSymbol(source) is IMethodSymbol { Name: not "AsEnumerable" } method

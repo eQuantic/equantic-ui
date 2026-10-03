@@ -1,5 +1,6 @@
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using eQuantic.UI.Compiler.CodeGen.Ir;
 
 namespace eQuantic.UI.Compiler.CodeGen.Strategies.Linq;
 
@@ -21,7 +22,6 @@ public class DefaultIfEmptyStrategy : IConversionStrategy
     {
         var invocation = (InvocationExpressionSyntax)node;
         var memberAccess = (MemberAccessExpressionSyntax)invocation.Expression;
-        var caller = LinqSource.Text(memberAccess.Expression, context);
         var args = invocation.ArgumentList.Arguments;
 
         // DefaultIfEmpty(val) -> source.length > 0 ? source : [val]
@@ -32,7 +32,9 @@ public class DefaultIfEmptyStrategy : IConversionStrategy
             ? context.Converter.ConvertExpression(args[0].Expression)
             : DefaultValue.OfElement(context.SemanticHelper.GetType(memberAccess.Expression), context);
 
-        return $"({caller}.length > 0 ? {caller} : [{defaultVal}])";
+        // The source read ONCE (see LastStrategy).
+        return JsExprWriter.Write(JsExpr.Template("({0}.length > 0 ? {0} : [{1}])",
+            [LinqSource.Ir(memberAccess.Expression, context), JsExpr.Opaque(defaultVal)], context.TypeAnnotations));
     }
 
     public int Priority => 10;

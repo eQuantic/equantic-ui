@@ -20,13 +20,14 @@ public class CollectionMaterializationStrategy : IConversionStrategy
 
         var methodName = memberAccess.Name.Identifier.Text;
         if (methodName is not ("ToList" or "ToArray")) return false;
-        // LINQ's, or a List's own ToArray; a runtime collection's own (a queue's, a stack's) is its
-        // class's method, and a type of the app's is its own.
+        // LINQ's, or a BCL collection's own (a list's, a queue's, an immutable array's): each answers a
+        // new array of its elements in the order it enumerates them, which the runtime's twins and
+        // arrays give by iteration. A type of the app's own keeps the method it wrote.
         return context.SemanticHelper.GetSymbol(invocation) switch
         {
             IMethodSymbol method => context.SemanticHelper.IsLinqExtension(method.ContainingType)
-                || method.ContainingType.OriginalDefinition is { Name: "List", ContainingNamespace: var space }
-                    && space.ToDisplayString() == "System.Collections.Generic",
+                || method.ContainingType.ContainingNamespace?.ToDisplayString() is { } space
+                    && (space == "System" || space.StartsWith("System.", System.StringComparison.Ordinal)),
             _ => context.CanGuess(node),
         };
     }

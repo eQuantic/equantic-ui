@@ -35,9 +35,8 @@ public class ObjectCreationStrategy : IConversionStrategy
         // `new string(chars)` and `new string(c, n)`: the text they build, where `new string(…)` named a
         // class JavaScript does not have (#524).
         if (context.SemanticHelper.GetType(node) is { SpecialType: SpecialType.System_String }
-            && node is BaseObjectCreationExpressionSyntax { ArgumentList.Arguments: var stringArguments }
-            && context.SemanticHelper.GetSymbol(node) is IMethodSymbol { Parameters: var stringParameters }
-            && NewString(stringParameters, stringArguments, context) is { } text)
+            && context.SemanticHelper.GetOperation(node) is Microsoft.CodeAnalysis.Operations.IObjectCreationOperation creation
+            && NewString(creation, context) is { } text)
             return text;
 
         if (node is ObjectCreationExpressionSyntax objCreation)
@@ -51,23 +50,32 @@ public class ObjectCreationStrategy : IConversionStrategy
         throw new InvalidOperationException("Invalid node type");
     }
 
-    /// <summary>The text a string constructor builds: its chars joined, a char repeated, or a range
-    /// of chars joined. Null for an overload with no such reading here (a span, a pointer).</summary>
-    private static string? NewString(IReadOnlyList<IParameterSymbol> parameters,
-        SeparatedSyntaxList<ArgumentSyntax> arguments, ConversionContext context)
+    /// <summary>
+    /// The text a string constructor builds: its chars joined (none for a null array, as .NET's
+    /// <c>new string((char[])null)</c> is empty), a char repeated, or a range of chars joined. Null
+    /// for an overload with no such reading here (a span, a pointer). Each argument is placed by the
+    /// parameter it binds to, so a named argument written out of order fills its own.
+    /// </summary>
+    private static string? NewString(Microsoft.CodeAnalysis.Operations.IObjectCreationOperation creation,
+        ConversionContext context)
     {
-        var parts = arguments.Select(argument => context.Converter.ConvertIr(argument.Expression)).ToArray();
-        var template = parameters.Select(parameter => parameter.Type).ToArray() switch
+        if (creation.Constructor is not { } constructor) return null;
+        var template = constructor.Parameters.Select(parameter => parameter.Type).ToArray() switch
         {
-            [IArrayTypeSymbol] => "{0}.join('')",
+            [IArrayTypeSymbol] => "({0} ?? []).join('')",
             [{ SpecialType: SpecialType.System_Char }, { SpecialType: SpecialType.System_Int32 }] => "{0}.repeat({1})",
             [IArrayTypeSymbol, { SpecialType: SpecialType.System_Int32 }, { SpecialType: SpecialType.System_Int32 }]
                 => "{0}.slice({1}, {1} + {2}).join('')",
             _ => null,
         };
-        return template is null || parts.Length != parameters.Count
-            ? null
-            : Ir.JsExprWriter.Write(Ir.JsExpr.Template(template, parts, context.TypeAnnotations));
+        if (template is null || creation.Arguments.Length != constructor.Parameters.Length) return null;
+        var parts = new Ir.JsExpr[constructor.Parameters.Length];
+        foreach (var argument in creation.Arguments)
+        {
+            if (argument.Parameter is not { } parameter || argument.Value.Syntax is not ExpressionSyntax value) return null;
+            parts[parameter.Ordinal] = context.Converter.ConvertIr(value);
+        }
+        return Ir.JsExprWriter.Write(Ir.JsExpr.Template(template, parts, context.TypeAnnotations));
     }
 
     private string ConvertExplicit(ObjectCreationExpressionSyntax creation, ConversionContext context)

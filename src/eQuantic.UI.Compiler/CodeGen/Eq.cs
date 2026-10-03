@@ -130,6 +130,9 @@ public static class Eq
 
     /// <summary>A sequence as the array the lowered operators work on — see <c>seq</c> in utils/linq.ts.</summary>
     public const string LinqSeq = "$eq.linq.seq";
+
+    /// <summary>A NEW array of a sequence's elements, as <c>ToList</c> and <c>ToArray</c> make.</summary>
+    public const string LinqToArray = "$eq.linq.toArray";
     /// <summary>Where each text element (an extended grapheme cluster, UAX #29) of a string begins:
     /// <c>StringInfo.ParseCombiningCharacters</c>, answered by the platform's segmenter.</summary>
     public const string TextElementStarts = "$eq.text.textElementStarts";

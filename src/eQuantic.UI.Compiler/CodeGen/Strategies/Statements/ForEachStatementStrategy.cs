@@ -20,11 +20,13 @@ public class ForEachStatementStrategy : IStatementStrategy
         var foreachStmt = (ForEachStatementSyntax)node;
         var item = foreachStmt.Identifier.Text.ToJsIdentifier();
         var declared = ExpressionVariableScanner.Declarations(foreachStmt.Expression, context.TypeAnnotations);
-        var collection = context.Converter.ConvertExpression(foreachStmt.Expression);
         // A string enumerates its chars, the UTF-16 code units, where JavaScript's iterator gives code
         // points: `foreach (var c in "a😀b")` counted three where .NET counts four (#524).
-        if (context.SemanticHelper.GetType(foreachStmt.Expression) is { SpecialType: SpecialType.System_String })
-            collection = JsExprWriter.Write(JsExpr.Call(JsExpr.Member(JsExpr.Opaque(collection), "split"), JsExpr.Literal("''")));
+        var source = context.Converter.ConvertIr(foreachStmt.Expression);
+        var collection = JsExprWriter.Write(
+            context.SemanticHelper.GetType(foreachStmt.Expression) is { SpecialType: SpecialType.System_String }
+                ? JsExpr.Call(JsExpr.Member(source, "split"), JsExpr.Literal("''"))
+                : source);
 
         var body = context.Converter.ConvertStatementIr(foreachStmt.Statement);
         var loopType = foreachStmt.AwaitKeyword.Value != null ? "for await" : "for";

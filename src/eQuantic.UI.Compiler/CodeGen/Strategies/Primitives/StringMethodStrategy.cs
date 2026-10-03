@@ -101,7 +101,10 @@ public class StringMethodStrategy : IConversionStrategy
             "ToUpperInvariant" => $"{caller}.toUpperCase()",
             "ToLowerInvariant" => $"{caller}.toLowerCase()",
             // Its chars, the UTF-16 code units: a spread gives code points, one where .NET has two (#524).
-            "ToCharArray" => $"{caller}.split('')",
+            // The (startIndex, length) overload takes its range first, each argument read once.
+            "ToCharArray" => args.Count == 2
+                ? $"{caller}.slice({args[0]}).slice(0, {args[1]}).split('')"
+                : $"{caller}.split('')",
             "Insert" => ConvertInsert(caller, args),
             "Remove" => ConvertRemove(caller, args),
             _ => $"{caller}.{methodName.ToCamelCase()}({JoinArgs(args)})"

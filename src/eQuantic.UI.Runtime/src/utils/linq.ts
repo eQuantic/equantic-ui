@@ -144,5 +144,18 @@ export function toDictionary<T, K, V = T>(
 export function seq<T>(source: Iterable<T> | string): T[] {
   if (Array.isArray(source)) return source;
   if (typeof source === 'string') return source.split('') as unknown as T[];
+  // Array.from reads an object that is not iterable as an EMPTY array: a value that crossed as a plain
+  // object where C# holds a sequence would count nothing, in silence. It says so instead.
+  if (typeof (source as { [Symbol.iterator]?: unknown } | null)?.[Symbol.iterator] !== 'function') {
+    throw new TypeError(`A sequence was expected: ${Object.prototype.toString.call(source)}`);
+  }
   return Array.from(source);
+}
+
+/**
+ * A NEW array of a sequence's elements, as `ToList` and `ToArray` make one: an array is copied too, so
+ * the copy and its source are two arrays, as in .NET, whatever the static type hid it behind.
+ */
+export function toArray<T>(source: Iterable<T> | string): T[] {
+  return Array.isArray(source) ? source.slice() : seq(source);
 }
