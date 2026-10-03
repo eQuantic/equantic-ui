@@ -53,14 +53,14 @@ public class StringComparisonOverloadTests
     [InlineData("var r = a.Contains(b, StringComparison.InvariantCulture)")]
     [InlineData("var r = a.Replace(b, c, StringComparison.CurrentCultureIgnoreCase)")]
     public void ASearchByAConstantCultureComparison_IsRefused(string code) =>
-        TestHelper.DiagnosticsFor(code).Should().Contain(d => d.Code == "EQ1004" && d.Message.Contains("by a culture comparison"));
+        TestHelper.DiagnosticsFor(code).Should().Contain(d => d.Code == "EQ1004" && d.Message.Contains("a culture comparison has no search in the browser: search by Ordinal"));
 
     [Theory]
     [InlineData("var r = a.StartsWith(b, true, System.Globalization.CultureInfo.InvariantCulture)")]
     [InlineData("var r = a.EndsWith(b, false, null)")]
     [InlineData("var r = a.Replace(b, c, true, null)")]
     public void AnOverloadTakingACultureInfo_IsRefused(string code) =>
-        TestHelper.DiagnosticsFor(code).Should().Contain(d => d.Code == "EQ1004" && d.Message.Contains("with a CultureInfo"));
+        TestHelper.DiagnosticsFor(code).Should().Contain(d => d.Code == "EQ1004" && d.Message.Contains("a CultureInfo has no search in the browser: pass StringComparison"));
 
     [Theory]
     [InlineData("var r = a.Equals(b, StringComparison.CurrentCulture)")]

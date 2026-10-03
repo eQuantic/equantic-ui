@@ -125,9 +125,7 @@ public class StringMethodStrategy : IConversionStrategy
                 { SpecialType: SpecialType.System_Int32 } => "i",
                 { SpecialType: SpecialType.System_Boolean } => "b",
                 var type when type.IsNamed("System.StringComparison") => "k",
-                // By name and namespace: the parameter is a CultureInfo?, whose display name carries
-                // the annotation, so a full-name match never saw it.
-                { Name: "CultureInfo", ContainingNamespace: { Name: "Globalization", ContainingNamespace.Name: "System" } } => "u",
+                var type when type.IsNamed("System.Globalization.CultureInfo") => "u",
                 _ => "?",
             }));
             // A CultureInfo makes a COMPARING overload of these three, and nothing else's: ToUpper's
@@ -172,10 +170,13 @@ public class StringMethodStrategy : IConversionStrategy
             ("Replace", "s,s,k" or "s,s") => Eq.StringReplace,
             _ => null,
         };
+        // The label names the fix, since the refusal is where a developer meets it.
         if (helper is null)
-            return context.Unhandled(invocation, $"string.{methodName} with a CultureInfo");
+            return context.Unhandled(invocation,
+                $"string.{methodName} (a CultureInfo has no search in the browser: pass StringComparison.Ordinal or OrdinalIgnoreCase)");
         if (methodName != "Equals" && shape.EndsWith('k') && IsCultureConstant(invocation.ArgumentList.Arguments[^1], context))
-            return context.Unhandled(invocation, $"string.{methodName} by a culture comparison, which has no search in the browser,");
+            return context.Unhandled(invocation,
+                $"string.{methodName} (a culture comparison has no search in the browser: search by Ordinal or OrdinalIgnoreCase)");
 
         context.UsedHelpers.Add(Eq.Import);
         var parameters = Enumerable.Range(0, shape.Split(',').Length).Select(slot => $"{{{slot}}}");
@@ -196,7 +197,7 @@ public class StringMethodStrategy : IConversionStrategy
     private static bool IsCultureConstant(ArgumentSyntax argument, ConversionContext context)
     {
         if (context.SemanticHelper.TryGetConstantValue(argument.Expression, out var value))
-            return value is int member && member < 4;
+            return value is int and >= 0 and < 4;
         var spelled = argument.Expression.ToString();
         return spelled.Contains("StringComparison.CurrentCulture") || spelled.Contains("StringComparison.InvariantCulture");
     }
