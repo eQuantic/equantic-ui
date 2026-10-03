@@ -1081,6 +1081,27 @@ record of a release, the wiki's Upgrading page is the distillate.
   stops the client of every page ([#526](https://github.com/eQuantic/equantic-ui/issues/526)).
   Proposed and archived through OpenSpec (`openspec/specs/transpiler-expressions`,
   `openspec/specs/transpiler-source-maps`).
+- **2026-10-03 · A tab bar, a radio group, a combobox and a dialog are themselves on Photon**: the
+  semantics walk announced every `Adjustable` as a slider, so a `Tabs` and a `RadioGroup` reached
+  VoiceOver and TalkBack as one unnamed slider and their tabs and radios were never read
+  ([#500](https://github.com/eQuantic/equantic-ui/issues/500)); a `Select`'s field reached them as a
+  button that expands and an open modal layer as a plain group, where the web says `combobox` and
+  `dialog` ([#501](https://github.com/eQuantic/equantic-ui/issues/501)). `SemanticRole` gains
+  `TabBar`, `RadioGroup`, `ComboBox`, `Dialog` and `AlertDialog`, appended at 17 to 21 in Flutter's
+  words. A tab strip and a radio group are containers a reader walks into, each tab and radio a stop
+  with its state, while the bar stays the keyboard's one stop; the pressable a listbox panel hangs
+  from is the combobox, the web's rule; an open modal layer is a dialog, or an alert dialog when it
+  interrupts. `NativeRole` takes Core-AAM's words for the containers and the dialogs, and gives the
+  select-only combobox each platform's drop-down, `AXPopUpButton` and `Spinner`, rather than
+  Core-AAM's editable pair. Found on the way and fixed: the layer Photon opens for an anchored panel
+  was modal by default, so an unnamed group stood in front of every open menu and select, and would
+  have read as a dialog; it is one now only for the date picker's calendar. AppKit's own description
+  of the dialog's `AXGroup` is "group", read back from AppKit, so the subrole is what says dialog.
+  `AnnouncementParityTests` compares the web's ARIA and the native tree for these components, a
+  slice of [#339](https://github.com/eQuantic/equantic-ui/issues/339), and `AppKitAccessibilityTests`
+  reads the elements of real components back from AppKit. The handoff's `native-roles` request is
+  shipped. Position in a set is still [#502](https://github.com/eQuantic/equantic-ui/issues/502).
+  Proposed and archived through OpenSpec (`openspec/specs/native-accessibility`).
 
 ## Retired documents
 
