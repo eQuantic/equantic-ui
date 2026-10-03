@@ -994,6 +994,22 @@ record of a release, the wiki's Upgrading page is the distillate.
   ([#500](https://github.com/eQuantic/equantic-ui/issues/500)), and no item says where it sits in
   its set ([#502](https://github.com/eQuantic/equantic-ui/issues/502)). Proposed and archived
   through OpenSpec (`openspec/specs/native-accessibility`).
+- **2026-10-03 · The build derives the hydration contract**: the server named a component's values
+  after the fields the C# compiler synthesizes, so an auto-property and a captured primary-constructor
+  parameter drew on the server and vanished on hydration
+  ([#509](https://github.com/eQuantic/equantic-ui/issues/509)), and a service registered as a class
+  crossed whole into the HTML of a page that prefetched, while the browser, which builds a page without
+  it, drew the other branch ([#510](https://github.com/eQuantic/equantic-ui/issues/510)). The source
+  generator now writes a hydration manifest, the server writes each payload from it and eqc each
+  twin's adoption: every value under the twin's name, and a value from the container as its
+  projection, what the browser-side code reads of it, worked out from the bound tree of what the twin
+  runs. A use the projection cannot follow fails the build with EQ2114, and the container has the last
+  word on a value written whole. `HydrationCrossingTests` renders pages on the server and draws their
+  twins in the embedded Bun on the payloads the server wrote, and the dashboard sample's Server data
+  and Identity screens were measured in a browser against main. Filed on the way: two pages of one
+  simple name share one entry of the page index
+  ([#514](https://github.com/eQuantic/equantic-ui/issues/514)). Proposed and archived through OpenSpec
+  (`openspec/specs/hydration-contract`).
 - **2026-10-03 · A string or a char keeps its value in its module**: eqc wrote C# string and char
   values in spellings that lost them ([#520](https://github.com/eQuantic/equantic-ui/issues/520)).
   A surrogate that is not half of a pair has no UTF-8 encoding, so a page holding `"x\uD83D"` stopped
@@ -1017,22 +1033,6 @@ record of a release, the wiki's Upgrading page is the distillate.
   stops the client of every page ([#526](https://github.com/eQuantic/equantic-ui/issues/526)).
   Proposed and archived through OpenSpec (`openspec/specs/transpiler-expressions`,
   `openspec/specs/transpiler-source-maps`).
-- **2026-10-03 · The build derives the hydration contract**: the server named a component's values
-  after the fields the C# compiler synthesizes, so an auto-property and a captured primary-constructor
-  parameter drew on the server and vanished on hydration
-  ([#509](https://github.com/eQuantic/equantic-ui/issues/509)), and a service registered as a class
-  crossed whole into the HTML of a page that prefetched, while the browser, which builds a page without
-  it, drew the other branch ([#510](https://github.com/eQuantic/equantic-ui/issues/510)). The source
-  generator now writes a hydration manifest, the server writes each payload from it and eqc each
-  twin's adoption: every value under the twin's name, and a value from the container as its
-  projection, what the browser-side code reads of it, worked out from the bound tree of what the twin
-  runs. A use the projection cannot follow fails the build with EQ2114, and the container has the last
-  word on a value written whole. `HydrationCrossingTests` renders pages on the server and draws their
-  twins in the embedded Bun on the payloads the server wrote, and the dashboard sample's Server data
-  and Identity screens were measured in a browser against main. Filed on the way: two pages of one
-  simple name share one entry of the page index
-  ([#514](https://github.com/eQuantic/equantic-ui/issues/514)). Proposed and archived through OpenSpec
-  (`openspec/specs/hydration-contract`).
 
 ## Retired documents
 
