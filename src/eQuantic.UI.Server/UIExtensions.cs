@@ -491,15 +491,16 @@ public static class UIExtensions
 
     /// <summary>
     /// What a route's document says about its page before the page speaks, the same for a full load
-    /// and a client navigation: the app's defaults, then what the route declares, each winning over the
-    /// one before by key. What the page says itself (<see cref="AdoptPageMetadata"/>) goes on top.
+    /// and a client navigation: the app's defaults, then what the route declares, then its translation
+    /// group, each winning over the one before by key. What the page says itself
+    /// (<see cref="AdoptPageMetadata"/>) goes on top.
     /// <para>
     /// The route's title used to be applied after the page, and only when the metadata had none, which
     /// the app's default title always filled, so no page ever got it; and a navigation never looked at
     /// it, answering with the app's title over the one the client had just set from its route table.
     /// </para>
     /// </summary>
-    private static MetadataCollection PageMetadata(UIOptions options, DeclaredPage? declared)
+    private static MetadataCollection PageMetadata(HttpContext context, UIOptions options, DeclaredPage? declared)
     {
         var shell = options.HtmlShell;
         var metadata = new MetadataCollection { Title = shell.Title };
@@ -507,6 +508,10 @@ public static class UIExtensions
         var seo = new SeoBuilder(metadata);
         if (!string.IsNullOrEmpty(declared?.Title)) seo.Title(declared.Title);
         if (!string.IsNullOrEmpty(declared?.Description)) seo.Description(declared.Description);
+        // The translation group, BEFORE the page speaks: an app-wide policy is a default, and a page
+        // with something better to say (a slug that is not a translation of this one) writes its own
+        // Alternate and wins by key.
+        AddAlternateLinks(context, options, seo);
         return metadata;
     }
 
@@ -539,53 +544,53 @@ public static class UIExtensions
         // Never cached: this is the page's data, and the next visitor's is not this one's.
         context.Response.Headers["Cache-Control"] = "no-store";
 
+        // The document's metadata FIRST: the app's and the route's need nothing prepared, so a page
+        // the server does not render (SSR off, a page that turns it off, a prefetch that failed)
+        // still answers the title and the head a full load of it writes. It answered `{}`, and the
+        // previous page's description and canonical stayed.
         var options = context.RequestServices.GetRequiredService<UIOptions>();
-        var rendering = pageName is null || !options.EnableSsr
-            ? null
-            : context.RequestServices.GetService<IServerRenderingService>();
-        if (rendering is null)
+        var metadata = PageMetadata(context, options, declared);
+        var prepared = await PreparedOrNull(context, options, pageName);
+        if (prepared is not null)
         {
-            await context.Response.WriteAsync("{}");
-            return;
+            // The page's own answer travels too — a route that matched while its content did not
+            // exist says so to a client navigation the same way it says it to a full load.
+            if (prepared.StatusCode != StatusCodes.Status200OK)
+                context.Response.StatusCode = prepared.StatusCode;
+            AdoptPageMetadata(metadata, prepared.Metadata);
         }
-
-        ServerRenderResult result;
-        try
-        {
-            result = await rendering.PreparePageAsync(pageName!, context);
-        }
-        catch (Exception)
-        {
-            // A navigation must not be able to 500 the app: without the payload the page renders
-            // its empty state, which is exactly where it was before this endpoint existed.
-            await context.Response.WriteAsync("{}");
-            return;
-        }
-
-        if (!result.Success)
-        {
-            await context.Response.WriteAsync("{}");
-            return;
-        }
-
-        // The page's own answer travels too — a route that matched while its content did not exist
-        // says so to a client navigation the same way it says it to a full load.
-        if (result.StatusCode != StatusCodes.Status200OK)
-            context.Response.StatusCode = result.StatusCode;
-
-        // The same metadata a full load of this route writes, minus the alternate languages, whose
-        // links the client matches by `rel` alone and would collapse into one.
-        var metadata = PageMetadata(options, declared);
-        AdoptPageMetadata(metadata, result.Metadata);
         LocalizeCanonical(context, options, metadata);
 
         var payload = new StringBuilder("{");
         payload.Append("\"title\":").Append(JsonSerializer.Serialize(metadata.Title));
         payload.Append(",\"head\":").Append(JsonSerializer.Serialize(metadata.RenderTags()));
-        if (result.SerializedState is { Length: > 0 } state)
+        if (prepared?.SerializedState is { Length: > 0 } state)
             payload.Append(",\"state\":").Append(state);
         payload.Append('}');
         await context.Response.WriteAsync(payload.ToString());
+    }
+
+    /// <summary>
+    /// The page's server-side moment without its drawing (prefetch, then its own metadata), or null
+    /// where there is none: SSR off, no page, or a preparation that failed. A navigation must not be
+    /// able to 500 the app: without the payload's state the page renders its empty state, which is
+    /// exactly where it was before this endpoint existed.
+    /// </summary>
+    private static async Task<ServerRenderResult?> PreparedOrNull(HttpContext context, UIOptions options, string? pageName)
+    {
+        var rendering = pageName is null || !options.EnableSsr
+            ? null
+            : context.RequestServices.GetService<IServerRenderingService>();
+        if (rendering is null) return null;
+        try
+        {
+            var result = await rendering.PreparePageAsync(pageName!, context);
+            return result.Success ? result : null;
+        }
+        catch (Exception)
+        {
+            return null;
+        }
     }
 
     /// <summary>
@@ -668,17 +673,8 @@ public static class UIExtensions
         // handing back the work we just took.
         headTags.AddRange(GeneratedIconTags(context));
 
-        // What the document says before the page speaks: the app's defaults and the route's own
-        // declaration, then the translation group. The group comes BEFORE the page: an app-wide
-        // policy is a default, and a page with something better to say (a slug that is not a
-        // translation of this one) writes its own Alternate and wins by key.
-        MetadataCollection metadata = null!;
-        void StartMetadata(DeclaredPage? from)
-        {
-            metadata = PageMetadata(options, from);
-            AddAlternateLinks(context, options, new SeoBuilder(metadata));
-        }
-        StartMetadata(declared);
+        // What the document says before the page speaks (PageMetadata), restarted for an error page.
+        var metadata = PageMetadata(context, options, declared);
 
         // Attempt SSR if page name is provided and SSR is enabled
         var ssrContent = "<div class=\"loading\">Loading...</div>";
@@ -815,7 +811,7 @@ public static class UIExtensions
                              pageName = errorPageName;
                              // The error page is not the route that failed: it speaks over the
                              // app's defaults, never under the failed route's title.
-                             StartMetadata(null);
+                             metadata = PageMetadata(context, options, null);
                              // The THIRD door to a rendered page, and it was drifting like the other
                              // two: an error page that loads its own branding kept none of it.
                              AdoptSsr(result);

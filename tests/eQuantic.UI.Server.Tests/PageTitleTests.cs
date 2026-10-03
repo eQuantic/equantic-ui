@@ -51,6 +51,13 @@ public class PageTitleTests
         public override VisualNode Build(ComponentContext context) => new Text("untitled", TypeRole.BodyM);
     }
 
+    /// <summary>A page the server never renders, whose route still says what it is.</summary>
+    [Page("/client-only", Title = "Client only", Description = "Drawn in the browser", DisableSsr = true)]
+    public sealed class ClientOnlyPage : StatelessComponent
+    {
+        public override VisualNode Build(ComponentContext context) => new Text("client", TypeRole.BodyM);
+    }
+
     [Page("/scripted", Title = "</script><b>x")]
     public sealed class ScriptTitledPage : StatelessComponent
     {
@@ -137,5 +144,36 @@ public class PageTitleTests
         config.GetProperty("page").GetString().Should().Be(nameof(UntitledPage));
         // The title of a route closes no script element: its `<` is escaped where it is written.
         html.Should().NotContain("</script><b>x");
+    }
+
+    [Fact]
+    public async Task ANavigationToAPageTheServerDoesNotRender_StillAnswersItsRoutesTitleAndHead()
+    {
+        // It answered `{}`, so the previous page's description and canonical stayed in the head.
+        var (app, client) = await StartAsync();
+        await using var _ = app;
+
+        var navigation = await NavigateAsync(client, "/client-only");
+
+        navigation.GetProperty("title").GetString().Should().Be("Client only");
+        navigation.GetProperty("head").GetString().Should().Contain("<meta name=\"description\" content=\"Drawn in the browser\" data-eq-meta>");
+        navigation.TryGetProperty("state", out var __).Should().BeFalse("nothing was prepared");
+    }
+
+    [Fact]
+    public async Task EveryTagTheMetadataWrites_IsMarked_OnALoadAndANavigation()
+    {
+        // The client removes the marked set the previous page left and writes the next one's, so a tag
+        // the next page does not have is gone instead of standing beside the new ones.
+        var (app, client) = await StartAsync();
+        await using var _ = app;
+
+        var html = await client.GetStringAsync("/spoken");
+        var head = (await NavigateAsync(client, "/spoken")).GetProperty("head").GetString()!;
+
+        html.Should().Contain("<meta name=\"description\" content=\"Dynamic words\" data-eq-meta>");
+        html.Should().Contain("<meta property=\"og:title\" content=\"Dynamic\" data-eq-meta>");
+        System.Text.RegularExpressions.Regex.Matches(head, "<(meta|link) [^>]*>").Should().NotBeEmpty()
+            .And.OnlyContain(tag => tag.Value.EndsWith(" data-eq-meta>"));
     }
 }

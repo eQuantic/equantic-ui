@@ -237,5 +237,7 @@ public class CultureRouteTests
         var payload = System.Text.Json.JsonDocument.Parse(await response.Content.ReadAsStringAsync()).RootElement;
         payload.GetProperty("title").GetString().Should().Be("Terms");
         payload.GetProperty("head").GetString().Should().Contain("href=\"https://site.test/pt-BR/terms\"");
+        // And the translation group a full load writes, which the client now replaces as a set.
+        payload.GetProperty("head").GetString().Should().Contain("hreflang=\"es\"").And.Contain("hreflang=\"x-default\"");
     }
 }
