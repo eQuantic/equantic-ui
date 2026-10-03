@@ -4,11 +4,13 @@ using eQuantic.UI.Primitives;
 namespace eQuantic.UI.Native.Components;
 
 /// <summary>
-/// Interaction and motion — fifteen words. Three are controls and announce as one stop each; a
-/// fourth, <see cref="Progress"/>, announces WITHOUT being one — it is read, never moved, which is
-/// why it carries no tab stop and no key handler; two, <see cref="Navigable"/> and
-/// <see cref="LiveRegion"/>, are GROUPS that announce and then keep walking; the remaining nine wrap
-/// a child or are ornament.
+/// Interaction and motion — fifteen words. Three are controls with a keyboard stop each:
+/// <see cref="Pressable"/> and <see cref="Link"/> announce as one stop, and
+/// <see cref="Adjustable"/> as one stop when it is a slider and as a GROUP that keeps walking when it
+/// is a tab strip or a radio group (#500); a fourth, <see cref="Progress"/>, announces WITHOUT being
+/// one — it is read, never moved, which is why it carries no tab stop and no key handler; two,
+/// <see cref="Navigable"/> and <see cref="LiveRegion"/>, are GROUPS that announce and then keep
+/// walking; the remaining nine wrap a child or are ornament.
 /// <para>
 /// This tally said "the fourteenth, Navigable, is the gap" until <see cref="SemanticRole.Group"/>
 /// landed — the running-count shape that rots, caught here one commit after the gap closed.
@@ -22,6 +24,15 @@ internal sealed partial class SemanticsVisitor
     /// </summary>
     public bool Visit(Pressable node, LayoutNode laidOut)
     {
+        // The pressable a listbox panel hangs from is the COMBOBOX, whatever role it was given: the
+        // web's own rule (`LowerAnchored` puts role="combobox" on the anchor's root), and the one
+        // role here decided by where the pressable SITS rather than by what it says it is. Its state
+        // is whether the list is open, never a check or a pick. Until #501 a Select's field reached
+        // every bridge as a button that happened to expand.
+        if (AnchorsAListbox(laidOut))
+            return Announce(new(SemanticRole.ComboBox, laidOut.Path ?? "", laidOut.Bounds,
+                node.Label ?? TextWithin(laidOut), null, node.Disabled, Expanded: node.Expanded));
+
         // A check states its state beside the name, never inside it — the exact mirror of the web's
         // aria-checked. Mixed is checkbox-only, ARIA's own rule.
         //
@@ -65,6 +76,29 @@ internal sealed partial class SemanticsVisitor
             selected));
     }
 
+    /// <summary>
+    /// Whether this pressable is the ROOT of a listbox panel's anchor: its nearest ancestor that is a
+    /// thing on screen is an <see cref="Anchored"/> whose panel is a
+    /// <see cref="AnchorPanelRole.Listbox"/>. The ANCHOR becomes the combobox, the vocabulary's own
+    /// words for that role (<see cref="Anchored.PanelRole"/>), and the panel never lays out under it
+    /// here: it is an overlay root of its own.
+    /// <para>
+    /// Component seams are walked through, because a component is not on screen, it BUILT what is:
+    /// an anchor written as a component reaches its pressable the way the web reaches the element it
+    /// lowered to. Anything else in between, a row holding two pressables, means this one sits
+    /// inside the anchor rather than being it.
+    /// </para>
+    /// </summary>
+    private static bool AnchorsAListbox(LayoutNode laidOut)
+    {
+        for (var parent = laidOut.Parent; parent is not null; parent = parent.Parent)
+        {
+            if (parent.Source is UiComponent) continue;
+            return parent.Source is Anchored { PanelRole: AnchorPanelRole.Listbox };
+        }
+        return false;
+    }
+
     /// <summary>One stop, named by the author or derived from the words inside it — the same rule
     /// the Pressable arm follows, and the reason both consume their subtree.</summary>
     public bool Visit(Link node, LayoutNode laidOut) =>
@@ -72,31 +106,49 @@ internal sealed partial class SemanticsVisitor
             node.Label ?? TextWithin(laidOut), null, false, Current: node.Current));
 
     /// <summary>
-    /// One stop for the whole control, inner pressables stay pointer-only — the same rule the focus
-    /// route applies (<c>InputSink.WithoutFocusStops</c>).
+    /// ONE KEYBOARD STOP for the whole control, inner pressables stay pointer-only — the rule the
+    /// focus route applies (<c>InputSink.WithoutFocusStops</c>). What a READER meets depends on the
+    /// role, because a slider and a set of choices are different things to read, as the web's
+    /// <c>slider</c>, <c>tablist</c> and <c>radiogroup</c> are.
     /// <para>
-    /// The VALUE rides the same slot a text field's does (spec C7): the bridges report an Adjustable
-    /// as their platform's slider, and a slider whose value is null announces its name and nothing
-    /// else — the native half of the invalid <c>role="slider"</c> the web emitted.
+    /// A SLIDER is one stop that consumes its subtree, and its VALUE rides the same slot a text
+    /// field's does (spec C7) — the value is the slider role's and no other's, exactly as on the web,
+    /// where a <c>tablist</c> and a <c>radiogroup</c> report no range at all.
     /// </para>
     /// <para>
-    /// The value is the SLIDER role's and no other's, exactly as on the web. Nothing here needs ARIA
-    /// to say so — the bridges report all three roles as one — but the node's own contract does, and
-    /// a contract that holds on one target is not a contract. This became reachable the moment
-    /// <c>UI.Adjustable</c> grew a value argument beside a role one: the same tree would have
-    /// announced a position on Photon and none in the DOM.
+    /// A TAB STRIP and a RADIO GROUP are CONTAINERS, read and then walked into: the reader names the
+    /// bar or the group, then lands on each tab or radio, which says itself whether it is the picked
+    /// one (#338's roles) and runs the same handler a tap does. Until #500 every Adjustable was
+    /// announced as a slider, so a <c>Tabs</c> and a <c>RadioGroup</c> reached every bridge as one
+    /// unnamed slider with no value, and the tabs and radios inside were never read.
+    /// </para>
+    /// <para>
+    /// The group takes no adjust gesture on any platform, as NSTabView, Android's RadioGroup and
+    /// Flutter's tab bar take none: the arrows that move the pick are the keyboard's way through the
+    /// set, and a reader's way is the items. A slider's adjust has a value to announce after it; a
+    /// group's would move the pick and say nothing.
+    /// </para>
+    /// <para>
+    /// Every role is written out and there is no default arm: a role appended to
+    /// <see cref="AdjustableRole"/> fails the BUILD by name (CS8509) instead of being read as a
+    /// slider, which is how the two lost theirs. CS8524, the unnamed value only a cast makes, is
+    /// waived as narrowly as the Pressable arm waives it.
     /// </para>
     /// </summary>
-    public bool Visit(Adjustable node, LayoutNode laidOut) =>
-        Announce(new(SemanticRole.Slider, laidOut.Path ?? "", laidOut.Bounds,
-            node.Label,
-            node.Role == AdjustableRole.Slider ? node.Spoken : null,
-            false,
-            // The NUMBERS travel beside the words now, so a bridge can offer its platform's own
-            // range — a `RangeInfo` on Android, `AXMinValue`/`AXMaxValue` on macOS. They ride under
-            // the same condition as the words: a node that is not announced as a slider is not
-            // announced as having a range either (#243).
-            Range: node.Role == AdjustableRole.Slider ? node.Value : null));
+#pragma warning disable CS8524
+    public bool Visit(Adjustable node, LayoutNode laidOut) => node.Role switch
+    {
+        AdjustableRole.Slider => Announce(new(SemanticRole.Slider, laidOut.Path ?? "", laidOut.Bounds,
+            node.Label, node.Spoken, false,
+            // The NUMBERS travel beside the words, so a bridge can offer its platform's own range — a
+            // `RangeInfo` on Android, `AXMinValue`/`AXMaxValue` on macOS (#243).
+            Range: node.Value)),
+        AdjustableRole.Tablist => AnnounceGroup(new(SemanticRole.TabBar, laidOut.Path ?? "",
+            laidOut.Bounds, node.Label, null, false)),
+        AdjustableRole.Radiogroup => AnnounceGroup(new(SemanticRole.RadioGroup, laidOut.Path ?? "",
+            laidOut.Bounds, node.Label, null, false)),
+    };
+#pragma warning restore CS8524
 
     /// <summary>
     /// Spec B14: the bar says WHAT IT IS FOR and HOW FAR ALONG. It is not a Slider — the platforms

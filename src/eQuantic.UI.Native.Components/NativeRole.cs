@@ -59,10 +59,11 @@ namespace eQuantic.UI.Native.Components;
 /// <param name="AppKitSubrole">
 /// The second word AppKit needs for a role it names with two, or null for the many it names with
 /// one. A tab is the reason it exists: AppKit has no tab role, and what NSTabView's own tabs report
-/// is a radio button whose subrole is <c>AXTabButton</c> — the pair VoiceOver reads as "tab". It is
-/// a column rather than a special case in the bridge for the reason the names are: a bridge that
-/// knew which roles carry a subrole would be a second table, and the first one the compiler could
-/// not see.
+/// is a radio button whose subrole is <c>AXTabButton</c> — the pair VoiceOver reads as "tab". The
+/// two dialogs are the others: a group whose subrole says <c>AXApplicationDialog</c> or
+/// <c>AXApplicationAlertDialog</c> (#501). It is a column rather than a special case in the bridge
+/// for the reason the names are: a bridge that knew which roles carry a subrole would be a second
+/// table, and the first one the compiler could not see.
 /// </param>
 /// <param name="UIKitCheckAsSelected">
 /// Whether UIKit hears a CHECK as the Selected trait rather than as the element's value. A toggle's
@@ -208,6 +209,75 @@ public readonly record struct NativeRole(
         SemanticRole.Destination =>
             new("AXButton", "android.widget.Button", UIKitTrait.Button,
                 Activatable: true, Adjustable: false),
+
+        // THE FOUR CONTAINERS AND THE TRIGGER that reached every bridge as something else until #500
+        // and #501. AppKit's and Android's words are again the W3C Core-AAM's for the same ARIA role
+        // (tablist, radiogroup, dialog, alertdialog), what WebKit and Chrome expose for the web half;
+        // the combobox is the one departure, argued in its row. What AppKit itself calls each of
+        // them was read back from an NSAccessibilityElement rather than assumed
+        // (AppKitAccessibilityTests): "tab group", "radio group", "pop up button", and "group" for
+        // both dialogs, whose subrole is the part that says dialog.
+        //
+        // The containers are pressed by nothing and adjusted by nothing on any platform. They are
+        // read and then WALKED INTO, like a Group: each tab, radio and control inside is a stop of
+        // its own and carries its own action. A tab strip's keyboard (one Tab stop, arrows move the
+        // pick) is a keyboard's convenience, and its reader's twin is the tabs themselves, which is
+        // how NSTabView, Android's RadioGroup and Flutter's tab bar are read as well.
+
+        // The bar a set of tabs sits in. AXTabGroup is NSTabView's own role, and TabWidget is the
+        // class TalkBack names "tab bar" (Role.java, ROLE_TAB_BAR). Chrome maps a tablist to a
+        // plain ViewGroup instead, because TabWidget makes TalkBack drop a CollectionInfo's "2 of
+        // 4"; this tree carries no position yet (#502), so the bar's own word wins today, and #502
+        // is where that trade is made again. UIKit's word, the tabBar trait, is reserved for a
+        // CONTAINER that is not itself an element (Apple: "return false for
+        // isAccessibilityElement"), which a flat bridge does not build, so the row is a group's: no
+        // trait, and the name.
+        SemanticRole.TabBar =>
+            new("AXTabGroup", "android.widget.TabWidget", UIKitTrait.None,
+                Activatable: false, Adjustable: false),
+
+        // A set of radios of which one is chosen. AXRadioGroup is AppKit's own role for one, and
+        // RadioGroup is Android's own class, which TalkBack reads as a plain group: Role.java has no
+        // radio-group role yet, and expects a radio button's ANCESTOR to be one, which a flat bridge
+        // does not build either (#502). UIKit has no word for it.
+        SemanticRole.RadioGroup =>
+            new("AXRadioGroup", "android.widget.RadioGroup", UIKitTrait.None,
+                Activatable: false, Adjustable: false),
+
+        // A field that shows one choice and opens the list of the others. The ONE departure from
+        // Core-AAM in this group, whose words for a combobox (AXComboBox, android.widget.EditText)
+        // are an EDITABLE one's: NSComboBox on the Mac, and on Android a field TalkBack calls an
+        // "edit box" and offers to type into. Every combobox this library builds is SELECT-ONLY, and a
+        // select-only field is each platform's drop-down. On the Mac that is NSPopUpButton, whose
+        // AXPopUpButton is also Core-AAM's word for a button with aria-haspopup and the pair to an
+        // option's AXMenuItem, NSPopUpButton's own items (#338). On Android it is Spinner, which
+        // TalkBack names "drop-down list" and which is the class Chrome gives the web half of this
+        // very component (a combobox that is not a text field). UIKit has no trait for it: a menu
+        // button reports the button trait, and whether the list is open rides the expanded status
+        // the bridge already sets. An editable combobox, a text field with the list under it, would
+        // take Core-AAM's own pair, and nothing in the library builds one.
+        SemanticRole.ComboBox =>
+            new("AXPopUpButton", "android.widget.Spinner", UIKitTrait.Button,
+                Activatable: true, Adjustable: false),
+
+        // A layer that holds the screen until it is answered: AXGroup with the AXApplicationDialog
+        // subrole, the pair WebKit and Chrome expose for role="dialog". AppKit's own description of
+        // that pair is "group", because the description a browser gives it is the browser's own; the
+        // SUBROLE is what marks the element a dialog to VoiceOver and the Accessibility Inspector,
+        // and a description of our own would be words this framework does not ship. TalkBack reads
+        // android.app.Dialog as a dialog (Role.java, ROLE_DIALOG). UIKit has no dialog trait: a
+        // modal layer says so with accessibilityViewIsModal on a CONTAINER, which a flat bridge
+        // cannot set, so the row is a group's and the name is the dialog's title.
+        SemanticRole.Dialog =>
+            new("AXGroup", "android.app.Dialog", UIKitTrait.None,
+                Activatable: false, Adjustable: false, AppKitSubrole: "AXApplicationDialog"),
+
+        // A dialog that interrupts, the destructive confirm: Core-AAM's AXApplicationAlertDialog
+        // subrole, and android.app.AlertDialog, the class TalkBack reads as an alert dialog
+        // (ROLE_ALERT_DIALOG). Everything else is the dialog's row.
+        SemanticRole.AlertDialog =>
+            new("AXGroup", "android.app.AlertDialog", UIKitTrait.None,
+                Activatable: false, Adjustable: false, AppKitSubrole: "AXApplicationAlertDialog"),
     };
 #pragma warning restore CS8524
 }
