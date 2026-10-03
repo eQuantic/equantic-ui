@@ -1021,6 +1021,34 @@ record of a release, the wiki's Upgrading page is the distillate.
   JSON. `PageTitleTests` runs both doors, and the dashboard
   sample's titles were measured in a browser against main. Proposed and archived through OpenSpec
   (`openspec/specs/document-metadata`).
+- **2026-10-03 · A value reaches the browser as its code reads it**: `Color` is the one vocabulary
+  value type the browser holds as plain data, and eqc emitted its instance members as methods of the
+  value, so `Color.FromRgb(…).WithOpacity(0.8f)` rendered on the server and threw once the page
+  hydrated, its text read `[object Object]`, and `new Color(…)` was recognized by its name, building an
+  app's own `Color` as the vocabulary's ([#494](https://github.com/eQuantic/equantic-ui/issues/494)).
+  `[TwinIsData]` says so by symbol now, every member lowers to the runtime's companion and the text to
+  the record text .NET writes. A `HashSet`, and the runtime's sorted set, queue, stack and linked
+  list, crossed hydration as the array the server writes
+  ([#516](https://github.com/eQuantic/equantic-ui/issues/516)): each is rebuilt as its class, a stack
+  with its top coming off first, a server value's projection takes a set of scalars whole, and a set
+  or a dictionary the browser's copy would answer differently, by a comparer of its own or an equality
+  nothing can read, stays out of the page, the rest of a projected value still crossing. Every sorted
+  collection the browser built or rebuilt ordered by `<`, so strings ignored the culture and decimals
+  compared their text: one table (`ValueOrdering`, `utils/ordering.ts`) now names how a type orders,
+  an enum by its value included, read by `Max`/`Min`, by every sorted collection eqc builds and by
+  every one a hydration rebuilds, and a queue or a stack finds a member by value. On
+  the way, a property pattern counted a set or a runtime collection as an array, and a `SortedSet`
+  dropped its collection initializer. `VocabularyValueConformanceTests` executes every member of every type
+  `[TwinIsData]` marks on both sides and checks each vocabulary value type's export against the
+  attribute, which found `Curve` in two shapes
+  ([#518](https://github.com/eQuantic/equantic-ui/issues/518)); the dashboard sample's Colors screen
+  was measured in a browser against main. Filed on the way: `GetHashCode` has no lowering
+  ([#519](https://github.com/eQuantic/equantic-ui/issues/519)), and a `HashSet` finds a date, a
+  decimal or a record by reference ([#531](https://github.com/eQuantic/equantic-ui/issues/531)). The
+  `SortedSet` initializer half of [#434](https://github.com/eQuantic/equantic-ui/issues/434) is fixed
+  here, and its LINQ half stays open. Proposed
+  and archived through OpenSpec (`openspec/specs/transpiler-vocabulary-values`,
+  `openspec/specs/hydration-contract`, `openspec/specs/transpiler-bcl`).
 - **2026-10-03 · A string or a char keeps its value in its module**: eqc wrote C# string and char
   values in spellings that lost them ([#520](https://github.com/eQuantic/equantic-ui/issues/520)).
   A surrogate that is not half of a pair has no UTF-8 encoding, so a page holding `"x\uD83D"` stopped

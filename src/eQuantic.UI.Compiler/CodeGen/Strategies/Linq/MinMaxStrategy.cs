@@ -64,11 +64,11 @@ public class MinMaxStrategy : IConversionStrategy
     /// whether the answer may be null (a reference type or a <c>Nullable&lt;T&gt;</c>, which pass a
     /// null over and answer null for a sequence with no value; anything else throws for an empty one).
     /// <c>Math.max</c> over the values answered -Infinity for an empty list, let a NaN win a
-    /// <c>Max</c>, and made NaN of two strings and a TypeError of two longs. An enum is refused: its
-    /// values cross as member NAMES, which order alphabetically where .NET orders by value; and so is
-    /// a Guid, which .NET orders by its fields and this side rides as text, and every other type with
-    /// no <c>compareTo</c> to call here (<see cref="CarriesCompareTo"/>). A comparer argument has no
-    /// JavaScript form to call.
+    /// <c>Max</c>, and made NaN of two strings and a TypeError of two longs. An enum orders by its
+    /// value, its members written out beside the call since its values cross as member NAMES. A Guid
+    /// is refused, which .NET orders by its fields and this side rides as text, and so is every other
+    /// type with no <c>compareTo</c> to call here (<see cref="ValueOrdering"/>). A comparer argument
+    /// has no JavaScript form to call.
     /// </summary>
     private static string Extreme(InvocationExpressionSyntax invocation, MemberAccessExpressionSyntax access,
         IMethodSymbol method, string helper, ConversionContext context)
@@ -85,7 +85,7 @@ public class MinMaxStrategy : IConversionStrategy
             return context.Unhandled(invocation, $"LINQ Max/Min over {method.ReturnType.ToDisplayString()}");
 
         context.UsedHelpers.Add(Eq.Import);
-        var how = $"'{ordering}', {(nullable ? "true" : "false")}";
+        var how = $"{ordering}, {(nullable ? "true" : "false")}";
         if (staticForm)
         {
             // Each argument in its parameter's place, and all of them run in the order they were
@@ -100,48 +100,10 @@ public class MinMaxStrategy : IConversionStrategy
         return $"{helper}({source}, {projection}, {how})";
     }
 
-    /// <summary>How the runtime orders the values a call answers, and whether it answers null: see
-    /// <c>Ordering</c> in utils/linq.ts. Null where the values have no faithful order this side.</summary>
-    private static (string Ordering, bool Nullable)? OrderingOf(ITypeSymbol type)
-    {
-        var nullable = type.IsReferenceType || type.IsNullableValue();
-        var value = type.UnwrapNullable() ?? type;
-        string? ordering = value.SpecialType switch
-        {
-            SpecialType.System_Double or SpecialType.System_Single => "real",
-            SpecialType.System_Int32 or SpecialType.System_Int64 or SpecialType.System_Int16
-                or SpecialType.System_Byte or SpecialType.System_SByte or SpecialType.System_UInt16
-                or SpecialType.System_UInt32 or SpecialType.System_UInt64 or SpecialType.System_Char
-                or SpecialType.System_Boolean => "value",
-            SpecialType.System_String => "text",
-            _ when CarriesCompareTo(value) => "comparable",
-            _ => null,
-        };
-        return ordering is null ? null : (ordering, nullable);
-    }
-
-    /// <summary>
-    /// Whether a value of this type orders by a <c>compareTo</c> it carries on this side: a decimal and
-    /// the dates, whose runtime types have one, and a type of the app's own that is comparable through
-    /// a <c>CompareTo</c> it wrote, which its twin carries by that name. Nothing else has one to call:
-    /// an enum and a Guid are comparable in the BCL but cross as a name and as text, a type that is not
-    /// comparable makes .NET's default comparer throw, a comparison written as an explicit interface
-    /// member has no name to be called by, and a type parameter may be answered by a number.
-    /// </summary>
-    private static bool CarriesCompareTo(ITypeSymbol type)
-    {
-        if (type.SpecialType is SpecialType.System_Decimal or SpecialType.System_DateTime
-            || type.IsNamed("System.TimeSpan") || type.IsNamed("System.DateOnly")
-            || type.IsNamed("System.TimeOnly") || type.IsNamed("System.DateTimeOffset"))
-            return true;
-        return type.AllInterfaces
-            .Where(contract => contract.ContainingNamespace?.ToDisplayString() == "System"
-                && contract.OriginalDefinition.MetadataName is "IComparable" or "IComparable`1")
-            .SelectMany(contract => contract.GetMembers("CompareTo"))
-            .Select(type.FindImplementationForInterfaceMember)
-            .Any(found => found is IMethodSymbol { MethodKind: MethodKind.Ordinary } method
-                && method.Locations.Any(location => location.IsInSource));
-    }
+    /// <summary>How the runtime orders the values a call answers (<see cref="ValueOrdering"/>), and
+    /// whether it answers null. Null where the values have no faithful order this side.</summary>
+    private static (string Ordering, bool Nullable)? OrderingOf(ITypeSymbol type) =>
+        ValueOrdering.Of(type) is { } ordering ? (ordering, type.IsReferenceType || type.IsNullableValue()) : null;
 
     public int Priority => 10;
 }

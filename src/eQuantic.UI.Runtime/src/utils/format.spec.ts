@@ -1,5 +1,5 @@
 import { describe, it, expect, afterEach, vi } from 'vitest';
-import { parseEnum, format, stringFormat, stringFormatInvariant, asSingle } from './format';
+import { parseEnum, format, stringFormat, stringFormatInvariant, asSingle, recordText } from './format';
 import { installCulture } from './culture';
 import { dateTime } from './datetime';
 
@@ -317,5 +317,25 @@ describe('a date in a time zone that skips or repeats an hour', () => {
     expect(format(dateTime(2026, 11, 1, 0, 59, 59), 'U')).toBe('Sunday, 01 November 2026 04:59:59');
     expect(format(dateTime(2026, 11, 1, 2, 0, 0), 'U')).toBe('Sunday, 01 November 2026 07:00:00');
     expect(format(dateTime(2026, 11, 1, 1, 30, 0), 'HH:mm')).toBe('01:30');
+  });
+});
+
+describe('recordText', () => {
+  it("writes a plain value as .NET writes the record, member by member in the order it is given", () => {
+    expect(recordText({ r: 1, g: 2, b: 3, a: 4 }, 'Color', ['R', 'G', 'B', 'A'])).toBe(
+      'Color { R = 1, G = 2, B = 3, A = 4 }',
+    );
+  });
+
+  it('writes each member as an interpolation hole does', () => {
+    expect(recordText({ on: true, ratio: 0.5, label: null }, 'Probe', ['On', 'Ratio', 'Label'])).toBe(
+      'Probe { On = True, Ratio = 0.5, Label =  }',
+    );
+  });
+
+  it('writes a record with no members, and nothing for a null value', () => {
+    expect(recordText({}, 'Empty', [])).toBe('Empty { }');
+    expect(recordText(null, 'Color', ['R'])).toBe('');
+    expect(recordText(undefined, 'Color', ['R'])).toBe('');
   });
 });

@@ -42,6 +42,28 @@ internal static class BoundaryShape
             or "ICollection" or "IReadOnlyCollection" or "IEnumerable";
 
     /// <summary>
+    /// The class the browser holds a collection of this type as, when it is one of the browser's own
+    /// rather than an array: <c>set</c>, a JavaScript Set, for a <c>HashSet</c> and the faces it
+    /// answers to, and the runtime's own <c>sortedSet</c>, <c>queue</c>, <c>stack</c> and
+    /// <c>linkedList</c>. Null for every other type, a list's faces and a dictionary included.
+    /// </summary>
+    public static string? CollectionClass(ITypeSymbol? type)
+    {
+        if (type is not INamedTypeSymbol { TypeArguments.Length: 1 } named) return null;
+        var definition = named.OriginalDefinition;
+        if (definition.ContainingNamespace?.ToDisplayString() != Generic) return null;
+        return definition.Name switch
+        {
+            "HashSet" or "ISet" or "IReadOnlySet" => "set",
+            "SortedSet" => "sortedSet",
+            "Queue" => "queue",
+            "Stack" => "stack",
+            "LinkedList" => "linkedList",
+            _ => null,
+        };
+    }
+
+    /// <summary>
     /// The name of a dictionary the browser holds as a runtime class (<c>Dictionary</c>, or
     /// <c>SortedMap</c> for the sorted two), or null. Matched on name, namespace and arity rather than
     /// a display-string prefix, which <c>Dictionary&lt;,&gt;.KeyCollection</c> shares.

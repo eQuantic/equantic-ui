@@ -119,8 +119,9 @@ public class DictionaryStrategyTests
     [InlineData("new Dictionary<string, string>(dict)", "$eq.collections.dictionary(this.dict)")]
     [InlineData("new Dictionary<string, string>(dict) { [\"a\"] = \"b\" }", "$eq.collections.dictionary([...this.dict, ['a', 'b']])")]
     [InlineData("new Dictionary<string, int> { { \"a\", 1 }, { \"b\", 2 } }", "$eq.collections.dictionary([['a', 1], ['b', 2]])")]
-    [InlineData("new SortedDictionary<int, string>()", "$eq.collections.sortedDictionary()")]
-    [InlineData("new SortedList<int, string>(dictionaryOfInts)", "$eq.collections.sortedList(dictionaryOfInts)")]
+    [InlineData("new SortedDictionary<int, string>()", "$eq.collections.sortedDictionary(null, 'value')")]
+    [InlineData("new SortedList<int, string>(dictionaryOfInts)", "$eq.collections.sortedList(dictionaryOfInts, 'value')")]
+    [InlineData("new SortedDictionary<string, int>()", "$eq.collections.sortedDictionary(null, 'text')")]
     public void Construction_SeedsTheFactory(string csharp, string js)
     {
         var converted = csharp.Contains("dictionaryOfInts")
