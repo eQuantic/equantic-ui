@@ -307,6 +307,10 @@ public static class ConformanceRunner
     private static string BuildHelperImport(string js)
     {
         var used = RuntimeHelpers.Where(h => Regex.IsMatch(js, $@"\b{h}[(.]")).ToList();
+        // A type test against a scalar the runtime holds as a class of its own (a decimal, a date)
+        // names the class, which a module imports and this program has to as well.
+        used.AddRange(Regex.Matches(js, @"\binstanceof (Decimal|DateTime|DateOnly|TimeOnly|TimeSpan|DateTimeOffset)\b")
+            .Select(match => match.Groups[1].Value).Distinct());
         // The `$eq` namespace is a browser global; the standalone harness JS imports it explicitly.
         if (js.Contains("$eq.")) used.Insert(0, "$eq");
         if (used.Count == 0) return string.Empty;

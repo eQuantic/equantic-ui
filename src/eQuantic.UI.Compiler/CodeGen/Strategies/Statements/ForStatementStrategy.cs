@@ -15,6 +15,8 @@ public class ForStatementStrategy : IStatementStrategy
     public JsStatement Convert(StatementSyntax node, ConversionContext context)
     {
         var forStmt = (ForStatementSyntax)node;
+        if (CapturesALoopVariable(forStmt, context))
+            return HoistedLoop(forStmt, context);
         var declaration = ConvertDeclaration(forStmt, Declared(forStmt), context);
         var condition = forStmt.Condition != null
             ? context.Converter.ConvertExpression(forStmt.Condition)
@@ -23,6 +25,89 @@ public class ForStatementStrategy : IStatementStrategy
             forStmt.Incrementors.Select(i => context.Converter.ConvertExpression(i)));
         var body = context.Converter.ConvertStatementIr(forStmt.Statement);
         return JsStatement.Headed($"for ({declaration}; {condition}; {incrementors})", body);
+    }
+
+    /// <summary>
+    /// <c>for (int i = 0; …)</c> declares ONE variable for the whole loop, and a closure made in the
+    /// body reads that variable, so after the loop every one of them sees its last value. A head's
+    /// <c>let</c> is copied into each iteration in JavaScript, so each closure kept its own: three
+    /// closures over <c>i</c> answered 0, 1 and 2 where .NET answers 3, 3 and 3 (#476). When a closure
+    /// captures one, the declaration moves in front of the loop, in a block of its own so a second
+    /// loop declaring the same name stays legal. What its initializers declare (<c>out var n</c>)
+    /// goes with it, declared first as the head declares it, being one for the whole loop as well. A
+    /// head of expressions (<c>for (var (i, j) = (0, 3); …)</c>, <c>for (Seed(out var n); …)</c>)
+    /// runs them there once, after what they declare, a deconstruction declaring its own. The head
+    /// keeps what its condition and incrementors declare, which .NET does give a fresh variable each
+    /// time round.
+    /// </summary>
+    private static JsStatement HoistedLoop(ForStatementSyntax forStmt, ConversionContext context)
+    {
+        var statements = new List<JsStatement>();
+        IReadOnlyList<string> once;
+        if (forStmt.Declaration is { } declaration)
+        {
+            once = declaration.Variables
+                .Select(v => v.Initializer?.Value)
+                .SelectMany(ExpressionVariableScanner.Names)
+                .Distinct(StringComparer.Ordinal)
+                .ToList();
+            var variables = declaration.Variables.Select(v =>
+                $"{v.Identifier.Text.ToJsIdentifier()} = "
+                + (v.Initializer != null ? context.Converter.ConvertExpression(v.Initializer.Value) : "undefined"));
+            var hoisted = once.Count == 0
+                ? variables
+                : variables.Prepend(ExpressionVariableScanner.List(once, context.TypeAnnotations));
+            statements.Add(JsStatement.Raw($"let {string.Join(", ", hoisted)};"));
+        }
+        else
+        {
+            once = forStmt.Initializers
+                .SelectMany(ExpressionVariableScanner.Names)
+                .Distinct(StringComparer.Ordinal)
+                .ToList();
+            if (once.Count > 0)
+                statements.Add(JsStatement.Raw($"let {ExpressionVariableScanner.List(once, context.TypeAnnotations)};"));
+            statements.AddRange(forStmt.Initializers.Select(initializer =>
+                JsStatement.Raw($"{context.Converter.ConvertExpression(initializer)};")));
+        }
+        var eachTime = Declared(forStmt).Except(once, StringComparer.Ordinal).ToList();
+        var head = eachTime.Count == 0 ? "" : $"let {ExpressionVariableScanner.List(eachTime, context.TypeAnnotations)}";
+        var condition = forStmt.Condition != null ? context.Converter.ConvertExpression(forStmt.Condition) : "";
+        var incrementors = string.Join(", ", forStmt.Incrementors.Select(i => context.Converter.ConvertExpression(i)));
+        var body = context.Converter.ConvertStatementIr(forStmt.Statement);
+        statements.Add(JsStatement.Headed($"for ({head}; {condition}; {incrementors})", body));
+        return JsStatement.Block(statements);
+    }
+
+    /// <summary>Whether a lambda, an anonymous method or a local function anywhere in the loop reads
+    /// a variable that is one for the whole loop: what its declaration declares, and what that
+    /// declaration's initializers or the head's own expressions declare (<c>out var n</c>,
+    /// <c>var (i, j) = …</c>), which the bound tree answers by symbol. One only an initializer
+    /// declared, captured alone, was left in the head, a copy per iteration.</summary>
+    private static bool CapturesALoopVariable(ForStatementSyntax forStmt, ConversionContext context)
+    {
+        var variables = forStmt.Declaration?.Variables.ToList() ?? [];
+        var initializing = variables.Where(v => v.Initializer is not null).Select(v => v.Initializer!.Value)
+            .Concat(forStmt.Initializers);
+        var declarators = variables
+            .Select(v => ((SyntaxNode)v, v.Identifier.ValueText))
+            .Concat(initializing
+                .SelectMany(expression => expression.DescendantNodesAndSelf(node => node is not AnonymousFunctionExpressionSyntax))
+                .OfType<SingleVariableDesignationSyntax>()
+                .Select(designation => ((SyntaxNode)designation, designation.Identifier.ValueText)))
+            .ToList();
+        var loopVariables = declarators
+            .Select(declarator => context.SemanticHelper.GetDeclaredSymbol(declarator.Item1))
+            .Where(symbol => symbol is not null)
+            .ToHashSet(SymbolEqualityComparer.Default);
+        if (loopVariables.Count == 0) return false;
+        // Only a name spelled like one of them can read one, so the model is asked about those alone.
+        var names = declarators.Select(declarator => declarator.ValueText).ToHashSet(StringComparer.Ordinal);
+        return forStmt.DescendantNodes()
+            .Where(n => n is AnonymousFunctionExpressionSyntax or LocalFunctionStatementSyntax)
+            .SelectMany(function => function.DescendantNodes().OfType<IdentifierNameSyntax>())
+            .Where(name => names.Contains(name.Identifier.ValueText))
+            .Any(name => context.SemanticHelper.GetSymbol(name) is { } read && loopVariables.Contains(read));
     }
 
     /// <summary>
