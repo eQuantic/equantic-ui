@@ -490,21 +490,6 @@ public static class UIExtensions
     internal const string NavigationHeader = "X-EQ-Navigate";
 
     /// <summary>
-    /// What a client navigation needs and could not get: the page's SERVER DATA and its METADATA.
-    /// <para>
-    /// A link used to swap the component and nothing else — no prefetch ran, so every navigated-to
-    /// page rendered its empty state, and the head kept the previous document's title and canonical.
-    /// Both are the same moment of the lifecycle: the things the server does around a page that the
-    /// client never repeated.
-    /// </para>
-    /// <para>
-    /// It runs the same code the shell runs, minus the DRAWING: prefetch, then metadata, from the
-    /// request's own services, in one order and described in one place. Skipping the markup is what
-    /// makes this cheap enough for the router to warm a page on hover — a tree build per hovered
-    /// link would cost more than the round trip it saves.
-    /// </para>
-    /// </summary>
-    /// <summary>
     /// What a route's document says about its page before the page speaks, the same for a full load
     /// and a client navigation: the app's defaults, then what the route declares, each winning over the
     /// one before by key. What the page says itself (<see cref="AdoptPageMetadata"/>) goes on top.
@@ -533,6 +518,21 @@ public static class UIExtensions
         foreach (var tag in page.Tags) metadata.AddOrUpdate(tag);
     }
 
+    /// <summary>
+    /// What a client navigation needs and could not get: the page's SERVER DATA and its METADATA.
+    /// <para>
+    /// A link used to swap the component and nothing else — no prefetch ran, so every navigated-to
+    /// page rendered its empty state, and the head kept the previous document's title and canonical.
+    /// Both are the same moment of the lifecycle: the things the server does around a page that the
+    /// client never repeated.
+    /// </para>
+    /// <para>
+    /// It runs the same code the shell runs, minus the DRAWING: prefetch, then metadata, from the
+    /// request's own services, in one order and described in one place. Skipping the markup is what
+    /// makes this cheap enough for the router to warm a page on hover — a tree build per hovered
+    /// link would cost more than the round trip it saves.
+    /// </para>
+    /// </summary>
     private static async Task ServePageState(HttpContext context, string? pageName, DeclaredPage? declared)
     {
         context.Response.ContentType = "application/json; charset=utf-8";
@@ -668,13 +668,17 @@ public static class UIExtensions
         // handing back the work we just took.
         headTags.AddRange(GeneratedIconTags(context));
 
-        var metadata = PageMetadata(options, declared);
-        var seo = new SeoBuilder(metadata);
-
-        // The translation group, BEFORE the page speaks: an app-wide policy is a default, and a
-        // page with something better to say (a slug that is not a translation of this one) writes
-        // its own Alternate and wins by key.
-        AddAlternateLinks(context, options, seo);
+        // What the document says before the page speaks: the app's defaults and the route's own
+        // declaration, then the translation group. The group comes BEFORE the page: an app-wide
+        // policy is a default, and a page with something better to say (a slug that is not a
+        // translation of this one) writes its own Alternate and wins by key.
+        MetadataCollection metadata = null!;
+        void StartMetadata(DeclaredPage? from)
+        {
+            metadata = PageMetadata(options, from);
+            AddAlternateLinks(context, options, new SeoBuilder(metadata));
+        }
+        StartMetadata(declared);
 
         // Attempt SSR if page name is provided and SSR is enabled
         var ssrContent = "<div class=\"loading\">Loading...</div>";
@@ -809,7 +813,10 @@ public static class UIExtensions
                          {
                              context.Response.StatusCode = 500;
                              pageName = errorPageName;
-                                          // The THIRD door to a rendered page, and it was drifting like the other
+                             // The error page is not the route that failed: it speaks over the
+                             // app's defaults, never under the failed route's title.
+                             StartMetadata(null);
+                             // The THIRD door to a rendered page, and it was drifting like the other
                              // two: an error page that loads its own branding kept none of it.
                              AdoptSsr(result);
                          }
@@ -826,20 +833,9 @@ public static class UIExtensions
         // right on every page.
         LocalizeCanonical(context, options, metadata);
 
-        // Client route table from [Page] attributes — lets the runtime resolve URLs to page bundles
-        // for client-side (SPA) navigation without a server round-trip.
-        var routeEntries = options.AssembliesToScan
-            .SelectMany(a => a.GetTypes())
-            .SelectMany(t => t.GetCustomAttributes<PageAttribute>()
-                .Select(attr => (Pattern: attr.Route, Page: t.Name, attr.Title)))
-            .Concat(options.DeclaredRoutes.Select(r => (Pattern: r.Pattern, Page: r.Page.Name, r.Title)))
-            // The prefixed URLs go in the table too, or the FIRST client-side navigation inside a
-            // translated page finds no match and falls back to a full reload — the language would
-            // survive and the SPA would not, which is the kind of regression nobody reports.
-            .SelectMany(r => CultureClientPatterns(options, r.Pattern)
-                .Select(pattern => (Pattern: pattern, r.Page, r.Title)))
-            .Distinct()
-            .ToList();
+        // The app's route table and whether it has server actions, worked out once (AppSurface).
+        var surface = AppSurface.Of(options, route => CultureClientPatterns(options, route));
+
         // The client's configuration, written by System.Text.Json and nothing else. Its strings were
         // quoted by hand, escaping the backslash and the quote, so a route title holding a line break
         // was a syntax error in a script every page carries, and stopped the client of the whole app
@@ -861,18 +857,12 @@ public static class UIExtensions
             CultureRoutes: options.CultureRoutes is { } cultureMap
                 ? new ClientCultureRoutes(cultureMap.Default, cultureMap.Prefixed.ToList())
                 : null,
-            Routes: routeEntries
-                .Select(r => new ClientRoute(r.Pattern, r.Page, string.IsNullOrEmpty(r.Title) ? null : r.Title))
-                .ToList()), ClientConfig.Json);
+            Routes: surface.Routes), ClientConfig.Json);
 
         // Render HTML using template engine with conditionals
         var isDevelopment = context.RequestServices.GetRequiredService<IWebHostEnvironment>().IsDevelopment();
 
-        // Check if any component uses Server Actions
-        var hasServerActions = options.AssembliesToScan
-            .SelectMany(a => a.GetTypes())
-            .SelectMany(t => t.GetMethods())
-            .Any(m => m.GetCustomAttributes(typeof(ServerActionAttribute), false).Any());
+        var hasServerActions = surface.HasServerActions;
 
         var template = HtmlTemplateEngine.FromResource("eQuantic.UI.Server.Templates.app-shell.html");
         var html = template.Render(ctx =>

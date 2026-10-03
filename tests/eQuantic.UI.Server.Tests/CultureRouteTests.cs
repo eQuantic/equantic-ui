@@ -33,6 +33,14 @@ public class CultureRouteTests
         public override VisualNode Build(ComponentContext context) => new Text("Home", TypeRole.Heading);
     }
 
+    /// <summary>A page stating its canonical once, in the default language's spelling.</summary>
+    private sealed class TermsPage : StatelessComponent, eQuantic.UI.Server.Metadata.IHandleMetadata
+    {
+        public void ConfigureMetadata(eQuantic.UI.Server.Metadata.SeoBuilder seo) => seo.Canonical("https://site.test/terms");
+
+        public override VisualNode Build(ComponentContext context) => new Text("Terms", TypeRole.Heading);
+    }
+
     private static async Task<(WebApplication App, HttpClient Client)> StartAppAsync(bool lambdaOverload = false)
     {
         var builder = WebApplication.CreateBuilder(new WebApplicationOptions
@@ -55,6 +63,7 @@ public class CultureRouteTests
         app.MapPage<HomePage>("/", title: "Home");
         app.MapPage<PricingPage>("/pricing", title: "Pricing");
         app.MapPage<AboutPage>("/about", title: "About");
+        app.MapPage<TermsPage>("/terms", title: "Terms");
         app.MapUI();
         await app.StartAsync();
         var client = app.GetTestClient();
@@ -209,5 +218,24 @@ public class CultureRouteTests
         map.PathFor("pt-BR", "/").Should().Be("/pt-BR");
         map.Split("/PT-br/about").Should().Be(("pt-BR", "/about"));
         map.Split("/about").Should().Be(("en", "/about"));
+    }
+
+    [Fact]
+    public async Task AMappedRoutesTitle_AndAPagesCanonical_FollowTheLanguage_OnANavigationToo()
+    {
+        var (app, client) = await StartAppAsync();
+        await using var _ = app;
+
+        // A title MapPage declares reaches the document, as [Page(Title)] does (#416).
+        (await client.GetStringAsync("/pt-BR/pricing")).Should().Contain("<title>Pricing</title>");
+
+        // A navigation's head carries the canonical a full load writes, in the request's language:
+        // it went out as the page wrote it, so a Portuguese page told a crawler it was the English one.
+        using var request = new HttpRequestMessage(HttpMethod.Get, "/pt-BR/terms");
+        request.Headers.Add("X-EQ-Navigate", "1");
+        var response = await client.SendAsync(request);
+        var payload = System.Text.Json.JsonDocument.Parse(await response.Content.ReadAsStringAsync()).RootElement;
+        payload.GetProperty("title").GetString().Should().Be("Terms");
+        payload.GetProperty("head").GetString().Should().Contain("href=\"https://site.test/pt-BR/terms\"");
     }
 }
