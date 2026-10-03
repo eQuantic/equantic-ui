@@ -223,9 +223,12 @@ public class RealWorldUITests
 
         var result = TestHelper.ConvertCodeBlock(code);
 
-        result.Should().Contain("$eq.enums.parse");
+        // The enum's shape travels with each call: `Object.values(Status)` named an object no module
+        // declares (#480).
+        result.Should().Contain("$eq.enums.tryParse(");
         result.Should().Contain("!== undefined");
-        result.Should().Contain("Object.values");
+        result.Should().Contain("$eq.enums.values({ names: ['Active', 'Pending', 'Inactive']");
+        result.Should().NotContain("Object.values");
         result.Should().Contain("'status'");
     }
 

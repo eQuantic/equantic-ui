@@ -26,7 +26,8 @@ public class EnumCastStrategyTests
     public void IntCast_OfEnumVariable_InlinesNameToValueMap()
     {
         var js = TestHelper.ConvertCodeBlock("var z = (int)status;");
-        js.Should().Contain("({ 'active': 0, 'pending': 1, 'inactive': 2 })[this.status]");
+        // A value no member names is held as its number, and the map falls back to it.
+        js.Should().Contain("(($0) => (({ 'active': 0, 'pending': 1, 'inactive': 2 })[$0] ?? $0))(this.status)");
         js.Should().NotContain("Math.trunc");
     }
 
@@ -40,10 +41,17 @@ public class EnumCastStrategyTests
     }
 
     [Fact]
+    public void EnumCast_OfAConstantNoMemberNames_IsItsNumber()
+    {
+        var js = TestHelper.ConvertCodeBlock("var z = (Status)7;");
+        js.Should().Contain("let z = 7;");
+    }
+
+    [Fact]
     public void EnumCast_OfIntVariable_InlinesValueToNameMap()
     {
         var js = TestHelper.ConvertCodeBlock("var z = (Status)x;");
-        js.Should().Contain("({ 0: 'active', 1: 'pending', 2: 'inactive' })[this.x]");
+        js.Should().Contain("(($0) => (({ 0: 'active', 1: 'pending', 2: 'inactive' })[$0] ?? $0))(this.x)");
     }
 
     // ============ comparison / non-enum casts are untouched ============

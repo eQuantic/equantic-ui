@@ -28,7 +28,10 @@ public static class StringConversion
 
         var text = JsExprWriter.Write(converted);
         if (type is INamedTypeSymbol { TypeKind: TypeKind.Enum } enumType)
-            return JsExpr.Callish(Invocation.ToStringStrategy.EnumNameLookup(enumType, operand, text));
+            return JsExpr.Callish(Invocation.ToStringStrategy.EnumNameLookup(enumType, operand, text, context));
+        // A NULLABLE enum prints its value's name, and nothing for null (#452).
+        if (type.UnwrapNullable() is INamedTypeSymbol { TypeKind: TypeKind.Enum } nullableEnum)
+            return JsExpr.Callish(Types.EnumShape.Text(nullableEnum, text, context));
 
         // A string that MAY be null reads as itself or as nothing — the cheapest faithful spelling.
         // Annotated `string?` says so; a string from code with no nullable context (annotation

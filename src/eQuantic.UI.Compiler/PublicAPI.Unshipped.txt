@@ -117,6 +117,16 @@ const eQuantic.UI.Compiler.CodeGen.Eq.RecordText = "$eq.text.record" -> string!
 *REMOVED*eQuantic.UI.Compiler.Models.PropertyDefinition.DefaultValue.set -> void
 *REMOVED*eQuantic.UI.Compiler.Models.StateField.DefaultValue.get -> string?
 *REMOVED*eQuantic.UI.Compiler.Models.StateField.DefaultValue.set -> void
+*REMOVED*const eQuantic.UI.Compiler.CodeGen.Eq.ParseEnum = "$eq.enums.parse" -> string!
+const eQuantic.UI.Compiler.CodeGen.Eq.EnumIsDefined = "$eq.enums.isDefined" -> string!
+const eQuantic.UI.Compiler.CodeGen.Eq.EnumNames = "$eq.enums.names" -> string!
+const eQuantic.UI.Compiler.CodeGen.Eq.EnumParse = "$eq.enums.parse" -> string!
+const eQuantic.UI.Compiler.CodeGen.Eq.EnumText = "$eq.enums.text" -> string!
+const eQuantic.UI.Compiler.CodeGen.Eq.EnumTryParse = "$eq.enums.tryParse" -> string!
+const eQuantic.UI.Compiler.CodeGen.Eq.EnumValues = "$eq.enums.values" -> string!
+const eQuantic.UI.Compiler.CodeGen.Eq.EnumZero = "$eq.enums.zero" -> string!
+const eQuantic.UI.Compiler.CodeGen.Eq.EnumName = "$eq.enums.name" -> string!
+const eQuantic.UI.Compiler.CodeGen.Eq.EnumUnbox = "$eq.enums.unbox" -> string!
 eQuantic.UI.Compiler.Services.SemanticHelper.GetDeconstructionInfo(Microsoft.CodeAnalysis.SyntaxNode! node) -> Microsoft.CodeAnalysis.CSharp.DeconstructionInfo?
 const eQuantic.UI.Compiler.CodeGen.Eq.LockGate = "$eq.lockGate" -> string!
 const eQuantic.UI.Compiler.CodeGen.Eq.NewObject = "$eq.newObject" -> string!
