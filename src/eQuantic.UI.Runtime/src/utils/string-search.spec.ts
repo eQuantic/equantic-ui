@@ -54,29 +54,29 @@ describe("an ordinal search that ignores case, as .NET's OrdinalCasing", () => {
 
 describe('the start and the count, checked and normalized as .NET does', () => {
   it('searches forward inside the range', () => {
-    expect(indexOf('abc', '', 'ordinalIgnoreCase', 2)).toBe(2);
-    expect(indexOf('abc', '', 'ordinalIgnoreCase', 3)).toBe(3);
-    expect(indexOf('abcb', 'B', 'ordinalIgnoreCase', 2)).toBe(3);
-    expect(indexOf('abcb', 'B', 'ordinalIgnoreCase', 1, 1)).toBe(1);
-    expect(indexOf('abcb', 'B', 'ordinalIgnoreCase', 2, 1)).toBe(-1);
-    expect(indexOf('abcb', 'b', 'ordinal', 2, 1)).toBe(-1);
+    expect(indexOf('abc', '', 2, 'ordinalIgnoreCase')).toBe(2);
+    expect(indexOf('abc', '', 3, 'ordinalIgnoreCase')).toBe(3);
+    expect(indexOf('abcb', 'B', 2, 'ordinalIgnoreCase')).toBe(3);
+    expect(indexOf('abcb', 'B', 1, 1, 'ordinalIgnoreCase')).toBe(1);
+    expect(indexOf('abcb', 'B', 2, 1, 'ordinalIgnoreCase')).toBe(-1);
+    expect(indexOf('abcb', 'b', 2, 1, 'ordinal')).toBe(-1);
   });
 
   it('searches back from the start, which may be one past the end', () => {
     expect(lastIndexOf('kAk', 'a', 'ordinalIgnoreCase')).toBe(1);
     expect(lastIndexOf('abc', '', 'ordinalIgnoreCase')).toBe(3);
     expect(lastIndexOf('abc', '', 'ordinal')).toBe(3);
-    expect(lastIndexOf('abcb', 'B', 'ordinalIgnoreCase', 2)).toBe(1);
-    expect(lastIndexOf('abcb', 'B', 'ordinalIgnoreCase', 3, 2)).toBe(3);
-    expect(lastIndexOf('abcb', 'B', 'ordinalIgnoreCase', 0)).toBe(-1);
-    expect(lastIndexOf('abcb', 'BC', 'ordinalIgnoreCase', 2)).toBe(1);
-    expect(lastIndexOf('abcb', 'BC', 'ordinalIgnoreCase', 1)).toBe(-1);
+    expect(lastIndexOf('abcb', 'B', 2, 'ordinalIgnoreCase')).toBe(1);
+    expect(lastIndexOf('abcb', 'B', 3, 2, 'ordinalIgnoreCase')).toBe(3);
+    expect(lastIndexOf('abcb', 'B', 0, 'ordinalIgnoreCase')).toBe(-1);
+    expect(lastIndexOf('abcb', 'BC', 2, 'ordinalIgnoreCase')).toBe(1);
+    expect(lastIndexOf('abcb', 'BC', 1, 'ordinalIgnoreCase')).toBe(-1);
     expect(lastIndexOf('', '', 'ordinalIgnoreCase')).toBe(0);
-    expect(lastIndexOf('abc', '', 'ordinalIgnoreCase', 1)).toBe(2);
-    expect(lastIndexOf('abc', 'b', 'ordinalIgnoreCase', 3)).toBe(1);
+    expect(lastIndexOf('abc', '', 1, 'ordinalIgnoreCase')).toBe(2);
+    expect(lastIndexOf('abc', 'b', 3, 'ordinalIgnoreCase')).toBe(1);
     expect(lastIndexOf('', 'a', 'ordinalIgnoreCase')).toBe(-1);
-    expect(lastIndexOf('', 'a', 'ordinalIgnoreCase', -1)).toBe(-1);
-    expect(lastIndexOf('', 'a', 'ordinalIgnoreCase', 0)).toBe(-1);
+    expect(lastIndexOf('', 'a', -1, 'ordinalIgnoreCase')).toBe(-1);
+    expect(lastIndexOf('', 'a', 0, 'ordinalIgnoreCase')).toBe(-1);
   });
 
   it("throws .NET's words for a range outside the string", () => {
@@ -86,21 +86,25 @@ describe('the start and the count, checked and normalized as .NET does', () => {
       "Index was out of range. Must be non-negative and less than the size of the collection. (Parameter 'startIndex')";
     const count =
       "Count must be positive and count must refer to a location within the string/array/collection. (Parameter 'count')";
-    expect(() => indexOf('abc', 'b', 'ordinalIgnoreCase', 4)).toThrow(lessOrEqual);
-    expect(() => indexOf('abc', 'b', 'ordinalIgnoreCase', -1)).toThrow(lessOrEqual);
-    expect(() => indexOf('abcb', 'B', 'ordinalIgnoreCase', 2, 5)).toThrow(count);
-    expect(() => indexOf('abc', 'b', 'ordinalIgnoreCase', 1, -1)).toThrow(count);
-    expect(() => lastIndexOf('abc', 'b', 'ordinalIgnoreCase', 4)).toThrow(less);
-    expect(() => lastIndexOf('abc', 'b', 'ordinalIgnoreCase', -1)).toThrow(less);
-    expect(() => lastIndexOf('abc', 'b', 'ordinalIgnoreCase', 2, 4)).toThrow(count);
+    expect(() => indexOf('abc', 'b', 4, 'ordinalIgnoreCase')).toThrow(lessOrEqual);
+    expect(() => indexOf('abc', 'b', -1, 'ordinalIgnoreCase')).toThrow(lessOrEqual);
+    expect(() => indexOf('abcb', 'B', 2, 5, 'ordinalIgnoreCase')).toThrow(count);
+    expect(() => indexOf('abc', 'b', 1, -1, 'ordinalIgnoreCase')).toThrow(count);
+    expect(() => lastIndexOf('abc', 'b', 4, 'ordinalIgnoreCase')).toThrow(less);
+    expect(() => lastIndexOf('abc', 'b', -1, 'ordinalIgnoreCase')).toThrow(less);
+    expect(() => lastIndexOf('abc', 'b', 2, 4, 'ordinalIgnoreCase')).toThrow(count);
   });
 });
 
 describe('the arguments, in the order .NET checks them', () => {
   it('names a null value before the comparison, where .NET does', () => {
-    expect(() => startsWith('abc', null, 'nope')).toThrow("Value cannot be null. (Parameter 'value')");
+    expect(() => startsWith('abc', null, 'nope')).toThrow(
+      "Value cannot be null. (Parameter 'value')",
+    );
     expect(() => indexOf('abc', null, 'nope')).toThrow("Value cannot be null. (Parameter 'value')");
-    expect(() => lastIndexOf('abc', null, 'nope')).toThrow("Value cannot be null. (Parameter 'value')");
+    expect(() => lastIndexOf('abc', null, 'nope')).toThrow(
+      "Value cannot be null. (Parameter 'value')",
+    );
     expect(() => startsWith('abc', '', 'nope')).toThrow(notSupported);
     expect(() => indexOf('abc', 'b', 'nope')).toThrow(notSupported);
     expect(() => lastIndexOf('abc', 'b', 'nope')).toThrow(notSupported);
@@ -137,7 +141,7 @@ describe('a culture comparison', () => {
     expect(startsWith('ab', '', 'currentCulture')).toBe(true);
     expect(startsWith('ab', 'ab', 'invariantCulture')).toBe(true);
     expect(endsWith('ab', '', 'currentCultureIgnoreCase')).toBe(true);
-    expect(indexOf('ab', '', 'invariantCulture', 1)).toBe(1);
+    expect(indexOf('ab', '', 1, 'invariantCulture')).toBe(1);
     expect(lastIndexOf('ab', '', 'currentCulture')).toBe(2);
   });
 
@@ -145,7 +149,9 @@ describe('a culture comparison', () => {
     expect(() => startsWith('\u00adab', 'ab', 'invariantCulture')).toThrow(
       /StartsWith by StringComparison\.InvariantCulture has no search in the browser/,
     );
-    expect(() => indexOf('a\r\nb', '\n', 'currentCulture')).toThrow(/IndexOf by StringComparison\.CurrentCulture/);
+    expect(() => indexOf('a\r\nb', '\n', 'currentCulture')).toThrow(
+      /IndexOf by StringComparison\.CurrentCulture/,
+    );
     expect(() => replace('aBa', 'b', 'x', 'invariantCultureIgnoreCase')).toThrow(/Replace by/);
   });
 

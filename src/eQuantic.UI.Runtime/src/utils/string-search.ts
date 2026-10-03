@@ -198,11 +198,27 @@ export function endsWith(
     case 'ordinal':
       return text.endsWith(value);
     case 'ordinalIgnoreCase':
-      return text.length >= value.length && equalsIgnoreCase(text, text.length - value.length, value);
+      return (
+        text.length >= value.length && equalsIgnoreCase(text, text.length - value.length, value)
+      );
     default:
       requireComparison(comparison);
       throw cultureSearch('EndsWith', comparison);
   }
+}
+
+/**
+ * What a search overload takes after its value, as C# lists it: the comparison alone, a start and
+ * the comparison, or a start, a count and the comparison. The arguments arrive in the order they
+ * were written, so a call site binds nothing to keep them in the order they run.
+ */
+export type SearchArguments =
+  | [comparison: string]
+  | [startIndex: number, comparison: string]
+  | [startIndex: number, count: number, comparison: string];
+
+function comparisonOf(args: SearchArguments): string {
+  return args.length === 1 ? args[0] : args.length === 2 ? args[1] : args[2];
 }
 
 /**
@@ -213,13 +229,12 @@ export function endsWith(
 export function indexOf(
   source: string | null | undefined,
   value: string | null | undefined,
-  comparison: string,
-  startIndex?: number,
-  count?: number,
+  ...args: SearchArguments
 ): number {
   const text = receiver(source);
-  const start = startIndex ?? 0;
-  const length = count ?? text.length - start;
+  const comparison = comparisonOf(args);
+  const start = args.length === 1 ? 0 : args[0];
+  const length = args.length === 3 ? args[1] : text.length - start;
   if (!isStringComparison(comparison)) {
     throw value == null ? argumentNull('value') : new Error(NOT_SUPPORTED);
   }
@@ -227,7 +242,8 @@ export function indexOf(
   requireRange(text, start, length);
   let found: number;
   if (comparison === 'ordinal') found = ordinalIndexOf(text, start, length, value);
-  else if (comparison === 'ordinalIgnoreCase') found = ignoreCaseIndexOf(text, start, length, value);
+  else if (comparison === 'ordinalIgnoreCase')
+    found = ignoreCaseIndexOf(text, start, length, value);
   else if (value.length === 0) found = 0;
   else throw cultureSearch('IndexOf', comparison);
   return found >= 0 ? found + start : found;
@@ -241,13 +257,12 @@ export function indexOf(
 export function lastIndexOf(
   source: string | null | undefined,
   value: string | null | undefined,
-  comparison: string,
-  startIndex?: number,
-  count?: number,
+  ...args: SearchArguments
 ): number {
   const text = receiver(source);
-  let start = startIndex ?? text.length - 1;
-  let length = count ?? (startIndex === undefined ? text.length : start + 1);
+  const comparison = comparisonOf(args);
+  let start = args.length === 1 ? text.length - 1 : args[0];
+  let length = args.length === 1 ? text.length : args.length === 2 ? start + 1 : args[1];
   if (!isStringComparison(comparison)) {
     throw value == null ? argumentNull('value') : new Error(NOT_SUPPORTED);
   }
@@ -266,7 +281,8 @@ export function lastIndexOf(
   if (begin < 0 || length < 0 || begin + length > text.length) throw outOfRange('count', COUNT);
   let found: number;
   if (comparison === 'ordinal') found = ordinalLastIndexOf(text, begin, length, value);
-  else if (comparison === 'ordinalIgnoreCase') found = ignoreCaseLastIndexOf(text, begin, length, value);
+  else if (comparison === 'ordinalIgnoreCase')
+    found = ignoreCaseLastIndexOf(text, begin, length, value);
   else if (value.length === 0) found = length;
   else throw cultureSearch('LastIndexOf', comparison);
   return found >= 0 ? found + begin : found;
@@ -295,7 +311,8 @@ export function replace(
   const text = receiver(source);
   requireComparison(comparison);
   if (oldValue == null) throw argumentNull('oldValue');
-  if (oldValue.length === 0) throw new Error("The value cannot be an empty string. (Parameter 'oldValue')");
+  if (oldValue.length === 0)
+    throw new Error("The value cannot be an empty string. (Parameter 'oldValue')");
   const replacement = newValue ?? '';
   if (comparison === 'ordinal') return text.split(oldValue).join(replacement);
   if (comparison !== 'ordinalIgnoreCase') throw cultureSearch('Replace', comparison);
@@ -320,6 +337,9 @@ export function instanceEquals(
 }
 
 /** `CompareTo(strB)`: the current culture's comparison, as `string.Compare(a, b)`, a null last. */
-export function compareTo(source: string | null | undefined, value: string | null | undefined): number {
+export function compareTo(
+  source: string | null | undefined,
+  value: string | null | undefined,
+): number {
   return compare(receiver(source), value, 'currentCulture');
 }
