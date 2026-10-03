@@ -63,8 +63,8 @@ primary path: the SDK knows what the browser reads, so it decides.
 
 The generator analyses each component and writes a **hydration manifest** into the generated sources:
 one assembly attribute per crossing member, naming the component type, the member as C# declares it
-(a field, a property, or a captured primary-constructor parameter), its wire name, and its projection
-when it has one. The types of those attributes live in `eQuantic.UI.Primitives`, beside the other
+(a field, a property, or a captured primary-constructor parameter), and its projection when it has
+one. The wire name is not recorded: it is the rule of D3, applied by every reader. The types of those attributes live in `eQuantic.UI.Primitives`, beside the other
 contract attributes.
 
 - **The server** reads the attributes of the assemblies it scans, once, at startup.
@@ -84,8 +84,9 @@ it). Alternatives considered:
 ### D3. A wire name is the twin's member name, from one rule
 
 The wire name is the name the twin declares the member under. That rule (`ToCamelCase` on the C# name)
-moves to `src/Shared` and is compiled into the generator, and eqc's own naming calls the same function,
-so there is one owner of it. The runtime then adopts the keys the twin's hydration map declares, whether
+moves to `src/Shared` as `TwinName` and is compiled into the generator and the server, and eqc's own
+naming calls the same function, so there is one owner of it. The server applies it to a top-level
+member and to every member of a projection alike, which is why the manifest records no name. The runtime then adopts the keys the twin's hydration map declares, whether
 or not the instance already holds the property, since the map, not the constructor, says what the twin
 declares. That is what lets a captured parameter the router did not pass be adopted.
 
