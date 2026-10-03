@@ -24,43 +24,21 @@ public class AssignmentExpressionStrategy : IExpressionIrStrategy
     {
         var assignment = (AssignmentExpressionSyntax)node;
 
-        // Deconstructing a record/struct (a plain object, not a tuple array) -> object destructuring
-        // keyed by the type's Deconstruct order: `var (a, b) = point` -> `let { x: a, y: b } = point`.
-        if (assignment.Left is DeclarationExpressionSyntax { Designation: ParenthesizedVariableDesignationSyntax design })
+        // A deconstruction a record, a struct or any type with a Deconstruct takes part in, declared
+        // (`var (a, b) = point` -> `let { x: a, y: b } = point`) or assigned (`(a, b) = point`,
+        // `(var a, b) = point` -> `({ x: a, y: b } = point)`, what the statement declares in front of
+        // itself). One made of tuples alone keeps the array destructuring below. See
+        // DeconstructionPattern, which the foreach goes through too (#486).
+        if (assignment.Left is TupleExpressionSyntax or DeclarationExpressionSyntax { Designation: ParenthesizedVariableDesignationSyntax }
+            && DeconstructionPattern.Of(assignment.Left, context.SemanticHelper.GetDeconstructionInfo(assignment),
+                context.SemanticHelper.GetType(assignment.Right), context) is { } deconstruction)
         {
-            var rhsType = context.SemanticHelper.GetType(assignment.Right);
-            if (rhsType is { IsTupleType: false } && rhsType.DeconstructElementNames() is { } fields)
-            {
-                var vars = design.Variables.ToList();
-                var pairs = new List<string>();
-                for (var i = 0; i < vars.Count && i < fields.Count; i++)
-                {
-                    if (vars[i] is SingleVariableDesignationSyntax s && s.Identifier.Text != "_")
-                        pairs.Add($"{fields[i]}: {s.Identifier.Text.ToJsIdentifier()}");
-                }
-                var rhsObj = context.Converter.ConvertExpression(assignment.Right);
-                return $"let {{ {string.Join(", ", pairs)} }} = {rhsObj}";
-            }
-        }
-
-        // The same, ASSIGNED rather than declared: `(a, b) = point`. It was array destructuring,
-        // which a record is not, so it threw `{} is not iterable` (#486). Each target is converted
-        // as any assignment target is, and a discard names nothing.
-        if (assignment.Left is TupleExpressionSyntax tuple
-            && tuple.Arguments.All(argument => argument.Expression is not DeclarationExpressionSyntax)
-            && context.SemanticHelper.GetType(assignment.Right) is { IsTupleType: false } assignedType
-            && assignedType.DeconstructElementNames() is { } assignedFields)
-        {
-            var targets = new List<string>();
-            for (var i = 0; i < tuple.Arguments.Count && i < assignedFields.Count; i++)
-            {
-                var element = tuple.Arguments[i].Expression;
-                if (element is IdentifierNameSyntax { Identifier.Text: "_" }
-                    && context.SemanticHelper.GetSymbol(element) is null or IDiscardSymbol)
-                    continue;
-                targets.Add($"{assignedFields[i]}: {context.Converter.ConvertExpression(element)}");
-            }
-            return $"({{ {string.Join(", ", targets)} }} = {context.Converter.ConvertExpression(assignment.Right)})";
+            var value = context.Converter.ConvertIr(assignment.Right);
+            if (deconstruction.Called is { } called) value = DeconstructionPattern.Through(called, value, context);
+            var written = JsExprWriter.Write(value);
+            return assignment.Left is DeclarationExpressionSyntax
+                ? $"let {deconstruction.Pattern} = {written}"
+                : $"({deconstruction.Pattern} = {written})";
         }
 
         // `flag |= Next()` on a bool: the logical operator, both sides evaluated, the bool written

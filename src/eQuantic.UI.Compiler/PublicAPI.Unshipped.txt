@@ -116,3 +116,4 @@ const eQuantic.UI.Compiler.CodeGen.Eq.Dictionary = "$eq.collections.dictionary" 
 *REMOVED*eQuantic.UI.Compiler.Models.PropertyDefinition.DefaultValue.set -> void
 *REMOVED*eQuantic.UI.Compiler.Models.StateField.DefaultValue.get -> string?
 *REMOVED*eQuantic.UI.Compiler.Models.StateField.DefaultValue.set -> void
+eQuantic.UI.Compiler.Services.SemanticHelper.GetDeconstructionInfo(Microsoft.CodeAnalysis.SyntaxNode! node) -> Microsoft.CodeAnalysis.CSharp.DeconstructionInfo?

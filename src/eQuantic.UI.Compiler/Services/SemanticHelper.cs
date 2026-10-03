@@ -133,6 +133,22 @@ public class SemanticHelper
             : null;
     }
 
+    /// <summary>What a deconstruction binds to: the <c>Deconstruct</c> each level calls (none for a
+    /// tuple's), and each part's own below it. For an assignment or a declaration
+    /// (<c>(a, b) = p</c>, <c>var (a, b) = p</c>) and a deconstructing <c>foreach</c>; null for
+    /// anything else, and where the model cannot answer. Original-aware and guarded.</summary>
+    public DeconstructionInfo? GetDeconstructionInfo(SyntaxNode node)
+    {
+        node = Original(node);
+        if (!Knows(node)) return null;
+        return node switch
+        {
+            AssignmentExpressionSyntax assignment => _semanticModel!.GetDeconstructionInfo(assignment),
+            ForEachVariableStatementSyntax loop => _semanticModel!.GetDeconstructionInfo(loop),
+            _ => null,
+        };
+    }
+
     /// <summary>The symbol a node DECLARES (a lambda parameter, a local), Original-aware and
     /// guarded — the model throws for a node outside its tree.</summary>
     public ISymbol? GetDeclaredSymbol(SyntaxNode node)
