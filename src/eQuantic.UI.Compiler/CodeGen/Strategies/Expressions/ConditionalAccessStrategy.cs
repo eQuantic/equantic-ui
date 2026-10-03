@@ -82,8 +82,20 @@ public class ConditionalAccessStrategy : IConversionStrategy
         if (converted.StartsWith(Placeholder + "[", StringComparison.Ordinal)
             || converted.StartsWith(Placeholder + "(", StringComparison.Ordinal))
             return $"{receiver}?.{converted[Placeholder.Length..]}";
+        // A tail that awaits runs in an ASYNC arrow, awaited where it stands: an `await` inside a
+        // plain one is a module JavaScript refuses to parse, as `s?.StartsWith(await f(), c)` was
+        // once the call went to a helper (#536). A null receiver still skips the arguments.
+        if (AwaitsInItsOwnBody(whenNotNull))
+            return $"(await (async ({Placeholder}) => {Placeholder} == null ? null : {converted})({receiver}))";
         return $"(({Placeholder}) => {Placeholder} == null ? null : {converted})({receiver})";
     }
+
+    /// <summary>Whether the tail awaits in the function it is written in: an <c>await</c> inside a
+    /// lambda of its own belongs to that lambda, which is async on its own account.</summary>
+    private static bool AwaitsInItsOwnBody(ExpressionSyntax tail) =>
+        tail.DescendantNodesAndSelf(node => node is not AnonymousFunctionExpressionSyntax)
+            .OfType<AwaitExpressionSyntax>()
+            .Any();
 
     /// <summary>The leftmost binding of the tail — the `.B` of `?.B.C(x)`, the `[i]` of `?[i]` —
     /// which is where the receiver is implicitly attached. Null for a tail this does not model.</summary>

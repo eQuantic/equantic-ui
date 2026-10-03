@@ -86,4 +86,23 @@ public class AsyncConformanceTests
         Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
         ConformanceRunner.AssertStatementsSameAsDotNet(program);
     }
+
+    /// <summary>
+    /// A null-conditional call whose translation is a helper is wrapped in an arrow that binds the
+    /// receiver once, and an argument that awaits was inside a plain one: a module JavaScript
+    /// refuses to parse (#536). Both receiver states, and the count of the awaited calls, which a
+    /// null receiver skips.
+    /// </summary>
+    [SkippableTheory]
+    [InlineData("string s = \"abc\"; var calls = 0; async Task<string> Needle() { calls++; await Task.Yield(); return \"a\"; } "
+        + "var r = s?.StartsWith(await Needle(), StringComparison.Ordinal); return (r == true ? \"yes\" : r == false ? \"no\" : \"null\") + calls;")] // yes1
+    [InlineData("string s = null; var calls = 0; async Task<string> Needle() { calls++; await Task.Yield(); return \"a\"; } "
+        + "var r = s?.StartsWith(await Needle(), StringComparison.Ordinal); return (r == true ? \"yes\" : r == false ? \"no\" : \"null\") + calls;")] // null0
+    [InlineData("string s = \"abc\"; async Task<int> One() { await Task.Yield(); return 1; } return s?.Substring(await One()) ?? \"null\";")] // bc
+    [InlineData("string s = null; async Task<int> One() { await Task.Yield(); return 1; } return s?.Substring(await One()) ?? \"null\";")] // null
+    public void AnAwaitBehindANullConditionalHelper_RunsAsTheGuardSays(string program)
+    {
+        Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
+        ConformanceRunner.AssertStatementsSameAsDotNet(program);
+    }
 }
