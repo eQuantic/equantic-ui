@@ -127,6 +127,20 @@ public static class Eq
     /// <summary>LINQ <c>ToDictionary</c> into the runtime's dictionary class, refusing a null key and a
     /// key twice.</summary>
     public const string LinqToDictionary = "$eq.linq.toDictionary";
+
+    /// <summary>A sequence as the array the lowered operators work on — see <c>seq</c> in utils/linq.ts.</summary>
+    public const string LinqSeq = "$eq.linq.seq";
+
+    /// <summary>A range of a string's or an array's chars, refused where it leaves its source:
+    /// <c>new string(char[], int, int)</c> and <c>ToCharArray(int, int)</c>.</summary>
+    public const string TextChars = "$eq.text.chars";
+
+    /// <summary>A sequence as a <c>foreach</c> enumerates it where its static type may hide a
+    /// string: a string by its code units, anything else as it is.</summary>
+    public const string LinqEnumerable = "$eq.linq.enumerable";
+
+    /// <summary>A NEW array of a sequence's elements, as <c>ToList</c> and <c>ToArray</c> make.</summary>
+    public const string LinqToArray = "$eq.linq.toArray";
     /// <summary>Where each text element (an extended grapheme cluster, UAX #29) of a string begins:
     /// <c>StringInfo.ParseCombiningCharacters</c>, answered by the platform's segmenter.</summary>
     public const string TextElementStarts = "$eq.text.textElementStarts";

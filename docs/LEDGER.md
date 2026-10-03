@@ -1112,6 +1112,19 @@ record of a release, the wiki's Upgrading page is the distillate.
   ([#533](https://github.com/eQuantic/equantic-ui/issues/533)), and a char search with a start
   clamps and drops its count ([#534](https://github.com/eQuantic/equantic-ui/issues/534)). Proposed
   and archived through OpenSpec (`openspec/specs/transpiler-bcl`).
+- **2026-10-03 · LINQ reads any sequence**: every operator was an array method on its receiver as
+  converted, so a `HashSet`, the runtime's sorted set, queue, stack and linked list, and a sorted
+  dictionary or list threw on their first one, `queue.First()` called a `first` the queue does not have
+  ([#434](https://github.com/eQuantic/equantic-ui/issues/434)), a dictionary read as its pairs met the
+  same templates ([#439](https://github.com/eQuantic/equantic-ui/issues/439)), and a string read as a
+  sequence threw on `Count`, `Where` and `Select`, was iterated by code point by `foreach` and
+  `ToCharArray`, could not be built from chars, and refused `Count(char.IsDigit)`
+  ([#524](https://github.com/eQuantic/equantic-ui/issues/524)). One place reads an operator's source
+  (`LinqSource`, `$eq.linq.seq`), `ToList` and `ToArray` always copy, and the queue and the stack
+  enumerate in .NET's order. The local review found the copy trusting operators that hand their source
+  back (`Cast`, `DefaultIfEmpty`) and a read-only face hiding a list, and both copy now. Each is a
+  conformance case on both sides that failed against main. Proposed and archived through OpenSpec
+  (`openspec/specs/transpiler-sequences`).
 
 ## Retired documents
 

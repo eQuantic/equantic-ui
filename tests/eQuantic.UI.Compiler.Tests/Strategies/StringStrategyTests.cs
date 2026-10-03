@@ -121,10 +121,12 @@ public class StringStrategyTests
     }
 
     [Fact]
-    public void ToCharArray_MapsToSpread()
+    public void ToCharArray_SplitsIntoCodeUnits()
     {
+        // A char is one UTF-16 code unit: a spread iterates code points, and handed a pair it made
+        // one two-unit element where .NET makes two chars (#524).
         var result = TestHelper.ConvertExpression("str.ToCharArray()");
-        result.Should().Be("[...this.str]");
+        result.Should().Be("this.str.split('')");
     }
 
     [Fact]

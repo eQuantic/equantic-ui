@@ -32,6 +32,13 @@ public class ObjectCreationStrategy : IConversionStrategy
         if (context.SemanticHelper.GetType(node)?.ToDisplayString() == "System.Threading.Lock")
             return "{}";
 
+        // `new string(chars)` and `new string(c, n)`: the text they build, where `new string(…)` named a
+        // class JavaScript does not have (#524).
+        if (context.SemanticHelper.GetType(node) is { SpecialType: SpecialType.System_String }
+            && context.SemanticHelper.GetOperation(node) is Microsoft.CodeAnalysis.Operations.IObjectCreationOperation creation
+            && NewString(creation, context) is { } text)
+            return text;
+
         if (node is ObjectCreationExpressionSyntax objCreation)
         {
             return ConvertExplicit(objCreation, context);
@@ -41,6 +48,42 @@ public class ObjectCreationStrategy : IConversionStrategy
             return ConvertImplicit(implicitCreation, context);
         }
         throw new InvalidOperationException("Invalid node type");
+    }
+
+    /// <summary>
+    /// The text a string constructor builds: its chars joined (none for a null array, as .NET's
+    /// <c>new string((char[])null)</c> is empty), a char repeated, or a range of chars joined. Null
+    /// for an overload with no such reading here (a span, a pointer). Each argument is placed by the
+    /// parameter it binds to, so a named argument written out of order fills its own, and the parts
+    /// keep their written order, the order C# evaluates them in, which the template writer preserves
+    /// where the holes follow another.
+    /// </summary>
+    private static string? NewString(Microsoft.CodeAnalysis.Operations.IObjectCreationOperation creation,
+        ConversionContext context)
+    {
+        if (creation.Constructor is not { } constructor) return null;
+        var template = constructor.Parameters.Select(parameter => parameter.Type).ToArray() switch
+        {
+            [IArrayTypeSymbol] => "({0} ?? []).join('')",
+            [{ SpecialType: SpecialType.System_Char }, { SpecialType: SpecialType.System_Int32 }] => "{0}.repeat({1})",
+            // The range refused where it leaves the array, as .NET refuses it: `slice` clamped it.
+            [IArrayTypeSymbol, { SpecialType: SpecialType.System_Int32 }, { SpecialType: SpecialType.System_Int32 }]
+                => $"{Eq.TextChars}({{0}}, {{1}}, {{2}}).join('')",
+            _ => null,
+        };
+        if (template is null || creation.Arguments.Length != constructor.Parameters.Length) return null;
+        if (template.Contains("$eq.")) context.UsedHelpers.Add(Eq.Import);
+        var parts = new List<Ir.JsExpr>();
+        var slots = new int[constructor.Parameters.Length];
+        foreach (var argument in creation.Arguments)
+        {
+            if (argument.Parameter is not { } parameter || argument.Value.Syntax is not ExpressionSyntax value) return null;
+            slots[parameter.Ordinal] = parts.Count;
+            parts.Add(context.Converter.ConvertIr(value));
+        }
+        var placed = System.Text.RegularExpressions.Regex.Replace(template, @"\{(\d)\}",
+            hole => $"{{{slots[hole.Groups[1].Value[0] - '0']}}}");
+        return Ir.JsExprWriter.Write(Ir.JsExpr.Template(placed, parts, context.TypeAnnotations));
     }
 
     private string ConvertExplicit(ObjectCreationExpressionSyntax creation, ConversionContext context)
