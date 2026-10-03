@@ -62,8 +62,7 @@ public sealed class CrossingCollectionsPage : StatefulComponent, IServerPrefetch
         var index = "";
         foreach (var key in _index.Keys) index += "," + key;
         var ranks = "";
-        // By interpolation: `"," + rank` writes undefined (#535).
-        foreach (var rank in _ranks) ranks += $",{rank}";
+        foreach (var rank in _ranks) ranks += "," + rank;
 
         var page = new Column();
         page.Add(new Text($"roles {_roles.Contains("admin")} {_roles.Count}", TypeRole.BodyM));
