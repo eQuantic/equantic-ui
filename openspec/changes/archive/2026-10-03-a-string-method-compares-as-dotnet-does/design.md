@@ -32,8 +32,9 @@ with the statics (#533); the char overloads with a start and a count (#534).
   argument written out of order is bound to its parameter by the helper the static strategies use,
   and the template writer keeps the order the arguments run in. With no model to ask (the playground
   compiles one buffer alone), the count of the arguments and a comparison spelled last are the only
-  evidence, and they are read as such. `CultureInfo` is matched by its name and namespace: the
-  parameter is `CultureInfo?`, whose display name carries the annotation.
+  evidence, and they are read as such. A type is matched by its name, and `IsNamed` now drops a
+  reference type's nullable annotation first: the parameter is `CultureInfo?`, whose display name
+  carries it, so an overload taking a `CultureInfo` matched nothing and slipped past its refusal.
 - **Port .NET's ordinal casing rather than lower-case.** `toLowerCase` and `toUpperCase` are full
   Unicode case maps; .NET's ordinal comparison that ignores case takes each code point's simple upper
   case, with its own exceptions, and reads a surrogate pair as its code point. The statics already

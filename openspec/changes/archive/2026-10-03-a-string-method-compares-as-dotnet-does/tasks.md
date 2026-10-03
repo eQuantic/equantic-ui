@@ -7,9 +7,9 @@
 
 ## 2. The compiler chooses by the bound method
 
-- [x] 2.1 `StringMethodStrategy` reads the overload from the bound method's parameters (a `CultureInfo?` by its name and namespace) and calls `$eq.text` with the arguments as C# writes them, `Replace(string, string)` as the ordinal replace; with no model, by the count of the arguments and a comparison spelled last; check: `StringComparisonOverloadTests`
+- [x] 2.1 `StringMethodStrategy` reads the overload from the bound method's parameters, and `IsNamed` matches a `CultureInfo?` by its name without the annotation (`TypeIsNamedTests`); it calls `$eq.text` with the arguments as C# writes them, `Replace(string, string)` as the ordinal replace; with no model, by the count of the arguments and a comparison spelled last; check: `StringComparisonOverloadTests`
 - [x] 2.2 A constant culture comparison in a search, and an overload taking a `CultureInfo`, are refused with EQ1004; `CompareTo(string)` is the current culture's and `CompareTo(object)` is refused; check: `StringComparisonOverloadTests`
-- [x] 2.3 Check against the real thing: `InstanceStringComparisonConformanceTests` run on both sides, 43 cases, 26 of them failing on main, and the whole conformance suite green
+- [x] 2.3 Check against the real thing: `InstanceStringComparisonConformanceTests` run on both sides, 46 cases, 27 of them failing on main, and the whole conformance suite green
 
 ## 3. What moved with it
 
@@ -19,6 +19,6 @@
 
 ## 4. Documentation
 
-- [ ] 4.1 The wiki's SupportedFeatures and Compiler pages in English and Portuguese, on the wiki branch `fix/a-string-method-compares-as-dotnet-does`, merged at the merge
-- [ ] 4.2 One `docs/LEDGER.md` line citing #528
-- [ ] 4.3 Archive this change in the same pull request
+- [x] 4.1 The wiki's SupportedFeatures and Compiler pages in English and Portuguese, on the wiki branch `fix/a-string-method-compares-as-dotnet-does`, merged at the merge
+- [x] 4.2 One `docs/LEDGER.md` line citing #528
+- [x] 4.3 Archive this change in the same pull request

@@ -6,7 +6,7 @@ Closes #528, a Bug under #164 (The transpiler's fences hold on every path).
 
 A string's own methods that take a `StringComparison` read the comparison from its SPELLING and
 lower-cased both sides, and `CompareTo` ordered by code unit. Measured through the conformance
-harness, 26 of the 43 cases this change adds answered differently in the browser on main: the Kelvin
+harness, 27 of the 46 cases this change adds answered differently in the browser on main: the Kelvin
 sign matched a k under `OrdinalIgnoreCase`, a comparison held in a variable was dropped, `Replace`
 dropped its own and read `$&` in its replacement as a pattern, a start past the end clamped where
 .NET throws, and a sort written with `CompareTo` put every capital first.
@@ -45,7 +45,8 @@ the browser answered the ordinal result. Migration: search by `StringComparison.
 `StringComparison.OrdinalIgnoreCase`, or compare whole strings with `Equals` or `string.Compare` by
 the culture.
 
-The parts reached are eqc (`StringMethodStrategy`, `CompareToStrategy` and eight `Eq` constants) and
+The parts reached are eqc (`StringMethodStrategy`, `CompareToStrategy`, eight `Eq` constants, and
+`IsNamed`, which reads a type's name without a reference type's nullable annotation) and
 the runtime (`utils/string-search.ts`, reached through `$eq.text`). The write-once components'
 ordinal searches (the code editor's languages, the patch, Markdown and Mermaid parsers, the TSV codec)
 call the runtime's. The public surface grows by the eight `Eq` constants; the developer surface does
