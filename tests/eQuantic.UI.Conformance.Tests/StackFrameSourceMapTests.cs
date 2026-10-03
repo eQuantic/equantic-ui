@@ -179,7 +179,7 @@ public class StackFrameSourceMapTests
 
     /// <summary>Strings holding U+2028 and U+2029 before the call (#491): JavaScript reads either as a
     /// line break when it counts positions, Bun among them, and eqc's map counts only line feeds, so a
-    /// raw one moved every mapping after it a line down. The literal's were escaped by #412; an
+    /// raw one moved every mapping after it a line down. String literals escaped them since #412; an
     /// interpolated string's text kept them raw until #520. The sum keeps the call out of tail
     /// position, as above.</summary>
     private const string SeparatorSource = """

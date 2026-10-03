@@ -109,8 +109,8 @@ one brace.
 
 ### Requirement: A literal with no JavaScript spelling is refused
 
-A literal JavaScript has no spelling for SHALL fail the build with EQ1004 at the literal, and SHALL
-NOT be written into the module as C#.
+A literal that JavaScript has no spelling for SHALL fail the build with EQ1004 at the literal,
+and SHALL NOT be written into the module as C#.
 
 #### Scenario: A UTF-8 literal
 

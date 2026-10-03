@@ -9,7 +9,7 @@ namespace eQuantic.UI.Compiler.CodeGen.Strategies.Expressions;
 /// Literals in their JavaScript spelling: a string or a char as a single-quoted string written from
 /// its value (<see cref="JsStringLiteral"/>), <c>true</c>/<c>false</c>/<c>null</c>, numbers with the
 /// C# type suffixes stripped (<c>L</c> becomes a BigInt literal, <c>m</c> an exact Decimal through the
-/// runtime helper). A literal JavaScript has no spelling for is refused (EQ1004).
+/// runtime helper). A literal that JavaScript has no spelling for is refused (EQ1004).
 /// </summary>
 public class LiteralExpressionStrategy : IExpressionIrStrategy
 {
