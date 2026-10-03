@@ -69,6 +69,7 @@ import {
 } from './utils/number-parse';
 import { max, min, seq, toArray, toDictionary } from './utils/linq';
 import {
+  chars,
   compare,
   compareRange,
   compareRangeBy,
@@ -272,6 +273,8 @@ export const $eq = {
    * from the platform's segmenter), a character's general category, string's comparisons and
    * ranged join, and .NET's white space. */
   text: {
+    /** A range of chars, refused where it leaves its source, as .NET refuses it. */
+    chars,
     format,
     record: recordText,
     stringFormat,

@@ -49,7 +49,7 @@ public class LinqTableStrategy : IExpressionIrStrategy
 
         var receiver = LinqSource.Ir(receiverSyntax, context);
         var args = invocation.ArgumentList.Arguments
-            .Select(a => context.Converter.ConvertIr(a.Expression))
+            .Select(a => LinqSource.Argument(a, invocation, context))
             .ToArray();
 
         var template = Template(name.Identifier.Text, args.Length);

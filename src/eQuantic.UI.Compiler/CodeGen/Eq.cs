@@ -131,6 +131,10 @@ public static class Eq
     /// <summary>A sequence as the array the lowered operators work on — see <c>seq</c> in utils/linq.ts.</summary>
     public const string LinqSeq = "$eq.linq.seq";
 
+    /// <summary>A range of a string's or an array's chars, refused where it leaves its source:
+    /// <c>new string(char[], int, int)</c> and <c>ToCharArray(int, int)</c>.</summary>
+    public const string TextChars = "$eq.text.chars";
+
     /// <summary>A NEW array of a sequence's elements, as <c>ToList</c> and <c>ToArray</c> make.</summary>
     public const string LinqToArray = "$eq.linq.toArray";
     /// <summary>Where each text element (an extended grapheme cluster, UAX #29) of a string begins:

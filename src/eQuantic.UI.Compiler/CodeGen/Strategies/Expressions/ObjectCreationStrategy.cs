@@ -64,11 +64,13 @@ public class ObjectCreationStrategy : IConversionStrategy
         {
             [IArrayTypeSymbol] => "({0} ?? []).join('')",
             [{ SpecialType: SpecialType.System_Char }, { SpecialType: SpecialType.System_Int32 }] => "{0}.repeat({1})",
+            // The range refused where it leaves the array, as .NET refuses it: `slice` clamped it.
             [IArrayTypeSymbol, { SpecialType: SpecialType.System_Int32 }, { SpecialType: SpecialType.System_Int32 }]
-                => "{0}.slice({1}, {1} + {2}).join('')",
+                => $"{Eq.TextChars}({{0}}, {{1}}, {{2}}).join('')",
             _ => null,
         };
         if (template is null || creation.Arguments.Length != constructor.Parameters.Length) return null;
+        if (template.Contains("$eq.")) context.UsedHelpers.Add(Eq.Import);
         var parts = new Ir.JsExpr[constructor.Parameters.Length];
         foreach (var argument in creation.Arguments)
         {

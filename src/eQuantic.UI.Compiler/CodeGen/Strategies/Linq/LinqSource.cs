@@ -48,6 +48,26 @@ internal static class LinqSource
         return JsExpr.Call(JsExpr.Identifier(Eq.LinqToArray), converted);
     }
 
+    /// <summary>
+    /// An argument of a LINQ call, read as a source when the parameter it binds to is a sequence
+    /// (<c>Intersect</c>'s, <c>Except</c>'s, <c>Zip</c>'s second, <c>Concat</c>'s, or the span an
+    /// array's <c>SequenceEqual</c> binds through <c>MemoryExtensions</c>): a set or a queue there was
+    /// handed to <c>includes</c> or spread as a string by code point, as the receiver was before it
+    /// went through here. Any other argument converts as it always did.
+    /// </summary>
+    internal static JsExpr Argument(ArgumentSyntax argument, InvocationExpressionSyntax invocation, ConversionContext context) =>
+        context.SemanticHelper.GetOperation(invocation) is Microsoft.CodeAnalysis.Operations.IInvocationOperation call
+        && call.Arguments.FirstOrDefault(bound => bound.Syntax == argument)?.Parameter?.Type is INamedTypeSymbol parameter
+        && IsSequence(parameter)
+            ? Ir(argument.Expression, context)
+            : context.Converter.ConvertIr(argument.Expression);
+
+    /// <summary>A parameter a LINQ call reads elements from: an <c>IEnumerable&lt;T&gt;</c>, or a span.</summary>
+    private static bool IsSequence(INamedTypeSymbol parameter) =>
+        parameter.OriginalDefinition.SpecialType == SpecialType.System_Collections_Generic_IEnumerable_T
+        || parameter.OriginalDefinition is { MetadataName: "ReadOnlySpan`1" or "Span`1", ContainingNamespace: var space }
+            && space.ToDisplayString() == "System";
+
     /// <summary>The source as text, for the strategies that still write it.</summary>
     internal static string Text(ExpressionSyntax source, ConversionContext context) =>
         JsExprWriter.Write(Ir(source, context));

@@ -64,6 +64,37 @@ public class LinqOverAnySequenceConformanceTests
         ConformanceRunner.AssertStatementsSameAsDotNet(statements);
     }
 
+    /// <summary>
+    /// A sequence handed to an operator as its argument is read as one too, and an ordering reads its
+    /// source through the same place: a set given to <c>Intersect</c> was asked <c>includes</c>, and
+    /// <c>OrderBy</c> spread a string by code point.
+    /// </summary>
+    [SkippableTheory]
+    [InlineData("var s = new HashSet<int> { 1, 2, 3 }; return new[] { 2, 3, 4 }.Intersect(s).Count();")]                     // 2
+    [InlineData("return new[] { 1, 2, 3 }.Except(new Queue<int>(new[] { 2 })).Sum();")]                                       // 4
+    [InlineData("return new[] { 1, 2 }.Zip(new Stack<int>(new[] { 10, 20 }), (a, b) => a + b).Sum();")]                        // 33
+    [InlineData("return new[] { 'a', 'b' }.SequenceEqual(\"ab\");")]                                                           // true
+    [InlineData("return new[] { 1 }.Concat(new HashSet<int> { 2, 3 }).Count();")]                                             // 3
+    [InlineData("return \"a\\uD83D\\uDE00\".OrderBy(c => c).Count();")]                                                     // 3
+    public void ASequenceArgument_IsASequenceToo(string statements)
+    {
+        Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
+        ConformanceRunner.AssertStatementsSameAsDotNet(statements);
+    }
+
+    /// <summary>A range of chars is refused where it leaves its source, as .NET refuses it: `slice`
+    /// clamped it, counting a negative start from the end.</summary>
+    [SkippableTheory]
+    [InlineData("try { return new string(new[] { 'a', 'b', 'c' }, -1, 1); } catch { return \"refused\"; }")] // "refused"
+    [InlineData("try { return new string(new[] { 'a', 'b', 'c' }, 1, 5); } catch { return \"refused\"; }")]  // "refused"
+    [InlineData("try { return \"abc\".ToCharArray(-1, 1).Length; } catch { return -1; }")]                   // -1
+    [InlineData("try { return \"abc\".ToCharArray(1, 5).Length; } catch { return -1; }")]                    // -1
+    public void ACharRange_IsRefusedWhereItLeavesItsSource(string statements)
+    {
+        Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
+        ConformanceRunner.AssertStatementsSameAsDotNet(statements);
+    }
+
     /// <summary>A char static reached by its name alone, under <c>using static System.Char</c>, is the
     /// same call and the same group as through its type.</summary>
     [SkippableTheory]

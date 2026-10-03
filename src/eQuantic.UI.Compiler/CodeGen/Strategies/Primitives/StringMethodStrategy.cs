@@ -101,9 +101,10 @@ public class StringMethodStrategy : IConversionStrategy
             "ToUpperInvariant" => $"{caller}.toUpperCase()",
             "ToLowerInvariant" => $"{caller}.toLowerCase()",
             // Its chars, the UTF-16 code units: a spread gives code points, one where .NET has two (#524).
-            // The (startIndex, length) overload takes its range first, each argument read once.
+            // The (startIndex, length) overload takes its range, refused where it leaves the string,
+            // as .NET refuses it: `slice` clamped a negative start and a long length in silence.
             "ToCharArray" => args.Count == 2
-                ? $"{caller}.slice({args[0]}).slice(0, {args[1]}).split('')"
+                ? CharRange(caller, args, context)
                 : $"{caller}.split('')",
             "Insert" => ConvertInsert(caller, args),
             "Remove" => ConvertRemove(caller, args),
@@ -230,6 +231,14 @@ public class StringMethodStrategy : IConversionStrategy
     }
 
     private string JoinArgs(List<string> args) => string.Join(", ", args);
+
+    /// <summary><c>ToCharArray(startIndex, length)</c>: the range through the runtime, which refuses
+    /// one that leaves the string.</summary>
+    private static string CharRange(string caller, IReadOnlyList<string> args, ConversionContext context)
+    {
+        context.UsedHelpers.Add(Eq.Import);
+        return $"{Eq.TextChars}({caller}, {args[0]}, {args[1]})";
+    }
 
     public int Priority => 15; // Higher than InvocationStrategy (1)
 }

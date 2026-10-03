@@ -23,7 +23,7 @@ public class ZipStrategy : IConversionStrategy
         
         if (args.Count >= 2)
         {
-            var second = context.Converter.ConvertExpression(args[0].Expression);
+            var second = Ir.JsExprWriter.Write(LinqSource.Argument(args[0], invocation, context));
             var resultSelector = context.Converter.ConvertExpression(args[1].Expression);
             
             // A map over the receiver walks the LONGER sequence and hands the selector undefined

@@ -32,7 +32,7 @@ public class SequenceEqualStrategy : IConversionStrategy
 
         if (args.Count == 1)
         {
-            var other = context.Converter.ConvertExpression(args[0].Expression);
+            var other = Ir.JsExprWriter.Write(LinqSource.Argument(args[0], invocation, context));
             // JSON.stringify approach for simplicity in UI context
             return $"(JSON.stringify({caller}) === JSON.stringify({other}))";
         }
