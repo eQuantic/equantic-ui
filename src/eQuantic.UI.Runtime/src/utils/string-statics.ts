@@ -36,19 +36,24 @@ const COMPARISONS: ReadonlySet<string> = new Set<StringComparison>([
   'ordinalIgnoreCase',
 ]);
 
-const NOT_SUPPORTED =
+export const NOT_SUPPORTED =
   "The string comparison type passed in is currently not supported. (Parameter 'comparisonType')";
 
 /**
  * A comparison held in a variable reaches here as a plain string (a `let` widens the member's name),
  * so the statics take any string and this says which are comparisons, as .NET's own check does.
  */
-function requireComparison(comparison: string): asserts comparison is StringComparison {
-  if (!COMPARISONS.has(comparison)) throw new Error(NOT_SUPPORTED);
+export function requireComparison(comparison: string): asserts comparison is StringComparison {
+  if (!isStringComparison(comparison)) throw new Error(NOT_SUPPORTED);
+}
+
+/** Whether a value is one of the six comparisons, without throwing. */
+export function isStringComparison(comparison: string): comparison is StringComparison {
+  return COMPARISONS.has(comparison);
 }
 
 /** An `ArgumentOutOfRangeException`'s words; .NET writes the actual value on a line of its own. */
-function outOfRange(parameter: string, message: string, actual?: number): Error {
+export function outOfRange(parameter: string, message: string, actual?: number): Error {
   const value = actual === undefined ? '' : `\nActual value was ${actual}.`;
   return new Error(`${message} (Parameter '${parameter}')${value}`);
 }
@@ -90,7 +95,7 @@ for (const start of [0x1f80, 0x1f90, 0x1fa0]) {
 }
 
 /** A code point's simple upper case, as .NET's ordinal comparison takes it. */
-function ordinalUpper(codePoint: number): number {
+export function ordinalUpper(codePoint: number): number {
   if (codePoint < 0x61) return codePoint;
   const known = ORDINAL_UPPER.get(codePoint);
   if (known !== undefined) return known;
@@ -99,11 +104,11 @@ function ordinalUpper(codePoint: number): number {
   return upper.length === text.length ? (upper.codePointAt(0) as number) : codePoint;
 }
 
-function isHigh(unit: number): boolean {
+export function isHigh(unit: number): boolean {
   return unit >= 0xd800 && unit <= 0xdbff;
 }
 
-function isLow(unit: number): boolean {
+export function isLow(unit: number): boolean {
   return unit >= 0xdc00 && unit <= 0xdfff;
 }
 
@@ -135,7 +140,7 @@ function startsPair(text: string, at: number, remaining: number): boolean {
  * code units or of code points, the first that differs. A pair against a unit that is not one answers
  * 1 or -1 without comparing them, and past the shorter range it is the difference of the lengths.
  */
-function ordinalIgnoreCase(
+export function ordinalIgnoreCase(
   a: string,
   indexA: number,
   lengthA: number,

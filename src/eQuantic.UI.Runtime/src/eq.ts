@@ -75,6 +75,16 @@ import {
   equals as stringEquals,
   joinRange,
 } from './utils/string-statics';
+import {
+  compareTo,
+  contains as textContains,
+  endsWith,
+  indexOf,
+  instanceEquals,
+  lastIndexOf,
+  replace,
+  startsWith,
+} from './utils/string-search';
 import { asInteger, asSingle, format, parseEnum, stringFormat, stringFormatInvariant } from './utils/format';
 import { nextTextElementLength, textElementStarts } from './utils/text-elements';
 import { unicodeCategory } from './utils/unicode-category';
@@ -262,7 +272,7 @@ export const $eq = {
   },
   /** Text: number/string formatting, StringBuilder, StringInfo's text elements (grapheme clusters,
    * from the platform's segmenter), a character's general category, string's comparisons and
-   * ranged join, and .NET's white space. */
+   * ranged join, a string's own searches by a comparison, and .NET's white space. */
   text: {
     format,
     stringFormat,
@@ -279,6 +289,14 @@ export const $eq = {
     compareRangeBy,
     equals: stringEquals,
     joinRange,
+    startsWith,
+    endsWith,
+    indexOf,
+    lastIndexOf,
+    contains: textContains,
+    replace,
+    instanceEquals,
+    compareTo,
     isWhiteSpace,
     hasNonWhiteSpace,
     trim,
