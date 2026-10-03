@@ -34,4 +34,16 @@ public class DeconstructionConformanceTests
         Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
         ConformanceRunner.AssertStatementsSameAsDotNet(statements, "public record Point(int X, int Y);");
     }
+
+    /// <summary>A record deconstructed into variables that already exist: it was array destructuring,
+    /// which a record is not, and threw (#486).</summary>
+    [SkippableTheory]
+    [InlineData("int a, b; (a, b) = new Point(1, 2); return a * 10 + b;")]            // 12
+    [InlineData("int a = 0; (a, _) = new Point(5, 6); return a;")]                   // 5
+    [InlineData("var xs = new int[2]; (xs[0], xs[1]) = new Point(3, 4); return xs[0] + xs[1];")] // 7
+    public void ARecordDeconstructedByAssignment_FillsItsTargets(string statements)
+    {
+        Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
+        ConformanceRunner.AssertStatementsSameAsDotNet(statements, "public record Point(int X, int Y);");
+    }
 }

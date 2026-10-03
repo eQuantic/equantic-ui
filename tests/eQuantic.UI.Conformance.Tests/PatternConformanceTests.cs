@@ -65,4 +65,42 @@ public class PatternConformanceTests
         Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
         ConformanceRunner.AssertSameAsDotNet(expression, NestedPrelude);
     }
+
+    /// <summary>
+    /// A type with nothing bound (C# 9's type pattern) tests the type, as a declaration pattern does:
+    /// it had no case, so `o is int or long`, `int => …` and `case int:` were all `false` (#482). A
+    /// long is a BigInt here, and was asked whether it was a number.
+    /// </summary>
+    [SkippableTheory]
+    [InlineData("object o = 5L; return o is int or long;")]                                                  // true
+    [InlineData("object o = 5; return o switch { int => \"int\", string => \"text\", _ => \"other\" };")]     // "int"
+    [InlineData("object o = \"x\"; return o switch { int => \"int\", string => \"text\", _ => \"other\" };")] // "text"
+    [InlineData("object o = 5; switch (o) { case long: return \"long\"; case int: return \"int\"; default: return \"other\"; }")] // "int"
+    [InlineData("object o = 2.5; return o is int;")]                                                         // false
+    [InlineData("object o = 2.5; return o is double;")]                                                      // true
+    [InlineData("object o = 1.5m; return o is int or decimal;")]                                             // true
+    [InlineData("object o = 1.5m; return o is double;")]                                                     // false
+    [InlineData("object o = 7L; return o is System.Int64;")]                                                 // true
+    public void ABareTypePattern_TestsTheType(string statements)
+    {
+        Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
+        ConformanceRunner.AssertStatementsSameAsDotNet(statements);
+    }
+
+    /// <summary>
+    /// <c>x is Limits.Max</c> parses as the type test and binds as a constant pattern: it was
+    /// answered <c>x != null</c>, true for every number (#451). An enum's member is the member.
+    /// </summary>
+    [SkippableTheory]
+    [InlineData("int x = 3; return x is Limits.Max;")]                    // false
+    [InlineData("int x = 10; return x is Limits.Max;")]                   // true
+    [InlineData("string s = \"on\"; return s is Limits.Label;")]          // true
+    [InlineData("var l = Level.High; return l is Level.High;")]           // true
+    [InlineData("var l = Level.Low; return l is Level.High;")]            // false
+    public void IsANamedConstant_ComparesToItsValue(string statements)
+    {
+        Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
+        ConformanceRunner.AssertStatementsSameAsDotNet(statements,
+            "public static class Limits { public const int Max = 10; public const string Label = \"on\"; }\npublic enum Level { Low, High }");
+    }
 }

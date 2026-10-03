@@ -32,6 +32,13 @@ public class ObjectCreationStrategy : IConversionStrategy
         if (context.SemanticHelper.GetType(node)?.ToDisplayString() == "System.Threading.Lock")
             return "{}";
 
+        // `new object()` — a value with nothing but its identity, the gate a `lock` takes or a
+        // sentinel. A fresh plain object is that here; `new object()` named a class JavaScript does
+        // not have, and threw where it ran (#478).
+        if (context.SemanticHelper.GetType(node) is { SpecialType: SpecialType.System_Object }
+            && node is BaseObjectCreationExpressionSyntax { Initializer: null })
+            return "({})";
+
         if (node is ObjectCreationExpressionSyntax objCreation)
         {
             return ConvertExplicit(objCreation, context);

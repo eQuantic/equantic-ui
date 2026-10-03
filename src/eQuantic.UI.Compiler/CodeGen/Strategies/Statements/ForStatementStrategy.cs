@@ -15,6 +15,8 @@ public class ForStatementStrategy : IStatementStrategy
     public JsStatement Convert(StatementSyntax node, ConversionContext context)
     {
         var forStmt = (ForStatementSyntax)node;
+        if (forStmt.Declaration is not null && CapturesALoopVariable(forStmt, context))
+            return HoistedLoop(forStmt, context);
         var declaration = ConvertDeclaration(forStmt, Declared(forStmt), context);
         var condition = forStmt.Condition != null
             ? context.Converter.ConvertExpression(forStmt.Condition)
@@ -23,6 +25,47 @@ public class ForStatementStrategy : IStatementStrategy
             forStmt.Incrementors.Select(i => context.Converter.ConvertExpression(i)));
         var body = context.Converter.ConvertStatementIr(forStmt.Statement);
         return JsStatement.Headed($"for ({declaration}; {condition}; {incrementors})", body);
+    }
+
+    /// <summary>
+    /// <c>for (int i = 0; …)</c> declares ONE variable for the whole loop, and a closure made in the
+    /// body reads that variable, so after the loop every one of them sees its last value. A head's
+    /// <c>let</c> is copied into each iteration in JavaScript, so each closure kept its own: three
+    /// closures over <c>i</c> answered 0, 1 and 2 where .NET answers 3, 3 and 3 (#476). When a closure
+    /// captures one, the declaration moves in front of the loop, in a block of its own so a second
+    /// loop declaring the same name stays legal. The head keeps what its expressions declare, which
+    /// .NET does give a fresh variable each time round.
+    /// </summary>
+    private static JsStatement HoistedLoop(ForStatementSyntax forStmt, ConversionContext context)
+    {
+        var variables = forStmt.Declaration!.Variables.Select(v =>
+            $"{v.Identifier.Text.ToJsIdentifier()} = "
+            + (v.Initializer != null ? context.Converter.ConvertExpression(v.Initializer.Value) : "undefined"));
+        var declared = Declared(forStmt);
+        var head = declared.Count == 0 ? "" : $"let {ExpressionVariableScanner.List(declared, context.TypeAnnotations)}";
+        var condition = forStmt.Condition != null ? context.Converter.ConvertExpression(forStmt.Condition) : "";
+        var incrementors = string.Join(", ", forStmt.Incrementors.Select(i => context.Converter.ConvertExpression(i)));
+        var body = context.Converter.ConvertStatementIr(forStmt.Statement);
+        return JsStatement.Block(
+        [
+            JsStatement.Raw($"let {string.Join(", ", variables)};"),
+            JsStatement.Headed($"for ({head}; {condition}; {incrementors})", body),
+        ]);
+    }
+
+    /// <summary>Whether a lambda, an anonymous method or a local function anywhere in the loop reads
+    /// a variable its declaration declares, which the bound tree answers by symbol.</summary>
+    private static bool CapturesALoopVariable(ForStatementSyntax forStmt, ConversionContext context)
+    {
+        var loopVariables = forStmt.Declaration!.Variables
+            .Select(v => context.SemanticHelper.GetDeclaredSymbol(v))
+            .Where(symbol => symbol is not null)
+            .ToHashSet(SymbolEqualityComparer.Default);
+        if (loopVariables.Count == 0) return false;
+        return forStmt.DescendantNodes()
+            .Where(n => n is AnonymousFunctionExpressionSyntax or LocalFunctionStatementSyntax)
+            .SelectMany(function => function.DescendantNodes().OfType<IdentifierNameSyntax>())
+            .Any(name => context.SemanticHelper.GetSymbol(name) is { } read && loopVariables.Contains(read));
     }
 
     /// <summary>

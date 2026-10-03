@@ -67,43 +67,47 @@ public class InlinedConstantStrategy : IConversionStrategy
         if (Services.ResourceClasses.IsResourceClass(owner)) return false;
         if (owner.TypeKind == TypeKind.Enum) return false;
 
-        switch (field.ConstantValue)
+        if (LiteralOf(field.ConstantValue) is not { } written) return false;
+        literal = written;
+        return true;
+    }
+
+    /// <summary>
+    /// The JavaScript literal of a constant's value, or null where none is exact: a decimal, an
+    /// integer past 2^53, and anything that is no literal.
+    /// </summary>
+    internal static string? LiteralOf(object? value)
+    {
+        switch (value)
         {
             case null:
-                literal = "null";
-                return true;
+                return "null";
             case string text:
-                literal = JsStringLiteral.Quote(text);
-                return true;
+                return JsStringLiteral.Quote(text);
             case char character:
-                literal = JsStringLiteral.Quote(character.ToString());
-                return true;
+                return JsStringLiteral.Quote(character.ToString());
             case bool flag:
-                literal = flag ? "true" : "false";
-                return true;
+                return flag ? "true" : "false";
             // EXACTNESS FIRST: only values a JS number represents exactly are inlined. `long.MaxValue`
             // as a literal becomes 9223372036854776000 — the dedicated long/decimal strategies keep
             // those in their compat types, so leave them alone.
             case decimal:
-                return false;
+                return null;
             case long or ulong or int or uint or short or ushort or byte or sbyte:
-                var integral = System.Convert.ToDecimal(field.ConstantValue);
-                if (System.Math.Abs(integral) > 9007199254740991m) return false;
-                literal = integral.ToString(System.Globalization.CultureInfo.InvariantCulture);
-                return true;
+                var integral = System.Convert.ToDecimal(value);
+                if (System.Math.Abs(integral) > 9007199254740991m) return null;
+                return integral.ToString(System.Globalization.CultureInfo.InvariantCulture);
             // A FLOAT constant is written as the DOUBLE it is. Its own shortest text names the single
             // to .NET and a different number to JavaScript: `float.E` printed as "2.7182817" is read
             // back as 2.7182817000000001, not 2.7182817459106445 — so a design token like `0.38f`
             // reached arithmetic already off by the difference (SinglePrecision). "R" is the
             // shortest text that reads back as the same double, which is JavaScript's own rule.
             case float single:
-                literal = ((double)single).ToString("R", System.Globalization.CultureInfo.InvariantCulture);
-                return true;
+                return ((double)single).ToString("R", System.Globalization.CultureInfo.InvariantCulture);
             case double number:
-                literal = number.ToString("R", System.Globalization.CultureInfo.InvariantCulture);
-                return true;
+                return number.ToString("R", System.Globalization.CultureInfo.InvariantCulture);
             default:
-                return false;
+                return null;
         }
     }
 

@@ -128,4 +128,55 @@ public class StatementConformanceTests
     [InlineData("var m = new Dictionary<string, int>(); try { var v = -m[\"gone\"]; return 1; } catch { return -1; }")] // -1
     public void OutOfRangeFailsWhereDotNetFails(string statements) =>
         ConformanceRunner.AssertStatementsSameAsDotNet(statements);
+
+    /// <summary>A lock's expression runs, once, before its body, as C# evaluates it: a call in it
+    /// ran nowhere (#475).</summary>
+    [SkippableTheory]
+    [InlineData("int n = 0; object Gate() { n++; return new object(); } lock (Gate()) { n *= 10; } return n;")] // 10
+    [InlineData("var gate = new object(); int n = 1; lock (gate) { n++; } return n;")]                        // 2
+    public void ALocksExpression_Runs(string statements)
+    {
+        Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
+        ConformanceRunner.AssertStatementsSameAsDotNet(statements);
+    }
+
+    /// <summary><c>new object()</c> is a value with an identity of its own: it named a class
+    /// JavaScript does not have (#478).</summary>
+    [SkippableTheory]
+    [InlineData("var a = new object(); var b = new object(); return a == b;")]  // false
+    [InlineData("var a = new object(); var b = a; return a == b;")]             // true
+    public void ANewObject_IsAValueOfItsOwn(string statements)
+    {
+        Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
+        ConformanceRunner.AssertStatementsSameAsDotNet(statements);
+    }
+
+    /// <summary>
+    /// A for loop declares ONE variable, so every closure over it reads its last value; JavaScript's
+    /// head gave each iteration its own (#476). And a delegate read from a list and called in place
+    /// is the list's element, where it was read off <c>this</c> (#477).
+    /// </summary>
+    [SkippableTheory]
+    [InlineData("var fs = new List<Func<int>>(); for (int i = 0; i < 3; i++) fs.Add(() => i); return fs[0]() + fs[1]() + fs[2]();")] // 9
+    [InlineData("var fs = new List<Func<int>>(); for (int i = 0, j = 10; i < 2; i++, j--) fs.Add(() => i * 100 + j); return fs[0]() + fs[1]();")] // 416
+    [InlineData("var fs = new List<Func<int>>(); for (int i = 0; i < 3; i++) { var copy = i; fs.Add(() => copy); } return fs[0]() + fs[1]() + fs[2]();")] // 3
+    [InlineData("int total = 0; for (int i = 0; i < 3; i++) total += i; for (int i = 0; i < 2; i++) total += i; return total;")] // 4
+    [InlineData("Func<int, int>[] ops = [x => x + 1, x => x * 2]; return ops[1](ops[0](3));")]                // 8
+    [InlineData("Func<Func<int>> make = () => () => 7; return make()();")]                                   // 7
+    public void ALoopsVariable_IsOnePerLoop_AndADelegateIsCalledAsItsValue(string statements)
+    {
+        Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
+        ConformanceRunner.AssertStatementsSameAsDotNet(statements);
+    }
+
+    /// <summary>A static property guarding its own store with <c>field</c> keeps that store on the
+    /// type: a record's had no such property at all (#483).</summary>
+    [SkippableFact]
+    public void AStaticFieldBackedProperty_KeepsItsStoreOnTheType()
+    {
+        Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
+        ConformanceRunner.AssertStatementsSameAsDotNet(
+            "Shapes.Half = 9; var first = Shapes.Half; Shapes.Half = 20; return first * 100 + Shapes.Half;",
+            "public sealed record Shapes(string Tag) { public static int Half { get; set => field = value / 2; } }");
+    }
 }

@@ -43,6 +43,26 @@ public class AssignmentExpressionStrategy : IExpressionIrStrategy
             }
         }
 
+        // The same, ASSIGNED rather than declared: `(a, b) = point`. It was array destructuring,
+        // which a record is not, so it threw `{} is not iterable` (#486). Each target is converted
+        // as any assignment target is, and a discard names nothing.
+        if (assignment.Left is TupleExpressionSyntax tuple
+            && tuple.Arguments.All(argument => argument.Expression is not DeclarationExpressionSyntax)
+            && context.SemanticHelper.GetType(assignment.Right) is { IsTupleType: false } assignedType
+            && assignedType.DeconstructElementNames() is { } assignedFields)
+        {
+            var targets = new List<string>();
+            for (var i = 0; i < tuple.Arguments.Count && i < assignedFields.Count; i++)
+            {
+                var element = tuple.Arguments[i].Expression;
+                if (element is IdentifierNameSyntax { Identifier.Text: "_" }
+                    && context.SemanticHelper.GetSymbol(element) is null or IDiscardSymbol)
+                    continue;
+                targets.Add($"{assignedFields[i]}: {context.Converter.ConvertExpression(element)}");
+            }
+            return $"({{ {string.Join(", ", targets)} }} = {context.Converter.ConvertExpression(assignment.Right)})";
+        }
+
         // `flag |= Next()` on a bool: the logical operator, both sides evaluated, the bool written
         // back — never JavaScript's `|=`, which stores a NUMBER. FIRST, ahead of the dictionary path
         // below, which returns for every compound entry write and would store the number anyway.

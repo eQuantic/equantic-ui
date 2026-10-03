@@ -77,12 +77,47 @@ public class IsPatternStrategy : IConversionStrategy
             // from the same place. It used to carry a copy of the rule that stopped at the
             // primitives and answered `!= null` for everything else — so `node is Icon` was true for
             // any non-null node, silently.
+            // …unless it BINDS as a constant: `x is Limits.Max` parses as the type test and binds as a
+            // constant pattern over the const, and was answered `x != null` (#451).
+            if (context.SemanticHelper.GetOperation(binary) is Microsoft.CodeAnalysis.Operations.IIsPatternOperation
+                {
+                    Pattern: Microsoft.CodeAnalysis.Operations.IConstantPatternOperation constant,
+                })
+            {
+                return $"{expr} === {ConstantOf(constant.Value, binary.Right, context)}";
+            }
             if (binary.Right is TypeSyntax typeSyntax)
                 return PatternConverter.TypeCheck(typeSyntax, expr, context);
             return $"{expr} != null";
         }
 
         throw new InvalidOperationException($"Invalid node type for IsPatternStrategy: {node.GetType().Name}");
+    }
+
+    /// <summary>
+    /// A constant a pattern names, as JavaScript writes it: an enum's member as the value the twin
+    /// holds (its camelCase name, or a flags enum's number), any other constant as its literal, and
+    /// what has no exact literal (a decimal, a long past 2^53) as its expression converts. The name
+    /// parsed as a TYPE (`Limits.Max` is a qualified name there), so converting the syntax wrote it
+    /// as it was spelled, a class nothing defines.
+    /// </summary>
+    private static string ConstantOf(Microsoft.CodeAnalysis.IOperation value, ExpressionSyntax spelled,
+        ConversionContext context)
+    {
+        while (value is Microsoft.CodeAnalysis.Operations.IConversionOperation conversion) value = conversion.Operand;
+        if (value is Microsoft.CodeAnalysis.Operations.IFieldReferenceOperation
+            {
+                Field: { ContainingType.TypeKind: TypeKind.Enum, HasConstantValue: true } member,
+            })
+        {
+            return member.ContainingType.IsFlagsEnum()
+                ? System.Convert.ToInt64(member.ConstantValue, System.Globalization.CultureInfo.InvariantCulture)
+                    .ToString(System.Globalization.CultureInfo.InvariantCulture)
+                : $"'{member.Name.ToCamelCase()}'";
+        }
+        if (value.ConstantValue is { HasValue: true } known && InlinedConstantStrategy.LiteralOf(known.Value) is { } literal)
+            return literal;
+        return context.Converter.ConvertExpression(spelled);
     }
 
     public int Priority => 10;

@@ -85,6 +85,24 @@ public class CSharpVersionCoverageTests
     }
 
     [Fact]
+    public void AStaticFieldKeyword_KeepsItsSlotOnTheClass()
+    {
+        // A static accessor's `this` is the class, so the store it names has to be the class's: it was
+        // declared on the instance, which the module's type check refuses (#483).
+        var probe = One(Head + """
+            public sealed class Probe : StatelessComponent
+            {
+                public static int Total { get; set => field = value * 2; }
+                public override VisualNode Build(ComponentContext context) => new Text(Total.ToString(), TypeRole.BodyM, null);
+            }
+            """, "Probe");
+
+        Assert.True(probe.Success, string.Join("\n", probe.Errors.Select(e => e.Message)));
+        Assert.Contains("declare static $total", probe.TypeScript);
+        Assert.Contains("static set total(value) {\n        this.$total = value * 2;\n    }", probe.TypeScript);
+    }
+
+    [Fact]
     public void ExtensionBlockMembers_LowerToStatics_AndCallSitesFollow()
     {
         var results = Compile(Head + """

@@ -1476,7 +1476,9 @@ public class TypeScriptEmitter
                     if (Strategies.Expressions.FieldExpressionStrategy.UsesBackingField(node))
                     {
                         var slot = Strategies.Expressions.FieldExpressionStrategy.BackingSlot(node);
-                        c.Field(slot, DeclarationType(component, prop.Type), null, node, isDeclare: true);
+                        // On the class for a static property, where its accessors' `this` is the
+                        // class: declared on the instance, the slot they write did not exist (#483).
+                        c.Field(slot, DeclarationType(component, prop.Type), null, node, isStatic: prop.IsStatic, isDeclare: true);
                         if (!getterHasBody && getter != null)
                             c.Member(JsClassMember.Getter(stat, name, "", JsStatement.Return(JsExpr.ThisMember(slot))), getter);
                     }
@@ -1625,12 +1627,16 @@ public class TypeScriptEmitter
                     {
                         var slot = Strategies.Expressions.FieldExpressionStrategy.BackingSlot(p);
                         var slotDefault = TypeDeclarationExtensions.DefaultFor(p.Type);
+                        // On the class for a static property, where its accessors' `this` is the
+                        // class: on the instance, a static `field` read undefined (#483).
+                        var slotIsStatic = accessorQualifier.Length > 0;
                         if (slotDefault == "null")
                         {
-                            if (CanDeclareTypeOnly) c.Member(JsClassMember.Field("declare ", slot, $": {DeclaredType(p.Type)}"), p);
+                            if (CanDeclareTypeOnly)
+                                c.Member(JsClassMember.Field(slotIsStatic ? "declare static " : "declare ", slot, $": {DeclaredType(p.Type)}"), p);
                         }
                         else
-                            c.Field(slot, DeclaredType(p.Type), slotDefault, p);
+                            c.Field(slot, DeclaredType(p.Type), slotDefault, p, isStatic: slotIsStatic);
                     }
 
                     if (EmitGetter(p, c, accessorQualifier)) { }

@@ -48,6 +48,11 @@ public static class PatternConverter
             case DeclarationPatternSyntax declaration:
                 return TypeCheck(declaration.Type, access, context);
 
+            // `o is int or long`, `int => …`, `case int:` — a type with nothing bound (C# 9). It had
+            // no case here, so it fell to the default below and every such test was `false` (#482).
+            case TypePatternSyntax typePattern:
+                return TypeCheck(typePattern.Type, access, context);
+
             case RecursivePatternSyntax recursive:
                 return BuildRecursive(recursive, access, context, accessType);
 
@@ -241,11 +246,17 @@ public static class PatternConverter
     /// </summary>
     public static string TypeCheck(TypeSyntax typeSyntax, string access, ConversionContext context)
     {
+        // A type the platform represents by a value of its own, read off the SYMBOL: the spelling
+        // missed `Int32` and `System.Int64`, and asked a long, which is a BigInt here, whether it was
+        // a number, so `o is long` was false for every long.
+        if (context.SemanticHelper.GetSymbol(typeSyntax) is INamedTypeSymbol known && ScalarCheck(known, access, context) is { } scalar)
+            return scalar;
         switch (typeSyntax.ToString())
         {
             case "string": return $"typeof {access} === 'string'";
-            case "int" or "double" or "float" or "long" or "decimal" or "number":
+            case "int" or "double" or "float" or "decimal" or "number":
                 return $"typeof {access} === 'number'";
+            case "long": return $"typeof {access} === 'bigint'";
             case "bool" or "boolean": return $"typeof {access} === 'boolean'";
         }
 
@@ -285,6 +296,40 @@ public static class PatternConverter
         }
 
         return $"{access} != null";
+    }
+
+    /// <summary>
+    /// The test for a type the browser holds as a value of its own: a string (a char is one too), a
+    /// bool, a long as a BigInt, an integer as a whole number, a real as any number, and a decimal and
+    /// the dates as the runtime's classes. Null for every other type. A boxed double holding a whole
+    /// number still tests as an int, since both are one JavaScript number.
+    /// </summary>
+    private static string? ScalarCheck(INamedTypeSymbol type, string access, ConversionContext context)
+    {
+        switch (type.SpecialType)
+        {
+            case SpecialType.System_String or SpecialType.System_Char:
+                return $"typeof {access} === 'string'";
+            case SpecialType.System_Boolean:
+                return $"typeof {access} === 'boolean'";
+            case SpecialType.System_Int64 or SpecialType.System_UInt64:
+                return $"typeof {access} === 'bigint'";
+            case SpecialType.System_Int32 or SpecialType.System_Int16 or SpecialType.System_SByte
+                or SpecialType.System_Byte or SpecialType.System_UInt16 or SpecialType.System_UInt32:
+                return $"Number.isInteger({access})";
+            case SpecialType.System_Double or SpecialType.System_Single:
+                return $"typeof {access} === 'number'";
+            case SpecialType.System_Decimal or SpecialType.System_DateTime:
+                context.UsedRuntimeTypes.Add(type.Name);
+                return $"{access} instanceof {type.Name}";
+        }
+        if (type.ContainingNamespace?.ToDisplayString() == "System"
+            && type.Name is "TimeSpan" or "DateOnly" or "TimeOnly" or "DateTimeOffset")
+        {
+            context.UsedRuntimeTypes.Add(type.Name);
+            return $"{access} instanceof {type.Name}";
+        }
+        return null;
     }
 
     /// <summary>

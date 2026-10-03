@@ -275,6 +275,13 @@ public class InvocationStrategy : IExpressionIrStrategy
             return JsExpr.Callish($"this.{delegateIdentifier.Identifier.Text.ToCamelCase()}{ProvenNotNull(delegateTarget, delegateIdentifier, context)}({args})");
         }
 
+        // A delegate VALUE reached any other way (`handlers[0](x)`, `Make()(x)`, `(f)(x)`) is called
+        // as the value its expression gives. It fell to the member rule below and was read off
+        // `this`: `fs[0]()` over a local list was `this.fs[0]()` (#477).
+        if (symbol is { MethodKind: MethodKind.DelegateInvoke }
+            && methodExpression is not (IdentifierNameSyntax or MemberAccessExpressionSyntax or MemberBindingExpressionSyntax))
+            return JsExpr.Call(context.Converter.ConvertIr(methodExpression), argIrs);
+
         // Direct invocation (Function() -> function())
         bool needsThis = false;
 
