@@ -11,7 +11,7 @@
 
 ## 3. A type's own Count is its own (#517)
 
-- [x] 3.1 Spell a `Count` by the receiver's symbol: .NET's collections keep the array's `length`, and any other type reads its twin's `count`, wherever it is declared. Verify: `ReferencedCountTests` compiles a component against a library image, reads the library type's `count` and a list's `length`, and fails against the previous rule
+- [x] 3.1 Spell a `Count` by the receiver's symbol: .NET's own types keep the array's `length`, and a type the app or a library it references declares reads its twin's `count`. Verify: `ReferencedCountTests` compiles a component against a library image, reads the library type's `count` and a list's `length`, and fails against the previous rule
 
 ## 4. Documentation and the suites
 

@@ -27,7 +27,8 @@ symbol, and both failed only in the browser.
   constant inlines, `Math` and `string` members and the primitives' statics go through the same
   tables, and an enum's member is the member. One that no translation covers fails the build with
   EQ2004, never a camel-cased guess.
-- A type that is not one of .NET's collections reads its own `Count`, wherever it is declared.
+- A type the app or a library it references declares reads its own `Count`; one of .NET's own
+  (a list, a lookup) keeps the array's `length` the browser holds it as.
 - Nothing a developer writes changes. Code that compiled and failed in the browser now either runs
   as on the server or fails the build, naming the member.
 
