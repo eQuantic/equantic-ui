@@ -366,7 +366,7 @@ export class CodeBlock extends StatelessComponent {
             if (element.start >= to) break;
             if (element.start < from) continue;
             let text = $eq.text.substring(cells.text, element.start, element.end - element.start);
-            if (text === '	') {
+            if (text === '\t') {
                 for (let space = 0; space < element.width; space++) run += ' ';
             } else if (element.width === 2) {
                 if (run.length > 0) code.add(CodeBlock.run(run, color, style));

@@ -111,7 +111,8 @@ public static class DefaultValue
         // [ZeroConstructs]) gets its twin's own default instead, which is what `undefined` asks
         // for: the twin's constructor defaults (`style: BoxStyle = new BoxStyle()`) and its
         // `!== undefined` checks apply for undefined and never for null, and C# has no null struct.
-        // ParameterDefaultLiteral fills an omitted `= default` struct argument by the same rule.
+        // ObjectCreationStrategy.DefaultLiteralFor fills an omitted `= default` struct argument by the
+        // same rule.
         return type is { IsValueType: true } && !type.IsNullableValue() ? "undefined" : "null";
     }
 

@@ -60,7 +60,7 @@ public class BclSurfaceAuditTests
     [
         typeof(Math), typeof(MathF), typeof(Convert), typeof(Guid), typeof(DateTime),
         typeof(TimeSpan), typeof(DateOnly), typeof(TimeOnly), typeof(string), typeof(int),
-        typeof(double), typeof(bool), typeof(char), typeof(long), typeof(Array),
+        typeof(double), typeof(bool), typeof(char), typeof(long), typeof(decimal), typeof(Array),
     ];
 
     /// <summary>LINQ over a materialized list — the shape client code overwhelmingly uses.</summary>
