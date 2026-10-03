@@ -3,13 +3,13 @@
 ## 1. The writer
 
 - [x] 1.1 Spell every string from its value in `JsStringLiteral`, as a quoted literal or a template's text, escaping each code unit that does not show as itself, and verify the module holds `'x\uD83D'` with a pair raw beside it
-- [x] 1.2 Check: `LiteralConformanceTests` reads lone halves, a pair between them, the halves in a template, a folded and an inlined constant and every invisible class on both sides; 31 of its 39 cases fail on main at d09f7bec, where the module could not be written
+- [x] 1.2 Check: `LiteralConformanceTests` reads lone halves, a pair between them, the halves in a template, a folded and an inlined constant, a record's skipped defaults and every invisible class on both sides; 31 of its 41 cases fail on main at d09f7bec, where the module could not be written
 
 ## 2. The strategies
 
 - [x] 2.1 Write a char literal and `nameof` from their value, and quote an interpolation's format, a skipped parameter's default and a resource lookup through the writer
 - [x] 2.2 Keep a raw interpolated string's doubled braces, and refuse a literal with no JavaScript spelling with EQ1004
-- [x] 2.3 Check: the conformance cases for the char escapes, the quoted format, the skipped defaults, `nameof(@class)` and the raw braces pass on both sides and fail on main; `LiteralSpellingTests` asks for EQ1004 and its message on `"ab"u8` and pins each spelling (22 of its 35 cases, with the resource and C# 13 tests, fail on main), and the C# 13 `\e` test reads the ESC character ordinally, since a culture-aware search finds a control at position 0 of any text
+- [x] 2.3 Check: the conformance cases for the char escapes, the quoted format, the skipped defaults, `nameof(@class)` and the raw braces pass on both sides and fail on main; `LiteralSpellingTests` asks for EQ1004 and its message on `"ab"u8` and pins each spelling, a class's skipped default and `nameof` with no model included (19 of its 27 cases fail on main), and the C# 13 `\e` test reads the ESC character ordinally, since a culture-aware search finds a control at position 0 of any text
 
 ## 3. The map
 

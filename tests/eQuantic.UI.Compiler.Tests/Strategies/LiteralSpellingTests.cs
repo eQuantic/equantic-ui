@@ -60,6 +60,18 @@ public class LiteralSpellingTests
     }
 
     [Fact]
+    public void AClassCreationsSkippedDefault_IsQuotedAsAnyString()
+    {
+        // A class's parameter that a named argument skips is filled at the call from its default.
+        var ts = TestHelper.ConvertClass("""
+            public class Inner { public Inner(string a = "it's\n", char c = '\'', int b = 0) { } }
+            public Inner Make() => new Inner(b: 1);
+            """);
+
+        ts.Should().Contain(@"new Inner('it\'s\n', '\'', 1)");
+    }
+
+    [Fact]
     public void Nameof_IsTheNameAndNotItsSpelling()
     {
         TestHelper.ConvertCodeBlock("var @class = 1; var n = nameof(@class);")

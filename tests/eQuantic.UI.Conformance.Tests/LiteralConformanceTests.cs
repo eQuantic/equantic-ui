@@ -99,8 +99,10 @@ public class LiteralConformanceTests
     private const string Defaults =
         "public record Quoted(string A = \"it's\\n\\\\\", char C = '\\'', int B = 0);";
 
-    /// <summary>A record's constructor skipped by a named argument fills the parameter from its
-    /// default, on the creation path rather than the call's.</summary>
+    /// <summary>A record's member that a named argument skips is left to the twin's constructor,
+    /// whose default is a literal like any other: a quote, a line feed and a backslash in it, and a
+    /// quote for a char. (A class's skipped parameter is filled at the call instead, which
+    /// <c>LiteralSpellingTests</c> pins: the harness's prelude emits no class.)</summary>
     [SkippableTheory]
     [InlineData("var q = new Quoted(B: 1); return q.A + q.C + q.B;")]                               // it's, a line feed, a backslash, a quote, 1
     [InlineData("return new Quoted(C: 'x').A.Length;")]                                            // 6

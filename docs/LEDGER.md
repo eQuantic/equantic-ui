@@ -1000,7 +1000,7 @@ record of a release, the wiki's Upgrading page is the distillate.
   their value. The review found a raw interpolated string's doubled braces collapsed
   (`$$$"""a{{b}}"""` was `a{b}`), a UTF-8 literal spliced into the module as C# (refused with EQ1004
   now), and the C# 13 escape's test reading ESC culture-aware, which finds a control at position 0
-  of anything. 31 of the 39 conformance cases fail on main, and a frame thrown after an interpolated
+  of anything. 31 of the 41 conformance cases fail on main, and a frame thrown after an interpolated
   string holding U+2028 leads to its own line, where main led it two lines down
   ([#491](https://github.com/eQuantic/equantic-ui/issues/491)). Filed on the way: a constant written
   outside a literal loses its type's representation
