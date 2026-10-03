@@ -6,6 +6,7 @@ using Microsoft.CodeAnalysis.CSharp.Syntax;
 using eQuantic.UI.Compiler.Services;
 
 using eQuantic.UI.Compiler.CodeGen.Extensions;
+using eQuantic.UI.Compiler.CodeGen.Ir;
 
 namespace eQuantic.UI.Compiler.CodeGen.Strategies.Expressions;
 
@@ -445,10 +446,13 @@ public class ObjectCreationStrategy : IConversionStrategy
             if (member != null) return $"'{member.Name.ToCamelCase()}'";
         }
 
+        // A string or a char is spelled by the one writer of JavaScript strings: quoted by hand, a
+        // default of "it's" closed its own quotes and a char had none at all (`M.g(,, 1)`, #520).
         return value switch
         {
             bool flag => flag ? "true" : "false",
-            string text => $"'{text}'",
+            string text => JsStringLiteral.Quote(text),
+            char character => JsStringLiteral.Quote(character.ToString()),
             float f => f.ToString(System.Globalization.CultureInfo.InvariantCulture),
             double d => d.ToString(System.Globalization.CultureInfo.InvariantCulture),
             _ => System.Convert.ToString(value, System.Globalization.CultureInfo.InvariantCulture) ?? "null",
