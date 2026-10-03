@@ -254,10 +254,16 @@ public class HydrationSpecEmissionTests
                 private Queue<decimal> _queue = new();
                 private LinkedList<string> _list = new();
                 private SortedSet<int> _sorted = new();
+                private SortedSet<string> _names = new();
+                private SortedSet<decimal?> _prices = new();
+                private SortedSet<Level> _levels = new();
+                private SortedDictionary<string, int> _index = new();
 
                 public override VisualNode Build(ComponentContext context)
                     => new Text("", TypeRole.BodyM, context.Theme.TextPrimary);
             }
+
+            public enum Level { Low, High }
             """;
         var compiler = new ComponentCompiler();
         compiler.SetProjectCompilation(GeneratedProject.Of(source, "Kept.cs"));
@@ -270,7 +276,13 @@ public class HydrationSpecEmissionTests
         Assert.Contains("_stack: { collection: 'stack', of: null }", map);
         Assert.Contains("_queue: { collection: 'queue', of: 'decimal' }", map);
         Assert.Contains("_list: { collection: 'linkedList', of: null }", map);
-        Assert.Contains("_sorted: { collection: 'sortedSet', of: null }", map);
+        // A sorted one says how its element type orders, which the browser cannot tell from a value: a
+        // string in the culture, a decimal by its compareTo. An enum has no order there, and says none.
+        Assert.Contains("_sorted: { collection: 'sortedSet', of: null, order: 'value' }", map);
+        Assert.Contains("_names: { collection: 'sortedSet', of: null, order: 'text' }", map);
+        Assert.Contains("_prices: { collection: 'sortedSet', of: 'decimal', order: 'comparable' }", map);
+        Assert.Contains("_levels: { collection: 'sortedSet', of: null }", map);
+        Assert.Contains("_index: { dict: null, sorted: true, order: 'text' }", map);
     }
 
     private static string Compile()

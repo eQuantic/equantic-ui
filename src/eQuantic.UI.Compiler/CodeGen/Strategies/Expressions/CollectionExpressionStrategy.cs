@@ -58,8 +58,11 @@ public class CollectionExpressionStrategy : IExpressionIrStrategy
 
         if (definition.StartsWith("System.Collections.Generic.SortedSet"))
         {
+            // In its element type's order (ValueOrdering), as a constructed one is.
             context.UsedHelpers.Add(Eq.Import);
-            return JsExpr.Call(JsExpr.Identifier(Eq.SortedSet), array);
+            return target is INamedTypeSymbol { TypeArguments: [var element] } && ValueOrdering.Of(element) is { } ordering
+                ? JsExpr.Call(JsExpr.Identifier(Eq.SortedSet), array, JsExpr.Literal($"'{ordering}'"))
+                : JsExpr.Call(JsExpr.Identifier(Eq.SortedSet), array);
         }
         if (definition.StartsWith("System.Collections.Generic.HashSet")
             || definition.StartsWith("System.Collections.Generic.ISet")

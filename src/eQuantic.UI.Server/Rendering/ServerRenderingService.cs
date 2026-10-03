@@ -762,7 +762,17 @@ public class ServerRenderingService : IServerRenderingService
                 {
                     try
                     {
-                        stateDict[hydrated.Name] = HydrationProjection.Of(value, projection, hydrated.Declared);
+                        stateDict[hydrated.Name] = HydrationProjection.Of(value, projection, hydrated.Declared,
+                            (read, foreign) =>
+                            {
+                                if (_reportedServices.TryAdd((type, $"{hydrated.Name}.{read}"), 0))
+                                    _logger.LogWarning(
+                                        "[SSR Hydration] {Component}.{Member}.{Read} holds {Foreign}: the browser's copy "
+                                        + "would not find or order its elements as it does, so it is left out of the page, "
+                                        + "and the rest of {Member} crosses. Build it with the default comparer, or decide "
+                                        + "on the server and keep the result.",
+                                        type.FullName, hydrated.Name, read, foreign, hydrated.Name);
+                            });
                     }
                     catch (Exception ex)
                     {
@@ -825,15 +835,14 @@ public class ServerRenderingService : IServerRenderingService
                 // A COLLECTION WITH ITS OWN COMPARER does not cross either: the wire carries its
                 // elements, and the browser rebuilds it with the element type's default equality or
                 // order, so a case-insensitive set would answer differently there.
-                else if (ForeignComparer.Of(value) is { } comparer)
+                else if (ForeignComparer.Of(value, hydrated.Declared) is { } foreign)
                 {
                     if (_reportedServices.TryAdd((type, hydrated.Name), 0))
                         _logger.LogWarning(
-                            "[SSR Hydration] {Component}.{Member} holds a {Collection} with a {Comparer}, which the "
-                            + "browser's copy would not keep, since it compares with the element type's default, so "
-                            + "it is left out of the page. Build it with the default comparer, or decide on the server "
-                            + "and keep the result.",
-                            type.FullName, hydrated.Name, value.GetType().Name, comparer.GetType().Name);
+                            "[SSR Hydration] {Component}.{Member} holds {Foreign}: the browser's copy would not find "
+                            + "or order its elements as it does, so it is left out of the page. Build it with the "
+                            + "default comparer, or decide on the server and keep the result.",
+                            type.FullName, hydrated.Name, foreign);
                 }
                 else
                 {

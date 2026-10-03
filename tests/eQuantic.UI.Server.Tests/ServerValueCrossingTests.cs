@@ -1,3 +1,6 @@
+using System.Collections;
+using System.Collections.Immutable;
+using System.Collections.ObjectModel;
 using System.Net;
 using System.Reflection;
 using System.Text.Json;
@@ -106,9 +109,11 @@ public class ServerValueCrossingTests
         public override VisualNode Build(ComponentContext context) => new Text(_status, TypeRole.BodyM);
     }
 
-    /// <summary>A service holding a set whose equality is its own, which the browser's copy would not keep.</summary>
+    /// <summary>A service holding a name, and a set whose equality is its own, which the browser's copy
+    /// would not keep.</summary>
     public sealed class Roster
     {
+        public string Name { get; init; } = "";
         public HashSet<string> Roles { get; init; } = new();
     }
 
@@ -116,24 +121,71 @@ public class ServerValueCrossingTests
     public sealed class RosterPage(Roster roster) : StatelessComponent
     {
         public override VisualNode Build(ComponentContext context) =>
-            new Text(roster.Roles.Contains("ADMIN") ? "admin" : "member", TypeRole.BodyM);
+            new Text($"{roster.Name}: {(roster.Roles.Contains("ADMIN") ? "admin" : "member")}", TypeRole.BodyM);
     }
 
-    /// <summary>A prefetch keeping one set with its own comparer and one with the default.</summary>
+    /// <summary>
+    /// A prefetch keeping sets and dictionaries whose equality or order the browser's copy keeps, and
+    /// ones whose it would not: a comparer of their own, read through a wrapper and from an immutable
+    /// set, an ordinal order for a sorted set of strings, and a set of a class whose equality nothing
+    /// can read. And a plain object with a comparer of its own, which is no collection at all.
+    /// </summary>
     [Page("/kept-roles")]
     public sealed class KeptRolesPage : StatelessComponent, IServerPrefetch
     {
         private HashSet<string> _roles = new();
         private HashSet<string> _plain = new();
+        private HashSet<string> _ordinal = new();
+        private SortedSet<string> _sortedOrdinal = new();
+        private SortedSet<string> _sortedDefault = new();
+        private IReadOnlySet<string> _immutable = ImmutableHashSet<string>.Empty;
+        private IReadOnlyDictionary<string, int> _wrapped = new Dictionary<string, int>();
+        private IReadOnlyDictionary<string, int> _wrappedPlain = new Dictionary<string, int>();
+        private IReadOnlySet<string> _custom = new HashSet<string>();
+        private SortSpec _spec = new();
 
         public Task PrefetchAsync(IServiceProvider services, CancellationToken cancellationToken)
         {
             _roles = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "admin" };
             _plain = new HashSet<string> { "admin" };
+            _ordinal = new HashSet<string>(StringComparer.Ordinal) { "admin" };
+            _sortedOrdinal = new SortedSet<string>(StringComparer.Ordinal) { "b", "A" };
+            _sortedDefault = new SortedSet<string> { "b", "A" };
+            _immutable = ImmutableHashSet.Create(StringComparer.OrdinalIgnoreCase, "admin");
+            _wrapped = new ReadOnlyDictionary<string, int>(new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase) { ["a"] = 1 });
+            _wrappedPlain = new ReadOnlyDictionary<string, int>(new Dictionary<string, int> { ["a"] = 1 });
+            _custom = new CaseBlindTags("admin");
+            _spec = new SortSpec { Column = "name" };
             return Task.CompletedTask;
         }
 
-        public override VisualNode Build(ComponentContext context) => new Text($"{_roles.Count},{_plain.Count}", TypeRole.BodyM);
+        public override VisualNode Build(ComponentContext context) => new Text(
+            $"{_roles.Count},{_plain.Count},{_ordinal.Count},{_sortedOrdinal.Count},{_sortedDefault.Count},"
+            + $"{_immutable.Count},{_wrapped.Count},{_wrappedPlain.Count},{_custom.Count},{_spec.Column}",
+            TypeRole.BodyM);
+    }
+
+    /// <summary>A sort the page keeps: plain data, beside a comparer of its own.</summary>
+    public sealed class SortSpec
+    {
+        public string Column { get; init; } = "";
+        public IComparer<string> Comparer { get; } = StringComparer.OrdinalIgnoreCase;
+    }
+
+    /// <summary>A set of the app's own, case-blind inside, with no comparer anything can read.</summary>
+    public sealed class CaseBlindTags(params string[] tags) : IReadOnlySet<string>
+    {
+        private readonly HashSet<string> _inner = new(tags, StringComparer.OrdinalIgnoreCase);
+        public int Count => _inner.Count;
+        public bool Contains(string item) => _inner.Contains(item);
+        public bool IsProperSubsetOf(IEnumerable<string> other) => _inner.IsProperSubsetOf(other);
+        public bool IsProperSupersetOf(IEnumerable<string> other) => _inner.IsProperSupersetOf(other);
+        public bool IsSubsetOf(IEnumerable<string> other) => _inner.IsSubsetOf(other);
+        public bool IsSupersetOf(IEnumerable<string> other) => _inner.IsSupersetOf(other);
+        public bool Overlaps(IEnumerable<string> other) => _inner.Overlaps(other);
+        public bool SetEquals(IEnumerable<string> other) => _inner.SetEquals(other);
+        public IEnumerator<string> GetEnumerator() => _inner.GetEnumerator();
+        IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
     }
 
     /// <summary>A prefetch that keeps a service behind a member typed object, which the build cannot see into.</summary>
@@ -161,7 +213,7 @@ public class ServerValueCrossingTests
         builder.Services.AddSingleton(new SiteOptions { Title = "The Docs", ApiKey = ApiKey });
         builder.Services.AddSingleton<BaseOptions>(new BrandedOptions { Title = "the brand's" });
         builder.Services.AddSingleton<IAccountView>(new AccountSecrets { Token = "tok-0123456789" });
-        builder.Services.AddSingleton(new Roster { Roles = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "admin" } });
+        builder.Services.AddSingleton(new Roster { Name = "Crew", Roles = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "admin" } });
         builder.Services.AddUI(options => options.ScanAssembly(Assembly.GetExecutingAssembly()));
         var app = builder.Build();
         app.MapUI();
@@ -268,24 +320,24 @@ public class ServerValueCrossingTests
     }
 
     [Fact]
-    public async Task ASetWithItsOwnComparer_DoesNotCross_SinceTheBrowsersCopyWouldNotKeepIt()
+    public async Task ASetWithItsOwnComparer_DoesNotCross_AndTheRestOfTheValueDoes()
     {
         // Case-insensitive on the server, where `Contains("ADMIN")` is true; a browser Set compares by
-        // code units and would answer false.
+        // code units and would answer false. The name beside it is plain data, and still crosses: the
+        // whole value was left out, so the browser lost what it could have drawn.
         var (app, client) = await StartAsync();
         await using var _ = app;
 
         var html = await client.GetStringAsync("/roster");
 
-        html.Should().Contain("admin");
-        var state = PayloadIn(html);
-        var key = eQuantic.UI.Web.ComponentIdentity.Key(typeof(RosterPage), 0);
-        if (state.TryGetProperty(key, out var entry))
-            entry.TryGetProperty("roster", out var __).Should().BeFalse("its set's equality is its own");
+        html.Should().Contain("Crew: admin");
+        var roster = EntryOf(PayloadIn(html), typeof(RosterPage)).GetProperty("roster");
+        roster.GetProperty("name").GetString().Should().Be("Crew");
+        roster.TryGetProperty("roles", out var __).Should().BeFalse("its set's equality is its own");
     }
 
     [Fact]
-    public async Task APrefetchedSetWithItsOwnComparer_IsLeftOut_AndOneWithTheDefaultCrosses()
+    public async Task APrefetchedSetOrDictionary_CrossesExactlyWhenTheBrowsersCopyKeepsItsEqualityAndOrder()
     {
         var (app, client) = await StartAsync();
         await using var _ = app;
@@ -293,8 +345,19 @@ public class ServerValueCrossingTests
         var html = await client.GetStringAsync("/kept-roles");
 
         var entry = EntryOf(PayloadIn(html), typeof(KeptRolesPage));
-        entry.TryGetProperty("_roles", out var __).Should().BeFalse("a case-insensitive set would answer differently in the browser");
+        // What the browser's copy keeps: the default equality, the ordinal one for a string (which is
+        // the browser's own), a sorted set's default order, and a wrapper of a plain dictionary.
         entry.GetProperty("_plain").EnumerateArray().Select(role => role.GetString()).Should().Equal(["admin"]);
+        entry.GetProperty("_ordinal").EnumerateArray().Select(role => role.GetString()).Should().Equal(["admin"]);
+        entry.GetProperty("_sortedDefault").EnumerateArray().Select(name => name.GetString()).Should().Equal(["A", "b"]);
+        entry.GetProperty("_wrappedPlain").GetProperty("a").GetInt32().Should().Be(1);
+        // A plain object with a comparer of its own is no collection, and crosses as the data it is.
+        entry.GetProperty("_spec").GetProperty("column").GetString().Should().Be("name");
+        // What it would not: a case-insensitive set, read from a set, an immutable set and through a
+        // wrapper; an ordinal order where the browser orders a string in the culture; and a set of a
+        // class whose equality nothing can read.
+        foreach (var left in new[] { "_roles", "_immutable", "_wrapped", "_sortedOrdinal", "_custom" })
+            entry.TryGetProperty(left, out var __).Should().BeFalse($"{left} would answer differently in the browser");
     }
 
     [Fact]

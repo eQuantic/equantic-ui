@@ -1,6 +1,8 @@
 using System.Linq;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using Microsoft.CodeAnalysis.Operations;
+using eQuantic.UI.Compiler.CodeGen.Extensions;
 
 namespace eQuantic.UI.Compiler.CodeGen.Strategies.Types;
 
@@ -54,7 +56,9 @@ public class QueueStackStrategy : ConversionStrategyBase
                         ? KindOfName(named.Type.ToString())
                         : null)
                     ?? "queue";
-                var construction = $"$eq.collections.{kind}({ConvertArgs(oc.ArgumentList, context)})";
+                var construction = kind == "sortedSet" && SortedSetConstruction(oc, resolvedType, context) is { } sorted
+                    ? sorted
+                    : $"$eq.collections.{kind}({ConvertArgs(oc.ArgumentList, context)})";
                 // `new SortedSet<int> { 2, 1 }` is a construction and then one Add per element, as
                 // C# runs it. The initializer was dropped, so the set began empty in the browser alone.
                 return oc.Initializer is { } initializer && initializer.Expressions.Count > 0
@@ -77,6 +81,34 @@ public class QueueStackStrategy : ConversionStrategyBase
             default:
                 return context.Unhandled(node, "Queue/Stack");
         }
+    }
+
+    /// <summary>
+    /// <c>new SortedSet&lt;T&gt;(…)</c>: the elements it copies, and the order it keeps them in, which is
+    /// its element type's (<see cref="ValueOrdering"/>) unless the comparer it is handed asks for the
+    /// code-unit one. Every set ordered its elements by <c>&lt;</c>, so strings did not follow the
+    /// current culture and decimals compared their text; and a comparer reached the factory as the
+    /// elements to copy, which threw. Null where the model cannot bind the construction.
+    /// </summary>
+    private static string? SortedSetConstruction(BaseObjectCreationExpressionSyntax creation, ITypeSymbol? type,
+        ConversionContext context)
+    {
+        if (type is not INamedTypeSymbol { TypeArguments: [var element] }
+            || context.SemanticHelper.GetOperation(creation) is not IObjectCreationOperation operation)
+            return null;
+        var ordering = ValueOrdering.Of(element);
+        string? source = null;
+        foreach (var argument in operation.Arguments)
+        {
+            if (argument.ArgumentKind == ArgumentKind.DefaultValue) continue;
+            if (argument.Parameter?.Type.Name == "IComparer")
+                ordering = argument.Value.OrderingAskedFor(element);
+            else
+                source = context.Converter.ConvertExpression((ExpressionSyntax)argument.Value.Syntax);
+        }
+        return ordering is null
+            ? $"$eq.collections.sortedSet({source})"
+            : $"$eq.collections.sortedSet({source ?? "null"}, '{ordering}')";
     }
 
     private static bool IsMember(MemberAccessExpressionSyntax ma, ConversionContext context)

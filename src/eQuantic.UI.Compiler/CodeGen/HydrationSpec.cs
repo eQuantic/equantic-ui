@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using Microsoft.CodeAnalysis;
+using eQuantic.UI.Compiler.CodeGen.Strategies;
 using eQuantic.UI.Compiler.CodeGen.Strategies.Types;
 
 namespace eQuantic.UI.Compiler.CodeGen;
@@ -79,7 +80,13 @@ public static class HydrationSpec
         // runtime's. It crossed as the array, which no read of a Set answers (#516). The names are
         // BoundaryShape's, which the generator's projection reads too.
         if (BoundaryShape.CollectionClass(named) is { } collection)
-            return $"{{ collection: '{collection}', of: {Of(named.TypeArguments[0], referenced, visiting) ?? "null"} }}";
+        {
+            // A sorted set orders as its element type does (ValueOrdering), as one eqc builds does.
+            var order = collection == "sortedSet" && ValueOrdering.Of(named.TypeArguments[0]) is { } ordering
+                ? $", order: '{ordering}'"
+                : "";
+            return $"{{ collection: '{collection}', of: {Of(named.TypeArguments[0], referenced, visiting) ?? "null"}{order} }}";
+        }
 
         if (ElementType(named) is { } element)
             return List(element, referenced, visiting);
@@ -173,9 +180,10 @@ public static class HydrationSpec
         Of(element, referenced, visiting) is { } inner ? $"[{inner}]" : null;
 
     /// <summary>
-    /// <c>{ dict: values, key: tag, byValue: …, sorted: true }</c>: how each value hydrates (null
-    /// when it arrives as it is), how a property name becomes the key, and which class holds the
-    /// entries — a sorted one's own, or the runtime's <c>Dictionary</c>, finding its keys by value
+    /// <c>{ dict: values, key: tag, byValue: …, sorted: true, order: … }</c>: how each value hydrates
+    /// (null when it arrives as it is), how a property name becomes the key, and which class holds the
+    /// entries — a sorted one's own, in its key type's order (<see cref="ValueOrdering"/>), or the
+    /// runtime's <c>Dictionary</c>, finding its keys by value
     /// or by their own equality where the key type's default comparer does
     /// (<see cref="DictionaryStrategy.KeyEquality"/>).
     /// </summary>
@@ -184,7 +192,11 @@ public static class HydrationSpec
     {
         var parts = new List<string> { $"dict: {Of(value, referenced, visiting) ?? "null"}" };
         if (KeyTag(key) is { } tag) parts.Add($"key: {tag}");
-        if (dictionary.DictionaryFactory() is Eq.SortedDictionary or Eq.SortedList) parts.Add("sorted: true");
+        if (dictionary.DictionaryFactory() is Eq.SortedDictionary or Eq.SortedList)
+        {
+            parts.Add("sorted: true");
+            if (ValueOrdering.Of(key) is { } ordering) parts.Add($"order: '{ordering}'");
+        }
         else if (DictionaryStrategy.KeyEquality(key) is { } equality) parts.Add($"byValue: {equality}");
         return $"{{ {string.Join(", ", parts)} }}";
     }

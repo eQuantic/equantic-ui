@@ -296,6 +296,18 @@ describe('a collection the browser holds as its own class', () => {
     expect(sorted.min).toBe(1);
   });
 
+  it('keeps a sorted one in its element type\'s order, which `<` does not give', async () => {
+    const { SortedSet } = await import('./sorted');
+    // Decimals compared by their text put 10 before 9 and kept 1.0 beside 1.00, which .NET finds equal.
+    const prices = hydrate(['10', '9', '1.0', '1.00'], { collection: 'sortedSet', of: 'decimal', order: 'comparable' });
+    expect([...(prices as InstanceType<typeof SortedSet<Decimal>>)].map(String)).toEqual(['1.0', '9', '10']);
+    // A string orders in the culture, as Comparer<string>.Default does: B after b, not before a.
+    const names = hydrate(['a', 'b', 'B'], { collection: 'sortedSet', of: null, order: 'text' });
+    expect([...(names as InstanceType<typeof SortedSet<string>>)]).toEqual(['a', 'b', 'B']);
+    const index = hydrate({ a: 3, b: 1, B: 2 }, { dict: null, sorted: true, order: 'text' }) as SortedMap<string, number>;
+    expect([...index.keys()]).toEqual(['a', 'b', 'B']);
+  });
+
   it('passes a value that is already its class, so hydrating twice is harmless', () => {
     const once = hydrate(['a'], { collection: 'set', of: null });
     expect(hydrate(once, { collection: 'set', of: null })).toBe(once);

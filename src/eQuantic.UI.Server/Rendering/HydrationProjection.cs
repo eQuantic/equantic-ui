@@ -14,6 +14,11 @@ namespace eQuantic.UI.Server.Rendering;
 /// <c>?</c> crosses only whether its value is null, as null or an empty object. A null met on the way
 /// crosses as null where it was met, which is what the browser's own read would meet.
 /// </para>
+/// <para>
+/// A read ending at a set or a dictionary the browser's copy would answer differently, by a comparer
+/// it would not keep (<see cref="ForeignComparer"/>), is left out, and named to the caller: the rest of
+/// the value still crosses, as the browser reads it.
+/// </para>
 /// </summary>
 internal static class HydrationProjection
 {
@@ -25,16 +30,19 @@ internal static class HydrationProjection
     /// <param name="value">The value the manifest's entry holds.</param>
     /// <param name="projection">The reads the browser makes of it.</param>
     /// <param name="declared">The type the entry's member is declared as, which the reads are bound against.</param>
-    public static object? Of(object? value, string projection, Type declared)
+    /// <param name="leftOut">Told of each read left out, with why: the read as the manifest writes it, and
+    /// what its value holds that the browser's copy would not keep.</param>
+    public static object? Of(object? value, string projection, Type declared, Action<string, string>? leftOut = null)
     {
         if (value is null) return null;
         var projected = new Dictionary<string, object?>(StringComparer.Ordinal);
         foreach (var read in projection.Split(',', StringSplitOptions.RemoveEmptyEntries))
-            Write(projected, value, declared, read);
+            Write(projected, value, declared, read, leftOut);
         return projected;
     }
 
-    private static void Write(Dictionary<string, object?> into, object value, Type declared, string read)
+    private static void Write(Dictionary<string, object?> into, object value, Type declared, string read,
+        Action<string, string>? leftOut)
     {
         var presence = read.EndsWith('?');
         var segments = (presence ? read[..^1] : read).Split('.');
@@ -51,13 +59,13 @@ internal static class HydrationProjection
 
             if (i == segments.Length - 1)
             {
-                // A collection crossing whole carries its elements and never its comparer, which the
-                // browser's copy would not keep, so it does not cross at all.
-                if (!presence && next is not null && ForeignComparer.Of(next) is { } comparer)
-                    throw new InvalidOperationException(
-                        $"{type.FullName}.{segments[i]} holds a {comparer.GetType().Name}, an equality or an order the "
-                        + "browser's copy would not keep, since it compares with the element type's default. Build "
-                        + "the collection with the default comparer, or decide on the server and keep the result.");
+                // A collection crossing whole carries its elements and never its comparer, so one whose
+                // comparer the browser's copy would not keep does not cross, and nothing else is lost.
+                if (!presence && next is not null && ForeignComparer.Of(next, member.Type) is { } foreign)
+                {
+                    leftOut?.Invoke(read, foreign);
+                    return;
+                }
                 target[name] = !presence ? next
                     : next is null ? null
                     : target.TryGetValue(name, out var already) && already is Dictionary<string, object?> ? already

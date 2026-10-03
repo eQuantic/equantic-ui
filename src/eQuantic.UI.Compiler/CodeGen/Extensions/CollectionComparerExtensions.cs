@@ -56,19 +56,38 @@ public static class CollectionComparerExtensions
     /// Whether the comparer asks for nothing the lowering does not already do: <c>null</c> (the
     /// constructor's own default), <c>EqualityComparer&lt;T&gt;.Default</c> or
     /// <c>Comparer&lt;T&gt;.Default</c>, and <c>StringComparer.Ordinal</c>, which is how every twin
-    /// compares a string and how the sorted ones order it (<c>utils/sorted.ts</c>).
+    /// compares a string, and the order a sorted one is built in when it is named
+    /// (<see cref="OrderingAskedFor"/>).
     /// </summary>
-    private static bool AsksForTheDefault(IOperation value)
+    private static bool AsksForTheDefault(IOperation value) => Asked(value) is not Ask.Other;
+
+    /// <summary>
+    /// The order a comparer handed to a sorted collection asks for, as an ordering of
+    /// <see cref="Strategies.ValueOrdering"/>: its element type's own for <c>null</c> and
+    /// <c>Comparer&lt;T&gt;.Default</c>, and the code-unit order for <c>StringComparer.Ordinal</c>,
+    /// where the element type's would be the current culture's. Null for any other comparer, which
+    /// <see cref="ReportUntranslatableComparer"/> reports, and for an element type with no order here.
+    /// </summary>
+    internal static string? OrderingAskedFor(this IOperation comparer, ITypeSymbol element) => Asked(comparer) switch
+    {
+        Ask.Ordinal => "value",
+        Ask.Default => Strategies.ValueOrdering.Of(element),
+        _ => null,
+    };
+
+    private enum Ask { Default, Ordinal, Other }
+
+    private static Ask Asked(IOperation value)
     {
         while (value is IConversionOperation conversion) value = conversion.Operand;
         return value switch
         {
-            ILiteralOperation { ConstantValue: { HasValue: true, Value: null } } => true,
+            ILiteralOperation { ConstantValue: { HasValue: true, Value: null } } => Ask.Default,
             IPropertyReferenceOperation { Property: { Name: "Default", ContainingType: var home } }
-                => IsNamed(home, "EqualityComparer`1") || IsNamed(home, "Comparer`1"),
+                when IsNamed(home, "EqualityComparer`1") || IsNamed(home, "Comparer`1") => Ask.Default,
             IPropertyReferenceOperation { Property: { Name: "Ordinal", ContainingType: var home } }
-                => home.ToDisplayString() == "System.StringComparer",
-            _ => false,
+                when home.ToDisplayString() == "System.StringComparer" => Ask.Ordinal,
+            _ => Ask.Other,
         };
     }
 

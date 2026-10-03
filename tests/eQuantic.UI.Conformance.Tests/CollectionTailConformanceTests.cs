@@ -63,6 +63,42 @@ public class CollectionTailConformanceTests
         ConformanceRunner.AssertStatementsSameAsDotNet(statements);
     }
 
+    /// <summary>
+    /// A sorted collection orders as its element type's <c>Comparer&lt;T&gt;.Default</c> does, which
+    /// the browser can only learn from the type: every one ordered by <c>&lt;</c>, so strings did not
+    /// follow the culture (<c>B</c> came before <c>a</c>), decimals and dates compared their text
+    /// (<c>10</c> before <c>9</c>, <c>1.0</c> kept beside <c>1.00</c>), and a NaN equalled every
+    /// number. An ordinal comparer asks for the code-unit order, and reached the factory as the
+    /// elements to copy, which threw.
+    /// </summary>
+    [SkippableTheory]
+    // Each written out with a loop, which reads the collection as C# enumerates it.
+    [InlineData("var s = new SortedSet<string> { \"b\", \"B\", \"a\", \"A\", \"_x\" }; var r = \"\"; foreach (var x in s) r += \",\" + x; return r;")]   // ",_x,a,A,b,B"
+    [InlineData("var s = new SortedSet<string>(new[] { \"b\", \"B\", \"a\" }); s.Add(\"A\"); var r = \"\"; foreach (var x in s) r += \",\" + x; return r + \"|\" + s.Min;")] // ",a,A,b,B|a"
+    [InlineData("var s = new SortedSet<string>(StringComparer.Ordinal) { \"b\", \"B\", \"a\", \"A\" }; var r = \"\"; foreach (var x in s) r += \",\" + x; return r;")] // ",A,B,a,b"
+    [InlineData("var s = new SortedSet<string>(new[] { \"b\", \"a\" }, Comparer<string>.Default) { \"B\" }; var r = \"\"; foreach (var x in s) r += \",\" + x; return r;")] // ",a,b,B"
+    [InlineData("SortedSet<string> s = [\"b\", \"B\", \"a\"]; var r = \"\"; foreach (var x in s) r += \",\" + x; return r;")]   // ",a,b,B"
+    [InlineData("var s = new SortedSet<decimal> { 10m, 9m, 1.0m, 1.00m }; var r = \"\"; foreach (var x in s) r += \",\" + x; return r + \"|\" + s.Count;")] // ",1.0,9,10|3"
+    [InlineData("var s = new SortedSet<double> { 2, double.NaN, 1, double.NaN }; var r = \"\"; foreach (var x in s) r += \",\" + x; return r + \"|\" + s.Count;")] // ",NaN,1,2|3"
+    [InlineData("var s = new SortedSet<DateTime> { new DateTime(2026, 1, 2), new DateTime(2025, 12, 31), new DateTime(2026, 1, 2) }; return s.Count + \"|\" + s.Min.Year + \"|\" + s.Max.Day;")] // "2|2025|2"
+    [InlineData("var s = new SortedSet<char> { 'b', 'B', 'a' }; var r = \"\"; foreach (var x in s) r += \",\" + x; return r;")]  // ",B,a,b"
+    [InlineData("var d = new SortedDictionary<string, int> { [\"b\"] = 1, [\"B\"] = 2, [\"a\"] = 3 }; var r = \"\"; foreach (var k in d.Keys) r += \",\" + k; return r;")] // ",a,b,B"
+    [InlineData("var d = new SortedList<decimal, string> { [10m] = \"x\", [9m] = \"y\", [1.0m] = \"z\" }; var r = \"\"; foreach (var v in d.Values) r += v; return r;")] // "zyx"
+    public void ASortedCollection_OrdersAsItsElementTypeDoes(string statements)
+    {
+        Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
+        ConformanceRunner.AssertStatementsSameAsDotNet(statements);
+    }
+
+    [SkippableFact]
+    public void ASortedSetOfAComparableTypeOfTheAppsOwn_OrdersByItsCompareTo()
+    {
+        Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
+        ConformanceRunner.AssertStatementsSameAsDotNet(
+            "var s = new SortedSet<Release> { new(2, \"b\"), new(10, \"c\"), new(1, \"a\"), new(2, \"d\") }; var r = \"\"; foreach (var x in s) r += x.Name; return r + \"|\" + s.Count;",
+            "public sealed record Release(int Number, string Name) : IComparable<Release> { public int CompareTo(Release? other) => Number.CompareTo(other!.Number); }");
+    }
+
     [SkippableTheory]
     // ILookup[key] — the group for a key, or an empty sequence for an absent key (never throws).
     [InlineData("var lk = new[]{1,2,3,4}.ToLookup(x => x % 2); return lk[0].Count();")]   // evens → 2
