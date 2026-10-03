@@ -344,10 +344,18 @@ public class ForeignRecordHydrationTests
     public void AForeignRecordsMembersKeepTheBoundaryTyped()
     {
         // The domain assembly is REAL metadata, not source — compiled here and referenced by path,
-        // exactly as a page library's consumer builds.
-        var processRefs = AppDomain.CurrentDomain.GetAssemblies()
-            .Where(a => !a.IsDynamic && !string.IsNullOrEmpty(a.Location))
-            .Select(a => Microsoft.CodeAnalysis.MetadataReference.CreateFromFile(a.Location))
+        // exactly as a page library's consumer builds. The references are NAMED, the framework and
+        // the vocabulary: the assemblies the test process happens to have loaded depend on the tests
+        // that ran before this one, and alone it had not loaded the vocabulary, so IServerPrefetch did
+        // not bind and the page had no hydration spec at all.
+        var named = ((string)AppContext.GetData("TRUSTED_PLATFORM_ASSEMBLIES")!)
+            .Split(Path.PathSeparator)
+            .Where(path => path.EndsWith(".dll", StringComparison.OrdinalIgnoreCase))
+            .Append(typeof(eQuantic.UI.Primitives.IServerPrefetch).Assembly.Location)
+            .Distinct()
+            .ToList();
+        var processRefs = named
+            .Select(path => Microsoft.CodeAnalysis.MetadataReference.CreateFromFile(path))
             .Cast<Microsoft.CodeAnalysis.MetadataReference>()
             .ToList();
         var domainPath = Path.Combine(Path.GetTempPath(), $"acme-domain-{Guid.NewGuid():N}.dll");
@@ -368,12 +376,7 @@ public class ForeignRecordHydrationTests
             Directory.CreateDirectory(pagePath);
             File.WriteAllText(Path.Combine(pagePath, "HomePage.cs"), Page);
 
-            var refs = AppDomain.CurrentDomain.GetAssemblies()
-                .Where(a => !a.IsDynamic && !string.IsNullOrEmpty(a.Location))
-                .Select(a => a.Location)
-                .Append(domainPath)
-                .Distinct()
-                .ToList();
+            var refs = named.Append(domainPath).ToList();
             var compilation = eQuantic.UI.Compiler.Services.ProjectCompilationHelper
                 .CreateCompilationFromSources(
                     [Path.Combine(pagePath, "HomePage.cs")], refs, "Acme.Site");
