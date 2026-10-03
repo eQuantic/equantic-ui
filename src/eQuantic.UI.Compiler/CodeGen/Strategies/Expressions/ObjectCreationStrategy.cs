@@ -32,6 +32,14 @@ public class ObjectCreationStrategy : IConversionStrategy
         if (context.SemanticHelper.GetType(node)?.ToDisplayString() == "System.Threading.Lock")
             return "{}";
 
+        // `new string(chars)` and `new string(c, n)`: the text they build, where `new string(…)` named a
+        // class JavaScript does not have (#524).
+        if (context.SemanticHelper.GetType(node) is { SpecialType: SpecialType.System_String }
+            && node is BaseObjectCreationExpressionSyntax { ArgumentList.Arguments: var stringArguments }
+            && context.SemanticHelper.GetSymbol(node) is IMethodSymbol { Parameters: var stringParameters }
+            && NewString(stringParameters, stringArguments, context) is { } text)
+            return text;
+
         if (node is ObjectCreationExpressionSyntax objCreation)
         {
             return ConvertExplicit(objCreation, context);
@@ -41,6 +49,25 @@ public class ObjectCreationStrategy : IConversionStrategy
             return ConvertImplicit(implicitCreation, context);
         }
         throw new InvalidOperationException("Invalid node type");
+    }
+
+    /// <summary>The text a string constructor builds: its chars joined, a char repeated, or a range
+    /// of chars joined. Null for an overload with no such reading here (a span, a pointer).</summary>
+    private static string? NewString(IReadOnlyList<IParameterSymbol> parameters,
+        SeparatedSyntaxList<ArgumentSyntax> arguments, ConversionContext context)
+    {
+        var parts = arguments.Select(argument => context.Converter.ConvertIr(argument.Expression)).ToArray();
+        var template = parameters.Select(parameter => parameter.Type).ToArray() switch
+        {
+            [IArrayTypeSymbol] => "{0}.join('')",
+            [{ SpecialType: SpecialType.System_Char }, { SpecialType: SpecialType.System_Int32 }] => "{0}.repeat({1})",
+            [IArrayTypeSymbol, { SpecialType: SpecialType.System_Int32 }, { SpecialType: SpecialType.System_Int32 }]
+                => "{0}.slice({1}, {1} + {2}).join('')",
+            _ => null,
+        };
+        return template is null || parts.Length != parameters.Count
+            ? null
+            : Ir.JsExprWriter.Write(Ir.JsExpr.Template(template, parts, context.TypeAnnotations));
     }
 
     private string ConvertExplicit(ObjectCreationExpressionSyntax creation, ConversionContext context)

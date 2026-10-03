@@ -19,7 +19,7 @@ public class OfTypeStrategy : IConversionStrategy
     {
         var invocation = (InvocationExpressionSyntax)node;
         var memberAccess = (MemberAccessExpressionSyntax)invocation.Expression;
-        var source = context.Converter.ConvertExpression(memberAccess.Expression);
+        var source = LinqSource.Text(memberAccess.Expression, context);
 
         // Extract the generic type argument if available
         if (memberAccess.Name is GenericNameSyntax genericName)

@@ -150,3 +150,15 @@ export function toDictionary<T, K, V = T>(
   }
   return result;
 }
+
+/**
+ * A sequence as C# enumerates it, as the array the lowered operators call array methods on: an array
+ * as it is, a string by its chars (UTF-16 code units, where a spread gives code points), and anything
+ * else by its own iterator (a `Set`, a dictionary's pairs, the runtime's sorted set, queue, stack and
+ * linked list). LINQ over any of these called an array method the receiver does not have, and threw.
+ */
+export function seq<T>(source: Iterable<T> | string): T[] {
+  if (Array.isArray(source)) return source;
+  if (typeof source === 'string') return source.split('') as unknown as T[];
+  return Array.from(source);
+}

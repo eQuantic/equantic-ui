@@ -18,7 +18,7 @@ public class ZipStrategy : IConversionStrategy
     {
         var invocation = (InvocationExpressionSyntax)node;
         var memberAccess = (MemberAccessExpressionSyntax)invocation.Expression;
-        var source = context.Converter.ConvertExpression(memberAccess.Expression);
+        var source = LinqSource.Text(memberAccess.Expression, context);
         var args = invocation.ArgumentList.Arguments;
         
         if (args.Count >= 2)

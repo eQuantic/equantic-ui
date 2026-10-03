@@ -47,7 +47,7 @@ public class LinqTableStrategy : IExpressionIrStrategy
         var invocation = (InvocationExpressionSyntax)node;
         invocation.TryGetInstanceCall(out var receiverSyntax, out var name);
 
-        var receiver = context.Converter.ConvertIr(receiverSyntax);
+        var receiver = LinqSource.Ir(receiverSyntax, context);
         var args = invocation.ArgumentList.Arguments
             .Select(a => context.Converter.ConvertIr(a.Expression))
             .ToArray();
