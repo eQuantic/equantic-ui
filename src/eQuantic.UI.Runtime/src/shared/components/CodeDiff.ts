@@ -20,11 +20,6 @@ export class CodeDiff extends StatefulComponent {
     _viewport: number = 0;
     _originalWidth: number = 0;
     _modifiedWidth: number = 0;
-
-    static get $hydration() {
-        return { _offset: 'single', _viewport: 'single', _originalWidth: 'single', _modifiedWidth: 'single', height: { of: SizeValue, members: { value: 'single' } }, maxHeight: 'single' };
-    }
-
     declare original: string;
     declare modified: string;
     declare patch: any;

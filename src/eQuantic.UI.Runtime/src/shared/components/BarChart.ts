@@ -1,4 +1,4 @@
-import { BarChartGeometry, BarChartLayout, Box, BoxStyle, BuildContext, Button, Canvas, CanvasPointer, CategoryAxis, ChartSeries, Column, CornerRadii, DataColumn, DataRow, DataTable, EdgeInsets, Flexible, GridTrack, Point, Positioned, Pressable, Rect, Row, SdkStrings, SizeValue, Stack, StatefulComponent, Text, UiComponent, ValueAxis, ValueTicks, VisualNode } from "../runtime-exports";
+import { BarChartLayout, Box, BoxStyle, BuildContext, Button, Canvas, CanvasPointer, CategoryAxis, ChartSeries, Column, CornerRadii, DataColumn, DataRow, DataTable, EdgeInsets, Flexible, GridTrack, Point, Positioned, Pressable, Rect, Row, SdkStrings, SizeValue, Stack, StatefulComponent, Text, UiComponent, ValueAxis, ValueTicks, VisualNode } from "../runtime-exports";
 
 export class BarChart extends StatefulComponent {
     static $typeId = 'eQuantic.UI.Charts.BarChart';
@@ -21,10 +21,6 @@ export class BarChart extends StatefulComponent {
     _table: boolean = false;
     _geometry: any = null;
     _theme: any = null;
-
-    static get $hydration() {
-        return { _plotHeight: 'single', _pointerX: 'single', _pointerY: 'single', _geometry: BarChartGeometry };
-    }
 
     constructor(series?: any, categories?: any, values: any = null, layout: any = 'grouped', orientation: any = 'vertical', title: any = null, subtitle: any = null, plotHeight: any = BarChart.defaultPlotHeight, props?: any) {
         super();

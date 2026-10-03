@@ -19,6 +19,7 @@ public class ModuleResolutionTests
     private const string Page = """
         using System;
         using System.Collections.Generic;
+        using System.Threading;
         using System.Threading.Tasks;
         using eQuantic.UI.Primitives;
 
@@ -26,8 +27,12 @@ public class ModuleResolutionTests
         public readonly record struct Point(long X, long Y);
 
         [Page("/wallet")]
-        public sealed class Wallet : StatefulComponent
+        public sealed class Wallet : StatefulComponent, IServerPrefetch
         {
+            [ServerOnly]
+            public Task PrefetchAsync(IServiceProvider services, CancellationToken cancellationToken)
+                => Task.CompletedTask;
+
             private List<Money> _monies = new();
             private Money? _maybe;
             private Point _point;
@@ -44,11 +49,22 @@ public class ModuleResolutionTests
         }
         """;
 
+    /// <summary>The page's module as an app's build writes it. The page prefetches, so the manifest
+    /// the generator writes lists its fields and the twin's hydration map names their records.</summary>
+    private static string Module()
+    {
+        var compiler = new ComponentCompiler();
+        compiler.SetProjectCompilation(GeneratedProject.Of(Page, "Wallet.cs"));
+        var module = compiler.CompileSource(Page, "Wallet.cs").Single(r => r.ComponentName == "Wallet").TypeScript;
+        // The map is what names the records here, so a module without one would pass vacuously.
+        module.Should().Contain("static get $hydration()");
+        return module;
+    }
+
     [Fact]
     public void EveryNameTheBodyMentionsIsImportedOrDeclared()
     {
-        var module = new ComponentCompiler().CompileSource(Page, "Wallet.cs")
-            .Single(r => r.ComponentName == "Wallet").TypeScript;
+        var module = Module();
 
         var available = new HashSet<string>(JsGlobals.Concat(TypeLevelNames));
         foreach (Match import in Regex.Matches(module, @"import\s*\{([^}]*)\}"))
@@ -76,8 +92,7 @@ public class ModuleResolutionTests
     [Fact]
     public void ATupleHydratesPositionally()
     {
-        var module = new ComponentCompiler().CompileSource(Page, "Wallet.cs")
-            .Single(r => r.ComponentName == "Wallet").TypeScript;
+        var module = Module();
         module.Should().Contain("_tuple: { tuple: ['decimal', 'long'] }");
         module.Should().Contain("'Wallet/Pair', []), { tuple: ['decimal', 'long'] })");
         module.Should().NotContain("ValueTuple");
