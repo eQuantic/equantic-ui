@@ -1021,8 +1021,15 @@ record of a release, the wiki's Upgrading page is the distillate.
   a record deconstructed into existing variables was array destructuring
   ([#486](https://github.com/eQuantic/equantic-ui/issues/486)), and a static `field` store lived on the
   instance or, in a record, nowhere ([#483](https://github.com/eQuantic/equantic-ui/issues/483)). Each
-  is a conformance case on both sides that failed against main. Proposed and archived through
-  OpenSpec (`openspec/specs/transpiler-statements`, `transpiler-expressions`, `transpiler-records`).
+  is a conformance case on both sides that failed against main. The local review found the first cut
+  short, and widened it: every deconstruction, declared, assigned or in a `foreach`, nested or through
+  a struct's own `Deconstruct`, goes through one lowering read from the bound tree; a long constant
+  is a BigInt, and a constant in a pattern is tested by its value (a decimal, a NaN, a null); a char
+  is one code unit; a static store starts as its initializer; and a local function's `out` reaches
+  its caller ([#541](https://github.com/eQuantic/equantic-ui/issues/541)). A deconstruction into an
+  indexer or a wider type is left to [#542](https://github.com/eQuantic/equantic-ui/issues/542).
+  Proposed and archived through OpenSpec (`openspec/specs/transpiler-statements`,
+  `transpiler-expressions`, `transpiler-records`).
 - **2026-10-03 · A string or a char keeps its value in its module**: eqc wrote C# string and char
   values in spellings that lost them ([#520](https://github.com/eQuantic/equantic-ui/issues/520)).
   A surrogate that is not half of a pair has no UTF-8 encoding, so a page holding `"x\uD83D"` stopped

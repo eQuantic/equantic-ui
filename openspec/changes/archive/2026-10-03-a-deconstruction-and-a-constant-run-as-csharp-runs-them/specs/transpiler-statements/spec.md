@@ -1,20 +1,4 @@
-# transpiler-statements Specification
-
-## Purpose
-How a statement's own semantics cross to the browser where JavaScript's statement of the same name
-means something else: a lock's expression, a for loop's variable, a delegate called as a value.
-
-## Requirements
-
-### Requirement: A lock runs its expression
-
-A `lock` statement SHALL evaluate its expression once, before its body, unless the expression only
-reads a local, a parameter, a field or `this`.
-
-#### Scenario: A gate made by a call
-
-- **WHEN** browser-side code locks on `Gate()`, which counts its calls
-- **THEN** `Gate` has been called once when the body runs, as in .NET
+## MODIFIED Requirements
 
 ### Requirement: A for loop's variable is one per loop
 
@@ -33,24 +17,7 @@ var n`) SHALL be one for the whole loop too, declared before the code that assig
   and adds `() => i * 10 + n` to a list
 - **THEN** the two closures answer `22` each, as in .NET
 
-### Requirement: A delegate value is called as the value its expression gives
-
-A delegate invoked through any expression but a name or a member (`fs[0]()`, `Make()()`) SHALL call
-the value the expression gives.
-
-#### Scenario: A delegate from a list
-
-- **WHEN** browser-side code calls `ops[1](ops[0](3))` over a local array of two lambdas
-- **THEN** it answers what .NET answers
-
-### Requirement: A new object is a value of its own
-
-`new object()` SHALL be a fresh value equal only to itself.
-
-#### Scenario: Two objects
-
-- **WHEN** browser-side code compares two `new object()` with `==`
-- **THEN** the answer is `false`, as in .NET
+## ADDED Requirements
 
 ### Requirement: A local function's out parameter reaches its caller
 
