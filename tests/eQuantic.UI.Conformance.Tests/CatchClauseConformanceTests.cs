@@ -74,6 +74,7 @@ public class CatchClauseConformanceTests
     [InlineData("var d = new Dictionary<string, int>(); try { return d[null!]; } catch (KeyNotFoundException) { return 1; } catch (ArgumentNullException) { return 2; }")] // 2
     [InlineData("try { return int.Parse(\"x\"); } catch (OverflowException) { return 1; } catch (FormatException) { return 2; }")] // 2
     [InlineData("try { return int.Parse(\"99999999999\"); } catch (FormatException) { return 1; } catch (OverflowException) { return 2; }")] // 2
+    [InlineData("object gate = null; try { lock (gate) { return 0; } } catch (InvalidOperationException) { return 1; } catch (ArgumentNullException) { return 2; }")] // 2: a lock refuses a null gate
     [InlineData("try { return \"abc\".Substring(5); } catch (ArgumentNullException) { return 1; } catch (ArgumentException) { return 2; }")] // 2
     [InlineData("try { return new List<int>().Max(); } catch (ArgumentException) { return 1; } catch (InvalidOperationException) { return 2; }")] // 2
     [InlineData("try { return Convert.ToBoolean('a') ? 1 : 0; } catch (FormatException) { return 1; } catch (InvalidCastException) { return 2; }")] // 2
