@@ -104,8 +104,9 @@ Design notes:
   `GetValueOrDefault`/`TryAdd`/`ContainsValue`, `Keys`/`Values`/`Count`, `foreach` over destructuring
   pairs all routed, #435), HashSet ✅, Queue ✅, Stack ✅, **LinkedList ✅** (doubly-linked, `First`/`Last`
   nodes), **sorted collections ✅** (`SortedSet`, `SortedDictionary`, `SortedList` → key-sorted
-  enumeration via `$eq.collections.sorted*`; default comparer — culture-sensitive string ordering out of
-  scope) — all compat types.
+  enumeration via `$eq.collections.sorted*`, in the element type's `Comparer<T>.Default` order: a
+  string in the current culture, a decimal, a date or an `IComparable` type of the app's by its
+  `CompareTo`, a double with its NaN first, `StringComparer.Ordinal` by code unit) — all compat types.
 - **Types**: enum ✅, Guid ✅, DateTime ✅, TimeSpan ✅, DateOnly ✅, TimeOnly ✅, DateTimeOffset ✅
   (all tick-precise compat; DateTimeOffset = wall-clock + offset, compared by the instant),
   Nullable ✅ (HasValue/Value, GetValueOrDefault()/(fallback) with a type-aware default, lifted

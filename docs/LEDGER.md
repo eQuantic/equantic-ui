@@ -1019,17 +1019,23 @@ record of a release, the wiki's Upgrading page is the distillate.
   the record text .NET writes. A `HashSet`, and the runtime's sorted set, queue, stack and linked
   list, crossed hydration as the array the server writes
   ([#516](https://github.com/eQuantic/equantic-ui/issues/516)): each is rebuilt as its class, a stack
-  with its top coming off first, a server value's projection takes a set of scalars whole, and one
-  holding a comparer of its own stays out of the page, since the browser's copy compares with the
-  default. On the
-  way, a property pattern counted a set or a runtime collection as an array, and a `SortedSet` dropped
-  its collection initializer. `VocabularyValueConformanceTests` executes every member of every type
+  with its top coming off first, a server value's projection takes a set of scalars whole, and a set
+  or a dictionary the browser's copy would answer differently, by a comparer of its own or an equality
+  nothing can read, stays out of the page, the rest of a projected value still crossing. Every sorted
+  collection the browser built or rebuilt ordered by `<`, so strings ignored the culture and decimals
+  compared their text: one table (`ValueOrdering`, `utils/ordering.ts`) now names how a type orders,
+  read by `Max`/`Min`, by every sorted collection eqc builds and by every one a hydration rebuilds. On
+  the way, a property pattern counted a set or a runtime collection as an array, and a `SortedSet`
+  dropped its collection initializer. `VocabularyValueConformanceTests` executes every member of every type
   `[TwinIsData]` marks on both sides and checks each vocabulary value type's export against the
   attribute, which found `Curve` in two shapes
   ([#518](https://github.com/eQuantic/equantic-ui/issues/518)); the dashboard sample's Colors screen
   was measured in a browser against main. Filed on the way: `GetHashCode` has no lowering
-  ([#519](https://github.com/eQuantic/equantic-ui/issues/519)). Proposed and archived through OpenSpec
-  (`openspec/specs/transpiler-vocabulary-values`, `openspec/specs/hydration-contract`).
+  ([#519](https://github.com/eQuantic/equantic-ui/issues/519)), `string.Join` reads only an array
+  ([#529](https://github.com/eQuantic/equantic-ui/issues/529)), and LINQ over a set or a runtime
+  collection calls array methods ([#530](https://github.com/eQuantic/equantic-ui/issues/530)). Proposed
+  and archived through OpenSpec (`openspec/specs/transpiler-vocabulary-values`,
+  `openspec/specs/hydration-contract`, `openspec/specs/transpiler-bcl`).
 
 ## Retired documents
 
