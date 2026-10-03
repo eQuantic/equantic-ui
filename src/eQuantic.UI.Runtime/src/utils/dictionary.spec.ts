@@ -435,4 +435,11 @@ describe('bagEntries / bagSize — a DOM bag in either form', () => {
     expect(bagSize(d)).toBe(2);
     expect(bagSize({ a: '1' })).toBe(1);
   });
+
+  it('adds a new key, refuses one already there, and assigns an object initializer\'s entries', () => {
+    const d = dictionary<string, number>([['a', 1]]);
+    expect(() => d.add('a', 2)).toThrow('An item with the same key has already been added. Key: a');
+    expect(() => dictionary([['a', 1], ['a', 2]])).toThrow('Key: a');
+    expect(dictionary<string, number>().assign([['a', 1], ['a', 2]]).get('a')).toBe(2);
+  });
 });

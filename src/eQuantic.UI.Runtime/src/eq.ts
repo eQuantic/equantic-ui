@@ -110,7 +110,7 @@ import {
   setAdd,
   zip,
 } from './utils/collections';
-import { dictionary } from './utils/dictionary';
+import { dictionary, pair } from './utils/dictionary';
 import { boolConvert, boolParse, boolTryParse } from './utils/boolean-text';
 import { sortedSet, sortedDictionary, sortedList } from './utils/sorted';
 import { liftArith, liftCmp, liftUnary } from './utils/nullable';
@@ -326,6 +326,8 @@ export const $eq = {
     remove,
     sameItem,
     pairComparer,
+    /** `new KeyValuePair<K, V>(key, value)` and `KeyValuePair.Create`: the shape a dictionary yields. */
+    pair,
   },
   /** `bool.Parse`, `bool.TryParse` and `Convert.ToBoolean(string)`, as .NET reads the text. */
   bool: { parse: boolParse, tryParse: boolTryParse, convert: boolConvert },

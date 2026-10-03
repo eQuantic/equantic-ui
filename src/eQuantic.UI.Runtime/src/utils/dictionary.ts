@@ -57,7 +57,21 @@ export class Dictionary<K, V> implements Iterable<Pair<K, V>> {
   constructor(entries?: Iterable<readonly [K, V]> | null, byValue: KeyEquality = false) {
     this.byValue = byValue;
     this.index = byValue === true ? null : new Map<K, number>();
-    if (entries) for (const [key, value] of entries) this.set(key, value);
+    // A constructor adds what it copies and what a collection initializer lists, as .NET's `Add`
+    // does: a key already there is refused, where the indexer's write would replace it (#440).
+    if (entries) for (const [key, value] of entries) this.add(key, value);
+  }
+
+  /** `Add`: a new key, or .NET's refusal of one already there. The indexer's write replaces instead. */
+  add(key: K, value: V): void {
+    if (this.find(key) >= 0) throw new Error(`An item with the same key has already been added. Key: ${keyText(key)}`);
+    this.set(key, value);
+  }
+
+  /** An object initializer's `[key] = value` entries, written by the indexer, in order. */
+  assign(entries: Iterable<readonly [K, V]>): this {
+    for (const [key, value] of entries) this.set(key, value);
+    return this;
   }
 
   /** `Count`. */

@@ -110,9 +110,20 @@ internal sealed class DictionaryStrategy : IExpressionIrStrategy
     internal static JsExpr Seeded(ITypeSymbol type, InitializerExpressionSyntax initializer, ConversionContext context)
     {
         context.UsedHelpers.Add(Eq.Import);
-        return Factory(type.DictionaryFactory()!, type,
-            Entries(initializer, context) is { Count: > 0 } pairs ? Pairs(null, pairs) : null);
+        var (pairs, assigned) = Entries(initializer, context);
+        return Seed(Factory(type.DictionaryFactory()!, type, !assigned && pairs is { Count: > 0 } ? Pairs(null, pairs) : null),
+            assigned ? pairs : null);
     }
+
+    /// <summary>
+    /// The dictionary with an object initializer's <c>[key] = value</c> entries written by the indexer,
+    /// which replaces a key already there, where a constructor and a collection initializer add, which
+    /// refuses one (#440). C# takes one kind of initializer or the other, never both.
+    /// </summary>
+    private static JsExpr Seed(JsExpr dictionary, List<string>? assigned) =>
+        assigned is { Count: > 0 }
+            ? JsExpr.Call(JsExpr.Member(dictionary, "assign"), JsExpr.Literal($"[{string.Join(", ", assigned)}]"))
+            : dictionary;
 
     /// <summary>The factory a creation constructs by: its type's, where the model knows the type, and
     /// the one the name it writes says only where the model cannot be asked.</summary>
@@ -159,8 +170,9 @@ internal sealed class DictionaryStrategy : IExpressionIrStrategy
             source = context.Converter.ConvertIr(arguments[i].Expression);
         }
 
-        var pairs = Entries(creation.Initializer, context);
-        return Factory(FactoryOf(creation, context)!, type, pairs is { Count: > 0 } ? Pairs(source, pairs) : source);
+        var (pairs, assigned) = Entries(creation.Initializer, context);
+        return Seed(Factory(FactoryOf(creation, context)!, type,
+            !assigned && pairs is { Count: > 0 } ? Pairs(source, pairs) : source), assigned ? pairs : null);
     }
 
     /// <summary><c>factory(seed)</c>, and <c>factory(seed, equality)</c> when the keys are not found by
@@ -188,12 +200,14 @@ internal sealed class DictionaryStrategy : IExpressionIrStrategy
     }
 
     /// <summary>
-    /// The <c>[key, value]</c> pairs an initializer adds, in order: <c>{ key, value }</c> elements of a
-    /// collection initializer, or <c>[key] = value</c> ones of an object initializer. Null for none.
+    /// The <c>[key, value]</c> pairs an initializer lists, in order: <c>{ key, value }</c> elements of a
+    /// collection initializer, which ADD, or <c>[key] = value</c> ones of an object initializer, which are
+    /// ASSIGNED by the indexer. Null for none.
     /// </summary>
-    private static List<string>? Entries(InitializerExpressionSyntax? initializer, ConversionContext context)
+    private static (List<string>? Pairs, bool Assigned) Entries(InitializerExpressionSyntax? initializer, ConversionContext context)
     {
-        if (initializer is null) return null;
+        if (initializer is null) return (null, false);
+        var assigned = initializer.IsKind(SyntaxKind.ObjectInitializerExpression);
         var pairs = new List<string>();
         foreach (var element in initializer.Expressions)
         {
@@ -212,7 +226,7 @@ internal sealed class DictionaryStrategy : IExpressionIrStrategy
                     break;
             }
         }
-        return pairs;
+        return (pairs, assigned);
     }
 
     /// <summary>The call a dictionary answers, or null when this invocation is not one.</summary>
@@ -272,7 +286,8 @@ internal sealed class DictionaryStrategy : IExpressionIrStrategy
         {
             ("ContainsKey", 1) => JsExpr.Call(JsExpr.Member(receiver, "has"), values),
             // `set` replaces the value of a key already there, where .NET's Add throws (#440).
-            ("Add", 2) => JsExpr.Call(JsExpr.Member(receiver, "set"), values),
+            // Add refuses a key already there, as .NET's does, where the indexer's write replaces (#440).
+            ("Add", 2) => JsExpr.Call(JsExpr.Member(receiver, "add"), values),
             ("Remove", 1) => JsExpr.Call(JsExpr.Member(receiver, "delete"), values),
             ("Clear", 0) => JsExpr.Call(JsExpr.Member(receiver, "clear")),
             _ => context.Unhandled(invocation, $"Dictionary.{call}"),
