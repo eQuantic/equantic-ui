@@ -504,7 +504,6 @@ public class ComponentParser
             {
                 Name = prop.Identifier.Text,
                 Type = prop.Type.ToString(),
-                DefaultValue = prop.Initializer?.Value.ToString(),
                 DefaultValueNode = prop.Initializer?.Value,
                 IsPublic = isPublic,
                 IsStatic = prop.Modifiers.Any(SyntaxKind.StaticKeyword),
@@ -744,7 +743,6 @@ public class ComponentParser
                     Name = variable.Identifier.Text,
                     Type = field.Declaration.Type.ToString(),
                     TypeNode = field.Declaration.Type,
-                    DefaultValue = variable.Initializer?.Value.ToString(),
                     DefaultValueNode = variable.Initializer?.Value,
                     IsStatic = isStatic
                 });

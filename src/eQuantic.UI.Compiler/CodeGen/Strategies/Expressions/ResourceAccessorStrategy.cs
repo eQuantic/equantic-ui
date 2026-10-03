@@ -1,12 +1,13 @@
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using eQuantic.UI.Compiler.CodeGen.Ir;
 using eQuantic.UI.Compiler.Services;
 
 namespace eQuantic.UI.Compiler.CodeGen.Strategies.Expressions;
 
 /// <summary>
 /// Track L D2: a resx accessor (<c>Strings.Hero_Title</c>) is REWRITTEN to a runtime lookup —
-/// <c>$eq.str("Strings", "Hero_Title")</c> — never emitted as a member read and never inlined.
+/// <c>$eq.str('Strings', 'Hero_Title')</c> — never emitted as a member read and never inlined.
 /// The accessor looks constant-ish and is not: it resolves against <c>CurrentUICulture</c> at
 /// call time, and an inlined value would bake the build machine's culture into the bundle (the
 /// silent-wrong-code failure the plan calls out by name). Detection is the ResXFileCodeGenerator
@@ -32,6 +33,7 @@ public class ResourceAccessorStrategy : IConversionStrategy
         context.ResourceUses.Add(new ResourceUse(
             id, key, ResourceClasses.DesignerPathFor(property.ContainingType)));
         context.UsedHelpers.Add(Eq.Import);
-        return $"{Eq.Str}(\"{id}\", \"{key}\")";
+        // The key is whatever name the resx gives it, so it is spelled like any other string (#520).
+        return $"{Eq.Str}({JsStringLiteral.Quote(id)}, {JsStringLiteral.Quote(key)})";
     }
 }

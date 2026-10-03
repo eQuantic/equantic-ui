@@ -1020,6 +1020,29 @@ record of a release, the wiki's Upgrading page is the distillate.
   and the configuration is serialized as JSON. `PageTitleTests` runs both doors, and the dashboard
   sample's titles were measured in a browser against main. Proposed and archived through OpenSpec
   (`openspec/specs/document-metadata`).
+- **2026-10-03 · A string or a char keeps its value in its module**: eqc wrote C# string and char
+  values in spellings that lost them ([#520](https://github.com/eQuantic/equantic-ui/issues/520)).
+  A surrogate that is not half of a pair has no UTF-8 encoding, so a page holding `"x\uD83D"` stopped
+  the dashboard sample's build with `EQ0001: Compilation crash`, naming no file; a char literal
+  crossed in its C# spelling, so `'\a'` and `'\e'` were `'a'` and `'e'` and `'\x1'` a syntax error;
+  and `$"{date:dd 'de' MMMM}"` closed its own quotes and Bun refused the module. One writer,
+  `JsStringLiteral`, now spells every string the transpiler writes from a value, a template's text,
+  an interpolation's format, a skipped parameter's default, a resource lookup and `nameof` among
+  them, escaping each code unit that does not show as itself, and a char literal and `nameof` are
+  their value. The review found a raw interpolated string's doubled braces collapsed
+  (`$$$"""a{{b}}"""` was `a{b}`), a UTF-8 literal spliced into the module as C# (refused with EQ1004
+  now), and the C# 13 escape's test reading ESC culture-aware, which finds a control at position 0
+  of anything. 31 of the 41 conformance cases fail on main, and a frame thrown after an interpolated
+  string holding U+2028 leads to its own line, where main led it two lines down
+  ([#491](https://github.com/eQuantic/equantic-ui/issues/491)). Filed on the way: a constant written
+  outside a literal loses its type's representation
+  ([#523](https://github.com/eQuantic/equantic-ui/issues/523)), a string read as a sequence is
+  treated as an array ([#524](https://github.com/eQuantic/equantic-ui/issues/524)), a control in a
+  C# file makes its source map invalid JSON
+  ([#525](https://github.com/eQuantic/equantic-ui/issues/525)), and a page title holding a line break
+  stops the client of every page ([#526](https://github.com/eQuantic/equantic-ui/issues/526)).
+  Proposed and archived through OpenSpec (`openspec/specs/transpiler-expressions`,
+  `openspec/specs/transpiler-source-maps`).
 
 ## Retired documents
 
