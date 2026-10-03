@@ -1033,6 +1033,26 @@ record of a release, the wiki's Upgrading page is the distillate.
   indexer or a wider type is left to [#542](https://github.com/eQuantic/equantic-ui/issues/542).
   Proposed and archived through OpenSpec (`openspec/specs/transpiler-statements`,
   `transpiler-expressions`, `transpiler-records`).
+- **2026-10-03 · A route's title reaches the document**: `[Page(Title = …)]` applied only when the
+  page's metadata had no title, which the app's default always filled, so no page ever got it, and a
+  client navigation answered with the app's title over the one the router had set
+  ([#416](https://github.com/eQuantic/equantic-ui/issues/416)); the client's configuration quoted its
+  strings by hand, so a title holding a line break stopped the client of every page
+  ([#526](https://github.com/eQuantic/equantic-ui/issues/526)). Each route hands its declaration to
+  both doors, one builder writes a document's metadata (the app's, the route's, then the page's own),
+  a navigation replaces the head's metadata as a marked set, a page answering with a status of its
+  own (a 404 through `IHandleStatus`) still hands a navigation its marked payload, and the
+  configuration is serialized as JSON. `PageTitleTests` runs both doors, and the dashboard
+  sample's titles were measured in a browser against main. Proposed and archived through OpenSpec
+  (`openspec/specs/document-metadata`).
+- **2026-10-03 · A run that links follows the language**: a `TextRun` with a `Destination` lowered to
+  an anchor holding the destination as written, on both producers, so with language prefixes on a run
+  to `/terms` on a Portuguese page led to the English one, and a Markdown page's internal links did
+  the same; it carried no `data-prefetch` either
+  ([#505](https://github.com/eQuantic/equantic-ui/issues/505)). It lowers as a `Link` does now, and
+  one rule decides what warms on hover for both, which no longer marks a protocol-relative URL. The
+  component parity fixture lowers both under `pt-BR` on each side and compares them. Proposed and
+  archived through OpenSpec (`openspec/specs/links`).
 - **2026-10-03 · A value reaches the browser as its code reads it**: `Color` is the one vocabulary
   value type the browser holds as plain data, and eqc emitted its instance members as methods of the
   value, so `Color.FromRgb(…).WithOpacity(0.8f)` rendered on the server and threw once the page
