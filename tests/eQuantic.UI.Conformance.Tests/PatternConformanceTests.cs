@@ -97,6 +97,7 @@ public class PatternConformanceTests
     [InlineData("string s = \"on\"; return s is Limits.Label;")]          // true
     [InlineData("var l = Level.High; return l is Level.High;")]           // true
     [InlineData("var l = Level.Low; return l is Level.High;")]            // false
+    [InlineData("var l = Level.High; return l is (Level)1;")]             // true
     public void IsANamedConstant_ComparesToItsValue(string statements)
     {
         Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");

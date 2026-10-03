@@ -367,6 +367,33 @@ public class CSharpVersionCoverageTests
     }
 
     [Fact]
+    public void ALabeledLoopWhoseVariableIsCaptured_KeepsItsLabelOnTheLoop()
+    {
+        // The captured variable moves in front of the loop, in a block of its own (#476): the label
+        // has to stay on the loop, or `continue outer` is a SyntaxError that costs the module.
+        var probe = One(Head + """
+            public sealed class Probe : StatelessComponent
+            {
+                public override VisualNode Build(ComponentContext context)
+                {
+                    var fs = new System.Collections.Generic.List<System.Func<int>>();
+                    outer: for (var i = 0; i < 3; i++)
+                    {
+                        fs.Add(() => i);
+                        if (i == 1) continue outer;
+                    }
+                    return new Text($"{fs[0]()}", TypeRole.BodyM, null);
+                }
+            }
+            """, "Probe");
+
+        Assert.True(probe.Success, string.Join("\n", probe.Errors.Select(e => e.Message)));
+        Assert.Contains("let i = 0;", probe.TypeScript);
+        Assert.Contains("outer: for (; i < 3; i++)", probe.TypeScript);
+        Assert.DoesNotContain("outer: {", probe.TypeScript);
+    }
+
+    [Fact]
     public void CollectionWithArguments_CapacityDrops_ComparerIsFenced()
     {
         var probe = One(Head + """

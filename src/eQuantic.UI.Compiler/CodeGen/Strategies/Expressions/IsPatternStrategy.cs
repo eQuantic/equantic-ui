@@ -115,6 +115,12 @@ public class IsPatternStrategy : IConversionStrategy
                     .ToString(System.Globalization.CultureInfo.InvariantCulture)
                 : $"'{member.Name.ToCamelCase()}'";
         }
+        // An enum's value reached otherwise (`x is (Level)1`) is the member that holds it.
+        if (value.Type is INamedTypeSymbol { TypeKind: TypeKind.Enum } enumType && !enumType.IsFlagsEnum()
+            && value.ConstantValue is { HasValue: true } enumValue
+            && enumType.GetMembers().OfType<IFieldSymbol>().FirstOrDefault(field =>
+                field.HasConstantValue && Equals(field.ConstantValue, enumValue.Value)) is { } named)
+            return $"'{named.Name.ToCamelCase()}'";
         if (value.ConstantValue is { HasValue: true } known && InlinedConstantStrategy.LiteralOf(known.Value) is { } literal)
             return literal;
         return context.Converter.ConvertExpression(spelled);
