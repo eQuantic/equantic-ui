@@ -2257,8 +2257,8 @@ public class TypeScriptEmitter
         if (cls.BaseList is null) return null;
         foreach (var entry in cls.BaseList.Types)
         {
-            var candidate = entry.Type.ToString();
-            if (candidate.Contains('<')) candidate = candidate[..candidate.IndexOf('<')];
+            // Named as its twin: a namespace in the spelling is no name the module has (#479).
+            var candidate = entry.Type.TwinTypeName(_semanticModel);
             var resolved = _semanticModel?.GetSymbolInfo(entry.Type).Symbol as INamedTypeSymbol;
             if (resolved is not null ? resolved.TypeKind == TypeKind.Class : Resolvable(candidate))
                 return candidate;
