@@ -25,13 +25,28 @@ namespace eQuantic.UI.Generators;
 /// resolves for itself (<see cref="CapabilityRule"/>, the rule the factory surface and eqc already
 /// share). A type is named by its metadata name, so a private nested component is described too.
 /// </para>
+/// <para>
+/// A PAGE is described as well when the server's container hands it a value the browser cannot build
+/// (<see cref="ServerValueAnalysis"/>): that value crosses as its projection, what the browser-side code
+/// reads of it, whether the page prefetches or not, and a use the projection cannot follow fails the
+/// build with EQ2114. A page is a type with <c>[Page]</c>, or one an app routes with <c>MapPage&lt;T&gt;</c>.
+/// </para>
 /// </summary>
 [Generator]
 public sealed class HydrationManifestGenerator : IIncrementalGenerator
 {
     private const string PrefetchInterface = "eQuantic.UI.Primitives.IServerPrefetch";
+    private const string RouteExtensions = "eQuantic.UI.Server.UIExtensions";
     private const string Attribute = "global::eQuantic.UI.Primitives.HydratedMember";
     private const string Kind = "global::eQuantic.UI.Primitives.HydratedMemberKind";
+
+    internal static readonly DiagnosticDescriptor ServerValueEscapes = new(
+        "EQ2114", "A server value is used in a way the browser cannot follow",
+        "'{0}' uses '{1}', which only the server has, at '{2}': {3}. The browser builds the page without "
+        + "it, and the build sends only what it can see the browser read of it. Decide on the server, in "
+        + "PrefetchAsync or a [ServerOnly] member, and keep the result in a field; or call a [ServerAction] "
+        + "when the browser's state is an input.",
+        "eQuantic.UI", DiagnosticSeverity.Error, isEnabledByDefault: true);
 
     public void Initialize(IncrementalGeneratorInitializationContext context)
     {
@@ -41,27 +56,94 @@ public sealed class HydrationManifestGenerator : IIncrementalGenerator
             .Where(static component => component is not null)
             .Collect();
 
-        context.RegisterSourceOutput(components, static (spc, all) => Emit(spc, all));
+        // A page routed with `app.MapPage<T>(…)` carries no attribute, and the container builds it all
+        // the same.
+        var routed = context.SyntaxProvider.CreateSyntaxProvider(
+                predicate: static (node, _) => node is GenericNameSyntax
+                {
+                    Identifier.ValueText: "MapPage", TypeArgumentList.Arguments.Count: 1,
+                },
+                transform: static (ctx, token) => Routed(ctx, token))
+            .Where(static page => page is not null)
+            .Collect();
+
+        context.RegisterSourceOutput(components.Combine(routed),
+            static (spc, pair) => Emit(spc, pair.Left, pair.Right));
     }
 
-    /// <summary>One crossing value: the component, the type declaring the member, the member, its kind.</summary>
+    /// <summary>One crossing value: the component, the type declaring the member, the member, its kind, its projection.</summary>
     private sealed class Entry
     {
-        public Entry(string component, string declaringType, string member, string kind)
+        public Entry(string component, string declaringType, string member, string kind, string? projection = null)
         {
-            Component = component; DeclaringType = declaringType; Member = member; Kind = kind;
+            Component = component; DeclaringType = declaringType; Member = member; Kind = kind; Projection = projection;
         }
 
         public string Component { get; }
         public string DeclaringType { get; }
         public string Member { get; }
         public string Kind { get; }
+        /// <summary>Null when the value crosses whole.</summary>
+        public string? Projection { get; }
     }
 
-    private static void Emit(SourceProductionContext spc, ImmutableArray<IReadOnlyList<Entry>?> all)
+    /// <summary>
+    /// What one class carries: as any component, and as a page. Whether it IS a page is known only once
+    /// every <c>MapPage&lt;T&gt;</c> of the app has been read, so both answers are kept until then.
+    /// </summary>
+    private sealed class Described
     {
+        public Described(string component, bool isPage, IReadOnlyList<Entry> entries,
+            IReadOnlyList<Entry> projected, IReadOnlyCollection<(string Declaring, string Member)> server,
+            IReadOnlyList<BoundaryStop> stops)
+        {
+            Component = component; IsPage = isPage; Entries = entries;
+            Projected = projected; Server = server; Stops = stops;
+        }
+
+        public string Component { get; }
+        public bool IsPage { get; }
+        /// <summary>What crosses whole, when it prefetches.</summary>
+        public IReadOnlyList<Entry> Entries { get; }
+        /// <summary>As a page: each server value the browser reads, with its projection.</summary>
+        public IReadOnlyList<Entry> Projected { get; }
+        /// <summary>As a page: the members holding a server value, which never cross whole.</summary>
+        public IReadOnlyCollection<(string Declaring, string Member)> Server { get; }
+        /// <summary>As a page: the uses the projection cannot follow.</summary>
+        public IReadOnlyList<BoundaryStop> Stops { get; }
+    }
+
+    private static string? Routed(GeneratorSyntaxContext ctx, System.Threading.CancellationToken token) =>
+        ctx.SemanticModel.GetSymbolInfo(ctx.Node, token).Symbol is IMethodSymbol { TypeArguments.Length: 1 } route
+        && route.ContainingType?.ToDisplayString() == RouteExtensions
+        && route.TypeArguments[0] is INamedTypeSymbol page
+            ? MetadataName(page)
+            : null;
+
+    private static void Emit(SourceProductionContext spc, ImmutableArray<Described?> all, ImmutableArray<string?> routed)
+    {
+        var pages = new HashSet<string>(routed.Where(name => name is not null)!, System.StringComparer.Ordinal);
+        var reported = new HashSet<string>(System.StringComparer.Ordinal);
+        var described = new List<Entry>();
+        foreach (var component in all.Where(c => c is not null).Select(c => c!))
+        {
+            if (!component.IsPage && !pages.Contains(component.Component))
+            {
+                described.AddRange(component.Entries);
+                continue;
+            }
+
+            described.AddRange(component.Entries.Where(e => !component.Server.Contains((e.DeclaringType, e.Member))));
+            described.AddRange(component.Projected);
+            // A partial class is met once per declaration, and each met the same stops.
+            foreach (var stop in component.Stops)
+                if (reported.Add($"{stop.Location.SourceTree?.FilePath}:{stop.Location.SourceSpan}:{stop.Reason}"))
+                    spc.ReportDiagnostic(Diagnostic.Create(ServerValueEscapes, stop.Location,
+                        stop.Page, stop.Value, stop.Expression, stop.Reason));
+        }
+
         // A partial class is met once per declaration, so the same entries arrive more than once.
-        var entries = all.Where(e => e is not null).SelectMany(e => e!)
+        var entries = described
             .GroupBy(e => (e.Component, e.DeclaringType, e.Member, e.Kind))
             .Select(g => g.First())
             .OrderBy(e => e.Component, System.StringComparer.Ordinal)
@@ -77,18 +159,55 @@ public sealed class HydrationManifestGenerator : IIncrementalGenerator
         foreach (var entry in entries)
             source.AppendLine(
                 $"[assembly: {Attribute}(\"{entry.Component}\", \"{entry.DeclaringType}\", "
-                + $"\"{entry.Member}\", {Kind}.{entry.Kind})]");
+                + $"\"{entry.Member}\", {Kind}.{entry.Kind}"
+                + (entry.Projection is null ? "" : $", Projection = \"{entry.Projection}\"")
+                + ")]");
 
         spc.AddSource("HydrationManifest.g.cs", source.ToString());
     }
 
-    private static IReadOnlyList<Entry>? Describe(GeneratorSyntaxContext ctx, System.Threading.CancellationToken token)
+    private static Described? Describe(GeneratorSyntaxContext ctx, System.Threading.CancellationToken token)
     {
         if (ctx.SemanticModel.GetDeclaredSymbol(ctx.Node, token) is not INamedTypeSymbol symbol) return null;
         if (symbol.IsAbstract || symbol.IsStatic) return null;
-        if (!Prefetches(symbol)) return null;
+
+        var prefetches = Prefetches(symbol);
+        // Read only where it can matter: a type whose constructor takes a value the browser cannot build.
+        var servers = symbol.InstanceConstructors
+            .Any(c => !c.IsImplicitlyDeclared && c.Parameters.Any(p => ServerValueAnalysis.IsServerValue(p.Type)))
+            ? ServerValueAnalysis.Of(symbol, ctx.SemanticModel.Compilation, token)
+            : null;
+        if (!prefetches && servers is null) return null;
 
         var component = MetadataName(symbol);
+        var entries = prefetches ? Crossing(symbol, component, ctx.SemanticModel.Compilation, token) : new List<Entry>();
+        var projected = new List<Entry>();
+        var server = new HashSet<(string Declaring, string Member)>();
+        if (servers is not null)
+        {
+            foreach (var member in servers.Storage)
+                server.Add((MetadataName(member is IParameterSymbol parameter ? parameter.ContainingType : member.ContainingType), member.Name));
+            foreach (var pair in servers.Projections)
+                projected.Add(new Entry(component,
+                    MetadataName(pair.Key is IParameterSymbol parameter ? parameter.ContainingType : pair.Key.ContainingType),
+                    pair.Key.Name, KindOf(pair.Key), pair.Value.ToString()));
+        }
+
+        return new Described(component, FactorySurface.IsPage(symbol), entries, projected, server,
+            servers?.Stops ?? (IReadOnlyList<BoundaryStop>)new List<BoundaryStop>());
+    }
+
+    private static string KindOf(ISymbol storage) => storage switch
+    {
+        IParameterSymbol => "CapturedParameter",
+        IPropertySymbol => "Property",
+        _ => "Field",
+    };
+
+    /// <summary>Every member a prefetching component holds, which crosses whole.</summary>
+    private static List<Entry> Crossing(
+        INamedTypeSymbol symbol, string component, Compilation compilation, System.Threading.CancellationToken token)
+    {
         var entries = new List<Entry>();
         for (var type = symbol; type is not null && IsDeclaredInSource(type); type = type.BaseType)
         {
@@ -111,7 +230,7 @@ public sealed class HydrationManifestGenerator : IIncrementalGenerator
                 entries.Add(new Entry(component, declaring, field.Name, "Field"));
             }
 
-            foreach (var parameter in CapturedParameters(type, ctx.SemanticModel.Compilation, token))
+            foreach (var parameter in CapturedParameters(type, compilation, token))
                 if (!Excluded(parameter.Type))
                     entries.Add(new Entry(component, declaring, parameter.Name, "CapturedParameter"));
         }

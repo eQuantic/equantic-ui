@@ -20,11 +20,12 @@ namespace eQuantic.UI.Primitives;
 /// </para>
 /// <para>
 /// <see cref="Projection"/> says what of the value crosses. <c>null</c> means the value crosses whole.
-/// An empty string means only whether it is null: the server writes <c>null</c>, or an empty object.
-/// Otherwise it is a comma-separated list of paths on the value, each a chain of C# member names joined
-/// by <c>.</c>, where a segment ending in <c>[]</c> means every element of that collection
-/// (<c>DisplayName,Roles[].Name</c>). The server writes exactly those members, each under the twin's
-/// name, and nothing else of the value.
+/// Otherwise it crosses as a plain object holding only what the browser reads of it, or as null when it
+/// is null, and the string lists those reads, comma-separated: each a chain of C# member names joined by
+/// <c>.</c> (<c>DisplayName,Profile.Avatar</c>). A read crosses the value it reaches, and one ending in
+/// <c>?</c> only whether that value is null, as null or an empty object (<c>Profile?</c>). An empty
+/// string lists no read, so only whether the value itself is null crosses. The server writes exactly
+/// those members, each under the twin's name, and nothing else of the value.
 /// </para>
 /// </summary>
 [AttributeUsage(AttributeTargets.Assembly, AllowMultiple = true)]
@@ -56,8 +57,8 @@ public sealed class HydratedMemberAttribute : Attribute
     public HydratedMemberKind Kind { get; }
 
     /// <summary>
-    /// What of the value crosses: <c>null</c> for all of it, an empty string for whether it is null, or
-    /// the paths the browser reads (see the type's remarks).
+    /// What of the value crosses: <c>null</c> for all of it, or the reads of it the browser makes (see
+    /// the type's remarks).
     /// </summary>
     public string? Projection { get; set; }
 }

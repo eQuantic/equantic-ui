@@ -1,0 +1,451 @@
+using eQuantic.UI.Generators;
+using FluentAssertions;
+using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
+using Xunit;
+
+namespace eQuantic.UI.Web.Tests;
+
+/// <summary>
+/// A value a page receives from the server's container crosses as what the browser reads of it, never
+/// whole, and a use the build cannot follow fails it with EQ2114. Pinned on the manifest the generator
+/// writes, with the app's own factory surface generated beside it as the SDK does, so a factory call is
+/// exactly what it is in an app: bound in the compilation, invisible to the generator that follows it.
+/// </summary>
+public class ServerValueProjectionTests
+{
+    private const string Attribute = "global::eQuantic.UI.Primitives.HydratedMember";
+    private const string Kind = "global::eQuantic.UI.Primitives.HydratedMemberKind";
+
+    private const string Services = """
+        public sealed class SiteIdentity
+        {
+            public string Authority { get; set; } = "";
+            public string DisplayName { get; set; } = "";
+            public bool IsAdmin { get; set; }
+            public Profile? Profile { get; set; }
+            public bool IsInRole(string role) => false;
+        }
+
+        public sealed class Profile
+        {
+            public string Name { get; set; } = "";
+            public string Secret { get; set; } = "";
+        }
+
+        public sealed class SiteOptions
+        {
+            public string Title { get; set; } = "";
+            public string ApiKey { get; set; } = "";
+        }
+
+        public sealed class ProductRepository
+        {
+            public string Find(int id) => "";
+        }
+
+        public sealed class Product
+        {
+            public string Name { get; set; } = "";
+        }
+
+        public sealed class Catalog : System.Collections.Generic.List<Product> { }
+
+        public sealed class UserBadge(SiteIdentity? identity) : StatelessComponent
+        {
+            public override VisualNode Build(ComponentContext context) =>
+                new Text(identity?.DisplayName ?? "guest", TypeRole.BodyM);
+        }
+        """;
+
+    private sealed record Generated(string Manifest, IReadOnlyList<Diagnostic> Reported, IReadOnlyList<Diagnostic> Errors)
+    {
+        public IEnumerable<Diagnostic> Escapes => Reported.Where(d => d.Id == "EQ2114");
+    }
+
+    private static Generated Run(string pages, string? another = null)
+    {
+        var source = $$"""
+            using System;
+            using System.Threading;
+            using System.Threading.Tasks;
+            using eQuantic.UI.Primitives;
+
+            namespace Shop;
+
+            {{Services}}
+
+            {{pages}}
+            """;
+        var references = ((string)AppContext.GetData("TRUSTED_PLATFORM_ASSEMBLIES")!)
+            .Split(Path.PathSeparator)
+            .Where(p => p.EndsWith(".dll", StringComparison.OrdinalIgnoreCase))
+            .Select(p => (MetadataReference)MetadataReference.CreateFromFile(p))
+            .Append(MetadataReference.CreateFromFile(typeof(eQuantic.UI.Primitives.VisualNode).Assembly.Location));
+        var trees = new List<SyntaxTree> { CSharpSyntaxTree.ParseText(source, path: "Shop.cs") };
+        if (another is not null) trees.Add(CSharpSyntaxTree.ParseText(another, path: "Another.cs"));
+        var compilation = CSharpCompilation.Create("Shop", trees, references,
+            new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary, nullableContextOptions: NullableContextOptions.Enable));
+
+        var driver = CSharpGeneratorDriver.Create(
+                new AppFactorySurfaceGenerator().AsSourceGenerator(),
+                new HydrationManifestGenerator().AsSourceGenerator())
+            .RunGeneratorsAndUpdateCompilation(compilation, out var updated, out var reported);
+        var manifest = driver.GetRunResult().Results
+            .SelectMany(result => result.GeneratedSources)
+            .Where(generated => generated.HintName == "HydrationManifest.g.cs")
+            .Select(generated => generated.SourceText.ToString())
+            .FirstOrDefault() ?? "";
+        var errors = updated.GetDiagnostics().Where(d => d.Severity == DiagnosticSeverity.Error).ToList();
+        return new Generated(manifest, reported, errors);
+    }
+
+    private static string Projected(string component, string member, string kind, string projection) =>
+        $"[assembly: {Attribute}(\"Shop.{component}\", \"Shop.{component}\", \"{member}\", {Kind}.{kind}, Projection = \"{projection}\")]";
+
+    [Fact]
+    public void ANullTest_CrossesOnlyWhetherItIsNull()
+    {
+        var generated = Run("""
+            [Page("/login")]
+            public sealed class LoginPage(SiteIdentity? identity) : StatelessComponent
+            {
+                public override VisualNode Build(ComponentContext context) =>
+                    new Text(identity is null ? "sign in" : "account", TypeRole.BodyM);
+            }
+            """);
+
+        generated.Errors.Should().BeEmpty();
+        generated.Reported.Should().BeEmpty();
+        generated.Manifest.Should().Contain(Projected("LoginPage", "identity", "CapturedParameter", ""));
+    }
+
+    [Fact]
+    public void AMemberReadThroughAField_CrossesThatMemberAlone()
+    {
+        var generated = Run("""
+            [Page("/about")]
+            public sealed class AboutPage : StatelessComponent
+            {
+                private readonly SiteOptions _options;
+
+                public AboutPage(SiteOptions options) { _options = options; }
+
+                public override VisualNode Build(ComponentContext context) => new Text(_options.Title, TypeRole.BodyM);
+            }
+            """);
+
+        generated.Errors.Should().BeEmpty();
+        generated.Reported.Should().BeEmpty();
+        generated.Manifest.Should().Contain(Projected("AboutPage", "_options", "Field", "Title"))
+            .And.NotContain("ApiKey");
+    }
+
+    [Fact]
+    public void WhatAChildReads_ThroughItsFactory_JoinsThePagesProjection()
+    {
+        var generated = Run("""
+            [Page("/account")]
+            public sealed class AccountPage(SiteIdentity? identity) : StatelessComponent
+            {
+                public override VisualNode Build(ComponentContext context) => UserBadge(identity);
+            }
+            """);
+
+        generated.Errors.Should().BeEmpty("the factory binds in the compilation the app builds");
+        generated.Reported.Should().BeEmpty();
+        generated.Manifest.Should().Contain(Projected("AccountPage", "identity", "CapturedParameter", "DisplayName"))
+            .And.NotContain("\"Shop.UserBadge\"", "a component that is no page receives what its parent passes, on both sides");
+    }
+
+    [Fact]
+    public void WhatAChildReads_ThroughNew_AndFromTheFieldItKeepsTheValueIn_JoinsThePagesProjection()
+    {
+        var generated = Run("""
+            public sealed class ProfileCard : StatelessComponent
+            {
+                private readonly SiteIdentity _identity;
+
+                public ProfileCard(SiteIdentity identity) { _identity = identity; }
+
+                public override VisualNode Build(ComponentContext context) =>
+                    new Text(_identity.Profile?.Name ?? "", TypeRole.BodyM);
+            }
+
+            [Page("/profile")]
+            public sealed class ProfilePage(SiteIdentity identity) : StatelessComponent
+            {
+                public override VisualNode Build(ComponentContext context) => new ProfileCard(identity);
+            }
+            """);
+
+        generated.Errors.Should().BeEmpty();
+        generated.Reported.Should().BeEmpty();
+        generated.Manifest.Should().Contain(Projected("ProfilePage", "identity", "CapturedParameter", "Profile.Name"))
+            .And.NotContain("Secret");
+    }
+
+    [Fact]
+    public void APatternAndAConditionalAccess_ReadWhatTheyTest()
+    {
+        var generated = Run("""
+            [Page("/admin")]
+            public sealed class AdminPage(SiteIdentity? identity) : StatelessComponent
+            {
+                public override VisualNode Build(ComponentContext context) =>
+                    new Text(identity is { IsAdmin: true } ? "admin"
+                        : identity?.Profile is null ? "no profile" : "user", TypeRole.BodyM);
+            }
+            """);
+
+        generated.Reported.Should().BeEmpty();
+        generated.Manifest.Should().Contain(Projected("AdminPage", "identity", "CapturedParameter", "IsAdmin,Profile?"));
+    }
+
+    [Fact]
+    public void ALocal_AndAMemberThatReturnsTheValue_AreFollowed()
+    {
+        var generated = Run("""
+            [Page("/settings")]
+            public sealed class SettingsPage(SiteOptions options) : StatelessComponent
+            {
+                private SiteOptions Options => options;
+
+                public override VisualNode Build(ComponentContext context)
+                {
+                    var current = Options;
+                    return new Text(current.Title, TypeRole.BodyM);
+                }
+            }
+            """);
+
+        generated.Reported.Should().BeEmpty();
+        generated.Manifest.Should().Contain(Projected("SettingsPage", "options", "CapturedParameter", "Title"));
+    }
+
+    [Fact]
+    public void ACallWithAnArgumentFromTheBrowser_FailsTheBuild_NamingThePageTheValueAndTheCall()
+    {
+        var generated = Run("""
+            [Page("/products")]
+            public sealed class ProductsPage(ProductRepository repository) : StatefulComponent
+            {
+                private int _selectedId;
+                private string _found = "";
+
+                private void Pick() => SetState(() => _found = repository.Find(_selectedId));
+
+                public override VisualNode Build(ComponentContext context) => new Text(_found, TypeRole.BodyM);
+            }
+            """);
+
+        var escape = generated.Escapes.Should().ContainSingle().Subject;
+        escape.Severity.Should().Be(DiagnosticSeverity.Error);
+        escape.GetMessage().Should().Contain("ProductsPage").And.Contain("'repository'")
+            .And.Contain("repository.Find(_selectedId)").And.Contain("a method is called on it");
+    }
+
+    [Fact]
+    public void AValuePassedWhereTheBuildHasNoSource_FailsTheBuild_NamingTheCall()
+    {
+        var generated = Run("""
+            [Page("/keep")]
+            public sealed class KeepPage(SiteIdentity identity) : StatelessComponent
+            {
+                public override VisualNode Build(ComponentContext context)
+                {
+                    GC.KeepAlive(identity);
+                    return new Text("kept", TypeRole.BodyM);
+                }
+            }
+            """);
+
+        generated.Escapes.Should().ContainSingle().Which.GetMessage()
+            .Should().Contain("GC.KeepAlive(identity)").And.Contain("whose source the build does not have");
+    }
+
+    [Fact]
+    public void AValueUsedOnlyOnTheServer_BuildsClean_AndNothingOfItCrosses()
+    {
+        var generated = Run("""
+            [Page("/catalog")]
+            public sealed class CatalogPage(ProductRepository repository) : StatelessComponent, IServerPrefetch
+            {
+                private string _first = "";
+
+                [ServerOnly]
+                public Task PrefetchAsync(IServiceProvider services, CancellationToken cancellationToken)
+                {
+                    _first = repository.Find(1);
+                    return Task.CompletedTask;
+                }
+
+                public override VisualNode Build(ComponentContext context) => new Text(_first, TypeRole.BodyM);
+            }
+            """);
+
+        generated.Errors.Should().BeEmpty();
+        generated.Reported.Should().BeEmpty();
+        generated.Manifest.Should().Contain("\"_first\"").And.NotContain("\"repository\"");
+    }
+
+    [Fact]
+    public void AReadWhileThePageIsConstructed_FailsTheBuild()
+    {
+        // The browser constructs the page with no arguments, and the server's value arrives after.
+        var generated = Run("""
+            [Page("/title")]
+            public sealed class TitlePage : StatelessComponent
+            {
+                private readonly string _title;
+
+                public TitlePage(SiteOptions options) { _title = options.Title; }
+
+                public override VisualNode Build(ComponentContext context) => new Text(_title, TypeRole.BodyM);
+            }
+            """);
+
+        generated.Escapes.Should().ContainSingle().Which.GetMessage().Should().Contain("constructed");
+    }
+
+    [Fact]
+    public void AValueConvertedToText_FailsTheBuild()
+    {
+        var generated = Run("""
+            [Page("/whoami")]
+            public sealed class WhoAmIPage(SiteIdentity identity) : StatelessComponent
+            {
+                public override VisualNode Build(ComponentContext context) => new Text($"{identity}", TypeRole.BodyM);
+            }
+            """);
+
+        generated.Escapes.Should().ContainSingle().Which.GetMessage().Should().Contain("converted to text");
+    }
+
+    [Fact]
+    public void AValueStoredInACollection_FailsTheBuild()
+    {
+        var generated = Run("""
+            [Page("/pair")]
+            public sealed class PairPage(SiteIdentity identity) : StatelessComponent
+            {
+                public override VisualNode Build(ComponentContext context) =>
+                    new Text(new[] { identity }.Length.ToString(), TypeRole.BodyM);
+            }
+            """);
+
+        generated.Escapes.Should().ContainSingle().Which.GetMessage().Should().Contain("stored in a collection");
+    }
+
+    [Fact]
+    public void AValueComparedWithAnotherObject_FailsTheBuild()
+    {
+        var generated = Run("""
+            [Page("/same")]
+            public sealed class SamePage(SiteIdentity identity) : StatelessComponent
+            {
+                private static readonly SiteIdentity Nobody = new();
+
+                public override VisualNode Build(ComponentContext context) =>
+                    new Text(identity == Nobody ? "nobody" : "somebody", TypeRole.BodyM);
+            }
+            """);
+
+        generated.Escapes.Should().ContainSingle().Which.GetMessage().Should().Contain("compared with another object");
+    }
+
+    [Fact]
+    public void AValueEnumerated_FailsTheBuild()
+    {
+        var generated = Run("""
+            [Page("/shelf")]
+            public sealed class ShelfPage(Catalog catalog) : StatelessComponent
+            {
+                public override VisualNode Build(ComponentContext context)
+                {
+                    var names = "";
+                    foreach (var product in catalog) names += product.Name;
+                    return new Text(names, TypeRole.BodyM);
+                }
+            }
+            """);
+
+        generated.Escapes.Should().ContainSingle().Which.GetMessage().Should().Contain("enumerated");
+    }
+
+    [Fact]
+    public void AComponentThatIsNoPage_ReceivesWhatItsParentPasses_AndIsNotRefused()
+    {
+        var generated = Run("""
+            public sealed class RoleBadge(SiteIdentity identity) : StatelessComponent
+            {
+                public override VisualNode Build(ComponentContext context) =>
+                    new Text(identity.IsInRole("admin") ? "admin" : "user", TypeRole.BodyM);
+            }
+            """);
+
+        generated.Reported.Should().BeEmpty();
+        generated.Manifest.Should().BeEmpty();
+    }
+
+    [Fact]
+    public void APageRoutedWithMapPage_IsAPageToo()
+    {
+        var generated = Run("""
+            public sealed class AccountView(SiteIdentity? identity) : StatelessComponent
+            {
+                public override VisualNode Build(ComponentContext context) =>
+                    new Text(identity is null ? "sign in" : "account", TypeRole.BodyM);
+            }
+
+            public static class Routes
+            {
+                public static void Map(eQuantic.UI.Server.Endpoints endpoints) =>
+                    eQuantic.UI.Server.UIExtensions.MapPage<AccountView>(endpoints, "/account");
+            }
+            """,
+            // The route extension as the Server declares it, which this compilation does not reference.
+            """
+            namespace eQuantic.UI.Server;
+
+            public sealed class Endpoints { }
+
+            public static class UIExtensions
+            {
+                public static Endpoints MapPage<TPage>(this Endpoints endpoints, string route) => endpoints;
+            }
+            """);
+
+        generated.Errors.Should().BeEmpty();
+        generated.Manifest.Should().Contain(Projected("AccountView", "identity", "CapturedParameter", ""));
+    }
+
+    [Fact]
+    public void APrefetchingPage_SendsItsDataWhole_AndItsServerValueAsAProjection()
+    {
+        var generated = Run("""
+            [Page("/dashboard")]
+            public sealed class DashboardPage(SiteIdentity? identity) : StatelessComponent, IServerPrefetch
+            {
+                private long _count;
+
+                [ServerOnly]
+                public Task PrefetchAsync(IServiceProvider services, CancellationToken cancellationToken)
+                {
+                    _count = 3;
+                    return Task.CompletedTask;
+                }
+
+                public override VisualNode Build(ComponentContext context) =>
+                    new Text(identity is null ? "" : $"{_count}", TypeRole.BodyM);
+            }
+            """);
+
+        generated.Errors.Should().BeEmpty();
+        generated.Reported.Should().BeEmpty();
+        generated.Manifest
+            .Should().Contain($"[assembly: {Attribute}(\"Shop.DashboardPage\", \"Shop.DashboardPage\", \"_count\", {Kind}.Field)]")
+            .And.Contain(Projected("DashboardPage", "identity", "CapturedParameter", ""))
+            .And.NotContain($"\"identity\", {Kind}.CapturedParameter)]", "a server value never crosses whole");
+    }
+}

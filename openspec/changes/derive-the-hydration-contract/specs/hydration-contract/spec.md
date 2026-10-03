@@ -78,8 +78,8 @@ browser resolves its own implementation of it.
 
 ### Requirement: A service the build cannot project fails the build
 
-eqc SHALL refuse with EQ2114, an error, a page whose browser-side code uses a value from the server's
-container in a way the projection cannot follow: a method of it called with an argument that changes in
+The build SHALL refuse with EQ2114, an error, a page whose browser-side code uses a value from the
+server's container in a way the projection cannot follow: a method of it called with an argument that changes in
 the browser, or the value passed where the analysis cannot see what is read of it. The message SHALL
 name the page, the value, the expression where the analysis stopped, and the way out: deciding on the
 server in `PrefetchAsync` or a `[ServerOnly]` member and keeping the result in a field, or a
