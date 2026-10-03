@@ -62,13 +62,18 @@ public class CastExpressionStrategy : IExpressionIrStrategy
             }
 
             var operandIr = context.Converter.ConvertIr(cast.Expression);
-            // An object holding the enum (`(Status)Enum.Parse(typeof(Status), text)`) already holds
-            // what the browser holds for it, and so does the enum itself: neither is a number to map,
-            // and the value→key table answered undefined for both.
+            // The enum itself is what the browser holds already. An object holding one
+            // (`(Status)Enum.Parse(typeof(Status), text)`) is unboxed, as the runtime unboxes it: the
+            // member it holds, a boxed number's member, and a refusal for anything else, where the
+            // value→key table answered undefined and a boxed string passed through.
+            if (SymbolEqualityComparer.Default.Equals(operandType, enumTarget)) return operandIr;
             if (operandType is not null && !IsNumeric(operandType)
-                && operandType is not INamedTypeSymbol { TypeKind: TypeKind.Enum }
-                || SymbolEqualityComparer.Default.Equals(operandType, enumTarget))
-                return operandIr;
+                && operandType is not INamedTypeSymbol { TypeKind: TypeKind.Enum })
+            {
+                context.UsedHelpers.Add(Eq.Import);
+                return JsExpr.Call(JsExpr.Identifier(Eq.EnumUnbox), operandIr,
+                    JsExpr.Literal(Types.EnumShape.Of(enumTarget)), JsExpr.Literal(JsStringLiteral.Quote(enumTarget.Name)));
+            }
             // Another enum's value: its own table gives the number, and this one's gives the key.
             if (operandType is INamedTypeSymbol { TypeKind: TypeKind.Enum } sourceEnum)
                 operandIr = Types.EnumShape.ValueOf(sourceEnum, operandIr, context);

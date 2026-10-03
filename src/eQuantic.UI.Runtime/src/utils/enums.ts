@@ -191,6 +191,7 @@ export function values(shape: EnumShape): (string | number)[] {
  * string is a name, or the key of a boxed member, and a number is a value.
  */
 export function isDefined(given: unknown, shape: EnumShape, as: 'held' | 'number' | 'name' | 'object'): boolean {
+  if (given == null) throw new Error("Value cannot be null. (Parameter 'value')");
   if (as === 'object') {
     if (typeof given === 'string') return shape.names.includes(given) || keys(shape).includes(given);
     return shape.values.includes(Number(given));
@@ -198,4 +199,18 @@ export function isDefined(given: unknown, shape: EnumShape, as: 'held' | 'number
   if (as === 'name') return shape.names.includes(given as string);
   const value = as === 'number' ? Number(given) : valueOf(given, shape);
   return shape.values.includes(value);
+}
+
+/**
+ * A cast from `object` to the enum, an unboxing: a boxed member is held as its key, and a boxed number
+ * of the underlying type is the member with that value, as the runtime unboxes one. A null and anything
+ * else are refused as .NET refuses them: `(Status)(object)"Pending"` passed the text through. A boxed
+ * string spelled as a member's key cannot be told from the member, both being that string here.
+ */
+export function unbox(given: unknown, shape: EnumShape, name: string): string | number {
+  if (given == null) throw new Error('Object reference not set to an instance of an object.');
+  if (typeof given === 'number') return hold(given, shape);
+  if (typeof given === 'string' && keys(shape).includes(given)) return given;
+  const type = typeof given === 'string' ? 'System.String' : typeof given === 'boolean' ? 'System.Boolean' : 'System.Object';
+  throw new Error(`Unable to cast object of type '${type}' to type '${name}'.`);
 }

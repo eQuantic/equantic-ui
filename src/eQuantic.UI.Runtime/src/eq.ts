@@ -120,6 +120,7 @@ import {
   parse as enumParse,
   text as enumText,
   tryParse as enumTryParse,
+  unbox as enumUnbox,
   values as enumValues,
   zero as enumZero,
 } from './utils/enums';
@@ -312,7 +313,7 @@ export const $eq = {
   time: { dateTime, timeSpan, dateOnly, timeOnly, dateTimeOffset },
   /** An enum as .NET reads it, from the shape the compiler writes: its text, Parse and TryParse,
    * its default, GetNames, GetValues and IsDefined. */
-  enums: { text: enumText, parse: enumParse, tryParse: enumTryParse, zero: enumZero, name: enumName, names: enumNames, values: enumValues, isDefined: enumIsDefined },
+  enums: { text: enumText, parse: enumParse, tryParse: enumTryParse, zero: enumZero, name: enumName, names: enumNames, values: enumValues, unbox: enumUnbox, isDefined: enumIsDefined },
   /**
    * Collections — Queue (FIFO), Stack (LIFO), Dictionary (by slot, as .NET's), LinkedList, and the
    * sorted family (SortedSet / SortedDictionary / SortedList).

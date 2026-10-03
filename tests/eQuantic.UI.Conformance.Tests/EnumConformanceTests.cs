@@ -177,6 +177,8 @@ public class EnumConformanceTests
     [InlineData("var ok = Enum.TryParse(typeof(Status), \"inactive\", true, out object? r); return ok + \":\" + ((Status)r! == Status.Inactive);")] // "True:True"
     [InlineData("return ((Status)Enum.Parse(typeof(Status), \"Pending\")).ToString();")]  // "Pending"
     [InlineData("var s = Status.Inactive; return ((Rank)s).ToString() + \"|\" + (Status)Rank.Alpha;")] // "2|Pending"
+    [InlineData("object o = 1; object t = \"Pending\"; string r = ((Status)o).ToString(); try { var s = (Status)t; return r + \"|cast\"; } catch { return r + \"|refused\"; }")] // "Pending|refused"
+    [InlineData("try { return Enum.IsDefined(typeof(Status), null).ToString(); } catch (Exception e) { return e.Message; }")] // "Value cannot be null. (Parameter 'value')"
     public void EnumsStatics_ReadTheEnumsShape(string statements)
     {
         Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");

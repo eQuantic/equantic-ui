@@ -126,3 +126,4 @@ const eQuantic.UI.Compiler.CodeGen.Eq.EnumTryParse = "$eq.enums.tryParse" -> str
 const eQuantic.UI.Compiler.CodeGen.Eq.EnumValues = "$eq.enums.values" -> string!
 const eQuantic.UI.Compiler.CodeGen.Eq.EnumZero = "$eq.enums.zero" -> string!
 const eQuantic.UI.Compiler.CodeGen.Eq.EnumName = "$eq.enums.name" -> string!
+const eQuantic.UI.Compiler.CodeGen.Eq.EnumUnbox = "$eq.enums.unbox" -> string!

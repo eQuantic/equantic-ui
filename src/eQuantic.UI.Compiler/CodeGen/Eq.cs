@@ -189,6 +189,10 @@ public static class Eq
 
     public const string EnumName = "$eq.enums.name";
 
+    /// <summary>A cast from <c>object</c> to an enum: the boxed member, a boxed number's member, or
+    /// .NET's refusal.</summary>
+    public const string EnumUnbox = "$eq.enums.unbox";
+
     /// <summary><c>Enum.GetValues</c>.</summary>
     public const string EnumValues = "$eq.enums.values";
 
