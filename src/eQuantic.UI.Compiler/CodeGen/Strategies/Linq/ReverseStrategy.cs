@@ -47,7 +47,7 @@ public class ReverseStrategy : IConversionStrategy
         var invocation = (InvocationExpressionSyntax)node;
         var memberAccess = (MemberAccessExpressionSyntax)invocation.Expression;
 
-        var caller = context.Converter.ConvertExpression(memberAccess.Expression);
+        var caller = LinqSource.Text(memberAccess.Expression, context);
 
         // Use spread to create a copy before reversing (JS reverse mutates in place)
         return $"[...{caller}].reverse()";
