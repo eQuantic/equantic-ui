@@ -155,7 +155,7 @@ public class StructDefaultTests
         var ts = Emit("Grid");
 
         ts.Should().Contain("tone: any = 'quiet'");
-        ts.Should().Contain("mark: any = '\\0'");
+        ts.Should().Contain("mark: any = '\\u0000'");
     }
 
     /// <summary>An EMPTY struct has no twin (the emitter refuses it), so `new Nothing()` would name

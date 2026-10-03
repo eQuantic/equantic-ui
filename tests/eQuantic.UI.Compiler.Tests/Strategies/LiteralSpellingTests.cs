@@ -1,4 +1,6 @@
+using eQuantic.UI.Compiler.CodeGen;
 using FluentAssertions;
+using Microsoft.CodeAnalysis.CSharp;
 using Xunit;
 
 namespace eQuantic.UI.Compiler.Tests.Strategies;
@@ -62,6 +64,15 @@ public class LiteralSpellingTests
     {
         TestHelper.ConvertCodeBlock("var @class = 1; var n = nameof(@class);")
             .Should().Contain("n = 'class';");
+    }
+
+    [Fact]
+    public void Nameof_WithNoModel_IsTheIdentifiersValue()
+    {
+        // The playground compiles a buffer alone: the identifier's value, not its text, answers.
+        new CSharpToJsConverter()
+            .ConvertExpression(SyntaxFactory.ParseExpression("nameof(@class)"))
+            .Should().Be("'class'");
     }
 
     [Fact]

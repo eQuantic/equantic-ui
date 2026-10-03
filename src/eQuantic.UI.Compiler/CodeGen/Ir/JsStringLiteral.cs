@@ -5,7 +5,9 @@ namespace eQuantic.UI.Compiler.CodeGen.Ir;
 
 /// <summary>
 /// THE SPELLING OF A STRING in the emitted JavaScript: a single-quoted literal, or the text between a
-/// template literal's backticks. Every string the transpiler spells from a C# value is written here.
+/// template literal's backticks. Every string or char VALUE the transpiler writes into a module is
+/// spelled here, a char's default included; what is quoted elsewhere is a name (an enum member's, a
+/// type's), which an identifier's characters keep from needing an escape, or a tag of the SDK's own.
 /// <para>
 /// The text was quoted by hand in nine places, and five of them, a record's declared defaults among
 /// them, escaped the backslash and the quote only, so `string Joined = "a" + "\n"` was written with a

@@ -96,6 +96,20 @@ public class LiteralConformanceTests
         ConformanceRunner.AssertStatementsSameAsDotNet(statements);
     }
 
+    private const string Defaults =
+        "public record Quoted(string A = \"it's\\n\\\\\", char C = '\\'', int B = 0);";
+
+    /// <summary>A record's constructor skipped by a named argument fills the parameter from its
+    /// default, on the creation path rather than the call's.</summary>
+    [SkippableTheory]
+    [InlineData("var q = new Quoted(B: 1); return q.A + q.C + q.B;")]                               // it's, a line feed, a backslash, a quote, 1
+    [InlineData("return new Quoted(C: 'x').A.Length;")]                                            // 6
+    public void ARecordsSkippedDefault_IsQuotedAsAnyString(string statements)
+    {
+        Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
+        ConformanceRunner.AssertStatementsSameAsDotNet(statements, Defaults);
+    }
+
     /// <summary>
     /// A raw interpolated string's braces are its text unless as many of them as it has dollars open
     /// a hole, so <c>{{</c> stays two braces there. Only a regular or a verbatim one reads a doubled
