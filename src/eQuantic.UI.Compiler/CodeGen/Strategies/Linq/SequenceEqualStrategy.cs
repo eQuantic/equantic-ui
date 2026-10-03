@@ -27,12 +27,12 @@ public class SequenceEqualStrategy : IConversionStrategy
     {
         var invocation = (InvocationExpressionSyntax)node;
         var memberAccess = (MemberAccessExpressionSyntax)invocation.Expression;
-        var caller = context.Converter.ConvertExpression(memberAccess.Expression);
+        var caller = LinqSource.Text(memberAccess.Expression, context);
         var args = invocation.ArgumentList.Arguments;
 
         if (args.Count == 1)
         {
-            var other = context.Converter.ConvertExpression(args[0].Expression);
+            var other = Ir.JsExprWriter.Write(LinqSource.Argument(args[0], invocation, context));
             // JSON.stringify approach for simplicity in UI context
             return $"(JSON.stringify({caller}) === JSON.stringify({other}))";
         }

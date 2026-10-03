@@ -67,8 +67,9 @@ import {
   realParse,
   realTryParse,
 } from './utils/number-parse';
-import { max, min, toDictionary } from './utils/linq';
+import { enumerable, max, min, seq, toArray, toDictionary } from './utils/linq';
 import {
+  chars,
   compare,
   compareRange,
   compareRangeBy,
@@ -191,7 +192,7 @@ export const $eq = {
   /** LINQ Zip: pairs stop with the shorter sequence. */
   zip,
   /** LINQ's Max and Min by the type they answer, and ToDictionary with .NET's refusals. */
-  linq: { max, min, toDictionary },
+  linq: { enumerable, max, min, seq, toArray, toDictionary },
   /** C# `with` over a runtime value type — prototype preserved. */
   withPatch,
   /** `new object()`, an identity of its own, and a `lock` statement's gate, refused when null. */
@@ -276,6 +277,8 @@ export const $eq = {
    * from the platform's segmenter), a character's general category, string's comparisons and
    * ranged join, and .NET's white space. */
   text: {
+    /** A range of chars, refused where it leaves its source, as .NET refuses it. */
+    chars,
     format,
     record: recordText,
     stringFormat,

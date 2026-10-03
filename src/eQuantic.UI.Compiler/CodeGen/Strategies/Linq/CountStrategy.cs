@@ -44,7 +44,7 @@ public class CountStrategy : IConversionStrategy
         var invocation = (InvocationExpressionSyntax)node;
         var memberAccess = (MemberAccessExpressionSyntax)invocation.Expression;
         
-        var caller = context.Converter.ConvertExpression(memberAccess.Expression);
+        var caller = LinqSource.Text(memberAccess.Expression, context);
         var hasArguments = invocation.ArgumentList.Arguments.Count > 0;
 
         if (hasArguments)
