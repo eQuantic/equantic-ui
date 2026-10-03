@@ -944,6 +944,12 @@ record of a release, the wiki's Upgrading page is the distillate.
   inlines, a zero-context patch's gaps, F7 stuck past a removed end, the focus a fold's press
   dropped on the web, a patch line's bare carriage return, and a tuple's enum named as in C#; the
   find bar's Escape, still page-wide, is [#457](https://github.com/eQuantic/equantic-ui/issues/457).
+- **0.2.0-preview.59 released** from `e83e07fa`: the code diff view (#412) over the engine's line and
+  word diffs (#386), the number specifiers printed as .NET prints them (#445) beside List.Remove, a
+  bool from text (#421), a date's fractional Add* (#426), a record member's starting value (#409),
+  a class's default interface members (#418) and an expression variable's scope (#484), names the
+  transpiler changes kept off the names a scope holds (#399), and the working agreement in the
+  repository (#411, #431, #448). *([v0.2.0-preview.59](https://github.com/eQuantic/equantic-ui/releases/tag/v0.2.0-preview.59))*
 - **2026-09-27 · A lambda's block maps statement by statement**: since #382 every statement of a
   member's body mapped to its own line, but a lambda's block reached the writer as text, laid out
   where the lambda was converted, and its statements' marks were dropped with it
@@ -988,6 +994,22 @@ record of a release, the wiki's Upgrading page is the distillate.
   ([#500](https://github.com/eQuantic/equantic-ui/issues/500)), and no item says where it sits in
   its set ([#502](https://github.com/eQuantic/equantic-ui/issues/502)). Proposed and archived
   through OpenSpec (`openspec/specs/native-accessibility`).
+- **2026-10-03 · The build derives the hydration contract**: the server named a component's values
+  after the fields the C# compiler synthesizes, so an auto-property and a captured primary-constructor
+  parameter drew on the server and vanished on hydration
+  ([#509](https://github.com/eQuantic/equantic-ui/issues/509)), and a service registered as a class
+  crossed whole into the HTML of a page that prefetched, while the browser, which builds a page without
+  it, drew the other branch ([#510](https://github.com/eQuantic/equantic-ui/issues/510)). The source
+  generator now writes a hydration manifest, the server writes each payload from it and eqc each
+  twin's adoption: every value under the twin's name, and a value from the container as its
+  projection, what the browser-side code reads of it, worked out from the bound tree of what the twin
+  runs. A use the projection cannot follow fails the build with EQ2114, and the container has the last
+  word on a value written whole. `HydrationCrossingTests` renders pages on the server and draws their
+  twins in the embedded Bun on the payloads the server wrote, and the dashboard sample's Server data
+  and Identity screens were measured in a browser against main. Filed on the way: two pages of one
+  simple name share one entry of the page index
+  ([#514](https://github.com/eQuantic/equantic-ui/issues/514)). Proposed and archived through OpenSpec
+  (`openspec/specs/hydration-contract`).
 
 ## Retired documents
 

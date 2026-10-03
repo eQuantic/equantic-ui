@@ -38,6 +38,7 @@ describe('server-state adoption (C# IServerPrefetch twin)', () => {
   });
 
   class HomePage {
+    static $hydration = { _downloads: 'declared', _packages: 'declared' } as const;
     _downloads = 627000;
     _packages = 23;
   }
@@ -59,6 +60,7 @@ describe('server-state adoption (C# IServerPrefetch twin)', () => {
     // appeared, for the one value that is indistinguishable from absence. The server sends it now
     // and this is the side that has to write it.
     class Banner {
+      static $hydration = { _message: 'declared' } as const;
       _message: string | null = 'still here';
     }
     const banner = new Banner();
@@ -84,6 +86,7 @@ describe('server-state adoption (C# IServerPrefetch twin)', () => {
 
   it('gives each component its own entry, and two of a type are told apart by the ordinal', () => {
     class StatsHeader {
+      static $hydration = { _count: 'declared' } as const;
       _count = 0;
     }
     win.__INITIAL_STATE__ = {
@@ -102,6 +105,7 @@ describe('server-state adoption (C# IServerPrefetch twin)', () => {
 
   it('leaves a component alone when the key names a different type — a drift is a missing value', () => {
     class StatsHeader {
+      static $hydration = { _count: 'declared' } as const;
       _count = 7;
     }
     win.__INITIAL_STATE__ = { 'SomethingElse#0': { _count: 99 } };
@@ -116,6 +120,7 @@ describe('server-state adoption (C# IServerPrefetch twin)', () => {
   it('coerces a long that crossed as a string back to the field type', () => {
     // EqJson writes Int64 as a string so values beyond 2^53 survive the wire.
     class Downloads {
+      static $hydration = { _downloads: 'declared' } as const;
       _downloads = 627000;
     }
     const page = new Downloads();
@@ -133,7 +138,12 @@ describe('server-state adoption (C# IServerPrefetch twin)', () => {
       title = '';
     }
     class WalletPage {
-      static $hydration = { _total: 'decimal' as const, _count: 'long' as const, _todos: [Todo] as const };
+      static $hydration = {
+        _total: 'decimal' as const,
+        _count: 'long' as const,
+        _todos: [Todo] as const,
+        _label: 'declared' as const,
+      };
       _total: unknown = null; // even a null default hydrates — the spec, not the witness, types it
       _count: unknown = 0n;
       _todos: unknown = [];
@@ -155,11 +165,12 @@ describe('server-state adoption (C# IServerPrefetch twin)', () => {
     expect(page._count).toBe(9007199254740993n);
     expect((page._todos as Todo[])[0]).toBeInstanceOf(Todo);
     expect((page._todos as Todo[])[0].id).toBe(1n);
-    expect(page._label).toBe('x'); // no spec entry — assigned verbatim
+    expect(page._label).toBe('x'); // 'declared': the witness path, its default a string
   });
 
-  it('ignores keys the component does not declare', () => {
+  it('ignores keys the class map does not list', () => {
     class Page {
+      static $hydration = { _downloads: 'declared' } as const;
       _downloads = 1;
     }
     const page = new Page() as Page & Record<string, unknown>;
@@ -173,6 +184,7 @@ describe('server-state adoption (C# IServerPrefetch twin)', () => {
 
   it('does not take a key every object INHERITS for a field the component declares', () => {
     class Page {
+      static $hydration = { _downloads: 'declared' } as const;
       _downloads = 1;
     }
     const page = new Page();
@@ -202,6 +214,7 @@ describe('server-state adoption (C# IServerPrefetch twin)', () => {
     // component silently reverted to its defaults on the second pass. Only stateful children are
     // retained between renders; a composed stateless one is rebuilt, so it asks for a key again.
     class StatsHeader {
+      static $hydration = { _count: 'declared' } as const;
       _count = 0;
     }
     win.__INITIAL_STATE__ = {
@@ -244,6 +257,7 @@ describe('server-state adoption (C# IServerPrefetch twin)', () => {
     // `AComponentABuildReturnsDirectly_IsNamedLikeAnyOther`. An earlier version of this case read
     // the Core page — whose Render returns markup, not a component — and concluded the opposite.
     class TreeNode {
+      static $hydration = { _label: 'declared' } as const;
       _label = 'default';
     }
     win.__INITIAL_STATE__ = {
@@ -267,6 +281,7 @@ describe('server-state adoption (C# IServerPrefetch twin)', () => {
     // changed: a filter reset itself each time anything above it redrew. The root already adopts
     // only while unmounted; this is the same rule for everything below it.
     class Filter {
+      static $hydration = { _query: 'declared' } as const;
       _query = '';
     }
     win.__INITIAL_STATE__ = { 'Filter#0': { _query: 'server' } };
@@ -290,6 +305,7 @@ describe('server-state adoption (C# IServerPrefetch twin)', () => {
     // a `component` node, and the render inside is then a step in the walk rather than the start of
     // one.
     class StatsHeader {
+      static $hydration = { _count: 'declared' } as const;
       _count = 0;
       render() {
         // what a real StatelessComponent.render() does around its build
@@ -302,6 +318,7 @@ describe('server-state adoption (C# IServerPrefetch twin)', () => {
       }
     }
     class Footer {
+      static $hydration = { _note: 'declared' } as const;
       _note = '';
     }
     win.__INITIAL_STATE__ = {
@@ -335,6 +352,7 @@ describe('server-state adoption (C# IServerPrefetch twin)', () => {
     // version read the first as the second — it suppressed every render the seam reached — and a
     // component with nothing above it then adopted nothing at all.
     class Widget {
+      static $hydration = { _text: 'declared' } as const;
       _text = 'default';
       render() {
         return runComponentWalk(this, true, () => ({
@@ -365,6 +383,7 @@ describe('server-state adoption (C# IServerPrefetch twin)', () => {
     // one render and Type#1 on the next: the payload names the first, and every render after the
     // first reverted the component to its defaults.
     class Widget {
+      static $hydration = { _text: 'declared' } as const;
       _text = 'default';
       render() {
         return runComponentWalk(this, true, () => ({
@@ -399,6 +418,7 @@ describe('server-state adoption (C# IServerPrefetch twin)', () => {
     // so with two same-type prefetching children both claimed Type#0 and the second was handed the
     // FIRST one's data. A wrong value, not a missing one.
     class StatsHeader {
+      static $hydration = { _count: 'declared' } as const;
       _count = 0;
     }
     win.__INITIAL_STATE__ = {
@@ -422,5 +442,128 @@ describe('server-state adoption (C# IServerPrefetch twin)', () => {
 
     expect(first._count).toBe(10);
     expect(second._count).toBe(20);
+  });
+});
+
+/**
+ * WHAT THE CLASS'S MAP LISTS is what the server sends: the compiler writes `static $hydration` from
+ * the hydration manifest the server writes its payload from. A captured primary-constructor
+ * parameter the router did not pass is never assigned, so the instance has no such property, and a
+ * rule that adopted only members the instance already held refused the server's value for it.
+ */
+describe('server-state adoption by the hydration manifest', () => {
+  beforeEach(() => {
+    resetComponentKeys();
+  });
+
+  afterEach(() => {
+    delete win.__INITIAL_STATE__;
+    resetComponentKeys();
+  });
+
+  it('adopts a listed value into a member the instance has not assigned yet', () => {
+    class Quote {
+      declare symbol: string | undefined;
+      static get $hydration() {
+        return { symbol: 'declared' as const };
+      }
+    }
+    const quote = new Quote();
+    expect(Object.prototype.hasOwnProperty.call(quote, 'symbol')).toBe(false);
+    win.__INITIAL_STATE__ = { 'Quote#0': { symbol: 'ACME' } };
+
+    runComponentWalk(quote, true, () => undefined);
+
+    expect(quote.symbol).toBe('ACME');
+  });
+
+  it('coerces a listed value by its wire spec', () => {
+    class Stats {
+      declare downloads: bigint | undefined;
+      static get $hydration() {
+        return { downloads: 'long' as const };
+      }
+    }
+    const stats = new Stats();
+    win.__INITIAL_STATE__ = { 'Stats#0': { downloads: '9007199254740993' } };
+
+    runComponentWalk(stats, true, () => undefined);
+
+    expect(stats.downloads).toBe(9007199254740993n);
+  });
+
+  it('leaves out a key the map does not list, even one the instance holds', () => {
+    // The map, not the instance, says what the server carries here. A payload key it does not list
+    // came from a build that described this class differently, and taking it would overwrite a
+    // member with a value nothing in this build sent.
+    class Draft {
+      _count = 1;
+      _text = 'typed here';
+      static get $hydration() {
+        return { _count: 'declared' as const };
+      }
+    }
+    const draft = new Draft();
+    win.__INITIAL_STATE__ = { 'Draft#0': { _count: 2, _text: 'from an older build' } };
+
+    runComponentWalk(draft, true, () => undefined);
+
+    expect(draft._count).toBe(2);
+    expect(draft._text).toBe('typed here');
+  });
+
+  it('adopts a projection as plain data, never rebuilt into the twin of its class', () => {
+    // A server value crosses as only the members the browser reads. The class it was on the server has
+    // a twin whose getters compute from members that never crossed, so the projection stays plain.
+    class SiteOptions {
+      title = '';
+      maxUpload = 0n;
+      get display() {
+        return this.title.toUpperCase();
+      }
+      static get $hydration() {
+        return { maxUpload: 'long' as const };
+      }
+    }
+    class AboutPage {
+      _options: unknown = undefined;
+      static get $hydration() {
+        return { _options: { members: { maxUpload: 'long' as const } } };
+      }
+    }
+    const page = new AboutPage();
+    win.__INITIAL_STATE__ = { 'AboutPage#0': { _options: { title: 'Docs', maxUpload: '9007199254740993' } } };
+
+    runComponentWalk(page, true, () => undefined);
+
+    expect(page._options).not.toBeInstanceOf(SiteOptions);
+    expect(Object.getPrototypeOf(page._options)).toBe(Object.prototype);
+    expect(page._options).toEqual({ title: 'Docs', maxUpload: 9007199254740993n });
+  });
+
+  it('adopts a null server value as null', () => {
+    class LoginPage {
+      declare identity: unknown;
+      static get $hydration() {
+        return { identity: { members: {} } };
+      }
+    }
+    const page = new LoginPage();
+    win.__INITIAL_STATE__ = { 'LoginPage#0': { identity: null } };
+
+    runComponentWalk(page, true, () => undefined);
+
+    expect(page.identity).toBeNull();
+  });
+
+  it('adopts nothing into a class without a map, which the build described no state for', () => {
+    class Undescribed {
+      _count = 1;
+    }
+    const undescribed = new Undescribed();
+    win.__INITIAL_STATE__ = { 'Undescribed#0': { _count: 2 } };
+
+    expect(adoptServerStateFor(undescribed, nextComponentKey('Undescribed'))).toBe(false);
+    expect(undescribed._count).toBe(1);
   });
 });

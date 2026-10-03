@@ -64,6 +64,8 @@ export type FontWeightValue = 'regular' | 'medium' | 'semiBold' | 'bold' | 'extr
 
 export type GradientDirectionValue = 'toRight' | 'toBottom' | 'toBottomRight' | 'toBottomLeft';
 
+export type HydratedMemberKindValue = 'field' | 'property' | 'capturedParameter' | 'backingField';
+
 export type IconGlyphStyleValue = 'fill' | 'stroke';
 
 export type IconsValue =

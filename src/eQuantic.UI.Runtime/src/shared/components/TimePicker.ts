@@ -5,11 +5,6 @@ export class TimePicker extends StatefulComponent {
     _open: boolean = false;
     _highlight: number = 0;
     static panelHeight: number = 260;
-
-    static get $hydration() {
-        return { selected: 'timeOnly', min: 'timeOnly', max: 'timeOnly' };
-    }
-
     declare selected: any;
     declare onChanged: ((timeOnly: TimeOnly) => void) | null;
     declare stepMinutes: number;

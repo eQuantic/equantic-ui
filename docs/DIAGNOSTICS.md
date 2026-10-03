@@ -70,9 +70,10 @@ The localization contract, checked on the build machine rather than when a visit
 | `EQ2100` | About **this call**: the template must be a valid composite format whose specifiers are inside the supported subset, and the call must pass every hole it declares. | Fix the argument count, or drop the out-of-subset specifier (alignment such as `{0,10}` is outside v1). |
 | `EQ2101` | About the **translations**: every culture's resx is held against the neutral one, which is the arity contract. | Fix the culture's template — a dropped or extra `{n}` fails the build, not the page. |
 
-## EQ2102–EQ2107, EQ2112 — the client/server boundary
+## EQ2102–EQ2107, EQ2112, EQ2114 — the client/server boundary
 
-A client component reached for an API that only exists on a server. The bridge is `[ServerAction]`.
+A client component reached for an API that only exists on a server, or for a value only the server
+has. The bridge is `[ServerAction]`.
 
 | Code | Meaning |
 |---|---|
@@ -83,6 +84,7 @@ A client component reached for an API that only exists on a server. The bridge i
 | `EQ2106` | Native interop / P-Invoke (`System.Runtime.InteropServices`). |
 | `EQ2107` | Runtime IL generation (`System.Reflection.Emit`). |
 | `EQ2112` | File-system access (`System.IO`). |
+| `EQ2114` | A page uses a value the server's container gave it (a constructor parameter of a class type, or a member the page keeps one in) in a way the build cannot follow: a method called on it, the value passed where the build has no source, converted to text, compared, enumerated, stored in a collection, read through a member a .NET type declares (a list's `Count`, a set's, a pair's `Value`), read through a type whose member of that name the value's own type hides (`new`), or read while the page is constructed. Such a value crosses to the browser as only what the browser reads of it, so a use the build cannot see would draw something else there. Reported by the source generator, so it shows in the editor. Decide on the server, in `PrefetchAsync` or a `[ServerOnly]` member, and keep the result in a field; or call a `[ServerAction]` when the browser's state is an input. |
 
 `EQ2112` sits apart from its family on purpose: `System.IO` was reported as `EQ2101` until that
 code turned out to belong to the resx check above, which the wiki already published. It is not a

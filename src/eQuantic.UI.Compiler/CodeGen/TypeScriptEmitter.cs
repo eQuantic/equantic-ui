@@ -97,12 +97,6 @@ public class TypeScriptEmitter
         };
     }
 
-    /// <summary>
-    /// The class's TYPED BOUNDARY: <c>static $hydration = { total: 'decimal', … }</c>, naming every
-    /// field whose wire form differs from its runtime type (HydrationSpec). The runtime hydrates
-    /// SSR state and prefetch payloads by this map — coerced once at the boundary, so use sites
-    /// need no defensive coercions. Nothing is emitted when every field is identity.
-    /// </summary>
     /// <summary>The in-source types this module's hydration specs NAME. They are emitted into the
     /// body (a spec says <c>[Todo]</c>, meaning the class), but they appear in no syntax the type
     /// scan walks — a record reaches a page only as a field's declared type or an action's return
@@ -138,14 +132,23 @@ public class TypeScriptEmitter
         return ts;
     }
 
+    /// <summary>
+    /// The class's TYPED BOUNDARY: <c>static get $hydration() { return { total: 'decimal', … }; }</c>,
+    /// naming every value the server carries to this component (the hydration manifest) and how it is
+    /// coerced: by its wire spec where its JSON form differs from its runtime type (HydrationSpec), and
+    /// <c>'declared'</c> otherwise. The runtime adopts exactly the keys this map lists, so a value the
+    /// server sends lands even in a member the instance has not assigned yet (a captured
+    /// primary-constructor parameter the router did not pass). Nothing is emitted for a component
+    /// the manifest does not describe: it never receives state.
+    /// </summary>
     private void EmitHydrationMap(TypeScriptCodeBuilder.ClassBuilder c,
-        IEnumerable<(string Key, TypeSyntax? Type)> fields)
+        IEnumerable<(string Key, ITypeSymbol? Type, string? Projection)> carried)
     {
         var referenced = _hydrationReferences;
-        var entries = fields
-            .Select(field => (field.Key, Spec: HydrationSpec.Of(BindType(field.Type), referenced, _hydrationRuntimeReferences)))
-            .Where(field => field.Spec is not null)
-            .Select(field => $"{field.Key}: {field.Spec}")
+        var entries = carried
+            .Select(value => $"{value.Key}: {(value.Projection is { } projection
+                ? ProjectionSpec(value.Type, projection)
+                : HydrationSpec.Of(value.Type, referenced, _hydrationRuntimeReferences) ?? "'declared'")}")
             .ToList();
         if (entries.Count == 0) return;
         // A GETTER, never a field: the map can name a class (`_geometry: BarChartGeometry`), and a
@@ -155,6 +158,65 @@ public class TypeScriptEmitter
         // module has loaded.
         c.Member(JsClassMember.Getter("static ", "$hydration", "",
             JsStatement.Raw($"return {{ {string.Join(", ", entries)} }};")));
+    }
+
+    /// <summary>
+    /// A server value's spec: the projection it crosses as, which is plain data and never the twin of
+    /// its class. A twin's getters compute from members, and a projection holds only the members the
+    /// browser reads, so rebuilt on the twin it would answer from members that never crossed. Each leaf
+    /// the projection reads is coerced by its C# type, the way a field of that type would be.
+    /// </summary>
+    private string ProjectionSpec(ITypeSymbol? type, string projection)
+    {
+        var reads = new ProjectionReads();
+        foreach (var read in projection.Split(',', StringSplitOptions.RemoveEmptyEntries))
+        {
+            var presence = read.EndsWith('?');
+            var node = reads;
+            var current = type;
+            foreach (var segment in (presence ? read[..^1] : read).Split('.'))
+            {
+                current = MemberType(current, segment);
+                node = node.Child(segment);
+            }
+            if (!presence) node.Leaf = current;
+        }
+        return Members(reads) ?? "{ members: {} }";
+    }
+
+    /// <summary>The members of one level that need coercing, or null when every one crosses as it is.</summary>
+    private string? Members(ProjectionReads node)
+    {
+        var entries = new List<string>();
+        foreach (var (segment, child) in node.Children)
+        {
+            var spec = child.Children.Count > 0
+                ? Members(child)
+                : HydrationSpec.Of(child.Leaf, _hydrationReferences, _hydrationRuntimeReferences);
+            if (spec is not null) entries.Add($"{segment.ToCamelCase()}: {spec}");
+        }
+        return entries.Count == 0 ? null : $"{{ members: {{ {string.Join(", ", entries)} }} }}";
+    }
+
+    /// <summary>The C# type of the member a projection reads, as the value's type or one it derives from declares it.</summary>
+    private static ITypeSymbol? MemberType(ITypeSymbol? type, string name)
+    {
+        // A nullable struct's members are the struct's: its `.Value` never reaches a projection's path.
+        if (type is INamedTypeSymbol { OriginalDefinition.SpecialType: SpecialType.System_Nullable_T } nullable)
+            type = nullable.TypeArguments[0];
+        for (var current = type; current is not null; current = current.BaseType)
+        {
+            foreach (var member in current.GetMembers(name))
+            {
+                if (member is IPropertySymbol { IsIndexer: false } property) return property.Type;
+                if (member is IFieldSymbol field) return field.Type;
+            }
+        }
+        return type?.AllInterfaces
+            .SelectMany(face => face.GetMembers(name))
+            .OfType<IPropertySymbol>()
+            .Select(property => property.Type)
+            .FirstOrDefault();
     }
 
     /// <summary>A Build method's body as IR: its block, its expression as a return, or the
@@ -306,24 +368,18 @@ public class TypeScriptEmitter
 
                 }
 
-                // The component's typed boundary — what hydration coerces an incoming payload
-                // by. Fields AND public auto-properties: a property is a slot the payload
-                // fills exactly as a field is, and leaving them out meant a `long` prop
-                // arrived as the JSON number it was sent as, into a slot the twin declares
-                // `bigint`. The first arithmetic on it threw "Cannot mix BigInt and other
-                // types" — in the browser only, after hydration, on a page the server had
-                // rendered perfectly.
-                if (!component.IsPrimitive)
+                // The component's typed boundary: what the server carries to it, read from the
+                // hydration manifest the server writes its payload from, so the two halves cannot
+                // disagree. Each value is coerced by its C# type: a `long` arriving as the string
+                // the wire carries it as becomes the `bigint` the twin declares, where it used to
+                // throw "Cannot mix BigInt and other types" on its first arithmetic, in the browser
+                // only, after hydration.
+                if (!component.IsPrimitive
+                    && component.ClassSyntax is { } declaration
+                    && ModelFor(declaration) is { } classModel
+                    && classModel.GetDeclaredSymbol(declaration) is INamedTypeSymbol componentSymbol)
                 {
-                    var slots = component.ComponentFields
-                        .Where(field => !field.IsStatic)
-                        .Select(field => (Key: field.Name.ToCamelCase(), Type: field.TypeNode))
-                        .Concat(component.Properties
-                            .Where(prop => prop.IsPublic && !prop.IsStatic && IsAutoProperty(prop))
-                            .Select(prop => (Key: prop.Name.ToCamelCase(), Type: prop.Node?.Type)))
-                        .GroupBy(slot => slot.Key, StringComparer.Ordinal)
-                        .Select(group => group.First());
-                    EmitHydrationMap(c, slots);
+                    EmitHydrationMap(c, HydrationManifest.Of(componentSymbol, classModel.Compilation));
                 }
 
                 if (component.IsPrimitive)
