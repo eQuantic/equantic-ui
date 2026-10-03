@@ -47,7 +47,7 @@ public class AssignmentExpressionStrategy : IExpressionIrStrategy
         body.Append($"let {ExpressionVariableScanner.List(bound.Temporaries, context.TypeAnnotations)}; ");
         body.Append($"({bound.Pattern} = {subject}); ");
         foreach (var step in bound.Steps)
-            body.Append($"({step.Pattern} = {JsExprWriter.Write(DeconstructionPattern.Through(step.Called, JsExpr.Identifier(step.Temporary), context))}); ");
+            body.Append($"({step.Pattern} = {DeconstructionPattern.StepValue(step, context)}); ");
         foreach (var (temporary, target) in bound.Assignments) body.Append($"{target} = {temporary}; ");
         body.Append($"return {bound.Tuple}; ");
         return $"(({subject}) => {{ {body}}})({written})";

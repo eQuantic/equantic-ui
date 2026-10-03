@@ -27,12 +27,13 @@ namespace eQuantic.UI.Compiler.CodeGen.Strategies;
 internal static class DeconstructionPattern
 {
     /// <summary>
-    /// A level a pattern cannot reach: a part whose <c>Deconstruct</c> the app wrote, bound to
-    /// <paramref name="Temporary"/> in its parent's pattern, then destructured by
-    /// <paramref name="Pattern"/> from what <paramref name="Called"/> hands back. A step comes after
-    /// the one that binds its temporary.
+    /// A nested level destructured on its own: bound to <paramref name="Temporary"/> in its parent's
+    /// pattern, then destructured by <paramref name="Pattern"/> from what <paramref name="Called"/>
+    /// hands back, a <c>Deconstruct</c> the app wrote, or from the temporary itself when there is none
+    /// to call. A step comes after the one that binds its temporary, and steps run in the order C#
+    /// deconstructs, each level before the next one to its right.
     /// </summary>
-    internal sealed record Step(string Temporary, string Pattern, IMethodSymbol Called);
+    internal sealed record Step(string Temporary, string Pattern, IMethodSymbol? Called);
 
     /// <summary>
     /// A deconstruction's destructuring: the top level's <paramref name="Pattern"/>, the
@@ -61,10 +62,18 @@ internal static class DeconstructionPattern
         ConversionContext context, bool temporaries = false)
     {
         if (Parts(left) is not { } parts) return null;
-        var walk = new Walk(context, temporaries, $"$d{left.SpanStart}_");
         var top = Positional(type) ? null : Deconstruct(info, type);
         var called = top is not null && IsTheApps(top) ? top : null;
+        var walk = new Walk(context, temporaries, $"$d{left.SpanStart}_", stepsAll: false);
         var (pattern, tuple) = walk.Composite(parts, info, type, called is not null);
+        // A call among the levels runs as a step, after the parent's pattern has read every member it
+        // names: a Deconstruct that changes what a later level reads would read it first. With one,
+        // every nested level is a step, so each is read when C# reads it, left to right.
+        if (walk.Steps.Count > 0)
+        {
+            walk = new Walk(context, temporaries, $"$d{left.SpanStart}_", stepsAll: true);
+            (pattern, tuple) = walk.Composite(parts, info, type, called is not null);
+        }
         return walk.Deconstructs
             ? new Lowered(pattern, called, walk.Steps, walk.Temporaries, walk.Assignments, tuple)
             : null;
@@ -94,8 +103,13 @@ internal static class DeconstructionPattern
     /// declaration appends to its own <c>let</c> or <c>const</c>.
     /// </summary>
     internal static string StepDeclarators(Lowered lowered, ConversionContext context) =>
-        string.Concat(lowered.Steps.Select(step =>
-            $", {step.Pattern} = {JsExprWriter.Write(Through(step.Called, JsExpr.Identifier(step.Temporary), context))}"));
+        string.Concat(lowered.Steps.Select(step => $", {step.Pattern} = {StepValue(step, context)}"));
+
+    /// <summary>What a step destructures: its temporary, through the <c>Deconstruct</c> it calls.</summary>
+    internal static string StepValue(Step step, ConversionContext context) =>
+        step.Called is { } called
+            ? JsExprWriter.Write(Through(called, JsExpr.Identifier(step.Temporary), context))
+            : step.Temporary;
 
     /// <summary>The parts a target splits into, or null for a target that is one part.</summary>
     private static IReadOnlyList<SyntaxNode>? Parts(SyntaxNode target) => target switch
@@ -142,7 +156,7 @@ internal static class DeconstructionPattern
     };
 
     /// <summary>One deconstruction's walk: the steps, and with temporaries, what each part binds.</summary>
-    private sealed class Walk(ConversionContext context, bool temporaries, string prefix)
+    private sealed class Walk(ConversionContext context, bool temporaries, string prefix, bool stepsAll)
     {
         public bool Deconstructs { get; private set; }
         public List<Step> Steps { get; } = [];
@@ -233,7 +247,8 @@ internal static class DeconstructionPattern
             ITypeSymbol? type)
         {
             var deconstruct = Positional(type) ? null : Deconstruct(info, type);
-            if (deconstruct is null || !IsTheApps(deconstruct))
+            var calls = deconstruct is not null && IsTheApps(deconstruct);
+            if (!calls && !stepsAll)
             {
                 var (pattern, tuple) = Composite(parts, info, type, called: false);
                 return (pattern, tuple);
@@ -241,8 +256,8 @@ internal static class DeconstructionPattern
             var temporary = Fresh();
             var at = Steps.Count;
             Steps.Add(null!);
-            var (stepPattern, stepTuple) = Composite(parts, info, type, called: true);
-            Steps[at] = new Step(temporary, stepPattern, deconstruct);
+            var (stepPattern, stepTuple) = Composite(parts, info, type, called: calls);
+            Steps[at] = new Step(temporary, stepPattern, calls ? deconstruct : null);
             return (temporary, stepTuple);
         }
     }
