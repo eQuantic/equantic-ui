@@ -484,7 +484,10 @@ async function fetchPageState(url?: string): Promise<PageStatePayload | null> {
       headers: { 'X-EQ-Navigate': '1' },
       credentials: 'same-origin',
     });
-    if (!response.ok) return null;
+    // A page answers with its own status, a 404 for content that does not exist among them, and
+    // still sends its payload, which the server marks with the header the request carried. Anything
+    // else that fails (a proxy's error page) is no payload.
+    if (!response.ok && response.headers.get('X-EQ-Navigate') !== '1') return null;
     return (await response.json()) as PageStatePayload;
   } catch {
     return null;

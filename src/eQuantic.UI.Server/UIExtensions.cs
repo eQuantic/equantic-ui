@@ -543,6 +543,11 @@ public static class UIExtensions
         context.Response.ContentType = "application/json; charset=utf-8";
         // Never cached: this is the page's data, and the next visitor's is not this one's.
         context.Response.Headers["Cache-Control"] = "no-store";
+        // The answer to a navigation says so, with the header the request carried, whatever its
+        // status: a page that answers 404 for content that does not exist still sends its title, its
+        // head and its state, and the client applies them as a full load of it shows them. Read off
+        // the status alone, the payload was dropped, and the previous page's head stayed.
+        context.Response.Headers[NavigationHeader] = "1";
 
         // The document's metadata FIRST: the app's and the route's need nothing prepared, so a page
         // the server does not render (SSR off, a page that turns it off, a prefetch that failed)
