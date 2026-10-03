@@ -179,4 +179,52 @@ public class StatementConformanceTests
             "Shapes.Half = 9; var first = Shapes.Half; Shapes.Half = 20; return first * 100 + Shapes.Half;",
             "public sealed record Shapes(string Tag) { public static int Half { get; set => field = value / 2; } }");
     }
+
+    /// <summary>A store a property guards with <c>field</c> starts as its initializer, which C# writes
+    /// into it directly (#483). The class and component emitters are pinned in the compiler's
+    /// coverage tests, since this harness emits a prelude's records alone.</summary>
+    [SkippableFact]
+    public void AFieldBackedStore_StartsAsItsInitializer()
+    {
+        Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
+        ConformanceRunner.AssertStatementsSameAsDotNet(
+            "var before = Shapes.Scale; Shapes.Scale = 3; return before * 10 + Shapes.Scale;", // 76
+            "public sealed record Shapes(string Tag) { public static int Scale { get; set => field = value * 2; } = 7; }");
+    }
+
+    /// <summary>A local function with an out parameter keeps the callee contract its call unwraps,
+    /// as a method's and a lambda's do: it kept the out as a plain parameter (#541).</summary>
+    [SkippableTheory]
+    [InlineData("int Measure(string s, out int length) { length = s.Length; return 1; } var ok = Measure(\"abc\", out var n); return ok * 10 + n;")] // 13
+    [InlineData("bool Halve(int x, out int half) => (half = x / 2) > 0; var b = Halve(9, out var h); return (b ? 100 : 0) + h;")]                     // 104
+    public void ALocalFunctionsOut_ReachesItsCaller(string statements)
+    {
+        Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
+        ConformanceRunner.AssertStatementsSameAsDotNet(statements);
+    }
+
+    /// <summary>A long constant is a BigInt, as every long is: written as a number, the first
+    /// arithmetic with another long threw, the BCL's own ticks constants included.</summary>
+    [SkippableTheory]
+    [InlineData("long n = Limits.Five; n += 1L; return n.ToString();")]                                 // "6"
+    [InlineData("var t = TimeSpan.FromDays(2); return (t.Ticks / TimeSpan.TicksPerDay).ToString();")]   // "2"
+    [InlineData("return (Limits.Five * 2 + long.MaxValue / Limits.Huge).ToString();")]                   // "11"
+    public void ALongConstant_IsALong(string statements)
+    {
+        Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
+        ConformanceRunner.AssertStatementsSameAsDotNet(statements,
+            "public static class Limits { public const long Five = 5; public const long Huge = 9223372036854775807; }");
+    }
+
+    /// <summary>What a for loop's initializer declares is one variable for the whole loop, as the
+    /// loop's own are, and stays declared before what assigns it when a closure moves the loop's
+    /// variables in front of it (#476).</summary>
+    [SkippableFact]
+    public void AnInitializersOutVariable_IsOnePerLoop_WhenTheLoopIsHoisted()
+    {
+        Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
+        ConformanceRunner.AssertStatementsSameAsDotNet(
+            "int Seed(out int limit) { limit = 2; return 0; } var fs = new List<Func<int>>(); "
+            + "for (int i = Seed(out var n); i < n; i++) fs.Add(() => i * 10 + n); return fs[0]() + fs[1]();"); // 44
+    }
 }

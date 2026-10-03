@@ -33,22 +33,33 @@ public class ForStatementStrategy : IStatementStrategy
     /// <c>let</c> is copied into each iteration in JavaScript, so each closure kept its own: three
     /// closures over <c>i</c> answered 0, 1 and 2 where .NET answers 3, 3 and 3 (#476). When a closure
     /// captures one, the declaration moves in front of the loop, in a block of its own so a second
-    /// loop declaring the same name stays legal. The head keeps what its expressions declare, which
-    /// .NET does give a fresh variable each time round.
+    /// loop declaring the same name stays legal. What its initializers declare (<c>out var n</c>)
+    /// goes with it, declared first as the head declares it, being one for the whole loop as well.
+    /// The head keeps what its condition and incrementors declare, which .NET does give a fresh
+    /// variable each time round.
     /// </summary>
     private static JsStatement HoistedLoop(ForStatementSyntax forStmt, ConversionContext context)
     {
-        var variables = forStmt.Declaration!.Variables.Select(v =>
+        var declaration = forStmt.Declaration!;
+        var once = declaration.Variables
+            .Select(v => v.Initializer?.Value)
+            .SelectMany(ExpressionVariableScanner.Names)
+            .Distinct(StringComparer.Ordinal)
+            .ToList();
+        var variables = declaration.Variables.Select(v =>
             $"{v.Identifier.Text.ToJsIdentifier()} = "
             + (v.Initializer != null ? context.Converter.ConvertExpression(v.Initializer.Value) : "undefined"));
-        var declared = Declared(forStmt);
-        var head = declared.Count == 0 ? "" : $"let {ExpressionVariableScanner.List(declared, context.TypeAnnotations)}";
+        var hoisted = once.Count == 0
+            ? variables
+            : variables.Prepend(ExpressionVariableScanner.List(once, context.TypeAnnotations));
+        var eachTime = Declared(forStmt).Except(once, StringComparer.Ordinal).ToList();
+        var head = eachTime.Count == 0 ? "" : $"let {ExpressionVariableScanner.List(eachTime, context.TypeAnnotations)}";
         var condition = forStmt.Condition != null ? context.Converter.ConvertExpression(forStmt.Condition) : "";
         var incrementors = string.Join(", ", forStmt.Incrementors.Select(i => context.Converter.ConvertExpression(i)));
         var body = context.Converter.ConvertStatementIr(forStmt.Statement);
         return JsStatement.Block(
         [
-            JsStatement.Raw($"let {string.Join(", ", variables)};"),
+            JsStatement.Raw($"let {string.Join(", ", hoisted)};"),
             JsStatement.Headed($"for ({head}; {condition}; {incrementors})", body),
         ]);
     }
@@ -57,14 +68,18 @@ public class ForStatementStrategy : IStatementStrategy
     /// a variable its declaration declares, which the bound tree answers by symbol.</summary>
     private static bool CapturesALoopVariable(ForStatementSyntax forStmt, ConversionContext context)
     {
-        var loopVariables = forStmt.Declaration!.Variables
+        var declaration = forStmt.Declaration!;
+        var loopVariables = declaration.Variables
             .Select(v => context.SemanticHelper.GetDeclaredSymbol(v))
             .Where(symbol => symbol is not null)
             .ToHashSet(SymbolEqualityComparer.Default);
         if (loopVariables.Count == 0) return false;
+        // Only a name spelled like one of them can read one, so the model is asked about those alone.
+        var names = declaration.Variables.Select(v => v.Identifier.ValueText).ToHashSet(StringComparer.Ordinal);
         return forStmt.DescendantNodes()
             .Where(n => n is AnonymousFunctionExpressionSyntax or LocalFunctionStatementSyntax)
             .SelectMany(function => function.DescendantNodes().OfType<IdentifierNameSyntax>())
+            .Where(name => names.Contains(name.Identifier.ValueText))
             .Any(name => context.SemanticHelper.GetSymbol(name) is { } read && loopVariables.Contains(read));
     }
 
