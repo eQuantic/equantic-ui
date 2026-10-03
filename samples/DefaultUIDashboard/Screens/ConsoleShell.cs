@@ -89,6 +89,8 @@ public static class ConsoleShell
         // Values a prefetch loaded on the server, which the browser has to show after it hydrates and
         // after a client navigation brings them.
         new(Icons.Info, "Server data", "/server-data"),
+        // A service the container hands the page, which crosses as only what the page reads of it.
+        new(Icons.Person, "Identity", "/identity"),
     ];
 
     /// <summary>
