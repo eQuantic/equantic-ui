@@ -51,7 +51,9 @@ public class CastExpressionStrategy : IExpressionIrStrategy
         if (targetType is INamedTypeSymbol { TypeKind: TypeKind.Enum } enumTarget)
         {
             var flags = enumTarget.IsFlagsEnum();
-            if (context.SemanticHelper.TryGetConstantValue(cast.Expression, out var constant))
+            // The CAST's own constant, the value already brought into the underlying type
+            // (`unchecked((Tiny)257)` is 1 with a byte under it), never the operand's.
+            if (context.SemanticHelper.TryGetConstantValue(cast, out var constant))
             {
                 // Flags enums are numeric — keep the literal value. Normal enums map the value to the
                 // member-name string (so it stays comparable to other enum members).
@@ -77,6 +79,7 @@ public class CastExpressionStrategy : IExpressionIrStrategy
             // Another enum's value: its own table gives the number, and this one's gives the key.
             if (operandType is INamedTypeSymbol { TypeKind: TypeKind.Enum } sourceEnum)
                 operandIr = Types.EnumShape.ValueOf(sourceEnum, operandIr, context);
+            operandIr = IntoUnderlying(operandIr, operandType, enumTarget);
             // Flags: the int IS the runtime value (identity). Normal: map value → member-name string.
             return Types.EnumShape.Held(enumTarget, operandIr, context);
         }
@@ -127,6 +130,30 @@ public class CastExpressionStrategy : IExpressionIrStrategy
         SpecialType.System_Int32 or SpecialType.System_Int64 or SpecialType.System_Int16 or
         SpecialType.System_Byte or SpecialType.System_SByte or SpecialType.System_UInt16 or
         SpecialType.System_UInt32 or SpecialType.System_UInt64;
+
+    /// <summary>
+    /// A number brought into an enum's underlying type, as C#'s explicit conversion brings it:
+    /// <c>(Tiny)n</c> with a byte under it and n of 257 is 1, where the value was kept whole. A value
+    /// that fits already is left as it is, a long's BigInt is narrowed, and a 64-bit enum, a number
+    /// here (#551), takes the value as it comes.
+    /// </summary>
+    private static JsExpr IntoUnderlying(JsExpr number, ITypeSymbol? source, INamedTypeSymbol target)
+    {
+        if (IntegerWidth.Of(target.EnumUnderlyingType) is not { } width || width.Bits == 64) return number;
+        var from = source is INamedTypeSymbol { TypeKind: TypeKind.Enum } sourceEnum
+            ? IntegerWidth.Of(sourceEnum.EnumUnderlyingType)
+            : IntegerWidth.Of(source);
+        if (from is { Bits: 64 })
+            return JsExpr.Callish($"Number(BigInt.{(width.Unsigned ? "asUintN" : "asIntN")}({width.Bits}, {JsExprWriter.Write(number)}))");
+        if (from is { } narrow)
+            return narrow.Bits < width.Bits && (narrow.Unsigned || !width.Unsigned)
+                || narrow == width
+                ? number
+                : IntegerWidth.Wrap(number, width);
+        return source?.SpecialType is SpecialType.System_Single or SpecialType.System_Double
+            ? IntegerWidth.Wrap(JsExpr.Callish($"Math.trunc({JsExprWriter.Write(number)})"), width)
+            : number;
+    }
 
     private static bool IsNumeric(ITypeSymbol type) => IsIntegral(type)
         || type.SpecialType is SpecialType.System_Single or SpecialType.System_Double or SpecialType.System_Decimal

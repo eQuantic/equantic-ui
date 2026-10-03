@@ -115,20 +115,37 @@ public class EnumMethodStrategy : IConversionStrategy
                 if (OutArgument.IsBareName(target))
                     return Answer($"(({target} = {{0}}) !== undefined || (({target} = {failed}), false))", [parse]);
 
-                // A place that reads parts of its own (`slots[i]`) reads them where it is written: a
-                // value written after it that reassigns `i` must not move the write. The parse's
-                // answer is a part used twice, so the writer binds it, and the parts before it with it.
-                var outer = new List<JsExpr>();
-                var placeFirst = result.SpanStart < input.Value.SpanStart;
-                if (!placeFirst) outer.Add(parse);
-                var place = OutArgument.Place(result, context, part =>
+                // A place that reads parts of its own (`slots[i]`) reads them where it is written, among
+                // the other arguments: every argument and every part of the place is bound to a
+                // parameter of an arrow, in the order C# evaluates them, so `result: out arr[i]` written
+                // first reads `i` before a value written after it changes it, and one written between
+                // the value and `ignoreCase` reads it between them.
+                var bound = new List<JsExpr>();
+                string? text = null, ignoreCase = null, place = null;
+                foreach (var argument in call.Arguments
+                             .Where(argument => argument.ArgumentKind == ArgumentKind.Explicit && argument.Parameter is { Name: not "enumType" })
+                             .OrderBy(argument => argument.Syntax.SpanStart))
                 {
-                    outer.Add(part);
-                    return $"{{{outer.Count - 1}}}";
-                });
-                var found = placeFirst ? $"{{{outer.Count}}}" : "{0}";
-                if (placeFirst) outer.Add(parse);
-                return Answer($"({found} !== undefined ? (({place} = {found}), true) : (({place} = {failed}), false))", outer);
+                    if (argument.Parameter!.RefKind == RefKind.Out)
+                    {
+                        place = OutArgument.Place(result, context, part =>
+                        {
+                            bound.Add(part);
+                            return $"${bound.Count - 1}";
+                        });
+                        continue;
+                    }
+                    bound.Add(context.Converter.ConvertIr((ExpressionSyntax)argument.Value.Syntax));
+                    if (argument.Parameter.Name == "value") text = $"${bound.Count - 1}";
+                    else if (argument.Parameter.Name == "ignoreCase") ignoreCase = $"${bound.Count - 1}";
+                }
+                var annotate = context.TypeAnnotations ? ": any" : "";
+                var parameters = string.Join(", ", bound.Select((_, at) => $"${at}{annotate}"));
+                var arguments = string.Join(", ", bound.Select((_, at) => $"{{{at}}}"));
+                var read = $"{Eq.EnumTryParse}({text}, {shape}{(ignoreCase is null ? "" : $", {ignoreCase}")})";
+                return Answer(
+                    $"(({parameters}) => (($r{annotate}) => ($r !== undefined ? (({place} = $r), true) : (({place} = {failed}), false)))({read}))({arguments})",
+                    bound);
             }
             default:
                 return context.Unhandled(invocation, $"Enum.{name}");

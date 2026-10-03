@@ -170,7 +170,14 @@ function byValue(shape: EnumShape): number[] {
  * `object` holding either, or null where no member has it, a flags combination included.
  */
 export function name(given: unknown, shape: EnumShape, as: 'held' | 'number' | 'object'): string | null {
-  const value = as === 'number' || typeof given === 'number' ? Number(given) : valueOf(given, shape);
+  if (given == null) throw new Error("Value cannot be null. (Parameter 'value')");
+  // An object must hold the enum or a number, as .NET's GetName(Type, object) requires: a boxed
+  // member is its key here, and a string or a bool of any other kind is refused in .NET's words.
+  if (as === 'object' && typeof given !== 'number' && typeof given !== 'bigint' && !(typeof given === 'string' && keys(shape).includes(given)))
+    throw new Error(
+      "The value passed in must be an enum base or an underlying type for an enum, such as an Int32. (Parameter 'value')",
+    );
+  const value = as === 'number' || typeof given === 'number' || typeof given === 'bigint' ? Number(given) : valueOf(given, shape);
   const at = shape.values.indexOf(value);
   return at < 0 ? null : shape.names[at];
 }
@@ -194,6 +201,10 @@ export function isDefined(given: unknown, shape: EnumShape, as: 'held' | 'number
   if (given == null) throw new Error("Value cannot be null. (Parameter 'value')");
   if (as === 'object') {
     if (typeof given === 'string') return shape.names.includes(given) || keys(shape).includes(given);
+    // An integral number of the underlying type, as .NET requires; a bool, a fraction or any other
+    // object is a type .NET refuses with "Unknown enum type.".
+    if ((typeof given !== 'number' || !Number.isInteger(given)) && typeof given !== 'bigint')
+      throw new Error('Unknown enum type.');
     return shape.values.includes(Number(given));
   }
   if (as === 'name') return shape.names.includes(given as string);

@@ -73,6 +73,7 @@ public class EnumConformanceTests
         public enum Level { Low = 1, High = 2 }
         public enum U : uint { Low = 1, High = 0x80000000 }
         [System.Flags] public enum Wide : long { None = 0, A = 1, B = 1L << 40 }
+        public enum Tiny : byte { Zero = 0, One = 1 }
         """;
 
     /// <summary>
@@ -88,6 +89,10 @@ public class EnumConformanceTests
     [InlineData("var order = \"\"; bool B() { order += \"b\"; return true; } string T() { order += \"t\"; return \"pending\"; } var s = Enum.Parse<Status>(ignoreCase: B(), value: T()); return s + order;")] // "Pendingbt"
     [InlineData("var arr = new Status[2]; int i = 0; string T() { i = 1; return \"Inactive\"; } Enum.TryParse<Status>(result: out arr[i], value: T()); return arr[0] + \",\" + arr[1];")] // "Inactive,Active"
     [InlineData("int calls = 0; IFormatProvider P() { calls++; return null; } var st = Status.Inactive; return Status.Pending.ToString(P()) + st.ToString(\"D\", P()) + calls;")] // "Pending22"
+    [InlineData("int n = 257; long m = 258; return ((Tiny)n == Tiny.One) + \",\" + unchecked((Tiny)257) + \",\" + (Tiny)m;")] // "True,One,2"
+    [InlineData("var arr = new Status[3]; int i = 0; string order = \"\"; bool B() { order += \"b\"; i = 1; return true; } string T() { order += \"t\"; i = 5; return \"inactive\"; } Enum.TryParse<Status>(ignoreCase: B(), result: out arr[i++], value: T()); return order + \",\" + arr[0] + \",\" + arr[1] + \",\" + i;")] // "bt,Active,Inactive,5"
+    [InlineData("try { return Enum.GetName(typeof(Status), (object)true); } catch (Exception e) { return e.Message; }")] // "The value passed in must be an enum base..."
+    [InlineData("try { return Enum.IsDefined(typeof(Status), (object)true).ToString(); } catch (Exception e) { return e.Message; }")] // "Unknown enum type."
     public void AnEnum_ReadsItsWidth_AndRunsItsArgumentsInOrder(string statements)
     {
         Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");

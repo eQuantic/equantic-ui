@@ -46,6 +46,14 @@ describe('an enum as .NET reads it', () => {
     expect(zero(rank)).toBe('zeta');
   });
 
+  it('refuses a boxed value of another kind, as GetName and IsDefined over an object do', () => {
+    expect(() => name(true, rank, 'object')).toThrow('The value passed in must be an enum base');
+    expect(() => name('Mid', rank, 'object')).toThrow('The value passed in must be an enum base');
+    expect(name('mid', rank, 'object')).toBe('Mid');
+    expect(() => isDefined(true, rank, 'object')).toThrow('Unknown enum type.');
+    expect(() => isDefined(1.5, rank, 'object')).toThrow('Unknown enum type.');
+  });
+
   it('names the member with a value, and nothing for a value none has', () => {
     expect(name('mid', rank, 'held')).toBe('Mid');
     expect(name(5, rank, 'number')).toBe('Mid');
