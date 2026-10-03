@@ -1,5 +1,6 @@
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using eQuantic.UI.Compiler.CodeGen.Ir;
 using eQuantic.UI.Compiler.Services;
 
 namespace eQuantic.UI.Compiler.CodeGen.Strategies.Expressions;
@@ -32,6 +33,7 @@ public class ResourceAccessorStrategy : IConversionStrategy
         context.ResourceUses.Add(new ResourceUse(
             id, key, ResourceClasses.DesignerPathFor(property.ContainingType)));
         context.UsedHelpers.Add(Eq.Import);
-        return $"{Eq.Str}(\"{id}\", \"{key}\")";
+        // The key is whatever name the resx gives it, so it is spelled like any other string (#520).
+        return $"{Eq.Str}({JsStringLiteral.Quote(id)}, {JsStringLiteral.Quote(key)})";
     }
 }
