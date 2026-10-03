@@ -80,8 +80,8 @@ public class ServerValueProjectionTests
         var references = ((string)AppContext.GetData("TRUSTED_PLATFORM_ASSEMBLIES")!)
             .Split(Path.PathSeparator)
             .Where(p => p.EndsWith(".dll", StringComparison.OrdinalIgnoreCase))
-            .Select(p => (MetadataReference)MetadataReference.CreateFromFile(p))
-            .Append(MetadataReference.CreateFromFile(typeof(eQuantic.UI.Primitives.VisualNode).Assembly.Location))
+            .Select(p => (MetadataReference)TestReferences.Of(p))
+            .Append(TestReferences.Of(typeof(eQuantic.UI.Primitives.VisualNode).Assembly.Location))
             .Concat(referenced is null ? [] : [referenced]);
         var trees = new List<SyntaxTree> { CSharpSyntaxTree.ParseText(source, path: "Shop.cs") };
         if (another is not null) trees.Add(CSharpSyntaxTree.ParseText(another, path: "Another.cs"));
@@ -572,7 +572,7 @@ public class ServerValueProjectionTests
                 """)],
             ((string)AppContext.GetData("TRUSTED_PLATFORM_ASSEMBLIES")!).Split(Path.PathSeparator)
                 .Where(p => p.EndsWith(".dll", StringComparison.OrdinalIgnoreCase))
-                .Select(p => (MetadataReference)MetadataReference.CreateFromFile(p)),
+                .Select(p => (MetadataReference)TestReferences.Of(p)),
             new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
         using var image = new MemoryStream();
         library.Emit(image).Success.Should().BeTrue();

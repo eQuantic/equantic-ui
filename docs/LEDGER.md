@@ -1098,6 +1098,17 @@ record of a release, the wiki's Upgrading page is the distillate.
   enum's first member, each fixed and run on both sides. Filed on the way: an enum's table is built
   at every call instead of once per module ([#547](https://github.com/eQuantic/equantic-ui/issues/547)).
   Proposed and archived through OpenSpec (`openspec/specs/transpiler-bcl`).
+- **2026-10-03 · A test compilation shares its references**: the suites turned the .NET framework into
+  new metadata references for every compilation they created, and `MetadataReference.CreateFromFile`
+  copies an assembly into native memory the GC does not count, so one test host held tens of
+  gigabytes ([#481](https://github.com/eQuantic/equantic-ui/issues/481)). One owner,
+  `tests/Shared/TestReferences.cs`, keeps one reference per assembly for the process, and a guard
+  fails on a `CreateFromFile` anywhere else under `tests/`. Measured with a sampler reading every test
+  host once a second, each suite alone: the compiler suite's peak went from 25 to 35 GB to 6.1 GB and
+  its run from 20 to 47 seconds to 4, the conformance suite's from 34 GB to 5.6 GB, and the web
+  suite's from 3 to 5 GB to 1.2 GB. Under load, with the conformance suite alongside, 12 runs of the
+  compiler suite in a row completed, where one on a branch without the change aborted the same day
+  ([#473](https://github.com/eQuantic/equantic-ui/issues/473)).
 - **2026-10-03 · LINQ reads any sequence**: every operator was an array method on its receiver as
   converted, so a `HashSet`, the runtime's sorted set, queue, stack and linked list, and a sorted
   dictionary or list threw on their first one, `queue.First()` called a `first` the queue does not have
