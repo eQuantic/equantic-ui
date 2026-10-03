@@ -6,7 +6,7 @@ Closes #528, a Bug under #164 (The transpiler's fences hold on every path).
 
 A string's own methods that take a `StringComparison` read the comparison from its SPELLING and
 lower-cased both sides, and `CompareTo` ordered by code unit. Measured through the conformance
-harness, 27 of the 46 cases this change adds answered differently in the browser on main: the Kelvin
+harness, 28 of the 48 cases this change adds answered differently in the browser on main: the Kelvin
 sign matched a k under `OrdinalIgnoreCase`, a comparison held in a variable was dropped, `Replace`
 dropped its own and read `$&` in its replacement as a pattern, a start past the end clamped where
 .NET throws, and a sort written with `CompareTo` put every capital first.

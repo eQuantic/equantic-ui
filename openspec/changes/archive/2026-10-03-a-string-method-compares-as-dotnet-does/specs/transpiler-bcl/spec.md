@@ -79,15 +79,22 @@ null ordering first. `CompareTo(object)` SHALL fail the build with EQ1004.
 ### Requirement: A search by a culture comparison is refused
 
 A string's search (`StartsWith`, `EndsWith`, `Contains`, `IndexOf`, `LastIndexOf` or `Replace`) given
-a culture comparison as a constant, and an overload that takes a `CultureInfo`, SHALL fail the build
-with EQ1004. One given a culture comparison in a variable SHALL throw at run time with a message that
-names the method and the comparison, after every check .NET makes before it searches. `Equals` by a
-culture comparison SHALL compare the two whole strings by the culture's collator.
+a culture comparison as a constant, written in its place or named, and an overload that takes a
+`CultureInfo`, SHALL fail the build with EQ1004. A comparison that is not a constant, held in a
+variable or chosen by a conditional, SHALL reach the run time, where a culture one SHALL throw with a
+message that names the method and the comparison, after every check .NET makes before it searches.
+`Equals` by a culture comparison SHALL compare the two whole strings by the culture's collator.
 
 #### Scenario: A constant culture comparison
 
-- **WHEN** a component calls `a.StartsWith(b, StringComparison.CurrentCulture)`
+- **WHEN** a component calls `a.StartsWith(b, StringComparison.CurrentCulture)`, or
+  `a.StartsWith(comparisonType: StringComparison.CurrentCulture, value: b)`
 - **THEN** the build fails with EQ1004 at that call
+
+#### Scenario: A comparison chosen at run time
+
+- **WHEN** `var active = true; return "aB".StartsWith("ab", active ? StringComparison.OrdinalIgnoreCase : StringComparison.CurrentCulture);` runs
+- **THEN** it builds and answers true
 
 #### Scenario: A whole-string culture comparison
 

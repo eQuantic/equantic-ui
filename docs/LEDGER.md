@@ -1047,11 +1047,13 @@ record of a release, the wiki's Upgrading page is the distillate.
   its parameter is `CultureInfo?`, and the type check compared a display name that carries the
   annotation, so `IsNamed` now reads a name without it. The components' pins also showed every call
   with a range bound in an arrow function to keep C#'s order, so the runtime now takes the arguments
-  in the order C# writes them. 27 of the 46 conformance cases fail on main, and the dashboard
-  sample's payment filter, code editor, Markdown, Mermaid and diff pages were checked in a browser.
-  Filed on the way: the overloads without a comparison search by the current culture in .NET
-  ([#532](https://github.com/eQuantic/equantic-ui/issues/532)), a culture comparison that ignores
-  case equates widths and kana types .NET keeps apart
+  in the order C# writes them. Copilot's review found the comparison read from the last argument
+  written, so a named start was refused as a culture comparison, and a conditional refused for the
+  culture member it spells, though it is no constant. 28 of the 48 conformance cases fail on main,
+  and the dashboard sample's payment filter, code editor, Markdown, Mermaid and diff pages were
+  checked in a browser. Filed on the way: the overloads without a comparison search by the current
+  culture in .NET ([#532](https://github.com/eQuantic/equantic-ui/issues/532)), a culture comparison
+  that ignores case equates widths and kana types .NET keeps apart
   ([#533](https://github.com/eQuantic/equantic-ui/issues/533)), and a char search with a start
   clamps and drops its count ([#534](https://github.com/eQuantic/equantic-ui/issues/534)). Proposed
   and archived through OpenSpec (`openspec/specs/transpiler-bcl`).
