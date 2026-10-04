@@ -3161,6 +3161,8 @@ function lowerShortcut(
 ): HtmlNode | null {
   const child = lowerNode(node.child, context, horizontalAxis, path + '/0');
   if (!child) return null;
+  // A chord that is not enabled stays in the tree and binds nothing, marker included (the C# twin's).
+  if (node.enabled === false) return child;
   const chord = chordId(node.chord);
   // C# twin: nested shortcuts share one child root, so the marker LISTS them.
   const existing = child.attributes['data-eq-shortcut'];

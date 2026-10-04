@@ -86,6 +86,8 @@ internal sealed partial class WebLoweringVisitor
     private HtmlElement? LowerShortcut(Shortcut shortcut, bool? horizontalAxis)
     {
         if (Lower(shortcut.Child, horizontalAxis) is not { } child) return null;
+        // A chord that is not enabled binds nothing: no marker, as the TS twin writes none.
+        if (!shortcut.Enabled) return child;
         if (child is RealizedElement realized)
         {
             realized.RawAttributes ??= new Dictionary<string, string>();

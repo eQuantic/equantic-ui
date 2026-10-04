@@ -124,6 +124,25 @@ public class S8ShortcutNativeTests
         log.Should().Equal("first", "second");
     }
 
+    /// <summary>
+    /// A binding that is not ENABLED stays in the tree and takes nothing: the key goes on to the one
+    /// around it, as a disabled Action lets it go in Flutter (#457).
+    /// </summary>
+    [Fact]
+    public void ABindingThatIsNotEnabled_LeavesTheKeyToTheOneAroundIt()
+    {
+        var log = new List<string>();
+        var inner = new Shortcut(new Box(new BoxStyle { Width = 60, Height = 30 }), KeyChord.Escape,
+            () => log.Add("inner")) { Enabled = false };
+        var host = Host(new Shortcut(inner, KeyChord.Escape, () => log.Add("dialog")));
+
+        host.KeyDown("Escape").Should().BeTrue();
+        log.Should().Equal("dialog");
+
+        Host(new Shortcut(new Box(new BoxStyle { Width = 60, Height = 30 }), KeyChord.Escape, () => { })
+            { Enabled = false }).KeyDown("Escape").Should().BeFalse("nothing else takes it");
+    }
+
     [Fact]
     public void NoBinding_IsNotHandled()
     {

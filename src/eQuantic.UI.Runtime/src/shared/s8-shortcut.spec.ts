@@ -290,3 +290,44 @@ describe('S8 focus-scoped shortcuts', () => {
     }
   });
 });
+
+/**
+ * A shortcut that is not ENABLED (C# `Shortcut.Enabled`) stays in the tree and binds nothing: no
+ * marker, no declaration, and the key goes on to the binding around it. A find bar's Escape is one,
+ * live only while the bar is open, so a dialog around the editor keeps its own Escape (#457).
+ */
+describe('S8 shortcuts that are not enabled', () => {
+  beforeEach(() => resetShortcuts());
+
+  it('binds nothing and leaves the chord to the binding around it', () => {
+    const fired: string[] = [];
+    const parent = document.createElement('div');
+    document.body.appendChild(parent);
+    try {
+      const inner = {
+        nodeKind: 'shortcut',
+        child: marker(),
+        chord: { key: 'Escape' },
+        onPressed: () => fired.push('inner'),
+        enabled: false,
+      } as unknown as VisualNodeValue;
+      const outer = {
+        nodeKind: 'shortcut',
+        child: { nodeKind: 'column', children: [inner] },
+        chord: { key: 'Escape' },
+        onPressed: () => fired.push('outer'),
+      } as unknown as VisualNodeValue;
+      new Reconciler().reconcile(parent, null, lowerVisualNode(outer, ctx));
+      commitShortcuts();
+      expect(parent.querySelectorAll('[data-eq-shortcut="escape"]')).toHaveLength(1);
+
+      const event = new KeyboardEvent('keydown', { key: 'Escape', cancelable: true });
+      window.dispatchEvent(event);
+
+      expect(event.defaultPrevented).toBe(true);
+      expect(fired).toEqual(['outer']);
+    } finally {
+      parent.remove();
+    }
+  });
+});

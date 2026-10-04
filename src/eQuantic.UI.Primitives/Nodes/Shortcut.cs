@@ -41,6 +41,15 @@ public sealed class Shortcut : SingleChildNode
     /// </summary>
     public bool FocusScoped { get; init; }
 
+    /// <summary>
+    /// Whether the chord answers at all. A chord that holds only while something is on screen, a
+    /// find bar's Escape, stays in the tree, which keeps everything under it where it is, and says
+    /// here whether it is live: not, and the key goes on to whatever else would take it, a dialog's
+    /// Escape around the editor among them, as an Action that is not enabled lets it go in Flutter.
+    /// Mounted and unmounted around its subtree instead, it moved that subtree in the tree.
+    /// </summary>
+    public bool Enabled { get; init; } = true;
+
     public sealed override TResult Accept<TState, TResult>(
         IVisualNodeVisitor<TState, TResult> visitor, TState state) => visitor.Visit(this, state);
 }
