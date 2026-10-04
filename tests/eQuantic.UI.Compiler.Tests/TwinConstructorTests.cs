@@ -125,6 +125,9 @@ public class TwinConstructorTests
         result.TypeScript.Should().Contain("constructor(...$a: any[]) { let a: any, c: any; let $k: any = -1; "
             + "if ($a.length === 1) { [a] = $a; $k = 0; } else if ($a.length === 2) { [a, c] = $a; $k = 1; } ");
         result.TypeScript.Should().Contain("if ($k === 0) { this.a = a; this.c = 'EUR'; } if ($k === 1) { this.a = a; this.c = c; } ");
+        // C#'s null for a string member TypeScript declares never null: strict TypeScript refuses a bare
+        // `null` there, and the runtime's own twins are compiled strict.
+        result.TypeScript.Should().Contain("declare c: string;").And.Contain("this.c = null!;");
     }
 
     [Fact]

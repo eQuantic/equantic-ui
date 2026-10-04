@@ -302,8 +302,9 @@ public class RecordTypeEmitter
             if (TargetOf(constructor.Initializer!, roots) is not { } target)
             {
                 _converter.Report(constructor, ConversionSeverity.Error, "EQ1009",
-                    $"{signature} chains to a constructor that chains in turn. The twin has one constructor, which "
-                    + "reaches the others by how many arguments arrive, so each must chain to one that does its own work.");
+                    $"{signature} chains to a constructor that does not do its own work: one that chains in turn, or a "
+                    + "struct's implicit one beside constructors of its own. The twin has one constructor, which reaches the "
+                    + "others by how many arguments arrive, so each must chain to one that does its own work.");
                 continue;
             }
             var arity = Arity.Of(constructor.ParameterList.Parameters.ToList());
@@ -567,7 +568,13 @@ public class RecordTypeEmitter
             sb.Append(string.Join("else ", branches));
         }
 
-        var values = members.Select(member => (member, Value: ValueOf(member, out var runsCode), runsCode)).ToList();
+        // A member of a reference type with no initializer starts as C#'s null, which strict TypeScript
+        // refuses for a type it reads as never null (`declare c: string`): the value is said to be one.
+        var values = members.Select(member => (member, Value: ValueOf(member, out var runsCode), runsCode))
+            .Select(entry => entry.Value == "null" && _annotations && !Nullable(entry.member.TsType)
+                ? entry with { Value = "null!" }
+                : entry)
+            .ToList();
         if (baseName is not null)
         {
             foreach (var (member, value, runsCode) in values)
@@ -598,6 +605,10 @@ public class RecordTypeEmitter
         sb.Append(AlternateBodies(constructors.Alternates, arrived));
         return sb.Append("} ").ToString();
     }
+
+    /// <summary>Whether TypeScript reads a member's type as one that may hold null.</summary>
+    private static bool Nullable(string tsType) =>
+        tsType == "any" || tsType.Split('|').Any(part => part.Trim() is "null" or "undefined");
 
     /// <summary>Where a root stands among the roots.</summary>
     private static int Index(Constructors constructors, Root root) =>
