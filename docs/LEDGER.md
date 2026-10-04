@@ -1226,6 +1226,14 @@ record of a release, the wiki's Upgrading page is the distillate.
   back (`Cast`, `DefaultIfEmpty`) and a read-only face hiding a list, and both copy now. Each is a
   conformance case on both sides that failed against main. Proposed and archived through OpenSpec
   (`openspec/specs/transpiler-sequences`).
+- **2026-10-04 · A deconstruction writes each part as C# does**: a deconstruction was destructuring,
+  which writes each part straight into its target, so a dictionary's entry as a target wrote its read,
+  a SyntaxError that cost the module, and an int part into a long stayed a number, which the next long
+  arithmetic refused, in an assignment, a declaration and a loop alike
+  ([#542](https://github.com/eQuantic/equantic-ui/issues/542)). Each part is converted to its target's
+  type as the bound tree's `DeconstructionInfo` says, and written by what its target is, an entry
+  through its class. Each is a conformance case on both sides that failed against main. Proposed and
+  archived through OpenSpec (`openspec/specs/transpiler-records`).
 - **2026-10-04 · A find bar's Escape closes its own editor's bar**: the code editor's Escape was a
   page-wide chord mounted with the find bar, so with two bars open it closed the one mounted last,
   wherever the keyboard was ([#457](https://github.com/eQuantic/equantic-ui/issues/457)). Made the
