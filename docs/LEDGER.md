@@ -794,26 +794,6 @@ record of a release, the wiki's Upgrading page is the distillate.
   value, a ToBoolean provider is evaluated in the order it is written (another `CultureInfo`
   than the invariant or the current one is EQ2108, having no twin to evaluate), and the BCL
   audit's `(Object)` probes call the object overload instead of the string one beside it.
-- **2026-09-26 · A constant is its value in its C# type**: `decimal.MaxValue` emitted
-  `decimal.maxValue`, a ReferenceError, because the strategy that writes a const field as its value
-  left decimals to a strategy that never wrote one
-  ([#444](https://github.com/eQuantic/equantic-ui/issues/444)). The same function wrote a `long`
-  constant in a number's range as a number, which the first long it met threw on
-  (`t / TimeSpan.TicksPerSecond`), a decimal literal went through its text (`1_000.5m`), and a
-  parameter's default filled in for a skipped argument had a second writer that dropped a decimal's
-  and a long's type, a char's quotes and a string's escapes. One writer now answers a constant in
-  its C# type for all three paths, a const with no source is inlined under a `using static` too,
-  the primitive table keeps only what is not a constant, and a narrow integer and a `ulong`
-  annotate as `number` and `bigint`. The author's review found three more on the same paths: a
-  decimal constant in a pattern or a `case` compared by identity and never matched, a constant of
-  an enum type was written as its number (and a flags default as a name), and a lone surrogate left
-  the module unwritable, and Copilot's second round a char literal written from its source text,
-  whose `\e`, `\a` and `\x041` JavaScript reads as other characters. 47 of the 92 conformance
-  cases failed on main. The BCL audit grades
-  `decimal`'s static surface: its nine translated members are proved, and the 38 it fences are left
-  to their own issue ([#449](https://github.com/eQuantic/equantic-ui/issues/449)), as are an `is`
-  over a named constant ([#451](https://github.com/eQuantic/equantic-ui/issues/451)) and an enum's
-  `ToString` ([#452](https://github.com/eQuantic/equantic-ui/issues/452)).
 - **2026-09-26 · A dictionary enumerates as .NET's does**: a `Dictionary<K, V>` with a primitive key
   was a plain object, which listed integer-like keys ascending and handed every key back as a
   string, so `d[3] = 30; d[1] = 10;` enumerated `1,3` where .NET enumerates `3,1`
@@ -1297,6 +1277,30 @@ record of a release, the wiki's Upgrading page is the distillate.
   names the pair it was handed, a `SortedList` the key and its parameter), an object initializer's
   `[key] = value` is assigned by the indexer, and a pair built by hand is the pair a dictionary yields.
   Proposed and archived through OpenSpec (`openspec/specs/runtime-dictionaries`).
+- **2026-09-26 · A constant is its value in its C# type**: `decimal.MaxValue` emitted
+  `decimal.maxValue`, a ReferenceError, because the strategy that writes a const field as its value
+  left decimals to a strategy that never wrote one
+  ([#444](https://github.com/eQuantic/equantic-ui/issues/444)). The same function wrote a `long`
+  constant in a number's range as a number, which the first long it met threw on
+  (`t / TimeSpan.TicksPerSecond`), a decimal literal went through its text (`1_000.5m`), and a
+  parameter's default filled in for a skipped argument had a second writer that dropped a decimal's
+  and a long's type, a char's quotes and a string's escapes. One writer now answers a constant in its
+  C# type for all three paths, a const with no source is inlined under a `using static` too, the
+  primitive table keeps only what is not a constant, and a narrow integer and a `ulong` annotate as
+  `number` and `bigint`. The author's review found three more on the same paths: a decimal constant
+  in a pattern or a `case` compared by identity and never matched, a constant of an enum type was
+  written as its number (and a flags default as a name), and a lone surrogate left the module
+  unwritable, and Copilot's second round a char literal written from its source text, whose `\e`,
+  `\a` and `\x041` JavaScript reads as other characters: both were spelled on main by the time this
+  merged, by the one writer of a string ([#520](https://github.com/eQuantic/equantic-ui/issues/520)),
+  which a constant's char and string now go through. 47 of the 92 conformance cases failed on main
+  when this opened, and 27 when it merged: the text, the long constants and some of the patterns,
+  defaults and enum constants had been fixed on the way by the pull requests before it. The BCL audit
+  grades `decimal`'s static surface: its nine translated members are proved, and the 38 it fences are
+  left to their own issue ([#449](https://github.com/eQuantic/equantic-ui/issues/449)), as are an
+  `is` over a named constant ([#451](https://github.com/eQuantic/equantic-ui/issues/451)) and an
+  enum's `ToString` ([#452](https://github.com/eQuantic/equantic-ui/issues/452)). Proposed and
+  archived through OpenSpec (`openspec/specs/transpiler-constants`).
 
 ## Retired documents
 
