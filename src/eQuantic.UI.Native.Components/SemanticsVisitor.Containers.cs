@@ -6,10 +6,10 @@ namespace eQuantic.UI.Native.Components;
 /// <summary>
 /// Containers and layout — fourteen words the engine has already resolved into geometry by the time
 /// a screen reader asks. All fourteen descend here, and that is no longer a gap: a modal
-/// <see cref="Overlay"/> DOES announce a group now (#187), at its overlay ROOT rather than at the
-/// placeholder this file sees — <see cref="SemanticsVisitor.AnnounceOverlay"/>, called by
-/// <c>SemanticsTree.Collect</c>. The arm below carries the reason, because "it descends" and "it has
-/// nothing to say" stopped being the same sentence.
+/// <see cref="Overlay"/> DOES announce itself now (#187), as a dialog since #501, at its overlay
+/// ROOT rather than at the placeholder this file sees — <see cref="SemanticsVisitor.AnnounceOverlay"/>,
+/// called by <c>SemanticsTree.Collect</c>. The arm below carries the reason, because "it descends"
+/// and "it has nothing to say" stopped being the same sentence.
 /// </summary>
 internal sealed partial class SemanticsVisitor
 {
@@ -39,7 +39,7 @@ internal sealed partial class SemanticsVisitor
     /// measured at 400x0 in the middle of a column — and puts the stop between the page content
     /// before and after it, while its own elements arrive later as unrelated siblings.
     /// <para>
-    /// The group is announced at the overlay ROOT instead (<c>SemanticsTree.Collect</c> →
+    /// The dialog is announced at the overlay ROOT instead (<c>SemanticsTree.Collect</c> →
     /// <see cref="SemanticsVisitor.AnnounceOverlay"/>), where it has the LAYER's bounds and sits
     /// immediately before its descendants. That is also what the web does: <c>role="dialog"</c> and
     /// <c>aria-modal</c> go on the `eq-overlay` element, which is `position: fixed; inset: 0` — the
