@@ -63,11 +63,14 @@ public class DeconstructionConformanceTests
     [InlineData("var pair = (3, 4); (long t, int m) = pair; return (t + 1L).ToString();")]                                                              // 4: declared, converted
     [InlineData("var total = 0L; foreach ((long a, int b) in new[] { (1, 2), (3, 4) }) total += a * 10 + b; return total.ToString();")] // "46": a loop's parts, converted
     [InlineData("var pair = (3, 4); long t; int m; var all = ((t, m) = pair); return (all.Item1 + 1L).ToString();")]                                   // 4: the value is the targets'
+    [InlineData("var made = 0; var pair = (new Feet(3, () => made++), 4); Meters a; int b; var all = ((a, b) = pair); return made + \":\" + a.Value + \":\" + all.Item1.Value + \":\" + object.ReferenceEquals(a, all.Item1);")] // "1:3:3:True": a conversion the app wrote runs once
     public void APart_IsWrittenAndConvertedAsItsTargetTakesIt(string statements)
     {
         Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
         ConformanceRunner.AssertStatementsSameAsDotNet(statements,
-            "public record Point(int X, int Y);\npublic record Holder { public int A { get; set; } public int B { get; set; } }");
+            "public record Point(int X, int Y);\npublic record Holder { public int A { get; set; } public int B { get; set; } }\n"
+            + "public record Meters(int Value);\n"
+            + "public record Feet(int Value, Action OnConvert) { public static implicit operator Meters(Feet f) { f.OnConvert(); return new Meters(f.Value); } }");
     }
 
     private const string Shapes = """

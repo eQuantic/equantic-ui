@@ -306,6 +306,9 @@ internal static class DeconstructionPattern
             const string probe = "$part";
             var converts = Converted(probe) != probe;
             if (converts) Converts = true;
+            // A temporary converted ONCE, in place, as the value its target is written: a conversion the
+            // app wrote runs once, as C# runs it, and the target and the tuple hold the same value.
+            string InPlace(string temporary) => converts ? $"({temporary} = {Converted(temporary)})" : temporary;
 
             if (target is SingleVariableDesignationSyntax variable)
             {
@@ -313,13 +316,13 @@ internal static class DeconstructionPattern
                 if (temporaries)
                 {
                     var assignedTo = Fresh();
-                    Assignments.Add((assignedTo, $"{name} = {Converted(assignedTo)}"));
-                    return (assignedTo, Converted(assignedTo));
+                    Assignments.Add((assignedTo, $"{name} = {InPlace(assignedTo)}"));
+                    return (assignedTo, assignedTo);
                 }
                 if (!converts) return (name, name);
                 var held = Fresh();
                 Declared.Add((name, Converted(held)));
-                return (held, Converted(held));
+                return (held, held);
             }
 
             if (target is not ExpressionSyntax written) return (null, "undefined");
@@ -329,15 +332,15 @@ internal static class DeconstructionPattern
                 var receiver = Capture(context.Converter.ConvertExpression(entry.Expression));
                 var key = Capture(context.Converter.ConvertExpression(entry.ArgumentList.Arguments[0].Expression));
                 var entered = Fresh();
-                Assignments.Add((entered, DictionaryEntry.Write(receiver, key, Converted(entered))));
-                return (entered, Converted(entered));
+                Assignments.Add((entered, DictionaryEntry.Write(receiver, key, InPlace(entered))));
+                return (entered, entered);
             }
             var place = Captured(written) ?? context.Converter.ConvertExpression(written);
             if (temporaries)
             {
                 var placed = Fresh();
-                Assignments.Add((placed, $"{place} = {Converted(placed)}"));
-                return (placed, Converted(placed));
+                Assignments.Add((placed, $"{place} = {InPlace(placed)}"));
+                return (placed, placed);
             }
             return (place, place);
         }
