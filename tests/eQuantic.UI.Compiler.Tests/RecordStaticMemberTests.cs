@@ -75,22 +75,24 @@ public class RecordStaticMemberTests
         // `static T P { get; } = new(…)` is an auto-property: no getter body, so the emitter's
         // property loop — which only knew `=> …`, `get => …` and `get { … }` — skipped it entirely.
         // The call site still wrote `Chrome.default.tag`, so the page threw on hydration having
-        // rendered perfectly on the server.
-        Twin().Should().Contain("static default = new Chrome('well-known')");
+        // rendered perfectly on the server. It initializes with the type's other statics, in order,
+        // on first use (TypeInitializer, #417), and reads through its accessor.
+        Twin().Should().Contain("slots.default = new Chrome('well-known');").And.Contain("static get default()");
     }
 
     [Fact]
     public void ASettableStaticPropertyReachesItToo()
     {
         // Same shape with a setter. Nothing about `{ get; set; }` makes it less of a static value.
-        Twin().Should().Contain("static mutable = new Chrome('also-well-known')");
+        Twin().Should().Contain("slots.mutable = new Chrome('also-well-known');").And.Contain("static set mutable(");
     }
 
     [Fact]
     public void TheOtherStaticShapesStillReachIt()
     {
         var twin = Twin();
-        twin.Should().Contain("static field = new Chrome('by-field')");
+        twin.Should().Contain("slots.field = new Chrome('by-field');");
+        // A const reads nothing and initializes nothing: it stays a field.
         twin.Should().Contain("static marker = 'a-const'");
         twin.Should().Contain("static describe()");
     }
@@ -153,9 +155,11 @@ public class RecordStaticMemberTests
 
         // .NET runs static initialisers top to bottom, so `First = Second` written ABOVE
         // `Second = 7` reads Second's default and not 7. Emitting all fields and then all
-        // properties reversed that for every type whose source interleaves them.
-        twin.IndexOf("static first", StringComparison.Ordinal)
-            .Should().BeLessThan(twin.IndexOf("static second", StringComparison.Ordinal),
+        // properties reversed that for every type whose source interleaves them. Each starts at its
+        // zero, which is what the one written first reads of the other (#417).
+        twin.Should().Contain("{ first: 0, second: 0 }");
+        twin.IndexOf("slots.first = Shapes.second;", StringComparison.Ordinal)
+            .Should().BeGreaterThan(-1).And.BeLessThan(twin.IndexOf("slots.second = 7;", StringComparison.Ordinal),
                 "the twin must run them in the order the source declares");
     }
 
@@ -272,7 +276,7 @@ public class RecordStaticMemberTests
     }
 
     [Fact]
-    public void AnOperatorEmitCannotWriteDoesNotConjureATwin()
+    public void AnOperatorEmitCannotWriteIsNotWritten()
     {
         const string source = """
             using eQuantic.UI.Primitives;
@@ -291,10 +295,11 @@ public class RecordStaticMemberTests
             """;
 
         // Emit has no method name for `&`, so it writes nothing for this operator and no call site
-        // can lower it either. Discovery must answer the same question Emit does — saying yes here
-        // would emit an empty module standing in for an operator nobody can use.
-        new ComponentCompiler().CompileSource(source, "Flags.cs")
-            .Should().NotContain(r => r.ComponentName == "Flags");
+        // can lower it either. The record still has its twin, as every record does whatever it
+        // declares (#428): it is a type the browser constructs and compares.
+        var twin = new ComponentCompiler().CompileSource(source, "Flags.cs")
+            .Single(r => r.ComponentName == "Flags").TypeScript;
+        twin.Should().Contain("class Flags").And.NotContain("static op");
     }
 
     [Fact]

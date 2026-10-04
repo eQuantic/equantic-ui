@@ -185,10 +185,12 @@ public class AppValueTypeImportTests
         ts.Should().Contain("import { Span2 } from \"./Span2\"");
     }
 
-    /// <summary>A zero that names a struct the declaration never mentions: Outer's is built member by
-    /// member, so it constructs an Inner, and only the conversion that writes it knows. A record's
-    /// constructor, a component's field and auto-property, and a plain class's field asked for the
-    /// zero without telling the conversion, so nothing imported Inner (found in review, #409).</summary>
+    /// <summary>A zero that names a struct the declaration never mentions: Outer's constructor gives K
+    /// more than its zero, so its zero is the `$zero()` its own twin builds member by member, without
+    /// the constructor (#413). A record's constructor, a component's field and auto-property, and a
+    /// plain class's field asked for the zero without telling the conversion, so nothing imported the
+    /// struct it named (found in review, #409); each imports Outer now, and Outer imports the Inner
+    /// its zero constructs.</summary>
     [Theory]
     [InlineData("Nest")]
     [InlineData("Deck")]
@@ -198,8 +200,16 @@ public class AppValueTypeImportTests
     {
         var ts = TypeScriptOf(module);
 
-        ts.Should().Contain("new Outer(new Inner(), 0)");
+        ts.Should().Contain("Outer.$zero()");
         ts.Should().Contain("import { Outer } from \"./Outer\"");
+    }
+
+    [Fact]
+    public void AStructsZero_ImportsTheStructsItConstructs()
+    {
+        var ts = TypeScriptOf("Outer");
+
+        ts.Should().Contain("static $zero(): Outer { return Object.assign(Object.create(Outer.prototype), { in: new Inner(), k: 0 }); }");
         ts.Should().Contain("import { Inner } from \"./Inner\"");
     }
 

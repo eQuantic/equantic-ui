@@ -21,9 +21,13 @@ public class StructDefaultTests
 
         public readonly record struct Grid(Point Origin, Size Pitch, Cell Home, Tone Tone, char Mark);
 
-        public struct Nothing { }
+        public partial struct Nothing { }
+
+        public struct Empty { }
 
         public readonly record struct Wrap(Nothing Inner, int Count);
+
+        public readonly record struct Shell(Empty Inner, int Count);
         """;
 
     private static string Emit(string name) => TypeScriptOf(Source, "Grid.cs", name);
@@ -116,15 +120,22 @@ public class StructDefaultTests
 
     /// <summary>
     /// A struct whose construction gives a member more than its zero (an initializer, an explicit
-    /// parameterless constructor) is not zeroed by its twin's bare <c>new T()</c>, which runs them:
-    /// its zero passes every member's own (found in review, #405).
+    /// parameterless constructor) is not zeroed by its twin's bare <c>new T()</c>, which runs them
+    /// (found in review, #405): its zero is the twin's <c>$zero()</c>, which sets every member to its
+    /// own zero without the constructor. Passing the zeros to the constructor stopped working when the
+    /// constructor became the C# one, which runs every initializer whatever it is passed (#413).
     /// </summary>
     [Fact]
     public void AStructThatConstructsBeyondZero_IsZeroedMemberByMember()
     {
-        var ts = TypeScriptOf(ZerosSource, "Board.cs", "Board");
+        var board = TypeScriptOf(ZerosSource, "Board.cs", "Board");
+        var counter = TypeScriptOf(ZerosSource, "Board.cs", "Counter");
 
-        ts.Should().MatchRegex(@"fresh\(\)[^{]*\{\s*return new Counter\(0, \$eq\.num\.long\(0\)\);");
+        board.Should().MatchRegex(@"fresh\(\)[^{]*\{\s*return Counter\.\$zero\(\);");
+        counter.Should().Contain(
+            "static $zero(): Counter { return Object.assign(Object.create(Counter.prototype), { step: 0, total: $eq.num.long(0) }); }");
+        counter.Should().Contain("constructor() { this.step = 2; this.total = $eq.num.long(0); }",
+            "`new Counter()` runs the initializer, and the zero does not");
     }
 
     /// <summary>A vocabulary struct whose twin cannot build its zero fills an array with its twin's
@@ -164,10 +175,24 @@ public class StructDefaultTests
     [Fact]
     public void AStructWithNoTwinIsNeverConstructed()
     {
+        // Declared only by a partial declaration that declares nothing: no twin is written for one,
+        // the members being another declaration's (RecordTypeEmitter.CanEmit).
         var ts = Emit("Wrap");
 
-        ts.Should().Contain("inner: any = undefined");
+        // An optional parameter: the twin's own default, undefined, as its type has no zero to build.
+        ts.Should().Contain("constructor(inner?: any, count: any = 0)");
         ts.Should().NotContain("new Nothing()");
+    }
+
+    /// <summary>A struct that declares nothing has a twin like any other (#428), so its zero is
+    /// built and imported; it was <c>undefined</c> while no twin was written for it.</summary>
+    [Fact]
+    public void AnEmptyStruct_HasATwin_AndIsItsZero()
+    {
+        var ts = Emit("Shell");
+
+        ts.Should().Contain("inner: any = new Empty()");
+        ts.Should().Contain("import { Empty } from \"./Empty\"");
     }
 
     [Fact]

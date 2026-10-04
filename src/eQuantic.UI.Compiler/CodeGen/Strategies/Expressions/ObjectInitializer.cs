@@ -62,7 +62,16 @@ internal static class ObjectInitializer
         {
             switch (element)
             {
-                // `[key] = value`: the entry, written as the type's indexer writes it.
+                // `[key] = value`: the entry, written as the type's indexer writes it. C# 13's
+                // from-the-end key (`[^1] = v`) writes the tail of what the member holds, which is
+                // fenced here as it is in a config object.
+                case AssignmentExpressionSyntax { Left: ImplicitElementAccessSyntax key } entry
+                    when key.ArgumentList.Arguments.Any(argument =>
+                        argument.Expression is PrefixUnaryExpressionSyntax { RawKind: (int)SyntaxKind.IndexExpression }):
+                    context.Report(entry, ConversionSeverity.Error, "EQ2008",
+                        "from-the-end indexer assignments inside initializers (`X = { [^i] = v }`) are not lowered yet "
+                        + "— assign after construction.");
+                    break;
                 case AssignmentExpressionSyntax { Left: ImplicitElementAccessSyntax key } entry:
                     if (Entry(target, targetType, key, entry.Right, context) is { } written)
                         statements.Add(written);
@@ -154,6 +163,9 @@ internal static class ObjectInitializer
         }
         if (context.SemanticHelper.GetSymbol(key) is IPropertySymbol { IsIndexer: true } indexer && Indexer.IsLowered(indexer))
             return $"{Indexer.Write(target, keys, written)};";
+        // An array's slot, or a list's, which is an array on this side.
+        if (keys.Count == 1 && (targetType is IArrayTypeSymbol || IsList(targetType)))
+            return $"{target}[{keys[0]}] = {written};";
         return null;
     }
 
