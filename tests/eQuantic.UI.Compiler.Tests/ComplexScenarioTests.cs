@@ -69,7 +69,7 @@ public class ComplexScenarioTests
 
         // 2. Dictionary & Initializers: with no model, the dictionary is known by the name its
         // creation writes, and the string literal keys keep their casing.
-        Assert.Contains("let config = $eq.collections.dictionary([['timeout', 1000], ['retries', 3]]);", js);
+        Assert.Contains("let config = $eq.collections.dictionary().add('timeout', 1000).add('retries', 3);", js);
 
         // 3. Dictionary ContainsKey, a name only a dictionary answers
         Assert.Contains("if (config.has('timeout'))", js);

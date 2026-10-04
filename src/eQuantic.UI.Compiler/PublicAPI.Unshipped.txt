@@ -142,3 +142,9 @@ eQuantic.UI.Compiler.CodeGen.ValueMember.Deconstruct(out string! Display, out st
 eQuantic.UI.Compiler.CodeGen.ValueMember.Printed.get -> bool
 eQuantic.UI.Compiler.CodeGen.ValueMember.Printed.init -> void
 eQuantic.UI.Compiler.CodeGen.ValueMember.ValueMember(string! Display, string! Js, string! TsType, bool Printed, Microsoft.CodeAnalysis.SyntaxNode! Declaration) -> void
+const eQuantic.UI.Compiler.CodeGen.Eq.Pair = "$eq.collections.pair" -> string!
+eQuantic.UI.Compiler.CodeGen.Strategies.Types.KeyValuePairStrategy
+eQuantic.UI.Compiler.CodeGen.Strategies.Types.KeyValuePairStrategy.CanConvert(Microsoft.CodeAnalysis.SyntaxNode! node, eQuantic.UI.Compiler.CodeGen.ConversionContext! context) -> bool
+eQuantic.UI.Compiler.CodeGen.Strategies.Types.KeyValuePairStrategy.ConvertIr(Microsoft.CodeAnalysis.SyntaxNode! node, eQuantic.UI.Compiler.CodeGen.ConversionContext! context) -> eQuantic.UI.Compiler.CodeGen.Ir.JsExpr!
+eQuantic.UI.Compiler.CodeGen.Strategies.Types.KeyValuePairStrategy.KeyValuePairStrategy() -> void
+eQuantic.UI.Compiler.CodeGen.Strategies.Types.KeyValuePairStrategy.Priority.get -> int

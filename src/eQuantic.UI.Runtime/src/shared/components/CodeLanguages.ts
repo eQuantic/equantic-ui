@@ -12,7 +12,7 @@ export class CodeLanguages {
             slots.json = new JsonLanguage();
             slots.xml = new XmlLanguage();
             slots.plainText = new PlainTextLanguage();
-            slots.known = $eq.collections.dictionary([['c#', CodeLanguages.cSharp], ['csharp', CodeLanguages.cSharp], ['cs', CodeLanguages.cSharp], ['typescript', CodeLanguages.typeScript], ['ts', CodeLanguages.typeScript], ['javascript', CodeLanguages.typeScript], ['js', CodeLanguages.typeScript], ['tsx', CodeLanguages.typeScript], ['jsx', CodeLanguages.typeScript], ['python', CodeLanguages.python], ['py', CodeLanguages.python], ['json', CodeLanguages.json], ['xml', CodeLanguages.xml], ['csproj', CodeLanguages.xml], ['html', CodeLanguages.xml], ['plist', CodeLanguages.xml], ['text', CodeLanguages.plainText], ['txt', CodeLanguages.plainText], ['plain', CodeLanguages.plainText]]);
+            slots.known = $eq.collections.dictionary().set('c#', CodeLanguages.cSharp).set('csharp', CodeLanguages.cSharp).set('cs', CodeLanguages.cSharp).set('typescript', CodeLanguages.typeScript).set('ts', CodeLanguages.typeScript).set('javascript', CodeLanguages.typeScript).set('js', CodeLanguages.typeScript).set('tsx', CodeLanguages.typeScript).set('jsx', CodeLanguages.typeScript).set('python', CodeLanguages.python).set('py', CodeLanguages.python).set('json', CodeLanguages.json).set('xml', CodeLanguages.xml).set('csproj', CodeLanguages.xml).set('html', CodeLanguages.xml).set('plist', CodeLanguages.xml).set('text', CodeLanguages.plainText).set('txt', CodeLanguages.plainText).set('plain', CodeLanguages.plainText);
         }
         return CodeLanguages.$slots;
     }

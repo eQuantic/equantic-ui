@@ -14,6 +14,7 @@
 import {
   collectionModified,
   containsValue,
+  keyText,
   pair,
   requireKey,
   wireObject,
@@ -133,11 +134,28 @@ export class SortedMap<K, V> implements Iterable<Pair<K, V>> {
   constructor(
     initial?: Iterable<readonly [K, V]>,
     compare: (a: K, b: K) => number = defaultCompare,
+    /** Which of .NET's two it stands for, whose refusals of a key already there are worded apart, and
+     * which hydration carries across (`DictionarySpec.sorted`). */
+    readonly kind: 'dictionary' | 'list' = 'dictionary',
   ) {
     this.compare = compare;
+    // Added, as a constructor and a collection initializer add: a key already there is refused (#440).
     if (initial) {
-      for (const [k, v] of initial) this.set(k, v);
+      for (const [k, v] of initial) this.add(k, v);
     }
+  }
+
+  /**
+   * `Add`: a new key, or .NET's refusal of one already there, in each collection's words, measured on
+   * .NET 10: a `SortedDictionary` names the pair it was handed (`Key: [2, c]`), and a `SortedList` the
+   * key and its parameter (`Key: 2 (Parameter 'key')`). The indexer's write replaces instead.
+   */
+  add(key: K, value: V): this {
+    if (this.has(key)) {
+      const named = this.kind === 'list' ? `${keyText(key)} (Parameter 'key')` : `[${keyText(key)}, ${value == null ? '' : keyText(value)}]`;
+      throw new Error(`An item with the same key has already been added. Key: ${named}`);
+    }
+    return this.set(key, value);
   }
 
   get size(): number {
@@ -249,5 +267,5 @@ export function sortedList<K, V>(
   initial?: Iterable<readonly [K, V]> | null,
   compare?: ((a: K, b: K) => number) | Ordering,
 ): SortedMap<K, V> {
-  return new SortedMap<K, V>(initial ?? undefined, orderOf(compare));
+  return new SortedMap<K, V>(initial ?? undefined, orderOf(compare), 'list');
 }
