@@ -1152,9 +1152,12 @@ record of a release, the wiki's Upgrading page is the distillate.
   bar is closed, and mounted only with the bar, around the code, it would have moved the code in the
   tree. `Shortcut.Enabled` gives a chord the state Flutter gives an `Action` that is not enabled: in
   the tree, binding nothing, on the web (SSR and the TypeScript twin) and on Photon. The Escape now
-  wraps the layers beside ⌘F, focus-scoped and enabled while the bar is open. Each test failed against
-  main's editor, or against its realizer without the guard, and the dialog's against an Escape that
-  is always enabled. Proposed and archived through OpenSpec (`openspec/specs/keyboard-shortcuts`).
+  wraps the layers beside ⌘F, focus-scoped and enabled while the bar is open. The local review found
+  the web answering a dialog's Escape before the open bar's inside it, where Photon closed the bar:
+  of two nested chords the web listed the inner one first, and a binding now takes its place before
+  its child lowers, as Photon emits it. Each test failed against main's editor, against its realizer
+  without the guard, or against the old order, and the dialog's against an Escape that is always
+  enabled. Proposed and archived through OpenSpec (`openspec/specs/keyboard-shortcuts`).
 
 ## Retired documents
 

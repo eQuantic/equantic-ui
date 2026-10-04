@@ -1186,13 +1186,14 @@ describe('the find bar', () => {
     resetShortcuts();
   });
 
-  /** C# twin: CodeEditorFinishTests.Escape_ClosesTheFindBarOfTheEditorTheKeyboardIsIn (#457). With
-   * two bars open, Escape closed the last one mounted wherever the keyboard was, and with the bar
-   * closed nothing may take Escape from a dialog around the editor. */
-  it('binds Escape only while its bar is open, for the editor the keyboard is in', async () => {
+  /** C# twins: CodeEditorFinishTests.Escape_ClosesTheFindBarOfTheEditorTheKeyboardIsIn and
+   * Escape_ClosesTheBarBeforeADialogAroundTheEditor (#457). Page-wide, Escape closed the last bar
+   * mounted wherever the keyboard was, and inside a dialog the dialog's Escape answered first. */
+  it('closes the bar of the editor the keyboard is in, before a dialog around it', async () => {
     const { materializeTheme } = await import('./theme-bridge');
     const photonData = (await import('./theme-bridge.photon.json')).default;
     const { CodeEditor } = await import('./components/CodeEditor');
+    const { ComponentInstanceStore, enterPass, exitPass } = await import('./instance-store');
     const theme = materializeTheme(photonData as never);
     setPhotonTheme(theme);
     const context = {
@@ -1203,36 +1204,54 @@ describe('the find bar', () => {
       monoAdvance: () => 7,
     };
     const editors = [new CodeEditor('var first = 1;', 'csharp'), new CodeEditor('var second = 2;', 'csharp')];
-    // One tree, so each editor's scope is named by its own path, lowered in ONE pass as a page is:
-    // outside one, a component inside an editor commits the bindings declared before it.
-    const { ComponentInstanceStore, enterPass, exitPass } = await import('./instance-store');
-    const lowerBoth = () => {
+    const open = () => editors.map((editor) => (editor as unknown as { _findOpen: boolean })._findOpen);
+    let dialogClosed = 0;
+    // One tree in ONE pass, as a page renders: each editor's scope is named by its own path, and a
+    // component inside an editor joins the pass instead of committing the bindings declared before it.
+    const render = () => {
       enterPass(new ComponentInstanceStore(), null);
       try {
         const page = { nodeKind: 'column', children: editors.map((editor) => editor.build(context as never)) };
-        return lowerVisualNode(page as never, context as never);
+        const dialog = { nodeKind: 'shortcut', child: page, chord: { key: 'Escape' }, onPressed: () => dialogClosed++ };
+        return lowerVisualNode(dialog as never, context as never);
       } finally {
         exitPass();
       }
     };
-    const escapes = () => activeShortcuts().filter((binding) => binding.chord === 'escape');
-
-    resetShortcuts();
-    lowerBoth();
-    expect(escapes(), 'a closed bar binds nothing').toHaveLength(0);
-    for (const find of activeShortcuts().filter((binding) => binding.chord === 'command+f')) find.handler();
-
     const parent = document.createElement('div');
     document.body.appendChild(parent);
-    try {
-      new Reconciler().reconcile(parent, null, lowerBoth());
-      const scopes = [...parent.querySelectorAll('[data-eq-focus-scope]')].filter((scope) =>
-        scope.querySelector('textarea'),
-      );
-      const second = scopes.find((scope) => scope.textContent?.includes('second'))!;
-      second.querySelector('textarea')!.focus();
+    const reconciler = new Reconciler();
+    let mounted: HtmlNode | null = null;
+    const mount = () => {
+      const next = render();
+      reconciler.reconcile(parent, mounted, next);
+      mounted = next;
+    };
+    // The FIRST editor, so the bar that answers is not the last one mounted.
+    const focusFirst = () =>
+      [...parent.querySelectorAll('[data-eq-focus-scope]')]
+        .find((scope) => scope.textContent?.includes('first') && scope.querySelector('textarea'))!
+        .querySelector('textarea')!
+        .focus();
+    const escape = () => window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', cancelable: true }));
 
-      expect(escapes().map((binding) => binding.live?.())).toEqual([false, true]);
+    try {
+      resetShortcuts();
+      mount();
+      expect(activeShortcuts().filter((binding) => binding.chord === 'escape'), 'a closed bar binds nothing').toHaveLength(1);
+      for (const find of activeShortcuts().filter((binding) => binding.chord === 'command+f')) find.handler();
+      mount();
+      focusFirst();
+
+      escape();
+      expect(open(), 'the bar of the editor the keyboard is in').toEqual([false, true]);
+      expect(dialogClosed).toBe(0);
+
+      mount();
+      focusFirst();
+      escape();
+      expect(dialogClosed, 'with its bar closed, the editor leaves Escape to the dialog').toBe(1);
+      expect(open()).toEqual([false, true]);
     } finally {
       parent.remove();
       resetShortcuts();

@@ -125,6 +125,25 @@ public class S8ShortcutNativeTests
     }
 
     /// <summary>
+    /// Of two NESTED bindings of one chord, the inner one answers: a component's own Escape inside a
+    /// dialog closes what the component opened before the dialog closes, as the Shortcuts nearest the
+    /// focus answer first in Flutter. The frame lists a binding before the ones inside it, so the LIFO
+    /// walk reaches the inner one first; the web declares them in the same order (#457).
+    /// </summary>
+    [Fact]
+    public void OfTwoNestedBindings_TheInnerOneAnswers()
+    {
+        var log = new List<string>();
+        var inner = new Shortcut(new Box(new BoxStyle { Width = 60, Height = 30 }), KeyChord.Escape,
+            () => log.Add("inner"));
+        var host = Host(new Shortcut(new Column(gap: 0) { inner }, KeyChord.Escape, () => log.Add("dialog")));
+
+        host.KeyDown("Escape").Should().BeTrue();
+
+        log.Should().Equal("inner");
+    }
+
+    /// <summary>
     /// A binding that is not ENABLED stays in the tree and takes nothing: the key goes on to the one
     /// around it, as a disabled Action lets it go in Flutter (#457).
     /// </summary>

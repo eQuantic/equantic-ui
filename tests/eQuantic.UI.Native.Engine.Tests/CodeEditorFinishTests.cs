@@ -283,6 +283,30 @@ public class CodeEditorFinishTests
         log.Should().Equal("dialog");
     }
 
+    /// <summary>In a dialog, Escape closes the editor's open bar before the dialog, as the Shortcuts
+    /// nearest the focus answer first in Flutter, and reaches the dialog once the bar is closed. The
+    /// web answered with the dialog's (#457).</summary>
+    [Fact]
+    public void Escape_ClosesTheBarBeforeADialogAroundTheEditor()
+    {
+        var log = new List<string>();
+        var editor = new CodeEditor("text", "csharp") { ShowLineNumbers = false };
+        var host = new PhotonHost(new Shortcut(editor, KeyChord.Escape, () => log.Add("dialog")),
+            PhotonTheme.Instance, ThemeMode.Light, 500, 400) { TextRasterizer = new FixedWidthRasterizer() };
+        var region = host.RenderFrame(new DisplayListBuilder()).CodeRegions.Single();
+        host.PressDown(region.Bounds.X + 4, region.Bounds.Y + 4);
+        host.PressUp(region.Bounds.X + 4, region.Bounds.Y + 4);
+        host.KeyDown("f", KeyModifiers.Command).Should().BeTrue();
+        host.RenderFrame(new DisplayListBuilder()).TextRegions.Should().ContainSingle("the bar is open");
+
+        host.KeyDown("Escape").Should().BeTrue();
+
+        log.Should().BeEmpty("the bar closes before the dialog");
+        host.RenderFrame(new DisplayListBuilder()).TextRegions.Should().BeEmpty("the bar is closed");
+        host.KeyDown("Escape").Should().BeTrue();
+        log.Should().Equal("dialog");
+    }
+
     // ---- virtualization --------------------------------------------------------------------------
 
     /// <summary>
