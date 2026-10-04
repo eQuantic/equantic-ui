@@ -485,13 +485,13 @@ public class ComponentParser
         }
 
         var seen = new HashSet<string>(StringComparer.Ordinal);
-        for (var name = PlainClassModule.SimpleName(written); seen.Add(name);)
+        for (var name = written.TwinTypeName(model: null); seen.Add(name);)
         {
             var declared = fileClasses.FirstOrDefault(c => c.Identifier.Text == name);
             if (declared is null) return false;
             if (declared.AttributeLists.SelectMany(list => list.Attributes).Any(a => a.IsNamed("ServerOnly"))) return true;
             if (declared.BaseList?.Types.FirstOrDefault()?.Type is not { } next) return false;
-            name = PlainClassModule.SimpleName(next);
+            name = next.TwinTypeName(model: null);
         }
         return false;
     }

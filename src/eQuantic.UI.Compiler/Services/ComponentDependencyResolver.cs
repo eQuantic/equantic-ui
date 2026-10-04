@@ -1,3 +1,4 @@
+using eQuantic.UI.Compiler.CodeGen;
 using eQuantic.UI.Compiler.CodeGen.Extensions;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
@@ -177,7 +178,7 @@ public class ComponentDependencyResolver
             {
                 _classes.Add(new ScannedClass(className,
                     PlainClassModule.Is(classDecl, _ => false),
-                    classDecl.BaseList?.Types.FirstOrDefault()?.Type is { } written ? PlainClassModule.SimpleName(written) : null));
+                    classDecl.BaseList?.Types.FirstOrDefault()?.Type is { } written ? written.TwinTypeName(model: null) : null));
             }
 
             if (classDecl.AttributeLists.SelectMany(list => list.Attributes).Any(attribute => attribute.IsNamed("ServerOnly")))

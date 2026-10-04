@@ -1,3 +1,4 @@
+using eQuantic.UI.Compiler.CodeGen;
 using eQuantic.UI.Compiler.CodeGen.Extensions;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
@@ -50,7 +51,7 @@ internal static class PlainClassModule
         if (IsException(declaration.Identifier.Text)) return false;
         if (declaration.BaseList?.Types.FirstOrDefault()?.Type is { } written)
         {
-            var name = SimpleName(written);
+            var name = written.TwinTypeName(model: null);
             if (name == "Attribute" || name.EndsWith("Attribute", StringComparison.Ordinal)) return false;
             if (IsException(name)) return false;
             if (baseStaysOnServer(written)) return false;
@@ -61,14 +62,4 @@ internal static class PlainClassModule
     /// <summary>The rule the construction and the import already follow: a type named for an
     /// exception is one, and lowers to JavaScript's <c>Error</c>.</summary>
     private static bool IsException(string name) => name.EndsWith("Exception", StringComparison.Ordinal);
-
-    /// <summary>A type's name as written, without its namespace, its alias or its arguments.</summary>
-    internal static string SimpleName(TypeSyntax type) => type switch
-    {
-        QualifiedNameSyntax qualified => SimpleName(qualified.Right),
-        AliasQualifiedNameSyntax aliased => SimpleName(aliased.Name),
-        GenericNameSyntax generic => generic.Identifier.Text,
-        IdentifierNameSyntax identifier => identifier.Identifier.Text,
-        _ => type.ToString(),
-    };
 }
