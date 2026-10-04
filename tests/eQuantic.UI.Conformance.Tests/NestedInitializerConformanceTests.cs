@@ -39,6 +39,44 @@ public class NestedInitializerConformanceTests
         ConformanceRunner.AssertStatementsSameAsDotNet(statements, Records);
     }
 
+    private const string Awaited = """
+        public record Holder { public List<int> Items { get; } = new(); }
+        public record Keyed { public Dictionary<string, int> Map { get; } = new(); }
+        public record Nest { public Holder Inner { get; } = new(); public int N { get; set; } }
+        """;
+
+    /// <summary>
+    /// Every part of the C# an initializer applies is evaluated in the caller's own function: an
+    /// <c>await</c> in an element, a value or a key stays in the async method it was written in. Each
+    /// was written inside the function that applies the initializer, which is not async, and the module
+    /// did not parse. Each part is evaluated once, in the order C# evaluates it.
+    /// </summary>
+    [SkippableTheory]
+    [InlineData("async Task<int> G() { await Task.Yield(); return 3; } var h = new Holder { Items = { await G(), 4 } }; return h.Items.Count + \":\" + h.Items[0];")] // "2:3"
+    [InlineData("async Task<int> G() { await Task.Yield(); return 5; } var k = new Keyed { Map = { { \"a\", await G() }, { \"b\", await G() + 1 } } }; return k.Map[\"a\"] + k.Map[\"b\"];")] // 11
+    [InlineData("async Task<int> G() { await Task.Yield(); return 5; } var k = new Keyed { Map = { [\"a\"] = await G() } }; return k.Map[\"a\"];")] // 5
+    [InlineData("async Task<string> K() { await Task.Yield(); return \"k\"; } var k = new Keyed { Map = { [await K()] = 1 } }; return k.Map[\"k\"];")] // 1
+    [InlineData("async Task<int> G() { await Task.Yield(); return 7; } var n = new Nest { Inner = { Items = { await G() } }, N = await G() }; return n.Inner.Items[0] + n.N;")] // 14
+    [InlineData("var log = \"\"; int Next(int v) { log += v; return v; } var h = new Holder { Items = { Next(1), Next(2), Next(3) } }; return string.Join(\",\", h.Items) + \":\" + log;")] // "1,2,3:123"
+    public void AnInitializersParts_RunInTheCallersFunction(string statements)
+    {
+        Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
+        ConformanceRunner.AssertStatementsSameAsDotNet(statements, Awaited);
+    }
+
+    /// <summary>
+    /// A pair of a collection initializer applied to a dictionary a member holds is that dictionary's
+    /// <c>Add</c>, which refuses a key already there, as every call to it lowers. It was written as the
+    /// indexer's <c>set</c>, which replaced the first value without a word.
+    /// </summary>
+    [SkippableTheory]
+    [InlineData("var k = new Keyed { Map = { [\"a\"] = 1, [\"a\"] = 2 } }; return k.Map[\"a\"] + \"|\" + k.Map.Count;")] // "2|1": the indexer replaces
+    public void APairAddedToAMembersDictionary_IsItsAdd(string statements)
+    {
+        Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
+        ConformanceRunner.AssertStatementsSameAsDotNet(statements, Awaited);
+    }
+
     private const string Classes = """
         using System.Collections.Generic;
 
