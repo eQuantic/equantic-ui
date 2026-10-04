@@ -1198,7 +1198,10 @@ record of a release, the wiki's Upgrading page is the distillate.
   through `JsonWriter`, whose escape is System.Text.Json's, and both maps through one map writer on top
   of it. Each case failed on main, the frames read through the composed map of a Bun bundle among
   them. The review found the iterator's buffer left out of the declaration's lines, its two lines
-  mapped to nothing, and they map to the declaration now. Proposed and archived through OpenSpec
+  mapped to nothing, and they map to the declaration now. Merged after #561, the out parameter's
+  wrapper leaves the functions the lowerings write by hand, the part of
+  [#539](https://github.com/eQuantic/equantic-ui/issues/539) it named, and so does one of the
+  creation's. Proposed and archived through OpenSpec
   (`openspec/specs/transpiler-source-maps`, `openspec/specs/generated-files`).
 - **2026-10-03 · A catch tests its type and its filter**: each catch clause was a JavaScript catch of
   its own, so two clauses were a SyntaxError that cost the module, and one took every exception, its
