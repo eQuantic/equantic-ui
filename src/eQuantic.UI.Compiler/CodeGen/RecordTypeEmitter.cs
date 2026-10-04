@@ -365,6 +365,17 @@ public class RecordTypeEmitter
         return sb.ToString();
     }
 
+    /// <summary>The statements of the type's static constructor, which run after its static
+    /// initializers (<see cref="TypeInitializer"/>); none when it declares none.</summary>
+    private IReadOnlyList<JsStatement> StaticConstructorBody(TypeDeclarationSyntax type)
+    {
+        if (type.Members.OfType<ConstructorDeclarationSyntax>()
+                .FirstOrDefault(constructor => constructor.Modifiers.Any(SyntaxKind.StaticKeyword)) is not { } cctor)
+            return [];
+        if (cctor.Body is { } block && _converter.ConvertBlockIr(block) is JsBlock converted) return converted.Statements;
+        return cctor.ExpressionBody is { } arrow ? [_lowering.ExpressionBody(arrow.Expression, returns: false)] : [];
+    }
+
     /// <summary>A constructor's own statements in the one-line layout, or nothing for an empty body.</summary>
     private string Body(ConstructorDeclarationSyntax constructor)
     {
@@ -568,6 +579,13 @@ public class RecordTypeEmitter
         // Absent an initialiser the member takes its TYPE's default, not `undefined`: C# gives
         // `static int Count { get; set; }` a 0, and a twin answering undefined disagrees with the
         // server about a number.
+        //
+        // And when one of them can observe another (an initializer that is not a constant, or a static
+        // constructor), every static with an initializer starts at its zero and they run in
+        // declaration order, on first use (TypeInitializer, #417): written in place, `static first =
+        // new Early()` ran Early's constructor before `static seed = 3` was defined, and read NaN.
+        var ordered = TypeInitializer.Orders(type, ModelFor);
+        var initialized = new List<TypeInitializer.Ordered>();
         foreach (var member in type.Members)
         {
             _converter.SetCurrentClass(name);
@@ -581,7 +599,11 @@ public class RecordTypeEmitter
                             ? ExpressionVariableScanner.Scoped(init.Value,
                                 _converter.ConvertExpression(init.Value, field.Declaration.Type.ToString()), _annotations)
                             : DefaultOf(field.Declaration.Type);
-                        sb.Append($"static {variable.Identifier.Text.ToCamelCase()} = {fieldValue}; ");
+                        if (ordered && variable.Initializer is not null && !field.Modifiers.Any(SyntaxKind.ConstKeyword))
+                            initialized.Add(new(variable.Identifier.Text.ToCamelCase(), TsTypeOf(field.Declaration.Type),
+                                DefaultOf(field.Declaration.Type), fieldValue, variable));
+                        else
+                            sb.Append($"static {variable.Identifier.Text.ToCamelCase()} = {fieldValue}; ");
                     }
                     break;
 
@@ -594,7 +616,10 @@ public class RecordTypeEmitter
                         ? ExpressionVariableScanner.Scoped(propInit.Value,
                             _converter.ConvertExpression(propInit.Value, prop.Type.ToString()), _annotations)
                         : DefaultOf(prop.Type);
-                    sb.Append($"static {prop.Identifier.Text.ToCamelCase()} = {propValue}; ");
+                    if (ordered && prop.Initializer is not null)
+                        initialized.Add(new(prop.Identifier.Text.ToCamelCase(), TsTypeOf(prop.Type), DefaultOf(prop.Type), propValue, prop));
+                    else
+                        sb.Append($"static {prop.Identifier.Text.ToCamelCase()} = {propValue}; ");
                     break;
 
                 // A static property that guards its own store with `field`: the store, named as the
@@ -607,9 +632,19 @@ public class RecordTypeEmitter
                         ? ExpressionVariableScanner.Scoped(slotInit.Value,
                             _converter.ConvertExpression(slotInit.Value, backed.Type.ToString()), _annotations)
                         : DefaultOf(backed.Type);
-                    sb.Append($"static {Strategies.Expressions.FieldExpressionStrategy.BackingSlot(backed)} = {slotValue}; ");
+                    if (ordered && backed.Initializer is not null)
+                        initialized.Add(new(Strategies.Expressions.FieldExpressionStrategy.BackingSlot(backed), TsTypeOf(backed.Type),
+                            DefaultOf(backed.Type), slotValue, backed));
+                    else
+                        sb.Append($"static {Strategies.Expressions.FieldExpressionStrategy.BackingSlot(backed)} = {slotValue}; ");
                     break;
             }
+        }
+        if (ordered)
+        {
+            _converter.SetCurrentClass(name);
+            foreach (var member in TypeInitializer.Members(name, initialized, StaticConstructorBody(type), _annotations))
+                sb.Append(Written(member));
         }
 
         // PROPERTIES with a body — computed, on the instance (`Start => Anchor <= Focus ? … : …`)
