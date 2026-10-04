@@ -295,9 +295,8 @@ public static class UIExtensions
                     var declared = new DeclaredPage(pageAttr.Title, pageAttr.Description);
                     // The endpoint carries the page's TYPE: by its simple name, two pages of one name in
                     // two namespaces rendered as one (#514).
-                    var page = pageType;
                     foreach (var route in CultureEndpointPatterns(options, pageAttr.Route))
-                        endpoints.MapGet(route, async context => await ServeAppShell(context, page, declared));
+                        endpoints.MapGet(route, async context => await ServeAppShell(context, pageType, declared));
                 }
             }
         }
