@@ -133,9 +133,9 @@ function currentView(): string {
  * real number is published a moment later. Measured on a fresh `/privacy#rights`: the page scrolled,
  * `targetTop` 0 against an offset that had by then become 65px.
  *
- * Corrected ONCE, and only when the target really is behind the chrome — its top inside `[0, offset)`
- * is exactly the broken state and nothing else. A reader who has already scrolled somewhere else
- * leaves the band.
+ * Corrected ONCE, and only when the target really is behind the chrome — its top inside
+ * `(-SubPixel, offset)` is exactly the broken state and nothing else. A reader who has already
+ * scrolled somewhere else leaves the band.
  *
  * <para>
  * The chance is spent on the CORRECTION, never on the measurement, and that distinction is the
@@ -187,13 +187,34 @@ function realignColdLoad(offset: number): void {
     return;
   }
   const top = target.getBoundingClientRect().top;
-  if (top < 0 || top >= offset) {
+  if (top <= -SubPixel || top >= offset) {
     bookRecheck();
     return;
   }
   coldLoadHandled = true;
   target.scrollIntoView();
 }
+
+/**
+ * How far ABOVE the top a target can sit and still be exactly where the jump left it.
+ *
+ * <para>
+ * A layout position is fractional (Chrome lays out in 1/64 of a pixel) and a scroll offset is whole
+ * device pixels, so a jump to a target lands it within a pixel of the top, on either side, and which
+ * side depends only on how the fraction rounds. A band that starts at 0 is a coin toss on that
+ * fraction. Measured on a live site, warm: the target's document top was 2471.796875, the jump
+ * scrolled to 2472, and the target sat at -0.203125, behind the header. Every frame of the watch saw
+ * it there, out of a band that started at 0, and booked another, until the window retired with the
+ * page still wrong. The same page cold was corrected at 64.796875, inside the band, which is why
+ * only the warm column failed.
+ * </para>
+ *
+ * <para>
+ * A reader a whole pixel or more past the target is somewhere the jump did not put them, and stays
+ * where they are.
+ * </para>
+ */
+const SubPixel = 1;
 
 /**
  * How many frames the correction keeps watching once the document has completed AND THE PAGE HAS

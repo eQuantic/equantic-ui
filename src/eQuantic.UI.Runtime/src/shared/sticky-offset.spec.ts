@@ -567,6 +567,60 @@ describe('the first measurement corrects a cold load that landed under the chrom
     bar.remove();
   });
 
+  /**
+   * A jump lands within a pixel of the top, on EITHER side.
+   *
+   * <para>
+   * Layout is fractional and scrolling is whole pixels, so the target of a jump sits a fraction of a
+   * pixel off the top, and the sign of that fraction depends only on how the layout above it rounds.
+   * Measured on a live site, warm: document top 2471.796875, the jump scrolled to 2472, and the
+   * target sat at -0.203125. A band that started at 0 refused it on every frame of the watch, and
+   * the page stayed behind the header. Every case above lands the target at a whole 0, which is why
+   * this suite stayed green.
+   * </para>
+   */
+  it('corrects a target the jump left a fraction of a pixel ABOVE the top', () => {
+    loaded();
+    const bar = chrome(65);
+    const target = bookmark('liability', -0.203125);
+    window.history.replaceState(null, '', '/probe#liability');
+
+    publishAnchorOffset();
+
+    expect(target.seen()).toBe(1);
+    bar.remove();
+  });
+
+  /** The same fraction, met by the frame window rather than by the measurement. */
+  it('corrects that target from the frame window when the jump comes after the measurement', () => {
+    loaded();
+    const bar = chrome(65);
+    const target = bookmark('liability', 3992);
+    window.history.replaceState(null, '', '/probe#liability');
+
+    publishAnchorOffset();
+    frame(2);
+    target.moveTo(-0.203125);
+    frame();
+
+    expect(target.seen()).toBe(1);
+    bar.remove();
+  });
+
+  /** The band's new edge is a pixel, not a reader: one a whole pixel past the target stays put. */
+  it('leaves a reader a whole pixel past the target alone', () => {
+    loaded();
+    const bar = chrome(65);
+    const target = bookmark('liability', -1);
+    window.history.replaceState(null, '', '/probe#liability');
+
+    publishAnchorOffset();
+    frame(25);
+
+    expect(target.seen()).toBe(0);
+    bar.remove();
+  });
+
   /** And the window is long enough to be worth having: a jump several frames out is still caught. */
   it('is still watching several frames after the document completed', () => {
     loaded();
