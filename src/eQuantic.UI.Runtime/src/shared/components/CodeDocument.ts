@@ -22,7 +22,7 @@ export class CodeDocument {
     }
 
     get text(): string {
-        return this._lines.join('\n');
+        return $eq.text.join('\n', this._lines);
     }
 
     get length(): number {

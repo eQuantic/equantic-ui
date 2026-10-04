@@ -1,4 +1,4 @@
-import { CellRef, SheetDocument, SheetRange } from "../runtime-exports";
+import { $eq, CellRef, SheetDocument, SheetRange } from "../runtime-exports";
 
 export class TsvCodec {
     static serialize(document: SheetDocument, range: SheetRange) {
@@ -6,9 +6,9 @@ export class TsvCodec {
         for (let row = range.topRow; row <= range.bottomRow; row++) {
             let cells: string[] = [];
             for (let col = range.leftCol; col <= range.rightCol; col++) cells.push(TsvCodec.escape(document.getCell(new CellRef(row, col))));
-            rows.push(cells.join('\t'));
+            rows.push($eq.text.join('\t', cells));
         }
-        return rows.join('\n');
+        return $eq.text.join('\n', rows);
     }
 
     static escape(value: string) {
