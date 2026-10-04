@@ -180,4 +180,27 @@ public class DictionaryEnumerationConformanceTests
         Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
         ConformanceRunner.AssertStatementsSameAsDotNet(statements);
     }
+
+    /// <summary>
+    /// A dictionary built with a comparer that asks for what the lowering already does builds, and
+    /// answers as .NET's (#577). Since #443 every constructor with a comparer parameter was EQ1004, so
+    /// <c>new(StringComparer.Ordinal) { [k] = v }</c>, the default for a string key, stopped a site's
+    /// build that 0.2.0-preview.59 had built. A sorted one keeps the order its comparer asks for: the
+    /// code-unit order for <c>StringComparer.Ordinal</c>, the culture's for the default.
+    /// </summary>
+    [SkippableTheory]
+    [InlineData("Dictionary<string, int> d = new(StringComparer.Ordinal) { [\"b\"] = 1, [\"a\"] = 2 }; var r = \"\"; foreach (var k in d.Keys) r += \",\" + k; return r + \"|\" + d[\"a\"] + \"|\" + d.ContainsKey(\"A\");")] // ",b,a|2|False"
+    [InlineData("var d = new Dictionary<string, int>(StringComparer.Ordinal); d[\"x\"] = 1; d[\"X\"] = 2; return d.Count + \"|\" + d[\"x\"];")] // "2|1"
+    [InlineData("var source = new Dictionary<string, int> { [\"a\"] = 1, [\"b\"] = 2 }; var d = new Dictionary<string, int>(source, StringComparer.Ordinal); source[\"c\"] = 3; return d.Count + \"|\" + d[\"b\"];")] // "2|2"
+    [InlineData("var d = new Dictionary<string, int>(4, StringComparer.Ordinal) { [\"a\"] = 1 }; return d.Count + \"|\" + d[\"a\"];")] // "1|1"
+    [InlineData("var d = new Dictionary<string, int>(EqualityComparer<string>.Default) { [\"a\"] = 1 }; return d[\"a\"].ToString();")] // "1"
+    [InlineData("Dictionary<string, (string Kind, int Level)> d = new(StringComparer.Ordinal) { [\"x\"] = (\"full\", 1) }; return d[\"x\"].Kind + d[\"x\"].Level;")] // "full1"
+    [InlineData("var d = new SortedDictionary<string, int>(StringComparer.Ordinal) { [\"b\"] = 1, [\"B\"] = 2, [\"a\"] = 3 }; var r = \"\"; foreach (var k in d.Keys) r += \",\" + k; return r;")] // ",B,a,b"
+    [InlineData("var d = new SortedList<string, int>(StringComparer.Ordinal) { [\"b\"] = 1, [\"B\"] = 2, [\"a\"] = 3 }; var r = \"\"; foreach (var k in d.Keys) r += \",\" + k; return r;")] // ",B,a,b"
+    [InlineData("var d = new SortedDictionary<string, int>(Comparer<string>.Default) { [\"b\"] = 1, [\"B\"] = 2, [\"a\"] = 3 }; var r = \"\"; foreach (var k in d.Keys) r += \",\" + k; return r;")] // ",a,b,B"
+    public void ADictionaryBuiltWithTheDefaultComparer_MatchesDotNet(string statements)
+    {
+        Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
+        ConformanceRunner.AssertStatementsSameAsDotNet(statements);
+    }
 }

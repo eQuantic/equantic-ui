@@ -3,6 +3,8 @@ using System.Linq;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using Microsoft.CodeAnalysis.Operations;
+using eQuantic.UI.Compiler.CodeGen.Extensions;
 using eQuantic.UI.Compiler.CodeGen.Ir;
 using eQuantic.UI.Compiler.CodeGen.Strategies.Linq;
 
@@ -25,8 +27,10 @@ namespace eQuantic.UI.Compiler.CodeGen.Strategies.Types;
 /// A key is found as <c>EqualityComparer&lt;TKey&gt;.Default</c> finds it, which eqc decides from the
 /// key type (<see cref="KeyEquality"/>), the factory's second argument: by identity, through the
 /// class's JavaScript Map, by value, through <c>$eq.equals</c>, or, where the key type does not decide,
-/// by the key's own equality, which the runtime asks the value for. A comparer has no form here and
-/// is refused.
+/// by the key's own equality, which the runtime asks the value for. A comparer is not this strategy's
+/// to judge: the fence every creation passes (<see cref="CollectionComparerExtensions"/>,
+/// EQ2007) refuses one that changes equality, so a comparer that reaches the construction asks for
+/// what the lowering already does, and a sorted dictionary keeps the order it asks for.
 /// </para>
 /// <para>
 /// Where the model cannot be asked (<see cref="ConversionContext.CanGuess"/>), a creation is known
@@ -168,41 +172,64 @@ internal sealed class DictionaryStrategy : IExpressionIrStrategy
     /// <summary>
     /// <c>new Dictionary&lt;K, V&gt;(…) { … }</c>: the factory, seeded by the dictionary or the pairs the
     /// constructor copies, and then the initializer's entries, one call each. A capacity has no meaning
-    /// here, and a comparer has no form.
+    /// here. A comparer is never the seed: the fence has judged it (see the type's summary), and a
+    /// sorted dictionary takes the order it asks for (<see cref="CollectionComparerExtensions.OrderingAskedFor"/>),
+    /// the code-unit order for <c>StringComparer.Ordinal</c>.
     /// </summary>
+    /// <remarks>
+    /// #443 refused every constructor with a comparer PARAMETER, whatever its argument, so
+    /// <c>new Dictionary&lt;string, T&gt;(StringComparer.Ordinal)</c>, which is the default for a string
+    /// key, failed the build with EQ1004 where 0.2.0-preview.59 built it (#577, met by a site
+    /// upgrading to 0.2.0-preview.60). That was a second, stricter copy of the fence, the shape the
+    /// fence's own documentation says a copy takes.
+    /// </remarks>
     private static JsExpr Construction(BaseObjectCreationExpressionSyntax creation, ConversionContext context)
     {
         var type = context.SemanticHelper.GetType(creation);
-        var constructor = context.SemanticHelper.GetSymbol(creation) as IMethodSymbol;
-        if (constructor?.Parameters.Any(parameter => parameter.Type.Name is "IEqualityComparer" or "IComparer") == true)
-            return context.Unhandled(creation, $"{type?.Name} with a comparer");
-
         context.UsedHelpers.Add(Eq.Import);
         JsExpr? source = null;
-        var arguments = creation.ArgumentList?.Arguments ?? default;
-        for (var i = 0; i < arguments.Count; i++)
+        string? ordering = null;
+
+        if (context.SemanticHelper.GetOperation(creation) is IObjectCreationOperation operation)
         {
-            // A capacity: an int parameter, or a number where no model says which parameter it fills.
-            if (constructor?.Parameters.ElementAtOrDefault(i)?.Type.SpecialType == SpecialType.System_Int32
-                || (constructor is null && arguments[i].Expression.IsKind(SyntaxKind.NumericLiteralExpression)))
-                continue;
-            source = context.Converter.ConvertIr(arguments[i].Expression);
+            var key = type is INamedTypeSymbol { TypeArguments: [var keyType, _] } ? keyType : null;
+            foreach (var argument in operation.Arguments)
+            {
+                if (argument.ArgumentKind == ArgumentKind.DefaultValue) continue;
+                var parameter = argument.Parameter?.Type;
+                if (parameter?.SpecialType == SpecialType.System_Int32) continue;
+                if (parameter?.Name is "IEqualityComparer" or "IComparer")
+                {
+                    if (key is not null) ordering = argument.Value.OrderingAskedFor(key);
+                    continue;
+                }
+                source = context.Converter.ConvertIr((ExpressionSyntax)argument.Value.Syntax);
+            }
+        }
+        else
+        {
+            // No model to ask which parameter an argument fills: a number is a capacity.
+            foreach (var argument in creation.ArgumentList?.Arguments ?? default)
+            {
+                if (argument.Expression.IsKind(SyntaxKind.NumericLiteralExpression)) continue;
+                source = context.Converter.ConvertIr(argument.Expression);
+            }
         }
 
-        return Initialized(Factory(FactoryOf(creation, context)!, type, source), creation.Initializer, context);
+        return Initialized(Factory(FactoryOf(creation, context)!, type, source, ordering), creation.Initializer, context);
     }
 
     /// <summary><c>factory(seed)</c>, and <c>factory(seed, equality)</c> when the keys are not found by
     /// identity (<see cref="KeyEquality"/>), or <c>factory(seed, ordering)</c> for a sorted one, whose
-    /// keys keep their type's order (<see cref="ValueOrdering"/>) rather than the one <c>&lt;</c> gives.</summary>
-    private static JsExpr Factory(string factory, ITypeSymbol? type, JsExpr? seed)
+    /// keys keep their type's order (<see cref="ValueOrdering"/>) rather than the one <c>&lt;</c> gives,
+    /// or the order its comparer asked for (<paramref name="asked"/>).</summary>
+    private static JsExpr Factory(string factory, ITypeSymbol? type, JsExpr? seed, string? asked = null)
     {
         var arguments = new List<JsExpr>();
         var key = type is INamedTypeSymbol { TypeArguments: [var keyType, _] } ? keyType : null;
         var second = key is null ? null
             : factory == Eq.Dictionary ? KeyEquality(key)
-            : ValueOrdering.Of(key) is { } ordering ? ordering
-            : null;
+            : asked ?? ValueOrdering.Of(key);
         if (seed is not null) arguments.Add(seed);
         else if (second is not null) arguments.Add(JsExpr.Literal("null"));
         if (second is not null) arguments.Add(JsExpr.Literal(second));
