@@ -458,7 +458,7 @@ public class BinaryExpressionStrategy : IExpressionIrStrategy
         };
     }
 
-    private static string? ConvertDateTimeOrTimeSpan(string left, string right, string op, ITypeSymbol? lt, ITypeSymbol? rt)
+    internal static string? ConvertDateTimeOrTimeSpan(string left, string right, string op, ITypeSymbol? lt, ITypeSymbol? rt)
     {
         const string dt = "System.DateTime";
         const string ts = "System.TimeSpan";
@@ -480,17 +480,17 @@ public class BinaryExpressionStrategy : IExpressionIrStrategy
             };
         }
 
+        // The operators name their parameter `t`, which a date leaving the calendar reports, where
+        // `Add` and `Subtract` name it `value`.
         if (lDt && rTs)
         {
             return op switch
             {
-                "+" => $"{left}.add({right})",
-                "-" => $"{left}.subtract({right})",
+                "+" => $"{left}.add({right}, 't')",
+                "-" => $"{left}.subtract({right}, 't')",
                 _ => null,
             };
         }
-
-        if (lTs && rDt && op == "+") return $"{right}.add({left})"; // TimeSpan + DateTime (commutative)
 
         // DateTimeOffset: like DateTime — DTO - DTO -> TimeSpan, DTO ± TimeSpan -> DTO, comparisons by instant.
         bool lDto = lt.IsNamed("System.DateTimeOffset"), rDto = rt.IsNamed("System.DateTimeOffset");
@@ -510,7 +510,7 @@ public class BinaryExpressionStrategy : IExpressionIrStrategy
         }
         if (lDto && rTs)
         {
-            return op switch { "+" => $"{left}.add({right})", "-" => $"{left}.subtract({right})", _ => null };
+            return op switch { "+" => $"{left}.add({right}, 't')", "-" => $"{left}.subtract({right}, 't')", _ => null };
         }
 
         // DateOnly/TimeOnly: comparisons + equality (no operator arithmetic modelled here).

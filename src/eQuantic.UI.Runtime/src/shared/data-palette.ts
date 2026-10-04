@@ -13,6 +13,7 @@
  * nothing audits it, here or on the server.
  */
 import type { ColorToken } from './value-types';
+import { hashesByValue } from '../utils/hash';
 
 /** C# `DivergingScale`: two poles that read as opposite, and a midpoint that reads as nothing. */
 export class DivergingScale {
@@ -69,3 +70,11 @@ export class DataPalette {
     return this.series[index];
   }
 }
+
+/** The twins of the vocabulary's records and structs: each hashes by its members, as `equals`
+ * compares it (`ValueTwinHashTests` holds this list to the C#). */
+hashesByValue(
+  DivergingScale,
+  StatusScale,
+  DataPalette,
+);

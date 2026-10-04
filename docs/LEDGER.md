@@ -1136,6 +1136,23 @@ record of a release, the wiki's Upgrading page is the distillate.
   stops the client of every page ([#526](https://github.com/eQuantic/equantic-ui/issues/526)).
   Proposed and archived through OpenSpec (`openspec/specs/transpiler-expressions`,
   `openspec/specs/transpiler-source-maps`).
+- **2026-10-03 · A value hashes as it equals**: `x.GetHashCode()` was a call of a `getHashCode` nothing
+  defines, for a string, a number and a record alike, and threw in the browser, and `HashCode.Combine`
+  named a class nothing defines ([#519](https://github.com/eQuantic/equantic-ui/issues/519)). The
+  runtime's hash (`$eq.hash`) agrees with `$eq.equals` case by case, so values `Equals` finds equal
+  hash equal, a decimal of any scale and a date by its ticks included; a record's and a struct's
+  twin carry a `getHashCode` written from the members their `equals` reads, a type that overrides
+  `GetHashCode` answers its own, and a class that does not is hashed by its identity. .NET's own
+  numbers are not stable across processes, so the browser keeps the contract and never the server's
+  number. A Guid made from text is its canonical text, the lowercase `D` format, so two spellings
+  of one Guid are one value to `==`, a dictionary and a set
+  ([#459](https://github.com/eQuantic/equantic-ui/issues/459)), and a date leaving the calendar is
+  refused in .NET's words, the operators naming their own parameter, where the twin built the invalid
+  date without a word and `d -= span` subtracted two objects into NaN
+  ([#424](https://github.com/eQuantic/equantic-ui/issues/424)). The hash strategy was written and not
+  registered, and the conformance suite caught it: `StrategyRegistrationTests` now fails for any
+  strategy the converter does not register. Proposed and archived through OpenSpec
+  (`openspec/specs/transpiler-bcl`).
 - **2026-10-03 · A string's own search compares as .NET does**: a string's methods that take a
   `StringComparison` read it from its spelling and lower-cased both sides
   ([#528](https://github.com/eQuantic/equantic-ui/issues/528)): the Kelvin sign matched a k under
