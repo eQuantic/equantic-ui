@@ -81,6 +81,16 @@ public class IdentifierStrategy : IExpressionIrStrategy
                     // A method GROUP names the symbol without calling it — `Func<…> f = Usable` emits
                     // `FaceName.usable` just as a call would, and fails at hydration just as hard.
                     symbol.ReportIfHostOnly(identifier, context);
+
+                    // An enum's member reached bare (`using static`) is the member, as its qualified
+                    // spelling is: it was `Level.high`, a member of a class nothing defines (#485).
+                    if (!isMemberName && symbol is IFieldSymbol { ContainingType.TypeKind: TypeKind.Enum } enumMember)
+                        return JsExpr.Literal(Types.EnumStrategy.MemberLiteral(enumMember));
+
+                    // A .NET type's member reached bare that no strategy claimed has no translation:
+                    // the class-static rule below is for the types the transpiler EMITS (#485).
+                    if (!isMemberName && symbol.ReportIfPlatformReachedBare(identifier, context))
+                        return JsExpr.Literal("undefined");
                     return isMemberName
                         ? JsExpr.Identifier(name.ToCamelCase())
                         : JsExpr.Member(JsExpr.Identifier(symbol.ContainingType.Name), name.ToCamelCase());
