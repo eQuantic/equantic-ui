@@ -9,6 +9,7 @@
 import { round as dotnetRound } from '../utils/dotnet-math';
 import type { ColorValue, SizeKindValue, TypeStyleValue } from './nodes';
 import type { DataPalette } from './data-palette';
+import { hashesByValue } from '../utils/hash';
 
 /**
  * Companion of the C# `Color` struct — the statics transpiled code references. The surface must
@@ -567,3 +568,19 @@ export function isWellFormedFace(family: string | null | undefined): family is s
 export const FaceName = {
   isWellFormed: isWellFormedFace,
 };
+
+/** The twins of the vocabulary's records and structs: each hashes by its members, as `equals`
+ * compares it (`ValueTwinHashTests` holds this list to the C#). */
+hashesByValue(
+  ColorToken,
+  SizeValue,
+  WebContent,
+  EdgeInsets,
+  Point,
+  Size,
+  Rect,
+  Transform2D,
+  CornerRadii,
+  TypeStyle,
+  VariantColors,
+);

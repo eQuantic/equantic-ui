@@ -376,6 +376,26 @@ public class RecordTypeEmitter
             sb.Append(string.Join(", ", members.Select(m => $"('{m.Js}' in patch ? patch.{m.Js} : this.{m.Js})")));
             sb.Append("); } ");
 
+            // getHashCode: the members `equals` reads, combined, as the record's synthesized GetHashCode
+            // and a struct's ValueType.GetHashCode hash them, so two values `equals` finds equal hash
+            // alike by construction (#519). One the app wrote OVERRIDING it is its own, emitted with
+            // its methods: a static one, or one that hides it, leaves the synthesized one in place, as
+            // .NET does. A record derived from a record of this compilation combines its base's hash
+            // first, which is the base's own override where it wrote one, as .NET's synthesized hash
+            // calls it.
+            if (!type.Members.OfType<MethodDeclarationSyntax>().Any(method =>
+                    method is { Identifier.Text: "GetHashCode", ParameterList.Parameters.Count: 0 }
+                    && method.Modifiers.Any(modifier => modifier.IsKind(SyntaxKind.OverrideKeyword))))
+            {
+                var hashed = members.Select(m => $"this.{m.Js}");
+                if (ModelFor(type)?.GetDeclaredSymbol(type) is INamedTypeSymbol { BaseType: { IsRecord: true } baseRecord }
+                    && baseRecord.Locations.Any(location => location.IsInSource))
+                    hashed = hashed.Prepend("super.getHashCode()");
+                sb.Append(tsTypeDeclarations ? "getHashCode(): number { return $eq.hash.combine(" : "getHashCode() { return $eq.hash.combine(")
+                    .Append(string.Join(", ", hashed))
+                    .Append("); } ");
+            }
+
             // The twin's own TYPED BOUNDARY: which members hydrate off the wire, and as what —
             // `$eq.hydrate` rebuilds a payload object on this prototype and coerces by this map.
             if (ModelFor(type)?.GetDeclaredSymbol(type) is INamedTypeSymbol symbol

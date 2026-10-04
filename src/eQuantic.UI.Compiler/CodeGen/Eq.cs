@@ -262,6 +262,35 @@ public static class Eq
     /// warning travelling to everyone who builds this assembly.</summary>
     public new const string Equals = "$eq.equals";
 
+    /// <summary><c>GetHashCode()</c> by .NET's contract: values <see cref="Equals"/> finds equal hash
+    /// equal, and a value with its own <c>getHashCode</c> answers it.</summary>
+    public const string Hash = "$eq.hash.of";
+
+    /// <summary>An instance <c>GetHashCode()</c> on a receiver that may be null: its hash, and the
+    /// refusal .NET's <c>NullReferenceException</c> is where it is null.</summary>
+    public const string HashInstance = "$eq.hash.instance";
+
+    /// <summary>The method group <c>value.GetHashCode</c>: a delegate over the receiver, refused where
+    /// the delegate is made when the receiver is null; a second argument of <c>true</c> hashes an
+    /// array's identity.</summary>
+    public const string HashGroup = "$eq.hash.group";
+
+    /// <summary><c>HashCode.Combine(…)</c>: the values' hashes, combined in order.</summary>
+    public const string HashCombine = "$eq.hash.combine";
+
+    /// <summary><c>object.GetHashCode()</c> for a class that does not override it: its identity's.</summary>
+    public const string HashIdentity = "$eq.hash.identity";
+
+    /// <summary><c>ValueType.GetHashCode()</c>, a struct's members, which its override reaches through
+    /// <c>base</c> without calling itself back.</summary>
+    public const string HashFields = "$eq.hash.fields";
+
+    /// <summary><c>Guid.Parse</c> and <c>new Guid(string)</c>: the canonical text, or .NET's refusal.</summary>
+    public const string GuidParse = "$eq.guid.parse";
+
+    /// <summary><c>Guid.TryParse</c>: the canonical text, or undefined where .NET answers false.</summary>
+    public const string GuidTryParse = "$eq.guid.tryParse";
+
     /// <summary><c>new object()</c>: an identity of its own, which a plain <c>{}</c> is not here, being
     /// an anonymous type compared by its members.</summary>
     public const string NewObject = "$eq.newObject";
