@@ -273,8 +273,10 @@ public class RealWorldUITests
         var result = TestHelper.ConvertCodeBlock(code);
 
         result.Should().Contain("some");
-        result.Should().Contain("sort");
-        result.Should().Contain("find");
+        // A sort and a find answer as .NET's (#488): its introspective sort, and the element type's
+        // default where nothing matches.
+        result.Should().Contain("$eq.collections.arraySortBy(itemArray, (a, b) => a.priority - b.priority");
+        result.Should().Contain("$eq.collections.arrayFind(itemArray, (x) => x.priority > 5, null)");
     }
 
     // ============ Complex Conditional Logic ============

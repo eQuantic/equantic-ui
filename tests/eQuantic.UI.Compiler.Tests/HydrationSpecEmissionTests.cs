@@ -272,7 +272,8 @@ public class HydrationSpecEmissionTests
         var map = page.TypeScript.Substring(page.TypeScript.IndexOf("$hydration"));
         Assert.Contains("_roles: { collection: 'set', of: null }", map);
         Assert.Contains("_ids: { collection: 'set', of: 'long' }", map);
-        Assert.Contains("_days: { collection: 'set', of: 'dateTime' }", map);
+        // A set finds its elements as its element type's default comparer does: a date by value (#531).
+        Assert.Contains("_days: { collection: 'set', of: 'dateTime', byValue: true }", map);
         Assert.Contains("_stack: { collection: 'stack', of: null }", map);
         Assert.Contains("_queue: { collection: 'queue', of: 'decimal' }", map);
         Assert.Contains("_list: { collection: 'linkedList', of: null }", map);
