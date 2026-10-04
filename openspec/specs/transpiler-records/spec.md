@@ -258,10 +258,10 @@ own without chaining, naming that constructor.
 ### Requirement: A record compares and prints as .NET does
 
 A record's equality SHALL compare its runtime type, what its base compares, and every instance field
-it declares, a private one and a property's store included. Its text SHALL be what .NET's
-`PrintMembers` writes: its base's members first, then the properties its positional parameters make,
-then its public fields and readable public properties in declaration order, a computed one included,
-each once, and `Name { }` for a record with none.
+it declares, a private one and a property's store included. Its text SHALL name the members .NET's
+`PrintMembers` writes, in its order: its base's members first, then the properties its positional
+parameters make, then its public fields and readable public properties in declaration order, a
+computed one included, each once, and `Name { }` for a record with none.
 
 #### Scenario: A derived record against its base
 
