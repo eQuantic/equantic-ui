@@ -31,7 +31,7 @@ public class TypeIsNamedTests
     {
         var tree = CSharpSyntaxTree.ParseText($"#nullable enable\nclass C {{ void M({parameter}) {{ }} }}");
         var compilation = CSharpCompilation.Create("IsNamed", [tree],
-            [MetadataReference.CreateFromFile(typeof(object).Assembly.Location)]);
+            [TestReferences.Of(typeof(object))]);
         var declared = tree.GetRoot().DescendantNodes().OfType<ParameterSyntax>().Single();
         return compilation.GetSemanticModel(tree).GetDeclaredSymbol(declared)!.Type;
     }

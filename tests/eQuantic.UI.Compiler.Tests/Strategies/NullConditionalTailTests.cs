@@ -57,12 +57,11 @@ public class NullConditionalTailTests
         return (converter.Convert(run.Body!), converter.Diagnostics.ToList());
     }
 
-    /// <summary>Read once for the class: each compilation re-reading the framework is what took the
-    /// suite's host to tens of gigabytes (#481).</summary>
+    /// <summary>The framework, through the one owner of the test process's references (#549).</summary>
     private static readonly Lazy<MetadataReference[]> References = new(() =>
         ((string)AppContext.GetData("TRUSTED_PLATFORM_ASSEMBLIES")!)
             .Split(Path.PathSeparator)
             .Where(path => path.EndsWith(".dll", StringComparison.OrdinalIgnoreCase))
-            .Select(path => (MetadataReference)MetadataReference.CreateFromFile(path))
+            .Select(TestReferences.Of)
             .ToArray());
 }
