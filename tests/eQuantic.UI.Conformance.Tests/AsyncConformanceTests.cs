@@ -86,4 +86,29 @@ public class AsyncConformanceTests
         Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
         ConformanceRunner.AssertStatementsSameAsDotNet(program);
     }
+
+    /// <summary>
+    /// A null-conditional call whose translation is a helper was wrapped in an arrow that binds the
+    /// receiver once, and an argument that awaits was inside a plain one: a module JavaScript
+    /// refuses to parse (#536). Both receiver states, the count of the awaited calls, which a null
+    /// receiver skips, and WHEN the method goes on: with a null receiver C# runs no await, so the
+    /// method finishes before it returns to its caller, which an async arrow awaited did not. The
+    /// same read behind a receiver that is not null has no case: there .NET runs the continuation of
+    /// the yield on another thread, which races the read and answers either way.
+    /// </summary>
+    [SkippableTheory]
+    [InlineData("string s = \"abc\"; var calls = 0; async Task<string> Needle() { calls++; await Task.Yield(); return \"a\"; } "
+        + "var r = s?.StartsWith(await Needle(), StringComparison.Ordinal); return (r == true ? \"yes\" : r == false ? \"no\" : \"null\") + calls;")] // yes1
+    [InlineData("string s = null; var calls = 0; async Task<string> Needle() { calls++; await Task.Yield(); return \"a\"; } "
+        + "var r = s?.StartsWith(await Needle(), StringComparison.Ordinal); return (r == true ? \"yes\" : r == false ? \"no\" : \"null\") + calls;")] // null0
+    [InlineData("string s = \"abc\"; async Task<int> One() { await Task.Yield(); return 1; } return s?.Substring(await One()) ?? \"null\";")] // bc
+    [InlineData("string s = null; async Task<int> One() { await Task.Yield(); return 1; } return s?.Substring(await One()) ?? \"null\";")] // null
+    [InlineData("string s = null; var finished = false; async Task<string> Needle() { await Task.Yield(); return \"a\"; } "
+        + "async Task Run() { var r = s?.StartsWith(await Needle(), StringComparison.Ordinal); finished = true; } "
+        + "var t = Run(); var seen = finished; await t; return $\"{seen} {finished}\";")] // True True: no await ran
+    public void AnAwaitBehindANullConditionalHelper_RunsAsTheGuardSays(string program)
+    {
+        Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
+        ConformanceRunner.AssertStatementsSameAsDotNet(program);
+    }
 }
