@@ -1,16 +1,31 @@
 import { $eq, MermaidEdge, MermaidEdgeRef, MermaidGraph, MermaidMessage, MermaidNode, MermaidNodeRef } from "../runtime-exports";
 
 export class MermaidParser {
-    static _skipWords: string[] | undefined;
+    static $slots: any = null;
 
-    static get skipWords(): string[] {
-        return MermaidParser._skipWords ??= ['subgraph', 'end', 'style', 'classDef', 'class', 'click', 'linkStyle', 'direction'];
+    static $init(): any {
+        if (MermaidParser.$slots === null) {
+            const slots: any = MermaidParser.$slots = { skipWords: null, messageArrows: null };
+            slots.skipWords = ['subgraph', 'end', 'style', 'classDef', 'class', 'click', 'linkStyle', 'direction'];
+            slots.messageArrows = ['-->>', '->>', '-->', '->'];
+        }
+        return MermaidParser.$slots;
     }
 
-    static _messageArrows: string[] | undefined;
+    static get skipWords(): string[] {
+        return MermaidParser.$init().skipWords;
+    }
+
+    static set skipWords(value: string[]) {
+        MermaidParser.$init().skipWords = value;
+    }
 
     static get messageArrows(): string[] {
-        return MermaidParser._messageArrows ??= ['-->>', '->>', '-->', '->'];
+        return MermaidParser.$init().messageArrows;
+    }
+
+    static set messageArrows(value: string[]) {
+        MermaidParser.$init().messageArrows = value;
     }
 
     static parse(source: string) {

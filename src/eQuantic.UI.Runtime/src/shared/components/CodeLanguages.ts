@@ -1,46 +1,76 @@
 import { $eq, CSharpLanguage, JsonLanguage, PlainTextLanguage, PythonLanguage, TypeScriptLanguage, XmlLanguage } from "../runtime-exports";
 
 export class CodeLanguages {
-    static _cSharp: any | undefined;
+    static $slots: any = null;
+
+    static $init(): any {
+        if (CodeLanguages.$slots === null) {
+            const slots: any = CodeLanguages.$slots = { cSharp: null, typeScript: null, python: null, json: null, xml: null, plainText: null, known: null };
+            slots.cSharp = new CSharpLanguage();
+            slots.typeScript = new TypeScriptLanguage();
+            slots.python = new PythonLanguage();
+            slots.json = new JsonLanguage();
+            slots.xml = new XmlLanguage();
+            slots.plainText = new PlainTextLanguage();
+            slots.known = $eq.collections.dictionary([['c#', CodeLanguages.cSharp], ['csharp', CodeLanguages.cSharp], ['cs', CodeLanguages.cSharp], ['typescript', CodeLanguages.typeScript], ['ts', CodeLanguages.typeScript], ['javascript', CodeLanguages.typeScript], ['js', CodeLanguages.typeScript], ['tsx', CodeLanguages.typeScript], ['jsx', CodeLanguages.typeScript], ['python', CodeLanguages.python], ['py', CodeLanguages.python], ['json', CodeLanguages.json], ['xml', CodeLanguages.xml], ['csproj', CodeLanguages.xml], ['html', CodeLanguages.xml], ['plist', CodeLanguages.xml], ['text', CodeLanguages.plainText], ['txt', CodeLanguages.plainText], ['plain', CodeLanguages.plainText]]);
+        }
+        return CodeLanguages.$slots;
+    }
 
     static get cSharp(): any {
-        return CodeLanguages._cSharp ??= new CSharpLanguage();
+        return CodeLanguages.$init().cSharp;
     }
 
-    static _typeScript: any | undefined;
+    static set cSharp(value: any) {
+        CodeLanguages.$init().cSharp = value;
+    }
 
     static get typeScript(): any {
-        return CodeLanguages._typeScript ??= new TypeScriptLanguage();
+        return CodeLanguages.$init().typeScript;
     }
 
-    static _python: any | undefined;
+    static set typeScript(value: any) {
+        CodeLanguages.$init().typeScript = value;
+    }
 
     static get python(): any {
-        return CodeLanguages._python ??= new PythonLanguage();
+        return CodeLanguages.$init().python;
     }
 
-    static _json: any | undefined;
+    static set python(value: any) {
+        CodeLanguages.$init().python = value;
+    }
 
     static get json(): any {
-        return CodeLanguages._json ??= new JsonLanguage();
+        return CodeLanguages.$init().json;
     }
 
-    static _xml: any | undefined;
+    static set json(value: any) {
+        CodeLanguages.$init().json = value;
+    }
 
     static get xml(): any {
-        return CodeLanguages._xml ??= new XmlLanguage();
+        return CodeLanguages.$init().xml;
     }
 
-    static _plainText: any | undefined;
+    static set xml(value: any) {
+        CodeLanguages.$init().xml = value;
+    }
 
     static get plainText(): any {
-        return CodeLanguages._plainText ??= new PlainTextLanguage();
+        return CodeLanguages.$init().plainText;
     }
 
-    static _known: any | undefined;
+    static set plainText(value: any) {
+        CodeLanguages.$init().plainText = value;
+    }
 
     static get known(): any {
-        return CodeLanguages._known ??= $eq.collections.dictionary([['c#', CodeLanguages.cSharp], ['csharp', CodeLanguages.cSharp], ['cs', CodeLanguages.cSharp], ['typescript', CodeLanguages.typeScript], ['ts', CodeLanguages.typeScript], ['javascript', CodeLanguages.typeScript], ['js', CodeLanguages.typeScript], ['tsx', CodeLanguages.typeScript], ['jsx', CodeLanguages.typeScript], ['python', CodeLanguages.python], ['py', CodeLanguages.python], ['json', CodeLanguages.json], ['xml', CodeLanguages.xml], ['csproj', CodeLanguages.xml], ['html', CodeLanguages.xml], ['plist', CodeLanguages.xml], ['text', CodeLanguages.plainText], ['txt', CodeLanguages.plainText], ['plain', CodeLanguages.plainText]]);
+        return CodeLanguages.$init().known;
+    }
+
+    static set known(value: any) {
+        CodeLanguages.$init().known = value;
     }
 
     static register(name: string, language: any) {

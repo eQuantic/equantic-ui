@@ -540,14 +540,10 @@ public class ObjectCreationStrategy : IConversionStrategy
     /// namespace it transpiles whole into the runtime. Its constructor is the C# constructor and its
     /// methods are the type's; a vocabulary twin is hand-written and takes a trailing config object.
     /// </summary>
-    private static bool TwinIsWritten(ITypeSymbol? type)
-    {
-        if (type is null) return false;
-        var ns = type.ContainingNamespace?.ToDisplayString() ?? string.Empty;
-        return !Services.RuntimeProvidedTypeScanner.IsVocabularyNamespace(ns)
-            && (type.Locations.Any(location => location.IsInSource)
-                || Services.RuntimeProvidedTypeScanner.IsTranspiledNamespace(ns));
-    }
+    private static bool TwinIsWritten(ITypeSymbol? type) =>
+        type is not null
+        && (type.Locations.Any(location => location.IsInSource)
+            || Services.RuntimeProvidedTypeScanner.IsTranspiledNamespace(type.ContainingNamespace?.ToDisplayString() ?? string.Empty));
 
     /// <summary>
     /// A record or a struct built as C# builds it (#413): the constructor the call binds, with its
@@ -567,7 +563,8 @@ public class ObjectCreationStrategy : IConversionStrategy
         // The abstract VOCABULARY (BoxStyle, EdgeInsets, …) is runtime-provided by a HAND-WRITTEN TS
         // twin that takes a trailing CONFIG OBJECT, the shape UI-component classes accept
         // (`new Row(gap, { height: … })`). Positional args pass through.
-        if (Services.RuntimeProvidedTypeScanner.IsVocabularyNamespace(type.ContainingNamespace?.ToDisplayString() ?? string.Empty))
+        if (!TwinIsWritten(type)
+            && Services.RuntimeProvidedTypeScanner.IsVocabularyNamespace(type.ContainingNamespace?.ToDisplayString() ?? string.Empty))
         {
             var parts = new List<string>();
             if (creation.ArgumentList != null)

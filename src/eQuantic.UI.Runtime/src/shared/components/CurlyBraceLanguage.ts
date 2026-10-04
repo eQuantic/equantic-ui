@@ -9,12 +9,6 @@ export abstract class CurlyBraceLanguage {
     static stateBlockComment: number = 1;
     static stateMultilineString: number = 2;
     static stateRawString: number = 16;
-    static _punctuation: Set<string> | undefined;
-
-    static get punctuation(): Set<string> {
-        return CurlyBraceLanguage._punctuation ??= new Set(['(', ')', '[', ']', '{', '}', ',', ';', '.', ':']);
-    }
-
     abstract name: string;
     rules: CodeLanguageRules = CodeLanguageRules.default;
     abstract keywords: Set<string>;
@@ -39,6 +33,24 @@ export abstract class CurlyBraceLanguage {
 
     get hasAtDecorators(): boolean {
         return false;
+    }
+
+    static $slots: any = null;
+
+    static $init(): any {
+        if (CurlyBraceLanguage.$slots === null) {
+            const slots: any = CurlyBraceLanguage.$slots = { punctuation: null };
+            slots.punctuation = new Set(['(', ')', '[', ']', '{', '}', ',', ';', '.', ':']);
+        }
+        return CurlyBraceLanguage.$slots;
+    }
+
+    static get punctuation(): Set<string> {
+        return CurlyBraceLanguage.$init().punctuation;
+    }
+
+    static set punctuation(value: Set<string>) {
+        CurlyBraceLanguage.$init().punctuation = value;
     }
 
     tokenize(line: string, state: number, into: CodeToken[]) {
