@@ -6,6 +6,7 @@
  * the canonical text, and a Guid from the wire arrives in it already, as System.Text.Json writes it.
  */
 
+import { exception } from './exceptions';
 import { isWhiteSpace, trim } from './white-space';
 
 const D = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -43,9 +44,9 @@ function dashed(digits: string): string {
 
 /** `Guid.Parse` and `new Guid(string)`: the canonical text, or .NET's refusal. */
 export function guidParse(text: string | null | undefined): string {
-  if (text == null) throw new Error("Value cannot be null. (Parameter 'input')");
+  if (text == null) throw exception('System.ArgumentNullException', "Value cannot be null. (Parameter 'input')");
   const guid = read(text);
-  if (guid === undefined) throw new Error('Unrecognized Guid format.');
+  if (guid === undefined) throw exception('System.FormatException', 'Unrecognized Guid format.');
   return guid;
 }
 

@@ -23,6 +23,7 @@ import {
 } from './dictionary';
 import { comparerOf, type Ordering } from './ordering';
 import { identityHash } from './hash';
+import { exception } from './exceptions';
 
 /** The order of a collection built with no ordering named: numeric for numbers/bigint, relational otherwise. */
 export function defaultCompare<T>(a: T, b: T): number {
@@ -154,7 +155,7 @@ export class SortedMap<K, V> implements Iterable<Pair<K, V>> {
   add(key: K, value: V): this {
     if (this.has(key)) {
       const named = this.kind === 'list' ? `${keyText(key)} (Parameter 'key')` : `[${keyText(key)}, ${value == null ? '' : keyText(value)}]`;
-      throw new Error(`An item with the same key has already been added. Key: ${named}`);
+      throw exception('System.ArgumentException', `An item with the same key has already been added. Key: ${named}`);
     }
     return this.set(key, value);
   }

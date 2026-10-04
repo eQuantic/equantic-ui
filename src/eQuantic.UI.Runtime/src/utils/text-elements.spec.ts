@@ -1,5 +1,16 @@
 import { describe, it, expect } from 'vitest';
 import { codePointStarts, nextTextElementLength, textElementStarts } from './text-elements';
+import { typesOf } from './exceptions';
+
+/** The .NET type a call throws, the most derived, or undefined where it throws nothing. */
+function thrownType(run: () => unknown): string | undefined {
+  try {
+    run();
+  } catch (error) {
+    return typesOf(error)?.[0];
+  }
+  return undefined;
+}
 
 /**
  * `StringInfo`'s text elements on this side. The conformance suite runs the same cases against
@@ -25,7 +36,7 @@ describe('text elements (StringInfo)', () => {
     expect(nextTextElementLength('e\u0301a', 0)).toBe(2);
     expect(nextTextElementLength('e\u0301a', 2)).toBe(1);
     expect(nextTextElementLength('ab', 2)).toBe(0);
-    expect(() => nextTextElementLength('ab', 3)).toThrow(RangeError);
+    expect(thrownType(() => nextTextElementLength('ab', 3))).toBe('System.ArgumentOutOfRangeException');
   });
 
   it('falls back to code points where the browser has no segmenter, and joins nothing', () => {

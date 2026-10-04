@@ -317,4 +317,34 @@ public static class Eq
     public const string SortedDictionary = "$eq.collections.sortedDictionary";
     /// <summary>Factory for a key-sorted list (<c>SortedList&lt;K, V&gt;</c>).</summary>
     public const string SortedList = "$eq.collections.sortedList";
+
+    /// <summary><c>new T(message)</c> for an exception type: a JavaScript Error carrying T and every type
+    /// it derives from, the most derived first, as T's symbol says. Two args: the chain, the message.</summary>
+    public const string ExceptionCreate = "$eq.exceptions.create";
+
+    /// <summary>An exception of a type the runtime throws itself, by its full name, for a lowering that
+    /// throws on .NET's behalf. Two args: the type, the message.</summary>
+    public const string ExceptionOf = "$eq.exceptions.of";
+
+    /// <summary>Whether a value is of an exception type, by the type's full name: the test a typed
+    /// <c>catch</c>, a type pattern and an <c>as</c> write.</summary>
+    public const string ExceptionIs = "$eq.exceptions.is";
+
+    /// <summary>A <c>throw</c> expression: throws its one argument, which is evaluated where C#
+    /// evaluates the exception, in the caller's own function.</summary>
+    public const string Raise = "$eq.exceptions.raise";
+
+    /// <summary>What a <c>throw</c> statement throws when its exception may be null: the exception, or the
+    /// NullReferenceException the CLR throws in its place.</summary>
+    public const string Thrown = "$eq.exceptions.thrown";
+
+    /// <summary>An exception filter, <c>when (…)</c>: the filter's answer, or false where it throws, as
+    /// .NET answers it. One arg: the filter, as a function.</summary>
+    public const string ExceptionFilter = "$eq.exceptions.filter";
+
+    /// <summary><c>Enumerable.Range(start, count)</c>, its arguments evaluated once.</summary>
+    public const string LinqRange = "$eq.linq.range";
+
+    /// <summary><c>Enumerable.Repeat(element, count)</c>: the one element, count times.</summary>
+    public const string LinqRepeat = "$eq.linq.repeat";
 }

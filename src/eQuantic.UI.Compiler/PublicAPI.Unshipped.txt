@@ -132,6 +132,43 @@ eQuantic.UI.Compiler.CodeGen.Strategies.Types.GuidTypeStrategy.ConvertIr(Microso
 *REMOVED*eQuantic.UI.Compiler.CodeGen.Strategies.Types.GuidTypeStrategy.Convert(Microsoft.CodeAnalysis.SyntaxNode! node, eQuantic.UI.Compiler.CodeGen.ConversionContext! context) -> string!
 const eQuantic.UI.Compiler.CodeGen.Eq.HashFields = "$eq.hash.fields" -> string!
 const eQuantic.UI.Compiler.CodeGen.Eq.HashGroup = "$eq.hash.group" -> string!
+*REMOVED*static eQuantic.UI.Compiler.CodeGen.Ir.JsStatement.Throw(eQuantic.UI.Compiler.CodeGen.Ir.JsExpr? value) -> eQuantic.UI.Compiler.CodeGen.Ir.JsStatement!
+*REMOVED*eQuantic.UI.Compiler.CodeGen.Ir.JsThrow.Deconstruct(out eQuantic.UI.Compiler.CodeGen.Ir.JsExpr? Value) -> void
+*REMOVED*eQuantic.UI.Compiler.CodeGen.Ir.JsThrow.JsThrow(eQuantic.UI.Compiler.CodeGen.Ir.JsExpr? Value) -> void
+*REMOVED*eQuantic.UI.Compiler.CodeGen.Ir.JsThrow.Value.get -> eQuantic.UI.Compiler.CodeGen.Ir.JsExpr?
+*REMOVED*eQuantic.UI.Compiler.CodeGen.Strategies.Expressions.CheckedExpressionStrategy.Convert(Microsoft.CodeAnalysis.SyntaxNode! node, eQuantic.UI.Compiler.CodeGen.ConversionContext! context) -> string!
+*REMOVED*eQuantic.UI.Compiler.CodeGen.Strategies.Expressions.ThrowExpressionStrategy.Convert(Microsoft.CodeAnalysis.SyntaxNode! node, eQuantic.UI.Compiler.CodeGen.ConversionContext! context) -> string!
+*REMOVED*eQuantic.UI.Compiler.CodeGen.Strategies.Linq.EnumerableFactoryStrategy.Convert(Microsoft.CodeAnalysis.SyntaxNode! node, eQuantic.UI.Compiler.CodeGen.ConversionContext! context) -> string!
+const eQuantic.UI.Compiler.CodeGen.Eq.ExceptionCreate = "$eq.exceptions.create" -> string!
+const eQuantic.UI.Compiler.CodeGen.Eq.ExceptionOf = "$eq.exceptions.of" -> string!
+const eQuantic.UI.Compiler.CodeGen.Eq.ExceptionIs = "$eq.exceptions.is" -> string!
+const eQuantic.UI.Compiler.CodeGen.Eq.Raise = "$eq.exceptions.raise" -> string!
+const eQuantic.UI.Compiler.CodeGen.Eq.Thrown = "$eq.exceptions.thrown" -> string!
+const eQuantic.UI.Compiler.CodeGen.Eq.ExceptionFilter = "$eq.exceptions.filter" -> string!
+const eQuantic.UI.Compiler.CodeGen.Eq.LinqRange = "$eq.linq.range" -> string!
+const eQuantic.UI.Compiler.CodeGen.Eq.LinqRepeat = "$eq.linq.repeat" -> string!
+static eQuantic.UI.Compiler.CodeGen.Ir.JsStatement.Throw(eQuantic.UI.Compiler.CodeGen.Ir.JsExpr! value) -> eQuantic.UI.Compiler.CodeGen.Ir.JsStatement!
+eQuantic.UI.Compiler.CodeGen.Ir.JsThrow.Deconstruct(out eQuantic.UI.Compiler.CodeGen.Ir.JsExpr! Value) -> void
+eQuantic.UI.Compiler.CodeGen.Ir.JsThrow.JsThrow(eQuantic.UI.Compiler.CodeGen.Ir.JsExpr! Value) -> void
+eQuantic.UI.Compiler.CodeGen.Ir.JsThrow.Value.get -> eQuantic.UI.Compiler.CodeGen.Ir.JsExpr!
+eQuantic.UI.Compiler.CodeGen.Strategies.Expressions.CheckedExpressionStrategy.ConvertIr(Microsoft.CodeAnalysis.SyntaxNode! node, eQuantic.UI.Compiler.CodeGen.ConversionContext! context) -> eQuantic.UI.Compiler.CodeGen.Ir.JsExpr!
+eQuantic.UI.Compiler.CodeGen.Strategies.Expressions.ExceptionCreationStrategy
+eQuantic.UI.Compiler.CodeGen.Strategies.Expressions.ExceptionCreationStrategy.ExceptionCreationStrategy() -> void
+eQuantic.UI.Compiler.CodeGen.Strategies.Expressions.ExceptionCreationStrategy.Priority.get -> int
+eQuantic.UI.Compiler.CodeGen.Strategies.Expressions.ExceptionCreationStrategy.CanConvert(Microsoft.CodeAnalysis.SyntaxNode! node, eQuantic.UI.Compiler.CodeGen.ConversionContext! context) -> bool
+eQuantic.UI.Compiler.CodeGen.Strategies.Expressions.ExceptionCreationStrategy.ConvertIr(Microsoft.CodeAnalysis.SyntaxNode! node, eQuantic.UI.Compiler.CodeGen.ConversionContext! context) -> eQuantic.UI.Compiler.CodeGen.Ir.JsExpr!
+eQuantic.UI.Compiler.CodeGen.Strategies.Expressions.ThrowExpressionStrategy.ConvertIr(Microsoft.CodeAnalysis.SyntaxNode! node, eQuantic.UI.Compiler.CodeGen.ConversionContext! context) -> eQuantic.UI.Compiler.CodeGen.Ir.JsExpr!
+eQuantic.UI.Compiler.CodeGen.Strategies.Linq.EnumerableFactoryStrategy.ConvertIr(Microsoft.CodeAnalysis.SyntaxNode! node, eQuantic.UI.Compiler.CodeGen.ConversionContext! context) -> eQuantic.UI.Compiler.CodeGen.Ir.JsExpr!
+*REMOVED*static eQuantic.UI.Compiler.CodeGen.Ir.JsStatement.Try(eQuantic.UI.Compiler.CodeGen.Ir.JsStatement! body, System.Collections.Generic.IReadOnlyList<eQuantic.UI.Compiler.CodeGen.Ir.JsCatch!>! catches, eQuantic.UI.Compiler.CodeGen.Ir.JsStatement? finally) -> eQuantic.UI.Compiler.CodeGen.Ir.JsStatement!
+*REMOVED*eQuantic.UI.Compiler.CodeGen.Ir.JsTry.Catches.get -> System.Collections.Generic.IReadOnlyList<eQuantic.UI.Compiler.CodeGen.Ir.JsCatch!>!
+*REMOVED*eQuantic.UI.Compiler.CodeGen.Ir.JsTry.Catches.init -> void
+*REMOVED*eQuantic.UI.Compiler.CodeGen.Ir.JsTry.Deconstruct(out eQuantic.UI.Compiler.CodeGen.Ir.JsStatement! Body, out System.Collections.Generic.IReadOnlyList<eQuantic.UI.Compiler.CodeGen.Ir.JsCatch!>! Catches, out eQuantic.UI.Compiler.CodeGen.Ir.JsStatement? Finally) -> void
+*REMOVED*eQuantic.UI.Compiler.CodeGen.Ir.JsTry.JsTry(eQuantic.UI.Compiler.CodeGen.Ir.JsStatement! Body, System.Collections.Generic.IReadOnlyList<eQuantic.UI.Compiler.CodeGen.Ir.JsCatch!>! Catches, eQuantic.UI.Compiler.CodeGen.Ir.JsStatement? Finally) -> void
+static eQuantic.UI.Compiler.CodeGen.Ir.JsStatement.Try(eQuantic.UI.Compiler.CodeGen.Ir.JsStatement! body, eQuantic.UI.Compiler.CodeGen.Ir.JsCatch? catch, eQuantic.UI.Compiler.CodeGen.Ir.JsStatement? finally) -> eQuantic.UI.Compiler.CodeGen.Ir.JsStatement!
+eQuantic.UI.Compiler.CodeGen.Ir.JsTry.Catch.get -> eQuantic.UI.Compiler.CodeGen.Ir.JsCatch?
+eQuantic.UI.Compiler.CodeGen.Ir.JsTry.Catch.init -> void
+eQuantic.UI.Compiler.CodeGen.Ir.JsTry.Deconstruct(out eQuantic.UI.Compiler.CodeGen.Ir.JsStatement! Body, out eQuantic.UI.Compiler.CodeGen.Ir.JsCatch? Catch, out eQuantic.UI.Compiler.CodeGen.Ir.JsStatement? Finally) -> void
+eQuantic.UI.Compiler.CodeGen.Ir.JsTry.JsTry(eQuantic.UI.Compiler.CodeGen.Ir.JsStatement! Body, eQuantic.UI.Compiler.CodeGen.Ir.JsCatch? Catch, eQuantic.UI.Compiler.CodeGen.Ir.JsStatement? Finally) -> void
 *REMOVED*const eQuantic.UI.Compiler.CodeGen.Eq.ParseEnum = "$eq.enums.parse" -> string!
 const eQuantic.UI.Compiler.CodeGen.Eq.EnumIsDefined = "$eq.enums.isDefined" -> string!
 const eQuantic.UI.Compiler.CodeGen.Eq.EnumNames = "$eq.enums.names" -> string!

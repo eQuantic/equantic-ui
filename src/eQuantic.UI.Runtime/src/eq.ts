@@ -68,6 +68,7 @@ import {
   realTryParse,
 } from './utils/number-parse';
 import { enumerable, max, min, seq, toArray, toDictionary } from './utils/linq';
+import { range, repeat } from './utils/sequence-factories';
 import {
   chars,
   compare,
@@ -116,6 +117,15 @@ import { liftArith, liftCmp, liftUnary } from './utils/nullable';
 import { equals } from './utils/equals';
 import { hash, hashCombine, hashFields, hashGroup, identityHash, instanceHash } from './utils/hash';
 import { guidParse, guidTryParse } from './utils/guid';
+import {
+  bases as exceptionBases,
+  create as createException,
+  exception,
+  filter as exceptionFilter,
+  is as isException,
+  raise,
+  thrown,
+} from './utils/exceptions';
 import {
   isDefined as enumIsDefined,
   declaredNames as enumNames,
@@ -203,8 +213,9 @@ export const $eq = {
   str,
   /** LINQ Zip: pairs stop with the shorter sequence. */
   zip,
-  /** LINQ's Max and Min by the type they answer, and ToDictionary with .NET's refusals. */
-  linq: { enumerable, max, min, seq, toArray, toDictionary },
+  /** LINQ's Max and Min by the type they answer, ToDictionary with .NET's refusals, and Range and
+   * Repeat over arguments evaluated once. */
+  linq: { enumerable, max, min, seq, toArray, toDictionary, range, repeat },
   /** C# `with` over a runtime value type — prototype preserved. */
   withPatch,
   /** `new object()`, an identity of its own, and a `lock` statement's gate, refused when null. */
@@ -375,6 +386,21 @@ export const $eq = {
   },
   /** A Guid's canonical text, the lowercase `D` format, from any format .NET reads. */
   guid: { parse: guidParse, tryParse: guidTryParse },
+  /**
+   * .NET exceptions: one built from its type and the types it derives from (`new T(…)`), one of a
+   * type the runtime knows, the test a typed `catch` and a type pattern write, a `throw`
+   * expression, what a `throw` statement throws when its exception may be null, and an exception
+   * filter, which answers false where it throws.
+   */
+  exceptions: {
+    create: createException,
+    of: exception,
+    is: isException,
+    raise,
+    thrown,
+    filter: exceptionFilter,
+    bases: exceptionBases,
+  },
   /** CSS class composition (the styling subsystem). */
   css: { styleBuilder: StyleBuilder, classBuilder: ClassBuilder, joinClasses, whenClass },
 } as const;

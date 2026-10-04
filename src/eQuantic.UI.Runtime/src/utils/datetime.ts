@@ -17,6 +17,12 @@
 
 import { activePattern } from './culture';
 import { hash } from './hash';
+import { exception } from './exceptions';
+
+/** A null text handed to `Parse`, as .NET words it: `DateTime`, `DateOnly` and `TimeOnly` name it `s`,
+ * `TimeSpan` and `DateTimeOffset` name it `input`. Read through null, it was a NullReferenceException. */
+const NULL_S = "Value cannot be null. (Parameter 's')";
+const NULL_INPUT = "Value cannot be null. (Parameter 'input')";
 
 const TICKS_PER_MICROSECOND = 10n;
 const TICKS_PER_MILLISECOND = 10_000n;
@@ -173,9 +179,12 @@ const TICKS_BOUND = 2 ** 63;
 const TOO_LONG = 'TimeSpan overflowed because the duration is too long.';
 const NOT_A_NUMBER = 'TimeSpan does not accept floating point Not-a-Number values.';
 
-/** A tick count a span can hold, or .NET's refusal. */
+/** A tick count a span can hold, or .NET's refusal: an integer count past it is an argument out of
+ * range, where a real one overflows ({@link interval}). */
 function checkedTicks(ticks: bigint): TimeSpan {
-  if (ticks > MAX_TICKS || ticks < MIN_TICKS) throw new Error(TOO_LONG);
+  if (ticks > MAX_TICKS || ticks < MIN_TICKS) {
+    throw exception('System.ArgumentOutOfRangeException', TOO_LONG);
+  }
   return new TimeSpan(ticks);
 }
 
@@ -191,9 +200,9 @@ function checkedTicks(ticks: bigint): TimeSpan {
  */
 function interval(value: bigint | number, ticksPerUnit: bigint): TimeSpan {
   if (typeof value === 'bigint') return checkedTicks(value * ticksPerUnit);
-  if (Number.isNaN(value)) throw new Error(NOT_A_NUMBER);
+  if (Number.isNaN(value)) throw exception('System.ArgumentException', NOT_A_NUMBER);
   const ticks = value * Number(ticksPerUnit);
-  if (ticks > TICKS_BOUND || ticks < -TICKS_BOUND) throw new Error(TOO_LONG);
+  if (ticks > TICKS_BOUND || ticks < -TICKS_BOUND) throw exception('System.OverflowException', TOO_LONG);
   // A product of exactly 2^63 passes that check, and is MaxValue in .NET.
   return new TimeSpan(ticks === TICKS_BOUND ? MAX_TICKS : BigInt(Math.trunc(ticks)));
 }
@@ -275,9 +284,10 @@ timeSpan.fromMilliseconds = components(4, TICKS_PER_MILLISECOND);
 timeSpan.fromMicroseconds = (v) => interval(v, 10n);
 timeSpan.fromTicks = (v) => new TimeSpan(typeof v === 'bigint' ? v : BigInt(Math.trunc(v)));
 timeSpan.parse = (text: string): TimeSpan => {
+  if (text == null) throw exception('System.ArgumentNullException', NULL_INPUT);
   // .NET "c" format: [-][d.]hh:mm:ss[.fffffff]
   const m = /^(-)?(?:(\d+)\.)?(\d{1,2}):(\d{2}):(\d{2})(?:\.(\d+))?$/.exec(text.trim());
-  if (!m) throw new Error(`Unrecognized TimeSpan format: '${text}'`);
+  if (!m) throw exception('System.FormatException', `Unrecognized TimeSpan format: '${text}'`);
   const frac = m[6] ? BigInt(m[6].padEnd(7, '0').slice(0, 7)) : 0n;
   const ticks =
     BigInt(m[2] ?? 0) * TICKS_PER_DAY +
@@ -333,15 +343,18 @@ function toLong(value: number): bigint {
  */
 function unitTicks(value: number, ticksPerUnit: bigint): bigint {
   if (Math.abs(value) > Number(MAX_DATETIME_TICKS / ticksPerUnit)) {
-    throw new Error(ADD_OUT_OF_RANGE);
+    throw exception('System.ArgumentOutOfRangeException', ADD_OUT_OF_RANGE);
   }
   const integral = Math.trunc(value);
   return toLong(integral) * ticksPerUnit + toLong((value - integral) * Number(ticksPerUnit));
 }
 
-/** Ticks inside the calendar, or the refusal of the member that computed them. */
+/** Ticks inside the calendar, or the refusal of the member that computed them, as .NET's
+ * ArgumentOutOfRangeException naming that member's parameter. */
 function calendarTicks(ticks: bigint, parameter = 'value'): bigint {
-  if (ticks < 0n || ticks > MAX_DATETIME_TICKS) throw new Error(unrepresentable(parameter));
+  if (ticks < 0n || ticks > MAX_DATETIME_TICKS) {
+    throw exception('System.ArgumentOutOfRangeException', unrepresentable(parameter));
+  }
   return ticks;
 }
 
@@ -416,7 +429,7 @@ export class DateTime {
 
   /** `AddMonths`: refused past 120000 months either way, or where the result leaves the calendar. */
   addMonths(months: number, parameter = 'months'): DateTime {
-    if (months < -120000 || months > 120000) throw new Error(BAD_MONTHS);
+    if (months < -120000 || months > 120000) throw exception('System.ArgumentOutOfRangeException', BAD_MONTHS);
     const c = this.civil();
     const i = c.month - 1 + months;
     let year: number, month: number;
@@ -427,7 +440,7 @@ export class DateTime {
       month = 12 + ((i + 1) % 12);
       year = c.year + idiv(i - 11, 12);
     }
-    if (year < 1 || year > 9999) throw new Error(unrepresentable(parameter));
+    if (year < 1 || year > 9999) throw exception('System.ArgumentOutOfRangeException', unrepresentable(parameter));
     const day = Math.min(c.day, daysInMonth(year, month));
     const datePart = BigInt(daysFromCivil(year, month, day)) * TICKS_PER_DAY;
     return new DateTime(datePart + (this.ticks % TICKS_PER_DAY));
@@ -435,7 +448,7 @@ export class DateTime {
   /** `AddYears`: refused past 10000 years either way, and where the result leaves the calendar in
    * its own parameter's name. */
   addYears(years: number): DateTime {
-    if (years < -10000 || years > 10000) throw new Error(BAD_YEARS);
+    if (years < -10000 || years > 10000) throw exception('System.ArgumentOutOfRangeException', BAD_YEARS);
     return this.addMonths(years * 12, 'value');
   }
 
@@ -588,6 +601,7 @@ dateTime.maxValue = () => new DateTime(MAX_DATETIME_TICKS);
 dateTime.daysInMonth = daysInMonth;
 dateTime.isLeapYear = isLeapYear;
 dateTime.parse = (text: string): DateTime => {
+  if (text == null) throw exception('System.ArgumentNullException', NULL_S);
   const t = text.trim();
   // ISO-8601: yyyy-MM-dd[Thh:mm:ss[.fffffff]] (the wire form).
   let m = /^(\d{4})-(\d{2})-(\d{2})(?:[T ](\d{2}):(\d{2}):(\d{2})(?:\.(\d+))?)?/.exec(t);
@@ -600,7 +614,7 @@ dateTime.parse = (text: string): DateTime => {
   // Invariant default: MM/dd/yyyy[ HH:mm:ss]
   m = /^(\d{1,2})\/(\d{1,2})\/(\d{4})(?:\s+(\d{1,2}):(\d{2}):(\d{2}))?/.exec(t);
   if (m) return fromComponents(+m[3], +m[1], +m[2], +(m[4] ?? 0), +(m[5] ?? 0), +(m[6] ?? 0));
-  throw new Error(`Unrecognized DateTime format: '${text}'`);
+  throw exception('System.FormatException', `Unrecognized DateTime format: '${text}'`);
 };
 
 // ---------------------------------------------------------------------------------------------
@@ -634,7 +648,7 @@ export class DateOnly {
   /** `AddDays`: refused where the day leaves 0001-01-01 to 9999-12-31, as .NET refuses it. */
   addDays(value: number): DateOnly {
     const day = this.dayNumber + Math.trunc(value);
-    if (day < 0 || day > MAX_DAY_NUMBER) throw new Error(ADD_OUT_OF_RANGE);
+    if (day < 0 || day > MAX_DAY_NUMBER) throw exception('System.ArgumentOutOfRangeException', ADD_OUT_OF_RANGE);
     return new DateOnly(day);
   }
   /** `AddMonths` and `AddYears`: the date's `DateTime` moved, so a count and a result past the
@@ -704,8 +718,9 @@ dateOnly.fromDateTime = (dt) => new DateOnly(Number(dt.ticks / TICKS_PER_DAY));
 dateOnly.minValue = () => new DateOnly(0);
 dateOnly.maxValue = () => new DateOnly(daysFromCivil(9999, 12, 31));
 dateOnly.parse = (text: string): DateOnly => {
+  if (text == null) throw exception('System.ArgumentNullException', NULL_S);
   const parsed = tryParseDateOnly(text);
-  if (parsed === null) throw new Error(`Unrecognized DateOnly format: '${text}'`);
+  if (parsed === null) throw exception('System.FormatException', `Unrecognized DateOnly format: '${text}'`);
   return parsed;
 };
 
@@ -870,8 +885,9 @@ timeOnly.fromDateTime = (value: DateTime) =>
 timeOnly.minValue = () => new TimeOnly(0n);
 timeOnly.maxValue = () => new TimeOnly(TICKS_PER_DAY - 1n);
 timeOnly.parse = (text: string): TimeOnly => {
+  if (text == null) throw exception('System.ArgumentNullException', NULL_S);
   const m = /^(\d{1,2}):(\d{2})(?::(\d{2})(?:\.(\d+))?)?/.exec(text.trim());
-  if (!m) throw new Error(`Unrecognized TimeOnly format: '${text}'`);
+  if (!m) throw exception('System.FormatException', `Unrecognized TimeOnly format: '${text}'`);
   const frac = m[4] ? BigInt(m[4].padEnd(7, '0').slice(0, 7)) : 0n;
   return new TimeOnly(
     BigInt(+m[1]) * TICKS_PER_HOUR +
@@ -962,7 +978,9 @@ export class DateTimeOffset {
    * `ValidateDate` refuses it after every move of the clock. */
   private atClock(local: bigint): DateTimeOffset {
     const utc = local - this.offsetTicks;
-    if (utc < 0n || utc > MAX_DATETIME_TICKS) throw new Error(UTC_OUT_OF_RANGE);
+    if (utc < 0n || utc > MAX_DATETIME_TICKS) {
+      throw exception('System.ArgumentOutOfRangeException', UTC_OUT_OF_RANGE);
+    }
     return new DateTimeOffset(local, this.offsetTicks);
   }
   addDays(v: number): DateTimeOffset {
@@ -1096,13 +1114,14 @@ dateTimeOffset.utcNow = () => new DateTimeOffset(dateTime.utcNow().ticks, 0n);
 dateTimeOffset.minValue = () => new DateTimeOffset(0n, 0n);
 dateTimeOffset.maxValue = () => new DateTimeOffset(MAX_DATETIME_TICKS, 0n);
 dateTimeOffset.parse = (text: string): DateTimeOffset => {
+  if (text == null) throw exception('System.ArgumentNullException', NULL_INPUT);
   const t = text.trim();
   // yyyy-MM-ddTHH:mm:ss[.fff][(+|-)HH:mm | Z]
   const m =
     /^(\d{4})-(\d{2})-(\d{2})[T ](\d{2}):(\d{2}):(\d{2})(?:\.(\d+))?\s*(Z|[+-]\d{2}:?\d{2})?$/.exec(
       t,
     );
-  if (!m) throw new Error(`Unrecognized DateTimeOffset format: '${text}'`);
+  if (!m) throw exception('System.FormatException', `Unrecognized DateTimeOffset format: '${text}'`);
   const frac = m[7] ? BigInt(m[7].padEnd(7, '0').slice(0, 7)) : 0n;
   const local = fromComponents(+m[1], +m[2], +m[3], +m[4], +m[5], +m[6]).ticks + frac;
   let offsetTicks = 0n;
