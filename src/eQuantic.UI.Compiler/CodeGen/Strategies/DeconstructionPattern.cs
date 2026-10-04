@@ -39,18 +39,23 @@ internal static class DeconstructionPattern
     /// A deconstruction's destructuring: the top level's <paramref name="Pattern"/>, the
     /// <c>Deconstruct</c> of the app's its value goes through first, if any, the nested levels that
     /// need a call of their own, and, written with temporaries, the temporaries every part was bound
-    /// to, each with the target it assigns (none for a discard), the tuple they make, which is the
-    /// value of an assignment, and what the targets <paramref name="Captures"/>: each name, with the
-    /// receiver or the index it holds, evaluated before the value.
+    /// to, each with the write that puts it in its target (none for a discard), the tuple they make,
+    /// which is the value of an assignment, and what the targets <paramref name="Captures"/>: each
+    /// name, with the receiver or the index it holds, evaluated before the value.
+    /// <paramref name="Converts"/> says a part changes its representation on its way into its target
+    /// (an int part into a long), which destructuring cannot do, and <paramref name="Declared"/> holds a
+    /// declaration's converted parts, each declared after the destructuring from its temporary.
     /// </summary>
     internal sealed record Lowered(
         string Pattern,
         IMethodSymbol? Called,
         IReadOnlyList<Step> Steps,
         IReadOnlyList<string> Temporaries,
-        IReadOnlyList<(string Temporary, string Target)> Assignments,
+        IReadOnlyList<(string Temporary, string Write)> Assignments,
         string Tuple,
-        IReadOnlyList<(string Name, string Value)> Captures);
+        IReadOnlyList<(string Name, string Value)> Captures,
+        bool Converts,
+        IReadOnlyList<(string Name, string Value)> Declared);
 
     /// <summary>
     /// The destructuring of <paramref name="left"/> (an assignment's tuple, a declaration's
@@ -77,8 +82,9 @@ internal static class DeconstructionPattern
             walk = new Walk(context, temporaries, $"$d{left.SpanStart}_", stepsAll: true);
             (pattern, tuple) = walk.Composite(parts, info, type, called is not null);
         }
-        return walk.Deconstructs || capture
-            ? new Lowered(pattern, called, walk.Steps, walk.Temporaries, walk.Assignments, tuple, walk.Captures)
+        return walk.Deconstructs || capture || walk.Converts
+            ? new Lowered(pattern, called, walk.Steps, walk.Temporaries, walk.Assignments, tuple, walk.Captures,
+                walk.Converts, walk.Declared)
             : null;
     }
 
@@ -112,12 +118,14 @@ internal static class DeconstructionPattern
     }
 
     /// <summary>
-    /// The declarators after the top one, one per step, each destructuring what its
-    /// <c>Deconstruct</c> hands back: <c>, { celsius: c } = $d12_0.deconstruct()</c>, which a
-    /// declaration appends to its own <c>let</c> or <c>const</c>.
+    /// The declarators after the top one: one per step, each destructuring what its
+    /// <c>Deconstruct</c> hands back (<c>, { celsius: c } = $d12_0.deconstruct()</c>), and then one per
+    /// converted part, its name from its temporary in its own type (<c>, total = BigInt($d12_0)</c>),
+    /// which a declaration appends to its own <c>let</c> or <c>const</c>.
     /// </summary>
     internal static string StepDeclarators(Lowered lowered, ConversionContext context) =>
-        string.Concat(lowered.Steps.Select(step => $", {step.Pattern} = {StepValue(step, context)}"));
+        string.Concat(lowered.Steps.Select(step => $", {step.Pattern} = {StepValue(step, context)}"))
+        + string.Concat(lowered.Declared.Select(declared => $", {declared.Name} = {declared.Value}"));
 
     /// <summary>What a step destructures: its temporary, through the <c>Deconstruct</c> it calls.</summary>
     internal static string StepValue(Step step, ConversionContext context) =>
@@ -173,10 +181,12 @@ internal static class DeconstructionPattern
     private sealed class Walk(ConversionContext context, bool temporaries, string prefix, bool stepsAll)
     {
         public bool Deconstructs { get; private set; }
+        public bool Converts { get; private set; }
         public List<Step> Steps { get; } = [];
         public List<string> Temporaries { get; } = [];
-        public List<(string Temporary, string Target)> Assignments { get; } = [];
+        public List<(string Temporary, string Write)> Assignments { get; } = [];
         public List<(string Name, string Value)> Captures { get; } = [];
+        public List<(string Name, string Value)> Declared { get; } = [];
 
         private string Fresh()
         {
@@ -195,8 +205,8 @@ internal static class DeconstructionPattern
         /// <summary>
         /// A target written through what it captures, with temporaries: an element as its captured
         /// receiver indexed by its captured index, a member read off its captured receiver. Null for
-        /// any other target, and for an element whose indexer is a call (a dictionary's), which
-        /// destructuring cannot write at all (#542).
+        /// any other target, and for an element whose indexer is a call (a dictionary's, which
+        /// <see cref="Part"/> writes through its class).
         /// </summary>
         private string? Captured(ExpressionSyntax target)
         {
@@ -260,6 +270,14 @@ internal static class DeconstructionPattern
         /// <summary>
         /// One part: what it binds in its parent's pattern (the name a declaration binds, the target an
         /// assignment writes, a temporary, or null for a discard), and its value in the tuple.
+        /// <para>
+        /// A part reaches its target as C# puts it there (#542): converted to the target's type, as
+        /// the bound tree's conversion for it says, and written by what the target is. A dictionary's
+        /// entry is written by its class, through <c>$eq.mapSet</c>, which no destructuring can do: a
+        /// destructuring target is a place, and the entry's read is a call. A converted part is bound
+        /// to a temporary as well, and a declaration declares its name after the destructuring, from
+        /// the temporary, converted.
+        /// </para>
         /// </summary>
         private (string? Bound, string Value) Part(SyntaxNode target, DeconstructionInfo? info, ITypeSymbol? type)
         {
@@ -269,21 +287,62 @@ internal static class DeconstructionPattern
             var discard = target is DiscardDesignationSyntax
                 || target is IdentifierNameSyntax { Identifier.ValueText: "_" } underscore
                     && context.SemanticHelper.GetSymbol(underscore) is null or IDiscardSymbol;
-            var written = discard
-                ? null
-                : target switch
+            if (discard)
+            {
+                if (!temporaries) return (null, "undefined");
+                var kept = Fresh();
+                return (kept, kept);
+            }
+
+            var targetType = target switch
+            {
+                SingleVariableDesignationSyntax single => (context.SemanticHelper.GetDeclaredSymbol(single) as ILocalSymbol)?.Type,
+                ExpressionSyntax assigned => context.SemanticHelper.GetType(assigned),
+                _ => null,
+            };
+            string Converted(string value) => info is { Conversion: { } conversion }
+                ? JsExprWriter.Write(ValueFlow.Apply(conversion, type, targetType, null, null, JsExpr.Identifier(value), context))
+                : value;
+            const string probe = "$part";
+            var converts = Converted(probe) != probe;
+            if (converts) Converts = true;
+            // A temporary converted ONCE, in place, as the value its target is written: a conversion the
+            // app wrote runs once, as C# runs it, and the target and the tuple hold the same value.
+            string InPlace(string temporary) => converts ? $"({temporary} = {Converted(temporary)})" : temporary;
+
+            if (target is SingleVariableDesignationSyntax variable)
+            {
+                var name = variable.Identifier.Text.ToJsIdentifier();
+                if (temporaries)
                 {
-                    SingleVariableDesignationSyntax single => single.Identifier.Text.ToJsIdentifier(),
-                    ExpressionSyntax assigned => Captured(assigned) ?? context.Converter.ConvertExpression(assigned),
-                    _ => null,
-                };
+                    var assignedTo = Fresh();
+                    Assignments.Add((assignedTo, $"{name} = {InPlace(assignedTo)}"));
+                    return (assignedTo, assignedTo);
+                }
+                if (!converts) return (name, name);
+                var held = Fresh();
+                Declared.Add((name, Converted(held)));
+                return (held, held);
+            }
+
+            if (target is not ExpressionSyntax written) return (null, "undefined");
+            if (temporaries && DictionaryEntry.Of(written, context) is { } entry)
+            {
+                context.UsedHelpers.Add(Eq.Import);
+                var receiver = Capture(context.Converter.ConvertExpression(entry.Expression));
+                var key = Capture(context.Converter.ConvertExpression(entry.ArgumentList.Arguments[0].Expression));
+                var entered = Fresh();
+                Assignments.Add((entered, DictionaryEntry.Write(receiver, key, InPlace(entered))));
+                return (entered, entered);
+            }
+            var place = Captured(written) ?? context.Converter.ConvertExpression(written);
             if (temporaries)
             {
-                var temporary = Fresh();
-                if (written is not null) Assignments.Add((temporary, written));
-                return (temporary, temporary);
+                var placed = Fresh();
+                Assignments.Add((placed, $"{place} = {InPlace(placed)}"));
+                return (placed, placed);
             }
-            return (written, written ?? "undefined");
+            return (place, place);
         }
 
         /// <summary>

@@ -47,6 +47,38 @@ public class DeconstructionConformanceTests
         ConformanceRunner.AssertStatementsSameAsDotNet(statements, "public record Point(int X, int Y);");
     }
 
+    /// <summary>
+    /// A part written through what its target is, and converted to its target's type, as C# writes it
+    /// (#542). Destructuring wrote each part straight into its target, so a dictionary's entry, whose
+    /// write is a call, was a SyntaxError that cost the module, and an int part stayed a number where
+    /// its long target holds a BigInt, which the next long arithmetic refused.
+    /// </summary>
+    [SkippableTheory]
+    [InlineData("var map = new Dictionary<string, int>(); (map[\"a\"], map[\"b\"]) = new Point(1, 2); return map[\"a\"] * 10 + map[\"b\"];")] // 12
+    [InlineData("var map = new Dictionary<string, int>(); (map[\"a\"], map[\"b\"]) = (3, 4); return map[\"a\"] * 10 + map[\"b\"];")]          // 34
+    [InlineData("var map = new Dictionary<string, int> { [\"a\"] = 9 }; (map[\"a\"], _) = (5, 6); return map[\"a\"] + map.Count;")]          // 6: the indexer replaces
+    // A dictionary's receiver and key run before the value, each once and in C#'s order, and an int part
+    // is converted in place to the long its entry holds: "manb12:12". A tuple LITERAL converts its
+    // elements itself, so the part reaches the entry converted through a record and a tuple variable.
+    [InlineData("var log = \"\"; var map = new Dictionary<string, long>(); Func<string, Dictionary<string, long>> m = s => { log += s; return map; }; Func<string, string> k = s => { log += s; return s; }; Func<int, int> v = x => { log += x; return x; }; (m(\"m\")[k(\"a\")], m(\"n\")[k(\"b\")]) = (v(1), v(2)); return log + \":\" + (map[\"a\"] * 10 + map[\"b\"]).ToString();")]
+    [InlineData("var log = \"\"; var map = new Dictionary<string, long>(); Func<string, Dictionary<string, long>> m = s => { log += s; return map; }; Func<string, string> k = s => { log += s; return s; }; Func<int, int> v = x => { log += x; return x; }; (m(\"m\")[k(\"a\")], m(\"n\")[k(\"b\")]) = new Point(v(1), v(2)); return log + \":\" + (map[\"a\"] * 10 + map[\"b\"]).ToString();")]
+    [InlineData("var log = \"\"; var map = new Dictionary<string, long>(); Func<string, Dictionary<string, long>> m = s => { log += s; return map; }; Func<string, string> k = s => { log += s; return s; }; var pair = (1, 2); (m(\"m\")[k(\"a\")], m(\"n\")[k(\"b\")]) = pair; return log + \":\" + (map[\"a\"] * 10 + map[\"b\"]).ToString();")]
+    [InlineData("var h = new Holder(); (h.A, h.B) = new Point(7, 8); return h.A * 10 + h.B;")]                                               // 78: a property's setter
+    [InlineData("long total; int n; (total, n) = new Point(1, 2); return (total + 1L).ToString();")]                                                    // "2": an int part into a long (text, as a long result is compared)
+    [InlineData("var pair = (3, 4); long t; int m; (t, m) = pair; return (t * 10L + m).ToString();")]                                                   // 34
+    [InlineData("var pair = (3, 4); (long t, int m) = pair; return (t + 1L).ToString();")]                                                              // 4: declared, converted
+    [InlineData("var total = 0L; foreach ((long a, int b) in new[] { (1, 2), (3, 4) }) total += a * 10 + b; return total.ToString();")] // "46": a loop's parts, converted
+    [InlineData("var pair = (3, 4); long t; int m; var all = ((t, m) = pair); return (all.Item1 + 1L).ToString();")]                                   // 4: the value is the targets'
+    [InlineData("var made = 0; var pair = (new Feet(3, () => made++), 4); Meters a; int b; var all = ((a, b) = pair); return made + \":\" + a.Value + \":\" + all.Item1.Value + \":\" + object.ReferenceEquals(a, all.Item1);")] // "1:3:3:True": a conversion the app wrote runs once
+    public void APart_IsWrittenAndConvertedAsItsTargetTakesIt(string statements)
+    {
+        Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
+        ConformanceRunner.AssertStatementsSameAsDotNet(statements,
+            "public record Point(int X, int Y);\npublic record Holder { public int A { get; set; } public int B { get; set; } }\n"
+            + "public record Meters(int Value);\n"
+            + "public record Feet(int Value, Action OnConvert) { public static implicit operator Meters(Feet f) { f.OnConvert(); return new Meters(f.Value); } }");
+    }
+
     private const string Shapes = """
         public record Point(int X, int Y);
         public record Line(Point From, Point To);
