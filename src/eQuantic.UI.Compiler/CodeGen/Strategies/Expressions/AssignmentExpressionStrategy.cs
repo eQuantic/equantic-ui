@@ -289,29 +289,21 @@ internal static class NullConditionalAssignment
         var t = depth == 0 ? "$t" : $"$t{depth}";
         var parameter = context.TypeAnnotations ? $"({t}: any)" : t;
 
-        // A dictionary's entry is written through its class's `set`, by $eq.mapSet, never by index.
-        // A compound write reads the entry first, through the guard that throws, which this lowering
-        // has no form for: null, and the caller reports it.
-        if (assignment.Left is ElementBindingExpressionSyntax { ArgumentList.Arguments.Count: 1 } entry
+        // An entry written by its key: a dictionary's through its class's `set`, by $eq.mapSet, never
+        // by index, and one an indexer the twin carries holds through its `setItem` (#427). A compound
+        // write reads the entry first, through the guard that throws, which this lowering has no form
+        // for: null, and the caller reports it.
+        if (assignment.Left is ElementBindingExpressionSyntax entry
             && context.SemanticHelper.GetSymbol(entry) is IPropertySymbol { IsIndexer: true } indexer
-            && indexer.ContainingType.IsDictionary())
+            && (indexer.ContainingType.IsDictionary() && entry.ArgumentList.Arguments.Count == 1 || Indexer.IsLowered(indexer)))
         {
             if (!assignment.IsKind(Microsoft.CodeAnalysis.CSharp.SyntaxKind.SimpleAssignmentExpression)) return null;
-            context.UsedHelpers.Add(Eq.Import);
-            var write = DictionaryEntry.Write(t,
-                context.Converter.ConvertExpression(entry.ArgumentList.Arguments[0].Expression),
-                context.Converter.ConvertExpression(assignment.Right));
-            return $"({parameter} => {t} == null ? null : {write})({receiver})";
-        }
-
-        // An indexer the twin carries is written through its `setItem` (#427).
-        if (assignment.Left is ElementBindingExpressionSyntax own
-            && context.SemanticHelper.GetSymbol(own) is IPropertySymbol { IsIndexer: true } ownIndexer
-            && Indexer.IsLowered(ownIndexer))
-        {
-            if (!assignment.IsKind(Microsoft.CodeAnalysis.CSharp.SyntaxKind.SimpleAssignmentExpression)) return null;
-            var write = Indexer.Write(t, own.ArgumentList.Arguments.Select(a => context.Converter.ConvertExpression(a.Expression)),
-                context.Converter.ConvertExpression(assignment.Right));
+            var keys = entry.ArgumentList.Arguments.Select(a => context.Converter.ConvertExpression(a.Expression)).ToList();
+            var value = context.Converter.ConvertExpression(assignment.Right);
+            if (indexer.ContainingType.IsDictionary()) context.UsedHelpers.Add(Eq.Import);
+            var write = indexer.ContainingType.IsDictionary()
+                ? DictionaryEntry.Write(t, keys[0], value)
+                : Indexer.Write(t, keys, value);
             return $"({parameter} => {t} == null ? null : {write})({receiver})";
         }
 
