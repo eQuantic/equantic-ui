@@ -48,7 +48,7 @@ public class MapPageTests
     /// document for no visible reason.
     /// </summary>
     [Fact]
-    public async Task AMappedPage_IsRenderableByName()
+    public async Task AMappedPage_IsRenderableByType()
     {
         await using var app = BuildApp();
 
