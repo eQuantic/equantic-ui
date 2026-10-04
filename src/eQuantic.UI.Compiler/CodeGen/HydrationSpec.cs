@@ -204,11 +204,13 @@ public static class HydrationSpec
     /// <summary>
     /// How the property name System.Text.Json writes for a key of this type becomes the key (a
     /// <c>HydrationKey</c> of <c>utils/hydrate.ts</c>): a number, a bool, or a compat scalar by its tag.
-    /// Null where the name IS the key: a string, a char, a <c>Guid</c>, an enum's camelCase name.
+    /// Null where the name IS the key: a string, a char, a <c>Guid</c>, an enum's camelCase name. A
+    /// <c>[Flags]</c> enum's key is its number's text (EqJson), and a number here (#442).
     /// </summary>
     private static string? KeyTag(ITypeSymbol key)
     {
         var type = key.UnwrapNullable() ?? key;
+        if (type is INamedTypeSymbol { TypeKind: TypeKind.Enum } flags && flags.IsFlagsEnum()) return "'number'";
         switch (type.SpecialType)
         {
             case SpecialType.System_Boolean:
