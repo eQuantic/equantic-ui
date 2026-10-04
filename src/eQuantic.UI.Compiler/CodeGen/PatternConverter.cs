@@ -43,8 +43,7 @@ public static class PatternConverter
                 if (constant.Expression is TypeSyntax bareType
                     && context.SemanticHelper.GetSymbol(constant.Expression) is INamedTypeSymbol)
                     return TypeCheck(bareType, access, context);
-                return ConstantTest(access, context.Converter.ConvertExpression(constant.Expression),
-                    (context.SemanticHelper.GetOperation(constant) as IConstantPatternOperation)?.Value, context);
+                return ConstantMatch(constant, constant.Expression, access, context);
 
             case RelationalPatternSyntax relational:
                 return $"{access} {relational.OperatorToken.Text} {context.Converter.ConvertExpression(relational.Expression)}";
@@ -86,6 +85,43 @@ public static class PatternConverter
                 return "false";
         }
     }
+
+    /// <summary>
+    /// The test that <paramref name="access"/> matches a constant label or pattern, by
+    /// <see cref="ConstantTest"/>'s one rule, with the constant the BOUND tree converted to the
+    /// input's type: a decimal is the runtime's Decimal, an object <c>===</c> compares by identity, so
+    /// <c>d is 1m</c>, <c>case decimal.One:</c> and a <c>1m =&gt;</c> arm never matched, and its exact
+    /// value is written from the bound constant, so <c>d is 1</c> meets 1m.
+    /// </summary>
+    internal static string ConstantMatch(SyntaxNode label, ExpressionSyntax constant, string access,
+        ConversionContext context)
+    {
+        var value = context.SemanticHelper.GetOperation(label) switch
+        {
+            IConstantPatternOperation pattern => pattern.Value,
+            ISingleValueCaseClauseOperation single => single.Value,
+            IPatternCaseClauseOperation { Pattern: IConstantPatternOperation pattern } => pattern.Value,
+            _ => null,
+        };
+        var text = DecimalConstant(label, context) is { } exact
+            ? ConstantLiteral.Write(exact, null, context)!
+            : context.Converter.ConvertExpression(constant);
+        return ConstantTest(access, text, value, context);
+    }
+
+    /// <summary>The decimal a constant pattern or a case label compares with, read from the bound
+    /// tree after its conversion to the input's type, or null when it compares something else.</summary>
+    internal static decimal? DecimalConstant(SyntaxNode label, ConversionContext context) =>
+        context.SemanticHelper.GetOperation(label) switch
+        {
+            IConstantPatternOperation { Value.ConstantValue: { HasValue: true, Value: decimal value } } => value,
+            ISingleValueCaseClauseOperation { Value.ConstantValue: { HasValue: true, Value: decimal value } } => value,
+            IPatternCaseClauseOperation
+            {
+                Pattern: IConstantPatternOperation { Value.ConstantValue: { HasValue: true, Value: decimal value } },
+            } => value,
+            _ => null,
+        };
 
     public static void CollectBindings(PatternSyntax pattern, string access, ConversionContext context,
         List<(string Name, string Access)> bindings, ITypeSymbol? accessType = null)

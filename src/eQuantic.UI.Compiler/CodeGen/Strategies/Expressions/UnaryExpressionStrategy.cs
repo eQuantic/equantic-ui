@@ -62,8 +62,7 @@ public class UnaryExpressionStrategy : IExpressionIrStrategy
                 if (context.SemanticHelper.GetOperation(prefix) is Microsoft.CodeAnalysis.Operations.IUnaryOperation
                     { ConstantValue: { HasValue: true, Value: decimal negated } })
                 {
-                    context.UsedHelpers.Add(Eq.Import);
-                    return JsExpr.Callish($"{Eq.Dec}(\"{negated.ToString(System.Globalization.CultureInfo.InvariantCulture)}\")");
+                    return JsExpr.Callish(ConstantLiteral.Write(negated, null, context)!);
                 }
                 var negatable = context.Converter.ConvertIr(prefix.Operand);
                 return JsExpr.Callish($"{JsExprWriter.WriteIn(negatable, JsPrecedence.Call)}.neg()");
