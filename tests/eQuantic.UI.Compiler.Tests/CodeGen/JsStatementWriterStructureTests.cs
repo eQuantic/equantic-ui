@@ -50,11 +50,11 @@ public class JsStatementWriterStructureTests
     [Fact]
     public void Try_Catch_Finally()
     {
-        var stmt = JsStatement.Try(Block(Call("a")), new[] { new JsCatch("(e: any)", Block(Call("b"))) }, Block(Call("c")));
+        var stmt = JsStatement.Try(Block(Call("a")), new JsCatch("(e: any)", Block(Call("b"))), Block(Call("c")));
         JsStatementWriter.Write(stmt, JsLayout.Compact).Should().Be("try {a();} catch (e: any) {b();} finally {c();}");
         JsStatementWriter.Write(stmt, JsLayout.Pretty)
             .Should().Be("try {\n    a();\n} catch (e: any) {\n    b();\n} finally {\n    c();\n}");
-        var bare = JsStatement.Try(Block(Call("a")), new[] { new JsCatch("", Block()) }, null);
+        var bare = JsStatement.Try(Block(Call("a")), new JsCatch("", Block()), null);
         JsStatementWriter.Write(bare, JsLayout.Compact).Should().Be("try {a();} catch {}");
     }
 

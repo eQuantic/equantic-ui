@@ -1,3 +1,5 @@
+import { exception } from './exceptions';
+
 /**
  * The value `new object()` makes: nothing but an identity. A plain `{}` is an anonymous type here,
  * compared by its members, so every two of them were equal, as `Equals` and as dictionary keys.
@@ -25,5 +27,5 @@ export function newObject(): NetObject {
  * body run where .NET throws before it.
  */
 export function lockGate(gate: unknown): void {
-  if (gate == null) throw new Error("Value cannot be null. (Parameter 'obj')");
+  if (gate == null) throw exception('System.ArgumentNullException', "Value cannot be null. (Parameter 'obj')");
 }
