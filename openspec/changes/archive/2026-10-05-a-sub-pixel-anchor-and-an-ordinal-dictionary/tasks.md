@@ -16,6 +16,6 @@
 
 ## 3. Documentation and the suites
 
-- [ ] 3.1 The wiki's Upgrading page, English and Portuguese, on the wiki branch of this pull request: the ordinal dictionary's workaround for an app on 0.2.0-preview.60
-- [ ] 3.2 `docs/LEDGER.md`: one line for this event citing #576 and #577, and the 0.2.0-preview.60 release line
-- [ ] 3.3 The full suites, each alone and read by its exit code: Compiler, Conformance, Web, Server, and the runtime's `TestRuntime`
+- [x] 3.1 The wiki's Upgrading page, English and Portuguese, on the wiki branch of this pull request: the ordinal dictionary's workaround for an app on 0.2.0-preview.60
+- [x] 3.2 `docs/LEDGER.md`: one line for this event citing #576 and #577, and the 0.2.0-preview.60 release line
+- [x] 3.3 The full suites, each alone and read by its exit code: Compiler, Conformance, Web, Server, and the runtime's `TestRuntime`
