@@ -1373,6 +1373,32 @@ record of a release, the wiki's Upgrading page is the distillate.
   drawn, which the base transform always did and a lift now shows
   ([#513](https://github.com/eQuantic/equantic-ui/issues/513)). Proposed and archived through
   OpenSpec (`openspec/specs/interaction-states`).
+- **0.2.0-preview.60 released** from `c12b761f`: the hydration contract the build derives (#515, #522),
+  a hover that moves and shadows a box on every target (#512), a route's title and a page held by
+  its type (#537, #538, #572), the native bridges' roles (#503, #557), the find bar's Escape and
+  `Shortcut.Enabled` (#568), source maps that keep every line (#493, #566), and the browser's
+  answers made .NET's for dictionaries (#443, #559), LINQ and strings (#545, #536, #527), enums
+  (#548), exceptions (#561), hashes, Guids and dates (#550, #472), constants (#450), patterns,
+  loops and deconstruction (#543, #562), a record's members (#464) and names read by their symbol
+  (#553), with the test suites' shared references (#549) and the release's own issue (#574).
+  *([v0.2.0-preview.60](https://github.com/eQuantic/equantic-ui/releases/tag/v0.2.0-preview.60))*
+- **2026-10-05 · A fragment a pixel above the top, and an ordinal dictionary**: two things
+  equantic-web met on 0.2.0-preview.60. A fragment link under its floating header landed BEHIND the
+  header on a warm load ([#576](https://github.com/eQuantic/equantic-ui/issues/576)): the target's
+  document top was 2471.796875, the browser's jump scrolled to 2472, and the cold-load correction,
+  whose band started at 0, refused the -0.203125 it saw on every frame of its watch. A layout
+  position is fractional and a scroll offset is whole pixels, so which side of the top a jump lands
+  on is a coin toss on the fraction; the band starts one pixel above it now. Measured with DevTools
+  logpoints, which leave the cache alone (a route that served an instrumented runtime moved the race
+  and hid it), and proved on the site itself, published on 0.2.0-preview.60 with the package's
+  Server and then this branch's: four of six cases, then six of six. And
+  `new Dictionary<string, T>(StringComparer.Ordinal)`, the default for a string key, failed the build
+  with EQ1004 ([#577](https://github.com/eQuantic/equantic-ui/issues/577)): #443's construction
+  refused every comparer parameter, a stricter copy of the fence that already passed that one, and
+  `CollectionComparerFenceTests` checked only for the fence's own code. The construction skips a
+  comparer now and a sorted one keeps the order it asks for; the fence decides alone. Found on the
+  way: a page route answers `HEAD` with a 404 ([#575](https://github.com/eQuantic/equantic-ui/issues/575)).
+  Proposed and archived through OpenSpec (`openspec/specs/links`, `openspec/specs/runtime-dictionaries`).
 
 ## Retired documents
 
