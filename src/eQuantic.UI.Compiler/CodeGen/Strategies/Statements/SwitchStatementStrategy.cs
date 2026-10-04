@@ -5,7 +5,7 @@ namespace eQuantic.UI.Compiler.CodeGen.Strategies.Statements;
 
 /// <summary>
 /// <c>switch</c> statements. Constant labels only → a native JavaScript <c>switch</c>. Any
-/// pattern label (<c>case int n when n > 3:</c>) → an if/else chain over the subject bound once
+/// pattern label (<c>case int n when n > 3:</c>) or decimal label → an if/else chain over the subject bound once
 /// (<c>const $s = …</c>), because JavaScript's switch has no patterns; the pattern's bindings are
 /// hoisted once for the whole chain and assigned inside each arm's condition.
 /// </summary>
@@ -28,9 +28,12 @@ public class SwitchStatementStrategy : IStatementStrategy
         // block the if-chain form opens.
         var declared = ExpressionVariableScanner.InFrontOf(switchStmt, switchStmt.Expression, context.TypeAnnotations);
         var expr = context.Converter.ConvertIr(switchStmt.Expression);
+        // A DECIMAL label takes the chain too: JavaScript's switch compares by `===`, which never
+        // matches the runtime's Decimal, an object (PatternConverter.ConstantMatch).
         var usesPatterns = switchStmt.Sections
             .SelectMany(s => s.Labels)
-            .Any(l => l is CasePatternSwitchLabelSyntax);
+            .Any(l => l is CasePatternSwitchLabelSyntax
+                || (l is CaseSwitchLabelSyntax && PatternConverter.DecimalConstant(l, context) is not null));
 
         return JsStatement.Hoisted(declared, usesPatterns
             ? ConvertAsIfChain(switchStmt, expr, context)
@@ -106,7 +109,7 @@ public class SwitchStatementStrategy : IStatementStrategy
                 switch (label)
                 {
                     case CaseSwitchLabelSyntax constant:
-                        labelConditions.Add($"{Subject} === {context.Converter.ConvertExpression(constant.Value)}");
+                        labelConditions.Add(PatternConverter.ConstantMatch(constant, constant.Value, Subject, context));
                         break;
 
                     case CasePatternSwitchLabelSyntax pat:
