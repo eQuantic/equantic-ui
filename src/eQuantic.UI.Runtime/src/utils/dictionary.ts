@@ -1,6 +1,7 @@
 import { adoptMember } from './adopt-member';
 import { sameItem } from './collections';
 import { equals } from './equals';
+import { exception } from './exceptions';
 
 /**
  * How a dictionary finds a key, as .NET's default comparer for the key type does, which eqc says:
@@ -68,7 +69,8 @@ export class Dictionary<K, V> implements Iterable<Pair<K, V>> {
    * throws stops the ones after it.
    */
   add(key: K, value: V): this {
-    if (this.find(key) >= 0) throw new Error(`An item with the same key has already been added. Key: ${keyText(key)}`);
+    if (this.find(key) >= 0)
+      throw exception('System.ArgumentException', `An item with the same key has already been added. Key: ${keyText(key)}`);
     return this.set(key, value);
   }
 
@@ -209,7 +211,10 @@ export function wireObject<K, V>(entries: Iterable<{ key: K; value: V } | undefi
 
 /** .NET's InvalidOperationException for a collection changed under a walk over it. */
 export function collectionModified(): Error {
-  return new Error('Collection was modified; enumeration operation may not execute.');
+  return exception(
+    'System.InvalidOperationException',
+    'Collection was modified; enumeration operation may not execute.',
+  );
 }
 
 /**
@@ -217,7 +222,7 @@ export function collectionModified(): Error {
  * included, with .NET's words: a `Map` would have answered a miss, or filed an entry under null.
  */
 export function requireKey(key: unknown): void {
-  if (key == null) throw new Error("Value cannot be null. (Parameter 'key')");
+  if (key == null) throw exception('System.ArgumentNullException', "Value cannot be null. (Parameter 'key')");
 }
 
 /**

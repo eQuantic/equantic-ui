@@ -118,6 +118,41 @@ and SHALL NOT be written into the module as C#.
 - **THEN** the build fails with EQ1004 naming the literal, where Bun met `"ab"u8.length` in the
   module and reported a syntax error against no C# line
 
+### Requirement: An expression the transpiler lowers runs where C# runs it
+
+A C# expression the transpiler lowers through a construct of its own SHALL run where C# runs it: once,
+in C#'s order, and in the function C# runs it in, so that an `await` in it is the enclosing method's.
+`checked(…)` and `unchecked(…)` SHALL be their operand, each operation in it settled under the bound
+tree's context; a `throw` expression's exception, `Trim`'s characters and receiver, and
+`Enumerable.Range`'s and `Repeat`'s arguments SHALL be passed as arguments, never held in a function
+the transpiler writes around them. `Trim` of no characters SHALL trim white space, and `Range` and
+`Repeat` SHALL refuse a negative count with an `ArgumentOutOfRangeException`, as .NET does.
+
+#### Scenario: An await in checked
+
+- **WHEN** `async Task<int> F() { await Task.Yield(); return 1; } return checked(await F() + 1);` runs
+- **THEN** it answers 2, as .NET does, where the module did not parse
+
+#### Scenario: An await in a throw expression
+
+- **WHEN** `string s = null; try { return s ?? throw new InvalidOperationException(await M()); } catch (InvalidOperationException e) { return e.Message; }` runs, `M` answering `m` after a yield
+- **THEN** it answers `m`, as .NET does
+
+#### Scenario: An await among Trim's characters
+
+- **WHEN** `return "xxaxx".Trim(await C());` runs, `C` answering `'x'` after a yield
+- **THEN** it answers `a`, as .NET does
+
+#### Scenario: Range's start evaluated once
+
+- **WHEN** `var calls = 0; int Start() { calls++; return 1; } var r = string.Join(",", Enumerable.Range(Start(), 3)); return r + ":" + calls;` runs
+- **THEN** it answers `1,2,3:1`, as .NET does, where `Start` ran three times and the answer was `1,3,5:3`
+
+#### Scenario: Repeat's element evaluated once
+
+- **WHEN** `var xs = Enumerable.Repeat(new List<int>(), 3).ToList(); return object.ReferenceEquals(xs[0], xs[1]);` runs
+- **THEN** it answers true, as .NET does, where the three lists were three
+
 ### Requirement: A type pattern tests the type
 
 A type pattern with nothing bound (`o is int`, `int => …`, `case int:`, either side of `or` and
@@ -171,3 +206,35 @@ A `long` or `ulong` constant SHALL cross as the BigInt every long is in the brow
 
 - **WHEN** a switch over an `object` holding `"hello"` has a `char` arm before a `string` arm
 - **THEN** the `string` arm is taken, as in .NET
+
+### Requirement: A null-conditional call evaluates as C# does, an awaited argument included
+
+A null-conditional access (`a?.M(x)`, `a?[i]`, and a chain behind one) SHALL evaluate its receiver
+once and SHALL answer null when the receiver is null, without evaluating the rest of the chain or
+its arguments. An argument that awaits SHALL be awaited in the method it is written in, only when
+the receiver is not null, so a method that meets a null receiver goes on without suspending, and
+the call's own answer SHALL NOT be awaited: a task it returns stays a task. Where the receiver is
+not a local, a parameter or `this` and the call translates to a helper, a tail that awaits SHALL
+fail the build with EQ1004, naming the fix: bind the receiver to a local first.
+
+#### Scenario: An awaited argument behind a string
+
+- **WHEN** `string s = "abc";` runs `var r = s?.StartsWith(await Needle(), StringComparison.Ordinal);`,
+  where `Needle` counts its calls and answers `"a"`
+- **THEN** `r` is true and `Needle` was called once
+
+#### Scenario: An awaited argument behind a null receiver
+
+- **WHEN** `string s = null;` runs the same line
+- **THEN** `r` is null and `Needle` was never called
+
+#### Scenario: A null receiver does not suspend the method
+
+- **WHEN** an async method runs `var r = s?.StartsWith(await Needle(), StringComparison.Ordinal);`
+  and then sets `finished = true`, with `s` null, and its caller reads `finished` before awaiting it
+- **THEN** the caller reads true
+
+#### Scenario: A receiver that is not a local
+
+- **WHEN** a component calls `Get()?.StartsWith(await Needle(), StringComparison.Ordinal)`
+- **THEN** the build fails with EQ1004, telling it to bind the receiver to a local first
