@@ -1229,6 +1229,26 @@ record of a release, the wiki's Upgrading page is the distillate.
   back (`Cast`, `DefaultIfEmpty`) and a read-only face hiding a list, and both copy now. Each is a
   conformance case on both sides that failed against main. Proposed and archived through OpenSpec
   (`openspec/specs/transpiler-sequences`).
+- **2026-10-04 · A find bar's Escape closes its own editor's bar**: the code editor's Escape was a
+  page-wide chord mounted with the find bar, so with two bars open it closed the one mounted last,
+  wherever the keyboard was ([#457](https://github.com/eQuantic/equantic-ui/issues/457)). Made the
+  editor's own, around the code, it would also have taken Escape from a dialog around an editor whose
+  bar is closed, and mounted only with the bar, around the code, it would have moved the code in the
+  tree. `Shortcut.Enabled` gives a chord the state Flutter gives an `Action` that is not enabled: in
+  the tree, binding nothing, on the web (SSR and the TypeScript twin) and on Photon. The Escape now
+  wraps the layers beside ⌘F, focus-scoped and enabled while the bar is open. The local review found
+  the web answering a dialog's Escape before the open bar's inside it, where Photon closed the bar:
+  of two nested chords the web listed the inner one first, and a binding now takes its place before
+  its child lowers, as Photon emits it. Each test failed against main's editor, against its realizer
+  without the guard, or against the old order, and the dialog's against an Escape that is always
+  enabled. Proposed and archived through OpenSpec (`openspec/specs/keyboard-shortcuts`).
+- **2026-10-04 · Opening a panel leaves the focus where it was**: `Select`, `Menu`, `TimePicker` and
+  `DatePicker` mounted the chords their panel answers to with the panel, a `Shortcut` per chord, so
+  opening moved the trigger down the tree, and on Photon the keyboard focus named a path the trigger
+  had left: no ring while the panel was up
+  ([#567](https://github.com/eQuantic/equantic-ui/issues/567), found in the local review of #457).
+  Their chords stay around the tree now, enabled while the panel is open, and each of the four failed
+  against the previous component. Recorded in `openspec/specs/keyboard-shortcuts`.
 - **2026-10-03 · A catch tests its type and its filter**: each catch clause was a JavaScript catch of
   its own, so two clauses were a SyntaxError that cost the module, and one took every exception, its
   type never tested and its filter dropped ([#474](https://github.com/eQuantic/equantic-ui/issues/474));

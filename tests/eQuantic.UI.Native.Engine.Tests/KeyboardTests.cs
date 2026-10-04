@@ -884,11 +884,48 @@ public class WordSelectionTests
 
 /// <summary>
 /// Choosing from a Select or a Menu without a mouse: open, arrow to the option, Enter. The chords
-/// are declared as Shortcut nodes around the OPEN panel, so a closed control owns no keys at all —
-/// and every arrow press rebuilds the tree, which is exactly what these walk through.
+/// are declared as Shortcut nodes around the control, enabled while its panel is open, so a closed
+/// control owns no keys at all — and every arrow press rebuilds the tree, which is exactly what these
+/// walk through.
 /// </summary>
 public class DropdownKeyboardTests
 {
+    /// <summary>
+    /// Opening a panel with the keyboard leaves the focus on a node of the frame, the trigger itself
+    /// where the panel is a list or a menu driven from it. The chords that answer while the panel is
+    /// up were MOUNTED with it, a Shortcut per chord around the trigger, so the trigger moved down the
+    /// tree and the focus named a node that was no longer in the frame: no ring while the panel was up
+    /// (#567). A date picker's panel is a dialog, which the focus may enter.
+    /// </summary>
+    [Theory]
+    [InlineData("select", 1, true)]
+    [InlineData("menu", 1, true)]
+    [InlineData("time", 1, true)]
+    [InlineData("date", 2, false)]
+    public void OpeningAPanelWithTheKeyboard_LeavesTheFocusOnANodeOfTheFrame(string which, int tabs, bool staysOnTrigger)
+    {
+        VisualNode control = which switch
+        {
+            "select" => new Select(["A", "B"], 0, _ => { }),
+            "menu" => new Menu(new Button("Actions"), [new MenuItem("Rename"), new MenuItem("Delete")], _ => { }),
+            "time" => new TimePicker(new TimeOnly(9, 0)),
+            _ => new DatePicker(new DateOnly(2026, 10, 4)),
+        };
+        var column = new Column(gap: 0) { Width = 300 };
+        column.Add(control);
+        var host = new PhotonHost(column, PhotonTheme.Instance, ThemeMode.Light, 300, 500);
+        var closed = host.RenderFrame(new DisplayListBuilder()).FocusStops.Count;
+        for (var i = 0; i < tabs; i++) Press(host, "Tab");
+        var trigger = host.FocusedPath;
+
+        Press(host, "Enter");
+
+        var frame = host.RenderFrame(new DisplayListBuilder());
+        frame.FocusStops.Count.Should().BeGreaterThan(closed, "the panel is open");
+        frame.FocusStops.Should().Contain(stop => stop.Path == host.FocusedPath, "the focus is on a node of the frame");
+        if (staysOnTrigger) host.FocusedPath.Should().Be(trigger);
+    }
+
     private static (PhotonHost Host, List<int> Chosen) OpenSelect(int selected = 0)
     {
         var chosen = new List<int>();

@@ -429,20 +429,27 @@ public sealed class CodeEditor : StatefulComponent
         if (CodeBlock.Corner(Caption, null, Inverse, context.Theme) is { } corner) layers.Add(corner);
         if (_findOpen)
         {
-            // Escape closes it wherever the keyboard is, in the bar or in the code, which is what
-            // it means in every editor: a chord live while the bar is on screen.
             // The bar counts what ITS field looks for: with the field empty, the matches of the app's own
             // Search still mark the code, and are no count of anything typed.
             IReadOnlyList<CodeRange> found = _findText.Length > 0 ? matches : [];
-            layers.Add(new Positioned(new Shortcut(FindBar(context, editor, found), KeyChord.Escape,
-                () => CloseFind(editor)), top: Space.S2, end: Space.S2));
+            layers.Add(new Positioned(FindBar(context, editor, found), top: Space.S2, end: Space.S2));
         }
+        // Escape closes the bar wherever the keyboard is in this editor, the bar or the code, and only
+        // while the bar is open: a chord of the editor's own, so that of two editors on one page the
+        // one in use closes its bar, and one that binds nothing while the bar is closed, so a dialog
+        // around the editor keeps its Escape (#457). Page-wide, the last bar mounted closed wherever
+        // the keyboard was.
+        var closable = new Shortcut(layers, KeyChord.Escape, () => CloseFind(editor))
+        {
+            FocusScoped = true,
+            Enabled = _findOpen,
+        };
         // ⌘F is UI, not a model command, so it is not in the keymap: a chord of this editor's own,
         // answered while the keyboard is in it (the code, the caption or the bar), so that of two
         // editors on one page the one in use opens its find. Page-wide, the last editor mounted took
-        // it wherever the keyboard was. Around the layers whether the bar is open or not, so
-        // nothing under it moves in the tree.
-        var findable = new Shortcut(layers, new KeyChord("f", KeyModifiers.Command),
+        // it wherever the keyboard was. Both chords wrap the layers whether the bar is open or not,
+        // so nothing under them moves in the tree.
+        var findable = new Shortcut(closable, new KeyChord("f", KeyModifiers.Command),
             () => SetState(() => _findOpen = true)) { FocusScoped = true };
         return new Box(new BoxStyle
         {

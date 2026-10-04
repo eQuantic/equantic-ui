@@ -135,16 +135,15 @@ public sealed class Select : StatefulComponent
         };
 
         // The keyboard, exactly while the panel is up. Nested Shortcuts share one child root — the
-        // realizers LIST the chords on it — and unmounting unsubscribes, so a closed Select owns no
-        // keys at all.
-        if (_open && !Disabled && Options.Count > 0)
-        {
-            select = new Shortcut(select, KeyChord.ArrowDown,
-                () => SetState(() => _highlight = Math.Min(Options.Count - 1, _highlight + 1)));
-            select = new Shortcut(select, KeyChord.ArrowUp,
-                () => SetState(() => _highlight = Math.Max(0, _highlight - 1)));
-            select = new Shortcut(select, KeyChord.Enter, () => Choose(_highlight));
-        }
+        // realizers LIST the chords on it — and one that is not enabled binds nothing, so a closed
+        // Select owns no keys at all. The chords stay around the tree whether it is open or not, so
+        // opening moves nothing in it and the focus stays on the field (#567).
+        var live = _open && !Disabled && Options.Count > 0;
+        select = new Shortcut(select, KeyChord.ArrowDown,
+            () => SetState(() => _highlight = Math.Min(Options.Count - 1, _highlight + 1))) { Enabled = live };
+        select = new Shortcut(select, KeyChord.ArrowUp,
+            () => SetState(() => _highlight = Math.Max(0, _highlight - 1))) { Enabled = live };
+        select = new Shortcut(select, KeyChord.Enter, () => Choose(_highlight)) { Enabled = live };
         return select;
     }
 
