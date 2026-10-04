@@ -979,6 +979,9 @@ const FORMAT_INDEX =
  * the interpolation path (`$"{x:F2}"`), which already uses `format`.
  */
 export function stringFormat(template: string, ...args: unknown[]): string {
+  // A null template is .NET's ArgumentNullException, by its parameter's name: read through null, it
+  // was a NullReferenceException.
+  if (template == null) throw exception('System.ArgumentNullException', "Value cannot be null. (Parameter 'format')");
   return template.replace(
     /\{\{|\}\}|\{(\d+)(?:,(-?\d+))?(?::([^}]*))?\}/g,
     (m, idx, width, spec) => {

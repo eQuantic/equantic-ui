@@ -18,6 +18,11 @@
 import { activePattern } from './culture';
 import { exception } from './exceptions';
 
+/** A null text handed to `Parse`, as .NET words it: `DateTime`, `DateOnly` and `TimeOnly` name it `s`,
+ * `TimeSpan` and `DateTimeOffset` name it `input`. Read through null, it was a NullReferenceException. */
+const NULL_S = "Value cannot be null. (Parameter 's')";
+const NULL_INPUT = "Value cannot be null. (Parameter 'input')";
+
 const TICKS_PER_MICROSECOND = 10n;
 const TICKS_PER_MILLISECOND = 10_000n;
 const TICKS_PER_SECOND = 10_000_000n;
@@ -271,6 +276,7 @@ timeSpan.fromMilliseconds = components(4, TICKS_PER_MILLISECOND);
 timeSpan.fromMicroseconds = (v) => interval(v, 10n);
 timeSpan.fromTicks = (v) => new TimeSpan(typeof v === 'bigint' ? v : BigInt(Math.trunc(v)));
 timeSpan.parse = (text: string): TimeSpan => {
+  if (text == null) throw exception('System.ArgumentNullException', NULL_INPUT);
   // .NET "c" format: [-][d.]hh:mm:ss[.fffffff]
   const m = /^(-)?(?:(\d+)\.)?(\d{1,2}):(\d{2}):(\d{2})(?:\.(\d+))?$/.exec(text.trim());
   if (!m) throw exception('System.FormatException', `Unrecognized TimeSpan format: '${text}'`);
@@ -566,6 +572,7 @@ dateTime.maxValue = () => new DateTime(MAX_DATETIME_TICKS);
 dateTime.daysInMonth = daysInMonth;
 dateTime.isLeapYear = isLeapYear;
 dateTime.parse = (text: string): DateTime => {
+  if (text == null) throw exception('System.ArgumentNullException', NULL_S);
   const t = text.trim();
   // ISO-8601: yyyy-MM-dd[Thh:mm:ss[.fffffff]] (the wire form).
   let m = /^(\d{4})-(\d{2})-(\d{2})(?:[T ](\d{2}):(\d{2}):(\d{2})(?:\.(\d+))?)?/.exec(t);
@@ -679,6 +686,7 @@ dateOnly.fromDateTime = (dt) => new DateOnly(Number(dt.ticks / TICKS_PER_DAY));
 dateOnly.minValue = () => new DateOnly(0);
 dateOnly.maxValue = () => new DateOnly(daysFromCivil(9999, 12, 31));
 dateOnly.parse = (text: string): DateOnly => {
+  if (text == null) throw exception('System.ArgumentNullException', NULL_S);
   const parsed = tryParseDateOnly(text);
   if (parsed === null) throw exception('System.FormatException', `Unrecognized DateOnly format: '${text}'`);
   return parsed;
@@ -840,6 +848,7 @@ timeOnly.fromDateTime = (value: DateTime) =>
 timeOnly.minValue = () => new TimeOnly(0n);
 timeOnly.maxValue = () => new TimeOnly(TICKS_PER_DAY - 1n);
 timeOnly.parse = (text: string): TimeOnly => {
+  if (text == null) throw exception('System.ArgumentNullException', NULL_S);
   const m = /^(\d{1,2}):(\d{2})(?::(\d{2})(?:\.(\d+))?)?/.exec(text.trim());
   if (!m) throw exception('System.FormatException', `Unrecognized TimeOnly format: '${text}'`);
   const frac = m[4] ? BigInt(m[4].padEnd(7, '0').slice(0, 7)) : 0n;
@@ -1058,6 +1067,7 @@ dateTimeOffset.utcNow = () => new DateTimeOffset(dateTime.utcNow().ticks, 0n);
 dateTimeOffset.minValue = () => new DateTimeOffset(0n, 0n);
 dateTimeOffset.maxValue = () => new DateTimeOffset(MAX_DATETIME_TICKS, 0n);
 dateTimeOffset.parse = (text: string): DateTimeOffset => {
+  if (text == null) throw exception('System.ArgumentNullException', NULL_INPUT);
   const t = text.trim();
   // yyyy-MM-ddTHH:mm:ss[.fff][(+|-)HH:mm | Z]
   const m =

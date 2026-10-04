@@ -78,9 +78,10 @@ public class ObjectCreationStrategy : IConversionStrategy
         {
             [IArrayTypeSymbol] => "({0} ?? []).join('')",
             [{ SpecialType: SpecialType.System_Char }, { SpecialType: SpecialType.System_Int32 }] => "{0}.repeat({1})",
-            // The range refused where it leaves the array, as .NET refuses it: `slice` clamped it.
+            // The range refused where it leaves the array, as .NET refuses it: `slice` clamped it. A null
+            // array is refused by its parameter's name, `value`.
             [IArrayTypeSymbol, { SpecialType: SpecialType.System_Int32 }, { SpecialType: SpecialType.System_Int32 }]
-                => $"{Eq.TextChars}({{0}}, {{1}}, {{2}}).join('')",
+                => $"{Eq.TextChars}({{0}}, {{1}}, {{2}}, 'value').join('')",
             _ => null,
         };
         if (template is null || creation.Arguments.Length != constructor.Parameters.Length) return null;

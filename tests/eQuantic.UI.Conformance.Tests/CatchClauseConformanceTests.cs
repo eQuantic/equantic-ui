@@ -81,6 +81,15 @@ public class CatchClauseConformanceTests
     [InlineData("string s = null; try { return s.Length; } catch (ArgumentException) { return 1; } catch (NullReferenceException) { return 2; }")] // 2
     [InlineData("try { return char.Parse(null!) == 'a' ? 0 : 1; } catch (NullReferenceException) { return 1; } catch (ArgumentNullException) { return 2; }")] // 2: char.Parse refuses null by name
     [InlineData("try { Exception x = null; throw x!; } catch (InvalidOperationException) { return 1; } catch (NullReferenceException) { return 2; }")] // 2: throw null is a NullReferenceException
+    [InlineData("try { return DateTime.Parse(null!).Year; } catch (NullReferenceException) { return 1; } catch (ArgumentNullException) { return 2; }")] // 2: a null argument is refused by name
+    [InlineData("try { return TimeSpan.Parse(null!).Hours; } catch (NullReferenceException) { return 1; } catch (ArgumentNullException) { return 2; }")] // 2
+    [InlineData("try { return DateOnly.Parse(null!).Day; } catch (NullReferenceException) { return 1; } catch (ArgumentNullException e) { return e.Message.Length; }")] // the message names `s`
+    [InlineData("try { return TimeOnly.Parse(null!).Hour; } catch (NullReferenceException) { return 1; } catch (ArgumentNullException) { return 2; }")] // 2
+    [InlineData("try { return DateTimeOffset.Parse(null!).Year; } catch (NullReferenceException) { return 1; } catch (ArgumentNullException e) { return e.Message.Length; }")] // the message names `input`
+    [InlineData("string format = null; try { return string.Format(format!, 1).Length; } catch (NullReferenceException) { return 1; } catch (ArgumentNullException) { return 2; }")] // 2
+    [InlineData("try { return new string((char[])null!, 0, 0).Length; } catch (NullReferenceException) { return 1; } catch (ArgumentNullException) { return 2; }")] // 2
+    [InlineData("return new string((char[])null!).Length;")] // 0: the one-array constructor takes null as no chars
+    [InlineData("string s = null; try { return s.ToCharArray(0, 1).Length; } catch (ArgumentNullException) { return 1; } catch (NullReferenceException) { return 2; }")] // 2: a null receiver
     [InlineData("string s = null; try { return s ?? throw (Exception)null!; } catch (NullReferenceException) { return \"nre\"; }")] // "nre": and so is a throw expression's null
     [InlineData("var log = \"\"; Func<string> m = () => { log += \"m\"; return \"msg\"; }; Func<string> p = () => { log += \"p\"; return \"x\"; }; try { throw new ArgumentException(m(), p()); } catch (ArgumentException) { } try { throw new ArgumentOutOfRangeException(p(), m()); } catch (ArgumentException) { } return log;")] // "mppm": every argument runs, as written
     public void AnExceptionTheRuntimeThrows_IsOfTheTypeDotNetThrows(string statements)

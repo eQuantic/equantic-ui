@@ -320,9 +320,18 @@ export function joinRange(
  * The chars of `source` from `startIndex`, `length` of them, as `new string(char[], int, int)` and
  * `ToCharArray(int, int)` take them, refusing a range that leaves the source as .NET refuses it.
  * JavaScript's `slice` clamps instead, so a negative start counted from the end and a length past it
- * was cut short, in silence.
+ * was cut short, in silence. A null array handed to the constructor is refused by `parameter`, its
+ * name there, and `ToCharArray` passes none: a null RECEIVER is a NullReferenceException.
  */
-export function chars(source: string | readonly string[], startIndex: number, length: number): string[] {
+export function chars(
+  source: string | readonly string[],
+  startIndex: number,
+  length: number,
+  parameter?: string,
+): string[] {
+  if (source == null && parameter !== undefined) {
+    throw exception('System.ArgumentNullException', `Value cannot be null. (Parameter '${parameter}')`);
+  }
   const items = typeof source === 'string' ? source.split('') : source;
   if (startIndex < 0) {
     throw exception(
