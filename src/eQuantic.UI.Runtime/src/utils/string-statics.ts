@@ -17,6 +17,7 @@
  * orders after anything that is not a pair, whatever the code units say.
  */
 import { formatLocale } from './culture';
+import { exception } from './exceptions';
 
 /** `StringComparison`, as its members cross: by name. */
 export type StringComparison =
@@ -44,7 +45,7 @@ export const NOT_SUPPORTED =
  * so the statics take any string and this says which are comparisons, as .NET's own check does.
  */
 export function requireComparison(comparison: string): asserts comparison is StringComparison {
-  if (!isStringComparison(comparison)) throw new Error(NOT_SUPPORTED);
+  if (!isStringComparison(comparison)) throw exception('System.ArgumentException', NOT_SUPPORTED);
 }
 
 /** Whether a value is one of the six comparisons, without throwing. */
@@ -55,7 +56,7 @@ export function isStringComparison(comparison: string): comparison is StringComp
 /** An `ArgumentOutOfRangeException`'s words; .NET writes the actual value on a line of its own. */
 export function outOfRange(parameter: string, message: string, actual?: number): Error {
   const value = actual === undefined ? '' : `\nActual value was ${actual}.`;
-  return new Error(`${message} (Parameter '${parameter}')${value}`);
+  return exception('System.ArgumentOutOfRangeException', `${message} (Parameter '${parameter}')${value}`);
 }
 
 function requireNonNegative(parameter: string, value: number): void {
@@ -307,7 +308,7 @@ export function joinRange(
   startIndex: number,
   count: number,
 ): string {
-  if (value == null) throw new Error("Value cannot be null. (Parameter 'value')");
+  if (value == null) throw exception('System.ArgumentNullException', "Value cannot be null. (Parameter 'value')");
   requireNonNegative('startIndex', startIndex);
   requireNonNegative('count', count);
   if (startIndex > value.length - count) {
@@ -324,16 +325,33 @@ export function joinRange(
  * The chars of `source` from `startIndex`, `length` of them, as `new string(char[], int, int)` and
  * `ToCharArray(int, int)` take them, refusing a range that leaves the source as .NET refuses it.
  * JavaScript's `slice` clamps instead, so a negative start counted from the end and a length past it
- * was cut short, in silence.
+ * was cut short, in silence. A null array handed to the constructor is refused by `parameter`, its
+ * name there, and `ToCharArray` passes none: a null RECEIVER is a NullReferenceException.
  */
-export function chars(source: string | readonly string[], startIndex: number, length: number): string[] {
+export function chars(
+  source: string | readonly string[],
+  startIndex: number,
+  length: number,
+  parameter?: string,
+): string[] {
+  if (source == null && parameter !== undefined) {
+    throw exception('System.ArgumentNullException', `Value cannot be null. (Parameter '${parameter}')`);
+  }
   const items = typeof source === 'string' ? source.split('') : source;
   if (startIndex < 0) {
-    throw new RangeError("StartIndex cannot be less than zero. (Parameter 'startIndex')");
+    throw exception(
+      'System.ArgumentOutOfRangeException',
+      "StartIndex cannot be less than zero. (Parameter 'startIndex')",
+    );
   }
-  if (length < 0) throw new RangeError("Length cannot be less than zero. (Parameter 'length')");
+  if (length < 0) {
+    throw exception('System.ArgumentOutOfRangeException', "Length cannot be less than zero. (Parameter 'length')");
+  }
   if (startIndex > items.length - length) {
-    throw new RangeError("Index and length must refer to a location within the string. (Parameter 'startIndex')");
+    throw exception(
+      'System.ArgumentOutOfRangeException',
+      "Index and length must refer to a location within the string. (Parameter 'startIndex')",
+    );
   }
   return items.slice(startIndex, startIndex + length);
 }

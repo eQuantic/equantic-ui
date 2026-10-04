@@ -32,6 +32,7 @@ import {
   outOfRange,
   requireComparison,
 } from './string-statics';
+import { exception } from './exceptions';
 
 const INDEX_AT_MOST_LENGTH =
   'Index was out of range. Must be non-negative and less than or equal to the size of the collection.';
@@ -42,17 +43,26 @@ const COUNT =
 
 /** The instance a method is called on: .NET throws before the method runs when there is none. */
 function receiver(source: string | null | undefined): string {
-  if (source == null) throw new TypeError('Object reference not set to an instance of an object.');
+  if (source == null)
+    throw exception(
+      'System.NullReferenceException',
+      'Object reference not set to an instance of an object.',
+    );
   return source;
 }
 
 function argumentNull(parameter: string): Error {
-  return new Error(`Value cannot be null. (Parameter '${parameter}')`);
+  return exception(
+    'System.ArgumentNullException',
+    `Value cannot be null. (Parameter '${parameter}')`,
+  );
 }
 
+/** A search .NET makes by ICU's collation, which the browser cannot: not supported here. */
 function cultureSearch(member: string, comparison: string): Error {
   const name = comparison[0].toUpperCase() + comparison.slice(1);
-  return new Error(
+  return exception(
+    'System.NotSupportedException',
     `${member} by StringComparison.${name} has no search in the browser: .NET searches with ICU's ` +
       'collation, which JavaScript does not expose. Search by Ordinal or OrdinalIgnoreCase.',
   );
@@ -236,7 +246,9 @@ export function indexOf(
   const start = args.length === 1 ? 0 : args[0];
   const length = args.length === 3 ? args[1] : text.length - start;
   if (!isStringComparison(comparison)) {
-    throw value == null ? argumentNull('value') : new Error(NOT_SUPPORTED);
+    throw value == null
+      ? argumentNull('value')
+      : exception('System.ArgumentException', NOT_SUPPORTED);
   }
   if (value == null) throw argumentNull('value');
   requireRange(text, start, length);
@@ -264,7 +276,9 @@ export function lastIndexOf(
   let start = args.length === 1 ? text.length - 1 : args[0];
   let length = args.length === 1 ? text.length : args.length === 2 ? start + 1 : args[1];
   if (!isStringComparison(comparison)) {
-    throw value == null ? argumentNull('value') : new Error(NOT_SUPPORTED);
+    throw value == null
+      ? argumentNull('value')
+      : exception('System.ArgumentException', NOT_SUPPORTED);
   }
   if (value == null) throw argumentNull('value');
   for (;;) {
@@ -312,7 +326,10 @@ export function replace(
   requireComparison(comparison);
   if (oldValue == null) throw argumentNull('oldValue');
   if (oldValue.length === 0)
-    throw new Error("The value cannot be an empty string. (Parameter 'oldValue')");
+    throw exception(
+      'System.ArgumentException',
+      "The value cannot be an empty string. (Parameter 'oldValue')",
+    );
   const replacement = newValue ?? '';
   if (comparison === 'ordinal') return text.split(oldValue).join(replacement);
   if (comparison !== 'ordinalIgnoreCase') throw cultureSearch('Replace', comparison);

@@ -13,6 +13,7 @@
  */
 
 import { double, single } from './real-text';
+import { exception } from './exceptions';
 import { activeCurrency, activePattern, formatLocale } from './culture';
 
 /**
@@ -602,7 +603,7 @@ function formatNumber(
   const digits = standard[2];
   // Leading zeros are allowed (`F0002` is `F2`), and .NET refuses a precision past its limit.
   const specified = digits.length > 0 ? Number(digits) : null;
-  if (specified !== null && specified > MAX_PRECISION) throw new Error(BAD_SPECIFIER);
+  if (specified !== null && specified > MAX_PRECISION) throw exception('System.FormatException', BAD_SPECIFIER);
   const precision = specified ?? 2;
 
   switch (letter.toUpperCase()) {
@@ -636,14 +637,14 @@ function formatNumber(
       return scientific(number, specified ?? 6, letter === 'e' ? 'e' : 'E');
     case 'D': {
       // Decimal: an integer's digits, padded, and the culture's minus sign (sv-SE's is U+2212)
-      if (!integral(value, kind)) throw new Error(BAD_SPECIFIER);
+      if (!integral(value, kind)) throw exception('System.FormatException', BAD_SPECIFIER);
       const whole = BigInt(value as number | bigint);
       const magnitude = (whole < 0n ? -whole : whole).toString();
       return (whole < 0n ? symbols().minus : '') + magnitude.padStart(specified ?? 1, '0');
     }
     case 'X': // Hex, and B, binary (.NET 8): a negative integer's two's complement at its width
     case 'B': {
-      if (!integral(value, kind)) throw new Error(BAD_SPECIFIER);
+      if (!integral(value, kind)) throw exception('System.FormatException', BAD_SPECIFIER);
       const text = bitsOf(value as number | bigint, kind).toString(
         letter.toUpperCase() === 'X' ? 16 : 2,
       );
@@ -657,7 +658,7 @@ function formatNumber(
       return generalWithPrecision(number, specified, letter === 'g' ? 'e' : 'E');
     default:
       // A letter no number takes (`Z2`) is .NET's FormatException, where it wrote the value.
-      throw new Error(BAD_SPECIFIER);
+      throw exception('System.FormatException', BAD_SPECIFIER);
   }
 }
 
@@ -978,13 +979,16 @@ const FORMAT_INDEX =
  * the interpolation path (`$"{x:F2}"`), which already uses `format`.
  */
 export function stringFormat(template: string, ...args: unknown[]): string {
+  // A null template is .NET's ArgumentNullException, by its parameter's name: read through null, it
+  // was a NullReferenceException.
+  if (template == null) throw exception('System.ArgumentNullException', "Value cannot be null. (Parameter 'format')");
   return template.replace(
     /\{\{|\}\}|\{(\d+)(?:,(-?\d+))?(?::([^}]*))?\}/g,
     (m, idx, width, spec) => {
       if (m === '{{') return '{';
       if (m === '}}') return '}';
       // A placeholder past the values is .NET's FormatException, where it was written as nothing.
-      if (Number(idx) >= args.length) throw new Error(FORMAT_INDEX);
+      if (Number(idx) >= args.length) throw exception('System.FormatException', FORMAT_INDEX);
       const v = args[Number(idx)];
       // `{0,5}` aligns what the placeholder writes; it was left in the text as written.
       const alignment = width != null ? Number(width) : undefined;

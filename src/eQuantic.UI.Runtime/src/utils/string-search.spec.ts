@@ -131,8 +131,12 @@ describe('the arguments, in the order .NET checks them', () => {
     expect(() => indexOf(null, 'a', 'ordinal')).toThrow(
       'Object reference not set to an instance of an object.',
     );
-    expect(() => instanceEquals(null, 'a', 'ordinal')).toThrow(TypeError);
-    expect(() => compareTo(undefined, 'a')).toThrow(TypeError);
+    expect(() => instanceEquals(null, 'a', 'ordinal')).toThrow(
+      'Object reference not set to an instance of an object.',
+    );
+    expect(() => compareTo(undefined, 'a')).toThrow(
+      'Object reference not set to an instance of an object.',
+    );
   });
 });
 

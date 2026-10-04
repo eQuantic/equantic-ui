@@ -1,4 +1,4 @@
-import { Badge, Box, BoxStyle, BuildContext, Column, CornerRadii, EdgeInsets, Icon, IconGlyph, IconsValue, MainAlignValue, NavItem, Pressable, SizeValue, StatelessComponent, Text, TypeStyle, VisualNodeExtensions } from "../runtime-exports";
+import { $eq, Badge, Box, BoxStyle, BuildContext, Column, CornerRadii, EdgeInsets, Icon, IconGlyph, IconsValue, MainAlignValue, NavItem, Pressable, SizeValue, StatelessComponent, Text, TypeStyle, VisualNodeExtensions } from "../runtime-exports";
 
 export class NavigationRail extends StatelessComponent {
     static $typeId = 'eQuantic.UI.Components.NavigationRail';
@@ -9,7 +9,7 @@ export class NavigationRail extends StatelessComponent {
     }
 
     set items(value) {
-        this.$items = (value.length < 3 || value.length > 7) ? (() => { throw new Error('NavigationRail takes 3-7 destinations (spec B4): 2 → Tabs, 8+ → Drawer.'); })() : value;
+        this.$items = (value.length < 3 || value.length > 7) ? $eq.exceptions.raise($eq.exceptions.create(['System.ArgumentException', 'System.SystemException', 'System.Exception'], 'NavigationRail takes 3-7 destinations (spec B4): 2 → Tabs, 8+ → Drawer.', 'Items')) : value;
     }
 
     declare selected: number;

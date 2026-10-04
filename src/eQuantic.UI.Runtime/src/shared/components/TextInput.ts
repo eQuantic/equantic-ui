@@ -1,4 +1,4 @@
-import { Box, BoxStyle, BuildContext, Column, CornerRadii, EdgeInsets, Flexible, Icon, IconGlyph, Row, SizeValue, SizeVariantValue, Sizing, StatefulComponent, Text, TextEntry, UiComponent } from "../runtime-exports";
+import { $eq, Box, BoxStyle, BuildContext, Column, CornerRadii, EdgeInsets, Flexible, Icon, IconGlyph, Row, SizeValue, SizeVariantValue, Sizing, StatefulComponent, Text, TextEntry, UiComponent } from "../runtime-exports";
 
 export class TextInput extends StatefulComponent {
     static $typeId = 'eQuantic.UI.Components.TextInput';
@@ -32,7 +32,7 @@ export class TextInput extends StatefulComponent {
         if (this.disabled === undefined) this.disabled = false;
         if (this.autofocus === undefined) this.autofocus = false;
         if (this.obscure === undefined) this.obscure = false;
-        if (size === 'small') throw new Error('TextInput has no Small size — text + padding can\'t fit 32dp (spec B9).');
+        if (size === 'small') throw $eq.exceptions.create(['System.ArgumentOutOfRangeException', 'System.ArgumentException', 'System.SystemException', 'System.Exception'], 'TextInput has no Small size — text + padding can\'t fit 32dp (spec B9).', 'size');
         this.value = value;
         this.onChanged = onChanged;
         this.label = label;
