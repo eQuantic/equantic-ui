@@ -12,6 +12,8 @@
  * `IsTight` (what every `Convert` overload passes), and every refusal carries .NET's words.
  */
 
+import { exception } from './exceptions';
+
 /** The integer types a base conversion reads into, as the compiler names them. */
 export type BaseTarget = 'byte' | 'sbyte' | 'short' | 'ushort' | 'int' | 'uint' | 'long' | 'ulong';
 
@@ -26,11 +28,11 @@ const NO_DIGITS = 'Could not find any recognizable digits.';
 const EXTRA_JUNK = 'Additional non-parsable characters are at the end of the string.';
 
 function overflow(type: string): Error {
-  return new Error(`Value was either too large or too small for ${type}.`);
+  return exception('System.OverflowException', `Value was either too large or too small for ${type}.`);
 }
 
 function checkBase(base: number): void {
-  if (base !== 2 && base !== 8 && base !== 10 && base !== 16) throw new Error(INVALID_BASE);
+  if (base !== 2 && base !== 8 && base !== 10 && base !== 16) throw exception('System.ArgumentException', INVALID_BASE);
 }
 
 /** A digit's value in the radix, or -1: .NET's `IsDigit`, which knows letters of either case. */
@@ -52,12 +54,12 @@ interface Head {
 /** The sign and the `0x` prefix, in .NET's order: a minus sign is refused outside base 10 before
  * an unsigned target refuses it. */
 function head(s: string, radix: number, unsigned: boolean): Head {
-  if (s.length === 0) throw new Error(EMPTY);
+  if (s.length === 0) throw exception('System.ArgumentOutOfRangeException', EMPTY);
   let index = 0;
   let sign: 1 | -1 = 1;
   if (s[0] === '-') {
-    if (radix !== 10) throw new Error(NEGATIVE_IN_BASE);
-    if (unsigned) throw new Error(NEGATIVE_UNSIGNED);
+    if (radix !== 10) throw exception('System.ArgumentException', NEGATIVE_IN_BASE);
+    if (unsigned) throw exception('System.OverflowException', NEGATIVE_UNSIGNED);
     sign = -1;
     index = 1;
   } else if (s[0] === '+') {
@@ -76,8 +78,8 @@ function head(s: string, radix: number, unsigned: boolean): Head {
 
 /** Nothing read, or something left after the digits. */
 function tail(s: string, start: number, end: number): void {
-  if (end === start) throw new Error(NO_DIGITS);
-  if (end < s.length) throw new Error(EXTRA_JUNK);
+  if (end === start) throw exception('System.FormatException', NO_DIGITS);
+  if (end < s.length) throw exception('System.FormatException', EXTRA_JUNK);
 }
 
 /** `ParseNumbers`' flags that change a read: an unsigned target, and the 8- and 16-bit ranges. */

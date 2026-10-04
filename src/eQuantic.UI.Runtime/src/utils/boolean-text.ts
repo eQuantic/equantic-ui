@@ -6,6 +6,7 @@
  * trims, made "true\0" false. `bool.TryParse` had no translation at all.
  */
 
+import { exception } from './exceptions';
 import { isWhiteSpace } from './white-space';
 
 /** `ArgumentNullException` for the text `bool.Parse` was handed, as .NET words it. */
@@ -47,10 +48,10 @@ export function boolTryParse(text: string | null | undefined): boolean | undefin
 
 /** `bool.Parse`: what TryParse reads, and .NET's exceptions where it reads nothing. */
 export function boolParse(text: string | null | undefined): boolean {
-  if (text == null) throw new Error(NULL_VALUE);
+  if (text == null) throw exception('System.ArgumentNullException', NULL_VALUE);
   const value = boolTryParse(text);
   if (value === undefined)
-    throw new Error(`String '${text}' was not recognized as a valid Boolean.`);
+    throw exception('System.FormatException', `String '${text}' was not recognized as a valid Boolean.`);
   return value;
 }
 

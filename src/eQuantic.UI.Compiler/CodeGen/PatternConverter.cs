@@ -4,8 +4,8 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Operations;
-using eQuantic.UI.Compiler.CodeGen.Strategies;
 using eQuantic.UI.Compiler.CodeGen.Ir;
+using eQuantic.UI.Compiler.CodeGen.Strategies;
 
 namespace eQuantic.UI.Compiler.CodeGen;
 
@@ -303,8 +303,9 @@ public static class PatternConverter
 
         // A class that lowers to a REAL JS class supports `instanceof`. That is the whole VOCABULARY
         // — every `VisualNode` is an `export class` in the runtime, components included (UiComponent
-        // derives from VisualNode). Everything else keeps the null-check: enums lower to string
-        // literals, value types to plain config objects, exceptions to Error.
+        // derives from VisualNode). An exception is an Error carrying its .NET types, which its own
+        // test reads. Everything else keeps the null-check: enums lower to string literals, value
+        // types to plain config objects.
         //
         // It used to be components ONLY, and the fallback is where that hurt: `leading switch { Icon
         // icon => …, Avatar avatar => … }` emitted `_s != null` for the Icon arm, so the FIRST arm
@@ -317,6 +318,10 @@ public static class PatternConverter
                 TypeKind: TypeKind.Class or TypeKind.Struct
             } named)
         {
+            // `e is ArgumentException`, a switch arm over exceptions, `e as …` and a typed catch, the
+            // same test: was `!= null`, so the first arm took every exception (#474).
+            if (ExceptionTypes.Is(named)) return ExceptionTypes.Test(access, named, context);
+
             if (LowersToAJsClass(named))
             {
                 // The name has to reach the import list, or the module references a free variable.

@@ -5,7 +5,6 @@ ArrayStaticStrategy
 AsExpressionStrategy
 AverageStrategy
 CastStrategy
-CheckedExpressionStrategy
 CollectionMaterializationStrategy
 ConditionalAccessStrategy
 ConsoleStrategy
@@ -22,7 +21,6 @@ ElementAtStrategy
 EnumHasFlagStrategy
 EnumMethodStrategy
 EnumStrategy
-EnumerableFactoryStrategy
 EventSubscriptionStrategy
 FieldExpressionStrategy
 FirstStrategy
@@ -69,7 +67,6 @@ SumStrategy
 SwitchExpressionStrategy
 TakeStrategy
 TaskMethodStrategy
-ThrowExpressionStrategy
 TimeSpanStrategy
 ToStringStrategy
 TupleExpressionStrategy

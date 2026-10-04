@@ -1,7 +1,7 @@
 # eqc BCL surface audit — the coverage DENOMINATOR, one verdict per probed member.
 # native = a strategy mapped it to plain JS · eq = routed through a $eq compat helper
 # fenced:EQxxxx = refused with that diagnostic · invalid-probe = the probe itself doesn't compile
-# totals: eq=204 · fenced=79 · invalid-probe=6 · native=721
+# totals: eq=211 · fenced=79 · invalid-probe=6 · native=714
 native         Array.MaxLength
 native         Boolean.CompareTo(Boolean)
 native         Boolean.CompareTo(Object)
@@ -62,7 +62,7 @@ eq             Char.IsWhiteSpace(Char)
 eq             Char.IsWhiteSpace(String,Int32)
 native         Char.MaxValue
 native         Char.MinValue
-native         Char.Parse(String)
+eq             Char.Parse(String)
 native         Char.ToLower(Char)
 native         Char.ToLowerInvariant(Char)
 native         Char.ToString()
@@ -850,14 +850,14 @@ native         String.ToString()
 native         String.ToUpper()
 native         String.ToUpperInvariant()
 eq             String.Trim()
-native         String.Trim(Char)
-native         String.Trim(Char[])
+eq             String.Trim(Char)
+eq             String.Trim(Char[])
 eq             String.TrimEnd()
-native         String.TrimEnd(Char)
-native         String.TrimEnd(Char[])
+eq             String.TrimEnd(Char)
+eq             String.TrimEnd(Char[])
 eq             String.TrimStart()
-native         String.TrimStart(Char)
-native         String.TrimStart(Char[])
+eq             String.TrimStart(Char)
+eq             String.TrimStart(Char[])
 native         StringBuilder.Append(Boolean)
 native         StringBuilder.Append(Byte)
 native         StringBuilder.Append(Char)

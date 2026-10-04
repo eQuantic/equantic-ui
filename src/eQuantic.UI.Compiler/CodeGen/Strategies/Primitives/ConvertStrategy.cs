@@ -255,8 +255,9 @@ public class ConvertStrategy : IExpressionIrStrategy
             case SpecialType.System_Char or SpecialType.System_DateTime:
                 var from = type.SpecialType == SpecialType.System_Char ? "Char" : "DateTime";
                 var parameter = context.TypeAnnotations ? "(_: unknown)" : "(_)";
+                context.UsedHelpers.Add(Eq.Import);
                 return JsExpr.Template(
-                    $"({parameter} => {{ throw new Error(\"Invalid cast from '{from}' to 'Decimal'.\"); }})({{0}})",
+                    $"({parameter} => {{ throw {Eq.ExceptionOf}('System.InvalidCastException', \"Invalid cast from '{from}' to 'Decimal'.\"); }})({{0}})",
                     [value], context.TypeAnnotations);
         }
         return type.IsIntegral() ? Call(Eq.Dec) : Call(Eq.DecConvert);
@@ -292,7 +293,8 @@ public class ConvertStrategy : IExpressionIrStrategy
             case SpecialType.System_Char or SpecialType.System_DateTime:
                 var from = type.SpecialType == SpecialType.System_Char ? "Char" : "DateTime";
                 var parameter = context.TypeAnnotations ? "(_: unknown)" : "(_)";
-                return Template($"({parameter} => {{ throw new Error(\"Invalid cast from '{from}' to 'Boolean'.\"); }})({{0}})");
+                context.UsedHelpers.Add(Eq.Import);
+                return Template($"({parameter} => {{ throw {Eq.ExceptionOf}('System.InvalidCastException', \"Invalid cast from '{from}' to 'Boolean'.\"); }})({{0}})");
             default:
                 return Template("(({0}) !== 0)");
         }
