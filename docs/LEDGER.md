@@ -1145,6 +1145,16 @@ record of a release, the wiki's Upgrading page is the distillate.
   back (`Cast`, `DefaultIfEmpty`) and a read-only face hiding a list, and both copy now. Each is a
   conformance case on both sides that failed against main. Proposed and archived through OpenSpec
   (`openspec/specs/transpiler-sequences`).
+- **2026-10-04 · A find bar's Escape closes its own editor's bar**: the code editor's Escape was a
+  page-wide chord mounted with the find bar, so with two bars open it closed the one mounted last,
+  wherever the keyboard was ([#457](https://github.com/eQuantic/equantic-ui/issues/457)). Made the
+  editor's own, around the code, it would also have taken Escape from a dialog around an editor whose
+  bar is closed, and mounted only with the bar, around the code, it would have moved the code in the
+  tree. `Shortcut.Enabled` gives a chord the state Flutter gives an `Action` that is not enabled: in
+  the tree, binding nothing, on the web (SSR and the TypeScript twin) and on Photon. The Escape now
+  wraps the layers beside ⌘F, focus-scoped and enabled while the bar is open. Each test failed against
+  main's editor, or against its realizer without the guard, and the dialog's against an Escape that
+  is always enabled. Proposed and archived through OpenSpec (`openspec/specs/keyboard-shortcuts`).
 
 ## Retired documents
 
