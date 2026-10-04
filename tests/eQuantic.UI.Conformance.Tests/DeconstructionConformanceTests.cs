@@ -57,6 +57,12 @@ public class DeconstructionConformanceTests
     [InlineData("var map = new Dictionary<string, int>(); (map[\"a\"], map[\"b\"]) = new Point(1, 2); return map[\"a\"] * 10 + map[\"b\"];")] // 12
     [InlineData("var map = new Dictionary<string, int>(); (map[\"a\"], map[\"b\"]) = (3, 4); return map[\"a\"] * 10 + map[\"b\"];")]          // 34
     [InlineData("var map = new Dictionary<string, int> { [\"a\"] = 9 }; (map[\"a\"], _) = (5, 6); return map[\"a\"] + map.Count;")]          // 6: the indexer replaces
+    // A dictionary's receiver and key run before the value, each once and in C#'s order, and an int part
+    // is converted in place to the long its entry holds: "manb12:12". A tuple LITERAL converts its
+    // elements itself, so the part reaches the entry converted through a record and a tuple variable.
+    [InlineData("var log = \"\"; var map = new Dictionary<string, long>(); Func<string, Dictionary<string, long>> m = s => { log += s; return map; }; Func<string, string> k = s => { log += s; return s; }; Func<int, int> v = x => { log += x; return x; }; (m(\"m\")[k(\"a\")], m(\"n\")[k(\"b\")]) = (v(1), v(2)); return log + \":\" + (map[\"a\"] * 10 + map[\"b\"]).ToString();")]
+    [InlineData("var log = \"\"; var map = new Dictionary<string, long>(); Func<string, Dictionary<string, long>> m = s => { log += s; return map; }; Func<string, string> k = s => { log += s; return s; }; Func<int, int> v = x => { log += x; return x; }; (m(\"m\")[k(\"a\")], m(\"n\")[k(\"b\")]) = new Point(v(1), v(2)); return log + \":\" + (map[\"a\"] * 10 + map[\"b\"]).ToString();")]
+    [InlineData("var log = \"\"; var map = new Dictionary<string, long>(); Func<string, Dictionary<string, long>> m = s => { log += s; return map; }; Func<string, string> k = s => { log += s; return s; }; var pair = (1, 2); (m(\"m\")[k(\"a\")], m(\"n\")[k(\"b\")]) = pair; return log + \":\" + (map[\"a\"] * 10 + map[\"b\"]).ToString();")]
     [InlineData("var h = new Holder(); (h.A, h.B) = new Point(7, 8); return h.A * 10 + h.B;")]                                               // 78: a property's setter
     [InlineData("long total; int n; (total, n) = new Point(1, 2); return (total + 1L).ToString();")]                                                    // "2": an int part into a long (text, as a long result is compared)
     [InlineData("var pair = (3, 4); long t; int m; (t, m) = pair; return (t * 10L + m).ToString();")]                                                   // 34
