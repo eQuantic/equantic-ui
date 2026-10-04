@@ -21,20 +21,32 @@ public class StringStaticStrategy : IConversionStrategy
         if (node is MemberAccessExpressionSyntax { Name.Identifier.Text: "Empty" } property
             && property.Expression.ToString() is "string" or "String" or "System.String")
             return true;
+        // The same field reached bare through `using static System.String;`, which read `String.empty` (#485).
+        if (node is IdentifierNameSyntax { Identifier.Text: "Empty" } bare && bare.StandsAlone()
+            && context.SemanticHelper.GetSymbol(bare) is IFieldSymbol { IsStatic: true, ContainingType.SpecialType: SpecialType.System_String })
+            return true;
 
         if (node is not InvocationExpressionSyntax invocation) return false;
-        
-        var methodAccess = invocation.Expression as MemberAccessExpressionSyntax;
-        if (methodAccess == null) return false;
 
-        var methodName = methodAccess.Name.Identifier.Text;
-
-        // The receiver must BE System.String — a user type merely named String must not route here.
-        if (!context.ReceiverIsType(methodAccess.Expression,
-                named => named.SpecialType == SpecialType.System_String,
-                "String", "string", "System.String"))
+        string methodName;
+        if (invocation.Expression is MemberAccessExpressionSyntax methodAccess)
+        {
+            methodName = methodAccess.Name.Identifier.Text;
+            // The receiver must BE System.String — a user type merely named String must not route here.
+            if (!context.ReceiverIsType(methodAccess.Expression,
+                    named => named.SpecialType == SpecialType.System_String,
+                    "String", "string", "System.String"))
+                return false;
+        }
+        // A bare `Join(",", parts)` through `using static System.String;` calls the same method,
+        // by the symbol the model binds (#485).
+        else if (invocation.Expression is SimpleNameSyntax simple
+                 && context.SemanticHelper.GetSymbol(invocation) is IMethodSymbol
+                     { IsStatic: true, ContainingType.SpecialType: SpecialType.System_String })
+            methodName = simple.Identifier.Text;
+        else
             return false;
-            
+
         return methodName switch
         {
             "IsNullOrEmpty" => true,
@@ -50,12 +62,13 @@ public class StringStaticStrategy : IConversionStrategy
 
     public string Convert(SyntaxNode node, ConversionContext context)
     {
-        if (node is MemberAccessExpressionSyntax { Name.Identifier.Text: "Empty" })
+        if (node is MemberAccessExpressionSyntax { Name.Identifier.Text: "Empty" } or IdentifierNameSyntax { Identifier.Text: "Empty" })
             return "''";
 
         var invocation = (InvocationExpressionSyntax)node;
-        var memberAccess = (MemberAccessExpressionSyntax)invocation.Expression;
-        var methodName = memberAccess.Name.Identifier.Text;
+        var methodName = invocation.Expression is MemberAccessExpressionSyntax memberAccess
+            ? memberAccess.Name.Identifier.Text
+            : ((SimpleNameSyntax)invocation.Expression).Identifier.Text;
         var args = invocation.ArgumentList.Arguments;
 
         if (methodName == "IsNullOrEmpty")
