@@ -1197,6 +1197,16 @@ record of a release, the wiki's Upgrading page is the distillate.
   cases, run on both sides, failed against main; the other 29 are neighbours that already held, kept as
   pins. The served runtime grew about 8 KB gzipped. Proposed
   and archived through OpenSpec (`openspec/specs/runtime-sets`, `runtime-dictionaries`, `transpiler-bcl`).
+- **2026-10-03 · A dictionary adds and pairs as .NET's does**: a dictionary's `Add` lowered to the
+  class's `set`, which replaces, and the constructor seeded through it, so `Add`, a collection
+  initializer and the constructor that copies pairs kept the last value of a key twice, where .NET
+  refuses the second ([#440](https://github.com/eQuantic/equantic-ui/issues/440), the rest of
+  [#395](https://github.com/eQuantic/equantic-ui/issues/395)); and `new KeyValuePair<K, V>(…)` named a
+  class nothing defines ([#433](https://github.com/eQuantic/equantic-ui/issues/433)). The runtime's
+  dictionaries add and refuse in each collection's words, measured on .NET 10 (a `SortedDictionary`
+  names the pair it was handed, a `SortedList` the key and its parameter), an object initializer's
+  `[key] = value` is assigned by the indexer, and a pair built by hand is the pair a dictionary yields.
+  Proposed and archived through OpenSpec (`openspec/specs/runtime-dictionaries`).
 
 ## Retired documents
 

@@ -110,7 +110,7 @@ import {
   setAdd,
   zip,
 } from './utils/collections';
-import { dictionary } from './utils/dictionary';
+import { dictionary, pair } from './utils/dictionary';
 import { hashSet, hashSetOf } from './utils/hash-set';
 import { memberEquality, sameKey, tupleEquality } from './utils/key-equality';
 import {
@@ -402,6 +402,8 @@ export const $eq = {
     arraySort,
     arraySortBy,
     binarySearch,
+    /** `new KeyValuePair<K, V>(key, value)` and `KeyValuePair.Create`: the shape a dictionary yields. */
+    pair,
   },
   /** `bool.Parse`, `bool.TryParse` and `Convert.ToBoolean(string)`, as .NET reads the text. */
   bool: { parse: boolParse, tryParse: boolTryParse, convert: boolConvert },

@@ -62,7 +62,7 @@ public class NewExpressionStrategyTests
     {
         // No model answers here, so the dictionary is known by the name the creation writes.
         var js = Convert("new Dictionary<string, int> { { \"a\", 1 } }");
-        Assert.Equal("$eq.collections.dictionary([['a', 1]])", js);
+        Assert.Equal("$eq.collections.dictionary().add('a', 1)", js);
     }
 
     [Fact]
