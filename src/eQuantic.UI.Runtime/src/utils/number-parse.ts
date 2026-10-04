@@ -8,6 +8,7 @@ import {
   validateRealStyles,
   type NumberText,
 } from './number-grammar';
+import { exception } from './exceptions';
 import { equals } from './string-statics';
 import { trim } from './white-space';
 
@@ -156,7 +157,10 @@ function held(value: bigint, type: IntegerType): number | bigint {
 }
 
 function overflow(type: IntegerType): Error {
-  return new Error(`Value was either too large or too small for ${WIDTHS[type].name}.`);
+  return exception(
+    'System.OverflowException',
+    `Value was either too large or too small for ${WIDTHS[type].name}.`,
+  );
 }
 
 /**
@@ -175,7 +179,7 @@ export function intParse(
   type: IntegerType,
   styles: number = NumberStyles.Integer,
 ): number | bigint {
-  if (text == null) throw new Error(NULL_TEXT);
+  if (text == null) throw exception('System.ArgumentNullException', NULL_TEXT);
   validateIntegerStyles(styles);
   return parsed(text, type, styles);
 }
@@ -318,7 +322,7 @@ export function realParse(
   type: RealType,
   styles: number = REAL_STYLES,
 ): number {
-  if (text == null) throw new Error(NULL_TEXT);
+  if (text == null) throw exception('System.ArgumentNullException', NULL_TEXT);
   validateRealStyles(styles);
   const value = readReal(text, styles, type);
   if (value === undefined) throw badFormat(text);

@@ -1,3 +1,5 @@
+import { exception } from './exceptions';
+
 /**
  * The text of a number, read as .NET's parser reads it (`Number.TryParseNumber`), in the invariant
  * culture the twin always parses in (EQ2110 names what a culture changes): `.` and `,` for the
@@ -42,7 +44,7 @@ export const NULL_TEXT = "Value cannot be null. (Parameter 's')";
 
 /** The FormatException a Parse throws for text its grammar refuses, as .NET words it. */
 export function badFormat(text: string): Error {
-  return new Error(`The input string '${text}' was not in a correct format.`);
+  return exception('System.FormatException', `The input string '${text}' was not in a correct format.`);
 }
 
 /**
@@ -57,7 +59,8 @@ export function validateIntegerStyles(styles: number): void {
     (styles & ~NumberStyles.HexNumber) !== 0 &&
     (styles & ~NumberStyles.BinaryNumber) !== 0
   ) {
-    throw new Error(
+    throw exception(
+      'System.ArgumentException',
       (styles & ~DEFINED_STYLES) !== 0
         ? UNDEFINED_STYLE
         : 'With the AllowHexSpecifier or AllowBinarySpecifier bit set in the enum bit field, the ' +
@@ -77,7 +80,8 @@ export function validateRealStyles(styles: number): void {
       (~DEFINED_STYLES | NumberStyles.AllowHexSpecifier | NumberStyles.AllowBinarySpecifier)) !==
     0
   ) {
-    throw new Error(
+    throw exception(
+      'System.ArgumentException',
       (styles & ~DEFINED_STYLES) !== 0
         ? UNDEFINED_STYLE
         : 'The number styles AllowHexSpecifier and AllowBinarySpecifier are not supported on ' +
