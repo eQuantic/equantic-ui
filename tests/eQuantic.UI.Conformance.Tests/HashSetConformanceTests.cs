@@ -77,6 +77,9 @@ public class HashSetConformanceTests
     [InlineData("var s = new HashSet<string> { null, \"a\", null }; return s.Count + \":\" + s.Contains(null) + \":\" + s.Remove(null) + \":\" + s.Count;")] // 2:True:True:1
     // A tuple's array element by reference; an element typed object by what it holds.
     [InlineData("var a = new[] { 1 }; var s = new HashSet<(int[], int)> { (a, 1) }; return s.Contains((a, 1)) + \":\" + s.Contains((new[] { 1 }, 1));")] // True:False
+    // A dictionary's keys take the same rule, one equality for both.
+    [InlineData("var a = new[] { 1 }; var d = new Dictionary<(int[], int), int> { [(a, 1)] = 5 }; return d.ContainsKey((a, 1)) + \":\" + d.ContainsKey((new[] { 1 }, 1));")] // True:False
+    [InlineData("var a = new[] { 1 }; var d = new Dictionary<(int[], int), int>(); d[(a, 1)] = 5; d[(new[] { 1 }, 1)] = 6; return d.Count;")] // 2
     [InlineData("return new HashSet<object> { 1.0m }.Contains(1.00m);")]                                                // True
     [InlineData("return new HashSet<object> { new Point(1, 2) }.Contains(new Point(1, 2));")]                            // True
     [InlineData("ISet<Point> s = new HashSet<Point>(); s.Add(new Point(1, 2)); return s.Contains(new Point(1, 2)) + \",\" + s.Add(new Point(1, 2));")] // True,False

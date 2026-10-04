@@ -1145,6 +1145,24 @@ record of a release, the wiki's Upgrading page is the distillate.
   back (`Cast`, `DefaultIfEmpty`) and a read-only face hiding a list, and both copy now. Each is a
   conformance case on both sides that failed against main. Proposed and archived through OpenSpec
   (`openspec/specs/transpiler-sequences`).
+- **2026-10-04 · A list, a set and a join answer as .NET's do**: a `List<T>` sorted by its elements'
+  text and stably, `RemoveAll` threw a ReferenceError, `BinarySearch` was a `findIndex`, a comparer
+  named a class nothing defines, `FindIndex`'s range reached its predicate, `CopyTo` wrote nowhere and
+  `Find` answered undefined ([#488](https://github.com/eQuantic/equantic-ui/issues/488)); `IndexOf`
+  compared with `===`, so a NaN, a record and a tuple were never found, and a tuple's array compared
+  element by element ([#425](https://github.com/eQuantic/equantic-ui/issues/425)); a `HashSet` was a
+  `Set`, appending where .NET reuses a freed slot ([#438](https://github.com/eQuantic/equantic-ui/issues/438))
+  and finding a date, a decimal, a tuple and a record by reference
+  ([#531](https://github.com/eQuantic/equantic-ui/issues/531)); `string.Join` called `join`, which a set
+  and a linked list lack ([#429](https://github.com/eQuantic/equantic-ui/issues/429)), and wrote each
+  value as JavaScript writes it ([#441](https://github.com/eQuantic/equantic-ui/issues/441)). One
+  equality decided from the element type (`ElementEquality`, `utils/key-equality.ts`) serves a list's
+  search, a set's elements and a dictionary's keys; the set and the dictionary share one slot table
+  with .NET's capacity (`utils/slots.ts`, `utils/hash-set.ts`); the sort is .NET's introspective sort,
+  both helpers, traced comparison for comparison against .NET through its heap sort (`utils/sort.ts`,
+  `utils/list.ts`); and a join converts each value as a concatenation does. Each row is a conformance
+  case on both sides that failed against main. The served runtime grew about 8 KB gzipped. Proposed
+  and archived through OpenSpec (`openspec/specs/runtime-sets`, `runtime-dictionaries`, `transpiler-bcl`).
 
 ## Retired documents
 
