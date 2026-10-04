@@ -1157,6 +1157,27 @@ record of a release, the wiki's Upgrading page is the distillate.
   back (`Cast`, `DefaultIfEmpty`) and a read-only face hiding a list, and both copy now. Each is a
   conformance case on both sides that failed against main. Proposed and archived through OpenSpec
   (`openspec/specs/transpiler-sequences`).
+- **2026-10-04 · A class and a record are built as C# builds them**: a plain class that declared no
+  member got no module while its users imported one ([#423](https://github.com/eQuantic/equantic-ui/issues/423)),
+  a record that declared only methods got no twin ([#428](https://github.com/eQuantic/equantic-ui/issues/428)),
+  an instance indexer reached no twin and `grid[3]` read a property named "3"
+  ([#427](https://github.com/eQuantic/equantic-ui/issues/427)), and a positional record that declared
+  its own property for a parameter emitted it twice and did not load
+  ([#546](https://github.com/eQuantic/equantic-ui/issues/546)). The twin's constructor took one
+  argument per member with each initializer as its default, so an object initializer skipped the
+  initializer of the member it set, a `with` ran them again and an explicit constructor's body never
+  ran ([#413](https://github.com/eQuantic/equantic-ui/issues/413)); a nested collection initializer
+  replaced the member's collection ([#462](https://github.com/eQuantic/equantic-ui/issues/462)); and
+  statics were defined where declared, so `A = B + 1` above `B = 2` answered NaN
+  ([#417](https://github.com/eQuantic/equantic-ui/issues/417)). The twin's constructor is now the C#
+  constructor, another one reached by its counts of arguments or refused (EQ1009), the object
+  initializer applied once it returns, a `with` a copy, a record's equality and text .NET's, an
+  indexer the twin's `item` and `setItem`, and a type's statics one initializer that starts them at
+  their zero and runs them in order on first use, in the record, class and component emitters alike.
+  One predicate decides a plain class's module for the parser and the resolver. Each is a conformance
+  case on both sides that failed against main, the class cases through the module graph an app's
+  build writes. Proposed and archived through OpenSpec (`openspec/specs/transpiler-records`,
+  `openspec/specs/transpiler-interfaces`).
 
 ## Retired documents
 
