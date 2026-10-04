@@ -21,16 +21,18 @@ public class MathStrategy : IExpressionIrStrategy
         if (node is not InvocationExpressionSyntax invocation)
             return false;
 
-        if (invocation.Expression is not MemberAccessExpressionSyntax memberAccess)
-            return false;
-
-        // Check via semantic model if available
+        // Check via semantic model if available: a bare `Round(x)` under `using static System.Math;`
+        // calls the method `Math.Round(x)` calls, and fell to JavaScript's `Math.round` (#485).
         var symbol = context.SemanticHelper.GetSymbol(invocation) as IMethodSymbol;
         if (symbol != null)
         {
+            if (invocation.Expression is not (MemberAccessExpressionSyntax or SimpleNameSyntax)) return false;
             var containingType = symbol.ContainingType.ToDisplayString();
             return containingType == "System.Math" || containingType.StartsWith("System.Math");
         }
+
+        if (invocation.Expression is not MemberAccessExpressionSyntax memberAccess)
+            return false;
 
         // Fallback: check expression text
         var callerText = memberAccess.Expression.ToString();
@@ -40,8 +42,8 @@ public class MathStrategy : IExpressionIrStrategy
     public JsExpr ConvertIr(SyntaxNode node, ConversionContext context)
     {
         var invocation = (InvocationExpressionSyntax)node;
-        var memberAccess = (MemberAccessExpressionSyntax)invocation.Expression;
-        var methodName = memberAccess.Name.Identifier.Text;
+        var memberAccess = invocation.Expression as MemberAccessExpressionSyntax;
+        var methodName = memberAccess?.Name.Identifier.Text ?? ((SimpleNameSyntax)invocation.Expression).Identifier.Text;
         var arguments = invocation.ArgumentList.Arguments;
 
         // The numeric table first, by the type the overload computes on.
@@ -59,18 +61,23 @@ public class MathStrategy : IExpressionIrStrategy
             .Select(a => context.Converter.ConvertExpression(a.Expression))
             .ToList();
 
-        // Below, no model bound the call. The class still says which numbers it computes on —
-        // `MathF` on singles, `Math` on doubles — so everything but Round is answered by the SAME
-        // table, by name: a fallback of its own guessed `Math.copySign`, `Math.bitIncrement` and a
-        // `Math.log` that dropped its base, none of which JavaScript has.
-        var single = memberAccess.Expression.ToString() is "MathF" or "System.MathF";
+        // Below, the table did not answer the bound method, or no model bound the call. The class
+        // still says which numbers it computes on — `MathF` on singles, `Math` on doubles — so
+        // everything but Round is answered by the SAME table, by name: a fallback of its own guessed
+        // `Math.copySign`, `Math.bitIncrement` and a `Math.log` that dropped its base, none of which
+        // JavaScript has. The class is the bound method's where there is one, since a call written
+        // bare under `using static System.MathF;` spells no class at all, and the receiver as
+        // written only where no model can be asked.
+        var bound = context.SemanticHelper.GetSymbol(invocation) as IMethodSymbol;
+        var single = bound is not null
+            ? bound.ContainingType is { Name: "MathF", ContainingNamespace: { Name: "System", ContainingNamespace.IsGlobalNamespace: true } }
+            : memberAccess?.Expression.ToString() is "MathF" or "System.MathF";
         var home = single ? SpecialType.System_Single : SpecialType.System_Double;
         if (PrimitiveStaticStrategy.TemplateByName(methodName, home, arguments.Count) is { } byName)
         {
             // A NAMED argument takes its parameter's slot, and only a bound method names the slots.
             // In written order, `Math.Log(newBase: 2, a: x)` put the base where the value goes: with
             // no method to ask, a named argument is a build error rather than a guessed placement.
-            var bound = context.SemanticHelper.GetSymbol(invocation) as IMethodSymbol;
             if (bound is null && arguments.Any(argument => argument.NameColon is not null))
                 return JsExpr.Opaque(context.Unhandled(node, "Math"));
             if (byName.Contains("$eq.")) context.UsedHelpers.Add(Eq.Import);
