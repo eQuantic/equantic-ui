@@ -42,6 +42,9 @@ export const bases = {
   'System.InvalidCastException': 'System.SystemException',
   'System.InvalidOperationException': 'System.SystemException',
   'System.NullReferenceException': 'System.SystemException',
+  // A string's search by a culture comparison, which .NET makes with ICU's collation and the browser
+  // cannot (#528): no .NET exception for the same call, so the one that says the platform lacks it.
+  'System.NotSupportedException': 'System.SystemException',
   'System.Collections.Generic.KeyNotFoundException': 'System.SystemException',
 } as const satisfies Record<string, string | null>;
 
