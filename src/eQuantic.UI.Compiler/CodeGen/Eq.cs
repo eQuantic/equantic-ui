@@ -127,6 +127,20 @@ public static class Eq
     /// <summary>LINQ <c>ToDictionary</c> into the runtime's dictionary class, refusing a null key and a
     /// key twice.</summary>
     public const string LinqToDictionary = "$eq.linq.toDictionary";
+
+    /// <summary>A sequence as the array the lowered operators work on — see <c>seq</c> in utils/linq.ts.</summary>
+    public const string LinqSeq = "$eq.linq.seq";
+
+    /// <summary>A range of a string's or an array's chars, refused where it leaves its source:
+    /// <c>new string(char[], int, int)</c> and <c>ToCharArray(int, int)</c>.</summary>
+    public const string TextChars = "$eq.text.chars";
+
+    /// <summary>A sequence as a <c>foreach</c> enumerates it where its static type may hide a
+    /// string: a string by its code units, anything else as it is.</summary>
+    public const string LinqEnumerable = "$eq.linq.enumerable";
+
+    /// <summary>A NEW array of a sequence's elements, as <c>ToList</c> and <c>ToArray</c> make.</summary>
+    public const string LinqToArray = "$eq.linq.toArray";
     /// <summary>Where each text element (an extended grapheme cluster, UAX #29) of a string begins:
     /// <c>StringInfo.ParseCombiningCharacters</c>, answered by the platform's segmenter.</summary>
     public const string TextElementStarts = "$eq.text.textElementStarts";
@@ -137,6 +151,9 @@ public static class Eq
     /// <c>CharUnicodeInfo.GetUnicodeCategory</c> and <c>char.GetUnicodeCategory</c>.</summary>
     public const string UnicodeCategory = "$eq.text.unicodeCategory";
     public const string Format = "$eq.text.format";
+    /// <summary>The record text .NET writes (<c>Color { R = 1, G = 2, B = 3, A = 4 }</c>) for a value the
+    /// browser holds as plain data, and the empty string for a null one.</summary>
+    public const string RecordText = "$eq.text.record";
     public const string StringFormat = "$eq.text.stringFormat";
     /// <summary><c>string.Compare</c> by a <c>StringComparison</c>: a null first, a culture comparison
     /// by the platform's collator, an ordinal one answering .NET's difference.</summary>
@@ -166,7 +183,35 @@ public static class Eq
     public const string DateTime = "$eq.time.dateTime";
     public const string TimeSpan = "$eq.time.timeSpan";
     public const string DateTimeOffset = "$eq.time.dateTimeOffset";
-    public const string ParseEnum = "$eq.enums.parse";
+    /// <summary>An enum's text, as .NET writes it: a flags enum's set flags, a nullable one's null.</summary>
+    public const string EnumText = "$eq.enums.text";
+
+    /// <summary><c>Enum.Parse</c>, from the enum's shape (<c>utils/enums.ts</c>).</summary>
+    public const string EnumParse = "$eq.enums.parse";
+
+    /// <summary><c>Enum.TryParse</c>: the value, or undefined where .NET answers false.</summary>
+    public const string EnumTryParse = "$eq.enums.tryParse";
+
+    /// <summary><c>default(TEnum)</c>, as the browser holds it.</summary>
+    public const string EnumZero = "$eq.enums.zero";
+
+    /// <summary><c>Enum.GetNames</c>.</summary>
+    public const string EnumNames = "$eq.enums.names";
+
+
+    /// <summary><c>Enum.GetName</c>: the member's name for a value, or null.</summary>
+
+    public const string EnumName = "$eq.enums.name";
+
+    /// <summary>A cast from <c>object</c> to an enum: the boxed member, a boxed number's member, or
+    /// .NET's refusal.</summary>
+    public const string EnumUnbox = "$eq.enums.unbox";
+
+    /// <summary><c>Enum.GetValues</c>.</summary>
+    public const string EnumValues = "$eq.enums.values";
+
+    /// <summary><c>Enum.IsDefined</c>.</summary>
+    public const string EnumIsDefined = "$eq.enums.isDefined";
 
     /// <summary>C# multicast delegates: `+=` composes an invocation list, `-=` drops the last
     /// occurrence. JavaScript has neither, and `+=` emitted literally is string concatenation.</summary>
@@ -197,6 +242,13 @@ public static class Eq
     /// warning travelling to everyone who builds this assembly.</summary>
     public new const string Equals = "$eq.equals";
 
+    /// <summary><c>new object()</c>: an identity of its own, which a plain <c>{}</c> is not here, being
+    /// an anonymous type compared by its members.</summary>
+    public const string NewObject = "$eq.newObject";
+
+    /// <summary>A <c>lock</c> statement's gate, evaluated once and refused when null.</summary>
+    public const string LockGate = "$eq.lockGate";
+
     /// <summary>Membership over a collection whose runtime shape is not knowable statically —
     /// an <c>IReadOnlyCollection&lt;T&gt;</c> is a Set as readily as an array.</summary>
     public const string Contains = "$eq.collections.contains";
@@ -225,6 +277,10 @@ public static class Eq
     /// <summary>Factory for a dictionary (<c>Dictionary&lt;K, V&gt;</c> and its interfaces), held by slot
     /// as .NET's is, its keys found by value when its second argument says so.</summary>
     public const string Dictionary = "$eq.collections.dictionary";
+
+    /// <summary><c>new KeyValuePair&lt;K, V&gt;(key, value)</c> and <c>KeyValuePair.Create</c>: the pair a
+    /// dictionary yields, which destructures as <c>[key, value]</c> and reads <c>.key</c> and <c>.value</c>.</summary>
+    public const string Pair = "$eq.collections.pair";
 
     /// <summary>Factory for a value-sorted set (<c>SortedSet&lt;T&gt;</c>).</summary>
     public const string SortedSet = "$eq.collections.sortedSet";

@@ -48,8 +48,8 @@ public class CultureCrossingTests
         var references = ((string)AppContext.GetData("TRUSTED_PLATFORM_ASSEMBLIES")!)
             .Split(Path.PathSeparator)
             .Where(path => path.EndsWith(".dll", StringComparison.OrdinalIgnoreCase))
-            .Select(path => (MetadataReference)MetadataReference.CreateFromFile(path))
-            .Append(MetadataReference.CreateFromFile(typeof(Primitives.VisualNode).Assembly.Location));
+            .Select(path => (MetadataReference)TestReferences.Of(path))
+            .Append(TestReferences.Of(typeof(Primitives.VisualNode).Assembly.Location));
 
         var tree = CSharpSyntaxTree.ParseText(source, path: "Readout.cs");
         var compilation = CSharpCompilation.Create("Culture", [tree], references,

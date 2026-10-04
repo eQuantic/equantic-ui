@@ -19,7 +19,7 @@ public class CastStrategy : IConversionStrategy
     {
         var invocation = (InvocationExpressionSyntax)node;
         var memberAccess = (MemberAccessExpressionSyntax)invocation.Expression;
-        var source = context.Converter.ConvertExpression(memberAccess.Expression);
+        var source = LinqSource.Text(memberAccess.Expression, context);
 
         // Cast<T>() is a type assertion in C#, but in JavaScript/TypeScript
         // we can just pass through the array since JS is dynamically typed

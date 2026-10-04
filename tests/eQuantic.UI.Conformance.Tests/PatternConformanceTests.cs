@@ -65,4 +65,88 @@ public class PatternConformanceTests
         Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
         ConformanceRunner.AssertSameAsDotNet(expression, NestedPrelude);
     }
+
+    /// <summary>
+    /// A type with nothing bound (C# 9's type pattern) tests the type, as a declaration pattern does:
+    /// it had no case, so `o is int or long`, `int => …` and `case int:` were all `false` (#482). A
+    /// long is a BigInt here, and was asked whether it was a number.
+    /// </summary>
+    [SkippableTheory]
+    [InlineData("object o = 5L; return o is int or long;")]                                                  // true
+    [InlineData("object o = 5; return o switch { int => \"int\", string => \"text\", _ => \"other\" };")]     // "int"
+    [InlineData("object o = \"x\"; return o switch { int => \"int\", string => \"text\", _ => \"other\" };")] // "text"
+    [InlineData("object o = 5; switch (o) { case long: return \"long\"; case int: return \"int\"; default: return \"other\"; }")] // "int"
+    [InlineData("object o = 2.5; return o is int;")]                                                         // false
+    [InlineData("object o = 2.5; return o is double;")]                                                      // true
+    [InlineData("object o = 1.5m; return o is int or decimal;")]                                             // true
+    [InlineData("object o = 1.5m; return o is double;")]                                                     // false
+    [InlineData("object o = 7L; return o is System.Int64;")]                                                 // true
+    public void ABareTypePattern_TestsTheType(string statements)
+    {
+        Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
+        ConformanceRunner.AssertStatementsSameAsDotNet(statements);
+    }
+
+    /// <summary>
+    /// A collection's <c>Count</c> in a property pattern reads as the collection's class answers it: a
+    /// Set's <c>size</c>, the runtime queue's <c>count</c>, and an open face's helper. It read
+    /// <c>length</c> on each, undefined, so the pattern was false in the browser alone (#516).
+    /// </summary>
+    [SkippableTheory]
+    [InlineData("var s = new HashSet<int> { 1, 2 }; return s is { Count: > 1 };")]                                  // -> true
+    [InlineData("var q = new Queue<int>(new[] { 7 }); return q is { Count: 1 };")]                                  // -> true
+    [InlineData("var t = new Stack<int>(new[] { 1, 2, 3 }); return t is { Count: 3 } ? t.Peek() : -1;")]            // -> 3
+    [InlineData("ICollection<int> c = new HashSet<int> { 4 }; return c is { Count: 1 };")]                          // -> true
+    [InlineData("var d = new SortedSet<int> { 2, 1 }; return d is { Count: 2, Min: 1 };")]                          // -> true
+    public void ACollectionsCountInAPattern_ReadsAsItsClassAnswersIt(string statements)
+    {
+        Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
+        ConformanceRunner.AssertStatementsSameAsDotNet(statements);
+    }
+
+    /// <summary>
+    /// <c>x is Limits.Max</c> parses as the type test and binds as a constant pattern: it was
+    /// answered <c>x != null</c>, true for every number (#451). An enum's member is the member.
+    /// </summary>
+    [SkippableTheory]
+    [InlineData("int x = 3; return x is Limits.Max;")]                    // false
+    [InlineData("int x = 10; return x is Limits.Max;")]                   // true
+    [InlineData("string s = \"on\"; return s is Limits.Label;")]          // true
+    [InlineData("var l = Level.High; return l is Level.High;")]           // true
+    [InlineData("var l = Level.Low; return l is Level.High;")]            // false
+    [InlineData("var l = Level.High; return l is (Level)1;")]             // true
+    public void IsANamedConstant_ComparesToItsValue(string statements)
+    {
+        Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
+        ConformanceRunner.AssertStatementsSameAsDotNet(statements,
+            "public static class Limits { public const int Max = 10; public const string Label = \"on\"; }\npublic enum Level { Low, High }");
+    }
+
+    /// <summary>
+    /// A constant in a pattern is tested as a constant pattern tests it, by its value, in either
+    /// spelling: a long is a BigInt, a decimal an object compared by value, a NaN matches a NaN, and
+    /// a null any absence. A char is one code unit, so a longer string is no char.
+    /// </summary>
+    [SkippableTheory]
+    [InlineData("long x = 5; return x is Limits.Five;")]                                   // true
+    [InlineData("object o = 5L; return o is Limits.Five;")]                                // true
+    [InlineData("object o = 1.5m; return o is Limits.Rate;")]                              // true
+    [InlineData("object o = 1.50m; return o is 1.5m;")]                                    // true
+    [InlineData("object o = 2.5m; return o is Limits.Rate;")]                              // false
+    [InlineData("double d = double.NaN; return d is Limits.NotANumber;")]                  // true
+    [InlineData("double d = double.NaN; return d is double.NaN;")]                         // true
+    [InlineData("string s = null; return s is Limits.Nothing;")]                           // true
+    [InlineData("object o = \"hello\"; return o switch { char => 1, string => 2, _ => 3 };")] // 2
+    [InlineData("object o = 'h'; return o switch { char => 1, string => 2, _ => 3 };")]      // 1
+    [InlineData("long x = 5; return x is Limits.Small;")]                                  // true
+    [InlineData("decimal d = 5m; return d is Limits.Small;")]                              // true
+    [InlineData("int calls = 0; object Read() { calls++; return \"xy\"; } var isChar = Read() is char; return calls * 10 + (isChar ? 1 : 0);")] // 10
+    [InlineData("int calls = 0; object Read() { calls++; return 7; } return (Read() is int n ? n : 0) * 10 + calls;")]                         // 71
+    public void AConstantInAPattern_IsTestedByItsValue(string statements)
+    {
+        Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
+        ConformanceRunner.AssertStatementsSameAsDotNet(statements,
+            "public static class Limits { public const long Five = 5; public const decimal Rate = 1.5m; "
+            + "public const double NotANumber = double.NaN; public const string Nothing = null; public const int Small = 5; }");
+    }
 }

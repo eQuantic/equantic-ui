@@ -42,6 +42,8 @@
     <ItemGroup>
         <!-- The dependency rule, shared with the other assembly rather than written twice: these two
              cannot reference each other, and a rule that drifts here moves constructor arguments. -->
+        <Compile Include="../Shared/BoundaryShape.cs" Link="Shared/BoundaryShape.cs" />
         <Compile Include="../Shared/CapabilityRule.cs" Link="Shared/CapabilityRule.cs" />
+        <Compile Include="../Shared/TwinName.cs" Link="Shared/TwinName.cs" />
     </ItemGroup>
 </Project>

@@ -50,7 +50,7 @@ public class FieldDefaultTests
         ts.Should().Contain("_kind: string = 'low'");
         // No member is zero here: .NET still yields the numeric 0, and so does the twin.
         ts.Should().Contain("_offset: string = 0");
-        ts.Should().Contain("_c: string = '\\0'");
+        ts.Should().Contain("_c: string = '\\u0000'");
         // Reached through an alias — invisible to a spelled-name table, plain to the symbol. The
         // VALUE is right and the annotation says `any`, which is an absence rather than a claim:
         // the default path reads the symbol, the annotation path still reads the spelling.
@@ -70,6 +70,6 @@ public class FieldDefaultTests
             .Single(r => r.ComponentName == "Defaults").TypeScript;
         // `Kind?` and `string?` default to null in C#; neither takes the value type's zero.
         ts.Should().NotContain("_maybeKind: string = 'low'");
-        ts.Should().NotContain("_maybe: string = '\\0'");
+        ts.Should().NotContain("_maybe: string = '\\u0000'");
     }
 }

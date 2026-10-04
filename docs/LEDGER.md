@@ -944,6 +944,12 @@ record of a release, the wiki's Upgrading page is the distillate.
   inlines, a zero-context patch's gaps, F7 stuck past a removed end, the focus a fold's press
   dropped on the web, a patch line's bare carriage return, and a tuple's enum named as in C#; the
   find bar's Escape, still page-wide, is [#457](https://github.com/eQuantic/equantic-ui/issues/457).
+- **0.2.0-preview.59 released** from `e83e07fa`: the code diff view (#412) over the engine's line and
+  word diffs (#386), the number specifiers printed as .NET prints them (#445) beside List.Remove, a
+  bool from text (#421), a date's fractional Add* (#426), a record member's starting value (#409),
+  a class's default interface members (#418) and an expression variable's scope (#484), names the
+  transpiler changes kept off the names a scope holds (#399), and the working agreement in the
+  repository (#411, #431, #448). *([v0.2.0-preview.59](https://github.com/eQuantic/equantic-ui/releases/tag/v0.2.0-preview.59))*
 - **2026-09-27 · A lambda's block maps statement by statement**: since #382 every statement of a
   member's body mapped to its own line, but a lambda's block reached the writer as text, laid out
   where the lambda was converted, and its statements' marks were dropped with it
@@ -1014,6 +1020,200 @@ record of a release, the wiki's Upgrading page is the distillate.
   drawn, which the base transform always did and a lift now shows
   ([#513](https://github.com/eQuantic/equantic-ui/issues/513)). Proposed and archived through
   OpenSpec (`openspec/specs/interaction-states`).
+- **2026-10-03 · The build derives the hydration contract**: the server named a component's values
+  after the fields the C# compiler synthesizes, so an auto-property and a captured primary-constructor
+  parameter drew on the server and vanished on hydration
+  ([#509](https://github.com/eQuantic/equantic-ui/issues/509)), and a service registered as a class
+  crossed whole into the HTML of a page that prefetched, while the browser, which builds a page without
+  it, drew the other branch ([#510](https://github.com/eQuantic/equantic-ui/issues/510)). The source
+  generator now writes a hydration manifest, the server writes each payload from it and eqc each
+  twin's adoption: every value under the twin's name, and a value from the container as its
+  projection, what the browser-side code reads of it, worked out from the bound tree of what the twin
+  runs. A use the projection cannot follow fails the build with EQ2114, and the container has the last
+  word on a value written whole. `HydrationCrossingTests` renders pages on the server and draws their
+  twins in the embedded Bun on the payloads the server wrote, and the dashboard sample's Server data
+  and Identity screens were measured in a browser against main. Filed on the way: two pages of one
+  simple name share one entry of the page index
+  ([#514](https://github.com/eQuantic/equantic-ui/issues/514)). Proposed and archived through OpenSpec
+  (`openspec/specs/hydration-contract`).
+- **2026-10-03 · The transpiler reads a name by its symbol**: a base written with its namespace, an
+  alias or `global::` was copied into the module as written, a name nothing there defines, so the
+  module failed when it loaded ([#479](https://github.com/eQuantic/equantic-ui/issues/479)); and a .NET
+  member reached bare through `using static` fell to the rule for an app's own statics, so `NaN` read
+  `Double.naN`, `Join` called `String.join` and `Round` sent a half up where .NET sends it to even
+  ([#485](https://github.com/eQuantic/equantic-ui/issues/485)); and a type's own `Count` was read as an
+  array's `length` unless the app declared the type, so a library's domain model counted `undefined`
+  ([#517](https://github.com/eQuantic/equantic-ui/issues/517)). A base is named after its twin from its
+  symbol, a bare member goes through the translation its qualified spelling reaches, or fails the
+  build with EQ2004, and a `Count` is spelled by the receiver's symbol. `UsingStaticConformanceTests`
+  executes each case on both sides. Proposed and
+  archived through OpenSpec (`openspec/specs/transpiler-names`, `openspec/specs/transpiler-bcl`).
+- **2026-10-03 · Patterns, locks, loops and deconstruction run as C# runs them**: a type pattern with
+  nothing bound tested false and a long was never one
+  ([#482](https://github.com/eQuantic/equantic-ui/issues/482)), `x is Limits.Max` was a null check
+  ([#451](https://github.com/eQuantic/equantic-ui/issues/451)), a lock's expression ran nowhere
+  ([#475](https://github.com/eQuantic/equantic-ui/issues/475)), `new object()` named a class JavaScript
+  does not have ([#478](https://github.com/eQuantic/equantic-ui/issues/478)), a for loop gave each
+  iteration its own variable ([#476](https://github.com/eQuantic/equantic-ui/issues/476)), a delegate
+  called from a list was read off `this` ([#477](https://github.com/eQuantic/equantic-ui/issues/477)),
+  a record deconstructed into existing variables was array destructuring
+  ([#486](https://github.com/eQuantic/equantic-ui/issues/486)), and a static `field` store lived on the
+  instance or, in a record, nowhere ([#483](https://github.com/eQuantic/equantic-ui/issues/483)). Each
+  is a conformance case on both sides that failed against main. The local review found the first cut
+  short, and widened it: every deconstruction, declared, assigned or in a `foreach`, nested or through
+  a struct's own `Deconstruct`, goes through one lowering read from the bound tree; a long constant
+  is a BigInt, and a constant in a pattern is tested by its value (a decimal, a NaN, a null); a char
+  is one code unit; a static store starts as its initializer; and a local function's `out` reaches
+  its caller ([#541](https://github.com/eQuantic/equantic-ui/issues/541)). Copilot's third round found
+  four more, each fixed and run on both sides: a deconstruction's targets are evaluated before its
+  value, a for loop's head of expressions is one variable for the loop, `new object() { }` is an
+  object, and a property of an enum type starts as its zero member. A deconstruction into an
+  indexer or a wider type is left to [#542](https://github.com/eQuantic/equantic-ui/issues/542).
+  Proposed and archived through OpenSpec (`openspec/specs/transpiler-statements`,
+  `transpiler-expressions`, `transpiler-records`).
+- **2026-10-03 · A route's title reaches the document**: `[Page(Title = …)]` applied only when the
+  page's metadata had no title, which the app's default always filled, so no page ever got it, and a
+  client navigation answered with the app's title over the one the router had set
+  ([#416](https://github.com/eQuantic/equantic-ui/issues/416)); the client's configuration quoted its
+  strings by hand, so a title holding a line break stopped the client of every page
+  ([#526](https://github.com/eQuantic/equantic-ui/issues/526)). Each route hands its declaration to
+  both doors, one builder writes a document's metadata (the app's, the route's, then the page's own),
+  a navigation replaces the head's metadata as a marked set, a page answering with a status of its
+  own (a 404 through `IHandleStatus`) still hands a navigation its marked payload, and the
+  configuration is serialized as JSON. `PageTitleTests` runs both doors, and the dashboard
+  sample's titles were measured in a browser against main. Proposed and archived through OpenSpec
+  (`openspec/specs/document-metadata`).
+- **2026-10-03 · A run that links follows the language**: a `TextRun` with a `Destination` lowered to
+  an anchor holding the destination as written, on both producers, so with language prefixes on a run
+  to `/terms` on a Portuguese page led to the English one, and a Markdown page's internal links did
+  the same; it carried no `data-prefetch` either
+  ([#505](https://github.com/eQuantic/equantic-ui/issues/505)). It lowers as a `Link` does now, and
+  one rule decides what warms on hover for both, which no longer marks a protocol-relative URL. The
+  component parity fixture lowers both under `pt-BR` on each side and compares them. Proposed and
+  archived through OpenSpec (`openspec/specs/links`).
+- **2026-10-03 · A value reaches the browser as its code reads it**: `Color` is the one vocabulary
+  value type the browser holds as plain data, and eqc emitted its instance members as methods of the
+  value, so `Color.FromRgb(…).WithOpacity(0.8f)` rendered on the server and threw once the page
+  hydrated, its text read `[object Object]`, and `new Color(…)` was recognized by its name, building an
+  app's own `Color` as the vocabulary's ([#494](https://github.com/eQuantic/equantic-ui/issues/494)).
+  `[TwinIsData]` says so by symbol now, every member lowers to the runtime's companion and the text to
+  the record text .NET writes. A `HashSet`, and the runtime's sorted set, queue, stack and linked
+  list, crossed hydration as the array the server writes
+  ([#516](https://github.com/eQuantic/equantic-ui/issues/516)): each is rebuilt as its class, a stack
+  with its top coming off first, a server value's projection takes a set of scalars whole, and a set
+  or a dictionary the browser's copy would answer differently, by a comparer of its own or an equality
+  nothing can read, stays out of the page, the rest of a projected value still crossing. Every sorted
+  collection the browser built or rebuilt ordered by `<`, so strings ignored the culture and decimals
+  compared their text: one table (`ValueOrdering`, `utils/ordering.ts`) now names how a type orders,
+  an enum by its value included, read by `Max`/`Min`, by every sorted collection eqc builds and by
+  every one a hydration rebuilds, and a queue or a stack finds a member by value. On
+  the way, a property pattern counted a set or a runtime collection as an array, and a `SortedSet`
+  dropped its collection initializer. `VocabularyValueConformanceTests` executes every member of every type
+  `[TwinIsData]` marks on both sides and checks each vocabulary value type's export against the
+  attribute, which found `Curve` in two shapes
+  ([#518](https://github.com/eQuantic/equantic-ui/issues/518)); the dashboard sample's Colors screen
+  was measured in a browser against main. Filed on the way: `GetHashCode` has no lowering
+  ([#519](https://github.com/eQuantic/equantic-ui/issues/519)), and a `HashSet` finds a date, a
+  decimal or a record by reference ([#531](https://github.com/eQuantic/equantic-ui/issues/531)). The
+  `SortedSet` initializer half of [#434](https://github.com/eQuantic/equantic-ui/issues/434) is fixed
+  here, and its LINQ half stays open. Proposed
+  and archived through OpenSpec (`openspec/specs/transpiler-vocabulary-values`,
+  `openspec/specs/hydration-contract`, `openspec/specs/transpiler-bcl`).
+- **2026-10-03 · A string or a char keeps its value in its module**: eqc wrote C# string and char
+  values in spellings that lost them ([#520](https://github.com/eQuantic/equantic-ui/issues/520)).
+  A surrogate that is not half of a pair has no UTF-8 encoding, so a page holding `"x\uD83D"` stopped
+  the dashboard sample's build with `EQ0001: Compilation crash`, naming no file; a char literal
+  crossed in its C# spelling, so `'\a'` and `'\e'` were `'a'` and `'e'` and `'\x1'` a syntax error;
+  and `$"{date:dd 'de' MMMM}"` closed its own quotes and Bun refused the module. One writer,
+  `JsStringLiteral`, now spells every string the transpiler writes from a value, a template's text,
+  an interpolation's format, a skipped parameter's default, a resource lookup and `nameof` among
+  them, escaping each code unit that does not show as itself, and a char literal and `nameof` are
+  their value. The review found a raw interpolated string's doubled braces collapsed
+  (`$$$"""a{{b}}"""` was `a{b}`), a UTF-8 literal spliced into the module as C# (refused with EQ1004
+  now), and the C# 13 escape's test reading ESC culture-aware, which finds a control at position 0
+  of anything. 31 of the 41 conformance cases fail on main, and a frame thrown after an interpolated
+  string holding U+2028 leads to its own line, where main led it two lines down
+  ([#491](https://github.com/eQuantic/equantic-ui/issues/491)). Filed on the way: a constant written
+  outside a literal loses its type's representation
+  ([#523](https://github.com/eQuantic/equantic-ui/issues/523)), a string read as a sequence is
+  treated as an array ([#524](https://github.com/eQuantic/equantic-ui/issues/524)), a control in a
+  C# file makes its source map invalid JSON
+  ([#525](https://github.com/eQuantic/equantic-ui/issues/525)), and a page title holding a line break
+  stops the client of every page ([#526](https://github.com/eQuantic/equantic-ui/issues/526)).
+  Proposed and archived through OpenSpec (`openspec/specs/transpiler-expressions`,
+  `openspec/specs/transpiler-source-maps`).
+- **2026-10-03 · A tab bar, a radio group, a combobox and a dialog are themselves on Photon**: the
+  semantics walk announced every `Adjustable` as a slider, so a `Tabs` and a `RadioGroup` reached
+  VoiceOver and TalkBack as one unnamed slider and their tabs and radios were never read
+  ([#500](https://github.com/eQuantic/equantic-ui/issues/500)); a `Select`'s field reached them as a
+  button that expands and an open modal layer as a plain group, where the web says `combobox` and
+  `dialog` ([#501](https://github.com/eQuantic/equantic-ui/issues/501)). `SemanticRole` gains
+  `TabBar`, `RadioGroup`, `ComboBox`, `Dialog` and `AlertDialog`, appended at 17 to 21 in Flutter's
+  words. A tab strip and a radio group are containers a reader walks into, each tab and radio a stop
+  with its state, while the bar stays the keyboard's one stop; the pressable a listbox panel hangs
+  from is the combobox, the web's rule; an open modal layer is a dialog, or an alert dialog when it
+  interrupts. `NativeRole` takes Core-AAM's words for the containers and the dialogs, and gives the
+  select-only combobox each platform's drop-down, `AXPopUpButton` and `Spinner`, rather than
+  Core-AAM's editable pair. Found on the way and fixed: the layer Photon opens for an anchored panel
+  was modal by default, so an unnamed group stood in front of every open menu and select, and would
+  have read as a dialog; it is one now only for the date picker's calendar. AppKit's own description
+  of the dialog's `AXGroup` is "group", read back from AppKit, so the subrole is what says dialog.
+  `AnnouncementParityTests` compares the web's ARIA and the native tree for these components, a
+  slice of [#339](https://github.com/eQuantic/equantic-ui/issues/339), and `AppKitAccessibilityTests`
+  reads the elements of real components back from AppKit. The handoff's `native-roles` request is
+  shipped. Position in a set is still [#502](https://github.com/eQuantic/equantic-ui/issues/502).
+  Proposed and archived through OpenSpec (`openspec/specs/native-accessibility`).
+- **2026-10-03 · An enum reads as .NET reads it**: an enum has no object of its own in the browser,
+  a member being held as its camelCase name and a `[Flags]` one as its number, and every place that
+  turned that back into what .NET answers did it on its own, or not at all. A flags enum's
+  `ToString()` answered null and a nullable enum's printed the camelCase name
+  ([#452](https://github.com/eQuantic/equantic-ui/issues/452)), `"," + rank` wrote `,undefined`
+  ([#535](https://github.com/eQuantic/equantic-ui/issues/535)), the statics of `Enum` named an object
+  no module declares and threw ([#480](https://github.com/eQuantic/equantic-ui/issues/480)), and a
+  dictionary keyed by an enum was refused by EqJson both ways
+  ([#442](https://github.com/eQuantic/equantic-ui/issues/442)). The runtime's enum functions
+  (`$eq.enums`) read the enum's shape, which eqc writes at the call from one member table
+  (`EnumShape`), the one the casts, the arithmetic and the ordering read too. The review found the
+  formats ignored (`ToString("D")` wrote the name), `IsDefined` over an `object`, the `TryParse` that
+  takes a `Type` leaving the default where .NET leaves null, a cast from an `object` holding the enum
+  answering undefined, a value no member names printing `undefined`, and an unknown name read as the
+  enum's first member, each fixed and run on both sides. Filed on the way: an enum's table is built
+  at every call instead of once per module ([#547](https://github.com/eQuantic/equantic-ui/issues/547)).
+  Proposed and archived through OpenSpec (`openspec/specs/transpiler-bcl`).
+- **2026-10-03 · A test compilation shares its references**: the suites turned the .NET framework into
+  new metadata references for every compilation they created, and `MetadataReference.CreateFromFile`
+  copies an assembly into native memory the GC does not count, so one test host held tens of
+  gigabytes ([#481](https://github.com/eQuantic/equantic-ui/issues/481)). One owner,
+  `tests/Shared/TestReferences.cs`, keeps one reference per assembly for the process, and a guard
+  fails on a `CreateFromFile` anywhere else under `tests/`. Measured with a sampler reading every test
+  host once a second, each suite alone: the compiler suite's peak went from 25 to 35 GB to 6.1 GB and
+  its run from 20 to 47 seconds to 4, the conformance suite's from 34 GB to 5.6 GB, and the web
+  suite's from 3 to 5 GB to 1.2 GB. Under load, with the conformance suite alongside, 12 runs of the
+  compiler suite in a row completed, where one on a branch without the change aborted the same day
+  ([#473](https://github.com/eQuantic/equantic-ui/issues/473)).
+- **2026-10-03 · LINQ reads any sequence**: every operator was an array method on its receiver as
+  converted, so a `HashSet`, the runtime's sorted set, queue, stack and linked list, and a sorted
+  dictionary or list threw on their first one, `queue.First()` called a `first` the queue does not have
+  ([#434](https://github.com/eQuantic/equantic-ui/issues/434)), a dictionary read as its pairs met the
+  same templates ([#439](https://github.com/eQuantic/equantic-ui/issues/439)), and a string read as a
+  sequence threw on `Count`, `Where` and `Select`, was iterated by code point by `foreach` and
+  `ToCharArray`, could not be built from chars, and refused `Count(char.IsDigit)`
+  ([#524](https://github.com/eQuantic/equantic-ui/issues/524)). One place reads an operator's source
+  (`LinqSource`, `$eq.linq.seq`), `ToList` and `ToArray` always copy, and the queue and the stack
+  enumerate in .NET's order. The local review found the copy trusting operators that hand their source
+  back (`Cast`, `DefaultIfEmpty`) and a read-only face hiding a list, and both copy now. Each is a
+  conformance case on both sides that failed against main. Proposed and archived through OpenSpec
+  (`openspec/specs/transpiler-sequences`).
+- **2026-10-03 · A dictionary adds and pairs as .NET's does**: a dictionary's `Add` lowered to the
+  class's `set`, which replaces, and the constructor seeded through it, so `Add`, a collection
+  initializer and the constructor that copies pairs kept the last value of a key twice, where .NET
+  refuses the second ([#440](https://github.com/eQuantic/equantic-ui/issues/440), the rest of
+  [#395](https://github.com/eQuantic/equantic-ui/issues/395)); and `new KeyValuePair<K, V>(…)` named a
+  class nothing defines ([#433](https://github.com/eQuantic/equantic-ui/issues/433)). The runtime's
+  dictionaries add and refuse in each collection's words, measured on .NET 10 (a `SortedDictionary`
+  names the pair it was handed, a `SortedList` the key and its parameter), an object initializer's
+  `[key] = value` is assigned by the indexer, and a pair built by hand is the pair a dictionary yields.
+  Proposed and archived through OpenSpec (`openspec/specs/runtime-dictionaries`).
 
 ## Retired documents
 

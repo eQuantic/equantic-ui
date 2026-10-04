@@ -64,6 +64,8 @@ export type FontWeightValue = 'regular' | 'medium' | 'semiBold' | 'bold' | 'extr
 
 export type GradientDirectionValue = 'toRight' | 'toBottom' | 'toBottomRight' | 'toBottomLeft';
 
+export type HydratedMemberKindValue = 'field' | 'property' | 'capturedParameter' | 'backingField';
+
 export type IconGlyphStyleValue = 'fill' | 'stroke';
 
 export type IconsValue =
@@ -111,7 +113,7 @@ export type SemanticCheckValue = 'off' | 'on' | 'mixed';
 export type SemanticRoleValue =
   'staticText' | 'button' | 'link' | 'textField' | 'codeField' | 'slider' | 'image' | 'checkbox'
   | 'switch' | 'gridCell' | 'progressIndicator' | 'group' | 'radio' | 'tab' | 'menuItem' | 'option'
-  | 'destination';
+  | 'destination' | 'tabBar' | 'radioGroup' | 'comboBox' | 'dialog' | 'alertDialog';
 
 export type ShapeScaleValue =
   'none' | 'extraSmall' | 'small' | 'medium' | 'large' | 'extraLarge' | 'full';

@@ -13,11 +13,6 @@ export class Spreadsheet extends StatefulComponent {
     static grip: number = 6;
     static fillHandle: number = 7;
     _resizeBase: number = -1;
-
-    static get $hydration() {
-        return { _offset: 'single', _viewport: 'single', _resizeBase: 'single', width: { of: SizeValue, members: { value: 'single' } }, height: { of: SizeValue, members: { value: 'single' } } };
-    }
-
     declare controller: SheetController;
     declare width: SizeValue;
     declare height: SizeValue;

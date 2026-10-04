@@ -29,6 +29,7 @@ describe('the SSR-to-client seam', () => {
 
   class Probe extends StatefulComponent {
     static $typeId = 'App.Components.Probe';
+    static $hydration = { label: 'declared' } as const;
     label = 'default';
     build(): VisualNodeValue {
       return new Text(this.label);
@@ -38,6 +39,7 @@ describe('the SSR-to-client seam', () => {
   /** An escape-hatch page: DOM of its own, and two write-once subtrees through two bridges. */
   class Host extends HtmlElement {
     static $typeId = 'App.Pages.Host';
+    static $hydration = { title_: 'declared' } as const;
     clicks = 0;
     title_ = 'none';
     render(): HtmlNode {
@@ -125,6 +127,7 @@ describe('the SSR-to-client seam', () => {
   const rowIn = (namespace: string) =>
     class Row extends StatefulComponent {
       static $typeId = `${namespace}.Row`;
+      static $hydration = { label: 'declared' } as const;
       label = 'default';
       build(): VisualNodeValue {
         return new Text(this.label);

@@ -39,7 +39,7 @@ public class AlternateLinkTests
         seo.AlternateDefault("https://equantic.tech/en/pricing");
 
         var rendered = metadata.RenderTags();
-        rendered.Should().Contain("<link rel=\"alternate\" hreflang=\"en\" href=\"https://equantic.tech/en/pricing\">");
+        rendered.Should().Contain("<link rel=\"alternate\" hreflang=\"en\" href=\"https://equantic.tech/en/pricing\" data-eq-meta>");
         rendered.Should().Contain("hreflang=\"pt-BR\"");
         rendered.Should().Contain("hreflang=\"x-default\"");
         rendered.Should().Contain("<link rel=\"canonical\"");
@@ -172,7 +172,7 @@ public class AlternateLinkTests
     {
         var head = html[..html.IndexOf("</head>", StringComparison.Ordinal)];
         return System.Text.RegularExpressions.Regex
-            .Matches(head, "<link rel=\"alternate\" hreflang=\"([^\"]+)\" href=\"([^\"]+)\">")
+            .Matches(head, "<link rel=\"alternate\" hreflang=\"([^\"]+)\" href=\"([^\"]+)\" data-eq-meta>")
             .Select(match => $"{match.Groups[1].Value} {match.Groups[2].Value}")
             .ToList();
     }

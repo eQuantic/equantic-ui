@@ -50,7 +50,7 @@ public class DefaultKeywordTests
         // A char is a one-unit string on this side, and its default is U+0000, not the empty
         // string: `(int)default(char)` read no unit at all.
         var result = TestHelper.ConvertExpression("default(char)");
-        result.Should().Be("'\\0'");
+        result.Should().Be("'\\u0000'");
     }
 
     // ============ Reference Types ============
@@ -77,8 +77,8 @@ public class DefaultKeywordTests
     [InlineData("default(System.Int64)", "$eq.num.long(0)")]
     [InlineData("default(System.Decimal)", "$eq.num.dec(0)")]
     [InlineData("default(System.Int32)", "0")]
-    [InlineData("default(char)", "'\\0'")]
-    [InlineData("default(System.Char)", "'\\0'")]
+    [InlineData("default(char)", "'\\u0000'")]
+    [InlineData("default(System.Char)", "'\\u0000'")]
     [InlineData("default(int?)", "null")]
     public void Default_WithNoModel_IsWhatTheNameSays(string expression, string expected)
     {

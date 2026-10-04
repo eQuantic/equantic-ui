@@ -6,10 +6,10 @@ using Xunit;
 namespace eQuantic.UI.Compiler.Tests;
 
 /// <summary>
-/// A slot holding a COMPAT type — a long, a decimal, a date — is described in three places, and
-/// they have to say the same thing: the TypeScript the twin declares, the entry in
-/// <c>$hydration</c> that coerces an incoming payload, and the default the constructor writes when
-/// the caller supplies none. Any two of them agreeing is not enough.
+/// A slot holding a COMPAT type — a long, a decimal, a date — on a component the server carries state
+/// to is described in three places, and they have to say the same thing: the TypeScript the twin
+/// declares, the entry in <c>$hydration</c> that coerces an incoming payload, and the default the
+/// constructor writes when the caller supplies none. Any two of them agreeing is not enough.
 /// <para>
 /// The site's home page died on the third. A `long` PROPERTY was declared `bigint`, but properties
 /// were missing from the hydration map, so the payload's JSON number stayed a number — and the
@@ -22,11 +22,17 @@ public class CompatSlotAgreementTests
 {
     private const string Source = """
         using System;
+        using System.Threading;
+        using System.Threading.Tasks;
         using eQuantic.UI.Primitives;
 
         [Component]
-        public sealed class Stats : StatelessComponent
+        public sealed class Stats : StatelessComponent, IServerPrefetch
         {
+            [ServerOnly]
+            public Task PrefetchAsync(IServiceProvider services, CancellationToken cancellationToken)
+                => Task.CompletedTask;
+
             public long Downloads { get; init; }
             public decimal Revenue { get; init; }
             public DateTime Since { get; init; }
@@ -39,8 +45,15 @@ public class CompatSlotAgreementTests
         }
         """;
 
-    private static string Twin() => new ComponentCompiler().CompileSource(Source, "Stats.cs")
-        .Single(result => result.ComponentName == "Stats").TypeScript;
+    private static string Twin() => Compile(Source, "Stats.cs", "Stats");
+
+    /// <summary>The twin as an app's build writes it: the map comes from the manifest the generator wrote.</summary>
+    private static string Compile(string source, string path, string component)
+    {
+        var compiler = new ComponentCompiler();
+        compiler.SetProjectCompilation(GeneratedProject.Of(source, path));
+        return compiler.CompileSource(source, path).Single(result => result.ComponentName == component).TypeScript;
+    }
 
     [Theory]
     [InlineData("downloads", "bigint", "long", "$eq.num.long(0)")]
@@ -71,14 +84,15 @@ public class CompatSlotAgreementTests
         Twin().Should().MatchRegex(@"\$hydration\(\)\s*\{\s*return \{[^}]*\bsince: 'dateTime'");
     }
 
-    /// <summary>Nothing is emitted for the slots whose wire form IS their runtime form — the
-    /// common case stays clean, which is why the map is worth having at all.</summary>
+    /// <summary>A slot whose wire form IS its runtime form is listed too, as <c>'declared'</c>: the map
+    /// is every value the server carries, and the runtime adopts nothing else. It keeps the witness
+    /// path, so the default it holds is what types it.</summary>
     [Fact]
-    public void APlainSlot_IsNotInTheBoundary()
+    public void APlainSlot_IsListedAsDeclared()
     {
         var map = Regex.Match(Twin(), @"\$hydration\(\)\s*\{\s*return \{[^}]*\}").Value;
 
-        map.Should().NotContain("stars:").And.NotContain("label:");
+        map.Should().Contain("stars: 'declared'").And.Contain("label: 'declared'");
     }
 
     /// <summary>A PRIVATE field was already covered; the property beside it was not, and that
@@ -101,16 +115,19 @@ public class CompatSlotAgreementTests
             using eQuantic.UI.Primitives;
 
             [Component]
-            public sealed class Tally : StatelessComponent
+            public sealed class Tally : StatelessComponent, IServerPrefetch
             {
+                [ServerOnly]
+                public System.Threading.Tasks.Task PrefetchAsync(System.IServiceProvider services, System.Threading.CancellationToken cancellationToken)
+                    => System.Threading.Tasks.Task.CompletedTask;
+
                 public long Count { get; init; }
 
                 public override VisualNode Build(ComponentContext context)
                     => new Text("", TypeRole.BodyM, context.Theme.TextPrimary);
             }
             """;
-        var twin = new ComponentCompiler().CompileSource(source, "Tally.cs")
-            .Single(result => result.ComponentName == "Tally").TypeScript;
+        var twin = Compile(source, "Tally.cs", "Tally");
 
         twin.Should().MatchRegex(@"\$hydration\(\)\s*\{\s*return \{ count: 'long' \}");
     }

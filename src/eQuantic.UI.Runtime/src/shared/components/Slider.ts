@@ -5,11 +5,6 @@ export class Slider extends StatelessComponent {
     static trackHeight: number = 4;
     static thumbSize: number = 24;
     static thumbBorder: number = 1;
-
-    static get $hydration() {
-        return { value: 'single', min: 'single', max: 'single', step: 'single' };
-    }
-
     declare value: number;
     declare onChanged: ((float: number) => void) | null;
     declare min: number;

@@ -51,7 +51,7 @@ not shrink with compiler work — they are the shape of the target.
 | `EQ2001` | A C# construct with no runtime equivalent in the browser (typed-reference intrinsics: `__makeref`, `__reftype`, `__refvalue`, `stackalloc`, pointers). | Restructure without it. |
 | `EQ2002` | `goto`. | Restructure with loops and conditionals, or a labelled `break`/`continue` (those DO translate). |
 | `EQ2003` | `new T()` on a type parameter — generic arguments are erased at runtime in JavaScript, so the concrete type is unknown. | Pass a factory (`Func<T>`) or the constructed value in. |
-| `EQ2004` | A member declared outside the compilation that no strategy translates, so nothing emits it: a BCL member with no JavaScript form (`Convert.FromBase64String`, `DateOnly.ParseExact`), an extension method whose declaring class is not part of this compilation, or a `System.Range` value stored rather than indexed with. | Use a member that translates (index with the range directly, `text[a..b]`), move the call behind a `[ServerAction]`, or bring the declaring source into the compilation. |
+| `EQ2004` | A member declared outside the compilation that no strategy translates, so nothing emits it: a BCL member with no JavaScript form (`Convert.FromBase64String`, `DateOnly.ParseExact`), written qualified or reached bare through `using static` (`WriteLine` under `using static System.Console`), an extension method whose declaring class is not part of this compilation, or a `System.Range` value stored rather than indexed with. | Use a member that translates (index with the range directly, `text[a..b]`), move the call behind a `[ServerAction]`, or bring the declaring source into the compilation. |
 | `EQ2005` | An infinite iterator. Iterators are MATERIALISED into an array, so the loop would run forever instead of yielding lazily. | Give the loop an end (a bound, a `yield break`), or take what you need inside the method. |
 | `EQ2006` | The member does not bind in the semantic model, so any translation would be a guess. | Either the code does not compile, or eqc is missing references / generated sources. Never guessed — see [Compiler](https://github.com/equantic/equantic-ui/wiki/Compiler). |
 | `EQ2007` | A comparer that changes what a collection considers equal or in order: a collection expression's `with(…)` argument beyond a capacity hint, or a comparer handed to a collection's constructor (`new Dictionary<string, T>(StringComparer.OrdinalIgnoreCase)`). A JS array, object, `Set` or runtime map compares with `===` and ordinal strings, and takes no comparer. The default comparers and `StringComparer.Ordinal` ask for exactly that, and pass. | Drop the comparer, or normalize the keys yourself (lower-case them on the way in and on every lookup). |
@@ -70,9 +70,10 @@ The localization contract, checked on the build machine rather than when a visit
 | `EQ2100` | About **this call**: the template must be a valid composite format whose specifiers are inside the supported subset, and the call must pass every hole it declares. | Fix the argument count, or drop the out-of-subset specifier (alignment such as `{0,10}` is outside v1). |
 | `EQ2101` | About the **translations**: every culture's resx is held against the neutral one, which is the arity contract. | Fix the culture's template — a dropped or extra `{n}` fails the build, not the page. |
 
-## EQ2102–EQ2107, EQ2112 — the client/server boundary
+## EQ2102–EQ2107, EQ2112, EQ2114 — the client/server boundary
 
-A client component reached for an API that only exists on a server. The bridge is `[ServerAction]`.
+A client component reached for an API that only exists on a server, or for a value only the server
+has. The bridge is `[ServerAction]`.
 
 | Code | Meaning |
 |---|---|
@@ -83,6 +84,7 @@ A client component reached for an API that only exists on a server. The bridge i
 | `EQ2106` | Native interop / P-Invoke (`System.Runtime.InteropServices`). |
 | `EQ2107` | Runtime IL generation (`System.Reflection.Emit`). |
 | `EQ2112` | File-system access (`System.IO`). |
+| `EQ2114` | A page uses a value the server's container gave it (a constructor parameter of a class type, or a member the page keeps one in) in a way the build cannot follow: a method called on it, the value passed where the build has no source, converted to text, compared, enumerated, stored in a collection, read through a member a .NET type declares on a value that does not cross whole (the `Count` of a list or a set of objects, a pair's `Value`), read through a type whose member of that name the value's own type hides (`new`), or read while the page is constructed. Such a value crosses to the browser as only what the browser reads of it, so a use the build cannot see would draw something else there. Reported by the source generator, so it shows in the editor. Decide on the server, in `PrefetchAsync` or a `[ServerOnly]` member, and keep the result in a field; or call a `[ServerAction]` when the browser's state is an input. |
 
 `EQ2112` sits apart from its family on purpose: `System.IO` was reported as `EQ2101` until that
 code turned out to belong to the resx check above, which the wiki already published. It is not a

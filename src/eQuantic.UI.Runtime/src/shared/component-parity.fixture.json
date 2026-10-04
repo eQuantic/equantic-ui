@@ -13034,5 +13034,169 @@
         }
       ]
     }
+  ],
+  "links-in-portuguese": [
+    {
+      "tag": "div",
+      "attrs": {
+        "class": "eq-11yg588 eq-19dgm5h eq-1eb13m5 eq-aexooi eq-kngwsg eq-m92pvu eq-mc2xdp"
+      },
+      "events": [],
+      "children": [
+        {
+          "tag": "a",
+          "attrs": {
+            "class": "eq-g7fowl eq-link",
+            "data-prefetch": "",
+            "href": "/pt-BR"
+          },
+          "events": [],
+          "children": [
+            {
+              "tag": "span",
+              "attrs": {
+                "class": "eq-7gvrt4 eq-type-bodym"
+              },
+              "events": [],
+              "children": [
+                {
+                  "tag": "#text",
+                  "text": "home",
+                  "attrs": {},
+                  "events": [],
+                  "children": []
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "tag": "a",
+          "attrs": {
+            "class": "eq-g7fowl eq-link",
+            "href": "//cdn.example.com/x"
+          },
+          "events": [],
+          "children": [
+            {
+              "tag": "span",
+              "attrs": {
+                "class": "eq-7gvrt4 eq-type-bodym"
+              },
+              "events": [],
+              "children": [
+                {
+                  "tag": "#text",
+                  "text": "cdn",
+                  "attrs": {},
+                  "events": [],
+                  "children": []
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "tag": "span",
+          "attrs": {
+            "class": "eq-7gvrt4 eq-type-bodym"
+          },
+          "events": [],
+          "children": [
+            {
+              "tag": "span",
+              "attrs": {},
+              "events": [],
+              "children": [
+                {
+                  "tag": "#text",
+                  "text": "Read the ",
+                  "attrs": {},
+                  "events": [],
+                  "children": []
+                }
+              ]
+            },
+            {
+              "tag": "a",
+              "attrs": {
+                "data-prefetch": "",
+                "href": "/pt-BR/terms"
+              },
+              "events": [],
+              "children": [
+                {
+                  "tag": "#text",
+                  "text": "terms",
+                  "attrs": {},
+                  "events": [],
+                  "children": []
+                }
+              ]
+            },
+            {
+              "tag": "span",
+              "attrs": {},
+              "events": [],
+              "children": [
+                {
+                  "tag": "#text",
+                  "text": ", the ",
+                  "attrs": {},
+                  "events": [],
+                  "children": []
+                }
+              ]
+            },
+            {
+              "tag": "a",
+              "attrs": {
+                "href": "https://example.com/docs"
+              },
+              "events": [],
+              "children": [
+                {
+                  "tag": "#text",
+                  "text": "docs",
+                  "attrs": {},
+                  "events": [],
+                  "children": []
+                }
+              ]
+            },
+            {
+              "tag": "span",
+              "attrs": {},
+              "events": [],
+              "children": [
+                {
+                  "tag": "#text",
+                  "text": " and the ",
+                  "attrs": {},
+                  "events": [],
+                  "children": []
+                }
+              ]
+            },
+            {
+              "tag": "a",
+              "attrs": {
+                "href": "//cdn.example.com/x"
+              },
+              "events": [],
+              "children": [
+                {
+                  "tag": "#text",
+                  "text": "cdn",
+                  "attrs": {},
+                  "events": [],
+                  "children": []
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
   ]
 }

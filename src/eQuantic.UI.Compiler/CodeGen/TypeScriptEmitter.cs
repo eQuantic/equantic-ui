@@ -78,6 +78,15 @@ public class TypeScriptEmitter
     private ITypeSymbol? BindType(TypeSyntax? type) =>
         type is null ? null : ModelFor(type)?.GetTypeInfo(type).Type;
 
+    /// <summary>
+    /// The default of a declared type, asked of the SYMBOL where a model can say, as the record
+    /// emitter asks it: the syntax alone cannot see through a name, and answered null for an enum, a
+    /// char and every struct, so a property of an enum type read undefined where C# reads its zero
+    /// member (#483).
+    /// </summary>
+    private string DefaultOf(TypeSyntax type) =>
+        BindType(type) is { } symbol ? _converter.DefaultOf(symbol) : TypeDeclarationExtensions.DefaultFor(type);
+
     /// <summary>The VALUE a [ServerAction] resolves to on the client: its return type with the
     /// task unwrapped — <c>Task&lt;List&lt;Todo&gt;&gt;</c> is <c>List&lt;Todo&gt;</c>; void and a
     /// bare Task carry nothing.</summary>
@@ -97,12 +106,6 @@ public class TypeScriptEmitter
         };
     }
 
-    /// <summary>
-    /// The class's TYPED BOUNDARY: <c>static $hydration = { total: 'decimal', … }</c>, naming every
-    /// field whose wire form differs from its runtime type (HydrationSpec). The runtime hydrates
-    /// SSR state and prefetch payloads by this map — coerced once at the boundary, so use sites
-    /// need no defensive coercions. Nothing is emitted when every field is identity.
-    /// </summary>
     /// <summary>The in-source types this module's hydration specs NAME. They are emitted into the
     /// body (a spec says <c>[Todo]</c>, meaning the class), but they appear in no syntax the type
     /// scan walks — a record reaches a page only as a field's declared type or an action's return
@@ -138,14 +141,23 @@ public class TypeScriptEmitter
         return ts;
     }
 
+    /// <summary>
+    /// The class's TYPED BOUNDARY: <c>static get $hydration() { return { total: 'decimal', … }; }</c>,
+    /// naming every value the server carries to this component (the hydration manifest) and how it is
+    /// coerced: by its wire spec where its JSON form differs from its runtime type (HydrationSpec), and
+    /// <c>'declared'</c> otherwise. The runtime adopts exactly the keys this map lists, so a value the
+    /// server sends lands even in a member the instance has not assigned yet (a captured
+    /// primary-constructor parameter the router did not pass). Nothing is emitted for a component
+    /// the manifest does not describe: it never receives state.
+    /// </summary>
     private void EmitHydrationMap(TypeScriptCodeBuilder.ClassBuilder c,
-        IEnumerable<(string Key, TypeSyntax? Type)> fields)
+        IEnumerable<(string Key, ITypeSymbol? Type, string? Projection)> carried)
     {
         var referenced = _hydrationReferences;
-        var entries = fields
-            .Select(field => (field.Key, Spec: HydrationSpec.Of(BindType(field.Type), referenced, _hydrationRuntimeReferences)))
-            .Where(field => field.Spec is not null)
-            .Select(field => $"{field.Key}: {field.Spec}")
+        var entries = carried
+            .Select(value => $"{value.Key}: {(value.Projection is { } projection
+                ? ProjectionSpec(value.Type, projection)
+                : HydrationSpec.Of(value.Type, referenced, _hydrationRuntimeReferences) ?? "'declared'")}")
             .ToList();
         if (entries.Count == 0) return;
         // A GETTER, never a field: the map can name a class (`_geometry: BarChartGeometry`), and a
@@ -155,6 +167,65 @@ public class TypeScriptEmitter
         // module has loaded.
         c.Member(JsClassMember.Getter("static ", "$hydration", "",
             JsStatement.Raw($"return {{ {string.Join(", ", entries)} }};")));
+    }
+
+    /// <summary>
+    /// A server value's spec: the projection it crosses as, which is plain data and never the twin of
+    /// its class. A twin's getters compute from members, and a projection holds only the members the
+    /// browser reads, so rebuilt on the twin it would answer from members that never crossed. Each leaf
+    /// the projection reads is coerced by its C# type, the way a field of that type would be.
+    /// </summary>
+    private string ProjectionSpec(ITypeSymbol? type, string projection)
+    {
+        var reads = new ProjectionReads();
+        foreach (var read in projection.Split(',', StringSplitOptions.RemoveEmptyEntries))
+        {
+            var presence = read.EndsWith('?');
+            var node = reads;
+            var current = type;
+            foreach (var segment in (presence ? read[..^1] : read).Split('.'))
+            {
+                current = MemberType(current, segment);
+                node = node.Child(segment);
+            }
+            if (!presence) node.Leaf = current;
+        }
+        return Members(reads) ?? "{ members: {} }";
+    }
+
+    /// <summary>The members of one level that need coercing, or null when every one crosses as it is.</summary>
+    private string? Members(ProjectionReads node)
+    {
+        var entries = new List<string>();
+        foreach (var (segment, child) in node.Children)
+        {
+            var spec = child.Children.Count > 0
+                ? Members(child)
+                : HydrationSpec.Of(child.Leaf, _hydrationReferences, _hydrationRuntimeReferences);
+            if (spec is not null) entries.Add($"{segment.ToCamelCase()}: {spec}");
+        }
+        return entries.Count == 0 ? null : $"{{ members: {{ {string.Join(", ", entries)} }} }}";
+    }
+
+    /// <summary>The C# type of the member a projection reads, as the value's type or one it derives from declares it.</summary>
+    private static ITypeSymbol? MemberType(ITypeSymbol? type, string name)
+    {
+        // A nullable struct's members are the struct's: its `.Value` never reaches a projection's path.
+        if (type is INamedTypeSymbol { OriginalDefinition.SpecialType: SpecialType.System_Nullable_T } nullable)
+            type = nullable.TypeArguments[0];
+        for (var current = type; current is not null; current = current.BaseType)
+        {
+            foreach (var member in current.GetMembers(name))
+            {
+                if (member is IPropertySymbol { IsIndexer: false } property) return property.Type;
+                if (member is IFieldSymbol field) return field.Type;
+            }
+        }
+        return type?.AllInterfaces
+            .SelectMany(face => face.GetMembers(name))
+            .OfType<IPropertySymbol>()
+            .Select(property => property.Type)
+            .FirstOrDefault();
     }
 
     /// <summary>A Build method's body as IR: its block, its expression as a return, or the
@@ -294,7 +365,7 @@ public class TypeScriptEmitter
                         var tsType = DeclarationType(component, field.Type);
                         var tsDefault = field.DefaultValueNode != null
                             ? Initializer(field.DefaultValueNode, _converter.ConvertExpression(field.DefaultValueNode, field.Type))
-                            : (field.DefaultValue != null ? ConvertToTsValue(field.DefaultValue, field.Type) : null);
+                            : null;
                         // C# value types default without an initializer (`private int _count;` is 0);
                         // an uninitialized TS field is `undefined` and would poison arithmetic (NaN).
                         tsDefault ??= ValueTypeDefault(field.Type, field.TypeNode);
@@ -306,24 +377,18 @@ public class TypeScriptEmitter
 
                 }
 
-                // The component's typed boundary — what hydration coerces an incoming payload
-                // by. Fields AND public auto-properties: a property is a slot the payload
-                // fills exactly as a field is, and leaving them out meant a `long` prop
-                // arrived as the JSON number it was sent as, into a slot the twin declares
-                // `bigint`. The first arithmetic on it threw "Cannot mix BigInt and other
-                // types" — in the browser only, after hydration, on a page the server had
-                // rendered perfectly.
-                if (!component.IsPrimitive)
+                // The component's typed boundary: what the server carries to it, read from the
+                // hydration manifest the server writes its payload from, so the two halves cannot
+                // disagree. Each value is coerced by its C# type: a `long` arriving as the string
+                // the wire carries it as becomes the `bigint` the twin declares, where it used to
+                // throw "Cannot mix BigInt and other types" on its first arithmetic, in the browser
+                // only, after hydration.
+                if (!component.IsPrimitive
+                    && component.ClassSyntax is { } declaration
+                    && ModelFor(declaration) is { } classModel
+                    && classModel.GetDeclaredSymbol(declaration) is INamedTypeSymbol componentSymbol)
                 {
-                    var slots = component.ComponentFields
-                        .Where(field => !field.IsStatic)
-                        .Select(field => (Key: field.Name.ToCamelCase(), Type: field.TypeNode))
-                        .Concat(component.Properties
-                            .Where(prop => prop.IsPublic && !prop.IsStatic && IsAutoProperty(prop))
-                            .Select(prop => (Key: prop.Name.ToCamelCase(), Type: prop.Node?.Type)))
-                        .GroupBy(slot => slot.Key, StringComparer.Ordinal)
-                        .Select(group => group.First());
-                    EmitHydrationMap(c, slots);
+                    EmitHydrationMap(c, HydrationManifest.Of(componentSymbol, classModel.Compilation));
                 }
 
                 if (component.IsPrimitive)
@@ -368,17 +433,15 @@ public class TypeScriptEmitter
                     }
 
                     // Apply defaults for properties not provided in props (only if still undefined)
-                    foreach (var prop in component.Properties.Where(p => p.IsPublic))
+                    // A STATIC property's is on the class (StaticInitial): written here, it became
+                    // an own property of each instance that nothing reads.
+                    foreach (var prop in component.Properties.Where(p => p.IsPublic && !p.IsStatic))
                     {
-                        // Read ONCE into a local. The filter used to carry `DefaultValue != null`,
-                        // which is true and unprovable: it is a mutable property, so nothing says it
-                        // is still non-null at the read a line later, and ConvertToTsValue derefs it
-                        // immediately.
-                        if (prop.DefaultValue is not { } declaredDefault) continue;
+                        // Read ONCE into a local: it is a mutable property, so nothing says it is
+                        // still non-null at a second read a line later.
+                        if (prop.DefaultValueNode is not { } declaredDefault) continue;
                         var camelName = prop.Name.ToCamelCase();
-                        var tsDefault = prop.DefaultValueNode != null
-                            ? Initializer(prop.DefaultValueNode, _converter.ConvertExpression(prop.DefaultValueNode, prop.Type))
-                            : ConvertToTsValue(declaredDefault, prop.Type);
+                        var tsDefault = Initializer(declaredDefault, _converter.ConvertExpression(declaredDefault, prop.Type));
                         // The default rides into the CONSTRUCTOR as text, past the converter's
                         // helper tracking — `$eq.num.long(0)` in a module that never imported $eq
                         // was "ReferenceError: $eq is not defined" at `new`, containing the
@@ -1424,7 +1487,14 @@ public class TypeScriptEmitter
                     if (Strategies.Expressions.FieldExpressionStrategy.UsesBackingField(node))
                     {
                         var slot = Strategies.Expressions.FieldExpressionStrategy.BackingSlot(node);
-                        c.Field(slot, DeclarationType(component, prop.Type), null, node, isDeclare: true);
+                        // A static one's store is the class's, where its accessors' `this` is, and
+                        // holds its initializer or its type's default from the start, as a static
+                        // auto-property's does: declared on the instance, the slot they wrote did not
+                        // exist, and declared alone it read undefined until the first write (#483).
+                        if (prop.IsStatic && StaticInitial(component, prop) is { } initial)
+                            c.Field(slot, DeclarationType(component, prop.Type), initial, node, isStatic: true);
+                        else
+                            c.Field(slot, DeclarationType(component, prop.Type), null, node, isStatic: prop.IsStatic, isDeclare: true);
                         if (!getterHasBody && getter != null)
                             c.Member(JsClassMember.Getter(stat, name, "", JsStatement.Return(JsExpr.ThisMember(slot))), getter);
                     }
@@ -1454,10 +1524,7 @@ public class TypeScriptEmitter
                 _converter.SetCurrentClass(component.Name);
                 if (prop.IsStatic)
                 {
-                    var def = prop.DefaultValueNode != null
-                        ? Initializer(prop.DefaultValueNode, _converter.ConvertExpression(prop.DefaultValueNode, prop.Type))
-                        : (prop.DefaultValue != null ? ConvertToTsValue(prop.DefaultValue, prop.Type) : null);
-                    c.Field(name, DeclarationType(component, prop.Type), def, node, isStatic: true);
+                    c.Field(name, DeclarationType(component, prop.Type), StaticInitial(component, prop), node, isStatic: true);
                 }
                 else
                 {
@@ -1465,6 +1532,21 @@ public class TypeScriptEmitter
                 }
             }
         }
+    }
+
+    /// <summary>
+    /// What a static property's store holds before anything writes it: its initializer, or its
+    /// type's default (a number's 0, an enum's zero member). Null for a reference type with neither,
+    /// whose C# default is null. No constructor runs for a static, so the value has to be on the
+    /// declaration: <c>static int Count { get; set; }</c> read undefined, where C# reads 0.
+    /// </summary>
+    private string? StaticInitial(ComponentDefinition component, PropertyDefinition prop)
+    {
+        var initial = prop.DefaultValueNode != null
+            ? Initializer(prop.DefaultValueNode, _converter.ConvertExpression(prop.DefaultValueNode, prop.Type))
+            : ValueTypeDefault(prop.Type, prop.Node?.Type);
+        if (initial is not null && initial.Contains("$eq.")) component.UsedHelpers.Add(Eq.Import);
+        return initial;
     }
 
     /// <summary>
@@ -1569,19 +1651,36 @@ public class TypeScriptEmitter
                     // C# 14 `field`: the property keeps its own store and the accessors guard it.
                     // The slot has to exist before the getter names it — see FieldExpressionStrategy
                     // for why it is called `$name` (a name no C# field can take).
-                    if (Strategies.Expressions.FieldExpressionStrategy.UsesBackingField(p))
+                    var backed = Strategies.Expressions.FieldExpressionStrategy.UsesBackingField(p);
+                    if (backed)
                     {
                         var slot = Strategies.Expressions.FieldExpressionStrategy.BackingSlot(p);
-                        var slotDefault = TypeDeclarationExtensions.DefaultFor(p.Type);
+                        // The store starts as the property's initializer, which C# writes into it
+                        // directly, or as its type's default. The initializer was dropped: the
+                        // accessors are emitted, so nothing below writes it (#483).
+                        var slotDefault = p.Initializer != null
+                            ? Initializer(p.Initializer.Value, _converter.ConvertExpression(p.Initializer.Value, p.Type.ToString()))
+                            : DefaultOf(p.Type);
+                        // On the class for a static property, where its accessors' `this` is the
+                        // class: on the instance, a static `field` read undefined (#483).
+                        var slotIsStatic = accessorQualifier.Length > 0;
                         if (slotDefault == "null")
                         {
-                            if (CanDeclareTypeOnly) c.Member(JsClassMember.Field("declare ", slot, $": {DeclaredType(p.Type)}"), p);
+                            if (CanDeclareTypeOnly)
+                                c.Member(JsClassMember.Field(slotIsStatic ? "declare static " : "declare ", slot, $": {DeclaredType(p.Type)}"), p);
                         }
                         else
-                            c.Field(slot, DeclaredType(p.Type), slotDefault, p);
+                            c.Field(slot, DeclaredType(p.Type), slotDefault, p, isStatic: slotIsStatic);
+                        // An automatic getter reads the store. Without one the class fell to the
+                        // auto-property's field below, named like the property, which shadows the
+                        // setter: a write skipped it, and `Total = 3` read back 3 where C# reads 6.
+                        if (p.AccessorList.Accessors.FirstOrDefault(a => a.Keyword.Text == "get") is { Body: null, ExpressionBody: null })
+                            c.Member(JsClassMember.Getter(accessorQualifier, pn, Annotation(DeclaredType(p.Type)),
+                                JsStatement.Return(JsExpr.ThisMember(slot))), p);
                     }
 
-                    if (EmitGetter(p, c, accessorQualifier)) { }
+                    // A property guarding a store has its accessors, and no field of its name.
+                    if (EmitGetter(p, c, accessorQualifier) || backed) { }
                     else if (p.Initializer != null)
                         c.Field(pn, DeclaredType(p.Type),
                             Initializer(p.Initializer.Value, _converter.ConvertExpression(p.Initializer.Value, p.Type.ToString())), p,
@@ -1595,7 +1694,7 @@ public class TypeScriptEmitter
                         // IS false before anyone assigns it, and leaving it undefined is not false
                         // to `===`. A reference type is DECLARED only: its C# default is null, but
                         // the declared type is non-nullable and the constructor is what assigns.
-                        var defaulted = TypeDeclarationExtensions.DefaultFor(p.Type);
+                        var defaulted = DefaultOf(p.Type);
                         var isStaticProperty = asStatic
                             || p.Modifiers.Any(Microsoft.CodeAnalysis.CSharp.SyntaxKind.StaticKeyword);
                         if (defaulted == "null" && !isStaticProperty)
@@ -2201,8 +2300,8 @@ public class TypeScriptEmitter
         if (cls.BaseList is null) return null;
         foreach (var entry in cls.BaseList.Types)
         {
-            var candidate = entry.Type.ToString();
-            if (candidate.Contains('<')) candidate = candidate[..candidate.IndexOf('<')];
+            // Named as its twin: a namespace in the spelling is no name the module has (#479).
+            var candidate = entry.Type.TwinTypeName(_semanticModel);
             var resolved = _semanticModel?.GetSymbolInfo(entry.Type).Symbol as INamedTypeSymbol;
             if (resolved is not null ? resolved.TypeKind == TypeKind.Class : Resolvable(candidate))
                 return candidate;
@@ -2689,36 +2788,5 @@ public class TypeScriptEmitter
         }
         parts.Add(text[start..]);
         return parts;
-    }
-
-    private static string ConvertToTsValue(string value, string type)
-    {
-        if (value.Contains("new()") || value.Contains("new List"))
-        {
-            var tsType = CSharpTypeToTypeScript(type);
-            if (tsType.EndsWith("[]"))
-            {
-                return "[]";
-            }
-        }
-        
-        return type.ToLowerInvariant() switch
-        {
-            "string" => $"\"{value.Trim('"')}\"",
-            "int" or "double" or "float" => value,
-            "bool" or "boolean" => value.ToLower(),
-             _ => value
-        };
-    }
-    
-    private static string GetDefaultForType(string type)
-    {
-        return type.ToLowerInvariant() switch
-        {
-            "string" => "\"\"",
-            "int" or "double" or "float" => "0",
-            "bool" or "boolean" => "false",
-             _ => "null"
-        };
     }
 }

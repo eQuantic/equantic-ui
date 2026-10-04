@@ -34,8 +34,9 @@ export class Queue<T> {
     return this.items[0];
   }
 
+  /** By `EqualityComparer<T>.Default`, as .NET's does: a decimal, a date or a record by its value. */
   contains(item: T): boolean {
-    return this.items.includes(item);
+    return this.items.some((held) => equals(held, item));
   }
 
   clear(): void {
@@ -45,6 +46,11 @@ export class Queue<T> {
   /** Front-to-back order (FIFO), matching .NET. */
   toArray(): T[] {
     return this.items.slice();
+  }
+
+  /** Enumerates front to back, as .NET's does, for a `foreach` and LINQ alike. */
+  [Symbol.iterator](): Iterator<T> {
+    return this.items.slice()[Symbol.iterator]();
   }
 }
 
@@ -73,8 +79,9 @@ export class Stack<T> {
     return this.items[this.items.length - 1];
   }
 
+  /** By `EqualityComparer<T>.Default`, as .NET's does: a decimal, a date or a record by its value. */
   contains(item: T): boolean {
-    return this.items.includes(item);
+    return this.items.some((held) => equals(held, item));
   }
 
   clear(): void {
@@ -84,6 +91,11 @@ export class Stack<T> {
   /** Top-to-bottom order (LIFO), matching .NET `Stack<T>.ToArray()`. */
   toArray(): T[] {
     return this.items.slice().reverse();
+  }
+
+  /** Enumerates from the top, as .NET's does, for a `foreach` and LINQ alike. */
+  [Symbol.iterator](): Iterator<T> {
+    return this.items.slice().reverse()[Symbol.iterator]();
   }
 }
 

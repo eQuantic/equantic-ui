@@ -2,107 +2,107 @@ import { $eq, CalendarNames } from "../runtime-exports";
 
 export class SdkStrings {
     static get dismiss(): string {
-        return $eq.str("SdkResources", "Dismiss");
+        return $eq.str('SdkResources', 'Dismiss');
     }
 
     static get cookieConsentTitle(): string {
-        return $eq.str("SdkResources", "CookieConsentTitle");
+        return $eq.str('SdkResources', 'CookieConsentTitle');
     }
 
     static get cookieConsentBody(): string {
-        return $eq.str("SdkResources", "CookieConsentBody");
+        return $eq.str('SdkResources', 'CookieConsentBody');
     }
 
     static get acceptCookies(): string {
-        return $eq.str("SdkResources", "AcceptCookies");
+        return $eq.str('SdkResources', 'AcceptCookies');
     }
 
     static get rejectCookies(): string {
-        return $eq.str("SdkResources", "RejectCookies");
+        return $eq.str('SdkResources', 'RejectCookies');
     }
 
     static get privacyPolicy(): string {
-        return $eq.str("SdkResources", "PrivacyPolicy");
+        return $eq.str('SdkResources', 'PrivacyPolicy');
     }
 
     static get remove(): string {
-        return $eq.str("SdkResources", "Remove");
+        return $eq.str('SdkResources', 'Remove');
     }
 
     static get searchPlaceholder(): string {
-        return $eq.str("SdkResources", "SearchPlaceholder");
+        return $eq.str('SdkResources', 'SearchPlaceholder');
     }
 
     static get clearSearch(): string {
-        return $eq.str("SdkResources", "ClearSearch");
+        return $eq.str('SdkResources', 'ClearSearch');
     }
 
     static get codeEditor(): string {
-        return $eq.str("SdkResources", "CodeEditor");
+        return $eq.str('SdkResources', 'CodeEditor');
     }
 
     static get previousChange(): string {
-        return $eq.str("SdkResources", "PreviousChange");
+        return $eq.str('SdkResources', 'PreviousChange');
     }
 
     static get nextChange(): string {
-        return $eq.str("SdkResources", "NextChange");
+        return $eq.str('SdkResources', 'NextChange');
     }
 
     static get showInline(): string {
-        return $eq.str("SdkResources", "ShowInline");
+        return $eq.str('SdkResources', 'ShowInline');
     }
 
     static get showSideBySide(): string {
-        return $eq.str("SdkResources", "ShowSideBySide");
+        return $eq.str('SdkResources', 'ShowSideBySide');
     }
 
     static get diffOriginal(): string {
-        return $eq.str("SdkResources", "DiffOriginal");
+        return $eq.str('SdkResources', 'DiffOriginal');
     }
 
     static get diffModified(): string {
-        return $eq.str("SdkResources", "DiffModified");
+        return $eq.str('SdkResources', 'DiffModified');
     }
 
     static get find(): string {
-        return $eq.str("SdkResources", "Find");
+        return $eq.str('SdkResources', 'Find');
     }
 
     static get previousMatch(): string {
-        return $eq.str("SdkResources", "PreviousMatch");
+        return $eq.str('SdkResources', 'PreviousMatch');
     }
 
     static get nextMatch(): string {
-        return $eq.str("SdkResources", "NextMatch");
+        return $eq.str('SdkResources', 'NextMatch');
     }
 
     static get closeFind(): string {
-        return $eq.str("SdkResources", "CloseFind");
+        return $eq.str('SdkResources', 'CloseFind');
     }
 
     static get copyCode(): string {
-        return $eq.str("SdkResources", "CopyCode");
+        return $eq.str('SdkResources', 'CopyCode');
     }
 
     static get previousMonth(): string {
-        return $eq.str("SdkResources", "PreviousMonth");
+        return $eq.str('SdkResources', 'PreviousMonth');
     }
 
     static get nextMonth(): string {
-        return $eq.str("SdkResources", "NextMonth");
+        return $eq.str('SdkResources', 'NextMonth');
     }
 
     static get today(): string {
-        return $eq.str("SdkResources", "Today");
+        return $eq.str('SdkResources', 'Today');
     }
 
     static get chooseDate(): string {
-        return $eq.str("SdkResources", "ChooseDate");
+        return $eq.str('SdkResources', 'ChooseDate');
     }
 
     static get chooseTime(): string {
-        return $eq.str("SdkResources", "ChooseTime");
+        return $eq.str('SdkResources', 'ChooseTime');
     }
 
     static get dateFormatHint(): string {
@@ -110,39 +110,39 @@ export class SdkStrings {
     }
 
     static get dateFormatLetters(): string {
-        return $eq.str("SdkResources", "DateFormatLetters");
+        return $eq.str('SdkResources', 'DateFormatLetters');
     }
 
     static get spreadsheet(): string {
-        return $eq.str("SdkResources", "Spreadsheet");
+        return $eq.str('SdkResources', 'Spreadsheet');
     }
 
     static get back(): string {
-        return $eq.str("SdkResources", "Back");
+        return $eq.str('SdkResources', 'Back');
     }
 
     static get nothingSelected(): string {
-        return $eq.str("SdkResources", "NothingSelected");
+        return $eq.str('SdkResources', 'NothingSelected');
     }
 
     static get showAsTable(): string {
-        return $eq.str("SdkResources", "ShowAsTable");
+        return $eq.str('SdkResources', 'ShowAsTable');
     }
 
     static get showAsChart(): string {
-        return $eq.str("SdkResources", "ShowAsChart");
+        return $eq.str('SdkResources', 'ShowAsChart');
     }
 
     static lineNumbered(number: number) {
-        return $eq.text.stringFormat($eq.str("SdkResources", "LineNumbered"), $eq.text.asInteger(number, 'int32'));
+        return $eq.text.stringFormat($eq.str('SdkResources', 'LineNumbered'), $eq.text.asInteger(number, 'int32'));
     }
 
     static unchangedLines(count: number) {
-        return count === 1 ? $eq.str("SdkResources", "UnchangedLine") : $eq.text.stringFormat($eq.str("SdkResources", "UnchangedLines"), $eq.text.asInteger(count, 'int32'));
+        return count === 1 ? $eq.str('SdkResources', 'UnchangedLine') : $eq.text.stringFormat($eq.str('SdkResources', 'UnchangedLines'), $eq.text.asInteger(count, 'int32'));
     }
 
     static hiddenLines(count: number) {
-        return count === 1 ? $eq.str("SdkResources", "HiddenLine") : $eq.text.stringFormat($eq.str("SdkResources", "HiddenLines"), $eq.text.asInteger(count, 'int32'));
+        return count === 1 ? $eq.str('SdkResources', 'HiddenLine') : $eq.text.stringFormat($eq.str('SdkResources', 'HiddenLines'), $eq.text.asInteger(count, 'int32'));
     }
 
     static hint(pattern: string, letters: string) {

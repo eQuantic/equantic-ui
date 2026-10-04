@@ -4,7 +4,7 @@ EQ0002 eQuantic.Build/Program.cs
 EQ1001 eQuantic.UI.Compiler/CodeGen/CSharpToJsConverter.cs
 EQ1002 eQuantic.UI.Compiler/CodeGen/CSharpToJsConverter.cs
 EQ1003 eQuantic.UI.Compiler/CodeGen/CSharpToJsConverter.cs
-EQ1004 eQuantic.UI.Compiler/CodeGen/ConversionContext.cs
+EQ1004 eQuantic.UI.Compiler/CodeGen/ConversionContext.cs eQuantic.UI.Compiler/CodeGen/Strategies/Expressions/ObjectCreationStrategy.cs
 EQ1005 eQuantic.Build/Program.cs
 EQ1006 eQuantic.Build/Program.cs
 EQ1007 eQuantic.UI.Compiler/Services/OverloadedMethods.cs
@@ -12,7 +12,7 @@ EQ1008 eQuantic.UI.Compiler/CodeGen/RecordTypeEmitter.cs eQuantic.UI.Compiler/Co
 EQ2001 eQuantic.Build/Program.cs eQuantic.UI.Compiler/CodeGen/Strategies/Special/UnsupportedConstructStrategy.cs
 EQ2002 eQuantic.UI.Compiler/CodeGen/Strategies/Statements/GotoStatementStrategy.cs
 EQ2003 eQuantic.UI.Compiler/CodeGen/Strategies/Expressions/ObjectCreationStrategy.cs
-EQ2004 eQuantic.UI.Code/Marks/CodeDiagnostic.cs eQuantic.UI.Compiler/CodeGen/Strategies/Expressions/InvocationStrategy.cs eQuantic.UI.Compiler/CodeGen/Strategies/Expressions/RangeExpressionStrategy.cs
+EQ2004 eQuantic.UI.Code/Marks/CodeDiagnostic.cs eQuantic.UI.Compiler/CodeGen/Extensions/UsingStaticSymbolExtensions.cs eQuantic.UI.Compiler/CodeGen/Strategies/Expressions/InvocationStrategy.cs eQuantic.UI.Compiler/CodeGen/Strategies/Expressions/RangeExpressionStrategy.cs
 EQ2005 eQuantic.UI.Compiler/CodeGen/MethodLowering.cs
 EQ2006 eQuantic.UI.Compiler/CodeGen/Strategies/Expressions/ConditionalAccessStrategy.cs eQuantic.UI.Compiler/CodeGen/Strategies/Expressions/InvocationStrategy.cs eQuantic.UI.Compiler/CodeGen/Strategies/Expressions/MemberAccessStrategy.cs eQuantic.UI.Compiler/CodeGen/Strategies/Expressions/ObjectCreationStrategy.cs
 EQ2007 eQuantic.UI.Compiler/CodeGen/Extensions/CollectionComparerExtensions.cs eQuantic.UI.Compiler/CodeGen/Strategies/Expressions/CollectionExpressionStrategy.cs
@@ -35,6 +35,7 @@ EQ2110 eQuantic.UI.Compiler/CodeGen/Strategies/Invocation/ToStringStrategy.cs eQ
 EQ2111 eQuantic.UI.Compiler/CodeGen/Strategies/Invocation/ServiceProviderStrategy.cs
 EQ2112 eQuantic.UI.Compiler/Services/SemanticValidator.cs
 EQ2113 eQuantic.UI.Compiler/CodeGen/Strategies/Async/TaskMethodStrategy.cs
+EQ2114 eQuantic.UI.Generators/HydrationManifestGenerator.cs
 EQ3001 eQuantic.UI.Native.Generators/PhotonProgramGenerator.cs
 EQ3002 eQuantic.UI.Native.Generators/PhotonProgramGenerator.cs
 EQ3003 eQuantic.UI.Native.Generators/CapabilityDeclarations.cs

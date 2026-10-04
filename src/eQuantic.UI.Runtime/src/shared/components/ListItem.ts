@@ -2,11 +2,6 @@ import { Avatar, Box, BoxStyle, BuildContext, Column, EdgeInsets, Flexible, Icon
 
 export class ListItem extends StatelessComponent {
     static $typeId = 'eQuantic.UI.Components.ListItem';
-
-    static get $hydration() {
-        return { leadingWidth: 'single' };
-    }
-
     declare title: string;
     declare subtitle: any;
     declare onPressed: (() => void) | null;

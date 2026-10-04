@@ -233,6 +233,52 @@ public static class ConformanceRunner
     }
 
     /// <summary>
+    /// As <see cref="AssertStatementsSameAsDotNet"/> for a case written against the VOCABULARY: both
+    /// sides read <c>using eQuantic.UI.Primitives;</c>, and the program imports from the served
+    /// bundle every runtime export the translation names (a vocabulary value type's companion, such
+    /// as <c>Color</c>), the way a page imports them from <c>@equantic/runtime</c>.
+    /// </summary>
+    public static void AssertVocabularyStatementsSameAsDotNet(string csharpStatements)
+    {
+        const string prelude = "using eQuantic.UI.Primitives;";
+        var jsBlock = Transpiler.TranspileStatements(csharpStatements, prelude);
+        var url = RuntimeJsUrl()
+            ?? throw new InvalidOperationException("Could not locate the bundled runtime.js.");
+        var named = RuntimeExports.Value
+            .Where(name => name != "$eq" && Regex.IsMatch(jsBlock, $@"(?<![\w$.]){Regex.Escape(name)}\b"))
+            .ToList();
+        if (jsBlock.Contains("$eq.")) named.Insert(0, "$eq");
+        var program = (named.Count == 0 ? "" : $"import {{ {string.Join(", ", named)} }} from '{url}';\n") + Log(jsBlock);
+
+        var actual = JsExecutor.Run(program);
+        var expected = DotNetEvaluator.EvaluateToJson(csharpStatements, prelude);
+
+        actual.Should().Be(
+            expected,
+            $"C# block `{csharpStatements}` (transpiled to JS `{jsBlock}`) must behave identically to .NET");
+    }
+
+    /// <summary>The names the served bundle exports, read from the bundle itself rather than listed.</summary>
+    public static readonly Lazy<IReadOnlyList<string>> RuntimeExports = new(() =>
+    {
+        var url = RuntimeJsUrl()
+            ?? throw new InvalidOperationException("Could not locate the bundled runtime.js.");
+        var json = JsExecutor.Run($"import * as runtime from '{url}';\nconsole.log(JSON.stringify(Object.keys(runtime)));");
+        return System.Text.Json.JsonSerializer.Deserialize<List<string>>(json)!;
+    });
+
+    /// <summary>What <c>typeof</c> answers for each named export of the served bundle.</summary>
+    public static IReadOnlyDictionary<string, string> RuntimeExportKinds(IEnumerable<string> names)
+    {
+        var url = RuntimeJsUrl()
+            ?? throw new InvalidOperationException("Could not locate the bundled runtime.js.");
+        var list = string.Join(", ", names.Select(name => $"'{name}'"));
+        var json = JsExecutor.Run($"import * as runtime from '{url}';\n"
+            + $"console.log(JSON.stringify(Object.fromEntries([{list}].map(name => [name, typeof runtime[name]]))));");
+        return System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, string>>(json)!;
+    }
+
+    /// <summary>
     /// The line that runs the block and prints its result.
     /// <para>
     /// A block that AWAITS cannot run inside a plain arrow — `await` there is a SyntaxError and bun
@@ -261,6 +307,10 @@ public static class ConformanceRunner
     private static string BuildHelperImport(string js)
     {
         var used = RuntimeHelpers.Where(h => Regex.IsMatch(js, $@"\b{h}[(.]")).ToList();
+        // A type test against a scalar the runtime holds as a class of its own (a decimal, a date)
+        // names the class, which a module imports and this program has to as well.
+        used.AddRange(Regex.Matches(js, @"\binstanceof (Decimal|DateTime|DateOnly|TimeOnly|TimeSpan|DateTimeOffset)\b")
+            .Select(match => match.Groups[1].Value).Distinct());
         // The `$eq` namespace is a browser global; the standalone harness JS imports it explicitly.
         if (js.Contains("$eq.")) used.Insert(0, "$eq");
         if (used.Count == 0) return string.Empty;

@@ -69,12 +69,20 @@ describe('typed hydration', () => {
   });
 
   it('builds a sorted dictionary as its own class, and passes a dictionary through', () => {
-    const sorted = hydrate({ b: 2, a: 1 }, { dict: null, sorted: true }) as SortedMap<string, number>;
+    const sorted = hydrate({ b: 2, a: 1 }, { dict: null, sorted: 'dictionary' }) as SortedMap<string, number>;
     expect(sorted).toBeInstanceOf(SortedMap);
     expect(sorted.keys()).toEqual(['a', 'b']);
     const d = dictionary<string, number>([['a', 1]]);
     expect(hydrate(d, { dict: null })).toBe(d);
     expect(hydrate('nope', { dict: null })).toBe('nope');
+  });
+
+  it('keeps which sorted collection it is, so a SortedList refuses a repeated key in its own words', () => {
+    const list = hydrate({ 2: 'b' }, { dict: null, key: 'number', sorted: 'list' }) as SortedMap<number, string>;
+    expect(list.kind).toBe('list');
+    expect(() => list.add(2, 'c')).toThrow("An item with the same key has already been added. Key: 2 (Parameter 'key')");
+    const index = hydrate({ 2: 'b' }, { dict: null, key: 'number', sorted: 'dictionary' }) as SortedMap<number, string>;
+    expect(() => index.add(2, 'c')).toThrow('An item with the same key has already been added. Key: [2, c]');
   });
 
   it('rebuilds a dictionary the witness path meets as its class, never on its prototype', () => {
@@ -266,5 +274,51 @@ describe('a payload the server writes', () => {
       expect(Object.getPrototypeOf(value)).toBe(Rect.prototype);
       expect((value as { planted?: boolean }).planted).toBeUndefined();
     }
+  });
+});
+
+describe('a collection the browser holds as its own class', () => {
+  it('becomes a Set, its elements hydrated', () => {
+    const roles = hydrate(['admin', 'editor'], { collection: 'set', of: null }) as Set<string>;
+    expect(roles).toBeInstanceOf(Set);
+    expect(roles.has('admin')).toBe(true);
+    expect(roles.size).toBe(2);
+    const ids = hydrate(['9007199254740993'], { collection: 'set', of: 'long' }) as Set<bigint>;
+    expect(ids.has(9007199254740993n)).toBe(true);
+  });
+
+  it('becomes the runtime class, a stack with its top coming off first', async () => {
+    const { Queue, Stack, LinkedList } = await import('./collections');
+    const { SortedSet } = await import('./sorted');
+    // System.Text.Json writes a stack of 1, 2, 3 as [3, 2, 1]: its top first.
+    const stack = hydrate([3, 2, 1], { collection: 'stack', of: null }) as InstanceType<typeof Stack<number>>;
+    expect(stack).toBeInstanceOf(Stack);
+    expect(stack.pop()).toBe(3);
+    expect(stack.pop()).toBe(2);
+    const queue = hydrate(['1', '2'], { collection: 'queue', of: 'long' }) as InstanceType<typeof Queue<bigint>>;
+    expect(queue).toBeInstanceOf(Queue);
+    expect(queue.dequeue()).toBe(1n);
+    expect(hydrate(['a', 'b'], { collection: 'linkedList', of: null })).toBeInstanceOf(LinkedList);
+    const sorted = hydrate([3, 1, 2], { collection: 'sortedSet', of: null }) as InstanceType<typeof SortedSet<number>>;
+    expect(sorted).toBeInstanceOf(SortedSet);
+    expect(sorted.min).toBe(1);
+  });
+
+  it('keeps a sorted one in its element type\'s order, which `<` does not give', async () => {
+    const { SortedSet } = await import('./sorted');
+    // Decimals compared by their text put 10 before 9 and kept 1.0 beside 1.00, which .NET finds equal.
+    const prices = hydrate(['10', '9', '1.0', '1.00'], { collection: 'sortedSet', of: 'decimal', order: 'comparable' });
+    expect([...(prices as InstanceType<typeof SortedSet<Decimal>>)].map(String)).toEqual(['1.0', '9', '10']);
+    // A string orders in the culture, as Comparer<string>.Default does: B after b, not before a.
+    const names = hydrate(['a', 'b', 'B'], { collection: 'sortedSet', of: null, order: 'text' });
+    expect([...(names as InstanceType<typeof SortedSet<string>>)]).toEqual(['a', 'b', 'B']);
+    const index = hydrate({ a: 3, b: 1, B: 2 }, { dict: null, sorted: 'dictionary', order: 'text' }) as SortedMap<string, number>;
+    expect([...index.keys()]).toEqual(['a', 'b', 'B']);
+  });
+
+  it('passes a value that is already its class, so hydrating twice is harmless', () => {
+    const once = hydrate(['a'], { collection: 'set', of: null });
+    expect(hydrate(once, { collection: 'set', of: null })).toBe(once);
+    expect(hydrate(null, { collection: 'set', of: null })).toBeNull();
   });
 });

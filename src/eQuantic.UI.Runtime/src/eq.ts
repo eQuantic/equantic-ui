@@ -67,15 +67,23 @@ import {
   realParse,
   realTryParse,
 } from './utils/number-parse';
-import { max, min, toDictionary } from './utils/linq';
+import { enumerable, max, min, seq, toArray, toDictionary } from './utils/linq';
 import {
+  chars,
   compare,
   compareRange,
   compareRangeBy,
   equals as stringEquals,
   joinRange,
 } from './utils/string-statics';
-import { asInteger, asSingle, format, parseEnum, stringFormat, stringFormatInvariant } from './utils/format';
+import {
+  asInteger,
+  asSingle,
+  format,
+  recordText,
+  stringFormat,
+  stringFormatInvariant,
+} from './utils/format';
 import { nextTextElementLength, textElementStarts } from './utils/text-elements';
 import { unicodeCategory } from './utils/unicode-category';
 import {
@@ -101,11 +109,23 @@ import {
   setAdd,
   zip,
 } from './utils/collections';
-import { dictionary } from './utils/dictionary';
+import { dictionary, pair } from './utils/dictionary';
 import { boolConvert, boolParse, boolTryParse } from './utils/boolean-text';
 import { sortedSet, sortedDictionary, sortedList } from './utils/sorted';
 import { liftArith, liftCmp, liftUnary } from './utils/nullable';
 import { equals } from './utils/equals';
+import {
+  isDefined as enumIsDefined,
+  declaredNames as enumNames,
+  name as enumName,
+  parse as enumParse,
+  text as enumText,
+  tryParse as enumTryParse,
+  unbox as enumUnbox,
+  values as enumValues,
+  zero as enumZero,
+} from './utils/enums';
+import { lockGate, newObject } from './utils/net-object';
 import { resolveService } from './utils/services';
 import { StyleBuilder } from './utils/style-builder';
 import { ClassBuilder, joinClasses, whenClass } from './utils/class-builder';
@@ -182,9 +202,12 @@ export const $eq = {
   /** LINQ Zip: pairs stop with the shorter sequence. */
   zip,
   /** LINQ's Max and Min by the type they answer, and ToDictionary with .NET's refusals. */
-  linq: { max, min, toDictionary },
+  linq: { enumerable, max, min, seq, toArray, toDictionary },
   /** C# `with` over a runtime value type — prototype preserved. */
   withPatch,
+  /** `new object()`, an identity of its own, and a `lock` statement's gate, refused when null. */
+  newObject,
+  lockGate,
   /** C# range indexing whose endpoints count from the end — see `slice`. */
   slice,
   /** Design mode only: the source span that constructed a node — see `origin`. */
@@ -264,7 +287,10 @@ export const $eq = {
    * from the platform's segmenter), a character's general category, string's comparisons and
    * ranged join, and .NET's white space. */
   text: {
+    /** A range of chars, refused where it leaves its source, as .NET refuses it. */
+    chars,
     format,
+    record: recordText,
     stringFormat,
     stringFormatInvariant,
     asSingle,
@@ -292,8 +318,9 @@ export const $eq = {
   mapSet,
   /** Date and time, tick-precise. */
   time: { dateTime, timeSpan, dateOnly, timeOnly, dateTimeOffset },
-  /** Enum parsing (member-name string). */
-  enums: { parse: parseEnum },
+  /** An enum as .NET reads it, from the shape the compiler writes: its text, Parse and TryParse,
+   * its default, GetNames, GetValues and IsDefined. */
+  enums: { text: enumText, parse: enumParse, tryParse: enumTryParse, zero: enumZero, name: enumName, names: enumNames, values: enumValues, unbox: enumUnbox, isDefined: enumIsDefined },
   /**
    * Collections — Queue (FIFO), Stack (LIFO), Dictionary (by slot, as .NET's), LinkedList, and the
    * sorted family (SortedSet / SortedDictionary / SortedList).
@@ -314,6 +341,8 @@ export const $eq = {
     remove,
     sameItem,
     pairComparer,
+    /** `new KeyValuePair<K, V>(key, value)` and `KeyValuePair.Create`: the shape a dictionary yields. */
+    pair,
   },
   /** `bool.Parse`, `bool.TryParse` and `Convert.ToBoolean(string)`, as .NET reads the text. */
   bool: { parse: boolParse, tryParse: boolTryParse, convert: boolConvert },

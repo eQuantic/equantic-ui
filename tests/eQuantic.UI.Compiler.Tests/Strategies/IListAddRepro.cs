@@ -42,10 +42,10 @@ public class IListAddRepro
         var compilation = CSharpCompilation.Create("IListAddRepro", new[] { tree },
             new[]
             {
-                MetadataReference.CreateFromFile(typeof(object).Assembly.Location),
-                MetadataReference.CreateFromFile(typeof(List<>).Assembly.Location),
-                MetadataReference.CreateFromFile(Assembly.Load("System.Runtime").Location),
-                MetadataReference.CreateFromFile(Assembly.Load("System.Collections").Location)
+                TestReferences.Of(typeof(object).Assembly.Location),
+                TestReferences.Of(typeof(List<>).Assembly.Location),
+                TestReferences.Of(Assembly.Load("System.Runtime").Location),
+                TestReferences.Of(Assembly.Load("System.Collections").Location)
             },
             new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
 

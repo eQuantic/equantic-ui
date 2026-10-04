@@ -8,7 +8,7 @@ import { RenderManager } from '../dom/renderer';
 import { getRootServiceProvider, ServiceProvider } from './service-provider';
 import { hydrateValue } from '../utils/hydrate-value';
 import { hydrate, type HydrationSpec } from '../utils/hydrate';
-import { adoptMember, declaresMember } from '../utils/adopt-member';
+import { adoptMember } from '../utils/adopt-member';
 import { getCurrentRoute } from '../router/current-route';
 import {
   ComponentInstanceStore,
@@ -184,23 +184,28 @@ export function runComponentWalk<T>(root: object, adopt: boolean, run: () => T):
 }
 
 function applyServerFields(target: object, payload: Record<string, unknown>): boolean {
-  // The class's TYPED boundary: the compiler emits `static $hydration` naming every field whose
-  // wire form differs from its runtime type. A spec'd field is coerced by what it IS; the rest
-  // keep the witness path (the default value reveals the type) for compat.
-  const specs = (target.constructor as { $hydration?: Record<string, HydrationSpec> }).$hydration;
+  // THE CLASS'S MAP is the one description of what crosses: the compiler emits `static $hydration`
+  // from the hydration manifest, the same entries the server writes its payload from, so it lists
+  // every value the server carries here. A value with a wire spec is coerced by what it IS; one
+  // marked `'declared'` keeps the witness path (the default value reveals the type).
+  const specs = (target.constructor as { $hydration?: Record<string, HydrationSpec | 'declared'> })
+    .$hydration;
+  if (specs === undefined) return false;
   let adopted = false;
   for (const key of Object.keys(payload)) {
-    // Only fields the component actually declares: an unknown key is stale payload, never a new
-    // field (assigning it would silently create one no build ever reads). DECLARES, not `in`: every
-    // object answers `in` for `__proto__` and `constructor`, and assigning the first swapped the
-    // component's prototype for the payload's object.
-    if (!declaresMember(target, key) || typeof payload[key] === 'function') continue;
-    const spec = specs?.[key];
-    const current = (target as Record<string, unknown>)[key];
+    // LISTED, not held. A captured constructor parameter the router did not pass is never assigned,
+    // so the instance holds no such property until the server's value lands, and a rule that asked
+    // the instance refused it. A key the map does not list is stale payload, never a new field.
+    // OWN keys of the map only: every object answers `in` for `__proto__` and `constructor`, and
+    // assigning the first swapped the component's prototype for the payload's object.
+    if (!Object.prototype.hasOwnProperty.call(specs, key) || typeof payload[key] === 'function') continue;
+    const spec = specs[key];
     adoptMember(
       target,
       key,
-      spec !== undefined ? hydrate(payload[key], spec) : hydrateValue(current, payload[key]),
+      spec === 'declared'
+        ? hydrateValue((target as Record<string, unknown>)[key], payload[key])
+        : hydrate(payload[key], spec),
     );
     adopted = true;
   }
