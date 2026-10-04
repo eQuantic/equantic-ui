@@ -118,9 +118,9 @@ public sealed class Select : StatefulComponent
             Clip = true,
         }, list);
 
-        var trigger = Disabled
-            ? field
-            : (VisualNode)new Pressable(field, Toggle) { Expanded = _open };
+        // A disabled field is still the combobox, one that says it is disabled: a plain box there was
+        // static text to every reader on Photon, its role and its state gone.
+        var trigger = new Pressable(field, Disabled ? null : Toggle) { Disabled = Disabled, Expanded = _open && !Disabled };
 
         VisualNode select = new Anchored(trigger, panel)
         {

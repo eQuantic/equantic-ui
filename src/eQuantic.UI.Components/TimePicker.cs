@@ -130,7 +130,13 @@ public sealed class TimePicker : StatefulComponent
         }, new ScrollView(list));
 
         VisualNode picker = new Anchored(
-            Disabled ? box : new Pressable(box, Toggle) { Label = Label.Length > 0 ? Label : SdkStrings.ChooseTime, Expanded = _open },
+            // Disabled, still the combobox, saying so, as the Select's field is.
+            new Pressable(box, Disabled ? null : Toggle)
+            {
+                Disabled = Disabled,
+                Label = Label.Length > 0 ? Label : SdkStrings.ChooseTime,
+                Expanded = _open && !Disabled,
+            },
             panel)
         {
             Open = open,
