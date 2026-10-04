@@ -134,8 +134,8 @@ function currentView(): string {
  * `targetTop` 0 against an offset that had by then become 65px.
  *
  * Corrected ONCE, and only when the target really is behind the chrome — its top inside
- * `(-SubPixel, offset)` is exactly the broken state and nothing else. A reader who has already
- * scrolled somewhere else leaves the band.
+ * `(-snapTolerance(), offset)` is exactly the broken state and nothing else. A reader who has
+ * already scrolled somewhere else leaves the band.
  *
  * <para>
  * The chance is spent on the CORRECTION, never on the measurement, and that distinction is the
@@ -187,7 +187,7 @@ function realignColdLoad(offset: number): void {
     return;
   }
   const top = target.getBoundingClientRect().top;
-  if (top <= -SubPixel || top >= offset) {
+  if (top <= -snapTolerance() || top >= offset) {
     bookRecheck();
     return;
   }
@@ -196,12 +196,13 @@ function realignColdLoad(offset: number): void {
 }
 
 /**
- * How far ABOVE the top a target can sit and still be exactly where the jump left it.
+ * How far ABOVE the top a target can sit and still be exactly where the jump left it: one DEVICE
+ * pixel, in CSS pixels, and never less than one CSS pixel.
  *
  * <para>
  * A layout position is fractional (Chrome lays out in 1/64 of a pixel) and a scroll offset is whole
- * device pixels, so a jump to a target lands it within a pixel of the top, on either side, and which
- * side depends only on how the fraction rounds. A band that starts at 0 is a coin toss on that
+ * device pixels, so a jump to a target lands it within a device pixel of the top, on either side, and
+ * which side depends only on how the fraction rounds. A band that starts at 0 is a coin toss on that
  * fraction. Measured on a live site, warm: the target's document top was 2471.796875, the jump
  * scrolled to 2472, and the target sat at -0.203125, behind the header. Every frame of the watch saw
  * it there, out of a band that started at 0, and booked another, until the window retired with the
@@ -210,11 +211,17 @@ function realignColdLoad(offset: number): void {
  * </para>
  *
  * <para>
- * A reader a whole pixel or more past the target is somewhere the jump did not put them, and stays
- * where they are.
+ * A device pixel is a CSS pixel at a ratio of 1, half of one on a 2x screen, and MORE than one on a
+ * page zoomed out below a ratio of 1, where a whole-device-pixel offset can miss by two CSS pixels at
+ * 50%. Hence the larger of the two (found in review). A reader a whole device pixel or more past the
+ * target is somewhere the jump did not put them, and stays where they are.
  * </para>
  */
-const SubPixel = 1;
+function snapTolerance(): number {
+  const ratio =
+    typeof devicePixelRatio === 'number' && devicePixelRatio > 0 ? devicePixelRatio : 1;
+  return Math.max(1, 1 / ratio);
+}
 
 /**
  * How many frames the correction keeps watching once the document has completed AND THE PAGE HAS

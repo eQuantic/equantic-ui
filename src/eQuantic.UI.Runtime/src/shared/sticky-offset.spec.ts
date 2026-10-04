@@ -621,6 +621,49 @@ describe('the first measurement corrects a cold load that landed under the chrom
     bar.remove();
   });
 
+  /**
+   * The pixel is a DEVICE pixel. On a page zoomed out below a ratio of 1 one is more than a CSS
+   * pixel, so a whole-device-pixel scroll can miss the top by up to two CSS pixels at 50%, and a band
+   * one CSS pixel deep would refuse it again (found in review).
+   */
+  describe('on a page zoomed out to a device-pixel ratio of 0.5', () => {
+    const originalRatio = Object.getOwnPropertyDescriptor(window, 'devicePixelRatio');
+
+    beforeEach(() => {
+      Object.defineProperty(window, 'devicePixelRatio', { value: 0.5, configurable: true });
+    });
+
+    afterEach(() => {
+      if (originalRatio) Object.defineProperty(window, 'devicePixelRatio', originalRatio);
+      else delete (window as unknown as Record<string, unknown>).devicePixelRatio;
+    });
+
+    it('corrects a target the jump left a CSS pixel and a half above the top', () => {
+      loaded();
+      const bar = chrome(65);
+      const target = bookmark('liability', -1.5);
+      window.history.replaceState(null, '', '/probe#liability');
+
+      publishAnchorOffset();
+
+      expect(target.seen()).toBe(1);
+      bar.remove();
+    });
+
+    it('leaves a reader a whole device pixel past the target alone', () => {
+      loaded();
+      const bar = chrome(65);
+      const target = bookmark('liability', -2);
+      window.history.replaceState(null, '', '/probe#liability');
+
+      publishAnchorOffset();
+      frame(25);
+
+      expect(target.seen()).toBe(0);
+      bar.remove();
+    });
+  });
+
   /** And the window is long enough to be worth having: a jump several frames out is still caught. */
   it('is still watching several frames after the document completed', () => {
     loaded();
