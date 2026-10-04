@@ -69,7 +69,8 @@ export class Dictionary<K, V> implements Iterable<Pair<K, V>> {
    * throws stops the ones after it.
    */
   add(key: K, value: V): this {
-    if (this.find(key) >= 0) throw new Error(`An item with the same key has already been added. Key: ${keyText(key)}`);
+    if (this.find(key) >= 0)
+      throw exception('System.ArgumentException', `An item with the same key has already been added. Key: ${keyText(key)}`);
     return this.set(key, value);
   }
 
