@@ -36,11 +36,10 @@ export class Menu extends StatefulComponent {
         }
         let panel = new Box(new BoxStyle({ minWidth: 180, background: theme.surface, cornerRadius: new CornerRadii(theme.shape('medium')), borderWidth: 1, borderColor: theme.border, elevation: 2, padding: EdgeInsets.symmetric(0, 4), clip: true }), list);
         let menu: VisualNode = new Anchored(new Pressable(this.trigger, this.toggle.bind(this), { expanded: this._open }), panel, { placement: this.placement, open: this._open, onDismiss: () => this.setState(() => this._open = false), panelRole: 'menu', activeIndex: this._open ? this._highlight : -1 });
-        if (this._open && this.items.length > 0) {
-            menu = new Shortcut(menu, KeyChord.arrowDown, () => this.setState(() => this._highlight = this.step(+1)));
-            menu = new Shortcut(menu, KeyChord.arrowUp, () => this.setState(() => this._highlight = this.step(-1)));
-            menu = new Shortcut(menu, KeyChord.enter, () => this.choose(this._highlight));
-        }
+        let live = this._open && this.items.length > 0;
+        menu = new Shortcut(menu, KeyChord.arrowDown, () => this.setState(() => this._highlight = this.step(+1)), { enabled: live });
+        menu = new Shortcut(menu, KeyChord.arrowUp, () => this.setState(() => this._highlight = this.step(-1)), { enabled: live });
+        menu = new Shortcut(menu, KeyChord.enter, () => this.choose(this._highlight), { enabled: live });
         return menu;
     }
 

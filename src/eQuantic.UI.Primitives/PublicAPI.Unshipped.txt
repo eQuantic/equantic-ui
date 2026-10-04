@@ -30,3 +30,5 @@ eQuantic.UI.Primitives.HydratedMemberAttribute.DeclaringType.get -> string!
 eQuantic.UI.Primitives.TwinIsDataAttribute
 eQuantic.UI.Primitives.TwinIsDataAttribute.TwinIsDataAttribute(string! reason) -> void
 eQuantic.UI.Primitives.TwinIsDataAttribute.Reason.get -> string!
+eQuantic.UI.Primitives.Shortcut.Enabled.get -> bool
+eQuantic.UI.Primitives.Shortcut.Enabled.init -> void
