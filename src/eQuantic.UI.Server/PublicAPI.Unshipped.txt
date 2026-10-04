@@ -1,1 +1,13 @@
 #nullable enable
+*REMOVED*eQuantic.UI.Server.Rendering.IServerRenderingService.IsSsrEnabled(string! pageTypeName) -> bool
+*REMOVED*eQuantic.UI.Server.Rendering.IServerRenderingService.PreparePageAsync(string! pageTypeName, Microsoft.AspNetCore.Http.HttpContext! context) -> System.Threading.Tasks.Task<eQuantic.UI.Server.Rendering.ServerRenderResult!>!
+*REMOVED*eQuantic.UI.Server.Rendering.IServerRenderingService.RenderPageAsync(string! pageTypeName, Microsoft.AspNetCore.Http.HttpContext! context) -> System.Threading.Tasks.Task<eQuantic.UI.Server.Rendering.ServerRenderResult!>!
+*REMOVED*eQuantic.UI.Server.Rendering.ServerRenderingService.IsSsrEnabled(string! pageTypeName) -> bool
+*REMOVED*eQuantic.UI.Server.Rendering.ServerRenderingService.PreparePageAsync(string! pageTypeName, Microsoft.AspNetCore.Http.HttpContext! context) -> System.Threading.Tasks.Task<eQuantic.UI.Server.Rendering.ServerRenderResult!>!
+*REMOVED*eQuantic.UI.Server.Rendering.ServerRenderingService.RenderPageAsync(string! pageTypeName, Microsoft.AspNetCore.Http.HttpContext! context) -> System.Threading.Tasks.Task<eQuantic.UI.Server.Rendering.ServerRenderResult!>!
+eQuantic.UI.Server.Rendering.IServerRenderingService.RenderPageAsync(System.Type! pageType, Microsoft.AspNetCore.Http.HttpContext! context) -> System.Threading.Tasks.Task<eQuantic.UI.Server.Rendering.ServerRenderResult!>!
+eQuantic.UI.Server.Rendering.IServerRenderingService.PreparePageAsync(System.Type! pageType, Microsoft.AspNetCore.Http.HttpContext! context) -> System.Threading.Tasks.Task<eQuantic.UI.Server.Rendering.ServerRenderResult!>!
+eQuantic.UI.Server.Rendering.IServerRenderingService.IsSsrEnabled(System.Type! pageType) -> bool
+eQuantic.UI.Server.Rendering.ServerRenderingService.IsSsrEnabled(System.Type! pageType) -> bool
+eQuantic.UI.Server.Rendering.ServerRenderingService.RenderPageAsync(System.Type! pageType, Microsoft.AspNetCore.Http.HttpContext! context) -> System.Threading.Tasks.Task<eQuantic.UI.Server.Rendering.ServerRenderResult!>!
+eQuantic.UI.Server.Rendering.ServerRenderingService.PreparePageAsync(System.Type! pageType, Microsoft.AspNetCore.Http.HttpContext! context) -> System.Threading.Tasks.Task<eQuantic.UI.Server.Rendering.ServerRenderResult!>!

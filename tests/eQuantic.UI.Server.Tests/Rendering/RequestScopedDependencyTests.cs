@@ -84,7 +84,7 @@ public class RequestScopedDependencyTests
         var context = new DefaultHttpContext { RequestServices = scope.ServiceProvider };
         var service = scope.ServiceProvider.GetRequiredService<IServerRenderingService>();
 
-        var result = await service.RenderPageAsync(nameof(StoragePage), context);
+        var result = await service.RenderPageAsync(typeof(StoragePage), context);
 
         result.Success.Should().BeTrue(result.Error);
         result.Html.Should().Contain("(nothing stored)",
@@ -112,7 +112,7 @@ public class RequestScopedDependencyTests
         using var scope = root.CreateScope();
         var context = new DefaultHttpContext { RequestServices = scope.ServiceProvider };
 
-        var result = await service.RenderPageAsync(nameof(TenantPage), context);
+        var result = await service.RenderPageAsync(typeof(TenantPage), context);
 
         result.Success.Should().BeTrue(result.Error);
         result.Html.Should().Contain("Tenant: acme",
@@ -133,7 +133,7 @@ public class RequestScopedDependencyTests
         using var scope = root.CreateScope();
         var context = new DefaultHttpContext { RequestServices = scope.ServiceProvider };
 
-        var result = await service.RenderPageAsync(nameof(BrokenPage), context);
+        var result = await service.RenderPageAsync(typeof(BrokenPage), context);
 
         result.Success.Should().BeFalse("the page could not be built");
         result.Error.Should().Contain("the page's own constructor is wrong");

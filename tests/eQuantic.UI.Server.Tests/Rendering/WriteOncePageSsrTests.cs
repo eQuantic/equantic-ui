@@ -165,7 +165,7 @@ public class WriteOncePageSsrTests
             RequestServices = new ServiceCollection().BuildServiceProvider(),
         };
 
-        var result = await CreateService().RenderPageAsync(nameof(MetadataFromPrefetchPage), context);
+        var result = await CreateService().RenderPageAsync(typeof(MetadataFromPrefetchPage), context);
 
         result.Success.Should().BeTrue();
         result.Metadata!.Title.Should().Be("Docs — getting-started");
@@ -207,7 +207,7 @@ public class WriteOncePageSsrTests
             RequestServices = new ServiceCollection().BuildServiceProvider(),
         };
 
-        var result = await CreateService().RenderPageAsync(nameof(MissingContentPage), context);
+        var result = await CreateService().RenderPageAsync(typeof(MissingContentPage), context);
 
         result.Success.Should().BeTrue("it rendered — the content is missing, not the page");
         result.Html.Should().Contain("Not found");
@@ -224,7 +224,7 @@ public class WriteOncePageSsrTests
             RequestServices = new ServiceCollection().BuildServiceProvider(),
         };
 
-        var result = await CreateService().RenderPageAsync(nameof(WriteOnceTestPage), context);
+        var result = await CreateService().RenderPageAsync(typeof(WriteOnceTestPage), context);
 
         result.StatusCode.Should().Be(200);
     }
@@ -271,7 +271,7 @@ public class WriteOncePageSsrTests
     public async Task AWriteOncePage_ReadsItsRoute_WithoutKnowingTheWeb()
     {
         var result = await CreateService().RenderPageAsync(
-            nameof(RoutedDocPage), RequestFor("getting-started", "2"));
+            typeof(RoutedDocPage), RequestFor("getting-started", "2"));
 
         result.Success.Should().BeTrue(result.Error);
         result.Html.Should().Contain("page=2", "the query reached Build through the context");
@@ -286,7 +286,7 @@ public class WriteOncePageSsrTests
     public async Task ThePrefetch_AlreadyKnowsTheRoute_WhenItRuns()
     {
         var result = await CreateService().RenderPageAsync(
-            nameof(RoutedDocPage), RequestFor("getting-started", "1"));
+            typeof(RoutedDocPage), RequestFor("getting-started", "1"));
 
         result.Html.Should().Contain("document:getting-started",
             "the loader keyed off the slug — a null there loads the wrong document, or none");
@@ -299,7 +299,7 @@ public class WriteOncePageSsrTests
     [Fact]
     public async Task TheRoute_DoesNotSurviveTheRequest()
     {
-        await CreateService().RenderPageAsync(nameof(RoutedDocPage), RequestFor("first", "1"));
+        await CreateService().RenderPageAsync(typeof(RoutedDocPage), RequestFor("first", "1"));
 
         RouteValues.Current.Param("slug").Should().BeNull();
     }
@@ -314,7 +314,7 @@ public class WriteOncePageSsrTests
             RequestServices = new ServiceCollection().BuildServiceProvider(),
         };
 
-        var result = await CreateService().RenderPageAsync(nameof(RoutedDocPage), context);
+        var result = await CreateService().RenderPageAsync(typeof(RoutedDocPage), context);
 
         result.Success.Should().BeTrue(result.Error);
         result.Html.Should().Contain("document: page=");
@@ -340,7 +340,7 @@ public class WriteOncePageSsrTests
             RequestServices = new ServiceCollection().BuildServiceProvider(),
         };
 
-        var result = await service.RenderPageAsync(nameof(WriteOnceTestPage), context);
+        var result = await service.RenderPageAsync(typeof(WriteOnceTestPage), context);
 
         result.Success.Should().BeTrue(result.Error);
         result.Html.Should().Contain("Count: 0", "field defaults are the v1 initial state");
@@ -362,7 +362,7 @@ public class WriteOncePageSsrTests
             RequestServices = new ServiceCollection().AddSingleton<ITestStats, TestStats>().BuildServiceProvider(),
         };
 
-        var result = await service.RenderPageAsync(nameof(PrefetchTestPage), context);
+        var result = await service.RenderPageAsync(typeof(PrefetchTestPage), context);
 
         result.Success.Should().BeTrue(result.Error);
         result.Html.Should().Contain("Downloads: 675617",
@@ -378,7 +378,7 @@ public class WriteOncePageSsrTests
             RequestServices = new ServiceCollection().AddSingleton<ITestStats, TestStats>().BuildServiceProvider(),
         };
 
-        var result = await service.RenderPageAsync(nameof(PrefetchTestPage), context);
+        var result = await service.RenderPageAsync(typeof(PrefetchTestPage), context);
 
         // BY FIELD NAME: the transpiled twin declares the identical field, so the client's first
         // render starts from the server's value instead of flashing the default.
@@ -398,7 +398,7 @@ public class WriteOncePageSsrTests
                 .BuildServiceProvider(),
         };
 
-        var result = await service.RenderPageAsync(nameof(PrefetchWithDependencyPage), context);
+        var result = await service.RenderPageAsync(typeof(PrefetchWithDependencyPage), context);
 
         // One unused constructor dependency used to take the ENTIRE payload with it: the interface
         // field threw, the catch returned null, and the page the server had loaded correctly reset
@@ -420,7 +420,7 @@ public class WriteOncePageSsrTests
                 .BuildServiceProvider(),
         };
 
-        var result = await service.RenderPageAsync(nameof(PrefetchWithDependencyPage), context);
+        var result = await service.RenderPageAsync(typeof(PrefetchWithDependencyPage), context);
 
         // This one hurts more than losing the payload, because nothing looks wrong. The ambient
         // writes cleanly, so no guard that only drops FAILURES would catch it, and whatever the
@@ -439,7 +439,7 @@ public class WriteOncePageSsrTests
             RequestServices = new ServiceCollection().BuildServiceProvider(),
         };
 
-        var result = await service.RenderPageAsync(nameof(PrefetchCollectionPage), context);
+        var result = await service.RenderPageAsync(typeof(PrefetchCollectionPage), context);
 
         // IReadOnlyList<T> is how a component RECEIVES its items, never something it resolves. A
         // rule that skipped every interface would drop this field and the page would hydrate
@@ -457,7 +457,7 @@ public class WriteOncePageSsrTests
             RequestServices = new ServiceCollection().BuildServiceProvider(),
         };
 
-        var result = await service.RenderPageAsync(nameof(WriteOnceTestPage), context);
+        var result = await service.RenderPageAsync(typeof(WriteOnceTestPage), context);
 
         result.SerializedState.Should().BeNull("nothing was loaded — there is nothing to hand over");
     }
@@ -489,7 +489,7 @@ public class WriteOncePageSsrTests
             RequestServices = new ServiceCollection().BuildServiceProvider(),
         };
 
-        var result = await service.RenderPageAsync(nameof(WriteOnceTestPage), context);
+        var result = await service.RenderPageAsync(typeof(WriteOnceTestPage), context);
 
         result.Success.Should().BeTrue(result.Error);
         var css = AtomicCss(result);
