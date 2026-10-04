@@ -1,9 +1,1 @@
 #nullable enable
-*REMOVED*eQuantic.UI.Native.Components.NativeRole.Deconstruct(out string! AppKit, out string! Android, out eQuantic.UI.Native.Components.UIKitTrait UIKit, out bool Activatable, out bool Adjustable) -> void
-*REMOVED*eQuantic.UI.Native.Components.NativeRole.NativeRole(string! AppKit, string! Android, eQuantic.UI.Native.Components.UIKitTrait UIKit, bool Activatable, bool Adjustable) -> void
-eQuantic.UI.Native.Components.NativeRole.AppKitSubrole.get -> string?
-eQuantic.UI.Native.Components.NativeRole.AppKitSubrole.init -> void
-eQuantic.UI.Native.Components.NativeRole.Deconstruct(out string! AppKit, out string! Android, out eQuantic.UI.Native.Components.UIKitTrait UIKit, out bool Activatable, out bool Adjustable, out string? AppKitSubrole, out bool UIKitCheckAsSelected) -> void
-eQuantic.UI.Native.Components.NativeRole.NativeRole(string! AppKit, string! Android, eQuantic.UI.Native.Components.UIKitTrait UIKit, bool Activatable, bool Adjustable, string? AppKitSubrole = null, bool UIKitCheckAsSelected = false) -> void
-eQuantic.UI.Native.Components.NativeRole.UIKitCheckAsSelected.get -> bool
-eQuantic.UI.Native.Components.NativeRole.UIKitCheckAsSelected.init -> void
