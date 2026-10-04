@@ -62,7 +62,8 @@ public class QueueStackStrategy : ConversionStrategyBase
                 // `new SortedSet<int> { 2, 1 }` is a construction and then one Add per element, as
                 // C# runs it. The initializer was dropped, so the set began empty in the browser alone.
                 return oc.Initializer is { } initializer && initializer.Expressions.Count > 0
-                    ? Expressions.ObjectCreationStrategy.AddPerElementConstruction(initializer, construction, context)
+                    ? Ir.JsExprWriter.Write(Expressions.ObjectCreationStrategy.AddPerElementConstruction(
+                        initializer, Ir.JsExpr.Opaque(construction), context))
                     : construction;
             }
 

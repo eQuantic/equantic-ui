@@ -25,11 +25,13 @@ export class CodeDiffSource {
     declare gaps: CodeDiffGap[];
 
     originalNumber(line: number) {
-        let numbers: any; return (numbers = this._originalNumbers) != null ? numbers[line] : line + 1;
+        let numbers: any; 
+        return (numbers = this._originalNumbers) != null ? numbers[line] : line + 1;
     }
 
     modifiedNumber(line: number) {
-        let numbers: any; return (numbers = this._modifiedNumbers) != null ? numbers[line] : line + 1;
+        let numbers: any; 
+        return (numbers = this._modifiedNumbers) != null ? numbers[line] : line + 1;
     }
 
     static fromTexts(original: string, modified: string) {

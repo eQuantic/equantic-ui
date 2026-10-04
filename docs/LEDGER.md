@@ -1239,6 +1239,39 @@ record of a release, the wiki's Upgrading page is the distillate.
   holds its pages by type: `IServerRenderingService` takes a `Type` where it took a name, a break.
   `SameNamedPagesTests` serves both over the real pipeline, and the shop's route rendered the admin's
   page against main. Recorded in `openspec/specs/page-routes`.
+- **2026-10-04 · A source map keeps every line it came from**: three carriers still wrote what they
+  held as text before any writer saw it, so none of their statements had a segment of its own: the
+  arrow a body with an `out` or `ref` parameter runs in
+  ([#487](https://github.com/eQuantic/equantic-ui/issues/487)), a member's expression body, and an
+  object creation, initializer or anonymous object
+  ([#492](https://github.com/eQuantic/equantic-ui/issues/492)), every line of a lambda's block they
+  held included. The wrapper is IR, built once for a method, a lambda and a local function, its own
+  lines the declaration's, and an iterator's buffer with it; an expression body takes the concise
+  body's one lowering; a creation and an object literal are nodes of their own (`JsNew`, `JsObject`),
+  and the three strategies leave the text baseline (81 to 78). The shared components' lambda
+  statements with no line of their own went from 59 to 0. A class that takes the default its interface
+  supplies wrote the default's lines into the class's file, at lines that file does not have
+  ([#490](https://github.com/eQuantic/equantic-ui/issues/490)): each mapping carries its tree now, and
+  the map names every file, each with its own text. The map escaped five characters by hand and the
+  JSON writer behind the web manifest and the asset catalog three, so a form feed in a C# comment or a
+  tab in an app's name made a file no JSON reader opens
+  ([#525](https://github.com/eQuantic/equantic-ui/issues/525)): every JSON the build lays out goes
+  through `JsonWriter`, whose escape is System.Text.Json's, and both maps through one map writer on top
+  of it. Each case failed on main, the frames read through the composed map of a Bun bundle among
+  them. The review found the iterator's buffer left out of the declaration's lines, its two lines
+  mapped to nothing, and they map to the declaration now. Merged after #561, the out parameter's
+  wrapper leaves the functions the lowerings write by hand, the part of
+  [#539](https://github.com/eQuantic/equantic-ui/issues/539) it named, and so does one of the
+  creation's. Proposed and archived through OpenSpec
+  (`openspec/specs/transpiler-source-maps`, `openspec/specs/generated-files`).
+- **2026-10-04 · A deconstruction writes each part as C# does**: a deconstruction was destructuring,
+  which writes each part straight into its target, so a dictionary's entry as a target wrote its read,
+  a SyntaxError that cost the module, and an int part into a long stayed a number, which the next long
+  arithmetic refused, in an assignment, a declaration and a loop alike
+  ([#542](https://github.com/eQuantic/equantic-ui/issues/542)). Each part is converted to its target's
+  type as the bound tree's `DeconstructionInfo` says, and written by what its target is, an entry
+  through its class. Each is a conformance case on both sides that failed against main. Proposed and
+  archived through OpenSpec (`openspec/specs/transpiler-records`).
 - **2026-10-04 · A find bar's Escape closes its own editor's bar**: the code editor's Escape was a
   page-wide chord mounted with the find bar, so with two bars open it closed the one mounted last,
   wherever the keyboard was ([#457](https://github.com/eQuantic/equantic-ui/issues/457)). Made the

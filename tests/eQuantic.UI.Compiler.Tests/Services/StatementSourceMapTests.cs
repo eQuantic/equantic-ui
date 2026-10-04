@@ -262,6 +262,209 @@ public class StatementSourceMapTests
         }
         """;
 
+    /// <summary>Bodies with an <c>out</c> or a <c>ref</c> parameter (#487): a method's, whose outs come
+    /// back in the object it returns, and a lambda's and a local function's, which every call site
+    /// unwraps the same way. The body runs inside an arrow the lowering adds around it, and that
+    /// wrapper was TEXT, so the body's statements reached the writer with no origin: the first one
+    /// shared the wrapper's line, and a breakpoint on any of them bound nowhere.</summary>
+    private const string ByReferenceSource = """
+        namespace Demo;
+
+        public delegate bool Probe(string text, out int length);
+
+        public class Halves
+        {
+            public bool TryHalf(int value, out int half)
+            {
+                var doubled = value * 2;
+                half = doubled / 4;
+                return value % 2 == 0;
+            }
+
+            public int Swap(ref int seed)
+            {
+                var before = seed;
+                seed = before + 3;
+                return before;
+            }
+
+            public int Measured(string text)
+            {
+                Probe probe = (string candidate, out int length) =>
+                {
+                    var trimmed = candidate.Trim();
+                    length = trimmed.Length;
+                    return length > 0;
+                };
+                bool Split(string source, out int parts)
+                {
+                    var pieces = source.Split(',');
+                    parts = pieces.Length;
+                    return parts > 1;
+                }
+                probe(text, out var measured);
+                Split(text, out var counted);
+                return measured + counted;
+            }
+        }
+        """;
+
+    /// <summary>An iterator, whose yields push onto a buffer the lowering declares in front of the body
+    /// and returns after it. The body's statements carry their own lines, and the buffer's two lines
+    /// carried none, so a frame or a breakpoint on them led nowhere (#566).</summary>
+    private const string IteratorSource = """
+        using System.Collections.Generic;
+
+        namespace Demo;
+
+        public class Sequences
+        {
+            public IEnumerable<int> Evens(int limit)
+            {
+                for (var i = 0; i < limit; i++)
+                {
+                    var doubled = i * 2;
+                    yield return doubled;
+                }
+            }
+        }
+        """;
+
+    /// <summary>The same shape on a component, whose methods the emitter writes on its own path.</summary>
+    private const string ComponentByReferenceSource = """
+        using eQuantic.UI.Primitives;
+
+        namespace Demo;
+
+        public sealed class Gauge : StatelessComponent
+        {
+            public override VisualNode Build(ComponentContext context) =>
+                new Text(Read(3, out var scaled) ? scaled.ToString() : "", TypeRole.BodyM);
+
+            private bool Read(int raw, out int scaled)
+            {
+                var widened = raw * 10;
+                scaled = widened + 1;
+                return scaled > 0;
+            }
+        }
+        """;
+
+    /// <summary>Lambdas in the two carriers that wrote what they held as TEXT (#492): an
+    /// expression-bodied member, whose body was a raw return, and an object creation, whose arguments
+    /// and initializer were spliced as text, each alone, and a creation inside an expression body,
+    /// the shape a form rule is written in. Every line of such a lambda's block read, through the map,
+    /// as the statement that held the lambda.</summary>
+    private const string CarriedSource = """
+        using System;
+        using System.Collections.Generic;
+
+        namespace Demo;
+
+        public class Rule
+        {
+            public Rule(string message, Func<string, bool> test)
+            {
+                Message = message;
+                Test = test;
+            }
+
+            public string Message { get; }
+
+            public Func<string, bool> Test { get; }
+
+            public Action<bool>? Changed { get; set; }
+        }
+
+        public class Carried
+        {
+            private int _seen;
+
+            public Carried(List<int> seed) => seed.ForEach(item =>
+            {
+                var squared = item * item;
+                _seen += squared;
+            });
+
+            public void Bump(List<int> values) => values.ForEach(value =>
+            {
+                var doubled = value * 2;
+                _seen += doubled;
+            });
+
+            public int Size => Apply(start =>
+            {
+                var bumped = start + 1;
+                return bumped;
+            });
+
+            public int Level
+            {
+                get => _seen;
+                set => Apply(next =>
+                {
+                    var clamped = next < 0 ? 0 : next;
+                    _seen = clamped + value;
+                    return clamped;
+                });
+            }
+
+            public Rule Built()
+            {
+                var rule = new Rule("built", text =>
+                {
+                    var length = text.Length;
+                    return length > 2;
+                })
+                {
+                    Changed = changed =>
+                    {
+                        var flag = changed ? 1 : 0;
+                        _seen = flag;
+                    },
+                };
+                return rule;
+            }
+
+            public static Rule Email(string message = "invalid") => new(message, address =>
+            {
+                var at = address.IndexOf('@');
+                return at > 0;
+            });
+
+            private int Apply(Func<int, int> step) => step(_seen);
+        }
+        """;
+
+    /// <summary>The carriers on a component's own paths: an expression-bodied constructor and an
+    /// expression-bodied Build that constructs a node with a handler.</summary>
+    private const string ComponentCarriedSource = """
+        using System;
+        using eQuantic.UI.Components;
+        using eQuantic.UI.Primitives;
+
+        namespace Demo;
+
+        public sealed class Clicker : StatefulComponent
+        {
+            private int _count;
+
+            public Clicker(int start) => Defer(() =>
+            {
+                var initial = start * 2;
+                _count = initial;
+            });
+
+            public override VisualNode Build(ComponentContext context) => new Button("Add", onPressed: () =>
+            {
+                var next = _count + 1;
+                SetState(() => _count = next);
+            });
+
+            private void Defer(Action run) => run();
+        }
+        """;
+
     private static CompilationResult Compile() => Compile(Source, "Tally.cs");
 
     private static CompilationResult Compile(string source, string path)
@@ -348,6 +551,68 @@ public class StatementSourceMapTests
     [InlineData("total += ((parsed", "total += int.TryParse(text, out var parsed) ? parsed : 0;")]
     public void AStatementsRestAndABracedBody_MapToTheirOwnStatement(string emitted, string written) =>
         AssertMapped(Compile(LambdaSource, "Lambdas.cs"), emitted, written, LambdaSource);
+
+    [Theory]
+    [InlineData("let doubled = value * 2;", "var doubled = value * 2;")]
+    [InlineData("half = ", "half = doubled / 4;")]
+    [InlineData("return value % 2 === 0;", "return value % 2 == 0;")]
+    [InlineData("let before = seed;", "var before = seed;")]
+    [InlineData("seed = before + 3;", "seed = before + 3;")]
+    [InlineData("return before;", "return before;")]
+    [InlineData("let trimmed = ", "var trimmed = candidate.Trim();")]
+    [InlineData("length = trimmed.length;", "length = trimmed.Length;")]
+    [InlineData("return length > 0;", "return length > 0;")]
+    [InlineData("let pieces = ", "var pieces = source.Split(',');")]
+    [InlineData("parts = pieces.length;", "parts = pieces.Length;")]
+    [InlineData("return parts > 1;", "return parts > 1;")]
+    public void AStatementOfABodyWithAnOutOrRefParameter_MapsToItsOwnCSharpLine(string emitted, string written) =>
+        AssertMapped(Compile(ByReferenceSource, "Halves.cs"), emitted, written, ByReferenceSource);
+
+    /// <summary>The lines a wrapper adds map to the declaration whose body it wraps: the arrow an out
+    /// parameter's body runs in, and the buffer an iterator fills (#566).</summary>
+    [Theory]
+    [InlineData("const $r = ", "public bool TryHalf(int value, out int half)", "Halves.cs")]
+    [InlineData("return { $: $r, half };", "public bool TryHalf(int value, out int half)", "Halves.cs")]
+    [InlineData("const _seq = [];", "public IEnumerable<int> Evens(int limit)", "Sequences.cs")]
+    [InlineData("return _seq;", "public IEnumerable<int> Evens(int limit)", "Sequences.cs")]
+    [InlineData("let doubled = i * 2;", "var doubled = i * 2;", "Sequences.cs")]
+    public void ALineAWrapperAdds_MapsToTheDeclarationWhoseBodyItWraps(string emitted, string written, string file)
+    {
+        var source = file == "Halves.cs" ? ByReferenceSource : IteratorSource;
+        AssertMapped(Compile(source, file), emitted, written, source);
+    }
+
+    [Theory]
+    [InlineData("let widened = raw * 10;", "var widened = raw * 10;")]
+    [InlineData("scaled = widened + 1;", "scaled = widened + 1;")]
+    [InlineData("return scaled > 0;", "return scaled > 0;")]
+    public void AStatementOfAComponentsMethodWithAnOutParameter_MapsToItsOwnCSharpLine(string emitted, string written) =>
+        AssertMapped(Compile(ComponentByReferenceSource, "Gauge.cs"), emitted, written, ComponentByReferenceSource);
+
+    [Theory]
+    [InlineData("let squared = item * item;", "var squared = item * item;")]
+    [InlineData("this._seen += squared;", "_seen += squared;")]
+    [InlineData("let doubled = value * 2;", "var doubled = value * 2;")]
+    [InlineData("this._seen += doubled;", "_seen += doubled;")]
+    [InlineData("let bumped = start + 1;", "var bumped = start + 1;")]
+    [InlineData("return bumped;", "return bumped;")]
+    [InlineData("let clamped = ", "var clamped = next < 0 ? 0 : next;")]
+    [InlineData("this._seen = clamped + value;", "_seen = clamped + value;")]
+    [InlineData("let length = text.length;", "var length = text.Length;")]
+    [InlineData("return length > 2;", "return length > 2;")]
+    [InlineData("let flag = ", "var flag = changed ? 1 : 0;")]
+    [InlineData("this._seen = flag;", "_seen = flag;")]
+    [InlineData("let at = ", "var at = address.IndexOf('@');")]
+    [InlineData("return at > 0;", "return at > 0;")]
+    public void AStatementInALambdaThatAnExpressionBodyOrACreationHolds_MapsToItsOwnCSharpLine(string emitted, string written) =>
+        AssertMapped(Compile(CarriedSource, "Carried.cs"), emitted, written, CarriedSource);
+
+    [Theory]
+    [InlineData("let initial = start * 2;", "var initial = start * 2;")]
+    [InlineData("this._count = initial;", "_count = initial;")]
+    [InlineData("let next = this._count + 1;", "var next = _count + 1;")]
+    public void AStatementInALambdaThatAComponentsExpressionBodyHolds_MapsToItsOwnCSharpLine(string emitted, string written) =>
+        AssertMapped(Compile(ComponentCarriedSource, "Clicker.cs"), emitted, written, ComponentCarriedSource);
 
     private static void AssertMapped(CompilationResult result, string emitted, string written, string source)
     {

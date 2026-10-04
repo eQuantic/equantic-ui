@@ -67,4 +67,39 @@ public class SourceMapModeTests
 
         map.RootElement.GetProperty("sources")[0].GetString().Should().Be("Shared.cs");
     }
+
+    /// <summary>
+    /// Every control character a C# file can hold, in a comment, where the lexer takes anything but a
+    /// line break: a form feed and a vertical tab are C# whitespace besides. The map escaped five
+    /// characters by hand and wrote the rest raw, which JSON refuses (#525): <c>'0x0C' is invalid within
+    /// a JSON string</c>, and a map that is not JSON is one the bundler and the browser drop in silence.
+    /// </summary>
+    private static readonly string ControlSource =
+        "using eQuantic.UI.Primitives;\n\nnamespace Demo;\n\n// "
+        + string.Concat(Enumerable.Range(0, 0x20).Where(c => c is not ('\n' or '\r')).Select(c => (char)c))
+        + "\npublic sealed class Home : StatelessComponent\n{\n"
+        + "    public override VisualNode Build(ComponentContext context) => new Text(\"\f\v\", TypeRole.BodyM);\n}\n";
+
+    [Fact]
+    public void ASourceHoldingEveryControlCharacter_MapsToJsonThatReadsBackAsTheSource()
+    {
+        var result = new ComponentCompiler { SourceMaps = SourceMapMode.Full, SourceRoot = Project, SourceMapDirectory = Maps }
+            .CompileSource(ControlSource, Screen).Single();
+        result.Success.Should().BeTrue(string.Join("\n", result.Errors.Select(error => error.Message)));
+
+        using var map = JsonDocument.Parse(result.SourceMap!);
+
+        map.RootElement.GetProperty("sourcesContent")[0].GetString().Should().Be(ControlSource);
+    }
+
+    /// <summary>A file name may hold what a JSON string may not, and the map wrote its <c>sources</c>
+    /// raw (#525).</summary>
+    [Fact]
+    public void AFileNameHoldingAQuote_IsNamedAsItIs()
+    {
+        var quoted = Path.Combine(Project, "Screens", "Say\"Hi.cs");
+        using var map = JsonDocument.Parse(MapOf(SourceMapMode.Full, quoted)!);
+
+        map.RootElement.GetProperty("sources")[0].GetString().Should().Be("Screens/Say\"Hi.cs");
+    }
 }
