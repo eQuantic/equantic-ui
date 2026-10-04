@@ -1193,8 +1193,9 @@ record of a release, the wiki's Upgrading page is the distillate.
   search, a set's elements and a dictionary's keys; the set and the dictionary share one slot table
   with .NET's capacity (`utils/slots.ts`, `utils/hash-set.ts`); the sort is .NET's introspective sort,
   both helpers, traced comparison for comparison against .NET through its heap sort (`utils/sort.ts`,
-  `utils/list.ts`); and a join converts each value as a concatenation does. Each row is a conformance
-  case on both sides that failed against main. The served runtime grew about 8 KB gzipped. Proposed
+  `utils/list.ts`); and a join converts each value as a concatenation does. 185 of the 214 conformance
+  cases, run on both sides, failed against main; the other 29 are neighbours that already held, kept as
+  pins. The served runtime grew about 8 KB gzipped. Proposed
   and archived through OpenSpec (`openspec/specs/runtime-sets`, `runtime-dictionaries`, `transpiler-bcl`).
 
 ## Retired documents
