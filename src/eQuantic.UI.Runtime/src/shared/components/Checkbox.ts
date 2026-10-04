@@ -30,7 +30,7 @@ export class Checkbox extends StatelessComponent {
         let borderColor = this.error ? theme.colors('destructive').base : theme.borderStrong;
         let filled = this.checked || this.indeterminate;
         let glyph: VisualNode | null = this.indeterminate ? new Icon(IconGlyph.fromIcons('minus'), 16, primary.onBase) : this.checked ? new Icon(IconGlyph.fromIcons('check'), 16, primary.onBase) : null;
-        let boxContent = (($r) => $r == null ? null : VisualNodeExtensions.centered($r))(glyph);
+        let boxContent = (glyph == null ? null : VisualNodeExtensions.centered(glyph));
         let box = new Box(new BoxStyle({ width: Sizing.selectionBox(context.density), height: Sizing.selectionBox(context.density), background: filled ? primary.base : null, cornerRadius: new CornerRadii(theme.shape('extraSmall')), borderWidth: filled ? 0 : 2, borderColor: borderColor }), boxContent);
         let row = new Row(12, 'start', 'center', false, null, null, { cross: 'center' });
         row.add(box);
