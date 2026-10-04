@@ -290,3 +290,84 @@ describe('S8 focus-scoped shortcuts', () => {
     }
   });
 });
+
+/**
+ * A shortcut that is not ENABLED (C# `Shortcut.Enabled`) stays in the tree and binds nothing: no
+ * marker, no declaration, and the key goes on to the binding around it. A find bar's Escape is one,
+ * live only while the bar is open, so a dialog around the editor keeps its own Escape (#457).
+ */
+describe('S8 shortcuts that are not enabled', () => {
+  beforeEach(() => resetShortcuts());
+
+  it('binds nothing and leaves the chord to the binding around it', () => {
+    const fired: string[] = [];
+    const parent = document.createElement('div');
+    document.body.appendChild(parent);
+    try {
+      const inner = {
+        nodeKind: 'shortcut',
+        child: marker(),
+        chord: { key: 'Escape' },
+        onPressed: () => fired.push('inner'),
+        enabled: false,
+      } as unknown as VisualNodeValue;
+      const outer = {
+        nodeKind: 'shortcut',
+        child: { nodeKind: 'column', children: [inner] },
+        chord: { key: 'Escape' },
+        onPressed: () => fired.push('outer'),
+      } as unknown as VisualNodeValue;
+      new Reconciler().reconcile(parent, null, lowerVisualNode(outer, ctx));
+      commitShortcuts();
+      expect(parent.querySelectorAll('[data-eq-shortcut="escape"]')).toHaveLength(1);
+
+      const event = new KeyboardEvent('keydown', { key: 'Escape', cancelable: true });
+      window.dispatchEvent(event);
+
+      expect(event.defaultPrevented).toBe(true);
+      expect(fired).toEqual(['outer']);
+    } finally {
+      parent.remove();
+    }
+  });
+});
+
+/**
+ * Of two NESTED shortcuts of one chord, the inner one answers (C# twin:
+ * S8ShortcutNativeTests.OfTwoNestedBindings_TheInnerOneAnswers): a component's own Escape inside a
+ * dialog closes what the component opened before the dialog closes. The web listed the inner binding
+ * first, since a shortcut declared after its child lowered, so the LIFO walk reached the dialog's
+ * (#457).
+ */
+describe('S8 nested shortcuts', () => {
+  beforeEach(() => resetShortcuts());
+
+  it('lets the inner of two nested bindings of one chord answer, as Photon does', () => {
+    const fired: string[] = [];
+    const parent = document.createElement('div');
+    document.body.appendChild(parent);
+    try {
+      const inner = {
+        nodeKind: 'shortcut',
+        child: marker(),
+        chord: { key: 'Escape' },
+        onPressed: () => fired.push('inner'),
+      } as unknown as VisualNodeValue;
+      const dialog = {
+        nodeKind: 'shortcut',
+        child: { nodeKind: 'column', children: [inner] },
+        chord: { key: 'Escape' },
+        onPressed: () => fired.push('dialog'),
+      } as unknown as VisualNodeValue;
+      new Reconciler().reconcile(parent, null, lowerVisualNode(dialog, ctx));
+      commitShortcuts();
+
+      expect(activeShortcuts()).toHaveLength(2);
+      window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', cancelable: true }));
+
+      expect(fired).toEqual(['inner']);
+    } finally {
+      parent.remove();
+    }
+  });
+});

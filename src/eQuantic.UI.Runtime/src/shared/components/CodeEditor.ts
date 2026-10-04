@@ -104,9 +104,10 @@ export class CodeEditor extends StatefulComponent {
         if ((corner = CodeBlock.corner(this.caption, null, this.inverse, context.theme)) != null) layers.add(corner);
         if (this._findOpen) {
             let found = this._findText.length > 0 ? matches : [];
-            layers.add(new Positioned(new Shortcut(this.findBar(context, editor, found), KeyChord.escape, () => this.closeFind(editor)), 8, 8));
+            layers.add(new Positioned(this.findBar(context, editor, found), 8, 8));
         }
-        let findable = new Shortcut(layers, new KeyChord('f', 4), () => this.setState(() => this._findOpen = true), { focusScoped: true });
+        let closable = new Shortcut(layers, KeyChord.escape, () => this.closeFind(editor), { focusScoped: true, enabled: this._findOpen });
+        let findable = new Shortcut(closable, new KeyChord('f', 4), () => this.setState(() => this._findOpen = true), { focusScoped: true });
         return new Box(new BoxStyle({ width: SizeValue.fill, height: this.height, maxHeight: capped ? SizeValue.fixed(this.maxHeight) : SizeValue.hug }), findable);
     }
 
