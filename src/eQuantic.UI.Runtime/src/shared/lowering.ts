@@ -106,7 +106,7 @@ import type {
   KeyChordValue,
   VisualNodeValue,
 } from './nodes';
-import { declareShortcut } from '../dom/shortcuts';
+import { declareShortcut, shortcutMark } from '../dom/shortcuts';
 import { declareScrollViewport } from './scroll-viewports';
 import { SheetKeymap } from './components/SheetKeymap';
 import { CellRef as CellRefCtor } from './components/CellRef';
@@ -3159,8 +3159,13 @@ function lowerShortcut(
   horizontalAxis: boolean | null,
   path: string,
 ): HtmlNode | null {
+  // Its place in the list is taken before the child lowers: a binding is listed before the ones
+  // inside it, as Photon emits them, so the inner of two nested chords answers first.
+  const mark = shortcutMark();
   const child = lowerNode(node.child, context, horizontalAxis, path + '/0');
   if (!child) return null;
+  // A chord that is not enabled stays in the tree and binds nothing, marker included (the C# twin's).
+  if (node.enabled === false) return child;
   const chord = chordId(node.chord);
   // C# twin: nested shortcuts share one child root, so the marker LISTS them.
   const existing = child.attributes['data-eq-shortcut'];
@@ -3176,7 +3181,7 @@ function lowerShortcut(
       child.attributes[FOCUS_SCOPE] = scope;
       live = () => focusWithin(scope) && (arms === undefined || arms());
     }
-    declareShortcut({ chord, handler: node.onPressed, live });
+    declareShortcut({ chord, handler: node.onPressed, live }, mark);
   }
   return child;
 }

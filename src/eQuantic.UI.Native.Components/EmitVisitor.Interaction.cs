@@ -100,6 +100,9 @@ internal sealed partial class EmitVisitor
     // one answers for its own subtree, which its path names.
     private void EmitShortcut(Shortcut shortcut, EmitState s)
     {
+        // Not enabled, the chord binds nothing this frame, and the key goes on to whatever else
+        // would take it.
+        if (!shortcut.Enabled) return;
         s.Input.Add(new ShortcutBinding(shortcut.Chord, shortcut.OnPressed,
             shortcut.FocusScoped ? s.Node.Path ?? "" : null));
     }

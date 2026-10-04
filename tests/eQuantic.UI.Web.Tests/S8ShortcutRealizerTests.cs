@@ -27,6 +27,16 @@ public class S8ShortcutRealizerTests
         element.Attributes["data-eq-shortcut"].Should().Be("command+k");
     }
 
+    /// <summary>A shortcut that is not enabled binds nothing, so SSR marks nothing on its child, as
+    /// the TS twin marks nothing (#457).</summary>
+    [Fact]
+    public void AShortcutThatIsNotEnabled_MarksNothing()
+    {
+        var element = Lower(new Shortcut(Marker(), KeyChord.Escape, () => { }) { Enabled = false });
+
+        element.Attributes.Should().NotContainKey("data-eq-shortcut");
+    }
+
     [Fact]
     public void Modifiers_SerializeInAFixedOrder()
     {
