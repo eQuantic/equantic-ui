@@ -50,7 +50,7 @@ public class UsingStatementStrategy : IStatementStrategy
         if (declared.Length > 0) statements.Add(JsStatement.Raw(declared.TrimEnd()));
         statements.Add(JsStatement.Const(resourceVar, init));
         statements.Add(JsStatement.Try(body is JsBlock ? body : JsStatement.Block(new[] { body }),
-            Array.Empty<JsCatch>(),
+            null,
             JsStatement.Block(new[] { dispose })));
         return JsStatement.Block(statements);
     }
