@@ -54,9 +54,13 @@ binds, in its parameters' order, a skipped optional parameter left to the constr
 an array passed whole to a `params` parameter spread. It SHALL apply an object initializer to what the
 constructor built, once the constructor has returned, element by element in source order: an
 assignment sets the member, a nested collection initializer adds each element to the collection the
-member holds through its `Add`, a nested object initializer assigns into the object the member holds,
-and an entry is written through the type's indexer. A struct built by its implicit parameterless
-constructor SHALL be its zero, running none of its initializers.
+member holds through its `Add` (a dictionary's pair as every call to its `Add` lowers), a nested
+object initializer assigns into the object the member holds, and an entry is written through the
+type's indexer. Every part of the initializer SHALL be evaluated in the caller's own function, in the
+order C# evaluates it, so an `await` in an element, a value or a key runs in the method it was written
+in; the parts are all evaluated before the first of them is applied, where C# applies each before
+evaluating the next, which only a part that reads the object's own member can observe. A struct
+built by its implicit parameterless constructor SHALL be its zero, running none of its initializers.
 
 #### Scenario: An object initializer sets one member
 
@@ -92,6 +96,11 @@ constructor SHALL be its zero, running none of its initializers.
 
 - **WHEN** `record Bag(params int[] Items) { public int Count => Items.Length; }`
 - **THEN** `new Bag(1, 2, 3).Count` is `3`, `new Bag(new[] { 4, 5 }).Count` is `2` and `new Bag().Count` is `0`
+
+#### Scenario: An awaited element
+
+- **WHEN** an async method builds `new Holder { Items = { await G(), 4 } }`, where `G` yields and answers `3`
+- **THEN** `Items.Count` is `2` and `Items[0]` is `3`, as in .NET, and the module parses
 
 ### Requirement: A default and a base clause read the constructor's parameters
 
@@ -226,13 +235,14 @@ initializer and no constructor, as .NET's copy does.
 
 ### Requirement: Every constructor a record or a struct declares is reached or refused
 
-A twin SHALL reach each constructor that chains to the C# constructor it is, with `: this(…)`, by the
-counts of arguments that constructor takes, its optional parameters counted: it SHALL evaluate the
-chain's arguments from the arguments that arrived, give a parameter the chain leaves out its default,
-and run the chaining constructor's body after the main one's. eqc SHALL refuse with EQ1009 a
-constructor that takes a count of arguments the main constructor or another chaining one takes too,
-one that chains to any constructor but the main one, and a second constructor that runs a body of its
-own without chaining, naming that constructor.
+A twin SHALL reach each constructor a record or a struct declares by the counts of arguments it
+takes, its optional parameters counted. A constructor that does its own work (the primary one, or an
+explicit one that does not chain with `: this(…)`) SHALL bind its parameters, set the members, call
+its base's constructor with its own arguments and run its body. One that chains with `: this(…)` SHALL
+evaluate the chain's arguments from the arguments that arrived, give a parameter the chain leaves out
+its default, run the constructor it chains to, and then its own body, even when that constructor's
+body returns early. eqc SHALL refuse with EQ1009, naming it, a constructor that takes a count of
+arguments another constructor takes too, and one that chains to a constructor that chains in turn.
 
 #### Scenario: An alternate with an optional parameter
 
@@ -252,8 +262,27 @@ own without chaining, naming that constructor.
 
 #### Scenario: Two constructors with bodies
 
-- **WHEN** `record Twice` declares `Twice() { A = 1; }` and `Twice(int a) { A = a; }`
-- **THEN** the build fails with EQ1009, naming `Twice()`
+- **WHEN** `struct Money { public decimal A; public string C; public Money(decimal a) { A = a; C = "EUR"; } public Money(decimal a, string c) { A = a; C = c; } }`
+- **THEN** `new Money(1.5m)` holds `1.5` and `EUR`, `new Money(2m, "USD")` holds `2` and `USD`, and
+  `default(Money).C` is null, as in .NET
+
+#### Scenario: A derived record's constructors, each with its base's arguments
+
+- **WHEN** `record Rect : Shape` declares `Rect(int side) : base("square")`, `Rect(int w, int h) : base("rect" + (w * h))`
+  and `Rect() : this(1)`, over `record Shape(string Kind)`, each logging its initializers and bodies
+- **THEN** `new Rect(2).Kind` is `square`, `new Rect(2, 3).Kind` is `rect6`, `new Rect().W` is `1`, and the
+  log of initializers, base constructors and bodies reads as .NET's
+
+#### Scenario: A root that returns early
+
+- **WHEN** `record Early` declares `Early(int a) { A = a; if (a < 0) return; Trail += "body "; }` and
+  `Early() : this(-1) { Trail += "alt"; }`
+- **THEN** `new Early().Trail` is `alt`, as in .NET
+
+#### Scenario: Two constructors with bodies and one count
+
+- **WHEN** `record Twins` declares `Twins(int a) { A = a; }` and `Twins(string s) { A = s.Length; }`
+- **THEN** the build fails with EQ1009, naming `Twins(string s)`
 
 ### Requirement: A record compares and prints as .NET does
 
@@ -296,9 +325,10 @@ once, as the declared member, which the parameter initializes.
 eqc SHALL write a twin for every record and every struct whatever it declares, a record that declares
 only methods, only an indexer or nothing included, and a module for every top-level plain class whatever
 it declares, so that every module naming such a type imports one that exists. A partial declaration
-that declares nothing, a static class, a nested class, an attribute, an exception, a class over a base
-that never crosses and a class marked `[ServerOnly]` or `[RuntimeProvided]` SHALL get no plain-class
-module, and no module SHALL import one for them.
+that declares nothing, a static class, a nested class, a class marked `[ServerOnly]` or
+`[RuntimeProvided]`, and a class whose chain of bases reaches an attribute, an exception or a type that
+never crosses SHALL get no plain-class module, and no module SHALL import one for them. The chain
+decides, not the name a class or its base has.
 
 #### Scenario: A record with only a method, extended
 
@@ -311,6 +341,13 @@ module, and no module SHALL import one for them.
   another module constructs it
 - **THEN** that module imports `./Mute`, the module exists, and `((IGreeting)new Mute()).Greet()`
   answers `hello`, as in .NET
+
+#### Scenario: An exception three levels down
+
+- **WHEN** `class Failure : Exception { }`, `class Retry : Failure { }` and `class LastRetry : Retry { }`,
+  across files, and `class Underline : Mark { }` over `class Mark : System.Attribute { }`
+- **THEN** none of them gets a module and no module imports one, while `class FakeException { }`,
+  which derives from no exception, gets its own
 
 ### Requirement: An instance indexer reaches its twin
 
@@ -342,8 +379,10 @@ same type.
 A type whose statics can observe one another (an initializer that is not a constant, or a static
 constructor) SHALL start every static at its type's zero, then run the initializers in declaration
 order, then the static constructor's body, once, the first time one of its statics is read or written;
-a record, a struct, a class, a static class and a component alike. A static with no initializer SHALL
-hold its type's zero in a type of any kind.
+a record, a struct, a class, a static class and a component alike. A type that declares a static
+constructor SHALL run it before its first instance and the first use of any of its static members, a
+method, a computed property and an operator included. A static with no initializer SHALL hold its
+type's zero in a type of any kind.
 
 #### Scenario: An initializer reads a static declared after it
 
@@ -359,6 +398,12 @@ hold its type's zero in a type of any kind.
 
 - **WHEN** `class Catalog { public static List<string> Names; public static int Size { get; private set; } static Catalog() { Names = new List<string> { "a", "b" }; Size = Names.Count; } }`
 - **THEN** `Catalog.Size` read first answers `2`, and `Catalog.Names[1]` answers `b`
+
+#### Scenario: A static method and the first instance
+
+- **WHEN** `class Pinger { static Pinger() { Log.Note("cctor "); } public static int Ping() { Log.Note("ping "); return 1; } }`
+  and `class Maker { static Maker() { Log.Note("cctor "); } public Maker() { Log.Note("ctor "); } }`
+- **THEN** two calls of `Pinger.Ping()` log `cctor ping ping ` and two `new Maker()` log `cctor ctor ctor `, as in .NET
 
 #### Scenario: Two types whose statics read each other
 

@@ -26,10 +26,10 @@ with both sides executed, most of them with a green build:
 
 - Every record and struct has a twin, and a plain class has a module whatever it declares; the rule
   is one predicate the parser and the dependency resolver both read.
-- A twin's constructor is the C# constructor: it takes that constructor's parameters, runs every
-  initializer in declaration order (a derived record's before its base's constructor), then the
-  body. Another constructor that chains with `: this(…)` is reached by the counts of arguments it
-  takes; one the twin cannot tell apart is refused with the new error EQ1009.
+- A twin's constructor is the C# constructor: it runs every initializer in declaration order (a
+  derived record's before its base's constructor), then the body. Each C# constructor is a branch on
+  the counts of arguments it takes, one with a body of its own and one that chains with `: this(…)`
+  alike; one the twin cannot tell apart is refused with the new error EQ1009.
 - A construction calls the constructor the call binds, then applies the object initializer to what
   it built: an assignment, an `Add` per element of a nested collection initializer, an assignment
   into the object a nested object initializer names, and an entry through the type's indexer. A
@@ -42,7 +42,8 @@ with both sides executed, most of them with a green build:
   name beside one, is EQ1007.
 - A type whose statics can observe one another starts them all at their zero and runs the
   initializers in declaration order, then its static constructor, on first use; a record, a struct,
-  a class, a static class and a component alike.
+  a class, a static class and a component alike. A type with a static constructor runs it before its
+  first instance and the first use of any static member.
 - **BREAKING** (preview): `ValueMember` in `eQuantic.UI.Compiler` gains `Printed` and `Declaration`.
   A record's twin no longer takes one argument per member, which an app never sees, since its C#
   constructions compile to the new form: only TypeScript written by hand against a twin moves, and the

@@ -25,18 +25,30 @@ evaluates a default only for an argument that is missing, so every rule that dep
 initializer running (#413) failed: an object initializer skipped the initializer of the member it set,
 a `with` rebuilt the record and ran them all again, and an explicit constructor had nowhere to go.
 
-The twin now takes the parameters of the C# constructor it is (the primary one, or the one explicit
-constructor that runs a body of its own) and writes every member as C# does, in declaration order,
-then runs the body. Over a base, the derived initializers that can do anything are evaluated into
-locals before `super()`, which JavaScript requires before `this`, and assigned after: the order C#
-runs them in, without touching `this` early.
+The twin now runs the C# constructor the call binds and writes every member as C# does, in
+declaration order, then runs the body. Over a base, the derived initializers that can do anything
+are evaluated into locals before `super()`, which JavaScript requires before `this`, and assigned
+after: the order C# runs them in, without touching `this` early.
 
-JavaScript has one constructor, so another constructor that chains with `: this(…)` is a branch on
-`arguments.length`. Each is reached by the RANGE of counts it takes (its optional parameters
-counted), and a range that meets another's cannot be told apart, so it is refused with EQ1009 rather
-than reached by the wrong branch. A parameter the chain leaves out takes its default, since it would
-otherwise hold whatever argument arrived in its place. A second constructor with a body of its own is
-refused too: there is no constructor for it to be.
+JavaScript has one constructor, so the twin's is a branch per C# constructor on `arguments.length`,
+each reached by the RANGE of counts it takes (its optional parameters counted). A constructor that
+does its own work (the primary one, or an explicit one that does not chain) is a ROOT: with one
+root, its parameters are the twin's own; with several, the twin takes `...$a`, declares the union of
+their parameters once, and the branch that takes the call binds them, calls its base's constructor
+with its own arguments (JavaScript and TypeScript take a `super()` per branch when the class
+initializes no field of its own, which a twin never does) and runs its body. A constructor that
+chains with `: this(…)` binds its own parameters in a block that shadows its root's, evaluates the
+chain's arguments into temporaries that cross the block, lands them in the root's parameters, and
+runs its own body after its root's: no function holds that C#. A parameter the chain leaves out
+takes its default, since it would otherwise hold whatever argument arrived in its place. A range
+that meets another's cannot be told apart, and a chain to a constructor that chains in turn has no
+root to run, so each is refused with EQ1009 rather than reached by the wrong branch.
+
+A root's `return` ends that constructor and nothing after it in C#, where the body of a constructor
+chained to it still runs. So a root body that returns early, under an alternate with a body of its
+own, runs in a function invoked in place, whose `return` ends it alone: C# allows no `await` and no
+`yield` in a constructor, so nothing in it changes meaning there. It is one of the three functions
+this change writes by hand, beside the object initializer's and an indexer setter's.
 
 ## An object initializer is applied, not passed
 
@@ -44,10 +56,14 @@ A construction calls the constructor the call binds, with the arguments in its p
 then applies the initializer to what it built. Assignments alone go through `Object.assign`, which
 evaluates the values after the constructor and calls a setter where the twin has one. Anything else
 (a nested collection initializer, a nested object initializer, an entry) is written as statements over
-the object, in an arrow that returns it: each element is an `Add` through the lowering that `Add` has
-everywhere (`push`, `add`, the dictionary's `set`, a twin's own method), an assignment into the
-member's object, or a write through the indexer. An element with no lowering is refused (EQ1004),
-never dropped. A class keeps its trailing config object for an initializer that only assigns, which
+the object's parameter in an arrow invoked in place, ARGUMENTS ONLY: the construction and every value,
+key and element are its arguments, evaluated in the caller's own function in the order C# evaluates
+them, and its body reads only its parameters. Written inside it, an `await` in an element landed in a
+function that is not async, and the module did not parse. Each element is an `Add` through the
+lowering every call to that `Add` has (`push`, `add`, a twin's own method, and a dictionary's through
+the dictionary strategy's one spelling, which refuses a key already there once the runtime's `add`
+does), an assignment into the member's object, or a write through the indexer. An element with no
+lowering is refused (EQ1004), never dropped. A class keeps its trailing config object for an initializer that only assigns, which
 its constructor applies last, so the vocabulary's hand-written twins are untouched.
 
 `with` is a copy onto the prototype and then the patch (`$eq.withPatch`), which runs no constructor,
@@ -59,10 +75,14 @@ default, an array's slot and an OrDefault.
 
 The parser decided that a plain class had a module, and the dependency resolver, which scans files
 with no semantic model, decided who imports it; they disagreed on a class with no member (#423). The
-rule is now one predicate over the syntax that both read, and the one fact it needs from another file,
-whether a base stays on the server, is asked of the caller. A record and a struct have a twin
-whatever they declare (#428); a partial declaration that declares nothing is the exception, since
-another declaration carries the members.
+rule is now one predicate over the syntax that both read, and what it needs from other declarations
+is asked of the caller: whether the CHAIN of bases reaches an attribute, an exception or a type that
+stays on the server. The parser asks its model (`System.Attribute`, `System.Exception`,
+`[ServerOnly]`), and the resolver walks the chain its scan saw, judging by name only a base outside
+it. Names alone gave `class Retry : Failure` over `class Failure : Exception` a module extending one
+nothing wrote, and none to `class FakeException`, which derives from no exception. A record and a
+struct have a twin whatever they declare (#428); a partial declaration that declares nothing is the
+exception, since another declaration carries the members.
 
 ## The state, the text and the equality are three lists
 
@@ -92,14 +112,18 @@ is read or written: zeros first, then the initializers in declaration order, the
 constructor's body. Each static is an accessor pair over its slot, so a read during the initialization
 sees what C# sees, and a cycle between two types reads the zero C# reads. A type whose initializers are
 constants keeps plain fields. One mechanism serves the record emitter, the class emitter and the
-component emitter. It replaces the class emitter's per-static lazy getter, which survived the shared
+component emitter. A type that declares a static constructor also starts the initialization first in
+its instance constructor and in every static method, accessor and operator, since C# runs that
+constructor before the first instance and the first use of any static member. It replaces the class emitter's per-static lazy getter, which survived the shared
 library's import cycles; the type initializer is lazy too, so it survives them the same way.
 
 ## Not here
 
-- The initialization starts on a read or a write of a static. A static method that touches none of
-  them, or an instance constructed, does not start it, where C# runs a static constructor on either;
-  only a static constructor's effect outside its own type can tell.
+- An initializer's parts are all evaluated before the first of them is applied, by `Object.assign`
+  and by the arrow alike, where C# applies each before evaluating the next: only a part that reads the
+  object's own member can tell.
+- A static iterator method of a type with a static constructor starts it when its sequence is first
+  read, where C# starts it at the call.
 - A plain class's instance members keep their order: an auto-property initializer is a class field and
   a field initializer runs in the constructor, and a derived class's run after its base's constructor.
 - A record's text prints each value as JavaScript's template does: `true` where .NET prints `True`.

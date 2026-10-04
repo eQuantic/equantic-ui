@@ -22,9 +22,16 @@
 - [x] 4.1 An instance indexer as `item` and `setItem`, every bound access calling them, a default indexer included, EQ1007 for its names (#427). Verify: `IndexerConformanceTests`, records and classes, failing against main
 - [x] 4.2 A type initializer: zeros, initializers in declaration order, then the static constructor, on first use, in the three emitters (#417). Verify: `StaticInitializationConformanceTests`, records, classes, a static class and a component, failing against main
 
-## 5. Documentation and the suites
+## 5. Review
 
-- [x] 5.1 The shared library's pins regenerated and read, and the runtime's specs built through `Object.assign`. Verify: `SharedComponentTranspilationTests` and `TestRuntime`
-- [x] 5.2 EQ1009 in docs/DIAGNOSTICS.md, EQ1007 and EQ1008 updated, one docs/LEDGER.md line citing the issues. Verify: `DiagnosticsDocumentedTests`
-- [x] 5.3 The wiki's SupportedFeatures and Diagnostics pages (EN + pt-BR) on a branch named like this one. Verify: the wiki guards pass with `EQ_WIKI_DIR` on it
-- [x] 5.4 The suites, each alone and read by its exit code, and the dashboard sample built. Verify: Compiler, Web, Server, Conformance and the runtime's `TestRuntime` exit 0
+- [x] 5.1 An initializer's parts are arguments of the function that applies it, and a dictionary's pair is its `Add`. Verify: `NestedInitializerConformanceTests.AnInitializersParts_RunInTheCallersFunction` and `APairAddedToAMembersDictionary_IsItsAdd`, failing against the previous lowering
+- [x] 5.2 An exception or an attribute keeps a class out by its chain of bases. Verify: `PlainClassModuleTests` with a chain of three, failing against the name-based rule
+- [x] 5.3 Every constructor with a body of its own is a branch. Verify: the `Money`, `Rect` and `Early` cases of `RecordConstructionConformanceTests`, failing against the previous emitter
+- [x] 5.4 A static constructor runs before the first instance and the first use of any static member. Verify: the trigger cases of `StaticInitializationConformanceTests`, records, classes and a component, failing against the data-access-only initializer
+
+## 6. Documentation and the suites
+
+- [x] 6.1 The shared library's pins regenerated and read, and the runtime's specs built through `Object.assign`. Verify: `SharedComponentTranspilationTests` and `TestRuntime`
+- [x] 6.2 EQ1009 in docs/DIAGNOSTICS.md, EQ1007 and EQ1008 updated, one docs/LEDGER.md line citing the issues. Verify: `DiagnosticsDocumentedTests`
+- [x] 6.3 The wiki's SupportedFeatures and Diagnostics pages (EN + pt-BR) on a branch named like this one. Verify: the wiki guards pass with `EQ_WIKI_DIR` on it
+- [x] 6.4 The suites, each alone and read by its exit code, and the dashboard sample built. Verify: Compiler, Web, Server, Conformance and the runtime's `TestRuntime` exit 0
