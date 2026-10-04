@@ -1185,4 +1185,57 @@ describe('the find bar', () => {
     expect(activeShortcuts().some((binding) => binding.chord === 'escape')).toBe(true);
     resetShortcuts();
   });
+
+  /** C# twin: CodeEditorFinishTests.Escape_ClosesTheFindBarOfTheEditorTheKeyboardIsIn (#457). With
+   * two bars open, Escape closed the last one mounted wherever the keyboard was, and with the bar
+   * closed nothing may take Escape from a dialog around the editor. */
+  it('binds Escape only while its bar is open, for the editor the keyboard is in', async () => {
+    const { materializeTheme } = await import('./theme-bridge');
+    const photonData = (await import('./theme-bridge.photon.json')).default;
+    const { CodeEditor } = await import('./components/CodeEditor');
+    const theme = materializeTheme(photonData as never);
+    setPhotonTheme(theme);
+    const context = {
+      theme,
+      textPrimary: theme.textPrimary,
+      density: 'comfortable',
+      measureText: (text: string) => text.length * 7,
+      monoAdvance: () => 7,
+    };
+    const editors = [new CodeEditor('var first = 1;', 'csharp'), new CodeEditor('var second = 2;', 'csharp')];
+    // One tree, so each editor's scope is named by its own path, lowered in ONE pass as a page is:
+    // outside one, a component inside an editor commits the bindings declared before it.
+    const { ComponentInstanceStore, enterPass, exitPass } = await import('./instance-store');
+    const lowerBoth = () => {
+      enterPass(new ComponentInstanceStore(), null);
+      try {
+        const page = { nodeKind: 'column', children: editors.map((editor) => editor.build(context as never)) };
+        return lowerVisualNode(page as never, context as never);
+      } finally {
+        exitPass();
+      }
+    };
+    const escapes = () => activeShortcuts().filter((binding) => binding.chord === 'escape');
+
+    resetShortcuts();
+    lowerBoth();
+    expect(escapes(), 'a closed bar binds nothing').toHaveLength(0);
+    for (const find of activeShortcuts().filter((binding) => binding.chord === 'command+f')) find.handler();
+
+    const parent = document.createElement('div');
+    document.body.appendChild(parent);
+    try {
+      new Reconciler().reconcile(parent, null, lowerBoth());
+      const scopes = [...parent.querySelectorAll('[data-eq-focus-scope]')].filter((scope) =>
+        scope.querySelector('textarea'),
+      );
+      const second = scopes.find((scope) => scope.textContent?.includes('second'))!;
+      second.querySelector('textarea')!.focus();
+
+      expect(escapes().map((binding) => binding.live?.())).toEqual([false, true]);
+    } finally {
+      parent.remove();
+      resetShortcuts();
+    }
+  });
 });

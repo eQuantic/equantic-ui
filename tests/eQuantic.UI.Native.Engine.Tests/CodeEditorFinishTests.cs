@@ -225,6 +225,64 @@ public class CodeEditorFinishTests
         bar.Bounds.Bottom.Should().BeLessThan(below.Bounds.Y, "the bar is the first editor's, over its code");
     }
 
+    /// <summary>
+    /// Escape closes the find bar of the editor the keyboard is in, and binds nothing while the bar is
+    /// closed. With two bars open it closed the last one mounted wherever the keyboard was, and a
+    /// page-wide Escape would also have taken the key from a dialog around a closed editor (#457).
+    /// </summary>
+    [Fact]
+    public void Escape_ClosesTheFindBarOfTheEditorTheKeyboardIsIn()
+    {
+        var first = new CodeEditor("first text", "csharp") { ShowLineNumbers = false };
+        var second = new CodeEditor("second text", "csharp") { ShowLineNumbers = false };
+        var page = new Column(gap: Space.S4) { Width = SizeValue.Fill };
+        page.Add(first);
+        page.Add(second);
+        var host = new PhotonHost(page, PhotonTheme.Instance, ThemeMode.Light, 500, 600)
+        {
+            TextRasterizer = new FixedWidthRasterizer(),
+        };
+        var frame = host.RenderFrame(new DisplayListBuilder());
+
+        void FocusAndFind(CodeEditor editor)
+        {
+            var region = frame.CodeRegions.Single(r => ReferenceEquals(r.Surface.Model, editor.Editor));
+            host.PressDown(region.Bounds.X + 4, region.Bounds.Y + 4);
+            host.PressUp(region.Bounds.X + 4, region.Bounds.Y + 4);
+            host.KeyDown("f", KeyModifiers.Command).Should().BeTrue();
+            frame = host.RenderFrame(new DisplayListBuilder());
+        }
+        FocusAndFind(second);
+        FocusAndFind(first);
+        frame.TextRegions.Should().HaveCount(2, "both bars are open");
+
+        // The keyboard is in the first editor's bar: its Escape is the one that answers.
+        host.KeyDown("Escape").Should().BeTrue();
+        frame = host.RenderFrame(new DisplayListBuilder());
+
+        var left = frame.TextRegions.Should().ContainSingle("one bar closed").Subject;
+        var firstCode = frame.CodeRegions.Single(r => ReferenceEquals(r.Surface.Model, first.Editor));
+        left.Bounds.Y.Should().BeGreaterThan(firstCode.Bounds.Bottom, "the bar left open is the second editor's");
+    }
+
+    /// <summary>A dialog around an editor whose bar is closed keeps its Escape: the editor's binds
+    /// nothing until the bar opens (#457).</summary>
+    [Fact]
+    public void Escape_ReachesADialogAroundAnEditorWhoseBarIsClosed()
+    {
+        var log = new List<string>();
+        var editor = new CodeEditor("text", "csharp") { ShowLineNumbers = false };
+        var host = new PhotonHost(new Shortcut(editor, KeyChord.Escape, () => log.Add("dialog")),
+            PhotonTheme.Instance, ThemeMode.Light, 500, 400) { TextRasterizer = new FixedWidthRasterizer() };
+        var region = host.RenderFrame(new DisplayListBuilder()).CodeRegions.Single();
+        host.PressDown(region.Bounds.X + 4, region.Bounds.Y + 4);
+        host.PressUp(region.Bounds.X + 4, region.Bounds.Y + 4);
+
+        host.KeyDown("Escape").Should().BeTrue();
+
+        log.Should().Equal("dialog");
+    }
+
     // ---- virtualization --------------------------------------------------------------------------
 
     /// <summary>
