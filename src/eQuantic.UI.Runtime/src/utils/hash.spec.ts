@@ -4,6 +4,7 @@ import { Point, Rect, TypeStyle } from '../shared/value-types';
 import { dec } from './decimal';
 import { dateTime } from './datetime';
 import { equals } from './equals';
+import { is as isException } from './exceptions';
 
 /** Values `equals` finds equal hash equal: .NET's contract, the one the browser can keep (#519). */
 function hashesAlike(a: unknown, b: unknown): void {
@@ -87,8 +88,17 @@ describe('a hash agrees with equals ($eq.hash)', () => {
 
   it('refuses a null receiver where .NET throws, and a method group where its delegate is made', () => {
     expect(() => instanceHash(null)).toThrow('Object reference not set to an instance of an object.');
-    expect(() => identityHash(null)).toThrow(TypeError);
-    expect(() => hashGroup(undefined)).toThrow(TypeError);
+    // .NET's NullReferenceException, the type a typed catch tests (utils/exceptions.ts).
+    const refused = (thrower: () => unknown) => {
+      try {
+        thrower();
+      } catch (error) {
+        return isException(error, 'System.NullReferenceException');
+      }
+      return false;
+    };
+    expect(refused(() => identityHash(null))).toBe(true);
+    expect(refused(() => hashGroup(undefined))).toBe(true);
     expect(instanceHash('abc')).toBe(hash('abc'));
     expect(hashGroup(42)()).toBe(42);
     const items = [1];

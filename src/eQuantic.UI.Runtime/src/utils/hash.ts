@@ -19,6 +19,8 @@
  *    {@link hashesByValue}) and an anonymous value, plain data here, member by member, in any order;
  *  - an instance of any other class by its identity, as `object.GetHashCode` is.
  */
+
+import { exception } from './exceptions';
 export function hash(value: unknown): number {
   if (value == null) return 0;
   switch (typeof value) {
@@ -74,7 +76,7 @@ const NULL_RECEIVER = 'Object reference not set to an instance of an object.';
  * and an empty `Nullable<T>` answers, and the compiler sends those two there.
  */
 export function instanceHash(value: unknown): number {
-  if (value == null) throw new TypeError(NULL_RECEIVER);
+  if (value == null) throw exception('System.NullReferenceException', NULL_RECEIVER);
   return hash(value);
 }
 
@@ -97,7 +99,7 @@ let lastIdentity = 0;
  * the object lives, and spread so that two objects seldom share one.
  */
 export function identityHash(value: object | null | undefined): number {
-  if (value == null) throw new TypeError(NULL_RECEIVER);
+  if (value == null) throw exception('System.NullReferenceException', NULL_RECEIVER);
   let identity = identities.get(value);
   if (identity === undefined) {
     lastIdentity = (lastIdentity + 0x9e3779b9) | 0;
@@ -143,7 +145,7 @@ function objectHash(value: object): number {
  * empty `Nullable<T>` included, which boxes to null. `byIdentity` hashes an array as .NET does.
  */
 export function hashGroup(value: unknown, byIdentity = false): () => number {
-  if (value == null) throw new TypeError(NULL_RECEIVER);
+  if (value == null) throw exception('System.NullReferenceException', NULL_RECEIVER);
   return byIdentity ? () => identityHash(value as object) : () => hash(value);
 }
 

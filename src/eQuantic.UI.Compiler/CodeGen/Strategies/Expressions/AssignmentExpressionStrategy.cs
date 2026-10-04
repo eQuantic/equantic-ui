@@ -149,9 +149,12 @@ public class AssignmentExpressionStrategy : IExpressionIrStrategy
                 || rightType is INamedTypeSymbol { OriginalDefinition.SpecialType: SpecialType.System_Nullable_T })
             {
                 context.UsedHelpers.Add(Eq.Import);
+                // The operator over the two values the lift hands it, and nothing else: an IR arrow,
+                // whose writer is the one that writes every arrow, holding no C# of its own.
                 var body = BinaryExpressionStrategy.ConvertDateTimeOrTimeSpan("$a", "$b", op[..^1], leftType, rightType);
+                var lifted = JsExpr.Arrow("$a, $b", JsExpr.Opaque(body!));
                 return Compound((current, operand) =>
-                    JsExpr.Template($"{Eq.LiftArith}({{0}}, {{1}}, ($a, $b) => {body})", [current, operand], context.TypeAnnotations));
+                    JsExpr.Call(JsExpr.Identifier(Eq.LiftArith), current, operand, lifted));
             }
             return Compound((current, operand) => JsExpr.Template(compat, [current, operand]));
         }
