@@ -1,7 +1,10 @@
 namespace eQuantic.UI.Primitives;
 
 /// <summary>What the web twin ANNOUNCES an <see cref="Adjustable"/> as. Member names are the ARIA
-/// tokens themselves (they cross to the client as camelCase strings — "tablist", not "tabList").</summary>
+/// tokens themselves (they cross to the client as camelCase strings — "tablist", not "tabList").
+/// The native semantics walk reads it too, and gives each member a <see cref="SemanticRole"/> of its
+/// own: <see cref="SemanticRole.Slider"/>, <see cref="SemanticRole.TabBar"/> and
+/// <see cref="SemanticRole.RadioGroup"/>.</summary>
 public enum AdjustableRole
 {
     /// <summary>role="slider" — a continuous value the arrows nudge.</summary>

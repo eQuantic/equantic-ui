@@ -99,6 +99,62 @@ public class NativeRoleTests
     }
 
     /// <summary>
+    /// The four containers and the trigger that reached every bridge as something else until #500
+    /// and #501, pinned to the sources that decided them. AppKit's and Android's words are again the
+    /// W3C Core-AAM's for the same ARIA role, with TalkBack's Role.java naming the class it reads:
+    /// TabWidget is its "tab bar", and Dialog and AlertDialog its two dialogs. The one departure, a
+    /// select-only combobox in each platform's own drop-down words (NSPopUpButton's AXPopUpButton,
+    /// and the Spinner Chrome gives the same web component), is argued in its row.
+    /// </summary>
+    [Theory]
+    [InlineData(SemanticRole.TabBar, "AXTabGroup", null, "android.widget.TabWidget", UIKitTrait.None, false)]
+    [InlineData(SemanticRole.RadioGroup, "AXRadioGroup", null, "android.widget.RadioGroup", UIKitTrait.None, false)]
+    [InlineData(SemanticRole.ComboBox, "AXPopUpButton", null, "android.widget.Spinner", UIKitTrait.Button, true)]
+    [InlineData(SemanticRole.Dialog, "AXGroup", "AXApplicationDialog", "android.app.Dialog", UIKitTrait.None, false)]
+    [InlineData(SemanticRole.AlertDialog, "AXGroup", "AXApplicationAlertDialog", "android.app.AlertDialog", UIKitTrait.None, false)]
+    public void TheContainersAndTheComboBoxSpeakEachPlatformsOwnWords(
+        SemanticRole role, string appKit, string? appKitSubrole, string android, UIKitTrait uiKit, bool activatable)
+    {
+        var native = NativeRole.Of(role);
+
+        native.AppKit.Should().Be(appKit);
+        native.AppKitSubrole.Should().Be(appKitSubrole);
+        native.Android.Should().Be(android);
+        native.UIKit.Should().Be(uiKit);
+        native.Activatable.Should().Be(activatable);
+        native.Adjustable.Should().BeFalse(
+            "a container takes no adjust gesture on any platform, and a combobox is opened rather than stepped");
+        native.UIKitCheckAsSelected.Should().BeFalse();
+    }
+
+    /// <summary>
+    /// A CONTAINER is pressed by nothing and adjusted by nothing on any platform: it is read and then
+    /// walked into, and each thing it holds carries its own action. Asked of every role the walk
+    /// announces as a container, which is what keeps a reader from being offered "double tap to
+    /// activate" on a tab bar that does nothing when taken up.
+    /// <para>
+    /// A tab strip's keyboard does step its pick from the bar, and the rows below say why that is
+    /// still no adjust gesture for a reader: the platforms' own tab groups and radio groups take
+    /// none, and a group has no value to announce after a step.
+    /// </para>
+    /// </summary>
+    [Theory]
+    [InlineData(SemanticRole.Group)]
+    [InlineData(SemanticRole.TabBar)]
+    [InlineData(SemanticRole.RadioGroup)]
+    [InlineData(SemanticRole.Dialog)]
+    [InlineData(SemanticRole.AlertDialog)]
+    public void AContainerIsPressedByNothingAndAdjustedByNothing(SemanticRole role)
+    {
+        var native = NativeRole.Of(role);
+
+        native.Activatable.Should().BeFalse();
+        native.Adjustable.Should().BeFalse();
+        native.UIKit.Should().Be(UIKitTrait.None,
+            "UIKit says a group by BEING a container, and a trait would make the element a stop that swallows its own");
+    }
+
+    /// <summary>
     /// How UIKit hears a CHECK, the one column where a radio and a toggle part (#338, found in
     /// review). A toggle's state is its value there, "1" or "0", a UISwitch's own contract; a radio's
     /// is the Selected trait, which is how a segmented control says which segment is chosen, and a
@@ -143,8 +199,13 @@ public class NativeRoleTests
             { Label = "Wi-Fi", Role = PressableRole.Switch });
         page.Add(new Pressable(new Text("c", TypeRole.Label), () => { })
             { Label = "Agree", Role = PressableRole.Checkbox });
-        // The five that reached every bridge as a button until #338, each standing alone: inside a
-        // Tabs or a RadioGroup the Adjustable around them is the one stop and they are not read.
+        // The five that reached every bridge as a button until #338, each standing alone, and then
+        // inside the containers #500 made of a Tabs and a RadioGroup, whose bar and group are the one
+        // Tab stop while each tab and radio is a stop of its own for a reader. The Select is the
+        // combobox #501 found announced as a button.
+        page.Add(new Tabs(["Overview", "Activity"], 0, _ => { }));
+        page.Add(new RadioGroup(["Small", "Large"], 0, _ => { }, "Size"));
+        page.Add(new Select(["Lisbon", "Porto"], 0, _ => { }));
         page.Add(new Pressable(new Text("r", TypeRole.Label), () => { })
             { Label = "Express", Role = PressableRole.Radio, Selected = true });
         page.Add(new Pressable(new Text("t", TypeRole.Label), () => { })
@@ -162,7 +223,7 @@ public class NativeRoleTests
         page.Add(new SheetSurface(new Text("sheet", TypeRole.BodyM), new SheetController(rows: 2, cols: 2))
             { Label = "Budget" });
 
-        var host = new PhotonHost(page, PhotonTheme.Instance, ThemeMode.Light, 400, 600);
+        var host = new PhotonHost(page, PhotonTheme.Instance, ThemeMode.Light, 400, 900);
         var frame = host.RenderFrame(new DisplayListBuilder());
         var reachable = frame.HitRegions.Select(region => region.Path)
             .Concat(frame.FocusStops.Select(stop => stop.Path))
@@ -174,7 +235,8 @@ public class NativeRoleTests
             [SemanticRole.Button, SemanticRole.TextField, SemanticRole.Slider,
              SemanticRole.GridCell, SemanticRole.Switch, SemanticRole.Checkbox,
              SemanticRole.CodeField, SemanticRole.Radio, SemanticRole.Tab,
-             SemanticRole.MenuItem, SemanticRole.Option, SemanticRole.Destination],
+             SemanticRole.MenuItem, SemanticRole.Option, SemanticRole.Destination,
+             SemanticRole.TabBar, SemanticRole.RadioGroup, SemanticRole.ComboBox],
             "the sample really does put one of each within reach");
         reached.Count(node => node.Role == SemanticRole.CodeField).Should().Be(2,
             "BOTH surfaces that announce as one are in the sample, not just the first");
@@ -184,8 +246,19 @@ public class NativeRoleTests
             var native = NativeRole.Of(node.Role);
             var what = $"'{node.Label}' ({node.Role})";
 
-            (native.Activatable || native.Adjustable).Should().BeTrue(
-                $"a user reaches {what}, so a screen reader has to be offered something as well");
+            // A user reaches it, so a screen reader has to be offered something as well. For a
+            // CONTAINER the keyboard reaches (#500), a tab bar or a radio group that is the one Tab
+            // stop of its control, the offer is what it HOLDS: reachable stops under its path, each
+            // held to its own row by this same loop. A leaf consumed its subtree and holds nothing,
+            // so a control mapped to a row that offers nothing still fails here, which is the
+            // defect this test was written for.
+            if (!native.Activatable && !native.Adjustable)
+            {
+                reached.Where(inside => inside.Path.StartsWith(node.Path + "/", StringComparison.Ordinal))
+                    .Should().Contain(inside => NativeRole.Of(inside.Role).Activatable,
+                        $"a user reaches {what}, which offers nothing itself, so what it holds has to");
+                continue;
+            }
 
             if (native.Activatable)
                 host.ActivatePath(node.Path).Should().BeTrue(

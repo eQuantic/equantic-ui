@@ -1116,6 +1116,27 @@ record of a release, the wiki's Upgrading page is the distillate.
   stops the client of every page ([#526](https://github.com/eQuantic/equantic-ui/issues/526)).
   Proposed and archived through OpenSpec (`openspec/specs/transpiler-expressions`,
   `openspec/specs/transpiler-source-maps`).
+- **2026-10-03 · A tab bar, a radio group, a combobox and a dialog are themselves on Photon**: the
+  semantics walk announced every `Adjustable` as a slider, so a `Tabs` and a `RadioGroup` reached
+  VoiceOver and TalkBack as one unnamed slider and their tabs and radios were never read
+  ([#500](https://github.com/eQuantic/equantic-ui/issues/500)); a `Select`'s field reached them as a
+  button that expands and an open modal layer as a plain group, where the web says `combobox` and
+  `dialog` ([#501](https://github.com/eQuantic/equantic-ui/issues/501)). `SemanticRole` gains
+  `TabBar`, `RadioGroup`, `ComboBox`, `Dialog` and `AlertDialog`, appended at 17 to 21 in Flutter's
+  words. A tab strip and a radio group are containers a reader walks into, each tab and radio a stop
+  with its state, while the bar stays the keyboard's one stop; the pressable a listbox panel hangs
+  from is the combobox, the web's rule; an open modal layer is a dialog, or an alert dialog when it
+  interrupts. `NativeRole` takes Core-AAM's words for the containers and the dialogs, and gives the
+  select-only combobox each platform's drop-down, `AXPopUpButton` and `Spinner`, rather than
+  Core-AAM's editable pair. Found on the way and fixed: the layer Photon opens for an anchored panel
+  was modal by default, so an unnamed group stood in front of every open menu and select, and would
+  have read as a dialog; it is one now only for the date picker's calendar. AppKit's own description
+  of the dialog's `AXGroup` is "group", read back from AppKit, so the subrole is what says dialog.
+  `AnnouncementParityTests` compares the web's ARIA and the native tree for these components, a
+  slice of [#339](https://github.com/eQuantic/equantic-ui/issues/339), and `AppKitAccessibilityTests`
+  reads the elements of real components back from AppKit. The handoff's `native-roles` request is
+  shipped. Position in a set is still [#502](https://github.com/eQuantic/equantic-ui/issues/502).
+  Proposed and archived through OpenSpec (`openspec/specs/native-accessibility`).
 - **2026-10-03 · An enum reads as .NET reads it**: an enum has no object of its own in the browser,
   a member being held as its camelCase name and a `[Flags]` one as its number, and every place that
   turned that back into what .NET answers did it on its own, or not at all. A flags enum's
@@ -1165,6 +1186,16 @@ record of a release, the wiki's Upgrading page is the distillate.
   type as the bound tree's `DeconstructionInfo` says, and written by what its target is, an entry
   through its class. Each is a conformance case on both sides that failed against main. Proposed and
   archived through OpenSpec (`openspec/specs/transpiler-records`).
+- **2026-10-03 · A dictionary adds and pairs as .NET's does**: a dictionary's `Add` lowered to the
+  class's `set`, which replaces, and the constructor seeded through it, so `Add`, a collection
+  initializer and the constructor that copies pairs kept the last value of a key twice, where .NET
+  refuses the second ([#440](https://github.com/eQuantic/equantic-ui/issues/440), the rest of
+  [#395](https://github.com/eQuantic/equantic-ui/issues/395)); and `new KeyValuePair<K, V>(…)` named a
+  class nothing defines ([#433](https://github.com/eQuantic/equantic-ui/issues/433)). The runtime's
+  dictionaries add and refuse in each collection's words, measured on .NET 10 (a `SortedDictionary`
+  names the pair it was handed, a `SortedList` the key and its parameter), an object initializer's
+  `[key] = value` is assigned by the indexer, and a pair built by hand is the pair a dictionary yields.
+  Proposed and archived through OpenSpec (`openspec/specs/runtime-dictionaries`).
 
 ## Retired documents
 

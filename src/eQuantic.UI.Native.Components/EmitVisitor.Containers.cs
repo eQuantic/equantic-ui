@@ -131,7 +131,15 @@ internal sealed partial class EmitVisitor
             AnchorPlacement.TopCenter => new Positioned(CenteredOn(panel, b.Center.X), bottom: s.Motion.ViewportH - b.Y + gap, start: 0),
             _ => new Positioned(panel, top: b.Bottom + gap, start: b.X),
         });
-        s.Overlays.Add(new Overlay(layer));
+        // What the LAYER is to a reader. It is Photon's own device, the web has none (its panel sits
+        // in the page), so it is a dialog exactly when the PANEL is one: the calendar a date picker
+        // opens, whose focus moves inside, which the web also calls role="dialog" (LowerAnchored).
+        // A menu's, a listbox's and a tooltip's layer is no stop at all, and their own items say what
+        // they are. The layer was a modal one by default, which read as an unnamed group in front of
+        // every open menu and select, and would have read as a DIALOG once a modal layer became one
+        // (#501). Nothing else on Photon reads the flag: the pointer only ever hits registered
+        // regions, so the scrim's tap-outside is the scrim's, not the layer's.
+        s.Overlays.Add(new Overlay(layer) { Modal = anchored.PanelRole == AnchorPanelRole.Dialog });
     }
 
     // Loop motion: translate the subtree by the frame-clock offset (spec §06 transform-only).
