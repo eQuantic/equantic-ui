@@ -53,6 +53,7 @@ public class StringJoinConformanceTests
     [InlineData("return string.Join(\";\", new[] { Mode.A | Mode.B, Mode.None });")]
     [InlineData("return string.Join(\",\", new List<Day?> { Day.Monday, null });")]
     [InlineData("return string.Join(\",\", new bool?[] { true, null });")]
+    [InlineData("return string.Join(\",\", new double?[] { 1.5, null, 1e21 }) + \"|\" + string.Join(\",\", new List<float?> { 0.1f, null });")]
     [InlineData("return string.Join(\";\", new[] { new Point(1, 2) });")]
     // A long, a decimal, a char and a double through the generic overload.
     [InlineData("return string.Join(\",\", new List<long> { 1L, long.MaxValue }) + \"|\" + string.Join(\",\", new[] { 1.0m, 1.00m }) + \"|\" + string.Join(\",\", new[] { 'a', 'b' });")]

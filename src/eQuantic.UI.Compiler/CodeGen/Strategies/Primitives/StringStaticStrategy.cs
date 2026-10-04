@@ -99,10 +99,15 @@ public class StringStaticStrategy : IConversionStrategy
             if (context.SemanticHelper.GetSymbol(invocation) is IMethodSymbol join)
                 return JoinCall(invocation, join, context);
 
-            // No model to say which overload: Join(separator, values) as the array it most often is.
+            // No model to say which overload or what the values are: the runtime reads any sequence,
+            // which only an array could be handed to `join` as (#429), and the values a params array
+            // takes one by one, a literal among them, are an array of them.
+            context.UsedHelpers.Add(Eq.Import);
             var separator = context.Converter.ConvertExpression(args[0].Expression);
-            var values = context.Converter.ConvertExpression(args[1].Expression);
-            return $"{values}.join({separator})";
+            var values = args.Count == 2 && args[1].Expression is not LiteralExpressionSyntax
+                ? context.Converter.ConvertExpression(args[1].Expression)
+                : "[" + string.Join(", ", args.Skip(1).Select(argument => context.Converter.ConvertExpression(argument.Expression))) + "]";
+            return $"{Eq.StringJoin}({separator}, {values})";
         }
         
         if (methodName == "Concat")
@@ -630,7 +635,9 @@ public class StringStaticStrategy : IConversionStrategy
         }
 
         var valuesType = context.SemanticHelper.GetType((ExpressionSyntax)bound.Value.Syntax) ?? valuesParameter.Type;
-        var element = valuesType.GetEnumerableElementType();
+        // The runtime asks the conversion of a value that is not null, so a nullable element type is
+        // its value type, and a string needs none.
+        var element = valuesType.GetEnumerableElementType()?.UnwrapNullable()?.WithNullableAnnotation(NullableAnnotation.NotAnnotated);
         var probe = element is null ? null : StringConversion.Of(element, JsExpr.Identifier("value"), context);
         var text = probe is null or JsIdentifier { Name: "value" } ? null : JsExpr.Arrow("value", probe);
         var parameter = valuesParameter.Name == "value" ? "'value'" : null;

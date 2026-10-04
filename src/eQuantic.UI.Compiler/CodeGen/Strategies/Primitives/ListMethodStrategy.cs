@@ -99,7 +99,8 @@ public class ListMethodStrategy : IExpressionIrStrategy
             "AddRange" => args.Count > 0 ? $"{caller}.push(...{args[0]})" : caller,
             "Insert" => ConvertInsert(caller, args),
             "InsertRange" => ConvertInsertRange(caller, args),
-            "Remove" when args.Count > 0 => Helper(context, $"{Eq.ListRemove}({caller}, {args[0]})"),
+            // An element type no model can say compares by what each value turns out to be.
+            "Remove" when args.Count > 0 => Helper(context, $"{Eq.ListRemove}({caller}, {args[0]}, 'own')"),
             "RemoveAt" => ConvertRemoveAt(caller, args),
             "RemoveRange" => ConvertRemoveRange(caller, args),
             "RemoveAll" when args.Count > 0 => Helper(context, $"{Eq.ListRemoveAll}({caller}, {args[0]})"),
