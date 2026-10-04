@@ -31,8 +31,14 @@ public sealed class Adjustable : SingleChildNode
     /// The ARIA identity the web twin ASKS FOR. It is honoured wherever ARIA allows it to be: the
     /// slider role requires <see cref="Value"/>, so a node that asks for it without one is announced
     /// as a group instead — the realizer settles the pair, because that rule is ARIA's and the
-    /// realizer is where the SDK speaks ARIA. The native side treats every role the same — one stop,
-    /// arrows adjust.
+    /// realizer is where the SDK speaks ARIA.
+    /// <para>
+    /// The keyboard is the same for all three, one stop whose arrows adjust. What a READER meets is
+    /// not: on every target a slider is one stop that says its value, and a tab list and a radio
+    /// group are containers whose tabs and radios are each a stop of their own, the native
+    /// semantics tree's <see cref="SemanticRole.TabBar"/> and <see cref="SemanticRole.RadioGroup"/>
+    /// (#500).
+    /// </para>
     /// </summary>
     public AdjustableRole Role { get; init; } = AdjustableRole.Slider;
 

@@ -4,6 +4,11 @@ eQuantic.UI.Primitives.SemanticRole.Tab = 13 -> eQuantic.UI.Primitives.SemanticR
 eQuantic.UI.Primitives.SemanticRole.MenuItem = 14 -> eQuantic.UI.Primitives.SemanticRole
 eQuantic.UI.Primitives.SemanticRole.Option = 15 -> eQuantic.UI.Primitives.SemanticRole
 eQuantic.UI.Primitives.SemanticRole.Destination = 16 -> eQuantic.UI.Primitives.SemanticRole
+eQuantic.UI.Primitives.SemanticRole.TabBar = 17 -> eQuantic.UI.Primitives.SemanticRole
+eQuantic.UI.Primitives.SemanticRole.RadioGroup = 18 -> eQuantic.UI.Primitives.SemanticRole
+eQuantic.UI.Primitives.SemanticRole.ComboBox = 19 -> eQuantic.UI.Primitives.SemanticRole
+eQuantic.UI.Primitives.SemanticRole.Dialog = 20 -> eQuantic.UI.Primitives.SemanticRole
+eQuantic.UI.Primitives.SemanticRole.AlertDialog = 21 -> eQuantic.UI.Primitives.SemanticRole
 eQuantic.UI.Primitives.HydratedMemberAttribute
 eQuantic.UI.Primitives.HydratedMemberAttribute.Member.get -> string!
 eQuantic.UI.Primitives.HydratedMemberAttribute.Kind.get -> eQuantic.UI.Primitives.HydratedMemberKind

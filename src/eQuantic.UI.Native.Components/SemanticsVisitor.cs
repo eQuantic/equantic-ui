@@ -101,8 +101,10 @@ internal sealed partial class SemanticsVisitor(List<SemanticNode> nodes)
     /// <para>
     /// A reader stops on the group, says its name, and then goes on into what it holds. That is the
     /// whole difference from <see cref="Announce"/>, and the reason it could not be expressed until
-    /// <see cref="SemanticRole.Group"/> existed: every other role is a leaf whose inner text IS its
-    /// name, so consuming is right for them and would have hidden every row of a navigable grid.
+    /// <see cref="SemanticRole.Group"/> existed: every role before it is a leaf whose inner text IS
+    /// its name, so consuming is right for them and would have hidden every row of a navigable grid.
+    /// The containers that came after it — a tab bar, a radio group, a dialog — announce through
+    /// here as well, each with its own role.
     /// </para>
     /// </summary>
     private bool AnnounceGroup(SemanticNode node)
@@ -118,13 +120,20 @@ internal sealed partial class SemanticsVisitor(List<SemanticNode> nodes)
     /// <para>
     /// Gated on modal AND open exactly as the web realizer gates its <c>role="dialog"</c>: a toast
     /// layer is not a dialog and a closed one is not one right now, so the two targets agree on
-    /// when this is a stop at all.
+    /// when this is a stop at all. And it says DIALOG, or ALERT DIALOG for the layer that
+    /// interrupts, the two words the web gives the same layer (<c>LowerOverlay</c>): until #501 it
+    /// said group, so every bridge announced a dialog as a plain group with a name.
+    /// </para>
+    /// <para>
+    /// A layer the realizer builds for an anchored panel reaches here too, and is a dialog only when
+    /// its PANEL is one (<c>EmitAnchored</c> says which): the web has no layer there at all, and a
+    /// menu's, a listbox's and a tooltip's are no dialog to anyone.
     /// </para>
     /// </summary>
     internal void AnnounceOverlay(Overlay overlay, LayoutNode root)
     {
         if (overlay is not { Modal: true, Open: true }) return;
-        AnnounceGroup(new(SemanticRole.Group, root.Path ?? "", root.Bounds, overlay.Label ?? "",
-            null, false));
+        AnnounceGroup(new(overlay.Alert ? SemanticRole.AlertDialog : SemanticRole.Dialog,
+            root.Path ?? "", root.Bounds, overlay.Label ?? "", null, false));
     }
 }
