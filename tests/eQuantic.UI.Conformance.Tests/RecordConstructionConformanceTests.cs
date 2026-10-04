@@ -31,6 +31,23 @@ public class RecordConstructionConformanceTests
         public record Box3(int A, int B, int C) { public Box3(int a, int b = 5) : this(a, b, 0) { } }
         public record Opt(int A, int B = 4, int C = 6) { public Opt(string s, string t, string u, string v) : this(s.Length, C: t.Length) { } }
         public record Bag(params int[] Items) { public int Count => Items.Length; }
+        public struct Money { public decimal A; public string C; public Money(decimal a) { A = a; C = "EUR"; } public Money(decimal a, string c) { A = a; C = c; } }
+        public record Shape(string Kind) { public int Trace = Log.Note("shape "); }
+        public record Rect : Shape
+        {
+            public int W; public int H;
+            public int Seen = Log.Note("rect ");
+            public Rect(int side) : base("square") { W = side; H = side; }
+            public Rect(int w, int h) : base("rect" + (w * h)) { W = w; H = h; Log.Note("body "); }
+            public Rect() : this(1) { Log.Note("unit "); }
+        }
+        public record Early
+        {
+            public int A; public string Trail = "";
+            public Early(int a) { A = a; if (a < 0) return; Trail += "body "; }
+            public Early(int a, int b) { A = a + b; Trail += "sum "; }
+            public Early() : this(-1) { Trail += "alt"; }
+        }
         public record Tags(string Name, params string[] Values) { public Tags() : this("none", "a", "b") { } }
         public record Listed(string Name, params string[] Values) { public Listed() : this("w", new[] { "x", "y", "z" }) { } }
 
@@ -68,6 +85,13 @@ public class RecordConstructionConformanceTests
     // parameter of the main one its chain leaves out takes its default.
     [InlineData("return new Box3(1) + \"|\" + new Box3(1, 2) + \"|\" + new Box3(a: 7) + \"|\" + new Box3(1, 2, 3);")] // "Box3 { A = 1, B = 5, C = 0 }|…"
     [InlineData("return new Opt(\"ab\", \"c\", \"d\", \"e\") + \"|\" + new Opt(1, C: 2);")]              // "Opt { A = 2, B = 4, C = 1 }|Opt { A = 1, B = 4, C = 2 }"
+    // Constructors that each do their own work are each a branch, by how many arguments arrive, with
+    // its own base constructor's arguments, and an alternate runs its body after its root's, even when
+    // the root's returns early.
+    [InlineData("return new Money(1.5m).A + new Money(1.5m).C + \"|\" + new Money(2m, \"USD\").A + new Money(2m, \"USD\").C + \"|\" + default(Money).C;")] // "1.5EUR|2USD|"
+    [InlineData("Log.Text = \"\"; var r = new Rect(2); var q = new Rect(2, 3); return r.Kind + r.W + r.H + \"|\" + q.Kind + q.W + q.H + \"|\" + Log.Text;")]
+    [InlineData("Log.Text = \"\"; var u = new Rect(); return u.Kind + u.W + \"|\" + Log.Text + \"|\" + (new Rect(2, 3) == new Rect(2, 3));")]
+    [InlineData("return new Early().Trail + \"|\" + new Early().A + \"|\" + new Early(4).Trail + \"|\" + new Early(1, 2).A + new Early(1, 2).Trail;")] // "alt|-1|body |3sum "
     // A `params` parameter takes the elements listed, or the array passed whole.
     [InlineData("return new Bag(1, 2, 3).Count + \"|\" + new Bag(new[] { 4, 5 }).Count + \"|\" + new Bag().Count;")] // "3|2|0"
     [InlineData("return string.Join(\",\", new Tags().Values) + \"|\" + string.Join(\",\", new Listed().Values) + \"|\" + new Tags(\"t\").Values.Length;")] // "a,b|x,y,z|0"

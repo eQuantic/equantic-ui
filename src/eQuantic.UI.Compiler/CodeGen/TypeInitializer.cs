@@ -36,6 +36,17 @@ internal static class TypeInitializer
     /// <summary>The holder of a type's statics, built by <c>$init()</c>.</summary>
     public const string Slots = "$slots";
 
+    /// <summary>The static method that builds <see cref="Slots"/> the first time it is called.</summary>
+    public const string Init = "$init";
+
+    /// <summary>
+    /// The statement that starts a type's initialization: what a type with a static constructor runs
+    /// first in its instance constructor and in each of its static members, since C# runs that
+    /// constructor before the first instance and the first use of any static member, a method
+    /// included, and not only before the first read of a static.
+    /// </summary>
+    public static JsStatement Start(string className) => JsStatement.Raw($"{className}.{Init}();");
+
     /// <summary>One static that initializes in order: its name on the twin, its annotation, its zero,
     /// its initializer converted (none for a static that holds its zero until something sets it), and
     /// the C# it came from.</summary>
@@ -87,7 +98,7 @@ internal static class TypeInitializer
         build.AddRange(statics.Where(member => member.Value is not null).Select(member =>
             JsStatement.Raw($"slots.{member.Name} = {member.Value};") with { Origin = member.Origin }));
         build.AddRange(constructor);
-        yield return JsClassMember.Method("static ", "$init", "", "", annotate ? ": any" : "", JsStatement.Block([
+        yield return JsClassMember.Method("static ", Init, "", "", annotate ? ": any" : "", JsStatement.Block([
             JsStatement.If(JsExpr.Binary(JsExpr.Member(JsExpr.Identifier(className), Slots), "===", JsExpr.Literal("null")),
                 JsStatement.Block(build), null),
             JsStatement.Raw($"return {className}.{Slots};"),
@@ -96,9 +107,9 @@ internal static class TypeInitializer
         foreach (var member in statics)
         {
             yield return JsClassMember.Getter("static ", member.Name, annotate ? $": {member.Type}" : "",
-                JsStatement.Block([JsStatement.Raw($"return {className}.$init().{member.Name};")])) with { Origin = new JsOrigin(member.Origin) };
+                JsStatement.Block([JsStatement.Raw($"return {className}.{Init}().{member.Name};")])) with { Origin = new JsOrigin(member.Origin) };
             yield return JsClassMember.Setter("static ", member.Name, annotate ? $"value: {member.Type}" : "value",
-                JsStatement.Block([JsStatement.Raw($"{className}.$init().{member.Name} = value;")])) with { Origin = new JsOrigin(member.Origin) };
+                JsStatement.Block([JsStatement.Raw($"{className}.{Init}().{member.Name} = value;")])) with { Origin = new JsOrigin(member.Origin) };
         }
     }
 }

@@ -26,15 +26,15 @@ public class TwinConstructorTests
             "Coded", "public record Coded(int Code) { public Coded(string text) : this(text.Length) { } }", "Coded(string text)"
         },
         {
-            // Two constructors each running a body of its own.
-            "Twice", """
-            public record Twice
+            // Two constructors doing their own work, with one count of arguments.
+            "Twins", """
+            public record Twins
             {
                 public int A { get; init; }
-                public Twice() { A = 1; }
-                public Twice(int a) { A = a; }
+                public Twins(int a) { A = a; }
+                public Twins(string s) { A = s.Length; }
             }
-            """, "Twice()"
+            """, "Twins(string s)"
         },
         {
             // An alternate that chains to another alternate.
@@ -92,7 +92,10 @@ public class TwinConstructorTests
         var result = Compile("public record Span(int Start, int End) { public Span(int at) : this(at, at + 1) { } }", "Span");
 
         result.Success.Should().BeTrue(string.Join("\n", result.Errors.Select(error => error.Message)));
-        result.TypeScript.Should().Contain("if (arguments.length === 1) { [start, end] = ((at: any) => [at, at + 1])(arguments[0]); }");
+        // The alternate's own parameters live in a block of their own, and the chain's arguments cross it
+        // in temporaries: no function holds the C#.
+        result.TypeScript.Should().Contain(
+            "if (arguments.length === 1) { let $c0: any, $c1: any; { const [at] = arguments; $c0 = at; $c1 = at + 1; } start = $c0; end = $c1; }");
     }
 
     [Fact]
@@ -102,7 +105,26 @@ public class TwinConstructorTests
 
         result.Success.Should().BeTrue(string.Join("\n", result.Errors.Select(error => error.Message)));
         result.TypeScript.Should().Contain(
-            "if (arguments.length >= 1 && arguments.length <= 2) { [a, b, c] = ((a: any, b: any = 5) => [a, b, 0])(arguments[0], arguments[1]); }");
+            "if (arguments.length >= 1 && arguments.length <= 2) { let $c0: any, $c1: any, $c2: any; { const [a, b = 5] = arguments; "
+            + "$c0 = a; $c1 = b; $c2 = 0; } a = $c0; b = $c1; c = $c2; }");
+    }
+
+    [Fact]
+    public void ConstructorsWithBodiesOfTheirOwn_AreEachABranch()
+    {
+        var result = Compile("""
+            public struct Money
+            {
+                public decimal A; public string C;
+                public Money(decimal a) { A = a; C = "EUR"; }
+                public Money(decimal a, string c) { A = a; C = c; }
+            }
+            """, "Money");
+
+        result.Success.Should().BeTrue(string.Join("\n", result.Errors.Select(error => error.Message)));
+        result.TypeScript.Should().Contain("constructor(...$a: any[]) { let a: any, c: any; let $k: any = -1; "
+            + "if ($a.length === 1) { [a] = $a; $k = 0; } else if ($a.length === 2) { [a, c] = $a; $k = 1; } ");
+        result.TypeScript.Should().Contain("if ($k === 0) { this.a = a; this.c = 'EUR'; } if ($k === 1) { this.a = a; this.c = c; } ");
     }
 
     [Fact]
