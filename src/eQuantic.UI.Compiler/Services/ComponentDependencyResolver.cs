@@ -22,7 +22,49 @@ public class ComponentDependencyResolver
     /// own module, so a component referencing <c>X.Foo()</c> imports it.</summary>
     private readonly HashSet<string> _staticHelpers = new();
     private readonly HashSet<string> _runtimeProvidedTypes = new();
-    private readonly HashSet<string> _plainClasses = new();
+
+    /// <summary>A class that is not a component or a static helper, as the scan saw it: whether the
+    /// plain-class rule takes it on everything but its base, and the base it names.</summary>
+    private readonly record struct ScannedClass(string Name, bool PlainOnItsOwn, string? Base);
+
+    private readonly List<ScannedClass> _classes = new();
+
+    /// <summary>The classes the scan saw marked <c>[ServerOnly]</c>.</summary>
+    private readonly HashSet<string> _serverOnly = new(StringComparer.Ordinal);
+
+    /// <summary>The plain classes, settled over every file the scan read; null until asked, and again
+    /// after another file is read.</summary>
+    private (HashSet<string> Modules, HashSet<string> Refused)? _plainClassesSettled;
+
+    /// <summary>
+    /// Which of the scanned classes are plain-class modules, and which the rule refused: the
+    /// predicate's answer, with a base that stays on the server (marked <c>[ServerOnly]</c>, or over
+    /// one that is, in any file the scan read) refusing the class over it.
+    /// </summary>
+    private (HashSet<string> Modules, HashSet<string> Refused) PlainClasses()
+    {
+        if (_plainClassesSettled is { } settled) return settled;
+        var bases = new Dictionary<string, string?>(StringComparer.Ordinal);
+        foreach (var scanned in _classes) bases.TryAdd(scanned.Name, scanned.Base);
+
+        bool StaysOnServer(string? name)
+        {
+            var seen = new HashSet<string>(StringComparer.Ordinal);
+            while (name is not null && seen.Add(name))
+            {
+                if (_serverOnly.Contains(name)) return true;
+                name = bases.TryGetValue(name, out var next) ? next : null;
+            }
+            return false;
+        }
+
+        var modules = new HashSet<string>(StringComparer.Ordinal);
+        var refused = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var scanned in _classes)
+            (scanned.PlainOnItsOwn && !StaysOnServer(scanned.Base) ? modules : refused).Add(scanned.Name);
+        _plainClassesSettled = (modules, refused);
+        return (modules, refused);
+    }
 
     /// <summary>
     /// Scans source code directories to build dependency map
@@ -126,15 +168,21 @@ public class ComponentDependencyResolver
                 _staticHelpers.Add(className);
             }
 
-            // A PLAIN class is a module too — a referencing module has to import it, or the
-            // page dies with "Bucket is not defined". Components and state classes are resolved
-            // by their own paths; a nested class embeds in its owner.
-            else if (classDecl.Parent is not Microsoft.CodeAnalysis.CSharp.Syntax.ClassDeclarationSyntax
-                     && classDecl.Members.Count > 0
-                     && !IsComponentLike(classDecl))
+            // A PLAIN class is a module too — a referencing module has to import it, or the page
+            // dies with "Bucket is not defined". Whether it is one is the parser's rule, read from
+            // the same predicate (#423), and settled once every file is scanned: whether its base
+            // stays on the server can be said in another file. Components and state classes are
+            // resolved by their own paths.
+            else if (!IsComponentLike(classDecl))
             {
-                _plainClasses.Add(className);
+                _classes.Add(new ScannedClass(className,
+                    PlainClassModule.Is(classDecl, _ => false),
+                    classDecl.BaseList?.Types.FirstOrDefault()?.Type is { } written ? PlainClassModule.SimpleName(written) : null));
             }
+
+            if (classDecl.AttributeLists.SelectMany(list => list.Attributes).Any(attribute => attribute.IsNamed("ServerOnly")))
+                _serverOnly.Add(className);
+            _plainClassesSettled = null;
 
             // Get base type
             var baseType = classDecl.BaseList?.Types.FirstOrDefault();
@@ -239,18 +287,22 @@ public class ComponentDependencyResolver
     public IReadOnlySet<string> GetRuntimeProvidedTypes() => _runtimeProvidedTypes;
 
     /// <summary>Plain classes the app declares — each its own module, each importable.</summary>
-    public IReadOnlySet<string> GetAllPlainClasses() => _plainClasses;
+    public IReadOnlySet<string> GetAllPlainClasses() => PlainClasses().Modules;
 
     /// <summary>
     /// Whether the scan knows <paramref name="name"/> became a module of its own: a component, a
     /// record or struct, a static helper or a plain class. Every emitter imports an APP type only
     /// when this answers yes, which is what keeps an import from naming a module nobody wrote.
+    /// A class with a base is in the component graph whatever it is, so a class the plain-class rule
+    /// refuses (an attribute, an exception, one over a server-only base) is taken out of it here: it
+    /// answered yes for those, and the parser wrote no module for any of them (#423).
     /// </summary>
-    public bool IsModule(string name) =>
-        _dependencyCache.ContainsKey(name)
-        || _recordTypes.Contains(name)
-        || _staticHelpers.Contains(name)
-        || _plainClasses.Contains(name);
+    public bool IsModule(string name)
+    {
+        if (_recordTypes.Contains(name) || _staticHelpers.Contains(name)) return true;
+        var (modules, refused) = PlainClasses();
+        return modules.Contains(name) || (_dependencyCache.ContainsKey(name) && !refused.Contains(name));
+    }
 
     /// <summary>
     /// Whether the class is (or extends) something the COMPONENT path emits. Syntactic on purpose:

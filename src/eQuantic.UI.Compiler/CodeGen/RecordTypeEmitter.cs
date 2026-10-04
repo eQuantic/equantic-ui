@@ -38,54 +38,29 @@ public class RecordTypeEmitter
         _lowering = new MethodLowering(converter, () => _annotations, ModelFor);
     }
 
-    /// <summary>True for the value types this emitter handles: any record, or a struct, that exposes at
-    /// least one value member (positional parameter, auto-property, or public field), a static
-    /// surface, or a base list. A base can give a type every member it has: a base record, or an
-    /// interface's defaults, which `record Nobody : IGreet;` takes whole, and with no twin the
-    /// default had nothing to be written into (found in review, #418).</summary>
+    /// <summary>
+    /// True for the value types this emitter handles: every record and every struct, whatever it
+    /// declares (#428). What a type declares has nothing to do with whether the browser can name it: a
+    /// record that declares only methods, only computed properties, only an indexer, or nothing at all
+    /// is still constructed, compared and extended, and the rule that asked for a value member, a static
+    /// surface or a base list left `new Animal()` naming a class nothing wrote, and every record over it
+    /// unextended. A PARTIAL declaration that declares nothing is the one exception, as it is for a
+    /// class (PlainClassModule): another declaration carries the type's members, and the empty one
+    /// written first would leave the twin without them.
+    /// </summary>
     public static bool CanEmit(TypeDeclarationSyntax type) =>
         type is RecordDeclarationSyntax or StructDeclarationSyntax
-        && (type.ValueMembers().Count > 0 || HasStaticSurface(type) || type.BaseList is { Types.Count: > 0 });
+        && !(type.Modifiers.Any(SyntaxKind.PartialKeyword) && type.Members.Count == 0 && type.ParameterList is null);
 
     /// <summary>
     /// Whether this emitter writes a twin for <paramref name="type"/>: declared in source, by a
     /// declaration <see cref="CanEmit"/> accepts. The rule every path that NAMES the twin asks — a
     /// type test (<c>instanceof</c>) and a default (<c>new T()</c>) may only name a class that exists,
-    /// and an empty struct has none.
+    /// and a type declared only by an empty partial declaration has none.
     /// </summary>
     public static bool EmitsTwin(INamedTypeSymbol type) =>
         type.DeclaringSyntaxReferences.Any(reference =>
             reference.GetSyntax() is TypeDeclarationSyntax declaration && CanEmit(declaration));
-
-    /// <summary>
-    /// Something the twin must carry even though the type holds no instance value: a const, a static
-    /// field, a static property, a static method. DISCOVERY is a separate question from what the
-    /// record's VALUE is made of, and conflating them deleted a type outright — excluding consts
-    /// from the value (rightly) took `record Limits { const int MaxRows; static Describe(); }` down
-    /// with it, and the page calling `Limits.describe()` referenced a module nobody emitted.
-    /// </summary>
-    private static bool HasStaticSurface(TypeDeclarationSyntax type) =>
-        type.Members.Any(m => m switch
-        {
-            FieldDeclarationSyntax f => f.Modifiers.Any(x =>
-                x.IsKind(SyntaxKind.StaticKeyword) || x.IsKind(SyntaxKind.ConstKeyword)),
-            PropertyDeclarationSyntax p => p.Modifiers.Any(SyntaxKind.StaticKeyword),
-            MethodDeclarationSyntax me => me.Modifiers.Any(SyntaxKind.StaticKeyword),
-            // Emit writes these as static methods (`Money.opAdd`, `Money.fromInt`), and a call site
-            // lowers to them — so a type whose only surface is one of them is a type whose twin must
-            // exist.
-            //
-            // The operator asks the SAME mapping Emit asks, because Emit skips the tokens it has no
-            // name for (`&`, `|`, `^`, shifts, `++`, `true`/`false`). Discovery answering yes where
-            // Emit writes nothing would produce an empty twin for a type that has no lowering
-            // either — a module standing in for an operator no call site can use.
-            OperatorDeclarationSyntax op => (op.ParameterList.Parameters.Count == 1
-                ? UnaryOperatorMethodName(op.OperatorToken.Text)
-                : OperatorMethodName(op.OperatorToken.Text)) is not null,
-            // Every conversion IS written — that loop has no such skip.
-            ConversionOperatorDeclarationSyntax => true,
-            _ => false,
-        });
 
     /// <summary>A model that can answer about THIS declaration. Roslyn throws for a node from
     /// another tree, so the COMPILATION is asked for that tree's own model; when even it does not

@@ -31,11 +31,12 @@ public static class Transpiler
             .ToList();
         if (valueTypes.Count == 0) return string.Empty;
 
-        // Emit base records before derived ones — JS `class X extends Base` needs Base already declared.
+        // Emit base records before derived ones — JS `class X extends Base` needs Base already declared,
+        // whether the base clause passes arguments (`: Animal(Name)`) or names it bare (`: Animal`).
         var names = valueTypes.Select(t => t.Identifier.Text).ToHashSet();
         string? EmittedBaseOf(TypeDeclarationSyntax t)
         {
-            var b = t.BaseList?.Types.OfType<PrimaryConstructorBaseTypeSyntax>().FirstOrDefault()?.Type.ToString();
+            var b = t.BaseList?.Types.FirstOrDefault()?.Type.ToString();
             if (b != null && b.Contains('<')) b = b[..b.IndexOf('<')];
             return b != null && names.Contains(b) ? b : null;
         }

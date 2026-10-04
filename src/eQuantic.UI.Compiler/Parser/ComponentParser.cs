@@ -245,11 +245,12 @@ public class ComponentParser
         // named something that did not exist. Identity, not value: no structural equals, no `with`.
         foreach (var classDecl in classes)
         {
-            if (classDecl.Parent is TypeDeclarationSyntax) continue;          // nested: its owner's scope
-            if (classDecl.Modifiers.Any(SyntaxKind.StaticKeyword)) continue;  // static-helper path
             if (componentNames.Contains(classDecl.Identifier.Text)) continue; // component path
             if (stateNames.Contains(classDecl.Identifier.Text)) continue;     // owned by its page
-            if (classDecl.Members.Count == 0) continue;
+            // The one rule the resolver reads too (#423): what the class IS decides, never whether it
+            // declares a member. A class that declared none was skipped here while the resolver had
+            // it imported, so the bundle could not resolve the module every user of it named.
+            if (!PlainClassModule.Is(classDecl, written => BaseStaysOnServer(written, classes))) continue;
             if (IsServerOnly(classDecl)) continue;                             // never crosses: no module
             // Track L D2: a resx Designer is a plain non-static class by shape, and a module of
             // ResourceManager.GetString calls cannot run in a browser — its accessors rewrite to
@@ -471,6 +472,33 @@ public class ComponentParser
 
         return classDecl.AttributeLists.SelectMany(list => list.Attributes)
             .Any(attribute => attribute.IsNamed("ServerOnly"));
+    }
+
+    /// <summary>
+    /// Whether a class's base, as written, stays on the server: it, or a base of its own, is marked
+    /// <c>[ServerOnly]</c>, so no module exists for a twin to extend (#423). Asked of the model, which
+    /// sees a base declared in another file; without one, of the classes this file declares.
+    /// </summary>
+    private bool BaseStaysOnServer(TypeSyntax written, IReadOnlyList<ClassDeclarationSyntax> fileClasses)
+    {
+        if (TryGetSemanticModel(written.SyntaxTree)?.GetSymbolInfo(written).Symbol is INamedTypeSymbol resolved)
+        {
+            for (var type = resolved; type is not null; type = type.BaseType)
+                if (type.GetAttributes().Any(a => a.AttributeClass?.Name is "ServerOnly" or "ServerOnlyAttribute"))
+                    return true;
+            return false;
+        }
+
+        var seen = new HashSet<string>(StringComparer.Ordinal);
+        for (var name = PlainClassModule.SimpleName(written); seen.Add(name);)
+        {
+            var declared = fileClasses.FirstOrDefault(c => c.Identifier.Text == name);
+            if (declared is null) return false;
+            if (declared.AttributeLists.SelectMany(list => list.Attributes).Any(a => a.IsNamed("ServerOnly"))) return true;
+            if (declared.BaseList?.Types.FirstOrDefault()?.Type is not { } next) return false;
+            name = PlainClassModule.SimpleName(next);
+        }
+        return false;
     }
 
     private bool IsRuntimeProvided(ClassDeclarationSyntax classDecl)
