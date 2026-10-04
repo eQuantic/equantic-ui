@@ -1142,6 +1142,37 @@ record of a release, the wiki's Upgrading page is the distillate.
   stops the client of every page ([#526](https://github.com/eQuantic/equantic-ui/issues/526)).
   Proposed and archived through OpenSpec (`openspec/specs/transpiler-expressions`,
   `openspec/specs/transpiler-source-maps`).
+- **2026-10-03 · A string's own search compares as .NET does**: a string's methods that take a
+  `StringComparison` read it from its spelling and lower-cased both sides
+  ([#528](https://github.com/eQuantic/equantic-ui/issues/528)): the Kelvin sign matched a k under
+  `OrdinalIgnoreCase`, a comparison held in a variable was dropped, `Replace` dropped its own and
+  read `$&` in its replacement as a pattern, a start past the end clamped where .NET throws, and a
+  sort written with `CompareTo` put every capital first. They now reach the runtime's `$eq.text`,
+  chosen by the bound method and handed the comparison as the value it is: an ordinal search that
+  ignores case ports .NET 10's `Ordinal` and `OrdinalCasing`, a start and a count are checked in
+  .NET's words, `CompareTo` is the current culture's comparison, and a search by a culture
+  comparison, which the browser has no form for, fails the build with EQ1004, or throws when the
+  comparison arrives in a variable. On the way, an overload taking a `CultureInfo` slipped through:
+  its parameter is `CultureInfo?`, and the type check compared a display name that carries the
+  annotation, so `IsNamed` now reads a name without it. The components' pins also showed every call
+  with a range bound in an arrow function to keep C#'s order, so the runtime now takes the arguments
+  in the order C# writes them. Copilot's review found the comparison read from the last argument
+  written, so a named start was refused as a culture comparison, and a conditional refused for the
+  culture member it spells, though it is no constant. Its second round found an argument that awaits
+  behind a null-conditional call that goes to a helper, wrapped in an arrow that was not async, so
+  the module did not parse (`s?.Substring(await f())` too, on main); and its third, that the async
+  arrow which first fixed it suspended where C# does not and handed back the result of a task the
+  call returned. A local, a parameter or `this` is now guarded by a conditional with no function
+  around the tail, and any other receiver refuses a tail that awaits, until a lowering binds it in
+  the enclosing function ([#539](https://github.com/eQuantic/equantic-ui/issues/539)). 28 of the 48
+  conformance cases fail on main, and the dashboard sample's payment filter, code editor, Markdown,
+  Mermaid and diff pages were checked in a browser. Filed on the way: the overloads without a
+  comparison search by the current culture in .NET
+  ([#532](https://github.com/eQuantic/equantic-ui/issues/532)), a culture comparison that ignores
+  case equates widths and kana types .NET keeps apart
+  ([#533](https://github.com/eQuantic/equantic-ui/issues/533)), and a char search with a start
+  clamps and drops its count ([#534](https://github.com/eQuantic/equantic-ui/issues/534)). Proposed
+  and archived through OpenSpec (`openspec/specs/transpiler-bcl`).
 - **2026-10-03 · A tab bar, a radio group, a combobox and a dialog are themselves on Photon**: the
   semantics walk announced every `Adjustable` as a slider, so a `Tabs` and a `RadioGroup` reached
   VoiceOver and TalkBack as one unnamed slider and their tabs and radios were never read
