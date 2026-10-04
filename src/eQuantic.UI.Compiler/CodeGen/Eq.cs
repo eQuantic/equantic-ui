@@ -307,6 +307,10 @@ public static class Eq
     /// as .NET's is, its keys found by value when its second argument says so.</summary>
     public const string Dictionary = "$eq.collections.dictionary";
 
+    /// <summary><c>new KeyValuePair&lt;K, V&gt;(key, value)</c> and <c>KeyValuePair.Create</c>: the pair a
+    /// dictionary yields, which destructures as <c>[key, value]</c> and reads <c>.key</c> and <c>.value</c>.</summary>
+    public const string Pair = "$eq.collections.pair";
+
     /// <summary>Factory for a value-sorted set (<c>SortedSet&lt;T&gt;</c>).</summary>
     public const string SortedSet = "$eq.collections.sortedSet";
     /// <summary>Factory for a key-sorted dictionary (<c>SortedDictionary&lt;K, V&gt;</c>).</summary>

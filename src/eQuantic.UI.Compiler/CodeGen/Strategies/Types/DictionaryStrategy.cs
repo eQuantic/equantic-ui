@@ -110,8 +110,38 @@ internal sealed class DictionaryStrategy : IExpressionIrStrategy
     internal static JsExpr Seeded(ITypeSymbol type, InitializerExpressionSyntax initializer, ConversionContext context)
     {
         context.UsedHelpers.Add(Eq.Import);
-        return Factory(type.DictionaryFactory()!, type,
-            Entries(initializer, context) is { Count: > 0 } pairs ? Pairs(null, pairs) : null);
+        return Initialized(Factory(type.DictionaryFactory()!, type, null), initializer, context);
+    }
+
+    /// <summary>
+    /// The dictionary with its initializer's entries, one call each, in the order C# makes them: a
+    /// collection initializer's <c>{ key, value }</c> by <c>add</c>, which refuses a key already there,
+    /// and an object initializer's <c>[key] = value</c> by the indexer's <c>set</c>, which replaces it
+    /// (#440). One call per entry, chained, so an entry that throws stops the ones after it before
+    /// their keys and values are evaluated, as C# stops them: listed as one array, they all ran first.
+    /// </summary>
+    private static JsExpr Initialized(JsExpr dictionary, InitializerExpressionSyntax? initializer, ConversionContext context)
+    {
+        if (initializer is null) return dictionary;
+        var member = initializer.IsKind(SyntaxKind.ObjectInitializerExpression) ? "set" : "add";
+        foreach (var element in initializer.Expressions)
+        {
+            switch (element)
+            {
+                case InitializerExpressionSyntax { Expressions.Count: 2 } pair:
+                    dictionary = JsExpr.Call(JsExpr.Member(dictionary, member),
+                        context.Converter.ConvertIr(pair.Expressions[0]), context.Converter.ConvertIr(pair.Expressions[1]));
+                    break;
+                case AssignmentExpressionSyntax { Left: ImplicitElementAccessSyntax { ArgumentList.Arguments.Count: 1 } key } assignment:
+                    dictionary = JsExpr.Call(JsExpr.Member(dictionary, member),
+                        context.Converter.ConvertIr(key.ArgumentList.Arguments[0].Expression), context.Converter.ConvertIr(assignment.Right));
+                    break;
+                default:
+                    context.Unhandled(element, "Dictionary initializer");
+                    break;
+            }
+        }
+        return dictionary;
     }
 
     /// <summary>The factory a creation constructs by: its type's, where the model knows the type, and
@@ -137,8 +167,8 @@ internal sealed class DictionaryStrategy : IExpressionIrStrategy
 
     /// <summary>
     /// <c>new Dictionary&lt;K, V&gt;(…) { … }</c>: the factory, seeded by the dictionary or the pairs the
-    /// constructor copies and then the initializer's pairs, in the order C# evaluates them. A capacity
-    /// has no meaning here, and a comparer has no form.
+    /// constructor copies, and then the initializer's entries, one call each. A capacity has no meaning
+    /// here, and a comparer has no form.
     /// </summary>
     private static JsExpr Construction(BaseObjectCreationExpressionSyntax creation, ConversionContext context)
     {
@@ -159,8 +189,7 @@ internal sealed class DictionaryStrategy : IExpressionIrStrategy
             source = context.Converter.ConvertIr(arguments[i].Expression);
         }
 
-        var pairs = Entries(creation.Initializer, context);
-        return Factory(FactoryOf(creation, context)!, type, pairs is { Count: > 0 } ? Pairs(source, pairs) : source);
+        return Initialized(Factory(FactoryOf(creation, context)!, type, source), creation.Initializer, context);
     }
 
     /// <summary><c>factory(seed)</c>, and <c>factory(seed, equality)</c> when the keys are not found by
@@ -178,41 +207,6 @@ internal sealed class DictionaryStrategy : IExpressionIrStrategy
         else if (second is not null) arguments.Add(JsExpr.Literal("null"));
         if (second is not null) arguments.Add(JsExpr.Literal(second));
         return JsExpr.Call(JsExpr.Identifier(factory), arguments);
-    }
-
-    /// <summary>The pairs a constructor seeds with: what it copies, spread, then the initializer's own.</summary>
-    private static JsExpr Pairs(JsExpr? source, IReadOnlyList<string> pairs)
-    {
-        var copied = source is null ? "" : $"...{JsExprWriter.Write(source)}, ";
-        return JsExpr.Literal($"[{copied}{string.Join(", ", pairs)}]");
-    }
-
-    /// <summary>
-    /// The <c>[key, value]</c> pairs an initializer adds, in order: <c>{ key, value }</c> elements of a
-    /// collection initializer, or <c>[key] = value</c> ones of an object initializer. Null for none.
-    /// </summary>
-    private static List<string>? Entries(InitializerExpressionSyntax? initializer, ConversionContext context)
-    {
-        if (initializer is null) return null;
-        var pairs = new List<string>();
-        foreach (var element in initializer.Expressions)
-        {
-            switch (element)
-            {
-                case InitializerExpressionSyntax { Expressions.Count: 2 } pair:
-                    pairs.Add($"[{context.Converter.ConvertExpression(pair.Expressions[0])}, "
-                        + $"{context.Converter.ConvertExpression(pair.Expressions[1])}]");
-                    break;
-                case AssignmentExpressionSyntax { Left: ImplicitElementAccessSyntax { ArgumentList.Arguments.Count: 1 } key } assignment:
-                    pairs.Add($"[{context.Converter.ConvertExpression(key.ArgumentList.Arguments[0].Expression)}, "
-                        + $"{context.Converter.ConvertExpression(assignment.Right)}]");
-                    break;
-                default:
-                    context.Unhandled(element, "Dictionary initializer");
-                    break;
-            }
-        }
-        return pairs;
     }
 
     /// <summary>The call a dictionary answers, or null when this invocation is not one.</summary>
@@ -272,7 +266,8 @@ internal sealed class DictionaryStrategy : IExpressionIrStrategy
         {
             ("ContainsKey", 1) => JsExpr.Call(JsExpr.Member(receiver, "has"), values),
             // `set` replaces the value of a key already there, where .NET's Add throws (#440).
-            ("Add", 2) => JsExpr.Call(JsExpr.Member(receiver, "set"), values),
+            // Add refuses a key already there, as .NET's does, where the indexer's write replaces (#440).
+            ("Add", 2) => JsExpr.Call(JsExpr.Member(receiver, "add"), values),
             ("Remove", 1) => JsExpr.Call(JsExpr.Member(receiver, "delete"), values),
             ("Clear", 0) => JsExpr.Call(JsExpr.Member(receiver, "clear")),
             _ => context.Unhandled(invocation, $"Dictionary.{call}"),

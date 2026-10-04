@@ -118,7 +118,7 @@ public class CollectionInitializerNodeTests
 
         Assert.True(result.Success, string.Join("\n", result.Errors.Select(e => e.Message)));
         Assert.Contains("['a', 'b']", result.TypeScript);
-        Assert.Contains("$eq.collections.dictionary([['a', 1]])", result.TypeScript);
+        Assert.Contains("$eq.collections.dictionary().add('a', 1)", result.TypeScript);
         Assert.DoesNotContain("$n.add('a')", result.TypeScript);
     }
 }
