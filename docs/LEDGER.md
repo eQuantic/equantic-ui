@@ -1158,10 +1158,14 @@ record of a release, the wiki's Upgrading page is the distillate.
   `Range` or `Repeat` did not parse, and `Range(Start(), 3)` called `Start` three times
   ([#539](https://github.com/eQuantic/equantic-ui/issues/539)): each takes its C# as arguments now,
   and `IntroducedFunctionsCoverageTests` counts the functions the lowerings still write by hand, per
-  file, against a baseline that may only shrink. 51 of the 62 conformance cases fail on main. One
-  difference stays, the platform's: .NET runs a filter before the `finally` blocks it unwinds, and
-  JavaScript after. Proposed and archived through OpenSpec (`openspec/specs/transpiler-exceptions`,
-  `openspec/specs/transpiler-expressions`).
+  file, against a baseline that may only shrink. #539 stays open for two of them: the body an out
+  parameter runs in, which #566 makes IR, and the null-conditional tail behind a receiver that is not
+  a local, after #536. 51 of the 62 conformance cases fail on main. Typed catches exposed five
+  `Parse` twins of the date and time types, `string.Format` and `new string(char[], int, int)`
+  reading a null argument through null, a NullReferenceException where .NET refuses it by name with
+  an ArgumentNullException, and each refuses it now. One difference stays, the platform's: .NET runs
+  a filter before the `finally` blocks it unwinds, and JavaScript after. Proposed and archived through
+  OpenSpec (`openspec/specs/transpiler-exceptions`, `openspec/specs/transpiler-expressions`).
 
 ## Retired documents
 

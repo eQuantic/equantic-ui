@@ -1,6 +1,8 @@
 # Proposal
 
-Closes #474 and #539, sub-issues of #164.
+Closes #474 and part of #539, sub-issues of #164. #539 stays open for the body an out parameter runs
+in, which #566 makes IR, and the null-conditional tail behind a receiver that is not a local, after
+#536.
 
 ## Why
 

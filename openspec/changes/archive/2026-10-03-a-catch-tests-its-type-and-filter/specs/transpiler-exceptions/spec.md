@@ -25,6 +25,14 @@ type SHALL test that type.
 - **WHEN** `string s = null; try { return s.Length; } catch (ArgumentException) { return 1; } catch (NullReferenceException) { return 2; }` runs
 - **THEN** it answers 2, as .NET does
 
+#### Scenario: A null argument a .NET method refuses by name
+
+- **WHEN** `DateTime.Parse(null!)`, `string.Format(format, 1)` with a null `format`, or
+  `new string((char[])null!, 0, 0)` runs inside `try` with clauses for `NullReferenceException` and
+  `ArgumentNullException`
+- **THEN** the `ArgumentNullException` clause takes it, its message naming the parameter as .NET's
+  does, where reading the argument through null threw a NullReferenceException
+
 #### Scenario: An exception class of the app's own
 
 - **WHEN** `class GateClosedException : InvalidOperationException` is thrown and caught by
