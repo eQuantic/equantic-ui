@@ -98,7 +98,7 @@ public class RecordKeyedDictionaryConformanceTests
 
         var stringKeyed = Transpiler.TranspileExpression(
             "new Dictionary<string, int> { { \"a\", 1 }, { \"b\", 2 } }[\"a\"]");
-        stringKeyed.Should().Contain("$eq.mapGet($eq.collections.dictionary([['a', 1], ['b', 2]]), 'a')");
+        stringKeyed.Should().Contain("$eq.mapGet($eq.collections.dictionary().add('a', 1).add('b', 2), 'a')");
 
         var intKeyed = Transpiler.TranspileStatements(
             "var d = new Dictionary<int, int>(); d[1] = 10; return d.Count;");

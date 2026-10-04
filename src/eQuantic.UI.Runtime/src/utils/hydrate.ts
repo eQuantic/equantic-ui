@@ -60,7 +60,8 @@ export interface DictionarySpec {
   readonly dict: HydrationSpec | null;
   readonly key?: HydrationKey;
   readonly byValue?: true | 'own';
-  readonly sorted?: true;
+  /** A sorted one, and which of .NET's two: a `SortedList` refuses a key already there in its own words. */
+  readonly sorted?: 'dictionary' | 'list';
   /** How a sorted one orders its keys, by their type; absent for a type with no order of its own here. */
   readonly order?: Ordering;
 }
@@ -174,7 +175,7 @@ function dictionary(incoming: unknown, spec: DictionarySpec): unknown {
       ] as const,
   );
   return spec.sorted
-    ? new SortedMap(entries, spec.order === undefined ? undefined : comparerOf(spec.order))
+    ? new SortedMap(entries, spec.order === undefined ? undefined : comparerOf(spec.order), spec.sorted)
     : new Dictionary(entries, spec.byValue ?? false);
 }
 
