@@ -125,6 +125,21 @@ const eQuantic.UI.Compiler.CodeGen.Eq.RecordText = "$eq.text.record" -> string!
 *REMOVED*eQuantic.UI.Compiler.Models.PropertyDefinition.DefaultValue.set -> void
 *REMOVED*eQuantic.UI.Compiler.Models.StateField.DefaultValue.get -> string?
 *REMOVED*eQuantic.UI.Compiler.Models.StateField.DefaultValue.set -> void
+const eQuantic.UI.Compiler.CodeGen.Eq.Hash = "$eq.hash.of" -> string!
+const eQuantic.UI.Compiler.CodeGen.Eq.HashCombine = "$eq.hash.combine" -> string!
+const eQuantic.UI.Compiler.CodeGen.Eq.HashIdentity = "$eq.hash.identity" -> string!
+const eQuantic.UI.Compiler.CodeGen.Eq.HashInstance = "$eq.hash.instance" -> string!
+eQuantic.UI.Compiler.CodeGen.Strategies.Types.GetHashCodeStrategy
+eQuantic.UI.Compiler.CodeGen.Strategies.Types.GetHashCodeStrategy.CanConvert(Microsoft.CodeAnalysis.SyntaxNode! node, eQuantic.UI.Compiler.CodeGen.ConversionContext! context) -> bool
+eQuantic.UI.Compiler.CodeGen.Strategies.Types.GetHashCodeStrategy.ConvertIr(Microsoft.CodeAnalysis.SyntaxNode! node, eQuantic.UI.Compiler.CodeGen.ConversionContext! context) -> eQuantic.UI.Compiler.CodeGen.Ir.JsExpr!
+eQuantic.UI.Compiler.CodeGen.Strategies.Types.GetHashCodeStrategy.GetHashCodeStrategy() -> void
+eQuantic.UI.Compiler.CodeGen.Strategies.Types.GetHashCodeStrategy.Priority.get -> int
+const eQuantic.UI.Compiler.CodeGen.Eq.GuidParse = "$eq.guid.parse" -> string!
+const eQuantic.UI.Compiler.CodeGen.Eq.GuidTryParse = "$eq.guid.tryParse" -> string!
+eQuantic.UI.Compiler.CodeGen.Strategies.Types.GuidTypeStrategy.ConvertIr(Microsoft.CodeAnalysis.SyntaxNode! node, eQuantic.UI.Compiler.CodeGen.ConversionContext! context) -> eQuantic.UI.Compiler.CodeGen.Ir.JsExpr!
+*REMOVED*eQuantic.UI.Compiler.CodeGen.Strategies.Types.GuidTypeStrategy.Convert(Microsoft.CodeAnalysis.SyntaxNode! node, eQuantic.UI.Compiler.CodeGen.ConversionContext! context) -> string!
+const eQuantic.UI.Compiler.CodeGen.Eq.HashFields = "$eq.hash.fields" -> string!
+const eQuantic.UI.Compiler.CodeGen.Eq.HashGroup = "$eq.hash.group" -> string!
 *REMOVED*static eQuantic.UI.Compiler.CodeGen.Ir.JsStatement.Throw(eQuantic.UI.Compiler.CodeGen.Ir.JsExpr? value) -> eQuantic.UI.Compiler.CodeGen.Ir.JsStatement!
 *REMOVED*eQuantic.UI.Compiler.CodeGen.Ir.JsThrow.Deconstruct(out eQuantic.UI.Compiler.CodeGen.Ir.JsExpr? Value) -> void
 *REMOVED*eQuantic.UI.Compiler.CodeGen.Ir.JsThrow.JsThrow(eQuantic.UI.Compiler.CodeGen.Ir.JsExpr? Value) -> void

@@ -23,13 +23,14 @@ public class TypeStrategyTests
     public void Guid_Empty_MapsTo_ZeroUUID()
     {
         var result = TestHelper.ConvertExpression("Guid.Empty");
-        result.Should().Be("\"00000000-0000-0000-0000-000000000000\"");
+        result.Should().Be("'00000000-0000-0000-0000-000000000000'");
     }
     
     [Fact]
-    public void Guid_Parse_MapsTo_String()
+    public void Guid_Parse_ReadsTheCanonicalText()
     {
+        // The text .NET writes for the Guid, whatever spelling it was read from (#459).
         var result = TestHelper.ConvertExpression("Guid.Parse(\"abc\")");
-        result.Should().Be("'abc'");
+        result.Should().Be("$eq.guid.parse('abc')");
     }
 }
