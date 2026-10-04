@@ -40,8 +40,7 @@ public static class CollectionComparerExtensions
         foreach (var argument in operation.Arguments)
         {
             if (argument.ArgumentKind == ArgumentKind.DefaultValue) continue;
-            if (argument.Parameter?.Type is not INamedTypeSymbol parameter) continue;
-            if (!IsNamed(parameter, "IEqualityComparer`1") && !IsNamed(parameter, "IComparer`1")) continue;
+            if (!(argument.Parameter?.Type).IsCollectionComparer()) continue;
             if (AsksForTheDefault(argument.Value)) continue;
 
             context.Report(argument.Syntax, ConversionSeverity.Error, "EQ2007",
@@ -51,6 +50,16 @@ public static class CollectionComparerExtensions
                 + "or drop the comparer.");
         }
     }
+
+    /// <summary>
+    /// Whether <paramref name="type"/> is a collection constructor's COMPARER parameter:
+    /// <c>IEqualityComparer&lt;T&gt;</c> or <c>IComparer&lt;T&gt;</c> of System.Collections.Generic.
+    /// The one answer to "which argument is the comparer", for this fence and for every strategy that
+    /// builds a collection and has to skip it: a strategy that asks the question its own way is the
+    /// copy that refused <c>StringComparer.Ordinal</c> while this fence passed it (#577).
+    /// </summary>
+    internal static bool IsCollectionComparer(this ITypeSymbol? type) =>
+        type is INamedTypeSymbol named && (IsNamed(named, "IEqualityComparer`1") || IsNamed(named, "IComparer`1"));
 
     /// <summary>
     /// Whether the comparer asks for nothing the lowering does not already do: <c>null</c> (the

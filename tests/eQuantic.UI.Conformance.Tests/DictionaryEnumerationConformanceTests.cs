@@ -198,6 +198,9 @@ public class DictionaryEnumerationConformanceTests
     [InlineData("var d = new SortedDictionary<string, int>(StringComparer.Ordinal) { [\"b\"] = 1, [\"B\"] = 2, [\"a\"] = 3 }; var r = \"\"; foreach (var k in d.Keys) r += \",\" + k; return r;")] // ",B,a,b"
     [InlineData("var d = new SortedList<string, int>(StringComparer.Ordinal) { [\"b\"] = 1, [\"B\"] = 2, [\"a\"] = 3 }; var r = \"\"; foreach (var k in d.Keys) r += \",\" + k; return r;")] // ",B,a,b"
     [InlineData("var d = new SortedDictionary<string, int>(Comparer<string>.Default) { [\"b\"] = 1, [\"B\"] = 2, [\"a\"] = 3 }; var r = \"\"; foreach (var k in d.Keys) r += \",\" + k; return r;")] // ",a,b,B"
+    // Named out of parameter order, and the pairs a constructor copies: the comparer is never the seed.
+    [InlineData("var source = new Dictionary<string, int> { [\"a\"] = 1 }; var d = new Dictionary<string, int>(comparer: StringComparer.Ordinal, dictionary: source); return d.Count + \"|\" + d[\"a\"];")] // "1|1"
+    [InlineData("var pairs = new List<KeyValuePair<string, int>> { new KeyValuePair<string, int>(\"b\", 2), new KeyValuePair<string, int>(\"a\", 1) }; var d = new Dictionary<string, int>(pairs, StringComparer.Ordinal); var r = \"\"; foreach (var k in d.Keys) r += \",\" + k; return r + \"|\" + d[\"a\"];")] // ",b,a|1"
     public void ADictionaryBuiltWithTheDefaultComparer_MatchesDotNet(string statements)
     {
         Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");

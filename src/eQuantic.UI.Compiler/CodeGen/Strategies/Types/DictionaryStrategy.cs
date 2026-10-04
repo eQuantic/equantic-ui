@@ -186,19 +186,25 @@ internal sealed class DictionaryStrategy : IExpressionIrStrategy
     private static JsExpr Construction(BaseObjectCreationExpressionSyntax creation, ConversionContext context)
     {
         var type = context.SemanticHelper.GetType(creation);
+        var factory = FactoryOf(creation, context)!;
         context.UsedHelpers.Add(Eq.Import);
         JsExpr? source = null;
         string? ordering = null;
 
         if (context.SemanticHelper.GetOperation(creation) is IObjectCreationOperation operation)
         {
-            var key = type is INamedTypeSymbol { TypeArguments: [var keyType, _] } ? keyType : null;
+            // Read in PARAMETER order, which the bound operation gives whatever order a named argument
+            // was written in. Only the seed is converted: a capacity and a comparer are dropped, and
+            // the fence has already refused a comparer whose evaluation could matter.
+            var key = factory != Eq.Dictionary && type is INamedTypeSymbol { TypeArguments: [var keyType, _] }
+                ? keyType
+                : null;
             foreach (var argument in operation.Arguments)
             {
                 if (argument.ArgumentKind == ArgumentKind.DefaultValue) continue;
                 var parameter = argument.Parameter?.Type;
                 if (parameter?.SpecialType == SpecialType.System_Int32) continue;
-                if (parameter?.Name is "IEqualityComparer" or "IComparer")
+                if (parameter.IsCollectionComparer())
                 {
                     if (key is not null) ordering = argument.Value.OrderingAskedFor(key);
                     continue;
@@ -208,15 +214,23 @@ internal sealed class DictionaryStrategy : IExpressionIrStrategy
         }
         else
         {
-            // No model to ask which parameter an argument fills: a number is a capacity.
-            foreach (var argument in creation.ArgumentList?.Arguments ?? default)
+            // No operation to read. Where the model still binds the constructor (a node only a
+            // strategy's symbol override knows), its parameters say which argument is which, as they
+            // did before #577; where nothing binds, a number is a capacity.
+            var constructor = context.SemanticHelper.GetSymbol(creation) as IMethodSymbol;
+            var arguments = creation.ArgumentList?.Arguments ?? default;
+            for (var i = 0; i < arguments.Count; i++)
             {
-                if (argument.Expression.IsKind(SyntaxKind.NumericLiteralExpression)) continue;
-                source = context.Converter.ConvertIr(argument.Expression);
+                var parameter = constructor?.Parameters.ElementAtOrDefault(i)?.Type;
+                var dropped = parameter is null
+                    ? arguments[i].Expression.IsKind(SyntaxKind.NumericLiteralExpression)
+                    : parameter.SpecialType == SpecialType.System_Int32 || parameter.IsCollectionComparer();
+                if (dropped) continue;
+                source = context.Converter.ConvertIr(arguments[i].Expression);
             }
         }
 
-        return Initialized(Factory(FactoryOf(creation, context)!, type, source, ordering), creation.Initializer, context);
+        return Initialized(Factory(factory, type, source, ordering), creation.Initializer, context);
     }
 
     /// <summary><c>factory(seed)</c>, and <c>factory(seed, equality)</c> when the keys are not found by
