@@ -63,7 +63,7 @@ public class NestedCapabilityTests
         var context = new DefaultHttpContext { RequestServices = scope.ServiceProvider };
         var service = scope.ServiceProvider.GetRequiredService<IServerRenderingService>();
 
-        var result = await service.RenderPageAsync(nameof(NestedPage), context);
+        var result = await service.RenderPageAsync(typeof(NestedPage), context);
 
         result.Success.Should().BeTrue(result.Error);
         result.Html.Should().Contain("from the container",
@@ -87,7 +87,7 @@ public class NestedCapabilityTests
         var context = new DefaultHttpContext { RequestServices = scope.ServiceProvider };
 
         var result = await scope.ServiceProvider.GetRequiredService<IServerRenderingService>()
-            .RenderPageAsync(nameof(NestedPage), context);
+            .RenderPageAsync(typeof(NestedPage), context);
 
         result.Success.Should().BeTrue(result.Error);
     }
@@ -105,7 +105,7 @@ public class NestedCapabilityTests
 
         using var scope = root.CreateScope();
         await scope.ServiceProvider.GetRequiredService<IServerRenderingService>()
-            .RenderPageAsync(nameof(NestedPage), new DefaultHttpContext { RequestServices = scope.ServiceProvider });
+            .RenderPageAsync(typeof(NestedPage), new DefaultHttpContext { RequestServices = scope.ServiceProvider });
 
         CapabilityScope.Resolve<IClipboardish>().Should().BeNull();
     }

@@ -48,14 +48,14 @@ public class MapPageTests
     /// document for no visible reason.
     /// </summary>
     [Fact]
-    public async Task AMappedPage_IsRenderableByName()
+    public async Task AMappedPage_IsRenderableByType()
     {
         await using var app = BuildApp();
 
         var service = app.Services.GetRequiredService<IServerRenderingService>();
         var context = new DefaultHttpContext { RequestServices = app.Services };
 
-        var result = await service.RenderPageAsync(nameof(UnattributedPage), context);
+        var result = await service.RenderPageAsync(typeof(UnattributedPage), context);
 
         result.Success.Should().BeTrue(result.Error);
         result.Html.Should().Contain("mapped from Program",

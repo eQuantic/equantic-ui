@@ -239,7 +239,7 @@ public static class UIExtensions
 
         // The same two endpoints a [Page] gets — the route, and its language-prefixed twin.
         foreach (var pattern in CultureEndpointPatterns(options, route))
-            endpoints.MapGet(pattern, async context => await ServeAppShell(context, pageType.Name, new DeclaredPage(title, null)));
+            endpoints.MapGet(pattern, async context => await ServeAppShell(context, pageType, new DeclaredPage(title, null)));
         return endpoints;
     }
 
@@ -293,11 +293,10 @@ public static class UIExtensions
                 {
                     // The bare route, plus the constrained one when the app declared languages.
                     var declared = new DeclaredPage(pageAttr.Title, pageAttr.Description);
+                    // The endpoint carries the page's TYPE: by its simple name, two pages of one name in
+                    // two namespaces rendered as one (#514).
                     foreach (var route in CultureEndpointPatterns(options, pageAttr.Route))
-                    {
-                        var name = pageType.Name;
-                        endpoints.MapGet(route, async context => await ServeAppShell(context, name, declared));
-                    }
+                        endpoints.MapGet(route, async context => await ServeAppShell(context, pageType, declared));
                 }
             }
         }
@@ -538,7 +537,7 @@ public static class UIExtensions
     /// link would cost more than the round trip it saves.
     /// </para>
     /// </summary>
-    private static async Task ServePageState(HttpContext context, string? pageName, DeclaredPage? declared)
+    private static async Task ServePageState(HttpContext context, Type? page, DeclaredPage? declared)
     {
         context.Response.ContentType = "application/json; charset=utf-8";
         // Never cached: this is the page's data, and the next visitor's is not this one's.
@@ -555,7 +554,7 @@ public static class UIExtensions
         // previous page's description and canonical stayed.
         var options = context.RequestServices.GetRequiredService<UIOptions>();
         var metadata = PageMetadata(context, options, declared);
-        var prepared = await PreparedOrNull(context, options, pageName);
+        var prepared = await PreparedOrNull(context, options, page);
         if (prepared is not null)
         {
             // The page's own answer travels too — a route that matched while its content did not
@@ -581,15 +580,15 @@ public static class UIExtensions
     /// able to 500 the app: without the payload's state the page renders its empty state, which is
     /// exactly where it was before this endpoint existed.
     /// </summary>
-    private static async Task<ServerRenderResult?> PreparedOrNull(HttpContext context, UIOptions options, string? pageName)
+    private static async Task<ServerRenderResult?> PreparedOrNull(HttpContext context, UIOptions options, Type? page)
     {
-        var rendering = pageName is null || !options.EnableSsr
+        var rendering = page is null || !options.EnableSsr
             ? null
             : context.RequestServices.GetService<IServerRenderingService>();
         if (rendering is null) return null;
         try
         {
-            var result = await rendering.PreparePageAsync(pageName!, context);
+            var result = await rendering.PreparePageAsync(page!, context);
             return result.Success ? result : null;
         }
         catch (Exception)
@@ -626,12 +625,12 @@ public static class UIExtensions
         return true;
     }
 
-    private static async Task ServeAppShell(HttpContext context, string? pageName, DeclaredPage? declared)
+    private static async Task ServeAppShell(HttpContext context, Type? page, DeclaredPage? declared)
     {
         // A client navigation asks the same route for the page's data instead of a document.
         if (context.Request.Headers.ContainsKey(NavigationHeader))
         {
-            await ServePageState(context, pageName, declared);
+            await ServePageState(context, page, declared);
             return;
         }
 
@@ -715,14 +714,14 @@ public static class UIExtensions
             }
         }
 
-        if (pageName != null && options.EnableSsr)
+        if (page != null && options.EnableSsr)
         {
             var renderingService = context.RequestServices.GetService<IServerRenderingService>();
             if (renderingService != null)
             {
                 try
                 {
-                    var result = await renderingService.RenderPageAsync(pageName, context);
+                    var result = await renderingService.RenderPageAsync(page, context);
                     if (result.Success && result.Html != null)
                     {
                         AdoptSsr(result);
@@ -741,18 +740,18 @@ public static class UIExtensions
                 catch (Exception ex)
                 {
                     var logger = context.RequestServices.GetService<ILogger<UIOptions>>();
-                    logger?.LogWarning(ex, "SSR failed for page {PageName}, falling back to client-side rendering", pageName);
+                    logger?.LogWarning(ex, "SSR failed for page {PageName}, falling back to client-side rendering", page.FullName);
                 }
             }
         }
 
-        if (pageName == null)
+        if (page == null)
         {
             // 404 Not Found Handling — the fallback endpoint already set the status; here the
             // app's registered /404 page (if any) takes over the CONTENT.
             if (options.NotFoundPageType != null)
             {
-                pageName = options.NotFoundPageType.Name;
+                page = options.NotFoundPageType;
                 
                 // Try to render the 404 page via SSR
                 if (options.EnableSsr)
@@ -762,7 +761,7 @@ public static class UIExtensions
                         var renderingService = context.RequestServices.GetService<IServerRenderingService>();
                         if (renderingService != null)
                         {
-                            var result = await renderingService.RenderPageAsync(pageName, context);
+                            var result = await renderingService.RenderPageAsync(page, context);
                             if (result.Success && result.Html != null)
                             {
                                 AdoptSsr(result);
@@ -791,7 +790,7 @@ public static class UIExtensions
         // the branch above exists to hold, that a 404 page failing must not fail the 404.
         var alreadyNotFound = context.Response.StatusCode == StatusCodes.Status404NotFound;
 
-        if (!ssrEnabled && pageName != null && options.EnableSsr && !alreadyNotFound)
+        if (!ssrEnabled && page != null && options.EnableSsr && !alreadyNotFound)
         {
             // If we are here, it means SSR failed or was disabled.
             // We need to check if it failed due to an exception (which we can't easily track from here without earlier logic change)
@@ -805,15 +804,15 @@ public static class UIExtensions
                 // Re-attempt SSR with the 500 page
                 try
                 {
-                    var errorPageName = options.ErrorPageType.Name;
+                    var errorPage = options.ErrorPageType;
                     var renderingService = context.RequestServices.GetService<IServerRenderingService>();
                     if (renderingService != null)
                     {
-                         var result = await renderingService.RenderPageAsync(errorPageName, context);
+                         var result = await renderingService.RenderPageAsync(errorPage, context);
                          if (result.Success && result.Html != null)
                          {
                              context.Response.StatusCode = 500;
-                             pageName = errorPageName;
+                             page = errorPage;
                              // The error page is not the route that failed: it speaks over the
                              // app's defaults, never under the failed route's title.
                              metadata = PageMetadata(context, options, null);
@@ -844,7 +843,9 @@ public static class UIExtensions
         // serializer's default encoder escapes every code unit a script cannot carry, `<` among them,
         // and JSON is a JavaScript expression.
         var configJson = JsonSerializer.Serialize(new ClientConfig(
-            Page: pageName,
+            // The page's MODULE, which the build names after the type alone (EQ1005 refuses two of
+            // one name in a project).
+            Page: page?.Name,
             Version: BuildId,
             Ssr: ssrEnabled,
             // The cookie config crosses to the browser because the browser is what WRITES it while the

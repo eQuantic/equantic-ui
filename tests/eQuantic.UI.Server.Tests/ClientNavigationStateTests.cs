@@ -157,7 +157,7 @@ public class ClientNavigationStateTests
         var context = new DefaultHttpContext { RequestServices = scope.ServiceProvider };
         context.Request.Path = "/probe";
 
-        var prepared = await rendering.PreparePageAsync(nameof(ProbePage), context);
+        var prepared = await rendering.PreparePageAsync(typeof(ProbePage), context);
 
         prepared.Success.Should().BeTrue();
         prepared.Html.Should().BeEmpty("the drawing is the part a navigation does not need");

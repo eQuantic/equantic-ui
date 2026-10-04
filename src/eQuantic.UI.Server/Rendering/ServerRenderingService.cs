@@ -23,7 +23,10 @@ public class ServerRenderingService : IServerRenderingService
     private readonly IServiceProvider _serviceProvider;
     private readonly UIOptions _options;
     private readonly ILogger<ServerRenderingService> _logger;
-    private readonly Dictionary<string, Type> _pageTypes = new();
+    /// <summary>The pages this service renders, each by its TYPE. Keyed by the simple name, two pages of
+    /// one name in two namespaces were one entry: the one registered last took it, and the other's
+    /// route rendered it, with no error and no log line (#514).</summary>
+    private readonly HashSet<Type> _pageTypes = new();
 
     public ServerRenderingService(
         IServiceProvider serviceProvider,
@@ -60,8 +63,8 @@ public class ServerRenderingService : IServerRenderingService
 
                 foreach (var type in pageTypes)
                 {
-                    _pageTypes[type.Name] = type;
-                    _logger.LogDebug("Registered page type for SSR: {PageType}", type.Name);
+                    _pageTypes.Add(type);
+                    _logger.LogDebug("Registered page type for SSR: {PageType}", type.FullName);
                 }
             }
             catch (Exception ex)
@@ -70,24 +73,24 @@ public class ServerRenderingService : IServerRenderingService
             }
         }
 
-        // Pages routed from Program.cs with MapPage<T> rather than a [Page] attribute. They are
-        // indexed by the same name the endpoint serves, so everything downstream cannot tell the
-        // two ways of declaring a route apart — which is the point.
+        // Pages routed from Program.cs with MapPage<T> rather than a [Page] attribute, held as the
+        // endpoint serves them, so everything downstream cannot tell the two ways of declaring a
+        // route apart — which is the point.
         foreach (var (_, page, _) in _options.DeclaredRoutes)
         {
-            _pageTypes[page.Name] = page;
+            _pageTypes.Add(page);
         }
 
         _logger.LogInformation("SSR initialized with {Count} page types", _pageTypes.Count);
     }
 
     /// <inheritdoc />
-    public Task<ServerRenderResult> RenderPageAsync(string pageTypeName, HttpContext context) =>
-        RunAsync(pageTypeName, context, draw: true);
+    public Task<ServerRenderResult> RenderPageAsync(Type pageType, HttpContext context) =>
+        RunAsync(pageType, context, draw: true);
 
     /// <inheritdoc />
-    public Task<ServerRenderResult> PreparePageAsync(string pageTypeName, HttpContext context) =>
-        RunAsync(pageTypeName, context, draw: false);
+    public Task<ServerRenderResult> PreparePageAsync(Type pageType, HttpContext context) =>
+        RunAsync(pageType, context, draw: false);
 
     /// <summary>
     /// The page's whole server-side moment, with the DRAWING optional.
@@ -98,14 +101,10 @@ public class ServerRenderingService : IServerRenderingService
     /// as a full page.
     /// </para>
     /// </summary>
-    private async Task<ServerRenderResult> RunAsync(string pageTypeName, HttpContext context, bool draw)
+    private async Task<ServerRenderResult> RunAsync(Type pageType, HttpContext context, bool draw)
     {
-        if (string.IsNullOrEmpty(pageTypeName))
-        {
-            return ServerRenderResult.NotAvailable();
-        }
-
-        if (!_pageTypes.TryGetValue(pageTypeName, out var pageType))
+        var pageTypeName = pageType.FullName ?? pageType.Name;
+        if (!_pageTypes.Contains(pageType))
         {
             _logger.LogWarning("Page type not found for SSR: {PageType}", pageTypeName);
             return ServerRenderResult.NotAvailable();
@@ -561,12 +560,9 @@ public class ServerRenderingService : IServerRenderingService
     }
 
     /// <inheritdoc />
-    public bool IsSsrEnabled(string pageTypeName)
+    public bool IsSsrEnabled(Type pageType)
     {
-        if (string.IsNullOrEmpty(pageTypeName))
-            return false;
-
-        if (!_pageTypes.TryGetValue(pageTypeName, out var pageType))
+        if (!_pageTypes.Contains(pageType))
             return false;
 
         var pageAttr = pageType.GetCustomAttributes<PageAttribute>().FirstOrDefault();

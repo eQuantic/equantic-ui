@@ -1226,6 +1226,19 @@ record of a release, the wiki's Upgrading page is the distillate.
   back (`Cast`, `DefaultIfEmpty`) and a read-only face hiding a list, and both copy now. Each is a
   conformance case on both sides that failed against main. Proposed and archived through OpenSpec
   (`openspec/specs/transpiler-sequences`).
+- **2026-10-04 · The compiler suite's aborts are gone**: under load its test host crashed in 2 of 6
+  runs on macOS arm64, and `dotnet test` still printed `Passed!` with the count that ran
+  ([#473](https://github.com/eQuantic/equantic-ui/issues/473)). Measured after #481 cut the suite's own
+  test host from 29 GB to about 6 GB: 27 runs on main, 12 of them beside a full conformance run and
+  seven of those beside two or three other test hosts, all exit 0 with Total 1439. No runtime setting
+  is called for, and nothing under `scripts/` or `.github/` reads the `Passed!` line.
+- **2026-10-04 · Two pages of one name each serve their own route**: the server held its pages by their
+  simple name, so of two `Dashboard` pages in two namespaces the one registered last answered at both
+  routes, with no error ([#514](https://github.com/eQuantic/equantic-ui/issues/514)). Each endpoint
+  carries its page's type to the shell, the navigation state and the SSR, and the rendering service
+  holds its pages by type: `IServerRenderingService` takes a `Type` where it took a name, a break.
+  `SameNamedPagesTests` serves both over the real pipeline, and the shop's route rendered the admin's
+  page against main. Recorded in `openspec/specs/page-routes`.
 - **2026-10-04 · A source map keeps every line it came from**: three carriers still wrote what they
   held as text before any writer saw it, so none of their statements had a segment of its own: the
   arrow a body with an `out` or `ref` parameter runs in
