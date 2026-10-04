@@ -168,6 +168,10 @@ public class CSharpToJsConverter
     /// <summary>The statement layout in force — what the emitter hands its builder.</summary>
     public JsLayout Layout => _context.Layout;
 
+    /// <summary>The depth of the block being converted, which an arrow a lowering adds is laid out at
+    /// (<see cref="InBlock{T}"/>).</summary>
+    internal int Depth => _context.Depth;
+
     /// <summary>See <see cref="ConversionContext.UsedAppTypes"/> — output-introduced app-type names.</summary>
     public HashSet<string> UsedAppTypes => _context.UsedAppTypes;
 
@@ -215,6 +219,7 @@ public class CSharpToJsConverter
         _strategyRegistry.Register<EnumHasFlagStrategy>();
         _strategyRegistry.Register<NullableStrategy>();
         _strategyRegistry.Register<StructuralEqualsStrategy>();
+        _strategyRegistry.Register<GetHashCodeStrategy>();
         _strategyRegistry.Register<KeyValuePairStrategy>();
         _strategyRegistry.Register<ReferenceEqualsStrategy>();
         _strategyRegistry.Register<EventSubscriptionStrategy>();
@@ -600,17 +605,27 @@ public class CSharpToJsConverter
     }
 
     /// <summary>
-    /// A concise body (an expression-bodied lambda or local function) as the block it stands for:
-    /// what the expression declares in front of its return, both mapped to the expression, and the
-    /// expression converted at the depth of the block's statements, so what it lays out (a lambda's
-    /// block) indents as it would inside that block. The local function and the lambda each built
-    /// their own, and mapped the declarations two ways (found in review, #384).
+    /// A concise body as the block it stands for: what the expression declares, then its return, or
+    /// the expression alone where the body returns nothing (a setter, a constructor), mapped to the
+    /// expression and converted at the depth of the block's statements, so what it lays out (a
+    /// lambda's block) indents as it would inside that block and keeps its lines (#384).
+    /// <para>
+    /// The ONE lowering of a concise body: a lambda's, a local function's and every member's. The
+    /// local function and the lambda each built their own and mapped the declarations two ways (found
+    /// in review, #384), and the members wrote theirs as a raw statement, so a lambda inside an
+    /// expression-bodied member kept no line of its own (#492).
+    /// </para>
     /// </summary>
-    public JsStatement ConvertExpressionBodyIr(ExpressionSyntax expression) =>
-        JsStatement.Block([
+    /// <param name="expression">The body.</param>
+    /// <param name="returns">Whether the body returns the expression's value: false for a setter's
+    /// and a constructor's, which have nothing to return.</param>
+    public JsBlock ConvertExpressionBodyIr(ExpressionSyntax expression, bool returns) =>
+        new([
             JsStatement.Hoisted(
                 ExpressionVariableScanner.Declarations(expression, _context.TypeAnnotations),
-                JsStatement.Return(InBlock(() => ConvertIr(expression)))) with { Origin = expression },
+                InBlock(() => returns
+                    ? JsStatement.Return(ConvertIr(expression))
+                    : JsStatement.Expression(ConvertIr(expression)))) with { Origin = expression },
         ]);
 
     /// <summary>The block as text, laid out at the current depth — what a strategy still

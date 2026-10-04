@@ -1,1 +1,2 @@
 #nullable enable
+eQuantic.UI.Codegen.JsonWriter.Strings(string! name, System.Collections.Generic.IEnumerable<string?>! values) -> eQuantic.UI.Codegen.JsonWriter!

@@ -1,8 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text.Encodings.Web;
-using System.Text.Json;
 using System.Text.Json.Nodes;
 
 namespace eQuantic.UI.Compiler.Services;
@@ -19,18 +17,16 @@ namespace eQuantic.UI.Compiler.Services;
 /// to a position with no source becomes a position with no source, and a segment that repeats the
 /// one before it adds nothing. A source that carries no map stays as the outer map names it. The one
 /// difference is what the script lost: bun's <c>debugId</c>, which an error reporter matches a map
-/// by, is kept.
+/// by, is kept. A source eqc's own map names keeps its number through the trace, so a module written
+/// from two files (a class and the interface whose default it takes, #490) leads to both.
+/// </para>
+/// <para>
+/// The composed map is written by the one writer of a map, <see cref="SourceMapWriter"/>, as eqc's
+/// own map is.
 /// </para>
 /// </summary>
 public static class SourceMapComposer
 {
-    private static readonly JsonSerializerOptions Writing = new()
-    {
-        // A map is read by a debugger and never embedded in markup, and its sources carry the C#:
-        // the default escaping would turn every '<' of a generic argument into a six-character escape.
-        Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
-    };
-
     /// <summary>
     /// <paramref name="outerMap"/> composed with the maps its sources carry. <paramref name="innerMapOf"/>
     /// is handed each source by the path the outer map names it with (its sourceRoot joined) and
@@ -227,17 +223,8 @@ public static class SourceMapComposer
                 : [column, sourceAt, sourceLine, sourceColumn, nameAt]);
         }
 
-        public string Write(string? file, string? debugId)
-        {
-            var map = new JsonObject { ["version"] = 3 };
-            if (file is not null) map["file"] = file;
-            map["sources"] = new JsonArray([.. _sources.Select(source => (JsonNode?)JsonValue.Create(source))]);
-            if (_contents.Any(content => content is not null))
-                map["sourcesContent"] = new JsonArray([.. _contents.Select(content => (JsonNode?)(content is null ? null : JsonValue.Create(content)))]);
-            map["names"] = new JsonArray([.. _names.Select(name => (JsonNode?)JsonValue.Create(name))]);
-            map["mappings"] = Base64Vlq.EncodeMappings(_lines);
-            if (debugId is not null) map["debugId"] = debugId;
-            return map.ToJsonString(Writing);
-        }
+        /// <summary>The composed map, its sources already resolved, so with no root of its own.</summary>
+        public string Write(string? file, string? debugId) =>
+            SourceMapWriter.Write(file, sourceRoot: null, _sources, _contents, _names, Base64Vlq.EncodeMappings(_lines), debugId);
     }
 }

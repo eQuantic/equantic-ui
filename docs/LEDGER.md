@@ -1142,6 +1142,23 @@ record of a release, the wiki's Upgrading page is the distillate.
   stops the client of every page ([#526](https://github.com/eQuantic/equantic-ui/issues/526)).
   Proposed and archived through OpenSpec (`openspec/specs/transpiler-expressions`,
   `openspec/specs/transpiler-source-maps`).
+- **2026-10-03 · A value hashes as it equals**: `x.GetHashCode()` was a call of a `getHashCode` nothing
+  defines, for a string, a number and a record alike, and threw in the browser, and `HashCode.Combine`
+  named a class nothing defines ([#519](https://github.com/eQuantic/equantic-ui/issues/519)). The
+  runtime's hash (`$eq.hash`) agrees with `$eq.equals` case by case, so values `Equals` finds equal
+  hash equal, a decimal of any scale and a date by its ticks included; a record's and a struct's
+  twin carry a `getHashCode` written from the members their `equals` reads, a type that overrides
+  `GetHashCode` answers its own, and a class that does not is hashed by its identity. .NET's own
+  numbers are not stable across processes, so the browser keeps the contract and never the server's
+  number. A Guid made from text is its canonical text, the lowercase `D` format, so two spellings
+  of one Guid are one value to `==`, a dictionary and a set
+  ([#459](https://github.com/eQuantic/equantic-ui/issues/459)), and a date leaving the calendar is
+  refused in .NET's words, the operators naming their own parameter, where the twin built the invalid
+  date without a word and `d -= span` subtracted two objects into NaN
+  ([#424](https://github.com/eQuantic/equantic-ui/issues/424)). The hash strategy was written and not
+  registered, and the conformance suite caught it: `StrategyRegistrationTests` now fails for any
+  strategy the converter does not register. Proposed and archived through OpenSpec
+  (`openspec/specs/transpiler-bcl`).
 - **2026-10-03 · A string's own search compares as .NET does**: a string's methods that take a
   `StringComparison` read it from its spelling and lower-cased both sides
   ([#528](https://github.com/eQuantic/equantic-ui/issues/528)): the Kelvin sign matched a k under
@@ -1235,6 +1252,39 @@ record of a release, the wiki's Upgrading page is the distillate.
   back (`Cast`, `DefaultIfEmpty`) and a read-only face hiding a list, and both copy now. Each is a
   conformance case on both sides that failed against main. Proposed and archived through OpenSpec
   (`openspec/specs/transpiler-sequences`).
+- **2026-10-04 · A source map keeps every line it came from**: three carriers still wrote what they
+  held as text before any writer saw it, so none of their statements had a segment of its own: the
+  arrow a body with an `out` or `ref` parameter runs in
+  ([#487](https://github.com/eQuantic/equantic-ui/issues/487)), a member's expression body, and an
+  object creation, initializer or anonymous object
+  ([#492](https://github.com/eQuantic/equantic-ui/issues/492)), every line of a lambda's block they
+  held included. The wrapper is IR, built once for a method, a lambda and a local function, its own
+  lines the declaration's, and an iterator's buffer with it; an expression body takes the concise
+  body's one lowering; a creation and an object literal are nodes of their own (`JsNew`, `JsObject`),
+  and the three strategies leave the text baseline (81 to 78). The shared components' lambda
+  statements with no line of their own went from 59 to 0. A class that takes the default its interface
+  supplies wrote the default's lines into the class's file, at lines that file does not have
+  ([#490](https://github.com/eQuantic/equantic-ui/issues/490)): each mapping carries its tree now, and
+  the map names every file, each with its own text. The map escaped five characters by hand and the
+  JSON writer behind the web manifest and the asset catalog three, so a form feed in a C# comment or a
+  tab in an app's name made a file no JSON reader opens
+  ([#525](https://github.com/eQuantic/equantic-ui/issues/525)): every JSON the build lays out goes
+  through `JsonWriter`, whose escape is System.Text.Json's, and both maps through one map writer on top
+  of it. Each case failed on main, the frames read through the composed map of a Bun bundle among
+  them. The review found the iterator's buffer left out of the declaration's lines, its two lines
+  mapped to nothing, and they map to the declaration now. Merged after #561, the out parameter's
+  wrapper leaves the functions the lowerings write by hand, the part of
+  [#539](https://github.com/eQuantic/equantic-ui/issues/539) it named, and so does one of the
+  creation's. Proposed and archived through OpenSpec
+  (`openspec/specs/transpiler-source-maps`, `openspec/specs/generated-files`).
+- **2026-10-04 · A deconstruction writes each part as C# does**: a deconstruction was destructuring,
+  which writes each part straight into its target, so a dictionary's entry as a target wrote its read,
+  a SyntaxError that cost the module, and an int part into a long stayed a number, which the next long
+  arithmetic refused, in an assignment, a declaration and a loop alike
+  ([#542](https://github.com/eQuantic/equantic-ui/issues/542)). Each part is converted to its target's
+  type as the bound tree's `DeconstructionInfo` says, and written by what its target is, an entry
+  through its class. Each is a conformance case on both sides that failed against main. Proposed and
+  archived through OpenSpec (`openspec/specs/transpiler-records`).
 - **2026-10-04 · A find bar's Escape closes its own editor's bar**: the code editor's Escape was a
   page-wide chord mounted with the find bar, so with two bars open it closed the one mounted last,
   wherever the keyboard was ([#457](https://github.com/eQuantic/equantic-ui/issues/457)). Made the
@@ -1286,6 +1336,30 @@ record of a release, the wiki's Upgrading page is the distillate.
   names the pair it was handed, a `SortedList` the key and its parameter), an object initializer's
   `[key] = value` is assigned by the indexer, and a pair built by hand is the pair a dictionary yields.
   Proposed and archived through OpenSpec (`openspec/specs/runtime-dictionaries`).
+- **2026-09-26 · A constant is its value in its C# type**: `decimal.MaxValue` emitted
+  `decimal.maxValue`, a ReferenceError, because the strategy that writes a const field as its value
+  left decimals to a strategy that never wrote one
+  ([#444](https://github.com/eQuantic/equantic-ui/issues/444)). The same function wrote a `long`
+  constant in a number's range as a number, which the first long it met threw on
+  (`t / TimeSpan.TicksPerSecond`), a decimal literal went through its text (`1_000.5m`), and a
+  parameter's default filled in for a skipped argument had a second writer that dropped a decimal's
+  and a long's type, a char's quotes and a string's escapes. One writer now answers a constant in its
+  C# type for all three paths, a const with no source is inlined under a `using static` too, the
+  primitive table keeps only what is not a constant, and a narrow integer and a `ulong` annotate as
+  `number` and `bigint`. The author's review found three more on the same paths: a decimal constant
+  in a pattern or a `case` compared by identity and never matched, a constant of an enum type was
+  written as its number (and a flags default as a name), and a lone surrogate left the module
+  unwritable, and Copilot's second round a char literal written from its source text, whose `\e`,
+  `\a` and `\x041` JavaScript reads as other characters: both were spelled on main by the time this
+  merged, by the one writer of a string ([#520](https://github.com/eQuantic/equantic-ui/issues/520)),
+  which a constant's char and string now go through. 47 of the 92 conformance cases failed on main
+  when this opened, and 27 when it merged: the text, the long constants and some of the patterns,
+  defaults and enum constants had been fixed on the way by the pull requests before it. The BCL audit
+  grades `decimal`'s static surface: its nine translated members are proved, and the 38 it fences are
+  left to their own issue ([#449](https://github.com/eQuantic/equantic-ui/issues/449)), as are an
+  `is` over a named constant ([#451](https://github.com/eQuantic/equantic-ui/issues/451)) and an
+  enum's `ToString` ([#452](https://github.com/eQuantic/equantic-ui/issues/452)). Proposed and
+  archived through OpenSpec (`openspec/specs/transpiler-constants`).
 
 ## Retired documents
 

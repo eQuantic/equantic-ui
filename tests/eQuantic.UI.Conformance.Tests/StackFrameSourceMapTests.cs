@@ -208,6 +208,121 @@ public class StackFrameSourceMapTests
         }
         """;
 
+    /// <summary>A frame inside a body with an <c>out</c> parameter (#487), which runs in an arrow the
+    /// lowering adds around it: the throw's line, and the caller's. The wrapper was text, so the body
+    /// had no segment of its own and the throw read as the method's head, whatever was mapped before
+    /// it on the bundled line. The arrow's call is a frame C# does not have, and the bundler's map
+    /// leads its position into the arrow's last statement, so it is not asked about.</summary>
+    private const string ByReferenceSource = """
+        using System;
+
+        namespace Demo;
+
+        public class Splitter
+        {
+            public int Run(int count)
+            {
+                var ok = TryHalf(count, out var half);
+                return (ok ? half : 0) + 1;
+            }
+
+            public bool TryHalf(int value, out int half)
+            {
+                var doubled = value * 2;
+                if (doubled > 0)
+                {
+                    throw new InvalidOperationException("odd");
+                }
+                half = doubled / 4;
+                return true;
+            }
+        }
+        """;
+
+    /// <summary>A frame inside a default an interface supplies (#490), whose body is written into the
+    /// class's module from the interface's file: it read as a line of the class's file, which that
+    /// file does not have. The sum keeps the call out of tail position, as above.</summary>
+    private const string DefaultInterfaceSource = """
+        using System;
+
+        namespace Demo;
+
+        public interface IChecked
+        {
+            int Check(int value)
+            {
+                var limit = value * 2;
+                if (limit > 0)
+                {
+                    throw new InvalidOperationException("default");
+                }
+                return limit;
+            }
+        }
+        """;
+
+    private const string DefaultClassSource = """
+        namespace Demo;
+
+        public class Checked : IChecked
+        {
+            public int Run(int count)
+            {
+                var result = ((IChecked)this).Check(count);
+                return result + 1;
+            }
+        }
+        """;
+
+    /// <summary>Frames inside lambdas that an expression-bodied member and an object creation hold
+    /// (#492): both carriers wrote the lambda as text, so its lines read as the statement holding it.
+    /// The sums keep the calls out of tail position, as above.</summary>
+    private const string CarriedSource = """
+        using System;
+
+        namespace Demo;
+
+        public class Step
+        {
+            public Step(Func<int, int> run)
+            {
+                Run = run;
+            }
+
+            public Func<int, int> Run { get; }
+        }
+
+        public class Holder
+        {
+            public int Bodied(int count) => Apply(count, value =>
+            {
+                var seen = value * 10;
+                return Check(seen) + 1;
+            });
+
+            public int Created(int count)
+            {
+                var step = new Step(value =>
+                {
+                    var seen = value * 100;
+                    return Check(seen) + 1;
+                });
+                return step.Run(count) + 1;
+            }
+
+            private int Apply(int seed, Func<int, int> step) => step(seed) + 1;
+
+            public int Check(int value)
+            {
+                if (value > 0)
+                {
+                    throw new InvalidOperationException("carried");
+                }
+                return value;
+            }
+        }
+        """;
+
     /// <summary>The 1-based line of the first line of <paramref name="source"/> that contains <paramref name="text"/>.</summary>
     private static int LineOf(string source, string text) =>
         source.Split('\n').Select((line, index) => (line, index)).First(pair => pair.line.Contains(text)).index + 1;
@@ -264,25 +379,67 @@ public class StackFrameSourceMapTests
         Resolve(map, frames[1]).Should().Be(("Separated.cs", LineOf(SeparatorSource, "var result = Check(text.Length + count);")), $"the next frame is the call, after the strings:\n{stack}");
     }
 
+    [SkippableFact]
+    public void AFrameInsideABodyWithAnOutParameter_LeadsToItsOwnLine()
+    {
+        var (stack, frames, map) = Throw(ByReferenceSource, "Splitter", "new Splitter().run(1)");
+        var resolved = frames.Select(frame => Resolve(map, frame)).ToList();
+        resolved[0].Should().Be(("Splitter.cs", LineOf(ByReferenceSource, "throw new InvalidOperationException")), $"the top frame is the throw:\n{stack}");
+        resolved.Should().Contain(("Splitter.cs", LineOf(ByReferenceSource, "var ok = TryHalf(count, out var half);")),
+            $"and the caller called the method:\n{stack}");
+    }
+
+    [SkippableFact]
+    public void AFrameInsideADefaultAnInterfaceSupplies_LeadsToTheInterfacesFile()
+    {
+        var (stack, frames, map) = Throw(DefaultClassSource, "Checked", "new Checked().run(1)", ("IChecked.cs", DefaultInterfaceSource));
+        Resolve(map, frames[0]).Should().Be(("IChecked.cs", LineOf(DefaultInterfaceSource, "throw new InvalidOperationException")), $"the top frame is the throw, in the interface's file:\n{stack}");
+        Resolve(map, frames[1]).Should().Be(("Checked.cs", LineOf(DefaultClassSource, "var result = ((IChecked)this).Check(count);")), $"the class called it:\n{stack}");
+    }
+
+    [SkippableFact]
+    public void AFrameInsideALambdaAnExpressionBodyHolds_LeadsToTheStatementThatCalled()
+    {
+        var (stack, frames, map) = Throw(CarriedSource, "Holder", "new Holder().bodied(1)");
+        Resolve(map, frames[0]).Should().Be(("Holder.cs", LineOf(CarriedSource, "throw new InvalidOperationException")), $"the top frame is the throw:\n{stack}");
+        Resolve(map, frames[1]).Should().Be(("Holder.cs", LineOf(CarriedSource, "return Check(seen) + 1;")), $"the lambda's statement called it:\n{stack}");
+    }
+
+    [SkippableFact]
+    public void AFrameInsideALambdaACreationHolds_LeadsToTheStatementThatCalled()
+    {
+        var (stack, frames, map) = Throw(CarriedSource, "Holder", "new Holder().created(1)");
+        var called = CarriedSource.Split('\n').Select((line, index) => (line, index))
+            .Where(pair => pair.line.Contains("return Check(seen) + 1;")).Select(pair => pair.index + 1).Last();
+        Resolve(map, frames[0]).Should().Be(("Holder.cs", LineOf(CarriedSource, "throw new InvalidOperationException")), $"the top frame is the throw:\n{stack}");
+        Resolve(map, frames[1]).Should().Be(("Holder.cs", called), $"the lambda's statement called it:\n{stack}");
+    }
+
     /// <summary>
-    /// Compiles <paramref name="source"/> as eqc does, bundles it as a build does, runs
-    /// <paramref name="call"/> in Bun and answers the stack, the module's frames in it, and the
-    /// composed map they read through.
+    /// Compiles <paramref name="source"/> as eqc does, with <paramref name="others"/> beside it in the
+    /// compilation, bundles it as a build does, runs <paramref name="call"/> in Bun and answers the
+    /// stack, the module's frames in it, and the composed map they read through.
     /// </summary>
-    private static (string Stack, List<(int Line, int Column)> Frames, string Map) Throw(string source, string module, string call)
+    private static (string Stack, List<(int Line, int Column)> Frames, string Map) Throw(string source, string module, string call,
+        params (string Path, string Text)[] others)
     {
         var bun = JsExecutor.RequireBun();
         var dir = Directory.CreateTempSubdirectory("eq-stack-").FullName;
         try
         {
             // eqc: the TypeScript, its map, and the comment that leads bun to it.
-            var result = Compile(source, $"{module}.cs");
+            // Every module the source compiles to, so one that constructs a type declared beside it
+            // finds that type's module where a build writes it.
             var tsDir = Path.Combine(dir, "ts");
             var outDir = Path.Combine(dir, "out");
             Directory.CreateDirectory(tsDir);
+            foreach (var result in Compile(source, $"{module}.cs", others))
+            {
+                var written = Path.Combine(tsDir, $"{result.ComponentName}.ts");
+                File.WriteAllText(written, result.TypeScript + $"\n//# sourceMappingURL={result.ComponentName}.ts.map");
+                File.WriteAllText(written + ".map", result.SourceMap);
+            }
             var tsPath = Path.Combine(tsDir, $"{module}.ts");
-            File.WriteAllText(tsPath, result.TypeScript + $"\n//# sourceMappingURL={module}.ts.map");
-            File.WriteAllText(tsPath + ".map", result.SourceMap);
 
             // The build's bundling, flags and composition included.
             ModuleBundler.Bundle(bun, [tsPath], outDir, tsDir, SourceMapMode.Full).Should().BeNull();
@@ -314,23 +471,30 @@ public class StackFrameSourceMapTests
         }
     }
 
-    private static CompilationResult Compile(string source, string path)
+    private static IReadOnlyList<CompilationResult> Compile(string source, string path, (string Path, string Text)[] others)
     {
         var references = ((string)AppContext.GetData("TRUSTED_PLATFORM_ASSEMBLIES")!)
             .Split(Path.PathSeparator)
             .Where(file => file.EndsWith(".dll", StringComparison.OrdinalIgnoreCase))
             .Select(file => (MetadataReference)TestReferences.Of(file))
             .Append(TestReferences.Of(typeof(eQuantic.UI.Primitives.VisualNode).Assembly.Location));
-        var tree = CSharpSyntaxTree.ParseText(source, path: path);
-        var compilation = CSharpCompilation.Create("Stack", [tree], references,
+        var trees = others.Select(other => CSharpSyntaxTree.ParseText(other.Text, path: other.Path))
+            .Prepend(CSharpSyntaxTree.ParseText(source, path: path));
+        var compilation = CSharpCompilation.Create("Stack", trees, references,
             new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
         Assert.Empty(compilation.GetDiagnostics().Where(d => d.Severity == DiagnosticSeverity.Error).Select(d => d.ToString()));
         var compiler = new ComponentCompiler { SourceMaps = SourceMapMode.Full };
         compiler.SetProjectCompilation(compilation);
-        var result = compiler.CompileSource(source, path).Single();
-        Assert.True(result.Success, string.Join("\n", result.Errors.Select(e => e.Message)));
-        result.SourceMap.Should().NotBeNullOrEmpty();
-        return result;
+        // The app's own modules, as eqc scans them, so a module imports the type it constructs.
+        compiler.SetDependencyResolver(ComponentDependencyResolver.From(compilation));
+        var results = compiler.CompileSource(source, path).ToList();
+        foreach (var result in results)
+        {
+            Assert.True(result.Success, string.Join("\n", result.Errors.Select(e => e.Message)));
+            result.SourceMap.Should().NotBeNullOrEmpty();
+        }
+        results.Should().Contain(result => $"{result.ComponentName}.cs" == path, "the file is named for the type the test throws in");
+        return results;
     }
 
     /// <summary>

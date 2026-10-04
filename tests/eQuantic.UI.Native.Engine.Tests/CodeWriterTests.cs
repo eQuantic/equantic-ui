@@ -73,6 +73,53 @@ public class CodeWriterTests
         }
     }
 
+    /// <summary>
+    /// Every code unit JSON refuses raw in a string — the 32 controls — beside what it takes raw and
+    /// what a reader of the file might trip on. The writer escaped the backslash, the quote and the
+    /// line feed by hand and wrote everything else raw (#525), so a carriage return or a tab made a
+    /// document no JSON reader would open.
+    /// </summary>
+    private static readonly string EveryControlCharacter =
+        string.Concat(Enumerable.Range(0, 0x20).Select(code => (char)code)) + "\"\\/\u007F\u2028\u2029\u00E9<>&'\U0001F600";
+
+    [Fact]
+    public void AStringHoldingEveryControlCharacter_IsJsonThatReadsBackAsWritten()
+    {
+        var json = JsonWriter.Document(document => document
+            .String(EveryControlCharacter, EveryControlCharacter)
+            .Object("nested", nested => nested.String("value", EveryControlCharacter)));
+
+        using var parsed = System.Text.Json.JsonDocument.Parse(json);
+
+        var member = parsed.RootElement.EnumerateObject().First();
+        member.Name.Should().Be(EveryControlCharacter, "a member's name is a string too");
+        member.Value.GetString().Should().Be(EveryControlCharacter);
+        parsed.RootElement.GetProperty("nested").GetProperty("value").GetString().Should().Be(EveryControlCharacter);
+        json.Should().NotContain("\t", "a control is escaped, never written raw, and the writer indents with spaces");
+    }
+
+    [Fact]
+    public void TheWebManifest_ForANameHoldingATabAndACarriageReturn_IsJson()
+    {
+        var dir = Path.Combine(Path.GetTempPath(), "eq-icon-" + Guid.NewGuid().ToString("N"));
+        try
+        {
+            const int source = 512;
+            var rgba = new byte[source * source * 4];
+            const string name = "My\tWallet\r\"Pro\"";
+
+            eQuantic.UI.Build.WebIcons.Write(dir, name, source, rgba);
+
+            using var manifest = System.Text.Json.JsonDocument.Parse(File.ReadAllText(Path.Combine(dir, "site.webmanifest")));
+            manifest.RootElement.GetProperty("name").GetString().Should().Be(name);
+            manifest.RootElement.GetProperty("short_name").GetString().Should().Be(name);
+        }
+        finally
+        {
+            if (Directory.Exists(dir)) Directory.Delete(dir, recursive: true);
+        }
+    }
+
     [Fact]
     public void ThePropertyListIsTabIndentedLikeEveryOtherPlistOnTheMachine()
     {

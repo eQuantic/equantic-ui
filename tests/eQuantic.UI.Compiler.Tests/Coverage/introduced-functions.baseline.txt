@@ -14,7 +14,6 @@
 # and writes "not looked at yet" for a file new to the list, which is not an approval.
 src/eQuantic.UI.Compiler/CodeGen/ExpressionVariableScanner.cs  1  not looked at yet
 src/eQuantic.UI.Compiler/CodeGen/Ir/JsExprWriter.cs  2  the IR's writer
-src/eQuantic.UI.Compiler/CodeGen/OutParameters.cs  2  not looked at yet
 src/eQuantic.UI.Compiler/CodeGen/Strategies/Async/TaskMethodStrategy.cs  2  not looked at yet
 src/eQuantic.UI.Compiler/CodeGen/Strategies/DictionaryLookup.cs  1  not looked at yet
 src/eQuantic.UI.Compiler/CodeGen/Strategies/Expressions/ArrayCreationStrategy.cs  1  not looked at yet
@@ -25,7 +24,7 @@ src/eQuantic.UI.Compiler/CodeGen/Strategies/Expressions/ConditionalAccessStrateg
 src/eQuantic.UI.Compiler/CodeGen/Strategies/Expressions/InitializerExpressionStrategy.cs  1  not looked at yet
 src/eQuantic.UI.Compiler/CodeGen/Strategies/Expressions/InvocationStrategy.cs  1  not looked at yet
 src/eQuantic.UI.Compiler/CodeGen/Strategies/Expressions/IsPatternStrategy.cs  1  arguments only
-src/eQuantic.UI.Compiler/CodeGen/Strategies/Expressions/ObjectCreationStrategy.cs  3  not looked at yet
+src/eQuantic.UI.Compiler/CodeGen/Strategies/Expressions/ObjectCreationStrategy.cs  2  not looked at yet
 src/eQuantic.UI.Compiler/CodeGen/Strategies/Expressions/SwitchExpressionStrategy.cs  1  not looked at yet
 src/eQuantic.UI.Compiler/CodeGen/Strategies/Expressions/TupleEquality.cs  1  arguments only
 src/eQuantic.UI.Compiler/CodeGen/Strategies/Invocation/ToStringStrategy.cs  1  not looked at yet

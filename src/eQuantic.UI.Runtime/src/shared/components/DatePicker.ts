@@ -75,7 +75,8 @@ export class DatePicker extends StatefulComponent {
     }
 
     inRange(day: DateOnly) {
-        let min: any; let max: any; return (!((min = this.min) != null) || (day.compareTo(min) >= 0)) && (!((max = this.max) != null) || (day.compareTo(max) <= 0));
+        let min: any; let max: any; 
+        return (!((min = this.min) != null) || (day.compareTo(min) >= 0)) && (!((max = this.max) != null) || (day.compareTo(max) <= 0));
     }
 
     static format(day: DateOnly) {

@@ -106,25 +106,29 @@ export class CodeDocument {
     }
 
     replace(range: CodeRange, text: string) {
-        let caret; const $r = (() => { let start = this.clamp(range.start);
-        let end = this.clamp(range.end);
-        let inserted = CodeDocument.fromText(text);
-        let lines: string[] = [];
-        for (let i = 0; i < start.line; i++) lines.push(this._lines[i]);
-        let head = this._lines[start.line].slice(0, start.column);
-        let tail = this._lines[end.line].slice(end.column);
-        if (inserted.lineCount === 1) {
-            lines.push(head + inserted.line(0) + tail);
-            caret = new CodePosition(start.line, start.column + inserted.line(0).length);
-        } else {
-            lines.push(head + inserted.line(0));
-            for (let i = 1; i < inserted.lineCount - 1; i++) lines.push(inserted.line(i));
-            let last = inserted.line(inserted.lineCount - 1);
-            lines.push(last + tail);
-            caret = new CodePosition(start.line + inserted.lineCount - 1, last.length);
-        }
-        for (let i = end.line + 1; i < this._lines.length; i++) lines.push(this._lines[i]);
-        return new CodeDocument(lines); })(); return { $: $r, caret };
+        let caret;
+        const $r = (() => {
+            let start = this.clamp(range.start);
+            let end = this.clamp(range.end);
+            let inserted = CodeDocument.fromText(text);
+            let lines: string[] = [];
+            for (let i = 0; i < start.line; i++) lines.push(this._lines[i]);
+            let head = this._lines[start.line].slice(0, start.column);
+            let tail = this._lines[end.line].slice(end.column);
+            if (inserted.lineCount === 1) {
+                lines.push(head + inserted.line(0) + tail);
+                caret = new CodePosition(start.line, start.column + inserted.line(0).length);
+            } else {
+                lines.push(head + inserted.line(0));
+                for (let i = 1; i < inserted.lineCount - 1; i++) lines.push(inserted.line(i));
+                let last = inserted.line(inserted.lineCount - 1);
+                lines.push(last + tail);
+                caret = new CodePosition(start.line + inserted.lineCount - 1, last.length);
+            }
+            for (let i = end.line + 1; i < this._lines.length; i++) lines.push(this._lines[i]);
+            return new CodeDocument(lines);
+        })();
+        return { $: $r, caret };
     }
 
     lineStart(position: CodePosition) {

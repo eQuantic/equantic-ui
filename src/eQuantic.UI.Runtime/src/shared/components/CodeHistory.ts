@@ -41,37 +41,45 @@ export class CodeHistory {
     }
 
     undo(document: CodeDocument) {
-        let selection, replaced, written; const $r = (() => { selection = new CodeRange();
-        replaced = new CodeRange();
-        written = new CodeRange();
-        if (this._past.length === 0) return null;
-        let edit = this._past[this._past.length - 1];
-        this._past.splice(this._past.length - 1, 1);
-        this._future.push(edit);
-        this.break();
-        replaced = new CodeRange(document.clamp(edit.insertedRange.start), document.clamp(edit.insertedRange.end));
-        let end: any; 
-        let next = ($o => (end = $o.caret, $o.$))(document.replace(replaced, edit.removedText));
-        written = new CodeRange(replaced.start, end);
-        selection = edit.selectionBefore;
-        return next; })(); return { $: $r, selection, replaced, written };
+        let selection, replaced, written;
+        const $r = (() => {
+            selection = new CodeRange();
+            replaced = new CodeRange();
+            written = new CodeRange();
+            if (this._past.length === 0) return null;
+            let edit = this._past[this._past.length - 1];
+            this._past.splice(this._past.length - 1, 1);
+            this._future.push(edit);
+            this.break();
+            replaced = new CodeRange(document.clamp(edit.insertedRange.start), document.clamp(edit.insertedRange.end));
+            let end: any; 
+            let next = ($o => (end = $o.caret, $o.$))(document.replace(replaced, edit.removedText));
+            written = new CodeRange(replaced.start, end);
+            selection = edit.selectionBefore;
+            return next;
+        })();
+        return { $: $r, selection, replaced, written };
     }
 
     redo(document: CodeDocument) {
-        let selection, replaced, written; const $r = (() => { selection = new CodeRange();
-        replaced = new CodeRange();
-        written = new CodeRange();
-        if (this._future.length === 0) return null;
-        let edit = this._future[this._future.length - 1];
-        this._future.splice(this._future.length - 1, 1);
-        this._past.push(edit);
-        this.break();
-        replaced = new CodeRange(document.clamp(edit.range.start), document.clamp(edit.range.end));
-        let end: any; 
-        let next = ($o => (end = $o.caret, $o.$))(document.replace(replaced, edit.insertedText));
-        written = new CodeRange(replaced.start, end);
-        selection = edit.selectionAfter;
-        return next; })(); return { $: $r, selection, replaced, written };
+        let selection, replaced, written;
+        const $r = (() => {
+            selection = new CodeRange();
+            replaced = new CodeRange();
+            written = new CodeRange();
+            if (this._future.length === 0) return null;
+            let edit = this._future[this._future.length - 1];
+            this._future.splice(this._future.length - 1, 1);
+            this._past.push(edit);
+            this.break();
+            replaced = new CodeRange(document.clamp(edit.range.start), document.clamp(edit.range.end));
+            let end: any; 
+            let next = ($o => (end = $o.caret, $o.$))(document.replace(replaced, edit.insertedText));
+            written = new CodeRange(replaced.start, end);
+            selection = edit.selectionAfter;
+            return next;
+        })();
+        return { $: $r, selection, replaced, written };
     }
 
     clear() {
