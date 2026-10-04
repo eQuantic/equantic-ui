@@ -77,6 +77,11 @@ public static class DefaultValue
                 return "'00000000-0000-0000-0000-000000000000'";
         }
 
+        // A KeyValuePair is the pair a dictionary yields, so its zero is the pair of the two zeros (#433).
+        if (type is INamedTypeSymbol { OriginalDefinition.MetadataName: "KeyValuePair`2", TypeArguments: [var key, var value] } pair
+            && pair.ContainingNamespace?.ToDisplayString() == "System.Collections.Generic")
+            return $"{Eq.Pair}({Of(key, named)}, {Of(value, named)})";
+
         // An enum is its member NAME at runtime, so the default is the member whose value is 0.
         // .NET still yields the numeric 0 when the enum declares no such member.
         if (type is { TypeKind: TypeKind.Enum })
