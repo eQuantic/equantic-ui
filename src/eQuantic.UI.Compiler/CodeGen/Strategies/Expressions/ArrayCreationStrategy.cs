@@ -64,8 +64,10 @@ public class ArrayCreationStrategy : IConversionStrategy
         var fill = context.SemanticHelper.GetType(sized) is IArrayTypeSymbol array
             ? Strategies.DefaultValue.Of(array.ElementType, context)
             : Unbound(sized.Type, context);
-        // A struct's zero and a tuple's (an array on this side) are objects: each slot builds its own.
+        // A struct's zero and a tuple's (an array on this side) are objects: each slot builds its own,
+        // whether the twin's constructor builds it or its `$zero()` does (#413).
         return fill.StartsWith("new ", StringComparison.Ordinal) || fill.StartsWith('[')
+            || fill.EndsWith(".$zero()", StringComparison.Ordinal)
             ? $"Array.from({{ length: {size} }}, () => {fill})"
             : $"new Array({size}).fill({fill})";
     }

@@ -320,46 +320,47 @@ public class RecordTypeEmitter
             }
 
             _converter.SetCurrentClass(type.Identifier.Text);
-            sb.Append($"if (arguments.length === {arity}) {{ ");
-            // The alternate's parameters ARE the arguments that arrived, in the main one's slots
-            // where it has them.
-            sb.Append(Bound(ctor, slots));
-            // Evaluate first, assign after: an argument that reads a slot it also writes must see
-            // the value that arrived, not the one this loop just put there.
-            var args = chain.ArgumentList.Arguments;
-            for (var i = 0; i < args.Count && i < slots.Count; i++)
-                sb.Append($"const $c{i} = {_converter.ConvertExpression(args[i].Expression)}; ");
-            for (var i = 0; i < args.Count && i < slots.Count; i++)
-                sb.Append($"{slots[i]} = $c{i}; ");
-            sb.Append("} ");
+            // The `: this(…)` arguments, computed in a scope of the alternate's own, where its
+            // parameters are the arguments that arrived, and landed in the main constructor's slots
+            // all at once: an argument that reads a slot it also writes sees the value that arrived.
+            // A block of its own would have bound `const a = a`, a parameter named like a slot.
+            var landed = new List<(string Slot, string Value)>();
+            for (var i = 0; i < chain.ArgumentList.Arguments.Count; i++)
+            {
+                var argument = chain.ArgumentList.Arguments[i];
+                var ordinal = argument.NameColon is { } named
+                    ? main.Parameters.ToList().FindIndex(parameter => parameter.Identifier.ValueText == named.Name.Identifier.ValueText)
+                    : i;
+                if (ordinal >= 0 && ordinal < slots.Count)
+                    landed.Add((slots[ordinal], _converter.ConvertExpression(argument.Expression)));
+            }
+            sb.Append($"if (arguments.length === {arity}) {{ [{string.Join(", ", landed.Select(l => l.Slot))}] = "
+                + $"(({Own(ctor)}) => [{string.Join(", ", landed.Select(l => l.Value))}])({Arrived(ctor)}); }} ");
         }
         return sb.ToString();
     }
 
-    /// <summary>An alternate's parameters, bound to the arguments that arrived: from the main
-    /// constructor's slot where it has one, and from <c>arguments</c> past them.</summary>
-    private static string Bound(ConstructorDeclarationSyntax alternate, IReadOnlyList<string> slots)
-    {
-        var sb = new StringBuilder();
-        var parameters = alternate.ParameterList.Parameters;
-        for (var i = 0; i < parameters.Count; i++)
-            sb.Append($"const {ParameterName(parameters[i], primary: false)} = {(i < slots.Count ? slots[i] : $"arguments[{i}]")}; ");
-        return sb.ToString();
-    }
+    /// <summary>An alternate's own parameters, as an arrow binds them.</summary>
+    private string Own(ConstructorDeclarationSyntax alternate) =>
+        string.Join(", ", alternate.ParameterList.Parameters.Select(parameter =>
+            _lowering.Param(ParameterName(parameter, primary: false), "any")));
+
+    /// <summary>The arguments that arrived, in an alternate's parameters' places.</summary>
+    private static string Arrived(ConstructorDeclarationSyntax alternate) =>
+        string.Join(", ", alternate.ParameterList.Parameters.Select((_, i) => $"arguments[{i}]"));
 
     /// <summary>The body each alternate runs after the main constructor's, as C# runs a constructor
-    /// that chains with `: this(…)`: its own parameters bound again, from the arguments that arrived.</summary>
+    /// that chains with `: this(…)`, with its own parameters bound to the arguments that arrived.</summary>
     private string AlternateBodies(TypeDeclarationSyntax type, MainConstructor main)
     {
         var sb = new StringBuilder();
         foreach (var ctor in main.Alternates)
         {
             if (Body(ctor) is not { Length: > 0 } body) continue;
-            sb.Append($"if (arguments.length === {ctor.ParameterList.Parameters.Count}) {{ ");
-            var parameters = ctor.ParameterList.Parameters;
-            for (var i = 0; i < parameters.Count; i++)
-                sb.Append($"const {ParameterName(parameters[i], primary: false)} = arguments[{i}]; ");
-            sb.Append(body).Append("} ");
+            // An arrow of its own: its parameters are the arguments that arrived, its `this` the
+            // constructor's, and a `return` in it ends it alone, as it ends that constructor in C#.
+            sb.Append($"if (arguments.length === {ctor.ParameterList.Parameters.Count}) {{ "
+                + $"(({Own(ctor)}) => {{ {body}}})({Arrived(ctor)}); }} ");
         }
         return sb.ToString();
     }
@@ -483,7 +484,7 @@ public class RecordTypeEmitter
 
             // The zero C# gives a struct whose constructor does more than zero it: `default(S)`, an
             // array's slot, an OrDefault. Built without the constructor, which would run it.
-            if (type is StructDeclarationSyntax && ZeroRunsCode(type))
+            if (IsStruct(type) && ZeroRunsCode(type))
             {
                 var zeros = string.Join(", ", members.Select(m => $"{m.Js}: {ZeroOf(m)}"));
                 sb.Append(tsTypeDeclarations
@@ -672,10 +673,11 @@ public class RecordTypeEmitter
 
     /// <summary>
     /// The members a record's text prints, as PrintMembers writes them: its base's first, then its
-    /// own public ones, in the order <see cref="TypeDeclarationExtensions.ValueMembers"/> lists them.
-    /// A struct prints its own.
+    /// own, the positional properties it makes in its parameters' order and then the public instance
+    /// fields and readable properties of its body in declaration order, a computed one included.
+    /// A struct prints its own the same way.
     /// </summary>
-    private IEnumerable<ValueMember> Printed(TypeDeclarationSyntax type)
+    private IEnumerable<(string Display, string Js)> Printed(TypeDeclarationSyntax type)
     {
         if (type is RecordDeclarationSyntax
             && ModelFor(type)?.GetDeclaredSymbol(type) is INamedTypeSymbol { BaseType: { } parent }
@@ -685,8 +687,35 @@ public class RecordTypeEmitter
             foreach (var inherited in Printed(baseDeclaration)) yield return inherited;
         }
         foreach (var member in type.ValueMembers(ModelFor(type)))
-            if (member.Printed) yield return member;
+            if (member is { Printed: true, Declaration: ParameterSyntax }) yield return (member.Display, member.Js);
+        foreach (var member in type.Members)
+        {
+            switch (member)
+            {
+                case FieldDeclarationSyntax field when field.Modifiers.Any(SyntaxKind.PublicKeyword)
+                    && !field.Modifiers.Any(SyntaxKind.StaticKeyword) && !field.Modifiers.Any(SyntaxKind.ConstKeyword):
+                    foreach (var variable in field.Declaration.Variables)
+                        yield return (variable.Identifier.ValueText, variable.Identifier.ValueText.ToCamelCase());
+                    break;
+                case PropertyDeclarationSyntax property when property.Modifiers.Any(SyntaxKind.PublicKeyword)
+                    && !property.Modifiers.Any(SyntaxKind.StaticKeyword) && PubliclyReadable(property):
+                    yield return (property.Identifier.ValueText, property.Identifier.ValueText.ToCamelCase());
+                    break;
+            }
+        }
     }
+
+    /// <summary>Whether a public property can be read from outside: an expression body, or a getter
+    /// with no accessibility of its own.</summary>
+    private static bool PubliclyReadable(PropertyDeclarationSyntax property) =>
+        property.ExpressionBody is not null
+        || property.AccessorList?.Accessors.Any(accessor => accessor.IsKind(SyntaxKind.GetAccessorDeclaration)
+            && accessor.Modifiers.Count == 0) == true;
+
+    /// <summary>A struct, or a record struct, whose declaration is a record's.</summary>
+    internal static bool IsStruct(TypeDeclarationSyntax type) =>
+        type is StructDeclarationSyntax
+        || type is RecordDeclarationSyntax record && record.ClassOrStructKeyword.IsKind(SyntaxKind.StructKeyword);
 
     /// <summary>A member's zero, the value <c>default</c> gives it.</summary>
     private string ZeroOf(ValueMember member) => member.Declaration switch
