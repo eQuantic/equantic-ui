@@ -14,7 +14,7 @@ namespace eQuantic.UI.Native.Engine.Tests;
 /// <para>
 /// Photon read the flag nowhere at all. A closed dialog painted at full opacity, took taps, kept its
 /// Tab stop and was read out — indistinguishable from an open one except that the reader was not even
-/// told it was a dialog, since the group announcement is the one thing that WAS gated on Open.
+/// told it was a dialog, since the layer's own announcement is the one thing that WAS gated on Open.
 /// </para>
 /// </summary>
 public class ClosedOverlayTests
@@ -107,8 +107,8 @@ public class ClosedOverlayTests
         // name over the open layer's contents — or, when the closed one is first, announces nothing
         // at all, because the gate that reads Modal and Open finds the wrong node.
         drawerGone.Host.Semantics().Should()
-            .ContainSingle(node => node.Role == SemanticRole.Group)
-            .Which.Should().Match<SemanticNode>(group => group.Label == "Dialog" && group.Path == "ov1");
+            .ContainSingle(node => node.Role == SemanticRole.Dialog)
+            .Which.Should().Match<SemanticNode>(dialog => dialog.Label == "Dialog" && dialog.Path == "ov1");
     }
 
     /// <summary>
