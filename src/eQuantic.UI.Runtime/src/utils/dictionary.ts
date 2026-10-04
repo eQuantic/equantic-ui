@@ -1,16 +1,13 @@
 import { adoptMember } from './adopt-member';
-import { sameItem } from './collections';
-import { equals } from './equals';
+import { sameBy, type KeyEquality } from './key-equality';
+import { SlotTable } from './slots';
 
 /**
- * How a dictionary finds a key, as .NET's default comparer for the key type does, which eqc says:
- * `false` by IDENTITY, SameValueZero through a `Map`; `true` by VALUE, `$eq.equals` over the live
- * slots; and `'own'` by what the key turns out to be, for a key type that does not decide (`object`,
- * an interface, a type parameter, a class a subclass may override `Equals` in): its twin's own
- * `equals`, a tuple's or an anonymous type's members, and identity for anything else, which keeps
- * that majority in the `Map`.
+ * How a dictionary finds a key, as .NET's default comparer for the key type does, which eqc says
+ * (`utils/key-equality.ts`): by identity, by value, by the key's own equality, or by a comparison
+ * eqc generated for a tuple. A set's elements are found by the same rule.
  */
-export type KeyEquality = boolean | 'own';
+export type { KeyEquality } from './key-equality';
 
 /**
  * A pair a dictionary enumerates: it destructures as `[key, value]` and reads `.key` and `.value`,
@@ -39,47 +36,29 @@ export function pair<K, V>(key: K, value: V): Pair<K, V> {
  * through `$eq.equals` over the live slots: a record, a struct, a tuple, a decimal and a date. And by
  * the key's OWN equality where its type does not decide: a class, `object`, an interface, a type
  * parameter, whose value may be a record, a decimal or an instance of a class overriding `Equals`.
+ * The slots and the finding are the {@link SlotTable} a `HashSet` keeps its elements in too.
  */
 export class Dictionary<K, V> implements Iterable<Pair<K, V>> {
-  /** Entries by slot, a freed slot `undefined` until an insertion takes it back. */
-  private readonly slots: ({ key: K; value: V } | undefined)[] = [];
-  /** The slots removals freed, the last freed on top: .NET's free list is last in, first out. */
-  private readonly freed: number[] = [];
-  /** Each slot of a key found by identity: every key, none when keys are found by value, and under
-   *  `'own'` every key but one with an equality of its own. */
-  private readonly index: Map<K, number> | null;
-  /** How a key is found. */
-  private readonly byValue: KeyEquality;
+  /** The entries, by slot, and how a key is found among them. */
+  private readonly table: SlotTable<K, { key: K; value: V }>;
   /** Bumped when a NEW key goes in, the one change .NET's enumerator refuses: an overwrite, a
    *  removal and `Clear` leave a walk over the pairs running (measured). */
   private version = 0;
 
   constructor(entries?: Iterable<readonly [K, V]> | null, byValue: KeyEquality = false) {
-    this.byValue = byValue;
-    this.index = byValue === true ? null : new Map<K, number>();
+    this.table = new SlotTable(byValue);
     if (entries) for (const [key, value] of entries) this.set(key, value);
   }
 
   /** `Count`. */
   get size(): number {
-    return this.slots.length - this.freed.length;
+    return this.table.size;
   }
 
   /** The key's slot, or -1. A null key is refused here, so every member refuses it as .NET's does. */
   private find(key: K): number {
     requireKey(key);
-    if (this.indexes(key)) return this.index!.get(key) ?? -1;
-    const same = this.byValue === 'own' ? sameKey : equals;
-    for (let slot = 0; slot < this.slots.length; slot++) {
-      const entry = this.slots[slot];
-      if (entry !== undefined && same(entry.key, key)) return slot;
-    }
-    return -1;
-  }
-
-  /** Whether the index holds this key's slot, rather than a walk over the slots finding it. */
-  private indexes(key: K): boolean {
-    return this.index !== null && !(this.byValue === 'own' && hasOwnEquality(key));
+    return this.table.find(key);
   }
 
   /** `ContainsKey`. */
@@ -93,19 +72,17 @@ export class Dictionary<K, V> implements Iterable<Pair<K, V>> {
    */
   get(key: K): V | undefined {
     const slot = this.find(key);
-    return slot < 0 ? undefined : this.slots[slot]!.value;
+    return slot < 0 ? undefined : this.table.entries[slot]!.value;
   }
 
   /** The indexer's write: a key already there keeps its slot, a new one takes the slot freed last. */
   set(key: K, value: V): this {
     const found = this.find(key);
     if (found >= 0) {
-      this.slots[found]!.value = value;
+      this.table.entries[found]!.value = value;
       return this;
     }
-    const slot = this.freed.length > 0 ? this.freed.pop()! : this.slots.length;
-    this.slots[slot] = { key, value };
-    if (this.indexes(key)) this.index!.set(key, slot);
+    this.table.insert({ key, value });
     this.version++;
     return this;
   }
@@ -122,37 +99,33 @@ export class Dictionary<K, V> implements Iterable<Pair<K, V>> {
    * type ({@link KeyEquality}, which eqc says of the VALUE type here).
    */
   containsValue(value: V, byValue: KeyEquality = false): boolean {
-    return containsValue(this.slots, value, byValue);
+    return containsValue(this.table.entries, value, byValue);
   }
 
   /** `Remove`: frees the key's slot for the next insertion, and answers whether the key was there. */
   delete(key: K): boolean {
     const slot = this.find(key);
     if (slot < 0) return false;
-    this.slots[slot] = undefined;
-    this.freed.push(slot);
-    if (this.indexes(key)) this.index!.delete(key);
+    this.table.release(slot);
     return true;
   }
 
   /** `Clear`: every slot goes, the freed ones too, so the next insertion takes the first. */
   clear(): void {
-    this.slots.length = 0;
-    this.freed.length = 0;
-    this.index?.clear();
+    this.table.clear();
   }
 
   /** `Keys`, in slot order. */
   keys(): K[] {
     const keys: K[] = [];
-    for (const entry of this.slots) if (entry !== undefined) keys.push(entry.key);
+    for (const entry of this.table.entries) if (entry !== undefined) keys.push(entry.key);
     return keys;
   }
 
   /** `Values`, in slot order. */
   values(): V[] {
     const values: V[] = [];
-    for (const entry of this.slots) if (entry !== undefined) values.push(entry.value);
+    for (const entry of this.table.entries) if (entry !== undefined) values.push(entry.value);
     return values;
   }
 
@@ -163,7 +136,7 @@ export class Dictionary<K, V> implements Iterable<Pair<K, V>> {
    */
   *[Symbol.iterator](): Iterator<Pair<K, V>> {
     const version = this.version;
-    for (const entry of this.slots) {
+    for (const entry of this.table.entries) {
       if (entry === undefined) continue;
       yield pair(entry.key, entry.value);
       if (this.version !== version) throw collectionModified();
@@ -181,7 +154,7 @@ export class Dictionary<K, V> implements Iterable<Pair<K, V>> {
    * entry is DEFINED, since assigning "__proto__" would reach the prototype's setter.
    */
   toJSON(): Record<string, V> {
-    return wireObject(this.slots);
+    return wireObject(this.table.entries);
   }
 }
 
@@ -217,45 +190,11 @@ export function containsValue<V>(
   value: V,
   byValue: KeyEquality,
 ): boolean {
-  const same = byValue === true ? equals : byValue === 'own' ? sameKey : sameValueZero;
+  const same = sameBy(byValue);
   for (const entry of entries) {
     if (entry !== undefined && same(entry.value, value)) return true;
   }
   return false;
-}
-
-/**
- * .NET's `EqualityComparer<object>.Default` on the values two keys turned out to be: identity (NaN
- * equal to NaN), a twin's own `equals` (a record, a struct, a decimal, a date, a class overriding
- * `Equals`), and the members of a tuple or an anonymous type, which have no twin to carry one. Two
- * of those are compared only with one of their own kind, as .NET's Equals checks the type first: an
- * anonymous type never equals a record with the same members.
- */
-export function sameKey(a: unknown, b: unknown): boolean {
-  if (sameItem(a, b)) return true;
-  return isPlainValue(a) && isPlainValue(b) && Array.isArray(a) === Array.isArray(b) && equals(a, b);
-}
-
-/** SameValueZero, a `Map`'s equality: identity, and NaN equal to NaN. */
-function sameValueZero(a: unknown, b: unknown): boolean {
-  return a === b || (a !== a && b !== b);
-}
-
-/** A tuple (an array) or an anonymous type (a plain object): a value compared by its members. */
-function isPlainValue(value: unknown): boolean {
-  if (Array.isArray(value)) return true;
-  if (value === null || typeof value !== 'object') return false;
-  const prototype = Object.getPrototypeOf(value);
-  return prototype === Object.prototype || prototype === null;
-}
-
-/** Whether a key has an equality of its own, which under `'own'` a walk over the slots asks. */
-function hasOwnEquality(key: unknown): boolean {
-  return (
-    key !== null &&
-    typeof key === 'object' &&
-    (typeof (key as { equals?: unknown }).equals === 'function' || isPlainValue(key))
-  );
 }
 
 /** A key as .NET's messages write it, by its `ToString`: a bool as True or False. */
