@@ -1,4 +1,6 @@
+using eQuantic.UI.Compiler.CodeGen;
 using FluentAssertions;
+using Microsoft.CodeAnalysis.CSharp;
 using Xunit;
 
 namespace eQuantic.UI.Compiler.Tests.Strategies;
@@ -105,4 +107,13 @@ public class CollectionEqualityLoweringTests
         TestHelper.ConvertExpression("numbers.FindIndex(count: 1, startIndex: 0, match: x => x > 0)")
             .Should().Be("$eq.collections.findIndex(this.numbers, (x) => x > 0, 0, 1)");
     }
+
+    [Theory]
+    // `findIndex` takes its predicate first, so `FindIndex(1, x => x > 4)` handed it the index (#488).
+    // The overloads' shapes say where each argument goes even with no model to bind them.
+    [InlineData("items.FindIndex(1, x => x > 4)", "$eq.collections.findIndex(items, (x) => x > 4, 1)")]
+    [InlineData("items.FindLastIndex(3, 2, x => x > 4)", "$eq.collections.findLastIndex(items, (x) => x > 4, 3, 2)")]
+    [InlineData("items.FindIndex(x => x > 4)", "items.findIndex((x) => x > 4)")]
+    public void WithNoModel_ARangedFindIndex_TakesItsRangeWhereDotNetDoes(string code, string expected) =>
+        new CSharpToJsConverter().ConvertExpression(SyntaxFactory.ParseExpression(code)).Should().Be(expected);
 }

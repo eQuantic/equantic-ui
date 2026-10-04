@@ -82,6 +82,18 @@ public class ListMethodStrategy : IExpressionIrStrategy
         if (method is not null && Bound(methodName, invocation, method, callerIr, element, context) is { } bound)
             return bound;
 
+        // With no model, FindIndex's and FindLastIndex's ranges still come before the predicate, which
+        // `findIndex` takes first: the runtime takes each where .NET's overloads put it (#488).
+        if (method is null && methodName is "FindIndex" or "FindLastIndex" && invocation.ArgumentList.Arguments.Count is 2 or 3)
+        {
+            context.UsedHelpers.Add(Eq.Import);
+            var helper = methodName == "FindIndex" ? Eq.ListFindIndex : Eq.ListFindLastIndex;
+            return ParameterTemplate.Call(invocation.ArgumentList.Arguments.Count == 2
+                    ? $"{helper}({{0}}, {{2}}, {{1}})"
+                    : $"{helper}({{0}}, {{3}}, {{1}}, {{2}})",
+                callerIr, invocation, null, context);
+        }
+
         var argsIr = invocation.ArgumentList.Arguments
             .Select(a => context.Converter.ConvertIr(a.Expression))
             .ToList();
