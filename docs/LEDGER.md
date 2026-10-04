@@ -1145,6 +1145,27 @@ record of a release, the wiki's Upgrading page is the distillate.
   back (`Cast`, `DefaultIfEmpty`) and a read-only face hiding a list, and both copy now. Each is a
   conformance case on both sides that failed against main. Proposed and archived through OpenSpec
   (`openspec/specs/transpiler-sequences`).
+- **2026-10-04 · A source map keeps every line it came from**: three carriers still wrote what they
+  held as text before any writer saw it, so none of their statements had a segment of its own: the
+  arrow a body with an `out` or `ref` parameter runs in
+  ([#487](https://github.com/eQuantic/equantic-ui/issues/487)), a member's expression body, and an
+  object creation, initializer or anonymous object
+  ([#492](https://github.com/eQuantic/equantic-ui/issues/492)), every line of a lambda's block they
+  held included. The wrapper is IR, built once for a method, a lambda and a local function, its own
+  lines the declaration's, and an iterator's buffer with it; an expression body takes the concise
+  body's one lowering; a creation and an object literal are nodes of their own (`JsNew`, `JsObject`),
+  and the three strategies leave the text baseline (81 to 78). The shared components' lambda
+  statements with no line of their own went from 59 to 0. A class that takes the default its interface
+  supplies wrote the default's lines into the class's file, at lines that file does not have
+  ([#490](https://github.com/eQuantic/equantic-ui/issues/490)): each mapping carries its tree now, and
+  the map names every file, each with its own text. The map escaped five characters by hand and the
+  JSON writer behind the web manifest and the asset catalog three, so a form feed in a C# comment or a
+  tab in an app's name made a file no JSON reader opens
+  ([#525](https://github.com/eQuantic/equantic-ui/issues/525)): every JSON the build lays out goes
+  through `JsonWriter`, whose escape is System.Text.Json's, and both maps through one map writer on top
+  of it. Each case failed on main, the frames read through the composed map of a Bun bundle among
+  them. Proposed and archived through OpenSpec (`openspec/specs/transpiler-source-maps`,
+  `openspec/specs/generated-files`).
 
 ## Retired documents
 
