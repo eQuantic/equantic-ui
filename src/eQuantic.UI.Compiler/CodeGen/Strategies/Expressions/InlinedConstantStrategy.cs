@@ -29,12 +29,13 @@ public class InlinedConstantStrategy : IConversionStrategy
     {
         MemberAccessExpressionSyntax =>
             TryResolveConstant(node, context, out _) || TryResolveInlinable(node, context, out _, out _),
-        // A bare name reaches a const of ANOTHER type only through `using static`, and one with no
-        // source has no twin for the identifier strategy's `Owner.member` to name. An in-source
-        // one keeps its reference, to the static its own module declares.
-        IdentifierNameSyntax identifier
-            when !(identifier.Parent is MemberAccessExpressionSyntax access && access.Name == identifier) =>
-            TryResolveConstant(node, context, out var field) && !field.Locations.Any(location => location.IsInSource),
+        // `using static System.Math;` then a bare `PI` reads the constant `Math.PI` reads, so it inlines
+        // as that one does: it fell to the rule for the app's own statics and read `Math.pI` (#485).
+        // Only a constant this compilation does not declare: an app's own, reached by its simple
+        // name, stays its twin's static.
+        IdentifierNameSyntax name when name.StandsAlone()
+            && context.SemanticHelper.GetSymbol(name) is IFieldSymbol { IsConst: true, ContainingType: { } owner }
+            && !owner.Locations.Any(location => location.IsInSource) => TryResolveConstant(node, context, out _),
         _ => false,
     };
 

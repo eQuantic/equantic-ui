@@ -6,11 +6,6 @@ export class ListView extends StatefulComponent {
     _viewport: number = 0;
     _first: number = 0;
     _last: number = -1;
-
-    static get $hydration() {
-        return { _offset: 'single', _viewport: 'single', itemExtent: 'single', width: { of: SizeValue, members: { value: 'single' } }, height: { of: SizeValue, members: { value: 'single' } } };
-    }
-
     declare count: number;
     declare itemExtent: number;
     declare itemBuilder: (value: number) => VisualNode;

@@ -24,7 +24,7 @@ public class NestedCopyClassTests
         var references = ((string)AppContext.GetData("TRUSTED_PLATFORM_ASSEMBLIES")!)
             .Split(Path.PathSeparator)
             .Where(path => path.EndsWith(".dll", StringComparison.OrdinalIgnoreCase))
-            .Select(path => (MetadataReference)MetadataReference.CreateFromFile(path));
+            .Select(path => (MetadataReference)TestReferences.Of(path));
 
         var compilation = CSharpCompilation.Create("Nested", [tree, usings], references,
             new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary,
@@ -78,7 +78,7 @@ public class NestedCopyClassTests
     {
         var section = Transpile(Localized);
 
-        section.Should().Contain("$eq.str(\"Strings\", \"About\")");
+        section.Should().Contain("$eq.str('Strings', 'About')");
         section.Should().MatchRegex(@"import \{[^}]*\$eq[^}]*\} from ""@equantic/runtime""",
             "a module that says $eq has to import it, or it fails to load whole");
     }

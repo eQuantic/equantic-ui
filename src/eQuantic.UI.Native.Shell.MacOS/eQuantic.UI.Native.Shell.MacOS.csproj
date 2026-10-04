@@ -19,4 +19,12 @@
     <ProjectReference Include="../eQuantic.UI.Native.Components/eQuantic.UI.Native.Components.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <!-- The accessibility bridge is internal — AppKit reaches it through accessibilityChildren, never
+         through a call — but what it hands AppKit is the claim to prove, and only AppKit can answer
+         it: the suite builds the elements through the real dispatch on a Mac and reads each role
+         back from the element, the way the window's own self-test does (#338). -->
+    <InternalsVisibleTo Include="eQuantic.UI.Native.Engine.Tests" />
+  </ItemGroup>
+
 </Project>

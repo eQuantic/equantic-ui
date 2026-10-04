@@ -109,6 +109,105 @@ public class StackFrameSourceMapTests
         }
         """;
 
+    /// <summary>A frame inside a lambda's block (#384): it read, through the map, as the line that
+    /// holds the lambda, whatever statement in the block had called. The sum keeps the call out of
+    /// tail position, as above.</summary>
+    private const string LambdaSource = """
+        using System;
+        using System.Collections.Generic;
+
+        namespace Demo;
+
+        public class Walker
+        {
+            public int Walk(int count)
+            {
+                var total = 0;
+                var values = new List<int> { count };
+                values.ForEach(value =>
+                {
+                    var seen = value * 10;
+                    total += Check(seen) + 1;
+                });
+                return total;
+            }
+
+            public int Check(int value)
+            {
+                if (value > 0)
+                {
+                    throw new InvalidOperationException("big");
+                }
+                return value;
+            }
+        }
+        """;
+
+    /// <summary>A frame in what follows a lambda's block, on its closing line: the statement that
+    /// holds the lambda, which the frame read as on main, and not the block's last statement, which
+    /// it read as once the block's statements carried marks and nothing marked the rest (found in
+    /// review, #384). The sum keeps the call out of tail position, as above.</summary>
+    private const string TailSource = """
+        using System;
+        using System.Collections.Generic;
+
+        namespace Demo;
+
+        public class Tail
+        {
+            public int Run(int count)
+            {
+                var values = new List<int> { count };
+                var kept = values.FindAll(value =>
+                {
+                    var doubled = value * 2;
+                    return doubled > 0;
+                }).Count + Check(count);
+                return kept;
+            }
+
+            public int Check(int value)
+            {
+                if (value > 0)
+                {
+                    throw new InvalidOperationException("tail");
+                }
+                return value;
+            }
+        }
+        """;
+
+    /// <summary>Strings holding U+2028 and U+2029 before the call (#491): JavaScript reads either as a
+    /// line break when it counts positions, Bun among them, and eqc's map counts only line feeds, so a
+    /// raw one moved every mapping after it a line down. String literals escaped them since #412; an
+    /// interpolated string's text kept them raw until #520. The sum keeps the call out of tail
+    /// position, as above.</summary>
+    private const string SeparatorSource = """
+        using System;
+
+        namespace Demo;
+
+        public class Separated
+        {
+            public int Run(int count)
+            {
+                var plain = "a\u2028b";
+                var text = $"{plain}\u2029{count}\u2028";
+                var result = Check(text.Length + count);
+                return result + 1;
+            }
+
+            public int Check(int value)
+            {
+                if (value > 0)
+                {
+                    throw new InvalidOperationException("separated");
+                }
+                return value;
+            }
+        }
+        """;
+
     /// <summary>The 1-based line of the first line of <paramref name="source"/> that contains <paramref name="text"/>.</summary>
     private static int LineOf(string source, string text) =>
         source.Split('\n').Select((line, index) => (line, index)).First(pair => pair.line.Contains(text)).index + 1;
@@ -139,6 +238,30 @@ public class StackFrameSourceMapTests
         Resolve(map, frames[0]).Should().Be(("Countdown.cs", LineOf(LoweredSource, "throw new InvalidOperationException")), $"the top frame is the throw:\n{stack}");
         Resolve(map, frames[1]).Should().Be(("Countdown.cs", LineOf(LoweredSource, "while (Check(n));")), $"the loop's condition called it:\n{stack}");
         Resolve(map, frames[2]).Should().Be(("Countdown.cs", LineOf(LoweredSource, "public int Size => Count(3) + 1;")), $"the getter called the loop:\n{stack}");
+    }
+
+    [SkippableFact]
+    public void AFrameInsideALambdasBlock_LeadsToTheStatementThatCalled()
+    {
+        var (stack, frames, map) = Throw(LambdaSource, "Walker", "new Walker().walk(1)");
+        Resolve(map, frames[0]).Should().Be(("Walker.cs", LineOf(LambdaSource, "throw new InvalidOperationException")), $"the top frame is the throw:\n{stack}");
+        Resolve(map, frames[1]).Should().Be(("Walker.cs", LineOf(LambdaSource, "total += Check(seen) + 1;")), $"the lambda's statement called it:\n{stack}");
+    }
+
+    [SkippableFact]
+    public void AFrameAfterALambdasBlock_LeadsToTheStatementThatHoldsIt()
+    {
+        var (stack, frames, map) = Throw(TailSource, "Tail", "new Tail().run(1)");
+        Resolve(map, frames[0]).Should().Be(("Tail.cs", LineOf(TailSource, "throw new InvalidOperationException")), $"the top frame is the throw:\n{stack}");
+        Resolve(map, frames[1]).Should().Be(("Tail.cs", LineOf(TailSource, "var kept = values.FindAll(value =>")), $"the statement's rest called it:\n{stack}");
+    }
+
+    [SkippableFact]
+    public void AFrameAfterAStringHoldingALineSeparator_LeadsToItsOwnLine()
+    {
+        var (stack, frames, map) = Throw(SeparatorSource, "Separated", "new Separated().run(1)");
+        Resolve(map, frames[0]).Should().Be(("Separated.cs", LineOf(SeparatorSource, "throw new InvalidOperationException")), $"the top frame is the throw:\n{stack}");
+        Resolve(map, frames[1]).Should().Be(("Separated.cs", LineOf(SeparatorSource, "var result = Check(text.Length + count);")), $"the next frame is the call, after the strings:\n{stack}");
     }
 
     /// <summary>
@@ -196,8 +319,8 @@ public class StackFrameSourceMapTests
         var references = ((string)AppContext.GetData("TRUSTED_PLATFORM_ASSEMBLIES")!)
             .Split(Path.PathSeparator)
             .Where(file => file.EndsWith(".dll", StringComparison.OrdinalIgnoreCase))
-            .Select(file => (MetadataReference)MetadataReference.CreateFromFile(file))
-            .Append(MetadataReference.CreateFromFile(typeof(eQuantic.UI.Primitives.VisualNode).Assembly.Location));
+            .Select(file => (MetadataReference)TestReferences.Of(file))
+            .Append(TestReferences.Of(typeof(eQuantic.UI.Primitives.VisualNode).Assembly.Location));
         var tree = CSharpSyntaxTree.ParseText(source, path: path);
         var compilation = CSharpCompilation.Create("Stack", [tree], references,
             new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));

@@ -5,11 +5,6 @@ export class TimePicker extends StatefulComponent {
     _open: boolean = false;
     _highlight: number = 0;
     static panelHeight: number = 260;
-
-    static get $hydration() {
-        return { selected: 'timeOnly', min: 'timeOnly', max: 'timeOnly' };
-    }
-
     declare selected: any;
     declare onChanged: ((timeOnly: TimeOnly) => void) | null;
     declare stepMinutes: number;
@@ -59,7 +54,7 @@ export class TimePicker extends StatefulComponent {
             list.add(new Pressable(new Box(new BoxStyle({ height: Sizing.height('medium', context.density), padding: EdgeInsets.symmetric(12, 0), width: SizeValue.fill, background: picked ? theme.colors('primary').subtle : highlighted ? theme.surfaceSubtle : null, hover: picked ? null : new StyleDiff({ background: theme.surfaceSubtle }) }), row), () => this.pick(slot), { role: 'option', selected: picked }));
         }
         let panel = new Box(new BoxStyle({ background: theme.surface, cornerRadius: new CornerRadii(theme.shape('medium')), borderWidth: 1, borderColor: theme.border, elevation: 2, padding: EdgeInsets.symmetric(0, 4), height: SizeValue.fixed(TimePicker.panelHeight), clip: true }), new ScrollView(list));
-        let picker: VisualNode = new Anchored(this.disabled ? box : new Pressable(box, this.toggle.bind(this), { label: this.label.length > 0 ? this.label : SdkStrings.chooseTime, expanded: this._open }), panel, { open: open, onDismiss: this.close.bind(this), matchAnchorWidth: true, panelRole: 'listbox', activeIndex: open ? highlight : -1 });
+        let picker: VisualNode = new Anchored(new Pressable(box, this.disabled ? null : this.toggle.bind(this), { disabled: this.disabled, label: this.label.length > 0 ? this.label : SdkStrings.chooseTime, expanded: this._open && !this.disabled }), panel, { open: open, onDismiss: this.close.bind(this), matchAnchorWidth: true, panelRole: 'listbox', activeIndex: open ? highlight : -1 });
         if (open) {
             picker = new Shortcut(picker, KeyChord.escape, this.close.bind(this));
             if (highlight >= 0) {

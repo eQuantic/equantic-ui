@@ -4,61 +4,105 @@ using System.Text;
 namespace eQuantic.UI.Compiler.CodeGen.Ir;
 
 /// <summary>
-/// THE SPELLING OF A STRING in the emitted JavaScript: single-quoted, with the backslash, the quote
-/// and the two line breaks escaped. A raw line feed or carriage return inside a string literal is a
-/// syntax error that takes the whole module with it, and the text was quoted by hand in nine places:
-/// five of them, a record's declared defaults among them, escaped the backslash and the quote only,
-/// so `string Joined = "a" + "\n"` was written with a line break inside its quotes.
+/// THE SPELLING OF A STRING in the emitted JavaScript: a single-quoted literal, or the text between a
+/// template literal's backticks. Every string or char VALUE the transpiler writes into a module is
+/// spelled here, a char's default included; what is quoted elsewhere is a name (an enum member's, a
+/// type's), which an identifier's characters keep from needing an escape, or a tag of the SDK's own.
 /// <para>
-/// Every character with no glyph of its own is escaped too, as <c>\uXXXX</c> in the upper case C#
-/// source spells it in: a control (the tab as <c>\t</c>), a format character, a mark, a separator
-/// other than the space (U+2028 and U+2029, legal inside a literal since ES2019, a line break to every
-/// tool older than that), a code point unassigned or for private use. Raw, each is text no reader of
-/// the module can see. So is a LONE surrogate, which UTF-8 has no bytes for: the module holding one
-/// could not be written, a strict encoder throwing and a lenient one writing U+FFFD, another
-/// character (#450). A surrogate PAIR is one character, which UTF-8 writes as it is.
+/// The text was quoted by hand in nine places, and five of them, a record's declared defaults among
+/// them, escaped the backslash and the quote only, so `string Joined = "a" + "\n"` was written with a
+/// line break inside its quotes. #520 found five more that wrote a value in a spelling that lost it:
+/// an interpolation's format (`$"{date:dd 'de' MMMM}"` closed its own quotes, and Bun refused the
+/// module), the default a named argument skips (`M.f('it's', 1)`, and a char with no quotes at all),
+/// the resource lookup, and the char literal and `nameof`, which wrote the C# SPELLING where the
+/// value belongs: `'\a'` is `'a'` to JavaScript, `'\x1'` a syntax error, and `nameof(@class)` was
+/// `'@class'`.
+/// </para>
+/// <para>
+/// A code unit is written as itself when it SHOWS as itself, and as a `\uXXXX` escape when it does not:
+/// <list type="bullet">
+/// <item>A surrogate that is not half of a pair has no UTF-8 encoding: `"x\uD83D"` stopped the whole
+/// build with EQ0001 when its module was written, naming no file, and a writer with a replacing
+/// encoder turns it into U+FFFD without a word.</item>
+/// <item>A control and a format character are invisible, and a raw line feed or carriage return
+/// ends the literal; the line feed, the carriage return and the tab keep their short escapes, and
+/// no other one is used (`\0` before a digit is an octal escape, which a module refuses).</item>
+/// <item>U+2028 and U+2029 are legal inside a literal since ES2019, and Bun reads them as line breaks
+/// when it maps positions, so a raw one moved every later line of the map (#491).</item>
+/// <item>A private-use character has no glyph outside the font that defines it, and a space other
+/// than U+0020 reads as one.</item>
+/// <item>A combining mark is drawn on the character before it, so one with nothing written before it
+/// to sit on, the first of a literal or one after an escape, would sit on the quote.</item>
+/// </list>
+/// Everything else, a well-formed pair included, is written raw: the module is UTF-8, and the
+/// bundler chooses the final spelling of what it ships.
 /// </para>
 /// </summary>
 internal static class JsStringLiteral
 {
+    /// <summary>The value as a single-quoted string literal.</summary>
     public static string Quote(string value)
     {
-        var quoted = new StringBuilder(value.Length + 2).Append('\'');
-        for (var i = 0; i < value.Length; i++)
-        {
-            var c = value[i];
-            if (char.IsHighSurrogate(c) && i + 1 < value.Length && char.IsLowSurrogate(value[i + 1]))
-            {
-                quoted.Append(c).Append(value[++i]);
-                continue;
-            }
-            switch (c)
-            {
-                case '\\': quoted.Append("\\\\"); break;
-                case '\'': quoted.Append("\\'"); break;
-                case '\n': quoted.Append("\\n"); break;
-                case '\r': quoted.Append("\\r"); break;
-                case '\t': quoted.Append("\\t"); break;
-                default:
-                    if (HasNoGlyph(c))
-                        quoted.Append("\\u").Append(((int)c).ToString("X4", CultureInfo.InvariantCulture));
-                    else
-                        quoted.Append(c);
-                    break;
-            }
-        }
-        return quoted.Append('\'').ToString();
+        var text = new StringBuilder(value.Length + 2).Append('\'');
+        Write(value, text, template: false);
+        return text.Append('\'').ToString();
     }
 
-    /// <summary>Whether a character shows nothing of its own where it stands: raw in the module, it is
-    /// text no reader can see, and a lone surrogate is text UTF-8 cannot hold.</summary>
-    private static bool HasNoGlyph(char c) => CharUnicodeInfo.GetUnicodeCategory(c) switch
+    /// <summary>The value as the text of a template literal, between its backticks or its holes. A
+    /// backtick and a <c>${</c> are escaped, so the text neither ends the template nor opens a hole.</summary>
+    public static string TemplateText(string value)
     {
-        UnicodeCategory.Control or UnicodeCategory.Format or UnicodeCategory.NonSpacingMark
-            or UnicodeCategory.EnclosingMark or UnicodeCategory.LineSeparator
-            or UnicodeCategory.ParagraphSeparator or UnicodeCategory.PrivateUse
-            or UnicodeCategory.OtherNotAssigned or UnicodeCategory.Surrogate => true,
-        UnicodeCategory.SpaceSeparator => c != ' ',
-        _ => false,
-    };
+        var text = new StringBuilder(value.Length);
+        Write(value, text, template: true);
+        return text.ToString();
+    }
+
+    private static void Write(string value, StringBuilder text, bool template)
+    {
+        var afterRaw = false;
+        for (var i = 0; i < value.Length; i++)
+        {
+            var unit = value[i];
+            var escape = unit switch
+            {
+                '\\' => @"\\",
+                '\'' when !template => @"\'",
+                '`' when template => @"\`",
+                '$' when template && i + 1 < value.Length && value[i + 1] == '{' => @"\$",
+                '\n' => @"\n",
+                '\r' => @"\r",
+                '\t' => @"\t",
+                _ => null,
+            };
+            if (escape is not null)
+            {
+                text.Append(escape);
+                afterRaw = false;
+                continue;
+            }
+
+            // A pair is one code point and is judged as one; a half of a pair alone is a Surrogate.
+            var length = char.IsHighSurrogate(unit) && i + 1 < value.Length && char.IsLowSurrogate(value[i + 1]) ? 2 : 1;
+            var codePoint = length == 2 ? char.ConvertToUtf32(unit, value[i + 1]) : unit;
+            var raw = ShowsAsItself(codePoint, afterRaw);
+            for (var k = i; k < i + length; k++)
+            {
+                if (raw) text.Append(value[k]);
+                else text.Append(@"\u").Append(((int)value[k]).ToString("X4", CultureInfo.InvariantCulture));
+            }
+            afterRaw = raw;
+            i += length - 1;
+        }
+    }
+
+    private static bool ShowsAsItself(int codePoint, bool afterRaw) =>
+        CharUnicodeInfo.GetUnicodeCategory(codePoint) switch
+        {
+            UnicodeCategory.Control or UnicodeCategory.Format or UnicodeCategory.Surrogate
+                or UnicodeCategory.PrivateUse or UnicodeCategory.LineSeparator
+                or UnicodeCategory.ParagraphSeparator => false,
+            UnicodeCategory.SpaceSeparator => codePoint == ' ',
+            UnicodeCategory.NonSpacingMark or UnicodeCategory.EnclosingMark => afterRaw,
+            _ => true,
+        };
 }

@@ -50,6 +50,20 @@ public class ClientNavigationStateTests
             new eQuantic.UI.Primitives.Text(Loaded, eQuantic.UI.Primitives.TypeRole.BodyM);
     }
 
+    /// <summary>A route whose content does not exist, which says so with its status and its title.</summary>
+    [eQuantic.UI.Primitives.Page("/gone")]
+    public sealed class GonePage : eQuantic.UI.Primitives.StatelessComponent,
+        eQuantic.UI.Primitives.IHandleStatus, IHandleMetadata
+    {
+        public int StatusCode => 404;
+
+        public void ConfigureMetadata(SeoBuilder seo) => seo.Title("Nothing Here");
+
+        public override eQuantic.UI.Primitives.VisualNode Build(
+            eQuantic.UI.Primitives.ComponentContext context) =>
+            new eQuantic.UI.Primitives.Text("Gone", eQuantic.UI.Primitives.TypeRole.BodyM);
+    }
+
     private static async Task<(WebApplication App, HttpClient Client)> StartAsync()
     {
         var builder = WebApplication.CreateBuilder();
@@ -76,6 +90,27 @@ public class ClientNavigationStateTests
         return JsonDocument.Parse(await response.Content.ReadAsStringAsync()).RootElement;
     }
 
+    /// <summary>
+    /// A page that answers with its own status still sends its payload, marked as the answer to a
+    /// navigation, so the client applies its title and head as a full load shows them: read off the
+    /// status alone, the payload was dropped and the previous page's head stayed.
+    /// </summary>
+    [Fact]
+    public async Task ANavigationToAPageWithAStatusOfItsOwn_CarriesItsPayloadMarked()
+    {
+        var (app, client) = await StartAsync();
+        await using var _ = app;
+
+        using var request = new HttpRequestMessage(HttpMethod.Get, "/gone");
+        request.Headers.Add("X-EQ-Navigate", "1");
+        var response = await client.SendAsync(request);
+
+        response.StatusCode.Should().Be(HttpStatusCode.NotFound, "the page's own answer travels too");
+        response.Headers.GetValues("X-EQ-Navigate").Should().Equal("1");
+        var payload = JsonDocument.Parse(await response.Content.ReadAsStringAsync()).RootElement;
+        payload.GetProperty("title").GetString().Should().Be("Nothing Here");
+    }
+
     [Fact]
     public async Task ANavigation_CarriesTheServerDataThePageWouldHaveHadOnAFullLoad()
     {
@@ -88,7 +123,7 @@ public class ClientNavigationStateTests
             "without it the page renders the empty state it shows while data loads, forever");
         // KEYED BY COMPONENT since a component the page composes may prefetch too — a flat map
         // could not say which one a field belongs to. The page is the first component expanded.
-        state.GetProperty(eQuantic.UI.Web.ComponentIdentity.Key(typeof(ProbePage), 0)).GetProperty("Loaded").GetString()
+        state.GetProperty(eQuantic.UI.Web.ComponentIdentity.Key(typeof(ProbePage), 0)).GetProperty("loaded").GetString()
             .Should().Be("from the server");
     }
 

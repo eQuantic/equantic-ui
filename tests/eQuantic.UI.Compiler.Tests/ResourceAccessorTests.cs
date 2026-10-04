@@ -56,8 +56,8 @@ public class ResourceAccessorTests
         var references = ((string)AppContext.GetData("TRUSTED_PLATFORM_ASSEMBLIES")!)
             .Split(Path.PathSeparator)
             .Where(p => p.EndsWith(".dll", StringComparison.OrdinalIgnoreCase))
-            .Select(p => (MetadataReference)MetadataReference.CreateFromFile(p))
-            .Append(MetadataReference.CreateFromFile(typeof(eQuantic.UI.Primitives.VisualNode).Assembly.Location));
+            .Select(p => (MetadataReference)TestReferences.Of(p))
+            .Append(TestReferences.Of(typeof(eQuantic.UI.Primitives.VisualNode).Assembly.Location));
         var compilation = CSharpCompilation.Create("L", trees, references,
             new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary,
                 nullableContextOptions: NullableContextOptions.Enable));
@@ -81,8 +81,8 @@ public class ResourceAccessorTests
         var references = ((string)AppContext.GetData("TRUSTED_PLATFORM_ASSEMBLIES")!)
             .Split(Path.PathSeparator)
             .Where(p => p.EndsWith(".dll", StringComparison.OrdinalIgnoreCase))
-            .Select(p => (MetadataReference)MetadataReference.CreateFromFile(p))
-            .Append(MetadataReference.CreateFromFile(typeof(eQuantic.UI.Primitives.VisualNode).Assembly.Location));
+            .Select(p => (MetadataReference)TestReferences.Of(p))
+            .Append(TestReferences.Of(typeof(eQuantic.UI.Primitives.VisualNode).Assembly.Location));
         var compilation = CSharpCompilation.Create("L3", trees, references,
             new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary,
                 nullableContextOptions: NullableContextOptions.Enable));
@@ -183,7 +183,7 @@ public class ResourceAccessorTests
         Assert.True(result.Success, string.Join("\n", result.Errors.Select(e => e.Message)));
         // The KEY is what the getter hands to GetString ("Hero.Title"), not the mangled
         // property name (Hero_Title) — the catalog speaks resx, not C#.
-        Assert.Contains("$eq.str(\"Strings\", \"Hero.Title\")", result.TypeScript);
+        Assert.Contains("$eq.str('Strings', 'Hero.Title')", result.TypeScript);
         Assert.DoesNotContain("Strings.heroTitle", result.TypeScript);
     }
 
@@ -220,7 +220,7 @@ public class ResourceAccessorTests
         Assert.True(result.Success, string.Join("\n", result.Errors.Select(e => e.Message)));
         // D11: the template is per-culture DATA resolved at call time — the composite format
         // rides the runtime helper with the lookup inside, never a compile-time evaluation.
-        Assert.Contains("$eq.text.stringFormat($eq.str(\"Strings\", \"Greeting\"), this.userName)",
+        Assert.Contains("$eq.text.stringFormat($eq.str('Strings', 'Greeting'), this.userName)",
             result.TypeScript);
     }
 
@@ -236,7 +236,7 @@ public class ResourceAccessorTests
         var references = ((string)AppContext.GetData("TRUSTED_PLATFORM_ASSEMBLIES")!)
             .Split(Path.PathSeparator)
             .Where(p => p.EndsWith(".dll", StringComparison.OrdinalIgnoreCase))
-            .Select(p => (MetadataReference)MetadataReference.CreateFromFile(p));
+            .Select(p => (MetadataReference)TestReferences.Of(p));
         var compilation = CSharpCompilation.Create("L2", trees, references,
             new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
 
@@ -271,7 +271,31 @@ public class ResourceAccessorTests
             """, adminDesigner);
 
         Assert.True(result.Success, string.Join("\n", result.Errors.Select(e => e.Message)));
-        Assert.Contains("$eq.str(\"Demo.Resources.Strings\", \"Hero.Title\")", result.TypeScript);
-        Assert.Contains("$eq.str(\"Admin.Strings\", \"Hero.Title\")", result.TypeScript);
+        Assert.Contains("$eq.str('Demo.Resources.Strings', 'Hero.Title')", result.TypeScript);
+        Assert.Contains("$eq.str('Admin.Strings', 'Hero.Title')", result.TypeScript);
+    }
+
+    [Fact]
+    public void AKeyHoldingAQuoteOrABackslash_IsSpelledAsAnyString()
+    {
+        // A key is whatever name the resx gives it, and the lookup quoted it by hand: a quote closed
+        // the string and a backslash escaped the character after it (#520).
+        var quotedDesigner = DesignerSource
+            .Replace("namespace Demo.Resources", "namespace Quoted")
+            .Replace("GetString(\"Greeting\"", "GetString(\"it's \\\"quoted\\\" \\\\ here\"");
+        var result = Compile("""
+            using eQuantic.UI.Primitives;
+
+            namespace Demo;
+
+            public sealed class Quoting : StatelessComponent
+            {
+                public override VisualNode Build(ComponentContext context) =>
+                    new Text(Quoted.Strings.Greeting, TypeRole.Display);
+            }
+            """, quotedDesigner);
+
+        Assert.True(result.Success, string.Join("\n", result.Errors.Select(e => e.Message)));
+        Assert.Contains("$eq.str('Quoted.Strings', 'it\\'s \"quoted\" \\\\ here')", result.TypeScript);
     }
 }

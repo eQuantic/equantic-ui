@@ -55,17 +55,33 @@ public class SwitchStatementStrategy : IStatementStrategy
 
     private static JsStatement ConvertAsNativeSwitch(SwitchStatementSyntax switchStmt, ConversionContext context, JsExpr expr)
     {
-        var cases = switchStmt.Sections.Select(section => new JsCase(
+        // The switch block's own declarations, in a block that is the switch's scope and no wider.
+        var declared = ExpressionVariableScanner.Declarations(SectionNames(switchStmt), context.TypeAnnotations);
+        // A section's statements sit two levels in, one more inside that block: converted there, so
+        // what they lay out (a lambda's block) indents as they do (found in review, #384).
+        var cases = Deeper(context, declared.Length == 0 ? 2 : 3, () => switchStmt.Sections.Select(section => new JsCase(
             section.Labels.Select(label => label switch
             {
                 CaseSwitchLabelSyntax caseLabel => $"case {context.Converter.ConvertExpression(caseLabel.Value)}",
                 _ => "default",
             }).ToList(),
-            section.Statements.Select(context.Converter.ConvertStatementIr).ToList())).ToList();
+            section.Statements.Select(context.Converter.ConvertStatementIr).ToList())).ToList());
         var switchStatement = JsStatement.Switch(expr, cases);
-        // The switch block's own declarations, in a block that is the switch's scope and no wider.
-        var declared = ExpressionVariableScanner.Declarations(SectionNames(switchStmt), context.TypeAnnotations);
         return declared.Length == 0 ? switchStatement : JsStatement.Block([JsStatement.Raw(declared.TrimEnd()), switchStatement]);
+    }
+
+    /// <summary><paramref name="convert"/> run <paramref name="levels"/> levels deeper than the switch.</summary>
+    private static T Deeper<T>(ConversionContext context, int levels, Func<T> convert)
+    {
+        context.Depth += levels;
+        try
+        {
+            return convert();
+        }
+        finally
+        {
+            context.Depth -= levels;
+        }
     }
 
     private static JsStatement ConvertAsIfChain(SwitchStatementSyntax switchStmt, JsExpr expr, ConversionContext context)
@@ -142,12 +158,13 @@ public class SwitchStatementStrategy : IStatementStrategy
         return JsStatement.Block(statements);
     }
 
-    /// <summary>A section's statements as a block — minus the `break` that only C# needs.</summary>
+    /// <summary>A section's statements as a block — minus the `break` that only C# needs — converted
+    /// where they sit, two levels in: the block of the chain, then the branch's own.</summary>
     private static JsStatement ConvertSectionBody(SwitchSectionSyntax section, ConversionContext context) =>
-        JsStatement.Block(section.Statements
+        JsStatement.Block(Deeper(context, 2, () => section.Statements
             .Where(stmt => stmt is not BreakStatementSyntax)
             .Select(context.Converter.ConvertStatementIr)
-            .ToList());
+            .ToList()));
 
     public int Priority => 0;
 }

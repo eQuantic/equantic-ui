@@ -179,9 +179,9 @@ public class NativeTemplateShellTests
         ((string)AppContext.GetData("TRUSTED_PLATFORM_ASSEMBLIES")!)
             .Split(Path.PathSeparator)
             .Where(path => path.Length > 0)
-            .Select(path => (MetadataReference)MetadataReference.CreateFromFile(path))
-            .Append(MetadataReference.CreateFromFile(
+            .Select(path => (MetadataReference)TestReferences.Of(path))
+            .Append(TestReferences.Of(
                 Assembly.Load("eQuantic.UI.Primitives").Location))
-            .Append(MetadataReference.CreateFromFile(
+            .Append(TestReferences.Of(
                 Assembly.Load("eQuantic.UI.Components").Location));
 }

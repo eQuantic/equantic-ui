@@ -6,7 +6,6 @@ AsExpressionStrategy
 AverageStrategy
 CastStrategy
 CheckedExpressionStrategy
-CollectionExpressionStrategy
 CollectionMaterializationStrategy
 ConditionalAccessStrategy
 ConsoleStrategy
@@ -38,7 +37,6 @@ InlinedConstantStrategy
 InterpolatedStringStrategy
 IsPatternStrategy
 LastStrategy
-ListMethodStrategy
 LookupIndexerStrategy
 MinMaxStrategy
 NameofStrategy

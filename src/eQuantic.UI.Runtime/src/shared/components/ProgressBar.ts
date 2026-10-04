@@ -9,11 +9,6 @@ export class ProgressBar extends StatefulComponent {
     _prominent: boolean = false;
     _label: string = '';
     _valueText: any = null;
-
-    static get $hydration() {
-        return { value: 'single' };
-    }
-
     declare value: any;
     declare variant: VariantValue;
 

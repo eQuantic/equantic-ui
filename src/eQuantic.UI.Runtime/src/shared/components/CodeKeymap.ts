@@ -32,7 +32,7 @@ export class CodeKeymap {
                         return true;
                     case 'v':
                         if (clipboard == null) return false;
-                        if (((clipboard.read() != null && clipboard.read().length > 0) && (pasted = clipboard.read(), true))) editor.paste(pasted);
+                        if ((($v4120) => (($v4120 != null && $v4120.length > 0) && (pasted = $v4120, true)))(clipboard.read())) editor.paste(pasted);
                         return true;
                     case '/':
                         return editor.toggleLineComment();

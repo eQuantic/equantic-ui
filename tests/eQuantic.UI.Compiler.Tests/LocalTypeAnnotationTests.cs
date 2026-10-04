@@ -32,7 +32,7 @@ public class LocalTypeAnnotationTests
             + $"class Wrapper {{ void Method(bool flag) {{ {bodyCode} }} }}";
         var tree = CSharpSyntaxTree.ParseText(classCode);
         var compilation = CSharpCompilation.Create("probe", [tree],
-            [MetadataReference.CreateFromFile(typeof(object).Assembly.Location)]);
+            [TestReferences.Of(typeof(object).Assembly.Location)]);
         _converter.SetSemanticModel(compilation.GetSemanticModel(tree));
 
         var method = tree.GetRoot().DescendantNodes().OfType<MethodDeclarationSyntax>().First();

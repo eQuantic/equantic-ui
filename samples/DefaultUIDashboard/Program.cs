@@ -4,6 +4,14 @@ using eQuantic.UI.Gtm;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Who is signed in: a service the container hands the identity screen, registered as a class. The
+// screen shows the name, and the authority never reaches a page.
+builder.Services.AddSingleton(new eQuantic.Console.ConsoleIdentity
+{
+    Authority = "https://login.example.test/console-tenant",
+    DisplayName = "Ada Lovelace",
+});
+
 // Add UI services
 builder.Services.AddUI(options =>
 {

@@ -9,9 +9,12 @@ public static class StringExtensions
     /// <summary>
     /// PascalCase C# identifier → camelCase JS identifier — the member/property casing the runtime
     /// expects (e.g. <c>FirstName</c> → <c>firstName</c>). Empty/null is returned unchanged.
+    /// <para>
+    /// The rule itself is <see cref="eQuantic.UI.TwinName"/>, shared with the source generator, whose
+    /// hydration manifest names what the server sends by the name this gives the twin's member.
+    /// </para>
     /// </summary>
-    public static string ToCamelCase(this string name) =>
-        string.IsNullOrEmpty(name) ? name : char.ToLowerInvariant(name[0]) + name[1..];
+    public static string ToCamelCase(this string name) => eQuantic.UI.TwinName.Of(name);
 
     /// <summary>
     /// Identifiers JS refuses in a module (modules are always strict): the reserved words, the

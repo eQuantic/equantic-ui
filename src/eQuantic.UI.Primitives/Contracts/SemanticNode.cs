@@ -10,7 +10,10 @@ public enum SemanticRole : byte
     TextField,
     /// <summary>A multiline editable code surface — a text area to a screen reader.</summary>
     CodeField,
-    /// <summary>An Adjustable: one stop, arrows adjust (slider, segmented control, radio group).</summary>
+    /// <summary>An Adjustable that moves along a range: one stop, and the adjust gesture steps it.
+    /// A tab strip and a radio group are Adjustables too, and each has a role of its own
+    /// (<see cref="TabBar"/>, <see cref="RadioGroup"/>), because what they hold is a set of
+    /// choices a reader walks, not a position.</summary>
     Slider,
     Image,
     /// <summary>A two-or-three-state check: the STATE rides <see cref="SemanticNode.Checked"/>,
@@ -44,15 +47,17 @@ public enum SemanticRole : byte
     ProgressIndicator,
 
     /// <summary>
-    /// A LABELLED GROUP THAT KEEPS WALKING — the one container role, and the only one here that does
-    /// not consume what is inside it. A reader stops on it, says its name, and then goes on into the
-    /// rows or the fields it holds.
+    /// A LABELLED GROUP THAT KEEPS WALKING — the first container role, and the plain one. A reader
+    /// stops on it, says its name, and then goes on into the rows or the fields it holds.
     /// <para>
-    /// It exists because every other role here is a LEAF: announcing consumes the subtree, which is
+    /// It exists because every role before it is a LEAF: announcing consumes the subtree, which is
     /// right for a button whose inner text is its name and catastrophic for a navigable grid, whose
     /// every row would vanish. <see cref="Navigable"/> and <see cref="Overlay"/> were both declining
     /// on Photon for exactly that reason while the web honoured them (#187), and a live region could
-    /// not have existed at all without it.
+    /// not have existed at all without it. The containers appended since say WHAT they group —
+    /// <see cref="TabBar"/>, <see cref="RadioGroup"/>, and the <see cref="Dialog"/> or
+    /// <see cref="AlertDialog"/> an open modal overlay is now (#501) — and keep walking the same
+    /// way.
     /// </para>
     /// <para>
     /// The platforms all have it: AXGroup on macOS, <c>android.view.ViewGroup</c> with screen-reader
@@ -60,6 +65,79 @@ public enum SemanticRole : byte
     /// </para>
     /// </summary>
     Group,
+
+    /// <summary>
+    /// One choice of an exclusive set. Its state is CHECKED-ness and rides
+    /// <see cref="SemanticNode.Checked"/>, as the web's <c>aria-checked</c> says it and as AppKit's
+    /// AXValue and Android's <c>isChecked</c> read it, which is not the picked-ness of a tab. UIKit
+    /// has no checked radio and says the chosen one with the Selected trait; <c>NativeRole</c>
+    /// carries that difference.
+    /// <para>
+    /// This and the four after it arrived together (#338): until then a radio, a tab, a menu item,
+    /// a list option and a navigation destination all reached the bridges as <see cref="Button"/>, because the semantics walk
+    /// knew three pressable roles and sent the rest to a catch-all. Appended, by the rule above.
+    /// </para>
+    /// </summary>
+    Radio,
+
+    /// <summary>One tab of a set. Its picked-ness rides <see cref="SemanticNode.Selected"/>, as the
+    /// web's <c>aria-selected</c> says it.</summary>
+    Tab,
+
+    /// <summary>One action in a menu: it is run, never picked, so it carries no state.</summary>
+    MenuItem,
+
+    /// <summary>One choice in a list of them, a select's or a time picker's. Its picked-ness rides
+    /// <see cref="SemanticNode.Selected"/>, as the web's <c>aria-selected</c> says it.</summary>
+    Option,
+
+    /// <summary>
+    /// One place a navigation bar, a rail or a list leads to. Where the user IS rides
+    /// <see cref="SemanticNode.Current"/>, as the web's <c>aria-current</c> says it, and the
+    /// platforms name it as they name a button — see <c>NativeRole</c> for why.
+    /// </summary>
+    Destination,
+
+    /// <summary>
+    /// The bar a set of tabs sits in — a <c>Tabs</c> strip. A CONTAINER, read and then walked into:
+    /// each <see cref="Tab"/> inside it is a stop of its own and says whether it is the picked one,
+    /// as the web's <c>tablist</c> of <c>tab</c>s does. Flutter's word for it is the same,
+    /// <c>SemanticsRole.tabBar</c>.
+    /// <para>
+    /// This and the four after it arrived together (#500, #501). Until then a tab strip and a radio
+    /// group reached every bridge as one unnamed slider whose tabs and radios were never read, a
+    /// combobox's trigger as a button, and a dialog as a plain <see cref="Group"/>. Appended, by the
+    /// rule above.
+    /// </para>
+    /// </summary>
+    TabBar,
+
+    /// <summary>A set of <see cref="Radio"/>s of which one is chosen — a <c>RadioGroup</c> or a
+    /// <c>SegmentedControl</c>. A container like <see cref="TabBar"/>: each radio inside it is a stop
+    /// of its own and carries its check, as the web's <c>radiogroup</c> of <c>radio</c>s does.</summary>
+    RadioGroup,
+
+    /// <summary>
+    /// A field that shows one choice and opens the list of the others — a <c>Select</c>'s or a
+    /// <c>TimePicker</c>'s trigger, the pressable a listbox panel hangs from. Whether the list is open
+    /// rides <see cref="SemanticNode.Expanded"/>, as the web's <c>aria-expanded</c> says it, and the
+    /// choices in it are <see cref="Option"/>s. Every one the library builds is SELECT-ONLY, which is
+    /// why the platforms hear it as their own drop-down rather than as an editable combo box; see
+    /// <c>NativeRole</c>.
+    /// </summary>
+    ComboBox,
+
+    /// <summary>
+    /// A layer that holds the screen until it is answered: an open modal <c>Overlay</c>, or a panel
+    /// the focus moves into, such as a date picker's calendar. A container whose name is the layer's
+    /// label, and what it holds follows it, as the web's <c>role="dialog"</c> does.
+    /// </summary>
+    Dialog,
+
+    /// <summary>A <see cref="Dialog"/> that interrupts, such as the destructive confirm, as the web's
+    /// <c>role="alertdialog"</c> does. Its own role because the platforms have their own words for
+    /// it.</summary>
+    AlertDialog,
 }
 
 /// <summary>A check's state, in ARIA's own three words. Mixed exists for checkboxes and nothing

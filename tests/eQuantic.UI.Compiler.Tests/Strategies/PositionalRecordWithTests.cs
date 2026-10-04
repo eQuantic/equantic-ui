@@ -27,7 +27,7 @@ public class PositionalRecordWithTests
         var code = declarations + $"\nclass Wrapper {{ void Method() {{ {bodyCode} }} }}";
         var tree = CSharpSyntaxTree.ParseText(code);
         var compilation = CSharpCompilation.Create("probe", [tree],
-            [MetadataReference.CreateFromFile(typeof(object).Assembly.Location)],
+            [TestReferences.Of(typeof(object).Assembly.Location)],
             new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
 
         var converter = new CSharpToJsConverter();

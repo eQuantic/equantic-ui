@@ -1,1 +1,27 @@
 #nullable enable
+eQuantic.UI.Primitives.SemanticRole.Radio = 12 -> eQuantic.UI.Primitives.SemanticRole
+eQuantic.UI.Primitives.SemanticRole.Tab = 13 -> eQuantic.UI.Primitives.SemanticRole
+eQuantic.UI.Primitives.SemanticRole.MenuItem = 14 -> eQuantic.UI.Primitives.SemanticRole
+eQuantic.UI.Primitives.SemanticRole.Option = 15 -> eQuantic.UI.Primitives.SemanticRole
+eQuantic.UI.Primitives.SemanticRole.Destination = 16 -> eQuantic.UI.Primitives.SemanticRole
+eQuantic.UI.Primitives.SemanticRole.TabBar = 17 -> eQuantic.UI.Primitives.SemanticRole
+eQuantic.UI.Primitives.SemanticRole.RadioGroup = 18 -> eQuantic.UI.Primitives.SemanticRole
+eQuantic.UI.Primitives.SemanticRole.ComboBox = 19 -> eQuantic.UI.Primitives.SemanticRole
+eQuantic.UI.Primitives.SemanticRole.Dialog = 20 -> eQuantic.UI.Primitives.SemanticRole
+eQuantic.UI.Primitives.SemanticRole.AlertDialog = 21 -> eQuantic.UI.Primitives.SemanticRole
+eQuantic.UI.Primitives.HydratedMemberAttribute
+eQuantic.UI.Primitives.HydratedMemberAttribute.Member.get -> string!
+eQuantic.UI.Primitives.HydratedMemberAttribute.Kind.get -> eQuantic.UI.Primitives.HydratedMemberKind
+eQuantic.UI.Primitives.HydratedMemberAttribute.Projection.get -> string?
+eQuantic.UI.Primitives.HydratedMemberAttribute.Projection.set -> void
+eQuantic.UI.Primitives.HydratedMemberKind
+eQuantic.UI.Primitives.HydratedMemberKind.Field = 0 -> eQuantic.UI.Primitives.HydratedMemberKind
+eQuantic.UI.Primitives.HydratedMemberKind.Property = 1 -> eQuantic.UI.Primitives.HydratedMemberKind
+eQuantic.UI.Primitives.HydratedMemberKind.CapturedParameter = 2 -> eQuantic.UI.Primitives.HydratedMemberKind
+eQuantic.UI.Primitives.HydratedMemberKind.BackingField = 3 -> eQuantic.UI.Primitives.HydratedMemberKind
+eQuantic.UI.Primitives.HydratedMemberAttribute.HydratedMemberAttribute(string! component, string! declaringType, string! member, eQuantic.UI.Primitives.HydratedMemberKind kind) -> void
+eQuantic.UI.Primitives.HydratedMemberAttribute.Component.get -> string!
+eQuantic.UI.Primitives.HydratedMemberAttribute.DeclaringType.get -> string!
+eQuantic.UI.Primitives.TwinIsDataAttribute
+eQuantic.UI.Primitives.TwinIsDataAttribute.TwinIsDataAttribute(string! reason) -> void
+eQuantic.UI.Primitives.TwinIsDataAttribute.Reason.get -> string!

@@ -1,3 +1,4 @@
+using System.Linq;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using eQuantic.UI.Compiler.CodeGen.Ir;
@@ -9,8 +10,9 @@ namespace eQuantic.UI.Compiler.CodeGen.Strategies;
 /// where JavaScript would do something else. The conversion is the same in both places, so it is
 /// decided in one: a null is the empty string (JavaScript writes <c>null</c>), a bool is
 /// <c>True</c>/<c>False</c> (JavaScript lowercases), a nullable value type follows its value or
-/// the empty string, an enum is its member NAME, and a fractional number is written in .NET's
-/// notation (<c>1E+17</c>, <c>-0</c>, a float's own digits). Integers, chars, longs and decimals
+/// the empty string, an enum is its member NAME, a fractional number is written in .NET's
+/// notation (<c>1E+17</c>, <c>-0</c>, a float's own digits), and a value the browser holds as data
+/// is its record text. Integers, chars, longs and decimals
 /// already read the same on both sides; a string known to be non-null is left alone.
 /// </summary>
 public static class StringConversion
@@ -26,7 +28,10 @@ public static class StringConversion
 
         var text = JsExprWriter.Write(converted);
         if (type is INamedTypeSymbol { TypeKind: TypeKind.Enum } enumType)
-            return JsExpr.Callish(Invocation.ToStringStrategy.EnumNameLookup(enumType, operand, text));
+            return JsExpr.Callish(Invocation.ToStringStrategy.EnumNameLookup(enumType, operand, text, context));
+        // A NULLABLE enum prints its value's name, and nothing for null (#452).
+        if (type.UnwrapNullable() is INamedTypeSymbol { TypeKind: TypeKind.Enum } nullableEnum)
+            return JsExpr.Callish(Types.EnumShape.Text(nullableEnum, text, context));
 
         // A string that MAY be null reads as itself or as nothing — the cheapest faithful spelling.
         // Annotated `string?` says so; a string from code with no nullable context (annotation
@@ -41,6 +46,17 @@ public static class StringConversion
         // String() keeps fixed notation up to 1e21, drops the sign of -0, and gives a float the
         // digits of the double underneath: "v=" + 0.1f read "v=0.10000000149011612".
         var real = type.UnwrapNullable() ?? type;
+
+        // A value the browser holds as DATA (`[TwinIsData]`, `Color`) is a plain object, whose own
+        // string is `[object Object]`. It reads as the record text .NET writes, from the members
+        // .NET prints, and a null one as nothing.
+        if (real is INamedTypeSymbol data && data.TwinIsData())
+        {
+            context.UsedHelpers.Add(Eq.Import);
+            var members = string.Join(", ", data.PrintedMembers().Select(member => $"'{member.Name}'"));
+            return JsExpr.Callish($"{Eq.RecordText}({text}, '{data.Name}', [{members}])");
+        }
+
         if (real.SpecialType is SpecialType.System_Double or SpecialType.System_Single)
         {
             context.UsedHelpers.Add(Eq.Import);

@@ -14,32 +14,16 @@
  * the dictionary, and every record key was the same "[object Object]".
  */
 import { Dictionary, keyText, type KeyEquality } from './dictionary';
-import { compare as compareStrings } from './string-statics';
+import { comparerOf, type Ordering } from './ordering';
 
 /**
- * How the values a `Max` or `Min` answers are ordered: `value` by `<` (an integer, a long, a char, a
- * bool), `real` by `<` with .NET's rules for NaN (a double, a float), `text` in the current
- * culture (a string, as `Comparer<string>.Default` orders one), and `comparable` by the value's own
- * `compareTo` (a decimal, a date, a type that implements `IComparable`).
+ * How the values a `Max` or `Min` answers are ordered, the table every ordering of the runtime reads
+ * ({@link comparerOf}). A real is the exception here: `Max` and `Min` pass a NaN over by .NET's own
+ * rules for them, below, rather than order it first.
  */
-export type Ordering = 'value' | 'real' | 'text' | 'comparable';
+export type { Ordering };
 
 const NO_ELEMENTS = 'Sequence contains no elements';
-
-interface Comparable {
-  compareTo(other: unknown): number;
-}
-
-function comparer(ordering: Ordering): (a: unknown, b: unknown) => number {
-  switch (ordering) {
-    case 'text':
-      return (a, b) => compareStrings(a as string, b as string, 'currentCulture');
-    case 'comparable':
-      return (a, b) => (a as Comparable).compareTo(b);
-    default:
-      return (a, b) => ((a as number) < (b as number) ? -1 : (a as number) > (b as number) ? 1 : 0);
-  }
-}
 
 /**
  * The largest (`direction` 1) or smallest (-1) value, by .NET's `MaxFloat`/`MinFloat` for a real
@@ -53,7 +37,7 @@ function extreme<T>(
   nullable: boolean,
   direction: 1 | -1,
 ): unknown {
-  const compare = comparer(ordering);
+  const compare = comparerOf(ordering);
   let found = false;
   let value: unknown = null;
   for (const item of source) {
@@ -149,4 +133,39 @@ export function toDictionary<T, K, V = T>(
     result.set(key, value);
   }
   return result;
+}
+
+/**
+ * A sequence as C# enumerates it, as the array the lowered operators call array methods on: an array
+ * as it is, a string by its chars (UTF-16 code units, where a spread gives code points), and anything
+ * else by its own iterator (a `Set`, a dictionary's pairs, the runtime's sorted set, queue, stack and
+ * linked list). LINQ over any of these called an array method the receiver does not have, and threw.
+ */
+export function seq<T>(source: Iterable<T> | string): T[] {
+  if (Array.isArray(source)) return source;
+  if (typeof source === 'string') return source.split('') as unknown as T[];
+  // Array.from reads an object that is not iterable as an EMPTY array: a value that crossed as a plain
+  // object where C# holds a sequence would count nothing, in silence. It says so instead.
+  if (typeof (source as { [Symbol.iterator]?: unknown } | null)?.[Symbol.iterator] !== 'function') {
+    throw new TypeError(`A sequence was expected: ${Object.prototype.toString.call(source)}`);
+  }
+  return Array.from(source);
+}
+
+/**
+ * A sequence as a `foreach` enumerates it, when its static type does not say whether it is a string
+ * (`object`, `IEnumerable`, `IEnumerable<char>`): a string by its chars, the UTF-16 code units, and
+ * anything else as it is, by its own iterator, which a dictionary's keeps watching for changes.
+ * JavaScript iterates a string by code point, so a pair behind an interface was one char.
+ */
+export function enumerable<T>(source: Iterable<T> | string): Iterable<T> {
+  return typeof source === 'string' ? (source.split('') as unknown as T[]) : source;
+}
+
+/**
+ * A NEW array of a sequence's elements, as `ToList` and `ToArray` make one: an array is copied too, so
+ * the copy and its source are two arrays, as in .NET, whatever the static type hid it behind.
+ */
+export function toArray<T>(source: Iterable<T> | string): T[] {
+  return Array.isArray(source) ? source.slice() : seq(source);
 }

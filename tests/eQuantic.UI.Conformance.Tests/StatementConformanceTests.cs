@@ -128,4 +128,133 @@ public class StatementConformanceTests
     [InlineData("var m = new Dictionary<string, int>(); try { var v = -m[\"gone\"]; return 1; } catch { return -1; }")] // -1
     public void OutOfRangeFailsWhereDotNetFails(string statements) =>
         ConformanceRunner.AssertStatementsSameAsDotNet(statements);
+
+    /// <summary>A lock's expression runs, once, before its body, as C# evaluates it: a call in it
+    /// ran nowhere (#475).</summary>
+    [SkippableTheory]
+    [InlineData("int n = 0; object Gate() { n++; return new object(); } lock (Gate()) { n *= 10; } return n;")] // 10
+    [InlineData("var gate = new object(); int n = 1; lock (gate) { n++; } return n;")]                        // 2
+    [InlineData("object gate = null; try { lock (gate) { return 1; } } catch { return 2; }")]                  // 2
+    [InlineData("object Gate() => null; try { lock (Gate()) { return 1; } } catch { return 2; }")]             // 2
+    public void ALocksExpression_Runs(string statements)
+    {
+        Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
+        ConformanceRunner.AssertStatementsSameAsDotNet(statements);
+    }
+
+    /// <summary><c>new object()</c> is a value with an identity of its own: it named a class
+    /// JavaScript does not have (#478).</summary>
+    [SkippableTheory]
+    [InlineData("var a = new object(); var b = new object(); return a == b;")]  // false
+    [InlineData("var a = new object(); var b = a; return a == b;")]             // true
+    [InlineData("var a = new object(); var b = new object(); return a.Equals(b);")]  // false
+    [InlineData("var a = new object(); return a.Equals(a);")]                   // true
+    [InlineData("var d = new Dictionary<object, int>(); d[new object()] = 1; d[new object()] = 2; return d.Count;")] // 2
+    [InlineData("return new object().ToString();")]                              // "System.Object"
+    [InlineData("var a = new object() { }; var b = new object() { }; return a == b;")] // false
+    [InlineData("object o = new() { }; return o.ToString() + o.Equals(o);")]         // "System.ObjectTrue"
+    public void ANewObject_IsAValueOfItsOwn(string statements)
+    {
+        Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
+        ConformanceRunner.AssertStatementsSameAsDotNet(statements);
+    }
+
+    /// <summary>
+    /// A for loop declares ONE variable, so every closure over it reads its last value; JavaScript's
+    /// head gave each iteration its own (#476). And a delegate read from a list and called in place
+    /// is the list's element, where it was read off <c>this</c> (#477).
+    /// </summary>
+    [SkippableTheory]
+    [InlineData("var fs = new List<Func<int>>(); for (int i = 0; i < 3; i++) fs.Add(() => i); return fs[0]() + fs[1]() + fs[2]();")] // 9
+    [InlineData("var fs = new List<Func<int>>(); for (int i = 0, j = 10; i < 2; i++, j--) fs.Add(() => i * 100 + j); return fs[0]() + fs[1]();")] // 416
+    [InlineData("var fs = new List<Func<int>>(); for (int i = 0; i < 3; i++) { var copy = i; fs.Add(() => copy); } return fs[0]() + fs[1]() + fs[2]();")] // 3
+    [InlineData("int total = 0; for (int i = 0; i < 3; i++) total += i; for (int i = 0; i < 2; i++) total += i; return total;")] // 4
+    [InlineData("Func<int, int>[] ops = [x => x + 1, x => x * 2]; return ops[1](ops[0](3));")]                // 8
+    [InlineData("Func<Func<int>> make = () => () => 7; return make()();")]                                   // 7
+    public void ALoopsVariable_IsOnePerLoop_AndADelegateIsCalledAsItsValue(string statements)
+    {
+        Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
+        ConformanceRunner.AssertStatementsSameAsDotNet(statements);
+    }
+
+    /// <summary>A static property guarding its own store with <c>field</c> keeps that store on the
+    /// type: a record's had no such property at all (#483).</summary>
+    [SkippableFact]
+    public void AStaticFieldBackedProperty_KeepsItsStoreOnTheType()
+    {
+        Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
+        ConformanceRunner.AssertStatementsSameAsDotNet(
+            "Shapes.Half = 9; var first = Shapes.Half; Shapes.Half = 20; return first * 100 + Shapes.Half;",
+            "public sealed record Shapes(string Tag) { public static int Half { get; set => field = value / 2; } }");
+    }
+
+    /// <summary>A store a property guards with <c>field</c> starts as its initializer, which C# writes
+    /// into it directly (#483). The class and component emitters are pinned in the compiler's
+    /// coverage tests, since this harness emits a prelude's records alone.</summary>
+    [SkippableFact]
+    public void AFieldBackedStore_StartsAsItsInitializer()
+    {
+        Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
+        ConformanceRunner.AssertStatementsSameAsDotNet(
+            "var before = Shapes.Scale; Shapes.Scale = 3; return before * 10 + Shapes.Scale;", // 76
+            "public sealed record Shapes(string Tag) { public static int Scale { get; set => field = value * 2; } = 7; }");
+    }
+
+    /// <summary>A local function with an out parameter keeps the callee contract its call unwraps,
+    /// as a method's and a lambda's do: it kept the out as a plain parameter (#541).</summary>
+    [SkippableTheory]
+    [InlineData("int Measure(string s, out int length) { length = s.Length; return 1; } var ok = Measure(\"abc\", out var n); return ok * 10 + n;")] // 13
+    [InlineData("bool Halve(int x, out int half) => (half = x / 2) > 0; var b = Halve(9, out var h); return (b ? 100 : 0) + h;")]                     // 104
+    public void ALocalFunctionsOut_ReachesItsCaller(string statements)
+    {
+        Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
+        ConformanceRunner.AssertStatementsSameAsDotNet(statements);
+    }
+
+    /// <summary>A long constant is a BigInt, as every long is: written as a number, the first
+    /// arithmetic with another long threw, the BCL's own ticks constants included.</summary>
+    [SkippableTheory]
+    [InlineData("long n = Limits.Five; n += 1L; return n.ToString();")]                                 // "6"
+    [InlineData("var t = TimeSpan.FromDays(2); return (t.Ticks / TimeSpan.TicksPerDay).ToString();")]   // "2"
+    [InlineData("return (Limits.Five * 2 + long.MaxValue / Limits.Huge).ToString();")]                   // "11"
+    public void ALongConstant_IsALong(string statements)
+    {
+        Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
+        ConformanceRunner.AssertStatementsSameAsDotNet(statements,
+            "public static class Limits { public const long Five = 5; public const long Huge = 9223372036854775807; }");
+    }
+
+    /// <summary>What a for loop's initializer declares is one variable for the whole loop, as the
+    /// loop's own are, and stays declared before what assigns it when a closure moves the loop's
+    /// variables in front of it (#476), a head of expressions included, whose out variables and
+    /// deconstruction are one for the loop too.</summary>
+    [SkippableTheory]
+    [InlineData("for (int i = Seed(out var n); i < n; i++) fs.Add(() => i * 10 + n); return fs[0]() + fs[1]();")] // 44
+    [InlineData("for (int i = Seed(out var n); i < 2; i++) fs.Add(() => n++); return fs[0]() * 10 + fs[1]();")]   // 23
+    [InlineData("for (Seed(out var n); n < 4; n++) fs.Add(() => n); return fs[0]() + fs[1]();")]                 // 8
+    [InlineData("for (var (i, j) = (0, 3); i < j; i++) fs.Add(() => i * 10 + j); return fs[0]() + fs[2]();")]   // 66
+    [InlineData("int k = 0; for (k = Seed(out var n); k < n; k++) fs.Add(() => k + n); return fs[0]() + fs[1]();")] // 8
+    public void AnInitializersOutVariable_IsOnePerLoop_WhenTheLoopIsHoisted(string loop)
+    {
+        Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
+        ConformanceRunner.AssertStatementsSameAsDotNet(
+            "int Seed(out int limit) { limit = 2; return 0; } var fs = new List<Func<int>>(); " + loop);
+    }
+
+    /// <summary>A lock's gate written through a conversion the app wrote runs that conversion, as C#
+    /// evaluates the gate before it takes the lock.</summary>
+    [SkippableFact]
+    public void ALocksGate_RunsItsConversion()
+    {
+        Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
+        ConformanceRunner.AssertStatementsSameAsDotNet(
+            "var token = new Token(1); lock ((Gate)token) { } return Gate.Made;", // 1
+            """
+            public sealed record Gate(int N) { public static int Made; }
+            public readonly record struct Token(int N)
+            {
+                public static explicit operator Gate(Token token) { Gate.Made++; return new Gate(token.N); }
+            }
+            """);
+    }
 }

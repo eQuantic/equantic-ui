@@ -144,15 +144,16 @@ public class LinqStrategyTests
     [Fact]
     public void Last_NoPredicate_MapsToLastElement()
     {
+        // The source read ONCE, as C# reads it: a member is bound, where it was written twice.
         var result = TestHelper.ConvertExpression("list.Last()");
-        result.Should().Be("(this.list[this.list.length - 1])");
+        result.Should().Be("(($0) => ($0[$0.length - 1]))(this.list)");
     }
 
     [Fact]
     public void LastOrDefault_NoPredicate_MapsWithNullCoalescing()
     {
         var result = TestHelper.ConvertExpression("list.LastOrDefault()");
-        result.Should().Be("(this.list[this.list.length - 1] ?? null)");
+        result.Should().Be("(($0) => ($0[$0.length - 1] ?? null))(this.list)");
     }
 
     [Fact]
@@ -229,12 +230,18 @@ public class LinqStrategyTests
     }
 
     [Fact]
-    public void MaxMin_WithNoFaithfulOrder_AreRefused()
+    public void MaxMin_OverAnEnum_OrdersByItsMembersValues()
     {
         // An enum's values cross as member NAMES, which order alphabetically where .NET orders by
-        // value, and a comparer has no form to call: each is refused where it was ordered wrongly.
-        TestHelper.DiagnosticsFor("var r = new[] { Size.Small, Size.Large }.Max()")
-            .Should().Contain(d => d.Code == "EQ1004" && d.Message.Contains("LINQ Max/Min over Size"));
+        // value, so the call carries its members' values (it was refused until it did).
+        TestHelper.ConvertExpression("new[] { Size.Small, Size.Large }.Max()")
+            .Should().Be("$eq.linq.max(['small', 'large'], undefined, { 'small': 0, 'medium': 1, 'large': 2 }, false)");
+    }
+
+    [Fact]
+    public void MaxMin_WithNoFaithfulOrder_AreRefused()
+    {
+        // A comparer has no form to call: it is refused where it was ordered wrongly.
         TestHelper.DiagnosticsFor("var r = numbers.Min(Comparer<int>.Default)")
             .Should().Contain(d => d.Code == "EQ1004" && d.Message.Contains("LINQ Max/Min with a comparer"));
         TestHelper.DiagnosticsFor("var r = numbers.Max()")

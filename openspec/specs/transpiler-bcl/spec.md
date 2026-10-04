@@ -126,3 +126,129 @@ A specifier the value's type does not take SHALL throw .NET's `FormatException` 
 
 - **WHEN** `(2.5).ToString("D")` runs
 - **THEN** it throws `Format specifier was invalid.`
+
+### Requirement: A sorted collection orders as its element type does
+
+A `SortedSet`, a `SortedDictionary` and a `SortedList` built in the browser SHALL order their
+elements or keys as .NET's `Comparer<T>.Default` orders the element type: a number by its value, a
+double with its NaN first and equal to another NaN, a string in the current culture, an enum by its
+value, and a decimal, a date and a type of the app's own that implements `IComparable` by its
+`CompareTo`. A `StringComparer.Ordinal` handed to a sorted set SHALL order by code unit.
+
+#### Scenario: Strings in the culture
+
+- **WHEN** browser-side code adds `b`, `B`, `a`, `A` and `_x` to a `SortedSet<string>` and enumerates it
+- **THEN** it enumerates `_x`, `a`, `A`, `b`, `B`, as in .NET
+
+#### Scenario: Decimals by their value
+
+- **WHEN** browser-side code adds `10m`, `9m`, `1.0m` and `1.00m` to a `SortedSet<decimal>`
+- **THEN** it holds three elements and enumerates `1.0`, `9`, `10`, as in .NET
+
+#### Scenario: An enum by its value
+
+- **WHEN** browser-side code adds `Mid`, `Alpha` and `Zeta` of `enum Rank { Zeta, Alpha, Mid = 5 }` to a
+  `SortedSet<Rank>`, and asks `Max()` of the three
+- **THEN** it enumerates `Zeta`, `Alpha`, `Mid`, and `Max()` is `Mid`, as in .NET
+
+#### Scenario: An ordinal comparer
+
+- **WHEN** browser-side code builds `new SortedSet<string>(StringComparer.Ordinal)` and adds `b`, `B`,
+  `a` and `A`
+- **THEN** it enumerates `A`, `B`, `a`, `b`, as in .NET
+
+### Requirement: A queue and a stack find a member by its value
+
+`Queue<T>.Contains` and `Stack<T>.Contains` SHALL answer as .NET's, by `EqualityComparer<T>.Default`:
+a decimal, a date, a record and a type that overrides `Equals` by its value.
+
+#### Scenario: A decimal in a queue
+
+- **WHEN** browser-side code enqueues `1m` on a `Queue<decimal>` and asks `Contains(1.00m)`
+- **THEN** the answer is `True`, as in .NET
+
+### Requirement: A member reached through using static answers as its qualified spelling
+
+A .NET member reached by its simple name through `using static` SHALL answer in the browser what
+its qualified spelling answers where the bare spelling reaches that translation: a `Math` and `MathF`
+member, a `string` static, an inlined constant and an enum's member. Any other platform member reached
+bare SHALL fail the build with EQ2004 rather than be emitted as a member of its class, even where its
+qualified spelling translates (`DateTime.Now`), until the bare spelling reaches that translation too.
+
+#### Scenario: Constants and methods
+
+- **WHEN** browser-side code writes, under `using static System.Double;`, `using static System.Math;`
+  and `using static System.String;`, `IsNaN(NaN)`, `Round(PI * 100) / 100` and
+  `Join(",", parts) + Empty`
+- **THEN** each answers what .NET answers: `true`, `3.14` and `a,b` for `parts` of `a` and `b`
+
+#### Scenario: An enum's member
+
+- **WHEN** browser-side code writes, under `using static System.DayOfWeek;`, `Monday == DayOfWeek.Monday`
+- **THEN** the answer is `true`, as in .NET
+
+#### Scenario: A member nothing translates
+
+- **WHEN** a component calls `WriteLine("built")` under `using static System.Console;`
+- **THEN** the build fails with EQ2004 naming `System.Console.WriteLine`
+
+### Requirement: An enum's text is .NET's
+
+An enum's `ToString()`, its interpolation and its concatenation SHALL write what .NET writes: a
+member's declared name, a `[Flags]` combination's set flags joined by `, ` in ascending order, a value
+no member names as its digits, and nothing for a null nullable enum. A format SHALL write what .NET
+writes for it: `D` the number, `X` its hex in the underlying type's width, `F` the set flags of any
+enum, and `G` or none the text above, and an unknown format SHALL throw. An alignment SHALL pad that
+text.
+
+#### Scenario: A flags combination
+
+- **WHEN** browser-side code prints `Perm.Read | Perm.Write` of `[Flags] enum Perm { None = 0, Read = 1, Write = 2, Exec = 4 }`
+- **THEN** it writes `Read, Write`, as in .NET
+
+#### Scenario: A format and an alignment
+
+- **WHEN** browser-side code writes `$"{r:D}|{r,6}|{r,-6:X}|"` for `Rank.Mid` of `enum Rank { Zeta, Alpha, Mid = 5 }`
+- **THEN** it writes `5|   Mid|00000005|`, as in .NET
+
+#### Scenario: A nullable enum
+
+- **WHEN** browser-side code writes `$"[{s,10}][{n,3}]"` for `Status? s = Status.Pending` and `Status? n = null`
+- **THEN** it writes `[   Pending][   ]`, as in .NET
+
+### Requirement: The statics of Enum read the enum's shape
+
+`Enum.Parse`, `TryParse`, `GetName`, `GetNames`, `GetValues` and `IsDefined` SHALL answer in the
+browser what they answer in .NET, for the enum their type argument or their `typeof` names: `Parse` reads a name, names
+joined by commas and a number, keeps the case unless told not to, and throws where .NET throws;
+`TryParse` leaves the enum's default on a failure, and the overload that takes a `Type` leaves null;
+`GetName` answers the name of the member with the value, or null where none has it;
+`GetNames` and `GetValues` follow the values; `IsDefined` reads its argument as the enum, a number, a
+declared name, or an `object` holding any of them.
+
+#### Scenario: Parse and TryParse
+
+- **WHEN** browser-side code calls `Enum.TryParse<Status>("nope", out var s)` and `Enum.Parse<Status>("pending", true)`
+- **THEN** the first answers false with `s` the first member, and the second answers `Pending`, as in .NET
+
+#### Scenario: An object holding the enum
+
+- **WHEN** browser-side code casts `Enum.Parse(typeof(Status), "Pending")` to `Status` and asks
+  `Enum.IsDefined(typeof(Status), o)` for `object o = Status.Pending`
+- **THEN** the cast is `Pending` and `IsDefined` answers true, as in .NET
+
+### Requirement: An enum crosses as a dictionary key
+
+A dictionary keyed by an enum SHALL cross between the server and the browser in both directions, its
+keys as the browser holds them: a member's camelCase name, and a `[Flags]` enum's number. A name no
+member has SHALL be refused, as a value and as a key.
+
+#### Scenario: Keys both ways
+
+- **WHEN** the server serializes a `Dictionary<Shelf, int>` and a `Dictionary<Channels, int>` keyed by a flags enum
+- **THEN** it writes `{"dataAccess":1,"core":2}` and `{"1":1,"3":3}`, and reads both back to the same dictionaries
+
+#### Scenario: A key no member has
+
+- **WHEN** the server reads `{"gone":1,"old":2}` as a `Dictionary<Shelf, int>`
+- **THEN** it throws a `JsonException` naming `'gone'`

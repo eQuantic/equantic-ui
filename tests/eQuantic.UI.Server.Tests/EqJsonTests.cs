@@ -147,4 +147,41 @@ public class EqJsonTests
         fromPascal!.Shelf.Should().Be(Shelf.DataAccess);
         fromOrdinal!.Shelf.Should().Be(Shelf.DataAccess);
     }
+    /// <summary>
+    /// A dictionary keyed by an enum crosses both ways, each key written as the transpiled side holds
+    /// it: a member's camelCase name, and a flags enum's number. EqJson refused the first both ways,
+    /// and wrote the second by its names (#442).
+    /// </summary>
+    [Fact]
+    public void ADictionaryKeyedByAnEnum_CrossesBothWays_AsTheBrowserHoldsItsKeys()
+    {
+        var byShelf = new Dictionary<Shelf, int> { [Shelf.DataAccess] = 1, [Shelf.Core] = 2 };
+        var byChannels = new Dictionary<Channels, int> { [Channels.Colors] = 1, [Channels.Colors | Channels.Shadow] = 3 };
+
+        var shelfJson = JsonSerializer.Serialize(byShelf, EqJson.Options);
+        var channelsJson = JsonSerializer.Serialize(byChannels, EqJson.Options);
+
+        shelfJson.Should().Be("{\"dataAccess\":1,\"core\":2}");
+        channelsJson.Should().Be("{\"1\":1,\"3\":3}");
+        JsonSerializer.Deserialize<Dictionary<Shelf, int>>(shelfJson, EqJson.Options).Should().Equal(byShelf);
+        JsonSerializer.Deserialize<Dictionary<Channels, int>>(channelsJson, EqJson.Options).Should().Equal(byChannels);
+    }
+
+    /// <summary>
+    /// A name no member has is refused, as System.Text.Json's own enum converter refuses it: read as
+    /// the default, a stale or forged value became the enum's first member, and two such keys of a
+    /// dictionary collapsed into one, or failed on a duplicate key that named neither.
+    /// </summary>
+    [Fact]
+    public void AnEnumTextNoMemberHas_IsRefused_AsAValueAndAsAKey()
+    {
+        var asValue = () => JsonSerializer.Deserialize<Shelf>("\"gone\"", EqJson.Options);
+        var asKey = () => JsonSerializer.Deserialize<Dictionary<Shelf, int>>("{\"gone\":1,\"old\":2}", EqJson.Options);
+        var asFlagsKey = () => JsonSerializer.Deserialize<Dictionary<Channels, int>>("{\"Nope\":1}", EqJson.Options);
+
+        asValue.Should().Throw<JsonException>().WithMessage("*'gone'*");
+        asKey.Should().Throw<JsonException>().WithMessage("*'gone'*");
+        asFlagsKey.Should().Throw<JsonException>().WithMessage("*'Nope'*");
+        JsonSerializer.Deserialize<Shelf>("\"DataAccess\"", EqJson.Options).Should().Be(Shelf.DataAccess);
+    }
 }

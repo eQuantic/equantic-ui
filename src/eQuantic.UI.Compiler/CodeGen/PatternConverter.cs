@@ -5,6 +5,7 @@ using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Operations;
 using eQuantic.UI.Compiler.CodeGen.Strategies;
+using eQuantic.UI.Compiler.CodeGen.Ir;
 
 namespace eQuantic.UI.Compiler.CodeGen;
 
@@ -50,6 +51,11 @@ public static class PatternConverter
             case DeclarationPatternSyntax declaration:
                 return TypeCheck(declaration.Type, access, context);
 
+            // `o is int or long`, `int => …`, `case int:` — a type with nothing bound (C# 9). It had
+            // no case here, so it fell to the default below and every such test was `false` (#482).
+            case TypePatternSyntax typePattern:
+                return TypeCheck(typePattern.Type, access, context);
+
             case RecursivePatternSyntax recursive:
                 return BuildRecursive(recursive, access, context, accessType);
 
@@ -81,20 +87,26 @@ public static class PatternConverter
     }
 
     /// <summary>
-    /// The test that <paramref name="access"/> matches a constant label or pattern: <c>===</c>, except
-    /// for a DECIMAL constant. That one is the runtime's Decimal, an object, which <c>===</c> compares
-    /// by identity, so <c>d is 1m</c>, <c>case decimal.One:</c> and a <c>1m =&gt;</c> arm never matched.
-    /// It compares by value through <c>$eq.equals</c>, as a lifted <c>==</c> does, which is false for
-    /// a null or a value of another type. The decimal is the constant the BOUND tree converted to the
-    /// input's type, so <c>d is 1</c> meets 1m.
+    /// The test that <paramref name="access"/> matches a constant label or pattern, by
+    /// <see cref="ConstantTest"/>'s one rule, with the constant the BOUND tree converted to the
+    /// input's type: a decimal is the runtime's Decimal, an object <c>===</c> compares by identity, so
+    /// <c>d is 1m</c>, <c>case decimal.One:</c> and a <c>1m =&gt;</c> arm never matched, and its exact
+    /// value is written from the bound constant, so <c>d is 1</c> meets 1m.
     /// </summary>
     internal static string ConstantMatch(SyntaxNode label, ExpressionSyntax constant, string access,
         ConversionContext context)
     {
-        if (DecimalConstant(label, context) is not { } value)
-            return $"{access} === {context.Converter.ConvertExpression(constant)}";
-        context.UsedHelpers.Add(Eq.Import);
-        return $"{Eq.Equals}({access}, {ConstantLiteral.Write(value, null, context)})";
+        var value = context.SemanticHelper.GetOperation(label) switch
+        {
+            IConstantPatternOperation pattern => pattern.Value,
+            ISingleValueCaseClauseOperation single => single.Value,
+            IPatternCaseClauseOperation { Pattern: IConstantPatternOperation pattern } => pattern.Value,
+            _ => null,
+        };
+        var text = DecimalConstant(label, context) is { } exact
+            ? ConstantLiteral.Write(exact, null, context)!
+            : context.Converter.ConvertExpression(constant);
+        return ConstantTest(access, text, value, context);
     }
 
     /// <summary>The decimal a constant pattern or a case label compares with, read from the bound
@@ -145,7 +157,8 @@ public static class PatternConverter
                         {
                             var receivers = ReceiverTypes(sp, PatternType(recursive, context) ?? accessType, context);
                             CollectBindings(sp.Pattern,
-                                access + string.Concat(path.Select((name, i) => "." + Camel(name, receivers[i]))),
+                                path.Select((name, i) => (name, i))
+                                    .Aggregate(access, (at, step) => Access(at, step.name, receivers[step.i], context)),
                                 context, bindings);
                         }
                 break;
@@ -198,10 +211,10 @@ public static class PatternConverter
                 var at = access;
                 for (var i = 0; i < path.Count - 1; i++)
                 {
-                    at = $"{at}.{Camel(path[i], receivers[i])}";
+                    at = Access(at, path[i], receivers[i], context);
                     checks.Add($"{at} != null");
                 }
-                var sub = BuildCondition(sp.Pattern, $"{at}.{Camel(path[^1], receivers[^1])}", context);
+                var sub = BuildCondition(sp.Pattern, Access(at, path[^1], receivers[^1], context), context);
                 if (sub != "true") checks.Add(sub);
             }
 
@@ -274,11 +287,17 @@ public static class PatternConverter
     /// </summary>
     public static string TypeCheck(TypeSyntax typeSyntax, string access, ConversionContext context)
     {
+        // A type the platform represents by a value of its own, read off the SYMBOL: the spelling
+        // missed `Int32` and `System.Int64`, and asked a long, which is a BigInt here, whether it was
+        // a number, so `o is long` was false for every long.
+        if (context.SemanticHelper.GetSymbol(typeSyntax) is INamedTypeSymbol known && ScalarCheck(known, access, context) is { } scalar)
+            return scalar;
         switch (typeSyntax.ToString())
         {
             case "string": return $"typeof {access} === 'string'";
-            case "int" or "double" or "float" or "long" or "decimal" or "number":
+            case "int" or "double" or "float" or "decimal" or "number":
                 return $"typeof {access} === 'number'";
+            case "long": return $"typeof {access} === 'bigint'";
             case "bool" or "boolean": return $"typeof {access} === 'boolean'";
         }
 
@@ -318,6 +337,65 @@ public static class PatternConverter
         }
 
         return $"{access} != null";
+    }
+
+    /// <summary>
+    /// The test that a value IS a constant, as a constant pattern asks it, by the constant's bound
+    /// value. A null is any absence, as <c>is null</c> is. A decimal is an object on this side and
+    /// compares by value, and so does a NaN, which a pattern matches where <c>===</c> never does.
+    /// Anything else is <c>===</c> its literal. One rule for <c>x is 5</c>, <c>case Limits.Max:</c>
+    /// and the binary <c>x is Limits.Max</c>, which parses as a type test and binds as a constant
+    /// (#451).
+    /// </summary>
+    internal static string ConstantTest(string access, string constant, IOperation? value, ConversionContext context)
+    {
+        if (value?.ConstantValue is { HasValue: true } known)
+        {
+            if (known.Value is null) return $"{access} == null";
+            if (known.Value is decimal or double.NaN or float.NaN)
+            {
+                context.UsedHelpers.Add(Eq.Import);
+                return $"{Eq.Equals}({access}, {constant})";
+            }
+        }
+        return $"{access} === {constant}";
+    }
+
+    /// <summary>
+    /// The test for a type the browser holds as a value of its own: a string (a char is one too), a
+    /// bool, a long as a BigInt, an integer as a whole number, a real as any number, and a decimal and
+    /// the dates as the runtime's classes. Null for every other type. A boxed double holding a whole
+    /// number still tests as an int, since both are one JavaScript number.
+    /// </summary>
+    private static string? ScalarCheck(INamedTypeSymbol type, string access, ConversionContext context)
+    {
+        switch (type.SpecialType)
+        {
+            case SpecialType.System_String:
+                return $"typeof {access} === 'string'";
+            // A char is one UTF-16 code unit, a string of one here: any longer string is not one.
+            case SpecialType.System_Char:
+                return $"typeof {access} === 'string' && {access}.length === 1";
+            case SpecialType.System_Boolean:
+                return $"typeof {access} === 'boolean'";
+            case SpecialType.System_Int64 or SpecialType.System_UInt64:
+                return $"typeof {access} === 'bigint'";
+            case SpecialType.System_Int32 or SpecialType.System_Int16 or SpecialType.System_SByte
+                or SpecialType.System_Byte or SpecialType.System_UInt16 or SpecialType.System_UInt32:
+                return $"Number.isInteger({access})";
+            case SpecialType.System_Double or SpecialType.System_Single:
+                return $"typeof {access} === 'number'";
+            case SpecialType.System_Decimal or SpecialType.System_DateTime:
+                context.UsedRuntimeTypes.Add(type.Name);
+                return $"{access} instanceof {type.Name}";
+        }
+        if (type.ContainingNamespace?.ToDisplayString() == "System"
+            && type.Name is "TimeSpan" or "DateOnly" or "TimeOnly" or "DateTimeOffset")
+        {
+            context.UsedRuntimeTypes.Add(type.Name);
+            return $"{access} instanceof {type.Name}";
+        }
+        return null;
     }
 
     /// <summary>
@@ -403,12 +481,14 @@ public static class PatternConverter
     /// collection's <c>Count</c> is <c>length</c>, a string's <c>Length</c> likewise. Lower-casing
     /// blindly emitted <c>actions.count</c> on a JS array — <c>undefined</c>, so
     /// <c>Actions is { Count: > 3 }</c> was quietly always false, with nothing to see at build time.
-    /// A dictionary's <c>Count</c> is its runtime class's <c>size</c>.
+    /// A <c>Count</c> reads as a member access reads it (<see cref="Strategies.CountSpelling"/>, one
+    /// table for both): <c>{ Roles.Count: > 0 }</c> over a set read <c>length</c>, and was false in the
+    /// browser where the server had drawn the other branch (#516).
     /// </summary>
-    private static string Camel(string name, ITypeSymbol? receiver) => name switch
+    private static string Access(string at, string name, ITypeSymbol? receiver, ConversionContext context) => name switch
     {
-        "Count" when receiver.IsDictionary() => "size",
-        "Count" or "Length" => "length",
-        _ => string.IsNullOrEmpty(name) ? name : char.ToLowerInvariant(name[0]) + name.Substring(1),
+        "Count" => JsExprWriter.Write(Strategies.CountSpelling.Read(JsExpr.Opaque(at), receiver, context)),
+        "Length" => $"{at}.length",
+        _ => $"{at}.{TwinName.Of(name)}",
     };
 }

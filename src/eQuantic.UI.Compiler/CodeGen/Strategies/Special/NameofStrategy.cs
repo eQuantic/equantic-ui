@@ -1,6 +1,7 @@
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using eQuantic.UI.Compiler.CodeGen.Ir;
 
 namespace eQuantic.UI.Compiler.CodeGen.Strategies.Special;
 
@@ -29,13 +30,13 @@ public class NameofStrategy : IConversionStrategy
         if (invocation.ArgumentList.Arguments.Count == 0)
             return "''";
 
-        var argument = invocation.ArgumentList.Arguments[0].Expression;
-
-        // Get the name of the identifier or member
-        var name = ExtractName(argument);
-
-        // Return as JavaScript string literal
-        return $"'{name}'";
+        // nameof is a CONSTANT, and the model knows its value: the name, not its spelling, so
+        // nameof(@class) is "class" where the identifier's text wrote '@class' (#520). The syntax
+        // answers only where the model cannot be asked.
+        var name = context.SemanticHelper.TryGetConstantValue(node, out var constant) && constant is string bound
+            ? bound
+            : ExtractName(invocation.ArgumentList.Arguments[0].Expression);
+        return JsStringLiteral.Quote(name);
     }
 
     private string ExtractName(ExpressionSyntax expression)
@@ -43,13 +44,13 @@ public class NameofStrategy : IConversionStrategy
         return expression switch
         {
             // Simple identifier: nameof(x) -> "x"
-            IdentifierNameSyntax identifier => identifier.Identifier.Text,
+            IdentifierNameSyntax identifier => identifier.Identifier.ValueText,
 
             // Member access: nameof(obj.Property) -> "Property"
-            MemberAccessExpressionSyntax memberAccess => memberAccess.Name.Identifier.Text,
+            MemberAccessExpressionSyntax memberAccess => memberAccess.Name.Identifier.ValueText,
 
             // Generic name: nameof(List<int>) -> "List"
-            GenericNameSyntax genericName => genericName.Identifier.Text,
+            GenericNameSyntax genericName => genericName.Identifier.ValueText,
 
             // Qualified name: nameof(System.String) -> "String"
             QualifiedNameSyntax qualifiedName => ExtractName(qualifiedName.Right),

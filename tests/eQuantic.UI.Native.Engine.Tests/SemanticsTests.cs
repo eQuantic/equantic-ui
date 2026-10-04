@@ -316,9 +316,10 @@ public class SemanticsTests
     }
 
     /// <summary>
-    /// The value is the SLIDER role's here too. The bridges report all three roles as one, so nothing
-    /// on this side would notice — but the node's contract says a tablist and a radiogroup announce a
-    /// SELECTION their children state, and a contract that holds only in the DOM is not a contract.
+    /// The value is the SLIDER role's here too: a tablist and a radiogroup announce a SELECTION their
+    /// children state, and a contract that holds only in the DOM is not a contract. Each is its own
+    /// role since #500, where this theory used to find all three as a slider — the bridges reported
+    /// them as one, which is how a tab strip reached every platform as a nameless slider.
     /// <para>
     /// Reachable since <c>UI.Adjustable</c> grew a value argument beside a role one: before that, no
     /// component in the library could build the pair, and the divergence would have shipped on the
@@ -326,15 +327,18 @@ public class SemanticsTests
     /// </para>
     /// </summary>
     [Theory]
-    [InlineData(AdjustableRole.Tablist)]
-    [InlineData(AdjustableRole.Radiogroup)]
-    public void AGroupRoleAnnouncesNoValue_TheSameRuleTheWebApplies(AdjustableRole role)
+    [InlineData(AdjustableRole.Tablist, SemanticRole.TabBar)]
+    [InlineData(AdjustableRole.Radiogroup, SemanticRole.RadioGroup)]
+    public void AGroupRoleAnnouncesNoValue_TheSameRuleTheWebApplies(AdjustableRole role, SemanticRole announcedAs)
     {
         var host = new PhotonHost(new GroupPage { Role = role }, PhotonTheme.Instance, ThemeMode.Light, 400, 400);
         host.RenderFrame(new DisplayListBuilder());
 
-        var announced = host.Semantics().Single(s => s.Role == SemanticRole.Slider);
+        var announced = host.Semantics().Single(s => s.Role == announcedAs);
         announced.Label.Should().Be("Period", "the NAME is still announced");
         announced.Value.Should().BeNull("ARIA has no valuenow for either role, and neither realizer invents one");
+        announced.Range.Should().BeNull("nor a range, which is the number behind a value");
+        host.Semantics().Should().NotContain(s => s.Role == SemanticRole.Slider,
+            "a set of choices is not a position on a range");
     }
 }

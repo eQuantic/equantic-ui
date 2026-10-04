@@ -1,5 +1,6 @@
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using eQuantic.UI.Compiler.CodeGen.Ir;
 
 namespace eQuantic.UI.Compiler.CodeGen.Strategies.Linq;
 
@@ -40,23 +41,28 @@ public class LastStrategy : IConversionStrategy
         var memberAccess = (MemberAccessExpressionSyntax)invocation.Expression;
         var methodName = memberAccess.Name.Identifier.Text;
 
-        var caller = context.Converter.ConvertExpression(memberAccess.Expression);
         var args = invocation.ArgumentList.Arguments;
         // The default of the ELEMENT — see DefaultValue; null is only right for a reference type.
         var isOrDefault = methodName == "LastOrDefault";
-        var defaultSuffix = isOrDefault
-            ? $" ?? {DefaultValue.OfElement(context.SemanticHelper.GetType(memberAccess.Expression), context)}"
-            : "";
+        var elementDefault = isOrDefault
+            ? DefaultValue.OfElement(context.SemanticHelper.GetType(memberAccess.Expression), context)
+            : null;
 
         if (args.Count > 0)
         {
             // Last(predicate) -> filter then get last
+            var caller = LinqSource.Text(memberAccess.Expression, context);
             var predicate = context.Converter.ConvertExpression(args[0].Expression);
-            return $"({caller}.filter({predicate}).pop(){defaultSuffix})";
+            return $"({caller}.filter({predicate}).pop(){(elementDefault is null ? "" : $" ?? {elementDefault}")})";
         }
 
-        // Last() -> array[array.length - 1]
-        return $"({caller}[{caller}.length - 1]{defaultSuffix})";
+        // Last() -> array[array.length - 1], the source read ONCE: the template binds a part it names
+        // twice, where the text wrote the source twice, and a sequence that is not an array was read
+        // into one twice.
+        var source = LinqSource.Ir(memberAccess.Expression, context);
+        return JsExprWriter.Write(elementDefault is null
+            ? JsExpr.Template("({0}[{0}.length - 1])", [source], context.TypeAnnotations)
+            : JsExpr.Template("({0}[{0}.length - 1] ?? {1})", [source, JsExpr.Opaque(elementDefault)], context.TypeAnnotations));
     }
 
     public int Priority => 10;

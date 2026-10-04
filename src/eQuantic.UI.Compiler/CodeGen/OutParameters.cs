@@ -1,6 +1,7 @@
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using eQuantic.UI.Compiler.CodeGen.Ir;
 
 namespace eQuantic.UI.Compiler.CodeGen;
 
@@ -42,6 +43,31 @@ internal static class OutParameters
     /// <summary>An `out` parameter is not passed IN, so it leaves the JS signature; a `ref` one is
     /// read before it is written, so it stays.</summary>
     public static bool IsOut(ParameterSyntax parameter) => parameter.Modifiers.Any(SyntaxKind.OutKeyword);
+
+    /// <summary>
+    /// The body of an ARROW that has them, a lambda's or a local function's: a block's statements,
+    /// or an expression body's return with what it declares in front, run inside
+    /// <see cref="WrapBody"/>. One owner, because the local function kept its outs as plain
+    /// parameters while the lambda wrapped them, and every call site unwraps (#541).
+    /// </summary>
+    public static JsStatement ArrowBody(BlockSyntax? block, ExpressionSyntax? expressionBody,
+        IReadOnlyList<ParameterSyntax> byReference, bool isAsync, ConversionContext context)
+    {
+        var inner = block != null
+            ? TrimBraces(context.Converter.ConvertBlock(block))
+            : ExpressionVariableScanner.Declarations(expressionBody, context.TypeAnnotations)
+                + $"return {context.Converter.ConvertExpression(expressionBody!)};";
+        return JsStatement.Raw($"{{ {WrapBody(inner, byReference, isAsync)} }}");
+    }
+
+    /// <summary>The statements of a converted block, without its outer braces.</summary>
+    private static string TrimBraces(string block)
+    {
+        var trimmed = block.Trim();
+        return trimmed.StartsWith('{') && trimmed.EndsWith('}')
+            ? trimmed[1..^1].Trim()
+            : trimmed;
+    }
 
     /// <summary>
     /// The body of a method that has them: outs declared, the original body run as a closure so its

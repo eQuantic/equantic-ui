@@ -6,6 +6,7 @@ using Microsoft.CodeAnalysis.CSharp.Syntax;
 using eQuantic.UI.Compiler.Services;
 
 using eQuantic.UI.Compiler.CodeGen.Extensions;
+using eQuantic.UI.Compiler.CodeGen.Ir;
 
 namespace eQuantic.UI.Compiler.CodeGen.Strategies.Expressions;
 
@@ -31,6 +32,25 @@ public class ObjectCreationStrategy : IConversionStrategy
         if (context.SemanticHelper.GetType(node)?.ToDisplayString() == "System.Threading.Lock")
             return "{}";
 
+        // `new object()` — a value with nothing but its identity, the gate a `lock` takes or a
+        // sentinel: the runtime's, since a plain `{}` is an anonymous type here, compared by its
+        // members, so two of them were Equal and one dictionary key. `new object()` named a class
+        // JavaScript does not have, and threw where it ran (#478). An empty initializer, the only one
+        // an object can take, changes nothing: `new object() { }` and `new() { }` are the same value.
+        if (context.SemanticHelper.GetType(node) is { SpecialType: SpecialType.System_Object }
+            && node is BaseObjectCreationExpressionSyntax { Initializer: null or { Expressions.Count: 0 } })
+        {
+            context.UsedHelpers.Add(Eq.Import);
+            return $"{Eq.NewObject}()";
+        }
+
+        // `new string(chars)` and `new string(c, n)`: the text they build, where `new string(…)` named a
+        // class JavaScript does not have (#524).
+        if (context.SemanticHelper.GetType(node) is { SpecialType: SpecialType.System_String }
+            && context.SemanticHelper.GetOperation(node) is Microsoft.CodeAnalysis.Operations.IObjectCreationOperation creation
+            && NewString(creation, context) is { } text)
+            return text;
+
         if (node is ObjectCreationExpressionSyntax objCreation)
         {
             return ConvertExplicit(objCreation, context);
@@ -40,6 +60,42 @@ public class ObjectCreationStrategy : IConversionStrategy
             return ConvertImplicit(implicitCreation, context);
         }
         throw new InvalidOperationException("Invalid node type");
+    }
+
+    /// <summary>
+    /// The text a string constructor builds: its chars joined (none for a null array, as .NET's
+    /// <c>new string((char[])null)</c> is empty), a char repeated, or a range of chars joined. Null
+    /// for an overload with no such reading here (a span, a pointer). Each argument is placed by the
+    /// parameter it binds to, so a named argument written out of order fills its own, and the parts
+    /// keep their written order, the order C# evaluates them in, which the template writer preserves
+    /// where the holes follow another.
+    /// </summary>
+    private static string? NewString(Microsoft.CodeAnalysis.Operations.IObjectCreationOperation creation,
+        ConversionContext context)
+    {
+        if (creation.Constructor is not { } constructor) return null;
+        var template = constructor.Parameters.Select(parameter => parameter.Type).ToArray() switch
+        {
+            [IArrayTypeSymbol] => "({0} ?? []).join('')",
+            [{ SpecialType: SpecialType.System_Char }, { SpecialType: SpecialType.System_Int32 }] => "{0}.repeat({1})",
+            // The range refused where it leaves the array, as .NET refuses it: `slice` clamped it.
+            [IArrayTypeSymbol, { SpecialType: SpecialType.System_Int32 }, { SpecialType: SpecialType.System_Int32 }]
+                => $"{Eq.TextChars}({{0}}, {{1}}, {{2}}).join('')",
+            _ => null,
+        };
+        if (template is null || creation.Arguments.Length != constructor.Parameters.Length) return null;
+        if (template.Contains("$eq.")) context.UsedHelpers.Add(Eq.Import);
+        var parts = new List<Ir.JsExpr>();
+        var slots = new int[constructor.Parameters.Length];
+        foreach (var argument in creation.Arguments)
+        {
+            if (argument.Parameter is not { } parameter || argument.Value.Syntax is not ExpressionSyntax value) return null;
+            slots[parameter.Ordinal] = parts.Count;
+            parts.Add(context.Converter.ConvertIr(value));
+        }
+        var placed = System.Text.RegularExpressions.Regex.Replace(template, @"\{(\d)\}",
+            hole => $"{{{slots[hole.Groups[1].Value[0] - '0']}}}");
+        return Ir.JsExprWriter.Write(Ir.JsExpr.Template(placed, parts, context.TypeAnnotations));
     }
 
     private string ConvertExplicit(ObjectCreationExpressionSyntax creation, ConversionContext context)
@@ -93,16 +149,11 @@ public class ObjectCreationStrategy : IConversionStrategy
             return "undefined";
         }
 
-        // `Color` is a positional record in C# and a hand-written factory NAMESPACE in the runtime
-        // (a plain object, so channels stay cheap). `new Color(…)` has to become the factory that
-        // means the same thing, or the module loads and the first construction throws.
-        if (typeName == "Color" && creation.ArgumentList is { Arguments.Count: >= 3 })
-        {
-            var channels = OrderedArguments(creation, context);
-            return channels.Count >= 4
-                ? $"Color.fromRgba({string.Join(", ", channels.Take(4))})"
-                : $"Color.fromRgb({string.Join(", ", channels.Take(3))})";
-        }
+        // A value the browser holds as DATA (`[TwinIsData]`, `Color`) is built as its data:
+        // `new Color(1, 2, 3, 4)` is `{ r: 1, g: 2, b: 3, a: 4 }`. Asked of the SYMBOL, so an app's
+        // own type named `Color` is built as the app's (it was matched by name, #494).
+        if (createdType is INamedTypeSymbol data && data.TwinIsData())
+            return DataConstruction(creation, data, context);
 
         // Records and user structs are emitted as named JS classes (they carry instance methods) —
         // construct via `new`, mapping positional args and any object initializer onto the constructor.
@@ -240,7 +291,7 @@ public class ObjectCreationStrategy : IConversionStrategy
     /// element (<c>{ key, value }</c>) is the two-argument Add overload. Works for every class with
     /// an Add: the vocabulary twins ship <c>add()</c>, and a user class transpiles its own.
     /// </summary>
-    private static string AddPerElementConstruction(
+    internal static string AddPerElementConstruction(
         InitializerExpressionSyntax initializer, string construction, ConversionContext context)
     {
         var adds = initializer.Expressions.Select(element => element is InitializerExpressionSyntax pair
@@ -293,6 +344,74 @@ public class ObjectCreationStrategy : IConversionStrategy
         return context.SemanticHelper.GetType(creation.ArgumentList.Arguments[0].Expression)
             is { SpecialType: SpecialType.System_Int32 };
     }
+
+    /// <summary>
+    /// A construction of a value the browser holds as data: each argument fills the member its
+    /// parameter is named for (a positional record's parameter IS its member), the initializer the
+    /// members it assigns after them, and every other member starts as its type's default. A parameter
+    /// with no member of its name has nowhere to go, and dropping its value would build a wrong colour
+    /// in silence, so it stops the build.
+    /// <para>
+    /// C# evaluates the arguments in the order they are written and the initializer after them, and a
+    /// literal evaluates its members in ITS order. Where those differ and a value may have an effect (a
+    /// named argument out of place, an argument the initializer then overwrites), every value is bound
+    /// first, in the written order, and the literal reads the bindings.
+    /// </para>
+    /// </summary>
+    private static string DataConstruction(BaseObjectCreationExpressionSyntax creation, INamedTypeSymbol data, ConversionContext context)
+    {
+        var members = data.DataMembers().Select(member => member.Name).ToList();
+        var written = new List<(string Member, string Js, ExpressionSyntax Source)>();
+        if (creation.ArgumentList is { } list && context.SemanticHelper.GetSymbol(creation) is IMethodSymbol ctor)
+        {
+            for (var i = 0; i < list.Arguments.Count; i++)
+            {
+                var argument = list.Arguments[i];
+                // A positional argument's slot is its list position: C# allows one after a named
+                // argument only when that one sits in its own position.
+                var parameter = argument.NameColon is { } named
+                    ? ctor.Parameters.FirstOrDefault(p => p.Name == named.Name.Identifier.Text)
+                    : i < ctor.Parameters.Length ? ctor.Parameters[i] : null;
+                if (parameter is null) continue;
+                if (!members.Contains(parameter.Name))
+                {
+                    context.Report(argument, ConversionSeverity.Error, "EQ1004",
+                        $"'{data.Name}' is plain data in the browser, built from its members by name, and its "
+                        + $"constructor's parameter '{parameter.Name}' names none of them.");
+                    return "undefined";
+                }
+                written.Add((parameter.Name, context.Converter.ConvertExpression(argument.Expression), argument.Expression));
+            }
+        }
+        if (creation.Initializer is { } initializer)
+            foreach (var assignment in initializer.Expressions.OfType<AssignmentExpressionSyntax>())
+                if (context.SemanticHelper.GetSymbol(assignment.Left) is { } member && members.Contains(member.Name))
+                    written.Add((member.Name, context.Converter.ConvertExpression(assignment.Right), assignment.Right));
+
+        var order = written.Select(value => members.IndexOf(value.Member)).ToList();
+        var inOrder = order.Distinct().Count() == order.Count && order.SequenceEqual(order.OrderBy(index => index));
+        if (inOrder || written.All(value => HasNoEffect(value.Source, context)))
+        {
+            var last = written.GroupBy(value => value.Member).ToDictionary(group => group.Key, group => group.Last().Js);
+            return TwinData.Literal(data,
+                member => last.TryGetValue(member.Name, out var value) ? value : null,
+                type => DefaultValue.Of(type, context));
+        }
+
+        // `$0`, `$1`…: no C# name can take one, so nothing a value names is shadowed.
+        var bound = written.Select((value, index) => (value.Member, Name: $"${index}")).ToList();
+        var lastBound = bound.GroupBy(value => value.Member).ToDictionary(group => group.Key, group => group.Last().Name);
+        var literal = TwinData.Literal(data,
+            member => lastBound.TryGetValue(member.Name, out var name) ? name : null,
+            type => DefaultValue.Of(type, context));
+        return $"(({string.Join(", ", bound.Select(value => value.Name))}) => ({literal}))({string.Join(", ", written.Select(value => value.Js))})";
+    }
+
+    /// <summary>Whether evaluating the expression can do nothing but produce its value: a constant, or
+    /// a name bound to a local, a parameter or a field.</summary>
+    private static bool HasNoEffect(ExpressionSyntax expression, ConversionContext context) =>
+        context.SemanticHelper.TryGetConstantValue(expression, out _)
+        || expression is IdentifierNameSyntax && context.SemanticHelper.GetSymbol(expression) is ILocalSymbol or IParameterSymbol or IFieldSymbol;
 
     private static IReadOnlyList<string> OrderedArguments(BaseObjectCreationExpressionSyntax creation, ConversionContext context)
     {
@@ -569,6 +688,10 @@ public class ObjectCreationStrategy : IConversionStrategy
         // guarding some of the ways a symbol can be named and reading like protection for all.
         // Found in review of that fix.
         if (ms?.ContainingType.ReportIfHostOnlyType(creation, context) == true) return "undefined";
+
+        // `Color c = new(1, 2, 3, 4)` builds the data as the explicit form does.
+        if (ms?.ContainingType is { } dataTarget && dataTarget.TwinIsData())
+            return DataConstruction(creation, dataTarget, context);
 
         if (creation.Initializer != null)
         {

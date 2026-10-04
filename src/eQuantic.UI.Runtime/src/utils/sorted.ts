@@ -4,23 +4,26 @@
  * **sorted key order** under the default comparer, not insertion order. The transpiler emits
  * `$eq.collections.sortedSet` / `sortedDictionary` / `sortedList`.
  *
- * The default comparer matches `Comparer<T>.Default` for numbers and `bigint` (numeric) and orders
- * other values (strings, etc.) by JS relational comparison — i.e. ordinal/code-unit order. Culture-
- * sensitive string ordering is intentionally out of scope (the same documented divergence as the rest
- * of the string subsystem); pass simple/numeric keys for guaranteed .NET parity.
+ * The order is `Comparer<T>.Default`'s for the element type, which the compiler names when it builds
+ * one and the hydration when it rebuilds one ({@link Ordering}): a string in the current culture, a
+ * decimal or a date by its `compareTo`, a double with its NaN first. {@link defaultCompare} is what a
+ * collection built with no ordering falls back to, which is `Comparer<T>.Default`'s only for a number,
+ * a bigint and a char.
  */
 
 import {
   collectionModified,
   containsValue,
+  keyText,
   pair,
   requireKey,
   wireObject,
   type KeyEquality,
   type Pair,
 } from './dictionary';
+import { comparerOf, type Ordering } from './ordering';
 
-/** `Comparer<T>.Default`-style ordering: numeric for numbers/bigint, relational otherwise. */
+/** The order of a collection built with no ordering named: numeric for numbers/bigint, relational otherwise. */
 export function defaultCompare<T>(a: T, b: T): number {
   if (a === b) return 0;
   if (a == null) return b == null ? 0 : -1;
@@ -104,10 +107,16 @@ export class SortedSet<T> implements Iterable<T> {
 }
 
 export function sortedSet<T>(
-  initial?: Iterable<T>,
-  compare?: (a: T, b: T) => number,
+  initial?: Iterable<T> | null,
+  compare?: ((a: T, b: T) => number) | Ordering,
 ): SortedSet<T> {
-  return new SortedSet<T>(initial, compare ?? defaultCompare);
+  return new SortedSet<T>(initial ?? undefined, orderOf(compare));
+}
+
+/** The comparer a factory was handed: a function as it is, an {@link Ordering} by its comparer. */
+function orderOf<T>(compare: ((a: T, b: T) => number) | Ordering | undefined): (a: T, b: T) => number {
+  if (typeof compare === 'function') return compare;
+  return compare === undefined ? defaultCompare : comparerOf(compare);
 }
 
 /**
@@ -125,11 +134,28 @@ export class SortedMap<K, V> implements Iterable<Pair<K, V>> {
   constructor(
     initial?: Iterable<readonly [K, V]>,
     compare: (a: K, b: K) => number = defaultCompare,
+    /** Which of .NET's two it stands for, whose refusals of a key already there are worded apart, and
+     * which hydration carries across (`DictionarySpec.sorted`). */
+    readonly kind: 'dictionary' | 'list' = 'dictionary',
   ) {
     this.compare = compare;
+    // Added, as a constructor and a collection initializer add: a key already there is refused (#440).
     if (initial) {
-      for (const [k, v] of initial) this.set(k, v);
+      for (const [k, v] of initial) this.add(k, v);
     }
+  }
+
+  /**
+   * `Add`: a new key, or .NET's refusal of one already there, in each collection's words, measured on
+   * .NET 10: a `SortedDictionary` names the pair it was handed (`Key: [2, c]`), and a `SortedList` the
+   * key and its parameter (`Key: 2 (Parameter 'key')`). The indexer's write replaces instead.
+   */
+  add(key: K, value: V): this {
+    if (this.has(key)) {
+      const named = this.kind === 'list' ? `${keyText(key)} (Parameter 'key')` : `[${keyText(key)}, ${value == null ? '' : keyText(value)}]`;
+      throw new Error(`An item with the same key has already been added. Key: ${named}`);
+    }
+    return this.set(key, value);
   }
 
   get size(): number {
@@ -230,16 +256,16 @@ export class SortedMap<K, V> implements Iterable<Pair<K, V>> {
 }
 
 export function sortedDictionary<K, V>(
-  initial?: Iterable<readonly [K, V]>,
-  compare?: (a: K, b: K) => number,
+  initial?: Iterable<readonly [K, V]> | null,
+  compare?: ((a: K, b: K) => number) | Ordering,
 ): SortedMap<K, V> {
-  return new SortedMap<K, V>(initial, compare ?? defaultCompare);
+  return new SortedMap<K, V>(initial ?? undefined, orderOf(compare));
 }
 
 /** `SortedList<TKey, TValue>` — same observable (key-sorted) behavior as `SortedDictionary` here. */
 export function sortedList<K, V>(
-  initial?: Iterable<readonly [K, V]>,
-  compare?: (a: K, b: K) => number,
+  initial?: Iterable<readonly [K, V]> | null,
+  compare?: ((a: K, b: K) => number) | Ordering,
 ): SortedMap<K, V> {
-  return new SortedMap<K, V>(initial, compare ?? defaultCompare);
+  return new SortedMap<K, V>(initial ?? undefined, orderOf(compare), 'list');
 }

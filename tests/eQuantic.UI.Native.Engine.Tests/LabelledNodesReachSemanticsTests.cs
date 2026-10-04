@@ -82,6 +82,18 @@ public class LabelledNodesReachSemanticsTests
     private static readonly string[] LabelledContainers = ["LiveRegion", "Navigable", "Overlay"];
 
     /// <summary>
+    /// The roles a reader walks INTO. <see cref="SemanticRole.Group"/> was the only one until #500
+    /// and #501 gave a container its own words: a modal <see cref="Overlay"/> is a dialog now, and a
+    /// tab strip and a radio group say which they are. Each keeps walking exactly as a group does,
+    /// which is what the theory below holds them to.
+    /// </summary>
+    private static readonly SemanticRole[] ContainerRoles =
+    [
+        SemanticRole.Group, SemanticRole.TabBar, SemanticRole.RadioGroup,
+        SemanticRole.Dialog, SemanticRole.AlertDialog,
+    ];
+
+    /// <summary>
     /// EMPTY, and kept for what emptying it took. It held <c>Navigable</c>, whose subtree could not be
     /// reached on Photon — not because of the role, but because
     /// <c>MeasureVisitor.Visit(Navigable)</c> measured the node and none of its <c>Rows</c>, so the
@@ -164,7 +176,7 @@ public class LabelledNodesReachSemanticsTests
         const string label = "a labelled group";
         var semantics = Describe(Samples[node](label));
 
-        semantics.Should().Contain(s => s.Role == SemanticRole.Group && s.Label == label,
+        semantics.Should().Contain(s => ContainerRoles.Contains(s.Role) && s.Label == label,
             $"{node} is a container: a reader stops on it and says its name");
 
         if (SubtreeDoesNotLayOutOnPhoton.Contains(node))
@@ -190,7 +202,7 @@ public class LabelledNodesReachSemanticsTests
     public void TheLabelledContainers_AreExactlyTheNodesThatAnnounceAGroup()
     {
         var announcing = Samples.Keys
-            .Where(n => Describe(Samples[n]("a labelled group")).Any(s => s.Role == SemanticRole.Group))
+            .Where(n => Describe(Samples[n]("a labelled group")).Any(s => ContainerRoles.Contains(s.Role)))
             .OrderBy(n => n, StringComparer.Ordinal)
             .ToArray();
 
@@ -200,7 +212,7 @@ public class LabelledNodesReachSemanticsTests
     }
 
     /// <summary>
-    /// A modal layer's group belongs to the LAYER, and this is the case the theory above cannot see.
+    /// A modal layer's dialog belongs to the LAYER, and this is the case the theory above cannot see.
     ///
     /// <para>
     /// It builds each container as the ROOT of the tree, where an <see cref="Overlay"/> looks
@@ -214,8 +226,8 @@ public class LabelledNodesReachSemanticsTests
     ///
     /// <para>
     /// So the announcement happens at the overlay ROOT, and this asserts both halves of what that
-    /// buys: the group has a real box, and the next stop after it is the dialog's own content.
-    /// Found in review; the probe that passed is the theory above.
+    /// buys: the dialog has a real box, and the next stop after it is its own content. Found in
+    /// review; the probe that passed is the theory above. The stop was a plain group until #501.
     /// </para>
     /// </summary>
     [Fact]
@@ -229,15 +241,15 @@ public class LabelledNodesReachSemanticsTests
         page.Add(new Text("after", TypeRole.BodyM));
 
         var semantics = Describe(page);
-        var group = semantics.Should().ContainSingle(s => s.Role == SemanticRole.Group).Which;
+        var layer = semantics.Should().ContainSingle(s => s.Role == SemanticRole.Dialog).Which;
 
-        group.Bounds.Height.Should().BeGreaterThan(0,
-            "the page-flow placeholder measures nothing, and a reader outlines what the group says "
+        layer.Bounds.Height.Should().BeGreaterThan(0,
+            "the page-flow placeholder measures nothing, and a reader outlines what the dialog says "
             + "it is — the LAYER, which is where the dialog actually laid out");
 
-        semantics.SkipWhile(s => s.Role != SemanticRole.Group).Skip(1).Should()
+        semantics.SkipWhile(s => s.Role != SemanticRole.Dialog).Skip(1).Should()
             .StartWith(semantics.Single(s => s.Label == "dialog title"),
-                "a group is a stop you walk INTO, so what follows it has to be what it holds — "
+                "a dialog is a stop you walk INTO, so what follows it has to be what it holds — "
                 + "announced in the page flow it was followed by the text after the overlay instead");
     }
 

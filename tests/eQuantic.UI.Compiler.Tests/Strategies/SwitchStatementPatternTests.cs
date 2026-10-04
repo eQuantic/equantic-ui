@@ -36,7 +36,8 @@ public class SwitchStatementPatternTests
         ts.Should().Contain("const $s = o;");
         ts.Should().Contain("let n");                                   // bindings hoisted for the chain
         // when-clause assigns the binding in the condition, so `n` is in scope for `n > 0`.
-        ts.Should().Contain("typeof $s === 'number' && (n = $s, n > 0)");
+        // An int is a whole number, as `o is int` asks it (#482): a real holding 2.5 is no int.
+        ts.Should().Contain("Number.isInteger($s) && (n = $s, n > 0)");
         ts.Should().Contain("else if");
         ts.Should().Contain("typeof $s === 'string'");
         System.Text.RegularExpressions.Regex.Replace(ts, @"\s+", "").Should().Contain("else{return'?';}");

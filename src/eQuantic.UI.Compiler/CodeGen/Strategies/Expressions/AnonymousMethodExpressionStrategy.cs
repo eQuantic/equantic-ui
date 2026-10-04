@@ -22,7 +22,7 @@ public class AnonymousMethodExpressionStrategy : IExpressionIrStrategy
         // an arrow that is not async makes `await` in its body a SyntaxError, and the module then
         // fails to parse rather than misbehaving somewhere visible.
         var isAsync = anon.Modifiers.Any(Microsoft.CodeAnalysis.CSharp.SyntaxKind.AsyncKeyword);
-        return JsExpr.ArrowBlock(parameters, context.Converter.ConvertBlock(anon.Block), isAsync);
+        return LambdaExpressionStrategy.Block(parameters, anon.Block, isAsync, context);
     }
 
     public int Priority => 10;

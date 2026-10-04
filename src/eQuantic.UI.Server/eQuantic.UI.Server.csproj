@@ -115,4 +115,14 @@
     <Exec Command="&quot;$(_BunPath)&quot; build ../eQuantic.UI.Sdk/Resources/boot.ts --outfile wwwroot/runtime.js --minify-syntax --minify-whitespace" />
   </Target>
 
+  <ItemGroup>
+    <InternalsVisibleTo Include="eQuantic.UI.Server.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- The name a twin gives a member, shared with eqc and the generator: the server writes each value
+         of the hydration manifest under it, so the twin adopts it into the member that reads it. -->
+    <Compile Include="../Shared/TwinName.cs" Link="Shared/TwinName.cs" />
+  </ItemGroup>
+
 </Project>

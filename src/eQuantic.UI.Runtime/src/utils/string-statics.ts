@@ -314,3 +314,21 @@ export function joinRange(
   }
   return value.slice(startIndex, startIndex + count).join(separator ?? '');
 }
+
+/**
+ * The chars of `source` from `startIndex`, `length` of them, as `new string(char[], int, int)` and
+ * `ToCharArray(int, int)` take them, refusing a range that leaves the source as .NET refuses it.
+ * JavaScript's `slice` clamps instead, so a negative start counted from the end and a length past it
+ * was cut short, in silence.
+ */
+export function chars(source: string | readonly string[], startIndex: number, length: number): string[] {
+  const items = typeof source === 'string' ? source.split('') : source;
+  if (startIndex < 0) {
+    throw new RangeError("StartIndex cannot be less than zero. (Parameter 'startIndex')");
+  }
+  if (length < 0) throw new RangeError("Length cannot be less than zero. (Parameter 'length')");
+  if (startIndex > items.length - length) {
+    throw new RangeError("Index and length must refer to a location within the string. (Parameter 'startIndex')");
+  }
+  return items.slice(startIndex, startIndex + length);
+}

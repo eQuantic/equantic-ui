@@ -112,6 +112,18 @@ public class RecordStaticMemberTests
         twin.Should().Contain("static marker = 'a-const'");
     }
 
+    [Fact]
+    public void AStaticFieldBackedProperty_HasItsStoreAndItsAccessors()
+    {
+        // `{ get; set => field = value / 2; }` has an automatic getter and a setter body, so it was
+        // neither a pure auto-property nor a computed one, and the twin had no such property (#483).
+        var twin = ShapesTwin();
+
+        twin.Should().Contain("static $half = 0;");
+        twin.Should().Contain("static get half() {\n    return this.$half;\n}");
+        twin.Should().Contain("static set half(value");
+    }
+
     private const string Shapes = """
         using eQuantic.UI.Primitives;
 
@@ -255,7 +267,7 @@ public class RecordStaticMemberTests
 
         // A syntax-only default cannot see through a NAME: it answers null for both, where .NET
         // gives '\0' and the zero-valued member. The symbol can, and the server would have said so.
-        twin.Should().Contain(@"static sep = '\0'");
+        twin.Should().Contain(@"static sep = '\u0000'");
         twin.Should().Contain("static level = 'low'");
     }
 
