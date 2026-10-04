@@ -268,8 +268,7 @@ public class ObjectCreationStrategy : IConversionStrategy
         if (createdType is null or IErrorTypeSymbol && typeName.EndsWith("Exception"))
         {
             IReadOnlyList<string> chain = typeName == "Exception" ? ["System.Exception"] : [typeName, "System.Exception"];
-            return JsExprWriter.Write(ExceptionTypes.Construction(
-                chain, ExceptionCreationStrategy.Message(creation, context), context));
+            return JsExprWriter.Write(ExceptionTypes.Construction(chain, creation, context));
         }
 
         if (assignInitializerAfterConstruction)

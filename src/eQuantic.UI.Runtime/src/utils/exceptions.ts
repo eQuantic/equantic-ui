@@ -71,19 +71,34 @@ const NULL_REFERENCE = chainOf('System.NullReferenceException');
  * console and a contained component print `InvalidOperationException: …` as the C# side does, where
  * they printed `Error: …`.
  */
-export function create(types: readonly string[], message?: string | null): Error {
+export function create(types: readonly string[], message?: string | null, ..._evaluated: unknown[]): Error {
   const error = new Error(message ?? undefined) as Tagged;
-  const generic = types[0].indexOf('<');
-  const qualified = generic < 0 ? types[0] : types[0].slice(0, generic);
   // Defined rather than assigned: an assignment makes `name` an own enumerable property, which an
   // Error's own `name` (its prototype's) is not, and JSON would start writing it.
   Object.defineProperty(error, 'name', {
-    value: qualified.slice(qualified.lastIndexOf('.') + 1),
+    value: simpleName(types[0]),
     writable: true,
     configurable: true,
   });
   Object.defineProperty(error, TYPES, { value: types });
   return error;
+}
+
+/**
+ * A type's own name, its namespace, its containing types and every generic argument list left out:
+ * `App.Outer<int>.Inner` is `Inner`, as .NET's `Type.Name` is, where cutting at the first `<` named it
+ * `Outer`. The arguments of the constructor past the message (`..._evaluated`) are only evaluated,
+ * where C# evaluates them, and carried nowhere.
+ */
+function simpleName(qualified: string): string {
+  let plain = '';
+  let depth = 0;
+  for (const character of qualified) {
+    if (character === '<') depth++;
+    else if (character === '>') depth--;
+    else if (depth === 0) plain += character;
+  }
+  return plain.slice(plain.lastIndexOf('.') + 1);
 }
 
 /** An exception the runtime throws on .NET's behalf, of the type .NET throws for the same operation. */
@@ -96,10 +111,21 @@ export function exception(type: RuntimeException, message: string): Error {
  * at all (only foreign code throws one: C# throws nothing but exceptions).
  */
 export function typesOf(value: unknown): readonly string[] | null {
-  if (!(value instanceof Error)) return null;
+  if (!isError(value)) return null;
   const own = (value as Tagged)[TYPES];
   if (own !== undefined) return own;
-  return value instanceof TypeError ? NULL_REFERENCE : EXCEPTION;
+  return value instanceof TypeError || (value as Error).name === 'TypeError' ? NULL_REFERENCE : EXCEPTION;
+}
+
+/**
+ * An error of any realm: `instanceof Error` answers false for one thrown in another frame, and for a
+ * `DOMException` (an aborted fetch) where the platform does not derive it from Error, so their tag is
+ * read instead.
+ */
+function isError(value: unknown): value is Error {
+  if (value instanceof Error) return true;
+  const tag = Object.prototype.toString.call(value);
+  return tag === '[object Error]' || tag === '[object DOMException]';
 }
 
 /**
@@ -115,7 +141,15 @@ export function is(value: unknown, type: string): boolean {
  * where C# evaluates it, in the caller's own function, so an `await` in it is the caller's await.
  */
 export function raise(error: unknown): never {
-  throw error;
+  throw thrown(error);
+}
+
+/**
+ * What a `throw` throws: the exception, or the NullReferenceException the CLR throws in its place
+ * when it is null (`Exception e = null; throw e;`), which a typed catch has to see as one.
+ */
+export function thrown(error: unknown): unknown {
+  return error ?? exception('System.NullReferenceException', 'Object reference not set to an instance of an object.');
 }
 
 /**

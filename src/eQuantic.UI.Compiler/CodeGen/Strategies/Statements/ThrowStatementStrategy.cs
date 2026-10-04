@@ -22,7 +22,17 @@ public class ThrowStatementStrategy : IStatementStrategy
         if (throwStmt.Expression == null) return JsStatement.Throw(JsExpr.Identifier(TryStatementStrategy.Caught));
         // What the expression declares is hoisted in front, as a return's is (enclosing block).
         var declared = ExpressionVariableScanner.InFrontOf(throwStmt, throwStmt.Expression, context.TypeAnnotations);
-        return JsStatement.Hoisted(declared, JsStatement.Throw(context.Converter.ConvertIr(throwStmt.Expression)));
+        var exception = context.Converter.ConvertIr(throwStmt.Expression);
+        // An exception that may be null is thrown as the NullReferenceException the CLR throws in its
+        // place, so a typed catch sees one: a creation never is null, and neither is what the
+        // nullable flow analysis proved not null.
+        if (throwStmt.Expression is not BaseObjectCreationExpressionSyntax
+            && !context.SemanticHelper.ProvedNotNull(throwStmt.Expression))
+        {
+            context.UsedHelpers.Add(Eq.Import);
+            exception = JsExpr.Call(JsExpr.Identifier(Eq.Thrown), exception);
+        }
+        return JsStatement.Hoisted(declared, JsStatement.Throw(exception));
     }
 
     public int Priority => 0;

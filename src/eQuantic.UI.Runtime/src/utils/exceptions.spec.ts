@@ -34,6 +34,8 @@ describe('a .NET exception carries the types it is', () => {
   it('names a nested or a generic type by its own simple name', () => {
     expect(create(['App.Outer.Inner', 'System.Exception']).name).toBe('Inner');
     expect(create(['App.Failed<App.Item>', 'System.Exception']).name).toBe('Failed');
+    expect(create(['App.Outer<int>.Inner', 'System.Exception']).name).toBe('Inner');
+    expect(create(['App.Pair<App.Box<int>, string>.Gone', 'System.Exception']).name).toBe('Gone');
   });
 
   it('takes a null message as no message', () => {
@@ -83,6 +85,25 @@ describe('a value thrown without a chain is read as .NET would meet it', () => {
     expect(typesOf(new RangeError('x'))).toEqual(['System.Exception']);
     expect(typesOf(new Error('x'))).toEqual(['System.Exception']);
     expect(is(new RangeError('x'), 'System.SystemException')).toBe(false);
+  });
+
+  it('reads an error of another realm, or a DOMException, as an Exception', () => {
+    const foreign = { name: 'Error', message: 'x', [Symbol.toStringTag]: 'Error' };
+    expect(typesOf(foreign)).toEqual(['System.Exception']);
+    const crossTypeError = { name: 'TypeError', message: 'x', [Symbol.toStringTag]: 'Error' };
+    expect(typesOf(crossTypeError)).toEqual(['System.NullReferenceException', 'System.SystemException', 'System.Exception']);
+    expect(typesOf(new DOMException('aborted', 'AbortError'))).toEqual(['System.Exception']);
+  });
+
+  it('throws a null exception as the NullReferenceException the CLR throws', () => {
+    expect(() => raise(null)).toThrow('Object reference not set to an instance of an object.');
+    let caught: unknown;
+    try {
+      raise(undefined);
+    } catch (error) {
+      caught = error;
+    }
+    expect(is(caught, 'System.NullReferenceException')).toBe(true);
   });
 
   it('reads a value that is no error as no exception at all', () => {

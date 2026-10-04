@@ -16,7 +16,7 @@ export class Dialog extends StatelessComponent {
         if (dismissible !== undefined) this.dismissible = dismissible;
         if (onDismiss !== undefined) this.onDismiss = onDismiss;
         if (this.dismissible === undefined) this.dismissible = false;
-        if ((actions.length === 0 || actions.length > 2)) throw $eq.exceptions.create(['System.ArgumentOutOfRangeException', 'System.ArgumentException', 'System.SystemException', 'System.Exception'], 'A Dialog carries 1-2 actions — a third means an ActionSheet or a screen (spec C2).');
+        if ((actions.length === 0 || actions.length > 2)) throw $eq.exceptions.create(['System.ArgumentOutOfRangeException', 'System.ArgumentException', 'System.SystemException', 'System.Exception'], 'A Dialog carries 1-2 actions — a third means an ActionSheet or a screen (spec C2).', 'actions');
         this.title = title;
         this.body = body;
         this.actions = actions;

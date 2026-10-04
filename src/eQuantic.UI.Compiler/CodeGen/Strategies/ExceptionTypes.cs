@@ -1,4 +1,5 @@
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 using eQuantic.UI.Compiler.CodeGen.Ir;
 
 namespace eQuantic.UI.Compiler.CodeGen.Strategies;
@@ -63,6 +64,26 @@ internal static class ExceptionTypes
     /// written.</summary>
     public static JsExpr Construction(INamedTypeSymbol type, JsExpr? message, ConversionContext context) =>
         Construction(ChainOf(type), message, context);
+
+    /// <summary>
+    /// <c>new T(…)</c> with every argument the creation writes evaluated where C# evaluates it, in
+    /// written order, and the message picked by its parameter
+    /// (<see cref="Expressions.ExceptionCreationStrategy.MessageIndex"/>): the arguments are the
+    /// template's parts, so the writer keeps their order however the holes are placed.
+    /// </summary>
+    public static JsExpr Construction(IReadOnlyList<string> chain, BaseObjectCreationExpressionSyntax creation,
+        ConversionContext context)
+    {
+        var arguments = creation.ArgumentList?.Arguments ?? default;
+        if (arguments.Count == 0) return Construction(chain, (JsExpr?)null, context);
+        context.UsedHelpers.Add(Eq.Import);
+        var message = Expressions.ExceptionCreationStrategy.MessageIndex(creation, context);
+        var holes = new List<string> { message < 0 ? "undefined" : $"{{{message}}}" };
+        holes.AddRange(Enumerable.Range(0, arguments.Count).Where(index => index != message).Select(index => $"{{{index}}}"));
+        var types = $"[{string.Join(", ", chain.Select(JsStringLiteral.Quote))}]";
+        var parts = arguments.Select(argument => context.Converter.ConvertIr(argument.Expression)).ToList();
+        return JsExpr.Template($"{Eq.ExceptionCreate}({types}, {string.Join(", ", holes)})", parts, context.TypeAnnotations);
+    }
 
     /// <summary>The construction from a chain the caller already has.</summary>
     public static JsExpr Construction(IReadOnlyList<string> chain, JsExpr? message, ConversionContext context)

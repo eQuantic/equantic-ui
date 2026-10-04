@@ -301,6 +301,10 @@ public static class Eq
     /// evaluates the exception, in the caller's own function.</summary>
     public const string Raise = "$eq.exceptions.raise";
 
+    /// <summary>What a <c>throw</c> statement throws when its exception may be null: the exception, or the
+    /// NullReferenceException the CLR throws in its place.</summary>
+    public const string Thrown = "$eq.exceptions.thrown";
+
     /// <summary>An exception filter, <c>when (…)</c>: the filter's answer, or false where it throws, as
     /// .NET answers it. One arg: the filter, as a function.</summary>
     public const string ExceptionFilter = "$eq.exceptions.filter";

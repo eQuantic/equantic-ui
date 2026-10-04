@@ -79,6 +79,10 @@ public class CatchClauseConformanceTests
     [InlineData("try { return new List<int>().Max(); } catch (ArgumentException) { return 1; } catch (InvalidOperationException) { return 2; }")] // 2
     [InlineData("try { return Convert.ToBoolean('a') ? 1 : 0; } catch (FormatException) { return 1; } catch (InvalidCastException) { return 2; }")] // 2
     [InlineData("string s = null; try { return s.Length; } catch (ArgumentException) { return 1; } catch (NullReferenceException) { return 2; }")] // 2
+    [InlineData("try { return char.Parse(null!) == 'a' ? 0 : 1; } catch (NullReferenceException) { return 1; } catch (ArgumentNullException) { return 2; }")] // 2: char.Parse refuses null by name
+    [InlineData("try { Exception x = null; throw x!; } catch (InvalidOperationException) { return 1; } catch (NullReferenceException) { return 2; }")] // 2: throw null is a NullReferenceException
+    [InlineData("string s = null; try { return s ?? throw (Exception)null!; } catch (NullReferenceException) { return \"nre\"; }")] // "nre": and so is a throw expression's null
+    [InlineData("var log = \"\"; Func<string> m = () => { log += \"m\"; return \"msg\"; }; Func<string> p = () => { log += \"p\"; return \"x\"; }; try { throw new ArgumentException(m(), p()); } catch (ArgumentException) { } try { throw new ArgumentOutOfRangeException(p(), m()); } catch (ArgumentException) { } return log;")] // "mppm": every argument runs, as written
     public void AnExceptionTheRuntimeThrows_IsOfTheTypeDotNetThrows(string statements)
     {
         Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");

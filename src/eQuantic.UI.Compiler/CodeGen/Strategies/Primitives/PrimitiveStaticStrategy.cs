@@ -464,7 +464,7 @@ public class PrimitiveStaticStrategy : IExpressionIrStrategy
                 "IsBetween" when argCount == 3 => "({1} <= {0} && {0} <= {2})",
                 // Parse keeps its contract, throw included — silently accepting "ab" would be a lie.
                 "Parse" when argCount == 1 =>
-                    "(($s) => { if ($s.length !== 1) throw " + Eq.ExceptionOf + "('System.FormatException', 'String must be exactly one character long.'); return $s; })({0})",
+                    "(($s) => { if ($s == null) throw " + Eq.ExceptionOf + "('System.ArgumentNullException', \"Value cannot be null. (Parameter 's')\"); if ($s.length !== 1) throw " + Eq.ExceptionOf + "('System.FormatException', 'String must be exactly one character long.'); return $s; })({0})",
                 "ConvertFromUtf32" when argCount == 1 => "String.fromCodePoint({0})",
                 // The surrogate pair IS the code point: concatenate the halves and read it back.
                 // Through Number(): `codePointAt` answers `number | undefined`, and a strict tsc
