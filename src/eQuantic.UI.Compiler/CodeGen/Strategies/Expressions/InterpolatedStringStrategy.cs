@@ -43,17 +43,28 @@ public class InterpolatedStringStrategy : IConversionStrategy
                     var format = interpolation.FormatClause?.FormatStringToken.ValueText;
                     var alignment = interpolation.AlignmentClause?.Value.ToString();
                     
+                    // An ENUM formats itself, as its ToString(format) does, and the alignment pads
+                    // that text: it prints its member name, not the camelCase key the browser holds
+                    // (`$"{Kind.B,5}"` is "    B" on the server), a nullable one included, which is
+                    // nothing for null, and `D`, `X` or `F` what they ask for, not the name (#452).
+                    var holeType = context.SemanticHelper.GetType(interpolation.Expression);
+                    if ((format != null || alignment != null)
+                        && holeType.UnwrapNullable() is INamedTypeSymbol { TypeKind: TypeKind.Enum } enumType)
+                    {
+                        var general = format is null or "" or "G" or "g";
+                        expr = general && holeType is INamedTypeSymbol { TypeKind: TypeKind.Enum }
+                            ? Invocation.ToStringStrategy.EnumNameLookup(enumType, interpolation.Expression, expr, context)
+                            : Types.EnumShape.Text(enumType, expr, context, general ? null : JsStringLiteral.Quote(format!));
+                        format = null;
+                        if (alignment == null)
+                        {
+                            sb.Append(expr).Append('}');
+                            break;
+                        }
+                    }
+
                     if (format != null || alignment != null)
                     {
-                        // A FORMATTED enum still prints its member name, not the lowercase wire
-                        // value (`$"{Kind.B,5}"` is "    B" on the server): the lookup is here
-                        // because the hole handed the formatter the raw value.
-                        if (context.SemanticHelper.GetType(interpolation.Expression)
-                            is INamedTypeSymbol { TypeKind: TypeKind.Enum } enumType)
-                        {
-                            expr = Invocation.ToStringStrategy.EnumNameLookup(
-                                enumType, interpolation.Expression, expr);
-                        }
                         context.UsedHelpers.Add(Eq.Import);
                         // The format is a string like any other: `dd 'de' MMMM` closed the quotes it
                         // was written between, and Bun refused the module (#520).
