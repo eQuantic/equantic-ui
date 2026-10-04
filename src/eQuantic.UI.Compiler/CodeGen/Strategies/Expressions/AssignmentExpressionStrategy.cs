@@ -104,6 +104,18 @@ public class AssignmentExpressionStrategy : IExpressionIrStrategy
                 context.Converter.ConvertIr(target.ArgumentList.Arguments[0].Expression));
         }
 
+        // An entry an INSTANCE INDEXER the twin carries (#427) is written through its `setItem`,
+        // which answers the value as the assignment does, and a compound reads it through its `item`
+        // first; its receiver and its keys are evaluated once each, before the value, as C# does.
+        List<JsExpr>? indexed = null;
+        if (Indexer.EntryOf(assignment.Left, context) is { } own)
+        {
+            indexed = Indexer.Parts(own, context);
+            if (assignment.IsKind(Microsoft.CodeAnalysis.CSharp.SyntaxKind.SimpleAssignmentExpression))
+                return JsExpr.Call(JsExpr.Member(indexed[0], Indexer.Set),
+                    [.. indexed.Skip(1), context.Converter.ConvertIr(assignment.Right)]);
+        }
+
         var leftIr = context.Converter.ConvertIr(assignment.Left);
         var rightIr = context.Converter.ConvertIr(assignment.Right);
         var left = JsExprWriter.Write(leftIr);
@@ -125,8 +137,11 @@ public class AssignmentExpressionStrategy : IExpressionIrStrategy
         JsExpr Compound(Func<JsExpr, JsExpr, JsExpr> next) => entry is var (receiver, key)
             ? ReadModifyWrite.AssignEntry(
                 receiver, key, [rightIr], (current, operands) => next(current, operands[0]), answerOld: false, context)
-            : ReadModifyWrite.Assign(
-                leftIr, [rightIr], (current, operands) => next(current, operands[0]), answerOld: false, context);
+            : indexed is { } parts
+                ? ReadModifyWrite.AssignIndexer(
+                    parts, [rightIr], (current, operands) => next(current, operands[0]), answerOld: false, context)
+                : ReadModifyWrite.Assign(
+                    leftIr, [rightIr], (current, operands) => next(current, operands[0]), answerOld: false, context);
 
         // COMPOUND assignment through a USER-DEFINED operator: `m += other` is `m = Money.opAdd(m, other)`.
         if (context.SemanticHelper.GetOperation(assignment) is Microsoft.CodeAnalysis.Operations.ICompoundAssignmentOperation
@@ -153,8 +168,10 @@ public class AssignmentExpressionStrategy : IExpressionIrStrategy
             if (Rule(binaryOp, leftType, assignment, context) is { } typed) return Compound(typed);
         }
 
-        // A dictionary entry has no operator of its own to fall back on: its read is the guard.
-        if (entry is not null) return Compound((current, operand) => JsExpr.Binary(current, op[..^1], operand));
+        // A dictionary entry has no operator of its own to fall back on: its read is the guard. Nor
+        // has an indexer's: its read and its write are methods.
+        if (entry is not null || indexed is not null)
+            return Compound((current, operand) => JsExpr.Binary(current, op[..^1], operand));
 
         // An assignment NODE: right-associative at the loosest level, so `a = b = c` chains and
         // an assignment used as an operand is fenced by whoever places it.
@@ -283,6 +300,17 @@ internal static class NullConditionalAssignment
             context.UsedHelpers.Add(Eq.Import);
             var write = DictionaryEntry.Write(t,
                 context.Converter.ConvertExpression(entry.ArgumentList.Arguments[0].Expression),
+                context.Converter.ConvertExpression(assignment.Right));
+            return $"({parameter} => {t} == null ? null : {write})({receiver})";
+        }
+
+        // An indexer the twin carries is written through its `setItem` (#427).
+        if (assignment.Left is ElementBindingExpressionSyntax own
+            && context.SemanticHelper.GetSymbol(own) is IPropertySymbol { IsIndexer: true } ownIndexer
+            && Indexer.IsLowered(ownIndexer))
+        {
+            if (!assignment.IsKind(Microsoft.CodeAnalysis.CSharp.SyntaxKind.SimpleAssignmentExpression)) return null;
+            var write = Indexer.Write(t, own.ArgumentList.Arguments.Select(a => context.Converter.ConvertExpression(a.Expression)),
                 context.Converter.ConvertExpression(assignment.Right));
             return $"({parameter} => {t} == null ? null : {write})({receiver})";
         }

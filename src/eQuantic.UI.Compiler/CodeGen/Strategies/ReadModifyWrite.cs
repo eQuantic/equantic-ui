@@ -76,6 +76,19 @@ public static class ReadModifyWrite
             operands, next, answerOld, context);
     }
 
+    /// <summary>
+    /// The same write to an entry an INDEXER the twin carries reads and writes (#427): read through
+    /// its <c>item</c>, written back through its <c>setItem</c>, which answers the value it wrote, the
+    /// receiver and each key bound once as any target's are.
+    /// </summary>
+    internal static JsExpr AssignIndexer(IReadOnlyList<JsExpr> parts, IReadOnlyList<JsExpr> operands,
+        Func<JsExpr, IReadOnlyList<JsExpr>, JsExpr> next, bool answerOld, ConversionContext context)
+    {
+        var keys = parts.Count - 1;
+        return Spelled(parts.ToList(), value => Expressions.Indexer.WriteTemplate(keys, value),
+            Expressions.Indexer.ReadTemplate(keys), operands, next, answerOld, context);
+    }
+
     /// <summary>The write spelled out as a template over <paramref name="parts"/>: the value read
     /// from <paramref name="read"/>, the next one written by <paramref name="write"/> (whose text
     /// answers the value it writes), and the old one answered when asked for, bound once since no

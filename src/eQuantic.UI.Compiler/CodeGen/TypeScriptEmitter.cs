@@ -515,6 +515,12 @@ public class TypeScriptEmitter
                     // Computed/get-set/static properties become real TS members (auto-props flow through
                     // the base Object.assign(props) instead).
                     EmitComponentProperties(component, c);
+                    if (component.ClassSyntax is { } indexed)
+                    {
+                        _converter.SetCurrentClass(component.Name);
+                        foreach (var indexer in indexed.Members.OfType<IndexerDeclarationSyntax>())
+                            EmitIndexer(indexer, c);
+                    }
 
                     // Constructor: assign positional params, apply auto-property defaults (only when a prop
                     // wasn't supplied — the base ctor's Object.assign runs first), then run the C# ctor body.
@@ -1720,6 +1726,8 @@ public class TypeScriptEmitter
             }
             foreach (var m in cls.Members.OfType<MethodDeclarationSyntax>())
                 EmitClassMethod(m, c, asStatic);
+            foreach (var indexer in cls.Members.OfType<IndexerDeclarationSyntax>())
+                EmitIndexer(indexer, c);
             // USER-DEFINED OPERATORS — the same family a record's twin already carries, and for the
             // same reason: JavaScript cannot overload an operator, so the call site lowers `a + b`
             // on two in-source objects to `T.opAdd(a, b)` whatever kind of type T is. It did that
@@ -1816,6 +1824,16 @@ public class TypeScriptEmitter
         if (Lowering.Method(m, asStatic, DeclaredType, returns: TupleReturn) is { } member) c.Member(member, m);
     }
 
+    /// <summary>
+    /// An instance indexer as the methods every element access bound to it calls, <c>item</c> and
+    /// <c>setItem</c> (#427), in a class, a component, or a default an interface supplies. It was
+    /// written into no twin, and `grid[3]` read a property named "3" that nothing had.
+    /// </summary>
+    private void EmitIndexer(IndexerDeclarationSyntax indexer, TypeScriptCodeBuilder.ClassBuilder c)
+    {
+        foreach (var member in Lowering.Indexer(indexer, DeclaredType)) c.Member(member, member.Origin?.Member ?? indexer);
+    }
+
     /// <summary>A vocabulary default the class takes from the interface's ASSEMBLY, where eqc has no
     /// body to convert: the twin delegates to the runtime's copy, which the runtime import brings in.</summary>
     private void EmitDelegatedDefault(ISymbol implementation, TypeScriptCodeBuilder.ClassBuilder c)
@@ -1852,12 +1870,6 @@ public class TypeScriptEmitter
             return;
         foreach (var (implementation, member, _) in DefaultInterfaceMembers.Of(self, model.Compilation))
         {
-            if (implementation is IPropertySymbol { IsIndexer: true })
-            {
-                _converter.Report(declaration, ConversionSeverity.Error, "EQ1008",
-                    DefaultInterfaceMembers.NoIndexer(self, implementation));
-                continue;
-            }
             if (member is not null && ModelFor(member) is { } memberModel
                 && DefaultInterfaceMembers.InterfaceStaticIn(member, memberModel) is { } reached)
             {
@@ -1877,6 +1889,10 @@ public class TypeScriptEmitter
                     break;
                 case MethodDeclarationSyntax method when method.Body != null || method.ExpressionBody != null:
                     _converter.InFileOf(method, () => EmitClassMethod(method, c, asStatic: false));
+                    break;
+                // A default indexer, as the class's own is written (#427).
+                case IndexerDeclarationSyntax indexer:
+                    _converter.InFileOf(indexer, () => EmitIndexer(indexer, c));
                     break;
                 case null when DefaultInterfaceMembers.RuntimeCarries(implementation.ContainingType):
                     EmitDelegatedDefault(implementation, c);

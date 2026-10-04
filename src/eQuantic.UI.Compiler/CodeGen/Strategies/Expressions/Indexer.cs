@@ -1,5 +1,7 @@
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 using eQuantic.UI.Compiler.CodeGen.Extensions;
+using eQuantic.UI.Compiler.CodeGen.Ir;
 
 namespace eQuantic.UI.Compiler.CodeGen.Strategies.Expressions;
 
@@ -33,6 +35,30 @@ internal static class Indexer
         return declaring.Locations.Any(location => location.IsInSource)
             || Services.RuntimeProvidedTypeScanner.IsTranspiledNamespace(ns);
     }
+
+    /// <summary>The element access <paramref name="target"/> is, through its parentheses, when a lowered
+    /// indexer reads and writes it; null for any other target.</summary>
+    public static ElementAccessExpressionSyntax? EntryOf(ExpressionSyntax target, ConversionContext context)
+    {
+        var node = target;
+        while (node is ParenthesizedExpressionSyntax parenthesized) node = parenthesized.Expression;
+        return node is ElementAccessExpressionSyntax access && IsLowered(context.SemanticHelper.GetSymbol(access) as IPropertySymbol)
+            ? access
+            : null;
+    }
+
+    /// <summary>An entry's receiver and keys, converted: the parts a template binds once each.</summary>
+    public static List<JsExpr> Parts(ElementAccessExpressionSyntax access, ConversionContext context) =>
+        [context.Converter.ConvertIr(access.Expression),
+         .. access.ArgumentList.Arguments.Select(argument => context.Converter.ConvertIr(argument.Expression))];
+
+    /// <summary>The read over a template's parts: the receiver <c>{0}</c> and the keys after it.</summary>
+    public static string ReadTemplate(int keys) => Read("{0}", Holes(keys));
+
+    /// <summary>The write over a template's parts, which answers <paramref name="value"/>.</summary>
+    public static string WriteTemplate(int keys, string value) => Write("{0}", Holes(keys), value);
+
+    private static IEnumerable<string> Holes(int keys) => Enumerable.Range(1, keys).Select(i => "{" + i + "}");
 
     /// <summary>The read: <c>receiver.item(keys)</c>.</summary>
     public static string Read(string receiver, IEnumerable<string> keys) => $"{receiver}.{Get}({string.Join(", ", keys)})";

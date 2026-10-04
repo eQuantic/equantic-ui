@@ -511,6 +511,14 @@ public class RecordTypeEmitter
             sb.Append(EmitMethod(method, name));
         }
 
+        // An INSTANCE INDEXER, as the methods every element access bound to it calls (#427). It was
+        // written into no twin, and `new Grid()[3]` read a property named "3" that nothing had.
+        foreach (var indexer in type.Members.OfType<IndexerDeclarationSyntax>())
+        {
+            _converter.SetCurrentClass(name);
+            foreach (var member in _lowering.Indexer(indexer, TsTypeOf)) sb.Append(Written(member));
+        }
+
         // OPERATOR overloads. JavaScript cannot overload `+`, so the operator becomes a static
         // method and the call site is rewritten to call it — dropping it silently made `a + b` on
         // two objects concatenate their toString()s, which is wrong output with nothing to see.
@@ -617,12 +625,6 @@ public class RecordTypeEmitter
         {
             foreach (var (implementation, member, _) in DefaultInterfaceMembers.Of(self, typeModel.Compilation))
             {
-                if (implementation is IPropertySymbol { IsIndexer: true })
-                {
-                    _converter.Report(type, ConversionSeverity.Error, "EQ1008",
-                        DefaultInterfaceMembers.NoIndexer(self, implementation));
-                    continue;
-                }
                 if (member is not null && ModelFor(member) is { } memberModel
                     && DefaultInterfaceMembers.InterfaceStaticIn(member, memberModel) is { } reached)
                 {
@@ -637,6 +639,14 @@ public class RecordTypeEmitter
                         break;
                     case PropertyDeclarationSyntax property when ComputedGetter(property) is not null || IsSetterOnly(property):
                         _converter.InFileOf(property, () => sb.Append(ComputedProperty(property, name)));
+                        break;
+                    // A default indexer, as the type's own is written (#427).
+                    case IndexerDeclarationSyntax indexer:
+                        _converter.InFileOf(indexer, () =>
+                        {
+                            _converter.SetCurrentClass(name);
+                            foreach (var lowered in _lowering.Indexer(indexer, TsTypeOf)) sb.Append(Written(lowered));
+                        });
                         break;
                     // A vocabulary default from the interface's assembly, with no body to convert:
                     // the twin delegates to the runtime's copy.

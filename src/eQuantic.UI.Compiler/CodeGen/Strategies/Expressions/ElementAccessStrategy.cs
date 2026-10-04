@@ -35,6 +35,14 @@ public class ElementAccessStrategy : IExpressionIrStrategy
             return JsExpr.Callish($"{extensionHome.Name}.item({receiver}, {indexerArgs})");
         }
 
+        // An INSTANCE indexer a twin carries (#427) reads through its getter, `receiver.item(keys)`:
+        // a subscript read a property named after the key, which no twin had.
+        if (Indexer.EntryOf(elementAccess, context) is { } own)
+        {
+            var parts = Indexer.Parts(own, context);
+            return JsExpr.Call(JsExpr.Member(parts[0], Indexer.Get), parts.Skip(1).ToList());
+        }
+
         // Each indexer argument is one subscript.
         // A DICTIONARY READ fails for a key that is not there, where the class's own `get` answers
         // `undefined`, so the absence would spread through the program instead of stopping it where

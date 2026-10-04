@@ -105,6 +105,45 @@ internal sealed class MethodLowering
     }
 
     /// <summary>
+    /// An instance indexer as the two methods its twin carries (#427): its getter as
+    /// <c>item(…)</c> and its setter as <c>setItem(…, value)</c>, which answers the value it wrote,
+    /// as C#'s assignment does, so a call site can use it as the assignment's value. A setter that
+    /// returns early runs in an arrow of its own, so its <c>return;</c> ends the setter and not the
+    /// answer. One path for a class, a component, a record, a struct and an interface's default.
+    /// </summary>
+    /// <param name="indexer">The indexer, its accessors bodied or expression-bodied.</param>
+    /// <param name="declaredType">The emitter's annotation for a declared type.</param>
+    public IEnumerable<JsClassMember> Indexer(IndexerDeclarationSyntax indexer, Func<TypeSyntax?, string> declaredType)
+    {
+        var keys = string.Join(", ", indexer.ParameterList.Parameters.Select(parameter =>
+            Param(parameter.Identifier.ValueText.ToJsIdentifier(), declaredType(parameter.Type))));
+        var annotation = TypeAnnotations ? $": {declaredType(indexer.Type)}" : "";
+        var get = indexer.AccessorList?.Accessors.FirstOrDefault(accessor => accessor.IsKind(SyntaxKind.GetAccessorDeclaration));
+        var getter = indexer.ExpressionBody is { } arrow ? Body(null, arrow.Expression, isIterator: false, [], isAsync: false)
+            : get?.ExpressionBody is { } getArrow ? Body(null, getArrow.Expression, isIterator: false, [], isAsync: false)
+            : get?.Body is { } getBlock ? AccessorBody(getBlock)
+            : null;
+        if (getter is not null)
+            yield return JsClassMember.Method("", Strategies.Expressions.Indexer.Get, "", keys, annotation, getter)
+                with { Origin = new JsOrigin(indexer) };
+
+        var set = indexer.AccessorList?.Accessors.FirstOrDefault(accessor => accessor.IsKind(SyntaxKind.SetAccessorDeclaration)
+            || accessor.IsKind(SyntaxKind.InitAccessorDeclaration));
+        JsStatement? written = set?.ExpressionBody is { } setArrow ? ExpressionBody(setArrow.Expression, returns: false)
+            : set?.Body is { } setBlock ? AccessorBody(setBlock)
+            : null;
+        if (written is null) yield break;
+        if (set!.Body?.DescendantNodes().OfType<ReturnStatementSyntax>().Any() == true)
+            written = JsStatement.Raw($"(() => {JsStatementWriter.Write(written, JsLayout.Compact)})();");
+        IReadOnlyList<JsStatement> statements = written is JsBlock block ? block.Statements : [written];
+        var parameters = string.IsNullOrEmpty(keys)
+            ? Param("value", declaredType(indexer.Type))
+            : $"{keys}, {Param("value", declaredType(indexer.Type))}";
+        yield return JsClassMember.Method("", Strategies.Expressions.Indexer.Set, "", parameters, "",
+            JsStatement.Block([.. statements, JsStatement.Raw("return value;")])) with { Origin = new JsOrigin(set) };
+    }
+
+    /// <summary>
     /// Whether a method's twin is an async function: an <c>async</c> method, whose body awaits, and
     /// one that returns a <c>Task</c> without awaiting, whose value is a Promise either way. Asked of
     /// the return type's symbol: the name alone made a method returning a type called

@@ -40,6 +40,18 @@ public class NullCoalescingAssignmentStrategy : IExpressionIrStrategy
                 context.Converter.ConvertIr(assignment.Right));
         }
 
+        // An indexer the twin carries reads through its `item`, and writes through its `setItem` only
+        // when that read is null, as C# calls its setter only then (#427). The receiver and the keys
+        // are bound once each; the value is evaluated only when it is written.
+        if (Indexer.EntryOf(assignment.Left, context) is { } own)
+        {
+            var parts = Indexer.Parts(own, context);
+            var keys = parts.Count - 1;
+            return JsExpr.Template(
+                $"({Indexer.ReadTemplate(keys)} ?? {Indexer.WriteTemplate(keys, "{" + (keys + 1) + "}")})",
+                [.. parts, context.Converter.ConvertIr(assignment.Right)], context.TypeAnnotations);
+        }
+
         var left = context.Converter.ConvertExpression(assignment.Left);
         var right = context.Converter.ConvertExpression(assignment.Right);
 

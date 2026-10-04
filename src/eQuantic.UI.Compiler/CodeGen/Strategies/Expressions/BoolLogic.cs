@@ -62,6 +62,16 @@ internal static class BoolLogic
                 context.TypeAnnotations);
         }
 
+        // An indexer the twin carries: read through its `item`, written through its `setItem` (#427).
+        if (Indexer.EntryOf(assignment.Left, context) is { } own)
+        {
+            var parts = Indexer.Parts(own, context);
+            var keys = parts.Count - 1;
+            return JsExpr.Template(
+                $"({Indexer.WriteTemplate(keys, Combine(op, Indexer.ReadTemplate(keys), "{" + (keys + 1) + "}"))})",
+                [.. parts, right], context.TypeAnnotations);
+        }
+
         var left = context.Converter.ConvertIr(assignment.Left);
         return left switch
         {

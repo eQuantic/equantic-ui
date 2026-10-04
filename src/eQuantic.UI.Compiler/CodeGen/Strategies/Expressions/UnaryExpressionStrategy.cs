@@ -113,12 +113,16 @@ public class UnaryExpressionStrategy : IExpressionIrStrategy
         var delta = op == "++" ? "+" : "-";
         var answerOld = node is PostfixUnaryExpressionSyntax && ValueUsed(node);
         var entry = DictionaryEntry.Of(operandSyntax, context);
+        // An indexer the twin carries has no target JavaScript's own step can write (#427).
+        var own = Indexer.EntryOf(operandSyntax, context);
         JsExpr Stepped(Func<JsExpr, JsExpr> next) => entry is { } found
             ? ReadModifyWrite.AssignEntry(context.Converter.ConvertIr(found.Expression),
                 context.Converter.ConvertIr(found.ArgumentList.Arguments[0].Expression), [], (current, _) => next(current),
                 answerOld, context)
-            : ReadModifyWrite.Assign(context.Converter.ConvertIr(operandSyntax), [], (current, _) => next(current),
-                answerOld, context);
+            : own is { } indexed
+                ? ReadModifyWrite.AssignIndexer(Indexer.Parts(indexed, context), [], (current, _) => next(current), answerOld, context)
+                : ReadModifyWrite.Assign(context.Converter.ConvertIr(operandSyntax), [], (current, _) => next(current),
+                    answerOld, context);
         JsExpr Plain(ITypeSymbol number, JsExpr current) =>
             JsExpr.Binary(current, delta, JsExpr.Literal(number.IsLong() ? "1n" : "1"));
 
@@ -128,7 +132,7 @@ public class UnaryExpressionStrategy : IExpressionIrStrategy
             return Stepped(current => NullableLift.Unary(current, rule, context));
         }
         if (StepRule(type, delta, node, context) is { } typed) return Stepped(typed);
-        return entry is not null && NullableLift.IsNumber(type) ? Stepped(current => Plain(type, current)) : null;
+        return (entry is not null || own is not null) && NullableLift.IsNumber(type) ? Stepped(current => Plain(type, current)) : null;
     }
 
     /// <summary>The value one step computes from the current one on <paramref name="type"/>, where

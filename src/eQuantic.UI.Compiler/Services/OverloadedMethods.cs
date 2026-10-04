@@ -79,29 +79,50 @@ internal static class OverloadedMethods
         List<CompilationError> errors)
     {
         var allStatic = type.Modifiers.Any(SyntaxKind.StaticKeyword);
-        var first = new Dictionary<(bool Static, string Name), MethodDeclarationSyntax>();
-        foreach (var (method, isStatic) in Methods(type, allStatic, isComponent))
+        var first = new Dictionary<(bool Static, string Name), (string Shown, SyntaxToken At)>();
+        foreach (var (name, isStatic, shown, at) in Named(type, allStatic, isComponent))
         {
-            var key = (isStatic, method.Identifier.Text.ToCamelCase());
+            var key = (isStatic, name);
             if (!first.TryGetValue(key, out var earlier))
             {
-                first[key] = method;
+                first[key] = (shown, at);
                 continue;
             }
-            var position = method.Identifier.GetLocation().GetLineSpan().StartLinePosition;
-            var earlierLine = earlier.Identifier.GetLocation().GetLineSpan().StartLinePosition.Line + 1;
+            var position = at.GetLocation().GetLineSpan().StartLinePosition;
+            var earlierLine = earlier.At.GetLocation().GetLineSpan().StartLinePosition.Line + 1;
             errors.Add(new CompilationError
             {
                 Code = "EQ1007",
                 Message =
-                    $"'{type.Identifier.Text}.{Signature(method)}' lowers to `{(isStatic ? "static " : "")}{key.Item2}()`, "
-                    + $"and so does '{Signature(earlier)}' (line {earlierLine}). C# tells overloads apart by "
+                    $"'{type.Identifier.Text}.{shown}' lowers to `{(isStatic ? "static " : "")}{name}()`, "
+                    + $"and so does '{earlier.Shown}' (line {earlierLine}). C# tells overloads apart by "
                     + "their parameters, and a JavaScript class has one member per name, so the twin would keep "
-                    + "one of them and every call would reach it. Give each its own name.",
+                    + "one of them and every call would reach it. Give each its own name, or keep one indexer.",
                 SourcePath = sourcePath,
                 Line = position.Line + 1,
                 Column = position.Character + 1,
             });
+        }
+    }
+
+    /// <summary>
+    /// The names a type's twin gives its methods, in declaration order, with whether each is static
+    /// there, how a message shows it, and where it is declared. An indexer takes two: its getter is
+    /// the twin's <c>item</c> and its setter its <c>setItem</c> (#427), so a second indexer, or a
+    /// method named <c>Item</c> or <c>SetItem</c> beside one, would land on the same member.
+    /// </summary>
+    private static IEnumerable<(string Name, bool Static, string Shown, SyntaxToken At)> Named(TypeDeclarationSyntax type,
+        bool allStatic, bool isComponent)
+    {
+        foreach (var (method, isStatic) in Methods(type, allStatic, isComponent))
+            yield return (method.Identifier.Text.ToCamelCase(), isStatic, Signature(method), method.Identifier);
+        foreach (var indexer in type.Members.OfType<IndexerDeclarationSyntax>())
+        {
+            var shown = $"this[{string.Join(", ", indexer.ParameterList.Parameters.Select(parameter => parameter.Type?.ToString() ?? parameter.Identifier.Text))}]";
+            yield return (CodeGen.Strategies.Expressions.Indexer.Get, false, shown, indexer.ThisKeyword);
+            if (indexer.AccessorList?.Accessors.Any(accessor => accessor.IsKind(SyntaxKind.SetAccessorDeclaration)
+                    || accessor.IsKind(SyntaxKind.InitAccessorDeclaration)) == true)
+                yield return (CodeGen.Strategies.Expressions.Indexer.Set, false, shown + "'s setter", indexer.ThisKeyword);
         }
     }
 
@@ -250,7 +271,8 @@ internal static class OverloadedMethods
     /// declares itself. A field takes its name too: <c>class C : I { public int Mark; }</c> beside a
     /// default <c>I.Mark()</c> gave the twin two members named <c>mark</c>, and so did an explicit
     /// <c>IA.M()</c> beside a default <c>IB.M()</c>, and an event, which lowers to an instance field
-    /// (all found in review, #418). An indexer is written into no twin (#427), so it takes no name.
+    /// (all found in review, #418). An indexer takes the names its twin's two methods have, which
+    /// <see cref="Named"/> checks within one declaration (#427); along the chain it is not checked yet.
     /// </summary>
     private static IEnumerable<ISymbol> InstanceMembers(INamedTypeSymbol type, bool isComponent) =>
         type.GetMembers().Where(member => !member.IsStatic && !member.IsImplicitlyDeclared
