@@ -167,11 +167,13 @@ internal sealed class MethodLowering
         {
             _converter.SetIteratorBuffer(null);
         }
+        // The buffer's two lines are the declaration's, as an out parameter's wrapper is: the body's
+        // statements carry their own origins, and without one here those two inherited none.
         return JsStatement.Block([
             JsStatement.Const(IteratorBufferName, JsExpr.Array([])),
             .. converted is JsBlock filled ? filled.Statements : [converted],
             JsStatement.Return(JsExpr.Identifier(IteratorBufferName)),
-        ]);
+        ]) with { Origin = block.Parent ?? block };
     }
 
     /// <summary>

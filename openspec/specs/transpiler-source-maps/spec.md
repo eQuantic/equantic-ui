@@ -99,6 +99,12 @@ returns. The lines the wrapper adds SHALL map to the declaration whose body it w
 - **THEN** the top frame leads, through the composed map, to the statement that threw, where it led to
   the method's head, and the caller's frame to the call
 
+#### Scenario: An iterator's buffer
+
+- **WHEN** `public IEnumerable<int> Evens(int limit)` yields from a loop, and is compiled
+- **THEN** the buffer the body fills and the return of it map to the method's declaration, and each
+  statement of the body to its own line, where the buffer's two lines had no segment
+
 ### Requirement: A map names every file its segments come from
 
 A module's map SHALL name, among its sources, every file a segment of it comes from, each once and

@@ -1164,8 +1164,9 @@ record of a release, the wiki's Upgrading page is the distillate.
   ([#525](https://github.com/eQuantic/equantic-ui/issues/525)): every JSON the build lays out goes
   through `JsonWriter`, whose escape is System.Text.Json's, and both maps through one map writer on top
   of it. Each case failed on main, the frames read through the composed map of a Bun bundle among
-  them. Proposed and archived through OpenSpec (`openspec/specs/transpiler-source-maps`,
-  `openspec/specs/generated-files`).
+  them. The review found the iterator's buffer left out of the declaration's lines, its two lines
+  mapped to nothing, and they map to the declaration now. Proposed and archived through OpenSpec
+  (`openspec/specs/transpiler-source-maps`, `openspec/specs/generated-files`).
 
 ## Retired documents
 

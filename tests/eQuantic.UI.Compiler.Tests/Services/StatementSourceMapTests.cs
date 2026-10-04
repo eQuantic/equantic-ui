@@ -309,6 +309,27 @@ public class StatementSourceMapTests
         }
         """;
 
+    /// <summary>An iterator, whose yields push onto a buffer the lowering declares in front of the body
+    /// and returns after it. The body's statements carry their own lines, and the buffer's two lines
+    /// carried none, so a frame or a breakpoint on them led nowhere (#566).</summary>
+    private const string IteratorSource = """
+        using System.Collections.Generic;
+
+        namespace Demo;
+
+        public class Sequences
+        {
+            public IEnumerable<int> Evens(int limit)
+            {
+                for (var i = 0; i < limit; i++)
+                {
+                    var doubled = i * 2;
+                    yield return doubled;
+                }
+            }
+        }
+        """;
+
     /// <summary>The same shape on a component, whose methods the emitter writes on its own path.</summary>
     private const string ComponentByReferenceSource = """
         using eQuantic.UI.Primitives;
@@ -546,6 +567,20 @@ public class StatementSourceMapTests
     [InlineData("return parts > 1;", "return parts > 1;")]
     public void AStatementOfABodyWithAnOutOrRefParameter_MapsToItsOwnCSharpLine(string emitted, string written) =>
         AssertMapped(Compile(ByReferenceSource, "Halves.cs"), emitted, written, ByReferenceSource);
+
+    /// <summary>The lines a wrapper adds map to the declaration whose body it wraps: the arrow an out
+    /// parameter's body runs in, and the buffer an iterator fills (#566).</summary>
+    [Theory]
+    [InlineData("const $r = ", "public bool TryHalf(int value, out int half)", "Halves.cs")]
+    [InlineData("return { $: $r, half };", "public bool TryHalf(int value, out int half)", "Halves.cs")]
+    [InlineData("const _seq = [];", "public IEnumerable<int> Evens(int limit)", "Sequences.cs")]
+    [InlineData("return _seq;", "public IEnumerable<int> Evens(int limit)", "Sequences.cs")]
+    [InlineData("let doubled = i * 2;", "var doubled = i * 2;", "Sequences.cs")]
+    public void ALineAWrapperAdds_MapsToTheDeclarationWhoseBodyItWraps(string emitted, string written, string file)
+    {
+        var source = file == "Halves.cs" ? ByReferenceSource : IteratorSource;
+        AssertMapped(Compile(source, file), emitted, written, source);
+    }
 
     [Theory]
     [InlineData("let widened = raw * 10;", "var widened = raw * 10;")]
