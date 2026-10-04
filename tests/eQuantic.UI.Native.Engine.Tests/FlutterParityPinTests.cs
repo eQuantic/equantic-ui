@@ -243,6 +243,10 @@ public class FlutterParityPinTests
         ["Canvas"] = () => Nothing("FragmentProgram", "FragmentShader"),
         // The cut is reported (MaxLines exists, MeasuredLine.Ellipsized is written); no neutral type owns the mark.
         ["TextOverflow.ellipsis"] = () => HasMember("Text", "MaxLines") && Nothing("TextOverflow", "TextPainter"),
+        ["Transform"] = () => Has("Transform2D") && HasMember("BoxStyle", "Transform")
+            && HasMember("StyleDiff", "Transform"),
+        ["WidgetStateProperty"] = () => HasMember("BoxStyle", "Hover") && HasMember("BoxStyle", "Focus")
+            && HasMember("StyleDiff", "Shadows") && HasMember("StyleDiff", "Transform"),
 
         // 3 — state
         ["setState"] = () => HasMember("StatefulComponent", "StateInvalidated"),

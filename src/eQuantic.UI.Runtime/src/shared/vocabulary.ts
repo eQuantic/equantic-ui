@@ -85,6 +85,10 @@ export class StyleDiff {
   opacity?: number | null;
   gradient?: LinearGradient | null;
   backdropBlur?: number | null;
+  /** The transform while active, replacing the base's (C# `StyleDiff.Transform`). */
+  transform?: unknown;
+  /** The custom shadows while active, replacing the base's (C# `StyleDiff.Shadows`). */
+  shadows?: ShadowSpec[] | null;
 
   constructor(config?: {
     background?: ColorTokenValue | null;
@@ -94,6 +98,8 @@ export class StyleDiff {
     opacity?: number | null;
     gradient?: LinearGradient | null;
     backdropBlur?: number | null;
+    transform?: unknown;
+    shadows?: ShadowSpec[] | null;
   }) {
     if (config) Object.assign(this, config);
   }

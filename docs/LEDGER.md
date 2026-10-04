@@ -1347,6 +1347,32 @@ record of a release, the wiki's Upgrading page is the distillate.
   `is` over a named constant ([#451](https://github.com/eQuantic/equantic-ui/issues/451)) and an
   enum's `ToString` ([#452](https://github.com/eQuantic/equantic-ui/issues/452)). Proposed and
   archived through OpenSpec (`openspec/specs/transpiler-constants`).
+- **2026-10-02 · A hover moves a box and changes its shadow on every target**: a `StyleDiff` could
+  tint a box and nothing more, and not even that whole
+  ([#507](https://github.com/eQuantic/equantic-ui/issues/507), the first slice of
+  [#504](https://github.com/eQuantic/equantic-ui/issues/504)). It gains `Transform`, replacing the
+  base's while the state is active, and `Shadows`, replacing the base's custom shadows. On Photon a
+  hover applied three of its seven members; one effective style now feeds the wrapper that fades and
+  moves a box and the chrome that fills and shadows it. On the web a hover's backdrop blur was never
+  written, and a hover that raised the elevation or swapped the gradient replaced the whole
+  `box-shadow` or `background-image`, taking the glow, the inset highlight and the grid pattern away
+  under the pointer; a state now writes those lists again from its members and the base's. The two
+  web producers wrote the base's custom shadows in opposite orders and a shadow with no geometry
+  differently (a `none` inside the list in C#, which CSS rejects with the whole declaration), and an
+  element listed a vendor pair's one class twice; the component parity fixture compares a box that
+  sets every part. The perf harness refused the first shape: the diff was a struct, a `BoxStyle`
+  carries two, and every box paid for the new members, 77,474 bytes a frame against a 74 KB ceiling,
+  so `StyleDiff` is a class and the frame measures 73.2 KB. Filed: a pinned header's scrolled style,
+  half drawn on the web and not at all on Photon
+  ([#506](https://github.com/eQuantic/equantic-ui/issues/506)), and the second slice, with a custom
+  shadow that snaps on Photon where the browser glides it
+  ([#508](https://github.com/eQuantic/equantic-ui/issues/508)); and, from the review, a draggable's
+  resting offset and its box's own transform taking the same CSS property, so a hover lift closes an
+  open row on the web ([#511](https://github.com/eQuantic/equantic-ui/issues/511)), and, from
+  Copilot's, Photon hit-testing a transformed box where it was laid out rather than where it is
+  drawn, which the base transform always did and a lift now shows
+  ([#513](https://github.com/eQuantic/equantic-ui/issues/513)). Proposed and archived through
+  OpenSpec (`openspec/specs/interaction-states`).
 
 ## Retired documents
 

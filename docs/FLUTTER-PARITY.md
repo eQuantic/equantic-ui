@@ -22,7 +22,7 @@ same question: this file asks *how does Flutter solve this?*, that one asks *whe
 structure weak?*. Both are measured rather than recalled, and both are pinned.
 
 Measured against the tree at the time of writing; every claim below was grepped, not recalled — and
-kept true by `FlutterParityPinTests`, which reads this file and probes all 64 rows. A SAME,
+kept true by `FlutterParityPinTests`, which reads this file and probes all 66 rows. A SAME,
 DIFFERENT or PARTIAL row must be findable in the public surface; a GAP row must still be missing;
 and a row added without a probe fails the build. So the audit cannot rot, cannot gain unchecked
 prose, and cannot go on claiming an absence that has ended.
@@ -63,6 +63,8 @@ prose, and cannot go on claiming an absence that has ended.
 | `CustomPaint` / `CustomPainter` | `Canvas` + `ICanvasPainter` | **SAME**, and the painter already carries the box it was given. |
 | `Canvas`, `Paint`, `Path`, shaders | The Photon engine's SDF shaders (Slang → Metal/SPIR-V) | **DIFFERENT.** Shaders are the ENGINE's, not an API. A consumer gets `Canvas` primitives; there is no `FragmentProgram`. Deliberate: a consumer shader would have to exist twice and match. |
 | `TextOverflow.ellipsis` on `Text`, drawn by `TextPainter` in the neutral `painting` layer | `Text.MaxLines`; the mark is INSIDE the measurement — CoreText truncates in its own layout (#123; the middle-cut of `.53` fixed in #136), Android's measurer appends it, CSS draws it on the web; DirectWrite still cuts without one | **PARTIAL — three of four targets.** Flutter puts the mark in one neutral painter; we put it where each platform makes the line, so the rule the contract states (the glyphs drawn are the line measured) is honoured at three sites today and by three different hands: CoreText's and Android's measurers shape it themselves, the web leaves it to the browser through CSS `text-overflow` (the browser is the shaper there, and `ITextMeasurer` is not on that path), and DirectWrite cuts without it. `TruncationContractTests` asks every measurer it can host, and carries DirectWrite as withholding until `SetTrimming` is verified on a Windows box. `MeasuredLine.Ellipsized` remains `didExceedMaxLines`'s analogue, read by no realizer. |
+| `Transform`, with a `Matrix4` | `BoxStyle.Transform`, a `Transform2D` (translate, rotate, scale) applied around the box's centre, and `StyleDiff.Transform` for a state | **PARTIAL.** Two-dimensional and centre-anchored: there is no `alignment` or `origin` to move the pivot and no perspective. Paint-only on both targets, so layout never moves. A state's transform REPLACES the base's, the way a CSS rule replaces `transform`: a card rotated at rest and lifted on hover states both in its hover transform (#507). |
+| `WidgetStateProperty` (`resolveWith` over hovered, focused, pressed, …) | `StyleDiff`, a partial style per state: `BoxStyle.Hover`, `BoxStyle.Focus`, and `Pressable.PressedBackground` for the press | **DIFFERENT.** Flutter resolves each PROPERTY against the set of states a control is in; we resolve each STATE to a diff laid over the base. For a fixed order of states the two say the same thing, and a diff is what the web writes as one pseudo-class rule and Photon as one overlay. Every member of a hover's diff applies on both targets, and a state rewrites the lists it shares with the base (the shadows, the background layers) rather than replacing them (#507). A pressed diff, the focus diff on Photon and a group hover are #508. |
 
 ---
 

@@ -47,6 +47,62 @@ public class SimulatedStateTests
     }
 
     /// <summary>
+    /// Every member a diff can set has a place in the simulated style. The pseudo path writes a
+    /// state's declarations as they come; the simulated one maps each back onto the element's style,
+    /// and a declaration with no place there throws while the page renders. The members are READ off
+    /// the type, so the next one added to <see cref="StyleDiff"/> is asked here before a preview meets
+    /// it (#507).
+    /// </summary>
+    [Fact]
+    public void EveryMemberOfADiff_HasAPlaceInTheSimulatedStyle()
+    {
+        var diff = new StyleDiff();
+        var members = typeof(StyleDiff).GetProperties().Where(p => p.CanWrite).ToList();
+        foreach (var member in members) member.SetValue(diff, Sample(member.PropertyType));
+        members.Should().HaveCountGreaterThan(8, "a diff with nothing set would prove nothing");
+
+        var box = new Primitives.Box(new BoxStyle { Hover = diff, Focus = diff }, new Text("x", TypeRole.BodyM));
+
+        FluentActions.Invoking(() => Render(box)).Should().NotThrow("the pseudo path writes every member");
+        FluentActions.Invoking(() => Render(new Simulated(SimulatedState.Hovered | SimulatedState.Focused, box)))
+            .Should().NotThrow("the simulated path has a place for every declaration the pseudo path writes");
+    }
+
+    /// <summary>A value for each type a <see cref="StyleDiff"/> member holds. A type with no sample
+    /// fails here by name, which is the question to answer when the vocabulary grows.</summary>
+    private static object Sample(Type type) => (Nullable.GetUnderlyingType(type) ?? type) switch
+    {
+        var t when t == typeof(ColorToken) => Theme.FocusRing,
+        var t when t == typeof(float) => 0.5f,
+        var t when t == typeof(int) => 3,
+        var t when t == typeof(LinearGradient) => new LinearGradient(Theme.Surface, Theme.SurfaceSubtle),
+        var t when t == typeof(Transform2D) => Transform2D.Translate(0, -2),
+        var t when t == typeof(IReadOnlyList<ShadowSpec>) => new[] { new ShadowSpec(4, 8, 0, Theme.Border) },
+        var t => throw new InvalidOperationException(
+            $"A StyleDiff member of type {t.Name} has no sample here: add one, and a place for what it writes in ApplyDiff."),
+    };
+
+    /// <summary>
+    /// The pictured hover writes what the real one does, the composed lists included: the raised
+    /// elevation keeps the glow beside it, and the lift moves the box (#504).
+    /// </summary>
+    [Fact]
+    public void AHoveredSubtree_DrawsEveryMemberOfTheDiff()
+    {
+        var glow = new ShadowSpec(0, 24, 0, new ColorToken(Color.FromRgb(0x44, 0x88, 0xFF)));
+        var (_, css) = Render(new Simulated(SimulatedState.Hovered, new Primitives.Box(new BoxStyle
+        {
+            Elevation = 1,
+            Shadow = glow,
+            Hover = new StyleDiff { Elevation = 3, Transform = Transform2D.Translate(0, -2) },
+        }, new Text("x", TypeRole.BodyM))));
+
+        css.Should().Contain($"{{box-shadow:{TokenCss.Shadow(Theme.Elevation(3))}, {TokenCss.Shadow(glow)}}}");
+        css.Should().Contain("{transform:translate(0, -2px)}");
+        css.Should().NotContain(":hover");
+    }
+
+    /// <summary>
     /// ONE declaration per property, not two. Every atomic class has equal specificity, so an
     /// element carrying both the base and the simulated colour would be decided by stylesheet
     /// insertion order — by whatever the rest of the page happened to emit first.

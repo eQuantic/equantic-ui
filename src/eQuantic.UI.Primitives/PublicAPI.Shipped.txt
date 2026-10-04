@@ -1688,7 +1688,7 @@ eQuantic.UI.Primitives.StyleDiff.BorderWidth.get -> float?
 eQuantic.UI.Primitives.StyleDiff.BorderWidth.init -> void
 eQuantic.UI.Primitives.StyleDiff.Elevation.get -> int?
 eQuantic.UI.Primitives.StyleDiff.Elevation.init -> void
-eQuantic.UI.Primitives.StyleDiff.Equals(eQuantic.UI.Primitives.StyleDiff other) -> bool
+eQuantic.UI.Primitives.StyleDiff.Equals(eQuantic.UI.Primitives.StyleDiff? other) -> bool
 eQuantic.UI.Primitives.StyleDiff.Gradient.get -> eQuantic.UI.Primitives.LinearGradient?
 eQuantic.UI.Primitives.StyleDiff.Gradient.init -> void
 eQuantic.UI.Primitives.StyleDiff.IsEmpty.get -> bool
@@ -2368,8 +2368,8 @@ static eQuantic.UI.Primitives.SpringSpec.operator !=(eQuantic.UI.Primitives.Spri
 static eQuantic.UI.Primitives.SpringSpec.operator ==(eQuantic.UI.Primitives.SpringSpec left, eQuantic.UI.Primitives.SpringSpec right) -> bool
 static eQuantic.UI.Primitives.StatusScale.operator !=(eQuantic.UI.Primitives.StatusScale left, eQuantic.UI.Primitives.StatusScale right) -> bool
 static eQuantic.UI.Primitives.StatusScale.operator ==(eQuantic.UI.Primitives.StatusScale left, eQuantic.UI.Primitives.StatusScale right) -> bool
-static eQuantic.UI.Primitives.StyleDiff.operator !=(eQuantic.UI.Primitives.StyleDiff left, eQuantic.UI.Primitives.StyleDiff right) -> bool
-static eQuantic.UI.Primitives.StyleDiff.operator ==(eQuantic.UI.Primitives.StyleDiff left, eQuantic.UI.Primitives.StyleDiff right) -> bool
+static eQuantic.UI.Primitives.StyleDiff.operator !=(eQuantic.UI.Primitives.StyleDiff? left, eQuantic.UI.Primitives.StyleDiff? right) -> bool
+static eQuantic.UI.Primitives.StyleDiff.operator ==(eQuantic.UI.Primitives.StyleDiff? left, eQuantic.UI.Primitives.StyleDiff? right) -> bool
 static eQuantic.UI.Primitives.SvgDocument.Parse(string! svg) -> eQuantic.UI.Primitives.VectorDrawing!
 static eQuantic.UI.Primitives.TextRun.operator !=(eQuantic.UI.Primitives.TextRun? left, eQuantic.UI.Primitives.TextRun? right) -> bool
 static eQuantic.UI.Primitives.TextRun.operator ==(eQuantic.UI.Primitives.TextRun? left, eQuantic.UI.Primitives.TextRun? right) -> bool
@@ -2520,8 +2520,8 @@ virtual eQuantic.UI.Primitives.UiComponent.AdoptConfig(eQuantic.UI.Primitives.Ui
 ~override eQuantic.UI.Primitives.SpringSpec.ToString() -> string
 ~override eQuantic.UI.Primitives.StatusScale.Equals(object obj) -> bool
 ~override eQuantic.UI.Primitives.StatusScale.ToString() -> string
-~override eQuantic.UI.Primitives.StyleDiff.Equals(object obj) -> bool
-~override eQuantic.UI.Primitives.StyleDiff.ToString() -> string
+override eQuantic.UI.Primitives.StyleDiff.Equals(object? obj) -> bool
+override eQuantic.UI.Primitives.StyleDiff.ToString() -> string!
 ~override eQuantic.UI.Primitives.Transform2D.Equals(object obj) -> bool
 ~override eQuantic.UI.Primitives.Transform2D.ToString() -> string
 ~override eQuantic.UI.Primitives.TransitionSpec.Equals(object obj) -> bool

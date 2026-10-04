@@ -153,6 +153,14 @@ public class PerfHarnessTests
     /// what a ruler is for; the answer is to make the change free, and the ConditionalWeakTable
     /// above is still the next kilobyte when one is genuinely needed.
     /// </para>
+    /// <para>
+    /// NOT raised on 2026-10-02 either (#507). Giving <c>StyleDiff</c> a transform and its own
+    /// shadows measured 77,474: the diff was a struct, a <c>BoxStyle</c> carries two of them, and
+    /// every box of a rebuilt tree carries a <c>BoxStyle</c>, so 36 bytes more per diff were 72 more
+    /// per box whether the box declared a state or not. <c>StyleDiff</c> became a class instead —
+    /// 16 bytes per box for the pair, paid in full only by a box that declares one — and the frame
+    /// measured 73.2 KB, under the 74.0 it started from.
+    /// </para>
     /// </summary>
     private const long PooledAllocationCeilingBytesPerFrame = 74 * 1024;
 
