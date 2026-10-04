@@ -107,8 +107,10 @@ public sealed class DatePicker : StatefulComponent
 
         // Esc closes while the panel is up, and it wraps the OPENER because that is what the
         // panel's lifetime belongs to — putting it outside the field would also put a key
-        // listener around an input for as long as the calendar is open.
-        if (_open && !Disabled) opener = new Shortcut(opener, KeyChord.Escape, Close);
+        // listener around an input for as long as the calendar is open. Around the opener whether
+        // the panel is up or not, and enabled while it is, so opening moves nothing in the tree and
+        // the keyboard focus stays where it was (#567).
+        opener = new Shortcut(opener, KeyChord.Escape, Close) { Enabled = _open && !Disabled };
 
         return new TextInput(shown, Type, Label,
             placeholder: SdkStrings.DateFormatHint,
