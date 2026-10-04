@@ -170,13 +170,7 @@ public class ComponentParser
         // base (semantic walk) / matches a base-name heuristic / it declares Build|Render — AND, transitively,
         // any class extending another in-file component (so a subclass of a user component is recognized even
         // without its own Build and without relying on the semantic model resolving the full base chain).
-        string? BaseName(ClassDeclarationSyntax c)
-        {
-            var b = c.BaseList?.Types.FirstOrDefault()?.Type.ToString();
-            if (b == null) return null;
-            if (b.Contains('<')) b = b.Substring(0, b.IndexOf('<'));
-            return b.Contains('.') ? b.Substring(b.LastIndexOf('.') + 1) : b;
-        }
+        string? BaseName(ClassDeclarationSyntax c) => c.BaseList?.Types.FirstOrDefault()?.Type.TwinTypeName(model);
         var componentNames = new HashSet<string>();
         foreach (var c in classes)
         {
@@ -281,9 +275,10 @@ public class ComponentParser
             if (!componentNames.Contains(classDecl.Identifier.Text)) continue;
 
             // The WRITTEN base, which is what the emitter puts after `extends` and what the relative
-            // import beside it names. Never the resolved one: a component over `CardBase` must keep
-            // saying `extends CardBase`.
-            var baseType = classDecl.BaseList?.Types.FirstOrDefault()?.Type.ToString();
+            // import beside it names. Never the resolved KIND: a component over `CardBase` must keep
+            // saying `extends CardBase`. Named as its twin, so `eQuantic.UI.Web.HtmlElement` is
+            // `HtmlElement`, which is what the import beside it brings (#479).
+            var baseType = classDecl.BaseList?.Types.FirstOrDefault()?.Type.TwinTypeName(model);
             var resolvedBase = ResolveBaseKind(classDecl);
 
             var definition = new ComponentDefinition
