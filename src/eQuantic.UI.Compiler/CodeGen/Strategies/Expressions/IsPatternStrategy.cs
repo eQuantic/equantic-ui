@@ -134,7 +134,7 @@ public class IsPatternStrategy : IConversionStrategy
             context.UsedHelpers.Add(Eq.Import);
             return $"{Eq.Dec}({JsStringLiteral.Quote(exact.ToString(System.Globalization.CultureInfo.InvariantCulture))})";
         }
-        if (constant is { HasValue: true } known && InlinedConstantStrategy.LiteralOf(known.Value) is { } literal)
+        if (constant is { HasValue: true } known && ConstantLiteral.Write(known.Value, null) is { } literal)
             return literal;
         return context.Converter.ConvertExpression(spelled);
     }

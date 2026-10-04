@@ -210,7 +210,7 @@ public class ObjectCreationStrategy : IExpressionIrStrategy
             if (context.SemanticHelper.GetSymbol(creation) is IMethodSymbol ctor)
             {
                 if (emittedSlots < ctor.Parameters.Length)
-                    arguments.AddRange(ctor.Parameters.Skip(emittedSlots).Select(DefaultOf));
+                    arguments.AddRange(ctor.Parameters.Skip(emittedSlots).Select(parameter => DefaultOf(parameter, context)));
                 arguments.Add(initializer);
             }
             else if (emittedSlots > 0)
@@ -291,8 +291,10 @@ public class ObjectCreationStrategy : IExpressionIrStrategy
     private static JsExpr Spliced(IReadOnlyList<JsExpr> values) =>
         values.Count == 1 ? values[0] : JsExpr.Opaque(string.Join(", ", values.Select(JsExprWriter.Write)));
 
-    /// <summary>A parameter's C# default as the literal a skipped argument is filled with.</summary>
-    private static JsExpr DefaultOf(IParameterSymbol parameter) => JsExpr.Literal(ParameterDefaultLiteral(parameter));
+    /// <summary>A parameter's C# default as the literal a skipped argument is filled with
+    /// (<see cref="DefaultLiteralFor"/>).</summary>
+    private static JsExpr DefaultOf(IParameterSymbol parameter, ConversionContext context) =>
+        JsExpr.Literal(DefaultLiteralFor(parameter, context));
 
     /// <summary>Type names whose creations lower to JS literals (array/object/Set) — a collection
     /// initializer on THESE is the literal itself, never Add-per-element on a constructed node.</summary>
@@ -462,7 +464,7 @@ public class ObjectCreationStrategy : IExpressionIrStrategy
         var lastSet = keep.FindLastIndex(i => slots[i] != null);
         var ordered = new List<JsExpr>();
         for (var k = 0; k <= lastSet; k++)
-            ordered.Add(slots[keep[k]] ?? DefaultOf(ctor.Parameters[keep[k]]));
+            ordered.Add(slots[keep[k]] ?? DefaultOf(ctor.Parameters[keep[k]], context));
         return ordered;
     }
 
@@ -480,12 +482,10 @@ public class ObjectCreationStrategy : IExpressionIrStrategy
         return false;
     }
 
-    /// <summary>The TS literal for a parameter's C# default value — enum members lower to their
-    /// camelCase member-name string, matching the enum representation everywhere else. Shared with
+    /// <summary>The TS literal for a parameter's C# default value: the constant it is in the parameter's
+    /// type (<see cref="ConstantLiteral"/>), an enum's in the enum's representation. Shared with
     /// InvocationStrategy (named INVOCATION arguments reorder the same way creations do).</summary>
-    internal static string DefaultLiteralFor(IParameterSymbol parameter) => ParameterDefaultLiteral(parameter);
-
-    private static string ParameterDefaultLiteral(IParameterSymbol parameter)
+    internal static string DefaultLiteralFor(IParameterSymbol parameter, ConversionContext context)
     {
         // A non-nullable STRUCT parameter defaulted with `= default` (BoxStyle, EdgeInsets…) must
         // fill as `undefined`, never `null`: the hand-written twin declares its own default
@@ -496,30 +496,11 @@ public class ObjectCreationStrategy : IExpressionIrStrategy
             && parameter.Type.OriginalDefinition?.SpecialType != SpecialType.System_Nullable_T)
             return "undefined";
         if (!parameter.HasExplicitDefaultValue || parameter.ExplicitDefaultValue is null) return "null";
-        var value = parameter.ExplicitDefaultValue;
 
-        var enumType = parameter.Type.TypeKind == TypeKind.Enum ? parameter.Type
-            : parameter.Type is INamedTypeSymbol { OriginalDefinition.SpecialType: SpecialType.System_Nullable_T } nullable
-                ? nullable.TypeArguments[0]
-                : null;
-        if (enumType is { TypeKind: TypeKind.Enum })
-        {
-            var member = enumType.GetMembers().OfType<IFieldSymbol>()
-                .FirstOrDefault(f => f.HasConstantValue && Equals(f.ConstantValue, value));
-            if (member != null) return $"'{member.Name.ToCamelCase()}'";
-        }
-
-        // A string or a char is spelled by the one writer of JavaScript strings: quoted by hand, a
-        // default of "it's" closed its own quotes and a char had none at all (`M.g(,, 1)`, #520).
-        return value switch
-        {
-            bool flag => flag ? "true" : "false",
-            string text => JsStringLiteral.Quote(text),
-            char character => JsStringLiteral.Quote(character.ToString()),
-            float f => f.ToString(System.Globalization.CultureInfo.InvariantCulture),
-            double d => d.ToString(System.Globalization.CultureInfo.InvariantCulture),
-            _ => System.Convert.ToString(value, System.Globalization.CultureInfo.InvariantCulture) ?? "null",
-        };
+        // The constant in the parameter's type: a decimal default was written as a number, a long as a
+        // number, a float as its own shortest text, a char with no quotes (a bare identifier), a string
+        // with a quote in it as a broken literal, and a [Flags] member as a name its enum never holds.
+        return ConstantLiteral.Write(parameter.ExplicitDefaultValue, parameter.Type, context) ?? "null";
     }
 
     /// <summary>
@@ -643,7 +624,7 @@ public class ObjectCreationStrategy : IExpressionIrStrategy
                 {
                     var supplied = creation.ArgumentList?.Arguments.Count ?? 0;
                     for (var i = supplied; i < ctor.Parameters.Length; i++)
-                        parts.Add(DefaultOf(ctor.Parameters[i]));
+                        parts.Add(DefaultOf(ctor.Parameters[i], context));
                     parts.Add(context.Converter.ConvertIr(creation.Initializer));
                     return JsExpr.New(constructed, parts);
                 }
@@ -758,7 +739,7 @@ public class ObjectCreationStrategy : IExpressionIrStrategy
                         JsExpr.New(JsExpr.Identifier(target.Name), ctorArgs), context);
                 }
                 if (ms != null && ctorArgs.Count < ms.Parameters.Length)
-                    ctorArgs.AddRange(ms.Parameters.Skip(ctorArgs.Count).Select(DefaultOf));
+                    ctorArgs.AddRange(ms.Parameters.Skip(ctorArgs.Count).Select(parameter => DefaultOf(parameter, context)));
                 ctorArgs.Add(context.Converter.ConvertIr(creation.Initializer));
                 return JsExpr.New(JsExpr.Identifier(target.Name), ctorArgs);
             }
