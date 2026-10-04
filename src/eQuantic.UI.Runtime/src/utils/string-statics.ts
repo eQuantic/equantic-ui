@@ -338,6 +338,8 @@ export function join<T>(
 ): string {
   if (values == null) throw new Error(`Value cannot be null. (Parameter '${parameter}')`);
   const between = separator ?? '';
+  // An array whose values JavaScript writes as .NET does is its own join, which writes a null as nothing too.
+  if (text === undefined && Array.isArray(values)) return values.join(between);
   const items = typeof values === 'string' ? (values.split('') as unknown as T[]) : values;
   let result = '';
   let first = true;

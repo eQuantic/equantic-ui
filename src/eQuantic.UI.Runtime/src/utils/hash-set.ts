@@ -455,9 +455,9 @@ export function hashSet<T>(equality: KeyEquality = false, ...source: [] | [Itera
 
 /**
  * A set a collection expression or a collection initializer builds: made with no argument, then each
- * element added in order, as C# lowers both to `Add` per element.
+ * element added in order, as C# lowers both to `Add` per element, the elements found by `equality`.
  */
-export function hashSetOf<T>(equality: KeyEquality, items: Iterable<T>): HashSet<T> {
+export function hashSetOf<T>(items: Iterable<T>, equality: KeyEquality = false): HashSet<T> {
   const set = new HashSet<T>(equality);
   for (const value of items) set.tryAdd(value);
   return set;

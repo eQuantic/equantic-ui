@@ -93,14 +93,14 @@ public class OpenCollectionShapeTests
         // `_selected.Add(...)` threw — which is what a checkbox that never responds looks like.
         // A collection expression adds each element to a set made empty, as C# lowers it.
         TestHelper.ConvertStatement("HashSet<string> picked = [\"a\", \"b\"];")
-            .Should().Be("let picked = $eq.collections.hashSetOf(false, ['a', 'b']);");
+            .Should().Be("let picked = $eq.collections.hashSetOf(['a', 'b']);");
     }
 
     [Fact]
     public void ASetInterfaceTarget_IsStillASet()
     {
         TestHelper.ConvertStatement("ISet<string> picked = [\"a\"];")
-            .Should().Be("let picked = $eq.collections.hashSetOf(false, ['a']);");
+            .Should().Be("let picked = $eq.collections.hashSetOf(['a']);");
     }
 
     [Fact]
@@ -108,7 +108,7 @@ public class OpenCollectionShapeTests
     {
         // The set takes the element type's equality, as a dictionary's keys do (#531).
         TestHelper.ConvertStatement("ISet<DistinctPoint> picked = [new DistinctPoint(1)];")
-            .Should().Be("let picked = $eq.collections.hashSetOf(true, [new DistinctPoint(1)]);");
+            .Should().Be("let picked = $eq.collections.hashSetOf([new DistinctPoint(1)], true);");
     }
 
     [Fact]

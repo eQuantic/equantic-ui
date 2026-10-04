@@ -264,7 +264,8 @@ public static class Eq
     /// type's equality and held by slot as .NET's are (#438, #531). Args: the equality, then what the
     /// constructor is handed, if anything.</summary>
     public const string HashSet = "$eq.collections.hashSet";
-    /// <summary>A set an initializer or a collection expression builds: made empty, each element added.</summary>
+    /// <summary>A set an initializer or a collection expression builds: made empty, each element added.
+    /// Args: the elements, then the equality where it is not identity.</summary>
     public const string HashSetOf = "$eq.collections.hashSetOf";
     /// <summary>A tuple's <c>Equals</c>, generated from its element types' equalities (#425).</summary>
     public const string TupleEquality = "$eq.collections.tupleEquality";

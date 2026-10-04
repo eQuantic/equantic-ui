@@ -71,7 +71,9 @@ public class CollectionExpressionStrategy : IExpressionIrStrategy
         {
             context.UsedHelpers.Add(Eq.Import);
             var element = target is INamedTypeSymbol { TypeArguments: [var item] } ? item : null;
-            return JsExpr.Call(JsExpr.Identifier(Eq.HashSetOf), JsExpr.Literal(ElementEquality.Of(element) ?? "false"), array);
+            return ElementEquality.Of(element) is { } equality
+                ? JsExpr.Call(JsExpr.Identifier(Eq.HashSetOf), array, JsExpr.Literal(equality))
+                : JsExpr.Call(JsExpr.Identifier(Eq.HashSetOf), array);
         }
 
         return array;

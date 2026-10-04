@@ -14,9 +14,10 @@ namespace eQuantic.UI.Compiler.CodeGen.Strategies.Types;
 /// <list type="bullet">
 /// <item>A construction — <c>new HashSet&lt;T&gt;()</c>, <c>(capacity)</c>, <c>(collection)</c>, a
 /// target-typed <c>new()</c> — is the factory, handed the equality and what the constructor is handed;
-/// a collection initializer adds each element in turn, one <c>add</c> per element, as C# calls
-/// <c>Add</c>. A comparer the fence lets through asks for the default (<c>EQ2007</c> refuses any
-/// other).</item>
+/// a collection initializer adds each element in turn, as C# calls <c>Add</c>: the set a collection
+/// expression builds, where the constructor is handed nothing, and one <c>add</c> per element after the
+/// constructor's argument otherwise. A comparer the fence lets through asks for the default
+/// (<c>EQ2007</c> refuses any other).</item>
 /// <item><c>Add</c> answers whether the element was new (<c>$eq.collections.setAdd</c>);
 /// <c>Contains</c>, <c>Remove</c> and <c>Clear</c> are the set's <c>has</c>, <c>delete</c> and
 /// <c>clear</c>; the rest of .NET's members are the set's own, by their camelCase names, each argument
@@ -141,15 +142,25 @@ public class HashSetStrategy : IExpressionIrStrategy
             source = context.Converter.ConvertIr(list.Arguments[0].Expression);
         }
 
+        var elements = creation.Initializer?.Expressions
+            .Select(element => context.Converter.ConvertIr(
+                element is InitializerExpressionSyntax { Expressions.Count: 1 } braced ? braced.Expressions[0] : element))
+            .ToList();
+        // A set made with no argument and its initializer's elements is the set a collection expression
+        // builds: made empty, each element added in order. Add never refuses one, so the elements may
+        // all be read before the first is added.
+        if (source is null && elements is not null)
+        {
+            return equality is null
+                ? JsExpr.Call(JsExpr.Identifier(Eq.HashSetOf), JsExpr.Array(elements))
+                : JsExpr.Call(JsExpr.Identifier(Eq.HashSetOf), JsExpr.Array(elements), JsExpr.Literal(equality));
+        }
+
         if (source is not null || equality is not null) arguments.Add(JsExpr.Literal(equality ?? "false"));
         if (source is not null) arguments.Add(source);
         JsExpr set = JsExpr.Call(JsExpr.Identifier(Eq.HashSet), arguments);
-        if (creation.Initializer is not { } initializer) return set;
-        foreach (var element in initializer.Expressions)
-        {
-            var added = element is InitializerExpressionSyntax { Expressions.Count: 1 } braced ? braced.Expressions[0] : element;
-            set = JsExpr.Call(JsExpr.Member(set, "add"), context.Converter.ConvertIr(added));
-        }
+        foreach (var element in elements ?? [])
+            set = JsExpr.Call(JsExpr.Member(set, "add"), element);
         return set;
     }
 
