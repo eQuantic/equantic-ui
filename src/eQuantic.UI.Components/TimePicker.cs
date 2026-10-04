@@ -145,19 +145,16 @@ public sealed class TimePicker : StatefulComponent
         // The keyboard, exactly while the panel is up — a closed picker owns no keys at all.
         // Without this a keyboard user could open the list and then not move in it: the rows are
         // tabindex=-1 by the listbox pattern, which is the whole reason the highlight travels on
-        // aria-activedescendant instead.
-        if (open)
-        {
-            picker = new Shortcut(picker, KeyChord.Escape, Close);
-            if (highlight >= 0)
-            {
-                picker = new Shortcut(picker, KeyChord.ArrowDown,
-                    () => SetState(() => _highlight = Math.Min(times.Count - 1, highlight + 1)));
-                picker = new Shortcut(picker, KeyChord.ArrowUp,
-                    () => SetState(() => _highlight = Math.Max(0, highlight - 1)));
-                picker = new Shortcut(picker, KeyChord.Enter, () => Pick(times[highlight]));
-            }
-        }
+        // aria-activedescendant instead. The chords stay around the tree whether the panel is up or
+        // not, enabled while it is, so opening moves nothing in it and the focus stays on the
+        // trigger (#567).
+        var moving = open && highlight >= 0;
+        picker = new Shortcut(picker, KeyChord.Escape, Close) { Enabled = open };
+        picker = new Shortcut(picker, KeyChord.ArrowDown,
+            () => SetState(() => _highlight = Math.Min(times.Count - 1, highlight + 1))) { Enabled = moving };
+        picker = new Shortcut(picker, KeyChord.ArrowUp,
+            () => SetState(() => _highlight = Math.Max(0, highlight - 1))) { Enabled = moving };
+        picker = new Shortcut(picker, KeyChord.Enter, () => Pick(times[highlight])) { Enabled = moving };
         return picker;
     }
 

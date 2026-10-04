@@ -50,3 +50,14 @@ code, and SHALL bind nothing while that editor's bar is closed.
 - **WHEN** a dialog that closes on Escape holds a code editor whose find bar is open, the keyboard is
   in the editor, and Escape is pressed
 - **THEN** the bar closes and the dialog stays open, and the next Escape closes the dialog
+
+### Requirement: A control's chords stay in the tree while its panel is closed
+
+A `Select`, a `Menu`, a `TimePicker` and a `DatePicker` SHALL keep the chords their panel answers to
+around their tree whether the panel is open or not, enabled only while it is, so that opening the
+panel moves nothing in the tree and the keyboard focus stays on a node of the frame.
+
+#### Scenario: Opening a Select with the keyboard on Photon
+
+- **WHEN** a `Select`'s field holds the keyboard focus and Enter opens its panel
+- **THEN** the focus stays on the field, a node of the frame, where it named a path the field had left

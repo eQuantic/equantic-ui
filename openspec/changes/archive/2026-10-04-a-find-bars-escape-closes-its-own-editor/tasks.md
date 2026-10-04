@@ -10,3 +10,7 @@
 
 - [x] 2.1 Wrap the editor's layers in an Escape beside ⌘F, focus-scoped and enabled only while the bar is open, and regenerate the transpiled pin. Verify: `CodeEditorFinishTests.Escape_ClosesTheFindBarOfTheEditorTheKeyboardIsIn` on Photon and the runtime's "closes the bar of the editor the keyboard is in, before a dialog around it" on the web, both failing against main's editor, the web's also with the binding declared after its child; `Escape_ReachesADialogAroundAnEditorWhoseBarIsClosed` failing against an Escape that is always enabled, and `Escape_ClosesTheBarBeforeADialogAroundTheEditor` on Photon
 - [x] 2.2 Document `Enabled` and the find bar's Escape on the wiki's Components page, in English and Portuguese
+
+## 3. A control's chords stay in the tree while its panel is closed
+
+- [x] 3.1 Keep the chords of `Select`, `Menu`, `TimePicker` and `DatePicker` around their tree, enabled while the panel is open, and regenerate their transpiled pins. Verify: `DropdownKeyboardTests.OpeningAPanelWithTheKeyboard_LeavesTheFocusOnANodeOfTheFrame`, all four cases failing against the previous components

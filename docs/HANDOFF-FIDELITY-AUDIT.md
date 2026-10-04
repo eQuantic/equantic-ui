@@ -1098,16 +1098,15 @@ the pill's 40 down.
 
 - **Component**: `src/eQuantic.UI.Components/Select.cs`
 - **Handoff**: "Keys — Combobox pattern: Space/Enter/↓ open · ↑/↓ move · type-ahead jumps · Enter commits · Esc closes without changing · Home/End."
-- **Code**: Only ↓/↑/Enter are bound, and only while the panel is already open — the Shortcut nodes are inside `if (_open …)`. So ↓ on a closed Select does not open it, and Home/End are bound nowhere in the component (Space/Enter open via the Pressable, and Esc closes via the Anchored's own binding, so those two hold).
+- **Code**: Only ↓/↑/Enter are bound, and only while the panel is already open — the Shortcut nodes are enabled only while `_open …` holds. So ↓ on a closed Select does not open it, and Home/End are bound nowhere in the component (Space/Enter open via the Pressable, and Esc closes via the Anchored's own binding, so those two hold).
 - **Evidence**:
 
   ```
-  Select.cs:140-147  if (_open && !Disabled && Options.Count > 0)
-          {
-              select = new Shortcut(select, KeyChord.ArrowDown,
-                  () => SetState(() => _highlight = Math.Min(Options.Count - 1, _highlight + 1)));
-              select = new Shortcut(select, KeyChord.ArrowUp,
-                  () => SetState(() => _highlight = Math.Max(0, _highlight - 1)));
+  Select.cs:141-145  var live = _open && !Disabled && Options.Count > 0;
+          select = new Shortcut(select, KeyChord.ArrowDown,
+              () => SetState(() => _highlight = Math.Min(Options.Count - 1, _highlight + 1))) { Enabled = live };
+          select = new Shortcut(select, KeyChord.ArrowUp,
+              () => SetState(() => _highlight = Math.Max(0, _highlight - 1))) { Enabled = live };
   ```
 
 ### C16 NavigationRail · missing-feature · **unverified**

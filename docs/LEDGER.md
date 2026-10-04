@@ -1158,6 +1158,13 @@ record of a release, the wiki's Upgrading page is the distillate.
   its child lowers, as Photon emits it. Each test failed against main's editor, against its realizer
   without the guard, or against the old order, and the dialog's against an Escape that is always
   enabled. Proposed and archived through OpenSpec (`openspec/specs/keyboard-shortcuts`).
+- **2026-10-04 · Opening a panel leaves the focus where it was**: `Select`, `Menu`, `TimePicker` and
+  `DatePicker` mounted the chords their panel answers to with the panel, a `Shortcut` per chord, so
+  opening moved the trigger down the tree, and on Photon the keyboard focus named a path the trigger
+  had left: no ring while the panel was up
+  ([#567](https://github.com/eQuantic/equantic-ui/issues/567), found in the local review of #457).
+  Their chords stay around the tree now, enabled while the panel is open, and each of the four failed
+  against the previous component. Recorded in `openspec/specs/keyboard-shortcuts`.
 
 ## Retired documents
 

@@ -1,6 +1,7 @@
 # Proposal
 
 Fixes #457: a code editor's find bar closed on Escape through a page-wide chord, mounted with the bar.
+Fixes #567 on the way: four controls mounted their chords with their panel, and moved their trigger.
 
 ## Why
 
@@ -28,6 +29,9 @@ Fixes #457: a code editor's find bar closed on Escape through a page-wide chord,
   while the bar is closed.
 - A web `Shortcut` takes its place in the list before its child lowers, so a binding is listed before
   the ones inside it, as on Photon, and the inner of two nested chords answers first.
+- `Select`, `Menu`, `TimePicker` and `DatePicker` keep their chords around their tree, enabled while
+  their panel is open. Mounted with the panel, a `Shortcut` per chord moved the trigger down the tree
+  when it opened, and on Photon the keyboard focus named a path the trigger had left.
 
 ## Capabilities
 
@@ -38,11 +42,13 @@ Fixes #457: a code editor's find bar closed on Escape through a page-wide chord,
 ### Modified Capabilities
 
 - `keyboard-shortcuts`: a shortcut that is not enabled binds nothing, the inner of two nested
-  shortcuts of one chord answers, and the find bar's Escape is the editor's own.
+  shortcuts of one chord answers, the find bar's Escape is the editor's own, and a control's chords
+  stay in the tree while its panel is closed.
 
 ## Impact
 
 - **Vocabulary**: `Shortcut.Enabled` (an addition to the public surface).
 - **Realizers**: the web's SSR lowering, its TypeScript twin and the browser's shortcut list, and
   Photon's emit visitor.
-- **Components**: `CodeEditor`, and its transpiled pin.
+- **Components**: `CodeEditor`, `Select`, `Menu`, `TimePicker` and `DatePicker`, and their transpiled
+  pins.
