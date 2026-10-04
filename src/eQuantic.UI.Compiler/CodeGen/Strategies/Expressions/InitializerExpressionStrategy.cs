@@ -12,48 +12,50 @@ namespace eQuantic.UI.Compiler.CodeGen.Strategies.Expressions;
 /// - { new A(), new B() } → [ new A(), new B() ]
 /// - { Prop = val } → { prop: val }
 /// - { {k, v} } → { k: v }, and the runtime's dictionary under a dictionary-typed member
+/// <para>
+/// Built as IR, each value as its own node, so a lambda an initializer holds (the handler a node is
+/// configured with) reaches the writer as an arrow whose block maps line by line (#492).
+/// </para>
 /// </summary>
-public class InitializerExpressionStrategy : IConversionStrategy
+public class InitializerExpressionStrategy : IExpressionIrStrategy
 {
     public bool CanConvert(SyntaxNode node, ConversionContext context)
     {
         return node is InitializerExpressionSyntax;
     }
 
-    public string Convert(SyntaxNode node, ConversionContext context)
+    public JsExpr ConvertIr(SyntaxNode node, ConversionContext context)
     {
         return ConvertInitializer((InitializerExpressionSyntax)node, context);
     }
 
-    public string ConvertInitializer(InitializerExpressionSyntax initializer, ConversionContext context)
+    public JsExpr ConvertInitializer(InitializerExpressionSyntax initializer, ConversionContext context)
     {
-        if (initializer == null) return "{}";
-
         // An initializer nested under a dictionary-typed member (`Map = { ["a"] = 1 }`) seeds the
         // runtime's dictionary class, as a constructed dictionary is seeded.
         if (initializer.Parent is AssignmentExpressionSyntax { Left: var member } parent && parent.Right == initializer
             && context.SemanticHelper.GetType(member) is { } memberType && memberType.IsDictionary())
-            return JsExprWriter.Write(DictionaryStrategy.Seeded(memberType, initializer, context));
-        
+            return DictionaryStrategy.Seeded(memberType, initializer, context);
+
         // Collection Initializer: { new A(), new B() } -> [ new A(), new B() ]
         if (initializer.Kind() == SyntaxKind.CollectionInitializerExpression)
         {
             // Pairs for a target that is not a dictionary: { {k, v}, {k, v} }
             if (initializer.Expressions.Count > 0 && initializer.Expressions.All(e => e is InitializerExpressionSyntax ie && ie.Expressions.Count == 2))
             {
-                var pairs = initializer.Expressions.Cast<InitializerExpressionSyntax>()
-                    .Select(ie => $"{context.Converter.ConvertExpression(ie.Expressions[0])}: {context.Converter.ConvertExpression(ie.Expressions[1])}");
-                return $"{{ {string.Join(", ", pairs)} }}";
+                return JsExpr.Object(initializer.Expressions.Cast<InitializerExpressionSyntax>()
+                    .Select(ie => new JsProperty(context.Converter.ConvertExpression(ie.Expressions[0]),
+                        context.Converter.ConvertIr(ie.Expressions[1])))
+                    .ToList());
             }
-            
-            var elements = initializer.Expressions.Select(e => context.Converter.ConvertExpression(e));
-            return $"[{string.Join(", ", elements)}]";
+
+            return JsExpr.Array(initializer.Expressions.Select(e => context.Converter.ConvertIr(e)).ToList());
         }
-        
+
         // Object Initializer: { Prop = Value } -> { prop: value }
         if (initializer.Kind() == SyntaxKind.ObjectInitializerExpression)
         {
-            var props = new List<string>();
+            var props = new List<JsProperty>();
             foreach (var expr in initializer.Expressions)
             {
                 if (expr is AssignmentExpressionSyntax assignment)
@@ -76,37 +78,19 @@ public class InitializerExpressionStrategy : IConversionStrategy
                         }
 
                         var key = context.Converter.ConvertExpression(elementKey.ArgumentList.Arguments[0].Expression);
-                        props.Add($"[{key}]: {context.Converter.ConvertExpression(assignment.Right)}");
+                        props.Add(new JsProperty($"[{key}]", context.Converter.ConvertIr(assignment.Right)));
                         continue;
                     }
 
                     var propName = assignment.Left.ToString();
-                    var value = context.Converter.ConvertExpression(assignment.Right);
-                    
-                    // Special handling for Children in initialization
-                    if (propName == "Children")
-                    {
-                        if (assignment.Right is InitializerExpressionSyntax childInit)
-                        {
-                            // Avoid recursive infinite loop by explicitly calling conversion
-                            // We need to handle this carefully.
-                            // The easiest way is to use a helper or detect it.
-                            // Actually, childInit is InitializerExpressionSyntax, so ConvertExpression will dispatch back to us.
-                            // But we are inside ConvertInitializer, so calling ConvertExpression(childInit) matches this strategy.
-                            value = Convert(childInit, context);
-                            
-                            var trimmedValue = value?.Trim();
-                            if (string.IsNullOrEmpty(trimmedValue) || (trimmedValue.StartsWith("{") && trimmedValue.EndsWith("}") && string.IsNullOrWhiteSpace(trimmedValue.Substring(1, trimmedValue.Length - 2))))
-                                value = "[]";
-                        }
-                        else 
-                        {
-                             var trimmedValue = value?.Trim();
-                             if (string.IsNullOrEmpty(trimmedValue) || (trimmedValue.StartsWith("{") && trimmedValue.EndsWith("}") && string.IsNullOrWhiteSpace(trimmedValue.Substring(1, trimmedValue.Length - 2))))
-                                value = "[]";
-                        }
-                    }
-                    
+
+                    // Children in an initializer: a nested initializer is converted here, where its
+                    // parent is known, and an empty one is an empty list of children.
+                    var value = propName == "Children" && assignment.Right is InitializerExpressionSyntax childInit
+                        ? ConvertInitializer(childInit, context)
+                        : context.Converter.ConvertIr(assignment.Right);
+                    if (propName == "Children" && IsEmptyObject(value)) value = JsExpr.Array([]);
+
                     // Event handler binding: Use semantic model to detect delegate/action assignments
                     var isEventHandler = false;
                     var leftType = context.SemanticHelper.GetType(assignment.Left);
@@ -117,35 +101,42 @@ public class InitializerExpressionStrategy : IConversionStrategy
                             isEventHandler = true;
                     }
 
-                    if (isEventHandler && value != null)
+                    if (isEventHandler)
                     {
                         var rightSymbol = context.SemanticHelper.GetSymbol(assignment.Right);
                         if (rightSymbol is IMethodSymbol methodSymbol && !methodSymbol.IsStatic)
                         {
                             // If it's an instance method reference and not already bound or a lambda
-                            if (!value.Contains("=>") && !value.Contains("function") && !value.Contains(".bind("))
+                            var text = JsExprWriter.Write(value);
+                            if (!text.Contains("=>") && !text.Contains("function") && !text.Contains(".bind("))
                             {
-                                value = $"{value}.bind(this)";
+                                value = JsExpr.Call(JsExpr.Member(value, "bind"), JsExpr.This);
                             }
                         }
                     }
-                    
-                    props.Add($"{propName.ToCamelCase()}: {value}");
+
+                    props.Add(new JsProperty(propName.ToCamelCase(), value));
                 }
             }
-            return $"{{ {string.Join(", ", props)} }}";
+            return JsExpr.Object(props);
         }
 
         // Bare array initializer: `string[] N = { "a", "b" }` (no `new[]`) — an ArrayInitializerExpression,
         // not a collection/object initializer. Map its elements to a JS array, same as `new[] { … }`.
         if (initializer.Kind() == SyntaxKind.ArrayInitializerExpression)
         {
-            var elements = initializer.Expressions.Select(e => context.Converter.ConvertExpression(e));
-            return $"[{string.Join(", ", elements)}]";
+            return JsExpr.Array(initializer.Expressions.Select(e => context.Converter.ConvertIr(e)).ToList());
         }
 
-        return "{}";
+        return JsExpr.Object([]);
     }
+
+    /// <summary>An object with nothing in it, as a node or as text a strategy wrote: what an empty
+    /// initializer of children is.</summary>
+    private static bool IsEmptyObject(JsExpr value) =>
+        value is JsObject { Properties.Count: 0 }
+        || JsExprWriter.Write(value).Trim() is var text
+            && (text.Length == 0 || (text.StartsWith('{') && text.EndsWith('}') && string.IsNullOrWhiteSpace(text[1..^1])));
 
     public int Priority => 10;
 }

@@ -1,5 +1,4 @@
 AddChildStrategy
-AnonymousObjectCreationStrategy
 ArrayCreationStrategy
 ArrayStaticStrategy
 AsExpressionStrategy
@@ -32,7 +31,6 @@ GuidTypeStrategy
 HashSetStrategy
 HtmlNodeStrategy
 IndexFromEndStrategy
-InitializerExpressionStrategy
 InlinedConstantStrategy
 InterpolatedStringStrategy
 IsPatternStrategy
@@ -43,7 +41,6 @@ NameofStrategy
 NamespaceRemovalStrategy
 NullableStrategy
 NumericConstantStrategy
-ObjectCreationStrategy
 OfTypeStrategy
 OrderByStrategy
 QueryExpressionStrategy

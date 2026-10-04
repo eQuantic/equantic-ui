@@ -597,7 +597,7 @@ public class RecordTypeEmitter
             null => "",
             BlockSyntax block => Written(JsClassMember.Getter(prefix, propertyName, "", _lowering.AccessorBody(block))),
             _ => Written(JsClassMember.Getter(prefix, propertyName, "",
-                _lowering.Body(null, (ExpressionSyntax)getter, isIterator: false, [], isAsync: false))),
+                _lowering.Body(null, (ExpressionSyntax)getter, isIterator: false, []))),
         };
         var setter = property.AccessorList?.Accessors.FirstOrDefault(a => a.Keyword.Text is "set" or "init");
         var setterBody = setter?.ExpressionBody is { } arrow
@@ -614,7 +614,7 @@ public class RecordTypeEmitter
     /// lowered as a method's (#432).</summary>
     private string StaticMember(string name, string parameters, BlockSyntax? block, ArrowExpressionClauseSyntax? arrow) =>
         Written(JsClassMember.Method("static ", name, "", parameters, "",
-            _lowering.Body(block, arrow?.Expression, isIterator: false, [], isAsync: false)));
+            _lowering.Body(block, arrow?.Expression, isIterator: false, [])));
 
     /// <summary>A member in the one-line layout this emitter writes a class in, and the space after it.</summary>
     private static string Written(JsClassMember member) => JsMemberWriter.Write(member, JsLayout.Compact) + " ";
