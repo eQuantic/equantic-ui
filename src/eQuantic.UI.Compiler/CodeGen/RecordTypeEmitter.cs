@@ -657,14 +657,12 @@ public class RecordTypeEmitter
                 && ModelFor(simple)?.GetSymbolInfo(simple.Type).Symbol is INamedTypeSymbol { TypeKind: TypeKind.Class } baseType
                 && EmitsTwin(baseType))
             {
-                var simpleName = simple.Type.ToString();
-                return (simpleName.Contains('<') ? simpleName[..simpleName.IndexOf('<')] : simpleName, "", new HashSet<string>());
+                return (simple.Type.TwinTypeName(ModelFor(simple)), "", new HashSet<string>());
             }
             return (null, "", new HashSet<string>());
         }
 
-        var baseName = primary.Type.ToString();
-        if (baseName.Contains('<')) baseName = baseName[..baseName.IndexOf('<')]; // erase generics
+        var baseName = primary.Type.TwinTypeName(ModelFor(primary));
 
         var passed = new HashSet<string>();
         var superArgs = new List<string>();

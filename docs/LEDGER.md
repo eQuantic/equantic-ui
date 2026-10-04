@@ -1010,6 +1010,18 @@ record of a release, the wiki's Upgrading page is the distillate.
   simple name share one entry of the page index
   ([#514](https://github.com/eQuantic/equantic-ui/issues/514)). Proposed and archived through OpenSpec
   (`openspec/specs/hydration-contract`).
+- **2026-10-03 · The transpiler reads a name by its symbol**: a base written with its namespace, an
+  alias or `global::` was copied into the module as written, a name nothing there defines, so the
+  module failed when it loaded ([#479](https://github.com/eQuantic/equantic-ui/issues/479)); and a .NET
+  member reached bare through `using static` fell to the rule for an app's own statics, so `NaN` read
+  `Double.naN`, `Join` called `String.join` and `Round` sent a half up where .NET sends it to even
+  ([#485](https://github.com/eQuantic/equantic-ui/issues/485)); and a type's own `Count` was read as an
+  array's `length` unless the app declared the type, so a library's domain model counted `undefined`
+  ([#517](https://github.com/eQuantic/equantic-ui/issues/517)). A base is named after its twin from its
+  symbol, a bare member goes through the translation its qualified spelling reaches, or fails the
+  build with EQ2004, and a `Count` is spelled by the receiver's symbol. `UsingStaticConformanceTests`
+  executes each case on both sides. Proposed and
+  archived through OpenSpec (`openspec/specs/transpiler-names`, `openspec/specs/transpiler-bcl`).
 - **2026-10-03 · Patterns, locks, loops and deconstruction run as C# runs them**: a type pattern with
   nothing bound tested false and a long was never one
   ([#482](https://github.com/eQuantic/equantic-ui/issues/482)), `x is Limits.Max` was a null check
