@@ -19,6 +19,7 @@ public class NestedInitializerConformanceTests
         public record RInner { public List<int> Items { get; } = new() { 1 }; public int N { get; set; } }
         public record ROuter { public RInner Inner { get; } = new(); }
         public struct SBag { public List<string> Tags; public SBag() { Tags = new() { "a" }; } }
+        public record REmpty { public List<int> Items { get; } = new(); public HashSet<int> Set { get; } = new(); public Dictionary<string, int> Map { get; } = new(); }
         """;
 
     [SkippableTheory]
@@ -31,6 +32,7 @@ public class NestedInitializerConformanceTests
     [InlineData("try { new RNull { Items = { 1 } }; return \"no\"; } catch (NullReferenceException) { return \"threw\"; }")] // "threw"
     [InlineData("var o = new ROuter { Inner = { Items = { 5 }, N = 3 } }; return o.Inner.Items.Count + \"|\" + o.Inner.N;")] // "2|3"
     [InlineData("var s = new SBag { Tags = { \"b\" } }; return string.Join(\",\", s.Tags);")]                 // "a,b"
+    [InlineData("var e = new REmpty { Items = { 1 }, Set = { 2, 2 }, Map = { [\"k\"] = 3 } }; return e.Items.Count + \"|\" + e.Set.Count + \"|\" + e.Map[\"k\"];")] // "1|1|3"
     public void ANestedInitializer_AddsToWhatTheMemberHolds(string statements)
     {
         Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
