@@ -5,7 +5,7 @@ export class MermaidGraph {
         if (props && typeof props === 'object') Object.assign(this, props);
     }
 
-    declare kind: string;
+    kind: string = 'flowchart';
     vertical: boolean = true;
     nodes: MermaidNode[] = [];
     edges: MermaidEdge[] = [];

@@ -1010,6 +1010,41 @@ record of a release, the wiki's Upgrading page is the distillate.
   simple name share one entry of the page index
   ([#514](https://github.com/eQuantic/equantic-ui/issues/514)). Proposed and archived through OpenSpec
   (`openspec/specs/hydration-contract`).
+- **2026-10-03 · The transpiler reads a name by its symbol**: a base written with its namespace, an
+  alias or `global::` was copied into the module as written, a name nothing there defines, so the
+  module failed when it loaded ([#479](https://github.com/eQuantic/equantic-ui/issues/479)); and a .NET
+  member reached bare through `using static` fell to the rule for an app's own statics, so `NaN` read
+  `Double.naN`, `Join` called `String.join` and `Round` sent a half up where .NET sends it to even
+  ([#485](https://github.com/eQuantic/equantic-ui/issues/485)); and a type's own `Count` was read as an
+  array's `length` unless the app declared the type, so a library's domain model counted `undefined`
+  ([#517](https://github.com/eQuantic/equantic-ui/issues/517)). A base is named after its twin from its
+  symbol, a bare member goes through the translation its qualified spelling reaches, or fails the
+  build with EQ2004, and a `Count` is spelled by the receiver's symbol. `UsingStaticConformanceTests`
+  executes each case on both sides. Proposed and
+  archived through OpenSpec (`openspec/specs/transpiler-names`, `openspec/specs/transpiler-bcl`).
+- **2026-10-03 · Patterns, locks, loops and deconstruction run as C# runs them**: a type pattern with
+  nothing bound tested false and a long was never one
+  ([#482](https://github.com/eQuantic/equantic-ui/issues/482)), `x is Limits.Max` was a null check
+  ([#451](https://github.com/eQuantic/equantic-ui/issues/451)), a lock's expression ran nowhere
+  ([#475](https://github.com/eQuantic/equantic-ui/issues/475)), `new object()` named a class JavaScript
+  does not have ([#478](https://github.com/eQuantic/equantic-ui/issues/478)), a for loop gave each
+  iteration its own variable ([#476](https://github.com/eQuantic/equantic-ui/issues/476)), a delegate
+  called from a list was read off `this` ([#477](https://github.com/eQuantic/equantic-ui/issues/477)),
+  a record deconstructed into existing variables was array destructuring
+  ([#486](https://github.com/eQuantic/equantic-ui/issues/486)), and a static `field` store lived on the
+  instance or, in a record, nowhere ([#483](https://github.com/eQuantic/equantic-ui/issues/483)). Each
+  is a conformance case on both sides that failed against main. The local review found the first cut
+  short, and widened it: every deconstruction, declared, assigned or in a `foreach`, nested or through
+  a struct's own `Deconstruct`, goes through one lowering read from the bound tree; a long constant
+  is a BigInt, and a constant in a pattern is tested by its value (a decimal, a NaN, a null); a char
+  is one code unit; a static store starts as its initializer; and a local function's `out` reaches
+  its caller ([#541](https://github.com/eQuantic/equantic-ui/issues/541)). Copilot's third round found
+  four more, each fixed and run on both sides: a deconstruction's targets are evaluated before its
+  value, a for loop's head of expressions is one variable for the loop, `new object() { }` is an
+  object, and a property of an enum type starts as its zero member. A deconstruction into an
+  indexer or a wider type is left to [#542](https://github.com/eQuantic/equantic-ui/issues/542).
+  Proposed and archived through OpenSpec (`openspec/specs/transpiler-statements`,
+  `transpiler-expressions`, `transpiler-records`).
 - **2026-10-03 · A route's title reaches the document**: `[Page(Title = …)]` applied only when the
   page's metadata had no title, which the app's default always filled, so no page ever got it, and a
   client navigation answered with the app's title over the one the router had set
@@ -1112,6 +1147,55 @@ record of a release, the wiki's Upgrading page is the distillate.
   ([#533](https://github.com/eQuantic/equantic-ui/issues/533)), and a char search with a start
   clamps and drops its count ([#534](https://github.com/eQuantic/equantic-ui/issues/534)). Proposed
   and archived through OpenSpec (`openspec/specs/transpiler-bcl`).
+- **2026-10-03 · A tab bar, a radio group, a combobox and a dialog are themselves on Photon**: the
+  semantics walk announced every `Adjustable` as a slider, so a `Tabs` and a `RadioGroup` reached
+  VoiceOver and TalkBack as one unnamed slider and their tabs and radios were never read
+  ([#500](https://github.com/eQuantic/equantic-ui/issues/500)); a `Select`'s field reached them as a
+  button that expands and an open modal layer as a plain group, where the web says `combobox` and
+  `dialog` ([#501](https://github.com/eQuantic/equantic-ui/issues/501)). `SemanticRole` gains
+  `TabBar`, `RadioGroup`, `ComboBox`, `Dialog` and `AlertDialog`, appended at 17 to 21 in Flutter's
+  words. A tab strip and a radio group are containers a reader walks into, each tab and radio a stop
+  with its state, while the bar stays the keyboard's one stop; the pressable a listbox panel hangs
+  from is the combobox, the web's rule; an open modal layer is a dialog, or an alert dialog when it
+  interrupts. `NativeRole` takes Core-AAM's words for the containers and the dialogs, and gives the
+  select-only combobox each platform's drop-down, `AXPopUpButton` and `Spinner`, rather than
+  Core-AAM's editable pair. Found on the way and fixed: the layer Photon opens for an anchored panel
+  was modal by default, so an unnamed group stood in front of every open menu and select, and would
+  have read as a dialog; it is one now only for the date picker's calendar. AppKit's own description
+  of the dialog's `AXGroup` is "group", read back from AppKit, so the subrole is what says dialog.
+  `AnnouncementParityTests` compares the web's ARIA and the native tree for these components, a
+  slice of [#339](https://github.com/eQuantic/equantic-ui/issues/339), and `AppKitAccessibilityTests`
+  reads the elements of real components back from AppKit. The handoff's `native-roles` request is
+  shipped. Position in a set is still [#502](https://github.com/eQuantic/equantic-ui/issues/502).
+  Proposed and archived through OpenSpec (`openspec/specs/native-accessibility`).
+- **2026-10-03 · An enum reads as .NET reads it**: an enum has no object of its own in the browser,
+  a member being held as its camelCase name and a `[Flags]` one as its number, and every place that
+  turned that back into what .NET answers did it on its own, or not at all. A flags enum's
+  `ToString()` answered null and a nullable enum's printed the camelCase name
+  ([#452](https://github.com/eQuantic/equantic-ui/issues/452)), `"," + rank` wrote `,undefined`
+  ([#535](https://github.com/eQuantic/equantic-ui/issues/535)), the statics of `Enum` named an object
+  no module declares and threw ([#480](https://github.com/eQuantic/equantic-ui/issues/480)), and a
+  dictionary keyed by an enum was refused by EqJson both ways
+  ([#442](https://github.com/eQuantic/equantic-ui/issues/442)). The runtime's enum functions
+  (`$eq.enums`) read the enum's shape, which eqc writes at the call from one member table
+  (`EnumShape`), the one the casts, the arithmetic and the ordering read too. The review found the
+  formats ignored (`ToString("D")` wrote the name), `IsDefined` over an `object`, the `TryParse` that
+  takes a `Type` leaving the default where .NET leaves null, a cast from an `object` holding the enum
+  answering undefined, a value no member names printing `undefined`, and an unknown name read as the
+  enum's first member, each fixed and run on both sides. Filed on the way: an enum's table is built
+  at every call instead of once per module ([#547](https://github.com/eQuantic/equantic-ui/issues/547)).
+  Proposed and archived through OpenSpec (`openspec/specs/transpiler-bcl`).
+- **2026-10-03 · A test compilation shares its references**: the suites turned the .NET framework into
+  new metadata references for every compilation they created, and `MetadataReference.CreateFromFile`
+  copies an assembly into native memory the GC does not count, so one test host held tens of
+  gigabytes ([#481](https://github.com/eQuantic/equantic-ui/issues/481)). One owner,
+  `tests/Shared/TestReferences.cs`, keeps one reference per assembly for the process, and a guard
+  fails on a `CreateFromFile` anywhere else under `tests/`. Measured with a sampler reading every test
+  host once a second, each suite alone: the compiler suite's peak went from 25 to 35 GB to 6.1 GB and
+  its run from 20 to 47 seconds to 4, the conformance suite's from 34 GB to 5.6 GB, and the web
+  suite's from 3 to 5 GB to 1.2 GB. Under load, with the conformance suite alongside, 12 runs of the
+  compiler suite in a row completed, where one on a branch without the change aborted the same day
+  ([#473](https://github.com/eQuantic/equantic-ui/issues/473)).
 - **2026-10-03 · LINQ reads any sequence**: every operator was an array method on its receiver as
   converted, so a `HashSet`, the runtime's sorted set, queue, stack and linked list, and a sorted
   dictionary or list threw on their first one, `queue.First()` called a `first` the queue does not have
@@ -1125,6 +1209,16 @@ record of a release, the wiki's Upgrading page is the distillate.
   back (`Cast`, `DefaultIfEmpty`) and a read-only face hiding a list, and both copy now. Each is a
   conformance case on both sides that failed against main. Proposed and archived through OpenSpec
   (`openspec/specs/transpiler-sequences`).
+- **2026-10-03 · A dictionary adds and pairs as .NET's does**: a dictionary's `Add` lowered to the
+  class's `set`, which replaces, and the constructor seeded through it, so `Add`, a collection
+  initializer and the constructor that copies pairs kept the last value of a key twice, where .NET
+  refuses the second ([#440](https://github.com/eQuantic/equantic-ui/issues/440), the rest of
+  [#395](https://github.com/eQuantic/equantic-ui/issues/395)); and `new KeyValuePair<K, V>(…)` named a
+  class nothing defines ([#433](https://github.com/eQuantic/equantic-ui/issues/433)). The runtime's
+  dictionaries add and refuse in each collection's words, measured on .NET 10 (a `SortedDictionary`
+  names the pair it was handed, a `SortedList` the key and its parameter), an object initializer's
+  `[key] = value` is assigned by the indexer, and a pair built by hand is the pair a dictionary yields.
+  Proposed and archived through OpenSpec (`openspec/specs/runtime-dictionaries`).
 
 ## Retired documents
 

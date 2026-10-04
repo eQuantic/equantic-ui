@@ -19,9 +19,19 @@ namespace eQuantic.UI.Compiler.CodeGen.Strategies.Expressions;
 /// </summary>
 public class InlinedConstantStrategy : IConversionStrategy
 {
-    public bool CanConvert(SyntaxNode node, ConversionContext context) =>
-        node is MemberAccessExpressionSyntax
-        && (TryResolveConstant(node, context, out _) || TryResolveInlinable(node, context, out _, out _));
+    public bool CanConvert(SyntaxNode node, ConversionContext context) => node switch
+    {
+        MemberAccessExpressionSyntax =>
+            TryResolveConstant(node, context, out _) || TryResolveInlinable(node, context, out _, out _),
+        // `using static System.Math;` then a bare `PI` reads the constant `Math.PI` reads, so it inlines
+        // as that one does: it fell to the rule for the app's own statics and read `Math.pI` (#485).
+        // Only a constant this compilation does not declare: an app's own, reached by its simple
+        // name, stays its twin's static.
+        IdentifierNameSyntax name when name.StandsAlone()
+            && context.SemanticHelper.GetSymbol(name) is IFieldSymbol { IsConst: true, ContainingType: { } owner }
+            && !owner.Locations.Any(location => location.IsInSource) => TryResolveConstant(node, context, out _),
+        _ => false,
+    };
 
     public string Convert(SyntaxNode node, ConversionContext context)
     {
@@ -67,43 +77,49 @@ public class InlinedConstantStrategy : IConversionStrategy
         if (Services.ResourceClasses.IsResourceClass(owner)) return false;
         if (owner.TypeKind == TypeKind.Enum) return false;
 
-        switch (field.ConstantValue)
+        if (LiteralOf(field.ConstantValue) is not { } written) return false;
+        literal = written;
+        return true;
+    }
+
+    /// <summary>
+    /// The JavaScript literal of a constant's value, or null where none is exact: a decimal, and
+    /// anything that is no literal.
+    /// </summary>
+    internal static string? LiteralOf(object? value)
+    {
+        switch (value)
         {
             case null:
-                literal = "null";
-                return true;
+                return "null";
             case string text:
-                literal = JsStringLiteral.Quote(text);
-                return true;
+                return JsStringLiteral.Quote(text);
             case char character:
-                literal = JsStringLiteral.Quote(character.ToString());
-                return true;
+                return JsStringLiteral.Quote(character.ToString());
             case bool flag:
-                literal = flag ? "true" : "false";
-                return true;
-            // EXACTNESS FIRST: only values a JS number represents exactly are inlined. `long.MaxValue`
-            // as a literal becomes 9223372036854776000 — the dedicated long/decimal strategies keep
-            // those in their compat types, so leave them alone.
+                return flag ? "true" : "false";
+            // EXACTNESS FIRST: a decimal has no literal, and its own strategy keeps it a Decimal.
             case decimal:
-                return false;
-            case long or ulong or int or uint or short or ushort or byte or sbyte:
-                var integral = System.Convert.ToDecimal(field.ConstantValue);
-                if (System.Math.Abs(integral) > 9007199254740991m) return false;
-                literal = integral.ToString(System.Globalization.CultureInfo.InvariantCulture);
-                return true;
+                return null;
+            // A long or a ulong is a BigInt here, as its literal is (`5L` is `5n`), so its constant
+            // is one too, and exact at any size. Written as a number, `long n = Limits.Five` held 5
+            // where every long holds 5n: `n is Limits.Five` compared 5n with 5, and the first
+            // arithmetic with another long threw, `ticks / TimeSpan.TicksPerDay` among them.
+            case long or ulong:
+                return System.Convert.ToString(value, System.Globalization.CultureInfo.InvariantCulture) + "n";
+            case int or uint or short or ushort or byte or sbyte:
+                return System.Convert.ToString(value, System.Globalization.CultureInfo.InvariantCulture);
             // A FLOAT constant is written as the DOUBLE it is. Its own shortest text names the single
             // to .NET and a different number to JavaScript: `float.E` printed as "2.7182817" is read
             // back as 2.7182817000000001, not 2.7182817459106445 — so a design token like `0.38f`
             // reached arithmetic already off by the difference (SinglePrecision). "R" is the
             // shortest text that reads back as the same double, which is JavaScript's own rule.
             case float single:
-                literal = ((double)single).ToString("R", System.Globalization.CultureInfo.InvariantCulture);
-                return true;
+                return ((double)single).ToString("R", System.Globalization.CultureInfo.InvariantCulture);
             case double number:
-                literal = number.ToString("R", System.Globalization.CultureInfo.InvariantCulture);
-                return true;
+                return number.ToString("R", System.Globalization.CultureInfo.InvariantCulture);
             default:
-                return false;
+                return null;
         }
     }
 

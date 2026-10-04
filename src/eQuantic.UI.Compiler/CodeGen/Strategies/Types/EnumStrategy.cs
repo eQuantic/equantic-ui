@@ -59,27 +59,27 @@ public class EnumStrategy : IConversionStrategy
     public string Convert(SyntaxNode node, ConversionContext context)
     {
         var memberAccess = (MemberAccessExpressionSyntax)node;
-        var member = memberAccess.Name.Identifier.Text;
-
-        // A [Flags] enum is represented NUMERICALLY: its members exist to be OR-combined (`Read | Write`),
-        // which a member-name string cannot express. Emit the underlying value so bitwise ops / HasFlag /
-        // casts behave like .NET.
-        if (context.SemanticHelper.GetSymbol(node) is IFieldSymbol field
-            && field.ContainingType.IsFlagsEnum()
-            && field.HasConstantValue)
-        {
-            return System.Convert.ToInt64(field.ConstantValue, CultureInfo.InvariantCulture)
-                .ToString(CultureInfo.InvariantCulture);
-        }
-
-        // Non-flags enums are represented by their member name as a string (e.g. SizeVariant.Medium ->
-        // 'medium'), never by their numeric value. A string is verbose and easy to identify,
-        // and is stable regardless of the underlying value or build configuration (previously
-        // the semantic path emitted a number while the fallback emitted a string). camelCase
-        // matches the runtime convention used by theme lookups (GetSize/GetVariant) and the
-        // case-insensitive parseEnum / Enum.* helpers.
-        return $"'{member.ToCamelCase()}'";
+        return context.SemanticHelper.GetSymbol(node) is IFieldSymbol field
+            ? MemberLiteral(field)
+            : $"'{memberAccess.Name.Identifier.Text.ToCamelCase()}'";
     }
+
+    /// <summary>
+    /// An enum member as the browser holds it, by its symbol, whichever way the source reached it: a
+    /// qualified <c>Level.High</c> and a bare <c>High</c> under <c>using static</c> alike (#485).
+    /// <para>
+    /// A [Flags] enum is represented NUMERICALLY: its members exist to be OR-combined (`Read | Write`),
+    /// which a member-name string cannot express, so the underlying value keeps bitwise ops, HasFlag
+    /// and casts behaving like .NET. Every other enum is its member name as a string (SizeVariant.Medium
+    /// is 'medium'), never its number: verbose, easy to identify, and stable whatever the underlying
+    /// value. camelCase matches the runtime's theme lookups. A flags value is read through decimal,
+    /// which holds every underlying type's range: a ulong member past long's crashed the compile.
+    /// </para>
+    /// </summary>
+    internal static string MemberLiteral(IFieldSymbol field) =>
+        field.ContainingType.IsFlagsEnum() && field.HasConstantValue
+            ? System.Convert.ToDecimal(field.ConstantValue, CultureInfo.InvariantCulture).ToString(CultureInfo.InvariantCulture)
+            : $"'{field.Name.ToCamelCase()}'";
 
     public int Priority => 5;
 }

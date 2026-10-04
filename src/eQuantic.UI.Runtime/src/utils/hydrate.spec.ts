@@ -69,12 +69,20 @@ describe('typed hydration', () => {
   });
 
   it('builds a sorted dictionary as its own class, and passes a dictionary through', () => {
-    const sorted = hydrate({ b: 2, a: 1 }, { dict: null, sorted: true }) as SortedMap<string, number>;
+    const sorted = hydrate({ b: 2, a: 1 }, { dict: null, sorted: 'dictionary' }) as SortedMap<string, number>;
     expect(sorted).toBeInstanceOf(SortedMap);
     expect(sorted.keys()).toEqual(['a', 'b']);
     const d = dictionary<string, number>([['a', 1]]);
     expect(hydrate(d, { dict: null })).toBe(d);
     expect(hydrate('nope', { dict: null })).toBe('nope');
+  });
+
+  it('keeps which sorted collection it is, so a SortedList refuses a repeated key in its own words', () => {
+    const list = hydrate({ 2: 'b' }, { dict: null, key: 'number', sorted: 'list' }) as SortedMap<number, string>;
+    expect(list.kind).toBe('list');
+    expect(() => list.add(2, 'c')).toThrow("An item with the same key has already been added. Key: 2 (Parameter 'key')");
+    const index = hydrate({ 2: 'b' }, { dict: null, key: 'number', sorted: 'dictionary' }) as SortedMap<number, string>;
+    expect(() => index.add(2, 'c')).toThrow('An item with the same key has already been added. Key: [2, c]');
   });
 
   it('rebuilds a dictionary the witness path meets as its class, never on its prototype', () => {
@@ -304,7 +312,7 @@ describe('a collection the browser holds as its own class', () => {
     // A string orders in the culture, as Comparer<string>.Default does: B after b, not before a.
     const names = hydrate(['a', 'b', 'B'], { collection: 'sortedSet', of: null, order: 'text' });
     expect([...(names as InstanceType<typeof SortedSet<string>>)]).toEqual(['a', 'b', 'B']);
-    const index = hydrate({ a: 3, b: 1, B: 2 }, { dict: null, sorted: true, order: 'text' }) as SortedMap<string, number>;
+    const index = hydrate({ a: 3, b: 1, B: 2 }, { dict: null, sorted: 'dictionary', order: 'text' }) as SortedMap<string, number>;
     expect([...index.keys()]).toEqual(['a', 'b', 'B']);
   });
 

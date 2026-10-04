@@ -377,7 +377,7 @@ public class ShadowedRuntimeMembersTests
             """;
         var tree = CSharpSyntaxTree.ParseText(source);
         var compilation = CSharpCompilation.Create("RuleProbe", [tree],
-            [MetadataReference.CreateFromFile(typeof(object).Assembly.Location)]);
+            [TestReferences.Of(typeof(object).Assembly.Location)]);
         var model = compilation.GetSemanticModel(tree);
 
         INamedTypeSymbol Named(string name) => tree.GetRoot().DescendantNodes()

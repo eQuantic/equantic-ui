@@ -203,7 +203,35 @@ public static class Eq
     public const string DateTime = "$eq.time.dateTime";
     public const string TimeSpan = "$eq.time.timeSpan";
     public const string DateTimeOffset = "$eq.time.dateTimeOffset";
-    public const string ParseEnum = "$eq.enums.parse";
+    /// <summary>An enum's text, as .NET writes it: a flags enum's set flags, a nullable one's null.</summary>
+    public const string EnumText = "$eq.enums.text";
+
+    /// <summary><c>Enum.Parse</c>, from the enum's shape (<c>utils/enums.ts</c>).</summary>
+    public const string EnumParse = "$eq.enums.parse";
+
+    /// <summary><c>Enum.TryParse</c>: the value, or undefined where .NET answers false.</summary>
+    public const string EnumTryParse = "$eq.enums.tryParse";
+
+    /// <summary><c>default(TEnum)</c>, as the browser holds it.</summary>
+    public const string EnumZero = "$eq.enums.zero";
+
+    /// <summary><c>Enum.GetNames</c>.</summary>
+    public const string EnumNames = "$eq.enums.names";
+
+
+    /// <summary><c>Enum.GetName</c>: the member's name for a value, or null.</summary>
+
+    public const string EnumName = "$eq.enums.name";
+
+    /// <summary>A cast from <c>object</c> to an enum: the boxed member, a boxed number's member, or
+    /// .NET's refusal.</summary>
+    public const string EnumUnbox = "$eq.enums.unbox";
+
+    /// <summary><c>Enum.GetValues</c>.</summary>
+    public const string EnumValues = "$eq.enums.values";
+
+    /// <summary><c>Enum.IsDefined</c>.</summary>
+    public const string EnumIsDefined = "$eq.enums.isDefined";
 
     /// <summary>C# multicast delegates: `+=` composes an invocation list, `-=` drops the last
     /// occurrence. JavaScript has neither, and `+=` emitted literally is string concatenation.</summary>
@@ -234,6 +262,13 @@ public static class Eq
     /// warning travelling to everyone who builds this assembly.</summary>
     public new const string Equals = "$eq.equals";
 
+    /// <summary><c>new object()</c>: an identity of its own, which a plain <c>{}</c> is not here, being
+    /// an anonymous type compared by its members.</summary>
+    public const string NewObject = "$eq.newObject";
+
+    /// <summary>A <c>lock</c> statement's gate, evaluated once and refused when null.</summary>
+    public const string LockGate = "$eq.lockGate";
+
     /// <summary>Membership over a collection whose runtime shape is not knowable statically —
     /// an <c>IReadOnlyCollection&lt;T&gt;</c> is a Set as readily as an array.</summary>
     public const string Contains = "$eq.collections.contains";
@@ -262,6 +297,10 @@ public static class Eq
     /// <summary>Factory for a dictionary (<c>Dictionary&lt;K, V&gt;</c> and its interfaces), held by slot
     /// as .NET's is, its keys found by value when its second argument says so.</summary>
     public const string Dictionary = "$eq.collections.dictionary";
+
+    /// <summary><c>new KeyValuePair&lt;K, V&gt;(key, value)</c> and <c>KeyValuePair.Create</c>: the pair a
+    /// dictionary yields, which destructures as <c>[key, value]</c> and reads <c>.key</c> and <c>.value</c>.</summary>
+    public const string Pair = "$eq.collections.pair";
 
     /// <summary>Factory for a value-sorted set (<c>SortedSet&lt;T&gt;</c>).</summary>
     public const string SortedSet = "$eq.collections.sortedSet";

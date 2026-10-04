@@ -258,6 +258,7 @@ public class HydrationSpecEmissionTests
                 private SortedSet<decimal?> _prices = new();
                 private SortedSet<Level> _levels = new();
                 private SortedDictionary<string, int> _index = new();
+                private SortedList<string, int> _ranks = new();
 
                 public override VisualNode Build(ComponentContext context)
                     => new Text("", TypeRole.BodyM, context.Theme.TextPrimary);
@@ -282,7 +283,9 @@ public class HydrationSpecEmissionTests
         Assert.Contains("_names: { collection: 'sortedSet', of: null, order: 'text' }", map);
         Assert.Contains("_prices: { collection: 'sortedSet', of: 'decimal', order: 'comparable' }", map);
         Assert.Contains("_levels: { collection: 'sortedSet', of: null, order: { 'low': 0, 'high': 1 } }", map);
-        Assert.Contains("_index: { dict: null, sorted: true, order: 'text' }", map);
+        // And which of the two it is: a SortedList refuses a repeated key in its own words.
+        Assert.Contains("_index: { dict: null, sorted: 'dictionary', order: 'text' }", map);
+        Assert.Contains("_ranks: { dict: null, sorted: 'list', order: 'text' }", map);
     }
 
     private static string Compile()
@@ -344,10 +347,18 @@ public class ForeignRecordHydrationTests
     public void AForeignRecordsMembersKeepTheBoundaryTyped()
     {
         // The domain assembly is REAL metadata, not source — compiled here and referenced by path,
-        // exactly as a page library's consumer builds.
-        var processRefs = AppDomain.CurrentDomain.GetAssemblies()
-            .Where(a => !a.IsDynamic && !string.IsNullOrEmpty(a.Location))
-            .Select(a => Microsoft.CodeAnalysis.MetadataReference.CreateFromFile(a.Location))
+        // exactly as a page library's consumer builds. The references are NAMED, the framework and
+        // the vocabulary: the assemblies the test process happens to have loaded depend on the tests
+        // that ran before this one, and alone it had not loaded the vocabulary, so IServerPrefetch did
+        // not bind and the page had no hydration spec at all.
+        var named = ((string)AppContext.GetData("TRUSTED_PLATFORM_ASSEMBLIES")!)
+            .Split(Path.PathSeparator)
+            .Where(path => path.EndsWith(".dll", StringComparison.OrdinalIgnoreCase))
+            .Append(typeof(eQuantic.UI.Primitives.IServerPrefetch).Assembly.Location)
+            .Distinct()
+            .ToList();
+        var processRefs = named
+            .Select(path => TestReferences.Of(path))
             .Cast<Microsoft.CodeAnalysis.MetadataReference>()
             .ToList();
         var domainPath = Path.Combine(Path.GetTempPath(), $"acme-domain-{Guid.NewGuid():N}.dll");
@@ -368,12 +379,7 @@ public class ForeignRecordHydrationTests
             Directory.CreateDirectory(pagePath);
             File.WriteAllText(Path.Combine(pagePath, "HomePage.cs"), Page);
 
-            var refs = AppDomain.CurrentDomain.GetAssemblies()
-                .Where(a => !a.IsDynamic && !string.IsNullOrEmpty(a.Location))
-                .Select(a => a.Location)
-                .Append(domainPath)
-                .Distinct()
-                .ToList();
+            var refs = named.Append(domainPath).ToList();
             var compilation = eQuantic.UI.Compiler.Services.ProjectCompilationHelper
                 .CreateCompilationFromSources(
                     [Path.Combine(pagePath, "HomePage.cs")], refs, "Acme.Site");

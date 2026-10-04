@@ -259,8 +259,8 @@ public class ExpressionVariableEmissionTests
         ((string)AppContext.GetData("TRUSTED_PLATFORM_ASSEMBLIES")!)
             .Split(Path.PathSeparator)
             .Where(file => file.EndsWith(".dll", StringComparison.OrdinalIgnoreCase))
-            .Select(file => (MetadataReference)MetadataReference.CreateFromFile(file))
-            .Append(MetadataReference.CreateFromFile(typeof(eQuantic.UI.Primitives.VisualNode).Assembly.Location))
+            .Select(file => (MetadataReference)TestReferences.Of(file))
+            .Append(TestReferences.Of(typeof(eQuantic.UI.Primitives.VisualNode).Assembly.Location))
             .ToArray());
 
     /// <summary>The source compiled as eqc compiles it: from a file, with a real compilation behind

@@ -286,6 +286,13 @@ public class InvocationStrategy : IExpressionIrStrategy
             return JsExpr.Callish($"this.{delegateIdentifier.Identifier.Text.ToCamelCase()}{ProvenNotNull(delegateTarget, delegateIdentifier, context)}({args})");
         }
 
+        // A delegate VALUE reached any other way (`handlers[0](x)`, `Make()(x)`, `(f)(x)`) is called
+        // as the value its expression gives. It fell to the member rule below and was read off
+        // `this`: `fs[0]()` over a local list was `this.fs[0]()` (#477).
+        if (symbol is { MethodKind: MethodKind.DelegateInvoke }
+            && methodExpression is not (IdentifierNameSyntax or MemberAccessExpressionSyntax or MemberBindingExpressionSyntax))
+            return JsExpr.Call(context.Converter.ConvertIr(methodExpression), argIrs);
+
         // Direct invocation (Function() -> function())
         bool needsThis = false;
 
@@ -305,6 +312,10 @@ public class InvocationStrategy : IExpressionIrStrategy
             // `using static …FaceName;` then a bare `Usable(...)` names the same symbol a qualified
             // call does, and this branch returns before the fence below ever runs.
             symbol.ReportIfHostOnly(invocation, context);
+            // A .NET type's method reached bare that no strategy claimed has no translation: the
+            // class-static rule below is for the types the transpiler EMITS (#485).
+            if (symbol.ReportIfPlatformReachedBare(invocation, context))
+                return JsExpr.Literal("undefined");
             var declaringNamespace = declaring.ContainingNamespace?.ToDisplayString() ?? string.Empty;
             if (RuntimeProvidedTypeScanner.IsRuntimeProvidedNamespace(declaringNamespace))
                 context.UsedRuntimeTypes.Add(declaring.Name);

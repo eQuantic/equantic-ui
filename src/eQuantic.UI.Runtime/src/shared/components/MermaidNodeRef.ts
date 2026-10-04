@@ -5,7 +5,7 @@ export class MermaidNodeRef {
 
     id: string = '';
     label: string = '';
-    declare shape: string;
+    shape: string = 'rect';
     shaped: boolean = false;
     end: number = 0;
 }

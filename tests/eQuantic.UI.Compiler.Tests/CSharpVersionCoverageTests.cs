@@ -20,8 +20,8 @@ public class CSharpVersionCoverageTests
         var references = ((string)AppContext.GetData("TRUSTED_PLATFORM_ASSEMBLIES")!)
             .Split(Path.PathSeparator)
             .Where(p => p.EndsWith(".dll", StringComparison.OrdinalIgnoreCase))
-            .Select(p => (MetadataReference)MetadataReference.CreateFromFile(p))
-            .Append(MetadataReference.CreateFromFile(typeof(eQuantic.UI.Primitives.VisualNode).Assembly.Location));
+            .Select(p => (MetadataReference)TestReferences.Of(p))
+            .Append(TestReferences.Of(typeof(eQuantic.UI.Primitives.VisualNode).Assembly.Location));
         var compilation = CSharpCompilation.Create("Probe", [tree], references,
             new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary,
                 nullableContextOptions: NullableContextOptions.Enable));
@@ -82,6 +82,56 @@ public class CSharpVersionCoverageTests
         Assert.True(probe.Success);
         Assert.Contains("$message", probe.TypeScript);
         Assert.Contains("set message(value) {\n        this.$message = value ?? '';\n    }", probe.TypeScript);
+    }
+
+    [Fact]
+    public void AStaticFieldKeyword_KeepsItsSlotOnTheClass()
+    {
+        // A static accessor's `this` is the class, so the store it names has to be the class's: it was
+        // declared on the instance, which the module's type check refuses (#483).
+        var probe = One(Head + """
+            public sealed class Probe : StatelessComponent
+            {
+                public static int Total { get; set => field = value * 2; }
+                public override VisualNode Build(ComponentContext context) => new Text(Total.ToString(), TypeRole.BodyM, null);
+            }
+            """, "Probe");
+
+        Assert.True(probe.Success, string.Join("\n", probe.Errors.Select(e => e.Message)));
+        Assert.Contains("static $total: number = 0;", probe.TypeScript);
+        Assert.DoesNotContain("declare static $total", probe.TypeScript);
+        Assert.Contains("static set total(value) {\n        this.$total = value * 2;\n    }", probe.TypeScript);
+    }
+
+    [Fact]
+    public void AStaticStore_StartsAsItsInitializerOrItsTypesDefault()
+    {
+        // No constructor runs for a static, so its store starts on the declaration, as C# starts it:
+        // the initializer, written into the store directly, or the type's default. A component's was
+        // declared alone and read undefined until the first write, a plain class dropped the
+        // initializer, and a static auto-property with none read undefined where C# reads 0 (#483).
+        var component = One(Head + """
+            public sealed class Probe : StatelessComponent
+            {
+                public static int Limit { get; set => field = value * 2; } = 5;
+                public static string Label { get; set => field = value.Trim(); }
+                public static int Hits { get; set; }
+                public override VisualNode Build(ComponentContext context) => new Text(Label + Limit + Hits, TypeRole.BodyM, null);
+            }
+            """, "Probe");
+        var plain = One(Head + """
+            public static class Counter
+            {
+                public static int Total { get; set => field = value * 2; } = 5;
+            }
+            """, "Counter");
+
+        Assert.True(component.Success, string.Join("\n", component.Errors.Select(e => e.Message)));
+        Assert.Contains("static $limit: number = 5;", component.TypeScript);
+        Assert.Contains("declare static $label: string;", component.TypeScript);
+        Assert.Contains("static hits: number = 0;", component.TypeScript);
+        Assert.True(plain.Success, string.Join("\n", plain.Errors.Select(e => e.Message)));
+        Assert.Contains("static $total: number = 5;", plain.TypeScript);
     }
 
     [Fact]
@@ -346,6 +396,33 @@ public class CSharpVersionCoverageTests
         Assert.Contains("outer: for", probe.TypeScript);
         Assert.Contains("continue outer;", probe.TypeScript);
         Assert.Contains("break outer;", probe.TypeScript);
+    }
+
+    [Fact]
+    public void ALabeledLoopWhoseVariableIsCaptured_KeepsItsLabelOnTheLoop()
+    {
+        // The captured variable moves in front of the loop, in a block of its own (#476): the label
+        // has to stay on the loop, or `continue outer` is a SyntaxError that costs the module.
+        var probe = One(Head + """
+            public sealed class Probe : StatelessComponent
+            {
+                public override VisualNode Build(ComponentContext context)
+                {
+                    var fs = new System.Collections.Generic.List<System.Func<int>>();
+                    outer: for (var i = 0; i < 3; i++)
+                    {
+                        fs.Add(() => i);
+                        if (i == 1) continue outer;
+                    }
+                    return new Text($"{fs[0]()}", TypeRole.BodyM, null);
+                }
+            }
+            """, "Probe");
+
+        Assert.True(probe.Success, string.Join("\n", probe.Errors.Select(e => e.Message)));
+        Assert.Contains("let i = 0;", probe.TypeScript);
+        Assert.Contains("outer: for (; i < 3; i++)", probe.TypeScript);
+        Assert.DoesNotContain("outer: {", probe.TypeScript);
     }
 
     [Fact]

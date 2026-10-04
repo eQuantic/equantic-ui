@@ -16,6 +16,10 @@ namespace eQuantic.UI.Native.Engine.Tests;
 /// empty alike — while <c>Semantics.cs</c> passes the label into the node exactly as it finds it.
 /// A web-side test alone would have proved the fix on the realizer that never needed it.
 /// </para>
+/// <para>
+/// The group was announced as a SLIDER when this was written, the role every Adjustable had; it is a
+/// radio group since #500, and the name rule did not move with it.
+/// </para>
 /// </summary>
 public class UnlabelledGroupSemanticsTests
 {
@@ -31,7 +35,7 @@ public class UnlabelledGroupSemanticsTests
     {
         var nodes = SemanticsOf(new RadioGroup(["Monthly", "Yearly"], 0, onChanged: _ => { }));
 
-        var group = nodes.Should().ContainSingle(n => n.Role == SemanticRole.Slider).Subject;
+        var group = nodes.Should().ContainSingle(n => n.Role == SemanticRole.RadioGroup).Subject;
         group.Label.Should().NotBeNull("the vocabulary says an absent label is \"\", and this is what a platform bridge reads");
         group.Label.Should().BeEmpty();
     }
@@ -41,7 +45,7 @@ public class UnlabelledGroupSemanticsTests
     {
         var nodes = SemanticsOf(new RadioGroup(["Monthly", "Yearly"], 0, onChanged: _ => { }) { Label = "Billing" });
 
-        nodes.Should().ContainSingle(n => n.Role == SemanticRole.Slider)
+        nodes.Should().ContainSingle(n => n.Role == SemanticRole.RadioGroup)
             .Which.Label.Should().Be("Billing");
     }
 }

@@ -221,9 +221,12 @@ public class RealWorldUITests
 
         var result = TestHelper.ConvertCodeBlock(code);
 
-        result.Should().Contain("$eq.enums.parse");
+        // The enum's shape travels with each call: `Object.values(Status)` named an object no module
+        // declares (#480).
+        result.Should().Contain("$eq.enums.tryParse(");
         result.Should().Contain("!== undefined");
-        result.Should().Contain("Object.values");
+        result.Should().Contain("$eq.enums.values({ names: ['Active', 'Pending', 'Inactive']");
+        result.Should().NotContain("Object.values");
         result.Should().Contain("'status'");
     }
 
@@ -243,7 +246,7 @@ public class RealWorldUITests
 
         // The dictionary class answers for its own keys, "constructor" among them.
         result.Should().Contain("!this.cache.has(this.key)");
-        result.Should().Contain("this.cache.set(this.key, this.fetchData())");
+        result.Should().Contain("this.cache.add(this.key, this.fetchData())");
         // TryGetValue names the receiver and the key twice, and both are properties here: each is
         // bound once, and a miss writes default(string) to the out.
         result.Should().Contain(
