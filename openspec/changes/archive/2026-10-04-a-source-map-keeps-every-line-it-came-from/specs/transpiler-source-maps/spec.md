@@ -1,10 +1,6 @@
-# transpiler-source-maps Specification
+# Spec Delta
 
-## Purpose
-How eqc maps the JavaScript it writes back to the C# it came from, so that a breakpoint binds on a C#
-statement and a thrown error's frame names one.
-
-## Requirements
+## MODIFIED Requirements
 
 ### Requirement: A lambda's block maps statement by statement
 
@@ -66,17 +62,7 @@ nothing the writer writes.
 - **THEN** no statement inside a lambda's or a `delegate`'s block lacks a segment of its own, where
   59 did
 
-### Requirement: A string moves no line of the map
-
-A string the transpiler writes SHALL hold no character JavaScript counts as a line terminator, so
-every mapping after it keeps its line.
-
-#### Scenario: A frame after strings holding U+2028 and U+2029
-
-- **WHEN** a method builds `"a\u2028b"` and `$"{plain}\u2029{count}\u2028"`, then calls a method that
-  throws, in the module a build bundles with the embedded Bun
-- **THEN** the throw and the call lead, through the composed map, to their own C# lines, where the
-  interpolated string's raw separators moved both two lines down
+## ADDED Requirements
 
 ### Requirement: A body a lowering wraps maps statement by statement
 

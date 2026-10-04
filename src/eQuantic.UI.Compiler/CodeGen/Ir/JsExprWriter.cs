@@ -74,6 +74,11 @@ public static class JsExprWriter
         JsCall call => new JsWrittenBuilder().Add(Receiver(call.Target)).Add("(")
             .AddJoined(", ", call.Arguments.Select(Argument)).Add(")").Done(),
         JsArray array => new JsWrittenBuilder().Add("[").AddJoined(", ", array.Elements.Select(Argument)).Add("]").Done(),
+        JsNew creation => new JsWrittenBuilder().Add("new ").Add(Constructed(creation.Target)).Add("(")
+            .AddJoined(", ", creation.Arguments.Select(Argument)).Add(")").Done(),
+        JsObject literal => literal.Properties.Count == 0
+            ? JsWritten.Of("{}")
+            : new JsWrittenBuilder().Add("{ ").AddJoined(", ", literal.Properties.Select(Property)).Add(" }").Done(),
         JsSpread spread => new JsWrittenBuilder().Add("...").Add(Write(spread.Operand, JsPrecedence.Assignment, null)).Done(),
         JsTemplate template => RenderTemplate(template),
         JsArrow arrow => RenderArrow(arrow),
@@ -222,6 +227,15 @@ public static class JsExprWriter
 
     /// <summary>An argument is fenced by its commas; only a sequence expression would need more.</summary>
     private static JsWritten Argument(JsExpr argument) => Write(argument, JsPrecedence.Assignment, null);
+
+    /// <summary>A property of an object literal: its key, and its value fenced as an argument is.</summary>
+    private static JsWritten Property(JsProperty property) =>
+        new JsWrittenBuilder().Add(property.Key + ": ").Add(Argument(property.Value)).Done();
+
+    /// <summary>What <c>new</c> constructs: a name or a member path, or anything else in parentheses,
+    /// since <c>new f()()</c> constructs <c>f</c> and calls the result.</summary>
+    private static JsWritten Constructed(JsExpr target) =>
+        target is JsIdentifier or JsMember or JsOpaque ? Write(target, JsPrecedence.Call, null) : Parenthesized(Written(target));
 
     private static JsWritten RenderBinary(JsBinary binary)
     {

@@ -97,7 +97,7 @@ internal sealed class MethodLowering
         var generics = TypeAnnotations && method.TypeParameterList is { Parameters.Count: > 0 } list
             ? $"<{string.Join(", ", list.Parameters.Select(parameter => parameter.Identifier.Text))}>"
             : "";
-        var body = Body(method.Body, method.ExpressionBody?.Expression, isIterator, byReference, isAsync);
+        var body = Body(method.Body, method.ExpressionBody?.Expression, isIterator, byReference);
         var modifiers = (method.Modifiers.Any(SyntaxKind.StaticKeyword) || asStatic ? "static " : "")
             + (isAsync ? "async " : "");
         return JsClassMember.Method(modifiers, method.Identifier.Text.ToCamelCase(), generics, parameters,
@@ -132,70 +132,60 @@ internal sealed class MethodLowering
     {
         var isIterator = block.IsIteratorBody();
         if (isIterator) ReportIfEndless(block);
-        return Body(block, null, isIterator, [], isAsync: false);
+        return Body(block, null, isIterator, []);
     }
 
     /// <summary>
     /// A member's body as IR, so each statement reaches the class writer carrying the C# it came
     /// from and the source map leads a frame or a breakpoint to it (#293): converted as text, the
     /// body lost every origin before the writer saw it, and the map stopped at the method's first
-    /// line. An iterator's buffer and an out parameter's returned object still wrap the body's
-    /// TEXT, so those two shapes stay text. The variables the body's expressions declare are each
-    /// statement's to declare (ExpressionVariableScanner, #484), with C#'s scope.
+    /// line. The variables the body's expressions declare are each statement's to declare
+    /// (ExpressionVariableScanner, #484), with C#'s scope.
+    /// <para>
+    /// The two shapes a lowering wraps around the body are IR as well: an iterator's buffer, and the
+    /// arrow an <c>out</c> or <c>ref</c> parameter's body runs in (<see cref="OutParameters.Body"/>).
+    /// Both wrapped the body's TEXT, so neither body mapped a single line (#487).
+    /// </para>
     /// </summary>
     public JsStatement Body(BlockSyntax? block, ExpressionSyntax? expressionBody, bool isIterator,
-        IReadOnlyList<ParameterSyntax> byReference, bool isAsync)
+        IReadOnlyList<ParameterSyntax> byReference)
     {
-        if (isIterator || byReference.Count > 0)
-        {
-            string text;
-            if (block != null)
-            {
-                _converter.SetIteratorBuffer(isIterator ? IteratorBufferName : null);
-                text = _converter.Convert(block);
-                _converter.SetIteratorBuffer(null);
-                if (isIterator) text = Braced(WrapIterator(StripJsBraces(text)));
-            }
-            else if (expressionBody != null)
-            {
-                text = Braced(ExpressionBodyReturn(expressionBody));
-            }
-            else
-            {
-                text = "{}";
-            }
-            var body = StripJsBraces(text);
-            if (byReference.Count > 0) body = OutParameters.WrapBody(body, byReference, isAsync);
-            return JsStatement.Raw(body);
-        }
+        if (byReference.Count > 0) return OutParameters.Body(block, expressionBody, byReference, _converter);
+        if (block is null)
+            return expressionBody is null ? JsStatement.Block([]) : ExpressionBody(expressionBody, returns: true);
+        if (!isIterator) return _converter.ConvertBlockIr(block);
 
-        // An expression body never reaches ReturnStatementStrategy, so nothing hoisted the `let` for
-        // a variable declared in it: ExpressionBodyReturn declares it in front of the return.
-        IReadOnlyList<JsStatement> statements = block != null
-            ? _converter.ConvertBlockIr(block) switch
-            {
-                JsBlock converted => converted.Statements,
-                var other => [other],
-            }
-            : expressionBody != null
-                ? [_converter.InBlock(() => ExpressionBody(expressionBody, returns: true))]
-                : [];
-        return JsStatement.Block(statements);
+        // An iterator's yields lower to pushes onto a buffer the body fills and returns, so the
+        // buffer is named while the body converts.
+        JsStatement converted;
+        _converter.SetIteratorBuffer(IteratorBufferName);
+        try
+        {
+            converted = _converter.ConvertBlockIr(block);
+        }
+        finally
+        {
+            _converter.SetIteratorBuffer(null);
+        }
+        // The buffer's two lines are the declaration's, as an out parameter's wrapper is: the body's
+        // statements carry their own origins, and without one here those two inherited none.
+        return JsStatement.Block([
+            JsStatement.Const(IteratorBufferName, JsExpr.Array([])),
+            .. converted is JsBlock filled ? filled.Statements : [converted],
+            JsStatement.Return(JsExpr.Identifier(IteratorBufferName)),
+        ]) with { Origin = block.Parent ?? block };
     }
 
-    /// <summary>An expression body as the one statement of its member — a return, or a bare
-    /// statement where a setter or a constructor has nothing to return — carrying the expression, so
-    /// the map leads a frame in it to its line (#293). A getter's, a setter's, a Build's and a
-    /// constructor's took the text alone, and a debugger read their lines as the member's head.</summary>
-    public JsStatement ExpressionBody(ExpressionSyntax expression, bool returns) =>
-        JsStatement.Raw(returns ? ExpressionBodyReturn(expression) : ExpressionBodyStatement(expression)) with { Origin = expression };
-
-    public string ExpressionBodyReturn(ExpressionSyntax expression) =>
-        $"{ExpressionVariableScanner.Declarations(expression, TypeAnnotations)}return {_converter.ConvertExpression(expression)};";
-
-    /// <summary>The same, in STATEMENT position (a setter) — no return to give it.</summary>
-    public string ExpressionBodyStatement(ExpressionSyntax expression) =>
-        $"{ExpressionVariableScanner.Declarations(expression, TypeAnnotations)}{_converter.ConvertExpression(expression)};";
+    /// <summary>
+    /// An expression body as the block of its member: a return, or the bare statement where a
+    /// setter or a constructor has nothing to return, with what it declares in front, all carrying
+    /// the expression, so the map leads a frame in it to its line (#293). The concise body's one
+    /// lowering (<see cref="CSharpToJsConverter.ConvertExpressionBodyIr"/>), the one a lambda's
+    /// takes: written here as a raw statement, it took a lambda inside it to the text, and every line
+    /// of that lambda's block with it (#492).
+    /// </summary>
+    public JsBlock ExpressionBody(ExpressionSyntax expression, bool returns) =>
+        _converter.ConvertExpressionBodyIr(expression, returns);
 
     /// <summary>One parameter in a hand-written signature: annotated in TypeScript mode, bare in
     /// plain-JavaScript mode.</summary>
@@ -225,26 +215,4 @@ internal sealed class MethodLowering
             + "`yield break`), or take what you need inside it and return a finished sequence.");
     }
 
-    /// <summary>An iterator's body fills a buffer and returns it — contents in, contents out. The
-    /// yields inside were already lowered to <c>_seq.push(…)</c>.</summary>
-    private static string WrapIterator(string contents) =>
-        $"const {IteratorBufferName} = [];\n{contents}\nreturn {IteratorBufferName};";
-
-    /// <summary>
-    /// A block's CONTENTS, for a member whose braces the emitter writes itself. The converter lays
-    /// the block out with its statements one level in; here that level comes off again (the first
-    /// line is trimmed, every later line loses one indentation unit), so the contents start at
-    /// column zero and the builder's own indentation puts them where the member is.
-    /// </summary>
-    public static string StripJsBraces(string js)
-    {
-        js = js.Trim();
-        if (js.StartsWith("{") && js.EndsWith("}")) js = js.Substring(1, js.Length - 2).Trim();
-        var lines = js.Split('\n');
-        for (var i = 1; i < lines.Length; i++)
-            if (lines[i].StartsWith("    ", StringComparison.Ordinal)) lines[i] = lines[i][4..];
-        return string.Join("\n", lines);
-    }
-
-    private static string Braced(string body) => JsMemberWriter.Braced(body);
 }
