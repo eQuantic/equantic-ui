@@ -244,7 +244,7 @@ public class ComponentParser
             // The one rule the resolver reads too (#423): what the class IS decides, never whether it
             // declares a member. A class that declared none was skipped here while the resolver had
             // it imported, so the bundle could not resolve the module every user of it named.
-            if (!PlainClassModule.Is(classDecl, written => BaseStaysOnServer(written, classes))) continue;
+            if (!PlainClassModule.Is(classDecl, written => BaseKeepsItOut(written, classes))) continue;
             if (IsServerOnly(classDecl)) continue;                             // never crosses: no module
             // Track L D2: a resx Designer is a plain non-static class by shape, and a module of
             // ResourceManager.GetString calls cannot run in a browser — its accessors rewrite to
@@ -470,17 +470,24 @@ public class ComponentParser
     }
 
     /// <summary>
-    /// Whether a class's base, as written, stays on the server: it, or a base of its own, is marked
-    /// <c>[ServerOnly]</c>, so no module exists for a twin to extend (#423). Asked of the model, which
-    /// sees a base declared in another file; without one, of the classes this file declares.
+    /// Whether a class's base, as written, keeps the class from a module of its own (#423): the base, or
+    /// a base of its own, is <c>System.Attribute</c>, <c>System.Exception</c> or a type marked
+    /// <c>[ServerOnly]</c>. Asked of the model, which sees the whole chain, a base declared in another
+    /// file or assembly included; without one, of the classes this file declares, and of the name a
+    /// base outside them has.
     /// </summary>
-    private bool BaseStaysOnServer(TypeSyntax written, IReadOnlyList<ClassDeclarationSyntax> fileClasses)
+    private bool BaseKeepsItOut(TypeSyntax written, IReadOnlyList<ClassDeclarationSyntax> fileClasses)
     {
         if (TryGetSemanticModel(written.SyntaxTree)?.GetSymbolInfo(written).Symbol is INamedTypeSymbol resolved)
         {
             for (var type = resolved; type is not null; type = type.BaseType)
+            {
                 if (type.GetAttributes().Any(a => a.AttributeClass?.Name is "ServerOnly" or "ServerOnlyAttribute"))
                     return true;
+                if (type is { Name: "Attribute" or "Exception", ContainingType: null, Arity: 0 }
+                    && type.ContainingNamespace is { Name: "System", ContainingNamespace.IsGlobalNamespace: true })
+                    return true;
+            }
             return false;
         }
 
@@ -488,7 +495,7 @@ public class ComponentParser
         for (var name = written.TwinTypeName(model: null); seen.Add(name);)
         {
             var declared = fileClasses.FirstOrDefault(c => c.Identifier.Text == name);
-            if (declared is null) return false;
+            if (declared is null) return PlainClassModule.KeepsOutByName(name);
             if (declared.AttributeLists.SelectMany(list => list.Attributes).Any(a => a.IsNamed("ServerOnly"))) return true;
             if (declared.BaseList?.Types.FirstOrDefault()?.Type is not { } next) return false;
             name = next.TwinTypeName(model: null);

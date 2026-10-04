@@ -25,7 +25,7 @@ public class ComponentDependencyResolver
     private readonly HashSet<string> _runtimeProvidedTypes = new();
 
     /// <summary>A class that is not a component or a static helper, as the scan saw it: whether the
-    /// plain-class rule takes it on everything but its base, and the base it names.</summary>
+    /// plain-class rule takes it on everything but its chain of bases, and the base it names.</summary>
     private readonly record struct ScannedClass(string Name, bool PlainOnItsOwn, string? Base);
 
     private readonly List<ScannedClass> _classes = new();
@@ -33,14 +33,21 @@ public class ComponentDependencyResolver
     /// <summary>The classes the scan saw marked <c>[ServerOnly]</c>.</summary>
     private readonly HashSet<string> _serverOnly = new(StringComparer.Ordinal);
 
+    /// <summary>Every class the scan saw, by name: a chain that reaches one is the app's, and is never
+    /// judged by its name.</summary>
+    private readonly HashSet<string> _declared = new(StringComparer.Ordinal);
+
     /// <summary>The plain classes, settled over every file the scan read; null until asked, and again
     /// after another file is read.</summary>
     private (HashSet<string> Modules, HashSet<string> Refused)? _plainClassesSettled;
 
     /// <summary>
     /// Which of the scanned classes are plain-class modules, and which the rule refused: the
-    /// predicate's answer, with a base that stays on the server (marked <c>[ServerOnly]</c>, or over
-    /// one that is, in any file the scan read) refusing the class over it.
+    /// predicate's answer over the CHAIN of bases the scan saw, in any file it read. A class is kept out
+    /// by a base that stays on the server (marked <c>[ServerOnly]</c>), and by a chain that leaves the
+    /// scan at an attribute or an exception of .NET, known there by its name
+    /// (<see cref="PlainClassModule.KeepsOutByName"/>): <c>class Retry : Failure</c> over
+    /// <c>class Failure : Exception</c> is an exception, which its own base's name does not say.
     /// </summary>
     private (HashSet<string> Modules, HashSet<string> Refused) PlainClasses()
     {
@@ -48,13 +55,15 @@ public class ComponentDependencyResolver
         var bases = new Dictionary<string, string?>(StringComparer.Ordinal);
         foreach (var scanned in _classes) bases.TryAdd(scanned.Name, scanned.Base);
 
-        bool StaysOnServer(string? name)
+        bool KeptOut(string? name)
         {
             var seen = new HashSet<string>(StringComparer.Ordinal);
             while (name is not null && seen.Add(name))
             {
                 if (_serverOnly.Contains(name)) return true;
-                name = bases.TryGetValue(name, out var next) ? next : null;
+                if (!bases.TryGetValue(name, out var next) && !_declared.Contains(name))
+                    return PlainClassModule.KeepsOutByName(name);
+                name = next;
             }
             return false;
         }
@@ -62,7 +71,7 @@ public class ComponentDependencyResolver
         var modules = new HashSet<string>(StringComparer.Ordinal);
         var refused = new HashSet<string>(StringComparer.Ordinal);
         foreach (var scanned in _classes)
-            (scanned.PlainOnItsOwn && !StaysOnServer(scanned.Base) ? modules : refused).Add(scanned.Name);
+            (scanned.PlainOnItsOwn && !KeptOut(scanned.Base) ? modules : refused).Add(scanned.Name);
         _plainClassesSettled = (modules, refused);
         return (modules, refused);
     }
@@ -148,6 +157,7 @@ public class ComponentDependencyResolver
         foreach (var classDecl in classes)
         {
             var className = classDecl.Identifier.Text;
+            _declared.Add(className);
 
             // [RuntimeProvided] types already exist in @equantic/runtime. The resolver is the
             // no-project-semantic-model fallback used to decide whether a referenced name is a
@@ -171,9 +181,9 @@ public class ComponentDependencyResolver
 
             // A PLAIN class is a module too — a referencing module has to import it, or the page
             // dies with "Bucket is not defined". Whether it is one is the parser's rule, read from
-            // the same predicate (#423), and settled once every file is scanned: whether its base
-            // stays on the server can be said in another file. Components and state classes are
-            // resolved by their own paths.
+            // the same predicate (#423), and settled once every file is scanned: its chain of bases
+            // can be declared in another file. Components and state classes are resolved by their
+            // own paths.
             else if (!IsComponentLike(classDecl))
             {
                 _classes.Add(new ScannedClass(className,

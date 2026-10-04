@@ -61,17 +61,29 @@ public class PlainClassModuleTests
             public class OverOverServer : OverServer { }
             """,
         // A partial type is one type: the half that declares nothing is not a module of its own.
+        // An exception or an attribute is one by its CHAIN of bases, which the base a class names does
+        // not say: three levels over `Exception`, across files, and two over `Attribute` with names
+        // that say nothing. A class named like an exception that derives from none is a class.
+        ["Failure.cs"] = "using System; public class Failure : Exception { }",
+        ["Retry.cs"] = """
+            public class Retry : Failure { }
+            public class LastRetry : Retry { public int Attempts; }
+            public class Mark : System.Attribute { }
+            public class Underline : Mark { }
+            public class FakeException { public int Code; }
+            """,
         ["SplitA.cs"] = "public partial class Split { public int Value; }",
         ["SplitB.cs"] = "public interface ISplit { } public partial class Split : ISplit { }",
         ["Hollow.cs"] = "public partial class Hollow { }",
     };
 
     private static readonly string[] Modules =
-        ["Mute", "ChainBase", "Echo", "Message", "Ping", "Marker", "Filled", "Helpers", "Outer", "Card", "Split"];
+        ["Mute", "ChainBase", "Echo", "Message", "Ping", "Marker", "Filled", "Helpers", "Outer", "Card", "Split",
+         "FakeException"];
 
     private static readonly string[] NotModules =
         ["FooAttribute", "TaggedAttribute", "NotFoundException", "Oops", "Stays", "Provided", "Inner",
-         "ServerBase", "OverServer", "OverOverServer", "Hollow"];
+         "ServerBase", "OverServer", "OverOverServer", "Hollow", "Failure", "Retry", "LastRetry", "Mark", "Underline"];
 
     [Fact]
     public void TheParserAndTheResolver_AnswerAlikeForEveryKindOfClass()
