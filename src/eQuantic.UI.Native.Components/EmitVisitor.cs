@@ -58,9 +58,13 @@ internal sealed partial class EmitVisitor : IVisualNodeVisitor<EmitState, Nothin
         // A box that declares NO Transition pays nothing here — not even the track-key strings: the
         // allocation harness pins steady frames under a ceiling, and the first version of this
         // built keys for every box in every frame. Only a Transition opens the gliding path.
-        var opacityNow = node.Source is Box ob ? ob.Style.Opacity ?? 1f : 1f;
-        var transformNow = node.Source is Box tb ? tb.Style.Transform ?? IdentityTransform : IdentityTransform;
-        if (node.Source is Box gliding && gliding.Style.Transition is { } glide && s.Motion.Transitions is { } store)
+        // The values come from the box's EFFECTIVE style, so a hover that fades or moves the box does
+        // it here, with the same answer the chrome reads (#504).
+        var box = node.Source as Box;
+        var style = box is null ? default : EffectiveStyle(box, s);
+        var opacityNow = style.Opacity ?? 1f;
+        var transformNow = style.Transform ?? IdentityTransform;
+        if (box is not null && style.Transition is { } glide && s.Motion.Transitions is { } store)
         {
             var glidePath = node.Path ?? "";
             if ((glide.Channels & StyleChannels.Opacity) != 0)
@@ -68,7 +72,7 @@ internal sealed partial class EmitVisitor : IVisualNodeVisitor<EmitState, Nothin
             if ((glide.Channels & StyleChannels.Transform) != 0)
                 transformNow = GlideTransform(store, glidePath, transformNow, s.Motion.TimeMs, glide, s.Motion.Reduced);
         }
-        if (node.Source is Box && (opacityNow < 1f || !transformNow.IsIdentity))
+        if (box is not null && (opacityNow < 1f || !transformNow.IsIdentity))
         {
             var opacity = opacityNow < 1f ? opacityNow : (float?)null;
             if (opacity is { } layerAlpha) s.Builder.PushLayer(layerAlpha);

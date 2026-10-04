@@ -592,6 +592,36 @@
       ]
     }
   ],
+  "box-hover-lift": [
+    {
+      "tag": "div",
+      "attrs": {
+        "class": "eq-1bta40m eq-1duvinx eq-1eb13m5 eq-1eseqdb eq-1eviv88 eq-1iwfc6c eq-1pwthtl eq-1q1vbff eq-1sxrvu1 eq-1xrfuoj eq-4cqe51 eq-5hocaj eq-98tox eq-bo3n4y eq-cl6mtg eq-d5vyha eq-g7fowl eq-gr7cq7 eq-p09hlc eq-qq7h3e"
+      },
+      "events": [],
+      "children": []
+    }
+  ],
+  "box-hover-lift-simulated": [
+    {
+      "tag": "div",
+      "attrs": {
+        "class": "eq-149bk11 eq-17jx3ip eq-17wm4ct eq-1eb13m5 eq-1eviv88 eq-1maple4 eq-1pwthtl eq-1rlze79 eq-1xrfuoj eq-1z0aupu eq-5hocaj eq-bo3n4y eq-cl6mtg eq-g7fowl"
+      },
+      "events": [],
+      "children": []
+    }
+  ],
+  "box-hover-drops-shadow": [
+    {
+      "tag": "div",
+      "attrs": {
+        "class": "eq-1eb13m5 eq-1eviv88 eq-1olzmfy eq-1p2uoqo eq-1xrfuoj eq-3yvdfh eq-bo3n4y eq-cl6mtg eq-g7fowl"
+      },
+      "events": [],
+      "children": []
+    }
+  ],
   "badge": [
     {
       "tag": "div",
