@@ -83,7 +83,7 @@ export function hydrateValue(current: unknown, incoming: unknown): unknown {
   // would be an instance with no entries to hold. Nothing here says the key type, so a key stays the
   // property name; every field the compiler types carries `{ dict, key }` and never reaches this.
   if (current instanceof Dictionary || current instanceof SortedMap) {
-    return hydrate(incoming, current instanceof SortedMap ? { dict: null, sorted: true } : { dict: null });
+    return hydrate(incoming, current instanceof SortedMap ? { dict: null, sorted: current.kind } : { dict: null });
   }
 
   // Record/struct field: SSR sends the value as a plain JSON object, which loses the class prototype
