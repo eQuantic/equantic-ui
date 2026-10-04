@@ -1,4 +1,4 @@
-import { Box, BoxStyle, BuildContext, EdgeInsets, Flexible, Row, SizeValue, StatelessComponent, Text, TypeStyle } from "../runtime-exports";
+import { $eq, Box, BoxStyle, BuildContext, EdgeInsets, Flexible, Row, SizeValue, StatelessComponent, Text, TypeStyle } from "../runtime-exports";
 
 export class AppBar extends StatelessComponent {
     static $typeId = 'eQuantic.UI.Components.AppBar';
@@ -11,7 +11,7 @@ export class AppBar extends StatelessComponent {
     }
 
     set actions(value) {
-        this.$actions = (value != null && value.length > 3) ? (() => { throw new Error('AppBar takes at most 3 actions (spec B3) — overflow belongs in an ActionSheet.'); })() : value;
+        this.$actions = (value != null && value.length > 3) ? $eq.exceptions.raise($eq.exceptions.create(['System.ArgumentException', 'System.SystemException', 'System.Exception'], 'AppBar takes at most 3 actions (spec B3) — overflow belongs in an ActionSheet.', 'Actions')) : value;
     }
 
     declare scrolled: boolean;

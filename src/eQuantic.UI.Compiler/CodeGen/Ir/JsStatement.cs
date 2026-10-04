@@ -44,7 +44,9 @@ public abstract record JsStatement
 
     public static JsStatement Return(JsExpr? value) => new JsReturn(value);
 
-    public static JsStatement Throw(JsExpr? value) => new JsThrow(value);
+    /// <summary><c>throw value;</c>. JavaScript has no bare <c>throw;</c>: C#'s rethrow names what it
+    /// rethrows (see <c>ThrowStatementStrategy</c>).</summary>
+    public static JsStatement Throw(JsExpr value) => new JsThrow(value);
 
     public static JsStatement Let(string name, string annotation, JsExpr initializer) =>
         new JsLet(name, annotation, initializer);
@@ -55,8 +57,10 @@ public abstract record JsStatement
     /// <c>for (const x of xs)</c>, <c>label:</c> — followed by its body, laid out like any block.</summary>
     public static JsStatement Headed(string head, JsStatement body) => new JsHeaded(head, body);
 
-    public static JsStatement Try(JsStatement body, IReadOnlyList<JsCatch> catches, JsStatement? @finally) =>
-        new JsTry(body, catches, @finally);
+    /// <summary><c>try</c> with at most ONE catch, which is all JavaScript takes: C#'s clauses are tried
+    /// inside it (see <c>TryStatementStrategy</c>), and a list here wrote two catches, a SyntaxError.</summary>
+    public static JsStatement Try(JsStatement body, JsCatch? @catch, JsStatement? @finally) =>
+        new JsTry(body, @catch, @finally);
 
     public static JsStatement Switch(JsExpr subject, IReadOnlyList<JsCase> cases) => new JsSwitch(subject, cases);
 
@@ -84,7 +88,7 @@ public sealed record JsExpressionStatement(JsExpr Expr) : JsStatement;
 
 public sealed record JsReturn(JsExpr? Value) : JsStatement;
 
-public sealed record JsThrow(JsExpr? Value) : JsStatement;
+public sealed record JsThrow(JsExpr Value) : JsStatement;
 
 /// <summary><c>let name: annotation = initializer;</c> — the annotation text already carries its
 /// leading colon, or is empty.</summary>
@@ -97,7 +101,7 @@ public sealed record JsHeaded(string Head, JsStatement Body) : JsStatement;
 /// <summary>A catch clause: its binding text (<c>(e: any)</c>, or empty for the bare form) and block.</summary>
 public sealed record JsCatch(string Binding, JsStatement Block);
 
-public sealed record JsTry(JsStatement Body, IReadOnlyList<JsCatch> Catches, JsStatement? Finally) : JsStatement;
+public sealed record JsTry(JsStatement Body, JsCatch? Catch, JsStatement? Finally) : JsStatement;
 
 /// <summary>One switch section: its labels (<c>case 1</c>, <c>default</c>) and statements.</summary>
 public sealed record JsCase(IReadOnlyList<string> Labels, IReadOnlyList<JsStatement> Body);
