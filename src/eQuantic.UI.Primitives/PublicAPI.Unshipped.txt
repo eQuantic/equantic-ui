@@ -1,1 +1,2 @@
 #nullable enable
+const eQuantic.UI.Primitives.Touch.MinPointerTarget = 24 -> float

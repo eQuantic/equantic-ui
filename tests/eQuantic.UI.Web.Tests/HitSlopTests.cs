@@ -51,18 +51,24 @@ public class HitSlopTests
     }
 
     /// <summary>
-    /// A POINTER lands where it is aimed. Expanding a dense toolbar's buttons would grow each one
-    /// into its neighbour, which is exactly why Photon skips the expansion in Compact — the media
-    /// query is the browser answering the same question.
+    /// A POINTER lands where it is aimed. Expanding a dense toolbar's buttons to a finger's minimum
+    /// would grow each one into its neighbour, so a fine pointer's gate grows a target only to the
+    /// floor WCAG 2.2 SC 2.5.8 asks of any target, which a 20px checkbox needs (#430), and a coarse
+    /// one's to the §08 minimum. Each minimum lives inside its own gate and comes from its token:
+    /// Photon's Compact and Comfortable densities ask the same two.
     /// </summary>
-    [Fact]
-    public void APointerDeviceIsLeftAlone()
+    [Theory]
+    [InlineData("coarse", Touch.MinTarget)]
+    [InlineData("fine", Touch.MinPointerTarget)]
+    public void EachPointerGetsItsOwnMinimum(string pointer, float minimum)
     {
         var css = Css();
-        var slop = css.IndexOf(".eq-pressable::after", StringComparison.Ordinal);
-        var gate = css.IndexOf("@media (pointer: coarse)", StringComparison.Ordinal);
+        var gate = css.IndexOf($"@media (pointer: {pointer}) {{", StringComparison.Ordinal);
+        gate.Should().BeGreaterThan(-1, $"a {pointer} pointer has its gate");
+        var block = css[gate..css.IndexOf("\n}", gate, StringComparison.Ordinal)].Replace(" ", string.Empty);
 
-        gate.Should().BeGreaterThan(-1);
-        slop.Should().BeGreaterThan(gate, "the slop lives inside the coarse-pointer gate");
+        block.Should().Contain(".eq-pressable::after")
+            .And.Contain($"min-width:{minimum}px")
+            .And.Contain($"min-height:{minimum}px");
     }
 }
