@@ -7,32 +7,59 @@ using eQuantic.UI.Compiler.CodeGen.Ir;
 
 namespace eQuantic.UI.Compiler.CodeGen;
 
-/// <summary>One value member of a record/struct — its declared name, camelCased JS name, and the TS
-/// type for its type-only declaration. What an omitted argument leaves in it is not part of the
-/// member list: the twin's constructor writes it, from the declaration (<see cref="RecordTypeEmitter"/>).</summary>
-public readonly record struct ValueMember(string Display, string Js, string TsType);
+/// <summary>
+/// One member of a record's or a struct's own STATE — what its constructor writes, its <c>equals</c>
+/// compares and its <c>with</c> copies: the declared name, the camelCased JS name, the TS type for its
+/// type-only declaration, whether the record's text prints it, and the declaration that says what it
+/// starts as (a positional <see cref="ParameterSyntax"/>, a <see cref="PropertyDeclarationSyntax"/>
+/// or a field's <see cref="VariableDeclaratorSyntax"/>). It is not a constructor parameter: the
+/// twin's constructor takes the C# constructor's parameters, and sets every member as C# does
+/// (<see cref="RecordTypeEmitter"/>, #413).
+/// </summary>
+public readonly record struct ValueMember(string Display, string Js, string TsType, bool Printed, SyntaxNode Declaration);
 
 /// <summary>
-/// Extracts the value members of a record/struct declaration — the data that participates in
-/// construction, equality, <c>with</c> and <c>toString</c> — in a single canonical order shared by the
-/// emitter and the construction site, so they never disagree. Order: positional (primary-constructor)
-/// parameters, then body auto-properties, then public instance fields, each in source order.
+/// Extracts the state of a record/struct declaration — the data that participates in equality,
+/// <c>with</c> and <c>toString</c> — in the order C# declares it, which is the order its record text
+/// prints: the positional parameters the record turns into properties of its own, then the instance
+/// fields and auto-properties of the body, each in source order.
 /// </summary>
 public static class TypeDeclarationExtensions
 {
-    /// <param name="type">The declaration whose value members to read.</param>
+    /// <param name="type">The declaration whose state to read.</param>
     /// <param name="model">The semantic model, when the caller has one, which the member TYPES are
-    /// asked of (an enum crosses as its member string, an interface as nothing to name).</param>
+    /// asked of (an enum crosses as its member string, an interface as nothing to name), and which says
+    /// whether a positional parameter of a derived record is a property of its own or its base's.</param>
     public static IReadOnlyList<ValueMember> ValueMembers(this TypeDeclarationSyntax type,
         SemanticModel? model = null)
     {
         var members = new List<ValueMember>();
+        var isRecord = type is RecordDeclarationSyntax;
 
-        // Positional (primary constructor) parameters.
+        // A member the body declares under a positional parameter's name REPLACES the property the
+        // record would have made of it (#546): `record Box(int X, int Y) { public int X { get; set; }
+        // = X; }` has one X, the declared one, which the parameter initializes. Listed twice, the
+        // twin's constructor bound `x` twice and the module did not load.
+        var declaredInBody = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var member in type.Members)
+        {
+            if (member is PropertyDeclarationSyntax property) declaredInBody.Add(property.Identifier.ValueText);
+            if (member is FieldDeclarationSyntax field)
+                foreach (var variable in field.Declaration.Variables) declaredInBody.Add(variable.Identifier.ValueText);
+        }
+
+        // Positional (primary constructor) parameters: the properties a record makes of them, and the
+        // state a C# 12 class or struct captures them in, which its members read as `this.<name>`.
         if (type.ParameterList != null)
         {
+            var self = model?.GetDeclaredSymbol(type) as INamedTypeSymbol;
             foreach (var p in type.ParameterList.Parameters)
-                members.Add(new ValueMember(p.Identifier.Text, p.Identifier.ValueText.ToCamelCase(), TsTypeFor(p.Type, model)));
+            {
+                var name = p.Identifier.ValueText;
+                if (declaredInBody.Contains(name)) continue;
+                if (isRecord && InheritedProperty(type, self, name)) continue;
+                members.Add(new ValueMember(name, name.ToCamelCase(), TsTypeFor(p.Type, model), isRecord, p));
+            }
         }
 
         foreach (var member in type.Members)
@@ -47,11 +74,12 @@ public static class TypeDeclarationExtensions
                          && prop.ExpressionBody == null
                          && prop.AccessorList?.Accessors.Any(a => a.IsKind(SyntaxKind.GetAccessorDeclaration)
                              && a.Body == null && a.ExpressionBody == null) == true:
-                    members.Add(new ValueMember(
-                        prop.Identifier.Text, prop.Identifier.ValueText.ToCamelCase(), TsTypeFor(prop.Type, model)));
+                    members.Add(new ValueMember(prop.Identifier.ValueText, prop.Identifier.ValueText.ToCamelCase(),
+                        TsTypeFor(prop.Type, model), prop.Modifiers.Any(SyntaxKind.PublicKeyword), prop));
                     break;
 
-                // Public instance fields (common in plain structs).
+                // Instance fields, whatever their accessibility: C# compares a record's private field
+                // as it compares a public one, and a struct's too, and only PRINTS the public ones.
                 //
                 // A `const` is NOT one of them, and it does not carry the `static` keyword to say so
                 // — C# makes it static implicitly. Reading the syntax alone let `public const string
@@ -59,16 +87,31 @@ public static class TypeDeclarationExtensions
                 // does not have, compared it in equals, offered it to `with`, and printed
                 // `Marker = undefined` where .NET printed nothing.
                 case FieldDeclarationSyntax field
-                    when field.Modifiers.Any(SyntaxKind.PublicKeyword)
-                         && !field.Modifiers.Any(SyntaxKind.StaticKeyword)
+                    when !field.Modifiers.Any(SyntaxKind.StaticKeyword)
                          && !field.Modifiers.Any(SyntaxKind.ConstKeyword):
                     foreach (var v in field.Declaration.Variables)
-                        members.Add(new ValueMember(v.Identifier.Text, v.Identifier.Text.ToCamelCase(), TsTypeFor(field.Declaration.Type, model)));
+                        members.Add(new ValueMember(v.Identifier.ValueText, v.Identifier.ValueText.ToCamelCase(),
+                            TsTypeFor(field.Declaration.Type, model), field.Modifiers.Any(SyntaxKind.PublicKeyword), v));
                     break;
             }
         }
 
         return members;
+    }
+
+    /// <summary>
+    /// Whether a derived record's positional parameter names a property its BASE already has, so the
+    /// record makes none of its own (<c>record Dog(string Name) : Animal(Name)</c>: the name is
+    /// Animal's). Asked of the model, which knows what the record itself declares; without one, a
+    /// parameter handed to the base by name is taken as the base's.
+    /// </summary>
+    private static bool InheritedProperty(TypeDeclarationSyntax type, INamedTypeSymbol? self, string name)
+    {
+        if (type.BaseList?.Types.FirstOrDefault() is not { } first) return false;
+        if (self is not null)
+            return !self.GetMembers(name).Any(member => member is IPropertySymbol or IFieldSymbol);
+        return first is PrimaryConstructorBaseTypeSyntax { ArgumentList: { } passed }
+            && passed.Arguments.Any(argument => argument.Expression is IdentifierNameSyntax id && id.Identifier.ValueText == name);
     }
 
     /// <summary>

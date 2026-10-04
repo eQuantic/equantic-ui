@@ -105,7 +105,7 @@ public static class DefaultValue
         if (type is INamedTypeSymbol { TypeKind: TypeKind.Struct } structType && ZeroConstructs(structType))
         {
             named?.Invoke(structType);
-            return ConstructsBeyondZero(structType) ? ZeroOf(structType, named) : $"new {structType.Name}()";
+            return ConstructsBeyondZero(structType) ? $"{structType.Name}.$zero()" : $"new {structType.Name}()";
         }
 
         // A tuple is an ARRAY on this side, and its zero is an array of its elements' zeros.
@@ -122,47 +122,14 @@ public static class DefaultValue
     }
 
     /// <summary>
-    /// Whether a struct's twin constructor gives a member more than its zero: a field's or a
-    /// property's initializer, a positional parameter's default, or an explicit parameterless
-    /// constructor's body. <c>default(T)</c> runs none of them, and the twin's bare <c>new T()</c>
-    /// runs all of them, so such a struct's zero is built with every member's own zero passed in
-    /// instead: <c>default(Counter)</c> held the <c>Step = 2</c> C# never gives it.
+    /// Whether a struct's twin constructor does more than zero it (<see cref="RecordTypeEmitter.ZeroRunsCode"/>):
+    /// <c>default(T)</c> runs none of it, and the twin's bare <c>new T()</c> would run all of it, so
+    /// such a struct's zero is the <c>$zero()</c> its twin builds without the constructor:
+    /// <c>default(Counter)</c> held the <c>Step = 2</c> C# never gives it.
     /// </summary>
     private static bool ConstructsBeyondZero(INamedTypeSymbol type) =>
         type.DeclaringSyntaxReferences.Select(reference => reference.GetSyntax()).OfType<TypeDeclarationSyntax>()
-            .Any(declaration =>
-                declaration.ParameterList?.Parameters.Any(parameter => parameter.Default is not null) == true
-                || declaration.Members.Any(member => member switch
-                {
-                    FieldDeclarationSyntax field => !field.Modifiers.Any(SyntaxKind.StaticKeyword)
-                        && !field.Modifiers.Any(SyntaxKind.ConstKeyword)
-                        && field.Declaration.Variables.Any(variable => variable.Initializer is not null),
-                    PropertyDeclarationSyntax property => !property.Modifiers.Any(SyntaxKind.StaticKeyword)
-                        && property.Initializer is not null,
-                    ConstructorDeclarationSyntax constructor => !constructor.Modifiers.Any(SyntaxKind.StaticKeyword)
-                        && constructor.ParameterList.Parameters.Count == 0,
-                    _ => false,
-                }));
-
-    /// <summary>The zero of such a struct: every member's own zero, passed to the twin's
-    /// constructor in the order it takes them, which is the order its value members are listed in.</summary>
-    private static string ZeroOf(INamedTypeSymbol type, Action<INamedTypeSymbol>? named)
-    {
-        var declaration = type.DeclaringSyntaxReferences.Select(reference => reference.GetSyntax())
-            .OfType<TypeDeclarationSyntax>().First();
-        var zeros = declaration.ValueMembers().Select(member => Of(MemberType(type, member.Display), named));
-        return $"new {type.Name}({string.Join(", ", zeros)})";
-    }
-
-    /// <summary>A value member's type: a field's, or a property's, which a positional parameter
-    /// declares too.</summary>
-    private static ITypeSymbol? MemberType(INamedTypeSymbol type, string name) =>
-        type.GetMembers(name).FirstOrDefault() switch
-        {
-            IFieldSymbol field => field.Type,
-            IPropertySymbol property => property.Type,
-            _ => null,
-        };
+            .Any(RecordTypeEmitter.ZeroRunsCode);
 
     /// <summary>Whether the twin of <paramref name="type"/> builds its zero instance from a bare
     /// constructor — see <see cref="Of(ITypeSymbol?, ConversionContext)"/>.</summary>
@@ -172,8 +139,8 @@ public static class DefaultValue
         // Nullable<T> is a struct too, and its default is null — handled above, never here.
         if (type.OriginalDefinition.SpecialType == SpecialType.System_Nullable_T) return false;
         if (type.GetAttributes().Any(a => a.AttributeClass?.Name == "ZeroConstructsAttribute")) return true;
-        // In source, only when a twin is emitted at all: a struct the emitter refuses (an empty one)
-        // has no class, and `new Empty()` would name one nothing wrote.
+        // In source, only when a twin is emitted at all: a struct declared only by an empty partial
+        // declaration has no class, and `new Empty()` would name one nothing wrote.
         if (type.Locations.Any(location => location.IsInSource)) return RecordTypeEmitter.EmitsTwin(type);
         var ns = type.ContainingNamespace?.ToDisplayString() ?? "";
         return Services.RuntimeProvidedTypeScanner.IsTranspiledNamespace(ns);

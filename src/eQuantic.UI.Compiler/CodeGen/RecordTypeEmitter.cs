@@ -87,54 +87,56 @@ public class RecordTypeEmitter
             : TypeDeclarationExtensions.DefaultFor(type);
 
     /// <summary>
-    /// What an omitted argument leaves in a member (#385): its declaration's own initializer, a
-    /// positional parameter's default or a property's or a field's <c>= value</c>, converted like
-    /// any expression, and the type's default where there is none. This constructor is the one
-    /// place a member's default is written. A construction site that skips a member passes
-    /// <c>undefined</c> and lets this default run, in the twin's own module where the initializer's
-    /// names resolve. Copied into the call site instead, it had to be a literal: a field's
-    /// initializer went nowhere at all, and a decimal, a long, a float or a <c>new()</c> came out
-    /// as a plain number or as null.
+    /// What the constructor sets a member to, as C# sets it: a positional property the parameter it is
+    /// made from, a property's or a field's initializer converted like any expression, and the type's
+    /// default where there is none. <paramref name="runsCode"/> says whether evaluating it can do
+    /// anything but read a value, which is what has to run before a base's constructor.
+    /// <para>
+    /// Every initializer runs on every construction (#413). It was each member's PARAMETER default,
+    /// which JavaScript evaluates only for an argument that is missing, so an object initializer
+    /// setting a member skipped its initializer, and `new Counted { B = 10 }` ran one `++N` where C#
+    /// runs two. The constructor takes the C# constructor's parameters and nothing else.
+    /// </para>
     /// </summary>
-    private string DefaultFor(TypeDeclarationSyntax type, ValueMember member)
+    private string ValueOf(ValueMember member, out bool runsCode)
     {
-        var (declared, initializer) = Declaration(type, member.Display);
-        if (initializer is null) return declared is null ? "null" : DefaultOf(declared);
-        // The default runs in the constructor's parameter list, where a positional parameter the
-        // initializer reads (`Tag = "#" + Id`) is the parameter itself, and no member is set yet.
-        return ExpressionVariableScanner.Scoped(initializer, _converter.WithConstructorParametersInScope(
-            () => _converter.ConvertExpression(initializer, declared?.ToString())), _annotations);
+        runsCode = false;
+        switch (member.Declaration)
+        {
+            case ParameterSyntax parameter:
+                return ParameterName(parameter, primary: true);
+            case PropertyDeclarationSyntax { Initializer: { } initializer } property:
+                runsCode = true;
+                return Initialized(initializer.Value, property.Type);
+            case PropertyDeclarationSyntax property:
+                return DefaultOf(property.Type);
+            case VariableDeclaratorSyntax { Parent: VariableDeclarationSyntax declaration } variable:
+                runsCode = variable.Initializer is not null;
+                return variable.Initializer is { } value ? Initialized(value.Value, declaration.Type) : DefaultOf(declaration.Type);
+            default:
+                return "null";
+        }
     }
 
-    /// <summary>The type and the initializer a value member is declared with, found by its name
-    /// among the positional parameters, the properties and the fields.</summary>
-    private static (TypeSyntax? Type, ExpressionSyntax? Initializer) Declaration(TypeDeclarationSyntax type, string name)
-    {
-        if (type.ParameterList?.Parameters.FirstOrDefault(p => p.Identifier.Text == name) is { } parameter)
-            return (parameter.Type, parameter.Default?.Value);
-        foreach (var member in type.Members)
-        {
-            switch (member)
-            {
-                case PropertyDeclarationSyntax property when property.Identifier.Text == name:
-                    return (property.Type, property.Initializer?.Value);
-                case FieldDeclarationSyntax field
-                    when field.Declaration.Variables.FirstOrDefault(v => v.Identifier.Text == name) is { } variable:
-                    return (field.Declaration.Type, variable.Initializer?.Value);
-            }
-        }
-        return (null, null);
-    }
+    /// <summary>An initializer, converted in the constructor's parameter scope: a positional parameter
+    /// it reads (`Tag = "#" + Id`) is the parameter itself, since no member is set yet.</summary>
+    private string Initialized(ExpressionSyntax initializer, TypeSyntax type) =>
+        ExpressionVariableScanner.Scoped(initializer, _converter.WithConstructorParametersInScope(
+            () => _converter.ConvertExpression(initializer, type.ToString())), _annotations);
+
+    /// <summary>
+    /// The name a constructor parameter is bound under, the one every reference to it is converted to:
+    /// a primary constructor's camelCased, as a member it makes, and an explicit constructor's as
+    /// written, each made a legal JavaScript name (`class` is `class$`).
+    /// </summary>
+    private static string ParameterName(ParameterSyntax parameter, bool primary) =>
+        (primary ? parameter.Identifier.ValueText.ToCamelCase() : parameter.Identifier.ValueText).ToJsIdentifier();
 
     /// <summary>Every accessor bodyless and no expression body — an auto-property and nothing else.</summary>
     private static bool IsPureAuto(PropertyDeclarationSyntax property) =>
         property.ExpressionBody is null
         && property.AccessorList is { } list
         && list.Accessors.All(a => a.Body is null && a.ExpressionBody is null);
-
-    /// <summary>Whether the emitted class carries VALUE semantics (structural equals, `with`).</summary>
-    private static bool IsValueShape(TypeDeclarationSyntax type) =>
-        type is RecordDeclarationSyntax or StructDeclarationSyntax;
 
     /// <summary>
     /// Emits the type as a standalone TypeScript module — the structural <c>equals</c>/<c>with</c> use
@@ -244,40 +246,177 @@ public class RecordTypeEmitter
     }
 
     /// <summary>
+    /// The C# constructor the twin's own one IS (#413): a record's primary constructor, or the one
+    /// explicit constructor that runs a body of its own, or the implicit parameterless one. The others
+    /// chain to it with `: this(…)`, and reach it through <see cref="ChainedOverloads"/>.
+    /// </summary>
+    private readonly record struct MainConstructor(IReadOnlyList<ParameterSyntax> Parameters, bool Primary,
+        ConstructorDeclarationSyntax? Explicit, IReadOnlyList<ConstructorDeclarationSyntax> Alternates);
+
+    /// <summary>
+    /// The constructor <see cref="MainConstructor"/> describes. JavaScript has ONE constructor, so a
+    /// type whose constructors each run a body of their own has no twin that can be all of them: the
+    /// widest is the twin's, and every other is refused (EQ1009) rather than dropped, which is what
+    /// happened to every explicit constructor of a record or a struct before.
+    /// </summary>
+    private MainConstructor MainOf(TypeDeclarationSyntax type)
+    {
+        var declared = type.Members.OfType<ConstructorDeclarationSyntax>()
+            .Where(constructor => !constructor.Modifiers.Any(SyntaxKind.StaticKeyword))
+            .ToList();
+        if (type.ParameterList is { } primary)
+            return new MainConstructor(primary.Parameters.ToList(), true, null, declared);
+
+        var bodies = declared.Where(constructor => !Chains(constructor)).ToList();
+        if (bodies.Count == 0) return new MainConstructor([], false, null, declared);
+        var main = bodies.OrderByDescending(constructor => constructor.ParameterList.Parameters.Count).First();
+        foreach (var other in bodies.Where(other => other != main))
+            _converter.Report(other, ConversionSeverity.Error, "EQ1009",
+                $"'{type.Identifier.Text}{other.ParameterList}' runs a body of its own, and so does "
+                + $"'{type.Identifier.Text}{main.ParameterList}'. A JavaScript class has one constructor, so the "
+                + "twin's is the widest, and reaches another only when it chains to it with `: this(…)`. "
+                + "Chain this one to it, or keep one constructor.");
+        return new MainConstructor(main.ParameterList.Parameters.ToList(), false, main,
+            declared.Where(constructor => constructor != main && Chains(constructor)).ToList());
+    }
+
+    /// <summary>Whether a constructor hands its work to another with `: this(…)`.</summary>
+    private static bool Chains(ConstructorDeclarationSyntax constructor) =>
+        constructor.Initializer?.ThisOrBaseKeyword.IsKind(SyntaxKind.ThisKeyword) == true;
+
+    /// <summary>
     /// The OTHER constructors — `CodeRange(CodePosition caret) : this(caret, caret)`. JavaScript has
     /// one constructor, so each alternate becomes a branch on how many arguments actually arrived:
-    /// bind its own parameters from the slots they landed in, evaluate the `: this(…)` arguments,
-    /// and land those in the primary's.
+    /// bind its own parameters from the arguments, evaluate the `: this(…)` arguments, and land those
+    /// in the main constructor's. Its own body runs after the main one's, as C# runs it
+    /// (<see cref="AlternateBodies"/>).
     /// <para>
     /// Dropping them is what used to happen, and it was silent: `new CodeRange(caret)` left the
-    /// second member NULL, so every read of it threw somewhere far away from the constructor.
+    /// second member NULL, so every read of it threw somewhere far away from the constructor. An
+    /// alternate the branch cannot tell from the main one, because the main one takes that many
+    /// arguments too, or one that chains to another alternate, is refused (EQ1009).
     /// </para>
     /// </summary>
-    private string ChainedOverloads(TypeDeclarationSyntax type, IReadOnlyList<ValueMember> members)
+    private string ChainedOverloads(TypeDeclarationSyntax type, MainConstructor main)
     {
+        var slots = main.Parameters.Select(parameter => ParameterName(parameter, main.Primary)).ToList();
+        var required = main.Parameters.Count(parameter => parameter.Default is null
+            && !parameter.Modifiers.Any(SyntaxKind.ParamsKeyword));
         var sb = new StringBuilder();
-        foreach (var ctor in type.Members.OfType<ConstructorDeclarationSyntax>())
+        foreach (var ctor in main.Alternates)
         {
-            if (ctor.Initializer is not { } chain
-                || !chain.ThisOrBaseKeyword.IsKind(SyntaxKind.ThisKeyword)) continue;
+            if (ctor.Initializer is not { } chain || !chain.ThisOrBaseKeyword.IsKind(SyntaxKind.ThisKeyword)) continue;
             var arity = ctor.ParameterList.Parameters.Count;
-            if (arity == 0 || arity > members.Count) continue;
+            if (arity >= required && arity <= slots.Count
+                || ModelFor(chain)?.GetSymbolInfo(chain).Symbol is IMethodSymbol target
+                    && target.DeclaringSyntaxReferences.FirstOrDefault()?.GetSyntax() is ConstructorDeclarationSyntax other
+                    && other != main.Explicit)
+            {
+                _converter.Report(ctor, ConversionSeverity.Error, "EQ1009",
+                    $"'{type.Identifier.Text}{ctor.ParameterList}' chains to another constructor, and the twin's one "
+                    + "constructor reaches it by how many arguments arrive: it must chain to the constructor the twin "
+                    + $"takes, with fewer or more arguments than that one accepts ({required} to {slots.Count}).");
+                continue;
+            }
 
             _converter.SetCurrentClass(type.Identifier.Text);
             sb.Append($"if (arguments.length === {arity}) {{ ");
-            // The alternate's parameters ARE the arguments that arrived, in the primary's slots.
-            for (var i = 0; i < arity; i++)
-                sb.Append($"const {ctor.ParameterList.Parameters[i].Identifier.Text.ToJsIdentifier()} = {members[i].Js.ToJsIdentifier()}; ");
+            // The alternate's parameters ARE the arguments that arrived, in the main one's slots
+            // where it has them.
+            sb.Append(Bound(ctor, slots));
             // Evaluate first, assign after: an argument that reads a slot it also writes must see
             // the value that arrived, not the one this loop just put there.
             var args = chain.ArgumentList.Arguments;
-            for (var i = 0; i < args.Count && i < members.Count; i++)
+            for (var i = 0; i < args.Count && i < slots.Count; i++)
                 sb.Append($"const $c{i} = {_converter.ConvertExpression(args[i].Expression)}; ");
-            for (var i = 0; i < args.Count && i < members.Count; i++)
-                sb.Append($"{members[i].Js.ToJsIdentifier()} = $c{i}; ");
+            for (var i = 0; i < args.Count && i < slots.Count; i++)
+                sb.Append($"{slots[i]} = $c{i}; ");
             sb.Append("} ");
         }
         return sb.ToString();
+    }
+
+    /// <summary>An alternate's parameters, bound to the arguments that arrived: from the main
+    /// constructor's slot where it has one, and from <c>arguments</c> past them.</summary>
+    private static string Bound(ConstructorDeclarationSyntax alternate, IReadOnlyList<string> slots)
+    {
+        var sb = new StringBuilder();
+        var parameters = alternate.ParameterList.Parameters;
+        for (var i = 0; i < parameters.Count; i++)
+            sb.Append($"const {ParameterName(parameters[i], primary: false)} = {(i < slots.Count ? slots[i] : $"arguments[{i}]")}; ");
+        return sb.ToString();
+    }
+
+    /// <summary>The body each alternate runs after the main constructor's, as C# runs a constructor
+    /// that chains with `: this(…)`: its own parameters bound again, from the arguments that arrived.</summary>
+    private string AlternateBodies(TypeDeclarationSyntax type, MainConstructor main)
+    {
+        var sb = new StringBuilder();
+        foreach (var ctor in main.Alternates)
+        {
+            if (Body(ctor) is not { Length: > 0 } body) continue;
+            sb.Append($"if (arguments.length === {ctor.ParameterList.Parameters.Count}) {{ ");
+            var parameters = ctor.ParameterList.Parameters;
+            for (var i = 0; i < parameters.Count; i++)
+                sb.Append($"const {ParameterName(parameters[i], primary: false)} = arguments[{i}]; ");
+            sb.Append(body).Append("} ");
+        }
+        return sb.ToString();
+    }
+
+    /// <summary>A constructor's own statements in the one-line layout, or nothing for an empty body.</summary>
+    private string Body(ConstructorDeclarationSyntax constructor)
+    {
+        if (constructor.Body is { Statements.Count: > 0 } block
+            && _converter.ConvertBlockIr(block) is JsBlock converted)
+            return string.Concat(converted.Statements.Select(statement => JsStatementWriter.Write(statement, JsLayout.Compact) + " "));
+        if (constructor.ExpressionBody is { } arrow)
+            return JsStatementWriter.Write(_lowering.ExpressionBody(arrow.Expression, returns: false), JsLayout.Compact) + " ";
+        return "";
+    }
+
+    /// <summary>
+    /// The twin's constructor (#413). It takes the C# constructor's parameters, never a member's
+    /// value, sets every member as C# does, in declaration order, and runs the constructor's body
+    /// after them; an object initializer is applied by the construction site once it returns
+    /// (<see cref="Strategies.Expressions.ObjectInitializer"/>). Over a base, C# runs the derived
+    /// type's initializers BEFORE the base constructor, and JavaScript cannot touch `this` before
+    /// `super()`, so each initializer that can do anything is evaluated into a local first and
+    /// assigned after.
+    /// </summary>
+    private string Constructor(TypeDeclarationSyntax type, IReadOnlyList<ValueMember> members, string? baseName, string superArgs)
+    {
+        var main = MainOf(type);
+        _converter.SetCurrentClass(type.Identifier.Text);
+        var parameters = main.Parameters.Select(parameter => _lowering.ParamWithDefault(
+            ParameterName(parameter, main.Primary), "any",
+            parameter.Default is { } given
+                ? _converter.ConvertExpression(given.Value, parameter.Type?.ToString())
+                : main.Primary && parameter.Type is { } typed ? DefaultOf(typed) : null,
+            parameter.Modifiers.Any(SyntaxKind.ParamsKeyword)));
+
+        var sb = new StringBuilder($"constructor({string.Join(", ", parameters)}) {{ ");
+        sb.Append(ChainedOverloads(type, main));
+        var values = members.Select(member => (member, Value: ValueOf(member, out var runsCode), runsCode)).ToList();
+        if (baseName is not null)
+        {
+            foreach (var (member, value, runsCode) in values)
+                if (runsCode) sb.Append($"const ${member.Js} = {value}; ");
+            var arguments = main.Explicit?.Initializer is { } chain && chain.ThisOrBaseKeyword.IsKind(SyntaxKind.BaseKeyword)
+                ? string.Join(", ", chain.ArgumentList.Arguments.Select(argument => _converter.ConvertExpression(argument.Expression)))
+                : superArgs;
+            sb.Append($"super({arguments}); ");
+            foreach (var (member, value, runsCode) in values)
+                sb.Append($"this.{member.Js} = {(runsCode ? "$" + member.Js : value)}; ");
+        }
+        else
+        {
+            foreach (var (member, value, _) in values)
+                sb.Append($"this.{member.Js} = {value}; ");
+        }
+        if (main.Explicit is { } own) sb.Append(Body(own));
+        sb.Append(AlternateBodies(type, main));
+        return sb.Append("} ").ToString();
     }
 
     /// <summary>The TS annotation for a declared type, resolved the way the class emitter does it:
@@ -305,51 +444,52 @@ public class RecordTypeEmitter
         _annotations = tsTypeDeclarations;
         var name = type.Identifier.Text;
         var members = type.ValueMembers(ModelFor(type));
-        var (baseName, superArgs, passedToBase) = BaseInfo(type);
+        var (baseName, superArgs, _) = BaseInfo(type);
 
         var sb = new StringBuilder();
         sb.Append($"class {name}{(baseName != null ? $" extends {baseName}" : "")} {{ ");
 
         // TYPE-ONLY member declarations: they restore checking on `record.x` without emitting any runtime
-        // code (the constructor below does the assigning). Only OWN members are declared — the ones passed
-        // to the base record's primary constructor are already declared by the base module.
+        // code (the constructor below does the assigning). Only OWN members are declared — a positional
+        // parameter its base already has a property for is the base's, declared by the base module.
         if (tsTypeDeclarations)
             foreach (var m in members)
-                if (!passedToBase.Contains(m.Display)) sb.Append($"declare {m.Js}: {m.TsType}; ");
+                sb.Append($"declare {m.Js}: {m.TsType}; ");
 
-        // constructor(x = …, y = …) { [super(…);] this.<own> = …; } — defaults cover omitted args;
-        // members passed to the base record's primary constructor are assigned by `super`, not here.
-        // TS mode annotates ctor params (`label: any = null`) — a bare `= null` default would make
-        // TypeScript infer the param TYPE as `null`. Plain-JS mode stays annotation-free (.mjs).
-        // A parameter is bound under a legal JS name of the member's (ToJsIdentifier): a member may be
-        // a reserved word, `this.class` being fine where a parameter `class` is not.
-        _converter.SetCurrentClass(name);
-        var defaults = members.Select(m => DefaultFor(type, m)).ToList();
-        sb.Append(tsTypeDeclarations
-            ? $"constructor({string.Join(", ", members.Select((m, i) => $"{m.Js.ToJsIdentifier()}: any = {defaults[i]}"))}) {{ "
-            : $"constructor({string.Join(", ", members.Select((m, i) => $"{m.Js.ToJsIdentifier()} = {defaults[i]}"))}) {{ ");
-        if (baseName != null) sb.Append($"super({superArgs}); ");
-        sb.Append(ChainedOverloads(type, members));
-        foreach (var m in members)
-            if (!passedToBase.Contains(m.Display)) sb.Append($"this.{m.Js} = {m.Js.ToJsIdentifier()}; ");
-        sb.Append("} ");
+        sb.Append(Constructor(type, members, baseName, superArgs));
 
         // VALUE semantics belong to records and structs. A plain class is IDENTITY: giving it a
         // structural `equals` would make two different buckets compare equal, and a `with` would
         // hand back a copy where the caller expects the same object.
         if (type is RecordDeclarationSyntax or StructDeclarationSyntax)
         {
-            // Structural equality — $eq.equals(a, b) delegates here when `a` is an instance.
+            // Structural equality — $eq.equals(a, b) delegates here when `a` is an instance. A record
+            // compares as C# compares it: the same runtime type (its EqualityContract), what its base
+            // compares, then its own members. `o instanceof Animal` alone made a Dog equal to an Animal
+            // with the same members, once a record could extend one that declares no value (#428).
             // Param annotations are TS-only (the plain-JS path must stay parseable as .mjs).
             sb.Append(tsTypeDeclarations ? $"equals(o: unknown) {{ return o instanceof {name}"
                 : $"equals(o) {{ return o instanceof {name}");
+            if (baseName != null) sb.Append(" && super.equals(o)");
+            else if (type is RecordDeclarationSyntax) sb.Append(" && o.constructor === this.constructor");
             foreach (var m in members) sb.Append($" && $eq.equals(this.{m.Js}, o.{m.Js})");
             sb.Append("; } ");
 
-            // with(patch): copy preserving the prototype (a spread would drop the methods).
-            sb.Append(tsTypeDeclarations ? $"with(patch: any) {{ return new {name}(" : $"with(patch) {{ return new {name}(");
-            sb.Append(string.Join(", ", members.Select(m => $"('{m.Js}' in patch ? patch.{m.Js} : this.{m.Js})")));
-            sb.Append("); } ");
+            // with(patch): a COPY, onto the prototype (a spread would drop the methods), then the
+            // members the patch names. C# copies the fields and runs no initializer, and building it
+            // through the constructor ran every one of them again (#413).
+            sb.Append(tsTypeDeclarations ? $"with(patch: any): {name} {{ return {Eq.With}(this, patch); }} "
+                : $"with(patch) {{ return {Eq.With}(this, patch); }} ");
+
+            // The zero C# gives a struct whose constructor does more than zero it: `default(S)`, an
+            // array's slot, an OrDefault. Built without the constructor, which would run it.
+            if (type is StructDeclarationSyntax && ZeroRunsCode(type))
+            {
+                var zeros = string.Join(", ", members.Select(m => $"{m.Js}: {ZeroOf(m)}"));
+                sb.Append(tsTypeDeclarations
+                    ? $"static $zero(): {name} {{ return Object.assign(Object.create({name}.prototype), {{ {zeros} }}); }} "
+                    : $"static $zero() {{ return Object.assign(Object.create({name}.prototype), {{ {zeros} }}); }} ");
+            }
 
             // The twin's own TYPED BOUNDARY: which members hydrate off the wire, and as what —
             // `$eq.hydrate` rebuilds a payload object on this prototype and coerces by this map.
@@ -514,16 +654,72 @@ public class RecordTypeEmitter
             }
         }
 
-        // .NET record ToString ("Name { X = …, Y = … }") unless the user overrode it.
+        // .NET record ToString ("Name { X = …, Y = … }") unless the user overrode it: the members
+        // PrintMembers writes, a base's first, each once (#546), and `Name { }` for none, as .NET
+        // writes it, where the twin wrote two spaces.
         if (!userToString)
         {
-            var inner = string.Join(", ", members.Select(m => $"{m.Display} = ${{this.{m.Js}}}"));
-            sb.Append($"toString() {{ return `{name} {{ {inner} }}`; }} ");
+            var printed = Printed(type).ToList();
+            var inner = printed.Count == 0
+                ? ""
+                : string.Join(", ", printed.Select(m => $"{m.Display} = ${{this.{m.Js}}}")) + " ";
+            sb.Append($"toString() {{ return `{name} {{ {inner}}}`; }} ");
         }
 
         sb.Append('}');
         return sb.ToString();
     }
+
+    /// <summary>
+    /// The members a record's text prints, as PrintMembers writes them: its base's first, then its
+    /// own public ones, in the order <see cref="TypeDeclarationExtensions.ValueMembers"/> lists them.
+    /// A struct prints its own.
+    /// </summary>
+    private IEnumerable<ValueMember> Printed(TypeDeclarationSyntax type)
+    {
+        if (type is RecordDeclarationSyntax
+            && ModelFor(type)?.GetDeclaredSymbol(type) is INamedTypeSymbol { BaseType: { } parent }
+            && parent.DeclaringSyntaxReferences.Select(reference => reference.GetSyntax())
+                .OfType<TypeDeclarationSyntax>().FirstOrDefault(CanEmit) is { } baseDeclaration)
+        {
+            foreach (var inherited in Printed(baseDeclaration)) yield return inherited;
+        }
+        foreach (var member in type.ValueMembers(ModelFor(type)))
+            if (member.Printed) yield return member;
+    }
+
+    /// <summary>A member's zero, the value <c>default</c> gives it.</summary>
+    private string ZeroOf(ValueMember member) => member.Declaration switch
+    {
+        ParameterSyntax { Type: { } type } => DefaultOf(type),
+        PropertyDeclarationSyntax property => DefaultOf(property.Type),
+        VariableDeclaratorSyntax { Parent: VariableDeclarationSyntax declaration } => DefaultOf(declaration.Type),
+        _ => "null",
+    };
+
+    /// <summary>
+    /// Whether the twin's constructor, called with no argument, does more than zero a struct: a
+    /// positional parameter's default, an instance initializer, or a constructor body it runs (an
+    /// explicit parameterless constructor, or the one explicit constructor of a struct that has no
+    /// primary one). C# runs none of it for <c>default(S)</c>, an array's slot or an OrDefault, and
+    /// for <c>new S()</c> where S declares no parameterless constructor, so such a struct's zero is
+    /// built without the constructor (<c>S.$zero()</c>), and every other's is <c>new S()</c>. One rule,
+    /// read by the emitter that writes <c>$zero</c> and by <see cref="Strategies.DefaultValue"/>, which
+    /// names it.
+    /// </summary>
+    internal static bool ZeroRunsCode(TypeDeclarationSyntax declaration) =>
+        declaration.ParameterList?.Parameters.Any(parameter => parameter.Default is not null) == true
+        || declaration.Members.Any(member => member switch
+        {
+            FieldDeclarationSyntax field => !field.Modifiers.Any(SyntaxKind.StaticKeyword)
+                && !field.Modifiers.Any(SyntaxKind.ConstKeyword)
+                && field.Declaration.Variables.Any(variable => variable.Initializer is not null),
+            PropertyDeclarationSyntax property => !property.Modifiers.Any(SyntaxKind.StaticKeyword)
+                && property.Initializer is not null,
+            ConstructorDeclarationSyntax constructor => !constructor.Modifiers.Any(SyntaxKind.StaticKeyword)
+                && (constructor.ParameterList.Parameters.Count == 0 || declaration.ParameterList is null),
+            _ => false,
+        });
 
     /// <summary>
     /// A property with a setter body and no getter at all (<c>int Twice { set => Stored = value * 2; }</c>),

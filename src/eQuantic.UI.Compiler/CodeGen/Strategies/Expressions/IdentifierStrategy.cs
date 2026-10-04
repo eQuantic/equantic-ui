@@ -108,11 +108,13 @@ public class IdentifierStrategy : IExpressionIrStrategy
 
             // C# 12 primary-constructor parameter captured in an instance member (e.g. referenced in Build):
             // it behaves like an instance field, so emit `this.<name>`. In a twin constructor's own
-            // parameter defaults it is that constructor's parameter, named as the constructor names it.
+            // initializers it is that constructor's parameter, named as the constructor names it: a
+            // legal JavaScript name too, since a parameter `class` does not parse where `this.class` does.
             if (symbol.IsPrimaryConstructorParameter())
             {
-                return isMemberName || context.ConstructorParametersInScope
-                    ? JsExpr.Identifier(name.ToCamelCase())
+                if (isMemberName) return JsExpr.Identifier(name.ToCamelCase());
+                return context.ConstructorParametersInScope
+                    ? JsExpr.Identifier(name.ToCamelCase().ToJsIdentifier())
                     : JsExpr.ThisMember(name.ToCamelCase());
             }
         }
