@@ -219,6 +219,7 @@ public class CSharpToJsConverter
         _strategyRegistry.Register<EnumHasFlagStrategy>();
         _strategyRegistry.Register<NullableStrategy>();
         _strategyRegistry.Register<StructuralEqualsStrategy>();
+        _strategyRegistry.Register<GetHashCodeStrategy>();
         _strategyRegistry.Register<KeyValuePairStrategy>();
         _strategyRegistry.Register<ReferenceEqualsStrategy>();
         _strategyRegistry.Register<EventSubscriptionStrategy>();

@@ -136,6 +136,29 @@ public class AssignmentExpressionStrategy : IExpressionIrStrategy
                 JsExprWriter.Write(current), JsExprWriter.Write(operand))!);
 
         var leftType = context.SemanticHelper.GetType(assignment.Left);
+
+        // A COMPOUND over a date, an offset or a time span: their operators are methods of the
+        // runtime's twins, which JavaScript's `op=` cannot call, so `d -= span` subtracted two objects
+        // into NaN and never refused a date leaving the calendar (#424). A nullable operand is lifted,
+        // as C#'s operator is: a null on either side answers null.
+        var rightType = context.SemanticHelper.GetType(assignment.Right);
+        if (op is "+=" or "-="
+            && BinaryExpressionStrategy.ConvertDateTimeOrTimeSpan("{0}", "{1}", op[..^1], leftType, rightType) is { } compat)
+        {
+            if (leftType is INamedTypeSymbol { OriginalDefinition.SpecialType: SpecialType.System_Nullable_T }
+                || rightType is INamedTypeSymbol { OriginalDefinition.SpecialType: SpecialType.System_Nullable_T })
+            {
+                context.UsedHelpers.Add(Eq.Import);
+                // The operator over the two values the lift hands it, and nothing else: an IR arrow,
+                // whose writer is the one that writes every arrow, holding no C# of its own.
+                var body = BinaryExpressionStrategy.ConvertDateTimeOrTimeSpan("$a", "$b", op[..^1], leftType, rightType);
+                var lifted = JsExpr.Arrow("$a, $b", JsExpr.Opaque(body!));
+                return Compound((current, operand) =>
+                    JsExpr.Call(JsExpr.Identifier(Eq.LiftArith), current, operand, lifted));
+            }
+            return Compound((current, operand) => JsExpr.Template(compat, [current, operand]));
+        }
+
         if (op.Length >= 2 && op[^1] == '=' && op is not ("==" or "!=" or "<=" or ">=" or "??="))
         {
             var binaryOp = op[..^1];

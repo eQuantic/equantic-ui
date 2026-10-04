@@ -8,6 +8,7 @@ import {
   validateRealStyles,
   type NumberText,
 } from './number-grammar';
+import { hash } from './hash';
 
 /** The largest mantissa a decimal holds: 96 bits. */
 const MAX_MANTISSA = (1n << 96n) - 1n;
@@ -237,6 +238,11 @@ export class Decimal {
   /** `Equals(object)`: a decimal of the same value, whatever its scale, and nothing of another kind. */
   equals(other: unknown): boolean {
     return other instanceof Decimal && this.compareTo(other) === 0;
+  }
+
+  /** `GetHashCode()`: its value's, whatever its scale, as `equals` reads it: 1.0 and 1.00 hash alike. */
+  getHashCode(): number {
+    return hash(this.toNumber());
   }
 
   toString(): string {

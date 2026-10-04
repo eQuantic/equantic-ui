@@ -5,6 +5,8 @@
  * import `vocabulary` (a cycle that has bitten this runtime twice). The class both of them need
  * therefore lives in a LEAF neither of them owns.
  */
+import { hashesByValue } from '../utils/hash';
+
 export class CanvasPointer {
   readonly x: number;
   readonly y: number;
@@ -39,3 +41,9 @@ export class CanvasPointer {
     return Math.fround(Math.sqrt(Math.fround(Math.fround(dx * dx) + Math.fround(dy * dy))));
   }
 }
+
+/** The twins of the vocabulary's records and structs: each hashes by its members, as `equals`
+ * compares it (`ValueTwinHashTests` holds this list to the C#). */
+hashesByValue(
+  CanvasPointer,
+);
