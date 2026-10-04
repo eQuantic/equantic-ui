@@ -70,20 +70,48 @@ public class ConditionalAccessStrategy : IConversionStrategy
         }
 
         var receiver = context.Converter.ConvertExpression(conditionalAccess.Expression);
-        var rebuilt = Rebuild(whenNotNull, rootBinding, conditionalAccess.Expression, context);
+        var readsAgain = ReadsAgain(conditionalAccess.Expression, context);
+        var rebuilt = Rebuild(whenNotNull, rootBinding, conditionalAccess.Expression, readsAgain, context);
 
         var converted = context.Converter.ConvertExpression(rebuilt);
+        var root = readsAgain ? receiver : Placeholder;
 
         // `$r.filter(p)` → `a?.filter(p)`; `$r[0]` → `a?.[0]`; `$r(x)` (a delegate's Invoke) →
-        // `a?.(x)`. Anything not rooted at the placeholder — `$eq.collections.contains($r, x)`,
-        // `[...$r, x]` — is wrapped so the receiver is still evaluated once and null still answers null.
-        if (converted.StartsWith(Placeholder + ".", StringComparison.Ordinal))
-            return $"{receiver}?.{converted[(Placeholder.Length + 1)..]}";
-        if (converted.StartsWith(Placeholder + "[", StringComparison.Ordinal)
-            || converted.StartsWith(Placeholder + "(", StringComparison.Ordinal))
-            return $"{receiver}?.{converted[Placeholder.Length..]}";
+        // `a?.(x)`. Anything not rooted at the receiver — `$eq.collections.contains($r, x)`,
+        // `[...$r, x]` — is guarded so the receiver is still evaluated once and null still answers null.
+        if (converted.StartsWith(root + ".", StringComparison.Ordinal))
+            return $"{receiver}?.{converted[(root.Length + 1)..]}";
+        if (converted.StartsWith(root + "[", StringComparison.Ordinal)
+            || converted.StartsWith(root + "(", StringComparison.Ordinal))
+            return $"{receiver}?.{converted[root.Length..]}";
+        // A receiver read again needs no function: the tail runs in the method it is written in, so
+        // an argument that awaits is awaited there, only when the receiver is not null, and nothing
+        // the call answers is awaited (an arrow made async did both, and a task the call returned
+        // came back as its result, #536).
+        if (readsAgain)
+            return $"({receiver} == null ? null : {converted})";
+        // Any other receiver is bound by an arrow, where an `await` is a module JavaScript refuses to
+        // parse, and an async arrow suspends where C# does not. Until a lowering can bind it in the
+        // enclosing function (#539), the shape is refused.
+        if (AwaitsInItsOwnBody(whenNotNull))
+            return context.Unhandled(node,
+                "null-conditional access (an argument that awaits behind a receiver that is not a local: bind the receiver to a local first)");
         return $"(({Placeholder}) => {Placeholder} == null ? null : {converted})({receiver})";
     }
+
+    /// <summary>A receiver whose second read nobody can observe, and that nothing between the null
+    /// test and the read can change: a local, a parameter, or <c>this</c>.</summary>
+    private static bool ReadsAgain(ExpressionSyntax receiver, ConversionContext context) =>
+        receiver is ThisExpressionSyntax
+        || receiver is IdentifierNameSyntax
+            && context.SemanticHelper.GetSymbol(receiver) is ILocalSymbol or IParameterSymbol;
+
+    /// <summary>Whether the tail awaits in the function it is written in: an <c>await</c> inside a
+    /// lambda of its own belongs to that lambda, which is async on its own account.</summary>
+    private static bool AwaitsInItsOwnBody(ExpressionSyntax tail) =>
+        tail.DescendantNodesAndSelf(node => node is not AnonymousFunctionExpressionSyntax)
+            .OfType<AwaitExpressionSyntax>()
+            .Any();
 
     /// <summary>The leftmost binding of the tail — the `.B` of `?.B.C(x)`, the `[i]` of `?[i]` —
     /// which is where the receiver is implicitly attached. Null for a tail this does not model.</summary>
@@ -117,16 +145,21 @@ public class ConditionalAccessStrategy : IConversionStrategy
     /// The tail with its root binding replaced by an access on the `$r` placeholder, every rebuilt
     /// node mapped to its original (Roslyn's TrackNodes survives the ReplaceNode, so the mapping is
     /// exact), and the placeholder carrying the receiver's TYPE so shape-dependent translations
-    /// (`.Count` on a Set, `Contains` on an open collection) still see what they need.
+    /// (`.Count` on a Set, `Contains` on an open collection) still see what they need. A receiver
+    /// that is read again takes the placeholder's place itself, mapped to the receiver it copies.
     /// </summary>
     private static ExpressionSyntax Rebuild(ExpressionSyntax tail, ExpressionSyntax rootBinding,
-        ExpressionSyntax receiverSyntax, ConversionContext context)
+        ExpressionSyntax receiverSyntax, bool readsAgain, ConversionContext context)
     {
         var originals = tail.DescendantNodesAndSelf().ToArray();
         var tracked = tail.TrackNodes(originals);
         var trackedRoot = tracked.GetCurrentNode(rootBinding)!;
 
-        var placeholder = SyntaxFactory.IdentifierName(Placeholder);
+        // Found again by annotation: the receiver's own name may also be written in the tail.
+        var marker = new SyntaxAnnotation();
+        ExpressionSyntax placeholder = (readsAgain
+            ? receiverSyntax.WithoutTrivia()
+            : SyntaxFactory.IdentifierName(Placeholder)).WithAdditionalAnnotations(marker);
         SyntaxNode replacement = trackedRoot switch
         {
             MemberBindingExpressionSyntax member => SyntaxFactory.MemberAccessExpression(
@@ -143,12 +176,12 @@ public class ConditionalAccessStrategy : IConversionStrategy
                 context.SemanticHelper.MapSynthetic(current, original);
         }
 
-        // The replacement itself is untracked: find it through the placeholder and map it to the
+        // The replacement itself is untracked: find it through its annotation and map it to the
         // binding it replaced, so `GetSymbol(memberAccess)` answers the member's symbol.
-        var placed = rebuilt.DescendantNodesAndSelf().OfType<IdentifierNameSyntax>()
-            .First(identifier => identifier.Identifier.Text == Placeholder);
+        var placed = rebuilt.GetAnnotatedNodes(marker).First();
         if (placed.Parent is { } access) context.SemanticHelper.MapSynthetic(access, rootBinding);
-        context.SemanticHelper.MapType(placed, context.SemanticHelper.GetType(receiverSyntax));
+        if (readsAgain) context.SemanticHelper.MapSynthetic(placed, receiverSyntax);
+        else context.SemanticHelper.MapType(placed, context.SemanticHelper.GetType(receiverSyntax));
 
         return rebuilt;
     }

@@ -10,7 +10,7 @@ export class CodePatch {
             hunks = [];
             open = false;
         };
-        let lines = text.replaceAll('\r\n', '\n').split('\n');
+        let lines = $eq.text.replace(text, '\r\n', '\n', 'ordinal').split('\n');
         let files: CodePatchFile[] = [];
         let originalPath: string | null = null;
         let modifiedPath: string | null = null;
@@ -20,7 +20,7 @@ export class CodePatch {
         let i = 0;
         while (i < lines.length) {
             let line = lines[i];
-            if (line.startsWith('diff --git ')) {
+            if ($eq.text.startsWith(line, 'diff --git ', 'ordinal')) {
                 close();
                 open = true;
                 let [a, b] = CodePatch.gitHeaderPaths(line.slice('diff --git '.length));
@@ -29,7 +29,7 @@ export class CodePatch {
                 i++;
                 continue;
             }
-            if (line.startsWith('--- ') && i + 1 < lines.length && lines[i + 1].startsWith('+++ ')) {
+            if ($eq.text.startsWith(line, '--- ', 'ordinal') && i + 1 < lines.length && $eq.text.startsWith(lines[i + 1], '+++ ', 'ordinal')) {
                 if (!open || hunks.length > 0) close();
                 open = true;
                 originalPath = CodePatch.pathOf(line.slice(4));
@@ -37,7 +37,7 @@ export class CodePatch {
                 i += 2;
                 continue;
             }
-            if (line.startsWith('rename from ')) originalPath = line.slice('rename from '.length); else if (line.startsWith('rename to ')) modifiedPath = line.slice('rename to '.length); else if (line.startsWith('Binary files ')) binary = true; else { let header: any; if (line.startsWith('@@ ') && (header = CodePatch.header(line)) != null) {
+            if ($eq.text.startsWith(line, 'rename from ', 'ordinal')) originalPath = line.slice('rename from '.length); else if ($eq.text.startsWith(line, 'rename to ', 'ordinal')) modifiedPath = line.slice('rename to '.length); else if ($eq.text.startsWith(line, 'Binary files ', 'ordinal')) binary = true; else { let header: any; if ($eq.text.startsWith(line, '@@ ', 'ordinal') && (header = CodePatch.header(line)) != null) {
                 open = true;
                 i = CodePatch.readHunk(lines, i + 1, header, line, hunks);
                 continue;
@@ -49,7 +49,7 @@ export class CodePatch {
     }
 
     static header(line: string): [number, number, number, number, string] | null {
-        let close = line.indexOf(' @@', 3);
+        let close = $eq.text.indexOf(line, ' @@', 3, 'ordinal');
         if (close < 0) return null;
         let parts = line.slice(3, close).split(' ');
         if (parts.length !== 2 || !parts[0].startsWith('-') || !parts[1].startsWith('+')) return null;
@@ -103,12 +103,12 @@ export class CodePatch {
         let tab = text.indexOf('\t');
         let path = tab < 0 ? text : text.slice(0, tab);
         if (path === '/dev/null') return null;
-        if (path.startsWith('a/') || path.startsWith('b/')) return path.slice(2);
+        if ($eq.text.startsWith(path, 'a/', 'ordinal') || $eq.text.startsWith(path, 'b/', 'ordinal')) return path.slice(2);
         return path;
     }
 
     static gitHeaderPaths(text: string): [string | null, string | null] {
-        let split = text.lastIndexOf(' b/');
+        let split = $eq.text.lastIndexOf(text, ' b/', 'ordinal');
         if (split < 0) return [null, null];
         return [CodePatch.pathOf(text.slice(0, split)), CodePatch.pathOf(text.slice((split + 1)))];
     }
