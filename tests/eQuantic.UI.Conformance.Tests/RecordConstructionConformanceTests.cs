@@ -28,6 +28,11 @@ public class RecordConstructionConformanceTests
 
         public record ExplicitCtor { public int A { get; init; } public int B = 7; public ExplicitCtor(int a) { A = a * 2; } }
         public record Span(int Start, int End) { public Span(int at) : this(at, at + 1) { Log.Note("one "); } }
+        public record Box3(int A, int B, int C) { public Box3(int a, int b = 5) : this(a, b, 0) { } }
+        public record Opt(int A, int B = 4, int C = 6) { public Opt(string s, string t, string u, string v) : this(s.Length, C: t.Length) { } }
+        public record Bag(params int[] Items) { public int Count => Items.Length; }
+        public record Tags(string Name, params string[] Values) { public Tags() : this("none", "a", "b") { } }
+        public record Listed(string Name, params string[] Values) { public Listed() : this("w", new[] { "x", "y", "z" }) { } }
 
         public struct Tally { public int N; public Tally() { N = 3; } }
         public struct Pinned { public int V; public Pinned(int v) { V = v * 10; } }
@@ -59,6 +64,13 @@ public class RecordConstructionConformanceTests
     [InlineData("return new ExplicitCtor(3).A + \"|\" + new ExplicitCtor(3).B;")]                          // "6|7"
     [InlineData("Log.Text = \"\"; var s = new Span(4); return s.Start + \"|\" + s.End + \"|\" + Log.Text;")] // "4|5|one "
     [InlineData("return new Quiet().Name;")]                                                              // "q"
+    // An alternate is reached by the counts of arguments it takes, its own defaults included, and a
+    // parameter of the main one its chain leaves out takes its default.
+    [InlineData("return new Box3(1) + \"|\" + new Box3(1, 2) + \"|\" + new Box3(a: 7) + \"|\" + new Box3(1, 2, 3);")] // "Box3 { A = 1, B = 5, C = 0 }|…"
+    [InlineData("return new Opt(\"ab\", \"c\", \"d\", \"e\") + \"|\" + new Opt(1, C: 2);")]              // "Opt { A = 2, B = 4, C = 1 }|Opt { A = 1, B = 4, C = 2 }"
+    // A `params` parameter takes the elements listed, or the array passed whole.
+    [InlineData("return new Bag(1, 2, 3).Count + \"|\" + new Bag(new[] { 4, 5 }).Count + \"|\" + new Bag().Count;")] // "3|2|0"
+    [InlineData("return string.Join(\",\", new Tags().Values) + \"|\" + string.Join(\",\", new Listed().Values) + \"|\" + new Tags(\"t\").Values.Length;")] // "a,b|x,y,z|0"
     // A struct's parameterless constructor runs; its default and its implicit one run nothing.
     [InlineData("return new Tally().N + \"|\" + default(Tally).N;")]                                       // "3|0"
     [InlineData("return new Pinned(2).V + \"|\" + new Pinned().V + \"|\" + default(Pinned).V;")]           // "20|0|0"

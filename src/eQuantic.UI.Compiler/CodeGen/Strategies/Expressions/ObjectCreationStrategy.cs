@@ -610,12 +610,20 @@ public class ObjectCreationStrategy : IConversionStrategy
     /// after the last argument are left out. Filling by WRITTEN order put `Sortable: true` in the
     /// align slot of `new DataColumn("Customer", track, Sortable: true)`: the column stopped being
     /// sortable on the client only, and hydration failed on the header it rendered.
+    /// <para>
+    /// A <c>params</c> parameter is a rest parameter on the twin, so an array passed whole, which C#
+    /// also allows, is spread, or it would arrive as one element (an invocation does the same).
+    /// </para>
     /// </summary>
     private static IReadOnlyList<string> ConstructorArguments(BaseObjectCreationExpressionSyntax creation, IMethodSymbol? ctor,
         ConversionContext context)
     {
         if (creation.ArgumentList is not { Arguments.Count: > 0 } list) return [];
         var converted = list.Arguments.Select(argument => context.Converter.ConvertExpression(argument.Expression)).ToList();
+        if (ctor is { Parameters.Length: > 0 } && ctor.Parameters[^1].IsParams
+            && list.Arguments.Count == ctor.Parameters.Length && list.Arguments[^1].NameColon is null
+            && context.SemanticHelper.GetType(list.Arguments[^1].Expression) is IArrayTypeSymbol)
+            converted[^1] = "..." + converted[^1];
         if (ctor is null || !list.Arguments.Any(argument => argument.NameColon != null)) return converted;
 
         var slots = new string?[ctor.Parameters.Length];

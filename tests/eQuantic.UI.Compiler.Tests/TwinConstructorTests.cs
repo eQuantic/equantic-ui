@@ -7,10 +7,11 @@ namespace eQuantic.UI.Compiler.Tests;
 
 /// <summary>
 /// A record's or a struct's twin has ONE constructor, the C# constructor the twin IS (#413): its
-/// primary one, or the one explicit constructor that runs a body of its own. The others reach it by
-/// how many arguments arrive. A constructor the twin cannot tell apart that way, or that runs a body
-/// of its own beside the main one, is refused (EQ1009): every explicit constructor of a record was
-/// dropped before, in silence, and `new ExplicitCtor(3)` set its member to 3 where C# ran the body.
+/// primary one, or the one explicit constructor that runs a body of its own. The others chain to it
+/// and are reached by how many arguments arrive. A constructor the twin cannot tell apart that way,
+/// that chains to another, or that runs a body of its own beside the main one, is refused (EQ1009):
+/// every explicit constructor of a record was dropped before, in silence, and `new ExplicitCtor(3)`
+/// set its member to 3 where C# ran the body.
 /// An indexer takes two names on its twin, so a second one, or a method on either name, is EQ1007.
 /// </summary>
 public class TwinConstructorTests
@@ -45,6 +46,33 @@ public class TwinConstructorTests
             }
             """, "Hop()"
         },
+        {
+            // Two alternates of one count: the twin cannot tell which one a call means either.
+            "Pair", """
+            public record Pair(int A, int B)
+            {
+                public Pair(int a) : this(a, a) { }
+                public Pair(string s) : this(s.Length, 0) { }
+            }
+            """, "Pair(string s)"
+        },
+        {
+            // An alternate's optional parameter reaches a count the main constructor takes.
+            "Reach", "public record Reach(int A, int B) { public Reach(string s, int n = 0) : this(s.Length, n) { } }",
+            "Reach(string s, int n = 0)"
+        },
+        {
+            // A struct's alternate that chains to its implicit constructor, beside an explicit one
+            // that is the twin's: it would run the explicit one's body, which C# does not run.
+            "Odd", """
+            public struct Odd
+            {
+                public int A;
+                public Odd(int a) { A = a; }
+                public Odd(int a, int b) : this() { A = b; }
+            }
+            """, "Odd(int a, int b)"
+        },
     };
 
     [Theory]
@@ -65,6 +93,16 @@ public class TwinConstructorTests
 
         result.Success.Should().BeTrue(string.Join("\n", result.Errors.Select(error => error.Message)));
         result.TypeScript.Should().Contain("if (arguments.length === 1) { [start, end] = ((at: any) => [at, at + 1])(arguments[0]); }");
+    }
+
+    [Fact]
+    public void AnAlternateWithAnOptionalParameter_IsReachedByEachCountItTakes()
+    {
+        var result = Compile("public record Box(int A, int B, int C) { public Box(int a, int b = 5) : this(a, b, 0) { } }", "Box");
+
+        result.Success.Should().BeTrue(string.Join("\n", result.Errors.Select(error => error.Message)));
+        result.TypeScript.Should().Contain(
+            "if (arguments.length >= 1 && arguments.length <= 2) { [a, b, c] = ((a: any, b: any = 5) => [a, b, 0])(arguments[0], arguments[1]); }");
     }
 
     [Fact]
