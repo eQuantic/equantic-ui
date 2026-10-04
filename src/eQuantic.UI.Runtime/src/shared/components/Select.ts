@@ -49,11 +49,10 @@ export class Select extends StatefulComponent {
         let panel = new Box(new BoxStyle({ background: theme.surface, cornerRadius: new CornerRadii(theme.shape('medium')), borderWidth: 1, borderColor: theme.border, elevation: 2, padding: EdgeInsets.symmetric(0, 4), clip: true }), list);
         let trigger = new Pressable(field, this.disabled ? null : this.toggle.bind(this), { disabled: this.disabled, expanded: this._open && !this.disabled });
         let select: VisualNode = new Anchored(trigger, panel, { open: this._open && !this.disabled, onDismiss: () => this.setState(() => this._open = false), matchAnchorWidth: true, panelRole: 'listbox', activeIndex: this._open ? this._highlight : -1 });
-        if (this._open && !this.disabled && this.options.length > 0) {
-            select = new Shortcut(select, KeyChord.arrowDown, () => this.setState(() => this._highlight = Math.min(this.options.length - 1, this._highlight + 1)));
-            select = new Shortcut(select, KeyChord.arrowUp, () => this.setState(() => this._highlight = Math.max(0, this._highlight - 1)));
-            select = new Shortcut(select, KeyChord.enter, () => this.choose(this._highlight));
-        }
+        let live = this._open && !this.disabled && this.options.length > 0;
+        select = new Shortcut(select, KeyChord.arrowDown, () => this.setState(() => this._highlight = Math.min(this.options.length - 1, this._highlight + 1)), { enabled: live });
+        select = new Shortcut(select, KeyChord.arrowUp, () => this.setState(() => this._highlight = Math.max(0, this._highlight - 1)), { enabled: live });
+        select = new Shortcut(select, KeyChord.enter, () => this.choose(this._highlight), { enabled: live });
         return select;
     }
 

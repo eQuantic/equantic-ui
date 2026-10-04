@@ -996,6 +996,9 @@ export class Shortcut extends VisualNode {
   onPressed: (() => void) | null;
   /** Only while the keyboard focus is inside this subtree: a component's own chord. */
   focusScoped = false;
+  /** Whether the chord answers at all (C# `Shortcut.Enabled`): off, it stays in the tree and the key
+   * goes on to whatever else would take it. */
+  enabled = true;
 
   constructor(
     child: VisualChild,
