@@ -112,6 +112,14 @@ eQuantic.UI.Compiler.CodeGen.Strategies.Expressions.CollectionExpressionStrategy
 *REMOVED*eQuantic.UI.Compiler.CodeGen.Strategies.Invocation.DictionaryStrategy.Priority.get -> int
 *REMOVED*abstract eQuantic.UI.Compiler.CodeGen.Strategies.Types.MapBackedDictionaryStrategy.Matches(Microsoft.CodeAnalysis.ITypeSymbol? type) -> bool
 const eQuantic.UI.Compiler.CodeGen.Eq.Dictionary = "$eq.collections.dictionary" -> string!
+const eQuantic.UI.Compiler.CodeGen.Eq.StringCompareTo = "$eq.text.compareTo" -> string!
+const eQuantic.UI.Compiler.CodeGen.Eq.StringContains = "$eq.text.contains" -> string!
+const eQuantic.UI.Compiler.CodeGen.Eq.StringEndsWith = "$eq.text.endsWith" -> string!
+const eQuantic.UI.Compiler.CodeGen.Eq.StringIndexOf = "$eq.text.indexOf" -> string!
+const eQuantic.UI.Compiler.CodeGen.Eq.StringInstanceEquals = "$eq.text.instanceEquals" -> string!
+const eQuantic.UI.Compiler.CodeGen.Eq.StringLastIndexOf = "$eq.text.lastIndexOf" -> string!
+const eQuantic.UI.Compiler.CodeGen.Eq.StringReplace = "$eq.text.replace" -> string!
+const eQuantic.UI.Compiler.CodeGen.Eq.StringStartsWith = "$eq.text.startsWith" -> string!
 const eQuantic.UI.Compiler.CodeGen.Eq.RecordText = "$eq.text.record" -> string!
 *REMOVED*eQuantic.UI.Compiler.Models.PropertyDefinition.DefaultValue.get -> string?
 *REMOVED*eQuantic.UI.Compiler.Models.PropertyDefinition.DefaultValue.set -> void
