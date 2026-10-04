@@ -26,10 +26,15 @@ public class GetHashCodeStrategy : IExpressionIrStrategy
         InvocationExpressionSyntax invocation =>
             context.SemanticHelper.GetSymbol(invocation) is IMethodSymbol method
             && (IsGetHashCode(method) || IsCombine(method)),
-        // A method GROUP, `Func<int> f = n.GetHashCode;`, read a `getHashCode` a number does not have.
+        // A method GROUP, `Func<int> f = n.GetHashCode;`, read a `getHashCode` a number does not have,
+        // and the bare `GetHashCode` of `this` one a class that does not override it has not either.
         MemberAccessExpressionSyntax access =>
             !IsCalled(access)
             && context.SemanticHelper.GetSymbol(access) is IMethodSymbol method
+            && IsGetHashCode(method),
+        IdentifierNameSyntax { Identifier.ValueText: "GetHashCode" } bare =>
+            IsBareGroup(bare)
+            && context.SemanticHelper.GetSymbol(bare) is IMethodSymbol method
             && IsGetHashCode(method),
         _ => false,
     };
@@ -39,6 +44,7 @@ public class GetHashCodeStrategy : IExpressionIrStrategy
         context.UsedHelpers.Add(Eq.Import);
         if (node is MemberAccessExpressionSyntax group)
             return Group(group, (IMethodSymbol)context.SemanticHelper.GetSymbol(group)!, context);
+        if (node is IdentifierNameSyntax) return JsExpr.Call(JsExpr.Identifier(Eq.HashGroup), JsExpr.Identifier("this"));
 
         var invocation = (InvocationExpressionSyntax)node;
         var method = (IMethodSymbol)context.SemanticHelper.GetSymbol(invocation)!;
@@ -105,6 +111,16 @@ public class GetHashCodeStrategy : IExpressionIrStrategy
     /// <summary>Whether the member access is the method an invocation calls, rather than a group.</summary>
     private static bool IsCalled(MemberAccessExpressionSyntax access) =>
         access.Parent is InvocationExpressionSyntax invocation && invocation.Expression == access;
+
+    /// <summary>Whether a bare name is a method group of <c>this</c>: neither called, nor the member
+    /// part of an access, which the access's own branch reads.</summary>
+    private static bool IsBareGroup(IdentifierNameSyntax name) => name.Parent switch
+    {
+        InvocationExpressionSyntax invocation => invocation.Expression != name,
+        MemberAccessExpressionSyntax access => access.Name != name,
+        MemberBindingExpressionSyntax => false,
+        _ => true,
+    };
 
     /// <summary>
     /// An instance <c>GetHashCode()</c> that is object's or overrides it. A method that HIDES it

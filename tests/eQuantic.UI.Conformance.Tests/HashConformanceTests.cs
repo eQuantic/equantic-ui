@@ -34,6 +34,9 @@ public class HashConformanceTests
             public int BaseHash() { Func<int> f = base.GetHashCode; return f(); }
         }
         public struct Hider { public int X; public new string GetHashCode() => "key"; }
+        public struct Shadowed { public int X; public new static int GetHashCode() => 123; }
+        public record Strict(int X) { public override int GetHashCode() => throw new InvalidOperationException("base"); }
+        public record Lenient(int X) : Strict(X);
         public record Base0(int X);
         public record Derived0(int X) : Base0(X)
         {
@@ -69,6 +72,8 @@ public class HashConformanceTests
     [InlineData("return HashCode.Combine(value2: 2, value1: 1) == HashCode.Combine(1, 2);")]                          // true: by parameter
     [InlineData("return new Derived1(1).BaseHash() + new Derived1(1).GetHashCode();")]                                  // 30: a base group runs the base's
     [InlineData("return new Hider().GetHashCode();")]                                                                    // "key": a hiding method is the app's own
+    [InlineData("object a = new Shadowed { X = 1 }; object b = new Shadowed { X = 1 }; return a.GetHashCode() == b.GetHashCode();")] // true: a static one hides nothing
+    [InlineData("try { return new Lenient(1).GetHashCode().ToString(); } catch (Exception e) { return e.Message; }")]   // "base": the base record's own runs first
     [InlineData("var log = \"\"; Func<int> a = () => { log += \"a\"; return 1; }; Func<int> b = () => { log += \"b\"; return 2; }; HashCode.Combine(value2: b(), value1: a()); return log;")] // "ba": evaluated as written
     public void AHash_AgreesWithEquals(string statements)
     {
