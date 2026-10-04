@@ -1198,6 +1198,27 @@ record of a release, the wiki's Upgrading page is the distillate.
   ([#567](https://github.com/eQuantic/equantic-ui/issues/567), found in the local review of #457).
   Their chords stay around the tree now, enabled while the panel is open, and each of the four failed
   against the previous component. Recorded in `openspec/specs/keyboard-shortcuts`.
+- **2026-10-03 · A catch tests its type and its filter**: each catch clause was a JavaScript catch of
+  its own, so two clauses were a SyntaxError that cost the module, and one took every exception, its
+  type never tested and its filter dropped ([#474](https://github.com/eQuantic/equantic-ui/issues/474));
+  an exception carried no type at all, so a type pattern over one was a null check, and `throw;` was a
+  SyntaxError too. A .NET exception is now an Error carrying its .NET types (`$eq.exceptions`), built
+  by `new T(…)` from T's symbol and thrown with .NET's type by every .NET twin of the runtime, a spec
+  refusing a new untyped throw there and a conformance test comparing the runtime's table with
+  .NET's hierarchy. The clauses are one catch that tries each by its type and its filter, a filter
+  that throws answering false, and `throw;` rethrows the exception caught. Five lowerings wrote a
+  JavaScript function around C#, so an await in `checked`, a throw expression, `Trim`'s characters,
+  `Range` or `Repeat` did not parse, and `Range(Start(), 3)` called `Start` three times
+  ([#539](https://github.com/eQuantic/equantic-ui/issues/539)): each takes its C# as arguments now,
+  and `IntroducedFunctionsCoverageTests` counts the functions the lowerings still write by hand, per
+  file, against a baseline that may only shrink. #539 stays open for two of them: the body an out
+  parameter runs in, which #566 makes IR, and the null-conditional tail behind a receiver that is not
+  a local, after #536. 51 of the 62 conformance cases fail on main. Typed catches exposed five
+  `Parse` twins of the date and time types, `string.Format` and `new string(char[], int, int)`
+  reading a null argument through null, a NullReferenceException where .NET refuses it by name with
+  an ArgumentNullException, and each refuses it now. One difference stays, the platform's: .NET runs
+  a filter before the `finally` blocks it unwinds, and JavaScript after. Proposed and archived through
+  OpenSpec (`openspec/specs/transpiler-exceptions`, `openspec/specs/transpiler-expressions`).
 - **2026-10-03 · A dictionary adds and pairs as .NET's does**: a dictionary's `Add` lowered to the
   class's `set`, which replaces, and the constructor seeded through it, so `Add`, a collection
   initializer and the constructor that copies pairs kept the last value of a key twice, where .NET

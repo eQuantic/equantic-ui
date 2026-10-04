@@ -8,6 +8,7 @@
  * OverflowException.
  */
 import { keyText } from './dictionary';
+import { exception } from './exceptions';
 
 const RANGES: Record<number, [min: number, max: number]> = {
   8: [-128, 127],
@@ -28,7 +29,7 @@ export function checked(
     const ok = unsigned
       ? value >= 0n && value <= 2n ** width - 1n
       : value >= -(2n ** (width - 1n)) && value <= 2n ** (width - 1n) - 1n;
-    if (!ok) throw new Error('Arithmetic operation resulted in an overflow.');
+    if (!ok) throw exception('System.OverflowException', 'Arithmetic operation resulted in an overflow.');
     return value;
   }
   if (bits === 64) {
@@ -39,14 +40,14 @@ export function checked(
       ? value >= 0 && value < 18446744073709551616
       : value >= -9223372036854775808 && value < 9223372036854775808;
     if (!ok || !Number.isFinite(value))
-      throw new Error('Arithmetic operation resulted in an overflow.');
+      throw exception('System.OverflowException', 'Arithmetic operation resulted in an overflow.');
     return value;
   }
   const [min, max] = RANGES[bits];
   const low = unsigned ? 0 : min;
   const high = unsigned ? max * 2 + 1 : max;
   if (value < low || value > high || !Number.isFinite(value)) {
-    throw new Error('Arithmetic operation resulted in an overflow.');
+    throw exception('System.OverflowException', 'Arithmetic operation resulted in an overflow.');
   }
   return value;
 }
@@ -63,9 +64,9 @@ export function divRem(
   bits: 8 | 16 | 32,
   unsigned = false,
 ): [number, number] {
-  if (right === 0) throw new Error('Attempted to divide by zero.');
+  if (right === 0) throw exception('System.DivideByZeroException', 'Attempted to divide by zero.');
   if (bits === 32 && !unsigned && left === -2_147_483_648 && right === -1) {
-    throw new Error('Arithmetic operation resulted in an overflow.');
+    throw exception('System.OverflowException', 'Arithmetic operation resulted in an overflow.');
   }
   const quotient = Math.trunc(left / right);
   const shift = 32 - bits;
@@ -83,9 +84,9 @@ export function divRem(
  * .NET's 64-bit quotient overflows.
  */
 export function divRemLong(left: bigint, right: bigint): [bigint, bigint] {
-  if (right === 0n) throw new Error('Attempted to divide by zero.');
+  if (right === 0n) throw exception('System.DivideByZeroException', 'Attempted to divide by zero.');
   if (left === -9_223_372_036_854_775_808n && right === -1n) {
-    throw new Error('Arithmetic operation resulted in an overflow.');
+    throw exception('System.OverflowException', 'Arithmetic operation resulted in an overflow.');
   }
   return [left / right, left % right];
 }
@@ -104,15 +105,15 @@ const LONG_MIN = -9_223_372_036_854_775_808n;
  * only a zero divisor reaches them.
  */
 export function intDiv(left: number, right: number): number {
-  if (right === 0) throw new Error(DIVIDE_BY_ZERO);
-  if (right === -1 && left === INT_MIN) throw new Error(OVERFLOW);
+  if (right === 0) throw exception('System.DivideByZeroException', DIVIDE_BY_ZERO);
+  if (right === -1 && left === INT_MIN) throw exception('System.OverflowException', OVERFLOW);
   return Math.trunc(left / right);
 }
 
 /** C#'s integer `%`: the same throws, `int.MinValue % -1` included, where JavaScript answers -0. */
 export function intRem(left: number, right: number): number {
-  if (right === 0) throw new Error(DIVIDE_BY_ZERO);
-  if (right === -1 && left === INT_MIN) throw new Error(OVERFLOW);
+  if (right === 0) throw exception('System.DivideByZeroException', DIVIDE_BY_ZERO);
+  if (right === -1 && left === INT_MIN) throw exception('System.OverflowException', OVERFLOW);
   return left % right;
 }
 
@@ -122,15 +123,15 @@ export function intRem(left: number, right: number): number {
  * 64-bit quotient overflows.
  */
 export function longDiv(left: bigint, right: bigint): bigint {
-  if (right === 0n) throw new Error(DIVIDE_BY_ZERO);
-  if (right === -1n && left === LONG_MIN) throw new Error(OVERFLOW);
+  if (right === 0n) throw exception('System.DivideByZeroException', DIVIDE_BY_ZERO);
+  if (right === -1n && left === LONG_MIN) throw exception('System.OverflowException', OVERFLOW);
   return left / right;
 }
 
 /** C#'s `%` for a long: the same throws, `long.MinValue % -1` included. */
 export function longRem(left: bigint, right: bigint): bigint {
-  if (right === 0n) throw new Error(DIVIDE_BY_ZERO);
-  if (right === -1n && left === LONG_MIN) throw new Error(OVERFLOW);
+  if (right === 0n) throw exception('System.DivideByZeroException', DIVIDE_BY_ZERO);
+  if (right === -1n && left === LONG_MIN) throw exception('System.OverflowException', OVERFLOW);
   return left % right;
 }
 
@@ -162,13 +163,13 @@ export function singleFromLong(value: bigint): number {
  */
 export function substring(value: string, start: number, length?: number): string {
   // The three cases .NET tells apart, because which one it is says where the bug is.
-  if (start < 0) throw new RangeError('startIndex cannot be less than zero.');
+  if (start < 0) throw exception('System.ArgumentOutOfRangeException', 'startIndex cannot be less than zero.');
   if (start > value.length)
-    throw new RangeError('startIndex cannot be larger than length of string.');
+    throw exception('System.ArgumentOutOfRangeException', 'startIndex cannot be larger than length of string.');
   if (length === undefined) return value.slice(start);
-  if (length < 0) throw new RangeError('length cannot be less than zero.');
+  if (length < 0) throw exception('System.ArgumentOutOfRangeException', 'length cannot be less than zero.');
   if (start + length > value.length) {
-    throw new RangeError('Index and length must refer to a location within the string.');
+    throw exception('System.ArgumentOutOfRangeException', 'Index and length must refer to a location within the string.');
   }
   return value.slice(start, start + length);
 }
@@ -183,12 +184,15 @@ export function substring(value: string, start: number, length?: number): string
  * type layer for what a dictionary holds.
  */
 export function mapGet<K, V = any>(map: { has(key: K): boolean; get(key: K): V | undefined }, key: K): V {
-  if (key === null || key === undefined) throw new Error("Value cannot be null. (Parameter 'key')");
+  if (key === null || key === undefined) throw exception('System.ArgumentNullException', "Value cannot be null. (Parameter 'key')");
   // One lookup where the key is there: `has` is asked only when `get` answers undefined, which is
   // either a missing key or a stored undefined, and a value-keyed map finds a key by a linear scan.
   const value = map.get(key);
   if (value === undefined && !map.has(key)) {
-    throw new Error(`The given key '${keyText(key)}' was not present in the dictionary.`);
+    throw exception(
+      'System.Collections.Generic.KeyNotFoundException',
+      `The given key '${keyText(key)}' was not present in the dictionary.`,
+    );
   }
   return value as V;
 }
@@ -200,7 +204,7 @@ export function mapGet<K, V = any>(map: { has(key: K): boolean; get(key: K): V |
  * `set` would have filed the entry under null.
  */
 export function mapSet<K, V>(map: { set(key: K, value: V): unknown }, key: K, value: V): V {
-  if (key === null || key === undefined) throw new Error("Value cannot be null. (Parameter 'key')");
+  if (key === null || key === undefined) throw exception('System.ArgumentNullException', "Value cannot be null. (Parameter 'key')");
   map.set(key, value);
   return value;
 }

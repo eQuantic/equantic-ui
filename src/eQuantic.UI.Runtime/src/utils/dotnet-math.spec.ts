@@ -11,6 +11,17 @@ import {
   roundSingleWithMode,
   roundWithMode,
 } from './dotnet-math';
+import { typesOf } from './exceptions';
+
+/** The .NET type a call throws, the most derived, or undefined where it throws nothing. */
+function thrownType(run: () => unknown): string | undefined {
+  try {
+    run();
+  } catch (error) {
+    return typesOf(error)?.[0];
+  }
+  return undefined;
+}
 
 describe("round (banker's rounding, like .NET Math.Round)", () => {
   it('rounds halves to the even neighbour', () => {
@@ -51,8 +62,8 @@ describe("round (banker's rounding, like .NET Math.Round)", () => {
 
   it('leaves a value past 1e16 alone and refuses a digit count past 15, as .NET does', () => {
     expect(round(12345678901234567, 2)).toBe(12345678901234567);
-    expect(() => round(1, 16)).toThrow(RangeError);
-    expect(() => round(1, -1)).toThrow(RangeError);
+    expect(thrownType(() => round(1, 16))).toBe('System.ArgumentOutOfRangeException');
+    expect(thrownType(() => round(1, -1))).toBe('System.ArgumentOutOfRangeException');
   });
 
   it('rounds by every MidpointRounding mode', () => {
@@ -63,15 +74,15 @@ describe("round (banker's rounding, like .NET Math.Round)", () => {
     expect(round(1.7, 0, 'toZero')).toBe(1);
     expect(round(-1.5, 0, 'toNegativeInfinity')).toBe(-2);
     expect(round(1.2, 0, 'toPositiveInfinity')).toBe(2);
-    expect(() => round(1, 0, 'sideways' as never)).toThrow(RangeError);
+    expect(thrownType(() => round(1, 0, 'sideways' as never))).toBe('System.ArgumentException');
   });
 });
 
 describe('the overload with a mode and no digits reads the mode first, as .NET does', () => {
   it('throws for a mode that is not one, even where the value is not rounded', () => {
-    expect(() => roundWithMode(Infinity, 'sideways' as never)).toThrow(RangeError);
-    expect(() => roundWithMode(1e17, 'sideways' as never)).toThrow(RangeError);
-    expect(() => roundSingleWithMode(1e9, 'sideways' as never)).toThrow(RangeError);
+    expect(thrownType(() => roundWithMode(Infinity, 'sideways' as never))).toBe('System.ArgumentException');
+    expect(thrownType(() => roundWithMode(1e17, 'sideways' as never))).toBe('System.ArgumentException');
+    expect(thrownType(() => roundSingleWithMode(1e9, 'sideways' as never))).toBe('System.ArgumentException');
   });
 
   it('leaves the digits overload returning such a value unread, as .NET does', () => {
@@ -93,7 +104,7 @@ describe('roundSingle (MathF.Round: the same algorithm in single precision)', ()
   });
 
   it('refuses a digit count past 6 and leaves 1e8 and beyond alone', () => {
-    expect(() => roundSingle(1, 7)).toThrow(RangeError);
+    expect(thrownType(() => roundSingle(1, 7))).toBe('System.ArgumentOutOfRangeException');
     expect(roundSingle(Math.fround(123456792), 2)).toBe(Math.fround(123456792));
   });
 });

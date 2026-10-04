@@ -78,9 +78,10 @@ public class ObjectCreationStrategy : IConversionStrategy
         {
             [IArrayTypeSymbol] => "({0} ?? []).join('')",
             [{ SpecialType: SpecialType.System_Char }, { SpecialType: SpecialType.System_Int32 }] => "{0}.repeat({1})",
-            // The range refused where it leaves the array, as .NET refuses it: `slice` clamped it.
+            // The range refused where it leaves the array, as .NET refuses it: `slice` clamped it. A null
+            // array is refused by its parameter's name, `value`.
             [IArrayTypeSymbol, { SpecialType: SpecialType.System_Int32 }, { SpecialType: SpecialType.System_Int32 }]
-                => $"{Eq.TextChars}({{0}}, {{1}}, {{2}}).join('')",
+                => $"{Eq.TextChars}({{0}}, {{1}}, {{2}}, 'value').join('')",
             _ => null,
         };
         if (template is null || creation.Arguments.Length != constructor.Parameters.Length) return null;
@@ -263,13 +264,12 @@ public class ObjectCreationStrategy : IConversionStrategy
             return "{ getService: () => null }";
         }
 
-        // Exception types -> JavaScript Error. Error takes ONE message argument — pick the C#
-        // constructor's `message` PARAMETER (signatures differ: ArgumentException(message, param)
-        // vs ArgumentOutOfRangeException(param, message)); emitting all arguments positionally
-        // would silently make the param NAME the thrown message.
-        if (typeName.EndsWith("Exception") || typeName == "Exception")
+        // An exception the model cannot see: ExceptionCreationStrategy builds every one it can, from
+        // its symbol, so here the name is all there is to go on, and it is rooted at System.Exception.
+        if (createdType is null or IErrorTypeSymbol && typeName.EndsWith("Exception"))
         {
-            return $"new Error({ExceptionMessageArgument(creation, context) ?? arguments})";
+            IReadOnlyList<string> chain = typeName == "Exception" ? ["System.Exception"] : [typeName, "System.Exception"];
+            return JsExprWriter.Write(ExceptionTypes.Construction(chain, creation, context));
         }
 
         if (assignInitializerAfterConstruction)
@@ -298,29 +298,6 @@ public class ObjectCreationStrategy : IConversionStrategy
             ? $"$n.add({string.Join(", ", pair.Expressions.Select(e => context.Converter.ConvertExpression(e)))}); "
             : $"$n.add({context.Converter.ConvertExpression(element)}); ");
         return $"($n => {{ {string.Concat(adds)}return $n; }})({construction})";
-    }
-
-    /// <summary>The converted argument bound to the exception constructor's <c>message</c> parameter
-    /// (semantic when resolvable, else the LAST argument of a multi-arg call — every BCL exception
-    /// with a paramName overload puts the message beside it); null = keep whatever was converted.</summary>
-    private static string? ExceptionMessageArgument(ObjectCreationExpressionSyntax creation, ConversionContext context)
-    {
-        var args = creation.ArgumentList?.Arguments;
-        if (args is not { Count: > 1 }) return null;
-
-        if (context.SemanticHelper.GetSymbol(creation) is IMethodSymbol ctor)
-        {
-            for (var i = 0; i < args.Value.Count && i < ctor.Parameters.Length; i++)
-            {
-                var parameter = args.Value[i].NameColon?.Name.Identifier.ValueText is { } named
-                    ? ctor.Parameters.FirstOrDefault(p => p.Name == named)
-                    : ctor.Parameters[i];
-                if (parameter?.Name == "message")
-                    return context.Converter.ConvertExpression(args.Value[i].Expression);
-            }
-        }
-
-        return context.Converter.ConvertExpression(args.Value[^1].Expression);
     }
 
     /// <summary>
