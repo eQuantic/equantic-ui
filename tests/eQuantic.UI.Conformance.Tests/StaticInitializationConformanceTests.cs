@@ -24,6 +24,7 @@ public class StaticInitializationConformanceTests
         }
         public record Counter { public static int Count; public static readonly string Label = "c" + Count; static Counter() { Count = 10; } }
         public struct Gauge { public static int Z = W + 1; public static int W = 3; public int V; }
+        public record Registry { public static List<string> Names; static Registry() { Names = new List<string> { "a" }; Names.Add("b"); } }
         """;
 
     [SkippableTheory]
@@ -36,6 +37,8 @@ public class StaticInitializationConformanceTests
     [InlineData("return Counter.Label + \"|\" + Counter.Count;")]                       // "c0|10"
     [InlineData("return Gauge.Z + \"|\" + Gauge.W;")]                                   // "1|3"
     [InlineData("Chain.B = 7; return Chain.A + \"|\" + Chain.B;")]                      // "1|7"
+    [InlineData("return Counter.Count + \"|\" + Counter.Label;")]                       // "10|c0"
+    [InlineData("return Registry.Names.Count + \"|\" + Registry.Names[1];")]            // "2|b"
     public void ARecordsStatics_InitializeAsCSharpRunsThem(string statements)
     {
         Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
@@ -43,6 +46,7 @@ public class StaticInitializationConformanceTests
     }
 
     private const string Classes = """
+        using System.Collections.Generic;
         using eQuantic.UI.Primitives;
 
         public static class Log { public static string Text = ""; public static int Note(string s) { Text += s; return 0; } }
@@ -69,10 +73,21 @@ public class StaticInitializationConformanceTests
 
         public class Timed { public static int Value = Log.Note("init "); static Timed() { Log.Note("cctor "); } }
 
+        public class Tally { public static int Count; public static string Name; }
+
+        public class Catalog
+        {
+            public static List<string> Names;
+            public static int Size { get; private set; }
+            static Catalog() { Names = new List<string> { "a", "b" }; Size = Names.Count; }
+        }
+
         public sealed class Panel : StatelessComponent
         {
             public static int A = B + 1;
             public static int B = 2;
+            public static int C;
+            static Panel() { C = A * 10; }
             public override VisualNode Build(ComponentContext context) => new Text("panel", TypeRole.BodyM);
         }
         """;
@@ -85,6 +100,9 @@ public class StaticInitializationConformanceTests
         ("two types whose statics read each other", "return Ping.A + \"|\" + Pong.B;"),
         ("the static constructor after the initializers, on first use", "Log.Text = \"\"; var v = Timed.Value; return Log.Text + v;"),
         ("a component", "return Panel.A + \"|\" + Panel.B;"),
+        ("a component's static its static constructor sets", "return Panel.C + \"|\" + Panel.A;"),
+        ("a static with no initializer, at its zero", "Tally.Count++; return Tally.Count + \"|\" + (Tally.Name == null);"),
+        ("statics a static constructor sets, read first", "return Catalog.Size + \"|\" + Catalog.Names[1];"),
     ];
 
     [SkippableTheory]

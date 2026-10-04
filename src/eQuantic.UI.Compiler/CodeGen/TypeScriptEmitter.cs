@@ -372,12 +372,12 @@ public class TypeScriptEmitter
                         var tsDefault = field.DefaultValueNode != null
                             ? Initializer(field.DefaultValueNode, _converter.ConvertExpression(field.DefaultValueNode, field.Type))
                             : null;
-                        if (orderedStatics && field.IsStatic && tsDefault is not null && !IsConstant(field))
+                        if (orderedStatics && field.IsStatic && !IsConstant(field))
                         {
-                            if (tsDefault.Contains("$eq.")) component.UsedHelpers.Add(Eq.Import);
+                            if (tsDefault is not null && tsDefault.Contains("$eq.")) component.UsedHelpers.Add(Eq.Import);
                             initializedStatics.Add(new(field.Name.ToCamelCase(), tsType,
                                 ValueTypeDefault(field.Type, field.TypeNode) ?? "null", tsDefault,
-                                field.DefaultValueNode!.Parent?.Parent ?? field.DefaultValueNode));
+                                field.DefaultValueNode?.Parent?.Parent ?? field.TypeNode?.Parent));
                             continue;
                         }
                         // C# value types default without an initializer (`private int _count;` is 0);
@@ -1519,9 +1519,10 @@ public class TypeScriptEmitter
                         // holds its initializer or its type's default from the start, as a static
                         // auto-property's does: declared on the instance, the slot they wrote did not
                         // exist, and declared alone it read undefined until the first write (#483).
-                        if (orderedStatics && prop.IsStatic && prop.DefaultValueNode is not null)
+                        if (orderedStatics && prop.IsStatic)
                             initializedStatics.Add(new(slot, DeclarationType(component, prop.Type),
-                                ValueTypeDefault(prop.Type, prop.Node?.Type) ?? "null", StaticInitial(component, prop)!, node));
+                                ValueTypeDefault(prop.Type, prop.Node?.Type) ?? "null",
+                                prop.DefaultValueNode is null ? null : StaticInitial(component, prop), node));
                         else if (prop.IsStatic && StaticInitial(component, prop) is { } initial)
                             c.Field(slot, DeclarationType(component, prop.Type), initial, node, isStatic: true);
                         else
@@ -1553,10 +1554,11 @@ public class TypeScriptEmitter
                 // emitted TYPE-ONLY — the declaration restores type checking on `this.x` without emitting
                 // runtime code that would clobber the assigned value under useDefineForClassFields.
                 _converter.SetCurrentClass(component.Name);
-                if (prop.IsStatic && orderedStatics && prop.DefaultValueNode is not null)
+                if (prop.IsStatic && orderedStatics)
                 {
                     initializedStatics.Add(new(name, DeclarationType(component, prop.Type),
-                        ValueTypeDefault(prop.Type, prop.Node?.Type) ?? "null", StaticInitial(component, prop)!, node));
+                        ValueTypeDefault(prop.Type, prop.Node?.Type) ?? "null",
+                        prop.DefaultValueNode is null ? null : StaticInitial(component, prop), node));
                 }
                 else if (prop.IsStatic)
                 {
@@ -1649,14 +1651,16 @@ public class TypeScriptEmitter
                         || f.Modifiers.Any(Microsoft.CodeAnalysis.CSharp.SyntaxKind.StaticKeyword)
                         || f.Modifiers.Any(Microsoft.CodeAnalysis.CSharp.SyntaxKind.ConstKeyword);
                     var fieldName = v.Identifier.Text.ToCamelCase();
-                    if (ordered && isStaticMember && def is not null
+                    if (ordered && isStaticMember
                         && !f.Modifiers.Any(Microsoft.CodeAnalysis.CSharp.SyntaxKind.ConstKeyword))
                     {
                         initialized.Add(new(fieldName, DeclaredType(f.Declaration.Type), DefaultOf(f.Declaration.Type), def, v));
                         continue;
                     }
+                    // A static with no initializer holds its type's zero, as C# starts it (#417):
+                    // `static int Count;` read undefined, and its first `++` made it NaN.
                     c.Field(fieldName, DeclaredType(f.Declaration.Type),
-                        isStaticMember ? def : null, v, isStatic: isStaticMember);
+                        isStaticMember ? def ?? DefaultOf(f.Declaration.Type) : null, v, isStatic: isStaticMember);
                 }
             }
             foreach (var p in cls.Members.OfType<PropertyDeclarationSyntax>())
@@ -1701,8 +1705,8 @@ public class TypeScriptEmitter
                         // On the class for a static property, where its accessors' `this` is the
                         // class: on the instance, a static `field` read undefined (#483).
                         var slotIsStatic = accessorQualifier.Length > 0;
-                        if (ordered && slotIsStatic && p.Initializer != null)
-                            initialized.Add(new(slot, DeclaredType(p.Type), DefaultOf(p.Type), slotDefault, p));
+                        if (ordered && slotIsStatic)
+                            initialized.Add(new(slot, DeclaredType(p.Type), DefaultOf(p.Type), p.Initializer is null ? null : slotDefault, p));
                         else if (slotDefault == "null")
                         {
                             if (CanDeclareTypeOnly)
@@ -1720,9 +1724,10 @@ public class TypeScriptEmitter
 
                     // A property guarding a store has its accessors, and no field of its name.
                     if (EmitGetter(p, c, accessorQualifier) || backed) { }
-                    else if (p.Initializer != null && ordered && accessorQualifier.Length > 0)
-                        initialized.Add(new(pn, DeclaredType(p.Type), DefaultOf(p.Type),
-                            Initializer(p.Initializer.Value, _converter.ConvertExpression(p.Initializer.Value, p.Type.ToString())), p));
+                    else if (ordered && accessorQualifier.Length > 0)
+                        initialized.Add(new(pn, DeclaredType(p.Type), DefaultOf(p.Type), p.Initializer is { } given
+                            ? Initializer(given.Value, _converter.ConvertExpression(given.Value, p.Type.ToString()))
+                            : null, p));
                     else if (p.Initializer != null)
                         c.Field(pn, DeclaredType(p.Type),
                             Initializer(p.Initializer.Value, _converter.ConvertExpression(p.Initializer.Value, p.Type.ToString())), p,

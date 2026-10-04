@@ -581,9 +581,9 @@ public class RecordTypeEmitter
         // server about a number.
         //
         // And when one of them can observe another (an initializer that is not a constant, or a static
-        // constructor), every static with an initializer starts at its zero and they run in
-        // declaration order, on first use (TypeInitializer, #417): written in place, `static first =
-        // new Early()` ran Early's constructor before `static seed = 3` was defined, and read NaN.
+        // constructor), every static starts at its zero and the initializers run in declaration
+        // order, on first use (TypeInitializer, #417): written in place, `static first = new Early()`
+        // ran Early's constructor before `static seed = 3` was defined, and read NaN.
         var ordered = TypeInitializer.Orders(type, ModelFor);
         var initialized = new List<TypeInitializer.Ordered>();
         foreach (var member in type.Members)
@@ -599,9 +599,9 @@ public class RecordTypeEmitter
                             ? ExpressionVariableScanner.Scoped(init.Value,
                                 _converter.ConvertExpression(init.Value, field.Declaration.Type.ToString()), _annotations)
                             : DefaultOf(field.Declaration.Type);
-                        if (ordered && variable.Initializer is not null && !field.Modifiers.Any(SyntaxKind.ConstKeyword))
+                        if (ordered && !field.Modifiers.Any(SyntaxKind.ConstKeyword))
                             initialized.Add(new(variable.Identifier.Text.ToCamelCase(), TsTypeOf(field.Declaration.Type),
-                                DefaultOf(field.Declaration.Type), fieldValue, variable));
+                                DefaultOf(field.Declaration.Type), variable.Initializer is null ? null : fieldValue, variable));
                         else
                             sb.Append($"static {variable.Identifier.Text.ToCamelCase()} = {fieldValue}; ");
                     }
@@ -616,8 +616,9 @@ public class RecordTypeEmitter
                         ? ExpressionVariableScanner.Scoped(propInit.Value,
                             _converter.ConvertExpression(propInit.Value, prop.Type.ToString()), _annotations)
                         : DefaultOf(prop.Type);
-                    if (ordered && prop.Initializer is not null)
-                        initialized.Add(new(prop.Identifier.Text.ToCamelCase(), TsTypeOf(prop.Type), DefaultOf(prop.Type), propValue, prop));
+                    if (ordered)
+                        initialized.Add(new(prop.Identifier.Text.ToCamelCase(), TsTypeOf(prop.Type), DefaultOf(prop.Type),
+                            prop.Initializer is null ? null : propValue, prop));
                     else
                         sb.Append($"static {prop.Identifier.Text.ToCamelCase()} = {propValue}; ");
                     break;
@@ -632,9 +633,9 @@ public class RecordTypeEmitter
                         ? ExpressionVariableScanner.Scoped(slotInit.Value,
                             _converter.ConvertExpression(slotInit.Value, backed.Type.ToString()), _annotations)
                         : DefaultOf(backed.Type);
-                    if (ordered && backed.Initializer is not null)
+                    if (ordered)
                         initialized.Add(new(Strategies.Expressions.FieldExpressionStrategy.BackingSlot(backed), TsTypeOf(backed.Type),
-                            DefaultOf(backed.Type), slotValue, backed));
+                            DefaultOf(backed.Type), backed.Initializer is null ? null : slotValue, backed));
                     else
                         sb.Append($"static {Strategies.Expressions.FieldExpressionStrategy.BackingSlot(backed)} = {slotValue}; ");
                     break;

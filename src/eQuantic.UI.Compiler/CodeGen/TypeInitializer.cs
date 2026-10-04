@@ -16,11 +16,19 @@ namespace eQuantic.UI.Compiler.CodeGen;
 /// read, in no order at all, and again whenever it held null.
 /// <para>
 /// So a type whose statics can observe one another (any initializer that is not a constant, or a
-/// static constructor) holds them in a <c>$slots</c> object its <c>$init()</c> builds on first use,
-/// zeros first; each static is an accessor pair over its slot, so a read during the initialization
-/// sees what C# sees, a zero or a value already set, and every reader of the type, a cycle's included,
-/// waits for nothing. A type whose initializers are constants, which read nothing, keeps its statics
-/// as fields. One mechanism for a record, a struct, a class, a static class and a component.
+/// static constructor) holds every one of them in a <c>$slots</c> object its <c>$init()</c> builds on
+/// first use, zeros first; each static is an accessor pair over its slot, so a read during the
+/// initialization sees what C# sees, a zero or a value already set, and every reader of the type, a
+/// cycle's included, waits for nothing. A static with no initializer takes part too: the static
+/// constructor is what sets it, and a read of it is what has to run that constructor. A type whose
+/// initializers are constants, which read nothing, keeps its statics as fields. One mechanism for a
+/// record, a struct, a class, a static class and a component.
+/// </para>
+/// <para>
+/// What starts the initialization is a read or a write of one of the statics, which is what C#'s
+/// first use mostly is. A static method that touches none of them, or an instance constructed, does
+/// not start it, so a static constructor's effect outside its own type waits until one of them is
+/// touched.
 /// </para>
 /// </summary>
 internal static class TypeInitializer
@@ -29,8 +37,9 @@ internal static class TypeInitializer
     public const string Slots = "$slots";
 
     /// <summary>One static that initializes in order: its name on the twin, its annotation, its zero,
-    /// its initializer converted, and the C# it came from.</summary>
-    public readonly record struct Ordered(string Name, string Type, string Zero, string Value, SyntaxNode Origin);
+    /// its initializer converted (none for a static that holds its zero until something sets it), and
+    /// the C# it came from.</summary>
+    public readonly record struct Ordered(string Name, string Type, string Zero, string? Value, SyntaxNode? Origin);
 
     /// <summary>
     /// Whether the type's statics initialize in order: one of them has an initializer that is not a
@@ -41,23 +50,16 @@ internal static class TypeInitializer
         type.Members.OfType<ConstructorDeclarationSyntax>().Any(constructor => constructor.Modifiers.Any(SyntaxKind.StaticKeyword))
         || Initializers(type).Any(initializer => !IsConstant(initializer, modelFor(initializer)));
 
-    /// <summary>Whether a static member takes part: a static field, or a static property with an
-    /// automatic getter or a store of its own, with an initializer. A constant never does.</summary>
-    public static bool TakesPart(MemberDeclarationSyntax member) => member switch
-    {
-        FieldDeclarationSyntax field => field.Modifiers.Any(SyntaxKind.StaticKeyword)
-            && !field.Modifiers.Any(SyntaxKind.ConstKeyword)
-            && field.Declaration.Variables.Any(variable => variable.Initializer is not null),
-        PropertyDeclarationSyntax property => property.Modifiers.Any(SyntaxKind.StaticKeyword) && property.Initializer is not null,
-        _ => false,
-    };
-
+    /// <summary>The initializers of the type's statics: a static field's, a constant's excepted, and a
+    /// static property's.</summary>
     private static IEnumerable<ExpressionSyntax> Initializers(TypeDeclarationSyntax type) =>
-        type.Members.Where(TakesPart).SelectMany(member => member switch
+        type.Members.SelectMany(member => member switch
         {
-            FieldDeclarationSyntax field => field.Declaration.Variables
+            FieldDeclarationSyntax field when field.Modifiers.Any(SyntaxKind.StaticKeyword)
+                && !field.Modifiers.Any(SyntaxKind.ConstKeyword) => field.Declaration.Variables
                 .Select(variable => variable.Initializer?.Value).OfType<ExpressionSyntax>(),
-            PropertyDeclarationSyntax { Initializer: { } initializer } => [initializer.Value],
+            PropertyDeclarationSyntax { Initializer: { } initializer } property
+                when property.Modifiers.Any(SyntaxKind.StaticKeyword) => [initializer.Value],
             _ => [],
         });
 
@@ -82,7 +84,7 @@ internal static class TypeInitializer
         {
             JsStatement.Raw($"const slots{(annotate ? ": any" : "")} = {className}.{Slots} = {{ {zeros} }};"),
         };
-        build.AddRange(statics.Select(member =>
+        build.AddRange(statics.Where(member => member.Value is not null).Select(member =>
             JsStatement.Raw($"slots.{member.Name} = {member.Value};") with { Origin = member.Origin }));
         build.AddRange(constructor);
         yield return JsClassMember.Method("static ", "$init", "", "", annotate ? ": any" : "", JsStatement.Block([

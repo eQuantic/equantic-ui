@@ -119,9 +119,11 @@ public class RecordStaticMemberTests
     {
         // `{ get; set => field = value / 2; }` has an automatic getter and a setter body, so it was
         // neither a pure auto-property nor a computed one, and the twin had no such property (#483).
+        // Its store is one of the statics the type initializes in order, starting at its zero (#417).
         var twin = ShapesTwin();
 
-        twin.Should().Contain("static $half = 0;");
+        twin.Should().Contain("$half: 0 }");
+        twin.Should().Contain("static get $half(): number {return Shapes.$init().$half;}");
         twin.Should().Contain("static get half() {\n    return this.$half;\n}");
         twin.Should().Contain("static set half(value");
     }
@@ -157,7 +159,7 @@ public class RecordStaticMemberTests
         // `Second = 7` reads Second's default and not 7. Emitting all fields and then all
         // properties reversed that for every type whose source interleaves them. Each starts at its
         // zero, which is what the one written first reads of the other (#417).
-        twin.Should().Contain("{ first: 0, second: 0 }");
+        twin.Should().Contain("Shapes.$slots = { first: 0, second: 0, counted: 0, $half: 0 }");
         twin.IndexOf("slots.first = Shapes.second;", StringComparison.Ordinal)
             .Should().BeGreaterThan(-1).And.BeLessThan(twin.IndexOf("slots.second = 7;", StringComparison.Ordinal),
                 "the twin must run them in the order the source declares");
@@ -167,8 +169,15 @@ public class RecordStaticMemberTests
     public void AStaticPropertyWithoutAnInitialiserTakesItsTypesDefault()
     {
         // C# gives `static int Counted { get; set; }` a 0. `undefined` is a different number to
-        // every reader of it, and the server would have said 0.
-        ShapesTwin().Should().Contain("static counted = 0");
+        // every reader of it, and the server would have said 0. In a type whose statics initialize in
+        // order, the 0 is its slot's zero, and a read of it is what starts the initialization (#417):
+        // a static constructor is what sets a static that has no initializer.
+        ShapesTwin().Should().Contain("counted: 0,").And.Contain("static get counted(): number {return Shapes.$init().counted;}");
+
+        var plain = new ComponentCompiler().CompileSource(
+                "public sealed record Plain(string Tag) { public static int Counted { get; set; } }", "Plain.cs")
+            .Single(r => r.ComponentName == "Plain").TypeScript;
+        plain.Should().Contain("static counted = 0;", "a type with no initializer to order keeps its statics as fields");
     }
 
     [Fact]
