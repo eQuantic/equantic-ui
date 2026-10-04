@@ -124,3 +124,21 @@ const eQuantic.UI.Compiler.CodeGen.Eq.LinqSeq = "$eq.linq.seq" -> string!
 const eQuantic.UI.Compiler.CodeGen.Eq.LinqToArray = "$eq.linq.toArray" -> string!
 const eQuantic.UI.Compiler.CodeGen.Eq.TextChars = "$eq.text.chars" -> string!
 const eQuantic.UI.Compiler.CodeGen.Eq.LinqEnumerable = "$eq.linq.enumerable" -> string!
+eQuantic.UI.Compiler.Services.SourceMapGenerator.Generate(string! generatedFileName, System.Collections.Generic.IReadOnlyList<eQuantic.UI.Compiler.Services.TypeScriptCodeBuilder.SourceMapping>! mappings, System.Func<Microsoft.CodeAnalysis.SyntaxTree!, eQuantic.UI.Compiler.Services.SourceMapSource!>! describe, string! sourceRoot = "") -> string!
+eQuantic.UI.Compiler.Services.SourceMapSource
+eQuantic.UI.Compiler.Services.SourceMapSource.<Clone>$() -> eQuantic.UI.Compiler.Services.SourceMapSource!
+eQuantic.UI.Compiler.Services.SourceMapSource.Content.get -> string?
+eQuantic.UI.Compiler.Services.SourceMapSource.Content.init -> void
+eQuantic.UI.Compiler.Services.SourceMapSource.Deconstruct(out string! Name, out string? Content) -> void
+eQuantic.UI.Compiler.Services.SourceMapSource.Equals(eQuantic.UI.Compiler.Services.SourceMapSource? other) -> bool
+eQuantic.UI.Compiler.Services.SourceMapSource.Name.get -> string!
+eQuantic.UI.Compiler.Services.SourceMapSource.Name.init -> void
+eQuantic.UI.Compiler.Services.SourceMapSource.SourceMapSource(string! Name, string? Content) -> void
+override eQuantic.UI.Compiler.Services.SourceMapSource.Equals(object? obj) -> bool
+override eQuantic.UI.Compiler.Services.SourceMapSource.GetHashCode() -> int
+override eQuantic.UI.Compiler.Services.SourceMapSource.ToString() -> string!
+static eQuantic.UI.Compiler.Services.SourceMapSource.operator !=(eQuantic.UI.Compiler.Services.SourceMapSource? left, eQuantic.UI.Compiler.Services.SourceMapSource? right) -> bool
+static eQuantic.UI.Compiler.Services.SourceMapSource.operator ==(eQuantic.UI.Compiler.Services.SourceMapSource? left, eQuantic.UI.Compiler.Services.SourceMapSource? right) -> bool
+eQuantic.UI.Compiler.Services.TypeScriptCodeBuilder.SourceMapping.Source -> Microsoft.CodeAnalysis.SyntaxTree!
+*REMOVED*eQuantic.UI.Compiler.Services.SourceMapGenerator.Generate(string! generatedFileName, string! sourceFileName, System.Collections.Generic.List<eQuantic.UI.Compiler.Services.TypeScriptCodeBuilder.SourceMapping>! mappings, string? sourceContent = null, string! sourceRoot = "") -> string!
+*REMOVED*eQuantic.UI.Compiler.Services.TypeScriptCodeBuilder.SourceMapping.SourceFile -> string!

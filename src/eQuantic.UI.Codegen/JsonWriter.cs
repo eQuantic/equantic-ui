@@ -1,3 +1,6 @@
+using System.Text.Encodings.Web;
+using System.Text.Json;
+
 namespace eQuantic.UI.Codegen;
 
 /// <summary>
@@ -10,9 +13,24 @@ namespace eQuantic.UI.Codegen;
 /// member's line is left OPEN until we know whether another follows it — which is the only way the
 /// last member is reliably the one without a comma.
 /// </para>
+/// <para>
+/// The escape is the other, and it is System.Text.Json's, not a list of replacements: every JSON
+/// file the build lays out goes through this writer, a source map, a web manifest and an asset
+/// catalog among them. Two hand-kept lists escaped the backslash, the quote and a line break or
+/// three, and wrote every other control raw, which JSON refuses (#525): a form feed in a C# comment
+/// made its source map a file the bundler and the browser dropped in silence.
+/// </para>
 /// </summary>
 public sealed class JsonWriter : CodeWriter
 {
+    /// <summary>
+    /// What a string is escaped with. Relaxed, because nothing this writes is placed inside markup:
+    /// the default encoder would spell every <c>&lt;</c> of a generic argument and every accented
+    /// letter of an app's name as a six-character escape. Relaxed still escapes what JSON refuses,
+    /// every control among them, and writes an unpaired surrogate as U+FFFD.
+    /// </summary>
+    private static readonly JavaScriptEncoder Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping;
+
     private readonly Stack<bool> _hasMembers = new();
     private bool _lineOpen;
 
@@ -26,9 +44,29 @@ public sealed class JsonWriter : CodeWriter
         return writer.ToString();
     }
 
-    public JsonWriter String(string name, string value) => Member(name, $"\"{Escape(value)}\"");
+    public JsonWriter String(string name, string value) => Member(name, Quote(value));
 
-    public JsonWriter Number(string name, long value) => Member(name, value.ToString());
+    public JsonWriter Number(string name, long value) => Member(name, value.ToString(System.Globalization.CultureInfo.InvariantCulture));
+
+    /// <summary>An array of strings, one to a line, a null among them written as <c>null</c>: a source
+    /// map's sources, their contents and its names. An empty one is <c>[]</c>.</summary>
+    public JsonWriter Strings(string name, IEnumerable<string?> values)
+    {
+        var items = values.ToList();
+        StartMember(name);
+        if (items.Count == 0)
+        {
+            Append("[]");
+            return this;
+        }
+        Append("[");
+        Members(array =>
+        {
+            foreach (var item in items) array.Value(item is null ? "null" : Quote(item));
+        });
+        Close("]");
+        return this;
+    }
 
     /// <summary>A named object member.</summary>
     public JsonWriter Object(string name, Action<JsonWriter> body)
@@ -67,6 +105,13 @@ public sealed class JsonWriter : CodeWriter
         return this;
     }
 
+    /// <summary>One value inside the array we are in, already written as JSON.</summary>
+    private void Value(string literal)
+    {
+        StartMember(null);
+        Append(literal);
+    }
+
     /// <summary>Closes the previous member's line — with a comma, because another one follows.</summary>
     private void StartMember(string? name)
     {
@@ -78,7 +123,7 @@ public sealed class JsonWriter : CodeWriter
             _hasMembers.Push(true);
         }
         StartLine();
-        if (name is not null) Append($"\"{Escape(name)}\" : ");
+        if (name is not null) Append($"{Quote(name)} : ");
         _lineOpen = true;
     }
 
@@ -111,6 +156,6 @@ public sealed class JsonWriter : CodeWriter
         if (IndentLevel == 0) { EndLine(); _lineOpen = false; }
     }
 
-    private static string Escape(string value) => value
-        .Replace("\\", "\\\\").Replace("\"", "\\\"").Replace("\n", "\\n");
+    /// <summary>A string as a JSON string literal, its quotes included, escaped by System.Text.Json.</summary>
+    private static string Quote(string value) => $"\"{JsonEncodedText.Encode(value, Encoder).Value}\"";
 }
