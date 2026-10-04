@@ -213,7 +213,7 @@ public class RecordTypeEmitter
         var imports = new StringBuilder(
             $"import {{ {string.Join(", ", used)} }} from \"@equantic/runtime\";\n");
         // A base record is emitted as its own module — import it so `extends` resolves.
-        var (baseName, _, _) = BaseInfo(type);
+        var (baseName, _) = BaseInfo(type);
         if (baseName != null) imports.Append($"import {{ {baseName} }} from \"./{baseName}\";\n");
         // Records the hydration map references by NAME (`price: Money`) are their own modules too;
         // the map is the only place the emitted JS names them (types erase), so import them here.
@@ -456,7 +456,7 @@ public class RecordTypeEmitter
         _annotations = tsTypeDeclarations;
         var name = type.Identifier.Text;
         var members = type.ValueMembers(ModelFor(type));
-        var (baseName, superArgs, _) = BaseInfo(type);
+        var (baseName, superArgs) = BaseInfo(type);
 
         var sb = new StringBuilder();
         sb.Append($"class {name}{(baseName != null ? $" extends {baseName}" : "")} {{ ");
@@ -866,14 +866,13 @@ public class RecordTypeEmitter
 
     /// <summary>
     /// The base record (if any) from a primary-constructor base clause (<c>record Dog(…) : Animal(Name)</c>):
-    /// its name (generics erased), the JS <c>super(...)</c> arguments, and which members are passed to the
-    /// base (so they aren't re-assigned in the derived constructor). A base record named without
+    /// its name (generics erased) and the JS <c>super(...)</c> arguments. A base record named without
     /// arguments (<c>record Dog : Animal;</c>) is extended with a bare <c>super()</c>, since it has a
     /// constructor that takes none: it was dropped, and the derived twin had none of its base's
     /// members, the defaults it takes included (found in review, #418). Only a base with a twin is
     /// extended, or <c>extends</c> would name a module nothing writes (#428). Interfaces yield none.
     /// </summary>
-    private (string? BaseName, string SuperArgs, HashSet<string> PassedToBase) BaseInfo(TypeDeclarationSyntax type)
+    private (string? BaseName, string SuperArgs) BaseInfo(TypeDeclarationSyntax type)
     {
         var primary = type.BaseList?.Types.OfType<PrimaryConstructorBaseTypeSyntax>().FirstOrDefault();
         if (primary == null)
@@ -882,14 +881,13 @@ public class RecordTypeEmitter
                 && ModelFor(simple)?.GetSymbolInfo(simple.Type).Symbol is INamedTypeSymbol { TypeKind: TypeKind.Class } baseType
                 && EmitsTwin(baseType))
             {
-                return (simple.Type.TwinTypeName(ModelFor(simple)), "", new HashSet<string>());
+                return (simple.Type.TwinTypeName(ModelFor(simple)), "");
             }
-            return (null, "", new HashSet<string>());
+            return (null, "");
         }
 
         var baseName = primary.Type.TwinTypeName(ModelFor(primary));
 
-        var passed = new HashSet<string>();
         var superArgs = new List<string>();
         if (primary.ArgumentList != null)
         {
@@ -897,8 +895,7 @@ public class RecordTypeEmitter
             {
                 if (arg.Expression is IdentifierNameSyntax id)
                 {
-                    passed.Add(id.Identifier.Text);                 // a member forwarded to the base
-                    // The derived constructor's own parameter for that member (the binding above).
+                    // A member forwarded to the base: the derived constructor's own parameter for it.
                     superArgs.Add(id.Identifier.ValueText.ToCamelCase().ToJsIdentifier());
                 }
                 else
@@ -910,7 +907,7 @@ public class RecordTypeEmitter
                 }
             }
         }
-        return (baseName, string.Join(", ", superArgs), passed);
+        return (baseName, string.Join(", ", superArgs));
     }
 
     /// <summary>
