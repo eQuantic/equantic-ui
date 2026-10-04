@@ -78,30 +78,12 @@ internal sealed class DictionaryStrategy : IExpressionIrStrategy
 
     /// <summary>
     /// How <c>EqualityComparer&lt;T&gt;.Default</c> tells two values of <paramref name="type"/> apart,
-    /// as the runtime's <c>KeyEquality</c> argument writes it. Null by IDENTITY: a number, a string, a
-    /// char, a bool, a long, an enum, a <c>Guid</c> and an array, which SameValueZero compares as .NET
-    /// does. <c>true</c> by VALUE, through <c>$eq.equals</c>: every type LINQ's keyed operators compare
-    /// so (a record, a struct, a tuple, an anonymous type, a decimal, a date). And <c>'own'</c> where
-    /// the type does not decide, because the value may be of a type that overrides <c>Equals</c>:
-    /// <c>object</c>, an interface, a type parameter, and a class, whose subclass may override it. The
-    /// runtime then asks the value for its own equality, and keeps a key with none in its Map. Those
-    /// were found by identity, so two equal records under <c>object</c> were two keys (found in
-    /// review, #443).
+    /// as the runtime's <c>KeyEquality</c> argument writes it: the decision every search the comparer
+    /// makes takes, a set's elements and a list's <c>IndexOf</c> included (<see cref="ElementEquality"/>).
+    /// <c>'own'</c> where the type does not decide was found in review, #443: two equal records under
+    /// <c>object</c> were two keys.
     /// </summary>
-    internal static string? KeyEquality(ITypeSymbol? type)
-    {
-        var unwrapped = type.UnwrapNullable() ?? type;
-        if (LinqKeys.ComparesByValue(unwrapped)) return "true";
-        return unwrapped switch
-        {
-            { SpecialType: SpecialType.System_Object or SpecialType.System_ValueType or SpecialType.System_Enum } => "'own'",
-            { TypeKind: TypeKind.Interface or TypeKind.TypeParameter or TypeKind.Dynamic } => "'own'",
-            // A class of the app's or a library's, never a special one: `string` overrides Equals too,
-            // and is a primitive on this side, which SameValueZero compares by value already.
-            { TypeKind: TypeKind.Class, SpecialType: SpecialType.None } => "'own'",
-            _ => null,
-        };
-    }
+    internal static string? KeyEquality(ITypeSymbol? type) => ElementEquality.Of(type);
 
     /// <summary>
     /// The dictionary an initializer nested under a dictionary-typed member seeds (<c>Map = { ["a"] = 1 }</c>),

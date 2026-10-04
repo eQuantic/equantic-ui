@@ -6,13 +6,10 @@ namespace eQuantic.UI.Compiler.CodeGen.Strategies.Primitives;
 /// <summary>
 /// Strategy for Array static methods.
 /// Handles:
-/// - Array.Sort(array) -> array.sort()
+/// - Array.Sort, Array.IndexOf, Array.LastIndexOf, Array.Find, Array.FindLast, Array.FindIndex and
+///   Array.FindLastIndex through the runtime (utils/list.ts), as .NET answers them (#488, #425)
 /// - Array.Reverse(array) -> array.reverse()
-/// - Array.Find(array, predicate) -> array.find(predicate)
-/// - Array.FindIndex(array, predicate) -> array.findIndex(predicate)
 /// - Array.FindAll(array, predicate) -> array.filter(predicate)
-/// - Array.IndexOf(array, value) -> array.indexOf(value)
-/// - Array.LastIndexOf(array, value) -> array.lastIndexOf(value)
 /// - Array.Exists(array, predicate) -> array.some(predicate)
 /// - Array.TrueForAll(array, predicate) -> array.every(predicate)
 /// </summary>
@@ -20,7 +17,7 @@ public class ArrayStaticStrategy : IConversionStrategy
 {
     private static readonly HashSet<string> SupportedMethods = new()
     {
-        "Sort", "Reverse", "Find", "FindIndex", "FindAll",
+        "Sort", "Reverse", "Find", "FindLast", "FindIndex", "FindLastIndex", "FindAll",
         "IndexOf", "LastIndexOf", "Exists", "TrueForAll", "Clear", "Resize"
     };
 
@@ -46,6 +43,14 @@ public class ArrayStaticStrategy : IConversionStrategy
         var args = invocation.ArgumentList.Arguments;
 
         if (args.Count == 0) return context.Unhandled(node, "static Array");
+
+        // Bound: the searches, the sorts and the finds as .NET answers them, each argument in its
+        // parameter's place (#488, #425).
+        if (context.SemanticHelper.GetSymbol(invocation) is IMethodSymbol method
+            && Bound(methodName, invocation, method, context) is { } bound)
+        {
+            return Ir.JsExprWriter.Write(bound);
+        }
 
         var arrayArg = context.Converter.ConvertExpression(args[0].Expression);
 
@@ -145,6 +150,76 @@ public class ArrayStaticStrategy : IConversionStrategy
         }
 
         return context.Unhandled(node, "static Array");
+    }
+
+    /// <summary>
+    /// <c>Sort</c> by .NET's introspective sort and the comparer it is handed; <c>IndexOf</c> and
+    /// <c>LastIndexOf</c> by the element type's equality, a NaN, a record and a tuple found as
+    /// <c>EqualityComparer&lt;T&gt;.Default</c> finds them, where <c>indexOf</c>'s <c>===</c> found none
+    /// of them; <c>Find</c> and <c>FindLast</c> with the element type's default; and every range checked
+    /// as .NET checks it (<c>utils/list.ts</c>). Null for the members whose array method answers alike.
+    /// </summary>
+    private static Ir.JsExpr? Bound(string name, InvocationExpressionSyntax invocation, IMethodSymbol method,
+        ConversionContext context)
+    {
+        // The element type: T of the generic overload, or what the non-generic one compares, `object`.
+        var element = method.TypeArguments.Length == 1
+            ? method.TypeArguments[0]
+            : name is "IndexOf" or "LastIndexOf" ? method.Parameters.ElementAtOrDefault(1)?.Type
+            : method.Parameters.FirstOrDefault()?.Type is IArrayTypeSymbol array ? array.ElementType : null;
+        var count = method.Parameters.Length;
+        switch (name)
+        {
+            case "Sort":
+            {
+                context.UsedHelpers.Add(Eq.Import);
+                if (method.Parameters.Any(parameter => parameter.Type.Name == "Array")
+                    || method.TypeArguments.Length > 1)
+                {
+                    return Ir.JsExpr.Opaque(context.Unhandled(invocation, "Array.Sort of keys and items"));
+                }
+                if (method.Parameters is [_, { Type: INamedTypeSymbol { TypeKind: TypeKind.Delegate } comparison }])
+                {
+                    return ParameterTemplate.Call($"{Eq.ArraySortBy}({{0}}, {{1}}, '{ReflectionName.Of(comparison)}')",
+                        null, invocation, method, context);
+                }
+                // (array), (array, comparer), (array, index, length), (array, index, length, comparer)
+                int? comparer = count is 2 or 4 ? count - 1 : null;
+                return SortOrders.Call(count >= 3
+                        ? $"{Eq.ArraySort}({{0}}, {{order}}, {{1}}, {{2}})"
+                        : $"{Eq.ArraySort}({{0}}, {{order}})",
+                    null, invocation, method, comparer, element, context) ?? Ir.JsExpr.Literal("undefined");
+            }
+            case "IndexOf" or "LastIndexOf":
+            {
+                context.UsedHelpers.Add(Eq.Import);
+                var helper = name == "IndexOf" ? Eq.ArrayIndexOf : Eq.ArrayLastIndexOf;
+                var equality = ElementEquality.Of(element);
+                var range = string.Concat(Enumerable.Range(2, count - 2).Select(slot => ", {" + slot + "}"));
+                var equalityArgument = equality is null && count == 2 ? "" : $", {equality ?? "false"}";
+                return ParameterTemplate.Call($"{helper}({{0}}, {{1}}{equalityArgument}{range})", null, invocation, method, context);
+            }
+            case "Find" or "FindLast":
+            {
+                context.UsedHelpers.Add(Eq.Import);
+                var fallback = DefaultValue.Of(method.ReturnType, context);
+                return ParameterTemplate.Call($"{(name == "Find" ? Eq.ArrayFind : Eq.ArrayFindLast)}({{0}}, {{1}}, {fallback})",
+                    null, invocation, method, context);
+            }
+            case "FindIndex" or "FindLastIndex":
+            {
+                context.UsedHelpers.Add(Eq.Import);
+                var helper = name == "FindIndex" ? Eq.ArrayFindIndex : Eq.ArrayFindLastIndex;
+                // (array, match), (array, startIndex, match), (array, startIndex, count, match).
+                return ParameterTemplate.Call(count switch
+                {
+                    2 => $"{helper}({{0}}, {{1}})",
+                    3 => $"{helper}({{0}}, {{2}}, {{1}})",
+                    _ => $"{helper}({{0}}, {{3}}, {{1}}, {{2}})",
+                }, null, invocation, method, context);
+            }
+        }
+        return null;
     }
 
     public int Priority => 20; // Higher than StringStaticStrategy to handle static array methods

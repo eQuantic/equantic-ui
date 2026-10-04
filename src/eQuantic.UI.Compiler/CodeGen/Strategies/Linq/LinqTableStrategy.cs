@@ -1,5 +1,6 @@
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using eQuantic.UI.Compiler.CodeGen.Extensions;
 using eQuantic.UI.Compiler.CodeGen.Ir;
 using eQuantic.UI.Compiler.CodeGen.Strategies.Types;
 
@@ -32,7 +33,8 @@ public class LinqTableStrategy : IExpressionIrStrategy
         // A ToDictionary of three arguments has no shape of its own: its third is a comparer, which
         // ConvertIr refuses in the words it refuses the shorter overloads with.
         if (Template(name.Identifier.Text, invocation.ArgumentList.Arguments.Count) is null
-            && !IsToDictionaryWithAComparer(name.Identifier.Text, invocation.ArgumentList.Arguments.Count)) return false;
+            && !IsToDictionaryWithAComparer(name.Identifier.Text, invocation.ArgumentList.Arguments.Count)
+            && name.Identifier.Text != "ToHashSet") return false;
 
         // The SYMBOL decides when there is one; a NAME may decide only where the model cannot be
         // asked at all (CanGuess — the documented policy). Claiming by name FIRST and checking the
@@ -46,6 +48,8 @@ public class LinqTableStrategy : IExpressionIrStrategy
     {
         var invocation = (InvocationExpressionSyntax)node;
         invocation.TryGetInstanceCall(out var receiverSyntax, out var name);
+
+        if (name.Identifier.Text == "ToHashSet") return ToHashSet(invocation, receiverSyntax, context);
 
         var receiver = LinqSource.Ir(receiverSyntax, context);
         var args = invocation.ArgumentList.Arguments
@@ -135,6 +139,28 @@ public class LinqTableStrategy : IExpressionIrStrategy
 
     private static bool IsToDictionaryWithAComparer(string name, int argCount) => name == "ToDictionary" && argCount == 3;
 
+    /// <summary>
+    /// <c>ToHashSet()</c>, which is <c>new HashSet&lt;T&gt;(source)</c>: the runtime's set, by the element
+    /// type's equality, handed the source as it is, so a set is copied as .NET copies one, slots and
+    /// all. A <c>Set</c> dropped a date, a decimal, a tuple and a record equal to one already there
+    /// on the floor of identity (#531). A comparer the collection fence would let through, the
+    /// default's, is the one the set has already; any other has no form here and is refused.
+    /// </summary>
+    private static JsExpr ToHashSet(InvocationExpressionSyntax invocation, ExpressionSyntax receiver, ConversionContext context)
+    {
+        var method = context.SemanticHelper.GetSymbol(invocation) as IMethodSymbol;
+        foreach (var argument in invocation.ArgumentList.Arguments)
+        {
+            if (context.SemanticHelper.GetOperation(argument.Expression) is not { } comparer)
+                return JsExpr.Opaque(context.Unhandled(invocation, "ToHashSet with a comparer"));
+            if (comparer.RefusesAsUntranslatable("ToHashSet", context)) return JsExpr.Literal("null");
+        }
+        context.UsedHelpers.Add(Eq.Import);
+        var element = method is { TypeArguments: [var item] } ? item : null;
+        return JsExpr.Call(JsExpr.Identifier(Eq.HashSet), JsExpr.Literal(ElementEquality.Of(element) ?? "false"),
+            context.Converter.ConvertIr(receiver));
+    }
+
     private static string? Template(string name, int argCount) => (name, argCount) switch
     {
         // Filtering, projection and quantifiers map one-for-one onto the array methods. These
@@ -189,7 +215,6 @@ public class LinqTableStrategy : IExpressionIrStrategy
         ("Append", 1) => "[...{0}, {1}]",
         ("Prepend", 1) => "[{1}, ...{0}]",
         ("AsEnumerable", 0) => "{0}",
-        ("ToHashSet", 0) => "new Set({0})",
         // A long is a BigInt on this side — Count already answers as a number, LongCount must not.
         ("LongCount", 0) => $"{Eq.Long}({{0}}.length)",
         ("LongCount", 1) => $"{Eq.Long}({{0}}.filter({{1}}).length)",
