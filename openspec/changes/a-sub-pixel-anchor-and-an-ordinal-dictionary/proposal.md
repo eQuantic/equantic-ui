@@ -18,8 +18,8 @@ build with EQ1004.
   fractional (Chrome lays out in 1/64 px) and a scroll offset is whole device pixels, so the jump
   lands the target within a pixel of the top on either side. On equantic-web's `/terms#liability`,
   warm, the target sat at -0.203125 on every frame of the watch and was never corrected. The band
-  now starts one pixel above the top. A reader a whole pixel or more past the target is still left
-  where they are.
+  now starts one device pixel above the top, and never less than one CSS pixel. A reader a whole
+  device pixel or more past the target is still left where they are.
 - **A dictionary built with a comparer that asks for the default builds again.** #443 made the
   dictionary strategy refuse every constructor with a comparer parameter (EQ1004), whatever the
   argument. That was a second, stricter copy of the fence every creation already passes (EQ2007),

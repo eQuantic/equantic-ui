@@ -1388,7 +1388,8 @@ record of a release, the wiki's Upgrading page is the distillate.
   document top was 2471.796875, the browser's jump scrolled to 2472, and the cold-load correction,
   whose band started at 0, refused the -0.203125 it saw on every frame of its watch. A layout
   position is fractional and a scroll offset is whole pixels, so which side of the top a jump lands
-  on is a coin toss on the fraction; the band starts one pixel above it now. Measured with DevTools
+  on is a coin toss on the fraction; the band starts one device pixel above it now, never less than
+  one CSS pixel, which a page zoomed out to 50% needs (found in review). Measured with DevTools
   logpoints, which leave the cache alone (a route that served an instrumented runtime moved the race
   and hid it), and proved on the site itself, published on 0.2.0-preview.60 with the package's
   Server and then this branch's: four of six cases, then six of six. And

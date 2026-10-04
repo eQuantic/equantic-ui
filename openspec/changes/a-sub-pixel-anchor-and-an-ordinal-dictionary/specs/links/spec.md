@@ -8,9 +8,10 @@ A URL whose fragment names an element SHALL leave that element one pinned header
 the window, on a cold load, on a warm load and after a navigation, the header's height being measured
 and never declared. When the browser's own jump leaves the target under the chrome before the
 height is known, the runtime SHALL scroll it into place once. It SHALL treat as under the chrome a
-target whose top is anywhere from one pixel ABOVE the top of the window down to the chrome's
-edge, because the jump lands a fractional layout position on a whole-pixel scroll offset. A reader a
-whole pixel or more past the target SHALL be left where they are.
+target whose top is anywhere from one device pixel ABOVE the top of the window, and never less than
+one CSS pixel, down to the chrome's edge, because the jump lands a fractional layout position on a
+whole-device-pixel scroll offset. A reader a whole device pixel or more past the target SHALL be left
+where they are.
 
 #### Scenario: A warm load leaves the target a fraction of a pixel above the top
 
@@ -21,5 +22,6 @@ whole pixel or more past the target SHALL be left where they are.
 
 #### Scenario: A reader past the target
 
-- **WHEN** the target sits a whole pixel or more above the top of the window
+- **WHEN** the target sits a whole device pixel or more above the top of the window, which is two
+  CSS pixels on a page zoomed out to a device-pixel ratio of 0.5
 - **THEN** the page does not move
