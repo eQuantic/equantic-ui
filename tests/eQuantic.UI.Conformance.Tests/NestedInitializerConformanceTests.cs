@@ -70,6 +70,7 @@ public class NestedInitializerConformanceTests
     /// indexer's <c>set</c>, which replaced the first value without a word.
     /// </summary>
     [SkippableTheory]
+    [InlineData("try { var k = new Keyed { Map = { { \"a\", 1 }, { \"a\", 2 } } }; return \"added \" + k.Map[\"a\"]; } catch (Exception) { return \"refused\"; }")] // "refused"
     [InlineData("var k = new Keyed { Map = { [\"a\"] = 1, [\"a\"] = 2 } }; return k.Map[\"a\"] + \"|\" + k.Map.Count;")] // "2|1": the indexer replaces
     public void APairAddedToAMembersDictionary_IsItsAdd(string statements)
     {
