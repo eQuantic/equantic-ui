@@ -119,7 +119,9 @@ internal static class OverloadedMethods
         foreach (var indexer in type.Members.OfType<IndexerDeclarationSyntax>())
         {
             var shown = $"this[{string.Join(", ", indexer.ParameterList.Parameters.Select(parameter => parameter.Type?.ToString() ?? parameter.Identifier.Text))}]";
-            yield return (CodeGen.Strategies.Expressions.Indexer.Get, false, shown, indexer.ThisKeyword);
+            if (indexer.ExpressionBody is not null
+                || indexer.AccessorList?.Accessors.Any(accessor => accessor.IsKind(SyntaxKind.GetAccessorDeclaration)) == true)
+                yield return (CodeGen.Strategies.Expressions.Indexer.Get, false, shown, indexer.ThisKeyword);
             if (indexer.AccessorList?.Accessors.Any(accessor => accessor.IsKind(SyntaxKind.SetAccessorDeclaration)
                     || accessor.IsKind(SyntaxKind.InitAccessorDeclaration)) == true)
                 yield return (CodeGen.Strategies.Expressions.Indexer.Set, false, shown + "'s setter", indexer.ThisKeyword);
