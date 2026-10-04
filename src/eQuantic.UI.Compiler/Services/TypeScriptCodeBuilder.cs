@@ -183,5 +183,13 @@ public class TypeScriptCodeBuilder
         public void Member(JsClassMember member, SyntaxNode? sourceNode = null,
             SyntaxNode? bodySource = null, int bodyLine = 1) =>
             _members.Add(member with { Origin = new JsOrigin(sourceNode, bodySource, bodyLine) });
+
+        /// <summary>Every member collected so far, rewritten in place by <paramref name="rewrite"/>,
+        /// each keeping where it came from.</summary>
+        internal void Rewrite(Func<JsClassMember, JsClassMember> rewrite)
+        {
+            for (var i = 0; i < _members.Count; i++)
+                _members[i] = rewrite(_members[i]) with { Origin = _members[i].Origin };
+        }
     }
 }

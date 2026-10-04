@@ -25,6 +25,11 @@ public class StaticInitializationConformanceTests
         public record Counter { public static int Count; public static readonly string Label = "c" + Count; static Counter() { Count = 10; } }
         public struct Gauge { public static int Z = W + 1; public static int W = 3; public int V; }
         public record Registry { public static List<string> Names; static Registry() { Names = new List<string> { "a" }; Names.Add("b"); } }
+        public record Trail { public static string Text = ""; }
+        public record Pinged { static Pinged() { Trail.Text += "cctor "; } public static int Ping() { Trail.Text += "ping "; return 1; } }
+        public record Built { static Built() { Trail.Text += "cctor "; } public Built() { Trail.Text += "ctor "; } }
+        public record Rated { static Rated() { Trail.Text += "cctor "; } public static int Rate => 3; }
+        public struct Tick { public int V; static Tick() { Trail.Text += "cctor "; } public Tick(int v) { V = v; Trail.Text += "ctor "; } public static Tick operator +(Tick a, Tick b) { Trail.Text += "plus "; return new Tick(a.V + b.V); } }
         """;
 
     [SkippableTheory]
@@ -39,6 +44,12 @@ public class StaticInitializationConformanceTests
     [InlineData("Chain.B = 7; return Chain.A + \"|\" + Chain.B;")]                      // "1|7"
     [InlineData("return Counter.Count + \"|\" + Counter.Label;")]                       // "10|c0"
     [InlineData("return Registry.Names.Count + \"|\" + Registry.Names[1];")]            // "2|b"
+    // A static constructor runs before the first use of any static member, a method or a computed
+    // property included, and before the first instance: not only before the first read of a static.
+    [InlineData("Trail.Text = \"\"; Pinged.Ping(); Pinged.Ping(); return Trail.Text;")]              // "cctor ping ping "
+    [InlineData("Trail.Text = \"\"; new Built(); new Built(); return Trail.Text;")]                // "cctor ctor ctor "
+    [InlineData("Trail.Text = \"\"; var r = Rated.Rate; return Trail.Text + r;")]                  // "cctor 3"
+    [InlineData("Trail.Text = \"\"; var t = new Tick(1) + new Tick(2); return Trail.Text + t.V;")] // "cctor ctor ctor plus ctor 3"
     public void ARecordsStatics_InitializeAsCSharpRunsThem(string statements)
     {
         Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
@@ -82,6 +93,17 @@ public class StaticInitializationConformanceTests
             static Catalog() { Names = new List<string> { "a", "b" }; Size = Names.Count; }
         }
 
+        public class Pinger { static Pinger() { Log.Note("cctor "); } public static int Ping() { Log.Note("ping "); return 1; } }
+        public class Maker { static Maker() { Log.Note("cctor "); } public Maker() { Log.Note("ctor "); } }
+        public class Rater { static Rater() { Log.Note("cctor "); } public static int Rate => 3; }
+
+        public sealed class Dial : StatelessComponent
+        {
+            static Dial() { Log.Note("dial "); }
+            public static int Size() => 1;
+            public override VisualNode Build(ComponentContext context) => new Text("dial", TypeRole.BodyM);
+        }
+
         public sealed class Panel : StatelessComponent
         {
             public static int A = B + 1;
@@ -103,6 +125,10 @@ public class StaticInitializationConformanceTests
         ("a component's static its static constructor sets", "return Panel.C + \"|\" + Panel.A;"),
         ("a static with no initializer, at its zero", "Tally.Count++; return Tally.Count + \"|\" + (Tally.Name == null);"),
         ("statics a static constructor sets, read first", "return Catalog.Size + \"|\" + Catalog.Names[1];"),
+        ("a static method starts the static constructor", "Log.Text = \"\"; Pinger.Ping(); Pinger.Ping(); return Log.Text;"),
+        ("the first instance starts the static constructor", "Log.Text = \"\"; new Maker(); new Maker(); return Log.Text;"),
+        ("a computed static property starts the static constructor", "Log.Text = \"\"; var r = Rater.Rate; return Log.Text + r;"),
+        ("a component's static method starts its static constructor", "Log.Text = \"\"; var s = Dial.Size(); return Log.Text + s;"),
     ];
 
     [SkippableTheory]

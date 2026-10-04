@@ -740,6 +740,14 @@ public class TypeScriptEmitter
 
                 _converter.SetCurrentClass(component.Name);
                 EmitInheritedDefaults(component.ClassSyntax, c);
+
+                // A static constructor runs before the first instance and the first use of any
+                // static member, a method included, and not only before the first read of a static.
+                if (orderedStatics && HasStaticConstructor(component.ClassSyntax!))
+                {
+                    var slots = initializedStatics.Select(member => member.Name).ToHashSet(StringComparer.Ordinal);
+                    c.Rewrite(member => TypeInitializer.StartedIn(member, component.Name, slots));
+                }
             }, component.TypeParameters);
 
         // Generate component code without imports
@@ -1814,6 +1822,14 @@ public class TypeScriptEmitter
             }
 
             EmitExtensionBlocks(cls, c);
+
+            // A static constructor runs before the first instance and the first use of any static
+            // member, a method included, and not only before the first read of a static.
+            if (ordered && HasStaticConstructor(cls))
+            {
+                var slots = initialized.Select(member => member.Name).ToHashSet(StringComparer.Ordinal);
+                c.Rewrite(member => TypeInitializer.StartedIn(member, name, slots));
+            }
     }
 
     /// <summary>
@@ -1863,6 +1879,12 @@ public class TypeScriptEmitter
             c.Member(JsClassMember.Setter(qualifier, pn, $"value{Annotation(DeclaredType(p.Type))}",
                 Lowering.AccessorBody(setter.Body)), setter);
     }
+
+    /// <summary>Whether a type declares a static constructor, which C# runs before its first instance
+    /// and the first use of any of its static members.</summary>
+    private static bool HasStaticConstructor(TypeDeclarationSyntax type) =>
+        type.Members.OfType<ConstructorDeclarationSyntax>()
+            .Any(constructor => constructor.Modifiers.Any(Microsoft.CodeAnalysis.CSharp.SyntaxKind.StaticKeyword));
 
     /// <summary>The statements of a type's static constructor, which run after its static initializers
     /// (<see cref="TypeInitializer"/>); none when it declares none. Nothing emitted one before, so its

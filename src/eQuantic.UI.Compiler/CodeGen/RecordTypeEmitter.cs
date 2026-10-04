@@ -634,6 +634,7 @@ public class RecordTypeEmitter
         _converter.EmitTypeAnnotations(tsTypeDeclarations);
         _annotations = tsTypeDeclarations;
         var name = type.Identifier.Text;
+        _startsInitialization = StaticConstructorOf(type) is null ? null : name;
         var members = type.ValueMembers(ModelFor(type));
         var (baseName, superArgs) = BaseInfo(type);
 
@@ -1017,11 +1018,11 @@ public class RecordTypeEmitter
         // pattern binds is declared in front of its use, as it is in a class.
         var text = getter switch
         {
-            null when readsItsStore => Written(JsClassMember.Getter(prefix, propertyName, "",
+            null when readsItsStore => Own(JsClassMember.Getter(prefix, propertyName, "",
                 JsStatement.Return(JsExpr.ThisMember(Strategies.Expressions.FieldExpressionStrategy.BackingSlot(property))))),
             null => "",
-            BlockSyntax block => Written(JsClassMember.Getter(prefix, propertyName, "", _lowering.AccessorBody(block))),
-            _ => Written(JsClassMember.Getter(prefix, propertyName, "",
+            BlockSyntax block => Own(JsClassMember.Getter(prefix, propertyName, "", _lowering.AccessorBody(block))),
+            _ => Own(JsClassMember.Getter(prefix, propertyName, "",
                 _lowering.Body(null, (ExpressionSyntax)getter, isIterator: false, [], isAsync: false))),
         };
         var setter = property.AccessorList?.Accessors.FirstOrDefault(a => a.Keyword.Text is "set" or "init");
@@ -1031,18 +1032,28 @@ public class RecordTypeEmitter
                 ? _lowering.AccessorBody(setterBlock)
                 : null;
         if (setterBody is not null)
-            text += Written(JsClassMember.Setter(prefix, propertyName, _lowering.Param("value", TsTypeOf(property.Type)), setterBody));
+            text += Own(JsClassMember.Setter(prefix, propertyName, _lowering.Param("value", TsTypeOf(property.Type)), setterBody));
         return text;
     }
 
     /// <summary>An operator or a conversion as the static method its call sites reach, its body
     /// lowered as a method's (#432).</summary>
     private string StaticMember(string name, string parameters, BlockSyntax? block, ArrowExpressionClauseSyntax? arrow) =>
-        Written(JsClassMember.Method("static ", name, "", parameters, "",
+        Own(JsClassMember.Method("static ", name, "", parameters, "",
             _lowering.Body(block, arrow?.Expression, isIterator: false, [], isAsync: false)));
 
     /// <summary>A member in the one-line layout this emitter writes a class in, and the space after it.</summary>
     private static string Written(JsClassMember member) => JsMemberWriter.Write(member, JsLayout.Compact) + " ";
+
+    /// <summary>The name of the type being written when it declares a static constructor, which its static
+    /// members start before anything else (<see cref="TypeInitializer.StartedIn"/>); null otherwise.</summary>
+    private string? _startsInitialization;
+
+    /// <summary>A member of the type being written, starting its initialization first where the type
+    /// declares a static constructor.</summary>
+    private string Own(JsClassMember member) => Written(_startsInitialization is { } type
+        ? TypeInitializer.StartedIn(member, type, new HashSet<string>())
+        : member);
 
     /// <summary>
     /// The base record (if any) from a primary-constructor base clause (<c>record Dog(…) : Animal(Name)</c>):
@@ -1173,7 +1184,7 @@ public class RecordTypeEmitter
     {
         _converter.SetCurrentClass(className);
         return _lowering.Method(method, asStatic: false, TsTypeOf,
-            returns: type => _annotations ? TupleReturn(type) : "") is { } member ? Written(member) : "";
+            returns: type => _annotations ? TupleReturn(type) : "") is { } member ? Own(member) : "";
     }
 
     /// <summary>

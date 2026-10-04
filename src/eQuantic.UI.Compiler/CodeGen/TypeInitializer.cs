@@ -25,10 +25,12 @@ namespace eQuantic.UI.Compiler.CodeGen;
 /// record, a struct, a class, a static class and a component.
 /// </para>
 /// <para>
-/// What starts the initialization is a read or a write of one of the statics, which is what C#'s
-/// first use mostly is. A static method that touches none of them, or an instance constructed, does
-/// not start it, so a static constructor's effect outside its own type waits until one of them is
-/// touched.
+/// What starts the initialization is a read or a write of one of the statics. A type that declares a
+/// static constructor starts it in its instance constructor and in each static member too, a method,
+/// a computed property and an operator included (<see cref="StartedIn"/>), since C# runs that
+/// constructor before the first instance and the first use of any static member, and its effects can
+/// be seen outside the type. A type without one has no such moment in C# either: its initializers run
+/// at some point before the first read of a static, which is when they run here.
 /// </para>
 /// </summary>
 internal static class TypeInitializer
@@ -46,6 +48,28 @@ internal static class TypeInitializer
     /// included, and not only before the first read of a static.
     /// </summary>
     public static JsStatement Start(string className) => JsStatement.Raw($"{className}.{Init}();");
+
+    /// <summary>
+    /// <paramref name="member"/> starting the type's initialization first, for a type that declares a
+    /// static constructor (#417): its instance constructor, and each static method and accessor the app
+    /// declared. A member the compiler writes for itself (a name starting with <c>$</c>) is left as it
+    /// is, and so is an accessor over a static's slot (<paramref name="slots"/>), which starts it already.
+    /// </summary>
+    public static JsClassMember StartedIn(JsClassMember member, string className, IReadOnlySet<string> slots) => member switch
+    {
+        JsConstructorMember constructor => constructor with { Body = Prepended(constructor.Body, className) },
+        JsMethodMember method when Applies(method.Modifiers, method.Name, slots) =>
+            method with { Body = Prepended(method.Body, className) },
+        JsAccessorMember accessor when Applies(accessor.Modifiers, accessor.Name, slots) =>
+            accessor with { Body = Prepended(accessor.Body, className) },
+        _ => member,
+    };
+
+    private static bool Applies(string modifiers, string name, IReadOnlySet<string> slots) =>
+        modifiers.Contains("static", StringComparison.Ordinal) && !name.StartsWith('$') && !slots.Contains(name);
+
+    private static JsStatement Prepended(JsStatement body, string className) =>
+        JsStatement.Block([Start(className), .. body is JsBlock block ? block.Statements : [body]]);
 
     /// <summary>One static that initializes in order: its name on the twin, its annotation, its zero,
     /// its initializer converted (none for a static that holds its zero until something sets it), and
