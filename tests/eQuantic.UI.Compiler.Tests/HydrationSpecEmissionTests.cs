@@ -289,6 +289,42 @@ public class HydrationSpecEmissionTests
         Assert.Contains("_ranks: { dict: null, sorted: 'list', order: 'text' }", map);
     }
 
+    [Fact]
+    public void AGeneratedEquality_ImportsTheRuntimeItCalls()
+    {
+        // A tuple holding an array is found by a comparison eqc generates, a call into $eq, written
+        // into the hydration map and into a ContainsValue. Neither registered the import, and the
+        // module that names $eq nowhere else failed to load on "$eq is not defined".
+        const string source = """
+            using System;
+            using System.Collections.Generic;
+            using eQuantic.UI.Primitives;
+
+            [Page("/seen")]
+            public sealed class Seen : StatefulComponent, IServerPrefetch
+            {
+                [ServerOnly]
+                public System.Threading.Tasks.Task PrefetchAsync(System.IServiceProvider services, System.Threading.CancellationToken cancellationToken)
+                    => System.Threading.Tasks.Task.CompletedTask;
+
+                private HashSet<(int[] Cells, int Row)> _seen;
+
+                public bool Holds(Dictionary<string, (int[] Cells, int Row)> rows, (int[] Cells, int Row) row)
+                    => rows.ContainsValue(row);
+
+                public override VisualNode Build(ComponentContext context)
+                    => new Text("", TypeRole.BodyM, context.Theme.TextPrimary);
+            }
+            """;
+        var compiler = new ComponentCompiler();
+        compiler.SetProjectCompilation(GeneratedProject.Of(source, "Seen.cs"));
+        var page = compiler.CompileSource(source, "Seen.cs").Single(r => r.ComponentName == "Seen");
+        Assert.True(page.Success, string.Join("\n", page.Errors.Select(e => e.Message)));
+        Assert.Contains("byValue: $eq.collections.tupleEquality(false, false) }", page.TypeScript);
+        Assert.Contains("rows.containsValue(row, $eq.collections.tupleEquality(false, false))", page.TypeScript);
+        Assert.Matches(@"import \{[^}]*\$eq\b[^}]*\} from ""@equantic/runtime""", page.TypeScript);
+    }
+
     private static string Compile()
     {
         var compiler = new ComponentCompiler();
