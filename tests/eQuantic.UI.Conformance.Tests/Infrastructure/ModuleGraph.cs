@@ -16,9 +16,11 @@ namespace eQuantic.UI.Conformance.Tests.Infrastructure;
 /// <para>
 /// Every case is a block of statements returning a value. They become the static methods of one class,
 /// <c>ConformanceCases</c>, compiled with the source, so the code that constructs and reads the types is
-/// eqc's own translation, in a module that imports them. .NET evaluates the same source and calls each
-/// method. A case that throws answers <c>"threw"</c> on either side, so one failure names its case
-/// instead of ending the run.
+/// eqc's own translation, in a module that imports them. .NET compiles the same source into the library
+/// an app's build compiles, with the references eqc's compilation has, and calls each method: a script
+/// nested every type in its submission, where an extension method cannot be declared (CS1109), so a case
+/// that adds or calls through one compared a compiler error with a value. A case that throws answers
+/// <c>"threw"</c> on either side, so one failure names its case instead of ending the run.
 /// </para>
 /// </summary>
 public static class ModuleGraph
@@ -45,9 +47,7 @@ public static class ModuleGraph
         var bun = JsExecutor.RequireBun();
         var withCases = source + "\n" + CasesClass(cases);
 
-        var expected = JsonSerializer.Deserialize<JsonElement[]>(DotNetEvaluator.EvaluateToJson(
-            $"new object[] {{ {string.Join(", ", cases.Select((_, i) => $"ConformanceAnswers.Of(() => {Cases}.Case{i}())"))} }}",
-            withCases + "\n" + AnswersClass))!;
+        var expected = JsonSerializer.Deserialize<JsonElement[]>(DotNetAnswers(withCases, cases.Length))!;
 
         var (actualJson, modules) = Run(bun, withCases, cases.Length, typeAnnotations);
         var actual = JsonSerializer.Deserialize<JsonElement[]>(actualJson)!;
@@ -68,17 +68,40 @@ public static class ModuleGraph
         + string.Concat(cases.Select((c, i) => $"    public static object Case{i}()\n    {{\n        {c.Statements}\n    }}\n"))
         + "}\n";
 
-    /// <summary>The .NET side's catch, kept out of the source eqc compiles.</summary>
-    private const string AnswersClass = """
-        public static class ConformanceAnswers
+    /// <summary>
+    /// The .NET side: the source compiled as a library, with the references eqc's own compilation of it
+    /// has, loaded in a context of its own, which is unloaded after, and each case called on it, in the
+    /// invariant culture the JavaScript side formats in.
+    /// </summary>
+    private static string DotNetAnswers(string source, int count)
+    {
+        var tree = CSharpSyntaxTree.ParseText(source, ParseDefaults.Options);
+        var compilation = CSharpCompilation.Create("ModuleGraphDotNet", [tree], References.Value,
+            new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
+        using var image = new MemoryStream();
+        var emitted = compilation.Emit(image);
+        emitted.Diagnostics.Where(d => d.Severity == DiagnosticSeverity.Error).Select(d => d.ToString())
+            .Should().BeEmpty("the case is C# that compiles");
+        image.Position = 0;
+        var loaded = new System.Runtime.Loader.AssemblyLoadContext("ModuleGraph", isCollectible: true);
+        var culture = System.Globalization.CultureInfo.CurrentCulture;
+        try
         {
-            public static object Of(System.Func<object> read)
+            System.Globalization.CultureInfo.CurrentCulture = System.Globalization.CultureInfo.InvariantCulture;
+            var type = loaded.LoadFromStream(image).GetType(Cases)!;
+            var answers = Enumerable.Range(0, count).Select(i =>
             {
-                try { return read(); }
-                catch (System.Exception) { return "threw"; }
-            }
+                try { return type.GetMethod($"Case{i}")!.Invoke(null, null); }
+                catch (System.Reflection.TargetInvocationException) { return "threw"; }
+            }).ToArray();
+            return DotNetEvaluator.ToJson(answers);
         }
-        """;
+        finally
+        {
+            System.Globalization.CultureInfo.CurrentCulture = culture;
+            loaded.Unload();
+        }
+    }
 
     private static (string Json, List<CompilationResult> Modules) Run(string bun, string source, int count, bool typeAnnotations)
     {

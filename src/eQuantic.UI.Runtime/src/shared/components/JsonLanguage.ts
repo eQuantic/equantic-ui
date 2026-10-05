@@ -9,7 +9,11 @@ export class JsonLanguage {
         return 'JSON';
     }
 
-    rules: CodeLanguageRules = Object.assign(new CodeLanguageRules(), { indentWidth: 2, quotes: ['"'] });
+    rules: CodeLanguageRules = (($o: any, $1: any, $2: any) => {
+        $o.indentWidth = $1;
+        $o.quotes = $2;
+        return $o;
+    })(new CodeLanguageRules(), 2, ['"']);
 
     tokenize(line: string, _state: number, into: CodeToken[]) {
         let i = 0;

@@ -58,14 +58,8 @@ public class ListMethodStrategy : IExpressionIrStrategy
 
         // Check if it's a List<T> method via semantic model
         var symbol = context.SemanticHelper.GetSymbol(invocation);
-        if (symbol is IMethodSymbol ms)
-        {
-            var containingType = ms.ContainingType.ToDisplayString();
-            if (containingType.StartsWith("System.Collections.Generic.List<") ||
-                containingType.StartsWith("System.Collections.Generic.IList<") ||
-                containingType.StartsWith("System.Collections.Generic.ICollection<"))
-                return true;
-        }
+        if (symbol is IMethodSymbol { ContainingType: { } declaring } && OfAList(declaring))
+            return true;
 
         // Name decides ONLY where guessing is honest — see ConversionContext.CanGuess. Under an
         // AUTHORITATIVE model, in-tree-but-unbindable is reported (EQ2006), never guessed.
@@ -113,6 +107,20 @@ public class ListMethodStrategy : IExpressionIrStrategy
             _ => throw new System.Diagnostics.UnreachableException($"List.{methodName} has no shape."),
         };
     }
+
+    /// <summary>Whether <paramref name="add"/> is an <c>Add</c> this strategy lowers: a list's, or a
+    /// list or collection interface's, which every call to it lowers to the array's <c>push</c>.</summary>
+    internal static bool Lowers(IMethodSymbol? add) => add is { Name: "Add", ContainingType: { } declaring } && OfAList(declaring);
+
+    /// <summary>A list, or a list or collection interface, whose methods this strategy lowers.</summary>
+    private static bool OfAList(INamedTypeSymbol type) =>
+        type.ToDisplayString() is var name
+        && (name.StartsWith("System.Collections.Generic.List<") || name.StartsWith("System.Collections.Generic.IList<")
+            || name.StartsWith("System.Collections.Generic.ICollection<"));
+
+    /// <summary>A list's <c>Add</c>, as every call to it lowers: the array's <c>push</c>. An object
+    /// initializer's element applied to a list a member holds is a call to it.</summary>
+    internal static JsExpr Add(JsExpr list, IReadOnlyList<JsExpr> items) => Method(list, "push", items);
 
     /// <summary>The array method a List method is, where the call is the same call.</summary>
     private static string? ArrayMethod(string name) => name switch

@@ -114,4 +114,91 @@ public class NestedInitializerConformanceTests
     [InlineData(false)]
     public void ANestedInitializer_AddsToWhatAClassMemberHolds(bool typeAnnotations) =>
         ModuleGraph.AssertSameAsDotNet(Classes, typeAnnotations, ClassCases);
+
+    private const string Rebuilt = """
+        using System.Collections.Generic;
+        using System.Linq;
+
+        public class Node { public List<int> Children { get; } = new(); public int Count; public void Attach(Node n) { Count += n.Children.Count; } }
+        public class Card { public List<string> Lines { get; } = new() { "head" }; }
+        public class Person { public string Name = ""; }
+        public class Box { public ICollection<int> Items { get; } = new List<int> { 0 }; public IList<int> List { get; } = new List<int>(); }
+        """;
+
+    private static readonly (string Name, string Statements)[] RebuiltCases =
+    [
+        // 2: an initializer inside a null-conditional call, whose nodes the strategy rebuilt
+        ("in a null-conditional call", "var p = new Node(); Node q = p; q?.Attach(new Node { Children = { 1, 2 } }); return p.Count;"),
+        // "head,a;head,b": inside a query's clause, which the query lowering rebuilds
+        ("in a query", "var people = new List<Person> { new Person { Name = \"a\" }, new Person { Name = \"b\" } }; var cards = (from p in people select new Card { Lines = { p.Name } }).ToList(); return string.Join(\";\", cards.Select(c => string.Join(\",\", c.Lines)));"),
+        // "3|3": a collection interface's Add, as a call to it lowers
+        ("a collection interface's members", "var b = new Box { Items = { 1, 2 }, List = { 3 } }; return b.Items.Count + \"|\" + b.List[0];"),
+    ];
+
+    /// <summary>
+    /// A nested initializer's element is added through the Add the bound tree binds, asked of it through
+    /// the guard every node a strategy rebuilt takes: inside a null-conditional call or a query, the model
+    /// was asked of a node not in its tree, and the module was never written. A collection interface's
+    /// Add (<c>ICollection&lt;int&gt;</c>, <c>IList&lt;int&gt;</c>) lowers as a call to it lowers, where it
+    /// was refused (EQ1004).
+    /// </summary>
+    [SkippableTheory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void AnElementsAdd_IsTheOneTheBoundTreeBinds(bool typeAnnotations) =>
+        ModuleGraph.AssertSameAsDotNet(Rebuilt, typeAnnotations, RebuiltCases);
+
+    private const string Extended = """
+        using System.Collections.Generic;
+        using System.Linq;
+
+        public static class TagExtensions { public static void Add(this List<string> tags, int n) => tags.Add("#" + n); }
+        public static class NameExtensions { extension(HashSet<string> names) { public void Add(int n) => names.Add("s" + n); } }
+        public static class MapExtensions { public static void Add(this Dictionary<string, int> map, int k, int v) => map.Add("k" + k, v); }
+        public static class BagExtensions { public static void Add(this Bag bag, int n) => bag.Items.Add("ext:" + n); }
+
+        public class Bag : System.Collections.IEnumerable
+        {
+            public System.Collections.IEnumerator GetEnumerator() { foreach (var item in Items) yield return item; }
+            public List<string> Items { get; } = new();
+            public void Add(string s) => Items.Add("bag:" + s);
+        }
+
+        public class Post
+        {
+            public List<string> Tags { get; } = new() { "seed" };
+            public HashSet<string> Names { get; } = new();
+            public Dictionary<string, int> Map { get; } = new() { ["seed"] = 0 };
+            public Bag Bag { get; } = new();
+        }
+        """;
+
+    private static readonly (string Name, string Statements)[] ExtendedCases =
+    [
+        // "seed,#1,x,#2": a list's own Add beside an extension's
+        ("a list member", "var p = new Post { Tags = { 1, \"x\", 2 } }; return string.Join(\",\", p.Tags);"),
+        // "s1,y": a C# 14 extension block's Add on a set
+        ("a set member", "var p = new Post { Names = { 1, \"y\" } }; return string.Join(\",\", p.Names.OrderBy(n => n));"),
+        // "k1,seed,z": a dictionary's pair through an extension
+        ("a dictionary member", "var p = new Post { Map = { { 1, 2 }, { \"z\", 3 } } }; return string.Join(\",\", p.Map.Keys.OrderBy(k => k));"),
+        // "ext:7,bag:w": a type's own Add(string) beside an extension Add(int)
+        ("a type with an Add of its own", "var p = new Post { Bag = { 7, \"w\" } }; return string.Join(\",\", p.Bag.Items);"),
+        // "#1,a,#2|#4,b|x,#5": a list's own initializer, explicit, target-typed and over a source
+        ("a list's own initializer", "var l = new List<string> { 1, \"a\", 2 }; List<string> t = new() { 4, \"b\" }; var m = new List<string>(new[] { \"x\" }) { 5 }; return string.Join(\",\", l) + \"|\" + string.Join(\",\", t) + \"|\" + string.Join(\",\", m);"),
+        // "#3": the call, the control
+        ("a call", "var l = new List<string>(); l.Add(3); return string.Join(\",\", l);"),
+    ];
+
+    /// <summary>
+    /// An element the bound tree adds through an EXTENSION method, or a C# 14 extension block's member,
+    /// goes to its home's static with the collection first, as every call to it lowers; a collection's
+    /// own lowering applies only to its own Add. It was written as the collection's own: a list has no
+    /// <c>add</c> and threw, and a set's, a dictionary's and a type's own Add ran in the extension's
+    /// place, in silence (.NET "seed,#1,x,#2", JavaScript a TypeError).
+    /// </summary>
+    [SkippableTheory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void AnElementAnExtensionAdds_GoesToItsHome(bool typeAnnotations) =>
+        ModuleGraph.AssertSameAsDotNet(Extended, typeAnnotations, ExtendedCases);
 }

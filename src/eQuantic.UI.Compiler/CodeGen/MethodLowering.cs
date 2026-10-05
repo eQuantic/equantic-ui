@@ -106,15 +106,21 @@ internal sealed class MethodLowering
 
     /// <summary>
     /// An instance indexer as the two methods its twin carries (#427): its getter as
-    /// <c>item(…)</c> and its setter as <c>setItem(…, value)</c>, which answers the value it wrote,
-    /// as C#'s assignment does, so a call site can use it as the assignment's value. A setter that
+    /// <c>item(…)</c> and its setter as <c>setItem(…, value)</c>, which answers the value it was
+    /// handed, so a call site can use it as the assignment's value: every writer hands the setter the
+    /// value C# answers the assignment with (the right operand converted, the value a compound or a
+    /// step computed), and C# answers with it whatever the setter does with its own copy. A setter that
+    /// reassigns <c>value</c> (a clamp) keeps the value it was handed before its body runs: it answered
+    /// the clamped one, so <c>var y = (g[0] = 250)</c> was 100 where .NET says 250. A setter that
     /// returns early runs in an arrow of its own, so its <c>return;</c> ends the setter and not the
-    /// answer. One path for a class, a component, a record, a struct and an interface's default.
+    /// answer. One path for a class, a component, a record, a struct and an interface's default; the
+    /// names are the indexer's (<see cref="Strategies.Expressions.Indexer.NamesOf(IPropertySymbol)"/>).
     /// </summary>
     /// <param name="indexer">The indexer, its accessors bodied or expression-bodied.</param>
     /// <param name="declaredType">The emitter's annotation for a declared type.</param>
     public IEnumerable<JsClassMember> Indexer(IndexerDeclarationSyntax indexer, Func<TypeSyntax?, string> declaredType)
     {
+        var (getName, setName) = Strategies.Expressions.Indexer.NamesOf(indexer, _modelFor(indexer));
         var keys = string.Join(", ", indexer.ParameterList.Parameters.Select(parameter =>
             Param(parameter.Identifier.ValueText.ToJsIdentifier(), declaredType(parameter.Type))));
         var annotation = TypeAnnotations ? $": {declaredType(indexer.Type)}" : "";
@@ -124,7 +130,7 @@ internal sealed class MethodLowering
             : get?.Body is { } getBlock ? AccessorBody(getBlock)
             : null;
         if (getter is not null)
-            yield return JsClassMember.Method("", Strategies.Expressions.Indexer.Get, "", keys, annotation, getter)
+            yield return JsClassMember.Method("", getName, "", keys, annotation, getter)
                 with { Origin = new JsOrigin(indexer) };
 
         var set = indexer.AccessorList?.Accessors.FirstOrDefault(accessor => accessor.IsKind(SyntaxKind.SetAccessorDeclaration)
@@ -135,15 +141,42 @@ internal sealed class MethodLowering
         if (written is null) yield break;
         // A `return` in the setter ends the accessor, never the method around it: the body runs in an
         // arrow of its own, an IR node, which keeps each statement's line (the shape OutParameters.Body
-        // has). C# allows no await in an accessor, and the arrow runs once.
-        if (set!.Body?.DescendantNodes().OfType<ReturnStatementSyntax>().Any() == true)
+        // has). C# allows no await in an accessor, and the arrow runs once. A `return` of a lambda or a
+        // local function inside it ends that function alone, and asks for no arrow.
+        if (set!.Body?.DescendantNodes(node => node is not (AnonymousFunctionExpressionSyntax or LocalFunctionStatementSyntax))
+                .OfType<ReturnStatementSyntax>().Any() == true)
             written = JsStatement.Expression(JsExpr.Call(JsExpr.ArrowBlock("", written, _converter.Layout, _converter.Depth + 1)));
         IReadOnlyList<JsStatement> statements = written is JsBlock block ? block.Statements : [written];
         var parameters = string.IsNullOrEmpty(keys)
             ? Param("value", declaredType(indexer.Type))
             : $"{keys}, {Param("value", declaredType(indexer.Type))}";
-        yield return JsClassMember.Method("", Strategies.Expressions.Indexer.Set, "", parameters, "",
-            JsStatement.Block([.. statements, JsStatement.Raw("return value;")])) with { Origin = new JsOrigin(set) };
+        var value = JsExpr.Identifier("value");
+        var handed = JsExpr.Identifier(HandedValue);
+        IReadOnlyList<JsStatement> setter = WritesValue(set)
+            ? [JsStatement.Const(HandedValue, value), .. statements, JsStatement.Return(handed)]
+            : [.. statements, JsStatement.Return(value)];
+        yield return JsClassMember.Method("", setName, "", parameters, "",
+            JsStatement.Block(setter)) with { Origin = new JsOrigin(set) };
+    }
+
+    /// <summary>The value an indexer's setter was handed, kept where its body reassigns <c>value</c>:
+    /// <c>$</c> cannot begin a C# identifier, so the body names nothing by it.</summary>
+    private const string HandedValue = "$value";
+
+    /// <summary>
+    /// Whether a setter's body may write its <c>value</c>, as the bound tree's data flow says: an
+    /// assignment, a step, an <c>out</c> or <c>ref</c> argument, a lambda that writes it. Where the model
+    /// cannot be asked, it may.
+    /// </summary>
+    private bool WritesValue(AccessorDeclarationSyntax set)
+    {
+        SyntaxNode? body = (SyntaxNode?)set.Body ?? set.ExpressionBody?.Expression;
+        if (body is null) return false;
+        var model = _modelFor(set);
+        if (model?.GetDeclaredSymbol(set) is not IMethodSymbol { Parameters: [.., var parameter] }) return true;
+        var flow = body is ExpressionSyntax expression ? model.AnalyzeDataFlow(expression) : model.AnalyzeDataFlow((StatementSyntax)body);
+        return flow is not { Succeeded: true }
+            || flow.WrittenInside.Contains(parameter, SymbolEqualityComparer.Default);
     }
 
     /// <summary>

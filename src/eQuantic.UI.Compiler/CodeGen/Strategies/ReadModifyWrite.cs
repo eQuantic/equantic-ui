@@ -58,43 +58,21 @@ public static class ReadModifyWrite
         if (!answerOld && parts.All(IsPlainRead))
             return JsExpr.Binary(target, "=", next(target, operands));
 
-        return Spelled(parts, value => $"{place} = {value}", place, operands, next, answerOld, context);
+        var (text, all) = Spelled(parts, value => $"{place} = {value}", place, operands, next, answerOld, context);
+        return JsExpr.Template(text, all, context.TypeAnnotations);
     }
 
     /// <summary>
-    /// The same write to a dictionary ENTRY. .NET reads it first and throws for a key that is not
-    /// there, where JavaScript reads undefined and computes on: <c>m[k]++</c> made NaN and created
-    /// the key, and a nullable entry's lift made null of it. So the current value is read through
-    /// the guard that throws, and written back as a dictionary writes an entry
-    /// (<see cref="DictionaryEntry"/>), the receiver and the key bound once each as any target's are.
+    /// The write spelled out as a template's text over <paramref name="parts"/>, the operands appended
+    /// to them: the value read from <paramref name="read"/>, the next one written by
+    /// <paramref name="write"/> (whose text answers the value it writes), and the old one answered when
+    /// asked for, bound once since no inverse recovers it. A <see cref="Place"/> writes a dictionary's
+    /// entry and an indexer's through it: <c>m[k]++</c> on an entry .NET reads first, and throws for a key
+    /// that is not there, where JavaScript read undefined, made NaN and created the key.
     /// </summary>
-    internal static JsExpr AssignEntry(JsExpr receiver, JsExpr key, IReadOnlyList<JsExpr> operands,
-        Func<JsExpr, IReadOnlyList<JsExpr>, JsExpr> next, bool answerOld, ConversionContext context)
-    {
-        context.UsedHelpers.Add(Eq.Import);
-        return Spelled([receiver, key], value => DictionaryEntry.Write("{0}", "{1}", value), DictionaryEntry.Read("{0}", "{1}"),
-            operands, next, answerOld, context);
-    }
-
-    /// <summary>
-    /// The same write to an entry an INDEXER the twin carries reads and writes (#427): read through
-    /// its <c>item</c>, written back through its <c>setItem</c>, which answers the value it wrote, the
-    /// receiver and each key bound once as any target's are.
-    /// </summary>
-    internal static JsExpr AssignIndexer(IReadOnlyList<JsExpr> parts, IReadOnlyList<JsExpr> operands,
-        Func<JsExpr, IReadOnlyList<JsExpr>, JsExpr> next, bool answerOld, ConversionContext context)
-    {
-        var keys = parts.Count - 1;
-        return Spelled(parts.ToList(), value => Expressions.Indexer.WriteTemplate(keys, value),
-            Expressions.Indexer.ReadTemplate(keys), operands, next, answerOld, context);
-    }
-
-    /// <summary>The write spelled out as a template over <paramref name="parts"/>: the value read
-    /// from <paramref name="read"/>, the next one written by <paramref name="write"/> (whose text
-    /// answers the value it writes), and the old one answered when asked for, bound once since no
-    /// inverse recovers it.</summary>
-    private static JsExpr Spelled(List<JsExpr> parts, Func<string, string> write, string read, IReadOnlyList<JsExpr> operands,
-        Func<JsExpr, IReadOnlyList<JsExpr>, JsExpr> next, bool answerOld, ConversionContext context)
+    internal static (string Text, List<JsExpr> Parts) Spelled(List<JsExpr> parts, Func<string, string> write, string read,
+        IReadOnlyList<JsExpr> operands, Func<JsExpr, IReadOnlyList<JsExpr>, JsExpr> next, bool answerOld,
+        ConversionContext context)
     {
         var holes = new List<JsExpr>();
         foreach (var operand in operands)
@@ -109,7 +87,7 @@ public static class ReadModifyWrite
         var text = answerOld
             ? $"(({Old}{(annotate ? ": any" : "")}) => ({written}, {Old}))({read})"
             : $"({written})";
-        return JsExpr.Template(text, parts, annotate);
+        return (text, parts);
     }
 
     /// <summary>A part whose second read nobody can observe: a bare name or a literal — the
