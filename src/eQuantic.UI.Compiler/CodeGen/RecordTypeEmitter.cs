@@ -4,6 +4,7 @@ using System.Text;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using eQuantic.UI.Compiler.CodeGen.Extensions;
 using eQuantic.UI.Compiler.CodeGen.Ir;
 using eQuantic.UI.Compiler.CodeGen.Strategies;
 
@@ -44,23 +45,35 @@ public class RecordTypeEmitter
     /// record that declares only methods, only computed properties, only an indexer, or nothing at all
     /// is still constructed, compared and extended, and the rule that asked for a value member, a static
     /// surface or a base list left `new Animal()` naming a class nothing wrote, and every record over it
-    /// unextended. A PARTIAL declaration that declares nothing is the one exception, as it is for a
+    /// unextended. A PARTIAL declaration that declares nothing is one exception, as it is for a
     /// class (PlainClassModule): another declaration carries the type's members, and the empty one
     /// written first would leave the twin without them.
+    /// <para>
+    /// A type marked <c>[ServerOnly]</c> is the other, as a class is: it never crosses, so it has no
+    /// twin, and the code in it may use the whole server surface. Every record and struct got a twin
+    /// whatever it was marked, so `[ServerOnly] struct TokenHasher` over HMACSHA256 failed the build
+    /// with EQ2004, whose own message says to mark the type [ServerOnly]. Asked of the declaration,
+    /// and of <paramref name="symbol"/> for the partial declaration another of whose declarations
+    /// carries the attribute (C# allows it on one of them only); null where the host has no
+    /// compilation, which then reads the declaration alone.
+    /// </para>
     /// </summary>
-    public static bool CanEmit(TypeDeclarationSyntax type) =>
+    public static bool CanEmit(TypeDeclarationSyntax type, INamedTypeSymbol? symbol) =>
         type is RecordDeclarationSyntax or StructDeclarationSyntax
-        && !(type.Modifiers.Any(SyntaxKind.PartialKeyword) && type.Members.Count == 0 && type.ParameterList is null);
+        && !(type.Modifiers.Any(SyntaxKind.PartialKeyword) && type.Members.Count == 0 && type.ParameterList is null)
+        && !type.AttributeLists.SelectMany(list => list.Attributes).Any(attribute => attribute.IsNamed("ServerOnly"))
+        && !(symbol?.GetAttributes().Any(attribute => attribute.AttributeClass?.Name is "ServerOnly" or "ServerOnlyAttribute") ?? false);
 
     /// <summary>
     /// Whether this emitter writes a twin for <paramref name="type"/>: declared in source, by a
     /// declaration <see cref="CanEmit"/> accepts. The rule every path that NAMES the twin asks — a
     /// type test (<c>instanceof</c>) and a default (<c>new T()</c>) may only name a class that exists,
-    /// and a type declared only by an empty partial declaration has none.
+    /// and a type declared only by an empty partial declaration has none, nor one marked
+    /// <c>[ServerOnly]</c>.
     /// </summary>
     public static bool EmitsTwin(INamedTypeSymbol type) =>
         type.DeclaringSyntaxReferences.Any(reference =>
-            reference.GetSyntax() is TypeDeclarationSyntax declaration && CanEmit(declaration));
+            reference.GetSyntax() is TypeDeclarationSyntax declaration && CanEmit(declaration, type));
 
     /// <summary>A model that can answer about THIS declaration. Roslyn throws for a node from
     /// another tree, so the COMPILATION is asked for that tree's own model; when even it does not
@@ -939,7 +952,7 @@ public class RecordTypeEmitter
         if (type is RecordDeclarationSyntax
             && ModelFor(type)?.GetDeclaredSymbol(type) is INamedTypeSymbol { BaseType: { } parent }
             && parent.DeclaringSyntaxReferences.Select(reference => reference.GetSyntax())
-                .OfType<TypeDeclarationSyntax>().FirstOrDefault(CanEmit) is { } baseDeclaration)
+                .OfType<TypeDeclarationSyntax>().FirstOrDefault(declaration => CanEmit(declaration, parent)) is { } baseDeclaration)
         {
             foreach (var inherited in Printed(baseDeclaration)) yield return inherited;
         }

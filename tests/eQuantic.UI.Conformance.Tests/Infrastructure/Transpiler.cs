@@ -27,7 +27,8 @@ public static class Transpiler
         var valueTypes = tree.GetRoot()
             .DescendantNodes()
             .OfType<TypeDeclarationSyntax>()
-            .Where(RecordTypeEmitter.CanEmit)
+            // The prelude is one tree, so its declarations say all there is to say.
+            .Where(declaration => RecordTypeEmitter.CanEmit(declaration, symbol: null))
             .ToList();
         if (valueTypes.Count == 0) return string.Empty;
 

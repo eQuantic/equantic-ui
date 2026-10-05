@@ -223,8 +223,11 @@ catch (Exception ex)
     File.AppendAllText(logPath, $"[{DateTime.Now:HH:mm:ss}] ERROR: {ex.Message}\n{ex.StackTrace}\n");
 }
 
-// Initialize dependency resolver by scanning component directories
-var dependencyResolver = new ComponentDependencyResolver();
+// Initialize dependency resolver by scanning component directories. It is handed the compilation the
+// compiler's model is built from: it asks it for each type's symbol, as the parser does, so who imports
+// a module and who writes it read one answer (#423). Without it the resolver judges a library's base,
+// and an interface, by its name.
+var dependencyResolver = new ComponentDependencyResolver(projectCompilation);
 var componentDirectories = new List<string>(sourceDirs);
 
 // Also scan standard component library locations relative to build tool
@@ -236,10 +239,6 @@ if (Directory.Exists(standardComponentsPath))
 }
 
 dependencyResolver.GeneratedDirectory = generatedDir;
-// The compilation the compiler's model is built from: the resolver asks it for each class's chain of
-// bases, as the parser does, so who imports a plain class and who writes it read one answer (#423).
-// Without it the resolver judges a library's base by its name, and an interface by its name too.
-if (projectCompilation is not null) dependencyResolver.SetProjectCompilation(projectCompilation);
 dependencyResolver.ScanSourceDirectories(componentDirectories);
 compiler.SetDependencyResolver(dependencyResolver);
 

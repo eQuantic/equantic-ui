@@ -196,8 +196,7 @@ public class PlainClassModuleTests
             compilation.GetDiagnostics().Where(d => d.Severity == DiagnosticSeverity.Error).Should().BeEmpty();
 
             // As eqc does it: the compilation the compiler's model is built from, to both.
-            var resolver = new ComponentDependencyResolver();
-            if (projectCompilation) resolver.SetProjectCompilation(compilation);
+            var resolver = new ComponentDependencyResolver(projectCompilation ? compilation : null);
             resolver.ScanSourceDirectories([dir]);
             var compiler = new ComponentCompiler();
             if (projectCompilation) compiler.SetProjectCompilation(compilation);

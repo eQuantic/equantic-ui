@@ -39,25 +39,31 @@ public class ComponentDependencyResolver
     /// compilation walks, and the one the parser of such a host reads too (<see cref="Chains"/>).</summary>
     private readonly PlainClassModule.Scan _scan = new();
 
-    /// <summary>The project's compilation, which answers for every class's chain by symbol; null for a
-    /// host that has none.</summary>
-    private Compilation? _projectCompilation;
+    /// <summary>The project's compilation, which answers for every type the scan reads by its symbol;
+    /// null for a host that has none.</summary>
+    private readonly Compilation? _projectCompilation;
 
     /// <summary>The plain-class modules, settled over every file the scan read; null until asked, and
-    /// again after another file is read or the compilation changes.</summary>
+    /// again after another file is read.</summary>
     private HashSet<string>? _plainClassesSettled;
 
-    /// <summary>
-    /// Hands over the project's compilation, the one the compiler's model is built from, so each class's
-    /// chain of bases is asked of its SYMBOL, as the parser asks it, and not of the names the scan saw:
-    /// a base from a referenced library is what it is there, whatever its name says, and an interface is
-    /// never on the chain. A host without one walks the chain by name (<see cref="PlainClassModule"/>).
-    /// </summary>
-    public void SetProjectCompilation(Compilation compilation)
+    /// <param name="projectCompilation">
+    /// The project's compilation, the one the compiler's model is built from, so each type the scan reads
+    /// is asked of its SYMBOL, as the parser asks it, and not of the names the scan saw: a base from a
+    /// referenced library is what it is there, whatever its name says, an interface is never on a chain
+    /// of bases, and a partial record marked <c>[ServerOnly]</c> on another declaration is server-only.
+    /// It is the resolver's from the start, as every answer the scan gives depends on it. A host that
+    /// has none walks the chains by name (<see cref="PlainClassModule"/>).
+    /// </param>
+    public ComponentDependencyResolver(Compilation? projectCompilation = null)
     {
-        _projectCompilation = compilation;
-        _plainClassesSettled = null;
+        _projectCompilation = projectCompilation;
     }
+
+    /// <summary>A declaration's type in the project's compilation, found by its CLR name; null where
+    /// the host has no compilation, or the compilation does not know the type.</summary>
+    private INamedTypeSymbol? SymbolOf(TypeDeclarationSyntax declaration) =>
+        _projectCompilation?.GetTypeByMetadataName(Parser.ComponentParser.ClrIdentity(declaration));
 
     /// <summary>What the scan saw of the app's declarations, which the parser reads for the chain of a
     /// class when its host has no compilation: the scan reaches across files, a parser's own file does
@@ -140,8 +146,7 @@ public class ComponentDependencyResolver
     /// </summary>
     public static ComponentDependencyResolver From(Compilation compilation)
     {
-        var resolver = new ComponentDependencyResolver();
-        resolver.SetProjectCompilation(compilation);
+        var resolver = new ComponentDependencyResolver(compilation);
         foreach (var tree in compilation.SyntaxTrees) resolver.Analyze(tree.GetRoot());
         return resolver;
     }
@@ -150,10 +155,11 @@ public class ComponentDependencyResolver
     private void Analyze(SyntaxNode root)
     {
         // Discover user value types (records/structs) — emitted as named JS classes (so references
-        // import them).
+        // import them). A server-only one has none, whichever of its declarations says so.
         foreach (var valueType in root.DescendantNodes().OfType<TypeDeclarationSyntax>())
         {
-            if (CodeGen.RecordTypeEmitter.CanEmit(valueType))
+            if (valueType is (RecordDeclarationSyntax or StructDeclarationSyntax)
+                && CodeGen.RecordTypeEmitter.CanEmit(valueType, SymbolOf(valueType)))
                 _recordTypes.Add(valueType.Identifier.Text);
         }
 

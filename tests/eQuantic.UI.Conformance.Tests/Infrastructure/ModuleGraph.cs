@@ -146,8 +146,7 @@ public static class ModuleGraph
             .Should().BeEmpty("the case is C# that compiles");
 
         // The compilation reaches the resolver as eqc hands it over, so the suite runs eqc's own path.
-        var resolver = new ComponentDependencyResolver();
-        resolver.SetProjectCompilation(compilation);
+        var resolver = new ComponentDependencyResolver(compilation);
         resolver.ScanSourceDirectories([dir]);
         var compiler = new ComponentCompiler { TypeAnnotations = typeAnnotations };
         compiler.SetProjectCompilation(compilation);

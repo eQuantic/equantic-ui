@@ -81,11 +81,15 @@ public class ComponentParser
             }
         }
         
+        var model = TryGetSemanticModel(tree);
+
         // Discover user value types: records (positional or body) and structs are emitted as named JS
-        // classes. Reactive — driven by the declarations actually present, not a fixed list.
+        // classes. Reactive — driven by the declarations actually present, not a fixed list. One marked
+        // [ServerOnly] has none, whichever of its declarations says so, as the resolver reads it.
         foreach (var typeDecl in root.DescendantNodes().OfType<TypeDeclarationSyntax>())
         {
-            if (RecordTypeEmitter.CanEmit(typeDecl))
+            if (typeDecl is (RecordDeclarationSyntax or StructDeclarationSyntax)
+                && RecordTypeEmitter.CanEmit(typeDecl, ProjectSymbol(typeDecl, model)))
             {
                 results.Add(new ComponentDefinition
                 {
@@ -164,7 +168,6 @@ public class ComponentParser
         // Container and any user-defined intermediate component) over matching base-type name strings;
         // fall back to the syntactic heuristic when no semantic model is available.
         var classes = root.DescendantNodes().OfType<ClassDeclarationSyntax>().ToList();
-        var model = TryGetSemanticModel(tree);
 
         // Pre-pass: which classes are components. A class is one if its base resolves to a known component
         // base (semantic walk) / matches a base-name heuristic / it declares Build|Render — AND, transitively,
@@ -485,12 +488,13 @@ public class ComponentParser
     private PlainClassModule.Scan? _chains;
 
     /// <summary>
-    /// A class's type in the PROJECT's compilation, which the plain-class rule asks for its chain of
-    /// bases (#423), as the resolver asks the same compilation; null where the host has none. The
-    /// minimal model of one file is not asked: it cannot bind a base another file declares, and the
-    /// resolver, which reads every file, would answer from names alone.
+    /// A type's symbol in the PROJECT's compilation, which the plain-class rule asks for a class's chain
+    /// of bases (#423) and the twin rule for a record's or a struct's [ServerOnly], as the resolver asks
+    /// the same compilation; null where the host has none. The minimal model of one file is not asked:
+    /// it cannot see a base or a partial declaration another file holds, and the resolver, which reads
+    /// every file, would answer from names alone.
     /// </summary>
-    private INamedTypeSymbol? ProjectSymbol(ClassDeclarationSyntax declaration, SemanticModel? model) =>
+    private INamedTypeSymbol? ProjectSymbol(TypeDeclarationSyntax declaration, SemanticModel? model) =>
         _semanticModelProvider?.HasProjectCompilation == true
             ? model?.GetDeclaredSymbol(declaration) as INamedTypeSymbol
             : null;
