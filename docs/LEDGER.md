@@ -1400,6 +1400,21 @@ record of a release, the wiki's Upgrading page is the distillate.
   comparer now and a sorted one keeps the order it asks for; the fence decides alone. Found on the
   way: a page route answers `HEAD` with a 404 ([#575](https://github.com/eQuantic/equantic-ui/issues/575)).
   Proposed and archived through OpenSpec (`openspec/specs/links`, `openspec/specs/runtime-dictionaries`).
+- **2026-10-05 · The code engine completes**: the engine half of the code editor's slice 3
+  ([#296](https://github.com/eQuantic/equantic-ui/issues/296)). `CodeCompletion`, a session on the
+  controller, asks its providers once when a word starts, filters and ranks what they answered on
+  every keystroke (`CodeFuzzyMatch`), asks an incomplete answer again, and drops a late answer by its
+  generation while its request is cancelled; the keymap routes the list's keys, Enter accepting only
+  what changes the text; the contracts are LSP's, typed; the language's words and the document's are
+  built-in providers, and an editor starts with none until the view
+  ([#297](https://github.com/eQuantic/equantic-ui/issues/297)) draws a list. Held by keystroke
+  sequences, by Roslyn's answer in the playground recorded as a fixture, and by the twin compared with
+  .NET in the embedded Bun over 6,000 patterns and 60 seeded sessions. Found on the way: eqc called a
+  method named `Invoke` as a delegate, named `Exception` and an interface in annotations no module
+  defines, and knew nothing of the cancellation trio, which is now the runtime's, measured with
+  `dotnet fsi` and run on both sides by the conformance suite; and the shared library's twins were
+  transpiled with three of the SDK's seven implicit usings. Proposed and archived through OpenSpec
+  (`openspec/specs/code-completion`).
 
 ## Retired documents
 
