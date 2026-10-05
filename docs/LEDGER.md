@@ -1250,7 +1250,7 @@ record of a release, the wiki's Upgrading page is the distillate.
   against main, the class cases through the module graph an app's build writes. Proposed and archived
   through OpenSpec (`openspec/specs/transpiler-records`, `openspec/specs/transpiler-interfaces`). Its review, at max effort before the pull request (eleven finders, verifiers and a sweep, every
   finding measured on both sides with a probe over the real conformance harness), found twenty-odd
-  defects in the new emission, three of them regressions against main, all fixed in the same pull
+  defects in the new emission, seven of them regressions against main, all fixed in the same pull
   request with a case that failed before: a refused class's simple name vetoed a component's import,
   and the resolver judged an interface or a library's base by its name; a record or a struct marked
   [ServerOnly] got a twin; a static constructor ran inside its type initializer's block (an early return
@@ -1267,8 +1267,11 @@ record of a release, the wiki's Upgrading page is the distillate.
   Add, an ICollection member's Add and one under `?.` went wrong; a record printed an override twice and
   dropped a non-public getter; a copy constructor was refused with EQ1009; `this =` in a struct and a
   `with` on a plain struct or the code engine's records did not work. What predates the batch is filed:
-  [#582](https://github.com/eQuantic/equantic-ui/issues/582) to [#587](https://github.com/eQuantic/equantic-ui/issues/587)
-  and [#589](https://github.com/eQuantic/equantic-ui/issues/589) to [#592](https://github.com/eQuantic/equantic-ui/issues/592).
+  [#582](https://github.com/eQuantic/equantic-ui/issues/582) to [#587](https://github.com/eQuantic/equantic-ui/issues/587),
+  [#589](https://github.com/eQuantic/equantic-ui/issues/589), [#591](https://github.com/eQuantic/equantic-ui/issues/591) and
+  [#592](https://github.com/eQuantic/equantic-ui/issues/592), and so is one consequence of it,
+  [#590](https://github.com/eQuantic/equantic-ui/issues/590): a hydrated record has none of the private fields its
+  equality now compares.
 - **2026-10-04 · The compiler suite's aborts are gone**: under load its test host crashed in 2 of 6
   runs on macOS arm64, and `dotnet test` still printed `Passed!` with the count that ran
   ([#473](https://github.com/eQuantic/equantic-ui/issues/473)). Measured after #481 cut the suite's own

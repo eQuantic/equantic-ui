@@ -122,9 +122,9 @@ library's import cycles; the type initializer is lazy too, so it survives them t
 
 ## Not here
 
-- An initializer's parts are all evaluated before the first of them is applied, by `Object.assign`
-  and by the arrow alike, where C# applies each before evaluating the next: only a part that reads the
-  object's own member can tell.
+- An initializer's parts are all evaluated before the first of them is applied, by the arrow that
+  applies them, where C# applies each before evaluating the next: only a part that reads the object's
+  own member can tell.
 - A static iterator method of a type with a static constructor starts it when its sequence is first
   read, where C# starts it at the call.
 - A plain class's instance members keep their order: an auto-property initializer is a class field and
@@ -140,7 +140,7 @@ library's import cycles; the type initializer is lazy too, so it survives them t
 
 The branch was reviewed at max effort before its pull request: eleven finders, a verifier per finding
 that could not be measured, and a sweep, every finding a probe ran on both sides of the real conformance
-harness. It found twenty-odd defects in the new emission, three of them regressions against main, and
+harness. It found twenty-odd defects in the new emission, seven of them regressions against main, and
 two streams fixed them in parallel worktrees before the third built on both: the resolver and the static
 initializer (a module per declaration of a name, bases by symbol, `[ServerOnly]` records and structs,
 the static constructor in a function of its own, statics in declaration order, constant statics as
@@ -148,5 +148,6 @@ their value), the indexer and the writes (one place every writer takes, keys by 
 assignment's answer, `^n`, steps of any type, deconstruction, EQ1007 over an indexer's names, the
 initializer's `Add` by the bound tree), and the construction (`BoundArguments`, `$zero()` on every
 struct, parameters as variables, the record's text from the symbol, a copy constructor no branch, `this =`
-in a struct, EQ1007 over two members of one name). What predates the batch is filed, #582 to #587 and
-#589 to #592.
+in a struct, EQ1007 over two members of one name). What predates the batch is filed, #582 to #587, #589,
+#591 and #592, and so is one consequence of it, #590: a hydrated record has none of the private fields
+its equality now compares.
