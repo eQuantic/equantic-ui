@@ -23,6 +23,8 @@ public class ClassModuleConformanceTests
         public class Ping : Message { }
 
         public class Marker { }
+
+        public partial class Hollow { }
         """;
 
     private static readonly (string Name, string Statements)[] Cases =
@@ -32,6 +34,7 @@ public class ClassModuleConformanceTests
         ("an empty class over an empty abstract base", "return new Ping() is Message;"),
         ("an empty class is its own type", "object m = new Marker(); return m is Marker && !(m is Ping);"),
         ("two empty instances are two objects", "return ReferenceEquals(new Marker(), new Marker());"),
+        ("a partial class declared once and empty is a class", "object h = new Hollow(); return h is Hollow && !(h is Marker);"),
     ];
 
     [SkippableTheory]

@@ -23,6 +23,8 @@ public class StructZeroConformanceTests
         public struct Meter0 { public int V; static Meter0() { Log.Note("cctor "); } public static int Read() => 1; }
         public struct Gauge2 { public int Level = 5; public int Count; public Gauge2(int level) { Level = level; } }
         public struct Wrap { public Pair<int> Inner; public P Point; }
+        public partial struct Lone { }
+        public record struct Holds(Lone Inner, int Count);
         """;
 
     [SkippableTheory]
@@ -31,6 +33,9 @@ public class StructZeroConformanceTests
     [InlineData("var a = new Pair<int>[2]; a[0].Count = 3; return a[0].Count + \"|\" + a[1].Count;")]       // "3|0"
     [InlineData("var p = new Pair<string> { Count = 2 }; return p.Count + \"|\" + (p.First == null);")]     // "2|True"
     [InlineData("return default(Pair<string>).Count;")]                                                     // 0
+    // A partial struct declared once and empty is the whole type: it has a twin and a zero (Copilot's
+    // review of #608).
+    [InlineData("object o = new Holds().Inner; object d = default(Lone); object n = new Lone(); return (o is Lone) + \"|\" + (d is Lone) + \"|\" + (n is Lone);")] // "True|True|True"
     // An all-optional constructor is not the zero: `new P()`, `default(P)` and an array's slot are (0, 0).
     [InlineData("var d = default(P); var arr = new P[2]; return d.X + \"|\" + arr[1].Y + \"|\" + new P(3).X;")] // "0|0|3"
     [InlineData("var n = new P(); return n.X + \"|\" + n.Y;")]                                              // "0|0"

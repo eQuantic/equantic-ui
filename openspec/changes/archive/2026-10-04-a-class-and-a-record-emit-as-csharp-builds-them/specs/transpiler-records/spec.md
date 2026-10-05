@@ -274,13 +274,20 @@ once, as the declared member, which the parameter initializes.
 eqc SHALL write a twin for every record and every struct whatever it declares, a record that declares
 only methods, only an indexer or nothing included, and a module for every top-level plain class whatever
 it declares, so that every module naming such a type imports one that exists. A partial declaration
-that declares nothing, a static class, a nested class, a class marked `[ServerOnly]` or
+that declares nothing beside another declaration of its type (alone, it is the whole type, and gets
+its twin or its module), a static class, a nested class, a class marked `[ServerOnly]` or
 `[RuntimeProvided]`, and a class whose chain of bases reaches an attribute, an exception or a type that
 never crosses SHALL get no plain-class module, and no module SHALL import one for them. The chain of
 base classes decides, by symbol, an interface never on it, not the name a class or its base has, and the
 parser and the resolver read one rule. A name SHALL be a module wherever any declaration of it is one:
 a nested class or a refused class of a component's name leaves the component's import as it is. A
-record or a struct marked `[ServerOnly]` SHALL get no twin.
+record or a struct marked `[ServerOnly]`, or a record over one, SHALL get no twin.
+
+#### Scenario: A partial type declared once and empty
+
+- **WHEN** `public partial class Hollow { }` and `public partial struct Lone { }` are each the only
+  declaration of their type
+- **THEN** `new Hollow() is Hollow` is true, and `default(Lone)` and `new Lone()` are `Lone`s, as in .NET
 
 #### Scenario: A record with only a method, extended
 

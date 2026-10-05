@@ -169,19 +169,16 @@ public class StructDefaultTests
         ts.Should().Contain("mark: any = '\\u0000'");
     }
 
-    /// <summary>An EMPTY struct has no twin (the emitter refuses it), so `new Nothing()` would name
-    /// a class nothing wrote (found in review, #359). Its member holds undefined, the answer for a
-    /// struct no twin can build: C# has no null struct (#405).</summary>
+    /// <summary>A partial struct declared once and empty is the whole type, so it has a twin and its
+    /// zero is that twin's, imported. It was refused as if another declaration carried its members, so
+    /// its member held undefined (found by Copilot's review of #608).</summary>
     [Fact]
-    public void AStructWithNoTwinIsNeverConstructed()
+    public void ALoneEmptyPartialStruct_HasATwin_AndIsItsZero()
     {
-        // Declared only by a partial declaration that declares nothing: no twin is written for one,
-        // the members being another declaration's (RecordTypeEmitter.CanEmit).
         var ts = Emit("Wrap");
 
-        // An optional parameter: the twin's own default, undefined, as its type has no zero to build.
-        ts.Should().Contain("constructor(inner?: any, count: any = 0)");
-        ts.Should().NotContain("new Nothing()");
+        ts.Should().Contain("inner: any = Nothing.$zero()");
+        ts.Should().Contain("import { Nothing } from \"./Nothing\"");
     }
 
     /// <summary>A struct that declares nothing has a twin like any other (#428), so its zero is

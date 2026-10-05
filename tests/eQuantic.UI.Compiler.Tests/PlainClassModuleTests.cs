@@ -76,6 +76,8 @@ public class PlainClassModuleTests
             """,
         ["SplitA.cs"] = "public partial class Split { public int Value; }",
         ["SplitB.cs"] = "public interface ISplit { } public partial class Split : ISplit { }",
+        // ...but ALONE it is the whole type: `partial` asks for no second declaration, and a lone
+        // `partial class Hollow { }` is constructed in C# (Copilot's review of #608).
         ["Hollow.cs"] = "public partial class Hollow { }",
         // Modules share ONE flat namespace, so a name is a module when any declaration of it is one: a
         // nested class the rule refuses shares its name with a component in another file, which is a
@@ -120,11 +122,11 @@ public class PlainClassModuleTests
 
     private static readonly string[] Modules =
         ["Mute", "ChainBase", "Echo", "Message", "Ping", "Marker", "Filled", "Helpers", "Outer", "Card", "Split",
-         "FakeException", "Header", "Api", "Settings", "UserSettings", "ColorAttribute", "Shell"];
+         "FakeException", "Header", "Api", "Settings", "UserSettings", "ColorAttribute", "Shell", "Hollow"];
 
     private static readonly string[] NotModules =
         ["FooAttribute", "TaggedAttribute", "NotFoundException", "Oops", "Stays", "Provided", "Inner",
-         "ServerBase", "OverServer", "OverOverServer", "Hollow", "Failure", "Retry", "LastRetry", "Mark", "Underline",
+         "ServerBase", "OverServer", "OverOverServer", "Failure", "Retry", "LastRetry", "Mark", "Underline",
          "Copy"];
 
     [Fact]

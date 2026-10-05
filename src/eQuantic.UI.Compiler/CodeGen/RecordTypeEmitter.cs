@@ -46,9 +46,11 @@ public class RecordTypeEmitter
     /// record that declares only methods, only computed properties, only an indexer, or nothing at all
     /// is still constructed, compared and extended, and the rule that asked for a value member, a static
     /// surface or a base list left `new Animal()` naming a class nothing wrote, and every record over it
-    /// unextended. A PARTIAL declaration that declares nothing is one exception, as it is for a
-    /// class (PlainClassModule): another declaration carries the type's members, and the empty one
-    /// written first would leave the twin without them.
+    /// unextended. A PARTIAL declaration that declares nothing beside another declaration of its type
+    /// is one exception, as it is for a class (PlainClassModule): the other carries the type's members,
+    /// and the empty one written first would leave the twin without them. Alone, it is the whole type
+    /// (`partial` asks for no second declaration), and it was refused all the same, so a lone
+    /// `partial struct Nothing { }` had no twin and no zero (found by Copilot's review of #608).
     /// <para>
     /// A type marked <c>[ServerOnly]</c> is the other, as a class is: it never crosses, so it has no
     /// twin, and the code in it may use the whole server surface. Every record and struct got a twin
@@ -63,9 +65,21 @@ public class RecordTypeEmitter
     /// </summary>
     public static bool CanEmit(TypeDeclarationSyntax type, INamedTypeSymbol? symbol) =>
         type is RecordDeclarationSyntax or StructDeclarationSyntax
-        && !(type.Modifiers.Any(SyntaxKind.PartialKeyword) && type.Members.Count == 0 && type.ParameterList is null)
+        && !(type.Modifiers.Any(SyntaxKind.PartialKeyword) && type.Members.Count == 0 && type.ParameterList is null
+             && HasAnotherDeclaration(type, symbol))
         && !type.AttributeLists.SelectMany(list => list.Attributes).Any(attribute => attribute.IsNamed("ServerOnly"))
         && !(symbol is not null && Services.PlainClassModule.ServerOnlyAlongChain(symbol));
+
+    /// <summary>Whether the type of <paramref name="declaration"/> has another declaration: by its symbol,
+    /// or, where the host has no compilation, in the declaration's own file.</summary>
+    private static bool HasAnotherDeclaration(TypeDeclarationSyntax declaration, INamedTypeSymbol? symbol) =>
+        symbol is not null
+            ? symbol.DeclaringSyntaxReferences.Length > 1
+            : declaration.SyntaxTree.GetRoot()
+                .DescendantNodes(node => node is CompilationUnitSyntax or BaseNamespaceDeclarationSyntax or TypeDeclarationSyntax)
+                .OfType<TypeDeclarationSyntax>()
+                .Any(other => other != declaration && other.Identifier.ValueText == declaration.Identifier.ValueText
+                    && other.Modifiers.Any(SyntaxKind.PartialKeyword));
 
     /// <summary>
     /// Whether this emitter writes a twin for <paramref name="type"/>: declared in source, by a

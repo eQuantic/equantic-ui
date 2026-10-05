@@ -55,16 +55,18 @@ internal static class PlainClassModule
     /// </summary>
     /// <param name="Name">The class's simple name.</param>
     /// <param name="OnItsOwn">Whether the declaration, by itself, takes a module: it is not nested, not
-    /// static, not marked <c>[RuntimeProvided]</c> or <c>[ServerOnly]</c>, and not a partial half that
-    /// declares nothing.</param>
+    /// static, and not marked <c>[RuntimeProvided]</c> or <c>[ServerOnly]</c>.</param>
     /// <param name="Base">The base it writes first, by the name its twin has; null for none.</param>
     /// <param name="Partial">Whether it is one declaration of a partial type, whose base another of its
     /// declarations may write.</param>
-    internal readonly record struct Declared(string Name, bool OnItsOwn, string? Base, bool Partial)
+    /// <param name="Empty">Whether it is a partial declaration that declares nothing, which is no module
+    /// of its own when another declaration of its type carries the members.</param>
+    internal readonly record struct Declared(string Name, bool OnItsOwn, string? Base, bool Partial, bool Empty)
     {
         internal static Declared Of(ClassDeclarationSyntax declaration) =>
             new(declaration.Identifier.ValueText, IsOnItsOwn(declaration), WrittenBase(declaration),
-                declaration.Modifiers.Any(SyntaxKind.PartialKeyword));
+                declaration.Modifiers.Any(SyntaxKind.PartialKeyword),
+                declaration.Modifiers.Any(SyntaxKind.PartialKeyword) && declaration.Members.Count == 0);
     }
 
     /// <summary>Whether <paramref name="declaration"/> gets a plain-class module.</summary>
@@ -77,20 +79,25 @@ internal static class PlainClassModule
         Is(Declared.Of(declaration), symbol, scan);
 
     /// <inheritdoc cref="Is(ClassDeclarationSyntax, INamedTypeSymbol?, Scan)"/>
+    /// <remarks>
+    /// A partial declaration that declares nothing is no module of its own only beside another
+    /// declaration of its type: <c>partial</c> asks for no second one, and a lone
+    /// <c>public partial class Hollow { }</c> is constructed in C#, where the browser got no module for
+    /// <c>new Hollow()</c> (found by Copilot's review of #608). The type's symbol counts its
+    /// declarations; a host with no compilation counts the scan's, by name.
+    /// </remarks>
     internal static bool Is(Declared declared, INamedTypeSymbol? symbol, Scan scan) =>
-        declared.OnItsOwn && !(symbol is not null ? KeptOut(symbol, scan) : scan.KeepsOut(declared));
+        declared.OnItsOwn
+        && !(declared.Empty && (symbol is not null ? symbol.DeclaringSyntaxReferences.Length > 1 : scan.DeclaredMoreThanOnce(declared.Name)))
+        && !(symbol is not null ? KeptOut(symbol, scan) : scan.KeepsOut(declared));
 
-    /// <summary>What the declaration says by itself: nested, static, marked <c>[RuntimeProvided]</c> or
-    /// <c>[ServerOnly]</c>, or a partial half that declares nothing.</summary>
-    private static bool IsOnItsOwn(ClassDeclarationSyntax declaration)
-    {
-        if (declaration.Parent is TypeDeclarationSyntax) return false;
-        if (declaration.Modifiers.Any(SyntaxKind.StaticKeyword)) return false;
-        if (declaration.AttributeLists.SelectMany(list => list.Attributes)
-            .Any(attribute => attribute.IsNamed("RuntimeProvided") || attribute.IsNamed("ServerOnly")))
-            return false;
-        return !(declaration.Modifiers.Any(SyntaxKind.PartialKeyword) && declaration.Members.Count == 0);
-    }
+    /// <summary>What the declaration says by itself: nested, static, or marked <c>[RuntimeProvided]</c> or
+    /// <c>[ServerOnly]</c>.</summary>
+    private static bool IsOnItsOwn(ClassDeclarationSyntax declaration) =>
+        declaration.Parent is not TypeDeclarationSyntax
+        && !declaration.Modifiers.Any(SyntaxKind.StaticKeyword)
+        && !declaration.AttributeLists.SelectMany(list => list.Attributes)
+            .Any(attribute => attribute.IsNamed("RuntimeProvided") || attribute.IsNamed("ServerOnly"));
 
     /// <summary>
     /// Whether the type's own declarations, or its chain of base CLASSES, keep it out: the type or a
@@ -159,6 +166,9 @@ internal static class PlainClassModule
 
         private readonly HashSet<string> _notClasses = new(StringComparer.Ordinal);
 
+        /// <summary>How many declarations of a class each name has, a partial type's halves counted apart.</summary>
+        private readonly Dictionary<string, int> _declarations = new(StringComparer.Ordinal);
+
         /// <summary>The scan of one file's declarations, what a parser that was handed no resolver
         /// has.</summary>
         internal static Scan Of(SyntaxNode root)
@@ -181,6 +191,7 @@ internal static class PlainClassModule
                 {
                     case ClassDeclarationSyntax type:
                         var name = type.Identifier.ValueText;
+                        _declarations[name] = _declarations.GetValueOrDefault(name) + 1;
                         var written = WrittenBase(type);
                         if (!_bases.TryGetValue(name, out var known) || known is null) _bases[name] = written;
                         if (type.AttributeLists.SelectMany(list => list.Attributes).Any(attribute => attribute.IsNamed("ServerOnly")))
@@ -195,6 +206,9 @@ internal static class PlainClassModule
                 }
             }
         }
+
+        /// <summary>Whether the scan saw more than one declaration of a class of this name.</summary>
+        internal bool DeclaredMoreThanOnce(string name) => _declarations.GetValueOrDefault(name) > 1;
 
         /// <summary>
         /// Whether a declaration is kept out, by name: a partial one by another declaration of its type
