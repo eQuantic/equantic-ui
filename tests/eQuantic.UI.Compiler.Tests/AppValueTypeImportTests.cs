@@ -146,7 +146,7 @@ public class AppValueTypeImportTests
     {
         var ts = TypeScriptOf("Holder");
 
-        ts.Should().Contain("span: any = new Span2()");
+        ts.Should().Contain("span: any = Span2.$zero()");
         ts.Should().Contain("import { Span2 } from \"./Span2\"");
     }
 
@@ -167,7 +167,7 @@ public class AppValueTypeImportTests
     {
         var ts = TypeScriptOf("Rows");
 
-        ts.Should().Contain("Array.from({ length: n }, () => new Span2())");
+        ts.Should().Contain("Array.from({ length: n }, () => Span2.$zero())");
         ts.Should().Contain("import { Span2 } from \"./Span2\"");
     }
 
@@ -180,8 +180,8 @@ public class AppValueTypeImportTests
     {
         var ts = TypeScriptOf("Aliased");
 
-        ts.Should().MatchRegex(@"blank(: any)? = new Span2\(\)");
-        ts.Should().MatchRegex(@"fresh(: any)? = new Span2\(\)");
+        ts.Should().MatchRegex(@"blank(: any)? = Span2\.\$zero\(\)");
+        ts.Should().MatchRegex(@"fresh(: any)? = Span2\.\$zero\(\)");
         ts.Should().Contain("import { Span2 } from \"./Span2\"");
     }
 
@@ -209,7 +209,7 @@ public class AppValueTypeImportTests
     {
         var ts = TypeScriptOf("Outer");
 
-        ts.Should().Contain("static $zero(): Outer { return Object.assign(Object.create(Outer.prototype), { in: new Inner(), k: 0 }); }");
+        ts.Should().Contain("static $zero(): Outer { const zero: any = Object.create(Outer.prototype); zero.in = Inner.$zero(); zero.k = 0; return zero; }");
         ts.Should().Contain("import { Inner } from \"./Inner\"");
     }
 
@@ -218,7 +218,7 @@ public class AppValueTypeImportTests
     {
         var ts = TypeScriptOf("Board");
 
-        ts.Should().MatchRegex(@"_span(: \w+)? = new Span2\(\)");
+        ts.Should().MatchRegex(@"_span(: \w+)? = Span2\.\$zero\(\)");
         ts.Should().Contain("import { Span2 } from \"./Span2\"");
     }
 }

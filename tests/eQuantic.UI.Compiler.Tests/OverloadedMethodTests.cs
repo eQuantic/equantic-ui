@@ -467,4 +467,44 @@ public class OverloadedMethodTests
         results.Single(result => result.ComponentName == "Grid").Errors
             .Should().Contain(error => error.Code == "EQ1007", why);
     }
+    /// <summary>
+    /// A record's or a struct's instance members that differ only in the case of their first letter
+    /// land on one member of the twin, which holds its state on each instance and its methods and
+    /// computed properties on its prototype. Two states shared one slot (`struct S(int x) { X = x * 2 }`
+    /// answered "6|6" for "3|6"), and a state beside an accessor of its name was written over the
+    /// getter, which threw at `new`.
+    /// </summary>
+    public static TheoryData<string, string, string> StateOnOneName => new()
+    {
+        { "S", "public struct S(int x) { public int X { get; } = x * 2; public int Raw() => x; }", "'S.X' lowers to `x`" },
+        { "R", "public record R(int Count) { private readonly int count = Count * 10; public int Scaled => count; }", "'R.count' lowers to `count`" },
+        { "Money", "public readonly struct Money(decimal amount) { public decimal Amount => amount; }", "'Money.Amount' lowers to `amount`" },
+        { "Temperature", "public struct Temperature { private double celsius; public double Celsius => celsius; public Temperature(double c) { celsius = c; } }", "'Temperature.Celsius' lowers to `celsius`" },
+        { "Tally", "public record Tally { public int Total { get; init; } public int total() => Total; }", "'Tally.total()' lowers to `total`" },
+    };
+
+    [Theory]
+    [MemberData(nameof(StateOnOneName))]
+    public void ARecordsOrAStructsMembersOnOneName_AreRefused(string name, string source, string named)
+    {
+        var errors = Compile(source, name).Errors;
+
+        errors.Should().ContainSingle().Which.Should().Match<CompilationError>(error =>
+            error.Code == "EQ1007" && error.Message.Contains(named) && error.Message.Contains("Rename one of them"));
+    }
+
+    /// <summary>
+    /// What is one member is not refused: a positional parameter the body redeclares under its own name
+    /// (#546), a static beside an instance member of the name, and a struct's primary constructor
+    /// parameter read only by an initializer, which no instance holds. A plain class's backing field
+    /// beside its property answers right, its field being a class field that shadows the getter, and is
+    /// left as it is.
+    /// </summary>
+    [Theory]
+    [InlineData("Box", "public sealed record Box(int X, int Y) { public int X { get; set; } = X; }")]
+    [InlineData("Units", "public record struct Units(int Count) { public static int count = 3; }")]
+    [InlineData("Plain", "public sealed class Plain { private int count = 2; public int Count => count; }")]
+    [InlineData("Point", "public readonly struct Point(int x, int y) { public int X { get; } = x; public int Y { get; } = y; }")]
+    public void OneMemberOnItsName_IsNotRefused(string name, string source) =>
+        Compile(source, name).Errors.Where(error => error.Code == "EQ1007").Should().BeEmpty();
 }

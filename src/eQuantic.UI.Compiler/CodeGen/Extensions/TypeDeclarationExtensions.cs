@@ -49,7 +49,9 @@ public static class TypeDeclarationExtensions
         }
 
         // Positional (primary constructor) parameters: the properties a record makes of them, and the
-        // state a C# 12 class or struct captures them in, which its members read as `this.<name>`.
+        // state a C# 12 class or struct captures them in, which its members read as `this.<name>`, for
+        // a parameter a member reads (HoldsParameter): one read only by initializers is the
+        // constructor's, held by nothing.
         if (type.ParameterList != null)
         {
             var self = model?.GetDeclaredSymbol(type) as INamedTypeSymbol;
@@ -58,6 +60,7 @@ public static class TypeDeclarationExtensions
                 var name = p.Identifier.ValueText;
                 if (declaredInBody.Contains(name)) continue;
                 if (isRecord && InheritedProperty(type, self, name)) continue;
+                if (!type.HoldsParameter(p, model)) continue;
                 members.Add(new ValueMember(name, name.ToCamelCase(), TsTypeFor(p.Type, model), isRecord, p));
             }
         }
@@ -68,9 +71,14 @@ public static class TypeDeclarationExtensions
             {
                 // AUTO-properties only. A `get` with a BODY is computed — it is behaviour, not
                 // state, and counting it as a member gave the class both a stored field and a
-                // getter of the same name (a duplicate identifier, and the getter shadowed).
+                // getter of the same name (a duplicate identifier, and the getter shadowed). An
+                // ABSTRACT one holds nothing either: its accessors have no body because a derived
+                // type gives them one, and as state the base's constructor wrote `this.name = null`
+                // over the derived getter, which threw (`new Circle(2)` over `abstract record Shape {
+                // public abstract string Name { get; } }`).
                 case PropertyDeclarationSyntax prop
                     when !prop.Modifiers.Any(SyntaxKind.StaticKeyword)
+                         && !prop.Modifiers.Any(SyntaxKind.AbstractKeyword)
                          && prop.ExpressionBody == null
                          && prop.AccessorList?.Accessors.Any(a => a.IsKind(SyntaxKind.GetAccessorDeclaration)
                              && a.Body == null && a.ExpressionBody == null) == true:
@@ -97,6 +105,33 @@ public static class TypeDeclarationExtensions
         }
 
         return members;
+    }
+
+    /// <summary>
+    /// Whether a primary constructor's parameter is state each instance holds: always for a record,
+    /// whose parameters are its properties, and for a class or a struct only where a member reads it
+    /// outside an initializer, which is what C# captures. A parameter read only by initializers, the
+    /// C# 12 idiom (<c>struct Point(int x) { public int X { get; } = x; }</c>), is the constructor's,
+    /// which the twin's constructor reads as its own; held as well, it shared the slot of the property
+    /// of its name.
+    /// </summary>
+    internal static bool HoldsParameter(this TypeDeclarationSyntax type, ParameterSyntax parameter, SemanticModel? model)
+    {
+        if (type is RecordDeclarationSyntax) return true;
+        var name = parameter.Identifier.ValueText;
+        var symbol = model is not null && model.SyntaxTree == parameter.SyntaxTree ? model.GetDeclaredSymbol(parameter) : null;
+        foreach (var member in type.Members)
+        {
+            // A field's initializer runs in the constructor, and so does a property's (skipped below).
+            if (member is BaseFieldDeclarationSyntax) continue;
+            foreach (var identifier in member.DescendantNodes(node => node is not EqualsValueClauseSyntax).OfType<IdentifierNameSyntax>())
+            {
+                if (identifier.Identifier.ValueText != name) continue;
+                if (symbol is null) return true;
+                if (SymbolEqualityComparer.Default.Equals(model!.GetSymbolInfo(identifier).Symbol, symbol)) return true;
+            }
+        }
+        return false;
     }
 
     /// <summary>

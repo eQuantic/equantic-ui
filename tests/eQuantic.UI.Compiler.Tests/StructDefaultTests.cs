@@ -64,7 +64,7 @@ public class StructDefaultTests
         ts.Should().Contain("origin: any = new Point()");
         ts.Should().Contain("pitch: any = new Size()");
         // … and a struct the compiler emits itself, whose own members default the same way.
-        ts.Should().Contain("home: any = new Cell()");
+        ts.Should().Contain("home: any = Cell.$zero()");
     }
 
     private const string DefaultsSource = """
@@ -90,7 +90,7 @@ public class StructDefaultTests
     /// Only a nullable is null.
     /// </summary>
     [Theory]
-    [InlineData("home", "new Cell()")]
+    [InlineData("home", "Cell.$zero()")]
     [InlineData("origin", "new Point()")]
     [InlineData("style", "undefined")]
     [InlineData("width", "undefined")]
@@ -133,7 +133,7 @@ public class StructDefaultTests
 
         board.Should().MatchRegex(@"fresh\(\)[^{]*\{\s*return Counter\.\$zero\(\);");
         counter.Should().Contain(
-            "static $zero(): Counter { return Object.assign(Object.create(Counter.prototype), { step: 0, total: $eq.num.long(0) }); }");
+            "static $zero(): Counter { const zero: any = Object.create(Counter.prototype); zero.step = 0; zero.total = $eq.num.long(0); return zero; }");
         counter.Should().Contain("constructor() { this.step = 2; this.total = $eq.num.long(0); }",
             "`new Counter()` runs the initializer, and the zero does not");
     }
@@ -191,7 +191,7 @@ public class StructDefaultTests
     {
         var ts = Emit("Shell");
 
-        ts.Should().Contain("inner: any = new Empty()");
+        ts.Should().Contain("inner: any = Empty.$zero()");
         ts.Should().Contain("import { Empty } from \"./Empty\"");
     }
 

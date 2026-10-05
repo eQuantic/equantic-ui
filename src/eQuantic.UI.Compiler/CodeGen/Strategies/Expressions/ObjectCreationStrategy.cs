@@ -597,9 +597,13 @@ public class ObjectCreationStrategy : IExpressionIrStrategy
             return JsExpr.New(constructed, parts);
         }
 
+        // The arguments as the bound tree binds them (BoundArguments); the syntax's own order where
+        // there is no model to ask.
         var construction = type.IsValueType && ctor is { IsImplicitlyDeclared: true, Parameters.Length: 0 } && TwinIsWritten(type)
             ? JsExpr.Opaque(DefaultValue.Of(type, context))
-            : JsExpr.New(constructed, ConstructorArguments(creation, ctor, context));
+            : BoundArguments.Of(context.SemanticHelper.GetOperation(creation), argument => context.Converter.ConvertIr(argument)) is { } bound
+                ? bound.New(type.Name, context.TypeAnnotations)
+                : JsExpr.New(constructed, ConstructorArguments(creation, ctor, context));
         return creation.Initializer is { } initializer
             ? ObjectInitializer.Apply(construction, initializer, context)
             : construction;

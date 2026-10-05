@@ -13,7 +13,7 @@ export class SheetEdit {
     removed: SheetCellSnapshot[] = [];
     oldSize: number = 0;
     newSize: number = 0;
-    selectionBefore: SheetRange = new SheetRange();
-    selectionAfter: SheetRange = new SheetRange();
+    selectionBefore: SheetRange = SheetRange.$zero();
+    selectionAfter: SheetRange = SheetRange.$zero();
 }
 

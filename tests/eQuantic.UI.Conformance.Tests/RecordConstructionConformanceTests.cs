@@ -126,4 +126,57 @@ public class RecordConstructionConformanceTests
         Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
         ConformanceRunner.AssertStatementsSameAsDotNet(statements, Prelude);
     }
+
+    /// <summary>
+    /// What a twin's constructor binds, each in a prelude of its own so a type that does not load fails
+    /// its own case: a constructor's parameter is a variable its body may assign (it was a `const`), the
+    /// locals the constructor gives itself are names no member takes (`const $a` met the rest parameter
+    /// `$a`), an abstract property holds nothing (its base's constructor wrote over the derived getter),
+    /// and a struct's primary constructor parameter read only by an initializer is the constructor's.
+    /// </summary>
+    [SkippableTheory]
+    [InlineData("public record Tag(string Name) { public Tag(string raw, bool trim) : this(raw) { raw = raw.Trim(); Clean = raw; } public string Clean { get; set; } = \"\"; }",
+        "return new Tag(\" x \", true).Clean + \"|\" + new Tag(\" x \", true).Name;")]                                       // "x| x "
+    [InlineData("public record Shape0(string Kind); public record Rect0 : Shape0 { public int K = 1; public int A { get; init; } = 2; public Rect0(int s) : base(\"sq\") { } public Rect0(int w, int h) : base(\"r\") { } }",
+        "return new Rect0(1).K + new Rect0(1, 2).A + \"|\" + new Rect0(1, 2).Kind;")]                                          // "3|r"
+    [InlineData("public abstract record Shape2 { public abstract string Name { get; } public string Describe() => \"I am \" + Name; } public record Circle2(double R) : Shape2 { public override string Name => \"circle\"; }",
+        "var c = new Circle2(2); return c.Name + \"|\" + c.Describe() + \"|\" + (c == new Circle2(2));")]                      // "circle|I am circle|True"
+    [InlineData("public readonly struct Point2(int x, int y) { public int X { get; } = x; public int Y { get; } = y; }",
+        "var p = new Point2(3, 4); return p.X + \"|\" + p.Y + \"|\" + p.Equals(new Point2(3, 4)) + \"|\" + default(Point2).X;")] // "3|4|True|0"
+    public void ATwinsConstructor_BindsAsCSharpBinds(string prelude, string statements)
+    {
+        Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
+        ConformanceRunner.AssertStatementsSameAsDotNet(statements, prelude);
+    }
+
+    /// <summary>
+    /// A constructor's arguments land as C# binds them (BoundArguments): each in its parameter's place,
+    /// evaluated in the order it is written, an array passed whole to a params parameter spread and an
+    /// element packed into one passed as it is, through a `new`, a `: this(…)`, a `: base(…)` and a base
+    /// clause alike, and the variables an argument declares (`out var n`) declared where it is evaluated.
+    /// </summary>
+    [SkippableTheory]
+    [InlineData("public record Shape(string Kind, int Sides = 0, string Color = \"black\"); public record Square : Shape { public Square() : base(\"square\", Color: \"red\") { } }",
+        "var s = new Square(); return s.Sides + \"|\" + s.Color + \"|\" + s.Kind;")]                                    // "0|red|square"
+    [InlineData("public abstract record Shape3(string Kind); public record Circle3(double Radius) : Shape3(DefaultKind) { public const string DefaultKind = \"circle\"; }",
+        "return new Circle3(1).Kind;")]                                                                              // "circle"
+    [InlineData("public record Animal(string Name, int Age); public record Pet : Animal { public Pet(string n, int a) : base(Age: a, Name: n) { } }",
+        "var p = new Pet(\"rex\", 3); return p.Name + p.Age;")]                                                       // "rex3"
+    [InlineData("public record Animal2(string Name, int Legs = 4); public record Bird(string Name) : Animal2(Legs: 2, Name: Name);",
+        "var b = new Bird(\"tweety\"); return b.Name + b.Legs;")]                                                     // "tweety2"
+    [InlineData("public record Bag(int Tag, params int[] Items) { public int Count => Items.Length; }",
+        "var arr = new[] { 4, 5, 6 }; return new Bag(1, Items: arr).Count + \"|\" + new Bag(1, 2, 3).Count + \"|\" + new Bag(1).Count + \"|\" + new Bag(1, arr).Count;")] // "3|2|0|3"
+    [InlineData("public record Box2(params object[] Items) { public int Count => Items.Length; }",
+        "var ints = new[] { 1, 2 }; return new Box2(ints).Count + \"|\" + new Box2(1, \"a\").Count;")]               // "1|2"
+    [InlineData("public record Tags2(string Title, params string[] Values) { public int Count => Values.Length; }",
+        "return new Tags2(Title: \"x\", \"a\", \"b\").Count;")]                                                     // 2
+    [InlineData("public record Log2 { public static string Text = \"\"; public static int Note(string s, int v) { Text += s; return v; } } public record Pair(int A, int B) { public Pair(string s) : this(B: Log2.Note(\"b\", 2), A: Log2.Note(\"a\", 1)) { } }",
+        "Log2.Text = \"\"; var p = new Pair(\"x\"); var first = Log2.Text; Log2.Text = \"\"; var q = new Pair(B: Log2.Note(\"d\", 4), A: Log2.Note(\"c\", 3)); return first + \"|\" + p.A + p.B + \"|\" + Log2.Text + \"|\" + q.A + q.B;")] // "ba|12|dc|34"
+    [InlineData("public record Size(int W, int H) { public Size(string text) : this(int.TryParse(text, out var n) ? n : 0, n) { } }",
+        "return new Size(\"4\").W + \"|\" + new Size(\"4\").H + \"|\" + new Size(\"z\").W;")]                     // "4|4|0"
+    public void AConstructorsArguments_LandAsCSharpBindsThem(string prelude, string statements)
+    {
+        Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
+        ConformanceRunner.AssertStatementsSameAsDotNet(statements, prelude);
+    }
 }

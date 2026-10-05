@@ -63,6 +63,7 @@ internal static class OverloadedMethods
     {
         var errors = new List<CompilationError>();
         CheckOne(type, sourcePath, isComponent, model, errors);
+        if (errors.Count == 0) CheckState(type, sourcePath, model, errors);
         if (errors.Count == 0 && model is not null) CheckInherited(type, sourcePath, isComponent, model, errors);
         if (errors.Count == 0 && model is not null) CheckDefaults(type, sourcePath, isComponent, model, errors);
         if (errors.Count == 0 && model is not null) CheckInterfaceIndexers(type, sourcePath, model, errors);
@@ -169,18 +170,69 @@ internal static class OverloadedMethods
         }
         if (taken.Count == 0 || allStatic) yield break;
 
-        foreach (var (name, shown, at) in HeldOnEachInstance(type))
+        foreach (var (name, shown, at) in HeldOnEachInstance(type, model))
             if (taken.Contains(name.ToCamelCase()))
                 yield return new(name.ToCamelCase(), false, shown, at, Bearer.Member);
     }
 
+    /// <summary>
+    /// A record's or a struct's instance members that land on one name on its twin. The twin holds the
+    /// state of each instance as properties of its own, and its methods and computed properties on its
+    /// prototype, one member per name, while C# tells names apart by case: a positional <c>X</c> beside a
+    /// field <c>x</c>, a primary constructor's <c>x</c> captured beside a property <c>X</c>, the private
+    /// field <c>celsius</c> beside <c>Celsius =&gt; celsius</c>. Two states shared one slot
+    /// (<c>struct S(int x) { public int X { get; } = x * 2; }</c> answered "6|6" for "3|6"), and a state
+    /// beside an accessor or a method of its name was written over it by the constructor, which threw
+    /// at <c>new</c>. A member the body declares under a positional parameter's own name is that
+    /// parameter's property (#546), one member, and two methods of one name are overloads, which
+    /// <see cref="CheckOne"/> judges. A plain class keeps its state in class fields, which shadow the
+    /// prototype's getter of the same name, so its backing-field idiom answers right and is left as it is.
+    /// </summary>
+    private static void CheckState(TypeDeclarationSyntax type, string sourcePath, SemanticModel? model, List<CompilationError> errors)
+    {
+        if (type is not (RecordDeclarationSyntax or StructDeclarationSyntax)) return;
+        var instance = HeldOnEachInstance(type, model)
+            .Concat(type.Members.OfType<MethodDeclarationSyntax>()
+                .Where(method => !method.Modifiers.Any(SyntaxKind.StaticKeyword) && method.ExplicitInterfaceSpecifier is null)
+                .Select(method => (Name: method.Identifier.ValueText, Shown: Signature(method), At: method.Identifier)));
+        var first = new Dictionary<string, (string Name, string Shown, SyntaxToken At)>(StringComparer.Ordinal);
+        foreach (var member in instance.OrderBy(member => member.At.SpanStart))
+        {
+            var lowered = member.Name.ToCamelCase();
+            if (!first.TryGetValue(lowered, out var earlier))
+            {
+                first[lowered] = member;
+                continue;
+            }
+            if (earlier.Name == member.Name) continue;
+            var position = member.At.GetLocation().GetLineSpan().StartLinePosition;
+            var earlierLine = earlier.At.GetLocation().GetLineSpan().StartLinePosition.Line + 1;
+            errors.Add(new CompilationError
+            {
+                Code = "EQ1007",
+                Message = $"'{type.Identifier.Text}.{member.Shown}' lowers to `{lowered}`, and so does '{earlier.Shown}' "
+                    + $"(line {earlierLine}). The twin of a record or a struct holds its state on each instance and its methods "
+                    + "and computed properties on its prototype, one member per name, so the two would share one value, or "
+                    + $"the constructor would write one over the other. Rename one of them (a private field `_{lowered}`, "
+                    + "or a primary constructor's parameter by what it holds).",
+                SourcePath = sourcePath,
+                Line = position.Line + 1,
+                Column = position.Character + 1,
+            });
+            return;
+        }
+    }
+
     /// <summary>The members besides its methods a twin holds on each instance, by their C# names: its
-    /// fields, properties and events, and a primary constructor's parameters (a record's being its
-    /// properties).</summary>
-    private static IEnumerable<(string Name, string Shown, SyntaxToken At)> HeldOnEachInstance(TypeDeclarationSyntax type)
+    /// fields, properties and events, and a primary constructor's parameters the instance holds (a
+    /// record's being its properties, a class's or a struct's those a member reads,
+    /// <see cref="TypeDeclarationExtensions.HoldsParameter"/>).</summary>
+    private static IEnumerable<(string Name, string Shown, SyntaxToken At)> HeldOnEachInstance(TypeDeclarationSyntax type,
+        SemanticModel? model)
     {
         foreach (var parameter in type.ParameterList?.Parameters ?? default)
-            yield return (parameter.Identifier.ValueText, $"{type.Identifier.Text}({parameter.Identifier.ValueText})", parameter.Identifier);
+            if (type.HoldsParameter(parameter, model))
+                yield return (parameter.Identifier.ValueText, $"{type.Identifier.Text}({parameter.Identifier.ValueText})", parameter.Identifier);
         foreach (var member in type.Members)
         {
             if (member.Modifiers.Any(SyntaxKind.StaticKeyword) || member.Modifiers.Any(SyntaxKind.ConstKeyword)) continue;
