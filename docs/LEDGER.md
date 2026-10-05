@@ -1400,6 +1400,20 @@ record of a release, the wiki's Upgrading page is the distillate.
   comparer now and a sorted one keeps the order it asks for; the fence decides alone. Found on the
   way: a page route answers `HEAD` with a 404 ([#575](https://github.com/eQuantic/equantic-ui/issues/575)).
   Proposed and archived through OpenSpec (`openspec/specs/links`, `openspec/specs/runtime-dictionaries`).
+- **2026-10-05 · A char's search checks its start and its count**: `IndexOf(char, int)`,
+  `IndexOf(char, int, int)`, `LastIndexOf(char, int)` and `LastIndexOf(char, int, int)` were
+  JavaScript's `indexOf` and `lastIndexOf`, which take no count and clamp a start outside the string,
+  so `"abcabc".IndexOf('c', 0, 2)` answered 2 where .NET answers -1 and `"abc".IndexOf('a', 4)`
+  answered -1 where .NET throws ([#534](https://github.com/eQuantic/equantic-ui/issues/534)). They
+  reach the runtime's `indexOfChar` and `lastIndexOfChar`, ported from .NET 10's
+  `String.Searching.cs` and measured with `dotnet fsi`: `IndexOf`'s start may stand at the end of the
+  string, `LastIndexOf`'s must stand on a char of it (the string overloads step back from one past
+  the end instead), an empty string's `LastIndexOf` answers -1 for any start and count, and each
+  refusal is in .NET's words, the start checked before the count. The call is built by the runtime
+  call the comparing overloads use. 9 of the 16 conformance cases fail on main. The Markdown, Mermaid
+  and curly-brace parsers and the SDK's strings, which search a char from a start, now throw where
+  the same C# throws on the server. Proposed and archived through OpenSpec
+  (`openspec/specs/transpiler-bcl`).
 
 ## Retired documents
 
