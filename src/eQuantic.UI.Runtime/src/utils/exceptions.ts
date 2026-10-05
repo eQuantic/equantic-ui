@@ -46,6 +46,8 @@ export const bases = {
   // cannot (#528): no .NET exception for the same call, so the one that says the platform lacks it.
   'System.NotSupportedException': 'System.SystemException',
   'System.Collections.Generic.KeyNotFoundException': 'System.SystemException',
+  // A type initializer that threw: what every access to the type throws from then on (typeInitialization).
+  'System.TypeInitializationException': 'System.SystemException',
 } as const satisfies Record<string, string | null>;
 
 /** A .NET exception type the runtime throws itself. */
@@ -107,6 +109,18 @@ function simpleName(qualified: string): string {
 /** An exception the runtime throws on .NET's behalf, of the type .NET throws for the same operation. */
 export function exception(type: RuntimeException, message: string): Error {
   return create(chainOf(type), message);
+}
+
+/**
+ * The `TypeInitializationException` .NET throws when a type's static initializers or its static
+ * constructor threw: on that first use of the type and on every one after it, the type never being
+ * initialized again. `typeName` is the type's full name, as .NET's message writes it, and `inner` the
+ * exception the initializer threw, which `InnerException` reads.
+ */
+export function typeInitialization(typeName: string, inner: unknown): Error {
+  const error = exception('System.TypeInitializationException', `The type initializer for '${typeName}' threw an exception.`);
+  Object.defineProperty(error, 'innerException', { value: inner, writable: true, configurable: true });
+  return error;
 }
 
 /**

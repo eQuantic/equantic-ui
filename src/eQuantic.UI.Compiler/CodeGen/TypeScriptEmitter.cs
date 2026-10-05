@@ -532,8 +532,9 @@ public class TypeScriptEmitter
                     if (orderedStatics)
                     {
                         _converter.SetCurrentClass(component.Name);
-                        foreach (var member in TypeInitializer.Members(component.Name, initializedStatics,
-                                     StaticConstructorBody(component.ClassSyntax!), TypeAnnotations))
+                        component.UsedHelpers.Add(Eq.Import);
+                        foreach (var member in TypeInitializer.Members(component.Name, component.TypeIdentity, initializedStatics,
+                                     StaticConstructorBody(component.ClassSyntax!), TypeAnnotations, _converter.Layout))
                             c.Member(member, member.Origin?.Member);
                     }
                     if (component.ClassSyntax is { } indexed)
@@ -1763,21 +1764,35 @@ public class TypeScriptEmitter
                     EmitSetter(p, c, accessorQualifier);
                 }
             }
+            // `event Action<T>? Changed;` — a member the model raises and a caller subscribes to.
+            // Nothing emitted it, so `this.changed?.(edit)` reached a property that did not exist.
+            // A static one is a static like any other where the type initializes in order: a
+            // subscription is a use of the type, which runs its static constructor first, and the
+            // handlers that constructor adds come before the subscriber's, as in .NET. As a plain
+            // field, it was subscribed to before the constructor ran.
+            foreach (var e in cls.Members.OfType<EventFieldDeclarationSyntax>())
+            {
+                var isStaticEvent = asStatic || e.Modifiers.Any(Microsoft.CodeAnalysis.CSharp.SyntaxKind.StaticKeyword);
+                foreach (var v in e.Declaration.Variables)
+                {
+                    if (ordered && isStaticEvent)
+                    {
+                        initialized.Add(new(v.Identifier.Text.ToCamelCase(), DeclaredType(e.Declaration.Type), "null",
+                            v.Initializer is { } handler
+                                ? Initializer(handler.Value, _converter.ConvertExpression(handler.Value, e.Declaration.Type.ToString()))
+                                : null, v));
+                        continue;
+                    }
+                    c.Field(v.Identifier.Text.ToCamelCase(), DeclaredType(e.Declaration.Type), "null", v, isStatic: isStaticEvent);
+                }
+            }
             if (ordered)
             {
                 _converter.SetCurrentClass(name);
-                foreach (var member in TypeInitializer.Members(name, initialized, StaticConstructorBody(cls), TypeAnnotations))
+                _converter.UsedHelpers.Add(Eq.Import);
+                foreach (var member in TypeInitializer.Members(name, Parser.ComponentParser.ClrIdentity(cls), initialized,
+                             StaticConstructorBody(cls), TypeAnnotations, _converter.Layout))
                     c.Member(member, member.Origin?.Member);
-            }
-            // `event Action<T>? Changed;` — a member the model raises and a caller subscribes to.
-            // Nothing emitted it, so `this.changed?.(edit)` reached a property that did not exist.
-            foreach (var e in cls.Members.OfType<EventFieldDeclarationSyntax>())
-            {
-                foreach (var v in e.Declaration.Variables)
-                {
-                    c.Field(v.Identifier.Text.ToCamelCase(), DeclaredType(e.Declaration.Type), "null", v,
-                        isStatic: asStatic || e.Modifiers.Any(Microsoft.CodeAnalysis.CSharp.SyntaxKind.StaticKeyword));
-                }
             }
             foreach (var m in cls.Members.OfType<MethodDeclarationSyntax>())
                 EmitClassMethod(m, c, asStatic);

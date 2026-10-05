@@ -15,13 +15,23 @@ export class PythonLanguage {
 
     rules: CodeLanguageRules = Object.assign(new CodeLanguageRules(), { lineComment: '#', indentAfter: [':', '(', '[', '{'], outdentOn: [')', ']', '}'], indentWidth: 4 });
     static $slots: any = null;
+    static $failure: any = null;
 
     static $init(): any {
         if (PythonLanguage.$slots === null) {
-            const slots: any = PythonLanguage.$slots = { keywords: null, builtins: null, constants: null };
-            slots.keywords = new Set(['and', 'as', 'assert', 'async', 'await', 'break', 'class', 'continue', 'def', 'del', 'elif', 'else', 'except', 'finally', 'for', 'from', 'global', 'if', 'import', 'in', 'is', 'lambda', 'match', 'nonlocal', 'not', 'or', 'pass', 'raise', 'return', 'try', 'while', 'with', 'yield']);
-            slots.builtins = new Set(['bool', 'bytes', 'dict', 'float', 'frozenset', 'int', 'list', 'object', 'set', 'str', 'tuple', 'type']);
-            slots.constants = new Set(['True', 'False', 'None', 'self', 'cls']);
+            if (PythonLanguage.$failure !== null) throw PythonLanguage.$failure;
+            let $slots: any = PythonLanguage.$slots = {};
+            try {
+                $slots.keywords = null;
+                $slots.builtins = null;
+                $slots.constants = null;
+                $slots.keywords = new Set(['and', 'as', 'assert', 'async', 'await', 'break', 'class', 'continue', 'def', 'del', 'elif', 'else', 'except', 'finally', 'for', 'from', 'global', 'if', 'import', 'in', 'is', 'lambda', 'match', 'nonlocal', 'not', 'or', 'pass', 'raise', 'return', 'try', 'while', 'with', 'yield']);
+                $slots.builtins = new Set(['bool', 'bytes', 'dict', 'float', 'frozenset', 'int', 'list', 'object', 'set', 'str', 'tuple', 'type']);
+                $slots.constants = new Set(['True', 'False', 'None', 'self', 'cls']);
+            } catch ($error) {
+                PythonLanguage.$slots = null;
+                throw PythonLanguage.$failure = $eq.exceptions.typeInitialization('eQuantic.UI.Code.PythonLanguage', $error);
+            }
         }
         return PythonLanguage.$slots;
     }

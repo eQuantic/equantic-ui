@@ -2,17 +2,31 @@ import { $eq, CSharpLanguage, JsonLanguage, PlainTextLanguage, PythonLanguage, T
 
 export class CodeLanguages {
     static $slots: any = null;
+    static $failure: any = null;
 
     static $init(): any {
         if (CodeLanguages.$slots === null) {
-            const slots: any = CodeLanguages.$slots = { cSharp: null, typeScript: null, python: null, json: null, xml: null, plainText: null, known: null };
-            slots.cSharp = new CSharpLanguage();
-            slots.typeScript = new TypeScriptLanguage();
-            slots.python = new PythonLanguage();
-            slots.json = new JsonLanguage();
-            slots.xml = new XmlLanguage();
-            slots.plainText = new PlainTextLanguage();
-            slots.known = $eq.collections.dictionary().set('c#', CodeLanguages.cSharp).set('csharp', CodeLanguages.cSharp).set('cs', CodeLanguages.cSharp).set('typescript', CodeLanguages.typeScript).set('ts', CodeLanguages.typeScript).set('javascript', CodeLanguages.typeScript).set('js', CodeLanguages.typeScript).set('tsx', CodeLanguages.typeScript).set('jsx', CodeLanguages.typeScript).set('python', CodeLanguages.python).set('py', CodeLanguages.python).set('json', CodeLanguages.json).set('xml', CodeLanguages.xml).set('csproj', CodeLanguages.xml).set('html', CodeLanguages.xml).set('plist', CodeLanguages.xml).set('text', CodeLanguages.plainText).set('txt', CodeLanguages.plainText).set('plain', CodeLanguages.plainText);
+            if (CodeLanguages.$failure !== null) throw CodeLanguages.$failure;
+            let $slots: any = CodeLanguages.$slots = {};
+            try {
+                $slots.cSharp = null;
+                $slots.typeScript = null;
+                $slots.python = null;
+                $slots.json = null;
+                $slots.xml = null;
+                $slots.plainText = null;
+                $slots.known = null;
+                $slots.cSharp = new CSharpLanguage();
+                $slots.typeScript = new TypeScriptLanguage();
+                $slots.python = new PythonLanguage();
+                $slots.json = new JsonLanguage();
+                $slots.xml = new XmlLanguage();
+                $slots.plainText = new PlainTextLanguage();
+                $slots.known = $eq.collections.dictionary().set('c#', CodeLanguages.cSharp).set('csharp', CodeLanguages.cSharp).set('cs', CodeLanguages.cSharp).set('typescript', CodeLanguages.typeScript).set('ts', CodeLanguages.typeScript).set('javascript', CodeLanguages.typeScript).set('js', CodeLanguages.typeScript).set('tsx', CodeLanguages.typeScript).set('jsx', CodeLanguages.typeScript).set('python', CodeLanguages.python).set('py', CodeLanguages.python).set('json', CodeLanguages.json).set('xml', CodeLanguages.xml).set('csproj', CodeLanguages.xml).set('html', CodeLanguages.xml).set('plist', CodeLanguages.xml).set('text', CodeLanguages.plainText).set('txt', CodeLanguages.plainText).set('plain', CodeLanguages.plainText);
+            } catch ($error) {
+                CodeLanguages.$slots = null;
+                throw CodeLanguages.$failure = $eq.exceptions.typeInitialization('eQuantic.UI.Code.CodeLanguages', $error);
+            }
         }
         return CodeLanguages.$slots;
     }

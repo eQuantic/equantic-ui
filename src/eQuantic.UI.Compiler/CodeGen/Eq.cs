@@ -358,6 +358,11 @@ public static class Eq
     /// NullReferenceException the CLR throws in its place.</summary>
     public const string Thrown = "$eq.exceptions.thrown";
 
+    /// <summary>The TypeInitializationException a type whose static initializers or static constructor
+    /// threw throws on every use from then on, the first included. Two args: the type's full name, and
+    /// the exception the initializer threw, its InnerException.</summary>
+    public const string TypeInitialization = "$eq.exceptions.typeInitialization";
+
     /// <summary>An exception filter, <c>when (…)</c>: the filter's answer, or false where it throws, as
     /// .NET answers it. One arg: the filter, as a function.</summary>
     public const string ExceptionFilter = "$eq.exceptions.filter";

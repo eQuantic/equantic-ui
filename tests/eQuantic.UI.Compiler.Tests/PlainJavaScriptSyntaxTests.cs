@@ -126,7 +126,7 @@ public class PlainJavaScriptSyntaxTests
     [InlineData(@"\bdeclare\s", "declare")]
     [InlineData(@"\babstract\s", "abstract")]
     [InlineData(@"^\s*static\s+\$slots\s*:", "an annotated type initializer's slots")]
-    [InlineData(@"\bconst\s+slots\s*:", "an annotated type initializer's local")]
+    [InlineData(@"\blet\s+\$slots\s*:", "an annotated type initializer's local")]
     [InlineData(@"\bget\s+\w+\(\)\s*:", "an annotated getter")]
     [InlineData(@"\bset\s+\w+\(value\s*:", "an annotated setter")]
     [InlineData(@"\blet\s+\w+\s*:\s*any\b", "an annotated hoisted variable")]
@@ -161,7 +161,7 @@ public class PlainJavaScriptSyntaxTests
                 (@"\bget\s+\w+\(\)\s*:", "an annotated getter"),
                 (@"\bset\s+\w+\(value\s*:", "an annotated setter"),
                 (@"^\s*static\s+\$slots\s*:", "an annotated type initializer's slots"),
-                (@"\bconst\s+slots\s*:", "an annotated type initializer's local"),
+                (@"\blet\s+\$slots\s*:", "an annotated type initializer's local"),
                 (@"\blet\s+\w+\s*:\s*any\b", "an annotated hoisted variable"),
                 (@"\blet\s+\w+\s*:\s*[A-Z]\w*", "an annotated local declaration"),
                 (@"\bdeclare\s", "a type-only declared property"),

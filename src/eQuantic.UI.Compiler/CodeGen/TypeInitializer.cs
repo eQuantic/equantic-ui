@@ -20,9 +20,14 @@ namespace eQuantic.UI.Compiler.CodeGen;
 /// first use, zeros first; each static is an accessor pair over its slot, so a read during the
 /// initialization sees what C# sees, a zero or a value already set, and every reader of the type, a
 /// cycle's included, waits for nothing. A static with no initializer takes part too: the static
-/// constructor is what sets it, and a read of it is what has to run that constructor. A type whose
-/// initializers are constants, which read nothing, keeps its statics as fields. One mechanism for a
-/// record, a struct, a class, a static class and a component.
+/// constructor is what sets it, and a read of it is what has to run that constructor; so does a
+/// static field-like event, whose subscription is a use of the type. A type whose initializers are
+/// constants, which read nothing, keeps its statics as fields. One mechanism for a record, a struct, a
+/// class, a static class and a component.
+/// </para>
+/// <para>
+/// A type whose initialization threw stays failed: every use of it throws the
+/// TypeInitializationException that carries the exception, as .NET's does (<see cref="Members"/>).
 /// </para>
 /// <para>
 /// What starts the initialization is a read or a write of one of the statics. A type that declares a
@@ -35,11 +40,19 @@ namespace eQuantic.UI.Compiler.CodeGen;
 /// </summary>
 internal static class TypeInitializer
 {
-    /// <summary>The holder of a type's statics, built by <c>$init()</c>.</summary>
+    /// <summary>The holder of a type's statics, built by <c>$init()</c>, and the name of the local
+    /// <c>$init()</c> builds it in: a name no C# local can take.</summary>
     public const string Slots = "$slots";
 
     /// <summary>The static method that builds <see cref="Slots"/> the first time it is called.</summary>
     public const string Init = "$init";
+
+    /// <summary>The TypeInitializationException of a type whose initialization threw, which every use
+    /// of the type throws from then on; null until then.</summary>
+    public const string Failure = "$failure";
+
+    /// <summary>What <c>$init()</c> calls the exception an initializer threw.</summary>
+    private const string Thrown = "$error";
 
     /// <summary>
     /// The statement that starts a type's initialization: what a type with a static constructor runs
@@ -85,12 +98,12 @@ internal static class TypeInitializer
         type.Members.OfType<ConstructorDeclarationSyntax>().Any(constructor => constructor.Modifiers.Any(SyntaxKind.StaticKeyword))
         || Initializers(type).Any(initializer => !IsConstant(initializer, modelFor(initializer)));
 
-    /// <summary>The initializers of the type's statics: a static field's, a constant's excepted, and a
-    /// static property's.</summary>
+    /// <summary>The initializers of the type's statics: a static field's, a constant's excepted, a
+    /// static property's and a static field-like event's.</summary>
     private static IEnumerable<ExpressionSyntax> Initializers(TypeDeclarationSyntax type) =>
         type.Members.SelectMany(member => member switch
         {
-            FieldDeclarationSyntax field when field.Modifiers.Any(SyntaxKind.StaticKeyword)
+            BaseFieldDeclarationSyntax field when field.Modifiers.Any(SyntaxKind.StaticKeyword)
                 && !field.Modifiers.Any(SyntaxKind.ConstKeyword) => field.Declaration.Variables
                 .Select(variable => variable.Initializer?.Value).OfType<ExpressionSyntax>(),
             PropertyDeclarationSyntax { Initializer: { } initializer } property
@@ -105,27 +118,68 @@ internal static class TypeInitializer
                 or PrefixUnaryExpressionSyntax { Operand: LiteralExpressionSyntax };
 
     /// <summary>
-    /// The members that hold the ordered statics: the slots, the initializer that builds them, and an
-    /// accessor pair per static. <paramref name="constructor"/> is the static constructor's body,
-    /// which runs after the initializers.
+    /// The members that hold the ordered statics: the slots, the failure, the initializer that builds
+    /// them, and an accessor pair per static. <paramref name="constructor"/> is the static
+    /// constructor's body, which runs after the initializers.
+    /// <para>
+    /// <c>$init()</c> builds the slots as C# initializes a type. The holder is assigned FIRST, empty, so
+    /// a use of the type while it initializes (a static's zero that constructs a struct whose own
+    /// constructor starts the type, a static constructor calling a static method of its type) finds it
+    /// and sees what C# sees then, where it found none and started the initialization again, without
+    /// end. Then every static is set to its zero, then the initializers run in declaration order, then
+    /// the static constructor's body, in a function of its own: a <c>return</c> in it ends the
+    /// constructor alone, where it returned from <c>$init()</c> before the slots were handed back, and
+    /// its locals meet nothing of <c>$init()</c>'s own, whose names take a <c>$</c> no C# name can take
+    /// (a local named <c>slots</c> redeclared the holder, and the module did not load). C# allows no
+    /// <c>await</c> and no <c>yield</c> in a static constructor, and it runs once.
+    /// </para>
+    /// <para>
+    /// An initializer or the static constructor that throws leaves the type failed for good: the
+    /// exception is kept, wrapped as the TypeInitializationException .NET throws, and that is what
+    /// every use of the type throws from then on, the first included. The type initialized nothing
+    /// more and answered whatever it held, while .NET throws on every access.
+    /// </para>
     /// </summary>
-    public static IEnumerable<JsClassMember> Members(string className, IReadOnlyList<Ordered> statics,
-        IReadOnlyList<JsStatement> constructor, bool annotate)
+    /// <param name="className">The twin's name, which the members reach the slots through.</param>
+    /// <param name="typeName">The type's full name, which the TypeInitializationException's message says.</param>
+    /// <param name="statics">The statics, in declaration order.</param>
+    /// <param name="constructor">The static constructor's statements; none when it declares none.</param>
+    /// <param name="annotate">Whether the module is TypeScript.</param>
+    /// <param name="layout">The layout the members are written in, which the static constructor's
+    /// function is laid out in too.</param>
+    public static IEnumerable<JsClassMember> Members(string className, string typeName, IReadOnlyList<Ordered> statics,
+        IReadOnlyList<JsStatement> constructor, bool annotate, JsLayout layout)
     {
-        yield return JsClassMember.Field("static ", Slots, annotate ? ": any" : "", "null");
+        var any = annotate ? ": any" : "";
+        yield return JsClassMember.Field("static ", Slots, any, "null");
+        yield return JsClassMember.Field("static ", Failure, any, "null");
 
-        var zeros = string.Join(", ", statics.Select(member => $"{member.Name}: {member.Zero}"));
-        var build = new List<JsStatement>
-        {
-            JsStatement.Raw($"const slots{(annotate ? ": any" : "")} = {className}.{Slots} = {{ {zeros} }};"),
-        };
+        var type = JsExpr.Identifier(className);
+        var holder = JsExpr.Identifier(Slots);
+        var build = new List<JsStatement>();
+        build.AddRange(statics.Select(member =>
+            JsStatement.Expression(JsExpr.Binary(JsExpr.Member(holder, member.Name), "=", JsExpr.Opaque(member.Zero)))));
         build.AddRange(statics.Where(member => member.Value is not null).Select(member =>
-            JsStatement.Raw($"slots.{member.Name} = {member.Value};") with { Origin = member.Origin }));
-        build.AddRange(constructor);
-        yield return JsClassMember.Method("static ", Init, "", "", annotate ? ": any" : "", JsStatement.Block([
-            JsStatement.If(JsExpr.Binary(JsExpr.Member(JsExpr.Identifier(className), Slots), "===", JsExpr.Literal("null")),
-                JsStatement.Block(build), null),
-            JsStatement.Raw($"return {className}.{Slots};"),
+            JsStatement.Expression(JsExpr.Binary(JsExpr.Member(holder, member.Name), "=", JsExpr.Opaque(member.Value!)))
+                with { Origin = member.Origin }));
+        // The function's block stands inside $init's `if`, and that inside its `try`: three levels in.
+        if (constructor.Count > 0)
+            build.Add(JsStatement.Expression(JsExpr.Call(JsExpr.ArrowBlock("", JsStatement.Block(constructor), layout, 3))));
+
+        yield return JsClassMember.Method("static ", Init, "", "", any, JsStatement.Block([
+            JsStatement.If(JsExpr.Binary(JsExpr.Member(type, Slots), "===", JsExpr.Literal("null")),
+                JsStatement.Block([
+                    JsStatement.If(JsExpr.Binary(JsExpr.Member(type, Failure), "!==", JsExpr.Literal("null")),
+                        JsStatement.Throw(JsExpr.Member(type, Failure)), null),
+                    JsStatement.Let(Slots, any, JsExpr.Binary(JsExpr.Member(type, Slots), "=", JsExpr.Object([]))),
+                    JsStatement.Try(JsStatement.Block(build), new JsCatch($"({Thrown})", JsStatement.Block([
+                        JsStatement.Expression(JsExpr.Binary(JsExpr.Member(type, Slots), "=", JsExpr.Literal("null"))),
+                        JsStatement.Throw(JsExpr.Binary(JsExpr.Member(type, Failure), "=",
+                            JsExpr.Call(JsExpr.Identifier(Eq.TypeInitialization),
+                                JsExpr.Literal(JsStringLiteral.Quote(typeName)), JsExpr.Identifier(Thrown)))),
+                    ])), null),
+                ]), null),
+            JsStatement.Return(JsExpr.Member(type, Slots)),
         ]));
 
         foreach (var member in statics)

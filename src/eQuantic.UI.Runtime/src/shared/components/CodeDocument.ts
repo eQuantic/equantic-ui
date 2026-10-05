@@ -31,11 +31,19 @@ export class CodeDocument {
     }
 
     static $slots: any = null;
+    static $failure: any = null;
 
     static $init(): any {
         if (CodeDocument.$slots === null) {
-            const slots: any = CodeDocument.$slots = { empty: null };
-            slots.empty = new CodeDocument(['']);
+            if (CodeDocument.$failure !== null) throw CodeDocument.$failure;
+            let $slots: any = CodeDocument.$slots = {};
+            try {
+                $slots.empty = null;
+                $slots.empty = new CodeDocument(['']);
+            } catch ($error) {
+                CodeDocument.$slots = null;
+                throw CodeDocument.$failure = $eq.exceptions.typeInitialization('eQuantic.UI.Code.CodeDocument', $error);
+            }
         }
         return CodeDocument.$slots;
     }

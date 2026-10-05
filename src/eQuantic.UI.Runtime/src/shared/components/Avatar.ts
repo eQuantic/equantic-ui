@@ -8,11 +8,19 @@ export class Avatar extends StatelessComponent {
     declare name: any;
     declare status: string;
     static $slots: any = null;
+    static $failure: any = null;
 
     static $init(): any {
         if (Avatar.$slots === null) {
-            const slots: any = Avatar.$slots = { tintPalette: null };
-            slots.tintPalette = ['primary', 'success', 'info', 'warning', 'destructive'];
+            if (Avatar.$failure !== null) throw Avatar.$failure;
+            let $slots: any = Avatar.$slots = {};
+            try {
+                $slots.tintPalette = null;
+                $slots.tintPalette = ['primary', 'success', 'info', 'warning', 'destructive'];
+            } catch ($error) {
+                Avatar.$slots = null;
+                throw Avatar.$failure = $eq.exceptions.typeInitialization('eQuantic.UI.Components.Avatar', $error);
+            }
         }
         return Avatar.$slots;
     }

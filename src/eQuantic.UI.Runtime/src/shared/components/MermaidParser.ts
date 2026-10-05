@@ -2,12 +2,21 @@ import { $eq, MermaidEdge, MermaidEdgeRef, MermaidGraph, MermaidMessage, Mermaid
 
 export class MermaidParser {
     static $slots: any = null;
+    static $failure: any = null;
 
     static $init(): any {
         if (MermaidParser.$slots === null) {
-            const slots: any = MermaidParser.$slots = { skipWords: null, messageArrows: null };
-            slots.skipWords = ['subgraph', 'end', 'style', 'classDef', 'class', 'click', 'linkStyle', 'direction'];
-            slots.messageArrows = ['-->>', '->>', '-->', '->'];
+            if (MermaidParser.$failure !== null) throw MermaidParser.$failure;
+            let $slots: any = MermaidParser.$slots = {};
+            try {
+                $slots.skipWords = null;
+                $slots.messageArrows = null;
+                $slots.skipWords = ['subgraph', 'end', 'style', 'classDef', 'class', 'click', 'linkStyle', 'direction'];
+                $slots.messageArrows = ['-->>', '->>', '-->', '->'];
+            } catch ($error) {
+                MermaidParser.$slots = null;
+                throw MermaidParser.$failure = $eq.exceptions.typeInitialization('eQuantic.UI.Components.MermaidParser', $error);
+            }
         }
         return MermaidParser.$slots;
     }

@@ -11,3 +11,4 @@ eQuantic.UI.Compiler.CodeGen.ValueMember.ValueMember(string! Display, string! Js
 *REMOVED*static eQuantic.UI.Compiler.CodeGen.RecordTypeEmitter.CanEmit(Microsoft.CodeAnalysis.CSharp.Syntax.TypeDeclarationSyntax! type) -> bool
 static eQuantic.UI.Compiler.CodeGen.RecordTypeEmitter.CanEmit(Microsoft.CodeAnalysis.CSharp.Syntax.TypeDeclarationSyntax! type, Microsoft.CodeAnalysis.INamedTypeSymbol? symbol) -> bool
 eQuantic.UI.Compiler.Services.ComponentDependencyResolver.ComponentDependencyResolver(Microsoft.CodeAnalysis.Compilation? projectCompilation = null) -> void
+const eQuantic.UI.Compiler.CodeGen.Eq.TypeInitialization = "$eq.exceptions.typeInitialization" -> string!

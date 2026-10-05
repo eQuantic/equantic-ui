@@ -36,11 +36,19 @@ export abstract class CurlyBraceLanguage {
     }
 
     static $slots: any = null;
+    static $failure: any = null;
 
     static $init(): any {
         if (CurlyBraceLanguage.$slots === null) {
-            const slots: any = CurlyBraceLanguage.$slots = { punctuation: null };
-            slots.punctuation = new Set(['(', ')', '[', ']', '{', '}', ',', ';', '.', ':']);
+            if (CurlyBraceLanguage.$failure !== null) throw CurlyBraceLanguage.$failure;
+            let $slots: any = CurlyBraceLanguage.$slots = {};
+            try {
+                $slots.punctuation = null;
+                $slots.punctuation = new Set(['(', ')', '[', ']', '{', '}', ',', ';', '.', ':']);
+            } catch ($error) {
+                CurlyBraceLanguage.$slots = null;
+                throw CurlyBraceLanguage.$failure = $eq.exceptions.typeInitialization('eQuantic.UI.Code.CurlyBraceLanguage', $error);
+            }
         }
         return CurlyBraceLanguage.$slots;
     }

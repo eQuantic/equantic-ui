@@ -30,6 +30,9 @@ public class StaticInitializationConformanceTests
         public record Built { static Built() { Trail.Text += "cctor "; } public Built() { Trail.Text += "ctor "; } }
         public record Rated { static Rated() { Trail.Text += "cctor "; } public static int Rate => 3; }
         public struct Tick { public int V; static Tick() { Trail.Text += "cctor "; } public Tick(int v) { V = v; Trail.Text += "ctor "; } public static Tick operator +(Tick a, Tick b) { Trail.Text += "plus "; return new Tick(a.V + b.V); } }
+        public struct Rgb { public byte R, G, B; public static Rgb Black; static Rgb() { Black = new Rgb { R = 1 }; } }
+        public record Gate { public static int X = 5; public static string Seen = ""; static Gate() { Seen = "cctor"; if (X > 0) return; Seen = "late"; } }
+        public record Shaky { public static int A = Fail(); public static int B = 3; static int Fail() => throw new InvalidOperationException("x"); }
         """;
 
     [SkippableTheory]
@@ -50,6 +53,14 @@ public class StaticInitializationConformanceTests
     [InlineData("Trail.Text = \"\"; new Built(); new Built(); return Trail.Text;")]                // "cctor ctor ctor "
     [InlineData("Trail.Text = \"\"; var r = Rated.Rate; return Trail.Text + r;")]                  // "cctor 3"
     [InlineData("Trail.Text = \"\"; var t = new Tick(1) + new Tick(2); return Trail.Text + t.V;")] // "cctor ctor ctor plus ctor 3"
+    // The type is used while it initializes: a static's zero is an instance whose constructor starts
+    // the type again, which finds it started and goes on, where it started over without end.
+    [InlineData("return Rgb.Black.R + \"|\" + default(Rgb).R;")]                                      // "1|0"
+    // A static constructor's `return` ends the constructor, and the type is initialized.
+    [InlineData("return Gate.X + \"|\" + Gate.Seen;")]                                                 // "5|cctor"
+    // An initializer that throws fails every use of the type, the first included, with the
+    // TypeInitializationException that carries what it threw.
+    [InlineData("string Read() { try { return Shaky.B.ToString(); } catch (Exception e) { return e is TypeInitializationException { InnerException: InvalidOperationException { Message: \"x\" } } ? \"tie\" : \"other\"; } } return Read() + \"|\" + Read();")] // "tie|tie"
     public void ARecordsStatics_InitializeAsCSharpRunsThem(string statements)
     {
         Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
@@ -57,6 +68,7 @@ public class StaticInitializationConformanceTests
     }
 
     private const string Classes = """
+        using System;
         using System.Collections.Generic;
         using eQuantic.UI.Primitives;
 
@@ -112,6 +124,12 @@ public class StaticInitializationConformanceTests
             static Panel() { C = A * 10; }
             public override VisualNode Build(ComponentContext context) => new Text("panel", TypeRole.BodyM);
         }
+
+        public static class Config { public static int X = 5; public static string Seen = ""; static Config() { Seen = "cctor"; if (X > 0) return; Seen = "late"; } }
+        public static class Pool { public static int Size; static Pool() { var slots = 4; Size = slots; } }
+        public static class Boom { public static int A = Fail(); public static int B = 3; static int Fail() => throw new InvalidOperationException("x"); }
+        public class Fuse { public static int Lit = 1; static Fuse() { throw new InvalidOperationException("cctor"); } public static int Light() => Lit; }
+        public class Bus { public static event Action Changed; static Bus() { Changed += () => Log.Text += "default "; } public static void Raise() => Changed?.Invoke(); }
         """;
 
     private static readonly (string Name, string Statements)[] ClassCases =
@@ -129,6 +147,20 @@ public class StaticInitializationConformanceTests
         ("the first instance starts the static constructor", "Log.Text = \"\"; new Maker(); new Maker(); return Log.Text;"),
         ("a computed static property starts the static constructor", "Log.Text = \"\"; var r = Rater.Rate; return Log.Text + r;"),
         ("a component's static method starts its static constructor", "Log.Text = \"\"; var s = Dial.Size(); return Log.Text + s;"),
+        // The static constructor runs in a function of its own: its `return` ends it, and its locals
+        // meet none of the initializer's.
+        ("a static constructor that returns early leaves its type initialized", "return Config.X + \"|\" + Config.Seen;"), // "5|cctor"
+        ("a static constructor's local named like the holder of the statics", "return Pool.Size;"),                      // 4
+        // A failure is kept: every use of the type throws the TypeInitializationException that
+        // carries what the initializer threw, the first use included.
+        ("an initializer that throws fails every use of its type",
+            "string Read() { try { return Boom.B.ToString(); } catch (Exception e) { return e is TypeInitializationException { InnerException: InvalidOperationException { Message: \"x\" } } ? \"tie\" : \"other\"; } } return Read() + \"|\" + Read();"), // "tie|tie"
+        ("a static constructor that throws fails every use of its type, a static method included",
+            "string Read(Func<int> use) { try { return use().ToString(); } catch (Exception e) { return e is TypeInitializationException { InnerException.Message: \"cctor\" } ? \"tie\" : \"other\"; } } return Read(() => Fuse.Lit) + \"|\" + Read(() => Fuse.Light()) + \"|\" + Read(() => Fuse.Lit);"), // "tie|tie|tie"
+        // A static event is a static: subscribing to it uses the type, which runs the static
+        // constructor first, and its handler comes before the subscriber's.
+        ("a subscription to a static event runs the static constructor first",
+            "Log.Text = \"\"; Bus.Changed += () => Log.Text += \"mine \"; Bus.Raise(); return Log.Text;"),              // "default mine "
     ];
 
     [SkippableTheory]

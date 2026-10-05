@@ -868,7 +868,8 @@ public class RecordTypeEmitter
         if (ordered)
         {
             _converter.SetCurrentClass(name);
-            foreach (var member in TypeInitializer.Members(name, initialized, StaticConstructorBody(type), _annotations))
+            foreach (var member in TypeInitializer.Members(name, Parser.ComponentParser.ClrIdentity(type), initialized,
+                         StaticConstructorBody(type), _annotations, JsLayout.Compact))
                 sb.Append(Written(member));
         }
 
