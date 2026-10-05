@@ -1,4 +1,4 @@
-import { $eq, CodeDirectionValue, CodeDocument, CodeEdit, CodeGrid, CodeHighlighter, CodeHistory, CodeKeymap, CodeLanguageRules, CodeLanguages, CodeLineCells, CodeMotionValue, CodePosition, CodeRange, KeyboardConventionValue, Point, PointerPhaseValue, Rect } from "../runtime-exports";
+import { $eq, CodeCompletion, CodeDirectionValue, CodeDocument, CodeEdit, CodeGrid, CodeHighlighter, CodeHistory, CodeKeymap, CodeLanguageRules, CodeLanguages, CodeLineCells, CodeMotionValue, CodePosition, CodeRange, KeyboardConventionValue, Point, PointerPhaseValue, Rect } from "../runtime-exports";
 
 export class CodeEditorController {
     constructor(text: string = '', language: any = null, props?: any) {
@@ -18,6 +18,7 @@ export class CodeEditorController {
         this._document = CodeDocument.fromText(text);
         this._selection = new CodeRange(CodePosition.start);
         this.highlighter = new CodeHighlighter(language ?? CodeLanguages.plainText);
+        this.completion = new CodeCompletion(this);
         if (props && typeof props === 'object') Object.assign(this, props);
     }
 
@@ -42,6 +43,7 @@ export class CodeEditorController {
     }
 
     set document(value: CodeDocument) {
+        this.completion.dismiss();
         this._document = value;
         this._widths = null;
         this._selection = new CodeRange(this._document.clamp(this._selection.focus));
@@ -66,6 +68,7 @@ export class CodeEditorController {
 
     declare highlighter: CodeHighlighter;
     history: CodeHistory = new CodeHistory();
+    declare completion: CodeCompletion;
 
     get rules(): CodeLanguageRules {
         return this.highlighter.language.rules;
@@ -226,6 +229,7 @@ export class CodeEditorController {
     handleText(text: string) {
         if (this.readOnly || text.length === 0) return false;
         this.tabMovesFocus = false;
+        if (text.length === 1 && this.completion.acceptsOn(text[0])) this.completion.accept();
         let committing = !(this._composition == null);
         this.endComposition();
         let typed = false;
@@ -235,6 +239,7 @@ export class CodeEditorController {
             typed = $eq.logic.or(typed, end - starts[i] === 1 ? this.type(text[starts[i]]) : this.edit(this._selection, $eq.text.substring(text, starts[i], end - starts[i]), true));
         }
         if (committing) this.history.break();
+        if (typed) this.completion.typed(text[text.length - 1]);
         return typed;
     }
 
@@ -295,6 +300,7 @@ export class CodeEditorController {
         this.history.break();
         this.tabMovesFocus = false;
         if (focused) return;
+        this.completion.dismiss();
         if (!(this._composition == null)) this.setComposition('');
         this._dragging = false;
     }

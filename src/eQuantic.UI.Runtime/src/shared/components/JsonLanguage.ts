@@ -10,6 +10,7 @@ export class JsonLanguage {
     }
 
     rules: CodeLanguageRules = new CodeLanguageRules(undefined, undefined, undefined, ['"'], undefined, undefined, 2);
+    keywords: string[] = ['true', 'false', 'null'];
 
     tokenize(line: string, _state: number, into: CodeToken[]) {
         let i = 0;

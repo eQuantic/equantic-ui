@@ -17,5 +17,9 @@ export class PlainTextLanguage {
     get rules(): CodeLanguageRules {
         return CodeLanguageRules.default;
     }
+
+    get keywords(): string[] {
+        return [];
+    }
 }
 

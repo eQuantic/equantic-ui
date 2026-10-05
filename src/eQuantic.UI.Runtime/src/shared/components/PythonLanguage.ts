@@ -8,10 +8,10 @@ export class PythonLanguage {
     static normal: number = 0;
     static tripleDouble: number = 1;
     static tripleSingle: number = 2;
-    static _keywords: Set<string> | undefined;
+    static _reserved: Set<string> | undefined;
 
-    static get keywords(): Set<string> {
-        return PythonLanguage._keywords ??= new Set(['and', 'as', 'assert', 'async', 'await', 'break', 'class', 'continue', 'def', 'del', 'elif', 'else', 'except', 'finally', 'for', 'from', 'global', 'if', 'import', 'in', 'is', 'lambda', 'match', 'nonlocal', 'not', 'or', 'pass', 'raise', 'return', 'try', 'while', 'with', 'yield']);
+    static get reserved(): Set<string> {
+        return PythonLanguage._reserved ??= new Set(['and', 'as', 'assert', 'async', 'await', 'break', 'class', 'continue', 'def', 'del', 'elif', 'else', 'except', 'finally', 'for', 'from', 'global', 'if', 'import', 'in', 'is', 'lambda', 'match', 'nonlocal', 'not', 'or', 'pass', 'raise', 'return', 'try', 'while', 'with', 'yield']);
     }
 
     static _builtins: Set<string> | undefined;
@@ -26,11 +26,21 @@ export class PythonLanguage {
         return PythonLanguage._constants ??= new Set(['True', 'False', 'None', 'self', 'cls']);
     }
 
+    static _words: string[] | undefined;
+
+    static get words(): string[] {
+        return PythonLanguage._words ??= [...[...$eq.linq.seq(PythonLanguage.reserved), ...$eq.linq.seq(PythonLanguage.builtins)], ...$eq.linq.seq(PythonLanguage.constants)].slice();
+    }
+
     get name(): string {
         return 'Python';
     }
 
     rules: CodeLanguageRules = new CodeLanguageRules('#', undefined, undefined, undefined, [':', '(', '[', '{'], [')', ']', '}'], 4);
+
+    get keywords(): string[] {
+        return PythonLanguage.words;
+    }
 
     tokenize(line: string, state: number, into: CodeToken[]) {
         let i = 0;
@@ -93,7 +103,7 @@ export class PythonLanguage {
                 let start = i;
                 while (i < line.length && CodeDocument.isWordChar(line[i])) i++;
                 let word = line.slice(start, i);
-                let kind: CodeTokenKindValue = PythonLanguage.keywords.has(word) ? 'keyword' : PythonLanguage.constants.has(word) ? 'constant' : PythonLanguage.builtins.has(word) ? 'type' : PythonLanguage.nextNonSpace(line, i) === '(' ? 'function' : (/^\p{Lu}$/u.test(word[0])) ? 'type' : 'plain';
+                let kind: CodeTokenKindValue = PythonLanguage.reserved.has(word) ? 'keyword' : PythonLanguage.constants.has(word) ? 'constant' : PythonLanguage.builtins.has(word) ? 'type' : PythonLanguage.nextNonSpace(line, i) === '(' ? 'function' : (/^\p{Lu}$/u.test(word[0])) ? 'type' : 'plain';
                 PythonLanguage.add(into, start, i - start, kind);
                 continue;
             }

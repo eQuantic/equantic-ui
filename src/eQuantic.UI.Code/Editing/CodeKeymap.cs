@@ -35,8 +35,31 @@ public static class CodeKeymap
     {
         var shift = (modifiers & KeyModifiers.Shift) != 0;
         var command = (modifiers & KeyModifiers.Command) != 0;
+        var control = (modifiers & KeyModifiers.Control) != 0;
         var alt = (modifiers & KeyModifiers.Alt) != 0;
         var apple = convention == KeyboardConvention.Apple;
+
+        // ---- an open completion list ---------------------------------------------------------
+        // While a list shows, the keys that walk it are ITS keys: the arrows and the page keys step
+        // through it, Tab accepts, and Escape closes it, only it, so the trap on Tab stays armed and
+        // a dialog around the editor stays open. An arrow goes back to the caret when one entry
+        // shows, as VS Code has it. Enter accepts only what would change the text: a word typed out
+        // in full ends its line (the list closes as the caret leaves it).
+        var completion = editor.Completion;
+        if (completion.IsOpen && !command && !control && !alt)
+        {
+            if (key == "ArrowDown" && !shift && completion.Move(1)) return true;
+            if (key == "ArrowUp" && !shift && completion.Move(-1)) return true;
+            if (key == "PageDown" && !shift && completion.MovePage(1)) return true;
+            if (key == "PageUp" && !shift && completion.MovePage(-1)) return true;
+            if (key == "Tab" && completion.Accept()) return true;
+            if (key == "Enter" && completion.AcceptChangesText && completion.Accept()) return true;
+            if (key == "Escape") return completion.Dismiss();
+        }
+
+        // ⌃Space, which a browser reports as the command key and a Mac's own shell as Control: asks
+        // for the list where the caret is. Before the chords, which would take a space as a letter.
+        if (key == " " && (command || control) && !shift && !alt) return completion.Invoke();
 
         // ---- the Tab trap --------------------------------------------------------------------
         // An editor TAKES Tab, which is the point — and a keyboard user must still be able to leave
@@ -46,6 +69,8 @@ public static class CodeKeymap
         // its own is not "another key", or Shift+Tab could never leave backwards.
         if (key == "Escape")
         {
+            // A list asked for and not yet showing is dropped: Escape means it was not wanted.
+            completion.Dismiss();
             editor.TabMovesFocus = true;
             return false;
         }

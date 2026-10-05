@@ -32,6 +32,7 @@ public sealed class CodeEditorController : ICodeSurfaceModel
         _document = CodeDocument.FromText(text);
         _selection = new CodeRange(CodePosition.Start);
         Highlighter = new CodeHighlighter(language ?? CodeLanguages.PlainText);
+        Completion = new CodeCompletion(this);
     }
 
     /// <summary>The text, as lines. Replacing it is a full reset — a file was opened.</summary>
@@ -40,6 +41,7 @@ public sealed class CodeEditorController : ICodeSurfaceModel
         get => _document;
         set
         {
+            Completion.Dismiss();
             _document = value;
             _widths = null;
             _selection = new CodeRange(_document.Clamp(_selection.Focus));
@@ -91,6 +93,12 @@ public sealed class CodeEditorController : ICodeSurfaceModel
 
     public CodeHighlighter Highlighter { get; }
     public CodeHistory History { get; } = new();
+
+    /// <summary>
+    /// The completion this editor offers as a word is typed: its providers, and the list while one
+    /// is open. An IDE adds its language service to <see cref="CodeCompletion.Providers"/>.
+    /// </summary>
+    public CodeCompletion Completion { get; }
     public CodeLanguageRules Rules => Highlighter.Language.Rules;
 
     /// <summary>Whether edits are refused — a viewer, a diff pane, a running debugger.</summary>
@@ -367,6 +375,9 @@ public sealed class CodeEditorController : ICodeSurfaceModel
     {
         if (ReadOnly || text.Length == 0) return false;
         TabMovesFocus = false;
+        // A character the selected completion commits on accepts it first, and is then typed after
+        // it: `Console.` takes `Console` and goes on to its members.
+        if (text.Length == 1 && Completion.AcceptsOn(text[0])) Completion.Accept();
         // An input method's commit REPLACES what it was composing: the composition comes out first,
         // so the commit is one ordinary edit from the document the composition began over — one undo
         // step, whatever the candidate window went through on the way.
@@ -387,6 +398,7 @@ public sealed class CodeEditorController : ICodeSurfaceModel
         // A step of its OWN, after as well as before (SetComposition broke the run it began at):
         // the typing that follows a commit does not join it.
         if (committing) History.Break();
+        if (typed) Completion.Typed(text[text.Length - 1]);
         return typed;
     }
 
@@ -491,6 +503,8 @@ public sealed class CodeEditorController : ICodeSurfaceModel
         History.Break();
         TabMovesFocus = false;
         if (focused) return;
+        // A list belongs to the editor being typed in, and this one no longer is.
+        Completion.Dismiss();
         // A composition cannot survive the keyboard leaving: the platform has already dropped it,
         // and text still underlined in the document would claim an input method nobody is using.
         if (_composition is not null) SetComposition("");
