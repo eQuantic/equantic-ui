@@ -14,8 +14,10 @@ namespace eQuantic.UI.Compiler.Tests;
 /// imported, so `new Mute()` named a module no build wrote and the bundle could not resolve it.
 /// <para>
 /// Every kind of class an app declares is here, across files, the way an app's build sees them: the
-/// parser through a real compilation, the resolver through its scan of the directory. They must answer
-/// alike for each, and each kind answers as the rule states.
+/// parser through a real compilation, the resolver through its scan of the directory and the same
+/// compilation, which eqc hands to both. They must answer alike for each, and each kind answers as the
+/// rule states. A host with no compilation at all walks the chain by name, the parser through the
+/// resolver's scan, and the two must answer alike there too.
 /// </para>
 /// </summary>
 public class PlainClassModuleTests
@@ -88,43 +90,119 @@ public class PlainClassModuleTests
             }
             """,
         ["Api.cs"] = "public class Api { public class Header { public string Name = \"nested\"; } public int Version = 1; }",
+        // Each declaration is judged on its own, by its symbol: a server-only class shares its simple
+        // name with a class in another namespace, which the class over it extends. The scan's set of
+        // server-only NAMES kept that class out while the parser wrote it.
+        ["ServerSettings.cs"] = """
+            namespace App.Server
+            {
+                [eQuantic.UI.Primitives.ServerOnly] public class Settings { public string ConnectionString = ""; }
+            }
+            """,
+        ["UiSettings.cs"] = """
+            namespace App.Ui
+            {
+                public class Settings { public int Theme = 1; }
+                public class UserSettings : Settings { public int Font = 14; }
+            }
+            """,
+        // An interface in a base list is no base class, whatever its name says: the resolver judged
+        // `IProductAttribute` as an attribute by its suffix, and kept a module the parser wrote out
+        // of every import.
+        ["Color.cs"] = """
+            public interface IProductAttribute { }
+            public class ColorAttribute : IProductAttribute { public string Name = "red"; }
+            """,
     };
 
     private static readonly string[] Modules =
         ["Mute", "ChainBase", "Echo", "Message", "Ping", "Marker", "Filled", "Helpers", "Outer", "Card", "Split",
-         "FakeException", "Header", "Api"];
+         "FakeException", "Header", "Api", "Settings", "UserSettings", "ColorAttribute"];
 
     private static readonly string[] NotModules =
         ["FooAttribute", "TaggedAttribute", "NotFoundException", "Oops", "Stays", "Provided", "Inner",
          "ServerBase", "OverServer", "OverOverServer", "Hollow", "Failure", "Retry", "LastRetry", "Mark", "Underline"];
 
     [Fact]
-    public void TheParserAndTheResolver_AnswerAlikeForEveryKindOfClass()
+    public void TheParserAndTheResolver_AnswerAlikeForEveryKindOfClass() =>
+        AssertTheRule(Files, library: null, projectCompilation: true, Modules, NotModules);
+
+    /// <summary>
+    /// A base from a LIBRARY the app references is judged as what it is there, by its symbol, and never
+    /// by its name: a plain class named like an attribute is a class, an exception named like nothing
+    /// is an exception, and a server-only class says so in its metadata. The resolver judged all three
+    /// by their names, so it refused the first while the parser wrote it, and imported the other two,
+    /// which nothing wrote.
+    /// </summary>
+    [Fact]
+    public void ABaseFromALibrary_IsJudgedAsWhatItIsThere() =>
+        AssertTheRule(
+            new Dictionary<string, string>
+            {
+                ["Color.cs"] = "public class ColorAttribute : ProductAttribute { public string Hex = \"#fff\"; }",
+                ["Order.cs"] = "public class OrderFailed : DomainError { public int OrderId; }",
+                ["Over.cs"] = "public class OverServer : ServerBase { public int Shown; }",
+            },
+            library: """
+                public class ProductAttribute { public string Name = "p"; }
+                public class DomainError : System.Exception { }
+                [eQuantic.UI.Primitives.ServerOnly] public class ServerBase { public int Secret; }
+                """,
+            projectCompilation: true,
+            modules: ["ColorAttribute"],
+            notModules: ["OrderFailed", "OverServer"]);
+
+    /// <summary>
+    /// A host with no compilation at all walks the chain by NAME, and the parser walks the resolver's
+    /// scan, which reaches the other file: it walked its own file only, stopped at `Failure`, which
+    /// another file declares over `Exception`, and wrote `Retry` as a module the resolver refused.
+    /// </summary>
+    [Fact]
+    public void WithoutACompilation_TheParserWalksTheResolversScan() =>
+        AssertTheRule(
+            new Dictionary<string, string>
+            {
+                ["Failure.cs"] = "public class Failure : System.Exception { }",
+                ["Retry.cs"] = "public class Retry : Failure { public int Attempts; }",
+                ["Color.cs"] = "public interface IProductAttribute { } public class ColorAttribute : IProductAttribute { public string Name = \"red\"; }",
+            },
+            library: null,
+            projectCompilation: false,
+            modules: ["ColorAttribute"],
+            notModules: ["Failure", "Retry"]);
+
+    private static void AssertTheRule(IReadOnlyDictionary<string, string> files, string? library, bool projectCompilation,
+        string[] modules, string[] notModules)
     {
         var dir = Directory.CreateTempSubdirectory("eq-plain-class-module-").FullName;
         try
         {
-            var trees = Files.Select(file =>
+            var trees = files.Select(file =>
             {
                 var path = Path.Combine(dir, file.Key);
                 File.WriteAllText(path, file.Value);
                 return CSharpSyntaxTree.ParseText(file.Value, ParseDefaults.Options, path: path);
             }).ToList();
-            var compilation = CSharpCompilation.Create("App", trees,
-                ((string)AppContext.GetData("TRUSTED_PLATFORM_ASSEMBLIES")!)
-                    .Split(Path.PathSeparator)
-                    .Where(p => p.EndsWith(".dll", StringComparison.OrdinalIgnoreCase))
-                    .Select(p => TestReferences.Of(p))
-                    .Append(TestReferences.Of(typeof(eQuantic.UI.Primitives.VisualNode).Assembly.Location)),
+            var references = ((string)AppContext.GetData("TRUSTED_PLATFORM_ASSEMBLIES")!)
+                .Split(Path.PathSeparator)
+                .Where(p => p.EndsWith(".dll", StringComparison.OrdinalIgnoreCase))
+                .Select(p => TestReferences.Of(p))
+                .Append(TestReferences.Of(typeof(eQuantic.UI.Primitives.VisualNode).Assembly.Location))
+                .ToList();
+            // The library is an assembly, as a package's is: metadata, never a directory the scan reads.
+            if (library is not null) references.Add(Assembly("Lib", library, references));
+            var compilation = CSharpCompilation.Create("App", trees, references,
                 new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
             compilation.GetDiagnostics().Where(d => d.Severity == DiagnosticSeverity.Error).Should().BeEmpty();
 
+            // As eqc does it: the compilation the compiler's model is built from, to both.
             var resolver = new ComponentDependencyResolver();
+            if (projectCompilation) resolver.SetProjectCompilation(compilation);
             resolver.ScanSourceDirectories([dir]);
             var compiler = new ComponentCompiler();
-            compiler.SetProjectCompilation(compilation);
+            if (projectCompilation) compiler.SetProjectCompilation(compilation);
             compiler.SetDependencyResolver(resolver);
-            var written = Files.Keys
+            var written = files.Keys
                 .SelectMany(file => compiler.CompileFile(Path.Combine(dir, file)))
                 .Where(result => result.TypeScript.Length > 0)
                 .Select(result => result.ComponentName)
@@ -134,7 +212,7 @@ public class PlainClassModuleTests
                 .Select(declaration => declaration.Identifier.Text)
                 .Distinct()
                 .ToList();
-            declared.Should().BeEquivalentTo(Modules.Concat(NotModules), "every class of the files is named below");
+            declared.Should().BeEquivalentTo(modules.Concat(notModules), "every class of the files is named below");
 
             var disagreements = declared
                 .Where(name => written.Contains(name) != resolver.IsModule(name))
@@ -143,12 +221,23 @@ public class PlainClassModuleTests
                 .ToList();
             disagreements.Should().BeEmpty("the parser and the resolver read one rule");
 
-            written.Should().Contain(Modules);
-            written.Should().NotContain(NotModules);
+            written.Should().Contain(modules);
+            written.Should().NotContain(notModules);
         }
         finally
         {
             Directory.Delete(dir, recursive: true);
         }
+    }
+
+    /// <summary>The source compiled to an assembly's image, referenced as a built package is.</summary>
+    private static MetadataReference Assembly(string name, string source, IEnumerable<MetadataReference> references)
+    {
+        var library = CSharpCompilation.Create(name, [CSharpSyntaxTree.ParseText(source, ParseDefaults.Options)], references,
+            new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
+        using var image = new MemoryStream();
+        var emitted = library.Emit(image);
+        emitted.Diagnostics.Where(d => d.Severity == DiagnosticSeverity.Error).Should().BeEmpty();
+        return MetadataReference.CreateFromImage(image.ToArray());
     }
 }

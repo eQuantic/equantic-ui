@@ -234,6 +234,10 @@ public class ComponentParser
 
         var stateNames = new HashSet<string>();
 
+        // The chains of bases a parser with no project compilation reads: the resolver's scan, which
+        // reaches every file it read, and this file's own declarations when there is no resolver.
+        var chains = _chains ?? PlainClassModule.Scan.Of(root);
+
         // A PLAIN class — not a component, not static, not a state class — is a model the developer
         // wrote: a bucket, a builder, a small state machine. Nothing emitted one, so `new Bucket()`
         // named something that did not exist. Identity, not value: no structural equals, no `with`.
@@ -243,9 +247,9 @@ public class ComponentParser
             if (stateNames.Contains(classDecl.Identifier.Text)) continue;     // owned by its page
             // The one rule the resolver reads too (#423): what the class IS decides, never whether it
             // declares a member. A class that declared none was skipped here while the resolver had
-            // it imported, so the bundle could not resolve the module every user of it named.
-            if (!PlainClassModule.Is(classDecl, written => BaseKeepsItOut(written, classes))) continue;
-            if (IsServerOnly(classDecl)) continue;                             // never crosses: no module
+            // it imported, so the bundle could not resolve the module every user of it named. A
+            // [ServerOnly] class never crosses, whichever of its declarations says so.
+            if (!PlainClassModule.Is(classDecl, ProjectSymbol(classDecl, model), chains)) continue;
             // Track L D2: a resx Designer is a plain non-static class by shape, and a module of
             // ResourceManager.GetString calls cannot run in a browser — its accessors rewrite to
             // $eq.str at every use site instead. Recorded on the way past (see the static-helper
@@ -437,8 +441,9 @@ public class ComponentParser
     /// <c>[ServerAction]</c>, which keeps the method callable FROM the browser through an RPC stub.
     /// </summary>
     /// <summary>
-    /// The class-level form: <c>[ServerOnly]</c> on a static helper or a plain class says the whole
-    /// type stays on the server, and the parser emits no module for it.
+    /// The class-level form: <c>[ServerOnly]</c> on a static helper says the whole type stays on the
+    /// server, and the parser emits no module for it. A plain class is asked the same of its symbol by
+    /// <see cref="PlainClassModule"/>, the rule the resolver reads too.
     /// <para>
     /// Asked of the SYMBOL, which unifies partial declarations, and not of the declaration in hand.
     /// The syntactic form answered per file, so a partial class spread across six files was
@@ -470,38 +475,25 @@ public class ComponentParser
     }
 
     /// <summary>
-    /// Whether a class's base, as written, keeps the class from a module of its own (#423): the base, or
-    /// a base of its own, is <c>System.Attribute</c>, <c>System.Exception</c> or a type marked
-    /// <c>[ServerOnly]</c>. Asked of the model, which sees the whole chain, a base declared in another
-    /// file or assembly included; without one, of the classes this file declares, and of the name a
-    /// base outside them has.
+    /// The chains of bases the resolver's scan saw across every file it read (#423), which this parser
+    /// reads for the plain-class rule when its host has no project compilation to ask: its own file stops
+    /// at a base another file declares, and `class Retry : Failure` over another file's
+    /// `class Failure : Exception` was written as a module the resolver never imported.
     /// </summary>
-    private bool BaseKeepsItOut(TypeSyntax written, IReadOnlyList<ClassDeclarationSyntax> fileClasses)
-    {
-        if (TryGetSemanticModel(written.SyntaxTree)?.GetSymbolInfo(written).Symbol is INamedTypeSymbol resolved)
-        {
-            for (var type = resolved; type is not null; type = type.BaseType)
-            {
-                if (type.GetAttributes().Any(a => a.AttributeClass?.Name is "ServerOnly" or "ServerOnlyAttribute"))
-                    return true;
-                if (type is { Name: "Attribute" or "Exception", ContainingType: null, Arity: 0 }
-                    && type.ContainingNamespace is { Name: "System", ContainingNamespace.IsGlobalNamespace: true })
-                    return true;
-            }
-            return false;
-        }
+    internal void SetChains(PlainClassModule.Scan chains) => _chains = chains;
 
-        var seen = new HashSet<string>(StringComparer.Ordinal);
-        for (var name = written.TwinTypeName(model: null); seen.Add(name);)
-        {
-            var declared = fileClasses.FirstOrDefault(c => c.Identifier.Text == name);
-            if (declared is null) return PlainClassModule.KeepsOutByName(name);
-            if (declared.AttributeLists.SelectMany(list => list.Attributes).Any(a => a.IsNamed("ServerOnly"))) return true;
-            if (declared.BaseList?.Types.FirstOrDefault()?.Type is not { } next) return false;
-            name = next.TwinTypeName(model: null);
-        }
-        return false;
-    }
+    private PlainClassModule.Scan? _chains;
+
+    /// <summary>
+    /// A class's type in the PROJECT's compilation, which the plain-class rule asks for its chain of
+    /// bases (#423), as the resolver asks the same compilation; null where the host has none. The
+    /// minimal model of one file is not asked: it cannot bind a base another file declares, and the
+    /// resolver, which reads every file, would answer from names alone.
+    /// </summary>
+    private INamedTypeSymbol? ProjectSymbol(ClassDeclarationSyntax declaration, SemanticModel? model) =>
+        _semanticModelProvider?.HasProjectCompilation == true
+            ? model?.GetDeclaredSymbol(declaration) as INamedTypeSymbol
+            : null;
 
     private bool IsRuntimeProvided(ClassDeclarationSyntax classDecl)
     {

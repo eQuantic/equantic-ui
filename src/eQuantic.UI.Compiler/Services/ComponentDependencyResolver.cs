@@ -28,53 +28,55 @@ public class ComponentDependencyResolver
     /// its own, a nested one included, as the parser writes one for every component it finds.</summary>
     private readonly HashSet<string> _componentLike = new(StringComparer.Ordinal);
 
-    /// <summary>A class that is not a component or a static helper, as the scan saw it: whether the
-    /// plain-class rule takes it on everything but its chain of bases, and the base it names.</summary>
-    private readonly record struct ScannedClass(string Name, bool PlainOnItsOwn, string? Base);
+    /// <summary>A class that is not a component or a static helper, as the scan saw it: what the
+    /// plain-class rule reads of its declaration, and the CLR name its type is found by in the
+    /// project's compilation.</summary>
+    private readonly record struct ScannedClass(PlainClassModule.Declared Declared, string MetadataName);
 
     private readonly List<ScannedClass> _classes = new();
 
-    /// <summary>The classes the scan saw marked <c>[ServerOnly]</c>.</summary>
-    private readonly HashSet<string> _serverOnly = new(StringComparer.Ordinal);
+    /// <summary>Every type declaration the scan read, by name: the chain of bases a host with no
+    /// compilation walks, and the one the parser of such a host reads too (<see cref="Chains"/>).</summary>
+    private readonly PlainClassModule.Scan _scan = new();
 
-    /// <summary>Every class the scan saw, by name: a chain that reaches one is the app's, and is never
-    /// judged by its name.</summary>
-    private readonly HashSet<string> _declared = new(StringComparer.Ordinal);
+    /// <summary>The project's compilation, which answers for every class's chain by symbol; null for a
+    /// host that has none.</summary>
+    private Compilation? _projectCompilation;
 
     /// <summary>The plain-class modules, settled over every file the scan read; null until asked, and
-    /// again after another file is read.</summary>
+    /// again after another file is read or the compilation changes.</summary>
     private HashSet<string>? _plainClassesSettled;
 
     /// <summary>
+    /// Hands over the project's compilation, the one the compiler's model is built from, so each class's
+    /// chain of bases is asked of its SYMBOL, as the parser asks it, and not of the names the scan saw:
+    /// a base from a referenced library is what it is there, whatever its name says, and an interface is
+    /// never on the chain. A host without one walks the chain by name (<see cref="PlainClassModule"/>).
+    /// </summary>
+    public void SetProjectCompilation(Compilation compilation)
+    {
+        _projectCompilation = compilation;
+        _plainClassesSettled = null;
+    }
+
+    /// <summary>What the scan saw of the app's declarations, which the parser reads for the chain of a
+    /// class when its host has no compilation: the scan reaches across files, a parser's own file does
+    /// not.</summary>
+    internal PlainClassModule.Scan Chains => _scan;
+
+    /// <summary>
     /// Which of the scanned classes are plain-class modules: the predicate's answer over the CHAIN of
-    /// bases the scan saw, in any file it read. A class is kept out by a base that stays on the server
-    /// (marked <c>[ServerOnly]</c>), and by a chain that leaves the scan at an attribute or an exception
-    /// of .NET, known there by its name (<see cref="PlainClassModule.KeepsOutByName"/>):
-    /// <c>class Retry : Failure</c> over <c>class Failure : Exception</c> is an exception, which its own
-    /// base's name does not say.
+    /// base classes, by symbol in the project's compilation, and through the scan of every file read
+    /// where there is none (<see cref="PlainClassModule"/>). Each declaration is judged on its own, so
+    /// two classes that share a simple name, in two namespaces, are two answers.
     /// </summary>
     private HashSet<string> PlainClasses()
     {
         if (_plainClassesSettled is { } settled) return settled;
-        var bases = new Dictionary<string, string?>(StringComparer.Ordinal);
-        foreach (var scanned in _classes) bases.TryAdd(scanned.Name, scanned.Base);
-
-        bool KeptOut(string? name)
-        {
-            var seen = new HashSet<string>(StringComparer.Ordinal);
-            while (name is not null && seen.Add(name))
-            {
-                if (_serverOnly.Contains(name)) return true;
-                if (!bases.TryGetValue(name, out var next) && !_declared.Contains(name))
-                    return PlainClassModule.KeepsOutByName(name);
-                name = next;
-            }
-            return false;
-        }
-
         var modules = new HashSet<string>(StringComparer.Ordinal);
         foreach (var scanned in _classes)
-            if (scanned.PlainOnItsOwn && !KeptOut(scanned.Base)) modules.Add(scanned.Name);
+            if (PlainClassModule.Is(scanned.Declared, _projectCompilation?.GetTypeByMetadataName(scanned.MetadataName), _scan))
+                modules.Add(scanned.Declared.Name);
         _plainClassesSettled = modules;
         return modules;
     }
@@ -139,6 +141,7 @@ public class ComponentDependencyResolver
     public static ComponentDependencyResolver From(Compilation compilation)
     {
         var resolver = new ComponentDependencyResolver();
+        resolver.SetProjectCompilation(compilation);
         foreach (var tree in compilation.SyntaxTrees) resolver.Analyze(tree.GetRoot());
         return resolver;
     }
@@ -154,13 +157,15 @@ public class ComponentDependencyResolver
                 _recordTypes.Add(valueType.Identifier.Text);
         }
 
+        _scan.Add(root);
+        _plainClassesSettled = null;
+
         // Find all class declarations
         var classes = root.DescendantNodes().OfType<ClassDeclarationSyntax>();
 
         foreach (var classDecl in classes)
         {
             var className = classDecl.Identifier.Text;
-            _declared.Add(className);
 
             // [RuntimeProvided] types already exist in @equantic/runtime. The resolver is the
             // no-project-semantic-model fallback used to decide whether a referenced name is a
@@ -195,14 +200,8 @@ public class ComponentDependencyResolver
             // can be declared in another file.
             else
             {
-                _classes.Add(new ScannedClass(className,
-                    PlainClassModule.Is(classDecl, _ => false),
-                    classDecl.BaseList?.Types.FirstOrDefault()?.Type is { } written ? written.TwinTypeName(model: null) : null));
+                _classes.Add(new ScannedClass(PlainClassModule.Declared.Of(classDecl), Parser.ComponentParser.ClrIdentity(classDecl)));
             }
-
-            if (classDecl.AttributeLists.SelectMany(list => list.Attributes).Any(attribute => attribute.IsNamed("ServerOnly")))
-                _serverOnly.Add(className);
-            _plainClassesSettled = null;
 
             // Get base type
             var baseType = classDecl.BaseList?.Types.FirstOrDefault();

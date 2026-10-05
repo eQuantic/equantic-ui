@@ -236,6 +236,10 @@ if (Directory.Exists(standardComponentsPath))
 }
 
 dependencyResolver.GeneratedDirectory = generatedDir;
+// The compilation the compiler's model is built from: the resolver asks it for each class's chain of
+// bases, as the parser does, so who imports a plain class and who writes it read one answer (#423).
+// Without it the resolver judges a library's base by its name, and an interface by its name too.
+if (projectCompilation is not null) dependencyResolver.SetProjectCompilation(projectCompilation);
 dependencyResolver.ScanSourceDirectories(componentDirectories);
 compiler.SetDependencyResolver(dependencyResolver);
 

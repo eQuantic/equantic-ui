@@ -7,3 +7,4 @@ eQuantic.UI.Compiler.CodeGen.ValueMember.Deconstruct(out string! Display, out st
 eQuantic.UI.Compiler.CodeGen.ValueMember.Printed.get -> bool
 eQuantic.UI.Compiler.CodeGen.ValueMember.Printed.init -> void
 eQuantic.UI.Compiler.CodeGen.ValueMember.ValueMember(string! Display, string! Js, string! TsType, bool Printed, Microsoft.CodeAnalysis.SyntaxNode! Declaration) -> void
+eQuantic.UI.Compiler.Services.ComponentDependencyResolver.SetProjectCompilation(Microsoft.CodeAnalysis.Compilation! compilation) -> void

@@ -145,7 +145,9 @@ public static class ModuleGraph
         compilation.GetDiagnostics().Where(d => d.Severity == DiagnosticSeverity.Error).Select(d => d.ToString())
             .Should().BeEmpty("the case is C# that compiles");
 
+        // The compilation reaches the resolver as eqc hands it over, so the suite runs eqc's own path.
         var resolver = new ComponentDependencyResolver();
+        resolver.SetProjectCompilation(compilation);
         resolver.ScanSourceDirectories([dir]);
         var compiler = new ComponentCompiler { TypeAnnotations = typeAnnotations };
         compiler.SetProjectCompilation(compilation);
