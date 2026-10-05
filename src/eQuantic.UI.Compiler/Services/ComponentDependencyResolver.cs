@@ -194,8 +194,9 @@ public class ComponentDependencyResolver
             }
 
             // A component is a module of its own, as the parser writes one for every component it
-            // finds, a nested one included.
-            else if (IsComponentLike(classDecl))
+            // finds, a nested one included. A static class never is one, whatever its methods are
+            // called: a nested `static class Copy` with a `Build` helper is its owner's scope.
+            else if (!classDecl.Modifiers.Any(SyntaxKind.StaticKeyword) && IsComponentLike(classDecl))
             {
                 _componentLike.Add(className);
             }

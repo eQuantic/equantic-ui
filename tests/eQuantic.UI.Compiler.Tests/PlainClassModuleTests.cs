@@ -90,6 +90,9 @@ public class PlainClassModuleTests
             }
             """,
         ["Api.cs"] = "public class Api { public class Header { public string Name = \"nested\"; } public int Version = 1; }",
+        // A nested STATIC class is its owner's scope whatever its methods are called: a helper named
+        // `Build` made the scan take it for a component, a module nobody writes.
+        ["Shell.cs"] = "public class Shell { public static class Copy { public static string Build(string s) => s; } public string Text => Copy.Build(\"x\"); }",
         // Each declaration is judged on its own, by its symbol: a server-only class shares its simple
         // name with a class in another namespace, which the class over it extends. The scan's set of
         // server-only NAMES kept that class out while the parser wrote it.
@@ -117,11 +120,12 @@ public class PlainClassModuleTests
 
     private static readonly string[] Modules =
         ["Mute", "ChainBase", "Echo", "Message", "Ping", "Marker", "Filled", "Helpers", "Outer", "Card", "Split",
-         "FakeException", "Header", "Api", "Settings", "UserSettings", "ColorAttribute"];
+         "FakeException", "Header", "Api", "Settings", "UserSettings", "ColorAttribute", "Shell"];
 
     private static readonly string[] NotModules =
         ["FooAttribute", "TaggedAttribute", "NotFoundException", "Oops", "Stays", "Provided", "Inner",
-         "ServerBase", "OverServer", "OverOverServer", "Hollow", "Failure", "Retry", "LastRetry", "Mark", "Underline"];
+         "ServerBase", "OverServer", "OverOverServer", "Hollow", "Failure", "Retry", "LastRetry", "Mark", "Underline",
+         "Copy"];
 
     [Fact]
     public void TheParserAndTheResolver_AnswerAlikeForEveryKindOfClass() =>
