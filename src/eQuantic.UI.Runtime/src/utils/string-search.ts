@@ -302,6 +302,48 @@ export function lastIndexOf(
   return found >= 0 ? found + begin : found;
 }
 
+/**
+ * `IndexOf(char, startIndex, [count])`, as .NET 10's `String.Searching.cs` answers it: a char
+ * search is ordinal, the start may stand at the end of the string, and the count runs no further
+ * than it. JavaScript's `indexOf` clamped a start outside the string and has no count, so the count
+ * was dropped (#534).
+ */
+export function indexOfChar(
+  source: string | null | undefined,
+  value: string,
+  startIndex: number,
+  count?: number,
+): number {
+  const text = receiver(source);
+  const length = count === undefined ? text.length - startIndex : count;
+  requireRange(text, startIndex, length);
+  const found = ordinalIndexOf(text, startIndex, length, value);
+  return found >= 0 ? found + startIndex : found;
+}
+
+/**
+ * `LastIndexOf(char, startIndex, [count])`, as .NET 10's `String.Searching.cs` answers it, which is
+ * not `CompareInfo`'s normalization the string overloads take: an empty string answers -1 for any
+ * start and count, the start must stand on a char of the string (one past the end throws), and the
+ * search runs back `count` chars from it, the start included.
+ */
+export function lastIndexOfChar(
+  source: string | null | undefined,
+  value: string,
+  startIndex: number,
+  count?: number,
+): number {
+  const text = receiver(source);
+  if (text.length === 0) return -1;
+  if (startIndex < 0 || startIndex >= text.length)
+    throw outOfRange('startIndex', INDEX_BELOW_LENGTH);
+  const length = count === undefined ? startIndex + 1 : count;
+  if (length < 0 || length > startIndex + 1) throw outOfRange('count', COUNT);
+  const begin = startIndex + 1 - length;
+  const found = ordinalLastIndexOf(text, begin, length, value);
+  return found >= 0 ? found + begin : found;
+}
+
 /** `Contains(value, comparisonType)` and the char overload: `IndexOf` found it. */
 export function contains(
   source: string | null | undefined,

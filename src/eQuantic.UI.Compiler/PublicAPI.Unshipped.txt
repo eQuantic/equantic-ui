@@ -1,1 +1,3 @@
 #nullable enable
+const eQuantic.UI.Compiler.CodeGen.Eq.StringIndexOfChar = "$eq.text.indexOfChar" -> string!
+const eQuantic.UI.Compiler.CodeGen.Eq.StringLastIndexOfChar = "$eq.text.lastIndexOfChar" -> string!

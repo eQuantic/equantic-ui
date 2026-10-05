@@ -178,6 +178,12 @@ public static class Eq
     /// <summary>A string's own <c>LastIndexOf</c> by a comparison, with its start and count,
     /// normalized as .NET's <c>CompareInfo</c> normalizes them.</summary>
     public const string StringLastIndexOf = "$eq.text.lastIndexOf";
+    /// <summary>A string's own <c>IndexOf(char, startIndex[, count])</c>: ordinal, the start and the
+    /// count checked as .NET 10 checks a char's search.</summary>
+    public const string StringIndexOfChar = "$eq.text.indexOfChar";
+    /// <summary>A string's own <c>LastIndexOf(char, startIndex[, count])</c>: ordinal, -1 for an empty
+    /// string, and a start that stands on a char of the string.</summary>
+    public const string StringLastIndexOfChar = "$eq.text.lastIndexOfChar";
     /// <summary>A string's own <c>Contains(value, comparisonType)</c>, and the char overload.</summary>
     public const string StringContains = "$eq.text.contains";
     /// <summary>A string's own <c>Replace(oldValue, newValue[, comparisonType])</c>: the replacement
