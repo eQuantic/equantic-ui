@@ -251,6 +251,9 @@ public class StaticInitializationConformanceTests
 
         public class Grid { public static readonly int Cells = Side * Side; public const int Side = 3; public int Count() => Cells; }
 
+        public class Money { public int Cents; public static implicit operator Money(int cents) => new Money { Cents = cents * 100 }; }
+        public static class Prices { public static readonly Money Base = 5; public static Money Other { get; } = Least; public const int Least = 7; }
+
         public sealed class Meter : StatelessComponent
         {
             public static readonly int Max = Default * 2;
@@ -269,6 +272,8 @@ public class StaticInitializationConformanceTests
         ("a constant of another type, read through using static", "return Derived.Next;"),                                  // 51
         ("a plain class's static over a later constant", "return Grid.Cells + \"|\" + new Grid().Count();"),              // "9|9"
         ("a component's static field and property over a later constant", "return Meter.Max + \"|\" + Meter.Least;"),     // "100|10"
+        // A user-defined conversion of a constant is code that runs, never the constant itself.
+        ("a constant through a user-defined conversion", "return Prices.Base.Cents + \"|\" + Prices.Other.Cents;"),      // "500|700"
     ];
 
     [SkippableTheory]

@@ -175,13 +175,15 @@ internal static class TypeInitializer
     /// included (<c>static long L = 1;</c> is the long 1); null for one it does not fold. A nullable or
     /// a reference conversion holds the constant it converts as it is, as the twin holds it:
     /// <c>static int? N = Default;</c> and <c>static object O = Default;</c> are the constant itself,
-    /// which C# does not fold for them, and which their initializer named all the same.
+    /// which C# does not fold for them, and which their initializer named all the same. A user-defined
+    /// conversion is code that runs (<c>static Money M = 5;</c> is <c>Money.fromInt(5)</c>), never the
+    /// constant it converts.
     /// </summary>
     private static IOperation? ConstantValue(EqualsValueClauseSyntax initializer, SemanticModel model)
     {
         if (model.GetOperation(initializer) is not ISymbolInitializerOperation { Value: { } value }) return null;
         while (!value.ConstantValue.HasValue
-               && value is IConversionOperation { Operand: { } operand } conversion
+               && value is IConversionOperation { Operand: { } operand, Conversion.IsUserDefined: false } conversion
                && (conversion.Conversion.IsNullable || conversion.Type is { IsReferenceType: true }))
             value = operand;
         return value.ConstantValue.HasValue ? value : null;
