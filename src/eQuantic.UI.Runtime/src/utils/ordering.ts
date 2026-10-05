@@ -9,22 +9,22 @@
  *  - `text` — a string in the current culture, as `string.CompareTo` orders one;
  *  - `comparable` — by the value's own `compareTo`: a decimal, a date, and a type of the app's own
  *    that implements `IComparable`;
- *  - an enum's values by name ({@link EnumOrder}) — a member crosses as its camelCase name, and
- *    .NET orders it by its value, so `High` after `Low` whatever their names say.
+ *  - an enum's values, read through its shape ({@link EnumShape}) — a member crosses as its camelCase
+ *    name, and .NET orders it by its value, so `High` after `Low` whatever their names say.
  *
  * A null comes before every value and equals another null, as it does in .NET. One table serves
  * `Max`/`Min`, every sorted collection the compiler builds, and every one a hydration rebuilds, so
  * a set that crossed from the server orders as one the browser makes.
  */
 import { compare as compareStrings } from './string-statics';
-
-export type Ordering = 'value' | 'real' | 'text' | 'comparable' | EnumOrder;
+import { value, type EnumShape } from './enums';
 
 /**
- * A non-flags enum's members, by the camelCase name a value crosses as, and the value .NET orders it
- * by. A flags enum is a number here and orders as a `value`.
+ * A non-flags enum orders by the shape its module declares once (#547): a value crosses as its
+ * member's camelCase name, which ordered alphabetically. A flags enum is its number here and orders as
+ * a `value`, a BigInt for a 64-bit one, which `<` compares exactly.
  */
-export type EnumOrder = Readonly<Record<string, number>>;
+export type Ordering = 'value' | 'real' | 'text' | 'comparable' | EnumShape;
 
 interface Comparable {
   compareTo(other: unknown): number;
@@ -63,15 +63,13 @@ function byText(a: unknown, b: unknown): number {
   return compareStrings(a as string | null | undefined, b as string | null | undefined, 'currentCulture');
 }
 
-function byEnum(values: EnumOrder): (a: unknown, b: unknown) => number {
+function byEnum(shape: EnumShape): (a: unknown, b: unknown) => number {
   // A value no member names is a number already (an undeclared one, cast in): it orders as itself.
-  const valueOf = (name: unknown): number =>
-    Object.prototype.hasOwnProperty.call(values, name as string) ? values[name as string] : Number(name);
   return (a, b) => {
     if (a == null) return b == null ? 0 : -1;
     if (b == null) return 1;
-    const x = valueOf(a);
-    const y = valueOf(b);
+    const x = value(a, shape)!;
+    const y = value(b, shape)!;
     return x < y ? -1 : x > y ? 1 : 0;
   };
 }

@@ -99,6 +99,13 @@ public class ConversionContext
     public bool ConstructorParametersInScope { get; set; }
     public HashSet<string> UsedHelpers { get; } = new();
 
+    /// <summary>
+    /// The module the conversion writes into, which declares once what its code reads at every call:
+    /// an enum's table (#547). Null where an expression converts alone, outside any module, and the
+    /// table is written where it is read.
+    /// </summary>
+    internal ModuleConstants? Module { get; set; }
+
     /// <summary>APP types the conversion itself introduced into the OUTPUT — names that never
     /// appear in the source syntax (an extension call reduced to `NodeExtensions.also(...)`), so
     /// the syntax-walking import collector cannot see them. The emitter unions these into the
@@ -181,6 +188,7 @@ public class ConversionContext
         UsedHelpers.Clear();
         UsedAppTypes.Clear();
         UsedRuntimeTypes.Clear();
+        Module = null;
         _cache.Clear();
         ExpectedType = null;
         IteratorBuffer = null;
@@ -192,6 +200,10 @@ public class ConversionContext
     // once as an operand and once on its own must be the same expression both times, and only the
     // IR remembers how tightly it binds.
     private readonly Dictionary<SyntaxNode, JsExpr> _cache = new();
+
+    /// <summary>Forgets every node converted so far: a conversion cached in one module names that
+    /// module's constants, which another module does not declare.</summary>
+    internal void ClearCache() => _cache.Clear();
 
     public JsExpr? GetCached(SyntaxNode node)
     {

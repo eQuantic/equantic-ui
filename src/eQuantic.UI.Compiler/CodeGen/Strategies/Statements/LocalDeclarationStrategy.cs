@@ -156,7 +156,7 @@ public class LocalDeclarationStrategy : IStatementStrategy
         string ts;
         if (underlying is INamedTypeSymbol { TypeKind: TypeKind.Enum } enumType)
         {
-            if (enumType.GetAttributes().Any(a => a.AttributeClass?.Name == "FlagsAttribute")) ts = "number";
+            if (enumType.GetAttributes().Any(a => a.AttributeClass?.Name == "FlagsAttribute")) ts = Types.EnumShape.FlagsTsType(enumType);
             else if (CodeGen.TypeScriptEmitter.VocabularyUnionFor(enumType) is { } union)
             {
                 context.UsedRuntimeTypes.Add(union);

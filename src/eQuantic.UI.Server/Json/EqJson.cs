@@ -66,10 +66,12 @@ public static class EqJson
 
     private sealed class CamelCaseEnumConverter<TEnum> : JsonConverter<TEnum> where TEnum : struct, Enum
     {
+        private static readonly bool Unsigned = Enum.GetUnderlyingType(typeof(TEnum)) == typeof(ulong);
+
         public override TEnum Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
             if (reader.TokenType == JsonTokenType.Number)
-                return (TEnum)Enum.ToObject(typeof(TEnum), reader.GetInt64());
+                return (TEnum)(Unsigned ? Enum.ToObject(typeof(TEnum), reader.GetUInt64()) : Enum.ToObject(typeof(TEnum), reader.GetInt64()));
             return Parse(reader.GetString());
         }
 
@@ -99,8 +101,10 @@ public static class EqJson
     /// <summary>
     /// A <c>[Flags]</c> enum crosses as its NUMBER, which the transpiled side holds, a dictionary's key
     /// included. System.Text.Json's own converter already writes the value as a number, but it writes a
-    /// key by the member names (<c>"Read, Write"</c>), which the browser does not hold (#442). Reads
-    /// take the number, as a number or as text, or the names, and refuse anything else.
+    /// key by the member names (<c>"Read, Write"</c>), which the browser does not hold (#442). A 64-bit
+    /// one crosses as its number's TEXT, as a <c>long</c> does: the browser holds it as a BigInt, and a
+    /// JSON number past 2^53 reaches it as another number (#551). Reads take the number, as a number or
+    /// as text, or the names, and refuse anything else.
     /// </summary>
     private sealed class FlagsEnumConverter : JsonConverterFactory
     {
@@ -116,6 +120,8 @@ public static class EqJson
     {
         private static readonly bool Unsigned = Enum.GetUnderlyingType(typeof(TEnum)) == typeof(ulong);
 
+        private static readonly bool Wide = Unsigned || Enum.GetUnderlyingType(typeof(TEnum)) == typeof(long);
+
         public override TEnum Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options) =>
             reader.TokenType == JsonTokenType.Number
                 ? (TEnum)(Unsigned ? Enum.ToObject(typeof(TEnum), reader.GetUInt64()) : Enum.ToObject(typeof(TEnum), reader.GetInt64()))
@@ -123,14 +129,17 @@ public static class EqJson
 
         public override void Write(Utf8JsonWriter writer, TEnum value, JsonSerializerOptions options)
         {
-            if (Unsigned) writer.WriteNumberValue(Convert.ToUInt64(value, CultureInfo.InvariantCulture));
+            if (Wide) writer.WriteStringValue(Text(value));
             else writer.WriteNumberValue(Convert.ToInt64(value, CultureInfo.InvariantCulture));
         }
 
+        /// <summary>The number's text, read unsigned for a ulong under it.</summary>
+        private static string Text(TEnum value) => Unsigned
+            ? Convert.ToUInt64(value, CultureInfo.InvariantCulture).ToString(CultureInfo.InvariantCulture)
+            : Convert.ToInt64(value, CultureInfo.InvariantCulture).ToString(CultureInfo.InvariantCulture);
+
         public override void WriteAsPropertyName(Utf8JsonWriter writer, TEnum value, JsonSerializerOptions options) =>
-            writer.WritePropertyName(Unsigned
-                ? Convert.ToUInt64(value, CultureInfo.InvariantCulture).ToString(CultureInfo.InvariantCulture)
-                : Convert.ToInt64(value, CultureInfo.InvariantCulture).ToString(CultureInfo.InvariantCulture));
+            writer.WritePropertyName(Text(value));
 
         public override TEnum ReadAsPropertyName(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options) =>
             Parse(reader.GetString());

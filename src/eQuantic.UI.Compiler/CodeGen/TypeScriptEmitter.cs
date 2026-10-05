@@ -157,7 +157,7 @@ public class TypeScriptEmitter
         var entries = carried
             .Select(value => $"{value.Key}: {(value.Projection is { } projection
                 ? ProjectionSpec(value.Type, projection)
-                : HydrationSpec.Of(value.Type, referenced, _hydrationRuntimeReferences) ?? "'declared'")}")
+                : HydrationSpec.Of(value.Type, referenced, _hydrationRuntimeReferences, _converter.Module) ?? "'declared'")}")
             .ToList();
         if (entries.Count == 0) return;
         // A GETTER, never a field: the map can name a class (`_geometry: BarChartGeometry`), and a
@@ -201,7 +201,7 @@ public class TypeScriptEmitter
         {
             var spec = child.Children.Count > 0
                 ? Members(child)
-                : HydrationSpec.Of(child.Leaf, _hydrationReferences, _hydrationRuntimeReferences);
+                : HydrationSpec.Of(child.Leaf, _hydrationReferences, _hydrationRuntimeReferences, _converter.Module);
             if (spec is not null) entries.Add($"{segment.ToCamelCase()}: {spec}");
         }
         return entries.Count == 0 ? null : $"{{ members: {{ {string.Join(", ", entries)} }} }}";
@@ -325,6 +325,8 @@ public class TypeScriptEmitter
         // Everything the PREVIOUS component left behind goes here — the node cache above all, which
         // pins a syntax tree per entry and used to survive this point (see ConversionContext.Reset).
         _converter.Reset();
+        // The module's constants: what its code reads at every call and builds once (#547).
+        _converter.BeginModule();
         _hydrationReferences.Clear();
         _hydrationRuntimeReferences.Clear();
         _annotationReferences.Clear();
@@ -700,7 +702,7 @@ public class TypeScriptEmitter
                     // as a string, a Task<List<Todo>> as plain objects — hydrated ONCE here, by
                     // the spec of the C# return type, so the caller computes with runtime types.
                     var invoke = $"getServerActionsClient().invoke('{action.ActionId}', [{argsList}])";
-                    var resultSpec = HydrationSpec.Of(ActionValueType(action.SyntaxNode), _hydrationReferences, _hydrationRuntimeReferences);
+                    var resultSpec = HydrationSpec.Of(ActionValueType(action.SyntaxNode), _hydrationReferences, _hydrationRuntimeReferences, _converter.Module);
                     if (resultSpec is not null) component.UsedHelpers.Add(Eq.Import);
 
                     c.Member(JsClassMember.Method("async ", action.MethodName.ToCamelCase(), "", paramsList, "", JsStatement.Block(new[]
@@ -749,11 +751,12 @@ public class TypeScriptEmitter
         // actually referenced, so it is passed in to drop imports the scan over-collected.
         var imports = Imports(component, nestedCode + componentCode);
 
-        // Return imports + nested scope classes + component code. The two builders recorded their
-        // mappings against their own text, and the module puts the imports above both and the
-        // nested classes above the component: every segment moves down by what stands above it,
-        // or a frame read through the map lands that many lines too early (#293).
-        var module = new JsModule(imports, nestedCode + componentCode);
+        // Return imports + constants + nested scope classes + component code. The two builders
+        // recorded their mappings against their own text, and the module puts the imports and the
+        // constants above both and the nested classes above the component: every segment moves down
+        // by what stands above it, or a frame read through the map lands that many lines too early
+        // (#293).
+        var module = new JsModule(imports, _converter.EndModule(), nestedCode + componentCode);
         var bodyLine = JsModuleWriter.BodyLine(module);
         _builder.ShiftMappings(bodyLine + nestedCode.Count(c => c == '\n'));
         if (nb is not null) _builder.AddMappings(nb.GetMappings(), bodyLine);
@@ -2168,7 +2171,7 @@ public class TypeScriptEmitter
                 var crossesAs = argument.TypeKind switch
                 {
                     TypeKind.Interface => "any",
-                    TypeKind.Enum => IsFlags(argument) ? "number" : EnumUnion(argument),
+                    TypeKind.Enum => IsFlags(argument) ? Strategies.Types.EnumShape.FlagsTsType(argument) : EnumUnion(argument),
                     _ => null,
                 };
                 if (crossesAs is null) continue;
@@ -2180,8 +2183,8 @@ public class TypeScriptEmitter
         var core = (echoed ? resolved : null) switch
         {
             // An enum crosses as its member STRING — unless it is [Flags], whose members COMBINE
-            // and therefore cross as the number the bitwise operators need.
-            { TypeKind: TypeKind.Enum } => IsFlags(resolved!) ? "number" : EnumUnion(resolved!),
+            // and therefore cross as the number the bitwise operators need, a BigInt for a 64-bit one.
+            { TypeKind: TypeKind.Enum } => IsFlags(resolved!) ? Strategies.Types.EnumShape.FlagsTsType(resolved!) : EnumUnion(resolved!),
             { TypeKind: TypeKind.Interface } => "any",
             { TypeKind: TypeKind.TypeParameter } => resolved!.Name,
             // A name nothing here can VERIFY is a name the module may not resolve. Annotating with
@@ -2350,6 +2353,8 @@ public class TypeScriptEmitter
         _converter.UsedHelpers.Clear();
         _converter.UsedAppTypes.Clear();
         _converter.UsedRuntimeTypes.Clear();
+        // The module's constants: what its code reads at every call and builds once (#547).
+        _converter.BeginModule();
         // This module's diagnostics start at zero — without this, GetLastDiagnostics() after a
         // plain-class/static-helper emit still carried the PREVIOUS component's entries, and now
         // that ComponentCompiler drains every branch, a leak here would fail the wrong file.
@@ -2443,8 +2448,9 @@ public class TypeScriptEmitter
             if (runtimeProvided.Contains(ct) || referencedEnums.Contains(ct)) continue;
             if (IsAppModule(ct)) imports.Add(new JsImport([ct], $"./{ct}"));
         }
-        var module = new JsModule(imports, builder.ToString());
-        // The class's mappings were recorded against its own text; the imports stand above it.
+        var module = new JsModule(imports, _converter.EndModule(), builder.ToString());
+        // The class's mappings were recorded against its own text; the imports and the constants
+        // stand above it.
         builder.ShiftMappings(JsModuleWriter.BodyLine(module));
         return JsModuleWriter.Write(module);
     }

@@ -46,6 +46,32 @@ public class CSharpToJsConverter
     /// <summary>The model in force, for an emitter that must ASK what a default refers to.</summary>
     internal SemanticModel? Model => _semanticModel;
 
+    /// <summary>
+    /// Opens a module for the conversions that follow: what they read at every call and build once,
+    /// an enum's table, is declared in it (#547), and <see cref="EndModule"/> hands the declarations to
+    /// the module's writer. Without one, a conversion writes the table where it reads it. The nodes
+    /// converted before are forgotten, since a conversion cached in another module names constants
+    /// this one does not declare.
+    /// </summary>
+    public void BeginModule()
+    {
+        _context.Module = new ModuleConstants();
+        _context.ClearCache();
+    }
+
+    /// <summary>The constants of the module <see cref="BeginModule"/> opened, in the order they were
+    /// first read, and the module closed. Empty when none was open.</summary>
+    public IReadOnlyList<JsConstant> EndModule()
+    {
+        var declared = _context.Module?.Declared ?? [];
+        _context.Module = null;
+        return declared;
+    }
+
+    /// <summary>The module open for the conversions, for an emitter that writes a table outside one
+    /// (a hydration spec); null where none is.</summary>
+    internal ModuleConstants? Module => _context.Module;
+
     /// <summary>See <see cref="ConversionContext.SymbolsAreAuthoritative"/> — set true by hosts
     /// that hand over the project's COMPLETE compilation (SDK build, design session, test
     /// harnesses that compile their snippets). Survives <see cref="Reset"/>: it describes the

@@ -81,7 +81,7 @@ public class MinMaxStrategy : IConversionStrategy
         // came after a selector would be refused too rather than dropped.
         if (parameters.Any(parameter => parameter.Type.Name == "IComparer"))
             return context.Unhandled(invocation, "LINQ Max/Min with a comparer");
-        if (OrderingOf(method.ReturnType) is not var (ordering, nullable))
+        if (OrderingOf(method.ReturnType, context) is not var (ordering, nullable))
             return context.Unhandled(invocation, $"LINQ Max/Min over {method.ReturnType.ToDisplayString()}");
 
         context.UsedHelpers.Add(Eq.Import);
@@ -102,8 +102,8 @@ public class MinMaxStrategy : IConversionStrategy
 
     /// <summary>How the runtime orders the values a call answers (<see cref="ValueOrdering"/>), and
     /// whether it answers null. Null where the values have no faithful order this side.</summary>
-    private static (string Ordering, bool Nullable)? OrderingOf(ITypeSymbol type) =>
-        ValueOrdering.Of(type) is { } ordering ? (ordering, type.IsReferenceType || type.IsNullableValue()) : null;
+    private static (string Ordering, bool Nullable)? OrderingOf(ITypeSymbol type, ConversionContext context) =>
+        ValueOrdering.Of(type, context.Module) is { } ordering ? (ordering, type.IsReferenceType || type.IsNullableValue()) : null;
 
     public int Priority => 10;
 }

@@ -44,6 +44,15 @@ describe('hydrateValue', () => {
     expect(hydrateValue(0, 42)).toBe(42);
   });
 
+  it('lets a member name reach an enum field whose default is its value 0', () => {
+    // An enum with no zero member defaults to the number 0, and a 64-bit one to 0n (#551): read as a
+    // number the name was NaN and dropped for the default, and read as a BigInt it threw.
+    expect(hydrateValue(0, 'high')).toBe('high');
+    expect(hydrateValue(0n, 'top')).toBe('top');
+    expect(hydrateValue(0n, '4611686018427387904')).toBe(4611686018427387904n);
+    expect(hydrateValue(0, '7')).toBe(7);
+  });
+
   it('passes null/undefined through', () => {
     expect(hydrateValue(dec('0'), null)).toBeNull();
     expect(hydrateValue(0n, undefined)).toBeUndefined();

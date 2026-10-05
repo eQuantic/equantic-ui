@@ -131,25 +131,15 @@ public class NullableStrategy : IConversionStrategy
                 return $"{Eq.Dec}(0)";
         }
 
-        // Enum: default is the member whose constant value is 0 (its name; enums are member-name
-        // strings at runtime). If no zero-valued member exists, .NET still yields the numeric 0.
-        if (t is { TypeKind: TypeKind.Enum })
-        {
-            var zero = t.GetMembers()
-                .OfType<IFieldSymbol>()
-                .FirstOrDefault(f => f.HasConstantValue && IsZero(f.ConstantValue));
-            return zero != null ? $"\"{zero.Name}\"" : "0";
-        }
+        // An enum's default is its value 0 as the browser holds it, by the one rule
+        // (EnumShape.HeldLiteral): the zero member's camelCase key, a flags enum's 0, a 64-bit one's
+        // 0n. It was the member's DECLARED name in double quotes, which no enum value is here.
+        if (t is INamedTypeSymbol { TypeKind: TypeKind.Enum } enumType)
+            return EnumShape.HeldLiteral(enumType, 0);
 
         // char / DateTime / Guid / other structs: no faithful no-arg default modelled — use the
         // explicit GetValueOrDefault(fallback) form for those.
         return "null";
-    }
-
-    private static bool IsZero(object? constant)
-    {
-        try { return constant != null && System.Convert.ToInt64(constant) == 0; }
-        catch { return false; }
     }
 
     public int Priority => 25;

@@ -1,13 +1,14 @@
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using eQuantic.UI.Compiler.CodeGen.Ir;
 
 namespace eQuantic.UI.Compiler.CodeGen.Strategies.Types;
 
 /// <summary>
-/// Converts <c>enumValue.HasFlag(flag)</c>. A <c>[Flags]</c> enum is represented numerically (see
-/// <see cref="EnumStrategy"/>), so <c>HasFlag</c> becomes the bitwise test <c>(value &amp; flag) === flag</c>
-/// (true when every bit of <c>flag</c> is set). For a non-flags enum (string repr) a single
-/// value "has" only itself, so it degrades to equality.
+/// Converts <c>enumValue.HasFlag(flag)</c>: whether every bit of the flag's value is set in the
+/// receiver's (<see cref="EnumOperators.HasFlag"/>), at the underlying type's width, for any enum. A
+/// non-flags enum answered equality, which .NET does not (a member with no bits is in every value),
+/// and a uint's high bit compared negative with positive.
 /// </summary>
 public class EnumHasFlagStrategy : IConversionStrategy
 {
@@ -29,16 +30,13 @@ public class EnumHasFlagStrategy : IConversionStrategy
         var invocation = (InvocationExpressionSyntax)node;
         var memberAccess = (MemberAccessExpressionSyntax)invocation.Expression;
 
-        var receiver = context.Converter.ConvertExpression(memberAccess.Expression);
-        var flag = context.Converter.ConvertExpression(invocation.ArgumentList.Arguments[0].Expression);
+        var receiver = context.Converter.ConvertIr(memberAccess.Expression);
+        var flag = context.Converter.ConvertIr(invocation.ArgumentList.Arguments[0].Expression);
 
-        // Bitwise test for [Flags] (numeric) enums; equality for a known non-flags (string) enum.
-        var receiverType = context.SemanticHelper.GetType(memberAccess.Expression);
-        var knownNonFlags = receiverType is { TypeKind: TypeKind.Enum } && !receiverType.IsFlagsEnum();
-
-        return knownNonFlags
-            ? $"({receiver} === {flag})"
-            : $"(({receiver} & {flag}) === {flag})";
+        // Without a model the method name is all there is, and the bitwise test is what it names.
+        return JsExprWriter.Write(EnumOperators.EnumOf(context.SemanticHelper.GetType(memberAccess.Expression)) is { } enumType
+            ? EnumOperators.HasFlag(enumType, receiver, flag, context)
+            : JsExpr.Template("(({0} & {1}) === {1})", [receiver, flag], context.TypeAnnotations));
     }
 
     // Above the generic invocation handling.

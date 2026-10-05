@@ -29,15 +29,17 @@ public static class HydrationSpec
 {
     /// <summary>The JS spec literal for <paramref name="type"/>, or null when hydration is the
     /// identity. Record/struct names the spec references are added to <paramref name="referenced"/>
-    /// so the caller can import their modules.</summary>
-    public static string? Of(ITypeSymbol? type, ISet<string> referenced, ISet<string> runtime) =>
-        Of(type, new References(referenced, runtime), new HashSet<INamedTypeSymbol>(SymbolEqualityComparer.Default));
+    /// so the caller can import their modules, and the enum shapes it orders by are the
+    /// <paramref name="module"/>'s constants (#547).</summary>
+    public static string? Of(ITypeSymbol? type, ISet<string> referenced, ISet<string> runtime, ModuleConstants? module) =>
+        Of(type, new References(referenced, runtime, module), new HashSet<INamedTypeSymbol>(SymbolEqualityComparer.Default));
 
     /// <summary>Where the names a spec mentions come from: <c>InSource</c> are this compilation's
     /// own twins, sibling modules; <c>Runtime</c> are the vocabulary's, which only
     /// <c>@equantic/runtime</c> exports. A caller that imported a runtime twin from a sibling module
-    /// emitted `import { Rect } from "./Rect"`, a module that exists nowhere.</summary>
-    private readonly record struct References(ISet<string> InSource, ISet<string> Runtime);
+    /// emitted `import { Rect } from "./Rect"`, a module that exists nowhere. <c>Module</c> declares
+    /// the enum shapes an order reads.</summary>
+    private readonly record struct References(ISet<string> InSource, ISet<string> Runtime, ModuleConstants? Module);
 
     private static string? Of(ITypeSymbol? type, References referenced, HashSet<INamedTypeSymbol> visiting)
     {
@@ -66,6 +68,11 @@ public static class HydrationSpec
 
         if (Scalar(named) is { } scalar) return scalar;
 
+        // A 64-bit [Flags] enum is its value here, a BigInt as a long is (#551), and crosses as the
+        // text EqJson writes for it, as a long does. A narrower one's value is a number on both sides,
+        // and any other enum crosses as its member's name, which is what the browser holds.
+        if (named is { TypeKind: TypeKind.Enum } && named.IsFlagsEnum() && EnumShape.IsWide(named)) return "'long'";
+
         // A dictionary before the enumerable walk — it IS IEnumerable<KeyValuePair<,>>, but it
         // crosses as a JSON object, which always has to become the runtime's dictionary class. Only
         // the dictionaries the lowering treats as that class: another shape that implements
@@ -82,7 +89,7 @@ public static class HydrationSpec
         if (BoundaryShape.CollectionClass(named) is { } collection)
         {
             // A sorted set orders as its element type does (ValueOrdering), as one eqc builds does.
-            var order = collection == "sortedSet" && ValueOrdering.Of(named.TypeArguments[0]) is { } ordering
+            var order = collection == "sortedSet" && ValueOrdering.Of(named.TypeArguments[0], referenced.Module) is { } ordering
                 ? $", order: {ordering}"
                 : "";
             return $"{{ collection: '{collection}', of: {Of(named.TypeArguments[0], referenced, visiting) ?? "null"}{order} }}";
@@ -195,7 +202,7 @@ public static class HydrationSpec
         if (dictionary.DictionaryFactory() is Eq.SortedDictionary or Eq.SortedList)
         {
             parts.Add("sorted: true");
-            if (ValueOrdering.Of(key) is { } ordering) parts.Add($"order: {ordering}");
+            if (ValueOrdering.Of(key, referenced.Module) is { } ordering) parts.Add($"order: {ordering}");
         }
         else if (DictionaryStrategy.KeyEquality(key) is { } equality) parts.Add($"byValue: {equality}");
         return $"{{ {string.Join(", ", parts)} }}";
@@ -205,12 +212,14 @@ public static class HydrationSpec
     /// How the property name System.Text.Json writes for a key of this type becomes the key (a
     /// <c>HydrationKey</c> of <c>utils/hydrate.ts</c>): a number, a bool, or a compat scalar by its tag.
     /// Null where the name IS the key: a string, a char, a <c>Guid</c>, an enum's camelCase name. A
-    /// <c>[Flags]</c> enum's key is its number's text (EqJson), and a number here (#442).
+    /// <c>[Flags]</c> enum's key is its number's text (EqJson), and a number here (#442), or a BigInt
+    /// for a 64-bit one, which a number read past 2^53 wrong (#551).
     /// </summary>
     private static string? KeyTag(ITypeSymbol key)
     {
         var type = key.UnwrapNullable() ?? key;
-        if (type is INamedTypeSymbol { TypeKind: TypeKind.Enum } flags && flags.IsFlagsEnum()) return "'number'";
+        if (type is INamedTypeSymbol { TypeKind: TypeKind.Enum } flags && flags.IsFlagsEnum())
+            return EnumShape.IsWide(flags) ? "'long'" : "'number'";
         switch (type.SpecialType)
         {
             case SpecialType.System_Boolean:
@@ -270,16 +279,16 @@ public static class HydrationSpec
     /// <summary>Whether any data member (transitively) has a spec — see the visiting guard above.</summary>
     private static bool HasHydratableMemberOf(INamedTypeSymbol named, HashSet<INamedTypeSymbol> visiting)
     {
-        var throwaway = new References(new HashSet<string>(), new HashSet<string>());
+        var throwaway = new References(new HashSet<string>(), new HashSet<string>(), null);
         return DataMembers(named).Any(member => Of(member.Type, throwaway, visiting) is not null);
     }
 
     /// <summary>The member map for a record/struct twin — <c>{ id: 'long', price: Money }</c> with
     /// the twin's camelCased member names — or null when no member needs hydration.</summary>
-    public static string? Members(INamedTypeSymbol type, ISet<string> referenced, ISet<string> runtime)
+    public static string? Members(INamedTypeSymbol type, ISet<string> referenced, ISet<string> runtime, ModuleConstants? module)
     {
         var entries = DataMembers(type)
-            .Select(m => (m.Name, Spec: Of(m.Type, referenced, runtime)))
+            .Select(m => (m.Name, Spec: Of(m.Type, referenced, runtime, module)))
             .Where(m => m.Spec is not null)
             .Select(m => $"{m.Name.ToCamelCase()}: {m.Spec}")
             .ToList();

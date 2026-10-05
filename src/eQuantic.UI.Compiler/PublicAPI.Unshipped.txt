@@ -134,3 +134,32 @@ const eQuantic.UI.Compiler.CodeGen.Eq.LinqSeq = "$eq.linq.seq" -> string!
 const eQuantic.UI.Compiler.CodeGen.Eq.LinqToArray = "$eq.linq.toArray" -> string!
 const eQuantic.UI.Compiler.CodeGen.Eq.TextChars = "$eq.text.chars" -> string!
 const eQuantic.UI.Compiler.CodeGen.Eq.LinqEnumerable = "$eq.linq.enumerable" -> string!
+*REMOVED*static eQuantic.UI.Compiler.CodeGen.HydrationSpec.Members(Microsoft.CodeAnalysis.INamedTypeSymbol! type, System.Collections.Generic.ISet<string!>! referenced, System.Collections.Generic.ISet<string!>! runtime) -> string?
+*REMOVED*static eQuantic.UI.Compiler.CodeGen.HydrationSpec.Of(Microsoft.CodeAnalysis.ITypeSymbol? type, System.Collections.Generic.ISet<string!>! referenced, System.Collections.Generic.ISet<string!>! runtime) -> string?
+*REMOVED*eQuantic.UI.Compiler.CodeGen.Ir.JsModule.Deconstruct(out System.Collections.Generic.IReadOnlyList<eQuantic.UI.Compiler.CodeGen.Ir.JsImport!>! Imports, out string! Body) -> void
+*REMOVED*eQuantic.UI.Compiler.CodeGen.Ir.JsModule.JsModule(System.Collections.Generic.IReadOnlyList<eQuantic.UI.Compiler.CodeGen.Ir.JsImport!>! Imports, string! Body) -> void
+eQuantic.UI.Compiler.CodeGen.CSharpToJsConverter.BeginModule() -> void
+eQuantic.UI.Compiler.CodeGen.CSharpToJsConverter.EndModule() -> System.Collections.Generic.IReadOnlyList<eQuantic.UI.Compiler.CodeGen.Ir.JsConstant!>!
+const eQuantic.UI.Compiler.CodeGen.Eq.EnumValue = "$eq.enums.value" -> string!
+const eQuantic.UI.Compiler.CodeGen.Eq.EnumHold = "$eq.enums.hold" -> string!
+static eQuantic.UI.Compiler.CodeGen.HydrationSpec.Members(Microsoft.CodeAnalysis.INamedTypeSymbol! type, System.Collections.Generic.ISet<string!>! referenced, System.Collections.Generic.ISet<string!>! runtime, eQuantic.UI.Compiler.CodeGen.ModuleConstants? module) -> string?
+static eQuantic.UI.Compiler.CodeGen.HydrationSpec.Of(Microsoft.CodeAnalysis.ITypeSymbol? type, System.Collections.Generic.ISet<string!>! referenced, System.Collections.Generic.ISet<string!>! runtime, eQuantic.UI.Compiler.CodeGen.ModuleConstants? module) -> string?
+eQuantic.UI.Compiler.CodeGen.Ir.JsConstant
+eQuantic.UI.Compiler.CodeGen.Ir.JsConstant.<Clone>$() -> eQuantic.UI.Compiler.CodeGen.Ir.JsConstant!
+eQuantic.UI.Compiler.CodeGen.Ir.JsConstant.Deconstruct(out string! Name, out string! Value) -> void
+eQuantic.UI.Compiler.CodeGen.Ir.JsConstant.Equals(eQuantic.UI.Compiler.CodeGen.Ir.JsConstant? other) -> bool
+eQuantic.UI.Compiler.CodeGen.Ir.JsConstant.JsConstant(string! Name, string! Value) -> void
+override eQuantic.UI.Compiler.CodeGen.Ir.JsConstant.Equals(object? obj) -> bool
+override eQuantic.UI.Compiler.CodeGen.Ir.JsConstant.GetHashCode() -> int
+override eQuantic.UI.Compiler.CodeGen.Ir.JsConstant.ToString() -> string!
+static eQuantic.UI.Compiler.CodeGen.Ir.JsConstant.operator !=(eQuantic.UI.Compiler.CodeGen.Ir.JsConstant? left, eQuantic.UI.Compiler.CodeGen.Ir.JsConstant? right) -> bool
+static eQuantic.UI.Compiler.CodeGen.Ir.JsConstant.operator ==(eQuantic.UI.Compiler.CodeGen.Ir.JsConstant? left, eQuantic.UI.Compiler.CodeGen.Ir.JsConstant? right) -> bool
+eQuantic.UI.Compiler.CodeGen.Ir.JsConstant.Name.get -> string!
+eQuantic.UI.Compiler.CodeGen.Ir.JsConstant.Name.init -> void
+eQuantic.UI.Compiler.CodeGen.Ir.JsConstant.Value.get -> string!
+eQuantic.UI.Compiler.CodeGen.Ir.JsConstant.Value.init -> void
+eQuantic.UI.Compiler.CodeGen.Ir.JsModule.Deconstruct(out System.Collections.Generic.IReadOnlyList<eQuantic.UI.Compiler.CodeGen.Ir.JsImport!>! Imports, out System.Collections.Generic.IReadOnlyList<eQuantic.UI.Compiler.CodeGen.Ir.JsConstant!>! Constants, out string! Body) -> void
+eQuantic.UI.Compiler.CodeGen.Ir.JsModule.JsModule(System.Collections.Generic.IReadOnlyList<eQuantic.UI.Compiler.CodeGen.Ir.JsImport!>! Imports, System.Collections.Generic.IReadOnlyList<eQuantic.UI.Compiler.CodeGen.Ir.JsConstant!>! Constants, string! Body) -> void
+eQuantic.UI.Compiler.CodeGen.Ir.JsModule.Constants.get -> System.Collections.Generic.IReadOnlyList<eQuantic.UI.Compiler.CodeGen.Ir.JsConstant!>!
+eQuantic.UI.Compiler.CodeGen.Ir.JsModule.Constants.init -> void
+eQuantic.UI.Compiler.CodeGen.ModuleConstants

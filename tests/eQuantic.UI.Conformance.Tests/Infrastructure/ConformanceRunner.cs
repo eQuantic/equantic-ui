@@ -2,6 +2,7 @@ using System;
 using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
+using eQuantic.UI.Compiler.CodeGen.Ir;
 using FluentAssertions;
 
 namespace eQuantic.UI.Conformance.Tests.Infrastructure;
@@ -30,11 +31,12 @@ public static class ConformanceRunner
     /// </summary>
     public static void AssertStatementsSameAsDotNet(string csharpStatements, string prelude = "")
     {
-        var jsBlock = Transpiler.TranspileStatements(csharpStatements, prelude);
-        var types = Transpiler.EmitDeclaredRecordTypes(prelude);
+        var (jsBlock, constants) = Transpiler.StatementsInModule(csharpStatements, prelude);
+        var (types, typeConstants) = Transpiler.DeclaredRecordTypesInModule(prelude);
+        var declared = Declarations(constants, typeConstants);
         // Top-level undefined canonicalizes to null: the transpiled world treats them as ONE
         // (the `== null` doctrine), and C#'s side of a guarded chain answers null.
-        var program = $"{BuildHelperImport(jsBlock + types)}{types}{Log(jsBlock)}";
+        var program = $"{BuildHelperImport(jsBlock + types)}{declared}{types}{Log(jsBlock)}";
 
         var actual = JsExecutor.Run(program);
         var expected = DotNetEvaluator.EvaluateToJson(csharpStatements, prelude);
@@ -74,8 +76,8 @@ public static class ConformanceRunner
     /// </summary>
     public static void AssertSameAsDotNetExceptTheHostsNewline(string csharpExpression, string why)
     {
-        var js = Transpiler.TranspileExpression(csharpExpression, "");
-        var program = $"{BuildHelperImport(js)}console.log(JSON.stringify(((v) => v === undefined ? null : v)({js})))";
+        var (js, constants) = Transpiler.ExpressionInModule(csharpExpression, "");
+        var program = $"{BuildHelperImport(js)}{Declarations(constants)}console.log(JSON.stringify(((v) => v === undefined ? null : v)({js})))";
 
         var actual = JsExecutor.Run(program);
         var expected = DotNetEvaluator.EvaluateToJson(csharpExpression, "");
@@ -128,9 +130,9 @@ public static class ConformanceRunner
     public static void AssertStatementsWithinAnUlpOfDotNet(
         string csharpStatements, string why, string prelude = "")
     {
-        var jsBlock = Transpiler.TranspileStatements(csharpStatements, prelude);
-        var types = Transpiler.EmitDeclaredRecordTypes(prelude);
-        var program = $"{BuildHelperImport(jsBlock + types)}{types}{Log(jsBlock)}";
+        var (jsBlock, constants) = Transpiler.StatementsInModule(csharpStatements, prelude);
+        var (types, typeConstants) = Transpiler.DeclaredRecordTypesInModule(prelude);
+        var program = $"{BuildHelperImport(jsBlock + types)}{Declarations(constants, typeConstants)}{types}{Log(jsBlock)}";
 
         var actual = JsExecutor.Run(program);
         var expected = DotNetEvaluator.EvaluateToJson(csharpStatements, prelude);
@@ -201,8 +203,8 @@ public static class ConformanceRunner
     /// </summary>
     public static void AssertSameAsDotNetIgnoringHostNewline(string csharpExpression)
     {
-        var js = Transpiler.TranspileExpression(csharpExpression, prelude: "");
-        var program = $"{BuildHelperImport(js)}console.log(JSON.stringify(((v) => v === undefined ? null : v)({js})))";
+        var (js, constants) = Transpiler.ExpressionInModule(csharpExpression, prelude: "");
+        var program = $"{BuildHelperImport(js)}{Declarations(constants)}console.log(JSON.stringify(((v) => v === undefined ? null : v)({js})))";
 
         var actual = JsExecutor.Run(program);
         var expected = DotNetEvaluator.EvaluateToJson(csharpExpression, prelude: "")
@@ -220,9 +222,9 @@ public static class ConformanceRunner
     /// </summary>
     public static void AssertSameAsDotNet(string csharpExpression, string prelude)
     {
-        var js = Transpiler.TranspileExpression(csharpExpression, prelude);
-        var types = Transpiler.EmitDeclaredRecordTypes(prelude);
-        var program = $"{BuildHelperImport(js + types)}{types}console.log(JSON.stringify(((v) => v === undefined ? null : v)({js})))";
+        var (js, constants) = Transpiler.ExpressionInModule(csharpExpression, prelude);
+        var (types, typeConstants) = Transpiler.DeclaredRecordTypesInModule(prelude);
+        var program = $"{BuildHelperImport(js + types)}{Declarations(constants, typeConstants)}{types}console.log(JSON.stringify(((v) => v === undefined ? null : v)({js})))";
 
         var actual = JsExecutor.Run(program);
         var expected = DotNetEvaluator.EvaluateToJson(csharpExpression, prelude);
@@ -241,14 +243,15 @@ public static class ConformanceRunner
     public static void AssertVocabularyStatementsSameAsDotNet(string csharpStatements)
     {
         const string prelude = "using eQuantic.UI.Primitives;";
-        var jsBlock = Transpiler.TranspileStatements(csharpStatements, prelude);
+        var (jsBlock, constants) = Transpiler.StatementsInModule(csharpStatements, prelude);
         var url = RuntimeJsUrl()
             ?? throw new InvalidOperationException("Could not locate the bundled runtime.js.");
         var named = RuntimeExports.Value
             .Where(name => name != "$eq" && Regex.IsMatch(jsBlock, $@"(?<![\w$.]){Regex.Escape(name)}\b"))
             .ToList();
         if (jsBlock.Contains("$eq.")) named.Insert(0, "$eq");
-        var program = (named.Count == 0 ? "" : $"import {{ {string.Join(", ", named)} }} from '{url}';\n") + Log(jsBlock);
+        var program = (named.Count == 0 ? "" : $"import {{ {string.Join(", ", named)} }} from '{url}';\n")
+            + Declarations(constants) + Log(jsBlock);
 
         var actual = JsExecutor.Run(program);
         var expected = DotNetEvaluator.EvaluateToJson(csharpStatements, prelude);
@@ -276,6 +279,29 @@ public static class ConformanceRunner
         var json = JsExecutor.Run($"import * as runtime from '{url}';\n"
             + $"console.log(JSON.stringify(Object.fromEntries([{list}].map(name => [name, typeof runtime[name]]))));");
         return System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, string>>(json)!;
+    }
+
+    /// <summary>
+    /// The constants the program declares above its code, as a module declares them after its imports
+    /// (an enum's table, #547): the snippet's and the prelude's types', converted apart, which ask for
+    /// the same enum by the same name. A name declared twice with two values is a broken case, and says
+    /// so rather than running whichever came last.
+    /// </summary>
+    private static string Declarations(params IReadOnlyList<JsConstant>[] sets)
+    {
+        var declared = new Dictionary<string, string>(StringComparer.Ordinal);
+        var lines = new System.Text.StringBuilder();
+        foreach (var constant in sets.SelectMany(set => set))
+        {
+            if (declared.TryGetValue(constant.Name, out var value))
+            {
+                value.Should().Be(constant.Value, $"the program declares {constant.Name} once, for one enum");
+                continue;
+            }
+            declared[constant.Name] = constant.Value;
+            lines.Append("const ").Append(constant.Name).Append(" = ").Append(constant.Value).Append(";\n");
+        }
+        return lines.ToString();
     }
 
     /// <summary>

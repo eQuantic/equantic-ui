@@ -68,10 +68,10 @@ public static class CollectionComparerExtensions
     /// where the element type's would be the current culture's. Null for any other comparer, which
     /// <see cref="ReportUntranslatableComparer"/> reports, and for an element type with no order here.
     /// </summary>
-    internal static string? OrderingAskedFor(this IOperation comparer, ITypeSymbol element) => Asked(comparer) switch
+    internal static string? OrderingAskedFor(this IOperation comparer, ITypeSymbol element, ModuleConstants? module) => Asked(comparer) switch
     {
         Ask.Ordinal => "'value'",
-        Ask.Default => Strategies.ValueOrdering.Of(element),
+        Ask.Default => Strategies.ValueOrdering.Of(element, module),
         _ => null,
     };
 

@@ -103,7 +103,7 @@ public static class TypeDeclarationExtensions
                 // the vocabulary, so a record member can be passed where that union is expected
                 // (see TypeScriptEmitter.EnumUnion for the whole story).
                 var lowered = core.GetAttributes().Any(a => a.AttributeClass?.Name == "FlagsAttribute")
-                    ? "number"
+                    ? Strategies.Types.EnumShape.FlagsTsType(core)
                     : TypeScriptEmitter.VocabularyUnionFor(core) ?? "string";
                 return type is NullableTypeSyntax ? $"{lowered} | null" : lowered;
             }

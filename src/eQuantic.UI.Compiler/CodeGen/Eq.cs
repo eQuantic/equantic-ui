@@ -213,6 +213,14 @@ public static class Eq
     /// <summary><c>Enum.IsDefined</c>.</summary>
     public const string EnumIsDefined = "$eq.enums.isDefined";
 
+    /// <summary>The value an enum value is, from the key the browser holds for it: what a cast to a
+    /// number and an operator read.</summary>
+    public const string EnumValue = "$eq.enums.value";
+
+    /// <summary>The key the browser holds for an enum's value, or the value where no member has it:
+    /// what a cast from a number and an operator's result write.</summary>
+    public const string EnumHold = "$eq.enums.hold";
+
     /// <summary>C# multicast delegates: `+=` composes an invocation list, `-=` drops the last
     /// occurrence. JavaScript has neither, and `+=` emitted literally is string concatenation.</summary>
     public const string CombineDelegate = "$eq.delegates.combine";

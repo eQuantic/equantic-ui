@@ -494,12 +494,11 @@ public class ObjectCreationStrategy : IConversionStrategy
             : parameter.Type is INamedTypeSymbol { OriginalDefinition.SpecialType: SpecialType.System_Nullable_T } nullable
                 ? nullable.TypeArguments[0]
                 : null;
-        if (enumType is { TypeKind: TypeKind.Enum })
-        {
-            var member = enumType.GetMembers().OfType<IFieldSymbol>()
-                .FirstOrDefault(f => f.HasConstantValue && Equals(f.ConstantValue, value));
-            if (member != null) return $"'{member.Name.ToCamelCase()}'";
-        }
+        // An enum's default is what the twin holds for its value (EnumShape.HeldLiteral): a member's
+        // key, a [Flags] enum's value, which was written as the key of the member that has it, and a
+        // 64-bit one's BigInt.
+        if (enumType is INamedTypeSymbol { TypeKind: TypeKind.Enum } enumDefault)
+            return Types.EnumShape.HeldLiteral(enumDefault, value);
 
         // A string or a char is spelled by the one writer of JavaScript strings: quoted by hand, a
         // default of "it's" closed its own quotes and a char had none at all (`M.g(,, 1)`, #520).

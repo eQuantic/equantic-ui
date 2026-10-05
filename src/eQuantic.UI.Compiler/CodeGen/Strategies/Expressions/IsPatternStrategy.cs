@@ -103,7 +103,8 @@ public class IsPatternStrategy : IConversionStrategy
 
     /// <summary>
     /// A constant a pattern names, as JavaScript writes it, from its bound value: an enum's member as
-    /// the value the twin holds (its camelCase name, or a flags enum's number), a decimal as the
+    /// the value the twin holds (its camelCase name, or a flags enum's value, a BigInt for a 64-bit
+    /// one), any other value of an enum as the twin holds it too, a decimal as the
     /// runtime's Decimal, and any other constant as its literal. The name parsed as a TYPE
     /// (<c>Limits.Max</c> is a qualified name there), so converting the syntax wrote it as it was
     /// spelled, a class nothing defines.
@@ -116,18 +117,12 @@ public class IsPatternStrategy : IConversionStrategy
         var value = converted;
         while (value is IConversionOperation conversion) value = conversion.Operand;
         if (value is IFieldReferenceOperation { Field: { ContainingType.TypeKind: TypeKind.Enum, HasConstantValue: true } member })
-        {
-            return member.ContainingType.IsFlagsEnum()
-                ? System.Convert.ToDecimal(member.ConstantValue, System.Globalization.CultureInfo.InvariantCulture)
-                    .ToString(System.Globalization.CultureInfo.InvariantCulture)
-                : $"'{member.Name.ToCamelCase()}'";
-        }
-        // An enum's value reached otherwise (`x is (Level)1`) is the member that holds it.
-        if (value.Type is INamedTypeSymbol { TypeKind: TypeKind.Enum } enumType && !enumType.IsFlagsEnum()
-            && value.ConstantValue is { HasValue: true } enumValue
-            && enumType.GetMembers().OfType<IFieldSymbol>().FirstOrDefault(field =>
-                field.HasConstantValue && Equals(field.ConstantValue, enumValue.Value)) is { } named)
-            return $"'{named.Name.ToCamelCase()}'";
+            return Types.EnumStrategy.MemberLiteral(member);
+        // An enum's value reached otherwise (`x is (Level)1`) is what the twin holds for it: the
+        // member that has it, or the value no member names.
+        if (value.Type is INamedTypeSymbol { TypeKind: TypeKind.Enum } enumType
+            && value.ConstantValue is { HasValue: true, Value: not null } enumValue)
+            return Types.EnumShape.HeldLiteral(enumType, enumValue.Value);
         var constant = converted.ConstantValue.HasValue ? converted.ConstantValue : value.ConstantValue;
         if (constant is { HasValue: true, Value: decimal exact })
         {

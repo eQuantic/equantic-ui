@@ -150,6 +150,13 @@ public class AssignmentExpressionStrategy : IExpressionIrStrategy
                     ?? ((current, operand) => JsExpr.Binary(current, binaryOp, operand));
                 return Compound((current, operand) => NullableLift.Binary(current, operand, rule, context));
             }
+            // An ENUM target computes its operator on the values, at the underlying type's width, and
+            // holds the result (EnumOperators): `flags |= Top` stored a uint's high bit negative and a
+            // non-flags key's `|=` stored 0. A nullable one inside the lift.
+            if (Types.EnumOperators.Compound(binaryOp, leftType, assignment, context) is { } enumRule)
+                return Compound(leftType.IsNullableValue()
+                    ? (current, operand) => NullableLift.Binary(current, operand, enumRule, context)
+                    : enumRule);
             if (Rule(binaryOp, leftType, assignment, context) is { } typed) return Compound(typed);
         }
 

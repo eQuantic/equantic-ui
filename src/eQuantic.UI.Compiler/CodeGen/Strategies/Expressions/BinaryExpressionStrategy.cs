@@ -61,6 +61,13 @@ public class BinaryExpressionStrategy : IExpressionIrStrategy
         // side. See BoolLogic.
         if (BoolLogic.Lower(binary, op, leftIr, rightIr, context) is { } logical) return logical;
 
+        // An ENUM's operator computes on the values at the underlying type's width, and holds an enum
+        // result again (EnumOperators): a flags enum's `|` computed in signed 32 bits, a long's lost
+        // its high flags, and a non-flags one's applied to the keys the browser holds (#555). Ahead of
+        // the long branch below, which took `e + aLong` for a long's own arithmetic. Equality stays
+        // below, comparing what is held.
+        if (Types.EnumOperators.Binary(binary, op, leftIr, rightIr, context) is { } enumeration) return enumeration;
+
         // A LIFTED operator over nullable numbers takes its value's rule inside the lift (#372):
         // the decimal and long branches below compute on their runtime types and never saw a null.
         if (Lifted(binary, op, leftIr, rightIr, context) is { } liftedOperator) return liftedOperator;
@@ -254,26 +261,10 @@ public class BinaryExpressionStrategy : IExpressionIrStrategy
             };
         }
 
-        // ENUM ARITHMETIC: an enum crosses as its member NAME, so `day + 1` needs the value behind
-        // the name and, when the result is the enum again, the name behind the value. Not a string
-        // concatenation, where the enum is boxed and printed by its name (StringConversion): its text
-        // indexed the value table, and `"," + rank` wrote `,undefined` (#535).
-        var resultType = context.SemanticHelper.GetType(binary);
-        if (op is "+" or "-" or "*" or "/" or "%" or "<" or ">" or "<=" or ">="
-            && resultType?.SpecialType != SpecialType.System_String
-            && (EnumOperand(binary.Left, context) is not null || EnumOperand(binary.Right, context) is not null))
-        {
-            leftIr = EnumValue(binary.Left, leftIr, context);
-            rightIr = EnumValue(binary.Right, rightIr, context);
-            var computed = JsExpr.Binary(leftIr, op, rightIr);
-            return resultType is INamedTypeSymbol { TypeKind: TypeKind.Enum } resultEnum
-                ? Types.EnumShape.Held(resultEnum, computed, context)
-                : computed;
-        }
-
         // A FIXED-WIDTH result settles by its type (IntegerWidth): sub-int widths and uint wrap,
         // int and long wrap under an explicit `unchecked`, a checked context throws. An int
         // product goes through Math.imul, which wraps exactly where a double would lose bits.
+        var resultType = context.SemanticHelper.GetType(binary);
         if (op is "+" or "-" or "*" or "<<" && IntegerWidth.Of(resultType) is { } width)
         {
             var arithmetic = ArithmeticContext.Of(binary, context);
@@ -307,15 +298,6 @@ public class BinaryExpressionStrategy : IExpressionIrStrategy
         // text wherever the bound tree shows one, `s += flag` included.
         return JsExpr.Binary(leftIr, op, rightIr);
     }
-
-    /// <summary>The enum type of an operand, for a non-flags enum (a flags enum is numeric already).</summary>
-    private static INamedTypeSymbol? EnumOperand(ExpressionSyntax operand, ConversionContext context) =>
-        context.SemanticHelper.GetType(operand) is INamedTypeSymbol { TypeKind: TypeKind.Enum } type && !type.IsFlagsEnum()
-            ? type : null;
-
-    /// <summary>An enum operand as its underlying value; anything else as itself.</summary>
-    internal static JsExpr EnumValue(ExpressionSyntax operand, JsExpr converted, ConversionContext context) =>
-        EnumOperand(operand, context) is { } type ? Types.EnumShape.ValueOf(type, converted, context) : converted;
 
     /// <summary>
     /// C#'s own operator over Nullable&lt;T&gt; operands, for any number T (#372). The decimal and long

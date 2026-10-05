@@ -7,11 +7,12 @@ namespace eQuantic.UI.Compiler.CodeGen.Strategies.Types;
 
 /// <summary>
 /// <c>Enum.Parse</c>, <c>TryParse</c>, <c>GetName</c>, <c>GetNames</c>, <c>GetValues</c> and <c>IsDefined</c>, each
-/// a call of the runtime's enum functions (<c>utils/enums.ts</c>) with the enum's shape written
-/// inline (<see cref="EnumShape"/>): an enum has no object of its own in the browser, and these named
-/// one after it, <c>Status</c>, which no module declares, so every one of them threw (#480). The enum
-/// is the one the bound call names, by its type argument or by its <c>typeof</c>, and each argument
-/// is the parameter it binds to, so a named one written out of order fills its own.
+/// a call of the runtime's enum functions (<c>utils/enums.ts</c>) with the enum's shape, the constant
+/// its module declares once (<see cref="EnumShape.Table(INamedTypeSymbol, ConversionContext)"/>): an
+/// enum has no object of its own in the browser, and these named one after it, <c>Status</c>, which no
+/// module declares, so every one of them threw (#480). The enum is the one the bound call names, by
+/// its type argument or by its <c>typeof</c>, and each argument is the parameter it binds to, so a
+/// named one written out of order fills its own.
 /// </summary>
 public class EnumMethodStrategy : IConversionStrategy
 {
@@ -36,7 +37,7 @@ public class EnumMethodStrategy : IConversionStrategy
             || EnumOf(call, context) is not { } enumType)
             return context.Unhandled(invocation, $"Enum.{name} over an enum the model cannot name");
 
-        var shape = EnumShape.Of(enumType);
+        var shape = EnumShape.Table(enumType, context);
         context.UsedHelpers.Add(Eq.Import);
 
         // Each argument converts once, in the order it is written, which is the order C# evaluates

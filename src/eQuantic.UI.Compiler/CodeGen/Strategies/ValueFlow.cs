@@ -144,6 +144,10 @@ public static class ValueFlow
                 ? call
                 : translated;
 
+        // An ENUM on either side: see Enumeration.
+        if (Enumeration(kind, from, to, convertedConstant, translated, context, isChecked) is { } enumeration)
+            return enumeration;
+
         // A NULLABLE conversion converts the underlying value and lets null pass: `(int?)aDouble?`
         // is null for a null, the numeric narrowing otherwise. The bound tree names only the
         // lifted conversion; the unwrapped types say what happens under it. A non-nullable SOURCE
@@ -165,17 +169,60 @@ public static class ValueFlow
 
         if (kind.IsNumeric) return Numeric(from, to, translated, operandConstant, isChecked, context);
 
-        if (kind.IsEnumeration && to is INamedTypeSymbol { TypeKind: TypeKind.Enum } enumType && !enumType.IsFlagsEnum())
-        {
-            // Only the literal 0 converts implicitly to an enum: the member that is 0, by name.
-            var zero = enumType.GetMembers().OfType<IFieldSymbol>()
-                .FirstOrDefault(f => f.HasConstantValue && System.Convert.ToInt64(f.ConstantValue, CultureInfo.InvariantCulture) == 0);
-            return zero is null ? translated : JsExpr.Literal($"'{zero.Name.ToCamelCase()}'");
-        }
-
         // Identity, reference, boxing, null/default literals, method groups, lambdas,
         // interpolated strings, tuples: the value is already what JavaScript needs.
         return translated;
+    }
+
+    /// <summary>
+    /// A conversion with an ENUM on either side (§10.3.3), or null for any other. An enum converts as
+    /// its underlying type does (<see cref="Types.EnumShape"/>): its value is read off what the
+    /// browser holds, the NUMERIC conversion between the two underlying types brings it into the
+    /// target's width, as this table brings any integer, and an enum target holds the result. So
+    /// <c>(int)aWideFlag</c> takes the low 32 bits, <c>(Tiny)300</c> wraps to 44 and throws checked,
+    /// <c>(long)status</c> is a BigInt, and <c>(double)status</c>, a <c>foreach (int v in
+    /// statuses)</c> and <c>(Status)3.7</c> are numbers, where all of them carried the key the browser
+    /// holds. A constant converts at compile time, held as the target holds it, which is the implicit
+    /// conversion of the literal 0 too. An unboxing is the runtime's, which knows a boxed member from
+    /// a boxed number of the underlying type and refuses anything else. Under a nullable conversion
+    /// the value converts and a null passes.
+    /// </summary>
+    private static JsExpr? Enumeration(Conversion kind, ITypeSymbol? from, ITypeSymbol? to, object? convertedConstant,
+        JsExpr translated, ConversionContext context, bool isChecked)
+    {
+        var source = Types.EnumOperators.EnumOf(from);
+        var target = Types.EnumOperators.EnumOf(to);
+        if (source is null && target is null) return null;
+
+        if (kind.IsUnboxing && target is not null)
+        {
+            context.UsedHelpers.Add(Eq.Import);
+            var unbox = $"{Eq.EnumUnbox}({{0}}, {Types.EnumShape.Table(target, context)}, {JsStringLiteral.Quote(target.Name)})";
+            // `(Status?)o` answers null for a null, which a cast to the enum itself refuses.
+            return JsExpr.Template(to.IsNullableValue() ? $"({{0}} == null ? null : {unbox})" : unbox,
+                [translated], context.TypeAnnotations);
+        }
+        if (!kind.IsEnumeration && !kind.IsNullable) return null;
+        // A nullable wrapping or unwrapping of the same enum is that value.
+        if (source is not null && SymbolEqualityComparer.Default.Equals(source, target)) return translated;
+
+        if (convertedConstant is not null)
+        {
+            if (target is not null) return JsExpr.Literal(Types.EnumShape.HeldLiteral(target, convertedConstant));
+            if (Expressions.InlinedConstantStrategy.LiteralOf(convertedConstant) is { } literal) return JsExpr.Literal(literal);
+        }
+
+        var fromValue = source?.EnumUnderlyingType ?? from.UnwrapNullable();
+        var toValue = target?.EnumUnderlyingType ?? to.UnwrapNullable();
+        JsExpr Convert(JsExpr held)
+        {
+            var value = source is null ? held : Types.EnumShape.ValueOf(source, held, context);
+            var converted = Numeric(fromValue, toValue, value, null, isChecked, context);
+            return target is null ? converted : Types.EnumShape.Held(target, converted, context);
+        }
+        if (!from.IsNullableValue()) return Convert(translated);
+        var name = JsExpr.Identifier("__v");
+        return JsExpr.Callish($"((__v) => __v == null ? null : {JsExprWriter.Write(Convert(name))})({JsExprWriter.Write(translated)})");
     }
 
     /// <summary>A numeric conversion between the primitives JavaScript represents differently:

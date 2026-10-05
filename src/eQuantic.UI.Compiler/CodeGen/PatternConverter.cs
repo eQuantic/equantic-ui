@@ -46,6 +46,19 @@ public static class PatternConverter
                     (context.SemanticHelper.GetOperation(constant) as IConstantPatternOperation)?.Value, context);
 
             case RelationalPatternSyntax relational:
+                // An ENUM's relation compares its VALUES (EnumShape): a non-flags one's keys compared
+                // as text, so `status is > Status.Pending` ordered the names alphabetically.
+                if (context.SemanticHelper.GetOperation(relational) is IRelationalPatternOperation
+                    {
+                        Value: { ConstantValue: { HasValue: true, Value: not null } bound } value,
+                    }
+                    && Strategies.Types.EnumOperators.EnumOf(value.Type) is { } enumType)
+                {
+                    var held = Strategies.Types.EnumShape.ValueOf(enumType, JsExpr.Literal(access), context);
+                    return $"{JsExprWriter.WriteIn(held, JsPrecedence.Relational)} {relational.OperatorToken.Text} "
+                        + Strategies.Types.EnumShape.ValueLiteral(enumType,
+                            System.Convert.ToDecimal(bound.Value, System.Globalization.CultureInfo.InvariantCulture));
+                }
                 return $"{access} {relational.OperatorToken.Text} {context.Converter.ConvertExpression(relational.Expression)}";
 
             case DeclarationPatternSyntax declaration:

@@ -42,6 +42,13 @@ export function hydrateValue(current: unknown, incoming: unknown): unknown {
     return dec(incoming);
   }
 
+  // A string that is no number's text is an enum member's NAME, which an enum holds whatever its
+  // default is: the value 0 where no member has it, a number, or a BigInt for a 64-bit enum (#551).
+  // Read as a number it was NaN, and the name was dropped for the default; read as a BigInt it threw.
+  if (typeof incoming === 'string' && (typeof current === 'number' || typeof current === 'bigint') && !numeric(incoming)) {
+    return incoming;
+  }
+
   // A NUMBER field fed a numeric string: EqJson writes Int64 as a string (so values beyond 2^53
   // survive the wire), but a `long` the transpiler typed as `number` must not end up holding a
   // string — later arithmetic would silently concatenate.
@@ -115,4 +122,9 @@ export function hydrateValue(current: unknown, incoming: unknown): unknown {
   }
 
   return incoming;
+}
+
+/** Whether a string is a number's text, as EqJson writes a long, a decimal or a double. */
+function numeric(text: string): boolean {
+  return text.trim().length > 0 && Number.isFinite(Number(text));
 }

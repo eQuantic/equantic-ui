@@ -195,10 +195,13 @@ public class RecordTypeEmitter
         var specReferences = new HashSet<string>();
         var specRuntime = new HashSet<string>();
         var declared = ModelFor(type)?.GetDeclaredSymbol(type) as INamedTypeSymbol;
-        if (declared is not null) HydrationSpec.Members(declared, specReferences, specRuntime);
+        if (declared is not null) HydrationSpec.Members(declared, specReferences, specRuntime, module: null);
         runtimeProvided.UnionWith(specRuntime);
 
+        // The module's constants: what its code reads at every call and builds once (#547).
+        _converter.BeginModule();
         var body = Emit(type, tsTypeDeclarations);
+        var constants = _converter.EndModule();
         // Names the CONVERSION introduced, which is why this reads AFTER `Emit`: a reduced extension
         // call sent home (`VisualNodeExtensions.centered(node)`) is written on the RECEIVER, so the
         // home's name appears in no syntax the scanner above walks. The component and static-helper
@@ -265,6 +268,11 @@ public class RecordTypeEmitter
             foreach (var reference in specReferences.OrderBy(n => n, StringComparer.Ordinal))
                 imports.Append($"import {{ {reference} }} from \"./{reference}\";\n");
         }
+        if (constants.Count > 0)
+        {
+            imports.Append('\n');
+            foreach (var constant in constants) imports.Append($"const {constant.Name} = {constant.Value};\n");
+        }
         return imports.Append("\nexport ").Append(body).Append('\n').ToString();
     }
 
@@ -306,14 +314,15 @@ public class RecordTypeEmitter
     }
 
     /// <summary>The TS annotation for a declared type, resolved the way the class emitter does it:
-    /// an enum is its member string and an interface has no emitted twin to name.</summary>
+    /// an enum is its member string, a [Flags] one the number or the BigInt it holds, and an interface
+    /// has no emitted twin to name.</summary>
     private string TsTypeOf(TypeSyntax? type)
     {
         if (type is null) return "any";
         var resolved = ModelFor(type)?.GetTypeInfo(type).Type;
         return resolved switch
         {
-            { TypeKind: TypeKind.Enum } => "string",
+            { TypeKind: TypeKind.Enum } enumType => enumType.IsFlagsEnum() ? Strategies.Types.EnumShape.FlagsTsType(enumType) : "string",
             { TypeKind: TypeKind.Interface } => "any",
             _ => TypeDeclarationExtensions.TsTypeFor(type, ModelFor(type)),
         };
@@ -379,7 +388,7 @@ public class RecordTypeEmitter
             // The twin's own TYPED BOUNDARY: which members hydrate off the wire, and as what —
             // `$eq.hydrate` rebuilds a payload object on this prototype and coerces by this map.
             if (ModelFor(type)?.GetDeclaredSymbol(type) is INamedTypeSymbol symbol
-                && HydrationSpec.Members(symbol, new HashSet<string>(), new HashSet<string>()) is { } hydration)
+                && HydrationSpec.Members(symbol, new HashSet<string>(), new HashSet<string>(), _converter.Module) is { } hydration)
                 // A getter, for the reason TypeScriptEmitter's map is one: a static initializer
                 // naming another class runs before an import cycle has defined it.
                 sb.Append($"static get $hydration() {{ return {hydration}; }} ");

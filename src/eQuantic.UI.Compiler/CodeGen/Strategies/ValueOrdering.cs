@@ -21,12 +21,13 @@ namespace eQuantic.UI.Compiler.CodeGen.Strategies;
 internal static class ValueOrdering
 {
     /// <summary>The ordering of a value of <paramref name="type"/>, a <c>Nullable&lt;T&gt;</c> read
-    /// as its <c>T</c>, as the JavaScript that names it (<c>'text'</c>, or an enum's members); null
-    /// where it has no faithful order in the browser.</summary>
-    internal static string? Of(ITypeSymbol type)
+    /// as its <c>T</c>, as the JavaScript that names it (<c>'text'</c>, or an enum's shape, which the
+    /// <paramref name="module"/> declares once); null where it has no faithful order in the
+    /// browser.</summary>
+    internal static string? Of(ITypeSymbol type, ModuleConstants? module)
     {
         var value = type.UnwrapNullable() ?? type;
-        if (value is INamedTypeSymbol { TypeKind: TypeKind.Enum } enumeration) return OfEnum(enumeration);
+        if (value is INamedTypeSymbol { TypeKind: TypeKind.Enum } enumeration) return OfEnum(enumeration, module);
         return value.SpecialType switch
         {
             SpecialType.System_Double or SpecialType.System_Single => "'real'",
@@ -42,13 +43,13 @@ internal static class ValueOrdering
 
     /// <summary>
     /// An enum orders by its value, as .NET's comparer orders it. A flags enum is that value already
-    /// in the browser, so it orders as a number. Any other crosses as its member's camelCase name,
-    /// which ordered alphabetically, so its members are written out with their values.
+    /// in the browser, so it orders as a number, or as a BigInt for a 64-bit one. Any other crosses as
+    /// its member's camelCase name, which ordered alphabetically, so it orders through its shape.
     /// </summary>
-    private static string OfEnum(INamedTypeSymbol enumeration)
+    private static string OfEnum(INamedTypeSymbol enumeration, ModuleConstants? module)
     {
         if (enumeration.IsFlagsEnum()) return "'value'";
-        return Types.EnumShape.KeyToValue(enumeration);
+        return Types.EnumShape.Table(enumeration, module);
     }
 
     /// <summary>

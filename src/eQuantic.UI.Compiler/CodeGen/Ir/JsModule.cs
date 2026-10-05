@@ -5,15 +5,17 @@ namespace eQuantic.UI.Compiler.CodeGen.Ir;
 public sealed record JsImport(IReadOnlyList<string> Names, string From);
 
 /// <summary>
-/// A generated module: its imports, then its body. The body is still text — the classes the
-/// builder lays out — and the imports are DATA, which is the point: what a module needs from the
-/// runtime and from its siblings is the emitter's hardest decision, and a decision that comes out
-/// as records can be asserted without parsing the file it ends up in.
+/// A generated module: its imports, the constants it declares once (<see cref="JsConstant"/>), then
+/// its body. The body is still text — the classes the builder lays out — and the imports are DATA,
+/// which is the point: what a module needs from the runtime and from its siblings is the emitter's
+/// hardest decision, and a decision that comes out as records can be asserted without parsing the
+/// file it ends up in.
 /// </summary>
-public sealed record JsModule(IReadOnlyList<JsImport> Imports, string Body);
+public sealed record JsModule(IReadOnlyList<JsImport> Imports, IReadOnlyList<JsConstant> Constants, string Body);
 
 /// <summary>The single writer of a module's text: the import lines, a blank line when there were
-/// any, the body. An import with no names is not written — a line that imports nothing is noise.</summary>
+/// any, the constants, one to a line, and a blank line when there were any, the body. An import with
+/// no names is not written — a line that imports nothing is noise.</summary>
 public static class JsModuleWriter
 {
     public static string Write(JsModule module)
@@ -26,14 +28,19 @@ public static class JsModuleWriter
                    .Append(" } from \"").Append(import.From).Append("\";\n");
         }
         if (builder.Length > 0) builder.Append('\n');
+        foreach (var constant in module.Constants)
+            builder.Append("const ").Append(constant.Name).Append(" = ").Append(constant.Value).Append(";\n");
+        if (module.Constants.Count > 0) builder.Append('\n');
         return builder.Append(module.Body).ToString();
     }
 
     /// <summary>The line, counted from zero, the body starts on: the import lines above it and the
-    /// blank line after them. A source map recorded against the body moves down by this (#293).</summary>
+    /// blank line after them, and the constants and theirs. A source map recorded against the body
+    /// moves down by this (#293).</summary>
     public static int BodyLine(JsModule module)
     {
         var imports = module.Imports.Count(import => import.Names.Count > 0);
-        return imports == 0 ? 0 : imports + 1;
+        var constants = module.Constants.Count;
+        return (imports == 0 ? 0 : imports + 1) + (constants == 0 ? 0 : constants + 1);
     }
 }

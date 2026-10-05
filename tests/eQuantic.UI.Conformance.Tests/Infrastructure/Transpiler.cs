@@ -1,6 +1,7 @@
 using System.Linq;
 using System.Reflection;
 using eQuantic.UI.Compiler.CodeGen;
+using eQuantic.UI.Compiler.CodeGen.Ir;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
@@ -18,18 +19,29 @@ public static class Transpiler
     /// Emits any positional records declared in the prelude as named JS classes (so instance methods,
     /// structural equality, etc. are available to the program under test). Returns "" when there are none.
     /// </summary>
-    public static string EmitDeclaredRecordTypes(string prelude)
+    public static string EmitDeclaredRecordTypes(string prelude) => DeclaredRecordTypes(prelude, module: false).Js;
+
+    /// <summary>
+    /// As <see cref="EmitDeclaredRecordTypes"/>, converted as a module converts them: what they read
+    /// at every call is declared once (an enum's table, #547) and answered beside the classes, for the
+    /// program to declare above them.
+    /// </summary>
+    internal static (string Js, IReadOnlyList<JsConstant> Constants) DeclaredRecordTypesInModule(string prelude) =>
+        DeclaredRecordTypes(prelude, module: true);
+
+    private static (string Js, IReadOnlyList<JsConstant> Constants) DeclaredRecordTypes(string prelude, bool module)
     {
-        if (string.IsNullOrWhiteSpace(prelude)) return string.Empty;
+        if (string.IsNullOrWhiteSpace(prelude)) return (string.Empty, []);
 
         var (tree, converter) = Compile("return 0;", prelude);
+        if (module) converter.BeginModule();
         var emitter = new RecordTypeEmitter(converter);
         var valueTypes = tree.GetRoot()
             .DescendantNodes()
             .OfType<TypeDeclarationSyntax>()
             .Where(RecordTypeEmitter.CanEmit)
             .ToList();
-        if (valueTypes.Count == 0) return string.Empty;
+        if (valueTypes.Count == 0) return (string.Empty, converter.EndModule());
 
         // Emit base records before derived ones — JS `class X extends Base` needs Base already declared.
         var names = valueTypes.Select(t => t.Identifier.Text).ToHashSet();
@@ -53,12 +65,25 @@ public static class Transpiler
         foreach (var t in valueTypes) Add(t);
 
         // Plain-JS emission (no TS `declare` type declarations) — this output runs as .mjs.
-        return string.Join("\n", ordered.Select(t => emitter.Emit(t))) + "\n";
+        var js = string.Join("\n", ordered.Select(t => emitter.Emit(t))) + "\n";
+        return (js, converter.EndModule());
     }
 
-    public static string TranspileExpression(string csharpExpression, string prelude = "")
+    public static string TranspileExpression(string csharpExpression, string prelude = "") =>
+        Expression(csharpExpression, prelude, module: false).Js;
+
+    /// <summary>
+    /// As <see cref="TranspileExpression"/>, converted as a module converts it: what it reads at every
+    /// call is declared once (an enum's table, #547), and answered for the program to declare above it,
+    /// so a case runs the shape a page ships.
+    /// </summary>
+    internal static (string Js, IReadOnlyList<JsConstant> Constants) ExpressionInModule(string csharpExpression, string prelude = "") =>
+        Expression(csharpExpression, prelude, module: true);
+
+    private static (string Js, IReadOnlyList<JsConstant> Constants) Expression(string csharpExpression, string prelude, bool module)
     {
         var (tree, converter) = Compile($"return {csharpExpression};", prelude);
+        if (module) converter.BeginModule();
         // Scope to the __Eval method body — a prelude type may now declare methods whose own `return`
         // statements would otherwise be picked up by a tree-wide First().
         var returnExpr = tree.GetRoot()
@@ -71,7 +96,8 @@ public static class Transpiler
             .First()
             .Expression!;
 
-        return converter.ConvertExpression(returnExpr);
+        var js = converter.ConvertExpression(returnExpr);
+        return (js, converter.EndModule());
     }
 
     /// <summary>
@@ -79,9 +105,21 @@ public static class Transpiler
     /// The block is expected to <c>return</c> a value; the runner wraps it in an IIFE to capture it.
     /// Exercises the control-flow statement strategies (if/for/foreach/while/switch/try/…).
     /// </summary>
-    public static string TranspileStatements(string csharpStatements, string prelude = "")
+    public static string TranspileStatements(string csharpStatements, string prelude = "") =>
+        Statements(csharpStatements, prelude, module: false).Js;
+
+    /// <summary>
+    /// As <see cref="TranspileStatements"/>, converted as a module converts it: what it reads at every
+    /// call is declared once (an enum's table, #547), and answered for the program to declare above
+    /// the block, so a case runs the shape a page ships.
+    /// </summary>
+    internal static (string Js, IReadOnlyList<JsConstant> Constants) StatementsInModule(string csharpStatements, string prelude = "") =>
+        Statements(csharpStatements, prelude, module: true);
+
+    private static (string Js, IReadOnlyList<JsConstant> Constants) Statements(string csharpStatements, string prelude, bool module)
     {
         var (tree, converter) = Compile(csharpStatements, prelude);
+        if (module) converter.BeginModule();
         var body = tree.GetRoot()
             .DescendantNodes()
             .OfType<MethodDeclarationSyntax>()
@@ -92,7 +130,8 @@ public static class Transpiler
         // C#'s scope (ExpressionVariableScanner). The harness once put a `let` for every `out var`
         // at the top of the block, which is what the emitter did for a method and nothing else did:
         // the cases passed while a getter, a loop and a deconstruction diverged.
-        return converter.Convert(body); // dispatches to ConvertBlock -> "{ … }"
+        var js = converter.Convert(body); // dispatches to ConvertBlock -> "{ … }"
+        return (js, converter.EndModule());
     }
 
     private static (SyntaxTree Tree, CSharpToJsConverter Converter) Compile(string evalBody, string prelude)

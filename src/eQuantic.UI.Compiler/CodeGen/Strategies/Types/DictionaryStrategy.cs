@@ -111,7 +111,7 @@ internal sealed class DictionaryStrategy : IExpressionIrStrategy
     {
         context.UsedHelpers.Add(Eq.Import);
         return Factory(type.DictionaryFactory()!, type,
-            Entries(initializer, context) is { Count: > 0 } pairs ? Pairs(null, pairs) : null);
+            Entries(initializer, context) is { Count: > 0 } pairs ? Pairs(null, pairs) : null, context);
     }
 
     /// <summary>The factory a creation constructs by: its type's, where the model knows the type, and
@@ -160,19 +160,19 @@ internal sealed class DictionaryStrategy : IExpressionIrStrategy
         }
 
         var pairs = Entries(creation.Initializer, context);
-        return Factory(FactoryOf(creation, context)!, type, pairs is { Count: > 0 } ? Pairs(source, pairs) : source);
+        return Factory(FactoryOf(creation, context)!, type, pairs is { Count: > 0 } ? Pairs(source, pairs) : source, context);
     }
 
     /// <summary><c>factory(seed)</c>, and <c>factory(seed, equality)</c> when the keys are not found by
     /// identity (<see cref="KeyEquality"/>), or <c>factory(seed, ordering)</c> for a sorted one, whose
     /// keys keep their type's order (<see cref="ValueOrdering"/>) rather than the one <c>&lt;</c> gives.</summary>
-    private static JsExpr Factory(string factory, ITypeSymbol? type, JsExpr? seed)
+    private static JsExpr Factory(string factory, ITypeSymbol? type, JsExpr? seed, ConversionContext context)
     {
         var arguments = new List<JsExpr>();
         var key = type is INamedTypeSymbol { TypeArguments: [var keyType, _] } ? keyType : null;
         var second = key is null ? null
             : factory == Eq.Dictionary ? KeyEquality(key)
-            : ValueOrdering.Of(key) is { } ordering ? ordering
+            : ValueOrdering.Of(key, context.Module) is { } ordering ? ordering
             : null;
         if (seed is not null) arguments.Add(seed);
         else if (second is not null) arguments.Add(JsExpr.Literal("null"));

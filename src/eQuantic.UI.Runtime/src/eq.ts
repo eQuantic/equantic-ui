@@ -117,11 +117,13 @@ import { equals } from './utils/equals';
 import {
   isDefined as enumIsDefined,
   declaredNames as enumNames,
+  hold as enumHold,
   name as enumName,
   parse as enumParse,
   text as enumText,
   tryParse as enumTryParse,
   unbox as enumUnbox,
+  value as enumValue,
   values as enumValues,
   zero as enumZero,
 } from './utils/enums';
@@ -318,9 +320,10 @@ export const $eq = {
   mapSet,
   /** Date and time, tick-precise. */
   time: { dateTime, timeSpan, dateOnly, timeOnly, dateTimeOffset },
-  /** An enum as .NET reads it, from the shape the compiler writes: its text, Parse and TryParse,
-   * its default, GetNames, GetValues and IsDefined. */
-  enums: { text: enumText, parse: enumParse, tryParse: enumTryParse, zero: enumZero, name: enumName, names: enumNames, values: enumValues, unbox: enumUnbox, isDefined: enumIsDefined },
+  /** An enum as .NET reads it, from the shape its module declares once: its text, Parse and
+   * TryParse, its default, GetNames, GetValues and IsDefined, and the value a held key stands for and
+   * the key a value is held as, which a cast and an operator read. */
+  enums: { text: enumText, parse: enumParse, tryParse: enumTryParse, zero: enumZero, name: enumName, names: enumNames, values: enumValues, unbox: enumUnbox, isDefined: enumIsDefined, value: enumValue, hold: enumHold },
   /**
    * Collections — Queue (FIFO), Stack (LIFO), Dictionary (by slot, as .NET's), LinkedList, and the
    * sorted family (SortedSet / SortedDictionary / SortedList).

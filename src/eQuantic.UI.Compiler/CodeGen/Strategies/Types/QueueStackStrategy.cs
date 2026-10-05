@@ -96,13 +96,13 @@ public class QueueStackStrategy : ConversionStrategyBase
         if (type is not INamedTypeSymbol { TypeArguments: [var element] }
             || context.SemanticHelper.GetOperation(creation) is not IObjectCreationOperation operation)
             return null;
-        var ordering = ValueOrdering.Of(element);
+        var ordering = ValueOrdering.Of(element, context.Module);
         string? source = null;
         foreach (var argument in operation.Arguments)
         {
             if (argument.ArgumentKind == ArgumentKind.DefaultValue) continue;
             if (argument.Parameter?.Type.Name == "IComparer")
-                ordering = argument.Value.OrderingAskedFor(element);
+                ordering = argument.Value.OrderingAskedFor(element, context.Module);
             else
                 source = context.Converter.ConvertExpression((ExpressionSyntax)argument.Value.Syntax);
         }

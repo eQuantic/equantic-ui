@@ -13,9 +13,9 @@ namespace eQuantic.UI.Compiler.CodeGen.Strategies.Expressions;
 /// An explicit cast. The bound tree names the conversion the cast performs, and the ONE conversion
 /// table (<see cref="ValueFlow.Apply"/>) applies it — the same table that settles implicit flows
 /// and <c>foreach</c> elements, so <c>(int)aLong</c> slices the BigInt's low 32 bits instead of
-/// putting a BigInt into Math.trunc, and <c>checked((byte)n)</c> throws where C# throws. What
-/// stays HERE is what only a cast does: the enum name↔value maps (the runtime enum is its
-/// member-name string), and the spelled-type fallback for the worlds without a semantic model.
+/// putting a BigInt into Math.trunc, <c>checked((byte)n)</c> throws where C# throws, and an enum
+/// converts as its underlying type does, read off and held back as its key (#551). What stays HERE
+/// is the spelled-type fallback for the worlds without a semantic model.
 /// </summary>
 public class CastExpressionStrategy : IExpressionIrStrategy
 {
@@ -28,72 +28,22 @@ public class CastExpressionStrategy : IExpressionIrStrategy
     {
         var cast = (CastExpressionSyntax)node;
 
-        // Enums are represented at runtime by their member-name string (SizeVariant.Medium -> 'medium'),
-        // not by their numeric value (see EnumStrategy). A numeric cast therefore can't reach the value the
-        // way .NET does — `(int)'medium'` is NaN. Bridge it with the enum's compile-time name↔value table:
-        // constant-fold to a literal when we can, else inline a tiny generated map indexed by the operand.
-        var targetType = context.SemanticHelper.GetType(cast);
-        var operandType = UnwrapNullable(context.SemanticHelper.GetType(cast.Expression));
-
-        // (int)enum / (long)enum / … → the underlying integral value.
-        if (operandType is INamedTypeSymbol { TypeKind: TypeKind.Enum } enumOperand
-            && IsIntegral(UnwrapNullable(targetType)))
-        {
-            if (context.SemanticHelper.TryGetConstantValue(cast.Expression, out var constant))
-                return JsExpr.Literal(ToLong(constant).ToString(CultureInfo.InvariantCulture));
-
-            // A [Flags] enum is already numeric at runtime — the cast is the identity. A normal (string)
-            // enum needs its member-name string mapped back to the underlying value.
-            return Types.EnumShape.ValueOf(enumOperand, context.Converter.ConvertIr(cast.Expression), context);
-        }
-
-        // (EnumType)int → a value of the enum.
-        if (targetType is INamedTypeSymbol { TypeKind: TypeKind.Enum } enumTarget)
-        {
-            var flags = enumTarget.IsFlagsEnum();
-            // The CAST's own constant, the value already brought into the underlying type
-            // (`unchecked((Tiny)257)` is 1 with a byte under it), never the operand's.
-            if (context.SemanticHelper.TryGetConstantValue(cast, out var constant))
-            {
-                // Flags enums are numeric — keep the literal value. Normal enums map the value to the
-                // member-name string (so it stays comparable to other enum members).
-                // A value no member names is held as its number.
-                var number = System.Convert.ToDecimal(constant, CultureInfo.InvariantCulture);
-                var key = flags ? null : Types.EnumShape.KeyOf(enumTarget, number);
-                return JsExpr.Literal(key != null ? $"'{key}'" : number.ToString(CultureInfo.InvariantCulture));
-            }
-
-            var operandIr = context.Converter.ConvertIr(cast.Expression);
-            // The enum itself is what the browser holds already. An object holding one
-            // (`(Status)Enum.Parse(typeof(Status), text)`) is unboxed, as the runtime unboxes it: the
-            // member it holds, a boxed number's member, and a refusal for anything else, where the
-            // value→key table answered undefined and a boxed string passed through.
-            if (SymbolEqualityComparer.Default.Equals(operandType, enumTarget)) return operandIr;
-            if (operandType is not null && !IsNumeric(operandType)
-                && operandType is not INamedTypeSymbol { TypeKind: TypeKind.Enum })
-            {
-                context.UsedHelpers.Add(Eq.Import);
-                return JsExpr.Call(JsExpr.Identifier(Eq.EnumUnbox), operandIr,
-                    JsExpr.Literal(Types.EnumShape.Of(enumTarget)), JsExpr.Literal(JsStringLiteral.Quote(enumTarget.Name)));
-            }
-            // Another enum's value: its own table gives the number, and this one's gives the key.
-            if (operandType is INamedTypeSymbol { TypeKind: TypeKind.Enum } sourceEnum)
-                operandIr = Types.EnumShape.ValueOf(sourceEnum, operandIr, context);
-            operandIr = IntoUnderlying(operandIr, operandType, enumTarget);
-            // Flags: the int IS the runtime value (identity). Normal: map value → member-name string.
-            return Types.EnumShape.Held(enumTarget, operandIr, context);
-        }
-
         // The bound tree names the conversion — user-defined operator, numeric with its widths and
-        // representations, nullable with its null propagation, checked with its throw — and the one
-        // table applies it, exactly as it would the implicit form of the same conversion.
+        // representations, an enum's with its keys, nullable with its null propagation, checked with
+        // its throw — and the one table applies it, exactly as it would the implicit form of the same
+        // conversion.
         if (context.SemanticHelper.GetOperation(cast) is IConversionOperation operation)
         {
             var operand = context.Converter.ConvertIr(cast.Expression);
+            // An enum's conversion is checked where its context is, which the bound tree does not
+            // report for it (ArithmeticContext.IsCheckedAt).
+            var isChecked = operation.IsChecked
+                || (Types.EnumOperators.EnumOf(operation.Operand.Type) ?? Types.EnumOperators.EnumOf(operation.Type)) is not null
+                && ArithmeticContext.IsCheckedAt(cast, context);
             return ValueFlow.Apply(operation.GetConversion(), operation.Operand.Type, operation.Type,
                 operation.ConstantValue.HasValue ? operation.ConstantValue.Value : null,
                 operation.Operand.ConstantValue.HasValue ? operation.Operand.ConstantValue.Value : null,
-                operand, context, operation.IsChecked);
+                operand, context, isChecked);
         }
 
         // No bound tree (a rewritten node, a model-less world): the SPELLED type decides, with the
@@ -120,46 +70,6 @@ public class CastExpressionStrategy : IExpressionIrStrategy
 
     /// <summary>The integer part of a value only spelled, never bound — Math.trunc as text.</summary>
     private static JsExpr Truncate(string text) => JsExpr.Callish($"Math.trunc({text})");
-
-    private static ITypeSymbol? UnwrapNullable(ITypeSymbol? type)
-        => type is INamedTypeSymbol named && named.OriginalDefinition.SpecialType == SpecialType.System_Nullable_T
-            ? named.TypeArguments[0]
-            : type;
-
-    private static bool IsIntegral(ITypeSymbol? type) => type?.SpecialType is
-        SpecialType.System_Int32 or SpecialType.System_Int64 or SpecialType.System_Int16 or
-        SpecialType.System_Byte or SpecialType.System_SByte or SpecialType.System_UInt16 or
-        SpecialType.System_UInt32 or SpecialType.System_UInt64;
-
-    /// <summary>
-    /// A number brought into an enum's underlying type, as C#'s explicit conversion brings it:
-    /// <c>(Tiny)n</c> with a byte under it and n of 257 is 1, where the value was kept whole. A value
-    /// that fits already is left as it is, a long's BigInt is narrowed, and a 64-bit enum, a number
-    /// here (#551), takes the value as it comes.
-    /// </summary>
-    private static JsExpr IntoUnderlying(JsExpr number, ITypeSymbol? source, INamedTypeSymbol target)
-    {
-        if (IntegerWidth.Of(target.EnumUnderlyingType) is not { } width || width.Bits == 64) return number;
-        var from = source is INamedTypeSymbol { TypeKind: TypeKind.Enum } sourceEnum
-            ? IntegerWidth.Of(sourceEnum.EnumUnderlyingType)
-            : IntegerWidth.Of(source);
-        if (from is { Bits: 64 })
-            return JsExpr.Callish($"Number(BigInt.{(width.Unsigned ? "asUintN" : "asIntN")}({width.Bits}, {JsExprWriter.Write(number)}))");
-        if (from is { } narrow)
-            return narrow.Bits < width.Bits && (narrow.Unsigned || !width.Unsigned)
-                || narrow == width
-                ? number
-                : IntegerWidth.Wrap(number, width);
-        return source?.SpecialType is SpecialType.System_Single or SpecialType.System_Double
-            ? IntegerWidth.Wrap(JsExpr.Callish($"Math.trunc({JsExprWriter.Write(number)})"), width)
-            : number;
-    }
-
-    private static bool IsNumeric(ITypeSymbol type) => IsIntegral(type)
-        || type.SpecialType is SpecialType.System_Single or SpecialType.System_Double or SpecialType.System_Decimal
-            or SpecialType.System_Char;
-
-    private static long ToLong(object? value) => System.Convert.ToInt64(value, CultureInfo.InvariantCulture);
 
     public int Priority => 10;
 }

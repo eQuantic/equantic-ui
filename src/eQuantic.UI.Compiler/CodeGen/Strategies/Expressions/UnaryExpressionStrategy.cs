@@ -35,6 +35,12 @@ public class UnaryExpressionStrategy : IExpressionIrStrategy
                     return unaryCall;
             }
 
+            // An ENUM's complement is its value's, in the underlying type's width, held as the enum
+            // (EnumOperators): a byte's `~1` is 254, where JavaScript's answers -2 (#555).
+            if (prefix.OperatorToken.Text == "~"
+                && Types.EnumOperators.Complement(prefix, context.Converter.ConvertIr(prefix.Operand), context) is { } complement)
+                return complement;
+
             // A NULLABLE number negates its value inside the lift (#372): JavaScript's `-null` is -0,
             // `~null` is -1 and `+null` is 0, where C#'s lifted operator answers null. `+` is the
             // value itself, which a BigInt needs: JavaScript's `+5n` throws.
@@ -127,6 +133,9 @@ public class UnaryExpressionStrategy : IExpressionIrStrategy
             var rule = StepRule(value, delta, node, context) ?? (current => Plain(value, current));
             return Stepped(current => NullableLift.Unary(current, rule, context));
         }
+        // A nullable ENUM steps its value inside the lift too, and null stays null.
+        if (type.IsNullableValue() && Types.EnumOperators.Step(type, delta, node, context) is { } enumStep)
+            return Stepped(current => NullableLift.Unary(current, enumStep, context));
         if (StepRule(type, delta, node, context) is { } typed) return Stepped(typed);
         return entry is not null && NullableLift.IsNumber(type) ? Stepped(current => Plain(type, current)) : null;
     }
@@ -149,6 +158,10 @@ public class UnaryExpressionStrategy : IExpressionIrStrategy
 
         if (SinglePrecision.Is(type))
             return current => SinglePrecision.Round(JsExpr.Binary(current, delta, JsExpr.Literal("1")));
+
+        // An ENUM steps its value in the underlying type's width and holds the result (EnumOperators):
+        // a non-flags one's key plus one was NaN, and a byte's never wrapped.
+        if (Types.EnumOperators.Step(type, delta, node, context) is { } enumStep) return enumStep;
 
         if (IntegerWidth.Of(type) is not { } width) return null;
         var arithmetic = ArithmeticContext.Of(node, context);
