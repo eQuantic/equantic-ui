@@ -1407,8 +1407,8 @@ record of a release, the wiki's Upgrading page is the distillate.
   instead, which hid it. The .NET side writes each kind as the runtime holds it now (`RuntimeJson`: a
   BigInt's digits, a decimal's text, an enum's twin name, a double as JavaScript's `Number::toString`
   writes it, a tuple and a pair as arrays), and the JS side prints a BigInt the same way whether or
-  not it imported the runtime, where `return 5L;` threw. 33 of 37 cases returning each kind directly
-  failed against the old harness, and the double writer matches bun's `String` on 5,000 doubles. Of
+  not it imported the runtime, where `return 5L;` threw. 33 of the first 37 cases returning each kind
+  directly failed against the old harness, and the double writer matches bun's `String` on 5,000 doubles. Of
   the 3,557 cases already there, one newly failed, and it was a real bug:
   `DateTimeOffset.ToUnixTimeSeconds()` answered a JS number for a long, and rounded an instant before
   1970 toward the epoch; it answers a BigInt cut as .NET cuts it now. Found on the way: the date

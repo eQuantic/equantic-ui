@@ -5,7 +5,7 @@
 - [x] 1.1 Measure what each side printed on main, kind by kind: a long, a ulong, a decimal, an enum, a double, a float, a tuple, a pair, a date, a char, and a long in a case that imports nothing
 - [x] 1.2 `RuntimeJson`: the converters the .NET side writes with, and `NumberText`, JavaScript's `Number::toString` over .NET's shortest digits
 - [x] 1.3 `ConformanceRunner.Print`: one printing statement for every assert, its replacer writing a BigInt as the runtime's `toJSON` does
-- [x] 1.4 Prove it: `ReturnedValueConformanceTests` (37 cases, 33 of them failing against main's harness, the other 4 neighbours kept as pins), `HarnessSelfChecksTests.AWrongRepresentation_Fails` (a wrong representation fails, the right one matches) and `NumberTextTests` (the writer against bun's `String` on about 5,000 doubles by their bits)
+- [x] 1.4 Prove it: `ReturnedValueConformanceTests` (43 cases: 33 of the first 37 failing against main's harness, the other 4 neighbours kept as pins, and 6 added in review for the keys each converter writes and an enum over a long), `HarnessSelfChecksTests.AWrongRepresentation_Fails` (a wrong representation fails, the right one matches) and `NumberTextTests` (the writer against bun's `String` on about 5,000 doubles by their bits)
 
 ## 2. A DateTimeOffset's unix times
 
