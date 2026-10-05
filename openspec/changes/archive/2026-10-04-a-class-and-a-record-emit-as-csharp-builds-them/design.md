@@ -55,11 +55,14 @@ this change writes by hand, beside the object initializer's and an indexer sette
 A construction calls the constructor the call binds, with its arguments as the bound tree binds them
 (`BoundArguments`: each in its parameter's place, evaluated in the order it is written), then applies
 the initializer to what it built. Every initializer, one that only assigns included, is written as
-statements over the object's parameter in an arrow invoked in place (`Object.assign(new X(…), { … })`
-cost 24 ns a construction where the arrow costs 2.6, measured in bun), ARGUMENTS ONLY: the construction and every value,
-key and element are its arguments, evaluated in the caller's own function in the order C# evaluates
-them, and its body reads only its parameters. Written inside it, an `await` in an element landed in a
-function that is not async, and the module did not parse. Each element is an `Add` through the
+one arrow per element, invoked in place with the object the element before it answered and the
+element's own parts (`Object.assign(new X(…), { … })` cost 24 ns a construction where an arrow
+costs 2.6, measured in bun), ARGUMENTS ONLY: the construction and every value, key and element are
+arguments, evaluated in the caller's own function, and each arrow's body reads only its parameters,
+so each element is applied before the next one's parts are evaluated, as C# applies them. One arrow
+for every part evaluated them all first (Copilot's review of #608). Written inside an arrow, an
+`await` in an element landed in a function that is not async, and the module did not parse. Each
+element is an `Add` through the
 lowering every call to that `Add` has (`push`, `add`, a twin's own method, and a dictionary's through
 the dictionary strategy's one spelling, which refuses a key already there once the runtime's `add`
 does), an assignment into the member's object, or a write through the indexer. The `Add` is the one the
@@ -122,9 +125,6 @@ library's import cycles; the type initializer is lazy too, so it survives them t
 
 ## Not here
 
-- An initializer's parts are all evaluated before the first of them is applied, by the arrow that
-  applies them, where C# applies each before evaluating the next: only a part that reads the object's
-  own member can tell.
 - A static iterator method of a type with a static constructor starts it when its sequence is first
   read, where C# starts it at the call.
 - A plain class's instance members keep their order: an auto-property initializer is a class field and

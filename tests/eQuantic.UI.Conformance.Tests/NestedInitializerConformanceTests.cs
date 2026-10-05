@@ -64,6 +64,36 @@ public class NestedInitializerConformanceTests
         ConformanceRunner.AssertStatementsSameAsDotNet(statements, Awaited);
     }
 
+    private const string Published = """
+        public record RLast
+        {
+            public static RLast Last;
+            public int A { get; set; }
+            public int B { get; set; }
+            public List<int> Items { get; } = new();
+            public Dictionary<string, int> Map { get; } = new();
+            public RLast() { Last = this; }
+        }
+        """;
+
+    /// <summary>
+    /// C# applies each element of an initializer before it evaluates the next, so a part that reads
+    /// the object being built (here through the static its constructor publishes it in) sees every
+    /// element before it applied. Every part was evaluated first and the elements applied after, so
+    /// `new RLast { A = 1, B = RLast.Last.A }` set B to 0 where .NET sets 1 (found by Copilot's review
+    /// of #608).
+    /// </summary>
+    [SkippableTheory]
+    [InlineData("var p = new RLast { A = 1, B = RLast.Last.A }; return p.B;")]                                                         // 1
+    [InlineData("var p = new RLast { Items = { 1, RLast.Last.Items.Count, RLast.Last.Items.Count } }; return string.Join(\",\", p.Items);")] // "1,1,2"
+    [InlineData("var p = new RLast { Map = { [\"a\"] = 1, [\"b\"] = RLast.Last.Map.Count } }; return p.Map[\"b\"];")]                   // 1
+    [InlineData("var p = new RLast { A = 2, Items = { RLast.Last.A }, B = RLast.Last.Items[0] + 1 }; return p.Items[0] + \"|\" + p.B;")] // "2|3"
+    public void AnInitializersElement_IsAppliedBeforeTheNextIsEvaluated(string statements)
+    {
+        Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
+        ConformanceRunner.AssertStatementsSameAsDotNet(statements, Published);
+    }
+
     /// <summary>
     /// A pair of a collection initializer applied to a dictionary a member holds is that dictionary's
     /// <c>Add</c>, which refuses a key already there, as every call to it lowers. It was written as the

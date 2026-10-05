@@ -25,12 +25,12 @@ namespace eQuantic.UI.Compiler.CodeGen.Strategies.Expressions;
 /// entry comes through here, as nothing in a config object can say that.
 /// <para>
 /// Every part of the C# is an ARGUMENT, evaluated in the caller's own function in the order C#
-/// evaluates it: the construction, then each value, key and element. The function that applies them
-/// reads only its parameters. Written inside it, an <c>await</c> in an element
+/// evaluates it: the construction, then each value, key and element. Each element is applied by a
+/// function of its own, which reads only its parameters and answers the object, and is invoked with the
+/// object the element before it answered, so each element is applied before the next one's parts are
+/// evaluated, as C# applies them. Written inside one function, an <c>await</c> in an element
 /// (<c>Items = { await Next(), 4 }</c>) landed in a function that is not async, and the module did
-/// not parse. What that costs is said where the values are: they are all evaluated before the first
-/// of them is applied, where C# applies each before evaluating the next, which only a value that reads
-/// the object's own member can tell.
+/// not parse.
 /// </para>
 /// </summary>
 internal static class ObjectInitializer
@@ -73,31 +73,84 @@ internal static class ObjectInitializer
     /// </summary>
     private sealed class Application(ConversionContext context)
     {
-        private readonly List<JsStatement> _statements = [];
+        /// <summary>Each element's statement, with the arguments it takes (the ones added since the
+        /// element before it), and whether every one of them is inert.</summary>
+        private readonly List<(JsStatement Statement, int First, int Count, bool Inert)> _elements = [];
         private readonly List<JsExpr> _arguments = [];
+        private int _taken;
+        private bool _inert = true;
 
         /// <summary>The parameter a converted part of the C# arrives in.</summary>
-        private string Argument(ExpressionSyntax expression) => Argument(context.Converter.ConvertIr(expression));
+        private string Argument(ExpressionSyntax expression) => Take(context.Converter.ConvertIr(expression), Inert(expression));
 
         /// <summary>The parameter a part already converted arrives in.</summary>
-        private string Argument(JsExpr converted)
+        private string Argument(JsExpr converted) => Take(converted, inert: false);
+
+        private string Take(JsExpr converted, bool inert)
         {
+            _inert &= inert;
             _arguments.Add(converted);
             return "$" + _arguments.Count;
         }
 
-        /// <summary>A statement over the function's parameters, which hold no C# of their own.</summary>
-        private void Statement(string text) => _statements.Add(JsStatement.Raw(text));
+        /// <summary>An element's statement over its function's parameters, which hold no C# of their
+        /// own: it takes the arguments its parts were given since the element before it.</summary>
+        private void Statement(string text)
+        {
+            _elements.Add((JsStatement.Raw(text), _taken, _arguments.Count - _taken, _inert));
+            _taken = _arguments.Count;
+            _inert = true;
+        }
 
-        /// <summary>The function that applies the statements, invoked in place with the construction and
-        /// every argument. An IR arrow: the C# it applies is in its arguments, never in its body.</summary>
+        /// <summary>
+        /// Whether evaluating a part can neither see nor change anything an element applies, so it may be
+        /// evaluated before the element ahead of it is applied: a constant, a literal, a lambda (making
+        /// a function runs none of it), a type, a default, or a tuple, an array or a collection of such
+        /// parts.
+        /// </summary>
+        private bool Inert(ExpressionSyntax expression) => expression switch
+        {
+            ParenthesizedExpressionSyntax parenthesized => Inert(parenthesized.Expression),
+            LiteralExpressionSyntax or LambdaExpressionSyntax or AnonymousMethodExpressionSyntax
+                or TypeOfExpressionSyntax or DefaultExpressionSyntax or OmittedArraySizeExpressionSyntax => true,
+            TupleExpressionSyntax tuple => tuple.Arguments.All(argument => Inert(argument.Expression)),
+            ImplicitArrayCreationExpressionSyntax array => array.Initializer.Expressions.All(Inert),
+            ArrayCreationExpressionSyntax { Initializer: { } elements } array =>
+                array.Type.RankSpecifiers.SelectMany(rank => rank.Sizes).All(Inert) && elements.Expressions.All(Inert),
+            CollectionExpressionSyntax collection =>
+                collection.Elements.All(element => element is ExpressionElementSyntax { Expression: var item } && Inert(item)),
+            _ => context.SemanticHelper.TryGetConstantValue(expression, out _) || context.SemanticHelper.IsNullConstant(expression),
+        };
+
+        /// <summary>
+        /// The elements applied one after another, each by an arrow invoked in place with the object
+        /// the one before it answered and its own parts, so each element is applied before the next
+        /// one's parts are evaluated, as C# applies them: `new R { A = 1, B = Published.A }` reads the
+        /// 1 when the constructor publishes the object. One arrow took every part, so every part was
+        /// evaluated before the first element was applied (found by Copilot's review of #608). An
+        /// element whose parts are inert joins the arrow of the one before it, since nothing can tell
+        /// when an inert part was evaluated: an initializer of constants stays one arrow. Each arrow is
+        /// IR, and the C# it applies is in its arguments, never in its body, so an <c>await</c> in a
+        /// part stays in the caller's function.
+        /// </summary>
         public JsExpr Written(JsExpr construction)
         {
             var annotation = context.TypeAnnotations ? ": any" : "";
-            var parameters = string.Join(", ", new[] { Target }.Concat(_arguments.Select((_, i) => "$" + (i + 1)))
-                .Select(parameter => parameter + annotation));
-            var body = JsStatement.Block([.. _statements, JsStatement.Return(JsExpr.Identifier(Target))]);
-            return JsExpr.Call(JsExpr.ArrowBlock(parameters, body, context.Layout, context.Depth), [construction, .. _arguments]);
+            var applied = construction;
+            for (var at = 0; at < _elements.Count;)
+            {
+                var end = at + 1;
+                while (end < _elements.Count && _elements[end].Inert) end++;
+                var group = _elements.GetRange(at, end - at);
+                var (first, count) = (group[0].First, group.Sum(element => element.Count));
+                var parameters = string.Join(", ", new[] { Target }.Concat(Enumerable.Range(first + 1, count).Select(index => "$" + index))
+                    .Select(parameter => parameter + annotation));
+                var body = JsStatement.Block([.. group.Select(element => element.Statement), JsStatement.Return(JsExpr.Identifier(Target))]);
+                applied = JsExpr.Call(JsExpr.ArrowBlock(parameters, body, context.Layout, context.Depth),
+                    [applied, .. _arguments.Skip(first).Take(count)]);
+                at = end;
+            }
+            return applied;
         }
 
         /// <summary>The statements an initializer applies to <paramref name="target"/>, in its order.</summary>

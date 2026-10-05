@@ -60,8 +60,7 @@ own as every call to it lowers, a dictionary's pair and an `ICollection<T>` memb
 object initializer assigns into the object the member holds, and an entry is written through the
 type's indexer. Every part of the initializer SHALL be evaluated in the caller's own function, in the
 order C# evaluates it, so an `await` in an element, a value or a key runs in the method it was written
-in; the parts are all evaluated before the first of them is applied, where C# applies each before
-evaluating the next, which only a part that reads the object's own member can observe. A struct's
+in, and each element is applied before the next one's parts are evaluated, as C# applies it. A struct's
 zero (`default`, an array's slot, an OrDefault, and `new S()` through the implicit parameterless
 constructor) SHALL be built without its constructor, running no initializer, no constructor and no
 static constructor, a generic struct's and a transpiled struct's from another assembly included.
@@ -105,6 +104,12 @@ static constructor, a generic struct's and a transpiled struct's from another as
 
 - **WHEN** an async method builds `new Holder { Items = { await G(), 4 } }`, where `G` yields and answers `3`
 - **THEN** `Items.Count` is `2` and `Items[0]` is `3`, as in .NET, and the module parses
+
+#### Scenario: An element is applied before the next is evaluated
+
+- **WHEN** `record RLast` publishes itself in `RLast.Last` from its constructor, and is built with
+  `new RLast { A = 1, B = RLast.Last.A }` or `new RLast { Items = { 1, RLast.Last.Items.Count } }`
+- **THEN** `B` is `1` and `Items` is `1, 1`, as in .NET
 
 #### Scenario: Named arguments out of the signature's order, and a params array by name
 
