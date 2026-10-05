@@ -1226,25 +1226,6 @@ record of a release, the wiki's Upgrading page is the distillate.
   back (`Cast`, `DefaultIfEmpty`) and a read-only face hiding a list, and both copy now. Each is a
   conformance case on both sides that failed against main. Proposed and archived through OpenSpec
   (`openspec/specs/transpiler-sequences`).
-- **2026-10-04 · A list, a set and a join answer as .NET's do**: a `List<T>` sorted by its elements'
-  text and stably, `RemoveAll` threw a ReferenceError, `BinarySearch` was a `findIndex`, a comparer
-  named a class nothing defines, `FindIndex`'s range reached its predicate, `CopyTo` wrote nowhere and
-  `Find` answered undefined ([#488](https://github.com/eQuantic/equantic-ui/issues/488)); `IndexOf`
-  compared with `===`, so a NaN, a record and a tuple were never found, and a tuple's array compared
-  element by element ([#425](https://github.com/eQuantic/equantic-ui/issues/425)); a `HashSet` was a
-  `Set`, appending where .NET reuses a freed slot ([#438](https://github.com/eQuantic/equantic-ui/issues/438))
-  and finding a date, a decimal, a tuple and a record by reference
-  ([#531](https://github.com/eQuantic/equantic-ui/issues/531)); `string.Join` called `join`, which a set
-  and a linked list lack ([#429](https://github.com/eQuantic/equantic-ui/issues/429)), and wrote each
-  value as JavaScript writes it ([#441](https://github.com/eQuantic/equantic-ui/issues/441)). One
-  equality decided from the element type (`ElementEquality`, `utils/key-equality.ts`) serves a list's
-  search, a set's elements and a dictionary's keys; the set and the dictionary share one slot table
-  with .NET's capacity (`utils/slots.ts`, `utils/hash-set.ts`); the sort is .NET's introspective sort,
-  both helpers, traced comparison for comparison against .NET through its heap sort (`utils/sort.ts`,
-  `utils/list.ts`); and a join converts each value as a concatenation does. 185 of the 214 conformance
-  cases, run on both sides, failed against main; the other 29 are neighbours that already held, kept as
-  pins. The served runtime grew about 8 KB gzipped. Proposed
-  and archived through OpenSpec (`openspec/specs/runtime-sets`, `runtime-dictionaries`, `transpiler-bcl`).
 - **2026-10-04 · The compiler suite's aborts are gone**: under load its test host crashed in 2 of 6
   runs on macOS arm64, and `dotnet test` still printed `Passed!` with the count that ran
   ([#473](https://github.com/eQuantic/equantic-ui/issues/473)). Measured after #481 cut the suite's own
@@ -1418,6 +1399,30 @@ record of a release, the wiki's Upgrading page is the distillate.
   `CollectionComparerFenceTests` checked only for the fence's own code. The construction skips a
   comparer now and a sorted one keeps the order it asks for; the fence decides alone. Found on the
   way: a page route answers `HEAD` with a 404 ([#575](https://github.com/eQuantic/equantic-ui/issues/575)).
+- **2026-10-05 · A list, a set and a join answer as .NET's do**: a `List<T>` sorted by its elements'
+  text and stably, `RemoveAll` threw a ReferenceError, `BinarySearch` was a `findIndex`, a comparer
+  named a class nothing defines, `FindIndex`'s range reached its predicate, `CopyTo` wrote nowhere and
+  `Find` answered undefined ([#488](https://github.com/eQuantic/equantic-ui/issues/488)); `IndexOf`
+  compared with `===`, so a NaN, a record and a tuple were never found, and a tuple's array compared
+  element by element ([#425](https://github.com/eQuantic/equantic-ui/issues/425)); a `HashSet` was a
+  `Set`, appending where .NET reuses a freed slot ([#438](https://github.com/eQuantic/equantic-ui/issues/438))
+  and finding a date, a decimal, a tuple and a record by reference
+  ([#531](https://github.com/eQuantic/equantic-ui/issues/531)); `string.Join` called `join`, which a set
+  and a linked list lack ([#429](https://github.com/eQuantic/equantic-ui/issues/429)), and wrote each
+  value as JavaScript writes it ([#441](https://github.com/eQuantic/equantic-ui/issues/441)). One
+  equality decided from the element type (`ElementEquality`, `utils/key-equality.ts`) serves a list's
+  search, a set's elements and a dictionary's keys; the set and the dictionary share one slot table
+  with .NET's capacity (`utils/slots.ts`, `utils/hash-set.ts`); the sort is .NET's introspective sort,
+  both helpers, traced comparison for comparison against .NET through its heap sort (`utils/sort.ts`,
+  `utils/list.ts`); and a join converts each value as a concatenation does. 185 of the 214 conformance
+  cases, run on both sides, failed against main; the other 29 are neighbours that already held, kept as
+  pins. The batch waited out the .60 cut, and main's later rules met it at the merge: its runtime threw
+  plain Errors that #561's typed catch let through, and throws .NET's types now (14 of 15 catch cases
+  failed before); a key compared by value is found through #550's hash, where a walk over every slot
+  cost 2,000 tuples four million comparisons; a module imports `$eq` wherever its body names it, which
+  a generated equality in a hydration map or a `ContainsValue` did not register; and `CopyTo` through
+  an `ICollection<T>` copies a set. The served runtime grew about 7 KB gzipped. Proposed and archived
+  through OpenSpec (`openspec/specs/runtime-sets`, `runtime-dictionaries`, `transpiler-bcl`).
   Proposed and archived through OpenSpec (`openspec/specs/links`, `openspec/specs/runtime-dictionaries`).
 
 ## Retired documents
