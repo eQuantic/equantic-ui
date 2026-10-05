@@ -135,6 +135,21 @@ public class StaticInitializationConformanceTests
         public class Fuse { public static int Lit = 1; static Fuse() { throw new InvalidOperationException("cctor"); } public static int Light() => Lit; }
         public class Bus { public static event Action Changed; static Bus() { Changed += () => Log.Text += "default "; } public static void Raise() => Changed?.Invoke(); }
 
+        public sealed class Knob : StatelessComponent
+        {
+            static Knob() { Log.Note("knob "); }
+            public override VisualNode Build(ComponentContext context) => new Text("knob", TypeRole.BodyM);
+        }
+
+        public sealed class Ticker : StatelessComponent
+        {
+            private int _count;
+            static Ticker() { Log.Note("ticker "); }
+            public Ticker() { _count = 5; }
+            public int Count => _count;
+            public override VisualNode Build(ComponentContext context) => new Text("ticker", TypeRole.BodyM);
+        }
+
         public static class Calc { public static int Compute() => 21; public static int Base { get; } = Compute(); public static readonly int Doubled = Base * 2; }
         public class PlainCalc { public static int Compute() => 21; public static int Base { get; } = Compute(); public static readonly int Doubled = Base * 2; }
         public sealed class CalcView : StatelessComponent
@@ -180,6 +195,11 @@ public class StaticInitializationConformanceTests
         ("a static class's property before a field over it", "return Calc.Doubled + \"|\" + Calc.Base;"),               // "42|21"
         ("a plain class's property before a field over it", "return PlainCalc.Doubled + \"|\" + PlainCalc.Base;"),     // "42|21"
         ("a component's property before a field over it", "return CalcView.Doubled + \"|\" + CalcView.Base;"),         // "42|21"
+        // A component's static constructor is never an instance one: it ran on every instance, and
+        // declared first it took a parameterless instance constructor's place, whose body was dropped.
+        ("a component's static constructor runs once, before its first instance", "Log.Text = \"\"; new Knob(); new Knob(); return Log.Text;"), // "knob "
+        ("a component's instance constructor beside a static one declared before it",
+            "Log.Text = \"\"; var t = new Ticker(); var u = new Ticker(); return t.Count + \"|\" + u.Count + \"|\" + Log.Text;"), // "5|5|ticker "
     ];
 
     [SkippableTheory]

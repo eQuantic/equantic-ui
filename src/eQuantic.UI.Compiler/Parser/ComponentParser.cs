@@ -615,10 +615,9 @@ public class ComponentParser
     {
         ParseMethods(classDecl, definition);
 
-        // Extract constructors
-        var constructors = classDecl.Members
-            .OfType<ConstructorDeclarationSyntax>();
-        
+        // Extract constructors, a static one excepted: it is the type initializer's.
+        var constructors = InstanceConstructors(classDecl);
+
         foreach (var ctor in constructors)
         {
             var ctorDef = new MethodDefinition
@@ -641,6 +640,12 @@ public class ComponentParser
             definition.Constructors.Add(ctorDef);
         }
     }
+
+    /// <summary>The constructors that build an instance: every one the class declares but a static
+    /// one, which is the type initializer's.</summary>
+    private static IEnumerable<ConstructorDeclarationSyntax> InstanceConstructors(ClassDeclarationSyntax classDecl) =>
+        classDecl.Members.OfType<ConstructorDeclarationSyntax>()
+            .Where(constructor => !constructor.Modifiers.Any(SyntaxKind.StaticKeyword));
 
     private void ParseConstructors(ClassDeclarationSyntax classDecl, ComponentDefinition definition)
     {
@@ -699,8 +704,10 @@ public class ComponentParser
         // takes no arguments meant the server ran that setup and the browser did not: SSR rendered
         // a form with three fields, hydration adopted the markup, and the client's own model was
         // empty, so typing changed nothing. Silent, and only on the target the user is on.
-        var constructors = classDecl.Members
-            .OfType<ConstructorDeclarationSyntax>()
+        // A STATIC constructor is never an instance one: the type initializer runs it, once
+        // (TypeInitializer). Taken for one, it ran on every instance besides, and declared before a
+        // parameterless instance constructor it took that one's place, whose body was dropped.
+        var constructors = InstanceConstructors(classDecl)
             .Where(c => c.ParameterList.Parameters.Count > 0
                         || c.Body is not null || c.ExpressionBody is not null);
 

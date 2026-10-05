@@ -560,7 +560,11 @@ public class TypeScriptEmitter
                     // written with. Only the block was read, so `public Chart(x) => _x = x;` emitted a
                     // constructor that assigned nothing and left the field undefined.
                     var hasCtorBody = ctorDef?.BodyNode != null || ctorDef?.ExpressionBodyNode != null;
-                    if (ctorParams.Count > 0 || autoDefaults.Count > 0 || hasCtorBody)
+                    // A type with a static constructor runs it before its first instance, so the twin has
+                    // a constructor to start it in (TypeInitializer.StartedIn) whether or not C# wrote one:
+                    // without, `new Dial()` ran the static constructor never.
+                    var startsOnConstruction = orderedStatics && TypeInitializer.HasStaticConstructor(component.ClassSyntax!);
+                    if (ctorParams.Count > 0 || autoDefaults.Count > 0 || hasCtorBody || startsOnConstruction)
                     {
                         // C# optional parameters keep their defaults as JS default parameters
                         // (`variant: any = 'primary'`) — without them `new Button("x")` would run the
