@@ -49,6 +49,10 @@ public class StringJoinConformanceTests
     [InlineData("return string.Join(\",\", new[] { Day.Friday, Day.Monday });")]
     [InlineData("return string.Join(\",\", new List<float> { 0.1f, 1e21f });")]
     [InlineData("return string.Join(\",\", new[] { 1e21, 0.1, -0.0, double.NaN });")]
+    // .NET writes a double in E notation from 1e17 and below 1e-4, where JavaScript waits for 1e21 and
+    // 1e-7: the range between is where a join of JavaScript's own text differs.
+    [InlineData("return string.Join(\",\", new[] { 1e17, 123456789012345678.0, 1e-5, 0.1 + 0.2 });")]
+    [InlineData("return string.Join(\",\", new object[] { 1e17, 1e-5, 0.1 + 0.2 });")]
     // A flags enum's set flags, a nullable enum, a nullable bool, a record's text.
     [InlineData("return string.Join(\";\", new[] { Mode.A | Mode.B, Mode.None });")]
     [InlineData("return string.Join(\",\", new List<Day?> { Day.Monday, null });")]
