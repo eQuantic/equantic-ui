@@ -158,7 +158,7 @@ export abstract class CurlyBraceLanguage {
                 continue;
             }
             if (this.hasBracketAttributes && c === '[' && CurlyBraceLanguage.isLineHead(line, i)) {
-                let close = line.indexOf(']', i);
+                let close = $eq.text.indexOfChar(line, ']', i);
                 if (close > 0) {
                     CurlyBraceLanguage.add(into, i, close + 1 - i, 'attribute');
                     i = close + 1;

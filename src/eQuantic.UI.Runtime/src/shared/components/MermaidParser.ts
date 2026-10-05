@@ -137,7 +137,7 @@ export class MermaidParser {
         let edge = new MermaidEdgeRef({ arrow: arrow, end: i });
         let after = MermaidParser.skipSpaces(text, i);
         if (after < text.length && text[after] === '|') {
-            let close = text.indexOf('|', after + 1);
+            let close = $eq.text.indexOfChar(text, '|', after + 1);
             if (close > after) {
                 edge.label = $eq.text.trim(text.slice((after + 1), close));
                 edge.end = close + 1;

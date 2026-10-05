@@ -154,7 +154,7 @@ export class SdkStrings {
         while (i < pattern.length) {
             let letter = pattern[i];
             if (letter === '\'') {
-                let close = pattern.indexOf('\'', i + 1);
+                let close = $eq.text.indexOfChar(pattern, '\'', i + 1);
                 if (close < 0) {
                     hint.append($eq.text.substring(pattern, i + 1));
                     break;

@@ -214,7 +214,7 @@ export class MarkdownParser {
         while (i < text.length) {
             let c = text[i];
             if (c === '`') {
-                let end = text.indexOf('`', i + 1);
+                let end = $eq.text.indexOfChar(text, '`', i + 1);
                 if (end > i) {
                     buffer = MarkdownParser.flushText(runs, buffer);
                     runs.push(new MarkdownRun({ text: text.slice((i + 1), end), code: true }));
@@ -288,9 +288,9 @@ export class MarkdownParser {
     }
 
     static matchLink(text: string, open: number) {
-        let close = text.indexOf(']', open + 1);
+        let close = $eq.text.indexOfChar(text, ']', open + 1);
         if (close <= open || close + 1 >= text.length || text[close + 1] !== '(') return null;
-        let hrefEnd = text.indexOf(')', close + 2);
+        let hrefEnd = $eq.text.indexOfChar(text, ')', close + 2);
         if (hrefEnd <= close) return null;
         return new MarkdownLinkMatch({ label: text.slice((open + 1), close), href: text.slice((close + 2), hrefEnd), end: hrefEnd + 1 });
     }
