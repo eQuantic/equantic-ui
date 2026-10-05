@@ -82,6 +82,51 @@ public class IndexerConformanceTests
     public void AClassIndexer_ReachesItsTwin(bool typeAnnotations) =>
         ModuleGraph.AssertSameAsDotNet(Classes, typeAnnotations, ClassCases);
 
+    private const string Clamps = """
+        public record Clamped { private readonly int[] _v = new int[4]; public int this[int i] { get => _v[i]; set { if (value > 100) value = 100; _v[i] = value; } } }
+        public record NullableClamped { private readonly int?[] _v = new int?[4]; public int? this[int i] { get => _v[i]; set { if (value > 100) value = 100; _v[i] = value; } } }
+        public record Flipped { private readonly bool[] _v = new bool[2]; public bool this[int i] { get => _v[i]; set { value = !value; _v[i] = value; } } }
+        public record EarlyClamp { private readonly int[] _v = new int[4]; public int this[int i] { get => _v[i]; set { if (value < 0) { value = 0; _v[i] = value; return; } _v[i] = value; } } }
+        """;
+
+    /// <summary>
+    /// An assignment to an indexer answers the value it assigned, whatever the setter does with its
+    /// copy of <c>value</c>: the right operand, the value a compound or a step computed, the value a
+    /// coalescing write wrote. The twin's setter answered its <c>value</c> after its body, which a clamp
+    /// had reassigned: <c>var y = (g[0] = 250)</c> was 100, where .NET says 250.
+    /// </summary>
+    [SkippableTheory]
+    [InlineData("var g = new Clamped(); var y = (g[0] = 250); return y + \"|\" + g[0];")]                                        // "250|100"
+    [InlineData("var g = new Clamped(); g[0] = 50; var y = (g[0] += 200); return y + \"|\" + g[0];")]                             // "250|100"
+    [InlineData("var g = new Clamped(); g[0] = 100; var a = g[0]++; var b = ++g[0]; return a + \"|\" + b + \"|\" + g[0];")]       // "100|101|100"
+    [InlineData("var n = new NullableClamped(); var y = (n[0] ??= 250); return y + \"|\" + n[0];")]                              // "250|100"
+    [InlineData("var f = new Flipped(); var y = (f[0] |= true); return y + \"|\" + f[0];")]                                       // "True|False"
+    [InlineData("Clamped h = new Clamped(); var y = (h?[0] = 250); return y + \"|\" + h[0];")]                                    // "250|100"
+    [InlineData("var e = new EarlyClamp(); var y = (e[0] = -5); return y + \"|\" + e[0];")]                                       // "-5|0"
+    public void AnIndexerAssignment_AnswersTheValueItAssigned(string statements)
+    {
+        Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
+        ConformanceRunner.AssertStatementsSameAsDotNet(statements, Clamps);
+    }
+
+    private const string ClassClamp = """
+        public class Clamped { private readonly int[] _v = new int[4]; public int this[int i] { get => _v[i]; set { if (value > 100) value = 100; _v[i] = value; } } }
+        """;
+
+    private static readonly (string Name, string Statements)[] ClassClampCases =
+    [
+        // "250|100|250|100"
+        ("an assignment and a compound", "var g = new Clamped(); var y = (g[0] = 250); var z = (g[1] += 250); return y + \"|\" + g[0] + \"|\" + z + \"|\" + g[1];"),
+        // "100|101|100"
+        ("a postfix and a prefix step", "var g = new Clamped(); g[0] = 100; var a = g[0]++; var b = ++g[0]; return a + \"|\" + b + \"|\" + g[0];"),
+    ];
+
+    [SkippableTheory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void AClassIndexerAssignment_AnswersTheValueItAssigned(bool typeAnnotations) =>
+        ModuleGraph.AssertSameAsDotNet(ClassClamp, typeAnnotations, ClassClampCases);
+
     private const string Keyed = """
         public class Grid
         {

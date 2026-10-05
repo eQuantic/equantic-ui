@@ -106,8 +106,12 @@ internal sealed class MethodLowering
 
     /// <summary>
     /// An instance indexer as the two methods its twin carries (#427): its getter as
-    /// <c>item(…)</c> and its setter as <c>setItem(…, value)</c>, which answers the value it wrote,
-    /// as C#'s assignment does, so a call site can use it as the assignment's value. A setter that
+    /// <c>item(…)</c> and its setter as <c>setItem(…, value)</c>, which answers the value it was
+    /// handed, so a call site can use it as the assignment's value: every writer hands the setter the
+    /// value C# answers the assignment with (the right operand converted, the value a compound or a
+    /// step computed), and C# answers with it whatever the setter does with its own copy. A setter that
+    /// reassigns <c>value</c> (a clamp) keeps the value it was handed before its body runs: it answered
+    /// the clamped one, so <c>var y = (g[0] = 250)</c> was 100 where .NET says 250. A setter that
     /// returns early runs in an arrow of its own, so its <c>return;</c> ends the setter and not the
     /// answer. One path for a class, a component, a record, a struct and an interface's default.
     /// </summary>
@@ -142,8 +146,33 @@ internal sealed class MethodLowering
         var parameters = string.IsNullOrEmpty(keys)
             ? Param("value", declaredType(indexer.Type))
             : $"{keys}, {Param("value", declaredType(indexer.Type))}";
+        var value = JsExpr.Identifier("value");
+        var handed = JsExpr.Identifier(HandedValue);
+        IReadOnlyList<JsStatement> setter = WritesValue(set)
+            ? [JsStatement.Const(HandedValue, value), .. statements, JsStatement.Return(handed)]
+            : [.. statements, JsStatement.Return(value)];
         yield return JsClassMember.Method("", Strategies.Expressions.Indexer.Set, "", parameters, "",
-            JsStatement.Block([.. statements, JsStatement.Raw("return value;")])) with { Origin = new JsOrigin(set) };
+            JsStatement.Block(setter)) with { Origin = new JsOrigin(set) };
+    }
+
+    /// <summary>The value an indexer's setter was handed, kept where its body reassigns <c>value</c>:
+    /// <c>$</c> cannot begin a C# identifier, so the body names nothing by it.</summary>
+    private const string HandedValue = "$value";
+
+    /// <summary>
+    /// Whether a setter's body may write its <c>value</c>, as the bound tree's data flow says: an
+    /// assignment, a step, an <c>out</c> or <c>ref</c> argument, a lambda that writes it. Where the model
+    /// cannot be asked, it may.
+    /// </summary>
+    private bool WritesValue(AccessorDeclarationSyntax set)
+    {
+        SyntaxNode? body = (SyntaxNode?)set.Body ?? set.ExpressionBody?.Expression;
+        if (body is null) return false;
+        var model = _modelFor(set);
+        if (model?.GetDeclaredSymbol(set) is not IMethodSymbol { Parameters: [.., var parameter] }) return true;
+        var flow = body is ExpressionSyntax expression ? model.AnalyzeDataFlow(expression) : model.AnalyzeDataFlow((StatementSyntax)body);
+        return flow is not { Succeeded: true }
+            || flow.WrittenInside.Contains(parameter, SymbolEqualityComparer.Default);
     }
 
     /// <summary>
