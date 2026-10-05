@@ -1399,6 +1399,7 @@ record of a release, the wiki's Upgrading page is the distillate.
   `CollectionComparerFenceTests` checked only for the fence's own code. The construction skips a
   comparer now and a sorted one keeps the order it asks for; the fence decides alone. Found on the
   way: a page route answers `HEAD` with a 404 ([#575](https://github.com/eQuantic/equantic-ui/issues/575)).
+  Proposed and archived through OpenSpec (`openspec/specs/links`, `openspec/specs/runtime-dictionaries`).
 - **2026-10-05 · A list, a set and a join answer as .NET's do**: a `List<T>` sorted by its elements'
   text and stably, `RemoveAll` threw a ReferenceError, `BinarySearch` was a `findIndex`, a comparer
   named a class nothing defines, `FindIndex`'s range reached its predicate, `CopyTo` wrote nowhere and
@@ -1423,7 +1424,6 @@ record of a release, the wiki's Upgrading page is the distillate.
   a generated equality in a hydration map or a `ContainsValue` did not register; and `CopyTo` through
   an `ICollection<T>` copies a set. The served runtime grew about 7 KB gzipped. Proposed and archived
   through OpenSpec (`openspec/specs/runtime-sets`, `runtime-dictionaries`, `transpiler-bcl`).
-  Proposed and archived through OpenSpec (`openspec/specs/links`, `openspec/specs/runtime-dictionaries`).
 
 ## Retired documents
 
