@@ -50,6 +50,10 @@ public static class DotNetEvaluator
         // runtime `format` helper formats with an invariant/dot convention, so we match that here.
         CultureInfo.DefaultThreadCurrentCulture = CultureInfo.InvariantCulture;
         CultureInfo.CurrentCulture = CultureInfo.InvariantCulture;
+        // A value is written as JSON.stringify writes the runtime's representation of it, where
+        // System.Text.Json's own JSON differs (a long as a BigInt's text, a decimal's text, an enum's
+        // twin name, a double as JavaScript writes it, a tuple and a pair as arrays): RuntimeJson.
+        foreach (var converter in RuntimeJson.Converters) JsonOptions.Converters.Add(converter);
     }
 
     public static string EvaluateToJson(string csharpExpression, string prelude = "")

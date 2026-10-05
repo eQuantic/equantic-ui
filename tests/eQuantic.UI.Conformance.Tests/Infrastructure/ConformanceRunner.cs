@@ -75,7 +75,7 @@ public static class ConformanceRunner
     public static void AssertSameAsDotNetExceptTheHostsNewline(string csharpExpression, string why)
     {
         var js = Transpiler.TranspileExpression(csharpExpression, "");
-        var program = $"{BuildHelperImport(js)}console.log(JSON.stringify(((v) => v === undefined ? null : v)({js})))";
+        var program = $"{BuildHelperImport(js)}{Print(js)}";
 
         var actual = JsExecutor.Run(program);
         var expected = DotNetEvaluator.EvaluateToJson(csharpExpression, "");
@@ -202,7 +202,7 @@ public static class ConformanceRunner
     public static void AssertSameAsDotNetIgnoringHostNewline(string csharpExpression)
     {
         var js = Transpiler.TranspileExpression(csharpExpression, prelude: "");
-        var program = $"{BuildHelperImport(js)}console.log(JSON.stringify(((v) => v === undefined ? null : v)({js})))";
+        var program = $"{BuildHelperImport(js)}{Print(js)}";
 
         var actual = JsExecutor.Run(program);
         var expected = DotNetEvaluator.EvaluateToJson(csharpExpression, prelude: "")
@@ -222,7 +222,7 @@ public static class ConformanceRunner
     {
         var js = Transpiler.TranspileExpression(csharpExpression, prelude);
         var types = Transpiler.EmitDeclaredRecordTypes(prelude);
-        var program = $"{BuildHelperImport(js + types)}{types}console.log(JSON.stringify(((v) => v === undefined ? null : v)({js})))";
+        var program = $"{BuildHelperImport(js + types)}{types}{Print(js)}";
 
         var actual = JsExecutor.Run(program);
         var expected = DotNetEvaluator.EvaluateToJson(csharpExpression, prelude);
@@ -287,18 +287,30 @@ public static class ConformanceRunner
     /// the harness writes a bare script, and top-level await needs a module.
     /// </para>
     /// <para>
-    /// Conditional ON PURPOSE. Every non-awaiting case keeps the exact program it had, byte for
-    /// byte, so a thousand green conformance cases are not quietly re-run through a new shape.
+    /// Conditional ON PURPOSE. Every non-awaiting case keeps the shape it had, so a thousand green
+    /// conformance cases are not quietly re-run through a new one.
     /// </para>
     /// </summary>
-    private static string Log(string jsBlock)
-    {
-        const string canonical = "((v) => v === undefined ? null : v)";
-        return Regex.IsMatch(jsBlock, @"\bawait\b")
-            ? $"(async () => {{ const $r = await (async () => {jsBlock})(); "
-              + $"console.log(JSON.stringify({canonical}($r))); }})()"
-            : $"console.log(JSON.stringify({canonical}((() => {jsBlock})())))";
-    }
+    private static string Log(string jsBlock) =>
+        Regex.IsMatch(jsBlock, @"\bawait\b")
+            ? $"(async () => {{ const $r = await (async () => {jsBlock})(); {Print("$r")}; }})()"
+            : Print($"(() => {jsBlock})()");
+
+    /// <summary>
+    /// The statement that prints a JS value as the harness compares it: <c>JSON.stringify</c>, with
+    /// <c>undefined</c> at the top as null (the transpiled world treats them as one, the <c>== null</c>
+    /// doctrine), and a BigInt as its digits in a string, as the runtime's own
+    /// <c>BigInt.prototype.toJSON</c> writes one. A case that imports nothing from the runtime has no
+    /// such <c>toJSON</c>, and <c>return 5L;</c> threw "JSON.stringify cannot serialize BigInt" for it;
+    /// where the runtime is imported, its <c>toJSON</c> runs first and the replacer meets a string. The
+    /// .NET side writes a long the same way (<see cref="RuntimeJson"/>, #596).
+    /// <para>
+    /// PUBLIC so the harness's own checks can print a value no translation produced, and prove that a
+    /// long written as a JS number fails.
+    /// </para>
+    /// </summary>
+    public static string Print(string value) =>
+        $"console.log(JSON.stringify(((v) => v === undefined ? null : v)({value}), (k, v) => typeof v === 'bigint' ? v.toString() : v))";
 
     /// <summary>
     /// If the emitted JS references runtime helpers (e.g. `format`), import exactly those from the
