@@ -1399,6 +1399,7 @@ record of a release, the wiki's Upgrading page is the distillate.
   `CollectionComparerFenceTests` checked only for the fence's own code. The construction skips a
   comparer now and a sorted one keeps the order it asks for; the fence decides alone. Found on the
   way: a page route answers `HEAD` with a 404 ([#575](https://github.com/eQuantic/equantic-ui/issues/575)).
+  Proposed and archived through OpenSpec (`openspec/specs/links`, `openspec/specs/runtime-dictionaries`).
 - **2026-10-05 · The conformance harness compares a value as the runtime holds it**: the .NET side
   wrote a value as System.Text.Json writes it and the JS side as `JSON.stringify` writes the runtime's,
   so a long, a decimal, an enum and a float compared backwards: a long that crossed as a BigInt
@@ -1413,7 +1414,7 @@ record of a release, the wiki's Upgrading page is the distillate.
   `DateTimeOffset.ToUnixTimeSeconds()` answered a JS number for a long, and rounded an instant before
   1970 toward the epoch; it answers a BigInt cut as .NET cuts it now. Found on the way: the date
   constructors past the second ([#606](https://github.com/eQuantic/equantic-ui/issues/606)).
-  Proposed and archived through OpenSpec (`openspec/specs/links`, `openspec/specs/runtime-dictionaries`).
+  Proposed and archived through OpenSpec (`openspec/specs/runtime-dates`).
 
 ## Retired documents
 
