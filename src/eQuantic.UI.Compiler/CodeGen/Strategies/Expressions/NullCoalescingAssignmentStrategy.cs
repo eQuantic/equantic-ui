@@ -23,34 +23,13 @@ public class NullCoalescingAssignmentStrategy : IExpressionIrStrategy
     {
         var assignment = (AssignmentExpressionSyntax)node;
 
-        // A DICTIONARY entry reads before it coalesces, and .NET throws for a key that is not
-        // there — `m[k] ??= v` on a missing key is a KeyNotFoundException, not an insert. The
-        // guarded read cannot stand in `a ?? (a = b)`, so it is lowered the way the compound
-        // assignment is: read through the guard, write the result. Writing back a value that was
-        // already there keeps its key's slot, and `??` still short-circuits the right-hand side.
-        // The template binds the receiver and key once each.
-        // Parenthesized like every template, which the writer places without fencing.
-        if (DictionaryEntry.Of(assignment.Left, context) is { } target)
-        {
-            context.UsedHelpers.Add(Eq.Import);
-            return JsExpr.Template(
-                $"({DictionaryEntry.Write("{0}", "{1}", $"{DictionaryEntry.Read("{0}", "{1}")} ?? {{2}}")})",
-                context.Converter.ConvertIr(target.Expression),
-                context.Converter.ConvertIr(target.ArgumentList.Arguments[0].Expression),
-                context.Converter.ConvertIr(assignment.Right));
-        }
-
-        // An indexer the twin carries reads through its `item`, and writes through its `setItem` only
-        // when that read is null, as C# calls its setter only then (#427). The receiver and the keys
-        // are bound once each; the value is evaluated only when it is written.
-        if (Indexer.EntryOf(assignment.Left, context) is { } own)
-        {
-            var parts = Indexer.Parts(own, context);
-            var keys = parts.Count - 1;
-            return JsExpr.Template(
-                $"({Indexer.ReadTemplate(keys)} ?? {Indexer.WriteTemplate(keys, "{" + (keys + 1) + "}")})",
-                [.. parts, context.Converter.ConvertIr(assignment.Right)], context.TypeAnnotations);
-        }
+        // A PLACE (a dictionary's entry, an entry of an indexer the twin carries, #427) reads before it
+        // coalesces, and writes only when that read is null, as C# calls the setter only then. A
+        // dictionary's read throws for a key that is not there, as .NET's does: `m[k] ??= v` on a
+        // missing key is a KeyNotFoundException, not an insert. The receiver and the keys are bound
+        // once each; the value is evaluated only when it is written.
+        if (Place.Of(assignment.Left, context) is { } place)
+            return place.Coalesce(context.Converter.ConvertIr(assignment.Right));
 
         var left = context.Converter.ConvertExpression(assignment.Left);
         var right = context.Converter.ConvertExpression(assignment.Right);

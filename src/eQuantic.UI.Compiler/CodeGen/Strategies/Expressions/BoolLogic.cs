@@ -52,25 +52,11 @@ internal static class BoolLogic
         context.UsedHelpers.Add(Eq.Import);
         var right = context.Converter.ConvertIr(assignment.Right);
 
-        if (DictionaryEntry.Of(assignment.Left, context) is { } entry)
-        {
-            return JsExpr.Template(
-                $"({DictionaryEntry.Write("{0}", "{1}", Combine(op, DictionaryEntry.Read("{0}", "{1}"), "{2}"))})",
-                [context.Converter.ConvertIr(entry.Expression),
-                 context.Converter.ConvertIr(entry.ArgumentList.Arguments[0].Expression),
-                 right],
-                context.TypeAnnotations);
-        }
-
-        // An indexer the twin carries: read through its `item`, written through its `setItem` (#427).
-        if (Indexer.EntryOf(assignment.Left, context) is { } own)
-        {
-            var parts = Indexer.Parts(own, context);
-            var keys = parts.Count - 1;
-            return JsExpr.Template(
-                $"({Indexer.WriteTemplate(keys, Combine(op, Indexer.ReadTemplate(keys), "{" + (keys + 1) + "}"))})",
-                [.. parts, right], context.TypeAnnotations);
-        }
+        // A place (a dictionary's entry, an indexer's the twin carries, #427): read through its call and
+        // written back through its call, as every read-modify-write of it is.
+        if (Place.Of(assignment.Left, context) is { } place)
+            return place.Modify([right], (current, operands) =>
+                JsExpr.Callish(Combine(op, JsExprWriter.Write(current), JsExprWriter.Write(operands[0]))), answerOld: false);
 
         var left = context.Converter.ConvertIr(assignment.Left);
         return left switch

@@ -1,17 +1,15 @@
 using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.CSharp.Syntax;
 using eQuantic.UI.Compiler.CodeGen.Extensions;
-using eQuantic.UI.Compiler.CodeGen.Ir;
 
 namespace eQuantic.UI.Compiler.CodeGen.Strategies.Expressions;
 
 /// <summary>
 /// An INSTANCE INDEXER a twin carries (#427): <c>this[…]</c>'s getter is the method <c>item(…)</c>
 /// and its setter <c>setItem(…, value)</c>, the extension indexer's <c>item</c> being the precedent,
-/// and every element access the bound tree binds to it calls them. JavaScript has no indexer, and
-/// <c>grid[3]</c> read a property named "3" that no twin had: undefined, with a green build. A
-/// type declares one indexer and no member named <c>Item</c> or <c>SetItem</c> beside it (EQ1007), so
-/// the two names are the indexer's.
+/// and every element access the bound tree binds to it calls them, through the <see cref="Place"/>
+/// every writer takes. JavaScript has no indexer, and <c>grid[3]</c> read a property named "3" that
+/// no twin had: undefined, with a green build. A type declares one indexer and no member named
+/// <c>Item</c> or <c>SetItem</c> beside it (EQ1007), so the two names are the indexer's.
 /// </summary>
 internal static class Indexer
 {
@@ -36,35 +34,9 @@ internal static class Indexer
             || Services.RuntimeProvidedTypeScanner.IsTranspiledNamespace(ns);
     }
 
-    /// <summary>The element access <paramref name="target"/> is, through its parentheses, when a lowered
-    /// indexer reads and writes it; null for any other target.</summary>
-    public static ElementAccessExpressionSyntax? EntryOf(ExpressionSyntax target, ConversionContext context)
-    {
-        var node = target;
-        while (node is ParenthesizedExpressionSyntax parenthesized) node = parenthesized.Expression;
-        return node is ElementAccessExpressionSyntax access && IsLowered(context.SemanticHelper.GetSymbol(access) as IPropertySymbol)
-            ? access
-            : null;
-    }
-
-    /// <summary>An entry's receiver and keys, converted: the parts a template binds once each.</summary>
-    public static List<JsExpr> Parts(ElementAccessExpressionSyntax access, ConversionContext context) =>
-        [context.Converter.ConvertIr(access.Expression),
-         .. access.ArgumentList.Arguments.Select(argument => context.Converter.ConvertIr(argument.Expression))];
-
-    /// <summary>The read over a template's parts: the receiver <c>{0}</c> and the keys after it.</summary>
-    public static string ReadTemplate(int keys) => Read("{0}", Holes(keys));
-
-    /// <summary>The write over a template's parts, which answers <paramref name="value"/>.</summary>
-    public static string WriteTemplate(int keys, string value) => Write("{0}", Holes(keys), value);
-
-    private static IEnumerable<string> Holes(int keys) => Enumerable.Range(1, keys).Select(i => "{" + i + "}");
-
-    /// <summary>The read: <c>receiver.item(keys)</c>.</summary>
-    public static string Read(string receiver, IEnumerable<string> keys) => $"{receiver}.{Get}({string.Join(", ", keys)})";
-
-    /// <summary>The write: <c>receiver.setItem(keys, value)</c>, which answers the value written, as
-    /// C#'s assignment does.</summary>
-    public static string Write(string receiver, IEnumerable<string> keys, string value) =>
-        $"{receiver}.{Set}({string.Join(", ", keys.Append(value))})";
+    /// <summary>The indexer this lowering carries that the bound tree binds an element access to, or
+    /// null: an access written with its receiver, a null-conditional's binding or an object
+    /// initializer's entry.</summary>
+    public static IPropertySymbol? LoweredAt(SyntaxNode access, ConversionContext context) =>
+        context.SemanticHelper.GetSymbol(access) is IPropertySymbol property && IsLowered(property) ? property : null;
 }

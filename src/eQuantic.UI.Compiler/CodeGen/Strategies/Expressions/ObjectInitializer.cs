@@ -80,9 +80,12 @@ internal static class ObjectInitializer
         private readonly List<JsExpr> _arguments = [];
 
         /// <summary>The parameter a converted part of the C# arrives in.</summary>
-        private string Argument(ExpressionSyntax expression)
+        private string Argument(ExpressionSyntax expression) => Argument(context.Converter.ConvertIr(expression));
+
+        /// <summary>The parameter a part already converted arrives in.</summary>
+        private string Argument(JsExpr converted)
         {
-            _arguments.Add(context.Converter.ConvertIr(expression));
+            _arguments.Add(converted);
             return "$" + _arguments.Count;
         }
 
@@ -179,27 +182,24 @@ internal static class ObjectInitializer
             return null;
         }
 
-        /// <summary>An entry written by its key: a dictionary's through <c>$eq.mapSet</c>, as every write
-        /// to an entry goes, and an indexer the type declares through the twin's <c>setItem</c>.</summary>
+        /// <summary>An entry written by its key: a Place over the object, a dictionary's through
+        /// <c>$eq.mapSet</c>, as every write to an entry goes, and an indexer the type declares through
+        /// the twin's <c>setItem</c>, its keys and its value arguments in the order C# evaluates them;
+        /// or an array's slot, or a list's, which is an array on this side.</summary>
         private string? Entry(string target, ITypeSymbol? targetType, ImplicitElementAccessSyntax key, ExpressionSyntax value)
         {
             if (value is InitializerExpressionSyntax) return null;
-            var indexer = context.SemanticHelper.GetSymbol(key) as IPropertySymbol;
-            var dictionary = targetType.IsDictionary() && key.ArgumentList.Arguments.Count == 1;
-            var lowered = indexer is { IsIndexer: true } && Indexer.IsLowered(indexer);
-            // An array's slot, or a list's, which is an array on this side.
-            var slot = key.ArgumentList.Arguments.Count == 1 && (targetType is IArrayTypeSymbol || IsList(targetType));
-            if (!dictionary && !lowered && !slot) return null;
-
-            var keys = key.ArgumentList.Arguments.Select(argument => Argument(argument.Expression)).ToList();
-            var written = Argument(value);
-            if (dictionary)
+            var receiver = JsExpr.Identifier(target);
+            if (Place.Of(key, receiver, context) is { } place)
             {
-                context.UsedHelpers.Add(Eq.Import);
-                return DictionaryEntry.Write(target, keys[0], written) + ";";
+                List<JsExpr> evaluated = [receiver, .. place.Evaluated.Skip(1).Select(part => JsExpr.Identifier(Argument(part)))];
+                var entered = JsExpr.Identifier(Argument(value));
+                return JsExprWriter.Write(place.Over(evaluated).Write(entered)) + ";";
             }
-            if (lowered) return $"{Indexer.Write(target, keys, written)};";
-            return $"{target}[{keys[0]}] = {written};";
+            var slot = key.ArgumentList.Arguments.Count == 1 && (targetType is IArrayTypeSymbol || IsList(targetType));
+            if (!slot) return null;
+            var index = Argument(key.ArgumentList.Arguments[0].Expression);
+            return $"{target}[{index}] = {Argument(value)};";
         }
 
         private void Refuse(SyntaxNode element, string what) =>
