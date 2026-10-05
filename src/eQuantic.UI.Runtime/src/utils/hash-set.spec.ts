@@ -224,3 +224,34 @@ describe("HashSet — .NET's own members", () => {
     expect(items(hashSet(false, 'a\u{1F600}a'))).toEqual(['a', '\ud83d', '\ude00']);
   });
 });
+
+describe('HashSet — an element compared by value is found by its hash, as .NET finds it', () => {
+  it('compares only the elements that hash alike, where a walk compared every one', () => {
+    let compared = 0;
+    const same = tupleEquality(false, false);
+    const counting = (a: unknown, b: unknown): boolean => {
+      compared++;
+      return same(a, b);
+    };
+    const s = new HashSet<[number, number]>(counting);
+    for (let i = 0; i < 2000; i++) s.add([i, i * 2]);
+    for (let i = 0; i < 2000; i++) expect(s.has([i, i * 2])).toBe(true);
+    expect(s.has([1, 3])).toBe(false);
+    // Each lookup compares the few elements of its hash: a walk over every slot compared millions.
+    expect(compared).toBeLessThan(10000);
+    expect(s.size).toBe(2000);
+  });
+
+  it('keeps the slots and the order a removal and a copy leave, the bucket following each', () => {
+    const s = hashSetOf([dec('1.0'), dec('2.0'), dec('3.0')], true);
+    s.delete(dec('2.00'));
+    s.add(dec('9'));
+    expect(items(s).map(String)).toEqual(['1.0', '9', '3.0']);
+    expect(s.has(dec('1'))).toBe(true);
+    const copy = hashSet(true, s);
+    expect(copy.has(dec('9.0'))).toBe(true);
+    copy.delete(dec('1'));
+    expect(copy.has(dec('1.0'))).toBe(false);
+    expect(items(copy).map(String)).toEqual(['9', '3.0']);
+  });
+});

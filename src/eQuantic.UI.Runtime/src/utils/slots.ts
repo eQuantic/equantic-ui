@@ -6,16 +6,21 @@
  * 5, enumerates `5, 1`. A JavaScript `Set` appends instead (#438).
  *
  * A key is found as `EqualityComparer<T>.Default` finds it, which eqc decides from the key type
- * ({@link KeyEquality}): by IDENTITY through a `Map` of key to slot, by a COMPARISON over the live
- * slots, and, where the type does not decide, by the key's own equality for a key that has one and
- * through the `Map` for any other. ONE table for both collections, so a set and a dictionary of one
- * type find, keep and reuse slots by one rule (#531).
+ * ({@link KeyEquality}): by IDENTITY through a `Map` of key to slot, by a COMPARISON over the slots
+ * whose keys hash alike, and, where the type does not decide, by the key's own equality for a key that
+ * has one and through the `Map` for any other. ONE table for both collections, so a set and a
+ * dictionary of one type find, keep and reuse slots by one rule (#531).
+ *
+ * The hash is `$eq.hash` (`utils/hash.ts`), which agrees with every equality here: values that compare
+ * equal hash equal, so the comparison reads only the keys that may match, as .NET reads one bucket. A
+ * walk over every live slot made a set of tuples or of records quadratic to build.
  *
  * It keeps .NET's CAPACITY too, the length of the entries array .NET allocates: a prime of .NET's
  * table, grown to the next when an insertion finds the entries full. Nothing a program sees depends
  * on it but what .NET makes depend on it: whether a copy of a set keeps the set's free slots, and
  * whether `TrimExcess` compacts it.
  */
+import { hash } from './hash';
 import { hasOwnEquality, sameBy, sameKey, type Equality, type KeyEquality } from './key-equality';
 
 /** An entry: the key it is found by. A dictionary's carries its value beside it. */
@@ -68,6 +73,11 @@ export class SlotTable<K, E extends Slot<K>> {
   /** Each slot of a key found by identity: every key, none when keys are found by a comparison, and
    *  under `'own'` every key but one with an equality of its own. */
   private readonly index: Map<K, number> | null;
+  /** The slots of the keys found by a comparison, by their hash: the keys a comparison may find. */
+  private readonly buckets = new Map<number, number[]>();
+  /** The hash each of those slots is filed under, so a release finds its bucket, as .NET's entry
+   *  keeps its hash code. */
+  private readonly hashes: number[] = [];
   /** The comparison a walk over the slots finds a key by. */
   private readonly same: Equality;
   /** .NET's capacity: the length of the entries array it allocated, 0 before the first. */
@@ -87,7 +97,9 @@ export class SlotTable<K, E extends Slot<K>> {
   /** The key's slot, or -1. */
   find(key: K): number {
     if (this.indexes(key)) return this.index!.get(key) ?? -1;
-    for (let slot = 0; slot < this.entries.length; slot++) {
+    const slots = this.buckets.get(hash(key));
+    if (slots === undefined) return -1;
+    for (const slot of slots) {
       const entry = this.entries[slot];
       if (entry !== undefined && this.same(entry.key, key)) return slot;
     }
@@ -114,8 +126,22 @@ export class SlotTable<K, E extends Slot<K>> {
       if (slot === this.capacity) this.capacity = expandPrime(slot);
     }
     this.entries[slot] = entry;
-    if (this.indexes(entry.key)) this.index!.set(entry.key, slot);
+    this.file(entry.key, slot);
     return slot;
+  }
+
+  /** Files a live slot where its key is found: the index for a key found by identity, its hash's
+   *  bucket for one found by a comparison. */
+  private file(key: K, slot: number): void {
+    if (this.indexes(key)) {
+      this.index!.set(key, slot);
+      return;
+    }
+    const code = hash(key);
+    this.hashes[slot] = code;
+    const slots = this.buckets.get(code);
+    if (slots === undefined) this.buckets.set(code, [slot]);
+    else slots.push(slot);
   }
 
   /** Frees a live slot for the next insertion. */
@@ -123,7 +149,14 @@ export class SlotTable<K, E extends Slot<K>> {
     const entry = this.entries[slot]!;
     this.entries[slot] = undefined;
     this.freed.push(slot);
-    if (this.indexes(entry.key)) this.index!.delete(entry.key);
+    if (this.indexes(entry.key)) {
+      this.index!.delete(entry.key);
+      return;
+    }
+    const code = this.hashes[slot];
+    const slots = this.buckets.get(code)!;
+    slots.splice(slots.indexOf(slot), 1);
+    if (slots.length === 0) this.buckets.delete(code);
   }
 
   /** Every slot goes, the freed ones too, so the next insertion takes the first. The capacity stays,
@@ -132,6 +165,8 @@ export class SlotTable<K, E extends Slot<K>> {
     this.entries.length = 0;
     this.freed.length = 0;
     this.index?.clear();
+    this.buckets.clear();
+    this.hashes.length = 0;
   }
 
   /** .NET's `Initialize`: empty, with the arrays a table of `capacity` entries allocates. Answers the size. */
@@ -155,10 +190,8 @@ export class SlotTable<K, E extends Slot<K>> {
     this.entries = source.entries.map((entry) => (entry === undefined ? undefined : copy(entry)));
     this.freed = source.freed.slice();
     this.capacity = source.capacity;
-    if (this.index !== null) {
-      this.entries.forEach((entry, slot) => {
-        if (entry !== undefined && this.indexes(entry.key)) this.index!.set(entry.key, slot);
-      });
-    }
+    this.entries.forEach((entry, slot) => {
+      if (entry !== undefined) this.file(entry.key, slot);
+    });
   }
 }
