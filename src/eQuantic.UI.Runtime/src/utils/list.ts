@@ -16,6 +16,7 @@
  * An array stands for a `List<T>` and for a `T[]` alike. Where the two check differently, each has
  * its own function, named for it.
  */
+import { exception } from './exceptions';
 import { sameBy, type KeyEquality } from './key-equality';
 import { binarySearchIn, introSort, type SortOrder } from './sort';
 import { comparerOf, type Ordering } from './ordering';
@@ -24,11 +25,11 @@ import { compare as compareStrings, type StringComparison } from './string-stati
 // ---- .NET's words ------------------------------------------------------------------------------
 
 function argumentNull(parameter: string): Error {
-  return new Error(`Value cannot be null. (Parameter '${parameter}')`);
+  return exception('System.ArgumentNullException', `Value cannot be null. (Parameter '${parameter}')`);
 }
 
 function outOfRange(parameter: string, message: string): Error {
-  return new Error(`${message} (Parameter '${parameter}')`);
+  return exception('System.ArgumentOutOfRangeException', `${message} (Parameter '${parameter}')`);
 }
 
 const NON_NEGATIVE = 'Non-negative number required.';
@@ -43,7 +44,8 @@ const BIGGER_THAN_COLLECTION = 'Larger than collection size.';
 /** `ArgumentOutOfRangeException.ThrowIfNegative`. */
 function requireNonNegative(parameter: string, value: number): void {
   if (value < 0) {
-    throw new Error(
+    throw exception(
+      'System.ArgumentOutOfRangeException',
       `${parameter} ('${value}') must be a non-negative value. (Parameter '${parameter}')\nActual value was ${value}.`,
     );
   }
@@ -52,7 +54,8 @@ function requireNonNegative(parameter: string, value: number): void {
 /** `ArgumentOutOfRangeException.ThrowIfLessThan(value, 0)`. */
 function requireAtLeastZero(parameter: string, value: number): void {
   if (value < 0) {
-    throw new Error(
+    throw exception(
+      'System.ArgumentOutOfRangeException',
       `${parameter} ('${value}') must be greater than or equal to '0'. (Parameter '${parameter}')\nActual value was ${value}.`,
     );
   }
@@ -118,7 +121,7 @@ export function listSort<T>(list: T[], how: SortOrder<T>, index?: number, count?
   }
   if (index < 0) throw outOfRange('index', NON_NEGATIVE);
   if (count < 0) throw outOfRange('count', NON_NEGATIVE);
-  if (list.length - index < count) throw new Error(INVALID_OFF_LEN);
+  if (list.length - index < count) throw exception('System.ArgumentException', INVALID_OFF_LEN);
   introSort(list, index, count, how);
 }
 
@@ -137,7 +140,7 @@ export function arraySort<T>(array: T[] | null, how: SortOrder<T>, index?: numbe
   }
   if (index < 0) throw outOfRange('index', NON_NEGATIVE);
   if (length < 0) throw outOfRange('length', NON_NEGATIVE);
-  if (array.length - index < length) throw new Error(INVALID_OFF_LEN);
+  if (array.length - index < length) throw exception('System.ArgumentException', INVALID_OFF_LEN);
   introSort(array, index, length, how);
 }
 
@@ -155,7 +158,7 @@ export function binarySearch<T>(list: readonly T[], item: T, how: SortOrder<T>, 
   if (index === undefined || count === undefined) return binarySearchIn(list, 0, list.length, item, how);
   if (index < 0) throw outOfRange('index', NON_NEGATIVE);
   if (count < 0) throw outOfRange('count', NON_NEGATIVE);
-  if (list.length - index < count) throw new Error(INVALID_OFF_LEN);
+  if (list.length - index < count) throw exception('System.ArgumentException', INVALID_OFF_LEN);
   return binarySearchIn(list, index, count, item, how);
 }
 
@@ -365,7 +368,7 @@ export function copyTo<T>(list: readonly T[], array: T[] | null, arrayIndex = 0)
 
 /** `List<T>.CopyTo(index, array, arrayIndex, count)`. */
 export function copyRangeTo<T>(list: readonly T[], index: number, array: T[] | null, arrayIndex: number, count: number): void {
-  if (list.length - index < count) throw new Error(INVALID_OFF_LEN);
+  if (list.length - index < count) throw exception('System.ArgumentException', INVALID_OFF_LEN);
   copyRange(list, index, array, arrayIndex, count);
 }
 
@@ -375,11 +378,15 @@ function copyRange<T>(source: readonly T[], sourceIndex: number, destination: T[
   requireNonNegative('length', length);
   requireAtLeastZero('sourceIndex', sourceIndex);
   if (sourceIndex + length > source.length) {
-    throw new Error("Source array was not long enough. Check the source index, length, and the array's lower bounds. (Parameter 'sourceArray')");
+    throw exception(
+      'System.ArgumentException',
+      "Source array was not long enough. Check the source index, length, and the array's lower bounds. (Parameter 'sourceArray')",
+    );
   }
   requireAtLeastZero('destinationIndex', destinationIndex);
   if (destinationIndex + length > destination.length) {
-    throw new Error(
+    throw exception(
+      'System.ArgumentException',
       "Destination array was not long enough. Check the destination index, length, and the array's lower bounds. (Parameter 'destinationArray')",
     );
   }

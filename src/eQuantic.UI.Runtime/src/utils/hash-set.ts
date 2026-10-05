@@ -18,6 +18,7 @@
  * past that.
  */
 import { collectionModified } from './dictionary';
+import { exception } from './exceptions';
 import { sameEquality, type KeyEquality } from './key-equality';
 import { expandPrime, getPrime, SlotTable } from './slots';
 
@@ -25,13 +26,22 @@ type Element<T> = { key: T };
 
 /** `ArgumentNullException`'s words for a parameter. */
 function argumentNull(parameter: string): Error {
-  return new Error(`Value cannot be null. (Parameter '${parameter}')`);
+  return exception('System.ArgumentNullException', `Value cannot be null. (Parameter '${parameter}')`);
 }
 
 /** `ArgumentOutOfRangeException.ThrowIfNegative`'s words. */
 function negative(parameter: string, value: number): Error {
-  return new Error(
+  return exception(
+    'System.ArgumentOutOfRangeException',
     `${parameter} ('${value}') must be a non-negative value. (Parameter '${parameter}')\nActual value was ${value}.`,
+  );
+}
+
+/** `ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.capacity)`'s words. */
+function outOfRangeCapacity(): Error {
+  return exception(
+    'System.ArgumentOutOfRangeException',
+    "Specified argument was out of the range of valid values. (Parameter 'capacity')",
   );
 }
 
@@ -358,7 +368,10 @@ export class HashSet<T> implements Set<T> {
     if (arrayIndex < 0) throw negative('arrayIndex', arrayIndex);
     if (count < 0) throw negative('count', count);
     if (arrayIndex > array.length || count > array.length - arrayIndex) {
-      throw new Error('Destination array is not long enough to copy all the items in the collection. Check array index and length.');
+      throw exception(
+        'System.ArgumentException',
+        'Destination array is not long enough to copy all the items in the collection. Check array index and length.',
+      );
     }
     for (const entry of this.table.entries) {
       if (count === 0) break;
@@ -370,7 +383,7 @@ export class HashSet<T> implements Set<T> {
 
   /** `EnsureCapacity`: the capacity, grown to hold `capacity` elements without growing again. */
   ensureCapacity(capacity: number): number {
-    if (capacity < 0) throw new Error("Specified argument was out of the range of valid values. (Parameter 'capacity')");
+    if (capacity < 0) throw outOfRangeCapacity();
     if (this.table.capacity >= capacity) return this.table.capacity;
     this.table.capacity = getPrime(capacity);
     return this.table.capacity;
@@ -380,7 +393,8 @@ export class HashSet<T> implements Set<T> {
    *  capacity they need is smaller than the one there is. */
   trimExcess(capacity: number = this.size): void {
     if (capacity < this.size) {
-      throw new Error(
+      throw exception(
+        'System.ArgumentOutOfRangeException',
         `capacity ('${capacity}') must be greater than or equal to '${this.size}'. (Parameter 'capacity')\nActual value was ${capacity}.`,
       );
     }
@@ -444,7 +458,7 @@ export function hashSet<T>(equality: KeyEquality = false, ...source: [] | [Itera
   if (source.length === 0) return set;
   const from = source[0];
   if (typeof from === 'number') {
-    if (from < 0) throw new Error("Specified argument was out of the range of valid values. (Parameter 'capacity')");
+    if (from < 0) throw outOfRangeCapacity();
     if (from > 0) set.ensureCapacity(from);
     return set;
   }

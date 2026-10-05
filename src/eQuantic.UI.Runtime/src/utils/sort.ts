@@ -17,6 +17,8 @@
  * says two elements failed to compare, the thrown one as its `cause` (.NET's `InnerException`).
  */
 
+import { exception } from './exceptions';
+
 /** How a sort compares, and which of .NET's helpers it is: see the module's description. */
 export interface SortOrder<T> {
   /** The comparison; null for a type .NET's default comparer cannot order, which throws when asked. */
@@ -36,7 +38,7 @@ class OutOfRange extends Error {}
 
 /** .NET's `InvalidOperationException` for a comparison that threw, carrying what it threw. */
 export function compareFailed(cause: unknown): Error {
-  const error = new Error('Failed to compare two elements in the array.');
+  const error = exception('System.InvalidOperationException', 'Failed to compare two elements in the array.');
   Object.defineProperty(error, 'cause', { value: cause, configurable: true, writable: true });
   return error;
 }
@@ -47,7 +49,7 @@ export function comparisonOf<T>(order: SortOrder<T>): (a: T, b: T) => number {
 }
 
 function uncomparable(): number {
-  throw new Error('At least one object must implement IComparable.');
+  throw exception('System.ArgumentException', 'At least one object must implement IComparable.');
 }
 
 /**
@@ -73,7 +75,8 @@ export function introSort<T>(keys: T[], index: number, count: number, order: Sor
     comparableSort(keys, from, length, 2 * (log2(length) + 1), compare);
   } catch (error) {
     if (error instanceof OutOfRange) {
-      throw new Error(
+      throw exception(
+        'System.ArgumentException',
         'Unable to sort because the IComparer.Compare() method returns inconsistent results. Either a value does not compare equal to itself, or one value repeatedly compared to another value yields different results. ' +
           `IComparer: '${order.name}'.`,
       );
@@ -202,7 +205,7 @@ function insertionSort<T>(keys: T[], lo: number, n: number, compare: (a: T, b: T
 
 /** `left.CompareTo(right)`: a null receiver is .NET's NullReferenceException, which the sort wraps. */
 function compareTo<T>(compare: (a: T, b: T) => number, left: T, right: T): number {
-  if (left == null) throw new TypeError('Object reference not set to an instance of an object.');
+  if (left == null) throw exception('System.NullReferenceException', 'Object reference not set to an instance of an object.');
   return compare(left, right);
 }
 
