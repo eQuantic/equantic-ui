@@ -1,8 +1,8 @@
 import { $eq, CodeDocument, CodeInnerChange, CodeLineChange, CodePosition, CodeRange } from "../runtime-exports";
 
 export class CodeDiffer {
-    static innerTokenLimit: number = 20_000;
-    static maxRounds: number = 2_000;
+    static innerTokenLimit: number = 20000;
+    static maxRounds: number = 2000;
 
     static compare(original: CodeDocument, modified: CodeDocument) {
         return CodeDiffer.compareLines(original.lines, modified.lines);

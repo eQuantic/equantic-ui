@@ -499,6 +499,12 @@ public class RecordTypeEmitter
         return returns && followed ? $"(() => {{ {body}}})(); " : body;
     }
 
+    /// <summary>A static's initializer: its VALUE where C# folds it to a constant
+    /// (<see cref="TypeInitializer.Constant"/>), and the expression converted otherwise.</summary>
+    private string StaticValue(EqualsValueClauseSyntax initializer, TypeSyntax type) =>
+        TypeInitializer.Constant(initializer, ModelFor(initializer), _converter)
+        ?? ExpressionVariableScanner.Scoped(initializer.Value, _converter.ConvertExpression(initializer.Value, type.ToString()), _annotations);
+
     /// <summary>The statements of the type's static constructor, which run after its static
     /// initializers (<see cref="TypeInitializer"/>); none when it declares none.</summary>
     private IReadOnlyList<JsStatement> StaticConstructorBody(TypeDeclarationSyntax type)
@@ -820,8 +826,7 @@ public class RecordTypeEmitter
                     foreach (var variable in field.Declaration.Variables)
                     {
                         var fieldValue = variable.Initializer is { } init
-                            ? ExpressionVariableScanner.Scoped(init.Value,
-                                _converter.ConvertExpression(init.Value, field.Declaration.Type.ToString()), _annotations)
+                            ? StaticValue(init, field.Declaration.Type)
                             : DefaultOf(field.Declaration.Type);
                         if (ordered && !field.Modifiers.Any(SyntaxKind.ConstKeyword))
                             initialized.Add(new(variable.Identifier.Text.ToCamelCase(), TsTypeOf(field.Declaration.Type),
@@ -837,8 +842,7 @@ public class RecordTypeEmitter
                 case PropertyDeclarationSyntax prop
                     when prop.Modifiers.Any(SyntaxKind.StaticKeyword) && IsPureAuto(prop):
                     var propValue = prop.Initializer is { } propInit
-                        ? ExpressionVariableScanner.Scoped(propInit.Value,
-                            _converter.ConvertExpression(propInit.Value, prop.Type.ToString()), _annotations)
+                        ? StaticValue(propInit, prop.Type)
                         : DefaultOf(prop.Type);
                     if (ordered)
                         initialized.Add(new(prop.Identifier.Text.ToCamelCase(), TsTypeOf(prop.Type), DefaultOf(prop.Type),
@@ -854,8 +858,7 @@ public class RecordTypeEmitter
                     when backed.Modifiers.Any(SyntaxKind.StaticKeyword)
                         && Strategies.Expressions.FieldExpressionStrategy.UsesBackingField(backed):
                     var slotValue = backed.Initializer is { } slotInit
-                        ? ExpressionVariableScanner.Scoped(slotInit.Value,
-                            _converter.ConvertExpression(slotInit.Value, backed.Type.ToString()), _annotations)
+                        ? StaticValue(slotInit, backed.Type)
                         : DefaultOf(backed.Type);
                     if (ordered)
                         initialized.Add(new(Strategies.Expressions.FieldExpressionStrategy.BackingSlot(backed), TsTypeOf(backed.Type),

@@ -369,9 +369,9 @@ public class TypeScriptEmitter
                     {
                         if (component.IsPrimitive && !field.IsStatic) continue;
                         var tsType = DeclarationType(component, field.Type);
-                        var tsDefault = field.DefaultValueNode != null
-                            ? Initializer(field.DefaultValueNode, _converter.ConvertExpression(field.DefaultValueNode, field.Type))
-                            : null;
+                        var tsDefault = field.DefaultValueNode is not { Parent: EqualsValueClauseSyntax given } ? null
+                            : field.IsStatic && field.TypeNode is { } declared ? StaticValue(given, declared)
+                            : Initializer(given.Value, _converter.ConvertExpression(given.Value, field.Type));
                         if (orderedStatics && field.IsStatic && !IsConstant(field))
                         {
                             if (tsDefault is not null && tsDefault.Contains("$eq.")) component.UsedHelpers.Add(Eq.Import);
@@ -1595,8 +1595,8 @@ public class TypeScriptEmitter
     /// </summary>
     private string? StaticInitial(ComponentDefinition component, PropertyDefinition prop)
     {
-        var initial = prop.DefaultValueNode != null
-            ? Initializer(prop.DefaultValueNode, _converter.ConvertExpression(prop.DefaultValueNode, prop.Type))
+        var initial = prop.DefaultValueNode is { Parent: EqualsValueClauseSyntax given } && prop.Node is { } declared
+            ? StaticValue(given, declared.Type)
             : ValueTypeDefault(prop.Type, prop.Node?.Type);
         if (initial is not null && initial.Contains("$eq.")) component.UsedHelpers.Add(Eq.Import);
         return initial;
@@ -1646,9 +1646,6 @@ public class TypeScriptEmitter
             {
                 foreach (var v in f.Declaration.Variables)
                 {
-                    var def = v.Initializer != null
-                        ? Initializer(v.Initializer.Value, _converter.ConvertExpression(v.Initializer.Value, f.Declaration.Type.ToString()))
-                        : null;
                     // The TYPE is emitted either way. Without it every field of a plain class is
                     // implicitly `any`, and the first thing that goes is the checking the whole
                     // two-layer design exists for.
@@ -1659,6 +1656,9 @@ public class TypeScriptEmitter
                     var isStaticMember = asStatic
                         || f.Modifiers.Any(Microsoft.CodeAnalysis.CSharp.SyntaxKind.StaticKeyword)
                         || f.Modifiers.Any(Microsoft.CodeAnalysis.CSharp.SyntaxKind.ConstKeyword);
+                    var def = v.Initializer is not { } given ? null
+                        : isStaticMember ? StaticValue(given, f.Declaration.Type)
+                        : Initializer(given.Value, _converter.ConvertExpression(given.Value, f.Declaration.Type.ToString()));
                     var fieldName = v.Identifier.Text.ToCamelCase();
                     if (ordered && isStaticMember
                         && !f.Modifiers.Any(Microsoft.CodeAnalysis.CSharp.SyntaxKind.ConstKeyword))
@@ -1708,12 +1708,12 @@ public class TypeScriptEmitter
                         // The store starts as the property's initializer, which C# writes into it
                         // directly, or as its type's default. The initializer was dropped: the
                         // accessors are emitted, so nothing below writes it (#483).
-                        var slotDefault = p.Initializer != null
-                            ? Initializer(p.Initializer.Value, _converter.ConvertExpression(p.Initializer.Value, p.Type.ToString()))
-                            : DefaultOf(p.Type);
                         // On the class for a static property, where its accessors' `this` is the
                         // class: on the instance, a static `field` read undefined (#483).
                         var slotIsStatic = accessorQualifier.Length > 0;
+                        var slotDefault = p.Initializer is not { } given ? DefaultOf(p.Type)
+                            : slotIsStatic ? StaticValue(given, p.Type)
+                            : Initializer(given.Value, _converter.ConvertExpression(given.Value, p.Type.ToString()));
                         if (ordered && slotIsStatic)
                             initialized.Add(new(slot, DeclaredType(p.Type), DefaultOf(p.Type), p.Initializer is null ? null : slotDefault, p));
                         else if (slotDefault == "null")
@@ -1734,13 +1734,14 @@ public class TypeScriptEmitter
                     // A property guarding a store has its accessors, and no field of its name.
                     if (EmitGetter(p, c, accessorQualifier) || backed) { }
                     else if (ordered && accessorQualifier.Length > 0)
-                        initialized.Add(new(pn, DeclaredType(p.Type), DefaultOf(p.Type), p.Initializer is { } given
-                            ? Initializer(given.Value, _converter.ConvertExpression(given.Value, p.Type.ToString()))
-                            : null, p));
-                    else if (p.Initializer != null)
+                        initialized.Add(new(pn, DeclaredType(p.Type), DefaultOf(p.Type),
+                            p.Initializer is { } given ? StaticValue(given, p.Type) : null, p));
+                    else if (p.Initializer is { } initial)
                         c.Field(pn, DeclaredType(p.Type),
-                            Initializer(p.Initializer.Value, _converter.ConvertExpression(p.Initializer.Value, p.Type.ToString())), p,
-                            isStatic: asStatic || p.Modifiers.Any(Microsoft.CodeAnalysis.CSharp.SyntaxKind.StaticKeyword));
+                            accessorQualifier.Length > 0
+                                ? StaticValue(initial, p.Type)
+                                : Initializer(initial.Value, _converter.ConvertExpression(initial.Value, p.Type.ToString())), p,
+                            isStatic: accessorQualifier.Length > 0);
                     // An AUTO-property — `{ get; set; }`, `{ get; private set; }`, `{ get; }` — is a
                     // field with a name. Emitting nothing for it left the class without the member
                     // its own constructor assigns: `Property 'readOnly' does not exist`.
@@ -1846,6 +1847,12 @@ public class TypeScriptEmitter
                 c.Rewrite(member => TypeInitializer.StartedIn(member, name, slots));
             }
     }
+
+    /// <summary>A static's initializer: its VALUE where C# folds it to a constant
+    /// (<see cref="TypeInitializer.Constant"/>), and the expression converted otherwise.</summary>
+    private string StaticValue(EqualsValueClauseSyntax initializer, TypeSyntax type) =>
+        TypeInitializer.Constant(initializer, ModelFor(initializer), _converter)
+        ?? Initializer(initializer.Value, _converter.ConvertExpression(initializer.Value, type.ToString()));
 
     /// <summary>
     /// A property's getter where it has one with a body: its expression body, or its get

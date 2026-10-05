@@ -33,6 +33,7 @@ public class StaticInitializationConformanceTests
         public struct Rgb { public byte R, G, B; public static Rgb Black; static Rgb() { Black = new Rgb { R = 1 }; } }
         public record Gate { public static int X = 5; public static string Seen = ""; static Gate() { Seen = "cctor"; if (X > 0) return; Seen = "late"; } }
         public record Shaky { public static int A = Fail(); public static int B = 3; static int Fail() => throw new InvalidOperationException("x"); }
+        public record Bounds { public static readonly int Max = Default * 2; public const int Default = 50; public static readonly long Wide = Default * 3L; }
         """;
 
     [SkippableTheory]
@@ -61,6 +62,9 @@ public class StaticInitializationConformanceTests
     // An initializer that throws fails every use of the type, the first included, with the
     // TypeInitializationException that carries what it threw.
     [InlineData("string Read() { try { return Shaky.B.ToString(); } catch (Exception e) { return e is TypeInitializationException { InnerException: InvalidOperationException { Message: \"x\" } } ? \"tie\" : \"other\"; } } return Read() + \"|\" + Read();")] // "tie|tie"
+    // A static that C# folds to a constant is its value, read before the later constant it names is
+    // defined: NaN where .NET answers 100.
+    [InlineData("return Bounds.Max + \"|\" + Bounds.Wide;")]                                          // "100|150"
     public void ARecordsStatics_InitializeAsCSharpRunsThem(string statements)
     {
         Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
@@ -168,4 +172,91 @@ public class StaticInitializationConformanceTests
     [InlineData(false)]
     public void AClassesStatics_InitializeAsCSharpRunsThem(bool typeAnnotations) =>
         ModuleGraph.AssertSameAsDotNet(Classes, typeAnnotations, ClassCases);
+
+    /// <summary>
+    /// A static whose initializer C# folds to a constant is that VALUE, in its own type, so a type of
+    /// constants keeps its fields and reads nothing while it is defined. Written as the expression, it
+    /// named the constants it folds, and an in-source constant read by its bare name is the twin's
+    /// static, defined where it is declared: `Max = Default * 2` above `const int Default = 50` read it
+    /// before it was defined, NaN for .NET's 100. Through `using static`, the initializer named another
+    /// type no import brought, and the module did not load.
+    /// </summary>
+    private const string Constants = """
+        using System;
+        using eQuantic.UI.Primitives;
+        using static Limits;
+
+        public enum Shade { None, Dark, Light }
+
+        public static class Limits { public static readonly int Max = Default * 2; public const int Default = 50; }
+
+        public static class Names
+        {
+            public const string Full = Prefix + "x";
+            public const string Prefix = "eq.";
+            public static readonly string Tagged = Full + "!";
+        }
+
+        public static class Widths
+        {
+            public static readonly long Wide = Base * 3;
+            public static readonly decimal Price = Base / 4m;
+            public static readonly float Ratio = Base / 3f;
+            public static readonly char Mark = First;
+            public static readonly Shade Tone = Initial;
+            public static readonly int? Maybe = Base;
+            public static readonly object Boxed = Base;
+            public static double Half { get; } = Base / 2.0;
+            public const int Base = 10;
+            public const char First = 'q';
+            public const Shade Initial = Shade.Light;
+        }
+
+        public static class Derived { public static readonly int Next = Default + 1; }
+
+        public class Grid { public static readonly int Cells = Side * Side; public const int Side = 3; public int Count() => Cells; }
+
+        public sealed class Meter : StatelessComponent
+        {
+            public static readonly int Max = Default * 2;
+            public static int Least { get; } = Default / 5;
+            public const int Default = 50;
+            public override VisualNode Build(ComponentContext context) => new Text("meter", TypeRole.BodyM);
+        }
+        """;
+
+    private static readonly (string Name, string Statements)[] ConstantCases =
+    [
+        ("a static over a later constant", "return Limits.Max;"),                                                          // 100
+        ("a constant over a later constant, and a static over it", "return Names.Full + \"|\" + Names.Tagged;"),            // "eq.x|eq.x!"
+        ("a long, a decimal, a float and a char", "return Widths.Wide + \"|\" + Widths.Price + \"|\" + Widths.Ratio + \"|\" + Widths.Mark;"), // "30|2.5|3.3333333|q"
+        ("an enum, a nullable, a boxed value and a property", "return Widths.Tone + \"|\" + Widths.Maybe + \"|\" + Widths.Boxed + \"|\" + Widths.Half;"), // "Light|10|10|5"
+        ("a constant of another type, read through using static", "return Derived.Next;"),                                  // 51
+        ("a plain class's static over a later constant", "return Grid.Cells + \"|\" + new Grid().Count();"),              // "9|9"
+        ("a component's static field and property over a later constant", "return Meter.Max + \"|\" + Meter.Least;"),     // "100|10"
+    ];
+
+    [SkippableTheory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void AStaticThatIsAConstant_IsItsValue(bool typeAnnotations) =>
+        ModuleGraph.AssertSameAsDotNet(Constants, typeAnnotations, ConstantCases);
+
+    /// <summary>
+    /// A static with no initializer whose zero CONSTRUCTS (an in-source struct's `new Alpha()`) is built
+    /// on first use, its type initializing in order, and never while its module is evaluated: there, an
+    /// import cycle (Alpha's method reads Zeta, so Alpha's module imports Zeta's) met Alpha's class
+    /// before it was defined, and the module graph did not load.
+    /// </summary>
+    private const string ConstructedZero = """
+        public struct Alpha { public int X; public int Read() => Zeta.Size; }
+        public class Zeta { public static Alpha Origin; public static int Size = 3; }
+        """;
+
+    [SkippableTheory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void AStaticWhoseZeroConstructs_IsBuiltOnFirstUse(bool typeAnnotations) =>
+        ModuleGraph.AssertSameAsDotNet(ConstructedZero, typeAnnotations,
+            ("a struct static's zero, its struct's module importing the class's", "return new Alpha().Read() + \"|\" + Zeta.Origin.X;")); // "3|0"
 }

@@ -2,7 +2,7 @@ import { $eq, Box, BoxStyle, BuildContext, Button, CodeBlock, CodeDecoration, Co
 
 export class CodeDiff extends StatefulComponent {
     static $typeId = 'eQuantic.UI.Components.CodeDiff';
-    static wordAlpha: number = Math.fround(0.3);
+    static wordAlpha: number = 0.30000001192092896;
     _original: any = null;
     _modified: any = null;
     _openedOriginal: any = null;

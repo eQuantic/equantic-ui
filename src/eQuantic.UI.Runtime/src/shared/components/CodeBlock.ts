@@ -2,7 +2,7 @@ import { $eq, Box, BoxStyle, BuildContext, CodeDecoration, CodeDecorationKindVal
 
 export class CodeBlock extends StatelessComponent {
     static $typeId = 'eQuantic.UI.Components.CodeBlock';
-    static selectionAlpha: number = Math.fround(0.28);
+    static selectionAlpha: number = 0.2800000011920929;
     _cells: any = $eq.collections.dictionary();
     _fillerCells: any = $eq.collections.dictionary();
     static linePass: number = 0;

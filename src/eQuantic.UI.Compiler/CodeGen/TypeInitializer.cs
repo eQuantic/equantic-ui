@@ -1,6 +1,7 @@
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using Microsoft.CodeAnalysis.Operations;
 using eQuantic.UI.Compiler.CodeGen.Ir;
 
 namespace eQuantic.UI.Compiler.CodeGen;
@@ -91,31 +92,83 @@ internal static class TypeInitializer
 
     /// <summary>
     /// Whether the type's statics initialize in order: one of them has an initializer that is not a
-    /// constant, which may read another static, call a method or build an instance, or the type has a
-    /// static constructor. A constant reads nothing, so a type of constants keeps its fields.
+    /// constant, which may read another static, call a method or build an instance; or one with no
+    /// initializer starts at a zero that constructs a twin (<c>static Cell Origin;</c>), which built
+    /// while the module is evaluated could meet, through an import cycle, a class not yet defined
+    /// (measured: <c>Cannot access 'Alpha' before initialization</c>); or the type has a static
+    /// constructor. A constant reads nothing, being written as its value (<see cref="Constant"/>), so a
+    /// type of constants keeps its fields.
     /// </summary>
     public static bool Orders(TypeDeclarationSyntax type, Func<SyntaxNode, SemanticModel?> modelFor) =>
         type.Members.OfType<ConstructorDeclarationSyntax>().Any(constructor => constructor.Modifiers.Any(SyntaxKind.StaticKeyword))
-        || Initializers(type).Any(initializer => !IsConstant(initializer, modelFor(initializer)));
+        || Initializers(type).Any(initializer => !IsConstant(initializer, modelFor(initializer)))
+        || Uninitialized(type).Any(declared => Strategies.DefaultValue.Constructs(modelFor(declared)?.GetTypeInfo(declared).Type));
 
     /// <summary>The initializers of the type's statics: a static field's, a constant's excepted, a
     /// static property's and a static field-like event's.</summary>
-    private static IEnumerable<ExpressionSyntax> Initializers(TypeDeclarationSyntax type) =>
+    private static IEnumerable<EqualsValueClauseSyntax> Initializers(TypeDeclarationSyntax type) =>
         type.Members.SelectMany(member => member switch
         {
             BaseFieldDeclarationSyntax field when field.Modifiers.Any(SyntaxKind.StaticKeyword)
                 && !field.Modifiers.Any(SyntaxKind.ConstKeyword) => field.Declaration.Variables
-                .Select(variable => variable.Initializer?.Value).OfType<ExpressionSyntax>(),
+                .Select(variable => variable.Initializer).OfType<EqualsValueClauseSyntax>(),
             PropertyDeclarationSyntax { Initializer: { } initializer } property
-                when property.Modifiers.Any(SyntaxKind.StaticKeyword) => [initializer.Value],
+                when property.Modifiers.Any(SyntaxKind.StaticKeyword) => [initializer],
             _ => [],
         });
 
-    private static bool IsConstant(ExpressionSyntax initializer, SemanticModel? model) =>
+    /// <summary>The declared types of the statics that hold their zero until something sets them: a
+    /// static field with no initializer, and a static property with a store and none.</summary>
+    private static IEnumerable<TypeSyntax> Uninitialized(TypeDeclarationSyntax type) =>
+        type.Members.SelectMany(member => member switch
+        {
+            FieldDeclarationSyntax field when field.Modifiers.Any(SyntaxKind.StaticKeyword)
+                && !field.Modifiers.Any(SyntaxKind.ConstKeyword)
+                && field.Declaration.Variables.Any(variable => variable.Initializer is null) => [field.Declaration.Type],
+            PropertyDeclarationSyntax { Initializer: null, ExpressionBody: null, AccessorList: { } accessors } property
+                when property.Modifiers.Any(SyntaxKind.StaticKeyword)
+                    && (accessors.Accessors.All(accessor => accessor.Body is null && accessor.ExpressionBody is null)
+                        || Strategies.Expressions.FieldExpressionStrategy.UsesBackingField(property)) => [property.Type],
+            _ => (IEnumerable<TypeSyntax>)[],
+        });
+
+    private static bool IsConstant(EqualsValueClauseSyntax initializer, SemanticModel? model) =>
         model is not null
-            ? model.GetConstantValue(initializer).HasValue
-            : initializer is LiteralExpressionSyntax
+            ? ConstantValue(initializer, model) is not null
+            : initializer.Value is LiteralExpressionSyntax
                 or PrefixUnaryExpressionSyntax { Operand: LiteralExpressionSyntax };
+
+    /// <summary>
+    /// The value a static's initializer folds to, in the static's own type, the conversion C# applies
+    /// included (<c>static long L = 1;</c> is the long 1); null for one it does not fold. A nullable or
+    /// a reference conversion holds the constant it converts as it is, as the twin holds it:
+    /// <c>static int? N = Default;</c> and <c>static object O = Default;</c> are the constant itself,
+    /// which C# does not fold for them, and which their initializer named all the same.
+    /// </summary>
+    private static IOperation? ConstantValue(EqualsValueClauseSyntax initializer, SemanticModel model)
+    {
+        if (model.GetOperation(initializer) is not ISymbolInitializerOperation { Value: { } value }) return null;
+        while (!value.ConstantValue.HasValue
+               && value is IConversionOperation { Operand: { } operand } conversion
+               && (conversion.Conversion.IsNullable || conversion.Type is { IsReferenceType: true }))
+            value = operand;
+        return value.ConstantValue.HasValue ? value : null;
+    }
+
+    /// <summary>
+    /// A static's initializer as its VALUE, where C# folds it to a constant (a field, a property or a
+    /// <c>const</c>), written by the writer of every constant's value (ConstantLiteral): a long is its
+    /// BigInt, a decimal the runtime's Decimal, a float the double it is, an enum its representation.
+    /// Written as the expression, it named the constants it folds, and an in-source constant read by its
+    /// bare name is its twin's static, defined where it is declared: <c>static readonly int Max =
+    /// Default * 2;</c> above <c>const int Default = 50;</c> read it before it was defined, and answered
+    /// NaN where .NET answers 100. Null for an initializer C# does not fold, which is converted as the
+    /// expression it is.
+    /// </summary>
+    public static string? Constant(EqualsValueClauseSyntax initializer, SemanticModel? model, CSharpToJsConverter converter) =>
+        model is not null && ConstantValue(initializer, model) is { } value
+            ? converter.ConstantOf(value.ConstantValue.Value, value.Type)
+            : null;
 
     /// <summary>
     /// The members that hold the ordered statics: the slots, the failure, the initializer that builds

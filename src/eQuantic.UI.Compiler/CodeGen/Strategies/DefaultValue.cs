@@ -128,6 +128,19 @@ public static class DefaultValue
     }
 
     /// <summary>
+    /// Whether the default of <paramref name="type"/> constructs a twin (<c>new Cell()</c>, a struct's
+    /// <c>$zero()</c>, or a tuple or a pair holding one): code that runs, and names another module,
+    /// where every other default is a value. Asked by the type initializer (TypeInitializer.Orders),
+    /// which builds such a static on first use and never while its module is evaluated.
+    /// </summary>
+    internal static bool Constructs(ITypeSymbol? type)
+    {
+        var constructs = false;
+        Of(type, _ => constructs = true);
+        return constructs;
+    }
+
+    /// <summary>
     /// Whether a struct's twin constructor does more than zero it (<see cref="RecordTypeEmitter.ZeroRunsCode"/>):
     /// <c>default(T)</c> runs none of it, and the twin's bare <c>new T()</c> would run all of it, so
     /// such a struct's zero is the <c>$zero()</c> its twin builds without the constructor:

@@ -189,6 +189,11 @@ public class CSharpToJsConverter
     /// </summary>
     public string DefaultOf(ITypeSymbol? type) => DefaultValue.Of(type, _context);
 
+    /// <summary>A compile-time constant of <paramref name="type"/> as its JavaScript value, by the one
+    /// writer of every constant's value (<see cref="ConstantLiteral"/>), the runtime import a decimal
+    /// needs registered; null where the value has no spelling here.</summary>
+    internal string? ConstantOf(object? value, ITypeSymbol? type) => ConstantLiteral.Write(value, type, _context);
+
     /// <summary>Diagnostics raised during the most recent conversion(s); call <see cref="ClearDiagnostics"/> between components.</summary>
     public IReadOnlyList<ConversionDiagnostic> Diagnostics => _context.Diagnostics;
 
