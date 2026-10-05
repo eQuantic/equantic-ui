@@ -102,7 +102,7 @@ public class QueueStackStrategy : ConversionStrategyBase
         foreach (var argument in operation.Arguments)
         {
             if (argument.ArgumentKind == ArgumentKind.DefaultValue) continue;
-            if (argument.Parameter?.Type.Name == "IComparer")
+            if ((argument.Parameter?.Type).IsCollectionComparer())
                 ordering = argument.Value.OrderingAskedFor(element);
             else
                 source = context.Converter.ConvertExpression((ExpressionSyntax)argument.Value.Syntax);
