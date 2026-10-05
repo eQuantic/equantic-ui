@@ -6,12 +6,13 @@ using Xunit;
 namespace eQuantic.UI.Compiler.Tests;
 
 /// <summary>
-/// A record's or a struct's twin has ONE constructor, the C# constructor the twin IS (#413): its
-/// primary one, or the one explicit constructor that runs a body of its own. The others chain to it
-/// and are reached by how many arguments arrive. A constructor the twin cannot tell apart that way,
-/// that chains to another, or that runs a body of its own beside the main one, is refused (EQ1009):
-/// every explicit constructor of a record was dropped before, in silence, and `new ExplicitCtor(3)`
-/// set its member to 3 where C# ran the body.
+/// A record's or a struct's twin has one JavaScript constructor, a branch per C# constructor on how
+/// many arguments arrive (#413): each one that does its own work binds its parameters, sets the members
+/// and runs its body, and each one that chains with `: this(…)` runs its root and then its own body. A
+/// constructor the twin cannot tell apart that way, by a count of arguments another takes, or one that
+/// chains to a constructor that chains in turn, is refused (EQ1009): every explicit constructor of a
+/// record was dropped before, in silence, and `new ExplicitCtor(3)` set its member to 3 where C# ran
+/// the body. A record's copy constructor is no branch: `new` never reaches it.
 /// An indexer takes two names on its twin, so a second one, or a method on either name, is EQ1007.
 /// </summary>
 public class TwinConstructorTests
@@ -170,5 +171,26 @@ public class TwinConstructorTests
         result.Success.Should().BeFalse();
         result.Errors.Should().Contain(error => error.Code == "EQ1007" && error.Message.Contains("this["),
             "an indexer lowers to `item` and `setItem`, and a second member on either name would take its place");
+    }
+
+    /// <summary>
+    /// A record's own copy constructor is what `with` copies through, and never a branch `new` reaches:
+    /// taken for a second constructor of one argument, it refused the type (EQ1009), which compiled
+    /// before.
+    /// </summary>
+    [Fact]
+    public void ACopyConstructor_IsNoBranch_AndIsNotRefused()
+    {
+        var result = Compile("""
+            public record Doc
+            {
+                public int Size;
+                public Doc(int capacity) { Size = capacity; }
+                protected Doc(Doc original) { Size = original.Size + 1; }
+            }
+            """, "Doc");
+
+        result.Errors.Should().BeEmpty();
+        result.TypeScript.Should().Contain("constructor(capacity: any)").And.NotContain("original");
     }
 }

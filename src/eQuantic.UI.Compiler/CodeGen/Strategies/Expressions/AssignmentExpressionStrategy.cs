@@ -74,6 +74,13 @@ public class AssignmentExpressionStrategy : IExpressionIrStrategy
     {
         var assignment = (AssignmentExpressionSyntax)node;
 
+        // `this = value` in a struct replaces every field of the instance with the value's (the C#
+        // before 11 assigned a whole struct that way): the value's state is copied onto the instance.
+        // Written as itself, `this = P.$zero()` is no assignment target, and the module did not parse
+        // once a struct constructor's body ran (#413).
+        if (assignment.IsKind(Microsoft.CodeAnalysis.CSharp.SyntaxKind.SimpleAssignmentExpression) && assignment.Left is ThisExpressionSyntax)
+            return JsExpr.Call(JsExpr.Identifier("Object.assign"), JsExpr.This, context.Converter.ConvertIr(assignment.Right));
+
         // A deconstruction a record, a struct or any type with a Deconstruct takes part in, declared
         // (`var (a, b) = point` -> `let { x: a, y: b } = point`) or assigned (`(a, b) = point`,
         // `(var a, b) = point` -> `({ x: a, y: b } = point)`, what the statement declares in front of

@@ -10,19 +10,19 @@ namespace eQuantic.UI.Compiler.CodeGen;
 /// <summary>
 /// One member of a record's or a struct's own STATE — what its constructor writes, its <c>equals</c>
 /// compares and its <c>with</c> copies: the declared name, the camelCased JS name, the TS type for its
-/// type-only declaration, whether the record's text prints it, and the declaration that says what it
-/// starts as (a positional <see cref="ParameterSyntax"/>, a <see cref="PropertyDeclarationSyntax"/>
-/// or a field's <see cref="VariableDeclaratorSyntax"/>). It is not a constructor parameter: the
-/// twin's constructor takes the C# constructor's parameters, and sets every member as C# does
-/// (<see cref="RecordTypeEmitter"/>, #413).
+/// type-only declaration, and the declaration that says what it starts as (a positional
+/// <see cref="ParameterSyntax"/>, a <see cref="PropertyDeclarationSyntax"/> or a field's
+/// <see cref="VariableDeclaratorSyntax"/>). It is not a constructor parameter: the twin's constructor
+/// takes the C# constructor's parameters, and sets every member as C# does
+/// (<see cref="RecordTypeEmitter"/>, #413). What a record's text prints is the symbol's to say.
 /// </summary>
-public readonly record struct ValueMember(string Display, string Js, string TsType, bool Printed, SyntaxNode Declaration);
+public readonly record struct ValueMember(string Display, string Js, string TsType, SyntaxNode Declaration);
 
 /// <summary>
-/// Extracts the state of a record/struct declaration — the data that participates in equality,
-/// <c>with</c> and <c>toString</c> — in the order C# declares it, which is the order its record text
-/// prints: the positional parameters the record turns into properties of its own, then the instance
-/// fields and auto-properties of the body, each in source order.
+/// Extracts the state of a record/struct declaration — what its constructor writes, its equality
+/// compares and its hash combines — in the order C# declares it: the positional parameters the record
+/// turns into properties of its own (a class's or a struct's those a member reads), then the instance
+/// fields, private ones included, and the auto-properties of the body, each in source order.
 /// </summary>
 public static class TypeDeclarationExtensions
 {
@@ -61,7 +61,7 @@ public static class TypeDeclarationExtensions
                 if (declaredInBody.Contains(name)) continue;
                 if (isRecord && InheritedProperty(type, self, name)) continue;
                 if (!type.HoldsParameter(p, model)) continue;
-                members.Add(new ValueMember(name, name.ToCamelCase(), TsTypeFor(p.Type, model), isRecord, p));
+                members.Add(new ValueMember(name, name.ToCamelCase(), TsTypeFor(p.Type, model), p));
             }
         }
 
@@ -83,7 +83,7 @@ public static class TypeDeclarationExtensions
                          && prop.AccessorList?.Accessors.Any(a => a.IsKind(SyntaxKind.GetAccessorDeclaration)
                              && a.Body == null && a.ExpressionBody == null) == true:
                     members.Add(new ValueMember(prop.Identifier.ValueText, prop.Identifier.ValueText.ToCamelCase(),
-                        TsTypeFor(prop.Type, model), prop.Modifiers.Any(SyntaxKind.PublicKeyword), prop));
+                        TsTypeFor(prop.Type, model), prop));
                     break;
 
                 // Instance fields, whatever their accessibility: C# compares a record's private field
@@ -99,7 +99,7 @@ public static class TypeDeclarationExtensions
                          && !field.Modifiers.Any(SyntaxKind.ConstKeyword):
                     foreach (var v in field.Declaration.Variables)
                         members.Add(new ValueMember(v.Identifier.ValueText, v.Identifier.ValueText.ToCamelCase(),
-                            TsTypeFor(field.Declaration.Type, model), field.Modifiers.Any(SyntaxKind.PublicKeyword), v));
+                            TsTypeFor(field.Declaration.Type, model), v));
                     break;
             }
         }

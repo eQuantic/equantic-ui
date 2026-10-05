@@ -3,10 +3,8 @@
 *REMOVED*eQuantic.UI.Compiler.CodeGen.ValueMember.ValueMember(string! Display, string! Js, string! TsType) -> void
 eQuantic.UI.Compiler.CodeGen.ValueMember.Declaration.get -> Microsoft.CodeAnalysis.SyntaxNode!
 eQuantic.UI.Compiler.CodeGen.ValueMember.Declaration.init -> void
-eQuantic.UI.Compiler.CodeGen.ValueMember.Deconstruct(out string! Display, out string! Js, out string! TsType, out bool Printed, out Microsoft.CodeAnalysis.SyntaxNode! Declaration) -> void
-eQuantic.UI.Compiler.CodeGen.ValueMember.Printed.get -> bool
-eQuantic.UI.Compiler.CodeGen.ValueMember.Printed.init -> void
-eQuantic.UI.Compiler.CodeGen.ValueMember.ValueMember(string! Display, string! Js, string! TsType, bool Printed, Microsoft.CodeAnalysis.SyntaxNode! Declaration) -> void
+eQuantic.UI.Compiler.CodeGen.ValueMember.Deconstruct(out string! Display, out string! Js, out string! TsType, out Microsoft.CodeAnalysis.SyntaxNode! Declaration) -> void
+eQuantic.UI.Compiler.CodeGen.ValueMember.ValueMember(string! Display, string! Js, string! TsType, Microsoft.CodeAnalysis.SyntaxNode! Declaration) -> void
 *REMOVED*eQuantic.UI.Compiler.Services.ComponentDependencyResolver.ComponentDependencyResolver() -> void
 *REMOVED*static eQuantic.UI.Compiler.CodeGen.RecordTypeEmitter.CanEmit(Microsoft.CodeAnalysis.CSharp.Syntax.TypeDeclarationSyntax! type) -> bool
 static eQuantic.UI.Compiler.CodeGen.RecordTypeEmitter.CanEmit(Microsoft.CodeAnalysis.CSharp.Syntax.TypeDeclarationSyntax! type, Microsoft.CodeAnalysis.INamedTypeSymbol? symbol) -> bool

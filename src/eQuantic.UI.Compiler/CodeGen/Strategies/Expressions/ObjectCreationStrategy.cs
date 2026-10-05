@@ -541,7 +541,7 @@ public class ObjectCreationStrategy : IExpressionIrStrategy
     /// namespace it transpiles whole into the runtime. Its constructor is the C# constructor and its
     /// methods are the type's; a vocabulary twin is hand-written and takes a trailing config object.
     /// </summary>
-    private static bool TwinIsWritten(ITypeSymbol? type) =>
+    internal static bool TwinIsWritten(ITypeSymbol? type) =>
         type is not null
         && (type.Locations.Any(location => location.IsInSource)
             || Services.RuntimeProvidedTypeScanner.IsTranspiledNamespace(type.ContainingNamespace?.ToDisplayString() ?? string.Empty));

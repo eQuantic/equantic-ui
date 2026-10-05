@@ -280,8 +280,11 @@ public class RecordTypeEmitter
     /// </summary>
     private Constructors ConstructorsOf(TypeDeclarationSyntax type)
     {
+        // A record's copy constructor (its one parameter the record's own type) is what `with` copies
+        // through in C#, and no `new` reaches it: taken for a branch, it met any other constructor of
+        // one argument and refused the type (EQ1009), which compiled before.
         var declared = type.Members.OfType<ConstructorDeclarationSyntax>()
-            .Where(constructor => !constructor.Modifiers.Any(SyntaxKind.StaticKeyword))
+            .Where(constructor => !constructor.Modifiers.Any(SyntaxKind.StaticKeyword) && !IsCopyConstructor(type, constructor))
             .ToList();
 
         var roots = new List<Root>();
@@ -325,6 +328,16 @@ public class RecordTypeEmitter
             alternates.Add(new Alternate(constructor, arity, target));
         }
         return new Constructors(roots, alternates);
+    }
+
+    /// <summary>Whether a record's constructor is its copy constructor: one parameter, of the record's own
+    /// type, asked of the model and, without one, of the type's name.</summary>
+    private bool IsCopyConstructor(TypeDeclarationSyntax type, ConstructorDeclarationSyntax constructor)
+    {
+        if (type is not RecordDeclarationSyntax || constructor.ParameterList.Parameters is not [{ Type: { } parameter }]) return false;
+        if (ModelFor(constructor) is { } model && model.GetDeclaredSymbol(type) is { } self)
+            return SymbolEqualityComparer.Default.Equals(model.GetTypeInfo(parameter).Type, self);
+        return parameter.ToString() == type.Identifier.Text;
     }
 
     /// <summary>The first constructor already taken whose counts of arguments meet <paramref name="arity"/>.</summary>
@@ -975,21 +988,36 @@ public class RecordTypeEmitter
 
     /// <summary>
     /// The members a record's text prints, as PrintMembers writes them: its base's first, then its
-    /// own, the positional properties it makes in its parameters' order and then the public instance
-    /// fields and readable properties of its body in declaration order, a computed one included.
-    /// A struct prints its own the same way.
+    /// own, as the symbol lists them (TypeSymbolExtensions.PrintedMembers, which the runtime's text of a
+    /// data twin reads too): every public instance field, and every public instance property with a
+    /// getter, whatever the getter's own accessibility, a computed one included, the positional ones in
+    /// their parameters' order. An override of a property its base declares is the base's to print.
+    /// The twin dropped `{ private get; set; }` (.NET prints it) and printed an override a second time
+    /// (`Derived { V = 2, V = 2, W = 3 }`). A struct prints its own the same way. Without a model, the
+    /// public fields and properties of the declaration.
     /// </summary>
     private IEnumerable<(string Display, string Js)> Printed(TypeDeclarationSyntax type)
     {
+        var self = ModelFor(type)?.GetDeclaredSymbol(type) as INamedTypeSymbol;
         if (type is RecordDeclarationSyntax
-            && ModelFor(type)?.GetDeclaredSymbol(type) is INamedTypeSymbol { BaseType: { } parent }
+            && self is { BaseType: { } parent }
             && parent.DeclaringSyntaxReferences.Select(reference => reference.GetSyntax())
                 .OfType<TypeDeclarationSyntax>().FirstOrDefault(declaration => CanEmit(declaration, parent)) is { } baseDeclaration)
         {
             foreach (var inherited in Printed(baseDeclaration)) yield return inherited;
         }
-        foreach (var member in type.ValueMembers(ModelFor(type)))
-            if (member is { Printed: true, Declaration: ParameterSyntax }) yield return (member.Display, member.Js);
+        if (self is not null)
+        {
+            // In the order of their declarations, which puts the properties a record makes of its
+            // parameters first, and a positional member the body declares where the body declares it
+            // (`record Box(int X, int Y) { public int X … }` prints `Y = …, X = …`, as .NET does).
+            foreach (var member in self.PrintedMembers().Where(member => member is not IPropertySymbol { IsOverride: true })
+                         .OrderBy(member => member.DeclaringSyntaxReferences.FirstOrDefault()?.Span.Start ?? int.MaxValue))
+                yield return (member.Name, member.Name.ToCamelCase());
+            yield break;
+        }
+        foreach (var member in type.ValueMembers(null))
+            if (type is RecordDeclarationSyntax && member.Declaration is ParameterSyntax) yield return (member.Display, member.Js);
         foreach (var member in type.Members)
         {
             switch (member)
@@ -1000,19 +1028,14 @@ public class RecordTypeEmitter
                         yield return (variable.Identifier.ValueText, variable.Identifier.ValueText.ToCamelCase());
                     break;
                 case PropertyDeclarationSyntax property when property.Modifiers.Any(SyntaxKind.PublicKeyword)
-                    && !property.Modifiers.Any(SyntaxKind.StaticKeyword) && PubliclyReadable(property):
+                    && !property.Modifiers.Any(SyntaxKind.StaticKeyword) && !property.Modifiers.Any(SyntaxKind.OverrideKeyword)
+                    && (property.ExpressionBody is not null
+                        || property.AccessorList?.Accessors.Any(accessor => accessor.IsKind(SyntaxKind.GetAccessorDeclaration)) == true):
                     yield return (property.Identifier.ValueText, property.Identifier.ValueText.ToCamelCase());
                     break;
             }
         }
     }
-
-    /// <summary>Whether a public property can be read from outside: an expression body, or a getter
-    /// with no accessibility of its own.</summary>
-    private static bool PubliclyReadable(PropertyDeclarationSyntax property) =>
-        property.ExpressionBody is not null
-        || property.AccessorList?.Accessors.Any(accessor => accessor.IsKind(SyntaxKind.GetAccessorDeclaration)
-            && accessor.Modifiers.Count == 0) == true;
 
     /// <summary>A struct, or a record struct, whose declaration is a record's.</summary>
     internal static bool IsStruct(TypeDeclarationSyntax type) =>
