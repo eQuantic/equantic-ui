@@ -194,7 +194,7 @@ public class ListMethodStrategy : IExpressionIrStrategy
     /// <c>Sort(Comparison)</c>, by .NET's introspective sort: the comparison a <c>Comparison</c> is, or
     /// the order the comparer asks for (<see cref="SortOrders"/>).
     /// </summary>
-    private static JsExpr? Sort(InvocationExpressionSyntax invocation, IMethodSymbol method, JsExpr list,
+    private static JsExpr Sort(InvocationExpressionSyntax invocation, IMethodSymbol method, JsExpr list,
         ITypeSymbol? element, ConversionContext context)
     {
         context.UsedHelpers.Add(Eq.Import);
@@ -207,11 +207,11 @@ public class ListMethodStrategy : IExpressionIrStrategy
         return SortOrders.Call(method.Parameters.Length == 3
                 ? $"{Eq.ListSort}({{0}}, {{order}}, {{1}}, {{2}})"
                 : $"{Eq.ListSort}({{0}}, {{order}})",
-            list, invocation, method, comparer, element, context) ?? JsExpr.Literal("undefined");
+            list, invocation, method, comparer, element, context);
     }
 
     /// <summary><c>BinarySearch(item)</c>, <c>(item, IComparer)</c> and <c>(index, count, item, IComparer)</c>.</summary>
-    private static JsExpr? BinarySearch(InvocationExpressionSyntax invocation, IMethodSymbol method, JsExpr list,
+    private static JsExpr BinarySearch(InvocationExpressionSyntax invocation, IMethodSymbol method, JsExpr list,
         ITypeSymbol? element, ConversionContext context)
     {
         context.UsedHelpers.Add(Eq.Import);
@@ -220,7 +220,7 @@ public class ListMethodStrategy : IExpressionIrStrategy
         return SortOrders.Call(parameters == 4
                 ? $"{Eq.ListBinarySearch}({{0}}, {{3}}, {{order}}, {{1}}, {{2}})"
                 : $"{Eq.ListBinarySearch}({{0}}, {{1}}, {{order}})",
-            list, invocation, method, comparer, element, context) ?? JsExpr.Literal("undefined");
+            list, invocation, method, comparer, element, context);
     }
 
     /// <summary>Whether an element of the type may be a NaN, which <c>indexOf</c> never finds and

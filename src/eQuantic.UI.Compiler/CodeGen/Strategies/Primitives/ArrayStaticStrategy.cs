@@ -188,7 +188,7 @@ public class ArrayStaticStrategy : IConversionStrategy
                 return SortOrders.Call(count >= 3
                         ? $"{Eq.ArraySort}({{0}}, {{order}}, {{1}}, {{2}})"
                         : $"{Eq.ArraySort}({{0}}, {{order}})",
-                    null, invocation, method, comparer, element, context) ?? Ir.JsExpr.Literal("undefined");
+                    null, invocation, method, comparer, element, context);
             }
             case "IndexOf" or "LastIndexOf":
             {

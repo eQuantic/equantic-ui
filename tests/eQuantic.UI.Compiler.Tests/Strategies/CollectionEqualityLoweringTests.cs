@@ -80,6 +80,22 @@ public class CollectionEqualityLoweringTests
         TestHelper.DiagnosticsFor("items.ToHashSet(StringComparer.Ordinal)").Should().NotContain(d => d.Code == "EQ2007");
     }
 
+    /// <summary>
+    /// Refused and reported, a call is written as its own C# text, as an unhandled one is: text that
+    /// fails where it runs. A value standing in for it ran as a sort that sorted nothing and a set
+    /// nothing built, wherever the diagnostic was not the end of the build (found in review).
+    /// </summary>
+    [Theory]
+    [InlineData("items.ToHashSet(StringComparer.OrdinalIgnoreCase)", "EQ2007")]
+    [InlineData("items.Sort(StringComparer.Create(System.Globalization.CultureInfo.InvariantCulture, true))", "EQ2007")]
+    [InlineData("new List<object>().Sort()", "EQ1004")]
+    [InlineData("Array.Sort(new object[] { 1 })", "EQ1004")]
+    public void ARefusedCall_IsWrittenAsItsOwnText(string code, string refusal)
+    {
+        TestHelper.DiagnosticsFor(code).Should().Contain(d => d.Code == refusal);
+        TestHelper.ConvertExpression(code).Should().Be(code);
+    }
+
     [Fact]
     public void ArraysStatics_SearchSortAndFindThroughTheRuntime()
     {

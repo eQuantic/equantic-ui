@@ -27,11 +27,12 @@ internal static class SortOrders
     /// <summary>
     /// The order of a call, from the comparer its parameter <paramref name="comparer"/> is handed (none:
     /// the default), and the call's template over its parameters (<see cref="ParameterTemplate"/>) with
-    /// the order written where <c>{order}</c> stands; null after a refusal was reported. The comparer's
+    /// the order written where <c>{order}</c> stands; after a refusal was reported, the call's own C# text,
+    /// as <see cref="ConversionContext.Unhandled"/> writes one (<see cref="Refused"/>). The comparer's
     /// own argument is converted only where the order reads it as a value: a <c>StringComparer</c>'s
     /// property and <c>Comparer&lt;T&gt;.Default</c> are no value this side.
     /// </summary>
-    internal static JsExpr? Call(string template, JsExpr? receiver, InvocationExpressionSyntax invocation, IMethodSymbol method,
+    internal static JsExpr Call(string template, JsExpr? receiver, InvocationExpressionSyntax invocation, IMethodSymbol method,
         int? comparer, ITypeSymbol? element, ConversionContext context)
     {
         ArgumentSyntax? comparerArgument = null;
@@ -45,9 +46,9 @@ internal static class SortOrders
             // The default a null comparer stands for at run time. A comparer that is no default can
             // order a type that has no order here; only one that turns out null meets that fallback.
             var fallback = Default(element, invocation, context, report: operation.AsksForTheDefaultOrder());
-            if (fallback is null) return null;
+            if (fallback is null) return Refused(invocation);
             var hole = ParameterTemplate.WrittenFor(invocation.ArgumentList.Arguments, method)[ordinal] + (receiver is null ? 0 : 1);
-            if (operation.SortOrderAskedFor(fallback, "{" + hole + "}", context) is not { } asked) return null;
+            if (operation.SortOrderAskedFor(fallback, "{" + hole + "}", context) is not { } asked) return Refused(invocation);
             order = asked.Order;
             value = asked.Value;
         }
@@ -57,7 +58,7 @@ internal static class SortOrders
         }
         else
         {
-            return null;
+            return Refused(invocation);
         }
         // The comparer's hole is numbered by where it was written, so the template's {order} is bound
         // as it stands; the rest of the template names parameters, which ParameterTemplate points at
@@ -68,6 +69,13 @@ internal static class SortOrders
                 : value is null ? JsExpr.Literal("null") : context.Converter.ConvertIr((ExpressionSyntax)value.Syntax),
             ("{order}", order));
     }
+
+    /// <summary>
+    /// A refused call, its diagnostic already reported, written as its own C# text, as
+    /// <see cref="ConversionContext.Unhandled"/> writes one: text that fails where it runs, where a value
+    /// standing in for the call (an <c>undefined</c>) would have run as a sort that sorted nothing.
+    /// </summary>
+    internal static JsExpr Refused(InvocationExpressionSyntax invocation) => JsExpr.Opaque(invocation.ToString());
 
     /// <summary>
     /// The default comparer's order for an element type. Where the type has no faithful order here, it

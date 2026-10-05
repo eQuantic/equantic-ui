@@ -153,7 +153,9 @@ public class LinqTableStrategy : IExpressionIrStrategy
         {
             if (context.SemanticHelper.GetOperation(argument.Expression) is not { } comparer)
                 return JsExpr.Opaque(context.Unhandled(invocation, "ToHashSet with a comparer"));
-            if (comparer.RefusesAsUntranslatable("ToHashSet", context)) return JsExpr.Literal("null");
+            // Refused and reported: the call's own C# text, as ConversionContext.Unhandled writes one, which
+            // fails where it runs rather than standing in as a set nothing built.
+            if (comparer.RefusesAsUntranslatable("ToHashSet", context)) return JsExpr.Opaque(invocation.ToString());
         }
         context.UsedHelpers.Add(Eq.Import);
         var element = method is { TypeArguments: [var item] } ? item : null;
