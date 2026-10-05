@@ -28,6 +28,7 @@ internal sealed class Place
     private readonly IReadOnlyList<JsExpr> _parts;
     private readonly int _evaluated;
     private readonly IReadOnlyList<string> _keys;
+    private readonly bool _computed;
     private readonly ConversionContext _context;
 
     /// <param name="entry">A dictionary's entry, or else an indexer's.</param>
@@ -35,14 +36,17 @@ internal sealed class Place
     /// <param name="evaluated">How many of the parts C# evaluates; the rest are constants.</param>
     /// <param name="keys">The keys the call passes, in its parameters' order, as template text over the
     /// parts' holes.</param>
+    /// <param name="computed">Whether the keys are computed from the parts (a from-the-end key's
+    /// position), once, where C# computes them.</param>
     /// <param name="context">The conversion the writers build in.</param>
-    private Place(bool entry, IReadOnlyList<JsExpr> parts, int evaluated, IReadOnlyList<string> keys,
+    private Place(bool entry, IReadOnlyList<JsExpr> parts, int evaluated, IReadOnlyList<string> keys, bool computed,
         ConversionContext context)
     {
         _entry = entry;
         _parts = parts;
         _evaluated = evaluated;
         _keys = keys;
+        _computed = computed;
         _context = context;
     }
 
@@ -73,14 +77,25 @@ internal sealed class Place
         return Indexer.LoweredAt(target, context) is null ? null : Indexed(target, arguments, receiver, context);
     }
 
-    /// <summary>The parts C# evaluates, in its order: the receiver, then the keys. A lowering that
-    /// evaluates them itself (a deconstruction's captures, an initializer's arguments) writes the place
-    /// over what it bound them to (<see cref="Over"/>).</summary>
-    public IReadOnlyList<JsExpr> Evaluated => _parts.Take(_evaluated).ToList();
+    /// <summary>
+    /// What a lowering that evaluates the place itself (a deconstruction's captures, an initializer's
+    /// arguments) evaluates, in C#'s order, and writes the place over (<see cref="Over"/>): the receiver,
+    /// then each key C# evaluates. Where the keys are computed from them, it is ONE value, the receiver
+    /// and the keys as C# computes them, before anything after the place runs: <c>[ring, ring.count -
+    /// 1]</c>, a template the writer binds the receiver of where it is read twice.
+    /// </summary>
+    public IReadOnlyList<JsExpr> Evaluated => _computed
+        ? [Template($"[{string.Join(", ", _keys.Prepend("{0}"))}]", _parts)]
+        : _parts.Take(_evaluated).ToList();
 
-    /// <summary>The same place over other parts for the ones C# evaluates, the constants kept.</summary>
-    public Place Over(IReadOnlyList<JsExpr> evaluated) =>
-        new(_entry, [.. evaluated, .. _parts.Skip(_evaluated)], _evaluated, _keys, _context);
+    /// <summary>The same place over what its <see cref="Evaluated"/> parts were bound to, the constants
+    /// kept: where the keys were computed, the receiver and the keys are read back from the one value.</summary>
+    public Place Over(IReadOnlyList<JsExpr> evaluated)
+    {
+        if (!_computed) return new(_entry, [.. evaluated, .. _parts.Skip(_evaluated)], _evaluated, _keys, false, _context);
+        List<JsExpr> held = [.. Enumerable.Range(0, _keys.Count + 1).Select(i => JsExpr.Index(evaluated[0], JsExpr.Literal(i.ToString())))];
+        return new(_entry, held, held.Count, [.. _keys.Select((_, i) => Hole(i + 1))], false, _context);
+    }
 
     /// <summary>The read.</summary>
     public JsExpr Read() => Template(ReadText(_keys), _parts);
@@ -121,7 +136,8 @@ internal sealed class Place
     private static Place Entry(JsExpr receiver, ExpressionSyntax key, ConversionContext context)
     {
         context.UsedHelpers.Add(Eq.Import);
-        return new Place(entry: true, [receiver, context.Converter.ConvertIr(key)], evaluated: 2, ["{1}"], context);
+        return new Place(entry: true, [receiver, context.Converter.ConvertIr(key)], evaluated: 2, ["{1}"], computed: false,
+            context);
     }
 
     /// <summary>The argument list of an element named by its keys, written with its receiver or without.</summary>
@@ -145,8 +161,10 @@ internal sealed class Place
     private static Place? Indexed(ExpressionSyntax access, BracketedArgumentListSyntax arguments, JsExpr receiver,
         ConversionContext context)
     {
-        if (context.SemanticHelper.GetOperation(access) is not IPropertyReferenceOperation { Property: var indexer } reference)
-            return null;
+        var operation = context.SemanticHelper.GetOperation(access);
+        if (operation is IImplicitIndexerReferenceOperation fromTheEnd)
+            return FromTheEnd(access, arguments, receiver, fromTheEnd, context);
+        if (operation is not IPropertyReferenceOperation { Property: var indexer } reference) return null;
         var written = new Written(access, arguments, context);
         var parts = new List<JsExpr> { receiver };
         var keys = new string?[indexer.Parameters.Length];
@@ -171,7 +189,41 @@ internal sealed class Place
             keys[argument.Parameter!.Ordinal] = Hole(parts.Count);
             parts.Add(Default(argument, context));
         }
-        return keys.Any(key => key is null) ? null : Made(entry: false, parts, evaluated, keys!, access, context);
+        return keys.Any(key => key is null) ? null : Made(entry: false, parts, evaluated, keys!, computed: false, access, context);
+    }
+
+    /// <summary>
+    /// A from-the-end key over a type that counts its elements, which C# binds to its <c>this[int]</c>:
+    /// <c>ring[^1]</c> is <c>ring[ring.Count - 1]</c>, through the count the bound tree names (a
+    /// <c>Count</c> or a <c>Length</c>). The position is computed from the receiver, after the offset,
+    /// as C# reads them: receiver, offset, count, and only then a value. It went to the array lowering,
+    /// which read <c>ring.length</c>, and its write passed the bare index to <c>setItem</c>. A writer
+    /// that reads and writes the entry computes the position for each, before it evaluates a value,
+    /// reading the count twice where C# reads it once, which only a count with an effect can tell.
+    /// An index that is a System.Index value rather than <c>^n</c> has no translation and is refused.
+    /// </summary>
+    private static Place? FromTheEnd(ExpressionSyntax access, BracketedArgumentListSyntax arguments, JsExpr receiver,
+        IImplicitIndexerReferenceOperation index, ConversionContext context)
+    {
+        if (index.Argument is not IUnaryOperation { OperatorKind: UnaryOperatorKind.Hat }
+            || arguments.Arguments is not [{ Expression: PrefixUnaryExpressionSyntax hat }]
+            || index.LengthSymbol is not IPropertySymbol count)
+        {
+            context.Unhandled(access, "index-from-end");
+            return null;
+        }
+        var offset = context.Converter.ConvertIr(hat.Operand);
+        var counted = $"{{0}}.{count.Name.ToCamelCase()}";
+        // A literal offset reads nothing, so the count may come first. Any other is read first, and a
+        // receiver read by its name is then bound once, as C# spills it, where an offset that has an
+        // effect could reassign the name between the two reads (and the template's writer, seeing a name
+        // read after a call, would bind the value of the write ahead of the count).
+        if (offset is JsLiteral)
+            return Made(entry: false, [receiver, offset], evaluated: 2, [$"{counted} - {{1}}"], computed: true, access, context);
+        var once = receiver is JsIdentifier { Name: not ("this" or "super") } && !JsExprWriter.IsInlinable(offset)
+            ? JsExpr.Group(receiver)
+            : receiver;
+        return Made(entry: false, [once, offset], evaluated: 2, [$"-{{1}} + {counted}"], computed: true, access, context);
     }
 
     /// <summary>
@@ -193,10 +245,10 @@ internal sealed class Place
 
     /// <summary>The place, unless it takes more parts than a template holds, which is refused (EQ1004)
     /// rather than written into holes no template fills.</summary>
-    private static Place? Made(bool entry, List<JsExpr> parts, int evaluated, IReadOnlyList<string> keys, SyntaxNode at,
-        ConversionContext context)
+    private static Place? Made(bool entry, List<JsExpr> parts, int evaluated, IReadOnlyList<string> keys, bool computed,
+        SyntaxNode at, ConversionContext context)
     {
-        if (parts.Count <= MostParts) return new Place(entry, parts, evaluated, keys, context);
+        if (parts.Count <= MostParts) return new Place(entry, parts, evaluated, keys, computed, context);
         context.Unhandled(at, $"indexer's (it passes {parts.Count - 1} keys, and one read and write holds {MostParts - 1})");
         return null;
     }

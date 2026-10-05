@@ -127,6 +127,65 @@ public class IndexerConformanceTests
     public void AClassIndexerAssignment_AnswersTheValueItAssigned(bool typeAnnotations) =>
         ModuleGraph.AssertSameAsDotNet(ClassClamp, typeAnnotations, ClassClampCases);
 
+    private const string Rings = """
+        public class Ring
+        {
+            private readonly int[] _v = { 1, 2, 3 };
+            public int Count => _v.Length;
+            public int this[int i] { get => _v[i]; set => _v[i] = value; }
+        }
+        public class Logged
+        {
+            public static string Text = "";
+            public static int At(string step, int value) { Text += step; return value; }
+            private readonly int[] _v = { 1, 2, 3 };
+            public int Length { get { Text += "C"; return _v.Length; } }
+            public int this[int i] { get { Text += "g" + i; return _v[i]; } set { Text += "s" + i; _v[i] = value; } }
+            public static Logged R(Logged l) { Text += "R"; return l; }
+        }
+        public class Stepped
+        {
+            public static string Text = "";
+            public static int At(string step, int value) { Text += step; return value; }
+            private readonly int[] _v = { 1, 2, 3 };
+            public int Count => _v.Length;
+            public int this[int i] { get { Text += "g" + i; return _v[i]; } set { Text += "s" + i; _v[i] = value; } }
+            public static Stepped R(Stepped s) { Text += "R"; return s; }
+        }
+        """;
+
+    private static readonly (string Name, string Statements)[] RingCases =
+    [
+        // "3|9"
+        ("a read and a write", "var r = new Ring(); var last = r[^1]; r[^1] = 9; return last + \"|\" + r[2];"),
+        // "1|2|41"
+        ("a compound and a step", "var r = new Ring(); r[^1] += 1; r[^2]--; var old = r[^3]++; return old + \"|\" + r[0] + \"|\" + r[2] + r[1];"),
+        // "RFCVs2|4": the receiver, the offset, the count the type names, then the value
+        ("a write's order", "Logged.Text = \"\"; var l = new Logged(); var x = Logged.R(l)[^Logged.At(\"F\", 1)] = Logged.At(\"V\", 4); return Logged.Text + \"|\" + x;"),
+        // "FCVs2GCg1|4|2": an offset with an effect over a receiver read by its name
+        ("a named receiver's order", "Logged.Text = \"\"; var l = new Logged(); var x = l[^Logged.At(\"F\", 1)] = Logged.At(\"V\", 4); var y = l[^Logged.At(\"G\", 2)]; return Logged.Text + \"|\" + x + \"|\" + y;"),
+        // "RFg2Vs2|12": the entry read before the value
+        ("a compound's order", "Stepped.Text = \"\"; var s = new Stepped(); Stepped.R(s)[^Stepped.At(\"F\", 1)] += Stepped.At(\"V\", 9); return Stepped.Text + \"|\" + s[2];"),
+        // "RFg2s2|3|4"
+        ("a step's order", "Stepped.Text = \"\"; var s = new Stepped(); var old = Stepped.R(s)[^Stepped.At(\"F\", 1)]++; return Stepped.Text + \"|\" + old + \"|\" + s[2];"),
+        // "14|2|1": a named offset, a compound and a step
+        ("a named offset", "var r = new Ring(); int n = 1; r[^n] = 7; r[^n] *= 2; var old = r[^(n + 1)]--; return r[2] + \"|\" + old + \"|\" + r[1];"),
+    ];
+
+    /// <summary>
+    /// A from-the-end key over a type that counts its elements is its <c>this[int]</c> at the count the
+    /// bound tree names, as C# binds it: <c>r[^1]</c> is <c>r[r.Count - 1]</c>, its receiver evaluated
+    /// once, then the offset, then the count, and only then a value. It went to the array lowering,
+    /// which read a <c>length</c> no twin has, and its write handed the bare index along (.NET "3|9",
+    /// JavaScript "undefined|3"). A read-modify-write reads the count for its read and for its write,
+    /// where C# reads it once, so its cases count without an effect, the one thing that tells them apart.
+    /// </summary>
+    [SkippableTheory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void AFromTheEndKey_IsTheIndexerAtTheCountTheTypeNames(bool typeAnnotations) =>
+        ModuleGraph.AssertSameAsDotNet(Rings, typeAnnotations, RingCases);
+
     private const string Keyed = """
         public class Grid
         {

@@ -33,6 +33,29 @@ public class IndexerPlaceTests
         result.TypeScript.Should().NotContain("{10}");
     }
 
+    /// <summary>
+    /// A <c>^n</c> that is no array's, list's or string's index, nor a from-the-end key over a type that
+    /// counts its elements, is a System.Index VALUE, which has no JavaScript translation: a
+    /// <c>this[Index]</c> key, a stored index. It is refused where it was written as a call to
+    /// <c>__INDEX_FROM_END__</c>, which nothing defines, and the access to a <c>this[Index]</c> goes
+    /// through the indexer, where it read the length of a twin that has none.
+    /// </summary>
+    [Fact]
+    public void AnIndexValue_IsRefused()
+    {
+        var result = Compile("""
+            public sealed class Indexed
+            {
+                public int this[System.Index i] { get => 0; set { } }
+                public int Last() { this[^1] = 2; System.Index i = ^2; return this[^1]; }
+            }
+            """, "Indexed");
+
+        result.Success.Should().BeFalse();
+        result.Errors.Where(error => error.Code == "EQ1004").Should().HaveCount(3);
+        result.TypeScript.Should().NotContain("__INDEX_FROM_END__").And.NotContain(".length");
+    }
+
     [Fact]
     public void AnAccessWithEightKeys_IsWritten()
     {

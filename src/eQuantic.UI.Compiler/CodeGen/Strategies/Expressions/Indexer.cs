@@ -1,4 +1,5 @@
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.Operations;
 using eQuantic.UI.Compiler.CodeGen.Extensions;
 
 namespace eQuantic.UI.Compiler.CodeGen.Strategies.Expressions;
@@ -36,7 +37,13 @@ internal static class Indexer
 
     /// <summary>The indexer this lowering carries that the bound tree binds an element access to, or
     /// null: an access written with its receiver, a null-conditional's binding or an object
-    /// initializer's entry.</summary>
+    /// initializer's entry, and a from-the-end key over a type that counts its elements, which C#
+    /// binds to its <c>this[int]</c> (<c>ring[^1]</c> is <c>ring[ring.Count - 1]</c>).</summary>
     public static IPropertySymbol? LoweredAt(SyntaxNode access, ConversionContext context) =>
-        context.SemanticHelper.GetSymbol(access) is IPropertySymbol property && IsLowered(property) ? property : null;
+        context.SemanticHelper.GetOperation(access) switch
+        {
+            IPropertyReferenceOperation { Property: var property } when IsLowered(property) => property,
+            IImplicitIndexerReferenceOperation { IndexerSymbol: IPropertySymbol property } when IsLowered(property) => property,
+            _ => null,
+        };
 }
