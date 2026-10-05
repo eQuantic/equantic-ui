@@ -538,7 +538,7 @@ export class CodeEditorController {
         for (let line = first; line <= last; line++) {
             let text = $eq.text.trimStart(this._document.line(line));
             if (text.length === 0) continue;
-            if (!text.startsWith(marker)) {
+            if (!$eq.text.startsWith(text, marker, 'ordinal')) {
                 allCommented = false;
                 break;
             }
@@ -550,7 +550,7 @@ export class CodeEditorController {
         for (let line = first; line <= last; line++) {
             let text = this._document.line(line);
             if (allCommented) {
-                let at = text.indexOf(marker);
+                let at = $eq.text.indexOf(text, marker, 'ordinal');
                 if (at < 0) {
                     lines.push(text);
                     ats.push(0);
@@ -757,10 +757,10 @@ export class CodeEditorController {
         for (let line = 0; line < this._document.lineCount; line++) {
             let raw = this._document.line(line);
             let text = matchCase ? raw : raw.toLowerCase();
-            let at = text.indexOf(pin);
+            let at = $eq.text.indexOf(text, pin, 'ordinal');
             while (at >= 0) {
                 matches.push(new CodeRange(new CodePosition(line, at), new CodePosition(line, at + needle.length)));
-                at = at + pin.length <= text.length ? text.indexOf(pin, at + pin.length) : -1;
+                at = at + pin.length <= text.length ? $eq.text.indexOf(text, pin, at + pin.length, 'ordinal') : -1;
             }
         }
         return matches;

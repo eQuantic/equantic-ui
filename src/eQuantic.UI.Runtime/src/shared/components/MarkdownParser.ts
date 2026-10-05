@@ -4,18 +4,18 @@ export class MarkdownParser {
     static parse(source: string) {
         let blocks: MarkdownBlock[] = [];
         if (!source) return blocks;
-        let lines = MarkdownParser.stripComments(source.replaceAll('\r\n', '\n').split('\n'));
+        let lines = MarkdownParser.stripComments($eq.text.replace(source, '\r\n', '\n', 'ordinal').split('\n'));
         let paragraph = '';
         let usedIds: Set<string> = $eq.collections.hashSet();
         for (let i = 0; i < lines.length; i++) {
             let line = lines[i];
             let trimmed = $eq.text.trim(line);
-            if (trimmed.startsWith('```')) {
+            if ($eq.text.startsWith(trimmed, '```', 'ordinal')) {
                 paragraph = MarkdownParser.flushParagraph(paragraph, blocks);
                 let lang = $eq.text.trim(trimmed.slice(3));
                 let body: string[] = [];
                 i++;
-                while (i < lines.length && !$eq.text.trimStart(lines[i]).startsWith('```')) {
+                while (i < lines.length && !$eq.text.startsWith($eq.text.trimStart(lines[i]), '```', 'ordinal')) {
                     body.push(lines[i]);
                     i++;
                 }
@@ -26,7 +26,7 @@ export class MarkdownParser {
                 paragraph = MarkdownParser.flushParagraph(paragraph, blocks);
                 continue;
             }
-            if (trimmed.startsWith('#')) {
+            if ($eq.text.startsWith(trimmed, '#', 'ordinal')) {
                 let level = 0;
                 while (level < trimmed.length && trimmed[level] === '#') level++;
                 if (level <= 6 && level < trimmed.length && trimmed[level] === ' ') {
@@ -49,12 +49,12 @@ export class MarkdownParser {
                 blocks.push(new MarkdownBlock({ kind: 'rule' }));
                 continue;
             }
-            if (trimmed.startsWith('|') && i + 1 < lines.length && MarkdownParser.isAlignmentRow(lines[i + 1])) {
+            if ($eq.text.startsWith(trimmed, '|', 'ordinal') && i + 1 < lines.length && MarkdownParser.isAlignmentRow(lines[i + 1])) {
                 paragraph = MarkdownParser.flushParagraph(paragraph, blocks);
                 let table = new MarkdownBlock({ kind: 'table' });
                 for (const cell of MarkdownParser.splitRow(trimmed)) table.head.push(new MarkdownCell({ runs: MarkdownParser.inline(cell) }));
                 i += 2;
-                while (i < lines.length && $eq.text.trim(lines[i]).startsWith('|')) {
+                while (i < lines.length && $eq.text.startsWith($eq.text.trim(lines[i]), '|', 'ordinal')) {
                     let row = new MarkdownRow();
                     for (const cell of MarkdownParser.splitRow($eq.text.trim(lines[i]))) row.cells.push(new MarkdownCell({ runs: MarkdownParser.inline(cell) }));
                     table.rows.push(row);
@@ -64,10 +64,10 @@ export class MarkdownParser {
                 blocks.push(table);
                 continue;
             }
-            if (trimmed.startsWith('>')) {
+            if ($eq.text.startsWith(trimmed, '>', 'ordinal')) {
                 paragraph = MarkdownParser.flushParagraph(paragraph, blocks);
                 let quoted = '';
-                while (i < lines.length && $eq.text.trimStart(lines[i]).startsWith('>')) {
+                while (i < lines.length && $eq.text.startsWith($eq.text.trimStart(lines[i]), '>', 'ordinal')) {
                     let q = $eq.text.trimStart(lines[i]);
                     q = $eq.text.trim(q.slice(1));
                     quoted = quoted.length === 0 ? q : quoted + ' ' + q;
@@ -84,7 +84,7 @@ export class MarkdownParser {
                 while (i < lines.length) {
                     let mark = MarkdownParser.bulletOf(lines[i]);
                     if (mark == null) {
-                        if (list.items.length > 0 && lines[i].startsWith('  ') && $eq.text.trim(lines[i]).length > 0 && !$eq.text.trimStart(lines[i]).startsWith('```')) {
+                        if (list.items.length > 0 && $eq.text.startsWith(lines[i], '  ', 'ordinal') && $eq.text.trim(lines[i]).length > 0 && !$eq.text.startsWith($eq.text.trimStart(lines[i]), '```', 'ordinal')) {
                             let last = list.items[list.items.length - 1];
                             for (const run of MarkdownParser.inline(' ' + $eq.text.trim(lines[i]))) last.runs.push(run);
                             i++;
@@ -130,7 +130,7 @@ export class MarkdownParser {
         let open = false;
         for (let i = 0; i < lines.length; i++) {
             let line = lines[i];
-            if ($eq.text.trimStart(line).startsWith('```')) {
+            if ($eq.text.startsWith($eq.text.trimStart(line), '```', 'ordinal')) {
                 fenced = !fenced;
                 clean.push(line);
                 continue;
@@ -141,7 +141,7 @@ export class MarkdownParser {
             }
             let text = line;
             if (open) {
-                let close = text.indexOf('-->');
+                let close = $eq.text.indexOf(text, '-->', 'ordinal');
                 if (close < 0) {
                     clean.push('');
                     continue;
@@ -150,9 +150,9 @@ export class MarkdownParser {
                 open = false;
             }
             while (true) {
-                let start = text.indexOf('<!--');
+                let start = $eq.text.indexOf(text, '<!--', 'ordinal');
                 if (start < 0) break;
-                let end = text.indexOf('-->', start);
+                let end = $eq.text.indexOf(text, '-->', start, 'ordinal');
                 if (end < 0) {
                     text = text.slice(0, start);
                     open = true;
@@ -167,7 +167,7 @@ export class MarkdownParser {
 
     static isAlignmentRow(line: string) {
         let t = $eq.text.trim(line);
-        if (!t.startsWith('|')) return false;
+        if (!$eq.text.startsWith(t, '|', 'ordinal')) return false;
         let hasDash = false;
         for (let i = 0; i < t.length; i++) {
             let ch = t[i];
@@ -199,7 +199,7 @@ export class MarkdownParser {
 
     static bulletOf(line: string) {
         let t = $eq.text.trimStart(line);
-        if (t.startsWith('- ') || t.startsWith('* ')) return new MarkdownBulletMatch({ marker: '•', content: $eq.text.trim(t.slice(2)) });
+        if ($eq.text.startsWith(t, '- ', 'ordinal') || $eq.text.startsWith(t, '* ', 'ordinal')) return new MarkdownBulletMatch({ marker: '•', content: $eq.text.trim(t.slice(2)) });
         let digits = 0;
         while (digits < t.length && (/^\p{Nd}$/u.test(t[digits]))) digits++;
         if (digits > 0 && digits + 1 < t.length && t[digits] === '.' && t[digits + 1] === ' ') return new MarkdownBulletMatch({ marker: t.slice(0, digits) + '.', content: $eq.text.trim(t.slice((digits + 2))) });
@@ -238,7 +238,7 @@ export class MarkdownParser {
                     continue;
                 }
             } else if (c === '*' && i + 1 < text.length && text[i + 1] === '*') {
-                let end = text.indexOf('**', i + 2);
+                let end = $eq.text.indexOf(text, '**', i + 2, 'ordinal');
                 if (end > i) {
                     buffer = MarkdownParser.flushText(runs, buffer);
                     for (const run of MarkdownParser.inline(text.slice((i + 2), end))) {

@@ -1,5 +1,16 @@
 import { describe, it, expect } from 'vitest';
 import { Decimal, dec } from './decimal';
+import { typesOf } from './exceptions';
+
+/** The .NET type a call throws, the most derived, or undefined where it throws nothing. */
+function thrownType(run: () => unknown): string | undefined {
+  try {
+    run();
+  } catch (error) {
+    return typesOf(error)?.[0];
+  }
+  return undefined;
+}
 
 describe('Decimal — exact base-10 arithmetic', () => {
   it('adds exactly (no binary float error)', () => {
@@ -90,13 +101,13 @@ describe('Decimal.round — half to even', () => {
   });
 
   it('refuses a mode that is not one, even where nothing needs rounding, as .NET does', () => {
-    expect(() => Decimal.from('1.2').round(2, 'sideways' as never)).toThrow(RangeError);
-    expect(() => Decimal.from('1.25').round(1, 'sideways' as never)).toThrow(RangeError);
-    expect(() => Decimal.from('1.2').round(2, 'toString' as never)).toThrow(RangeError);
+    expect(thrownType(() => Decimal.from('1.2').round(2, 'sideways' as never))).toBe('System.ArgumentException');
+    expect(thrownType(() => Decimal.from('1.25').round(1, 'sideways' as never))).toBe('System.ArgumentException');
+    expect(thrownType(() => Decimal.from('1.2').round(2, 'toString' as never))).toBe('System.ArgumentException');
   });
 
   it('refuses a digit count outside 0..28, as .NET does', () => {
-    expect(() => Decimal.from('1.5').round(29)).toThrow(RangeError);
-    expect(() => Decimal.from('1.5').round(-1)).toThrow(RangeError);
+    expect(thrownType(() => Decimal.from('1.5').round(29))).toBe('System.ArgumentOutOfRangeException');
+    expect(thrownType(() => Decimal.from('1.5').round(-1))).toBe('System.ArgumentOutOfRangeException');
   });
 });

@@ -17,6 +17,7 @@
  * approximated the annex before, and got Thai, Persian, decomposed Hangul, halfwidth kana and tag
  * flags wrong in ways no test would see, since every browser the tests run in has a segmenter.
  */
+import { exception } from './exceptions';
 
 interface GraphemeSegmenter {
   segment(input: string): Iterable<{ segment: string; index: number }>;
@@ -65,7 +66,10 @@ export function codePointStarts(text: string): number[] {
  */
 export function nextTextElementLength(text: string, index: number): number {
   if (index < 0 || index > text.length) {
-    throw new RangeError('Index was out of range. Must be non-negative and less than or equal to the size of the collection.');
+    throw exception(
+      'System.ArgumentOutOfRangeException',
+      'Index was out of range. Must be non-negative and less than or equal to the size of the collection.',
+    );
   }
   if (index === text.length) return 0;
   const rest = text.slice(index);

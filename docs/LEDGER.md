@@ -1116,6 +1116,54 @@ record of a release, the wiki's Upgrading page is the distillate.
   stops the client of every page ([#526](https://github.com/eQuantic/equantic-ui/issues/526)).
   Proposed and archived through OpenSpec (`openspec/specs/transpiler-expressions`,
   `openspec/specs/transpiler-source-maps`).
+- **2026-10-03 · A value hashes as it equals**: `x.GetHashCode()` was a call of a `getHashCode` nothing
+  defines, for a string, a number and a record alike, and threw in the browser, and `HashCode.Combine`
+  named a class nothing defines ([#519](https://github.com/eQuantic/equantic-ui/issues/519)). The
+  runtime's hash (`$eq.hash`) agrees with `$eq.equals` case by case, so values `Equals` finds equal
+  hash equal, a decimal of any scale and a date by its ticks included; a record's and a struct's
+  twin carry a `getHashCode` written from the members their `equals` reads, a type that overrides
+  `GetHashCode` answers its own, and a class that does not is hashed by its identity. .NET's own
+  numbers are not stable across processes, so the browser keeps the contract and never the server's
+  number. A Guid made from text is its canonical text, the lowercase `D` format, so two spellings
+  of one Guid are one value to `==`, a dictionary and a set
+  ([#459](https://github.com/eQuantic/equantic-ui/issues/459)), and a date leaving the calendar is
+  refused in .NET's words, the operators naming their own parameter, where the twin built the invalid
+  date without a word and `d -= span` subtracted two objects into NaN
+  ([#424](https://github.com/eQuantic/equantic-ui/issues/424)). The hash strategy was written and not
+  registered, and the conformance suite caught it: `StrategyRegistrationTests` now fails for any
+  strategy the converter does not register. Proposed and archived through OpenSpec
+  (`openspec/specs/transpiler-bcl`).
+- **2026-10-03 · A string's own search compares as .NET does**: a string's methods that take a
+  `StringComparison` read it from its spelling and lower-cased both sides
+  ([#528](https://github.com/eQuantic/equantic-ui/issues/528)): the Kelvin sign matched a k under
+  `OrdinalIgnoreCase`, a comparison held in a variable was dropped, `Replace` dropped its own and
+  read `$&` in its replacement as a pattern, a start past the end clamped where .NET throws, and a
+  sort written with `CompareTo` put every capital first. They now reach the runtime's `$eq.text`,
+  chosen by the bound method and handed the comparison as the value it is: an ordinal search that
+  ignores case ports .NET 10's `Ordinal` and `OrdinalCasing`, a start and a count are checked in
+  .NET's words, `CompareTo` is the current culture's comparison, and a search by a culture
+  comparison, which the browser has no form for, fails the build with EQ1004, or throws when the
+  comparison arrives in a variable. On the way, an overload taking a `CultureInfo` slipped through:
+  its parameter is `CultureInfo?`, and the type check compared a display name that carries the
+  annotation, so `IsNamed` now reads a name without it. The components' pins also showed every call
+  with a range bound in an arrow function to keep C#'s order, so the runtime now takes the arguments
+  in the order C# writes them. Copilot's review found the comparison read from the last argument
+  written, so a named start was refused as a culture comparison, and a conditional refused for the
+  culture member it spells, though it is no constant. Its second round found an argument that awaits
+  behind a null-conditional call that goes to a helper, wrapped in an arrow that was not async, so
+  the module did not parse (`s?.Substring(await f())` too, on main); and its third, that the async
+  arrow which first fixed it suspended where C# does not and handed back the result of a task the
+  call returned. A local, a parameter or `this` is now guarded by a conditional with no function
+  around the tail, and any other receiver refuses a tail that awaits, until a lowering binds it in
+  the enclosing function ([#539](https://github.com/eQuantic/equantic-ui/issues/539)). 28 of the 48
+  conformance cases fail on main, and the dashboard sample's payment filter, code editor, Markdown,
+  Mermaid and diff pages were checked in a browser. Filed on the way: the overloads without a
+  comparison search by the current culture in .NET
+  ([#532](https://github.com/eQuantic/equantic-ui/issues/532)), a culture comparison that ignores
+  case equates widths and kana types .NET keeps apart
+  ([#533](https://github.com/eQuantic/equantic-ui/issues/533)), and a char search with a start
+  clamps and drops its count ([#534](https://github.com/eQuantic/equantic-ui/issues/534)). Proposed
+  and archived through OpenSpec (`openspec/specs/transpiler-bcl`).
 - **2026-10-03 · A tab bar, a radio group, a combobox and a dialog are themselves on Photon**: the
   semantics walk announced every `Adjustable` as a slider, so a `Tabs` and a `RadioGroup` reached
   VoiceOver and TalkBack as one unnamed slider and their tabs and radios were never read
@@ -1197,6 +1245,93 @@ record of a release, the wiki's Upgrading page is the distillate.
   cases, run on both sides, failed against main; the other 29 are neighbours that already held, kept as
   pins. The served runtime grew about 8 KB gzipped. Proposed
   and archived through OpenSpec (`openspec/specs/runtime-sets`, `runtime-dictionaries`, `transpiler-bcl`).
+- **2026-10-04 · The compiler suite's aborts are gone**: under load its test host crashed in 2 of 6
+  runs on macOS arm64, and `dotnet test` still printed `Passed!` with the count that ran
+  ([#473](https://github.com/eQuantic/equantic-ui/issues/473)). Measured after #481 cut the suite's own
+  test host from 29 GB to about 6 GB: 27 runs on main, 12 of them beside a full conformance run and
+  seven of those beside two or three other test hosts, all exit 0 with Total 1439. No runtime setting
+  is called for, and nothing under `scripts/` or `.github/` reads the `Passed!` line.
+- **2026-10-04 · Two pages of one name each serve their own route**: the server held its pages by their
+  simple name, so of two `Dashboard` pages in two namespaces the one registered last answered at both
+  routes, with no error ([#514](https://github.com/eQuantic/equantic-ui/issues/514)). Each endpoint
+  carries its page's type to the shell, the navigation state and the SSR, and the rendering service
+  holds its pages by type: `IServerRenderingService` takes a `Type` where it took a name, a break.
+  `SameNamedPagesTests` serves both over the real pipeline, and the shop's route rendered the admin's
+  page against main. Recorded in `openspec/specs/page-routes`.
+- **2026-10-04 · A source map keeps every line it came from**: three carriers still wrote what they
+  held as text before any writer saw it, so none of their statements had a segment of its own: the
+  arrow a body with an `out` or `ref` parameter runs in
+  ([#487](https://github.com/eQuantic/equantic-ui/issues/487)), a member's expression body, and an
+  object creation, initializer or anonymous object
+  ([#492](https://github.com/eQuantic/equantic-ui/issues/492)), every line of a lambda's block they
+  held included. The wrapper is IR, built once for a method, a lambda and a local function, its own
+  lines the declaration's, and an iterator's buffer with it; an expression body takes the concise
+  body's one lowering; a creation and an object literal are nodes of their own (`JsNew`, `JsObject`),
+  and the three strategies leave the text baseline (81 to 78). The shared components' lambda
+  statements with no line of their own went from 59 to 0. A class that takes the default its interface
+  supplies wrote the default's lines into the class's file, at lines that file does not have
+  ([#490](https://github.com/eQuantic/equantic-ui/issues/490)): each mapping carries its tree now, and
+  the map names every file, each with its own text. The map escaped five characters by hand and the
+  JSON writer behind the web manifest and the asset catalog three, so a form feed in a C# comment or a
+  tab in an app's name made a file no JSON reader opens
+  ([#525](https://github.com/eQuantic/equantic-ui/issues/525)): every JSON the build lays out goes
+  through `JsonWriter`, whose escape is System.Text.Json's, and both maps through one map writer on top
+  of it. Each case failed on main, the frames read through the composed map of a Bun bundle among
+  them. The review found the iterator's buffer left out of the declaration's lines, its two lines
+  mapped to nothing, and they map to the declaration now. Merged after #561, the out parameter's
+  wrapper leaves the functions the lowerings write by hand, the part of
+  [#539](https://github.com/eQuantic/equantic-ui/issues/539) it named, and so does one of the
+  creation's. Proposed and archived through OpenSpec
+  (`openspec/specs/transpiler-source-maps`, `openspec/specs/generated-files`).
+- **2026-10-04 · A deconstruction writes each part as C# does**: a deconstruction was destructuring,
+  which writes each part straight into its target, so a dictionary's entry as a target wrote its read,
+  a SyntaxError that cost the module, and an int part into a long stayed a number, which the next long
+  arithmetic refused, in an assignment, a declaration and a loop alike
+  ([#542](https://github.com/eQuantic/equantic-ui/issues/542)). Each part is converted to its target's
+  type as the bound tree's `DeconstructionInfo` says, and written by what its target is, an entry
+  through its class. Each is a conformance case on both sides that failed against main. Proposed and
+  archived through OpenSpec (`openspec/specs/transpiler-records`).
+- **2026-10-04 · A find bar's Escape closes its own editor's bar**: the code editor's Escape was a
+  page-wide chord mounted with the find bar, so with two bars open it closed the one mounted last,
+  wherever the keyboard was ([#457](https://github.com/eQuantic/equantic-ui/issues/457)). Made the
+  editor's own, around the code, it would also have taken Escape from a dialog around an editor whose
+  bar is closed, and mounted only with the bar, around the code, it would have moved the code in the
+  tree. `Shortcut.Enabled` gives a chord the state Flutter gives an `Action` that is not enabled: in
+  the tree, binding nothing, on the web (SSR and the TypeScript twin) and on Photon. The Escape now
+  wraps the layers beside ⌘F, focus-scoped and enabled while the bar is open. The local review found
+  the web answering a dialog's Escape before the open bar's inside it, where Photon closed the bar:
+  of two nested chords the web listed the inner one first, and a binding now takes its place before
+  its child lowers, as Photon emits it. Each test failed against main's editor, against its realizer
+  without the guard, or against the old order, and the dialog's against an Escape that is always
+  enabled. Proposed and archived through OpenSpec (`openspec/specs/keyboard-shortcuts`).
+- **2026-10-04 · Opening a panel leaves the focus where it was**: `Select`, `Menu`, `TimePicker` and
+  `DatePicker` mounted the chords their panel answers to with the panel, a `Shortcut` per chord, so
+  opening moved the trigger down the tree, and on Photon the keyboard focus named a path the trigger
+  had left: no ring while the panel was up
+  ([#567](https://github.com/eQuantic/equantic-ui/issues/567), found in the local review of #457).
+  Their chords stay around the tree now, enabled while the panel is open, and each of the four failed
+  against the previous component. Recorded in `openspec/specs/keyboard-shortcuts`.
+- **2026-10-03 · A catch tests its type and its filter**: each catch clause was a JavaScript catch of
+  its own, so two clauses were a SyntaxError that cost the module, and one took every exception, its
+  type never tested and its filter dropped ([#474](https://github.com/eQuantic/equantic-ui/issues/474));
+  an exception carried no type at all, so a type pattern over one was a null check, and `throw;` was a
+  SyntaxError too. A .NET exception is now an Error carrying its .NET types (`$eq.exceptions`), built
+  by `new T(…)` from T's symbol and thrown with .NET's type by every .NET twin of the runtime, a spec
+  refusing a new untyped throw there and a conformance test comparing the runtime's table with
+  .NET's hierarchy. The clauses are one catch that tries each by its type and its filter, a filter
+  that throws answering false, and `throw;` rethrows the exception caught. Five lowerings wrote a
+  JavaScript function around C#, so an await in `checked`, a throw expression, `Trim`'s characters,
+  `Range` or `Repeat` did not parse, and `Range(Start(), 3)` called `Start` three times
+  ([#539](https://github.com/eQuantic/equantic-ui/issues/539)): each takes its C# as arguments now,
+  and `IntroducedFunctionsCoverageTests` counts the functions the lowerings still write by hand, per
+  file, against a baseline that may only shrink. #539 stays open for two of them: the body an out
+  parameter runs in, which #566 makes IR, and the null-conditional tail behind a receiver that is not
+  a local, after #536. 51 of the 62 conformance cases fail on main. Typed catches exposed five
+  `Parse` twins of the date and time types, `string.Format` and `new string(char[], int, int)`
+  reading a null argument through null, a NullReferenceException where .NET refuses it by name with
+  an ArgumentNullException, and each refuses it now. One difference stays, the platform's: .NET runs
+  a filter before the `finally` blocks it unwinds, and JavaScript after. Proposed and archived through
+  OpenSpec (`openspec/specs/transpiler-exceptions`, `openspec/specs/transpiler-expressions`).
 - **2026-10-03 · A dictionary adds and pairs as .NET's does**: a dictionary's `Add` lowered to the
   class's `set`, which replaces, and the constructor seeded through it, so `Add`, a collection
   initializer and the constructor that copies pairs kept the last value of a key twice, where .NET
@@ -1207,6 +1342,83 @@ record of a release, the wiki's Upgrading page is the distillate.
   names the pair it was handed, a `SortedList` the key and its parameter), an object initializer's
   `[key] = value` is assigned by the indexer, and a pair built by hand is the pair a dictionary yields.
   Proposed and archived through OpenSpec (`openspec/specs/runtime-dictionaries`).
+- **2026-09-26 · A constant is its value in its C# type**: `decimal.MaxValue` emitted
+  `decimal.maxValue`, a ReferenceError, because the strategy that writes a const field as its value
+  left decimals to a strategy that never wrote one
+  ([#444](https://github.com/eQuantic/equantic-ui/issues/444)). The same function wrote a `long`
+  constant in a number's range as a number, which the first long it met threw on
+  (`t / TimeSpan.TicksPerSecond`), a decimal literal went through its text (`1_000.5m`), and a
+  parameter's default filled in for a skipped argument had a second writer that dropped a decimal's
+  and a long's type, a char's quotes and a string's escapes. One writer now answers a constant in its
+  C# type for all three paths, a const with no source is inlined under a `using static` too, the
+  primitive table keeps only what is not a constant, and a narrow integer and a `ulong` annotate as
+  `number` and `bigint`. The author's review found three more on the same paths: a decimal constant
+  in a pattern or a `case` compared by identity and never matched, a constant of an enum type was
+  written as its number (and a flags default as a name), and a lone surrogate left the module
+  unwritable, and Copilot's second round a char literal written from its source text, whose `\e`,
+  `\a` and `\x041` JavaScript reads as other characters: both were spelled on main by the time this
+  merged, by the one writer of a string ([#520](https://github.com/eQuantic/equantic-ui/issues/520)),
+  which a constant's char and string now go through. 47 of the 92 conformance cases failed on main
+  when this opened, and 27 when it merged: the text, the long constants and some of the patterns,
+  defaults and enum constants had been fixed on the way by the pull requests before it. The BCL audit
+  grades `decimal`'s static surface: its nine translated members are proved, and the 38 it fences are
+  left to their own issue ([#449](https://github.com/eQuantic/equantic-ui/issues/449)), as are an
+  `is` over a named constant ([#451](https://github.com/eQuantic/equantic-ui/issues/451)) and an
+  enum's `ToString` ([#452](https://github.com/eQuantic/equantic-ui/issues/452)). Proposed and
+  archived through OpenSpec (`openspec/specs/transpiler-constants`).
+- **2026-10-02 · A hover moves a box and changes its shadow on every target**: a `StyleDiff` could
+  tint a box and nothing more, and not even that whole
+  ([#507](https://github.com/eQuantic/equantic-ui/issues/507), the first slice of
+  [#504](https://github.com/eQuantic/equantic-ui/issues/504)). It gains `Transform`, replacing the
+  base's while the state is active, and `Shadows`, replacing the base's custom shadows. On Photon a
+  hover applied three of its seven members; one effective style now feeds the wrapper that fades and
+  moves a box and the chrome that fills and shadows it. On the web a hover's backdrop blur was never
+  written, and a hover that raised the elevation or swapped the gradient replaced the whole
+  `box-shadow` or `background-image`, taking the glow, the inset highlight and the grid pattern away
+  under the pointer; a state now writes those lists again from its members and the base's. The two
+  web producers wrote the base's custom shadows in opposite orders and a shadow with no geometry
+  differently (a `none` inside the list in C#, which CSS rejects with the whole declaration), and an
+  element listed a vendor pair's one class twice; the component parity fixture compares a box that
+  sets every part. The perf harness refused the first shape: the diff was a struct, a `BoxStyle`
+  carries two, and every box paid for the new members, 77,474 bytes a frame against a 74 KB ceiling,
+  so `StyleDiff` is a class and the frame measures 73.2 KB. Filed: a pinned header's scrolled style,
+  half drawn on the web and not at all on Photon
+  ([#506](https://github.com/eQuantic/equantic-ui/issues/506)), and the second slice, with a custom
+  shadow that snaps on Photon where the browser glides it
+  ([#508](https://github.com/eQuantic/equantic-ui/issues/508)); and, from the review, a draggable's
+  resting offset and its box's own transform taking the same CSS property, so a hover lift closes an
+  open row on the web ([#511](https://github.com/eQuantic/equantic-ui/issues/511)), and, from
+  Copilot's, Photon hit-testing a transformed box where it was laid out rather than where it is
+  drawn, which the base transform always did and a lift now shows
+  ([#513](https://github.com/eQuantic/equantic-ui/issues/513)). Proposed and archived through
+  OpenSpec (`openspec/specs/interaction-states`).
+- **0.2.0-preview.60 released** from `c12b761f`: the hydration contract the build derives (#515, #522),
+  a hover that moves and shadows a box on every target (#512), a route's title and a page held by
+  its type (#537, #538, #572), the native bridges' roles (#503, #557), the find bar's Escape and
+  `Shortcut.Enabled` (#568), source maps that keep every line (#493, #566), and the browser's
+  answers made .NET's for dictionaries (#443, #559), LINQ and strings (#545, #536, #527), enums
+  (#548), exceptions (#561), hashes, Guids and dates (#550, #472), constants (#450), patterns,
+  loops and deconstruction (#543, #562), a record's members (#464) and names read by their symbol
+  (#553), with the test suites' shared references (#549) and the release's own issue (#574).
+  *([v0.2.0-preview.60](https://github.com/eQuantic/equantic-ui/releases/tag/v0.2.0-preview.60))*
+- **2026-10-05 · A fragment a pixel above the top, and an ordinal dictionary**: two things
+  equantic-web met on 0.2.0-preview.60. A fragment link under its floating header landed BEHIND the
+  header on a warm load ([#576](https://github.com/eQuantic/equantic-ui/issues/576)): the target's
+  document top was 2471.796875, the browser's jump scrolled to 2472, and the cold-load correction,
+  whose band started at 0, refused the -0.203125 it saw on every frame of its watch. A layout
+  position is fractional and a scroll offset is whole pixels, so which side of the top a jump lands
+  on is a coin toss on the fraction; the band starts one device pixel above it now, never less than
+  one CSS pixel, which a page zoomed out to 50% needs (found in review). Measured with DevTools
+  logpoints, which leave the cache alone (a route that served an instrumented runtime moved the race
+  and hid it), and proved on the site itself, published on 0.2.0-preview.60 with the package's
+  Server and then this branch's: four of six cases, then six of six. And
+  `new Dictionary<string, T>(StringComparer.Ordinal)`, the default for a string key, failed the build
+  with EQ1004 ([#577](https://github.com/eQuantic/equantic-ui/issues/577)): #443's construction
+  refused every comparer parameter, a stricter copy of the fence that already passed that one, and
+  `CollectionComparerFenceTests` checked only for the fence's own code. The construction skips a
+  comparer now and a sorted one keeps the order it asks for; the fence decides alone. Found on the
+  way: a page route answers `HEAD` with a 404 ([#575](https://github.com/eQuantic/equantic-ui/issues/575)).
+  Proposed and archived through OpenSpec (`openspec/specs/links`, `openspec/specs/runtime-dictionaries`).
 
 ## Retired documents
 

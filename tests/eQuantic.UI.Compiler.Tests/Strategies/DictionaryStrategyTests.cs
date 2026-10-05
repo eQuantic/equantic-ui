@@ -148,13 +148,20 @@ public class DictionaryStrategyTests
         ts.Should().Contain("map: any").And.Contain("sorted: any");
     }
 
-    /// <summary>A comparer decides how keys compare, which the runtime classes take from eqc alone.</summary>
+    /// <summary>
+    /// A comparer is the fence's to judge (EQ2007), never this strategy's: one that changes equality is
+    /// refused once, by the fence, and one that asks for what the runtime classes already do builds, a
+    /// sorted one asking for the order it names. This test pinned #443's refusal of EVERY comparer with
+    /// EQ1004, <c>StringComparer.Ordinal</c> included, and a site's build stopped on it (#577).
+    /// </summary>
     [Fact]
-    public void AComparer_IsRefused()
+    public void AComparer_IsTheFencesToJudge()
     {
         TestHelper.DiagnosticsFor("var d = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);")
-            .Should().Contain(d => d.Code == "EQ1004" && d.Message.Contains("Dictionary with a comparer"));
+            .Select(d => d.Code).Should().Contain("EQ2007").And.NotContain("EQ1004");
         TestHelper.DiagnosticsFor("var d = new SortedDictionary<string, int>(StringComparer.Ordinal);")
-            .Should().Contain(d => d.Code == "EQ1004" && d.Message.Contains("SortedDictionary with a comparer"));
+            .Should().BeEmpty();
+        TestHelper.ConvertExpression("new SortedDictionary<string, int>(StringComparer.Ordinal)")
+            .Should().EndWith("(null, 'value')");
     }
 }

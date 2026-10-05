@@ -13,7 +13,7 @@ export class TsvCodec {
 
     static escape(value: string) {
         if (value.indexOf('\t') < 0 && value.indexOf('\n') < 0 && value.indexOf('"') < 0) return value;
-        return '"' + value.replaceAll('"', '""') + '"';
+        return '"' + $eq.text.replace(value, '"', '""', 'ordinal') + '"';
     }
 
     static parse(text: string) {

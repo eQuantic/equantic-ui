@@ -28,9 +28,20 @@ const claimed = new WeakSet<Event>();
 let active: ShortcutBinding[] = [];
 let installed = false;
 
-/** Called by `lowerShortcut` for each live binding. */
-export function declareShortcut(binding: ShortcutBinding): void {
-  pending.push(binding);
+/**
+ * Where a binding declared now would be listed. A `Shortcut` asks before its child lowers and
+ * declares there afterwards, so a binding is listed before the ones inside it, as Photon's frame
+ * lists them, and the LIFO walk reaches the inner one first: a component's own Escape inside a
+ * dialog answers before the dialog's, as the Shortcuts nearest the focus do in Flutter.
+ */
+export function shortcutMark(): number {
+  return pending.length;
+}
+
+/** Called by `lowerShortcut` for each live binding, at the place it took with {@link shortcutMark}
+ * (the end of the list by default). */
+export function declareShortcut(binding: ShortcutBinding, at = pending.length): void {
+  pending.splice(Math.min(at, pending.length), 0, binding);
   install();
 }
 
@@ -81,9 +92,10 @@ function install(): void {
       if (active.length === 0) return;
       const spellings = candidates(event);
       let handled = false;
-      // A LIFO walk: the most recently mounted binding (the dialog on top) wins the chord — among
-      // the ones on screen. A binding in a hidden arm sits the chord out, so it reaches the arm the
-      // width shows, and when no arm that binds it is shown the browser keeps the key.
+      // A LIFO walk: the last binding listed wins the chord, among the ones on screen: of two
+      // siblings the later one (the dialog on top), of two nested ones the inner one. A binding in
+      // a hidden arm sits the chord out, so it reaches the arm the width shows, and when no arm
+      // that binds it is shown the browser keeps the key.
       for (let i = active.length - 1; i >= 0; i--) {
         const binding = active[i];
         if (!spellings.includes(binding.chord)) continue;

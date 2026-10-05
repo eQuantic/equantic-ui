@@ -1,0 +1,51 @@
+# The JavaScript functions the lowerings write BY HAND, as text: the path, how many string literals
+# introducing one (`=>`, `function(`) were MEASURED there, and why. A function around translated C#
+# is where an await stops parsing and a value runs per element (#539); the C# goes in as an
+# ARGUMENT instead. The list may ONLY SHRINK, and the count is checked, so a listed file cannot
+# quietly write one more.
+#
+# The reasons, and what each claims:
+#   arguments only      the function reads its parameters, and every C# part is passed in
+#   no C# inside        a callback of the runtime's or the platform's own, holding no translated C#
+#   the IR's writer     where the IR's arrow nodes and a template's bound parts are written
+#   not looked at yet   MEASURED, not judged: nobody has decided whether the function holds C#
+#
+# Regenerate with EQ_UPDATE_INTRODUCED_FUNCTIONS=1 after a REMOVAL. It carries every reason across
+# and writes "not looked at yet" for a file new to the list, which is not an approval.
+src/eQuantic.UI.Compiler/CodeGen/ExpressionVariableScanner.cs  1  not looked at yet
+src/eQuantic.UI.Compiler/CodeGen/Ir/JsExprWriter.cs  2  the IR's writer
+src/eQuantic.UI.Compiler/CodeGen/Strategies/Async/TaskMethodStrategy.cs  2  not looked at yet
+src/eQuantic.UI.Compiler/CodeGen/Strategies/DictionaryLookup.cs  1  not looked at yet
+src/eQuantic.UI.Compiler/CodeGen/Strategies/Expressions/ArrayCreationStrategy.cs  1  not looked at yet
+src/eQuantic.UI.Compiler/CodeGen/Strategies/Expressions/AsExpressionStrategy.cs  1  arguments only
+src/eQuantic.UI.Compiler/CodeGen/Strategies/Expressions/AssignmentExpressionStrategy.cs  5  not looked at yet
+src/eQuantic.UI.Compiler/CodeGen/Strategies/Expressions/BinaryExpressionStrategy.cs  5  not looked at yet
+src/eQuantic.UI.Compiler/CodeGen/Strategies/Expressions/ConditionalAccessStrategy.cs  1  not looked at yet
+src/eQuantic.UI.Compiler/CodeGen/Strategies/Expressions/InitializerExpressionStrategy.cs  1  not looked at yet
+src/eQuantic.UI.Compiler/CodeGen/Strategies/Expressions/InvocationStrategy.cs  1  not looked at yet
+src/eQuantic.UI.Compiler/CodeGen/Strategies/Expressions/IsPatternStrategy.cs  1  arguments only
+src/eQuantic.UI.Compiler/CodeGen/Strategies/Expressions/ObjectCreationStrategy.cs  2  not looked at yet
+src/eQuantic.UI.Compiler/CodeGen/Strategies/Expressions/SwitchExpressionStrategy.cs  1  not looked at yet
+src/eQuantic.UI.Compiler/CodeGen/Strategies/Expressions/TupleEquality.cs  1  arguments only
+src/eQuantic.UI.Compiler/CodeGen/Strategies/Invocation/ToStringStrategy.cs  1  not looked at yet
+src/eQuantic.UI.Compiler/CodeGen/Strategies/Linq/AverageStrategy.cs  3  not looked at yet
+src/eQuantic.UI.Compiler/CodeGen/Strategies/Linq/ContainsStrategy.cs  1  not looked at yet
+src/eQuantic.UI.Compiler/CodeGen/Strategies/Linq/DistinctStrategy.cs  2  not looked at yet
+src/eQuantic.UI.Compiler/CodeGen/Strategies/Linq/GroupByStrategy.cs  3  not looked at yet
+src/eQuantic.UI.Compiler/CodeGen/Strategies/Linq/LinqTableStrategy.cs  21  not looked at yet
+src/eQuantic.UI.Compiler/CodeGen/Strategies/Linq/LookupIndexerStrategy.cs  1  not looked at yet
+src/eQuantic.UI.Compiler/CodeGen/Strategies/Linq/OfTypeStrategy.cs  2  not looked at yet
+src/eQuantic.UI.Compiler/CodeGen/Strategies/Linq/OrderByStrategy.cs  2  not looked at yet
+src/eQuantic.UI.Compiler/CodeGen/Strategies/Linq/SumStrategy.cs  3  not looked at yet
+src/eQuantic.UI.Compiler/CodeGen/Strategies/NullableLift.cs  2  not looked at yet
+src/eQuantic.UI.Compiler/CodeGen/Strategies/Primitives/BclSurfaceTailStrategy.cs  3  not looked at yet
+src/eQuantic.UI.Compiler/CodeGen/Strategies/Primitives/ConvertStrategy.cs  3  arguments only
+src/eQuantic.UI.Compiler/CodeGen/Strategies/Primitives/ListMethodStrategy.cs  2  not looked at yet
+src/eQuantic.UI.Compiler/CodeGen/Strategies/Primitives/NumberMethodStrategy.cs  1  not looked at yet
+src/eQuantic.UI.Compiler/CodeGen/Strategies/Primitives/PrimitiveStaticStrategy.cs  1  arguments only
+src/eQuantic.UI.Compiler/CodeGen/Strategies/Primitives/StringMethodStrategy.cs  1  no C# inside
+src/eQuantic.UI.Compiler/CodeGen/Strategies/Primitives/StringStaticStrategy.cs  1  not looked at yet
+src/eQuantic.UI.Compiler/CodeGen/Strategies/ReadModifyWrite.cs  1  not looked at yet
+src/eQuantic.UI.Compiler/CodeGen/Strategies/Types/EnumMethodStrategy.cs  2  arguments only
+src/eQuantic.UI.Compiler/CodeGen/Strategies/ValueFlow.cs  1  not looked at yet
+src/eQuantic.UI.Compiler/CodeGen/TypeScriptEmitter.cs  7  not looked at yet

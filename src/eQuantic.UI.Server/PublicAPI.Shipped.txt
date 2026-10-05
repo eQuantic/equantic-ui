@@ -195,10 +195,10 @@ eQuantic.UI.Server.Metadata.SeoBuilder.SeoBuilder(eQuantic.UI.Server.Metadata.Me
 eQuantic.UI.Server.Metadata.SeoBuilder.Title(string! title) -> eQuantic.UI.Server.Metadata.SeoBuilder!
 eQuantic.UI.Server.Metadata.SeoBuilder.Twitter(string! name, string! content) -> eQuantic.UI.Server.Metadata.SeoBuilder!
 eQuantic.UI.Server.Rendering.IServerRenderingService
-eQuantic.UI.Server.Rendering.IServerRenderingService.IsSsrEnabled(string! pageTypeName) -> bool
-eQuantic.UI.Server.Rendering.IServerRenderingService.PreparePageAsync(string! pageTypeName, Microsoft.AspNetCore.Http.HttpContext! context) -> System.Threading.Tasks.Task<eQuantic.UI.Server.Rendering.ServerRenderResult!>!
+eQuantic.UI.Server.Rendering.IServerRenderingService.IsSsrEnabled(System.Type! pageType) -> bool
+eQuantic.UI.Server.Rendering.IServerRenderingService.PreparePageAsync(System.Type! pageType, Microsoft.AspNetCore.Http.HttpContext! context) -> System.Threading.Tasks.Task<eQuantic.UI.Server.Rendering.ServerRenderResult!>!
 eQuantic.UI.Server.Rendering.IServerRenderingService.RenderComponent(eQuantic.UI.Web.IComponent! component) -> string!
-eQuantic.UI.Server.Rendering.IServerRenderingService.RenderPageAsync(string! pageTypeName, Microsoft.AspNetCore.Http.HttpContext! context) -> System.Threading.Tasks.Task<eQuantic.UI.Server.Rendering.ServerRenderResult!>!
+eQuantic.UI.Server.Rendering.IServerRenderingService.RenderPageAsync(System.Type! pageType, Microsoft.AspNetCore.Http.HttpContext! context) -> System.Threading.Tasks.Task<eQuantic.UI.Server.Rendering.ServerRenderResult!>!
 eQuantic.UI.Server.Rendering.ServerRenderResult
 eQuantic.UI.Server.Rendering.ServerRenderResult.Assets.get -> eQuantic.UI.Server.Assets.AssetCollection?
 eQuantic.UI.Server.Rendering.ServerRenderResult.Error.get -> string?
@@ -209,10 +209,10 @@ eQuantic.UI.Server.Rendering.ServerRenderResult.StatusCode.get -> int
 eQuantic.UI.Server.Rendering.ServerRenderResult.Success.get -> bool
 eQuantic.UI.Server.Rendering.ServerRenderResult.VectorDefs.get -> string?
 eQuantic.UI.Server.Rendering.ServerRenderingService
-eQuantic.UI.Server.Rendering.ServerRenderingService.IsSsrEnabled(string! pageTypeName) -> bool
-eQuantic.UI.Server.Rendering.ServerRenderingService.PreparePageAsync(string! pageTypeName, Microsoft.AspNetCore.Http.HttpContext! context) -> System.Threading.Tasks.Task<eQuantic.UI.Server.Rendering.ServerRenderResult!>!
+eQuantic.UI.Server.Rendering.ServerRenderingService.IsSsrEnabled(System.Type! pageType) -> bool
+eQuantic.UI.Server.Rendering.ServerRenderingService.PreparePageAsync(System.Type! pageType, Microsoft.AspNetCore.Http.HttpContext! context) -> System.Threading.Tasks.Task<eQuantic.UI.Server.Rendering.ServerRenderResult!>!
 eQuantic.UI.Server.Rendering.ServerRenderingService.RenderComponent(eQuantic.UI.Web.IComponent! component) -> string!
-eQuantic.UI.Server.Rendering.ServerRenderingService.RenderPageAsync(string! pageTypeName, Microsoft.AspNetCore.Http.HttpContext! context) -> System.Threading.Tasks.Task<eQuantic.UI.Server.Rendering.ServerRenderResult!>!
+eQuantic.UI.Server.Rendering.ServerRenderingService.RenderPageAsync(System.Type! pageType, Microsoft.AspNetCore.Http.HttpContext! context) -> System.Threading.Tasks.Task<eQuantic.UI.Server.Rendering.ServerRenderResult!>!
 eQuantic.UI.Server.Rendering.ServerRenderingService.ServerRenderingService(System.IServiceProvider! serviceProvider, eQuantic.UI.Server.UIOptions! options, Microsoft.Extensions.Logging.ILogger<eQuantic.UI.Server.Rendering.ServerRenderingService!>! logger) -> void
 eQuantic.UI.Server.ScriptEndpointExtensions
 eQuantic.UI.Server.ServerActionDescriptor

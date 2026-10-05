@@ -45,41 +45,49 @@ internal static class OutParameters
     public static bool IsOut(ParameterSyntax parameter) => parameter.Modifiers.Any(SyntaxKind.OutKeyword);
 
     /// <summary>
-    /// The body of an ARROW that has them, a lambda's or a local function's: a block's statements,
-    /// or an expression body's return with what it declares in front, run inside
-    /// <see cref="WrapBody"/>. One owner, because the local function kept its outs as plain
-    /// parameters while the lambda wrapped them, and every call site unwraps (#541).
+    /// The body of a method, a lambda or a local function that has them: its outs declared, the body
+    /// run in an arrow so that each of its returns still means what it meant, and one object carrying
+    /// everything back. One owner, because the local function kept its outs as plain parameters while
+    /// the lambda wrapped them, and every call site unwraps (#541).
+    /// <para>
+    /// Built as IR, so the body's statements keep the C# they came from wherever the writer places
+    /// the arrow, as any lambda's block does (#384). The wrapper was TEXT: the body's first statement
+    /// shared the wrapper's line, and none of them had a mapping, so a breakpoint in the body bound
+    /// nowhere and a frame thrown there read as whatever was mapped before it (#487). The wrapper's
+    /// own lines belong to the declaration whose parameters these are, the arrow's call among them,
+    /// which is a frame of its own in a stack.
+    /// </para>
+    /// <para>
+    /// The arrow never awaits: C# refuses a <c>ref</c> or an <c>out</c> parameter on an async method
+    /// or lambda (CS1988), and on an iterator (CS1623).
+    /// </para>
     /// </summary>
-    public static JsStatement ArrowBody(BlockSyntax? block, ExpressionSyntax? expressionBody,
-        IReadOnlyList<ParameterSyntax> byReference, bool isAsync, ConversionContext context)
+    /// <param name="block">The body, when it is a block.</param>
+    /// <param name="expressionBody">The body, when it is an expression.</param>
+    /// <param name="byReference">The <c>out</c> and <c>ref</c> parameters, in order: not empty.</param>
+    /// <param name="converter">The conversion the body is part of, at the depth of the body's block.</param>
+    public static JsStatement Body(BlockSyntax? block, ExpressionSyntax? expressionBody,
+        IReadOnlyList<ParameterSyntax> byReference, CSharpToJsConverter converter)
     {
-        var inner = block != null
-            ? TrimBraces(context.Converter.ConvertBlock(block))
-            : ExpressionVariableScanner.Declarations(expressionBody, context.TypeAnnotations)
-                + $"return {context.Converter.ConvertExpression(expressionBody!)};";
-        return JsStatement.Raw($"{{ {WrapBody(inner, byReference, isAsync)} }}");
-    }
-
-    /// <summary>The statements of a converted block, without its outer braces.</summary>
-    private static string TrimBraces(string block)
-    {
-        var trimmed = block.Trim();
-        return trimmed.StartsWith('{') && trimmed.EndsWith('}')
-            ? trimmed[1..^1].Trim()
-            : trimmed;
-    }
-
-    /// <summary>
-    /// The body of a method that has them: outs declared, the original body run as a closure so its
-    /// returns keep working, and one object carrying everything back.
-    /// </summary>
-    public static string WrapBody(string body, IReadOnlyList<ParameterSyntax> byReference, bool isAsync)
-    {
+        var owner = byReference[0].Parent?.Parent ?? byReference[0];
         var declared = byReference.Where(IsOut).Select(p => p.Identifier.Text.ToJsIdentifier()).ToArray();
         var carried = byReference.Select(p => p.Identifier.Text.ToJsIdentifier());
 
-        var declaration = declared.Length > 0 ? $"let {string.Join(", ", declared)}; " : "";
-        var call = isAsync ? $"await (async () => {{ {body} }})()" : $"(() => {{ {body} }})()";
-        return $"{declaration}const $r = {call}; return {{ $: $r, {string.Join(", ", carried)} }};";
+        // The wrapper's statements stand one level into the body, the arrow's head among them, and
+        // the arrow's block one level further: the body converts there, so what it lays out (a
+        // lambda's block) indents as it will be read.
+        var depth = converter.Depth + 1;
+        var body = converter.InBlock(() => block != null
+            ? converter.ConvertBlockIr(block)
+            : expressionBody != null
+                ? converter.ConvertExpressionBodyIr(expressionBody, returns: true)
+                : JsStatement.Block([]));
+        var run = JsExpr.Call(JsExpr.ArrowBlock("", body with { Origin = owner }, converter.Layout, depth));
+
+        return JsStatement.Block([
+            .. declared.Length > 0 ? [JsStatement.Raw($"let {string.Join(", ", declared)};")] : Array.Empty<JsStatement>(),
+            JsStatement.Const("$r", run),
+            JsStatement.Return(JsExpr.Opaque($"{{ $: $r, {string.Join(", ", carried)} }}")),
+        ]) with { Origin = owner };
     }
 }

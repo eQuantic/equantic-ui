@@ -26,10 +26,11 @@ public class StringStrategyTests
     }
 
     [Fact]
-    public void Replace_MapsToReplaceAll()
+    public void Replace_IsTheRuntimesOrdinalReplace()
     {
+        // replaceAll read $& in the replacement as a pattern and wrote a null one as "null" (#528).
         var result = TestHelper.ConvertExpression("str.Replace(\"old\", \"new\")");
-        result.Should().Be("this.str.replaceAll('old', 'new')");
+        result.Should().Be("$eq.text.replace(this.str, 'old', 'new', 'ordinal')");
     }
 
     [Fact]

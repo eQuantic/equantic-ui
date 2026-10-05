@@ -12,6 +12,8 @@
  * interfaces, which are resolved by name and never imported.
  */
 
+import { hashesByValue } from '../utils/hash';
+
 /** The C# `ImageData` — a picture the user chose, as bytes plus what they are. */
 export class ImageData {
   constructor(
@@ -102,3 +104,15 @@ export class WindowSizeClasses {
     return 'compact';
   }
 }
+
+/** The twins of the vocabulary's records and structs: each hashes by its members, as `equals`
+ * compares it (`ValueTwinHashTests` holds this list to the C#). */
+hashesByValue(
+  ImageData,
+  GeoLocation,
+  MotionVector,
+  MotionReading,
+  NetworkState,
+  SpringSpec,
+  MotionSpec,
+);

@@ -30,7 +30,7 @@ public static class StyleAtomizer
         foreach (var declaration in style.EnumerateDeclarations())
         {
             var value = vars.Rewrite(declaration.Value);
-            classes.Add(sink.ClassFor(declaration.Key, value));
+            AddOnce(classes, sink.ClassFor(declaration.Key, value));
         }
         classes.Sort(StringComparer.Ordinal);
         return string.Join(" ", classes);
@@ -70,7 +70,7 @@ public static class StyleAtomizer
         {
             var scrolledClasses = new List<string>();
             foreach (var (prop, value) in scrolledDecls)
-                scrolledClasses.Add(sink.ClassForScrolled(prop, vars.Rewrite(value)));
+                AddOnce(scrolledClasses, sink.ClassForScrolled(prop, vars.Rewrite(value)));
             scrolledClasses.Sort(StringComparer.Ordinal);
             var joinedScrolled = string.Join(" ", scrolledClasses);
             element.ClassName = string.IsNullOrEmpty(element.ClassName)
@@ -83,7 +83,7 @@ public static class StyleAtomizer
         {
             var classes = new List<string>();
             foreach (var (pseudo, prop, value) in pseudos)
-                classes.Add(sink.ClassFor(prop, vars.Rewrite(value), pseudo));
+                AddOnce(classes, sink.ClassFor(prop, vars.Rewrite(value), pseudo));
             classes.Sort(StringComparer.Ordinal);
             var joined = string.Join(" ", classes);
             element.ClassName = string.IsNullOrEmpty(element.ClassName) ? joined : $"{element.ClassName} {joined}";
@@ -94,6 +94,16 @@ public static class StyleAtomizer
             if (child is HtmlElement childElement)
                 AtomizeTree(childElement, vars, sink);
         }
+    }
+
+    /// <summary>
+    /// A class goes on the element once. The two spellings of a vendor pair hash to ONE class (see
+    /// <see cref="StyleSink"/>), and the element listed it twice, once per spelling. The TypeScript
+    /// twin is <c>addOnce</c>; the attribute is compared as one string when the page hydrates.
+    /// </summary>
+    private static void AddOnce(List<string> classes, string className)
+    {
+        if (!classes.Contains(className)) classes.Add(className);
     }
 
     /// <summary>FNV-1a 32-bit over UTF-16 code units, base36 — deterministic, tiny, and trivially

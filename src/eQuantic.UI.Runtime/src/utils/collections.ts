@@ -8,6 +8,7 @@
  */
 
 import { equals } from './equals';
+import { exception } from './exceptions';
 import { HashSet } from './hash-set';
 import { sameBy, sameItem, type KeyEquality } from './key-equality';
 
@@ -29,12 +30,12 @@ export class Queue<T> {
   }
 
   dequeue(): T {
-    if (this.items.length === 0) throw new Error('Queue empty.');
+    if (this.items.length === 0) throw exception('System.InvalidOperationException', 'Queue empty.');
     return this.items.shift() as T;
   }
 
   peek(): T {
-    if (this.items.length === 0) throw new Error('Queue empty.');
+    if (this.items.length === 0) throw exception('System.InvalidOperationException', 'Queue empty.');
     return this.items[0];
   }
 
@@ -74,12 +75,12 @@ export class Stack<T> {
   }
 
   pop(): T {
-    if (this.items.length === 0) throw new Error('Stack empty.');
+    if (this.items.length === 0) throw exception('System.InvalidOperationException', 'Stack empty.');
     return this.items.pop() as T;
   }
 
   peek(): T {
-    if (this.items.length === 0) throw new Error('Stack empty.');
+    if (this.items.length === 0) throw exception('System.InvalidOperationException', 'Stack empty.');
     return this.items[this.items.length - 1];
   }
 
@@ -185,12 +186,12 @@ export class LinkedList<T> implements Iterable<T> {
   }
 
   removeFirst(): void {
-    if (this.head === null) throw new Error('LinkedList empty.');
+    if (this.head === null) throw exception('System.InvalidOperationException', 'LinkedList empty.');
     this.unlink(this.head);
   }
 
   removeLast(): void {
-    if (this.tail === null) throw new Error('LinkedList empty.');
+    if (this.tail === null) throw exception('System.InvalidOperationException', 'LinkedList empty.');
     this.unlink(this.tail);
   }
 

@@ -236,7 +236,7 @@ public class TypeScriptEmitter
         if (build?.ExpressionBody != null)
         {
             var expression = build.ExpressionBody.Expression;
-            return (JsStatement.Block(new[] { Lowering.ExpressionBody(expression, returns: true) }), expression);
+            return (Lowering.ExpressionBody(expression, returns: true), expression);
         }
         return (JsStatement.Block(new[] { fallback }), null);
     }
@@ -638,7 +638,7 @@ public class TypeScriptEmitter
                             var bodyLine = statements.Count + 1;
                             if (ctorDef?.BodyNode is { } ctorBlock) statements.Add(Contents(ctorBlock));
                             else if (ctorDef?.ExpressionBodyNode is { } ctorExpression)
-                                statements.Add(Lowering.ExpressionBody(ctorExpression, returns: false));
+                                statements.AddRange(Lowering.ExpressionBody(ctorExpression, returns: false).Statements);
                             // …and the initializer last, which is where C# runs it.
                             statements.Add(JsStatement.Raw($"if ({config} && typeof {config} === 'object') Object.assign(this, {config});"));
                             c.Member(JsClassMember.Constructor(signature, JsStatement.Block(statements)),
@@ -1902,12 +1902,12 @@ public class TypeScriptEmitter
     private JsStatement? OperatorBody(BaseMethodDeclarationSyntax op) =>
         op.Body is null && op.ExpressionBody is null
             ? null
-            : Lowering.Body(op.Body, op.ExpressionBody?.Expression, isIterator: false, byReference: [], isAsync: false);
+            : Lowering.Body(op.Body, op.ExpressionBody?.Expression, isIterator: false, byReference: []);
 
     /// <summary>An extension property's or indexer's getter: its expression, or its block lowered as
     /// an accessor's is, an iterator's included (#432).</summary>
     private JsStatement ExtensionGetter(BlockSyntax? block, ExpressionSyntax? expression) =>
-        block is not null ? Lowering.AccessorBody(block) : Lowering.Body(null, expression, isIterator: false, [], isAsync: false);
+        block is not null ? Lowering.AccessorBody(block) : Lowering.Body(null, expression, isIterator: false, []);
 
     /// <summary>
     /// C# 14 extension blocks (<c>extension(T receiver) { … }</c>): every member lowers to a
@@ -2060,7 +2060,7 @@ public class TypeScriptEmitter
                 var other => [other],
             }
             : ctor?.ExpressionBody is { } expression
-                ? [_converter.InBlock(() => Lowering.ExpressionBody(expression.Expression, returns: false))]
+                ? Lowering.ExpressionBody(expression.Expression, returns: false).Statements
                 : [];
 
         // `new Editor(text) { ReadOnly = true }` — an object initialiser is an ordinary way to
@@ -2515,7 +2515,7 @@ public class TypeScriptEmitter
         if (method.SyntaxNode != null)
         {
             _converter.SetCurrentClass(className);
-            var body = Lowering.Body(method.SyntaxNode.Body, method.SyntaxNode.ExpressionBody?.Expression, isIterator, byReference, isAsync);
+            var body = Lowering.Body(method.SyntaxNode.Body, method.SyntaxNode.ExpressionBody?.Expression, isIterator, byReference);
             var generics = method.TypeParameters is { } typeParameters && typeParameters.Any()
                 ? $"<{string.Join(", ", typeParameters)}>" : "";
             c.Member(JsClassMember.Method((method.IsStatic ? "static " : "") + asyncPrefix, methodName, generics, parameters,
@@ -2631,12 +2631,15 @@ public class TypeScriptEmitter
         string tsType = baseType switch
         {
             "string" or "char" => "string",
-            "int" or "double" or "float" or "number" => "number",
+            // Every integer that is not 64 bits is a JS number, as a float and a double are. A narrow
+            // one reached TypeScript verbatim (`static get top(): byte`), naming nothing there.
+            "int" or "double" or "float" or "number" or "uint" or "short" or "ushort" or "byte" or "sbyte"
+                or "nint" or "nuint" => "number",
             // NOT `number`, either of them. A long is a JS bigint on this side and a decimal is the
             // runtime's Decimal class — `$eq.num.long(0)` and `$eq.num.dec(0)` are what the emitter
             // writes for their literals, and a `number` annotation over either is a lie the rest of
             // the file then typechecks against: `unit.mul(...)` on a "number" is the shape it takes.
-            "long" => "bigint",
+            "long" or "ulong" => "bigint",
             "decimal" => Decimal,
             "bool" or "boolean" => "boolean",
             "void" => "void",
