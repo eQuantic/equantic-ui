@@ -141,8 +141,8 @@ internal static class ObjectInitializer
                         var arguments = element is InitializerExpressionSyntax { RawKind: (int)SyntaxKind.ComplexElementInitializerExpression } several
                             ? several.Expressions.ToList()
                             : [element];
-                        var add = context.SemanticModel?.GetCollectionInitializerSymbolInfo(element).Symbol as IMethodSymbol;
-                        if (Add(target, targetType, add, arguments) is { } call)
+                        var add = context.SemanticHelper.CollectionInitializerMethod(element);
+                        if (Add(target, targetType, add, arguments, element) is { } call)
                             Statement(call);
                         else
                             Refuse(element, $"'{add?.ContainingType.Name ?? targetType?.Name ?? "this"}.Add'");
@@ -152,33 +152,52 @@ internal static class ObjectInitializer
         }
 
         /// <summary>
-        /// One element added to the collection a member holds, as its type adds one: a dictionary's pair
-        /// through the lowering every call to its <c>Add</c> has, a set's value through its <c>add</c>, a
-        /// list's through the array's <c>push</c>, and the <c>Add</c> of a type whose twin eqc writes, or
-        /// of a vocabulary node, through the method itself. Null for any other, before any of its
-        /// arguments is taken.
+        /// One element added to the collection a member holds, as every call to the <c>Add</c> the bound
+        /// tree binds it to lowers: an EXTENSION's through its home's static, with the collection first
+        /// (<see cref="InvocationStrategy.Extension"/>), a dictionary's pair through the lowering every
+        /// call to its <c>Add</c> has, a set's value through its <c>add</c>, a list's or a collection
+        /// interface's through the array's <c>push</c>, as <c>Items.Add(1)</c> lowers
+        /// (<see cref="Primitives.ListMethodStrategy"/>), and the <c>Add</c> of a type whose twin eqc
+        /// writes, or of a vocabulary node, through the method itself. Each collection's own lowering
+        /// applies only to its own <c>Add</c>: an extension <c>Add(this List&lt;string&gt;, int)</c> was
+        /// written as the list's <c>add</c>, which a list does not have, and a set's or a dictionary's
+        /// own ran in its place. Where no model can be asked, the member's type decides. Null for any
+        /// other, before any of its arguments is taken.
         /// </summary>
-        private string? Add(string target, ITypeSymbol? targetType, IMethodSymbol? add, IReadOnlyList<ExpressionSyntax> arguments)
+        private string? Add(string target, ITypeSymbol? targetType, IMethodSymbol? add, IReadOnlyList<ExpressionSyntax> arguments,
+            SyntaxNode element)
         {
-            if (targetType.IsDictionary())
+            var receiver = JsExpr.Identifier(target);
+            // The bound tree names a classic extension in its static form: the call's lowering takes
+            // the reduced one, on the collection's type.
+            if (add is { IsExtensionMethod: true } || add.ExtensionBlockHome() is not null)
+            {
+                var extension = add is { IsExtensionMethod: true, ReducedFrom: null }
+                    ? targetType is null ? null : add.ReduceExtensionMethod(targetType)
+                    : add;
+                if (extension is null) return null;
+                List<JsExpr> passed = [.. arguments.Select(argument => JsExpr.Identifier(Argument(argument)))];
+                return JsExprWriter.Write(InvocationStrategy.Extension(extension, extension.Name, receiver, passed, element, context)!) + ";";
+            }
+
+            var declaring = add?.ContainingType;
+            if (add is null ? targetType.IsDictionary() : declaring.IsDictionary())
             {
                 if (arguments.Count != 2) return null;
                 var (key, value) = (Argument(arguments[0]), Argument(arguments[1]));
-                return JsExprWriter.Write(Types.DictionaryStrategy.Add(JsExpr.Opaque(target), JsExpr.Identifier(key), JsExpr.Identifier(value))) + ";";
+                return JsExprWriter.Write(Types.DictionaryStrategy.Add(receiver, JsExpr.Identifier(key), JsExpr.Identifier(value))) + ";";
             }
 
-            var owner = add?.ContainingType?.OriginalDefinition.ToDisplayString() ?? "";
+            var owner = declaring?.OriginalDefinition.ToDisplayString() ?? "";
             if (owner is "System.Collections.Generic.HashSet<T>" or "System.Collections.Generic.ISet<T>"
                 or "System.Collections.Generic.SortedSet<T>")
                 return arguments.Count == 1 ? $"{target}.add({Argument(arguments[0])});" : null;
-            if (owner is "System.Collections.Generic.List<T>" or "System.Collections.Generic.IList<T>"
-                or "System.Collections.Generic.ICollection<T>")
-                return targetType.HasOpenCollectionShape() && !IsList(targetType)
-                    ? null
-                    : $"{target}.push({string.Join(", ", arguments.Select(Argument))});";
+            if (Primitives.ListMethodStrategy.Lowers(add))
+                return JsExprWriter.Write(Primitives.ListMethodStrategy.Add(receiver,
+                    [.. arguments.Select(argument => JsExpr.Identifier(Argument(argument)))])) + ";";
 
-            if (add is { ContainingType: { } declaring } && TwinCarries(declaring))
-                return $"{target}.{add.Name.ToCamelCase()}({string.Join(", ", arguments.Select(Argument))});";
+            if (declaring is not null && TwinCarries(declaring))
+                return $"{target}.{add!.Name.ToCamelCase()}({string.Join(", ", arguments.Select(Argument))});";
             return null;
         }
 

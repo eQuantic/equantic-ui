@@ -193,6 +193,15 @@ public class ObjectCreationStrategy : IExpressionIrStrategy
                 creation.Initializer, JsExpr.New(JsExpr.Identifier(genericTypeName ?? typeName), arguments), context);
         }
 
+        // A list built with an element an EXTENSION adds (`new List<string> { 1 }` over
+        // `Add(this List<string>, int)`) is applied as C# applies it, each element through its own
+        // `Add` (ObjectInitializer), over the list the constructor built: as the list's literal, every
+        // element was the list's own, 1 where .NET holds "#1".
+        if (ListAddedByAnExtension(creation.Initializer, createdType, context) is { } listed)
+            return ObjectInitializer.Apply(
+                arguments.Count == 0 || IsCapacityArgument(creation, context) ? JsExpr.Array([]) : JsExpr.Array([JsExpr.Spread(arguments[0])]),
+                listed, context);
+
         // An object initializer that ADDS to what a member holds (`Items = { 1, 2 }`) or writes an
         // entry (`[k] = v`) is applied once the object exists (#462): a config object can only
         // replace a member, and the list the member was initialized with was gone. Only for a class
@@ -291,6 +300,20 @@ public class ObjectCreationStrategy : IExpressionIrStrategy
                 JsExpr.New(JsExpr.Identifier(genericTypeName ?? typeName), arguments), initializer!);
         return JsExpr.New(JsExpr.Identifier(genericTypeName ?? typeName), arguments);
     }
+
+    /// <summary>
+    /// A list's collection initializer one of whose elements the bound tree adds through an EXTENSION
+    /// method or a C# 14 extension block's member, or null: such a list is applied element by element,
+    /// where its literal could only hold every element as the list's own <c>Add</c> holds it.
+    /// </summary>
+    private static InitializerExpressionSyntax? ListAddedByAnExtension(InitializerExpressionSyntax? initializer, ITypeSymbol? type,
+        ConversionContext context) =>
+        initializer is { RawKind: (int)SyntaxKind.CollectionInitializerExpression }
+        && type?.OriginalDefinition.ToDisplayString() == "System.Collections.Generic.List<T>"
+        && initializer.Expressions.Any(element => context.SemanticHelper.CollectionInitializerMethod(element)
+            is { IsExtensionMethod: true } or { ContainingType.IsExtension: true })
+            ? initializer
+            : null;
 
     /// <summary>
     /// Values that stand where ONE expression is read, as they always stood: the only one, or, where
@@ -681,6 +704,14 @@ public class ObjectCreationStrategy : IExpressionIrStrategy
                 ctorArgs.Add(context.Converter.ConvertIr(creation.Initializer));
                 return JsExpr.New(JsExpr.Identifier(target.Name), ctorArgs);
             }
+
+            // A list one of whose elements an extension adds, as the explicit form applies it.
+            if (ListAddedByAnExtension(creation.Initializer, target, context) is { } listed)
+                return ObjectInitializer.Apply(
+                    creation.ArgumentList is { Arguments.Count: 1 } && !IsCapacityArgument(creation, context)
+                        ? JsExpr.Array([JsExpr.Spread(context.Converter.ConvertIr(creation.ArgumentList.Arguments[0].Expression))])
+                        : JsExpr.Array([]),
+                    listed, context);
 
             // `new() { … }` on a collection (or with no resolvable named target) → the initializer IS
             // the value. A dictionary target is DictionaryStrategy's.
