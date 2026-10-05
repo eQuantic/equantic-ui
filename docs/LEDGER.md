@@ -1271,7 +1271,9 @@ record of a release, the wiki's Upgrading page is the distillate.
   [#589](https://github.com/eQuantic/equantic-ui/issues/589), [#591](https://github.com/eQuantic/equantic-ui/issues/591) and
   [#592](https://github.com/eQuantic/equantic-ui/issues/592), and so is one consequence of it,
   [#590](https://github.com/eQuantic/equantic-ui/issues/590): a hydrated record has none of the private fields its
-  equality now compares.
+  equality now compares. Copilot's first review found two more, fixed in the same pull request: an
+  initializer applied every element after evaluating all their parts, where C# applies each before
+  evaluating the next, and a record over a `[ServerOnly]` record got a twin.
 - **2026-10-04 · The compiler suite's aborts are gone**: under load its test host crashed in 2 of 6
   runs on macOS arm64, and `dotnet test` still printed `Passed!` with the count that ran
   ([#473](https://github.com/eQuantic/equantic-ui/issues/473)). Measured after #481 cut the suite's own

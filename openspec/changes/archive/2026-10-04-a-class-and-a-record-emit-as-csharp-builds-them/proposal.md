@@ -44,7 +44,9 @@ with both sides executed, most of them with a green build:
   initializers in declaration order, then its static constructor, on first use; a record, a struct,
   a class, a static class and a component alike. A type with a static constructor runs it before its
   first instance and the first use of any static member.
-- **BREAKING** (preview): `ValueMember` in `eQuantic.UI.Compiler` gains `Printed` and `Declaration`.
+- **BREAKING** (preview), in `eQuantic.UI.Compiler`: `ValueMember` gains `Declaration`,
+  `RecordTypeEmitter.CanEmit` takes the type's symbol, `ComponentDependencyResolver` takes the
+  project's compilation, and `Eq.TypeInitialization` is new (`PublicAPI.Unshipped.txt`).
   A record's twin no longer takes one argument per member, which an app never sees, since its C#
   constructions compile to the new form: only TypeScript written by hand against a twin moves, and the
   runtime's own specs now pass the C# constructor's arguments and set the rest with `Object.assign`
