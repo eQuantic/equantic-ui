@@ -133,8 +133,11 @@ internal sealed class MethodLowering
             : set?.Body is { } setBlock ? AccessorBody(setBlock)
             : null;
         if (written is null) yield break;
+        // A `return` in the setter ends the accessor, never the method around it: the body runs in an
+        // arrow of its own, an IR node, which keeps each statement's line (the shape OutParameters.Body
+        // has). C# allows no await in an accessor, and the arrow runs once.
         if (set!.Body?.DescendantNodes().OfType<ReturnStatementSyntax>().Any() == true)
-            written = JsStatement.Raw($"(() => {JsStatementWriter.Write(written, JsLayout.Compact)})();");
+            written = JsStatement.Expression(JsExpr.Call(JsExpr.ArrowBlock("", written, _converter.Layout, _converter.Depth + 1)));
         IReadOnlyList<JsStatement> statements = written is JsBlock block ? block.Statements : [written];
         var parameters = string.IsNullOrEmpty(keys)
             ? Param("value", declaredType(indexer.Type))
