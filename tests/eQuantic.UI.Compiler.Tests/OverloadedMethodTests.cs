@@ -387,4 +387,84 @@ public class OverloadedMethodTests
 
         results.SelectMany(result => result.Errors).Should().NotContain(error => error.Code == "EQ1007");
     }
+
+    /// <summary>
+    /// Every member the twin holds on each instance under an indexer's names (a field, a property, an
+    /// event, a primary constructor's parameter, a record's positional property) lands on the
+    /// indexer's method and hides it: <c>new Box(4)[1]</c> answered the text of a function, and
+    /// <c>g[0] = 5</c> beside a <c>SetItem</c> property threw. Each is refused, naming both members
+    /// and the one to rename. An <c>[IndexerName]</c> lets C# take the <c>Item</c> name for another
+    /// member, and the twin's indexer is <c>item</c> whatever C# calls it.
+    /// </summary>
+    public static TheoryData<string, string, string> MembersOnAnIndexersNames => new()
+    {
+        { "Box", "public class Box(int item) { public int this[int i] => i + item; }", "Rename 'Box(item)'" },
+        { "Flag", "public class Flag { private readonly int[] _v = new int[2]; public bool SetItem { get; set; } = true; public int this[int i] { get => _v[i]; set => _v[i] = value; } }", "Rename 'SetItem'" },
+        { "Cells", "public class Cells { private readonly int[] _v = new int[2]; public int Item = 3; [System.Runtime.CompilerServices.IndexerName(\"Cell\")] public int this[int i] { get => _v[i]; set => _v[i] = value; } }", "Rename 'Item'" },
+        { "Ev", "public class Ev { public event System.Action SetItem; private readonly int[] _v = new int[2]; public int this[int i] { get => _v[i]; set => _v[i] = value; } public void Fire() => SetItem?.Invoke(); }", "Rename 'SetItem'" },
+        { "RItem", "public record RItem(int Item) { [System.Runtime.CompilerServices.IndexerName(\"Cell\")] public int this[int i] => i + Item; }", "Rename 'RItem(Item)'" },
+        { "Method", "public class Method { public int Item(int i) => i; [System.Runtime.CompilerServices.IndexerName(\"Cell\")] public int this[int i] => i; }", "Rename 'Item(int)'" },
+    };
+
+    [Theory]
+    [MemberData(nameof(MembersOnAnIndexersNames))]
+    public void AMemberOnAnIndexersName_IsRefused_NamingWhatToRename(string name, string source, string rename)
+    {
+        var error = Compile(source, name).Errors.Should().ContainSingle(e => e.Code == "EQ1007").Subject;
+
+        error.Message.Should().Contain("this[int]").And.Contain(rename);
+    }
+
+    /// <summary>
+    /// An explicit implementation of an interface's indexer takes its interface's name, which no
+    /// rename changes, so it is no second indexer: it answers an access through the interface as the
+    /// twin's <c>item</c>, and the type's own indexer beside it takes names of its own. It was counted
+    /// as a second indexer, and the type's module was not written.
+    /// </summary>
+    [Fact]
+    public void AnExplicitIndexer_IsNotASecondIndexer()
+    {
+        var results = new ComponentCompiler().CompileSource("""
+            public interface IGrid { int this[int i] { get; } }
+            public class Grid : IGrid { int IGrid.this[int i] => i * 10; public int this[int i] => i; }
+            """, "Probe.cs");
+
+        results.SelectMany(result => result.Errors).Should().NotContain(error => error.Code == "EQ1007");
+        results.Single(result => result.ComponentName == "Grid").TypeScript
+            .Should().MatchRegex(@"\n\s*item\(i\b").And.Contain("Grid$item(i");
+    }
+
+    /// <summary>
+    /// What an access through an interface reaches is the twin's <c>item</c>, whatever the type behind
+    /// it, so two explicit implementations, or one beside an indexer that answers another interface or a
+    /// default the type takes, cannot both be reached: refused.
+    /// </summary>
+    public static TheoryData<string, string> TwoIndexersOneSlot => new()
+    {
+        { "Two explicit implementations", """
+            public interface IA { int this[int i] { get; } }
+            public interface IB { int this[int i] { get; } }
+            public class Grid : IA, IB { int IA.this[int i] => 1; int IB.this[int i] => 2; }
+            """ },
+        { "an explicit one beside one that answers another interface", """
+            public interface IA { int this[int i] { get; } }
+            public interface IB { int this[int i] { get; } }
+            public class Grid : IA, IB { int IA.this[int i] => 1; public int this[int i] => 2; }
+            """ },
+        { "an explicit one beside a default", """
+            public interface IA { int this[int i] { get; } }
+            public interface IB { int this[string s] => 2; }
+            public class Grid : IA, IB { int IA.this[int i] => 1; }
+            """ },
+    };
+
+    [Theory]
+    [MemberData(nameof(TwoIndexersOneSlot))]
+    public void TwoIndexersAnInterfaceReaches_AreRefused(string why, string source)
+    {
+        var results = new ComponentCompiler().CompileSource(source, "Probe.cs");
+
+        results.Single(result => result.ComponentName == "Grid").Errors
+            .Should().Contain(error => error.Code == "EQ1007", why);
+    }
 }

@@ -29,6 +29,7 @@ internal sealed class Place
     private readonly int _evaluated;
     private readonly IReadOnlyList<string> _keys;
     private readonly bool _computed;
+    private readonly (string Get, string Set) _names;
     private readonly ConversionContext _context;
 
     /// <param name="entry">A dictionary's entry, or else an indexer's.</param>
@@ -37,16 +38,18 @@ internal sealed class Place
     /// <param name="keys">The keys the call passes, in its parameters' order, as template text over the
     /// parts' holes.</param>
     /// <param name="computed">Whether the keys are computed from the parts (a from-the-end key's
-    /// position), once, where C# computes them.</param>
+    /// position).</param>
+    /// <param name="names">An indexer's getter and setter on the twin (<see cref="Indexer.NamesOf(IPropertySymbol)"/>).</param>
     /// <param name="context">The conversion the writers build in.</param>
     private Place(bool entry, IReadOnlyList<JsExpr> parts, int evaluated, IReadOnlyList<string> keys, bool computed,
-        ConversionContext context)
+        (string Get, string Set) names, ConversionContext context)
     {
         _entry = entry;
         _parts = parts;
         _evaluated = evaluated;
         _keys = keys;
         _computed = computed;
+        _names = names;
         _context = context;
     }
 
@@ -92,9 +95,9 @@ internal sealed class Place
     /// kept: where the keys were computed, the receiver and the keys are read back from the one value.</summary>
     public Place Over(IReadOnlyList<JsExpr> evaluated)
     {
-        if (!_computed) return new(_entry, [.. evaluated, .. _parts.Skip(_evaluated)], _evaluated, _keys, false, _context);
+        if (!_computed) return new(_entry, [.. evaluated, .. _parts.Skip(_evaluated)], _evaluated, _keys, false, _names, _context);
         List<JsExpr> held = [.. Enumerable.Range(0, _keys.Count + 1).Select(i => JsExpr.Index(evaluated[0], JsExpr.Literal(i.ToString())))];
-        return new(_entry, held, held.Count, [.. _keys.Select((_, i) => Hole(i + 1))], false, _context);
+        return new(_entry, held, held.Count, [.. _keys.Select((_, i) => Hole(i + 1))], false, _names, _context);
     }
 
     /// <summary>The read.</summary>
@@ -125,10 +128,10 @@ internal sealed class Place
     private static string Hole(int index) => "{" + index + "}";
 
     private string ReadText(IReadOnlyList<string> keys) =>
-        _entry ? DictionaryEntry.Read("{0}", keys[0]) : $"{{0}}.{Indexer.Get}({string.Join(", ", keys)})";
+        _entry ? DictionaryEntry.Read("{0}", keys[0]) : $"{{0}}.{_names.Get}({string.Join(", ", keys)})";
 
     private string WriteText(IReadOnlyList<string> keys, string value) =>
-        _entry ? DictionaryEntry.Write("{0}", keys[0], value) : $"{{0}}.{Indexer.Set}({string.Join(", ", keys.Append(value))})";
+        _entry ? DictionaryEntry.Write("{0}", keys[0], value) : $"{{0}}.{_names.Set}({string.Join(", ", keys.Append(value))})";
 
     private JsExpr Template(string text, IReadOnlyList<JsExpr> parts) =>
         JsExpr.Template(text, parts, _context.TypeAnnotations);
@@ -137,7 +140,7 @@ internal sealed class Place
     {
         context.UsedHelpers.Add(Eq.Import);
         return new Place(entry: true, [receiver, context.Converter.ConvertIr(key)], evaluated: 2, ["{1}"], computed: false,
-            context);
+            (Indexer.Get, Indexer.Set), context);
     }
 
     /// <summary>The argument list of an element named by its keys, written with its receiver or without.</summary>
@@ -189,7 +192,9 @@ internal sealed class Place
             keys[argument.Parameter!.Ordinal] = Hole(parts.Count);
             parts.Add(Default(argument, context));
         }
-        return keys.Any(key => key is null) ? null : Made(entry: false, parts, evaluated, keys!, computed: false, access, context);
+        return keys.Any(key => key is null)
+            ? null
+            : Made(parts, evaluated, keys!, computed: false, Indexer.NamesOf(indexer), access, context);
     }
 
     /// <summary>
@@ -218,12 +223,13 @@ internal sealed class Place
         // receiver read by its name is then bound once, as C# spills it, where an offset that has an
         // effect could reassign the name between the two reads (and the template's writer, seeing a name
         // read after a call, would bind the value of the write ahead of the count).
+        var names = Indexer.NamesOf((IPropertySymbol)index.IndexerSymbol);
         if (offset is JsLiteral)
-            return Made(entry: false, [receiver, offset], evaluated: 2, [$"{counted} - {{1}}"], computed: true, access, context);
+            return Made([receiver, offset], evaluated: 2, [$"{counted} - {{1}}"], computed: true, names, access, context);
         var once = receiver is JsIdentifier { Name: not ("this" or "super") } && !JsExprWriter.IsInlinable(offset)
             ? JsExpr.Group(receiver)
             : receiver;
-        return Made(entry: false, [once, offset], evaluated: 2, [$"-{{1}} + {counted}"], computed: true, access, context);
+        return Made([once, offset], evaluated: 2, [$"-{{1}} + {counted}"], computed: true, names, access, context);
     }
 
     /// <summary>
@@ -243,12 +249,12 @@ internal sealed class Place
     /// </summary>
     private const int MostParts = 9;
 
-    /// <summary>The place, unless it takes more parts than a template holds, which is refused (EQ1004)
-    /// rather than written into holes no template fills.</summary>
-    private static Place? Made(bool entry, List<JsExpr> parts, int evaluated, IReadOnlyList<string> keys, bool computed,
-        SyntaxNode at, ConversionContext context)
+    /// <summary>An indexer's place, unless it takes more parts than a template holds, which is refused
+    /// (EQ1004) rather than written into holes no template fills.</summary>
+    private static Place? Made(List<JsExpr> parts, int evaluated, IReadOnlyList<string> keys, bool computed,
+        (string Get, string Set) names, SyntaxNode at, ConversionContext context)
     {
-        if (parts.Count <= MostParts) return new Place(entry, parts, evaluated, keys, computed, context);
+        if (parts.Count <= MostParts) return new Place(entry: false, parts, evaluated, keys, computed, names, context);
         context.Unhandled(at, $"indexer's (it passes {parts.Count - 1} keys, and one read and write holds {MostParts - 1})");
         return null;
     }

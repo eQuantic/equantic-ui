@@ -113,12 +113,14 @@ internal sealed class MethodLowering
     /// reassigns <c>value</c> (a clamp) keeps the value it was handed before its body runs: it answered
     /// the clamped one, so <c>var y = (g[0] = 250)</c> was 100 where .NET says 250. A setter that
     /// returns early runs in an arrow of its own, so its <c>return;</c> ends the setter and not the
-    /// answer. One path for a class, a component, a record, a struct and an interface's default.
+    /// answer. One path for a class, a component, a record, a struct and an interface's default; the
+    /// names are the indexer's (<see cref="Strategies.Expressions.Indexer.NamesOf(IPropertySymbol)"/>).
     /// </summary>
     /// <param name="indexer">The indexer, its accessors bodied or expression-bodied.</param>
     /// <param name="declaredType">The emitter's annotation for a declared type.</param>
     public IEnumerable<JsClassMember> Indexer(IndexerDeclarationSyntax indexer, Func<TypeSyntax?, string> declaredType)
     {
+        var (getName, setName) = Strategies.Expressions.Indexer.NamesOf(indexer, _modelFor(indexer));
         var keys = string.Join(", ", indexer.ParameterList.Parameters.Select(parameter =>
             Param(parameter.Identifier.ValueText.ToJsIdentifier(), declaredType(parameter.Type))));
         var annotation = TypeAnnotations ? $": {declaredType(indexer.Type)}" : "";
@@ -128,7 +130,7 @@ internal sealed class MethodLowering
             : get?.Body is { } getBlock ? AccessorBody(getBlock)
             : null;
         if (getter is not null)
-            yield return JsClassMember.Method("", Strategies.Expressions.Indexer.Get, "", keys, annotation, getter)
+            yield return JsClassMember.Method("", getName, "", keys, annotation, getter)
                 with { Origin = new JsOrigin(indexer) };
 
         var set = indexer.AccessorList?.Accessors.FirstOrDefault(accessor => accessor.IsKind(SyntaxKind.SetAccessorDeclaration)
@@ -151,7 +153,7 @@ internal sealed class MethodLowering
         IReadOnlyList<JsStatement> setter = WritesValue(set)
             ? [JsStatement.Const(HandedValue, value), .. statements, JsStatement.Return(handed)]
             : [.. statements, JsStatement.Return(value)];
-        yield return JsClassMember.Method("", Strategies.Expressions.Indexer.Set, "", parameters, "",
+        yield return JsClassMember.Method("", setName, "", parameters, "",
             JsStatement.Block(setter)) with { Origin = new JsOrigin(set) };
     }
 

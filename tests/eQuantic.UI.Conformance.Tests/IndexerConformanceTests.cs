@@ -233,6 +233,45 @@ public class IndexerConformanceTests
     public void AStepThroughAnIndexer_IsTheStepALocalOfItsTypeGets(bool typeAnnotations) =>
         ModuleGraph.AssertSameAsDotNet(Steppable, typeAnnotations, StepCases);
 
+    private const string Explicit = """
+        public interface IGrid { int this[int i] { get; } }
+        public interface ICells { int this[int i] { get; set; } }
+        public class Grid : IGrid { int IGrid.this[int i] => i * 10; public int this[int i] => i; }
+        public class Sub : Grid { }
+        public class Cells : ICells
+        {
+            private readonly int[] _v = new int[2];
+            int ICells.this[int i] { get => _v[i] * 100; set => _v[i] = value + 1; }
+            public int this[int i] { get => _v[i]; set => _v[i] = value; }
+        }
+        public class OnlyExplicit : IGrid { int IGrid.this[int i] => i + 1000; }
+        """;
+
+    private static readonly (string Name, string Statements)[] ExplicitCases =
+    [
+        // "2|20": the type's own indexer through the type, the explicit one through the interface
+        ("an explicit implementation beside the type's own", "var g = new Grid(); IGrid h = g; return g[2] + \"|\" + h[2];"),
+        // "3|30|3": a derived type's, through each
+        ("through a derived type", "var s = new Sub(); IGrid h = s; Grid g = s; return s[3] + \"|\" + h[3] + \"|\" + g[3];"),
+        // "502|8|50200|800": the setters apart, a compound through the interface
+        ("a setter of each", "var c = new Cells(); ICells i = c; c[0] = 5; i[1] = 7; i[0] += 1; return c[0] + \"|\" + c[1] + \"|\" + i[0] + \"|\" + i[1];"),
+        // 1005
+        ("an explicit implementation alone", "IGrid h = new OnlyExplicit(); return h[5];"),
+    ];
+
+    /// <summary>
+    /// An explicit implementation of an interface's indexer answers an access through the interface,
+    /// and the type's own indexer an access through the type, as C# binds them: the explicit one is the
+    /// twin's <c>item</c>, which every access through an interface reaches, and the type's own takes
+    /// names of its own beside it. EQ1007 counted the explicit one as a second indexer, and the module
+    /// was not written.
+    /// </summary>
+    [SkippableTheory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void AnExplicitIndexer_AnswersItsInterface(bool typeAnnotations) =>
+        ModuleGraph.AssertSameAsDotNet(Explicit, typeAnnotations, ExplicitCases);
+
     private const string Keyed = """
         public class Grid
         {
