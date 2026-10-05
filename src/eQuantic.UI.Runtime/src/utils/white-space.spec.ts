@@ -53,6 +53,22 @@ describe('white space is .NET\'s', () => {
     expect(narrowed).toBe('x');
   });
 
+  it('trims the characters it is handed, a char or an array of them, and nothing else', () => {
+    expect(trim('xxaxx', 'x')).toBe('a');
+    expect(trim('xyaxy', ['x', 'y'])).toBe('a');
+    expect(trimStart('xxaxx', 'x')).toBe('axx');
+    expect(trimEnd('xxaxx', 'x')).toBe('xxa');
+    expect(trim(' xa x ', 'x'), 'a space is no x').toBe(' xa x ');
+    expect(trim('xxxx', 'x')).toBe('');
+  });
+
+  it('trims white space where the characters are null or none, as .NET does', () => {
+    expect(trim('  a  ', [])).toBe('a');
+    expect(trim('  a  ', null)).toBe('a');
+    expect(trimStart('\u0085a', [])).toBe('a');
+    expect(trimEnd('a\u3000', null)).toBe('a');
+  });
+
   it('trims a long line of white space in linear time', () => {
     const text = ' '.repeat(200_000) + 'x' + ' '.repeat(200_000);
     const started = performance.now();

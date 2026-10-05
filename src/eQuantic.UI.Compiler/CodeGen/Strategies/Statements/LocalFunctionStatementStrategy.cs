@@ -39,9 +39,10 @@ public class LocalFunctionStatementStrategy : IStatementStrategy
             var kept = string.Join(", ", localFn.ParameterList.Parameters
                 .Where(p => !OutParameters.IsOut(p))
                 .Select(p => Parameter(p, context)));
+            // Never async: C# refuses an `out` or a `ref` parameter on an async local function (CS1988).
             return JsStatement.Const(name, JsExpr.ArrowBlock(kept,
-                OutParameters.ArrowBody(localFn.Body, localFn.ExpressionBody?.Expression, byReference, isAsync, context),
-                context.Layout, context.Depth, isAsync));
+                OutParameters.Body(localFn.Body, localFn.ExpressionBody?.Expression, byReference, context.Converter),
+                context.Layout, context.Depth));
         }
 
         var parameters = string.Join(", ", localFn.ParameterList.Parameters
@@ -52,7 +53,7 @@ public class LocalFunctionStatementStrategy : IStatementStrategy
         // the return, inside the function, where each call has its own.
         var body = localFn.Body != null
             ? context.Converter.ConvertBlockIr(localFn.Body)
-            : context.Converter.ConvertExpressionBodyIr(localFn.ExpressionBody!.Expression);
+            : context.Converter.ConvertExpressionBodyIr(localFn.ExpressionBody!.Expression, returns: true);
 
         // The `async` has to cross (read above). A C# local function that awaits becomes a JS arrow
         // that awaits, and an arrow that is not `async` makes `await` in its body a SyntaxError —

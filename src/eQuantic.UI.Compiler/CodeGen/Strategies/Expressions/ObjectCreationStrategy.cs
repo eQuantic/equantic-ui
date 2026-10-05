@@ -16,21 +16,29 @@ namespace eQuantic.UI.Compiler.CodeGen.Strategies.Expressions;
 /// - <c>List&lt;T&gt;</c> -> []
 /// - HtmlNode -> {} (UI config)
 /// - UI Components -> new Component(config) or just config
+/// <para>
+/// Built as IR, its arguments and its initializer's values each their own node, so a lambda a
+/// construction holds (a node's handler, a rule's test) reaches the writer as an arrow whose block
+/// maps line by line (#492). The arguments were spliced as text, and every line of such a lambda's
+/// block went with them.
+/// </para>
 /// </summary>
-public class ObjectCreationStrategy : IConversionStrategy
+public class ObjectCreationStrategy : IExpressionIrStrategy
 {
+    private static readonly JsExpr Undefined = JsExpr.Identifier("undefined");
+
     public bool CanConvert(SyntaxNode node, ConversionContext context)
     {
         return node is ObjectCreationExpressionSyntax || node is ImplicitObjectCreationExpressionSyntax;
     }
 
-    public string Convert(SyntaxNode node, ConversionContext context)
+    public JsExpr ConvertIr(SyntaxNode node, ConversionContext context)
     {
         // C# 13's `System.Threading.Lock` — single-threaded JS drops the lock STATEMENT's
         // semantics already (the body just runs); the gate object itself is inert, and emitting
         // `new Lock()` named a class no browser has.
         if (context.SemanticHelper.GetType(node)?.ToDisplayString() == "System.Threading.Lock")
-            return "{}";
+            return JsExpr.Object([]);
 
         // `new object()` — a value with nothing but its identity, the gate a `lock` takes or a
         // sentinel: the runtime's, since a plain `{}` is an anonymous type here, compared by its
@@ -41,15 +49,15 @@ public class ObjectCreationStrategy : IConversionStrategy
             && node is BaseObjectCreationExpressionSyntax { Initializer: null or { Expressions.Count: 0 } })
         {
             context.UsedHelpers.Add(Eq.Import);
-            return $"{Eq.NewObject}()";
+            return JsExpr.Call(JsExpr.Identifier(Eq.NewObject));
         }
 
         // `new string(chars)` and `new string(c, n)`: the text they build, where `new string(…)` named a
         // class JavaScript does not have (#524).
         if (context.SemanticHelper.GetType(node) is { SpecialType: SpecialType.System_String }
             && context.SemanticHelper.GetOperation(node) is Microsoft.CodeAnalysis.Operations.IObjectCreationOperation creation
-            && NewString(creation, context) is { } text)
-            return text;
+            && NewString(creation, context) is { } built)
+            return built;
 
         if (node is ObjectCreationExpressionSyntax objCreation)
         {
@@ -70,7 +78,7 @@ public class ObjectCreationStrategy : IConversionStrategy
     /// keep their written order, the order C# evaluates them in, which the template writer preserves
     /// where the holes follow another.
     /// </summary>
-    private static string? NewString(Microsoft.CodeAnalysis.Operations.IObjectCreationOperation creation,
+    private static JsExpr? NewString(Microsoft.CodeAnalysis.Operations.IObjectCreationOperation creation,
         ConversionContext context)
     {
         if (creation.Constructor is not { } constructor) return null;
@@ -78,14 +86,15 @@ public class ObjectCreationStrategy : IConversionStrategy
         {
             [IArrayTypeSymbol] => "({0} ?? []).join('')",
             [{ SpecialType: SpecialType.System_Char }, { SpecialType: SpecialType.System_Int32 }] => "{0}.repeat({1})",
-            // The range refused where it leaves the array, as .NET refuses it: `slice` clamped it.
+            // The range refused where it leaves the array, as .NET refuses it: `slice` clamped it. A null
+            // array is refused by its parameter's name, `value`.
             [IArrayTypeSymbol, { SpecialType: SpecialType.System_Int32 }, { SpecialType: SpecialType.System_Int32 }]
-                => $"{Eq.TextChars}({{0}}, {{1}}, {{2}}).join('')",
+                => $"{Eq.TextChars}({{0}}, {{1}}, {{2}}, 'value').join('')",
             _ => null,
         };
         if (template is null || creation.Arguments.Length != constructor.Parameters.Length) return null;
         if (template.Contains("$eq.")) context.UsedHelpers.Add(Eq.Import);
-        var parts = new List<Ir.JsExpr>();
+        var parts = new List<JsExpr>();
         var slots = new int[constructor.Parameters.Length];
         foreach (var argument in creation.Arguments)
         {
@@ -95,10 +104,10 @@ public class ObjectCreationStrategy : IConversionStrategy
         }
         var placed = System.Text.RegularExpressions.Regex.Replace(template, @"\{(\d)\}",
             hole => $"{{{slots[hole.Groups[1].Value[0] - '0']}}}");
-        return Ir.JsExprWriter.Write(Ir.JsExpr.Template(placed, parts, context.TypeAnnotations));
+        return JsExpr.Template(placed, parts, context.TypeAnnotations);
     }
 
-    private string ConvertExplicit(ObjectCreationExpressionSyntax creation, ConversionContext context)
+    private JsExpr ConvertExplicit(ObjectCreationExpressionSyntax creation, ConversionContext context)
     {
         var typeName = creation.Type.ToString();
         // TYPE ARGUMENTS are erased at runtime, and `new Bucket<string>()` is not even valid JS —
@@ -122,7 +131,7 @@ public class ObjectCreationStrategy : IConversionStrategy
         // hydration — while the static-member read beside it (`Matrix2D.Identity`) was already
         // fenced, through MemberAccessStrategy. The fence's doc counts the branches that owe it
         // this call; construction was one it did not name.
-        if (createdType.ReportIfHostOnlyType(creation, context)) return "undefined";
+        if (createdType.ReportIfHostOnlyType(creation, context)) return Undefined;
 
         // An in-tree creation whose TYPE an authoritative model cannot bind is the same story as
         // an unbound call (EQ2006): missing references or code that doesn't compile — emitting
@@ -146,7 +155,7 @@ public class ObjectCreationStrategy : IConversionStrategy
                 $"Cannot instantiate type parameter '{typeName}' with `new {typeName}()` — generic type " +
                 "arguments are erased at runtime in JavaScript, so the concrete type is unknown. Pass a " +
                 "factory (e.g. Func<T>) or the constructed value as a parameter instead.");
-            return "undefined";
+            return Undefined;
         }
 
         // A value the browser holds as DATA (`[TwinIsData]`, `Color`) is built as its data:
@@ -163,14 +172,14 @@ public class ObjectCreationStrategy : IConversionStrategy
             return BuildValueTypeConstruction(creation, createdType, context);
         }
 
-        var arguments = "";
+        var arguments = new List<JsExpr>();
         var emittedSlots = 0;
 
         if (creation.ArgumentList != null && creation.ArgumentList.Arguments.Count > 0)
         {
             var ordered = OrderedArguments(creation, context);
             emittedSlots = ordered.Count;
-            arguments = string.Join(", ", ordered);
+            arguments.AddRange(ordered);
         }
 
         // A COLLECTION initializer (`new Column(gap) { a, b }`) is Add-per-element in C# — it must
@@ -181,7 +190,7 @@ public class ObjectCreationStrategy : IConversionStrategy
             && !IsCollectionLikeTypeName(typeName))
         {
             return AddPerElementConstruction(
-                creation.Initializer, $"new {genericTypeName ?? typeName}({arguments})", context);
+                creation.Initializer, JsExpr.New(JsExpr.Identifier(genericTypeName ?? typeName), arguments), context);
         }
 
         // An object initializer that ADDS to what a member holds (`Items = { 1, 2 }`) or writes an
@@ -191,14 +200,14 @@ public class ObjectCreationStrategy : IConversionStrategy
         if (creation.Initializer is { } applied && TwinIsWritten(createdType)
             && applied.IsKind(SyntaxKind.ObjectInitializerExpression) && !ObjectInitializer.OnlyAssigns(applied))
         {
-            return ObjectInitializer.Apply($"new {genericTypeName ?? typeName}({arguments})", applied, context);
+            return ObjectInitializer.Apply(JsExpr.New(JsExpr.Identifier(genericTypeName ?? typeName), arguments), applied, context);
         }
 
-        var initializer = "";
+        JsExpr? initializer = null;
         var assignInitializerAfterConstruction = false;
         if (creation.Initializer != null)
         {
-            initializer = context.Converter.ConvertExpression(creation.Initializer);
+            initializer = context.Converter.ConvertIr(creation.Initializer);
             // The config object lands in the constructor's TRAILING config slot — when the call
             // site supplied fewer positional arguments than the resolved constructor's arity, the
             // skipped parameters fill from their C# defaults first (`new Stack { Width = … }` must
@@ -211,12 +220,8 @@ public class ObjectCreationStrategy : IConversionStrategy
             if (context.SemanticHelper.GetSymbol(creation) is IMethodSymbol ctor)
             {
                 if (emittedSlots < ctor.Parameters.Length)
-                {
-                    var defaults = ctor.Parameters.Skip(emittedSlots).Select(ParameterDefaultLiteral);
-                    var filler = string.Join(", ", defaults);
-                    arguments = string.IsNullOrEmpty(arguments) ? filler : arguments + ", " + filler;
-                }
-                arguments = string.IsNullOrEmpty(arguments) ? initializer : arguments + ", " + initializer;
+                    arguments.AddRange(ctor.Parameters.Skip(emittedSlots).Select(parameter => DefaultOf(parameter, context)));
+                arguments.Add(initializer);
             }
             else if (emittedSlots > 0)
             {
@@ -232,7 +237,7 @@ public class ObjectCreationStrategy : IConversionStrategy
             {
                 // No positional arguments: the config as the sole argument is the dominant
                 // constructor contract (`Component(props)`), and correct regardless of arity.
-                arguments = initializer;
+                arguments.Add(initializer);
             }
         }
 
@@ -245,12 +250,12 @@ public class ObjectCreationStrategy : IConversionStrategy
         if (typeName.StartsWith("List<") || typeName.Contains(".List<")
             || typeName.StartsWith("IEnumerable<") || typeName.Contains(".IEnumerable<"))
         {
-            if (string.IsNullOrEmpty(arguments) || arguments == "{}") return "[]";
-            if (IsCapacityArgument(creation, context)) return "[]";
+            if (arguments.Count == 0 || arguments is [JsObject { Properties.Count: 0 }]) return JsExpr.Array([]);
+            if (IsCapacityArgument(creation, context)) return JsExpr.Array([]);
             // A copy of the source, not an alias of it; a dictionary spreads into its pairs.
             if (creation.Initializer == null && creation.ArgumentList?.Arguments.Count == 1)
-                return $"[...{arguments}]";
-            return arguments;
+                return JsExpr.Array([JsExpr.Spread(arguments[0])]);
+            return Spliced(arguments);
         }
         
         // `new string(c, count)` — the padding idiom (`new string(' ', indentWidth)`). There is no
@@ -258,45 +263,48 @@ public class ObjectCreationStrategy : IConversionStrategy
         if (typeName == "string" && creation.ArgumentList?.Arguments.Count == 2)
         {
             var parts = OrderedArguments(creation, context);
-            return $"{parts[0]}.repeat({parts[1]})";
+            return JsExpr.Call(JsExpr.Member(parts[0], "repeat"), parts[1]);
         }
 
         // HtmlNode -> Plain Object
         if (typeName == "HtmlNode")
         {
-            return string.IsNullOrEmpty(arguments) ? "{}" : arguments;
+            return arguments.Count == 0 ? JsExpr.Object([]) : Spliced(arguments);
         }
         
         // RenderContext -> Mock or Plain Object (since it's a TS interface)
         if (typeName == "RenderContext")
         {
-            return "{ getService: () => null }";
+            return JsExpr.Opaque("{ getService: () => null }");
         }
 
-        // Exception types -> JavaScript Error. Error takes ONE message argument — pick the C#
-        // constructor's `message` PARAMETER (signatures differ: ArgumentException(message, param)
-        // vs ArgumentOutOfRangeException(param, message)); emitting all arguments positionally
-        // would silently make the param NAME the thrown message.
-        // An exception is one by its BASE too: `class Oops : Exception` has no module, since its twin
-        // could not extend a type the browser does not have (PlainClassModule, #423), so it is thrown
-        // as the Error every exception lowers to.
-        if (typeName.EndsWith("Exception") || typeName == "Exception" || IsException(createdType))
+        // An exception the model cannot see: ExceptionCreationStrategy builds every one it can, from
+        // its symbol, so here the name is all there is to go on, and it is rooted at System.Exception.
+        if (createdType is null or IErrorTypeSymbol && typeName.EndsWith("Exception"))
         {
-            return $"new Error({ExceptionMessageArgument(creation, context) ?? arguments})";
+            IReadOnlyList<string> chain = typeName == "Exception" ? ["System.Exception"] : [typeName, "System.Exception"];
+            return ExceptionTypes.Construction(chain, creation, context);
         }
 
         if (assignInitializerAfterConstruction)
-            return $"Object.assign(new {genericTypeName ?? typeName}({arguments}), {initializer})";
-        return $"new {genericTypeName ?? typeName}({arguments})";
+            return JsExpr.Call(JsExpr.Identifier("Object.assign"),
+                JsExpr.New(JsExpr.Identifier(genericTypeName ?? typeName), arguments), initializer!);
+        return JsExpr.New(JsExpr.Identifier(genericTypeName ?? typeName), arguments);
     }
 
-    /// <summary>Whether the type is <c>System.Exception</c> or derives from it.</summary>
-    private static bool IsException(ITypeSymbol? type)
-    {
-        for (var current = type as INamedTypeSymbol; current is not null; current = current.BaseType)
-            if (current.ToDisplayString() == "System.Exception") return true;
-        return false;
-    }
+    /// <summary>
+    /// Values that stand where ONE expression is read, as they always stood: the only one, or, where
+    /// a creation's arguments and its initializer meet in a collection's literal, all of them
+    /// spliced in as text. That second shape is a comma expression and was never right: kept as it
+    /// was, for a change that is about where lines map rather than what a collection holds.
+    /// </summary>
+    private static JsExpr Spliced(IReadOnlyList<JsExpr> values) =>
+        values.Count == 1 ? values[0] : JsExpr.Opaque(string.Join(", ", values.Select(JsExprWriter.Write)));
+
+    /// <summary>A parameter's C# default as the literal a skipped argument is filled with
+    /// (<see cref="DefaultLiteralFor"/>).</summary>
+    private static JsExpr DefaultOf(IParameterSymbol parameter, ConversionContext context) =>
+        JsExpr.Literal(DefaultLiteralFor(parameter, context));
 
     /// <summary>Type names whose creations lower to JS literals (array/object/Set) — a collection
     /// initializer on THESE is the literal itself, never Add-per-element on a constructed node.</summary>
@@ -308,40 +316,27 @@ public class ObjectCreationStrategy : IConversionStrategy
 
     /// <summary>
     /// C# collection-initializer semantics, exactly: construct, then one <c>add(…)</c> per element —
-    /// <c>($n =&gt; { $n.add(a); $n.add(b); return $n; })(new Column(12))</c>. A two-expression
+    /// <c>(($n) =&gt; { $n.add(a); $n.add(b); return $n; })(new Column(12))</c>. A two-expression
     /// element (<c>{ key, value }</c>) is the two-argument Add overload. Works for every class with
     /// an Add: the vocabulary twins ship <c>add()</c>, and a user class transpiles its own.
+    /// <para>
+    /// The arrow is a block of statements, each <c>add</c> carrying the element it adds, so a
+    /// breakpoint on a child's line binds and a lambda among the elements keeps its lines (#492).
+    /// The elements convert one level in, where the block lays them out.
+    /// </para>
     /// </summary>
-    internal static string AddPerElementConstruction(
-        InitializerExpressionSyntax initializer, string construction, ConversionContext context)
+    internal static JsExpr AddPerElementConstruction(
+        InitializerExpressionSyntax initializer, JsExpr construction, ConversionContext context)
     {
-        var adds = initializer.Expressions.Select(element => element is InitializerExpressionSyntax pair
-            ? $"$n.add({string.Join(", ", pair.Expressions.Select(e => context.Converter.ConvertExpression(e)))}); "
-            : $"$n.add({context.Converter.ConvertExpression(element)}); ");
-        return $"($n => {{ {string.Concat(adds)}return $n; }})({construction})";
-    }
-
-    /// <summary>The converted argument bound to the exception constructor's <c>message</c> parameter
-    /// (semantic when resolvable, else the LAST argument of a multi-arg call — every BCL exception
-    /// with a paramName overload puts the message beside it); null = keep whatever was converted.</summary>
-    private static string? ExceptionMessageArgument(ObjectCreationExpressionSyntax creation, ConversionContext context)
-    {
-        var args = creation.ArgumentList?.Arguments;
-        if (args is not { Count: > 1 }) return null;
-
-        if (context.SemanticHelper.GetSymbol(creation) is IMethodSymbol ctor)
-        {
-            for (var i = 0; i < args.Value.Count && i < ctor.Parameters.Length; i++)
-            {
-                var parameter = args.Value[i].NameColon?.Name.Identifier.ValueText is { } named
-                    ? ctor.Parameters.FirstOrDefault(p => p.Name == named)
-                    : ctor.Parameters[i];
-                if (parameter?.Name == "message")
-                    return context.Converter.ConvertExpression(args.Value[i].Expression);
-            }
-        }
-
-        return context.Converter.ConvertExpression(args.Value[^1].Expression);
+        var node = JsExpr.Identifier("$n");
+        var adds = context.Converter.InBlock(() => initializer.Expressions
+            .Select(element => JsStatement.Expression(JsExpr.Call(JsExpr.Member(node, "add"),
+                element is InitializerExpressionSyntax pair
+                    ? pair.Expressions.Select(e => context.Converter.ConvertIr(e)).ToList()
+                    : [context.Converter.ConvertIr(element)])) with { Origin = element })
+            .ToList());
+        return JsExpr.Call(JsExpr.ArrowBlock("$n", JsStatement.Block([.. adds, JsStatement.Return(node)]),
+            context.Layout, context.Depth), construction);
     }
 
     /// <summary>
@@ -379,7 +374,11 @@ public class ObjectCreationStrategy : IConversionStrategy
     /// first, in the written order, and the literal reads the bindings.
     /// </para>
     /// </summary>
-    private static string DataConstruction(BaseObjectCreationExpressionSyntax creation, INamedTypeSymbol data, ConversionContext context)
+    private static JsExpr DataConstruction(BaseObjectCreationExpressionSyntax creation, INamedTypeSymbol data, ConversionContext context) =>
+        // Plain data holds numbers and strings, never a lambda, so its values stay text for now.
+        JsExpr.Opaque(DataLiteral(creation, data, context));
+
+    private static string DataLiteral(BaseObjectCreationExpressionSyntax creation, INamedTypeSymbol data, ConversionContext context)
     {
         var members = data.DataMembers().Select(member => member.Name).ToList();
         var written = new List<(string Member, string Js, ExpressionSyntax Source)>();
@@ -434,10 +433,10 @@ public class ObjectCreationStrategy : IConversionStrategy
         context.SemanticHelper.TryGetConstantValue(expression, out _)
         || expression is IdentifierNameSyntax && context.SemanticHelper.GetSymbol(expression) is ILocalSymbol or IParameterSymbol or IFieldSymbol;
 
-    private static IReadOnlyList<string> OrderedArguments(BaseObjectCreationExpressionSyntax creation, ConversionContext context)
+    private static IReadOnlyList<JsExpr> OrderedArguments(BaseObjectCreationExpressionSyntax creation, ConversionContext context)
     {
         var args = creation.ArgumentList!.Arguments;
-        var converted = args.Select(a => context.Converter.ConvertExpression(a.Expression)).ToList();
+        var converted = args.Select(a => context.Converter.ConvertIr(a.Expression)).ToList();
         var symbol = context.SemanticHelper.GetSymbol(creation) as IMethodSymbol;
 
         // A COMPONENT's constructor loses its dependencies on the way out — the emitted one resolves
@@ -453,7 +452,7 @@ public class ObjectCreationStrategy : IConversionStrategy
 
         if (symbol is not { } ctor) return converted;
 
-        var slots = new string?[ctor.Parameters.Length];
+        var slots = new JsExpr?[ctor.Parameters.Length];
         for (var i = 0; i < args.Count; i++)
         {
             var name = args[i].NameColon?.Name.Identifier.Text;
@@ -473,9 +472,9 @@ public class ObjectCreationStrategy : IConversionStrategy
             .ToList();
 
         var lastSet = keep.FindLastIndex(i => slots[i] != null);
-        var ordered = new List<string>();
+        var ordered = new List<JsExpr>();
         for (var k = 0; k <= lastSet; k++)
-            ordered.Add(slots[keep[k]] ?? ParameterDefaultLiteral(ctor.Parameters[keep[k]]));
+            ordered.Add(slots[keep[k]] ?? DefaultOf(ctor.Parameters[keep[k]], context));
         return ordered;
     }
 
@@ -493,12 +492,10 @@ public class ObjectCreationStrategy : IConversionStrategy
         return false;
     }
 
-    /// <summary>The TS literal for a parameter's C# default value — enum members lower to their
-    /// camelCase member-name string, matching the enum representation everywhere else. Shared with
+    /// <summary>The TS literal for a parameter's C# default value: the constant it is in the parameter's
+    /// type (<see cref="ConstantLiteral"/>), an enum's in the enum's representation. Shared with
     /// InvocationStrategy (named INVOCATION arguments reorder the same way creations do).</summary>
-    internal static string DefaultLiteralFor(IParameterSymbol parameter) => ParameterDefaultLiteral(parameter);
-
-    private static string ParameterDefaultLiteral(IParameterSymbol parameter)
+    internal static string DefaultLiteralFor(IParameterSymbol parameter, ConversionContext context)
     {
         // A non-nullable STRUCT parameter defaulted with `= default` (BoxStyle, EdgeInsets…) must
         // fill as `undefined`, never `null`: the hand-written twin declares its own default
@@ -509,30 +506,11 @@ public class ObjectCreationStrategy : IConversionStrategy
             && parameter.Type.OriginalDefinition?.SpecialType != SpecialType.System_Nullable_T)
             return "undefined";
         if (!parameter.HasExplicitDefaultValue || parameter.ExplicitDefaultValue is null) return "null";
-        var value = parameter.ExplicitDefaultValue;
 
-        var enumType = parameter.Type.TypeKind == TypeKind.Enum ? parameter.Type
-            : parameter.Type is INamedTypeSymbol { OriginalDefinition.SpecialType: SpecialType.System_Nullable_T } nullable
-                ? nullable.TypeArguments[0]
-                : null;
-        if (enumType is { TypeKind: TypeKind.Enum })
-        {
-            var member = enumType.GetMembers().OfType<IFieldSymbol>()
-                .FirstOrDefault(f => f.HasConstantValue && Equals(f.ConstantValue, value));
-            if (member != null) return $"'{member.Name.ToCamelCase()}'";
-        }
-
-        // A string or a char is spelled by the one writer of JavaScript strings: quoted by hand, a
-        // default of "it's" closed its own quotes and a char had none at all (`M.g(,, 1)`, #520).
-        return value switch
-        {
-            bool flag => flag ? "true" : "false",
-            string text => JsStringLiteral.Quote(text),
-            char character => JsStringLiteral.Quote(character.ToString()),
-            float f => f.ToString(System.Globalization.CultureInfo.InvariantCulture),
-            double d => d.ToString(System.Globalization.CultureInfo.InvariantCulture),
-            _ => System.Convert.ToString(value, System.Globalization.CultureInfo.InvariantCulture) ?? "null",
-        };
+        // The constant in the parameter's type: a decimal default was written as a number, a long as a
+        // number, a float as its own shortest text, a char with no quotes (a bare identifier), a string
+        // with a quote in it as a broken literal, and a [Flags] member as a name its enum never holds.
+        return ConstantLiteral.Write(parameter.ExplicitDefaultValue, parameter.Type, context) ?? "null";
     }
 
     /// <summary>
@@ -556,17 +534,18 @@ public class ObjectCreationStrategy : IConversionStrategy
     /// its initializers runs, and none of its constructors, so it is the default the type has.
     /// </para>
     /// </summary>
-    private static string BuildValueTypeConstruction(BaseObjectCreationExpressionSyntax creation, ITypeSymbol type, ConversionContext context)
+    private static JsExpr BuildValueTypeConstruction(BaseObjectCreationExpressionSyntax creation, ITypeSymbol type, ConversionContext context)
     {
         var ctor = context.SemanticHelper.GetSymbol(creation) as IMethodSymbol;
 
+        var constructed = JsExpr.Identifier(type.Name);
         // The abstract VOCABULARY (BoxStyle, EdgeInsets, …) is runtime-provided by a HAND-WRITTEN TS
         // twin that takes a trailing CONFIG OBJECT, the shape UI-component classes accept
         // (`new Row(gap, { height: … })`). Positional args pass through.
         if (!TwinIsWritten(type)
             && Services.RuntimeProvidedTypeScanner.IsVocabularyNamespace(type.ContainingNamespace?.ToDisplayString() ?? string.Empty))
         {
-            var parts = new List<string>();
+            var parts = new List<JsExpr>();
             if (creation.ArgumentList != null)
                 parts.AddRange(OrderedArguments(creation, context));
             if (creation.Initializer != null)
@@ -579,9 +558,9 @@ public class ObjectCreationStrategy : IConversionStrategy
                 {
                     var supplied = creation.ArgumentList?.Arguments.Count ?? 0;
                     for (var i = supplied; i < ctor.Parameters.Length; i++)
-                        parts.Add(ParameterDefaultLiteral(ctor.Parameters[i]));
-                    parts.Add(context.Converter.ConvertExpression(creation.Initializer));
-                    return $"new {type.Name}({string.Join(", ", parts)})";
+                        parts.Add(DefaultOf(ctor.Parameters[i], context));
+                    parts.Add(context.Converter.ConvertIr(creation.Initializer));
+                    return JsExpr.New(constructed, parts);
                 }
 
                 // No resolvable constructor (standalone CompileSource, no references — the
@@ -589,15 +568,15 @@ public class ObjectCreationStrategy : IConversionStrategy
                 // `new Text(content, role) { Tabular = true }` landed the config in the COLOR
                 // parameter. Object.assign after construction is the C# initializer's exact
                 // semantics and needs no arity at all.
-                var config = context.Converter.ConvertExpression(creation.Initializer);
-                return $"Object.assign(new {type.Name}({string.Join(", ", parts)}), {config})";
+                var config = context.Converter.ConvertIr(creation.Initializer);
+                return JsExpr.Call(JsExpr.Identifier("Object.assign"), JsExpr.New(constructed, parts), config);
             }
-            return $"new {type.Name}({string.Join(", ", parts)})";
+            return JsExpr.New(constructed, parts);
         }
 
         var construction = type.IsValueType && ctor is { IsImplicitlyDeclared: true, Parameters.Length: 0 } && TwinIsWritten(type)
-            ? DefaultValue.Of(type, context)
-            : $"new {type.Name}({string.Join(", ", ConstructorArguments(creation, ctor, context))})";
+            ? JsExpr.Opaque(DefaultValue.Of(type, context))
+            : JsExpr.New(constructed, ConstructorArguments(creation, ctor, context));
         return creation.Initializer is { } initializer
             ? ObjectInitializer.Apply(construction, initializer, context)
             : construction;
@@ -615,18 +594,18 @@ public class ObjectCreationStrategy : IConversionStrategy
     /// also allows, is spread, or it would arrive as one element (an invocation does the same).
     /// </para>
     /// </summary>
-    private static IReadOnlyList<string> ConstructorArguments(BaseObjectCreationExpressionSyntax creation, IMethodSymbol? ctor,
+    private static IReadOnlyList<JsExpr> ConstructorArguments(BaseObjectCreationExpressionSyntax creation, IMethodSymbol? ctor,
         ConversionContext context)
     {
         if (creation.ArgumentList is not { Arguments.Count: > 0 } list) return [];
-        var converted = list.Arguments.Select(argument => context.Converter.ConvertExpression(argument.Expression)).ToList();
+        var converted = list.Arguments.Select(argument => context.Converter.ConvertIr(argument.Expression)).ToList();
         if (ctor is { Parameters.Length: > 0 } && ctor.Parameters[^1].IsParams
             && list.Arguments.Count == ctor.Parameters.Length && list.Arguments[^1].NameColon is null
             && context.SemanticHelper.GetType(list.Arguments[^1].Expression) is IArrayTypeSymbol)
-            converted[^1] = "..." + converted[^1];
+            converted[^1] = JsExpr.Spread(converted[^1]);
         if (ctor is null || !list.Arguments.Any(argument => argument.NameColon != null)) return converted;
 
-        var slots = new string?[ctor.Parameters.Length];
+        var slots = new JsExpr?[ctor.Parameters.Length];
         for (var i = 0; i < list.Arguments.Count; i++)
         {
             // A positional argument's slot is its list position: C# allows one after a named argument
@@ -637,10 +616,10 @@ public class ObjectCreationStrategy : IConversionStrategy
             if (ordinal >= 0 && ordinal < slots.Length) slots[ordinal] = converted[i];
         }
         var last = Array.FindLastIndex(slots, slot => slot != null);
-        return slots.Take(last + 1).Select(slot => slot ?? "undefined").ToList();
+        return slots.Take(last + 1).Select(slot => slot ?? Undefined).ToList();
     }
 
-    private string ConvertImplicit(ImplicitObjectCreationExpressionSyntax creation, ConversionContext context)
+    private JsExpr ConvertImplicit(ImplicitObjectCreationExpressionSyntax creation, ConversionContext context)
     {
         var ms = context.SemanticHelper.GetSymbol(creation) as IMethodSymbol;
         var typeDisplay = ms?.ContainingType.ToDisplayString() ?? context.ExpectedType ?? "";
@@ -650,7 +629,7 @@ public class ObjectCreationStrategy : IConversionStrategy
         // went straight to an emit — which is the third time the host-only fence has been found
         // guarding some of the ways a symbol can be named and reading like protection for all.
         // Found in review of that fix.
-        if (ms?.ContainingType.ReportIfHostOnlyType(creation, context) == true) return "undefined";
+        if (ms?.ContainingType.ReportIfHostOnlyType(creation, context) == true) return Undefined;
 
         // `Color c = new(1, 2, 3, 4)` builds the data as the explicit form does.
         if (ms?.ContainingType is { } dataTarget && dataTarget.TwinIsData())
@@ -674,7 +653,7 @@ public class ObjectCreationStrategy : IConversionStrategy
             // initializer here would silently return a bare object instead of an instance.
             // `new() { a, b }` on a HashSet target seeds a JS Set (the HashSetStrategy contract).
             if (typeDisplay.Contains("HashSet<"))
-                return $"new Set({context.Converter.ConvertExpression(creation.Initializer)})";
+                return JsExpr.New(JsExpr.Identifier("Set"), [context.Converter.ConvertIr(creation.Initializer)]);
 
             if (target is { SpecialType: SpecialType.None, TypeKind: TypeKind.Class }
                 && !typeDisplay.Contains("List<")
@@ -682,13 +661,13 @@ public class ObjectCreationStrategy : IConversionStrategy
             {
                 var ctorArgs = creation.ArgumentList is { Arguments.Count: > 0 }
                     ? OrderedArguments(creation, context).ToList()
-                    : new List<string>();
+                    : new List<JsExpr>();
                 // Target-typed `new(gap) { a, b }` on a node class: Add-per-element, exactly like
                 // the explicit form — the trailing config slot is for OBJECT initializers only.
                 if (creation.Initializer.Kind() == SyntaxKind.CollectionInitializerExpression)
                 {
                     return AddPerElementConstruction(creation.Initializer,
-                        $"new {target.Name}({string.Join(", ", ctorArgs)})", context);
+                        JsExpr.New(JsExpr.Identifier(target.Name), ctorArgs), context);
                 }
                 // An initializer that adds to a member or writes an entry, applied once the object
                 // exists, as the explicit form applies it (#462).
@@ -698,26 +677,26 @@ public class ObjectCreationStrategy : IConversionStrategy
                         creation.Initializer, context);
                 }
                 if (ms != null && ctorArgs.Count < ms.Parameters.Length)
-                    ctorArgs.AddRange(ms.Parameters.Skip(ctorArgs.Count).Select(ParameterDefaultLiteral));
-                ctorArgs.Add(context.Converter.ConvertExpression(creation.Initializer));
-                return $"new {target.Name}({string.Join(", ", ctorArgs)})";
+                    ctorArgs.AddRange(ms.Parameters.Skip(ctorArgs.Count).Select(parameter => DefaultOf(parameter, context)));
+                ctorArgs.Add(context.Converter.ConvertIr(creation.Initializer));
+                return JsExpr.New(JsExpr.Identifier(target.Name), ctorArgs);
             }
 
             // `new() { … }` on a collection (or with no resolvable named target) → the initializer IS
             // the value. A dictionary target is DictionaryStrategy's.
-            return context.Converter.ConvertExpression(creation.Initializer);
+            return context.Converter.ConvertIr(creation.Initializer);
         }
 
         // Collection target with no initializer → empty literal.
         if (typeDisplay.Contains("List<") || typeDisplay.Contains("IEnumerable<") ||
             typeDisplay.Contains("Collection<") || typeDisplay.TrimEnd('?').EndsWith("[]"))
         {
-            return "[]";
+            return JsExpr.Array([]);
         }
         // Bare `new()` on a HashSet target — the runtime representation is a JS Set.
         if (typeDisplay.Contains("HashSet<"))
         {
-            return "new Set()";
+            return JsExpr.New(JsExpr.Identifier("Set"), []);
         }
 
         // Records and user structs go the SAME way they do with an initializer, and the same way the
@@ -729,10 +708,9 @@ public class ObjectCreationStrategy : IConversionStrategy
             return BuildValueTypeConstruction(creation, value, context);
 
         // Target-typed `new(args)` on a named type: `Item _x = new(9, "z")` → `new Item(9, 'z')`.
-        var args = string.Join(", ",
-            creation.ArgumentList is { Arguments.Count: > 0 }
-                ? OrderedArguments(creation, context)
-                : System.Linq.Enumerable.Empty<string>());
+        var args = creation.ArgumentList is { Arguments.Count: > 0 }
+            ? OrderedArguments(creation, context)
+            : [];
         var typeName = ms?.ContainingType.Name;
         if (string.IsNullOrEmpty(typeName) || typeName == "Object")
         {
@@ -743,10 +721,10 @@ public class ObjectCreationStrategy : IConversionStrategy
         }
         if (!string.IsNullOrEmpty(typeName))
         {
-            return $"new {typeName}({args})";
+            return JsExpr.New(JsExpr.Identifier(typeName), args);
         }
 
-        return "{}";
+        return JsExpr.Object([]);
     }
 
     public int Priority => 5;

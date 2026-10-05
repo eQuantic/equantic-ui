@@ -99,7 +99,7 @@ public class TreePrefetchTests
         var context = RequestWith(out var counts);
 
         var result = await CreateService()
-            .RenderPageAsync(nameof(PageComposingAPrefetcher), context);
+            .RenderPageAsync(typeof(PageComposingAPrefetcher), context);
 
         result.Success.Should().BeTrue(result.Error);
         result.Html.Should().Contain("Downloads: 675617",
@@ -114,7 +114,7 @@ public class TreePrefetchTests
         var context = RequestWith(out _);
 
         var result = await CreateService()
-            .RenderPageAsync(nameof(PageComposingAPrefetcher), context);
+            .RenderPageAsync(typeof(PageComposingAPrefetcher), context);
 
         result.SerializedState.Should().NotBeNull(
             "a component that prefetched has state the client cannot rebuild for itself");
@@ -189,7 +189,7 @@ public class TreePrefetchTests
     {
         var context = RequestWith(out _);
 
-        var result = await CreateService().RenderPageAsync(nameof(PageWhoseRowsPrefetch), context);
+        var result = await CreateService().RenderPageAsync(typeof(PageWhoseRowsPrefetch), context);
 
         result.Success.Should().BeTrue(result.Error);
         result.Html.Should().Contain("detail-0").And.Contain("detail-1");
@@ -237,7 +237,7 @@ public class TreePrefetchTests
     {
         var context = RequestWith(out _);
 
-        var result = await CreateService().RenderPageAsync(nameof(PageWithABaseField), context);
+        var result = await CreateService().RenderPageAsync(typeof(PageWithABaseField), context);
 
         result.Success.Should().BeTrue(result.Error);
         result.Html.Should().Contain("loaded");
@@ -323,7 +323,7 @@ public class TreePrefetchTests
     {
         var context = RequestWith(out _);
 
-        var result = await CreateService().RenderPageAsync(nameof(PageWithAwkwardShapes), context);
+        var result = await CreateService().RenderPageAsync(typeof(PageWithAwkwardShapes), context);
 
         result.Success.Should().BeTrue(result.Error);
         result.Html.Should().Contain("Ready", "an enum survives the restore");
@@ -349,7 +349,7 @@ public class TreePrefetchTests
     {
         var context = RequestWith(out _);
 
-        var result = await CreateService().RenderPageAsync(nameof(PageWithAwkwardShapes), context);
+        var result = await CreateService().RenderPageAsync(typeof(PageWithAwkwardShapes), context);
 
         result.Success.Should().BeTrue(result.Error);
         result.SerializedState.Should().NotBeNull();
@@ -394,7 +394,7 @@ public class TreePrefetchTests
     {
         var context = RequestWith(out var counts);
 
-        var result = await CreateService().RenderPageAsync(nameof(PageThatLoadsItsOwnData), context);
+        var result = await CreateService().RenderPageAsync(typeof(PageThatLoadsItsOwnData), context);
 
         result.Success.Should().BeTrue(result.Error);
         result.Html.Should().Contain("total:675617");
@@ -441,7 +441,7 @@ public class TreePrefetchTests
     {
         var context = RequestWith(out _);
 
-        var result = await CreateService().PreparePageAsync(nameof(PageThatDropsItsHeader), context);
+        var result = await CreateService().PreparePageAsync(typeof(PageThatDropsItsHeader), context);
 
         result.Success.Should().BeTrue(result.Error);
         if (result.SerializedState is null) return;
@@ -476,7 +476,7 @@ public class TreePrefetchTests
     {
         var context = RequestWith(out _);
 
-        var result = await CreateService().RenderPageAsync(nameof(PageWhoseBuildIsAComponent), context);
+        var result = await CreateService().RenderPageAsync(typeof(PageWhoseBuildIsAComponent), context);
 
         result.Success.Should().BeTrue(result.Error);
         result.Html.Should().Contain("Downloads: 675617");
@@ -547,7 +547,7 @@ public class TreePrefetchTests
         app.MapPage<Header>("/tree-prefetch-name-clash");
 
         var service = app.Services.GetRequiredService<IServerRenderingService>();
-        var result = await service.RenderPageAsync(nameof(Header),
+        var result = await service.RenderPageAsync(typeof(Header),
             new DefaultHttpContext { RequestServices = app.Services });
 
         result.Success.Should().BeTrue(result.Error);
@@ -613,7 +613,7 @@ public class TreePrefetchTests
     {
         var context = RequestWith(out _);
 
-        var result = await CreateService().RenderPageAsync(nameof(PageThatSwapsACallback), context);
+        var result = await CreateService().RenderPageAsync(typeof(PageThatSwapsACallback), context);
 
         result.Success.Should().BeTrue(result.Error);
         result.Html.Should().Contain("b:loaded",
@@ -685,7 +685,7 @@ public class TreePrefetchTests
     {
         var context = RequestWith(out _);
 
-        var result = await CreateService().RenderPageAsync(nameof(PageThatSwapsItsRow), context);
+        var result = await CreateService().RenderPageAsync(typeof(PageThatSwapsItsRow), context);
 
         result.Success.Should().BeTrue(result.Error);
         result.Html.Should().Contain("row:b:b-loaded",
@@ -754,7 +754,7 @@ public class TreePrefetchTests
         lock (Order) Order.Clear();
         var context = RequestWith(out _);
 
-        var result = await CreateService().RenderPageAsync(nameof(PageWithTwoLoaders), context);
+        var result = await CreateService().RenderPageAsync(typeof(PageWithTwoLoaders), context);
 
         result.Success.Should().BeTrue(result.Error);
         string[] sequential = ["enter:a", "leave:a", "enter:b", "leave:b"];
@@ -808,7 +808,7 @@ public class TreePrefetchTests
     {
         var context = RequestWith(out _);
 
-        var result = await CreateService().RenderPageAsync(nameof(PageWithADeepChain), context);
+        var result = await CreateService().RenderPageAsync(typeof(PageWithADeepChain), context);
 
         result.Success.Should().BeTrue(result.Error);
         result.Html.Should().Contain("link0:loaded", "the cap stops a chain, it does not break the page");
@@ -859,7 +859,7 @@ public class TreePrefetchTests
     {
         var context = RequestWith(out var counts);
 
-        var result = await CreateService().RenderPageAsync(nameof(PageWithAStack), context);
+        var result = await CreateService().RenderPageAsync(typeof(PageWithAStack), context);
 
         result.Success.Should().BeTrue(result.Error);
         counts.Calls.Should().BeGreaterThan(0, "a Stack is a container, not a place data stops arriving");
@@ -921,12 +921,12 @@ public class TreePrefetchTests
 
         var service = app.Services.GetRequiredService<IServerRenderingService>();
 
-        var drawn = await service.RenderPageAsync(nameof(CoreRootComposingAPrefetcher),
+        var drawn = await service.RenderPageAsync(typeof(CoreRootComposingAPrefetcher),
             new DefaultHttpContext { RequestServices = app.Services });
         drawn.Success.Should().BeTrue(drawn.Error);
         drawn.Html.Should().Contain("Downloads: 675617", "a full load draws what the component loaded");
 
-        var navigated = await service.PreparePageAsync(nameof(CoreRootComposingAPrefetcher),
+        var navigated = await service.PreparePageAsync(typeof(CoreRootComposingAPrefetcher),
             new DefaultHttpContext { RequestServices = app.Services });
 
         navigated.Success.Should().BeTrue(navigated.Error);
@@ -963,7 +963,7 @@ public class TreePrefetchTests
         var service = app.Services.GetRequiredService<IServerRenderingService>();
         var context = new DefaultHttpContext { RequestServices = app.Services };
 
-        var result = await service.RenderPageAsync(nameof(CoreRootPage), context);
+        var result = await service.RenderPageAsync(typeof(CoreRootPage), context);
 
         result.Success.Should().BeTrue(result.Error);
         result.Html.Should().Contain("Downloads: 675617");

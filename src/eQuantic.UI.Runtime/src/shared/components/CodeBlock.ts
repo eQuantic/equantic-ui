@@ -306,7 +306,8 @@ export class CodeBlock extends StatelessComponent {
     }
 
     rowAt(row: number) {
-        let rows: any; return (rows = this.rows) != null ? rows.rowAt(row) : new CodeRow('line', row);
+        let rows: any; 
+        return (rows = this.rows) != null ? rows.rowAt(row) : new CodeRow('line', row);
     }
 
     rowOf(line: number) {

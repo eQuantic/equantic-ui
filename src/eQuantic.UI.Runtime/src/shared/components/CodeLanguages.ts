@@ -84,7 +84,7 @@ export class CodeLanguages {
     }
 
     static keyOf(name: string) {
-        return (_s => { const _c = '.'; let _i = 0; while (_i < _s.length && _c.includes(_s[_i])) _i++; return _s.slice(_i); })(name).toLowerCase();
+        return $eq.text.trimStart(name, '.').toLowerCase();
     }
 }
 

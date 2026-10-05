@@ -167,6 +167,70 @@ a decimal, a date, a record and a type that overrides `Equals` by its value.
 - **WHEN** browser-side code enqueues `1m` on a `Queue<decimal>` and asks `Contains(1.00m)`
 - **THEN** the answer is `True`, as in .NET
 
+### Requirement: A value hashes as it equals
+
+`GetHashCode()` SHALL answer in the browser by .NET's contract: two values `Equals` finds equal SHALL
+hash equal, whatever their type, a string, a number, a long, a bool, a value tuple, a record, a
+struct, a decimal of any scale, a date, a vocabulary value type (`Point`, `TypeStyle`) and a value
+under `object` included. A type that overrides `GetHashCode` SHALL answer its own, an instance of a
+class that does not SHALL hash by its identity, and so SHALL an array, however its items change.
+`base.GetHashCode()` SHALL call the base's override where the app wrote one or a record's is
+synthesized, and `HashCode.Combine(…)` SHALL combine its values' hashes in its parameters' order,
+evaluating its arguments as written. An instance call on a null reference SHALL be refused, as .NET
+throws `NullReferenceException`, while an empty `Nullable<T>` answers 0, and the method group
+`value.GetHashCode` SHALL take its receiver once, where the delegate is made, refusing a null one
+there.
+
+#### Scenario: Equal values hash equal
+
+- **WHEN** browser-side code compares `new P(1, 2).GetHashCode()` with another `new P(1, 2)`'s, for
+  `record P(int X, int Y)`, and `1.0m.GetHashCode()` with `1.00m.GetHashCode()`
+- **THEN** both comparisons are true, as in .NET
+
+#### Scenario: An override answers its own
+
+- **WHEN** browser-side code calls `new Weighted(3).GetHashCode()` for
+  `record Weighted(int X) { public override int GetHashCode() => X * 7; }`
+- **THEN** it answers `21`, as in .NET
+
+#### Scenario: An array is its identity, and a null receiver is refused
+
+- **WHEN** browser-side code hashes `var a = new[] { 1 }`, sets `a[0] = 2` and hashes it again, and
+  calls `GetHashCode()` on a null `object`
+- **THEN** the two hashes are equal and the call on null throws, as in .NET
+
+### Requirement: A Guid is its canonical text
+
+A Guid made from text by `Guid.Parse`, `Guid.TryParse` or `new Guid(text)` SHALL be the text .NET
+writes for it, the lowercase `D` format, read from any format .NET reads (`N`, `D`, `B`, `P`, `X`, in
+either case, surrounded by white space), so two spellings of one Guid SHALL be one value to `==`, a
+dictionary's key, a set and its hash. A text .NET refuses SHALL be refused, and a failed `TryParse`
+SHALL leave `Guid.Empty`.
+
+#### Scenario: Two spellings, one Guid
+
+- **WHEN** browser-side code compares `Guid.Parse("0f8fad5b-d9cb-469f-a165-70867728950A")` with
+  `Guid.Parse("0f8fad5b-d9cb-469f-a165-70867728950a")`, and adds an uppercase and a parenthesized
+  spelling of one Guid to a `HashSet<Guid>`
+- **THEN** the comparison is true and the set holds one Guid, as in .NET
+
+### Requirement: A date leaving the calendar is refused as .NET refuses it
+
+A `DateTime`'s and a `DateTimeOffset`'s `Add`, `Subtract`, `AddMonths`, `AddYears` and the `+` and `-`
+operators with a `TimeSpan`, their compound forms included, SHALL refuse a result outside the calendar
+with .NET's message, naming the parameter of the member that refuses it: `value` for `Add`, `Subtract`
+and `AddYears`, `months` for `AddMonths`, and `t` for the operators. `AddMonths` SHALL refuse a count
+past 120000 either way, and `AddYears` one past 10000, in .NET's words. A `DateTimeOffset`'s
+`AddMonths` and `AddYears` SHALL then refuse a UTC time outside the calendar, and a `DateOnly`'s
+`AddDays`, `AddMonths` and `AddYears` SHALL refuse a day outside it, each in .NET's words.
+
+#### Scenario: The operator names its own parameter
+
+- **WHEN** browser-side code evaluates `DateTime.MaxValue + TimeSpan.FromTicks(1)` and
+  `DateTime.MaxValue.Add(TimeSpan.FromTicks(1))`, catching each message
+- **THEN** both are "The added or subtracted value results in an un-representable DateTime.", the
+  first with `(Parameter 't')` and the second with `(Parameter 'value')`, as in .NET
+
 ### Requirement: A member reached through using static answers as its qualified spelling
 
 A .NET member reached by its simple name through `using static` SHALL answer in the browser what
@@ -252,3 +316,102 @@ member has SHALL be refused, as a value and as a key.
 
 - **WHEN** the server reads `{"gone":1,"old":2}` as a `Dictionary<Shelf, int>`
 - **THEN** it throws a `JsonException` naming `'gone'`
+
+### Requirement: A string's own search compares by the comparison it is given
+
+`StartsWith`, `EndsWith`, `Contains`, `IndexOf` and `LastIndexOf` given a `StringComparison`, and
+`Equals(string, StringComparison)`, SHALL answer what .NET answers by that comparison, whether it is
+written as a constant or held in a variable. An ordinal comparison that ignores case SHALL compare
+each code point's simple upper case as .NET's ordinal casing does: the Kelvin sign, the long s and
+the dotless i SHALL NOT match k, s and I, a Greek letter with an iota subscript SHALL match its title
+case, a surrogate pair SHALL match by its code point, and a lone half SHALL be found inside a pair. A
+comparison .NET does not define SHALL throw .NET's message.
+
+#### Scenario: The Kelvin sign is not a k
+
+- **WHEN** `("x" + "\u212A").Contains("k", StringComparison.OrdinalIgnoreCase)` runs
+- **THEN** it answers false
+
+#### Scenario: A comparison held in a variable
+
+- **WHEN** `var c = StringComparison.OrdinalIgnoreCase; return "aB".StartsWith("ab", c);` runs
+- **THEN** it answers true
+
+#### Scenario: A surrogate pair by its code point
+
+- **WHEN** `"x\uD801\uDC28y".IndexOf("\uD801\uDC00", StringComparison.OrdinalIgnoreCase)` runs
+- **THEN** it answers 1
+
+### Requirement: A string's search checks its start and its count as .NET does
+
+`IndexOf` and `LastIndexOf` given a start, or a start and a count, with a `StringComparison` SHALL
+search only that range, and SHALL throw .NET's `ArgumentOutOfRangeException`, with its message, for a
+start or a count outside the string. `LastIndexOf` SHALL read a start one past the end as the last
+unit. A null value SHALL throw `ArgumentNullException`.
+
+#### Scenario: The count ends the search
+
+- **WHEN** `"abcb".IndexOf("B", 2, 1, StringComparison.OrdinalIgnoreCase)` runs
+- **THEN** it answers -1
+
+#### Scenario: A start past the end
+
+- **WHEN** `"abc".IndexOf("b", 4, StringComparison.Ordinal)` runs
+- **THEN** it throws with the message `Index was out of range. Must be non-negative and less than or equal to the size of the collection. (Parameter 'startIndex')`
+
+#### Scenario: One past the end steps back
+
+- **WHEN** `"abc".LastIndexOf("b", 3, StringComparison.OrdinalIgnoreCase)` runs
+- **THEN** it answers 1
+
+### Requirement: Replace keeps its comparison and writes its replacement as text
+
+`Replace(string, string)` SHALL replace by the ordinal comparison, and `Replace(string, string,
+StringComparison)` by the one it is given, every match from left to right without overlap. The
+replacement SHALL be written as text, a null replacement SHALL remove the matches, and a null or
+empty old value SHALL throw .NET's exception.
+
+#### Scenario: Ignoring case
+
+- **WHEN** `"aBc".Replace("b", "x", StringComparison.OrdinalIgnoreCase)` runs
+- **THEN** it answers `axc`
+
+#### Scenario: A replacement that looks like a pattern
+
+- **WHEN** `"abc".Replace("b", "$&$&")` runs
+- **THEN** it answers `a$&$&c`
+
+### Requirement: CompareTo orders by the current culture
+
+`string.CompareTo(string)` SHALL compare as `string.Compare(a, b)` does, by the current culture, a
+null ordering first. `CompareTo(object)` SHALL fail the build with EQ1004.
+
+#### Scenario: A sort written with CompareTo
+
+- **WHEN** a `List<string>` holding `b`, `B`, `a` and `A` runs `names.Sort((x, y) => x.CompareTo(y))`
+- **THEN** the list is `a,A,b,B`
+
+### Requirement: A search by a culture comparison is refused
+
+A string's search (`StartsWith`, `EndsWith`, `Contains`, `IndexOf`, `LastIndexOf` or `Replace`) given
+a culture comparison as a constant, written in its place or named, and an overload that takes a
+`CultureInfo`, SHALL fail the build with EQ1004. A comparison that is not a constant, held in a
+variable or chosen by a conditional, SHALL reach the run time, where a culture one SHALL throw with a
+message that names the method and the comparison, after every check .NET makes before it searches.
+`Equals` by a culture comparison SHALL compare the two whole strings by the culture's collator.
+
+#### Scenario: A constant culture comparison
+
+- **WHEN** a component calls `a.StartsWith(b, StringComparison.CurrentCulture)`, or
+  `a.StartsWith(comparisonType: StringComparison.CurrentCulture, value: b)`
+- **THEN** the build fails with EQ1004 at that call
+
+#### Scenario: A comparison chosen at run time
+
+- **WHEN** `var active = true; return "aB".StartsWith("ab", active ? StringComparison.OrdinalIgnoreCase : StringComparison.CurrentCulture);` runs
+- **THEN** it builds and answers true
+
+#### Scenario: A whole-string culture comparison
+
+- **WHEN** `"\u00ADab".Equals("ab", StringComparison.InvariantCulture)` runs
+- **THEN** it answers true

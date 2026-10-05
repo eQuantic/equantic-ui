@@ -122,12 +122,12 @@ public sealed class Menu : StatefulComponent
             ActiveIndex = _open ? _highlight : -1,
         };
 
-        if (_open && Items.Count > 0)
-        {
-            menu = new Shortcut(menu, KeyChord.ArrowDown, () => SetState(() => _highlight = Step(+1)));
-            menu = new Shortcut(menu, KeyChord.ArrowUp, () => SetState(() => _highlight = Step(-1)));
-            menu = new Shortcut(menu, KeyChord.Enter, () => Choose(_highlight));
-        }
+        // The keyboard answers while the panel is up, and its chords stay around the tree whether it
+        // is or not, so opening moves nothing in it and the focus stays on the trigger (#567).
+        var live = _open && Items.Count > 0;
+        menu = new Shortcut(menu, KeyChord.ArrowDown, () => SetState(() => _highlight = Step(+1))) { Enabled = live };
+        menu = new Shortcut(menu, KeyChord.ArrowUp, () => SetState(() => _highlight = Step(-1))) { Enabled = live };
+        menu = new Shortcut(menu, KeyChord.Enter, () => Choose(_highlight)) { Enabled = live };
         return menu;
     }
 

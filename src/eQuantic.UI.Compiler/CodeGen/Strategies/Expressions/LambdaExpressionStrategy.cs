@@ -33,10 +33,10 @@ public class LambdaExpressionStrategy : IExpressionIrStrategy
                 var kept = string.Join(", ", parenthesized.ParameterList.Parameters
                     .Where(p => !OutParameters.IsOut(p))
                     .Select(p => Typed(p.Identifier.Text.ToJsIdentifier(), p, context)));
-                var isAsync = parenthesized.Modifiers.Any(Microsoft.CodeAnalysis.CSharp.SyntaxKind.AsyncKeyword);
+                // Never async: C# refuses an `out` or a `ref` parameter on an async lambda (CS1988).
                 return JsExpr.ArrowBlock(kept,
-                    OutParameters.ArrowBody(parenthesized.Block, parenthesized.ExpressionBody, byReference, isAsync, context),
-                    context.Layout, context.Depth, isAsync);
+                    OutParameters.Body(parenthesized.Block, parenthesized.ExpressionBody, byReference, context.Converter),
+                    context.Layout, context.Depth);
             }
 
             // The parameter TYPES come from the semantic model: a lambda handed to a config object
@@ -89,7 +89,7 @@ public class LambdaExpressionStrategy : IExpressionIrStrategy
         // converted at, and the block's return sits one level deeper than the arrow.
         ExpressionVariableScanner.Names(expression).Count == 0
             ? JsExpr.Arrow(parameters, context.Converter.ConvertIr(expression), isAsync)
-            : JsExpr.ArrowBlock(parameters, context.Converter.ConvertExpressionBodyIr(expression), context.Layout, context.Depth, isAsync);
+            : JsExpr.ArrowBlock(parameters, context.Converter.ConvertExpressionBodyIr(expression, returns: true), context.Layout, context.Depth, isAsync);
 
     /// <summary>A parameter with its TS type, resolved through the model. Falls back to the bare
     /// name when nothing can be said — an untyped parameter beats a wrong one.</summary>

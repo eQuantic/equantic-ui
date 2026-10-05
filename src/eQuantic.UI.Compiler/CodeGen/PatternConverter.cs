@@ -5,6 +5,7 @@ using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Operations;
 using eQuantic.UI.Compiler.CodeGen.Ir;
+using eQuantic.UI.Compiler.CodeGen.Strategies;
 
 namespace eQuantic.UI.Compiler.CodeGen;
 
@@ -42,8 +43,7 @@ public static class PatternConverter
                 if (constant.Expression is TypeSyntax bareType
                     && context.SemanticHelper.GetSymbol(constant.Expression) is INamedTypeSymbol)
                     return TypeCheck(bareType, access, context);
-                return ConstantTest(access, context.Converter.ConvertExpression(constant.Expression),
-                    (context.SemanticHelper.GetOperation(constant) as IConstantPatternOperation)?.Value, context);
+                return ConstantMatch(constant, constant.Expression, access, context);
 
             case RelationalPatternSyntax relational:
                 return $"{access} {relational.OperatorToken.Text} {context.Converter.ConvertExpression(relational.Expression)}";
@@ -85,6 +85,43 @@ public static class PatternConverter
                 return "false";
         }
     }
+
+    /// <summary>
+    /// The test that <paramref name="access"/> matches a constant label or pattern, by
+    /// <see cref="ConstantTest"/>'s one rule, with the constant the BOUND tree converted to the
+    /// input's type: a decimal is the runtime's Decimal, an object <c>===</c> compares by identity, so
+    /// <c>d is 1m</c>, <c>case decimal.One:</c> and a <c>1m =&gt;</c> arm never matched, and its exact
+    /// value is written from the bound constant, so <c>d is 1</c> meets 1m.
+    /// </summary>
+    internal static string ConstantMatch(SyntaxNode label, ExpressionSyntax constant, string access,
+        ConversionContext context)
+    {
+        var value = context.SemanticHelper.GetOperation(label) switch
+        {
+            IConstantPatternOperation pattern => pattern.Value,
+            ISingleValueCaseClauseOperation single => single.Value,
+            IPatternCaseClauseOperation { Pattern: IConstantPatternOperation pattern } => pattern.Value,
+            _ => null,
+        };
+        var text = DecimalConstant(label, context) is { } exact
+            ? ConstantLiteral.Write(exact, null, context)!
+            : context.Converter.ConvertExpression(constant);
+        return ConstantTest(access, text, value, context);
+    }
+
+    /// <summary>The decimal a constant pattern or a case label compares with, read from the bound
+    /// tree after its conversion to the input's type, or null when it compares something else.</summary>
+    internal static decimal? DecimalConstant(SyntaxNode label, ConversionContext context) =>
+        context.SemanticHelper.GetOperation(label) switch
+        {
+            IConstantPatternOperation { Value.ConstantValue: { HasValue: true, Value: decimal value } } => value,
+            ISingleValueCaseClauseOperation { Value.ConstantValue: { HasValue: true, Value: decimal value } } => value,
+            IPatternCaseClauseOperation
+            {
+                Pattern: IConstantPatternOperation { Value.ConstantValue: { HasValue: true, Value: decimal value } },
+            } => value,
+            _ => null,
+        };
 
     public static void CollectBindings(PatternSyntax pattern, string access, ConversionContext context,
         List<(string Name, string Access)> bindings, ITypeSymbol? accessType = null)
@@ -266,8 +303,9 @@ public static class PatternConverter
 
         // A class that lowers to a REAL JS class supports `instanceof`. That is the whole VOCABULARY
         // — every `VisualNode` is an `export class` in the runtime, components included (UiComponent
-        // derives from VisualNode). Everything else keeps the null-check: enums lower to string
-        // literals, value types to plain config objects, exceptions to Error.
+        // derives from VisualNode). An exception is an Error carrying its .NET types, which its own
+        // test reads. Everything else keeps the null-check: enums lower to string literals, value
+        // types to plain config objects.
         //
         // It used to be components ONLY, and the fallback is where that hurt: `leading switch { Icon
         // icon => …, Avatar avatar => … }` emitted `_s != null` for the Icon arm, so the FIRST arm
@@ -280,6 +318,10 @@ public static class PatternConverter
                 TypeKind: TypeKind.Class or TypeKind.Struct
             } named)
         {
+            // `e is ArgumentException`, a switch arm over exceptions, `e as …` and a typed catch, the
+            // same test: was `!= null`, so the first arm took every exception (#474).
+            if (ExceptionTypes.Is(named)) return ExceptionTypes.Test(access, named, context);
+
             if (LowersToAJsClass(named))
             {
                 // The name has to reach the import list, or the module references a free variable.

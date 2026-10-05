@@ -68,6 +68,7 @@ import {
   realTryParse,
 } from './utils/number-parse';
 import { enumerable, max, min, seq, toArray, toDictionary } from './utils/linq';
+import { range, repeat } from './utils/sequence-factories';
 import {
   chars,
   compare,
@@ -76,6 +77,16 @@ import {
   equals as stringEquals,
   joinRange,
 } from './utils/string-statics';
+import {
+  compareTo,
+  contains as textContains,
+  endsWith,
+  indexOf,
+  instanceEquals,
+  lastIndexOf,
+  replace,
+  startsWith,
+} from './utils/string-search';
 import {
   asInteger,
   asSingle,
@@ -114,6 +125,17 @@ import { boolConvert, boolParse, boolTryParse } from './utils/boolean-text';
 import { sortedSet, sortedDictionary, sortedList } from './utils/sorted';
 import { liftArith, liftCmp, liftUnary } from './utils/nullable';
 import { equals } from './utils/equals';
+import { hash, hashCombine, hashFields, hashGroup, identityHash, instanceHash } from './utils/hash';
+import { guidParse, guidTryParse } from './utils/guid';
+import {
+  bases as exceptionBases,
+  create as createException,
+  exception,
+  filter as exceptionFilter,
+  is as isException,
+  raise,
+  thrown,
+} from './utils/exceptions';
 import {
   isDefined as enumIsDefined,
   declaredNames as enumNames,
@@ -201,8 +223,9 @@ export const $eq = {
   str,
   /** LINQ Zip: pairs stop with the shorter sequence. */
   zip,
-  /** LINQ's Max and Min by the type they answer, and ToDictionary with .NET's refusals. */
-  linq: { enumerable, max, min, seq, toArray, toDictionary },
+  /** LINQ's Max and Min by the type they answer, ToDictionary with .NET's refusals, and Range and
+   * Repeat over arguments evaluated once. */
+  linq: { enumerable, max, min, seq, toArray, toDictionary, range, repeat },
   /** C# `with` over a runtime value type — prototype preserved. */
   withPatch,
   /** `new object()`, an identity of its own, and a `lock` statement's gate, refused when null. */
@@ -285,7 +308,7 @@ export const $eq = {
   },
   /** Text: number/string formatting, StringBuilder, StringInfo's text elements (grapheme clusters,
    * from the platform's segmenter), a character's general category, string's comparisons and
-   * ranged join, and .NET's white space. */
+   * ranged join, a string's own searches by a comparison, and .NET's white space. */
   text: {
     /** A range of chars, refused where it leaves its source, as .NET refuses it. */
     chars,
@@ -305,6 +328,14 @@ export const $eq = {
     compareRangeBy,
     equals: stringEquals,
     joinRange,
+    startsWith,
+    endsWith,
+    indexOf,
+    lastIndexOf,
+    contains: textContains,
+    replace,
+    instanceEquals,
+    compareTo,
     isWhiteSpace,
     hasNonWhiteSpace,
     trim,
@@ -357,6 +388,37 @@ export const $eq = {
   delegates: { combine: combineDelegate, remove: removeDelegate },
   /** Structural (value) equality for records/structs/tuples — backs ==, Contains, Distinct. */
   equals,
+  /**
+   * `GetHashCode` by .NET's contract, values `equals` finds equal hashing equal (`hash`), an instance
+   * call refused on null (`instance`), the method group (`group`), `HashCode.Combine` (`combine`),
+   * `object.GetHashCode`'s identity (`identity`), and `ValueType.GetHashCode`'s members (`fields`),
+   * which a struct reaches through `base`.
+   */
+  hash: {
+    of: hash,
+    instance: instanceHash,
+    group: hashGroup,
+    combine: hashCombine,
+    identity: identityHash,
+    fields: hashFields,
+  },
+  /** A Guid's canonical text, the lowercase `D` format, from any format .NET reads. */
+  guid: { parse: guidParse, tryParse: guidTryParse },
+  /**
+   * .NET exceptions: one built from its type and the types it derives from (`new T(…)`), one of a
+   * type the runtime knows, the test a typed `catch` and a type pattern write, a `throw`
+   * expression, what a `throw` statement throws when its exception may be null, and an exception
+   * filter, which answers false where it throws.
+   */
+  exceptions: {
+    create: createException,
+    of: exception,
+    is: isException,
+    raise,
+    thrown,
+    filter: exceptionFilter,
+    bases: exceptionBases,
+  },
   /** CSS class composition (the styling subsystem). */
   css: { styleBuilder: StyleBuilder, classBuilder: ClassBuilder, joinClasses, whenClass },
 } as const;

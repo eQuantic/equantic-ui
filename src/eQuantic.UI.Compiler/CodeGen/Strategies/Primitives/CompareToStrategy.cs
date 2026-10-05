@@ -11,8 +11,9 @@ namespace eQuantic.UI.Compiler.CodeGen.Strategies.Primitives;
 /// comparison built on it was dead.
 /// <para>
 /// The contract is only the SIGN, which is what every call site reads (`&lt; 0`, `&gt; 0`, `== 0`),
-/// so a subtraction is the faithful translation for numbers and a two-way comparison for strings.
-/// A user type keeps its own `compareTo` — the emitter gives it one.
+/// so a subtraction is the faithful translation for numbers. A string compares by the current
+/// culture, through the runtime's <c>string.Compare</c>. A user type keeps its own `compareTo` —
+/// the emitter gives it one.
 /// </para>
 /// </summary>
 public class CompareToStrategy : IExpressionIrStrategy
@@ -34,10 +35,25 @@ public class CompareToStrategy : IExpressionIrStrategy
         var right = Expressions.BinaryExpressionStrategy.EnumValue(invocation.ArgumentList.Arguments[0].Expression,
             context.Converter.ConvertIr(invocation.ArgumentList.Arguments[0].Expression), context);
 
-        // Numbers subtract; everything ordered (strings ordinally, chars by code unit,
-        // longs-as-BigInts) is a three-way the WRITER evaluates once per operand. Booleans order
-        // false < true. (Number CompareTo keeps its known NaN caveat: C# orders NaN below
-        // everything; a subtraction answers NaN.)
+        // A string compares by the current culture, as string.Compare(a, b) does. The ordinal
+        // three-way put every capital before every small letter, so a sort written with CompareTo
+        // answered A,B,a,b where .NET answers a,A,b,B (#528). CompareTo(object) is refused: a char
+        // is a string here, where .NET throws for one.
+        if (context.SemanticHelper.GetType(access.Expression) is { SpecialType: SpecialType.System_String })
+        {
+            if (context.SemanticHelper.GetSymbol(invocation) is not IMethodSymbol
+                { Parameters: [{ Type.SpecialType: SpecialType.System_String }] })
+            {
+                return JsExpr.Opaque(context.Unhandled(invocation, "string.CompareTo(object)"));
+            }
+            context.UsedHelpers.Add(Eq.Import);
+            return JsExpr.Template($"{Eq.StringCompareTo}({{0}}, {{1}})", new[] { left, right }, context.TypeAnnotations);
+        }
+
+        // Numbers subtract; everything else ordered (chars by code unit, longs-as-BigInts) is a
+        // three-way the WRITER evaluates once per operand. Booleans order false < true. (Number
+        // CompareTo keeps its known NaN caveat: C# orders NaN below everything; a subtraction
+        // answers NaN.)
         var kind = ReceiverKind(invocation, context);
         var template = kind switch
         {

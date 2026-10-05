@@ -694,6 +694,26 @@ public class RecordTypeEmitter
                     : $"static $zero() {{ return Object.assign(Object.create({name}.prototype), {{ {zeros} }}); }} ");
             }
 
+            // getHashCode: the members `equals` reads, combined, as the record's synthesized GetHashCode
+            // and a struct's ValueType.GetHashCode hash them, so two values `equals` finds equal hash
+            // alike by construction (#519). One the app wrote OVERRIDING it is its own, emitted with
+            // its methods: a static one, or one that hides it, leaves the synthesized one in place, as
+            // .NET does. A record derived from a record of this compilation combines its base's hash
+            // first, which is the base's own override where it wrote one, as .NET's synthesized hash
+            // calls it.
+            if (!type.Members.OfType<MethodDeclarationSyntax>().Any(method =>
+                    method is { Identifier.Text: "GetHashCode", ParameterList.Parameters.Count: 0 }
+                    && method.Modifiers.Any(modifier => modifier.IsKind(SyntaxKind.OverrideKeyword))))
+            {
+                var hashed = members.Select(m => $"this.{m.Js}");
+                if (ModelFor(type)?.GetDeclaredSymbol(type) is INamedTypeSymbol { BaseType: { IsRecord: true } baseRecord }
+                    && baseRecord.Locations.Any(location => location.IsInSource))
+                    hashed = hashed.Prepend("super.getHashCode()");
+                sb.Append(tsTypeDeclarations ? "getHashCode(): number { return $eq.hash.combine(" : "getHashCode() { return $eq.hash.combine(")
+                    .Append(string.Join(", ", hashed))
+                    .Append("); } ");
+            }
+
             // The twin's own TYPED BOUNDARY: which members hydrate off the wire, and as what —
             // `$eq.hydrate` rebuilds a payload object on this prototype and coerces by this map.
             if (ModelFor(type)?.GetDeclaredSymbol(type) is INamedTypeSymbol symbol
@@ -1034,7 +1054,7 @@ public class RecordTypeEmitter
             null => "",
             BlockSyntax block => Own(JsClassMember.Getter(prefix, propertyName, "", _lowering.AccessorBody(block))),
             _ => Own(JsClassMember.Getter(prefix, propertyName, "",
-                _lowering.Body(null, (ExpressionSyntax)getter, isIterator: false, [], isAsync: false))),
+                _lowering.Body(null, (ExpressionSyntax)getter, isIterator: false, []))),
         };
         var setter = property.AccessorList?.Accessors.FirstOrDefault(a => a.Keyword.Text is "set" or "init");
         var setterBody = setter?.ExpressionBody is { } arrow
@@ -1051,7 +1071,7 @@ public class RecordTypeEmitter
     /// lowered as a method's (#432).</summary>
     private string StaticMember(string name, string parameters, BlockSyntax? block, ArrowExpressionClauseSyntax? arrow) =>
         Own(JsClassMember.Method("static ", name, "", parameters, "",
-            _lowering.Body(block, arrow?.Expression, isIterator: false, [], isAsync: false)));
+            _lowering.Body(block, arrow?.Expression, isIterator: false, [])));
 
     /// <summary>A member in the one-line layout this emitter writes a class in, and the space after it.</summary>
     private static string Written(JsClassMember member) => JsMemberWriter.Write(member, JsLayout.Compact) + " ";

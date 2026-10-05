@@ -30,14 +30,14 @@ public class ComponentCompiler
     {
         if (SourceMaps == SourceMapMode.None) return;
         var mappings = _tsEmitter.GetLastMappings();
-        if (mappings.Any() && component.SyntaxTree != null)
-        {
-            // The C# itself only where a developer is debugging, and a path that names the
-            // project's own layout rather than the build machine's.
-            var sourceContent = SourceMaps == SourceMapMode.Full ? component.SyntaxTree.GetText().ToString() : null;
-            result.SourceMap = _sourceMapGenerator.Generate(
-                $"{component.Name}.ts", SourceName(component.SourcePath), mappings, sourceContent, MapSourceRoot());
-        }
+        if (mappings.Count == 0) return;
+        // Every file the module was written from, each named by the project's own layout rather
+        // than the build machine's, and carrying its C# only where a developer is debugging: the
+        // component's file, and the interface's whose default a class takes (#490).
+        var carriesTheCSharp = SourceMaps == SourceMapMode.Full;
+        result.SourceMap = _sourceMapGenerator.Generate($"{component.Name}.ts", mappings,
+            tree => new SourceMapSource(SourceName(tree.FilePath), carriesTheCSharp ? tree.GetText().ToString() : null),
+            MapSourceRoot());
     }
 
     /// <summary>What each module's source map carries. The SDK passes Full in Debug and None

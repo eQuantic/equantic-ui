@@ -30,10 +30,11 @@ public interface IServerRenderingService
     /// <summary>
     /// Renders a page component to HTML string for SSR.
     /// </summary>
-    /// <param name="pageTypeName">The name of the page component type.</param>
+    /// <param name="pageType">The page, by its TYPE: two pages with one name in two namespaces are two
+    /// pages, and a name looked one up as the other (#514).</param>
     /// <param name="context">The HTTP context for the current request.</param>
     /// <returns>The rendered HTML string, or null if SSR is not available for this page.</returns>
-    Task<ServerRenderResult> RenderPageAsync(string pageTypeName, HttpContext context);
+    Task<ServerRenderResult> RenderPageAsync(Type pageType, HttpContext context);
 
     /// <summary>
     /// Everything a page needs to START, without drawing it: the server data its prefetch loads,
@@ -50,7 +51,7 @@ public interface IServerRenderingService
     /// described in one place so the two paths cannot drift.
     /// </para>
     /// </summary>
-    Task<ServerRenderResult> PreparePageAsync(string pageTypeName, HttpContext context);
+    Task<ServerRenderResult> PreparePageAsync(Type pageType, HttpContext context);
 
     /// <summary>
     /// Renders a component instance to HTML string.
@@ -62,9 +63,9 @@ public interface IServerRenderingService
     /// <summary>
     /// Checks if SSR is enabled for a specific page.
     /// </summary>
-    /// <param name="pageTypeName">The name of the page component type.</param>
+    /// <param name="pageType">The page, by its type.</param>
     /// <returns>True if SSR is enabled for this page.</returns>
-    bool IsSsrEnabled(string pageTypeName);
+    bool IsSsrEnabled(Type pageType);
 }
 
 /// <summary>

@@ -1,4 +1,5 @@
 import type { MidpointRounding } from './dotnet-math';
+import { exception } from './exceptions';
 import {
   NULL_TEXT,
   NumberStyles,
@@ -7,6 +8,7 @@ import {
   validateRealStyles,
   type NumberText,
 } from './number-grammar';
+import { hash } from './hash';
 
 /** The largest mantissa a decimal holds: 96 bits. */
 const MAX_MANTISSA = (1n << 96n) - 1n;
@@ -82,12 +84,12 @@ export class Decimal {
    * number (a FormatException) and for one no decimal holds (an OverflowException).
    */
   static parse(text: string | null | undefined, styles: number = NumberStyles.Number): Decimal {
-    if (text == null) throw new Error(NULL_TEXT);
+    if (text == null) throw exception('System.ArgumentNullException', NULL_TEXT);
     validateRealStyles(styles);
     const number = readNumber(text, styles);
     if (number === undefined) throw badFormat(text);
     const value = fromText(number);
-    if (value === undefined) throw new Error(OVERFLOW);
+    if (value === undefined) throw exception('System.OverflowException', OVERFLOW);
     return value;
   }
 
@@ -157,13 +159,13 @@ export class Decimal {
    * computed on the two values as doubles. A zero divisor throws what .NET throws.
    */
   mod(other: Decimal): Decimal {
-    if (other.mantissa === 0n) throw new Error('Attempted to divide by zero.');
+    if (other.mantissa === 0n) throw exception('System.DivideByZeroException', 'Attempted to divide by zero.');
     const [am, bm, scale] = Decimal.align(this, other);
     return new Decimal(am % bm, scale);
   }
 
   div(other: Decimal): Decimal {
-    if (other.mantissa === 0n) throw new Error('Attempted to divide by zero.');
+    if (other.mantissa === 0n) throw exception('System.DivideByZeroException', 'Attempted to divide by zero.');
 
     const targetFrac = 28;
     const shift = other.scale - this.scale + targetFrac;
@@ -192,13 +194,14 @@ export class Decimal {
    */
   round(digits = 0, mode: MidpointRounding = 'toEven'): Decimal {
     if (!Number.isInteger(digits) || digits < 0 || digits > 28) {
-      throw new RangeError('Rounding digits must be between 0 and 28.');
+      throw exception('System.ArgumentOutOfRangeException', 'Rounding digits must be between 0 and 28.');
     }
     // The mode is checked whatever the value, as .NET checks it: a value that needs no rounding
     // does not make a mode that is not one valid. Own keys only, or `toString` would read as a rule.
     const steps = Object.prototype.hasOwnProperty.call(STEPS, mode) ? STEPS[mode] : undefined;
     if (steps === undefined) {
-      throw new RangeError(
+      throw exception(
+        'System.ArgumentException',
         `The value '${String(mode)}' is not valid for this usage of the type MidpointRounding.`,
       );
     }
@@ -235,6 +238,11 @@ export class Decimal {
   /** `Equals(object)`: a decimal of the same value, whatever its scale, and nothing of another kind. */
   equals(other: unknown): boolean {
     return other instanceof Decimal && this.compareTo(other) === 0;
+  }
+
+  /** `GetHashCode()`: its value's, whatever its scale, as `equals` reads it: 1.0 and 1.00 hash alike. */
+  getHashCode(): number {
+    return hash(this.toNumber());
   }
 
   toString(): string {
@@ -311,7 +319,7 @@ function fromText({ negative, digits, scale }: NumberText): Decimal | undefined 
  */
 function fromBinary(value: number, exponent: number, digits: 7 | 15): Decimal {
   if (exponent < -94) return ZERO;
-  if (exponent > 96) throw new Error(OVERFLOW);
+  if (exponent > 96) throw exception('System.OverflowException', OVERFLOW);
   const negative = value < 0;
   const top = digits - 1;
   let scaled = Math.abs(value);
@@ -335,7 +343,7 @@ function fromBinary(value: number, exponent: number, digits: 7 | 15): Decimal {
   let mantissa = BigInt(whole);
   if (power < 0) {
     mantissa *= 10n ** BigInt(-power);
-    if (mantissa > MAX_MANTISSA) throw new Error(OVERFLOW);
+    if (mantissa > MAX_MANTISSA) throw exception('System.OverflowException', OVERFLOW);
     return new Decimal(negative ? -mantissa : mantissa, 0);
   }
   let spare = Math.min(power, top);
@@ -387,5 +395,8 @@ export function decConvert(value: unknown, numbers: 'double' | 'single' = 'doubl
     return numbers === 'single' ? Decimal.fromSingle(value) : Decimal.fromDouble(value);
   }
   const name = (value as { constructor?: { name?: string } }).constructor?.name ?? 'Object';
-  throw new Error(`Unable to cast object of type '${name}' to type 'System.IConvertible'.`);
+  throw exception(
+    'System.InvalidCastException',
+    `Unable to cast object of type '${name}' to type 'System.IConvertible'.`,
+  );
 }

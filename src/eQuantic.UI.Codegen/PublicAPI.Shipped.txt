@@ -24,6 +24,7 @@ eQuantic.UI.Codegen.JsonWriter.JsonWriter() -> void
 eQuantic.UI.Codegen.JsonWriter.Number(string! name, long value) -> eQuantic.UI.Codegen.JsonWriter!
 eQuantic.UI.Codegen.JsonWriter.Object(string! name, System.Action<eQuantic.UI.Codegen.JsonWriter!>! body) -> eQuantic.UI.Codegen.JsonWriter!
 eQuantic.UI.Codegen.JsonWriter.String(string! name, string! value) -> eQuantic.UI.Codegen.JsonWriter!
+eQuantic.UI.Codegen.JsonWriter.Strings(string! name, System.Collections.Generic.IEnumerable<string?>! values) -> eQuantic.UI.Codegen.JsonWriter!
 eQuantic.UI.Codegen.PropertyListWriter
 eQuantic.UI.Codegen.PropertyListWriter.Bool(string! key, bool value) -> eQuantic.UI.Codegen.PropertyListWriter!
 eQuantic.UI.Codegen.PropertyListWriter.Dictionary(string! key, System.Action<eQuantic.UI.Codegen.PropertyListWriter!>! body) -> eQuantic.UI.Codegen.PropertyListWriter!

@@ -28,6 +28,7 @@ import { lowerVisualNode } from './lowering';
 import { ambientLoweringContext } from './photon-context';
 import { CornerRadii, EdgeInsets, SizeValue, StyleChannels, WebContent } from './value-types';
 import { Curve, Motion } from './design-system.generated';
+import { hashesByValue } from '../utils/hash';
 
 export { StyleChannels } from './value-types';
 
@@ -84,6 +85,10 @@ export class StyleDiff {
   opacity?: number | null;
   gradient?: LinearGradient | null;
   backdropBlur?: number | null;
+  /** The transform while active, replacing the base's (C# `StyleDiff.Transform`). */
+  transform?: unknown;
+  /** The custom shadows while active, replacing the base's (C# `StyleDiff.Shadows`). */
+  shadows?: ShadowSpec[] | null;
 
   constructor(config?: {
     background?: ColorTokenValue | null;
@@ -93,6 +98,8 @@ export class StyleDiff {
     opacity?: number | null;
     gradient?: LinearGradient | null;
     backdropBlur?: number | null;
+    transform?: unknown;
+    shadows?: ShadowSpec[] | null;
   }) {
     if (config) Object.assign(this, config);
   }
@@ -995,6 +1002,9 @@ export class Shortcut extends VisualNode {
   onPressed: (() => void) | null;
   /** Only while the keyboard focus is inside this subtree: a component's own chord. */
   focusScoped = false;
+  /** Whether the chord answers at all (C# `Shortcut.Enabled`): off, it stays in the tree and the key
+   * goes on to whatever else would take it. */
+  enabled = true;
 
   constructor(
     child: VisualChild,
@@ -1886,3 +1896,25 @@ export class Spacer extends VisualNode {
     return spacer;
   }
 }
+
+/** The twins of the vocabulary's records and structs: each hashes by its members, as `equals`
+ * compares it (`ValueTwinHashTests` holds this list to the C#). */
+hashesByValue(
+  StyleDiff,
+  TextRun,
+  ShadowSpec,
+  BoxStyle,
+  GridTrack,
+  KeyChord,
+  LinearGradient,
+  TransitionSpec,
+  RadialGradient,
+  GridPattern,
+  RangeValue,
+  IconGlyph,
+  VectorStop,
+  VectorGradient,
+  VectorPaint,
+  VectorShape,
+  VectorDrawing,
+);

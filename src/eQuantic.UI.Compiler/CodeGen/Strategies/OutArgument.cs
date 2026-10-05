@@ -67,4 +67,34 @@ internal static class OutArgument
             _ => JsExprWriter.Write(place),
         };
     }
+
+    /// <summary>
+    /// A <c>TryParse</c> lowered INLINE over a runtime reader, <paramref name="read"/>, that answers the
+    /// value, or undefined where .NET answers false: true with the value in the out argument, or false
+    /// with <paramref name="failed"/> there, what .NET leaves. A discard receives nothing and a bare name
+    /// is assigned in place. A place that reads parts of its own (<c>slots[i]</c>) reads them where it is
+    /// written, before or after the text at <paramref name="readStart"/>: the answer is a part used
+    /// twice, so the template writer binds it, and the parts written before it with it.
+    /// </summary>
+    public static string TryAnswer(ArgumentSyntax result, int readStart, JsExpr read, string failed, ConversionContext context)
+    {
+        string Answer(string template, List<JsExpr> parts) =>
+            JsExprWriter.Write(JsExpr.Template(template, parts, context.TypeAnnotations));
+        if (IsDiscard(result, context)) return Answer("({0} !== undefined)", [read]);
+        var target = Target(result, context);
+        if (IsBareName(target))
+            return Answer($"(({target} = {{0}}) !== undefined || (({target} = {failed}), false))", [read]);
+
+        var parts = new List<JsExpr>();
+        var placeFirst = result.SpanStart < readStart;
+        if (!placeFirst) parts.Add(read);
+        var place = Place(result, context, part =>
+        {
+            parts.Add(part);
+            return $"{{{parts.Count - 1}}}";
+        });
+        var found = placeFirst ? $"{{{parts.Count}}}" : "{0}";
+        if (placeFirst) parts.Add(read);
+        return Answer($"({found} !== undefined ? (({place} = {found}), true) : (({place} = {failed}), false))", parts);
+    }
 }

@@ -97,6 +97,26 @@ public class WikiClaimsCompile
         {
             StyleOverride = brand.Type(TypeRole.Caption) with { Family = "Fira Code", Mono = true },
         };
+
+        // Styling, "A state changes any member of the style" (preview.60): the card that lifts and
+        // deepens its glow on hover, the hover that keeps a resting rotation, and the one that
+        // undoes it.
+        var glow = theme.Colors(Variant.Primary).Base;
+        _ = Box(new BoxStyle
+        {
+            Background = theme.Surface,
+            Elevation = 1,
+            Shadows = [new ShadowSpec(12, 30, -12, glow)],
+            Transition = new TransitionSpec(StyleChannels.Transform | StyleChannels.Shadow),
+            Hover = new StyleDiff
+            {
+                Transform = Transform2D.Translate(0, -2),
+                Elevation = 3,
+                Shadows = [new ShadowSpec(16, 36, -12, glow)],
+            },
+        }, Text("content", TypeRole.BodyM));
+        _ = new StyleDiff { Transform = Transform2D.Rotate(2).WithTranslate(0, -2) };
+        _ = new StyleDiff { Transform = Transform2D.Scale(1) };
     }
 
     /// <summary>The theme the DesignSystem page shows, whose body is elided there as "the rest

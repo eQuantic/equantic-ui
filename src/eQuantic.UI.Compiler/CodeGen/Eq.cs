@@ -168,6 +168,26 @@ public static class Eq
     public const string StringEquals = "$eq.text.equals";
     /// <summary><c>string.Join(separator, value, startIndex, count)</c>: the range, checked.</summary>
     public const string StringJoinRange = "$eq.text.joinRange";
+    /// <summary>A string's own <c>StartsWith(value, comparisonType)</c>.</summary>
+    public const string StringStartsWith = "$eq.text.startsWith";
+    /// <summary>A string's own <c>EndsWith(value, comparisonType)</c>.</summary>
+    public const string StringEndsWith = "$eq.text.endsWith";
+    /// <summary>A string's own <c>IndexOf</c> by a comparison, with its start and count, and the char
+    /// overload: the range checked as .NET checks it.</summary>
+    public const string StringIndexOf = "$eq.text.indexOf";
+    /// <summary>A string's own <c>LastIndexOf</c> by a comparison, with its start and count,
+    /// normalized as .NET's <c>CompareInfo</c> normalizes them.</summary>
+    public const string StringLastIndexOf = "$eq.text.lastIndexOf";
+    /// <summary>A string's own <c>Contains(value, comparisonType)</c>, and the char overload.</summary>
+    public const string StringContains = "$eq.text.contains";
+    /// <summary>A string's own <c>Replace(oldValue, newValue[, comparisonType])</c>: the replacement
+    /// is text, never a pattern.</summary>
+    public const string StringReplace = "$eq.text.replace";
+    /// <summary>A string's own <c>Equals(value, comparisonType)</c>: the static's rule, on an instance
+    /// that must exist.</summary>
+    public const string StringInstanceEquals = "$eq.text.instanceEquals";
+    /// <summary>A string's own <c>CompareTo(strB)</c>: the current culture's comparison.</summary>
+    public const string StringCompareTo = "$eq.text.compareTo";
     /// <summary><c>string.Format(CultureInfo.InvariantCulture, …)</c>: every placeholder in the
     /// invariant culture.</summary>
     public const string StringFormatInvariant = "$eq.text.stringFormatInvariant";
@@ -242,6 +262,35 @@ public static class Eq
     /// warning travelling to everyone who builds this assembly.</summary>
     public new const string Equals = "$eq.equals";
 
+    /// <summary><c>GetHashCode()</c> by .NET's contract: values <see cref="Equals"/> finds equal hash
+    /// equal, and a value with its own <c>getHashCode</c> answers it.</summary>
+    public const string Hash = "$eq.hash.of";
+
+    /// <summary>An instance <c>GetHashCode()</c> on a receiver that may be null: its hash, and the
+    /// refusal .NET's <c>NullReferenceException</c> is where it is null.</summary>
+    public const string HashInstance = "$eq.hash.instance";
+
+    /// <summary>The method group <c>value.GetHashCode</c>: a delegate over the receiver, refused where
+    /// the delegate is made when the receiver is null; a second argument of <c>true</c> hashes an
+    /// array's identity.</summary>
+    public const string HashGroup = "$eq.hash.group";
+
+    /// <summary><c>HashCode.Combine(…)</c>: the values' hashes, combined in order.</summary>
+    public const string HashCombine = "$eq.hash.combine";
+
+    /// <summary><c>object.GetHashCode()</c> for a class that does not override it: its identity's.</summary>
+    public const string HashIdentity = "$eq.hash.identity";
+
+    /// <summary><c>ValueType.GetHashCode()</c>, a struct's members, which its override reaches through
+    /// <c>base</c> without calling itself back.</summary>
+    public const string HashFields = "$eq.hash.fields";
+
+    /// <summary><c>Guid.Parse</c> and <c>new Guid(string)</c>: the canonical text, or .NET's refusal.</summary>
+    public const string GuidParse = "$eq.guid.parse";
+
+    /// <summary><c>Guid.TryParse</c>: the canonical text, or undefined where .NET answers false.</summary>
+    public const string GuidTryParse = "$eq.guid.tryParse";
+
     /// <summary><c>new object()</c>: an identity of its own, which a plain <c>{}</c> is not here, being
     /// an anonymous type compared by its members.</summary>
     public const string NewObject = "$eq.newObject";
@@ -288,4 +337,34 @@ public static class Eq
     public const string SortedDictionary = "$eq.collections.sortedDictionary";
     /// <summary>Factory for a key-sorted list (<c>SortedList&lt;K, V&gt;</c>).</summary>
     public const string SortedList = "$eq.collections.sortedList";
+
+    /// <summary><c>new T(message)</c> for an exception type: a JavaScript Error carrying T and every type
+    /// it derives from, the most derived first, as T's symbol says. Two args: the chain, the message.</summary>
+    public const string ExceptionCreate = "$eq.exceptions.create";
+
+    /// <summary>An exception of a type the runtime throws itself, by its full name, for a lowering that
+    /// throws on .NET's behalf. Two args: the type, the message.</summary>
+    public const string ExceptionOf = "$eq.exceptions.of";
+
+    /// <summary>Whether a value is of an exception type, by the type's full name: the test a typed
+    /// <c>catch</c>, a type pattern and an <c>as</c> write.</summary>
+    public const string ExceptionIs = "$eq.exceptions.is";
+
+    /// <summary>A <c>throw</c> expression: throws its one argument, which is evaluated where C#
+    /// evaluates the exception, in the caller's own function.</summary>
+    public const string Raise = "$eq.exceptions.raise";
+
+    /// <summary>What a <c>throw</c> statement throws when its exception may be null: the exception, or the
+    /// NullReferenceException the CLR throws in its place.</summary>
+    public const string Thrown = "$eq.exceptions.thrown";
+
+    /// <summary>An exception filter, <c>when (…)</c>: the filter's answer, or false where it throws, as
+    /// .NET answers it. One arg: the filter, as a function.</summary>
+    public const string ExceptionFilter = "$eq.exceptions.filter";
+
+    /// <summary><c>Enumerable.Range(start, count)</c>, its arguments evaluated once.</summary>
+    public const string LinqRange = "$eq.linq.range";
+
+    /// <summary><c>Enumerable.Repeat(element, count)</c>: the one element, count times.</summary>
+    public const string LinqRepeat = "$eq.linq.repeat";
 }

@@ -45,16 +45,18 @@ internal static class ObjectInitializer
             Right: not InitializerExpressionSyntax,
         });
 
-    /// <summary>The construction, with the initializer applied to what it builds.</summary>
-    public static string Apply(string construction, InitializerExpressionSyntax initializer, ConversionContext context)
+    /// <summary>The construction, with the initializer applied to what it builds. IR in and out, so a
+    /// lambda among the values keeps its own lines in the source map (#566).</summary>
+    public static JsExpr Apply(JsExpr construction, InitializerExpressionSyntax initializer, ConversionContext context)
     {
         // Assignments alone: the literal's values are evaluated after the construction, in their
         // order, and assigned in it.
         if (OnlyAssigns(initializer))
         {
-            var members = initializer.Expressions.Cast<AssignmentExpressionSyntax>().Select(assignment =>
-                $"{Member(assignment.Left)}: {context.Converter.ConvertExpression(assignment.Right)}");
-            return $"Object.assign({construction}, {{ {string.Join(", ", members)} }})";
+            var members = initializer.Expressions.Cast<AssignmentExpressionSyntax>()
+                .Select(assignment => new JsProperty(Member(assignment.Left), context.Converter.ConvertIr(assignment.Right)))
+                .ToList();
+            return JsExpr.Call(JsExpr.Identifier("Object.assign"), construction, JsExpr.Object(members));
         }
 
         var application = new Application(context);
@@ -74,26 +76,28 @@ internal static class ObjectInitializer
     /// </summary>
     private sealed class Application(ConversionContext context)
     {
-        private readonly List<string> _statements = [];
-        private readonly List<string> _arguments = [];
+        private readonly List<JsStatement> _statements = [];
+        private readonly List<JsExpr> _arguments = [];
 
         /// <summary>The parameter a converted part of the C# arrives in.</summary>
         private string Argument(ExpressionSyntax expression)
         {
-            _arguments.Add(context.Converter.ConvertExpression(expression));
+            _arguments.Add(context.Converter.ConvertIr(expression));
             return "$" + _arguments.Count;
         }
 
+        /// <summary>A statement over the function's parameters, which hold no C# of their own.</summary>
+        private void Statement(string text) => _statements.Add(JsStatement.Raw(text));
+
         /// <summary>The function that applies the statements, invoked in place with the construction and
-        /// every argument.</summary>
-        public string Written(string construction)
+        /// every argument. An IR arrow: the C# it applies is in its arguments, never in its body.</summary>
+        public JsExpr Written(JsExpr construction)
         {
             var annotation = context.TypeAnnotations ? ": any" : "";
             var parameters = string.Join(", ", new[] { Target }.Concat(_arguments.Select((_, i) => "$" + (i + 1)))
                 .Select(parameter => parameter + annotation));
-            var arguments = string.Concat(_arguments.Select(argument => ", " + argument));
-            return $"(({parameters}) => {{ {string.Concat(_statements.Select(statement => statement + " "))}return {Target}; }})"
-                + $"({construction}{arguments})";
+            var body = JsStatement.Block([.. _statements, JsStatement.Return(JsExpr.Identifier(Target))]);
+            return JsExpr.Call(JsExpr.ArrowBlock(parameters, body, context.Layout, context.Depth), [construction, .. _arguments]);
         }
 
         /// <summary>The statements an initializer applies to <paramref name="target"/>, in its order.</summary>
@@ -115,7 +119,7 @@ internal static class ObjectInitializer
                         break;
                     case AssignmentExpressionSyntax { Left: ImplicitElementAccessSyntax key } entry:
                         if (Entry(target, targetType, key, entry.Right) is { } written)
-                            _statements.Add(written);
+                            Statement(written);
                         else
                             Refuse(entry, "an entry of this type");
                         break;
@@ -126,7 +130,7 @@ internal static class ObjectInitializer
                         break;
 
                     case AssignmentExpressionSyntax { Left: IdentifierNameSyntax name } assignment:
-                        _statements.Add($"{target}.{Member(name)} = {Argument(assignment.Right)};");
+                        Statement($"{target}.{Member(name)} = {Argument(assignment.Right)};");
                         break;
 
                     // An element of a collection initializer: its Add, with one argument or with several.
@@ -136,7 +140,7 @@ internal static class ObjectInitializer
                             : [element];
                         var add = context.SemanticModel?.GetCollectionInitializerSymbolInfo(element).Symbol as IMethodSymbol;
                         if (Add(target, targetType, add, arguments) is { } call)
-                            _statements.Add(call);
+                            Statement(call);
                         else
                             Refuse(element, $"'{add?.ContainingType.Name ?? targetType?.Name ?? "this"}.Add'");
                         break;

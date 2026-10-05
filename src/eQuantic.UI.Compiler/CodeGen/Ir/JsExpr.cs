@@ -94,6 +94,12 @@ public abstract record JsExpr
     /// <summary><c>...operand</c>, as an array's element or a call's argument.</summary>
     public static JsExpr Spread(JsExpr operand) => new JsSpread(operand);
 
+    /// <summary><c>new target(arguments)</c>.</summary>
+    public static JsExpr New(JsExpr target, IReadOnlyList<JsExpr> arguments) => new JsNew(target, arguments);
+
+    /// <summary>An object literal of <paramref name="properties"/>, <c>{}</c> when there are none.</summary>
+    public static JsExpr Object(IReadOnlyList<JsProperty> properties) => new JsObject(properties);
+
     public static JsExpr Binary(JsExpr left, string op, JsExpr right) => new JsBinary(left, op, right);
 
     public static JsExpr Prefix(string op, JsExpr operand) => new JsUnary(op, operand, IsPrefix: true);

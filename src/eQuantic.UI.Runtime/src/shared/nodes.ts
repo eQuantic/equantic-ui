@@ -187,6 +187,8 @@ export interface ShortcutNode extends VisualNodeValue {
   onPressed?: (() => void) | null;
   /** Only while the keyboard focus is inside this subtree (C# `Shortcut.FocusScoped`). */
   focusScoped?: boolean;
+  /** Whether the chord answers at all (C# `Shortcut.Enabled`); absent is enabled. */
+  enabled?: boolean;
 }
 
 /** Spec S4 — the 2D grid container (auto-flow, explicit column tracks). */
@@ -262,6 +264,10 @@ export interface StyleDiffValue {
   gradient?: LinearGradientValue | null;
   /** Backdrop blur radius while active (the scrolled header's frosted veil). */
   backdropBlur?: number | null;
+  /** The transform while active, replacing the base's (C# `StyleDiff.Transform`). */
+  transform?: TransformValue | null;
+  /** The custom shadows while active, replacing the base's `shadow` and `shadows`. */
+  shadows?: ShadowSpecValue[] | null;
 }
 
 /** Wire shape of the C# `ShadowSpec` (offsetY, blur, spread, color). */

@@ -5,6 +5,7 @@
  * semantics that JavaScript lacks natively. The transpiler emits calls to these where C# behavior
  * differs from the JS built-ins.
  */
+import { exception } from './exceptions';
 
 /** A `MidpointRounding` as it crosses: enums are their member names on this side. */
 export type MidpointRounding =
@@ -26,7 +27,10 @@ export type MidpointRounding =
  */
 export function round(value: number, digits = 0, mode: MidpointRounding = 'toEven'): number {
   if (!Number.isInteger(digits) || digits < 0 || digits > 15) {
-    throw new RangeError('Rounding digits must be between 0 and 15, inclusive.');
+    throw exception(
+      'System.ArgumentOutOfRangeException',
+      'Rounding digits must be between 0 and 15, inclusive.',
+    );
   }
   if (!Number.isFinite(value) || Math.abs(value) >= 1e16) return value;
   if (digits === 0) return roundBy(value, mode, false);
@@ -41,7 +45,10 @@ export function round(value: number, digits = 0, mode: MidpointRounding = 'toEve
  */
 export function roundSingle(value: number, digits = 0, mode: MidpointRounding = 'toEven'): number {
   if (!Number.isInteger(digits) || digits < 0 || digits > 6) {
-    throw new RangeError('Rounding digits must be between 0 and 6, inclusive.');
+    throw exception(
+      'System.ArgumentOutOfRangeException',
+      'Rounding digits must be between 0 and 6, inclusive.',
+    );
   }
   if (!Number.isFinite(value) || Math.abs(value) >= 1e8) return value;
   if (digits === 0) return roundBy(value, mode, true);
@@ -59,7 +66,8 @@ const MODES: ReadonlySet<string> = new Set<MidpointRounding>([
 
 function requireMode(mode: MidpointRounding): void {
   if (!MODES.has(mode)) {
-    throw new RangeError(
+    throw exception(
+      'System.ArgumentException',
       `The value '${String(mode)}' is not valid for this usage of the type MidpointRounding.`,
     );
   }
@@ -104,7 +112,8 @@ function roundBy(x: number, mode: MidpointRounding, single: boolean): number {
     case 'toPositiveInfinity':
       return Math.ceil(x);
     default:
-      throw new RangeError(
+      throw exception(
+        'System.ArgumentException',
         `The value '${String(mode)}' is not valid for this usage of the type MidpointRounding.`,
       );
   }

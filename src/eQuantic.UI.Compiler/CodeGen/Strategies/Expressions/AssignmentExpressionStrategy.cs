@@ -24,10 +24,12 @@ public class AssignmentExpressionStrategy : IExpressionIrStrategy
     /// A deconstruction a record, a struct or any type with a Deconstruct takes part in, or one whose
     /// targets capture (<see cref="DeconstructionPattern.Captures"/>), or null for any other of tuples
     /// alone. A declaration is one <c>let</c>, a level whose <c>Deconstruct</c> the app wrote one more
-    /// declarator of it. An assignment is one destructuring when nothing reads its value, no level
-    /// needs a call and no target captures; otherwise each part is bound to a temporary, inside an
-    /// arrow that runs any such call, assigns the targets, and answers the tuple of the parts, which is
-    /// the value C# gives it (an assignment's destructuring answered its right-hand side, a record).
+    /// declarator of it, and so is a part its type converts. An assignment is one destructuring when
+    /// nothing reads its value, no level needs a call, no target captures and no part converts;
+    /// otherwise each part is bound to a temporary, inside an arrow that runs any such call, writes the
+    /// targets as each takes its part (a dictionary's entry through its class, #542), and answers the
+    /// tuple of the parts, which is the value C# gives it (an assignment's destructuring answered its
+    /// right-hand side, a record).
     /// What the targets capture is its first arguments, evaluated before the value, as C# evaluates
     /// them.
     /// </summary>
@@ -42,7 +44,7 @@ public class AssignmentExpressionStrategy : IExpressionIrStrategy
         var written = JsExprWriter.Write(value);
         if (assignment.Left is DeclarationExpressionSyntax)
             return $"let {lowered.Pattern} = {written}{DeconstructionPattern.StepDeclarators(lowered, context)}";
-        if (lowered.Steps.Count == 0 && !ValueIsRead(assignment) && !captures)
+        if (lowered.Steps.Count == 0 && !ValueIsRead(assignment) && !captures && !lowered.Converts)
             return $"({lowered.Pattern} = {written})";
 
         var bound = DeconstructionPattern.Of(assignment.Left, info, type, context, temporaries: true, capture: captures)!;
@@ -52,7 +54,7 @@ public class AssignmentExpressionStrategy : IExpressionIrStrategy
         body.Append($"({bound.Pattern} = {subject}); ");
         foreach (var step in bound.Steps)
             body.Append($"({step.Pattern} = {DeconstructionPattern.StepValue(step, context)}); ");
-        foreach (var (temporary, target) in bound.Assignments) body.Append($"{target} = {temporary}; ");
+        foreach (var (_, write) in bound.Assignments) body.Append($"{write}; ");
         body.Append($"return {bound.Tuple}; ");
         var parameters = bound.Captures.Select(capture => capture.Name).Append(subject);
         var arguments = bound.Captures.Select(capture => capture.Value).Append(written);
@@ -151,6 +153,29 @@ public class AssignmentExpressionStrategy : IExpressionIrStrategy
                 JsExprWriter.Write(current), JsExprWriter.Write(operand))!);
 
         var leftType = context.SemanticHelper.GetType(assignment.Left);
+
+        // A COMPOUND over a date, an offset or a time span: their operators are methods of the
+        // runtime's twins, which JavaScript's `op=` cannot call, so `d -= span` subtracted two objects
+        // into NaN and never refused a date leaving the calendar (#424). A nullable operand is lifted,
+        // as C#'s operator is: a null on either side answers null.
+        var rightType = context.SemanticHelper.GetType(assignment.Right);
+        if (op is "+=" or "-="
+            && BinaryExpressionStrategy.ConvertDateTimeOrTimeSpan("{0}", "{1}", op[..^1], leftType, rightType) is { } compat)
+        {
+            if (leftType is INamedTypeSymbol { OriginalDefinition.SpecialType: SpecialType.System_Nullable_T }
+                || rightType is INamedTypeSymbol { OriginalDefinition.SpecialType: SpecialType.System_Nullable_T })
+            {
+                context.UsedHelpers.Add(Eq.Import);
+                // The operator over the two values the lift hands it, and nothing else: an IR arrow,
+                // whose writer is the one that writes every arrow, holding no C# of its own.
+                var body = BinaryExpressionStrategy.ConvertDateTimeOrTimeSpan("$a", "$b", op[..^1], leftType, rightType);
+                var lifted = JsExpr.Arrow("$a, $b", JsExpr.Opaque(body!));
+                return Compound((current, operand) =>
+                    JsExpr.Call(JsExpr.Identifier(Eq.LiftArith), current, operand, lifted));
+            }
+            return Compound((current, operand) => JsExpr.Template(compat, [current, operand]));
+        }
+
         if (op.Length >= 2 && op[^1] == '=' && op is not ("==" or "!=" or "<=" or ">=" or "??="))
         {
             var binaryOp = op[..^1];

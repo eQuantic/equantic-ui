@@ -1,11 +1,9 @@
 AddChildStrategy
-AnonymousObjectCreationStrategy
 ArrayCreationStrategy
 ArrayStaticStrategy
 AsExpressionStrategy
 AverageStrategy
 CastStrategy
-CheckedExpressionStrategy
 CollectionMaterializationStrategy
 ConditionalAccessStrategy
 ConsoleStrategy
@@ -22,17 +20,14 @@ ElementAtStrategy
 EnumHasFlagStrategy
 EnumMethodStrategy
 EnumStrategy
-EnumerableFactoryStrategy
 EventSubscriptionStrategy
 FieldExpressionStrategy
 FirstStrategy
 GenericNameStrategy
 GroupByStrategy
-GuidTypeStrategy
 HashSetStrategy
 HtmlNodeStrategy
 IndexFromEndStrategy
-InitializerExpressionStrategy
 InlinedConstantStrategy
 InterpolatedStringStrategy
 IsPatternStrategy
@@ -43,7 +38,6 @@ NameofStrategy
 NamespaceRemovalStrategy
 NullableStrategy
 NumericConstantStrategy
-ObjectCreationStrategy
 OfTypeStrategy
 OrderByStrategy
 QueryExpressionStrategy
@@ -69,7 +63,6 @@ SumStrategy
 SwitchExpressionStrategy
 TakeStrategy
 TaskMethodStrategy
-ThrowExpressionStrategy
 TimeSpanStrategy
 ToStringStrategy
 TupleExpressionStrategy

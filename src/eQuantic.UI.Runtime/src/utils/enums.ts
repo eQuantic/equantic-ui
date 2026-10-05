@@ -1,3 +1,5 @@
+import { exception } from './exceptions';
+
 /**
  * An enum as .NET reads it, from the shape the compiler writes at each call: an enum has no object of
  * its own in the browser, where a value is its member's camelCase name, or its number for a flags
@@ -73,7 +75,7 @@ export function text(held: unknown, shape: EnumShape, format?: string | null): s
     case 'G':
       return names(shape, value, shape.flags);
     default:
-      throw new Error('Format string can be only "G", "g", "X", "x", "F", "f", "D" or "d".');
+      throw exception('System.FormatException', 'Format string can be only "G", "g", "X", "x", "F", "f", "D" or "d".');
   }
 }
 
@@ -133,9 +135,9 @@ function read(input: string, shape: EnumShape, ignoreCase: boolean): number | un
 
 /** `Enum.Parse`: the value text names, which throws where .NET throws. */
 export function parse(input: string, shape: EnumShape, ignoreCase = false): string | number {
-  if (input == null) throw new Error("Value cannot be null. (Parameter 'value')");
+  if (input == null) throw exception('System.ArgumentNullException', "Value cannot be null. (Parameter 'value')");
   const value = read(input, shape, ignoreCase);
-  if (value === undefined) throw new Error(`Requested value '${input}' was not found.`);
+  if (value === undefined) throw exception('System.ArgumentException', `Requested value '${input}' was not found.`);
   return hold(value, shape);
 }
 
@@ -170,11 +172,12 @@ function byValue(shape: EnumShape): number[] {
  * `object` holding either, or null where no member has it, a flags combination included.
  */
 export function name(given: unknown, shape: EnumShape, as: 'held' | 'number' | 'object'): string | null {
-  if (given == null) throw new Error("Value cannot be null. (Parameter 'value')");
+  if (given == null) throw exception('System.ArgumentNullException', "Value cannot be null. (Parameter 'value')");
   // An object must hold the enum or a number, as .NET's GetName(Type, object) requires: a boxed
   // member is its key here, and a string or a bool of any other kind is refused in .NET's words.
   if (as === 'object' && typeof given !== 'number' && typeof given !== 'bigint' && !(typeof given === 'string' && keys(shape).includes(given)))
-    throw new Error(
+    throw exception(
+      'System.ArgumentException',
       "The value passed in must be an enum base or an underlying type for an enum, such as an Int32. (Parameter 'value')",
     );
   const value = as === 'number' || typeof given === 'number' || typeof given === 'bigint' ? Number(given) : valueOf(given, shape);
@@ -198,13 +201,13 @@ export function values(shape: EnumShape): (string | number)[] {
  * string is a name, or the key of a boxed member, and a number is a value.
  */
 export function isDefined(given: unknown, shape: EnumShape, as: 'held' | 'number' | 'name' | 'object'): boolean {
-  if (given == null) throw new Error("Value cannot be null. (Parameter 'value')");
+  if (given == null) throw exception('System.ArgumentNullException', "Value cannot be null. (Parameter 'value')");
   if (as === 'object') {
     if (typeof given === 'string') return shape.names.includes(given) || keys(shape).includes(given);
     // An integral number of the underlying type, as .NET requires; a bool, a fraction or any other
     // object is a type .NET refuses with "Unknown enum type.".
     if ((typeof given !== 'number' || !Number.isInteger(given)) && typeof given !== 'bigint')
-      throw new Error('Unknown enum type.');
+      throw exception('System.InvalidOperationException', 'Unknown enum type.');
     return shape.values.includes(Number(given));
   }
   if (as === 'name') return shape.names.includes(given as string);
@@ -219,9 +222,9 @@ export function isDefined(given: unknown, shape: EnumShape, as: 'held' | 'number
  * string spelled as a member's key cannot be told from the member, both being that string here.
  */
 export function unbox(given: unknown, shape: EnumShape, name: string): string | number {
-  if (given == null) throw new Error('Object reference not set to an instance of an object.');
+  if (given == null) throw exception('System.NullReferenceException', 'Object reference not set to an instance of an object.');
   if (typeof given === 'number') return hold(given, shape);
   if (typeof given === 'string' && keys(shape).includes(given)) return given;
   const type = typeof given === 'string' ? 'System.String' : typeof given === 'boolean' ? 'System.Boolean' : 'System.Object';
-  throw new Error(`Unable to cast object of type '${type}' to type '${name}'.`);
+  throw exception('System.InvalidCastException', `Unable to cast object of type '${type}' to type '${name}'.`);
 }

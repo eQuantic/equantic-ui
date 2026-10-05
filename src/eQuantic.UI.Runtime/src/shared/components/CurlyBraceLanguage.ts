@@ -56,7 +56,7 @@ export abstract class CurlyBraceLanguage {
     tokenize(line: string, state: number, into: CodeToken[]) {
         let i = 0;
         if (state === CurlyBraceLanguage.stateBlockComment) {
-            let close = line.indexOf('*/');
+            let close = $eq.text.indexOf(line, '*/', 'ordinal');
             if (close < 0) {
                 CurlyBraceLanguage.add(into, 0, line.length, 'comment');
                 return CurlyBraceLanguage.stateBlockComment;
@@ -93,7 +93,7 @@ export abstract class CurlyBraceLanguage {
                     return CurlyBraceLanguage.stateNormal;
                 }
                 if (line[i + 1] === '*') {
-                    let close = line.indexOf('*/', i + 2);
+                    let close = $eq.text.indexOf(line, '*/', i + 2, 'ordinal');
                     if (close < 0) {
                         CurlyBraceLanguage.add(into, i, line.length - i, 'comment');
                         return CurlyBraceLanguage.stateBlockComment;

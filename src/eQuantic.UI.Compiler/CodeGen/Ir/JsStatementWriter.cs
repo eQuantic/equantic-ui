@@ -51,7 +51,7 @@ public static class JsStatementWriter
         JsBlock block => "{" + string.Concat(block.Statements.Select(Compact)) + "}",
         JsHeaded headed => $"{headed.Head} {BracedCompact(headed.Body)}",
         JsTry @try => $"try {Compact(@try.Body)}"
-                      + string.Concat(@try.Catches.Select(c => $" catch{(c.Binding.Length == 0 ? "" : " " + c.Binding)} {Compact(c.Block)}"))
+                      + (@try.Catch is { } c ? $" catch{(c.Binding.Length == 0 ? "" : " " + c.Binding)} {Compact(c.Block)}" : "")
                       + (@try.Finally is null ? "" : $" finally {Compact(@try.Finally)}"),
         JsSwitch @switch => $"switch ({JsExprWriter.Write(@switch.Subject)}) {{"
                             + string.Concat(@switch.Cases.Select(c =>
@@ -75,8 +75,7 @@ public static class JsStatementWriter
         JsExpressionStatement expression => new JsWrittenBuilder().Add(Expr(expression.Expr)).Add(";").Done(),
         JsReturn { Value: null } => JsWritten.Of("return;"),
         JsReturn { Value: { } value } => new JsWrittenBuilder().Add("return ").Add(Expr(value)).Add(";").Done(),
-        JsThrow { Value: null } => JsWritten.Of("throw;"),
-        JsThrow { Value: { } value } => new JsWrittenBuilder().Add("throw ").Add(Expr(value)).Add(";").Done(),
+        JsThrow @throw => new JsWrittenBuilder().Add("throw ").Add(Expr(@throw.Value)).Add(";").Done(),
         JsLet let => new JsWrittenBuilder().Add($"let {let.Name}{let.Annotation} = ").Add(Expr(let.Initializer)).Add(";").Done(),
         JsConst @const => new JsWrittenBuilder().Add($"const {@const.Name} = ").Add(Expr(@const.Initializer)).Add(";").Done(),
         JsBreak { Label: null } => JsWritten.Of("break;"),
@@ -163,7 +162,7 @@ public static class JsStatementWriter
     private static JsWritten PrettyTry(JsTry @try, int depth, SyntaxNode? enclosing)
     {
         var text = new JsWrittenBuilder().Add("try ").Add(Pretty(@try.Body, depth, enclosing));
-        foreach (var @catch in @try.Catches)
+        if (@try.Catch is { } @catch)
             text.Add($" catch{(@catch.Binding.Length == 0 ? "" : " " + @catch.Binding)} ").Add(Pretty(@catch.Block, depth, enclosing));
         if (@try.Finally is not null) text.Add(" finally ").Add(Pretty(@try.Finally, depth, enclosing));
         return text.Done();

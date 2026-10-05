@@ -28,7 +28,7 @@ export class CodeDiffer {
             let fromJ = j;
             while (i < a.length && removed[i]) i++;
             while (j < b.length && added[j]) j++;
-            if (i === fromI && j === fromJ) throw new Error('The two sides of the diff lost their alignment.');
+            if (i === fromI && j === fromJ) throw $eq.exceptions.create(['System.InvalidOperationException', 'System.SystemException', 'System.Exception'], 'The two sides of the diff lost their alignment.');
             changes.push(new CodeLineChange(fromI, i - fromI, fromJ, j - fromJ, CodeDiffer.innerChanges(original, fromI, i - fromI, modified, fromJ, j - fromJ)));
         }
         return changes;
@@ -173,7 +173,7 @@ export class CodeDiffer {
             let fromJ = j;
             while (i < a.length && removed[i]) i++;
             while (j < b.length && added[j]) j++;
-            if (i === fromI && j === fromJ) throw new Error('The two sides of the diff lost their alignment.');
+            if (i === fromI && j === fromJ) throw $eq.exceptions.create(['System.InvalidOperationException', 'System.SystemException', 'System.Exception'], 'The two sides of the diff lost their alignment.');
             inner.push(new CodeInnerChange(CodeDiffer.span(aTexts, aLines, aColumns, fromI, i, originalEnd), CodeDiffer.span(bTexts, bLines, bColumns, fromJ, j, modifiedEnd)));
         }
         return inner;

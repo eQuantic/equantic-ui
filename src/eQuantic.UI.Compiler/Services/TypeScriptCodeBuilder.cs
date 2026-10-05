@@ -18,13 +18,18 @@ public class TypeScriptCodeBuilder
     private readonly CodeWriter _writer = new();
     private readonly List<SourceMapping> _mappings = new();
 
+    /// <summary>A position of the generated text and the C# it came from: the line 1-based and the
+    /// columns 0-based, and the source line 0-based, as Roslyn counts it.</summary>
     public struct SourceMapping
     {
         public int GeneratedLine;
         public int GeneratedColumn;
         public int SourceLine;
         public int SourceColumn;
-        public string SourceFile;
+
+        /// <summary>The file the C# is in. Not always the module's own: a default an interface
+        /// supplies is written into the class from the interface's file (#490).</summary>
+        public SyntaxTree Source;
     }
 
     public List<SourceMapping> GetMappings() => _mappings;
@@ -134,7 +139,7 @@ public class TypeScriptCodeBuilder
             // Roslyn line/character positions are already 0-based, matching the source-map spec.
             SourceLine = pos.StartLinePosition.Line,
             SourceColumn = pos.StartLinePosition.Character,
-            SourceFile = pos.Path
+            Source = node.SyntaxTree,
         });
     }
 

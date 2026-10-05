@@ -24,7 +24,9 @@ public class CollectionComparerFenceTests
     [InlineData("var m = new SortedDictionary<string, int>(StringComparer.OrdinalIgnoreCase);")]
     public void AComparerThatChangesEqualityIsRefused(string statement)
     {
-        ErrorsOf(statement).Should().Contain("EQ2007");
+        // The FENCE's refusal, and only it: a strategy that refuses the same construction again says the
+        // same thing twice under a code that names no comparer (#577).
+        ErrorsOf(statement).Should().Contain("EQ2007").And.NotContain("EQ1004");
     }
 
     [Theory]
@@ -34,9 +36,18 @@ public class CollectionComparerFenceTests
     [InlineData("var s = new SortedSet<int>(Comparer<int>.Default);")]
     [InlineData("var l = new List<int>(16);")]
     [InlineData("var d = new Dictionary<string, int>(capacity: 4);")]
+    // The shape a site met on 0.2.0-preview.60 (#577): an ordinal dictionary with an indexer
+    // initializer, target-typed, and its siblings, which #443 refused with EQ1004.
+    [InlineData("Dictionary<string, int> d = new(StringComparer.Ordinal) { [\"a\"] = 1 };")]
+    [InlineData("var d = new Dictionary<string, int>(new Dictionary<string, int>(), StringComparer.Ordinal);")]
+    [InlineData("var d = new Dictionary<string, int>(4, StringComparer.Ordinal);")]
+    [InlineData("var m = new SortedDictionary<string, int>(StringComparer.Ordinal);")]
+    [InlineData("var m = new SortedList<string, int>(Comparer<string>.Default);")]
     public void AComparerThatAsksForWhatTheLoweringDoesPasses(string statement)
     {
-        ErrorsOf(statement).Should().NotContain("EQ2007");
+        // No error at all, not merely no EQ2007: #443's refusal was EQ1004, which a check for the
+        // fence's own code never saw.
+        ErrorsOf(statement).Should().BeEmpty();
     }
 
     /// <summary>Compiled with the framework referenced, so the constructor BINDS: the fence reads the

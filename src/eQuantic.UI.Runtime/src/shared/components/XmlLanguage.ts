@@ -17,7 +17,7 @@ export class XmlLanguage {
     tokenize(line: string, state: number, into: CodeToken[]) {
         let i = 0;
         if (state === XmlLanguage.inComment) {
-            let close = line.indexOf('-->');
+            let close = $eq.text.indexOf(line, '-->', 'ordinal');
             if (close < 0) {
                 into.push(new CodeToken(0, line.length, 'comment'));
                 return XmlLanguage.inComment;
@@ -32,8 +32,8 @@ export class XmlLanguage {
                 continue;
             }
             if (c === '<') {
-                if (line.slice(i).startsWith('<!--')) {
-                    let close = line.indexOf('-->', i);
+                if ($eq.text.startsWith(line.slice(i), '<!--', 'ordinal')) {
+                    let close = $eq.text.indexOf(line, '-->', i, 'ordinal');
                     if (close < 0) {
                         into.push(new CodeToken(i, line.length - i, 'comment'));
                         return XmlLanguage.inComment;
