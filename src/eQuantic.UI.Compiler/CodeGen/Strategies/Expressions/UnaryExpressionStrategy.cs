@@ -127,23 +127,32 @@ public class UnaryExpressionStrategy : IExpressionIrStrategy
         JsExpr Plain(ITypeSymbol number, JsExpr current) =>
             JsExpr.Binary(current, delta, JsExpr.Literal(number.IsLong() ? "1n" : "1"));
 
-        // A user-defined step of a type the source declares; a framework type's (Int128, Half) keeps the
-        // rules below, which have none for it.
+        // A user-defined step goes through the static its twin carries, for a type the source
+        // declares; a framework type's (Int128, Half) keeps the rules below, which have none for it,
+        // and a host-only one stops here.
         if (context.SemanticHelper.GetOperation(node) is Microsoft.CodeAnalysis.Operations.IIncrementOrDecrementOperation
-            { OperatorMethod: { } method } increment && UserDefinedOperators.IsInSource(method))
+            { OperatorMethod: { } method } increment)
         {
-            // C# 14's instance `void operator ++()` steps the value in place, which no twin carries yet.
-            if (!method.IsStatic || UserDefinedOperators.Unary(method, op, "") is null)
-                return JsExpr.Callish(context.Unhandled(node, "user-defined step"));
-            method.ContainingType.RegisterIntroduced(context);
-            JsExpr Operator(JsExpr current) => UserDefinedOperators.Unary(method, op, JsExprWriter.Write(current))!;
-            return Stepped(current => increment.IsLifted ? NullableLift.Unary(current, Operator, context) : Operator(current));
+            if (method.ReportIfHostOnly(node, context)) return JsExpr.Callish("undefined");
+            if (UserDefinedOperators.IsInSource(method))
+            {
+                // C# 14's instance `void operator ++()` steps the value in place, which no twin carries yet.
+                if (!method.IsStatic || UserDefinedOperators.Unary(method, op, "") is null)
+                    return JsExpr.Callish(context.Unhandled(node, "user-defined step"));
+                method.ContainingType.RegisterIntroduced(context);
+                JsExpr Operator(JsExpr current) => UserDefinedOperators.Unary(method, op, JsExprWriter.Write(current))!;
+                return Stepped(current => increment.IsLifted ? NullableLift.Unary(current, Operator, context) : Operator(current));
+            }
         }
         if (NullableLift.IsNullableNumber(type, out var value))
         {
             var rule = StepRule(value, delta, node, context) ?? (current => Plain(value, current));
             return Stepped(current => NullableLift.Unary(current, rule, context));
         }
+        // A nullable enum steps its value inside the lift, as a nullable number does.
+        if (type.IsNullableValue() && type.UnwrapNullable() is INamedTypeSymbol { TypeKind: TypeKind.Enum } nullableEnum
+            && StepRule(nullableEnum, delta, node, context) is { } enumRule)
+            return Stepped(current => NullableLift.Unary(current, enumRule, context));
         if (StepRule(type, delta, node, context) is { } typed) return Stepped(typed);
         if (place is null) return null;
         if (NullableLift.IsNumber(type)) return Stepped(current => Plain(type, current));

@@ -215,6 +215,8 @@ public class IndexerConformanceTests
         ("a struct's operator", "var k = new Counters(); k[0]++; var old = k[0]++; var now = --k[1]; var c = new Counter(); c++; ++c; return k[0].V + \"|\" + old.V + \"|\" + now.V + \"|\" + c.V;"),
         // "2|C|B": a flags enum steps its number, and a local enum its value
         ("a flags enum and a local enum", "var f = new Flags(); f[0]++; f[0]++; var m = Mode.A; m++; var o = m++; return (int)f[0] + \"|\" + m + \"|\" + o;"),
+        // "C|True|C": a nullable enum steps its value, and null stays null
+        ("a nullable enum", "Mode? m = Mode.A; m++; Mode? none = null; none++; var n = ++m; return m + \"|\" + (none == null) + \"|\" + n;"),
         // "1.5|2.5": a decimal steps on the type
         ("a decimal", "var d = new Decimals(); d[0]++; var old = d[0]--; return d[0] + \"|\" + old;"),
     ];
