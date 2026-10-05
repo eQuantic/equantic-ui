@@ -174,6 +174,10 @@ public class RecordConstructionConformanceTests
         "Log2.Text = \"\"; var p = new Pair(\"x\"); var first = Log2.Text; Log2.Text = \"\"; var q = new Pair(B: Log2.Note(\"d\", 4), A: Log2.Note(\"c\", 3)); return first + \"|\" + p.A + p.B + \"|\" + Log2.Text + \"|\" + q.A + q.B;")] // "ba|12|dc|34"
     [InlineData("public record Size(int W, int H) { public Size(string text) : this(int.TryParse(text, out var n) ? n : 0, n) { } }",
         "return new Size(\"4\").W + \"|\" + new Size(\"4\").H + \"|\" + new Size(\"z\").W;")]                     // "4|4|0"
+    // More arguments out of their order than a template's holes: still evaluated where written (found by
+    // Copilot's review of #608, where eleven kept the parameter order).
+    [InlineData("public record Log3 { public static string Text = \"\"; public static int Note(string s, int v) { Text += s; return v; } } public record Wide(int A, int B, int C, int D, int E, int F, int G, int H, int I, int J, int K);",
+        "Log3.Text = \"\"; var w = new Wide(K: Log3.Note(\"k\", 11), A: Log3.Note(\"a\", 1), B: Log3.Note(\"b\", 2), C: Log3.Note(\"c\", 3), D: Log3.Note(\"d\", 4), E: Log3.Note(\"e\", 5), F: Log3.Note(\"f\", 6), G: Log3.Note(\"g\", 7), H: Log3.Note(\"h\", 8), I: Log3.Note(\"i\", 9), J: Log3.Note(\"j\", 10)); return Log3.Text + \"|\" + w.A + \"|\" + w.K;")] // "kabcdefghij|1|11"
     public void AConstructorsArguments_LandAsCSharpBindsThem(string prelude, string statements)
     {
         Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");

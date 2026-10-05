@@ -140,13 +140,21 @@ internal sealed class BoundArguments
     /// is the order they are written, and otherwise evaluated in the order they are written by the
     /// template's single evaluation (each bound once, as the arguments of the function that passes them
     /// in parameter order, so an <c>await</c> among them stays in the caller's function). A template
-    /// holds ten parts; a call with more out of order keeps the parameter order.
+    /// holds ten parts; past them the same function is written out, its parameters `$a0`, `$a1`… in
+    /// the order the arguments are written. It kept the parameter order instead, so eleven named
+    /// arguments out of their order ran in the signature's (found by Copilot's review of #608).
     /// </summary>
     public JsExpr New(string type, bool annotate)
     {
         // Literals and names alone can be read in any order: nothing among them runs.
-        if (InWrittenOrder || Written.All(part => part is JsLiteral or JsIdentifier) || Written.Count > 10)
+        if (InWrittenOrder || Written.All(part => part is JsLiteral or JsIdentifier))
             return JsExpr.New(JsExpr.Identifier(type), InParameterOrder());
+        if (Written.Count > 10)
+        {
+            var parameters = string.Join(", ", Written.Select((_, index) => $"$a{index}" + (annotate ? ": any" : "")));
+            var construction = JsExpr.New(JsExpr.Identifier(type), InParameterOrder(index => JsExpr.Identifier($"$a{index}")));
+            return JsExpr.Call(JsExpr.Arrow(parameters, construction), Written);
+        }
         var holes = Slots.Select(slot => slot.Written < 0 ? "undefined" : (slot.Spread ? "..." : "") + $"{{{slot.Written}}}");
         return JsExpr.Template($"(new {type}({string.Join(", ", holes)}))", Written, annotate);
     }
