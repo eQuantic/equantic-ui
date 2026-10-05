@@ -149,7 +149,9 @@ public static class RuntimeJson
     /// <summary>
     /// An enum as the runtime holds it: a <c>[Flags]</c> enum's number, a member by its twin name
     /// (<c>TwinName</c>, the rule eqc names it by), the first declared when two share a value, and a
-    /// value no member names by its number. The number is written as its underlying type is.
+    /// value no member names by its number. The number is a JS number whatever the underlying type, as
+    /// eqc writes an enum's value, so an enum over a long writes no BigInt: it is written as the double
+    /// it is (found in review).
     /// </summary>
     private sealed class EnumAsTwin : JsonConverterFactory
     {
@@ -175,16 +177,16 @@ public static class RuntimeJson
             public override void Write(Utf8JsonWriter writer, TEnum value, JsonSerializerOptions options)
             {
                 if (!Flags && Names.TryGetValue(value, out var name)) writer.WriteStringValue(name);
-                else JsonSerializer.Serialize(writer, Underlying(value), options);
+                else writer.WriteRawValue(Number(value));
             }
 
             public override void WriteAsPropertyName(Utf8JsonWriter writer, TEnum value, JsonSerializerOptions options) =>
                 writer.WritePropertyName(!Flags && Names.TryGetValue(value, out var name)
                     ? name
-                    : Convert.ToString(Underlying(value), CultureInfo.InvariantCulture)!);
+                    : Number(value));
 
-            private static object Underlying(TEnum value) =>
-                Convert.ChangeType(value, Enum.GetUnderlyingType(typeof(TEnum)), CultureInfo.InvariantCulture);
+            /// <summary>The value's number, as the JS number the browser holds it in.</summary>
+            private static string Number(TEnum value) => NumberText(Convert.ToDouble(value, CultureInfo.InvariantCulture));
         }
     }
 

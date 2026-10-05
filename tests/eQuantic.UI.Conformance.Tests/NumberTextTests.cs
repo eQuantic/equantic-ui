@@ -41,6 +41,7 @@ public class NumberTextTests
         var program = "const f = new Float64Array(1); const u = new BigUint64Array(f.buffer); "
             + $"console.log(JSON.stringify([{bits}].map(b => {{ u[0] = b; return String(f[0]); }})));";
         var javaScript = JsonSerializer.Deserialize<List<string>>(JsExecutor.Run(program))!;
+        Assert.Equal(values.Count, javaScript.Count);
 
         var differing = values
             .Select((value, at) => (Value: value, Ours: RuntimeJson.NumberText(value), Theirs: javaScript[at]))
@@ -49,6 +50,5 @@ public class NumberTextTests
             .Select(pair => $"{pair.Value:R}: the harness wrote {pair.Ours}, JavaScript {pair.Theirs}")
             .ToList();
         Assert.True(differing.Count == 0, string.Join("\n", differing));
-        Assert.Equal(values.Count, javaScript.Count);
     }
 }

@@ -18,6 +18,7 @@ public class ReturnedValueConformanceTests
         public record Item(long Id, string Name);
         public enum Day { Monday, Friday }
         [System.Flags] public enum Mode { None = 0, A = 1, B = 2 }
+        public enum Big : long { A = 1 }
         """;
 
     [SkippableTheory]
@@ -39,12 +40,18 @@ public class ReturnedValueConformanceTests
     [InlineData("return 1.5m;")]
     [InlineData("return new[] { 1.50m, 2m };")]
     [InlineData("return decimal.MaxValue;")]
+    [InlineData("return new Dictionary<decimal, int> { [1.50m] = 1 };")]
     // An enum by its member's name, a flags enum and a value no member names by its number.
     [InlineData("return Day.Friday;")]
     [InlineData("return new[] { Day.Monday };")]
     [InlineData("return (Day)7;")]
     [InlineData("return Mode.A | Mode.B;")]
     [InlineData("return new Dictionary<Day, int> { [Day.Friday] = 1 };")]
+    [InlineData("return new Dictionary<Mode, int> { [Mode.A | Mode.B] = 1 };")]
+    [InlineData("return new Dictionary<Day, int> { [(Day)7] = 1 };")]
+    // An enum over a long: its member by name, and a value no member names as the runtime holds it.
+    [InlineData("return Big.A;")]
+    [InlineData("return (Big)5;")]
     // A double as JavaScript writes it, where .NET's own text switches to E notation sooner.
     [InlineData("return 1e17;")]
     [InlineData("return 123456789012345678.0;")]
@@ -53,6 +60,7 @@ public class ReturnedValueConformanceTests
     [InlineData("return double.NaN;")]
     [InlineData("return double.NegativeInfinity;")]
     [InlineData("return -0.0;")]
+    [InlineData("return new Dictionary<double, int> { [1e21] = 1, [0.5] = 2 };")]
     // A float as the double the browser holds it in.
     [InlineData("return 0.1f;")]
     [InlineData("return 1e20f;")]
