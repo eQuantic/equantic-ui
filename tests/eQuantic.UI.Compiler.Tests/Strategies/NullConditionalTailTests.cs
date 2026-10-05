@@ -29,7 +29,7 @@ public class NullConditionalTailTests
         var (js, diagnostics) = Convert(
             "string s = \"abc\"; " + Needle + "return s?.StartsWith(await Needle(), StringComparison.Ordinal);");
         js.Should().Contain("return (s == null ? null : $eq.text.startsWith(s, await needle(), 'ordinal'));");
-        js.Should().NotContain("async ($");
+        js.Should().NotMatchRegex(@"async \(\$\w+\) => \$\w+ == null", "no async arrow guards the tail");
         diagnostics.Should().BeEmpty();
     }
 

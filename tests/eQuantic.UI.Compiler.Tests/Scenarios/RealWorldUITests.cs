@@ -44,7 +44,7 @@ public class RealWorldUITests
         // to a temporary its statement declares, rather than by `?.`, which only reads a JavaScript
         // member (#539).
         result.Should().Contain("let $n0;");
-        result.Should().Contain("(($n0 = this.user.email) == null ? null : $eq.text.trim($n0)");
+        result.Should().Contain("let email = (($n0 = this.user.email) == null ? null : $eq.text.trim($n0).toLowerCase()) ?? null;");
         result.Should().Contain("toLowerCase()");
         result.Should().Contain("?? null");
         result.Should().Contain("includes('@')");
@@ -205,7 +205,7 @@ public class RealWorldUITests
         // receiver once, to a temporary its statement declares, rather than by `?.`, which only
         // reads a JavaScript member (#539).
         result.Should().Contain("let $n0;");
-        result.Should().Contain("(($n0 = this.input) == null ? null : $eq.text.replace($eq.text.trim($n0).toLowerCase(), ' ', '-', 'ordinal'))");
+        result.Should().Contain("let normalized = (($n0 = this.input) == null ? null : $eq.text.replace($eq.text.trim($n0).toLowerCase(), ' ', '-', 'ordinal')) ?? null;");
         result.Should().Contain("?? null");
     }
 
