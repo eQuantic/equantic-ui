@@ -136,6 +136,31 @@ public class DeconstructionConformanceTests
         ConformanceRunner.AssertStatementsSameAsDotNet(statements, Shapes);
     }
 
+    private const string Indexed = """
+        public record Point(int X, int Y);
+        public record Grid { private readonly int[] _c = new int[4]; public int this[int i] { get => _c[i]; set => _c[i] = value; } }
+        public record Board { private readonly int[] _c = new int[9]; public int this[int r, int c] { get => _c[r * 3 + c]; set => _c[r * 3 + c] = value; } }
+        public record Ring { private readonly int[] _v = { 1, 2, 3 }; public int Count => _v.Length; public int this[int i] { get => _v[i]; set => _v[i] = value; } }
+        """;
+
+    /// <summary>
+    /// A target that is an entry of an indexer a twin carries is written through its <c>setItem</c>,
+    /// its receiver and keys evaluated with the other targets', before the value, as C# evaluates them.
+    /// Written as a destructuring target it was <c>grid.item(0) = $t0</c>, which does not parse, and the
+    /// module was lost (.NET "2|1").
+    /// </summary>
+    [SkippableTheory]
+    [InlineData("var g = new Grid(); g[0] = 1; g[1] = 2; (g[0], g[1]) = (g[1], g[0]); return g[0] + \"|\" + g[1];")]                                   // "2|1"
+    [InlineData("var b = new Board(); b[0, 1] = 5; b[2, 2] = 7; (b[0, 1], b[2, 2]) = (b[2, 2], b[0, 1]); return b[0, 1] + \"|\" + b[2, 2];")]          // "7|5"
+    [InlineData("var log = \"\"; var g = new Grid(); Func<string, Grid> at = s => { log += s; return g; }; Func<string, int, int> k = (s, v) => { log += s; return v; }; (at(\"g\")[k(\"a\", 0)], at(\"h\")[k(\"b\", 1)]) = (k(\"x\", 7), k(\"y\", 8)); return log + \"|\" + g[0] + g[1];")] // "gahbxy|78"
+    [InlineData("var g = new Grid(); (g[0], g[1]) = new Point(3, 4); var r = ((g[2], g[3]) = new Point(5, 6)); return g[0] + \"|\" + g[1] + \"|\" + g[2] + g[3] + \"|\" + r.Item1;")] // "3|4|56|5"
+    [InlineData("var r = new Ring(); (r[^1], r[0]) = (r[0], r[^1]); return r[0] + \"|\" + r[2];")]                                                     // "3|1"
+    public void AnIndexersEntry_IsADeconstructionTarget(string statements)
+    {
+        Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
+        ConformanceRunner.AssertStatementsSameAsDotNet(statements, Indexed);
+    }
+
     /// <summary>
     /// A deconstruction evaluates its targets' receivers and indices first, then its value, then
     /// writes, as C# does: destructuring evaluated the value first and each target as it wrote it, so

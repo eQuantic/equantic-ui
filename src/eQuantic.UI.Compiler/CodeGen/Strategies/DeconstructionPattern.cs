@@ -326,8 +326,11 @@ internal static class DeconstructionPattern
             }
 
             if (target is not ExpressionSyntax written) return (null, "undefined");
-            // A dictionary's entry is written by its call, over what its receiver and key were captured as.
-            if (temporaries && DictionaryEntry.Of(written, context) is not null && Place.Of(written, context) is { } entry)
+            // A place JavaScript cannot assign (a dictionary's entry, an entry of an indexer the twin
+            // carries) is written by its call, over what its receiver and keys were captured as, before
+            // the value, as C# evaluates them: written as a target it was `grid.item(0) = $t0`, which
+            // does not parse.
+            if (temporaries && Place.Of(written, context) is { } entry)
             {
                 List<JsExpr> captured = [.. entry.Evaluated.Select(part => JsExpr.Identifier(Capture(JsExprWriter.Write(part))))];
                 var entered = Fresh();
