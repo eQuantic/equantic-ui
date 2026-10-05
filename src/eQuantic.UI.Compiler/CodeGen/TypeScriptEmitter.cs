@@ -359,27 +359,29 @@ public class TypeScriptEmitter
                 // A component's statics initialize as any type's do (TypeInitializer, #417): when one
                 // of them can observe another, each starts at its zero and they run in declaration
                 // order on first use. A primitive keeps its fields, as its statics are its tag's.
+                // The statics are collected in ONE pass, in declaration order (TypeInitializer.Stores):
+                // every field and then every property ran a property's initializer after a field's
+                // written below it.
                 var orderedStatics = !component.IsPrimitive && component.ClassSyntax is { } staticsOf
                     && TypeInitializer.Orders(staticsOf, ModelFor);
-                var initializedStatics = new List<TypeInitializer.Ordered>();
+                _converter.SetCurrentClass(component.Name);
+                var initializedStatics = orderedStatics
+                    ? TypeInitializer.Collect(component.ClassSyntax!, type => DeclarationType(component, type.ToString()),
+                        type => ValueTypeDefault(type.ToString(), type) ?? "null", StaticValue)
+                    : [];
+                var slots = initializedStatics.Select(member => member.Name).ToHashSet(StringComparer.Ordinal);
                 if (component.ComponentFields.Count > 0)
                 {
                     _converter.SetCurrentClass(component.Name);
                     foreach (var field in component.ComponentFields)
                     {
                         if (component.IsPrimitive && !field.IsStatic) continue;
+                        // A static that initializes in order is its slot's, and holds no field.
+                        if (field.IsStatic && slots.Contains(field.Name.ToCamelCase())) continue;
                         var tsType = DeclarationType(component, field.Type);
                         var tsDefault = field.DefaultValueNode is not { Parent: EqualsValueClauseSyntax given } ? null
                             : field.IsStatic && field.TypeNode is { } declared ? StaticValue(given, declared)
                             : Initializer(given.Value, _converter.ConvertExpression(given.Value, field.Type));
-                        if (orderedStatics && field.IsStatic && !IsConstant(field))
-                        {
-                            if (tsDefault is not null && tsDefault.Contains("$eq.")) component.UsedHelpers.Add(Eq.Import);
-                            initializedStatics.Add(new(field.Name.ToCamelCase(), tsType,
-                                ValueTypeDefault(field.Type, field.TypeNode) ?? "null", tsDefault,
-                                field.DefaultValueNode?.Parent?.Parent ?? field.TypeNode?.Parent));
-                            continue;
-                        }
                         // C# value types default without an initializer (`private int _count;` is 0);
                         // an uninitialized TS field is `undefined` and would poison arithmetic (NaN).
                         tsDefault ??= ValueTypeDefault(field.Type, field.TypeNode);
@@ -528,13 +530,12 @@ public class TypeScriptEmitter
                 {
                     // Computed/get-set/static properties become real TS members (auto-props flow through
                     // the base Object.assign(props) instead).
-                    EmitComponentProperties(component, c, orderedStatics, initializedStatics);
+                    EmitComponentProperties(component, c, slots);
                     if (orderedStatics)
                     {
-                        _converter.SetCurrentClass(component.Name);
                         component.UsedHelpers.Add(Eq.Import);
-                        foreach (var member in TypeInitializer.Members(component.Name, component.TypeIdentity, initializedStatics,
-                                     StaticConstructorBody(component.ClassSyntax!), TypeAnnotations, _converter.Layout))
+                        foreach (var member in TypeInitializer.Members(component.ClassSyntax!, component.Name, initializedStatics,
+                                     _converter, Lowering, TypeAnnotations, _converter.Layout))
                             c.Member(member, member.Origin?.Member);
                     }
                     if (component.ClassSyntax is { } indexed)
@@ -744,11 +745,8 @@ public class TypeScriptEmitter
 
                 // A static constructor runs before the first instance and the first use of any
                 // static member, a method included, and not only before the first read of a static.
-                if (orderedStatics && HasStaticConstructor(component.ClassSyntax!))
-                {
-                    var slots = initializedStatics.Select(member => member.Name).ToHashSet(StringComparer.Ordinal);
+                if (orderedStatics && TypeInitializer.HasStaticConstructor(component.ClassSyntax!))
                     c.Rewrite(member => TypeInitializer.StartedIn(member, component.Name, slots));
-                }
             }, component.TypeParameters);
 
         // Generate component code without imports
@@ -1487,7 +1485,7 @@ public class TypeScriptEmitter
     /// Object.assign(props) populates them (with the ctor applying any default).
     /// </summary>
     private void EmitComponentProperties(ComponentDefinition component, TypeScriptCodeBuilder.ClassBuilder c,
-        bool orderedStatics, List<TypeInitializer.Ordered> initializedStatics)
+        IReadOnlySet<string> slots)
     {
         foreach (var prop in component.Properties)
         {
@@ -1528,10 +1526,8 @@ public class TypeScriptEmitter
                         // holds its initializer or its type's default from the start, as a static
                         // auto-property's does: declared on the instance, the slot they wrote did not
                         // exist, and declared alone it read undefined until the first write (#483).
-                        if (orderedStatics && prop.IsStatic)
-                            initializedStatics.Add(new(slot, DeclarationType(component, prop.Type),
-                                ValueTypeDefault(prop.Type, prop.Node?.Type) ?? "null",
-                                prop.DefaultValueNode is null ? null : StaticInitial(component, prop), node));
+                        // A store that initializes in order is its slot, and the accessors read it.
+                        if (prop.IsStatic && slots.Contains(slot)) { }
                         else if (prop.IsStatic && StaticInitial(component, prop) is { } initial)
                             c.Field(slot, DeclarationType(component, prop.Type), initial, node, isStatic: true);
                         else
@@ -1563,11 +1559,9 @@ public class TypeScriptEmitter
                 // emitted TYPE-ONLY — the declaration restores type checking on `this.x` without emitting
                 // runtime code that would clobber the assigned value under useDefineForClassFields.
                 _converter.SetCurrentClass(component.Name);
-                if (prop.IsStatic && orderedStatics)
+                if (prop.IsStatic && slots.Contains(name))
                 {
-                    initializedStatics.Add(new(name, DeclarationType(component, prop.Type),
-                        ValueTypeDefault(prop.Type, prop.Node?.Type) ?? "null",
-                        prop.DefaultValueNode is null ? null : StaticInitial(component, prop), node));
+                    // Its slot's, in the type initializer.
                 }
                 else if (prop.IsStatic)
                 {
@@ -1580,12 +1574,6 @@ public class TypeScriptEmitter
             }
         }
     }
-
-    /// <summary>Whether a component's field is a <c>const</c>, which C# inlines and never
-    /// initializes in order.</summary>
-    private static bool IsConstant(StateField field) =>
-        field.DefaultValueNode?.Parent?.Parent?.Parent?.Parent is FieldDeclarationSyntax declaration
-        && declaration.Modifiers.Any(Microsoft.CodeAnalysis.CSharp.SyntaxKind.ConstKeyword);
 
     /// <summary>
     /// What a static property's store holds before anything writes it: its initializer, or its
@@ -1639,9 +1627,13 @@ public class TypeScriptEmitter
             // cycles (its modules import each other through one barrel, and whichever loads first
             // sees the other's class as undefined) but initialized each static on its own first read,
             // in no order, and again whenever it held null. The type initializer is lazy too, so the
-            // cycle is survived as it was.
+            // cycle is survived as it was. The statics are collected in ONE pass, in declaration order
+            // (TypeInitializer.Stores): every field and then every property ran a property's
+            // initializer after a field's written below it.
             var ordered = TypeInitializer.Orders(cls, ModelFor);
-            var initialized = new List<TypeInitializer.Ordered>();
+            _converter.SetCurrentClass(name);
+            var initialized = ordered ? TypeInitializer.Collect(cls, DeclaredType, DefaultOf, StaticValue) : [];
+            var slots = initialized.Select(member => member.Name).ToHashSet(StringComparer.Ordinal);
             foreach (var f in cls.Members.OfType<FieldDeclarationSyntax>())
             {
                 foreach (var v in f.Declaration.Variables)
@@ -1656,16 +1648,12 @@ public class TypeScriptEmitter
                     var isStaticMember = asStatic
                         || f.Modifiers.Any(Microsoft.CodeAnalysis.CSharp.SyntaxKind.StaticKeyword)
                         || f.Modifiers.Any(Microsoft.CodeAnalysis.CSharp.SyntaxKind.ConstKeyword);
+                    var fieldName = v.Identifier.Text.ToCamelCase();
+                    // A static that initializes in order is its slot's, and holds no field.
+                    if (isStaticMember && slots.Contains(fieldName)) continue;
                     var def = v.Initializer is not { } given ? null
                         : isStaticMember ? StaticValue(given, f.Declaration.Type)
                         : Initializer(given.Value, _converter.ConvertExpression(given.Value, f.Declaration.Type.ToString()));
-                    var fieldName = v.Identifier.Text.ToCamelCase();
-                    if (ordered && isStaticMember
-                        && !f.Modifiers.Any(Microsoft.CodeAnalysis.CSharp.SyntaxKind.ConstKeyword))
-                    {
-                        initialized.Add(new(fieldName, DeclaredType(f.Declaration.Type), DefaultOf(f.Declaration.Type), def, v));
-                        continue;
-                    }
                     // A static with no initializer holds its type's zero, as C# starts it (#417):
                     // `static int Count;` read undefined, and its first `++` made it NaN.
                     c.Field(fieldName, DeclaredType(f.Declaration.Type),
@@ -1711,18 +1699,20 @@ public class TypeScriptEmitter
                         // On the class for a static property, where its accessors' `this` is the
                         // class: on the instance, a static `field` read undefined (#483).
                         var slotIsStatic = accessorQualifier.Length > 0;
-                        var slotDefault = p.Initializer is not { } given ? DefaultOf(p.Type)
-                            : slotIsStatic ? StaticValue(given, p.Type)
-                            : Initializer(given.Value, _converter.ConvertExpression(given.Value, p.Type.ToString()));
-                        if (ordered && slotIsStatic)
-                            initialized.Add(new(slot, DeclaredType(p.Type), DefaultOf(p.Type), p.Initializer is null ? null : slotDefault, p));
-                        else if (slotDefault == "null")
+                        // A store that initializes in order is its slot, and the accessors read it.
+                        if (!(slotIsStatic && slots.Contains(slot)))
                         {
-                            if (CanDeclareTypeOnly)
-                                c.Member(JsClassMember.Field(slotIsStatic ? "declare static " : "declare ", slot, $": {DeclaredType(p.Type)}"), p);
+                            var slotDefault = p.Initializer is not { } given ? DefaultOf(p.Type)
+                                : slotIsStatic ? StaticValue(given, p.Type)
+                                : Initializer(given.Value, _converter.ConvertExpression(given.Value, p.Type.ToString()));
+                            if (slotDefault == "null")
+                            {
+                                if (CanDeclareTypeOnly)
+                                    c.Member(JsClassMember.Field(slotIsStatic ? "declare static " : "declare ", slot, $": {DeclaredType(p.Type)}"), p);
+                            }
+                            else
+                                c.Field(slot, DeclaredType(p.Type), slotDefault, p, isStatic: slotIsStatic);
                         }
-                        else
-                            c.Field(slot, DeclaredType(p.Type), slotDefault, p, isStatic: slotIsStatic);
                         // An automatic getter reads the store. Without one the class fell to the
                         // auto-property's field below, named like the property, which shadows the
                         // setter: a write skipped it, and `Total = 3` read back 3 where C# reads 6.
@@ -1733,9 +1723,8 @@ public class TypeScriptEmitter
 
                     // A property guarding a store has its accessors, and no field of its name.
                     if (EmitGetter(p, c, accessorQualifier) || backed) { }
-                    else if (ordered && accessorQualifier.Length > 0)
-                        initialized.Add(new(pn, DeclaredType(p.Type), DefaultOf(p.Type),
-                            p.Initializer is { } given ? StaticValue(given, p.Type) : null, p));
+                    // A static that initializes in order is its slot's.
+                    else if (accessorQualifier.Length > 0 && slots.Contains(pn)) { }
                     else if (p.Initializer is { } initial)
                         c.Field(pn, DeclaredType(p.Type),
                             accessorQualifier.Length > 0
@@ -1776,23 +1765,14 @@ public class TypeScriptEmitter
                 var isStaticEvent = asStatic || e.Modifiers.Any(Microsoft.CodeAnalysis.CSharp.SyntaxKind.StaticKeyword);
                 foreach (var v in e.Declaration.Variables)
                 {
-                    if (ordered && isStaticEvent)
-                    {
-                        initialized.Add(new(v.Identifier.Text.ToCamelCase(), DeclaredType(e.Declaration.Type), "null",
-                            v.Initializer is { } handler
-                                ? Initializer(handler.Value, _converter.ConvertExpression(handler.Value, e.Declaration.Type.ToString()))
-                                : null, v));
-                        continue;
-                    }
+                    if (isStaticEvent && slots.Contains(v.Identifier.Text.ToCamelCase())) continue;
                     c.Field(v.Identifier.Text.ToCamelCase(), DeclaredType(e.Declaration.Type), "null", v, isStatic: isStaticEvent);
                 }
             }
             if (ordered)
             {
-                _converter.SetCurrentClass(name);
                 _converter.UsedHelpers.Add(Eq.Import);
-                foreach (var member in TypeInitializer.Members(name, Parser.ComponentParser.ClrIdentity(cls), initialized,
-                             StaticConstructorBody(cls), TypeAnnotations, _converter.Layout))
+                foreach (var member in TypeInitializer.Members(cls, name, initialized, _converter, Lowering, TypeAnnotations, _converter.Layout))
                     c.Member(member, member.Origin?.Member);
             }
             foreach (var m in cls.Members.OfType<MethodDeclarationSyntax>())
@@ -1841,11 +1821,8 @@ public class TypeScriptEmitter
 
             // A static constructor runs before the first instance and the first use of any static
             // member, a method included, and not only before the first read of a static.
-            if (ordered && HasStaticConstructor(cls))
-            {
-                var slots = initialized.Select(member => member.Name).ToHashSet(StringComparer.Ordinal);
+            if (ordered && TypeInitializer.HasStaticConstructor(cls))
                 c.Rewrite(member => TypeInitializer.StartedIn(member, name, slots));
-            }
     }
 
     /// <summary>A static's initializer: its VALUE where C# folds it to a constant
@@ -1900,24 +1877,6 @@ public class TypeScriptEmitter
         else if (setter?.Body != null)
             c.Member(JsClassMember.Setter(qualifier, pn, $"value{Annotation(DeclaredType(p.Type))}",
                 Lowering.AccessorBody(setter.Body)), setter);
-    }
-
-    /// <summary>Whether a type declares a static constructor, which C# runs before its first instance
-    /// and the first use of any of its static members.</summary>
-    private static bool HasStaticConstructor(TypeDeclarationSyntax type) =>
-        type.Members.OfType<ConstructorDeclarationSyntax>()
-            .Any(constructor => constructor.Modifiers.Any(Microsoft.CodeAnalysis.CSharp.SyntaxKind.StaticKeyword));
-
-    /// <summary>The statements of a type's static constructor, which run after its static initializers
-    /// (<see cref="TypeInitializer"/>); none when it declares none. Nothing emitted one before, so its
-    /// body never ran.</summary>
-    private IReadOnlyList<JsStatement> StaticConstructorBody(TypeDeclarationSyntax type)
-    {
-        if (type.Members.OfType<ConstructorDeclarationSyntax>()
-                .FirstOrDefault(constructor => constructor.Modifiers.Any(Microsoft.CodeAnalysis.CSharp.SyntaxKind.StaticKeyword)) is not { } cctor)
-            return [];
-        if (cctor.Body is { } block && _converter.ConvertBlockIr(block) is JsBlock converted) return converted.Statements;
-        return cctor.ExpressionBody is { } arrow ? [Lowering.ExpressionBody(arrow.Expression, returns: false)] : [];
     }
 
     /// <summary>A method of a class module, or of a component's twin when an interface's default

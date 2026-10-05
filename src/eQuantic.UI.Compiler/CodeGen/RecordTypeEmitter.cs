@@ -145,12 +145,6 @@ public class RecordTypeEmitter
     private static string ParameterName(ParameterSyntax parameter, bool primary) =>
         (primary ? parameter.Identifier.ValueText.ToCamelCase() : parameter.Identifier.ValueText).ToJsIdentifier();
 
-    /// <summary>Every accessor bodyless and no expression body — an auto-property and nothing else.</summary>
-    private static bool IsPureAuto(PropertyDeclarationSyntax property) =>
-        property.ExpressionBody is null
-        && property.AccessorList is { } list
-        && list.Accessors.All(a => a.Body is null && a.ExpressionBody is null);
-
     /// <summary>
     /// Emits the type as a standalone TypeScript module — the structural <c>equals</c>/<c>with</c> use
     /// <c>$eq</c>, imported from the runtime, and the class is exported so components can import it.
@@ -505,20 +499,6 @@ public class RecordTypeEmitter
         TypeInitializer.Constant(initializer, ModelFor(initializer), _converter)
         ?? ExpressionVariableScanner.Scoped(initializer.Value, _converter.ConvertExpression(initializer.Value, type.ToString()), _annotations);
 
-    /// <summary>The statements of the type's static constructor, which run after its static
-    /// initializers (<see cref="TypeInitializer"/>); none when it declares none.</summary>
-    private IReadOnlyList<JsStatement> StaticConstructorBody(TypeDeclarationSyntax type)
-    {
-        if (StaticConstructorOf(type) is not { } cctor) return [];
-        if (cctor.Body is { } block && _converter.ConvertBlockIr(block) is JsBlock converted) return converted.Statements;
-        return cctor.ExpressionBody is { } arrow ? [_lowering.ExpressionBody(arrow.Expression, returns: false)] : [];
-    }
-
-    /// <summary>The static constructor a type declares, or null.</summary>
-    private static ConstructorDeclarationSyntax? StaticConstructorOf(TypeDeclarationSyntax type) =>
-        type.Members.OfType<ConstructorDeclarationSyntax>()
-            .FirstOrDefault(constructor => constructor.Modifiers.Any(SyntaxKind.StaticKeyword));
-
     /// <summary>A constructor's own statements in the one-line layout, or nothing for an empty body.</summary>
     private string Body(ConstructorDeclarationSyntax constructor)
     {
@@ -569,13 +549,13 @@ public class RecordTypeEmitter
                     : optional ? "undefined" : null,
                 parameter.Modifiers.Any(SyntaxKind.ParamsKeyword)));
             sb.Append($"constructor({string.Join(", ", parameters)}) {{ ");
-            if (StaticConstructorOf(type) is not null) sb.Append($"{name}.{TypeInitializer.Init}(); ");
+            if (TypeInitializer.HasStaticConstructor(type)) sb.Append(Started(name));
             foreach (var alternate in constructors.Alternates) sb.Append(Mapped(alternate, arrived, selected: null));
         }
         else
         {
             sb.Append($"constructor(...{arrived}{(_annotations ? ": any[]" : "")}) {{ ");
-            if (StaticConstructorOf(type) is not null) sb.Append($"{name}.{TypeInitializer.Init}(); ");
+            if (TypeInitializer.HasStaticConstructor(type)) sb.Append(Started(name));
             var union = constructors.Roots.SelectMany(root => root.Parameters.Select(parameter => ParameterName(parameter, primary: false)))
                 .Distinct().ToList();
             if (union.Count > 0) sb.Append($"let {string.Join(", ", union.Select(parameter => parameter + annotation))}; ");
@@ -664,7 +644,7 @@ public class RecordTypeEmitter
         _converter.EmitTypeAnnotations(tsTypeDeclarations);
         _annotations = tsTypeDeclarations;
         var name = type.Identifier.Text;
-        _startsInitialization = StaticConstructorOf(type) is null ? null : name;
+        _startsInitialization = TypeInitializer.HasStaticConstructor(type) ? name : null;
         var members = type.ValueMembers(ModelFor(type));
         var (baseName, superArgs) = BaseInfo(type);
 
@@ -797,84 +777,38 @@ public class RecordTypeEmitter
             sb.Append(StaticMember(opName, par, conversion.Body, conversion.ExpressionBody));
         }
 
-        // Static FIELDS — `public static readonly CodePosition Start = new(0, 0);`. The other half of
-        // the "well-known value" idiom, and nothing emitted them: `CodePosition.start` was
-        // undefined, so every comparison against the origin silently failed.
-        // ONE pass, in SOURCE ORDER, over both spellings of a static value: the field
-        // (`static readonly T F = …`) and the auto-property (`static T P { get; } = …`). Two passes
-        // would initialise every field before every property whatever the source said, and C# runs
-        // static initialisers in declaration order — `static A = B;` written above `static B = 1;`
-        // reads B's DEFAULT in .NET, and would have read 1 here.
+        // Static STORES — `public static readonly CodePosition Start = new(0, 0);`, the other half of
+        // the "well-known value" idiom, which nothing emitted: `CodePosition.start` was undefined, so
+        // every comparison against the origin silently failed. A field, an auto-property (one with a
+        // custom setter is behaviour, which a plain field would throw away, so it keeps its own
+        // accessors below), the store a property guards with `field` (#483), and a field-like event,
+        // in SOURCE ORDER (TypeInitializer.Stores), which is the order C# initializes them in.
         //
         // Absent an initialiser the member takes its TYPE's default, not `undefined`: C# gives
         // `static int Count { get; set; }` a 0, and a twin answering undefined disagrees with the
         // server about a number.
         //
-        // And when one of them can observe another (an initializer that is not a constant, or a static
-        // constructor), every static starts at its zero and the initializers run in declaration
-        // order, on first use (TypeInitializer, #417): written in place, `static first = new Early()`
-        // ran Early's constructor before `static seed = 3` was defined, and read NaN.
+        // And when one of them can observe another (an initializer that is not a constant, a zero that
+        // constructs, or a static constructor), every static starts at its zero and the initializers
+        // run in declaration order, on first use (TypeInitializer, #417): written in place,
+        // `static first = new Early()` ran Early's constructor before `static seed = 3` was defined, and
+        // read NaN. A constant is its value wherever it stands, and never initializes.
         var ordered = TypeInitializer.Orders(type, ModelFor);
-        var initialized = new List<TypeInitializer.Ordered>();
+        _converter.SetCurrentClass(name);
         foreach (var member in type.Members)
         {
-            _converter.SetCurrentClass(name);
-            switch (member)
-            {
-                case FieldDeclarationSyntax field when field.Modifiers.Any(m =>
-                        m.IsKind(SyntaxKind.StaticKeyword) || m.IsKind(SyntaxKind.ConstKeyword)):
-                    foreach (var variable in field.Declaration.Variables)
-                    {
-                        var fieldValue = variable.Initializer is { } init
-                            ? StaticValue(init, field.Declaration.Type)
-                            : DefaultOf(field.Declaration.Type);
-                        if (ordered && !field.Modifiers.Any(SyntaxKind.ConstKeyword))
-                            initialized.Add(new(variable.Identifier.Text.ToCamelCase(), TsTypeOf(field.Declaration.Type),
-                                DefaultOf(field.Declaration.Type), variable.Initializer is null ? null : fieldValue, variable));
-                        else
-                            sb.Append($"static {variable.Identifier.Text.ToCamelCase()} = {fieldValue}; ");
-                    }
-                    break;
-
-                // A PURE auto-property only — every accessor bodyless, no expression body. One with a
-                // custom setter is behaviour, and emitting it as a plain field would silently throw
-                // that behaviour away; it stays unemitted, as it was before, rather than emitted wrong.
-                case PropertyDeclarationSyntax prop
-                    when prop.Modifiers.Any(SyntaxKind.StaticKeyword) && IsPureAuto(prop):
-                    var propValue = prop.Initializer is { } propInit
-                        ? StaticValue(propInit, prop.Type)
-                        : DefaultOf(prop.Type);
-                    if (ordered)
-                        initialized.Add(new(prop.Identifier.Text.ToCamelCase(), TsTypeOf(prop.Type), DefaultOf(prop.Type),
-                            prop.Initializer is null ? null : propValue, prop));
-                    else
-                        sb.Append($"static {prop.Identifier.Text.ToCamelCase()} = {propValue}; ");
-                    break;
-
-                // A static property that guards its own store with `field`: the store, named as the
-                // accessors name it, in declaration order with the other statics. Its accessors come
-                // with the properties below. It was neither, so the type had no such property (#483).
-                case PropertyDeclarationSyntax backed
-                    when backed.Modifiers.Any(SyntaxKind.StaticKeyword)
-                        && Strategies.Expressions.FieldExpressionStrategy.UsesBackingField(backed):
-                    var slotValue = backed.Initializer is { } slotInit
-                        ? StaticValue(slotInit, backed.Type)
-                        : DefaultOf(backed.Type);
-                    if (ordered)
-                        initialized.Add(new(Strategies.Expressions.FieldExpressionStrategy.BackingSlot(backed), TsTypeOf(backed.Type),
-                            DefaultOf(backed.Type), backed.Initializer is null ? null : slotValue, backed));
-                    else
-                        sb.Append($"static {Strategies.Expressions.FieldExpressionStrategy.BackingSlot(backed)} = {slotValue}; ");
-                    break;
-            }
+            if (member is FieldDeclarationSyntax constant && constant.Modifiers.Any(SyntaxKind.ConstKeyword))
+                foreach (var variable in constant.Declaration.Variables)
+                    sb.Append($"static {variable.Identifier.Text.ToCamelCase()} = "
+                        + $"{(variable.Initializer is { } init ? StaticValue(init, constant.Declaration.Type) : DefaultOf(constant.Declaration.Type))}; ");
+            else if (!ordered)
+                foreach (var store in TypeInitializer.StoresOf(member))
+                    sb.Append($"static {store.Name} = {(store.Initializer is { } init ? StaticValue(init, store.Type) : DefaultOf(store.Type))}; ");
         }
         if (ordered)
-        {
-            _converter.SetCurrentClass(name);
-            foreach (var member in TypeInitializer.Members(name, Parser.ComponentParser.ClrIdentity(type), initialized,
-                         StaticConstructorBody(type), _annotations, JsLayout.Compact))
+            foreach (var member in TypeInitializer.Members(type, name, TypeInitializer.Collect(type, TsTypeOf, DefaultOf, StaticValue),
+                         _converter, _lowering, _annotations, JsLayout.Compact))
                 sb.Append(Written(member));
-        }
 
         // PROPERTIES with a body — computed, on the instance (`Start => Anchor <= Focus ? … : …`)
         // or static (`static Foo Empty => …`, the factory idiom). A record is a value with
@@ -1092,6 +1026,11 @@ public class RecordTypeEmitter
 
     /// <summary>A member in the one-line layout this emitter writes a class in, and the space after it.</summary>
     private static string Written(JsClassMember member) => JsMemberWriter.Write(member, JsLayout.Compact) + " ";
+
+    /// <summary>The start of the type's initialization (<see cref="TypeInitializer.Start"/>), the first
+    /// statement of the constructor of a type with a static constructor, in this emitter's layout.</summary>
+    private static string Started(string className) =>
+        JsStatementWriter.Write(TypeInitializer.Start(className), JsLayout.Compact) + " ";
 
     /// <summary>The name of the type being written when it declares a static constructor, which its static
     /// members start before anything else (<see cref="TypeInitializer.StartedIn"/>); null otherwise.</summary>

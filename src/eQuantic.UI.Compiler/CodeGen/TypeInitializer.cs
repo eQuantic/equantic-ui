@@ -90,6 +90,65 @@ internal static class TypeInitializer
     /// the C# it came from.</summary>
     public readonly record struct Ordered(string Name, string Type, string Zero, string? Value, SyntaxNode? Origin);
 
+    /// <summary>A static that holds a value of its own: its name on the twin, its declared type, its
+    /// initializer, and the declaration it came from (a field's or an event's variable, a property).</summary>
+    public readonly record struct Store(string Name, TypeSyntax Type, EqualsValueClauseSyntax? Initializer, SyntaxNode Declaration);
+
+    /// <summary>
+    /// The type's statics that hold a value, in DECLARATION order, which is the order C# initializes
+    /// them in: every static field but a constant (which C# never initializes, its value being
+    /// written where it is read), every static property with a store of its own (an auto-property,
+    /// and one that guards its store with <c>field</c>, whose store is named as its accessors name
+    /// it), and every static field-like event. The one list the type initializer reads, for a record,
+    /// a struct, a class, a static class and a component alike: each emitter collected its own, a
+    /// class and a component in two passes, every field and then every property, so
+    /// <c>static int Base { get; } = Compute();</c> above <c>static readonly int Doubled = Base * 2;</c>
+    /// read Base's zero where .NET reads 21.
+    /// </summary>
+    public static IEnumerable<Store> Stores(TypeDeclarationSyntax type) => type.Members.SelectMany(StoresOf);
+
+    /// <summary>The stores one member of a type declares (<see cref="Stores"/>): none for a member that
+    /// is no static store, one per variable of a field or an event.</summary>
+    public static IEnumerable<Store> StoresOf(MemberDeclarationSyntax member)
+    {
+        if (!member.Modifiers.Any(SyntaxKind.StaticKeyword)) yield break;
+        switch (member)
+        {
+            case BaseFieldDeclarationSyntax field when !field.Modifiers.Any(SyntaxKind.ConstKeyword):
+                foreach (var variable in field.Declaration.Variables)
+                    yield return new(variable.Identifier.ValueText.ToCamelCase(), field.Declaration.Type, variable.Initializer, variable);
+                break;
+            case PropertyDeclarationSyntax property when Strategies.Expressions.FieldExpressionStrategy.UsesBackingField(property):
+                yield return new(Strategies.Expressions.FieldExpressionStrategy.BackingSlot(property), property.Type,
+                    property.Initializer, property);
+                break;
+            case PropertyDeclarationSyntax { ExpressionBody: null, AccessorList: { } accessors } property
+                when !property.Modifiers.Any(SyntaxKind.AbstractKeyword)
+                    && accessors.Accessors.All(accessor => accessor.Body is null && accessor.ExpressionBody is null):
+                yield return new(property.Identifier.ValueText.ToCamelCase(), property.Type, property.Initializer, property);
+                break;
+        }
+    }
+
+    /// <summary>
+    /// The type's statics as its initializer runs them (<see cref="Stores"/>), each written by the
+    /// emitter: its <paramref name="annotation"/>, its <paramref name="zero"/>, and its initializer's
+    /// <paramref name="value"/>.
+    /// </summary>
+    public static IReadOnlyList<Ordered> Collect(TypeDeclarationSyntax type, Func<TypeSyntax, string> annotation,
+        Func<TypeSyntax, string> zero, Func<EqualsValueClauseSyntax, TypeSyntax, string> value) =>
+        Stores(type).Select(store => new Ordered(store.Name, annotation(store.Type), zero(store.Type),
+            store.Initializer is { } initializer ? value(initializer, store.Type) : null, store.Declaration)).ToList();
+
+    /// <summary>The static constructor a type declares, or null.</summary>
+    public static ConstructorDeclarationSyntax? StaticConstructorOf(TypeDeclarationSyntax type) =>
+        type.Members.OfType<ConstructorDeclarationSyntax>()
+            .FirstOrDefault(constructor => constructor.Modifiers.Any(SyntaxKind.StaticKeyword));
+
+    /// <summary>Whether a type declares a static constructor, which C# runs before its first instance
+    /// and the first use of any of its static members (<see cref="StartedIn"/>).</summary>
+    public static bool HasStaticConstructor(TypeDeclarationSyntax type) => StaticConstructorOf(type) is not null;
+
     /// <summary>
     /// Whether the type's statics initialize in order: one of them has an initializer that is not a
     /// constant, which may read another static, call a method or build an instance; or one with no
@@ -100,37 +159,10 @@ internal static class TypeInitializer
     /// type of constants keeps its fields.
     /// </summary>
     public static bool Orders(TypeDeclarationSyntax type, Func<SyntaxNode, SemanticModel?> modelFor) =>
-        type.Members.OfType<ConstructorDeclarationSyntax>().Any(constructor => constructor.Modifiers.Any(SyntaxKind.StaticKeyword))
-        || Initializers(type).Any(initializer => !IsConstant(initializer, modelFor(initializer)))
-        || Uninitialized(type).Any(declared => Strategies.DefaultValue.Constructs(modelFor(declared)?.GetTypeInfo(declared).Type));
-
-    /// <summary>The initializers of the type's statics: a static field's, a constant's excepted, a
-    /// static property's and a static field-like event's.</summary>
-    private static IEnumerable<EqualsValueClauseSyntax> Initializers(TypeDeclarationSyntax type) =>
-        type.Members.SelectMany(member => member switch
-        {
-            BaseFieldDeclarationSyntax field when field.Modifiers.Any(SyntaxKind.StaticKeyword)
-                && !field.Modifiers.Any(SyntaxKind.ConstKeyword) => field.Declaration.Variables
-                .Select(variable => variable.Initializer).OfType<EqualsValueClauseSyntax>(),
-            PropertyDeclarationSyntax { Initializer: { } initializer } property
-                when property.Modifiers.Any(SyntaxKind.StaticKeyword) => [initializer],
-            _ => [],
-        });
-
-    /// <summary>The declared types of the statics that hold their zero until something sets them: a
-    /// static field with no initializer, and a static property with a store and none.</summary>
-    private static IEnumerable<TypeSyntax> Uninitialized(TypeDeclarationSyntax type) =>
-        type.Members.SelectMany(member => member switch
-        {
-            FieldDeclarationSyntax field when field.Modifiers.Any(SyntaxKind.StaticKeyword)
-                && !field.Modifiers.Any(SyntaxKind.ConstKeyword)
-                && field.Declaration.Variables.Any(variable => variable.Initializer is null) => [field.Declaration.Type],
-            PropertyDeclarationSyntax { Initializer: null, ExpressionBody: null, AccessorList: { } accessors } property
-                when property.Modifiers.Any(SyntaxKind.StaticKeyword)
-                    && (accessors.Accessors.All(accessor => accessor.Body is null && accessor.ExpressionBody is null)
-                        || Strategies.Expressions.FieldExpressionStrategy.UsesBackingField(property)) => [property.Type],
-            _ => (IEnumerable<TypeSyntax>)[],
-        });
+        HasStaticConstructor(type)
+        || Stores(type).Any(store => store.Initializer is { } initializer
+            ? !IsConstant(initializer, modelFor(initializer))
+            : Strategies.DefaultValue.Constructs(modelFor(store.Type)?.GetTypeInfo(store.Type).Type));
 
     private static bool IsConstant(EqualsValueClauseSyntax initializer, SemanticModel? model) =>
         model is not null
@@ -172,8 +204,8 @@ internal static class TypeInitializer
 
     /// <summary>
     /// The members that hold the ordered statics: the slots, the failure, the initializer that builds
-    /// them, and an accessor pair per static. <paramref name="constructor"/> is the static
-    /// constructor's body, which runs after the initializers.
+    /// them, and an accessor pair per static. The static constructor's body runs after the
+    /// initializers.
     /// <para>
     /// <c>$init()</c> builds the slots as C# initializes a type. The holder is assigned FIRST, empty, so
     /// a use of the type while it initializes (a static's zero that constructs a struct whose own
@@ -193,19 +225,27 @@ internal static class TypeInitializer
     /// more and answered whatever it held, while .NET throws on every access.
     /// </para>
     /// </summary>
+    /// <param name="declaration">The type, whose static constructor runs last and whose full name the
+    /// TypeInitializationException's message says.</param>
     /// <param name="className">The twin's name, which the members reach the slots through.</param>
-    /// <param name="typeName">The type's full name, which the TypeInitializationException's message says.</param>
-    /// <param name="statics">The statics, in declaration order.</param>
-    /// <param name="constructor">The static constructor's statements; none when it declares none.</param>
+    /// <param name="statics">The statics, in declaration order (<see cref="Collect"/>).</param>
+    /// <param name="converter">The emitter's converter, which converts the static constructor's body.</param>
+    /// <param name="lowering">The emitter's lowering, which lowers an expression-bodied one.</param>
     /// <param name="annotate">Whether the module is TypeScript.</param>
     /// <param name="layout">The layout the members are written in, which the static constructor's
     /// function is laid out in too.</param>
-    public static IEnumerable<JsClassMember> Members(string className, string typeName, IReadOnlyList<Ordered> statics,
-        IReadOnlyList<JsStatement> constructor, bool annotate, JsLayout layout)
+    public static IReadOnlyList<JsClassMember> Members(TypeDeclarationSyntax declaration, string className,
+        IReadOnlyList<Ordered> statics, CSharpToJsConverter converter, MethodLowering lowering, bool annotate, JsLayout layout)
     {
+        converter.SetCurrentClass(className);
+        var typeName = Parser.ComponentParser.ClrIdentity(declaration);
+        var constructor = ConstructorBody(declaration, converter, lowering);
         var any = annotate ? ": any" : "";
-        yield return JsClassMember.Field("static ", Slots, any, "null");
-        yield return JsClassMember.Field("static ", Failure, any, "null");
+        var members = new List<JsClassMember>
+        {
+            JsClassMember.Field("static ", Slots, any, "null"),
+            JsClassMember.Field("static ", Failure, any, "null"),
+        };
 
         var type = JsExpr.Identifier(className);
         var holder = JsExpr.Identifier(Slots);
@@ -219,7 +259,7 @@ internal static class TypeInitializer
         if (constructor.Count > 0)
             build.Add(JsStatement.Expression(JsExpr.Call(JsExpr.ArrowBlock("", JsStatement.Block(constructor), layout, 3))));
 
-        yield return JsClassMember.Method("static ", Init, "", "", any, JsStatement.Block([
+        members.Add(JsClassMember.Method("static ", Init, "", "", any, JsStatement.Block([
             JsStatement.If(JsExpr.Binary(JsExpr.Member(type, Slots), "===", JsExpr.Literal("null")),
                 JsStatement.Block([
                     JsStatement.If(JsExpr.Binary(JsExpr.Member(type, Failure), "!==", JsExpr.Literal("null")),
@@ -233,14 +273,26 @@ internal static class TypeInitializer
                     ])), null),
                 ]), null),
             JsStatement.Return(JsExpr.Member(type, Slots)),
-        ]));
+        ])));
 
         foreach (var member in statics)
         {
-            yield return JsClassMember.Getter("static ", member.Name, annotate ? $": {member.Type}" : "",
-                JsStatement.Block([JsStatement.Raw($"return {className}.{Init}().{member.Name};")])) with { Origin = new JsOrigin(member.Origin) };
-            yield return JsClassMember.Setter("static ", member.Name, annotate ? $"value: {member.Type}" : "value",
-                JsStatement.Block([JsStatement.Raw($"{className}.{Init}().{member.Name} = value;")])) with { Origin = new JsOrigin(member.Origin) };
+            members.Add(JsClassMember.Getter("static ", member.Name, annotate ? $": {member.Type}" : "",
+                JsStatement.Block([JsStatement.Raw($"return {className}.{Init}().{member.Name};")])) with { Origin = new JsOrigin(member.Origin) });
+            members.Add(JsClassMember.Setter("static ", member.Name, annotate ? $"value: {member.Type}" : "value",
+                JsStatement.Block([JsStatement.Raw($"{className}.{Init}().{member.Name} = value;")])) with { Origin = new JsOrigin(member.Origin) });
         }
+        return members;
+    }
+
+    /// <summary>The statements of the type's static constructor, converted by the emitter's own
+    /// converter, which run after its static initializers; none when it declares none. Nothing emitted
+    /// one before #417, so its body never ran.</summary>
+    private static IReadOnlyList<JsStatement> ConstructorBody(TypeDeclarationSyntax type, CSharpToJsConverter converter,
+        MethodLowering lowering)
+    {
+        if (StaticConstructorOf(type) is not { } constructor) return [];
+        if (constructor.Body is { } block && converter.ConvertBlockIr(block) is JsBlock converted) return converted.Statements;
+        return constructor.ExpressionBody is { } arrow ? [lowering.ExpressionBody(arrow.Expression, returns: false)] : [];
     }
 }

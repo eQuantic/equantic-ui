@@ -134,6 +134,16 @@ public class StaticInitializationConformanceTests
         public static class Boom { public static int A = Fail(); public static int B = 3; static int Fail() => throw new InvalidOperationException("x"); }
         public class Fuse { public static int Lit = 1; static Fuse() { throw new InvalidOperationException("cctor"); } public static int Light() => Lit; }
         public class Bus { public static event Action Changed; static Bus() { Changed += () => Log.Text += "default "; } public static void Raise() => Changed?.Invoke(); }
+
+        public static class Calc { public static int Compute() => 21; public static int Base { get; } = Compute(); public static readonly int Doubled = Base * 2; }
+        public class PlainCalc { public static int Compute() => 21; public static int Base { get; } = Compute(); public static readonly int Doubled = Base * 2; }
+        public sealed class CalcView : StatelessComponent
+        {
+            public static int Compute() => 21;
+            public static int Base { get; } = Compute();
+            public static readonly int Doubled = Base * 2;
+            public override VisualNode Build(ComponentContext context) => new Text("calc", TypeRole.BodyM);
+        }
         """;
 
     private static readonly (string Name, string Statements)[] ClassCases =
@@ -165,6 +175,11 @@ public class StaticInitializationConformanceTests
         // constructor first, and its handler comes before the subscriber's.
         ("a subscription to a static event runs the static constructor first",
             "Log.Text = \"\"; Bus.Changed += () => Log.Text += \"mine \"; Bus.Raise(); return Log.Text;"),              // "default mine "
+        // A property's initializer runs where the property is declared, before a field's written
+        // below it: every field ran before every property, and the field read the property's zero.
+        ("a static class's property before a field over it", "return Calc.Doubled + \"|\" + Calc.Base;"),               // "42|21"
+        ("a plain class's property before a field over it", "return PlainCalc.Doubled + \"|\" + PlainCalc.Base;"),     // "42|21"
+        ("a component's property before a field over it", "return CalcView.Doubled + \"|\" + CalcView.Base;"),         // "42|21"
     ];
 
     [SkippableTheory]
