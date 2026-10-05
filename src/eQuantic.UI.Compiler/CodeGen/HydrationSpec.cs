@@ -189,7 +189,7 @@ public static class HydrationSpec
     /// entries — a sorted one's own, in its key type's order (<see cref="ValueOrdering"/>), or the
     /// runtime's <c>Dictionary</c>, finding its keys by value
     /// or by their own equality where the key type's default comparer does
-    /// (<see cref="DictionaryStrategy.KeyEquality"/>).
+    /// (<see cref="ElementEquality"/>).
     /// </summary>
     private static string DictionarySpec(INamedTypeSymbol dictionary, ITypeSymbol key, ITypeSymbol value,
         References referenced, HashSet<INamedTypeSymbol> visiting)
@@ -202,7 +202,7 @@ public static class HydrationSpec
             parts.Add(dictionary.DictionaryFactory() == Eq.SortedList ? "sorted: 'list'" : "sorted: 'dictionary'");
             if (ValueOrdering.Of(key) is { } ordering) parts.Add($"order: {ordering}");
         }
-        else if (DictionaryStrategy.KeyEquality(key) is { } equality) parts.Add($"byValue: {equality}");
+        else if (ElementEquality.Of(key) is { } equality) parts.Add($"byValue: {equality}");
         return $"{{ {string.Join(", ", parts)} }}";
     }
 

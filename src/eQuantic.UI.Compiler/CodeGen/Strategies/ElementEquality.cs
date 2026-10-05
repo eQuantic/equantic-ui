@@ -68,7 +68,7 @@ internal static class ElementEquality
             // and is a primitive on this side, which SameValueZero compares by value already. One with no
             // Equals of its own is found by identity, which `$eq.equals` would walk member by member.
             { TypeKind: TypeKind.Class, SpecialType: SpecialType.None } => ("'own'", false),
-            { TypeKind: TypeKind.Delegate } => (null, true),
+            // Everything else by identity, a delegate included, which `$eq.equals` compares the same way.
             _ => (null, true),
         };
     }

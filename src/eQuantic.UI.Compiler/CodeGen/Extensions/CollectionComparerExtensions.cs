@@ -156,6 +156,13 @@ public static class CollectionComparerExtensions
         _ => null,
     };
 
+    /// <summary>
+    /// Whether a comparer handed to a sort or a search asks for the element type's own order: a null
+    /// literal or <c>Comparer&lt;T&gt;.Default</c>, by the one reading of a comparer every collection's
+    /// fence takes (#577).
+    /// </summary>
+    internal static bool AsksForTheDefaultOrder(this IOperation comparer) => Asked(comparer) is Ask.Default;
+
     private enum Ask { Default, Ordinal, Other }
 
     private static Ask Asked(IOperation value)

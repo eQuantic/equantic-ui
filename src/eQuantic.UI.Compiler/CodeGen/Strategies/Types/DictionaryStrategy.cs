@@ -25,7 +25,7 @@ namespace eQuantic.UI.Compiler.CodeGen.Strategies.Types;
 /// </para>
 /// <para>
 /// A key is found as <c>EqualityComparer&lt;TKey&gt;.Default</c> finds it, which eqc decides from the
-/// key type (<see cref="KeyEquality"/>), the factory's second argument: by identity, through the
+/// key type (<see cref="ElementEquality"/>), the factory's second argument: by identity, through the
 /// class's JavaScript Map, by value, through <c>$eq.equals</c>, or, where the key type does not decide,
 /// by the key's own equality, which the runtime asks the value for. A comparer is not this strategy's
 /// to judge: the fence every creation passes (<see cref="CollectionComparerExtensions"/>,
@@ -79,15 +79,6 @@ internal sealed class DictionaryStrategy : IExpressionIrStrategy
                 return context.Unhandled(node, "Dictionary");
         }
     }
-
-    /// <summary>
-    /// How <c>EqualityComparer&lt;T&gt;.Default</c> tells two values of <paramref name="type"/> apart,
-    /// as the runtime's <c>KeyEquality</c> argument writes it: the decision every search the comparer
-    /// makes takes, a set's elements and a list's <c>IndexOf</c> included (<see cref="ElementEquality"/>).
-    /// <c>'own'</c> where the type does not decide was found in review, #443: two equal records under
-    /// <c>object</c> were two keys.
-    /// </summary>
-    internal static string? KeyEquality(ITypeSymbol? type) => ElementEquality.Of(type);
 
     /// <summary>
     /// The dictionary an initializer nested under a dictionary-typed member seeds (<c>Map = { ["a"] = 1 }</c>),
@@ -216,7 +207,7 @@ internal sealed class DictionaryStrategy : IExpressionIrStrategy
     }
 
     /// <summary><c>factory(seed)</c>, and <c>factory(seed, equality)</c> when the keys are not found by
-    /// identity (<see cref="KeyEquality"/>), or <c>factory(seed, ordering)</c> for a sorted one, whose
+    /// identity (<see cref="ElementEquality"/>), or <c>factory(seed, ordering)</c> for a sorted one, whose
     /// keys keep their type's order (<see cref="ValueOrdering"/>) rather than the one <c>&lt;</c> gives,
     /// or the order its comparer asked for (<paramref name="asked"/>).</summary>
     private static JsExpr Factory(string factory, ITypeSymbol? type, JsExpr? seed, string? asked = null)
@@ -224,7 +215,7 @@ internal sealed class DictionaryStrategy : IExpressionIrStrategy
         var arguments = new List<JsExpr>();
         var key = type is INamedTypeSymbol { TypeArguments: [var keyType, _] } ? keyType : null;
         var second = key is null ? null
-            : factory == Eq.Dictionary ? KeyEquality(key)
+            : factory == Eq.Dictionary ? ElementEquality.Of(key)
             : asked ?? ValueOrdering.Of(key);
         if (seed is not null) arguments.Add(seed);
         else if (second is not null) arguments.Add(JsExpr.Literal("null"));

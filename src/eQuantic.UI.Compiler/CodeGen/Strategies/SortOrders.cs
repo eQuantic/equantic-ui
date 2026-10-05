@@ -44,7 +44,7 @@ internal static class SortOrders
             comparerArgument = argument;
             // The default a null comparer stands for at run time. A comparer that is no default can
             // order a type that has no order here; only one that turns out null meets that fallback.
-            var fallback = Default(element, invocation, context, report: AsksForTheDefault(operation));
+            var fallback = Default(element, invocation, context, report: operation.AsksForTheDefaultOrder());
             if (fallback is null) return null;
             var hole = ParameterTemplate.WrittenFor(invocation.ArgumentList.Arguments, method)[ordinal] + (receiver is null ? 0 : 1);
             if (operation.SortOrderAskedFor(fallback, "{" + hole + "}", context) is not { } asked) return null;
@@ -86,14 +86,6 @@ internal static class SortOrders
             ? "a sort or a search whose element type no model can say"
             : $"a sort or a search over {element.ToDisplayString()}, whose values have no faithful order here");
         return null;
-    }
-
-    /// <summary>Whether a comparer handed in asks for the default: a null literal, or <c>Comparer&lt;T&gt;.Default</c>.</summary>
-    private static bool AsksForTheDefault(IOperation comparer)
-    {
-        while (comparer is IConversionOperation conversion) comparer = conversion.Operand;
-        return comparer is ILiteralOperation { ConstantValue: { HasValue: true, Value: null } }
-            or IPropertyReferenceOperation { Property.Name: "Default", Property.ContainingType.Name: "Comparer" };
     }
 
     /// <summary>The helper .NET's default comparer sorts a type with.</summary>
