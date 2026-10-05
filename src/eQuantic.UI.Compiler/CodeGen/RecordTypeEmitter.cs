@@ -1168,13 +1168,17 @@ public class RecordTypeEmitter
     };
 
     /// <summary>A UNARY operator's method, named by what it does so it cannot collide with the
-    /// binary operator spelled with the same token (`-m` is opNegate, `a - b` is opSubtract).</summary>
+    /// binary operator spelled with the same token (`-m` is opNegate, `a - b` is opSubtract). A step's
+    /// (`++`, `--`) is a unary operator too, which every step of its type calls, a local's and an
+    /// indexer's alike: it was written into no twin, and `c++` stepped an object into NaN.</summary>
     internal static string? UnaryOperatorMethodName(string token) => token switch
     {
         "-" => "opNegate",
         "+" => "opPlus",
         "!" => "opNot",
         "~" => "opComplement",
+        "++" => "opIncrement",
+        "--" => "opDecrement",
         _ => null,
     };
 

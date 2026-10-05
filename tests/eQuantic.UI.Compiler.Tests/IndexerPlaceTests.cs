@@ -56,6 +56,26 @@ public class IndexerPlaceTests
         result.TypeScript.Should().NotContain("__INDEX_FROM_END__").And.NotContain(".length");
     }
 
+    /// <summary>
+    /// C# 14's instance <c>void operator ++()</c> steps the value in place, which no twin carries: the
+    /// step is refused, where it was written as JavaScript's own step of an object, NaN.
+    /// </summary>
+    [Fact]
+    public void AnInstanceStepOperator_IsRefused()
+    {
+        var result = Compile("""
+            public sealed class Box
+            {
+                public int V;
+                public void operator ++() { V++; }
+                public static int Run() { var b = new Box(); b++; return b.V; }
+            }
+            """, "Box");
+
+        result.Success.Should().BeFalse();
+        result.Errors.Should().Contain(error => error.Code == "EQ1004" && error.Message.Contains("user-defined step"));
+    }
+
     [Fact]
     public void AnAccessWithEightKeys_IsWritten()
     {

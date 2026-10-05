@@ -186,6 +186,53 @@ public class IndexerConformanceTests
     public void AFromTheEndKey_IsTheIndexerAtTheCountTheTypeNames(bool typeAnnotations) =>
         ModuleGraph.AssertSameAsDotNet(Rings, typeAnnotations, RingCases);
 
+    private const string Steppable = """
+        public enum Mode { A, B, C }
+        [System.Flags] public enum Bits { None = 0, One = 1, Two = 2, Four = 4 }
+        public struct Counter
+        {
+            public int V;
+            public static Counter operator ++(Counter c) => new Counter { V = c.V + 1 };
+            public static Counter operator --(Counter c) => new Counter { V = c.V - 10 };
+        }
+        public class Modes { private readonly Mode[] _m = new Mode[2]; public Mode this[int i] { get => _m[i]; set => _m[i] = value; } }
+        public class Chars { private readonly char[] _c = { 'a', 'y' }; public char this[int i] { get => _c[i]; set => _c[i] = value; } }
+        public class Longs { private readonly long[] _l = { 9007199254740993L, 0L }; public long this[int i] { get => _l[i]; set => _l[i] = value; } }
+        public class Counters { private readonly Counter[] _c = new Counter[2]; public Counter this[int i] { get => _c[i]; set => _c[i] = value; } }
+        public class Flags { private readonly Bits[] _b = new Bits[1]; public Bits this[int i] { get => _b[i]; set => _b[i] = value; } }
+        public class Decimals { private readonly decimal[] _d = { 1.5m }; public decimal this[int i] { get => _d[i]; set => _d[i] = value; } }
+        """;
+
+    private static readonly (string Name, string Statements)[] StepCases =
+    [
+        // "2|B|B|A": an enum steps its value, the old one or the new one answered
+        ("an enum", "var m = new Modes(); m[0]++; var old = m[0]++; var now = ++m[1]; m[1]--; return (int)m[0] + \"|\" + old + \"|\" + now + \"|\" + m[1];"),
+        // "b|y|{|{": a char steps its code unit
+        ("a char", "var c = new Chars(); c[0]++; var old = c[1]++; var now = ++c[1]; return c[0] + \"|\" + old + \"|\" + now + \"|\" + c[1];"),
+        // "9007199254740995|9007199254740994|-1": a long steps its 64 bits
+        ("a long", "var l = new Longs(); l[0]++; var old = l[0]++; var now = --l[1]; return l[0] + \"|\" + old + \"|\" + now;"),
+        // "2|1|-10|2": a struct steps through its operator, an indexer's and a local's
+        ("a struct's operator", "var k = new Counters(); k[0]++; var old = k[0]++; var now = --k[1]; var c = new Counter(); c++; ++c; return k[0].V + \"|\" + old.V + \"|\" + now.V + \"|\" + c.V;"),
+        // "2|C|B": a flags enum steps its number, and a local enum its value
+        ("a flags enum and a local enum", "var f = new Flags(); f[0]++; f[0]++; var m = Mode.A; m++; var o = m++; return (int)f[0] + \"|\" + m + \"|\" + o;"),
+        // "1.5|2.5": a decimal steps on the type
+        ("a decimal", "var d = new Decimals(); d[0]++; var old = d[0]--; return d[0] + \"|\" + old;"),
+    ];
+
+    /// <summary>
+    /// Every step of an indexer the twin carries is a read and a write, the step being the one a local
+    /// of its type gets: an enum its value, a char its code unit, a long its 64 bits, a decimal on the
+    /// type, a struct through its <c>operator ++</c>, the old value or the new one answered as C#
+    /// answers. A type the step rules did not name went to JavaScript's own step, written on the
+    /// getter's call (<c>m.item(0)++</c>), and the module did not parse; a local enum stepped its name
+    /// into NaN, and a struct's operator was written into no twin.
+    /// </summary>
+    [SkippableTheory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void AStepThroughAnIndexer_IsTheStepALocalOfItsTypeGets(bool typeAnnotations) =>
+        ModuleGraph.AssertSameAsDotNet(Steppable, typeAnnotations, StepCases);
+
     private const string Keyed = """
         public class Grid
         {
