@@ -1,6 +1,7 @@
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Operations;
+using eQuantic.UI.Compiler.CodeGen.Extensions;
 using eQuantic.UI.Compiler.CodeGen.Ir;
 
 namespace eQuantic.UI.Compiler.CodeGen.Strategies.Types;
@@ -133,7 +134,7 @@ public class HashSetStrategy : IExpressionIrStrategy
             {
                 if (argument.ArgumentKind == ArgumentKind.DefaultValue) continue;
                 // A comparer that reached here asks for the element type's own (EQ2007 refuses any other).
-                if (argument.Parameter?.Type.Name == "IEqualityComparer") continue;
+                if ((argument.Parameter?.Type).IsCollectionComparer()) continue;
                 source = context.Converter.ConvertIr((ExpressionSyntax)argument.Value.Syntax);
             }
         }
