@@ -693,12 +693,10 @@ public class ObjectCreationStrategy : IExpressionIrStrategy
                         JsExpr.New(JsExpr.Identifier(target.Name), ctorArgs), context);
                 }
                 // An initializer that adds to a member or writes an entry, applied once the object
-                // exists, as the explicit form applies it (#462).
+                // exists, as the explicit form applies it (#462), to the construction as IR: written as
+                // text, a lambda among its arguments lost every line of its block from the map.
                 if (TwinIsWritten(target) && !ObjectInitializer.OnlyAssigns(creation.Initializer))
-                {
-                    return ObjectInitializer.Apply($"new {target.Name}({string.Join(", ", ctorArgs)})",
-                        creation.Initializer, context);
-                }
+                    return ObjectInitializer.Apply(JsExpr.New(JsExpr.Identifier(target.Name), ctorArgs), creation.Initializer, context);
                 if (ms != null && ctorArgs.Count < ms.Parameters.Length)
                     ctorArgs.AddRange(ms.Parameters.Skip(ctorArgs.Count).Select(parameter => DefaultOf(parameter, context)));
                 ctorArgs.Add(context.Converter.ConvertIr(creation.Initializer));
