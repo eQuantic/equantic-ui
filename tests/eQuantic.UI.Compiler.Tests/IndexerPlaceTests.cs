@@ -90,4 +90,41 @@ public class IndexerPlaceTests
         result.Errors.Should().BeEmpty();
         result.TypeScript.Should().Contain("this.setItem(1, 2, 3, 4, 5, 6, 7, 8, this.item(1, 2, 3, 4, 5, 6, 7, 8) + 1)");
     }
+
+    /// <summary>
+    /// A setter's own <c>return</c> runs its body in an arrow of its own, so it ends the setter and
+    /// not its answer; a <c>return</c> of a lambda or a local function inside it ends that function
+    /// alone, and the setter stays a plain body, where it paid for the arrow too.
+    /// </summary>
+    [Fact]
+    public void ASetterRunsInAnArrow_OnlyForAReturnOfItsOwn()
+    {
+        var hooks = Compile("""
+            public sealed class Hooks
+            {
+                private readonly System.Func<int, int>[] _f = new System.Func<int, int>[2];
+                public int Last;
+                public int this[int i]
+                {
+                    get => _f[i](i);
+                    set { _f[i] = x => { return x + 1; }; int Local() { return 2; } Last = Local(); }
+                }
+            }
+            """, "Hooks");
+        var guarded = Compile("""
+            public sealed class Guarded
+            {
+                public int Last;
+                public int this[int i]
+                {
+                    get => Last;
+                    set { if (value < 0) return; Last = value; }
+                }
+            }
+            """, "Guarded");
+
+        hooks.Errors.Should().BeEmpty();
+        hooks.TypeScript.Should().NotContain("(() => {", "the setter's only returns are its lambda's and its local function's");
+        guarded.TypeScript.Should().Contain("(() => {", "the setter that returns on its own runs in an arrow");
+    }
 }

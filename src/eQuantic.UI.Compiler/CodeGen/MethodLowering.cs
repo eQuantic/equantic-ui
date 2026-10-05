@@ -141,8 +141,10 @@ internal sealed class MethodLowering
         if (written is null) yield break;
         // A `return` in the setter ends the accessor, never the method around it: the body runs in an
         // arrow of its own, an IR node, which keeps each statement's line (the shape OutParameters.Body
-        // has). C# allows no await in an accessor, and the arrow runs once.
-        if (set!.Body?.DescendantNodes().OfType<ReturnStatementSyntax>().Any() == true)
+        // has). C# allows no await in an accessor, and the arrow runs once. A `return` of a lambda or a
+        // local function inside it ends that function alone, and asks for no arrow.
+        if (set!.Body?.DescendantNodes(node => node is not (AnonymousFunctionExpressionSyntax or LocalFunctionStatementSyntax))
+                .OfType<ReturnStatementSyntax>().Any() == true)
             written = JsStatement.Expression(JsExpr.Call(JsExpr.ArrowBlock("", written, _converter.Layout, _converter.Depth + 1)));
         IReadOnlyList<JsStatement> statements = written is JsBlock block ? block.Statements : [written];
         var parameters = string.IsNullOrEmpty(keys)
