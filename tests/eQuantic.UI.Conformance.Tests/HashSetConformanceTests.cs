@@ -100,6 +100,9 @@ public class HashSetConformanceTests
     [InlineData("var s = new HashSet<int> { 1, 2, 3 }; var a = new int[5]; s.CopyTo(a, 1); s.CopyTo(a, 3, 1); return string.Join(\",\", a);")]
     [InlineData("try { var s = new HashSet<int> { 1, 2, 3 }; s.CopyTo(new int[2]); return \"no\"; } catch (Exception e) { return e.Message; }")]
     [InlineData("var s = new HashSet<int>(); return s.EnsureCapacity(5) + \",\" + s.EnsureCapacity(2) + \",\" + new HashSet<int>(10).EnsureCapacity(0);")] // 7,7,11
+    // A set behind ICollection<T> copies itself, and so does any collection behind it.
+    [InlineData("ICollection<int> c = new HashSet<int> { 1, 2 }; var a = new int[3]; c.CopyTo(a, 1); return string.Join(\",\", a);")]                  // 0,1,2
+    [InlineData("ICollection<int> c = new LinkedList<int>(new[] { 3, 4 }); var a = new int[3]; c.CopyTo(a, 0); return string.Join(\",\", a);")]          // 3,4,0
     public void HashSet_AnswersItsOwnMembers(string statements)
     {
         Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");

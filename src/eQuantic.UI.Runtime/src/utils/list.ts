@@ -360,10 +360,22 @@ export function removeAll<T>(list: T[], match: ((item: T) => boolean) | null): n
 
 /**
  * `List<T>.CopyTo(array)` and `CopyTo(array, arrayIndex)`: the list's elements written into `array` from
- * `arrayIndex`, checked as `Array.Copy` checks them.
+ * `arrayIndex`, checked as `Array.Copy` checks them. A receiver typed `ICollection<T>` may be another
+ * collection when the call runs: a set copies itself, as the interface call reaches the set's own
+ * `CopyTo`, and any other collection is copied in its order (#429). Read as an array, a set threw.
  */
-export function copyTo<T>(list: readonly T[], array: T[] | null, arrayIndex = 0): void {
-  copyRange(list, 0, array, arrayIndex, list.length);
+export function copyTo<T>(list: readonly T[] | Iterable<T>, array: T[] | null, arrayIndex = 0): void {
+  if (Array.isArray(list)) {
+    copyRange(list, 0, array, arrayIndex, list.length);
+    return;
+  }
+  const own = (list as { copyTo?: unknown }).copyTo;
+  if (typeof own === 'function') {
+    (own as (array: T[] | null, arrayIndex: number) => void).call(list, array, arrayIndex);
+    return;
+  }
+  const items = [...list];
+  copyRange(items, 0, array, arrayIndex, items.length);
 }
 
 /** `List<T>.CopyTo(index, array, arrayIndex, count)`. */

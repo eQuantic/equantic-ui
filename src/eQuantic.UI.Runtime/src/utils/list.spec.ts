@@ -20,6 +20,8 @@ import {
   stringOrder,
 } from './list';
 import { dec } from './decimal';
+import { hashSetOf } from './hash-set';
+import { linkedList } from './collections';
 import { tupleEquality } from './key-equality';
 
 // Every answer and every message below was measured on .NET 10 (#488, #425).
@@ -164,6 +166,15 @@ describe("List<T>'s RemoveAll and CopyTo (#488)", () => {
       "length ('-1') must be a non-negative value. (Parameter 'length')\nActual value was -1.",
     );
     expect(fails(() => copyTo([1, 2], null))).toBe("Value cannot be null. (Parameter 'destinationArray')");
+  });
+
+  it('copies a collection an ICollection<T> holds when the call runs: a set by its own CopyTo, any other in its order', () => {
+    const a = [0, 0, 0];
+    copyTo(hashSetOf([1, 2]), a, 1);
+    expect(a).toEqual([0, 1, 2]);
+    const b = [0, 0, 0];
+    copyTo(linkedList([3, 4]), b);
+    expect(b).toEqual([3, 4, 0]);
   });
 });
 
