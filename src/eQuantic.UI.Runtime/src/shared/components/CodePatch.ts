@@ -3,7 +3,10 @@ import { $eq, CodePatchFile, CodePatchHunk, CodePatchLine } from "../runtime-exp
 export class CodePatch {
     static parse(text: string) {
         const close = () => {
-            if (open && (hunks.length > 0 || binary || !(originalPath == null) || !(modifiedPath == null))) files.push(Object.assign(new CodePatchFile(originalPath, modifiedPath, hunks), { binary: binary }));
+            if (open && (hunks.length > 0 || binary || !(originalPath == null) || !(modifiedPath == null))) files.push((($o: any, $1: any) => {
+                $o.binary = $1;
+                return $o;
+            })(new CodePatchFile(originalPath, modifiedPath, hunks), binary));
             originalPath = null;
             modifiedPath = null;
             binary = false;
@@ -95,7 +98,10 @@ export class CodePatch {
             i++;
         }
         while (i < lines.length && lines[i].startsWith('\\')) i++;
-        hunks.push(Object.assign(new CodePatchHunk(header[1] === 0 ? header[0] : header[0] - 1, header[1], header[3] === 0 ? header[2] : header[2] - 1, header[3], header[4], body), { header: headerLine }));
+        hunks.push((($o: any, $1: any) => {
+            $o.header = $1;
+            return $o;
+        })(new CodePatchHunk(header[1] === 0 ? header[0] : header[0] - 1, header[1], header[3] === 0 ? header[2] : header[2] - 1, header[3], header[4], body), headerLine));
         return i;
     }
 

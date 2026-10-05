@@ -30,13 +30,13 @@ namespace eQuantic.UI.Compiler.CodeGen.Strategies.Expressions;
 /// (<c>Items = { await Next(), 4 }</c>) landed in a function that is not async, and the module did
 /// not parse. What that costs is said where the values are: they are all evaluated before the first
 /// of them is applied, where C# applies each before evaluating the next, which only a value that reads
-/// the object's own member can tell (as the assignments' <c>Object.assign</c> does).
+/// the object's own member can tell.
 /// </para>
 /// </summary>
 internal static class ObjectInitializer
 {
-    /// <summary>Whether an initializer only assigns members, each a value of its own: what
-    /// <c>Object.assign</c> and a config object can carry.</summary>
+    /// <summary>Whether an initializer only assigns members, each a value of its own: what a config
+    /// object can carry.</summary>
     public static bool OnlyAssigns(InitializerExpressionSyntax initializer) =>
         initializer.IsKind(SyntaxKind.ObjectInitializerExpression)
         && initializer.Expressions.All(expression => expression is AssignmentExpressionSyntax
@@ -45,20 +45,17 @@ internal static class ObjectInitializer
             Right: not InitializerExpressionSyntax,
         });
 
-    /// <summary>The construction, with the initializer applied to what it builds. IR in and out, so a
-    /// lambda among the values keeps its own lines in the source map (#566).</summary>
+    /// <summary>
+    /// The construction, with the initializer applied to what it builds. IR in and out, so a lambda
+    /// among the values keeps its own lines in the source map (#566). One that only assigns is applied
+    /// as every other is, by the arrow that takes the construction and the values as its arguments: it
+    /// was <c>Object.assign(new X(…), { … })</c>, the same order (the values evaluated in the caller,
+    /// in theirs, then assigned in it), at the cost of a literal and a generic copy for every
+    /// construction, measured at 27 ns against 3.6 ns in bun, on paths that build per scroll and per
+    /// render (<c>CodeDiff.marksOf</c>, an app's <c>Select(x => new Row(…) { … })</c>).
+    /// </summary>
     public static JsExpr Apply(JsExpr construction, InitializerExpressionSyntax initializer, ConversionContext context)
     {
-        // Assignments alone: the literal's values are evaluated after the construction, in their
-        // order, and assigned in it.
-        if (OnlyAssigns(initializer))
-        {
-            var members = initializer.Expressions.Cast<AssignmentExpressionSyntax>()
-                .Select(assignment => new JsProperty(Member(assignment.Left), context.Converter.ConvertIr(assignment.Right)))
-                .ToList();
-            return JsExpr.Call(JsExpr.Identifier("Object.assign"), construction, JsExpr.Object(members));
-        }
-
         var application = new Application(context);
         application.Collect(Target, context.SemanticHelper.GetType(initializer.Parent as ExpressionSyntax ?? initializer), initializer);
         return application.Written(construction);

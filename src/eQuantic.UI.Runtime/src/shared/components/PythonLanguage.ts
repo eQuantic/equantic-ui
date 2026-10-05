@@ -13,7 +13,13 @@ export class PythonLanguage {
         return 'Python';
     }
 
-    rules: CodeLanguageRules = Object.assign(new CodeLanguageRules(), { lineComment: '#', indentAfter: [':', '(', '[', '{'], outdentOn: [')', ']', '}'], indentWidth: 4 });
+    rules: CodeLanguageRules = (($o: any, $1: any, $2: any, $3: any, $4: any) => {
+        $o.lineComment = $1;
+        $o.indentAfter = $2;
+        $o.outdentOn = $3;
+        $o.indentWidth = $4;
+        return $o;
+    })(new CodeLanguageRules(), '#', [':', '(', '[', '{'], [')', ']', '}'], 4);
     static $slots: any = null;
 
     static $init(): any {
