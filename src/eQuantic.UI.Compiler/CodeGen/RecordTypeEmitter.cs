@@ -54,16 +54,18 @@ public class RecordTypeEmitter
     /// twin, and the code in it may use the whole server surface. Every record and struct got a twin
     /// whatever it was marked, so `[ServerOnly] struct TokenHasher` over HMACSHA256 failed the build
     /// with EQ2004, whose own message says to mark the type [ServerOnly]. Asked of the declaration,
-    /// and of <paramref name="symbol"/> for the partial declaration another of whose declarations
-    /// carries the attribute (C# allows it on one of them only); null where the host has no
-    /// compilation, which then reads the declaration alone.
+    /// and of <paramref name="symbol"/>'s whole chain: the partial declaration another of whose
+    /// declarations carries the attribute (C# allows it on one of them only), and a record over a
+    /// server-only record, which inherits the attribute (a derived record got a twin over a base
+    /// nothing wrote, its inheritance dropped in silence). Null where the host has no compilation,
+    /// which then reads the declaration alone.
     /// </para>
     /// </summary>
     public static bool CanEmit(TypeDeclarationSyntax type, INamedTypeSymbol? symbol) =>
         type is RecordDeclarationSyntax or StructDeclarationSyntax
         && !(type.Modifiers.Any(SyntaxKind.PartialKeyword) && type.Members.Count == 0 && type.ParameterList is null)
         && !type.AttributeLists.SelectMany(list => list.Attributes).Any(attribute => attribute.IsNamed("ServerOnly"))
-        && !(symbol?.GetAttributes().Any(attribute => attribute.AttributeClass?.Name is "ServerOnly" or "ServerOnlyAttribute") ?? false);
+        && !(symbol is not null && Services.PlainClassModule.ServerOnlyAlongChain(symbol));
 
     /// <summary>
     /// Whether this emitter writes a twin for <paramref name="type"/>: declared in source, by a

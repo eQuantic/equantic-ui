@@ -109,6 +109,19 @@ internal static class PlainClassModule
         return false;
     }
 
+    /// <summary>
+    /// Whether <paramref name="type"/> or a type it derives from is marked <c>[ServerOnly]</c>: the
+    /// attribute is inherited, so a record over a server-only record is server-only too, as a class
+    /// over a server-only class is (<see cref="KeptOut"/>), and the record emitter asks it of the
+    /// whole chain (<see cref="CodeGen.RecordTypeEmitter.CanEmit"/>).
+    /// </summary>
+    internal static bool ServerOnlyAlongChain(INamedTypeSymbol type)
+    {
+        for (var at = type; at is not null; at = at.BaseType)
+            if (IsServerOnly(at)) return true;
+        return false;
+    }
+
     /// <summary>Marked <c>[ServerOnly]</c>: by its full name, or by the name as written where the
     /// attribute binds to an error type, a compilation that does not reference it.</summary>
     private static bool IsServerOnly(INamedTypeSymbol type) =>

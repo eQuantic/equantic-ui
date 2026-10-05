@@ -47,6 +47,37 @@ public class ServerOnlyValueTypeTests
             .Should().BeEmpty("no module imports a twin nothing writes");
     }
 
+    /// <summary>
+    /// A record over a <c>[ServerOnly]</c> record is server-only too, as a class over a server-only class
+    /// is, and so is one over that: each IS its base, and the attribute is inherited. The record path
+    /// read the attribute on the type itself, so the derived records got twins over a base nothing
+    /// wrote, and their inheritance was dropped in silence (found by Copilot's review of #608).
+    /// </summary>
+    [Fact]
+    public void ARecordOverAServerOnlyRecord_HasNoTwinEither()
+    {
+        var (results, resolver) = Compile(new Dictionary<string, string>
+        {
+            ["Secret.cs"] = """
+                [eQuantic.UI.Primitives.ServerOnly]
+                public record Secret(string Key)
+                {
+                    public string Hash(string s) => System.Convert.ToHexString(System.Security.Cryptography.HMACSHA256.HashData(
+                        System.Text.Encoding.UTF8.GetBytes(Key), System.Text.Encoding.UTF8.GetBytes(s)));
+                }
+                """,
+            ["ApiSecret.cs"] = "public record ApiSecret(string Key, string Scope) : Secret(Key) { public string Signed(string s) => Hash(Scope + s); }",
+            ["ReadSecret.cs"] = "public record ReadSecret : ApiSecret { public ReadSecret() : base(\"k\", \"read\") { } }",
+        });
+
+        results.Where(result => result.TypeScript.Length > 0).Select(result => result.ComponentName)
+            .Should().BeEmpty("a record over a server-only record is server-only too");
+        results.SelectMany(result => result.Errors.Concat(result.Warnings)).Select(error => $"{error.Code} {error.Message}")
+            .Should().BeEmpty("nothing of a server-only chain is transpiled");
+        new[] { "Secret", "ApiSecret", "ReadSecret" }.Where(resolver.IsModule)
+            .Should().BeEmpty("no module imports a twin nothing writes");
+    }
+
     [Fact]
     public void AStructThatCrosses_StillRefusesWhatItCannotTranslate()
     {
