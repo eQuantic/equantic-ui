@@ -12,9 +12,10 @@ namespace eQuantic.UI.Compiler.CodeGen;
 
 /// <summary>
 /// Emits a user value type — a record (positional or with a body) or a struct — as a named JS class
-/// with full value semantics: a constructor over the type's value members (with per-member defaults),
-/// a structural <c>equals</c> (which <c>$eq.equals</c> delegates to automatically), a prototype-
-/// preserving <c>with</c>, a .NET-style <c>toString</c>, and the type's user-declared instance methods
+/// with full value semantics: the C# constructors (a branch each on how many arguments arrive, which
+/// sets every member as C# does and runs the body, #413), a structural <c>equals</c> (which
+/// <c>$eq.equals</c> delegates to automatically) and its hash, a prototype-preserving <c>with</c>, a
+/// struct's <c>$zero()</c>, a .NET-style <c>toString</c>, and the type's user-declared instance methods
 /// (the thing a plain-object representation can't carry). Member names are camelCased.
 /// </summary>
 public class RecordTypeEmitter

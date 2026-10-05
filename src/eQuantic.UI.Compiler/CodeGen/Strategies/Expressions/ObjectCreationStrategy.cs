@@ -165,7 +165,8 @@ public class ObjectCreationStrategy : IExpressionIrStrategy
             return DataConstruction(creation, data, context);
 
         // Records and user structs are emitted as named JS classes (they carry instance methods) —
-        // construct via `new`, mapping positional args and any object initializer onto the constructor.
+        // construct via `new` with the arguments the constructor binds, then apply any object
+        // initializer to what it built (#413).
         if (createdType is { IsRecord: true }
             || (createdType is { TypeKind: TypeKind.Struct } && createdType.IsStructuralValueType()))
         {
@@ -666,8 +667,8 @@ public class ObjectCreationStrategy : IExpressionIrStrategy
         {
             var target = ms?.ContainingType;
 
-            // Records and user structs keep full value semantics: map args + initializer onto the
-            // positional constructor exactly like the explicit `new T(...) { … }` path.
+            // Records and user structs keep full value semantics: built exactly like the explicit
+            // `new T(...) { … }` path, the constructor and then the initializer applied to it.
             if (target is { IsRecord: true }
                 || (target is { TypeKind: TypeKind.Struct } && target.IsStructuralValueType()))
             {

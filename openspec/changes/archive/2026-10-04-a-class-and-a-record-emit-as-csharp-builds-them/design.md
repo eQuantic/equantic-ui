@@ -52,24 +52,27 @@ this change writes by hand, beside the object initializer's and an indexer sette
 
 ## An object initializer is applied, not passed
 
-A construction calls the constructor the call binds, with the arguments in its parameters' order,
-then applies the initializer to what it built. Assignments alone go through `Object.assign`, which
-evaluates the values after the constructor and calls a setter where the twin has one. Anything else
-(a nested collection initializer, a nested object initializer, an entry) is written as statements over
-the object's parameter in an arrow invoked in place, ARGUMENTS ONLY: the construction and every value,
+A construction calls the constructor the call binds, with its arguments as the bound tree binds them
+(`BoundArguments`: each in its parameter's place, evaluated in the order it is written), then applies
+the initializer to what it built. Every initializer, one that only assigns included, is written as
+statements over the object's parameter in an arrow invoked in place (`Object.assign(new X(…), { … })`
+cost 24 ns a construction where the arrow costs 2.6, measured in bun), ARGUMENTS ONLY: the construction and every value,
 key and element are its arguments, evaluated in the caller's own function in the order C# evaluates
 them, and its body reads only its parameters. Written inside it, an `await` in an element landed in a
 function that is not async, and the module did not parse. Each element is an `Add` through the
 lowering every call to that `Add` has (`push`, `add`, a twin's own method, and a dictionary's through
 the dictionary strategy's one spelling, which refuses a key already there once the runtime's `add`
-does), an assignment into the member's object, or a write through the indexer. An element with no
+does), an assignment into the member's object, or a write through the indexer. The `Add` is the one the
+bound tree binds: an extension's goes to its home, as a call to it does. An element with no
 lowering is refused (EQ1004), never dropped. A class keeps its trailing config object for an initializer that only assigns, which
 its constructor applies last, so the vocabulary's hand-written twins are untouched.
 
 `with` is a copy onto the prototype and then the patch (`$eq.withPatch`), which runs no constructor,
-as .NET's copy runs none. A struct's zero is `default(S)`: when the twin's constructor does more than
-zero it, the twin carries `$zero()`, built without the constructor, which `DefaultValue` names for a
-default, an array's slot and an OrDefault.
+as .NET's copy runs none; a struct's and a record's the compiler writes in the vocabulary's namespace
+go through the twin's own. A struct's zero is `default(S)`: every struct twin carries `$zero()`, built
+member by member without the constructor, which `DefaultValue` names for a default, an array's slot, an
+OrDefault and `new S()` through the implicit constructor, a generic struct's and a transpiled struct's
+of another assembly included, so a zero runs no initializer, no constructor and no static constructor.
 
 ## One predicate decides who has a module
 
@@ -128,3 +131,22 @@ library's import cycles; the type initializer is lazy too, so it survives them t
   a field initializer runs in the constructor, and a derived class's run after its base's constructor.
 - A record's text prints each value as JavaScript's template does: `true` where .NET prints `True`.
 - An indexer's names are checked within one declaration, not along the class chain.
+- A record's own copy constructor is not run by `with` (#589). A hydrated record has none of its
+  private state, which its equality reads (#590). An auto-property and a computed property of one name
+  along a record's chain meet on one slot (#591). The records the compiler transpiles into the
+  vocabulary's namespace are taken for hand-written twins when an app reaches them as metadata (#592).
+
+## The review
+
+The branch was reviewed at max effort before its pull request: eleven finders, a verifier per finding
+that could not be measured, and a sweep, every finding a probe ran on both sides of the real conformance
+harness. It found twenty-odd defects in the new emission, three of them regressions against main, and
+two streams fixed them in parallel worktrees before the third built on both: the resolver and the static
+initializer (a module per declaration of a name, bases by symbol, `[ServerOnly]` records and structs,
+the static constructor in a function of its own, statics in declaration order, constant statics as
+their value), the indexer and the writes (one place every writer takes, keys by parameter, the
+assignment's answer, `^n`, steps of any type, deconstruction, EQ1007 over an indexer's names, the
+initializer's `Add` by the bound tree), and the construction (`BoundArguments`, `$zero()` on every
+struct, parameters as variables, the record's text from the symbol, a copy constructor no branch, `this =`
+in a struct, EQ1007 over two members of one name). What predates the batch is filed, #582 to #587 and
+#589 to #592.

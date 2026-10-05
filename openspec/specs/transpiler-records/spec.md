@@ -50,17 +50,21 @@ constructor's body. A derived record's initializers SHALL run before its base's 
 ### Requirement: A construction that skips a member leaves it to the constructor
 
 A construction SHALL call the twin's constructor with the arguments of the C# constructor the call
-binds, in its parameters' order, a skipped optional parameter left to the constructor's default and
-an array passed whole to a `params` parameter spread. It SHALL apply an object initializer to what the
+binds, as the bound tree binds them: each in its parameter's place and evaluated in the order it is
+written, a skipped optional parameter left to the constructor's default, an array passed whole to a
+`params` parameter spread, named or not, and an element packed into one passed as it is. It SHALL apply an object initializer to what the
 constructor built, once the constructor has returned, element by element in source order: an
 assignment sets the member, a nested collection initializer adds each element to the collection the
-member holds through its `Add` (a dictionary's pair as every call to its `Add` lowers), a nested
+member holds through the `Add` the bound tree binds (an extension's through its home, a collection's
+own as every call to it lowers, a dictionary's pair and an `ICollection<T>` member's included), a nested
 object initializer assigns into the object the member holds, and an entry is written through the
 type's indexer. Every part of the initializer SHALL be evaluated in the caller's own function, in the
 order C# evaluates it, so an `await` in an element, a value or a key runs in the method it was written
 in; the parts are all evaluated before the first of them is applied, where C# applies each before
-evaluating the next, which only a part that reads the object's own member can observe. A struct
-built by its implicit parameterless constructor SHALL be its zero, running none of its initializers.
+evaluating the next, which only a part that reads the object's own member can observe. A struct's
+zero (`default`, an array's slot, an OrDefault, and `new S()` through the implicit parameterless
+constructor) SHALL be built without its constructor, running no initializer, no constructor and no
+static constructor, a generic struct's and a transpiled struct's from another assembly included.
 
 #### Scenario: An object initializer sets one member
 
@@ -101,6 +105,26 @@ built by its implicit parameterless constructor SHALL be its zero, running none 
 
 - **WHEN** an async method builds `new Holder { Items = { await G(), 4 } }`, where `G` yields and answers `3`
 - **THEN** `Items.Count` is `2` and `Items[0]` is `3`, as in .NET, and the module parses
+
+#### Scenario: Named arguments out of the signature's order, and a params array by name
+
+- **WHEN** `record Pair(int A, int B)` is built with `new Pair(B: Log("b", 2), A: Log("a", 1))`, and
+  `record Bag(int Tag, params int[] Items)` with `new Bag(1, Items: arr)` over a three-element array
+- **THEN** the log reads `ba`, the pair holds `1` and `2`, and the bag's `Count` is `3`, as in .NET
+
+#### Scenario: A struct's zero runs nothing
+
+- **WHEN** `record struct P(int X, int Y) { public P(int a = 1) : this(a, a) { } }`, `struct Pair<T> { public int Count; }`
+  and `struct Meter0 { public int V; static Meter0() { Log.Note("cctor "); } }`
+- **THEN** `default(P)`, `new P()` and an array's slot are `(0, 0)`, `new Pair<string>()` is a zero whose `Count`
+  steps to `1`, and neither `new Meter0()`, `default(Meter0)` nor an array of it runs the static
+  constructor, as in .NET
+
+#### Scenario: A struct of another assembly
+
+- **WHEN** an app reads `default(CodeCollapse).Placeholder`, where the code engine's
+  `record struct CodeCollapse(int FirstLine, int LastLine, bool Placeholder = true, string? Label = null)` is metadata
+- **THEN** it is false, as in .NET, and so is an array's slot's and a `new CodeCollapse()`'s
 
 ### Requirement: A default and a base clause read the constructor's parameters
 
@@ -226,12 +250,25 @@ code writes it.
 ### Requirement: A copy runs nothing
 
 A `with` expression SHALL copy the record's members and then set the members it names, running no
-initializer and no constructor, as .NET's copy does.
+initializer and no constructor, as .NET's copy does, through the twin's own copy for a struct and for a
+record whose twin eqc writes in a namespace of the vocabulary. An assignment to `this` in a struct
+SHALL copy the value's state onto the instance.
 
 #### Scenario: A with over a counted record
 
 - **WHEN** `var s = new Counted(); var t = s with { A = 5 };`
 - **THEN** `Counted.N` is `2`, `t.A` is `5` and `t.B` is `2`, as in .NET
+
+#### Scenario: A with over a struct and over the code engine's record
+
+- **WHEN** `struct Pt { public int X; public int Y; public int Sum() => X + Y; }` is copied with `a with { Y = 5 }`,
+  and `CodeLanguageRules.Default with { LineComment = "--", IndentWidth = 2 }`
+- **THEN** the copy's `Sum()` answers, and the rules hold `--` and `2` while `CodeLanguageRules.Default` keeps `4`
+
+#### Scenario: An assignment to this
+
+- **WHEN** `struct P5 { public int X, Y; public P5(int x) { this = default; X = x; } public void Reset() { this = new P5(9); } }`
+- **THEN** `new P5(3)` holds `3` and `0`, and `Reset()` leaves `9` and `0`, as in .NET
 
 ### Requirement: Every constructor a record or a struct declares is reached or refused
 
@@ -241,8 +278,14 @@ explicit one that does not chain with `: this(…)`) SHALL bind its parameters, 
 its base's constructor with its own arguments and run its body. One that chains with `: this(…)` SHALL
 evaluate the chain's arguments from the arguments that arrived, give a parameter the chain leaves out
 its default, run the constructor it chains to, and then its own body, even when that constructor's
-body returns early. eqc SHALL refuse with EQ1009, naming it, a constructor that takes a count of
-arguments another constructor takes too, and one that chains to a constructor that chains in turn.
+body returns early. Every argument of a chain and of a base's constructor SHALL land in its
+parameter's place and be evaluated in the order it is written, a base clause's where the primary
+constructor's parameters are in scope, and a variable an argument declares (`out var n`) SHALL be
+declared where it is evaluated. A constructor's parameters SHALL be variables its body may assign. A
+record's copy constructor is no branch, and `new` never reaches it. eqc SHALL refuse with EQ1009,
+naming it, a constructor that takes a count of arguments another constructor takes too, one that
+chains to a constructor that chains in turn, and one that chains `: this()` to a struct's implicit
+constructor beside constructors of its own.
 
 #### Scenario: An alternate with an optional parameter
 
@@ -284,13 +327,32 @@ arguments another constructor takes too, and one that chains to a constructor th
 - **WHEN** `record Twins` declares `Twins(int a) { A = a; }` and `Twins(string s) { A = s.Length; }`
 - **THEN** the build fails with EQ1009, naming `Twins(string s)`
 
+#### Scenario: A base's arguments by name, and a base clause naming a constant
+
+- **WHEN** `record Square : Shape { public Square() : base("square", Color: "red") { } }` over
+  `record Shape(string Kind, int Sides = 0, string Color = "black")`, and
+  `record Circle3(double Radius) : Shape3(DefaultKind)` with `public const string DefaultKind = "circle";`
+- **THEN** `new Square()` holds `Sides` `0` and `Color` `red`, and `new Circle3(1).Kind` is `circle`, as in .NET
+
+#### Scenario: A chain's out variable, and a parameter the body assigns
+
+- **WHEN** `record Size(int W, int H) { public Size(string text) : this(int.TryParse(text, out var n) ? n : 0, n) { } }`
+  and `record Tag(string Name) { public Tag(string raw, bool trim) : this(raw) { raw = raw.Trim(); Clean = raw; } … }`
+- **THEN** `new Size("4")` is `4` by `4`, and `new Tag(" x ", true).Clean` is `x`, as in .NET
+
+#### Scenario: A record's own copy constructor
+
+- **WHEN** `record Doc { public Doc(int capacity) { … } protected Doc(Doc original) { … } }`
+- **THEN** the build succeeds and `new Doc(2)` runs the first one
+
 ### Requirement: A record compares and prints as .NET does
 
 A record's equality SHALL compare its runtime type, what its base compares, and every instance field
 it declares, a private one and a property's store included. Its text SHALL name the members .NET's
 `PrintMembers` writes, in its order: its base's members first, then the properties its positional
-parameters make, then its public fields and readable public properties in declaration order, a
-computed one included, each once, and `Name { }` for a record with none.
+parameters make, then its public fields and its public properties with a getter, whatever the
+getter's own accessibility, in declaration order, a computed one included and an override of a property
+its base prints left to the base, each once, and `Name { }` for a record with none.
 
 #### Scenario: A derived record against its base
 
@@ -307,6 +369,13 @@ computed one included, each once, and `Name { }` for a record with none.
 
 - **WHEN** `record Secret(int Shown) { private int _hidden = Shown * 2; public int Hidden => _hidden; }`
 - **THEN** `new Secret(2)` prints `Secret { Shown = 2, Hidden = 4 }` and equals `new Secret(2)`
+
+#### Scenario: A getter of its own accessibility, and an override
+
+- **WHEN** `record R { public int Hidden { private get; set; } = 3; public int Shown { get; set; } = 4; }`, and
+  `record Derived : Base { public override int V { get; init; } = 2; public int W { get; init; } = 3; }` over
+  `record Base { public virtual int V { get; init; } = 1; }`
+- **THEN** `new R()` prints `R { Hidden = 3, Shown = 4 }` and `new Derived()` prints `Derived { V = 2, W = 3 }`, as in .NET
 
 ### Requirement: A positional parameter whose property the record declares is one member
 
@@ -327,8 +396,11 @@ only methods, only an indexer or nothing included, and a module for every top-le
 it declares, so that every module naming such a type imports one that exists. A partial declaration
 that declares nothing, a static class, a nested class, a class marked `[ServerOnly]` or
 `[RuntimeProvided]`, and a class whose chain of bases reaches an attribute, an exception or a type that
-never crosses SHALL get no plain-class module, and no module SHALL import one for them. The chain
-decides, not the name a class or its base has.
+never crosses SHALL get no plain-class module, and no module SHALL import one for them. The chain of
+base classes decides, by symbol, an interface never on it, not the name a class or its base has, and the
+parser and the resolver read one rule. A name SHALL be a module wherever any declaration of it is one:
+a nested class or a refused class of a component's name leaves the component's import as it is. A
+record or a struct marked `[ServerOnly]` SHALL get no twin.
 
 #### Scenario: A record with only a method, extended
 
@@ -349,14 +421,29 @@ decides, not the name a class or its base has.
 - **THEN** none of them gets a module and no module imports one, while `class FakeException { }`,
   which derives from no exception, gets its own
 
+#### Scenario: A component beside a nested class of its name
+
+- **WHEN** a component `Header` and `class Api { public class Header { } }` in another file
+- **THEN** a module that builds `new Header()` imports `./Header`
+
+#### Scenario: A class over an interface named like an attribute, and a server-only struct
+
+- **WHEN** `class ColorAttribute : IProductAttribute { }` over `interface IProductAttribute { }`, and
+  `[ServerOnly] struct TokenHasher` over HMACSHA256
+- **THEN** `ColorAttribute` gets a module that its users import, and `TokenHasher` gets no twin and no diagnostic
+
 ### Requirement: An instance indexer reaches its twin
 
 An instance indexer of a type whose twin eqc writes SHALL be its twin's `item` method for the getter
 and `setItem` for the setter, which answers the value it wrote, and every element access bound to it
-SHALL call them: a read, a write, a compound assignment, a step, a coalescing assignment, a
-null-conditional access and an object initializer's entry, its receiver and keys evaluated once each.
-eqc SHALL refuse with EQ1007 a second indexer, or a method named `Item` or `SetItem` beside one, in the
-same type.
+SHALL call them: a read, a write, a compound assignment, a step of any type, a coalescing
+assignment, a null-conditional access, a deconstruction's target, a key from the end (`^n`, at the count
+its type names) and an object initializer's entry, its receiver and keys evaluated once each, each key
+in its parameter's place, an omitted optional key as its default and a `params` key packed as C# packs
+it. An assignment through it SHALL answer the value it assigned, whatever the setter does with its copy.
+eqc SHALL refuse with EQ1007 a second indexer, or any member the twin holds on `item` or `setItem`
+beside one, in the same type; an explicit implementation of an interface's indexer holds those names,
+and the type's own indexer beside it takes names of its own.
 
 #### Scenario: A computed indexer
 
@@ -374,6 +461,18 @@ same type.
 - **WHEN** a class declares `this[int i]` and `this[string s]`
 - **THEN** the build fails with EQ1007, naming the indexer
 
+#### Scenario: An optional key, a named key and a key from the end
+
+- **WHEN** `this[int row, int col = 0]` is written with `g[1] = 5` and read with `g[col: 1, row: 2]`, and
+  `r[^1]` reads and writes a type with `Count` and `this[int]`
+- **THEN** each reaches the cell .NET reaches
+
+#### Scenario: A step of an enum, a swap and a clamping setter
+
+- **WHEN** an indexer of an enum is stepped with `m[0]++`, `(g[0], g[1]) = (g[1], g[0])` swaps two entries,
+  and a setter that clamps its `value` is assigned with `var y = (g[0] = 250)`
+- **THEN** the module loads, each answers as in .NET, and `y` is `250`
+
 ### Requirement: A type's statics initialize as .NET runs them
 
 A type whose statics can observe one another (an initializer that is not a constant, or a static
@@ -382,7 +481,11 @@ order, then the static constructor's body, once, the first time one of its stati
 a record, a struct, a class, a static class and a component alike. A type that declares a static
 constructor SHALL run it before its first instance and the first use of any of its static members, a
 method, a computed property and an operator included. A static with no initializer SHALL hold its
-type's zero in a type of any kind.
+type's zero in a type of any kind. The statics SHALL initialize in declaration order across fields,
+properties and field-like events. The static constructor's body SHALL run in a function of its own after
+the initializers, a re-entrant access during the initialization seeing what C# sees, and a failure SHALL
+be kept and thrown as a TypeInitializationException at every use. A static whose initializer C# folds to
+a constant SHALL be its value. A component's static constructor SHALL never be its instance constructor.
 
 #### Scenario: An initializer reads a static declared after it
 
@@ -410,6 +513,41 @@ type's zero in a type of any kind.
 - **WHEN** `class Ping { public static int A = Pong.B + 1; }` and `class Pong { public static int B = Ping.A + 10; }`,
   and `Ping.A` is read first
 - **THEN** `Ping.A` is `11` and `Pong.B` is `10`, as in .NET
+
+#### Scenario: A static constructor that returns early, and one that throws
+
+- **WHEN** `static Config() { Seen = "cctor"; if (X > 0) return; Seen = "late"; }`, and a static whose initializer throws
+- **THEN** `Config.X` reads `5` and `Seen` `cctor`, and every read of the other type throws a
+  TypeInitializationException, as in .NET
+
+#### Scenario: A property before a field, and a constant read before it is declared
+
+- **WHEN** `static int Base { get; } = Compute();` above `static readonly int Doubled = Base * 2;`, and
+  `static readonly int Max = Default * 2;` above `const int Default = 50;`
+- **THEN** `Doubled` is twice `Base`, and `Max` is `100`, as in .NET
+
+### Requirement: A record's or a struct's members on one name are refused
+
+A record's or a struct's twin holds the state of each instance as properties of its own and its
+methods and computed properties on its prototype, one member per name. eqc SHALL refuse with EQ1007,
+naming both, two instance members of a record or a struct that land on one name: two states, or a
+state and a method or a computed property. A member the body declares under a positional parameter's
+own name is that parameter's property, one member. An abstract property SHALL hold no state, and a
+primary constructor's parameter of a class or a struct SHALL be held by an instance only when a member
+reads it outside an initializer.
+
+#### Scenario: A captured parameter and a property of its name
+
+- **WHEN** `struct S(int x) { public int X { get; } = x * 2; public int Raw() => x; }`, or
+  `readonly struct Money(decimal amount) { public decimal Amount => amount; }`
+- **THEN** the build fails with EQ1007, naming both members
+
+#### Scenario: A parameter read only by an initializer, and an abstract property
+
+- **WHEN** `readonly struct Point2(int x, int y) { public int X { get; } = x; public int Y { get; } = y; }`, and
+  `record Circle2(double R) : Shape2 { public override string Name => "circle"; }` over
+  `abstract record Shape2 { public abstract string Name { get; } }`
+- **THEN** both build, `new Point2(3, 4)` holds `3` and `4`, and `new Circle2(2).Name` is `circle`, as in .NET
 
 ### Requirement: A deconstruction's part is converted to its target's type and written by what its target is
 

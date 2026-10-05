@@ -1608,7 +1608,7 @@ public class TypeScriptEmitter
     /// <para>
     /// <see cref="TypeScriptCodeBuilder.ClassBuilder.Field"/> asks this question for the members it
     /// writes, but the members written through <c>Raw</c> — getters, setters, abstract and declare
-    /// members, lazy statics — each have to ask it themselves, and for a long time none of them did.
+    /// members, a type initializer's slots — each have to ask it themselves, and for a long time none of them did.
     /// A leaked <c>: T</c> is not a cosmetic problem in that mode: the browser rejects the module at
     /// parse time, so nothing in the file runs and the only symptom is an empty frame.
     /// </para>
