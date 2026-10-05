@@ -24,6 +24,10 @@ public class ComponentDependencyResolver
     private readonly HashSet<string> _staticHelpers = new();
     private readonly HashSet<string> _runtimeProvidedTypes = new();
 
+    /// <summary>The classes the COMPONENT path emits (<see cref="IsComponentLike"/>), each a module of
+    /// its own, a nested one included, as the parser writes one for every component it finds.</summary>
+    private readonly HashSet<string> _componentLike = new(StringComparer.Ordinal);
+
     /// <summary>A class that is not a component or a static helper, as the scan saw it: whether the
     /// plain-class rule takes it on everything but its chain of bases, and the base it names.</summary>
     private readonly record struct ScannedClass(string Name, bool PlainOnItsOwn, string? Base);
@@ -37,19 +41,19 @@ public class ComponentDependencyResolver
     /// judged by its name.</summary>
     private readonly HashSet<string> _declared = new(StringComparer.Ordinal);
 
-    /// <summary>The plain classes, settled over every file the scan read; null until asked, and again
-    /// after another file is read.</summary>
-    private (HashSet<string> Modules, HashSet<string> Refused)? _plainClassesSettled;
+    /// <summary>The plain-class modules, settled over every file the scan read; null until asked, and
+    /// again after another file is read.</summary>
+    private HashSet<string>? _plainClassesSettled;
 
     /// <summary>
-    /// Which of the scanned classes are plain-class modules, and which the rule refused: the
-    /// predicate's answer over the CHAIN of bases the scan saw, in any file it read. A class is kept out
-    /// by a base that stays on the server (marked <c>[ServerOnly]</c>), and by a chain that leaves the
-    /// scan at an attribute or an exception of .NET, known there by its name
-    /// (<see cref="PlainClassModule.KeepsOutByName"/>): <c>class Retry : Failure</c> over
-    /// <c>class Failure : Exception</c> is an exception, which its own base's name does not say.
+    /// Which of the scanned classes are plain-class modules: the predicate's answer over the CHAIN of
+    /// bases the scan saw, in any file it read. A class is kept out by a base that stays on the server
+    /// (marked <c>[ServerOnly]</c>), and by a chain that leaves the scan at an attribute or an exception
+    /// of .NET, known there by its name (<see cref="PlainClassModule.KeepsOutByName"/>):
+    /// <c>class Retry : Failure</c> over <c>class Failure : Exception</c> is an exception, which its own
+    /// base's name does not say.
     /// </summary>
-    private (HashSet<string> Modules, HashSet<string> Refused) PlainClasses()
+    private HashSet<string> PlainClasses()
     {
         if (_plainClassesSettled is { } settled) return settled;
         var bases = new Dictionary<string, string?>(StringComparer.Ordinal);
@@ -69,11 +73,10 @@ public class ComponentDependencyResolver
         }
 
         var modules = new HashSet<string>(StringComparer.Ordinal);
-        var refused = new HashSet<string>(StringComparer.Ordinal);
         foreach (var scanned in _classes)
-            (scanned.PlainOnItsOwn && !KeptOut(scanned.Base) ? modules : refused).Add(scanned.Name);
-        _plainClassesSettled = (modules, refused);
-        return (modules, refused);
+            if (scanned.PlainOnItsOwn && !KeptOut(scanned.Base)) modules.Add(scanned.Name);
+        _plainClassesSettled = modules;
+        return modules;
     }
 
     /// <summary>
@@ -179,12 +182,18 @@ public class ComponentDependencyResolver
                 _staticHelpers.Add(className);
             }
 
+            // A component is a module of its own, as the parser writes one for every component it
+            // finds, a nested one included.
+            else if (IsComponentLike(classDecl))
+            {
+                _componentLike.Add(className);
+            }
+
             // A PLAIN class is a module too — a referencing module has to import it, or the page
             // dies with "Bucket is not defined". Whether it is one is the parser's rule, read from
             // the same predicate (#423), and settled once every file is scanned: its chain of bases
-            // can be declared in another file. Components and state classes are resolved by their
-            // own paths.
-            else if (!IsComponentLike(classDecl))
+            // can be declared in another file.
+            else
             {
                 _classes.Add(new ScannedClass(className,
                     PlainClassModule.Is(classDecl, _ => false),
@@ -298,22 +307,27 @@ public class ComponentDependencyResolver
     public IReadOnlySet<string> GetRuntimeProvidedTypes() => _runtimeProvidedTypes;
 
     /// <summary>Plain classes the app declares — each its own module, each importable.</summary>
-    public IReadOnlySet<string> GetAllPlainClasses() => PlainClasses().Modules;
+    public IReadOnlySet<string> GetAllPlainClasses() => PlainClasses();
 
     /// <summary>
-    /// Whether the scan knows <paramref name="name"/> became a module of its own: a component, a
-    /// record or struct, a static helper or a plain class. Every emitter imports an APP type only
-    /// when this answers yes, which is what keeps an import from naming a module nobody wrote.
-    /// A class with a base is in the component graph whatever it is, so a class the plain-class rule
-    /// refuses (an attribute, an exception, one over a server-only base) is taken out of it here: it
-    /// answered yes for those, and the parser wrote no module for any of them (#423).
+    /// Whether the scan knows <paramref name="name"/> became a module of its own: a record or struct,
+    /// a static helper, a component or a plain class. Every emitter imports an APP type only when this
+    /// answers yes, which is what keeps an import from naming a module nobody wrote.
+    /// <para>
+    /// Modules share ONE flat namespace, named by the type's simple name, so a name is a module when
+    /// ANY declaration of it is one, and nothing a declaration of that name is refused for takes it
+    /// back: a class the plain-class rule refuses (a nested one, an exception, one over a server-only
+    /// base) said nothing about a component of the same name in another file, and its name vetoed
+    /// that component's import, which the browser met as a ReferenceError. The component graph is no
+    /// answer either: it holds every class with a base, and the parser writes no module for an
+    /// attribute or an exception (#423).
+    /// </para>
     /// </summary>
-    public bool IsModule(string name)
-    {
-        if (_recordTypes.Contains(name) || _staticHelpers.Contains(name)) return true;
-        var (modules, refused) = PlainClasses();
-        return modules.Contains(name) || (_dependencyCache.ContainsKey(name) && !refused.Contains(name));
-    }
+    public bool IsModule(string name) =>
+        _recordTypes.Contains(name)
+        || _staticHelpers.Contains(name)
+        || _componentLike.Contains(name)
+        || PlainClasses().Contains(name);
 
     /// <summary>
     /// Whether the class is (or extends) something the COMPONENT path emits. Syntactic on purpose:

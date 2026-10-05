@@ -75,11 +75,24 @@ public class PlainClassModuleTests
         ["SplitA.cs"] = "public partial class Split { public int Value; }",
         ["SplitB.cs"] = "public interface ISplit { } public partial class Split : ISplit { }",
         ["Hollow.cs"] = "public partial class Hollow { }",
+        // Modules share ONE flat namespace, so a name is a module when any declaration of it is one: a
+        // nested class the rule refuses shares its name with a component in another file, which is a
+        // module all the same. The refused name vetoed it, and the import of `Header` went missing.
+        ["Header.cs"] = """
+            using eQuantic.UI.Primitives;
+
+            public sealed class Header : StatelessComponent
+            {
+                public string Title { get; set; } = "top";
+                public override VisualNode Build(ComponentContext context) => new Text(Title, TypeRole.BodyM);
+            }
+            """,
+        ["Api.cs"] = "public class Api { public class Header { public string Name = \"nested\"; } public int Version = 1; }",
     };
 
     private static readonly string[] Modules =
         ["Mute", "ChainBase", "Echo", "Message", "Ping", "Marker", "Filled", "Helpers", "Outer", "Card", "Split",
-         "FakeException"];
+         "FakeException", "Header", "Api"];
 
     private static readonly string[] NotModules =
         ["FooAttribute", "TaggedAttribute", "NotFoundException", "Oops", "Stays", "Provided", "Inner",
