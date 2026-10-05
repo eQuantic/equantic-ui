@@ -1,5 +1,6 @@
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using Microsoft.CodeAnalysis.Operations;
 using eQuantic.UI.Compiler.CodeGen.Extensions;
 using eQuantic.UI.Compiler.CodeGen.Ir;
 using eQuantic.UI.Compiler.CodeGen.Strategies.Expressions;
@@ -15,9 +16,10 @@ namespace eQuantic.UI.Compiler.CodeGen.Strategies;
 /// null-conditional assignment, the object initializer's entry and the deconstruction. Each of them
 /// spelled the two kinds beside each other, so a rule of either had a writer for each to be taught in.
 /// <para>
-/// Its parts are what C# evaluates, in the order it evaluates them: the receiver, then the keys. A
-/// writer builds a template over them (<see cref="JsTemplate"/>), whose writer binds a part once
-/// where it is used twice.
+/// Its parts are what C# evaluates, in the order it evaluates them: the receiver, then the keys as they
+/// are written, and after them the constants the call passes without evaluating anything. A writer
+/// builds a template over them (<see cref="JsTemplate"/>), whose writer binds a part once where it is
+/// used twice and keeps C#'s order where a key is passed out of it.
 /// </para>
 /// </summary>
 internal sealed class Place
@@ -56,7 +58,7 @@ internal sealed class Place
             return Entry(context.Converter.ConvertIr(access.Expression), access.ArgumentList.Arguments[0].Expression, context);
         return Indexer.LoweredAt(access, context) is null
             ? null
-            : Indexed(access.ArgumentList, context.Converter.ConvertIr(access.Expression), context);
+            : Indexed(access, access.ArgumentList, context.Converter.ConvertIr(access.Expression), context);
     }
 
     /// <summary>The place an element named without its receiver is, the writer holding the
@@ -68,7 +70,7 @@ internal sealed class Place
         if (context.SemanticHelper.GetSymbol(target) is IPropertySymbol { IsIndexer: true } indexer
             && indexer.ContainingType.IsDictionary() && arguments.Arguments.Count == 1)
             return Entry(receiver, arguments.Arguments[0].Expression, context);
-        return Indexer.LoweredAt(target, context) is null ? null : Indexed(arguments, receiver, context);
+        return Indexer.LoweredAt(target, context) is null ? null : Indexed(target, arguments, receiver, context);
     }
 
     /// <summary>The parts C# evaluates, in its order: the receiver, then the keys. A lowering that
@@ -131,16 +133,93 @@ internal sealed class Place
         _ => null,
     };
 
-    /// <summary>An entry of an indexer a twin carries: the receiver, then each key.</summary>
-    private static Place Indexed(BracketedArgumentListSyntax arguments, JsExpr receiver, ConversionContext context)
+    /// <summary>
+    /// An entry of an indexer a twin carries, its keys as the bound tree passes them (its
+    /// <see cref="IArgumentOperation"/>s, in the order C# evaluates them): each key in its parameter's
+    /// place, the elements of a params key in the array C# packs them into, and a key the call leaves
+    /// out as the default the bound tree passes for it, after the keys C# evaluates, since nothing
+    /// evaluates a constant. Every call passes every key, so the twin's <c>item</c> and <c>setItem</c>
+    /// take them bare. Taken as written, <c>grid[1] = 5</c> over <c>this[int row, int col = 0]</c> put 5
+    /// in <c>col</c> and left the value undefined, and <c>grid[col: 1, row: 2]</c> read row 1.
+    /// </summary>
+    private static Place? Indexed(ExpressionSyntax access, BracketedArgumentListSyntax arguments, JsExpr receiver,
+        ConversionContext context)
     {
+        if (context.SemanticHelper.GetOperation(access) is not IPropertyReferenceOperation { Property: var indexer } reference)
+            return null;
+        var written = new Written(access, arguments, context);
         var parts = new List<JsExpr> { receiver };
-        var keys = new List<string>();
-        foreach (var argument in arguments.Arguments)
+        var keys = new string?[indexer.Parameters.Length];
+        var omitted = new List<IArgumentOperation>();
+        foreach (var argument in reference.Arguments)
         {
-            keys.Add(Hole(parts.Count));
-            parts.Add(context.Converter.ConvertIr(argument.Expression));
+            if (argument.Parameter is not { } parameter || parameter.Ordinal >= keys.Length) return null;
+            if (argument.ArgumentKind == ArgumentKind.DefaultValue)
+            {
+                omitted.Add(argument);
+                continue;
+            }
+            keys[parameter.Ordinal] = Hole(parts.Count);
+            parts.Add(argument.ArgumentKind == ArgumentKind.ParamArray
+                ? JsExpr.Array([.. ((argument.Value as IArrayCreationOperation)?.Initializer?.ElementValues ?? [])
+                    .Select(element => written.Convert(element.Syntax))])
+                : written.Convert(argument.Syntax));
         }
-        return new Place(entry: false, parts, parts.Count, keys, context);
+        var evaluated = parts.Count;
+        foreach (var argument in omitted)
+        {
+            keys[argument.Parameter!.Ordinal] = Hole(parts.Count);
+            parts.Add(Default(argument, context));
+        }
+        return keys.Any(key => key is null) ? null : Made(entry: false, parts, evaluated, keys!, access, context);
+    }
+
+    /// <summary>
+    /// The value a key the call leaves out takes: the constant the bound tree passes for it (its
+    /// declared default, or what a caller-info attribute supplies), in the parameter's type, or the
+    /// type's zero for a <c>default</c> that is no constant, a struct's.
+    /// </summary>
+    private static JsExpr Default(IArgumentOperation omitted, ConversionContext context) =>
+        omitted.Value.ConstantValue is { HasValue: true } constant
+        && ConstantLiteral.Write(constant.Value, omitted.Parameter!.Type, context) is { } literal
+            ? JsExpr.Literal(literal)
+            : JsExpr.Opaque(DefaultValue.Of(omitted.Parameter!.Type, context));
+
+    /// <summary>
+    /// The most parts a place takes: a template's holes are single digits, and a writer adds one part
+    /// after them, its value or its operand.
+    /// </summary>
+    private const int MostParts = 9;
+
+    /// <summary>The place, unless it takes more parts than a template holds, which is refused (EQ1004)
+    /// rather than written into holes no template fills.</summary>
+    private static Place? Made(bool entry, List<JsExpr> parts, int evaluated, IReadOnlyList<string> keys, SyntaxNode at,
+        ConversionContext context)
+    {
+        if (parts.Count <= MostParts) return new Place(entry, parts, evaluated, keys, context);
+        context.Unhandled(at, $"indexer's (it passes {parts.Count - 1} keys, and one read and write holds {MostParts - 1})");
+        return null;
+    }
+
+    /// <summary>
+    /// The keys as the access writes them, found by the in-tree argument the bound tree names: a strategy
+    /// that rebuilt the access (the null-conditional's, a query's) copied its arguments position by
+    /// position, and the copy is the one to convert.
+    /// </summary>
+    private sealed class Written(ExpressionSyntax access, BracketedArgumentListSyntax arguments, ConversionContext context)
+    {
+        private readonly BracketedArgumentListSyntax? _original = ArgumentsOf(context.SemanticHelper.Original(access));
+
+        /// <summary>The written expression of a node of the bound tree (an argument, or an element of
+        /// a params key), converted.</summary>
+        public JsExpr Convert(SyntaxNode bound)
+        {
+            var argument = bound.AncestorsAndSelf().OfType<ArgumentSyntax>().FirstOrDefault();
+            var at = argument is null || _original is null ? -1 : _original.Arguments.IndexOf(argument);
+            var expression = at >= 0 && at < arguments.Arguments.Count
+                ? arguments.Arguments[at].Expression
+                : argument?.Expression ?? (ExpressionSyntax)bound;
+            return context.Converter.ConvertIr(expression);
+        }
     }
 }

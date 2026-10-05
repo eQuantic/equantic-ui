@@ -81,4 +81,47 @@ public class IndexerConformanceTests
     [InlineData(false)]
     public void AClassIndexer_ReachesItsTwin(bool typeAnnotations) =>
         ModuleGraph.AssertSameAsDotNet(Classes, typeAnnotations, ClassCases);
+
+    private const string Keyed = """
+        public class Grid
+        {
+            private readonly int[] _cells = new int[16];
+            public int this[int row, int col = 0] { get => _cells[row * 4 + col]; set => _cells[row * 4 + col] = value; }
+        }
+        public class Path
+        {
+            public int Last;
+            public int this[params int[] path] { get => path.Length * 100 + (path.Length > 0 ? path[0] : 0); set { Last = path.Length * 1000 + value; } }
+        }
+        public static class Log
+        {
+            public static string Text = "";
+            public static int At(string step, int value) { Text += step; return value; }
+        }
+        """;
+
+    private static readonly (string Name, string Statements)[] KeyedCases =
+    [
+        // "5|7|7": an omitted key takes its default, and a named one fills its own parameter
+        ("an optional key and named keys", "var g = new Grid(); g[1] = 5; g[2, 1] = 7; return g[1] + \"|\" + g[2, 1] + \"|\" + g[col: 1, row: 2];"),
+        // "crvCR|7|7": named keys out of order are evaluated where they are written
+        ("named keys out of order", "Log.Text = \"\"; var g = new Grid(); g[col: Log.At(\"c\", 1), row: Log.At(\"r\", 2)] = Log.At(\"v\", 7); var x = g[col: Log.At(\"C\", 1), row: Log.At(\"R\", 2)]; return Log.Text + \"|\" + x + \"|\" + g[2, 1];"),
+        // "201|305|2010|1110": params keys packed as C# packs them, an array passed whole, one array for a compound's read and write
+        ("a params key", "var t = new Path(); var a = t[1, 2]; var b = t[new[] { 5, 6, 7 }]; t[4, 5] = 10; var c = t.Last; t[9] += 1; return a + \"|\" + b + \"|\" + c + \"|\" + t.Last;"),
+        // "8|6|9|8": the keys of an initializer's entry, a null-conditional write, a compound and a step
+        ("every writer's keys", "var g = new Grid { [1] = 5, [col: 3, row: 2] = 6 }; Grid h = g; h?[3] = 8; g[1] += 2; g[1]++; var old = g[3]++; return g[1] + \"|\" + g[2, 3] + \"|\" + g[3] + \"|\" + old;"),
+    ];
+
+    /// <summary>
+    /// An indexer's keys are passed as the bound tree binds them, each in its parameter's place: an
+    /// omitted optional key as its default, a named one where it is named, and evaluated where it is
+    /// written, a params key packed into its array. They were passed as written, so
+    /// <c>g[1] = 5</c> over <c>this[int row, int col = 0]</c> put 5 in <c>col</c> and left the value
+    /// undefined (.NET "5|7|7", JavaScript "undefined|7|0").
+    /// </summary>
+    [SkippableTheory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void AnIndexersKeys_ArePassedByParameter(bool typeAnnotations) =>
+        ModuleGraph.AssertSameAsDotNet(Keyed, typeAnnotations, KeyedCases);
 }
