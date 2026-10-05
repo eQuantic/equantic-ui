@@ -175,10 +175,14 @@ public class LocalDeclarationStrategy : IStatementStrategy
         return $": {ts}";
     }
 
-    /// <summary>The TS spelling of a SIMPLE item type, or null when TS has none to write.</summary>
+    /// <summary>The TS spelling of a SIMPLE item type, or null when TS has none to write. An interface
+    /// crosses as <c>any</c>, as it does in every annotation, and an exception as the Error it is: a
+    /// list of either named a type no module defines (#296).</summary>
     private static string? SimpleItemName(ITypeSymbol item)
     {
         if (item is INamedTypeSymbol { IsGenericType: true }) return null;
+        if (item.TypeKind == TypeKind.Interface) return "any";
+        if (ExceptionTypes.Is(item)) return "Error";
         return item.SpecialType switch
         {
             SpecialType.System_String or SpecialType.System_Char => "string",

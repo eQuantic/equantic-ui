@@ -281,6 +281,9 @@ public class TypeScriptEmitter
     private static readonly HashSet<string> RuntimeValueTypes = new(StringComparer.Ordinal)
     {
         "DateTime", "DateOnly", "TimeOnly", "TimeSpan", "DateTimeOffset", "Decimal",
+        // The cancellation trio (utils/cancellation.ts): built through `$eq.cancellation`, named by
+        // the parameter a provider takes its token in.
+        "CancellationToken", "CancellationTokenSource", "CancellationTokenRegistration",
     };
 
     /// <summary>
@@ -2169,6 +2172,9 @@ public class TypeScriptEmitter
                 {
                     TypeKind.Interface => "any",
                     TypeKind.Enum => IsFlags(argument) ? "number" : EnumUnion(argument),
+                    // An exception is a JavaScript Error carrying its .NET types (utils/exceptions):
+                    // `Action<Exception>` named an `Exception` no module defines.
+                    TypeKind.Class when Strategies.ExceptionTypes.Is(argument) => "Error",
                     _ => null,
                 };
                 if (crossesAs is null) continue;
@@ -2183,6 +2189,7 @@ public class TypeScriptEmitter
             // and therefore cross as the number the bitwise operators need.
             { TypeKind: TypeKind.Enum } => IsFlags(resolved!) ? "number" : EnumUnion(resolved!),
             { TypeKind: TypeKind.Interface } => "any",
+            { TypeKind: TypeKind.Class } when Strategies.ExceptionTypes.Is(resolved) => "Error",
             { TypeKind: TypeKind.TypeParameter } => resolved!.Name,
             // A name nothing here can VERIFY is a name the module may not resolve. Annotating with
             // it trades a missing type for a broken one, so it stays open.

@@ -12,7 +12,7 @@ EQ1008 eQuantic.UI.Compiler/CodeGen/RecordTypeEmitter.cs eQuantic.UI.Compiler/Co
 EQ2001 eQuantic.Build/Program.cs eQuantic.UI.Compiler/CodeGen/Strategies/Special/UnsupportedConstructStrategy.cs
 EQ2002 eQuantic.UI.Compiler/CodeGen/Strategies/Statements/GotoStatementStrategy.cs
 EQ2003 eQuantic.UI.Compiler/CodeGen/Strategies/Expressions/ObjectCreationStrategy.cs
-EQ2004 eQuantic.UI.Code/Marks/CodeDiagnostic.cs eQuantic.UI.Compiler/CodeGen/Extensions/UsingStaticSymbolExtensions.cs eQuantic.UI.Compiler/CodeGen/Strategies/Expressions/InvocationStrategy.cs eQuantic.UI.Compiler/CodeGen/Strategies/Expressions/RangeExpressionStrategy.cs
+EQ2004 eQuantic.UI.Code/Marks/CodeDiagnostic.cs eQuantic.UI.Compiler/CodeGen/Extensions/UsingStaticSymbolExtensions.cs eQuantic.UI.Compiler/CodeGen/Strategies/Expressions/InvocationStrategy.cs eQuantic.UI.Compiler/CodeGen/Strategies/Expressions/RangeExpressionStrategy.cs eQuantic.UI.Compiler/CodeGen/Strategies/Types/CancellationStrategy.cs
 EQ2005 eQuantic.UI.Compiler/CodeGen/MethodLowering.cs
 EQ2006 eQuantic.UI.Compiler/CodeGen/Strategies/Expressions/ConditionalAccessStrategy.cs eQuantic.UI.Compiler/CodeGen/Strategies/Expressions/InvocationStrategy.cs eQuantic.UI.Compiler/CodeGen/Strategies/Expressions/MemberAccessStrategy.cs eQuantic.UI.Compiler/CodeGen/Strategies/Expressions/ObjectCreationStrategy.cs
 EQ2007 eQuantic.UI.Compiler/CodeGen/Extensions/CollectionComparerExtensions.cs eQuantic.UI.Compiler/CodeGen/Strategies/Expressions/CollectionExpressionStrategy.cs

@@ -75,6 +75,9 @@ public static class DefaultValue
                 return $"{Eq.DateTimeOffset}.minValue()";
             case "System.Guid":
                 return "'00000000-0000-0000-0000-000000000000'";
+            // The token that never cancels: `default` and `None` are one value.
+            case "System.Threading.CancellationToken":
+                return Eq.CancellationNone;
         }
 
         // A KeyValuePair is the pair a dictionary yields, so its zero is the pair of the two zeros (#433).
