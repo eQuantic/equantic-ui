@@ -48,3 +48,11 @@
 - [x] 7.4 A bind the server could not answer is asked again before the page is told; verified by vitest specs for a stream that ended, a 503 and a server without session affinity
 - [x] 7.5 A topic that crosses the wire keeps its payload's spec, and one built where that type is a type parameter is EQ2013; verified by emission tests and vitest specs, each A/B against the code before it
 
+## 8. Copilot's first round
+
+- [x] 8.1 A record crosses as its twin whether or not a member needs coercion, in a topic's payload, a Server Action's result and a record that holds it; verified by emission tests and the regenerated twins
+- [x] 8.2 `with` copies a vocabulary twin built from arguments (`ServerTopic`, `DataPalette`) instead of rebuilding it from one object; verified by conformance cases on both sides
+- [x] 8.3 A connection's handlers hear its transitions in order, and an overflow cancels the stream's blocked write; verified by Server tests with a handler that holds its join
+- [x] 8.4 A request ends with its stream or after ten seconds, an unanswered release is asked again and then reopens the stream, and connected waits for every topic; verified by vitest specs
+- [x] 8.5 The equality of `ServerTopic<int>` and `ServerTopic<string>` of one name is the erasure every generic record has, measured on an app's own `Box<T>` and filed as #651
+

@@ -81,7 +81,8 @@ developer surface gains the `EQuantic:ServerEvents` section.
 
 ### Modified Capabilities
 
-None.
+- `hydration-contract`: a record crosses as its twin whether or not a member needs coercion, which a
+  topic's payload needs as a Server Action's result always did. Found in review (#647).
 
 ## After this slice
 

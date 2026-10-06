@@ -39,6 +39,17 @@ so a record's members, an enum, a decimal, a long and a nested record read as th
   `static ServerTopic<T> Topic<T>(string name) => new(name)`
 - **THEN** the build fails with `EQ2013`, naming the type parameter
 
+#### Scenario: A record none of whose members needs coercion
+
+- **WHEN** a component subscribes to a `ServerTopic<Notice>`, where `record Notice(string Text)`
+  declares a method, and the server publishes a `Notice`
+- **THEN** the handler receives a `Notice`, and the method runs on it
+
+#### Scenario: A copy of a topic
+
+- **WHEN** a component subscribes to `topic with { }`
+- **THEN** the copy equals the topic, and its payloads arrive revived as the topic's do
+
 ### Requirement: One connection per page carries every topic
 
 A page SHALL hold at most one server-events connection, opened when its first subscription starts
@@ -159,6 +170,23 @@ those topics are bound.
   ended, before the page sees it end
 - **THEN** the topic is bound on the page's next connection, and no refusal is reported
 
+#### Scenario: A topic subscribed while the others are being bound
+
+- **WHEN** a component subscribes while the page's connection is binding the topics it already held
+- **THEN** connected is reported once that topic is bound too
+
+#### Scenario: A request that never answers
+
+- **WHEN** a bind gets no answer, on a stream that stands or on one that dropped
+- **THEN** the page gives up on it after ten seconds, or when its stream drops, and binds the topic
+  again, on the connection it then has
+
+#### Scenario: A release the server does not answer
+
+- **WHEN** a page releases a topic and the server keeps failing to answer
+- **THEN** the page asks again, and at the last miss opens its stream again, which releases
+  everything the old one held
+
 #### Scenario: A bind no server answers for
 
 - **WHEN** the server keeps answering a page's binds with an unknown connection while its stream
@@ -187,6 +215,12 @@ subscribed and released, with the `HttpContext` of the request and the topic's t
 - **WHEN** a page subscribes to `room:a` and then closes
 - **THEN** the handler hears the subscription with `roomId` "a", and then the topic released and the
   connection closed
+
+#### Scenario: A join still being heard when its stream closes
+
+- **WHEN** a handler is still awaiting a topic's subscribed when the page's stream closes
+- **THEN** it hears the subscribed before that topic's released and the disconnected
+
 
 ### Requirement: Server rendering subscribes to nothing
 
@@ -219,6 +253,11 @@ cannot run with SHALL stop the app from starting.
 
 - **WHEN** a service publishes a payload larger than `MaxPayloadBytes`
 - **THEN** `PublishAsync` throws, naming the topic and the limit
+
+#### Scenario: A page that stops reading
+
+- **WHEN** a page stops reading its stream until more than `MaxQueuedEventsPerConnection` events wait
+- **THEN** the stream ends at once, even while it is blocked writing, and its topics are released
 
 #### Scenario: A limit the connections cannot run with
 

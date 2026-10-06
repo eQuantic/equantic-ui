@@ -1564,8 +1564,15 @@ record of a release, the wiki's Upgrading page is the distillate.
   refused for good; a topic built in a generic helper lost its payload's type with a green build (now
   EQ2013), and one that crossed the wire lost it too; limits nothing could run with started cleanly; a
   second `UseServerEvents` made every route ambiguous; a page whose app served no events retried
-  silently forever; the refusal followed the app's JSON naming; and the body had no cap. The served
-  runtime grew 2,582 gzipped bytes.
+  silently forever; the refusal followed the app's JSON naming; and the body had no cap. Copilot's
+  first round found seven: a record none of whose members needed coercion crossed as a plain object,
+  as a topic's payload and as a Server Action's result alike, and is now rebuilt on its twin wherever
+  it crosses; `topic with { }` lost its spec and `DataPalette.Default with { }` threw; a handler still
+  awaiting a join heard the leave first; an overflow waited for the write it was blocking; an
+  unanswered release left the topic held; a request that never answered held the next one; and
+  connected came before a topic subscribed meanwhile was bound. The equality of two topics of one name
+  and different payload types is the erasure every generic record has (#651). The served runtime grew
+  2,959 gzipped bytes.
   Migration: `ServerActionHub`, its route `/_equantic/hub` and the `AddSignalR()` call `AddUI` made
   are gone; an app that injected `IHubContext<ServerActionHub>`, which nothing documented, publishes
   through `IServerEventPublisher`, and an app that maps hubs of its own calls `AddSignalR()` itself. Proposed and archived through OpenSpec (`openspec/specs/server-events`).

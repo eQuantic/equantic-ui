@@ -153,6 +153,9 @@ dead door beside the real one.
   visitor's browser send, cookies included, would bind the visitor's topics to a stream that site
   opened. A bind and a release take only a JSON body: a form or a `no-cors` fetch cannot send one,
   and a cross-origin `fetch` that does needs a preflight the app's CORS policy refuses.
+- [A handler awaits its own work] → a connection's transitions are heard in order, so a handler
+  still awaiting a join holds that connection's close until it returns. A handler that never
+  returns holds its connection open, which is the handler's defect to fix, not the order's.
 - [A bind whose stream has just ended is answered as unknown] → the server cannot tell that page
   from one whose requests reach the wrong instance, so the browser asks again, four times over three
   and a half seconds, binding on whatever connection the page then has, before it reports the
