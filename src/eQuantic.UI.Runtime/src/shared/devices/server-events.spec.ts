@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { Decimal } from '../../utils/decimal';
 import { equals } from '../../utils/equals';
+import { hydrate } from '../../utils/hydrate';
 import { ServerConnection, ServerTopic, ServerTopicRefusal } from '../primitive-values';
 import { ServerEventStream } from './server-event-stream';
 import { WebServerEvents } from './server-events';
@@ -391,8 +392,9 @@ describe('WebServerEvents', () => {
     expect(refusals).toEqual([]);
   });
 
-  it('fails, and says why, a bind the server does not know the connection of while the stream stands', async () => {
-    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+  it('fails, and says why, a bind the server keeps not knowing the connection of while the stream stands', async () => {
+    vi.useFakeTimers();
+    const error = vi.spyOn(console, 'error').mockImplementation(() => {});
     respond = (request) => request.answer(404);
     const page = events();
     const refusals: ServerTopicRefusal[] = [];
@@ -402,10 +404,112 @@ describe('WebServerEvents', () => {
       (refusal) => refusals.push(refusal),
     );
     sources[0].connect('c1');
-    await settle();
+    await vi.advanceTimersByTimeAsync(0);
+    expect(refusals).toEqual([]);
 
+    // Asked again after half a second, a second and two: four answers in a row before it is told.
+    await vi.advanceTimersByTimeAsync(3_500);
+
+    expect(sent.map((request) => request.url)).toEqual(
+      Array(4).fill('/_equantic/events/c1/subscribe'),
+    );
     expect(refusals).toEqual([new ServerTopicRefusal('room:a', 'failed')]);
-    expect(warn.mock.calls[0][0]).toContain('session affinity');
+    expect(error.mock.calls[0][0]).toContain('session affinity');
+  });
+
+  it('binds on the next connection a topic whose bind met the end of its stream', async () => {
+    vi.useFakeTimers();
+    respond = null;
+    const page = events();
+    const refusals: ServerTopicRefusal[] = [];
+    page.subscribe(
+      room('a'),
+      () => {},
+      (refusal) => refusals.push(refusal),
+    );
+    sources[0].connect('c1');
+    await vi.advanceTimersByTimeAsync(0);
+
+    // The server ended the stream while it authorized the bind, and its 404 arrives before the
+    // browser sees the stream end.
+    sent[0].answer(404);
+    await vi.advanceTimersByTimeAsync(0);
+    sources[0].fail(0);
+    sources[0].connect('c2');
+    await vi.advanceTimersByTimeAsync(500);
+    sent[1].answer(204);
+    await vi.advanceTimersByTimeAsync(0);
+
+    expect(sent.map((request) => request.url)).toEqual([
+      '/_equantic/events/c1/subscribe',
+      '/_equantic/events/c2/subscribe',
+    ]);
+    expect(refusals).toEqual([]);
+    expect(page.connection.state).toBe('connected');
+  });
+
+  it('asks again a bind the server could not answer, and binds it', async () => {
+    vi.useFakeTimers();
+    const answers = [503, 204];
+    respond = (request) => request.answer(answers.shift()!);
+    const page = events();
+    const refusals: ServerTopicRefusal[] = [];
+    page.subscribe(
+      room('a'),
+      () => {},
+      (refusal) => refusals.push(refusal),
+    );
+    sources[0].connect('c1');
+    await vi.advanceTimersByTimeAsync(500);
+
+    expect(sent.map((request) => request.url)).toEqual([
+      '/_equantic/events/c1/subscribe',
+      '/_equantic/events/c1/subscribe',
+    ]);
+    expect(refusals).toEqual([]);
+    expect(page.connection.state).toBe('connected');
+  });
+
+  it('refuses at once, and says why, a topic of a page whose server serves no events', async () => {
+    const error = vi.spyOn(console, 'error').mockImplementation(() => {});
+    window.__EQ_CONFIG = { serverEvents: false };
+    try {
+      const page = events();
+      const refusals: ServerTopicRefusal[] = [];
+      page.subscribe(
+        prices,
+        () => {},
+        (refusal) => refusals.push(refusal),
+      );
+      await settle();
+
+      expect(sources).toEqual([]);
+      expect(refusals).toEqual([new ServerTopicRefusal('prices', 'unknown')]);
+      expect(error.mock.calls[0][0]).toContain('UseServerEvents');
+      expect(page.connection.state).toBe('disconnected');
+    } finally {
+      delete window.__EQ_CONFIG;
+    }
+  });
+
+  it('revives the payloads of a topic that crossed the wire, as the one built here does', async () => {
+    // A Server Action's result, as the server writes it and eqc's spec rebuilds it.
+    const crossed = hydrate(
+      { name: 'prices' },
+      { of: ServerTopic, members: {}, typeArguments: [Quote] },
+    ) as ServerTopic;
+    expect(crossed).toBeInstanceOf(ServerTopic);
+    expect(equals(crossed, prices)).toBe(true);
+
+    const page = events();
+    const heard: unknown[] = [];
+    page.subscribe(crossed, (quote) => heard.push(quote));
+    sources[0].connect('c1');
+    await settle();
+    sources[0].publish('prices', { symbol: 'EQ', price: '0.1' });
+
+    expect(heard[0]).toBeInstanceOf(Quote);
+    expect((heard[0] as Quote).price).toBeInstanceOf(Decimal);
   });
 
   it('keeps delivering to the others when one subscriber throws', async () => {

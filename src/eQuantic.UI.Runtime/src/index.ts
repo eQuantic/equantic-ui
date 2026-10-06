@@ -289,6 +289,11 @@ export interface EqConfig {
   themeCookie?: { name: string; days: number } | false;
   /** Client route table (generated from `[Page]` attributes) — enables SPA navigation. */
   routes?: import('./router/route-table').RouteEntry[];
+  /**
+   * Whether the server serves events (`UseServerEvents`). `false` refuses every subscription at once,
+   * with an error that says so, rather than opening a stream nothing answers.
+   */
+  serverEvents?: boolean;
 }
 
 declare global {
