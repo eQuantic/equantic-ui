@@ -28,6 +28,8 @@ public class ServerTopicEmissionTests
             public string Shout() => Text.ToUpperInvariant();
         }
 
+        public sealed record Box<T>(T Value);
+
         public sealed class Ticker(IServerEvents? events) : StatefulComponent
         {
             private static readonly ServerTopic<Quote> Prices = new("prices");
@@ -36,6 +38,8 @@ public class ServerTopicEmissionTests
             private static readonly ServerTopic<string> Note = new("note");
             private static readonly ServerTopic<List<long>> Ids = new("ids");
             private static readonly ServerTopic<Notice> Notices = new("notices");
+            private static readonly ServerTopic<Box<long>> Counts = new("counts");
+            private static readonly ServerTopic<Box<Notice>> Wrapped = new("wrapped");
 
             private IDisposable? _prices;
             private decimal _price;
@@ -46,7 +50,7 @@ public class ServerTopicEmissionTests
             protected override void OnUnmount() => _prices?.Dispose();
 
             public override VisualNode Build(ComponentContext context) =>
-                new Text($"{_price} {Prices} {Rate} {Note} {Ids} {Notices}", TypeRole.BodyM, null);
+                new Text($"{_price} {Prices} {Rate} {Note} {Ids} {Notices} {Counts} {Wrapped}", TypeRole.BodyM, null);
         }
         """;
 
@@ -103,6 +107,19 @@ public class ServerTopicEmissionTests
     [Fact]
     public void ARecordPayloadWhoseMembersNeedNoCoercion_StillCarriesItsTwin() =>
         Ticker().Should().Contain("new ServerTopic('notices', Notice)");
+
+    /// <summary>
+    /// A generic record's payload is described by its own members, T substituted: the twin is the
+    /// open declaration's, whose map cannot know T, so <c>Box&lt;long&gt;</c>'s value arrived as text
+    /// and <c>Box&lt;Notice&gt;</c>'s without its methods (#647).
+    /// </summary>
+    [Fact]
+    public void AGenericRecordPayload_IsDescribedByItsOwnMembers()
+    {
+        var ts = Ticker();
+        ts.Should().Contain("new ServerTopic('counts', { of: Box, members: { value: 'long' } })");
+        ts.Should().Contain("new ServerTopic('wrapped', { of: Box, members: { value: Notice } })");
+    }
 
     [Fact]
     public void TheCapability_IsResolvedByName_AndSubscribedOnTheRuntimesObject()

@@ -114,6 +114,21 @@ public static class HydrationSpec
         if (IsEmittedValueType(named) && !named.IsHostOnly())
         {
             referenced.InSource.Add(named.Name);
+            // A CONSTRUCTED generic record shares its twin with the open declaration, whose
+            // `$hydration` cannot know what T is: `Box<long>`'s value arrived as the text the wire
+            // writes. Its own members, T substituted, describe it on that twin. A record that holds
+            // itself is described once, and below that by its twin's own map.
+            if (!SymbolEqualityComparer.Default.Equals(named, named.OriginalDefinition) && visiting.Add(named))
+            {
+                try
+                {
+                    return $"{{ of: {named.Name}, members: {MemberMap(MemberEntries(named, referenced, visiting))} }}";
+                }
+                finally
+                {
+                    visiting.Remove(named);
+                }
+            }
             return named.Name;
         }
 
@@ -196,9 +211,12 @@ public static class HydrationSpec
         var members = MemberEntries(named, referenced, visiting);
         var typeArguments = arguments.Select(argument => Of(argument, referenced, visiting) ?? "null");
         referenced.Runtime.Add(named.Name);
-        var memberMap = members.Count == 0 ? "{}" : $"{{ {string.Join(", ", members)} }}";
-        return $"{{ of: {named.Name}, members: {memberMap}, typeArguments: [{string.Join(", ", typeArguments)}] }}";
+        return $"{{ of: {named.Name}, members: {MemberMap(members)}, typeArguments: [{string.Join(", ", typeArguments)}] }}";
     }
+
+    /// <summary>The <c>{ name: spec, … }</c> map a <c>{ of, members }</c> spec carries, <c>{}</c> when empty.</summary>
+    private static string MemberMap(List<string> entries) =>
+        entries.Count == 0 ? "{}" : $"{{ {string.Join(", ", entries)} }}";
 
     /// <summary>The date/time compat scalars, by their one full name each.</summary>
     private static string? Scalar(INamedTypeSymbol named) => named.ToDisplayString() switch
