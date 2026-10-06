@@ -1,10 +1,12 @@
 export class MermaidArrowhead {
-    constructor(props?: any) {
-        if (props && typeof props === 'object') Object.assign(this, props);
+    constructor() {
+        this.x = 0;
+        this.y = 0;
+        this.direction = 0;
     }
 
-    x: number = 0;
-    y: number = 0;
-    direction: number = 0;
+    x!: number;
+    y!: number;
+    direction!: number;
 }
 

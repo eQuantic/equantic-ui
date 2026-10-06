@@ -247,7 +247,9 @@ public static class JsExprWriter
             ? (looser, precedence)
             : (precedence, looser);
 
-        return new JsWrittenBuilder().Add(Write(binary.Left, left, binary.Operator)).Add($" {binary.Operator} ")
+        // A comma is written as a list's: `a, b`, never `a , b`.
+        var spaced = binary.Operator == "," ? ", " : $" {binary.Operator} ";
+        return new JsWrittenBuilder().Add(Write(binary.Left, left, binary.Operator)).Add(spaced)
             .Add(Write(binary.Right, right, binary.Operator)).Done();
     }
 

@@ -376,6 +376,13 @@ public class StatementSourceMapTests
             public Action<bool>? Changed { get; set; }
         }
 
+        public class Listed : Rule
+        {
+            public Listed(string message, Func<string, bool> test) : base(message, test) { }
+
+            public List<int> Seen { get; } = new();
+        }
+
         public class Carried
         {
             private int _seen;
@@ -431,6 +438,16 @@ public class StatementSourceMapTests
                 var at = address.IndexOf('@');
                 return at > 0;
             });
+
+            public static Listed Typed()
+            {
+                Listed listed = new("typed", text =>
+                {
+                    var trimmed = text.Trim();
+                    return trimmed.Length > 0;
+                }) { Seen = { 1, 2 } };
+                return listed;
+            }
 
             private int Apply(Func<int, int> step) => step(_seen);
         }
@@ -604,6 +621,9 @@ public class StatementSourceMapTests
     [InlineData("this._seen = flag;", "_seen = flag;")]
     [InlineData("let at = ", "var at = address.IndexOf('@');")]
     [InlineData("return at > 0;", "return at > 0;")]
+    // A target-typed creation whose initializer adds to a member: its arguments were spliced as text
+    [InlineData("let trimmed = ", "var trimmed = text.Trim();")]
+    [InlineData("return trimmed.length > 0;", "return trimmed.Length > 0;")]
     public void AStatementInALambdaThatAnExpressionBodyOrACreationHolds_MapsToItsOwnCSharpLine(string emitted, string written) =>
         AssertMapped(Compile(CarriedSource, "Carried.cs"), emitted, written, CarriedSource);
 
@@ -613,6 +633,36 @@ public class StatementSourceMapTests
     [InlineData("let next = this._count + 1;", "var next = _count + 1;")]
     public void AStatementInALambdaThatAComponentsExpressionBodyHolds_MapsToItsOwnCSharpLine(string emitted, string written) =>
         AssertMapped(Compile(ComponentCarriedSource, "Clicker.cs"), emitted, written, ComponentCarriedSource);
+
+    /// <summary>A class's state as its constructor starts it (#583): each member's start maps to the
+    /// member's declaration, a derived class's local evaluated before its base's constructor too, so a
+    /// frame thrown in an initializer leads to its own line. Built as a record's twin is, the starts
+    /// carried no line of their own and read as the class's declaration.</summary>
+    private const string InitializedSource = """
+        namespace Demo;
+
+        public class Gauge
+        {
+            private int _limit = Parse("40");
+
+            public string Label { get; set; } = "gauge";
+
+            public static int Parse(string text) => int.Parse(text);
+        }
+
+        public class Dial : Gauge
+        {
+            private int _turns = Parse("3");
+        }
+        """;
+
+    [Theory]
+    [InlineData("this._limit = ", "private int _limit = Parse(\"40\");", "Gauge.cs")]
+    [InlineData("this.label = ", "public string Label { get; set; } = \"gauge\";", "Gauge.cs")]
+    [InlineData("const $$_turns = ", "private int _turns = Parse(\"3\");", "Dial.cs")]
+    [InlineData("this._turns = $$_turns;", "private int _turns = Parse(\"3\");", "Dial.cs")]
+    public void AMembersStart_MapsToItsDeclaration(string emitted, string written, string file) =>
+        AssertMapped(Compile(InitializedSource, file), emitted, written, InitializedSource);
 
     private static void AssertMapped(CompilationResult result, string emitted, string written, string source)
     {

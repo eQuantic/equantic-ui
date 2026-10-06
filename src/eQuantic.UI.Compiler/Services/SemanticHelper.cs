@@ -149,6 +149,20 @@ public class SemanticHelper
         };
     }
 
+    /// <summary>
+    /// The method a collection initializer's element is added through, its <c>Add</c> (an extension's
+    /// in its static form), Original-aware and guarded: the model throws for a node a strategy rebuilt
+    /// (a null-conditional's receiver, a query's clause), and an element of an initializer inside one
+    /// asked it directly, so the whole module was lost to "Syntax node is not within syntax tree".
+    /// </summary>
+    internal IMethodSymbol? CollectionInitializerMethod(ExpressionSyntax element)
+    {
+        var node = Original(element);
+        return Knows(node) && node is ExpressionSyntax original
+            ? _semanticModel!.GetCollectionInitializerSymbolInfo(original).Symbol as IMethodSymbol
+            : null;
+    }
+
     /// <summary>The symbol a node DECLARES (a lambda parameter, a local), Original-aware and
     /// guarded — the model throws for a node outside its tree.</summary>
     public ISymbol? GetDeclaredSymbol(SyntaxNode node)
@@ -204,7 +218,7 @@ public class SemanticHelper
 
     /// <summary>
     /// The in-tree node a SYNTHETIC node stands for, or the node itself. A strategy that rewrites
-    /// syntax (the null-conditional path turns <c>a?.M(x)</c> into <c>$r.M(x)</c> so every other
+    /// syntax (the null-conditional path turns <c>a?.M(x)</c> into <c>$n0.M(x)</c> so every other
     /// strategy can translate it) registers the correspondence here, and the model keeps
     /// answering for the rewritten nodes — symbols, types, the lambda parameters inside their
     /// arguments — instead of falling back to name heuristics. Chased to a fixpoint: a rewrite OF

@@ -23,12 +23,13 @@ public class OpenCollectionShapeTests
     public void Contains_UnderANullGuard_KeepsTheGuardAroundTheHelper()
     {
         // `this.selection?.contains(...)` is the shape that once shipped: a member no Set and no
-        // array has, reached through a guard. The guarded form now wraps the helper in a
-        // null-answering arrow — MORE faithful than the old bare helper, which answered false for
-        // a null receiver where C# answers null.
+        // array has, reached through a guard. The guarded form now tests the receiver it binds once
+        // — MORE faithful than the old bare helper, which answered false for a null receiver where
+        // C# answers null. An expression on its own has no statement to declare a temporary in, so
+        // the receiver is bound by the arrow an initializer takes (#539).
         var result = TestHelper.ConvertExpression("selection?.Contains(\"a\") == true");
         result.Should().Be(
-            "(($r) => $r == null ? null : $eq.collections.contains($r, 'a'))(this.selection) === true");
+            "(($n0) => $n0 == null ? null : $eq.collections.contains($n0, 'a'))(this.selection) === true");
     }
 
     [Fact]
@@ -91,15 +92,24 @@ public class OpenCollectionShapeTests
     {
         // `HashSet<string> _selected = ["#3841"]` lowered to a plain ARRAY, so the very first
         // `_selected.Add(...)` threw — which is what a checkbox that never responds looks like.
+        // A collection expression adds each element to a set made empty, as C# lowers it.
         TestHelper.ConvertStatement("HashSet<string> picked = [\"a\", \"b\"];")
-            .Should().Be("let picked = new Set(['a', 'b']);");
+            .Should().Be("let picked = $eq.collections.hashSetOf(['a', 'b']);");
     }
 
     [Fact]
     public void ASetInterfaceTarget_IsStillASet()
     {
         TestHelper.ConvertStatement("ISet<string> picked = [\"a\"];")
-            .Should().Be("let picked = new Set(['a']);");
+            .Should().Be("let picked = $eq.collections.hashSetOf(['a']);");
+    }
+
+    [Fact]
+    public void ASetOfRecords_FindsItsElementsByValue()
+    {
+        // The set takes the element type's equality, as a dictionary's keys do (#531).
+        TestHelper.ConvertStatement("ISet<DistinctPoint> picked = [new DistinctPoint(1)];")
+            .Should().Be("let picked = $eq.collections.hashSetOf([new DistinctPoint(1)], true);");
     }
 
     [Fact]

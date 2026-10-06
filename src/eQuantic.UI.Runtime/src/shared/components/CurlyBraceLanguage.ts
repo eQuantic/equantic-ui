@@ -1,22 +1,25 @@
 import { $eq, CodeDocument, CodeLanguageRules, CodeToken, CodeTokenKindValue } from "../runtime-exports";
 
 export abstract class CurlyBraceLanguage {
-    constructor(props?: any) {
-        if (props && typeof props === 'object') Object.assign(this, props);
+    constructor() {
+        this.$rules = CodeLanguageRules.default;
     }
 
+    $rules!: CodeLanguageRules;
     static stateNormal: number = 0;
     static stateBlockComment: number = 1;
     static stateMultilineString: number = 2;
     static stateRawString: number = 16;
-    static _punctuation: Set<string> | undefined;
+    abstract name: string;
 
-    static get punctuation(): Set<string> {
-        return CurlyBraceLanguage._punctuation ??= new Set(['(', ')', '[', ']', '{', '}', ',', ';', '.', ':']);
+    get rules(): CodeLanguageRules {
+        return this.$rules;
     }
 
-    abstract name: string;
-    rules: CodeLanguageRules = CodeLanguageRules.default;
+    set rules(value: CodeLanguageRules) {
+        this.$rules = value;
+    }
+
     abstract keywords: Set<string>;
     abstract typeWords: Set<string>;
     abstract constantWords: Set<string>;
@@ -39,6 +42,32 @@ export abstract class CurlyBraceLanguage {
 
     get hasAtDecorators(): boolean {
         return false;
+    }
+
+    static $slots: any = null;
+    static $failure: any = null;
+
+    static $init(): any {
+        if (CurlyBraceLanguage.$slots === null) {
+            if (CurlyBraceLanguage.$failure !== null) throw CurlyBraceLanguage.$failure;
+            let $slots: any = CurlyBraceLanguage.$slots = {};
+            try {
+                $slots.punctuation = null;
+                $slots.punctuation = $eq.collections.hashSetOf(['(', ')', '[', ']', '{', '}', ',', ';', '.', ':']);
+            } catch ($error) {
+                CurlyBraceLanguage.$slots = null;
+                throw CurlyBraceLanguage.$failure = $eq.exceptions.typeInitialization('eQuantic.UI.Code.CurlyBraceLanguage', $error);
+            }
+        }
+        return CurlyBraceLanguage.$slots;
+    }
+
+    static get punctuation(): Set<string> {
+        return CurlyBraceLanguage.$init().punctuation;
+    }
+
+    static set punctuation(value: Set<string>) {
+        CurlyBraceLanguage.$init().punctuation = value;
     }
 
     tokenize(line: string, state: number, into: CodeToken[]) {
@@ -288,6 +317,10 @@ export abstract class CurlyBraceLanguage {
     static isLineHead(line: string, index: number) {
         for (let i = 0; i < index; i++) if (!$eq.text.isWhiteSpace(line[i])) return false;
         return true;
+    }
+
+    toJSON() {
+        return $eq.json(this);
     }
 }
 

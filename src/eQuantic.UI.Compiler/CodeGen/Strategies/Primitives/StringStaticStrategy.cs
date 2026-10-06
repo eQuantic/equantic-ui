@@ -96,11 +96,18 @@ public class StringStaticStrategy : IConversionStrategy
             {
                 return Call($"{Eq.StringJoinRange}({{0}}, {{1}}, {{2}}, {{3}})", invocation, range, context);
             }
+            if (context.SemanticHelper.GetSymbol(invocation) is IMethodSymbol join)
+                return JoinCall(invocation, join, context);
 
-            // Join(separator, values)
+            // No model to say which overload or what the values are: the runtime reads any sequence,
+            // which only an array could be handed to `join` as (#429), and the values a params array
+            // takes one by one, a literal among them, are an array of them.
+            context.UsedHelpers.Add(Eq.Import);
             var separator = context.Converter.ConvertExpression(args[0].Expression);
-            var values = context.Converter.ConvertExpression(args[1].Expression);
-            return $"{values}.join({separator})";
+            var values = args.Count == 2 && args[1].Expression is not LiteralExpressionSyntax
+                ? context.Converter.ConvertExpression(args[1].Expression)
+                : "[" + string.Join(", ", args.Skip(1).Select(argument => context.Converter.ConvertExpression(argument.Expression))) + "]";
+            return $"{Eq.StringJoin}({separator}, {values})";
         }
         
         if (methodName == "Concat")
@@ -578,6 +585,76 @@ public class StringStaticStrategy : IConversionStrategy
             ? context.Unhandled(node, "string.Compare with a CultureInfo or CompareOptions")
             : Call(template, node, method, context);
     }
+
+    /// <summary>
+    /// <c>string.Join(separator, values)</c> by the overload C# bound, each value written as .NET's
+    /// <c>ToString</c> writes it (<see cref="StringConversion"/>), a null one as nothing, and a null
+    /// separator as none (#441). <c>values.join(separator)</c> called a method only an array has, so a
+    /// set, a linked list or a sequence behind an interface threw (#429); it wrote a bool in lower case,
+    /// an enum by its key, a float by the double's digits and 1e21 in JavaScript's notation; and the
+    /// values a params array takes one by one became <c>1.join(',')</c>, which does not parse.
+    /// <list type="bullet">
+    /// <item>The values passed one by one (a params array or span in its expanded form) are each
+    /// written by their own type, in order, and joined.</item>
+    /// <item>A sequence goes to the runtime with the conversion its element type needs, which reads any
+    /// sequence by its iterator (an array, a set, a linked list, a dictionary's keys, a generated
+    /// sequence, a string by its chars) and refuses a null one by its parameter's name, where an
+    /// array's own <c>join</c> met a null with a TypeError.</item>
+    /// </list>
+    /// </summary>
+    private static string JoinCall(InvocationExpressionSyntax node, IMethodSymbol method, ConversionContext context)
+    {
+        if (method.Parameters.Length != 2 || context.SemanticHelper.GetOperation(node) is not IInvocationOperation operation)
+            return context.Unhandled(node, "string.Join of this overload");
+        var separatorArgument = ParameterTemplate.Filling(node, method, 0);
+        var valuesParameter = method.Parameters[1];
+        var bound = operation.Arguments.FirstOrDefault(argument => SymbolEqualityComparer.Default.Equals(argument.Parameter, valuesParameter));
+        if (separatorArgument is null || bound is null) return context.Unhandled(node, "string.Join of this overload");
+
+        context.UsedHelpers.Add(Eq.Import);
+
+        // The values passed one by one: each written by its own type, then joined. The separator is
+        // evaluated first and the values in their order, as C# evaluates the call's arguments.
+        if (bound.ArgumentKind is ArgumentKind.ParamArray or ArgumentKind.ParamCollection)
+        {
+            var written = node.ArgumentList.Arguments.Where(argument => argument != separatorArgument).ToList();
+            if (written.Any(argument => argument.NameColon is not null))
+                return context.Unhandled(node, "string.Join whose values are named one by one");
+            var parts = new List<JsExpr> { context.Converter.ConvertIr(separatorArgument.Expression) };
+            parts.AddRange(written.Select(argument => StringConversion.ToDotNetString(argument.Expression,
+                context.Converter.ConvertIr(argument.Expression), context)));
+            var holes = string.Join(", ", Enumerable.Range(1, written.Count).Select(index => "{" + index + "}"));
+            if (node.ArgumentList.Arguments.IndexOf(separatorArgument) != 0)
+                return context.Unhandled(node, "string.Join whose separator follows its values");
+            // Each value is text already, which an array's own join writes as it is, a null as
+            // nothing; only a separator that may be null needs the runtime's.
+            var template = IsConstantText(separatorArgument.Expression, context)
+                ? $"[{holes}].join({{0}})"
+                : $"{Eq.StringJoin}({{0}}, [{holes}])";
+            return JsExprWriter.Write(JsExpr.Template(template, parts, context.TypeAnnotations));
+        }
+
+        var valuesType = context.SemanticHelper.GetType((ExpressionSyntax)bound.Value.Syntax) ?? valuesParameter.Type;
+        // The runtime asks the conversion of a value that is not null, so a nullable element type is
+        // its value type, and a string needs none.
+        var element = valuesType.GetEnumerableElementType()?.UnwrapNullable()?.WithNullableAnnotation(NullableAnnotation.NotAnnotated);
+        var probe = element is null ? null : StringConversion.Of(element, JsExpr.Identifier("value"), context);
+        var text = probe is null or JsIdentifier { Name: "value" } ? null : JsExpr.Arrow("value", probe);
+        var parameter = valuesParameter.Name == "value" ? "'value'" : null;
+
+        var call = (text, parameter) switch
+        {
+            (null, null) => $"{Eq.StringJoin}({{0}}, {{1}})",
+            (null, _) => $"{Eq.StringJoin}({{0}}, {{1}}, undefined, {parameter})",
+            (_, null) => $"{Eq.StringJoin}({{0}}, {{1}}, {JsExprWriter.Write(text)})",
+            _ => $"{Eq.StringJoin}({{0}}, {{1}}, {JsExprWriter.Write(text)}, {parameter})",
+        };
+        return JsExprWriter.Write(ParameterTemplate.Call(call, null, node, method, context));
+    }
+
+    /// <summary>Whether a separator is text no run can make null: a constant string or char.</summary>
+    private static bool IsConstantText(ExpressionSyntax separator, ConversionContext context) =>
+        context.SemanticHelper.TryGetConstantValue(separator, out var constant) && constant is string or char;
 
     /// <summary>A runtime helper over the call's arguments, each in its PARAMETER's hole and all of
     /// them evaluated in the order they were written.</summary>

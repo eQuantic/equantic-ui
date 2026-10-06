@@ -1,5 +1,6 @@
 using eQuantic.UI.Compiler.CodeGen;
 using eQuantic.UI.Compiler.CodeGen.Extensions;
+using eQuantic.UI.Compiler.CodeGen.Strategies.Expressions;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
@@ -61,47 +62,315 @@ internal static class OverloadedMethods
         SemanticModel? model = null)
     {
         var errors = new List<CompilationError>();
-        CheckOne(type, sourcePath, isComponent, errors);
+        CheckOne(type, sourcePath, isComponent, model, errors);
+        if (errors.Count == 0) CheckState(type, sourcePath, model, errors);
         if (errors.Count == 0 && model is not null) CheckInherited(type, sourcePath, isComponent, model, errors);
         if (errors.Count == 0 && model is not null) CheckDefaults(type, sourcePath, isComponent, model, errors);
+        if (errors.Count == 0 && model is not null) CheckInterfaceIndexers(type, sourcePath, model, errors);
         if (isComponent)
         {
             foreach (var nested in type.Members.OfType<ClassDeclarationSyntax>()
                          .Where(nested => nested.Modifiers.Any(SyntaxKind.StaticKeyword)))
             {
-                CheckOne(nested, sourcePath, isComponent: false, errors);
+                CheckOne(nested, sourcePath, isComponent: false, model, errors);
             }
         }
         return errors;
     }
 
-    private static void CheckOne(TypeDeclarationSyntax type, string sourcePath, bool isComponent,
+    /// <summary>What holds a name on the twin, which says what can be renamed: a method, an indexer, an
+    /// explicit implementation of an interface's indexer, or a member the twin holds on each instance.</summary>
+    private enum Bearer { Method, Indexer, ExplicitIndexer, Member }
+
+    /// <summary>A name the twin gives a member: whether it is static there, how a message shows the
+    /// member, where it is declared, and what holds it.</summary>
+    private readonly record struct Name(string Lowered, bool Static, string Shown, SyntaxToken At, Bearer Bearer);
+
+    private static void CheckOne(TypeDeclarationSyntax type, string sourcePath, bool isComponent, SemanticModel? model,
         List<CompilationError> errors)
     {
         var allStatic = type.Modifiers.Any(SyntaxKind.StaticKeyword);
-        var first = new Dictionary<(bool Static, string Name), MethodDeclarationSyntax>();
-        foreach (var (method, isStatic) in Methods(type, allStatic, isComponent))
+        var first = new Dictionary<(bool Static, string Lowered), Name>();
+        foreach (var name in Names(type, allStatic, isComponent, model).OrderBy(name => name.At.SpanStart))
         {
-            var key = (isStatic, method.Identifier.Text.ToCamelCase());
+            var key = (name.Static, name.Lowered);
             if (!first.TryGetValue(key, out var earlier))
             {
-                first[key] = method;
+                first[key] = name;
                 continue;
             }
-            var position = method.Identifier.GetLocation().GetLineSpan().StartLinePosition;
-            var earlierLine = earlier.Identifier.GetLocation().GetLineSpan().StartLinePosition.Line + 1;
+            var position = name.At.GetLocation().GetLineSpan().StartLinePosition;
+            var earlierLine = earlier.At.GetLocation().GetLineSpan().StartLinePosition.Line + 1;
             errors.Add(new CompilationError
             {
                 Code = "EQ1007",
-                Message =
-                    $"'{type.Identifier.Text}.{Signature(method)}' lowers to `{(isStatic ? "static " : "")}{key.Item2}()`, "
-                    + $"and so does '{Signature(earlier)}' (line {earlierLine}). C# tells overloads apart by "
-                    + "their parameters, and a JavaScript class has one member per name, so the twin would keep "
-                    + "one of them and every call would reach it. Give each its own name.",
+                Message = Message(type.Identifier.Text, name, earlier, earlierLine),
                 SourcePath = sourcePath,
                 Line = position.Line + 1,
                 Column = position.Character + 1,
             });
+        }
+    }
+
+    /// <summary>The refusal of two members on one name, naming both and the one the author can rename.</summary>
+    private static string Message(string type, Name later, Name earlier, int earlierLine)
+    {
+        var lowered = $"`{(later.Static ? "static " : "")}{later.Lowered}{(later.Bearer == Bearer.Member ? "" : "()")}`";
+        var both = $"'{type}.{later.Shown}' lowers to {lowered}, and so does '{earlier.Shown}' (line {earlierLine}). ";
+        Name? Held(Bearer bearer) => later.Bearer == bearer ? later : earlier.Bearer == bearer ? earlier : null;
+        if (Held(Bearer.Member) is { } member)
+            return both + $"The twin holds '{member.Shown}' on each instance, over the indexer's `{member.Lowered}` "
+                + $"method, so every access to the indexer would reach '{member.Shown}' instead. Rename '{member.Shown}'.";
+        if (Held(Bearer.Method) is { } method && (later.Bearer != Bearer.Method || earlier.Bearer != Bearer.Method))
+            return both + "A JavaScript class has one member per name, so every access to the indexer would reach the "
+                + $"method, or every call to the method the indexer. Rename '{method.Shown}'.";
+        if (Held(Bearer.ExplicitIndexer) is not null)
+            return both + "An explicit implementation answers its interface through the twin's "
+                + $"`{later.Lowered}`, and a JavaScript class has one member per name, so one of them would answer the "
+                + "other's accesses. Implement one of them implicitly, or keep one indexer.";
+        return both + "C# tells overloads apart by their parameters, and a JavaScript class has one member per name, so "
+            + "the twin would keep one of them and every call would reach it. Give each its own name, or keep one indexer.";
+    }
+
+    /// <summary>
+    /// The names a type's twin gives its methods and its indexers, with whether each is static there,
+    /// how a message shows it, where it is declared, and what holds it. An indexer takes two: its getter
+    /// is the twin's <c>item</c> and its setter its <c>setItem</c> (#427), unless it is the type's own
+    /// beside an explicit implementation of an interface's indexer, which holds those
+    /// (<see cref="Indexer.NamesOf(IPropertySymbol)"/>). So a second indexer, or a method named
+    /// <c>Item</c> or <c>SetItem</c> beside one, would land on the same member, and so would any member
+    /// the twin holds on each instance under those names: a field, a property, an event, a primary
+    /// constructor's parameter. Each shadowed the indexer's method, so an access reached the member
+    /// (<c>class Box(int item)</c> answered the text of the function).
+    /// </summary>
+    private static IEnumerable<Name> Names(TypeDeclarationSyntax type, bool allStatic, bool isComponent, SemanticModel? model)
+    {
+        foreach (var (method, isStatic) in Methods(type, allStatic, isComponent))
+            yield return new(method.Identifier.Text.ToCamelCase(), isStatic, Signature(method), method.Identifier, Bearer.Method);
+
+        var taken = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var indexer in type.Members.OfType<IndexerDeclarationSyntax>())
+        {
+            var (get, set) = Indexer.NamesOf(indexer, model);
+            var bearer = indexer.ExplicitInterfaceSpecifier is null ? Bearer.Indexer : Bearer.ExplicitIndexer;
+            var keys = string.Join(", ", indexer.ParameterList.Parameters.Select(parameter => parameter.Type?.ToString() ?? parameter.Identifier.Text));
+            var shown = indexer.ExplicitInterfaceSpecifier is { } face ? $"{face.Name}.this[{keys}]" : $"this[{keys}]";
+            if (indexer.ExpressionBody is not null
+                || indexer.AccessorList?.Accessors.Any(accessor => accessor.IsKind(SyntaxKind.GetAccessorDeclaration)) == true)
+            {
+                taken.Add(get);
+                yield return new(get, false, shown, indexer.ThisKeyword, bearer);
+            }
+            if (indexer.AccessorList?.Accessors.Any(accessor => accessor.IsKind(SyntaxKind.SetAccessorDeclaration)
+                    || accessor.IsKind(SyntaxKind.InitAccessorDeclaration)) == true)
+            {
+                taken.Add(set);
+                yield return new(set, false, shown + "'s setter", indexer.ThisKeyword, bearer);
+            }
+        }
+        if (taken.Count == 0 || allStatic) yield break;
+
+        foreach (var (name, shown, at) in HeldOnEachInstance(type, model))
+            if (taken.Contains(name.ToCamelCase()))
+                yield return new(name.ToCamelCase(), false, shown, at, Bearer.Member);
+    }
+
+    /// <summary>
+    /// A record's or a struct's instance members that land on one name on its twin. The twin holds the
+    /// state of each instance as properties of its own, and its methods and computed properties on its
+    /// prototype, one member per name, while C# tells names apart by case: a positional <c>X</c> beside a
+    /// field <c>x</c>, a primary constructor's <c>x</c> captured beside a property <c>X</c>, the private
+    /// field <c>celsius</c> beside <c>Celsius =&gt; celsius</c>. Two states shared one slot
+    /// (<c>struct S(int x) { public int X { get; } = x * 2; }</c> answered "6|6" for "3|6"), and a state
+    /// beside an accessor or a method of its name was written over it by the constructor, which threw
+    /// at <c>new</c>. A member the body declares under a positional parameter's own name is that
+    /// parameter's property (#546), one member, and two methods of one name are overloads, which
+    /// <see cref="CheckOne"/> judges. A plain class keeps its state in class fields, which shadow the
+    /// prototype's getter of the same name, so its backing-field idiom answers right and is left as it is.
+    /// </summary>
+    private static void CheckState(TypeDeclarationSyntax type, string sourcePath, SemanticModel? model, List<CompilationError> errors)
+    {
+        if (CheckPrimaryParameters(type, sourcePath, errors)) return;
+        if (type is ClassDeclarationSyntax)
+        {
+            CheckHeldParameters(type, sourcePath, model, errors);
+            return;
+        }
+        if (type is not (RecordDeclarationSyntax or StructDeclarationSyntax)) return;
+        var instance = HeldOnEachInstance(type, model)
+            .Concat(type.Members.OfType<MethodDeclarationSyntax>()
+                .Where(method => !method.Modifiers.Any(SyntaxKind.StaticKeyword) && method.ExplicitInterfaceSpecifier is null)
+                .Select(method => (Name: method.Identifier.ValueText, Shown: Signature(method), At: method.Identifier)));
+        var first = new Dictionary<string, (string Name, string Shown, SyntaxToken At)>(StringComparer.Ordinal);
+        foreach (var member in instance.OrderBy(member => member.At.SpanStart))
+        {
+            var lowered = member.Name.ToCamelCase();
+            if (!first.TryGetValue(lowered, out var earlier))
+            {
+                first[lowered] = member;
+                continue;
+            }
+            if (earlier.Name == member.Name) continue;
+            var position = member.At.GetLocation().GetLineSpan().StartLinePosition;
+            var earlierLine = earlier.At.GetLocation().GetLineSpan().StartLinePosition.Line + 1;
+            errors.Add(new CompilationError
+            {
+                Code = "EQ1007",
+                Message = $"'{type.Identifier.Text}.{member.Shown}' lowers to `{lowered}`, and so does '{earlier.Shown}' "
+                    + $"(line {earlierLine}). The twin of a record or a struct holds its state on each instance and its methods "
+                    + "and computed properties on its prototype, one member per name, so the two would share one value, or "
+                    + $"the constructor would write one over the other. Rename one of them (a private field `_{lowered}`, "
+                    + "or a primary constructor's parameter by what it holds).",
+                SourcePath = sourcePath,
+                Line = position.Line + 1,
+                Column = position.Character + 1,
+            });
+            return;
+        }
+    }
+
+    /// <summary>
+    /// Two parameters of a primary constructor that land on one name (`x` beside `X`): the twin's
+    /// constructor names each one camelCased, as the member a record makes of it, and a JavaScript
+    /// function refuses two parameters of one name, so the module did not load, whether a member read
+    /// them or not (found by Copilot's review of #621). A class's, a record's and a struct's alike.
+    /// </summary>
+    private static bool CheckPrimaryParameters(TypeDeclarationSyntax type, string sourcePath, List<CompilationError> errors)
+    {
+        if (type.ParameterList is not { Parameters.Count: > 1 } list) return false;
+        var first = new Dictionary<string, ParameterSyntax>(StringComparer.Ordinal);
+        foreach (var parameter in list.Parameters)
+        {
+            var lowered = CodeGen.TwinConstructor.ParameterName(parameter, primary: true);
+            if (!first.TryGetValue(lowered, out var earlier))
+            {
+                first[lowered] = parameter;
+                continue;
+            }
+            var position = parameter.Identifier.GetLocation().GetLineSpan().StartLinePosition;
+            errors.Add(new CompilationError
+            {
+                Code = "EQ1007",
+                Message = $"'{type.Identifier.Text}({parameter.Identifier.ValueText})' lowers to `{lowered}`, and so does "
+                    + $"'{type.Identifier.Text}({earlier.Identifier.ValueText})'. The twin's constructor names a primary "
+                    + "constructor's parameters camelCased, and a function cannot take two parameters of one name. Rename one "
+                    + "of them by what it holds.",
+                SourcePath = sourcePath,
+                Line = position.Line + 1,
+                Column = position.Character + 1,
+            });
+            return true;
+        }
+        return false;
+    }
+
+    /// <summary>
+    /// A class's primary constructor parameter that a member reads, which the twin holds on each
+    /// instance under its camelCased name as a struct's (#583), beside a member that lands on the same
+    /// name: `class Greeter(string name) { public string Name => name.ToUpper(); }` held "ada" where the
+    /// getter `name` stands, and the instance's own value hid the getter, so `Name` answered "ada" where
+    /// C# answers "ADA". A class's members among themselves are not judged here: its fields are class
+    /// state its own accessors read through, and #396 is theirs.
+    /// </summary>
+    private static void CheckHeldParameters(TypeDeclarationSyntax type, string sourcePath, SemanticModel? model,
+        List<CompilationError> errors)
+    {
+        if (type.ParameterList is null) return;
+        var held = type.ParameterList.Parameters.Where(parameter => type.HoldsParameter(parameter, model)).ToList();
+        if (held.Count == 0) return;
+        var members = HeldOnEachInstance(type, model).Where(member => member.At.Parent is not ParameterSyntax)
+            .Concat(type.Members.OfType<MethodDeclarationSyntax>()
+                .Where(method => !method.Modifiers.Any(SyntaxKind.StaticKeyword) && method.ExplicitInterfaceSpecifier is null)
+                .Select(method => (Name: method.Identifier.ValueText, Shown: Signature(method), At: method.Identifier)))
+            .ToList();
+        foreach (var parameter in held)
+        {
+            var name = parameter.Identifier.ValueText;
+            var lowered = name.ToCamelCase();
+            if (members.FirstOrDefault(member => member.Name != name && member.Name.ToCamelCase() == lowered) is not { Name: not null } other)
+                continue;
+            var position = parameter.Identifier.GetLocation().GetLineSpan().StartLinePosition;
+            var otherLine = other.At.GetLocation().GetLineSpan().StartLinePosition.Line + 1;
+            errors.Add(new CompilationError
+            {
+                Code = "EQ1007",
+                Message = $"'{type.Identifier.Text}({name})' lowers to `{lowered}`, and so does '{other.Shown}' (line {otherLine}). "
+                    + "A member reads the primary constructor's parameter, so the twin holds it on each instance under that "
+                    + "name, where the member of the same name stands, and one would hide the other. Rename the parameter by "
+                    + $"what it holds, or hold it in a field of your own (`private readonly {parameter.Type} _{lowered} = {name};`).",
+                SourcePath = sourcePath,
+                Line = position.Line + 1,
+                Column = position.Character + 1,
+            });
+            return;
+        }
+    }
+
+    /// <summary>The members besides its methods a twin holds on each instance, by their C# names: its
+    /// fields, properties and events, and a primary constructor's parameters the instance holds (a
+    /// record's being its properties, a class's or a struct's those a member reads,
+    /// <see cref="TypeDeclarationExtensions.HoldsParameter"/>).</summary>
+    private static IEnumerable<(string Name, string Shown, SyntaxToken At)> HeldOnEachInstance(TypeDeclarationSyntax type,
+        SemanticModel? model)
+    {
+        foreach (var parameter in type.ParameterList?.Parameters ?? default)
+            if (type.HoldsParameter(parameter, model))
+                yield return (parameter.Identifier.ValueText, $"{type.Identifier.Text}({parameter.Identifier.ValueText})", parameter.Identifier);
+        foreach (var member in type.Members)
+        {
+            if (member.Modifiers.Any(SyntaxKind.StaticKeyword) || member.Modifiers.Any(SyntaxKind.ConstKeyword)) continue;
+            switch (member)
+            {
+                case PropertyDeclarationSyntax { ExplicitInterfaceSpecifier: null } property:
+                    yield return (property.Identifier.ValueText, property.Identifier.ValueText, property.Identifier);
+                    break;
+                case EventDeclarationSyntax { ExplicitInterfaceSpecifier: null } handler:
+                    yield return (handler.Identifier.ValueText, handler.Identifier.ValueText, handler.Identifier);
+                    break;
+                case BaseFieldDeclarationSyntax field:
+                    foreach (var variable in field.Declaration.Variables)
+                        yield return (variable.Identifier.ValueText, variable.Identifier.ValueText, variable.Identifier);
+                    break;
+            }
+        }
+    }
+
+    /// <summary>
+    /// A type that implements an interface's indexer explicitly, which every access through an
+    /// interface reaches as the twin's <c>item</c>, and answers ANOTHER interface's indexer with an
+    /// indexer of its own or with a default it takes: an access through that interface reaches
+    /// <c>item</c> too, so one of the two would answer the other's accesses. Refused, as a name the twin
+    /// cannot hold twice is.
+    /// </summary>
+    private static void CheckInterfaceIndexers(TypeDeclarationSyntax type, string sourcePath, SemanticModel model,
+        List<CompilationError> errors)
+    {
+        if (model.SyntaxTree != type.SyntaxTree || model.GetDeclaredSymbol(type) is not INamedTypeSymbol declared) return;
+        if (declared.GetMembers().OfType<IPropertySymbol>()
+                .FirstOrDefault(member => member.IsIndexer && !member.ExplicitInterfaceImplementations.IsEmpty) is not { } held)
+            return;
+        foreach (var contract in declared.AllInterfaces.SelectMany(face => face.GetMembers().OfType<IPropertySymbol>())
+                     .Where(member => member.IsIndexer))
+        {
+            if (declared.FindImplementationForInterfaceMember(contract) is not IPropertySymbol answer
+                || !answer.ExplicitInterfaceImplementations.IsEmpty)
+                continue;
+            var what = answer.ContainingType.TypeKind == TypeKind.Interface
+                ? $"the default '{answer.ContainingType.Name}.this[]', which it takes"
+                : $"'{declared.Name}.this[]', which answers '{contract.ContainingType.Name}.this[]'";
+            var position = type.Identifier.GetLocation().GetLineSpan().StartLinePosition;
+            errors.Add(new CompilationError
+            {
+                Code = "EQ1007",
+                Message = $"'{declared.Name}' implements '{Shown(held)}' explicitly, which an access through its interface "
+                    + $"reaches as the twin's `{Indexer.Get}()`, and so does {what}: every access through an interface "
+                    + $"reaches `{Indexer.Get}()`, so one of them would answer the other's. Answer both interfaces with "
+                    + "one indexer, or implement one of them implicitly.",
+                SourcePath = sourcePath,
+                Line = position.Line + 1,
+                Column = position.Character + 1,
+            });
+            return;
         }
     }
 
@@ -250,7 +519,8 @@ internal static class OverloadedMethods
     /// declares itself. A field takes its name too: <c>class C : I { public int Mark; }</c> beside a
     /// default <c>I.Mark()</c> gave the twin two members named <c>mark</c>, and so did an explicit
     /// <c>IA.M()</c> beside a default <c>IB.M()</c>, and an event, which lowers to an instance field
-    /// (all found in review, #418). An indexer is written into no twin (#427), so it takes no name.
+    /// (all found in review, #418). An indexer takes the names its twin's two methods have, which
+    /// <see cref="Names"/> checks within one declaration (#427); along the chain it is not checked yet.
     /// </summary>
     private static IEnumerable<ISymbol> InstanceMembers(INamedTypeSymbol type, bool isComponent) =>
         type.GetMembers().Where(member => !member.IsStatic && !member.IsImplicitlyDeclared

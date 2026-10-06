@@ -6,6 +6,8 @@ import { Dictionary } from './dictionary';
 import { SortedMap, SortedSet } from './sorted';
 import { comparerOf, type Ordering } from './ordering';
 import { LinkedList, Queue, Stack } from './collections';
+import { hashSet } from './hash-set';
+import type { KeyEquality } from './key-equality';
 
 /**
  * TYPED hydration — the boundary where a value from the server (SSR state, a Server Action result)
@@ -22,9 +24,10 @@ import { LinkedList, Queue, Stack } from './collections';
  *    shortest text that names IT, which JavaScript reads as the nearest DOUBLE — so it rounds back
  *    to the single here, before any arithmetic sees the difference;
  *  - `[spec]` — a list whose every element hydrates by the inner spec;
- *  - `{ collection, of, order }` — a collection the browser holds as its own class: the JSON array
- *    becomes a `Set`, or the runtime's `SortedSet` (in its element type's `order`), `Queue`, `Stack`
- *    or `LinkedList`, each element hydrated by `of` (null when elements arrive as they are);
+ *  - `{ collection, of, order, byValue }` — a collection the browser holds as its own class: the JSON
+ *    array becomes the runtime's `HashSet` (its elements found as `byValue` says), `SortedSet` (in its
+ *    element type's `order`), `Queue`, `Stack` or `LinkedList`, each element hydrated by `of` (null
+ *    when elements arrive as they are);
  *  - `{ dict: spec, key, byValue, sorted, order }` — a dictionary: the JSON object becomes the
  *    runtime's `Dictionary` (a `SortedMap` in its key type's `order` when `sorted`), each property
  *    name turned into the key by `key` and each value hydrated by `dict` (null when values arrive as
@@ -59,7 +62,7 @@ export type HydrationKey = HydrationTag | 'number' | 'bool';
 export interface DictionarySpec {
   readonly dict: HydrationSpec | null;
   readonly key?: HydrationKey;
-  readonly byValue?: true | 'own';
+  readonly byValue?: KeyEquality;
   /** A sorted one, and which of .NET's two: a `SortedList` refuses a key already there in its own words. */
   readonly sorted?: 'dictionary' | 'list';
   /** How a sorted one orders its keys, by their type; absent for a type with no order of its own here. */
@@ -72,6 +75,8 @@ export interface CollectionSpec {
   readonly of: HydrationSpec | null;
   /** How a sorted set orders its elements, by their type; absent for a type with no order of its own here. */
   readonly order?: Ordering;
+  /** How a set finds its elements, by their type ({@link KeyEquality}); absent for identity. */
+  readonly byValue?: KeyEquality;
 }
 
 /** A record/struct twin: a prototype to rebuild on, and its own member specs. */
@@ -147,7 +152,7 @@ function collection(incoming: unknown, spec: CollectionSpec): unknown {
   const items = spec.of == null ? incoming : incoming.map((element) => hydrate(element, spec.of!));
   switch (spec.collection) {
     case 'set':
-      return new Set(items);
+      return hashSet(spec.byValue ?? false, items);
     case 'sortedSet':
       return new SortedSet(items, spec.order === undefined ? undefined : comparerOf(spec.order));
     case 'queue':

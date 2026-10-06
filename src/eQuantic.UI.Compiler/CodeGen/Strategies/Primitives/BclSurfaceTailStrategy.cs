@@ -94,13 +94,13 @@ public class BclSurfaceTailStrategy : IExpressionIrStrategy
 
         // The runtime's dictionary classes answer TryAdd and ContainsValue themselves, each argument
         // evaluated once and in its place; a value compares as the value type's default comparer
-        // compares it (DictionaryStrategy.KeyEquality).
+        // compares it (ElementEquality).
         if (home.IsDictionary() && home.TypeArguments is [_, var valueType])
         {
             return (name, argCount) switch
             {
                 ("TryAdd", 2) => "{0}.tryAdd({1}, {2})",
-                ("ContainsValue", 1) => DictionaryStrategy.KeyEquality(valueType) is { } equality
+                ("ContainsValue", 1) => ElementEquality.Of(valueType) is { } equality
                     ? $"{{0}}.containsValue({{1}}, {equality})"
                     : "{0}.containsValue({1})",
                 // Capacity hints have no JS meaning; EnsureCapacity ANSWERS a capacity, so the

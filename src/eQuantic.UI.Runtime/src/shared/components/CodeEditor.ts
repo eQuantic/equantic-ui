@@ -9,7 +9,7 @@ export class CodeEditor extends StatefulComponent {
     _viewport: number = 0;
     _viewportWidth: number = 0;
     _toldDocument: any = null;
-    _toldSelection: CodeRange = new CodeRange();
+    _toldSelection: CodeRange = CodeRange.$zero();
     _matches: CodeRange[] = [];
     _matchedIn: any = null;
     _matchedFor: any = null;
@@ -112,7 +112,8 @@ export class CodeEditor extends StatefulComponent {
     }
 
     create() {
-        let editor = new CodeEditorController(this.initialCode, CodeLanguages.for(this.languageName), { readOnly: this.readOnly });
+        let $n0: any; 
+        let editor = ($n0 = new CodeEditorController(this.initialCode, CodeLanguages.for(this.languageName)), $n0.readOnly = this.readOnly, $n0);
         this._toldDocument = editor.document;
         this._toldSelection = editor.selection;
         return editor;

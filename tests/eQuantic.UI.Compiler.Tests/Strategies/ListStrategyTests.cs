@@ -48,24 +48,37 @@ public class ListStrategyTests
     }
 
     [Fact]
-    public void IndexOf_MapsToIndexOf()
+    public void IndexOf_OfAnIdentityElement_MapsToIndexOf()
     {
-        var result = TestHelper.ConvertExpression("list.IndexOf(item)");
-        result.Should().Be("this.list.indexOf(this.item)");
+        var result = TestHelper.ConvertExpression("numbers.IndexOf(5)");
+        result.Should().Be("this.numbers.indexOf(5)");
     }
 
     [Fact]
-    public void LastIndexOf_MapsToLastIndexOf()
+    public void IndexOf_ComparesAsTheDefaultComparer()
+    {
+        // indexOf's === never finds a record equal to one in the list, nor a NaN (#425).
+        TestHelper.ConvertExpression("points.IndexOf(new DistinctPoint(1))")
+            .Should().Be("$eq.collections.indexOf(this.points, new DistinctPoint(1), true)");
+        TestHelper.ConvertExpression("list.IndexOf(item)")
+            .Should().Be("$eq.collections.indexOf(this.list, this.item, 'own')");
+    }
+
+    [Fact]
+    public void LastIndexOf_ComparesAsTheDefaultComparer()
     {
         var result = TestHelper.ConvertExpression("list.LastIndexOf(item)");
-        result.Should().Be("this.list.lastIndexOf(this.item)");
+        result.Should().Be("$eq.collections.lastIndexOf(this.list, this.item, 'own')");
     }
 
     [Fact]
-    public void Find_MapsToFind()
+    public void Find_AnswersTheElementTypesDefault()
     {
-        var result = TestHelper.ConvertExpression("list.Find(x => x.Active)");
-        result.Should().Be("this.list.find((x) => x.active)");
+        // No match is default(T), which for an int is 0, not undefined (#488).
+        TestHelper.ConvertExpression("list.Find(x => x.Active)")
+            .Should().Be("$eq.collections.find(this.list, (x) => x.active, null)");
+        TestHelper.ConvertExpression("numbers.Find(x => x > 1)")
+            .Should().Be("$eq.collections.find(this.numbers, (x) => x > 1, 0)");
     }
 
     [Fact]
@@ -97,17 +110,37 @@ public class ListStrategyTests
     }
 
     [Fact]
-    public void Sort_NoArgs_MapsToSort()
+    public void Sort_NoArgs_SortsByTheTypesDefaultComparer()
     {
-        var result = TestHelper.ConvertExpression("list.Sort()");
-        result.Should().Be("this.list.sort()");
+        // By value, not by text, with the helper .NET picks for an IComparable<T> (#488).
+        TestHelper.ConvertExpression("numbers.Sort()")
+            .Should().Be("$eq.collections.listSort(this.numbers, $eq.collections.order('value', 'comparable'))");
+        // A class that is not comparable sorts as .NET's: it throws once two elements are compared.
+        TestHelper.ConvertExpression("list.Sort()")
+            .Should().Be("$eq.collections.listSort(this.list, $eq.collections.order(null))");
     }
 
     [Fact]
-    public void Sort_WithComparison_MapsToSort()
+    public void Sort_WithComparison_SortsAsDotNet()
     {
+        // The comparison's type names it in .NET's message about an inconsistent one.
         var result = TestHelper.ConvertExpression("list.Sort((a, b) => a.Id - b.Id)");
-        result.Should().Be("this.list.sort((a, b) => a.id - b.id)");
+        result.Should().Be("$eq.collections.listSortBy(this.list, (a, b) => a.id - b.id, 'System.Comparison`1[TestClass]')");
+    }
+
+    [Fact]
+    public void Sort_WithAStringComparer_SortsByItsComparison()
+    {
+        TestHelper.ConvertExpression("items.Sort(StringComparer.OrdinalIgnoreCase)")
+            .Should().Be("$eq.collections.listSort(this.items, $eq.collections.stringOrder('ordinalIgnoreCase'))");
+    }
+
+    [Fact]
+    public void Sort_WithAComparerNoTwinCarries_IsRefused()
+    {
+        var diagnostics = TestHelper.DiagnosticsFor(
+            "items.Sort(StringComparer.Create(System.Globalization.CultureInfo.InvariantCulture, true))");
+        diagnostics.Should().Contain(d => d.Code == "EQ2007");
     }
 
     [Fact]

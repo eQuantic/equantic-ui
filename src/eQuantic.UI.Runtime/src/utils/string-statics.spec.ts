@@ -1,5 +1,7 @@
 import { describe, it, expect } from 'vitest';
-import { compare, compareRange, compareRangeBy, equals, joinRange } from './string-statics';
+import { compare, compareRange, compareRangeBy, equals, join, joinRange } from './string-statics';
+import { hashSetOf } from './hash-set';
+import { linkedList } from './collections';
 
 // Every answer below was measured on .NET 10 with the invariant culture; the conformance suite runs
 // the same calls on both sides.
@@ -114,5 +116,28 @@ describe('joinRange (string.Join over a range)', () => {
       "startIndex ('-1') must be a non-negative value.",
     );
     expect(() => joinRange(',', null, 0, 0)).toThrow("Value cannot be null. (Parameter 'value')");
+  });
+});
+
+describe('join (string.Join over any sequence)', () => {
+  it('reads any sequence by its iterator, which only an array answered join for (#429)', () => {
+    expect(join(',', hashSetOf([1, 2]))).toBe('1,2');
+    expect(join(',', linkedList([1, 2]))).toBe('1,2');
+    expect(join(',', [1, 2].values())).toBe('1,2');
+    expect(join(',', 'ab')).toBe('a,b');
+    expect(join(',', 'a\u{1F600}')).toBe('a,\ud83d,\ude00');
+  });
+
+  it('writes each value by the conversion handed, a null as nothing (#441)', () => {
+    const text = (value: boolean): string => (value ? 'True' : 'False');
+    expect(join(',', [true, null, false], text as (value: boolean | null) => string)).toBe('True,,False');
+    expect(join(',', [1, undefined, 3])).toBe('1,,3');
+    expect(join(',', [])).toBe('');
+  });
+
+  it('takes a null separator for none, and refuses a null sequence by its parameter\'s name', () => {
+    expect(join(null, ['a', 'b'])).toBe('ab');
+    expect(() => join(',', null)).toThrow("Value cannot be null. (Parameter 'values')");
+    expect(() => join(',', null, undefined, 'value')).toThrow("Value cannot be null. (Parameter 'value')");
   });
 });

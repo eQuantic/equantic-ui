@@ -387,4 +387,162 @@ public class OverloadedMethodTests
 
         results.SelectMany(result => result.Errors).Should().NotContain(error => error.Code == "EQ1007");
     }
+
+    /// <summary>
+    /// Every member the twin holds on each instance under an indexer's names (a field, a property, an
+    /// event, a primary constructor's parameter, a record's positional property) lands on the
+    /// indexer's method and hides it: <c>new Box(4)[1]</c> answered the text of a function, and
+    /// <c>g[0] = 5</c> beside a <c>SetItem</c> property threw. Each is refused, naming both members
+    /// and the one to rename. An <c>[IndexerName]</c> lets C# take the <c>Item</c> name for another
+    /// member, and the twin's indexer is <c>item</c> whatever C# calls it.
+    /// </summary>
+    public static TheoryData<string, string, string> MembersOnAnIndexersNames => new()
+    {
+        { "Box", "public class Box(int item) { public int this[int i] => i + item; }", "Rename 'Box(item)'" },
+        { "Flag", "public class Flag { private readonly int[] _v = new int[2]; public bool SetItem { get; set; } = true; public int this[int i] { get => _v[i]; set => _v[i] = value; } }", "Rename 'SetItem'" },
+        { "Cells", "public class Cells { private readonly int[] _v = new int[2]; public int Item = 3; [System.Runtime.CompilerServices.IndexerName(\"Cell\")] public int this[int i] { get => _v[i]; set => _v[i] = value; } }", "Rename 'Item'" },
+        { "Ev", "public class Ev { public event System.Action SetItem; private readonly int[] _v = new int[2]; public int this[int i] { get => _v[i]; set => _v[i] = value; } public void Fire() => SetItem?.Invoke(); }", "Rename 'SetItem'" },
+        { "RItem", "public record RItem(int Item) { [System.Runtime.CompilerServices.IndexerName(\"Cell\")] public int this[int i] => i + Item; }", "Rename 'RItem(Item)'" },
+        { "Method", "public class Method { public int Item(int i) => i; [System.Runtime.CompilerServices.IndexerName(\"Cell\")] public int this[int i] => i; }", "Rename 'Item(int)'" },
+    };
+
+    [Theory]
+    [MemberData(nameof(MembersOnAnIndexersNames))]
+    public void AMemberOnAnIndexersName_IsRefused_NamingWhatToRename(string name, string source, string rename)
+    {
+        var error = Compile(source, name).Errors.Should().ContainSingle(e => e.Code == "EQ1007").Subject;
+
+        error.Message.Should().Contain("this[int]").And.Contain(rename);
+    }
+
+    /// <summary>
+    /// An explicit implementation of an interface's indexer takes its interface's name, which no
+    /// rename changes, so it is no second indexer: it answers an access through the interface as the
+    /// twin's <c>item</c>, and the type's own indexer beside it takes names of its own. It was counted
+    /// as a second indexer, and the type's module was not written.
+    /// </summary>
+    [Fact]
+    public void AnExplicitIndexer_IsNotASecondIndexer()
+    {
+        var results = new ComponentCompiler().CompileSource("""
+            public interface IGrid { int this[int i] { get; } }
+            public class Grid : IGrid { int IGrid.this[int i] => i * 10; public int this[int i] => i; }
+            """, "Probe.cs");
+
+        results.SelectMany(result => result.Errors).Should().NotContain(error => error.Code == "EQ1007");
+        results.Single(result => result.ComponentName == "Grid").TypeScript
+            .Should().MatchRegex(@"\n\s*item\(i\b").And.Contain("Grid$item(i");
+    }
+
+    /// <summary>
+    /// What an access through an interface reaches is the twin's <c>item</c>, whatever the type behind
+    /// it, so two explicit implementations, or one beside an indexer that answers another interface or a
+    /// default the type takes, cannot both be reached: refused.
+    /// </summary>
+    public static TheoryData<string, string> TwoIndexersOneSlot => new()
+    {
+        { "Two explicit implementations", """
+            public interface IA { int this[int i] { get; } }
+            public interface IB { int this[int i] { get; } }
+            public class Grid : IA, IB { int IA.this[int i] => 1; int IB.this[int i] => 2; }
+            """ },
+        { "an explicit one beside one that answers another interface", """
+            public interface IA { int this[int i] { get; } }
+            public interface IB { int this[int i] { get; } }
+            public class Grid : IA, IB { int IA.this[int i] => 1; public int this[int i] => 2; }
+            """ },
+        { "an explicit one beside a default", """
+            public interface IA { int this[int i] { get; } }
+            public interface IB { int this[string s] => 2; }
+            public class Grid : IA, IB { int IA.this[int i] => 1; }
+            """ },
+    };
+
+    [Theory]
+    [MemberData(nameof(TwoIndexersOneSlot))]
+    public void TwoIndexersAnInterfaceReaches_AreRefused(string why, string source)
+    {
+        var results = new ComponentCompiler().CompileSource(source, "Probe.cs");
+
+        results.Single(result => result.ComponentName == "Grid").Errors
+            .Should().Contain(error => error.Code == "EQ1007", why);
+    }
+    /// <summary>
+    /// A record's or a struct's instance members that differ only in the case of their first letter
+    /// land on one member of the twin, which holds its state on each instance and its methods and
+    /// computed properties on its prototype. Two states shared one slot (`struct S(int x) { X = x * 2 }`
+    /// answered "6|6" for "3|6"), and a state beside an accessor of its name was written over the
+    /// getter, which threw at `new`.
+    /// </summary>
+    public static TheoryData<string, string, string> StateOnOneName => new()
+    {
+        { "S", "public struct S(int x) { public int X { get; } = x * 2; public int Raw() => x; }", "'S.X' lowers to `x`" },
+        { "R", "public record R(int Count) { private readonly int count = Count * 10; public int Scaled => count; }", "'R.count' lowers to `count`" },
+        { "Money", "public readonly struct Money(decimal amount) { public decimal Amount => amount; }", "'Money.Amount' lowers to `amount`" },
+        { "Temperature", "public struct Temperature { private double celsius; public double Celsius => celsius; public Temperature(double c) { celsius = c; } }", "'Temperature.Celsius' lowers to `celsius`" },
+        { "Tally", "public record Tally { public int Total { get; init; } public int total() => Total; }", "'Tally.total()' lowers to `total`" },
+    };
+
+    [Theory]
+    [MemberData(nameof(StateOnOneName))]
+    public void ARecordsOrAStructsMembersOnOneName_AreRefused(string name, string source, string named)
+    {
+        var errors = Compile(source, name).Errors;
+
+        errors.Should().ContainSingle().Which.Should().Match<CompilationError>(error =>
+            error.Code == "EQ1007" && error.Message.Contains(named) && error.Message.Contains("Rename one of them"));
+    }
+
+    /// <summary>
+    /// A plain class's primary constructor parameter that a member reads is held on each instance under
+    /// its name, as a struct's is (#583), so one that lands on another member's name would hide it, and
+    /// a getter or a method of that name would answer the parameter: refused, naming both.
+    /// </summary>
+    [Theory]
+    [InlineData("Greeter", "public class Greeter(string name) { public string Name => name.ToUpper(); }", "'Greeter(name)' lowers to `name`")]
+    [InlineData("Clock", "public class Clock(int tick) { public int Tick() => tick + 1; }", "'Clock(tick)' lowers to `tick`")]
+    public void AClassesHeldParameterOnAMembersName_IsRefused(string name, string source, string named)
+    {
+        var errors = Compile(source, name).Errors;
+
+        errors.Should().ContainSingle().Which.Should().Match<CompilationError>(error =>
+            error.Code == "EQ1007" && error.Message.Contains(named) && error.Message.Contains("Rename the parameter"));
+    }
+
+    /// <summary>
+    /// Two parameters of a primary constructor that land on one name: the twin's constructor names each
+    /// one camelCased, and a function cannot take two parameters of one name, so the module did not load,
+    /// whether a member read both, one or neither (found by Copilot's review of #621).
+    /// </summary>
+    [Theory]
+    [InlineData("Both", "public class Both(int x, int X) { public int Sum() => x + X; }")]
+    [InlineData("One", "public class One(int x, int X) { public int Get() => x; }")]
+    [InlineData("Neither", "public class Neither(int x, int X) { }")]
+    [InlineData("Pair", "public struct Pair(int x, int X) { public int Get() => x; }")]
+    [InlineData("Twins", "public record Twins(int x, int X);")]
+    public void TwoPrimaryParametersOnOneName_AreRefused(string name, string source)
+    {
+        var errors = Compile(source, name).Errors;
+
+        errors.Should().ContainSingle().Which.Should().Match<CompilationError>(error =>
+            error.Code == "EQ1007" && error.Message.Contains($"'{name}(X)' lowers to `x`")
+            && error.Message.Contains($"'{name}(x)'") && error.Message.Contains("cannot take two parameters of one name"));
+    }
+
+    /// <summary>
+    /// What is one member is not refused: a positional parameter the body redeclares under its own name
+    /// (#546), a static beside an instance member of the name, and a struct's primary constructor
+    /// parameter read only by an initializer, which no instance holds. A plain class's backing field
+    /// beside its property answers right, its field being a class field that shadows the getter, and is
+    /// left as it is.
+    /// </summary>
+    [Theory]
+    [InlineData("Box", "public sealed record Box(int X, int Y) { public int X { get; set; } = X; }")]
+    [InlineData("Units", "public record struct Units(int Count) { public static int count = 3; }")]
+    [InlineData("Plain", "public sealed class Plain { private int count = 2; public int Count => count; }")]
+    [InlineData("Point", "public readonly struct Point(int x, int y) { public int X { get; } = x; public int Y { get; } = y; }")]
+    [InlineData("Spot", "public class Spot(int x) { public int X { get; } = x; }")]
+    [InlineData("Badge", "public class Badge(string label) { public string Name => label; }")]
+    public void OneMemberOnItsName_IsNotRefused(string name, string source) =>
+        Compile(source, name).Errors.Where(error => error.Code == "EQ1007").Should().BeEmpty();
 }

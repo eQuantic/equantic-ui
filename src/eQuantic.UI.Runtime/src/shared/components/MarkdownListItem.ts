@@ -1,12 +1,14 @@
 import { MarkdownRun } from "../runtime-exports";
 
 export class MarkdownListItem {
-    constructor(props?: any) {
-        if (props && typeof props === 'object') Object.assign(this, props);
+    constructor() {
+        this.runs = [];
+        this.depth = 0;
+        this.marker = '•';
     }
 
-    runs: MarkdownRun[] = [];
-    depth: number = 0;
-    marker: string = '•';
+    runs!: MarkdownRun[];
+    depth!: number;
+    marker!: string;
 }
 

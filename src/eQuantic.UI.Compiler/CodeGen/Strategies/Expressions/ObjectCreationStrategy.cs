@@ -165,12 +165,20 @@ public class ObjectCreationStrategy : IExpressionIrStrategy
             return DataConstruction(creation, data, context);
 
         // Records and user structs are emitted as named JS classes (they carry instance methods) —
-        // construct via `new`, mapping positional args and any object initializer onto the constructor.
+        // construct via `new` with the arguments the constructor binds, then apply any object
+        // initializer to what it built (#413).
         if (createdType is { IsRecord: true }
             || (createdType is { TypeKind: TypeKind.Struct } && createdType.IsStructuralValueType()))
         {
             return BuildValueTypeConstruction(creation, createdType, context);
         }
+
+        // A plain class eqc writes is built as a record is (#582, #583): the constructor the call binds,
+        // with its arguments as the bound tree binds them, then its initializer applied to what it built.
+        // It took an object initializer as a trailing config object, an argument of its constructor, so
+        // the values were evaluated before the constructor ran and its initializers moved them.
+        if (createdType is INamedTypeSymbol plain && IsBuiltAsCSharp(plain))
+            return BuildClassConstruction(creation, plain, context);
 
         var arguments = new List<JsExpr>();
         var emittedSlots = 0;
@@ -191,6 +199,25 @@ public class ObjectCreationStrategy : IExpressionIrStrategy
         {
             return AddPerElementConstruction(
                 creation.Initializer, JsExpr.New(JsExpr.Identifier(genericTypeName ?? typeName), arguments), context);
+        }
+
+        // A list built with an element an EXTENSION adds (`new List<string> { 1 }` over
+        // `Add(this List<string>, int)`) is applied as C# applies it, each element through its own
+        // `Add` (ObjectInitializer), over the list the constructor built: as the list's literal, every
+        // element was the list's own, 1 where .NET holds "#1".
+        if (ListAddedByAnExtension(creation.Initializer, createdType, context) is { } listed)
+            return ObjectInitializer.Apply(
+                arguments.Count == 0 || IsCapacityArgument(creation, context) ? JsExpr.Array([]) : JsExpr.Array([JsExpr.Spread(arguments[0])]),
+                listed, context);
+
+        // An object initializer that ADDS to what a member holds (`Items = { 1, 2 }`) or writes an
+        // entry (`[k] = v`) is applied once the object exists (#462): a config object can only
+        // replace a member, and the list the member was initialized with was gone. Only for a class
+        // whose twin eqc writes; the vocabulary's hand-written twins take their config as they always did.
+        if (creation.Initializer is { } applied && TwinIsWritten(createdType)
+            && applied.IsKind(SyntaxKind.ObjectInitializerExpression) && !ObjectInitializer.OnlyAssigns(applied))
+        {
+            return ObjectInitializer.Apply(JsExpr.New(JsExpr.Identifier(genericTypeName ?? typeName), arguments), applied, context);
         }
 
         JsExpr? initializer = null;
@@ -283,6 +310,20 @@ public class ObjectCreationStrategy : IExpressionIrStrategy
     }
 
     /// <summary>
+    /// A list's collection initializer one of whose elements the bound tree adds through an EXTENSION
+    /// method or a C# 14 extension block's member, or null: such a list is applied element by element,
+    /// where its literal could only hold every element as the list's own <c>Add</c> holds it.
+    /// </summary>
+    private static InitializerExpressionSyntax? ListAddedByAnExtension(InitializerExpressionSyntax? initializer, ITypeSymbol? type,
+        ConversionContext context) =>
+        initializer is { RawKind: (int)SyntaxKind.CollectionInitializerExpression }
+        && type?.OriginalDefinition.ToDisplayString() == "System.Collections.Generic.List<T>"
+        && initializer.Expressions.Any(element => context.SemanticHelper.CollectionInitializerMethod(element)
+            is { IsExtensionMethod: true } or { ContainingType.IsExtension: true })
+            ? initializer
+            : null;
+
+    /// <summary>
     /// Values that stand where ONE expression is read, as they always stood: the only one, or, where
     /// a creation's arguments and its initializer meet in a collection's literal, all of them
     /// spliced in as text. That second shape is a comma expression and was never right: kept as it
@@ -296,12 +337,12 @@ public class ObjectCreationStrategy : IExpressionIrStrategy
     private static JsExpr DefaultOf(IParameterSymbol parameter, ConversionContext context) =>
         JsExpr.Literal(DefaultLiteralFor(parameter, context));
 
-    /// <summary>Type names whose creations lower to JS literals (array/object/Set) — a collection
-    /// initializer on THESE is the literal itself, never Add-per-element on a constructed node.</summary>
+    /// <summary>Type names whose creations lower to JS literals (an array or an object) — a collection
+    /// initializer on THESE is the literal itself, never Add-per-element on a constructed node. A set is
+    /// HashSetStrategy's.</summary>
     private static bool IsCollectionLikeTypeName(string typeName) =>
         typeName.StartsWith("List<") || typeName.Contains(".List<")
         || typeName.StartsWith("IEnumerable<") || typeName.Contains(".IEnumerable<")
-        || typeName.StartsWith("HashSet<") || typeName.Contains(".HashSet<")
         || typeName.Contains("Collection<");
 
     /// <summary>
@@ -504,112 +545,38 @@ public class ObjectCreationStrategy : IExpressionIrStrategy
     }
 
     /// <summary>
-    /// Value members of a record/struct we have no syntax for, in the SAME order
-    /// <see cref="TypeDeclarationExtensions.ValueMembers"/> produces (and therefore the same order
-    /// RecordTypeEmitter emitted the constructor in): primary-constructor parameters, then settable
-    /// instance properties, then public instance fields. Empty when the type has no usable symbol.
+    /// Whether eqc writes the twin of <paramref name="type"/>: one the source declares, one from a
+    /// namespace it transpiles whole into the runtime, or one the vocabulary marks
+    /// <c>[TwinIsTranspiled]</c> (#592). Its constructor is the C# constructor and its methods are the
+    /// type's; a vocabulary twin is hand-written and takes a trailing config object.
     /// </summary>
-    private static IReadOnlyList<ValueMember> SymbolValueMembers(INamedTypeSymbol? type)
-    {
-        if (type == null) return new List<ValueMember>();
-
-        // The abstract VOCABULARY (BoxStyle, EdgeInsets, …) is runtime-provided by a HAND-WRITTEN TS twin
-        // that takes a trailing config object — only types whose twin the compiler EMITS (RecordTypeEmitter,
-        // e.g. the shared component library's NavItem) have the positional constructor this mapping needs.
-        var ns = type.ContainingNamespace?.ToDisplayString() ?? string.Empty;
-        if (Services.RuntimeProvidedTypeScanner.IsVocabularyNamespace(ns))
-            return new List<ValueMember>();
-
-        // The primary constructor: the widest one that is not the record's synthesized copy constructor.
-        var primary = type.InstanceConstructors
-            .Where(c => c.Parameters.Length > 0
-                        && !(c.Parameters.Length == 1
-                             && SymbolEqualityComparer.Default.Equals(c.Parameters[0].Type, type)))
-            .OrderByDescending(c => c.Parameters.Length)
-            .FirstOrDefault();
-
-        var members = new List<ValueMember>();
-        var seen = new HashSet<string>();
-
-        if (primary != null)
-            foreach (var p in primary.Parameters)
-                if (seen.Add(p.Name))
-                    members.Add(new ValueMember(p.Name, p.Name.ToCamelCase(), "any"));
-
-        foreach (var member in type.GetMembers())
-        {
-            // `EqualityContract` is the record's synthesized type discriminator, never a value member.
-            if (member is IPropertySymbol { IsStatic: false, IsImplicitlyDeclared: false } prop
-                && prop.DeclaredAccessibility == Accessibility.Public
-                && prop.SetMethod != null
-                && prop.Name != "EqualityContract"
-                && seen.Add(prop.Name))
-            {
-                members.Add(new ValueMember(prop.Name, prop.Name.ToCamelCase(), "any"));
-            }
-            else if (member is IFieldSymbol { IsStatic: false, IsImplicitlyDeclared: false } field
-                     && field.DeclaredAccessibility == Accessibility.Public
-                     && seen.Add(field.Name))
-            {
-                members.Add(new ValueMember(field.Name, field.Name.ToCamelCase(), "any"));
-            }
-        }
-
-        return members;
-    }
+    internal static bool TwinIsWritten(ITypeSymbol? type) =>
+        type is not null
+        && (type.Locations.Any(location => location.IsInSource)
+            || type.TwinIsTranspiled()
+            || Services.RuntimeProvidedTypeScanner.IsTranspiledNamespace(type.ContainingNamespace?.ToDisplayString() ?? string.Empty));
 
     /// <summary>
-    /// Builds a <c>new T(...)</c> construction for a record/struct, mapping positional arguments and any
-    /// object initializer (<c>{ Name = … }</c>) onto the constructor's positional value members (in the
-    /// type's declaration order). Members left unset before the last supplied one are passed
-    /// <c>undefined</c>, and trailing unset members are omitted: either way the constructor's own
-    /// parameter defaults cover them.
+    /// A record or a struct built as C# builds it (#413): the constructor the call binds, with its
+    /// arguments in its parameters' order, then the object initializer applied to what it built
+    /// (<see cref="ObjectInitializer"/>). The twin's constructor is the C# constructor, so it runs
+    /// every initializer itself; a member's value was a constructor argument once, which made an
+    /// initializer the default of a parameter, run only when the initializer did not set the member.
+    /// <para>
+    /// A struct built by its implicit parameterless constructor is its zero, as C# builds it: none of
+    /// its initializers runs, and none of its constructors, so it is the default the type has.
+    /// </para>
     /// </summary>
-    /// <summary>
-    /// A model that can answer about THIS node. Roslyn throws when asked about a node from another
-    /// tree, and a record is usually declared in another file — the component library's, not the
-    /// page's — so the COMPILATION is asked for that tree's own model rather than giving up. Giving
-    /// up is what left `TextAlignment.Start` as a null the client aligned by and the server did not.
-    /// </summary>
-    private static SemanticModel? ModelOf(SyntaxNode node, ConversionContext context)
-    {
-        if (context.SemanticModel is not { } model) return null;
-        if (ReferenceEquals(node.SyntaxTree, model.SyntaxTree)) return model;
-        return model.Compilation.ContainsSyntaxTree(node.SyntaxTree)
-            ? model.Compilation.GetSemanticModel(node.SyntaxTree)
-            : null;
-    }
-
-    /// <summary>The slot a member name occupies, or -1. One lookup for both ways a caller can name
-    /// a member: a constructor argument's <c>NameColon</c> and an object initializer's left side.</summary>
-    private static int IndexOfMember(IReadOnlyList<ValueMember> members, string js)
-    {
-        for (var i = 0; i < members.Count; i++)
-            if (members[i].Js == js) return i;
-        return -1;
-    }
-
     private static JsExpr BuildValueTypeConstruction(BaseObjectCreationExpressionSyntax creation, ITypeSymbol type, ConversionContext context)
     {
-        var declSyntax = type.DeclaringSyntaxReferences
-            .Select(r => r.GetSyntax())
-            .OfType<TypeDeclarationSyntax>()
-            .FirstOrDefault();
+        var ctor = context.SemanticHelper.GetSymbol(creation) as IMethodSymbol;
 
-        // No declaration syntax (external/metadata type — a record from a referenced assembly, e.g. the
-        // shared component library's NavItem): the SYMBOL still carries the member order, so recover it
-        // there and map positionally exactly as the syntax path does. A record's emitted constructor is
-        // positional-only, so a trailing config object would silently land in the next positional slot
-        // (`new NavItem(icon, label, { badgeCount: 3 })` sets selectedIcon and leaves badgeCount 0 —
-        // SSR renders the badge, the hydrated client does not).
-        var members = declSyntax != null
-            ? declSyntax.ValueMembers(ModelOf(declSyntax, context))
-            : SymbolValueMembers(type as INamedTypeSymbol);
-
-        // Neither syntax nor a usable symbol: fall back to a trailing CONFIG OBJECT — the shape
-        // UI-component classes accept (`new Row(gap, { height: … })`). Positional args pass through.
         var constructed = JsExpr.Identifier(type.Name);
-        if (members.Count == 0)
+        // The abstract VOCABULARY (BoxStyle, EdgeInsets, …) is runtime-provided by a HAND-WRITTEN TS
+        // twin that takes a trailing CONFIG OBJECT, the shape UI-component classes accept
+        // (`new Row(gap, { height: … })`). Positional args pass through.
+        if (!TwinIsWritten(type)
+            && Services.RuntimeProvidedTypeScanner.IsVocabularyNamespace(type.ContainingNamespace?.ToDisplayString() ?? string.Empty))
         {
             var parts = new List<JsExpr>();
             if (creation.ArgumentList != null)
@@ -620,7 +587,7 @@ public class ObjectCreationStrategy : IExpressionIrStrategy
                 // arguments than the constructor's arity must first fill the skipped parameters
                 // from their C# defaults — otherwise `new TransitionSpec(channels, 300) { Easing = … }`
                 // emits the config in the `delayMs` slot and the easing silently reverts to default.
-                if (context.SemanticHelper.GetSymbol(creation) is IMethodSymbol ctor)
+                if (ctor is not null)
                 {
                     var supplied = creation.ArgumentList?.Arguments.Count ?? 0;
                     for (var i = supplied; i < ctor.Parameters.Length; i++)
@@ -640,52 +607,91 @@ public class ObjectCreationStrategy : IExpressionIrStrategy
             return JsExpr.New(constructed, parts);
         }
 
-        var values = new JsExpr?[members.Count];
+        var construction = Construction(creation, type, ctor, context);
+        return creation.Initializer is { } initializer
+            ? ObjectInitializer.Apply(construction, initializer, context)
+            : construction;
+    }
 
-        // Constructor arguments fill the members — a NAMED one by its name, and only the unnamed
-        // ones by position. C# lets a caller skip optionals by naming a later parameter
-        // (`new DataColumn("Customer", track, Sortable: true)`), and filling by WRITTEN order put
-        // that `true` in the align slot: the column stopped being sortable on the client only, so
-        // SSR rendered a header button the hydrated page did not, hydration failed on the tag
-        // mismatch, and the whole page fell back to a full re-render.
-        if (creation.ArgumentList != null)
+    /// <summary>
+    /// The call of a twin eqc writes with its C# constructors (<see cref="TwinConstructor"/>): the
+    /// constructor the call binds, its arguments as the bound tree binds them (BoundArguments), and the
+    /// syntax's own order where there is no model to ask. A struct built by its implicit parameterless
+    /// constructor is its zero.
+    /// </summary>
+    private static JsExpr Construction(BaseObjectCreationExpressionSyntax creation, ITypeSymbol type, IMethodSymbol? ctor,
+        ConversionContext context) =>
+        type.IsValueType && ctor is { IsImplicitlyDeclared: true, Parameters.Length: 0 } && TwinIsWritten(type)
+            ? JsExpr.Opaque(DefaultValue.Of(type, context))
+            : BoundArguments.Of(context.SemanticHelper.GetOperation(creation), argument => context.Converter.ConvertIr(argument)) is { } bound
+                ? bound.New(type.Name, context.TypeAnnotations)
+                : JsExpr.New(JsExpr.Identifier(type.Name), ConstructorArguments(creation, ctor, context));
+
+    /// <summary>
+    /// Whether <paramref name="type"/> is a class whose twin eqc writes with its C# constructors
+    /// (<see cref="TwinConstructor"/>, #583), which is built as a record is
+    /// (<see cref="BuildClassConstruction"/>). A node of the tree, a component and a component's state
+    /// take their initializer as the props the runtime's classes take, an exception is built by its
+    /// symbol (<see cref="ExceptionCreationStrategy"/>), and the vocabulary's hand-written twins take a
+    /// config object of their own.
+    /// </summary>
+    internal static bool IsBuiltAsCSharp(INamedTypeSymbol type) =>
+        type is { TypeKind: TypeKind.Class, IsRecord: false, IsStatic: false }
+        && TwinIsWritten(type)
+        && !type.IsVisualNode() && !type.IsComponentState() && !ExceptionTypes.Is(type);
+
+    /// <summary>
+    /// A plain class built as C# builds it (#582): the constructor the call binds, then the object
+    /// initializer applied to what it built (<see cref="ObjectInitializer"/>), or the elements of a
+    /// collection initializer added to it, each through its <c>Add</c>.
+    /// </summary>
+    private static JsExpr BuildClassConstruction(BaseObjectCreationExpressionSyntax creation, INamedTypeSymbol type,
+        ConversionContext context)
+    {
+        var construction = Construction(creation, type, context.SemanticHelper.GetSymbol(creation) as IMethodSymbol, context);
+        return creation.Initializer switch
         {
-            var args = creation.ArgumentList.Arguments;
-            var position = 0;
-            foreach (var argument in args)
-            {
-                var index = argument.NameColon is { } named
-                    ? IndexOfMember(members, named.Name.Identifier.Text.ToCamelCase())
-                    : position++;
-                if (index >= 0 && index < members.Count)
-                    values[index] = context.Converter.ConvertIr(argument.Expression);
-            }
-        }
+            null => construction,
+            { RawKind: (int)SyntaxKind.CollectionInitializerExpression } collection => AddPerElementConstruction(collection, construction, context),
+            var initializer => ObjectInitializer.Apply(construction, initializer, context),
+        };
+    }
 
-        // Object initializer `{ Name = …, Age = … }` fills the named members by position.
-        if (creation.Initializer != null)
+    /// <summary>
+    /// A twin constructor's arguments, in its parameters' order: a NAMED argument fills the parameter
+    /// it names, the unnamed ones fill by position, a parameter the call skips is passed
+    /// <c>undefined</c>, which lets the twin's own default run in its module (#385), and the ones
+    /// after the last argument are left out. Filling by WRITTEN order put `Sortable: true` in the
+    /// align slot of `new DataColumn("Customer", track, Sortable: true)`: the column stopped being
+    /// sortable on the client only, and hydration failed on the header it rendered.
+    /// <para>
+    /// A <c>params</c> parameter is a rest parameter on the twin, so an array passed whole, which C#
+    /// also allows, is spread, or it would arrive as one element (an invocation does the same).
+    /// </para>
+    /// </summary>
+    private static IReadOnlyList<JsExpr> ConstructorArguments(BaseObjectCreationExpressionSyntax creation, IMethodSymbol? ctor,
+        ConversionContext context)
+    {
+        if (creation.ArgumentList is not { Arguments.Count: > 0 } list) return [];
+        var converted = list.Arguments.Select(argument => context.Converter.ConvertIr(argument.Expression)).ToList();
+        if (ctor is { Parameters.Length: > 0 } && ctor.Parameters[^1].IsParams
+            && list.Arguments.Count == ctor.Parameters.Length && list.Arguments[^1].NameColon is null
+            && context.SemanticHelper.GetType(list.Arguments[^1].Expression) is IArrayTypeSymbol)
+            converted[^1] = JsExpr.Spread(converted[^1]);
+        if (ctor is null || !list.Arguments.Any(argument => argument.NameColon != null)) return converted;
+
+        var slots = new JsExpr?[ctor.Parameters.Length];
+        for (var i = 0; i < list.Arguments.Count; i++)
         {
-            foreach (var expr in creation.Initializer.Expressions)
-            {
-                if (expr is AssignmentExpressionSyntax assignment)
-                {
-                    var idx = IndexOfMember(members, assignment.Left.ToString().ToCamelCase());
-                    if (idx >= 0) values[idx] = context.Converter.ConvertIr(assignment.Right);
-                }
-            }
+            // A positional argument's slot is its list position: C# allows one after a named argument
+            // only when that one sits in its own position.
+            var ordinal = list.Arguments[i].NameColon is { } named
+                ? ctor.Parameters.FirstOrDefault(parameter => parameter.Name == named.Name.Identifier.ValueText)?.Ordinal ?? -1
+                : i;
+            if (ordinal >= 0 && ordinal < slots.Length) slots[ordinal] = converted[i];
         }
-
-        var lastSet = -1;
-        for (var i = 0; i < values.Length; i++) if (values[i] != null) lastSet = i;
-
-        // A member the creation does not set is `undefined`, which lets the twin's constructor write
-        // its default: the constructor is where a member's initializer is converted, in its own
-        // module (#385). A default copied here had to be a literal, so a field's `= "x"` and a
-        // property's `= new()` were lost at every `new Fields { N = 3 }`.
-        var ctorArgs = new List<JsExpr>();
-        for (var i = 0; i <= lastSet; i++) ctorArgs.Add(values[i] ?? Undefined);
-
-        return JsExpr.New(constructed, ctorArgs);
+        var last = Array.FindLastIndex(slots, slot => slot != null);
+        return slots.Take(last + 1).Select(slot => slot ?? Undefined).ToList();
     }
 
     private JsExpr ConvertImplicit(ImplicitObjectCreationExpressionSyntax creation, ConversionContext context)
@@ -708,22 +714,22 @@ public class ObjectCreationStrategy : IExpressionIrStrategy
         {
             var target = ms?.ContainingType;
 
-            // Records and user structs keep full value semantics: map args + initializer onto the
-            // positional constructor exactly like the explicit `new T(...) { … }` path.
+            // Records and user structs keep full value semantics: built exactly like the explicit
+            // `new T(...) { … }` path, the constructor and then the initializer applied to it.
             if (target is { IsRecord: true }
                 || (target is { TypeKind: TypeKind.Struct } && target.IsStructuralValueType()))
             {
                 return BuildValueTypeConstruction(creation, target, context);
             }
 
+            // A plain class eqc writes, as the explicit `new C(…) { … }` builds it.
+            if (target is not null && IsBuiltAsCSharp(target))
+                return BuildClassConstruction(creation, target, context);
+
             // A named class target (`Badge b = new(0, 99, variant) { Dot = true }`) must CONSTRUCT —
             // ordered args, skipped parameters filled from their C# defaults, initializer as the
             // trailing config object (the runtime component classes' contract). Delegating to the
             // initializer here would silently return a bare object instead of an instance.
-            // `new() { a, b }` on a HashSet target seeds a JS Set (the HashSetStrategy contract).
-            if (typeDisplay.Contains("HashSet<"))
-                return JsExpr.New(JsExpr.Identifier("Set"), [context.Converter.ConvertIr(creation.Initializer)]);
-
             if (target is { SpecialType: SpecialType.None, TypeKind: TypeKind.Class }
                 && !typeDisplay.Contains("List<")
                 && !typeDisplay.Contains("IEnumerable<") && !typeDisplay.Contains("Collection<"))
@@ -738,11 +744,24 @@ public class ObjectCreationStrategy : IExpressionIrStrategy
                     return AddPerElementConstruction(creation.Initializer,
                         JsExpr.New(JsExpr.Identifier(target.Name), ctorArgs), context);
                 }
+                // An initializer that adds to a member or writes an entry, applied once the object
+                // exists, as the explicit form applies it (#462), to the construction as IR: written as
+                // text, a lambda among its arguments lost every line of its block from the map.
+                if (TwinIsWritten(target) && !ObjectInitializer.OnlyAssigns(creation.Initializer))
+                    return ObjectInitializer.Apply(JsExpr.New(JsExpr.Identifier(target.Name), ctorArgs), creation.Initializer, context);
                 if (ms != null && ctorArgs.Count < ms.Parameters.Length)
                     ctorArgs.AddRange(ms.Parameters.Skip(ctorArgs.Count).Select(parameter => DefaultOf(parameter, context)));
                 ctorArgs.Add(context.Converter.ConvertIr(creation.Initializer));
                 return JsExpr.New(JsExpr.Identifier(target.Name), ctorArgs);
             }
+
+            // A list one of whose elements an extension adds, as the explicit form applies it.
+            if (ListAddedByAnExtension(creation.Initializer, target, context) is { } listed)
+                return ObjectInitializer.Apply(
+                    creation.ArgumentList is { Arguments.Count: 1 } && !IsCapacityArgument(creation, context)
+                        ? JsExpr.Array([JsExpr.Spread(context.Converter.ConvertIr(creation.ArgumentList.Arguments[0].Expression))])
+                        : JsExpr.Array([]),
+                    listed, context);
 
             // `new() { … }` on a collection (or with no resolvable named target) → the initializer IS
             // the value. A dictionary target is DictionaryStrategy's.
@@ -755,12 +774,6 @@ public class ObjectCreationStrategy : IExpressionIrStrategy
         {
             return JsExpr.Array([]);
         }
-        // Bare `new()` on a HashSet target — the runtime representation is a JS Set.
-        if (typeDisplay.Contains("HashSet<"))
-        {
-            return JsExpr.New(JsExpr.Identifier("Set"), []);
-        }
-
         // Records and user structs go the SAME way they do with an initializer, and the same way the
         // explicit `new T(...)` does. Converting the arguments here in written order was the third
         // copy of that rule and the one that was wrong.
@@ -768,6 +781,8 @@ public class ObjectCreationStrategy : IExpressionIrStrategy
             return BuildValueTypeConstruction(creation, record, context);
         if (ms?.ContainingType is { TypeKind: TypeKind.Struct } value && value.IsStructuralValueType())
             return BuildValueTypeConstruction(creation, value, context);
+        if (ms?.ContainingType is { } plain && IsBuiltAsCSharp(plain))
+            return BuildClassConstruction(creation, plain, context);
 
         // Target-typed `new(args)` on a named type: `Item _x = new(9, "z")` → `new Item(9, 'z')`.
         var args = creation.ArgumentList is { Arguments.Count: > 0 }

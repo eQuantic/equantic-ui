@@ -116,7 +116,7 @@ public class InlinedConstantTests
             }
             """);
 
-        ts.Should().Contain("static get top(): bigint");
+        ts.Should().Contain("static top: bigint = 18446744073709551615n;");
         ts.Should().Contain("static small: number = 7;");
         ts.Should().Contain("static port: number = 8080;");
         ts.Should().Contain("static signed: number = -3;");
@@ -145,8 +145,9 @@ public class InlinedConstantTests
         ts.Should().Contain("Labels.label('x', 'it\\'s', $eq.num.dec(\"1.5\"), 5n, 0.10000000149011612, 1)");
     }
 
-    /// <summary>A CREATION's skipped defaults take the same writer as an invocation's: the
-    /// constructor path fills them in on its own, so it is pinned on its own (found in review, #450).</summary>
+    /// <summary>A CREATION's skipped defaults arrive undefined, and the twin's constructor gives each its
+    /// default, written as its value in its type (#583): the call filled them in once, on its own, so
+    /// it is pinned on its own (found in review, #450).</summary>
     [Fact]
     public void ACreationsSkippedDefault_IsWrittenAsItsValue_InItsType()
     {
@@ -160,7 +161,9 @@ public class InlinedConstantTests
             }
             """);
 
-        ts.Should().Contain("new Label('x', 'it\\'s', $eq.num.dec(\"1.5\"), 5n, 0.10000000149011612, 4, 1)");
+        ts.Should().Contain("new Label(undefined, undefined, undefined, undefined, undefined, undefined, 1)");
+        ts.Should().Contain("= 'x'").And.Contain("= 'it\\'s'").And.Contain("= $eq.num.dec(\"1.5\")")
+            .And.Contain("= 5n").And.Contain("= Math.fround(0.1)").And.Contain("= 4");
     }
 
     /// <summary>
