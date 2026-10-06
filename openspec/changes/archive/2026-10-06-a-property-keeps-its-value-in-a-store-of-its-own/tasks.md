@@ -19,9 +19,9 @@
 ## 4. The runtime and the real thing
 
 - [x] 4.1 Regenerate the runtime's transpiled classes (`EQ_UPDATE_TRANSPILED=1`), run `dotnet build src/eQuantic.UI.Runtime -t:TestRuntime`, the Compiler, Server, Web and Conformance suites
-- [ ] 4.2 The dashboard sample in a browser: the code editor (its languages keep their rules in stores), the form, the sheet and the markdown screen exercised, with no console error
+- [x] 4.2 The dashboard sample in a browser: the code editor (its languages keep their rules in stores), the form, the sheet and the markdown screen exercised, with no console error. Verified on this branch: the editor highlighted and undid a typed line, the diff followed an edit, the form validated a field on leaving it, the diagrams drew, and a cell took an edit and an undo
 
 ## 5. Documentation and archive
 
 - [x] 5.1 The wiki's SupportedFeatures page in English and Portuguese, on the wiki branch named like this change's branch: an overridable property's store, and `base.Name` over an overridden auto-property as the one difference left
-- [ ] 5.2 One docs/LEDGER.md line, and the change archived with `openspec archive`
+- [x] 5.2 One docs/LEDGER.md line, and the change archived with `openspec archive`
