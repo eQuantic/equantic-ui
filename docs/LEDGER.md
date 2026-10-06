@@ -1277,7 +1277,9 @@ record of a release, the wiki's Upgrading page is the distillate.
   lone empty partial class, record or struct got no module or twin, eleven named arguments out of
   their order ran in the signature's, and a nested initializer read its member after the element's
   parts, so the initializer is now a sequence over a temporary of its function, which
-  [#588](https://github.com/eQuantic/equantic-ui/pull/588) brought.
+  [#588](https://github.com/eQuantic/equantic-ui/pull/588) brought. Its third found two: a field-like event's
+  delegate was no state of a record's equality, and a generic struct's zero held its open type
+  parameter's default (`default(Pair<int>).First` was null), so `$zero` takes each type argument's zero.
 - **2026-10-04 · The compiler suite's aborts are gone**: under load its test host crashed in 2 of 6
   runs on macOS arm64, and `dotnet test` still printed `Passed!` with the count that ran
   ([#473](https://github.com/eQuantic/equantic-ui/issues/473)). Measured after #481 cut the suite's own

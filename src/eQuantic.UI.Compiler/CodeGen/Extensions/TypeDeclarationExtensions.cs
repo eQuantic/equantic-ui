@@ -88,13 +88,16 @@ public static class TypeDeclarationExtensions
 
                 // Instance fields, whatever their accessibility: C# compares a record's private field
                 // as it compares a public one, and a struct's too, and only PRINTS the public ones.
+                // A field-like EVENT is one too: its delegate is a field the compiler declares, which
+                // equality, the hash and a copy read as they read any other, so a record subscribed to
+                // and one that is not are not equal (found by Copilot's review of #608).
                 //
                 // A `const` is NOT one of them, and it does not carry the `static` keyword to say so
                 // — C# makes it static implicitly. Reading the syntax alone let `public const string
                 // Marker` through as value state: the twin took an extra positional parameter C#
                 // does not have, compared it in equals, offered it to `with`, and printed
                 // `Marker = undefined` where .NET printed nothing.
-                case FieldDeclarationSyntax field
+                case BaseFieldDeclarationSyntax field
                     when !field.Modifiers.Any(SyntaxKind.StaticKeyword)
                          && !field.Modifiers.Any(SyntaxKind.ConstKeyword):
                     foreach (var v in field.Declaration.Variables)

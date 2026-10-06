@@ -63,6 +63,7 @@ public class RecordConstructionConformanceTests
         public record Quiet : Animal { public Quiet() : base("q") { } }
         public record Unit;
         public record Secret(int Shown) { private int _hidden = Shown * 2; public int Hidden => _hidden; }
+        public record Ev { public event System.Action Changed; public int N; }
         """;
 
     [SkippableTheory]
@@ -121,6 +122,9 @@ public class RecordConstructionConformanceTests
     // A private field is part of the value and not of its text, and a public computed property is
     // part of its text and not of its value.
     [InlineData("return new Secret(2).Hidden + \"|\" + new Secret(2) + \"|\" + (new Secret(2) == new Secret(2));")] // "4|Secret { Shown = 2, Hidden = 4 }|True"
+    // A field-like event's delegate is state, compared, hashed and copied as any field is (found by
+    // Copilot's review of #608).
+    [InlineData("var a = new Ev(); var b = new Ev(); b.Changed += () => { }; var c = a with { }; return (a == b) + \"|\" + a.Equals(new Ev()) + \"|\" + (c == a) + \"|\" + (a.GetHashCode() == new Ev().GetHashCode());")] // "False|True|True|True"
     public void ARecordsMembers_AreEachOnce_AndItsTextIsDotNets(string statements)
     {
         Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");

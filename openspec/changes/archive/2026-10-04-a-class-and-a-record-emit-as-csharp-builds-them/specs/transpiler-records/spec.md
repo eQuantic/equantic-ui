@@ -58,7 +58,8 @@ in, each element is applied before the next one's parts are evaluated, and the m
 adds to or assigns into is read before that element's parts, as C# applies them. A struct's
 zero (`default`, an array's slot, an OrDefault, and `new S()` through the implicit parameterless
 constructor) SHALL be built without its constructor, running no initializer, no constructor and no
-static constructor, a generic struct's and a transpiled struct's from another assembly included.
+static constructor, a transpiled struct's from another assembly included, and a generic struct's
+holding the zero of each of its type arguments (`default(Pair<int>).First` is 0).
 
 #### Scenario: An object initializer sets one member
 
@@ -235,7 +236,7 @@ constructor beside constructors of its own.
 ### Requirement: A record compares and prints as .NET does
 
 A record's equality SHALL compare its runtime type, what its base compares, and every instance field
-it declares, a private one and a property's store included. Its text SHALL name the members .NET's
+it declares, a private one, a property's store and a field-like event's delegate included. Its text SHALL name the members .NET's
 `PrintMembers` writes, in its order: its base's members first, then the properties its positional
 parameters make, then its public fields and its public properties with a getter, whatever the
 getter's own accessibility, in declaration order, a computed one included and an override of a property
