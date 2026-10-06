@@ -604,14 +604,25 @@ public static class PhotonCssGenerator
     /// containing block, the framework's own wrapper element: an absolutely positioned descendant of
     /// a pressable anchoring to the pressable is the more correct answer anyway (a badge on a
     /// button), and fixed layers are unaffected by `relative`.
+    /// <para>
+    /// The target lies UNDER the control's own content, so it answers only where the control draws
+    /// nothing: the slop around a small one. It is the `::before`, first in tree order, and the
+    /// content is positioned like it, so the content paints and is hit after it, as Flutter's hit test
+    /// asks a child before its parent. A target over the content took every hit the content
+    /// should have had: under a fine pointer a Button's own box never matched `:hover`, so no button
+    /// showed its hover fill, and a Pressable around an IconButton took the inner control's hits
+    /// (#430, measured in a browser). The lift has no specificity, so a child that positions itself
+    /// (a raised box, a layer of a Stack) keeps its own.
+    /// </para>
     /// </summary>
     private static void HitSlop(StringBuilder css, string pointer, float minimum)
     {
         css.AppendLine($"@media (pointer: {pointer}) {{");
         css.AppendLine("  .eq-pressable { position: relative; }");
-        css.AppendLine("  .eq-pressable::after { content: \"\"; position: absolute; top: 50%; left: 50%; "
+        css.AppendLine("  .eq-pressable::before { content: \"\"; position: absolute; top: 50%; left: 50%; "
             + $"width: 100%; height: 100%; min-width: {TokenCss.Px(minimum)}; min-height: {TokenCss.Px(minimum)}; "
             + "transform: translate(-50%, -50%); }");
+        css.AppendLine("  :where(.eq-pressable) > * { position: relative; }");
         css.AppendLine("}");
     }
 

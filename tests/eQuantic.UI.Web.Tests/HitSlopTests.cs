@@ -33,7 +33,7 @@ public class HitSlopTests
         css.Should().Contain("@media(pointer:coarse)");
         css.Should().Contain($"min-width:{Touch.MinTarget}px");
         css.Should().Contain($"min-height:{Touch.MinTarget}px");
-        css.Should().Contain(".eq-pressable::after");
+        css.Should().Contain(".eq-pressable::before");
     }
 
     /// <summary>
@@ -67,8 +67,33 @@ public class HitSlopTests
         gate.Should().BeGreaterThan(-1, $"a {pointer} pointer has its gate");
         var block = css[gate..css.IndexOf("\n}", gate, StringComparison.Ordinal)].Replace(" ", string.Empty);
 
-        block.Should().Contain(".eq-pressable::after")
+        block.Should().Contain(".eq-pressable::before")
             .And.Contain($"min-width:{minimum}px")
             .And.Contain($"min-height:{minimum}px");
+    }
+
+    /// <summary>
+    /// The target lies UNDER the control's own content, inside each gate: it is the pseudo-element
+    /// that comes FIRST in tree order, and the content is positioned like it, so the content paints
+    /// and is hit after it. Measured in a browser under a fine pointer (#430): with the target over
+    /// the content, the centre of a Button hit the button element itself, its box never matched
+    /// <c>:hover</c> and the hover fill never showed, and a Pressable around an IconButton took every
+    /// hit the inner control should have had. The lift has no specificity, so a child that positions
+    /// itself (a raised box, a layer of a Stack) keeps its own position.
+    /// </summary>
+    [Theory]
+    [InlineData("coarse")]
+    [InlineData("fine")]
+    public void TheControlsOwnContentStaysAboveItsTarget(string pointer)
+    {
+        var css = Css();
+        var gate = css.IndexOf($"@media (pointer: {pointer}) {{", StringComparison.Ordinal);
+        gate.Should().BeGreaterThan(-1, $"a {pointer} pointer has its gate");
+        var block = css[gate..css.IndexOf("\n}", gate, StringComparison.Ordinal)].Replace(" ", string.Empty);
+
+        block.Should().Contain(":where(.eq-pressable)>*{position:relative;}",
+            "the content is lifted to the target's level, where tree order puts it on top");
+        css.Should().NotContain(".eq-pressable::after",
+            "a target that comes after the content in tree order paints, and is hit, over it");
     }
 }
