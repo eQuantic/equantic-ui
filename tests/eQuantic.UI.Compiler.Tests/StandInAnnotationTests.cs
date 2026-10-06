@@ -110,6 +110,34 @@ public class StandInAnnotationTests
         }
     }
 
+    /// <summary>
+    /// The build context a helper class takes is the runtime's <c>BuildContext</c>, which the helper's
+    /// module imports (#632). It was <c>RenderContext</c>, a name only the app-facing exports carry,
+    /// and nothing imported it, so the shared library's first helper to take the context failed the
+    /// runtime's own build.
+    /// </summary>
+    [Fact]
+    public void TheBuildContext_IsTheRuntimesBuildContext_AndAHelperImportsIt()
+    {
+        const string helper = """
+            using eQuantic.UI.Primitives;
+
+            public static class Measures
+            {
+                public static float LineOf(ComponentContext context, TypeStyle style) =>
+                    style.ScaledLineHeight(context.TypeScale);
+            }
+            """;
+        var compiler = new ComponentCompiler();
+        compiler.SetProjectCompilation(GeneratedProject.Of(helper, "Measures.cs"));
+        var twin = compiler.CompileSource(helper, "Measures.cs")
+            .Single(result => result.ComponentName == "Measures").TypeScript;
+
+        twin.Should().Contain("lineOf(context: BuildContext, ");
+        twin.Should().MatchRegex(@"import \{[^}]*\bBuildContext\b[^}]*\} from");
+        twin.Should().NotContain("RenderContext");
+    }
+
     [Fact]
     public void ARecord_DeclaresItsMembersAndParameters_ByWhatTheyCrossAs()
     {
