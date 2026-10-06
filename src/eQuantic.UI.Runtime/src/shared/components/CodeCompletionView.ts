@@ -5,6 +5,7 @@ export class CodeCompletionView {
     static minColumns: number = 24;
     static maxColumns: number = 60;
     static documentationLines: number = 4;
+    static documentationBudget: number = 480;
     static border: number = 1;
     static pageMarkWidth: number = 3;
 
@@ -39,8 +40,15 @@ export class CodeCompletionView {
         let room = Math.max(1, Math.fround(width - Math.fround(2 * Math.fround(CodeCompletionView.border + 8))));
         let style = CodeCompletionView.documentationStyle(metrics);
         let lines = 0;
-        for (const paragraph of documentation.split('\n')) lines += Math.max(1, (Math.trunc(Math.ceil(Math.fround(context.measureText(paragraph, style) / room))) | 0));
-        return Math.min(lines, CodeCompletionView.documentationLines);
+        for (const paragraph of CodeCompletionView.shown(documentation).split('\n')) {
+            lines += Math.max(1, (Math.trunc(Math.ceil(Math.fround(context.measureText(paragraph, style) / room))) | 0));
+            if (lines >= CodeCompletionView.documentationLines) return CodeCompletionView.documentationLines;
+        }
+        return lines;
+    }
+
+    static shown(documentation: string) {
+        return documentation.length > CodeCompletionView.documentationBudget ? $eq.text.substring(documentation, 0, CodeCompletionView.documentationBudget) : documentation;
     }
 
     static documentationHeightOf(context: BuildContext, metrics: CodeMetrics, lines: number) {
@@ -70,10 +78,11 @@ export class CodeCompletionView {
     static build(context: BuildContext, completion: CodeCompletion, metrics: CodeMetrics, top: number, rows: number, width: number, above: boolean, documentation: string | null, documentationLines: number, pick: (int: number) => void) {
         let theme = context.theme;
         let items = completion.items;
+        let columns = (Math.trunc(Math.floor(Math.fround(Math.fround(width - CodeCompletionView.widthOf(metrics, 0)) / metrics.columnWidth))) | 0);
         let page = new Column(0, 'start', 'stretch', false, null, null, { width: SizeValue.fill });
         for (let i = top; i < top + rows && i < items.length; i++) {
             let index = i;
-            page.add(CodeCompletionView.option(theme, metrics, items[i], i === completion.selected, () => pick(index)));
+            page.add(CodeCompletionView.option(theme, metrics, items[i], i === completion.selected, columns, () => pick(index)));
         }
         let paged = new Row(4, 'start', 'start', false, null, null, { width: SizeValue.fill });
         paged.add(new Flexible(page));
@@ -86,19 +95,26 @@ export class CodeCompletionView {
         return new Box(new BoxStyle({ width: width, background: theme.surface, cornerRadius: new CornerRadii(theme.shape('medium')), borderWidth: CodeCompletionView.border, borderColor: theme.border, elevation: 2, padding: EdgeInsets.symmetric(0, 4), clip: true }), list);
     }
 
-    static option(theme: any, metrics: CodeMetrics, match: CodeCompletionMatch, selected: boolean, pressed: () => void) {
+    static option(theme: any, metrics: CodeMetrics, match: CodeCompletionMatch, selected: boolean, columns: number, pressed: () => void) {
         let item = match.item;
         let ink = selected ? theme.colors('primary').onSubtle : theme.textPrimary;
+        let label = CodeCompletionView.fit(item.label, columns);
         let row = new Row(4, 'start', 'center', false, null, null, { width: SizeValue.fill, height: SizeValue.fill });
         row.add(CodeCompletionView.glyph(theme, metrics, item.kind));
-        row.add(new Text(item.label, 'labelSmall', ink, 1, 'start', false, false, null, 0, { mono: true, styleOverride: metrics.style, spans: CodeCompletionView.marked(item.label, match.highlights, ink, theme.colors('primary').base) }));
-        let detail: any; 
-        if (((item.detail != null && item.detail.length > 0) && (detail = item.detail, true))) {
+        row.add(new Text(label, 'labelSmall', ink, 1, 'start', false, false, null, 0, { mono: true, styleOverride: metrics.style, spans: CodeCompletionView.marked(label, match.highlights, ink, theme.colors('primary').base) }));
+        let room = columns - label.length - 2;
+        let said: any; 
+        let detail = ((item.detail != null && item.detail.length > 0) && (said = item.detail, true)) && room >= 2 ? CodeCompletionView.fit(said, room) : null;
+        if (!(detail == null)) {
             row.add(new Flexible(new Spacer()));
             row.add(new Text(detail, 'labelSmall', theme.textMuted, 1, 'start', false, false, null, 0, { mono: true, styleOverride: metrics.style }));
         }
-        let said: any; 
-        return new Pressable(new Box(new BoxStyle({ width: SizeValue.fill, height: metrics.lineHeight, padding: EdgeInsets.symmetric(8, 0), background: selected ? theme.colors('primary').subtle : null, hover: selected ? null : new StyleDiff({ background: theme.surfaceSubtle }) }), row), pressed, { role: 'option', selected: selected, canRequestFocus: false, label: ((item.detail != null && item.detail.length > 0) && (said = item.detail, true)) ? item.label + ', ' + said : item.label });
+        let whole: any; 
+        return new Pressable(new Box(new BoxStyle({ width: SizeValue.fill, height: metrics.lineHeight, padding: EdgeInsets.symmetric(8, 0), background: selected ? theme.colors('primary').subtle : null, hover: selected ? null : new StyleDiff({ background: theme.surfaceSubtle }) }), row), pressed, { role: 'option', selected: selected, canRequestFocus: false, label: ((item.detail != null && item.detail.length > 0) && (whole = item.detail, true)) ? item.label + ', ' + whole : item.label });
+    }
+
+    static fit(text: string, columns: number) {
+        return text.length <= columns ? text : columns <= 1 ? '…' : $eq.text.substring(text, 0, columns - 1) + '…';
     }
 
     static glyph(theme: any, metrics: CodeMetrics, kind: CodeCompletionKindValue) {
@@ -145,7 +161,7 @@ export class CodeCompletionView {
         if (lines === 0 || !(((documentation != null && documentation.length > 0) && (text = documentation, true)))) return null;
         let theme = context.theme;
         let rule = new Box(new BoxStyle({ width: SizeValue.fill, height: 1, background: theme.border }));
-        let body = new Box(new BoxStyle({ width: SizeValue.fill, height: Math.fround(CodeCompletionView.documentationHeightOf(context, metrics, lines) - 1), padding: EdgeInsets.symmetric(8, 4), clip: true }), new Text(text, 'labelSmall', theme.textSecondary, lines, 'start', false, false, null, 0, { styleOverride: CodeCompletionView.documentationStyle(metrics) }));
+        let body = new Box(new BoxStyle({ width: SizeValue.fill, height: Math.fround(CodeCompletionView.documentationHeightOf(context, metrics, lines) - 1), padding: EdgeInsets.symmetric(8, 4), clip: true }), new Text(CodeCompletionView.shown(text), 'labelSmall', theme.textSecondary, lines, 'start', false, false, null, 0, { styleOverride: CodeCompletionView.documentationStyle(metrics) }));
         let column = new Column(0, 'start', 'stretch', false, null, null, { width: SizeValue.fill });
         if (above) {
             column.add(body);
