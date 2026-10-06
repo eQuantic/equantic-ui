@@ -660,8 +660,9 @@ function lowerCodeSurface(node: CodeSurfaceNode, context: LoweringContext, path:
       }) as unknown as EventHandler;
       list.events['pointerdown'] = keep;
       list.events['mousedown'] = keep;
+      // No aria-expanded: ARIA allows it on a combobox and not on the textbox a textarea is, and
+      // the list it controls and the option it points at already say that one is showing.
       input.attributes['aria-autocomplete'] = 'list';
-      input.attributes['aria-expanded'] = 'true';
       input.attributes['aria-controls'] = listId;
       const highlighted = node.highlightedOption ?? -1;
       if (highlighted >= 0) input.attributes['aria-activedescendant'] = `${listId}-${highlighted}`;

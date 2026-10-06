@@ -27,8 +27,9 @@ Inside the surface the list moves with the code because it is drawn with it. Bot
 
 The surface, not a node beside it, is what owns them, because the INPUT is what assistive technology
 asks. On the web, while options show, the input (the `textarea` the surface already keeps at the
-caret) gets `aria-autocomplete="list"`, `aria-expanded`, `aria-controls` naming the list and
-`aria-activedescendant` naming the highlighted option, with the ids numbered the way an `Anchored`
+caret) gets `aria-autocomplete="list"`, `aria-controls` naming the list and
+`aria-activedescendant` naming the highlighted option (and no `aria-expanded`, which ARIA allows on a
+combobox and not on the textbox a textarea is), with the ids numbered the way an `Anchored`
 listbox numbers its rows. A press on the list is the list's on both targets: it never reaches the
 code under it, which would move the caret. A node beside the surface could hold the list, never the
 pointer to it. On Photon the code field announces as before, and the options under it announce as

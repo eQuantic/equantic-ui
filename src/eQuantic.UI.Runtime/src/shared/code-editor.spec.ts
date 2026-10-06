@@ -1323,7 +1323,7 @@ describe('the completion list', () => {
     expect(options.map((option) => option.attributes['aria-label'])).toEqual(['ColorToken', 'Column']);
     const input = inputIn(lowered);
     expect(input.attributes['aria-autocomplete']).toBe('list');
-    expect(input.attributes['aria-expanded']).toBe('true');
+    expect(input.attributes['aria-expanded'], 'ARIA allows it on a combobox, not on a textbox').toBeUndefined();
     expect(input.attributes['aria-controls']).toBe(list.attributes['id']);
     expect(input.attributes['aria-activedescendant']).toBe(options[0].attributes['id']);
     expect(options[0].attributes['aria-selected']).toBe('true');

@@ -83,8 +83,8 @@ announce as options after the code field, the selected one selected.
 #### Scenario: The second entry selected, on the web
 
 - **WHEN** the list shows two entries and ↓ is pressed
-- **THEN** the input's active descendant is the second option, and the input says the list is open
-  and which list it is
+- **THEN** the input's active descendant is the second option, and the input names the list it
+  completes from
 
 #### Scenario: The second entry selected, on Photon
 

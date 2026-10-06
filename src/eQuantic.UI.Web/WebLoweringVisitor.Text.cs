@@ -243,8 +243,9 @@ internal sealed partial class WebLoweringVisitor
             list.Children.Add(offered);
             var next = 0;
             NumberItemRows(list, listId, ref next);
+            // No aria-expanded: ARIA allows it on a combobox and not on the textbox a textarea is,
+            // and the list it controls and the option it points at already say that one is showing.
             input["aria-autocomplete"] = "list";
-            input["aria-expanded"] = "true";
             input["aria-controls"] = listId;
             if (surface.HighlightedOption >= 0) input["aria-activedescendant"] = $"{listId}-{surface.HighlightedOption}";
         }

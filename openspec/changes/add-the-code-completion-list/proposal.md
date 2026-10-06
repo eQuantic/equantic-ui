@@ -25,7 +25,7 @@ compile in the runtime's own build.
   read-only editor completes nothing.
 - A press on a row accepts it, and the keyboard stays in the code.
 - The list is the code input's listbox: on the web the rows are options, the input points at the
-  selected one (`aria-activedescendant`), and says the list is open and which list it is; on Photon the
+  selected one (`aria-activedescendant`), and names the list it completes from; on Photon the
   rows announce as options, the selected one selected.
 - The vocabulary grows two pieces. `CodeSurface.Options`, `OptionsOrigin` and `HighlightedOption`:
   what a surface offers at its caret, drawn in the code's own coordinate space over the code, with the

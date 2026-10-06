@@ -113,7 +113,7 @@ public class SurfaceSsrTests
         html.Should().Contain("position:absolute;left:28px;top:48px;");
         html.Should().Contain($"id=\"{listId}-0\"").And.Contain($"id=\"{listId}-1\"");
         html.Should().Contain("aria-autocomplete=\"list\"");
-        html.Should().Contain("aria-expanded=\"true\"");
+        html.Should().NotContain("aria-expanded", "ARIA allows it on a combobox, not on the textbox a textarea is");
         html.Should().Contain($"aria-controls=\"{listId}\"");
         html.Should().Contain($"aria-activedescendant=\"{listId}-1\"");
         html.Should().Contain("tabindex=\"-1\"", "a row is no Tab stop: the arrows walk the list from the code");
