@@ -9,6 +9,10 @@
 
 import { equals } from './equals';
 import { exception } from './exceptions';
+import { HashSet } from './hash-set';
+import { sameBy, sameItem, type KeyEquality } from './key-equality';
+
+export { pairComparer, sameItem } from './key-equality';
 
 export class Queue<T> {
   private readonly items: T[];
@@ -237,37 +241,29 @@ export function linkedList<T>(initial?: Iterable<T>): LinkedList<T> {
 }
 
 /**
- * Membership, for a collection whose RUNTIME shape the transpiler could not know. A C# API that
- * takes `IReadOnlyCollection<T>` is handed a `HashSet` as readily as a `List`, and those become a
- * `Set` and an array here — one answers `has`, the other `includes`, and asking the wrong one
- * returns `undefined` rather than failing. That is a selection that never highlights and a filter
- * that never matches, with nothing in the console to say so.
+ * Membership, as `ICollection<T>.Contains` and LINQ's `Contains` answer it, for a collection whose
+ * RUNTIME shape the transpiler could not know. A C# API that takes `IReadOnlyCollection<T>` is handed
+ * a `HashSet` as readily as a `List`, and those are a set and an array here — one answers `has`, the
+ * other `includes`, and asking the wrong one returns `undefined` rather than failing. That is a
+ * selection that never highlights and a filter that never matches, with nothing in the console to say
+ * so. A set answers by its own equality, as .NET's `ICollection<T>.Contains` does; anything else is
+ * walked by the element type's ({@link KeyEquality}, which eqc says), so a NaN, a record and a tuple
+ * are found as `EqualityComparer<T>.Default` finds them (#425).
  */
-export function contains(collection: unknown, value: unknown): boolean {
+export function contains(collection: unknown, value: unknown, equality: KeyEquality = false): boolean {
   if (collection == null) return false;
-  if (Array.isArray(collection)) return collection.includes(value);
-  if (collection instanceof Set || collection instanceof Map) return collection.has(value as never);
   if (typeof collection === 'string') return collection.includes(value as string);
-  // Anything else iterable — a generated sequence, a Map's keys view.
+  if (collection instanceof HashSet || collection instanceof Set || collection instanceof Map) {
+    return collection.has(value as never);
+  }
+  if (Array.isArray(collection) && equality === false) return collection.includes(value);
+  // Anything else iterable — a list compared by its element type, a generated sequence, a
+  // dictionary's keys view, the runtime's sorted set, queue, stack and linked list.
   if (typeof (collection as Iterable<unknown>)[Symbol.iterator] === 'function') {
-    for (const item of collection as Iterable<unknown>) if (item === value) return true;
+    const same = sameBy(equality);
+    for (const item of collection as Iterable<unknown>) if (same(item, value)) return true;
   }
   return false;
-}
-
-/**
- * `EqualityComparer<T>.Default`, as a list's `Remove` asks it: a type's own `Equals` where its twin
- * carries one (a record, a struct, a decimal, a date, a class that overrides it), a double's where
- * NaN equals NaN, and identity for everything else, which is what a class that does not override
- * `Equals` compares by.
- */
-export function sameItem(item: unknown, value: unknown): boolean {
-  if (item === value) return true;
-  if (typeof item === 'number' && typeof value === 'number')
-    return item !== item && value !== value;
-  if (item == null || value == null) return false;
-  const own = (item as { equals?: unknown }).equals;
-  return typeof own === 'function' && (own as (other: unknown) => boolean).call(item, value);
 }
 
 /** What a dictionary is here: the runtime's `Dictionary` or sorted map, or a `Map`, keyed by the pair's key. */
@@ -285,52 +281,42 @@ function isDictionary(collection: unknown): collection is Dictionary<unknown, un
     typeof shape.has === 'function' &&
     typeof shape.get === 'function' &&
     typeof shape.delete === 'function' &&
-    !(collection instanceof Set)
+    !(collection instanceof Set) &&
+    !(collection instanceof HashSet)
   );
 }
 
 /**
  * `ICollection<KeyValuePair<K, V>>.Remove`: the pair leaves only when its key is there with an equal
- * value, and the answer says whether it did. The comparison is the pair's the compiler picked
- * (`pairComparer`, found in review, #421), handed the stored pair and the one to remove; without one,
- * the value is compared as `sameItem` compares it.
+ * value, and the answer says whether it did. The equality is the pair's, which the compiler picks from
+ * its halves' types: a comparison it generated (`pairComparer`, found in review, #421) is handed the
+ * stored pair and the one to remove; `true`, a pair whose halves both compare by value, compares the
+ * value by `$eq.equals`; and without one, the value is compared as `sameItem` compares it.
  */
-function removePair<T>(dictionary: Dictionary<unknown, unknown>, pair: T, same: (a: T, b: T) => boolean): boolean {
+function removePair(dictionary: Dictionary<unknown, unknown>, pair: unknown, equality: KeyEquality): boolean {
   if (pair == null || typeof pair !== 'object' || !('key' in pair)) return false;
-  const { key, value } = pair as unknown as { key: unknown; value: unknown };
+  const { key, value } = pair as { key: unknown; value: unknown };
   if (!dictionary.has(key)) return false;
   const stored = { key, value: dictionary.get(key) };
-  const equal = same === sameItem ? sameItem(stored.value, value) : same(stored as T, pair);
+  const equal =
+    typeof equality === 'function'
+      ? equality(stored, pair)
+      : equality === true
+        ? equals(stored.value, value)
+        : sameItem(stored.value, value);
   return equal && dictionary.delete(key);
-}
-
-/**
- * `EqualityComparer<KeyValuePair<K, V>>.Default`, which compares the pair's two halves as each one's
- * own comparer does (`ValueType.Equals` over its fields), and `Dictionary`'s
- * `ICollection<KeyValuePair<K, V>>.Remove`, which compares the value by `V`'s. The compiler picks
- * each half's comparison from its static type (found in review, #421): a tuple value is an array
- * here, and only the type says it compares by value. It reads `.key` and `.value`, which both
- * shapes of a pair have: a dictionary's entry (an array that carries them) and a plain pair.
- */
-export function pairComparer<K, V>(
-  key: (a: K, b: K) => boolean,
-  value: (a: V, b: V) => boolean,
-): (a: { key: K; value: V }, b: { key: K; value: V }) => boolean {
-  return (a, b) => key(a.key, b.key) && value(a.value, b.value);
 }
 
 /**
  * `List<T>.Remove`: takes out the FIRST item equal to the value and answers whether there was one
  * (#400). It was lowered to `((_idx = list.indexOf(x)) >= 0 && list.splice(_idx, 1))`, which assigned
  * a name nothing declared, so every call threw `ReferenceError: _idx is not defined` in a module, and
- * would have answered the spliced array where C# answers a bool. `same` is the comparison the
- * compiler picks from the element type: the structural one for a tuple, a record or a struct, as
- * `Contains` picks it (a tuple is an array here, which `sameItem` takes by reference), and
- * `sameItem` for everything else.
+ * would have answered the spliced array where C# answers a bool. `equality` is the element type's,
+ * which the compiler says ({@link KeyEquality}), the one `Contains` and `IndexOf` search by (#425).
  *
  * The static type may be `ICollection<T>`, which can hold any collection that implements it when the
  * call runs (found in review, #421), and each removes as it does when called directly, as `contains`
- * asks the value what it is: a Set (`HashSet<T>`) through `delete`, the way `set.Remove(x)` lowers; a
+ * asks the value what it is: a set (`HashSet<T>`) through `delete`, the way `set.Remove(x)` lowers; a
  * dictionary (`ICollection<KeyValuePair<K, V>>`) the pair whose key it holds with an equal value, as
  * .NET's does, the runtime's `Dictionary` and a sorted map alike; and a twin
  * with a `remove` of its own (`LinkedList<T>`, `SortedSet<T>`) through it. An
@@ -340,11 +326,12 @@ export function pairComparer<K, V>(
 export function remove<T>(
   list: T[] | Set<T> | Dictionary<unknown, unknown> | { remove(value: T): boolean },
   value: T,
-  same: (a: T, b: T) => boolean = sameItem,
+  equality: KeyEquality = false,
 ): boolean {
-  if (list instanceof Set) return list.delete(value);
-  if (isDictionary(list)) return removePair(list, value, same);
+  if (list instanceof HashSet || list instanceof Set) return list.delete(value);
+  if (isDictionary(list)) return removePair(list, value, equality);
   if (!Array.isArray(list)) return (list as { remove(value: T): boolean }).remove(value);
+  const same = sameBy(equality);
   for (let index = 0; index < list.length; index++) {
     if (same(list[index], value)) {
       list.splice(index, 1);
@@ -376,6 +363,7 @@ export function zip<A, B, R>(
 }
 
 export function setAdd<T>(set: Set<T>, value: T): boolean {
+  if (set instanceof HashSet) return set.tryAdd(value);
   if (set.has(value)) return false;
   set.add(value);
   return true;

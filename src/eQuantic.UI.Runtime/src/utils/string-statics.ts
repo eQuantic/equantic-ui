@@ -322,6 +322,42 @@ export function joinRange(
 }
 
 /**
+ * `string.Join(separator, values)` over any sequence, and over a params array: each value written as
+ * .NET's `ToString` writes it, a null one as nothing, with the separator between them, and a null
+ * separator as none. `values.join(separator)` was this: it called a method only an array has, so a
+ * `HashSet`, a `LinkedList` or a sequence behind an interface threw (#429), it wrote each value with
+ * JavaScript's `toString` (`true`, an enum's key, a float's double digits, `1e+21`) (#441), and a null
+ * separator wrote "null" between them.
+ *
+ * `text` is how the compiler says a value of the element type is written, from its static type (the
+ * conversion a concatenation applies, `StringConversion`): passed only where JavaScript's own string
+ * of it differs, and asked only of a value that is not null. Each value is read and written in turn,
+ * as .NET's enumerator reads and writes it. A string is read by its UTF-16 code units, as
+ * `IEnumerable<char>` enumerates one, where JavaScript iterates code points. A null sequence is refused
+ * by the name its overload's parameter has: `value` for a `string[]`, `values` for any other.
+ */
+export function join<T>(
+  separator: string | null | undefined,
+  values: Iterable<T> | string | null | undefined,
+  text?: (value: T) => string,
+  parameter = 'values',
+): string {
+  if (values == null) throw exception('System.ArgumentNullException', `Value cannot be null. (Parameter '${parameter}')`);
+  const between = separator ?? '';
+  // An array whose values JavaScript writes as .NET does is its own join, which writes a null as nothing too.
+  if (text === undefined && Array.isArray(values)) return values.join(between);
+  const items = typeof values === 'string' ? (values.split('') as unknown as T[]) : values;
+  let result = '';
+  let first = true;
+  for (const value of items) {
+    if (!first) result += between;
+    first = false;
+    if (value != null) result += text === undefined ? String(value) : text(value);
+  }
+  return result;
+}
+
+/**
  * The chars of `source` from `startIndex`, `length` of them, as `new string(char[], int, int)` and
  * `ToCharArray(int, int)` take them, refusing a range that leaves the source as .NET refuses it.
  * JavaScript's `slice` clamps instead, so a negative start counted from the end and a length past it

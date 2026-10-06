@@ -6,32 +6,25 @@ using Microsoft.CodeAnalysis.CSharp.Syntax;
 namespace eQuantic.UI.Compiler.CodeGen.Strategies.Primitives;
 
 /// <summary>
-/// Converts C# List/Collection methods to JavaScript array equivalents.
-/// Handles:
-/// - Add(item) -> push(item)
-/// - AddRange(items) -> push(...items)
-/// - Insert(index, item) -> splice(index, 0, item)
-/// - Remove(item) -> splice(indexOf(item), 1)
-/// - RemoveAt(index) -> splice(index, 1)
-/// - RemoveRange(index, count) -> splice(index, count)
-/// - RemoveAll(predicate) -> filter and reassign
-/// - Clear() -> length = 0 or splice(0)
-/// - IndexOf(item) -> indexOf(item)
-/// - LastIndexOf(item) -> lastIndexOf(item)
-/// - Find(predicate) -> find(predicate)
-/// - FindIndex(predicate) -> findIndex(predicate)
-/// - FindAll(predicate) -> filter(predicate)
-/// - Exists(predicate) -> some(predicate)
-/// - TrueForAll(predicate) -> every(predicate)
-/// - Sort() -> sort()
-/// - Sort(comparison) -> sort(comparison)
-/// - ForEach(action) -> forEach(action)
-/// - CopyTo(array) -> [...list]
-/// - GetRange(index, count) -> slice(index, index + count)
+/// <c>List&lt;T&gt;</c>'s members, and those of the faces a list answers to (<c>IList&lt;T&gt;</c>,
+/// <c>ICollection&lt;T&gt;</c>), over the array a list is on this side.
 /// <para>
-/// A call of the array's own method is IR, so a lambda passed to it (<c>ForEach</c>, <c>Find</c>,
-/// <c>Exists</c>…) reaches the statement writer as an arrow whose block maps line by line (#384).
-/// The other shapes still splice their parts as text.
+/// A member is the array's own method only where the two answer alike: <c>Add</c> is <c>push</c>,
+/// <c>FindAll</c> <c>filter</c>, <c>Exists</c> <c>some</c>, <c>TrueForAll</c> <c>every</c>,
+/// <c>ForEach</c> <c>forEach</c>, and <c>IndexOf</c> <c>indexOf</c> for an element compared by identity
+/// that no NaN can be. Everything else goes through the runtime (<c>utils/list.ts</c>), which answers
+/// as .NET does (#488, #425): <c>Sort</c> by .NET's introspective sort and the comparer it is handed,
+/// where <c>sort()</c> compared the elements' text; <c>BinarySearch</c> with the complement of the
+/// insertion point; <c>IndexOf</c>, <c>LastIndexOf</c> and <c>Remove</c> by the element type's equality
+/// (<see cref="ElementEquality"/>), which <c>indexOf</c>'s <c>===</c> is not; <c>Find</c> and
+/// <c>FindLast</c> with the element type's default; <c>FindIndex</c>'s and <c>FindLastIndex</c>'s ranges,
+/// which <c>findIndex</c> took for its predicate; <c>RemoveAll</c>, which answers how many it removed
+/// and once threw a ReferenceError; and <c>CopyTo</c>, which writes into the array it is handed.
+/// </para>
+/// <para>
+/// A call of the array's own method is IR, so a lambda passed to it (<c>ForEach</c>, <c>Exists</c>…)
+/// reaches the statement writer as an arrow whose block maps line by line (#384). Every call names its
+/// arguments by the parameter each fills (<see cref="ParameterTemplate"/>).
 /// </para>
 /// </summary>
 public class ListMethodStrategy : IExpressionIrStrategy
@@ -74,17 +67,35 @@ public class ListMethodStrategy : IExpressionIrStrategy
         var invocation = (InvocationExpressionSyntax)node;
         var memberAccess = (MemberAccessExpressionSyntax)invocation.Expression;
         var methodName = memberAccess.Name.Identifier.Text;
+        var method = context.SemanticHelper.GetSymbol(invocation) as IMethodSymbol;
+        var element = context.SemanticHelper.GetType(memberAccess.Expression).GetEnumerableElementType();
 
         var callerIr = context.Converter.ConvertIr(memberAccess.Expression);
+
+        // Bound: each member by the overload C# chose, its arguments in their parameters' places.
+        if (method is not null && Bound(methodName, invocation, method, callerIr, element, context) is { } bound)
+            return bound;
+
+        // With no model, FindIndex's and FindLastIndex's ranges still come before the predicate, which
+        // `findIndex` takes first: the runtime takes each where .NET's overloads put it (#488).
+        if (method is null && methodName is "FindIndex" or "FindLastIndex" && invocation.ArgumentList.Arguments.Count is 2 or 3)
+        {
+            context.UsedHelpers.Add(Eq.Import);
+            var helper = methodName == "FindIndex" ? Eq.ListFindIndex : Eq.ListFindLastIndex;
+            return ParameterTemplate.Call(invocation.ArgumentList.Arguments.Count == 2
+                    ? $"{helper}({{0}}, {{2}}, {{1}})"
+                    : $"{helper}({{0}}, {{3}}, {{1}}, {{2}})",
+                callerIr, invocation, null, context);
+        }
+
         var argsIr = invocation.ArgumentList.Arguments
             .Select(a => context.Converter.ConvertIr(a.Expression))
             .ToList();
 
         // A call of the array's own method, as IR, so a lambda passed to it reaches the statement
-        // writer as an arrow whose block maps line by line (#384). `Sort` takes its comparison
-        // alone, the one argument the shape has.
+        // writer as an arrow whose block maps line by line (#384).
         if (ArrayMethod(methodName) is { } own)
-            return Method(callerIr, own, methodName == "Sort" ? argsIr.Take(1).ToList() : argsIr);
+            return Method(callerIr, own, argsIr);
 
         // The other shapes still splice their parts as text, written only here.
         var caller = JsExprWriter.Write(callerIr);
@@ -94,17 +105,16 @@ public class ListMethodStrategy : IExpressionIrStrategy
             "AddRange" => args.Count > 0 ? $"{caller}.push(...{args[0]})" : caller,
             "Insert" => ConvertInsert(caller, args),
             "InsertRange" => ConvertInsertRange(caller, args),
-            "Remove" => ConvertRemove(caller, args, context,
-                context.SemanticHelper.GetType(memberAccess.Expression).GetEnumerableElementType()),
+            // An element type no model can say compares by what each value turns out to be.
+            "Remove" when args.Count > 0 => Helper(context, $"{Eq.ListRemove}({caller}, {args[0]}, 'own')"),
             "RemoveAt" => ConvertRemoveAt(caller, args),
             "RemoveRange" => ConvertRemoveRange(caller, args),
-            "RemoveAll" => ConvertRemoveAll(caller, args),
+            "RemoveAll" when args.Count > 0 => Helper(context, $"{Eq.ListRemoveAll}({caller}, {args[0]})"),
             "Clear" => $"{caller}.splice(0)",
             "GetRange" => ConvertGetRange(caller, args),
-            "CopyTo" => $"[...{caller}]",
-            "BinarySearch" => ConvertBinarySearch(caller, args),
-            // CanConvert admits the names above and ArrayMethod's, and no other.
-            _ => throw new System.Diagnostics.UnreachableException($"List.{methodName} has no shape."),
+            // No model to say which overload, element type or comparer a call is: the shapes that
+            // need one have none to take.
+            _ => JsExpr.Opaque(context.Unhandled(invocation, $"List.{methodName}, which no model binds")),
         };
     }
 
@@ -122,20 +132,128 @@ public class ListMethodStrategy : IExpressionIrStrategy
     /// initializer's element applied to a list a member holds is a call to it.</summary>
     internal static JsExpr Add(JsExpr list, IReadOnlyList<JsExpr> items) => Method(list, "push", items);
 
+    /// <summary>The lowering of a call the model binds, or null for the shapes every model answers alike.</summary>
+    private static JsExpr? Bound(string name, InvocationExpressionSyntax invocation, IMethodSymbol method, JsExpr list,
+        ITypeSymbol? element, ConversionContext context)
+    {
+        var count = method.Parameters.Length;
+        switch (name)
+        {
+            case "IndexOf" or "LastIndexOf":
+            {
+                var equality = ElementEquality.Of(element);
+                var own = name == "IndexOf" ? "indexOf" : "lastIndexOf";
+                // The array's own search compares with ===, which is the element type's equality
+                // wherever that is identity and no NaN can be among the elements.
+                if (count == 1 && equality is null && !MayBeNaN(element))
+                    return ParameterTemplate.Call($"{{0}}.{own}({{1}})", list, invocation, method, context);
+                context.UsedHelpers.Add(Eq.Import);
+                var helper = name == "IndexOf" ? Eq.ListIndexOf : Eq.ListLastIndexOf;
+                var range = string.Concat(Enumerable.Range(2, count - 1).Select(slot => ", {" + slot + "}"));
+                var equalityArgument = equality is null && count == 1 ? "" : $", {equality ?? "false"}";
+                return ParameterTemplate.Call($"{helper}({{0}}, {{1}}{equalityArgument}{range})", list, invocation, method, context);
+            }
+            case "Remove" when count == 1:
+            {
+                context.UsedHelpers.Add(Eq.Import);
+                var equality = ElementEquality.Of(element);
+                return ParameterTemplate.Call(equality is null ? $"{Eq.ListRemove}({{0}}, {{1}})" : $"{Eq.ListRemove}({{0}}, {{1}}, {equality})",
+                    list, invocation, method, context);
+            }
+            case "Find" or "FindLast":
+            {
+                context.UsedHelpers.Add(Eq.Import);
+                var fallback = DefaultValue.Of(method.ReturnType, context);
+                return ParameterTemplate.Call($"{(name == "Find" ? Eq.ListFind : Eq.ListFindLast)}({{0}}, {{1}}, {fallback})",
+                    list, invocation, method, context);
+            }
+            case "FindIndex" or "FindLastIndex":
+            {
+                if (count == 1) return null;
+                context.UsedHelpers.Add(Eq.Import);
+                var helper = name == "FindIndex" ? Eq.ListFindIndex : Eq.ListFindLastIndex;
+                // (startIndex, match) and (startIndex, count, match): the match is the last parameter.
+                var template = count == 2
+                    ? $"{helper}({{0}}, {{2}}, {{1}})"
+                    : $"{helper}({{0}}, {{3}}, {{1}}, {{2}})";
+                return ParameterTemplate.Call(template, list, invocation, method, context);
+            }
+            case "RemoveAll":
+                context.UsedHelpers.Add(Eq.Import);
+                return ParameterTemplate.Call($"{Eq.ListRemoveAll}({{0}}, {{1}})", list, invocation, method, context);
+            case "CopyTo":
+                context.UsedHelpers.Add(Eq.Import);
+                return ParameterTemplate.Call(count switch
+                {
+                    1 => $"{Eq.ListCopyTo}({{0}}, {{1}})",
+                    2 => $"{Eq.ListCopyTo}({{0}}, {{1}}, {{2}})",
+                    _ => $"{Eq.ListCopyRangeTo}({{0}}, {{1}}, {{2}}, {{3}}, {{4}})",
+                }, list, invocation, method, context);
+            case "Sort":
+                return Sort(invocation, method, list, element, context);
+            case "BinarySearch":
+                return BinarySearch(invocation, method, list, element, context);
+        }
+        return null;
+    }
+
+    /// <summary>
+    /// <c>Sort()</c>, <c>Sort(IComparer)</c>, <c>Sort(index, count, IComparer)</c> and
+    /// <c>Sort(Comparison)</c>, by .NET's introspective sort: the comparison a <c>Comparison</c> is, or
+    /// the order the comparer asks for (<see cref="SortOrders"/>).
+    /// </summary>
+    private static JsExpr Sort(InvocationExpressionSyntax invocation, IMethodSymbol method, JsExpr list,
+        ITypeSymbol? element, ConversionContext context)
+    {
+        context.UsedHelpers.Add(Eq.Import);
+        if (method.Parameters is [{ Type: INamedTypeSymbol { TypeKind: TypeKind.Delegate } comparison }])
+        {
+            return ParameterTemplate.Call($"{Eq.ListSortBy}({{0}}, {{1}}, '{ReflectionName.Of(comparison)}')",
+                list, invocation, method, context);
+        }
+        int? comparer = method.Parameters.Length == 0 ? null : method.Parameters.Length - 1;
+        return SortOrders.Call(method.Parameters.Length == 3
+                ? $"{Eq.ListSort}({{0}}, {{order}}, {{1}}, {{2}})"
+                : $"{Eq.ListSort}({{0}}, {{order}})",
+            list, invocation, method, comparer, element, context);
+    }
+
+    /// <summary><c>BinarySearch(item)</c>, <c>(item, IComparer)</c> and <c>(index, count, item, IComparer)</c>.</summary>
+    private static JsExpr BinarySearch(InvocationExpressionSyntax invocation, IMethodSymbol method, JsExpr list,
+        ITypeSymbol? element, ConversionContext context)
+    {
+        context.UsedHelpers.Add(Eq.Import);
+        var parameters = method.Parameters.Length;
+        int? comparer = parameters switch { 2 => 1, 4 => 3, _ => null };
+        return SortOrders.Call(parameters == 4
+                ? $"{Eq.ListBinarySearch}({{0}}, {{3}}, {{order}}, {{1}}, {{2}})"
+                : $"{Eq.ListBinarySearch}({{0}}, {{1}}, {{order}})",
+            list, invocation, method, comparer, element, context);
+    }
+
+    /// <summary>Whether an element of the type may be a NaN, which <c>indexOf</c> never finds and
+    /// <c>EqualityComparer&lt;T&gt;.Default</c> does.</summary>
+    private static bool MayBeNaN(ITypeSymbol? element) =>
+        (element.UnwrapNullable() ?? element)?.SpecialType is SpecialType.System_Double or SpecialType.System_Single
+        || element is null;
+
+    private static JsExpr Helper(ConversionContext context, string call)
+    {
+        context.UsedHelpers.Add(Eq.Import);
+        return JsExpr.Callish(call);
+    }
+
     /// <summary>The array method a List method is, where the call is the same call.</summary>
     private static string? ArrayMethod(string name) => name switch
     {
         "Add" => "push",
         "IndexOf" => "indexOf",
         "LastIndexOf" => "lastIndexOf",
-        "Find" => "find",
         "FindIndex" => "findIndex",
-        "FindLast" => "findLast",
         "FindLastIndex" => "findLastIndex",
         "FindAll" => "filter",
         "Exists" => "some",
         "TrueForAll" => "every",
-        "Sort" => "sort",
         "ForEach" => "forEach",
         _ => null,
     };
@@ -158,58 +276,6 @@ public class ListMethodStrategy : IExpressionIrStrategy
         return caller;
     }
 
-    /// <summary>
-    /// <c>list.Remove(item)</c>, through the runtime, which answers the bool C# does and compares as
-    /// <c>EqualityComparer&lt;T&gt;.Default</c> does (#400). It assigned an index nothing declared
-    /// (<c>(_idx = list.indexOf(item)) &gt;= 0 &amp;&amp; list.splice(_idx, 1)</c>), so every call threw
-    /// a ReferenceError in a module, and would have answered the spliced array. The list and the item
-    /// are each evaluated once, in the order C# evaluates them. A value-shaped element (a tuple, a
-    /// record, a struct) compares through the structural equality <c>Contains</c> uses, so the two
-    /// agree: a tuple is an array on this side, which the default comparison takes by reference (found
-    /// in review, #421).
-    /// </summary>
-    private static string ConvertRemove(string caller, List<string> args, ConversionContext context,
-        ITypeSymbol? element)
-    {
-        if (args.Count == 0) return caller;
-        context.UsedHelpers.Add(Eq.Import);
-        return Comparer(element) is { } comparer
-            ? $"{Eq.ListRemove}({caller}, {args[0]}, {comparer})"
-            : $"{Eq.ListRemove}({caller}, {args[0]})";
-    }
-
-    /// <summary>
-    /// The comparison <c>EqualityComparer&lt;T&gt;.Default</c> makes for the element, when it is not the
-    /// runtime's default: the structural one for an element compared by value, and for a
-    /// <c>KeyValuePair&lt;K, V&gt;</c> one that compares each half by its own type's rule, which is what
-    /// the pair's <c>Equals</c> does and what a dictionary's <c>ICollection&lt;KeyValuePair&lt;K, V&gt;&gt;.Remove</c>
-    /// does with the value (found in review, #421). A pair is compared by its fields, not walked as an
-    /// object: a dictionary's entries are arrays that carry <c>key</c> and <c>value</c>.
-    /// </summary>
-    private static string? Comparer(ITypeSymbol? element)
-    {
-        if (element is INamedTypeSymbol { Name: "KeyValuePair", ContainingNamespace: { } ns, TypeArguments.Length: 2 } pair
-            && ns.ToDisplayString() == "System.Collections.Generic")
-        {
-            static string Half(ITypeSymbol half) => ComparesByValue(half) ? Eq.Equals : Eq.SameItem;
-            return $"{Eq.PairComparer}({Half(pair.TypeArguments[0])}, {Half(pair.TypeArguments[1])})";
-        }
-        return ComparesByValue(element) ? Eq.Equals : null;
-    }
-
-    /// <summary>
-    /// Whether <c>EqualityComparer&lt;T&gt;.Default</c> compares the element by value: a tuple, a record
-    /// or a struct, a nullable one of those, and an anonymous type, whose <c>Equals</c> compares its
-    /// members (the last two found in review, #421). Asked here and not of
-    /// <c>IsStructuralValueType</c>, which <c>==</c> asks too, and an anonymous type's <c>==</c>
-    /// compares references.
-    /// </summary>
-    private static bool ComparesByValue(ITypeSymbol? element) =>
-        element.IsStructuralValueType()
-        || element is { IsAnonymousType: true }
-        || (element is INamedTypeSymbol { OriginalDefinition.SpecialType: SpecialType.System_Nullable_T } nullable
-            && nullable.TypeArguments[0].IsStructuralValueType());
-
     private string ConvertRemoveAt(string caller, List<string> args)
     {
         if (args.Count == 0) return caller;
@@ -223,15 +289,6 @@ public class ListMethodStrategy : IExpressionIrStrategy
         return caller;
     }
 
-    private string ConvertRemoveAll(string caller, List<string> args)
-    {
-        if (args.Count == 0) return caller;
-        // list.RemoveAll(x => x.Active) -> filter and keep items that DON'T match
-        // Returns count of removed items, but we'll just do the filter
-        // This is a mutating operation, so we need a different approach
-        return $"((_removed = {caller}.filter({args[0]})).length, {caller}.length = 0, {caller}.push(...{caller}.filter(_x => !({args[0]})(_x))), _removed.length)";
-    }
-
     private string ConvertGetRange(string caller, List<string> args)
     {
         if (args.Count >= 2)
@@ -239,15 +296,6 @@ public class ListMethodStrategy : IExpressionIrStrategy
         if (args.Count == 1)
             return $"{caller}.slice({args[0]})";
         return $"[...{caller}]";
-    }
-
-    private string ConvertBinarySearch(string caller, List<string> args)
-    {
-        // JavaScript doesn't have built-in binary search, use findIndex as fallback
-        // For sorted arrays, this is not optimal but works
-        if (args.Count > 0)
-            return $"{caller}.findIndex(_x => _x === {args[0]})";
-        return "-1";
     }
 
     public int Priority => 15; // Higher than InvocationStrategy (1)

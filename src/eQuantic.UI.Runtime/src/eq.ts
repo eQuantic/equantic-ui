@@ -75,6 +75,7 @@ import {
   compareRange,
   compareRangeBy,
   equals as stringEquals,
+  join,
   joinRange,
 } from './utils/string-statics';
 import {
@@ -121,6 +122,33 @@ import {
   zip,
 } from './utils/collections';
 import { dictionary, pair } from './utils/dictionary';
+import { hashSet, hashSetOf } from './utils/hash-set';
+import { memberEquality, sameKey, tupleEquality } from './utils/key-equality';
+import {
+  arrayFind,
+  arrayFindIndex,
+  arrayFindLast,
+  arrayFindLastIndex,
+  arrayIndexOf,
+  arrayLastIndexOf,
+  arraySort,
+  arraySortBy,
+  binarySearch,
+  comparerOrder,
+  copyRangeTo,
+  copyTo,
+  find,
+  findIndex,
+  findLast,
+  findLastIndex,
+  indexOf as listIndexOf,
+  lastIndexOf as listLastIndexOf,
+  listSort,
+  listSortBy,
+  order,
+  removeAll,
+  stringOrder,
+} from './utils/list';
 import { boolConvert, boolParse, boolTryParse } from './utils/boolean-text';
 import { sortedSet, sortedDictionary, sortedList } from './utils/sorted';
 import { liftArith, liftCmp, liftUnary } from './utils/nullable';
@@ -328,6 +356,7 @@ export const $eq = {
     compareRange,
     compareRangeBy,
     equals: stringEquals,
+    join,
     joinRange,
     startsWith,
     endsWith,
@@ -373,6 +402,38 @@ export const $eq = {
     remove,
     sameItem,
     pairComparer,
+    /** `new HashSet<T>(…)`, and a set an initializer or a collection expression builds. */
+    hashSet,
+    hashSetOf,
+    /** The equalities eqc generates for a tuple and an anonymous type, and the one a type that does
+     * not decide is compared by (`utils/key-equality.ts`). */
+    tupleEquality,
+    memberEquality,
+    sameKey,
+    /** `List<T>`'s and `Array`'s searches, sorts and copies, as .NET answers them (`utils/list.ts`). */
+    indexOf: listIndexOf,
+    lastIndexOf: listLastIndexOf,
+    arrayIndexOf,
+    arrayLastIndexOf,
+    find,
+    findLast,
+    findIndex,
+    findLastIndex,
+    arrayFind,
+    arrayFindLast,
+    arrayFindIndex,
+    arrayFindLastIndex,
+    removeAll,
+    copyTo,
+    copyRangeTo,
+    order,
+    stringOrder,
+    comparerOrder,
+    listSort,
+    listSortBy,
+    arraySort,
+    arraySortBy,
+    binarySearch,
     /** `new KeyValuePair<K, V>(key, value)` and `KeyValuePair.Create`: the shape a dictionary yields. */
     pair,
   },

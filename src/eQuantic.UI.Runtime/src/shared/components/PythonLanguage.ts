@@ -32,9 +32,9 @@ export class PythonLanguage {
                 $slots.keywords = null;
                 $slots.builtins = null;
                 $slots.constants = null;
-                $slots.keywords = new Set(['and', 'as', 'assert', 'async', 'await', 'break', 'class', 'continue', 'def', 'del', 'elif', 'else', 'except', 'finally', 'for', 'from', 'global', 'if', 'import', 'in', 'is', 'lambda', 'match', 'nonlocal', 'not', 'or', 'pass', 'raise', 'return', 'try', 'while', 'with', 'yield']);
-                $slots.builtins = new Set(['bool', 'bytes', 'dict', 'float', 'frozenset', 'int', 'list', 'object', 'set', 'str', 'tuple', 'type']);
-                $slots.constants = new Set(['True', 'False', 'None', 'self', 'cls']);
+                $slots.keywords = $eq.collections.hashSetOf(['and', 'as', 'assert', 'async', 'await', 'break', 'class', 'continue', 'def', 'del', 'elif', 'else', 'except', 'finally', 'for', 'from', 'global', 'if', 'import', 'in', 'is', 'lambda', 'match', 'nonlocal', 'not', 'or', 'pass', 'raise', 'return', 'try', 'while', 'with', 'yield']);
+                $slots.builtins = $eq.collections.hashSetOf(['bool', 'bytes', 'dict', 'float', 'frozenset', 'int', 'list', 'object', 'set', 'str', 'tuple', 'type']);
+                $slots.constants = $eq.collections.hashSetOf(['True', 'False', 'None', 'self', 'cls']);
             } catch ($error) {
                 PythonLanguage.$slots = null;
                 throw PythonLanguage.$failure = $eq.exceptions.typeInitialization('eQuantic.UI.Code.PythonLanguage', $error);

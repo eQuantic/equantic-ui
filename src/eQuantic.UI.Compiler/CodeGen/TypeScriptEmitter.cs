@@ -1099,6 +1099,11 @@ public class TypeScriptEmitter
         // parseEnum) are emitted as `$eq.*` and provided by the global `$eq` namespace, so they are
         // NOT imported here. Only the remaining runtime utilities (e.g. StyleBuilder/ClassBuilder,
         // tracked in UsedHelpers by RuntimeUtilityStrategy) are imported.
+        // `$eq` itself is imported wherever the body names it, whoever wrote the name: a strategy that
+        // writes a `$eq.*` call without registering the import (a dictionary's ContainsValue handed a
+        // generated tuple equality, a hydration map's `byValue`) is otherwise a module that fails to
+        // load on "$eq is not defined", which this emitter has met more than once.
+        if (referenced.Contains(Eq.Import)) coreImports.Add(Eq.Import);
         foreach (var helper in component.UsedHelpers)
         {
             coreImports.Add(helper);

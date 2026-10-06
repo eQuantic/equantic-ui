@@ -3,8 +3,9 @@ import { describe, expect, it } from 'vitest';
 import { hydrate, type HydrationSpec } from './hydrate';
 import { hydrateValue } from './hydrate-value';
 import { Decimal, dec } from './decimal';
-import { DateOnly, DateTime, TimeSpan, dateOnly } from './datetime';
+import { DateOnly, DateTime, TimeSpan, dateOnly, dateTime } from './datetime';
 import { Dictionary, dictionary } from './dictionary';
+import { HashSet } from './hash-set';
 import { SortedMap, sortedDictionary } from './sorted';
 import { Rect } from '../shared/value-types';
 
@@ -278,13 +279,20 @@ describe('a payload the server writes', () => {
 });
 
 describe('a collection the browser holds as its own class', () => {
-  it('becomes a Set, its elements hydrated', () => {
-    const roles = hydrate(['admin', 'editor'], { collection: 'set', of: null }) as Set<string>;
-    expect(roles).toBeInstanceOf(Set);
+  it('becomes the runtime set, its elements hydrated', () => {
+    const roles = hydrate(['admin', 'editor'], { collection: 'set', of: null }) as HashSet<string>;
+    expect(roles).toBeInstanceOf(HashSet);
     expect(roles.has('admin')).toBe(true);
     expect(roles.size).toBe(2);
-    const ids = hydrate(['9007199254740993'], { collection: 'set', of: 'long' }) as Set<bigint>;
+    const ids = hydrate(['9007199254740993'], { collection: 'set', of: 'long' }) as HashSet<bigint>;
     expect(ids.has(9007199254740993n)).toBe(true);
+  });
+
+  it('finds a date in a set as .NET does, by value, where the spec says so (#531)', () => {
+    const days = hydrate(['2026-01-01T00:00:00'], { collection: 'set', of: 'dateTime', byValue: true }) as HashSet<DateTime>;
+    expect(days.has(dateTime.parse('2026-01-01T00:00:00'))).toBe(true);
+    const byIdentity = hydrate(['2026-01-01T00:00:00'], { collection: 'set', of: 'dateTime' }) as HashSet<DateTime>;
+    expect(byIdentity.has(dateTime.parse('2026-01-01T00:00:00'))).toBe(false);
   });
 
   it('becomes the runtime class, a stack with its top coming off first', async () => {

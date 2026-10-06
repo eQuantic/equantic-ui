@@ -5,7 +5,7 @@ using Xunit;
 namespace eQuantic.UI.Conformance.Tests;
 
 /// <summary>
-/// The folding the two host-newline conformance cases lean on, exercised where it can be.
+/// The folding the host-newline conformance cases lean on, exercised where it can be.
 ///
 /// <para>
 /// Those cases compare only when the two sides DIFFER, and they differ only on Windows — so on any
