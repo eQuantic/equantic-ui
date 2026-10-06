@@ -399,6 +399,37 @@ public class CSharpVersionCoverageTests
     }
 
     [Fact]
+    public void ALabeledLoopWhoseConditionBindsATemporary_DeclaresItInFrontOfTheLabel()
+    {
+        // A null-conditional tail behind a call binds a temporary its statement declares (#539). The
+        // declaration goes in front of the label: between the label and its loop it would brace the
+        // loop away from the label, and `continue outer` is then a SyntaxError that costs the module.
+        var probe = One(Head + """
+            public sealed class Probe : StatelessComponent
+            {
+                private int _at;
+                private string Next() => _at < 3 ? " x " : null;
+                public override VisualNode Build(ComponentContext context)
+                {
+                    var seen = 0;
+                    outer: while (Next()?.Trim() != null)
+                    {
+                        _at++;
+                        if (_at == 2) continue outer;
+                        seen++;
+                    }
+                    return new Text($"{seen}", TypeRole.BodyM, null);
+                }
+            }
+            """, "Probe");
+
+        Assert.True(probe.Success);
+        Assert.Matches(@"let \$n0: any;\s*outer: while \(\(\(\$n0 = this\.next\(\)\) == null \? null : \$eq\.text\.trim\(\$n0\)\)",
+            probe.TypeScript);
+        Assert.Contains("continue outer;", probe.TypeScript);
+    }
+
+    [Fact]
     public void ALabeledLoopWhoseVariableIsCaptured_KeepsItsLabelOnTheLoop()
     {
         // The captured variable moves in front of the loop, in a block of its own (#476): the label

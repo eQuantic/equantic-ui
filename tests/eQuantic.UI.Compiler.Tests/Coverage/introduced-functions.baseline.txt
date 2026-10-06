@@ -8,6 +8,9 @@
 #   arguments only      the function reads its parameters, and every C# part is passed in
 #   no C# inside        a callback of the runtime's or the platform's own, holding no translated C#
 #   the IR's writer     where the IR's arrow nodes and a template's bound parts are written
+#   no statement there  the function holds C# only where no statement or body can declare a
+#                       temporary instead (an initializer, a constructor's base call), which C#
+#                       never lets await, and it runs once each time the C# does
 #   not looked at yet   MEASURED, not judged: nobody has decided whether the function holds C#
 #
 # Regenerate with EQ_UPDATE_INTRODUCED_FUNCTIONS=1 after a REMOVAL. It carries every reason across
@@ -20,7 +23,7 @@ src/eQuantic.UI.Compiler/CodeGen/Strategies/Expressions/ArrayCreationStrategy.cs
 src/eQuantic.UI.Compiler/CodeGen/Strategies/Expressions/AsExpressionStrategy.cs  1  arguments only
 src/eQuantic.UI.Compiler/CodeGen/Strategies/Expressions/AssignmentExpressionStrategy.cs  5  not looked at yet
 src/eQuantic.UI.Compiler/CodeGen/Strategies/Expressions/BinaryExpressionStrategy.cs  5  not looked at yet
-src/eQuantic.UI.Compiler/CodeGen/Strategies/Expressions/ConditionalAccessStrategy.cs  1  not looked at yet
+src/eQuantic.UI.Compiler/CodeGen/Strategies/Expressions/ConditionalAccessStrategy.cs  1  no statement there
 src/eQuantic.UI.Compiler/CodeGen/Strategies/Expressions/InitializerExpressionStrategy.cs  1  not looked at yet
 src/eQuantic.UI.Compiler/CodeGen/Strategies/Expressions/InvocationStrategy.cs  1  not looked at yet
 src/eQuantic.UI.Compiler/CodeGen/Strategies/Expressions/IsPatternStrategy.cs  1  arguments only

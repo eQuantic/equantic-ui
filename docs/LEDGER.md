@@ -1424,6 +1424,22 @@ record of a release, the wiki's Upgrading page is the distillate.
   a generated equality in a hydration map or a `ContainsValue` did not register; and `CopyTo` through
   an `ICollection<T>` copies a set. The served runtime grew about 7 KB gzipped. Proposed and archived
   through OpenSpec (`openspec/specs/runtime-sets`, `runtime-dictionaries`, `transpiler-bcl`).
+- **2026-10-05 · A null-conditional binds its receiver in its own function**: a null-conditional call
+  whose translation is a helper bound a receiver that is not a local with an arrow invoked on the
+  spot, where an `await` in its arguments made a module JavaScript refuses to parse, so #536 refused
+  that shape with EQ1004 and asked for a local
+  ([#539](https://github.com/eQuantic/equantic-ui/issues/539)). The receiver is now assigned to a
+  temporary the statement around it declares, `(($n0 = get()) == null ? null : $eq.text.trim($n0))`,
+  as Roslyn keeps it in a local of the method, so the tail runs in the method it is written in and an
+  `await` in it is the method's own. A concise lambda that binds one declares it in a block of its
+  own, so every call keeps its own receiver, and a loop a label names leaves it to the label:
+  declared between them, `continue outer` is a SyntaxError, measured with that rule removed. A
+  translation that names a temporary is never served from the node cache. The arrow stays only where
+  no statement can declare one, an initializer and a record's base call, which C# never lets await.
+  The 6 conformance cases with an `await` behind a call, a property and a guard in the tail of
+  another, in a lambda run three times at once over an array's elements, and behind a call that
+  answers null and must not suspend the method, fail on main. #539's other sites closed in #561 and
+  #566. Proposed and archived through OpenSpec (`openspec/specs/transpiler-expressions`).
 
 ## Retired documents
 

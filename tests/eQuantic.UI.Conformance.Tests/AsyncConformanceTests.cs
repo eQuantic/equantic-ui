@@ -111,4 +111,33 @@ public class AsyncConformanceTests
         Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
         ConformanceRunner.AssertStatementsSameAsDotNet(program);
     }
+
+    /// <summary>
+    /// The same behind a receiver that is NOT a local, which #536 had to refuse: the receiver is
+    /// assigned to a temporary the statement, or the lambda, around it declares (#539), so the await
+    /// is the method's own. The receiver runs once, the awaited call only when it is not null, a
+    /// null receiver lets the method finish before it returns to its caller, an await inside a guard
+    /// in the tail of another runs where C# runs it, and a lambda run three times at once keeps each
+    /// call's receiver.
+    /// </summary>
+    [SkippableTheory]
+    [InlineData("var gets = 0; var calls = 0; string Get() { gets++; return \"abc\"; } async Task<string> Needle() { calls++; await Task.Yield(); return \"a\"; } "
+        + "var r = Get()?.StartsWith(await Needle(), StringComparison.Ordinal); return (r == true ? \"yes\" : r == false ? \"no\" : \"null\") + gets + calls;")] // yes11
+    [InlineData("var gets = 0; var calls = 0; string Get() { gets++; return null; } async Task<string> Needle() { calls++; await Task.Yield(); return \"a\"; } "
+        + "var r = Get()?.StartsWith(await Needle(), StringComparison.Ordinal); return (r == true ? \"yes\" : r == false ? \"no\" : \"null\") + gets + calls;")] // null10
+    [InlineData("var o = new { Name = \"abc\" }; var calls = 0; async Task<string> Needle() { calls++; await Task.Yield(); return \"a\"; } "
+        + "var r = o.Name?.StartsWith(await Needle(), StringComparison.Ordinal); return (r == true ? \"yes\" : r == false ? \"no\" : \"null\") + calls;")] // yes1
+    [InlineData("string Get() => \"abc\"; async Task<string> Inner() { await Task.Yield(); return \" b \"; } "
+        + "return Get()?.Replace((await Inner())?.Trim() ?? \"q\", \"x\") ?? \"null\";")] // axc
+    [InlineData("async Task<string> Echo(string v) { await Task.Yield(); return v; } var arr = new[] { \"abc\", \"bcd\", null }; "
+        + "Func<int, Task<string>> f = async i => arr[i]?.Replace(await Echo(\"b\"), \"x\"); "
+        + "var rs = await Task.WhenAll(f(0), f(1), f(2)); return string.Join(\",\", rs.Select(r => r ?? \"null\"));")] // axc,xcd,null
+    [InlineData("string Get() => null; var finished = false; async Task<string> Needle() { await Task.Yield(); return \"a\"; } "
+        + "async Task Run() { var r = Get()?.StartsWith(await Needle(), StringComparison.Ordinal); finished = true; } "
+        + "var t = Run(); var seen = finished; await t; return $\"{seen} {finished}\";")] // True True: no await ran
+    public void AnAwaitBehindANullConditionalOnAnyReceiver_RunsAsTheGuardSays(string program)
+    {
+        Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
+        ConformanceRunner.AssertStatementsSameAsDotNet(program);
+    }
 }

@@ -40,9 +40,11 @@ public class RealWorldUITests
 
         var result = TestHelper.ConvertCodeBlock(code);
 
-        // Trim is .NET's through the runtime, so the chain is guarded by binding its receiver once
-        // rather than by `?.`, which only reads a JavaScript member.
-        result.Should().Contain("$r == null ? null : $eq.text.trim($r)");
+        // Trim is .NET's through the runtime, so the chain is guarded by binding its receiver once,
+        // to a temporary its statement declares, rather than by `?.`, which only reads a JavaScript
+        // member (#539).
+        result.Should().Contain("let $n0;");
+        result.Should().Contain("let email = (($n0 = this.user.email) == null ? null : $eq.text.trim($n0).toLowerCase()) ?? null;");
         result.Should().Contain("toLowerCase()");
         result.Should().Contain("?? null");
         result.Should().Contain("includes('@')");
@@ -200,8 +202,10 @@ public class RealWorldUITests
         var result = TestHelper.ConvertExpression(code);
 
         // Trim and Replace are .NET's through the runtime, so the chain is guarded by binding its
-        // receiver once rather than by `?.`, which only reads a JavaScript member.
-        result.Should().Contain("$r == null ? null : $eq.text.replace($eq.text.trim($r).toLowerCase(), ' ', '-', 'ordinal')");
+        // receiver once, to a temporary its statement declares, rather than by `?.`, which only
+        // reads a JavaScript member (#539).
+        result.Should().Contain("let $n0;");
+        result.Should().Contain("let normalized = (($n0 = this.input) == null ? null : $eq.text.replace($eq.text.trim($n0).toLowerCase(), ' ', '-', 'ordinal')) ?? null;");
         result.Should().Contain("?? null");
     }
 
