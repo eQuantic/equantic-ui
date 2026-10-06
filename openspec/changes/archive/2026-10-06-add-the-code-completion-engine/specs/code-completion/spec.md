@@ -132,7 +132,9 @@ SHALL be dropped however late it arrives, and its request SHALL be cancelled.
 
 A provider that throws, whose answer faults, or whose callback on its request's token throws when the
 request is cancelled, SHALL be reported through `Failed`, the list going on with what the others
-offered; no keystroke SHALL fail for it.
+offered; no keystroke SHALL fail for it. An `OperationCanceledException` SHALL be taken as the
+request's own cancellation only when the request's token, or the list's for a resolve, was cancelled,
+and as the provider's failure otherwise.
 
 #### Scenario: A cancellation that throws
 
@@ -140,6 +142,12 @@ offered; no keystroke SHALL fail for it.
   space ends the word
 - **THEN** the space is typed, the list closes, and the failure is reported as the
   `AggregateException` cancelling gathered it in
+
+#### Scenario: A provider that gives up by itself
+
+- **WHEN** a provider's answer faults with an `OperationCanceledException` while its request is still
+  wanted, or its resolve throws one while the list is open
+- **THEN** it is reported through `Failed`, and the list shows what the others offered
 
 ### Requirement: The list closes when the word is left
 

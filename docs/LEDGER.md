@@ -1460,7 +1460,9 @@ record of a release, the wiki's Upgrading page is the distillate.
   match, the filter's work per keystroke, and the document's words read whole at every word started
   (46 ms in Bun for 45,000 lines, now 50,000 characters nearest the caret) among them. The first
   review round found three more: a provider's range that moved with the caret, a minified line read
-  from its start, and a linked source that kept its callbacks on a long-lived token. Proposed and
+  from its start, and a linked source that kept its callbacks on a long-lived token; the second, a
+  cancellation a provider threw by itself taken for the request's own, a `TimeProvider` source that
+  compiled and dropped its clock, and a disposed source that kept its callbacks. Proposed and
   archived through OpenSpec (`openspec/specs/code-completion`).
 
 ## Retired documents
