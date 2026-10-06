@@ -58,6 +58,8 @@ public class CodeEditorCompletionTests
         {
             TextRasterizer = new FixedWidthRasterizer(),
             Density = Density.Compact,
+            // A wheel lands at once: smooth scrolling glides toward it over frames that move the clock.
+            SmoothScroll = false,
         };
 
     private static RealizeResult Frame(PhotonHost host) => host.RenderFrame(new DisplayListBuilder());
@@ -530,6 +532,7 @@ public class CodeEditorCompletionTests
         editor.Editor.Completion.IsOpen.Should().BeTrue("a scroll moves no caret, so the list stays open");
         var region = frame.CodeRegions.Single();
         var visible = region.Visible!.Value;
+        WordOnScreen(frame, editor).Bottom.Should().BeLessThan(visible.Top, "the word's line left the view");
         visible.Bottom.Should().BeLessThanOrEqualTo(200.5f, "a press can land on the code only inside the editor");
         if (region.Offered is { } offered && offered.Width > 0 && offered.Height > 0)
             offered.Bottom.Should().BeLessThanOrEqualTo(visible.Bottom + 0.5f, "nor on the list, outside it");
