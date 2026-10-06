@@ -12,7 +12,15 @@ export class XmlLanguage {
         return 'XML';
     }
 
-    rules: CodeLanguageRules = new CodeLanguageRules(undefined, ['<!--', '-->'], [['<', '>'], ['(', ')'], ['[', ']']], undefined, ['>'], ['<'], 2);
+    rules: CodeLanguageRules = (() => {
+        const $o = new CodeLanguageRules();
+        $o.blockComment = ['<!--', '-->'];
+        $o.brackets = [['<', '>'], ['(', ')'], ['[', ']']];
+        $o.indentAfter = ['>'];
+        $o.outdentOn = ['<'];
+        $o.indentWidth = 2;
+        return $o;
+    })();
 
     tokenize(line: string, state: number, into: CodeToken[]) {
         let i = 0;

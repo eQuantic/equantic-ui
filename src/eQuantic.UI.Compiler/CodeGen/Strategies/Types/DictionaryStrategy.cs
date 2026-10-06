@@ -25,7 +25,7 @@ namespace eQuantic.UI.Compiler.CodeGen.Strategies.Types;
 /// </para>
 /// <para>
 /// A key is found as <c>EqualityComparer&lt;TKey&gt;.Default</c> finds it, which eqc decides from the
-/// key type (<see cref="KeyEquality"/>), the factory's second argument: by identity, through the
+/// key type (<see cref="ElementEquality"/>), the factory's second argument: by identity, through the
 /// class's JavaScript Map, by value, through <c>$eq.equals</c>, or, where the key type does not decide,
 /// by the key's own equality, which the runtime asks the value for. A comparer is not this strategy's
 /// to judge: the fence every creation passes (<see cref="CollectionComparerExtensions"/>,
@@ -78,33 +78,6 @@ internal sealed class DictionaryStrategy : IExpressionIrStrategy
             default:
                 return context.Unhandled(node, "Dictionary");
         }
-    }
-
-    /// <summary>
-    /// How <c>EqualityComparer&lt;T&gt;.Default</c> tells two values of <paramref name="type"/> apart,
-    /// as the runtime's <c>KeyEquality</c> argument writes it. Null by IDENTITY: a number, a string, a
-    /// char, a bool, a long, an enum, a <c>Guid</c> and an array, which SameValueZero compares as .NET
-    /// does. <c>true</c> by VALUE, through <c>$eq.equals</c>: every type LINQ's keyed operators compare
-    /// so (a record, a struct, a tuple, an anonymous type, a decimal, a date). And <c>'own'</c> where
-    /// the type does not decide, because the value may be of a type that overrides <c>Equals</c>:
-    /// <c>object</c>, an interface, a type parameter, and a class, whose subclass may override it. The
-    /// runtime then asks the value for its own equality, and keeps a key with none in its Map. Those
-    /// were found by identity, so two equal records under <c>object</c> were two keys (found in
-    /// review, #443).
-    /// </summary>
-    internal static string? KeyEquality(ITypeSymbol? type)
-    {
-        var unwrapped = type.UnwrapNullable() ?? type;
-        if (LinqKeys.ComparesByValue(unwrapped)) return "true";
-        return unwrapped switch
-        {
-            { SpecialType: SpecialType.System_Object or SpecialType.System_ValueType or SpecialType.System_Enum } => "'own'",
-            { TypeKind: TypeKind.Interface or TypeKind.TypeParameter or TypeKind.Dynamic } => "'own'",
-            // A class of the app's or a library's, never a special one: `string` overrides Equals too,
-            // and is a primitive on this side, which SameValueZero compares by value already.
-            { TypeKind: TypeKind.Class, SpecialType: SpecialType.None } => "'own'",
-            _ => null,
-        };
     }
 
     /// <summary>
@@ -234,7 +207,7 @@ internal sealed class DictionaryStrategy : IExpressionIrStrategy
     }
 
     /// <summary><c>factory(seed)</c>, and <c>factory(seed, equality)</c> when the keys are not found by
-    /// identity (<see cref="KeyEquality"/>), or <c>factory(seed, ordering)</c> for a sorted one, whose
+    /// identity (<see cref="ElementEquality"/>), or <c>factory(seed, ordering)</c> for a sorted one, whose
     /// keys keep their type's order (<see cref="ValueOrdering"/>) rather than the one <c>&lt;</c> gives,
     /// or the order its comparer asked for (<paramref name="asked"/>).</summary>
     private static JsExpr Factory(string factory, ITypeSymbol? type, JsExpr? seed, string? asked = null)
@@ -242,7 +215,7 @@ internal sealed class DictionaryStrategy : IExpressionIrStrategy
         var arguments = new List<JsExpr>();
         var key = type is INamedTypeSymbol { TypeArguments: [var keyType, _] } ? keyType : null;
         var second = key is null ? null
-            : factory == Eq.Dictionary ? KeyEquality(key)
+            : factory == Eq.Dictionary ? ElementEquality.Of(key)
             : asked ?? ValueOrdering.Of(key);
         if (seed is not null) arguments.Add(seed);
         else if (second is not null) arguments.Add(JsExpr.Literal("null"));
@@ -306,14 +279,22 @@ internal sealed class DictionaryStrategy : IExpressionIrStrategy
         return (call, values.Length) switch
         {
             ("ContainsKey", 1) => JsExpr.Call(JsExpr.Member(receiver, "has"), values),
-            // `set` replaces the value of a key already there, where .NET's Add throws (#440).
-            // Add refuses a key already there, as .NET's does, where the indexer's write replaces (#440).
-            ("Add", 2) => JsExpr.Call(JsExpr.Member(receiver, "add"), values),
+            ("Add", 2) => Add(receiver, values[0], values[1]),
             ("Remove", 1) => JsExpr.Call(JsExpr.Member(receiver, "delete"), values),
             ("Clear", 0) => JsExpr.Call(JsExpr.Member(receiver, "clear")),
             _ => context.Unhandled(invocation, $"Dictionary.{call}"),
         };
     }
+
+    /// <summary>
+    /// A dictionary's <c>Add(key, value)</c>, the one place it is spelled: every call to it, and an
+    /// element of a collection initializer applied to a dictionary a member already holds
+    /// (<c>Map = { { "a", 1 } }</c>, <see cref="Expressions.ObjectInitializer"/>), which is a call to
+    /// it in C#. Add refuses a key already there, as .NET's does, where the indexer's write replaces
+    /// (#440).
+    /// </summary>
+    internal static JsExpr Add(JsExpr dictionary, JsExpr key, JsExpr value) =>
+        JsExpr.Call(JsExpr.Member(dictionary, "add"), key, value);
 
     /// <summary>What a member access on a dictionary reads — its keys, its values or its count, the
     /// count through its keys or values included — or null when it reads none of them.</summary>

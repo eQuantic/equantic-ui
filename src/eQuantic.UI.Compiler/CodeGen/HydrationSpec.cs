@@ -75,16 +75,20 @@ public static class HydrationSpec
             return DictionarySpec(named, named.TypeArguments[0], named.TypeArguments[1], referenced, visiting);
 
         // A collection the browser holds as one of its OWN classes crosses as the array the server
-        // writes, which always has to become that class, as a dictionary's object does: a HashSet is a
-        // JavaScript Set (HashSetStrategy), a SortedSet, a Queue, a Stack and a LinkedList the
-        // runtime's. It crossed as the array, which no read of a Set answers (#516). The names are
+        // writes, which always has to become that class, as a dictionary's object does: a HashSet is
+        // the runtime's set (HashSetStrategy), and a SortedSet, a Queue, a Stack and a LinkedList the
+        // runtime's too. It crossed as the array, which no read of a set answers (#516). The names are
         // BoundaryShape's, which the generator's projection reads too.
         if (BoundaryShape.CollectionClass(named) is { } collection)
         {
-            // A sorted set orders as its element type does (ValueOrdering), as one eqc builds does.
+            // A sorted set orders as its element type does (ValueOrdering), and a set finds its
+            // elements as its element type's default comparer does (ElementEquality), as one eqc
+            // builds does: a set of dates rebuilt from the server answered Contains false (#531).
             var order = collection == "sortedSet" && ValueOrdering.Of(named.TypeArguments[0]) is { } ordering
                 ? $", order: {ordering}"
-                : "";
+                : collection == "set" && ElementEquality.Of(named.TypeArguments[0]) is { } equality
+                    ? $", byValue: {equality}"
+                    : "";
             return $"{{ collection: '{collection}', of: {Of(named.TypeArguments[0], referenced, visiting) ?? "null"}{order} }}";
         }
 
@@ -185,7 +189,7 @@ public static class HydrationSpec
     /// entries — a sorted one's own, in its key type's order (<see cref="ValueOrdering"/>), or the
     /// runtime's <c>Dictionary</c>, finding its keys by value
     /// or by their own equality where the key type's default comparer does
-    /// (<see cref="DictionaryStrategy.KeyEquality"/>).
+    /// (<see cref="ElementEquality"/>).
     /// </summary>
     private static string DictionarySpec(INamedTypeSymbol dictionary, ITypeSymbol key, ITypeSymbol value,
         References referenced, HashSet<INamedTypeSymbol> visiting)
@@ -198,7 +202,7 @@ public static class HydrationSpec
             parts.Add(dictionary.DictionaryFactory() == Eq.SortedList ? "sorted: 'list'" : "sorted: 'dictionary'");
             if (ValueOrdering.Of(key) is { } ordering) parts.Add($"order: {ordering}");
         }
-        else if (DictionaryStrategy.KeyEquality(key) is { } equality) parts.Add($"byValue: {equality}");
+        else if (ElementEquality.Of(key) is { } equality) parts.Add($"byValue: {equality}");
         return $"{{ {string.Join(", ", parts)} }}";
     }
 

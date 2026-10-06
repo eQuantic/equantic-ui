@@ -1226,6 +1226,60 @@ record of a release, the wiki's Upgrading page is the distillate.
   back (`Cast`, `DefaultIfEmpty`) and a read-only face hiding a list, and both copy now. Each is a
   conformance case on both sides that failed against main. Proposed and archived through OpenSpec
   (`openspec/specs/transpiler-sequences`).
+- **2026-10-04 · A class and a record are built as C# builds them**: a plain class that declared no
+  member got no module while its users imported one ([#423](https://github.com/eQuantic/equantic-ui/issues/423)),
+  a record that declared only methods got no twin ([#428](https://github.com/eQuantic/equantic-ui/issues/428)),
+  an instance indexer reached no twin and `grid[3]` read a property named "3"
+  ([#427](https://github.com/eQuantic/equantic-ui/issues/427)), and a positional record that declared
+  its own property for a parameter emitted it twice and did not load
+  ([#546](https://github.com/eQuantic/equantic-ui/issues/546)). The twin's constructor took one
+  argument per member with each initializer as its default, so an object initializer skipped the
+  initializer of the member it set, a `with` ran them again and an explicit constructor's body never
+  ran ([#413](https://github.com/eQuantic/equantic-ui/issues/413)); a nested collection initializer
+  replaced the member's collection ([#462](https://github.com/eQuantic/equantic-ui/issues/462)); and
+  statics were defined where declared, so `A = B + 1` above `B = 2` answered NaN
+  ([#417](https://github.com/eQuantic/equantic-ui/issues/417)). The twin's constructor is now a branch
+  per C# constructor on how many arguments arrive, one with a body of its own and one that chains
+  alike, and a count two of them share is refused (EQ1009); the object initializer is applied once it
+  returns, its parts the arguments of the function that applies it, so an `await` in one still parses;
+  a `with` is a copy, a record's equality and text are .NET's, an indexer is the twin's `item` and
+  `setItem`, and a type's statics are one initializer that starts them at their zero and runs them in
+  order on first use, before any static member of a type with a static constructor is used, in the
+  record, class and component emitters alike. One predicate decides a plain class's module for the
+  parser and the resolver, by the chain of bases. Each is a conformance case on both sides that failed
+  against main, the class cases through the module graph an app's build writes. Proposed and archived
+  through OpenSpec (`openspec/specs/transpiler-records`, `openspec/specs/transpiler-interfaces`). Its review, at max effort before the pull request (eleven finders, verifiers and a sweep, every
+  finding measured on both sides with a probe over the real conformance harness), found twenty-odd
+  defects in the new emission, seven of them regressions against main, all fixed in the same pull
+  request with a case that failed before: a refused class's simple name vetoed a component's import,
+  and the resolver judged an interface or a library's base by its name; a record or a struct marked
+  [ServerOnly] got a twin; a static constructor ran inside its type initializer's block (an early return
+  threw, a local named `slots` did not parse, a throw left the type half-initialized, a static event did
+  not start it), a constant-valued static read a later constant as NaN, statics initialized every field
+  before every property, and a component's static constructor ran per instance; a struct's zero ran its
+  constructor, its static constructor or an all-optional alternate, and a generic struct's was undefined;
+  a constructor's arguments landed by written position in `new`, `: this(…)`, `: base(…)` and a base
+  clause (BoundArguments places them as the bound tree binds them), an alternate bound its parameters as
+  constants, and generated locals met members' names; an indexer's keys landed by written position, its
+  assignment answered the setter's own value, `^n`, a step on an enum and a deconstruction into an
+  indexer bypassed it or did not parse (one place every writer takes now); EQ1007 misjudged an indexer's
+  names, and refuses two members of a record or a struct on one name; a nested initializer's extension
+  Add, an ICollection member's Add and one under `?.` went wrong; a record printed an override twice and
+  dropped a non-public getter; a copy constructor was refused with EQ1009; `this =` in a struct and a
+  `with` on a plain struct or the code engine's records did not work. What predates the batch is filed:
+  [#582](https://github.com/eQuantic/equantic-ui/issues/582) to [#587](https://github.com/eQuantic/equantic-ui/issues/587),
+  [#589](https://github.com/eQuantic/equantic-ui/issues/589), [#591](https://github.com/eQuantic/equantic-ui/issues/591) and
+  [#592](https://github.com/eQuantic/equantic-ui/issues/592), and so is one consequence of it,
+  [#590](https://github.com/eQuantic/equantic-ui/issues/590): a hydrated record has none of the private fields its
+  equality now compares. Copilot's first review found two more, fixed in the same pull request: an
+  initializer applied every element after evaluating all their parts, where C# applies each before
+  evaluating the next, and a record over a `[ServerOnly]` record got a twin. Its second found three: a
+  lone empty partial class, record or struct got no module or twin, eleven named arguments out of
+  their order ran in the signature's, and a nested initializer read its member after the element's
+  parts, so the initializer is now a sequence over a temporary of its function, which
+  [#588](https://github.com/eQuantic/equantic-ui/pull/588) brought. Its third found two: a field-like event's
+  delegate was no state of a record's equality, and a generic struct's zero held its open type
+  parameter's default (`default(Pair<int>).First` was null), so `$zero` takes each type argument's zero.
 - **2026-10-04 · The compiler suite's aborts are gone**: under load its test host crashed in 2 of 6
   runs on macOS arm64, and `dotnet test` still printed `Passed!` with the count that ran
   ([#473](https://github.com/eQuantic/equantic-ui/issues/473)). Measured after #481 cut the suite's own
@@ -1400,6 +1454,46 @@ record of a release, the wiki's Upgrading page is the distillate.
   comparer now and a sorted one keeps the order it asks for; the fence decides alone. Found on the
   way: a page route answers `HEAD` with a 404 ([#575](https://github.com/eQuantic/equantic-ui/issues/575)).
   Proposed and archived through OpenSpec (`openspec/specs/links`, `openspec/specs/runtime-dictionaries`).
+- **2026-10-05 · A null-conditional binds its receiver in its own function**: a null-conditional call
+  whose translation is a helper bound a receiver that is not a local with an arrow invoked on the
+  spot, where an `await` in its arguments made a module JavaScript refuses to parse, so #536 refused
+  that shape with EQ1004 and asked for a local
+  ([#539](https://github.com/eQuantic/equantic-ui/issues/539)). The receiver is now assigned to a
+  temporary the statement around it declares, `(($n0 = get()) == null ? null : $eq.text.trim($n0))`,
+  as Roslyn keeps it in a local of the method, so the tail runs in the method it is written in and an
+  `await` in it is the method's own. A concise lambda that binds one declares it in a block of its
+  own, so every call keeps its own receiver, and a loop a label names leaves it to the label:
+  declared between them, `continue outer` is a SyntaxError, measured with that rule removed. A
+  translation that names a temporary is never served from the node cache. The arrow stays only where
+  no statement can declare one, an initializer and a record's base call, which C# never lets await.
+  The 6 conformance cases with an `await` behind a call, a property and a guard in the tail of
+  another, in a lambda run three times at once over an array's elements, and behind a call that
+  answers null and must not suspend the method, fail on main. #539's other sites closed in #561 and
+  #566. Proposed and archived through OpenSpec (`openspec/specs/transpiler-expressions`).
+- **2026-10-05 · A list, a set and a join answer as .NET's do**: a `List<T>` sorted by its elements'
+  text and stably, `RemoveAll` threw a ReferenceError, `BinarySearch` was a `findIndex`, a comparer
+  named a class nothing defines, `FindIndex`'s range reached its predicate, `CopyTo` wrote nowhere and
+  `Find` answered undefined ([#488](https://github.com/eQuantic/equantic-ui/issues/488)); `IndexOf`
+  compared with `===`, so a NaN, a record and a tuple were never found, and a tuple's array compared
+  element by element ([#425](https://github.com/eQuantic/equantic-ui/issues/425)); a `HashSet` was a
+  `Set`, appending where .NET reuses a freed slot ([#438](https://github.com/eQuantic/equantic-ui/issues/438))
+  and finding a date, a decimal, a tuple and a record by reference
+  ([#531](https://github.com/eQuantic/equantic-ui/issues/531)); `string.Join` called `join`, which a set
+  and a linked list lack ([#429](https://github.com/eQuantic/equantic-ui/issues/429)), and wrote each
+  value as JavaScript writes it ([#441](https://github.com/eQuantic/equantic-ui/issues/441)). One
+  equality decided from the element type (`ElementEquality`, `utils/key-equality.ts`) serves a list's
+  search, a set's elements and a dictionary's keys; the set and the dictionary share one slot table
+  with .NET's capacity (`utils/slots.ts`, `utils/hash-set.ts`); the sort is .NET's introspective sort,
+  both helpers, traced comparison for comparison against .NET through its heap sort (`utils/sort.ts`,
+  `utils/list.ts`); and a join converts each value as a concatenation does. 185 of the 214 conformance
+  cases, run on both sides, failed against main; the other 29 are neighbours that already held, kept as
+  pins. The batch waited out the .60 cut, and main's later rules met it at the merge: its runtime threw
+  plain Errors that #561's typed catch let through, and throws .NET's types now (14 of 15 catch cases
+  failed before); a key compared by value is found through #550's hash, where a walk over every slot
+  cost 2,000 tuples four million comparisons; a module imports `$eq` wherever its body names it, which
+  a generated equality in a hydration map or a `ContainsValue` did not register; and `CopyTo` through
+  an `ICollection<T>` copies a set. The served runtime grew about 7 KB gzipped. Proposed and archived
+  through OpenSpec (`openspec/specs/runtime-sets`, `runtime-dictionaries`, `transpiler-bcl`).
 - **2026-10-05 · The conformance harness compares a value as the runtime holds it**: the .NET side
   wrote a value as System.Text.Json writes it and the JS side as `JSON.stringify` writes the runtime's,
   so a long, a decimal, an enum and a float compared backwards: a long that crossed as a BigInt

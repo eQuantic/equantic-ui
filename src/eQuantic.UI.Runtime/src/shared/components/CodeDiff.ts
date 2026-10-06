@@ -2,7 +2,7 @@ import { $eq, Box, BoxStyle, BuildContext, Button, CodeBlock, CodeDecoration, Co
 
 export class CodeDiff extends StatefulComponent {
     static $typeId = 'eQuantic.UI.Components.CodeDiff';
-    static wordAlpha: number = Math.fround(0.3);
+    static wordAlpha: number = 0.30000001192092896;
     _original: any = null;
     _modified: any = null;
     _openedOriginal: any = null;
@@ -13,7 +13,7 @@ export class CodeDiff extends StatefulComponent {
     _comparedModified: any = null;
     _layout: any = null;
     _toldDocument: any = null;
-    _expanded: any = new Set();
+    _expanded: any = $eq.collections.hashSet();
     _inlineChosen: boolean = false;
     _inlineChoice: boolean = false;
     _offset: number = 0;
@@ -313,8 +313,12 @@ export class CodeDiff extends StatefulComponent {
             let count = modifiedSide ? change.modifiedCount : change.originalCount;
             if (count === 0 || start + count - 1 < first || start > last) continue;
             let end = Math.min(start + count - 1, document.lineCount - 1);
-            marks.push(new CodeDecoration(new CodeRange(new CodePosition(start, 0), new CodePosition(end, document.line(end).length)), 'line', line));
-            for (const inner of change.inner) marks.push(new CodeDecoration(modifiedSide ? inner.modified : inner.original, undefined, word));
+            let $n2: any; 
+            marks.push(($n2 = new CodeDecoration(new CodeRange(new CodePosition(start, 0), new CodePosition(end, document.line(end).length)), 'line'), $n2.color = line, $n2));
+            for (const inner of change.inner) {
+                let $n3: any; 
+                marks.push(($n3 = new CodeDecoration(modifiedSide ? inner.modified : inner.original), $n3.color = word, $n3));
+            }
         }
         let composing: any; 
         if ((composing = composition) != null) marks.push(new CodeDecoration(composing, 'underline'));

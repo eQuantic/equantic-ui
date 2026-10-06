@@ -8,29 +8,64 @@ export class PythonLanguage {
     static normal: number = 0;
     static tripleDouble: number = 1;
     static tripleSingle: number = 2;
-    static _keywords: Set<string> | undefined;
-
-    static get keywords(): Set<string> {
-        return PythonLanguage._keywords ??= new Set(['and', 'as', 'assert', 'async', 'await', 'break', 'class', 'continue', 'def', 'del', 'elif', 'else', 'except', 'finally', 'for', 'from', 'global', 'if', 'import', 'in', 'is', 'lambda', 'match', 'nonlocal', 'not', 'or', 'pass', 'raise', 'return', 'try', 'while', 'with', 'yield']);
-    }
-
-    static _builtins: Set<string> | undefined;
-
-    static get builtins(): Set<string> {
-        return PythonLanguage._builtins ??= new Set(['bool', 'bytes', 'dict', 'float', 'frozenset', 'int', 'list', 'object', 'set', 'str', 'tuple', 'type']);
-    }
-
-    static _constants: Set<string> | undefined;
-
-    static get constants(): Set<string> {
-        return PythonLanguage._constants ??= new Set(['True', 'False', 'None', 'self', 'cls']);
-    }
 
     get name(): string {
         return 'Python';
     }
 
-    rules: CodeLanguageRules = new CodeLanguageRules('#', undefined, undefined, undefined, [':', '(', '[', '{'], [')', ']', '}'], 4);
+    rules: CodeLanguageRules = (() => {
+        const $o = new CodeLanguageRules();
+        $o.lineComment = '#';
+        $o.indentAfter = [':', '(', '[', '{'];
+        $o.outdentOn = [')', ']', '}'];
+        $o.indentWidth = 4;
+        return $o;
+    })();
+    static $slots: any = null;
+    static $failure: any = null;
+
+    static $init(): any {
+        if (PythonLanguage.$slots === null) {
+            if (PythonLanguage.$failure !== null) throw PythonLanguage.$failure;
+            let $slots: any = PythonLanguage.$slots = {};
+            try {
+                $slots.keywords = null;
+                $slots.builtins = null;
+                $slots.constants = null;
+                $slots.keywords = $eq.collections.hashSetOf(['and', 'as', 'assert', 'async', 'await', 'break', 'class', 'continue', 'def', 'del', 'elif', 'else', 'except', 'finally', 'for', 'from', 'global', 'if', 'import', 'in', 'is', 'lambda', 'match', 'nonlocal', 'not', 'or', 'pass', 'raise', 'return', 'try', 'while', 'with', 'yield']);
+                $slots.builtins = $eq.collections.hashSetOf(['bool', 'bytes', 'dict', 'float', 'frozenset', 'int', 'list', 'object', 'set', 'str', 'tuple', 'type']);
+                $slots.constants = $eq.collections.hashSetOf(['True', 'False', 'None', 'self', 'cls']);
+            } catch ($error) {
+                PythonLanguage.$slots = null;
+                throw PythonLanguage.$failure = $eq.exceptions.typeInitialization('eQuantic.UI.Code.PythonLanguage', $error);
+            }
+        }
+        return PythonLanguage.$slots;
+    }
+
+    static get keywords(): Set<string> {
+        return PythonLanguage.$init().keywords;
+    }
+
+    static set keywords(value: Set<string>) {
+        PythonLanguage.$init().keywords = value;
+    }
+
+    static get builtins(): Set<string> {
+        return PythonLanguage.$init().builtins;
+    }
+
+    static set builtins(value: Set<string>) {
+        PythonLanguage.$init().builtins = value;
+    }
+
+    static get constants(): Set<string> {
+        return PythonLanguage.$init().constants;
+    }
+
+    static set constants(value: Set<string>) {
+        PythonLanguage.$init().constants = value;
+    }
 
     tokenize(line: string, state: number, into: CodeToken[]) {
         let i = 0;

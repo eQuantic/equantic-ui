@@ -44,8 +44,9 @@ public class PlainJavaScriptSyntaxTests
 
         public static class Catalogue
         {
-            // A static collection: emitted as a lazy getter with a backing slot, because a static
-            // that CONSTRUCTS runs at module-evaluation time and the modules import in a cycle.
+            // A static collection: initialized through the type initializer, its slots built on first
+            // use, because a static that CONSTRUCTS would run at module-evaluation time and the
+            // modules import in a cycle (#417).
             public static readonly List<Row> Rows = new() { new Row("1", "one"), new Row("2", "two") };
         }
 
@@ -124,7 +125,8 @@ public class PlainJavaScriptSyntaxTests
     [Theory]
     [InlineData(@"\bdeclare\s", "declare")]
     [InlineData(@"\babstract\s", "abstract")]
-    [InlineData(@"^\s*static\s+_\w+\s*:", "an annotated lazy-static backing slot")]
+    [InlineData(@"^\s*static\s+\$slots\s*:", "an annotated type initializer's slots")]
+    [InlineData(@"\blet\s+\$slots\s*:", "an annotated type initializer's local")]
     [InlineData(@"\bget\s+\w+\(\)\s*:", "an annotated getter")]
     [InlineData(@"\bset\s+\w+\(value\s*:", "an annotated setter")]
     [InlineData(@"\blet\s+\w+\s*:\s*any\b", "an annotated hoisted variable")]
@@ -158,7 +160,8 @@ public class PlainJavaScriptSyntaxTests
             {
                 (@"\bget\s+\w+\(\)\s*:", "an annotated getter"),
                 (@"\bset\s+\w+\(value\s*:", "an annotated setter"),
-                (@"^\s*static\s+_\w+\s*:", "an annotated lazy-static backing slot"),
+                (@"^\s*static\s+\$slots\s*:", "an annotated type initializer's slots"),
+                (@"\blet\s+\$slots\s*:", "an annotated type initializer's local"),
                 (@"\blet\s+\w+\s*:\s*any\b", "an annotated hoisted variable"),
                 (@"\blet\s+\w+\s*:\s*[A-Z]\w*", "an annotated local declaration"),
                 (@"\bdeclare\s", "a type-only declared property"),

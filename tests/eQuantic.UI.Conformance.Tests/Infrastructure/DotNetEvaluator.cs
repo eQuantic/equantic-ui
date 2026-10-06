@@ -62,6 +62,9 @@ public static class DotNetEvaluator
         // CSharpScript returns the value of that final expression.
         var script = string.IsNullOrWhiteSpace(prelude) ? csharpExpression : $"{prelude}\n{csharpExpression}";
         var value = CSharpScript.EvaluateAsync<object?>(script, Options).GetAwaiter().GetResult();
-        return JsonSerializer.Serialize(value, JsonOptions);
+        return ToJson(value);
     }
+
+    /// <summary>A .NET value as the canonical JSON a case's answers are compared in.</summary>
+    public static string ToJson(object? value) => JsonSerializer.Serialize(value, JsonOptions);
 }

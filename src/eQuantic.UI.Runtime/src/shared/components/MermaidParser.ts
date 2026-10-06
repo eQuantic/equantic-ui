@@ -1,16 +1,40 @@
 import { $eq, MermaidEdge, MermaidEdgeRef, MermaidGraph, MermaidMessage, MermaidNode, MermaidNodeRef } from "../runtime-exports";
 
 export class MermaidParser {
-    static _skipWords: string[] | undefined;
+    static $slots: any = null;
+    static $failure: any = null;
 
-    static get skipWords(): string[] {
-        return MermaidParser._skipWords ??= ['subgraph', 'end', 'style', 'classDef', 'class', 'click', 'linkStyle', 'direction'];
+    static $init(): any {
+        if (MermaidParser.$slots === null) {
+            if (MermaidParser.$failure !== null) throw MermaidParser.$failure;
+            let $slots: any = MermaidParser.$slots = {};
+            try {
+                $slots.skipWords = null;
+                $slots.messageArrows = null;
+                $slots.skipWords = ['subgraph', 'end', 'style', 'classDef', 'class', 'click', 'linkStyle', 'direction'];
+                $slots.messageArrows = ['-->>', '->>', '-->', '->'];
+            } catch ($error) {
+                MermaidParser.$slots = null;
+                throw MermaidParser.$failure = $eq.exceptions.typeInitialization('eQuantic.UI.Components.MermaidParser', $error);
+            }
+        }
+        return MermaidParser.$slots;
     }
 
-    static _messageArrows: string[] | undefined;
+    static get skipWords(): string[] {
+        return MermaidParser.$init().skipWords;
+    }
+
+    static set skipWords(value: string[]) {
+        MermaidParser.$init().skipWords = value;
+    }
 
     static get messageArrows(): string[] {
-        return MermaidParser._messageArrows ??= ['-->>', '->>', '-->', '->'];
+        return MermaidParser.$init().messageArrows;
+    }
+
+    static set messageArrows(value: string[]) {
+        MermaidParser.$init().messageArrows = value;
     }
 
     static parse(source: string) {

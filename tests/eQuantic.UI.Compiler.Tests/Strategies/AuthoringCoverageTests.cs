@@ -97,7 +97,7 @@ public class AuthoringCoverageTests
     {
         var ts = Ts("public class C : StatelessComponent { private static readonly string[] N = { \"a\", \"b\", \"c\" }; " +
                     "public override IComponent Build(RenderContext c) => new Text(N[0]); }");
-        ts.Should().Contain("static n: string[] = ['a', 'b', 'c'];");
+        ts.Should().Contain("slots.n = ['a', 'b', 'c'];").And.Contain("static get n(): string[]");
     }
 
     [Fact]

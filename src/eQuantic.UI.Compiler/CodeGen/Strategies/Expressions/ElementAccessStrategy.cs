@@ -35,18 +35,17 @@ public class ElementAccessStrategy : IExpressionIrStrategy
             return JsExpr.Callish($"{extensionHome.Name}.item({receiver}, {indexerArgs})");
         }
 
-        // Each indexer argument is one subscript.
-        // A DICTIONARY READ fails for a key that is not there, where the class's own `get` answers
-        // `undefined`, so the absence would spread through the program instead of stopping it where
-        // .NET stops it. Only a READ: the same syntax on the left of an assignment is how a key is
-        // ADDED.
-        if (!IsAssignmentTarget(elementAccess) && DictionaryEntry.Of(elementAccess, context) is not null)
-        {
-            context.UsedHelpers.Add(Eq.Import);
-            return DictionaryEntry.Read(context.Converter.ConvertIr(elementAccess.Expression),
-                context.Converter.ConvertIr(elementAccess.ArgumentList.Arguments[0].Expression));
-        }
+        // An INSTANCE indexer a twin carries (#427) reads through its getter, `receiver.item(keys)`:
+        // a subscript read a property named after the key, which no twin had. A DICTIONARY READ fails
+        // for a key that is not there, where the class's own `get` answers `undefined`, so the absence
+        // would spread through the program instead of stopping it where .NET stops it. Only a READ: the
+        // same syntax on the left of an assignment is how a key is ADDED. Both are a Place's read.
+        if ((Indexer.LoweredAt(elementAccess, context) is not null
+                || !IsAssignmentTarget(elementAccess) && DictionaryEntry.Of(elementAccess, context) is not null)
+            && Place.Of(elementAccess, context) is { } place)
+            return place.Read();
 
+        // Each indexer argument is one subscript.
         var indexed = context.Converter.ConvertIr(elementAccess.Expression);
         foreach (var arg in elementAccess.ArgumentList.Arguments)
         {

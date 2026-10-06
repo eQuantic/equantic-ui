@@ -376,6 +376,13 @@ public class StatementSourceMapTests
             public Action<bool>? Changed { get; set; }
         }
 
+        public class Listed : Rule
+        {
+            public Listed(string message, Func<string, bool> test) : base(message, test) { }
+
+            public List<int> Seen { get; } = new();
+        }
+
         public class Carried
         {
             private int _seen;
@@ -431,6 +438,16 @@ public class StatementSourceMapTests
                 var at = address.IndexOf('@');
                 return at > 0;
             });
+
+            public static Listed Typed()
+            {
+                Listed listed = new("typed", text =>
+                {
+                    var trimmed = text.Trim();
+                    return trimmed.Length > 0;
+                }) { Seen = { 1, 2 } };
+                return listed;
+            }
 
             private int Apply(Func<int, int> step) => step(_seen);
         }
@@ -604,6 +621,9 @@ public class StatementSourceMapTests
     [InlineData("this._seen = flag;", "_seen = flag;")]
     [InlineData("let at = ", "var at = address.IndexOf('@');")]
     [InlineData("return at > 0;", "return at > 0;")]
+    // A target-typed creation whose initializer adds to a member: its arguments were spliced as text
+    [InlineData("let trimmed = ", "var trimmed = text.Trim();")]
+    [InlineData("return trimmed.length > 0;", "return trimmed.Length > 0;")]
     public void AStatementInALambdaThatAnExpressionBodyOrACreationHolds_MapsToItsOwnCSharpLine(string emitted, string written) =>
         AssertMapped(Compile(CarriedSource, "Carried.cs"), emitted, written, CarriedSource);
 

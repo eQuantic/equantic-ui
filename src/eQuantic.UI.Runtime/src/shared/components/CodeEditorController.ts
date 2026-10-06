@@ -2,7 +2,7 @@ import { $eq, CodeDirectionValue, CodeDocument, CodeEdit, CodeGrid, CodeHighligh
 
 export class CodeEditorController {
     constructor(text: string = '', language: any = null, props?: any) {
-        this._selection = new CodeRange();
+        this._selection = CodeRange.$zero();
         this._desiredCell = -1;
         this._cells = $eq.collections.dictionary();
         this._widths = null;
@@ -13,7 +13,7 @@ export class CodeEditorController {
         this._focusVersion = 0;
         this._composition = null;
         this._compositionReplaced = '';
-        this._compositionSelection = new CodeRange();
+        this._compositionSelection = CodeRange.$zero();
         this._wholeLineCopy = null;
         this._document = CodeDocument.fromText(text);
         this._selection = new CodeRange(CodePosition.start);
@@ -506,7 +506,7 @@ export class CodeEditorController {
         let anchor = this._selection.anchor;
         let focus = this._selection.focus;
         let range = new CodeRange(new CodePosition(first, 0), new CodePosition(last, this._document.line(last).length));
-        if (!this.apply(range, lines.join('\n'))) return false;
+        if (!this.apply(range, $eq.text.join('\n', lines))) return false;
         this.selection = new CodeRange(CodeEditorController.shiftedBy(anchor, first, last, changes, add), CodeEditorController.shiftedBy(focus, first, last, changes, add));
         return true;
     }
@@ -575,7 +575,7 @@ export class CodeEditorController {
         let anchor = this._selection.anchor;
         let focus = this._selection.focus;
         let range = new CodeRange(new CodePosition(first, 0), new CodePosition(last, this._document.line(last).length));
-        if (!this.apply(range, lines.join('\n'))) return false;
+        if (!this.apply(range, $eq.text.join('\n', lines))) return false;
         this.selection = new CodeRange(CodeEditorController.commented(anchor, first, last, ats, removals, insertions), CodeEditorController.commented(focus, first, last, ats, removals, insertions));
         return true;
     }
