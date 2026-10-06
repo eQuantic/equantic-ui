@@ -1,6 +1,7 @@
 #nullable enable
 const eQuantic.UI.Compiler.CodeGen.Eq.CancellationLinked = "$eq.cancellation.linked" -> string!
 const eQuantic.UI.Compiler.CodeGen.Eq.CancellationNone = "$eq.cancellation.none" -> string!
+const eQuantic.UI.Compiler.CodeGen.Eq.CancellationRegistration = "$eq.cancellation.registration" -> string!
 const eQuantic.UI.Compiler.CodeGen.Eq.CancellationSource = "$eq.cancellation.source" -> string!
 const eQuantic.UI.Compiler.CodeGen.Eq.CancellationToken = "$eq.cancellation.token" -> string!
 eQuantic.UI.Compiler.CodeGen.Strategies.Types.CancellationStrategy

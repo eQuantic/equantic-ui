@@ -15,11 +15,13 @@ public class CancellationConformanceTests
 {
     private const string Source = "System.Threading.CancellationTokenSource";
     private const string Token = "System.Threading.CancellationToken";
+    private const string Registration = "System.Threading.CancellationTokenRegistration";
 
     private static void SameAsDotNet(string program)
     {
         Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
         ConformanceRunner.AssertStatementsSameAsDotNet(program
+            .Replace("CTR", Registration, StringComparison.Ordinal)
             .Replace("CTS", Source, StringComparison.Ordinal)
             .Replace("CT.", Token + ".", StringComparison.Ordinal)
             .Replace("new CT(", $"new {Token}(", StringComparison.Ordinal)
@@ -73,6 +75,15 @@ public class CancellationConformanceTests
         + "catch (SystemException e) when (e is OperationCanceledException) { return \"system\"; }")]
     [InlineData("var cts = new CTS(); cts.Dispose(); try { cts.Cancel(); return \"ran\"; } "
         + "catch (ObjectDisposedException e) { return e.Message; }")]
+    // A delay .NET refuses, past the longest it takes as a TimeSpan (4294967294 ms), by either door.
+    [InlineData("try { new CTS().CancelAfter(TimeSpan.FromMilliseconds(4294967295d)); return \"accepted\"; } "
+        + "catch (ArgumentOutOfRangeException e) { return e.Message; }")]
+    [InlineData("try { var c = new CTS(TimeSpan.FromMilliseconds(4294967295d)); return \"accepted\"; } "
+        + "catch (ArgumentOutOfRangeException e) { return e.Message; }")]
+    // And the longest it takes, its fraction cut, and a month: neither cancels at once.
+    [InlineData("var c = new CTS(); c.CancelAfter(TimeSpan.FromMilliseconds(4294967294.9)); var d = new CTS(); "
+        + "d.CancelAfter(TimeSpan.FromDays(30)); var now = c.IsCancellationRequested || d.IsCancellationRequested; "
+        + "c.Dispose(); d.Dispose(); return $\"{now}\";")]
     // An awaited method that finds its token cancelled.
     [InlineData("async Task<string> F(CT t) { await Task.Yield(); t.ThrowIfCancellationRequested(); return \"done\"; } "
         + "var cts = new CTS(); cts.Cancel(); try { return await F(cts.Token); } catch (OperationCanceledException) { return \"canceled\"; }")]
@@ -83,6 +94,9 @@ public class CancellationConformanceTests
     [InlineData("var a = new CTS(); var linked = CTS.CreateLinkedTokenSource(a.Token, CT.None); var log = \"\"; "
         + "linked.Token.Register(() => log += \"L\"); a.Token.Register(() => log += \"A\"); a.Cancel(); "
         + "return $\"{linked.IsCancellationRequested}{log}\";")]
+    // The default registration, and its constructor: the registration of nothing, whose token is None.
+    [InlineData("var r = default(CTR); r.Dispose(); var n = new CTR(); "
+        + "return $\"{r.Unregister()}|{r.Token == CT.None}|{r.Token.CanBeCanceled}|{n.Unregister()}|{n.Token == CT.None}\";")]
     // A parameter defaulted to the token that never cancels.
     [InlineData("string F(CT t = default) => $\"{t.CanBeCanceled}{t.IsCancellationRequested}\"; return F();")]
     public void LinkingAndDefaults_AnswerAsDotNetDoes(string program) => SameAsDotNet(program);

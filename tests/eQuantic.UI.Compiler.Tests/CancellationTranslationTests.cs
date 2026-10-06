@@ -44,6 +44,8 @@ public class CancellationTranslationTests
     [InlineData("var t = CancellationToken.None;", "$eq.cancellation.none")]
     [InlineData("CancellationToken t = default;", "$eq.cancellation.none")]
     [InlineData("var t = new CancellationToken(true);", "$eq.cancellation.token(true)")]
+    [InlineData("CancellationTokenRegistration r = default;", "$eq.cancellation.registration")]
+    [InlineData("var r = new CancellationTokenRegistration();", "$eq.cancellation.registration")]
     [InlineData("var l = CancellationTokenSource.CreateLinkedTokenSource(given, CancellationToken.None);",
         "$eq.cancellation.linked(given, $eq.cancellation.none)")]
     public void WhatCSharpBuilds_IsBuiltByTheRuntime(string body, string expected)
@@ -68,6 +70,17 @@ public class CancellationTranslationTests
 
         Assert.Empty(errors);
         Assert.Contains(expected, js);
+    }
+
+    [Fact]
+    public void AFieldOfTheRegistrationType_StartsAsTheRegistrationOfNothing()
+    {
+        // Never assigned, it is disposed all the same: .NET's default does nothing, where undefined threw.
+        var js = TestHelper.ConvertClass(
+            "private System.Threading.CancellationTokenRegistration _registration;\n"
+            + "public void Stop() => _registration.Dispose();");
+
+        Assert.Contains("this._registration = $eq.cancellation.registration", js);
     }
 
     [Fact]

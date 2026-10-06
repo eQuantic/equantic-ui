@@ -8,7 +8,8 @@
  * in, once, at the first `cancel()`; a callback registered after the cancellation runs at once; the
  * callbacks that throw are gathered into one `AggregateException` after the others have run; a
  * disposed source refuses to cancel or to hand out its token; a linked source, disposed, lets go of
- * the tokens it follows; `new CancellationToken(true)` is the same token every time; and
+ * the tokens it follows; a delay is taken up to the longest .NET takes, and waited out past what a
+ * browser's timer holds; `new CancellationToken(true)` is the same token every time; and
  * `throwIfCancellationRequested()` throws an `OperationCanceledException` whose `cancellationToken`
  * is the token that threw it.
  */
@@ -26,6 +27,12 @@ const released: Callback = () => {};
 
 /** A delay in milliseconds, or a `TimeSpan`. */
 type Delay = number | { readonly totalMilliseconds: number };
+
+/** The longest delay .NET accepts as a `TimeSpan` (`Timer.MaxSupportedTimeout`), in milliseconds. */
+const LONGEST_DELAY = 4_294_967_294;
+
+/** The longest a timer waits in one go: a browser's holds a 32-bit signed delay, and fires at once past it. */
+const LONGEST_STEP = 2_147_483_647;
 
 /** `CancellationTokenSource`: the side that cancels. */
 export class CancellationTokenSource {
@@ -82,11 +89,14 @@ export class CancellationTokenSource {
     throw aggregate;
   }
 
-  /** Cancels after `delay`, replacing any delay set before; -1 cancels none. */
+  /**
+   * Cancels after `delay`, replacing any delay set before; -1 cancels none. A `TimeSpan` counts its
+   * whole milliseconds, as .NET's `(long)delay.TotalMilliseconds` does, up to the longest .NET takes.
+   */
   cancelAfter(delay: Delay): void {
     this.throwIfDisposed();
-    const milliseconds = typeof delay === 'number' ? delay : delay.totalMilliseconds;
-    if (milliseconds < -1) {
+    const milliseconds = typeof delay === 'number' ? delay : Math.trunc(delay.totalMilliseconds);
+    if (milliseconds < -1 || milliseconds > LONGEST_DELAY) {
       throw exception(
         'System.ArgumentOutOfRangeException',
         `Specified argument was out of the range of valid values. (Parameter '${typeof delay === 'number' ? 'millisecondsDelay' : 'delay'}')`,
@@ -95,10 +105,21 @@ export class CancellationTokenSource {
     if (this._cancelled) return;
     this.stopTimer();
     if (milliseconds === -1) return;
+    this.wait(milliseconds);
+  }
+
+  /**
+   * Waits `milliseconds`, in steps a timer can hold, and cancels. A delay past a browser timer's range
+   * (about 24.8 days) fired at once, where .NET waits it out.
+   */
+  private wait(milliseconds: number): void {
+    const step = Math.min(milliseconds, LONGEST_STEP);
     this._timer = setTimeout(() => {
       this._timer = null;
-      if (!this._disposed) this.cancel();
-    }, milliseconds);
+      if (this._disposed) return;
+      if (milliseconds > step) this.wait(milliseconds - step);
+      else this.cancel();
+    }, step);
   }
 
   dispose(): void {
@@ -121,7 +142,7 @@ export class CancellationTokenSource {
   register(callback: Callback): CancellationTokenRegistration {
     if (this._cancelled) {
       callback();
-      return new CancellationTokenRegistration(CancellationToken.none, null, -1);
+      return CancellationTokenRegistration.none;
     }
     const at = this._next++;
     this._callbacks.set(at, callback);
@@ -202,7 +223,7 @@ export class CancellationToken {
   }
 
   register(callback: Callback): CancellationTokenRegistration {
-    if (this._source === null) return new CancellationTokenRegistration(this, null, -1);
+    if (this._source === null) return CancellationTokenRegistration.none;
     return this._source.register(callback);
   }
 
@@ -217,6 +238,13 @@ export class CancellationToken {
 
 /** `CancellationTokenRegistration`: a callback's place on a token, given back by `dispose()`. */
 export class CancellationTokenRegistration {
+  /**
+   * `default(CancellationTokenRegistration)`: the registration of nothing, whose token is `none`. It
+   * unregisters nothing and disposes as nothing, as .NET's does, where a field of the type that was
+   * never assigned was `undefined` and threw on its first `dispose()`.
+   */
+  static readonly none: CancellationTokenRegistration = new CancellationTokenRegistration(CancellationToken.none, null, -1);
+
   constructor(
     readonly token: CancellationToken,
     private readonly _source: CancellationTokenSource | null,

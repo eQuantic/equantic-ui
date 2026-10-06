@@ -155,7 +155,7 @@ import { liftArith, liftCmp, liftUnary } from './utils/nullable';
 import { equals } from './utils/equals';
 import { hash, hashCombine, hashFields, hashGroup, identityHash, instanceHash } from './utils/hash';
 import { guidParse, guidTryParse } from './utils/guid';
-import { CancellationToken, CancellationTokenSource } from './utils/cancellation';
+import { CancellationToken, CancellationTokenRegistration, CancellationTokenSource } from './utils/cancellation';
 import {
   bases as exceptionBases,
   create as createException,
@@ -468,12 +468,14 @@ export const $eq = {
   guid: { parse: guidParse, tryParse: guidTryParse },
   /**
    * The cancellation pair, built where C# builds it: `new CancellationTokenSource(delay?)`,
-   * `CancellationToken.None` (and `default`), `new CancellationToken(canceled)` and
-   * `CancellationTokenSource.CreateLinkedTokenSource(…)`. Their members are their own, in camelCase.
+   * `CancellationToken.None` (and `default`), `new CancellationToken(canceled)`,
+   * `default(CancellationTokenRegistration)` and `CancellationTokenSource.CreateLinkedTokenSource(…)`.
+   * Their members are their own, in camelCase.
    */
   cancellation: {
     source: (delay?: number | { readonly totalMilliseconds: number }) => new CancellationTokenSource(delay),
     none: CancellationToken.none,
+    registration: CancellationTokenRegistration.none,
     token: CancellationToken.of,
     linked: CancellationTokenSource.createLinkedTokenSource,
   },

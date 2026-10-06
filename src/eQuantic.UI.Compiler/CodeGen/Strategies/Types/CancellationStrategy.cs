@@ -10,10 +10,10 @@ namespace eQuantic.UI.Compiler.CodeGen.Strategies.Types;
 /// .NET's behaviour, measured: <c>CancellationTokenSource</c>, <c>CancellationToken</c> and the
 /// <c>CancellationTokenRegistration</c> a callback is given back as. What C# BUILDS is built through
 /// <c>$eq.cancellation</c>: <c>new CancellationTokenSource(delay?)</c>, <c>CancellationToken.None</c>
-/// (and <c>default</c>, see <see cref="DefaultValue"/>), <c>new CancellationToken(canceled)</c> and
-/// <c>CreateLinkedTokenSource</c>. A member the runtime's twin carries is that twin's member in
-/// camelCase, and any other member of the three is refused (EQ2004), where it went out under its own
-/// name and failed only when the browser called it.
+/// (and <c>default</c>, see <see cref="DefaultValue"/>), <c>new CancellationToken(canceled)</c>, the
+/// default registration and <c>CreateLinkedTokenSource</c>. A member the runtime's twin carries is
+/// that twin's member in camelCase, and any other member of the three is refused (EQ2004), where it
+/// went out under its own name and failed only when the browser called it.
 /// <para>
 /// The code engine's completion was the first write-once code to ask a provider for an answer it may
 /// stop wanting (#296): a source per request, cancelled by the next one. Nothing in the translation
@@ -39,7 +39,7 @@ public class CancellationStrategy : IExpressionIrStrategy
     public bool CanConvert(SyntaxNode node, ConversionContext context) => node switch
     {
         BaseObjectCreationExpressionSyntax creation => context.SemanticHelper.GetType(creation) is { } type
-            && (type.IsNamed(Source) || type.IsNamed(Token)),
+            && (type.IsNamed(Source) || type.IsNamed(Token) || type.IsNamed(Registration)),
         InvocationExpressionSyntax { Expression: MemberAccessExpressionSyntax method } => DeclaredByTrio(method, context),
         // The callee of a call is the call's to translate, with its arguments.
         MemberAccessExpressionSyntax access => access.Parent is not InvocationExpressionSyntax { Expression: var callee }
@@ -108,6 +108,9 @@ public class CancellationStrategy : IExpressionIrStrategy
                 + "has no JavaScript translation: the runtime's source takes a delay or nothing, and its token a flag.");
             return JsExpr.Opaque("undefined");
         }
+        // A registration has no constructor but its zero: `new CancellationTokenRegistration()` is default.
+        if (context.SemanticHelper.GetType(creation).IsNamed(Registration))
+            return JsExpr.Identifier(Eq.CancellationRegistration);
         var arguments = (creation.ArgumentList?.Arguments ?? default)
             .Select(argument => context.Converter.ConvertIr(argument.Expression)).ToList();
         if (context.SemanticHelper.GetType(creation).IsNamed(Token))

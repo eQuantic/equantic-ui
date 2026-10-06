@@ -818,6 +818,21 @@ public class CodeCompletionTests : IDisposable
     }
 
     [Fact]
+    public async Task AWordLongerThanWhatAnAnswerReads_IsSkippedNoFurtherThanTheWindow()
+    {
+        // A million letters as one word, the caret inside it, and two words after it: the window around
+        // the caret starts inside the word, and its skip stops at the window's end, where it walked on
+        // to the end of the word and read past it.
+        var text = new string('a', 1_000_000) + " far1 far2";
+
+        var list = await new CodeWordCompletionProvider().CompleteAsync(CodeDocument.FromText(text),
+            new CodePosition(0, 500_000),
+            new CodeCompletionContext(CodeCompletionTrigger.Typing, CodeLanguages.PlainText), CancellationToken.None);
+
+        list.Items.Should().BeEmpty("the window holds part of the word being typed, and nothing else");
+    }
+
+    [Fact]
     public async Task TheLanguagesWords_AreOfferedWhereAWordStarts_AndNeverAfterADot()
     {
         var keywords = new CodeKeywordCompletionProvider();

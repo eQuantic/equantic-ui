@@ -50,13 +50,15 @@ public sealed class CodeWordCompletionProvider : ICodeCompletionProvider
     /// </summary>
     private static int Read(string text, int caret, int left, HashSet<string> seen, List<CodeCompletionItem> items)
     {
-        var from = caret < 0 ? 0 : Math.Max(0, Math.Min(caret - left / 2, text.Length - left));
-        // A window that starts inside a word starts after it.
+        var first = caret < 0 ? 0 : Math.Max(0, Math.Min(caret - left / 2, text.Length - left));
+        var end = Math.Min(text.Length, first + left);
+        // A window that starts inside a word starts after it, and no further than the window's end:
+        // a word of megabytes walked to the end of its line before anything was counted.
+        var from = first;
         if (from > 0 && CodeDocument.IsWordChar(text[from - 1]))
         {
-            while (from < text.Length && CodeDocument.IsWordChar(text[from])) from++;
+            while (from < end && CodeDocument.IsWordChar(text[from])) from++;
         }
-        var end = Math.Min(text.Length, from + left);
         var i = from;
         while (i < end)
         {
@@ -73,6 +75,6 @@ public sealed class CodeWordCompletionProvider : ICodeCompletionProvider
             var word = text.Substring(start, i - start);
             if (seen.Add(word)) items.Add(new CodeCompletionItem(word));
         }
-        return left - (end - from) - 1;
+        return left - (end - first) - 1;
     }
 }

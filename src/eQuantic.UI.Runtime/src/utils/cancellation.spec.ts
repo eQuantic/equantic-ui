@@ -158,6 +158,33 @@ describe('CancellationTokenSource and CancellationToken', () => {
     expect(ran).toBe(true);
   });
 
+  it('waits out a delay longer than a browser timer holds, and refuses one .NET refuses', async () => {
+    // Thirty days: a browser's timer holds about 24.8, and fired a longer delay at once.
+    const month = new CancellationTokenSource();
+    month.cancelAfter({ totalMilliseconds: 30 * 86_400_000 });
+    await new Promise((resolve) => setTimeout(resolve, 30));
+    expect(month.isCancellationRequested).toBe(false);
+    month.dispose();
+
+    // Measured with dotnet fsi: 4294967294 ms is the longest, its fraction cut, and one more is refused.
+    const longest = new CancellationTokenSource({ totalMilliseconds: 4_294_967_294.9 });
+    expect(longest.isCancellationRequested).toBe(false);
+    longest.dispose();
+    expect(() => new CancellationTokenSource().cancelAfter({ totalMilliseconds: 4_294_967_295 })).toThrow(
+      "Specified argument was out of the range of valid values. (Parameter 'delay')",
+    );
+  });
+
+  it('cancels after the whole of a long delay, and not before', () => {
+    vi.useFakeTimers();
+    const source = new CancellationTokenSource({ totalMilliseconds: 3_000_000_000 });
+
+    vi.advanceTimersByTime(2_999_999_999);
+    expect(source.isCancellationRequested).toBe(false);
+    vi.advanceTimersByTime(1);
+    expect(source.isCancellationRequested).toBe(true);
+  });
+
   it('cancels after a delay, and a newer delay replaces the older', () => {
     vi.useFakeTimers();
     const source = new CancellationTokenSource(100);

@@ -215,6 +215,10 @@ public static class Eq
 
     /// <summary><c>CancellationTokenSource.CreateLinkedTokenSource(…)</c>.</summary>
     public const string CancellationLinked = "$eq.cancellation.linked";
+
+    /// <summary><c>default(CancellationTokenRegistration)</c>: the registration of nothing, whose token
+    /// is <c>None</c>.</summary>
+    public const string CancellationRegistration = "$eq.cancellation.registration";
     public const string DateTime = "$eq.time.dateTime";
     public const string TimeSpan = "$eq.time.timeSpan";
     public const string DateTimeOffset = "$eq.time.dateTimeOffset";
