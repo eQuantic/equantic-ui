@@ -156,6 +156,7 @@ import { liftArith, liftCmp, liftUnary } from './utils/nullable';
 import { equals } from './utils/equals';
 import { hash, hashCombine, hashFields, hashGroup, identityHash, instanceHash } from './utils/hash';
 import { guidParse, guidTryParse } from './utils/guid';
+import { CancellationToken, CancellationTokenRegistration, CancellationTokenSource } from './utils/cancellation';
 import {
   bases as exceptionBases,
   create as createException,
@@ -469,6 +470,19 @@ export const $eq = {
   },
   /** A Guid's canonical text, the lowercase `D` format, from any format .NET reads. */
   guid: { parse: guidParse, tryParse: guidTryParse },
+  /**
+   * The cancellation pair, built where C# builds it: `new CancellationTokenSource(delay?)`,
+   * `CancellationToken.None` (and `default`), `new CancellationToken(canceled)`,
+   * `default(CancellationTokenRegistration)` and `CancellationTokenSource.CreateLinkedTokenSource(…)`.
+   * Their members are their own, in camelCase.
+   */
+  cancellation: {
+    source: (delay?: number | { readonly totalMilliseconds: number }) => new CancellationTokenSource(delay),
+    none: CancellationToken.none,
+    registration: CancellationTokenRegistration.none,
+    token: CancellationToken.of,
+    linked: CancellationTokenSource.createLinkedTokenSource,
+  },
   /**
    * .NET exceptions: one built from its type and the types it derives from (`new T(…)`), one of a
    * type the runtime knows, the test a typed `catch` and a type pattern write, a `throw`

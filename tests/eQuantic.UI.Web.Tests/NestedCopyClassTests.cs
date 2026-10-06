@@ -19,8 +19,7 @@ public class NestedCopyClassTests
     private static string Transpile(string source)
     {
         var tree = CSharpSyntaxTree.ParseText(source, path: "Section.cs");
-        var usings = CSharpSyntaxTree.ParseText(
-            "global using System;\nglobal using System.Linq;", path: "GlobalUsings.g.cs");
+        var usings = SdkImplicitUsings.Tree();
         var references = ((string)AppContext.GetData("TRUSTED_PLATFORM_ASSEMBLIES")!)
             .Split(Path.PathSeparator)
             .Where(path => path.EndsWith(".dll", StringComparison.OrdinalIgnoreCase))
