@@ -1520,6 +1520,30 @@ record of a release, the wiki's Upgrading page is the distillate.
   megabytes that walked past the window, a month's delay that a browser's timer fired at once, and a
   default registration that was undefined. Proposed and archived through OpenSpec
   (`openspec/specs/code-completion`).
+- **2026-10-06 · The code editor shows its completion list**: the view half of the code editor's
+  slice 3 ([#297](https://github.com/eQuantic/equantic-ui/issues/297)). `CodeEditor` draws the list
+  at the word it completes, through the code surface and in the code's own coordinates
+  (`CodeSurface.Options`, `OptionsOrigin`, `HighlightedOption`): one line under the word with its
+  labels lined up with it, over the line when a page fits only there, as many rows as fit when
+  neither side holds one, and a page that follows the selection; each row is the entry's kind as a
+  letter, its label with what the word matched marked, and its detail, and the selected entry's
+  documentation shows once it is resolved. A press on a row accepts it while the code keeps the
+  keyboard (`Pressable.CanRequestFocus`, Flutter's `canRequestFocus`, in the declarative factory
+  too), and the list is the code input's listbox on the web and options after the code field on
+  Photon. `CodeEditor.Completions` says what an editor completes from: the language's words and the
+  document's unless it says otherwise. Found on the way and fixed: a bounded editor's code was as
+  tall as the file, so a press under it landed nowhere
+  ([#599](https://github.com/eQuantic/equantic-ui/issues/599)) and a short file left a list no room;
+  eqc wrote an enum member named `Value` as a read of an object nothing defines
+  ([#631](https://github.com/eQuantic/equantic-ui/issues/631)); and a helper class that takes the
+  build context named a type its module could not import, read an optional `typeScale` and called
+  `TypeStyle` measures its twin did not have
+  ([#632](https://github.com/eQuantic/equantic-ui/issues/632)). Reported: Photon lays a bordered
+  box's child over its border ([#629](https://github.com/eQuantic/equantic-ui/issues/629)), under
+  Comfortable density a dense row's margin takes the presses of the row above it
+  ([#630](https://github.com/eQuantic/equantic-ui/issues/630)), and a null-conditional read is
+  `undefined` in the browser ([#633](https://github.com/eQuantic/equantic-ui/issues/633)). Proposed
+  and archived through OpenSpec (`openspec/specs/code-completion`).
 
 ## Retired documents
 
