@@ -1899,11 +1899,16 @@ public sealed class PhotonHost
             _pressed = region.Node;
             _pressedPath = region.Path;
             // Pressing a control takes focus off whatever had it — including a field being edited,
-            // whose caret must not go on blinking somewhere the user is no longer looking.
-            EndEditing();
-            // Focused, but not RINGED: pressing Enter after clicking a button goes on working,
-            // and the click leaves no ring behind it.
-            Focus(region.Node, region.Path, visible: false);
+            // whose caret must not go on blinking somewhere the user is no longer looking. Unless
+            // it may not take the keyboard (Pressable.CanRequestFocus): a row of the list a code
+            // editor shows at its caret is pressed while the code keeps the keyboard.
+            if (region.Node.CanRequestFocus)
+            {
+                EndEditing();
+                // Focused, but not RINGED: pressing Enter after clicking a button goes on working,
+                // and the click leaves no ring behind it.
+                Focus(region.Node, region.Path, visible: false);
+            }
             NeedsRender = true;
             return true;
         }
@@ -1938,6 +1943,13 @@ public sealed class PhotonHost
         var surfaces = _lastFrame.CodeRegions;
         for (var i = surfaces.Count - 1; i >= 0; i--)
         {
+            // A press on what the surface offers, that none of its rows took (between them, on the
+            // documentation), is the list's: it moves no caret under it, and the code keeps the keyboard.
+            if (surfaces[i].Offered is { } offered && offered.Contains(point))
+            {
+                _pressSwallowed = true;
+                return true;
+            }
             if (!surfaces[i].Bounds.Contains(point)) continue;
             BeginCodeEditing(surfaces[i]);
             // What the press MEANS — a caret, a word, a line, a shift-extended selection — is the

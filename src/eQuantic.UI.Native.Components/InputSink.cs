@@ -61,9 +61,11 @@ internal readonly struct InputSink(FrameRegions regions, Rect? clip = null, bool
     public void Add(HitRegion region)
     {
         // A control with nothing to DO is not somewhere Tab should ever land — disabled, or a
-        // handler-less pressable that only exists as another control's visual. Scrolled out of
-        // sight is NOT the same thing: see FocusStop.
-        if (!suppressFocusStops && !region.Node.Disabled && region.Node.OnPressed is not null)
+        // handler-less pressable that only exists as another control's visual — and neither is one
+        // that may not take the keyboard (Pressable.CanRequestFocus). Scrolled out of sight is NOT
+        // the same thing: see FocusStop.
+        if (!suppressFocusStops && !region.Node.Disabled && region.Node.OnPressed is not null
+            && region.Node.CanRequestFocus)
             regions.Stops.Add(new FocusStop(region.Path, region.Node, null, region.Bounds));
         if (!Visible(region.Bounds)) return;
         regions.Hits.Add(Clipped(region));
