@@ -67,9 +67,9 @@ one entry showing, an arrow SHALL move the caret. Every key but Tab and Escape, 
 
 ### Requirement: Accepting writes over the word typed, as one step
 
-Accepting SHALL replace the word typed since the list opened, or the provider's own range with its end
-moved by what was typed after the provider answered, leave the caret after the text, and be one undo
-step.
+Accepting SHALL replace the word typed since the list opened, or the provider's own range, whose end
+keeps its distance from the end of the line (what is typed or deleted at the caret moves it, and a move
+of the caret does not), leave the caret after the text, and be one undo step.
 
 #### Scenario: Roslyn's answer after a dot
 
@@ -81,6 +81,12 @@ step.
 
 - **WHEN** `Co` is typed, `Column` accepted, and the edit undone
 - **THEN** the text reads `Co` again
+
+#### Scenario: A provider's range after an arrow
+
+- **WHEN** a provider asked in `Fo|bar()` replaces the whole word with `FooBaz`, the caret moves left
+  one character, and Enter is pressed
+- **THEN** the line reads `FooBaz()`
 
 ### Requirement: A commit character accepts first
 
@@ -175,8 +181,9 @@ states, a run of characters above the same characters apart.
 
 The built-in providers SHALL offer the language's own words (`ICodeLanguage.Keywords`) wherever a word
 starts and never right after a dot, and the document's words, each once, leaving out the word being
-typed and numbers. The document's words SHALL be read from the lines nearest the caret outward, no
-more than 50,000 characters for one answer, since the answer is given before the keystroke returns.
+typed and numbers. The document's words SHALL be read from the lines nearest the caret outward, the
+caret's own line around the caret, no more than 50,000 characters for one answer, since the answer is
+given before the keystroke returns.
 
 #### Scenario: A C# editor with both
 
@@ -188,6 +195,11 @@ more than 50,000 characters for one answer, since the answer is given before the
 - **WHEN** the words of 2,000 lines of 100 characters are asked for from the middle line
 - **THEN** the words of the lines nearest the caret are offered, and those of the first and the last
   line are not
+
+#### Scenario: A minified line
+
+- **WHEN** the words of one line of 40,000 words are asked for with the caret in its middle
+- **THEN** the words beside the caret are offered, and the line's first and last are not
 
 ### Requirement: The web completes as .NET does
 

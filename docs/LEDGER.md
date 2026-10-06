@@ -1458,7 +1458,9 @@ record of a release, the wiki's Upgrading page is the distillate.
   each proved failing without its fix: the trap on Tab after ⌃Space, a provider's cancellation that
   threw into the keystroke, a commit during an input method's composition, a duplicate that hid a
   match, the filter's work per keystroke, and the document's words read whole at every word started
-  (46 ms in Bun for 45,000 lines, now 50,000 characters nearest the caret) among them. Proposed and
+  (46 ms in Bun for 45,000 lines, now 50,000 characters nearest the caret) among them. The first
+  review round found three more: a provider's range that moved with the caret, a minified line read
+  from its start, and a linked source that kept its callbacks on a long-lived token. Proposed and
   archived through OpenSpec (`openspec/specs/code-completion`).
 
 ## Retired documents

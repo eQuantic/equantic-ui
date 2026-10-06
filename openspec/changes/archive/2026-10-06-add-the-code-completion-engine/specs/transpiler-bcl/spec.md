@@ -9,7 +9,8 @@ runtime's, which SHALL behave as .NET's: callbacks run once, the last registered
 after the cancellation runs at once, and its registration is the default one, whose token is `None`;
 a method group of the three keeps its receiver, read once; the callbacks that throw are gathered into an
 `AggregateException` after the others ran; `ThrowIfCancellationRequested` throws an
-`OperationCanceledException`; a disposed source refuses to cancel; and `CancellationToken.None`,
+`OperationCanceledException`; a disposed source refuses to cancel, and a linked one lets go of the
+tokens it follows; and `CancellationToken.None`,
 `default` and `new CancellationToken(false)` are one token that never cancels. A member of the three
 the runtime does not carry SHALL be refused at the build (EQ2004).
 
