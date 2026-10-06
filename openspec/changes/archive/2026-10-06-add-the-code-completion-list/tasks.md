@@ -67,4 +67,4 @@
 - [x] 7.1 The wiki's code editor and declarative surface pages, in English and Portuguese
 - [x] 7.2 `docs/FLUTTER-PARITY.md` (`canRequestFocus`, `RawAutocomplete`), the plan's slice 3 row and
       the `docs/LEDGER.md` line citing #297
-- [ ] 7.3 Archive this change before the merge
+- [x] 7.3 Archive this change before the merge

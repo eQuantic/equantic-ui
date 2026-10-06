@@ -282,7 +282,9 @@ enum as its members (the vocabulary's union, a number when it is [Flags], a stri
 delegate as its function. One rule SHALL decide it on every path that writes an annotation: a class's
 members and parameters, a record's members, parameters and setters, a local, the item type of an empty
 list, and a local function's parameters. A record's static that starts as null SHALL be annotated with
-its type and the null.
+its type and the null. The build context, which C# names `ComponentContext`, SHALL be annotated
+`BuildContext`, the name the runtime exports to every module, and a module that writes it SHALL import
+it; its `typeScale` SHALL be the number C# holds.
 
 #### Scenario: An event of exceptions and lists of an interface and of exceptions
 
@@ -297,3 +299,27 @@ its type and the null.
   and a local function taking an exception
 - **THEN** no annotation of the twin names `Exception`, `IThing`, the enum, `Measure` or `Action`, and
   they read `Error`, `any`, `string`, `(text: string) => number` and `(() => void)[]`
+
+#### Scenario: A helper class that takes the build context
+
+- **WHEN** a static class of the shared library declares a method that takes a `ComponentContext` and
+  scales a `TypeStyle`'s line height by its `TypeScale`
+- **THEN** the twin annotates the parameter `BuildContext`, imports it, and passes the runtime's type
+  check
+
+### Requirement: An enum member is its name, whatever it is called
+
+An enum member SHALL be written as its enum's representation whatever its name, `Value` and `HasValue`
+included. Those two names SHALL be taken for `Nullable<T>`'s members only where the semantic model
+cannot say what they are.
+
+#### Scenario: Members named like Nullable's
+
+- **WHEN** a method compares `reading == Reading.Value` and `reading == Reading.HasValue`, where
+  `Reading` is an enum
+- **THEN** the twin compares with `'value'` and `'hasValue'`, and reads no `Reading` object
+
+#### Scenario: Nullable's own
+
+- **WHEN** a method reads `count.HasValue` and `count.Value` of an `int?`
+- **THEN** neither is read as a member in the browser
