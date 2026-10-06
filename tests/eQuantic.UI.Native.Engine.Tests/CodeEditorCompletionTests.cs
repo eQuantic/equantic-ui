@@ -2,6 +2,8 @@ using eQuantic.UI.Code;
 using eQuantic.UI.Components;
 using eQuantic.UI.Native.Components;
 using eQuantic.UI.Native.Engine;
+using eQuantic.UI.Native.Engine.Reference;
+using eQuantic.UI.Native.Engine.Tests.Golden;
 using eQuantic.UI.Native.Framework;
 using eQuantic.UI.Primitives;
 using FluentAssertions;
@@ -458,5 +460,43 @@ public class CodeEditorCompletionTests
 
         editor.Editor.Completion.IsOpen.Should().BeTrue();
         editor.Editor.Completion.Providers.Should().Equal(handed, "the same providers are not handed again");
+    }
+
+    // ---- pixels ----------------------------------------------------------------------------------
+
+    /// <summary>
+    /// The list at the caret, light and dark, on the reference backend: its frame and its shadow, the
+    /// selected entry's coat, the letters and the matched characters, the page mark and the selected
+    /// entry's documentation. The state the picture is of is asserted beside it, so a golden cannot
+    /// bless a list that shows the wrong thing.
+    /// </summary>
+    [Theory]
+    [InlineData(ThemeMode.Light, "code-completion-light")]
+    [InlineData(ThemeMode.Dark, "code-completion-dark")]
+    public void TheListAtTheCaret_RendersThePhotonPixels(ThemeMode mode, string golden)
+    {
+        var editor = Editor(Lines(8),
+            new CodeCompletionItem("ColorToken", CodeCompletionKind.Struct) { Detail = "struct" },
+            new CodeCompletionItem("Column", CodeCompletionKind.Class)
+            {
+                Detail = "class",
+                Documentation = "Lays its children out in a column.",
+            },
+            new CodeCompletionItem("Count", CodeCompletionKind.Property) { Detail = "int" });
+        using var backend = new ReferenceBackend();
+        using var surface = backend.CreateSurface(360, 240);
+        var host = new PhotonHost(editor, PhotonTheme.Instance, mode, 360, 240) { Density = Density.Compact };
+        Settle(host);
+        ClickAt(host, editor, 1, 0);
+        Type(host, "Co");
+        Press(host, "ArrowDown");
+        host.RenderFrame(new DisplayListBuilder(), timeMs: 500);
+        var builder = new DisplayListBuilder();
+        host.RenderFrame(builder, timeMs: 1000);
+        backend.Render(builder.Build(), surface);
+
+        Shown(host).Should().Equal(["ColorToken, struct", "Column, class", "Count, int"]);
+        editor.Editor.Completion.Selected.Should().Be(1, "the second entry is selected, and its documentation shows");
+        GoldenImage.Match(surface, golden);
     }
 }
