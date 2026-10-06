@@ -1,0 +1,20 @@
+# Spec Delta
+
+## ADDED Requirements
+
+### Requirement: A press under a bounded editor's code is the end of the document
+
+A bounded `CodeEditor` (one that fills its place or has a fixed height) SHALL draw its code as tall as
+its viewport however short the file. A press under its last line SHALL put the caret at the end of the
+document and give the editor the keyboard, and a drag from there SHALL select back to where it stops.
+
+#### Scenario: Under a two-line file
+
+- **WHEN** an editor 400 tall holding `one` and `two three` is pressed 300 below its top, under the
+  second column of its last line
+- **THEN** the caret is at the end of `two three`, and the editor has the keyboard
+
+#### Scenario: A drag from under the code
+
+- **WHEN** that press is dragged to the second column of the first line and released
+- **THEN** the selection runs from the end of the document back to the second column of the first line
