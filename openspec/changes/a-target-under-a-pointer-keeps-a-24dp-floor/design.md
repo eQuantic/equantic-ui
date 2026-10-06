@@ -62,3 +62,7 @@ Rejected:
   changes order.
 - On a touch screen a control inside a Pressable now takes its own tap, and the press bubbles to the
   wrapper. That is what a mouse already did, so the two pointers now agree.
+- The lift reaches the pressable's child and no deeper. A child that draws no box of its own
+  (`display: contents`: an InView, an Adaptive, a light and dark Image) leaves its content under the
+  slop, which then takes that content's hover under a mouse. No SDK component or sample composes a
+  Pressable this way, and the hole is #622.

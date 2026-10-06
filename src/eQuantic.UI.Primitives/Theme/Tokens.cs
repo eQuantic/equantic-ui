@@ -185,12 +185,12 @@ public static class Sizing
     public static float Radius(SizeVariant size) =>
         size == SizeVariant.XLarge ? Primitives.Radius.Lg : Primitives.Radius.Md;
 
-    /// <summary>The hit rect: the enforced minimum, except XLarge whose visual already exceeds it.</summary>
+    /// <summary>The hit rect: a finger's §08 minimum, except XLarge whose visual already exceeds it,
+    /// and a pointer's visual bounds, never less than <see cref="Touch.MinPointerTarget"/>.</summary>
     public static float HitTarget(SizeVariant size, Density density = Density.Comfortable) =>
-        // A POINTER lands where it is aimed, so a dense control needs no invisible margin around
-        // it — and on a toolbar of 26dp buttons those margins would overlap each other anyway —
-        // beyond the floor every target keeps under one (Touch.MinPointerTarget). A finger gets the
-        // §08 minimum, always.
+        // A POINTER lands where it is aimed, so a dense control needs no invisible margin around it
+        // (on a toolbar of 26dp buttons those margins would overlap each other), only the floor.
+        // A finger gets the §08 minimum, always.
         density == Density.Compact
             ? MathF.Max(Height(size, density), Touch.MinPointerTarget)
             : size == SizeVariant.XLarge ? 56 : Touch.MinTarget;
@@ -199,7 +199,7 @@ public static class Sizing
 /// <summary>Touch-target rules (spec §08): the engine enforces the stricter 48dp on both platforms.</summary>
 public static class Touch
 {
-    /// <summary>Minimum hit-rect side; visuals may be smaller — the framework expands hit-slop symmetrically.</summary>
+    /// <summary>Minimum hit-rect side under a FINGER; visuals may be smaller, the framework expands the slop symmetrically.</summary>
     public const float MinTarget = 48;
 
     /// <summary>

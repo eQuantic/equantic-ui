@@ -600,10 +600,11 @@ public static class PhotonCssGenerator
 
     /// <summary>
     /// The hit slop for one kind of pointer: a pressable's target, centred on it and at least
-    /// <paramref name="minimum"/> on each side, without moving anything. The pressable is the
-    /// containing block, the framework's own wrapper element: an absolutely positioned descendant of
-    /// a pressable anchoring to the pressable is the more correct answer anyway (a badge on a
-    /// button), and fixed layers are unaffected by `relative`.
+    /// <paramref name="minimum"/> on each side, without moving anything. The pressable is the slop's
+    /// containing block, and the child the lift below positions is the containing block of what the
+    /// content positions absolutely: the same box, since the pressable is a button with no padding
+    /// around one child (a badge on a button anchors to the button either way), and fixed layers are
+    /// unaffected by `relative`.
     /// <para>
     /// The target lies UNDER the control's own content, so it answers only where the control draws
     /// nothing: the slop around a small one. It is the `::before`, first in tree order, and the
@@ -612,7 +613,9 @@ public static class PhotonCssGenerator
     /// should have had: under a fine pointer a Button's own box never matched `:hover`, so no button
     /// showed its hover fill, and a Pressable around an IconButton took the inner control's hits
     /// (#430, measured in a browser). The lift has no specificity, so a child that positions itself
-    /// (a raised box, a layer of a Stack) keeps its own.
+    /// (a raised box, a layer of a Stack) keeps its own. It reaches the pressable's child and no
+    /// deeper, so content behind a child that draws no box of its own (`display: contents`: an
+    /// InView, an Adaptive, a light and dark Image) stays under the slop (#622).
     /// </para>
     /// </summary>
     private static void HitSlop(StringBuilder css, string pointer, float minimum)

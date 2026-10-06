@@ -21,6 +21,15 @@ public class HitSlopTests
 {
     private static string Css() => PhotonCssGenerator.Generate(PhotonTheme.Instance);
 
+    /// <summary>The rules inside one pointer's gate, with the spaces taken out.</summary>
+    private static string Gate(string pointer)
+    {
+        var css = Css();
+        var gate = css.IndexOf($"@media (pointer: {pointer}) {{", StringComparison.Ordinal);
+        gate.Should().BeGreaterThan(-1, $"a {pointer} pointer has its gate");
+        return css[gate..css.IndexOf("\n}", gate, StringComparison.Ordinal)].Replace(" ", string.Empty);
+    }
+
     /// <summary>
     /// The rule exists, and its size comes from the TOKEN. A literal 48 here would let the token
     /// move while the stylesheet kept promising the old number.
@@ -62,10 +71,7 @@ public class HitSlopTests
     [InlineData("fine", Touch.MinPointerTarget)]
     public void EachPointerGetsItsOwnMinimum(string pointer, float minimum)
     {
-        var css = Css();
-        var gate = css.IndexOf($"@media (pointer: {pointer}) {{", StringComparison.Ordinal);
-        gate.Should().BeGreaterThan(-1, $"a {pointer} pointer has its gate");
-        var block = css[gate..css.IndexOf("\n}", gate, StringComparison.Ordinal)].Replace(" ", string.Empty);
+        var block = Gate(pointer);
 
         block.Should().Contain(".eq-pressable::before")
             .And.Contain($"min-width:{minimum}px")
@@ -86,14 +92,27 @@ public class HitSlopTests
     [InlineData("fine")]
     public void TheControlsOwnContentStaysAboveItsTarget(string pointer)
     {
-        var css = Css();
-        var gate = css.IndexOf($"@media (pointer: {pointer}) {{", StringComparison.Ordinal);
-        gate.Should().BeGreaterThan(-1, $"a {pointer} pointer has its gate");
-        var block = css[gate..css.IndexOf("\n}", gate, StringComparison.Ordinal)].Replace(" ", string.Empty);
+        var block = Gate(pointer);
 
         block.Should().Contain(":where(.eq-pressable)>*{position:relative;}",
             "the content is lifted to the target's level, where tree order puts it on top");
-        css.Should().NotContain(".eq-pressable::after",
+        Css().Should().NotContain(".eq-pressable::after",
             "a target that comes after the content in tree order paints, and is hit, over it");
+    }
+
+    /// <summary>
+    /// Each slop lives inside its own gate and nowhere else. A slop outside both gates, or the
+    /// finger's minimum inside the pointer's gate, would grow every 26px button of a dense toolbar
+    /// under a mouse into its neighbour, which is the reason a pointer has a gate of its own.
+    /// </summary>
+    [Fact]
+    public void EachSlopLivesOnlyInsideItsGate()
+    {
+        var slops = Css().Split(".eq-pressable::before").Length - 1;
+
+        slops.Should().Be(2, "one slop per pointer, each inside its gate");
+        Gate("coarse").Should().Contain(".eq-pressable::before");
+        Gate("fine").Should().Contain(".eq-pressable::before")
+            .And.NotContain($"min-width:{Touch.MinTarget}px", "a mouse never gets a finger's minimum");
     }
 }
