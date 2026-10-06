@@ -152,17 +152,6 @@ public class SharedComponentTranspilationTests
         }
         """;
 
-    /// <summary>
-    /// The global usings <c>&lt;ImplicitUsings&gt;</c> writes for a project of <c>Microsoft.NET.Sdk</c>,
-    /// which every shared source is: all seven, as <c>obj/*.GlobalUsings.g.cs</c> has them. Three of
-    /// them were mirrored, so a name from the other four (<c>CancellationTokenSource</c>) bound in the
-    /// build and not here, and its twin was written by the path for a type nothing knows (#296).
-    /// </summary>
-    private const string SdkImplicitUsings =
-        "global using System;\nglobal using System.Collections.Generic;\nglobal using System.IO;\n"
-        + "global using System.Linq;\nglobal using System.Net.Http;\nglobal using System.Threading;\n"
-        + "global using System.Threading.Tasks;";
-
     private static Dictionary<string, string> TranspileSharedComponents()
     {
         var modules = new Dictionary<string, string>();
@@ -193,7 +182,7 @@ public class SharedComponentTranspilationTests
         trees.Add(CSharpSyntaxTree.ParseText(NestedReconcilerSource, path: nestedPath));
         // The shared sources build with <ImplicitUsings> — mirror the generated global usings, or
         // `Action?` fails to bind (CS0246) and the semantic paths silently degrade.
-        trees.Add(CSharpSyntaxTree.ParseText(SdkImplicitUsings, path: "GlobalUsings.g.cs"));
+        trees.Add(SdkImplicitUsings.Tree());
         // Full TPA references, INCLUDING eQuantic.UI.Web.Components: since the merge the legacy
         // web set lives outside the eQuantic.UI.Components namespace chain, so the old
         // enclosing-namespace rebinding gotcha is structurally impossible.
@@ -466,7 +455,7 @@ public class SharedComponentTranspilationTests
         return CSharpCompilation.Create("BoundProbe",
             [
                 CSharpSyntaxTree.ParseText(source, path: path),
-                CSharpSyntaxTree.ParseText(SdkImplicitUsings, path: "GlobalUsings.g.cs"),
+                SdkImplicitUsings.Tree(),
             ],
             references,
             new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
@@ -609,7 +598,7 @@ public class SharedComponentTranspilationTests
         var trees = new List<Microsoft.CodeAnalysis.SyntaxTree>
         {
             CSharpSyntaxTree.ParseText(BridgePageSource, path: pagePath),
-            CSharpSyntaxTree.ParseText(SdkImplicitUsings, path: "GlobalUsings.g.cs"),
+            SdkImplicitUsings.Tree(),
         };
         var references = ((string)AppContext.GetData("TRUSTED_PLATFORM_ASSEMBLIES")!)
             .Split(Path.PathSeparator)
@@ -639,7 +628,7 @@ public class SharedComponentTranspilationTests
         var trees = new List<Microsoft.CodeAnalysis.SyntaxTree>
         {
             CSharpSyntaxTree.ParseText(source, path: pagePath),
-            CSharpSyntaxTree.ParseText(SdkImplicitUsings, path: "GlobalUsings.g.cs"),
+            SdkImplicitUsings.Tree(),
         };
         var references = ((string)AppContext.GetData("TRUSTED_PLATFORM_ASSEMBLIES")!)
             .Split(Path.PathSeparator)
