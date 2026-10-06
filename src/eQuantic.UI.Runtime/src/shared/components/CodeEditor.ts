@@ -13,6 +13,7 @@ export class CodeEditor extends StatefulComponent {
     _listColumns: number = 0;
     _handed: any = null;
     _handedAny: boolean = false;
+    _put: any[] = [];
     _toldDocument: any = null;
     _toldSelection: CodeRange = CodeRange.$zero();
     _matches: CodeRange[] = [];
@@ -162,13 +163,9 @@ export class CodeEditor extends StatefulComponent {
         this._handedAny = true;
         this._handed = this.completions;
         let providers = completion.providers;
-        providers.splice(0);
-        if (this.completions == null) {
-            providers.push(new CodeKeywordCompletionProvider());
-            providers.push(new CodeWordCompletionProvider());
-            return;
-        }
-        for (const provider of this.completions) providers.push(provider);
+        for (const provider of this._put) $eq.collections.remove(providers, provider, 'own');
+        this._put = this.completions == null ? [new CodeKeywordCompletionProvider(), new CodeWordCompletionProvider()] : [...this.completions];
+        for (const provider of this._put) providers.push(provider);
     }
 
     static sameProviders(one: any, other: any) {
