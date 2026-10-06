@@ -3,3 +3,5 @@ eQuantic.UI.Components.CodeBlock.MinHeight.get -> float
 eQuantic.UI.Components.CodeBlock.MinHeight.init -> void
 eQuantic.UI.Components.CodeEditor.Completions.get -> System.Collections.Generic.IReadOnlyList<eQuantic.UI.Code.ICodeCompletionProvider!>?
 eQuantic.UI.Components.CodeEditor.Completions.set -> void
+*REMOVED*static eQuantic.UI.Components.UI.Pressable(eQuantic.UI.Primitives.VisualNode! child, System.Action? onPressed = null, string? label = null, bool? selected = null, bool disabled = false, eQuantic.UI.Primitives.ColorToken? pressedBackground = null, bool? expanded = null, eQuantic.UI.Primitives.PressableRole role = eQuantic.UI.Primitives.PressableRole.Button) -> eQuantic.UI.Primitives.Pressable!
+static eQuantic.UI.Components.UI.Pressable(eQuantic.UI.Primitives.VisualNode! child, System.Action? onPressed = null, string? label = null, bool? selected = null, bool disabled = false, eQuantic.UI.Primitives.ColorToken? pressedBackground = null, bool? expanded = null, eQuantic.UI.Primitives.PressableRole role = eQuantic.UI.Primitives.PressableRole.Button, bool canRequestFocus = true) -> eQuantic.UI.Primitives.Pressable!

@@ -130,13 +130,13 @@ internal static class CodeCompletionView
     /// <summary>
     /// The list: a page of <paramref name="rows"/> entries from <paramref name="top"/>, in a frame
     /// <paramref name="width"/> wide, the selected entry washed, a mark on the right saying where the
-    /// page is in the whole, and <paramref name="documentationLines"/> lines of the selected entry's
-    /// documentation on the side away from the line. A press on a row hands <paramref name="pick"/>
-    /// that entry's index.
+    /// page is in the whole, and the selected entry's <paramref name="documentation"/> in
+    /// <paramref name="documentationLines"/> lines on the side away from the line. A press on a row
+    /// hands <paramref name="pick"/> that entry's index.
     /// </summary>
     internal static VisualNode Build(ComponentContext context, CodeCompletion completion,
-        CodeBlock.CodeMetrics metrics, int top, int rows, float width, bool above, int documentationLines,
-        Action<int> pick)
+        CodeBlock.CodeMetrics metrics, int top, int rows, float width, bool above, string? documentation,
+        int documentationLines, Action<int> pick)
     {
         var theme = context.Theme;
         var items = completion.Items;
@@ -152,11 +152,10 @@ internal static class CodeCompletionView
         paged.Add(PageMark(theme, metrics, top, rows, items.Count));
 
         var list = new Column(gap: 0) { Width = SizeValue.Fill };
-        var selected = completion.Selected >= 0 ? items[completion.Selected].Item : null;
-        var documentation = Documentation(context, metrics, selected?.Documentation, documentationLines, above);
-        if (above && documentation is not null) list.Add(documentation);
+        var documented = Documentation(context, metrics, documentation, documentationLines, above);
+        if (above && documented is not null) list.Add(documented);
         list.Add(paged);
-        if (!above && documentation is not null) list.Add(documentation);
+        if (!above && documented is not null) list.Add(documented);
 
         return new Box(new BoxStyle
         {

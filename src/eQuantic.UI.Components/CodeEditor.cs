@@ -442,7 +442,7 @@ public sealed class CodeEditor : StatefulComponent
             completion.PageSize = rows;
 
             offered = CodeCompletionView.Build(context, completion, metrics, _listTop, rows, width, above,
-                documentationLines, index => Pick(editor, index));
+                documentation, documentationLines, index => Pick(editor, index));
             offeredAt = new Point(x, y);
             highlighted = selected - _listTop;
         }
