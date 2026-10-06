@@ -1,12 +1,16 @@
 export class MermaidNodeRef {
-    constructor(props?: any) {
-        if (props && typeof props === 'object') Object.assign(this, props);
+    constructor() {
+        this.id = '';
+        this.label = '';
+        this.shape = 'rect';
+        this.shaped = false;
+        this.end = 0;
     }
 
-    id: string = '';
-    label: string = '';
-    shape: string = 'rect';
-    shaped: boolean = false;
-    end: number = 0;
+    id!: string;
+    label!: string;
+    shape!: string;
+    shaped!: boolean;
+    end!: number;
 }
 

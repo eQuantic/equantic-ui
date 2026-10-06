@@ -1,1 +1,3 @@
 #nullable enable
+eQuantic.UI.Primitives.TwinIsTranspiledAttribute
+eQuantic.UI.Primitives.TwinIsTranspiledAttribute.TwinIsTranspiledAttribute() -> void

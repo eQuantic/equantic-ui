@@ -1,7 +1,11 @@
 import { $eq, CodeCell } from "../runtime-exports";
 
 export class CodeLineCells {
-    constructor(text: string, tabSize: number, props?: any) {
+    constructor(text: string, tabSize: number) {
+        this._columns = null!;
+        this._cells = null!;
+        this.text = null!;
+        this.tabSize = 0;
         this.text = text;
         this.tabSize = Math.max(1, tabSize);
         let starts = $eq.text.textElementStarts(text);
@@ -17,13 +21,12 @@ export class CodeLineCells {
         }
         this._columns[starts.length] = text.length;
         this._cells[starts.length] = cell;
-        if (props && typeof props === 'object') Object.assign(this, props);
     }
 
-    _columns: number[];
-    _cells: number[];
-    declare text: string;
-    tabSize: number = 0;
+    _columns!: number[];
+    _cells!: number[];
+    text!: string;
+    tabSize!: number;
 
     get width(): number {
         return this._cells[this._cells.length - 1];

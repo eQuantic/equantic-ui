@@ -1,10 +1,12 @@
 export class MermaidLabel {
-    constructor(props?: any) {
-        if (props && typeof props === 'object') Object.assign(this, props);
+    constructor() {
+        this.text = '';
+        this.x = 0;
+        this.y = 0;
     }
 
-    text: string = '';
-    x: number = 0;
-    y: number = 0;
+    text!: string;
+    x!: number;
+    y!: number;
 }
 

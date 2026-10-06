@@ -6,6 +6,7 @@ namespace eQuantic.UI.Primitives;
 /// drift between them. Clipboard stays with the platforms (they own it); Escape-leaves-the-sheet
 /// stays with the hosts (focus is theirs).
 /// </summary>
+[TwinIsTranspiled]
 public static class SheetKeymap
 {
     /// <summary>Handles one key. Answers false for keys the sheet does not claim.</summary>
