@@ -46,6 +46,14 @@ public class NumberTextInTheCultureConformanceTests
             + "sb.Append(d).Append('|').Append(i).Append('|').Append(f).Append('|').Append(none).Append(true).Insert(0, i); "
             + "return sb.ToString() + \"|\" + Convert.ToString(d) + \"|\" + Convert.ToString(i) + \"|\" "
             + "+ Convert.ToString(f) + \"|\" + Convert.ToString(d, System.Globalization.CultureInfo.InvariantCulture);",
+        // The value a builder's call binds BY NAME is the same value, and an Insert written out of its
+        // parameters' order evaluates its arguments in the order they are written. An interpolated
+        // string handed to Append builds StringBuilder's own handler, whose holes are the same holes.
+        "var sb = new System.Text.StringBuilder(); var log = \"\"; double d = -1234.5; bool on = true; object? none = null; "
+            + "double V() { log += \"v\"; return -1.5; } int I() { log += \"i\"; return 0; } "
+            + "sb.Append(value: d).Append(value: none).Append('|').Insert(value: V(), index: I()).Insert(index: 0, value: 2.5); "
+            + "sb.Append($\"|{d}|{on}|{none}|\").AppendLine($\"{-5}\"); "
+            + "return sb.ToString() + \"|\" + log;",
         // An unsigned integer reads the same in every culture.
         "uint u = 7; byte y = 8; ushort h = 9; ulong w = 10; return $\"{u}|{y}|{h}|{w}|\" + u + y + \"|\" + w.ToString();",
         // An aligned hole pads the culture's text, and so does a composite placeholder.

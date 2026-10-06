@@ -158,4 +158,23 @@ internal sealed class BoundArguments
         var holes = Slots.Select(slot => slot.Written < 0 ? "undefined" : (slot.Spread ? "..." : "") + $"{{{slot.Written}}}");
         return JsExpr.Template($"(new {type}({string.Join(", ", holes)}))", Written, annotate);
     }
+
+    /// <summary>
+    /// <c><paramref name="receiver"/>.<paramref name="member"/>(…)</c> with these arguments, as
+    /// <see cref="New"/> passes them: in parameter order where that is the order they are written, and
+    /// otherwise each evaluated once, in the order it is written, the receiver before them all.
+    /// </summary>
+    public JsExpr Call(JsExpr receiver, string member, bool annotate)
+    {
+        if (InWrittenOrder || Written.All(part => part is JsLiteral or JsIdentifier))
+            return JsExpr.Call(JsExpr.Member(receiver, member), InParameterOrder());
+        if (Written.Count > 9)
+        {
+            var parameters = string.Join(", ", Written.Select((_, index) => $"$a{index}" + (annotate ? ": any" : "")).Prepend("$r" + (annotate ? ": any" : "")));
+            var call = JsExpr.Call(JsExpr.Member(JsExpr.Identifier("$r"), member), InParameterOrder(index => JsExpr.Identifier($"$a{index}")));
+            return JsExpr.Call(JsExpr.Arrow(parameters, call), [receiver, .. Written]);
+        }
+        var holes = Slots.Select(slot => slot.Written < 0 ? "undefined" : (slot.Spread ? "..." : "") + $"{{{slot.Written + 1}}}");
+        return JsExpr.Template($"{{0}}.{member}({string.Join(", ", holes)})", [receiver, .. Written], annotate);
+    }
 }
