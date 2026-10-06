@@ -403,18 +403,16 @@ public static class PhotonCssGenerator
         // padding is layout. It is centred on the control and at least the minimum on each side, so
         // the growth is symmetric and needs to know nothing about the control's own size.
         //
-        // Gated on a COARSE pointer, which is the browser answering the question Photon answers with
-        // Density: a pointer lands where it is aimed, and expanding a dense toolbar's buttons would
-        // grow each one into its neighbour. A finger gets the minimum, always.
-        css.AppendLine("@media (pointer: coarse) {");
-        // The containing block for the target below. It is the framework's own wrapper element, and
-        // an absolutely positioned descendant of a pressable anchoring to the pressable is the more
-        // correct answer anyway (a badge on a button); fixed layers are unaffected by `relative`.
-        css.AppendLine("  .eq-pressable { position: relative; }");
-        css.AppendLine("  .eq-pressable::after { content: \"\"; position: absolute; top: 50%; left: 50%; "
-            + $"width: 100%; height: 100%; min-width: {TokenCss.Px(Touch.MinTarget)}; min-height: {TokenCss.Px(Touch.MinTarget)}; "
-            + "transform: translate(-50%, -50%); }");
-        css.AppendLine("}");
+        // The finger's minimum is gated on a COARSE pointer, which is the browser answering the
+        // question Photon answers with Density: a pointer lands where it is aimed, and expanding a
+        // dense toolbar's buttons to it would grow each one into its neighbour. A finger gets the
+        // minimum, always.
+        //
+        // A FINE pointer keeps a floor of its own, Touch.MinPointerTarget, the minimum WCAG 2.2 SC
+        // 2.5.8 asks of a target: a 20px checkbox was a 20px target, while a dense toolbar's 26px
+        // buttons are past it and grow nothing (#430). Photon's Compact density is the same rule.
+        HitSlop(css, "coarse", Touch.MinTarget);
+        HitSlop(css, "fine", Touch.MinPointerTarget);
 
         // Overlay layer (Phase C): the viewport-fixed stacking layer — composition (scrim,
         // centering) belongs to the component; only the layer mechanics live here. The single
@@ -599,6 +597,37 @@ public static class PhotonCssGenerator
 
     private static void AppendColor(StringBuilder css, string name, ColorToken token) =>
         css.AppendLine($"  --eq-color-{name}: {TokenCss.Value(token)};");
+
+    /// <summary>
+    /// The hit slop for one kind of pointer: a pressable's target, centred on it and at least
+    /// <paramref name="minimum"/> on each side, without moving anything. The pressable is the slop's
+    /// containing block, and the child the lift below positions is the containing block of what the
+    /// content positions absolutely: the same box, since the pressable is a button with no padding
+    /// around one child (a badge on a button anchors to the button either way), and fixed layers are
+    /// unaffected by `relative`.
+    /// <para>
+    /// The target lies UNDER the control's own content, so it answers only where the control draws
+    /// nothing: the slop around a small one. It is the `::before`, first in tree order, and the
+    /// content is positioned like it, so the content paints and is hit after it, as Flutter's hit test
+    /// asks a child before its parent. A target over the content took every hit the content
+    /// should have had: under a fine pointer a Button's own box never matched `:hover`, so no button
+    /// showed its hover fill, and a Pressable around an IconButton took the inner control's hits
+    /// (#430, measured in a browser). The lift has no specificity, so a child that positions itself
+    /// (a raised box, a layer of a Stack) keeps its own. It reaches the pressable's child and no
+    /// deeper, so content behind a child that draws no box of its own (`display: contents`: an
+    /// InView, an Adaptive, a light and dark Image) stays under the slop (#622).
+    /// </para>
+    /// </summary>
+    private static void HitSlop(StringBuilder css, string pointer, float minimum)
+    {
+        css.AppendLine($"@media (pointer: {pointer}) {{");
+        css.AppendLine("  .eq-pressable { position: relative; }");
+        css.AppendLine("  .eq-pressable::before { content: \"\"; position: absolute; top: 50%; left: 50%; "
+            + $"width: 100%; height: 100%; min-width: {TokenCss.Px(minimum)}; min-height: {TokenCss.Px(minimum)}; "
+            + "transform: translate(-50%, -50%); }");
+        css.AppendLine("  :where(.eq-pressable) > * { position: relative; }");
+        css.AppendLine("}");
+    }
 
     private static string Cubic(Curve curve) =>
         string.Create(CultureInfo.InvariantCulture, $"{curve.X1}, {curve.Y1}, {curve.X2}, {curve.Y2}");
