@@ -52,9 +52,7 @@ public class CompilerPerfHarnessTests(ITestOutputHelper output)
             // Roslyn's defaults here would build a compilation that rejects syntax a real build
             // accepts — an instrument measuring a corpus the compiler never sees.
             .Select(path => CSharpSyntaxTree.ParseText(File.ReadAllText(path), ParseDefaults.Options, path))
-            .Append(CSharpSyntaxTree.ParseText(
-                "global using System;\nglobal using System.Collections.Generic;\nglobal using System.Linq;",
-                ParseDefaults.Options, "GlobalUsings.g.cs"))
+            .Append(SdkImplicitUsings.Tree(ParseDefaults.Options))
             .ToList();
         var parse = watch.ElapsedMilliseconds;
 

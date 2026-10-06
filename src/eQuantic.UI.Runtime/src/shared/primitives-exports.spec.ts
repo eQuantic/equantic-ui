@@ -59,11 +59,9 @@ const NO_TWIN_OWED = new Set([
   // The seam a HOST arms so `context.GetService<T>()` can answer. A page names the capability, not
   // the scope; the client's twin of it is the ComponentContext.getService method.
   'CapabilityScope',
-  // The same shape, for the UI thread — and on this target it would name something that does not
-  // exist. The seam says "the process's one drawing thread", which is a native fact; a page here
-  // asks for IConsent-style capabilities by name, and the browser's IUiDispatcher (registered in
-  // register.ts) reports itself already on the only thread there is.
-  'UiDispatcher',
+  // `UiDispatcher` used to be named here, as a seam only a native host arms. Write-once code asks it
+  // too (the code engine's completion applies a provider's answer on the thread the list is read
+  // on), so it has a twin, whose `current` is null: what one thread looks like, by its own docs.
   // HOST CONFIGURATION, composed in Program.cs and consulted by the native shells: which URL
   // schemes IWorkspace.OpenUrl hands to the operating system. A page names the capability
   // (IWorkspace, an interface, resolved by name); the policy is what the shell behind it applies,
