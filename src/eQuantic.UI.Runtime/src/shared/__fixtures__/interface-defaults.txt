@@ -1,7 +1,9 @@
 IAppTheme.code
 IAppTheme.data
 IAppTheme.monoFamily
+ICodeCompletionProvider.resolveAsync
 ICodeCompletionProvider.triggerCharacters
+ICodeLanguage.keywords
 ICodeLanguage.rules
 code|plain|23,27,33,255|242,244,247,255
 code|keyword|0,80,160,255|118,186,255,255

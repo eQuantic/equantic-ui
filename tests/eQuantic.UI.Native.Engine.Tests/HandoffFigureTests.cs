@@ -28,7 +28,7 @@ namespace eQuantic.UI.Native.Engine.Tests;
 /// </summary>
 public class HandoffFigureTests
 {
-    private const int Floor = 52;
+    private const int Floor = 54;
 
     /// <summary>The counted figures (<c>data-figure</c>) the pages carried when this was written: the
     /// component count on Foundations, three times on the design system's index (its opening, its
