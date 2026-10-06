@@ -1460,7 +1460,11 @@ record of a release, the wiki's Upgrading page is the distillate.
   order between press and focus is now asked of a `Simulated` picture. The review found a control
   disabled while it held focus still showing its states on Photon, where the web's families never
   select under a disabled control, and two mechanisms saying one pressed fill, now
-  [#616](https://github.com/eQuantic/equantic-ui/issues/616). The group hover and the inherited
+  [#616](https://github.com/eQuantic/equantic-ui/issues/616). Copilot's rounds found a surface's
+  own transition replaced by the fill's fade (a pressed scale snapped, measured in Chromium), a
+  disabled control still arming its fill and ring, shadows with no geometry paired as glide
+  positions, and a picture of a disabled control, or an enabled control around one, still reaching
+  its boxes; a disabled control's subtree is muted now on all three producers. The group hover and the inherited
   foreground of [#498](https://github.com/eQuantic/equantic-ui/issues/498) are
   [#614](https://github.com/eQuantic/equantic-ui/issues/614). Proposed and archived through OpenSpec
   (`openspec/specs/interaction-states`).

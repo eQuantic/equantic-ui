@@ -92,6 +92,12 @@ base composed as a hover's are. A disabled control SHALL show no press.
 - **WHEN** the same control is drawn inside `Simulated(SimulatedState.Pressed, …)`
 - **THEN** both targets draw the box pressed with nothing held
 
+#### Scenario: A disabled control, pictured or inside a pressed control
+
+- **WHEN** a disabled `Pressable` whose box declares a `Pressed` diff is drawn inside
+  `Simulated(SimulatedState.Pressed, …)`, or inside an enabled `Pressable` that is pressed
+- **THEN** neither target draws the box pressed, and the web writes it no press rule
+
 ### Requirement: A control's focus shows on every box inside it
 
 While a `Pressable` has keyboard focus, every box inside it that declares a `Focus` diff SHALL apply
