@@ -203,6 +203,8 @@ public class CodeEditorCompletionTests
         var frame = Type(host, "I");
 
         Shown(host).Should().HaveCount(12, "the pane has room for a page under a two-line file");
+        frame.HitRegions.Count(region => region.Node.Role == PressableRole.Option).Should().Be(12,
+            "and every row of it can be pressed: a surface as short as its code clipped them away");
         var offered = frame.CodeRegions.Single().Offered!.Value;
         var word = WordOnScreen(frame, editor);
         offered.Y.Should().BeApproximately(word.Y + word.Height, 0.5f, "below the line, in the room under the code");
