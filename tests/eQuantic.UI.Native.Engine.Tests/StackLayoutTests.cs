@@ -64,6 +64,40 @@ public class StackLayoutTests
         badge.Bounds.Y.Should().Be(-4);
     }
 
+    /// <summary>
+    /// An edge is a point plus a fraction of the stack, and the shift a fraction of the child: a
+    /// 100 × 30 tooltip at 50% / 25% − 16 of a 400 × 800 stack, centred above its anchor, lands at
+    /// (150, 154) — what the web's `left: 50%; top: calc(25% - 16px); translate(-50%, -100%)` draws.
+    /// </summary>
+    [Fact]
+    public void FractionsOfTheStackAndAShiftOfTheChild_PlaceAsTheWebDoes()
+    {
+        var stack = new Stack { Width = SizeValue.Fixed(400), Height = SizeValue.Fixed(800) };
+        stack.Add(new Positioned(new Primitives.Box(new BoxStyle { Width = 100, Height = 30 }), top: -16)
+        {
+            StartFraction = 0.5f,
+            TopFraction = 0.25f,
+            ShiftX = -0.5f,
+            ShiftY = -1f,
+        });
+
+        var tip = Layout(stack).Children[0];
+
+        tip.Bounds.X.Should().Be(150);
+        tip.Bounds.Y.Should().Be(154);
+    }
+
+    /// <summary>An end fraction measures from the stack's end edge: 10% of 400 leaves a 40 × 20
+    /// child's right edge 40 from the stack's, at x = 320.</summary>
+    [Fact]
+    public void AnEndFraction_MeasuresFromTheEndEdge()
+    {
+        var stack = new Stack { Width = SizeValue.Fixed(400), Height = SizeValue.Fixed(800) };
+        stack.Add(new Positioned(new Primitives.Box(new BoxStyle { Width = 40, Height = 20 })) { EndFraction = 0.1f });
+
+        Layout(stack).Children[0].Bounds.X.Should().Be(320);
+    }
+
     [Fact]
     public void CenterAlignment_CentersNonPositionedChildren()
     {

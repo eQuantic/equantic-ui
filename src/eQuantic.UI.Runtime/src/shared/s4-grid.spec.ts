@@ -33,4 +33,15 @@ describe('S4 grid lowering (C# cross-pin)', () => {
     expect(style).toContain('grid-template-columns: auto 1fr');
     expect(style).toContain('gap: 8px');
   });
+
+  it('an auto-fill track lowers to a repeat of a minmax', () => {
+    const grid = new Grid([GridTrack.autoFill(210)], 10, null, { width: { kind: 'fill', value: 0 } as never });
+
+    const style = effectiveStyle(lowerVisualNode(grid as unknown as VisualNodeValue, ctx));
+    expect(style).toContain('grid-template-columns: repeat(auto-fill, minmax(210px, 1fr))');
+  });
+
+  it('refuses an auto-fill track beside another, as the C# constructor does', () => {
+    expect(() => new Grid([GridTrack.autoFill(210), GridTrack.fixed(40)])).toThrow(/whole column list/);
+  });
 });

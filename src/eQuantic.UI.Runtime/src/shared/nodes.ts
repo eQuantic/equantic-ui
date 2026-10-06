@@ -80,6 +80,10 @@ export type { CrossAlignValue } from './enums.generated';
 export interface GridTrackValue {
   kind: 'fixed' | 'fill' | 'hug';
   value: number;
+  /** The narrowest an auto-fill track may be, in dp; 0 for every other track. */
+  min?: number;
+  /** Whether this track repeats as often as it fits (`GridTrack.AutoFill`). */
+  repeats?: boolean;
 }
 
 /** Spec S7 — scroll-anchored chrome: in flow until scrolling pins it at `offset`. */
@@ -925,9 +929,9 @@ export interface VectorDrawingValue {
 export interface DrawingNode extends VisualNodeValue {
   nodeKind: 'drawing';
   artwork: VectorDrawingValue;
-  /** The box's WIDTH in dp. */
-  width: number;
-  /** The box's HEIGHT — the artwork's own aspect unless the author decided. */
+  /** The box's WIDTH: dp, or a fill of the width the parent offers. */
+  width: SizeValueValue;
+  /** The height the author decided, in dp; 0 when the artwork's aspect decides it. */
   height: number;
   /** What answers the shapes the file left as `currentColor`. */
   tint?: ColorTokenValue | null;
@@ -949,6 +953,14 @@ export interface PositionedNode extends VisualNodeValue {
   end?: number | null;
   bottom?: number | null;
   start?: number | null;
+  /** Edges as fractions of the stack (0.3 = 30%), each added to its point offset. */
+  topFraction?: number | null;
+  endFraction?: number | null;
+  bottomFraction?: number | null;
+  startFraction?: number | null;
+  /** A move by fractions of the child's OWN size, after placement (-0.5 centres on the anchor). */
+  shiftX?: number;
+  shiftY?: number;
   /** Spec S7: explicit stacking inside the Stack — higher paints on top; 0 = flow order. */
   layer?: number;
 }

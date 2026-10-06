@@ -1,1 +1,3 @@
 #nullable enable
+static eQuantic.UI.Web.TokenCss.Edge(float? point, float? fraction) -> string?
+static eQuantic.UI.Web.TokenCss.Shift(float x, float y) -> string?

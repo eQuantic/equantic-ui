@@ -26,6 +26,26 @@ public class S4GridRealizerTests
         ((HtmlElement)element.Children[1]).Style!.ToCssString().Should().NotContain("grid-column");
     }
 
+    /// <summary>An auto-fill track is the whole column list: as many as fit the minimum, sharing the rest.</summary>
+    [Fact]
+    public void AutoFill_LowersToARepeatOfAMinmax()
+    {
+        var grid = new Grid([GridTrack.AutoFill(210)], gap: 10) { Width = SizeValue.Fill };
+
+        var style = WebRealizer.Lower(grid, PhotonTheme.Instance).Style!.ToCssString();
+
+        style.Should().Contain("grid-template-columns: repeat(auto-fill, minmax(210px, 1fr))");
+    }
+
+    /// <summary>Beside another track an auto-fill track would need a solver: refused at construction.</summary>
+    [Fact]
+    public void AutoFill_BesideAnotherTrack_IsRefused()
+    {
+        var act = () => new Grid([GridTrack.AutoFill(210), GridTrack.Fixed(40)]);
+
+        act.Should().Throw<ArgumentException>().WithMessage("*whole column list*");
+    }
+
     [Fact]
     public void AutoTrack_LowersToAuto_AndSingleGapCollapses()
     {

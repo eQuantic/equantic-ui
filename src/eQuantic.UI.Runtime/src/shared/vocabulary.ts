@@ -452,6 +452,11 @@ export class AdaptiveNode extends VisualNode {
 
 /** Mirror of the C# `GridTrack` statics. */
 export class GridTrack {
+  /** The narrowest an auto-fill track may be, in dp; 0 for every other track. */
+  readonly min: number = 0;
+  /** Whether this track repeats as often as it fits (`autoFill`). */
+  readonly repeats: boolean = false;
+
   constructor(
     readonly kind: 'fixed' | 'fill' | 'hug',
     readonly value: number,
@@ -471,6 +476,11 @@ export class GridTrack {
   }
   static repeat(count: number, track: GridTrack): GridTrack[] {
     return Array.from({ length: count }, () => track);
+  }
+  /** C# `GridTrack.AutoFill` twin: as many columns as fit `min`, sharing the rest by `weight`. */
+  static autoFill(min: number, weight = 1): GridTrack {
+    if (!(min > 0)) throw new RangeError('An auto-fill track needs a positive minimum width.');
+    return new GridTrack('fill', weight, { min, repeats: true });
   }
 }
 
@@ -494,6 +504,11 @@ export class Grid extends VisualNode {
 
   constructor(columns: GridTrack[], gap = 0, rowGap: number | null = null, config?: GridConfig) {
     super();
+    // The C# constructor's refusal, word for word: an auto-fill track is the whole column list.
+    if (columns?.length > 1 && columns.some((c) => c.repeats))
+      throw new Error(
+        'An auto-fill track (GridTrack.AutoFill) is the grid\'s whole column list; it cannot stand beside another track.',
+      );
     this.columns = columns;
     this.gap = gap;
     this.rowGap = rowGap;
@@ -1745,15 +1760,16 @@ export class VectorDrawing {
 export class Drawing extends VisualNode {
   readonly nodeKind = 'drawing';
   artwork: VectorDrawing;
-  width: number;
-  /** The box's HEIGHT — the artwork's own aspect unless the author decided. */
+  /** The box's width: dp, or a fill of the width the parent offers. */
+  width: SizeValue;
+  /** The height the author decided, in dp; 0 when the artwork's aspect decides it. */
   height: number;
   tint: ColorTokenValue | null;
   label: string | null;
 
   constructor(
     artwork: VectorDrawing,
-    width: number,
+    width: SizeValue | number,
     height = 0,
     tint: ColorTokenValue | null = null,
     label: string | null = null,
@@ -1761,14 +1777,28 @@ export class Drawing extends VisualNode {
   ) {
     super();
     this.artwork = artwork;
-    this.width = width;
-    // Defensive about the artwork itself: a drawing whose asset failed to generate is a page that
-    // should lose a logo, not a page that throws while building its tree.
-    const aspect = artwork && artwork.height > 0 ? artwork.width / artwork.height : 1;
-    this.height = height > 0 ? height : width / (aspect <= 0 ? 1 : aspect);
+    // A number arrives raw: the C# float → SizeValue conversion passes through to the twin.
+    this.width = SizeValue.from(width) ?? SizeValue.fill;
+    this.height = height > 0 ? height : 0;
     this.tint = tint;
     this.label = label;
     if (config) Object.assign(this, config);
+  }
+
+  /**
+   * Width over height, the ratio a derived height keeps. Defensive about the artwork itself: a
+   * drawing whose asset failed to generate is a page that should lose a logo, not a page that
+   * throws while building its tree.
+   */
+  get aspect(): number {
+    const a = this.artwork;
+    const aspect = a && a.height > 0 ? a.width / a.height : 1;
+    return aspect <= 0 ? 1 : aspect;
+  }
+
+  /** The height this drawing takes at `width` dp: the decided one, or the aspect's. */
+  heightAt(width: number): number {
+    return this.height > 0 ? this.height : width / this.aspect;
   }
 }
 
@@ -1809,6 +1839,14 @@ export class Positioned extends VisualNode {
   end: number | null;
   bottom: number | null;
   start: number | null;
+  /** Edges as fractions of the stack (0.3 = 30%), each added to its point offset. */
+  topFraction: number | null = null;
+  endFraction: number | null = null;
+  bottomFraction: number | null = null;
+  startFraction: number | null = null;
+  /** A move by fractions of the child's OWN size, after placement (-0.5 centres on the anchor). */
+  shiftX = 0;
+  shiftY = 0;
   /** Spec S7: explicit stacking order inside the Stack (0 = the child's own depth). */
   layer = 0;
 
@@ -1823,6 +1861,12 @@ export class Positioned extends VisualNode {
       end?: number | null;
       bottom?: number | null;
       start?: number | null;
+      topFraction?: number | null;
+      endFraction?: number | null;
+      bottomFraction?: number | null;
+      startFraction?: number | null;
+      shiftX?: number;
+      shiftY?: number;
       layer?: number;
       key?: string | null;
     },

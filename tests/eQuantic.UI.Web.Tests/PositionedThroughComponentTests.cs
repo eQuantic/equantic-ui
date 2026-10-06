@@ -137,4 +137,37 @@ public class PositionedSpanTests
 
         Css(stack).Should().Contain("left:8px").And.Contain("right:8px");
     }
+
+    /// <summary>
+    /// An edge is a point, a fraction of the stack, or both added; the shift is a fraction of the
+    /// child's own box — a tooltip centred 16 above a point at 50% / 25% of a map.
+    /// </summary>
+    [Fact]
+    public void FractionsOfTheStackAndAShiftOfTheChild_LowerToPercentagesCalcAndATranslate()
+    {
+        var stack = new Stack { Width = SizeValue.Fill };
+        stack.Add(new Positioned(new Primitives.Box(new BoxStyle { Width = 100, Height = 30 }), top: -16)
+        {
+            StartFraction = 0.5f,
+            TopFraction = 0.25f,
+            ShiftX = -0.5f,
+            ShiftY = -1f,
+        });
+
+        Css(stack).Should().Contain("left:50%")
+            .And.Contain("top:calc(25% - 16px)")
+            .And.Contain("transform:translate(-50%, -100%)");
+    }
+
+    /// <summary>A fraction alone on the end edge, and no shift means no transform.</summary>
+    [Fact]
+    public void AnEndFractionAlone_IsAPercentage_AndNoShiftIsNoTransform()
+    {
+        var stack = new Stack { Width = SizeValue.Fill };
+        stack.Add(new Positioned(new Primitives.Box(new BoxStyle { Width = 40, Height = 20 })) { EndFraction = 0.1f });
+
+        var css = Css(stack);
+        css.Should().Contain("right:10%");
+        css.Should().NotContain("translate(");
+    }
 }

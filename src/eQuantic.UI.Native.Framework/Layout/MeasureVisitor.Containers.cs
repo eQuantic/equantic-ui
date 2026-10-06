@@ -93,9 +93,25 @@ internal sealed partial class MeasureVisitor
 
             if (PositionedOf(child, measured) is { } positioned)
             {
-                var x = positioned.Start ?? (positioned.End is { } end ? width - cw - end : alignX);
-                var y = positioned.Top ?? (positioned.Bottom is { } bottom ? height - ch - bottom : alignY);
-                measured.Bounds = measured.Bounds with { X = x, Y = y };
+                // An edge is its point offset plus its fraction of the stack, the web's
+                // `calc(30% - 16px)`; then the shift moves the child by fractions of its OWN size,
+                // the web's `translate(-50%, -100%)`. Applied to the laid-out position, so the hit
+                // region follows the drawn box as it does under a CSS transform.
+                var x = positioned.AnchorsStart
+                    ? (positioned.Start ?? 0) + (positioned.StartFraction ?? 0) * width
+                    : positioned.AnchorsEnd
+                        ? width - cw - ((positioned.End ?? 0) + (positioned.EndFraction ?? 0) * width)
+                        : alignX;
+                var y = positioned.AnchorsTop
+                    ? (positioned.Top ?? 0) + (positioned.TopFraction ?? 0) * height
+                    : positioned.AnchorsBottom
+                        ? height - ch - ((positioned.Bottom ?? 0) + (positioned.BottomFraction ?? 0) * height)
+                        : alignY;
+                measured.Bounds = measured.Bounds with
+                {
+                    X = x + positioned.ShiftX * cw,
+                    Y = y + positioned.ShiftY * ch,
+                };
             }
             else
             {
@@ -350,18 +366,37 @@ internal sealed partial class MeasureVisitor
     /// remaining width by weight (collapsing to 0 in unbounded space). Children flow left→right,
     /// wrapping to a new row; a span clamps to the row's remainder. Rows size to their tallest cell.
     /// </summary>
+    /// <summary>
+    /// An auto-fill track (the grid's whole list, the constructor saw to that) becomes as many
+    /// flexible tracks as fit its minimum with the gap between them, at least one: CSS's
+    /// <c>repeat(auto-fill, minmax(min, 1fr))</c>. On a width the grid sizes from its content there
+    /// is nothing to divide, and it is one column at its minimum, as CSS answers for an intrinsic
+    /// width. Any other list passes through.
+    /// </summary>
+    private static IReadOnlyList<GridTrack> AutoFilled(IReadOnlyList<GridTrack> columns, float available, float gap)
+    {
+        if (columns.Count != 1 || !columns[0].Repeats) return columns;
+        var track = columns[0];
+        if (float.IsPositiveInfinity(available)) return [GridTrack.Fixed(track.Min)];
+        var count = Math.Max(1, (int)MathF.Floor((available + gap) / (track.Min + gap)));
+        var flexible = GridTrack.Flex(track.Value);
+        var tracks = new GridTrack[count];
+        Array.Fill(tracks, flexible);
+        return tracks;
+    }
+
     private LayoutNode MeasureGrid(Grid grid, LayoutConstraints constraints, LayoutContext ctx, string path)
     {
         var (maxW, maxH) = (constraints.MaxWidth, constraints.MaxHeight);
         var result = ctx.Node(grid);
-        var columns = grid.Columns;
-        var count = columns.Count;
         var rowGap = grid.RowGap ?? grid.Gap;
         var padH = grid.Padding.Horizontal;
 
         var avail = grid.Width.Kind == SizeKind.Fixed ? grid.Width.Value - padH
             : !float.IsPositiveInfinity(maxW) ? maxW - padH
             : float.PositiveInfinity;
+        var columns = AutoFilled(grid.Columns, avail, grid.Gap);
+        var count = columns.Count;
         var gapTotal = grid.Gap * MathF.Max(0, count - 1);
 
         // Place children into (column, span) slots — auto-flow with span clamping.

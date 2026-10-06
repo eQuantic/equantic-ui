@@ -1,1 +1,28 @@
 #nullable enable
+*REMOVED*eQuantic.UI.Primitives.Drawing.Drawing(eQuantic.UI.Primitives.VectorDrawing! artwork, float width, float height = 0, eQuantic.UI.Primitives.ColorToken? tint = null, string? label = null) -> void
+*REMOVED*eQuantic.UI.Primitives.Drawing.Width.get -> float
+static eQuantic.UI.Primitives.GridTrack.AutoFill(float min, float weight = 1) -> eQuantic.UI.Primitives.GridTrack
+eQuantic.UI.Primitives.GridTrack.Min.get -> float
+eQuantic.UI.Primitives.GridTrack.Min.init -> void
+eQuantic.UI.Primitives.GridTrack.Repeats.get -> bool
+eQuantic.UI.Primitives.GridTrack.Repeats.init -> void
+eQuantic.UI.Primitives.Positioned.TopFraction.get -> float?
+eQuantic.UI.Primitives.Positioned.TopFraction.init -> void
+eQuantic.UI.Primitives.Positioned.EndFraction.get -> float?
+eQuantic.UI.Primitives.Positioned.EndFraction.init -> void
+eQuantic.UI.Primitives.Positioned.BottomFraction.get -> float?
+eQuantic.UI.Primitives.Positioned.BottomFraction.init -> void
+eQuantic.UI.Primitives.Positioned.StartFraction.get -> float?
+eQuantic.UI.Primitives.Positioned.StartFraction.init -> void
+eQuantic.UI.Primitives.Positioned.ShiftX.get -> float
+eQuantic.UI.Primitives.Positioned.ShiftX.init -> void
+eQuantic.UI.Primitives.Positioned.ShiftY.get -> float
+eQuantic.UI.Primitives.Positioned.ShiftY.init -> void
+eQuantic.UI.Primitives.Positioned.AnchorsStart.get -> bool
+eQuantic.UI.Primitives.Positioned.AnchorsEnd.get -> bool
+eQuantic.UI.Primitives.Positioned.AnchorsTop.get -> bool
+eQuantic.UI.Primitives.Positioned.AnchorsBottom.get -> bool
+eQuantic.UI.Primitives.Drawing.Drawing(eQuantic.UI.Primitives.VectorDrawing! artwork, eQuantic.UI.Primitives.SizeValue width, float height = 0, eQuantic.UI.Primitives.ColorToken? tint = null, string? label = null) -> void
+eQuantic.UI.Primitives.Drawing.Width.get -> eQuantic.UI.Primitives.SizeValue
+eQuantic.UI.Primitives.Drawing.Aspect.get -> float
+eQuantic.UI.Primitives.Drawing.HeightAt(float width) -> float

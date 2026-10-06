@@ -1,1 +1,5 @@
 #nullable enable
+*REMOVED*static eQuantic.UI.Components.UI.Drawing(eQuantic.UI.Primitives.VectorDrawing! artwork, float width, float height = 0, eQuantic.UI.Primitives.ColorToken? tint = null, string? label = null) -> eQuantic.UI.Primitives.Drawing!
+*REMOVED*static eQuantic.UI.Components.UI.Positioned(eQuantic.UI.Primitives.VisualNode! child, float? top = null, float? end = null, float? bottom = null, float? start = null) -> eQuantic.UI.Primitives.Positioned!
+static eQuantic.UI.Components.UI.Drawing(eQuantic.UI.Primitives.VectorDrawing! artwork, eQuantic.UI.Primitives.SizeValue width, float height = 0, eQuantic.UI.Primitives.ColorToken? tint = null, string? label = null) -> eQuantic.UI.Primitives.Drawing!
+static eQuantic.UI.Components.UI.Positioned(eQuantic.UI.Primitives.VisualNode! child, float? top = null, float? end = null, float? bottom = null, float? start = null, float? topFraction = null, float? endFraction = null, float? bottomFraction = null, float? startFraction = null, float shiftX = 0, float shiftY = 0) -> eQuantic.UI.Primitives.Positioned!

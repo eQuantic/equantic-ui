@@ -42,6 +42,34 @@ public class S4GridLayoutTests
         node.Children[2].Bounds.Width.Should().Be(100);
     }
 
+    /// <summary>An auto-fill track repeats as often as fits: 820dp with a 10dp gap holds three
+    /// tracks of at least 210 ((820 + 10) / 220 = 3.77), each 266.67 — the web's auto-fill.</summary>
+    [Fact]
+    public void AutoFill_RepeatsAsOftenAsFits_AndSharesTheRest()
+    {
+        var grid = new Grid([GridTrack.AutoFill(210)], gap: 10) { Width = SizeValue.Fill };
+        for (var i = 0; i < 4; i++) grid.Add(Cell());
+
+        var node = Layout(grid, w: 820);
+
+        node.Children[0].Bounds.Width.Should().BeApproximately(266.67f, 0.01f);
+        node.Children[2].Bounds.X.Should().BeApproximately(553.33f, 0.01f, "two tracks and two gaps in");
+        node.Children[3].Bounds.Y.Should().BeGreaterThan(node.Children[0].Bounds.Y, "the fourth wraps to a second row");
+    }
+
+    /// <summary>Narrower than one track is still one track, as wide as the grid.</summary>
+    [Fact]
+    public void AutoFill_NarrowerThanOneTrack_IsOneColumn()
+    {
+        var grid = new Grid([GridTrack.AutoFill(210)], gap: 10) { Width = SizeValue.Fill };
+        grid.Add(Cell()); grid.Add(Cell());
+
+        var node = Layout(grid, w: 150);
+
+        node.Children[0].Bounds.Width.Should().Be(150);
+        node.Children[1].Bounds.Y.Should().BeGreaterThan(0, "one column: the second cell is on the next row");
+    }
+
     [Fact]
     public void AutoFlow_WrapsRows_AndSpansClamp()
     {
