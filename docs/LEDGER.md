@@ -1494,6 +1494,17 @@ record of a release, the wiki's Upgrading page is the distillate.
   a generated equality in a hydration map or a `ContainsValue` did not register; and `CopyTo` through
   an `ICollection<T>` copies a set. The served runtime grew about 7 KB gzipped. Proposed and archived
   through OpenSpec (`openspec/specs/runtime-sets`, `runtime-dictionaries`, `transpiler-bcl`).
+- **2026-10-06 · A target under a pointer keeps a 24dp floor**: under a mouse a target was its visual
+  bounds, so a Checkbox or a Radio without a label was a 20dp target on Photon and on the web, under
+  the 24 × 24 WCAG 2.2 SC 2.5.8 asks, and the cross-pin passed because both agreed on 20
+  ([#430](https://github.com/eQuantic/equantic-ui/issues/430), decided by Edgar on 2026-09-26).
+  `Touch.MinPointerTarget` is the floor Photon's Compact hit rect, `Sizing.HitTarget` and a fine
+  pointer's slop on the web grow to, published in the handoff at `touch.minPointerTarget`. Measuring
+  it in a browser found the web's slop drawn over the control's content: under a fine pointer the
+  centre of a Button hit the button element itself, so its box never matched `:hover` and no button
+  showed its hover fill, and a Pressable around an IconButton took the inner control's hits. The slop
+  is now the `::before` with the content lifted above it, and answers only around the control.
+  Proposed and archived through OpenSpec (`openspec/specs/hit-targets`).
 
 ## Retired documents
 
