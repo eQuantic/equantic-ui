@@ -63,6 +63,16 @@ public static class TypeSymbolExtensions
     }
 
     /// <summary>
+    /// Whether the vocabulary's assembly marks <paramref name="type"/> <c>[TwinIsTranspiled]</c>: its
+    /// twin is transpiled from its C# with the runtime, as an app's type's is, though its namespace is
+    /// the vocabulary's, whose other twins are hand-written (#592). Asked of the symbol, since an app
+    /// reaches it as metadata.
+    /// </summary>
+    internal static bool TwinIsTranspiled(this ITypeSymbol type) =>
+        type.GetAttributes().Any(attribute => attribute.AttributeClass is { Name: "TwinIsTranspiledAttribute" } marker
+            && marker.ContainingNamespace?.ToDisplayString() == "eQuantic.UI.Primitives");
+
+    /// <summary>
     /// True when the type derives (transitively) from a framework component/state base. Walking the base
     /// chain recognises a component that extends another user or library component without enumerating
     /// every intermediate base — replacing brittle direct-base-name matching.

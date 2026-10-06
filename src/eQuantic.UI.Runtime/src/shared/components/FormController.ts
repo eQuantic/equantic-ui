@@ -1,19 +1,21 @@
 import { FieldError, FieldRule, FormField } from "../runtime-exports";
 
 export class FormController {
-    constructor(props?: any) {
+    constructor() {
         this._fields = [];
-        if (props && typeof props === 'object') Object.assign(this, props);
+        this.changed = null;
+        this.submitting = false;
+        this.submitError = null;
     }
 
-    _fields: FormField[];
+    _fields!: FormField[];
+    changed!: (() => void) | null;
+    submitting!: boolean;
+    submitError!: string | null;
 
     get fields(): FormField[] {
         return this._fields;
     }
-
-    submitting: boolean = false;
-    declare submitError: string | null;
 
     get valid(): boolean {
         for (const entry of this._fields) if (entry.relevant && !(entry.error == null)) return false;
@@ -24,8 +26,6 @@ export class FormController {
         for (const entry of this._fields) if (entry.dirty) return true;
         return false;
     }
-
-    changed: (() => void) | null = null;
 
     add(name: string, initial: string = '', rules: FieldRule[] | null = null, relevantWhen: (() => boolean) | null = null) {
         let field = new FormField(name, initial, rules, relevantWhen);

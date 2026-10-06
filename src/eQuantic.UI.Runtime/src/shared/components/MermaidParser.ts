@@ -56,11 +56,20 @@ export class MermaidParser {
         for (let i = 0; i < lines.length; i++) {
             let line = $eq.text.trim(MermaidParser.stripComment(lines[i]));
             if (line.length === 0) continue;
-            if ($eq.text.startsWith(line, 'sequenceDiagram', 'ordinal')) return new MermaidGraph({ kind: 'sequence' });
+            if ($eq.text.startsWith(line, 'sequenceDiagram', 'ordinal')) {
+                let $n13: any; 
+                return ($n13 = new MermaidGraph(), $n13.kind = 'sequence', $n13);
+            }
             let rest = '';
             if ($eq.text.startsWith(line, 'flowchart', 'ordinal')) rest = $eq.text.trim(line.slice(9)); else if ($eq.text.startsWith(line, 'graph', 'ordinal')) rest = $eq.text.trim(line.slice(5)); else return null;
-            if (rest === 'TD' || rest === 'TB') return new MermaidGraph({ vertical: true });
-            if (rest === 'LR') return new MermaidGraph({ vertical: false });
+            if (rest === 'TD' || rest === 'TB') {
+                let $n14: any; 
+                return ($n14 = new MermaidGraph(), $n14.vertical = true, $n14);
+            }
+            if (rest === 'LR') {
+                let $n15: any; 
+                return ($n15 = new MermaidGraph(), $n15.vertical = false, $n15);
+            }
             return null;
         }
         return null;
@@ -92,7 +101,8 @@ export class MermaidParser {
             let to = MermaidParser.nodeRefAt(text, pos);
             if (to == null) break;
             MermaidParser.declare(graph, to);
-            graph.edges.push(new MermaidEdge({ from: current, to: to.id, label: edge.label, arrow: edge.arrow }));
+            let $n16: any; 
+            graph.edges.push(($n16 = new MermaidEdge(), $n16.from = current, $n16.to = to.id, $n16.label = edge.label, $n16.arrow = edge.arrow, $n16));
             current = to.id;
             pos = to.end;
         }
@@ -107,7 +117,8 @@ export class MermaidParser {
             }
             return;
         }
-        graph.nodes.push(new MermaidNode({ id: nodeRef.id, label: nodeRef.label.length === 0 ? nodeRef.id : nodeRef.label, shape: nodeRef.shape }));
+        let $n17: any; 
+        graph.nodes.push(($n17 = new MermaidNode(), $n17.id = nodeRef.id, $n17.label = nodeRef.label.length === 0 ? nodeRef.id : nodeRef.label, $n17.shape = nodeRef.shape, $n17));
     }
 
     static skipSpaces(text: string, pos: number) {
@@ -124,7 +135,8 @@ export class MermaidParser {
         let end = start;
         while (end < text.length && MermaidParser.isIdChar(text[end])) end++;
         if (end === start) return null;
-        let node = new MermaidNodeRef({ id: text.slice(start, end), end: end });
+        let $n18: any; 
+        let node = ($n18 = new MermaidNodeRef(), $n18.id = text.slice(start, end), $n18.end = end, $n18);
         if (end >= text.length) return node;
         let c = text[end];
         if (c === '[') return MermaidParser.closeShape(text, end + 1, ']', 'rect', node);
@@ -158,7 +170,8 @@ export class MermaidParser {
         if (body < 2) return null;
         let arrow = i < text.length && text[i] === '>';
         if (arrow) i++;
-        let edge = new MermaidEdgeRef({ arrow: arrow, end: i });
+        let $n19: any; 
+        let edge = ($n19 = new MermaidEdgeRef(), $n19.arrow = arrow, $n19.end = i, $n19);
         let after = MermaidParser.skipSpaces(text, i);
         if (after < text.length && text[after] === '|') {
             let close = text.indexOf('|', after + 1);
@@ -195,14 +208,16 @@ export class MermaidParser {
             if (from.length === 0 || to.length === 0) return;
             MermaidParser.declareParticipant(graph, from, from);
             MermaidParser.declareParticipant(graph, to, to);
-            graph.messages.push(new MermaidMessage({ from: from, to: to, label: label, dashed: $eq.text.startsWith(arrow, '--', 'ordinal') }));
+            let $n20: any; 
+            graph.messages.push(($n20 = new MermaidMessage(), $n20.from = from, $n20.to = to, $n20.label = label, $n20.dashed = $eq.text.startsWith(arrow, '--', 'ordinal'), $n20));
             return;
         }
     }
 
     static declareParticipant(graph: MermaidGraph, id: string, display: string) {
         for (const known of graph.nodes) if (known.id === id) return;
-        graph.nodes.push(new MermaidNode({ id: id, label: display, shape: 'rect' }));
+        let $n21: any; 
+        graph.nodes.push(($n21 = new MermaidNode(), $n21.id = id, $n21.label = display, $n21.shape = 'rect', $n21));
     }
 }
 
