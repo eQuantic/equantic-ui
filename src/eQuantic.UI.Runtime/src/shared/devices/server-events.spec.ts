@@ -74,7 +74,11 @@ function events(): WebServerEvents {
   const transport = new ServerEventStream(
     (url) => new FakeSource(url) as unknown as EventSource,
     (url, init) =>
-      new Promise<Response>((resolve) => {
+      new Promise<Response>((resolve, reject) => {
+        // As fetch does: an aborted request rejects, whether or not it was answered yet.
+        init.signal?.addEventListener('abort', () =>
+          reject(new DOMException('The request was aborted.', 'AbortError')),
+        );
         const request: Sent = {
           url,
           topic: (JSON.parse(init.body as string) as { topic: string }).topic,
@@ -468,6 +472,84 @@ describe('WebServerEvents', () => {
     ]);
     expect(refusals).toEqual([]);
     expect(page.connection.state).toBe('connected');
+  });
+
+  it('reports connected only once a topic subscribed while the others were binding is bound too', async () => {
+    respond = null;
+    const page = events();
+    const states: string[] = [];
+    page.onConnectionChanged((connection) => states.push(connection.state));
+    page.subscribe(room('a'), () => {});
+    sources[0].connect('c1');
+    await settle();
+
+    // A's bind is under way when B subscribes.
+    page.subscribe(room('b'), () => {});
+    await settle();
+    sent[0].answer(204);
+    await settle();
+    expect(states).not.toContain('connected');
+
+    sent[1].answer(204);
+    await settle();
+    expect(sent.map((request) => request.topic)).toEqual(['room:a', 'room:b']);
+    expect(states[states.length - 1]).toBe('connected');
+  });
+
+  it('asks again a release the server did not answer, and opens the stream again at the last miss', async () => {
+    vi.useFakeTimers();
+    respond = (request) => request.answer(request.url.endsWith('/release') ? 503 : 204);
+    const page = events();
+    const a = page.subscribe(room('a'), () => {});
+    page.subscribe(room('b'), () => {});
+    sources[0].connect('c1');
+    await vi.advanceTimersByTimeAsync(0);
+
+    a.dispose();
+    await vi.advanceTimersByTimeAsync(3_500);
+
+    expect(sent.filter((request) => request.url.endsWith('/release'))).toHaveLength(4);
+    // The server releases everything a stream held when it ends, and the new one binds what is left.
+    expect(sources[0].closed).toBe(true);
+    expect(sources).toHaveLength(2);
+    sources[1].connect('c2');
+    await vi.advanceTimersByTimeAsync(0);
+    expect(sent[sent.length - 1]).toMatchObject({ url: '/_equantic/events/c2/subscribe', topic: 'room:b' });
+    expect(page.connection.state).toBe('connected');
+  });
+
+  it('binds on the new connection a topic whose bind on the old one never answered', async () => {
+    respond = null;
+    const page = events();
+    page.subscribe(room('a'), () => {});
+    sources[0].connect('c1');
+    await settle();
+    expect(sent).toHaveLength(1);
+
+    sources[0].fail(0);
+    sources[0].connect('c2');
+    await settle();
+
+    expect(sent.map((request) => request.url)).toEqual([
+      '/_equantic/events/c1/subscribe',
+      '/_equantic/events/c2/subscribe',
+    ]);
+  });
+
+  it('gives up on a bind that never answers, and asks again', async () => {
+    vi.useFakeTimers();
+    respond = null;
+    const page = events();
+    page.subscribe(room('a'), () => {});
+    sources[0].connect('c1');
+    await vi.advanceTimersByTimeAsync(0);
+    expect(sent).toHaveLength(1);
+
+    await vi.advanceTimersByTimeAsync(10_000 + 500);
+
+    expect(sent.map((request) => request.url)).toEqual(
+      Array(2).fill('/_equantic/events/c1/subscribe'),
+    );
   });
 
   it('refuses at once, and says why, a topic of a page whose server serves no events', async () => {

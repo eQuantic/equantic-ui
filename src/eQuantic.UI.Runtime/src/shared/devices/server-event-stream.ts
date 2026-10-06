@@ -1,4 +1,9 @@
-import type { BindOutcome, ServerEventsListener, ServerEventsTransport } from './server-events';
+import type {
+  BindOutcome,
+  ReleaseOutcome,
+  ServerEventsListener,
+  ServerEventsTransport,
+} from './server-events';
 
 /** Where the server serves the stream: `ServerEventsEndpoints.Path`. */
 const PATH = '/_equantic/events';
@@ -9,6 +14,13 @@ const CLOSED = 2;
 /** How long to wait before opening a stream the browser gave up on, the first time and at most. */
 const FIRST_RETRY_MS = 1_000;
 const LAST_RETRY_MS = 30_000;
+
+/**
+ * How long a bind or a release may take, its answer read, before it counts as unanswered. A request
+ * left hanging held its topic's next request, on the connection that replaced its own, until the
+ * network gave up on it.
+ */
+const REQUEST_TIMEOUT_MS = 10_000;
 
 type OpenSource = (url: string) => EventSource;
 type Request = (url: string, init: RequestInit) => Promise<Response>;
@@ -34,6 +46,8 @@ export class ServerEventStream implements ServerEventsTransport {
   private listener: ServerEventsListener | null = null;
   private retry: ReturnType<typeof setTimeout> | null = null;
   private failures = 0;
+  /** Aborted when the stream the requests under way serve drops or closes. */
+  private requests = new AbortController();
 
   constructor(
     private readonly openSource: OpenSource = (url) => new EventSource(url),
@@ -52,6 +66,7 @@ export class ServerEventStream implements ServerEventsTransport {
     this.source?.close();
     this.source = null;
     this.failures = 0;
+    this.abortRequests();
   }
 
   async bind(connection: string, topic: string): Promise<BindOutcome> {
@@ -69,13 +84,17 @@ export class ServerEventStream implements ServerEventsTransport {
     return reason === 'unknown' || reason === 'limitReached' ? reason : 'forbidden';
   }
 
-  async release(connection: string, topic: string): Promise<void> {
+  async release(connection: string, topic: string): Promise<ReleaseOutcome> {
+    let answer: Answer;
     try {
-      await this.post(connection, 'release', topic);
+      answer = await this.post(connection, 'release', topic);
     } catch {
-      // The server releases every topic of a connection that ends, and a request that cannot reach
-      // it means the connection is ending.
+      return 'failed';
     }
+    if (answer.status === 204) return 'released';
+    // The server does not know the connection: it ended, and released everything it held.
+    if (answer.status === 404) return 'gone';
+    return 'failed';
   }
 
   /**
@@ -88,13 +107,33 @@ export class ServerEventStream implements ServerEventsTransport {
     action: 'subscribe' | 'release',
     topic: string,
   ): Promise<Answer> {
-    const response = await this.request(`${PATH}/${encodeURIComponent(connection)}/${action}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ topic }),
-      credentials: 'same-origin',
-    });
-    return { status: response.status, text: await response.text() };
+    // A request ends with the stream it serves, or after REQUEST_TIMEOUT_MS, its answer's body
+    // included: the topic's next request waits for this one.
+    const controller = new AbortController();
+    const stream = this.requests.signal;
+    const abort = () => controller.abort();
+    if (stream.aborted) abort();
+    else stream.addEventListener('abort', abort, { once: true });
+    const deadline = setTimeout(abort, REQUEST_TIMEOUT_MS);
+    try {
+      const response = await this.request(`${PATH}/${encodeURIComponent(connection)}/${action}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ topic }),
+        credentials: 'same-origin',
+        signal: controller.signal,
+      });
+      return { status: response.status, text: await response.text() };
+    } finally {
+      clearTimeout(deadline);
+      stream.removeEventListener('abort', abort);
+    }
+  }
+
+  /** Ends the requests the stream that dropped or closed was served by. */
+  private abortRequests(): void {
+    this.requests.abort();
+    this.requests = new AbortController();
   }
 
   private connect(): void {
@@ -119,6 +158,7 @@ export class ServerEventStream implements ServerEventsTransport {
     source.addEventListener('error', () => {
       if (this.source !== source) return;
       this.listener?.dropped();
+      this.abortRequests();
       if (source.readyState !== CLOSED) return;
       source.close();
       const delay = Math.min(FIRST_RETRY_MS * 2 ** this.failures, LAST_RETRY_MS);

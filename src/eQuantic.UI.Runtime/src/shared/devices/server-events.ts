@@ -17,7 +17,7 @@ export interface ServerEventsTransport {
   /** Asks the server to bind a topic to a connection. Never rejects. */
   bind(connection: string, topic: string): Promise<BindOutcome>;
   /** Asks the server to release a topic from a connection. Never rejects. */
-  release(connection: string, topic: string): Promise<void>;
+  release(connection: string, topic: string): Promise<ReleaseOutcome>;
 }
 
 /** What a transport reports. */
@@ -35,6 +35,13 @@ export interface ServerEventsListener {
  * connection, because the one it knew has ended and the page's next connection binds the topic.
  */
 export type BindOutcome = 'bound' | 'gone' | ServerTopicRefusalReasonValue;
+
+/**
+ * The server's answer to a release: released, `gone` when the connection it knew has ended (which
+ * released everything it held), or `failed` when the request went unanswered and the server may
+ * still hold the topic.
+ */
+export type ReleaseOutcome = 'released' | 'gone' | 'failed';
 
 interface Subscription {
   dispose(): void;
@@ -66,7 +73,10 @@ interface ConnectionListener {
  *
  * A bind the server could not answer for (it did not know the connection, or the request did not
  * reach it) is asked again, a few times, before the page is told: a stream that has just ended is
- * still the page's own until the browser sees it end, and its next connection binds the topic.
+ * still the page's own until the browser sees it end, and its next connection binds the topic. A
+ * release that goes unanswered is asked again too, and at the last miss the stream is opened again,
+ * which releases everything the old one held: a topic the server kept took a slot of the page's
+ * limit, and kept the page in a room's presence.
  */
 export class WebServerEvents {
   /** The topics the page holds, by name, each with its subscribers. */
@@ -104,7 +114,10 @@ export class WebServerEvents {
   ): Subscription {
     const subscriber: Subscriber = { topic, onEvent, onRefused: onRefused ?? null };
     let subscribers = this.topics.get(topic.name);
-    if (subscribers === undefined) this.topics.set(topic.name, (subscribers = new Set()));
+    if (subscribers === undefined) {
+      this.topics.set(topic.name, (subscribers = new Set()));
+      this.misses.delete(topic.name);
+    }
     subscribers.add(subscriber);
     if (this.serves()) {
       this.open();
@@ -175,10 +188,33 @@ export class WebServerEvents {
   private connected(connection: string): void {
     this.connectionId = connection;
     this.bound.clear();
-    const binding = [...this.topics.keys()].map((name) => this.sync(name));
-    void Promise.all(binding).then(() => {
-      if (this.connectionId === connection) this.change('connected');
-    });
+    void this.settle(connection);
+  }
+
+  /**
+   * Reports connected once every topic the page holds is bound or refused, a topic subscribed while
+   * the others were being bound included: waiting only for the ones held when the connection opened
+   * reported connected while a later one was still unbound, and a component that asked the server
+   * for what it missed then could miss more.
+   */
+  private async settle(connection: string): Promise<void> {
+    for (;;) {
+      const unbound = [...this.topics.keys()].filter((name) => !this.bound.has(name));
+      if (unbound.length === 0) break;
+      await Promise.all(unbound.map((name) => this.sync(name)));
+      if (this.connectionId !== connection) return;
+    }
+    this.change('connected');
+  }
+
+  /** Opens the stream again: the server releases everything the old one held, and every topic the
+   * page holds is bound on the new one. */
+  private reopen(): void {
+    this.transport.close();
+    this.connectionId = null;
+    this.bound.clear();
+    this.change('reconnecting');
+    this.transport.open(this.reports);
   }
 
   private dropped(): void {
@@ -228,8 +264,23 @@ export class WebServerEvents {
           // releases what a connection held when it ends; a subscription that arrives first keeps it
           // open, and syncs this again (open).
           if (this.topics.size === 0) return;
-          await this.transport.release(connection, name);
-          if (connection === this.connectionId) this.bound.delete(name);
+          const released = await this.transport.release(connection, name);
+          if (connection !== this.connectionId) continue;
+          if (released !== 'failed') {
+            this.bound.delete(name);
+            this.misses.delete(name);
+            continue;
+          }
+          // The server may still hold it. Asked again, and at the last miss the stream is opened
+          // again, which releases everything the old one held.
+          const misses = (this.misses.get(name) ?? 0) + 1;
+          if (misses >= BIND_ATTEMPTS) {
+            this.misses.delete(name);
+            this.reopen();
+            return;
+          }
+          this.misses.set(name, misses);
+          await delay(FIRST_BIND_RETRY_MS * 2 ** (misses - 1));
           continue;
         }
         const outcome = await this.transport.bind(connection, name);
