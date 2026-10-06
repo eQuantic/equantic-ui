@@ -84,9 +84,10 @@ public static class TypeDeclarationExtensions
         var raw = type?.ToString() ?? "";
         var name = raw.TrimEnd('?');
 
-        // An ENUM crosses as its member STRING and a USER interface has no emitted twin to name.
-        // The kind is only asked once the mapper has passed, though: `IReadOnlyList<T>` is an
-        // interface too, and answering `any` for it threw away every element type in the model.
+        // A type whose C# name names nothing in TypeScript crosses as its stand-in (TsStandIn): an
+        // enum as its members, a USER interface as any, an exception as Error, a delegate as its
+        // function. The kind is only asked once the mapper has passed, though: `IReadOnlyList<T>` is
+        // an interface too, and answering `any` for it threw away every element type in the model.
         var asked = type is NullableTypeSyntax wrapper ? wrapper.ElementType : type;
         if (((model?.GetSymbolInfo(asked!).Symbol as ITypeSymbol) ?? model?.GetTypeInfo(asked!).Type) is { } resolved
             && TypeScriptEmitter.CSharpTypeToTypeScript(name) == name)
@@ -96,18 +97,8 @@ public static class TypeDeclarationExtensions
             var core = resolved is INamedTypeSymbol { OriginalDefinition.SpecialType: SpecialType.System_Nullable_T } nullable
                 ? nullable.TypeArguments[0]
                 : resolved;
-            if (core.TypeKind == TypeKind.Enum)
-            {
-                // [Flags] members COMBINE, so they cross as the number the bitwise operators need.
-                // Everything else crosses as its member string — NAMED, when the enum belongs to
-                // the vocabulary, so a record member can be passed where that union is expected
-                // (see TypeScriptEmitter.EnumUnion for the whole story).
-                var lowered = core.GetAttributes().Any(a => a.AttributeClass?.Name == "FlagsAttribute")
-                    ? "number"
-                    : TypeScriptEmitter.VocabularyUnionFor(core) ?? "string";
-                return type is NullableTypeSyntax ? $"{lowered} | null" : lowered;
-            }
-            if (core.TypeKind == TypeKind.Interface) return "any";
+            if (TsStandIn.For(core) is { } standIn)
+                return type is NullableTypeSyntax && standIn != "any" ? TypeScriptEmitter.OrNull(standIn) : standIn;
         }
 
         // ONE mapper for the whole emission. This used to keep its own short list and answer `any`

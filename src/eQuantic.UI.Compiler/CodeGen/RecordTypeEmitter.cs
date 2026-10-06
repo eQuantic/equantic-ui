@@ -305,19 +305,28 @@ public class RecordTypeEmitter
         return sb.ToString();
     }
 
-    /// <summary>The TS annotation for a declared type, resolved the way the class emitter does it:
-    /// an enum is its member string and an interface has no emitted twin to name.</summary>
-    private string TsTypeOf(TypeSyntax? type)
+    /// <summary>
+    /// The annotation of a static that STARTS as null, in the TypeScript emission: its declared type
+    /// with the null, which TypeScript cannot infer from the null alone. Unannotated, <c>static _score
+    /// = null</c> was a field of type null, and the assignment that grows it was refused (the code
+    /// engine's search tables, #296). A static that starts as a value is inferred from it, as it
+    /// always was.
+    /// </summary>
+    private string NullStartAnnotation(string value, TypeSyntax type)
     {
-        if (type is null) return "any";
-        var resolved = ModelFor(type)?.GetTypeInfo(type).Type;
-        return resolved switch
-        {
-            { TypeKind: TypeKind.Enum } => "string",
-            { TypeKind: TypeKind.Interface } => "any",
-            _ => TypeDeclarationExtensions.TsTypeFor(type, ModelFor(type)),
-        };
+        if (!_annotations || value != "null") return "";
+        var ts = TsTypeOf(type);
+        return ts == "any" || ts.EndsWith(" | null", StringComparison.Ordinal)
+            ? $": {ts}"
+            : $": {TypeScriptEmitter.OrNull(ts)}";
     }
+
+    /// <summary>The TS annotation for a declared type, by the rule a member's type takes
+    /// (<see cref="TypeDeclarationExtensions.TsTypeFor"/>): a parameter's and a member's were two
+    /// rules, and the parameter's called every enum a string, a [Flags] one included, and named an
+    /// exception by its C# name.</summary>
+    private string TsTypeOf(TypeSyntax? type) =>
+        type is null ? "any" : TypeDeclarationExtensions.TsTypeFor(type, ModelFor(type));
 
     /// <param name="type">The record/struct declaration to emit.</param>
     /// <param name="tsTypeDeclarations">Emit the TYPE-ONLY <c>declare</c> member declarations. They are
@@ -477,7 +486,7 @@ public class RecordTypeEmitter
                             ? ExpressionVariableScanner.Scoped(init.Value,
                                 _converter.ConvertExpression(init.Value, field.Declaration.Type.ToString()), _annotations)
                             : DefaultOf(field.Declaration.Type);
-                        sb.Append($"static {variable.Identifier.Text.ToCamelCase()} = {fieldValue}; ");
+                        sb.Append($"static {variable.Identifier.Text.ToCamelCase()}{NullStartAnnotation(fieldValue, field.Declaration.Type)} = {fieldValue}; ");
                     }
                     break;
 
@@ -490,7 +499,7 @@ public class RecordTypeEmitter
                         ? ExpressionVariableScanner.Scoped(propInit.Value,
                             _converter.ConvertExpression(propInit.Value, prop.Type.ToString()), _annotations)
                         : DefaultOf(prop.Type);
-                    sb.Append($"static {prop.Identifier.Text.ToCamelCase()} = {propValue}; ");
+                    sb.Append($"static {prop.Identifier.Text.ToCamelCase()}{NullStartAnnotation(propValue, prop.Type)} = {propValue}; ");
                     break;
 
                 // A static property that guards its own store with `field`: the store, named as the
@@ -503,7 +512,7 @@ public class RecordTypeEmitter
                         ? ExpressionVariableScanner.Scoped(slotInit.Value,
                             _converter.ConvertExpression(slotInit.Value, backed.Type.ToString()), _annotations)
                         : DefaultOf(backed.Type);
-                    sb.Append($"static {Strategies.Expressions.FieldExpressionStrategy.BackingSlot(backed)} = {slotValue}; ");
+                    sb.Append($"static {Strategies.Expressions.FieldExpressionStrategy.BackingSlot(backed)}{NullStartAnnotation(slotValue, backed.Type)} = {slotValue}; ");
                     break;
             }
         }

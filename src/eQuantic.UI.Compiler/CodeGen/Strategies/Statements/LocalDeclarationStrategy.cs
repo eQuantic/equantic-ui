@@ -94,11 +94,11 @@ public class LocalDeclarationStrategy : IStatementStrategy
                 // (the mermaid layout's per-rank orders were the first to hit it).
                 if (item is INamedTypeSymbol { Name: "List", IsGenericType: true, TypeArguments.Length: 1 } inner
                     && collection.Name == "List"
-                    && SimpleItemName(inner.TypeArguments[0]) is { } innerName)
+                    && SimpleItemName(inner.TypeArguments[0], context) is { } innerName)
                     return $": {innerName}[][]";
                 // A GENERIC item (KeyValuePair<,>, a tuple) has no TS name to annotate with — its
                 // bare C# name names nothing over there. Inference from the initializer is right.
-                if (SimpleItemName(item) is not { } itemName) return "";
+                if (SimpleItemName(item, context) is not { } itemName) return "";
                 return collection.Name == "HashSet" ? $": Set<{itemName}>" : $": {itemName}[]";
             }
 
@@ -141,8 +141,10 @@ public class LocalDeclarationStrategy : IStatementStrategy
     /// null</c> as it goes, and a closure that reads it sees <c>any</c>, which the runtime's own build
     /// refuses; the patch reader resets its paths from a local function and was the first to hit it.
     /// Null, and no annotation, for a type TypeScript cannot name here: a type parameter, and what
-    /// maps to <c>any</c>. An enum crosses as the union its members lower to, the vocabulary's
-    /// named one when it has one.
+    /// maps to <c>any</c>. A type whose C# name names nothing in TypeScript crosses as its stand-in
+    /// (<see cref="TsStandIn"/>): an enum as the union its members lower to, an exception as Error,
+    /// a delegate as its function, and an interface as an <c>any</c> that is SAID, since the null
+    /// alone is the implicit one a closure trips over.
     /// </summary>
     private static string? StartingNullAnnotation(LocalDeclarationStatementSyntax decl, ConversionContext context)
     {
@@ -154,15 +156,10 @@ public class LocalDeclarationStrategy : IStatementStrategy
         if (underlying is ITypeParameterSymbol) return null;
 
         string ts;
-        if (underlying is INamedTypeSymbol { TypeKind: TypeKind.Enum } enumType)
+        if (TsStandIn.For(underlying, context.UsedRuntimeTypes) is { } standIn)
         {
-            if (enumType.GetAttributes().Any(a => a.AttributeClass?.Name == "FlagsAttribute")) ts = "number";
-            else if (CodeGen.TypeScriptEmitter.VocabularyUnionFor(enumType) is { } union)
-            {
-                context.UsedRuntimeTypes.Add(union);
-                ts = union;
-            }
-            else ts = "string";
+            if (standIn == "any") return ": any";
+            ts = standIn;
         }
         else ts = CodeGen.TypeScriptEmitter.CSharpTypeToTypeScript(decl.Declaration.Type.ToString());
 
@@ -175,21 +172,24 @@ public class LocalDeclarationStrategy : IStatementStrategy
         return $": {ts}";
     }
 
-    /// <summary>The TS spelling of a SIMPLE item type, or null when TS has none to write. An interface
-    /// crosses as <c>any</c>, as it does in every annotation, and an exception as the Error it is: a
-    /// list of either named a type no module defines (#296).</summary>
-    private static string? SimpleItemName(ITypeSymbol item)
+    /// <summary>
+    /// The TS spelling of a SIMPLE item type, or null when TS has none to write: a generic item and an
+    /// array are left to inference. A type whose C# name names nothing in TypeScript is its stand-in
+    /// (<see cref="TsStandIn"/>), a function parenthesised to be an element: a list of exceptions, of
+    /// an interface, of an enum or of Action named a type no module defines (#296). A primitive is the
+    /// mapper's, where this called a long, a decimal, a date and an object all a number.
+    /// </summary>
+    private static string? SimpleItemName(ITypeSymbol item, ConversionContext context)
     {
         if (item is INamedTypeSymbol { IsGenericType: true }) return null;
-        if (item.TypeKind == TypeKind.Interface) return "any";
-        if (ExceptionTypes.Is(item)) return "Error";
-        return item.SpecialType switch
-        {
-            SpecialType.System_String or SpecialType.System_Char => "string",
-            SpecialType.System_Boolean => "boolean",
-            SpecialType.None => item.Name,
-            _ => "number",
-        };
+        if (TsStandIn.Inside(item, context.UsedRuntimeTypes) is { } standIn) return standIn;
+        if (item is ITypeParameterSymbol or INamedTypeSymbol { SpecialType: SpecialType.None }) return item.Name;
+        if (item.SpecialType == SpecialType.None) return null;
+        var ts = CodeGen.TypeScriptEmitter.CSharpTypeToTypeScript(
+            item.ToDisplayString(SymbolDisplayFormat.MinimallyQualifiedFormat).TrimEnd('?'));
+        // A decimal is the runtime's class, which the module imports only when something says so.
+        if (ts == "Decimal") context.UsedRuntimeTypes.Add("Decimal");
+        return ts;
     }
 
     /// <summary>
@@ -210,10 +210,13 @@ public class LocalDeclarationStrategy : IStatementStrategy
         // C# spellings, which are not TypeScript's, and inference is already right for them.
         if (declared is not INamedTypeSymbol { IsGenericType: false, SpecialType: SpecialType.None } named)
             return "";
+        // An interface, an exception and a delegate are named by what they cross as (TsStandIn):
+        // `IThing thing = new Thing()` declared an `IThing` no module defines.
+        var name = TsStandIn.For(named, context.UsedRuntimeTypes) ?? named.Name;
+        if (name == "any") return ": any";
         // `VisualNode?` crosses as the union it is — an annotation that rejects the null the C#
         // explicitly allowed would refuse `VisualNode? icon = selected ? new Icon(…) : null`.
-        var nullable = decl.Declaration.Type is NullableTypeSyntax ? " | null" : "";
-        return $": {named.Name}{nullable}";
+        return $": {(decl.Declaration.Type is NullableTypeSyntax ? CodeGen.TypeScriptEmitter.OrNull(name) : name)}";
     }
 
     public int Priority => 0;
