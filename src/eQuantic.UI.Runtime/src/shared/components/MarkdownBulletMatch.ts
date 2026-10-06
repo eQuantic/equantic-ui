@@ -4,7 +4,7 @@ export class MarkdownBulletMatch {
         this.content = '';
     }
 
-    declare marker: string;
-    declare content: string;
+    marker!: string;
+    content!: string;
 }
 

@@ -23,10 +23,10 @@ export class CodeLineCells {
         this._cells[starts.length] = cell;
     }
 
-    declare _columns: number[];
-    declare _cells: number[];
-    declare text: string;
-    declare tabSize: number;
+    _columns!: number[];
+    _cells!: number[];
+    text!: string;
+    tabSize!: number;
 
     get width(): number {
         return this._cells[this._cells.length - 1];

@@ -11,6 +11,7 @@ export class PythonLanguage {
     })(new CodeLanguageRules(), '#', [':', '(', '[', '{'], [')', ']', '}'], 4);
     }
 
+    rules!: CodeLanguageRules;
     static normal: number = 0;
     static tripleDouble: number = 1;
     static tripleSingle: number = 2;
@@ -19,7 +20,6 @@ export class PythonLanguage {
         return 'Python';
     }
 
-    declare rules: CodeLanguageRules;
     static $slots: any = null;
     static $failure: any = null;
 

@@ -6,9 +6,9 @@ export class MermaidEdge {
         this.arrow = true;
     }
 
-    declare from: string;
-    declare to: string;
-    declare label: string;
-    declare arrow: boolean;
+    from!: string;
+    to!: string;
+    label!: string;
+    arrow!: boolean;
 }
 

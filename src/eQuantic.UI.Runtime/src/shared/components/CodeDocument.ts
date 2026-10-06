@@ -6,7 +6,7 @@ export class CodeDocument {
         this._lines = lines;
     }
 
-    declare _lines: string[];
+    _lines!: string[];
 
     get lines(): string[] {
         return this._lines;

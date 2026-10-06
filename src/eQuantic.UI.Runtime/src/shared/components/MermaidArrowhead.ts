@@ -5,8 +5,8 @@ export class MermaidArrowhead {
         this.direction = 0;
     }
 
-    declare x: number;
-    declare y: number;
-    declare direction: number;
+    x!: number;
+    y!: number;
+    direction!: number;
 }
 

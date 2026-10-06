@@ -14,15 +14,15 @@ export class SheetEdit {
         this.selectionAfter = SheetRange.$zero();
     }
 
-    declare kind: SheetEditKindValue;
-    declare before: SheetCellSnapshot[];
-    declare after: SheetCellSnapshot[];
-    declare at: number;
-    declare count: number;
-    declare removed: SheetCellSnapshot[];
-    declare oldSize: number;
-    declare newSize: number;
-    declare selectionBefore: SheetRange;
-    declare selectionAfter: SheetRange;
+    kind!: SheetEditKindValue;
+    before!: SheetCellSnapshot[];
+    after!: SheetCellSnapshot[];
+    at!: number;
+    count!: number;
+    removed!: SheetCellSnapshot[];
+    oldSize!: number;
+    newSize!: number;
+    selectionBefore!: SheetRange;
+    selectionAfter!: SheetRange;
 }
 

@@ -8,9 +8,9 @@ export class CodeHighlighter {
         this.language = language;
     }
 
-    declare _tokens: CodeToken[][];
-    declare _endStates: number[];
-    declare language: any;
+    _tokens!: CodeToken[][];
+    _endStates!: number[];
+    language!: any;
 
     useLanguage(language: any) {
         this.language = language;

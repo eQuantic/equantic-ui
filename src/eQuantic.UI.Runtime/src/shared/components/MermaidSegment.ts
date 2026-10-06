@@ -6,9 +6,9 @@ export class MermaidSegment {
         this.h = 0;
     }
 
-    declare x: number;
-    declare y: number;
-    declare w: number;
-    declare h: number;
+    x!: number;
+    y!: number;
+    w!: number;
+    h!: number;
 }
 

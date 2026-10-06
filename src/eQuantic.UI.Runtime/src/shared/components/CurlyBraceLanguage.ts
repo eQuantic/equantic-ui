@@ -2,15 +2,24 @@ import { $eq, CodeDocument, CodeLanguageRules, CodeToken, CodeTokenKindValue } f
 
 export abstract class CurlyBraceLanguage {
     constructor() {
-        this.rules = CodeLanguageRules.default;
+        this.$rules = CodeLanguageRules.default;
     }
 
+    $rules!: CodeLanguageRules;
     static stateNormal: number = 0;
     static stateBlockComment: number = 1;
     static stateMultilineString: number = 2;
     static stateRawString: number = 16;
     abstract name: string;
-    declare rules: CodeLanguageRules;
+
+    get rules(): CodeLanguageRules {
+        return this.$rules;
+    }
+
+    set rules(value: CodeLanguageRules) {
+        this.$rules = value;
+    }
+
     abstract keywords: Set<string>;
     abstract typeWords: Set<string>;
     abstract constantWords: Set<string>;
@@ -308,6 +317,10 @@ export abstract class CurlyBraceLanguage {
     static isLineHead(line: string, index: number) {
         for (let i = 0; i < index; i++) if (!$eq.text.isWhiteSpace(line[i])) return false;
         return true;
+    }
+
+    toJSON() {
+        return $eq.json(this);
     }
 }
 

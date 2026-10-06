@@ -7,8 +7,8 @@ export class MarkdownListItem {
         this.marker = '•';
     }
 
-    declare runs: MarkdownRun[];
-    declare depth: number;
-    declare marker: string;
+    runs!: MarkdownRun[];
+    depth!: number;
+    marker!: string;
 }
 

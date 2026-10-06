@@ -5,8 +5,8 @@ export class MarkdownLinkMatch {
         this.end = 0;
     }
 
-    declare label: string;
-    declare href: string;
-    declare end: number;
+    label!: string;
+    href!: string;
+    end!: number;
 }
 

@@ -7,7 +7,7 @@
 
 ## 2. A class built as C# builds it
 
-- [x] 2.1 The plain class path builds its constructor with the builder: its instance fields, auto-properties, `field` stores, events and held primary parameters started in declaration order, declared for TypeScript only. Verified by conformance cases through the module graph for #571 and #582's declaration order, failing on #608's head and green here
+- [x] 2.1 The plain class path builds its constructor with the builder: its instance fields, auto-properties, `field` stores, events and held primary parameters started in declaration order, each declared as a class field with no initializer. Verified by conformance cases through the module graph for #571 and #582's declaration order, failing on #608's head and green here
 - [x] 2.2 A class's constructors, `: this(…)` chains, `: base(…)` arguments, primary constructor and base clause reached as a record's are, EQ1009 for a count two constructors share. Verified by conformance cases for #583 (chain, base arguments, primary constructor, base clause) and a Compiler test for EQ1009 on a class
 - [x] 2.3 EQ1007 for a class's held primary parameter on another member's name, and none for a parameter read only by an initializer. Verified by Compiler tests for both
 - [x] 2.4 `new C(…) { … }` over a plain class whose twin eqc writes builds, then applies the initializer; a component and a vocabulary twin keep their config. Verified by #582's conformance cases (the values after the constructor, the log's order), and by the regenerated twins: no component's own constructor moves, two components only where they build a plain class

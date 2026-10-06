@@ -17,12 +17,13 @@ export class FormField {
         this.revalidate();
     }
 
-    declare _rules: FieldRule[];
-    declare _relevantWhen: (() => boolean) | null;
-    declare name: string;
-    declare initial: string;
-    declare value: string;
-    declare touched: boolean;
+    _rules!: FieldRule[];
+    _relevantWhen!: (() => boolean) | null;
+    name!: string;
+    initial!: string;
+    value!: string;
+    touched!: boolean;
+    error!: string | null;
 
     get dirty(): boolean {
         return this.value !== this.initial;
@@ -31,8 +32,6 @@ export class FormField {
     get relevant(): boolean {
         return this._relevantWhen == null || this._relevantWhen!();
     }
-
-    declare error: string | null;
 
     get visibleError(): string | null {
         return this.touched && this.relevant ? this.error : null;

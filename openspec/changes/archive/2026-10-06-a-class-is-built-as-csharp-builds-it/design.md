@@ -55,12 +55,17 @@ place.
 
 A plain class's instance fields, auto-properties, the stores of the properties that use `field`, its
 instance events and the primary constructor's parameters a member reads are started by the
-constructor, in declaration order, each its initializer or its type's default. The class declares
-them for TypeScript only (`declare`), as a record does. A class field runs at a moment of its own: at
-the start of the class's constructor, or after `super()` returns in a derived class, where it also
-writes over whatever the base's constructor set. Alternative: keep the class fields and move only the
-property initializers. Rejected: the order of a field and a property would still depend on which kind
-each is, and a derived class's fields would still be redefined after `super()`.
+constructor, in declaration order, each its initializer or its type's default. A class field's
+INITIALIZER runs at a moment of its own: at the start of the class's constructor, or after `super()`
+returns in a derived class. So the class declares each one as a class field with no initializer
+(`count!: number;`), which JavaScript defines on the instance at that moment, and the constructor
+writes its value. Defined first, the member is the instance's own property, so the constructor's
+write never reaches an accessor or a method of its name along the chain, as C# writes a field and
+never a property. Declared for TypeScript only (`declare`), as a record's are, it was not defined,
+and the write reached a getter of its name: `int count; int Count => count;`, the most common shape a
+C# class has, threw at `new` (`a-property-keeps-its-value-in-a-store-of-its-own`). Alternative: keep
+the class fields with their initializers and move only the property initializers. Rejected: the order
+of a field and a property would still depend on which kind each is.
 
 ### Before `super()`, then after it
 

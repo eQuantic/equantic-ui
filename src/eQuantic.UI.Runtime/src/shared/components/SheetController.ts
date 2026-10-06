@@ -14,11 +14,15 @@ export class SheetController {
         this.document = new SheetDocument(rows, cols);
     }
 
-    declare _selection: SheetRange;
-    declare _active: CellRef;
-    declare document: SheetDocument;
-    declare history: SheetHistory;
-    declare changed: ((sheetEdit: SheetEdit) => void) | null;
+    _selection!: SheetRange;
+    _active!: CellRef;
+    document!: SheetDocument;
+    history!: SheetHistory;
+    changed!: ((sheetEdit: SheetEdit) => void) | null;
+    editing!: boolean;
+    draft!: string;
+    fillSource!: SheetRange | null;
+    fillTarget!: SheetRange | null;
 
     get selection(): SheetRange {
         return this._selection;
@@ -32,11 +36,6 @@ export class SheetController {
     get activeCell(): CellRef {
         return this._active;
     }
-
-    declare editing: boolean;
-    declare draft: string;
-    declare fillSource: SheetRange | null;
-    declare fillTarget: SheetRange | null;
 
     get filling(): boolean {
         return !(this.fillSource == null);

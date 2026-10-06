@@ -5,6 +5,6 @@ export class MarkdownCell {
         this.runs = [];
     }
 
-    declare runs: MarkdownRun[];
+    runs!: MarkdownRun[];
 }
 

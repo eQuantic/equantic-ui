@@ -5,8 +5,8 @@ export class MermaidLabel {
         this.y = 0;
     }
 
-    declare text: string;
-    declare x: number;
-    declare y: number;
+    text!: string;
+    x!: number;
+    y!: number;
 }
 

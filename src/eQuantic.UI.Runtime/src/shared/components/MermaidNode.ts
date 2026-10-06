@@ -5,8 +5,8 @@ export class MermaidNode {
         this.shape = 'rect';
     }
 
-    declare id: string;
-    declare label: string;
-    declare shape: string;
+    id!: string;
+    label!: string;
+    shape!: string;
 }
 

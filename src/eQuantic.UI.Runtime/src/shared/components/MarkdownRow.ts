@@ -5,6 +5,6 @@ export class MarkdownRow {
         this.cells = [];
     }
 
-    declare cells: MarkdownCell[];
+    cells!: MarkdownCell[];
 }
 

@@ -11,12 +11,12 @@ export class MermaidScene {
         this.labels = [];
     }
 
-    declare width: number;
-    declare height: number;
-    declare nodes: MermaidPlacedNode[];
-    declare segments: MermaidSegment[];
-    declare curves: MermaidCurve[];
-    declare arrows: MermaidArrowhead[];
-    declare labels: MermaidLabel[];
+    width!: number;
+    height!: number;
+    nodes!: MermaidPlacedNode[];
+    segments!: MermaidSegment[];
+    curves!: MermaidCurve[];
+    arrows!: MermaidArrowhead[];
+    labels!: MermaidLabel[];
 }
 

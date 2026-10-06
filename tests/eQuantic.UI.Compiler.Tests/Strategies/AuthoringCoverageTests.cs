@@ -480,7 +480,7 @@ public class AuthoringCoverageTests
         ts.Should().Contain("constructor(seed: number = 0)");
         ts.Should().NotContain("props");
         ts.Should().Contain("this._items = []", "field initialisers run before the constructor body");
-        ts.Should().Contain("_items: string[]");
+        ts.Should().Contain("_items!: string[];", "the state is a class field the instance defines before the constructor writes it");
         ts.Should().Contain("get count(): number");
         ts.Should().Contain("add(item: string)");
         ts.Should().NotContain("equals(o", "a class is identity, not value");

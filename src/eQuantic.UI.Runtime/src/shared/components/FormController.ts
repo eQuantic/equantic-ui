@@ -8,14 +8,14 @@ export class FormController {
         this.submitError = null;
     }
 
-    declare _fields: FormField[];
+    _fields!: FormField[];
+    changed!: (() => void) | null;
+    submitting!: boolean;
+    submitError!: string | null;
 
     get fields(): FormField[] {
         return this._fields;
     }
-
-    declare submitting: boolean;
-    declare submitError: string | null;
 
     get valid(): boolean {
         for (const entry of this._fields) if (entry.relevant && !(entry.error == null)) return false;
@@ -26,8 +26,6 @@ export class FormController {
         for (const entry of this._fields) if (entry.dirty) return true;
         return false;
     }
-
-    declare changed: (() => void) | null;
 
     add(name: string, initial: string = '', rules: FieldRule[] | null = null, relevantWhen: (() => boolean) | null = null) {
         let field = new FormField(name, initial, rules, relevantWhen);

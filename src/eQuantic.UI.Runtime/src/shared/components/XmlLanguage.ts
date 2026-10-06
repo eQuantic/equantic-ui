@@ -12,14 +12,13 @@ export class XmlLanguage {
     })(new CodeLanguageRules(), ['<!--', '-->'], [['<', '>'], ['(', ')'], ['[', ']']], ['>'], ['<'], 2);
     }
 
+    rules!: CodeLanguageRules;
     static normal: number = 0;
     static inComment: number = 1;
 
     get name(): string {
         return 'XML';
     }
-
-    declare rules: CodeLanguageRules;
 
     tokenize(line: string, state: number, into: CodeToken[]) {
         let i = 0;

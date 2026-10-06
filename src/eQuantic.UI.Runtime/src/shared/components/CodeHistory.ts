@@ -8,10 +8,10 @@ export class CodeHistory {
         this.limit = 500;
     }
 
-    declare _past: CodeEdit[];
-    declare _future: CodeEdit[];
-    declare _runEnd: CodePosition;
-    declare limit: number;
+    _past!: CodeEdit[];
+    _future!: CodeEdit[];
+    _runEnd!: CodePosition;
+    limit!: number;
 
     get canUndo(): boolean {
         return this._past.length > 0;

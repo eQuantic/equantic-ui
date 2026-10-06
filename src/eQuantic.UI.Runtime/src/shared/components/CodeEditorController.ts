@@ -28,21 +28,28 @@ export class CodeEditorController {
         this.highlighter = new CodeHighlighter(language ?? CodeLanguages.plainText);
     }
 
-    declare _document: CodeDocument;
-    declare _selection: CodeRange;
-    declare _desiredCell: number;
-    declare _cells: any;
-    declare _widths: number[] | null;
-    declare _widthsTabs: number;
-    declare _widest: number;
+    _document!: CodeDocument;
+    _selection!: CodeRange;
+    highlighter!: CodeHighlighter;
+    history!: CodeHistory;
+    readOnly!: boolean;
+    tabMovesFocus!: boolean;
+    changed!: ((codeEdit: CodeEdit | null) => void) | null;
+    selectionChanged!: ((codeRange: CodeRange) => void) | null;
+    _desiredCell!: number;
+    _cells!: any;
+    _widths!: number[] | null;
+    _widthsTabs!: number;
+    _widest!: number;
+    grid!: CodeGrid;
+    _dragging!: boolean;
+    _revealVersion!: number;
+    _focusVersion!: number;
+    _composition!: CodeRange | null;
+    _compositionReplaced!: string;
+    _compositionSelection!: CodeRange;
+    _wholeLineCopy!: string | null;
     static caretWidth: number = 2;
-    declare _dragging: boolean;
-    declare _revealVersion: number;
-    declare _focusVersion: number;
-    declare _composition: CodeRange | null;
-    declare _compositionReplaced: string;
-    declare _compositionSelection: CodeRange;
-    declare _wholeLineCopy: string | null;
 
     get document(): CodeDocument {
         return this._document;
@@ -71,15 +78,9 @@ export class CodeEditorController {
         return this._selection.focus;
     }
 
-    declare highlighter: CodeHighlighter;
-    declare history: CodeHistory;
-
     get rules(): CodeLanguageRules {
         return this.highlighter.language.rules;
     }
-
-    declare readOnly: boolean;
-    declare tabMovesFocus: boolean;
 
     get widestLine(): number {
         let tabSize = this.rules.indentWidth;
@@ -91,8 +92,6 @@ export class CodeEditorController {
         }
         return this._widest;
     }
-
-    declare grid: CodeGrid;
 
     get carets(): Rect[] {
         return [this.caretRect(this.caret)];
@@ -109,9 +108,6 @@ export class CodeEditorController {
     get composition(): CodeRange | null {
         return this._composition;
     }
-
-    declare changed: ((codeEdit: CodeEdit | null) => void) | null;
-    declare selectionChanged: ((codeRange: CodeRange) => void) | null;
 
     select(value: CodeRange, keepCell: boolean) {
         if (!keepCell) this._desiredCell = -1;

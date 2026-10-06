@@ -9,11 +9,11 @@ export class JsonLanguage {
     })(new CodeLanguageRules(), 2, ['"']);
     }
 
+    rules!: CodeLanguageRules;
+
     get name(): string {
         return 'JSON';
     }
-
-    declare rules: CodeLanguageRules;
 
     tokenize(line: string, _state: number, into: CodeToken[]) {
         let i = 0;

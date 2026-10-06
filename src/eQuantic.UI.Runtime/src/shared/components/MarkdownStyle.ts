@@ -12,13 +12,13 @@ export class MarkdownStyle {
         this.codeInverse = false;
     }
 
-    declare heading1: TypeRoleValue;
-    declare heading2: TypeRoleValue;
-    declare heading3: TypeRoleValue;
-    declare heading4: TypeRoleValue;
-    declare body: TypeRoleValue;
-    declare blockGap: number;
-    declare codeLineNumbers: boolean;
-    declare codeInverse: boolean;
+    heading1!: TypeRoleValue;
+    heading2!: TypeRoleValue;
+    heading3!: TypeRoleValue;
+    heading4!: TypeRoleValue;
+    body!: TypeRoleValue;
+    blockGap!: number;
+    codeLineNumbers!: boolean;
+    codeInverse!: boolean;
 }
 

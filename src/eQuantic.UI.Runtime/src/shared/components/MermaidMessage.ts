@@ -6,9 +6,9 @@ export class MermaidMessage {
         this.dashed = false;
     }
 
-    declare from: string;
-    declare to: string;
-    declare label: string;
-    declare dashed: boolean;
+    from!: string;
+    to!: string;
+    label!: string;
+    dashed!: boolean;
 }
 

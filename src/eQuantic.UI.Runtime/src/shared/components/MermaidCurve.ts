@@ -8,11 +8,11 @@ export class MermaidCurve {
         this.viewBox = '';
     }
 
-    declare x: number;
-    declare y: number;
-    declare w: number;
-    declare h: number;
-    declare path: string;
-    declare viewBox: string;
+    x!: number;
+    y!: number;
+    w!: number;
+    h!: number;
+    path!: string;
+    viewBox!: string;
 }
 

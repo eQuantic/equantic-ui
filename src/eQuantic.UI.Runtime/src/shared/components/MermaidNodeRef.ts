@@ -7,10 +7,10 @@ export class MermaidNodeRef {
         this.end = 0;
     }
 
-    declare id: string;
-    declare label: string;
-    declare shape: string;
-    declare shaped: boolean;
-    declare end: number;
+    id!: string;
+    label!: string;
+    shape!: string;
+    shaped!: boolean;
+    end!: number;
 }
 

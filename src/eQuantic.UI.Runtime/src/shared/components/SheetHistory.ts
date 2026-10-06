@@ -6,8 +6,8 @@ export class SheetHistory {
         this._redo = [];
     }
 
-    declare _undo: SheetEdit[];
-    declare _redo: SheetEdit[];
+    _undo!: SheetEdit[];
+    _redo!: SheetEdit[];
 
     get canUndo(): boolean {
         return this._undo.length > 0;

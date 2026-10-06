@@ -14,15 +14,15 @@ export class MarkdownBlock {
         this.rows = [];
     }
 
-    declare kind: string;
-    declare level: number;
-    declare text: string;
-    declare id: string;
-    declare runs: MarkdownRun[];
-    declare items: MarkdownListItem[];
-    declare lang: string;
-    declare raw: string;
-    declare head: MarkdownCell[];
-    declare rows: MarkdownRow[];
+    kind!: string;
+    level!: number;
+    text!: string;
+    id!: string;
+    runs!: MarkdownRun[];
+    items!: MarkdownListItem[];
+    lang!: string;
+    raw!: string;
+    head!: MarkdownCell[];
+    rows!: MarkdownRow[];
 }
 

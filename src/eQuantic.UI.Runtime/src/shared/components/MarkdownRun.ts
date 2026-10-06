@@ -7,11 +7,11 @@ export class MarkdownRun {
         this.href = '';
     }
 
-    declare text: string;
-    declare bold: boolean;
-    declare italic: boolean;
-    declare code: boolean;
-    declare href: string;
+    text!: string;
+    bold!: boolean;
+    italic!: boolean;
+    code!: boolean;
+    href!: string;
 
     get isLink(): boolean {
         return this.href.length > 0;

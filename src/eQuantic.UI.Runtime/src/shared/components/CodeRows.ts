@@ -47,15 +47,15 @@ export class CodeRows {
         this.rowCount = row;
     }
 
-    declare _kinds: CodeRowKindValue[];
-    declare _lines: number[];
-    declare _lineCounts: number[];
-    declare _rows: number[];
-    declare _rowCounts: number[];
-    declare _sources: number[];
-    declare _labels: (string | null)[];
-    declare lineCount: number;
-    declare rowCount: number;
+    _kinds!: CodeRowKindValue[];
+    _lines!: number[];
+    _lineCounts!: number[];
+    _rows!: number[];
+    _rowCounts!: number[];
+    _sources!: number[];
+    _labels!: (string | null)[];
+    lineCount!: number;
+    rowCount!: number;
 
     add(kind: CodeRowKindValue, line: number, lineCount: number, row: number, rowCount: number, source: number, label: string | null) {
         this._kinds.push(kind);

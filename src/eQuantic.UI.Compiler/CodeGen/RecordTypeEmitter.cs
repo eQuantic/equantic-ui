@@ -265,13 +265,13 @@ public class RecordTypeEmitter
         // parameter its base already has a property for is the base's, declared by the base module.
         if (tsTypeDeclarations)
             foreach (var m in members)
-                sb.Append($"declare {m.Js}: {m.TsType}; ");
+                sb.Append($"declare {m.Store}: {m.TsType}; ");
 
         // The C# constructors, as the one the twin has (TwinConstructor, #413): the same builder a plain
         // class's constructor comes from, so the two reach, chain and base alike.
         var twin = new TwinConstructor(_converter, _lowering, ModelFor, _annotations, JsLayout.Compact);
         sb.Append(Written(twin.Build(type,
-            members.Select(member => twin.StartOf(member.Js, member.Declaration, member.TsType)).ToList(),
+            members.Select(member => twin.StartOf(member.Store, member.Declaration, member.TsType)).ToList(),
             hasBase: baseName is not null, clause,
             TypeInitializer.HasStaticConstructor(type) ? TypeInitializer.Start(name) : null)));
 
@@ -282,14 +282,16 @@ public class RecordTypeEmitter
         {
             // Structural equality — $eq.equals(a, b) delegates here when `a` is an instance. A record
             // compares as C# compares it: the same runtime type (its EqualityContract), what its base
-            // compares, then its own members. `o instanceof Animal` alone made a Dog equal to an Animal
-            // with the same members, once a record could extend one that declares no value (#428).
+            // compares, then its own members, each by the slot it lives in, a property's store included,
+            // as .NET compares backing fields, so a computed override does not change what two records
+            // compare (#591). `o instanceof Animal` alone made a Dog equal to an Animal with the same
+            // members, once a record could extend one that declares no value (#428).
             // Param annotations are TS-only (the plain-JS path must stay parseable as .mjs).
             sb.Append(tsTypeDeclarations ? $"equals(o: unknown) {{ return o instanceof {name}"
                 : $"equals(o) {{ return o instanceof {name}");
             if (baseName != null) sb.Append(" && super.equals(o)");
             else if (type is RecordDeclarationSyntax) sb.Append(" && o.constructor === this.constructor");
-            foreach (var m in members) sb.Append($" && $eq.equals(this.{m.Js}, o.{m.Js})");
+            foreach (var m in members) sb.Append($" && $eq.equals(this.{m.Store}, o.{m.Store})");
             sb.Append("; } ");
 
             // with(patch): a COPY, onto the prototype (a spread would drop the methods), then the
@@ -320,7 +322,7 @@ public class RecordTypeEmitter
                     ? $"static $zero({zeros}): {name} {{ const zero: any = Object.create({name}.prototype); "
                     : $"static $zero({zeros}) {{ const zero = Object.create({name}.prototype); ");
                 foreach (var m in members)
-                    sb.Append($"zero.{m.Js} = {ZeroOf(m, typeParameters.Count == 0 ? null : parameter => typeParameters.Contains(parameter.Name) && parameter.TypeParameterKind == TypeParameterKind.Type ? $"$z{parameter.Name}" : null)}; ");
+                    sb.Append($"zero.{m.Store} = {ZeroOf(m, typeParameters.Count == 0 ? null : parameter => typeParameters.Contains(parameter.Name) && parameter.TypeParameterKind == TypeParameterKind.Type ? $"$z{parameter.Name}" : null)}; ");
                 sb.Append("return zero; } ");
             }
 
@@ -335,7 +337,7 @@ public class RecordTypeEmitter
                     method is { Identifier.Text: "GetHashCode", ParameterList.Parameters.Count: 0 }
                     && method.Modifiers.Any(modifier => modifier.IsKind(SyntaxKind.OverrideKeyword))))
             {
-                var hashed = members.Select(m => $"this.{m.Js}");
+                var hashed = members.Select(m => $"this.{m.Store}");
                 if (ModelFor(type)?.GetDeclaredSymbol(type) is INamedTypeSymbol { BaseType: { IsRecord: true } baseRecord }
                     && baseRecord.Locations.Any(location => location.IsInSource))
                     hashed = hashed.Prepend("super.getHashCode()");
@@ -351,6 +353,15 @@ public class RecordTypeEmitter
                 // A getter, for the reason TypeScriptEmitter's map is one: a static initializer
                 // naming another class runs before an import cycle has defined it.
                 sb.Append($"static get $hydration() {{ return {hydration}; }} ");
+
+            // A member kept in a store (PropertyStore, #591, #615) is written in JSON under its
+            // property's name, read through the property, as System.Text.Json writes the property:
+            // JSON.stringify writes an object's own properties, so a server action received `$name`
+            // and bound nothing. A derived record inherits it.
+            if (members.Any(member => member.Store != member.Js))
+                sb.Append(tsTypeDeclarations
+                    ? $"toJSON(): Record<string, unknown> {{ return {Eq.Json}(this); }} "
+                    : $"toJSON() {{ return {Eq.Json}(this); }} ");
         }
 
         // User-declared methods — a STATIC one keeps its modifier: a record's factory
@@ -599,27 +610,37 @@ public class RecordTypeEmitter
             _ => null,
         };
 
-    /// <summary>A property with a body, as its getter, and its setter where it has one with a body
-    /// (an interface's default property writes through its other members, found in review, #418);
-    /// nothing for a property with no getter body.</summary>
+    /// <summary>
+    /// A property's accessors on the twin's prototype: a computed one's getter, and its setter where it
+    /// has one with a body (an interface's default property writes through its other members, found in
+    /// review, #418); the compiler's accessors over the store of a property that keeps one
+    /// (<see cref="PropertyStore"/>, #591, #615), its setter written for a get-only one too, which only
+    /// the runtime's hydration reaches, as in a class; a static <c>field</c> store's automatic getter
+    /// (#483); and the half an override inherits (<see cref="PropertyStore.Inherited"/>), forwarded to
+    /// <c>super</c>. Nothing for an auto-property held under its own name.
+    /// </summary>
     private string ComputedProperty(PropertyDeclarationSyntax property, string className)
     {
         var getter = ComputedGetter(property);
-        // A static `field` store's automatic getter reads the store (#483). An instance one is part
-        // of the value, which the value members hold.
-        var readsItsStore = getter is null
-            && property.Modifiers.Any(m => m.IsKind(SyntaxKind.StaticKeyword))
+        var isStatic = property.Modifiers.Any(m => m.IsKind(SyntaxKind.StaticKeyword));
+        var store = Strategies.Expressions.FieldExpressionStrategy.BackingSlot(property);
+        // A static `field` store's automatic getter reads the store (#483).
+        var readsItsStore = getter is null && isStatic
             && Strategies.Expressions.FieldExpressionStrategy.UsesBackingField(property);
-        if (getter is null && !IsSetterOnly(property) && !readsItsStore) return "";
+        var stored = !isStatic && PropertyStore.KeepsAStore(property);
+        var (inheritsGetter, inheritsSetter) = isStatic ? (false, false) : PropertyStore.Inherited(property, ModelFor(property));
+        if (getter is null && !IsSetterOnly(property) && !readsItsStore && !stored && !inheritsGetter && !inheritsSetter) return "";
         _converter.SetCurrentClass(className);
-        var prefix = property.Modifiers.Any(m => m.IsKind(SyntaxKind.StaticKeyword)) ? "static " : "";
+        var prefix = isStatic ? "static " : "";
         var propertyName = property.Identifier.Text.ToCamelCase();
+        var inherited = JsExpr.Member(JsExpr.Identifier("super"), propertyName);
         // Both accessors are lowered as a method's body is (#432), so a variable an expression body's
         // pattern binds is declared in front of its use, as it is in a class.
         var text = getter switch
         {
-            null when readsItsStore => Own(JsClassMember.Getter(prefix, propertyName, "",
-                JsStatement.Return(JsExpr.ThisMember(Strategies.Expressions.FieldExpressionStrategy.BackingSlot(property))))),
+            null when readsItsStore || stored => Own(JsClassMember.Getter(prefix, propertyName, "",
+                JsStatement.Return(JsExpr.ThisMember(store)))),
+            null when inheritsGetter => Own(JsClassMember.Getter(prefix, propertyName, "", JsStatement.Return(inherited))),
             null => "",
             BlockSyntax block => Own(JsClassMember.Getter(prefix, propertyName, "", _lowering.AccessorBody(block))),
             _ => Own(JsClassMember.Getter(prefix, propertyName, "",
@@ -630,7 +651,11 @@ public class RecordTypeEmitter
             ? _lowering.ExpressionBody(arrow.Expression, returns: false)
             : setter?.Body is { } setterBlock
                 ? _lowering.AccessorBody(setterBlock)
-                : null;
+                : stored
+                    ? JsStatement.Expression(JsExpr.Binary(JsExpr.ThisMember(store), "=", JsExpr.Identifier("value")))
+                    : inheritsSetter
+                        ? JsStatement.Expression(JsExpr.Binary(inherited, "=", JsExpr.Identifier("value")))
+                        : null;
         if (setterBody is not null)
             text += Own(JsClassMember.Setter(prefix, propertyName, _lowering.Param("value", TsTypeOf(property.Type)), setterBody));
         return text;

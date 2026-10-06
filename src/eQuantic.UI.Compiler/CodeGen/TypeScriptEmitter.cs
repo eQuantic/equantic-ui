@@ -1660,15 +1660,9 @@ public class TypeScriptEmitter
                     var fieldName = v.Identifier.Text.ToCamelCase();
                     // A static that initializes in order is its slot's, and holds no field.
                     if (isStaticMember && slots.Contains(fieldName)) continue;
-                    // An instance field is the constructor's to start, in declaration order with the
-                    // class's other state (InstanceState, #571, #582), so it is declared for TypeScript
-                    // only. As a class field it was defined again after a base's constructor returned,
-                    // over whatever that constructor had set.
-                    if (!isStaticMember)
-                    {
-                        c.Field(fieldName, DeclaredType(f.Declaration.Type), null, v, isDeclare: true);
-                        continue;
-                    }
+                    // An instance field is state, declared and started with the class's other state, in
+                    // declaration order (InstanceState, #571, #582).
+                    if (!isStaticMember) continue;
                     var def = v.Initializer is { } given ? StaticValue(given, f.Declaration.Type) : null;
                     // A static with no initializer holds its type's zero, as C# starts it (#417):
                     // `static int Count;` read undefined, and its first `++` made it NaN.
@@ -1705,7 +1699,8 @@ public class TypeScriptEmitter
                     // The slot has to exist before the getter names it — see FieldExpressionStrategy
                     // for why it is called `$name` (a name no C# field can take).
                     var backed = Strategies.Expressions.FieldExpressionStrategy.UsesBackingField(p);
-                    if (backed)
+                    var isStaticProperty = accessorQualifier.Length > 0;
+                    if (backed && isStaticProperty)
                     {
                         var slot = Strategies.Expressions.FieldExpressionStrategy.BackingSlot(p);
                         // The store starts as the property's initializer, which C# writes into it
@@ -1713,21 +1708,17 @@ public class TypeScriptEmitter
                         // accessors are emitted, so nothing below writes it (#483).
                         // On the class for a static property, where its accessors' `this` is the
                         // class: on the instance, a static `field` read undefined (#483).
-                        var slotIsStatic = accessorQualifier.Length > 0;
-                        // A store that initializes in order is its slot, and the accessors read it. An
-                        // instance one is the constructor's to start (InstanceState).
-                        if (!slotIsStatic)
-                            c.Field(slot, DeclaredType(p.Type), null, p, isDeclare: true);
-                        else if (!slots.Contains(slot))
+                        // A store that initializes in order is its slot, and the accessors read it.
+                        if (!slots.Contains(slot))
                         {
                             var slotDefault = p.Initializer is { } given ? StaticValue(given, p.Type) : DefaultOf(p.Type);
                             if (slotDefault == "null")
                             {
                                 if (CanDeclareTypeOnly)
-                                    c.Member(JsClassMember.Field(slotIsStatic ? "declare static " : "declare ", slot, $": {DeclaredType(p.Type)}"), p);
+                                    c.Member(JsClassMember.Field("declare static ", slot, $": {DeclaredType(p.Type)}"), p);
                             }
                             else
-                                c.Field(slot, DeclaredType(p.Type), slotDefault, p, isStatic: slotIsStatic);
+                                c.Field(slot, DeclaredType(p.Type), slotDefault, p, isStatic: true);
                         }
                         // An automatic getter reads the store. Without one the class fell to the
                         // auto-property's field below, named like the property, which shadows the
@@ -1736,16 +1727,18 @@ public class TypeScriptEmitter
                             c.Member(JsClassMember.Getter(accessorQualifier, pn, Annotation(DeclaredType(p.Type)),
                                 JsStatement.Return(JsExpr.ThisMember(slot))), p);
                     }
+                    // An instance property that keeps a store, which the constructor starts with the
+                    // class's other state (InstanceState), reads and writes it through accessors.
+                    var stored = !isStaticProperty && PropertyStore.KeepsAStore(p);
+                    if (stored) EmitStoreAccessors(p, c);
 
                     // A property guarding a store has its accessors, and no field of its name.
-                    if (EmitGetter(p, c, accessorQualifier) || backed) { }
+                    if (EmitGetter(p, c, accessorQualifier) || backed || stored) { }
                     // A static that initializes in order is its slot's.
-                    else if (accessorQualifier.Length > 0 && slots.Contains(pn)) { }
-                    // An instance auto-property is the constructor's to start, in declaration order
-                    // with the fields (InstanceState): as a class field with its initializer, it ran
-                    // before every field's, which the constructor assigned (#582).
-                    else if (accessorQualifier.Length == 0)
-                        c.Field(pn, DeclaredType(p.Type), null, p, isDeclare: true);
+                    else if (isStaticProperty && slots.Contains(pn)) { }
+                    // An instance auto-property is state, declared and started with the class's other
+                    // state, in declaration order (InstanceState, #582).
+                    else if (!isStaticProperty) { }
                     else if (p.Initializer is { } initial)
                         c.Field(pn, DeclaredType(p.Type), StaticValue(initial, p.Type), p, isStatic: true);
                     // A static AUTO-property — `{ get; set; }`, `{ get; private set; }`, `{ get; }` — is a
@@ -1756,6 +1749,7 @@ public class TypeScriptEmitter
 
                     EmitSetter(p, c, accessorQualifier);
                 }
+                if (accessorQualifier.Length == 0) EmitInheritedAccessors(p, c);
             }
             // `event Action<T>? Changed;` — a member the model raises and a caller subscribes to.
             // Nothing emitted it, so `this.changed?.(edit)` reached a property that did not exist.
@@ -1769,9 +1763,9 @@ public class TypeScriptEmitter
                 foreach (var v in e.Declaration.Variables)
                 {
                     if (isStaticEvent && slots.Contains(v.Identifier.Text.ToCamelCase())) continue;
-                    // An instance one is the constructor's to start (InstanceState).
-                    if (!isStaticEvent) c.Field(v.Identifier.Text.ToCamelCase(), DeclaredType(e.Declaration.Type), null, v, isDeclare: true);
-                    else c.Field(v.Identifier.Text.ToCamelCase(), DeclaredType(e.Declaration.Type), "null", v, isStatic: true);
+                    // An instance one is state, declared and started with the class's other state
+                    // (InstanceState).
+                    if (isStaticEvent) c.Field(v.Identifier.Text.ToCamelCase(), DeclaredType(e.Declaration.Type), "null", v, isStatic: true);
                 }
             }
             if (ordered)
@@ -1820,6 +1814,17 @@ public class TypeScriptEmitter
                         from: conversion.Type.ToString() == cls.Identifier.Text);
                 var convPar = conversion.ParameterList.Parameters[0].Identifier.Text.ToJsIdentifier();
                 c.Member(JsClassMember.Method("static ", convName, "", convPar, "", convBody), conversion);
+            }
+
+            // A twin that keeps a store (PropertyStore, #591) writes it in JSON under its property's
+            // name, read through the property, as System.Text.Json writes the property: JSON.stringify
+            // writes an object's own properties, so a server action received `$name` and bound nothing.
+            // A derived class inherits it.
+            if (!asStatic && cls.Members.OfType<PropertyDeclarationSyntax>().Any(PropertyStore.KeepsAStore))
+            {
+                _converter.UsedHelpers.Add(Eq.Import);
+                c.Member(JsClassMember.Method("", "toJSON", "", "", "",
+                    JsStatement.Return(JsExpr.Call(JsExpr.Opaque(Eq.Json), JsExpr.This))), cls);
             }
 
             EmitExtensionBlocks(cls, c);
@@ -1882,6 +1887,48 @@ public class TypeScriptEmitter
         else if (setter?.Body != null)
             c.Member(JsClassMember.Setter(qualifier, pn, $"value{Annotation(DeclaredType(p.Type))}",
                 Lowering.AccessorBody(setter.Body)), setter);
+    }
+
+    /// <summary>
+    /// The compiler's accessors of an instance property that keeps a store (<see cref="PropertyStore"/>,
+    /// #591): a getter that returns the store where C# writes no getter body, and a setter that writes it
+    /// where C# writes no setter body. The setter is written for a property C# declares get-only too:
+    /// C# refuses every write to it when the C# compiles, so only the runtime reaches it, by hydration,
+    /// which adopts a member through its setter and skips one that only has a getter, as it skips a
+    /// computed property. The accessors C# writes a body for are its own (<see cref="EmitGetter"/>,
+    /// <see cref="EmitSetter"/>).
+    /// </summary>
+    private void EmitStoreAccessors(PropertyDeclarationSyntax p, TypeScriptCodeBuilder.ClassBuilder c)
+    {
+        var name = p.Identifier.Text.ToCamelCase();
+        var store = Strategies.Expressions.FieldExpressionStrategy.BackingSlot(p);
+        var annotation = Annotation(DeclaredType(p.Type));
+        var accessors = p.AccessorList?.Accessors ?? default;
+        var getter = accessors.FirstOrDefault(a => a.Keyword.Text == "get");
+        var setter = accessors.FirstOrDefault(a => a.Keyword.Text is "set" or "init");
+        if (getter is { Body: null, ExpressionBody: null })
+            c.Member(JsClassMember.Getter("", name, annotation, JsStatement.Return(JsExpr.ThisMember(store))), getter);
+        if (setter is null or { Body: null, ExpressionBody: null })
+            c.Member(JsClassMember.Setter("", name, $"value{annotation}",
+                JsStatement.Expression(JsExpr.Binary(JsExpr.ThisMember(store), "=", JsExpr.Identifier("value")))), (SyntaxNode?)setter ?? p);
+    }
+
+    /// <summary>
+    /// The half of a property an override inherits (<see cref="PropertyStore.Inherited"/>): C# lets an
+    /// override declare only the getter, or only the setter, of a property whose base has both, and a
+    /// JavaScript accessor is one property with both halves, so the derived getter alone hid the base's
+    /// setter and a write threw. The inherited half forwards to <c>super</c>.
+    /// </summary>
+    private void EmitInheritedAccessors(PropertyDeclarationSyntax p, TypeScriptCodeBuilder.ClassBuilder c)
+    {
+        var (getter, setter) = PropertyStore.Inherited(p, ModelFor(p));
+        var name = p.Identifier.Text.ToCamelCase();
+        var annotation = Annotation(DeclaredType(p.Type));
+        var inherited = JsExpr.Member(JsExpr.Identifier("super"), name);
+        if (getter) c.Member(JsClassMember.Getter("", name, annotation, JsStatement.Return(inherited)), p);
+        if (setter)
+            c.Member(JsClassMember.Setter("", name, $"value{annotation}",
+                JsStatement.Expression(JsExpr.Binary(inherited, "=", JsExpr.Identifier("value")))), p);
     }
 
     /// <summary>A method of a class module, or of a component's twin when an interface's default
@@ -2102,24 +2149,41 @@ public class TypeScriptEmitter
     {
         var twin = new TwinConstructor(_converter, Lowering, ModelFor, TypeAnnotations, _converter.Layout, DeclaredType);
         var clause = cls.BaseList?.Types.OfType<PrimaryConstructorBaseTypeSyntax>().FirstOrDefault();
-        c.Member(twin.Build(cls, InstanceState(cls, twin), HasEmittedBase(cls), clause, first: null), cls);
+        var state = InstanceState(cls);
+        c.Member(twin.Build(cls, state.Select(member => twin.StartOf(member.Slot, member.Declaration, member.TsType)).ToList(),
+            HasEmittedBase(cls), clause, first: null), cls);
+        // The same members, each a class field JavaScript defines on the instance before the constructor
+        // writes it, so the write never reaches an accessor of its name (ClassBuilder.State). A store
+        // a base's twin already defines is declared for TypeScript only: defined again, it would be
+        // undefined once `super()` returned, until the constructor wrote it (TypeScript refuses that,
+        // TS2612).
+        foreach (var member in state)
+        {
+            if (member.DefinedByBase) c.Field(member.Slot, member.TsType, null, member.Declaration, isDeclare: true);
+            else c.State(member.Slot, member.TsType, member.Declaration);
+        }
     }
+
+    /// <summary>One member of a plain class's instance state: the slot it lives in on each instance, what
+    /// TypeScript reads it as, the C# that declares it, and whether a base's twin defines the slot, as it
+    /// does the store an override shares with the property it overrides.</summary>
+    private readonly record struct InstanceMember(string Slot, string TsType, SyntaxNode Declaration, bool DefinedByBase = false);
 
     /// <summary>
     /// What a plain class's constructor starts, in the order C# starts it (#571, #582): the primary
     /// constructor's parameters a member reads, which C# holds before anything runs, then each instance
-    /// field, auto-property, store of a property that uses <c>field</c>, and field-like event, in
-    /// declaration order, its initializer or its type's default. A field's and a property's alike: the
-    /// property's was a class field, which ran before every field's initializer the constructor wrote,
-    /// and in a derived class after its base's constructor.
+    /// field, auto-property, store of a property that keeps one (<see cref="PropertyStore"/>), and
+    /// field-like event, in declaration order, its initializer or its type's default. A field's and a
+    /// property's alike: the property's was a class field with its initializer, which ran before every
+    /// field's initializer the constructor wrote, and in a derived class after its base's constructor.
     /// </summary>
-    private IReadOnlyList<TwinConstructor.Start> InstanceState(ClassDeclarationSyntax cls, TwinConstructor twin)
+    private IReadOnlyList<InstanceMember> InstanceState(ClassDeclarationSyntax cls)
     {
-        var state = new List<TwinConstructor.Start>();
+        var state = new List<InstanceMember>();
         var model = ModelFor(cls);
         foreach (var parameter in cls.ParameterList?.Parameters ?? default)
             if (cls.HoldsParameter(parameter, model))
-                state.Add(twin.StartOf(parameter.Identifier.ValueText.ToCamelCase(), parameter, DeclaredType(parameter.Type)));
+                state.Add(new(parameter.Identifier.ValueText.ToCamelCase(), DeclaredType(parameter.Type), parameter));
         foreach (var member in cls.Members)
         {
             if (member.Modifiers.Any(Microsoft.CodeAnalysis.CSharp.SyntaxKind.StaticKeyword)
@@ -2128,31 +2192,19 @@ public class TypeScriptEmitter
             {
                 case FieldDeclarationSyntax field:
                     foreach (var variable in field.Declaration.Variables)
-                        state.Add(twin.StartOf(variable.Identifier.Text.ToCamelCase(), variable, DeclaredType(field.Declaration.Type)));
+                        state.Add(new(variable.Identifier.Text.ToCamelCase(), DeclaredType(field.Declaration.Type), variable));
                     break;
                 case EventFieldDeclarationSyntax handler:
                     foreach (var variable in handler.Declaration.Variables)
-                        state.Add(twin.StartOf(variable.Identifier.Text.ToCamelCase(), variable, DeclaredType(handler.Declaration.Type)));
+                        state.Add(new(variable.Identifier.Text.ToCamelCase(), DeclaredType(handler.Declaration.Type), variable));
                     break;
-                case PropertyDeclarationSyntax property
-                    when !property.Modifiers.Any(Microsoft.CodeAnalysis.CSharp.SyntaxKind.AbstractKeyword) && StoreOf(property) is { } slot:
-                    state.Add(twin.StartOf(slot, property, DeclaredType(property.Type)));
+                case PropertyDeclarationSyntax property when PropertyStore.SlotOf(property) is { } slot:
+                    state.Add(new(slot, DeclaredType(property.Type), property,
+                        PropertyStore.KeepsAStore(property) && PropertyStore.BaseKeepsTheStore(property, model)));
                     break;
             }
         }
         return state;
-    }
-
-    /// <summary>The slot an instance property keeps its value in: its own name for an auto-property, the
-    /// store of one whose accessors use <c>field</c>, and none for one whose accessors compute it.</summary>
-    private static string? StoreOf(PropertyDeclarationSyntax property)
-    {
-        if (Strategies.Expressions.FieldExpressionStrategy.UsesBackingField(property))
-            return Strategies.Expressions.FieldExpressionStrategy.BackingSlot(property);
-        if (property.ExpressionBody is not null) return null;
-        return property.AccessorList?.Accessors.All(accessor => accessor.Body is null && accessor.ExpressionBody is null) == true
-            ? property.Identifier.Text.ToCamelCase()
-            : null;
     }
 
     /// <summary>

@@ -5,8 +5,8 @@ export class MermaidEdgeRef {
         this.end = 0;
     }
 
-    declare arrow: boolean;
-    declare label: string;
-    declare end: number;
+    arrow!: boolean;
+    label!: string;
+    end!: number;
 }
 

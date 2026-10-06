@@ -9,10 +9,10 @@ export class MermaidPlacedNode {
         this.h = 0;
     }
 
-    declare node: MermaidNode;
-    declare x: number;
-    declare y: number;
-    declare w: number;
-    declare h: number;
+    node!: MermaidNode;
+    x!: number;
+    y!: number;
+    w!: number;
+    h!: number;
 }
 

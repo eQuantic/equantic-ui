@@ -26,7 +26,7 @@ public class EmittedTypeSurfaceTests
             """);
 
         // The literal the constructor starts the property with IS a bigint, and `n * 2` emits `n * 2n`.
-        ts.Should().Contain("declare ticks: bigint;").And.Contain("this.ticks = $eq.num.long(0);");
+        ts.Should().Contain("ticks!: bigint;").And.Contain("this.ticks = $eq.num.long(0);");
         ts.Should().Contain("doubled(n: bigint)");
         ts.Should().NotContain(": number = $eq.num.long");
     }
@@ -39,7 +39,7 @@ public class EmittedTypeSurfaceTests
             public decimal Total(decimal unit, int count) => unit * count;
             """);
 
-        ts.Should().Contain("declare price: Decimal;").And.Contain("this.price = $eq.num.dec(0);");
+        ts.Should().Contain("price!: Decimal;").And.Contain("this.price = $eq.num.dec(0);");
         ts.Should().Contain("total(unit: Decimal, count: number)");
         // The name the TRANSLATION invents — no syntax walk can see it, so the import is the half
         // of this fix that a mapping change alone would have missed.
@@ -79,13 +79,13 @@ public class EmittedTypeSurfaceTests
             public List<string> Plain { get; init; } = new();
             """);
 
-        ts.Should().Contain("_labels: (string | null)[]");
-        ts.Should().Contain("names: (string | null)[]");
-        ts.Should().Contain("counts: (number | null)[]");
-        ts.Should().Contain("callbacks: (() => void)[]");
-        ts.Should().Contain("handlers: ((() => void) | null)[]");
-        ts.Should().Contain("grid: (string | null)[][]");
-        ts.Should().Contain("plain: string[]", "an element that is a plain name needs nothing");
+        ts.Should().Contain("_labels!: (string | null)[]");
+        ts.Should().Contain("names!: (string | null)[]");
+        ts.Should().Contain("counts!: (number | null)[]");
+        ts.Should().Contain("callbacks!: (() => void)[]");
+        ts.Should().Contain("handlers!: ((() => void) | null)[]");
+        ts.Should().Contain("grid!: (string | null)[][]");
+        ts.Should().Contain("plain!: string[]", "an element that is a plain name needs nothing");
         ts.Should().NotContain("| null[]");
     }
 
@@ -268,8 +268,8 @@ public class EmittedTypeSurfaceTests
             public long[] Stamps { get; init; } = [];
             """);
 
-        ts.Should().Contain("prices: Decimal[]");
-        ts.Should().Contain("stamps: bigint[]");
+        ts.Should().Contain("prices!: Decimal[]");
+        ts.Should().Contain("stamps!: bigint[]");
         ts.Should().Contain("Decimal } from \"@equantic/runtime\"");
     }
 }

@@ -67,6 +67,7 @@ public class ClassConstructionConformanceTests
         public abstract class Shape { public string Kind; protected Shape(string kind) { Kind = kind; Log.Note("shape " + kind); } public abstract double Area(); }
         public class Square : Shape { public double Side = 2; public Square() : base("square") { Log.Note("square " + Side); } public override double Area() => Side * Side; }
         public class Counted { public static int Made; static Counted() { Made = 100; } public int Id = ++Made; }
+        public class Tally { private int count; public int Count => count; public void Inc() => count++; }
         """;
 
     private static readonly (string Name, string Statements)[] InitializerCases =
@@ -77,6 +78,7 @@ public class ClassConstructionConformanceTests
         ("an instance event starts with no handler", "var t = new Ticker(); var n = 0; t.Ticked += () => n++; t.Tick(); t.Tick(); return n + \"|\" + t.Count;"),
         ("an abstract base's constructor before its derived class's body", "Log.Text = \"\"; var q = new Square(); return Log.Text + \"|\" + q.Area() + \"|\" + q.Kind;"),
         ("a static constructor before the first instance", "var c1 = new Counted(); var c2 = new Counted(); return c1.Id + \"|\" + c2.Id + \"|\" + Counted.Made;"),
+        ("a field beside the property that exposes it, written as a field", "var t = new Tally(); t.Inc(); t.Inc(); return t.Count.ToString();"),
     ];
 
     [SkippableTheory]

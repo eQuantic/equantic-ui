@@ -11,13 +11,13 @@ export class SheetDocument {
         this.cols = Math.max(1, Math.min(cols, 16384));
     }
 
-    declare _cells: any;
-    declare _rowHeights: any;
-    declare _colWidths: any;
+    _cells!: any;
+    _rowHeights!: any;
+    _colWidths!: any;
+    rows!: number;
+    cols!: number;
     static defaultRowHeight: number = 28;
     static defaultColWidth: number = 96;
-    declare rows: number;
-    declare cols: number;
 
     get cells(): any {
         return this._cells;

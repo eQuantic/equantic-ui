@@ -9,10 +9,10 @@ export class MermaidGraph {
         this.messages = [];
     }
 
-    declare kind: string;
-    declare vertical: boolean;
-    declare nodes: MermaidNode[];
-    declare edges: MermaidEdge[];
-    declare messages: MermaidMessage[];
+    kind!: string;
+    vertical!: boolean;
+    nodes!: MermaidNode[];
+    edges!: MermaidEdge[];
+    messages!: MermaidMessage[];
 }
 

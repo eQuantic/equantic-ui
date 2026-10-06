@@ -20,14 +20,14 @@ export class CodeDiffSource {
         this.gaps = gaps;
     }
 
-    declare _originalNumbers: number[] | null;
-    declare _modifiedNumbers: number[] | null;
-    declare original: CodeDocument;
-    declare modified: CodeDocument;
-    declare originalLineCount: number;
-    declare modifiedLineCount: number;
-    declare changes: CodeLineChange[];
-    declare gaps: CodeDiffGap[];
+    _originalNumbers!: number[] | null;
+    _modifiedNumbers!: number[] | null;
+    original!: CodeDocument;
+    modified!: CodeDocument;
+    originalLineCount!: number;
+    modifiedLineCount!: number;
+    changes!: CodeLineChange[];
+    gaps!: CodeDiffGap[];
 
     originalNumber(line: number) {
         let numbers: any; 
