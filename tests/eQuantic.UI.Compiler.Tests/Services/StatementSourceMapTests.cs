@@ -634,6 +634,36 @@ public class StatementSourceMapTests
     public void AStatementInALambdaThatAComponentsExpressionBodyHolds_MapsToItsOwnCSharpLine(string emitted, string written) =>
         AssertMapped(Compile(ComponentCarriedSource, "Clicker.cs"), emitted, written, ComponentCarriedSource);
 
+    /// <summary>A class's state as its constructor starts it (#583): each member's start maps to the
+    /// member's declaration, a derived class's local evaluated before its base's constructor too, so a
+    /// frame thrown in an initializer leads to its own line. Built as a record's twin is, the starts
+    /// carried no line of their own and read as the class's declaration.</summary>
+    private const string InitializedSource = """
+        namespace Demo;
+
+        public class Gauge
+        {
+            private int _limit = Parse("40");
+
+            public string Label { get; set; } = "gauge";
+
+            public static int Parse(string text) => int.Parse(text);
+        }
+
+        public class Dial : Gauge
+        {
+            private int _turns = Parse("3");
+        }
+        """;
+
+    [Theory]
+    [InlineData("this._limit = ", "private int _limit = Parse(\"40\");", "Gauge.cs")]
+    [InlineData("this.label = ", "public string Label { get; set; } = \"gauge\";", "Gauge.cs")]
+    [InlineData("const $$_turns = ", "private int _turns = Parse(\"3\");", "Dial.cs")]
+    [InlineData("this._turns = $$_turns;", "private int _turns = Parse(\"3\");", "Dial.cs")]
+    public void AMembersStart_MapsToItsDeclaration(string emitted, string written, string file) =>
+        AssertMapped(Compile(InitializedSource, file), emitted, written, InitializedSource);
+
     private static void AssertMapped(CompilationResult result, string emitted, string written, string source)
     {
         result.SourceMap.Should().NotBeNullOrEmpty();

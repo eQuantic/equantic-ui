@@ -275,6 +275,11 @@ public static class Eq
     /// twin has no generated <c>with</c>, and a spread would drop its prototype and its methods.</summary>
     public const string With = "$eq.withPatch";
 
+    /// <summary>A twin's JSON, as System.Text.Json writes the C# value: the twin's own properties, a
+    /// property's store (<c>$name</c>) written under the property's name and read through it (#591).
+    /// What a twin that keeps a store answers <c>toJSON</c> with.</summary>
+    public const string Json = "$eq.json";
+
     /// <summary>Structural (value) equality for records/structs/tuples — backs ==, Contains, Distinct.
     /// <c>new</c> because this table names JS HELPERS, and one of them is called what
     /// <c>object</c> calls a method — hiding it is the point, and saying so is what stops the

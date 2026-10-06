@@ -18,7 +18,6 @@
 # and writes "not looked at yet" for a file new to the list, which is not an approval.
 src/eQuantic.UI.Compiler/CodeGen/ExpressionVariableScanner.cs  1  not looked at yet
 src/eQuantic.UI.Compiler/CodeGen/Ir/JsExprWriter.cs  2  the IR's writer
-src/eQuantic.UI.Compiler/CodeGen/RecordTypeEmitter.cs  1  a constructor's body, where C# allows no await and no yield, run once: the function scopes its return
 src/eQuantic.UI.Compiler/CodeGen/Strategies/Async/TaskMethodStrategy.cs  2  not looked at yet
 src/eQuantic.UI.Compiler/CodeGen/Strategies/DictionaryLookup.cs  1  not looked at yet
 src/eQuantic.UI.Compiler/CodeGen/Strategies/Expressions/ArrayCreationStrategy.cs  1  not looked at yet

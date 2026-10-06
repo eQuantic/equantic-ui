@@ -1,7 +1,8 @@
 import { $eq, CancellationToken, CancellationTokenSource, CodeCompletionAnswer, CodeCompletionContext, CodeCompletionList, CodeCompletionMatch, CodeCompletionOffer, CodeCompletionTriggerValue, CodeDocument, CodeEditorController, CodeFuzzyMatch, CodePosition, CodeRange, UiDispatcher } from "../runtime-exports";
 
 export class CodeCompletion {
-    constructor(editor: CodeEditorController, props?: any) {
+    constructor(editor: CodeEditorController) {
+        this._editor = null!;
         this._answers = [];
         this._candidates = [];
         this._groups = 0;
@@ -15,28 +16,34 @@ export class CodeCompletion {
         this._generation = 0;
         this._request = null;
         this._list = null;
+        this.providers = [];
+        this.opensAsYouType = true;
+        this.pageSize = 12;
+        this.changed = null;
+        this.failed = null;
         this._editor = editor;
         editor.selectionChanged = $eq.delegates.combine(editor.selectionChanged, (_) => this.follow());
-        if (props && typeof props === 'object') Object.assign(this, props);
     }
 
-    _editor: CodeEditorController;
-    _answers: CodeCompletionAnswer[];
-    _candidates: CodeCompletionOffer[];
-    _groups: number;
-    _items: CodeCompletionMatch[];
-    _shown: CodeCompletionOffer[];
-    _selected: number;
-    _active: boolean;
-    _start: CodePosition;
-    _openedEmpty: boolean;
-    _askedWord: string;
-    _generation: number;
-    _request: CancellationTokenSource | null;
-    _list: CancellationTokenSource | null;
-    providers: any[] = [];
-    opensAsYouType: boolean = true;
-    pageSize: number = 12;
+    _editor!: CodeEditorController;
+    _answers!: CodeCompletionAnswer[];
+    _candidates!: CodeCompletionOffer[];
+    _groups!: number;
+    _items!: CodeCompletionMatch[];
+    _shown!: CodeCompletionOffer[];
+    _selected!: number;
+    _active!: boolean;
+    _start!: CodePosition;
+    _openedEmpty!: boolean;
+    _askedWord!: string;
+    _generation!: number;
+    _request!: CancellationTokenSource | null;
+    _list!: CancellationTokenSource | null;
+    providers!: any[];
+    opensAsYouType!: boolean;
+    pageSize!: number;
+    changed!: (() => void) | null;
+    failed!: ((exception: Error) => void) | null;
 
     get isOpen(): boolean {
         return this._active && this._items.length > 0;
@@ -63,9 +70,6 @@ export class CodeCompletion {
         let offer = this._shown[this._selected];
         return this._editor.document.textIn(this.rangeOf(offer)) !== (offer.item.insertText ?? offer.item.label);
     }
-
-    changed: (() => void) | null = null;
-    failed: ((exception: Error) => void) | null = null;
 
     invoke() {
         if (this._editor.readOnly || this.providers.length === 0) return false;

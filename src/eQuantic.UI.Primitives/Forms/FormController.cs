@@ -15,6 +15,7 @@ namespace eQuantic.UI.Primitives;
 /// the most common complaint about validated forms, and it is a two-line rule.
 /// </para>
 /// </summary>
+[TwinIsTranspiled]
 public sealed class FormController
 {
     private readonly List<FormField> _fields = [];
@@ -200,4 +201,5 @@ public sealed class FormController
 
 /// <summary>One server-side verdict about one field. A record so it crosses a Server Action as
 /// ordinary data.</summary>
+[TwinIsTranspiled]
 public sealed record FieldError(string Field, string Message);

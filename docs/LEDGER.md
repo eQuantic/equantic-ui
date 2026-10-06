@@ -1494,6 +1494,54 @@ record of a release, the wiki's Upgrading page is the distillate.
   a generated equality in a hydration map or a `ContainsValue` did not register; and `CopyTo` through
   an `ICollection<T>` copies a set. The served runtime grew about 7 KB gzipped. Proposed and archived
   through OpenSpec (`openspec/specs/runtime-sets`, `runtime-dictionaries`, `transpiler-bcl`).
+- **2026-10-06 · A class is built as C# builds it**: a plain class kept its widest constructor and
+  called its base's with no arguments, and a C# 12 primary constructor on a class was not read, so
+  `Money() : this(100)` built no cents, `: base(x * 2)` passed nothing and `new Greeter("ada").Hello()`
+  answered "hi " ([#583](https://github.com/eQuantic/equantic-ui/issues/583)); a derived class ran its
+  initializers after its base's constructor ([#571](https://github.com/eQuantic/equantic-ui/issues/571));
+  an object initializer was a trailing config object, evaluated before the constructor ran, and a
+  property's initializer ran before every field's ([#582](https://github.com/eQuantic/equantic-ui/issues/582));
+  an exception dropped its initializer ([#587](https://github.com/eQuantic/equantic-ui/issues/587));
+  and the vocabulary's types the runtime transpiles (the spreadsheet's and the forms' models) were
+  taken by an app for hand-written twins, so `new CellRef(1, 2) { Col = 3 }` kept its 2 and
+  `default(CellRef)` threw ([#592](https://github.com/eQuantic/equantic-ui/issues/592)).
+  The record twin's constructor (#413) moved into one builder written as IR, which a plain class's
+  constructor comes from too: every constructor is reached by its counts, the class's state starts in
+  declaration order, each member a class field with no initializer that the constructor writes, a
+  derived class's initializers run before `super()` and land after it, and a construction builds, then
+  applies its initializer. A class's held primary parameter on another member's name is EQ1007, as a
+  struct's is. The vocabulary marks its transpiled types `[TwinIsTranspiled]`, a test holding the mark
+  on exactly those, and every decision about a twin eqc writes reads it: without it, this change would
+  have dropped `new SheetController(10, 4) { Changed = … }`'s handler too. Of the 25 conformance cases
+  of a class this adds, run through the module graph on both sides, 18 fail on #608's head, a `params`
+  constructor not even loading (its rest parameter was written before the config), and the other 7 are
+  neighbours kept as pins; of the 6 of a transpiled vocabulary type, 3 fail there. Found on the way:
+  an app exception's own members
+  ([#611](https://github.com/eQuantic/equantic-ui/issues/611)) and enumerating a class that implements
+  `IEnumerable<T>` ([#612](https://github.com/eQuantic/equantic-ui/issues/612)). Proposed and archived
+  through OpenSpec (`openspec/specs/transpiler-classes`, `openspec/specs/transpiler-exceptions`).
+- **2026-10-06 · A property keeps its value in a store of its own**: a twin's constructor wrote each
+  member onto the instance under its name, which reached any accessor of that name along the chain. A
+  record's auto-property over a base's computed `virtual` one, or a computed override over a base's
+  auto-property, threw at `new` ([#591](https://github.com/eQuantic/equantic-ui/issues/591)), and a plain
+  class of those shapes answered its base's value; an override that declared only a getter lost the
+  setter it inherits, and one that read `base.Name` read nothing; and a record's or a struct's property
+  that uses `field` ran none of its accessors' bodies, so `new FRec { X = 5 }` over
+  `set => field = value * 2` held 5 for 10 ([#615](https://github.com/eQuantic/equantic-ui/issues/615)).
+  Building a class as C# builds it had also declared its state for TypeScript only, so
+  `int count; int Count => count;`, one name in the twin, threw at `new`, where #608's head answered
+  right. A class's state is a class field with no initializer again, which JavaScript defines before
+  the constructor writes it, in the order the constructor always wrote it; a property that can be
+  overridden, or that has an accessor of its own over a backing field, keeps a store, `$name`, under
+  accessors on the prototype, which the constructor starts, a record compares and copies and a
+  struct's zero zeroes; an override that declares one accessor forwards the other to `super`; and a
+  twin with a store answers `toJSON` with `$eq.json`, which writes the store under its property's
+  name, as System.Text.Json writes the property (a class's `field` property was sent to a server action
+  as `$name`). Of the 15 conformance cases this adds, 10 fail on #608's head, 3 of them throwing, and
+  the one of a field beside its property, which passes there, pins the regression. One difference stays,
+  documented: `base.Name` over an auto-property overridden by another reads the override's value.
+  Proposed and archived through OpenSpec (`openspec/specs/transpiler-classes`,
+  `openspec/specs/transpiler-records`).
 - **2026-10-06 · The code engine completes**: the engine half of the code editor's slice 3
   ([#296](https://github.com/eQuantic/equantic-ui/issues/296)). `CodeCompletion`, a session on the
   controller, asks its providers once when a word starts, filters and ranks what they answered on

@@ -1,16 +1,20 @@
 import { CodeCompletionAnswer, CodeCompletionItem } from "../runtime-exports";
 
 export class CodeCompletionOffer {
-    constructor(answer: CodeCompletionAnswer, item: CodeCompletionItem, props?: any) {
+    constructor(answer: CodeCompletionAnswer, item: CodeCompletionItem) {
+        this.answer = null!;
+        this.item = null!;
+        this.resolving = false;
+        this.group = 0;
+        this.sortKey = '';
         this.answer = answer;
         this.item = item;
-        if (props && typeof props === 'object') Object.assign(this, props);
     }
 
-    declare answer: CodeCompletionAnswer;
-    declare item: CodeCompletionItem;
-    resolving: boolean = false;
-    group: number = 0;
-    sortKey: string = '';
+    answer!: CodeCompletionAnswer;
+    item!: CodeCompletionItem;
+    resolving!: boolean;
+    group!: number;
+    sortKey!: string;
 }
 

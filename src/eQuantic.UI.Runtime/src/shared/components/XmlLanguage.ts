@@ -1,18 +1,8 @@
 import { $eq, CodeDocument, CodeLanguageRules, CodeToken, CodeTokenKindValue } from "../runtime-exports";
 
 export class XmlLanguage {
-    constructor(props?: any) {
-        if (props && typeof props === 'object') Object.assign(this, props);
-    }
-
-    static normal: number = 0;
-    static inComment: number = 1;
-
-    get name(): string {
-        return 'XML';
-    }
-
-    rules: CodeLanguageRules = (() => {
+    constructor() {
+        this.rules = (() => {
         const $o = new CodeLanguageRules();
         $o.blockComment = ['<!--', '-->'];
         $o.brackets = [['<', '>'], ['(', ')'], ['[', ']']];
@@ -21,6 +11,15 @@ export class XmlLanguage {
         $o.indentWidth = 2;
         return $o;
     })();
+    }
+
+    rules!: CodeLanguageRules;
+    static normal: number = 0;
+    static inComment: number = 1;
+
+    get name(): string {
+        return 'XML';
+    }
 
     tokenize(line: string, state: number, into: CodeToken[]) {
         let i = 0;

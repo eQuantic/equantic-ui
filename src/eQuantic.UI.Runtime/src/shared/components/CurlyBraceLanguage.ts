@@ -1,18 +1,27 @@
 import { $eq, CodeDocument, CodeLanguageRules, CodeToken, CodeTokenKindValue } from "../runtime-exports";
 
 export abstract class CurlyBraceLanguage {
-    constructor(props?: any) {
+    constructor() {
+        this.$rules = CodeLanguageRules.default;
         this._keywords = null;
-        if (props && typeof props === 'object') Object.assign(this, props);
     }
 
+    $rules!: CodeLanguageRules;
+    _keywords!: string[] | null;
     static stateNormal: number = 0;
     static stateBlockComment: number = 1;
     static stateMultilineString: number = 2;
     static stateRawString: number = 16;
-    _keywords: string[] | null;
     abstract name: string;
-    rules: CodeLanguageRules = CodeLanguageRules.default;
+
+    get rules(): CodeLanguageRules {
+        return this.$rules;
+    }
+
+    set rules(value: CodeLanguageRules) {
+        this.$rules = value;
+    }
+
     abstract reservedWords: Set<string>;
     abstract typeWords: Set<string>;
     abstract constantWords: Set<string>;
@@ -314,6 +323,10 @@ export abstract class CurlyBraceLanguage {
     static isLineHead(line: string, index: number) {
         for (let i = 0; i < index; i++) if (!$eq.text.isWhiteSpace(line[i])) return false;
         return true;
+    }
+
+    toJSON() {
+        return $eq.json(this);
     }
 }
 
