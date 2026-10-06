@@ -289,6 +289,41 @@ public class CodeEditorCompletionTests
         Shown(host).Should().Equal(["Column, class Column"]);
     }
 
+    /// <summary>
+    /// A row longer than the list cuts its detail first and its label after it, each with an
+    /// ellipsis, by the code face's columns, so both targets cut it in the same place; its name keeps
+    /// them whole. A label could not shrink, and on the web it ran past the frame with its detail
+    /// pushed out of sight (found reviewing #297).
+    /// </summary>
+    [Fact]
+    public void ARowLongerThanTheList_CutsItsDetailFirst_AndKeepsItsName()
+    {
+        var name = "Co" + new string('x', 70);
+        var editor = Editor(Lines(20),
+            new CodeCompletionItem(name) { Detail = "string" },
+            new CodeCompletionItem("Column") { Detail = "(string text, int start, int count, bool ignoreCase) -> string" });
+        var host = Host(editor);
+        Settle(host);
+        ClickAt(host, editor, 1, 0);
+
+        var frame = Type(host, "Co");
+
+        var texts = Descendants(frame.Root).Select(node => node.Source).OfType<Text>().Select(text => text.Content).ToList();
+        texts.Should().Contain(text => text.StartsWith("Coxx") && text.EndsWith("…"), "the long label is cut");
+        texts.Should().NotContain(text => text == "string", "and its detail, which has no room left");
+        texts.Should().Contain(text => text.StartsWith("(string text") && text.EndsWith("…"), "a long detail is cut");
+        texts.Should().Contain("Column", "beside a label that fits whole");
+        Shown(host).Should().Contain($"{name}, string", "the name keeps both whole");
+    }
+
+    private static IEnumerable<LayoutNode> Descendants(LayoutNode node)
+    {
+        yield return node;
+        foreach (var child in node)
+            foreach (var descendant in Descendants(child))
+                yield return descendant;
+    }
+
     [Fact]
     public void TheLabelMarksWhatTheWordMatched()
     {

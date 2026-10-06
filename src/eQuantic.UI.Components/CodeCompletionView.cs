@@ -154,11 +154,13 @@ internal static class CodeCompletionView
     {
         var theme = context.Theme;
         var items = completion.Items;
+        // The columns a row has for its label and its detail: the list's width less its chrome.
+        var columns = (int)MathF.Floor((width - WidthOf(metrics, 0)) / metrics.ColumnWidth);
         var page = new Column(gap: 0) { Width = SizeValue.Fill };
         for (var i = top; i < top + rows && i < items.Count; i++)
         {
             var index = i;
-            page.Add(Option(theme, metrics, items[i], i == completion.Selected, () => pick(index)));
+            page.Add(Option(theme, metrics, items[i], i == completion.Selected, columns, () => pick(index)));
         }
 
         var paged = new Row(gap: Space.S1, cross: CrossAlign.Start) { Width = SizeValue.Fill };
@@ -186,23 +188,30 @@ internal static class CodeCompletionView
 
     /// <summary>
     /// One entry, as an option the keyboard never lands on: a press accepts it while the code keeps
-    /// the keyboard. Its name is its label and its detail, so the letter before them, which says the
-    /// same as the detail, is not read out.
+    /// the keyboard. Its name is its label and its detail, whole, so the letter before them, which
+    /// says the same as the detail, is not read out. What it draws fits its
+    /// <paramref name="columns"/>: the detail is cut first and the label after it, each ending in an
+    /// ellipsis, by counting the code face's columns, so both targets cut a row in the same place
+    /// where each one's flex would have cut it differently, or not at all.
     /// </summary>
     private static VisualNode Option(IAppTheme theme, CodeBlock.CodeMetrics metrics, CodeCompletionMatch match,
-        bool selected, Action pressed)
+        bool selected, int columns, Action pressed)
     {
         var item = match.Item;
         var ink = selected ? theme.Colors(Variant.Primary).OnSubtle : theme.TextPrimary;
+        var label = Fit(item.Label, columns);
         var row = new Row(gap: Space.S1) { Width = SizeValue.Fill, Height = SizeValue.Fill };
         row.Add(Glyph(theme, metrics, item.Kind));
-        row.Add(new Text(item.Label, TypeRole.LabelSmall, ink, maxLines: 1)
+        row.Add(new Text(label, TypeRole.LabelSmall, ink, maxLines: 1)
         {
             Mono = true,
             StyleOverride = metrics.Style,
-            Spans = Marked(item.Label, match.Highlights, ink, theme.Colors(Variant.Primary).Base),
+            Spans = Marked(label, match.Highlights, ink, theme.Colors(Variant.Primary).Base),
         });
-        if (item.Detail is { Length: > 0 } detail)
+        // The detail has what the label left, less the two columns between them.
+        var room = columns - label.Length - 2;
+        var detail = item.Detail is { Length: > 0 } said && room >= 2 ? Fit(said, room) : null;
+        if (detail is not null)
         {
             row.Add(new Flexible(new Spacer()));
             row.Add(new Text(detail, TypeRole.LabelSmall, theme.TextMuted, maxLines: 1)
@@ -226,9 +235,14 @@ internal static class CodeCompletionView
             Role = PressableRole.Option,
             Selected = selected,
             CanRequestFocus = false,
-            Label = item.Detail is { Length: > 0 } said ? item.Label + ", " + said : item.Label,
+            Label = item.Detail is { Length: > 0 } whole ? item.Label + ", " + whole : item.Label,
         };
     }
+
+    /// <summary><paramref name="text"/> in no more than <paramref name="columns"/> columns of the code
+    /// face, its end replaced by an ellipsis when it is longer.</summary>
+    internal static string Fit(string text, int columns) =>
+        text.Length <= columns ? text : columns <= 1 ? "…" : text.Substring(0, columns - 1) + "…";
 
     /// <summary>The entry's kind, as its letter in its colour, centred in a square cell a line tall.</summary>
     private static VisualNode Glyph(IAppTheme theme, CodeBlock.CodeMetrics metrics, CodeCompletionKind kind)
