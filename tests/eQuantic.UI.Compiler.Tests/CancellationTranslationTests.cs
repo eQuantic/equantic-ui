@@ -70,6 +70,20 @@ public class CancellationTranslationTests
         Assert.Contains(expected, js);
     }
 
+    [Fact]
+    public void AMethodGroup_KeepsItsReceiver_ReadOnce()
+    {
+        var (named, namedErrors) = Convert("var inner = new CancellationTokenSource(); given.Register(inner.Cancel);");
+        var (made, madeErrors) = Convert("given.Register(Make().Cancel); CancellationTokenSource Make() => new();");
+
+        Assert.Empty(namedErrors);
+        Assert.Empty(madeErrors);
+        Assert.Contains("given.register(inner.cancel.bind(inner))", named);
+        // A receiver that is a call is read once, as C# reads it when the delegate is made.
+        Assert.Single(System.Text.RegularExpressions.Regex.Matches(made, @"\bmake\(\)"));
+        Assert.Contains(".cancel.bind(", made);
+    }
+
     [Theory]
     [InlineData("var s = new CancellationTokenSource(); s.Cancel(true);")]
     [InlineData("var s = new CancellationTokenSource(); var ok = s.TryReset();")]
