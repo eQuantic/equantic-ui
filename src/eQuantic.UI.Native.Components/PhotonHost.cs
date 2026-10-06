@@ -1790,7 +1790,11 @@ public sealed class PhotonHost
         // editor still takes the caret and the selection, so it says the same.
         var code = _lastFrame.CodeRegions;
         for (var i = code.Count - 1; i >= 0; i--)
-            if (code[i].Bounds.Contains(point)) return CursorShape.Text;
+        {
+            // Over what a surface offers, where no row is, the pointer is the list's and not the code's.
+            if (code[i].Offered is { } offered && offered.Contains(point)) return CursorShape.Default;
+            if ((code[i].Visible ?? code[i].Bounds).Contains(point)) return CursorShape.Text;
+        }
         for (var i = links.Count - 1; i >= 0; i--)
             if (links[i].Bounds.Contains(point)) return CursorShape.Pointer;
 
@@ -1950,7 +1954,7 @@ public sealed class PhotonHost
                 _pressSwallowed = true;
                 return true;
             }
-            if (!surfaces[i].Bounds.Contains(point)) continue;
+            if (!(surfaces[i].Visible ?? surfaces[i].Bounds).Contains(point)) continue;
             BeginCodeEditing(surfaces[i]);
             // What the press MEANS — a caret, a word, a line, a shift-extended selection — is the
             // model's to decide. The platform counts the clicks: its double-click interval is a

@@ -1,7 +1,9 @@
 #nullable enable
 *REMOVED*eQuantic.UI.Native.Components.CodeRegion.CodeRegion(eQuantic.UI.Primitives.Rect Bounds, eQuantic.UI.Primitives.CodeSurface! Surface, string! Path) -> void
 *REMOVED*eQuantic.UI.Native.Components.CodeRegion.Deconstruct(out eQuantic.UI.Primitives.Rect Bounds, out eQuantic.UI.Primitives.CodeSurface! Surface, out string! Path) -> void
-eQuantic.UI.Native.Components.CodeRegion.CodeRegion(eQuantic.UI.Primitives.Rect Bounds, eQuantic.UI.Primitives.CodeSurface! Surface, string! Path, eQuantic.UI.Primitives.Rect? Offered = null) -> void
-eQuantic.UI.Native.Components.CodeRegion.Deconstruct(out eQuantic.UI.Primitives.Rect Bounds, out eQuantic.UI.Primitives.CodeSurface! Surface, out string! Path, out eQuantic.UI.Primitives.Rect? Offered) -> void
 eQuantic.UI.Native.Components.CodeRegion.Offered.get -> eQuantic.UI.Primitives.Rect?
 eQuantic.UI.Native.Components.CodeRegion.Offered.init -> void
+eQuantic.UI.Native.Components.CodeRegion.CodeRegion(eQuantic.UI.Primitives.Rect Bounds, eQuantic.UI.Primitives.CodeSurface! Surface, string! Path, eQuantic.UI.Primitives.Rect? Offered = null, eQuantic.UI.Primitives.Rect? Visible = null) -> void
+eQuantic.UI.Native.Components.CodeRegion.Deconstruct(out eQuantic.UI.Primitives.Rect Bounds, out eQuantic.UI.Primitives.CodeSurface! Surface, out string! Path, out eQuantic.UI.Primitives.Rect? Offered, out eQuantic.UI.Primitives.Rect? Visible) -> void
+eQuantic.UI.Native.Components.CodeRegion.Visible.get -> eQuantic.UI.Primitives.Rect?
+eQuantic.UI.Native.Components.CodeRegion.Visible.init -> void

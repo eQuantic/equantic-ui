@@ -390,6 +390,31 @@ public class CodeEditorComponentTests
         host.CodeTarget.Should().NotBeNull("and gives the editor the keyboard");
     }
 
+    /// <summary>
+    /// A press OUTSIDE an editor is not the editor's, however far its code runs past the viewport that
+    /// shows it. The code region was registered whole, so a press on what stood below a scrolled
+    /// editor moved its caret and took the keyboard (found reviewing #297).
+    /// </summary>
+    [Fact]
+    public void APressBelowAScrolledEditor_LandsOutsideIt()
+    {
+        var text = string.Join("\n", Enumerable.Range(0, 60).Select(i => $"var line{i} = {i};"));
+        var editor = new CodeEditor(text, "csharp") { ShowLineNumbers = false, Height = SizeValue.Fixed(200) };
+        var page = new Column(gap: 0) { Width = SizeValue.Fill };
+        page.Add(editor);
+        page.Add(new Box(new BoxStyle { Width = SizeValue.Fill, Height = 200 }, new Text("below", TypeRole.BodyM)));
+        var host = Host(page, 500, 400);
+        var region = Settle(host).CodeRegions.Single();
+        region.Bounds.Bottom.Should().BeGreaterThan(300, "the code runs past the viewport, under the box below");
+
+        host.PressDown(100, 300);
+        host.PressUp(100, 300);
+        Settle(host);
+
+        editor.Editor.Caret.Should().Be(CodePosition.Start, "the press was on the box below the editor");
+        host.CodeTarget.Should().BeNull("and the editor did not take the keyboard");
+    }
+
     [Fact]
     public void ADragFromUnderTheCode_SelectsBackToWhereItStops()
     {

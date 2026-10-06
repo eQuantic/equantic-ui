@@ -358,6 +358,41 @@ public class CodeEditorCompletionTests
             "Tab never lands on a row: the arrows walk them while the code keeps the keyboard");
     }
 
+    /// <summary>
+    /// A list that left the view with its line takes no press outside the view: the area it would
+    /// cover is clipped like the code it stands in, where unclipped it swallowed what was pressed
+    /// below the editor (found reviewing #297).
+    /// </summary>
+    [Fact]
+    public void AListThatLeftTheViewWithItsLine_IsClippedWithIt()
+    {
+        var editor = new CodeEditor(Lines(60), "csharp")
+        {
+            // The gutter is where a wheel reaches the vertical scroll alone: over the code, the
+            // sideways scroll is the topmost one and takes it.
+            ShowLineNumbers = true,
+            Height = SizeValue.Fixed(200),
+            Completions = [new ListProvider(new CodeCompletionItem("Column"), new CodeCompletionItem("ColorToken"))],
+        };
+        var page = new Column(gap: 0) { Width = SizeValue.Fill };
+        page.Add(editor);
+        page.Add(new Box(new BoxStyle { Width = SizeValue.Fill, Height = 200 }, new Text("below", TypeRole.BodyM)));
+        var host = Host(page);
+        Settle(host);
+        ClickAt(host, editor, 1, 0);
+        Type(host, "Co");
+
+        host.ScrollBy(8, 100, 120).Should().BeTrue("the code scrolls");
+        var frame = Settle(host);
+
+        editor.Editor.Completion.IsOpen.Should().BeTrue("a scroll moves no caret, so the list stays open");
+        var region = frame.CodeRegions.Single();
+        var visible = region.Visible!.Value;
+        visible.Bottom.Should().BeLessThanOrEqualTo(200.5f, "a press can land on the code only inside the editor");
+        if (region.Offered is { } offered && offered.Width > 0 && offered.Height > 0)
+            offered.Bottom.Should().BeLessThanOrEqualTo(visible.Bottom + 0.5f, "nor on the list, outside it");
+    }
+
     // ---- what assistive technology is told ------------------------------------------------------
 
     [Fact]
