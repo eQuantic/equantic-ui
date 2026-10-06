@@ -42,6 +42,17 @@ public class CodeEditorCompletionTests
             Task.FromResult(new CodeCompletionList(items));
     }
 
+    /// <summary>Answers when the test says so, as a language server answers after the keystroke.</summary>
+    private sealed class LateProvider(params CodeCompletionItem[] items) : ICodeCompletionProvider
+    {
+        private readonly TaskCompletionSource<CodeCompletionList> _answer = new();
+
+        public Task<CodeCompletionList> CompleteAsync(CodeDocument document, CodePosition position,
+            CodeCompletionContext context, CancellationToken cancellation) => _answer.Task;
+
+        public void Answer() => _answer.TrySetResult(new CodeCompletionList(items));
+    }
+
     private static PhotonHost Host(VisualNode root, float width = 600, float height = 400) =>
         new(root, PhotonTheme.Instance, ThemeMode.Light, width, height)
         {
@@ -210,6 +221,35 @@ public class CodeEditorCompletionTests
         var offered = frame.CodeRegions.Single().Offered!.Value;
         var word = WordOnScreen(frame, editor);
         offered.Y.Should().BeApproximately(word.Y + word.Height, 0.5f, "below the line, in the room under the code");
+    }
+
+    /// <summary>
+    /// An answer that arrives after the keystroke asks for a frame of its own: nothing else would draw
+    /// the list until the next key, since the editor learns of the answer outside any input the
+    /// surface handled.
+    /// </summary>
+    [Fact]
+    public void AnAnswerThatArrivesAfterTheKey_AsksForAFrame_AndTheListShows()
+    {
+        var late = new LateProvider(new CodeCompletionItem("Column"), new CodeCompletionItem("ColorToken"));
+        var editor = new CodeEditor(Lines(20), "csharp")
+        {
+            ShowLineNumbers = false,
+            Height = SizeValue.Fill,
+            Completions = [late],
+        };
+        var host = Host(editor);
+        Settle(host);
+        ClickAt(host, editor, 1, 0);
+        Type(host, "Co");
+        Shown(host).Should().BeEmpty("nothing has answered yet");
+        host.NeedsRender.Should().BeFalse("the frames after the key were drawn");
+
+        late.Answer();
+
+        host.NeedsRender.Should().BeTrue("the answer asks for a frame");
+        Settle(host);
+        Shown(host).Should().Equal(["ColorToken", "Column"]);
     }
 
     // ---- the page --------------------------------------------------------------------------------
