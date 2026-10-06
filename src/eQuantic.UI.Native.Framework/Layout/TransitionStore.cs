@@ -135,6 +135,13 @@ public sealed class TransitionStore
     /// track — what a position that left its list fades from.</summary>
     public float? Target(string path) => _tracks.TryGetValue(path, out var track) ? track.To : null;
 
+    /// <summary>The colour a <see cref="ResolveColor"/> track is gliding TOWARD, or null when it has
+    /// none, rounded as the track rounds what it draws.</summary>
+    public Color? TargetColor(string path) =>
+        Target(path + ".r") is { } r
+            ? new Color(Byte(r), Byte(Target(path + ".g") ?? 0), Byte(Target(path + ".b") ?? 0), Byte(Target(path + ".a") ?? 0))
+            : null;
+
     private static byte Byte(float channel) => (byte)Math.Clamp(MathF.Round(channel), 0, 255);
 
     private static float ValueAt(Transition track, float timeMs)

@@ -115,10 +115,12 @@ internal sealed partial class EmitVisitor : IVisualNodeVisitor<EmitState, Nothin
 
         // The control's press and focus reach EVERY box inside it, for as long as its subtree is
         // drawn (#508): set around its own visit, which draws the subtree, and restored after. The
-        // control is a Pressable, as the web's is the element carrying eq-pressable; anything else
-        // that takes focus (a Link) still draws its ring, and lends its subtree no state.
-        var pressedHere = pressTracked && node.Source is Pressable;
-        var focusedHere = focusTracked && node.Source is Pressable;
+        // control is an ENABLED Pressable, as the web's is the element carrying eq-pressable, which
+        // a disabled control never does: the handoff's "disabled mutes everything", and a disabled
+        // control stays in the focus walk. Anything else that takes focus (a Link) still draws its
+        // ring, and lends its subtree no state.
+        var pressedHere = pressTracked && node.Source is Pressable { Disabled: false };
+        var focusedHere = focusTracked && node.Source is Pressable { Disabled: false };
         var outerPressed = press.InPressedControl;
         var outerFocused = press.InFocusedControl;
         if (pressedHere) press.InPressedControl = true;

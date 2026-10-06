@@ -73,13 +73,13 @@ internal sealed partial class EmitVisitor
         {
             GlideCustomShadows(s, style, customSpec, customStore);
         }
-        else if (style.Shadow is { IsNone: false } custom)
+        else
         {
-            s.Builder.ShadowRRect(new RRect(s.Node.Bounds, style.CornerRadius),
-                custom.OffsetY, custom.Blur, custom.Spread, custom.Color.Resolve(s.Mode));
-        }
-        if (s.Motion.Transitions is null || TransitionStore.Only(style.Transition, StyleChannels.Shadow) is null)
-        {
+            if (style.Shadow is { IsNone: false } custom)
+            {
+                s.Builder.ShadowRRect(new RRect(s.Node.Bounds, style.CornerRadius),
+                    custom.OffsetY, custom.Blur, custom.Spread, custom.Color.Resolve(s.Mode));
+            }
             if (style.Shadows is { Count: > 0 } customList)
             {
                 foreach (var entry in customList)
@@ -319,9 +319,7 @@ internal sealed partial class EmitVisitor
             else
             {
                 // Gone from the list: fade the colour it had, rather than toward black.
-                color = new Color(
-                    Channel(store.Target(p + ".c.r")), Channel(store.Target(p + ".c.g")),
-                    Channel(store.Target(p + ".c.b")), 0);
+                color = (store.TargetColor(p + ".c") ?? default) with { A = 0 };
             }
             var offsetY = store.Resolve(p + ".y", target?.OffsetY ?? 0, time, spec, reduced);
             var blur = store.Resolve(p + ".b", target?.Blur ?? 0, time, spec, reduced);
@@ -334,8 +332,6 @@ internal sealed partial class EmitVisitor
         }
         store.RememberPositions(key, leaving ? positions : count);
     }
-
-    private static byte Channel(float? value) => (byte)Math.Clamp(MathF.Round(value ?? 0), 0, 255);
 
     /// <summary>
     /// The style a box paints with this frame: its own, with each active state's diff laid over it

@@ -120,6 +120,32 @@ public class ControlStateNativeTests
         LayerAlpha(Frame(focused)).Should().Be(0.5f);
     }
 
+    /// <summary>A control that becomes disabled while it has focus, the button that turns to "loading"
+    /// under the keyboard. The focus walk skips a disabled control but the focus it already holds is
+    /// kept by path, and the handoff's "disabled mutes everything" holds there too, as the web's
+    /// families never select under a disabled control (it carries no <c>eq-pressable</c>).</summary>
+    private sealed class Loading : StatefulComponent
+    {
+        public bool Busy;
+        public void Start() => SetState(() => Busy = true);
+
+        public override VisualNode Build(ComponentContext context) =>
+            new Pressable(Surface(focus: new StyleDiff { Opacity = 0.5f }), () => { }) { Disabled = Busy };
+    }
+
+    [Fact]
+    public void AControlDisabledWhileFocused_StopsShowingTheFocus()
+    {
+        var control = new Loading();
+        var host = Host(control);
+        Frame(host);
+        host.FocusNext().Should().BeTrue();
+        LayerAlpha(Frame(host)).Should().Be(0.5f, "focused");
+
+        control.Start();
+        LayerAlpha(Frame(host)).Should().Be(1, "a disabled control mutes its states, focused or not");
+    }
+
     /// <summary>The state lends its subtree nothing when the thing focused is not a control: a Link
     /// takes focus and draws its own ring, and the web's focus family selects only under
     /// <c>eq-pressable</c>.</summary>
