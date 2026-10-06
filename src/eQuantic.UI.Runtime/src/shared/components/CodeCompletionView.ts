@@ -8,6 +8,7 @@ export class CodeCompletionView {
     static documentationBudget: number = 480;
     static border: number = 1;
     static pageMarkWidth: number = 3;
+    static documentationChrome: number = 9;
 
     static labelInset(metrics: CodeMetrics) {
         return Math.fround(Math.fround(Math.fround(CodeCompletionView.border + 8) + metrics.lineHeight) + 4);
@@ -51,11 +52,15 @@ export class CodeCompletionView {
         return documentation.length > CodeCompletionView.documentationBudget ? $eq.text.substring(documentation, 0, CodeCompletionView.documentationBudget) : documentation;
     }
 
-    static documentationHeightOf(context: BuildContext, metrics: CodeMetrics, lines: number) {
-        return lines === 0 ? 0 : Math.fround(Math.fround(1 + Math.fround(2 * 4)) + Math.fround(Math.fround(lines) * CodeCompletionView.documentationStyle(metrics).scaledLineHeight(context.typeScale)));
+    static documentationLineOf(context: BuildContext, metrics: CodeMetrics) {
+        return CodeCompletionView.documentationStyle(metrics).scaledLineHeight(context.typeScale);
     }
 
-    static place(metrics: CodeMetrics, word: Rect, viewTop: number, viewBottom: number, viewLeft: number, viewWidth: number, wanted: number, width: number, farSide: number): [number, number, number, boolean] {
+    static documentationHeightOf(line: number, lines: number) {
+        return lines === 0 ? 0 : Math.fround(CodeCompletionView.documentationChrome + Math.fround(Math.fround(lines) * line));
+    }
+
+    static place(metrics: CodeMetrics, word: Rect, viewTop: number, viewBottom: number, viewLeft: number, viewWidth: number, wanted: number, width: number, documentation: number, documentationLine: number): [number, number, number, boolean, number] {
         let below = Math.fround(viewBottom - Math.fround(word.y + word.height));
         let above = Math.fround(word.y - viewTop);
         let shown = Math.fround(word.y + word.height) > viewTop && word.y < viewBottom;
@@ -68,11 +73,16 @@ export class CodeCompletionView {
                 rows = Math.max(1, Math.min(wanted, (Math.trunc(Math.floor(Math.fround(room / metrics.lineHeight))) | 0)));
             }
         }
+        let lines = documentation;
+        if (shown) {
+            let spare = Math.fround(Math.fround((up ? above : below) - CodeCompletionView.heightOf(metrics, rows)) - CodeCompletionView.documentationChrome);
+            lines = Math.max(0, Math.min(lines, (Math.trunc(Math.floor(Math.fround(spare / documentationLine))) | 0)));
+        }
         let x = Math.fround(word.x - CodeCompletionView.labelInset(metrics));
         if (viewWidth > 0) x = Math.min(x, Math.fround(Math.fround(viewLeft + viewWidth) - width));
         x = Math.max(x, viewLeft);
-        let y = up ? Math.fround(Math.fround(word.y - CodeCompletionView.heightOf(metrics, rows)) - farSide) : Math.fround(word.y + word.height);
-        return [x, y, rows, up];
+        let y = up ? Math.fround(Math.fround(word.y - CodeCompletionView.heightOf(metrics, rows)) - CodeCompletionView.documentationHeightOf(documentationLine, lines)) : Math.fround(word.y + word.height);
+        return [x, y, rows, up, lines];
     }
 
     static build(context: BuildContext, completion: CodeCompletion, metrics: CodeMetrics, top: number, rows: number, width: number, above: boolean, documentation: string | null, documentationLines: number, pick: (int: number) => void) {
@@ -161,7 +171,7 @@ export class CodeCompletionView {
         if (lines === 0 || !(((documentation != null && documentation.length > 0) && (text = documentation, true)))) return null;
         let theme = context.theme;
         let rule = new Box(new BoxStyle({ width: SizeValue.fill, height: 1, background: theme.border }));
-        let body = new Box(new BoxStyle({ width: SizeValue.fill, height: Math.fround(CodeCompletionView.documentationHeightOf(context, metrics, lines) - 1), padding: EdgeInsets.symmetric(8, 4), clip: true }), new Text(CodeCompletionView.shown(text), 'labelSmall', theme.textSecondary, lines, 'start', false, false, null, 0, { styleOverride: CodeCompletionView.documentationStyle(metrics) }));
+        let body = new Box(new BoxStyle({ width: SizeValue.fill, height: Math.fround(CodeCompletionView.documentationHeightOf(CodeCompletionView.documentationLineOf(context, metrics), lines) - 1), padding: EdgeInsets.symmetric(8, 4), clip: true }), new Text(CodeCompletionView.shown(text), 'labelSmall', theme.textSecondary, lines, 'start', false, false, null, 0, { styleOverride: CodeCompletionView.documentationStyle(metrics) }));
         let column = new Column(0, 'start', 'stretch', false, null, null, { width: SizeValue.fill });
         if (above) {
             column.add(body);

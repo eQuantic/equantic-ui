@@ -39,6 +39,10 @@ internal static class CodeCompletionView
     /// <summary>How wide the mark is that says where the page is in the whole list.</summary>
     private const float PageMarkWidth = 3;
 
+    /// <summary>What documentation adds to its lines: the rule that parts it from the rows, and its
+    /// padding above and below them.</summary>
+    private const float DocumentationChrome = 1 + 2 * Space.S1;
+
     /// <summary>From the list's left edge to where its labels start: the frame, the row's padding,
     /// the letter's cell and the gap after it. The list stands this far left of the word, so its
     /// labels line up with what was typed.</summary>
@@ -100,10 +104,14 @@ internal static class CodeCompletionView
     private static string Shown(string documentation) =>
         documentation.Length > DocumentationBudget ? documentation.Substring(0, DocumentationBudget) : documentation;
 
-    /// <summary>How tall <paramref name="lines"/> lines of documentation are, with the rule that
-    /// parts them from the rows. Zero lines is none.</summary>
-    internal static float DocumentationHeightOf(ComponentContext context, CodeBlock.CodeMetrics metrics, int lines) =>
-        lines == 0 ? 0 : 1 + 2 * Space.S1 + lines * DocumentationStyle(metrics).ScaledLineHeight(context.TypeScale);
+    /// <summary>How tall a line of documentation is.</summary>
+    internal static float DocumentationLineOf(ComponentContext context, CodeBlock.CodeMetrics metrics) =>
+        DocumentationStyle(metrics).ScaledLineHeight(context.TypeScale);
+
+    /// <summary>How tall <paramref name="lines"/> lines of documentation, each <paramref name="line"/>
+    /// tall, are with the rule that parts them from the rows. Zero lines is none.</summary>
+    internal static float DocumentationHeightOf(float line, int lines) =>
+        lines == 0 ? 0 : DocumentationChrome + lines * line;
 
     /// <summary>
     /// Where a list stands, and how many of <paramref name="wanted"/> rows it shows. Its labels start
@@ -113,11 +121,19 @@ internal static class CodeCompletionView
     /// many rows as fit, never fewer than one. It never leaves the view on the left or on the right,
     /// the view being from <paramref name="viewLeft"/> across <paramref name="viewWidth"/> (zero while
     /// nothing has measured it). A line scrolled out of the view takes its list with it, below it as
-    /// ever. <paramref name="farSide"/> is what the list draws on its side away from the line (the
-    /// documentation), which a list above the line stands that much higher for.
+    /// ever.
+    /// <para>
+    /// On its side away from the line the list draws the selected entry's documentation,
+    /// <paramref name="documentation"/> lines each <paramref name="documentationLine"/> tall. It takes
+    /// the room the rows leave on that side and no more, as many of its lines as fit or none, and a
+    /// list above the line stands that much higher. The rows never yield to it: the documentation
+    /// changes with the selection, and a list that moved or lost rows as the arrows walked it would
+    /// jump under the reader's eye.
+    /// </para>
     /// </summary>
-    internal static (float X, float Y, int Rows, bool Above) Place(CodeBlock.CodeMetrics metrics, Rect word,
-        float viewTop, float viewBottom, float viewLeft, float viewWidth, int wanted, float width, float farSide)
+    internal static (float X, float Y, int Rows, bool Above, int DocumentationLines) Place(
+        CodeBlock.CodeMetrics metrics, Rect word, float viewTop, float viewBottom, float viewLeft,
+        float viewWidth, int wanted, float width, int documentation, float documentationLine)
     {
         var below = viewBottom - (word.Y + word.Height);
         var above = word.Y - viewTop;
@@ -134,11 +150,19 @@ internal static class CodeCompletionView
                 rows = Math.Max(1, Math.Min(wanted, (int)MathF.Floor(room / metrics.LineHeight)));
             }
         }
+        var lines = documentation;
+        if (shown)
+        {
+            var spare = (up ? above : below) - HeightOf(metrics, rows) - DocumentationChrome;
+            lines = Math.Max(0, Math.Min(lines, (int)MathF.Floor(spare / documentationLine)));
+        }
         var x = word.X - LabelInset(metrics);
         if (viewWidth > 0) x = MathF.Min(x, viewLeft + viewWidth - width);
         x = MathF.Max(x, viewLeft);
-        var y = up ? word.Y - HeightOf(metrics, rows) - farSide : word.Y + word.Height;
-        return (x, y, rows, up);
+        var y = up
+            ? word.Y - HeightOf(metrics, rows) - DocumentationHeightOf(documentationLine, lines)
+            : word.Y + word.Height;
+        return (x, y, rows, up, lines);
     }
 
     /// <summary>
@@ -365,7 +389,7 @@ internal static class CodeCompletionView
         var body = new Box(new BoxStyle
         {
             Width = SizeValue.Fill,
-            Height = DocumentationHeightOf(context, metrics, lines) - 1,
+            Height = DocumentationHeightOf(DocumentationLineOf(context, metrics), lines) - 1,
             Padding = EdgeInsets.Symmetric(Space.S2, Space.S1),
             Clip = true,
         }, new Text(Shown(text), TypeRole.LabelSmall, theme.TextSecondary, maxLines: lines)

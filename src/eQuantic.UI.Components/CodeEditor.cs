@@ -124,8 +124,9 @@ public sealed class CodeEditor : StatefulComponent
         return editor;
     }
 
-    /// <summary>The list last handed to the completion, whether any has been, and the providers the
-    /// editor put in for it: the only ones it ever takes out again.</summary>
+    /// <summary>The providers last handed to the completion (a copy, since a parent may change the list
+    /// it keeps in place, and null for the built-ins), whether any have been, and the providers the
+    /// editor put in for them: the only ones it ever takes out again.</summary>
     private IReadOnlyList<ICodeCompletionProvider>? _handed;
     private bool _handedAny;
     private List<ICodeCompletionProvider> _put = [];
@@ -138,12 +139,14 @@ public sealed class CodeEditor : StatefulComponent
     {
         if (_handedAny && SameProviders(Completions, _handed)) return;
         _handedAny = true;
-        _handed = Completions;
         var providers = completion.Providers;
         foreach (var provider in _put) providers.Remove(provider);
         _put = Completions is null
             ? [new CodeKeywordCompletionProvider(), new CodeWordCompletionProvider()]
             : [.. Completions];
+        // The copy, never the list itself: compared with itself, a list the parent changed in place
+        // would always hold the same providers, and the ones it gained would never be handed.
+        _handed = Completions is null ? null : _put;
         foreach (var provider in _put) providers.Add(provider);
     }
 
@@ -431,10 +434,10 @@ public sealed class CodeEditor : StatefulComponent
             var surfaceHeight = bounded ? MathF.Max(codeHeight, _viewport) : codeHeight;
             var viewTop = windowed ? _offset : 0;
             var viewBottom = windowed && _viewport > 0 ? MathF.Min(_offset + _viewport, surfaceHeight) : surfaceHeight;
-            var (x, y, rows, above) = CodeCompletionView.Place(metrics, editor.CaretRect(completion.Start),
-                viewTop, viewBottom, _scrollX, _viewportWidth,
-                Math.Min(CodeCompletionView.PageRows, items.Count), width,
-                CodeCompletionView.DocumentationHeightOf(context, metrics, documentationLines));
+            var (x, y, rows, above, documentationShown) = CodeCompletionView.Place(metrics,
+                editor.CaretRect(completion.Start), viewTop, viewBottom, _scrollX, _viewportWidth,
+                Math.Min(CodeCompletionView.PageRows, items.Count), width, documentationLines,
+                CodeCompletionView.DocumentationLineOf(context, metrics));
 
             // The page follows the selection past either end, and PageUp and PageDown step by it.
             var selected = completion.Selected;
@@ -444,7 +447,7 @@ public sealed class CodeEditor : StatefulComponent
             completion.PageSize = rows;
 
             offered = CodeCompletionView.Build(context, completion, metrics, _listTop, rows, width, above,
-                documentation, documentationLines, index => Pick(editor, index));
+                documentation, documentationShown, index => Pick(editor, index));
             offeredAt = new Point(x, y);
             highlighted = selected - _listTop;
         }

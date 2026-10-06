@@ -26,6 +26,7 @@ public sealed class CodeEditorController : ICodeSurfaceModel
 {
     private CodeDocument _document;
     private CodeRange _selection;
+    private bool _readOnly;
 
     public CodeEditorController(string text = "", ICodeLanguage? language = null)
     {
@@ -101,8 +102,18 @@ public sealed class CodeEditorController : ICodeSurfaceModel
     public CodeCompletion Completion { get; }
     public CodeLanguageRules Rules => Highlighter.Language.Rules;
 
-    /// <summary>Whether edits are refused — a viewer, a diff pane, a running debugger.</summary>
-    public bool ReadOnly { get; set; }
+    /// <summary>Whether edits are refused — a viewer, a diff pane, a running debugger. Turning it on
+    /// closes a list showing and drops an answer still on its way, since a read-only editor
+    /// completes nothing.</summary>
+    public bool ReadOnly
+    {
+        get => _readOnly;
+        set
+        {
+            _readOnly = value;
+            if (value) Completion.Dismiss();
+        }
+    }
 
     /// <summary>
     /// Whether the next Tab LEAVES the editor instead of indenting. Escape sets it — the one way out

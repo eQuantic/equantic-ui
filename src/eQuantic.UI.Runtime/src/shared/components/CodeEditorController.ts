@@ -4,10 +4,10 @@ export class CodeEditorController {
     constructor(text: string = '', language: any = null) {
         this._document = null!;
         this._selection = CodeRange.$zero();
+        this._readOnly = false;
         this.highlighter = null!;
         this.history = new CodeHistory();
         this.completion = null!;
-        this.readOnly = false;
         this.tabMovesFocus = false;
         this.changed = null;
         this.selectionChanged = null;
@@ -32,10 +32,10 @@ export class CodeEditorController {
 
     _document!: CodeDocument;
     _selection!: CodeRange;
+    _readOnly!: boolean;
     highlighter!: CodeHighlighter;
     history!: CodeHistory;
     completion!: CodeCompletion;
-    readOnly!: boolean;
     tabMovesFocus!: boolean;
     changed!: ((codeEdit: CodeEdit | null) => void) | null;
     selectionChanged!: ((codeRange: CodeRange) => void) | null;
@@ -84,6 +84,15 @@ export class CodeEditorController {
 
     get rules(): CodeLanguageRules {
         return this.highlighter.language.rules;
+    }
+
+    get readOnly(): boolean {
+        return this._readOnly;
+    }
+
+    set readOnly(value: boolean) {
+        this._readOnly = value;
+        if (value) this.completion.dismiss();
     }
 
     get widestLine(): number {

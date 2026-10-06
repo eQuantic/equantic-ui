@@ -431,6 +431,63 @@ public class CodeEditorCompletionTests
         shown.Content.Length.Should().BeLessThan(page.Length / 10, "and only what they can show is laid out");
     }
 
+    /// <summary>Documentation of four paragraphs, each a line of its own.</summary>
+    private const string FourParagraphs = "Lays its children out.\nIn a column.\nTop to bottom.\nWith a gap.";
+
+    /// <summary>
+    /// The documentation takes the room the rows leave on its side and no more. A row that just fits
+    /// under its line stays there, and documentation drawn whole under it ran out of the view (found by
+    /// Copilot reviewing #653).
+    /// </summary>
+    [Fact]
+    public void ARowThatJustFitsUnderItsLine_StaysThere_AndNoDocumentationRunsOutOfTheView()
+    {
+        var editor = Editor(Lines(40), new CodeCompletionItem("Column") { Documentation = FourParagraphs });
+        var host = Host(editor, height: 300);
+        Settle(host);
+        var grid = editor.Editor.Grid;
+        // The list's height on the web for one row: the row, its padding and its frame.
+        var listHeight = grid.Cell.Height + 2 * (Space.S1 + 1);
+        // The lowest line with room for that row under it, and so with none for documentation too.
+        var line = (int)((300 - grid.Origin.Y - listHeight) / grid.Cell.Height) - 1;
+        ClickAt(host, editor, line, 0);
+
+        var frame = Type(host, "Col");
+
+        var word = WordOnScreen(frame, editor);
+        frame.CodeRegions.Single().Offered!.Value.Y.Should().BeApproximately(word.Y + word.Height, 0.5f,
+            "the row fits under its line, and the documentation does not move it");
+        Shown(host).Should().Equal(["Column"]);
+        FindOrNull(frame.Root, node => node.Source is Text { Content: FourParagraphs })
+            .Should().BeNull("no line of the documentation fits under the row, inside the view");
+    }
+
+    /// <summary>
+    /// Above its line the list keeps its page, and its documentation shows the lines that fit between
+    /// the rows and the view's top: drawn whole, it crossed the top (found by Copilot reviewing #653).
+    /// </summary>
+    [Fact]
+    public void APageAboveItsLine_KeepsItsRows_AndItsDocumentationUnderTheViewsTop()
+    {
+        var documented = Enumerable.Range(0, 12)
+            .Select(i => new CodeCompletionItem($"Item{i:00}") { Documentation = FourParagraphs }).ToArray();
+        var editor = Editor(Lines(40), documented);
+        var host = Host(editor, height: 300);
+        Settle(host);
+        var grid = editor.Editor.Grid;
+        var last = (int)((300 - grid.Origin.Y) / grid.Cell.Height) - 1;
+        ClickAt(host, editor, last, 0);
+
+        var frame = Type(host, "I");
+
+        Shown(host).Should().HaveCount(12, "the rows never yield to the documentation");
+        var view = frame.CodeRegions.Single();
+        var top = (view.Visible ?? view.Bounds).Top;
+        var shown = Find(frame.Root, node => node.Source is Text { Content: FourParagraphs });
+        shown.Bounds.Top.Should().BeGreaterThanOrEqualTo(top, "the documentation stays under the view's top");
+        ((Text)shown.Source).MaxLines.Should().BeInRange(1, 3, "showing the lines that fit there, cut");
+    }
+
     private static LayoutNode Find(LayoutNode node, Func<LayoutNode, bool> match) =>
         FindOrNull(node, match) ?? throw new InvalidOperationException("nothing in the frame matches");
 
@@ -619,6 +676,33 @@ public class CodeEditorCompletionTests
     }
 
     /// <summary>
+    /// An editor a parent makes read-only while its list shows closes the list: it stayed open until a
+    /// key closed it, in an editor that completes nothing (found by Copilot reviewing #653).
+    /// </summary>
+    [Fact]
+    public void AnEditorMadeReadOnlyWhileItsListShows_ClosesIt()
+    {
+        var editor = Editor(Lines(20), new CodeCompletionItem("Column"), new CodeCompletionItem("ColorToken"));
+        var host = Host(editor);
+        Settle(host);
+        ClickAt(host, editor, 1, 0);
+        Type(host, "Co");
+        Shown(host).Should().NotBeEmpty();
+
+        editor.AdoptConfig(new CodeEditor(Lines(20), "csharp")
+        {
+            ShowLineNumbers = false,
+            Height = SizeValue.Fill,
+            ReadOnly = true,
+            Completions = editor.Completions,
+        });
+        var frame = Settle(host);
+
+        editor.Editor.Completion.IsOpen.Should().BeFalse("a read-only editor completes nothing");
+        frame.CodeRegions.Single().Offered.Should().BeNull("and draws no list");
+    }
+
+    /// <summary>
     /// A provider an app added to the controller's completion itself, the way the controller's own
     /// documentation tells an IDE to add its language service, stays beside the built-ins: the editor
     /// cleared the list on its first build, and the service never answered (found reviewing #297).
@@ -661,6 +745,33 @@ public class CodeEditorCompletionTests
 
         editor.Editor.Completion.IsOpen.Should().BeTrue();
         editor.Editor.Completion.Providers.Should().Equal(handed, "the same providers are not handed again");
+    }
+
+    /// <summary>
+    /// A parent that keeps one list of providers and adds to it hands what it added on its next build:
+    /// the editor recorded the list itself, which compared with itself never held other providers
+    /// (found by Copilot reviewing #653).
+    /// </summary>
+    [Fact]
+    public void AListOfProvidersChangedInPlace_HandsWhatItGained()
+    {
+        var providers = new List<ICodeCompletionProvider> { new ListProvider(new CodeCompletionItem("Column")) };
+        var editor = new CodeEditor(Lines(20), "csharp")
+        {
+            ShowLineNumbers = false,
+            Height = SizeValue.Fill,
+            Completions = providers,
+        };
+        var host = Host(editor);
+        Settle(host);
+        editor.Editor.Completion.Providers.Should().Equal(providers, "the first build hands the list");
+
+        var gained = new ListProvider(new CodeCompletionItem("Cobalt"));
+        providers.Add(gained);
+        editor.AdoptConfig(new CodeEditor(Lines(20), "csharp") { Completions = providers });
+        Settle(host);
+
+        editor.Editor.Completion.Providers.Should().Equal(providers, "the list holds a provider it did not");
     }
 
     // ---- pixels ----------------------------------------------------------------------------------

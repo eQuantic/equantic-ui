@@ -99,13 +99,13 @@ export class CodeEditor extends StatefulComponent {
             let surfaceHeight = bounded ? Math.max(codeHeight, this._viewport) : codeHeight;
             let viewTop = windowed ? this._offset : 0;
             let viewBottom = windowed && this._viewport > 0 ? Math.min(Math.fround(this._offset + this._viewport), surfaceHeight) : surfaceHeight;
-            let [x, y, rows, above] = CodeCompletionView.place(metrics, editor.caretRect(completion.start), viewTop, viewBottom, this._scrollX, this._viewportWidth, Math.min(12, items.length), width, CodeCompletionView.documentationHeightOf(context, metrics, documentationLines));
+            let [x, y, rows, above, documentationShown] = CodeCompletionView.place(metrics, editor.caretRect(completion.start), viewTop, viewBottom, this._scrollX, this._viewportWidth, Math.min(12, items.length), width, documentationLines, CodeCompletionView.documentationLineOf(context, metrics));
             let selected = completion.selected;
             if (selected < this._listTop) this._listTop = selected;
             if (selected >= this._listTop + rows) this._listTop = selected - rows + 1;
             this._listTop = Math.max(0, Math.min(this._listTop, items.length - rows));
             completion.pageSize = rows;
-            offered = CodeCompletionView.build(context, completion, metrics, this._listTop, rows, width, above, documentation, documentationLines, (index: number) => this.pick(editor, index));
+            offered = CodeCompletionView.build(context, completion, metrics, this._listTop, rows, width, above, documentation, documentationShown, (index: number) => this.pick(editor, index));
             offeredAt = new Point(x, y);
             highlighted = selected - this._listTop;
         } else {
@@ -162,10 +162,10 @@ export class CodeEditor extends StatefulComponent {
     handProviders(completion: CodeCompletion) {
         if (this._handedAny && CodeEditor.sameProviders(this.completions, this._handed)) return;
         this._handedAny = true;
-        this._handed = this.completions;
         let providers = completion.providers;
         for (const provider of this._put) $eq.collections.remove(providers, provider, 'own');
         this._put = this.completions == null ? [new CodeKeywordCompletionProvider(), new CodeWordCompletionProvider()] : [...this.completions];
+        this._handed = this.completions == null ? null : this._put;
         for (const provider of this._put) providers.push(provider);
     }
 
