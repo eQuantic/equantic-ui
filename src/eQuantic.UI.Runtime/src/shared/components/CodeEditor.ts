@@ -9,7 +9,7 @@ export class CodeEditor extends StatefulComponent {
     _viewport: number = 0;
     _viewportWidth: number = 0;
     _toldDocument: any = null;
-    _toldSelection: CodeRange = new CodeRange();
+    _toldSelection: CodeRange = CodeRange.$zero();
     _matches: CodeRange[] = [];
     _matchedIn: any = null;
     _matchedFor: any = null;

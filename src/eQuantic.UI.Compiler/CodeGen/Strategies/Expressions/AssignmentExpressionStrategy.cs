@@ -74,6 +74,13 @@ public class AssignmentExpressionStrategy : IExpressionIrStrategy
     {
         var assignment = (AssignmentExpressionSyntax)node;
 
+        // `this = value` in a struct replaces every field of the instance with the value's (the C#
+        // before 11 assigned a whole struct that way): the value's state is copied onto the instance.
+        // Written as itself, `this = P.$zero()` is no assignment target, and the module did not parse
+        // once a struct constructor's body ran (#413).
+        if (assignment.IsKind(Microsoft.CodeAnalysis.CSharp.SyntaxKind.SimpleAssignmentExpression) && assignment.Left is ThisExpressionSyntax)
+            return JsExpr.Call(JsExpr.Identifier("Object.assign"), JsExpr.This, context.Converter.ConvertIr(assignment.Right));
+
         // A deconstruction a record, a struct or any type with a Deconstruct takes part in, declared
         // (`var (a, b) = point` -> `let { x: a, y: b } = point`) or assigned (`(a, b) = point`,
         // `(var a, b) = point` -> `({ x: a, y: b } = point)`, what the statement declares in front of
@@ -91,24 +98,22 @@ public class AssignmentExpressionStrategy : IExpressionIrStrategy
             && BoolLogic.LowerCompound(assignment, context) is { } logical)
             return logical;
 
-        // A COMPOUND write to a dictionary entry READS it first, and .NET throws when the key is
-        // not there. Emitting `map[k] op= v` would answer undefined and walk it into the
-        // arithmetic; emitting the guarded read as the TARGET does not even parse. So it is
-        // lowered: read through the guard, write plainly. That is only how the ENTRY is read and
-        // written: the value it takes follows every rule below, as any compound target's does. A
-        // template of its own had returned ahead of them, so a float entry's `+=` added doubles, a
-        // decimal's glued two texts together and a byte's never wrapped.
-        (JsExpr Receiver, JsExpr Key)? entry = null;
-        if (!assignment.IsKind(Microsoft.CodeAnalysis.CSharp.SyntaxKind.SimpleAssignmentExpression)
-            && DictionaryEntry.Of(assignment.Left, context) is { } target)
-        {
-            entry = (context.Converter.ConvertIr(target.Expression),
-                context.Converter.ConvertIr(target.ArgumentList.Arguments[0].Expression));
-        }
+        // A PLACE JavaScript cannot assign (a dictionary's entry, an entry of an indexer the twin
+        // carries, #427) is written through its call, which answers the value as the assignment does,
+        // and a compound reads it first: a dictionary's through the guard that throws for a key that is
+        // not there, as .NET's read does, where `map[k] op= v` answered undefined into the arithmetic.
+        // Its receiver and its keys are evaluated once each, before the value, as C# does. That is only
+        // how the place is read and written: the value it takes follows every rule below, as any
+        // compound target's does. A template of its own had returned ahead of them, so a float entry's
+        // `+=` added doubles, a decimal's glued two texts together and a byte's never wrapped. A plain
+        // write to a dictionary's entry is the dictionary strategy's.
+        var place = Place.Of(assignment.Left, context);
+        if (place is not null && assignment.IsKind(Microsoft.CodeAnalysis.CSharp.SyntaxKind.SimpleAssignmentExpression))
+            return place.Write(context.Converter.ConvertIr(assignment.Right));
 
-        var leftIr = context.Converter.ConvertIr(assignment.Left);
+        var leftIr = place is null ? context.Converter.ConvertIr(assignment.Left) : null;
         var rightIr = context.Converter.ConvertIr(assignment.Right);
-        var left = JsExprWriter.Write(leftIr);
+        var left = leftIr is null ? "" : JsExprWriter.Write(leftIr);
         var right = JsExprWriter.Write(rightIr);
         var op = assignment.OperatorToken.Text;
 
@@ -124,11 +129,10 @@ public class AssignmentExpressionStrategy : IExpressionIrStrategy
         // Every compound this strategy spells out as `target = next(target, value)` evaluates the
         // target once, as JavaScript's own `op=` and C# both do (ReadModifyWrite): the text names it
         // twice, so `values[i++] += x` would otherwise step `i` twice.
-        JsExpr Compound(Func<JsExpr, JsExpr, JsExpr> next) => entry is var (receiver, key)
-            ? ReadModifyWrite.AssignEntry(
-                receiver, key, [rightIr], (current, operands) => next(current, operands[0]), answerOld: false, context)
+        JsExpr Compound(Func<JsExpr, JsExpr, JsExpr> next) => place is not null
+            ? place.Modify([rightIr], (current, operands) => next(current, operands[0]), answerOld: false)
             : ReadModifyWrite.Assign(
-                leftIr, [rightIr], (current, operands) => next(current, operands[0]), answerOld: false, context);
+                leftIr!, [rightIr], (current, operands) => next(current, operands[0]), answerOld: false, context);
 
         // COMPOUND assignment through a USER-DEFINED operator: `m += other` is `m = Money.opAdd(m, other)`.
         if (context.SemanticHelper.GetOperation(assignment) is Microsoft.CodeAnalysis.Operations.ICompoundAssignmentOperation
@@ -178,12 +182,14 @@ public class AssignmentExpressionStrategy : IExpressionIrStrategy
             if (Rule(binaryOp, leftType, assignment, context) is { } typed) return Compound(typed);
         }
 
-        // A dictionary entry has no operator of its own to fall back on: its read is the guard.
-        if (entry is not null) return Compound((current, operand) => JsExpr.Binary(current, op[..^1], operand));
+        // A place has no operator of its own to fall back on: a dictionary entry's read is the guard,
+        // and an indexer's read and write are methods.
+        if (place is not null)
+            return Compound((current, operand) => JsExpr.Binary(current, op[..^1], operand));
 
         // An assignment NODE: right-associative at the loosest level, so `a = b = c` chains and
         // an assignment used as an operand is fenced by whoever places it.
-        return JsExpr.Binary(leftIr, op, rightIr);
+        return JsExpr.Binary(leftIr!, op, rightIr);
     }
 
     /// <summary>
@@ -297,18 +303,16 @@ internal static class NullConditionalAssignment
         var t = depth == 0 ? "$t" : $"$t{depth}";
         var parameter = context.TypeAnnotations ? $"({t}: any)" : t;
 
-        // A dictionary's entry is written through its class's `set`, by $eq.mapSet, never by index.
-        // A compound write reads the entry first, through the guard that throws, which this lowering
-        // has no form for: null, and the caller reports it.
-        if (assignment.Left is ElementBindingExpressionSyntax { ArgumentList.Arguments.Count: 1 } entry
-            && context.SemanticHelper.GetSymbol(entry) is IPropertySymbol { IsIndexer: true } indexer
-            && indexer.ContainingType.IsDictionary())
+        // An entry written by its key, a Place over the guarded value: a dictionary's through its
+        // class's `set`, by $eq.mapSet, never by index, and one an indexer the twin carries holds
+        // through its `setItem` (#427). Its keys and its value are evaluated behind the guard, as C#
+        // evaluates them only for a value that is there. A compound write reads the entry first, which
+        // this lowering has no form for: null, and the caller reports it.
+        if (assignment.Left is ElementBindingExpressionSyntax entry
+            && Place.Of(entry, JsExpr.Identifier(t), context) is { } place)
         {
             if (!assignment.IsKind(Microsoft.CodeAnalysis.CSharp.SyntaxKind.SimpleAssignmentExpression)) return null;
-            context.UsedHelpers.Add(Eq.Import);
-            var write = DictionaryEntry.Write(t,
-                context.Converter.ConvertExpression(entry.ArgumentList.Arguments[0].Expression),
-                context.Converter.ConvertExpression(assignment.Right));
+            var write = JsExprWriter.Write(place.Write(context.Converter.ConvertIr(assignment.Right)));
             return $"({parameter} => {t} == null ? null : {write})({receiver})";
         }
 

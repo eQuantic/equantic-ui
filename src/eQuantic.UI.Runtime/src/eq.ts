@@ -163,6 +163,7 @@ import {
   is as isException,
   raise,
   thrown,
+  typeInitialization,
 } from './utils/exceptions';
 import {
   isDefined as enumIsDefined,
@@ -468,8 +469,9 @@ export const $eq = {
   /**
    * .NET exceptions: one built from its type and the types it derives from (`new T(…)`), one of a
    * type the runtime knows, the test a typed `catch` and a type pattern write, a `throw`
-   * expression, what a `throw` statement throws when its exception may be null, and an exception
-   * filter, which answers false where it throws.
+   * expression, what a `throw` statement throws when its exception may be null, an exception
+   * filter, which answers false where it throws, and what a type whose initializer threw throws on
+   * every use.
    */
   exceptions: {
     create: createException,
@@ -478,6 +480,7 @@ export const $eq = {
     raise,
     thrown,
     filter: exceptionFilter,
+    typeInitialization,
     bases: exceptionBases,
   },
   /** CSS class composition (the styling subsystem). */

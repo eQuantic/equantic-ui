@@ -279,14 +279,22 @@ internal sealed class DictionaryStrategy : IExpressionIrStrategy
         return (call, values.Length) switch
         {
             ("ContainsKey", 1) => JsExpr.Call(JsExpr.Member(receiver, "has"), values),
-            // `set` replaces the value of a key already there, where .NET's Add throws (#440).
-            // Add refuses a key already there, as .NET's does, where the indexer's write replaces (#440).
-            ("Add", 2) => JsExpr.Call(JsExpr.Member(receiver, "add"), values),
+            ("Add", 2) => Add(receiver, values[0], values[1]),
             ("Remove", 1) => JsExpr.Call(JsExpr.Member(receiver, "delete"), values),
             ("Clear", 0) => JsExpr.Call(JsExpr.Member(receiver, "clear")),
             _ => context.Unhandled(invocation, $"Dictionary.{call}"),
         };
     }
+
+    /// <summary>
+    /// A dictionary's <c>Add(key, value)</c>, the one place it is spelled: every call to it, and an
+    /// element of a collection initializer applied to a dictionary a member already holds
+    /// (<c>Map = { { "a", 1 } }</c>, <see cref="Expressions.ObjectInitializer"/>), which is a call to
+    /// it in C#. Add refuses a key already there, as .NET's does, where the indexer's write replaces
+    /// (#440).
+    /// </summary>
+    internal static JsExpr Add(JsExpr dictionary, JsExpr key, JsExpr value) =>
+        JsExpr.Call(JsExpr.Member(dictionary, "add"), key, value);
 
     /// <summary>What a member access on a dictionary reads — its keys, its values or its count, the
     /// count through its keys or values included — or null when it reads none of them.</summary>

@@ -143,14 +143,6 @@ internal static class DefaultInterfaceMembers
         + $"{implementation.Name} in {type.Name}, or keep {type.Name} out of client code.";
 
     /// <summary>
-    /// The error for a default indexer: a twin has no form for an indexer, a class's own included
-    /// (#427), so the default would reach the browser's class as nothing (found in review, #418).
-    /// </summary>
-    public static string NoIndexer(INamedTypeSymbol type, ISymbol implementation) =>
-        $"{type.Name} relies on the default indexer of {implementation.ContainingType.Name}, and a twin has no form "
-        + $"for an indexer yet (#427), so the browser's {type.Name} would have none. Keep {type.Name} out of client code.";
-
-    /// <summary>
     /// The error for a default whose body cannot be written and that the runtime does not carry:
     /// its interface is compiled into a referenced assembly outside the vocabulary, so the
     /// transpiler has its signature and not its code, and the twin would answer the member with

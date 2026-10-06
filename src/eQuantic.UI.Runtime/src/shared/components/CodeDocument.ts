@@ -7,11 +7,6 @@ export class CodeDocument {
     }
 
     _lines: string[];
-    static _empty: CodeDocument | undefined;
-
-    static get empty(): CodeDocument {
-        return CodeDocument._empty ??= new CodeDocument(['']);
-    }
 
     get lines(): string[] {
         return this._lines;
@@ -33,6 +28,32 @@ export class CodeDocument {
 
     get end(): CodePosition {
         return new CodePosition(this._lines.length - 1, this._lines[this._lines.length - 1].length);
+    }
+
+    static $slots: any = null;
+    static $failure: any = null;
+
+    static $init(): any {
+        if (CodeDocument.$slots === null) {
+            if (CodeDocument.$failure !== null) throw CodeDocument.$failure;
+            let $slots: any = CodeDocument.$slots = {};
+            try {
+                $slots.empty = null;
+                $slots.empty = new CodeDocument(['']);
+            } catch ($error) {
+                CodeDocument.$slots = null;
+                throw CodeDocument.$failure = $eq.exceptions.typeInitialization('eQuantic.UI.Code.CodeDocument', $error);
+            }
+        }
+        return CodeDocument.$slots;
+    }
+
+    static get empty(): CodeDocument {
+        return CodeDocument.$init().empty;
+    }
+
+    static set empty(value: CodeDocument) {
+        CodeDocument.$init().empty = value;
     }
 
     static fromLines(lines: string[]) {
