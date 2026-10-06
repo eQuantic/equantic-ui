@@ -19,4 +19,15 @@ internal sealed class CodeCompletionOffer
 
     /// <summary>Whether its provider has been asked to resolve it, so it is asked once.</summary>
     public bool Resolving { get; set; }
+
+    /// <summary>
+    /// The offers that are one entry share a group: one label and one inserted text, from whichever
+    /// provider. Worked out once per answer, as <see cref="SortKey"/> is, rather than on every
+    /// keystroke.
+    /// </summary>
+    public int Group { get; set; }
+
+    /// <summary>What the list sorts it by among equal matches, case aside: its sort text, or its
+    /// label. From the item as it was answered: resolving adds to an entry and never moves it.</summary>
+    public string SortKey { get; set; } = "";
 }

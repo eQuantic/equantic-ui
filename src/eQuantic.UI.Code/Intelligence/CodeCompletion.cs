@@ -26,6 +26,10 @@ public sealed class CodeCompletion
 {
     private readonly CodeEditorController _editor;
     private readonly List<CodeCompletionAnswer> _answers = [];
+    // Every offer of every answer, in the order the providers answered, and how many groups of
+    // offers that are one entry they make (see Gather).
+    private List<CodeCompletionOffer> _candidates = [];
+    private int _groups;
     private List<CodeCompletionMatch> _items = [];
     private List<CodeCompletionOffer> _shown = [];
     private int _selected = -1;
@@ -81,7 +85,9 @@ public sealed class CodeCompletion
 
     /// <summary>
     /// Raised when a provider throws, with what it threw. The list still shows what the others
-    /// offered, so a failing provider is otherwise silent.
+    /// offered, so a failing provider is otherwise silent. A callback a provider registered on its
+    /// cancellation throws when the list cancels it, and arrives as the <c>AggregateException</c>
+    /// cancelling gathers it in.
     /// </summary>
     public event Action<Exception>? Failed;
 
@@ -146,7 +152,7 @@ public sealed class CodeCompletion
     private async Task Ask(CodeCompletionTrigger trigger, char? character, List<ICodeCompletionProvider> providers)
     {
         var generation = ++_generation;
-        _request?.Cancel();
+        Cancel(_request);
         var cancellation = new CancellationTokenSource();
         _request = cancellation;
         var document = _editor.Document;
@@ -219,6 +225,7 @@ public sealed class CodeCompletion
             return;
         }
 
+        Gather();
         Filter();
         AskAgainIfIncomplete();
         ResolveSelected();
@@ -274,10 +281,42 @@ public sealed class CodeCompletion
     }
 
     /// <summary>
-    /// Matches every offer against the word typed over its range, keeps one of each label and
-    /// inserted text (the first provider's), and ranks them: the better match first, then the sort
-    /// text (or the label) case aside, then the label, then the order the providers answered in.
-    /// Selects the first entry, or the first one a provider preselected among those that match best.
+    /// Lays out what the answers offer for <see cref="Filter"/>, once per answer rather than once per
+    /// keystroke: every offer in the order the providers answered, its sort key, case aside, and its
+    /// group, the offers that are one entry (one label and one inserted text) whichever provider
+    /// offered them.
+    /// </summary>
+    private void Gather()
+    {
+        _candidates = [];
+        var groups = new Dictionary<string, int>();
+        foreach (var answer in _answers)
+        {
+            foreach (var offer in answer.Offers)
+            {
+                var item = offer.Item;
+                // The label's length leads, so that no label and inserted text run together into
+                // another pair's: "ab" inserting "c" and "a" inserting "bc" are two entries.
+                var key = item.Label.Length + ":" + item.Label + (item.InsertText ?? item.Label);
+                if (!groups.TryGetValue(key, out var group))
+                {
+                    group = groups.Count;
+                    groups[key] = group;
+                }
+                offer.Group = group;
+                offer.SortKey = (item.SortText ?? item.Label).ToLowerInvariant();
+                _candidates.Add(offer);
+            }
+        }
+        _groups = groups.Count;
+    }
+
+    /// <summary>
+    /// Matches every offer against the word typed over its range, keeps one of each group (the first
+    /// provider's copy THAT MATCHES: a copy that does not must not hide one that does), and ranks
+    /// them: the better match first, then the sort text (or the label) case aside, then the label,
+    /// then the order the providers answered in. Selects the first entry, or the first one a provider
+    /// preselected among those that match best.
     /// </summary>
     private void Filter()
     {
@@ -287,30 +326,26 @@ public sealed class CodeCompletion
 
         var matches = new List<CodeCompletionMatch>();
         var offers = new List<CodeCompletionOffer>();
-        var keys = new List<string>();
-        var seen = new HashSet<string>();
-        foreach (var answer in _answers)
+        var listed = new bool[_groups];
+        foreach (var offer in _candidates)
         {
-            foreach (var offer in answer.Offers)
-            {
-                var item = offer.Item;
-                if (!seen.Add(item.Label + "\n" + (item.InsertText ?? item.Label))) continue;
+            if (listed[offer.Group]) continue;
+            var item = offer.Item;
 
-                var typed = word;
-                if (item.Replacing is { } replacing && replacing.Start.Line == caret.Line
-                    && replacing.Start.Column != _start.Column && replacing.Start.Column <= caret.Column)
-                    typed = line.Substring(replacing.Start.Column, caret.Column - replacing.Start.Column);
+            var typed = word;
+            if (item.Replacing is { } replacing && replacing.Start.Line == caret.Line
+                && replacing.Start.Column != _start.Column && replacing.Start.Column <= caret.Column)
+                typed = line.Substring(replacing.Start.Column, caret.Column - replacing.Start.Column);
 
-                var filter = item.FilterText ?? item.Label;
-                if (CodeFuzzyMatch.Of(typed, filter) is not { } match) continue;
-                var highlights = item.FilterText is null || item.FilterText == item.Label
-                    ? match.Positions
-                    : CodeFuzzyMatch.Of(typed, item.Label, anywhere: true)?.Positions ?? [];
+            var filter = item.FilterText ?? item.Label;
+            if (CodeFuzzyMatch.Of(typed, filter) is not { } match) continue;
+            listed[offer.Group] = true;
+            var highlights = item.FilterText is null || item.FilterText == item.Label
+                ? match.Positions
+                : CodeFuzzyMatch.Of(typed, item.Label, anywhere: true)?.Positions ?? [];
 
-                matches.Add(new CodeCompletionMatch(item, match.Score, highlights));
-                offers.Add(offer);
-                keys.Add((item.SortText ?? item.Label).ToLowerInvariant());
-            }
+            matches.Add(new CodeCompletionMatch(item, match.Score, highlights));
+            offers.Add(offer);
         }
 
         var order = new List<int>();
@@ -318,7 +353,7 @@ public sealed class CodeCompletion
         order.Sort((a, b) =>
         {
             if (matches[a].Score != matches[b].Score) return matches[b].Score - matches[a].Score;
-            var byKey = string.CompareOrdinal(keys[a], keys[b]);
+            var byKey = string.CompareOrdinal(offers[a].SortKey, offers[b].SortKey);
             if (byKey != 0) return byKey;
             var byLabel = string.CompareOrdinal(matches[a].Item.Label, matches[b].Item.Label);
             return byLabel != 0 ? byLabel : a - b;
@@ -436,17 +471,42 @@ public sealed class CodeCompletion
     {
         // A request still out is no longer wanted: its answer, and every resolve, is dropped.
         _generation++;
-        _request?.Cancel();
+        var request = _request;
+        var list = _list;
         _request = null;
-        _list?.Cancel();
         _list = null;
         var was = _active;
         _active = false;
         _answers.Clear();
+        _candidates = [];
+        _groups = 0;
         _items = [];
         _shown = [];
         _selected = -1;
+        // Once the list is closed, so that what cancelling runs at once finds it closed.
+        Cancel(request);
+        Cancel(list);
         if (raise && was) Changed?.Invoke();
+    }
+
+    /// <summary>
+    /// Cancels <paramref name="source"/>, which runs at once, on this thread, every callback a
+    /// provider registered on its token. One that throws is that provider's failure, reported like
+    /// any other (<see cref="Failed"/>), and never the keystroke's: cancelling gathers what the
+    /// callbacks threw into one <c>AggregateException</c> after running them all, and it escaped into
+    /// the edit that had closed the list.
+    /// </summary>
+    private void Cancel(CancellationTokenSource? source)
+    {
+        if (source is null) return;
+        try
+        {
+            source.Cancel();
+        }
+        catch (Exception error)
+        {
+            Failed?.Invoke(error);
+        }
     }
 
     // ---- resolving ------------------------------------------------------------------------------

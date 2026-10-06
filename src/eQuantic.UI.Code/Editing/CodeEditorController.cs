@@ -375,14 +375,16 @@ public sealed class CodeEditorController : ICodeSurfaceModel
     {
         if (ReadOnly || text.Length == 0) return false;
         TabMovesFocus = false;
-        // A character the selected completion commits on accepts it first, and is then typed after
-        // it: `Console.` takes `Console` and goes on to its members.
-        if (text.Length == 1 && Completion.AcceptsOn(text[0])) Completion.Accept();
         // An input method's commit REPLACES what it was composing: the composition comes out first,
         // so the commit is one ordinary edit from the document the composition began over — one undo
         // step, whatever the candidate window went through on the way.
         var committing = _composition is not null;
         EndComposition();
+        // A character the selected completion commits on accepts it first, and is then typed after
+        // it: `Console.` takes `Console` and goes on to its members. Only once the composition is
+        // out: taking it out writes back over the range it was recorded at, and an entry accepted
+        // before that had moved the text the range named.
+        if (text.Length == 1 && Completion.AcceptsOn(text[0])) Completion.Accept();
         // Element by element: a character goes through Type, which pairs brackets and quotes, and
         // an element of more than one unit (an emoji, a letter with its accent) goes in WHOLE, never
         // a half of a surrogate pair at a time.

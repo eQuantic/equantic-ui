@@ -99,4 +99,22 @@ public class CodeFuzzyMatchTests
         CodeFuzzyMatch.Of("cl", "CopyLine")!.Score.Should()
             .BeGreaterThan(CodeFuzzyMatch.Of("cl", "Column")!.Score);
     }
+
+    [Fact]
+    public void TheSearch_KeepsItsTablesBetweenCalls_AndAllocatesOnlyTheMatch()
+    {
+        // A list runs the search over every entry on every keystroke. The first call grows the
+        // tables; the calls after it allocate the match and its positions, about 70 bytes, where two
+        // tables of 3 × 19 cells were another 500 or so on every call.
+        CodeFuzzyMatch.Of("cou", "ConsoleOutputWriter");
+        var before = GC.GetAllocatedBytesForCurrentThread();
+        for (var i = 0; i < 100; i++) CodeFuzzyMatch.Of("cou", "ConsoleOutputWriter");
+        var perCall = (GC.GetAllocatedBytesForCurrentThread() - before) / 100;
+
+        perCall.Should().BeLessThan(200);
+
+        // What a longer search left in the tables is never read by a shorter one.
+        CodeFuzzyMatch.Of("cowf", "ConsoleOutputWriterFactory");
+        CodeFuzzyMatch.Of("cou", "ConsoleOutput")!.Positions.Should().Equal(0, 7, 8);
+    }
 }

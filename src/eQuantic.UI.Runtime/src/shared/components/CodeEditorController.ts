@@ -229,9 +229,9 @@ export class CodeEditorController {
     handleText(text: string) {
         if (this.readOnly || text.length === 0) return false;
         this.tabMovesFocus = false;
-        if (text.length === 1 && this.completion.acceptsOn(text[0])) this.completion.accept();
         let committing = !(this._composition == null);
         this.endComposition();
+        if (text.length === 1 && this.completion.acceptsOn(text[0])) this.completion.accept();
         let typed = false;
         let starts = $eq.text.textElementStarts(text);
         for (let i = 0; i < starts.length; i++) {

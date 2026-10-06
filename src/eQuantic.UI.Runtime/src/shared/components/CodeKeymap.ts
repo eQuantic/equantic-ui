@@ -7,6 +7,7 @@ export class CodeKeymap {
         let control = (modifiers & 8) !== 0;
         let alt = (modifiers & 2) !== 0;
         let apple = convention === 'apple';
+        if (key !== 'Tab' && key !== 'Escape' && !CodeKeymap.isModifierKey(key)) editor.tabMovesFocus = false;
         let completion = editor.completion;
         if (completion.isOpen && !command && !control && !alt) {
             if (key === 'ArrowDown' && !shift && completion.move(1)) return true;
@@ -23,7 +24,6 @@ export class CodeKeymap {
             editor.tabMovesFocus = true;
             return false;
         }
-        if (key !== 'Tab' && !CodeKeymap.isModifierKey(key)) editor.tabMovesFocus = false;
         if (command && key.length === 1) {
             {
                 let pasted: any;
@@ -45,7 +45,7 @@ export class CodeKeymap {
                         return true;
                     case 'v':
                         if (clipboard == null) return false;
-                        if ((($v5868) => (($v5868 != null && $v5868.length > 0) && (pasted = $v5868, true)))(clipboard.read())) editor.paste(pasted);
+                        if ((($v6199) => (($v6199 != null && $v6199.length > 0) && (pasted = $v6199, true)))(clipboard.read())) editor.paste(pasted);
                         return true;
                     case '/':
                         return editor.toggleLineComment();

@@ -32,6 +32,9 @@ public class CodeCompletionTests : IDisposable
         public IReadOnlyList<char> TriggerCharacters { get; init; } = [];
         public Exception? Throws { get; init; }
         public Exception? Faults { get; init; }
+        /// <summary>Registers, on every request, a callback that throws when the request is
+        /// cancelled: a language server's adapter whose connection dropped.</summary>
+        public bool ThrowsOnCancel { get; init; }
         public Func<CodeCompletionItem, CodeCompletionItem>? Resolver { get; init; }
         public List<(CodePosition Position, CodeCompletionContext Context)> Asked { get; } = [];
         public List<string> Resolved { get; } = [];
@@ -40,6 +43,7 @@ public class CodeCompletionTests : IDisposable
             CodeCompletionContext context, CancellationToken cancellation)
         {
             Asked.Add((position, context));
+            if (ThrowsOnCancel) cancellation.Register(() => throw new InvalidOperationException("the connection dropped"));
             if (Throws is not null) throw Throws;
             if (Faults is not null) return Task.FromException<CodeCompletionList>(Faults);
             return Task.FromResult(new CodeCompletionList(Items.ToList(), Incomplete));
@@ -243,6 +247,23 @@ public class CodeCompletionTests : IDisposable
         editor.TabMovesFocus.Should().BeFalse("the trap on Tab is released by the NEXT Escape");
         Key(editor, "Escape").Should().BeFalse();
         editor.TabMovesFocus.Should().BeTrue();
+    }
+
+    [Fact]
+    public void AListAskedForAfterEscape_ArmsTheTrapOnTabAgain()
+    {
+        var editor = Editor("", Offering("Column"));
+        Key(editor, "Escape").Should().BeFalse();
+        editor.TabMovesFocus.Should().BeTrue("Escape with no list releases the trap");
+
+        // ⌃Space is a key like any other, and the Escape after it closes the list it asked for, only it.
+        Key(editor, " ", KeyModifiers.Control).Should().BeTrue();
+        editor.Completion.IsOpen.Should().BeTrue();
+        Key(editor, "Escape").Should().BeTrue();
+
+        editor.TabMovesFocus.Should().BeFalse("a key was pressed since the Escape that released it");
+        Key(editor, "Tab").Should().BeTrue("Tab indents, and stays in the editor");
+        editor.Document.Text.Should().Be("    ");
     }
 
     [Fact]
@@ -525,6 +546,43 @@ public class CodeCompletionTests : IDisposable
     }
 
     [Fact]
+    public void ACancellationThatThrows_IsReported_AndTheKeyThatClosedTheListStillTypes()
+    {
+        var provider = new Provider { ThrowsOnCancel = true };
+        provider.Items.Add(new CodeCompletionItem("Column"));
+        var editor = Editor("", provider);
+        var failures = new List<Exception>();
+        editor.Completion.Failed += failures.Add;
+        Type(editor, "Co");
+
+        // The space ends the word, the list closes, and closing cancels the request.
+        Type(editor, " ");
+
+        editor.Document.Text.Should().Be("Co ");
+        editor.Completion.IsOpen.Should().BeFalse();
+        failures.Should().ContainSingle().Which.Should().BeOfType<AggregateException>()
+            .Which.InnerExceptions.Should().ContainSingle().Which.Message.Should().Be("the connection dropped");
+    }
+
+    [Fact]
+    public void ACancellationThatThrows_IsReported_AndAnIncompleteAnswerIsStillAskedForAgain()
+    {
+        var provider = new Provider { Incomplete = true, ThrowsOnCancel = true };
+        provider.Items.Add(new CodeCompletionItem("Column"));
+        var editor = Editor("", provider);
+        var failures = new List<Exception>();
+        editor.Completion.Failed += failures.Add;
+        Type(editor, "C");
+
+        // Asking again cancels the request before it.
+        Type(editor, "o");
+
+        provider.Asked.Should().HaveCount(2, "the word changed and the answer was incomplete");
+        failures.Should().ContainSingle();
+        Labels(editor).Should().Equal("Column");
+    }
+
+    [Fact]
     public void ACommitCharacter_AcceptsTheSelectedEntry_AndIsTypedAfterIt()
     {
         var provider = new Provider { TriggerCharacters = ['.'] };
@@ -536,6 +594,23 @@ public class CodeCompletionTests : IDisposable
 
         editor.Document.Text.Should().Be("Console.");
         provider.Asked[^1].Context.Trigger.Should().Be(CodeCompletionTrigger.Character, "the dot then opened the members");
+    }
+
+    [Fact]
+    public void ACommitCharacter_AnInputMethodCommits_AcceptsOverTheWordAsItWasBeforeTheComposition()
+    {
+        var provider = new Provider();
+        provider.Items.Add(new CodeCompletionItem("Console", CodeCompletionKind.Class) { CommitCharacters = ['.'] });
+        var editor = Editor("", provider);
+        Type(editor, "Con");
+        // An input method composes after the word, and commits a character the entry commits on.
+        editor.SetComposition("s");
+        editor.Completion.IsOpen.Should().BeTrue();
+
+        editor.HandleText(".");
+
+        editor.Document.Text.Should().Be("Console.");
+        editor.Composition.Should().BeNull();
     }
 
     [Fact]
@@ -608,6 +683,21 @@ public class CodeCompletionTests : IDisposable
     }
 
     [Fact]
+    public void ACopyThatDoesNotMatch_HidesNoCopyThatDoes()
+    {
+        // The first provider filters its Column by a text the word does not match; the second's
+        // Column matches it, and is the one entry listed.
+        var first = new Provider();
+        first.Items.Add(new CodeCompletionItem("Column") { FilterText = "zzz" });
+        var editor = Editor("", first, Offering("Column"));
+
+        Type(editor, "Col");
+
+        Labels(editor).Should().Equal("Column");
+        editor.Completion.Items[0].Item.FilterText.Should().BeNull("it is the second provider's copy");
+    }
+
+    [Fact]
     public void TheSelectedEntry_IsResolvedOnce_AndShowsWhatItsProviderAdded()
     {
         var provider = new Provider { Resolver = item => item with { Documentation = $"about {item.Label}" } };
@@ -636,6 +726,26 @@ public class CodeCompletionTests : IDisposable
 
         list.Items.Select(item => item.Label).Should().Equal("alpha", "beta");
         list.Items.Should().OnlyContain(item => item.Kind == CodeCompletionKind.Text);
+    }
+
+    [Fact]
+    public async Task TheDocumentsWords_AreReadNearestFirst_AndALongFileIsNotReadWhole()
+    {
+        // Two thousand lines of a hundred characters with their ends, each with a word of its own:
+        // w0 to w1999. The word is typed at the start of the middle line.
+        var document = CodeDocument.FromText(string.Join("\n",
+            Enumerable.Range(0, 2000).Select(n => $"w{n}".PadRight(99))));
+
+        var list = await new CodeWordCompletionProvider().CompleteAsync(document, new CodePosition(1000, 0),
+            new CodeCompletionContext(CodeCompletionTrigger.Typing, CodeLanguages.PlainText), CancellationToken.None);
+
+        var offered = list.Items.Select(item => int.Parse(item.Label[1..])).ToHashSet();
+        offered.Should().Contain([999, 1001]).And.NotContain(1000, "it is the word being typed");
+        offered.Should().NotContain([0, 1999], "the lines farthest from the caret are the ones left out");
+        offered.Count.Should().BeLessThan(1000, "a part of the document is read, and not the whole of it");
+        var reach = offered.Max(n => Math.Abs(n - 1000));
+        Enumerable.Range(0, 2000).Where(n => n != 1000 && Math.Abs(n - 1000) < reach)
+            .Should().OnlyContain(n => offered.Contains(n), "every line nearer the caret was read first");
     }
 
     [Fact]

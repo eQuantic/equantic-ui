@@ -23,6 +23,13 @@ namespace eQuantic.UI.Code;
 /// </summary>
 public sealed record CodeFuzzyMatch(int Score, IReadOnlyList<int> Positions)
 {
+    // The search's two tables (see Of), kept between calls and grown when one needs more: a list
+    // runs the search over its entries on every keystroke, and two new tables per entry were most of
+    // what filtering allocated. One pair per thread, since a provider may filter off the UI thread;
+    // every cell a call reads, it wrote first.
+    [ThreadStatic] private static int[]? _score;
+    [ThreadStatic] private static int[]? _from;
+
     /// <summary>
     /// The best way <paramref name="pattern"/> lies over <paramref name="word"/>, or null when it does
     /// not. An empty pattern matches every word, scoring nothing. With
@@ -38,8 +45,13 @@ public sealed record CodeFuzzyMatch(int Score, IReadOnlyList<int> Positions)
 
         // score[i * n + j]: the best score of pattern[0..i] with pattern[i] on word[j], or -1 where it
         // cannot be. from[i * n + j]: where pattern[i - 1] lies on that best way.
-        var score = new int[m * n];
-        var from = new int[m * n];
+        if (_score is null || _from is null || _score.Length < m * n)
+        {
+            _score = new int[m * n];
+            _from = new int[m * n];
+        }
+        var score = _score;
+        var from = _from;
         for (var i = 0; i < m; i++)
         {
             var typed = pattern[i];

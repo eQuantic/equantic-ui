@@ -3,6 +3,8 @@ import { $eq, CancellationToken, CancellationTokenSource, CodeCompletionAnswer, 
 export class CodeCompletion {
     constructor(editor: CodeEditorController, props?: any) {
         this._answers = [];
+        this._candidates = [];
+        this._groups = 0;
         this._items = [];
         this._shown = [];
         this._selected = -1;
@@ -20,6 +22,8 @@ export class CodeCompletion {
 
     _editor: CodeEditorController;
     _answers: CodeCompletionAnswer[];
+    _candidates: CodeCompletionOffer[];
+    _groups: number;
     _items: CodeCompletionMatch[];
     _shown: CodeCompletionOffer[];
     _selected: number;
@@ -102,7 +106,7 @@ export class CodeCompletion {
 
     async ask(trigger: CodeCompletionTriggerValue, character: string | null, providers: any[]) {
         let generation = ++this._generation;
-        this._request?.cancel();
+        this.cancel(this._request);
         let cancellation = $eq.cancellation.source();
         this._request = cancellation;
         let document = this._editor.document;
@@ -151,6 +155,7 @@ export class CodeCompletion {
             this.close(true);
             return;
         }
+        this.gather();
         this.filter();
         this.askAgainIfIncomplete();
         this.resolveSelected();
@@ -186,35 +191,52 @@ export class CodeCompletion {
         if (incomplete.length > 0) this.ask('incomplete', null, incomplete);
     }
 
+    gather() {
+        this._candidates = [];
+        let groups: any = $eq.collections.dictionary();
+        for (const answer of this._answers) {
+            for (const offer of answer.offers) {
+                let item = offer.item;
+                let key = item.label.length + ':' + item.label + (item.insertText ?? item.label);
+                let group: any; 
+                if (!(groups.has(key) ? ((group = groups.get(key)), true) : ((group = 0), false))) {
+                    group = groups.size;
+                    $eq.mapSet(groups, key, group);
+                }
+                offer.group = group;
+                offer.sortKey = (item.sortText ?? item.label).toLowerCase();
+                this._candidates.push(offer);
+            }
+        }
+        this._groups = groups.size;
+    }
+
     filter() {
         let line = this._editor.document.line(this._start.line);
         let caret = this._editor.caret;
         let word = this.word();
         let matches: CodeCompletionMatch[] = [];
         let offers: CodeCompletionOffer[] = [];
-        let keys: string[] = [];
-        let seen: Set<string> = new Set();
-        for (const answer of this._answers) {
-            for (const offer of answer.offers) {
-                let item = offer.item;
-                if (!$eq.collections.setAdd(seen, item.label + '\n' + (item.insertText ?? item.label))) continue;
-                let typed = word;
-                let replacing: any; 
-                if ((replacing = item.replacing) != null && replacing.start.line === caret.line && replacing.start.column !== this._start.column && replacing.start.column <= caret.column) typed = $eq.text.substring(line, replacing.start.column, caret.column - replacing.start.column);
-                let filter = item.filterText ?? item.label;
-                let match: any; 
-                if (!((match = CodeFuzzyMatch.of(typed, filter)) != null)) continue;
-                let highlights = item.filterText == null || item.filterText === item.label ? match.positions : CodeFuzzyMatch.of(typed, item.label, true)?.positions ?? [];
-                matches.push(new CodeCompletionMatch(item, match.score, highlights));
-                offers.push(offer);
-                keys.push((item.sortText ?? item.label).toLowerCase());
-            }
+        let listed = new Array(this._groups).fill(false);
+        for (const offer of this._candidates) {
+            if (listed[offer.group]) continue;
+            let item = offer.item;
+            let typed = word;
+            let replacing: any; 
+            if ((replacing = item.replacing) != null && replacing.start.line === caret.line && replacing.start.column !== this._start.column && replacing.start.column <= caret.column) typed = $eq.text.substring(line, replacing.start.column, caret.column - replacing.start.column);
+            let filter = item.filterText ?? item.label;
+            let match: any; 
+            if (!((match = CodeFuzzyMatch.of(typed, filter)) != null)) continue;
+            listed[offer.group] = true;
+            let highlights = item.filterText == null || item.filterText === item.label ? match.positions : CodeFuzzyMatch.of(typed, item.label, true)?.positions ?? [];
+            matches.push(new CodeCompletionMatch(item, match.score, highlights));
+            offers.push(offer);
         }
         let order: number[] = [];
         for (let i = 0; i < matches.length; i++) order.push(i);
         order.sort((a: number, b: number) => {
             if (matches[a].score !== matches[b].score) return matches[b].score - matches[a].score;
-            let byKey = $eq.text.compare(keys[a], keys[b], 'ordinal');
+            let byKey = $eq.text.compare(offers[a].sortKey, offers[b].sortKey, 'ordinal');
             if (byKey !== 0) return byKey;
             let byLabel = $eq.text.compare(matches[a].item.label, matches[b].item.label, 'ordinal');
             return byLabel !== 0 ? byLabel : a - b;
@@ -285,17 +307,30 @@ export class CodeCompletion {
 
     close(raise: boolean) {
         this._generation++;
-        this._request?.cancel();
+        let request = this._request;
+        let list = this._list;
         this._request = null;
-        this._list?.cancel();
         this._list = null;
         let was = this._active;
         this._active = false;
         this._answers.splice(0);
+        this._candidates = [];
+        this._groups = 0;
         this._items = [];
         this._shown = [];
         this._selected = -1;
+        this.cancel(request);
+        this.cancel(list);
         if (raise && was) this.changed?.();
+    }
+
+    cancel(source: CancellationTokenSource | null) {
+        if (source == null) return;
+        try {
+            source.cancel();
+        } catch (error: any) {
+            this.failed?.(error);
+        }
     }
 
     resolveSelected() {

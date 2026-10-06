@@ -5,26 +5,43 @@ export class CodeWordCompletionProvider {
         if (props && typeof props === 'object') Object.assign(this, props);
     }
 
+    static _budget: number | undefined;
+
+    static get budget(): number {
+        return CodeWordCompletionProvider._budget ??= 50_000;
+    }
+
     async completeAsync(document: CodeDocument, position: CodePosition, _context: CodeCompletionContext, _cancellation: CancellationToken) {
         let seen: Set<string> = new Set();
         let items: CodeCompletionItem[] = [];
-        for (let line = 0; line < document.lineCount; line++) {
-            let text = document.line(line);
-            let i = 0;
-            while (i < text.length) {
-                if (!CodeDocument.isWordChar(text[i])) {
-                    i++;
-                    continue;
-                }
-                let start = i;
-                while (i < text.length && CodeDocument.isWordChar(text[i])) i++;
-                if (line === position.line && start <= position.column && position.column <= i) continue;
-                if ((/^\p{Nd}$/u.test(text[start]))) continue;
-                let word = $eq.text.substring(text, start, i - start);
-                if ($eq.collections.setAdd(seen, word)) items.push(new CodeCompletionItem(word));
-            }
+        let left = CodeWordCompletionProvider.budget;
+        for (let distance = 0; left > 0; distance++) {
+            let above = position.line - distance;
+            let below = position.line + distance;
+            if (above < 0 && below >= document.lineCount) break;
+            if (above >= 0) left = CodeWordCompletionProvider.read(document.line(above), above === position.line ? position.column : -1, left, seen, items);
+            if (distance > 0 && below < document.lineCount && left > 0) left = CodeWordCompletionProvider.read(document.line(below), -1, left, seen, items);
         }
         return Promise.resolve(new CodeCompletionList(items));
+    }
+
+    static read(text: string, caret: number, left: number, seen: Set<string>, items: CodeCompletionItem[]) {
+        let end = Math.min(text.length, left);
+        let i = 0;
+        while (i < end) {
+            if (!CodeDocument.isWordChar(text[i])) {
+                i++;
+                continue;
+            }
+            let start = i;
+            while (i < end && CodeDocument.isWordChar(text[i])) i++;
+            if (start <= caret && caret <= i) continue;
+            if (i === end && end < text.length && CodeDocument.isWordChar(text[end])) continue;
+            if ((/^\p{Nd}$/u.test(text[start]))) continue;
+            let word = $eq.text.substring(text, start, i - start);
+            if ($eq.collections.setAdd(seen, word)) items.push(new CodeCompletionItem(word));
+        }
+        return left - end - 1;
     }
 
     get triggerCharacters(): string[] {

@@ -92,6 +92,77 @@ public class CodeCompletionTwinTests
             .ToList();
     }
 
+    // ---- the document's words ----------------------------------------------------------------------
+
+    [SkippableFact]
+    public async Task TheDocumentsWords_AreTheSameOnBothSides_PastWhatOneAnswerReads()
+    {
+        Skip.IfNot(JsExecutor.EngineName == "bun", "The twin runs in the embedded Bun, and the engine here is not Bun.");
+        var runtime = ConformanceRunner.RuntimeJsUrl() ?? throw new InvalidOperationException("No served runtime.js.");
+
+        // Seeded lines of seeded words, some long enough that what one answer reads ends inside them,
+        // inside a word or between two: the budget's arithmetic is the twin's as much as the scan.
+        var random = new Random(2026_10_06);
+        var lines = new List<string>();
+        for (var i = 0; i < 3000; i++)
+        {
+            var line = new StringBuilder();
+            var length = random.Next(8) == 0 ? random.Next(200, 900) : random.Next(0, 80);
+            while (line.Length < length)
+            {
+                line.Append(random.Next(5) switch { 0 => " ", 1 => ".", 2 => "(", _ => "" });
+                if (random.Next(10) == 0) line.Append(random.Next(1000));
+                else
+                {
+                    for (var c = random.Next(1, 10); c > 0; c--)
+                        line.Append("abcdeABCé_ç"[random.Next(11)]);
+                }
+            }
+            lines.Add(line.ToString());
+        }
+        var text = string.Join("\n", lines);
+        var carets = Enumerable.Range(0, 24).Select(_ =>
+        {
+            var line = random.Next(lines.Count);
+            return new CodePosition(line, random.Next(lines[line].Length + 1));
+        }).ToList();
+
+        var program = $$"""
+            import { CodeDocument, CodeWordCompletionProvider, CodePosition, CancellationToken } from '{{runtime}}';
+            const document = CodeDocument.fromText({{JsonSerializer.Serialize(text)}});
+            const carets = {{JsonSerializer.Serialize(carets.Select(caret => new[] { caret.Line, caret.Column }))}};
+            const provider = new CodeWordCompletionProvider();
+            for (const [line, column] of carets) {
+              const list = await provider.completeAsync(document, new CodePosition(line, column), null, CancellationToken.none);
+              console.log('=' + list.items.map((item) => item.label).join(','));
+            }
+            """;
+        var web = JsExecutor.Run(program, timeoutMs: 120_000).Split('\n');
+
+        // One answer reads a quarter of the document at most, so every caret meets the budget's end.
+        var budget = (int)typeof(CodeWordCompletionProvider)
+            .GetField("Budget", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static)!
+            .GetRawConstantValue()!;
+        text.Length.Should().BeGreaterThan(4 * budget);
+
+        var document = CodeDocument.FromText(text);
+        var context = new CodeCompletionContext(CodeCompletionTrigger.Typing, CodeLanguages.PlainText);
+        var differences = new StringBuilder();
+        var count = 0;
+        for (var i = 0; i < carets.Count; i++)
+        {
+            var words = (await new CodeWordCompletionProvider()
+                .CompleteAsync(document, carets[i], context, CancellationToken.None)).Items;
+            var dotnet = string.Join(",", words.Select(item => item.Label));
+            var twin = i < web.Length && web[i].StartsWith('=') ? web[i].TrimEnd('\r')[1..] : "(no answer)";
+            if (dotnet == twin) continue;
+            if (count++ < 3)
+                differences.Append($"\n  caret {carets[i]}:\n    .NET    {dotnet[..Math.Min(200, dotnet.Length)]}\n    the web {twin[..Math.Min(200, twin.Length)]}");
+        }
+
+        count.Should().Be(0, $"the document's words are the same on both sides:{differences}");
+    }
+
     // ---- whole sessions ----------------------------------------------------------------------------
 
     /// <summary>One keystroke: text typed, or a key with its modifiers.</summary>

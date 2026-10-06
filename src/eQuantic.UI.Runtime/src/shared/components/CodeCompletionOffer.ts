@@ -10,5 +10,7 @@ export class CodeCompletionOffer {
     declare answer: CodeCompletionAnswer;
     declare item: CodeCompletionItem;
     resolving: boolean = false;
+    group: number = 0;
+    sortKey: string = '';
 }
 

@@ -39,6 +39,16 @@ public static class CodeKeymap
         var alt = (modifiers & KeyModifiers.Alt) != 0;
         var apple = convention == KeyboardConvention.Apple;
 
+        // ---- the Tab trap --------------------------------------------------------------------
+        // An editor TAKES Tab, which is the point — and a keyboard user must still be able to leave
+        // it. Escape is the door (the handoff's rule for every editing surface): it releases the
+        // trap (below), so the NEXT Tab moves focus on instead of indenting. Any other key re-arms
+        // it, and does so before anything else here can claim the key: the list's own keys and
+        // ⌃Space return early, and re-arming after them left Escape, ⌃Space, Escape (the list asked
+        // for, then closed) with Tab leaving the editor. A modifier on its own is not "another key",
+        // or Shift+Tab could never leave backwards.
+        if (key != "Tab" && key != "Escape" && !IsModifierKey(key)) editor.TabMovesFocus = false;
+
         // ---- an open completion list ---------------------------------------------------------
         // While a list shows, the keys that walk it are ITS keys: the arrows and the page keys step
         // through it, Tab accepts, and Escape closes it, only it, so the trap on Tab stays armed and
@@ -61,12 +71,8 @@ public static class CodeKeymap
         // for the list where the caret is. Before the chords, which would take a space as a letter.
         if (key == " " && (command || control) && !shift && !alt) return completion.Invoke();
 
-        // ---- the Tab trap --------------------------------------------------------------------
-        // An editor TAKES Tab, which is the point — and a keyboard user must still be able to leave
-        // it. Escape is the door (the handoff's rule for every editing surface): it releases the
-        // trap, so the NEXT Tab moves focus on instead of indenting. Unclaimed, so the host can go on
-        // meaning what Escape means around the editor. Any other key re-arms the trap; a modifier on
-        // its own is not "another key", or Shift+Tab could never leave backwards.
+        // Escape with no list showing releases the trap, unclaimed, so the host can go on meaning
+        // what Escape means around the editor.
         if (key == "Escape")
         {
             // A list asked for and not yet showing is dropped: Escape means it was not wanted.
@@ -74,7 +80,6 @@ public static class CodeKeymap
             editor.TabMovesFocus = true;
             return false;
         }
-        if (key != "Tab" && !IsModifierKey(key)) editor.TabMovesFocus = false;
 
         // ---- the chords ------------------------------------------------------------------------
         if (command && key.Length == 1)
