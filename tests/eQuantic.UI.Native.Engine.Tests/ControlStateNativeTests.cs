@@ -146,6 +146,64 @@ public class ControlStateNativeTests
         LayerAlpha(Frame(host)).Should().Be(1, "a disabled control mutes its states, focused or not");
     }
 
+    private static readonly ColorToken PressedFill = new(Color.FromRgb(0xAA, 0x00, 0x00));
+
+    /// <summary>A control that goes disabled while it is held, the press and the focus both. The host
+    /// tracks them by path, so the rebuilt, disabled control is still the tracked one, and it must
+    /// arm neither its pressed fill nor the ring (found by Copilot on #617).</summary>
+    private sealed class Guarded : StatefulComponent
+    {
+        public bool Off;
+        public void Disable() => SetState(() => Off = true);
+
+        public override VisualNode Build(ComponentContext context) =>
+            new Pressable(Surface(), () => { }) { Disabled = Off, PressedBackground = PressedFill };
+    }
+
+    private static bool Paints(DisplayList list, ColorToken token) =>
+        list.Commands.ToArray().Any(c => c.Kind == DrawCommandKind.FillRRect && c.Paint.Color == token.Light);
+
+    private static bool Rings(DisplayList list) =>
+        list.Commands.ToArray().Any(c => c.Kind == DrawCommandKind.StrokeRRect
+            && c.Paint.Color == PhotonTheme.Instance.FocusRing.Resolve(ThemeMode.Light));
+
+    [Fact]
+    public void AControlDisabledWhilePressed_DrawsNoPressedFill()
+    {
+        var control = new Guarded();
+        var host = Host(control);
+        Frame(host);
+        host.PressDown(20, 20);
+        Paints(Frame(host), PressedFill).Should().BeTrue("pressed");
+
+        control.Disable();
+        Paints(Frame(host), PressedFill).Should().BeFalse("a disabled control shows no press");
+    }
+
+    [Fact]
+    public void AControlDisabledWhileFocused_DrawsNoRing()
+    {
+        var control = new Guarded();
+        var host = Host(control);
+        Frame(host);
+        host.FocusNext().Should().BeTrue();
+        Rings(Frame(host)).Should().BeTrue("focused from the keyboard");
+
+        control.Disable();
+        Rings(Frame(host)).Should().BeFalse("a disabled control shows no focus");
+    }
+
+    [Fact]
+    public void ASimulatedPressOfADisabledControl_DrawsNothing()
+    {
+        var host = Host(new Simulated(SimulatedState.Pressed | SimulatedState.Focused,
+            new Pressable(Surface(), () => { }) { Disabled = true, PressedBackground = PressedFill }));
+        var frame = Frame(host);
+
+        Paints(frame, PressedFill).Should().BeFalse("the web gives a disabled control no eq-pressed");
+        Rings(frame).Should().BeFalse("nor eq-focused");
+    }
+
     /// <summary>The state lends its subtree nothing when the thing focused is not a control: a Link
     /// takes focus and draws its own ring, and the web's focus family selects only under
     /// <c>eq-pressable</c>.</summary>

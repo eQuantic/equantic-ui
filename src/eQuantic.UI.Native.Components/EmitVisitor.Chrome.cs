@@ -290,7 +290,9 @@ internal sealed partial class EmitVisitor
     /// </summary>
     private static void GlideCustomShadows(in EmitState s, in BoxStyle style, TransitionSpec spec, TransitionStore store)
     {
-        var count = (style.Shadow is null ? 0 : 1) + (style.Shadows?.Count ?? 0);
+        // The positions are the shadows that DRAW: the web's list leaves a shadow with no geometry
+        // out, so CSS pairs the ones around it, and so does this (#508).
+        var count = Drawn(style);
         var key = (s.Node.Path ?? "") + ":sh";
         var known = store.Positions(key);
         var positions = Math.Max(known ?? count, count);
@@ -300,9 +302,7 @@ internal sealed partial class EmitVisitor
         for (var i = 0; i < positions; i++)
         {
             var p = key + i.ToString(System.Globalization.CultureInfo.InvariantCulture);
-            ShadowSpec? target = i >= count ? null
-                : style.Shadow is { } single && i == 0 ? single
-                : style.Shadows![i - (style.Shadow is null ? 0 : 1)];
+            ShadowSpec? target = i < count ? DrawnAt(style, i) : null;
             Color color;
             if (target is { } shown)
             {
@@ -331,6 +331,35 @@ internal sealed partial class EmitVisitor
                 s.Builder.ShadowRRect(new RRect(s.Node.Bounds, style.CornerRadius), offsetY, blur, spread, shadowColor);
         }
         store.RememberPositions(key, leaving ? positions : count);
+    }
+
+    /// <summary>How many custom shadows a box draws: those with geometry, the single one first.</summary>
+    private static int Drawn(in BoxStyle style)
+    {
+        var count = style.Shadow is { IsNone: false } ? 1 : 0;
+        if (style.Shadows is { } list)
+            for (var i = 0; i < list.Count; i++)
+                if (!list[i].IsNone) count++;
+        return count;
+    }
+
+    /// <summary>The custom shadow a box draws at <paramref name="position"/>, counting only those
+    /// <see cref="Drawn"/> counts.</summary>
+    private static ShadowSpec DrawnAt(in BoxStyle style, int position)
+    {
+        if (style.Shadow is { IsNone: false } single)
+        {
+            if (position == 0) return single;
+            position--;
+        }
+        var list = style.Shadows!;
+        for (var i = 0; i < list.Count; i++)
+        {
+            if (list[i].IsNone) continue;
+            if (position == 0) return list[i];
+            position--;
+        }
+        throw new ArgumentOutOfRangeException(nameof(position));
     }
 
     /// <summary>

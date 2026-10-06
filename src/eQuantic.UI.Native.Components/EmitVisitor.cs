@@ -98,29 +98,34 @@ internal sealed partial class EmitVisitor : IVisualNodeVisitor<EmitState, Nothin
     {
         var node = s.Node;
         var press = s.Press;
-        var pressTracked = press.IsTracked(node, press.Pressed, press.PressedPath);
-        if (pressTracked && press.Pressed?.PressedBackground is { } pressedFill)
+        // A DISABLED control shows no press and no focus, the handoff's "disabled mutes everything":
+        // the web gives it no eq-pressable, so neither the fill swap, the ring, nor a state family
+        // reaches it. The host tracks a press and a focus BY PATH, so a control that rebuilt as
+        // disabled while held is still tracked here, and the CURRENT node is what decides (#508).
+        var disabledControl = node.Source is Pressable { Disabled: true };
+        var pressTracked = !disabledControl && press.IsTracked(node, press.Pressed, press.PressedPath);
+        if (pressTracked && node.Source is Pressable { PressedBackground: { } pressedFill })
             press.PendingFill = pressedFill;
         // A SIMULATED press takes the fill from the Pressable being pictured — the host is tracking
         // nothing, so there is no tracked node to read it from.
         else if ((press.Simulated & SimulatedState.Pressed) != 0
-            && node.Source is Pressable { PressedBackground: { } simulatedFill })
+            && node.Source is Pressable { Disabled: false, PressedBackground: { } simulatedFill })
             press.PendingFill = simulatedFill;
-        var focusTracked = (press.Focused is not null || press.FocusedPath is not null)
+        var focusTracked = !disabledControl
+            && (press.Focused is not null || press.FocusedPath is not null)
             && press.IsTracked(node, press.Focused, press.FocusedPath);
         if (focusTracked)
             press.PendingFocusRing = true;
-        else if ((press.Simulated & SimulatedState.Focused) != 0 && node.Source is Pressable)
+        else if ((press.Simulated & SimulatedState.Focused) != 0 && node.Source is Pressable { Disabled: false })
             press.PendingFocusRing = true;
 
         // The control's press and focus reach EVERY box inside it, for as long as its subtree is
         // drawn (#508): set around its own visit, which draws the subtree, and restored after. The
-        // control is an ENABLED Pressable, as the web's is the element carrying eq-pressable, which
-        // a disabled control never does: the handoff's "disabled mutes everything", and a disabled
-        // control stays in the focus walk. Anything else that takes focus (a Link) still draws its
+        // control is an enabled Pressable (a disabled one was ruled out above), as the web's is the
+        // element carrying eq-pressable. Anything else that takes focus (a Link) still draws its
         // ring, and lends its subtree no state.
-        var pressedHere = pressTracked && node.Source is Pressable { Disabled: false };
-        var focusedHere = focusTracked && node.Source is Pressable { Disabled: false };
+        var pressedHere = pressTracked && node.Source is Pressable;
+        var focusedHere = focusTracked && node.Source is Pressable;
         var outerPressed = press.InPressedControl;
         var outerFocused = press.InFocusedControl;
         if (pressedHere) press.InPressedControl = true;

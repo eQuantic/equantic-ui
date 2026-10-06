@@ -181,6 +181,36 @@ public class S5StateNativeTests
         BlursAt(2100).Should().Equal([24], "gone once it has glided out");
     }
 
+    /// <summary>A shadow with no geometry is not a position: the web's list leaves it out and CSS pairs
+    /// the shadows around it, so the one that draws glides into the hover's, rather than fading out
+    /// while another grows beside it (#508, found by Copilot on #617).</summary>
+    [Fact]
+    public void AShadowWithNoGeometry_PairsWithNothingInTheGlide()
+    {
+        var box = new Box(new BoxStyle
+        {
+            Width = 40, Height = 40, Background = Fill,
+            Shadows = [new ShadowSpec(0, 0, 0, Glow), new ShadowSpec(0, 4, 0, Glow)],
+            Transition = new TransitionSpec(StyleChannels.Shadow, 100),
+            Hover = new StyleDiff { Shadows = [new ShadowSpec(0, 8, 0, Glow)] },
+        });
+        var host = new PhotonHost(box, PhotonTheme.Instance, ThemeMode.Light, 40, 40);
+        List<float> BlursAt(float timeMs)
+        {
+            var builder = new DisplayListBuilder();
+            host.RenderFrame(builder, timeMs);
+            return ShadowBlurs(builder.Build());
+        }
+
+        BlursAt(0).Should().Equal(4);
+        host.SetHovered(box);
+        BlursAt(1000).Should().Equal(4);
+        var midway = BlursAt(1050);
+        midway.Should().HaveCount(1, "one shadow on its way from 4 to 8, as the browser draws it");
+        midway[0].Should().BeInRange(4.01f, 7.99f);
+        BlursAt(1100).Should().Equal(8);
+    }
+
     [Fact]
     public void AHoverTransform_ReplacesTheRestingOne()
     {

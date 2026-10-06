@@ -54,7 +54,11 @@ public class PressedStateRealizerTests
         css.Should().Contain(".eq-pressed.eq-press-fill > :first-child { background-color: var(--eq-pressed-bg) !important; }");
         css.Should().NotContain(".eq-pressable:active > :first-child { background-color",
             "a control with no pressed fill must not take one");
-        css.Should().Contain("transition: background-color var(--eq-motion-fast) ease-out");
+        // At zero specificity, so a surface's own transition (a press that scales, a hover that
+        // lifts) is kept: at (0,2,0) this rule replaced it, measured in Chromium (#508).
+        css.Should().Contain(":where(.eq-pressable > :first-child) { transition: background-color var(--eq-motion-fast) ease-out; }");
+        css.Should().NotContain("\n.eq-pressable > :first-child { transition",
+            "no rule may outrank the surface's own transition");
     }
 
     /// <summary>

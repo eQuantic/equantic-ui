@@ -386,7 +386,11 @@ public static class PhotonCssGenerator
         // Interaction mechanics (spec §01 pressed = token swap; feedback at Fast motion). The VALUES
         // arrive per element as custom properties set by the realizers; only the mechanics live here.
         css.AppendLine(".eq-pressable { -webkit-tap-highlight-color: transparent; }");
-        css.AppendLine(".eq-pressable > :first-child { transition: background-color var(--eq-motion-fast) ease-out; }");
+        // The fill's fade is a DEFAULT, at zero specificity: at (0,2,0) it replaced the surface's own
+        // transition (0,1,0), so a press that scales and a hover that lifts a control snapped,
+        // measured in Chromium as `background-color 0.1s ease-out` on a surface that declared
+        // `transform 0.2s` (#508). A surface that declares a transition keeps it.
+        css.AppendLine(":where(.eq-pressable > :first-child) { transition: background-color var(--eq-motion-fast) ease-out; }");
         // Only a control that HAS a pressed fill swaps to it (eq-press-fill, set beside the custom
         // property): a var() with no value and no fallback makes the declaration compute to the
         // property's initial value, so every pressable without one went TRANSPARENT while pressed,
