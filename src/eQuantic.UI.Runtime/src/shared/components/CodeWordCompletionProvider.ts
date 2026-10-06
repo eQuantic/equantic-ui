@@ -12,7 +12,7 @@ export class CodeWordCompletionProvider {
     }
 
     async completeAsync(document: CodeDocument, position: CodePosition, _context: CodeCompletionContext, _cancellation: CancellationToken) {
-        let seen: Set<string> = new Set();
+        let seen: Set<string> = $eq.collections.hashSet();
         let items: CodeCompletionItem[] = [];
         let left = CodeWordCompletionProvider.budget;
         for (let distance = 0; left > 0; distance++) {

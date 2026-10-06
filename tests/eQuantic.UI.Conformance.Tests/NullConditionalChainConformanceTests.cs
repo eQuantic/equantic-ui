@@ -48,4 +48,31 @@ public class NullConditionalChainConformanceTests
         Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
         ConformanceRunner.AssertStatementsSameAsDotNet(statements);
     }
+
+    /// <summary>
+    /// A tail whose translation is a helper, behind a receiver that is NOT a local: a call, an
+    /// element, a property, a guard in the tail of another. The receiver is assigned to a temporary
+    /// the statement around it declares (#539), so it is evaluated once, and each place a statement
+    /// can stand declares its own: a body written without braces, a loop, a loop a label names, two
+    /// sections of one switch, and a concise lambda, which declares it in a block of its own.
+    /// </summary>
+    [SkippableTheory]
+    [InlineData("var gets = 0; string? Get() { gets++; return \" ab \"; } var r = Get()?.Trim(); return r + gets;")]                      // ab1
+    [InlineData("var gets = 0; string? Get() { gets++; return null; } var r = Get()?.Trim(); return (r ?? \"null\") + gets;")]           // null1
+    [InlineData("var xs = new[] { \" a \", null }; return (xs[0]?.Trim() ?? \"null\") + (xs[1]?.Trim() ?? \"null\");")]                 // anull
+    [InlineData("var o = new { Name = \" ab \" }; return o.Name?.Trim();")]                                                               // ab
+    [InlineData("string? Get() => \"abc\"; string? Other() => \" b \"; return Get()?.Replace(Other()?.Trim() ?? \"q\", \"x\");")]       // axc
+    [InlineData("Func<string?[], int, string?> f = (a, i) => a[i]?.Trim(); "
+        + "return (f(new[] { \" x \" }, 0) ?? \"null\") + (f(new string?[] { null }, 0) ?? \"null\");")]                                  // xnull
+    [InlineData("string? Get() => \" y \"; string? x = null; var flag = true; if (flag) x = Get()?.Trim(); return x;")]                   // y
+    [InlineData("var xs = new[] { \" a \", null, \" c \" }; var s = \"\"; for (var i = 0; i < xs.Length; i++) s += xs[i]?.Trim() ?? \"-\"; return s;")] // a-c
+    [InlineData("var items = new[] { \" a \", \" b \", null }; var at = -1; string? Next() { at++; return at < items.Length ? items[at] : null; } "
+        + "var seen = \"\"; outer: while (Next()?.Trim() is { } v) { if (v == \"b\") continue outer; seen += v; } return seen + at;")]    // a2
+    [InlineData("var k = 2; string? Get() => \" z \"; string? r = null; "
+        + "switch (k) { case 1: r = Get()?.Trim() + \"1\"; break; case 2: r = Get()?.Trim() + \"2\"; break; } return r;")]               // z2
+    public void BehindAReceiverThatIsNotALocal_TheTailRunsOnceAndOnlyWhenItShould(string statements)
+    {
+        Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
+        ConformanceRunner.AssertStatementsSameAsDotNet(statements);
+    }
 }

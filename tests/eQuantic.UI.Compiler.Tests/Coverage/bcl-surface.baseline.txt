@@ -1,7 +1,7 @@
 # eqc BCL surface audit — the coverage DENOMINATOR, one verdict per probed member.
 # native = a strategy mapped it to plain JS · eq = routed through a $eq compat helper
 # fenced:EQxxxx = refused with that diagnostic · invalid-probe = the probe itself doesn't compile
-# totals: eq=232 · fenced=88 · invalid-probe=6 · native=707
+# totals: eq=240 · fenced=89 · invalid-probe=6 · native=698
 native         Array.MaxLength
 native         Boolean.CompareTo(Boolean)
 native         Boolean.CompareTo(Object)
@@ -492,7 +492,7 @@ native         Enumerable.ToArray/0
 invalid-probe  Enumerable.ToDictionary/0
 eq             Enumerable.ToDictionary/1
 eq             Enumerable.ToDictionary/2
-native         Enumerable.ToHashSet/0
+eq             Enumerable.ToHashSet/0
 native         Enumerable.ToList/0
 native         Enumerable.ToLookup/1
 native         Enumerable.ToLookup/2
@@ -530,7 +530,7 @@ native         HashSet<Int32>.IsProperSubsetOf(IEnumerable<Int32>)
 native         HashSet<Int32>.IsProperSupersetOf(IEnumerable<Int32>)
 native         HashSet<Int32>.IsSubsetOf(IEnumerable<Int32>)
 native         HashSet<Int32>.IsSupersetOf(IEnumerable<Int32>)
-native         HashSet<Int32>.OnDeserialization(Object)
+fenced:EQ2004  HashSet<Int32>.OnDeserialization(Object)
 native         HashSet<Int32>.Overlaps(IEnumerable<Int32>)
 native         HashSet<Int32>.Remove(Int32)
 native         HashSet<Int32>.SetEquals(IEnumerable<Int32>)
@@ -601,7 +601,7 @@ eq             Int64.TrailingZeroCount(Int64)
 native         List<Int32>.Add(Int32)
 native         List<Int32>.AddRange(IEnumerable<Int32>)
 native         List<Int32>.AsReadOnly()
-native         List<Int32>.BinarySearch(Int32)
+eq             List<Int32>.BinarySearch(Int32)
 native         List<Int32>.Capacity
 native         List<Int32>.Clear()
 native         List<Int32>.Contains(Int32)
@@ -610,20 +610,20 @@ native         List<Int32>.EnsureCapacity(Int32)
 native         List<Int32>.ForEach(Action<Int32>)
 native         List<Int32>.GetRange(Int32,Int32)
 native         List<Int32>.IndexOf(Int32)
-native         List<Int32>.IndexOf(Int32,Int32)
-native         List<Int32>.IndexOf(Int32,Int32,Int32)
+eq             List<Int32>.IndexOf(Int32,Int32)
+eq             List<Int32>.IndexOf(Int32,Int32,Int32)
 native         List<Int32>.Insert(Int32,Int32)
 native         List<Int32>.InsertRange(Int32,IEnumerable<Int32>)
 native         List<Int32>.LastIndexOf(Int32)
-native         List<Int32>.LastIndexOf(Int32,Int32)
-native         List<Int32>.LastIndexOf(Int32,Int32,Int32)
+eq             List<Int32>.LastIndexOf(Int32,Int32)
+eq             List<Int32>.LastIndexOf(Int32,Int32,Int32)
 eq             List<Int32>.Remove(Int32)
 native         List<Int32>.RemoveAt(Int32)
 native         List<Int32>.RemoveRange(Int32,Int32)
 native         List<Int32>.Reverse()
 native         List<Int32>.Reverse(Int32,Int32)
 native         List<Int32>.Slice(Int32,Int32)
-native         List<Int32>.Sort()
+eq             List<Int32>.Sort()
 native         List<Int32>.ToArray()
 native         List<Int32>.TrimExcess()
 native         Math.Abs(Int16)
@@ -827,7 +827,7 @@ fenced:EQ1001  String.IsInterned(String)
 native         String.IsNormalized()
 native         String.IsNullOrEmpty(String)
 eq             String.IsNullOrWhiteSpace(String)
-native         String.Join(Char,String[])
+eq             String.Join(Char,String[])
 eq             String.Join(Char,String[],Int32,Int32)
 native         String.LastIndexOf(Char)
 native         String.LastIndexOf(Char,Int32)

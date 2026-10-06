@@ -11,19 +11,19 @@ export class PythonLanguage {
     static _reserved: Set<string> | undefined;
 
     static get reserved(): Set<string> {
-        return PythonLanguage._reserved ??= new Set(['and', 'as', 'assert', 'async', 'await', 'break', 'class', 'continue', 'def', 'del', 'elif', 'else', 'except', 'finally', 'for', 'from', 'global', 'if', 'import', 'in', 'is', 'lambda', 'match', 'nonlocal', 'not', 'or', 'pass', 'raise', 'return', 'try', 'while', 'with', 'yield']);
+        return PythonLanguage._reserved ??= $eq.collections.hashSetOf(['and', 'as', 'assert', 'async', 'await', 'break', 'class', 'continue', 'def', 'del', 'elif', 'else', 'except', 'finally', 'for', 'from', 'global', 'if', 'import', 'in', 'is', 'lambda', 'match', 'nonlocal', 'not', 'or', 'pass', 'raise', 'return', 'try', 'while', 'with', 'yield']);
     }
 
     static _builtins: Set<string> | undefined;
 
     static get builtins(): Set<string> {
-        return PythonLanguage._builtins ??= new Set(['bool', 'bytes', 'dict', 'float', 'frozenset', 'int', 'list', 'object', 'set', 'str', 'tuple', 'type']);
+        return PythonLanguage._builtins ??= $eq.collections.hashSetOf(['bool', 'bytes', 'dict', 'float', 'frozenset', 'int', 'list', 'object', 'set', 'str', 'tuple', 'type']);
     }
 
     static _constants: Set<string> | undefined;
 
     static get constants(): Set<string> {
-        return PythonLanguage._constants ??= new Set(['True', 'False', 'None', 'self', 'cls']);
+        return PythonLanguage._constants ??= $eq.collections.hashSetOf(['True', 'False', 'None', 'self', 'cls']);
     }
 
     static _words: string[] | undefined;

@@ -296,12 +296,12 @@ public class ObjectCreationStrategy : IExpressionIrStrategy
     private static JsExpr DefaultOf(IParameterSymbol parameter, ConversionContext context) =>
         JsExpr.Literal(DefaultLiteralFor(parameter, context));
 
-    /// <summary>Type names whose creations lower to JS literals (array/object/Set) — a collection
-    /// initializer on THESE is the literal itself, never Add-per-element on a constructed node.</summary>
+    /// <summary>Type names whose creations lower to JS literals (an array or an object) — a collection
+    /// initializer on THESE is the literal itself, never Add-per-element on a constructed node. A set is
+    /// HashSetStrategy's.</summary>
     private static bool IsCollectionLikeTypeName(string typeName) =>
         typeName.StartsWith("List<") || typeName.Contains(".List<")
         || typeName.StartsWith("IEnumerable<") || typeName.Contains(".IEnumerable<")
-        || typeName.StartsWith("HashSet<") || typeName.Contains(".HashSet<")
         || typeName.Contains("Collection<");
 
     /// <summary>
@@ -720,10 +720,6 @@ public class ObjectCreationStrategy : IExpressionIrStrategy
             // ordered args, skipped parameters filled from their C# defaults, initializer as the
             // trailing config object (the runtime component classes' contract). Delegating to the
             // initializer here would silently return a bare object instead of an instance.
-            // `new() { a, b }` on a HashSet target seeds a JS Set (the HashSetStrategy contract).
-            if (typeDisplay.Contains("HashSet<"))
-                return JsExpr.New(JsExpr.Identifier("Set"), [context.Converter.ConvertIr(creation.Initializer)]);
-
             if (target is { SpecialType: SpecialType.None, TypeKind: TypeKind.Class }
                 && !typeDisplay.Contains("List<")
                 && !typeDisplay.Contains("IEnumerable<") && !typeDisplay.Contains("Collection<"))
@@ -755,12 +751,6 @@ public class ObjectCreationStrategy : IExpressionIrStrategy
         {
             return JsExpr.Array([]);
         }
-        // Bare `new()` on a HashSet target — the runtime representation is a JS Set.
-        if (typeDisplay.Contains("HashSet<"))
-        {
-            return JsExpr.New(JsExpr.Identifier("Set"), []);
-        }
-
         // Records and user structs go the SAME way they do with an initializer, and the same way the
         // explicit `new T(...)` does. Converting the arguments here in written order was the third
         // copy of that rule and the one that was wrong.

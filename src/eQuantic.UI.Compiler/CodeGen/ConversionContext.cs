@@ -81,6 +81,10 @@ public class ConversionContext
     /// </summary>
     public int Depth { get; set; }
 
+    /// <summary>The temporaries a lowering binds in the function its C# is written in, declared by
+    /// the statement or the concise body that holds it (#539).</summary>
+    internal Temporaries Temporaries { get; } = new();
+
     /// <summary>
     /// Set while converting an ITERATOR method's body. A C# iterator yields a sequence, and every
     /// sequence in the emitted world is an ARRAY — so the method fills this buffer and returns it,
@@ -182,6 +186,7 @@ public class ConversionContext
         UsedAppTypes.Clear();
         UsedRuntimeTypes.Clear();
         _cache.Clear();
+        Temporaries.Reset();
         ExpectedType = null;
         IteratorBuffer = null;
         Depth = 0;

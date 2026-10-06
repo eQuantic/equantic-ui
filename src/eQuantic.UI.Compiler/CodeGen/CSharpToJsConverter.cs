@@ -451,8 +451,10 @@ public class CSharpToJsConverter
     public JsExpr ConvertIr(ExpressionSyntax expression, string? expectedType = null)
     {
         _context.ExpectedType = expectedType;
+        // A translation naming a temporary another statement declares is converted again where it
+        // stands now, so the statement it lands in declares its own (#539).
         var cached = _context.GetCached(expression);
-        if (cached != null) return cached;
+        if (cached != null && _context.Temporaries.Serves(expression)) return cached;
 
         // A comparer handed to a collection has no translation WHICHEVER strategy builds the
         // collection, so the fence stands here, where every creation passes.
@@ -462,12 +464,14 @@ public class CSharpToJsConverter
         var strategy = _strategyRegistry.FindStrategy(expression, _context);
         if (strategy != null)
         {
+            var mark = _context.Temporaries.Mark();
             var result = strategy is IExpressionIrStrategy ir
                 ? StampIr(expression, ir.ConvertIr(expression, _context))
                 : JsExpr.Opaque(Stamp(expression, strategy.Convert(expression, _context)));
             // The bound tree has the last word: the implicit conversion C# applied around this
             // expression, the string it flows into — settled once here, for every site.
             result = ValueFlow.Settle(expression, result, _context);
+            _context.Temporaries.Remember(expression, mark);
             _context.SetCached(expression, result);
             return result;
         }
@@ -620,13 +624,25 @@ public class CSharpToJsConverter
     /// <param name="expression">The body.</param>
     /// <param name="returns">Whether the body returns the expression's value: false for a setter's
     /// and a constructor's, which have nothing to return.</param>
-    public JsBlock ConvertExpressionBodyIr(ExpressionSyntax expression, bool returns) =>
+    public JsBlock ConvertExpressionBodyIr(ExpressionSyntax expression, bool returns)
+    {
+        var (converted, bound) = _context.Temporaries.In(() => InBlock(() => ConvertIr(expression)));
+        return ExpressionBodyBlock(expression, converted, bound, returns);
+    }
+
+    /// <summary>
+    /// The block a concise body stands for, from its converted expression: what the expression
+    /// declares and the temporaries its conversion bound (#539), then its return. A lambda that
+    /// learns only once its body is converted that the body bound a temporary asks for this rather
+    /// than converting the body a second time.
+    /// </summary>
+    internal JsBlock ExpressionBodyBlock(ExpressionSyntax expression, JsExpr converted,
+        IReadOnlyList<string> temporaries, bool returns) =>
         new([
             JsStatement.Hoisted(
-                ExpressionVariableScanner.Declarations(expression, _context.TypeAnnotations),
-                InBlock(() => returns
-                    ? JsStatement.Return(ConvertIr(expression))
-                    : JsStatement.Expression(ConvertIr(expression)))) with { Origin = expression },
+                ExpressionVariableScanner.Declarations(expression, _context.TypeAnnotations)
+                    + ExpressionVariableScanner.Declarations(temporaries, _context.TypeAnnotations),
+                returns ? JsStatement.Return(converted) : JsStatement.Expression(converted)) with { Origin = expression },
         ]);
 
     /// <summary>The block as text, laid out at the current depth — what a strategy still
@@ -699,14 +715,26 @@ public class CSharpToJsConverter
 
     /// <summary>The statement as IR — every statement strategy builds one — carrying the C# it
     /// came from, so the writer can map the line it lands on back to it (#293). A block is left
-    /// unmarked: its statements carry their own origins, and its brace is no line to stop on.</summary>
+    /// unmarked: its statements carry their own origins, and its brace is no line to stop on.
+    /// <para>
+    /// The temporaries its expressions bound are declared in front of it (#539), so every call of
+    /// the function it stands in has its own. A statement a label names leaves them to the label's,
+    /// in front of the label: JavaScript continues a label only on the loop it stands on, and a
+    /// declaration between the two would brace the loop away from it.
+    /// </para>
+    /// </summary>
     public JsStatement ConvertStatementIr(StatementSyntax stmt)
     {
         var strategy = _statementRegistry.FindStrategy(stmt, _context);
         if (strategy != null)
         {
-            var converted = strategy.Convert(stmt, _context);
-            return stmt is BlockSyntax || converted.Origin is not null ? converted : converted with { Origin = stmt };
+            if (stmt.Parent is LabeledStatementSyntax) return Marked(strategy.Convert(stmt, _context));
+            var (converted, bound) = _context.Temporaries.In(() => strategy.Convert(stmt, _context));
+            converted = Marked(converted);
+            return bound.Count == 0
+                ? converted
+                : JsStatement.Hoisted(ExpressionVariableScanner.Declarations(bound, _context.TypeAnnotations), converted)
+                    with { Origin = stmt };
         }
 
         if (stmt is BlockSyntax block)
@@ -718,5 +746,8 @@ public class CSharpToJsConverter
             $"C# statement '{stmt.Kind()}' has no transpilation strategy — it cannot be emitted as JavaScript. " +
             "Rewrite it in a transpilable form, or add a conversion strategy for this construct.");
         return JsStatement.Raw(stmt.ToString());
+
+        JsStatement Marked(JsStatement converted) =>
+            stmt is BlockSyntax || converted.Origin is not null ? converted : converted with { Origin = stmt };
     }
 }

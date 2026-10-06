@@ -8,6 +8,9 @@
 #   arguments only      the function reads its parameters, and every C# part is passed in
 #   no C# inside        a callback of the runtime's or the platform's own, holding no translated C#
 #   the IR's writer     where the IR's arrow nodes and a template's bound parts are written
+#   no statement there  the function holds C# only where no statement or body can declare a
+#                       temporary instead (an initializer, a constructor's base call), which C#
+#                       never lets await, and it runs once each time the C# does
 #   a type, not a function   a TypeScript function TYPE, written into an annotation: nothing runs
 #   not looked at yet   MEASURED, not judged: nobody has decided whether the function holds C#
 #
@@ -21,7 +24,7 @@ src/eQuantic.UI.Compiler/CodeGen/Strategies/Expressions/ArrayCreationStrategy.cs
 src/eQuantic.UI.Compiler/CodeGen/Strategies/Expressions/AsExpressionStrategy.cs  1  arguments only
 src/eQuantic.UI.Compiler/CodeGen/Strategies/Expressions/AssignmentExpressionStrategy.cs  5  not looked at yet
 src/eQuantic.UI.Compiler/CodeGen/Strategies/Expressions/BinaryExpressionStrategy.cs  5  not looked at yet
-src/eQuantic.UI.Compiler/CodeGen/Strategies/Expressions/ConditionalAccessStrategy.cs  1  not looked at yet
+src/eQuantic.UI.Compiler/CodeGen/Strategies/Expressions/ConditionalAccessStrategy.cs  1  no statement there
 src/eQuantic.UI.Compiler/CodeGen/Strategies/Expressions/InitializerExpressionStrategy.cs  1  not looked at yet
 src/eQuantic.UI.Compiler/CodeGen/Strategies/Expressions/InvocationStrategy.cs  1  not looked at yet
 src/eQuantic.UI.Compiler/CodeGen/Strategies/Expressions/IsPatternStrategy.cs  1  arguments only
@@ -30,7 +33,6 @@ src/eQuantic.UI.Compiler/CodeGen/Strategies/Expressions/SwitchExpressionStrategy
 src/eQuantic.UI.Compiler/CodeGen/Strategies/Expressions/TupleEquality.cs  1  arguments only
 src/eQuantic.UI.Compiler/CodeGen/Strategies/Invocation/ToStringStrategy.cs  1  not looked at yet
 src/eQuantic.UI.Compiler/CodeGen/Strategies/Linq/AverageStrategy.cs  3  not looked at yet
-src/eQuantic.UI.Compiler/CodeGen/Strategies/Linq/ContainsStrategy.cs  1  not looked at yet
 src/eQuantic.UI.Compiler/CodeGen/Strategies/Linq/DistinctStrategy.cs  2  not looked at yet
 src/eQuantic.UI.Compiler/CodeGen/Strategies/Linq/GroupByStrategy.cs  3  not looked at yet
 src/eQuantic.UI.Compiler/CodeGen/Strategies/Linq/LinqTableStrategy.cs  21  not looked at yet
@@ -41,7 +43,6 @@ src/eQuantic.UI.Compiler/CodeGen/Strategies/Linq/SumStrategy.cs  3  not looked a
 src/eQuantic.UI.Compiler/CodeGen/Strategies/NullableLift.cs  2  not looked at yet
 src/eQuantic.UI.Compiler/CodeGen/Strategies/Primitives/BclSurfaceTailStrategy.cs  3  not looked at yet
 src/eQuantic.UI.Compiler/CodeGen/Strategies/Primitives/ConvertStrategy.cs  3  arguments only
-src/eQuantic.UI.Compiler/CodeGen/Strategies/Primitives/ListMethodStrategy.cs  2  not looked at yet
 src/eQuantic.UI.Compiler/CodeGen/Strategies/Primitives/NumberMethodStrategy.cs  1  not looked at yet
 src/eQuantic.UI.Compiler/CodeGen/Strategies/Primitives/PrimitiveStaticStrategy.cs  1  arguments only
 src/eQuantic.UI.Compiler/CodeGen/Strategies/Primitives/StringMethodStrategy.cs  1  no C# inside

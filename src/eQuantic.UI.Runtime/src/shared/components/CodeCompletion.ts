@@ -234,13 +234,13 @@ export class CodeCompletion {
         }
         let order: number[] = [];
         for (let i = 0; i < matches.length; i++) order.push(i);
-        order.sort((a: number, b: number) => {
+        $eq.collections.listSortBy(order, (a: number, b: number) => {
             if (matches[a].score !== matches[b].score) return matches[b].score - matches[a].score;
             let byKey = $eq.text.compare(offers[a].sortKey, offers[b].sortKey, 'ordinal');
             if (byKey !== 0) return byKey;
             let byLabel = $eq.text.compare(matches[a].item.label, matches[b].item.label, 'ordinal');
             return byLabel !== 0 ? byLabel : a - b;
-        });
+        }, 'System.Comparison`1[System.Int32]');
         this._items = [];
         this._shown = [];
         for (const i of order) {
@@ -357,7 +357,7 @@ export class CodeCompletion {
         CodeCompletion.onUiThread(() => {
             if (!this._active || (resolved === offer.item)) return;
             offer.item = resolved;
-            let at = this._shown.indexOf(offer);
+            let at = $eq.collections.indexOf(this._shown, offer, 'own');
             if (at < 0) return;
             this._items[at] = $eq.withPatch(this._items[at], { item: resolved });
             this.changed?.();

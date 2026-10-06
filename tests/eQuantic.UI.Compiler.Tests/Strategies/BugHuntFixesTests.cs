@@ -264,8 +264,10 @@ public class BugHuntFixesTests
     [Fact]
     public void HashSetInitializer_KeepsElements()
     {
-        // Found by the conformance harness: HashSet initializer values were dropped (new Set()).
-        TestHelper.ConvertExpression("new HashSet<int>{1,2,3}").Should().Be("new Set([1, 2, 3])");
+        // Found by the conformance harness: HashSet initializer values were dropped (new Set()). Each
+        // is added in turn, as C#'s initializer calls Add.
+        TestHelper.ConvertExpression("new HashSet<int>{1,2,3}").Should().Be("$eq.collections.hashSetOf([1, 2, 3])");
+        TestHelper.ConvertExpression("new HashSet<int>(numbers){4}").Should().Be("$eq.collections.hashSet(false, this.numbers).add(4)");
     }
 
     [Fact]

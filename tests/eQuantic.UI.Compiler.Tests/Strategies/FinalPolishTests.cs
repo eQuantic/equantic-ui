@@ -15,12 +15,15 @@ public class FinalPolishTests
         Assert.Equal("!s", js);
     }
 
-    [Fact]
-    public void String_Join_ConvertsToJoin()
+    /// <summary>With no model to say what the values are, they go through the runtime, which reads any
+    /// sequence: <c>join</c> is an array's alone, and a set or a linked list threw (#429).</summary>
+    [Theory]
+    [InlineData("String.Join(\",\", list)", "$eq.text.join(',', list)")]
+    [InlineData("String.Join(\",\", a, b)", "$eq.text.join(',', [a, b])")]
+    [InlineData("String.Join(\",\", \"a\")", "$eq.text.join(',', ['a'])")]
+    public void String_Join_WithNoModel_GoesThroughTheRuntime(string code, string expected)
     {
-        var code = "String.Join(\",\", list)";
-        var js = ConvertExpression(code);
-        Assert.Equal("list.join(',')", js);
+        Assert.Equal(expected, ConvertExpression(code));
     }
     
     [Fact]

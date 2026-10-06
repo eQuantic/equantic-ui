@@ -92,6 +92,22 @@ public class CatchClauseConformanceTests
     [InlineData("string s = null; try { return s.ToCharArray(0, 1).Length; } catch (ArgumentNullException) { return 1; } catch (NullReferenceException) { return 2; }")] // 2: a null receiver
     [InlineData("string s = null; try { return s ?? throw (Exception)null!; } catch (NullReferenceException) { return \"nre\"; }")] // "nre": and so is a throw expression's null
     [InlineData("var log = \"\"; Func<string> m = () => { log += \"m\"; return \"msg\"; }; Func<string> p = () => { log += \"p\"; return \"x\"; }; try { throw new ArgumentException(m(), p()); } catch (ArgumentException) { } try { throw new ArgumentOutOfRangeException(p(), m()); } catch (ArgumentException) { } return log;")] // "mppm": every argument runs, as written
+    // The runtime's set, a list's searches, sorts and copies, and string.Join (#488, #438, #429).
+    [InlineData("try { new HashSet<int>().UnionWith(null!); return 0; } catch (ArgumentOutOfRangeException) { return 1; } catch (ArgumentNullException) { return 2; }")] // 2
+    [InlineData("try { return new HashSet<int>(-1).Count; } catch (ArgumentNullException) { return 1; } catch (ArgumentOutOfRangeException) { return 2; }")] // 2
+    [InlineData("try { new HashSet<int> { 1, 2 }.CopyTo(new int[1]); return 0; } catch (ArgumentOutOfRangeException) { return 1; } catch (ArgumentException) { return 2; }")] // 2
+    [InlineData("var s = new HashSet<int> { 1, 2 }; try { s.TrimExcess(1); return 0; } catch (ArgumentNullException) { return 1; } catch (ArgumentOutOfRangeException) { return 2; }")] // 2
+    [InlineData("var s = new HashSet<int> { 1 }; try { foreach (var x in s) s.Add(x + 1); return 0; } catch (ArgumentException) { return 1; } catch (InvalidOperationException) { return 2; }")] // 2
+    [InlineData("try { return new List<int> { 5, 6, 5 }.IndexOf(5, 1, 3); } catch (ArgumentNullException) { return -1; } catch (ArgumentOutOfRangeException) { return -2; }")] // -2
+    [InlineData("try { new List<int> { 1, 2 }.CopyTo(new int[1]); return 0; } catch (ArgumentOutOfRangeException) { return 1; } catch (ArgumentException) { return 2; }")] // 2
+    [InlineData("try { new List<int> { 1, 2 }.CopyTo(-1, new int[3], 0, 1); return 0; } catch (ArgumentNullException) { return 1; } catch (ArgumentOutOfRangeException) { return 2; }")] // 2
+    [InlineData("try { return new List<int> { 1 }.RemoveAll(null!); } catch (ArgumentOutOfRangeException) { return -1; } catch (ArgumentNullException) { return -2; }")] // -2
+    [InlineData("try { return Array.IndexOf((int[])null!, 1); } catch (NullReferenceException) { return -1; } catch (ArgumentNullException) { return -2; }")] // -2
+    [InlineData("try { new List<int> { 2, 1 }.Sort((a, b) => throw new FormatException()); return 0; } catch (FormatException) { return 1; } catch (InvalidOperationException) { return 2; }")] // 2: what the comparison threw is the inner one
+    [InlineData("var l = Enumerable.Range(0, 20).ToList(); try { l.Sort((a, b) => -1); return 0; } catch (InvalidOperationException) { return 1; } catch (ArgumentException) { return 2; }")] // 2: an inconsistent comparison
+    [InlineData("try { Array.Sort(new[] { 5, 4, 3 }, 2, 2); return 0; } catch (ArgumentOutOfRangeException) { return 1; } catch (ArgumentException) { return 2; }")] // 2
+    [InlineData("try { return new List<int> { 1, 3 }.BinarySearch(5, Comparer<int>.Create((a, b) => throw new FormatException())); } catch (FormatException) { return -1; } catch (InvalidOperationException) { return -2; }")] // -2
+    [InlineData("try { return string.Join(\",\", (IEnumerable<int>)null!).Length; } catch (NullReferenceException) { return 1; } catch (ArgumentNullException) { return 2; }")] // 2
     public void AnExceptionTheRuntimeThrows_IsOfTheTypeDotNetThrows(string statements)
     {
         Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");

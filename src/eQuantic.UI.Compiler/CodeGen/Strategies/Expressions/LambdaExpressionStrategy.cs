@@ -82,14 +82,28 @@ public class LambdaExpressionStrategy : IExpressionIrStrategy
     /// to declare, so every other lambda stays an expression — the writer parenthesizes an object
     /// literal there.
     /// </para>
+    /// <para>
+    /// A temporary the body binds (#539) is the other thing to declare, and it is known only once
+    /// the body is converted, so the body is converted in a scope of its own and given its block
+    /// then: the lambda's every call has its own slot, where the statement around the lambda would
+    /// have shared one between calls that run at once.
+    /// </para>
     /// </summary>
     private static JsExpr ExpressionBody(string parameters, ExpressionSyntax expression, bool isAsync,
-        ConversionContext context) =>
+        ConversionContext context)
+    {
         // Asked before the expression is converted: converted, it is cached at the depth it was
         // converted at, and the block's return sits one level deeper than the arrow.
-        ExpressionVariableScanner.Names(expression).Count == 0
-            ? JsExpr.Arrow(parameters, context.Converter.ConvertIr(expression), isAsync)
-            : JsExpr.ArrowBlock(parameters, context.Converter.ConvertExpressionBodyIr(expression, returns: true), context.Layout, context.Depth, isAsync);
+        if (ExpressionVariableScanner.Names(expression).Count > 0)
+            return JsExpr.ArrowBlock(parameters, context.Converter.ConvertExpressionBodyIr(expression, returns: true),
+                context.Layout, context.Depth, isAsync);
+
+        var (body, bound) = context.Temporaries.In(() => context.Converter.ConvertIr(expression));
+        return bound.Count == 0
+            ? JsExpr.Arrow(parameters, body, isAsync)
+            : JsExpr.ArrowBlock(parameters, context.Converter.ExpressionBodyBlock(expression, body, bound, returns: true),
+                context.Layout, context.Depth, isAsync);
+    }
 
     /// <summary>A parameter with its TS type, resolved through the model. Falls back to the bare
     /// name when nothing can be said — an untyped parameter beats a wrong one.</summary>
