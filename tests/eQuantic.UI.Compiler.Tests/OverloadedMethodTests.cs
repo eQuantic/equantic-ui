@@ -510,6 +510,26 @@ public class OverloadedMethodTests
     }
 
     /// <summary>
+    /// Two parameters of a primary constructor that land on one name: the twin's constructor names each
+    /// one camelCased, and a function cannot take two parameters of one name, so the module did not load,
+    /// whether a member read both, one or neither (found by Copilot's review of #621).
+    /// </summary>
+    [Theory]
+    [InlineData("Both", "public class Both(int x, int X) { public int Sum() => x + X; }")]
+    [InlineData("One", "public class One(int x, int X) { public int Get() => x; }")]
+    [InlineData("Neither", "public class Neither(int x, int X) { }")]
+    [InlineData("Pair", "public struct Pair(int x, int X) { public int Get() => x; }")]
+    [InlineData("Twins", "public record Twins(int x, int X);")]
+    public void TwoPrimaryParametersOnOneName_AreRefused(string name, string source)
+    {
+        var errors = Compile(source, name).Errors;
+
+        errors.Should().ContainSingle().Which.Should().Match<CompilationError>(error =>
+            error.Code == "EQ1007" && error.Message.Contains($"'{name}(X)' lowers to `x`")
+            && error.Message.Contains($"'{name}(x)'") && error.Message.Contains("cannot take two parameters of one name"));
+    }
+
+    /// <summary>
     /// What is one member is not refused: a positional parameter the body redeclares under its own name
     /// (#546), a static beside an instance member of the name, and a struct's primary constructor
     /// parameter read only by an initializer, which no instance holds. A plain class's backing field

@@ -190,6 +190,7 @@ internal static class OverloadedMethods
     /// </summary>
     private static void CheckState(TypeDeclarationSyntax type, string sourcePath, SemanticModel? model, List<CompilationError> errors)
     {
+        if (CheckPrimaryParameters(type, sourcePath, errors)) return;
         if (type is ClassDeclarationSyntax)
         {
             CheckHeldParameters(type, sourcePath, model, errors);
@@ -226,6 +227,41 @@ internal static class OverloadedMethods
             });
             return;
         }
+    }
+
+    /// <summary>
+    /// Two parameters of a primary constructor that land on one name (`x` beside `X`): the twin's
+    /// constructor names each one camelCased, as the member a record makes of it, and a JavaScript
+    /// function refuses two parameters of one name, so the module did not load, whether a member read
+    /// them or not (found by Copilot's review of #621). A class's, a record's and a struct's alike.
+    /// </summary>
+    private static bool CheckPrimaryParameters(TypeDeclarationSyntax type, string sourcePath, List<CompilationError> errors)
+    {
+        if (type.ParameterList is not { Parameters.Count: > 1 } list) return false;
+        var first = new Dictionary<string, ParameterSyntax>(StringComparer.Ordinal);
+        foreach (var parameter in list.Parameters)
+        {
+            var lowered = CodeGen.TwinConstructor.ParameterName(parameter, primary: true);
+            if (!first.TryGetValue(lowered, out var earlier))
+            {
+                first[lowered] = parameter;
+                continue;
+            }
+            var position = parameter.Identifier.GetLocation().GetLineSpan().StartLinePosition;
+            errors.Add(new CompilationError
+            {
+                Code = "EQ1007",
+                Message = $"'{type.Identifier.Text}({parameter.Identifier.ValueText})' lowers to `{lowered}`, and so does "
+                    + $"'{type.Identifier.Text}({earlier.Identifier.ValueText})'. The twin's constructor names a primary "
+                    + "constructor's parameters camelCased, and a function cannot take two parameters of one name. Rename one "
+                    + "of them by what it holds.",
+                SourcePath = sourcePath,
+                Line = position.Line + 1,
+                Column = position.Character + 1,
+            });
+            return true;
+        }
+        return false;
     }
 
     /// <summary>
