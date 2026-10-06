@@ -9,14 +9,16 @@ namespace eQuantic.UI.Compiler.CodeGen;
 
 /// <summary>
 /// One member of a record's or a struct's own STATE — what its constructor writes, its <c>equals</c>
-/// compares and its <c>with</c> copies: the declared name, the camelCased JS name, the TS type for its
-/// type-only declaration, and the declaration that says what it starts as (a positional
-/// <see cref="ParameterSyntax"/>, a <see cref="PropertyDeclarationSyntax"/> or a field's
-/// <see cref="VariableDeclaratorSyntax"/>). It is not a constructor parameter: the twin's constructor
-/// takes the C# constructor's parameters, and sets every member as C# does
-/// (<see cref="RecordTypeEmitter"/>, #413). What a record's text prints is the symbol's to say.
+/// compares and its <c>with</c> copies: the declared name, the camelCased JS name, the slot each
+/// instance keeps it in (the JS name, or a property's store, <c>$name</c>, where the property keeps one,
+/// <see cref="PropertyStore"/>), the TS type for its type-only declaration, and the declaration that
+/// says what it starts as (a positional <see cref="ParameterSyntax"/>, a
+/// <see cref="PropertyDeclarationSyntax"/> or a field's <see cref="VariableDeclaratorSyntax"/>). It is
+/// not a constructor parameter: the twin's constructor takes the C# constructor's parameters, and sets
+/// every member as C# does (<see cref="RecordTypeEmitter"/>, #413). What a record's text prints is the
+/// symbol's to say.
 /// </summary>
-public readonly record struct ValueMember(string Display, string Js, string TsType, SyntaxNode Declaration);
+public readonly record struct ValueMember(string Display, string Js, string Store, string TsType, SyntaxNode Declaration);
 
 /// <summary>
 /// Extracts the state of a record/struct declaration — what its constructor writes, its equality
@@ -61,7 +63,7 @@ public static class TypeDeclarationExtensions
                 if (declaredInBody.Contains(name)) continue;
                 if (isRecord && InheritedProperty(type, self, name)) continue;
                 if (!type.HoldsParameter(p, model)) continue;
-                members.Add(new ValueMember(name, name.ToCamelCase(), TsTypeFor(p.Type, model), p));
+                members.Add(new ValueMember(name, name.ToCamelCase(), name.ToCamelCase(), TsTypeFor(p.Type, model), p));
             }
         }
 
@@ -69,20 +71,17 @@ public static class TypeDeclarationExtensions
         {
             switch (member)
             {
-                // AUTO-properties only. A `get` with a BODY is computed — it is behaviour, not
-                // state, and counting it as a member gave the class both a stored field and a
-                // getter of the same name (a duplicate identifier, and the getter shadowed). An
-                // ABSTRACT one holds nothing either: its accessors have no body because a derived
-                // type gives them one, and as state the base's constructor wrote `this.name = null`
-                // over the derived getter, which threw (`new Circle(2)` over `abstract record Shape {
-                // public abstract string Name { get; } }`).
-                case PropertyDeclarationSyntax prop
-                    when !prop.Modifiers.Any(SyntaxKind.StaticKeyword)
-                         && !prop.Modifiers.Any(SyntaxKind.AbstractKeyword)
-                         && prop.ExpressionBody == null
-                         && prop.AccessorList?.Accessors.Any(a => a.IsKind(SyntaxKind.GetAccessorDeclaration)
-                             && a.Body == null && a.ExpressionBody == null) == true:
-                    members.Add(new ValueMember(prop.Identifier.ValueText, prop.Identifier.ValueText.ToCamelCase(),
+                // A property with a backing field, where PropertyStore says it lives. A computed one
+                // (every accessor with a body, none using `field`) is behaviour, not state, and
+                // counting it as a member gave the class both a stored field and a getter of the
+                // same name (a duplicate identifier, and the getter shadowed). An ABSTRACT one holds
+                // nothing either: its accessors have no body because a derived type gives them one,
+                // and as state the base's constructor wrote `this.name = null` over the derived
+                // getter, which threw (`new Circle(2)` over `abstract record Shape { public abstract
+                // string Name { get; } }`). One that uses `field` with a getter body is state, which
+                // read NaN while it was taken for a computed one (#615).
+                case PropertyDeclarationSyntax prop when PropertyStore.SlotOf(prop) is { } slot:
+                    members.Add(new ValueMember(prop.Identifier.ValueText, prop.Identifier.ValueText.ToCamelCase(), slot,
                         TsTypeFor(prop.Type, model), prop));
                     break;
 
@@ -102,7 +101,7 @@ public static class TypeDeclarationExtensions
                          && !field.Modifiers.Any(SyntaxKind.ConstKeyword):
                     foreach (var v in field.Declaration.Variables)
                         members.Add(new ValueMember(v.Identifier.ValueText, v.Identifier.ValueText.ToCamelCase(),
-                            TsTypeFor(field.Declaration.Type, model), v));
+                            v.Identifier.ValueText.ToCamelCase(), TsTypeFor(field.Declaration.Type, model), v));
                     break;
             }
         }

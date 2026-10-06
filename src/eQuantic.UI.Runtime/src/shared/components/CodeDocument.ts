@@ -1,12 +1,12 @@
 import { $eq, CodePosition, CodeRange } from "../runtime-exports";
 
 export class CodeDocument {
-    constructor(lines: string[], props?: any) {
+    constructor(lines: string[]) {
+        this._lines = null!;
         this._lines = lines;
-        if (props && typeof props === 'object') Object.assign(this, props);
     }
 
-    _lines: string[];
+    _lines!: string[];
 
     get lines(): string[] {
         return this._lines;

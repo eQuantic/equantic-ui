@@ -174,6 +174,21 @@ public class TypeScriptCodeBuilder
             _members.Add(JsClassMember.Field(prefix, name, annotation, defaultValue) with { Origin = new JsOrigin(sourceNode) });
         }
 
+        /// <summary>
+        /// A member of each instance's state: a class field with no initializer (<c>name!: T;</c>, and
+        /// <c>name;</c> in JavaScript), which JavaScript DEFINES on the instance as it is built, at the
+        /// start of its construction or as soon as <c>super()</c> returns. The constructor then writes
+        /// its value onto that own property, never onto an accessor or a method of its name along the
+        /// chain, as C# writes a field and never a property: declared for TypeScript only, the write
+        /// reached a getter of the name and threw (<c>int count; int Count =&gt; count;</c>). The
+        /// constructor gives it its value, hence the <c>!</c>.
+        /// </summary>
+        public void State(string name, string? type, SyntaxNode? sourceNode = null)
+        {
+            var annotation = !_builder.TypeAnnotations || string.IsNullOrEmpty(type) ? "" : $"!: {type}";
+            _members.Add(JsClassMember.Field("", name, annotation) with { Origin = new JsOrigin(sourceNode) });
+        }
+
         public void Property(string name, string type, bool isPublic = true, SyntaxNode? sourceNode = null)
         {
             if (!_builder.TypeAnnotations) return;   // a bare interface-style property is TypeScript-only

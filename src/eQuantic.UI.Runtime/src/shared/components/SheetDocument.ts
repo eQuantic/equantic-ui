@@ -1,22 +1,23 @@
 import { $eq, CellRef, SheetCellSnapshot } from "../runtime-exports";
 
 export class SheetDocument {
-    constructor(rows: number = 1000, cols: number = 26, props?: any) {
+    constructor(rows: number = 1000, cols: number = 26) {
         this._cells = $eq.collections.dictionary();
         this._rowHeights = $eq.collections.dictionary();
         this._colWidths = $eq.collections.dictionary();
+        this.rows = 0;
+        this.cols = 0;
         this.rows = Math.max(1, rows);
         this.cols = Math.max(1, Math.min(cols, 16384));
-        if (props && typeof props === 'object') Object.assign(this, props);
     }
 
-    _cells: any;
-    _rowHeights: any;
-    _colWidths: any;
+    _cells!: any;
+    _rowHeights!: any;
+    _colWidths!: any;
+    rows!: number;
+    cols!: number;
     static defaultRowHeight: number = 28;
     static defaultColWidth: number = 96;
-    rows: number = 0;
-    cols: number = 0;
 
     get cells(): any {
         return this._cells;

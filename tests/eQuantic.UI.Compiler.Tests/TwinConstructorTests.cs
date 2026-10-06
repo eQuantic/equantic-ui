@@ -74,6 +74,21 @@ public class TwinConstructorTests
             }
             """, "Odd(int a, int b)"
         },
+        {
+            // A plain class's two constructors of one count, refused as a record's are (#583).
+            "Coupled", "public class Coupled { public Coupled(int a) { } public Coupled(string s) { } }", "Coupled(string s)"
+        },
+        {
+            // A plain class's chain to a constructor that chains in turn.
+            "Leap", """
+            public class Leap
+            {
+                public Leap(int a, int b) { }
+                public Leap(int a) : this(a, a) { }
+                public Leap() : this(1) { }
+            }
+            """, "Leap()"
+        },
     };
 
     [Theory]
@@ -96,7 +111,7 @@ public class TwinConstructorTests
         // The alternate's own parameters live in a block of their own, and the chain's arguments cross it
         // in temporaries: no function holds the C#.
         result.TypeScript.Should().Contain(
-            "if (arguments.length === 1) { let $c0: any, $c1: any; { let at: any = arguments[0]; $c0 = at; $c1 = at + 1; } start = $c0; end = $c1; }");
+            "if (arguments.length === 1) {let $c0: any, $c1: any;{let at: any = arguments[0];$c0 = at;$c1 = at + 1;}start = $c0;end = $c1;}");
     }
 
     [Fact]
@@ -106,8 +121,8 @@ public class TwinConstructorTests
 
         result.Success.Should().BeTrue(string.Join("\n", result.Errors.Select(error => error.Message)));
         result.TypeScript.Should().Contain(
-            "if (arguments.length >= 1 && arguments.length <= 2) { let $c0: any, $c1: any, $c2: any; { let a: any = arguments[0], b: any = arguments[1] === undefined ? 5 : arguments[1]; "
-            + "$c0 = a; $c1 = b; $c2 = 0; } a = $c0; b = $c1; c = $c2; }");
+            "if (arguments.length >= 1 && arguments.length <= 2) {let $c0: any, $c1: any, $c2: any;{let a: any = arguments[0], b: any = arguments[1] === undefined ? 5 : arguments[1];"
+            + "$c0 = a;$c1 = b;$c2 = 0;}a = $c0;b = $c1;c = $c2;}");
     }
 
     [Fact]
@@ -123,9 +138,9 @@ public class TwinConstructorTests
             """, "Money");
 
         result.Success.Should().BeTrue(string.Join("\n", result.Errors.Select(error => error.Message)));
-        result.TypeScript.Should().Contain("constructor(...$a: any[]) { let a: any, c: any; let $k: any = -1; "
-            + "if ($a.length === 1) { a = $a[0]; $k = 0; } else if ($a.length === 2) { a = $a[0]; c = $a[1]; $k = 1; } ");
-        result.TypeScript.Should().Contain("if ($k === 0) { this.a = a; this.c = 'EUR'; } if ($k === 1) { this.a = a; this.c = c; } ");
+        result.TypeScript.Should().Contain("constructor(...$a: any[]) {let a: any, c: any;let $k: any = -1;"
+            + "if ($a.length === 1) {a = $a[0];$k = 0;} else if ($a.length === 2) {a = $a[0];c = $a[1];$k = 1;}");
+        result.TypeScript.Should().Contain("if ($k === 0) {this.a = a;this.c = 'EUR';}if ($k === 1) {this.a = a;this.c = c;}");
         // C#'s null for a string member TypeScript declares never null: strict TypeScript refuses a bare
         // `null` there, and the runtime's own twins are compiled strict.
         result.TypeScript.Should().Contain("declare c: string;").And.Contain("this.c = null!;");
@@ -137,7 +152,7 @@ public class TwinConstructorTests
         var result = Compile("public record Doubled { public int A { get; init; } public Doubled(int a) { A = a * 2; } }", "Doubled");
 
         result.Success.Should().BeTrue(string.Join("\n", result.Errors.Select(error => error.Message)));
-        result.TypeScript.Should().Contain("constructor(a: any) { this.a = 0; this.a = a * 2; }");
+        result.TypeScript.Should().Contain("constructor(a: any) {this.a = 0;this.a = a * 2;}");
     }
 
     public static TheoryData<string, string> Collisions => new()

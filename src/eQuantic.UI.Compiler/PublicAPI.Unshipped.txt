@@ -3,8 +3,6 @@
 *REMOVED*eQuantic.UI.Compiler.CodeGen.ValueMember.ValueMember(string! Display, string! Js, string! TsType) -> void
 eQuantic.UI.Compiler.CodeGen.ValueMember.Declaration.get -> Microsoft.CodeAnalysis.SyntaxNode!
 eQuantic.UI.Compiler.CodeGen.ValueMember.Declaration.init -> void
-eQuantic.UI.Compiler.CodeGen.ValueMember.Deconstruct(out string! Display, out string! Js, out string! TsType, out Microsoft.CodeAnalysis.SyntaxNode! Declaration) -> void
-eQuantic.UI.Compiler.CodeGen.ValueMember.ValueMember(string! Display, string! Js, string! TsType, Microsoft.CodeAnalysis.SyntaxNode! Declaration) -> void
 *REMOVED*eQuantic.UI.Compiler.Services.ComponentDependencyResolver.ComponentDependencyResolver() -> void
 *REMOVED*static eQuantic.UI.Compiler.CodeGen.RecordTypeEmitter.CanEmit(Microsoft.CodeAnalysis.CSharp.Syntax.TypeDeclarationSyntax! type) -> bool
 static eQuantic.UI.Compiler.CodeGen.RecordTypeEmitter.CanEmit(Microsoft.CodeAnalysis.CSharp.Syntax.TypeDeclarationSyntax! type, Microsoft.CodeAnalysis.INamedTypeSymbol? symbol) -> bool
@@ -40,3 +38,9 @@ const eQuantic.UI.Compiler.CodeGen.Eq.ArraySort = "$eq.collections.arraySort" ->
 const eQuantic.UI.Compiler.CodeGen.Eq.ArraySortBy = "$eq.collections.arraySortBy" -> string!
 const eQuantic.UI.Compiler.CodeGen.Eq.ListBinarySearch = "$eq.collections.binarySearch" -> string!
 eQuantic.UI.Compiler.CodeGen.Strategies.Types.HashSetStrategy.ConvertIr(Microsoft.CodeAnalysis.SyntaxNode! node, eQuantic.UI.Compiler.CodeGen.ConversionContext! context) -> eQuantic.UI.Compiler.CodeGen.Ir.JsExpr!
+const eQuantic.UI.Compiler.CodeGen.Eq.Json = "$eq.json" -> string!
+eQuantic.UI.Compiler.CodeGen.ValueMember.Deconstruct(out string! Display, out string! Js, out string! Store, out string! TsType, out Microsoft.CodeAnalysis.SyntaxNode! Declaration) -> void
+eQuantic.UI.Compiler.CodeGen.ValueMember.ValueMember(string! Display, string! Js, string! Store, string! TsType, Microsoft.CodeAnalysis.SyntaxNode! Declaration) -> void
+eQuantic.UI.Compiler.CodeGen.ValueMember.Store.get -> string!
+eQuantic.UI.Compiler.CodeGen.ValueMember.Store.init -> void
+eQuantic.UI.Compiler.Services.TypeScriptCodeBuilder.ClassBuilder.State(string! name, string? type, Microsoft.CodeAnalysis.SyntaxNode? sourceNode = null) -> void
