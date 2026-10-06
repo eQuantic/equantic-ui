@@ -138,22 +138,8 @@ export class MermaidLayout {
             let h = MermaidLayout.nodeHeightOf(node);
             let x = Math.fround((graph.vertical ? crossCenter[i] : mainCenter[i]) - Math.fround(w / 2));
             let y = Math.fround((graph.vertical ? mainCenter[i] : crossCenter[i]) - Math.fround(h / 2));
-            scene.nodes.push((($o: any, $5: any) => {
-                $o.h = $5;
-                return $o;
-            })((($o: any, $4: any) => {
-                $o.w = $4;
-                return $o;
-            })((($o: any, $3: any) => {
-                $o.y = $3;
-                return $o;
-            })((($o: any, $2: any) => {
-                $o.x = $2;
-                return $o;
-            })((($o: any, $1: any) => {
-                $o.node = $1;
-                return $o;
-            })(new MermaidPlacedNode(), node), x), y), w), h));
+            let $n0: any; 
+            scene.nodes.push(($n0 = new MermaidPlacedNode(), $n0.node = node, $n0.x = x, $n0.y = y, $n0.w = w, $n0.h = h, $n0));
         }
         for (const edge of graph.edges) {
             let from = scene.nodes[$eq.mapGet(index, edge.from)];
@@ -265,48 +251,24 @@ export class MermaidLayout {
         let mid = vertical ? Math.fround(Math.fround(y0 + y1) / 2) : Math.fround(Math.fround(x0 + x1) / 2);
         if (vertical) {
             MermaidLayout.addCurve(scene, x0, y0, x0, mid, x1, mid, x1, y1);
-            if (edge.arrow) scene.arrows.push((($o: any, $3: any) => {
-                $o.direction = $3;
-                return $o;
-            })((($o: any, $2: any) => {
-                $o.y = $2;
-                return $o;
-            })((($o: any, $1: any) => {
-                $o.x = $1;
-                return $o;
-            })(new MermaidArrowhead(), x1), y1), y1 >= mid ? 0 : 2));
-            if (edge.label.length > 0) scene.labels.push((($o: any, $3: any) => {
-                $o.y = $3;
-                return $o;
-            })((($o: any, $2: any) => {
-                $o.x = $2;
-                return $o;
-            })((($o: any, $1: any) => {
-                $o.text = $1;
-                return $o;
-            })(new MermaidLabel(), edge.label), Math.fround(Math.fround(x0 + x1) / 2)), mid));
+            if (edge.arrow) {
+                let $n1: any; 
+                scene.arrows.push(($n1 = new MermaidArrowhead(), $n1.x = x1, $n1.y = y1, $n1.direction = y1 >= mid ? 0 : 2, $n1));
+            }
+            if (edge.label.length > 0) {
+                let $n2: any; 
+                scene.labels.push(($n2 = new MermaidLabel(), $n2.text = edge.label, $n2.x = Math.fround(Math.fround(x0 + x1) / 2), $n2.y = mid, $n2));
+            }
         } else {
             MermaidLayout.addCurve(scene, x0, y0, mid, y0, mid, y1, x1, y1);
-            if (edge.arrow) scene.arrows.push((($o: any, $3: any) => {
-                $o.direction = $3;
-                return $o;
-            })((($o: any, $2: any) => {
-                $o.y = $2;
-                return $o;
-            })((($o: any, $1: any) => {
-                $o.x = $1;
-                return $o;
-            })(new MermaidArrowhead(), x1), y1), x1 >= mid ? 1 : 3));
-            if (edge.label.length > 0) scene.labels.push((($o: any, $3: any) => {
-                $o.y = $3;
-                return $o;
-            })((($o: any, $2: any) => {
-                $o.x = $2;
-                return $o;
-            })((($o: any, $1: any) => {
-                $o.text = $1;
-                return $o;
-            })(new MermaidLabel(), edge.label), mid), Math.fround(Math.fround(y0 + y1) / 2)));
+            if (edge.arrow) {
+                let $n3: any; 
+                scene.arrows.push(($n3 = new MermaidArrowhead(), $n3.x = x1, $n3.y = y1, $n3.direction = x1 >= mid ? 1 : 3, $n3));
+            }
+            if (edge.label.length > 0) {
+                let $n4: any; 
+                scene.labels.push(($n4 = new MermaidLabel(), $n4.text = edge.label, $n4.x = mid, $n4.y = Math.fround(Math.fround(y0 + y1) / 2), $n4));
+            }
         }
     }
 
@@ -323,25 +285,8 @@ export class MermaidLayout {
         let maxX = MermaidLayout.max4(sx, k1x, k2x, ex) + MermaidLayout.curvePad;
         let minY = MermaidLayout.min4(sy, k1y, k2y, ey) - MermaidLayout.curvePad;
         let maxY = MermaidLayout.max4(sy, k1y, k2y, ey) + MermaidLayout.curvePad;
-        scene.curves.push((($o: any, $6: any) => {
-            $o.viewBox = $6;
-            return $o;
-        })((($o: any, $5: any) => {
-            $o.path = $5;
-            return $o;
-        })((($o: any, $4: any) => {
-            $o.h = $4;
-            return $o;
-        })((($o: any, $3: any) => {
-            $o.w = $3;
-            return $o;
-        })((($o: any, $2: any) => {
-            $o.y = $2;
-            return $o;
-        })((($o: any, $1: any) => {
-            $o.x = $1;
-            return $o;
-        })(new MermaidCurve(), Math.fround(minX)), Math.fround(minY)), Math.fround(maxX - minX)), Math.fround(maxY - minY)), 'M ' + sx + ' ' + sy + ' C ' + k1x + ' ' + k1y + ', ' + k2x + ' ' + k2y + ', ' + ex + ' ' + ey), minX + ' ' + minY + ' ' + (maxX - minX) + ' ' + (maxY - minY)));
+        let $n5: any; 
+        scene.curves.push(($n5 = new MermaidCurve(), $n5.x = Math.fround(minX), $n5.y = Math.fround(minY), $n5.w = Math.fround(maxX - minX), $n5.h = Math.fround(maxY - minY), $n5.path = 'M ' + sx + ' ' + sy + ' C ' + k1x + ' ' + k1y + ', ' + k2x + ' ' + k2y + ', ' + ex + ' ' + ey, $n5.viewBox = minX + ' ' + minY + ' ' + (maxX - minX) + ' ' + (maxY - minY), $n5));
     }
 
     static whole(v: number) {
@@ -365,32 +310,14 @@ export class MermaidLayout {
         if (x0 === x1) {
             let top = y0 < y1 ? y0 : y1;
             let h = y0 < y1 ? Math.fround(y1 - y0) : Math.fround(y0 - y1);
-            scene.segments.push((($o: any, $4: any) => {
-                $o.h = $4;
-                return $o;
-            })((($o: any, $2: any, $3: any) => {
-                $o.y = $2;
-                $o.w = $3;
-                return $o;
-            })((($o: any, $1: any) => {
-                $o.x = $1;
-                return $o;
-            })(new MermaidSegment(), Math.fround(x0 - Math.fround(MermaidLayout.lineThickness / 2))), top, MermaidLayout.lineThickness), h));
+            let $n6: any; 
+            scene.segments.push(($n6 = new MermaidSegment(), $n6.x = Math.fround(x0 - Math.fround(MermaidLayout.lineThickness / 2)), $n6.y = top, $n6.w = MermaidLayout.lineThickness, $n6.h = h, $n6));
             return;
         }
         let left = x0 < x1 ? x0 : x1;
         let w = x0 < x1 ? Math.fround(x1 - x0) : Math.fround(x0 - x1);
-        scene.segments.push((($o: any, $3: any, $4: any) => {
-            $o.w = $3;
-            $o.h = $4;
-            return $o;
-        })((($o: any, $2: any) => {
-            $o.y = $2;
-            return $o;
-        })((($o: any, $1: any) => {
-            $o.x = $1;
-            return $o;
-        })(new MermaidSegment(), left), Math.fround(y0 - Math.fround(MermaidLayout.lineThickness / 2))), w, MermaidLayout.lineThickness));
+        let $n7: any; 
+        scene.segments.push(($n7 = new MermaidSegment(), $n7.x = left, $n7.y = Math.fround(y0 - Math.fround(MermaidLayout.lineThickness / 2)), $n7.w = w, $n7.h = MermaidLayout.lineThickness, $n7));
     }
 
     static solveSequence(graph: MermaidGraph) {
@@ -399,18 +326,8 @@ export class MermaidLayout {
         let at = MermaidLayout.margin;
         for (const participant of graph.nodes) {
             let w = MermaidLayout.labelWidth(participant.label, 28, 80, 220);
-            scene.nodes.push((($o: any, $4: any, $5: any) => {
-                $o.w = $4;
-                $o.h = $5;
-                return $o;
-            })((($o: any, $2: any, $3: any) => {
-                $o.x = $2;
-                $o.y = $3;
-                return $o;
-            })((($o: any, $1: any) => {
-                $o.node = $1;
-                return $o;
-            })(new MermaidPlacedNode(), participant), at, MermaidLayout.margin), w, MermaidLayout.nodeHeight));
+            let $n8: any; 
+            scene.nodes.push(($n8 = new MermaidPlacedNode(), $n8.node = participant, $n8.x = at, $n8.y = MermaidLayout.margin, $n8.w = w, $n8.h = MermaidLayout.nodeHeight, $n8));
             $eq.mapSet(centers, participant.id, Math.fround(at + Math.fround(w / 2)));
             at = Math.fround(at + Math.fround(w + MermaidLayout.participantGap));
         }
@@ -427,46 +344,20 @@ export class MermaidLayout {
                 MermaidLayout.addSegment(scene, x0, Math.fround(y - 12), Math.fround(x0 + 36), Math.fround(y - 12));
                 MermaidLayout.addSegment(scene, Math.fround(x0 + 36), Math.fround(y - 12), Math.fround(x0 + 36), y);
                 MermaidLayout.addSegment(scene, Math.fround(x0 + 36), y, x0, y);
-                scene.arrows.push((($o: any, $2: any, $3: any) => {
-                    $o.y = $2;
-                    $o.direction = $3;
-                    return $o;
-                })((($o: any, $1: any) => {
-                    $o.x = $1;
-                    return $o;
-                })(new MermaidArrowhead(), x0), y, 3));
-                if (message.label.length > 0) scene.labels.push((($o: any, $3: any) => {
-                    $o.y = $3;
-                    return $o;
-                })((($o: any, $2: any) => {
-                    $o.x = $2;
-                    return $o;
-                })((($o: any, $1: any) => {
-                    $o.text = $1;
-                    return $o;
-                })(new MermaidLabel(), message.label), Math.fround(Math.fround(x0 + 36) + 12)), Math.fround(y - 12)));
+                let $n9: any; 
+                scene.arrows.push(($n9 = new MermaidArrowhead(), $n9.x = x0, $n9.y = y, $n9.direction = 3, $n9));
+                if (message.label.length > 0) {
+                    let $n10: any; 
+                    scene.labels.push(($n10 = new MermaidLabel(), $n10.text = message.label, $n10.x = Math.fround(Math.fround(x0 + 36) + 12), $n10.y = Math.fround(y - 12), $n10));
+                }
             } else {
                 MermaidLayout.addSegment(scene, x0, y, x1, y);
-                scene.arrows.push((($o: any, $3: any) => {
-                    $o.direction = $3;
-                    return $o;
-                })((($o: any, $2: any) => {
-                    $o.y = $2;
-                    return $o;
-                })((($o: any, $1: any) => {
-                    $o.x = $1;
-                    return $o;
-                })(new MermaidArrowhead(), x1), y), x1 > x0 ? 1 : 3));
-                if (message.label.length > 0) scene.labels.push((($o: any, $3: any) => {
-                    $o.y = $3;
-                    return $o;
-                })((($o: any, $2: any) => {
-                    $o.x = $2;
-                    return $o;
-                })((($o: any, $1: any) => {
-                    $o.text = $1;
-                    return $o;
-                })(new MermaidLabel(), message.label), Math.fround(Math.fround(x0 + x1) / 2)), Math.fround(y - 12)));
+                let $n11: any; 
+                scene.arrows.push(($n11 = new MermaidArrowhead(), $n11.x = x1, $n11.y = y, $n11.direction = x1 > x0 ? 1 : 3, $n11));
+                if (message.label.length > 0) {
+                    let $n12: any; 
+                    scene.labels.push(($n12 = new MermaidLabel(), $n12.text = message.label, $n12.x = Math.fround(Math.fround(x0 + x1) / 2), $n12.y = Math.fround(y - 12), $n12));
+                }
             }
             y = Math.fround(y + MermaidLayout.messageGap);
         }

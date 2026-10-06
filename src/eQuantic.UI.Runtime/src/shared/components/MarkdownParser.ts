@@ -6,7 +6,7 @@ export class MarkdownParser {
         if (!source) return blocks;
         let lines = MarkdownParser.stripComments($eq.text.replace(source, '\r\n', '\n', 'ordinal').split('\n'));
         let paragraph = '';
-        let usedIds: Set<string> = new Set();
+        let usedIds: Set<string> = $eq.collections.hashSet();
         for (let i = 0; i < lines.length; i++) {
             let line = lines[i];
             let trimmed = $eq.text.trim(line);
@@ -19,16 +19,8 @@ export class MarkdownParser {
                     body.push(lines[i]);
                     i++;
                 }
-                blocks.push((($o: any, $3: any) => {
-                    $o.raw = $3;
-                    return $o;
-                })((($o: any, $2: any) => {
-                    $o.lang = $2;
-                    return $o;
-                })((($o: any, $1: any) => {
-                    $o.kind = $1;
-                    return $o;
-                })(new MarkdownBlock(), 'code'), lang.length === 0 ? 'text' : lang), body.join('\n')));
+                let $n1: any; 
+                blocks.push(($n1 = new MarkdownBlock(), $n1.kind = 'code', $n1.lang = lang.length === 0 ? 'text' : lang, $n1.raw = $eq.text.join('\n', body), $n1));
                 continue;
             }
             if (trimmed.length === 0) {
@@ -49,50 +41,32 @@ export class MarkdownParser {
                         unique = id + '-' + n;
                     }
                     $eq.collections.setAdd(usedIds, unique);
-                    blocks.push((($o: any, $5: any) => {
-                        $o.id = $5;
-                        return $o;
-                    })((($o: any, $4: any) => {
-                        $o.runs = $4;
-                        return $o;
-                    })((($o: any, $3: any) => {
-                        $o.text = $3;
-                        return $o;
-                    })((($o: any, $2: any) => {
-                        $o.level = $2;
-                        return $o;
-                    })((($o: any, $1: any) => {
-                        $o.kind = $1;
-                        return $o;
-                    })(new MarkdownBlock(), 'heading'), level > 4 ? 4 : level), MarkdownParser.strip(text)), MarkdownParser.inline(text)), unique));
+                    let $n2: any; 
+                    blocks.push(($n2 = new MarkdownBlock(), $n2.kind = 'heading', $n2.level = level > 4 ? 4 : level, $n2.text = MarkdownParser.strip(text), $n2.runs = MarkdownParser.inline(text), $n2.id = unique, $n2));
                     continue;
                 }
             }
             if (trimmed === '---' || trimmed === '***' || trimmed === '___') {
                 paragraph = MarkdownParser.flushParagraph(paragraph, blocks);
-                blocks.push((($o: any, $1: any) => {
-                    $o.kind = $1;
-                    return $o;
-                })(new MarkdownBlock(), 'rule'));
+                let $n3: any; 
+                blocks.push(($n3 = new MarkdownBlock(), $n3.kind = 'rule', $n3));
                 continue;
             }
             if ($eq.text.startsWith(trimmed, '|', 'ordinal') && i + 1 < lines.length && MarkdownParser.isAlignmentRow(lines[i + 1])) {
                 paragraph = MarkdownParser.flushParagraph(paragraph, blocks);
-                let table = (($o: any, $1: any) => {
-                    $o.kind = $1;
-                    return $o;
-                })(new MarkdownBlock(), 'table');
-                for (const cell of MarkdownParser.splitRow(trimmed)) table.head.push((($o: any, $1: any) => {
-                    $o.runs = $1;
-                    return $o;
-                })(new MarkdownCell(), MarkdownParser.inline(cell)));
+                let $n4: any; 
+                let table = ($n4 = new MarkdownBlock(), $n4.kind = 'table', $n4);
+                for (const cell of MarkdownParser.splitRow(trimmed)) {
+                    let $n5: any; 
+                    table.head.push(($n5 = new MarkdownCell(), $n5.runs = MarkdownParser.inline(cell), $n5));
+                }
                 i += 2;
                 while (i < lines.length && $eq.text.startsWith($eq.text.trim(lines[i]), '|', 'ordinal')) {
                     let row = new MarkdownRow();
-                    for (const cell of MarkdownParser.splitRow($eq.text.trim(lines[i]))) row.cells.push((($o: any, $1: any) => {
-                        $o.runs = $1;
-                        return $o;
-                    })(new MarkdownCell(), MarkdownParser.inline(cell)));
+                    for (const cell of MarkdownParser.splitRow($eq.text.trim(lines[i]))) {
+                        let $n6: any; 
+                        row.cells.push(($n6 = new MarkdownCell(), $n6.runs = MarkdownParser.inline(cell), $n6));
+                    }
                     table.rows.push(row);
                     i++;
                 }
@@ -110,22 +84,15 @@ export class MarkdownParser {
                     i++;
                 }
                 i--;
-                blocks.push((($o: any, $2: any) => {
-                    $o.runs = $2;
-                    return $o;
-                })((($o: any, $1: any) => {
-                    $o.kind = $1;
-                    return $o;
-                })(new MarkdownBlock(), 'quote'), MarkdownParser.inline($eq.text.trim(quoted))));
+                let $n7: any; 
+                blocks.push(($n7 = new MarkdownBlock(), $n7.kind = 'quote', $n7.runs = MarkdownParser.inline($eq.text.trim(quoted)), $n7));
                 continue;
             }
             let bullet = MarkdownParser.bulletOf(line);
             if (bullet != null) {
                 paragraph = MarkdownParser.flushParagraph(paragraph, blocks);
-                let list = (($o: any, $1: any) => {
-                    $o.kind = $1;
-                    return $o;
-                })(new MarkdownBlock(), 'list');
+                let $n8: any; 
+                let list = ($n8 = new MarkdownBlock(), $n8.kind = 'list', $n8);
                 while (i < lines.length) {
                     let mark = MarkdownParser.bulletOf(lines[i]);
                     if (mark == null) {
@@ -138,16 +105,8 @@ export class MarkdownParser {
                         break;
                     }
                     let indent = lines[i].length - $eq.text.trimStart(lines[i]).length;
-                    list.items.push((($o: any, $3: any) => {
-                        $o.marker = $3;
-                        return $o;
-                    })((($o: any, $2: any) => {
-                        $o.depth = $2;
-                        return $o;
-                    })((($o: any, $1: any) => {
-                        $o.runs = $1;
-                        return $o;
-                    })(new MarkdownListItem(), MarkdownParser.inline(mark.content)), indent >= 2 ? 1 : 0), mark.marker));
+                    let $n9: any; 
+                    list.items.push(($n9 = new MarkdownListItem(), $n9.runs = MarkdownParser.inline(mark.content), $n9.depth = indent >= 2 ? 1 : 0, $n9.marker = mark.marker, $n9));
                     i++;
                 }
                 i--;
@@ -174,13 +133,8 @@ export class MarkdownParser {
     static flushParagraph(paragraph: string, blocks: MarkdownBlock[]) {
         let joined = $eq.text.trim(paragraph);
         if (joined.length === 0) return '';
-        blocks.push((($o: any, $2: any) => {
-            $o.runs = $2;
-            return $o;
-        })((($o: any, $1: any) => {
-            $o.kind = $1;
-            return $o;
-        })(new MarkdownBlock(), 'paragraph'), MarkdownParser.inline(joined)));
+        let $n10: any; 
+        blocks.push(($n10 = new MarkdownBlock(), $n10.kind = 'paragraph', $n10.runs = MarkdownParser.inline(joined), $n10));
         return '';
     }
 
@@ -259,22 +213,16 @@ export class MarkdownParser {
 
     static bulletOf(line: string) {
         let t = $eq.text.trimStart(line);
-        if ($eq.text.startsWith(t, '- ', 'ordinal') || $eq.text.startsWith(t, '* ', 'ordinal')) return (($o: any, $2: any) => {
-            $o.content = $2;
-            return $o;
-        })((($o: any, $1: any) => {
-            $o.marker = $1;
-            return $o;
-        })(new MarkdownBulletMatch(), '•'), $eq.text.trim(t.slice(2)));
+        if ($eq.text.startsWith(t, '- ', 'ordinal') || $eq.text.startsWith(t, '* ', 'ordinal')) {
+            let $n11: any; 
+            return ($n11 = new MarkdownBulletMatch(), $n11.marker = '•', $n11.content = $eq.text.trim(t.slice(2)), $n11);
+        }
         let digits = 0;
         while (digits < t.length && (/^\p{Nd}$/u.test(t[digits]))) digits++;
-        if (digits > 0 && digits + 1 < t.length && t[digits] === '.' && t[digits + 1] === ' ') return (($o: any, $2: any) => {
-            $o.content = $2;
-            return $o;
-        })((($o: any, $1: any) => {
-            $o.marker = $1;
-            return $o;
-        })(new MarkdownBulletMatch(), t.slice(0, digits) + '.'), $eq.text.trim(t.slice((digits + 2))));
+        if (digits > 0 && digits + 1 < t.length && t[digits] === '.' && t[digits + 1] === ' ') {
+            let $n12: any; 
+            return ($n12 = new MarkdownBulletMatch(), $n12.marker = t.slice(0, digits) + '.', $n12.content = $eq.text.trim(t.slice((digits + 2))), $n12);
+        }
         return null;
     }
 
@@ -289,11 +237,8 @@ export class MarkdownParser {
                 let end = text.indexOf('`', i + 1);
                 if (end > i) {
                     buffer = MarkdownParser.flushText(runs, buffer);
-                    runs.push((($o: any, $1: any, $2: any) => {
-                        $o.text = $1;
-                        $o.code = $2;
-                        return $o;
-                    })(new MarkdownRun(), text.slice((i + 1), end), true));
+                    let $n13: any; 
+                    runs.push(($n13 = new MarkdownRun(), $n13.text = text.slice((i + 1), end), $n13.code = true, $n13));
                     i = end + 1;
                     continue;
                 }
@@ -359,10 +304,10 @@ export class MarkdownParser {
     }
 
     static flushText(runs: MarkdownRun[], buffer: string) {
-        if (buffer.length > 0) runs.push((($o: any, $1: any) => {
-            $o.text = $1;
-            return $o;
-        })(new MarkdownRun(), buffer));
+        if (buffer.length > 0) {
+            let $n14: any; 
+            runs.push(($n14 = new MarkdownRun(), $n14.text = buffer, $n14));
+        }
         return '';
     }
 
@@ -371,28 +316,15 @@ export class MarkdownParser {
         if (close <= open || close + 1 >= text.length || text[close + 1] !== '(') return null;
         let hrefEnd = text.indexOf(')', close + 2);
         if (hrefEnd <= close) return null;
-        return (($o: any, $3: any) => {
-            $o.end = $3;
-            return $o;
-        })((($o: any, $2: any) => {
-            $o.href = $2;
-            return $o;
-        })((($o: any, $1: any) => {
-            $o.label = $1;
-            return $o;
-        })(new MarkdownLinkMatch(), text.slice((open + 1), close)), text.slice((close + 2), hrefEnd)), hrefEnd + 1);
+        let $n15: any; 
+        return ($n15 = new MarkdownLinkMatch(), $n15.label = text.slice((open + 1), close), $n15.href = text.slice((close + 2), hrefEnd), $n15.end = hrefEnd + 1, $n15);
     }
 
     static addLinkRuns(runs: MarkdownRun[], label: string, href: string) {
         let inner = MarkdownParser.inline(label);
         if (inner.length === 0) {
-            runs.push((($o: any, $2: any) => {
-                $o.href = $2;
-                return $o;
-            })((($o: any, $1: any) => {
-                $o.text = $1;
-                return $o;
-            })(new MarkdownRun(), label), href));
+            let $n16: any; 
+            runs.push(($n16 = new MarkdownRun(), $n16.text = label, $n16.href = href, $n16));
             return;
         }
         for (const run of inner) {

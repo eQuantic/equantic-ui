@@ -2,11 +2,12 @@ import { $eq, CodeLanguageRules, CodeToken } from "../runtime-exports";
 
 export class JsonLanguage {
     constructor() {
-        this.rules = (($o: any, $1: any, $2: any) => {
-        $o.indentWidth = $1;
-        $o.quotes = $2;
+        this.rules = (() => {
+        const $o = new CodeLanguageRules();
+        $o.indentWidth = 2;
+        $o.quotes = ['"'];
         return $o;
-    })(new CodeLanguageRules(), 2, ['"']);
+    })();
     }
 
     rules!: CodeLanguageRules;

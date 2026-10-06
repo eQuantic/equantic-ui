@@ -189,20 +189,10 @@ export class CodeDiff extends StatefulComponent {
         if ((patch = this.patch) != null) {
             if (!(this._original == null) && (patch === this._openedPatch)) return;
             let source = CodeDiffSource.fromPatch(patch);
-            this._original = (($o: any, $2: any) => {
-                $o.document = $2;
-                return $o;
-            })((($o: any, $1: any) => {
-                $o.readOnly = $1;
-                return $o;
-            })(new CodeEditorController(undefined, language), true), source.original);
-            this._modified = (($o: any, $2: any) => {
-                $o.document = $2;
-                return $o;
-            })((($o: any, $1: any) => {
-                $o.readOnly = $1;
-                return $o;
-            })(new CodeEditorController(undefined, language), true), source.modified);
+            let $n0: any; 
+            this._original = ($n0 = new CodeEditorController(undefined, language), $n0.readOnly = true, $n0.document = source.original, $n0);
+            let $n1: any; 
+            this._modified = ($n1 = new CodeEditorController(undefined, language), $n1.readOnly = true, $n1.document = source.modified, $n1);
             this._openedPatch = patch;
             this._source = source;
             this._comparedOriginal = null;
@@ -213,10 +203,8 @@ export class CodeDiff extends StatefulComponent {
         }
         let opened = false;
         if (this._original == null || !(this._openedPatch == null) || this.original !== this._openedOriginal) {
-            this._original = (($o: any, $1: any) => {
-                $o.readOnly = $1;
-                return $o;
-            })(new CodeEditorController(this.original, language), true);
+            let $n2: any; 
+            this._original = ($n2 = new CodeEditorController(this.original, language), $n2.readOnly = true, $n2);
             this._openedOriginal = this.original;
             this._expanded.clear();
             opened = true;
@@ -328,11 +316,11 @@ export class CodeDiff extends StatefulComponent {
             let count = modifiedSide ? change.modifiedCount : change.originalCount;
             if (count === 0 || start + count - 1 < first || start > last) continue;
             let end = Math.min(start + count - 1, document.lineCount - 1);
-            let $n2: any; 
-            marks.push(($n2 = new CodeDecoration(new CodeRange(new CodePosition(start, 0), new CodePosition(end, document.line(end).length)), 'line'), $n2.color = line, $n2));
+            let $n5: any; 
+            marks.push(($n5 = new CodeDecoration(new CodeRange(new CodePosition(start, 0), new CodePosition(end, document.line(end).length)), 'line'), $n5.color = line, $n5));
             for (const inner of change.inner) {
-                let $n3: any; 
-                marks.push(($n3 = new CodeDecoration(modifiedSide ? inner.modified : inner.original), $n3.color = word, $n3));
+                let $n6: any; 
+                marks.push(($n6 = new CodeDecoration(modifiedSide ? inner.modified : inner.original), $n6.color = word, $n6));
             }
         }
         let composing: any; 
