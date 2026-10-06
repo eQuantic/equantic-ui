@@ -74,6 +74,15 @@ public class NestedInitializerConformanceTests
             public Dictionary<string, int> Map { get; } = new();
             public RLast() { Last = this; }
         }
+        public record GLog { public static string Text = ""; public static int Note(string s, int v) { Text += s; return v; } }
+        public record GInner { public int N { get; set; } }
+        public record GBox
+        {
+            private readonly List<int> _items = new();
+            private readonly GInner _inner = new();
+            public List<int> Items { get { GLog.Text += "get "; return _items; } }
+            public GInner Inner { get { GLog.Text += "inner "; return _inner; } }
+        }
         """;
 
     /// <summary>
@@ -88,6 +97,8 @@ public class NestedInitializerConformanceTests
     [InlineData("var p = new RLast { Items = { 1, RLast.Last.Items.Count, RLast.Last.Items.Count } }; return string.Join(\",\", p.Items);")] // "1,1,2"
     [InlineData("var p = new RLast { Map = { [\"a\"] = 1, [\"b\"] = RLast.Last.Map.Count } }; return p.Map[\"b\"];")]                   // 1
     [InlineData("var p = new RLast { A = 2, Items = { RLast.Last.A }, B = RLast.Last.Items[0] + 1 }; return p.Items[0] + \"|\" + p.B;")] // "2|3"
+    // The member an element adds to is read before the element's parts, again for each element.
+    [InlineData("GLog.Text = \"\"; var b = new GBox { Items = { GLog.Note(\"a \", 1), GLog.Note(\"b \", 2) }, Inner = { N = GLog.Note(\"n \", 3) } }; return GLog.Text + \"|\" + b.Items.Count + b.Inner.N;")] // "get a get b inner n |23"
     public void AnInitializersElement_IsAppliedBeforeTheNextIsEvaluated(string statements)
     {
         Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");

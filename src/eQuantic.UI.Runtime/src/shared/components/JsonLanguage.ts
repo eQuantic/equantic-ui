@@ -9,11 +9,12 @@ export class JsonLanguage {
         return 'JSON';
     }
 
-    rules: CodeLanguageRules = (($o: any, $1: any, $2: any) => {
-        $o.indentWidth = $1;
-        $o.quotes = $2;
+    rules: CodeLanguageRules = (() => {
+        const $o = new CodeLanguageRules();
+        $o.indentWidth = 2;
+        $o.quotes = ['"'];
         return $o;
-    })(new CodeLanguageRules(), 2, ['"']);
+    })();
 
     tokenize(line: string, _state: number, into: CodeToken[]) {
         let i = 0;

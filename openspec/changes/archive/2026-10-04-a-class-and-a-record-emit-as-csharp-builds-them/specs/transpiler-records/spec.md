@@ -54,7 +54,8 @@ own as every call to it lowers, a dictionary's pair and an `ICollection<T>` memb
 object initializer assigns into the object the member holds, and an entry is written through the
 type's indexer. Every part of the initializer SHALL be evaluated in the caller's own function, in the
 order C# evaluates it, so an `await` in an element, a value or a key runs in the method it was written
-in, and each element is applied before the next one's parts are evaluated, as C# applies it. A struct's
+in, each element is applied before the next one's parts are evaluated, and the member an element
+adds to or assigns into is read before that element's parts, as C# applies them. A struct's
 zero (`default`, an array's slot, an OrDefault, and `new S()` through the implicit parameterless
 constructor) SHALL be built without its constructor, running no initializer, no constructor and no
 static constructor, a generic struct's and a transpiled struct's from another assembly included.
@@ -104,6 +105,12 @@ static constructor, a generic struct's and a transpiled struct's from another as
 - **WHEN** `record RLast` publishes itself in `RLast.Last` from its constructor, and is built with
   `new RLast { A = 1, B = RLast.Last.A }` or `new RLast { Items = { 1, RLast.Last.Items.Count } }`
 - **THEN** `B` is `1` and `Items` is `1, 1`, as in .NET
+
+#### Scenario: A member is read before the parts of the element that adds to it
+
+- **WHEN** `GBox.Items` and `GBox.Inner` log their reads, and
+  `new GBox { Items = { Note("a "), Note("b ") }, Inner = { N = Note("n ") } }` is built
+- **THEN** the log is `get a get b inner n `, as in .NET
 
 #### Scenario: Named arguments out of the signature's order, and a params array by name
 

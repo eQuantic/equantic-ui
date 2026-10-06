@@ -313,14 +313,12 @@ export class CodeDiff extends StatefulComponent {
             let count = modifiedSide ? change.modifiedCount : change.originalCount;
             if (count === 0 || start + count - 1 < first || start > last) continue;
             let end = Math.min(start + count - 1, document.lineCount - 1);
-            marks.push((($o: any, $1: any) => {
-                $o.color = $1;
-                return $o;
-            })(new CodeDecoration(new CodeRange(new CodePosition(start, 0), new CodePosition(end, document.line(end).length)), 'line'), line));
-            for (const inner of change.inner) marks.push((($o: any, $1: any) => {
-                $o.color = $1;
-                return $o;
-            })(new CodeDecoration(modifiedSide ? inner.modified : inner.original), word));
+            let $n2: any; 
+            marks.push(($n2 = new CodeDecoration(new CodeRange(new CodePosition(start, 0), new CodePosition(end, document.line(end).length)), 'line'), $n2.color = line, $n2));
+            for (const inner of change.inner) {
+                let $n3: any; 
+                marks.push(($n3 = new CodeDecoration(modifiedSide ? inner.modified : inner.original), $n3.color = word, $n3));
+            }
         }
         let composing: any; 
         if ((composing = composition) != null) marks.push(new CodeDecoration(composing, 'underline'));

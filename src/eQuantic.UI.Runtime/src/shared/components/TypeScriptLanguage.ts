@@ -19,12 +19,13 @@ export class TypeScriptLanguage extends CurlyBraceLanguage {
         return true;
     }
 
-    rules: CodeLanguageRules = (($o: any, $1: any, $2: any, $3: any) => {
-        $o.lineComment = $1;
-        $o.blockComment = $2;
-        $o.indentWidth = $3;
+    rules: CodeLanguageRules = (() => {
+        const $o = new CodeLanguageRules();
+        $o.lineComment = '//';
+        $o.blockComment = ['/*', '*/'];
+        $o.indentWidth = 2;
         return $o;
-    })(new CodeLanguageRules(), '//', ['/*', '*/'], 2);
+    })();
     keywords: Set<string> = new Set(['abstract', 'any', 'as', 'async', 'await', 'break', 'case', 'catch', 'class', 'const', 'constructor', 'continue', 'debugger', 'declare', 'default', 'delete', 'do', 'else', 'enum', 'export', 'extends', 'finally', 'for', 'from', 'function', 'get', 'if', 'implements', 'import', 'in', 'infer', 'instanceof', 'interface', 'is', 'keyof', 'let', 'namespace', 'new', 'of', 'private', 'protected', 'public', 'readonly', 'return', 'satisfies', 'set', 'static', 'super', 'switch', 'this', 'throw', 'try', 'type', 'typeof', 'var', 'while', 'yield']);
     typeWords: Set<string> = new Set(['bigint', 'boolean', 'never', 'number', 'object', 'string', 'symbol', 'unknown', 'void']);
     constantWords: Set<string> = new Set(['true', 'false', 'null', 'undefined', 'NaN', 'Infinity']);

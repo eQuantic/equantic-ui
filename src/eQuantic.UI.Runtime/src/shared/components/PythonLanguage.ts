@@ -13,13 +13,14 @@ export class PythonLanguage {
         return 'Python';
     }
 
-    rules: CodeLanguageRules = (($o: any, $1: any, $2: any, $3: any, $4: any) => {
-        $o.lineComment = $1;
-        $o.indentAfter = $2;
-        $o.outdentOn = $3;
-        $o.indentWidth = $4;
+    rules: CodeLanguageRules = (() => {
+        const $o = new CodeLanguageRules();
+        $o.lineComment = '#';
+        $o.indentAfter = [':', '(', '[', '{'];
+        $o.outdentOn = [')', ']', '}'];
+        $o.indentWidth = 4;
         return $o;
-    })(new CodeLanguageRules(), '#', [':', '(', '[', '{'], [')', ']', '}'], 4);
+    })();
     static $slots: any = null;
     static $failure: any = null;
 

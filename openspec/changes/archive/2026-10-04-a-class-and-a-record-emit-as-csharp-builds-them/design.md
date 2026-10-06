@@ -54,14 +54,16 @@ this change writes by hand, beside the object initializer's and an indexer sette
 
 A construction calls the constructor the call binds, with its arguments as the bound tree binds them
 (`BoundArguments`: each in its parameter's place, evaluated in the order it is written), then applies
-the initializer to what it built. Every initializer, one that only assigns included, is written as
-one arrow per element, invoked in place with the object the element before it answered and the
-element's own parts (`Object.assign(new X(…), { … })` cost 24 ns a construction where an arrow
-costs 2.6, measured in bun), ARGUMENTS ONLY: the construction and every value, key and element are
-arguments, evaluated in the caller's own function, and each arrow's body reads only its parameters,
-so each element is applied before the next one's parts are evaluated, as C# applies them. One arrow
-for every part evaluated them all first (Copilot's review of #608). Written inside an arrow, an
-`await` in an element landed in a function that is not async, and the module did not parse. Each
+the initializer to what it built. The object lives in a temporary the function the C# is written in
+declares (#588's `Temporaries`), and the initializer is a sequence over it,
+`($n0 = new X(…), $n0.a = f(), $n0.items.push(g()), $n0)`, so every part is evaluated in that
+function, each element is applied before the next one's parts are evaluated, and the member an
+element adds to is read before its parts, again for each element, as C# runs them. Where no
+statement can declare one (a field's or a property's initializer, a constructor's base call),
+which C# lets no part await, a function invoked in place holds the same statements. It was an
+arrow that took every part as its argument, which evaluated them all before the first element was
+applied, then an arrow per element, which still evaluated an element's parts before the getter of
+the member it adds to (both found by Copilot's review of #608). Each
 element is an `Add` through the
 lowering every call to that `Add` has (`push`, `add`, a twin's own method, and a dictionary's through
 the dictionary strategy's one spelling, which refuses a key already there once the runtime's `add`
