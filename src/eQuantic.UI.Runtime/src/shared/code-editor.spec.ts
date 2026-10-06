@@ -16,7 +16,7 @@ import { lowerVisualNode } from './lowering';
 import { setPhotonTheme } from './photon-context';
 import { effectiveStyle } from './style-atomizer';
 import { CodeSurface, Text, type VisualNode } from './vocabulary';
-import { Point, Size } from './value-types';
+import { Point, Size, SizeValue } from './value-types';
 import { CodeEditorController } from './components/CodeEditorController';
 import { CodeGrid } from './components/CodeGrid';
 import { CodePosition } from './components/CodePosition';
@@ -1401,5 +1401,45 @@ describe('the completion list', () => {
     expect(stopped, 'the surface around the list never hears it').toBe(true);
     expect(prevented, 'and the input keeps the keyboard').toBe(true);
     expect(editor.caret).toEqual({ line: 1, column: 2 });
+  });
+});
+
+/**
+ * A press under a bounded editor's code (#599), on the web; the C# twins are in
+ * CodeEditorComponentTests, on Photon. The code's box was as tall as the file, so the room under a
+ * short file was the scroll view's and a press there moved nothing.
+ */
+describe('a press under the code', () => {
+  it('is the end of the document, wherever across the line it lands', () => {
+    const { editor, lowered } = surfaceFor('one\ntwo three');
+
+    pressAt(lowered, [12 + COLUMN, 12 + 10 * LINE]);
+
+    expect(editor.caret).toEqual({ line: 1, column: 9 });
+  });
+
+  it("lands in the code, since a bounded editor's code is as tall as its viewport", async () => {
+    const { materializeTheme } = await import('./theme-bridge');
+    const photonData = (await import('./theme-bridge.photon.json')).default;
+    const { CodeEditor } = await import('./components/CodeEditor');
+    const theme = materializeTheme(photonData as never);
+    setPhotonTheme(theme);
+    const context = {
+      theme,
+      textPrimary: theme.textPrimary,
+      density: 'comfortable',
+      typeScale: 1,
+      measureText: (text: string) => text.length * 7,
+      monoAdvance: () => 7,
+    };
+    const component = new CodeEditor('one\ntwo three', 'csharp');
+    component.height = SizeValue.fill;
+    component.build(context as never);
+    // What the vertical scroll view reports once it is laid out: the pane is 400 tall.
+    (component as unknown as { _viewport: number })._viewport = 400;
+
+    const lowered = lowerVisualNode(component.build(context as never) as never, context as never);
+
+    expect(nodesWhere(lowered, (node) => effectiveStyle(node).includes('min-height: 400px'))).toHaveLength(1);
   });
 });
