@@ -26,6 +26,18 @@ so a record's members, an enum, a decimal, a long and a nested record read as th
   component subscribes to `Room("a")` and a service publishes to `Room("a")`
 - **THEN** the component receives the event, and a publish to `Room("b")` does not reach it
 
+#### Scenario: A topic that crossed the wire
+
+- **WHEN** a Server Action returns `new ServerTopic<Quote>("prices")`, or a page's state holds one,
+  and a component subscribes to the value it received
+- **THEN** each payload published to it arrives as a `Quote`, as through a topic built in the browser
+
+#### Scenario: A topic built where its payload type is erased
+
+- **WHEN** a component builds a topic where its payload type is a type parameter, as in
+  `static ServerTopic<T> Topic<T>(string name) => new(name)`
+- **THEN** the build fails with `EQ2013`, naming the type parameter
+
 ### Requirement: One connection per page carries every topic
 
 A page SHALL hold at most one server-events connection, opened when its first subscription starts
@@ -87,16 +99,28 @@ asked, and SHALL receive nothing.
 - **WHEN** a subscription is still being authorized when its page's stream ends
 - **THEN** the topic is bound to nothing, and no handler hears it subscribed
 
+#### Scenario: Configured twice
+
+- **WHEN** a library and the app each call `UseServerEvents` with their own topics
+- **THEN** both sets of topics are authorized, over one set of endpoints
+
 ### Requirement: A client only listens
 
 No request a client sends SHALL publish to a topic. The requests a client sends SHALL only bind or
 release topics on a connection the server issued, named by the unguessable id the stream handed to
-its page.
+its page, and SHALL carry a JSON body, which another origin cannot send without the browser's
+preflight.
 
 #### Scenario: A connection the server never issued
 
 - **WHEN** a request names a connection id the server never issued
 - **THEN** the request is refused and no connection changes
+
+#### Scenario: A bind another site sends
+
+- **WHEN** a request to bind or release a topic carries a body that is not JSON, as a form or a
+  `no-cors` fetch from another site sends it
+- **THEN** it is refused unread, and nothing is bound
 
 ### Requirement: Ending a subscription stops delivery
 
@@ -127,6 +151,19 @@ those topics are bound.
 
 - **WHEN** the app stops gracefully while a page holds a stream
 - **THEN** the stream ends rather than holding the shutdown, and the page reconnects
+
+#### Scenario: A bind that meets the end of its stream
+
+- **WHEN** the server answers a bind with an unknown connection because the page's stream has just
+  ended, before the page sees it end
+- **THEN** the topic is bound on the page's next connection, and no refusal is reported
+
+#### Scenario: A bind no server answers for
+
+- **WHEN** the server keeps answering a page's binds with an unknown connection while its stream
+  stands, as behind a load balancer without session affinity
+- **THEN** the page asks again a few times and then reports the topic refused, with an error that
+  names session affinity
 
 ### Requirement: An event published on one instance reaches subscribers on every instance
 
@@ -164,7 +201,8 @@ open nothing, and the browser SHALL subscribe once the page runs there.
 
 The heartbeat interval, the number of topics one connection may hold and the size of a payload SHALL
 be read from the `EQuantic:ServerEvents` configuration section. A subscription past the topic limit
-SHALL be refused, and publishing a payload past the size limit SHALL throw.
+SHALL be refused, and publishing a payload past the size limit SHALL throw. A limit the connections
+cannot run with SHALL stop the app from starting.
 
 #### Scenario: Too many topics
 
@@ -180,6 +218,23 @@ SHALL be refused, and publishing a payload past the size limit SHALL throw.
 
 - **WHEN** a service publishes a payload larger than `MaxPayloadBytes`
 - **THEN** `PublishAsync` throws, naming the topic and the limit
+
+#### Scenario: A limit the connections cannot run with
+
+- **WHEN** `HeartbeatInterval` is zero or negative, or a limit is below one
+- **THEN** the app does not start, and the error names the setting and its value
+
+### Requirement: A page whose server serves no events is told
+
+The server SHALL tell each page whether it serves events. A subscription on a page whose server
+serves none SHALL be refused at once as unknown, with an error that names `UseServerEvents`, and
+SHALL open no connection.
+
+#### Scenario: An app that never configured server events
+
+- **WHEN** a component subscribes on a page whose app never called `UseServerEvents`
+- **THEN** the subscription is refused as unknown, the console names `UseServerEvents`, and no
+  stream is opened
 
 ### Requirement: No script from another origin
 

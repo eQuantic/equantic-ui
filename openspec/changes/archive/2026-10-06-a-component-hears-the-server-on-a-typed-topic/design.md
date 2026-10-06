@@ -149,3 +149,11 @@ dead door beside the real one.
   topics they themselves are authorized for, or release its topics; it travels in the request's
   path, so access logs hold it. Binding the connection to the identity that opened it is a hardening
   slice.
+- [A bind is authorized as the request that makes it] → so a request another site makes the
+  visitor's browser send, cookies included, would bind the visitor's topics to a stream that site
+  opened. A bind and a release take only a JSON body: a form or a `no-cors` fetch cannot send one,
+  and a cross-origin `fetch` that does needs a preflight the app's CORS policy refuses.
+- [A bind whose stream has just ended is answered as unknown] → the server cannot tell that page
+  from one whose requests reach the wrong instance, so the browser asks again, four times over three
+  and a half seconds, binding on whatever connection the page then has, before it reports the
+  topic refused.

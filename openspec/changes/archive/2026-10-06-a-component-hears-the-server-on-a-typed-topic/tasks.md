@@ -39,3 +39,12 @@
 
 - [x] 6.1 A wiki page for server events, in English and Portuguese, on the wiki branch named like the pull request's: topics, the capability, the publisher, authorization, the backplane and handlers seams, the limits, HTTP/2, session affinity; its snippets compiled by `WikiClaimsCompile` and `WikiServerEventsClaims`
 - [x] 6.2 The hub's removal as a migration line for the release notes, and one `docs/LEDGER.md` line citing #291
+
+## 7. The review before the pull request
+
+- [x] 7.1 A bind or a release takes only a JSON body of at most 8 KB, parsed to a depth of 4, and the refusal is written with options of its own; verified by Server tests that send `text/plain`, a 16 KB body and an app whose JSON naming is `SnakeCaseUpper`
+- [x] 7.2 The limits are validated when the app starts, and `UseServerEvents` called twice configures one builder; verified by Server tests over each invalid limit and over two calls
+- [x] 7.3 The page is told whether its server serves events, and refuses each topic at once when it does not; verified by a Server test on the shell's configuration and a vitest spec
+- [x] 7.4 A bind the server could not answer is asked again before the page is told; verified by vitest specs for a stream that ended, a 503 and a server without session affinity
+- [x] 7.5 A topic that crosses the wire keeps its payload's spec, and one built where that type is a type parameter is EQ2013; verified by emission tests and vitest specs, each A/B against the code before it
+

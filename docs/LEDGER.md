@@ -1558,7 +1558,14 @@ record of a release, the wiki's Upgrading page is the distillate.
   a browser found five defects of the server's half, each fixed with a test that fails without it: an
   app's fallback policy refused the stream, a bind authorized after its stream ended was never
   released, binds sent at once passed the topic limit, a payload's U+2028 split its JSON, and a stream
-  held a graceful shutdown until the host's timeout. The served runtime grew 2,148 gzipped bytes.
+  held a graceful shutdown until the host's timeout. The review before it opened found nine more,
+  each fixed with a test that fails without it: a bind read a body of any type, so another site could
+  bind its visitor's topics to a stream it opened itself; a bind that met the end of its stream was
+  refused for good; a topic built in a generic helper lost its payload's type with a green build (now
+  EQ2013), and one that crossed the wire lost it too; limits nothing could run with started cleanly; a
+  second `UseServerEvents` made every route ambiguous; a page whose app served no events retried
+  silently forever; the refusal followed the app's JSON naming; and the body had no cap. The served
+  runtime grew 2,582 gzipped bytes.
   Migration: `ServerActionHub`, its route `/_equantic/hub` and `AddSignalR` are gone; an app that
   injected `IHubContext<ServerActionHub>`, which nothing documented, publishes through
   `IServerEventPublisher`. Proposed and archived through OpenSpec (`openspec/specs/server-events`).
