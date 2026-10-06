@@ -101,4 +101,16 @@ internal sealed class PressScope
 
     public ColorToken? PendingFill { get; set; }
     public bool PendingFocusRing { get; set; }
+
+    /// <summary>
+    /// True while the subtree of the PRESSED control is drawn, set by its <see cref="Pressable"/>
+    /// and restored after, the way a <see cref="Simulated"/> node sets its states: a press is the
+    /// control's, and every box inside it shows its <c>Pressed</c> diff (#508). The web twin is
+    /// <c>.eq-pressable:active .cls</c>.
+    /// </summary>
+    public bool InPressedControl { get; set; }
+
+    /// <summary>True while the subtree of the FOCUSED control is drawn — its boxes show their
+    /// <c>Focus</c> diff, as <see cref="InPressedControl"/>'s show their press.</summary>
+    public bool InFocusedControl { get; set; }
 }

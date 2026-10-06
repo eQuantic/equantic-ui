@@ -12,8 +12,8 @@ internal sealed partial class EmitVisitor
 {
     private void EmitBoxChrome(Box box, EmitState s)
     {
-        // Everything below paints the EFFECTIVE style: the box's own, with its Hover diff over it
-        // while it is hovered — every member of the diff, not the colours alone (#504).
+        // Everything below paints the EFFECTIVE style: the box's own, with the diff of every state
+        // it is in laid over it — every member, not the colours alone (#504, #508).
         var style = EffectiveStyle(box, s);
         if (style.Cursor != PointerCursor.Default)
             s.Input.Add(new CursorRegion(s.Node.Bounds, style.Cursor));
@@ -67,18 +67,27 @@ internal sealed partial class EmitVisitor
         // CUSTOM shadow (glows, halos): the same analytic rrect shadow with the caller's
         // full spec — composes with the neutral elevation above. Lists draw in order. A shadow
         // with no geometry draws nothing, and the web leaves it out of its list the same way.
-        if (style.Shadow is { IsNone: false } custom)
+        // Under a Transition over the shadow channel the list GLIDES, position by position (#508).
+        if (TransitionStore.Only(style.Transition, StyleChannels.Shadow) is { } customSpec
+            && s.Motion.Transitions is { } customStore)
+        {
+            GlideCustomShadows(s, style, customSpec, customStore);
+        }
+        else if (style.Shadow is { IsNone: false } custom)
         {
             s.Builder.ShadowRRect(new RRect(s.Node.Bounds, style.CornerRadius),
                 custom.OffsetY, custom.Blur, custom.Spread, custom.Color.Resolve(s.Mode));
         }
-        if (style.Shadows is { Count: > 0 } customList)
+        if (s.Motion.Transitions is null || TransitionStore.Only(style.Transition, StyleChannels.Shadow) is null)
         {
-            foreach (var entry in customList)
+            if (style.Shadows is { Count: > 0 } customList)
             {
-                if (entry.IsNone) continue;
-                s.Builder.ShadowRRect(new RRect(s.Node.Bounds, style.CornerRadius),
-                    entry.OffsetY, entry.Blur, entry.Spread, entry.Color.Resolve(s.Mode));
+                foreach (var entry in customList)
+                {
+                    if (entry.IsNone) continue;
+                    s.Builder.ShadowRRect(new RRect(s.Node.Bounds, style.CornerRadius),
+                        entry.OffsetY, entry.Blur, entry.Spread, entry.Color.Resolve(s.Mode));
+                }
             }
         }
 
@@ -273,18 +282,85 @@ internal sealed partial class EmitVisitor
     private static readonly Transform2D IdentityTransform = new(ScaleX: 1, ScaleY: 1);
 
     /// <summary>
-    /// The style a box paints with this frame: its own, with its Hover diff over it while the
-    /// pointer is on it or a <see cref="Simulated"/> node pictures it hovered (#504). One answer for
-    /// both halves of the box, the wrapper that fades and moves it and the chrome that fills,
-    /// borders and shadows it, so the two cannot disagree about whether the box is hovered. Tracked
-    /// BY PATH like the press: a component rebuild replaces every instance, and a hover that only
-    /// knew the old reference would paint exactly one frame.
+    /// The custom shadows under a <c>Transition</c> over the shadow channel: the single one first,
+    /// then the list, as the web writes them, each position gliding its offset, blur, spread and
+    /// colour as the elevation's shadow glides. A position the list gained on a box drawn before is
+    /// seeded at nothing so it glides in, and one it lost glides out to a transparent shadow of its
+    /// last colour before it stops being drawn: the padding CSS gives the shorter of two lists.
     /// </summary>
-    private static BoxStyle EffectiveStyle(Box box, in EmitState s) =>
-        box.Style.Hover is { IsEmpty: false } hover
-            && (s.Press.IsHovered(s.Node, box) || (s.Press.Simulated & SimulatedState.Hovered) != 0)
-            ? Over(box.Style, hover)
-            : box.Style;
+    private static void GlideCustomShadows(in EmitState s, in BoxStyle style, TransitionSpec spec, TransitionStore store)
+    {
+        var count = (style.Shadow is null ? 0 : 1) + (style.Shadows?.Count ?? 0);
+        var key = (s.Node.Path ?? "") + ":sh";
+        var known = store.Positions(key);
+        var positions = Math.Max(known ?? count, count);
+        var time = s.Motion.TimeMs;
+        var reduced = s.Motion.Reduced;
+        var leaving = false;
+        for (var i = 0; i < positions; i++)
+        {
+            var p = key + i.ToString(System.Globalization.CultureInfo.InvariantCulture);
+            ShadowSpec? target = i >= count ? null
+                : style.Shadow is { } single && i == 0 ? single
+                : style.Shadows![i - (style.Shadow is null ? 0 : 1)];
+            Color color;
+            if (target is { } shown)
+            {
+                color = shown.Color.Resolve(s.Mode);
+                // New in a list drawn before: start from nothing, then glide to the target.
+                if (known is not null && store.Target(p + ".y") is null)
+                {
+                    store.Resolve(p + ".y", 0, time, spec, reduced);
+                    store.Resolve(p + ".b", 0, time, spec, reduced);
+                    store.Resolve(p + ".s", 0, time, spec, reduced);
+                    store.ResolveColor(p + ".c", color with { A = 0 }, time, spec, reduced);
+                }
+            }
+            else
+            {
+                // Gone from the list: fade the colour it had, rather than toward black.
+                color = new Color(
+                    Channel(store.Target(p + ".c.r")), Channel(store.Target(p + ".c.g")),
+                    Channel(store.Target(p + ".c.b")), 0);
+            }
+            var offsetY = store.Resolve(p + ".y", target?.OffsetY ?? 0, time, spec, reduced);
+            var blur = store.Resolve(p + ".b", target?.Blur ?? 0, time, spec, reduced);
+            var spread = store.Resolve(p + ".s", target?.Spread ?? 0, time, spec, reduced);
+            var shadowColor = store.ResolveColor(p + ".c", color, time, spec, reduced);
+            var visible = (blur > 0 || offsetY != 0 || spread != 0) && shadowColor.A > 0;
+            if (target is null && visible) leaving = true;
+            if (visible)
+                s.Builder.ShadowRRect(new RRect(s.Node.Bounds, style.CornerRadius), offsetY, blur, spread, shadowColor);
+        }
+        store.RememberPositions(key, leaving ? positions : count);
+    }
+
+    private static byte Channel(float? value) => (byte)Math.Clamp(MathF.Round(value ?? 0), 0, 255);
+
+    /// <summary>
+    /// The style a box paints with this frame: its own, with each active state's diff laid over it
+    /// in the handoff's order — its own hover, then its control's focus, then its control's press,
+    /// so a press beats a focus and a focus beats a hover, member by member, as the web's selectors
+    /// do by specificity (#508). A state is active when the host tracks it (the hover chain by path,
+    /// the control's scope for focus and press) or a <see cref="Simulated"/> node pictures it. One
+    /// answer for both halves of the box, the wrapper that fades and moves it and the chrome that
+    /// fills, borders and shadows it, so the two cannot disagree about what state the box is in.
+    /// </summary>
+    private static BoxStyle EffectiveStyle(Box box, in EmitState s)
+    {
+        var press = s.Press;
+        var style = box.Style;
+        if (box.Style.Hover is { IsEmpty: false } hover
+            && (press.IsHovered(s.Node, box) || (press.Simulated & SimulatedState.Hovered) != 0))
+            style = Over(style, hover);
+        if (box.Style.Focus is { IsEmpty: false } focus
+            && (press.InFocusedControl || (press.Simulated & SimulatedState.Focused) != 0))
+            style = Over(style, focus);
+        if (box.Style.Pressed is { IsEmpty: false } pressed
+            && (press.InPressedControl || (press.Simulated & SimulatedState.Pressed) != 0))
+            style = Over(style, pressed);
+        return style;
+    }
 
     /// <summary>
     /// A state's diff over the base: each member the diff sets replaces the base's, and its custom

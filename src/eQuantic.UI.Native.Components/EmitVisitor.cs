@@ -98,20 +98,34 @@ internal sealed partial class EmitVisitor : IVisualNodeVisitor<EmitState, Nothin
     {
         var node = s.Node;
         var press = s.Press;
-        if (press.IsTracked(node, press.Pressed, press.PressedPath) && press.Pressed?.PressedBackground is { } pressedFill)
+        var pressTracked = press.IsTracked(node, press.Pressed, press.PressedPath);
+        if (pressTracked && press.Pressed?.PressedBackground is { } pressedFill)
             press.PendingFill = pressedFill;
         // A SIMULATED press takes the fill from the Pressable being pictured — the host is tracking
         // nothing, so there is no tracked node to read it from.
         else if ((press.Simulated & SimulatedState.Pressed) != 0
             && node.Source is Pressable { PressedBackground: { } simulatedFill })
             press.PendingFill = simulatedFill;
-        if ((press.Focused is not null || press.FocusedPath is not null)
-            && press.IsTracked(node, press.Focused, press.FocusedPath))
+        var focusTracked = (press.Focused is not null || press.FocusedPath is not null)
+            && press.IsTracked(node, press.Focused, press.FocusedPath);
+        if (focusTracked)
             press.PendingFocusRing = true;
         else if ((press.Simulated & SimulatedState.Focused) != 0 && node.Source is Pressable)
             press.PendingFocusRing = true;
 
+        // The control's press and focus reach EVERY box inside it, for as long as its subtree is
+        // drawn (#508): set around its own visit, which draws the subtree, and restored after. The
+        // control is a Pressable, as the web's is the element carrying eq-pressable; anything else
+        // that takes focus (a Link) still draws its ring, and lends its subtree no state.
+        var pressedHere = pressTracked && node.Source is Pressable;
+        var focusedHere = focusTracked && node.Source is Pressable;
+        var outerPressed = press.InPressedControl;
+        var outerFocused = press.InFocusedControl;
+        if (pressedHere) press.InPressedControl = true;
+        if (focusedHere) press.InFocusedControl = true;
         node.Source.Accept(this, s);
+        press.InPressedControl = outerPressed;
+        press.InFocusedControl = outerFocused;
     }
 
     /// <summary>Paint the children where they were laid out. The default arm of the old dispatch,
