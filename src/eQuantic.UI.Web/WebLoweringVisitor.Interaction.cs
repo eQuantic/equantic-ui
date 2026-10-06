@@ -504,7 +504,10 @@ internal sealed partial class WebLoweringVisitor
             // eq-pressed carries the same declaration :active does, and eq-focused the ring
             // :focus-visible draws — see TokenCss. They are added, not substituted, so a simulated
             // control still behaves like the control it is picturing.
+            // eq-press-fill marks a control that HAS a pressed fill: the stylesheet's swap selects it,
+            // so a control without one keeps its own fill while pressed.
             element.ClassName = "eq-pressable"
+                + (pressable.PressedBackground is not null ? " eq-press-fill" : "")
                 + (_simulated.HasFlag(SimulatedState.Pressed) ? " eq-pressed" : "")
                 + (_simulated.HasFlag(SimulatedState.Focused) ? " eq-focused" : "");
             if (pressable.PressedBackground is { } pressedFill)

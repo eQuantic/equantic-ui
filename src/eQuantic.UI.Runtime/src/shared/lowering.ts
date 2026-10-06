@@ -2972,9 +2972,12 @@ function lowerPressable(
   if (!disabled) {
     // eq-pressed carries the same declaration :active does, and eq-focused the ring :focus-visible
     // draws (see the generated stylesheet), so a simulated state cannot drift from a real one.
+    // eq-press-fill marks a control that HAS a pressed fill (C# twin): the stylesheet's swap selects
+    // it, so a control without one keeps its own fill while pressed.
     prependClass(
       node,
       'eq-pressable' +
+        (pressable.pressedBackground ? ' eq-press-fill' : '') +
         (simulatedState & SIMULATED_PRESSED ? ' eq-pressed' : '') +
         (simulatedState & SIMULATED_FOCUSED ? ' eq-focused' : ''),
     );

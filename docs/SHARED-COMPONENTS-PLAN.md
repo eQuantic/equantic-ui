@@ -252,7 +252,7 @@ rejected.)
    remaining gates: the interaction system and the reconciler.
    Interaction slice 1: PRESSED ✅ (2026-07-05, spec §01) — pressed is a REAL token swap declared on
    the Pressable (`PressedBackground`), framework-applied per target with ZERO user code: web =
-   mechanics in the GENERATED stylesheet (`.eq-pressable:active > :first-child` driven by a
+   mechanics in the GENERATED stylesheet (`.eq-press-fill:active > :first-child` driven by a
    per-element `--eq-pressed-bg` custom property, Fast-motion transition, tap-highlight neutralized;
    values via `HtmlStyle.CustomProperties`, emitted at the style tail — cross-pinned C#/TS); native =
    `PhotonHost.PressDown/PressUp` (topmost capture, release-outside cancels, disabled swallows) with

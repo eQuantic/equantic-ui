@@ -460,7 +460,7 @@ export interface PressableNode extends VisualNodeValue {
   onPressed?: (() => void) | null;
   disabled?: boolean;
   label?: string | null;
-  /** Pressed-state fill token — drives the generated `.eq-pressable:active` swap. */
+  /** Pressed-state fill token — drives the generated `.eq-press-fill:active` swap. */
   pressedBackground?: ColorTokenValue | null;
   /** Selection for a toggling/picking button — lowers to aria-pressed. null = not selectable. */
   selected?: boolean | null;
