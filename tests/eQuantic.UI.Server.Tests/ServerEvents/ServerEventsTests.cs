@@ -399,6 +399,43 @@ public class ServerEventsTests
         connection.Frames.TryRead(out var frame).Should().BeTrue();
         frame.Should().Be("first");
         connection.Frames.Completion.IsCompleted.Should().BeTrue("the second frame found the queue full and closed it");
+        connection.Overflowed.IsCancellationRequested.Should().BeTrue(
+            "the stream is blocked writing to the page that filled the queue, and only a cancellation reaches that write");
+    }
+
+    [Fact]
+    public void AConnectionItsStreamClosed_IsNotOverflowedByALateDelivery()
+    {
+        var connection = new ServerEventConnection("id", capacity: 1);
+
+        connection.Close();
+        connection.Send("late");
+
+        connection.Overflowed.IsCancellationRequested.Should().BeFalse();
+    }
+
+    /// <summary>
+    /// A handler's join that is still being heard when its stream closes is heard before the leave: a
+    /// presence store that joins slowly recorded a participant who had already left (#647).
+    /// </summary>
+    [Fact]
+    public async Task AJoinStillBeingHeard_IsHeardBeforeTheLeaveOfItsStream()
+    {
+        SlowJoinHandler.Reset();
+        await using var app = await AnonymousApp(events => events.AddHandler<SlowJoinHandler>());
+        var stream = await app.OpenStreamAsync();
+        var subscribing = app.SubscribeAsync(stream.ConnectionId, "room:a");
+        await SlowJoinHandler.Joining.Task.WaitAsync(TimeSpan.FromSeconds(5));
+
+        await stream.DisposeAsync();
+        await Task.Delay(Quiet);
+        SlowJoinHandler.Heard.Should().Equal(new[] { "connected" }, "the close waits for the join it would overtake");
+
+        SlowJoinHandler.Joined.SetResult();
+        (await subscribing).Should().BeNull();
+        await Until(() => SlowJoinHandler.Heard.Contains("disconnected"));
+
+        SlowJoinHandler.Heard.Should().Equal("connected", "subscribed room:a", "released room:a", "disconnected");
     }
 
     /// <summary>

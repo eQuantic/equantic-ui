@@ -59,8 +59,6 @@ internal static class ServerEventsEndpoints
         // another one.
         var stopping = http.RequestServices.GetService<IHostApplicationLifetime>()?.ApplicationStopping
                        ?? CancellationToken.None;
-        using var ending = CancellationTokenSource.CreateLinkedTokenSource(http.RequestAborted, stopping);
-        var aborted = ending.Token;
 
         http.Response.Headers.ContentType = "text/event-stream";
         http.Response.Headers.CacheControl = "no-cache";
@@ -69,6 +67,10 @@ internal static class ServerEventsEndpoints
         http.Features.Get<IHttpResponseBodyFeature>()?.DisableBuffering();
 
         var connection = connections.Open(options.MaxQueuedEventsPerConnection);
+        // ...and with its own queue's overflow, which a page that stopped reading causes while the
+        // stream is blocked writing to it.
+        using var ending = CancellationTokenSource.CreateLinkedTokenSource(http.RequestAborted, stopping, connection.Overflowed);
+        var aborted = ending.Token;
         try
         {
             await Notify(http, handler => handler.OnConnectedAsync(new ServerEventConnectionContext(connection.Id, http)));
@@ -104,9 +106,18 @@ internal static class ServerEventsEndpoints
         }
         finally
         {
-            foreach (var topic in connections.Close(connection, http))
-                await Notify(http, handler => handler.OnReleasedAsync(topic));
-            await Notify(http, handler => handler.OnDisconnectedAsync(new ServerEventConnectionContext(connection.Id, http)));
+            // After any bind or release still telling its handlers: they hear this one's leave last.
+            await connection.Transitions.WaitAsync();
+            try
+            {
+                foreach (var topic in connections.Close(connection, http))
+                    await Notify(http, handler => handler.OnReleasedAsync(topic));
+                await Notify(http, handler => handler.OnDisconnectedAsync(new ServerEventConnectionContext(connection.Id, http)));
+            }
+            finally
+            {
+                connection.Transitions.Release();
+            }
         }
     }
 
@@ -150,11 +161,23 @@ internal static class ServerEventsEndpoints
             return;
         }
 
-        switch (connections.Bind(connection, answer.Context, limit))
+        // The bind and its subscribed are one transition: a close that comes while the handlers hear it
+        // waits for them, and they hear the leave after the join.
+        ServerTopicBinding binding;
+        await connection.Transitions.WaitAsync(http.RequestAborted);
+        try
         {
-            case ServerTopicBinding.Bound:
+            binding = connections.Bind(connection, answer.Context, limit);
+            if (binding == ServerTopicBinding.Bound)
                 await Notify(http, handler => handler.OnSubscribedAsync(answer.Context));
-                break;
+        }
+        finally
+        {
+            connection.Transitions.Release();
+        }
+
+        switch (binding)
+        {
             case ServerTopicBinding.LimitReached:
                 await RefuseAsync(http, ServerTopicRefusalReason.LimitReached);
                 return;
@@ -185,8 +208,16 @@ internal static class ServerEventsEndpoints
             return;
         }
 
-        if (connections.Release(connection!, topic, http) is { } released)
-            await Notify(http, handler => handler.OnReleasedAsync(released));
+        await connection!.Transitions.WaitAsync(http.RequestAborted);
+        try
+        {
+            if (connections.Release(connection, topic, http) is { } released)
+                await Notify(http, handler => handler.OnReleasedAsync(released));
+        }
+        finally
+        {
+            connection.Transitions.Release();
+        }
         http.Response.StatusCode = StatusCodes.Status204NoContent;
     }
 
