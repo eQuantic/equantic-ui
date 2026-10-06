@@ -8,6 +8,7 @@ import {
 } from './utils/decimal';
 import { combineDelegate, removeDelegate } from './utils/delegates';
 import { hydrate } from './utils/hydrate';
+import { twinJson } from './utils/twin-json';
 import { long } from './utils/long';
 import {
   round,
@@ -257,6 +258,8 @@ export const $eq = {
   linq: { enumerable, max, min, seq, toArray, toDictionary, range, repeat },
   /** C# `with` over a runtime value type — prototype preserved. */
   withPatch,
+  /** A twin's JSON, a property's store under the property's name — see utils/twin-json. */
+  json: twinJson,
   /** `new object()`, an identity of its own, and a `lock` statement's gate, refused when null. */
   newObject,
   lockGate,

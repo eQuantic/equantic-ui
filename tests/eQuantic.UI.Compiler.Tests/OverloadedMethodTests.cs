@@ -494,6 +494,42 @@ public class OverloadedMethodTests
     }
 
     /// <summary>
+    /// A plain class's primary constructor parameter that a member reads is held on each instance under
+    /// its name, as a struct's is (#583), so one that lands on another member's name would hide it, and
+    /// a getter or a method of that name would answer the parameter: refused, naming both.
+    /// </summary>
+    [Theory]
+    [InlineData("Greeter", "public class Greeter(string name) { public string Name => name.ToUpper(); }", "'Greeter(name)' lowers to `name`")]
+    [InlineData("Clock", "public class Clock(int tick) { public int Tick() => tick + 1; }", "'Clock(tick)' lowers to `tick`")]
+    public void AClassesHeldParameterOnAMembersName_IsRefused(string name, string source, string named)
+    {
+        var errors = Compile(source, name).Errors;
+
+        errors.Should().ContainSingle().Which.Should().Match<CompilationError>(error =>
+            error.Code == "EQ1007" && error.Message.Contains(named) && error.Message.Contains("Rename the parameter"));
+    }
+
+    /// <summary>
+    /// Two parameters of a primary constructor that land on one name: the twin's constructor names each
+    /// one camelCased, and a function cannot take two parameters of one name, so the module did not load,
+    /// whether a member read both, one or neither (found by Copilot's review of #621).
+    /// </summary>
+    [Theory]
+    [InlineData("Both", "public class Both(int x, int X) { public int Sum() => x + X; }")]
+    [InlineData("One", "public class One(int x, int X) { public int Get() => x; }")]
+    [InlineData("Neither", "public class Neither(int x, int X) { }")]
+    [InlineData("Pair", "public struct Pair(int x, int X) { public int Get() => x; }")]
+    [InlineData("Twins", "public record Twins(int x, int X);")]
+    public void TwoPrimaryParametersOnOneName_AreRefused(string name, string source)
+    {
+        var errors = Compile(source, name).Errors;
+
+        errors.Should().ContainSingle().Which.Should().Match<CompilationError>(error =>
+            error.Code == "EQ1007" && error.Message.Contains($"'{name}(X)' lowers to `x`")
+            && error.Message.Contains($"'{name}(x)'") && error.Message.Contains("cannot take two parameters of one name"));
+    }
+
+    /// <summary>
     /// What is one member is not refused: a positional parameter the body redeclares under its own name
     /// (#546), a static beside an instance member of the name, and a struct's primary constructor
     /// parameter read only by an initializer, which no instance holds. A plain class's backing field
@@ -505,6 +541,8 @@ public class OverloadedMethodTests
     [InlineData("Units", "public record struct Units(int Count) { public static int count = 3; }")]
     [InlineData("Plain", "public sealed class Plain { private int count = 2; public int Count => count; }")]
     [InlineData("Point", "public readonly struct Point(int x, int y) { public int X { get; } = x; public int Y { get; } = y; }")]
+    [InlineData("Spot", "public class Spot(int x) { public int X { get; } = x; }")]
+    [InlineData("Badge", "public class Badge(string label) { public string Name => label; }")]
     public void OneMemberOnItsName_IsNotRefused(string name, string source) =>
         Compile(source, name).Errors.Where(error => error.Code == "EQ1007").Should().BeEmpty();
 }
