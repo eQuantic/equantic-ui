@@ -20,7 +20,7 @@ internal sealed class ServerEventConnection
     public ServerEventConnection(string id, int capacity)
     {
         Id = id;
-        _frames = Channel.CreateBounded<string>(new BoundedChannelOptions(Math.Max(1, capacity))
+        _frames = Channel.CreateBounded<string>(new BoundedChannelOptions(capacity)
         {
             SingleReader = true,
             FullMode = BoundedChannelFullMode.Wait,

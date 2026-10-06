@@ -1,5 +1,6 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.Options;
 
 namespace eQuantic.UI.Server;
 
@@ -71,6 +72,10 @@ public sealed class ServerEventsBuilder
     {
         var options = services.AddOptions<ServerEventsOptions>().BindConfiguration(ServerEventsOptions.SectionName);
         foreach (var configure in _configurations) options.Configure(configure);
+        // A limit the connections cannot run with stops the app from starting, instead of failing
+        // each page that connects.
+        options.ValidateOnStart();
+        services.TryAddEnumerable(ServiceDescriptor.Singleton<IValidateOptions<ServerEventsOptions>, ServerEventsOptionsValidator>());
 
         if (_backplane is null) services.TryAddSingleton<IServerEventBackplane, InMemoryServerEventBackplane>();
         else services.Replace(ServiceDescriptor.Singleton(typeof(IServerEventBackplane), _backplane));

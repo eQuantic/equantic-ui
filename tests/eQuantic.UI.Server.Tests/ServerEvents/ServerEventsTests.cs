@@ -9,6 +9,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 using Xunit;
 
 namespace eQuantic.UI.Server.Tests.ServerEvents;
@@ -433,6 +434,114 @@ public class ServerEventsTests
         imports.Should().NotBeEmpty("the runtime is imported through the import map");
         sources.Concat(imports).Should().OnlyContain(url => url.StartsWith('/') && !url.StartsWith("//"),
             "a script from another origin is a dependency the app never chose, fetched at run time");
+    }
+
+    /// <summary>
+    /// A bind is authorized as the request that makes it, cookies included, and bound to whichever
+    /// connection its path names. A body that is not JSON is one a form or a no-cors fetch can send
+    /// from another site, which would bind its visitor's topics to a stream the other site opened.
+    /// </summary>
+    [Fact]
+    public async Task ABindOrReleaseWhoseBodyIsNotJson_IsRefused_AndBindsNothing()
+    {
+        await using var app = await AnonymousApp();
+        await using var stream = await app.OpenStreamAsync();
+
+        foreach (var action in new[] { "subscribe", "release" })
+        {
+            using var request = new HttpRequestMessage(HttpMethod.Post, $"/_equantic/events/{stream.ConnectionId}/{action}")
+            {
+                Content = new StringContent("""{"topic":"room:a"}""", System.Text.Encoding.UTF8, "text/plain"),
+            };
+            using var response = await app.Client.SendAsync(request);
+            response.StatusCode.Should().Be(HttpStatusCode.UnsupportedMediaType, action);
+        }
+
+        await app.PublishAsync(Room("a"), "not for this page");
+        (await stream.NextAsync()).IsHeartbeat.Should().BeTrue("nothing was bound");
+    }
+
+    [Fact]
+    public async Task ABindWhoseBodyIsPastTheCap_IsRefusedUnread()
+    {
+        await using var app = await AnonymousApp();
+        await using var stream = await app.OpenStreamAsync();
+
+        using var response = await app.Client.PostAsync($"/_equantic/events/{stream.ConnectionId}/subscribe",
+            new StringContent($$"""{"topic":"room:a","padding":"{{new string('x', 16 * 1024)}}"}""",
+                System.Text.Encoding.UTF8, "application/json"));
+
+        response.StatusCode.Should().Be(HttpStatusCode.RequestEntityTooLarge);
+    }
+
+    /// <summary>The refusal's body is the client's protocol: an app's own JSON naming never renames it.</summary>
+    [Fact]
+    public async Task ARefusal_NamesItsReasonAsTheClientReadsIt_WhateverTheAppsJsonSettings()
+    {
+        await using var app = await ServerEventsApp.StartAsync(
+            events => events.Topic("room:{roomId}", rule => rule.AllowAnonymous()),
+            services => services.ConfigureHttpJsonOptions(json =>
+                json.SerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseUpper));
+        await using var stream = await app.OpenStreamAsync();
+
+        (await app.SubscribeAsync(stream.ConnectionId, "orders:7")).Should().Be("unknown");
+    }
+
+    [Theory]
+    [InlineData("HeartbeatInterval", "00:00:00")]
+    [InlineData("HeartbeatInterval", "-00:00:05")]
+    [InlineData("MaxTopicsPerConnection", "0")]
+    [InlineData("MaxPayloadBytes", "0")]
+    [InlineData("MaxQueuedEventsPerConnection", "-1")]
+    public async Task ALimitTheConnectionsCannotRunWith_StopsTheAppFromStarting(string setting, string value)
+    {
+        var starting = () => ServerEventsApp.StartAsync(
+            events => events.Topic("prices", rule => rule.AllowAnonymous()),
+            configuration: new Dictionary<string, string?> { [$"EQuantic:ServerEvents:{setting}"] = value });
+
+        (await starting.Should().ThrowAsync<OptionsValidationException>())
+            .WithMessage($"*EQuantic:ServerEvents:{setting} is*");
+    }
+
+    /// <summary>A library and the app may each declare their topics: one set of endpoints, every topic kept.</summary>
+    [Fact]
+    public async Task UsingServerEventsTwice_KeepsEveryTopic_OnOneSetOfEndpoints()
+    {
+        await using var app = await ServerEventsApp.StartAsync(
+            events => events.Topic("prices", rule => rule.AllowAnonymous()),
+            ui: options => options.UseServerEvents(events => events.Topic("room:{roomId}", rule => rule.AllowAnonymous())));
+        await using var stream = await app.OpenStreamAsync();
+
+        (await app.SubscribeAsync(stream.ConnectionId, "room:a")).Should().BeNull("the first call's topic");
+        (await app.SubscribeAsync(stream.ConnectionId, "prices")).Should().BeNull("the second call's topic");
+    }
+
+    /// <summary>
+    /// The page is told whether its server serves events. A page whose app never called
+    /// UseServerEvents opened a stream the app's fallback answered, and retried it forever while no
+    /// subscription heard why.
+    /// </summary>
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task APage_IsToldWhetherItsServerServesEvents(bool serves)
+    {
+        var builder = WebApplication.CreateBuilder(new WebApplicationOptions { EnvironmentName = "Production" });
+        builder.WebHost.UseTestServer();
+        builder.Services.AddUI(options =>
+        {
+            if (serves) options.UseServerEvents(events => events.Topic("prices", rule => rule.AllowAnonymous()));
+        });
+        await using var app = builder.Build();
+        app.MapUI();
+        await app.StartAsync();
+
+        // An unknown route answers 404 with the same shell, its configuration included.
+        using var response = await app.GetTestClient().GetAsync("/untitled");
+        var html = await response.Content.ReadAsStringAsync();
+
+        var config = Regex.Match(html, @"window\.__EQ_CONFIG = (\{.*?\});\s*$", RegexOptions.Multiline).Groups[1].Value;
+        JsonDocument.Parse(config).RootElement.GetProperty("serverEvents").GetBoolean().Should().Be(serves);
     }
 
     [Fact]

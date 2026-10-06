@@ -25,6 +25,17 @@ internal static class ServerEventsEndpoints
     private const int MaxTopicLength = 512;
 
     /// <summary>
+    /// The largest body a bind or release request may send: a topic of <see cref="MaxTopicLength"/>
+    /// characters, each escaped as JSON may escape it, with room to spare. The endpoints are open to
+    /// anyone, and without a cap a request made the server parse whatever Kestrel's own limit lets
+    /// through to read one short string.
+    /// </summary>
+    private const int MaxBodyBytes = 8 * 1024;
+
+    /// <summary>The refusal's body is the client's protocol, so the app's own JSON settings never rename it.</summary>
+    private static readonly JsonSerializerOptions Protocol = new();
+
+    /// <summary>
     /// Maps the three endpoints, each open to an anonymous request: what a page may hear is decided per
     /// topic, by the rules the app configured, and a stream carries nothing until a topic is bound to
     /// it. An app's fallback authorization policy would otherwise refuse the stream itself, and with it
@@ -101,6 +112,7 @@ internal static class ServerEventsEndpoints
 
     private static async Task SubscribeAsync(HttpContext http)
     {
+        if (!AcceptsBody(http)) return;
         var connections = http.RequestServices.GetRequiredService<ServerEventConnections>();
         if (!connections.TryGet(http.Request.RouteValues["connection"] as string ?? "", out var connection))
         {
@@ -158,6 +170,7 @@ internal static class ServerEventsEndpoints
 
     private static async Task ReleaseAsync(HttpContext http)
     {
+        if (!AcceptsBody(http)) return;
         var connections = http.RequestServices.GetRequiredService<ServerEventConnections>();
         if (!connections.TryGet(http.Request.RouteValues["connection"] as string ?? "", out var connection))
         {
@@ -177,12 +190,42 @@ internal static class ServerEventsEndpoints
         http.Response.StatusCode = StatusCodes.Status204NoContent;
     }
 
+    /// <summary>
+    /// Whether a bind or release request may be read: a JSON body, within <see cref="MaxBodyBytes"/>.
+    /// JSON is what makes the request the page's own. A topic is authorized as the request that binds
+    /// it, cookies included, and bound to whichever connection its path names, so a hostile page that
+    /// could send one would bind its visitor's topics to a stream it opened itself. A body of any
+    /// other type is a request a form or a <c>no-cors</c> fetch can send from another site; a JSON one
+    /// from another origin needs the browser's preflight, which an app without a CORS policy for that
+    /// origin refuses before the request leaves.
+    /// </summary>
+    private static bool AcceptsBody(HttpContext http)
+    {
+        if (!http.Request.HasJsonContentType())
+        {
+            http.Response.StatusCode = StatusCodes.Status415UnsupportedMediaType;
+            return false;
+        }
+
+        if (http.Request.ContentLength > MaxBodyBytes)
+        {
+            http.Response.StatusCode = StatusCodes.Status413PayloadTooLarge;
+            return false;
+        }
+
+        // A chunked body states no length: Kestrel enforces the cap while it reads.
+        if (http.Features.Get<IHttpMaxRequestBodySizeFeature>() is { IsReadOnly: false } limit)
+            limit.MaxRequestBodySize = MaxBodyBytes;
+        return true;
+    }
+
     /// <summary>The topic a bind or release request names, or null when the body does not name one.</summary>
     private static async Task<string?> ReadTopicAsync(HttpContext http)
     {
         try
         {
-            using var body = await JsonDocument.ParseAsync(http.Request.Body, cancellationToken: http.RequestAborted);
+            using var body = await JsonDocument.ParseAsync(http.Request.Body, new JsonDocumentOptions { MaxDepth = 4 },
+                http.RequestAborted);
             return body.RootElement.ValueKind == JsonValueKind.Object
                    && body.RootElement.TryGetProperty("topic", out var topic)
                    && topic.ValueKind == JsonValueKind.String
@@ -190,7 +233,7 @@ internal static class ServerEventsEndpoints
                 ? name
                 : null;
         }
-        catch (JsonException)
+        catch (Exception exception) when (exception is JsonException or BadHttpRequestException)
         {
             return null;
         }
@@ -199,7 +242,8 @@ internal static class ServerEventsEndpoints
     private static async Task RefuseAsync(HttpContext http, ServerTopicRefusalReason reason)
     {
         http.Response.StatusCode = StatusCodes.Status403Forbidden;
-        await http.Response.WriteAsJsonAsync(new { reason = JsonNamingPolicy.CamelCase.ConvertName(reason.ToString()) });
+        await http.Response.WriteAsJsonAsync(new { reason = JsonNamingPolicy.CamelCase.ConvertName(reason.ToString()) },
+            Protocol);
     }
 
     private static async Task WriteAsync(HttpContext http, string frame, CancellationToken aborted)

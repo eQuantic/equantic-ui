@@ -854,7 +854,11 @@ public static class UIExtensions
             CultureRoutes: options.CultureRoutes is { } cultureMap
                 ? new ClientCultureRoutes(cultureMap.Default, cultureMap.Prefixed.ToList())
                 : null,
-            Routes: surface.Routes), ClientConfig.Json);
+            Routes: surface.Routes,
+            // Whether the server serves events crosses because only the server knows: without it, a
+            // page whose app never called UseServerEvents opened a stream the app's fallback
+            // answered, and retried it forever while no subscription heard why.
+            ServerEvents: options.ServerEvents is not null), ClientConfig.Json);
 
         // Render HTML using template engine with conditionals
         var isDevelopment = context.RequestServices.GetRequiredService<IWebHostEnvironment>().IsDevelopment();
@@ -1278,12 +1282,22 @@ public class UIOptions
     public UIOptions UseServerEvents(Action<ServerEventsBuilder> configure)
     {
         ArgumentNullException.ThrowIfNull(configure);
-        var events = new ServerEventsBuilder();
-        configure(events);
-        RegisterServices(events.Register);
-        RegisterEndpoints(endpoints => endpoints.MapServerEvents());
+        // One builder however many times this is called: a library and the app may each declare
+        // their topics. A builder per call mapped the endpoints twice, which made every request to
+        // them ambiguous, and the last call's templates replaced the others'.
+        if (ServerEvents is null)
+        {
+            ServerEvents = new ServerEventsBuilder();
+            RegisterServices(ServerEvents.Register);
+            RegisterEndpoints(endpoints => endpoints.MapServerEvents());
+        }
+        configure(ServerEvents);
         return this;
     }
+
+    /// <summary>The server events the app configured, or null when it called no
+    /// <see cref="UseServerEvents"/>: the page is told, so a subscription is refused at once.</summary>
+    internal ServerEventsBuilder? ServerEvents { get; private set; }
 
     /// <summary>
     /// Routes the app declared in <c>Program.cs</c> with <c>MapPage&lt;T&gt;</c>, rather than on the
