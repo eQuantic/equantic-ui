@@ -2491,6 +2491,9 @@ public class TypeScriptEmitter
         // A compat value type is not in an eQuantic namespace, so the scanner above never buckets
         // it — but a factory's `DateOnly? selected` annotates with the name all the same.
         foreach (var compat in RuntimeValueTypes) runtimeProvided.Add(compat);
+        // The context a helper takes as a ComponentContext annotates as BuildContext
+        // (CSharpTypeToTypeScript), a name no syntax the scanner walks spells.
+        runtimeProvided.Add("BuildContext");
         runtimeProvided.RemoveWhere(referenced => !System.Text.RegularExpressions.Regex.IsMatch(
             emitted, $@"(?<![\w$]){System.Text.RegularExpressions.Regex.Escape(referenced)}(?![\w$])"));
         core.UnionWith(runtimeProvided);
@@ -2721,9 +2724,12 @@ public class TypeScriptEmitter
             "Guid" => "string",
             "Task" => "void",
             // C# names the build argument `ComponentContext`; the runtime declares one interface
-            // for it, under the name the DOM side has always used. Emitting the C# name asked for
-            // a second, incompatible type with the same meaning.
-            "ComponentContext" or "BuildContext" => "RenderContext",
+            // for it, and exports it to modules as `BuildContext`, which a component's `build` is
+            // annotated with. Emitting the C# name asked for a second, incompatible type with the
+            // same meaning, and the interface's own name is exported to apps alone: a helper class
+            // of the shared library that took the context annotated it with a name its module
+            // could not import.
+            "ComponentContext" or "BuildContext" => "BuildContext",
             _ => baseType
         };
 

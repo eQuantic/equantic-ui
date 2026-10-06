@@ -1,4 +1,4 @@
-import { $eq, Box, BoxStyle, BuildContext, CodeBlock, CodeDecoration, CodeEditorController, CodeGrid, CodeGutterMarker, CodeLanguages, CodeRange, CodeSurface, CornerRadii, EdgeInsets, Flexible, Icon, IconButton, IconGlyph, KeyChord, Point, Positioned, Row, ScrollView, SdkStrings, Shortcut, Size, SizeValue, SizeVariantValue, Stack, StatefulComponent, Text, TextEntry, UiComponent, VisualNode } from "../runtime-exports";
+import { $eq, Box, BoxStyle, BuildContext, CodeBlock, CodeCompletion, CodeCompletionView, CodeDecoration, CodeEditorController, CodeGrid, CodeGutterMarker, CodeKeywordCompletionProvider, CodeLanguages, CodeRange, CodeSurface, CodeWordCompletionProvider, CornerRadii, EdgeInsets, Flexible, Icon, IconButton, IconGlyph, KeyChord, Point, Positioned, Row, ScrollView, SdkStrings, Shortcut, Size, SizeValue, SizeVariantValue, Stack, StatefulComponent, Text, TextEntry, UiComponent, VisualNode } from "../runtime-exports";
 
 export class CodeEditor extends StatefulComponent {
     static $typeId = 'eQuantic.UI.Components.CodeEditor';
@@ -8,6 +8,11 @@ export class CodeEditor extends StatefulComponent {
     _offset: number = 0;
     _viewport: number = 0;
     _viewportWidth: number = 0;
+    _scrollX: number = 0;
+    _listTop: number = 0;
+    _listColumns: number = 0;
+    _handed: any = null;
+    _handedAny: boolean = false;
     _toldDocument: any = null;
     _toldSelection: CodeRange = CodeRange.$zero();
     _matches: CodeRange[] = [];
@@ -33,6 +38,7 @@ export class CodeEditor extends StatefulComponent {
     declare search: any;
     declare searchMatchCase: boolean;
     declare onGutterPressed: ((int: number) => void) | null;
+    declare completions: any;
 
     get editor() {
         return this._editor ?? (this._editor = this.create());
@@ -64,6 +70,7 @@ export class CodeEditor extends StatefulComponent {
     build(context: BuildContext) {
         let editor = this.editor;
         editor.readOnly = this.readOnly;
+        this.handProviders(editor.completion);
         let highlighter = editor.highlighter;
         let metrics = CodeBlock.metricsFor(context, this.size, this.showLineNumbers, this.firstLineNumber + editor.document.lineCount - 1);
         editor.grid = new CodeGrid(new Point(metrics.contentLeft, metrics.contentTop), new Size(metrics.columnWidth, metrics.lineHeight));
@@ -75,11 +82,42 @@ export class CodeEditor extends StatefulComponent {
         }
         let [first, last] = CodeBlock.windowOf(editor.document.lineCount, metrics.lineHeight, this._offset, this._viewport);
         let matches = this.matchesOf(editor, this.needle);
-        let block = new CodeBlock('', null, { document: editor.document, language: highlighter.language, decorations: this.marks(editor, matches, first, last), showLineNumbers: this.showLineNumbers, firstLineNumber: this.firstLineNumber, standalone: false, size: this.size, inverse: this.inverse, gutterMarkers: this.gutterMarkers, onGutterPressed: this.onGutterPressed, highlighter: highlighter, metrics: metrics, viewportOffset: this._offset, viewportHeight: this._viewport, viewportWidth: this._viewportWidth, activeLine: editor.caret.line, selectionBands: editor.selectionBandsIn(first, last), widestLine: editor.widestLine });
-        let surface: VisualNode = new CodeSurface(block, editor, { autofocus: this.autofocus, label: this.caption ?? SdkStrings.codeEditor, caretColor: CodeBlock.inkFor(this.inverse, context.theme), onChanged: () => this.setState(() => this.notify(editor)) });
+        let block = new CodeBlock('', null, { document: editor.document, language: highlighter.language, decorations: this.marks(editor, matches, first, last), showLineNumbers: this.showLineNumbers, firstLineNumber: this.firstLineNumber, standalone: false, size: this.size, inverse: this.inverse, gutterMarkers: this.gutterMarkers, onGutterPressed: this.onGutterPressed, highlighter: highlighter, metrics: metrics, viewportOffset: this._offset, viewportHeight: this._viewport, viewportWidth: this._viewportWidth, minHeight: bounded ? this._viewport : 0, activeLine: editor.caret.line, selectionBands: editor.selectionBandsIn(first, last), widestLine: editor.widestLine });
+        let completion = editor.completion;
+        let offered: VisualNode | null = null;
+        let offeredAt = Point.zero;
+        let highlighted = -1;
+        if (completion.isOpen && completion.selected >= 0) {
+            let items = completion.items;
+            this._listColumns = Math.max(this._listColumns, CodeCompletionView.columnsOf(items));
+            let width = CodeCompletionView.widthOf(metrics, this._listColumns);
+            if (this._viewportWidth > 0) width = Math.min(width, this._viewportWidth);
+            let documentation = items[completion.selected].item.documentation;
+            let documentationLines = (documentation != null && documentation.length > 0) ? CodeCompletionView.documentationLinesOf(context, metrics, documentation, width) : 0;
+            let codeHeight = Math.fround(Math.fround(2 * metrics.contentTop) + Math.fround(Math.fround(editor.document.lineCount) * metrics.lineHeight));
+            let surfaceHeight = bounded ? Math.max(codeHeight, this._viewport) : codeHeight;
+            let viewTop = windowed ? this._offset : 0;
+            let viewBottom = windowed && this._viewport > 0 ? Math.min(Math.fround(this._offset + this._viewport), surfaceHeight) : surfaceHeight;
+            let [x, y, rows, above] = CodeCompletionView.place(metrics, editor.caretRect(completion.start), viewTop, viewBottom, this._scrollX, this._viewportWidth, Math.min(12, items.length), width, CodeCompletionView.documentationHeightOf(context, metrics, documentationLines));
+            let selected = completion.selected;
+            if (selected < this._listTop) this._listTop = selected;
+            if (selected >= this._listTop + rows) this._listTop = selected - rows + 1;
+            this._listTop = Math.max(0, Math.min(this._listTop, items.length - rows));
+            completion.pageSize = rows;
+            offered = CodeCompletionView.build(context, completion, metrics, this._listTop, rows, width, above, documentation, documentationLines, (index: number) => this.pick(editor, index));
+            offeredAt = new Point(x, y);
+            highlighted = selected - this._listTop;
+        } else {
+            this._listTop = 0;
+            this._listColumns = 0;
+        }
+        let surface: VisualNode = new CodeSurface(block, editor, { autofocus: this.autofocus, label: this.caption ?? SdkStrings.codeEditor, caretColor: CodeBlock.inkFor(this.inverse, context.theme), onChanged: () => this.setState(() => this.notify(editor)), options: offered, optionsOrigin: offeredAt, highlightedOption: highlighted });
         let viewport: VisualNode = new ScrollView(surface, 'horizontal', { width: SizeValue.fill, onViewportChanged: (width: number) => {
             if (Math.abs(Math.fround(width - this._viewportWidth)) < 1) return;
             this.setState(() => this._viewportWidth = width);
+        }, onScrolled: (offset: number) => {
+            if (Math.abs(Math.fround(offset - this._scrollX)) < 1) return;
+            if (editor.completion.isOpen) this.setState(() => this._scrollX = offset); else this._scrollX = offset;
         } });
         if (this.showLineNumbers) {
             let withGutter = new Row(0, 'start', 'center', false, null, null, { width: SizeValue.fill, cross: 'start' });
@@ -115,7 +153,38 @@ export class CodeEditor extends StatefulComponent {
         let editor = new CodeEditorController(this.initialCode, CodeLanguages.for(this.languageName), { readOnly: this.readOnly });
         this._toldDocument = editor.document;
         this._toldSelection = editor.selection;
+        editor.completion.changed = $eq.delegates.combine(editor.completion.changed, () => this.setState(() => {}));
         return editor;
+    }
+
+    handProviders(completion: CodeCompletion) {
+        if (this._handedAny && CodeEditor.sameProviders(this.completions, this._handed)) return;
+        this._handedAny = true;
+        this._handed = this.completions;
+        let providers = completion.providers;
+        providers.splice(0);
+        if (this.completions == null) {
+            providers.push(new CodeKeywordCompletionProvider());
+            providers.push(new CodeWordCompletionProvider());
+            return;
+        }
+        for (const provider of this.completions) providers.push(provider);
+    }
+
+    static sameProviders(one: any, other: any) {
+        if (one == null || other == null) return one == null && other == null;
+        if (one.length !== other.length) return false;
+        for (let i = 0; i < one.length; i++) {
+            if (!(one[i] === other[i])) return false;
+        }
+        return true;
+    }
+
+    pick(editor: CodeEditorController, index: number) {
+        return this.setState(() => {
+            if (editor.completion.select(index)) editor.completion.accept();
+            this.notify(editor);
+        });
     }
 
     notify(editor: CodeEditorController) {
@@ -170,6 +239,7 @@ export class CodeEditor extends StatefulComponent {
         this.search = fresh.search;
         this.searchMatchCase = fresh.searchMatchCase;
         this.onGutterPressed = fresh.onGutterPressed;
+        this.completions = fresh.completions;
     }
 
     matchesOf(editor: CodeEditorController, needle: any) {
@@ -201,7 +271,7 @@ export class CodeEditor extends StatefulComponent {
         });
     }
 
-    findBar(context: any, editor: CodeEditorController, matches: CodeRange[]) {
+    findBar(context: BuildContext, editor: CodeEditorController, matches: CodeRange[]) {
         const step = (forward: boolean) => {
             if (this._findText.length === 0) return;
             let found: any; 

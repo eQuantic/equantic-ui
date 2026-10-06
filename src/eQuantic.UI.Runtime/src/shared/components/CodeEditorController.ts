@@ -218,6 +218,8 @@ export class CodeEditorController {
     }
 
     positionAt(point: Point) {
+        let last = this._document.lineCount - 1;
+        if (point.y >= Math.fround(this.grid.pointOf(last, 0).y + this.grid.cell.height)) return this._document.end;
         let target = this._document.clamp(new CodePosition(Math.max(0, this.grid.lineAt(point.y)), 0)).line;
         return new CodePosition(target, this.cellsOf(target).columnAt(Math.fround(Math.fround(point.x - this.grid.origin.x) / this.grid.cell.width)));
     }
