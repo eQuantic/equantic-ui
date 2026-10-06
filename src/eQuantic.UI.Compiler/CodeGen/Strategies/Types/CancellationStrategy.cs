@@ -82,7 +82,12 @@ public class CancellationStrategy : IExpressionIrStrategy
                 var symbol = context.SemanticHelper.GetSymbol(access)!;
                 if (symbol is { IsStatic: true, Name: "None" }) return JsExpr.Identifier(Eq.CancellationNone);
                 if (!Supported(symbol)) return Refused(access, symbol, context);
-                return JsExpr.Member(context.Converter.ConvertIr(access.Expression), symbol.Name.ToCamelCase());
+                var receiver = context.Converter.ConvertIr(access.Expression);
+                var member = JsExpr.Member(receiver, symbol.Name.ToCamelCase());
+                // A method REFERENCE is a method group, and a group keeps its receiver, as
+                // MemberAccessStrategy binds every other one: `register(inner.cancel)` lost it, and the
+                // callback threw a TypeError on `this` when the token cancelled.
+                return symbol is IMethodSymbol ? JsExpr.Call(JsExpr.Member(member, "bind"), receiver) : member;
             }
         }
         return JsExpr.Opaque(context.Unhandled(node, "the cancellation trio"));

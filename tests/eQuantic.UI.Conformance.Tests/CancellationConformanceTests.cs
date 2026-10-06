@@ -43,8 +43,11 @@ public class CancellationConformanceTests
     // The last registered runs first, and each once.
     [InlineData("var log = \"\"; var cts = new CTS(); cts.Token.Register(() => log += \"a\"); cts.Token.Register(() => log += \"b\"); "
         + "cts.Token.Register(() => log += \"c\"); cts.Cancel(); cts.Cancel(); return log;")]
-    // Registered after the cancellation, a callback runs at once.
-    [InlineData("var cts = new CTS(); cts.Cancel(); var ran = false; cts.Token.Register(() => ran = true); return $\"{ran}\";")]
+    // Registered after the cancellation, a callback runs at once, and its registration is the default
+    // one, whose token is the one that never cancels; registered before, it holds the source's token.
+    [InlineData("var cts = new CTS(); cts.Cancel(); var ran = false; var r = cts.Token.Register(() => ran = true); "
+        + "var live = new CTS(); var l = live.Token.Register(() => { }); "
+        + "return $\"{ran}|{r.Token == CT.None}|{r.Token.CanBeCanceled}|{l.Token == live.Token}\";")]
     // A disposed registration runs nothing, and unregisters once.
     [InlineData("var log = \"\"; var cts = new CTS(); var r = cts.Token.Register(() => log += \"x\"); var first = r.Unregister(); "
         + "var second = r.Unregister(); r.Dispose(); cts.Cancel(); return $\"[{log}]{first}{second}\";")]
@@ -52,6 +55,9 @@ public class CancellationConformanceTests
     [InlineData("var log = \"\"; var cts = new CTS(); cts.Token.Register(() => log += \"1\"); "
         + "cts.Token.Register(() => throw new InvalidOperationException(\"boom\")); cts.Token.Register(() => log += \"3\"); "
         + "try { cts.Cancel(); return \"ran\"; } catch (AggregateException e) { return $\"{log}|{e.Message}\"; }")]
+    // A method group keeps its receiver: the source it names is the one cancelled.
+    [InlineData("var outer = new CTS(); var inner = new CTS(); outer.Token.Register(inner.Cancel); outer.Cancel(); "
+        + "return $\"{inner.IsCancellationRequested}|{outer.IsCancellationRequested}\";")]
     public void Callbacks_RunAsDotNetRunsThem(string program) => SameAsDotNet(program);
 
     [SkippableTheory]

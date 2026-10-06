@@ -94,11 +94,15 @@ export class CancellationTokenSource {
     this.stopTimer();
   }
 
-  /** Registers a callback, or runs it at once when the cancellation has already happened. */
+  /**
+   * Registers a callback, or runs it at once when the cancellation has already happened. A callback
+   * that ran at once is given back the default registration, as .NET gives it, whose token is `none`:
+   * it carried the source's token, so `registration.token.canBeCanceled` said true where .NET says false.
+   */
   register(callback: Callback): CancellationTokenRegistration {
     if (this._cancelled) {
       callback();
-      return new CancellationTokenRegistration(this._token, null, -1);
+      return new CancellationTokenRegistration(CancellationToken.none, null, -1);
     }
     this._callbacks.push(callback);
     return new CancellationTokenRegistration(this._token, this, this._callbacks.length - 1);

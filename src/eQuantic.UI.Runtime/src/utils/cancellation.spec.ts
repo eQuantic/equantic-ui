@@ -27,14 +27,18 @@ describe('CancellationTokenSource and CancellationToken', () => {
     expect(source.token.isCancellationRequested).toBe(true);
   });
 
-  it('runs a callback registered after the cancellation at once', () => {
+  it('runs a callback registered after the cancellation at once, and gives back the default registration', () => {
     const source = new CancellationTokenSource();
     source.cancel();
     let ran = false;
 
-    source.token.register(() => (ran = true));
+    const registration = source.token.register(() => (ran = true));
 
     expect(ran).toBe(true);
+    // .NET's default(CancellationTokenRegistration), whose token is None and cannot be cancelled.
+    expect(registration.token.equals(CancellationToken.none)).toBe(true);
+    expect(registration.token.canBeCanceled).toBe(false);
+    expect(registration.unregister()).toBe(false);
   });
 
   it('runs no callback whose registration was disposed, and unregisters once', () => {
