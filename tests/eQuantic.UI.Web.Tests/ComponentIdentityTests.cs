@@ -86,8 +86,8 @@ namespace eQuantic.UI.Web.Tests
         {
             var assemblies = new[] { typeof(eQuantic.UI.Components.UI).Assembly, typeof(eQuantic.UI.Charts.BarChart).Assembly };
             var components = assemblies.SelectMany(a => a.GetTypes())
-                .Where(t => typeof(UiComponent).IsAssignableFrom(t) && !t.IsAbstract && t.IsPublic)
-                .GroupBy(t => t.Name)
+                .Where(t => typeof(UiComponent).IsAssignableFrom(t) && !t.IsAbstract && (t.IsPublic || t.IsNestedPublic))
+                .GroupBy(TwinNameOf)
                 .ToDictionary(g => g.Key, g => g.ToList());
 
             var modules = Directory.GetFiles(Path.Combine(RepoRoot(), "src", "eQuantic.UI.Runtime", "src", "shared", "components"), "*.ts");
@@ -95,8 +95,8 @@ namespace eQuantic.UI.Web.Tests
             foreach (var module in modules)
             {
                 var text = File.ReadAllText(module);
-                // A twin's name can hold a `$` (a nested type's, `CodeBlock$CodeMetrics`, #584), which is
-                // no component's: read whole, it is skipped rather than taken for its owner.
+                // A twin is named by the types it is nested in and its own name, joined by `$` (#584): a
+                // nested component's module is `Owner$Component`, read whole and checked as any other.
                 var name = Regex.Match(text, @"export class ([\w$]+)").Groups[1].Value;
                 if (!components.TryGetValue(name, out var types)) continue;
 
@@ -107,6 +107,11 @@ namespace eQuantic.UI.Web.Tests
 
             checkedCount.Should().BeGreaterThan(50, "the shared library's twins were found and read");
         }
+
+        /// <summary>The name a type's twin takes, as eqc writes it and the server reads it (TwinName.OfType,
+        /// #584): its declaring types' names and its own, joined by <c>$</c>, generic arity erased.</summary>
+        private static string TwinNameOf(Type type) =>
+            (type.DeclaringType is { } owner ? TwinNameOf(owner) + "$" : "") + type.Name.Split('`')[0];
 
         private static string? Identity(string module) =>
             Regex.Match(module, @"static \$typeId = '([^']+)'") is { Success: true } m ? m.Groups[1].Value : null;

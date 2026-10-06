@@ -146,10 +146,10 @@ public static class RuntimeProvidedTypeScanner
             if (IsRuntimeProvidedNamespace(rebuiltNamespace))
             {
                 if (IsFenced(named)) Fence(named, with);
-                else runtimeProvided.Add(named.TwinTypeName());
+                else runtimeProvided.Add(named.TwinReference());
             }
             else if (appTypes is not null && named.Locations.Any(l => l.IsInSource))
-                appTypes.Add(named.TwinTypeName());
+                appTypes.Add(named.TwinReference());
         }
 
         foreach (var identifier in root.DescendantNodes().OfType<IdentifierNameSyntax>())
@@ -206,7 +206,7 @@ public static class RuntimeProvidedTypeScanner
             if (isRuntimeProvided)
             {
                 if (IsFenced(type)) Fence(type, identifier);
-                else runtimeProvided.Add(type is INamedTypeSymbol named ? named.TwinTypeName() : type.Name);
+                else runtimeProvided.Add(type is INamedTypeSymbol named ? named.TwinReference() : type.Name);
                 continue;
             }
 
@@ -214,7 +214,7 @@ public static class RuntimeProvidedTypeScanner
             // metadata from referenced assemblies) — a semantic distinction, never a name list.
             // The emitter decides which of these actually became modules before importing them.
             if (appTypes is not null && type.Locations.Any(l => l.IsInSource))
-                appTypes.Add(type is INamedTypeSymbol named ? named.TwinTypeName() : type.Name);
+                appTypes.Add(type is INamedTypeSymbol named ? named.TwinReference() : type.Name);
         }
     }
 }

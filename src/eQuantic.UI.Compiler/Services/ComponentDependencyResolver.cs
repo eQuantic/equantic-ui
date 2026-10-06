@@ -62,10 +62,6 @@ public class ComponentDependencyResolver
 
     /// <summary>A declaration's type in the project's compilation, found by its CLR name; null where
     /// the host has no compilation, or the compilation does not know the type.</summary>
-    /// <summary>Marked <c>[ServerOnly]</c>, which the parser writes no module for, as it reads it.</summary>
-    private static bool IsServerOnlyDeclaration(MemberDeclarationSyntax declaration) =>
-        declaration.AttributeLists.SelectMany(list => list.Attributes).Any(attribute => attribute.IsNamed("ServerOnly"));
-
     private INamedTypeSymbol? SymbolOf(TypeDeclarationSyntax declaration) =>
         _projectCompilation?.GetTypeByMetadataName(Parser.ComponentParser.ClrIdentity(declaration));
 
@@ -193,7 +189,7 @@ public class ComponentDependencyResolver
             // #584), where its owner crosses.
             if (classDecl.Modifiers.Any(m => m.IsKind(Microsoft.CodeAnalysis.CSharp.SyntaxKind.StaticKeyword)))
             {
-                if (PlainClassModule.OwnersCross(classDecl) && !IsServerOnlyDeclaration(classDecl)
+                if (PlainClassModule.OwnersCross(classDecl) && !PlainClassModule.IsServerOnlyDeclaration(classDecl)
                     && !(SymbolOf(classDecl) is { } helper && PlainClassModule.OwnerKeptOut(helper)))
                     _staticHelpers.Add(classDecl.TwinTypeName());
             }

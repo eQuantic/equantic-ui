@@ -80,7 +80,7 @@ public static class TypeSymbolExtensions
     /// imports it as it imports any type's. A top-level type's is its own name.
     /// </summary>
     internal static string TwinTypeName(this INamedTypeSymbol type) =>
-        type.ContainingType is { } owner ? owner.TwinTypeName() + "$" + type.Name : type.Name;
+        eQuantic.UI.TwinName.OfNested(type.ContainingType?.TwinTypeName(), type.Name);
 
     /// <summary>The twin name of a class, record or struct declared inside another type whose twin eqc
     /// writes (in the source, or in a namespace it transpiles whole), which differs from the name it is
@@ -92,6 +92,14 @@ public static class TypeSymbolExtensions
             || Services.RuntimeProvidedTypeScanner.IsTranspiledNamespace(type.ContainingNamespace?.ToDisplayString() ?? string.Empty))
             ? type.TwinTypeName()
             : null;
+
+    /// <summary>
+    /// The name a REFERENCE to a type writes, and imports: a nested type's twin where eqc writes it
+    /// (<see cref="NestedTwinName"/>), and the type's own name otherwise, which is what a top-level type's
+    /// twin and a hand-written twin of the runtime are called (a nested vocabulary type keeps its simple
+    /// name there). Registering one name and calling another imported nothing the call named.
+    /// </summary>
+    internal static string TwinReference(this INamedTypeSymbol type) => type.NestedTwinName() ?? type.Name;
 
     /// <summary>
     /// True when the type derives (transitively) from a framework component/state base. Walking the base
@@ -331,9 +339,9 @@ public static class TypeSymbolExtensions
     public static void RegisterIntroduced(this INamedTypeSymbol home, ConversionContext context)
     {
         if (home.IsRuntimeProvided())
-            context.UsedRuntimeTypes.Add(home.TwinTypeName());
+            context.UsedRuntimeTypes.Add(home.TwinReference());
         else
-            context.UsedAppTypes.Add(home.TwinTypeName());
+            context.UsedAppTypes.Add(home.TwinReference());
     }
 
     /// <summary>

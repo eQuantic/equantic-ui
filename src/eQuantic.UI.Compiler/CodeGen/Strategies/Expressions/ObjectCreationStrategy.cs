@@ -628,12 +628,12 @@ public class ObjectCreationStrategy : IExpressionIrStrategy
                 : JsExpr.New(JsExpr.Identifier(TwinOf(type, context)), ConstructorArguments(creation, ctor, context));
 
     /// <summary>The name a construction calls, its type's twin's: named by its owner where it is nested
-    /// (#584), and imported from there.</summary>
+    /// (#584), and imported from there, and the type's own name otherwise.</summary>
     private static string TwinOf(ITypeSymbol type, ConversionContext context)
     {
         if (type is not INamedTypeSymbol named) return type.Name;
         if (named.NestedTwinName() is not null) named.RegisterIntroduced(context);
-        return named.TwinTypeName();
+        return named.TwinReference();
     }
 
     /// <summary>

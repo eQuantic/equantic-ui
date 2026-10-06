@@ -843,9 +843,9 @@ public static class UIExtensions
         // serializer's default encoder escapes every code unit a script cannot carry, `<` among them,
         // and JSON is a JavaScript expression.
         var configJson = JsonSerializer.Serialize(new ClientConfig(
-            // The page's MODULE, which the build names after the type alone (EQ1005 refuses two of
-            // one name in a project).
-            Page: page?.Name,
+            // The page's MODULE, which the build names after the type and the types it is nested in
+            // (TwinName.OfType, #584), so a page declared inside a class loads the module eqc wrote.
+            Page: page is null ? null : TwinName.OfType(page),
             Version: BuildId,
             Ssr: ssrEnabled,
             // The cookie config crosses to the browser because the browser is what WRITES it while the

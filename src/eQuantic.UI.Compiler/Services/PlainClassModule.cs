@@ -103,8 +103,13 @@ internal static class PlainClassModule
 
     /// <summary>Marked <c>[RuntimeProvided]</c> or <c>[ServerOnly]</c>.</summary>
     private static bool Marked(MemberDeclarationSyntax declaration) =>
-        declaration.AttributeLists.SelectMany(list => list.Attributes)
-            .Any(attribute => attribute.IsNamed("RuntimeProvided") || attribute.IsNamed("ServerOnly"));
+        IsServerOnlyDeclaration(declaration)
+        || declaration.AttributeLists.SelectMany(list => list.Attributes).Any(attribute => attribute.IsNamed("RuntimeProvided"));
+
+    /// <summary>Marked <c>[ServerOnly]</c> where it is declared, which the parser writes no module for, as
+    /// it reads it.</summary>
+    internal static bool IsServerOnlyDeclaration(MemberDeclarationSyntax declaration) =>
+        declaration.AttributeLists.SelectMany(list => list.Attributes).Any(attribute => attribute.IsNamed("ServerOnly"));
 
     /// <summary>
     /// Whether no type a declaration is nested in is marked <c>[RuntimeProvided]</c> or

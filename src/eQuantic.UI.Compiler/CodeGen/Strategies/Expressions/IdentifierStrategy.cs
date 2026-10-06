@@ -193,7 +193,7 @@ public class IdentifierStrategy : IExpressionIrStrategy
     private static string StaticHome(INamedTypeSymbol type, ConversionContext context)
     {
         if (type.Locations.Any(location => location.IsInSource)) type.RegisterIntroduced(context);
-        return type.TwinTypeName();
+        return type.TwinReference();
     }
 
 }

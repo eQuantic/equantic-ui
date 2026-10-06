@@ -36,8 +36,8 @@ internal sealed class AppSurface
         options.AssembliesToScan
             .SelectMany(assembly => assembly.GetTypes())
             .SelectMany(type => type.GetCustomAttributes<PageAttribute>()
-                .Select(attribute => (Pattern: attribute.Route, Page: type.Name, attribute.Title)))
-            .Concat(options.DeclaredRoutes.Select(route => (route.Pattern, Page: route.Page.Name, route.Title)))
+                .Select(attribute => (Pattern: attribute.Route, Page: TwinName.OfType(type), attribute.Title)))
+            .Concat(options.DeclaredRoutes.Select(route => (route.Pattern, Page: TwinName.OfType(route.Page), route.Title)))
             // The prefixed URLs go in the table too, or the FIRST client-side navigation inside a
             // translated page finds no match and falls back to a full reload — the language would
             // survive and the SPA would not, which is the kind of regression nobody reports.

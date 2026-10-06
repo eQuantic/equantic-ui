@@ -242,11 +242,13 @@ public class InvocationStrategy : IExpressionIrStrategy
             if (symbol.ReportIfPlatformReachedBare(invocation, context))
                 return JsExpr.Literal("undefined");
             var declaringNamespace = declaring.ContainingNamespace?.ToDisplayString() ?? string.Empty;
+            // One name for the import and the call (#584): a nested type's twin, or the name a top-level
+            // type and a hand-written runtime twin keep.
             if (RuntimeProvidedTypeScanner.IsRuntimeProvidedNamespace(declaringNamespace))
-                context.UsedRuntimeTypes.Add(declaring.Name);
+                context.UsedRuntimeTypes.Add(declaring.TwinReference());
             else
-                context.UsedAppTypes.Add(declaring.TwinTypeName());
-            return JsExpr.Call(JsExpr.Member(JsExpr.Identifier(declaring.TwinTypeName()), methodName.ToCamelCase()), argIrs);
+                context.UsedAppTypes.Add(declaring.TwinReference());
+            return JsExpr.Call(JsExpr.Member(JsExpr.Identifier(declaring.TwinReference()), methodName.ToCamelCase()), argIrs);
         }
 
         // STANDALONE factory calls (no semantic model — the playground's mode): nothing can RESOLVE

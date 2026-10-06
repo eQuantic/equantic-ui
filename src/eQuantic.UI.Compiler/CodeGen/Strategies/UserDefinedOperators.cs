@@ -38,22 +38,22 @@ public static class UserDefinedOperators
         var name = RecordTypeEmitter.ConversionNameFor(method);
         // A vocabulary type is imported from the runtime, and the C# at the call never names it:
         // `Icon(Icons.Search)` mentions no IconGlyph. The call is what introduces the name.
-        if (!IsInSource(method)) context.UsedRuntimeTypes.Add(method.ContainingType.Name);
-        return JsExpr.Callish($"{method.ContainingType.TwinTypeName()}.{name}({operand})");
+        if (!IsInSource(method)) context.UsedRuntimeTypes.Add(method.ContainingType.TwinReference());
+        return JsExpr.Callish($"{method.ContainingType.TwinReference()}.{name}({operand})");
     }
 
     /// <summary>The unary operator called on its operand, or null.</summary>
     public static JsExpr? Unary(IMethodSymbol method, string token, string operand)
     {
         if (!IsInSource(method) || RecordTypeEmitter.UnaryOperatorMethodName(token) is not { } name) return null;
-        return JsExpr.Callish($"{method.ContainingType.TwinTypeName()}.{name}({operand})");
+        return JsExpr.Callish($"{method.ContainingType.TwinReference()}.{name}({operand})");
     }
 
     /// <summary>The binary operator called on its operands, or null.</summary>
     public static JsExpr? Binary(IMethodSymbol method, string token, string left, string right)
     {
         if (!IsInSource(method) || RecordTypeEmitter.OperatorMethodName(token) is not { } name) return null;
-        return JsExpr.Callish($"{method.ContainingType.TwinTypeName()}.{name}({left}, {right})");
+        return JsExpr.Callish($"{method.ContainingType.TwinReference()}.{name}({left}, {right})");
     }
 
 }

@@ -184,7 +184,8 @@ of its own, named by the chain of the types that contain it and its own name joi
 (`Cart$Item`), which no C# type can take. Every reference to it, inside its owner or out, SHALL name
 that twin: a construction, a type test, a static member, a default and an annotation alike. A nested
 type of an owner that never crosses (`[ServerOnly]`, an exception, an attribute) SHALL have none. A
-record's text SHALL print its C# name, as .NET's does.
+record's text SHALL print its C# name, as .NET's does. The server SHALL name the page it serves by the
+same rule, so a page declared inside a class loads the module the build wrote for it.
 
 #### Scenario: A nested class beside a top-level class of its name
 
@@ -220,3 +221,8 @@ record's text SHALL print its C# name, as .NET's does.
 
 - **WHEN** `[ServerOnly] class Vault { public class Key { } }`
 - **THEN** the build writes no module for `Key`, as it writes none for `Vault`
+
+#### Scenario: A page declared inside a class
+
+- **WHEN** `public static class Admin { [Page("/admin/users")] public class Users : StatelessComponent { … } }` is served
+- **THEN** the page's configuration and its route name `Admin$Users`, the module the build wrote

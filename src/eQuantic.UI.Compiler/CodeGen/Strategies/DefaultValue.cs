@@ -177,7 +177,7 @@ public static class DefaultValue
               || type.TwinIsTranspiled();
         if (!written) return null;
         var zeros = type.TypeArguments.Select(argument => Of(argument, named, typeParameter));
-        return $"{type.TwinTypeName()}.$zero({string.Join(", ", zeros)})";
+        return $"{type.TwinReference()}.$zero({string.Join(", ", zeros)})";
     }
 
     /// <summary>The default of the ELEMENT of a sequence-typed expression.</summary>
