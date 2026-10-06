@@ -137,7 +137,7 @@ export class CodeCompletion {
                     }
                 }
             }
-            answers.push(new CodeCompletionAnswer(providers[i], position, list));
+            answers.push(new CodeCompletionAnswer(providers[i], document.line(position.line).length, list));
         }
         CodeCompletion.onUiThread(() => {
             for (const error of errors) this.failed?.(error);
@@ -382,8 +382,8 @@ export class CodeCompletion {
         let line = this._editor.document.line(caret.line);
         let replacing: any; 
         if ((replacing = offer.item.replacing) != null && replacing.start.line === caret.line && replacing.end.line === caret.line && replacing.start.column <= caret.column) {
-            let after = Math.max(0, replacing.end.column - offer.answer.askedAt.column);
-            return new CodeRange(replacing.start, new CodePosition(caret.line, Math.min(line.length, caret.column + after)));
+            let fromLineEnd = Math.max(0, offer.answer.askedLineLength - replacing.end.column);
+            return new CodeRange(replacing.start, new CodePosition(caret.line, Math.max(caret.column, line.length - fromLineEnd)));
         }
         return new CodeRange(this._start, caret);
     }

@@ -31,8 +31,9 @@ public sealed record CodeCompletionItem(string Label, CodeCompletionKind Kind = 
 
     /// <summary>
     /// The range accepting replaces, on the line of the position the provider was asked about and as
-    /// the document stood when it answered: LSP's edit range. Its end moves with whatever is typed
-    /// after the answer. Null replaces the word typed before the caret.
+    /// the document stood when it was asked: LSP's edit range. Its end keeps its distance from the end
+    /// of the line, so what is typed or deleted at the caret moves it and a move of the caret does
+    /// not. Null replaces the word typed before the caret.
     /// </summary>
     public CodeRange? Replacing { get; init; }
 

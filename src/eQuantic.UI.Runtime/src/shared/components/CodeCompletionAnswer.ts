@@ -1,16 +1,16 @@
-import { CodeCompletionList, CodeCompletionOffer, CodePosition } from "../runtime-exports";
+import { CodeCompletionList, CodeCompletionOffer } from "../runtime-exports";
 
 export class CodeCompletionAnswer {
-    constructor(provider: any, askedAt: CodePosition, list: CodeCompletionList, props?: any) {
+    constructor(provider: any, askedLineLength: number, list: CodeCompletionList, props?: any) {
         this.provider = provider;
-        this.askedAt = askedAt;
+        this.askedLineLength = askedLineLength;
         this.isIncomplete = list.isIncomplete;
         for (const item of list.items) this.offers.push(new CodeCompletionOffer(this, item));
         if (props && typeof props === 'object') Object.assign(this, props);
     }
 
     declare provider: any;
-    askedAt: CodePosition = new CodePosition();
+    askedLineLength: number = 0;
     isIncomplete: boolean = false;
     offers: CodeCompletionOffer[] = [];
 }

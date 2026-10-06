@@ -120,12 +120,16 @@ public class CodeCompletionTwinTests
             }
             lines.Add(line.ToString());
         }
+        // And one line longer than an answer reads, as a minified file has, read around the caret.
+        var minified = string.Join(".", Enumerable.Range(0, 20000).Select(n => $"m{n}"));
+        lines.Insert(1500, minified);
         var text = string.Join("\n", lines);
         var carets = Enumerable.Range(0, 24).Select(_ =>
         {
             var line = random.Next(lines.Count);
             return new CodePosition(line, random.Next(lines[line].Length + 1));
-        }).ToList();
+        }).Concat(Enumerable.Range(0, 4).Select(_ => new CodePosition(1500, random.Next(minified.Length + 1))))
+            .ToList();
 
         var program = $$"""
             import { CodeDocument, CodeWordCompletionProvider, CodePosition, CancellationToken } from '{{runtime}}';

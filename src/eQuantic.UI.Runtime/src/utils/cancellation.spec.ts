@@ -126,6 +126,22 @@ describe('CancellationTokenSource and CancellationToken', () => {
     expect(() => CancellationTokenSource.createLinkedTokenSource([])).toThrow('No tokens were supplied.');
   });
 
+  it('lets go of the tokens a linked source follows once it is disposed, and keeps no slot for them', () => {
+    // A token that lives as long as the app, and a linked source per request, disposed after it.
+    const app = new CancellationTokenSource();
+    for (let i = 0; i < 1000; i++) CancellationTokenSource.createLinkedTokenSource(app.token).dispose();
+    const kept = app.token.register(() => {});
+    kept.dispose();
+
+    // What the app's source still holds: nothing, as .NET's linked source unregisters when disposed.
+    expect((app as unknown as { _callbacks: Map<number, unknown> })._callbacks.size).toBe(0);
+    let ran = false;
+    const live = CancellationTokenSource.createLinkedTokenSource(app.token);
+    live.token.register(() => (ran = true));
+    app.cancel();
+    expect(ran).toBe(true);
+  });
+
   it('cancels after a delay, and a newer delay replaces the older', () => {
     vi.useFakeTimers();
     const source = new CancellationTokenSource(100);

@@ -670,6 +670,29 @@ public class CodeCompletionTests : IDisposable
     }
 
     [Fact]
+    public void AProvidersRange_StaysWhereItWas_WhenOnlyTheCaretMoves()
+    {
+        var provider = new Provider();
+        // Asked with the caret in "Fo|bar", the provider replaces the whole word, past the caret.
+        provider.Items.Add(new CodeCompletionItem("FooBaz")
+        {
+            Replacing = new CodeRange(new CodePosition(0, 0), new CodePosition(0, 5)),
+        });
+        var editor = Editor("Fobar()", provider);
+        editor.Selection = new CodeRange(new CodePosition(0, 2));
+        Key(editor, " ", KeyModifiers.Command);
+
+        // An arrow moves the caret and edits nothing: the list follows the word, and the range is the
+        // provider's as it was.
+        Key(editor, "ArrowLeft");
+        editor.Completion.IsOpen.Should().BeTrue();
+        Key(editor, "Enter");
+
+        editor.Document.Text.Should().Be("FooBaz()");
+        editor.Caret.Should().Be(new CodePosition(0, 6));
+    }
+
+    [Fact]
     public void TwoProvidersOfferingOneEntry_ListItOnce_AsTheFirstOneSaidIt()
     {
         var first = new Provider();
@@ -746,6 +769,23 @@ public class CodeCompletionTests : IDisposable
         var reach = offered.Max(n => Math.Abs(n - 1000));
         Enumerable.Range(0, 2000).Where(n => n != 1000 && Math.Abs(n - 1000) < reach)
             .Should().OnlyContain(n => offered.Contains(n), "every line nearer the caret was read first");
+    }
+
+    [Fact]
+    public async Task ALineLongerThanWhatAnAnswerReads_IsReadAroundTheCaret()
+    {
+        // One line of 40,000 words, about 270,000 characters, as a minified file has one: w0 to
+        // w39999. The caret is at the start of w20000.
+        var text = string.Join(" ", Enumerable.Range(0, 40000).Select(n => $"w{n}"));
+        var caret = text.IndexOf(" w20000 ", StringComparison.Ordinal) + 1;
+
+        var list = await new CodeWordCompletionProvider().CompleteAsync(CodeDocument.FromText(text),
+            new CodePosition(0, caret),
+            new CodeCompletionContext(CodeCompletionTrigger.Typing, CodeLanguages.PlainText), CancellationToken.None);
+
+        var offered = list.Items.Select(item => item.Label).ToHashSet();
+        offered.Should().Contain(["w19999", "w20001"]).And.NotContain("w20000", "it is the word being typed");
+        offered.Should().NotContain(["w0", "w39999"], "the words far from the caret are the ones left out");
     }
 
     [Fact]

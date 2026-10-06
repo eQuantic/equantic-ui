@@ -195,7 +195,7 @@ public sealed class CodeCompletion
                     errors.Add(error);
                 }
             }
-            answers.Add(new CodeCompletionAnswer(providers[i], position, list));
+            answers.Add(new CodeCompletionAnswer(providers[i], document.Line(position.Line).Length, list));
         }
 
         OnUiThread(() =>
@@ -571,8 +571,11 @@ public sealed class CodeCompletion
     }
 
     /// <summary>
-    /// The range accepting <paramref name="offer"/> replaces: the provider's own, its end moved by
-    /// what was typed since it answered, or the word typed so far.
+    /// The range accepting <paramref name="offer"/> replaces: the provider's own, or the word typed so
+    /// far. The provider's range ends as far from the END of its line as it did when the provider was
+    /// asked: what was typed or deleted since happened at the caret, before that end, and a move of
+    /// the caret alone moves nothing. Measured from the caret, an arrow moved the end with it, and
+    /// accepting after one left the rest of the word behind.
     /// </summary>
     private CodeRange RangeOf(CodeCompletionOffer offer)
     {
@@ -581,8 +584,8 @@ public sealed class CodeCompletion
         if (offer.Item.Replacing is { } replacing && replacing.Start.Line == caret.Line
             && replacing.End.Line == caret.Line && replacing.Start.Column <= caret.Column)
         {
-            var after = Math.Max(0, replacing.End.Column - offer.Answer.AskedAt.Column);
-            return new CodeRange(replacing.Start, new CodePosition(caret.Line, Math.Min(line.Length, caret.Column + after)));
+            var fromLineEnd = Math.Max(0, offer.Answer.AskedLineLength - replacing.End.Column);
+            return new CodeRange(replacing.Start, new CodePosition(caret.Line, Math.Max(caret.Column, line.Length - fromLineEnd)));
         }
         return new CodeRange(_start, caret);
     }

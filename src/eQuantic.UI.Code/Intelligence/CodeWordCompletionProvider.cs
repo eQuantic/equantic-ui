@@ -42,11 +42,22 @@ public sealed class CodeWordCompletionProvider : ICodeCompletionProvider
     /// <paramref name="left"/> of its characters, and answers how many are left after it. The word
     /// <paramref name="caret"/> is in (a column, or -1) is left out, and so is a word the budget cuts:
     /// a part of a word is not one.
+    /// <para>
+    /// The caret's own line is read around the caret, the budget's half either side where the line
+    /// allows it. Read from its start, a line longer than the budget (a minified file is one) gave the
+    /// words farthest from the caret and none of those beside it.
+    /// </para>
     /// </summary>
     private static int Read(string text, int caret, int left, HashSet<string> seen, List<CodeCompletionItem> items)
     {
-        var end = Math.Min(text.Length, left);
-        var i = 0;
+        var from = caret < 0 ? 0 : Math.Max(0, Math.Min(caret - left / 2, text.Length - left));
+        // A window that starts inside a word starts after it.
+        if (from > 0 && CodeDocument.IsWordChar(text[from - 1]))
+        {
+            while (from < text.Length && CodeDocument.IsWordChar(text[from])) from++;
+        }
+        var end = Math.Min(text.Length, from + left);
+        var i = from;
         while (i < end)
         {
             if (!CodeDocument.IsWordChar(text[i]))
@@ -62,6 +73,6 @@ public sealed class CodeWordCompletionProvider : ICodeCompletionProvider
             var word = text.Substring(start, i - start);
             if (seen.Add(word)) items.Add(new CodeCompletionItem(word));
         }
-        return left - end - 1;
+        return left - (end - from) - 1;
     }
 }

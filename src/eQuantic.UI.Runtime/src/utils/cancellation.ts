@@ -7,9 +7,10 @@
  * Every behaviour is .NET's, measured: callbacks run in the reverse of the order they were registered
  * in, once, at the first `cancel()`; a callback registered after the cancellation runs at once; the
  * callbacks that throw are gathered into one `AggregateException` after the others have run; a
- * disposed source refuses to cancel or to hand out its token; `new CancellationToken(true)` is the
- * same token every time; and `throwIfCancellationRequested()` throws an `OperationCanceledException`
- * whose `cancellationToken` is the token that threw it.
+ * disposed source refuses to cancel or to hand out its token; a linked source, disposed, lets go of
+ * the tokens it follows; `new CancellationToken(true)` is the same token every time; and
+ * `throwIfCancellationRequested()` throws an `OperationCanceledException` whose `cancellationToken`
+ * is the token that threw it.
  */
 
 import { exception } from './exceptions';
@@ -23,10 +24,16 @@ type Delay = number | { readonly totalMilliseconds: number };
 export class CancellationTokenSource {
   private _cancelled = false;
   private _disposed = false;
-  /** In registration order; a removed one is left as null, so the others keep their place. */
-  private _callbacks: (Callback | null)[] = [];
+  /**
+   * In registration order, by the number its registration holds. One taken back is deleted: kept as
+   * a null, every registration a long-lived token ever took back stayed in its list.
+   */
+  private readonly _callbacks = new Map<number, Callback>();
+  private _next = 0;
   private _timer: ReturnType<typeof setTimeout> | null = null;
   private readonly _token: CancellationToken;
+  /** A linked source's callbacks on the tokens it follows, taken back when it is disposed. */
+  private _links: CancellationTokenRegistration[] = [];
 
   constructor(delay?: Delay) {
     this._token = new CancellationToken(this);
@@ -49,14 +56,12 @@ export class CancellationTokenSource {
     if (this._cancelled) return;
     this._cancelled = true;
     this.stopTimer();
-    const callbacks = this._callbacks;
-    this._callbacks = [];
+    const callbacks = [...this._callbacks.values()];
+    this._callbacks.clear();
     const errors: unknown[] = [];
     for (let i = callbacks.length - 1; i >= 0; i--) {
-      const callback = callbacks[i];
-      if (callback === null) continue;
       try {
-        callback();
+        callbacks[i]();
       } catch (error) {
         errors.push(error);
       }
@@ -92,6 +97,10 @@ export class CancellationTokenSource {
   dispose(): void {
     this._disposed = true;
     this.stopTimer();
+    // A linked source lets go of the tokens it follows, as .NET's does: their callbacks held it until
+    // those tokens cancelled, which a token that lives as long as the app never does.
+    for (const link of this._links) link.dispose();
+    this._links = [];
   }
 
   /**
@@ -104,15 +113,14 @@ export class CancellationTokenSource {
       callback();
       return new CancellationTokenRegistration(CancellationToken.none, null, -1);
     }
-    this._callbacks.push(callback);
-    return new CancellationTokenRegistration(this._token, this, this._callbacks.length - 1);
+    const at = this._next++;
+    this._callbacks.set(at, callback);
+    return new CancellationTokenRegistration(this._token, this, at);
   }
 
-  /** Takes back the callback registered at `at`, or answers false when it ran or was taken. */
+  /** Takes back the callback registered as `at`, or answers false when it ran or was taken. */
   unregister(at: number): boolean {
-    if (at < 0 || at >= this._callbacks.length || this._callbacks[at] === null) return false;
-    this._callbacks[at] = null;
-    return true;
+    return this._callbacks.delete(at);
   }
 
   /** A source cancelled as soon as any of `tokens` is. */
@@ -121,9 +129,11 @@ export class CancellationTokenSource {
     if (all.length === 0) throw exception('System.ArgumentException', 'No tokens were supplied.');
     const linked = new CancellationTokenSource();
     for (const token of all) {
-      token.register(() => {
-        if (!linked._disposed) linked.cancel();
-      });
+      linked._links.push(
+        token.register(() => {
+          if (!linked._disposed) linked.cancel();
+        }),
+      );
     }
     return linked;
   }

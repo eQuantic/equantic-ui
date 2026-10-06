@@ -26,8 +26,12 @@ export class CodeWordCompletionProvider {
     }
 
     static read(text: string, caret: number, left: number, seen: Set<string>, items: CodeCompletionItem[]) {
-        let end = Math.min(text.length, left);
-        let i = 0;
+        let from = caret < 0 ? 0 : Math.max(0, Math.min(caret - Math.trunc(left / 2), text.length - left));
+        if (from > 0 && CodeDocument.isWordChar(text[from - 1])) {
+            while (from < text.length && CodeDocument.isWordChar(text[from])) from++;
+        }
+        let end = Math.min(text.length, from + left);
+        let i = from;
         while (i < end) {
             if (!CodeDocument.isWordChar(text[i])) {
                 i++;
@@ -41,7 +45,7 @@ export class CodeWordCompletionProvider {
             let word = $eq.text.substring(text, start, i - start);
             if ($eq.collections.setAdd(seen, word)) items.push(new CodeCompletionItem(word));
         }
-        return left - end - 1;
+        return left - (end - from) - 1;
     }
 
     get triggerCharacters(): string[] {
