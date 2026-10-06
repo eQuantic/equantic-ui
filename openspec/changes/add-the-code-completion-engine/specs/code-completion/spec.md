@@ -47,7 +47,8 @@ anywhere.
 While a list shows, ↓ and ↑ SHALL move its selection round from the last entry to the first, the page
 keys SHALL move it a page and stop at either end, Tab SHALL accept the selected entry, Enter SHALL
 accept it only when accepting changes the text, and Escape SHALL close the list and nothing else. With
-one entry showing, an arrow SHALL move the caret.
+one entry showing, an arrow SHALL move the caret. Every key but Tab and Escape, the list's own and
+⌃Space among them, SHALL arm the trap on Tab again.
 
 #### Scenario: A word typed out in full
 
@@ -58,6 +59,11 @@ one entry showing, an arrow SHALL move the caret.
 
 - **WHEN** a list shows and Escape is pressed twice
 - **THEN** the first closes the list and is claimed, and only the second releases the trap on Tab
+
+#### Scenario: A list asked for after Escape
+
+- **WHEN** Escape is pressed with no list, ⌃Space opens one, Escape closes it, and Tab is pressed
+- **THEN** Tab indents, since a key was pressed after the Escape that released the trap
 
 ### Requirement: Accepting writes over the word typed, as one step
 
@@ -76,6 +82,31 @@ step.
 - **WHEN** `Co` is typed, `Column` accepted, and the edit undone
 - **THEN** the text reads `Co` again
 
+### Requirement: A commit character accepts first
+
+A character the selected entry commits on SHALL accept it and then be typed after it. An input
+method's composition SHALL come out of the document before the entry is accepted.
+
+#### Scenario: A dot after a class
+
+- **WHEN** `Con` is typed, the list selects `Console`, which commits on `.`, and `.` is typed
+- **THEN** the text reads `Console.`
+
+#### Scenario: A dot an input method commits
+
+- **WHEN** `Con` is typed, an input method composes `s` after it and commits `.`
+- **THEN** the text reads `Console.`
+
+### Requirement: One entry is listed once
+
+Offers of one label and one inserted text SHALL be listed once, as the first provider's copy that
+matches the word, so that a copy that does not match hides none that does.
+
+#### Scenario: Two providers offering Column
+
+- **WHEN** the first provider's `Column` filters by `zzz`, the second's by its label, and `Col` is typed
+- **THEN** `Column` is listed once, the second provider's
+
 ### Requirement: An answer nobody waits for is dropped
 
 An answer SHALL be applied only while its request is the newest and its list is open; an older one
@@ -90,6 +121,19 @@ SHALL be dropped however late it arrives, and its request SHALL be cancelled.
 
 - **WHEN** `a` and then `.` start two requests, and the second is answered before the first
 - **THEN** the list shows the second's answer only
+
+### Requirement: A provider's failure is its own
+
+A provider that throws, whose answer faults, or whose callback on its request's token throws when the
+request is cancelled, SHALL be reported through `Failed`, the list going on with what the others
+offered; no keystroke SHALL fail for it.
+
+#### Scenario: A cancellation that throws
+
+- **WHEN** a provider registers on its request's token a callback that throws, `Co` is typed, and a
+  space ends the word
+- **THEN** the space is typed, the list closes, and the failure is reported as the
+  `AggregateException` cancelling gathered it in
 
 ### Requirement: The list closes when the word is left
 
@@ -131,12 +175,19 @@ states, a run of characters above the same characters apart.
 
 The built-in providers SHALL offer the language's own words (`ICodeLanguage.Keywords`) wherever a word
 starts and never right after a dot, and the document's words, each once, leaving out the word being
-typed and numbers.
+typed and numbers. The document's words SHALL be read from the lines nearest the caret outward, no
+more than 50,000 characters for one answer, since the answer is given before the keystroke returns.
 
 #### Scenario: A C# editor with both
 
 - **WHEN** both are given to a C# editor holding `result = compute();` and `re` is typed on a new line
 - **THEN** the list holds `readonly`, `record`, `ref`, `required`, `result` and `return`
+
+#### Scenario: A long file
+
+- **WHEN** the words of 2,000 lines of 100 characters are asked for from the middle line
+- **THEN** the words of the lines nearest the caret are offered, and those of the first and the last
+  line are not
 
 ### Requirement: The web completes as .NET does
 
@@ -147,3 +198,9 @@ The engine's twin SHALL score, rank, select and accept exactly as the engine doe
 - **WHEN** 60 seeded sessions of keystrokes run over a real source file on .NET and in the embedded Bun
 - **THEN** after every keystroke both show the same list, the same selection, the same line and the
   same caret
+
+#### Scenario: The document's words past what one answer reads
+
+- **WHEN** the document's words are asked for at 24 seeded carets in a document four times longer
+  than one answer reads, on .NET and in the embedded Bun
+- **THEN** both offer the same words in the same order

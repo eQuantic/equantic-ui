@@ -30,13 +30,17 @@ sequences (§5), asking once and filtering locally because latency is the constr
 - `CodeFuzzyMatch`, the filter, written once for the list and for anything that narrows as a person
   types.
 - `CodeKeywordCompletionProvider` offers the language's own words, `ICodeLanguage.Keywords`, the
-  tables its colours already read, and `CodeWordCompletionProvider` the document's. An editor starts
-  with no provider, so no key goes to a list nothing draws: the view (#297) says what it offers.
+  tables its colours already read, and `CodeWordCompletionProvider` the document's, read nearest the
+  caret and no more than 50,000 characters of it, since it answers before the keystroke returns. An
+  editor starts with no provider, so no key goes to a list nothing draws: the view (#297) says what it
+  offers.
 - eqc crosses what the engine is the first write-once code to use: the cancellation trio
   (`CancellationTokenSource`, `CancellationToken`, `CancellationTokenRegistration`) as the runtime's,
   refusing the members it does not carry (EQ2004); a method named `Invoke` is a method, where it was
-  called as a delegate; and an annotation names an exception as `Error` and an interface as `any`,
-  where it named types no module defines.
+  called as a delegate; and an annotation names a type whose C# name names nothing in TypeScript by
+  what it crosses as (an exception as `Error`, an interface as `any`, an enum as its members, a
+  delegate as its function), one rule on every path that writes one, where each path named types no
+  module defines.
 - The runtime carries the cancellation trio (`utils/cancellation.ts`), `UiDispatcher` with a null
   `current`, and delegate helpers typed by the delegate.
 
@@ -57,13 +61,14 @@ public list of words. Migration line: a provider takes the context and returns
 ### Modified Capabilities
 
 - `transpiler-bcl`: the cancellation trio, against .NET's answer.
-- `transpiler-expressions`: a method named `Invoke`, and the annotation of an exception and of an
-  interface.
+- `transpiler-expressions`: a method named `Invoke`, and one rule for the annotation of a type with
+  no twin of its name.
 
 ## Impact
 
 The code engine (`eQuantic.UI.Code`), eqc (a strategy for the cancellation trio, the invocation
-strategy, the local and emitter annotations), the runtime (cancellation, `UiDispatcher`, the delegate
-helpers, the exception table, the twins), and the tests that transpile the shared library, which now
-mirror all seven implicit usings of the SDK. The public surface moves (the new types and the breaks
+strategy, and `TsStandIn`, which the class and record emitters, the locals and the local functions
+annotate through), the runtime (cancellation, `UiDispatcher`, the delegate helpers, the exception
+table, the twins), and the tests that transpile the shared library, which now take one file of all
+seven implicit usings of the SDK. The public surface moves (the new types and the breaks
 above), and the developer surface does not.

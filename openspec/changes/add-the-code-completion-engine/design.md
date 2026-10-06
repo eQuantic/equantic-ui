@@ -65,4 +65,28 @@ label order in the twin fails 3 of the sessions.
 
 The shared library was transpiled in its tests with three of the seven implicit usings the SDK
 writes, so `CancellationTokenSource` bound in the build and not there, and its twin was written by
-the path for a type nothing knows. The tests mirror all seven now, and no other twin moved.
+the path for a type nothing knows. Every test pipeline takes one file of all seven now, and no other
+twin moved.
+
+## What the author's review changed
+
+The review of the whole diff found ten defects, each fixed with a test that fails without its fix:
+
+- Every key but Tab and Escape arms the trap on Tab again BEFORE the list's keys and ⌃Space are
+  routed: they returned ahead of the line that re-armed it, so Escape, ⌃Space and Escape left Tab
+  moving focus out of the editor.
+- Cancelling runs at once what the providers registered on the token. A callback that throws is that
+  provider's failure, raised through `Failed`, and never the keystroke's.
+- A commit character accepts once an input method's composition is out of the document: taking it
+  out afterwards wrote over the range the accepted entry had moved.
+- Offers that are one entry are grouped once per answer, and the list takes the first copy of a group
+  that MATCHES, so a copy that does not match hides none that does. Sort keys are lowercased once per
+  answer, and the filter's search keeps its tables between calls instead of allocating two per entry
+  on every keystroke.
+- The document's words are read nearest the caret first, up to 50,000 characters: reading every line
+  cost 46 ms in Bun at every word started in a file of 45,000 lines. VS Code reads every word, off the
+  UI thread, up to ten thousand of them; this answer is given on it, so it is bounded by what it reads.
+- In the translation: a method group of the trio is bound to its receiver, read once; a registration
+  after the cancellation is the default one, as .NET's; and one rule, `TsStandIn`, names a type with
+  no twin of its name on every path that writes an annotation, where each path had named a part of
+  them by their C# names.

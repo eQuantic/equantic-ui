@@ -1410,11 +1410,16 @@ record of a release, the wiki's Upgrading page is the distillate.
   ([#297](https://github.com/eQuantic/equantic-ui/issues/297)) draws a list. Held by keystroke
   sequences, by Roslyn's answer in the playground recorded as a fixture, and by the twin compared with
   .NET in the embedded Bun over 6,000 patterns and 60 seeded sessions. Found on the way: eqc called a
-  method named `Invoke` as a delegate, named `Exception` and an interface in annotations no module
-  defines, and knew nothing of the cancellation trio, which is now the runtime's, measured with
+  method named `Invoke` as a delegate, named an exception, an interface, an enum and a delegate by
+  their C# names in annotations no module defines (one rule, `TsStandIn`, decides it on every path
+  now), and knew nothing of the cancellation trio, which is now the runtime's, measured with
   `dotnet fsi` and run on both sides by the conformance suite; and the shared library's twins were
-  transpiled with three of the SDK's seven implicit usings. Proposed and archived through OpenSpec
-  (`openspec/specs/code-completion`).
+  transpiled with three of the SDK's seven implicit usings. The author's review found ten defects,
+  each proved failing without its fix: the trap on Tab after ⌃Space, a provider's cancellation that
+  threw into the keystroke, a commit during an input method's composition, a duplicate that hid a
+  match, the filter's work per keystroke, and the document's words read whole at every word started
+  (46 ms in Bun for 45,000 lines, now 50,000 characters nearest the caret) among them. Proposed and
+  archived through OpenSpec (`openspec/specs/code-completion`).
 
 ## Retired documents
 

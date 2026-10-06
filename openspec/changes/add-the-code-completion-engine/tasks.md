@@ -31,7 +31,8 @@
 
 - [x] 4.1 The cancellation trio as the runtime's, every other member refused (EQ2004)
 - [x] 4.2 A method named `Invoke` called as a method
-- [x] 4.3 An exception annotated as `Error` and an interface as `any`
+- [x] 4.3 An exception annotated as `Error` and an interface as `any`, then one rule for every type with
+      no twin of its name on every annotation path (`TsStandIn`)
 - [x] 4.4 Transpile the shared library with the SDK's seven implicit usings
 - [x] 4.5 Check: the conformance suite on both sides (`CancellationConformanceTests`, failing with the
       callbacks in the wrong order), the BCL audit's 23 verdicts, and the runtime's `tsc` over every
@@ -45,5 +46,7 @@
 
 ## 6. The author's review
 
-- [ ] 6.1 Review the whole diff (`/code-review high`) and fix each defect it confirms, proved failing
-      without its fix
+- [x] 6.1 Review the whole diff (`/code-review high`) and fix each defect it confirms, proved failing
+      without its fix: the trap on Tab, a cancellation that throws, a commit during a composition, a
+      copy that does not match, the filter's per-keystroke work, the document's words read whole, a
+      method group of the trio, a late registration, the annotation rule and the implicit usings
