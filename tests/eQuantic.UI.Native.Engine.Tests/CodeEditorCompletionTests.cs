@@ -339,6 +339,21 @@ public class CodeEditorCompletionTests
         host.CodeTarget.Should().NotBeNull();
     }
 
+    [Fact]
+    public void TheRowsAreNoTabStops_TheKeyboardWalksThemFromTheCode()
+    {
+        var editor = Editor(Lines(20), new CodeCompletionItem("Column"), new CodeCompletionItem("ColorToken"));
+        var host = Host(editor);
+        Settle(host);
+        ClickAt(host, editor, 1, 0);
+
+        var frame = Type(host, "Co");
+
+        frame.HitRegions.Should().Contain(region => region.Node.Role == PressableRole.Option, "the rows take presses");
+        frame.FocusStops.Should().NotContain(stop => stop.Pressable != null && stop.Pressable.Role == PressableRole.Option,
+            "Tab never lands on a row: the arrows walk them while the code keeps the keyboard");
+    }
+
     // ---- what assistive technology is told ------------------------------------------------------
 
     [Fact]
