@@ -1,7 +1,7 @@
 import { describe, expect, it, afterEach } from 'vitest';
 import { CalendarNames } from './calendar-names';
 import { SdkStrings } from './components/SdkStrings';
-import { installCulture } from '../utils/culture';
+import { INVARIANT_FORMAT, installCulture } from '../utils/culture';
 import pinned from './calendar-names.fixture.json';
 
 type Snapshot = {
@@ -50,11 +50,15 @@ describe('calendar names (C# CalendarNamesFixtureTests cross-pin)', () => {
       installCulture(
         culture,
         culture,
-        {
-          $dateShort: expected.shortDatePattern,
-          'SdkResources/DateFormatLetters': expected.dateFormatLetters,
-        },
+        { 'SdkResources/DateFormatLetters': expected.dateFormatLetters },
         expected,
+        {
+          ...INVARIANT_FORMAT,
+          dateTimeFormat: {
+            ...INVARIANT_FORMAT.dateTimeFormat,
+            shortDatePattern: expected.shortDatePattern,
+          },
+        },
       );
       expect(CalendarNames.shortDatePattern).toBe(expected.shortDatePattern);
       expect(SdkStrings.dateFormatHint).toBe(expected.dateFormatHint);

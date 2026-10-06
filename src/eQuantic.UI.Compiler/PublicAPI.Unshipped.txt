@@ -40,3 +40,6 @@ const eQuantic.UI.Compiler.CodeGen.Eq.ArraySort = "$eq.collections.arraySort" ->
 const eQuantic.UI.Compiler.CodeGen.Eq.ArraySortBy = "$eq.collections.arraySortBy" -> string!
 const eQuantic.UI.Compiler.CodeGen.Eq.ListBinarySearch = "$eq.collections.binarySearch" -> string!
 eQuantic.UI.Compiler.CodeGen.Strategies.Types.HashSetStrategy.ConvertIr(Microsoft.CodeAnalysis.SyntaxNode! node, eQuantic.UI.Compiler.CodeGen.ConversionContext! context) -> eQuantic.UI.Compiler.CodeGen.Ir.JsExpr!
+*REMOVED*const eQuantic.UI.Compiler.CodeGen.Eq.AsInteger = "$eq.text.asInteger" -> string!
+*REMOVED*const eQuantic.UI.Compiler.CodeGen.Eq.AsSingle = "$eq.text.asSingle" -> string!
+const eQuantic.UI.Compiler.CodeGen.Eq.AsNumber = "$eq.text.asNumber" -> string!

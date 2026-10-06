@@ -10,14 +10,18 @@ namespace eQuantic.UI.Server;
 
 /// <summary>
 /// Track L D4 — the culture half of the shell bridge, the theme bridge's shape slot for slot:
-/// the server picks the catalog the request's UI culture resolves to and inlines it as
-/// <c>window.__EQ_CULTURE__ = { name, formatName, calendar, strings }</c>, applied by boot BEFORE
-/// hydration so the client resolves exactly the strings the server rendered — and names a month
-/// exactly as the server named it, which is what <c>calendar</c> carries (see
-/// <see cref="CalendarJson"/>: the browser's ICU and .NET's do not always agree). The catalogs are the build's
-/// own output (<c>wwwroot/_equantic/strings/{culture}.json</c>, eqc-emitted): resolution walks
-/// exact culture → parents → <c>neutral.json</c> — the .NET fallback chain, already FLATTENED at
-/// emit time (D12), so this walk only picks a FILE and never merges.
+/// <c>window.__EQ_CULTURE__ = { name, formatName, calendar, format, strings }</c>, applied by boot
+/// BEFORE hydration, so the client writes every number and date as the server wrote them and
+/// resolves exactly the strings it rendered. The FORMAT culture travels with every page
+/// (<c>format</c>, from .NET's own data — see <see cref="Web.CultureFormatBridge"/> — and
+/// <c>calendar</c>, what its calendar is called — see <see cref="CalendarJson"/>), whether or not the
+/// app has a single string to translate: a page with no catalog was handed no culture at all, so the
+/// browser formatted in its HOST's locale while the server formatted in the request's (#471). The
+/// strings travel when there are some: the catalog the request's UI culture resolves to, the build's
+/// own output (<c>wwwroot/_equantic/strings/{culture}.json</c>, eqc-emitted), walked exact culture →
+/// parents → <c>neutral.json</c> — the .NET fallback chain, already FLATTENED at emit time (D12), so
+/// this walk only picks a FILE and never merges. A culture switch fetches the format half for the
+/// culture it switches to from <c>/_equantic/culture/{name}.json</c> (<see cref="FormatDocument"/>).
 /// </summary>
 internal static class CultureBridge
 {
@@ -25,23 +29,42 @@ internal static class CultureBridge
     /// the next request in dev without a restart, and production never re-reads a static file.</summary>
     private static readonly ConcurrentDictionary<string, (DateTime Stamp, string Text)> Cache = new();
 
-    internal static string? BuildCultureData(HttpContext context, CultureInfo uiCulture, CultureInfo formatCulture)
+    internal static string BuildCultureData(HttpContext context, CultureInfo uiCulture, CultureInfo formatCulture)
     {
         var webRoot = context.RequestServices.GetService<IWebHostEnvironment>()?.WebRootPath;
         if (string.IsNullOrEmpty(webRoot)) webRoot = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot");
         var stringsDir = Path.Combine(webRoot, "_equantic", "strings");
-        if (!Directory.Exists(stringsDir)) return null;
-
-        var catalog = PickCatalog(stringsDir, uiCulture);
-        if (catalog is null) return null;
+        var catalog = Directory.Exists(stringsDir) ? PickCatalog(stringsDir, uiCulture) : null;
 
         // The catalog file is the build's own System.Text.Json output (default encoder escapes
         // '<', '>' and '&'), so inlining it RAW inside a <script> is safe by construction; the
-        // culture names still serialize through the encoder because they are request-shaped.
+        // culture names and the format data serialize through the encoder too.
         return $"{{\"name\":{JsonSerializer.Serialize(uiCulture.Name)}," +
             $"\"formatName\":{JsonSerializer.Serialize(formatCulture.Name)}," +
             $"\"calendar\":{CalendarJson(formatCulture)}," +
-            $"\"strings\":{catalog}}}";
+            $"\"format\":{Web.CultureFormatBridge.SerializeJson(formatCulture)}" +
+            (catalog is null ? "" : $",\"strings\":{catalog}") + "}";
+    }
+
+    /// <summary>
+    /// A format culture's half of the bridge, for a page that switches to it with no reload: what it
+    /// formats with and what its calendar is called, written as the shell writes them for a request
+    /// in that culture. Null for a name that is no culture .NET knows.
+    /// </summary>
+    internal static string? FormatDocument(string name)
+    {
+        CultureInfo culture;
+        try
+        {
+            culture = CultureInfo.GetCultureInfo(name, predefinedOnly: true);
+        }
+        catch (CultureNotFoundException)
+        {
+            return null;
+        }
+        return $"{{\"formatName\":{JsonSerializer.Serialize(culture.Name)}," +
+            $"\"calendar\":{CalendarJson(culture)}," +
+            $"\"format\":{Web.CultureFormatBridge.SerializeJson(culture)}}}";
     }
 
     /// <summary>

@@ -10,11 +10,11 @@ namespace eQuantic.UI.Compiler.Tests;
 /// What a number turns into when it becomes text, on both targets.
 ///
 /// <para>
-/// C#'s <c>ToString()</c> reads the culture the thread is in; JavaScript's <c>String(x)</c> is
-/// always invariant. So the same expression renders "0,55" from a pt server and "0.55" in the
-/// browser that hydrates over it, and nothing in either language says so. The author's escape is
-/// <c>CultureInfo.InvariantCulture</c> — which the transpiler used to emit as a NAME, so the fix
-/// for the divergence was itself a crash: "CultureInfo is not defined".
+/// C#'s <c>ToString()</c> reads the culture the thread is in, and so does the browser's now: the
+/// formatter writes it in the culture the server sent (#454, #471), where JavaScript's <c>String(x)</c>
+/// rendered "0.55" over a pt server's "0,55". A value written for a machine says so with
+/// <c>CultureInfo.InvariantCulture</c> — which the transpiler used to emit as a NAME, so the escape
+/// was itself a crash: "CultureInfo is not defined".
 /// </para>
 /// </summary>
 public class CultureCrossingTests
@@ -103,15 +103,23 @@ public class CultureCrossingTests
         Assert.Contains("$eq.text.format(this._value, 'N2', undefined, undefined, 'single')", result.TypeScript);
     }
 
-    /// <summary>The quiet one: the shape everybody writes, which means two different things.</summary>
-    [Fact]
-    public void AFractionalNumber_WithNoCulture_IsFlagged()
+    /// <summary>
+    /// The shape everybody writes follows the culture on both targets (#454): a number's text with no
+    /// specifier, and with the current culture or a null named, is the formatter's, in the culture the
+    /// server sent. It was the invariant text under a warning that the targets disagreed (EQ2110),
+    /// and the current culture named with no specifier was refused (EQ2109).
+    /// </summary>
+    [Theory]
+    [InlineData("_value.ToString()")]
+    [InlineData("_value.ToString(CultureInfo.CurrentCulture)")]
+    [InlineData("_value.ToString((IFormatProvider)null)")]
+    public void ANumberWithNoSpecifier_FollowsTheAppsCulture(string body)
     {
-        var result = Compile("_value.ToString()");
+        var result = Compile(body);
 
-        var warning = Assert.Single(result.Warnings, w => w.Code == "EQ2110");
-        Assert.Contains("invariant", warning.Message);
-        Assert.True(result.Success, "it compiles in apps today — the fix is one argument away");
+        Assert.True(result.Success, string.Join("; ", result.Errors.Select(e => e.Message)));
+        Assert.DoesNotContain(result.Warnings, w => w.Code is "EQ2109" or "EQ2110");
+        Assert.Contains("$eq.text.format(this._value, null, undefined, undefined, 'single')", result.TypeScript);
     }
 
     /// <summary>
@@ -172,26 +180,33 @@ public class CultureCrossingTests
         Assert.Single(refused.Errors, e => e.Code == "EQ2108");
     }
 
-    /// <summary>A DateTime's ToString with no specifier is `G` in the current culture, as .NET's is,
-    /// and so is one given the current culture or a null; with the invariant one it is the invariant
-    /// `G`. It wrote the twin's invariant text for the first three (found in review, #472). A null or
-    /// an empty format is `G` too, a variable's at run time (found in Copilot's second round,
-    /// #472).</summary>
+    /// <summary>A date's ToString with no specifier is its type's own text in the current culture, as
+    /// .NET's is — `G` of a DateTime, `d` of a DateOnly, `t` of a TimeOnly, a DateTimeOffset's `G` and
+    /// offset — which the formatter knows, and so is one given the current culture, a null, or a null
+    /// or an empty format, a variable's at run time; with the invariant culture it is the invariant
+    /// text. It wrote the twin's invariant text (found in review, #472), and the other three types
+    /// never reached the formatter (#469).</summary>
     [Theory]
-    [InlineData("new DateTime(2026, 9, 24).ToString()", "'G')")]
-    [InlineData("new DateTime(2026, 9, 24).ToString(CultureInfo.CurrentCulture)", "'G')")]
-    [InlineData("new DateTime(2026, 9, 24).ToString((IFormatProvider)null)", "'G')")]
-    [InlineData("new DateTime(2026, 9, 24).ToString(CultureInfo.InvariantCulture)", "'G', undefined, true)")]
-    [InlineData("new DateTime(2026, 9, 24).ToString((string)null)", "'G')")]
-    [InlineData("new DateTime(2026, 9, 24).ToString(\"\")", "'G')")]
-    [InlineData("new DateTime(2026, 9, 24).ToString((string)null, CultureInfo.InvariantCulture)", "'G', undefined, true)")]
-    [InlineData("new DateTime(2026, 9, 24).ToString(\"\", CultureInfo.CurrentCulture)", "'G')")]
-    [InlineData("new DateTime(2026, 9, 24).ToString(_pattern)", "this._pattern || 'G')")]
-    public void ADateTimesToString_WithNoSpecifier_IsTheGeneralPattern(string body, string emitted)
+    [InlineData("new DateTime(2026, 9, 24).ToString()", ", null)")]
+    [InlineData("new DateTime(2026, 9, 24).ToString(CultureInfo.CurrentCulture)", ", null)")]
+    [InlineData("new DateTime(2026, 9, 24).ToString((IFormatProvider)null)", ", null)")]
+    [InlineData("new DateTime(2026, 9, 24).ToString(CultureInfo.InvariantCulture)", ", null, undefined, true)")]
+    [InlineData("new DateTime(2026, 9, 24).ToString((string)null)", ", null)")]
+    [InlineData("new DateTime(2026, 9, 24).ToString(\"\")", ", '')")]
+    [InlineData("new DateTime(2026, 9, 24).ToString((string)null, CultureInfo.InvariantCulture)", ", null, undefined, true)")]
+    [InlineData("new DateTime(2026, 9, 24).ToString(\"\", CultureInfo.CurrentCulture)", ", '')")]
+    [InlineData("new DateTime(2026, 9, 24).ToString(_pattern)", ", this._pattern)")]
+    [InlineData("new DateOnly(2026, 9, 24).ToString()", ", null)")]
+    [InlineData("new DateOnly(2026, 9, 24).ToString(\"D\", CultureInfo.InvariantCulture)", ", 'D', undefined, true)")]
+    [InlineData("new TimeOnly(10, 30).ToString(\"t\")", ", 't')")]
+    [InlineData("new DateTimeOffset(2026, 9, 24, 10, 30, 0, TimeSpan.Zero).ToString(\"o\")", ", 'o')")]
+    public void ADatesToString_WithNoSpecifier_IsItsTypesOwnText(string body, string emitted)
     {
         var result = Compile(body);
         Assert.True(result.Success, string.Join("; ", result.Errors.Select(e => e.Message)));
-        Assert.Contains(emitted, result.TypeScript);
+        // The formatter's call, closing on what it is handed after the value.
+        Assert.Matches(@"\$eq\.text\.format\(\$eq\.time\.\w+\([^;]*?\)" + System.Text.RegularExpressions.Regex.Escape(emitted),
+            result.TypeScript);
     }
 
     /// <summary>A provider the subset cannot honour is refused where the developer can see it,

@@ -1,4 +1,4 @@
-import { BuildContext, Button, Column, StatefulComponent, Text } from "@equantic/runtime";
+import { $eq, BuildContext, Button, Column, StatefulComponent, Text } from "@equantic/runtime";
 
 export class SharedCounter extends StatefulComponent {
     static $typeId = 'eQuantic.UI.Web.Tests.Fixtures.SharedCounter';
@@ -6,7 +6,7 @@ export class SharedCounter extends StatefulComponent {
 
     build(_context: BuildContext) {
         let column = new Column(12);
-        column.add(new Text(`Count: ${this._count}`, 'title'));
+        column.add(new Text(`Count: ${$eq.text.format(this._count, null)}`, 'title'));
         for (const cell of this.cells()) column.add(cell);
         column.add(new Button('Increment', 'primary', 'medium', () => this.setState(() => this._count++)));
         column.add(new Button('Later', 'primary', 'medium', this.bumpSoon.bind(this)));

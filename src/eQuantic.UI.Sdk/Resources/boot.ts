@@ -22,6 +22,7 @@ import {
   installCulture,
   setCultureInvalidator,
   type CalendarCatalog,
+  type CultureFormat,
 } from '../../eQuantic.UI.Runtime/src/utils/culture';
 import { EscapeHatchPage, componentIdentity } from '../../eQuantic.UI.Runtime/src/core/component';
 import {
@@ -166,9 +167,10 @@ export async function boot(): Promise<void> {
       setPhotonTheme(materializeTheme(themeData));
     }
 
-    // Track L D4: install the request's culture and its string catalog BEFORE hydration — the
-    // client must resolve exactly the strings the server rendered, or the SSR-identity contract
-    // breaks on any translated page. The server emits window.__EQ_CULTURE__ next to the theme.
+    // Track L D4: install the request's culture BEFORE hydration — the client must resolve exactly
+    // the strings the server rendered and write every number and date as it wrote them, or the
+    // SSR-identity contract breaks. The server emits window.__EQ_CULTURE__ next to the theme, on
+    // every page: the format culture always travels, its strings only when the app has some (#471).
     const cultureData = (window as unknown as {
       __EQ_CULTURE__?: {
         name?: string;
@@ -179,6 +181,9 @@ export async function boot(): Promise<void> {
         // Sunday with the definite article in one and without it in the other), and a label that
         // differs between the SSR HTML and the hydrated tree is a flicker nobody catches.
         calendar?: CalendarCatalog;
+        // How the format culture writes a number and a date, from .NET's own NumberFormatInfo and
+        // DateTimeFormatInfo, for the same reason.
+        format?: CultureFormat;
       };
     }).__EQ_CULTURE__;
     if (cultureData) {
@@ -187,6 +192,7 @@ export async function boot(): Promise<void> {
         cultureData.formatName ?? cultureData.name ?? '',
         cultureData.strings ?? {},
         cultureData.calendar,
+        cultureData.format,
       );
     }
 

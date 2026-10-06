@@ -272,7 +272,7 @@ export class MermaidLayout {
         let maxX = MermaidLayout.max4(sx, k1x, k2x, ex) + MermaidLayout.curvePad;
         let minY = MermaidLayout.min4(sy, k1y, k2y, ey) - MermaidLayout.curvePad;
         let maxY = MermaidLayout.max4(sy, k1y, k2y, ey) + MermaidLayout.curvePad;
-        scene.curves.push(new MermaidCurve({ x: Math.fround(minX), y: Math.fround(minY), w: Math.fround(maxX - minX), h: Math.fround(maxY - minY), path: 'M ' + sx + ' ' + sy + ' C ' + k1x + ' ' + k1y + ', ' + k2x + ' ' + k2y + ', ' + ex + ' ' + ey, viewBox: minX + ' ' + minY + ' ' + (maxX - minX) + ' ' + (maxY - minY) }));
+        scene.curves.push(new MermaidCurve({ x: Math.fround(minX), y: Math.fround(minY), w: Math.fround(maxX - minX), h: Math.fround(maxY - minY), path: $eq.text.stringFormatInvariant('M {0} {1} C {2} {3}, {4} {5}, {6} {7}', sx, sy, k1x, k1y, k2x, k2y, ex, ey), viewBox: $eq.text.stringFormatInvariant('{0} {1} {2} {3}', minX, minY, maxX - minX, maxY - minY) }));
     }
 
     static whole(v: number) {

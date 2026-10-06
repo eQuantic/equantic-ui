@@ -19,7 +19,7 @@ export class CodeRows {
         while (f < sortedFillers.length || c < sortedCollapses.length) {
             let takeFiller = f < sortedFillers.length && (c >= sortedCollapses.length || sortedFillers[f].beforeLine <= sortedCollapses[c].firstLine);
             let at = takeFiller ? sortedFillers[f].beforeLine : sortedCollapses[c].firstLine;
-            if (at < line || at > this.lineCount) throw $eq.exceptions.create(['System.ArgumentException', 'System.SystemException', 'System.Exception'], `A filler or a collapse at line ${at} overlaps a collapse, or lies outside the ${this.lineCount} lines.`);
+            if (at < line || at > this.lineCount) throw $eq.exceptions.create(['System.ArgumentException', 'System.SystemException', 'System.Exception'], `A filler or a collapse at line ${$eq.text.format(at, null)} overlaps a collapse, or lies outside the ${$eq.text.format(this.lineCount, null)} lines.`);
             if (at > line) {
                 this.add('line', line, at - line, row, at - line, -1, null);
                 row += at - line;

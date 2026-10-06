@@ -13,6 +13,15 @@ namespace eQuantic.UI.Compiler.CodeGen.Strategies.Types;
 /// </summary>
 public class DateOnlyTimeOnlyStrategy : ConversionStrategyBase
 {
+    /// <summary>The methods that are a standard specifier by another name.</summary>
+    private static readonly Dictionary<string, string> CultureStrings = new(StringComparer.Ordinal)
+    {
+        ["ToShortDateString"] = "d",
+        ["ToLongDateString"] = "D",
+        ["ToShortTimeString"] = "t",
+        ["ToLongTimeString"] = "T",
+    };
+
     public override bool CanConvert(SyntaxNode node, ConversionContext context)
     {
         switch (node)
@@ -24,8 +33,11 @@ public class DateOnlyTimeOnlyStrategy : ConversionStrategyBase
             // No twin reads a date back through a format pattern: `ParseExact` emitted a call to a
             // member the runtime does not have, a TypeError the moment the page ran it, and the audit
             // graded it `eq` because the call named `$eq`. Left unclaimed, it is EQ1001 at build time.
+            // A value's ToString is the formatter's (ToStringStrategy), as a DateTime's is (#469): the
+            // twin's toString knew six tokens and no culture.
             case InvocationExpressionSyntax { Expression: MemberAccessExpressionSyntax ma }:
-                return Kind(ma, context) != null && ma.Name.Identifier.Text is not ("ParseExact" or "TryParseExact");
+                return Kind(ma, context) != null
+                    && ma.Name.Identifier.Text is not ("ParseExact" or "TryParseExact" or "ToString");
 
             case MemberAccessExpressionSyntax member:
                 return Kind(member, context) != null;
@@ -54,6 +66,11 @@ public class DateOnlyTimeOnlyStrategy : ConversionStrategyBase
                 if (IsStaticAccess(ma, context))
                     return $"$eq.time.{StaticKind(ma, context)}.{name.ToCamelCase()}({args})";
                 var receiver = context.Converter.ConvertExpression(ma.Expression);
+                // The short and long date and time strings are .NET's ToString("d"), ("D"), ("t") and
+                // ("T") in the current culture, and go where ToString goes: the twins have no method by
+                // those names, so each was a TypeError in the browser (#469).
+                if (CultureStrings.TryGetValue(name, out var specifier))
+                    return $"{Eq.Format}({receiver}, '{specifier}')";
                 return $"{receiver}.{name.ToCamelCase()}({args})";
             }
 

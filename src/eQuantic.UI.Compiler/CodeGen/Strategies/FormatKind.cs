@@ -5,21 +5,25 @@ namespace eQuantic.UI.Compiler.CodeGen.Strategies;
 
 /// <summary>
 /// Which C# number a JavaScript number stands for, as the runtime's formatter reads it
-/// (<c>NumberKind</c>): the name of its .NET type. A number cannot say it is a float or an int, and
-/// each formats its own way: a float writes a single's own digits (#378), an integer rounds a
-/// formatted half away from zero where a double rounds it to even (#393), so
+/// (<c>NumberKind</c>): the name of its .NET type. A number cannot say it is a double, a float or an
+/// int, and each formats its own way: a float writes a single's own digits (#378), an integer rounds
+/// a formatted half away from zero where a double rounds it to even (#393), so
 /// <c>125.ToString("E1")</c> is <c>1.3E+002</c> and <c>125.0.ToString("E1")</c> is <c>1.2E+002</c>,
-/// and <c>X</c> writes a negative integer as its two's complement at the type's width, so
-/// <c>((short)-1).ToString("X")</c> is <c>FFFF</c> where an int's is <c>FFFFFFFF</c> (#445). A long
-/// and a decimal say what they are on their own, as a BigInt and a Decimal. The one place the static
-/// type is turned into the kind.
+/// <c>X</c> writes a negative integer as its two's complement at the type's width, so
+/// <c>((short)-1).ToString("X")</c> is <c>FFFF</c> where an int's is <c>FFFFFFFF</c> (#445) and a
+/// <c>nint</c>'s sixteen F's, and only an integer takes <c>D</c>, <c>X</c> and <c>B</c>, so
+/// <c>(2.0).ToString("D")</c> throws as .NET throws (#455). A value whose type is none of these (an
+/// <c>object</c>, a generic) reaches the formatter with no kind, as <c>unknown</c>, and is read by
+/// what it holds. A long and a decimal say what they are on their own, as a BigInt and a Decimal.
+/// The one place the static type is turned into the kind.
 /// </summary>
 internal static class FormatKind
 {
-    /// <summary>The kind for <paramref name="type"/>, or null for a double, which is the formatter's
-    /// default, and for anything that is not a number of these widths.</summary>
+    /// <summary>The kind for <paramref name="type"/>, or null for anything that is not a number of
+    /// these types.</summary>
     public static string? Of(ITypeSymbol? type) => type.UnwrapNullable()?.SpecialType switch
     {
+        SpecialType.System_Double => "double",
         SpecialType.System_Single => "single",
         SpecialType.System_SByte => "sbyte",
         SpecialType.System_Byte => "byte",
@@ -27,10 +31,12 @@ internal static class FormatKind
         SpecialType.System_UInt16 => "uint16",
         SpecialType.System_Int32 => "int32",
         SpecialType.System_UInt32 => "uint32",
+        SpecialType.System_IntPtr => "nint",
+        SpecialType.System_UIntPtr => "nuint",
         _ => null,
     };
 
-    /// <summary>Whether <paramref name="kind"/> names an integer: its text with no specifier is its
-    /// digits whatever it is, so it says what it is only where a specifier is written.</summary>
-    public static bool IsInteger(string? kind) => kind is not null and not "single";
+    /// <summary>The kind a value's text with NO specifier needs, which is a float's alone: its own
+    /// digits are not the double's, and every other number's text is its digits whatever it is.</summary>
+    public static string? OfText(ITypeSymbol? type) => Of(type) is "single" ? "single" : null;
 }

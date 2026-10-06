@@ -10,10 +10,12 @@ namespace eQuantic.UI.Compiler.CodeGen.Strategies;
 /// where JavaScript would do something else. The conversion is the same in both places, so it is
 /// decided in one: a null is the empty string (JavaScript writes <c>null</c>), a bool is
 /// <c>True</c>/<c>False</c> (JavaScript lowercases), a nullable value type follows its value or
-/// the empty string, an enum is its member NAME, a fractional number is written in .NET's
-/// notation (<c>1E+17</c>, <c>-0</c>, a float's own digits), and a value the browser holds as data
-/// is its record text. Integers, chars, longs and decimals
-/// already read the same on both sides; a string known to be non-null is left alone.
+/// the empty string, an enum is its member NAME, a value the browser holds as data is its record
+/// text, and a number and a date are written in the culture in force, as .NET writes them (#454): a
+/// fraction with the culture's separator (<c>1,5</c> in pt-BR), a negative integer with its minus
+/// sign (sv-SE's is U+2212), a float in its own digits, a date in its type's own pattern. An
+/// unsigned integer and a char read the same in every culture, and are left as they are, as is a
+/// string known to be non-null and an integer constant that is not negative.
 /// </summary>
 public static class StringConversion
 {
@@ -39,6 +41,9 @@ public static class StringConversion
                 ? converted
                 : JsExpr.Binary(converted, "??", JsExpr.Literal("''"));
 
+        // An integer constant that is not negative is its digits in every culture.
+        if (IsNonNegativeIntegerConstant(operand, context)) return converted;
+
         return Of(type, converted, context);
     }
 
@@ -55,9 +60,6 @@ public static class StringConversion
         if (type.UnwrapNullable() is INamedTypeSymbol { TypeKind: TypeKind.Enum } enumType)
             return JsExpr.Callish(Types.EnumShape.Text(enumType, text, context));
 
-        // A fractional number, or a nullable one, reads the way .NET writes it (#336). JavaScript's
-        // String() keeps fixed notation up to 1e21, drops the sign of -0, and gives a float the
-        // digits of the double underneath: "v=" + 0.1f read "v=0.10000000149011612".
         var real = type.UnwrapNullable() ?? type;
 
         // A value the browser holds as DATA (`[TwinIsData]`, `Color`) is a plain object, whose own
@@ -70,13 +72,15 @@ public static class StringConversion
             return JsExpr.Callish($"{Eq.RecordText}({text}, '{data.Name}', [{members}])");
         }
 
-        if (real.SpecialType is SpecialType.System_Double or SpecialType.System_Single)
+        // A number or a date is its text in the culture in force, through the formatter that writes
+        // every other number and date (#454): JavaScript's own string of it is invariant, so a
+        // pt-BR page read `1.5` where the server had rendered `1,5`, and a float spelled the double
+        // underneath. A null one writes nothing, which the formatter answers too.
+        if (WritesInTheCulture(real))
         {
             context.UsedHelpers.Add(Eq.Import);
-            var printer = real.SpecialType == SpecialType.System_Single ? Eq.Single : Eq.Double;
-            return ReferenceEquals(real, type)
-                ? JsExpr.Callish($"{printer}({text})")
-                : JsExpr.Template($"({{0}} == null ? '' : {printer}({{0}}))", [converted], context.TypeAnnotations);
+            var kind = FormatKind.OfText(real) is { } named ? $", undefined, undefined, '{named}'" : "";
+            return JsExpr.Callish($"{Eq.Format}({text}, null{kind})");
         }
 
         if (!NeedsFormatting(type)) return converted;
@@ -84,6 +88,36 @@ public static class StringConversion
         context.UsedHelpers.Add(Eq.Import);
         return JsExpr.Callish($"{Eq.Format}({text}, null)");
     }
+
+    /// <summary>
+    /// The value's text, as its <c>ToString()</c> writes it: what a concatenation writes, and
+    /// <c>String()</c> of what a concatenation leaves as it is, since a number on its own is not text.
+    /// </summary>
+    internal static JsExpr ToText(ExpressionSyntax operand, JsExpr converted, ConversionContext context)
+    {
+        var text = ToDotNetString(operand, converted, context);
+        return ReferenceEquals(text, converted)
+            && context.SemanticHelper.GetType(operand)?.SpecialType != SpecialType.System_String
+            ? JsExpr.Callish($"String({JsExprWriter.Write(converted)})")
+            : text;
+    }
+
+    /// <summary>
+    /// Whether the culture changes this type's text: a fraction's separator, a signed integer's
+    /// minus sign and a date's patterns. An unsigned integer, a char and a TimeSpan (whose text is
+    /// invariant in .NET) read the same everywhere.
+    /// </summary>
+    private static bool WritesInTheCulture(ITypeSymbol type) =>
+        type.SpecialType is SpecialType.System_Double or SpecialType.System_Single
+            or SpecialType.System_Decimal or SpecialType.System_SByte or SpecialType.System_Int16
+            or SpecialType.System_Int32 or SpecialType.System_Int64 or SpecialType.System_IntPtr
+            or SpecialType.System_DateTime
+        || type.ToDisplayString() is "System.DateOnly" or "System.TimeOnly" or "System.DateTimeOffset";
+
+    /// <summary>An integer constant that is not negative: its digits are its text in every culture.</summary>
+    private static bool IsNonNegativeIntegerConstant(ExpressionSyntax operand, ConversionContext context) =>
+        context.SemanticHelper.TryGetConstantValue(operand, out var value)
+        && value is sbyte and >= 0 or short and >= 0 or int and >= 0 or long and >= 0;
 
     /// <summary>Whether JavaScript's own string of this type differs from .NET's: booleans, anything
     /// nullable, and a bare <c>object</c> (which may hold either).</summary>

@@ -1,11 +1,18 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   activeCulture,
+  activeFormatData,
+  activePattern,
+  calendarCatalog,
+  formatLocale,
+  INVARIANT_FORMAT,
   installCulture,
   setCulture,
   setCultureCatalogLoader,
+  setCultureFormatLoader,
   setCultureInvalidator,
   str,
+  type CultureFormat,
 } from './culture';
 import { $eq } from '../eq';
 
@@ -14,6 +21,8 @@ import { $eq } from '../eq';
 describe('culture atom', () => {
   beforeEach(() => {
     installCulture('', '', {});
+    // No server behind these specs: a switch finds no format data unless a spec answers for it.
+    setCultureFormatLoader(async () => null);
   });
 
   it('carries the PAIR — resources and formats are independent, exactly as .NET models them', () => {
@@ -177,5 +186,105 @@ describe('culture atom', () => {
     } finally {
       warn.mockRestore();
     }
+  });
+});
+
+/** A format culture's data as the server writes it, as far as these specs read it. */
+function formatOf(decimal: string, shortDatePattern: string): CultureFormat {
+  return {
+    ...INVARIANT_FORMAT,
+    numberFormat: { ...INVARIANT_FORMAT.numberFormat, numberDecimalSeparator: decimal },
+    dateTimeFormat: { ...INVARIANT_FORMAT.dateTimeFormat, shortDatePattern },
+  };
+}
+
+/** #471: the FORMAT culture travels always, its strings only when there are some. */
+describe('the format culture', () => {
+  beforeEach(() => {
+    installCulture('', '', {});
+    setCultureCatalogLoader(async () => null);
+    setCultureFormatLoader(async () => null);
+    setCultureInvalidator(() => {});
+  });
+
+  it('is the invariant culture on a page nothing installed a culture on', () => {
+    expect(formatLocale()).toBeUndefined();
+    expect(activeFormatData()).toBe(INVARIANT_FORMAT);
+    expect(activePattern('dateShort')).toBe('MM/dd/yyyy');
+  });
+
+  it('installs the data the server wrote for it, catalog or not', () => {
+    const ptBr = formatOf(',', 'dd/MM/yyyy');
+    installCulture('pt-BR', 'pt-BR', {}, null, ptBr);
+    expect(activeFormatData()).toBe(ptBr);
+    expect(activePattern('dateShort')).toBe('dd/MM/yyyy');
+  });
+
+  it('has no data for a culture installed without it, which the formatter reads through Intl', () => {
+    installCulture('fr-FR', 'fr-FR', {});
+    expect(activeFormatData()).toBeNull();
+    expect(activePattern('dateShort')).toBeNull();
+  });
+
+  it('a switch fetches the FORMAT culture’s data beside the catalog, with its calendar', async () => {
+    const asked: string[] = [];
+    const calendar = {
+      firstDayOfWeek: 1,
+      dayNamesShort: ['So.', 'Mo.', 'Di.', 'Mi.', 'Do.', 'Fr.', 'Sa.'],
+      dayNamesLong: [],
+      monthNames: [],
+      monthNamesShort: [],
+    };
+    const deDe = formatOf(',', 'dd.MM.yyyy');
+    setCultureFormatLoader(async (culture) => {
+      asked.push(culture);
+      return culture === 'de-CH' ? { format: deDe, calendar } : null;
+    });
+
+    // English strings over Swiss formats: the data asked for is the FORMAT half's.
+    await setCulture('en-GB', 'de-CH');
+
+    expect(asked).toEqual(['de-CH']);
+    expect(activeFormatData()).toBe(deDe);
+    expect(calendarCatalog()).toBe(calendar);
+  });
+
+  it('a format culture already in memory switches back without asking for it again', async () => {
+    const asked: string[] = [];
+    setCultureFormatLoader(async (culture) => {
+      asked.push(culture);
+      return { format: formatOf(culture === 'nl-BE' ? ',' : '.', 'd/MM/yyyy') };
+    });
+
+    await setCulture('nl-BE');
+    await setCulture('en-IE');
+    await setCulture('nl-BE');
+
+    expect(asked).toEqual(['nl-BE', 'en-IE']);
+    expect(activeFormatData()?.numberFormat.numberDecimalSeparator).toBe(',');
+  });
+
+  it('a switch with no server to answer still switches, and formats through Intl', async () => {
+    await setCulture('it-IT');
+    expect(activeCulture()).toEqual({ ui: 'it-IT', format: 'it-IT' });
+    expect(activeFormatData()).toBeNull();
+  });
+
+  it('asks the server for the culture by its name', async () => {
+    const urls: string[] = [];
+    const original = globalThis.fetch;
+    globalThis.fetch = (async (url: string) => {
+      urls.push(url);
+      return new Response(JSON.stringify({ format: formatOf(',', 'dd/MM/yyyy') }), { status: 200 });
+    }) as typeof fetch;
+    try {
+      // The module's own transport, as boot leaves it.
+      setCultureFormatLoader();
+      await setCulture('pt-PT');
+    } finally {
+      globalThis.fetch = original;
+    }
+    expect(urls).toContain('/_equantic/culture/pt-PT.json');
+    expect(activeFormatData()?.dateTimeFormat.shortDatePattern).toBe('dd/MM/yyyy');
   });
 });

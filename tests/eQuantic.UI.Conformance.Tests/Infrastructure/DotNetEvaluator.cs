@@ -43,24 +43,66 @@ public static class DotNetEvaluator
         Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
     };
 
-    static DotNetEvaluator()
+    /// <summary>
+    /// The JSON as <c>JSON.stringify</c> spells it, which escapes only what JSON requires: a quote, a
+    /// backslash, a control character and a lone surrogate. Even the relaxed encoder escapes more —
+    /// a no-break space, which is sv-SE's group separator, came out as <c>\u00A0</c> on this side and
+    /// as the character on the other, and two spellings of one string compared unequal. A code unit it
+    /// escaped that JSON.stringify writes as it is, is written as it is.
+    /// </summary>
+    private static string AsJavaScriptWritesIt(string json)
     {
-        // Make .NET formatting (ToString("F2"), N0, etc.) deterministic and culture-independent so
-        // the comparison isn't skewed by the host locale (e.g. pt-BR using a comma decimal). The JS
-        // runtime `format` helper formats with an invariant/dot convention, so we match that here.
-        CultureInfo.DefaultThreadCurrentCulture = CultureInfo.InvariantCulture;
-        CultureInfo.CurrentCulture = CultureInfo.InvariantCulture;
+        if (!json.Contains("\\u", StringComparison.Ordinal)) return json;
+        var written = new System.Text.StringBuilder(json.Length);
+        for (var i = 0; i < json.Length; i++)
+        {
+            var c = json[i];
+            if (c != '\\' || i + 1 >= json.Length)
+            {
+                written.Append(c);
+                continue;
+            }
+            if (json[i + 1] == 'u' && i + 5 < json.Length
+                && int.TryParse(json.AsSpan(i + 2, 4), NumberStyles.AllowHexSpecifier, CultureInfo.InvariantCulture, out var unit)
+                && unit >= 0x20 && unit != '"' && unit != '\\' && !char.IsSurrogate((char)unit))
+            {
+                written.Append((char)unit);
+                i += 5;
+                continue;
+            }
+            // Any other escape is the same on both sides, and its second character is not a new one.
+            written.Append(c).Append(json[i + 1]);
+            i++;
+        }
+        return written.ToString();
     }
 
-    public static string EvaluateToJson(string csharpExpression, string prelude = "")
+    /// <summary>
+    /// Evaluates the C# in the culture NAMED, the invariant one unless a case names another, never in
+    /// whatever culture the host or the thread happens to be in: a case runs on the browser side with
+    /// that culture installed, or with none, which is the invariant culture there too (#471). It was
+    /// set once, in a static constructor, on whichever thread first touched this type.
+    /// </summary>
+    public static string EvaluateToJson(string csharpExpression, string prelude = "", CultureInfo? culture = null)
     {
         // A prelude (type declarations such as enums/records) runs before the trailing expression;
         // CSharpScript returns the value of that final expression.
         var script = string.IsNullOrWhiteSpace(prelude) ? csharpExpression : $"{prelude}\n{csharpExpression}";
-        var value = CSharpScript.EvaluateAsync<object?>(script, Options).GetAwaiter().GetResult();
-        return ToJson(value);
+        var previous = (CultureInfo.CurrentCulture, CultureInfo.CurrentUICulture);
+        CultureInfo.CurrentCulture = culture ?? CultureInfo.InvariantCulture;
+        CultureInfo.CurrentUICulture = culture ?? CultureInfo.InvariantCulture;
+        try
+        {
+            // The culture flows into the script's awaits with the execution context.
+            var value = CSharpScript.EvaluateAsync<object?>(script, Options).GetAwaiter().GetResult();
+            return ToJson(value);
+        }
+        finally
+        {
+            (CultureInfo.CurrentCulture, CultureInfo.CurrentUICulture) = previous;
+        }
     }
 
     /// <summary>A .NET value as the canonical JSON a case's answers are compared in.</summary>
-    public static string ToJson(object? value) => JsonSerializer.Serialize(value, JsonOptions);
+    public static string ToJson(object? value) => AsJavaScriptWritesIt(JsonSerializer.Serialize(value, JsonOptions));
 }

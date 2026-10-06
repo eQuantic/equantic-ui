@@ -1,4 +1,4 @@
-import { BuildContext, Button, Column, StatefulComponent } from "@equantic/runtime";
+import { $eq, BuildContext, Button, Column, StatefulComponent } from "@equantic/runtime";
 import { NestedChild } from "./NestedChild";
 
 export class NestedHost extends StatefulComponent {
@@ -8,7 +8,7 @@ export class NestedHost extends StatefulComponent {
     build(_context: BuildContext) {
         let column = new Column(8);
         column.add(new Button('Bump', 'primary', 'medium', () => this.setState(() => this._generation++)));
-        column.add(new NestedChild(`g${this._generation}`));
+        column.add(new NestedChild(`g${$eq.text.format(this._generation, null)}`));
         return column;
     }
 }

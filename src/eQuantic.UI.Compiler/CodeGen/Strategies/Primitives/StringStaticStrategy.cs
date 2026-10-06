@@ -315,16 +315,17 @@ public class StringStaticStrategy : IConversionStrategy
         context.UsedHelpers.Add(Eq.Import);
         var passed = values.OrderBy(value => value.Slot).ToList();
         // A float is boxed with its kind wherever its static type is float: an argument, an element
-        // written in place, and each element of a spread collection of floats.
-        // An integer is boxed with its kind too, where the template writes a specifier, since it rounds
-        // a formatted half away from zero where a double rounds it to even (#393).
+        // written in place, and each element of a spread collection of floats, since its text is its
+        // own digits with a specifier or without one.
+        // Any other number is boxed with its kind where the template writes a specifier: an integer
+        // rounds a formatted half away from zero where a double rounds it to even (#393), and only an
+        // integer takes D, X and B, at its type's width (#445, #455).
         var specified = MayWriteASpecifier(template, context);
-        // The call that boxes one value of the type, or null where the value goes as it is. An
-        // integer's box carries its kind, whose width is what X writes a negative one at.
+        // The call that boxes one value of the type, or null where the value goes as it is.
         Func<string, string>? BoxOf(ITypeSymbol? type) => FormatKind.Of(type) switch
         {
-            "single" => text => $"{Eq.AsSingle}({text})",
-            { } integer when specified => text => $"{Eq.AsInteger}({text}, '{integer}')",
+            "single" => text => $"{Eq.AsNumber}({text}, 'single')",
+            { } kind when specified => text => $"{Eq.AsNumber}({text}, '{kind}')",
             _ => null,
         };
         string Passed((int Slot, ExpressionSyntax Value, bool Spread) value, string text) =>

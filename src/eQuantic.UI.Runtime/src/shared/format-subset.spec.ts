@@ -14,7 +14,7 @@
 
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import { installCulture } from '../utils/culture';
+import { INVARIANT_FORMAT, installCulture, type CultureFormat } from '../utils/culture';
 import { dateTime } from '../utils/datetime';
 import { format, stringFormat } from '../utils/format';
 
@@ -42,16 +42,14 @@ interface InvariantCase {
   expected: string;
 }
 
-/** The catalog a culture would carry in production: its currency code and its own date patterns,
- * both written by the build from the same .NET source this fixture was generated from. */
-type CultureFacts = Record<string, string>;
-
 function parseFixture(): {
-  facts: Record<string, CultureFacts>;
+  facts: Record<string, CultureFormat>;
+  invariantFormat: CultureFormat | null;
   cases: Case[];
   invariant: InvariantCase[];
 } {
-  const facts: Record<string, CultureFacts> = {};
+  const facts: Record<string, CultureFormat> = {};
+  let invariantFormat: CultureFormat | null = null;
   const cases: Case[] = [];
   const invariant: InvariantCase[] = [];
   for (const line of fixture.split('\n')) {
@@ -63,30 +61,21 @@ function parseFixture(): {
       invariant.push({ value, spec, expected: rest.join('|') });
       continue;
     }
+    if (line.startsWith('invariant ')) {
+      invariantFormat = JSON.parse(line.slice('invariant '.length)) as CultureFormat;
+      continue;
+    }
     if (line.startsWith('culture ')) {
-      // Split on the FIRST space only: a pattern is full of spaces ("dddd, MMMM d, yyyy"), and
-      // splitting on all of them silently truncated every culture's date facts.
+      // The data starts after the SECOND space: it is JSON, and its patterns are full of spaces.
       const header = line.slice('culture '.length);
       const cut = header.indexOf(' ');
-      const name = header.slice(0, cut);
-      const rest = header.slice(cut + 1);
-      const [currency, dateShort, dateLong, timeShort, timeLong, monthDay, yearMonth] =
-        rest.split('|');
-      facts[name] = {
-        $currency: currency,
-        $dateShort: dateShort,
-        $dateLong: dateLong,
-        $timeShort: timeShort,
-        $timeLong: timeLong,
-        $monthDay: monthDay,
-        $yearMonth: yearMonth,
-      };
+      facts[header.slice(0, cut)] = JSON.parse(header.slice(cut + 1)) as CultureFormat;
       continue;
     }
     const [kind, culture, value, spec, ...rest] = line.split('|');
     cases.push({ kind: kind as Case['kind'], culture, value, spec, expected: rest.join('|') });
   }
-  return { facts, cases, invariant };
+  return { facts, invariantFormat, cases, invariant };
 }
 
 /** The date arrives as LOCAL parts, exactly as the C# side wrote them — a fixture that crossed a
@@ -99,7 +88,13 @@ function localDate(iso: string): Date {
 }
 
 describe('D7 formatting subset (cross-pinned with FormatSubsetTests.cs)', () => {
-  const { facts, cases, invariant } = parseFixture();
+  const { facts, invariantFormat, cases, invariant } = parseFixture();
+
+  it('carries the invariant culture the server writes, as the runtime’s own', () => {
+    // A page with no culture installed is in the invariant culture, from the runtime's constant;
+    // a request in the invariant culture installs what the server writes for it. They are one.
+    expect(INVARIANT_FORMAT).toEqual(invariantFormat);
+  });
 
   it('covers every culture in the fixture', () => {
     expect(Object.keys(facts).length).toBeGreaterThan(2);
@@ -110,7 +105,7 @@ describe('D7 formatting subset (cross-pinned with FormatSubsetTests.cs)', () => 
     // What `new DateTime(2026, 8, 13, 15, 45, 7)` transpiles to. It used to fall through to
     // String(value) — the invariant default — so the most naturally written date on a page was
     // the one that ignored the culture.
-    installCulture('pt-BR', 'pt-BR', facts['pt-BR']);
+    installCulture('pt-BR', 'pt-BR', {}, null, facts['pt-BR']);
     const moment = dateTime(2026, 8, 13, 15, 45, 7);
     expect(format(moment, 'd')).toBe('13/08/2026');
     expect(format(moment, 't')).toBe('15:45');
@@ -119,9 +114,9 @@ describe('D7 formatting subset (cross-pinned with FormatSubsetTests.cs)', () => 
 
   for (const culture of Object.keys(facts)) {
     it(`formats exactly like .NET in ${culture}`, () => {
-      // Exactly the catalog production carries: the currency code and the culture's own
-      // patterns, written by the build from the .NET data this fixture was generated from.
-      installCulture(culture, culture, facts[culture]);
+      // Exactly the data production installs: what the server writes for a page in the culture,
+      // from the .NET data this fixture was generated from.
+      installCulture(culture, culture, {}, null, facts[culture]);
 
       const mismatches: string[] = [];
       for (const testCase of cases.filter((c) => c.culture === culture)) {
@@ -147,17 +142,14 @@ describe('D7 formatting subset (cross-pinned with FormatSubsetTests.cs)', () => 
    * a dot, matching what real .NET produced on the other side of the fixture.
    */
   it('formats invariantly even with another culture installed', () => {
-    installCulture('pt-BR', 'pt-BR', facts['pt-BR']);
+    installCulture('pt-BR', 'pt-BR', {}, null, facts['pt-BR']);
     expect(invariant.length).toBeGreaterThan(10);
 
     const mismatches: string[] = [];
     for (const testCase of invariant) {
       const value = Number(testCase.value);
-      // No specifier is `String(x)` — which is what the transpiler emits for the same shape, and
-      // is already .NET's invariant rendering of a number.
-      const actual = normalize(
-        testCase.spec.length === 0 ? String(value) : format(value, testCase.spec, undefined, true),
-      );
+      // No specifier is the value's own text in the invariant culture.
+      const actual = normalize(format(value, testCase.spec, undefined, true));
       if (actual !== testCase.expected)
         mismatches.push(
           `${testCase.value}:${testCase.spec} → "${actual}" ≠ "${testCase.expected}"`,

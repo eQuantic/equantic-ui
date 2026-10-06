@@ -85,24 +85,18 @@ public class FormatSubsetTests
     private static string Dump()
     {
         var builder = new StringBuilder();
+        // What the runtime carries for the invariant culture, which has to be what the server writes
+        // for it: the spec compares the runtime's constant with this line.
+        builder.Append("invariant ").Append(CultureFormatBridge.SerializeJson(CultureInfo.InvariantCulture)).Append('\n');
         foreach (var name in Cultures)
         {
             var culture = CultureInfo.GetCultureInfo(name);
-            // The currency CODE the client needs (Intl takes no symbol) — the same value the build
-            // writes into each culture catalog, from the same .NET source.
-            var currency = new RegionInfo(culture.Name).ISOCurrencySymbol;
-            // The culture's own patterns travel with it, exactly as the build writes them into
-            // each catalog: .NET's `d` IS ShortDatePattern, and Intl's short-date preset is a
-            // different editorial choice (a two-digit year in en-US, which .NET never prints).
-            var dtf = culture.DateTimeFormat;
-            builder.Append("culture ").Append(name).Append(' ').Append(currency)
-                .Append('|').Append(dtf.ShortDatePattern)
-                .Append('|').Append(dtf.LongDatePattern)
-                .Append('|').Append(dtf.ShortTimePattern)
-                .Append('|').Append(dtf.LongTimePattern)
-                .Append('|').Append(dtf.MonthDayPattern)
-                .Append('|').Append(dtf.YearMonthPattern)
-                .Append('\n');
+            // What the culture formats with, exactly as the server writes it for a page in it (#471):
+            // the currency CODE the client needs (Intl takes no symbol), the culture's own patterns
+            // (.NET's `d` IS ShortDatePattern, and Intl's short-date preset is a different editorial
+            // choice), its separators, its names and its number symbols.
+            builder.Append("culture ").Append(name).Append(' ')
+                .Append(CultureFormatBridge.SerializeJson(culture)).Append('\n');
 
             foreach (var value in Numbers)
                 foreach (var spec in NumberSpecs)
@@ -172,23 +166,22 @@ public class FormatSubsetTests
 
         // Drop the host's data and NOTHING else.
         //
-        // The `culture` row's `|`-separated fields are the culture's own PATTERNS, which is the
-        // data that differs per host — `en-US`'s long time pattern is `h:mm:ss tt` on macOS and
-        // `h:mm tt` on the Windows runner. Its HEAD is not: the culture's name, and the ISO
-        // currency code the client is sent, which every ICU spells the same. So the head stays and
-        // only the patterns go.
+        // The `culture` row's data is the culture's own, which is what differs per host — `en-US`'s
+        // long time pattern is `h:mm:ss tt` on macOS and `h:mm tt` on the Windows runner. Its name
+        // is not, so the name stays and the data goes.
         //
-        // The `inv` rows stay WHOLE. They are formatted against the invariant culture, which is
-        // .NET's own and not the machine's, and they are the half of the subset this pin can still
-        // compare by value — dropping them would have left the invariant contract to the vitest
-        // side alone. Every other row ends in a culture-formatted value, so its last field goes.
+        // The `invariant` row and the `inv` rows stay WHOLE. They are the invariant culture's, which
+        // is .NET's own and not the machine's, and they are the half of the subset this pin can still
+        // compare by value — dropping them would have left the invariant contract to the vitest side
+        // alone. Every other row ends in a culture-formatted value, so its last field goes.
         static IEnumerable<string> Keys(string dump) => dump
             .Split('\n', StringSplitOptions.RemoveEmptyEntries)
             .Select(line => line switch
             {
                 _ when line.StartsWith("culture ", StringComparison.Ordinal) =>
-                    line.Split('|')[0],
-                _ when line.StartsWith("inv|", StringComparison.Ordinal) =>
+                    string.Join(' ', line.Split(' ').Take(2)),
+                _ when line.StartsWith("inv|", StringComparison.Ordinal)
+                    || line.StartsWith("invariant ", StringComparison.Ordinal) =>
                     line,
                 _ => string.Join('|', line.Split('|').SkipLast(1)),
             });

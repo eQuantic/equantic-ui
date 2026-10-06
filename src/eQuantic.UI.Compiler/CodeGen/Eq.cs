@@ -194,14 +194,12 @@ public static class Eq
     /// <summary><c>string.Format(CultureInfo.InvariantCulture, …)</c>: every placeholder in the
     /// invariant culture.</summary>
     public const string StringFormatInvariant = "$eq.text.stringFormatInvariant";
-    /// <summary>A float boxed for <c>string.Format</c>, with its kind: the formatter writes its own
-    /// digits, not those of the double underneath.</summary>
-    public const string AsSingle = "$eq.text.asSingle";
-
-    /// <summary>An int, a short, a byte or their unsigned twins on its way into <c>string.Format</c>, boxed
-    /// with its kind (<c>'int32'</c>, <c>'int16'</c>…): it rounds a formatted half away from zero (#393),
-    /// and <c>X</c> writes a negative one at its type's width (#445).</summary>
-    public const string AsInteger = "$eq.text.asInteger";
+    /// <summary>A number on its way into <c>string.Format</c>, boxed with its .NET type
+    /// (<see cref="Strategies.FormatKind"/>): a float writes its own digits, not those of the double
+    /// underneath (#378), an integer rounds a formatted half away from zero (#393) and writes a
+    /// negative one at its type's width under <c>X</c> (#445), and only an integer takes <c>D</c>,
+    /// <c>X</c> and <c>B</c> (#455).</summary>
+    public const string AsNumber = "$eq.text.asNumber";
     public const string StringBuilder = "$eq.text.stringBuilder";
     public const string DateTime = "$eq.time.dateTime";
     public const string TimeSpan = "$eq.time.timeSpan";

@@ -1,20 +1,29 @@
 /**
  * C#-style formatting, resolved against the CULTURE the app is running in (Track L D7/D13).
  *
- * The rule this file exists to keep: a `{0:N2}` written in C# must read the same on the server and
- * in the browser. The server has real .NET; here there is `Intl`, and the two agree for a CLOSED,
- * TESTED subset — integers, fixed decimals, currency, percent, the standard date/time patterns —
- * which is exactly what the build-time diagnostic (EQ2100) allows through. Anything outside it is
- * refused where the developer can see it, never approximated at runtime.
+ * The rule this file exists to keep: a value written as text in C# — `{0:N2}`, `$"{x}"`, `"v=" + x`,
+ * `d.ToString()` — must read the same on the server and in the browser. The server has real .NET;
+ * here there is `Intl` for the layout of `N`, `F`, `C` and `P`, and, for everything this file draws
+ * by hand, the culture's own `NumberFormatInfo` and `DateTimeFormatInfo`, which the server writes
+ * from .NET and hands every page (`CultureFormat`, #471). Anything outside what is pinned is refused
+ * where the developer can see it, never approximated at runtime.
  *
- * Every formatter reads the ACTIVE format culture. It used to pass `undefined`, which is "whatever
- * locale the browser is in" — so a pt-BR request rendered "1,234.50" on a US laptop and
- * "1.234,50" on a Brazilian one, from the same server response. The atom removes the question.
+ * Every formatter reads the ACTIVE format culture, and a page with none installed is in the
+ * invariant culture: it used to pass `undefined` to `Intl`, which is "whatever locale the browser is
+ * in", so a pt-BR request rendered "1,234.50" on a US laptop and "1.234,50" on a Brazilian one, from
+ * the same server response.
  */
 
 import { double, single } from './real-text';
 import { exception } from './exceptions';
-import { activeCurrency, activePattern, formatLocale } from './culture';
+import {
+  activeFormatData,
+  formatLocale,
+  INVARIANT_FORMAT,
+  type CultureFormat,
+  type DatePatternName,
+  type DateTimeFormatData,
+} from './culture';
 
 /**
  * .NET's InvariantCulture, as the closest thing Intl has to one: a "." decimal point and a ","
@@ -31,15 +40,27 @@ const INVARIANT_LOCALE = 'en-US';
 let invariantDepth = 0;
 
 /**
- * The locale every formatter in this file reads. It is the ACTIVE format culture, except while an
- * explicitly invariant conversion is being formatted — `value.ToString("0.##",
- * CultureInfo.InvariantCulture)`, which an author writes precisely so the number does NOT follow
- * whoever is reading it.
+ * Whether the text being written is the invariant culture's: an explicitly invariant conversion —
+ * `value.ToString("0.##", CultureInfo.InvariantCulture)`, which an author writes precisely so the
+ * number does NOT follow whoever is reading it — or a page with no culture installed, which is in
+ * the invariant culture as a .NET thread with none is (#471).
  */
-function activeFormatLocale(): string | undefined {
-  return invariantDepth > 0 ? INVARIANT_LOCALE : formatLocale();
+function isInvariant(): boolean {
+  return invariantDepth > 0 || formatLocale() === undefined;
 }
-import { DateTime as DotNetDateTime } from './datetime';
+
+/** The locale every `Intl` call in this file reads: the active format culture, or the invariant
+ * culture's nearest, never the host's own. */
+function activeFormatLocale(): string {
+  return isInvariant() ? INVARIANT_LOCALE : (formatLocale() ?? INVARIANT_LOCALE);
+}
+
+/** The active culture's format data: the invariant culture's in an invariant conversion, and null
+ * for a culture whose data did not travel, which this file reads through `Intl` instead. */
+function cultureFormat(): CultureFormat | null {
+  return invariantDepth > 0 ? INVARIANT_FORMAT : activeFormatData();
+}
+import { DateOnly, DateTime as DotNetDateTime, DateTimeOffset, TimeOnly } from './datetime';
 import { Decimal } from './decimal';
 import {
   exactOfBigInt,
@@ -57,78 +78,28 @@ import {
 } from './exact-decimal';
 import { drawPicture, type PictureNumber, type PictureSymbols } from './number-picture';
 
-/**
- * A date as the formatter reads it: a native Date whose UTC fields ARE the wall-clock parts to
- * print, so no time zone can move them. The compat `DateTime` (tick-based, what `new DateTime(…)`
- * transpiles to) keeps no zone, and a LOCAL Date built from its parts was normalised by the host's:
- * in a spring-forward gap, 2026-03-08 02:30 in New York became 03:30 (found in review, #472). A
- * native Date is an instant, and its local parts are the ones it always printed. Every reader
- * below asks the UTC fields, and `Intl` is told the zone is UTC. Without this, `{Moment:d}` over a
- * compat value fell through to `String(value)`, the invariant default.
- */
-function asJsDate(value: unknown): Date | null {
-  if (value instanceof Date)
-    return wallClock(
-      value.getFullYear(),
-      value.getMonth(),
-      value.getDate(),
-      value.getHours(),
-      value.getMinutes(),
-      value.getSeconds(),
-      value.getMilliseconds(),
-    );
-  if (value instanceof DotNetDateTime)
-    return wallClock(
-      value.year,
-      value.month - 1,
-      value.day,
-      value.hour,
-      value.minute,
-      value.second,
-      value.millisecond,
-    );
-  return null;
-}
-
-/** The wall-clock parts as a Date's UTC fields. `Date.UTC` reads a year from 0 to 99 as 1900 plus
- * it, so the year is set again: DateTime.MinValue printed 1901. */
-function wallClock(
-  year: number,
-  month: number,
-  day: number,
-  hour: number,
-  minute: number,
-  second: number,
-  millisecond: number,
-): Date {
-  const date = new Date(Date.UTC(year, month, day, hour, minute, second, millisecond));
-  date.setUTCFullYear(year);
-  return date;
-}
-
-const TICKS_PER_SECOND = 10_000_000n;
-
-/**
- * A date's fraction of a second as the seven digits .NET's `f` and `o` write: a compat DateTime's
- * from its ticks, exactly, and a native Date's from its milliseconds, which is all it has.
- */
-function fractionOf(value: unknown, date: Date): string {
-  if (value instanceof DotNetDateTime)
-    return (value.ticks % TICKS_PER_SECOND).toString().padStart(7, '0');
-  return String(date.getUTCMilliseconds()).padStart(3, '0') + '0000';
-}
-
 /** Which C# number a JavaScript number stands for, by the name of its .NET type. A number cannot
- * say it is a single or an int, so whoever knows passes it: the compiler, from the static type, at
- * every call it writes. A float's digits are not the double's (#378), and an integer rounds a
- * formatted half away from zero where a double rounds it to even (#393). A long and a decimal say
- * what they are on their own, as a BigInt and a Decimal. */
-export type NumberKind = 'double' | 'single' | IntegerKind;
+ * say it is a double, a single or an int, so whoever knows passes it: the compiler, from the static
+ * type, at every call it writes. A float's digits are not the double's (#378), an integer rounds a
+ * formatted half away from zero where a double rounds it to even (#393), and only an integer takes
+ * `D`, `X` and `B` (#455). A value whose type did not travel (one typed as an object, a generic) is
+ * `unknown`, and read by what it holds. A long and a decimal say what they are on their own, as a
+ * BigInt and a Decimal. */
+export type NumberKind = 'unknown' | 'double' | 'single' | IntegerKind;
 
 /** An integer that travels as a JavaScript number. Its width is what `X` and `B` write a negative
- * one at, as its two's complement: `((short)-1).ToString("X")` is `FFFF`, and an int's is
- * `FFFFFFFF` (#445). An unsigned one is never negative, and its bits are its digits. */
-export type IntegerKind = 'sbyte' | 'byte' | 'int16' | 'uint16' | 'int32' | 'uint32';
+ * one at, as its two's complement: `((short)-1).ToString("X")` is `FFFF`, an int's is `FFFFFFFF`
+ * (#445), and a `nint`'s is the platform's, sixteen F's on the 64-bit hosts .NET serves from (#455).
+ * An unsigned one is never negative, and its bits are its digits. */
+export type IntegerKind =
+  | 'sbyte'
+  | 'byte'
+  | 'int16'
+  | 'uint16'
+  | 'int32'
+  | 'uint32'
+  | 'nint'
+  | 'nuint';
 
 const INTEGER_BITS: Readonly<Record<IntegerKind, number>> = {
   sbyte: 8,
@@ -137,6 +108,8 @@ const INTEGER_BITS: Readonly<Record<IntegerKind, number>> = {
   uint16: 16,
   int32: 32,
   uint32: 32,
+  nint: 64,
+  nuint: 64,
 };
 
 function isInteger(kind: NumberKind): kind is IntegerKind {
@@ -144,9 +117,9 @@ function isInteger(kind: NumberKind): kind is IntegerKind {
 }
 
 /**
- * A float or an integer on its way into `string.Format`, whose arguments are objects in C#: boxed
- * with its kind, which the formatter reads and nothing else ever sees. Anywhere else a boxed
- * number is the plain number, and its kind is lost (#378).
+ * A number on its way into `string.Format`, whose arguments are objects in C#: boxed with its kind,
+ * which the formatter reads and nothing else ever sees. Anywhere else a boxed number is the plain
+ * number, and its kind is lost (#378).
  */
 export class FormatNumber {
   constructor(
@@ -155,28 +128,23 @@ export class FormatNumber {
   ) {}
 }
 
-/** Boxes a float for `string.Format`; null stays null. */
-export function asSingle(value: number | null | undefined): FormatNumber | null | undefined {
-  return value == null ? value : new FormatNumber(value, 'single');
-}
-
-/** Boxes an integer of the given kind for `string.Format`; null stays null. */
-export function asInteger(
+/** Boxes a number of the given kind for `string.Format`; null stays null. */
+export function asNumber(
   value: number | null | undefined,
-  kind: IntegerKind,
+  kind: NumberKind,
 ): FormatNumber | null | undefined {
   return value == null ? value : new FormatNumber(value, kind);
 }
 
 /**
  * @param value The value to format
- * @param format The format string (e.g. "C2", "N0", "yyyy-MM-dd")
+ * @param format The format string (e.g. "C2", "N0", "yyyy-MM-dd"); none, or an empty one, is the
+ *   value's own text, as its `ToString()` writes it in the culture in force
  * @param alignment Optional alignment width
  * @param invariant Format against the INVARIANT culture rather than the active one — what
  *   `ToString(CultureInfo.InvariantCulture)` asks for, and the shape a number written for a
  *   machine (a CSS length, a key, a wire value) has to keep whoever is reading the page.
- * @param kind A number's binary kind, when it is a single: the shortest digits that read back as
- *   a float are not those of the double underneath (0.1f is 0.1, not 0.10000000149011612).
+ * @param kind A number's .NET type, where the compiler knows it ({@link NumberKind}).
  */
 export function format(
   value: any,
@@ -193,41 +161,22 @@ export function format(
   if (value === null || value === undefined) return pad('', alignment);
   if (invariant) invariantDepth++;
   try {
-    return formatCore(value, format, alignment, kind ?? 'double');
+    return pad(formatCore(value, format, kind ?? 'unknown'), alignment);
   } finally {
     if (invariant) invariantDepth--;
   }
 }
 
-function formatCore(
-  value: any,
-  format: string | null,
-  alignment: number | undefined,
-  kind: NumberKind,
-): string {
-  // .NET spells a bool `True`/`False`, where JavaScript lowercases it, and writes a number with
-  // its own notation (1E+17, -0), where String() keeps fixed notation up to 1e21.
-  let result =
-    typeof value === 'boolean'
-      ? value
-        ? 'True'
-        : 'False'
-      : typeof value === 'number'
-        ? kind === 'single'
-          ? single(value)
-          : double(value)
-        : String(value);
-
-  if (format) {
-    const date = asJsDate(value);
-    if (typeof value === 'number' || typeof value === 'bigint' || value instanceof Decimal) {
-      result = formatNumber(value, format, kind);
-    } else if (date !== null) {
-      result = formatDate(date, format, () => fractionOf(value, date));
-    }
-  }
-
-  return pad(result, alignment);
+function formatCore(value: any, format: string | null, kind: NumberKind): string {
+  // No format is the value's own text: a number's and a date's in the culture in force, as .NET
+  // writes `$"{x}"`, `"v=" + x` and `x.ToString()` (#454), where this wrote the invariant digits.
+  if (!format) return general(value, kind);
+  if (typeof value === 'number' || typeof value === 'bigint' || value instanceof Decimal)
+    return formatNumber(value, format, kind);
+  const moment = momentOf(value);
+  if (moment !== null) return formatDate(moment, format);
+  // A value that takes no format writes its own text, as one that is not IFormattable does in .NET.
+  return general(value, kind);
 }
 
 /**
@@ -386,13 +335,35 @@ function pastIntlsDigits(
 }
 
 const symbolsByLocale = new Map<string, PictureSymbols>();
+const symbolsByData = new WeakMap<CultureFormat, PictureSymbols>();
 
-/** The culture's number symbols, as `Intl` writes them in the locale in force: the same CLDR data
- * .NET's `NumberFormatInfo` is built from. `Intl` has no per mille sign, and CLDR's is `‰` in every
- * culture but the Arabic-script ones. */
+/**
+ * The culture's number symbols, as its `NumberFormatInfo` holds them: the data the server wrote
+ * from .NET (#455: `ar-SA`'s per mille is `؉`, and `ar`'s minus sign carries a left-to-right mark
+ * that `Intl` keeps outside its sign), or, for a culture whose data did not travel, what `Intl`
+ * writes in its locale, which is the same CLDR .NET's is built from.
+ */
 function symbols(): PictureSymbols {
+  const data = cultureFormat();
+  if (data !== null) {
+    let known = symbolsByData.get(data);
+    if (known === undefined) {
+      const number = data.numberFormat;
+      known = {
+        decimal: number.numberDecimalSeparator,
+        group: number.numberGroupSeparator,
+        groupSizes: number.numberGroupSizes,
+        minus: number.negativeSign,
+        plus: number.positiveSign,
+        percent: number.percentSymbol,
+        perMille: number.perMilleSymbol,
+      };
+      symbolsByData.set(data, known);
+    }
+    return known;
+  }
   const locale = activeFormatLocale();
-  const key = locale ?? '';
+  const key = locale;
   let found = symbolsByLocale.get(key);
   if (found === undefined) {
     const part = (parts: Intl.NumberFormatPart[], type: string, fallback: string): string =>
@@ -422,6 +393,8 @@ function symbols(): PictureSymbols {
         'percentSign',
         '%',
       ),
+      // `Intl` has no per mille sign; CLDR's is `‰` in every culture but the Arabic-script ones,
+      // whose data travels from the server.
       perMille: '‰',
     };
     symbolsByLocale.set(key, found);
@@ -461,28 +434,29 @@ function formatCustomNumber(number: Numeric, format: string): string {
 
 /**
  * Currency, the one specifier that needs a fact the browser cannot derive: `Intl` wants an ISO
- * CODE and a locale alone does not carry one. The code rides in the culture catalog (the build
- * reads it from .NET's own `RegionInfo`), and when there is none — the invariant culture — .NET
- * prints the generic ¤ sign, so that is what this prints too rather than guessing a country. With
- * no precision, the currency's own digits apply, as .NET's culture takes them from the same ISO
- * data (a yen has none).
+ * CODE and a locale alone does not carry one. The code travels with the culture's data (the server
+ * reads it from .NET's own `RegionInfo`), and where there is none — the invariant culture, a
+ * neutral one, a culture of no single country — .NET prints the generic ¤ sign, so that is what this
+ * prints too rather than guessing a country. With no precision, the currency's own digits apply, as
+ * .NET's culture takes them from the same ISO data (a yen has none).
  */
 function formatCurrency(number: Numeric, precision: number | null): string {
   // An invariant conversion has no currency of its own, whichever culture is reading.
-  const currency = invariantDepth > 0 ? null : activeCurrency();
+  const currency = cultureFormat()?.isoCurrencySymbol ?? null;
   const digits: ExactOptions =
     precision === null
       ? {}
       : { minimumFractionDigits: precision, maximumFractionDigits: precision };
   if (currency !== null) return exactly(number, { style: 'currency', currency, ...digits });
 
-  // .NET's invariant currency pattern is "¤n" with the invariant number conventions.
+  // .NET's invariant currency patterns are "¤n" and, for a negative amount, "(¤n)", with the
+  // invariant number conventions.
   const text = exactly(
     number,
     precision === null ? { minimumFractionDigits: 2, maximumFractionDigits: 2 } : digits,
   );
   const { minus } = symbols();
-  return text.startsWith(minus) ? `${minus}¤${text.slice(minus.length)}` : `¤${text}`;
+  return text.startsWith(minus) ? `(¤${text.slice(minus.length)})` : `¤${text}`;
 }
 
 /**
@@ -494,11 +468,12 @@ function formatCurrency(number: Numeric, precision: number | null): string {
  */
 function scientific(number: Numeric, precision: number, marker: 'E' | 'e'): string {
   const rounded = roundSignificant(number.exact, precision + 1, number.tie);
-  const { decimal, minus } = symbols();
+  const { decimal, minus, plus } = symbols();
   const mantissa = rounded.digits[0] + (precision > 0 ? decimal + rounded.digits.slice(1) : '');
   const exponent = rounded.scientific;
   const power = String(Math.abs(exponent)).padStart(3, '0');
-  return `${signOf(number, minus)}${mantissa}${marker}${exponent < 0 ? minus : '+'}${power}`;
+  // The exponent's sign is the culture's too: `ar` writes `1.23E\u200e+003`.
+  return `${signOf(number, minus)}${mantissa}${marker}${exponent < 0 ? minus : plus}${power}`;
 }
 
 /**
@@ -509,7 +484,7 @@ function scientific(number: Numeric, precision: number, marker: 'E' | 'e'): stri
  */
 function generalWithPrecision(number: Numeric, precision: number, marker: 'E' | 'e'): string {
   const rounded = roundSignificant(number.exact, precision, number.tie);
-  const { decimal, minus } = symbols();
+  const { decimal, minus, plus } = symbols();
   const digits = rounded.digits.replace(/0+$/, '') || '0';
   const exponent = rounded.scientific;
   const sign = signOf(number, minus);
@@ -521,39 +496,45 @@ function generalWithPrecision(number: Numeric, precision: number, marker: 'E' | 
   }
   const mantissa = digits[0] + (digits.length > 1 ? decimal + digits.slice(1) : '');
   const power = String(Math.abs(exponent)).padStart(2, '0');
-  return `${sign}${mantissa}${marker}${exponent < 0 ? minus : '+'}${power}`;
+  return `${sign}${mantissa}${marker}${exponent < 0 ? minus : plus}${power}`;
 }
 
 /**
- * A double's infinities and NaN are words, not digits: the culture's symbols (`∞`), which `Intl`
- * writes from the same data .NET reads, and the invariant culture's own `Infinity` and `NaN`
- * where no culture is in force.
+ * A double's infinities and NaN are words, not digits: the culture's own symbols (`∞`, and the
+ * invariant culture's `Infinity` and `NaN`), from its data, or as `Intl` writes them in a culture
+ * whose data did not travel.
  */
 function nonFinite(value: number): string {
-  if (invariantDepth > 0 || formatLocale() === undefined)
-    return Number.isNaN(value) ? 'NaN' : value > 0 ? 'Infinity' : '-Infinity';
-  return numberFormat({}).format(value);
+  const data = cultureFormat();
+  if (data === null) return numberFormat({}).format(value);
+  const number = data.numberFormat;
+  if (Number.isNaN(value)) return number.nanSymbol;
+  return value > 0 ? number.positiveInfinitySymbol : number.negativeInfinitySymbol;
 }
 
 /**
  * The shortest digits that read back as the value, in .NET's notation (1E+21, -0), with the
- * active culture's decimal separator and minus sign (sv-SE writes `−1,5` and `1E−05`, with the
- * minus its data spells): what `G` and `R` write, and a `string.Format` placeholder with no
- * specifier, since .NET formats one with the value's `ToString(provider)`.
+ * active culture's decimal separator and signs (sv-SE writes `−1,5` and `1E−05`, with the minus
+ * its data spells, and `ar` writes `1E\u200e+21`): what `G` and `R` write, and the text of a
+ * number with no specifier at all.
  */
 function shortest(value: number, kind: NumberKind): string {
   if (!Number.isFinite(value)) return nonFinite(value);
-  const text = kind === 'single' ? single(value) : double(value);
-  const { decimal, minus } = symbols();
-  return text.replace('.', decimal).replace(/-/g, minus);
+  return inCulture(kind === 'single' ? single(value) : double(value));
 }
 
 /** A long's or a decimal's text with no specifier: all of its digits, a decimal's scale kept
- * (`12.50m` is `12.50`), in the culture's decimal separator. */
+ * (`12.50m` is `12.50`), in the culture's decimal separator and minus sign. */
 function plainDigits(value: bigint | Decimal): string {
-  const text = value.toString();
-  const { decimal, minus } = symbols();
-  return text.replace('.', decimal).replace('-', minus);
+  return inCulture(value.toString());
+}
+
+/** A number's invariant text (`-1.5E+21`) in the culture's symbols: its point, its minus signs
+ * and the plus of its exponent. The text has at most one of each but the minus. */
+function inCulture(text: string): string {
+  const { decimal, minus, plus } = symbols();
+  if (decimal === '.' && minus === '-' && plus === '+') return text;
+  return text.replace('.', decimal).replace(/-/g, minus).replace('+', plus);
 }
 
 /** A standard specifier is ONE letter and an optional precision; anything else is a picture. */
@@ -563,15 +544,16 @@ const STANDARD = /^([A-Za-z])(\d*)$/;
 const MAX_PRECISION = 999_999_999;
 
 /**
- * Whether `D`, `X` and `B` can take the value: an integer's, never a decimal's, a float's or a
- * fraction's, for which .NET throws. A whole number whose kind nobody passed (a value typed as an
- * object, a generic) is taken as the integer it holds, since the type that would say otherwise did
- * not travel with it.
+ * Whether `D`, `X` and `B` can take the value: an integer's, never a decimal's, a double's or a
+ * float's, whatever it holds, for which .NET throws: `(2.0).ToString("D")` prints nothing (#455).
+ * A whole number whose type did not travel (a value typed as an object, a generic) is taken as the
+ * integer it holds, since the type that would say otherwise is not there to ask.
  */
 function integral(value: number | bigint | Decimal, kind: NumberKind): boolean {
   if (typeof value === 'bigint') return true;
   if (value instanceof Decimal) return false;
-  return kind !== 'single' && Number.isInteger(value);
+  if (isInteger(kind)) return true;
+  return kind === 'unknown' && Number.isInteger(value);
 }
 
 /**
@@ -586,11 +568,7 @@ function bitsOf(value: number | bigint, kind: NumberKind): bigint {
   return BigInt.asUintN(width, BigInt(value));
 }
 
-function formatNumber(
-  value: number | bigint | Decimal,
-  format: string,
-  kind: NumberKind = 'double',
-): string {
+function formatNumber(value: number | bigint | Decimal, format: string, kind: NumberKind): string {
   if (typeof value === 'number' && !Number.isFinite(value)) return nonFinite(value);
   const number = numeric(value, kind);
 
@@ -616,7 +594,7 @@ function formatNumber(
       });
     case 'P': // Percentage — the exact value times 100, rounded where the percent is written
       // The invariant culture writes `n %`, with a space `Intl`'s nearest locale leaves out.
-      if (invariantDepth > 0 || formatLocale() === undefined) {
+      if (isInvariant()) {
         const percent = scaled(number.exact, 2);
         return `${exactly(number, { minimumFractionDigits: precision, maximumFractionDigits: precision }, percent)} %`;
       }
@@ -662,52 +640,161 @@ function formatNumber(
   }
 }
 
-/**
- * The standard date/time specifiers .NET spells with ONE letter, as the culture PATTERN ROLES they
- * actually stand for — `d` is not "a short date" in the abstract, it is this culture's
- * ShortDatePattern. Two roles joined by a space is how .NET composes `g`/`G`/`f`/`F`.
- */
-const DATE_ROLES: Record<string, string[]> = {
-  d: ['dateShort'],
-  D: ['dateLong'],
-  t: ['timeShort'],
-  T: ['timeLong'],
-  g: ['dateShort', 'timeShort'],
-  G: ['dateShort', 'timeLong'],
-  f: ['dateLong', 'timeShort'],
-  F: ['dateLong', 'timeLong'],
-  M: ['monthDay'],
-  m: ['monthDay'],
-  Y: ['yearMonth'],
-  y: ['yearMonth'],
-};
+/** .NET's FormatException for a date format its type does not take or a picture it cannot read. */
+const BAD_DATE_FORMAT = 'Input string was not in a correct format.';
 
-/**
- * The invariant culture's date and time patterns, as .NET's `CultureInfo.InvariantCulture` holds
- * them. An explicitly invariant conversion writes these whatever culture is reading, as it writes
- * the invariant number conventions and the generic ¤ for a currency: read from the active culture,
- * `string.Format(CultureInfo.InvariantCulture, "{0:G}", date)` followed the reader's patterns.
- */
-const INVARIANT_PATTERNS: Readonly<Record<string, string>> = {
-  dateShort: 'MM/dd/yyyy',
-  dateLong: 'dddd, dd MMMM yyyy',
-  timeShort: 'HH:mm',
-  timeLong: 'HH:mm:ss',
-  monthDay: 'MMMM dd',
-  yearMonth: 'yyyy MMMM',
-};
-
-/** A pattern role in the culture the formatter is writing in. With no culture in force, the
- * invariant culture's, as a number's text is invariant then: `Intl`'s presets are the fallback for
- * a culture whose patterns did not travel, and printed en-US's `9/24/26` for no culture at all. */
-function patternFor(role: string): string | null {
-  return invariantDepth > 0 || formatLocale() === undefined
-    ? (INVARIANT_PATTERNS[role] ?? null)
-    : activePattern(role);
+/** The error .NET throws for a date format it refuses: its FormatException. */
+function formatError(message: string): Error {
+  return exception('System.FormatException', message);
 }
 
-/** `Intl`'s fallback for a culture whose patterns did not travel (no catalog installed). Close,
- * not exact — which is why the patterns travel at all. */
+/** The .NET type a date's text is drawn for: what it may be asked for, and what it writes with none. */
+type DateType = 'dateTime' | 'dateOnly' | 'timeOnly' | 'dateTimeOffset';
+
+/**
+ * A date as the formatter draws it. `date` is a native Date whose UTC fields ARE the wall-clock
+ * parts to print, so no time zone can move them: a LOCAL Date built from a compat value's parts was
+ * normalised by the host's zone, and in a spring-forward gap 2026-03-08 02:30 in New York became
+ * 03:30 (found in review, #472). Every reader below asks the UTC fields, and `Intl` is told the zone
+ * is UTC.
+ */
+interface Moment {
+  readonly type: DateType;
+  readonly date: Date;
+  /** The fraction of a second as the seven digits `f` and `o` write, asked only by what writes it. */
+  readonly fraction: () => string;
+  /** A DateTimeOffset's offset from UTC, in minutes. Null for the other types, whose offset — what
+   * `z` writes — is the host's at that time, as .NET's is for a DateTime of no kind. */
+  readonly offset: number | null;
+}
+
+const TICKS_PER_SECOND = 10_000_000n;
+const TICKS_PER_MINUTE = 600_000_000n;
+
+/** The fraction of a second in a tick count, as seven digits. */
+function sevenDigits(ticks: bigint): string {
+  return (ticks % TICKS_PER_SECOND).toString().padStart(7, '0');
+}
+
+/**
+ * The value as a moment, or null when it is no date. A native Date is an instant, and its local
+ * parts are the ones it always printed; the compat `DateTime` keeps no zone, as a .NET DateTime of
+ * no kind; a `DateOnly` is its day at midnight and a `TimeOnly` its time on the first day, which is
+ * what .NET formats them as; and a `DateTimeOffset` is its own clock with its offset (#469). Without
+ * this, `{Moment:d}` over a compat value fell through to `String(value)`, the invariant default.
+ */
+function momentOf(value: unknown): Moment | null {
+  if (value instanceof Date) {
+    const date = wallClock(
+      value.getFullYear(),
+      value.getMonth(),
+      value.getDate(),
+      value.getHours(),
+      value.getMinutes(),
+      value.getSeconds(),
+      value.getMilliseconds(),
+    );
+    // A native Date has its milliseconds, which is all it has.
+    const fraction = () => String(value.getMilliseconds()).padStart(3, '0') + '0000';
+    return { type: 'dateTime', date, fraction, offset: null };
+  }
+  if (value instanceof DotNetDateTime)
+    return {
+      type: 'dateTime',
+      date: wallClock(value.year, value.month - 1, value.day, value.hour, value.minute, value.second, value.millisecond),
+      fraction: () => sevenDigits(value.ticks),
+      offset: null,
+    };
+  if (value instanceof DateOnly)
+    return {
+      type: 'dateOnly',
+      date: wallClock(value.year, value.month - 1, value.day, 0, 0, 0, 0),
+      fraction: () => '0000000',
+      offset: null,
+    };
+  if (value instanceof TimeOnly)
+    return {
+      type: 'timeOnly',
+      date: wallClock(1, 0, 1, value.hour, value.minute, value.second, value.millisecond),
+      fraction: () => sevenDigits(value.ticks),
+      offset: null,
+    };
+  if (value instanceof DateTimeOffset)
+    return {
+      type: 'dateTimeOffset',
+      date: wallClock(value.year, value.month - 1, value.day, value.hour, value.minute, value.second, value.millisecond),
+      fraction: () => sevenDigits(value.localTicks),
+      offset: Number(value.offsetTicks / TICKS_PER_MINUTE),
+    };
+  return null;
+}
+
+/** The wall-clock parts as a Date's UTC fields. `Date.UTC` reads a year from 0 to 99 as 1900 plus
+ * it, so the year is set again: DateTime.MinValue printed 1901. */
+function wallClock(
+  year: number,
+  month: number,
+  day: number,
+  hour: number,
+  minute: number,
+  second: number,
+  millisecond: number,
+): Date {
+  const date = new Date(Date.UTC(year, month, day, hour, minute, second, millisecond));
+  date.setUTCFullYear(year);
+  return date;
+}
+
+/**
+ * The standard date/time specifiers .NET spells with ONE letter, as the culture PATTERNS they
+ * actually stand for — `d` is not "a short date" in the abstract, it is this culture's
+ * ShortDatePattern. Two patterns joined by a space is how .NET composes `g`/`G`/`f`/`F`.
+ */
+const DATE_ROLES: Readonly<Record<string, readonly DatePatternName[]>> = {
+  d: ['shortDatePattern'],
+  D: ['longDatePattern'],
+  t: ['shortTimePattern'],
+  T: ['longTimePattern'],
+  g: ['shortDatePattern', 'shortTimePattern'],
+  G: ['shortDatePattern', 'longTimePattern'],
+  f: ['longDatePattern', 'shortTimePattern'],
+  F: ['longDatePattern', 'longTimePattern'],
+  M: ['monthDayPattern'],
+  m: ['monthDayPattern'],
+  Y: ['yearMonthPattern'],
+  y: ['yearMonthPattern'],
+};
+
+/**
+ * The one-letter specifiers each type takes; any other one letter is .NET's FormatException, which
+ * is how a one-letter format is read whatever its letter (`d.ToString("z")` throws). A `DateOnly`
+ * takes the date's and a `TimeOnly` the time's (#469), and a `DateTimeOffset` everything but `U`.
+ */
+const STANDARD_DATE: Readonly<Record<DateType, string>> = {
+  dateTime: 'dDfFgGmMoOrRstTuUyY',
+  dateOnly: 'dDmMoOrRyY',
+  timeOnly: 'tToOrR',
+  dateTimeOffset: 'dDfFgGmMoOrRstTuyY',
+};
+
+/**
+ * What a custom picture of a `DateOnly` or a `TimeOnly` may not name, outside its quotes: a time's
+ * parts for the first and a date's for the second, as .NET refuses them. `K` and `g` are taken by
+ * a time, which .NET formats as the time on the first day.
+ */
+const REFUSED_PARTS: Readonly<Partial<Record<DateType, string>>> = {
+  dateOnly: ':tfFhHmszK',
+  timeOnly: 'dMy/zk',
+};
+
+/** The date and time patterns of the culture writing the date, or null when its data did not
+ * travel, where `Intl`'s presets stand in. */
+function dateTimeFormat(): DateTimeFormatData | null {
+  return cultureFormat()?.dateTimeFormat ?? null;
+}
+
+/** `Intl`'s presets, for a culture whose patterns did not travel. Close, not exact — which is why
+ * the patterns travel at all. */
 const DATE_STYLES: Record<string, Intl.DateTimeFormatOptions> = {
   d: { dateStyle: 'short' },
   D: { dateStyle: 'full' },
@@ -724,151 +811,270 @@ const DATE_STYLES: Record<string, Intl.DateTimeFormatOptions> = {
 };
 
 /** One `Intl` part, for the NAMES a pattern cannot spell — months, weekdays, the AM/PM designator.
- * `Intl` is exactly right about these, in every culture, which is why they are not in the patterns. */
+ * `Intl` is exactly right about these, in every culture, which is why they are not in the data. With
+ * no culture in force the names are the invariant culture's, as the patterns are: the host's own
+ * locale wrote `quinta-feira` into an invariant layout on a Portuguese machine. */
 function namePart(value: Date, options: Intl.DateTimeFormatOptions, type: string): string {
-  // With no culture in force the names are the invariant culture's, as the patterns are: the
-  // host's own locale wrote `quinta-feira` into an invariant layout on a Portuguese machine.
-  const locale = formatLocale() === undefined ? INVARIANT_LOCALE : activeFormatLocale();
-  const parts = new Intl.DateTimeFormat(locale, { ...options, timeZone: 'UTC' }).formatToParts(
-    value,
-  );
+  const parts = new Intl.DateTimeFormat(activeFormatLocale(), {
+    ...options,
+    timeZone: 'UTC',
+  }).formatToParts(value);
   return parts.find((part) => part.type === type)?.value ?? '';
 }
 
+/** What a culture whose data did not travel writes for `/`, `:` and `g`, as `Intl` writes them: the
+ * literal between the day and the month of a numeric date, the one after the hour, and the era. */
+interface IntlDateSymbols {
+  readonly dateSeparator: string;
+  readonly timeSeparator: string;
+  readonly eraName: string;
+}
+
+const dateSymbolsByLocale = new Map<string, IntlDateSymbols>();
+
+function intlDateSymbols(): IntlDateSymbols {
+  const locale = activeFormatLocale();
+  let found = dateSymbolsByLocale.get(locale);
+  if (found === undefined) {
+    const sample = new Date(Date.UTC(2026, 8, 24, 10, 30));
+    const parts = (options: Intl.DateTimeFormatOptions): Intl.DateTimeFormatPart[] =>
+      new Intl.DateTimeFormat(locale, { ...options, timeZone: 'UTC' }).formatToParts(sample);
+    const after = (list: Intl.DateTimeFormatPart[], type: string, fallback: string): string => {
+      const at = list.findIndex((part) => part.type === type);
+      return at >= 0 && list[at + 1]?.type === 'literal' ? list[at + 1].value : fallback;
+    };
+    const date = parts({ year: 'numeric', month: '2-digit', day: '2-digit' });
+    const first = date.find((part) => part.type !== 'literal')?.type ?? 'day';
+    found = {
+      dateSeparator: after(date, first, '/'),
+      timeSeparator: after(parts({ hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }), 'hour', ':'),
+      eraName:
+        parts({ era: 'short', year: 'numeric' }).find((part) => part.type === 'era')?.value ?? '',
+    };
+    dateSymbolsByLocale.set(locale, found);
+  }
+  return found;
+}
+
+/** The culture's date separator, time separator and era, from its data or, failing it, `Intl`. */
+function dateSymbol(name: keyof IntlDateSymbols): string {
+  const data = dateTimeFormat();
+  return data !== null ? data[name] : intlDateSymbols()[name];
+}
+
+/** How many times the character at `at` repeats from there: the length of the token it starts. */
+function runOf(pattern: string, at: number): number {
+  let run = 1;
+  while (at + run < pattern.length && pattern[at + run] === pattern[at]) run++;
+  return run;
+}
+
+/** A number written with at least `length` digits, as .NET's `FormatDigits` writes it: two at
+ * most unless asked for more. */
+function digits(value: number, length: number, unlimited = false): string {
+  return String(value).padStart(unlimited ? length : Math.min(length, 2), '0');
+}
+
+/** The moment's offset from UTC, in minutes: a DateTimeOffset's own, and for every other type the
+ * host's at that time, as .NET reads it for a DateTime of no kind. */
+function offsetMinutes(moment: Moment): number {
+  return moment.offset ?? Math.round(localOffset(moment.date.getTime()) / 60_000);
+}
+
+/** An offset as `z` (`+1`), `zz` (`+01`) and `zzz` (`+01:00`) write it: always signed, its minutes
+ * after a colon that is not the culture's time separator. */
+function offsetText(minutes: number, length: number): string {
+  const sign = minutes < 0 ? '-' : '+';
+  const hours = Math.trunc(Math.abs(minutes) / 60);
+  if (length <= 1) return sign + String(hours);
+  const whole = sign + String(hours).padStart(2, '0');
+  return length < 3 ? whole : `${whole}:${String(Math.abs(minutes) % 60).padStart(2, '0')}`;
+}
+
 /**
- * Renders a .NET date/time PATTERN. The token set is the one the standard patterns of real
- * cultures use, and a custom picture's: a literal in quotes travels verbatim (pt-BR's long date is
- * `dddd, d 'de' MMMM 'de' yyyy`), `f` and `F` write the fraction of a second (`fraction`, seven
- * digits), `K` writes nothing for a value with no kind, `%` marks a lone token, and anything
- * unrecognized is a literal too.
+ * Renders a .NET date/time PATTERN as .NET's `FormatCustomized` does, token by token: a run of one
+ * letter is one token whose length decides what it writes (`yyyyy` is a five-digit year, `hhh` a
+ * two-digit hour, `MMMMM` the month's name), `/` and `:` are the culture's date and time separators
+ * (de-DE writes `dd/MM/yyyy` as `24.09.2026`), `z` the offset, `K` a DateTimeOffset's offset and
+ * nothing for a DateTime of no kind, `g` the era, a quoted run and a `\`-escaped character are text,
+ * and `%` makes the character after it a token of its own. They were written as they stand (#470).
  */
-function renderPattern(value: Date, pattern: string, fraction: () => string): string {
+function renderPattern(moment: Moment, pattern: string): string {
+  const value = moment.date;
   const hours24 = value.getUTCHours();
   const hours12 = hours24 % 12 === 0 ? 12 : hours24 % 12;
-  const out: string[] = [];
+  // The culture's names, when its data travelled; `Intl`'s otherwise.
+  const names = dateTimeFormat();
+  let out = '';
+
+  /** Writes the token a run of `ch` that long, starting at `at`, stands for. */
+  const token = (ch: string, run: number, at: number): void => {
+    switch (ch) {
+      case 'g':
+        out += dateSymbol('eraName');
+        return;
+      case 'h':
+        out += digits(hours12, run);
+        return;
+      case 'H':
+        out += digits(hours24, run);
+        return;
+      case 'm':
+        out += digits(value.getUTCMinutes(), run);
+        return;
+      case 's':
+        out += digits(value.getUTCSeconds(), run);
+        return;
+      case 'f':
+      case 'F': {
+        if (run > 7) throw formatError(BAD_DATE_FORMAT);
+        const written = moment.fraction().slice(0, run);
+        if (ch === 'f') {
+          out += written;
+          return;
+        }
+        // `F` drops the zeros that end it, and with them the point in front when nothing is left.
+        const kept = written.replace(/0+$/, '');
+        if (kept.length > 0) out += kept;
+        else if (out.endsWith('.')) out = out.slice(0, -1);
+        return;
+      }
+      case 't': {
+        const morning = hours24 < 12;
+        const designator =
+          names !== null
+            ? morning
+              ? names.amDesignator
+              : names.pmDesignator
+            : namePart(value, { hour: 'numeric', hour12: true }, 'dayPeriod');
+        out += run === 1 ? designator.slice(0, 1) : designator;
+        return;
+      }
+      case 'd': {
+        if (run <= 2) {
+          out += digits(value.getUTCDate(), run);
+          return;
+        }
+        const day = value.getUTCDay();
+        out +=
+          names !== null
+            ? (run === 3 ? names.abbreviatedDayNames : names.dayNames)[day]
+            : namePart(value, { weekday: run === 3 ? 'short' : 'long' }, 'weekday');
+        return;
+      }
+      case 'M': {
+        const month = value.getUTCMonth();
+        if (run <= 2) {
+          out += digits(month + 1, run);
+          return;
+        }
+        if (names === null) {
+          out += namePart(value, { month: run === 3 ? 'short' : 'long' }, 'month');
+          return;
+        }
+        // A month beside its day is named in the genitive where the culture has one, as .NET
+        // decides it: a `d` or a `dd` before the month or, failing that, after it.
+        const genitive = besideItsDay(pattern, at, run);
+        const list =
+          run === 3
+            ? genitive
+              ? names.abbreviatedMonthGenitiveNames
+              : names.abbreviatedMonthNames
+            : genitive
+              ? names.monthGenitiveNames
+              : names.monthNames;
+        out += list[month];
+        return;
+      }
+      case 'y': {
+        const year = value.getUTCFullYear();
+        out += run <= 2 ? digits(year % 100, run) : digits(year, run, true);
+        return;
+      }
+      case 'z':
+        out += offsetText(offsetMinutes(moment), run);
+        return;
+      case 'K':
+        // A DateTime keeps no kind, and .NET writes nothing for one of no kind.
+        if (moment.type === 'dateTimeOffset') out += offsetText(moment.offset ?? 0, 3);
+        return;
+      case ':':
+        out += dateSymbol('timeSeparator');
+        return;
+      case '/':
+        out += dateSymbol('dateSeparator');
+        return;
+      default:
+        out += ch;
+    }
+  };
 
   for (let i = 0; i < pattern.length; ) {
     const ch = pattern[i];
-
-    if (ch === '%') {
-      i++;
-      continue;
-    }
-    if (ch === 'f' || ch === 'F') {
-      let digits = 1;
-      while (i + digits < pattern.length && pattern[i + digits] === ch) digits++;
-      const written = fraction().slice(0, Math.min(digits, 7));
-      if (ch === 'f') {
-        out.push(written);
-      } else {
-        // `F` drops the zeros that end it, and with them the point in front when nothing is left.
-        const kept = written.replace(/0+$/, '');
-        if (kept.length > 0) out.push(kept);
-        else if (out.length > 0 && out[out.length - 1].endsWith('.'))
-          out[out.length - 1] = out[out.length - 1].slice(0, -1);
-      }
-      i += digits;
-      continue;
-    }
-    if (ch === 'K') {
-      i++;
-      continue;
-    }
-
     if (ch === "'" || ch === '"') {
-      const close = pattern.indexOf(ch, i + 1);
-      if (close < 0) {
-        out.push(pattern.slice(i + 1));
-        break;
+      // A quoted run is text, a `\` inside it escaping the next character, as .NET reads it.
+      let at = i + 1;
+      let closed = false;
+      while (at < pattern.length) {
+        const inside = pattern[at++];
+        if (inside === ch) {
+          closed = true;
+          break;
+        }
+        if (inside === '\\') {
+          if (at >= pattern.length) throw formatError(BAD_DATE_FORMAT);
+          out += pattern[at++];
+        } else {
+          out += inside;
+        }
       }
-      out.push(pattern.slice(i + 1, close));
-      i = close + 1;
+      if (!closed) throw formatError(`Cannot find a matching quote character for the character '${ch}'.`);
+      i = at;
       continue;
     }
-    if (ch === '\\' && i + 1 < pattern.length) {
-      out.push(pattern[i + 1]);
+    if (ch === '\\') {
+      if (i + 1 >= pattern.length) throw formatError(BAD_DATE_FORMAT);
+      out += pattern[i + 1];
       i += 2;
       continue;
     }
-
-    let run = 1;
-    while (i + run < pattern.length && pattern[i + run] === ch) run++;
-    const token = ch.repeat(run);
-
-    switch (token) {
-      case 'dddd':
-        out.push(namePart(value, { weekday: 'long' }, 'weekday'));
-        break;
-      case 'ddd':
-        out.push(namePart(value, { weekday: 'short' }, 'weekday'));
-        break;
-      case 'dd':
-        out.push(String(value.getUTCDate()).padStart(2, '0'));
-        break;
-      case 'd':
-        out.push(String(value.getUTCDate()));
-        break;
-      case 'MMMM':
-        out.push(namePart(value, { month: 'long' }, 'month'));
-        break;
-      case 'MMM':
-        out.push(namePart(value, { month: 'short' }, 'month'));
-        break;
-      case 'MM':
-        out.push(String(value.getUTCMonth() + 1).padStart(2, '0'));
-        break;
-      case 'M':
-        out.push(String(value.getUTCMonth() + 1));
-        break;
-      case 'yyyy':
-        out.push(String(value.getUTCFullYear()).padStart(4, '0'));
-        break;
-      case 'yyy':
-        out.push(String(value.getUTCFullYear()).padStart(3, '0'));
-        break;
-      case 'yy':
-        out.push(String(value.getUTCFullYear() % 100).padStart(2, '0'));
-        break;
-      case 'y':
-        out.push(String(value.getUTCFullYear() % 100));
-        break;
-      case 'HH':
-        out.push(String(hours24).padStart(2, '0'));
-        break;
-      case 'H':
-        out.push(String(hours24));
-        break;
-      case 'hh':
-        out.push(String(hours12).padStart(2, '0'));
-        break;
-      case 'h':
-        out.push(String(hours12));
-        break;
-      case 'mm':
-        out.push(String(value.getUTCMinutes()).padStart(2, '0'));
-        break;
-      case 'm':
-        out.push(String(value.getUTCMinutes()));
-        break;
-      case 'ss':
-        out.push(String(value.getUTCSeconds()).padStart(2, '0'));
-        break;
-      case 's':
-        out.push(String(value.getUTCSeconds()));
-        break;
-      case 'tt':
-        out.push(namePart(value, { hour: 'numeric', hour12: true }, 'dayPeriod'));
-        break;
-      case 't':
-        out.push(namePart(value, { hour: 'numeric', hour12: true }, 'dayPeriod').slice(0, 1));
-        break;
-      default:
-        out.push(token);
-        break;
+    if (ch === '%') {
+      // The character after it is a token of its own; `%%` and a `%` that ends the picture are refused.
+      const next = pattern[i + 1];
+      if (next === undefined || next === '%') throw formatError(BAD_DATE_FORMAT);
+      token(next, 1, i + 1);
+      i += 2;
+      continue;
     }
+    // `K`, `/`, `:` and a character that is no token stand alone; a token letter takes its run.
+    const run = 'ghHmsfFtdMyz'.includes(ch) ? runOf(pattern, i) : 1;
+    token(ch, run, i);
     i += run;
   }
-  return out.join('');
+  return out;
+}
+
+/**
+ * Whether a month name at `at`, `run` long, is beside its day, which is when .NET names it in the
+ * genitive (`IsUseGenitiveForm`): the nearest `d` before it is a `d` or a `dd`, or else the nearest
+ * one after it is. Read over the picture as written, quotes included, as .NET reads it.
+ */
+function besideItsDay(pattern: string, at: number, run: number): boolean {
+  let i = at - 1;
+  while (i >= 0 && pattern[i] !== 'd') i--;
+  if (i >= 0) {
+    let repeat = 0;
+    while (--i >= 0 && pattern[i] === 'd') repeat++;
+    if (repeat <= 1) return true;
+  }
+  i = at + run;
+  while (i < pattern.length && pattern[i] !== 'd') i++;
+  if (i < pattern.length) {
+    let repeat = 0;
+    while (++i < pattern.length && pattern[i] === 'd') repeat++;
+    if (repeat <= 1) return true;
+  }
+  return false;
 }
 
 /** The invariant culture's abbreviated names, which `R` writes whatever culture is reading. */
@@ -888,7 +1094,7 @@ const INVARIANT_MONTHS = [
   'Dec',
 ];
 
-/** `yyyy-MM-dd` and `HH:mm:ss` from a date's own parts: a DateTime keeps no time zone to shift. */
+/** `yyyy-MM-dd` and `HH:mm:ss` from a date's own parts: no time zone shifts them. */
 function sortableParts(value: Date): { date: string; time: string } {
   const two = (part: number): string => String(part).padStart(2, '0');
   return {
@@ -915,59 +1121,113 @@ function localOffset(wall: number): number {
   return naming.length === 1 ? naming[0] : Math.min(before, after);
 }
 
+/** The same moment at UTC: a DateTimeOffset's clock less its own offset, and any other's read as
+ * local time and moved, as .NET's ToUniversalTime moves a DateTime of no kind. */
+function universal(moment: Moment): Moment {
+  const wall = moment.date.getTime();
+  const shift = moment.offset !== null ? moment.offset * 60_000 : localOffset(wall);
+  return { ...moment, date: new Date(wall - shift), offset: 0 };
+}
+
 /**
- * Formats a date through a standard specifier or a custom picture, as .NET formats a DateTime:
- * its kind is not tracked (a wall-clock value, .NET's `Unspecified`), so the round-trip, sortable
- * and RFC 1123 forms write its own parts, and only `U` converts, reading it as local time as .NET
- * does. `fraction` gives its fraction of a second, seven digits, asked only by what writes it (#388).
+ * Formats a date through a standard specifier or a custom picture, as .NET formats the type it is
+ * (#388, #469). A DateTime's kind is not tracked (a wall-clock value, .NET's `Unspecified`), so the
+ * round-trip, sortable and RFC 1123 forms write its own parts and only `U` converts, reading it as
+ * local time as .NET does; a DateTimeOffset's `o` and `K` write its offset, and its `u` and `R`
+ * convert it by it. No format, or an empty one, is the type's own text: `G` of a DateTime, `d` of a
+ * DateOnly, `t` of a TimeOnly, and a DateTimeOffset's `G` with its offset after it.
  */
-function formatDate(value: Date, format: string, fraction: () => string): string {
+function formatDate(moment: Moment, format: string | null): string {
+  if (!format) {
+    switch (moment.type) {
+      case 'dateOnly':
+        return standardDate(moment, 'd');
+      case 'timeOnly':
+        return standardDate(moment, 't');
+      case 'dateTimeOffset': {
+        // .NET's DateTimeOffsetPattern: the short date, the long time, and the offset unless the
+        // long time already writes one.
+        const general = standardDate(moment, 'G');
+        const longTime = dateTimeFormat()?.longTimePattern ?? '';
+        return /z/.test(longTime.replace(/'[^']*'|"[^"]*"/g, '')) ? general : `${general} ${renderPattern(moment, 'zzz')}`;
+      }
+      default:
+        return standardDate(moment, 'G');
+    }
+  }
+  if (format.length === 1) return standardDate(moment, format);
+
+  // A custom picture — `yyyy-MM-dd HH:mm`, `dd MMM yyyy`, `HH:mm:ss.fff` — drawn token by token as
+  // a culture's own patterns are, once its type has been checked to take every part it names.
+  const refused = REFUSED_PARTS[moment.type];
+  if (refused !== undefined) checkParts(format, refused);
+  return renderPattern(moment, format);
+}
+
+/** Refuses a picture that names a part its type does not have, outside its quotes and escapes. */
+function checkParts(picture: string, refused: string): void {
+  for (let i = 0; i < picture.length; i++) {
+    const ch = picture[i];
+    if (ch === '\\') {
+      i++;
+    } else if (ch === "'" || ch === '"') {
+      const close = picture.indexOf(ch, i + 1);
+      if (close < 0) throw formatError(`Cannot find a matching quote character for the character '${ch}'.`);
+      i = close;
+    } else if (refused.includes(ch)) {
+      throw formatError(BAD_DATE_FORMAT);
+    }
+  }
+}
+
+/** A one-letter specifier, which is a STANDARD one whatever its letter: the forms defined to ignore
+ * the culture, `U`, and the culture's patterns. A letter the type does not take is .NET's
+ * FormatException. */
+function standardDate(moment: Moment, letter: string): string {
+  if (!STANDARD_DATE[moment.type].includes(letter)) throw formatError(BAD_DATE_FORMAT);
+  const value = moment.date;
   // The invariant forms first: they are DEFINED to ignore the culture, which is the whole reason a
   // wire format uses them. They wrote `toISOString()`, which is UTC, so a page off UTC shifted the
   // hour and `o` spelled a `Z` a wall-clock value does not have.
-  switch (format) {
+  switch (letter) {
     case 'O':
     case 'o': {
       const { date, time } = sortableParts(value);
-      return `${date}T${time}.${fraction()}`;
+      if (moment.type === 'dateOnly') return date;
+      if (moment.type === 'timeOnly') return `${time}.${moment.fraction()}`;
+      const offset = moment.type === 'dateTimeOffset' ? offsetText(moment.offset ?? 0, 3) : '';
+      return `${date}T${time}.${moment.fraction()}${offset}`;
     }
     case 's': {
       const { date, time } = sortableParts(value);
       return `${date}T${time}`;
     }
     case 'u': {
-      const { date, time } = sortableParts(value);
+      const shown = moment.type === 'dateTimeOffset' ? universal(moment).date : value;
+      const { date, time } = sortableParts(shown);
       return `${date} ${time}Z`;
     }
     case 'R':
     case 'r': {
-      const { date, time } = sortableParts(value);
-      return `${INVARIANT_DAYS[value.getUTCDay()]}, ${date.slice(8)} ${INVARIANT_MONTHS[value.getUTCMonth()]} ${date.slice(0, 4)} ${time} GMT`;
+      if (moment.type === 'timeOnly') return sortableParts(value).time;
+      const shown = moment.type === 'dateTimeOffset' ? universal(moment).date : value;
+      const { date, time } = sortableParts(shown);
+      const day = `${INVARIANT_DAYS[shown.getUTCDay()]}, ${date.slice(8)} ${INVARIANT_MONTHS[shown.getUTCMonth()]} ${date.slice(0, 4)}`;
+      return moment.type === 'dateOnly' ? day : `${day} ${time} GMT`;
     }
-    case 'U': {
+    case 'U':
       // The full date and time of the value read as local time and moved to UTC, as .NET's
-      // ToUniversalTime moves an unspecified one: the instant those parts name in the host's zone,
-      // whose UTC fields are then the parts to print.
-      const wall = value.getTime();
-      return formatDate(new Date(wall - localOffset(wall)), 'F', fraction);
-    }
+      // ToUniversalTime moves an unspecified one.
+      return standardDate(universal(moment), 'F');
   }
 
-  if (format.length === 1 && DATE_ROLES[format] !== undefined) {
-    const patterns = DATE_ROLES[format].map(patternFor);
-    // Every role must have travelled; a half-known composite would print half a date.
-    if (patterns.every((pattern) => pattern !== null))
-      return patterns.map((pattern) => renderPattern(value, pattern as string, fraction)).join(' ');
-    return new Intl.DateTimeFormat(activeFormatLocale(), {
-      ...DATE_STYLES[format],
-      timeZone: 'UTC',
-    }).format(value);
-  }
-
-  // A custom picture — `yyyy-MM-dd HH:mm`, `dd MMM yyyy`, `HH:mm:ss.fff` — drawn token by token as
-  // a culture's own patterns are. It replaced six tokens by text, so `d/M/yyyy` printed `d/M/2026`
-  // and `dd MMM yyyy` printed `24 09M 2026`.
-  return renderPattern(value, format, fraction);
+  const data = dateTimeFormat();
+  const roles = DATE_ROLES[letter];
+  if (data !== null) return roles.map((role) => renderPattern(moment, data[role])).join(' ');
+  return new Intl.DateTimeFormat(activeFormatLocale(), {
+    ...DATE_STYLES[letter],
+    timeZone: 'UTC',
+  }).format(value);
 }
 
 const FORMAT_INDEX =
@@ -1010,22 +1270,22 @@ export function stringFormatInvariant(template: string, ...args: unknown[]): str
 }
 
 /**
- * A placeholder with NO specifier still formats per culture in .NET — `{0}` over 1234.5 is
- * "1234,5" in pt-BR — because it calls the value's `ToString(IFormatProvider)`. `String(v)` was
- * the old answer and it is invariant, so the one placeholder shape everybody writes was the one
- * that quietly disagreed with the server.
+ * A value's own text, with no format: what its `ToString()` writes in the culture in force, which
+ * is what .NET writes for `{0}`, `$"{x}"`, `"v=" + x` and `x.ToString()` alike (#454). A number is
+ * the shortest text that reads back, in .NET's notation (1E+21, which toLocaleString never writes),
+ * in the culture's symbols and with no grouping, a float in its own digits; a negative integer's
+ * minus sign is the culture's (sv-SE writes U+2212); a date is its type's own pattern. `String(v)`
+ * was the old answer and it is invariant, so the one shape everybody writes was the one that quietly
+ * disagreed with the server.
  */
-function general(value: unknown): string {
+function general(value: unknown, kind: NumberKind = 'unknown'): string {
   if (value === null || value === undefined) return '';
-  // .NET's default ("G") is the shortest text that reads back, in its notation (1E+21, which
-  // toLocaleString never writes), with the culture's decimal separator and no grouping; a float
-  // boxed for the call keeps its own digits.
   if (value instanceof FormatNumber) return shortest(value.value, value.kind);
-  if (typeof value === 'number') return shortest(value, 'double');
+  if (typeof value === 'number') return shortest(value, kind);
   if (typeof value === 'bigint' || value instanceof Decimal) return plainDigits(value);
   if (typeof value === 'boolean') return value ? 'True' : 'False';
-  const date = asJsDate(value);
-  if (date !== null) return formatDate(date, 'G', () => fractionOf(value, date));
+  const moment = momentOf(value);
+  if (moment !== null) return formatDate(moment, null);
   return String(value);
 }
 

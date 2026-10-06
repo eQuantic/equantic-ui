@@ -6,11 +6,11 @@ export class Rules {
     }
 
     static minLength(length: number, message: string | null = null) {
-        return new FieldRule(message ?? `Use at least ${length} characters.`, (value: string) => value.length === 0 || value.length >= length);
+        return new FieldRule(message ?? `Use at least ${$eq.text.format(length, null)} characters.`, (value: string) => value.length === 0 || value.length >= length);
     }
 
     static maxLength(length: number, message: string | null = null) {
-        return new FieldRule(message ?? `Use at most ${length} characters.`, (value: string) => value.length <= length);
+        return new FieldRule(message ?? `Use at most ${$eq.text.format(length, null)} characters.`, (value: string) => value.length <= length);
     }
 
     static email(message: string = 'Enter a valid email address.') {
@@ -25,7 +25,7 @@ export class Rules {
     }
 
     static range(min: number, max: number, message: string | null = null) {
-        return new FieldRule(message ?? `Enter a number between ${$eq.num.double(min)} and ${$eq.num.double(max)}.`, (value: string) => {
+        return new FieldRule(message ?? `Enter a number between ${$eq.text.format(min, null)} and ${$eq.text.format(max, null)}.`, (value: string) => {
             if (value.length === 0) return true;
             let number: any; 
             return ((number = $eq.num.realTryParse(value, 'double', 511)) !== undefined || ((number = 0), false)) && number >= min && number <= max;

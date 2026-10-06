@@ -29,7 +29,7 @@ export class Calendar extends StatefulComponent {
     build(context: BuildContext) {
         let theme = context.theme;
         let first = CalendarNames.firstDayOfWeek;
-        let monthTitle = `${CalendarNames.monthNames[this._month.month - 1]} ${this._month.year}`;
+        let monthTitle = `${CalendarNames.monthNames[this._month.month - 1]} ${$eq.text.format(this._month.year, null)}`;
         let header = new Row(4, 'start', 'center', false, null, null, { cross: 'center', width: SizeValue.fill });
         header.add(new Text(this.label ?? monthTitle, 'titleSmall', theme.textPrimary, 1));
         header.add(new Flexible(new Spacer()));
@@ -80,14 +80,14 @@ export class Calendar extends StatefulComponent {
         let isToday = day.equals(Calendar.today());
         let reachable = this.inRange(day);
         let primary = theme.colors('primary');
-        let numeral = new Text(String(day.day), 'bodyM', selected ? primary.onBase : isToday ? primary.base : theme.textPrimary, 1);
+        let numeral = new Text($eq.text.format(day.day, null), 'bodyM', selected ? primary.onBase : isToday ? primary.base : theme.textPrimary, 1);
         let cell = new Box(new BoxStyle({ width: size, height: size, cornerRadius: new CornerRadii(Math.fround(Calendar.cellSize / 2)), background: selected ? primary.base : null, borderWidth: !selected && isToday ? 1.5 : 0, borderColor: primary.base, opacity: reachable ? null : theme.disabledOpacity, hover: reachable && !selected ? new StyleDiff({ background: theme.surfaceSubtle }) : null }), VisualNodeExtensions.centered(numeral));
         if (!reachable) return cell;
         return new Pressable(cell, () => this.choose(day), { role: 'gridCell', selected: selected, label: isToday ? `${Calendar.spoken(day)}, ${SdkStrings.today}` : Calendar.spoken(day) });
     }
 
     static spoken(day: DateOnly) {
-        return `${CalendarNames.dayNamesLong[Calendar.sundayIndex(day)]}, ${day.day} ${CalendarNames.monthNames[day.month - 1]} ${day.year}`;
+        return `${CalendarNames.dayNamesLong[Calendar.sundayIndex(day)]}, ${$eq.text.format(day.day, null)} ${CalendarNames.monthNames[day.month - 1]} ${$eq.text.format(day.year, null)}`;
     }
 
     static sundayIndex(day: DateOnly) {

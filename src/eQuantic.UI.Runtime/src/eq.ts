@@ -89,8 +89,7 @@ import {
   startsWith,
 } from './utils/string-search';
 import {
-  asInteger,
-  asSingle,
+  asNumber,
   format,
   recordText,
   stringFormat,
@@ -345,8 +344,8 @@ export const $eq = {
     record: recordText,
     stringFormat,
     stringFormatInvariant,
-    asSingle,
-    asInteger,
+    /** A number boxed with its .NET type for `string.Format`, whose arguments are objects. */
+    asNumber,
     stringBuilder,
     substring,
     textElementStarts,
