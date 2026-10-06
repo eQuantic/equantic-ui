@@ -327,6 +327,27 @@ public class CodeEditorCompletionTests
             .Should().NotBeNull("the selected entry's documentation shows with the list");
     }
 
+    /// <summary>
+    /// A language service's page of documentation shows its first lines and is laid out no further:
+    /// four lines of the list hold a few hundred characters, and the whole page was measured and
+    /// wrapped on every build while its entry was selected.
+    /// </summary>
+    [Fact]
+    public void ALongDocumentation_IsLaidOutOnlyAsFarAsItShows()
+    {
+        var page = string.Join("\n", Enumerable.Range(0, 300).Select(i => $"Line {i} of a long page of documentation."));
+        var editor = Editor(Lines(20), new CodeCompletionItem("Column") { Documentation = page });
+        var host = Host(editor);
+        Settle(host);
+        ClickAt(host, editor, 1, 0);
+
+        var frame = Type(host, "Col");
+
+        var shown = (Text)Find(frame.Root, node => node.Source is Text text && text.Content.StartsWith("Line 0 ")).Source;
+        shown.MaxLines.Should().Be(4, "the box holds four lines");
+        shown.Content.Length.Should().BeLessThan(page.Length / 10, "and only what they can show is laid out");
+    }
+
     private static LayoutNode Find(LayoutNode node, Func<LayoutNode, bool> match) =>
         FindOrNull(node, match) ?? throw new InvalidOperationException("nothing in the frame matches");
 

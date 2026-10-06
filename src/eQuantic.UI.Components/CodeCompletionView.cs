@@ -28,6 +28,11 @@ internal static class CodeCompletionView
     /// <summary>The most lines of documentation shown with the list.</summary>
     internal const int DocumentationLines = 4;
 
+    /// <summary>The most of an entry's documentation that is laid out: more than four lines of the
+    /// widest list hold, so a language service's page of documentation is never wrapped whole, on
+    /// every build, to show its first lines.</summary>
+    private const int DocumentationBudget = DocumentationLines * MaxColumns * 2;
+
     /// <summary>The list's frame, a hairline.</summary>
     private const float Border = 1;
 
@@ -81,10 +86,19 @@ internal static class CodeCompletionView
         var room = MathF.Max(1, width - 2 * (Border + Space.S2));
         var style = DocumentationStyle(metrics);
         var lines = 0;
-        foreach (var paragraph in documentation.Split('\n'))
+        foreach (var paragraph in Shown(documentation).Split('\n'))
+        {
             lines += Math.Max(1, (int)MathF.Ceiling(context.MeasureText(paragraph, style) / room));
-        return Math.Min(lines, DocumentationLines);
+            // The box holds no more, and what it cannot show is not measured.
+            if (lines >= DocumentationLines) return DocumentationLines;
+        }
+        return lines;
     }
+
+    /// <summary>The part of <paramref name="documentation"/> that is laid out (see
+    /// <see cref="DocumentationBudget"/>).</summary>
+    private static string Shown(string documentation) =>
+        documentation.Length > DocumentationBudget ? documentation.Substring(0, DocumentationBudget) : documentation;
 
     /// <summary>How tall <paramref name="lines"/> lines of documentation are, with the rule that
     /// parts them from the rows. Zero lines is none.</summary>
@@ -340,7 +354,7 @@ internal static class CodeCompletionView
             Height = DocumentationHeightOf(context, metrics, lines) - 1,
             Padding = EdgeInsets.Symmetric(Space.S2, Space.S1),
             Clip = true,
-        }, new Text(text, TypeRole.LabelSmall, theme.TextSecondary, maxLines: lines)
+        }, new Text(Shown(text), TypeRole.LabelSmall, theme.TextSecondary, maxLines: lines)
         {
             StyleOverride = DocumentationStyle(metrics),
         });
