@@ -1,7 +1,7 @@
 # Proposal
 
-Closes #454, #455, #469, #470 and #471, sub-issues of #164 (the transpiler's fences hold on every
-path).
+Closes #454, #455, #469, #470, #471 and #634, sub-issues of #164 (the transpiler's fences hold on every
+path) and of #565, its continuation.
 
 ## Why
 
@@ -22,18 +22,28 @@ could print it two ways itself:
 - The page was handed its culture only when the app had a string catalog: with no `.resx`, the browser
   formatted in its HOST's locale, a date's patterns in the invariant culture, and the conformance
   suite passed or failed by the machine it ran on (#471).
+- `N`, `F`, `C` and `P` were laid out by `Intl`, whose ICU is not .NET's: ar-EG's own digits where .NET
+  writes ASCII ones, a no-break space where .NET's currency and percent patterns have a plain one, and
+  two digits with no precision where .NET reads the culture's, three on ICU (#634). The format subset
+  test folded the spaces on both sides, which hid it.
 
 ## What Changes
 
 - The format culture travels with every page: `window.__EQ_CULTURE__.format` carries what the
-  browser's formatter reads of it, its number symbols and its date patterns, separators and names,
-  read from .NET's own `NumberFormatInfo` and `DateTimeFormatInfo` (`CultureFormatBridge`), whether or
-  not the app has a string to translate. A culture switch with no reload fetches the culture it
+  browser reads of it, its number symbols, separators, group sizes, digits and patterns, and its date
+  patterns, separators, names and first day of the week, read from .NET's own `NumberFormatInfo` and
+  `DateTimeFormatInfo` (`CultureFormatBridge`), whether or not the app has a string to translate. A
+  calendar's names are this data too: they travelled as a second copy beside it. A culture switch with no reload fetches the culture it
   switches to from `/_equantic/culture/{name}.json`. With no culture installed, the browser formats
   in the invariant culture, never in its host's.
 - A number written with no specifier, wherever C# writes it, is the culture's text, through the
-  formatter that writes every other number. An unsigned integer, a char and a non-negative integer
-  constant read the same in every culture and are left as they are.
+  formatter that writes every other number: a concatenation, an interpolation hole, `ToString()`,
+  `Convert.ToString`, `string.Format`, `string.Join`, a `StringBuilder` and a record's text. An integer
+  writes no sign on a zero JavaScript holds as `-0`. An unsigned integer, a char and a non-negative
+  integer constant read the same in every culture and are left as they are.
+- `N`, `F`, `C` and `P` are laid out from the culture's `NumberFormatInfo` as .NET lays them out, and
+  `Intl` only for a culture whose data did not travel. The ISO currency code the browser needed for
+  `Intl` is no longer read, and no longer written.
 - The compiler tells the formatter what a number is: a `double` says so, and `nint` and `nuint` are
   integers of the platform's width. The per mille sign, the signs of an exponent and the percent sign
   are the culture's own.
@@ -48,8 +58,8 @@ could print it two ways itself:
 - EQ2109 (`ToString(CultureInfo.CurrentCulture)` with no specifier) is retired: the general format is
   the culture's on both sides now.
 - No break for an app: its C# compiles to the new form. The public surface of `eQuantic.UI.Compiler`
-  replaces `Eq.AsInteger` and `Eq.AsSingle` with `Eq.AsNumber`, and `eQuantic.UI.Web` gains
-  `CultureFormatBridge`. The developer surface does not move.
+  replaces `Eq.AsInteger` and `Eq.AsSingle` with `Eq.AsNumber` and gains `TypeSymbolExtensions.IsDate`,
+  and `eQuantic.UI.Web` gains `CultureFormatBridge`. The developer surface does not move.
 
 ## Capabilities
 
@@ -68,15 +78,18 @@ could print it two ways itself:
 ## Impact
 
 - eqc: `StringConversion` and the interpolated string path write a number or a date through the
-  formatter, `FormatKind` passes a double's and a native integer's kind, `ToStringStrategy`,
-  `DateOnlyTimeOnlyStrategy` and `DateTimeOffsetStrategy` route their text to the formatter, and the
-  build's string catalogs carry strings only: the format facts they carried (the currency and the
-  date patterns, from the build machine's ICU and for the UI culture) are the server's to write now.
+  formatter, `FormatKind` passes a number's kind, `ToStringStrategy`, `ConvertStrategy`,
+  `StringBuilderStrategy`, `DateOnlyTimeOnlyStrategy` and `DateTimeOffsetStrategy` route their text to
+  it, a record's text writes each member as a concatenation does, and the build's string catalogs carry
+  strings only: the format facts they carried (the currency and the date patterns, from the build
+  machine's ICU and for the UI culture) are the server's to write now.
 - The runtime: `utils/format.ts` draws numbers and dates from the culture's data, `utils/culture.ts`
-  installs and switches it, and boot installs it from `__EQ_CULTURE__` before hydration.
+  installs and switches it, `CalendarNames` reads its names from it, and boot installs it from
+  `__EQ_CULTURE__` before hydration.
 - The server: `CultureBridge` writes the format culture on every page and serves a culture's format
-  document, `UIExtensions` maps it.
+  document, without the calendar catalog it wrote beside it, and `UIExtensions` maps it.
 - Tests: conformance cases in five cultures, both sides run in the culture a case names and the
-  invariant one when it names none, on every host; the runtime's format tests; the culture bridge's.
+  invariant one when it names none, on every host; the format subset compared byte for byte, in seven
+  cultures; the runtime's format tests; the culture bridge's.
 - Docs: the wiki's SupportedFeatures and Diagnostics pages (English and Portuguese), docs/DIAGNOSTICS.md
   for EQ2109, and one docs/LEDGER.md line.

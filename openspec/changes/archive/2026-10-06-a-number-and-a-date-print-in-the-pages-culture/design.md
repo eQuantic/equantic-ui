@@ -24,18 +24,19 @@ other date types printed through their twins.
 - The culture a server action runs in (#580), which is the request's, and its own change.
 - A `DateTimeOffset`'s local time (`Now`, `LocalDateTime`, `ToLocalTime`, #626), a time zone matter
   rather than a culture's, and its own change.
-- Native digits and non-Gregorian calendars as a culture's default: .NET writes ASCII digits and the
-  Gregorian calendar for the cultures the SDK serves unless told otherwise, and so does the browser.
+- A non-Gregorian calendar as a culture's default: th-TH counts Buddhist years and ar-SA the Um al-Qura
+  calendar in .NET, and the browser writes the Gregorian date for both. Digits are not this case: .NET
+  writes ASCII digits in every culture, and so does the browser, which draws every number by hand.
 
 ## Decisions
 
 ### The format culture is .NET's data, shipped with every page
 
-The server writes `__EQ_CULTURE__.format` on every page: the number symbols (decimal and group
-separators and sizes, the signs, the percent and per mille symbols, the words for NaN and the
-infinities), the date patterns, separators, era, day and month names (genitive ones included) and AM
-and PM designators, and the ISO code of the currency, serialized from the request's format culture by
-`CultureFormatBridge`. A culture switch fetches the same document for the culture it switches to
+The server writes `__EQ_CULTURE__.format` on every page: the number symbols (the separators and group
+sizes of a number, a currency and a percent, the signs, the currency, percent and per mille symbols, the
+words for NaN and the infinities), the default digits and the patterns of `N`, `C` and `P`, and the date
+patterns, separators, era, first day of the week, day and month names (genitive ones included) and AM
+and PM designators, serialized from the request's format culture by `CultureFormatBridge`. A culture switch fetches the same document for the culture it switches to
 (`/_equantic/culture/{name}.json`). This is what Flutter's `intl` does: a locale's `NumberSymbols`
 and `DateSymbols` are data the app carries, never the platform's.
 
@@ -51,6 +52,29 @@ Alternatives considered:
   machine's ICU, and for the UI culture where formatting reads the format culture. The catalogs carry
   strings only now.
 
+### One copy of a culture's names
+
+A calendar's first day and its day and month names are the format data's `DateTimeFormatInfo` (the
+twin of `CalendarNames` reads them there), where the server wrote them a second time as a calendar
+catalog beside the format data: two copies of one fact on every page, read by two modules. With no
+culture installed, a calendar is the invariant culture's as a date is: it followed the host's locale,
+and named the days of a calendar in Portuguese beside an invariant date on a Portuguese machine.
+
+### `N`, `F`, `C` and `P` are laid out from the data
+
+The four specifiers people write most are drawn as .NET's `Number.Formatting` draws them: the value (a
+percent's times 100) rounded to the precision written or to the culture's own digits, by the type's tie
+rule, its whole part grouped by the specifier's group sizes, and set in .NET's pattern table at the
+culture's index, `#` for the number, `-` for its negative sign, `$` and `%` for its symbols. `Intl` stays
+for a culture whose data did not travel, where nothing names its currency, so `C` writes the generic ¤
+there in the invariant culture's patterns.
+
+Alternatives considered:
+
+- `Intl` with `numberingSystem: 'latn'`. Rejected: ASCII digits, but ar-EG's separators then become
+  Latin ones, the space of a currency and a percent stays a no-break one, and the default digits stay
+  `Intl`'s, where .NET reads 3 for `N` on ICU and 2 on NLS. Only the data says what the server wrote.
+
 ### A page with no culture installed is in the invariant culture
 
 `activeFormatLocale()` and the formatter's data answer the invariant culture when nothing is
@@ -64,14 +88,19 @@ the culture the case names, the invariant one when it names none.
 no specifier: a double, a float, a decimal, a signed integer, a native one, and the date types. An
 unsigned integer, a char and a `TimeSpan` read the same in every culture and are left as they are, and
 so is a non-negative integer constant, whose digits are its text. The same path serves a
-concatenation, a plain and an aligned interpolation hole, `ToString()` and `string.Join`.
+concatenation, a plain and an aligned interpolation hole, `ToString()`, `Convert.ToString`,
+`string.Join`, the value a `StringBuilder` appends or inserts, and each member of a record's text, which
+.NET's PrintMembers writes as a concatenation would.
 
 ### The compiler tells the formatter what a number is
 
 A number crosses as a JavaScript number, so the kind travels with the call (`FormatKind`): a float, a
 double, every integer width, and `nint` and `nuint` as the platform's width (64 bits, as on the hosts
-.NET serves from). `D`, `X` and `B` refuse a double whatever it holds, as .NET does. A value whose kind
-nothing passes (an `object`) is formatted by what it holds, as before.
+.NET serves from). `D`, `X` and `B` refuse a double whatever it holds, as .NET does. With no specifier
+the kind of every number but a double travels, a double being how the formatter reads a number it is
+told nothing about: a float writes its own digits, and an integer writes no sign on a zero, which
+JavaScript makes of `-1 / 2`. A value whose kind nothing passes (an `object`) is formatted by what it
+holds, as before.
 
 ### The date types print through the formatter
 
@@ -94,8 +123,9 @@ where the SDK writes a machine's text, rather than a defect a page showed.
 
 ## Risks / Trade-offs
 
-- [Every page carries its culture's format data] → a few hundred bytes of JSON in the shell; the
-  served runtime grows by the formatter's code for the date types and the symbols.
+- [Every page carries its culture's format data] → measured before compression, 1.2 KB of JSON for
+  en-US and 3 KB for ar-EG, whose names the encoder escapes, with the calendar catalog it replaces gone;
+  the served runtime grows by the formatter's code for the date types, the symbols and the patterns.
 - [A component that built a key or a style from a number now writes the culture's text, as .NET
   does] → the SDK's own components were read for it: their keys hold non-negative integers, whose
   digits every culture writes alike, their labels are a person's text and follow the culture as the

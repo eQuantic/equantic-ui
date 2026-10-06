@@ -1494,6 +1494,26 @@ record of a release, the wiki's Upgrading page is the distillate.
   a generated equality in a hydration map or a `ContainsValue` did not register; and `CopyTo` through
   an `ICollection<T>` copies a set. The served runtime grew about 7 KB gzipped. Proposed and archived
   through OpenSpec (`openspec/specs/runtime-sets`, `runtime-dictionaries`, `transpiler-bcl`).
+- **2026-10-06 · A number and a date print in the page's culture**: the browser wrote a number with no
+  specifier as JavaScript's invariant text wherever C# writes one, a concatenation, an interpolation
+  hole, `ToString()`, `Convert.ToString`, a `StringBuilder` and a record's text
+  ([#454](https://github.com/eQuantic/equantic-ui/issues/454)); the formatter guessed what the compiler
+  knew, so a whole double took `D`, a `nint` was a double and the per mille sign was `‰` everywhere
+  ([#455](https://github.com/eQuantic/equantic-ui/issues/455)); `DateOnly`, `TimeOnly` and
+  `DateTimeOffset` printed through twins that knew no culture
+  ([#469](https://github.com/eQuantic/equantic-ui/issues/469)); a custom date picture wrote `/`, `:`,
+  `z` and `g` as they stand ([#470](https://github.com/eQuantic/equantic-ui/issues/470)); a page had a
+  culture only when the app had a string catalog, and formatted in its host's locale otherwise
+  ([#471](https://github.com/eQuantic/equantic-ui/issues/471)); and `N`, `F`, `C` and `P` were laid out
+  by `Intl`, with ar-EG's own digits, a no-break space and two digits where .NET reads three
+  ([#634](https://github.com/eQuantic/equantic-ui/issues/634)). The server writes the format culture's
+  `NumberFormatInfo` and `DateTimeFormatInfo` on every page and answers a switch from
+  `/_equantic/culture/{name}.json`; the browser draws every number and date from them, a calendar's
+  names among them, and a page with no culture installed is in the invariant culture. 182 of the 217
+  conformance cases, run on both sides, failed against main with the culture installed as main installs
+  it on a page with a catalog; the other 35 are neighbours that already held, kept as pins. EQ2109 is
+  retired. The served runtime grew about 3.5 KB gzipped. Proposed and archived through OpenSpec
+  (`openspec/specs/page-culture`, `runtime-dates`, `transpiler-bcl`).
 
 ## Retired documents
 

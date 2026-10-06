@@ -4,11 +4,13 @@
 
 A number written into text with no format specifier SHALL be its text in the culture in force, as
 .NET writes it, wherever C# writes it: a concatenation, a plain or an aligned interpolation hole,
-`ToString()`, `string.Format("{0}")`, `string.Concat` and `string.Join`. It SHALL carry the culture's
-decimal separator, minus sign and words for NaN and the infinities, a float SHALL be written in its own
-digits and a decimal with its scale. The current culture or a null provider SHALL be the call with
-none, and the invariant culture SHALL write the invariant text. An unsigned integer SHALL read the same
-in every culture.
+`ToString()`, `Convert.ToString`, `string.Format("{0}")`, `string.Concat`, `string.Join`,
+`StringBuilder.Append`, `AppendLine` and `Insert`, and the text of a record, whose members are written
+as a concatenation writes them. It SHALL carry the culture's decimal separator, minus sign and words for
+NaN and the infinities, a float SHALL be written in its own digits, a decimal with its scale, and an
+integer with no sign on a zero. The current culture or a null provider SHALL be the call with none, and
+the invariant culture SHALL write the invariant text. An unsigned integer SHALL read the same in every
+culture.
 
 #### Scenario: A fraction in pt-BR
 
@@ -19,6 +21,18 @@ in every culture.
 
 - **WHEN** `int i = -5;` is written as `$"{i}"` with sv-SE in force
 - **THEN** it writes `−5`, with the culture's U+2212 minus sign, as .NET does
+
+#### Scenario: An integer JavaScript holds as a negative zero
+
+- **WHEN** `int half = neg / 2;` with `neg` holding `-1` is written as `$"{half}"`, `"v=" + half` and
+  `half.ToString()`
+- **THEN** each writes `0`, as .NET does, where the division truncates to `-0` in JavaScript
+
+#### Scenario: A builder and a record
+
+- **WHEN** `sb.Append(-1.5)` and the text of `record Point(double X, string? Name, bool On)` built with
+  `(-1.5, null, true)` run with pt-BR in force
+- **THEN** they write `-1,5` and `Point { X = -1,5, Name = , On = True }`, as .NET does
 
 #### Scenario: An aligned hole
 
