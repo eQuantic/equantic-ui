@@ -119,6 +119,8 @@
   "Rules",
   "SafeArea",
   "ScrollView",
+  "ServerConnection",
+  "ServerTopicRefusal",
   "ShadowSpec",
   "SheetCellSnapshot",
   "SheetController",

@@ -308,6 +308,9 @@ export {
   MotionSpec,
   MotionVector,
   NetworkState,
+  ServerConnection,
+  ServerTopic,
+  ServerTopicRefusal,
   SpringSpec,
   WindowSizeClasses,
 } from './shared/primitive-values';
