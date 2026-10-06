@@ -120,6 +120,67 @@ public class S5StateNativeTests
         (LiftAt(1100) - rest).Should().Be(-2, "settled once the transition's 100 ms are over");
     }
 
+    /// <summary>A hovered box's custom shadows glide under a <c>Transition</c> over the shadow channel,
+    /// as the browser glides the <c>box-shadow</c> list, where they used to snap (#508).</summary>
+    [Fact]
+    public void AHoverGlow_GlidesUnderTheBoxsTransition()
+    {
+        var box = new Box(new BoxStyle
+        {
+            Width = 40, Height = 40, Background = Fill,
+            Shadows = [new ShadowSpec(0, 24, 0, Glow)],
+            Transition = new TransitionSpec(StyleChannels.Shadow, 100),
+            Hover = new StyleDiff { Shadows = [new ShadowSpec(0, 48, 0, Glow)] },
+        });
+        var host = new PhotonHost(box, PhotonTheme.Instance, ThemeMode.Light, 40, 40);
+        List<float> BlursAt(float timeMs)
+        {
+            var builder = new DisplayListBuilder();
+            host.RenderFrame(builder, timeMs);
+            return ShadowBlurs(builder.Build());
+        }
+
+        BlursAt(0).Should().Equal(24);
+        host.SetHovered(box);
+        BlursAt(1000).Should().Equal([24], "the glide starts from the glow that is drawn");
+        BlursAt(1050).Single().Should().BeInRange(24.01f, 47.99f, "halfway in time, on its way");
+        BlursAt(1100).Should().Equal([48], "settled after the transition's 100 ms");
+    }
+
+    /// <summary>A list that grows glides its new shadow in from nothing, and one that shrinks glides the
+    /// shadow it lost out before it stops drawing it: CSS pads the shorter list with transparent ones.</summary>
+    [Fact]
+    public void AShadowTheHoverAdds_GlidesIn_AndGlidesOutWhenTheHoverEnds()
+    {
+        var box = new Box(new BoxStyle
+        {
+            Width = 40, Height = 40, Background = Fill,
+            Shadows = [new ShadowSpec(0, 24, 0, Glow)],
+            Transition = new TransitionSpec(StyleChannels.Shadow, 100),
+            Hover = new StyleDiff { Shadows = [new ShadowSpec(0, 24, 0, Glow), new ShadowSpec(4, 40, 0, Glow)] },
+        });
+        var host = new PhotonHost(box, PhotonTheme.Instance, ThemeMode.Light, 40, 40);
+        List<float> BlursAt(float timeMs)
+        {
+            var builder = new DisplayListBuilder();
+            host.RenderFrame(builder, timeMs);
+            return ShadowBlurs(builder.Build());
+        }
+
+        BlursAt(0).Should().Equal(24);
+        host.SetHovered(box);
+        BlursAt(1000).Should().Equal([24], "the new shadow starts from nothing, which draws nothing");
+        var growing = BlursAt(1050);
+        growing.Should().HaveCount(2, "halfway, the new shadow is on its way in");
+        growing[1].Should().BeInRange(0.01f, 39.99f);
+        BlursAt(1100).Should().Equal([24, 40]);
+
+        host.SetHovered(null);
+        BlursAt(2000).Should().Equal([24, 40], "the glide out starts from what is drawn");
+        BlursAt(2050).Should().HaveCount(2, "halfway, the shadow the list lost is still on its way out");
+        BlursAt(2100).Should().Equal([24], "gone once it has glided out");
+    }
+
     [Fact]
     public void AHoverTransform_ReplacesTheRestingOne()
     {

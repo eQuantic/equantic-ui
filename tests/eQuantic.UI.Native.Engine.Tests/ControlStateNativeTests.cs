@@ -1,0 +1,127 @@
+using eQuantic.UI.Native.Components;
+using eQuantic.UI.Native.Engine;
+using eQuantic.UI.Primitives;
+using FluentAssertions;
+
+namespace eQuantic.UI.Native.Engine.Tests;
+
+/// <summary>
+/// A control's press and focus on Photon (#508): the <see cref="Pressable"/> is what is pressed and
+/// what takes focus, and every box inside it shows its <c>Pressed</c> and <c>Focus</c> diffs while it
+/// is, in the handoff's order, pressed over focus over hover. The web twin is the
+/// <c>.eq-pressable:active</c> and <c>.eq-pressable:focus-visible</c> rule families.
+/// </summary>
+public class ControlStateNativeTests
+{
+    private static readonly ColorToken Fill = new(Color.FromRgb(0x11, 0x22, 0x33));
+
+    private static Box Surface(StyleDiff? hover = null, StyleDiff? focus = null, StyleDiff? pressed = null) =>
+        new(new BoxStyle
+        {
+            Width = 40, Height = 40, Background = Fill,
+            Hover = hover, Focus = focus, Pressed = pressed,
+        });
+
+    private static PhotonHost Host(VisualNode root, float width = 40) =>
+        new(root, PhotonTheme.Instance, ThemeMode.Light, width, 40);
+
+    private static DisplayList Frame(PhotonHost host)
+    {
+        var builder = new DisplayListBuilder();
+        host.RenderFrame(builder);
+        return builder.Build();
+    }
+
+    private static DrawCommand[] Fills(DisplayList list) =>
+        list.Commands.ToArray().Where(c => c.Kind == DrawCommandKind.FillRRect && c.Paint.Color == Fill.Light).ToArray();
+
+    /// <summary>The alpha of the one group-opacity layer the frame opens, or 1 when it opens none.</summary>
+    private static float LayerAlpha(DisplayList list) =>
+        list.Commands.ToArray().Where(c => c.Kind == DrawCommandKind.BeginLayer).Select(c => c.StrokeWidth)
+            .DefaultIfEmpty(1f).Single();
+
+    [Fact]
+    public void APressedControl_ScalesTheBoxInsideIt()
+    {
+        var host = Host(new Pressable(Surface(pressed: new StyleDiff { Transform = Transform2D.Scale(0.5f) }), () => { }));
+
+        Fills(Frame(host)).Single().Transform.M11.Should().Be(1, "nothing is pressed yet");
+        host.PressDown(20, 20);
+        Fills(Frame(host)).Single().Transform.M11.Should().BeApproximately(0.5f, 1e-5f,
+            "the press is the control's, and its box shows it");
+    }
+
+    [Fact]
+    public void AFocusedControl_DrawsTheFocusDiffOfTheBoxInsideIt()
+    {
+        var host = Host(new Pressable(Surface(focus: new StyleDiff { Opacity = 0.5f }), () => { }));
+
+        LayerAlpha(Frame(host)).Should().Be(1);
+        host.FocusNext().Should().BeTrue();
+        LayerAlpha(Frame(host)).Should().Be(0.5f, "the control has keyboard focus, and its box shows it");
+    }
+
+    /// <summary>The handoff's §10: pressed beats hover, and the focus sits between them, as the web's
+    /// selectors order them by specificity.</summary>
+    [Fact]
+    public void PressedBeatsFocus_AndFocusBeatsHover()
+    {
+        var host = Host(new Pressable(Surface(
+            hover: new StyleDiff { Opacity = 0.8f },
+            focus: new StyleDiff { Opacity = 0.6f },
+            pressed: new StyleDiff { Opacity = 0.4f }), () => { }));
+        Frame(host);
+
+        host.PointerMove(20, 20);
+        LayerAlpha(Frame(host)).Should().Be(0.8f, "hovered");
+        host.FocusNext().Should().BeTrue();
+        LayerAlpha(Frame(host)).Should().Be(0.6f, "focus beats hover");
+        host.PressDown(20, 20);
+        LayerAlpha(Frame(host)).Should().Be(0.4f, "pressed beats focus");
+    }
+
+    /// <summary>The control's state is its SUBTREE's: a box beside the pressed control, with a press of
+    /// its own declared, stays as it is.</summary>
+    [Fact]
+    public void TheControlsStateEndsWithItsSubtree()
+    {
+        var row = new Row(gap: 0)
+        {
+            new Pressable(Surface(pressed: new StyleDiff { Transform = Transform2D.Scale(0.5f) }), () => { }),
+            Surface(pressed: new StyleDiff { Transform = Transform2D.Scale(0.5f) }),
+        };
+        var host = Host(row, width: 80);
+        Frame(host);
+
+        host.PressDown(20, 20);
+        var fills = Fills(Frame(host));
+        fills.Should().HaveCount(2);
+        fills[0].Transform.M11.Should().BeApproximately(0.5f, 1e-5f, "the pressed control's box");
+        fills[1].Transform.M11.Should().Be(1, "a box outside it");
+    }
+
+    [Fact]
+    public void ASimulatedPressAndFocus_DrawTheirDiffs()
+    {
+        var pressed = Host(new Simulated(SimulatedState.Pressed,
+            new Pressable(Surface(pressed: new StyleDiff { Transform = Transform2D.Scale(0.5f) }), () => { })));
+        Fills(Frame(pressed)).Single().Transform.M11.Should().BeApproximately(0.5f, 1e-5f);
+
+        var focused = Host(new Simulated(SimulatedState.Focused,
+            new Pressable(Surface(focus: new StyleDiff { Opacity = 0.5f }), () => { })));
+        LayerAlpha(Frame(focused)).Should().Be(0.5f);
+    }
+
+    /// <summary>The state lends its subtree nothing when the thing focused is not a control: a Link
+    /// takes focus and draws its own ring, and the web's focus family selects only under
+    /// <c>eq-pressable</c>.</summary>
+    [Fact]
+    public void ABoxOutsideAnyControl_NeverShowsAFocusOrAPress()
+    {
+        var host = Host(Surface(focus: new StyleDiff { Opacity = 0.5f }, pressed: new StyleDiff { Opacity = 0.4f }));
+        Frame(host);
+
+        host.PressDown(20, 20);
+        LayerAlpha(Frame(host)).Should().Be(1, "a press needs a control to press");
+    }
+}

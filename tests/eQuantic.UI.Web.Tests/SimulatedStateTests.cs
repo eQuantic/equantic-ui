@@ -46,6 +46,26 @@ public class SimulatedStateTests
         simulated.Should().Contain("--eq-color-primary", "the hover's colour is the resting colour now");
     }
 
+    /// <summary>A pictured press lays the box's <c>Pressed</c> diff over its base, as a real one does
+    /// under the control's <c>:active</c>, and a pictured focus marks the control so the ring is drawn
+    /// as a real focus draws it (#508).</summary>
+    [Fact]
+    public void ASimulatedPressAndFocus_DrawWhatTheRealOnesDo()
+    {
+        Primitives.Pressable Control() => new(new Primitives.Box(new BoxStyle
+        {
+            Pressed = new StyleDiff { Transform = Transform2D.Scale(0.985f) },
+            Focus = new StyleDiff { Opacity = 0.9f },
+        }, new Text("x", TypeRole.BodyM)), () => { });
+
+        var (html, css) = Render(new Simulated(SimulatedState.Pressed | SimulatedState.Focused, Control()));
+
+        css.Should().Contain("{transform:scale(0.985)}", "the press is on the base");
+        css.Should().Contain("{opacity:0.9}", "and so is the focus");
+        css.Should().NotContain(":active", "there is nothing to press: it is already drawn");
+        html.Should().MatchRegex("class=\"[^\"]*eq-focused", "the control is marked, so the ring is drawn");
+    }
+
     /// <summary>
     /// Every member a diff can set has a place in the simulated style. The pseudo path writes a
     /// state's declarations as they come; the simulated one maps each back onto the element's style,
@@ -97,7 +117,7 @@ public class SimulatedStateTests
             Hover = new StyleDiff { Elevation = 3, Transform = Transform2D.Translate(0, -2) },
         }, new Text("x", TypeRole.BodyM))));
 
-        css.Should().Contain($"{{box-shadow:{TokenCss.Shadow(Theme.Elevation(3))}, {TokenCss.Shadow(glow)}}}");
+        css.Should().Contain($"{{box-shadow:{TokenCss.RingSlot}, {TokenCss.Shadow(Theme.Elevation(3))}, {TokenCss.Shadow(glow)}}}");
         css.Should().Contain("{transform:translate(0, -2px)}");
         css.Should().NotContain(":hover");
     }
