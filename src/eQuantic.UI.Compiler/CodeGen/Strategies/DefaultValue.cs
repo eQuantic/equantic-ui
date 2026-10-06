@@ -173,7 +173,8 @@ public static class DefaultValue
         // declaration has no class, and its zero would name one nothing wrote.
         var written = type.Locations.Any(location => location.IsInSource)
             ? RecordTypeEmitter.EmitsTwin(type)
-            : Services.RuntimeProvidedTypeScanner.IsTranspiledNamespace(type.ContainingNamespace?.ToDisplayString() ?? "");
+            : Services.RuntimeProvidedTypeScanner.IsTranspiledNamespace(type.ContainingNamespace?.ToDisplayString() ?? "")
+              || type.TwinIsTranspiled();
         if (!written) return null;
         var zeros = type.TypeArguments.Select(argument => Of(argument, named, typeParameter));
         return $"{type.Name}.$zero({string.Join(", ", zeros)})";

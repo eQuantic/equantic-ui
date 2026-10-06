@@ -545,13 +545,15 @@ public class ObjectCreationStrategy : IExpressionIrStrategy
     }
 
     /// <summary>
-    /// Whether eqc writes the twin of <paramref name="type"/>: one the source declares, or one from a
-    /// namespace it transpiles whole into the runtime. Its constructor is the C# constructor and its
-    /// methods are the type's; a vocabulary twin is hand-written and takes a trailing config object.
+    /// Whether eqc writes the twin of <paramref name="type"/>: one the source declares, one from a
+    /// namespace it transpiles whole into the runtime, or one the vocabulary marks
+    /// <c>[TwinIsTranspiled]</c> (#592). Its constructor is the C# constructor and its methods are the
+    /// type's; a vocabulary twin is hand-written and takes a trailing config object.
     /// </summary>
     internal static bool TwinIsWritten(ITypeSymbol? type) =>
         type is not null
         && (type.Locations.Any(location => location.IsInSource)
+            || type.TwinIsTranspiled()
             || Services.RuntimeProvidedTypeScanner.IsTranspiledNamespace(type.ContainingNamespace?.ToDisplayString() ?? string.Empty));
 
     /// <summary>

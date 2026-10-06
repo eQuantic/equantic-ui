@@ -82,6 +82,18 @@ by `ObjectInitializer`. The trailing config object stays where a class takes one
 and the vocabulary's hand-written twins. An exception is built by its symbol (`$eq.exceptions.create`),
 and its initializer is applied to what that builds, through the same `ObjectInitializer`.
 
+### A transpiled vocabulary type is marked
+
+The runtime transpiles the spreadsheet's and the forms' models out of the vocabulary's assembly, so
+their twins are written from their C# while every other type of that namespace has a hand-written
+twin, and an app reaches both as metadata. The namespace cannot tell them apart, so the vocabulary
+marks the transpiled ones `[TwinIsTranspiled]`, and every decision about a twin eqc writes reads it:
+the construction (built, then initialized), the zero (`$zero()`), the indexer (`item`) and the type
+test (`instanceof`). A test holds the mark on every class, record and struct of the transpiled
+folders and on no other type. Alternative: move those models to a namespace of their own. Rejected:
+it is a break for every app that names them, for a distinction the attribute states where the type
+is declared, as `[TwinIsData]` and `[ZeroConstructs]` already do.
+
 ### A held parameter and a member of one name
 
 A primary constructor's parameter a member reads is held on the instance under its camelCased name,

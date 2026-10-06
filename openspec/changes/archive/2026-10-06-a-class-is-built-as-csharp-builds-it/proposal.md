@@ -1,6 +1,6 @@
 # Proposal
 
-Closes #571, #582, #583 and #587, sub-issues of #565 (the transpiler's fences hold on every path,
+Closes #571, #582, #583, #587 and #592, sub-issues of #565 (the transpiler's fences hold on every path,
 continued). The class and record emission of #608 is what this builds on: a record's and a struct's
 twin are built as C# builds them since then, and a plain class is not yet.
 
@@ -22,6 +22,11 @@ Each of these compiles, emits and runs differently in the browser with a green b
   browser.
 - An exception built with an object initializer drops it (#587): `new Retry { Attempts = 3 }.Attempts`
   is 3 in .NET and null in the browser.
+- A type of the vocabulary's assembly whose twin the runtime transpiles (the spreadsheet's and the
+  forms' models) is taken by an app for a hand-written twin, since both share the vocabulary's
+  namespace (#592): `new CellRef(1, 2) { Col = 3 }` is `1|3` in .NET and `1|2` in the browser, and
+  `default(CellRef)` throws. A plain class built through a config object would make it worse:
+  `new SheetController(10, 4) { Changed = … }` would drop its handler.
 
 ## What Changes
 
@@ -38,13 +43,17 @@ Each of these compiles, emits and runs differently in the browser with a green b
   object stays for a component's props and for the vocabulary's hand-written twins, whose classes
   take one.
 - An exception built with an object initializer has it applied once it is built.
+- The vocabulary marks the types whose twins the runtime transpiles `[TwinIsTranspiled]`, and every
+  decision about a twin eqc writes reads the mark where an app reaches the type as metadata: its
+  construction, its zero, its indexer and its type test.
 - A primary constructor's parameter a member reads is held on the instance, as a struct's is, and a
   held parameter that lands on the name of another member is refused with EQ1007, as it is for a
   struct.
 - **BREAKING** (preview): a plain class's twin no longer takes a trailing config object. TypeScript
   written by hand that built a transpiled class with one sets those members after `new` instead. An
   app never sees it, since its C# compiles to the new form, and nothing in the runtime builds one
-  that way. The public surface of `eQuantic.UI.Compiler` and the developer surface do not move.
+  that way. `eQuantic.UI.Primitives` gains `TwinIsTranspiledAttribute`; the public surface of
+  `eQuantic.UI.Compiler` and the developer surface do not move.
 
 ## Capabilities
 

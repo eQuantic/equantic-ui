@@ -1501,15 +1501,22 @@ record of a release, the wiki's Upgrading page is the distillate.
   initializers after its base's constructor ([#571](https://github.com/eQuantic/equantic-ui/issues/571));
   an object initializer was a trailing config object, evaluated before the constructor ran, and a
   property's initializer ran before every field's ([#582](https://github.com/eQuantic/equantic-ui/issues/582));
-  and an exception dropped its initializer ([#587](https://github.com/eQuantic/equantic-ui/issues/587)).
+  an exception dropped its initializer ([#587](https://github.com/eQuantic/equantic-ui/issues/587));
+  and the vocabulary's types the runtime transpiles (the spreadsheet's and the forms' models) were
+  taken by an app for hand-written twins, so `new CellRef(1, 2) { Col = 3 }` kept its 2 and
+  `default(CellRef)` threw ([#592](https://github.com/eQuantic/equantic-ui/issues/592)).
   The record twin's constructor (#413) moved into one builder written as IR, which a plain class's
   constructor comes from too: every constructor is reached by its counts, the class's state starts in
   declaration order, declared for TypeScript only, since a class field runs at a moment of its own, a
   derived class's initializers run before `super()` and land after it, and a construction builds, then
   applies its initializer. A class's held primary parameter on another member's name is EQ1007, as a
-  struct's is. Of the 25 conformance cases this adds, run through the module graph on both sides, 18
-  fail on #608's head, a `params` constructor not even loading (its rest parameter was written before
-  the config); the other 7 are neighbours kept as pins. Found on the way: an app exception's own members
+  struct's is. The vocabulary marks its transpiled types `[TwinIsTranspiled]`, a test holding the mark
+  on exactly those, and every decision about a twin eqc writes reads it: without it, this change would
+  have dropped `new SheetController(10, 4) { Changed = … }`'s handler too. Of the 25 conformance cases
+  of a class this adds, run through the module graph on both sides, 18 fail on #608's head, a `params`
+  constructor not even loading (its rest parameter was written before the config), and the other 7 are
+  neighbours kept as pins; of the 6 of a transpiled vocabulary type, 3 fail there. Found on the way:
+  an app exception's own members
   ([#611](https://github.com/eQuantic/equantic-ui/issues/611)) and enumerating a class that implements
   `IEnumerable<T>` ([#612](https://github.com/eQuantic/equantic-ui/issues/612)). Proposed and archived
   through OpenSpec (`openspec/specs/transpiler-classes`, `openspec/specs/transpiler-exceptions`).

@@ -16,6 +16,10 @@
 
 - [x] 3.1 An exception built with an object initializer has it applied. Verified by conformance cases for a field and a property an initializer sets on an app exception, failing on #608's head and green here (its own members are #611)
 
+## 3b. A transpiled vocabulary type
+
+- [x] 3b.1 `[TwinIsTranspiled]` on every class, record and struct of the vocabulary's transpiled folders, held by a test that no other type carries it, and read by the construction, the zero, the indexer and the type test (#592). Verified by conformance cases through the module graph for `CellRef`, `FieldError`, `SheetEdit` and `SheetController` built with an initializer, a `with` and a zero, 3 of 6 failing on #608's head and 5 of 6 on this branch without the mark
+
 ## 4. The runtime and the real thing
 
 - [x] 4.1 Regenerate the runtime's transpiled classes (`EQ_UPDATE_TRANSPILED=1`) and run `dotnet build src/eQuantic.UI.Runtime -t:TestRuntime`, the Server suite (the served runtime's budget) and the Web suite
