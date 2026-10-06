@@ -136,6 +136,7 @@ public static class UIExtensions
         services.TryAddSingleton<eQuantic.UI.Primitives.IMotionSensor, AbsentCapabilities.MotionSensor>();
         services.TryAddSingleton<eQuantic.UI.Primitives.IBiometrics, AbsentCapabilities.Biometrics>();
         services.TryAddSingleton<eQuantic.UI.Primitives.INetworkStatus, AbsentCapabilities.NetworkStatus>();
+        services.TryAddSingleton<eQuantic.UI.Primitives.IServerEvents, AbsentCapabilities.ServerEvents>();
         services.TryAddSingleton<eQuantic.UI.Primitives.IAnalytics, AbsentCapabilities.Analytics>();
         services.TryAddSingleton<eQuantic.UI.Primitives.IClock, AbsentCapabilities.Clock>();
         services.TryAddSingleton<eQuantic.UI.Primitives.IFrameTicker, AbsentCapabilities.FrameTicker>();
@@ -153,9 +154,6 @@ public static class UIExtensions
         });
         services.Configure<BrotliCompressionProviderOptions>(opts => opts.Level = CompressionLevel.Fastest);
         services.Configure<GzipCompressionProviderOptions>(opts => opts.Level = CompressionLevel.Fastest);
-
-        // Add SignalR services
-        services.AddSignalR();
 
         // Register explicit asset providers first (WithAssetProvider<T> takes priority)
         foreach (var (serviceType, implType) in options.AssetProviders)
@@ -300,9 +298,6 @@ public static class UIExtensions
                 }
             }
         }
-
-        // Map SignalR Hub
-        endpoints.MapHub<Hubs.ServerActionHub>("/_equantic/hub");
 
         // Map Runtime JS (immutable via BuildId in URL, long cache)
         endpoints.MapGet("/_equantic/runtime.js", async context =>
@@ -1270,6 +1265,23 @@ public class UIOptions
     public UIOptions RegisterEndpoints(Action<IEndpointRouteBuilder> configuration)
     {
         EndpointConfigurations.Add(configuration);
+        return this;
+    }
+
+    /// <summary>
+    /// Lets the server publish to topics the app's components subscribe to (<c>IServerEvents</c> in a
+    /// component, <see cref="IServerEventPublisher"/> on the server), over one stream per page.
+    /// <paramref name="configure"/> says who may subscribe to which topics (a topic no template
+    /// matches is refused) and fills the seams an app may need: its own backplane, lifecycle
+    /// handlers, the limits read from <c>EQuantic:ServerEvents</c>.
+    /// </summary>
+    public UIOptions UseServerEvents(Action<ServerEventsBuilder> configure)
+    {
+        ArgumentNullException.ThrowIfNull(configure);
+        var events = new ServerEventsBuilder();
+        configure(events);
+        RegisterServices(events.Register);
+        RegisterEndpoints(endpoints => endpoints.MapServerEvents());
         return this;
     }
 
