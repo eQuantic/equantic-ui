@@ -49,6 +49,11 @@ so a record's members, an enum, a decimal, a long and a nested record read as th
 - **WHEN** a component subscribes to `topic with { }`
 - **THEN** the copy equals the topic, and its payloads arrive revived as the topic's do
 
+#### Scenario: A generic record
+
+- **WHEN** a component subscribes to a `ServerTopic<Box<long>>`, where `record Box<T>(T Value)`
+- **THEN** each payload's `Value` arrives as a long, not as the text the wire writes
+
 ### Requirement: One connection per page carries every topic
 
 A page SHALL hold at most one server-events connection, opened when its first subscription starts
@@ -114,6 +119,18 @@ asked, and SHALL receive nothing.
 
 - **WHEN** a library and the app each call `UseServerEvents` with their own topics
 - **THEN** both sets of topics are authorized, over one set of endpoints
+
+#### Scenario: A policy restricted to a scheme
+
+- **WHEN** a topic requires a policy that names an authentication scheme, and the request's default
+  scheme has a signed-in user
+- **THEN** the topic is refused unless the policy's own scheme authenticates the request, and the
+  rule's delegate reads the user that scheme answered
+
+#### Scenario: A template's default
+
+- **WHEN** `room/{roomId=lobby}` is a topic template and a page subscribes to `room`
+- **THEN** the template matches it, with `roomId` "lobby"
 
 ### Requirement: A client only listens
 
@@ -185,6 +202,17 @@ those topics are bound.
 - **WHEN** a page releases a topic and the server keeps failing to answer
 - **THEN** the page asks again, and at the last miss opens its stream again, which releases
   everything the old one held
+
+#### Scenario: A bind whose answer was lost
+
+- **WHEN** the server binds a topic but its answer never reaches the page, and the page then lets go
+  of the topic
+- **THEN** the page releases it, as it releases a bound one
+
+#### Scenario: A reading nobody assigned
+
+- **WHEN** a component reads a `ServerConnection` it never assigned, or a `default(ServerTopicRefusal)`
+- **THEN** it reads `Disconnected` with no event id, and `Forbidden` with no topic, as in C#
 
 #### Scenario: A bind no server answers for
 

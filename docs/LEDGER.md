@@ -1571,8 +1571,14 @@ record of a release, the wiki's Upgrading page is the distillate.
   awaiting a join heard the leave first; an overflow waited for the write it was blocking; an
   unanswered release left the topic held; a request that never answered held the next one; and
   connected came before a topic subscribed meanwhile was bound. The equality of two topics of one name
-  and different payload types is the erasure every generic record has (#651). The served runtime grew
-  2,959 gzipped bytes.
+  and different payload types is the erasure every generic record has (#651). Its second round found
+  six: a topic's policies ran against the request's principal without their own schemes, so the
+  cookie's user met a bearer-only policy, and they are now evaluated as the authorization middleware
+  evaluates an endpoint's; a generic record's type argument crossed unrevived, and a constructed one is
+  now described by its own members; a bind whose answer was lost was never released; a reading and a
+  refusal nobody assigned were null in the browser; a template's defaults never reached its matcher;
+  and the test stream's wait for an event never failed while heartbeats came. The served runtime grew
+  3,028 gzipped bytes.
   Migration: `ServerActionHub`, its route `/_equantic/hub` and the `AddSignalR()` call `AddUI` made
   are gone; an app that injected `IHubContext<ServerActionHub>`, which nothing documented, publishes
   through `IServerEventPublisher`, and an app that maps hubs of its own calls `AddSignalR()` itself. Proposed and archived through OpenSpec (`openspec/specs/server-events`).

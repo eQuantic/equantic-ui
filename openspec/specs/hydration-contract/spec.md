@@ -213,3 +213,9 @@ its members needs coercion, so its methods, its equality and `with` work on it t
 
 - **WHEN** a record that crosses holds another record among its members
 - **THEN** the one it holds is rebuilt on its own twin too
+
+#### Scenario: A generic record
+
+- **WHEN** a `Box<long>` crosses, where `record Box<T>(T Value)`
+- **THEN** its `Value` arrives as a long: the constructed type's members describe it, since the twin's
+  own map cannot know `T`

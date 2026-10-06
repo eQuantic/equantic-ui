@@ -56,3 +56,12 @@
 - [x] 8.4 A request ends with its stream or after ten seconds, an unanswered release is asked again and then reopens the stream, and connected waits for every topic; verified by vitest specs
 - [x] 8.5 The equality of `ServerTopic<int>` and `ServerTopic<string>` of one name is the erasure every generic record has, measured on an app's own `Box<T>` and filed as #651
 
+## 9. Copilot's second round
+
+- [x] 9.1 A constructed generic record crosses described by its own members on its twin, `Box<long>`'s value as a long; verified by an emission test
+- [x] 9.2 A topic's policies are evaluated as the authorization middleware evaluates an endpoint's, their schemes authenticated; verified by a Server test with a default scheme and a bearer one
+- [x] 9.3 A bind whose answer was lost is released when the page lets go of it; verified by a vitest spec
+- [x] 9.4 `ServerConnection` and `ServerTopicRefusal` zero-construct (`[ZeroConstructs]`); verified by conformance cases on `new()` and `default`
+- [x] 9.5 A template's defaults reach its matcher, measured with `dotnet fsi` against ASP.NET Core's `TemplateMatcher`; verified by a Server test
+- [x] 9.6 The test stream's wait for an event has one deadline, heartbeats or not; verified by a test of the instrument itself
+
