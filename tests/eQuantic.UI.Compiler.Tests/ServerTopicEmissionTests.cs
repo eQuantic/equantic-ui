@@ -23,6 +23,11 @@ public class ServerTopicEmissionTests
 
         public sealed record Quote(string Symbol, decimal Price);
 
+        public sealed record Notice(string Text)
+        {
+            public string Shout() => Text.ToUpperInvariant();
+        }
+
         public sealed class Ticker(IServerEvents? events) : StatefulComponent
         {
             private static readonly ServerTopic<Quote> Prices = new("prices");
@@ -30,6 +35,7 @@ public class ServerTopicEmissionTests
             private static readonly ServerTopic<decimal> Rate = new ServerTopic<decimal>("rate");
             private static readonly ServerTopic<string> Note = new("note");
             private static readonly ServerTopic<List<long>> Ids = new("ids");
+            private static readonly ServerTopic<Notice> Notices = new("notices");
 
             private IDisposable? _prices;
             private decimal _price;
@@ -40,7 +46,7 @@ public class ServerTopicEmissionTests
             protected override void OnUnmount() => _prices?.Dispose();
 
             public override VisualNode Build(ComponentContext context) =>
-                new Text($"{_price} {Prices} {Rate} {Note} {Ids}", TypeRole.BodyM, null);
+                new Text($"{_price} {Prices} {Rate} {Note} {Ids} {Notices}", TypeRole.BodyM, null);
         }
         """;
 
@@ -88,6 +94,15 @@ public class ServerTopicEmissionTests
         ts.Should().Contain("new ServerTopic('note', null)");
         ts.Should().Contain("new ServerTopic('ids', ['long'])");
     }
+
+    /// <summary>
+    /// A record none of whose members needs coercion still carries its twin: the payload is rebuilt on
+    /// it, so the record's methods, equality and <c>with</c> work there. Its spec was null, and the
+    /// payload arrived as the plain object JSON made of it (#647).
+    /// </summary>
+    [Fact]
+    public void ARecordPayloadWhoseMembersNeedNoCoercion_StillCarriesItsTwin() =>
+        Ticker().Should().Contain("new ServerTopic('notices', Notice)");
 
     [Fact]
     public void TheCapability_IsResolvedByName_AndSubscribedOnTheRuntimesObject()
@@ -140,12 +155,20 @@ public class ServerTopicEmissionTests
 
             public sealed record Quote(string Symbol, decimal Price);
 
+            public sealed record Notice(string Text)
+            {
+                public string Shout() => Text.ToUpperInvariant();
+            }
+
             public sealed class Lobby : StatefulComponent
             {
                 private ServerTopic<Quote>? _room;
 
                 [ServerAction]
                 public Task<ServerTopic<Quote>> Join(string code) => Task.FromResult(new ServerTopic<Quote>($"room:{code}"));
+
+                [ServerAction]
+                public Task<Notice> Latest() => Task.FromResult(new Notice("hello"));
 
                 public override VisualNode Build(ComponentContext context) =>
                     new Text(_room?.Name ?? "", TypeRole.BodyM, null);
@@ -156,6 +179,8 @@ public class ServerTopicEmissionTests
         result.Success.Should().BeTrue(string.Join("\n", result.Errors.Select(e => e.Message)));
 
         result.TypeScript.Should().Contain("{ of: ServerTopic, members: {}, typeArguments: [Quote] }");
+        result.TypeScript.Should().MatchRegex(@"\$eq\.hydrate\(await [^;]*\, Notice\)",
+            "a Server Action's record result is rebuilt on its twin, coerced members or not");
         result.TypeScript.Should().MatchRegex(@"import \{[^}]*\bServerTopic\b[^}]*\} from ""@equantic/runtime""");
     }
 }
