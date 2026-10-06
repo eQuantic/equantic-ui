@@ -42,7 +42,7 @@
 
 - [x] 5.1 The wiki's code editor page, in English and Portuguese
 - [x] 5.2 The plan's slice 3 rows and the `docs/LEDGER.md` line citing #296
-- [ ] 5.3 Archive this change before the merge, so `openspec/specs` on main matches the code
+- [x] 5.3 Archive this change before the merge, so `openspec/specs` on main matches the code
 
 ## 6. The author's review
 
