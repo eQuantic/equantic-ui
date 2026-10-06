@@ -584,3 +584,12 @@ hashesByValue(
   TypeStyle,
   VariantColors,
 );
+
+/**
+ * Width over height of an artwork, 1 when it has none (C# `Drawing.Aspect` twin). Defensive about
+ * the artwork itself: a drawing whose asset failed to generate should lose a logo, not throw.
+ */
+export function artworkAspect(artwork: { width: number; height: number } | null | undefined): number {
+  const aspect = artwork && artwork.height > 0 ? artwork.width / artwork.height : 1;
+  return aspect > 0 ? aspect : 1;
+}

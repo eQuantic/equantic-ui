@@ -34,7 +34,7 @@ import {
 import { getActivePass } from './instance-store';
 import { getPhotonTheme, setInFlow } from './photon-context';
 import { declareInView } from './in-view';
-import { cssFontWeight, isWellFormedFace } from './value-types';
+import { artworkAspect, cssFontWeight, isWellFormedFace } from './value-types';
 import {
   adaptiveGateOpen,
   atomizeEntries,
@@ -2070,7 +2070,7 @@ function lowerDrawing(node: DrawingNode): HtmlNode {
   // The C# LowerDrawing twin: a dp width is the box, both axes in px; a fill width is `100%`, and
   // the artwork's own aspect decides the height unless the author did.
   const width = typeof node.width === 'number' ? { kind: 'fixed' as const, value: node.width } : node.width;
-  const aspect = artwork && artwork.height > 0 && artwork.width / artwork.height > 0 ? artwork.width / artwork.height : 1;
+  const aspect = artworkAspect(artwork);
   const fixed = width.kind === 'fixed';
   const attributes: Record<string, string | undefined> = {
     ...atomicAttrs({

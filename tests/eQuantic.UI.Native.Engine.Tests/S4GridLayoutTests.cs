@@ -70,6 +70,17 @@ public class S4GridLayoutTests
         node.Children[1].Bounds.Y.Should().BeGreaterThan(0, "one column: the second cell is on the next row");
     }
 
+    /// <summary>A weight of 0 or less has no meaning both targets share, so the track refuses it.</summary>
+    [Theory]
+    [InlineData(0f)]
+    [InlineData(-1f)]
+    public void AutoFill_RefusesAWeightThatIsNotPositive(float weight)
+    {
+        var act = () => GridTrack.AutoFill(210, weight);
+
+        act.Should().Throw<ArgumentOutOfRangeException>().WithParameterName("weight");
+    }
+
     [Fact]
     public void AutoFlow_WrapsRows_AndSpansClamp()
     {

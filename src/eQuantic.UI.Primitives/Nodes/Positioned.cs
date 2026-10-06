@@ -44,8 +44,8 @@ public sealed class Positioned : SingleChildNode
     public float? StartFraction { get; init; }
 
     /// <summary>
-    /// Moves the placed child along the reading direction by this fraction of its OWN width:
-    /// -0.5 centres it on its start anchor. Applied after the edges, on both targets as layout
+    /// Moves the placed child right by this fraction of its OWN width (left when negative), as a
+    /// CSS <c>translate</c> does in either writing direction: -0.5 centres it on its anchor. Applied after the edges, on both targets as layout
     /// (the hit region follows the drawn box).
     /// </summary>
     public float ShiftX { get; init; }

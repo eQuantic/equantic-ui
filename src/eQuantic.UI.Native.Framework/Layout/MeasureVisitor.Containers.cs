@@ -361,12 +361,6 @@ internal sealed partial class MeasureVisitor
     // ---- flex ------------------------------------------------------------------------------------
 
     /// <summary>
-    /// Spec S4 — the grid track-sizing pass (CSS Grid twin, v1 auto-flow): Fixed tracks take their
-    /// dp; Auto tracks size to their widest starting single-span item; Flex tracks share the
-    /// remaining width by weight (collapsing to 0 in unbounded space). Children flow left→right,
-    /// wrapping to a new row; a span clamps to the row's remainder. Rows size to their tallest cell.
-    /// </summary>
-    /// <summary>
     /// An auto-fill track (the grid's whole list, the constructor saw to that) becomes as many
     /// flexible tracks as fit its minimum with the gap between them, at least one: CSS's
     /// <c>repeat(auto-fill, minmax(min, 1fr))</c>. On a width the grid sizes from its content there
@@ -385,6 +379,12 @@ internal sealed partial class MeasureVisitor
         return tracks;
     }
 
+    /// <summary>
+    /// Spec S4 — the grid track-sizing pass (CSS Grid twin, v1 auto-flow): Fixed tracks take their
+    /// dp; Auto tracks size to their widest starting single-span item; Flex tracks share the
+    /// remaining width by weight (collapsing to 0 in unbounded space). Children flow left→right,
+    /// wrapping to a new row; a span clamps to the row's remainder. Rows size to their tallest cell.
+    /// </summary>
     private LayoutNode MeasureGrid(Grid grid, LayoutConstraints constraints, LayoutContext ctx, string path)
     {
         var (maxW, maxH) = (constraints.MaxWidth, constraints.MaxHeight);

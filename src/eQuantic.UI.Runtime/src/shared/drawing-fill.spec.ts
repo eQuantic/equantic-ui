@@ -34,4 +34,10 @@ describe('Drawing at a fill width', () => {
     expect(style).toContain('width: 240px');
     expect(style).toContain('height: 416px');
   });
+
+  it('refuses what the C# constructor refuses, so both targets fail the same way', () => {
+    expect(() => new Drawing(map, 0)).toThrow(/positive width/);
+    expect(() => new Drawing(map, SizeValue.hug)).toThrow(/no content to hug/);
+    expect(() => new Drawing(map, 240, -1)).toThrow(/cannot be negative/);
+  });
 });

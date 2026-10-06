@@ -26,7 +26,7 @@ import { CanvasPointer } from './canvas-pointer';
 export { CanvasPointer };
 import { lowerVisualNode } from './lowering';
 import { ambientLoweringContext } from './photon-context';
-import { CornerRadii, EdgeInsets, SizeValue, StyleChannels, WebContent } from './value-types';
+import { artworkAspect, CornerRadii, EdgeInsets, SizeValue, StyleChannels, WebContent } from './value-types';
 import { Curve, Motion } from './design-system.generated';
 import { hashesByValue } from '../utils/hash';
 
@@ -480,6 +480,7 @@ export class GridTrack {
   /** C# `GridTrack.AutoFill` twin: as many columns as fit `min`, sharing the rest by `weight`. */
   static autoFill(min: number, weight = 1): GridTrack {
     if (!(min > 0)) throw new RangeError('An auto-fill track needs a positive minimum width.');
+    if (!(weight > 0)) throw new RangeError('An auto-fill track needs a positive weight.');
     return new GridTrack('fill', weight, { min, repeats: true });
   }
 }
@@ -1777,9 +1778,16 @@ export class Drawing extends VisualNode {
   ) {
     super();
     this.artwork = artwork;
-    // A number arrives raw: the C# float → SizeValue conversion passes through to the twin.
-    this.width = SizeValue.from(width) ?? SizeValue.fill;
-    this.height = height > 0 ? height : 0;
+    // A number arrives raw: the C# float → SizeValue conversion passes through to the twin. The
+    // C# constructor's refusals, word for word, so a bad width fails the same way on both targets.
+    // A width eqc never omits; only the vocabulary probe builds one without it.
+    const size = SizeValue.from(width) ?? SizeValue.fill;
+    if (size.kind === 'fixed' && !(size.value > 0)) throw new RangeError('A drawing needs a positive width.');
+    if (size.kind === 'hug')
+      throw new RangeError("A drawing has no content to hug: give it a width in dp, or SizeValue.Fill for its parent's.");
+    if (height < 0) throw new RangeError("A drawing's height cannot be negative.");
+    this.width = size;
+    this.height = height;
     this.tint = tint;
     this.label = label;
     if (config) Object.assign(this, config);
@@ -1791,9 +1799,7 @@ export class Drawing extends VisualNode {
    * throws while building its tree.
    */
   get aspect(): number {
-    const a = this.artwork;
-    const aspect = a && a.height > 0 ? a.width / a.height : 1;
-    return aspect <= 0 ? 1 : aspect;
+    return artworkAspect(this.artwork);
   }
 
   /** The height this drawing takes at `width` dp: the decided one, or the aspect's. */

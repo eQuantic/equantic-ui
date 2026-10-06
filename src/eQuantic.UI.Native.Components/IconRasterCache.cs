@@ -15,6 +15,9 @@ public sealed class IconRasterCache
     /// <summary>Fallback for callers that pass no cache (single-shot renders).</summary>
     public static readonly IconRasterCache Shared = new();
 
+    /// <summary>The most rasters kept at once; a screen's icons fit many times over.</summary>
+    private const int MaxEntries = 512;
+
     private readonly Dictionary<(IconGlyph Glyph, float Width, float Height, float Scale), TextureData?> _entries = new();
 
     public TextureData? Get(IIconRasterizer rasterizer, IconGlyph glyph, float widthDp, float heightDp, float scale)
@@ -22,6 +25,9 @@ public sealed class IconRasterCache
         var key = (glyph, widthDp, heightDp, scale);
         if (_entries.TryGetValue(key, out var cached)) return cached;
 
+        // A drawing that fills its parent is rasterized at every width a resize passes through;
+        // past the cap the cache starts over rather than keeping each of them for the session.
+        if (_entries.Count >= MaxEntries) _entries.Clear();
         var raster = rasterizer.Rasterize(glyph, widthDp, heightDp, scale);
         var entry = raster is null || raster.Width <= 0 || raster.Height <= 0
             ? null

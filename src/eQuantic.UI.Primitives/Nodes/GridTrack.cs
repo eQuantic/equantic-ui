@@ -15,10 +15,16 @@ public readonly record struct GridTrack(SizeKind Kind, float Value)
     /// grid's whole column list: a grid refuses it beside another track. On a width the grid sizes
     /// from its content there is nothing to divide, and it is one column.
     /// </summary>
-    public static GridTrack AutoFill(float min, float weight = 1) =>
-        min > 0
-            ? new(SizeKind.Fill, weight) { Min = min, Repeats = true }
-            : throw new ArgumentOutOfRangeException(nameof(min), "An auto-fill track needs a positive minimum width.");
+    public static GridTrack AutoFill(float min, float weight = 1)
+    {
+        if (!(min > 0))
+            throw new ArgumentOutOfRangeException(nameof(min), "An auto-fill track needs a positive minimum width.");
+        // A weight of 0 leaves the remainder empty on the web and collapses the tracks on Photon,
+        // and a negative one is CSS the browser drops: refuse both rather than diverge.
+        if (!(weight > 0))
+            throw new ArgumentOutOfRangeException(nameof(weight), "An auto-fill track needs a positive weight.");
+        return new(SizeKind.Fill, weight) { Min = min, Repeats = true };
+    }
 
     /// <summary>The narrowest an auto-fill track may be, in dp; 0 for every other track.</summary>
     public float Min { get; init; }
