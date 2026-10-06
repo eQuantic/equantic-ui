@@ -25,7 +25,6 @@ FieldExpressionStrategy
 FirstStrategy
 GenericNameStrategy
 GroupByStrategy
-HashSetStrategy
 HtmlNodeStrategy
 IndexFromEndStrategy
 InlinedConstantStrategy

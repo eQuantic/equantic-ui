@@ -44,11 +44,11 @@ public class AdditionalTypesTests
     }
     
     [Fact]
-    public void HashSet_New_ConvertsToSet()
+    public void HashSet_New_IsTheRuntimesSet()
     {
         var code = "new HashSet<int>()";
         var js = ConvertExpression(code);
-        Assert.Equal("new Set()", js);
+        Assert.Equal("$eq.collections.hashSet()", js);
     }
     
     /*

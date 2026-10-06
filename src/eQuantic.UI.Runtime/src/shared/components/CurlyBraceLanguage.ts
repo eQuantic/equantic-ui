@@ -12,7 +12,7 @@ export abstract class CurlyBraceLanguage {
     static _punctuation: Set<string> | undefined;
 
     static get punctuation(): Set<string> {
-        return CurlyBraceLanguage._punctuation ??= new Set(['(', ')', '[', ']', '{', '}', ',', ';', '.', ':']);
+        return CurlyBraceLanguage._punctuation ??= $eq.collections.hashSetOf(['(', ')', '[', ']', '{', '}', ',', ';', '.', ':']);
     }
 
     abstract name: string;

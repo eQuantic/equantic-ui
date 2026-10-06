@@ -20,10 +20,11 @@ public class ExpressionStrategyTests
     }
 
     [Fact]
-    public void StringJoin_MapsTo_Join()
+    public void StringJoin_ReadsTheSequenceInTheRuntime()
     {
+        // Any sequence, each value written as .NET writes it (#429, #441).
         var result = TestHelper.ConvertExpression("string.Join(\", \", list)");
-        result.Should().Be("this.list.join(', ')");
+        result.Should().Be("$eq.text.join(', ', this.list)");
     }
 
     [Fact]

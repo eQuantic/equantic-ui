@@ -30,18 +30,37 @@ public static class ConformanceRunner
     /// </summary>
     public static void AssertStatementsSameAsDotNet(string csharpStatements, string prelude = "")
     {
+        var (jsBlock, actual, expected) = RunStatements(csharpStatements, prelude);
+
+        actual.Should().Be(
+            expected,
+            $"C# block `{csharpStatements}` (transpiled to JS `{jsBlock}`) must behave identically to .NET");
+    }
+
+    /// <summary>
+    /// As <see cref="AssertSameAsDotNetExceptTheHostsNewline"/>, for a block of statements whose .NET
+    /// answer holds the host's newline: an exception's message is the usual one, since
+    /// <c>ArgumentOutOfRangeException</c> writes its actual value after <c>Environment.NewLine</c>.
+    /// </summary>
+    public static void AssertStatementsSameAsDotNetExceptTheHostsNewline(string csharpStatements, string why, string prelude = "")
+    {
+        var (jsBlock, actual, expected) = RunStatements(csharpStatements, prelude);
+        if (actual == expected) return;
+
+        Folded(actual).Should().Be(Folded(expected),
+            $"C# block `{csharpStatements}` (transpiled to JS `{jsBlock}`) differs from .NET by MORE than the "
+            + $"host's newline, which is the only difference this overload excuses: {why}");
+    }
+
+    private static (string JsBlock, string Actual, string Expected) RunStatements(string csharpStatements, string prelude)
+    {
         var jsBlock = Transpiler.TranspileStatements(csharpStatements, prelude);
         var types = Transpiler.EmitDeclaredRecordTypes(prelude);
         // Top-level undefined canonicalizes to null: the transpiled world treats them as ONE
         // (the `== null` doctrine), and C#'s side of a guarded chain answers null.
         var program = $"{BuildHelperImport(jsBlock + types)}{types}{Log(jsBlock)}";
 
-        var actual = JsExecutor.Run(program);
-        var expected = DotNetEvaluator.EvaluateToJson(csharpStatements, prelude);
-
-        actual.Should().Be(
-            expected,
-            $"C# block `{csharpStatements}` (transpiled to JS `{jsBlock}`) must behave identically to .NET");
+        return (jsBlock, JsExecutor.Run(program), DotNetEvaluator.EvaluateToJson(csharpStatements, prelude));
     }
 
     /// <summary>
