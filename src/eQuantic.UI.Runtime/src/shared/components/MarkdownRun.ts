@@ -1,13 +1,17 @@
 export class MarkdownRun {
-    constructor(props?: any) {
-        if (props && typeof props === 'object') Object.assign(this, props);
+    constructor() {
+        this.text = '';
+        this.bold = false;
+        this.italic = false;
+        this.code = false;
+        this.href = '';
     }
 
-    text: string = '';
-    bold: boolean = false;
-    italic: boolean = false;
-    code: boolean = false;
-    href: string = '';
+    declare text: string;
+    declare bold: boolean;
+    declare italic: boolean;
+    declare code: boolean;
+    declare href: string;
 
     get isLink(): boolean {
         return this.href.length > 0;

@@ -1,7 +1,7 @@
 import { $eq, CodeCollapse, CodeFiller, CodeRow, CodeRowKindValue } from "../runtime-exports";
 
 export class CodeRows {
-    constructor(lineCount: number, fillers: CodeFiller[], collapses: CodeCollapse[], props?: any) {
+    constructor(lineCount: number, fillers: CodeFiller[], collapses: CodeCollapse[]) {
         this._kinds = [];
         this._lines = [];
         this._lineCounts = [];
@@ -9,6 +9,8 @@ export class CodeRows {
         this._rowCounts = [];
         this._sources = [];
         this._labels = [];
+        this.lineCount = 0;
+        this.rowCount = 0;
         this.lineCount = Math.max(0, lineCount);
         let sortedFillers = [...fillers.filter((filler) => filler.rows > 0)].sort((a, b) => { { const _k: (x: typeof a) => any = (filler) => filler.beforeLine; const _a = _k(a), _b = _k(b); if (_a < _b) return -1; if (_a > _b) return 1; } return 0; }).slice();
         let sortedCollapses = [...collapses.filter((collapse) => collapse.lastLine >= collapse.firstLine)].sort((a, b) => { { const _k: (x: typeof a) => any = (collapse) => collapse.firstLine; const _a = _k(a), _b = _k(b); if (_a < _b) return -1; if (_a > _b) return 1; } return 0; }).slice();
@@ -43,18 +45,17 @@ export class CodeRows {
             row += this.lineCount - line;
         }
         this.rowCount = row;
-        if (props && typeof props === 'object') Object.assign(this, props);
     }
 
-    _kinds: CodeRowKindValue[];
-    _lines: number[];
-    _lineCounts: number[];
-    _rows: number[];
-    _rowCounts: number[];
-    _sources: number[];
-    _labels: (string | null)[];
-    lineCount: number = 0;
-    rowCount: number = 0;
+    declare _kinds: CodeRowKindValue[];
+    declare _lines: number[];
+    declare _lineCounts: number[];
+    declare _rows: number[];
+    declare _rowCounts: number[];
+    declare _sources: number[];
+    declare _labels: (string | null)[];
+    declare lineCount: number;
+    declare rowCount: number;
 
     add(kind: CodeRowKindValue, line: number, lineCount: number, row: number, rowCount: number, source: number, label: string | null) {
         this._kinds.push(kind);

@@ -33,6 +33,7 @@ internal sealed class TwinConstructor
     private readonly Func<SyntaxNode, SemanticModel?> _modelFor;
     private readonly bool _annotations;
     private readonly JsLayout _layout;
+    private readonly Func<TypeSyntax?, string>? _parameterType;
 
     /// <param name="converter">The converter the C# goes through.</param>
     /// <param name="lowering">The method lowering of the emitter, which writes a parameter as its target does.</param>
@@ -40,14 +41,18 @@ internal sealed class TwinConstructor
     /// <param name="annotations">Whether the twin is TypeScript.</param>
     /// <param name="layout">The layout the emitter writes the constructor in, which a function
     /// nested in it (a root's own body, run in a function of its own) is laid out in too.</param>
+    /// <param name="parameterType">The TypeScript a parameter's declared type is, where the twin's
+    /// constructor names its parameters' types; null types every one of them <c>any</c>, as a record's
+    /// twin does.</param>
     public TwinConstructor(CSharpToJsConverter converter, MethodLowering lowering, Func<SyntaxNode, SemanticModel?> modelFor,
-        bool annotations, JsLayout layout)
+        bool annotations, JsLayout layout, Func<TypeSyntax?, string>? parameterType = null)
     {
         _converter = converter;
         _lowering = lowering;
         _modelFor = modelFor;
         _annotations = annotations;
         _layout = layout;
+        _parameterType = parameterType;
     }
 
     /// <summary>One member the constructor starts: the slot it is held in on the instance, what it starts
@@ -121,13 +126,18 @@ internal sealed class TwinConstructor
             // A count an alternate takes below what the root requires reaches the twin with fewer
             // arguments than its parameters: each is then optional to TypeScript, as JavaScript reads it.
             var optional = constructors.Alternates.Any(alternate => alternate.Arity.Low < single.Arity.Low);
-            parameters = string.Join(", ", single.Parameters.Select(parameter => _lowering.ParamWithDefault(
-                ParameterName(parameter, single.Primary), "any",
-                parameter.Default is { } given
+            parameters = string.Join(", ", single.Parameters.Select(parameter =>
+            {
+                var defaulted = parameter.Default is { } given
                     ? _converter.ConvertExpression(given.Value, parameter.Type?.ToString())
                     : single.Primary && parameter.Type is { } typed ? DefaultOf(typed)
-                    : optional ? "undefined" : null,
-                parameter.Modifiers.Any(SyntaxKind.ParamsKeyword))));
+                    : optional ? "undefined" : null;
+                // Its declared type where the emitter names one: one that may arrive missing is optional
+                // to TypeScript (`x?: number`).
+                var type = _parameterType?.Invoke(parameter.Type) ?? "any";
+                return _lowering.ParamWithDefault(ParameterName(parameter, single.Primary), type, defaulted,
+                    parameter.Modifiers.Any(SyntaxKind.ParamsKeyword));
+            }));
             foreach (var alternate in constructors.Alternates)
                 if (Mapped(alternate, arrived, selected: null) is { } mapped)
                     statements.Add(JsStatement.If(mapped.Test, JsStatement.Block(mapped.Body), null));

@@ -112,7 +112,10 @@ export class CodeEditor extends StatefulComponent {
     }
 
     create() {
-        let editor = new CodeEditorController(this.initialCode, CodeLanguages.for(this.languageName), { readOnly: this.readOnly });
+        let editor = (($o: any, $1: any) => {
+            $o.readOnly = $1;
+            return $o;
+        })(new CodeEditorController(this.initialCode, CodeLanguages.for(this.languageName)), this.readOnly);
         this._toldDocument = editor.document;
         this._toldSelection = editor.selection;
         return editor;

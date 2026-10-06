@@ -1,8 +1,8 @@
 import { $eq, CodeDocument, CodeLanguageRules, CodeToken, CodeTokenKindValue } from "../runtime-exports";
 
 export abstract class CurlyBraceLanguage {
-    constructor(props?: any) {
-        if (props && typeof props === 'object') Object.assign(this, props);
+    constructor() {
+        this.rules = CodeLanguageRules.default;
     }
 
     static stateNormal: number = 0;
@@ -10,7 +10,7 @@ export abstract class CurlyBraceLanguage {
     static stateMultilineString: number = 2;
     static stateRawString: number = 16;
     abstract name: string;
-    rules: CodeLanguageRules = CodeLanguageRules.default;
+    declare rules: CodeLanguageRules;
     abstract keywords: Set<string>;
     abstract typeWords: Set<string>;
     abstract constantWords: Set<string>;

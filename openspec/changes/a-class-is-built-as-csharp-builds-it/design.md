@@ -29,6 +29,8 @@ property's initializer ran before every field's, and a derived class's after its
   a prop is missing), and its constructors are its factory's, which mirrors one of them.
 - A nested class (#584), which is a question of naming every reference to a type, and its own change.
 - A base constructor that reads a derived class's member through a virtual member (below).
+- An app exception's own members, constructors and methods (#611). It is built as the `Error` the
+  runtime makes, with no twin, so this change applies its object initializer and nothing more.
 
 ## Decisions
 

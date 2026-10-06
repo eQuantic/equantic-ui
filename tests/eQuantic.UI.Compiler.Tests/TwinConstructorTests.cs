@@ -74,6 +74,21 @@ public class TwinConstructorTests
             }
             """, "Odd(int a, int b)"
         },
+        {
+            // A plain class's two constructors of one count, refused as a record's are (#583).
+            "Coupled", "public class Coupled { public Coupled(int a) { } public Coupled(string s) { } }", "Coupled(string s)"
+        },
+        {
+            // A plain class's chain to a constructor that chains in turn.
+            "Leap", """
+            public class Leap
+            {
+                public Leap(int a, int b) { }
+                public Leap(int a) : this(a, a) { }
+                public Leap() : this(1) { }
+            }
+            """, "Leap()"
+        },
     };
 
     [Theory]

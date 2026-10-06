@@ -30,7 +30,7 @@ takes too, and one that chains to a constructor that chains in turn.
 
 #### Scenario: A primary constructor with a base clause
 
-- **WHEN** `class Sized(string text) : B0(text.Length) { public string Text => text; }`
+- **WHEN** `class Sized(string label) : B0(label.Length) { public string Text => label; }`
 - **THEN** `new Sized("abc").X` is `3` and `new Sized("abc").Text` is `abc`, as in .NET
 
 #### Scenario: Two constructors of one count

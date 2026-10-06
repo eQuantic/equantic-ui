@@ -1,15 +1,15 @@
 import { CodeDocument, CodeToken } from "../runtime-exports";
 
 export class CodeHighlighter {
-    constructor(language: any, props?: any) {
+    constructor(language: any) {
         this._tokens = [];
         this._endStates = [];
+        this.language = null;
         this.language = language;
-        if (props && typeof props === 'object') Object.assign(this, props);
     }
 
-    _tokens: CodeToken[][];
-    _endStates: number[];
+    declare _tokens: CodeToken[][];
+    declare _endStates: number[];
     declare language: any;
 
     useLanguage(language: any) {

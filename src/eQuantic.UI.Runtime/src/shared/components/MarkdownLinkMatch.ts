@@ -1,10 +1,12 @@
 export class MarkdownLinkMatch {
-    constructor(props?: any) {
-        if (props && typeof props === 'object') Object.assign(this, props);
+    constructor() {
+        this.label = '';
+        this.href = '';
+        this.end = 0;
     }
 
-    label: string = '';
-    href: string = '';
-    end: number = 0;
+    declare label: string;
+    declare href: string;
+    declare end: number;
 }
 

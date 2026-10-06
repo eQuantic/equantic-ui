@@ -1,17 +1,17 @@
 import { $eq, CodeDocument, CodeEdit, CodePosition, CodeRange } from "../runtime-exports";
 
 export class CodeHistory {
-    constructor(props?: any) {
+    constructor() {
         this._past = [];
         this._future = [];
         this._runEnd = new CodePosition(-1, -1);
-        if (props && typeof props === 'object') Object.assign(this, props);
+        this.limit = 500;
     }
 
-    _past: CodeEdit[];
-    _future: CodeEdit[];
-    _runEnd: CodePosition;
-    limit: number = 500;
+    declare _past: CodeEdit[];
+    declare _future: CodeEdit[];
+    declare _runEnd: CodePosition;
+    declare limit: number;
 
     get canUndo(): boolean {
         return this._past.length > 0;

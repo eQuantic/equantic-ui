@@ -1,8 +1,14 @@
 import { $eq, CodeDocument, CodeLanguageRules, CodeToken, CodeTokenKindValue } from "../runtime-exports";
 
 export class PythonLanguage {
-    constructor(props?: any) {
-        if (props && typeof props === 'object') Object.assign(this, props);
+    constructor() {
+        this.rules = (($o: any, $1: any, $2: any, $3: any, $4: any) => {
+        $o.lineComment = $1;
+        $o.indentAfter = $2;
+        $o.outdentOn = $3;
+        $o.indentWidth = $4;
+        return $o;
+    })(new CodeLanguageRules(), '#', [':', '(', '[', '{'], [')', ']', '}'], 4);
     }
 
     static normal: number = 0;
@@ -13,14 +19,7 @@ export class PythonLanguage {
         return 'Python';
     }
 
-    rules: CodeLanguageRules = (() => {
-        const $o = new CodeLanguageRules();
-        $o.lineComment = '#';
-        $o.indentAfter = [':', '(', '[', '{'];
-        $o.outdentOn = [')', ']', '}'];
-        $o.indentWidth = 4;
-        return $o;
-    })();
+    declare rules: CodeLanguageRules;
     static $slots: any = null;
     static $failure: any = null;
 
@@ -32,9 +31,9 @@ export class PythonLanguage {
                 $slots.keywords = null;
                 $slots.builtins = null;
                 $slots.constants = null;
-                $slots.keywords = $eq.collections.hashSetOf(['and', 'as', 'assert', 'async', 'await', 'break', 'class', 'continue', 'def', 'del', 'elif', 'else', 'except', 'finally', 'for', 'from', 'global', 'if', 'import', 'in', 'is', 'lambda', 'match', 'nonlocal', 'not', 'or', 'pass', 'raise', 'return', 'try', 'while', 'with', 'yield']);
-                $slots.builtins = $eq.collections.hashSetOf(['bool', 'bytes', 'dict', 'float', 'frozenset', 'int', 'list', 'object', 'set', 'str', 'tuple', 'type']);
-                $slots.constants = $eq.collections.hashSetOf(['True', 'False', 'None', 'self', 'cls']);
+                $slots.keywords = new Set(['and', 'as', 'assert', 'async', 'await', 'break', 'class', 'continue', 'def', 'del', 'elif', 'else', 'except', 'finally', 'for', 'from', 'global', 'if', 'import', 'in', 'is', 'lambda', 'match', 'nonlocal', 'not', 'or', 'pass', 'raise', 'return', 'try', 'while', 'with', 'yield']);
+                $slots.builtins = new Set(['bool', 'bytes', 'dict', 'float', 'frozenset', 'int', 'list', 'object', 'set', 'str', 'tuple', 'type']);
+                $slots.constants = new Set(['True', 'False', 'None', 'self', 'cls']);
             } catch ($error) {
                 PythonLanguage.$slots = null;
                 throw PythonLanguage.$failure = $eq.exceptions.typeInitialization('eQuantic.UI.Code.PythonLanguage', $error);

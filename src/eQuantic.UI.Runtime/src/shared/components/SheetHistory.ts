@@ -1,14 +1,13 @@
 import { SheetEdit } from "../runtime-exports";
 
 export class SheetHistory {
-    constructor(props?: any) {
+    constructor() {
         this._undo = [];
         this._redo = [];
-        if (props && typeof props === 'object') Object.assign(this, props);
     }
 
-    _undo: SheetEdit[];
-    _redo: SheetEdit[];
+    declare _undo: SheetEdit[];
+    declare _redo: SheetEdit[];
 
     get canUndo(): boolean {
         return this._undo.length > 0;

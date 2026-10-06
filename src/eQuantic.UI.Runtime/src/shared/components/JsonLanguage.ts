@@ -1,20 +1,19 @@
 import { $eq, CodeLanguageRules, CodeToken } from "../runtime-exports";
 
 export class JsonLanguage {
-    constructor(props?: any) {
-        if (props && typeof props === 'object') Object.assign(this, props);
+    constructor() {
+        this.rules = (($o: any, $1: any, $2: any) => {
+        $o.indentWidth = $1;
+        $o.quotes = $2;
+        return $o;
+    })(new CodeLanguageRules(), 2, ['"']);
     }
 
     get name(): string {
         return 'JSON';
     }
 
-    rules: CodeLanguageRules = (() => {
-        const $o = new CodeLanguageRules();
-        $o.indentWidth = 2;
-        $o.quotes = ['"'];
-        return $o;
-    })();
+    declare rules: CodeLanguageRules;
 
     tokenize(line: string, _state: number, into: CodeToken[]) {
         let i = 0;

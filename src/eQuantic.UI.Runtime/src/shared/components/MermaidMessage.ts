@@ -1,11 +1,14 @@
 export class MermaidMessage {
-    constructor(props?: any) {
-        if (props && typeof props === 'object') Object.assign(this, props);
+    constructor() {
+        this.from = '';
+        this.to = '';
+        this.label = '';
+        this.dashed = false;
     }
 
-    from: string = '';
-    to: string = '';
-    label: string = '';
-    dashed: boolean = false;
+    declare from: string;
+    declare to: string;
+    declare label: string;
+    declare dashed: boolean;
 }
 

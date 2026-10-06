@@ -189,8 +189,20 @@ export class CodeDiff extends StatefulComponent {
         if ((patch = this.patch) != null) {
             if (!(this._original == null) && (patch === this._openedPatch)) return;
             let source = CodeDiffSource.fromPatch(patch);
-            this._original = new CodeEditorController('', language, { readOnly: true, document: source.original });
-            this._modified = new CodeEditorController('', language, { readOnly: true, document: source.modified });
+            this._original = (($o: any, $2: any) => {
+                $o.document = $2;
+                return $o;
+            })((($o: any, $1: any) => {
+                $o.readOnly = $1;
+                return $o;
+            })(new CodeEditorController(undefined, language), true), source.original);
+            this._modified = (($o: any, $2: any) => {
+                $o.document = $2;
+                return $o;
+            })((($o: any, $1: any) => {
+                $o.readOnly = $1;
+                return $o;
+            })(new CodeEditorController(undefined, language), true), source.modified);
             this._openedPatch = patch;
             this._source = source;
             this._comparedOriginal = null;
@@ -201,7 +213,10 @@ export class CodeDiff extends StatefulComponent {
         }
         let opened = false;
         if (this._original == null || !(this._openedPatch == null) || this.original !== this._openedOriginal) {
-            this._original = new CodeEditorController(this.original, language, { readOnly: true });
+            this._original = (($o: any, $1: any) => {
+                $o.readOnly = $1;
+                return $o;
+            })(new CodeEditorController(this.original, language), true);
             this._openedOriginal = this.original;
             this._expanded.clear();
             opened = true;

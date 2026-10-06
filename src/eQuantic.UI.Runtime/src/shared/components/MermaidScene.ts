@@ -1,16 +1,22 @@
 import { MermaidArrowhead, MermaidCurve, MermaidLabel, MermaidPlacedNode, MermaidSegment } from "../runtime-exports";
 
 export class MermaidScene {
-    constructor(props?: any) {
-        if (props && typeof props === 'object') Object.assign(this, props);
+    constructor() {
+        this.width = 0;
+        this.height = 0;
+        this.nodes = [];
+        this.segments = [];
+        this.curves = [];
+        this.arrows = [];
+        this.labels = [];
     }
 
-    width: number = 0;
-    height: number = 0;
-    nodes: MermaidPlacedNode[] = [];
-    segments: MermaidSegment[] = [];
-    curves: MermaidCurve[] = [];
-    arrows: MermaidArrowhead[] = [];
-    labels: MermaidLabel[] = [];
+    declare width: number;
+    declare height: number;
+    declare nodes: MermaidPlacedNode[];
+    declare segments: MermaidSegment[];
+    declare curves: MermaidCurve[];
+    declare arrows: MermaidArrowhead[];
+    declare labels: MermaidLabel[];
 }
 

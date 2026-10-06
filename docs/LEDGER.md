@@ -1494,6 +1494,25 @@ record of a release, the wiki's Upgrading page is the distillate.
   a generated equality in a hydration map or a `ContainsValue` did not register; and `CopyTo` through
   an `ICollection<T>` copies a set. The served runtime grew about 7 KB gzipped. Proposed and archived
   through OpenSpec (`openspec/specs/runtime-sets`, `runtime-dictionaries`, `transpiler-bcl`).
+- **2026-10-06 · A class is built as C# builds it**: a plain class kept its widest constructor and
+  called its base's with no arguments, and a C# 12 primary constructor on a class was not read, so
+  `Money() : this(100)` built no cents, `: base(x * 2)` passed nothing and `new Greeter("ada").Hello()`
+  answered "hi " ([#583](https://github.com/eQuantic/equantic-ui/issues/583)); a derived class ran its
+  initializers after its base's constructor ([#571](https://github.com/eQuantic/equantic-ui/issues/571));
+  an object initializer was a trailing config object, evaluated before the constructor ran, and a
+  property's initializer ran before every field's ([#582](https://github.com/eQuantic/equantic-ui/issues/582));
+  and an exception dropped its initializer ([#587](https://github.com/eQuantic/equantic-ui/issues/587)).
+  The record twin's constructor (#413) moved into one builder written as IR, which a plain class's
+  constructor comes from too: every constructor is reached by its counts, the class's state starts in
+  declaration order, declared for TypeScript only, since a class field runs at a moment of its own, a
+  derived class's initializers run before `super()` and land after it, and a construction builds, then
+  applies its initializer. A class's held primary parameter on another member's name is EQ1007, as a
+  struct's is. Of the 25 conformance cases this adds, run through the module graph on both sides, 18
+  fail on #608's head, a `params` constructor not even loading (its rest parameter was written before
+  the config); the other 7 are neighbours kept as pins. Found on the way: an app exception's own members
+  ([#611](https://github.com/eQuantic/equantic-ui/issues/611)) and enumerating a class that implements
+  `IEnumerable<T>` ([#612](https://github.com/eQuantic/equantic-ui/issues/612)). Proposed and archived
+  through OpenSpec (`openspec/specs/transpiler-classes`, `openspec/specs/transpiler-exceptions`).
 
 ## Retired documents
 

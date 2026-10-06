@@ -1,13 +1,21 @@
 import { $eq, CodeDirectionValue, CodeDocument, CodeEdit, CodeGrid, CodeHighlighter, CodeHistory, CodeKeymap, CodeLanguageRules, CodeLanguages, CodeLineCells, CodeMotionValue, CodePosition, CodeRange, KeyboardConventionValue, Point, PointerPhaseValue, Rect } from "../runtime-exports";
 
 export class CodeEditorController {
-    constructor(text: string = '', language: any = null, props?: any) {
+    constructor(text: string = '', language: any = null) {
+        this._document = null!;
         this._selection = CodeRange.$zero();
+        this.highlighter = null!;
+        this.history = new CodeHistory();
+        this.readOnly = false;
+        this.tabMovesFocus = false;
+        this.changed = null;
+        this.selectionChanged = null;
         this._desiredCell = -1;
         this._cells = $eq.collections.dictionary();
         this._widths = null;
         this._widthsTabs = 0;
         this._widest = 0;
+        this.grid = CodeGrid.default;
         this._dragging = false;
         this._revealVersion = 0;
         this._focusVersion = 0;
@@ -18,24 +26,23 @@ export class CodeEditorController {
         this._document = CodeDocument.fromText(text);
         this._selection = new CodeRange(CodePosition.start);
         this.highlighter = new CodeHighlighter(language ?? CodeLanguages.plainText);
-        if (props && typeof props === 'object') Object.assign(this, props);
     }
 
-    _document: CodeDocument;
-    _selection: CodeRange;
-    _desiredCell: number;
-    _cells: any;
-    _widths: number[] | null;
-    _widthsTabs: number;
-    _widest: number;
+    declare _document: CodeDocument;
+    declare _selection: CodeRange;
+    declare _desiredCell: number;
+    declare _cells: any;
+    declare _widths: number[] | null;
+    declare _widthsTabs: number;
+    declare _widest: number;
     static caretWidth: number = 2;
-    _dragging: boolean;
-    _revealVersion: number;
-    _focusVersion: number;
-    _composition: CodeRange | null;
-    _compositionReplaced: string;
-    _compositionSelection: CodeRange;
-    _wholeLineCopy: string | null;
+    declare _dragging: boolean;
+    declare _revealVersion: number;
+    declare _focusVersion: number;
+    declare _composition: CodeRange | null;
+    declare _compositionReplaced: string;
+    declare _compositionSelection: CodeRange;
+    declare _wholeLineCopy: string | null;
 
     get document(): CodeDocument {
         return this._document;
@@ -65,14 +72,14 @@ export class CodeEditorController {
     }
 
     declare highlighter: CodeHighlighter;
-    history: CodeHistory = new CodeHistory();
+    declare history: CodeHistory;
 
     get rules(): CodeLanguageRules {
         return this.highlighter.language.rules;
     }
 
-    readOnly: boolean = false;
-    tabMovesFocus: boolean = false;
+    declare readOnly: boolean;
+    declare tabMovesFocus: boolean;
 
     get widestLine(): number {
         let tabSize = this.rules.indentWidth;
@@ -85,7 +92,7 @@ export class CodeEditorController {
         return this._widest;
     }
 
-    grid: CodeGrid = CodeGrid.default;
+    declare grid: CodeGrid;
 
     get carets(): Rect[] {
         return [this.caretRect(this.caret)];
@@ -103,8 +110,8 @@ export class CodeEditorController {
         return this._composition;
     }
 
-    changed: ((codeEdit: CodeEdit | null) => void) | null = null;
-    selectionChanged: ((codeRange: CodeRange) => void) | null = null;
+    declare changed: ((codeEdit: CodeEdit | null) => void) | null;
+    declare selectionChanged: ((codeRange: CodeRange) => void) | null;
 
     select(value: CodeRange, keepCell: boolean) {
         if (!keepCell) this._desiredCell = -1;

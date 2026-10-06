@@ -1,10 +1,12 @@
 export class MermaidEdgeRef {
-    constructor(props?: any) {
-        if (props && typeof props === 'object') Object.assign(this, props);
+    constructor() {
+        this.arrow = false;
+        this.label = '';
+        this.end = 0;
     }
 
-    arrow: boolean = false;
-    label: string = '';
-    end: number = 0;
+    declare arrow: boolean;
+    declare label: string;
+    declare end: number;
 }
 

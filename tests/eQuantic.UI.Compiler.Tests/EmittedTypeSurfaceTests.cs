@@ -25,8 +25,8 @@ public class EmittedTypeSurfaceTests
             public long Doubled(long n) => n * 2;
             """);
 
-        // The literal the emitter writes for the field IS a bigint, and `n * 2` emits `n * 2n`.
-        ts.Should().Contain("ticks: bigint = $eq.num.long(0)");
+        // The literal the constructor starts the property with IS a bigint, and `n * 2` emits `n * 2n`.
+        ts.Should().Contain("declare ticks: bigint;").And.Contain("this.ticks = $eq.num.long(0);");
         ts.Should().Contain("doubled(n: bigint)");
         ts.Should().NotContain(": number = $eq.num.long");
     }
@@ -39,7 +39,7 @@ public class EmittedTypeSurfaceTests
             public decimal Total(decimal unit, int count) => unit * count;
             """);
 
-        ts.Should().Contain("price: Decimal = $eq.num.dec(0)");
+        ts.Should().Contain("declare price: Decimal;").And.Contain("this.price = $eq.num.dec(0);");
         ts.Should().Contain("total(unit: Decimal, count: number)");
         // The name the TRANSLATION invents — no syntax walk can see it, so the import is the half
         // of this fix that a mapping change alone would have missed.
