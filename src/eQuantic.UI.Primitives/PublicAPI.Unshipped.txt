@@ -54,5 +54,6 @@ eQuantic.UI.Primitives.ServerTopicRefusalReason.LimitReached = 2 -> eQuantic.UI.
 eQuantic.UI.Primitives.ServerTopicRefusalReason.Failed = 3 -> eQuantic.UI.Primitives.ServerTopicRefusalReason
 eQuantic.UI.Primitives.ServerTopicRefusalReason
 eQuantic.UI.Primitives.ServerTopicRefusalReason.Forbidden = 0 -> eQuantic.UI.Primitives.ServerTopicRefusalReason
+const eQuantic.UI.Primitives.Touch.MinPointerTarget = 24 -> float
 eQuantic.UI.Primitives.TwinIsTranspiledAttribute
 eQuantic.UI.Primitives.TwinIsTranspiledAttribute.TwinIsTranspiledAttribute() -> void

@@ -203,6 +203,22 @@ public static class Eq
     /// and <c>X</c> writes a negative one at its type's width (#445).</summary>
     public const string AsInteger = "$eq.text.asInteger";
     public const string StringBuilder = "$eq.text.stringBuilder";
+
+    /// <summary><c>new CancellationTokenSource(delay?)</c> (<c>utils/cancellation.ts</c>).</summary>
+    public const string CancellationSource = "$eq.cancellation.source";
+
+    /// <summary><c>CancellationToken.None</c>, which is also <c>default(CancellationToken)</c>.</summary>
+    public const string CancellationNone = "$eq.cancellation.none";
+
+    /// <summary><c>new CancellationToken(canceled)</c>: the one cancelled token, or the one that never is.</summary>
+    public const string CancellationToken = "$eq.cancellation.token";
+
+    /// <summary><c>CancellationTokenSource.CreateLinkedTokenSource(…)</c>.</summary>
+    public const string CancellationLinked = "$eq.cancellation.linked";
+
+    /// <summary><c>default(CancellationTokenRegistration)</c>: the registration of nothing, whose token
+    /// is <c>None</c>.</summary>
+    public const string CancellationRegistration = "$eq.cancellation.registration";
     public const string DateTime = "$eq.time.dateTime";
     public const string TimeSpan = "$eq.time.timeSpan";
     public const string DateTimeOffset = "$eq.time.dateTimeOffset";

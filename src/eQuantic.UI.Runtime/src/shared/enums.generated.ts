@@ -24,7 +24,11 @@ export type BiometricResultValue =
 
 export type CodeCompletionKindValue =
   'text' | 'method' | 'function' | 'constructor' | 'field' | 'variable' | 'class' | 'interface'
-  | 'module' | 'property' | 'enum' | 'keyword' | 'snippet' | 'file';
+  | 'module' | 'property' | 'enum' | 'keyword' | 'snippet' | 'file' | 'struct' | 'enumMember'
+  | 'constant' | 'event' | 'operator' | 'typeParameter' | 'value' | 'unit' | 'color' | 'reference'
+  | 'folder';
+
+export type CodeCompletionTriggerValue = 'invoked' | 'typing' | 'character' | 'incomplete';
 
 export type CodeDecorationKindValue =
   'highlight' | 'squiggle' | 'outline' | 'strike' | 'underline' | 'line';

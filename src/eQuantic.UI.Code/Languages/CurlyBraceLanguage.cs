@@ -35,13 +35,20 @@ public abstract class CurlyBraceLanguage : ICodeLanguage
     public virtual CodeLanguageRules Rules { get; } = CodeLanguageRules.Default;
 
     /// <summary>The reserved words, exactly as written.</summary>
-    protected abstract IReadOnlySet<string> Keywords { get; }
+    protected abstract IReadOnlySet<string> ReservedWords { get; }
 
     /// <summary>Words that name a TYPE (the built-ins; declared types are caught by convention).</summary>
     protected abstract IReadOnlySet<string> TypeWords { get; }
 
     /// <summary>Words that ARE a value: true, false, null, undefined.</summary>
     protected abstract IReadOnlySet<string> ConstantWords { get; }
+
+    private IReadOnlyList<string>? _keywords;
+
+    /// <summary>The three tables the colours read, as one list: the reserved words, the built-in
+    /// types and the constants. Read when first asked, since a derived language's tables are not
+    /// there yet while this constructor runs.</summary>
+    public IReadOnlyList<string> Keywords => _keywords ??= ReservedWords.Concat(TypeWords).Concat(ConstantWords).Distinct().ToList();
 
     /// <summary>Whether <c>@"…"</c> opens a string that runs to the closing quote (C# verbatim).</summary>
     protected virtual bool HasVerbatimStrings => false;
@@ -238,7 +245,7 @@ public abstract class CurlyBraceLanguage : ICodeLanguage
     protected virtual CodeTokenKind WordKind(string word, string line, int afterIndex)
     {
         if (word.Length > 1 && word[0] == '@') return CodeTokenKind.Attribute;
-        if (Keywords.Contains(word)) return CodeTokenKind.Keyword;
+        if (ReservedWords.Contains(word)) return CodeTokenKind.Keyword;
         if (ConstantWords.Contains(word)) return CodeTokenKind.Constant;
         if (TypeWords.Contains(word)) return CodeTokenKind.Type;
 

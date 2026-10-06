@@ -40,6 +40,11 @@ export type { ServerActionResponse } from './core/server-actions';
 export { format, stringFormat } from './utils/format';
 export { round } from './utils/dotnet-math';
 export { Decimal, dec } from './utils/decimal';
+export {
+  CancellationToken,
+  CancellationTokenRegistration,
+  CancellationTokenSource,
+} from './utils/cancellation';
 export { long } from './utils/long';
 export {
   DateTime,
@@ -305,6 +310,7 @@ declare global {
 
 // What a browser can do, registered under the C# interface names — see shared/devices.
 export { registerDeviceCapabilities } from './shared/devices/register';
+export { UiDispatcher } from './shared/devices/ui-dispatcher';
 export { RouteValues } from './shared/route-values';
 export {
   GeoLocation,

@@ -1542,6 +1542,43 @@ record of a release, the wiki's Upgrading page is the distillate.
   documented: `base.Name` over an auto-property overridden by another reads the override's value.
   Proposed and archived through OpenSpec (`openspec/specs/transpiler-classes`,
   `openspec/specs/transpiler-records`).
+- **2026-10-06 · The code engine completes**: the engine half of the code editor's slice 3
+  ([#296](https://github.com/eQuantic/equantic-ui/issues/296)). `CodeCompletion`, a session on the
+  controller, asks its providers once when a word starts, filters and ranks what they answered on
+  every keystroke (`CodeFuzzyMatch`), asks an incomplete answer again, and drops a late answer by its
+  generation while its request is cancelled; the keymap routes the list's keys, Enter accepting only
+  what changes the text; the contracts are LSP's, typed; the language's words and the document's are
+  built-in providers, and an editor starts with none until the view
+  ([#297](https://github.com/eQuantic/equantic-ui/issues/297)) draws a list. Held by keystroke
+  sequences, by Roslyn's answer in the playground recorded as a fixture, and by the twin compared with
+  .NET in the embedded Bun over 6,000 patterns and 60 seeded sessions. Found on the way: eqc called a
+  method named `Invoke` as a delegate, named an exception, an interface, an enum and a delegate by
+  their C# names in annotations no module defines (one rule, `TsStandIn`, decides it on every path
+  now), and knew nothing of the cancellation trio, which is now the runtime's, measured with
+  `dotnet fsi` and run on both sides by the conformance suite; and the shared library's twins were
+  transpiled with three of the SDK's seven implicit usings. The author's review found ten defects,
+  each proved failing without its fix: the trap on Tab after ⌃Space, a provider's cancellation that
+  threw into the keystroke, a commit during an input method's composition, a duplicate that hid a
+  match, the filter's work per keystroke, and the document's words read whole at every word started
+  (46 ms in Bun for 45,000 lines, now 50,000 characters nearest the caret) among them. The first
+  review round found three more: a provider's range that moved with the caret, a minified line read
+  from its start, and a linked source that kept its callbacks on a long-lived token; the second, a
+  cancellation a provider threw by itself taken for the request's own, a `TimeProvider` source that
+  compiled and dropped its clock, and a disposed source that kept its callbacks; the third, a word of
+  megabytes that walked past the window, a month's delay that a browser's timer fired at once, and a
+  default registration that was undefined. Proposed and archived through OpenSpec
+  (`openspec/specs/code-completion`).
+- **2026-10-06 · A target under a pointer keeps a 24dp floor**: under a mouse a target was its visual
+  bounds, so a Checkbox or a Radio without a label was a 20dp target on Photon and on the web, under
+  the 24 × 24 WCAG 2.2 SC 2.5.8 asks, and the cross-pin passed because both agreed on 20
+  ([#430](https://github.com/eQuantic/equantic-ui/issues/430), decided by Edgar on 2026-09-26).
+  `Touch.MinPointerTarget` is the floor Photon's Compact hit rect, `Sizing.HitTarget` and a fine
+  pointer's slop on the web grow to, published in the handoff at `touch.minPointerTarget`. Measuring
+  it in a browser found the web's slop drawn over the control's content: under a fine pointer the
+  centre of a Button hit the button element itself, so its box never matched `:hover` and no button
+  showed its hover fill, and a Pressable around an IconButton took the inner control's hits. The slop
+  is now the `::before` with the content lifted above it, and answers only around the control.
+  Proposed and archived through OpenSpec (`openspec/specs/hit-targets`).
 - **2026-10-06 · A component hears the server on a typed topic**: the only door from the browser to
   the server was a Server Action, so no component could hear what someone else did, and an empty
   SignalR hub, a CDN script nothing called and an unbundled client stood where the door would be
@@ -1578,7 +1615,7 @@ record of a release, the wiki's Upgrading page is the distillate.
   now described by its own members; a bind whose answer was lost was never released; a reading and a
   refusal nobody assigned were null in the browser; a template's defaults never reached its matcher;
   and the test stream's wait for an event never failed while heartbeats came. The served runtime grew
-  3,028 gzipped bytes.
+  3,124 gzipped bytes.
   Migration: `ServerActionHub`, its route `/_equantic/hub` and the `AddSignalR()` call `AddUI` made
   are gone; an app that injected `IHubContext<ServerActionHub>`, which nothing documented, publishes
   through `IServerEventPublisher`, and an app that maps hubs of its own calls `AddSignalR()` itself. Proposed and archived through OpenSpec (`openspec/specs/server-events`).

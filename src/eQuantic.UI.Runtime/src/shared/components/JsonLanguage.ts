@@ -8,9 +8,11 @@ export class JsonLanguage {
         $o.quotes = ['"'];
         return $o;
     })();
+        this.keywords = ['true', 'false', 'null'];
     }
 
     rules!: CodeLanguageRules;
+    keywords!: string[];
 
     get name(): string {
         return 'JSON';

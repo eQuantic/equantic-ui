@@ -1,4 +1,14 @@
 #nullable enable
+const eQuantic.UI.Compiler.CodeGen.Eq.CancellationLinked = "$eq.cancellation.linked" -> string!
+const eQuantic.UI.Compiler.CodeGen.Eq.CancellationNone = "$eq.cancellation.none" -> string!
+const eQuantic.UI.Compiler.CodeGen.Eq.CancellationRegistration = "$eq.cancellation.registration" -> string!
+const eQuantic.UI.Compiler.CodeGen.Eq.CancellationSource = "$eq.cancellation.source" -> string!
+const eQuantic.UI.Compiler.CodeGen.Eq.CancellationToken = "$eq.cancellation.token" -> string!
+eQuantic.UI.Compiler.CodeGen.Strategies.Types.CancellationStrategy
+eQuantic.UI.Compiler.CodeGen.Strategies.Types.CancellationStrategy.CanConvert(Microsoft.CodeAnalysis.SyntaxNode! node, eQuantic.UI.Compiler.CodeGen.ConversionContext! context) -> bool
+eQuantic.UI.Compiler.CodeGen.Strategies.Types.CancellationStrategy.CancellationStrategy() -> void
+eQuantic.UI.Compiler.CodeGen.Strategies.Types.CancellationStrategy.ConvertIr(Microsoft.CodeAnalysis.SyntaxNode! node, eQuantic.UI.Compiler.CodeGen.ConversionContext! context) -> eQuantic.UI.Compiler.CodeGen.Ir.JsExpr!
+eQuantic.UI.Compiler.CodeGen.Strategies.Types.CancellationStrategy.Priority.get -> int
 *REMOVED*eQuantic.UI.Compiler.CodeGen.ValueMember.Deconstruct(out string! Display, out string! Js, out string! TsType) -> void
 *REMOVED*eQuantic.UI.Compiler.CodeGen.ValueMember.ValueMember(string! Display, string! Js, string! TsType) -> void
 eQuantic.UI.Compiler.CodeGen.ValueMember.Declaration.get -> Microsoft.CodeAnalysis.SyntaxNode!

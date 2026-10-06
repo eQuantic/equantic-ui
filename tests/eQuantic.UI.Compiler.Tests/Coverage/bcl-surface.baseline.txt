@@ -1,7 +1,7 @@
 # eqc BCL surface audit — the coverage DENOMINATOR, one verdict per probed member.
 # native = a strategy mapped it to plain JS · eq = routed through a $eq compat helper
 # fenced:EQxxxx = refused with that diagnostic · invalid-probe = the probe itself doesn't compile
-# totals: eq=235 · fenced=81 · invalid-probe=6 · native=688
+# totals: eq=240 · fenced=89 · invalid-probe=6 · native=698
 native         Array.MaxLength
 native         Boolean.CompareTo(Boolean)
 native         Boolean.CompareTo(Object)
@@ -11,6 +11,29 @@ native         Boolean.FalseString
 eq             Boolean.Parse(String)
 eq             Boolean.ToString()
 native         Boolean.TrueString
+native         CancellationToken.CanBeCanceled
+eq             CancellationToken.Equals(CancellationToken)
+native         CancellationToken.Equals(Object)
+native         CancellationToken.IsCancellationRequested
+eq             CancellationToken.None
+native         CancellationToken.Register(Action)
+fenced:EQ2004  CancellationToken.Register(Action,Boolean)
+fenced:EQ2004  CancellationToken.Register(Action<Object>,Object)
+fenced:EQ2004  CancellationToken.Register(Action<Object>,Object,Boolean)
+native         CancellationToken.ThrowIfCancellationRequested()
+fenced:EQ2004  CancellationToken.UnsafeRegister(Action<Object>,Object)
+fenced:EQ2004  CancellationToken.WaitHandle
+native         CancellationTokenSource.Cancel()
+fenced:EQ2004  CancellationTokenSource.Cancel(Boolean)
+native         CancellationTokenSource.CancelAfter(Int32)
+eq             CancellationTokenSource.CancelAfter(TimeSpan)
+fenced:EQ2004  CancellationTokenSource.CancelAsync()
+eq             CancellationTokenSource.CreateLinkedTokenSource(CancellationToken)
+eq             CancellationTokenSource.CreateLinkedTokenSource(CancellationToken,CancellationToken)
+native         CancellationTokenSource.Dispose()
+native         CancellationTokenSource.IsCancellationRequested
+native         CancellationTokenSource.Token
+fenced:EQ2004  CancellationTokenSource.TryReset()
 native         Char.CompareTo(Char)
 native         Char.CompareTo(Object)
 native         Char.ConvertFromUtf32(Int32)
