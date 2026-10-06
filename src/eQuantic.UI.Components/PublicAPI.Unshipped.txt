@@ -1,3 +1,5 @@
 #nullable enable
 eQuantic.UI.Components.CodeBlock.MinHeight.get -> float
 eQuantic.UI.Components.CodeBlock.MinHeight.init -> void
+eQuantic.UI.Components.CodeEditor.Completions.get -> System.Collections.Generic.IReadOnlyList<eQuantic.UI.Code.ICodeCompletionProvider!>?
+eQuantic.UI.Components.CodeEditor.Completions.set -> void

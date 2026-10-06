@@ -26,6 +26,11 @@ public sealed class CodeEditor : StatefulComponent
     private float _offset;
     private float _viewport;
     private float _viewportWidth;
+    // How far the code has scrolled sideways: where the completion list's right edge has to stop.
+    private float _scrollX;
+    // The completion list's first row in view, and the most columns it has needed since it opened.
+    private int _listTop;
+    private int _listColumns;
 
     public CodeEditor(string code = "", string? language = null)
     {
@@ -85,6 +90,20 @@ public sealed class CodeEditor : StatefulComponent
     /// <summary>A press on a gutter row — where an IDE toggles a breakpoint.</summary>
     public Action<int>? OnGutterPressed { get; set; }
 
+    /// <summary>
+    /// What the editor completes from as a word is typed: the providers its completion asks, in this
+    /// order. Null, the default, is the language's own words and the document's
+    /// (<see cref="CodeKeywordCompletionProvider"/>, <see cref="CodeWordCompletionProvider"/>). An
+    /// empty list completes nothing, and an IDE passes its language service, with the built-ins
+    /// beside it or without them. A read-only editor completes nothing, whatever it is given.
+    /// <para>
+    /// The editor owns its completion's providers: it sets them from this list when it opens, and
+    /// again only when the list holds other providers, so a parent rebuilding with the same ones
+    /// changes nothing. A list already showing goes on with the providers it was asked of.
+    /// </para>
+    /// </summary>
+    public IReadOnlyList<ICodeCompletionProvider>? Completions { get; set; }
+
     /// <summary>The live editor: the document, the selection, and every command. An IDE reaches for
     /// this to run its own — a formatter, a refactor, a language server's edit — and they undo like
     /// anything the person typed, because they go through the same primitive.</summary>
@@ -98,8 +117,55 @@ public sealed class CodeEditor : StatefulComponent
         };
         _toldDocument = editor.Document;
         _toldSelection = editor.Selection;
+        // The list changes outside any input the surface handles (an answer arriving, an entry
+        // resolved), and has to be drawn again when it does.
+        editor.Completion.Changed += () => SetState(() => { });
         return editor;
     }
+
+    /// <summary>The providers last handed to the completion, and whether any have been.</summary>
+    private IReadOnlyList<ICodeCompletionProvider>? _handed;
+    private bool _handedAny;
+
+    /// <summary>Hands <see cref="Completions"/> to the completion, the built-ins for null, unless
+    /// what it holds already came from a list of the same providers.</summary>
+    private void HandProviders(CodeCompletion completion)
+    {
+        if (_handedAny && SameProviders(Completions, _handed)) return;
+        _handedAny = true;
+        _handed = Completions;
+        var providers = completion.Providers;
+        providers.Clear();
+        if (Completions is null)
+        {
+            providers.Add(new CodeKeywordCompletionProvider());
+            providers.Add(new CodeWordCompletionProvider());
+            return;
+        }
+        foreach (var provider in Completions) providers.Add(provider);
+    }
+
+    /// <summary>Whether two lists hold the same providers in the same order: a parent's build makes
+    /// a new list every time, around the providers it keeps.</summary>
+    private static bool SameProviders(IReadOnlyList<ICodeCompletionProvider>? one,
+        IReadOnlyList<ICodeCompletionProvider>? other)
+    {
+        if (one is null || other is null) return one is null && other is null;
+        if (one.Count != other.Count) return false;
+        for (var i = 0; i < one.Count; i++)
+        {
+            if (!ReferenceEquals(one[i], other[i])) return false;
+        }
+        return true;
+    }
+
+    /// <summary>A press on a row of the list: selects that entry and accepts it, and the app hears
+    /// of the edit as it does of a key's.</summary>
+    private void Pick(CodeEditorController editor, int index) => SetState(() =>
+    {
+        if (editor.Completion.Select(index)) editor.Completion.Accept();
+        Notify(editor);
+    });
 
     /// <summary>The document and the selection the app was last told about (see <see cref="Notify"/>).</summary>
     private CodeDocument? _toldDocument;
@@ -210,6 +276,7 @@ public sealed class CodeEditor : StatefulComponent
         Search = fresh.Search;
         SearchMatchCase = fresh.SearchMatchCase;
         OnGutterPressed = fresh.OnGutterPressed;
+        Completions = fresh.Completions;
     }
 
     /// <summary>What find is looking for: the bar's text while the bar is open, else what the app
@@ -262,6 +329,7 @@ public sealed class CodeEditor : StatefulComponent
     {
         var editor = Editor;
         editor.ReadOnly = ReadOnly;
+        HandProviders(editor.Completion);
         // The controller's OWN highlighter, kept across frames: a keystroke re-colours the line it
         // touched and stops, where a fresh one per frame would re-tokenize the file per character.
         var highlighter = editor.Highlighter;
@@ -336,6 +404,54 @@ public sealed class CodeEditor : StatefulComponent
             WidestLine = editor.WidestLine,
         };
 
+        // The completion list, while one shows: drawn by the surface at the word it completes, in the
+        // code's own coordinates, so it moves with the code (docs/CODE-EDITOR-PLAN.md, §7).
+        var completion = editor.Completion;
+        VisualNode? offered = null;
+        var offeredAt = Point.Zero;
+        var highlighted = -1;
+        if (completion.IsOpen && completion.Selected >= 0)
+        {
+            var items = completion.Items;
+            // The list only widens while it shows, so it never narrows under the pointer as the
+            // word filters it.
+            _listColumns = Math.Max(_listColumns, CodeCompletionView.ColumnsOf(items));
+            var width = CodeCompletionView.WidthOf(metrics, _listColumns);
+            if (_viewportWidth > 0) width = MathF.Min(width, _viewportWidth);
+            var documentation = items[completion.Selected].Item.Documentation;
+            var documentationLines = documentation is { Length: > 0 }
+                ? CodeCompletionView.DocumentationLinesOf(context, metrics, documentation, width)
+                : 0;
+
+            // The room the list has, in the surface's coordinates: the viewport, inside the surface,
+            // since the scrollers around the surface clip whatever leaves it.
+            var codeHeight = 2 * metrics.ContentTop + editor.Document.LineCount * metrics.LineHeight;
+            var surfaceHeight = bounded ? MathF.Max(codeHeight, _viewport) : codeHeight;
+            var viewTop = windowed ? _offset : 0;
+            var viewBottom = windowed && _viewport > 0 ? MathF.Min(_offset + _viewport, surfaceHeight) : surfaceHeight;
+            var (x, y, rows, above) = CodeCompletionView.Place(metrics, editor.CaretRect(completion.Start),
+                viewTop, viewBottom, _scrollX, _viewportWidth,
+                Math.Min(CodeCompletionView.PageRows, items.Count), width,
+                CodeCompletionView.DocumentationHeightOf(context, metrics, documentationLines));
+
+            // The page follows the selection past either end, and PageUp and PageDown step by it.
+            var selected = completion.Selected;
+            if (selected < _listTop) _listTop = selected;
+            if (selected >= _listTop + rows) _listTop = selected - rows + 1;
+            _listTop = Math.Max(0, Math.Min(_listTop, items.Count - rows));
+            completion.PageSize = rows;
+
+            offered = CodeCompletionView.Build(context, completion, metrics, _listTop, rows, width, above,
+                documentationLines, index => Pick(editor, index));
+            offeredAt = new Point(x, y);
+            highlighted = selected - _listTop;
+        }
+        else
+        {
+            _listTop = 0;
+            _listColumns = 0;
+        }
+
         VisualNode surface = new CodeSurface(block, editor)
         {
             Autofocus = Autofocus,
@@ -345,6 +461,9 @@ public sealed class CodeEditor : StatefulComponent
             // The controller mutates outside the tree, so the rebuild has to be asked for. This is
             // the seam: everything the surface does ends here, and here is where the app hears it.
             OnChanged = () => SetState(() => Notify(editor)),
+            Options = offered,
+            OptionsOrigin = offeredAt,
+            HighlightedOption = highlighted,
         };
 
         // The viewport lives OUT HERE, around the surface, rather than inside the block. One
@@ -364,6 +483,14 @@ public sealed class CodeEditor : StatefulComponent
             {
                 if (MathF.Abs(width - _viewportWidth) < 1) return;
                 SetState(() => _viewportWidth = width);
+            },
+            // How far it slid, which only the completion list reads: a rebuild while one shows, and
+            // otherwise a number kept for when one opens.
+            OnScrolled = offset =>
+            {
+                if (MathF.Abs(offset - _scrollX) < 1) return;
+                if (editor.Completion.IsOpen) SetState(() => _scrollX = offset);
+                else _scrollX = offset;
             },
         };
 
