@@ -72,6 +72,8 @@ internal sealed class ServerEventsApp : IAsyncDisposable
     public ValueTask PublishAsync<T>(ServerTopic<T> topic, T payload, ServerEventPublishOptions? options = null) =>
         Services.GetRequiredService<IServerEventPublisher>().PublishAsync(topic, payload, options);
 
+    public Task StopAsync() => _app.StopAsync();
+
     public async ValueTask DisposeAsync()
     {
         await _app.StopAsync();

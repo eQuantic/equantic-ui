@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Features;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
@@ -41,7 +42,14 @@ internal static class ServerEventsEndpoints
     {
         var options = http.RequestServices.GetRequiredService<IOptions<ServerEventsOptions>>().Value;
         var connections = http.RequestServices.GetRequiredService<ServerEventConnections>();
-        var aborted = http.RequestAborted;
+        // The stream ends with its request or with the app. A graceful shutdown waits for every
+        // request in flight, and a stream left open held the instance until the host's timeout
+        // instead of sending its page to connect again, to this instance once it is back or to
+        // another one.
+        var stopping = http.RequestServices.GetService<IHostApplicationLifetime>()?.ApplicationStopping
+                       ?? CancellationToken.None;
+        using var ending = CancellationTokenSource.CreateLinkedTokenSource(http.RequestAborted, stopping);
+        var aborted = ending.Token;
 
         http.Response.Headers.ContentType = "text/event-stream";
         http.Response.Headers.CacheControl = "no-cache";
@@ -81,7 +89,7 @@ internal static class ServerEventsEndpoints
         }
         catch (OperationCanceledException) when (aborted.IsCancellationRequested)
         {
-            // The page went away.
+            // The page went away, or the app is stopping.
         }
         finally
         {

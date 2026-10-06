@@ -267,6 +267,21 @@ public class ServerEventsTests
     }
 
     [Fact]
+    public async Task AStoppingApp_EndsItsStreams_SoTheirPagesConnectAgain()
+    {
+        await using var app = await AnonymousApp();
+        await using var stream = await app.OpenStreamAsync();
+        (await app.SubscribeAsync(stream.ConnectionId, "room:a")).Should().BeNull();
+
+        var stopping = app.StopAsync();
+
+        var frames = 0;
+        while (await stream.NextOrEndAsync(TimeSpan.FromSeconds(5)) is not null)
+            frames++.Should().BeLessThan(10, "the heartbeat must not outlive the app");
+        await stopping.WaitAsync(TimeSpan.FromSeconds(5));
+    }
+
+    [Fact]
     public async Task AnIdleConnection_SendsAHeartbeat()
     {
         await using var app = await AnonymousApp();
