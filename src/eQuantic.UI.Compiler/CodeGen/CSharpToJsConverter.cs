@@ -165,6 +165,13 @@ public class CSharpToJsConverter
 
     public HashSet<string> UsedHelpers => _context.UsedHelpers;
 
+    /// <summary>
+    /// A record's text over <paramref name="value"/> (<see cref="StringConversion.RecordText"/>), for a
+    /// writer outside the expression tree: a record twin's <c>toString</c>.
+    /// </summary>
+    internal string RecordText(string value, string name, IEnumerable<(string Name, ITypeSymbol? Type)> members) =>
+        StringConversion.RecordText(value, name, members, _context);
+
     /// <summary>The statement layout in force — what the emitter hands its builder.</summary>
     public JsLayout Layout => _context.Layout;
 

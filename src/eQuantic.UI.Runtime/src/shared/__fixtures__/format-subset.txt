@@ -1,96 +1,128 @@
-invariant {"isoCurrencySymbol":null,"numberFormat":{"numberDecimalSeparator":".","numberGroupSeparator":",","numberGroupSizes":[3],"negativeSign":"-","positiveSign":"\u002B","percentSymbol":"%","perMilleSymbol":"\u2030","nanSymbol":"NaN","positiveInfinitySymbol":"Infinity","negativeInfinitySymbol":"-Infinity"},"dateTimeFormat":{"shortDatePattern":"MM/dd/yyyy","longDatePattern":"dddd, dd MMMM yyyy","shortTimePattern":"HH:mm","longTimePattern":"HH:mm:ss","monthDayPattern":"MMMM dd","yearMonthPattern":"yyyy MMMM","dateSeparator":"/","timeSeparator":":","eraName":"A.D.","dayNames":["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"],"abbreviatedDayNames":["Sun","Mon","Tue","Wed","Thu","Fri","Sat"],"monthNames":["January","February","March","April","May","June","July","August","September","October","November","December"],"abbreviatedMonthNames":["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"],"monthGenitiveNames":["January","February","March","April","May","June","July","August","September","October","November","December"],"abbreviatedMonthGenitiveNames":["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"],"amDesignator":"AM","pmDesignator":"PM"}}
-culture en-US {"isoCurrencySymbol":"USD","numberFormat":{"numberDecimalSeparator":".","numberGroupSeparator":",","numberGroupSizes":[3],"negativeSign":"-","positiveSign":"\u002B","percentSymbol":"%","perMilleSymbol":"\u2030","nanSymbol":"NaN","positiveInfinitySymbol":"\u221E","negativeInfinitySymbol":"-\u221E"},"dateTimeFormat":{"shortDatePattern":"M/d/yyyy","longDatePattern":"dddd, MMMM d, yyyy","shortTimePattern":"h:mm\u202Ftt","longTimePattern":"h:mm:ss\u202Ftt","monthDayPattern":"MMMM d","yearMonthPattern":"MMMM yyyy","dateSeparator":"/","timeSeparator":":","eraName":"AD","dayNames":["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"],"abbreviatedDayNames":["Sun","Mon","Tue","Wed","Thu","Fri","Sat"],"monthNames":["January","February","March","April","May","June","July","August","September","October","November","December"],"abbreviatedMonthNames":["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"],"monthGenitiveNames":["January","February","March","April","May","June","July","August","September","October","November","December"],"abbreviatedMonthGenitiveNames":["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"],"amDesignator":"AM","pmDesignator":"PM"}}
+invariant {"numberFormat":{"numberDecimalSeparator":".","numberGroupSeparator":",","numberGroupSizes":[3],"numberDecimalDigits":2,"numberNegativePattern":1,"negativeSign":"-","positiveSign":"\u002B","currencySymbol":"\u00A4","currencyDecimalSeparator":".","currencyGroupSeparator":",","currencyGroupSizes":[3],"currencyDecimalDigits":2,"currencyPositivePattern":0,"currencyNegativePattern":0,"percentSymbol":"%","percentDecimalSeparator":".","percentGroupSeparator":",","percentGroupSizes":[3],"percentDecimalDigits":2,"percentPositivePattern":0,"percentNegativePattern":0,"perMilleSymbol":"\u2030","nanSymbol":"NaN","positiveInfinitySymbol":"Infinity","negativeInfinitySymbol":"-Infinity"},"dateTimeFormat":{"shortDatePattern":"MM/dd/yyyy","longDatePattern":"dddd, dd MMMM yyyy","shortTimePattern":"HH:mm","longTimePattern":"HH:mm:ss","monthDayPattern":"MMMM dd","yearMonthPattern":"yyyy MMMM","dateSeparator":"/","timeSeparator":":","eraName":"A.D.","firstDayOfWeek":0,"dayNames":["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"],"abbreviatedDayNames":["Sun","Mon","Tue","Wed","Thu","Fri","Sat"],"monthNames":["January","February","March","April","May","June","July","August","September","October","November","December"],"abbreviatedMonthNames":["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"],"monthGenitiveNames":["January","February","March","April","May","June","July","August","September","October","November","December"],"abbreviatedMonthGenitiveNames":["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"],"amDesignator":"AM","pmDesignator":"PM"}}
+culture en-US {"numberFormat":{"numberDecimalSeparator":".","numberGroupSeparator":",","numberGroupSizes":[3],"numberDecimalDigits":3,"numberNegativePattern":1,"negativeSign":"-","positiveSign":"\u002B","currencySymbol":"$","currencyDecimalSeparator":".","currencyGroupSeparator":",","currencyGroupSizes":[3],"currencyDecimalDigits":2,"currencyPositivePattern":0,"currencyNegativePattern":1,"percentSymbol":"%","percentDecimalSeparator":".","percentGroupSeparator":",","percentGroupSizes":[3],"percentDecimalDigits":3,"percentPositivePattern":1,"percentNegativePattern":1,"perMilleSymbol":"\u2030","nanSymbol":"NaN","positiveInfinitySymbol":"\u221E","negativeInfinitySymbol":"-\u221E"},"dateTimeFormat":{"shortDatePattern":"M/d/yyyy","longDatePattern":"dddd, MMMM d, yyyy","shortTimePattern":"h:mm\u202Ftt","longTimePattern":"h:mm:ss\u202Ftt","monthDayPattern":"MMMM d","yearMonthPattern":"MMMM yyyy","dateSeparator":"/","timeSeparator":":","eraName":"AD","firstDayOfWeek":0,"dayNames":["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"],"abbreviatedDayNames":["Sun","Mon","Tue","Wed","Thu","Fri","Sat"],"monthNames":["January","February","March","April","May","June","July","August","September","October","November","December"],"abbreviatedMonthNames":["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"],"monthGenitiveNames":["January","February","March","April","May","June","July","August","September","October","November","December"],"abbreviatedMonthGenitiveNames":["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"],"amDesignator":"AM","pmDesignator":"PM"}}
 num|en-US|1234.5||1234.5
+num|en-US|1234.5|N|1,234.500
 num|en-US|1234.5|N0|1,234
 num|en-US|1234.5|N2|1,234.50
+num|en-US|1234.5|F|1234.500
 num|en-US|1234.5|F2|1234.50
 num|en-US|1234.5|F0|1234
+num|en-US|1234.5|P|123,450.000%
 num|en-US|1234.5|P1|123,450.0%
 num|en-US|1234.5|P0|123,450%
+num|en-US|1234.5|C|$1,234.50
 num|en-US|1234.5|C2|$1,234.50
 num|en-US|1234.5|C0|$1,234
 num|en-US|1234.5|E2|1.23E+003
 num|en-US|1234.5|#,##0.00|1,234.50
 num|en-US|1234.5|0.0%|123450.0%
 num|en-US|-1234.5||-1234.5
+num|en-US|-1234.5|N|-1,234.500
 num|en-US|-1234.5|N0|-1,234
 num|en-US|-1234.5|N2|-1,234.50
+num|en-US|-1234.5|F|-1234.500
 num|en-US|-1234.5|F2|-1234.50
 num|en-US|-1234.5|F0|-1234
+num|en-US|-1234.5|P|-123,450.000%
 num|en-US|-1234.5|P1|-123,450.0%
 num|en-US|-1234.5|P0|-123,450%
+num|en-US|-1234.5|C|-$1,234.50
 num|en-US|-1234.5|C2|-$1,234.50
 num|en-US|-1234.5|C0|-$1,234
 num|en-US|-1234.5|E2|-1.23E+003
 num|en-US|-1234.5|#,##0.00|-1,234.50
 num|en-US|-1234.5|0.0%|-123450.0%
 num|en-US|0||0
+num|en-US|0|N|0.000
 num|en-US|0|N0|0
 num|en-US|0|N2|0.00
+num|en-US|0|F|0.000
 num|en-US|0|F2|0.00
 num|en-US|0|F0|0
+num|en-US|0|P|0.000%
 num|en-US|0|P1|0.0%
 num|en-US|0|P0|0%
+num|en-US|0|C|$0.00
 num|en-US|0|C2|$0.00
 num|en-US|0|C0|$0
 num|en-US|0|E2|0.00E+000
 num|en-US|0|#,##0.00|0.00
 num|en-US|0|0.0%|0.0%
 num|en-US|0.125||0.125
+num|en-US|0.125|N|0.125
 num|en-US|0.125|N0|0
 num|en-US|0.125|N2|0.12
+num|en-US|0.125|F|0.125
 num|en-US|0.125|F2|0.12
 num|en-US|0.125|F0|0
+num|en-US|0.125|P|12.500%
 num|en-US|0.125|P1|12.5%
 num|en-US|0.125|P0|12%
+num|en-US|0.125|C|$0.12
 num|en-US|0.125|C2|$0.12
 num|en-US|0.125|C0|$0
 num|en-US|0.125|E2|1.25E-001
 num|en-US|0.125|#,##0.00|0.13
 num|en-US|0.125|0.0%|12.5%
 num|en-US|1000000||1000000
+num|en-US|1000000|N|1,000,000.000
 num|en-US|1000000|N0|1,000,000
 num|en-US|1000000|N2|1,000,000.00
+num|en-US|1000000|F|1000000.000
 num|en-US|1000000|F2|1000000.00
 num|en-US|1000000|F0|1000000
+num|en-US|1000000|P|100,000,000.000%
 num|en-US|1000000|P1|100,000,000.0%
 num|en-US|1000000|P0|100,000,000%
+num|en-US|1000000|C|$1,000,000.00
 num|en-US|1000000|C2|$1,000,000.00
 num|en-US|1000000|C0|$1,000,000
 num|en-US|1000000|E2|1.00E+006
 num|en-US|1000000|#,##0.00|1,000,000.00
 num|en-US|1000000|0.0%|100000000.0%
 num|en-US|Infinity||∞
+num|en-US|Infinity|N|∞
 num|en-US|Infinity|N0|∞
 num|en-US|Infinity|N2|∞
+num|en-US|Infinity|F|∞
 num|en-US|Infinity|F2|∞
 num|en-US|Infinity|F0|∞
+num|en-US|Infinity|P|∞
 num|en-US|Infinity|P1|∞
 num|en-US|Infinity|P0|∞
+num|en-US|Infinity|C|∞
 num|en-US|Infinity|C2|∞
 num|en-US|Infinity|C0|∞
 num|en-US|Infinity|E2|∞
 num|en-US|Infinity|#,##0.00|∞
 num|en-US|Infinity|0.0%|∞
 num|en-US|-Infinity||-∞
+num|en-US|-Infinity|N|-∞
 num|en-US|-Infinity|N0|-∞
 num|en-US|-Infinity|N2|-∞
+num|en-US|-Infinity|F|-∞
 num|en-US|-Infinity|F2|-∞
 num|en-US|-Infinity|F0|-∞
+num|en-US|-Infinity|P|-∞
 num|en-US|-Infinity|P1|-∞
 num|en-US|-Infinity|P0|-∞
+num|en-US|-Infinity|C|-∞
 num|en-US|-Infinity|C2|-∞
 num|en-US|-Infinity|C0|-∞
 num|en-US|-Infinity|E2|-∞
 num|en-US|-Infinity|#,##0.00|-∞
 num|en-US|-Infinity|0.0%|-∞
 num|en-US|NaN||NaN
+num|en-US|NaN|N|NaN
 num|en-US|NaN|N0|NaN
 num|en-US|NaN|N2|NaN
+num|en-US|NaN|F|NaN
 num|en-US|NaN|F2|NaN
 num|en-US|NaN|F0|NaN
+num|en-US|NaN|P|NaN
 num|en-US|NaN|P1|NaN
 num|en-US|NaN|P0|NaN
+num|en-US|NaN|C|NaN
 num|en-US|NaN|C2|NaN
 num|en-US|NaN|C0|NaN
 num|en-US|NaN|E2|NaN
@@ -110,12 +142,12 @@ int|en-US|1000000|D|1000000
 int|en-US|1000000|N0|1,000,000
 date|en-US|2026-08-13T15:45:07|d|8/13/2026
 date|en-US|2026-08-13T15:45:07|D|Thursday, August 13, 2026
-date|en-US|2026-08-13T15:45:07|t|3:45 PM
-date|en-US|2026-08-13T15:45:07|T|3:45:07 PM
-date|en-US|2026-08-13T15:45:07|f|Thursday, August 13, 2026 3:45 PM
-date|en-US|2026-08-13T15:45:07|F|Thursday, August 13, 2026 3:45:07 PM
-date|en-US|2026-08-13T15:45:07|g|8/13/2026 3:45 PM
-date|en-US|2026-08-13T15:45:07|G|8/13/2026 3:45:07 PM
+date|en-US|2026-08-13T15:45:07|t|3:45 PM
+date|en-US|2026-08-13T15:45:07|T|3:45:07 PM
+date|en-US|2026-08-13T15:45:07|f|Thursday, August 13, 2026 3:45 PM
+date|en-US|2026-08-13T15:45:07|F|Thursday, August 13, 2026 3:45:07 PM
+date|en-US|2026-08-13T15:45:07|g|8/13/2026 3:45 PM
+date|en-US|2026-08-13T15:45:07|G|8/13/2026 3:45:07 PM
 date|en-US|2026-08-13T15:45:07|M|August 13
 date|en-US|2026-08-13T15:45:07|m|August 13
 date|en-US|2026-08-13T15:45:07|Y|August 2026
@@ -124,98 +156,130 @@ date|en-US|2026-08-13T15:45:07|O|2026-08-13T15:45:07.0000000
 date|en-US|2026-08-13T15:45:07|o|2026-08-13T15:45:07.0000000
 date|en-US|2026-08-13T15:45:07|s|2026-08-13T15:45:07
 date|en-US|2026-08-13T15:45:07|yyyy-MM-dd|2026-08-13
-culture pt-BR {"isoCurrencySymbol":"BRL","numberFormat":{"numberDecimalSeparator":",","numberGroupSeparator":".","numberGroupSizes":[3],"negativeSign":"-","positiveSign":"\u002B","percentSymbol":"%","perMilleSymbol":"\u2030","nanSymbol":"NaN","positiveInfinitySymbol":"\u221E","negativeInfinitySymbol":"-\u221E"},"dateTimeFormat":{"shortDatePattern":"dd/MM/yyyy","longDatePattern":"dddd, d \u0027de\u0027 MMMM \u0027de\u0027 yyyy","shortTimePattern":"HH:mm","longTimePattern":"HH:mm:ss","monthDayPattern":"d \u0027de\u0027 MMMM","yearMonthPattern":"MMMM \u0027de\u0027 yyyy","dateSeparator":"/","timeSeparator":":","eraName":"d.C.","dayNames":["domingo","segunda-feira","ter\u00E7a-feira","quarta-feira","quinta-feira","sexta-feira","s\u00E1bado"],"abbreviatedDayNames":["dom.","seg.","ter.","qua.","qui.","sex.","s\u00E1b."],"monthNames":["janeiro","fevereiro","mar\u00E7o","abril","maio","junho","julho","agosto","setembro","outubro","novembro","dezembro"],"abbreviatedMonthNames":["jan.","fev.","mar.","abr.","mai.","jun.","jul.","ago.","set.","out.","nov.","dez."],"monthGenitiveNames":["janeiro","fevereiro","mar\u00E7o","abril","maio","junho","julho","agosto","setembro","outubro","novembro","dezembro"],"abbreviatedMonthGenitiveNames":["jan.","fev.","mar.","abr.","mai.","jun.","jul.","ago.","set.","out.","nov.","dez."],"amDesignator":"AM","pmDesignator":"PM"}}
+culture pt-BR {"numberFormat":{"numberDecimalSeparator":",","numberGroupSeparator":".","numberGroupSizes":[3],"numberDecimalDigits":3,"numberNegativePattern":1,"negativeSign":"-","positiveSign":"\u002B","currencySymbol":"R$","currencyDecimalSeparator":",","currencyGroupSeparator":".","currencyGroupSizes":[3],"currencyDecimalDigits":2,"currencyPositivePattern":2,"currencyNegativePattern":9,"percentSymbol":"%","percentDecimalSeparator":",","percentGroupSeparator":".","percentGroupSizes":[3],"percentDecimalDigits":3,"percentPositivePattern":1,"percentNegativePattern":1,"perMilleSymbol":"\u2030","nanSymbol":"NaN","positiveInfinitySymbol":"\u221E","negativeInfinitySymbol":"-\u221E"},"dateTimeFormat":{"shortDatePattern":"dd/MM/yyyy","longDatePattern":"dddd, d \u0027de\u0027 MMMM \u0027de\u0027 yyyy","shortTimePattern":"HH:mm","longTimePattern":"HH:mm:ss","monthDayPattern":"d \u0027de\u0027 MMMM","yearMonthPattern":"MMMM \u0027de\u0027 yyyy","dateSeparator":"/","timeSeparator":":","eraName":"d.C.","firstDayOfWeek":0,"dayNames":["domingo","segunda-feira","ter\u00E7a-feira","quarta-feira","quinta-feira","sexta-feira","s\u00E1bado"],"abbreviatedDayNames":["dom.","seg.","ter.","qua.","qui.","sex.","s\u00E1b."],"monthNames":["janeiro","fevereiro","mar\u00E7o","abril","maio","junho","julho","agosto","setembro","outubro","novembro","dezembro"],"abbreviatedMonthNames":["jan.","fev.","mar.","abr.","mai.","jun.","jul.","ago.","set.","out.","nov.","dez."],"monthGenitiveNames":["janeiro","fevereiro","mar\u00E7o","abril","maio","junho","julho","agosto","setembro","outubro","novembro","dezembro"],"abbreviatedMonthGenitiveNames":["jan.","fev.","mar.","abr.","mai.","jun.","jul.","ago.","set.","out.","nov.","dez."],"amDesignator":"AM","pmDesignator":"PM"}}
 num|pt-BR|1234.5||1234,5
+num|pt-BR|1234.5|N|1.234,500
 num|pt-BR|1234.5|N0|1.234
 num|pt-BR|1234.5|N2|1.234,50
+num|pt-BR|1234.5|F|1234,500
 num|pt-BR|1234.5|F2|1234,50
 num|pt-BR|1234.5|F0|1234
+num|pt-BR|1234.5|P|123.450,000%
 num|pt-BR|1234.5|P1|123.450,0%
 num|pt-BR|1234.5|P0|123.450%
+num|pt-BR|1234.5|C|R$ 1.234,50
 num|pt-BR|1234.5|C2|R$ 1.234,50
 num|pt-BR|1234.5|C0|R$ 1.234
 num|pt-BR|1234.5|E2|1,23E+003
 num|pt-BR|1234.5|#,##0.00|1.234,50
 num|pt-BR|1234.5|0.0%|123450,0%
 num|pt-BR|-1234.5||-1234,5
+num|pt-BR|-1234.5|N|-1.234,500
 num|pt-BR|-1234.5|N0|-1.234
 num|pt-BR|-1234.5|N2|-1.234,50
+num|pt-BR|-1234.5|F|-1234,500
 num|pt-BR|-1234.5|F2|-1234,50
 num|pt-BR|-1234.5|F0|-1234
+num|pt-BR|-1234.5|P|-123.450,000%
 num|pt-BR|-1234.5|P1|-123.450,0%
 num|pt-BR|-1234.5|P0|-123.450%
+num|pt-BR|-1234.5|C|-R$ 1.234,50
 num|pt-BR|-1234.5|C2|-R$ 1.234,50
 num|pt-BR|-1234.5|C0|-R$ 1.234
 num|pt-BR|-1234.5|E2|-1,23E+003
 num|pt-BR|-1234.5|#,##0.00|-1.234,50
 num|pt-BR|-1234.5|0.0%|-123450,0%
 num|pt-BR|0||0
+num|pt-BR|0|N|0,000
 num|pt-BR|0|N0|0
 num|pt-BR|0|N2|0,00
+num|pt-BR|0|F|0,000
 num|pt-BR|0|F2|0,00
 num|pt-BR|0|F0|0
+num|pt-BR|0|P|0,000%
 num|pt-BR|0|P1|0,0%
 num|pt-BR|0|P0|0%
+num|pt-BR|0|C|R$ 0,00
 num|pt-BR|0|C2|R$ 0,00
 num|pt-BR|0|C0|R$ 0
 num|pt-BR|0|E2|0,00E+000
 num|pt-BR|0|#,##0.00|0,00
 num|pt-BR|0|0.0%|0,0%
 num|pt-BR|0.125||0,125
+num|pt-BR|0.125|N|0,125
 num|pt-BR|0.125|N0|0
 num|pt-BR|0.125|N2|0,12
+num|pt-BR|0.125|F|0,125
 num|pt-BR|0.125|F2|0,12
 num|pt-BR|0.125|F0|0
+num|pt-BR|0.125|P|12,500%
 num|pt-BR|0.125|P1|12,5%
 num|pt-BR|0.125|P0|12%
+num|pt-BR|0.125|C|R$ 0,12
 num|pt-BR|0.125|C2|R$ 0,12
 num|pt-BR|0.125|C0|R$ 0
 num|pt-BR|0.125|E2|1,25E-001
 num|pt-BR|0.125|#,##0.00|0,13
 num|pt-BR|0.125|0.0%|12,5%
 num|pt-BR|1000000||1000000
+num|pt-BR|1000000|N|1.000.000,000
 num|pt-BR|1000000|N0|1.000.000
 num|pt-BR|1000000|N2|1.000.000,00
+num|pt-BR|1000000|F|1000000,000
 num|pt-BR|1000000|F2|1000000,00
 num|pt-BR|1000000|F0|1000000
+num|pt-BR|1000000|P|100.000.000,000%
 num|pt-BR|1000000|P1|100.000.000,0%
 num|pt-BR|1000000|P0|100.000.000%
+num|pt-BR|1000000|C|R$ 1.000.000,00
 num|pt-BR|1000000|C2|R$ 1.000.000,00
 num|pt-BR|1000000|C0|R$ 1.000.000
 num|pt-BR|1000000|E2|1,00E+006
 num|pt-BR|1000000|#,##0.00|1.000.000,00
 num|pt-BR|1000000|0.0%|100000000,0%
 num|pt-BR|Infinity||∞
+num|pt-BR|Infinity|N|∞
 num|pt-BR|Infinity|N0|∞
 num|pt-BR|Infinity|N2|∞
+num|pt-BR|Infinity|F|∞
 num|pt-BR|Infinity|F2|∞
 num|pt-BR|Infinity|F0|∞
+num|pt-BR|Infinity|P|∞
 num|pt-BR|Infinity|P1|∞
 num|pt-BR|Infinity|P0|∞
+num|pt-BR|Infinity|C|∞
 num|pt-BR|Infinity|C2|∞
 num|pt-BR|Infinity|C0|∞
 num|pt-BR|Infinity|E2|∞
 num|pt-BR|Infinity|#,##0.00|∞
 num|pt-BR|Infinity|0.0%|∞
 num|pt-BR|-Infinity||-∞
+num|pt-BR|-Infinity|N|-∞
 num|pt-BR|-Infinity|N0|-∞
 num|pt-BR|-Infinity|N2|-∞
+num|pt-BR|-Infinity|F|-∞
 num|pt-BR|-Infinity|F2|-∞
 num|pt-BR|-Infinity|F0|-∞
+num|pt-BR|-Infinity|P|-∞
 num|pt-BR|-Infinity|P1|-∞
 num|pt-BR|-Infinity|P0|-∞
+num|pt-BR|-Infinity|C|-∞
 num|pt-BR|-Infinity|C2|-∞
 num|pt-BR|-Infinity|C0|-∞
 num|pt-BR|-Infinity|E2|-∞
 num|pt-BR|-Infinity|#,##0.00|-∞
 num|pt-BR|-Infinity|0.0%|-∞
 num|pt-BR|NaN||NaN
+num|pt-BR|NaN|N|NaN
 num|pt-BR|NaN|N0|NaN
 num|pt-BR|NaN|N2|NaN
+num|pt-BR|NaN|F|NaN
 num|pt-BR|NaN|F2|NaN
 num|pt-BR|NaN|F0|NaN
+num|pt-BR|NaN|P|NaN
 num|pt-BR|NaN|P1|NaN
 num|pt-BR|NaN|P0|NaN
+num|pt-BR|NaN|C|NaN
 num|pt-BR|NaN|C2|NaN
 num|pt-BR|NaN|C0|NaN
 num|pt-BR|NaN|E2|NaN
@@ -249,98 +313,130 @@ date|pt-BR|2026-08-13T15:45:07|O|2026-08-13T15:45:07.0000000
 date|pt-BR|2026-08-13T15:45:07|o|2026-08-13T15:45:07.0000000
 date|pt-BR|2026-08-13T15:45:07|s|2026-08-13T15:45:07
 date|pt-BR|2026-08-13T15:45:07|yyyy-MM-dd|2026-08-13
-culture de-DE {"isoCurrencySymbol":"EUR","numberFormat":{"numberDecimalSeparator":",","numberGroupSeparator":".","numberGroupSizes":[3],"negativeSign":"-","positiveSign":"\u002B","percentSymbol":"%","perMilleSymbol":"\u2030","nanSymbol":"NaN","positiveInfinitySymbol":"\u221E","negativeInfinitySymbol":"-\u221E"},"dateTimeFormat":{"shortDatePattern":"dd.MM.yyyy","longDatePattern":"dddd, d. MMMM yyyy","shortTimePattern":"HH:mm","longTimePattern":"HH:mm:ss","monthDayPattern":"d. MMMM","yearMonthPattern":"MMMM yyyy","dateSeparator":".","timeSeparator":":","eraName":"n. Chr.","dayNames":["Sonntag","Montag","Dienstag","Mittwoch","Donnerstag","Freitag","Samstag"],"abbreviatedDayNames":["So","Mo","Di","Mi","Do","Fr","Sa"],"monthNames":["Januar","Februar","M\u00E4rz","April","Mai","Juni","Juli","August","September","Oktober","November","Dezember"],"abbreviatedMonthNames":["Jan","Feb","M\u00E4r","Apr","Mai","Jun","Jul","Aug","Sep","Okt","Nov","Dez"],"monthGenitiveNames":["Januar","Februar","M\u00E4rz","April","Mai","Juni","Juli","August","September","Oktober","November","Dezember"],"abbreviatedMonthGenitiveNames":["Jan.","Feb.","M\u00E4rz","Apr.","Mai","Juni","Juli","Aug.","Sept.","Okt.","Nov.","Dez."],"amDesignator":"AM","pmDesignator":"PM"}}
+culture de-DE {"numberFormat":{"numberDecimalSeparator":",","numberGroupSeparator":".","numberGroupSizes":[3],"numberDecimalDigits":3,"numberNegativePattern":1,"negativeSign":"-","positiveSign":"\u002B","currencySymbol":"\u20AC","currencyDecimalSeparator":",","currencyGroupSeparator":".","currencyGroupSizes":[3],"currencyDecimalDigits":2,"currencyPositivePattern":3,"currencyNegativePattern":8,"percentSymbol":"%","percentDecimalSeparator":",","percentGroupSeparator":".","percentGroupSizes":[3],"percentDecimalDigits":3,"percentPositivePattern":0,"percentNegativePattern":0,"perMilleSymbol":"\u2030","nanSymbol":"NaN","positiveInfinitySymbol":"\u221E","negativeInfinitySymbol":"-\u221E"},"dateTimeFormat":{"shortDatePattern":"dd.MM.yyyy","longDatePattern":"dddd, d. MMMM yyyy","shortTimePattern":"HH:mm","longTimePattern":"HH:mm:ss","monthDayPattern":"d. MMMM","yearMonthPattern":"MMMM yyyy","dateSeparator":".","timeSeparator":":","eraName":"n. Chr.","firstDayOfWeek":1,"dayNames":["Sonntag","Montag","Dienstag","Mittwoch","Donnerstag","Freitag","Samstag"],"abbreviatedDayNames":["So","Mo","Di","Mi","Do","Fr","Sa"],"monthNames":["Januar","Februar","M\u00E4rz","April","Mai","Juni","Juli","August","September","Oktober","November","Dezember"],"abbreviatedMonthNames":["Jan","Feb","M\u00E4r","Apr","Mai","Jun","Jul","Aug","Sep","Okt","Nov","Dez"],"monthGenitiveNames":["Januar","Februar","M\u00E4rz","April","Mai","Juni","Juli","August","September","Oktober","November","Dezember"],"abbreviatedMonthGenitiveNames":["Jan.","Feb.","M\u00E4rz","Apr.","Mai","Juni","Juli","Aug.","Sept.","Okt.","Nov.","Dez."],"amDesignator":"AM","pmDesignator":"PM"}}
 num|de-DE|1234.5||1234,5
+num|de-DE|1234.5|N|1.234,500
 num|de-DE|1234.5|N0|1.234
 num|de-DE|1234.5|N2|1.234,50
+num|de-DE|1234.5|F|1234,500
 num|de-DE|1234.5|F2|1234,50
 num|de-DE|1234.5|F0|1234
+num|de-DE|1234.5|P|123.450,000 %
 num|de-DE|1234.5|P1|123.450,0 %
 num|de-DE|1234.5|P0|123.450 %
+num|de-DE|1234.5|C|1.234,50 €
 num|de-DE|1234.5|C2|1.234,50 €
 num|de-DE|1234.5|C0|1.234 €
 num|de-DE|1234.5|E2|1,23E+003
 num|de-DE|1234.5|#,##0.00|1.234,50
 num|de-DE|1234.5|0.0%|123450,0%
 num|de-DE|-1234.5||-1234,5
+num|de-DE|-1234.5|N|-1.234,500
 num|de-DE|-1234.5|N0|-1.234
 num|de-DE|-1234.5|N2|-1.234,50
+num|de-DE|-1234.5|F|-1234,500
 num|de-DE|-1234.5|F2|-1234,50
 num|de-DE|-1234.5|F0|-1234
+num|de-DE|-1234.5|P|-123.450,000 %
 num|de-DE|-1234.5|P1|-123.450,0 %
 num|de-DE|-1234.5|P0|-123.450 %
+num|de-DE|-1234.5|C|-1.234,50 €
 num|de-DE|-1234.5|C2|-1.234,50 €
 num|de-DE|-1234.5|C0|-1.234 €
 num|de-DE|-1234.5|E2|-1,23E+003
 num|de-DE|-1234.5|#,##0.00|-1.234,50
 num|de-DE|-1234.5|0.0%|-123450,0%
 num|de-DE|0||0
+num|de-DE|0|N|0,000
 num|de-DE|0|N0|0
 num|de-DE|0|N2|0,00
+num|de-DE|0|F|0,000
 num|de-DE|0|F2|0,00
 num|de-DE|0|F0|0
+num|de-DE|0|P|0,000 %
 num|de-DE|0|P1|0,0 %
 num|de-DE|0|P0|0 %
+num|de-DE|0|C|0,00 €
 num|de-DE|0|C2|0,00 €
 num|de-DE|0|C0|0 €
 num|de-DE|0|E2|0,00E+000
 num|de-DE|0|#,##0.00|0,00
 num|de-DE|0|0.0%|0,0%
 num|de-DE|0.125||0,125
+num|de-DE|0.125|N|0,125
 num|de-DE|0.125|N0|0
 num|de-DE|0.125|N2|0,12
+num|de-DE|0.125|F|0,125
 num|de-DE|0.125|F2|0,12
 num|de-DE|0.125|F0|0
+num|de-DE|0.125|P|12,500 %
 num|de-DE|0.125|P1|12,5 %
 num|de-DE|0.125|P0|12 %
+num|de-DE|0.125|C|0,12 €
 num|de-DE|0.125|C2|0,12 €
 num|de-DE|0.125|C0|0 €
 num|de-DE|0.125|E2|1,25E-001
 num|de-DE|0.125|#,##0.00|0,13
 num|de-DE|0.125|0.0%|12,5%
 num|de-DE|1000000||1000000
+num|de-DE|1000000|N|1.000.000,000
 num|de-DE|1000000|N0|1.000.000
 num|de-DE|1000000|N2|1.000.000,00
+num|de-DE|1000000|F|1000000,000
 num|de-DE|1000000|F2|1000000,00
 num|de-DE|1000000|F0|1000000
+num|de-DE|1000000|P|100.000.000,000 %
 num|de-DE|1000000|P1|100.000.000,0 %
 num|de-DE|1000000|P0|100.000.000 %
+num|de-DE|1000000|C|1.000.000,00 €
 num|de-DE|1000000|C2|1.000.000,00 €
 num|de-DE|1000000|C0|1.000.000 €
 num|de-DE|1000000|E2|1,00E+006
 num|de-DE|1000000|#,##0.00|1.000.000,00
 num|de-DE|1000000|0.0%|100000000,0%
 num|de-DE|Infinity||∞
+num|de-DE|Infinity|N|∞
 num|de-DE|Infinity|N0|∞
 num|de-DE|Infinity|N2|∞
+num|de-DE|Infinity|F|∞
 num|de-DE|Infinity|F2|∞
 num|de-DE|Infinity|F0|∞
+num|de-DE|Infinity|P|∞
 num|de-DE|Infinity|P1|∞
 num|de-DE|Infinity|P0|∞
+num|de-DE|Infinity|C|∞
 num|de-DE|Infinity|C2|∞
 num|de-DE|Infinity|C0|∞
 num|de-DE|Infinity|E2|∞
 num|de-DE|Infinity|#,##0.00|∞
 num|de-DE|Infinity|0.0%|∞
 num|de-DE|-Infinity||-∞
+num|de-DE|-Infinity|N|-∞
 num|de-DE|-Infinity|N0|-∞
 num|de-DE|-Infinity|N2|-∞
+num|de-DE|-Infinity|F|-∞
 num|de-DE|-Infinity|F2|-∞
 num|de-DE|-Infinity|F0|-∞
+num|de-DE|-Infinity|P|-∞
 num|de-DE|-Infinity|P1|-∞
 num|de-DE|-Infinity|P0|-∞
+num|de-DE|-Infinity|C|-∞
 num|de-DE|-Infinity|C2|-∞
 num|de-DE|-Infinity|C0|-∞
 num|de-DE|-Infinity|E2|-∞
 num|de-DE|-Infinity|#,##0.00|-∞
 num|de-DE|-Infinity|0.0%|-∞
 num|de-DE|NaN||NaN
+num|de-DE|NaN|N|NaN
 num|de-DE|NaN|N0|NaN
 num|de-DE|NaN|N2|NaN
+num|de-DE|NaN|F|NaN
 num|de-DE|NaN|F2|NaN
 num|de-DE|NaN|F0|NaN
+num|de-DE|NaN|P|NaN
 num|de-DE|NaN|P1|NaN
 num|de-DE|NaN|P0|NaN
+num|de-DE|NaN|C|NaN
 num|de-DE|NaN|C2|NaN
 num|de-DE|NaN|C0|NaN
 num|de-DE|NaN|E2|NaN
@@ -374,98 +470,130 @@ date|de-DE|2026-08-13T15:45:07|O|2026-08-13T15:45:07.0000000
 date|de-DE|2026-08-13T15:45:07|o|2026-08-13T15:45:07.0000000
 date|de-DE|2026-08-13T15:45:07|s|2026-08-13T15:45:07
 date|de-DE|2026-08-13T15:45:07|yyyy-MM-dd|2026-08-13
-culture es-ES {"isoCurrencySymbol":"EUR","numberFormat":{"numberDecimalSeparator":",","numberGroupSeparator":".","numberGroupSizes":[3],"negativeSign":"-","positiveSign":"\u002B","percentSymbol":"%","perMilleSymbol":"\u2030","nanSymbol":"NaN","positiveInfinitySymbol":"\u221E","negativeInfinitySymbol":"-\u221E"},"dateTimeFormat":{"shortDatePattern":"d/M/yyyy","longDatePattern":"dddd, d \u0027de\u0027 MMMM \u0027de\u0027 yyyy","shortTimePattern":"H:mm","longTimePattern":"H:mm:ss","monthDayPattern":"d \u0027de\u0027 MMMM","yearMonthPattern":"MMMM \u0027de\u0027 yyyy","dateSeparator":"/","timeSeparator":":","eraName":"d. C.","dayNames":["domingo","lunes","martes","mi\u00E9rcoles","jueves","viernes","s\u00E1bado"],"abbreviatedDayNames":["dom","lun","mar","mi\u00E9","jue","vie","s\u00E1b"],"monthNames":["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"],"abbreviatedMonthNames":["ene","feb","mar","abr","may","jun","jul","ago","sept","oct","nov","dic"],"monthGenitiveNames":["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"],"abbreviatedMonthGenitiveNames":["ene","feb","mar","abr","may","jun","jul","ago","sept","oct","nov","dic"],"amDesignator":"a.\u202Fm.","pmDesignator":"p.\u202Fm."}}
+culture es-ES {"numberFormat":{"numberDecimalSeparator":",","numberGroupSeparator":".","numberGroupSizes":[3],"numberDecimalDigits":3,"numberNegativePattern":1,"negativeSign":"-","positiveSign":"\u002B","currencySymbol":"\u20AC","currencyDecimalSeparator":",","currencyGroupSeparator":".","currencyGroupSizes":[3],"currencyDecimalDigits":2,"currencyPositivePattern":3,"currencyNegativePattern":8,"percentSymbol":"%","percentDecimalSeparator":",","percentGroupSeparator":".","percentGroupSizes":[3],"percentDecimalDigits":3,"percentPositivePattern":0,"percentNegativePattern":0,"perMilleSymbol":"\u2030","nanSymbol":"NaN","positiveInfinitySymbol":"\u221E","negativeInfinitySymbol":"-\u221E"},"dateTimeFormat":{"shortDatePattern":"d/M/yyyy","longDatePattern":"dddd, d \u0027de\u0027 MMMM \u0027de\u0027 yyyy","shortTimePattern":"H:mm","longTimePattern":"H:mm:ss","monthDayPattern":"d \u0027de\u0027 MMMM","yearMonthPattern":"MMMM \u0027de\u0027 yyyy","dateSeparator":"/","timeSeparator":":","eraName":"d. C.","firstDayOfWeek":1,"dayNames":["domingo","lunes","martes","mi\u00E9rcoles","jueves","viernes","s\u00E1bado"],"abbreviatedDayNames":["dom","lun","mar","mi\u00E9","jue","vie","s\u00E1b"],"monthNames":["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"],"abbreviatedMonthNames":["ene","feb","mar","abr","may","jun","jul","ago","sept","oct","nov","dic"],"monthGenitiveNames":["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"],"abbreviatedMonthGenitiveNames":["ene","feb","mar","abr","may","jun","jul","ago","sept","oct","nov","dic"],"amDesignator":"a.\u202Fm.","pmDesignator":"p.\u202Fm."}}
 num|es-ES|1234.5||1234,5
+num|es-ES|1234.5|N|1.234,500
 num|es-ES|1234.5|N0|1.234
 num|es-ES|1234.5|N2|1.234,50
+num|es-ES|1234.5|F|1234,500
 num|es-ES|1234.5|F2|1234,50
 num|es-ES|1234.5|F0|1234
+num|es-ES|1234.5|P|123.450,000 %
 num|es-ES|1234.5|P1|123.450,0 %
 num|es-ES|1234.5|P0|123.450 %
+num|es-ES|1234.5|C|1.234,50 €
 num|es-ES|1234.5|C2|1.234,50 €
 num|es-ES|1234.5|C0|1.234 €
 num|es-ES|1234.5|E2|1,23E+003
 num|es-ES|1234.5|#,##0.00|1.234,50
 num|es-ES|1234.5|0.0%|123450,0%
 num|es-ES|-1234.5||-1234,5
+num|es-ES|-1234.5|N|-1.234,500
 num|es-ES|-1234.5|N0|-1.234
 num|es-ES|-1234.5|N2|-1.234,50
+num|es-ES|-1234.5|F|-1234,500
 num|es-ES|-1234.5|F2|-1234,50
 num|es-ES|-1234.5|F0|-1234
+num|es-ES|-1234.5|P|-123.450,000 %
 num|es-ES|-1234.5|P1|-123.450,0 %
 num|es-ES|-1234.5|P0|-123.450 %
+num|es-ES|-1234.5|C|-1.234,50 €
 num|es-ES|-1234.5|C2|-1.234,50 €
 num|es-ES|-1234.5|C0|-1.234 €
 num|es-ES|-1234.5|E2|-1,23E+003
 num|es-ES|-1234.5|#,##0.00|-1.234,50
 num|es-ES|-1234.5|0.0%|-123450,0%
 num|es-ES|0||0
+num|es-ES|0|N|0,000
 num|es-ES|0|N0|0
 num|es-ES|0|N2|0,00
+num|es-ES|0|F|0,000
 num|es-ES|0|F2|0,00
 num|es-ES|0|F0|0
+num|es-ES|0|P|0,000 %
 num|es-ES|0|P1|0,0 %
 num|es-ES|0|P0|0 %
+num|es-ES|0|C|0,00 €
 num|es-ES|0|C2|0,00 €
 num|es-ES|0|C0|0 €
 num|es-ES|0|E2|0,00E+000
 num|es-ES|0|#,##0.00|0,00
 num|es-ES|0|0.0%|0,0%
 num|es-ES|0.125||0,125
+num|es-ES|0.125|N|0,125
 num|es-ES|0.125|N0|0
 num|es-ES|0.125|N2|0,12
+num|es-ES|0.125|F|0,125
 num|es-ES|0.125|F2|0,12
 num|es-ES|0.125|F0|0
+num|es-ES|0.125|P|12,500 %
 num|es-ES|0.125|P1|12,5 %
 num|es-ES|0.125|P0|12 %
+num|es-ES|0.125|C|0,12 €
 num|es-ES|0.125|C2|0,12 €
 num|es-ES|0.125|C0|0 €
 num|es-ES|0.125|E2|1,25E-001
 num|es-ES|0.125|#,##0.00|0,13
 num|es-ES|0.125|0.0%|12,5%
 num|es-ES|1000000||1000000
+num|es-ES|1000000|N|1.000.000,000
 num|es-ES|1000000|N0|1.000.000
 num|es-ES|1000000|N2|1.000.000,00
+num|es-ES|1000000|F|1000000,000
 num|es-ES|1000000|F2|1000000,00
 num|es-ES|1000000|F0|1000000
+num|es-ES|1000000|P|100.000.000,000 %
 num|es-ES|1000000|P1|100.000.000,0 %
 num|es-ES|1000000|P0|100.000.000 %
+num|es-ES|1000000|C|1.000.000,00 €
 num|es-ES|1000000|C2|1.000.000,00 €
 num|es-ES|1000000|C0|1.000.000 €
 num|es-ES|1000000|E2|1,00E+006
 num|es-ES|1000000|#,##0.00|1.000.000,00
 num|es-ES|1000000|0.0%|100000000,0%
 num|es-ES|Infinity||∞
+num|es-ES|Infinity|N|∞
 num|es-ES|Infinity|N0|∞
 num|es-ES|Infinity|N2|∞
+num|es-ES|Infinity|F|∞
 num|es-ES|Infinity|F2|∞
 num|es-ES|Infinity|F0|∞
+num|es-ES|Infinity|P|∞
 num|es-ES|Infinity|P1|∞
 num|es-ES|Infinity|P0|∞
+num|es-ES|Infinity|C|∞
 num|es-ES|Infinity|C2|∞
 num|es-ES|Infinity|C0|∞
 num|es-ES|Infinity|E2|∞
 num|es-ES|Infinity|#,##0.00|∞
 num|es-ES|Infinity|0.0%|∞
 num|es-ES|-Infinity||-∞
+num|es-ES|-Infinity|N|-∞
 num|es-ES|-Infinity|N0|-∞
 num|es-ES|-Infinity|N2|-∞
+num|es-ES|-Infinity|F|-∞
 num|es-ES|-Infinity|F2|-∞
 num|es-ES|-Infinity|F0|-∞
+num|es-ES|-Infinity|P|-∞
 num|es-ES|-Infinity|P1|-∞
 num|es-ES|-Infinity|P0|-∞
+num|es-ES|-Infinity|C|-∞
 num|es-ES|-Infinity|C2|-∞
 num|es-ES|-Infinity|C0|-∞
 num|es-ES|-Infinity|E2|-∞
 num|es-ES|-Infinity|#,##0.00|-∞
 num|es-ES|-Infinity|0.0%|-∞
 num|es-ES|NaN||NaN
+num|es-ES|NaN|N|NaN
 num|es-ES|NaN|N0|NaN
 num|es-ES|NaN|N2|NaN
+num|es-ES|NaN|F|NaN
 num|es-ES|NaN|F2|NaN
 num|es-ES|NaN|F0|NaN
+num|es-ES|NaN|P|NaN
 num|es-ES|NaN|P1|NaN
 num|es-ES|NaN|P0|NaN
+num|es-ES|NaN|C|NaN
 num|es-ES|NaN|C2|NaN
 num|es-ES|NaN|C0|NaN
 num|es-ES|NaN|E2|NaN
@@ -499,98 +627,130 @@ date|es-ES|2026-08-13T15:45:07|O|2026-08-13T15:45:07.0000000
 date|es-ES|2026-08-13T15:45:07|o|2026-08-13T15:45:07.0000000
 date|es-ES|2026-08-13T15:45:07|s|2026-08-13T15:45:07
 date|es-ES|2026-08-13T15:45:07|yyyy-MM-dd|2026-08-13
-culture sv-SE {"isoCurrencySymbol":"SEK","numberFormat":{"numberDecimalSeparator":",","numberGroupSeparator":"\u00A0","numberGroupSizes":[3],"negativeSign":"\u2212","positiveSign":"\u002B","percentSymbol":"%","perMilleSymbol":"\u2030","nanSymbol":"NaN","positiveInfinitySymbol":"\u221E","negativeInfinitySymbol":"\u2212\u221E"},"dateTimeFormat":{"shortDatePattern":"yyyy-MM-dd","longDatePattern":"dddd d MMMM yyyy","shortTimePattern":"HH:mm","longTimePattern":"HH:mm:ss","monthDayPattern":"d MMMM","yearMonthPattern":"MMMM yyyy","dateSeparator":"-","timeSeparator":":","eraName":"e.Kr.","dayNames":["s\u00F6ndag","m\u00E5ndag","tisdag","onsdag","torsdag","fredag","l\u00F6rdag"],"abbreviatedDayNames":["s\u00F6n","m\u00E5n","tis","ons","tors","fre","l\u00F6r"],"monthNames":["januari","februari","mars","april","maj","juni","juli","augusti","september","oktober","november","december"],"abbreviatedMonthNames":["jan.","feb.","mars","apr.","maj","juni","juli","aug.","sep.","okt.","nov.","dec."],"monthGenitiveNames":["januari","februari","mars","april","maj","juni","juli","augusti","september","oktober","november","december"],"abbreviatedMonthGenitiveNames":["jan.","feb.","mars","apr.","maj","juni","juli","aug.","sep.","okt.","nov.","dec."],"amDesignator":"fm","pmDesignator":"em"}}
+culture sv-SE {"numberFormat":{"numberDecimalSeparator":",","numberGroupSeparator":"\u00A0","numberGroupSizes":[3],"numberDecimalDigits":3,"numberNegativePattern":1,"negativeSign":"\u2212","positiveSign":"\u002B","currencySymbol":"kr","currencyDecimalSeparator":",","currencyGroupSeparator":"\u00A0","currencyGroupSizes":[3],"currencyDecimalDigits":2,"currencyPositivePattern":3,"currencyNegativePattern":8,"percentSymbol":"%","percentDecimalSeparator":",","percentGroupSeparator":"\u00A0","percentGroupSizes":[3],"percentDecimalDigits":3,"percentPositivePattern":0,"percentNegativePattern":0,"perMilleSymbol":"\u2030","nanSymbol":"NaN","positiveInfinitySymbol":"\u221E","negativeInfinitySymbol":"\u2212\u221E"},"dateTimeFormat":{"shortDatePattern":"yyyy-MM-dd","longDatePattern":"dddd d MMMM yyyy","shortTimePattern":"HH:mm","longTimePattern":"HH:mm:ss","monthDayPattern":"d MMMM","yearMonthPattern":"MMMM yyyy","dateSeparator":"-","timeSeparator":":","eraName":"e.Kr.","firstDayOfWeek":1,"dayNames":["s\u00F6ndag","m\u00E5ndag","tisdag","onsdag","torsdag","fredag","l\u00F6rdag"],"abbreviatedDayNames":["s\u00F6n","m\u00E5n","tis","ons","tors","fre","l\u00F6r"],"monthNames":["januari","februari","mars","april","maj","juni","juli","augusti","september","oktober","november","december"],"abbreviatedMonthNames":["jan.","feb.","mars","apr.","maj","juni","juli","aug.","sep.","okt.","nov.","dec."],"monthGenitiveNames":["januari","februari","mars","april","maj","juni","juli","augusti","september","oktober","november","december"],"abbreviatedMonthGenitiveNames":["jan.","feb.","mars","apr.","maj","juni","juli","aug.","sep.","okt.","nov.","dec."],"amDesignator":"fm","pmDesignator":"em"}}
 num|sv-SE|1234.5||1234,5
-num|sv-SE|1234.5|N0|1 234
-num|sv-SE|1234.5|N2|1 234,50
+num|sv-SE|1234.5|N|1 234,500
+num|sv-SE|1234.5|N0|1 234
+num|sv-SE|1234.5|N2|1 234,50
+num|sv-SE|1234.5|F|1234,500
 num|sv-SE|1234.5|F2|1234,50
 num|sv-SE|1234.5|F0|1234
-num|sv-SE|1234.5|P1|123 450,0 %
-num|sv-SE|1234.5|P0|123 450 %
-num|sv-SE|1234.5|C2|1 234,50 kr
-num|sv-SE|1234.5|C0|1 234 kr
+num|sv-SE|1234.5|P|123 450,000 %
+num|sv-SE|1234.5|P1|123 450,0 %
+num|sv-SE|1234.5|P0|123 450 %
+num|sv-SE|1234.5|C|1 234,50 kr
+num|sv-SE|1234.5|C2|1 234,50 kr
+num|sv-SE|1234.5|C0|1 234 kr
 num|sv-SE|1234.5|E2|1,23E+003
-num|sv-SE|1234.5|#,##0.00|1 234,50
+num|sv-SE|1234.5|#,##0.00|1 234,50
 num|sv-SE|1234.5|0.0%|123450,0%
 num|sv-SE|-1234.5||−1234,5
-num|sv-SE|-1234.5|N0|−1 234
-num|sv-SE|-1234.5|N2|−1 234,50
+num|sv-SE|-1234.5|N|−1 234,500
+num|sv-SE|-1234.5|N0|−1 234
+num|sv-SE|-1234.5|N2|−1 234,50
+num|sv-SE|-1234.5|F|−1234,500
 num|sv-SE|-1234.5|F2|−1234,50
 num|sv-SE|-1234.5|F0|−1234
-num|sv-SE|-1234.5|P1|−123 450,0 %
-num|sv-SE|-1234.5|P0|−123 450 %
-num|sv-SE|-1234.5|C2|−1 234,50 kr
-num|sv-SE|-1234.5|C0|−1 234 kr
+num|sv-SE|-1234.5|P|−123 450,000 %
+num|sv-SE|-1234.5|P1|−123 450,0 %
+num|sv-SE|-1234.5|P0|−123 450 %
+num|sv-SE|-1234.5|C|−1 234,50 kr
+num|sv-SE|-1234.5|C2|−1 234,50 kr
+num|sv-SE|-1234.5|C0|−1 234 kr
 num|sv-SE|-1234.5|E2|−1,23E+003
-num|sv-SE|-1234.5|#,##0.00|−1 234,50
+num|sv-SE|-1234.5|#,##0.00|−1 234,50
 num|sv-SE|-1234.5|0.0%|−123450,0%
 num|sv-SE|0||0
+num|sv-SE|0|N|0,000
 num|sv-SE|0|N0|0
 num|sv-SE|0|N2|0,00
+num|sv-SE|0|F|0,000
 num|sv-SE|0|F2|0,00
 num|sv-SE|0|F0|0
+num|sv-SE|0|P|0,000 %
 num|sv-SE|0|P1|0,0 %
 num|sv-SE|0|P0|0 %
+num|sv-SE|0|C|0,00 kr
 num|sv-SE|0|C2|0,00 kr
 num|sv-SE|0|C0|0 kr
 num|sv-SE|0|E2|0,00E+000
 num|sv-SE|0|#,##0.00|0,00
 num|sv-SE|0|0.0%|0,0%
 num|sv-SE|0.125||0,125
+num|sv-SE|0.125|N|0,125
 num|sv-SE|0.125|N0|0
 num|sv-SE|0.125|N2|0,12
+num|sv-SE|0.125|F|0,125
 num|sv-SE|0.125|F2|0,12
 num|sv-SE|0.125|F0|0
+num|sv-SE|0.125|P|12,500 %
 num|sv-SE|0.125|P1|12,5 %
 num|sv-SE|0.125|P0|12 %
+num|sv-SE|0.125|C|0,12 kr
 num|sv-SE|0.125|C2|0,12 kr
 num|sv-SE|0.125|C0|0 kr
 num|sv-SE|0.125|E2|1,25E−001
 num|sv-SE|0.125|#,##0.00|0,13
 num|sv-SE|0.125|0.0%|12,5%
 num|sv-SE|1000000||1000000
-num|sv-SE|1000000|N0|1 000 000
-num|sv-SE|1000000|N2|1 000 000,00
+num|sv-SE|1000000|N|1 000 000,000
+num|sv-SE|1000000|N0|1 000 000
+num|sv-SE|1000000|N2|1 000 000,00
+num|sv-SE|1000000|F|1000000,000
 num|sv-SE|1000000|F2|1000000,00
 num|sv-SE|1000000|F0|1000000
-num|sv-SE|1000000|P1|100 000 000,0 %
-num|sv-SE|1000000|P0|100 000 000 %
-num|sv-SE|1000000|C2|1 000 000,00 kr
-num|sv-SE|1000000|C0|1 000 000 kr
+num|sv-SE|1000000|P|100 000 000,000 %
+num|sv-SE|1000000|P1|100 000 000,0 %
+num|sv-SE|1000000|P0|100 000 000 %
+num|sv-SE|1000000|C|1 000 000,00 kr
+num|sv-SE|1000000|C2|1 000 000,00 kr
+num|sv-SE|1000000|C0|1 000 000 kr
 num|sv-SE|1000000|E2|1,00E+006
-num|sv-SE|1000000|#,##0.00|1 000 000,00
+num|sv-SE|1000000|#,##0.00|1 000 000,00
 num|sv-SE|1000000|0.0%|100000000,0%
 num|sv-SE|Infinity||∞
+num|sv-SE|Infinity|N|∞
 num|sv-SE|Infinity|N0|∞
 num|sv-SE|Infinity|N2|∞
+num|sv-SE|Infinity|F|∞
 num|sv-SE|Infinity|F2|∞
 num|sv-SE|Infinity|F0|∞
+num|sv-SE|Infinity|P|∞
 num|sv-SE|Infinity|P1|∞
 num|sv-SE|Infinity|P0|∞
+num|sv-SE|Infinity|C|∞
 num|sv-SE|Infinity|C2|∞
 num|sv-SE|Infinity|C0|∞
 num|sv-SE|Infinity|E2|∞
 num|sv-SE|Infinity|#,##0.00|∞
 num|sv-SE|Infinity|0.0%|∞
 num|sv-SE|-Infinity||−∞
+num|sv-SE|-Infinity|N|−∞
 num|sv-SE|-Infinity|N0|−∞
 num|sv-SE|-Infinity|N2|−∞
+num|sv-SE|-Infinity|F|−∞
 num|sv-SE|-Infinity|F2|−∞
 num|sv-SE|-Infinity|F0|−∞
+num|sv-SE|-Infinity|P|−∞
 num|sv-SE|-Infinity|P1|−∞
 num|sv-SE|-Infinity|P0|−∞
+num|sv-SE|-Infinity|C|−∞
 num|sv-SE|-Infinity|C2|−∞
 num|sv-SE|-Infinity|C0|−∞
 num|sv-SE|-Infinity|E2|−∞
 num|sv-SE|-Infinity|#,##0.00|−∞
 num|sv-SE|-Infinity|0.0%|−∞
 num|sv-SE|NaN||NaN
+num|sv-SE|NaN|N|NaN
 num|sv-SE|NaN|N0|NaN
 num|sv-SE|NaN|N2|NaN
+num|sv-SE|NaN|F|NaN
 num|sv-SE|NaN|F2|NaN
 num|sv-SE|NaN|F0|NaN
+num|sv-SE|NaN|P|NaN
 num|sv-SE|NaN|P1|NaN
 num|sv-SE|NaN|P0|NaN
+num|sv-SE|NaN|C|NaN
 num|sv-SE|NaN|C2|NaN
 num|sv-SE|NaN|C0|NaN
 num|sv-SE|NaN|E2|NaN
@@ -607,7 +767,7 @@ int|sv-SE|-42|N0|−42
 int|sv-SE|1000000||1000000
 int|sv-SE|1000000|D5|1000000
 int|sv-SE|1000000|D|1000000
-int|sv-SE|1000000|N0|1 000 000
+int|sv-SE|1000000|N0|1 000 000
 date|sv-SE|2026-08-13T15:45:07|d|2026-08-13
 date|sv-SE|2026-08-13T15:45:07|D|torsdag 13 augusti 2026
 date|sv-SE|2026-08-13T15:45:07|t|15:45
@@ -624,11 +784,327 @@ date|sv-SE|2026-08-13T15:45:07|O|2026-08-13T15:45:07.0000000
 date|sv-SE|2026-08-13T15:45:07|o|2026-08-13T15:45:07.0000000
 date|sv-SE|2026-08-13T15:45:07|s|2026-08-13T15:45:07
 date|sv-SE|2026-08-13T15:45:07|yyyy-MM-dd|2026-08-13
+culture fr-FR {"numberFormat":{"numberDecimalSeparator":",","numberGroupSeparator":"\u202F","numberGroupSizes":[3],"numberDecimalDigits":3,"numberNegativePattern":1,"negativeSign":"-","positiveSign":"\u002B","currencySymbol":"\u20AC","currencyDecimalSeparator":",","currencyGroupSeparator":"\u202F","currencyGroupSizes":[3],"currencyDecimalDigits":2,"currencyPositivePattern":3,"currencyNegativePattern":8,"percentSymbol":"%","percentDecimalSeparator":",","percentGroupSeparator":"\u202F","percentGroupSizes":[3],"percentDecimalDigits":3,"percentPositivePattern":0,"percentNegativePattern":0,"perMilleSymbol":"\u2030","nanSymbol":"NaN","positiveInfinitySymbol":"\u221E","negativeInfinitySymbol":"-\u221E"},"dateTimeFormat":{"shortDatePattern":"dd/MM/yyyy","longDatePattern":"dddd d MMMM yyyy","shortTimePattern":"HH:mm","longTimePattern":"HH:mm:ss","monthDayPattern":"d MMMM","yearMonthPattern":"MMMM yyyy","dateSeparator":"/","timeSeparator":":","eraName":"ap. J.-C.","firstDayOfWeek":1,"dayNames":["dimanche","lundi","mardi","mercredi","jeudi","vendredi","samedi"],"abbreviatedDayNames":["dim.","lun.","mar.","mer.","jeu.","ven.","sam."],"monthNames":["janvier","f\u00E9vrier","mars","avril","mai","juin","juillet","ao\u00FBt","septembre","octobre","novembre","d\u00E9cembre"],"abbreviatedMonthNames":["janv.","f\u00E9vr.","mars","avr.","mai","juin","juil.","ao\u00FBt","sept.","oct.","nov.","d\u00E9c."],"monthGenitiveNames":["janvier","f\u00E9vrier","mars","avril","mai","juin","juillet","ao\u00FBt","septembre","octobre","novembre","d\u00E9cembre"],"abbreviatedMonthGenitiveNames":["janv.","f\u00E9vr.","mars","avr.","mai","juin","juil.","ao\u00FBt","sept.","oct.","nov.","d\u00E9c."],"amDesignator":"AM","pmDesignator":"PM"}}
+num|fr-FR|1234.5||1234,5
+num|fr-FR|1234.5|N|1 234,500
+num|fr-FR|1234.5|N0|1 234
+num|fr-FR|1234.5|N2|1 234,50
+num|fr-FR|1234.5|F|1234,500
+num|fr-FR|1234.5|F2|1234,50
+num|fr-FR|1234.5|F0|1234
+num|fr-FR|1234.5|P|123 450,000 %
+num|fr-FR|1234.5|P1|123 450,0 %
+num|fr-FR|1234.5|P0|123 450 %
+num|fr-FR|1234.5|C|1 234,50 €
+num|fr-FR|1234.5|C2|1 234,50 €
+num|fr-FR|1234.5|C0|1 234 €
+num|fr-FR|1234.5|E2|1,23E+003
+num|fr-FR|1234.5|#,##0.00|1 234,50
+num|fr-FR|1234.5|0.0%|123450,0%
+num|fr-FR|-1234.5||-1234,5
+num|fr-FR|-1234.5|N|-1 234,500
+num|fr-FR|-1234.5|N0|-1 234
+num|fr-FR|-1234.5|N2|-1 234,50
+num|fr-FR|-1234.5|F|-1234,500
+num|fr-FR|-1234.5|F2|-1234,50
+num|fr-FR|-1234.5|F0|-1234
+num|fr-FR|-1234.5|P|-123 450,000 %
+num|fr-FR|-1234.5|P1|-123 450,0 %
+num|fr-FR|-1234.5|P0|-123 450 %
+num|fr-FR|-1234.5|C|-1 234,50 €
+num|fr-FR|-1234.5|C2|-1 234,50 €
+num|fr-FR|-1234.5|C0|-1 234 €
+num|fr-FR|-1234.5|E2|-1,23E+003
+num|fr-FR|-1234.5|#,##0.00|-1 234,50
+num|fr-FR|-1234.5|0.0%|-123450,0%
+num|fr-FR|0||0
+num|fr-FR|0|N|0,000
+num|fr-FR|0|N0|0
+num|fr-FR|0|N2|0,00
+num|fr-FR|0|F|0,000
+num|fr-FR|0|F2|0,00
+num|fr-FR|0|F0|0
+num|fr-FR|0|P|0,000 %
+num|fr-FR|0|P1|0,0 %
+num|fr-FR|0|P0|0 %
+num|fr-FR|0|C|0,00 €
+num|fr-FR|0|C2|0,00 €
+num|fr-FR|0|C0|0 €
+num|fr-FR|0|E2|0,00E+000
+num|fr-FR|0|#,##0.00|0,00
+num|fr-FR|0|0.0%|0,0%
+num|fr-FR|0.125||0,125
+num|fr-FR|0.125|N|0,125
+num|fr-FR|0.125|N0|0
+num|fr-FR|0.125|N2|0,12
+num|fr-FR|0.125|F|0,125
+num|fr-FR|0.125|F2|0,12
+num|fr-FR|0.125|F0|0
+num|fr-FR|0.125|P|12,500 %
+num|fr-FR|0.125|P1|12,5 %
+num|fr-FR|0.125|P0|12 %
+num|fr-FR|0.125|C|0,12 €
+num|fr-FR|0.125|C2|0,12 €
+num|fr-FR|0.125|C0|0 €
+num|fr-FR|0.125|E2|1,25E-001
+num|fr-FR|0.125|#,##0.00|0,13
+num|fr-FR|0.125|0.0%|12,5%
+num|fr-FR|1000000||1000000
+num|fr-FR|1000000|N|1 000 000,000
+num|fr-FR|1000000|N0|1 000 000
+num|fr-FR|1000000|N2|1 000 000,00
+num|fr-FR|1000000|F|1000000,000
+num|fr-FR|1000000|F2|1000000,00
+num|fr-FR|1000000|F0|1000000
+num|fr-FR|1000000|P|100 000 000,000 %
+num|fr-FR|1000000|P1|100 000 000,0 %
+num|fr-FR|1000000|P0|100 000 000 %
+num|fr-FR|1000000|C|1 000 000,00 €
+num|fr-FR|1000000|C2|1 000 000,00 €
+num|fr-FR|1000000|C0|1 000 000 €
+num|fr-FR|1000000|E2|1,00E+006
+num|fr-FR|1000000|#,##0.00|1 000 000,00
+num|fr-FR|1000000|0.0%|100000000,0%
+num|fr-FR|Infinity||∞
+num|fr-FR|Infinity|N|∞
+num|fr-FR|Infinity|N0|∞
+num|fr-FR|Infinity|N2|∞
+num|fr-FR|Infinity|F|∞
+num|fr-FR|Infinity|F2|∞
+num|fr-FR|Infinity|F0|∞
+num|fr-FR|Infinity|P|∞
+num|fr-FR|Infinity|P1|∞
+num|fr-FR|Infinity|P0|∞
+num|fr-FR|Infinity|C|∞
+num|fr-FR|Infinity|C2|∞
+num|fr-FR|Infinity|C0|∞
+num|fr-FR|Infinity|E2|∞
+num|fr-FR|Infinity|#,##0.00|∞
+num|fr-FR|Infinity|0.0%|∞
+num|fr-FR|-Infinity||-∞
+num|fr-FR|-Infinity|N|-∞
+num|fr-FR|-Infinity|N0|-∞
+num|fr-FR|-Infinity|N2|-∞
+num|fr-FR|-Infinity|F|-∞
+num|fr-FR|-Infinity|F2|-∞
+num|fr-FR|-Infinity|F0|-∞
+num|fr-FR|-Infinity|P|-∞
+num|fr-FR|-Infinity|P1|-∞
+num|fr-FR|-Infinity|P0|-∞
+num|fr-FR|-Infinity|C|-∞
+num|fr-FR|-Infinity|C2|-∞
+num|fr-FR|-Infinity|C0|-∞
+num|fr-FR|-Infinity|E2|-∞
+num|fr-FR|-Infinity|#,##0.00|-∞
+num|fr-FR|-Infinity|0.0%|-∞
+num|fr-FR|NaN||NaN
+num|fr-FR|NaN|N|NaN
+num|fr-FR|NaN|N0|NaN
+num|fr-FR|NaN|N2|NaN
+num|fr-FR|NaN|F|NaN
+num|fr-FR|NaN|F2|NaN
+num|fr-FR|NaN|F0|NaN
+num|fr-FR|NaN|P|NaN
+num|fr-FR|NaN|P1|NaN
+num|fr-FR|NaN|P0|NaN
+num|fr-FR|NaN|C|NaN
+num|fr-FR|NaN|C2|NaN
+num|fr-FR|NaN|C0|NaN
+num|fr-FR|NaN|E2|NaN
+num|fr-FR|NaN|#,##0.00|NaN
+num|fr-FR|NaN|0.0%|NaN
+int|fr-FR|42||42
+int|fr-FR|42|D5|00042
+int|fr-FR|42|D|42
+int|fr-FR|42|N0|42
+int|fr-FR|-42||-42
+int|fr-FR|-42|D5|-00042
+int|fr-FR|-42|D|-42
+int|fr-FR|-42|N0|-42
+int|fr-FR|1000000||1000000
+int|fr-FR|1000000|D5|1000000
+int|fr-FR|1000000|D|1000000
+int|fr-FR|1000000|N0|1 000 000
+date|fr-FR|2026-08-13T15:45:07|d|13/08/2026
+date|fr-FR|2026-08-13T15:45:07|D|jeudi 13 août 2026
+date|fr-FR|2026-08-13T15:45:07|t|15:45
+date|fr-FR|2026-08-13T15:45:07|T|15:45:07
+date|fr-FR|2026-08-13T15:45:07|f|jeudi 13 août 2026 15:45
+date|fr-FR|2026-08-13T15:45:07|F|jeudi 13 août 2026 15:45:07
+date|fr-FR|2026-08-13T15:45:07|g|13/08/2026 15:45
+date|fr-FR|2026-08-13T15:45:07|G|13/08/2026 15:45:07
+date|fr-FR|2026-08-13T15:45:07|M|13 août
+date|fr-FR|2026-08-13T15:45:07|m|13 août
+date|fr-FR|2026-08-13T15:45:07|Y|août 2026
+date|fr-FR|2026-08-13T15:45:07|y|août 2026
+date|fr-FR|2026-08-13T15:45:07|O|2026-08-13T15:45:07.0000000
+date|fr-FR|2026-08-13T15:45:07|o|2026-08-13T15:45:07.0000000
+date|fr-FR|2026-08-13T15:45:07|s|2026-08-13T15:45:07
+date|fr-FR|2026-08-13T15:45:07|yyyy-MM-dd|2026-08-13
+culture ar-EG {"numberFormat":{"numberDecimalSeparator":"\u066B","numberGroupSeparator":"\u066C","numberGroupSizes":[3],"numberDecimalDigits":3,"numberNegativePattern":1,"negativeSign":"\u061C-","positiveSign":"\u061C\u002B","currencySymbol":"\u062C.\u0645.\u200F","currencyDecimalSeparator":"\u066B","currencyGroupSeparator":"\u066C","currencyGroupSizes":[3],"currencyDecimalDigits":2,"currencyPositivePattern":3,"currencyNegativePattern":8,"percentSymbol":"\u066A\u061C","percentDecimalSeparator":"\u066B","percentGroupSeparator":"\u066C","percentGroupSizes":[3],"percentDecimalDigits":3,"percentPositivePattern":1,"percentNegativePattern":1,"perMilleSymbol":"\u0609","nanSymbol":"\u0644\u064A\u0633\u00A0\u0631\u0642\u0645\u064B\u0627","positiveInfinitySymbol":"\u221E","negativeInfinitySymbol":"\u061C-\u221E"},"dateTimeFormat":{"shortDatePattern":"d\u200F/M\u200F/yyyy","longDatePattern":"dddd\u060C d MMMM\u060C yyyy","shortTimePattern":"h:mm\u00A0tt","longTimePattern":"h:mm:ss\u00A0tt","monthDayPattern":"d MMMM","yearMonthPattern":"MMMM yyyy","dateSeparator":"\u200F/","timeSeparator":":","eraName":"\u0645","firstDayOfWeek":6,"dayNames":["\u0627\u0644\u0623\u062D\u062F","\u0627\u0644\u0627\u062B\u0646\u064A\u0646","\u0627\u0644\u062B\u0644\u0627\u062B\u0627\u0621","\u0627\u0644\u0623\u0631\u0628\u0639\u0627\u0621","\u0627\u0644\u062E\u0645\u064A\u0633","\u0627\u0644\u062C\u0645\u0639\u0629","\u0627\u0644\u0633\u0628\u062A"],"abbreviatedDayNames":["\u0623\u062D\u062F","\u0627\u062B\u0646\u064A\u0646","\u062B\u0644\u0627\u062B\u0627\u0621","\u0623\u0631\u0628\u0639\u0627\u0621","\u062E\u0645\u064A\u0633","\u062C\u0645\u0639\u0629","\u0633\u0628\u062A"],"monthNames":["\u064A\u0646\u0627\u064A\u0631","\u0641\u0628\u0631\u0627\u064A\u0631","\u0645\u0627\u0631\u0633","\u0623\u0628\u0631\u064A\u0644","\u0645\u0627\u064A\u0648","\u064A\u0648\u0646\u064A\u0648","\u064A\u0648\u0644\u064A\u0648","\u0623\u063A\u0633\u0637\u0633","\u0633\u0628\u062A\u0645\u0628\u0631","\u0623\u0643\u062A\u0648\u0628\u0631","\u0646\u0648\u0641\u0645\u0628\u0631","\u062F\u064A\u0633\u0645\u0628\u0631"],"abbreviatedMonthNames":["\u064A\u0646\u0627\u064A\u0631","\u0641\u0628\u0631\u0627\u064A\u0631","\u0645\u0627\u0631\u0633","\u0623\u0628\u0631\u064A\u0644","\u0645\u0627\u064A\u0648","\u064A\u0648\u0646\u064A\u0648","\u064A\u0648\u0644\u064A\u0648","\u0623\u063A\u0633\u0637\u0633","\u0633\u0628\u062A\u0645\u0628\u0631","\u0623\u0643\u062A\u0648\u0628\u0631","\u0646\u0648\u0641\u0645\u0628\u0631","\u062F\u064A\u0633\u0645\u0628\u0631"],"monthGenitiveNames":["\u064A\u0646\u0627\u064A\u0631","\u0641\u0628\u0631\u0627\u064A\u0631","\u0645\u0627\u0631\u0633","\u0623\u0628\u0631\u064A\u0644","\u0645\u0627\u064A\u0648","\u064A\u0648\u0646\u064A\u0648","\u064A\u0648\u0644\u064A\u0648","\u0623\u063A\u0633\u0637\u0633","\u0633\u0628\u062A\u0645\u0628\u0631","\u0623\u0643\u062A\u0648\u0628\u0631","\u0646\u0648\u0641\u0645\u0628\u0631","\u062F\u064A\u0633\u0645\u0628\u0631"],"abbreviatedMonthGenitiveNames":["\u064A\u0646\u0627\u064A\u0631","\u0641\u0628\u0631\u0627\u064A\u0631","\u0645\u0627\u0631\u0633","\u0623\u0628\u0631\u064A\u0644","\u0645\u0627\u064A\u0648","\u064A\u0648\u0646\u064A\u0648","\u064A\u0648\u0644\u064A\u0648","\u0623\u063A\u0633\u0637\u0633","\u0633\u0628\u062A\u0645\u0628\u0631","\u0623\u0643\u062A\u0648\u0628\u0631","\u0646\u0648\u0641\u0645\u0628\u0631","\u062F\u064A\u0633\u0645\u0628\u0631"],"amDesignator":"\u0635","pmDesignator":"\u0645"}}
+num|ar-EG|1234.5||1234٫5
+num|ar-EG|1234.5|N|1٬234٫500
+num|ar-EG|1234.5|N0|1٬234
+num|ar-EG|1234.5|N2|1٬234٫50
+num|ar-EG|1234.5|F|1234٫500
+num|ar-EG|1234.5|F2|1234٫50
+num|ar-EG|1234.5|F0|1234
+num|ar-EG|1234.5|P|123٬450٫000٪؜
+num|ar-EG|1234.5|P1|123٬450٫0٪؜
+num|ar-EG|1234.5|P0|123٬450٪؜
+num|ar-EG|1234.5|C|1٬234٫50 ج.م.‏
+num|ar-EG|1234.5|C2|1٬234٫50 ج.م.‏
+num|ar-EG|1234.5|C0|1٬234 ج.م.‏
+num|ar-EG|1234.5|E2|1٫23E؜+003
+num|ar-EG|1234.5|#,##0.00|1٬234٫50
+num|ar-EG|1234.5|0.0%|123450٫0٪؜
+num|ar-EG|-1234.5||؜-1234٫5
+num|ar-EG|-1234.5|N|؜-1٬234٫500
+num|ar-EG|-1234.5|N0|؜-1٬234
+num|ar-EG|-1234.5|N2|؜-1٬234٫50
+num|ar-EG|-1234.5|F|؜-1234٫500
+num|ar-EG|-1234.5|F2|؜-1234٫50
+num|ar-EG|-1234.5|F0|؜-1234
+num|ar-EG|-1234.5|P|؜-123٬450٫000٪؜
+num|ar-EG|-1234.5|P1|؜-123٬450٫0٪؜
+num|ar-EG|-1234.5|P0|؜-123٬450٪؜
+num|ar-EG|-1234.5|C|؜-1٬234٫50 ج.م.‏
+num|ar-EG|-1234.5|C2|؜-1٬234٫50 ج.م.‏
+num|ar-EG|-1234.5|C0|؜-1٬234 ج.م.‏
+num|ar-EG|-1234.5|E2|؜-1٫23E؜+003
+num|ar-EG|-1234.5|#,##0.00|؜-1٬234٫50
+num|ar-EG|-1234.5|0.0%|؜-123450٫0٪؜
+num|ar-EG|0||0
+num|ar-EG|0|N|0٫000
+num|ar-EG|0|N0|0
+num|ar-EG|0|N2|0٫00
+num|ar-EG|0|F|0٫000
+num|ar-EG|0|F2|0٫00
+num|ar-EG|0|F0|0
+num|ar-EG|0|P|0٫000٪؜
+num|ar-EG|0|P1|0٫0٪؜
+num|ar-EG|0|P0|0٪؜
+num|ar-EG|0|C|0٫00 ج.م.‏
+num|ar-EG|0|C2|0٫00 ج.م.‏
+num|ar-EG|0|C0|0 ج.م.‏
+num|ar-EG|0|E2|0٫00E؜+000
+num|ar-EG|0|#,##0.00|0٫00
+num|ar-EG|0|0.0%|0٫0٪؜
+num|ar-EG|0.125||0٫125
+num|ar-EG|0.125|N|0٫125
+num|ar-EG|0.125|N0|0
+num|ar-EG|0.125|N2|0٫12
+num|ar-EG|0.125|F|0٫125
+num|ar-EG|0.125|F2|0٫12
+num|ar-EG|0.125|F0|0
+num|ar-EG|0.125|P|12٫500٪؜
+num|ar-EG|0.125|P1|12٫5٪؜
+num|ar-EG|0.125|P0|12٪؜
+num|ar-EG|0.125|C|0٫12 ج.م.‏
+num|ar-EG|0.125|C2|0٫12 ج.م.‏
+num|ar-EG|0.125|C0|0 ج.م.‏
+num|ar-EG|0.125|E2|1٫25E؜-001
+num|ar-EG|0.125|#,##0.00|0٫13
+num|ar-EG|0.125|0.0%|12٫5٪؜
+num|ar-EG|1000000||1000000
+num|ar-EG|1000000|N|1٬000٬000٫000
+num|ar-EG|1000000|N0|1٬000٬000
+num|ar-EG|1000000|N2|1٬000٬000٫00
+num|ar-EG|1000000|F|1000000٫000
+num|ar-EG|1000000|F2|1000000٫00
+num|ar-EG|1000000|F0|1000000
+num|ar-EG|1000000|P|100٬000٬000٫000٪؜
+num|ar-EG|1000000|P1|100٬000٬000٫0٪؜
+num|ar-EG|1000000|P0|100٬000٬000٪؜
+num|ar-EG|1000000|C|1٬000٬000٫00 ج.م.‏
+num|ar-EG|1000000|C2|1٬000٬000٫00 ج.م.‏
+num|ar-EG|1000000|C0|1٬000٬000 ج.م.‏
+num|ar-EG|1000000|E2|1٫00E؜+006
+num|ar-EG|1000000|#,##0.00|1٬000٬000٫00
+num|ar-EG|1000000|0.0%|100000000٫0٪؜
+num|ar-EG|Infinity||∞
+num|ar-EG|Infinity|N|∞
+num|ar-EG|Infinity|N0|∞
+num|ar-EG|Infinity|N2|∞
+num|ar-EG|Infinity|F|∞
+num|ar-EG|Infinity|F2|∞
+num|ar-EG|Infinity|F0|∞
+num|ar-EG|Infinity|P|∞
+num|ar-EG|Infinity|P1|∞
+num|ar-EG|Infinity|P0|∞
+num|ar-EG|Infinity|C|∞
+num|ar-EG|Infinity|C2|∞
+num|ar-EG|Infinity|C0|∞
+num|ar-EG|Infinity|E2|∞
+num|ar-EG|Infinity|#,##0.00|∞
+num|ar-EG|Infinity|0.0%|∞
+num|ar-EG|-Infinity||؜-∞
+num|ar-EG|-Infinity|N|؜-∞
+num|ar-EG|-Infinity|N0|؜-∞
+num|ar-EG|-Infinity|N2|؜-∞
+num|ar-EG|-Infinity|F|؜-∞
+num|ar-EG|-Infinity|F2|؜-∞
+num|ar-EG|-Infinity|F0|؜-∞
+num|ar-EG|-Infinity|P|؜-∞
+num|ar-EG|-Infinity|P1|؜-∞
+num|ar-EG|-Infinity|P0|؜-∞
+num|ar-EG|-Infinity|C|؜-∞
+num|ar-EG|-Infinity|C2|؜-∞
+num|ar-EG|-Infinity|C0|؜-∞
+num|ar-EG|-Infinity|E2|؜-∞
+num|ar-EG|-Infinity|#,##0.00|؜-∞
+num|ar-EG|-Infinity|0.0%|؜-∞
+num|ar-EG|NaN||ليس رقمًا
+num|ar-EG|NaN|N|ليس رقمًا
+num|ar-EG|NaN|N0|ليس رقمًا
+num|ar-EG|NaN|N2|ليس رقمًا
+num|ar-EG|NaN|F|ليس رقمًا
+num|ar-EG|NaN|F2|ليس رقمًا
+num|ar-EG|NaN|F0|ليس رقمًا
+num|ar-EG|NaN|P|ليس رقمًا
+num|ar-EG|NaN|P1|ليس رقمًا
+num|ar-EG|NaN|P0|ليس رقمًا
+num|ar-EG|NaN|C|ليس رقمًا
+num|ar-EG|NaN|C2|ليس رقمًا
+num|ar-EG|NaN|C0|ليس رقمًا
+num|ar-EG|NaN|E2|ليس رقمًا
+num|ar-EG|NaN|#,##0.00|ليس رقمًا
+num|ar-EG|NaN|0.0%|ليس رقمًا
+int|ar-EG|42||42
+int|ar-EG|42|D5|00042
+int|ar-EG|42|D|42
+int|ar-EG|42|N0|42
+int|ar-EG|-42||؜-42
+int|ar-EG|-42|D5|؜-00042
+int|ar-EG|-42|D|؜-42
+int|ar-EG|-42|N0|؜-42
+int|ar-EG|1000000||1000000
+int|ar-EG|1000000|D5|1000000
+int|ar-EG|1000000|D|1000000
+int|ar-EG|1000000|N0|1٬000٬000
+date|ar-EG|2026-08-13T15:45:07|d|13‏‏/8‏‏/2026
+date|ar-EG|2026-08-13T15:45:07|D|الخميس، 13 أغسطس، 2026
+date|ar-EG|2026-08-13T15:45:07|t|3:45 م
+date|ar-EG|2026-08-13T15:45:07|T|3:45:07 م
+date|ar-EG|2026-08-13T15:45:07|f|الخميس، 13 أغسطس، 2026 3:45 م
+date|ar-EG|2026-08-13T15:45:07|F|الخميس، 13 أغسطس، 2026 3:45:07 م
+date|ar-EG|2026-08-13T15:45:07|g|13‏‏/8‏‏/2026 3:45 م
+date|ar-EG|2026-08-13T15:45:07|G|13‏‏/8‏‏/2026 3:45:07 م
+date|ar-EG|2026-08-13T15:45:07|M|13 أغسطس
+date|ar-EG|2026-08-13T15:45:07|m|13 أغسطس
+date|ar-EG|2026-08-13T15:45:07|Y|أغسطس 2026
+date|ar-EG|2026-08-13T15:45:07|y|أغسطس 2026
+date|ar-EG|2026-08-13T15:45:07|O|2026-08-13T15:45:07.0000000
+date|ar-EG|2026-08-13T15:45:07|o|2026-08-13T15:45:07.0000000
+date|ar-EG|2026-08-13T15:45:07|s|2026-08-13T15:45:07
+date|ar-EG|2026-08-13T15:45:07|yyyy-MM-dd|2026-08-13
 inv|1234.5||1234.5
 inv|1234.5|N0|1,234
 inv|1234.5|N2|1,234.50
 inv|1234.5|F2|1234.50
 inv|1234.5|F0|1234
+inv|1234.5|C2|¤1,234.50
+inv|1234.5|P1|123,450.0 %
 inv|1234.5|0.##|1234.5
 inv|1234.5|0.0|1234.5
 inv|-1234.5||-1234.5
@@ -636,6 +1112,8 @@ inv|-1234.5|N0|-1,234
 inv|-1234.5|N2|-1,234.50
 inv|-1234.5|F2|-1234.50
 inv|-1234.5|F0|-1234
+inv|-1234.5|C2|(¤1,234.50)
+inv|-1234.5|P1|-123,450.0 %
 inv|-1234.5|0.##|-1234.5
 inv|-1234.5|0.0|-1234.5
 inv|0||0
@@ -643,6 +1121,8 @@ inv|0|N0|0
 inv|0|N2|0.00
 inv|0|F2|0.00
 inv|0|F0|0
+inv|0|C2|¤0.00
+inv|0|P1|0.0 %
 inv|0|0.##|0
 inv|0|0.0|0.0
 inv|0.125||0.125
@@ -650,6 +1130,8 @@ inv|0.125|N0|0
 inv|0.125|N2|0.12
 inv|0.125|F2|0.12
 inv|0.125|F0|0
+inv|0.125|C2|¤0.12
+inv|0.125|P1|12.5 %
 inv|0.125|0.##|0.13
 inv|0.125|0.0|0.1
 inv|1000000||1000000
@@ -657,6 +1139,8 @@ inv|1000000|N0|1,000,000
 inv|1000000|N2|1,000,000.00
 inv|1000000|F2|1000000.00
 inv|1000000|F0|1000000
+inv|1000000|C2|¤1,000,000.00
+inv|1000000|P1|100,000,000.0 %
 inv|1000000|0.##|1000000
 inv|1000000|0.0|1000000.0
 inv|Infinity||Infinity
@@ -664,6 +1148,8 @@ inv|Infinity|N0|Infinity
 inv|Infinity|N2|Infinity
 inv|Infinity|F2|Infinity
 inv|Infinity|F0|Infinity
+inv|Infinity|C2|Infinity
+inv|Infinity|P1|Infinity
 inv|Infinity|0.##|Infinity
 inv|Infinity|0.0|Infinity
 inv|-Infinity||-Infinity
@@ -671,6 +1157,8 @@ inv|-Infinity|N0|-Infinity
 inv|-Infinity|N2|-Infinity
 inv|-Infinity|F2|-Infinity
 inv|-Infinity|F0|-Infinity
+inv|-Infinity|C2|-Infinity
+inv|-Infinity|P1|-Infinity
 inv|-Infinity|0.##|-Infinity
 inv|-Infinity|0.0|-Infinity
 inv|NaN||NaN
@@ -678,5 +1166,7 @@ inv|NaN|N0|NaN
 inv|NaN|N2|NaN
 inv|NaN|F2|NaN
 inv|NaN|F0|NaN
+inv|NaN|C2|NaN
+inv|NaN|P1|NaN
 inv|NaN|0.##|NaN
 inv|NaN|0.0|NaN

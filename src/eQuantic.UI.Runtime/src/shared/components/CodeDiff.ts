@@ -116,7 +116,7 @@ export class CodeDiff extends StatefulComponent {
         let body = new Row(0, 'start', 'center', false, null, null, { width: SizeValue.fill, cross: 'stretch' });
         if (inline) {
             body.add(modifiedBlock.gutter(context, (row) => CodeDiff.originalNumberOf(source, row)));
-            body.add(modifiedBlock.gutter(context, (row) => row.kind === 'line' ? $eq.text.format(source.modifiedNumber(row.line), null) : null));
+            body.add(modifiedBlock.gutter(context, (row) => row.kind === 'line' ? $eq.text.format(source.modifiedNumber(row.line), null, undefined, undefined, 'int32') : null));
             body.add(new Flexible(modifiedScroll));
         } else {
             let originalLines = layout.original.linesIn(first, last);
@@ -127,10 +127,10 @@ export class CodeDiff extends StatefulComponent {
                 this.setState(() => this._originalWidth = width);
             } });
             let originalSide = new Row(0, 'start', 'center', false, null, null, { width: SizeValue.fill, cross: 'start' });
-            originalSide.add(originalBlock.gutter(context, (row) => row.kind === 'line' ? $eq.text.format(source.originalNumber(row.line), null) : null));
+            originalSide.add(originalBlock.gutter(context, (row) => row.kind === 'line' ? $eq.text.format(source.originalNumber(row.line), null, undefined, undefined, 'int32') : null));
             originalSide.add(new Flexible(originalScroll));
             let modifiedSide = new Row(0, 'start', 'center', false, null, null, { width: SizeValue.fill, cross: 'start' });
-            modifiedSide.add(modifiedBlock.gutter(context, (row) => row.kind === 'line' ? $eq.text.format(source.modifiedNumber(row.line), null) : null));
+            modifiedSide.add(modifiedBlock.gutter(context, (row) => row.kind === 'line' ? $eq.text.format(source.modifiedNumber(row.line), null, undefined, undefined, 'int32') : null));
             modifiedSide.add(new Flexible(modifiedScroll));
             body.add(new Flexible(originalSide));
             body.add(new Box(new BoxStyle({ width: 1, background: theme.border })));
@@ -257,8 +257,8 @@ export class CodeDiff extends StatefulComponent {
         let bar = new Row(8, 'start', 'center', false, null, null, { width: SizeValue.fill, cross: 'center' });
         let title = this.modifiedCaption ?? this.originalCaption;
         bar.add(new Flexible(new Text(title ?? '', 'label', theme.textSecondary, 1, 'start', false, false, null, 0, { mono: true })));
-        bar.add(new Text(`+${$eq.text.format(addedLines, null)}`, 'labelSmall', theme.colors('success').base, 1, 'start', false, false, null, 0, { tabular: true }));
-        bar.add(new Text(`−${$eq.text.format(removedLines, null)}`, 'labelSmall', theme.colors('destructive').base, 1, 'start', false, false, null, 0, { tabular: true }));
+        bar.add(new Text(`+${$eq.text.format(addedLines, null, undefined, undefined, 'int32')}`, 'labelSmall', theme.colors('success').base, 1, 'start', false, false, null, 0, { tabular: true }));
+        bar.add(new Text(`−${$eq.text.format(removedLines, null, undefined, undefined, 'int32')}`, 'labelSmall', theme.colors('destructive').base, 1, 'start', false, false, null, 0, { tabular: true }));
         let none = source.changes.length === 0;
         bar.add(new IconButton(new Icon(IconGlyph.fromIcons('chevronUp')), SdkStrings.previousChange, 'standard', 'medium', null, { size: 'small', disabled: none, onPressed: () => this.stepTo(false) }));
         bar.add(new IconButton(new Icon(IconGlyph.fromIcons('chevronDown')), SdkStrings.nextChange, 'standard', 'medium', null, { size: 'small', disabled: none, onPressed: () => this.stepTo(true) }));
@@ -326,10 +326,10 @@ export class CodeDiff extends StatefulComponent {
     }
 
     static originalNumberOf(source: CodeDiffSource, row: CodeRow) {
-        if (row.kind === 'filler' && row.sourceLine >= 0) return $eq.text.format(source.originalNumber(row.sourceLine), null);
+        if (row.kind === 'filler' && row.sourceLine >= 0) return $eq.text.format(source.originalNumber(row.sourceLine), null, undefined, undefined, 'int32');
         if (row.kind !== 'line') return null;
         let line = source.originalLineOf(row.line);
-        return line < 0 ? null : $eq.text.format(source.originalNumber(line), null);
+        return line < 0 ? null : $eq.text.format(source.originalNumber(line), null, undefined, undefined, 'int32');
     }
 }
 

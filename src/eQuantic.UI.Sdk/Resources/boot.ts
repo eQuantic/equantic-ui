@@ -21,7 +21,6 @@ import {
 import {
   installCulture,
   setCultureInvalidator,
-  type CalendarCatalog,
   type CultureFormat,
 } from '../../eQuantic.UI.Runtime/src/utils/culture';
 import { EscapeHatchPage, componentIdentity } from '../../eQuantic.UI.Runtime/src/core/component';
@@ -176,13 +175,11 @@ export async function boot(): Promise<void> {
         name?: string;
         formatName?: string;
         strings?: Record<string, string>;
-        // What a calendar is CALLED for this request's format culture. Shipped rather than
-        // derived: the server's ICU and the browser's do not always agree (ar-EG abbreviates
-        // Sunday with the definite article in one and without it in the other), and a label that
-        // differs between the SSR HTML and the hydrated tree is a flicker nobody catches.
-        calendar?: CalendarCatalog;
-        // How the format culture writes a number and a date, from .NET's own NumberFormatInfo and
-        // DateTimeFormatInfo, for the same reason.
+        // How the format culture writes a number and a date, and what its calendar is called, from
+        // .NET's own NumberFormatInfo and DateTimeFormatInfo. Shipped rather than derived: the
+        // server's ICU and the browser's do not always agree (ar-EG abbreviates Sunday with the
+        // definite article in one and without it in the other), and text that differs between the
+        // SSR HTML and the hydrated tree is a flicker nobody catches.
         format?: CultureFormat;
       };
     }).__EQ_CULTURE__;
@@ -191,7 +188,6 @@ export async function boot(): Promise<void> {
         cultureData.name ?? '',
         cultureData.formatName ?? cultureData.name ?? '',
         cultureData.strings ?? {},
-        cultureData.calendar,
         cultureData.format,
       );
     }

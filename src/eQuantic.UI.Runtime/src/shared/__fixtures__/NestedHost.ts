@@ -8,7 +8,7 @@ export class NestedHost extends StatefulComponent {
     build(_context: BuildContext) {
         let column = new Column(8);
         column.add(new Button('Bump', 'primary', 'medium', () => this.setState(() => this._generation++)));
-        column.add(new NestedChild(`g${$eq.text.format(this._generation, null)}`));
+        column.add(new NestedChild(`g${$eq.text.format(this._generation, null, undefined, undefined, 'int32')}`));
         return column;
     }
 }

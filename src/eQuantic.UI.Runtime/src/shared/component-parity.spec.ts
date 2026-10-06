@@ -76,13 +76,14 @@ import { Switch } from './components/Switch';
 import { Calendar } from './components/Calendar';
 import { dateOnly } from '../utils/datetime';
 import { installCulture } from '../utils/culture';
+import { calendarFormat } from './__fixtures__/calendar-format';
 import calendarNames from './calendar-names.fixture.json';
 
 setPhotonTheme(photonTheme);
 
 // The calendar reads the culture for its names, so the twin replays under the SAME one the C#
-// generator fixed — with the shipped catalog, which is what a server-rendered page installs.
-installCulture('en-US', 'en-US', {}, calendarNames['en-US']);
+// generator fixed — with the shipped data, which is what a server-rendered page installs.
+installCulture('en-US', 'en-US', {}, calendarFormat(calendarNames['en-US']));
 
 const lower = (node: unknown): HtmlNode =>
   lowerVisualNode(node as never, {
@@ -287,12 +288,12 @@ function inLinkLanguage<T>(name: string, lower: () => T): T {
   if (language === undefined) return lower();
   const host = globalThis as { __EQ_CONFIG?: unknown };
   host.__EQ_CONFIG = { cultureRoutes: { default: 'en-US', prefixed: [language] } };
-  installCulture(language, 'en-US', {}, calendarNames['en-US']);
+  installCulture(language, 'en-US', {}, calendarFormat(calendarNames['en-US']));
   try {
     return lower();
   } finally {
     delete host.__EQ_CONFIG;
-    installCulture('en-US', 'en-US', {}, calendarNames['en-US']);
+    installCulture('en-US', 'en-US', {}, calendarFormat(calendarNames['en-US']));
   }
 }
 

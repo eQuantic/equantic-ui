@@ -997,15 +997,10 @@ public class RecordTypeEmitter
 
         // .NET record ToString ("Name { X = …, Y = … }") unless the user overrode it: the members
         // PrintMembers writes, a base's first, each once (#546), and `Name { }` for none, as .NET
-        // writes it, where the twin wrote two spaces.
+        // writes it, where the twin wrote two spaces. The runtime's record text writes it, each member
+        // as a concatenation would (#454): a template hole wrote JavaScript's own text of each.
         if (!userToString)
-        {
-            var printed = Printed(type).ToList();
-            var inner = printed.Count == 0
-                ? ""
-                : string.Join(", ", printed.Select(m => $"{m.Display} = ${{this.{m.Js}}}")) + " ";
-            sb.Append($"toString() {{ return `{name} {{ {inner}}}`; }} ");
-        }
+            sb.Append($"toString() {{ return {_converter.RecordText("this", name, Printed(type))}; }} ");
 
         sb.Append('}');
         return sb.ToString();
@@ -1021,7 +1016,7 @@ public class RecordTypeEmitter
     /// (`Derived { V = 2, V = 2, W = 3 }`). A struct prints its own the same way. Without a model, the
     /// public fields and properties of the declaration.
     /// </summary>
-    private IEnumerable<(string Display, string Js)> Printed(TypeDeclarationSyntax type)
+    private IEnumerable<(string Name, ITypeSymbol? Type)> Printed(TypeDeclarationSyntax type)
     {
         var self = ModelFor(type)?.GetDeclaredSymbol(type) as INamedTypeSymbol;
         if (type is RecordDeclarationSyntax
@@ -1038,11 +1033,12 @@ public class RecordTypeEmitter
             // (`record Box(int X, int Y) { public int X … }` prints `Y = …, X = …`, as .NET does).
             foreach (var member in self.PrintedMembers().Where(member => member is not IPropertySymbol { IsOverride: true })
                          .OrderBy(member => member.DeclaringSyntaxReferences.FirstOrDefault()?.Span.Start ?? int.MaxValue))
-                yield return (member.Name, member.Name.ToCamelCase());
+                yield return (member.Name,
+                    member switch { IFieldSymbol field => field.Type, IPropertySymbol property => property.Type, _ => null });
             yield break;
         }
         foreach (var member in type.ValueMembers(null))
-            if (type is RecordDeclarationSyntax && member.Declaration is ParameterSyntax) yield return (member.Display, member.Js);
+            if (type is RecordDeclarationSyntax && member.Declaration is ParameterSyntax) yield return (member.Display, null);
         foreach (var member in type.Members)
         {
             switch (member)
@@ -1050,13 +1046,13 @@ public class RecordTypeEmitter
                 case FieldDeclarationSyntax field when field.Modifiers.Any(SyntaxKind.PublicKeyword)
                     && !field.Modifiers.Any(SyntaxKind.StaticKeyword) && !field.Modifiers.Any(SyntaxKind.ConstKeyword):
                     foreach (var variable in field.Declaration.Variables)
-                        yield return (variable.Identifier.ValueText, variable.Identifier.ValueText.ToCamelCase());
+                        yield return (variable.Identifier.ValueText, null);
                     break;
                 case PropertyDeclarationSyntax property when property.Modifiers.Any(SyntaxKind.PublicKeyword)
                     && !property.Modifiers.Any(SyntaxKind.StaticKeyword) && !property.Modifiers.Any(SyntaxKind.OverrideKeyword)
                     && (property.ExpressionBody is not null
                         || property.AccessorList?.Accessors.Any(accessor => accessor.IsKind(SyntaxKind.GetAccessorDeclaration)) == true):
-                    yield return (property.Identifier.ValueText, property.Identifier.ValueText.ToCamelCase());
+                    yield return (property.Identifier.ValueText, null);
                     break;
             }
         }

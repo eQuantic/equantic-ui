@@ -36,7 +36,9 @@ internal static class FormatKind
         _ => null,
     };
 
-    /// <summary>The kind a value's text with NO specifier needs, which is a float's alone: its own
-    /// digits are not the double's, and every other number's text is its digits whatever it is.</summary>
-    public static string? OfText(ITypeSymbol? type) => Of(type) is "single" ? "single" : null;
+    /// <summary>The kind a value's text with NO specifier needs: every number's but a double's, which
+    /// is how the formatter reads a number it is told nothing about. A float writes its own digits,
+    /// not the double's, and an integer writes no sign on a zero: <c>-1 / 2</c> truncates to
+    /// <c>-0</c> in JavaScript, which is a double's text, and to <c>0</c> in C#.</summary>
+    public static string? OfText(ITypeSymbol? type) => Of(type) is "double" ? null : Of(type);
 }

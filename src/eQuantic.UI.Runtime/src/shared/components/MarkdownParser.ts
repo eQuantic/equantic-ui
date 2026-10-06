@@ -37,7 +37,7 @@ export class MarkdownParser {
                     let n = 1;
                     while (usedIds.has(unique)) {
                         n++;
-                        unique = id + '-' + $eq.text.format(n, null);
+                        unique = id + '-' + $eq.text.format(n, null, undefined, undefined, 'int32');
                     }
                     $eq.collections.setAdd(usedIds, unique);
                     blocks.push(new MarkdownBlock({ kind: 'heading', level: level > 4 ? 4 : level, text: MarkdownParser.strip(text), runs: MarkdownParser.inline(text), id: unique }));

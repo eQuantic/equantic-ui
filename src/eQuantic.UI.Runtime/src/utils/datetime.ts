@@ -15,7 +15,7 @@
  * (Utc/Local/Unspecified) is not tracked — values are treated as wall-clock, matching `Unspecified`.
  */
 
-import { activePattern } from './culture';
+import { activeFormatData } from './culture';
 import { hash } from './hash';
 import { exception } from './exceptions';
 
@@ -729,9 +729,9 @@ dateOnly.parse = (text: string): DateOnly => {
  * `07/08` is July 8th to a reader in Chicago and August 7th to one in São Paulo, and a parser that
  * picks one silently is wrong twelve times a year for half the world.
  *
- * The order comes from the culture's own short-date pattern (`$dateShort`, shipped beside the
- * string catalog — see culture.ts), which is `DateTimeFormatInfo`'s, so the client reads a typed
- * date exactly as the server would. ISO is accepted everywhere: it is unambiguous by construction
+ * The order comes from the culture's own short-date pattern, `DateTimeFormatInfo`'s, which travels
+ * with every page (`CultureFormat`, #471), so the client reads a typed date exactly as the server
+ * would. ISO is accepted everywhere: it is unambiguous by construction
  * and it is what a date input hands over.
  */
 function tryParseDateOnly(text: string): DateOnly | null {
@@ -745,9 +745,10 @@ function tryParseDateOnly(text: string): DateOnly | null {
   if (!parts) return null;
 
   // Which slot holds what, read off the pattern: "M/d/yyyy" is month-first, "dd/MM/yyyy" is
-  // day-first, "yyyy/MM/dd" leads with the year. Without a catalog (a page with no server behind
-  // it) the invariant order applies, which is what .NET's own invariant culture does.
-  const pattern = (activePattern('dateShort') ?? 'M/d/yyyy').toLowerCase();
+  // day-first, "yyyy/MM/dd" leads with the year. For a culture whose data did not travel (a switch
+  // with no server to ask), the invariant order applies, which is what .NET's own invariant
+  // culture does.
+  const pattern = (activeFormatData()?.dateTimeFormat.shortDatePattern ?? 'M/d/yyyy').toLowerCase();
   const dayAt = pattern.indexOf('d');
   const monthAt = pattern.indexOf('m');
   const yearAt = pattern.indexOf('y');

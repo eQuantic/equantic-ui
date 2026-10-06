@@ -15,10 +15,10 @@ namespace eQuantic.UI.Web.Tests;
 /// subset and have EQ2100 refuse it at build time — never to approximate it at runtime.
 /// </para>
 /// <para>
-/// Two normalizations, both about ICU rather than about us: the space inside a formatted currency
-/// or percent is a NON-BREAKING one whose exact codepoint moved between ICU versions (U+00A0 vs
-/// U+202F), and both runtimes may carry different ICU builds — so both dumpers fold those to a
-/// plain space. The values compared are otherwise byte-for-byte.
+/// The values are compared byte for byte, a no-break space included. Both dumpers folded U+00A0 and
+/// U+202F into a plain space, as if the difference were two ICU builds, and it hid that .NET writes
+/// the space of its own currency and percent patterns as U+0020 where the browser's `Intl` wrote
+/// U+00A0 (#634). The runtime draws every number from the culture's data now, which is this host's.
 /// </para>
 /// Regenerate with <c>EQ_UPDATE_FORMAT_FIXTURE=1</c>.
 /// </summary>
@@ -33,8 +33,10 @@ public class FormatSubsetTests
     /// <summary>The cultures the fixture covers: a comma-decimal one, a dot-decimal one, and one
     /// whose group separator is the other's decimal point — the three ways a number can go wrong —
     /// then one whose data leaves a four-digit number ungrouped where .NET groups it (es-ES writes
-    /// 1.234, #445), and one whose minus sign is not a hyphen (sv-SE writes U+2212).</summary>
-    private static readonly string[] Cultures = ["en-US", "pt-BR", "de-DE", "es-ES", "sv-SE"];
+    /// 1.234, #445), one whose minus sign is not a hyphen (sv-SE writes U+2212), one whose group
+    /// separator is a narrow no-break space (fr-FR), and one whose own digits are not ASCII, which
+    /// .NET never writes (ar-EG, #634).</summary>
+    private static readonly string[] Cultures = ["en-US", "pt-BR", "de-DE", "es-ES", "sv-SE", "fr-FR", "ar-EG"];
 
     /// <summary>The values, the infinities and NaN among them: the culture's symbols, whatever the
     /// specifier.</summary>
@@ -43,9 +45,10 @@ public class FormatSubsetTests
 
     // The empty spec is the one everybody writes — `{0}` — and it is NOT invariant in .NET: it
     // calls ToString(IFormatProvider), so 1234.5 is "1234,5" in pt-BR. Pinned like the rest. `E2` and
-    // the two pictures are drawn in the culture's symbols too (#445).
+    // the two pictures are drawn in the culture's symbols too (#445), and `N`, `F`, `P` and `C` with
+    // no precision write the culture's own digits, three for `N` on ICU (#634).
     private static readonly string[] NumberSpecs =
-        ["", "N0", "N2", "F2", "F0", "P1", "P0", "C2", "C0", "E2", "#,##0.00", "0.0%"];
+        ["", "N", "N0", "N2", "F", "F2", "F0", "P", "P1", "P0", "C", "C2", "C0", "E2", "#,##0.00", "0.0%"];
 
     /// <summary>`D` and `X` are INTEGER specifiers in .NET — <c>(1234.5).ToString("D5")</c> throws,
     /// and a subset that pretended otherwise would be promising something the server cannot do.</summary>
@@ -70,15 +73,11 @@ public class FormatSubsetTests
     /// <summary>
     /// The specifiers an INVARIANT conversion is written for: a number a machine reads — a CSS
     /// length, a key, a value on the wire — which has to keep its shape whoever is reading the
-    /// page. Currency and percent are absent on purpose: .NET's invariant currency symbol is the
-    /// generic sign, and Intl has no notion of a currency without a country, so an invariant `C2`
-    /// is a promise neither side can keep.
+    /// page, and a currency and a percent, which the invariant culture writes in its own patterns
+    /// with the generic ¤ sign (#634).
     /// </summary>
-    private static readonly string[] InvariantSpecs = ["", "N0", "N2", "F2", "F0", "0.##", "0.0"];
+    private static readonly string[] InvariantSpecs = ["", "N0", "N2", "F2", "F0", "C2", "P1", "0.##", "0.0"];
 
-    /// <summary>ICU's non-breaking spaces, folded — see the type's remarks.</summary>
-    internal static string Normalize(string value) =>
-        value.Replace(' ', ' ').Replace(' ', ' ');
 
     /// <summary>The subset as this host's .NET spells it — the sample's generator, and the
     /// subject of the invariant check below.</summary>
@@ -92,9 +91,9 @@ public class FormatSubsetTests
         {
             var culture = CultureInfo.GetCultureInfo(name);
             // What the culture formats with, exactly as the server writes it for a page in it (#471):
-            // the currency CODE the client needs (Intl takes no symbol), the culture's own patterns
-            // (.NET's `d` IS ShortDatePattern, and Intl's short-date preset is a different editorial
-            // choice), its separators, its names and its number symbols.
+            // its number symbols, separators, digits and patterns (#634), the culture's own date
+            // patterns (.NET's `d` IS ShortDatePattern, and Intl's short-date preset is a different
+            // editorial choice), its separators and its names.
             builder.Append("culture ").Append(name).Append(' ')
                 .Append(CultureFormatBridge.SerializeJson(culture)).Append('\n');
 
@@ -103,7 +102,7 @@ public class FormatSubsetTests
                     builder.Append("num|").Append(name).Append('|')
                         .Append(value.ToString(CultureInfo.InvariantCulture)).Append('|')
                         .Append(spec).Append('|')
-                        .Append(Normalize(spec.Length == 0
+                        .Append((spec.Length == 0
                             ? value.ToString(culture)
                             : value.ToString(spec, culture))).Append('\n');
 
@@ -112,7 +111,7 @@ public class FormatSubsetTests
                     builder.Append("int|").Append(name).Append('|')
                         .Append(value.ToString(CultureInfo.InvariantCulture)).Append('|')
                         .Append(spec).Append('|')
-                        .Append(Normalize(spec.Length == 0
+                        .Append((spec.Length == 0
                             ? value.ToString(culture)
                             : value.ToString(spec, culture))).Append('\n');
 
@@ -120,7 +119,7 @@ public class FormatSubsetTests
                 builder.Append("date|").Append(name).Append('|')
                     .Append(Moment.ToString("yyyy-MM-ddTHH:mm:ss", CultureInfo.InvariantCulture)).Append('|')
                     .Append(spec).Append('|')
-                    .Append(Normalize(Moment.ToString(spec, culture))).Append('\n');
+                    .Append(Moment.ToString(spec, culture)).Append('\n');
         }
 
         // The INVARIANT section: no culture installed against it, because that is the point — the
@@ -130,7 +129,7 @@ public class FormatSubsetTests
                 builder.Append("inv|")
                     .Append(value.ToString(CultureInfo.InvariantCulture)).Append('|')
                     .Append(spec).Append('|')
-                    .Append(Normalize(spec.Length == 0
+                    .Append((spec.Length == 0
                         ? value.ToString(CultureInfo.InvariantCulture)
                         : value.ToString(spec, CultureInfo.InvariantCulture))).Append('\n');
 
@@ -205,7 +204,7 @@ public class FormatSubsetTests
             var rows = new List<string>();
             foreach (var value in Numbers)
                 foreach (var spec in InvariantSpecs)
-                    rows.Add(Normalize(spec.Length == 0
+                    rows.Add((spec.Length == 0
                         ? value.ToString(CultureInfo.InvariantCulture)
                         : value.ToString(spec, CultureInfo.InvariantCulture)));
             return [.. rows];

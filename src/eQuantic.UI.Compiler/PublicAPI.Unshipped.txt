@@ -43,3 +43,4 @@ eQuantic.UI.Compiler.CodeGen.Strategies.Types.HashSetStrategy.ConvertIr(Microsof
 *REMOVED*const eQuantic.UI.Compiler.CodeGen.Eq.AsInteger = "$eq.text.asInteger" -> string!
 *REMOVED*const eQuantic.UI.Compiler.CodeGen.Eq.AsSingle = "$eq.text.asSingle" -> string!
 const eQuantic.UI.Compiler.CodeGen.Eq.AsNumber = "$eq.text.asNumber" -> string!
+static eQuantic.UI.Compiler.CodeGen.TypeSymbolExtensions.IsDate(this Microsoft.CodeAnalysis.ITypeSymbol? type) -> bool

@@ -23,6 +23,7 @@ import {
   type CultureFormat,
   type DatePatternName,
   type DateTimeFormatData,
+  type NumberFormatData,
 } from './culture';
 
 /**
@@ -180,18 +181,28 @@ function formatCore(value: any, format: string | null, kind: NumberKind): string
 }
 
 /**
- * The text .NET writes for a record, `Name { A = 1, B = x }` as `PrintMembers` lists it, for a value
- * the browser holds as plain data (`[TwinIsData]`), whose own string would be `[object Object]`. The
- * compiler passes the members .NET prints, in its order, by their C# names, and each is read under
- * its twin's name and written as an interpolation hole writes it. A null value is the empty string,
- * as `$"{value}"` is.
+ * A member a record's text prints: its C# name, read under its twin's name (the name with its first
+ * letter lowered, as `TwinName` names it), with what the type says that the value cannot: a number's
+ * kind (a float's own digits, an integer's unsigned zero), or a function that writes a value the
+ * formatter cannot read (an enum's member name, a data twin's own record text).
  */
-export function recordText(value: unknown, name: string, members: readonly string[]): string {
+export type PrintedMember = string | readonly [string, NumberKind | ((value: any) => string)];
+
+/**
+ * The text .NET writes for a record, `Name { A = 1, B = x }` as `PrintMembers` lists it: the members
+ * .NET prints, in its order, each written as a concatenation writes it (#454), a number in the
+ * culture in force, a null as nothing, a bool as `True`. A record the browser holds as a class and one
+ * it holds as plain data (`[TwinIsData]`, whose own string would be `[object Object]`) both write it
+ * here. A null value is the empty string, as `$"{value}"` is.
+ */
+export function recordText(value: unknown, name: string, members: readonly PrintedMember[]): string {
   if (value === null || value === undefined) return '';
   const data = value as Record<string, unknown>;
-  const written = members.map(
-    (member) => `${member} = ${format(data[member.charAt(0).toLowerCase() + member.slice(1)], null)}`,
-  );
+  const written = members.map((member) => {
+    const [label, how] = typeof member === 'string' ? [member, undefined] : member;
+    const held = data[label.charAt(0).toLowerCase() + label.slice(1)];
+    return `${label} = ${typeof how === 'function' ? how(held) : format(held, null, undefined, undefined, how)}`;
+  });
   return written.length === 0 ? `${name} { }` : `${name} { ${written.join(', ')} }`;
 }
 
@@ -432,31 +443,148 @@ function formatCustomNumber(number: Numeric, format: string): string {
   return drawPicture(picture, format, symbols());
 }
 
-/**
- * Currency, the one specifier that needs a fact the browser cannot derive: `Intl` wants an ISO
- * CODE and a locale alone does not carry one. The code travels with the culture's data (the server
- * reads it from .NET's own `RegionInfo`), and where there is none — the invariant culture, a
- * neutral one, a culture of no single country — .NET prints the generic ¤ sign, so that is what this
- * prints too rather than guessing a country. With no precision, the currency's own digits apply, as
- * .NET's culture takes them from the same ISO data (a yen has none).
- */
-function formatCurrency(number: Numeric, precision: number | null): string {
-  // An invariant conversion has no currency of its own, whichever culture is reading.
-  const currency = cultureFormat()?.isoCurrencySymbol ?? null;
-  const digits: ExactOptions =
-    precision === null
-      ? {}
-      : { minimumFractionDigits: precision, maximumFractionDigits: precision };
-  if (currency !== null) return exactly(number, { style: 'currency', currency, ...digits });
+/** The four specifiers .NET lays out from the culture's patterns (`Number.Formatting.cs`). */
+type Laid = 'N' | 'F' | 'C' | 'P';
 
-  // .NET's invariant currency patterns are "¤n" and, for a negative amount, "(¤n)", with the
-  // invariant number conventions.
-  const text = exactly(
-    number,
-    precision === null ? { minimumFractionDigits: 2, maximumFractionDigits: 2 } : digits,
-  );
-  const { minus } = symbols();
-  return text.startsWith(minus) ? `(¤${text.slice(minus.length)})` : `¤${text}`;
+/**
+ * .NET's tables for a negative `N`, a currency and a percent, which a culture's `NumberFormatInfo`
+ * indexes: `#` is the number, `-` the culture's negative sign, `$` its currency symbol and `%` its
+ * percent symbol, and anything else is written as it stands. Their spaces are U+0020, which is what
+ * .NET writes where CLDR, and `Intl` with it, has a no-break space (#634).
+ */
+const NEGATIVE_NUMBER = ['(#)', '-#', '- #', '#-', '# -'];
+const POSITIVE_CURRENCY = ['$#', '#$', '$ #', '# $'];
+const NEGATIVE_CURRENCY = [
+  '($#)', '-$#', '$-#', '$#-', '(#$)', '-#$', '#-$', '#$-', '-# $',
+  '-$ #', '# $-', '$ #-', '$ -#', '#- $', '($ #)', '(# $)', '$- #',
+];
+const POSITIVE_PERCENT = ['# %', '#%', '%#', '% #'];
+const NEGATIVE_PERCENT = [
+  '-# %', '-#%', '-%#', '%-#', '%#-', '#-%', '#%-', '-% #', '# %-', '% #-', '% -#', '#- %',
+];
+
+/** How a specifier lays a number out: the culture's digits with no precision, its separators, the
+ * group sizes (none for `F`), and its patterns for a positive and a negative value. */
+interface Layout {
+  readonly digits: number;
+  readonly decimal: string;
+  readonly group: string;
+  readonly sizes: readonly number[];
+  readonly positive: string;
+  readonly negative: string;
+}
+
+function layoutOf(letter: Laid, info: NumberFormatData): Layout {
+  switch (letter) {
+    case 'C':
+      return {
+        digits: info.currencyDecimalDigits,
+        decimal: info.currencyDecimalSeparator,
+        group: info.currencyGroupSeparator,
+        sizes: info.currencyGroupSizes,
+        positive: POSITIVE_CURRENCY[info.currencyPositivePattern],
+        negative: NEGATIVE_CURRENCY[info.currencyNegativePattern],
+      };
+    case 'P':
+      return {
+        digits: info.percentDecimalDigits,
+        decimal: info.percentDecimalSeparator,
+        group: info.percentGroupSeparator,
+        sizes: info.percentGroupSizes,
+        positive: POSITIVE_PERCENT[info.percentPositivePattern],
+        negative: NEGATIVE_PERCENT[info.percentNegativePattern],
+      };
+    case 'N':
+      return {
+        digits: info.numberDecimalDigits,
+        decimal: info.numberDecimalSeparator,
+        group: info.numberGroupSeparator,
+        sizes: info.numberGroupSizes,
+        positive: '#',
+        negative: NEGATIVE_NUMBER[info.numberNegativePattern],
+      };
+    case 'F':
+      return {
+        digits: info.numberDecimalDigits,
+        decimal: info.numberDecimalSeparator,
+        group: '',
+        sizes: [],
+        positive: '#',
+        negative: '-#',
+      };
+  }
+}
+
+/**
+ * `N`, `F`, `C` and `P` as .NET's `Number.Formatting` lays them out from the culture's
+ * `NumberFormatInfo` (#634): the value, a percent's times 100, rounded to the precision asked or to
+ * the culture's own digits by the type's tie rule, its whole part grouped by the specifier's group
+ * sizes, and set in the culture's pattern for its sign. `Intl` laid them out, and its ICU is not
+ * .NET's: it wrote ar-EG's own digits where .NET writes ASCII ones, a no-break space where .NET's
+ * pattern has a plain one, and two digits with no precision where .NET reads the culture's, three on
+ * ICU.
+ */
+function laidOut(number: Numeric, letter: Laid, specified: number | null, info: NumberFormatData): string {
+  const layout = layoutOf(letter, info);
+  const places = specified ?? layout.digits;
+  const rounded = roundFraction(letter === 'P' ? scaled(number.exact, 2) : number.exact, places, number.tie);
+  // A zero keeps its sign where its type does: a double's `-0.00`, never an integer's or a decimal's.
+  const negative = rounded.negative && (number.signedZero || !isZero(rounded));
+  const text = plainText({ ...rounded, negative: false });
+  const point = text.indexOf('.');
+  const whole = groupDigits(point < 0 ? text : text.slice(0, point), layout.sizes, layout.group);
+  const fraction = point < 0 ? '' : text.slice(point + 1);
+  const digits = places > 0 ? whole + layout.decimal + fraction.padEnd(places, '0') : whole;
+  let out = '';
+  for (const part of negative ? layout.negative : layout.positive) {
+    if (part === '#') out += digits;
+    else if (part === '-') out += info.negativeSign;
+    else if (part === '$') out += info.currencySymbol;
+    else if (part === '%') out += info.percentSymbol;
+    else out += part;
+  }
+  return out;
+}
+
+/** A whole number's digits in groups, as .NET's `FormatFixed` writes them: the size next to the
+ * point first, each after it once, the last one repeating, and a 0 that ends the grouping. */
+function groupDigits(whole: string, sizes: readonly number[], separator: string): string {
+  if (sizes.length === 0) return whole;
+  const groups: string[] = [];
+  let end = whole.length;
+  let at = 0;
+  let size = sizes[0];
+  while (size > 0 && end > size) {
+    groups.push(whole.slice(end - size, end));
+    end -= size;
+    if (at < sizes.length - 1) size = sizes[++at];
+  }
+  groups.push(whole.slice(0, end));
+  return groups.reverse().join(separator);
+}
+
+/**
+ * `N`, `F`, `C` and `P` for a culture whose data did not travel (a switch with no server to ask),
+ * laid out by `Intl`: close, not exact, which is why the data travels. Nothing names the culture's
+ * currency there, and `Intl` wants an ISO code, so `C` writes .NET's generic ¤ in the invariant
+ * culture's patterns, "¤n" and "(¤n)", rather than guess a country.
+ */
+function laidOutByIntl(number: Numeric, letter: Laid, specified: number | null): string {
+  const precision = specified ?? 2;
+  const digits: ExactOptions = { minimumFractionDigits: precision, maximumFractionDigits: precision };
+  switch (letter) {
+    case 'N':
+      return exactly(number, digits);
+    case 'F':
+      return exactly(number, { ...digits, useGrouping: false });
+    case 'P':
+      return exactly(number, { style: 'percent', ...digits });
+    case 'C': {
+      const text = exactly(number, digits);
+      const { minus } = symbols();
+      return text.startsWith(minus) ? `(¤${text.slice(minus.length)})` : `¤${text}`;
+    }
+  }
 }
 
 /**
@@ -516,10 +644,12 @@ function nonFinite(value: number): string {
  * The shortest digits that read back as the value, in .NET's notation (1E+21, -0), with the
  * active culture's decimal separator and signs (sv-SE writes `−1,5` and `1E−05`, with the minus
  * its data spells, and `ar` writes `1E\u200e+21`): what `G` and `R` write, and the text of a
- * number with no specifier at all.
+ * number with no specifier at all. An integer is its digits, and a zero has no sign: `-1 / 2`
+ * truncates to -0 in JavaScript, which only a double's text keeps, and to 0 in C#.
  */
 function shortest(value: number, kind: NumberKind): string {
   if (!Number.isFinite(value)) return nonFinite(value);
+  if (isInteger(kind)) return inCulture(String(value));
   return inCulture(kind === 'single' ? single(value) : double(value));
 }
 
@@ -582,35 +712,16 @@ function formatNumber(value: number | bigint | Decimal, format: string, kind: Nu
   // Leading zeros are allowed (`F0002` is `F2`), and .NET refuses a precision past its limit.
   const specified = digits.length > 0 ? Number(digits) : null;
   if (specified !== null && specified > MAX_PRECISION) throw exception('System.FormatException', BAD_SPECIFIER);
-  const precision = specified ?? 2;
 
-  switch (letter.toUpperCase()) {
-    case 'C': // Currency
-      return formatCurrency(number, specified);
-    case 'N': // Number — grouped, culture separators
-      return exactly(number, {
-        minimumFractionDigits: precision,
-        maximumFractionDigits: precision,
-      });
-    case 'P': // Percentage — the exact value times 100, rounded where the percent is written
-      // The invariant culture writes `n %`, with a space `Intl`'s nearest locale leaves out.
-      if (isInvariant()) {
-        const percent = scaled(number.exact, 2);
-        return `${exactly(number, { minimumFractionDigits: precision, maximumFractionDigits: precision }, percent)} %`;
-      }
-      return exactly(number, {
-        style: 'percent',
-        minimumFractionDigits: precision,
-        maximumFractionDigits: precision,
-      });
-    case 'F': // Fixed point — culture decimal separator, NEVER grouped
-      // `toFixed` was the old answer and it is invariant: a pt-BR page showed "1234.50" beside
-      // numbers that used a comma everywhere else on the same line.
-      return exactly(number, {
-        minimumFractionDigits: precision,
-        maximumFractionDigits: precision,
-        useGrouping: false,
-      });
+  const upper = letter.toUpperCase();
+  if (upper === 'N' || upper === 'F' || upper === 'C' || upper === 'P') {
+    const data = cultureFormat();
+    return data !== null
+      ? laidOut(number, upper, specified, data.numberFormat)
+      : laidOutByIntl(number, upper, specified);
+  }
+
+  switch (upper) {
     case 'E': // Scientific — six digits after the point unless told otherwise
       return scientific(number, specified ?? 6, letter === 'e' ? 'e' : 'E');
     case 'D': {

@@ -87,7 +87,7 @@ public static class ConformanceRunner
         var data = eQuantic.UI.Web.CultureFormatBridge.SerializeJson(
             System.Globalization.CultureInfo.GetCultureInfo(culture));
         return $"import {{ installCulture as $installCulture }} from '{url}';\n"
-            + $"$installCulture({name}, {name}, {{}}, null, {data});\n";
+            + $"$installCulture({name}, {name}, {{}}, {data});\n";
     }
 
     /// <summary>

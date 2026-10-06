@@ -6,11 +6,11 @@ export class Rules {
     }
 
     static minLength(length: number, message: string | null = null) {
-        return new FieldRule(message ?? `Use at least ${$eq.text.format(length, null)} characters.`, (value: string) => value.length === 0 || value.length >= length);
+        return new FieldRule(message ?? `Use at least ${$eq.text.format(length, null, undefined, undefined, 'int32')} characters.`, (value: string) => value.length === 0 || value.length >= length);
     }
 
     static maxLength(length: number, message: string | null = null) {
-        return new FieldRule(message ?? `Use at most ${$eq.text.format(length, null)} characters.`, (value: string) => value.length <= length);
+        return new FieldRule(message ?? `Use at most ${$eq.text.format(length, null, undefined, undefined, 'int32')} characters.`, (value: string) => value.length <= length);
     }
 
     static email(message: string = 'Enter a valid email address.') {

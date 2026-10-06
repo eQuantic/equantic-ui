@@ -272,7 +272,7 @@ export class MermaidLayout {
         let maxX = MermaidLayout.max4(sx, k1x, k2x, ex) + MermaidLayout.curvePad;
         let minY = MermaidLayout.min4(sy, k1y, k2y, ey) - MermaidLayout.curvePad;
         let maxY = MermaidLayout.max4(sy, k1y, k2y, ey) + MermaidLayout.curvePad;
-        scene.curves.push(new MermaidCurve({ x: Math.fround(minX), y: Math.fround(minY), w: Math.fround(maxX - minX), h: Math.fround(maxY - minY), path: $eq.text.stringFormatInvariant('M {0} {1} C {2} {3}, {4} {5}, {6} {7}', sx, sy, k1x, k1y, k2x, k2y, ex, ey), viewBox: $eq.text.stringFormatInvariant('{0} {1} {2} {3}', minX, minY, maxX - minX, maxY - minY) }));
+        scene.curves.push(new MermaidCurve({ x: Math.fround(minX), y: Math.fround(minY), w: Math.fround(maxX - minX), h: Math.fround(maxY - minY), path: $eq.text.stringFormatInvariant('M {0} {1} C {2} {3}, {4} {5}, {6} {7}', $eq.text.asNumber(sx, 'int32'), $eq.text.asNumber(sy, 'int32'), $eq.text.asNumber(k1x, 'int32'), $eq.text.asNumber(k1y, 'int32'), $eq.text.asNumber(k2x, 'int32'), $eq.text.asNumber(k2y, 'int32'), $eq.text.asNumber(ex, 'int32'), $eq.text.asNumber(ey, 'int32')), viewBox: $eq.text.stringFormatInvariant('{0} {1} {2} {3}', $eq.text.asNumber(minX, 'int32'), $eq.text.asNumber(minY, 'int32'), $eq.text.asNumber(maxX - minX, 'int32'), $eq.text.asNumber(maxY - minY, 'int32')) }));
     }
 
     static whole(v: number) {

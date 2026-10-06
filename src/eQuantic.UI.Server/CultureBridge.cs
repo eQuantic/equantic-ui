@@ -4,18 +4,17 @@ using System.Text.Json;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
-using eQuantic.UI.Primitives;
 
 namespace eQuantic.UI.Server;
 
 /// <summary>
 /// Track L D4 — the culture half of the shell bridge, the theme bridge's shape slot for slot:
-/// <c>window.__EQ_CULTURE__ = { name, formatName, calendar, format, strings }</c>, applied by boot
-/// BEFORE hydration, so the client writes every number and date as the server wrote them and
-/// resolves exactly the strings it rendered. The FORMAT culture travels with every page
-/// (<c>format</c>, from .NET's own data — see <see cref="Web.CultureFormatBridge"/> — and
-/// <c>calendar</c>, what its calendar is called — see <see cref="CalendarJson"/>), whether or not the
-/// app has a single string to translate: a page with no catalog was handed no culture at all, so the
+/// <c>window.__EQ_CULTURE__ = { name, formatName, format, strings }</c>, applied by boot BEFORE
+/// hydration, so the client writes every number and date as the server wrote them, names a month as
+/// the server named it, and resolves exactly the strings it rendered. The FORMAT culture travels with
+/// every page (<c>format</c>, from .NET's own data — see <see cref="Web.CultureFormatBridge"/>, whose
+/// day and month names are what a calendar says too), whether or not the app has a single string to
+/// translate: a page with no catalog was handed no culture at all, so the
 /// browser formatted in its HOST's locale while the server formatted in the request's (#471). The
 /// strings travel when there are some: the catalog the request's UI culture resolves to, the build's
 /// own output (<c>wwwroot/_equantic/strings/{culture}.json</c>, eqc-emitted), walked exact culture →
@@ -41,15 +40,14 @@ internal static class CultureBridge
         // culture names and the format data serialize through the encoder too.
         return $"{{\"name\":{JsonSerializer.Serialize(uiCulture.Name)}," +
             $"\"formatName\":{JsonSerializer.Serialize(formatCulture.Name)}," +
-            $"\"calendar\":{CalendarJson(formatCulture)}," +
             $"\"format\":{Web.CultureFormatBridge.SerializeJson(formatCulture)}" +
             (catalog is null ? "" : $",\"strings\":{catalog}") + "}";
     }
 
     /// <summary>
     /// A format culture's half of the bridge, for a page that switches to it with no reload: what it
-    /// formats with and what its calendar is called, written as the shell writes them for a request
-    /// in that culture. Null for a name that is no culture .NET knows.
+    /// formats with and what its calendar is called, written as the shell writes it for a request in
+    /// that culture. Null for a name that is no culture .NET knows.
     /// </summary>
     internal static string? FormatDocument(string name)
     {
@@ -63,36 +61,7 @@ internal static class CultureBridge
             return null;
         }
         return $"{{\"formatName\":{JsonSerializer.Serialize(culture.Name)}," +
-            $"\"calendar\":{CalendarJson(culture)}," +
             $"\"format\":{Web.CultureFormatBridge.SerializeJson(culture)}}}";
-    }
-
-    /// <summary>
-    /// What a calendar is CALLED for this request's format culture — shipped, not derived. The
-    /// browser's ICU and .NET's do not always agree (ar-EG abbreviates Sunday as "أحد" here and
-    /// "الأحد" in a JS runtime, both correct Arabic), and a day name that differs between the SSR
-    /// HTML and the hydrated tree is a flicker on exactly the pages nobody debugs. The client
-    /// keeps an Intl fallback for renders with no server behind them.
-    /// </summary>
-    private static string CalendarJson(CultureInfo formatCulture)
-    {
-        var previous = CultureInfo.CurrentCulture;
-        try
-        {
-            CultureInfo.CurrentCulture = formatCulture;
-            return JsonSerializer.Serialize(new
-            {
-                firstDayOfWeek = CalendarNames.FirstDayOfWeek,
-                dayNamesShort = CalendarNames.DayNamesShort,
-                dayNamesLong = CalendarNames.DayNamesLong,
-                monthNames = CalendarNames.MonthNames,
-                monthNamesShort = CalendarNames.MonthNamesShort,
-            });
-        }
-        finally
-        {
-            CultureInfo.CurrentCulture = previous;
-        }
     }
 
     private static string? PickCatalog(string stringsDir, CultureInfo uiCulture)

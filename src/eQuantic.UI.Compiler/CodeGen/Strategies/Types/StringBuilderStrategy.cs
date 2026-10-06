@@ -50,7 +50,27 @@ public class StringBuilderStrategy : ConversionStrategyBase
             {
                 var receiver = context.Converter.ConvertExpression(ma.Expression);
                 var name = ma.Name.Identifier.Text;
-                return $"{receiver}.{name.ToCamelCase()}({ConvertArgs(inv.ArgumentList, context)})";
+                var args = inv.ArgumentList.Arguments;
+                // The VALUE `Append`, `AppendLine` and `Insert` write is its ToString, in the culture in
+                // force: what a concatenation writes (StringConversion), a number in the culture's
+                // symbols (#454), a bool as True, an enum as its name. The runtime's builder took
+                // JavaScript's String() of it, so `Append(1.5)` read `1.5` on a pt-BR page.
+                var value = args.Any(argument => argument.NameColon is not null) ? null : (name, args.Count) switch
+                {
+                    ("Append" or "AppendLine", 1) => args[0],
+                    ("Insert", 2) => args[1],
+                    _ => null,
+                };
+                if (value is null)
+                    return $"{receiver}.{name.ToCamelCase()}({ConvertArgs(inv.ArgumentList, context)})";
+                var written = args.Select(argument =>
+                {
+                    var converted = context.Converter.ConvertIr(argument.Expression);
+                    return Ir.JsExprWriter.Write(argument == value
+                        ? StringConversion.ToDotNetString(argument.Expression, converted, context)
+                        : converted);
+                });
+                return $"{receiver}.{name.ToCamelCase()}({string.Join(", ", written)})";
             }
 
             case MemberAccessExpressionSyntax member:

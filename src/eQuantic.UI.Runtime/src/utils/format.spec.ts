@@ -2,14 +2,24 @@ import { describe, it, expect, afterEach, vi } from 'vitest';
 import { format, stringFormat, stringFormatInvariant, asNumber, recordText } from './format';
 import { INVARIANT_FORMAT, installCulture, type CultureFormat } from './culture';
 
-/** pt-BR as the server writes it, as far as these specs read it: its currency, its symbols and its
- * short date and long time patterns. */
+/** pt-BR as .NET 10 writes it on ICU, as far as these specs read it: its separators, digits and
+ * patterns, its currency, its symbols and its short date and long time patterns. */
 const PT_BR: CultureFormat = {
-  isoCurrencySymbol: 'BRL',
   numberFormat: {
     ...INVARIANT_FORMAT.numberFormat,
     numberDecimalSeparator: ',',
     numberGroupSeparator: '.',
+    numberDecimalDigits: 3,
+    currencySymbol: 'R$',
+    currencyDecimalSeparator: ',',
+    currencyGroupSeparator: '.',
+    currencyPositivePattern: 2,
+    currencyNegativePattern: 9,
+    percentDecimalSeparator: ',',
+    percentGroupSeparator: '.',
+    percentDecimalDigits: 3,
+    percentPositivePattern: 1,
+    percentNegativePattern: 1,
     positiveInfinitySymbol: '∞',
     negativeInfinitySymbol: '-∞',
   },
@@ -159,7 +169,7 @@ describe('custom numeric formats (digit pictures)', () => {
 describe('an invariant conversion ignores the culture reading it', () => {
   afterEach(() => installCulture('', '', {}));
 
-  const reading = () => installCulture('pt-BR', 'pt-BR', {}, null, PT_BR);
+  const reading = () => installCulture('pt-BR', 'pt-BR', {}, PT_BR);
 
   it('writes the invariant date patterns', () => {
     reading();
@@ -176,19 +186,17 @@ describe('an invariant conversion ignores the culture reading it', () => {
   });
 });
 
-// Past the 100 digits Intl writes after the point, the value is rounded here and Intl lays out the
-// rest, a culture's currency and percent patterns included (#445). The expected strings are what
-// .NET 10 writes for the same value in pt-BR, its no-break spaces folded to a space.
+// Past the 100 digits Intl writes after the point (#445), the culture's patterns still hold around
+// every digit. The expected strings are what .NET 10 writes for the same value in pt-BR, byte for
+// byte: the space in its currency pattern is a plain one (#634).
 describe('a precision past 100 digits, in a culture', () => {
   afterEach(() => installCulture('', '', {}));
 
-  const folded = (value: string): string => value.replace(/[\u00a0\u202f]/g, ' ');
-
   it('keeps the culture’s currency and percent patterns around every digit', () => {
-    installCulture('pt-BR', 'pt-BR', {}, null, PT_BR);
+    installCulture('pt-BR', 'pt-BR', {}, PT_BR);
     const zeros = (count: number): string => '0'.repeat(count);
     expect(format(0.125, 'P101')).toBe(`12,5${zeros(100)}%`);
-    expect(folded(format(-1234.5, 'C101'))).toBe(`-R$ 1.234,5${zeros(100)}`);
+    expect(format(-1234.5, 'C101')).toBe(`-R$ 1.234,5${zeros(100)}`);
     expect(format(-1234.5, 'N101')).toBe(`-1.234,5${zeros(100)}`);
   });
 });
@@ -272,6 +280,18 @@ describe('recordText', () => {
     );
   });
 
+  it('writes a member with what its type says: a number\u2019s kind, or a function of the value', () => {
+    // A float in its own digits, an integer with no sign on the zero JavaScript made of `-1 / 2`, and
+    // an enum by the function the compiler writes for its member names.
+    expect(
+      recordText({ ratio: Math.fround(0.1), half: -0, kind: 1 }, 'Reading', [
+        ['Ratio', 'single'],
+        ['Half', 'int32'],
+        ['Kind', (value: number) => (value === 1 ? 'Large' : 'Small')],
+      ]),
+    ).toBe('Reading { Ratio = 0.1, Half = 0, Kind = Large }');
+  });
+
   it('writes a record with no members, and nothing for a null value', () => {
     expect(recordText({}, 'Empty', [])).toBe('Empty { }');
     expect(recordText(null, 'Color', ['R'])).toBe('');
@@ -295,7 +315,7 @@ describe('a value’s own text, in the culture in force', () => {
   };
 
   it('writes a number with no format in the culture’s symbols, whatever its type', () => {
-    installCulture('sv-SE', 'sv-SE', {}, null, SV_SE);
+    installCulture('sv-SE', 'sv-SE', {}, SV_SE);
     expect(format(-1.5, null)).toBe('−1,5');
     expect(format(-5, null, undefined, undefined, 'int32')).toBe('−5');
     expect(format(-5n, null)).toBe('−5');
@@ -304,7 +324,7 @@ describe('a value’s own text, in the culture in force', () => {
   });
 
   it('writes the invariant text in an invariant conversion, whoever is reading', () => {
-    installCulture('sv-SE', 'sv-SE', {}, null, SV_SE);
+    installCulture('sv-SE', 'sv-SE', {}, SV_SE);
     expect(format(-1.5, null, undefined, true)).toBe('-1.5');
     expect(stringFormatInvariant('{0}', -1.5)).toBe('-1.5');
   });

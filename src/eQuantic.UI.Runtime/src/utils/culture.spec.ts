@@ -2,8 +2,6 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   activeCulture,
   activeFormatData,
-  activePattern,
-  calendarCatalog,
   formatLocale,
   INVARIANT_FORMAT,
   installCulture,
@@ -210,35 +208,27 @@ describe('the format culture', () => {
   it('is the invariant culture on a page nothing installed a culture on', () => {
     expect(formatLocale()).toBeUndefined();
     expect(activeFormatData()).toBe(INVARIANT_FORMAT);
-    expect(activePattern('dateShort')).toBe('MM/dd/yyyy');
+    expect(activeFormatData()?.dateTimeFormat.shortDatePattern).toBe('MM/dd/yyyy');
   });
 
   it('installs the data the server wrote for it, catalog or not', () => {
     const ptBr = formatOf(',', 'dd/MM/yyyy');
-    installCulture('pt-BR', 'pt-BR', {}, null, ptBr);
+    installCulture('pt-BR', 'pt-BR', {}, ptBr);
     expect(activeFormatData()).toBe(ptBr);
-    expect(activePattern('dateShort')).toBe('dd/MM/yyyy');
+    expect(activeFormatData()?.dateTimeFormat.shortDatePattern).toBe('dd/MM/yyyy');
   });
 
   it('has no data for a culture installed without it, which the formatter reads through Intl', () => {
     installCulture('fr-FR', 'fr-FR', {});
     expect(activeFormatData()).toBeNull();
-    expect(activePattern('dateShort')).toBeNull();
   });
 
-  it('a switch fetches the FORMAT culture’s data beside the catalog, with its calendar', async () => {
+  it('a switch fetches the FORMAT culture’s data beside the catalog', async () => {
     const asked: string[] = [];
-    const calendar = {
-      firstDayOfWeek: 1,
-      dayNamesShort: ['So.', 'Mo.', 'Di.', 'Mi.', 'Do.', 'Fr.', 'Sa.'],
-      dayNamesLong: [],
-      monthNames: [],
-      monthNamesShort: [],
-    };
     const deDe = formatOf(',', 'dd.MM.yyyy');
     setCultureFormatLoader(async (culture) => {
       asked.push(culture);
-      return culture === 'de-CH' ? { format: deDe, calendar } : null;
+      return culture === 'de-CH' ? { format: deDe } : null;
     });
 
     // English strings over Swiss formats: the data asked for is the FORMAT half's.
@@ -246,7 +236,6 @@ describe('the format culture', () => {
 
     expect(asked).toEqual(['de-CH']);
     expect(activeFormatData()).toBe(deDe);
-    expect(calendarCatalog()).toBe(calendar);
   });
 
   it('a format culture already in memory switches back without asking for it again', async () => {

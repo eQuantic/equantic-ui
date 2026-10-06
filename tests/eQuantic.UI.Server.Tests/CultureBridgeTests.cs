@@ -99,7 +99,7 @@ public class CultureBridgeTests
         data.GetProperty("formatName").GetString().Should().Be("pt-BR");
         data.TryGetProperty("strings", out _).Should().BeFalse("an app with no resx has no strings to send");
         var format = data.GetProperty("format");
-        format.GetProperty("isoCurrencySymbol").GetString().Should().Be("BRL");
+        format.GetProperty("numberFormat").GetProperty("currencySymbol").GetString().Should().Be("R$");
         format.GetProperty("numberFormat").GetProperty("numberDecimalSeparator").GetString().Should().Be(",");
         format.GetProperty("dateTimeFormat").GetProperty("shortDatePattern").GetString().Should().Be("dd/MM/yyyy");
     }
@@ -116,9 +116,8 @@ public class CultureBridgeTests
 
         var culture = System.Globalization.CultureInfo.GetCultureInfo("fr");
         data.GetProperty("format").GetRawText().Should().Be(eQuantic.UI.Web.CultureFormatBridge.SerializeJson(culture));
-        data.GetProperty("format").GetProperty("isoCurrencySymbol").ValueKind.Should().Be(JsonValueKind.Null,
-            "a neutral culture has no currency of its own: .NET writes the generic ¤ for it, where its "
-            + "RegionInfo would answer France's");
+        data.GetProperty("format").GetProperty("numberFormat").GetProperty("currencySymbol").GetString().Should().Be("¤",
+            "a neutral culture has no currency of its own, and .NET writes the generic ¤ for it");
         data.GetProperty("strings").GetProperty("Strings/Hero.Title").GetString().Should().StartWith("Build products");
     }
 
@@ -140,7 +139,10 @@ public class CultureBridgeTests
         document.RootElement.GetProperty("formatName").GetString().Should().Be("de-DE");
         document.RootElement.GetProperty("format").GetRawText().Should().Be(
             eQuantic.UI.Web.CultureFormatBridge.SerializeJson(System.Globalization.CultureInfo.GetCultureInfo("de-DE")));
-        document.RootElement.GetProperty("calendar").GetProperty("firstDayOfWeek").GetInt32().Should().Be(1);
+        document.RootElement.GetProperty("format").GetProperty("dateTimeFormat").GetProperty("firstDayOfWeek").GetInt32()
+            .Should().Be(1, "a calendar's first day travels in the culture's date data, its names' one source");
+        document.RootElement.TryGetProperty("calendar", out _).Should().BeFalse(
+            "the calendar's names were a second copy of the format data's, beside it");
 
         (await client.GetAsync("/_equantic/culture/not-a-culture.json")).StatusCode
             .Should().Be(System.Net.HttpStatusCode.NotFound);

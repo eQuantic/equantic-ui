@@ -200,7 +200,7 @@ export class CodeBlock extends StatelessComponent {
 
     static metricsFor(context: any, size: SizeVariantValue, showLineNumbers: boolean, lastLineNumber: number) {
         let style = $eq.withPatch(TypeStyle.ofSize(Sizing.labelSize(size, context.density), 'regular'), { mono: true });
-        let gutter = showLineNumbers ? Math.fround(Math.ceil(context.measureText($eq.text.format(lastLineNumber, null) + '0', style)) + 12) : 0;
+        let gutter = showLineNumbers ? Math.fround(Math.ceil(context.measureText($eq.text.format(lastLineNumber, null, undefined, undefined, 'int32') + '0', style)) + 12) : 0;
         return new CodeMetrics(style, $eq.math.roundSingle(Math.fround(style.lineHeight * Math.fround(1.15))), context.monoAdvance(style), gutter);
     }
 
@@ -235,7 +235,7 @@ export class CodeBlock extends StatelessComponent {
         let isLine = shown.kind === 'line';
         let index = shown.line;
         let number: any; 
-        let label = (number = numberOf) != null ? number(shown) : isLine ? $eq.text.format((this.firstLineNumber + index), null) : null;
+        let label = (number = numberOf) != null ? number(shown) : isLine ? $eq.text.format((this.firstLineNumber + index), null, undefined, undefined, 'int32') : null;
         let numbers = new Row(4, 'start', 'center', false, null, null, { width: SizeValue.fill, height: SizeValue.fill, main: 'end', cross: 'center' });
         let mark: any; 
         if (isLine && (mark = this.markerFor(index)) != null) {

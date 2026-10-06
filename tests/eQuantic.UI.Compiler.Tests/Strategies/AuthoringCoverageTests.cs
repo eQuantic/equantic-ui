@@ -186,7 +186,7 @@ public class AuthoringCoverageTests
         ts.Should().Contain("this.id = id");
         ts.Should().Contain("this.label = label");
         // An int's text is the culture's: a negative one's minus sign is (#454).
-        ts.Should().Contain("this.label + $eq.text.format(this.id, null)");
+        ts.Should().Contain("this.label + $eq.text.format(this.id, null, undefined, undefined, 'int32')");
     }
 
     /// <summary>
@@ -259,7 +259,7 @@ public class AuthoringCoverageTests
                     "    var package = \"eQuantic.Core\"; var yield = 2; " +
                     "    return new Text(package + yield); } }");
         ts.Should().Contain("let package$ = 'eQuantic.Core'");
-        ts.Should().Contain("package$ + $eq.text.format(yield$, null)");
+        ts.Should().Contain("package$ + $eq.text.format(yield$, null, undefined, undefined, 'int32')");
         ts.Should().NotContain("let package =").And.NotContain("let yield =");
     }
 

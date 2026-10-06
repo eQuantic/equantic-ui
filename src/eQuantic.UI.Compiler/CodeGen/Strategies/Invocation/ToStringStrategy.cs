@@ -125,7 +125,7 @@ public class ToStringStrategy : IConversionStrategy
         // invariant patterns. A DateTime with no specifier wrote the twin's invariant text where .NET
         // writes the culture's (found in review, #472), and the other three types never reached the
         // formatter at all (#469). A null date writes nothing (#388).
-        if (IsDate(receiverType))
+        if (receiverType.IsDate())
         {
             context.UsedHelpers.Add(Eq.Import);
             var specifier = formatArg is null ? "null" : context.Converter.ConvertExpression(formatArg.Expression);
@@ -180,12 +180,6 @@ public class ToStringStrategy : IConversionStrategy
         provider is LiteralExpressionSyntax
         || provider is IdentifierNameSyntax && context.SemanticHelper.GetSymbol(provider) is ILocalSymbol or IParameterSymbol or IFieldSymbol
         || NamedCulture.IsInvariant(provider, context) || NamedCulture.IsCurrent(provider, context);
-
-    /// <summary>Whether the receiver is a date: a DateTime, a DateOnly, a TimeOnly or a DateTimeOffset,
-    /// a nullable one's included.</summary>
-    private static bool IsDate(ITypeSymbol? type) =>
-        type.UnwrapNullable()?.ToDisplayString() is "System.DateTime" or "System.DateOnly"
-            or "System.TimeOnly" or "System.DateTimeOffset";
 
     /// <summary>
     /// A float's or a double's text in the INVARIANT culture, as .NET writes it: the shortest digits

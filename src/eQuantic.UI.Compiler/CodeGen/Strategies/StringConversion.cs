@@ -32,14 +32,10 @@ public static class StringConversion
         if (type is INamedTypeSymbol { TypeKind: TypeKind.Enum } enumType)
             return JsExpr.Callish(Invocation.ToStringStrategy.EnumNameLookup(enumType, operand, JsExprWriter.Write(converted), context));
 
-        // A string that MAY be null reads as itself or as nothing — the cheapest faithful spelling.
-        // Annotated `string?` says so; a string from code with no nullable context (annotation
-        // None) has not said it cannot be. Only a `string` under nullable-enabled code has.
-        if (type.SpecialType == SpecialType.System_String)
-            return type.NullableAnnotation == NullableAnnotation.NotAnnotated
-                || operand is LiteralExpressionSyntax or InterpolatedStringExpressionSyntax
-                ? converted
-                : JsExpr.Binary(converted, "??", JsExpr.Literal("''"));
+        // A literal or an interpolated string is never null.
+        if (type.SpecialType == SpecialType.System_String
+            && operand is LiteralExpressionSyntax or InterpolatedStringExpressionSyntax)
+            return converted;
 
         // An integer constant that is not negative is its digits in every culture.
         if (IsNonNegativeIntegerConstant(operand, context)) return converted;
@@ -60,17 +56,23 @@ public static class StringConversion
         if (type.UnwrapNullable() is INamedTypeSymbol { TypeKind: TypeKind.Enum } enumType)
             return JsExpr.Callish(Types.EnumShape.Text(enumType, text, context));
 
+        // A string that MAY be null reads as itself or as nothing — the cheapest faithful spelling.
+        // Annotated `string?` says so; a string from code with no nullable context (annotation
+        // None) has not said it cannot be. Only a `string` under nullable-enabled code has.
+        if (type.SpecialType == SpecialType.System_String)
+            return type.NullableAnnotation == NullableAnnotation.NotAnnotated
+                ? converted
+                : JsExpr.Binary(converted, "??", JsExpr.Literal("''"));
+
         var real = type.UnwrapNullable() ?? type;
 
         // A value the browser holds as DATA (`[TwinIsData]`, `Color`) is a plain object, whose own
         // string is `[object Object]`. It reads as the record text .NET writes, from the members
         // .NET prints, and a null one as nothing.
         if (real is INamedTypeSymbol data && data.TwinIsData())
-        {
-            context.UsedHelpers.Add(Eq.Import);
-            var members = string.Join(", ", data.PrintedMembers().Select(member => $"'{member.Name}'"));
-            return JsExpr.Callish($"{Eq.RecordText}({text}, '{data.Name}', [{members}])");
-        }
+            return JsExpr.Callish(RecordText(text, data.Name, data.PrintedMembers()
+                .Select(member => (member.Name, (ITypeSymbol?)(member as IFieldSymbol)?.Type ?? (member as IPropertySymbol)?.Type)),
+                context));
 
         // A number or a date is its text in the culture in force, through the formatter that writes
         // every other number and date (#454): JavaScript's own string of it is invariant, so a
@@ -90,6 +92,33 @@ public static class StringConversion
     }
 
     /// <summary>
+    /// A record's text, as its PrintMembers writes it (<c>Name { A = 1, B = x }</c>), through the
+    /// runtime's record text, which reads each member under its twin's name: a record the browser holds
+    /// as a class (its <c>toString</c>) and one it holds as data alike. Each member is written as a
+    /// concatenation would write it, which the runtime's formatter answers from the value alone where
+    /// its type says nothing more, and from the member's kind or a function of the value where it does:
+    /// a float's own digits, an integer's unsigned zero, an enum's member name, a data twin's own text.
+    /// A member whose type is not known is written from its value.
+    /// </summary>
+    internal static string RecordText(string value, string name,
+        IEnumerable<(string Name, ITypeSymbol? Type)> members, ConversionContext context)
+    {
+        context.UsedHelpers.Add(Eq.Import);
+        string Member((string Name, ITypeSymbol? Type) member)
+        {
+            var label = JsStringLiteral.Quote(member.Name);
+            var real = member.Type.UnwrapNullable() ?? member.Type;
+            if (real is INamedTypeSymbol named && (named.TypeKind == TypeKind.Enum || named.TwinIsData()))
+                return $"[{label}, {JsExprWriter.Write(JsExpr.Arrow(context.TypeAnnotations ? "v: any" : "v",
+                    Of(member.Type!, JsExpr.Identifier("v"), context)))}]";
+            return real is not null && WritesInTheCulture(real) && FormatKind.OfText(real) is { } kind
+                ? $"[{label}, '{kind}']"
+                : label;
+        }
+        return $"{Eq.RecordText}({value}, {JsStringLiteral.Quote(name)}, [{string.Join(", ", members.Select(Member))}])";
+    }
+
+    /// <summary>
     /// The value's text, as its <c>ToString()</c> writes it: what a concatenation writes, and
     /// <c>String()</c> of what a concatenation leaves as it is, since a number on its own is not text.
     /// </summary>
@@ -103,6 +132,21 @@ public static class StringConversion
     }
 
     /// <summary>
+    /// The value's text in the INVARIANT culture, as <c>ToString(CultureInfo.InvariantCulture)</c>
+    /// writes it: a number or a date through the formatter in the invariant culture, and anything else
+    /// as it reads in every culture.
+    /// </summary>
+    internal static JsExpr InvariantText(ExpressionSyntax operand, JsExpr converted, ConversionContext context)
+    {
+        var type = context.SemanticHelper.GetType(operand);
+        var real = type.UnwrapNullable() ?? type;
+        if (real is null || !WritesInTheCulture(real)) return ToText(operand, converted, context);
+        context.UsedHelpers.Add(Eq.Import);
+        var kind = FormatKind.OfText(real) is { } named ? $", '{named}'" : "";
+        return JsExpr.Callish($"{Eq.Format}({JsExprWriter.Write(converted)}, null, undefined, true{kind})");
+    }
+
+    /// <summary>
     /// Whether the culture changes this type's text: a fraction's separator, a signed integer's
     /// minus sign and a date's patterns. An unsigned integer, a char and a TimeSpan (whose text is
     /// invariant in .NET) read the same everywhere.
@@ -111,8 +155,7 @@ public static class StringConversion
         type.SpecialType is SpecialType.System_Double or SpecialType.System_Single
             or SpecialType.System_Decimal or SpecialType.System_SByte or SpecialType.System_Int16
             or SpecialType.System_Int32 or SpecialType.System_Int64 or SpecialType.System_IntPtr
-            or SpecialType.System_DateTime
-        || type.ToDisplayString() is "System.DateOnly" or "System.TimeOnly" or "System.DateTimeOffset";
+        || type.IsDate();
 
     /// <summary>An integer constant that is not negative: its digits are its text in every culture.</summary>
     private static bool IsNonNegativeIntegerConstant(ExpressionSyntax operand, ConversionContext context) =>

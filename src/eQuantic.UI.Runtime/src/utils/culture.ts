@@ -14,18 +14,34 @@ import { sdkNeutralStrings } from '../shared/sdk-strings.generated';
 const SDK_RESOURCE_ID = 'SdkResources';
 
 /**
- * The symbols of a culture's `NumberFormatInfo` the formatter writes by hand, under .NET's own
- * names: what a number's text with no specifier, `E`, `G`, `D`, a custom picture and a value that is
- * not a finite number are written in. `Intl` lays out `N`, `F`, `C` and `P` itself.
+ * A culture's `NumberFormatInfo`, under .NET's own names: what the formatter writes every number in,
+ * a number's text with no specifier, every standard specifier and a custom picture (#634). The
+ * patterns are .NET's indexes into its own pattern tables (`NumberNegativePattern` 1 is `-n`).
  */
 export interface NumberFormatData {
   numberDecimalSeparator: string;
   numberGroupSeparator: string;
   /** The group next to the point first, as .NET's are: en-IN's are `[3, 2]`. */
   numberGroupSizes: number[];
+  /** What `N` and `F` write with no precision: 3 in every specific culture on ICU, 2 on NLS. */
+  numberDecimalDigits: number;
+  numberNegativePattern: number;
   negativeSign: string;
   positiveSign: string;
+  currencySymbol: string;
+  currencyDecimalSeparator: string;
+  currencyGroupSeparator: string;
+  currencyGroupSizes: number[];
+  currencyDecimalDigits: number;
+  currencyPositivePattern: number;
+  currencyNegativePattern: number;
   percentSymbol: string;
+  percentDecimalSeparator: string;
+  percentGroupSeparator: string;
+  percentGroupSizes: number[];
+  percentDecimalDigits: number;
+  percentPositivePattern: number;
+  percentNegativePattern: number;
   perMilleSymbol: string;
   nanSymbol: string;
   positiveInfinitySymbol: string;
@@ -33,9 +49,10 @@ export interface NumberFormatData {
 }
 
 /**
- * The patterns and symbols of a culture's `DateTimeFormatInfo` the formatter draws a date with:
- * what a standard specifier stands for (`d` IS the short date pattern), what `/` and `:` write in a
- * picture, and the era `g` writes.
+ * The patterns, symbols and names of a culture's `DateTimeFormatInfo`: what the formatter draws a
+ * date with (`d` IS the short date pattern, `/` and `:` its separators in a picture, `g` its era),
+ * and what a calendar says, its first day of the week and its day and month names (`CalendarNames`).
+ * One copy of each: the calendar's names travelled beside these as a catalog of their own.
  */
 export interface DateTimeFormatData {
   shortDatePattern: string;
@@ -47,6 +64,8 @@ export interface DateTimeFormatData {
   dateSeparator: string;
   timeSeparator: string;
   eraName: string;
+  /** The day a week starts on, as `System.DayOfWeek` counts: 0 is Sunday. */
+  firstDayOfWeek: number;
   /** Sunday first, as `System.DayOfWeek` counts. */
   dayNames: string[];
   abbreviatedDayNames: string[];
@@ -70,9 +89,6 @@ export interface DateTimeFormatData {
  * that `Intl` keeps outside the sign, and its exponent's plus with another.
  */
 export interface CultureFormat {
-  /** The ISO code of the culture's currency, or null where .NET writes the generic ¤: the invariant
-   * culture, a neutral one, a culture of no single country (`es-419`). */
-  isoCurrencySymbol: string | null;
   numberFormat: NumberFormatData;
   dateTimeFormat: DateTimeFormatData;
 }
@@ -99,14 +115,28 @@ const INVARIANT_MONTHS = [
  * byte (`format-subset.spec.ts` compares the two).
  */
 export const INVARIANT_FORMAT: CultureFormat = Object.freeze({
-  isoCurrencySymbol: null,
   numberFormat: Object.freeze({
     numberDecimalSeparator: '.',
     numberGroupSeparator: ',',
     numberGroupSizes: [3],
+    numberDecimalDigits: 2,
+    numberNegativePattern: 1,
     negativeSign: '-',
     positiveSign: '+',
+    currencySymbol: '¤',
+    currencyDecimalSeparator: '.',
+    currencyGroupSeparator: ',',
+    currencyGroupSizes: [3],
+    currencyDecimalDigits: 2,
+    currencyPositivePattern: 0,
+    currencyNegativePattern: 0,
     percentSymbol: '%',
+    percentDecimalSeparator: '.',
+    percentGroupSeparator: ',',
+    percentGroupSizes: [3],
+    percentDecimalDigits: 2,
+    percentPositivePattern: 0,
+    percentNegativePattern: 0,
     perMilleSymbol: '‰',
     nanSymbol: 'NaN',
     positiveInfinitySymbol: 'Infinity',
@@ -122,6 +152,7 @@ export const INVARIANT_FORMAT: CultureFormat = Object.freeze({
     dateSeparator: '/',
     timeSeparator: ':',
     eraName: 'A.D.',
+    firstDayOfWeek: 0,
     dayNames: INVARIANT_DAYS,
     abbreviatedDayNames: INVARIANT_DAYS.map((day) => day.slice(0, 3)),
     monthNames: INVARIANT_MONTHS,
@@ -142,16 +173,6 @@ export type DatePatternName =
   | 'monthDayPattern'
   | 'yearMonthPattern';
 
-/** The formatter's names for the patterns a standard specifier stands for, as the data names them. */
-const PATTERNS: Readonly<Record<string, DatePatternName>> = {
-  dateShort: 'shortDatePattern',
-  dateLong: 'longDatePattern',
-  timeShort: 'shortTimePattern',
-  timeLong: 'longTimePattern',
-  monthDay: 'monthDayPattern',
-  yearMonth: 'yearMonthPattern',
-};
-
 /** The pair, by BCP-47 name. Empty = the invariant culture every page boots in until the server's
  * `__EQ_CULTURE__` installs the request's truth. */
 export interface CulturePair {
@@ -170,8 +191,8 @@ const warned = new Set<string>();
  * fetched. A second switch back is instant and silent. */
 const catalogs = new Map<string, Record<string, string>>();
 
-/** Format data already in memory, by FORMAT culture name, with the calendar names that came with it. */
-const formats = new Map<string, { format: CultureFormat; calendar: CalendarCatalog | null }>();
+/** Format data already in memory, by FORMAT culture name. */
+const formats = new Map<string, CultureFormat>();
 
 /** What re-renders the mounted tree after a swap. Registered by boot rather than imported: this
  * module is a LEAF, and reaching the component tree from here would close an eval-time cycle —
@@ -200,7 +221,6 @@ async function defaultLoader(culture: string): Promise<Record<string, string> | 
  * page boots in, for one it switches to. */
 export interface CultureFormatDocument {
   format: CultureFormat;
-  calendar?: CalendarCatalog | null;
 }
 
 /** Where a format culture's data is fetched from: the server, which writes it from .NET as it
@@ -224,53 +244,24 @@ async function defaultFormatLoader(culture: string): Promise<CultureFormatDocume
 /**
  * Installs the ACTIVE culture and its flat catalog (`"Strings/Hero.Title"` → value) — called by
  * boot from `window.__EQ_CULTURE__` BEFORE hydration, so the client resolves exactly the strings
- * the server rendered and the SSR-identity contract holds on a translated page (D4).
- */
-export interface CalendarCatalog {
-  firstDayOfWeek: number;
-  dayNamesShort: string[];
-  dayNamesLong: string[];
-  monthNames: string[];
-  monthNamesShort: string[];
-}
-
-/**
- * What the SERVER said a calendar is called, for this request's format culture. Present on any
- * page the server rendered; absent in a client-only render, where Intl answers instead.
- *
- * It is shipped rather than derived because the two sides read different ICU builds and they do
- * not always agree: `ar-EG` abbreviates Sunday as "أحد" in .NET and "الأحد" in a JS runtime's ICU
- * — both correct Arabic, one with the definite article — and even two JS engines disagreed in the
- * probe. Deriving on each side would put a different label in the SSR HTML and the hydrated tree.
- */
-let activeCalendar: CalendarCatalog | null = null;
-
-/** The server's calendar names for the active culture, or null when nothing installed them. */
-export function calendarCatalog(): CalendarCatalog | null {
-  return activeCalendar;
-}
-
-/**
- * Installs the pair, the UI culture's strings, and what the FORMAT culture's calendar is called and
- * how it formats. The invariant culture (an empty format name) needs no data: the runtime carries
- * it. A culture installed with no data is formatted through `Intl`, the nearest the browser has.
+ * the server rendered and the SSR-identity contract holds on a translated page (D4) — with how the
+ * FORMAT culture formats and what its calendar is called. The invariant culture (an empty format
+ * name) needs no data: the runtime carries it. A culture installed with no data is formatted and
+ * named through `Intl`, the nearest the browser has, rather than with the OLD culture's data, which
+ * would be the one answer that is certainly wrong.
  */
 export function installCulture(
   ui: string,
   format: string,
   strings: Record<string, string>,
-  calendar?: CalendarCatalog | null,
   formatData?: CultureFormat | null,
 ): void {
   active = { ui, format };
   activeStrings = strings;
-  // A culture change without a catalog falls back to Intl rather than keeping the OLD culture's
-  // names, which would be the one answer that is certainly wrong.
-  activeCalendar = calendar ?? null;
   activeFormat = formatData ?? (format.length === 0 ? INVARIANT_FORMAT : null);
   warned.clear();
   if (ui.length > 0) catalogs.set(ui, strings);
-  if (format.length > 0 && formatData) formats.set(format, { format: formatData, calendar: calendar ?? null });
+  if (format.length > 0 && formatData) formats.set(format, formatData);
 
   // The DOCUMENT's language, not just the catalog's. The server stamps `<html lang>` on the page
   // it renders and a no-reload switch left it behind, so the page said `lang="en"` while every
@@ -319,7 +310,7 @@ export async function setCulture(ui: string, format?: string): Promise<void> {
   if (ui === active.ui && formatName === active.format) return;
 
   const [strings, data] = await Promise.all([catalogFor(ui), formatFor(formatName)]);
-  installCulture(ui, formatName, strings ?? activeStrings, data?.calendar, data?.format);
+  installCulture(ui, formatName, strings ?? activeStrings, data);
   invalidate?.();
 }
 
@@ -335,9 +326,9 @@ async function catalogFor(ui: string): Promise<Record<string, string> | undefine
 }
 
 /** The format culture's data, from memory or from the server, or null when neither has it. */
-async function formatFor(format: string): Promise<CultureFormatDocument | null> {
+async function formatFor(format: string): Promise<CultureFormat | null> {
   if (format.length === 0) return null;
-  return formats.get(format) ?? (await loadFormat(format));
+  return formats.get(format) ?? (await loadFormat(format))?.format ?? null;
 }
 
 /** `pt-BR` → [`pt-BR`, `pt`]. The .NET parent walk, by name, with no CultureInfo to consult. */
@@ -373,14 +364,6 @@ export function formatLocale(): string | undefined {
  */
 export function activeFormatData(): CultureFormat | null {
   return activeFormat;
-}
-
-/** One of the active culture's date/time patterns by the formatter's name for it (`dateShort` is
- * the short date pattern), or null when the culture's data did not travel. */
-export function activePattern(role: string): string | null {
-  const key = PATTERNS[role];
-  if (key === undefined || activeFormat === null) return null;
-  return activeFormat.dateTimeFormat[key];
 }
 
 /**

@@ -96,6 +96,12 @@ public class ConvertStrategy : IExpressionIrStrategy
                 [Of(JsExpr.Identifier("$v")), providerFirst ? provider : value, providerFirst ? value : provider],
                 context.TypeAnnotations);
         }
+        // A value's TEXT is its ToString in the culture the call names, which is all .NET's
+        // Convert.ToString does: what a concatenation writes in the culture in force (#454), and the
+        // invariant text for the invariant culture. It was String(), JavaScript's invariant text, so
+        // `Convert.ToString(-1.5)` read `-1.5` on a pt-BR page that wrote `-1,5` beside it.
+        if (name == "ToString")
+            return TextOf(invocation, argExpr, providerExpr, context);
         if (ReadsText(invocation, argExpr, context) && TextReader(name) is { } text)
         {
             // Text is read in a culture, and the browser reads the invariant one (see ParseCulture).
@@ -265,6 +271,28 @@ public class ConvertStrategy : IExpressionIrStrategy
 
     /// <summary>Whether the provider is a member or a constructor of <c>CultureInfo</c> itself, which
     /// has no twin to evaluate it with.</summary>
+    /// <summary>
+    /// <c>Convert.ToString(value)</c> and <c>Convert.ToString(value, provider)</c>: a text is itself,
+    /// a null one included, and anything else is its text in the current culture, with no provider,
+    /// the current one or a null, or in the invariant culture. Any other provider is EQ2108, as it is
+    /// for <c>ToString</c>: the browser formats in no other culture.
+    /// </summary>
+    private static JsExpr TextOf(InvocationExpressionSyntax invocation, ExpressionSyntax value, ExpressionSyntax? provider,
+        ConversionContext context)
+    {
+        var converted = context.Converter.ConvertIr(value);
+        if (context.SemanticHelper.GetType(value)?.SpecialType == SpecialType.System_String) return converted;
+        if (provider is null || NamedCulture.IsCurrent(provider, context) || context.SemanticHelper.IsNullConstant(provider))
+            return StringConversion.ToText(value, converted, context);
+        if (NamedCulture.IsInvariant(provider, context))
+            return StringConversion.InvariantText(value, converted, context);
+        context.Report(invocation, ConversionSeverity.Error, "EQ2108",
+            "Only CultureInfo.InvariantCulture and CultureInfo.CurrentCulture cross to JavaScript. "
+            + "Convert with one of them, or format with an explicit specifier, ToString(\"N2\"), which "
+            + "follows the app's culture on both targets.");
+        return StringConversion.ToText(value, converted, context);
+    }
+
     private static bool BindsToCultureInfo(ExpressionSyntax provider, ConversionContext context) =>
         context.SemanticHelper.GetSymbol(provider)?.ContainingType?.ToDisplayString() == "System.Globalization.CultureInfo";
 
@@ -325,7 +353,6 @@ public class ConvertStrategy : IExpressionIrStrategy
 
         return name switch
         {
-            "ToString" => $"String({value})",
             // A single, as every float this side produces (SinglePrecision). Text never gets here:
             // it reads as float.Parse and double.Parse do (TextReader).
             "ToSingle" => $"Math.fround(Number({value}))",

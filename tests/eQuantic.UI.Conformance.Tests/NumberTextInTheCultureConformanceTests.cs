@@ -5,8 +5,8 @@ namespace eQuantic.UI.Conformance.Tests;
 
 /// <summary>
 /// A number's text with no specifier is the culture's, wherever C# writes it: a concatenation, a plain
-/// or an aligned interpolation hole, <c>ToString()</c>, <c>string.Format("{0}")</c> and
-/// <c>string.Concat</c> (#454). The server renders a component in the request's culture, and the
+/// or an aligned interpolation hole, <c>ToString()</c>, <c>Convert.ToString</c>,
+/// <c>string.Format("{0}")</c>, <c>string.Concat</c>, a <c>StringBuilder</c> and a record's text (#454). The server renders a component in the request's culture, and the
 /// browser wrote the invariant text for every shape but <c>string.Format</c>, so the SSR markup and the
 /// hydrated page printed the same value two ways: <c>1,5</c> and <c>1.5</c> in pt-BR, a minus sign the
 /// culture spells (sv-SE's U+2212, <c>ar</c>'s with a left-to-right mark) and a hyphen. Measured on
@@ -34,6 +34,18 @@ public class NumberTextInTheCultureConformanceTests
         // A negative integer of every signed width, and a long past a double's digits.
         "int i = -5; long l = -9007199254740993L; short s = -3; sbyte b = -1; "
             + "return $\"{i}|{l}|{s}|{b}|\" + i + \"|\" + l + \"|\" + i.ToString() + \"|\" + l.ToString() + \"|\" + (i * 2);",
+        // An integer is never a negative zero, which JavaScript makes of one: `-1 / 2` truncates to
+        // -0 there and to 0 in C#, and so do a negated zero and a zero times a negative number.
+        "int zero = 0, neg = -1; int half = neg / 2, minus = -zero, times = zero * -1; "
+            + "return $\"{half}|{minus}|{times}|[{half,3}]|\" + half + \"|\" + half.ToString() + \"|\" "
+            + "+ string.Format(\"{0}\", half) + \"|\" + string.Format(\"{0}|{1:D2}\", half, minus) + \"|\" "
+            + "+ string.Join(\",\", new[] { half, minus, times });",
+        // A builder appends and inserts a value's text, and Convert.ToString is ToString in the culture
+        // the call names: they wrote JavaScript's own text of it.
+        "var sb = new System.Text.StringBuilder(); double d = -1234.5; int i = -5; float f = 0.1f; string? none = null; "
+            + "sb.Append(d).Append('|').Append(i).Append('|').Append(f).Append('|').Append(none).Append(true).Insert(0, i); "
+            + "return sb.ToString() + \"|\" + Convert.ToString(d) + \"|\" + Convert.ToString(i) + \"|\" "
+            + "+ Convert.ToString(f) + \"|\" + Convert.ToString(d, System.Globalization.CultureInfo.InvariantCulture);",
         // An unsigned integer reads the same in every culture.
         "uint u = 7; byte y = 8; ushort h = 9; ulong w = 10; return $\"{u}|{y}|{h}|{w}|\" + u + y + \"|\" + w.ToString();",
         // An aligned hole pads the culture's text, and so does a composite placeholder.
@@ -54,6 +66,23 @@ public class NumberTextInTheCultureConformanceTests
 
     public static IEnumerable<object?[]> CasesInEveryCulture() =>
         Cases.SelectMany(statements => Cultures.Select(culture => new object?[] { statements, culture }));
+
+    public static IEnumerable<object?[]> EveryCulture() => Cultures.Select(culture => new object?[] { culture });
+
+    /// <summary>A record's text is what its PrintMembers writes: each member as a concatenation writes
+    /// it, a number in the culture, a null as nothing, a bool as True and an enum as its name. The twin
+    /// wrote each member through a template hole, JavaScript's own text of it.</summary>
+    [SkippableTheory]
+    [MemberData(nameof(EveryCulture))]
+    public void ARecordsText_WritesItsMembersAsDotNetDoes(string? culture)
+    {
+        Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
+        ConformanceRunner.AssertStatementsSameAsDotNet(
+            "return new Reading(-1234.5, -5, null, true, Scale.Large, 0.1f).ToString();",
+            "public enum Scale { Small, Large }\n"
+            + "public record Reading(double Value, int Delta, string? Note, bool Live, Scale Scale, float Ratio);",
+            culture);
+    }
 
     [SkippableTheory]
     [MemberData(nameof(CasesInEveryCulture))]

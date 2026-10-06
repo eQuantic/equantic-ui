@@ -20,12 +20,6 @@ import { format, stringFormat } from '../utils/format';
 
 const fixture = readFileSync('src/shared/__fixtures__/format-subset.txt', 'utf8');
 
-/** ICU's non-breaking spaces, folded — the C# dumper folds the same two, and for the same reason:
- * the exact codepoint moved between ICU versions and the two runtimes may carry different builds. */
-// The narrow and regular no-break spaces ARE the subject here — .NET formats with them, and the
-// test folds them to a plain space to compare the digits.
-// eslint-disable-next-line no-irregular-whitespace
-const normalize = (value: string): string => value.replace(/ /g, ' ').replace(/ /g, ' ');
 
 interface Case {
   kind: 'num' | 'int' | 'date';
@@ -105,27 +99,27 @@ describe('D7 formatting subset (cross-pinned with FormatSubsetTests.cs)', () => 
     // What `new DateTime(2026, 8, 13, 15, 45, 7)` transpiles to. It used to fall through to
     // String(value) — the invariant default — so the most naturally written date on a page was
     // the one that ignored the culture.
-    installCulture('pt-BR', 'pt-BR', {}, null, facts['pt-BR']);
+    installCulture('pt-BR', 'pt-BR', {}, facts['pt-BR']);
     const moment = dateTime(2026, 8, 13, 15, 45, 7);
     expect(format(moment, 'd')).toBe('13/08/2026');
     expect(format(moment, 't')).toBe('15:45');
-    expect(normalize(stringFormat('{0:d}', moment))).toBe('13/08/2026');
+    expect(stringFormat('{0:d}', moment)).toBe('13/08/2026');
   });
 
   for (const culture of Object.keys(facts)) {
     it(`formats exactly like .NET in ${culture}`, () => {
       // Exactly the data production installs: what the server writes for a page in the culture,
       // from the .NET data this fixture was generated from.
-      installCulture(culture, culture, {}, null, facts[culture]);
+      installCulture(culture, culture, {}, facts[culture]);
 
       const mismatches: string[] = [];
       for (const testCase of cases.filter((c) => c.culture === culture)) {
         const value = testCase.kind === 'date' ? localDate(testCase.value) : Number(testCase.value);
         // An EMPTY spec is `{0}` — the no-specifier placeholder — so it must go through the
         // composite formatter, which is where .NET's per-culture default lives.
-        const actual = normalize(
-          testCase.spec.length === 0 ? stringFormat('{0}', value) : format(value, testCase.spec),
-        );
+        // Byte for byte: a no-break space is a different character from a space (#634).
+        const actual =
+          testCase.spec.length === 0 ? stringFormat('{0}', value) : format(value, testCase.spec);
         if (actual !== testCase.expected)
           mismatches.push(
             `${testCase.kind} ${testCase.value}:${testCase.spec} → "${actual}" ≠ "${testCase.expected}"`,
@@ -142,14 +136,14 @@ describe('D7 formatting subset (cross-pinned with FormatSubsetTests.cs)', () => 
    * a dot, matching what real .NET produced on the other side of the fixture.
    */
   it('formats invariantly even with another culture installed', () => {
-    installCulture('pt-BR', 'pt-BR', {}, null, facts['pt-BR']);
+    installCulture('pt-BR', 'pt-BR', {}, facts['pt-BR']);
     expect(invariant.length).toBeGreaterThan(10);
 
     const mismatches: string[] = [];
     for (const testCase of invariant) {
       const value = Number(testCase.value);
       // No specifier is the value's own text in the invariant culture.
-      const actual = normalize(format(value, testCase.spec, undefined, true));
+      const actual = format(value, testCase.spec, undefined, true);
       if (actual !== testCase.expected)
         mismatches.push(
           `${testCase.value}:${testCase.spec} → "${actual}" ≠ "${testCase.expected}"`,

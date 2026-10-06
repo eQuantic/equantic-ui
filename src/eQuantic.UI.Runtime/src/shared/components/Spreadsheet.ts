@@ -61,7 +61,7 @@ export class Spreadsheet extends StatefulComponent {
     }
 
     static rowKey(row: number) {
-        return $eq.text.format(row, null);
+        return $eq.text.format(row, null, undefined, undefined, 'int32');
     }
 
     static columnName(col: number) {
@@ -127,7 +127,7 @@ export class Spreadsheet extends StatefulComponent {
         let selection = this.controller.selection;
         let inBand = r >= selection.topRow && r <= selection.bottomRow;
         let stack = new Stack('topStart', { key: Spreadsheet.rowKey(r) });
-        stack.add(Spreadsheet.headerCell(`${$eq.text.format(r + 1, null)}`, Spreadsheet.headerWidth, document.rowHeight(r), theme, inBand, () => this.setState(() => this.controller.selectRows(row, row))));
+        stack.add(Spreadsheet.headerCell(`${$eq.text.format(r + 1, null, undefined, undefined, 'int32')}`, Spreadsheet.headerWidth, document.rowHeight(r), theme, inBand, () => this.setState(() => this.controller.selectRows(row, row))));
         stack.add(new Positioned(new Draggable(new Box(new BoxStyle({ width: SizeValue.fixed(Spreadsheet.headerWidth), height: SizeValue.fixed(Spreadsheet.grip), cursor: 'rowResize' })), null, { axis: 'vertical', min: -4000, max: 4000, follows: false, onMoved: (delta: number) => this.previewResize('rows', row, delta), onReleased: (delta: number) => this.commitResize('rows', row, delta) }), null, null, 0, 0, { layer: 1 }));
         return stack;
     }
