@@ -143,9 +143,10 @@ export class ServerTopic {
  * 'reconnecting'), and the id of the last event received.
  */
 export class ServerConnection {
+  /** With no arguments, the C# struct's zero: disconnected, no event received (`[ZeroConstructs]`). */
   constructor(
-    readonly state: string,
-    readonly lastEventId: string | null,
+    readonly state: string = 'disconnected',
+    readonly lastEventId: string | null = null,
   ) {}
 
   static readonly disconnected = new ServerConnection('disconnected', null);
@@ -154,10 +155,14 @@ export class ServerConnection {
 /** The C# `ServerTopicRefusal` — a topic the server did not bind, and why, as the
  * `ServerTopicRefusalReason` enum's wire string ('forbidden' | 'unknown' | 'limitReached' | 'failed'). */
 export class ServerTopicRefusal {
-  constructor(
-    readonly topic: string,
-    readonly reason: string,
-  ) {}
+  readonly topic: string;
+  readonly reason: string;
+
+  /** With no arguments, the C# struct's zero: no topic, and the enum's first reason (`[ZeroConstructs]`). */
+  constructor(topic: string | null = null, reason = 'forbidden') {
+    this.topic = topic as string;
+    this.reason = reason;
+  }
 }
 
 /** The twins of the vocabulary's records and structs: each hashes by its members, as `equals`

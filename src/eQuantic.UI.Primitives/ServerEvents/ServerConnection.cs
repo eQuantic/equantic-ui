@@ -5,6 +5,7 @@ namespace eQuantic.UI.Primitives;
 /// <param name="LastEventId">The id of the last event the page received, when the server published
 /// it with one. A page that comes back from <see cref="ServerConnectionState.Reconnecting"/> asks the
 /// server for what it missed since then.</param>
+[ZeroConstructs("primitive-values.ts: `constructor(state = 'disconnected', lastEventId = null)`.")]
 public readonly record struct ServerConnection(ServerConnectionState State, string? LastEventId)
 {
     /// <summary>No connection, and no event received.</summary>

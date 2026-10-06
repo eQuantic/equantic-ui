@@ -28,6 +28,12 @@ public class ServerTopicConformanceTests
     // The same rule copies the other vocabulary record built only from arguments: its constructor
     // threw on the copy it was handed as its first argument.
     [InlineData("var palette = DataPalette.Default; var copy = palette with { }; return copy == palette && copy.Series.Count == DataPalette.SeriesCeiling;")]
+    // The two structs of a reading are never null in C#: a field nobody assigned, `new()` and `default`
+    // are their zero, which the browser builds too (#647).
+    [InlineData("var connection = default(ServerConnection); return connection.State == ServerConnectionState.Disconnected && connection.LastEventId == null;")]
+    [InlineData("return new ServerConnection() == ServerConnection.Disconnected;")]
+    [InlineData("var refusal = default(ServerTopicRefusal); return refusal.Reason == ServerTopicRefusalReason.Forbidden && refusal.Topic == null;")]
+    [InlineData("return new ServerTopicRefusal().Equals(default(ServerTopicRefusal)) && new ServerTopicRefusal(\"x\", ServerTopicRefusalReason.Unknown).Topic == \"x\";")]
     public void AServerTopicAnswersAsInDotNet(string statements)
     {
         Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
