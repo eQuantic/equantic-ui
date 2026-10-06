@@ -97,9 +97,10 @@ public sealed class CodeEditor : StatefulComponent
     /// empty list completes nothing, and an IDE passes its language service, with the built-ins
     /// beside it or without them. A read-only editor completes nothing, whatever it is given.
     /// <para>
-    /// The editor owns its completion's providers: it sets them from this list when it opens, and
-    /// again only when the list holds other providers, so a parent rebuilding with the same ones
-    /// changes nothing. A list already showing goes on with the providers it was asked of.
+    /// The editor puts these in its completion when it opens, and again only when the list holds
+    /// other providers, so a parent rebuilding with the same ones changes nothing; a list already
+    /// showing goes on with the providers it was asked of. It takes out only what it put in: a
+    /// provider an app added to <c>Editor.Completion.Providers</c> itself stays beside them.
     /// </para>
     /// </summary>
     public IReadOnlyList<ICodeCompletionProvider>? Completions { get; set; }
@@ -123,26 +124,27 @@ public sealed class CodeEditor : StatefulComponent
         return editor;
     }
 
-    /// <summary>The providers last handed to the completion, and whether any have been.</summary>
+    /// <summary>The list last handed to the completion, whether any has been, and the providers the
+    /// editor put in for it: the only ones it ever takes out again.</summary>
     private IReadOnlyList<ICodeCompletionProvider>? _handed;
     private bool _handedAny;
+    private List<ICodeCompletionProvider> _put = [];
 
     /// <summary>Hands <see cref="Completions"/> to the completion, the built-ins for null, unless
-    /// what it holds already came from a list of the same providers.</summary>
+    /// what it holds already came from a list of the same providers. A provider the app added to the
+    /// completion itself stays: the controller's own documentation tells an IDE to add its language
+    /// service there, and clearing the list wiped it on the first build.</summary>
     private void HandProviders(CodeCompletion completion)
     {
         if (_handedAny && SameProviders(Completions, _handed)) return;
         _handedAny = true;
         _handed = Completions;
         var providers = completion.Providers;
-        providers.Clear();
-        if (Completions is null)
-        {
-            providers.Add(new CodeKeywordCompletionProvider());
-            providers.Add(new CodeWordCompletionProvider());
-            return;
-        }
-        foreach (var provider in Completions) providers.Add(provider);
+        foreach (var provider in _put) providers.Remove(provider);
+        _put = Completions is null
+            ? [new CodeKeywordCompletionProvider(), new CodeWordCompletionProvider()]
+            : [.. Completions];
+        foreach (var provider in _put) providers.Add(provider);
     }
 
     /// <summary>Whether two lists hold the same providers in the same order: a parent's build makes

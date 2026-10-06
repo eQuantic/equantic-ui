@@ -472,6 +472,26 @@ public class CodeEditorCompletionTests
         Settle(host).CodeRegions.Single().Offered.Should().BeNull();
     }
 
+    /// <summary>
+    /// A provider an app added to the controller's completion itself, the way the controller's own
+    /// documentation tells an IDE to add its language service, stays beside the built-ins: the editor
+    /// cleared the list on its first build, and the service never answered (found reviewing #297).
+    /// </summary>
+    [Fact]
+    public void AProviderAddedToTheController_StaysBesideTheBuiltIns()
+    {
+        var editor = new CodeEditor(Lines(20), "csharp") { ShowLineNumbers = false, Height = SizeValue.Fill };
+        editor.Editor.Completion.Providers.Add(new ListProvider(new CodeCompletionItem("Cobalt")));
+        var host = Host(editor);
+        Settle(host);
+        ClickAt(host, editor, 1, 0);
+
+        Type(host, "Co");
+
+        Shown(host).Should().Contain("Cobalt", "the app's provider answers")
+            .And.Contain("Column", "and so do the document's words");
+    }
+
     [Fact]
     public void AParentRebuildingWithTheSameProviders_KeepsTheListOpen()
     {
