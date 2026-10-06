@@ -501,11 +501,12 @@ internal sealed partial class WebLoweringVisitor
         // the pressed swap additionally needs its token value as a per-element custom property.
         if (!pressable.Disabled)
         {
-            // eq-pressed carries the same declaration :active does — see TokenCss. It is added, not
-            // substituted, so a simulated control still behaves like the control it is picturing.
-            element.ClassName = _simulated.HasFlag(SimulatedState.Pressed)
-                ? "eq-pressable eq-pressed"
-                : "eq-pressable";
+            // eq-pressed carries the same declaration :active does, and eq-focused the ring
+            // :focus-visible draws — see TokenCss. They are added, not substituted, so a simulated
+            // control still behaves like the control it is picturing.
+            element.ClassName = "eq-pressable"
+                + (_simulated.HasFlag(SimulatedState.Pressed) ? " eq-pressed" : "")
+                + (_simulated.HasFlag(SimulatedState.Focused) ? " eq-focused" : "");
             if (pressable.PressedBackground is { } pressedFill)
             {
                 element.Style!.CustomProperties = new Dictionary<string, string>

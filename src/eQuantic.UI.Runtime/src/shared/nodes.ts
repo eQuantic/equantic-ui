@@ -247,8 +247,10 @@ export interface BoxStyleValue {
   transition?: TransitionSpecValue | null;
   /** Spec S5: style diff while hovered (CSS :hover — never fires on touch). */
   hover?: StyleDiffValue | null;
-  /** Spec S5: style diff while focused (CSS :focus-visible). */
+  /** Spec S5: style diff while the control the box is inside has keyboard focus (C# `BoxStyle.Focus`). */
   focus?: StyleDiffValue | null;
+  /** Style diff while the control the box is inside is pressed (C# `BoxStyle.Pressed`). */
+  pressed?: StyleDiffValue | null;
   /** CSS cursor mirror — the C# PointerCursor member name in camelCase ('crosshair', 'colResize'). */
   cursor?: string;
 }

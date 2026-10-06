@@ -40,6 +40,8 @@ import {
   atomizeEntries,
   atomizePseudo,
   atomizeScrolled,
+  CONTROL_FOCUS,
+  CONTROL_PRESSED,
   ensureAdaptiveGate,
   gateCompactUntil,
   gateExpandedFrom,
@@ -2372,15 +2374,19 @@ function lowerBox(box: BoxNode, context: LoweringContext, path: string): HtmlNod
   // A SIMULATED state REPLACES the base declarations, before they are atomized. Adding a second
   // class for the same property instead would leave the winner to stylesheet insertion order —
   // every atomic class has equal specificity — and would emit a class set the C# side does not.
+  // Hover, then the control's focus, then its press: the order a real one wins by specificity (C#).
   if (style.hover && simulatedState & SIMULATED_HOVERED) applyDiff(entries, style.hover, style);
   if (style.focus && simulatedState & SIMULATED_FOCUSED) applyDiff(entries, style.focus, style);
+  if (style.pressed && simulatedState & SIMULATED_PRESSED) applyDiff(entries, style.pressed, style);
 
   const result = element('div', entries);
 
   if (style.hover && !(simulatedState & SIMULATED_HOVERED))
     appendDiff(result, ':hover', style.hover, style);
   if (style.focus && !(simulatedState & SIMULATED_FOCUSED))
-    appendDiff(result, ':focus-visible', style.focus, style);
+    appendDiff(result, CONTROL_FOCUS, style.focus, style);
+  if (style.pressed && !(simulatedState & SIMULATED_PRESSED))
+    appendDiff(result, CONTROL_PRESSED, style.pressed, style);
 
   if (box.child) {
     const child = lowerNode(box.child, context, null, path + '/0');
@@ -2425,6 +2431,9 @@ function appendAtomic(node: HtmlNode, entries: StyleEntries): void {
   node.attributes['class'] = existing ? `${existing} ${atomized.class}` : atomized.class;
 }
 
+/** The focus ring's place in a shadow list: the C# `TokenCss.RingSlot` (#508). */
+const RING_SLOT = 'var(--eq-ring, 0 0 #0000)';
+
 /** One shadow in the C# `TokenCss.Shadow` spelling. */
 function shadowValue(spec: ShadowSpecValue): string {
   return `0 ${px(spec.offsetY)} ${px(spec.blur)} ${px(spec.spread)} ${tokenValue(spec.color)}`;
@@ -2456,14 +2465,15 @@ function shadowList(
   if (shadow && !isNoShadow(shadow)) parts.push(shadowValue(shadow));
   if (shadows) for (const entry of shadows) if (!isNoShadow(entry)) parts.push(shadowValue(entry));
   if (inset) parts.push(`inset 0 1px 0 ${tokenValue(inset)}`);
-  return parts.length > 0 ? parts.join(', ') : undefined;
+  // The focus ring's slot leads the list (the C# twin), so a focused control keeps its shadows.
+  return parts.length > 0 ? `${RING_SLOT}, ${parts.join(', ')}` : undefined;
 }
 
 /**
  * The C# `StateShadowList`: the list while a state is active, or undefined when the state changes no
  * shadow and the base's stands. CSS replaces box-shadow whole, so a state that changes one part
- * writes every part again; its custom shadows replace both of the base's. "none" when nothing is
- * left to draw (#504).
+ * writes every part again; its custom shadows replace both of the base's. The ring's slot alone
+ * when nothing is left to draw (#504, #508).
  */
 function stateShadowList(style: BoxStyleValue, diff: StyleDiffValue): string | undefined {
   if (diff.elevation == null && diff.shadows == null) return undefined;
@@ -2472,7 +2482,7 @@ function stateShadowList(style: BoxStyleValue, diff: StyleDiffValue): string | u
     diff.shadows != null
       ? shadowList(elevation, null, diff.shadows, style.insetHighlight)
       : shadowList(elevation, style.shadow, style.shadows, style.insetHighlight);
-  return list ?? 'none';
+  return list ?? RING_SLOT;
 }
 
 /** A StyleDiff's set members, written over the given entries — what a simulated state does. */
@@ -2960,11 +2970,13 @@ function lowerPressable(
   // pressable carries the class (:focus-visible double ring is an a11y DEFAULT); the pressed swap
   // additionally ships its token value as a custom property at the style TAIL (the C# cross-pin).
   if (!disabled) {
-    // eq-pressed carries the same declaration :active does (see the generated stylesheet), so a
-    // simulated press cannot drift from a real one — it is the same selector list.
+    // eq-pressed carries the same declaration :active does, and eq-focused the ring :focus-visible
+    // draws (see the generated stylesheet), so a simulated state cannot drift from a real one.
     prependClass(
       node,
-      simulatedState & SIMULATED_PRESSED ? 'eq-pressable eq-pressed' : 'eq-pressable',
+      'eq-pressable' +
+        (simulatedState & SIMULATED_PRESSED ? ' eq-pressed' : '') +
+        (simulatedState & SIMULATED_FOCUSED ? ' eq-focused' : ''),
     );
     if (pressable.pressedBackground) {
       const tail = `--eq-pressed-bg: ${tokenValue(pressable.pressedBackground)}`;

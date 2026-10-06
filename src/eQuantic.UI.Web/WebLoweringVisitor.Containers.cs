@@ -724,10 +724,18 @@ internal sealed partial class WebLoweringVisitor
             if (simulated.HasFlag(SimulatedState.Hovered)) ApplyDiff(element.Style, hover, box.Style);
             else AppendDiff(element, ":hover", hover, box.Style);
         }
+        // Focus and press are the CONTROL's states, so they go to the families that select every box
+        // inside the control (#508), and they are laid over the base in the handoff's order: a
+        // simulated press is written last, and wins, as the real one wins by specificity.
         if (box.Style.Focus is { IsEmpty: false } focus)
         {
             if (simulated.HasFlag(SimulatedState.Focused)) ApplyDiff(element.Style, focus, box.Style);
-            else AppendDiff(element, ":focus-visible", focus, box.Style);
+            else AppendDiff(element, StyleSink.ControlFocus, focus, box.Style);
+        }
+        if (box.Style.Pressed is { IsEmpty: false } pressed)
+        {
+            if (simulated.HasFlag(SimulatedState.Pressed)) ApplyDiff(element.Style, pressed, box.Style);
+            else AppendDiff(element, StyleSink.ControlPressed, pressed, box.Style);
         }
 
         if (box.Child is not null && Lower(box.Child, horizontalAxis: null) is { } child)
@@ -806,7 +814,9 @@ internal sealed partial class WebLoweringVisitor
             foreach (var entry in shadows)
                 if (!entry.IsNone) parts.Add(TokenCss.Shadow(entry));
         if (inset is { } highlight) parts.Add($"inset 0 1px 0 {TokenCss.Value(highlight)}");
-        return parts.Count == 0 ? null : string.Join(", ", parts);
+        // The focus ring's slot leads the list, so a focused control draws the ring beside its own
+        // shadows rather than instead of them (#508).
+        return parts.Count == 0 ? null : $"{TokenCss.RingSlot}, {string.Join(", ", parts)}";
     }
 
     /// <summary>
@@ -815,7 +825,8 @@ internal sealed partial class WebLoweringVisitor
     /// part writes every part again: a hover that only raised the elevation used to write the
     /// elevation's shadow alone and took the glow and the inset highlight away under the pointer.
     /// The state's custom shadows replace BOTH of the base's (<c>Shadow</c> and <c>Shadows</c>).
-    /// "none" when the state leaves nothing to draw, which is how a hover drops a shadow.
+    /// When the state leaves nothing to draw it writes the focus ring's slot alone, which is how a
+    /// hover drops a shadow and keeps the ring (#508).
     /// </summary>
     private string? StateShadowList(in BoxStyle style, StyleDiff diff)
     {
@@ -824,7 +835,8 @@ internal sealed partial class WebLoweringVisitor
         var list = diff.Shadows is { } replaced
             ? ShadowList(elevation, null, replaced, style.InsetHighlight)
             : ShadowList(elevation, style.Shadow, style.Shadows, style.InsetHighlight);
-        return list ?? "none";
+        // Nothing left to draw is the ring's slot alone: no shadow, and still the ring when focused.
+        return list ?? TokenCss.RingSlot;
     }
 
     /// <summary>

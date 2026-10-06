@@ -87,6 +87,15 @@ public static class TokenCss
     public static string Padding(EdgeInsets insets) =>
         $"{Px(insets.Top)} {Px(insets.End)} {Px(insets.Bottom)} {Px(insets.Start)}";
 
+    /// <summary>
+    /// The focus ring's place in a box's shadow list (#508). A transparent zero shadow until the
+    /// control the box is the surface of takes keyboard focus, when the generated stylesheet sets
+    /// <c>--eq-ring</c> to the handoff's double ring: the ring is drawn INSIDE the list, beside the
+    /// box's elevation and glow, where a rule of its own replaced them. The TypeScript twin is
+    /// <c>RING_SLOT</c>.
+    /// </summary>
+    internal const string RingSlot = "var(--eq-ring, 0 0 #0000)";
+
     /// <summary>An elevation level as a box-shadow value (offset/blur/spread + light-dark color).</summary>
     public static string Shadow(ShadowSpec spec) => spec.IsNone
         ? "none"
@@ -384,14 +393,25 @@ public static class PhotonCssGenerator
         // showing none, and one selector list cannot drift from itself.
         css.AppendLine(".eq-pressed > :first-child { background-color: var(--eq-pressed-bg) !important; }");
         // Focus (spec §01): the double ring — 2dp Surface gap + 2dp FocusRing — on keyboard focus only
-        // (:focus-visible). The shadow sits on the CHILD so it follows the control's border-radius.
+        // (:focus-visible). It sits on the CHILD so it follows the control's border-radius.
         css.AppendLine(".eq-pressable { outline: none; }");
         // INERT yields to its wrapper (the native dispatch twin): a disabled control inside an
         // enabled pressable lets the click reach the pressable that composed it — a Menu whose
         // trigger is a disabled-looking Button still opens. Without this the browser suppresses
         // the click on the disabled control entirely and the wrapper never hears it.
         css.AppendLine(".eq-pressable [disabled], .eq-pressable [aria-disabled=\"true\"] { pointer-events: none; }");
-        css.AppendLine(".eq-pressable:focus-visible > :first-child { box-shadow: 0 0 0 2px var(--eq-color-surface), 0 0 0 4px var(--eq-color-focus); }");
+        // The ring is a slot in the child's OWN shadow list (TokenCss.RingSlot leads every list the
+        // realizers write), never a rule of its own: a box-shadow rule here outranked the box's, so
+        // keyboard focus took a raised or glowing control's elevation and glow away, where the
+        // handoff has the ring "coexist with any fill" (#508). The property does not inherit, so a
+        // shadowed box INSIDE the control draws no ring of its own, and a child with no shadow list
+        // takes the ring from a rule of zero specificity that any list of its own outranks. A
+        // SIMULATED focus (eq-focused) draws the same ring, as Photon's does.
+        css.AppendLine("@property --eq-ring { syntax: \"*\"; inherits: false; }");
+        css.AppendLine(".eq-pressable:focus-visible > :first-child, .eq-focused > :first-child "
+            + "{ --eq-ring: 0 0 0 2px var(--eq-color-surface), 0 0 0 4px var(--eq-color-focus); }");
+        css.AppendLine(":where(.eq-pressable:focus-visible > :first-child, .eq-focused > :first-child) "
+            + "{ box-shadow: var(--eq-ring); }");
 
         // HIT SLOP (spec §08). `Touch.MinTarget`'s own doc promised it — "visuals may be smaller, the
         // framework expands hit-slop symmetrically" — and on the web nothing kept the promise: every
