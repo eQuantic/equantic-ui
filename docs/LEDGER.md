@@ -1433,8 +1433,11 @@ record of a release, the wiki's Upgrading page is the distillate.
   glides a state's custom shadows as one list, a shadow a state adds or takes away fading in or out as
   CSS pads the shorter list. The A/B caught a test of the order that passed with the order
   reversed, because a pointer press hides the focus on Photon as `:focus-visible` does on the web; the
-  order between press and focus is now asked of a `Simulated` picture. The group hover and the
-  inherited foreground of [#498](https://github.com/eQuantic/equantic-ui/issues/498) are
+  order between press and focus is now asked of a `Simulated` picture. The review found a control
+  disabled while it held focus still showing its states on Photon, where the web's families never
+  select under a disabled control, and two mechanisms saying one pressed fill, now
+  [#616](https://github.com/eQuantic/equantic-ui/issues/616). The group hover and the inherited
+  foreground of [#498](https://github.com/eQuantic/equantic-ui/issues/498) are
   [#614](https://github.com/eQuantic/equantic-ui/issues/614). Proposed and archived through OpenSpec
   (`openspec/specs/interaction-states`).
 
