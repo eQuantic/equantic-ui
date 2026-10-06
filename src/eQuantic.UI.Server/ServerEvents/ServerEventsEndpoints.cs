@@ -23,11 +23,17 @@ internal static class ServerEventsEndpoints
     /// <summary>The longest topic name a request may carry.</summary>
     private const int MaxTopicLength = 512;
 
+    /// <summary>
+    /// Maps the three endpoints, each open to an anonymous request: what a page may hear is decided per
+    /// topic, by the rules the app configured, and a stream carries nothing until a topic is bound to
+    /// it. An app's fallback authorization policy would otherwise refuse the stream itself, and with it
+    /// every topic the app allowed anyone to hear.
+    /// </summary>
     public static IEndpointRouteBuilder MapServerEvents(this IEndpointRouteBuilder endpoints)
     {
-        endpoints.MapGet(Path, StreamAsync);
-        endpoints.MapPost(Path + "/{connection}/subscribe", SubscribeAsync);
-        endpoints.MapPost(Path + "/{connection}/release", ReleaseAsync);
+        endpoints.MapGet(Path, StreamAsync).AllowAnonymous();
+        endpoints.MapPost(Path + "/{connection}/subscribe", SubscribeAsync).AllowAnonymous();
+        endpoints.MapPost(Path + "/{connection}/release", ReleaseAsync).AllowAnonymous();
         return endpoints;
     }
 
@@ -107,8 +113,10 @@ internal static class ServerEventsEndpoints
             return;
         }
 
-        var options = http.RequestServices.GetRequiredService<IOptions<ServerEventsOptions>>().Value;
-        if (connection.TopicCount >= options.MaxTopicsPerConnection)
+        // Read again when the topic is bound: this one only spares the authorization a request that
+        // is already over the limit.
+        var limit = http.RequestServices.GetRequiredService<IOptions<ServerEventsOptions>>().Value.MaxTopicsPerConnection;
+        if (connection.TopicCount >= limit)
         {
             await RefuseAsync(http, ServerTopicRefusalReason.LimitReached);
             return;
@@ -122,8 +130,21 @@ internal static class ServerEventsEndpoints
             return;
         }
 
-        if (connections.Bind(connection, answer.Context))
-            await Notify(http, handler => handler.OnSubscribedAsync(answer.Context));
+        switch (connections.Bind(connection, answer.Context, limit))
+        {
+            case ServerTopicBinding.Bound:
+                await Notify(http, handler => handler.OnSubscribedAsync(answer.Context));
+                break;
+            case ServerTopicBinding.LimitReached:
+                await RefuseAsync(http, ServerTopicRefusalReason.LimitReached);
+                return;
+            case ServerTopicBinding.ConnectionClosed:
+                // The stream ended while the topic was being authorized: the page's next connection
+                // binds it again.
+                http.Response.StatusCode = StatusCodes.Status404NotFound;
+                return;
+        }
+
         http.Response.StatusCode = StatusCodes.Status204NoContent;
     }
 

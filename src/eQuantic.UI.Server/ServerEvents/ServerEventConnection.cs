@@ -35,6 +35,10 @@ internal sealed class ServerEventConnection
 
     public IReadOnlyCollection<string> Topics => _topics.Keys.ToList();
 
+    /// <summary>Set by the registry when the stream ends, under its lock: a bind that was still being
+    /// authorized finds it set, and binds nothing no one would ever release.</summary>
+    public bool Retired { get; set; }
+
     public bool TryBind(string topic, IReadOnlyDictionary<string, string?> values) => _topics.TryAdd(topic, values);
 
     public bool Holds(string topic) => _topics.ContainsKey(topic);

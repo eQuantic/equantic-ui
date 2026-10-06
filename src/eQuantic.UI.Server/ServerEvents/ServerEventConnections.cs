@@ -25,16 +25,24 @@ internal sealed class ServerEventConnections
 
     public bool TryGet(string id, out ServerEventConnection? connection) => _connections.TryGetValue(id, out connection);
 
-    /// <summary>Binds the topic to the connection; false when the connection already held it.</summary>
-    public bool Bind(ServerEventConnection connection, ServerTopicContext topic)
+    /// <summary>
+    /// Binds the topic to the connection, unless the connection already holds it, holds as many as
+    /// <paramref name="limit"/> allows, or closed while the request was being authorized. Decided
+    /// under the lock <see cref="Close"/> takes, so two requests at once cannot pass the limit, and a
+    /// topic is never bound to a stream that has already released everything it held.
+    /// </summary>
+    public ServerTopicBinding Bind(ServerEventConnection connection, ServerTopicContext topic, int limit)
     {
         lock (_index)
         {
-            if (!connection.TryBind(topic.Topic, topic.Values)) return false;
+            if (connection.Retired) return ServerTopicBinding.ConnectionClosed;
+            if (connection.Holds(topic.Topic)) return ServerTopicBinding.AlreadyHeld;
+            if (connection.TopicCount >= limit) return ServerTopicBinding.LimitReached;
+            connection.TryBind(topic.Topic, topic.Values);
             if (!_byTopic.TryGetValue(topic.Topic, out var holders))
                 _byTopic[topic.Topic] = holders = new Dictionary<string, ServerEventConnection>(StringComparer.Ordinal);
             holders[connection.Id] = connection;
-            return true;
+            return ServerTopicBinding.Bound;
         }
     }
 
@@ -54,14 +62,19 @@ internal sealed class ServerEventConnections
         }
     }
 
-    /// <summary>Closes the connection, answering the topics it held, each released.</summary>
+    /// <summary>Closes the connection, answering the topics it held, each released. Nothing binds to it
+    /// afterwards (<see cref="Bind"/>).</summary>
     public IReadOnlyList<ServerTopicContext> Close(ServerEventConnection connection, HttpContext httpContext)
     {
         _connections.TryRemove(connection.Id, out _);
         var released = new List<ServerTopicContext>();
-        foreach (var topic in connection.Topics)
+        lock (_index)
         {
-            if (Release(connection, topic, httpContext) is { } context) released.Add(context);
+            connection.Retired = true;
+            foreach (var topic in connection.Topics)
+            {
+                if (Release(connection, topic, httpContext) is { } context) released.Add(context);
+            }
         }
         connection.Close();
         return released;

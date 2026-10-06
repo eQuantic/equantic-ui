@@ -1,9 +1,13 @@
 using System.Net;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 using eQuantic.UI.Primitives;
 using eQuantic.UI.Server.Json;
 using FluentAssertions;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 
@@ -21,6 +25,17 @@ public class ServerEventsTests
     private static readonly TimeSpan Quiet = TimeSpan.FromMilliseconds(200);
 
     private static ServerTopic<string> Room(string id) => new($"room:{id}");
+
+    /// <summary>Waits for what the server does after a response has already gone out.</summary>
+    private static async Task Until(Func<bool> condition)
+    {
+        var deadline = DateTime.UtcNow.AddSeconds(5);
+        while (!condition())
+        {
+            if (DateTime.UtcNow > deadline) throw new TimeoutException("The server never got there.");
+            await Task.Delay(20);
+        }
+    }
 
     private static Task<ServerEventsApp> AnonymousApp(Action<ServerEventsBuilder>? more = null) =>
         ServerEventsApp.StartAsync(events =>
@@ -217,6 +232,41 @@ public class ServerEventsTests
     }
 
     [Fact]
+    public async Task ALineSeparatorInsideAJsonString_StaysInTheString()
+    {
+        await using var app = await AnonymousApp();
+        await using var stream = await app.OpenStreamAsync();
+        (await app.SubscribeAsync(stream.ConnectionId, "room:a")).Should().BeNull();
+
+        // As a backplane may carry it: indented with CRLF, by a serializer that leaves U+2028 and NEL
+        // unescaped, as JSON allows.
+        const string payload = "{\r\n  \"text\": \"a\u2028b\u0085c\"\r\n}";
+        await app.Services.GetRequiredService<IServerEventBackplane>()
+            .PublishAsync(new ServerEventEnvelope("room:a", payload, null));
+
+        var data = JsonDocument.Parse((await stream.NextEventAsync()).Data!).RootElement;
+        data.GetProperty("payload").GetProperty("text").GetString().Should().Be("a\u2028b\u0085c");
+    }
+
+    [Fact]
+    public async Task AFallbackPolicy_LeavesEachTopicToItsOwnRule()
+    {
+        await using var app = await ServerEventsApp.StartAsync(
+            events => events.Topic("prices", rule => rule.AllowAnonymous()).Topic("me", rule => rule.RequireAuthorization()),
+            services =>
+            {
+                services.AddAuthentication(NobodyAuthenticates.Name)
+                    .AddScheme<AuthenticationSchemeOptions, NobodyAuthenticates>(NobodyAuthenticates.Name, null);
+                services.AddAuthorization(options => options.FallbackPolicy =
+                    new AuthorizationPolicyBuilder().RequireAuthenticatedUser().Build());
+            });
+        await using var stream = await app.OpenStreamAsync();
+
+        (await app.SubscribeAsync(stream.ConnectionId, "prices")).Should().BeNull("the app let anyone hear it");
+        (await app.SubscribeAsync(stream.ConnectionId, "me")).Should().Be("forbidden");
+    }
+
+    [Fact]
     public async Task AnIdleConnection_SendsAHeartbeat()
     {
         await using var app = await AnonymousApp();
@@ -251,14 +301,64 @@ public class ServerEventsTests
         (await app.SubscribeAsync(stream.ConnectionId, "room:a")).Should().BeNull();
 
         await stream.DisposeAsync();
-        var deadline = DateTime.UtcNow.AddSeconds(5);
-        while (!RecordingHandler.Heard.Contains("disconnected") && DateTime.UtcNow < deadline) await Task.Delay(20);
+        await Until(() => RecordingHandler.Heard.Contains("disconnected"));
 
         RecordingHandler.Heard.Should().Equal(
             "connected",
             $"subscribed room:a roomId=a path=/_equantic/events/{stream.ConnectionId}/subscribe",
             "released room:a",
             "disconnected");
+    }
+
+    [Fact]
+    public async Task ATopicAuthorizedAfterItsStreamEnded_IsBoundToNothing()
+    {
+        RecordingHandler.Heard.Clear();
+        var authorizing = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var decided = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+        await using var app = await ServerEventsApp.StartAsync(events => events
+            .Topic("room:{roomId}", rule => rule.Authorize(async _ =>
+            {
+                authorizing.TrySetResult();
+                return await decided.Task;
+            }))
+            .AddHandler<RecordingHandler>());
+        var stream = await app.OpenStreamAsync();
+        var subscribing = app.SubscribeAsync(stream.ConnectionId, "room:a");
+        await authorizing.Task.WaitAsync(TimeSpan.FromSeconds(5));
+
+        await stream.DisposeAsync();
+        await Until(() => RecordingHandler.Heard.Contains("disconnected"));
+        decided.SetResult(true);
+
+        (await subscribing).Should().Be("HTTP 404", "the stream it would have been bound to is gone");
+        RecordingHandler.Heard.Should().Equal(new[] { "connected", "disconnected" },
+            "a topic bound after the stream released everything would never be released, and a presence count would keep it");
+    }
+
+    [Fact]
+    public async Task RequestsAtOnce_CannotPassTheTopicLimit()
+    {
+        const int requests = 6;
+        var authorizing = 0;
+        var allIn = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var decided = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+        await using var app = await ServerEventsApp.StartAsync(
+            events => events.Topic("room:{roomId}", rule => rule.Authorize(async _ =>
+            {
+                if (Interlocked.Increment(ref authorizing) == requests) allIn.TrySetResult();
+                return await decided.Task;
+            })),
+            configuration: new Dictionary<string, string?> { ["EQuantic:ServerEvents:MaxTopicsPerConnection"] = "2" });
+        await using var stream = await app.OpenStreamAsync();
+
+        var subscribing = Enumerable.Range(0, requests).Select(i => app.SubscribeAsync(stream.ConnectionId, $"room:{i}")).ToList();
+        await allIn.Task.WaitAsync(TimeSpan.FromSeconds(5));
+        decided.SetResult(true);
+        var answers = await Task.WhenAll(subscribing);
+
+        answers.Count(answer => answer is null).Should().Be(2, "every request was under the limit when it began, and only two fit");
+        answers.Where(answer => answer is not null).Should().AllBe("limitReached");
     }
 
     [Fact]
@@ -283,6 +383,41 @@ public class ServerEventsTests
         connection.Frames.TryRead(out var frame).Should().BeTrue();
         frame.Should().Be("first");
         connection.Frames.Completion.IsCompleted.Should().BeTrue("the second frame found the queue full and closed it");
+    }
+
+    /// <summary>
+    /// The shell fetched SignalR's client from a CDN for every app that declared a server action, and
+    /// nothing read it. Server events ship inside the runtime, so a page loads no script but the app's.
+    /// </summary>
+    [Theory]
+    [InlineData("Development")]
+    [InlineData("Production")]
+    public async Task APageOfAnAppWithServerActions_LoadsEveryScriptFromItsOwnOrigin(string environment)
+    {
+        var builder = WebApplication.CreateBuilder(new WebApplicationOptions { EnvironmentName = environment });
+        builder.WebHost.UseTestServer();
+        builder.Services.AddUI(options =>
+        {
+            // This assembly declares server actions (ServerActionAuthorizationServiceTests), which is
+            // when the shell wrote the CDN's script.
+            options.ScanAssembly(typeof(ServerEventsTests).Assembly);
+            options.UseServerEvents(events => events.Topic("prices", rule => rule.AllowAnonymous()));
+        });
+        await using var app = builder.Build();
+        app.MapUI();
+        await app.StartAsync();
+
+        var html = await app.GetTestClient().GetStringAsync("/untitled");
+
+        var sources = Regex.Matches(html, @"<script\b[^>]*?\bsrc\s*=\s*[""']?([^""'\s>]+)", RegexOptions.IgnoreCase)
+            .Select(match => match.Groups[1].Value);
+        var importMap = Regex.Match(html, @"<script type=""importmap"">(.*?)</script>", RegexOptions.Singleline).Groups[1].Value;
+        var imports = JsonDocument.Parse(importMap).RootElement.GetProperty("imports").EnumerateObject()
+            .Select(entry => entry.Value.GetString()!).ToList();
+
+        imports.Should().NotBeEmpty("the runtime is imported through the import map");
+        sources.Concat(imports).Should().OnlyContain(url => url.StartsWith('/') && !url.StartsWith("//"),
+            "a script from another origin is a dependency the app never chose, fetched at run time");
     }
 
     [Fact]
