@@ -11,7 +11,9 @@ a method group of the three keeps its receiver, read once; the callbacks that th
 `AggregateException` after the others ran; `ThrowIfCancellationRequested` throws an
 `OperationCanceledException`; a disposed source refuses to cancel and lets go of its callbacks, a
 registration still unregistering once after it, and a linked one lets go of the tokens it follows;
-and `CancellationToken.None`,
+a delay is taken up to 4294967294 ms, its fraction cut, refused past it, and waited out past what a
+browser's timer holds; `default(CancellationTokenRegistration)` is the registration of nothing,
+whose token is `None`; and `CancellationToken.None`,
 `default` and `new CancellationToken(false)` are one token that never cancels. A member of the three
 the runtime does not carry SHALL be refused at the build (EQ2004), a constructor among them: the
 runtime's source takes a delay or nothing, and a `TimeProvider` beside the delay is refused.

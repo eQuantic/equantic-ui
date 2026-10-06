@@ -214,6 +214,12 @@ given before the keystroke returns.
 - **WHEN** the words of one line of 40,000 words are asked for with the caret in its middle
 - **THEN** the words beside the caret are offered, and the line's first and last are not
 
+#### Scenario: A word longer than one answer reads
+
+- **WHEN** the caret is inside a word of a million letters that two short words follow
+- **THEN** nothing is offered: the window holds part of the word being typed, and the skip past it
+  stops at the window's end
+
 ### Requirement: The web completes as .NET does
 
 The engine's twin SHALL score, rank, select and accept exactly as the engine does.

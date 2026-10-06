@@ -1462,8 +1462,10 @@ record of a release, the wiki's Upgrading page is the distillate.
   review round found three more: a provider's range that moved with the caret, a minified line read
   from its start, and a linked source that kept its callbacks on a long-lived token; the second, a
   cancellation a provider threw by itself taken for the request's own, a `TimeProvider` source that
-  compiled and dropped its clock, and a disposed source that kept its callbacks. Proposed and
-  archived through OpenSpec (`openspec/specs/code-completion`).
+  compiled and dropped its clock, and a disposed source that kept its callbacks; the third, a word of
+  megabytes that walked past the window, a month's delay that a browser's timer fired at once, and a
+  default registration that was undefined. Proposed and archived through OpenSpec
+  (`openspec/specs/code-completion`).
 
 ## Retired documents
 
