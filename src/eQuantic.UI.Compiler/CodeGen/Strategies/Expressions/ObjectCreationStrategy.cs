@@ -572,6 +572,7 @@ public class ObjectCreationStrategy : IExpressionIrStrategy
             var parts = new List<JsExpr>();
             if (creation.ArgumentList != null)
                 parts.AddRange(OrderedArguments(creation, context));
+            var specs = HydrationSpecs(type, context);
             if (creation.Initializer != null)
             {
                 // The config object rides the TRAILING slot: a call that supplied fewer positional
@@ -583,6 +584,7 @@ public class ObjectCreationStrategy : IExpressionIrStrategy
                     var supplied = creation.ArgumentList?.Arguments.Count ?? 0;
                     for (var i = supplied; i < ctor.Parameters.Length; i++)
                         parts.Add(DefaultOf(ctor.Parameters[i], context));
+                    parts.AddRange(specs);
                     parts.Add(context.Converter.ConvertIr(creation.Initializer));
                     return JsExpr.New(constructed, parts);
                 }
@@ -594,6 +596,14 @@ public class ObjectCreationStrategy : IExpressionIrStrategy
                 // semantics and needs no arity at all.
                 var config = context.Converter.ConvertIr(creation.Initializer);
                 return JsExpr.Call(JsExpr.Identifier("Object.assign"), JsExpr.New(constructed, parts), config);
+            }
+            if (specs.Count > 0)
+            {
+                // The specs follow EVERY constructor parameter, so a skipped one is filled first.
+                if (ctor is not null)
+                    for (var i = parts.Count; i < ctor.Parameters.Length; i++)
+                        parts.Add(DefaultOf(ctor.Parameters[i], context));
+                parts.AddRange(specs);
             }
             return JsExpr.New(constructed, parts);
         }
@@ -609,6 +619,16 @@ public class ObjectCreationStrategy : IExpressionIrStrategy
             ? ObjectInitializer.Apply(construction, initializer, context)
             : construction;
     }
+
+    /// <summary>
+    /// The hydration specs a vocabulary twin takes after its constructor's parameters, one for each
+    /// type argument whose parameter carries <c>[HydratesTypeArgument]</c> (#291): the C# type is
+    /// erased in JavaScript, and the twin revives what it receives of that type with the spec a Server
+    /// Action's result is revived with. <c>null</c> where the argument needs no revival.
+    /// </summary>
+    private static IReadOnlyList<JsExpr> HydrationSpecs(ITypeSymbol type, ConversionContext context) =>
+        [.. type.HydratedTypeArguments().Select(argument =>
+            JsExpr.Opaque(HydrationSpec.Of(argument, context.UsedAppTypes, context.UsedRuntimeTypes) ?? "null"))];
 
     /// <summary>
     /// A twin constructor's arguments, in its parameters' order: a NAMED argument fills the parameter
@@ -650,7 +670,10 @@ public class ObjectCreationStrategy : IExpressionIrStrategy
     private JsExpr ConvertImplicit(ImplicitObjectCreationExpressionSyntax creation, ConversionContext context)
     {
         var ms = context.SemanticHelper.GetSymbol(creation) as IMethodSymbol;
-        var typeDisplay = ms?.ContainingType.ToDisplayString() ?? context.ExpectedType ?? "";
+        // The constructed type's OWN definition, its type parameters and not its arguments: a list is a
+        // list by what it is, and `ServerTopic<List<long>>` was built as an empty array because its
+        // argument's text holds `List<`.
+        var typeDisplay = ms?.ContainingType.OriginalDefinition.ToDisplayString() ?? context.ExpectedType ?? "";
 
         // TARGET-TYPED construction is the same naming, spelled shorter: `Matrix2D m = new(…)`.
         // The explicit path was fenced and this one was not, so the type came back by inference and
