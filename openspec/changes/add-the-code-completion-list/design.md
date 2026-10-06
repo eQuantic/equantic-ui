@@ -25,10 +25,11 @@ Inside the surface the list moves with the code because it is drawn with it.
   order over the pressables whose role is `Option`, or -1.
 
 The surface, not a node beside it, is what owns them, because the INPUT is what assistive technology
-asks. On the web the input (the `textarea` the surface already keeps at the caret) gets
-`aria-autocomplete="list"`, and while options show, `aria-expanded`, `aria-controls` naming the list
-and `aria-activedescendant` naming the highlighted option, with the ids numbered the way an
-`Anchored` listbox numbers its rows. A node beside the surface could hold the list, never the
+asks. On the web, while options show, the input (the `textarea` the surface already keeps at the
+caret) gets `aria-autocomplete="list"`, `aria-expanded`, `aria-controls` naming the list and
+`aria-activedescendant` naming the highlighted option, with the ids numbered the way an `Anchored`
+listbox numbers its rows. A press on the list is the list's on both targets: it never reaches the
+code under it, which would move the caret. A node beside the surface could hold the list, never the
 pointer to it. On Photon the code field announces as before, and the options under it announce as
 options, the highlighted one selected.
 

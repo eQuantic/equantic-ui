@@ -48,9 +48,9 @@ editor keeps the focus, and no list closes because the editor lost it.
 
 ### Requirement: The list is the code input's listbox
 
-On the web, the code input SHALL say it completes from a list, and while one shows SHALL name it and
-point at the selected option; the rows SHALL be options, the selected one selected. On Photon the rows
-SHALL announce as options, the selected one selected.
+On the web, while a list shows, the code input SHALL say it completes from it, name it and point at
+the selected option; the rows SHALL be options, the selected one selected. On Photon the rows SHALL
+announce as options after the code field, the selected one selected.
 
 #### Scenario: The second entry selected, on the web
 

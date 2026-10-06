@@ -26,8 +26,11 @@ without anything being asked of the app.
   option the keyboard is on. `Pressable.CanRequestFocus` (Flutter's `InkWell.canRequestFocus`): a
   pressable that never takes the keyboard from where it is, which is what a row of the list is.
 
-No break. The public surface grows (`CodeEditor.Completions`, the three `CodeSurface` members,
-`Pressable.CanRequestFocus`), and the developer surface does not move.
+The public surface grows (`CodeEditor.Completions`, the three `CodeSurface` members,
+`Pressable.CanRequestFocus`), and `CodeRegion`, the Photon realizer's record of a code surface, widens
+with where the options landed (`Offered`): its old constructor and `Deconstruct` go, replaced by the
+wider ones, which a caller that built one positionally meets as a new optional argument. The
+developer surface does not move.
 
 ## Capabilities
 
