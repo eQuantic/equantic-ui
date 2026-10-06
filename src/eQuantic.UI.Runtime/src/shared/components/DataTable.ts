@@ -76,7 +76,8 @@ export class DataTable extends StatelessComponent {
     }
 
     body(theme: any, tracks: GridTrack[], row: DataRow) {
-        let selected = (($r) => $r == null ? null : $eq.collections.contains($r, row.key))(this.selection) === true;
+        let $n0: any; 
+        let selected = (($n0 = this.selection) == null ? null : $eq.collections.contains($n0, row.key)) === true;
         let grid = new Grid(tracks, 0, null, { width: SizeValue.fill });
         if (this.selectable) {
             let toggle = this.onToggleRow;
