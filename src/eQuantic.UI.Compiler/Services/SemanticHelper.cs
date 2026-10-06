@@ -204,7 +204,7 @@ public class SemanticHelper
 
     /// <summary>
     /// The in-tree node a SYNTHETIC node stands for, or the node itself. A strategy that rewrites
-    /// syntax (the null-conditional path turns <c>a?.M(x)</c> into <c>$r.M(x)</c> so every other
+    /// syntax (the null-conditional path turns <c>a?.M(x)</c> into <c>$n0.M(x)</c> so every other
     /// strategy can translate it) registers the correspondence here, and the model keeps
     /// answering for the rewritten nodes — symbols, types, the lambda parameters inside their
     /// arguments — instead of falling back to name heuristics. Chased to a fixpoint: a rewrite OF
