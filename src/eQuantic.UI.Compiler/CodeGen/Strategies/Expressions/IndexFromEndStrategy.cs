@@ -7,9 +7,19 @@ namespace eQuantic.UI.Compiler.CodeGen.Strategies.Expressions;
 /// <summary>
 /// Strategy for Index from end expressions (hat operator).
 /// Handles:
-/// - ^1 -> creates Index from end
 /// - array[^1] -> array[array.length - 1]
 /// - array[^2] -> array[array.length - 2]
+/// <para>
+/// An indexer a twin carries is not here: <c>ring[^1]</c> over a type that counts its elements is its
+/// <c>item</c> at the count the bound tree names (<see cref="Place"/>), and a type that declares
+/// <c>this[Index]</c> takes the index itself. This read <c>ring.length</c>, which no twin has, and
+/// wrote the bare index into <c>setItem</c>.
+/// </para>
+/// <para>
+/// A <c>^n</c> that is no array's, list's or string's index is a System.Index VALUE (<c>Index i =
+/// ^1</c>, a <c>this[Index]</c> key), which has no JavaScript translation: it is refused (EQ1004), where
+/// it was written as a call to <c>__INDEX_FROM_END__</c>, which nothing defines.
+/// </para>
 /// </summary>
 public class IndexFromEndStrategy : IConversionStrategy
 {
@@ -24,9 +34,10 @@ public class IndexFromEndStrategy : IConversionStrategy
 
         // Handle element access with ^n index: array[^1]. A dictionary keyed by Index is not one:
         // `d[^1]` looks the key up (DictionaryEntry), where this counted back from a length a map
-        // does not have.
+        // does not have. Nor is an indexer a twin carries.
         if (node is ElementAccessExpressionSyntax elementAccess
-            && DictionaryEntry.Of(elementAccess, context) is null)
+            && DictionaryEntry.Of(elementAccess, context) is null
+            && Indexer.LoweredAt(elementAccess, context) is null)
         {
             var arg = elementAccess.ArgumentList.Arguments.FirstOrDefault()?.Expression;
             if (arg is PrefixUnaryExpressionSyntax indexExpr &&
@@ -41,15 +52,6 @@ public class IndexFromEndStrategy : IConversionStrategy
 
     public string Convert(SyntaxNode node, ConversionContext context)
     {
-        // Handle standalone ^n expression
-        if (node is PrefixUnaryExpressionSyntax prefix &&
-            prefix.IsKind(SyntaxKind.IndexExpression))
-        {
-            var operand = context.Converter.ConvertExpression(prefix.Operand);
-            // Return as a marker that will be used by element access
-            return $"__INDEX_FROM_END__({operand})";
-        }
-
         // Handle array[^n] expression
         if (node is ElementAccessExpressionSyntax elementAccess)
         {
@@ -64,6 +66,7 @@ public class IndexFromEndStrategy : IConversionStrategy
             }
         }
 
+        // A standalone ^n is an Index value.
         return context.Unhandled(node, "index-from-end");
     }
 

@@ -9,6 +9,17 @@ eQuantic.UI.Compiler.CodeGen.Strategies.Types.CancellationStrategy.CanConvert(Mi
 eQuantic.UI.Compiler.CodeGen.Strategies.Types.CancellationStrategy.CancellationStrategy() -> void
 eQuantic.UI.Compiler.CodeGen.Strategies.Types.CancellationStrategy.ConvertIr(Microsoft.CodeAnalysis.SyntaxNode! node, eQuantic.UI.Compiler.CodeGen.ConversionContext! context) -> eQuantic.UI.Compiler.CodeGen.Ir.JsExpr!
 eQuantic.UI.Compiler.CodeGen.Strategies.Types.CancellationStrategy.Priority.get -> int
+*REMOVED*eQuantic.UI.Compiler.CodeGen.ValueMember.Deconstruct(out string! Display, out string! Js, out string! TsType) -> void
+*REMOVED*eQuantic.UI.Compiler.CodeGen.ValueMember.ValueMember(string! Display, string! Js, string! TsType) -> void
+eQuantic.UI.Compiler.CodeGen.ValueMember.Declaration.get -> Microsoft.CodeAnalysis.SyntaxNode!
+eQuantic.UI.Compiler.CodeGen.ValueMember.Declaration.init -> void
+eQuantic.UI.Compiler.CodeGen.ValueMember.Deconstruct(out string! Display, out string! Js, out string! TsType, out Microsoft.CodeAnalysis.SyntaxNode! Declaration) -> void
+eQuantic.UI.Compiler.CodeGen.ValueMember.ValueMember(string! Display, string! Js, string! TsType, Microsoft.CodeAnalysis.SyntaxNode! Declaration) -> void
+*REMOVED*eQuantic.UI.Compiler.Services.ComponentDependencyResolver.ComponentDependencyResolver() -> void
+*REMOVED*static eQuantic.UI.Compiler.CodeGen.RecordTypeEmitter.CanEmit(Microsoft.CodeAnalysis.CSharp.Syntax.TypeDeclarationSyntax! type) -> bool
+static eQuantic.UI.Compiler.CodeGen.RecordTypeEmitter.CanEmit(Microsoft.CodeAnalysis.CSharp.Syntax.TypeDeclarationSyntax! type, Microsoft.CodeAnalysis.INamedTypeSymbol? symbol) -> bool
+eQuantic.UI.Compiler.Services.ComponentDependencyResolver.ComponentDependencyResolver(Microsoft.CodeAnalysis.Compilation? projectCompilation = null) -> void
+const eQuantic.UI.Compiler.CodeGen.Eq.TypeInitialization = "$eq.exceptions.typeInitialization" -> string!
 *REMOVED*eQuantic.UI.Compiler.CodeGen.Strategies.Types.HashSetStrategy.Convert(Microsoft.CodeAnalysis.SyntaxNode! node, eQuantic.UI.Compiler.CodeGen.ConversionContext! context) -> string!
 const eQuantic.UI.Compiler.CodeGen.Eq.StringJoin = "$eq.text.join" -> string!
 const eQuantic.UI.Compiler.CodeGen.Eq.HashSet = "$eq.collections.hashSet" -> string!

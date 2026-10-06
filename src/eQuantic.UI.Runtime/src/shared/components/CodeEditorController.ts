@@ -2,7 +2,7 @@ import { $eq, CodeCompletion, CodeDirectionValue, CodeDocument, CodeEdit, CodeGr
 
 export class CodeEditorController {
     constructor(text: string = '', language: any = null, props?: any) {
-        this._selection = new CodeRange();
+        this._selection = CodeRange.$zero();
         this._desiredCell = -1;
         this._cells = $eq.collections.dictionary();
         this._widths = null;
@@ -13,7 +13,7 @@ export class CodeEditorController {
         this._focusVersion = 0;
         this._composition = null;
         this._compositionReplaced = '';
-        this._compositionSelection = new CodeRange();
+        this._compositionSelection = CodeRange.$zero();
         this._wholeLineCopy = null;
         this._document = CodeDocument.fromText(text);
         this._selection = new CodeRange(CodePosition.start);

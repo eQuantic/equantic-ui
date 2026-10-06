@@ -5,11 +5,7 @@ export class CodeWordCompletionProvider {
         if (props && typeof props === 'object') Object.assign(this, props);
     }
 
-    static _budget: number | undefined;
-
-    static get budget(): number {
-        return CodeWordCompletionProvider._budget ??= 50_000;
-    }
+    static budget: number = 50000;
 
     async completeAsync(document: CodeDocument, position: CodePosition, _context: CodeCompletionContext, _cancellation: CancellationToken) {
         let seen: Set<string> = $eq.collections.hashSet();

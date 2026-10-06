@@ -18,9 +18,9 @@ const nextFrame = () =>
   );
 
 const LANGUAGES = [
-  new CultureOption('en', 'English', 'EN', '🇬🇧'),
-  new CultureOption('pt-BR', 'Português', 'PT', '🇧🇷'),
-  new CultureOption('es', 'Español', 'ES', '🇪🇸'),
+  Object.assign(new CultureOption('en', 'English'), { short: 'EN', flag: '🇬🇧' }),
+  Object.assign(new CultureOption('pt-BR', 'Português'), { short: 'PT', flag: '🇧🇷' }),
+  Object.assign(new CultureOption('es', 'Español'), { short: 'ES', flag: '🇪🇸' }),
 ];
 
 /** Enough of ICultureController for the component: which culture we are in, and a record of what
@@ -85,7 +85,7 @@ describe('CultureSwitcher', () => {
   });
 
   it('Shape.segments keeps segments past three languages, where auto would give up', () => {
-    const many = [...LANGUAGES, new CultureOption('fr', 'Français', 'FR', '🇫🇷')];
+    const many = [...LANGUAGES, Object.assign(new CultureOption('fr', 'Français'), { short: 'FR', flag: '🇫🇷' })];
     const { container } = mount(new CultureSwitcher(many, { shape: 'segments' }));
     expect(container.textContent).toContain('Français');
     expect(container.querySelector('[aria-haspopup="menu"]')).toBeNull();

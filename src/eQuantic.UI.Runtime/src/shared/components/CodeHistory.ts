@@ -43,9 +43,9 @@ export class CodeHistory {
     undo(document: CodeDocument) {
         let selection, replaced, written;
         const $r = (() => {
-            selection = new CodeRange();
-            replaced = new CodeRange();
-            written = new CodeRange();
+            selection = CodeRange.$zero();
+            replaced = CodeRange.$zero();
+            written = CodeRange.$zero();
             if (this._past.length === 0) return null;
             let edit = this._past[this._past.length - 1];
             this._past.splice(this._past.length - 1, 1);
@@ -64,9 +64,9 @@ export class CodeHistory {
     redo(document: CodeDocument) {
         let selection, replaced, written;
         const $r = (() => {
-            selection = new CodeRange();
-            replaced = new CodeRange();
-            written = new CodeRange();
+            selection = CodeRange.$zero();
+            replaced = CodeRange.$zero();
+            written = CodeRange.$zero();
             if (this._future.length === 0) return null;
             let edit = this._future[this._future.length - 1];
             this._future.splice(this._future.length - 1, 1);

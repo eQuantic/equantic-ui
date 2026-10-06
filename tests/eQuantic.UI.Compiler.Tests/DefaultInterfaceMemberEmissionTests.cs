@@ -572,17 +572,15 @@ public class DefaultInterfaceMemberEmissionTests
         (result.TypeScript ?? "").Should().NotContain("IForeignLanguage.greet(this)");
     }
 
-    /// <summary>A default indexer is refused by name (found in review, #418): it fell to the message for
-    /// a body compiled into another assembly, which it is not, and no twin has an indexer yet (#427).</summary>
+    /// <summary>A default indexer is written into the twin of the class that takes it, as the class's
+    /// own indexer is (#427): its getter as `item`, which every access through the interface calls. It
+    /// was refused while no twin had an indexer (found in review, #418).</summary>
     [Fact]
-    public void ADefaultIndexerIsRefusedForWhatItIs()
+    public void ADefaultIndexerIsWrittenIntoTheTwin()
     {
-        var result = Compile("Indexed", succeeds: false);
+        var result = Compile("Indexed");
 
-        result.Errors.Should().ContainSingle(error => error.Code == "EQ1008")
-            .Which.Message.Should().Contain("Indexed relies on the default indexer of IIndexed")
-            .And.Contain("#427")
-            .And.NotContain("compiled into");
+        result.TypeScript.Should().MatchRegex(@"item\(i(: number)?\)(: number)? \{\s*return i \* 2;");
     }
 
     /// <summary>An explicit implementation lowers under its member's own name (found in review, #418):

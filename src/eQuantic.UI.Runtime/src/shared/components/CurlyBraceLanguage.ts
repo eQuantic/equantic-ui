@@ -11,12 +11,6 @@ export abstract class CurlyBraceLanguage {
     static stateMultilineString: number = 2;
     static stateRawString: number = 16;
     _keywords: string[] | null;
-    static _punctuation: Set<string> | undefined;
-
-    static get punctuation(): Set<string> {
-        return CurlyBraceLanguage._punctuation ??= $eq.collections.hashSetOf(['(', ')', '[', ']', '{', '}', ',', ';', '.', ':']);
-    }
-
     abstract name: string;
     rules: CodeLanguageRules = CodeLanguageRules.default;
     abstract reservedWords: Set<string>;
@@ -45,6 +39,32 @@ export abstract class CurlyBraceLanguage {
 
     get hasAtDecorators(): boolean {
         return false;
+    }
+
+    static $slots: any = null;
+    static $failure: any = null;
+
+    static $init(): any {
+        if (CurlyBraceLanguage.$slots === null) {
+            if (CurlyBraceLanguage.$failure !== null) throw CurlyBraceLanguage.$failure;
+            let $slots: any = CurlyBraceLanguage.$slots = {};
+            try {
+                $slots.punctuation = null;
+                $slots.punctuation = $eq.collections.hashSetOf(['(', ')', '[', ']', '{', '}', ',', ';', '.', ':']);
+            } catch ($error) {
+                CurlyBraceLanguage.$slots = null;
+                throw CurlyBraceLanguage.$failure = $eq.exceptions.typeInitialization('eQuantic.UI.Code.CurlyBraceLanguage', $error);
+            }
+        }
+        return CurlyBraceLanguage.$slots;
+    }
+
+    static get punctuation(): Set<string> {
+        return CurlyBraceLanguage.$init().punctuation;
+    }
+
+    static set punctuation(value: Set<string>) {
+        CurlyBraceLanguage.$init().punctuation = value;
     }
 
     tokenize(line: string, state: number, into: CodeToken[]) {

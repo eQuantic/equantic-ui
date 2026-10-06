@@ -18,10 +18,19 @@ public static class DefaultValue
     /// reference type or unknown. Every struct the value names is imported: the default is text no
     /// syntax spells (<c>new T[n]</c> and <c>default(T)</c> never write <c>new Point()</c>), so the
     /// module's own scan cannot see it, and an unimported twin fails the module when it loads.</summary>
-    public static string Of(ITypeSymbol? type, ConversionContext context)
+    public static string Of(ITypeSymbol? type, ConversionContext context) => Of(type, context, typeParameter: null);
+
+    /// <summary>
+    /// The default of <paramref name="type"/> where a type parameter's zero is given: inside a generic
+    /// struct's <c>$zero</c>, which takes the zero of each of its type arguments from its caller,
+    /// a member of type <c>T</c> is that zero, and a <c>Pair&lt;T&gt;</c> passes it on. The open
+    /// declaration cannot know it: <c>default(Pair&lt;int&gt;).First</c> was null where C# has 0
+    /// (found by Copilot's review of #608).
+    /// </summary>
+    internal static string Of(ITypeSymbol? type, ConversionContext context, Func<ITypeParameterSymbol, string?>? typeParameter)
     {
         var value = Of(type, named => (IsRuntimeProvided(named) ? context.UsedRuntimeTypes : context.UsedAppTypes)
-            .Add(named.Name));
+            .Add(named.Name), typeParameter);
         if (value.Contains("$eq.")) context.UsedHelpers.Add(Eq.Import);
         return value;
     }
@@ -38,8 +47,11 @@ public static class DefaultValue
 
     /// <param name="type">The type whose default to write.</param>
     /// <param name="named">Told of every struct the value constructs, for its import.</param>
-    private static string Of(ITypeSymbol? type, Action<INamedTypeSymbol>? named)
+    /// <param name="typeParameter">The zero a type parameter has where its caller gives one, or null.</param>
+    private static string Of(ITypeSymbol? type, Action<INamedTypeSymbol>? named,
+        Func<ITypeParameterSymbol, string?>? typeParameter = null)
     {
+        if (type is ITypeParameterSymbol parameter && typeParameter?.Invoke(parameter) is { } given) return given;
         switch (type?.SpecialType)
         {
             case SpecialType.System_Boolean:
@@ -87,7 +99,7 @@ public static class DefaultValue
         // A KeyValuePair is the pair a dictionary yields, so its zero is the pair of the two zeros (#433).
         if (type is INamedTypeSymbol { OriginalDefinition.MetadataName: "KeyValuePair`2", TypeArguments: [var key, var value] } pair
             && pair.ContainingNamespace?.ToDisplayString() == "System.Collections.Generic")
-            return $"{Eq.Pair}({Of(key, named)}, {Of(value, named)})";
+            return $"{Eq.Pair}({Of(key, named, typeParameter)}, {Of(value, named, typeParameter)})";
 
         // An enum is its member NAME at runtime, so the default is the member whose value is 0.
         // .NET still yields the numeric 0 when the enum declares no such member.
@@ -106,23 +118,25 @@ public static class DefaultValue
         // A value the browser holds as DATA (`[TwinIsData]`) is its members, so its zero is each
         // member's zero written out, `{ r: 0, g: 0, b: 0, a: 0 }` for a `Color`, with no twin to build.
         if (type is INamedTypeSymbol data && data.TwinIsData())
-            return TwinData.Literal(data, _ => null, member => Of(member, named));
+            return TwinData.Literal(data, _ => null, member => Of(member, named, typeParameter));
 
-        // A STRUCT's default is its zero instance, and C# never has a null one. The twin can build
-        // it when its bare constructor zeroes every component: a struct the compiler EMITS (one of
-        // the app's with a twin to build, or one from a namespace it transpiles whole), whose
-        // parameters default to their own types' zeros by this same rule, or a vocabulary struct
-        // whose hand-written twin says it does ([ZeroConstructs]). `new CodeGrid()` held a null
-        // Point on the web before this.
-        if (type is INamedTypeSymbol { TypeKind: TypeKind.Struct } structType && ZeroConstructs(structType))
+        // A STRUCT's default is its zero instance, and C# never has a null one: the `$zero()` every
+        // struct twin the compiler EMITS carries (one of the app's, or one from a namespace it
+        // transpiles whole, a generic one included), built without the constructor, or the bare
+        // constructor of a vocabulary struct whose hand-written twin says it zeroes it
+        // ([ZeroConstructs]). `new CodeGrid()` held a null Point on the web before this; and a bare
+        // `new S()` for every struct whose constructor did nothing but zero it ran an all-optional
+        // constructor for a zero, started the type's initialization, and from another assembly ran
+        // its constructor's defaults, where nothing said which constructors a struct of metadata had.
+        if (type is INamedTypeSymbol { TypeKind: TypeKind.Struct } structType && ZeroOf(structType, named, typeParameter) is { } structZero)
         {
             named?.Invoke(structType);
-            return ConstructsBeyondZero(structType) ? ZeroOf(structType, named) : $"new {structType.Name}()";
+            return structZero;
         }
 
         // A tuple is an ARRAY on this side, and its zero is an array of its elements' zeros.
         if (type is INamedTypeSymbol { IsTupleType: true } tuple)
-            return "[" + string.Join(", ", tuple.TupleElements.Select(element => Of(element.Type, named))) + "]";
+            return "[" + string.Join(", ", tuple.TupleElements.Select(element => Of(element.Type, named, typeParameter))) + "]";
 
         // A nullable value type defaults to the null one; every reference type does too. A struct
         // whose twin cannot build its zero (a hand-written vocabulary twin not marked
@@ -135,61 +149,41 @@ public static class DefaultValue
     }
 
     /// <summary>
-    /// Whether a struct's twin constructor gives a member more than its zero: a field's or a
-    /// property's initializer, a positional parameter's default, or an explicit parameterless
-    /// constructor's body. <c>default(T)</c> runs none of them, and the twin's bare <c>new T()</c>
-    /// runs all of them, so such a struct's zero is built with every member's own zero passed in
-    /// instead: <c>default(Counter)</c> held the <c>Step = 2</c> C# never gives it.
+    /// Whether the default of <paramref name="type"/> constructs a twin (<c>new Cell()</c>, a struct's
+    /// <c>$zero()</c>, or a tuple or a pair holding one): code that runs, and names another module,
+    /// where every other default is a value. Asked by the type initializer (TypeInitializer.Orders),
+    /// which builds such a static on first use and never while its module is evaluated.
     /// </summary>
-    private static bool ConstructsBeyondZero(INamedTypeSymbol type) =>
-        type.DeclaringSyntaxReferences.Select(reference => reference.GetSyntax()).OfType<TypeDeclarationSyntax>()
-            .Any(declaration =>
-                declaration.ParameterList?.Parameters.Any(parameter => parameter.Default is not null) == true
-                || declaration.Members.Any(member => member switch
-                {
-                    FieldDeclarationSyntax field => !field.Modifiers.Any(SyntaxKind.StaticKeyword)
-                        && !field.Modifiers.Any(SyntaxKind.ConstKeyword)
-                        && field.Declaration.Variables.Any(variable => variable.Initializer is not null),
-                    PropertyDeclarationSyntax property => !property.Modifiers.Any(SyntaxKind.StaticKeyword)
-                        && property.Initializer is not null,
-                    ConstructorDeclarationSyntax constructor => !constructor.Modifiers.Any(SyntaxKind.StaticKeyword)
-                        && constructor.ParameterList.Parameters.Count == 0,
-                    _ => false,
-                }));
-
-    /// <summary>The zero of such a struct: every member's own zero, passed to the twin's
-    /// constructor in the order it takes them, which is the order its value members are listed in.</summary>
-    private static string ZeroOf(INamedTypeSymbol type, Action<INamedTypeSymbol>? named)
+    internal static bool Constructs(ITypeSymbol? type)
     {
-        var declaration = type.DeclaringSyntaxReferences.Select(reference => reference.GetSyntax())
-            .OfType<TypeDeclarationSyntax>().First();
-        var zeros = declaration.ValueMembers().Select(member => Of(MemberType(type, member.Display), named));
-        return $"new {type.Name}({string.Join(", ", zeros)})";
+        var constructs = false;
+        Of(type, _ => constructs = true);
+        return constructs;
     }
 
-    /// <summary>A value member's type: a field's, or a property's, which a positional parameter
-    /// declares too.</summary>
-    private static ITypeSymbol? MemberType(INamedTypeSymbol type, string name) =>
-        type.GetMembers(name).FirstOrDefault() switch
-        {
-            IFieldSymbol field => field.Type,
-            IPropertySymbol property => property.Type,
-            _ => null,
-        };
-
-    /// <summary>Whether the twin of <paramref name="type"/> builds its zero instance from a bare
-    /// constructor — see <see cref="Of(ITypeSymbol?, ConversionContext)"/>.</summary>
-    private static bool ZeroConstructs(INamedTypeSymbol type)
+    /// <summary>
+    /// How the twin of <paramref name="type"/> gives its zero instance (see
+    /// <see cref="Of(ITypeSymbol?, ConversionContext)"/>), or null where it has none to give: the
+    /// <c>$zero()</c> of a twin the compiler writes, or the bare constructor of a hand-written one
+    /// marked <c>[ZeroConstructs]</c>. A generic struct's <c>$zero</c> takes the zero of each of its
+    /// type arguments, which only the closed type here knows: <c>Pair.$zero(0)</c> for a
+    /// <c>Pair&lt;int&gt;</c>.
+    /// </summary>
+    private static string? ZeroOf(INamedTypeSymbol type, Action<INamedTypeSymbol>? named,
+        Func<ITypeParameterSymbol, string?>? typeParameter)
     {
-        if (type.IsGenericType || type.SpecialType != SpecialType.None) return false;
+        if (type.SpecialType != SpecialType.None) return null;
         // Nullable<T> is a struct too, and its default is null — handled above, never here.
-        if (type.OriginalDefinition.SpecialType == SpecialType.System_Nullable_T) return false;
-        if (type.GetAttributes().Any(a => a.AttributeClass?.Name == "ZeroConstructsAttribute")) return true;
-        // In source, only when a twin is emitted at all: a struct the emitter refuses (an empty one)
-        // has no class, and `new Empty()` would name one nothing wrote.
-        if (type.Locations.Any(location => location.IsInSource)) return RecordTypeEmitter.EmitsTwin(type);
-        var ns = type.ContainingNamespace?.ToDisplayString() ?? "";
-        return Services.RuntimeProvidedTypeScanner.IsTranspiledNamespace(ns);
+        if (type.OriginalDefinition.SpecialType == SpecialType.System_Nullable_T) return null;
+        if (type.GetAttributes().Any(a => a.AttributeClass?.Name == "ZeroConstructsAttribute")) return $"new {type.Name}()";
+        // In source, only when a twin is emitted at all: a struct declared only by an empty partial
+        // declaration has no class, and its zero would name one nothing wrote.
+        var written = type.Locations.Any(location => location.IsInSource)
+            ? RecordTypeEmitter.EmitsTwin(type)
+            : Services.RuntimeProvidedTypeScanner.IsTranspiledNamespace(type.ContainingNamespace?.ToDisplayString() ?? "");
+        if (!written) return null;
+        var zeros = type.TypeArguments.Select(argument => Of(argument, named, typeParameter));
+        return $"{type.Name}.$zero({string.Join(", ", zeros)})";
     }
 
     /// <summary>The default of the ELEMENT of a sequence-typed expression.</summary>

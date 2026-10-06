@@ -81,11 +81,15 @@ public class ComponentParser
             }
         }
         
+        var model = TryGetSemanticModel(tree);
+
         // Discover user value types: records (positional or body) and structs are emitted as named JS
-        // classes. Reactive — driven by the declarations actually present, not a fixed list.
+        // classes. Reactive — driven by the declarations actually present, not a fixed list. One marked
+        // [ServerOnly] has none, whichever of its declarations says so, as the resolver reads it.
         foreach (var typeDecl in root.DescendantNodes().OfType<TypeDeclarationSyntax>())
         {
-            if (RecordTypeEmitter.CanEmit(typeDecl))
+            if (typeDecl is (RecordDeclarationSyntax or StructDeclarationSyntax)
+                && RecordTypeEmitter.CanEmit(typeDecl, ProjectSymbol(typeDecl, model)))
             {
                 results.Add(new ComponentDefinition
                 {
@@ -164,7 +168,6 @@ public class ComponentParser
         // Container and any user-defined intermediate component) over matching base-type name strings;
         // fall back to the syntactic heuristic when no semantic model is available.
         var classes = root.DescendantNodes().OfType<ClassDeclarationSyntax>().ToList();
-        var model = TryGetSemanticModel(tree);
 
         // Pre-pass: which classes are components. A class is one if its base resolves to a known component
         // base (semantic walk) / matches a base-name heuristic / it declares Build|Render — AND, transitively,
@@ -234,17 +237,22 @@ public class ComponentParser
 
         var stateNames = new HashSet<string>();
 
+        // The chains of bases a parser with no project compilation reads: the resolver's scan, which
+        // reaches every file it read, and this file's own declarations when there is no resolver.
+        var chains = _chains ?? PlainClassModule.Scan.Of(root);
+
         // A PLAIN class — not a component, not static, not a state class — is a model the developer
         // wrote: a bucket, a builder, a small state machine. Nothing emitted one, so `new Bucket()`
         // named something that did not exist. Identity, not value: no structural equals, no `with`.
         foreach (var classDecl in classes)
         {
-            if (classDecl.Parent is TypeDeclarationSyntax) continue;          // nested: its owner's scope
-            if (classDecl.Modifiers.Any(SyntaxKind.StaticKeyword)) continue;  // static-helper path
             if (componentNames.Contains(classDecl.Identifier.Text)) continue; // component path
             if (stateNames.Contains(classDecl.Identifier.Text)) continue;     // owned by its page
-            if (classDecl.Members.Count == 0) continue;
-            if (IsServerOnly(classDecl)) continue;                             // never crosses: no module
+            // The one rule the resolver reads too (#423): what the class IS decides, never whether it
+            // declares a member. A class that declared none was skipped here while the resolver had
+            // it imported, so the bundle could not resolve the module every user of it named. A
+            // [ServerOnly] class never crosses, whichever of its declarations says so.
+            if (!PlainClassModule.Is(classDecl, ProjectSymbol(classDecl, model), chains)) continue;
             // Track L D2: a resx Designer is a plain non-static class by shape, and a module of
             // ResourceManager.GetString calls cannot run in a browser — its accessors rewrite to
             // $eq.str at every use site instead. Recorded on the way past (see the static-helper
@@ -436,8 +444,9 @@ public class ComponentParser
     /// <c>[ServerAction]</c>, which keeps the method callable FROM the browser through an RPC stub.
     /// </summary>
     /// <summary>
-    /// The class-level form: <c>[ServerOnly]</c> on a static helper or a plain class says the whole
-    /// type stays on the server, and the parser emits no module for it.
+    /// The class-level form: <c>[ServerOnly]</c> on a static helper says the whole type stays on the
+    /// server, and the parser emits no module for it. A plain class is asked the same of its symbol by
+    /// <see cref="PlainClassModule"/>, the rule the resolver reads too.
     /// <para>
     /// Asked of the SYMBOL, which unifies partial declarations, and not of the declaration in hand.
     /// The syntactic form answered per file, so a partial class spread across six files was
@@ -467,6 +476,28 @@ public class ComponentParser
         return classDecl.AttributeLists.SelectMany(list => list.Attributes)
             .Any(attribute => attribute.IsNamed("ServerOnly"));
     }
+
+    /// <summary>
+    /// The chains of bases the resolver's scan saw across every file it read (#423), which this parser
+    /// reads for the plain-class rule when its host has no project compilation to ask: its own file stops
+    /// at a base another file declares, and `class Retry : Failure` over another file's
+    /// `class Failure : Exception` was written as a module the resolver never imported.
+    /// </summary>
+    internal void SetChains(PlainClassModule.Scan chains) => _chains = chains;
+
+    private PlainClassModule.Scan? _chains;
+
+    /// <summary>
+    /// A type's symbol in the PROJECT's compilation, which the plain-class rule asks for a class's chain
+    /// of bases (#423) and the twin rule for a record's or a struct's [ServerOnly], as the resolver asks
+    /// the same compilation; null where the host has none. The minimal model of one file is not asked:
+    /// it cannot see a base or a partial declaration another file holds, and the resolver, which reads
+    /// every file, would answer from names alone.
+    /// </summary>
+    private INamedTypeSymbol? ProjectSymbol(TypeDeclarationSyntax declaration, SemanticModel? model) =>
+        _semanticModelProvider?.HasProjectCompilation == true
+            ? model?.GetDeclaredSymbol(declaration) as INamedTypeSymbol
+            : null;
 
     private bool IsRuntimeProvided(ClassDeclarationSyntax classDecl)
     {
@@ -584,10 +615,9 @@ public class ComponentParser
     {
         ParseMethods(classDecl, definition);
 
-        // Extract constructors
-        var constructors = classDecl.Members
-            .OfType<ConstructorDeclarationSyntax>();
-        
+        // Extract constructors, a static one excepted: it is the type initializer's.
+        var constructors = InstanceConstructors(classDecl);
+
         foreach (var ctor in constructors)
         {
             var ctorDef = new MethodDefinition
@@ -610,6 +640,12 @@ public class ComponentParser
             definition.Constructors.Add(ctorDef);
         }
     }
+
+    /// <summary>The constructors that build an instance: every one the class declares but a static
+    /// one, which is the type initializer's.</summary>
+    private static IEnumerable<ConstructorDeclarationSyntax> InstanceConstructors(ClassDeclarationSyntax classDecl) =>
+        classDecl.Members.OfType<ConstructorDeclarationSyntax>()
+            .Where(constructor => !constructor.Modifiers.Any(SyntaxKind.StaticKeyword));
 
     private void ParseConstructors(ClassDeclarationSyntax classDecl, ComponentDefinition definition)
     {
@@ -668,8 +704,10 @@ public class ComponentParser
         // takes no arguments meant the server ran that setup and the browser did not: SSR rendered
         // a form with three fields, hydration adopted the markup, and the client's own model was
         // empty, so typing changed nothing. Silent, and only on the target the user is on.
-        var constructors = classDecl.Members
-            .OfType<ConstructorDeclarationSyntax>()
+        // A STATIC constructor is never an instance one: the type initializer runs it, once
+        // (TypeInitializer). Taken for one, it ran on every instance besides, and declared before a
+        // parameterless instance constructor it took that one's place, whose body was dropped.
+        var constructors = InstanceConstructors(classDecl)
             .Where(c => c.ParameterList.Parameters.Count > 0
                         || c.Body is not null || c.ExpressionBody is not null);
 

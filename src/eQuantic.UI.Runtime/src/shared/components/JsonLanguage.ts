@@ -9,7 +9,12 @@ export class JsonLanguage {
         return 'JSON';
     }
 
-    rules: CodeLanguageRules = new CodeLanguageRules(undefined, undefined, undefined, ['"'], undefined, undefined, 2);
+    rules: CodeLanguageRules = (() => {
+        const $o = new CodeLanguageRules();
+        $o.indentWidth = 2;
+        $o.quotes = ['"'];
+        return $o;
+    })();
     keywords: string[] = ['true', 'false', 'null'];
 
     tokenize(line: string, _state: number, into: CodeToken[]) {

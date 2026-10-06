@@ -116,7 +116,7 @@ public class InlinedConstantTests
             }
             """);
 
-        ts.Should().Contain("static get top(): bigint");
+        ts.Should().Contain("static top: bigint = 18446744073709551615n;");
         ts.Should().Contain("static small: number = 7;");
         ts.Should().Contain("static port: number = 8080;");
         ts.Should().Contain("static signed: number = -3;");

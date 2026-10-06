@@ -1,6 +1,6 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import { bases, create, exception, filter, is, raise, typesOf } from './exceptions';
+import { bases, create, exception, filter, is, raise, typeInitialization, typesOf } from './exceptions';
 
 const ARGUMENT_NULL = [
   'System.ArgumentNullException',
@@ -63,6 +63,15 @@ describe('the runtime throws the type .NET throws', () => {
       const chain = typesOf(exception(type, '')) ?? [];
       expect(chain[chain.length - 1]).toBe('System.Exception');
     }
+  });
+
+  it('wraps what a type initializer threw as .NET does, the original as its inner exception', () => {
+    const original = exception('System.InvalidOperationException', 'x');
+    const error = typeInitialization('App.Boom', original) as Error & { innerException?: unknown };
+    expect(typesOf(error)).toEqual(['System.TypeInitializationException', 'System.SystemException', 'System.Exception']);
+    expect(error.name).toBe('TypeInitializationException');
+    expect(error.message).toBe("The type initializer for 'App.Boom' threw an exception.");
+    expect(error.innerException).toBe(original);
   });
 });
 

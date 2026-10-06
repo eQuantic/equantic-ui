@@ -61,6 +61,13 @@ answers with a less specific default SHALL be written into the class's twin, ove
   `int Half { get => Width / 2; set => Width = value * 2; }`
 - **THEN** `Mark()` answers `m!`, and setting `Half` to 5 leaves `Width` at 10
 
+#### Scenario: A default indexer
+
+- **WHEN** `interface IIndexed { int this[int i] => i * 3; }` and `record Tripler : IIndexed;`, or
+  `interface IShelf { string this[int i] => "shelf " + i; }` and `class Shelf : IShelf { }`
+- **THEN** `((IIndexed)new Tripler())[3]` answers `9` and `((IShelf)new Shelf())[4]` answers
+  `shelf 4`, as in .NET
+
 ### Requirement: Two members on one name are refused
 
 eqc SHALL refuse with EQ1007 a class that takes two defaults which lower to one name, from different
@@ -124,7 +131,8 @@ interface of one of the assemblies it provides, not any interface that shares th
 
 eqc SHALL refuse the class with EQ1008, an error naming the class, the member and the two ways out,
 for each default it takes from an interface compiled into a referenced assembly the runtime does not
-provide, for a default that uses a static member of its interface, and for a default indexer.
+provide, and for a default that uses a static member of its interface. A default indexer SHALL be
+written into the twin as the class's own indexer is, and not refused.
 
 #### Scenario: A default uses a static member of its interface
 
@@ -135,8 +143,8 @@ provide, for a default that uses a static member of its interface, and for a def
 #### Scenario: A default indexer
 
 - **WHEN** `interface IIndexed { int this[int i] => i * 2; }` and a class relies on it
-- **THEN** the build fails with EQ1008, naming the indexer and saying that no twin has a form for
-  one yet
+- **THEN** the build reports nothing, and the class's twin carries the indexer, which answers as in
+  .NET
 
 #### Scenario: An interface from another assembly
 

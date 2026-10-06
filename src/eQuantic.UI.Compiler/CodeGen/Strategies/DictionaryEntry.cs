@@ -37,9 +37,6 @@ internal static class DictionaryEntry
     /// <summary>The write, which answers <paramref name="value"/>, as text for a template.</summary>
     public static string Write(string dictionary, string key, string value) => Fill(WritePattern, dictionary, key, value);
 
-    /// <summary>The read, as a node.</summary>
-    public static JsExpr Read(JsExpr dictionary, JsExpr key) => JsExpr.Call(JsExpr.Identifier(Eq.MapGet), dictionary, key);
-
     /// <summary>The write, as a node.</summary>
     public static JsExpr Write(JsExpr dictionary, JsExpr key, JsExpr value) =>
         JsExpr.Call(JsExpr.Identifier(Eq.MapSet), dictionary, key, value);

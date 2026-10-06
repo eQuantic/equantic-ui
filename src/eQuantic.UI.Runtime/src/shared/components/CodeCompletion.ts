@@ -9,7 +9,7 @@ export class CodeCompletion {
         this._shown = [];
         this._selected = -1;
         this._active = false;
-        this._start = new CodePosition();
+        this._start = CodePosition.$zero();
         this._openedEmpty = false;
         this._askedWord = '';
         this._generation = 0;
@@ -111,7 +111,8 @@ export class CodeCompletion {
         this._request = cancellation;
         let document = this._editor.document;
         let position = this._editor.caret;
-        let context = new CodeCompletionContext(trigger, this._editor.highlighter.language, character);
+        let $n14: any; 
+        let context = ($n14 = new CodeCompletionContext(trigger, this._editor.highlighter.language), $n14.character = character, $n14);
         this._askedWord = this.word();
         let asked = [];
         let errors: Error[] = [];

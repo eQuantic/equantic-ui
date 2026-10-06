@@ -401,11 +401,12 @@ public class RealWorldUITests
         // A plain target keeps the `a ?? (a = b)` shape: named twice, evaluated once.
         result.Should().Contain("this.cache ?? (this.cache =");
         // A DICTIONARY entry does not. `m[k] ??= v` reads the entry first, and .NET throws for a
-        // key that is not there, so the read goes through the guard and the result is written —
-        // which cannot be written as `a ?? (a = b)`, because the guarded read is not a target.
-        // The receiver and the key are each bound once, so neither is evaluated twice.
+        // key that is not there, so the read goes through the guard, and the entry is written only
+        // where that read is null, as C# calls the setter only then: the guarded read is not a target,
+        // so it cannot be written as `a ?? (a = b)`. The receiver and the key are each bound once, so
+        // neither is evaluated twice.
         result.Should().Contain("this.cache ?? (this.cache = $eq.collections.dictionary())");
-        result.Should().Contain("$eq.mapSet($0, $1, $eq.mapGet($0, $1) ?? this.fetchValue(this.key))");
+        result.Should().Contain("$eq.mapGet($0, $1) ?? $eq.mapSet($0, $1, this.fetchValue(this.key))");
         result.Should().Contain("(this.cache, this.key)");
     }
 

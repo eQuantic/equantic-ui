@@ -8,38 +8,78 @@ export class PythonLanguage {
     static normal: number = 0;
     static tripleDouble: number = 1;
     static tripleSingle: number = 2;
-    static _reserved: Set<string> | undefined;
-
-    static get reserved(): Set<string> {
-        return PythonLanguage._reserved ??= $eq.collections.hashSetOf(['and', 'as', 'assert', 'async', 'await', 'break', 'class', 'continue', 'def', 'del', 'elif', 'else', 'except', 'finally', 'for', 'from', 'global', 'if', 'import', 'in', 'is', 'lambda', 'match', 'nonlocal', 'not', 'or', 'pass', 'raise', 'return', 'try', 'while', 'with', 'yield']);
-    }
-
-    static _builtins: Set<string> | undefined;
-
-    static get builtins(): Set<string> {
-        return PythonLanguage._builtins ??= $eq.collections.hashSetOf(['bool', 'bytes', 'dict', 'float', 'frozenset', 'int', 'list', 'object', 'set', 'str', 'tuple', 'type']);
-    }
-
-    static _constants: Set<string> | undefined;
-
-    static get constants(): Set<string> {
-        return PythonLanguage._constants ??= $eq.collections.hashSetOf(['True', 'False', 'None', 'self', 'cls']);
-    }
-
-    static _words: string[] | undefined;
-
-    static get words(): string[] {
-        return PythonLanguage._words ??= [...[...$eq.linq.seq(PythonLanguage.reserved), ...$eq.linq.seq(PythonLanguage.builtins)], ...$eq.linq.seq(PythonLanguage.constants)].slice();
-    }
 
     get name(): string {
         return 'Python';
     }
 
-    rules: CodeLanguageRules = new CodeLanguageRules('#', undefined, undefined, undefined, [':', '(', '[', '{'], [')', ']', '}'], 4);
+    rules: CodeLanguageRules = (() => {
+        const $o = new CodeLanguageRules();
+        $o.lineComment = '#';
+        $o.indentAfter = [':', '(', '[', '{'];
+        $o.outdentOn = [')', ']', '}'];
+        $o.indentWidth = 4;
+        return $o;
+    })();
 
     get keywords(): string[] {
         return PythonLanguage.words;
+    }
+
+    static $slots: any = null;
+    static $failure: any = null;
+
+    static $init(): any {
+        if (PythonLanguage.$slots === null) {
+            if (PythonLanguage.$failure !== null) throw PythonLanguage.$failure;
+            let $slots: any = PythonLanguage.$slots = {};
+            try {
+                $slots.reserved = null;
+                $slots.builtins = null;
+                $slots.constants = null;
+                $slots.words = null;
+                $slots.reserved = $eq.collections.hashSetOf(['and', 'as', 'assert', 'async', 'await', 'break', 'class', 'continue', 'def', 'del', 'elif', 'else', 'except', 'finally', 'for', 'from', 'global', 'if', 'import', 'in', 'is', 'lambda', 'match', 'nonlocal', 'not', 'or', 'pass', 'raise', 'return', 'try', 'while', 'with', 'yield']);
+                $slots.builtins = $eq.collections.hashSetOf(['bool', 'bytes', 'dict', 'float', 'frozenset', 'int', 'list', 'object', 'set', 'str', 'tuple', 'type']);
+                $slots.constants = $eq.collections.hashSetOf(['True', 'False', 'None', 'self', 'cls']);
+                $slots.words = [...[...$eq.linq.seq(PythonLanguage.reserved), ...$eq.linq.seq(PythonLanguage.builtins)], ...$eq.linq.seq(PythonLanguage.constants)].slice();
+            } catch ($error) {
+                PythonLanguage.$slots = null;
+                throw PythonLanguage.$failure = $eq.exceptions.typeInitialization('eQuantic.UI.Code.PythonLanguage', $error);
+            }
+        }
+        return PythonLanguage.$slots;
+    }
+
+    static get reserved(): Set<string> {
+        return PythonLanguage.$init().reserved;
+    }
+
+    static set reserved(value: Set<string>) {
+        PythonLanguage.$init().reserved = value;
+    }
+
+    static get builtins(): Set<string> {
+        return PythonLanguage.$init().builtins;
+    }
+
+    static set builtins(value: Set<string>) {
+        PythonLanguage.$init().builtins = value;
+    }
+
+    static get constants(): Set<string> {
+        return PythonLanguage.$init().constants;
+    }
+
+    static set constants(value: Set<string>) {
+        PythonLanguage.$init().constants = value;
+    }
+
+    static get words(): string[] {
+        return PythonLanguage.$init().words;
+    }
+
+    static set words(value: string[]) {
+        PythonLanguage.$init().words = value;
     }
 
     tokenize(line: string, state: number, into: CodeToken[]) {

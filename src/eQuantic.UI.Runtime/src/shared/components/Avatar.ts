@@ -2,12 +2,36 @@ import { $eq, Box, BoxStyle, BuildContext, CornerRadii, Icon, IconGlyph, Image, 
 
 export class Avatar extends StatelessComponent {
     static $typeId = 'eQuantic.UI.Components.Avatar';
-    static tintPalette: VariantValue[] = ['primary', 'success', 'info', 'warning', 'destructive'];
     declare initials: string;
     declare imageSource: any;
     declare size: SizeVariantValue;
     declare name: any;
     declare status: string;
+    static $slots: any = null;
+    static $failure: any = null;
+
+    static $init(): any {
+        if (Avatar.$slots === null) {
+            if (Avatar.$failure !== null) throw Avatar.$failure;
+            let $slots: any = Avatar.$slots = {};
+            try {
+                $slots.tintPalette = null;
+                $slots.tintPalette = ['primary', 'success', 'info', 'warning', 'destructive'];
+            } catch ($error) {
+                Avatar.$slots = null;
+                throw Avatar.$failure = $eq.exceptions.typeInitialization('eQuantic.UI.Components.Avatar', $error);
+            }
+        }
+        return Avatar.$slots;
+    }
+
+    static get tintPalette(): VariantValue[] {
+        return Avatar.$init().tintPalette;
+    }
+
+    static set tintPalette(value: VariantValue[]) {
+        Avatar.$init().tintPalette = value;
+    }
 
     constructor(initials?: any, size: any = 'medium', name: any = null, props?: any) {
         super();
