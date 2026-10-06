@@ -380,6 +380,19 @@ public static class TypeSymbolExtensions
     }
 
     /// <summary>
+    /// Whether <paramref name="type"/> names a type parameter anywhere in it (<c>T</c>, <c>List&lt;T&gt;</c>,
+    /// <c>T[]</c>): a type the browser cannot know, since a type argument is erased in JavaScript.
+    /// </summary>
+    internal static bool MentionsTypeParameter(this ITypeSymbol type) => type switch
+    {
+        ITypeParameterSymbol => true,
+        IArrayTypeSymbol array => array.ElementType.MentionsTypeParameter(),
+        INamedTypeSymbol named => named.TypeArguments.Any(argument => argument.MentionsTypeParameter())
+                                  || named.ContainingType?.MentionsTypeParameter() == true,
+        _ => false,
+    };
+
+    /// <summary>
     /// The members .NET writes in a record's text: the public instance fields and readable properties,
     /// as <c>PrintMembers</c> lists them, a positional record's own first and in its parameters'
     /// order. A type from metadata does not record where a field sits among the properties, so the

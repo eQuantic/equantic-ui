@@ -581,7 +581,7 @@ public class ObjectCreationStrategy : IExpressionIrStrategy
             var parts = new List<JsExpr>();
             if (creation.ArgumentList != null)
                 parts.AddRange(OrderedArguments(creation, context));
-            var specs = HydrationSpecs(type, context);
+            var specs = HydrationSpecs(creation, type, context);
             if (creation.Initializer != null)
             {
                 // The config object rides the TRAILING slot: a call that supplied fewer positional
@@ -628,10 +628,28 @@ public class ObjectCreationStrategy : IExpressionIrStrategy
     /// type argument whose parameter carries <c>[HydratesTypeArgument]</c> (#291): the C# type is
     /// erased in JavaScript, and the twin revives what it receives of that type with the spec a Server
     /// Action's result is revived with. <c>null</c> where the argument needs no revival.
+    /// <para>
+    /// An argument that names a type parameter is refused (EQ2013): where the twin is built, the type
+    /// is erased, so its spec would be null and every value it receives would pass through unrevived.
+    /// A helper as natural as <c>static ServerTopic&lt;T&gt; Topic&lt;T&gt;(string name) =&gt; new(name)</c>
+    /// built every topic that way, and the build was green.
+    /// </para>
     /// </summary>
-    private static IReadOnlyList<JsExpr> HydrationSpecs(ITypeSymbol type, ConversionContext context) =>
-        [.. type.HydratedTypeArguments().Select(argument =>
-            JsExpr.Opaque(HydrationSpec.Of(argument, context.UsedAppTypes, context.UsedRuntimeTypes) ?? "null"))];
+    private static IReadOnlyList<JsExpr> HydrationSpecs(BaseObjectCreationExpressionSyntax creation, ITypeSymbol type,
+        ConversionContext context)
+    {
+        var specs = new List<JsExpr>();
+        foreach (var argument in type.HydratedTypeArguments())
+        {
+            if (argument.MentionsTypeParameter())
+                context.Report(creation, ConversionSeverity.Error, "EQ2013",
+                    $"'{type.ToDisplayString()}' is built where its type argument '{argument.ToDisplayString()}' is a type " +
+                    "parameter, which JavaScript erases, so what it receives could not be revived as that type. Build it " +
+                    "where the type argument is a concrete type, as in a static member of the type that declares the topic.");
+            specs.Add(JsExpr.Opaque(HydrationSpec.Of(argument, context.UsedAppTypes, context.UsedRuntimeTypes) ?? "null"));
+        }
+        return specs;
+    }
 
     /// <summary>
     /// The call of a twin eqc writes with its C# constructors (<see cref="TwinConstructor"/>): the

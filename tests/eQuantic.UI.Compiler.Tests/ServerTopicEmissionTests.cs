@@ -46,19 +46,25 @@ public class ServerTopicEmissionTests
 
     private static string Ticker()
     {
-        var tree = CSharpSyntaxTree.ParseText(Source, ParseDefaults.Options, path: "Ticker.cs");
+        var result = Compile(Source, "Ticker");
+        result.Success.Should().BeTrue(string.Join("\n", result.Errors.Select(e => e.Message)));
+        return result.TypeScript;
+    }
+
+    private static CompilationResult Compile(string source, string component)
+    {
+        var path = component + ".cs";
+        var tree = CSharpSyntaxTree.ParseText(source, ParseDefaults.Options, path: path);
         var references = ((string)AppContext.GetData("TRUSTED_PLATFORM_ASSEMBLIES")!)
             .Split(Path.PathSeparator)
-            .Where(path => path.EndsWith(".dll", StringComparison.OrdinalIgnoreCase))
-            .Select(path => (MetadataReference)TestReferences.Of(path))
+            .Where(file => file.EndsWith(".dll", StringComparison.OrdinalIgnoreCase))
+            .Select(file => (MetadataReference)TestReferences.Of(file))
             .Append(TestReferences.Of(typeof(eQuantic.UI.Primitives.VisualNode).Assembly.Location));
-        var compilation = CSharpCompilation.Create("Ticker", [tree], references,
+        var compilation = CSharpCompilation.Create(component, [tree], references,
             new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary, nullableContextOptions: NullableContextOptions.Enable));
         var compiler = new ComponentCompiler { TypeAnnotations = true };
         compiler.SetProjectCompilation(compilation);
-        var result = compiler.CompileSource(Source, "Ticker.cs").Single(r => r.ComponentName == "Ticker");
-        result.Success.Should().BeTrue(string.Join("\n", result.Errors.Select(e => e.Message)));
-        return result.TypeScript;
+        return compiler.CompileSource(source, path).Single(r => r.ComponentName == component);
     }
 
     [Fact]
@@ -89,5 +95,67 @@ public class ServerTopicEmissionTests
         var ts = Ticker();
         ts.Should().Contain("$eq.services.resolve('IServerEvents')");
         ts.Should().MatchRegex(@"\.subscribe\(Ticker\.room\('a'\), ");
+    }
+
+    /// <summary>
+    /// A topic built where its payload's type is a type parameter is refused (EQ2013): the type is
+    /// erased there, so the twin would get no spec and every payload would arrive unrevived, with a
+    /// green build. The helper is the natural way to factor topics, which is why it is fenced.
+    /// </summary>
+    [Fact]
+    public void ATopicBuiltWhereItsPayloadTypeIsATypeParameter_IsRefused()
+    {
+        const string source = """
+            using eQuantic.UI.Primitives;
+
+            public sealed record Quote(string Symbol, decimal Price);
+
+            public sealed class Feed : StatelessComponent
+            {
+                private static ServerTopic<T> Topic<T>(string name) => new(name);
+                private static readonly ServerTopic<Quote> Prices = Topic<Quote>("prices");
+
+                public override VisualNode Build(ComponentContext context) =>
+                    new Text(Prices.Name, TypeRole.BodyM, null);
+            }
+            """;
+
+        var result = Compile(source, "Feed");
+
+        result.Errors.Should().Contain(error => error.Code == "EQ2013" && error.Message.Contains("'T'"),
+            "the type argument is erased where the topic is built");
+    }
+
+    /// <summary>
+    /// A topic that crosses the wire, a Server Action's result or a page's state, is rebuilt on its
+    /// twin with its payload's spec. It arrived as the plain object EqJson wrote, without the spec, and
+    /// handed every payload through unrevived.
+    /// </summary>
+    [Fact]
+    public void ATopicThatCrossesTheWire_IsRebuiltWithItsPayloadsSpec()
+    {
+        const string source = """
+            using System.Threading.Tasks;
+            using eQuantic.UI.Primitives;
+
+            public sealed record Quote(string Symbol, decimal Price);
+
+            public sealed class Lobby : StatefulComponent
+            {
+                private ServerTopic<Quote>? _room;
+
+                [ServerAction]
+                public Task<ServerTopic<Quote>> Join(string code) => Task.FromResult(new ServerTopic<Quote>($"room:{code}"));
+
+                public override VisualNode Build(ComponentContext context) =>
+                    new Text(_room?.Name ?? "", TypeRole.BodyM, null);
+            }
+            """;
+
+        var result = Compile(source, "Lobby");
+        result.Success.Should().BeTrue(string.Join("\n", result.Errors.Select(e => e.Message)));
+
+        result.TypeScript.Should().Contain("{ of: ServerTopic, members: {}, typeArguments: [Quote] }");
+        result.TypeScript.Should().MatchRegex(@"import \{[^}]*\bServerTopic\b[^}]*\} from ""@equantic/runtime""");
     }
 }

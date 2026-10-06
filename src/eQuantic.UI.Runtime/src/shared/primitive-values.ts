@@ -132,6 +132,9 @@ export class ServerTopic {
   toString(): string {
     return this.name;
   }
+
+  /** Where a topic that crossed the wire keeps the spec it revives with (`hydrate`). */
+  static readonly $typeArguments = ['spec'] as const;
 }
 
 /**
