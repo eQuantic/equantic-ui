@@ -43,7 +43,7 @@ public class StringComparisonOverloadTests
     [Theory]
     [InlineData("var r = a.IndexOf('x')", "this.a.indexOf('x')")]
     [InlineData("var r = a.LastIndexOf('x')", "this.a.lastIndexOf('x')")]
-    public void ACharSearchWithNoStart_StaysJavaScripts(string code, string expected) =>
+    public void ACharSearchWithNoStart_StaysJavaScript(string code, string expected) =>
         TestHelper.ConvertExpression(code).Should().Contain(expected);
 
     [Fact]

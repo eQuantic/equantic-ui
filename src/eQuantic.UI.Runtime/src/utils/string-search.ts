@@ -306,7 +306,8 @@ export function lastIndexOf(
  * `IndexOf(char, startIndex, [count])`, as .NET 10's `String.Searching.cs` answers it: a char
  * search is ordinal, the start may stand at the end of the string, and the count runs no further
  * than it. JavaScript's `indexOf` clamped a start outside the string and has no count, so the count
- * was dropped (#534).
+ * was dropped (#534). `value` is a C# char, which the compiler hands over as the one UTF-16 code
+ * unit it is: never empty, and never two units, a pair included.
  */
 export function indexOfChar(
   source: string | null | undefined,
@@ -325,7 +326,8 @@ export function indexOfChar(
  * `LastIndexOf(char, startIndex, [count])`, as .NET 10's `String.Searching.cs` answers it, which is
  * not `CompareInfo`'s normalization the string overloads take: an empty string answers -1 for any
  * start and count, the start must stand on a char of the string (one past the end throws), and the
- * search runs back `count` chars from it, the start included.
+ * search runs back `count` chars from it, the start included. `value` is a C# char, one UTF-16 code
+ * unit, as for `indexOfChar`.
  */
 export function lastIndexOfChar(
   source: string | null | undefined,
