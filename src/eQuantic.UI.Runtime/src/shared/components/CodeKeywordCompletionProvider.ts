@@ -1,9 +1,7 @@
 import { CancellationToken, CodeCompletionContext, CodeCompletionItem, CodeCompletionList, CodeDocument, CodePosition } from "../runtime-exports";
 
 export class CodeKeywordCompletionProvider {
-    constructor(props?: any) {
-        if (props && typeof props === 'object') Object.assign(this, props);
-    }
+    constructor() {}
 
     async completeAsync(document: CodeDocument, position: CodePosition, context: CodeCompletionContext, _cancellation: CancellationToken) {
         let line = document.line(position.line);

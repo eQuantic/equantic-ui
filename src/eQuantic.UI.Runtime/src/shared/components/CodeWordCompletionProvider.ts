@@ -1,9 +1,7 @@
 import { $eq, CancellationToken, CodeCompletionContext, CodeCompletionItem, CodeCompletionList, CodeDocument, CodePosition } from "../runtime-exports";
 
 export class CodeWordCompletionProvider {
-    constructor(props?: any) {
-        if (props && typeof props === 'object') Object.assign(this, props);
-    }
+    constructor() {}
 
     static budget: number = 50000;
 

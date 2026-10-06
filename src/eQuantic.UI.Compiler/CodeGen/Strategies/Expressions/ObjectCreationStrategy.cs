@@ -173,6 +173,13 @@ public class ObjectCreationStrategy : IExpressionIrStrategy
             return BuildValueTypeConstruction(creation, createdType, context);
         }
 
+        // A plain class eqc writes is built as a record is (#582, #583): the constructor the call binds,
+        // with its arguments as the bound tree binds them, then its initializer applied to what it built.
+        // It took an object initializer as a trailing config object, an argument of its constructor, so
+        // the values were evaluated before the constructor ran and its initializers moved them.
+        if (createdType is INamedTypeSymbol plain && IsBuiltAsCSharp(plain))
+            return BuildClassConstruction(creation, plain, context);
+
         var arguments = new List<JsExpr>();
         var emittedSlots = 0;
 
@@ -538,13 +545,15 @@ public class ObjectCreationStrategy : IExpressionIrStrategy
     }
 
     /// <summary>
-    /// Whether eqc writes the twin of <paramref name="type"/>: one the source declares, or one from a
-    /// namespace it transpiles whole into the runtime. Its constructor is the C# constructor and its
-    /// methods are the type's; a vocabulary twin is hand-written and takes a trailing config object.
+    /// Whether eqc writes the twin of <paramref name="type"/>: one the source declares, one from a
+    /// namespace it transpiles whole into the runtime, or one the vocabulary marks
+    /// <c>[TwinIsTranspiled]</c> (#592). Its constructor is the C# constructor and its methods are the
+    /// type's; a vocabulary twin is hand-written and takes a trailing config object.
     /// </summary>
     internal static bool TwinIsWritten(ITypeSymbol? type) =>
         type is not null
         && (type.Locations.Any(location => location.IsInSource)
+            || type.TwinIsTranspiled()
             || Services.RuntimeProvidedTypeScanner.IsTranspiledNamespace(type.ContainingNamespace?.ToDisplayString() ?? string.Empty));
 
     /// <summary>
@@ -598,16 +607,54 @@ public class ObjectCreationStrategy : IExpressionIrStrategy
             return JsExpr.New(constructed, parts);
         }
 
-        // The arguments as the bound tree binds them (BoundArguments); the syntax's own order where
-        // there is no model to ask.
-        var construction = type.IsValueType && ctor is { IsImplicitlyDeclared: true, Parameters.Length: 0 } && TwinIsWritten(type)
-            ? JsExpr.Opaque(DefaultValue.Of(type, context))
-            : BoundArguments.Of(context.SemanticHelper.GetOperation(creation), argument => context.Converter.ConvertIr(argument)) is { } bound
-                ? bound.New(type.Name, context.TypeAnnotations)
-                : JsExpr.New(constructed, ConstructorArguments(creation, ctor, context));
+        var construction = Construction(creation, type, ctor, context);
         return creation.Initializer is { } initializer
             ? ObjectInitializer.Apply(construction, initializer, context)
             : construction;
+    }
+
+    /// <summary>
+    /// The call of a twin eqc writes with its C# constructors (<see cref="TwinConstructor"/>): the
+    /// constructor the call binds, its arguments as the bound tree binds them (BoundArguments), and the
+    /// syntax's own order where there is no model to ask. A struct built by its implicit parameterless
+    /// constructor is its zero.
+    /// </summary>
+    private static JsExpr Construction(BaseObjectCreationExpressionSyntax creation, ITypeSymbol type, IMethodSymbol? ctor,
+        ConversionContext context) =>
+        type.IsValueType && ctor is { IsImplicitlyDeclared: true, Parameters.Length: 0 } && TwinIsWritten(type)
+            ? JsExpr.Opaque(DefaultValue.Of(type, context))
+            : BoundArguments.Of(context.SemanticHelper.GetOperation(creation), argument => context.Converter.ConvertIr(argument)) is { } bound
+                ? bound.New(type.Name, context.TypeAnnotations)
+                : JsExpr.New(JsExpr.Identifier(type.Name), ConstructorArguments(creation, ctor, context));
+
+    /// <summary>
+    /// Whether <paramref name="type"/> is a class whose twin eqc writes with its C# constructors
+    /// (<see cref="TwinConstructor"/>, #583), which is built as a record is
+    /// (<see cref="BuildClassConstruction"/>). A node of the tree, a component and a component's state
+    /// take their initializer as the props the runtime's classes take, an exception is built by its
+    /// symbol (<see cref="ExceptionCreationStrategy"/>), and the vocabulary's hand-written twins take a
+    /// config object of their own.
+    /// </summary>
+    internal static bool IsBuiltAsCSharp(INamedTypeSymbol type) =>
+        type is { TypeKind: TypeKind.Class, IsRecord: false, IsStatic: false }
+        && TwinIsWritten(type)
+        && !type.IsVisualNode() && !type.IsComponentState() && !ExceptionTypes.Is(type);
+
+    /// <summary>
+    /// A plain class built as C# builds it (#582): the constructor the call binds, then the object
+    /// initializer applied to what it built (<see cref="ObjectInitializer"/>), or the elements of a
+    /// collection initializer added to it, each through its <c>Add</c>.
+    /// </summary>
+    private static JsExpr BuildClassConstruction(BaseObjectCreationExpressionSyntax creation, INamedTypeSymbol type,
+        ConversionContext context)
+    {
+        var construction = Construction(creation, type, context.SemanticHelper.GetSymbol(creation) as IMethodSymbol, context);
+        return creation.Initializer switch
+        {
+            null => construction,
+            { RawKind: (int)SyntaxKind.CollectionInitializerExpression } collection => AddPerElementConstruction(collection, construction, context),
+            var initializer => ObjectInitializer.Apply(construction, initializer, context),
+        };
     }
 
     /// <summary>
@@ -675,6 +722,10 @@ public class ObjectCreationStrategy : IExpressionIrStrategy
                 return BuildValueTypeConstruction(creation, target, context);
             }
 
+            // A plain class eqc writes, as the explicit `new C(…) { … }` builds it.
+            if (target is not null && IsBuiltAsCSharp(target))
+                return BuildClassConstruction(creation, target, context);
+
             // A named class target (`Badge b = new(0, 99, variant) { Dot = true }`) must CONSTRUCT —
             // ordered args, skipped parameters filled from their C# defaults, initializer as the
             // trailing config object (the runtime component classes' contract). Delegating to the
@@ -730,6 +781,8 @@ public class ObjectCreationStrategy : IExpressionIrStrategy
             return BuildValueTypeConstruction(creation, record, context);
         if (ms?.ContainingType is { TypeKind: TypeKind.Struct } value && value.IsStructuralValueType())
             return BuildValueTypeConstruction(creation, value, context);
+        if (ms?.ContainingType is { } plain && IsBuiltAsCSharp(plain))
+            return BuildClassConstruction(creation, plain, context);
 
         // Target-typed `new(args)` on a named type: `Item _x = new(9, "z")` → `new Item(9, 'z')`.
         var args = creation.ArgumentList is { Arguments.Count: > 0 }

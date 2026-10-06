@@ -274,14 +274,28 @@ public class AuthoringCoverageTests
     }
 
     [Fact]
-    public void APlainClassParameterNamedProps_LeavesTheConfigObjectANameOfItsOwn()
+    public void AComponentParameterNamedProps_LeavesTheConfigObjectANameOfItsOwn()
     {
-        // The trailing config object is `props`: a parameter of that name made
-        // `constructor(props: number, props?: any)`, which a strict module refuses.
+        // A component's trailing config object is `props`: a parameter of that name made
+        // `constructor(props, props)`, and a local of that name `let props` beside the parameter, which
+        // a strict module refuses.
+        var parameter = TsOf("Setup", "public class Setup : StatelessComponent { public int Value { get; set; } "
+            + "public Setup(int props) { Value = props; } public override IComponent Build(RenderContext c) => new Text(\"x\"); }");
+        var local = TsOf("Local", "public class Local : StatelessComponent { public int Value { get; set; } "
+            + "public Local(int seed) { var props = seed; Value = props; } public override IComponent Build(RenderContext c) => new Text(\"x\"); }");
+
+        parameter.Should().Contain("props?: any, $props?: any)").And.Contain("Object.assign(this, $props)");
+        local.Should().Contain("$props?: any)").And.Contain("Object.assign(this, $props)");
+    }
+
+    [Fact]
+    public void APlainClassParameterNamedProps_IsJustAParameter()
+    {
+        // A plain class takes no config object since #583: an object initializer is applied after its
+        // constructor returns, so `props` is a name like any other.
         var ts = TestHelper.ConvertClass("public int Value { get; set; } public Setup(int props) { Value = props; }", "Setup");
 
-        ts.Should().Contain("constructor(props: number, $props?: any)")
-            .And.Contain("Object.assign(this, $props)").And.Contain("this.value = props");
+        ts.Should().Contain("constructor(props: number)").And.Contain("this.value = props").And.NotContain("Object.assign");
     }
 
     [Fact]
@@ -460,13 +474,13 @@ public class AuthoringCoverageTests
         var ts = TsOfResolved("Bucket", src);
 
         // Typed on the way out, too: a plain class is where an app's own model lives, and an
-        // untyped emission ends the checking exactly where the model starts.
-        // The trailing config is how an object initialiser arrives — `new Bucket(2) { Tag = "x" }`
-        // is an ordinary way to construct one, and a constructor without it is arity-wrong.
-        ts.Should().Contain("constructor(seed: number = 0, props?: any)");
-        ts.Should().Contain("Object.assign(this, props)");
+        // untyped emission ends the checking exactly where the model starts. An object initializer
+        // (`new Bucket(2) { Tag = "x" }`) is applied once the constructor returns (#582), so the
+        // constructor takes the C# constructor's parameters and nothing else.
+        ts.Should().Contain("constructor(seed: number = 0)");
+        ts.Should().NotContain("props");
         ts.Should().Contain("this._items = []", "field initialisers run before the constructor body");
-        ts.Should().Contain("_items: string[]");
+        ts.Should().Contain("_items!: string[];", "the state is a class field the instance defines before the constructor writes it");
         ts.Should().Contain("get count(): number");
         ts.Should().Contain("add(item: string)");
         ts.Should().NotContain("equals(o", "a class is identity, not value");
