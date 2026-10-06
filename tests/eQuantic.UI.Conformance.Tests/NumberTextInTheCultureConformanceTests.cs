@@ -39,7 +39,8 @@ public class NumberTextInTheCultureConformanceTests
         "int zero = 0, neg = -1; int half = neg / 2, minus = -zero, times = zero * -1; "
             + "return $\"{half}|{minus}|{times}|[{half,3}]|\" + half + \"|\" + half.ToString() + \"|\" "
             + "+ string.Format(\"{0}\", half) + \"|\" + string.Format(\"{0}|{1:D2}\", half, minus) + \"|\" "
-            + "+ string.Join(\",\", new[] { half, minus, times });",
+            + "+ string.Join(\",\", new[] { half, minus, times }) + \"|\" "
+            + "+ half.ToString(System.Globalization.CultureInfo.InvariantCulture);",
         // A builder appends and inserts a value's text, and Convert.ToString is ToString in the culture
         // the call names: they wrote JavaScript's own text of it.
         "var sb = new System.Text.StringBuilder(); double d = -1234.5; int i = -5; float f = 0.1f; string? none = null; "
