@@ -190,6 +190,12 @@ internal static class OverloadedMethods
     /// </summary>
     private static void CheckState(TypeDeclarationSyntax type, string sourcePath, SemanticModel? model, List<CompilationError> errors)
     {
+        if (CheckPrimaryParameters(type, sourcePath, errors)) return;
+        if (type is ClassDeclarationSyntax)
+        {
+            CheckHeldParameters(type, sourcePath, model, errors);
+            return;
+        }
         if (type is not (RecordDeclarationSyntax or StructDeclarationSyntax)) return;
         var instance = HeldOnEachInstance(type, model)
             .Concat(type.Members.OfType<MethodDeclarationSyntax>()
@@ -215,6 +221,83 @@ internal static class OverloadedMethods
                     + "and computed properties on its prototype, one member per name, so the two would share one value, or "
                     + $"the constructor would write one over the other. Rename one of them (a private field `_{lowered}`, "
                     + "or a primary constructor's parameter by what it holds).",
+                SourcePath = sourcePath,
+                Line = position.Line + 1,
+                Column = position.Character + 1,
+            });
+            return;
+        }
+    }
+
+    /// <summary>
+    /// Two parameters of a primary constructor that land on one name (`x` beside `X`): the twin's
+    /// constructor names each one camelCased, as the member a record makes of it, and a JavaScript
+    /// function refuses two parameters of one name, so the module did not load, whether a member read
+    /// them or not (found by Copilot's review of #621). A class's, a record's and a struct's alike.
+    /// </summary>
+    private static bool CheckPrimaryParameters(TypeDeclarationSyntax type, string sourcePath, List<CompilationError> errors)
+    {
+        if (type.ParameterList is not { Parameters.Count: > 1 } list) return false;
+        var first = new Dictionary<string, ParameterSyntax>(StringComparer.Ordinal);
+        foreach (var parameter in list.Parameters)
+        {
+            var lowered = CodeGen.TwinConstructor.ParameterName(parameter, primary: true);
+            if (!first.TryGetValue(lowered, out var earlier))
+            {
+                first[lowered] = parameter;
+                continue;
+            }
+            var position = parameter.Identifier.GetLocation().GetLineSpan().StartLinePosition;
+            errors.Add(new CompilationError
+            {
+                Code = "EQ1007",
+                Message = $"'{type.Identifier.Text}({parameter.Identifier.ValueText})' lowers to `{lowered}`, and so does "
+                    + $"'{type.Identifier.Text}({earlier.Identifier.ValueText})'. The twin's constructor names a primary "
+                    + "constructor's parameters camelCased, and a function cannot take two parameters of one name. Rename one "
+                    + "of them by what it holds.",
+                SourcePath = sourcePath,
+                Line = position.Line + 1,
+                Column = position.Character + 1,
+            });
+            return true;
+        }
+        return false;
+    }
+
+    /// <summary>
+    /// A class's primary constructor parameter that a member reads, which the twin holds on each
+    /// instance under its camelCased name as a struct's (#583), beside a member that lands on the same
+    /// name: `class Greeter(string name) { public string Name => name.ToUpper(); }` held "ada" where the
+    /// getter `name` stands, and the instance's own value hid the getter, so `Name` answered "ada" where
+    /// C# answers "ADA". A class's members among themselves are not judged here: its fields are class
+    /// state its own accessors read through, and #396 is theirs.
+    /// </summary>
+    private static void CheckHeldParameters(TypeDeclarationSyntax type, string sourcePath, SemanticModel? model,
+        List<CompilationError> errors)
+    {
+        if (type.ParameterList is null) return;
+        var held = type.ParameterList.Parameters.Where(parameter => type.HoldsParameter(parameter, model)).ToList();
+        if (held.Count == 0) return;
+        var members = HeldOnEachInstance(type, model).Where(member => member.At.Parent is not ParameterSyntax)
+            .Concat(type.Members.OfType<MethodDeclarationSyntax>()
+                .Where(method => !method.Modifiers.Any(SyntaxKind.StaticKeyword) && method.ExplicitInterfaceSpecifier is null)
+                .Select(method => (Name: method.Identifier.ValueText, Shown: Signature(method), At: method.Identifier)))
+            .ToList();
+        foreach (var parameter in held)
+        {
+            var name = parameter.Identifier.ValueText;
+            var lowered = name.ToCamelCase();
+            if (members.FirstOrDefault(member => member.Name != name && member.Name.ToCamelCase() == lowered) is not { Name: not null } other)
+                continue;
+            var position = parameter.Identifier.GetLocation().GetLineSpan().StartLinePosition;
+            var otherLine = other.At.GetLocation().GetLineSpan().StartLinePosition.Line + 1;
+            errors.Add(new CompilationError
+            {
+                Code = "EQ1007",
+                Message = $"'{type.Identifier.Text}({name})' lowers to `{lowered}`, and so does '{other.Shown}' (line {otherLine}). "
+                    + "A member reads the primary constructor's parameter, so the twin holds it on each instance under that "
+                    + "name, where the member of the same name stands, and one would hide the other. Rename the parameter by "
+                    + $"what it holds, or hold it in a field of your own (`private readonly {parameter.Type} _{lowered} = {name};`).",
                 SourcePath = sourcePath,
                 Line = position.Line + 1,
                 Column = position.Character + 1,

@@ -1,10 +1,18 @@
 import { $eq, CodeDocument, CodeLanguageRules, CodeToken, CodeTokenKindValue } from "../runtime-exports";
 
 export class PythonLanguage {
-    constructor(props?: any) {
-        if (props && typeof props === 'object') Object.assign(this, props);
+    constructor() {
+        this.rules = (() => {
+        const $o = new CodeLanguageRules();
+        $o.lineComment = '#';
+        $o.indentAfter = [':', '(', '[', '{'];
+        $o.outdentOn = [')', ']', '}'];
+        $o.indentWidth = 4;
+        return $o;
+    })();
     }
 
+    rules!: CodeLanguageRules;
     static normal: number = 0;
     static tripleDouble: number = 1;
     static tripleSingle: number = 2;
@@ -13,14 +21,6 @@ export class PythonLanguage {
         return 'Python';
     }
 
-    rules: CodeLanguageRules = (() => {
-        const $o = new CodeLanguageRules();
-        $o.lineComment = '#';
-        $o.indentAfter = [':', '(', '[', '{'];
-        $o.outdentOn = [')', ']', '}'];
-        $o.indentWidth = 4;
-        return $o;
-    })();
     static $slots: any = null;
     static $failure: any = null;
 

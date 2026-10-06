@@ -16,6 +16,7 @@ public enum SheetEditKind : byte
 /// One undoable step, stored as its own INVERSE: enough to put the sheet back exactly. Snapshots
 /// are per-populated-cell, never per-grid — a sparse document undoes sparsely.
 /// </summary>
+[TwinIsTranspiled]
 public sealed class SheetEdit
 {
     public SheetEditKind Kind { get; init; }
@@ -47,6 +48,7 @@ public sealed class SheetEdit
 /// Edits are atomic (a cell commit, a structural change), so there is no typing coalescing here;
 /// the in-cell editor owns its own keystrokes and commits ONE edit.
 /// </summary>
+[TwinIsTranspiled]
 public sealed class SheetHistory
 {
     private readonly List<SheetEdit> _undo = new();
@@ -91,6 +93,7 @@ public sealed class SheetHistory
 /// rows, Excel's quoting for cells that CONTAIN tabs, newlines or quotes. This is what makes
 /// copy/paste between this component and Excel/Google Sheets just work.
 /// </summary>
+[TwinIsTranspiled]
 public static class TsvCodec
 {
     public static string Serialize(SheetDocument document, SheetRange range)

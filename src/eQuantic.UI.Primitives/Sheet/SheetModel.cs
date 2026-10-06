@@ -6,6 +6,7 @@ namespace eQuantic.UI.Primitives;
 /// (identity, not value), so the key crosses targets as an int. 16384 columns is Excel's own
 /// ceiling, which makes the packing stable and the interop honest.
 /// </summary>
+[TwinIsTranspiled]
 public readonly record struct CellRef(int Row, int Col) : IComparable<CellRef>
 {
     public const int MaxCols = 16384;
@@ -60,6 +61,7 @@ public readonly record struct CellRef(int Row, int Col) : IComparable<CellRef>
 /// moves — the same two-ended shape the code editor's range has, in two dimensions. A single cell
 /// is a range whose ends agree.
 /// </summary>
+[TwinIsTranspiled]
 public readonly record struct SheetRange(CellRef Anchor, CellRef Focus)
 {
     public SheetRange(CellRef cell) : this(cell, cell) { }
