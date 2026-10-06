@@ -1542,8 +1542,14 @@ record of a release, the wiki's Upgrading page is the distillate.
   box's child over its border ([#629](https://github.com/eQuantic/equantic-ui/issues/629)), under
   Comfortable density a dense row's margin takes the presses of the row above it
   ([#630](https://github.com/eQuantic/equantic-ui/issues/630)), and a null-conditional read is
-  `undefined` in the browser ([#633](https://github.com/eQuantic/equantic-ui/issues/633)). Proposed
-  and archived through OpenSpec (`openspec/specs/code-completion`).
+  `undefined` in the browser ([#633](https://github.com/eQuantic/equantic-ui/issues/633)). The
+  author's review found five defects and two holes in the net, each proved failing without its fix:
+  on Photon a press under a scrolled editor landed in its code, which ran past the view unclipped
+  (fields and sheets do the same, [#635](https://github.com/eQuantic/equantic-ui/issues/635));
+  `aria-expanded` sat on the code input, which ARIA does not allow on a textbox; the first build
+  wiped a provider an app added to the controller itself; a row longer than the list was cut
+  differently on each target; and the whole documentation was measured on every build. Proposed and
+  archived through OpenSpec (`openspec/specs/code-completion`, `openspec/specs/code-editor`).
 
 ## Retired documents
 

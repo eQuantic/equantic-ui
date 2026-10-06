@@ -8,8 +8,10 @@ While its completion shows a list, `CodeEditor` SHALL draw it one line below the
 completed, in the code's own coordinate space, with its labels lined up with the word and its rows the
 editor's line height. When a page of rows does not fit below the line inside the editor's viewport and
 fits above it, the list SHALL be drawn above the line; when neither side fits, on the larger side with
-as many rows as fit, never fewer than one. The list's right edge SHALL stay inside the viewport. It
-SHALL show at most a page of rows, and the selected row SHALL stay among them as the selection moves.
+as many rows as fit, never fewer than one. The list's right edge SHALL stay inside the viewport, and its
+left edge too when the code scrolls sideways. It SHALL show at most a page of rows, and the selected row
+SHALL stay among them as the selection moves. An answer that arrives after the keystroke SHALL be drawn
+without waiting for another key.
 
 #### Scenario: A word typed near the top
 
@@ -28,6 +30,21 @@ SHALL show at most a page of rows, and the selected row SHALL stay among them as
   with thirty entries to offer
 - **THEN** a page of twelve rows shows under the line, and every one of them can be pressed
 
+#### Scenario: A word near the right edge
+
+- **WHEN** `Co` is typed where a list standing at the word would run past the viewport's right edge
+- **THEN** the list's right edge is the viewport's
+
+#### Scenario: Code scrolled sideways
+
+- **WHEN** a list is open on a short line and the code is scrolled 200 sideways
+- **THEN** the list stands inside the viewport, at its left edge
+
+#### Scenario: An answer after the key
+
+- **WHEN** `Co` is typed and the provider answers only afterwards
+- **THEN** the answer asks for a frame, and the list shows in it
+
 #### Scenario: Walking past the page
 
 - **WHEN** a list of 30 entries shows a page of 12 and ↓ is pressed 14 times
@@ -36,8 +53,10 @@ SHALL show at most a page of rows, and the selected row SHALL stay among them as
 ### Requirement: A row shows what the word matched
 
 A row SHALL show the entry's kind, its label with the characters the word matched marked, and its
-detail, and SHALL be named by its label and its detail. The selected entry's documentation, once its
-provider resolved it, SHALL show with the list.
+detail, and SHALL be named by its label and its detail. A row longer than the list SHALL cut its
+detail before its label, each with an ellipsis, by the code face's columns, and its name SHALL keep
+both whole. The selected entry's documentation, once its provider resolved it, SHALL show with the list,
+laid out only as far as it shows.
 
 #### Scenario: Three letters of Column
 
@@ -48,6 +67,13 @@ provider resolved it, SHALL show with the list.
 
 - **WHEN** `Column`, a class with the detail `class Column`, is listed
 - **THEN** its row is named `Column, class Column`
+
+#### Scenario: A row longer than the list
+
+- **WHEN** a 72-character label with the detail `string`, and `Column` with a detail longer than the
+  list, are listed
+- **THEN** the long label is cut with an ellipsis and its detail is not drawn, `Column`'s detail is cut
+  with an ellipsis, and the long row's name still reads `<label>, string`
 
 #### Scenario: The selected entry's documentation
 
@@ -95,7 +121,8 @@ announce as options after the code field, the selected one selected.
 
 `CodeEditor.Completions` SHALL say what the editor completes from: null, the default, the language's
 words and the document's; an empty list, nothing. A read-only editor SHALL complete nothing. The
-editor SHALL hand a list of the same providers to its completion only once.
+editor SHALL hand a list of the same providers to its completion only once, and SHALL take out of it
+only the providers it put in.
 
 #### Scenario: A new C# editor
 
@@ -106,6 +133,12 @@ editor SHALL hand a list of the same providers to its completion only once.
 
 - **WHEN** the same editor has `Completions = []` and `re` is typed
 - **THEN** no list shows
+
+#### Scenario: A provider the app added itself
+
+- **WHEN** an app adds a provider to `Editor.Completion.Providers` before the editor's first build, and
+  `Co` is typed
+- **THEN** the list shows that provider's entries beside the document's words
 
 #### Scenario: A parent that rebuilds
 

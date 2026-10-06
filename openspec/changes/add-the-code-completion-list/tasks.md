@@ -53,9 +53,18 @@
 - [x] 5.3 Reported, with what the tests fence: a bordered box on Photon (#629), a dense row's touch
       margin under Comfortable density (#630), a null-conditional read that is `undefined` (#633)
 
-## 6. Documentation
+## 6. The author's review
 
-- [x] 6.1 The wiki's code editor and declarative surface pages, in English and Portuguese
-- [x] 6.2 `docs/FLUTTER-PARITY.md` (`canRequestFocus`, `RawAutocomplete`), the plan's slice 3 row and
+- [x] 6.1 A press outside an editor is not its code's, and the list's area is clipped with the code
+- [x] 6.2 No `aria-expanded` on the code input
+- [x] 6.3 A provider the app added to the controller stays beside the editor's
+- [x] 6.4 A row longer than the list fits its columns; the documentation is laid out only as far as it shows
+- [x] 6.5 Check: a test for each, proved failing without its fix, including an answer that arrives after
+      the key and the list's placement at the right edge and when the code scrolls sideways
+
+## 7. Documentation
+
+- [x] 7.1 The wiki's code editor and declarative surface pages, in English and Portuguese
+- [x] 7.2 `docs/FLUTTER-PARITY.md` (`canRequestFocus`, `RawAutocomplete`), the plan's slice 3 row and
       the `docs/LEDGER.md` line citing #297
-- [ ] 6.3 Archive this change before the merge
+- [ ] 7.3 Archive this change before the merge

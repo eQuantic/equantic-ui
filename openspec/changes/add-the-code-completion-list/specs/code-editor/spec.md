@@ -18,3 +18,15 @@ document and give the editor the keyboard, and a drag from there SHALL select ba
 
 - **WHEN** that press is dragged to the second column of the first line and released
 - **THEN** the selection runs from the end of the document back to the second column of the first line
+
+### Requirement: A press outside an editor is not its code's
+
+A press SHALL land on an editor's code only where the code is on screen: the part of the code that runs
+past the viewport showing it, and the part of a completion list that left the view with its line,
+SHALL take no press.
+
+#### Scenario: Under a scrolled editor
+
+- **WHEN** an editor 200 tall holding 60 lines stands above a box, and the box is pressed 100 below the
+  editor
+- **THEN** the caret stays where it was, and the editor does not take the keyboard

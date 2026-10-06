@@ -104,6 +104,20 @@ session in flight is not dropped by a rebuild.
   context is `BuildContext` on every path and its helper's module imports it, `typeScale` is required
   as `density` is, and the two measures are pinned against values measured on .NET.
 
+## What the author's review found
+
+- On Photon a code surface was registered with its whole bounds, so a long file's code took the
+  presses aimed at whatever stood below the editor, and a list that left the view with its line
+  swallowed them. A code region now carries the part of it on screen (`CodeRegion.Visible`), and its
+  options are clipped the same way; text fields and sheets have the same defect (#635).
+- `aria-expanded` on the code input: ARIA allows it on a combobox and not on the textbox a textarea is,
+  and `aria-controls` and `aria-activedescendant` already say a list shows.
+- The editor cleared its completion's providers on its first build, wiping a provider an app added to
+  the controller itself; it now takes out only what it put in.
+- A label wider than the list could not shrink, and the two targets cut it differently; a row now fits
+  its columns, the detail cut before the label.
+- The whole documentation was measured and laid out on every build; only what four lines can show is.
+
 ## Fences
 
 - A wheel over the list does not scroll it: the arrows and the page keys do, and the visible page
