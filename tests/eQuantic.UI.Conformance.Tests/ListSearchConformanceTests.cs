@@ -105,15 +105,28 @@ public class ListSearchConformanceTests
     [InlineData("var a = new int[3]; new List<int> { 1, 2 }.CopyTo(1, a, 0, 1); return string.Join(\",\", a);")]           // 2,0,0
     [InlineData("try { var a = new int[1]; new List<int> { 1, 2 }.CopyTo(a); return \"no\"; } catch (Exception e) { return e.Message; }")]
     [InlineData("try { var a = new int[3]; new List<int> { 1, 2 }.CopyTo(a, 2); return \"no\"; } catch (Exception e) { return e.Message; }")]
-    [InlineData("try { var a = new int[3]; new List<int> { 1, 2 }.CopyTo(a, -1); return \"no\"; } catch (Exception e) { return e.Message; }")]
     [InlineData("try { var a = new int[3]; new List<int> { 1, 2 }.CopyTo(1, a, 0, 2); return \"no\"; } catch (Exception e) { return e.Message; }")]
-    [InlineData("try { var a = new int[3]; new List<int> { 1, 2 }.CopyTo(-1, a, 0, 1); return \"no\"; } catch (Exception e) { return e.Message; }")]
-    [InlineData("try { var a = new int[3]; new List<int> { 1, 2 }.CopyTo(0, a, 0, -1); return \"no\"; } catch (Exception e) { return e.Message; }")]
     [InlineData("try { var a = new int[3]; new List<int> { 1, 2 }.CopyTo(0, a, 3, 1); return \"no\"; } catch (Exception e) { return e.Message; }")]
     [InlineData("try { new List<int> { 1, 2 }.CopyTo(null); return \"no\"; } catch (Exception e) { return e.Message; }")]
     public void RemoveAllAndCopyTo_AnswerAsDotNet(string statements)
     {
         Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
         ConformanceRunner.AssertStatementsSameAsDotNet(statements, Prelude);
+    }
+
+    /// <summary>
+    /// A range refused with its actual value. <c>ArgumentOutOfRangeException</c> writes that value on
+    /// a line of its own, after <c>Environment.NewLine</c>: <c>\r\n</c> on Windows, where the runtime
+    /// writes the SDK's <c>\n</c> on every host. The Windows leg measured it, and nothing else differs.
+    /// </summary>
+    [SkippableTheory]
+    [InlineData("try { var a = new int[3]; new List<int> { 1, 2 }.CopyTo(a, -1); return \"no\"; } catch (Exception e) { return e.Message; }")]
+    [InlineData("try { var a = new int[3]; new List<int> { 1, 2 }.CopyTo(-1, a, 0, 1); return \"no\"; } catch (Exception e) { return e.Message; }")]
+    [InlineData("try { var a = new int[3]; new List<int> { 1, 2 }.CopyTo(0, a, 0, -1); return \"no\"; } catch (Exception e) { return e.Message; }")]
+    public void CopyTo_WhereDotNetAnswersTheHostsNewline(string statements)
+    {
+        Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
+        ConformanceRunner.AssertStatementsSameAsDotNetExceptTheHostsNewline(
+            statements, "an ArgumentOutOfRangeException writes its actual value after Environment.NewLine", Prelude);
     }
 }
