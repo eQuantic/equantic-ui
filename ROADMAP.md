@@ -101,10 +101,16 @@ The raw-HTML/CSS escape hatch (`HtmlElement`, `ClassBuilder`) stays for web-only
   throws without a registered theme).
 - **Docs & examples**: essential for a "0 JS" audience — the supported subset and recipes.
 - **SSR/hydration robustness**: the hydration mis-alignment shows this path is still fragile.
-- **Security**: hardened in this pass (deserialization allow-list, SignalR relay, payload cap);
+- **Security**: hardened in this pass (deserialization allow-list, payload cap);
   needs a formal hardening review + CSP guidance. **Consent before cookies (2026-09)**: `IConsent` as
   a capability, the `CookieConsent` card, and `UseGtm(...).WithConsent()` — Consent Mode defaults to
   denied and the container is fetched only on a granted answer, on the first paint and live.
+- **Server events (2026-10)**: a component hears what the server publishes to a typed topic
+  (`ServerTopic<T>`, the `IServerEvents` capability) over one Server-Sent Events stream per page, each
+  topic authorized by route templates and ASP.NET Core policies, with seams for the backplane and the
+  lifecycle; the empty SignalR hub and the CDN script nothing read are gone (#291). Ahead: a streaming
+  Server Action, presence, replay, a WebSocket transport, a Redis backplane package, the Photon
+  realization.
 - **Server-only code in a web project**: `[ServerOnly]` on a CLASS (2026-09) says the type never
   crosses; before it, a Roslyn service or a hosted warm-up in the web project failed the build on its
   first server-only call, and only another assembly could say otherwise.

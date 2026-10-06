@@ -71,7 +71,8 @@ is an implementation to add. The seam is internal until a second transport exist
 knob with one value is a member kept for nothing.
 
 **One stream, subscriptions as requests.** The stream's first event hands the page a connection id;
-each `Subscribe` posts `{connection, topic}` and each release deletes it. The alternative, the topics
+a bind posts `{topic}` to `/_equantic/events/{connection}/subscribe` and a release to
+`…/{connection}/release`. The alternative, the topics
 in the stream's query string, would reopen the stream whenever a component mounts, losing what was
 published in between, and would authorize every topic again each time. The connection id is an
 unguessable token bound to the stream that issued it, and a request naming an id the server did not
@@ -80,7 +81,7 @@ issue is refused.
 **Authorization: route templates, policies, a delegate, and a closed default.** A template uses
 ASP.NET Core's route syntax (`room:{roomId}`), parsed and matched by its own `RoutePattern` machinery,
 so a developer reads it as a route. A template takes a policy name (the topic reaches the policy's
-handlers as a `ServerTopicResource`: its name, its values, the `HttpContext`), `AllowAnonymous()`, or
+handlers as a `ServerTopicContext`: its name, its values, the connection's id, the `HttpContext`), `AllowAnonymous()`, or
 a delegate for the case a policy would be heavy. No match refuses. The Primitives' `[Authorize]`
 attribute, which Server Actions use, was the alternative; a topic is not a member to put it on.
 
@@ -101,10 +102,29 @@ close and a topic bound and released, with the `HttpContext` and the template's 
 occupancy and audit are built on it by the app. A handler that throws is logged and does not break
 the connection or the subscription.
 
-**Limits are options, bound from configuration.** `ServerEventOptions` binds `EQuantic:ServerEvents`
+**Limits are options, bound from configuration.** `ServerEventsOptions` binds `EQuantic:ServerEvents`
 (heartbeat, topics per connection, payload size, events queued per connection) and the fluent
 builder can override them. A connection whose queue fills is closed, and the page reconnects and
 resynchronizes: a slow reader never grows the server's memory.
+
+**Connected means bound.** After a connection opens, the runtime binds every live topic and reports
+`Connected` once they are bound, with the last event's id. A page that resynchronizes through a
+Server Action on that change asks when nothing more can be missed in between; reported when the
+stream opened, an event published between the page's read and the binds would be lost.
+
+**The endpoints admit anonymous requests; each topic decides.** A stream carries nothing until a
+topic is bound to it, and every bind is authorized by the topic's rule. Left to an app's fallback
+authorization policy, a policy that requires a user would refuse the stream itself, and with it
+every topic the app allowed anyone to hear.
+
+**A stream ends with its request or with the app.** A graceful shutdown waits for every request in
+flight; a stream that ended only when its page went away held each instance until the host's timeout,
+and in a rolling deploy kept its pages on the instance that was leaving. Linked to
+`ApplicationStopping`, the stream ends, and the page reconnects as after any drop.
+
+**A bind is decided under the lock the stream's end takes.** The topic limit is read again where the
+topic is bound, and a connection whose stream ended binds nothing: a bind authorized after the end
+would hold a topic no one ever releases, and a presence handler would count a member who left.
 
 **The SignalR pieces are removed, not repurposed.** Nothing publishes through the hub, nothing in the
 runtime reads the script, and `SignalRClient.ts` is not bundled. Keeping them would leave a second,
@@ -121,3 +141,11 @@ dead door beside the real one.
   resynchronizes through a Server Action; replay is a later slice on that id.
 - [Ordering across instances depends on the backplane] → the in-memory one keeps publish order per
   topic; a replacement documents its own.
+- [Several instances behind a load balancer] → a bind names the connection, which only the instance
+  holding the stream knows, so a page's requests need session affinity, as SignalR's do; a bind that
+  reaches another instance is reported as `Failed`, and the browser's console names the cause.
+  Forwarding binds through the backplane is the alternative to weigh when an app cannot pin.
+- [The connection's id is a bearer token] → anyone who learns it can bind to that page's stream the
+  topics they themselves are authorized for, or release its topics; it travels in the request's
+  path, so access logs hold it. Binding the connection to the identity that opened it is a hardening
+  slice.

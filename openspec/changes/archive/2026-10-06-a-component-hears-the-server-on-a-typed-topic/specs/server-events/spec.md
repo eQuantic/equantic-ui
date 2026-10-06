@@ -76,14 +76,27 @@ asked, and SHALL receive nothing.
 - **WHEN** a page subscribes to a topic that matches no configured template
 - **THEN** the subscription is refused
 
+#### Scenario: A fallback policy that requires a user
+
+- **WHEN** the app's fallback authorization policy requires a signed-in user, and an anonymous page
+  subscribes to a topic the app lets anyone hear and to one that requires a user
+- **THEN** the first is bound and the second is refused: the events endpoints are open, and each
+  topic's own rule decides
+
+#### Scenario: A topic authorized after its stream ended
+
+- **WHEN** a subscription is still being authorized when its page's stream ends
+- **THEN** the topic is bound to nothing, and no handler hears it subscribed
+
 ### Requirement: A client only listens
 
-No request a client sends SHALL publish to a topic or reach another connection. The requests a
-client sends SHALL only bind or release topics on its own connection.
+No request a client sends SHALL publish to a topic. The requests a client sends SHALL only bind or
+release topics on a connection the server issued, named by the unguessable id the stream handed to
+its page.
 
-#### Scenario: Releasing a topic on someone else's connection
+#### Scenario: A connection the server never issued
 
-- **WHEN** a request names a connection the server did not issue to it
+- **WHEN** a request names a connection id the server never issued
 - **THEN** the request is refused and no connection changes
 
 ### Requirement: Ending a subscription stops delivery
@@ -102,13 +115,19 @@ the topic on the server when no other subscription on the page holds it.
 The capability SHALL expose the connection's state (connecting, connected, reconnecting,
 disconnected) and SHALL report each change to the components that watch it, the change carrying the
 id of the last event the page received. When the connection drops, the runtime SHALL reconnect by
-itself and SHALL subscribe every live topic again, authorized again.
+itself and SHALL subscribe every live topic again, authorized again, and SHALL report connected once
+those topics are bound.
 
 #### Scenario: The server restarts
 
 - **WHEN** a page holds two subscriptions, the connection drops and the server comes back
 - **THEN** the page is told reconnecting and then connected, the change names the id of the last
   event it received, and events published after it to both topics arrive
+
+#### Scenario: The app stops
+
+- **WHEN** the app stops gracefully while a page holds a stream
+- **THEN** the stream ends rather than holding the shutdown, and the page reconnects
 
 ### Requirement: An event published on one instance reaches subscribers on every instance
 
@@ -152,6 +171,11 @@ SHALL be refused, and publishing a payload past the size limit SHALL throw.
 
 - **WHEN** `MaxTopicsPerConnection` is 2 and a page subscribes to a third topic
 - **THEN** the third subscription is refused
+
+#### Scenario: Requests sent at once
+
+- **WHEN** `MaxTopicsPerConnection` is 2 and a page sends six subscriptions at once
+- **THEN** two are bound and four are refused
 
 #### Scenario: A payload too large
 

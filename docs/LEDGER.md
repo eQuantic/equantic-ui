@@ -1494,6 +1494,26 @@ record of a release, the wiki's Upgrading page is the distillate.
   a generated equality in a hydration map or a `ContainsValue` did not register; and `CopyTo` through
   an `ICollection<T>` copies a set. The served runtime grew about 7 KB gzipped. Proposed and archived
   through OpenSpec (`openspec/specs/runtime-sets`, `runtime-dictionaries`, `transpiler-bcl`).
+- **2026-10-06 · A component hears the server on a typed topic**: the only door from the browser to
+  the server was a Server Action, so no component could hear what someone else did, and an empty
+  SignalR hub, a CDN script nothing called and an unbundled client stood where the door would be
+  ([#291](https://github.com/eQuantic/equantic-ui/issues/291)). `ServerTopic<T>` names a topic and its
+  payload's type; `IServerEvents` is the capability a component subscribes through, over one
+  Server-Sent Events stream per page that reconnects by itself and binds every live topic again
+  before it reports connected; `IServerEventPublisher` publishes from any server code; a topic is
+  authorized by route templates with ASP.NET Core policies (the topic as their resource), anonymous
+  access or a delegate, closed by default; `IServerEventBackplane` and `IServerEventHandler` are the
+  seams for several instances and for presence; the limits bind from `EQuantic:ServerEvents`. eqc
+  hands the twin the payload's hydration spec through `[HydratesTypeArgument]`, and two defects of its
+  own met on the way went at the root: a generic vocabulary type was imported from a sibling module,
+  and a target-typed one whose argument is a list was built as a collection expression. Proving it in
+  a browser found five defects of the server's half, each fixed with a test that fails without it: an
+  app's fallback policy refused the stream, a bind authorized after its stream ended was never
+  released, binds sent at once passed the topic limit, a payload's U+2028 split its JSON, and a stream
+  held a graceful shutdown until the host's timeout. The served runtime grew 2,153 gzipped bytes.
+  Migration: `ServerActionHub`, its route `/_equantic/hub` and `AddSignalR` are gone; an app that
+  injected `IHubContext<ServerActionHub>`, which nothing documented, publishes through
+  `IServerEventPublisher`. Proposed and archived through OpenSpec (`openspec/specs/server-events`).
 
 ## Retired documents
 
