@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
+import { TypeScriptLanguage } from '../shared/components/TypeScriptLanguage';
 import { twinJson } from './twin-json';
 
 /**
@@ -52,6 +53,15 @@ describe('twinJson', () => {
     const json = twinJson(value);
     expect(Object.prototype.hasOwnProperty.call(json, '__proto__')).toBe(true);
     expect(Object.getPrototypeOf(json)).toBe(Object.prototype);
+  });
+
+  it('is what a twin eqc writes with a store answers, its stores under their properties', () => {
+    // The code engine's languages keep their overridable rules in stores: `Rules` is virtual in
+    // CurlyBraceLanguage's C#, and each language overrides it.
+    const json = JSON.parse(JSON.stringify(new TypeScriptLanguage())) as Record<string, unknown>;
+    expect(Object.keys(json)).toContain('rules');
+    expect(Object.keys(json).filter((key) => key.startsWith('$'))).toEqual([]);
+    expect((json.rules as Record<string, unknown>).lineComment).toBe('//');
   });
 
   it('writes a nested twin through its own toJSON', () => {

@@ -1,6 +1,7 @@
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using eQuantic.UI.Compiler.CodeGen.Ir;
 using eQuantic.UI.Compiler.CodeGen.Strategies.Expressions;
 
 namespace eQuantic.UI.Compiler.CodeGen;
@@ -95,6 +96,46 @@ internal static class PropertyStore
             .Select(reference => reference.GetSyntax())
             .OfType<PropertyDeclarationSyntax>()
             .Any(KeepsAStore));
+    }
+
+    /// <summary>
+    /// The accessors the compiler writes for an instance property, the one rule both emitters write them
+    /// by: over the store of a property that keeps one, a getter that returns it where C# writes no
+    /// getter body, and a setter that writes it where C# writes no setter body, written for a property C#
+    /// declares get-only too, since C# refuses every write to that one when it compiles and only the
+    /// runtime's hydration reaches it (it adopts a member through its setter and skips one with a getter
+    /// alone, as it skips a computed property); and the half an override inherits
+    /// (<see cref="Inherited"/>), forwarded to <c>super</c>. The accessors C# writes a body for are the
+    /// emitter's to lower.
+    /// </summary>
+    /// <param name="property">The instance property.</param>
+    /// <param name="model">The model that can answer about it, or null.</param>
+    /// <param name="getterAnnotation">What a getter it writes is annotated with (<c>: T</c>, or nothing).</param>
+    /// <param name="valueParameter">The parameter of a setter it writes (<c>value: T</c>, or <c>value</c>).</param>
+    public static IEnumerable<JsClassMember> CompilerAccessors(PropertyDeclarationSyntax property, SemanticModel? model,
+        string getterAnnotation, string valueParameter)
+    {
+        var name = TwinName.Of(property.Identifier.Text);
+        var accessors = property.AccessorList?.Accessors ?? default;
+        var getter = accessors.FirstOrDefault(accessor => accessor.IsKind(SyntaxKind.GetAccessorDeclaration));
+        var setter = accessors.FirstOrDefault(accessor =>
+            accessor.IsKind(SyntaxKind.SetAccessorDeclaration) || accessor.IsKind(SyntaxKind.InitAccessorDeclaration));
+        var (inheritsGetter, inheritsSetter) = Inherited(property, model);
+        var store = JsExpr.ThisMember(FieldExpressionStrategy.BackingSlot(property));
+        var inherited = JsExpr.Member(JsExpr.Identifier("super"), name);
+        var stored = KeepsAStore(property);
+
+        if (stored && getter is { Body: null, ExpressionBody: null })
+            yield return JsClassMember.Getter("", name, getterAnnotation, JsStatement.Return(store));
+        else if (inheritsGetter)
+            yield return JsClassMember.Getter("", name, getterAnnotation, JsStatement.Return(inherited));
+
+        if (stored && setter is null or { Body: null, ExpressionBody: null })
+            yield return JsClassMember.Setter("", name, valueParameter,
+                JsStatement.Expression(JsExpr.Binary(store, "=", JsExpr.Identifier("value"))));
+        else if (inheritsSetter)
+            yield return JsClassMember.Setter("", name, valueParameter,
+                JsStatement.Expression(JsExpr.Binary(inherited, "=", JsExpr.Identifier("value"))));
     }
 
     /// <summary>Whether <paramref name="property"/> or a property it overrides answers <paramref name="has"/>.</summary>

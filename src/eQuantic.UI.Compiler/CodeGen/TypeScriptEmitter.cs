@@ -1728,9 +1728,9 @@ public class TypeScriptEmitter
                                 JsStatement.Return(JsExpr.ThisMember(slot))), p);
                     }
                     // An instance property that keeps a store, which the constructor starts with the
-                    // class's other state (InstanceState), reads and writes it through accessors.
+                    // class's other state (InstanceState), reads and writes it through accessors
+                    // (EmitCompilerAccessors, below).
                     var stored = !isStaticProperty && PropertyStore.KeepsAStore(p);
-                    if (stored) EmitStoreAccessors(p, c);
 
                     // A property guarding a store has its accessors, and no field of its name.
                     if (EmitGetter(p, c, accessorQualifier) || backed || stored) { }
@@ -1749,7 +1749,7 @@ public class TypeScriptEmitter
 
                     EmitSetter(p, c, accessorQualifier);
                 }
-                if (accessorQualifier.Length == 0) EmitInheritedAccessors(p, c);
+                if (accessorQualifier.Length == 0) EmitCompilerAccessors(p, c);
             }
             // `event Action<T>? Changed;` — a member the model raises and a caller subscribes to.
             // Nothing emitted it, so `this.changed?.(edit)` reached a property that did not exist.
@@ -1890,45 +1890,16 @@ public class TypeScriptEmitter
     }
 
     /// <summary>
-    /// The compiler's accessors of an instance property that keeps a store (<see cref="PropertyStore"/>,
-    /// #591): a getter that returns the store where C# writes no getter body, and a setter that writes it
-    /// where C# writes no setter body. The setter is written for a property C# declares get-only too:
-    /// C# refuses every write to it when the C# compiles, so only the runtime reaches it, by hydration,
-    /// which adopts a member through its setter and skips one that only has a getter, as it skips a
-    /// computed property. The accessors C# writes a body for are its own (<see cref="EmitGetter"/>,
-    /// <see cref="EmitSetter"/>).
+    /// The accessors the compiler writes for an instance property (<see cref="PropertyStore.CompilerAccessors"/>,
+    /// #591): over the store of one that keeps one, and the half an override inherits, forwarded to
+    /// <c>super</c>. A record's twin takes the same ones. The accessors C# writes a body for are lowered by
+    /// <see cref="EmitGetter"/> and <see cref="EmitSetter"/>.
     /// </summary>
-    private void EmitStoreAccessors(PropertyDeclarationSyntax p, TypeScriptCodeBuilder.ClassBuilder c)
+    private void EmitCompilerAccessors(PropertyDeclarationSyntax p, TypeScriptCodeBuilder.ClassBuilder c)
     {
-        var name = p.Identifier.Text.ToCamelCase();
-        var store = Strategies.Expressions.FieldExpressionStrategy.BackingSlot(p);
         var annotation = Annotation(DeclaredType(p.Type));
-        var accessors = p.AccessorList?.Accessors ?? default;
-        var getter = accessors.FirstOrDefault(a => a.Keyword.Text == "get");
-        var setter = accessors.FirstOrDefault(a => a.Keyword.Text is "set" or "init");
-        if (getter is { Body: null, ExpressionBody: null })
-            c.Member(JsClassMember.Getter("", name, annotation, JsStatement.Return(JsExpr.ThisMember(store))), getter);
-        if (setter is null or { Body: null, ExpressionBody: null })
-            c.Member(JsClassMember.Setter("", name, $"value{annotation}",
-                JsStatement.Expression(JsExpr.Binary(JsExpr.ThisMember(store), "=", JsExpr.Identifier("value")))), (SyntaxNode?)setter ?? p);
-    }
-
-    /// <summary>
-    /// The half of a property an override inherits (<see cref="PropertyStore.Inherited"/>): C# lets an
-    /// override declare only the getter, or only the setter, of a property whose base has both, and a
-    /// JavaScript accessor is one property with both halves, so the derived getter alone hid the base's
-    /// setter and a write threw. The inherited half forwards to <c>super</c>.
-    /// </summary>
-    private void EmitInheritedAccessors(PropertyDeclarationSyntax p, TypeScriptCodeBuilder.ClassBuilder c)
-    {
-        var (getter, setter) = PropertyStore.Inherited(p, ModelFor(p));
-        var name = p.Identifier.Text.ToCamelCase();
-        var annotation = Annotation(DeclaredType(p.Type));
-        var inherited = JsExpr.Member(JsExpr.Identifier("super"), name);
-        if (getter) c.Member(JsClassMember.Getter("", name, annotation, JsStatement.Return(inherited)), p);
-        if (setter)
-            c.Member(JsClassMember.Setter("", name, $"value{annotation}",
-                JsStatement.Expression(JsExpr.Binary(inherited, "=", JsExpr.Identifier("value")))), p);
+        foreach (var accessor in PropertyStore.CompilerAccessors(p, ModelFor(p), annotation, $"value{annotation}"))
+            c.Member(accessor, p);
     }
 
     /// <summary>A method of a class module, or of a component's twin when an interface's default

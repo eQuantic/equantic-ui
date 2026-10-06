@@ -56,9 +56,10 @@ internal sealed class TwinConstructor
     }
 
     /// <summary>One member the constructor starts: the slot it is held in on the instance, what it starts
-    /// as, and whether evaluating that can do anything but read a value, which is what a derived type
-    /// evaluates before its base's constructor runs.</summary>
-    public readonly record struct Start(string Slot, JsExpr Value, bool RunsCode);
+    /// as, whether evaluating that can do anything but read a value, which is what a derived type
+    /// evaluates before its base's constructor runs, and the C# that declares it, which the statements
+    /// that start it map to, so a frame thrown in an initializer leads to its own line (#293).</summary>
+    public readonly record struct Start(string Slot, JsExpr Value, bool RunsCode, SyntaxNode? Origin = null);
 
     /// <summary>
     /// What a member starts as, as C# starts it: a primary constructor's parameter the parameter
@@ -85,7 +86,7 @@ internal sealed class TwinConstructor
             _ => ("null", false),
         };
         if (value == "null" && _annotations && !Nullable(tsType)) value = "null!";
-        return new Start(slot, JsExpr.Opaque(value), runsCode);
+        return new Start(slot, JsExpr.Opaque(value), runsCode, declaration);
     }
 
     /// <summary>
@@ -163,7 +164,7 @@ internal sealed class TwinConstructor
             // C# name holds no `$`, and the constructor's are `$` and a letter (`$a`, `$k`, `$c0`). A
             // member `A` or `K` was `const $a` beside the rest parameter `$a`, and the module did not load.
             foreach (var start in state)
-                if (start.RunsCode) statements.Add(JsStatement.Const(Evaluated(start.Slot), start.Value));
+                if (start.RunsCode) statements.Add(JsStatement.Const(Evaluated(start.Slot), start.Value) with { Origin = start.Origin });
             if (single is not null)
                 statements.AddRange(SuperCall(single, clause));
             else
@@ -173,12 +174,13 @@ internal sealed class TwinConstructor
                     i == constructors.Roots.Count - 1 ? null : (JsExpr?)JsExpr.Binary(JsExpr.Identifier("$k"), "===", JsExpr.Literal(i.ToString())),
                     SuperCall(root, clause))).ToList()));
             foreach (var start in state)
-                statements.Add(Assign(JsExpr.ThisMember(start.Slot), start.RunsCode ? JsExpr.Identifier(Evaluated(start.Slot)) : start.Value));
+                statements.Add(Assign(JsExpr.ThisMember(start.Slot), start.RunsCode ? JsExpr.Identifier(Evaluated(start.Slot)) : start.Value)
+                    with { Origin = start.Origin });
         }
         else
         {
             foreach (var start in state)
-                statements.Add(Assign(JsExpr.ThisMember(start.Slot), start.Value));
+                statements.Add(Assign(JsExpr.ThisMember(start.Slot), start.Value) with { Origin = start.Origin });
         }
 
         if (single is not null)

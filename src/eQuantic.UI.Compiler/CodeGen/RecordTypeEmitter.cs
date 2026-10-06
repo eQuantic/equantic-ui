@@ -613,34 +613,31 @@ public class RecordTypeEmitter
     /// <summary>
     /// A property's accessors on the twin's prototype: a computed one's getter, and its setter where it
     /// has one with a body (an interface's default property writes through its other members, found in
-    /// review, #418); the compiler's accessors over the store of a property that keeps one
-    /// (<see cref="PropertyStore"/>, #591, #615), its setter written for a get-only one too, which only
-    /// the runtime's hydration reaches, as in a class; a static <c>field</c> store's automatic getter
-    /// (#483); and the half an override inherits (<see cref="PropertyStore.Inherited"/>), forwarded to
-    /// <c>super</c>. Nothing for an auto-property held under its own name.
+    /// review, #418); a static <c>field</c> store's automatic getter (#483); and the accessors the
+    /// compiler writes for an instance property (<see cref="PropertyStore.CompilerAccessors"/>, the class
+    /// path's too): over the store of one that keeps one (#591, #615), and the half an override inherits,
+    /// forwarded to <c>super</c>. Nothing for an auto-property held under its own name.
     /// </summary>
     private string ComputedProperty(PropertyDeclarationSyntax property, string className)
     {
         var getter = ComputedGetter(property);
         var isStatic = property.Modifiers.Any(m => m.IsKind(SyntaxKind.StaticKeyword));
-        var store = Strategies.Expressions.FieldExpressionStrategy.BackingSlot(property);
         // A static `field` store's automatic getter reads the store (#483).
         var readsItsStore = getter is null && isStatic
             && Strategies.Expressions.FieldExpressionStrategy.UsesBackingField(property);
-        var stored = !isStatic && PropertyStore.KeepsAStore(property);
-        var (inheritsGetter, inheritsSetter) = isStatic ? (false, false) : PropertyStore.Inherited(property, ModelFor(property));
-        if (getter is null && !IsSetterOnly(property) && !readsItsStore && !stored && !inheritsGetter && !inheritsSetter) return "";
+        var compilers = isStatic
+            ? []
+            : PropertyStore.CompilerAccessors(property, ModelFor(property), "", _lowering.Param("value", TsTypeOf(property.Type))).ToList();
+        if (getter is null && !IsSetterOnly(property) && !readsItsStore && compilers.Count == 0) return "";
         _converter.SetCurrentClass(className);
         var prefix = isStatic ? "static " : "";
         var propertyName = property.Identifier.Text.ToCamelCase();
-        var inherited = JsExpr.Member(JsExpr.Identifier("super"), propertyName);
         // Both accessors are lowered as a method's body is (#432), so a variable an expression body's
         // pattern binds is declared in front of its use, as it is in a class.
         var text = getter switch
         {
-            null when readsItsStore || stored => Own(JsClassMember.Getter(prefix, propertyName, "",
-                JsStatement.Return(JsExpr.ThisMember(store)))),
-            null when inheritsGetter => Own(JsClassMember.Getter(prefix, propertyName, "", JsStatement.Return(inherited))),
+            null when readsItsStore => Own(JsClassMember.Getter(prefix, propertyName, "",
+                JsStatement.Return(JsExpr.ThisMember(Strategies.Expressions.FieldExpressionStrategy.BackingSlot(property))))),
             null => "",
             BlockSyntax block => Own(JsClassMember.Getter(prefix, propertyName, "", _lowering.AccessorBody(block))),
             _ => Own(JsClassMember.Getter(prefix, propertyName, "",
@@ -651,13 +648,10 @@ public class RecordTypeEmitter
             ? _lowering.ExpressionBody(arrow.Expression, returns: false)
             : setter?.Body is { } setterBlock
                 ? _lowering.AccessorBody(setterBlock)
-                : stored
-                    ? JsStatement.Expression(JsExpr.Binary(JsExpr.ThisMember(store), "=", JsExpr.Identifier("value")))
-                    : inheritsSetter
-                        ? JsStatement.Expression(JsExpr.Binary(inherited, "=", JsExpr.Identifier("value")))
-                        : null;
+                : null;
         if (setterBody is not null)
             text += Own(JsClassMember.Setter(prefix, propertyName, _lowering.Param("value", TsTypeOf(property.Type)), setterBody));
+        foreach (var accessor in compilers) text += Own(accessor);
         return text;
     }
 
