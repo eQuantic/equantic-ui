@@ -33,9 +33,11 @@ public sealed class ServerTopicRule
     }
 
     /// <summary>
-    /// The user must satisfy every named policy, evaluated by ASP.NET Core's
-    /// <c>IAuthorizationService</c> with the topic (<see cref="ServerTopicContext"/>) as the resource,
-    /// so a policy's handlers read the template's values. With no name, the user must be signed in.
+    /// The user must satisfy every named policy, evaluated as ASP.NET Core's authorization middleware
+    /// evaluates an endpoint's: the policies' authentication schemes authenticated, then their
+    /// requirements, with the topic (<see cref="ServerTopicContext"/>) as the resource, so a policy's
+    /// handlers read the template's values. With no name, the app's default policy, a signed-in user
+    /// unless the app changed it.
     /// </summary>
     public ServerTopicRule RequireAuthorization(params string[] policies)
     {

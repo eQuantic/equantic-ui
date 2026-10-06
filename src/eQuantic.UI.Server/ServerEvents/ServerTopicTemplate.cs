@@ -35,7 +35,9 @@ internal sealed class ServerTopicTemplate
             throw new ArgumentException(
                 $"The topic template '{rule.Template}' constrains '{constrained.Name}', and a topic template's parameter takes no constraint: validate the value in the template's authorization, which receives it.");
 
-        _matcher = new TemplateMatcher(new RouteTemplate(pattern), new RouteValueDictionary());
+        // The template's own defaults, which the matcher does not read from the template: without them
+        // `room/{roomId=lobby}` refused the topic `room` that the route syntax says it matches.
+        _matcher = new TemplateMatcher(new RouteTemplate(pattern), new RouteValueDictionary(pattern.Defaults));
         Specificity = pattern.PathSegments
             .SelectMany(segment => segment.Parts)
             .OfType<RoutePatternLiteralPart>()

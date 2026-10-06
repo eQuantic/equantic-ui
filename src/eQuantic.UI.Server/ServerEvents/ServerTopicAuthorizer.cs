@@ -1,5 +1,6 @@
 using eQuantic.UI.Primitives;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Authorization.Policy;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -30,19 +31,21 @@ internal sealed class ServerTopicAuthorizer(IReadOnlyList<ServerTopicTemplate> t
         var context = new ServerTopicContext(connectionId, topic, values, http);
         if (rule.Rule.IsAnonymous) return ServerTopicAuthorization.Allowed(context);
 
-        if (rule.Rule.RequiresAuthenticatedUser && http.User.Identity?.IsAuthenticated != true)
-            return ServerTopicAuthorization.Refused(ServerTopicRefusalReason.Forbidden);
-
-        if (rule.Rule.Policies.Count > 0)
+        if (rule.Rule.RequiresAuthenticatedUser || rule.Rule.Policies.Count > 0)
         {
-            // No authorization registered means no policy can be satisfied: refused, not waved through.
-            var authorization = http.RequestServices.GetService<IAuthorizationService>();
-            if (authorization is null) return ServerTopicAuthorization.Refused(ServerTopicRefusalReason.Forbidden);
-            foreach (var policy in rule.Rule.Policies)
-            {
-                if (!(await authorization.AuthorizeAsync(http.User, context, policy)).Succeeded)
-                    return ServerTopicAuthorization.Refused(ServerTopicRefusalReason.Forbidden);
-            }
+            // As ASP.NET Core's authorization middleware evaluates an endpoint's: the policies combined,
+            // their authentication schemes authenticated (the request's principal becomes the one they
+            // answer), then their requirements, with the topic as the resource. Evaluating the
+            // requirements alone against the request's principal let the default scheme's user meet
+            // a policy restricted to another scheme, a bearer token's for one (#647). No authorization
+            // registered means no policy can be met: refused, not waved through.
+            var provider = http.RequestServices.GetService<IAuthorizationPolicyProvider>();
+            var evaluator = http.RequestServices.GetService<IPolicyEvaluator>();
+            if (provider is null || evaluator is null) return ServerTopicAuthorization.Refused(ServerTopicRefusalReason.Forbidden);
+            var policy = await PolicyOf(rule.Rule, provider);
+            var authenticated = await evaluator.AuthenticateAsync(policy, http);
+            if (!(await evaluator.AuthorizeAsync(policy, authenticated, http, context)).Succeeded)
+                return ServerTopicAuthorization.Refused(ServerTopicRefusalReason.Forbidden);
         }
 
         foreach (var authorize in rule.Rule.Delegates)
@@ -51,5 +54,20 @@ internal sealed class ServerTopicAuthorizer(IReadOnlyList<ServerTopicTemplate> t
         }
 
         return ServerTopicAuthorization.Allowed(context);
+    }
+
+    /// <summary>The rule's policies as one, the app's default policy standing for a rule that asks only
+    /// for a signed-in user, as <c>RequireAuthorization()</c> on an endpoint does.</summary>
+    private static async Task<AuthorizationPolicy> PolicyOf(ServerTopicRule rule, IAuthorizationPolicyProvider provider)
+    {
+        var combined = new AuthorizationPolicyBuilder();
+        if (rule.RequiresAuthenticatedUser) combined.Combine(await provider.GetDefaultPolicyAsync());
+        foreach (var name in rule.Policies)
+        {
+            combined.Combine(await provider.GetPolicyAsync(name)
+                             ?? throw new InvalidOperationException(
+                                 $"The topic template '{rule.Template}' requires the authorization policy '{name}', and the app registers none of that name."));
+        }
+        return combined.Build();
     }
 }

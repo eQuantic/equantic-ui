@@ -60,12 +60,19 @@ internal sealed class ServerEventStream : IAsyncDisposable
     public async Task<ServerEventFrame> NextAsync(TimeSpan? deadline = null) =>
         await NextOrEndAsync(deadline) ?? throw new InvalidOperationException("The server ended the stream.");
 
-    /// <summary>The next frame that is not a heartbeat.</summary>
+    /// <summary>
+    /// The next frame that is not a heartbeat, within one deadline for the whole wait. A deadline per frame
+    /// started again at every heartbeat, so an event that never came kept a test waiting forever instead
+    /// of failing it.
+    /// </summary>
     public async Task<ServerEventFrame> NextEventAsync(TimeSpan? deadline = null)
     {
+        var until = DateTime.UtcNow + (deadline ?? TimeSpan.FromSeconds(10));
         while (true)
         {
-            var frame = await NextAsync(deadline);
+            var left = until - DateTime.UtcNow;
+            if (left <= TimeSpan.Zero) throw new TimeoutException("Only heartbeats arrived before the deadline.");
+            var frame = await NextAsync(left);
             if (!frame.IsHeartbeat) return frame;
         }
     }

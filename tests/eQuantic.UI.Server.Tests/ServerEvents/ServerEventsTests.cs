@@ -161,6 +161,58 @@ public class ServerEventsTests
         (await app.SubscribeAsync(stream.ConnectionId, "room:a")).Should().BeNull();
     }
 
+    /// <summary>A parameter's default, which the route syntax gives, matches a topic that leaves it out.</summary>
+    [Fact]
+    public async Task ATemplatesDefault_FillsAParameterTheTopicLeavesOut()
+    {
+        string? room = null;
+        await using var app = await ServerEventsApp.StartAsync(events => events
+            .Topic("room/{roomId=lobby}", rule => rule.Authorize(topic =>
+            {
+                room = topic.Values["roomId"];
+                return true;
+            })));
+        await using var stream = await app.OpenStreamAsync();
+
+        (await app.SubscribeAsync(stream.ConnectionId, "room")).Should().BeNull();
+        room.Should().Be("lobby");
+    }
+
+    /// <summary>
+    /// A policy restricted to a scheme is met only by that scheme's user, as the authorization
+    /// middleware evaluates it: the default scheme's signed-in user met a bearer-only policy, because
+    /// the requirements ran against the request's principal without the policy's schemes (#647).
+    /// </summary>
+    [Fact]
+    public async Task APolicyRestrictedToAScheme_IsMetOnlyByThatSchemesUser()
+    {
+        string? heard = null;
+        await using var app = await ServerEventsApp.StartAsync(
+            events => events.Topic("inbox:{user}", rule => rule
+                .RequireAuthorization("BearerOnly")
+                .Authorize(topic =>
+                {
+                    heard = topic.HttpContext.User.Identity?.Name;
+                    return true;
+                })),
+            services =>
+            {
+                services.AddAuthentication(EveryoneIsAlice.Name)
+                    .AddScheme<AuthenticationSchemeOptions, EveryoneIsAlice>(EveryoneIsAlice.Name, null)
+                    .AddScheme<AuthenticationSchemeOptions, BearerHeader>(BearerHeader.Name, null);
+                services.AddAuthorization(options => options.AddPolicy("BearerOnly", policy => policy
+                    .AddAuthenticationSchemes(BearerHeader.Name)
+                    .RequireAuthenticatedUser()));
+            });
+        await using var stream = await app.OpenStreamAsync();
+
+        (await app.SubscribeAsync(stream.ConnectionId, "inbox:bob")).Should().Be("forbidden",
+            "the default scheme's alice is signed in, but not by the scheme the policy names");
+        (await app.SubscribeAsync(stream.ConnectionId, "inbox:bob", request => request.Headers.Add("X-Bearer", "token")))
+            .Should().BeNull();
+        heard.Should().Be("bob", "the topic's rule reads the principal the policy's scheme answered");
+    }
+
     [Fact]
     public async Task RequiringAnAuthenticatedUser_RefusesAnAnonymousRequest()
     {
@@ -280,6 +332,23 @@ public class ServerEventsTests
         while (await stream.NextOrEndAsync(TimeSpan.FromSeconds(5)) is not null)
             frames++.Should().BeLessThan(10, "the heartbeat must not outlive the app");
         await stopping.WaitAsync(TimeSpan.FromSeconds(5));
+    }
+
+    /// <summary>
+    /// The instrument fails when the event it waits for never comes: with a heartbeat every 200 ms, a
+    /// deadline per frame started again at each one and the wait never ended.
+    /// </summary>
+    [Fact]
+    public async Task WaitingForAnEventThatNeverComes_FailsAtTheDeadline_HeartbeatsOrNot()
+    {
+        await using var app = await AnonymousApp();
+        await using var stream = await app.OpenStreamAsync();
+
+        var waiting = stream.NextEventAsync(TimeSpan.FromMilliseconds(700));
+        var first = await Task.WhenAny(waiting, Task.Delay(TimeSpan.FromSeconds(5)));
+
+        first.Should().BeSameAs(waiting, "the wait gives up at its deadline, heartbeats arriving all along");
+        await waiting.Awaiting(wait => wait).Should().ThrowAsync<Exception>();
     }
 
     [Fact]
