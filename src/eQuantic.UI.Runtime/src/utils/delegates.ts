@@ -34,24 +34,28 @@ const compose = (handlers: Function[]): Function | null => {
   return composed;
 };
 
-/** `delegate += handler` — appends, preserving order. */
-export function combineDelegate(
-  delegate: Function | null | undefined,
-  handler: Function | null | undefined,
-): Function | null {
+/**
+ * `delegate += handler` — appends, preserving order. Typed by the delegate's own type, so an event
+ * field declared as a function of its arguments takes the composed delegate back, and the handler
+ * written in place is typed from it: an untyped answer was not assignable to the field it came from.
+ */
+export function combineDelegate<T extends Function>(
+  delegate: T | null | undefined,
+  handler: T | null | undefined,
+): T | null {
   if (!handler) return delegate ?? null;
-  return compose([...listOf(delegate), handler]);
+  return compose([...listOf(delegate), handler]) as T | null;
 }
 
 /** `delegate -= handler` — drops the LAST occurrence, like `Delegate.Remove`. */
-export function removeDelegate(
-  delegate: Function | null | undefined,
-  handler: Function | null | undefined,
-): Function | null {
+export function removeDelegate<T extends Function>(
+  delegate: T | null | undefined,
+  handler: T | null | undefined,
+): T | null {
   if (!delegate || !handler) return delegate ?? null;
   const handlers = [...listOf(delegate)];
   const at = handlers.lastIndexOf(handler);
   if (at < 0) return delegate;
   handlers.splice(at, 1);
-  return compose(handlers);
+  return compose(handlers) as T | null;
 }
