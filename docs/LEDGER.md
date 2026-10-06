@@ -1596,8 +1596,11 @@ record of a release, the wiki's Upgrading page is the distillate.
   (fields and sheets do the same, [#635](https://github.com/eQuantic/equantic-ui/issues/635));
   `aria-expanded` sat on the code input, which ARIA does not allow on a textbox; the first build
   wiped a provider an app added to the controller itself; a row longer than the list was cut
-  differently on each target; and the whole documentation was measured on every build. Proposed and
-  archived through OpenSpec (`openspec/specs/code-completion`, `openspec/specs/code-editor`).
+  differently on each target; and the whole documentation was measured on every build. Copilot's
+  first round found three more: the documentation ran out of the view where the rows just fitted,
+  and now takes only the room they leave; a list of providers the parent changed in place never
+  handed what it gained; and turning an editor read-only left its list open. Proposed and archived
+  through OpenSpec (`openspec/specs/code-completion`, `openspec/specs/code-editor`).
 
 ## Retired documents
 

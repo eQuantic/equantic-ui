@@ -245,7 +245,9 @@ fits above it, the list SHALL be drawn above the line; when neither side fits, o
 as many rows as fit, never fewer than one. The list's right edge SHALL stay inside the viewport, and its
 left edge too when the code scrolls sideways. It SHALL show at most a page of rows, and the selected row
 SHALL stay among them as the selection moves. An answer that arrives after the keystroke SHALL be drawn
-without waiting for another key.
+without waiting for another key. The selected entry's documentation, drawn on the list's side away from
+the line, SHALL take the room the rows leave on that side and no more, as many of its lines as fit or
+none, and the rows SHALL NOT yield to it.
 
 #### Scenario: A word typed near the top
 
@@ -283,6 +285,19 @@ without waiting for another key.
 
 - **WHEN** a list of 30 entries shows a page of 12 and ↓ is pressed 14 times
 - **THEN** the fifteenth entry is selected and shown, the first is not shown, and PageDown steps by 12
+
+#### Scenario: A documented row that just fits under its line
+
+- **WHEN** `Col` is typed on the lowest line with room for one row under it, and `Column` has four
+  lines of documentation
+- **THEN** the row stands under the line, and none of its documentation shows
+
+#### Scenario: A documented page above its line
+
+- **WHEN** `I` is typed on the last visible line of an editor 300 tall, with twelve entries that each
+  have four lines of documentation
+- **THEN** all twelve rows show above the line, and the documentation shows the lines that fit between
+  them and the view's top, cut
 
 ### Requirement: A row shows what the word matched
 
@@ -354,9 +369,11 @@ announce as options after the code field, the selected one selected.
 ### Requirement: An editable editor completes the language's words and the document's
 
 `CodeEditor.Completions` SHALL say what the editor completes from: null, the default, the language's
-words and the document's; an empty list, nothing. A read-only editor SHALL complete nothing. The
-editor SHALL hand a list of the same providers to its completion only once, and SHALL take out of it
-only the providers it put in.
+words and the document's; an empty list, nothing. A read-only editor SHALL complete nothing, and an
+editor turned read-only SHALL close the list it shows and drop an answer still on its way. The editor
+SHALL hand a list of the same providers to its completion only once, comparing the providers rather than
+the list, so a list changed in place hands what it gained, and SHALL take out of it only the providers
+it put in.
 
 #### Scenario: A new C# editor
 
@@ -378,3 +395,13 @@ only the providers it put in.
 
 - **WHEN** a list is open and the parent rebuilds the editor with a new list around the same provider
 - **THEN** the list stays open, and the completion's providers are the ones it already had
+
+#### Scenario: A list changed in place
+
+- **WHEN** a parent adds a provider to the list it handed the editor, and rebuilds it with that list
+- **THEN** the completion's providers are the list's, the one it gained included
+
+#### Scenario: Turned read-only while the list shows
+
+- **WHEN** a list is open, or an answer is on its way, and the editor is turned read-only
+- **THEN** the list closes, and the answer opens nothing when it arrives
