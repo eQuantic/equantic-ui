@@ -1503,8 +1503,8 @@ record of a release, the wiki's Upgrading page is the distillate.
   `GridTrack.AutoFill(min)` repeats a column as often as it fits, `repeat(auto-fill, minmax(…))` on the
   web and the same count on Photon. Both web targets lower byte-identically and Photon measures the
   same boxes. `Drawing.Width` is now a `SizeValue`, the one break, listed in Upgrading
-  ([#636](https://github.com/eQuantic/equantic-ui/issues/636)). Proposed through OpenSpec
-  (`openspec/changes/a-layout-follows-its-box`).
+  ([#636](https://github.com/eQuantic/equantic-ui/issues/636)). Proposed and archived
+  through OpenSpec (`openspec/specs/layout`).
 
 ## Retired documents
 
