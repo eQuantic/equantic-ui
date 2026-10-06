@@ -66,18 +66,26 @@ public class ControlStateNativeTests
     [Fact]
     public void PressedBeatsFocus_AndFocusBeatsHover()
     {
-        var host = Host(new Pressable(Surface(
-            hover: new StyleDiff { Opacity = 0.8f },
-            focus: new StyleDiff { Opacity = 0.6f },
-            pressed: new StyleDiff { Opacity = 0.4f }), () => { }));
-        Frame(host);
+        static StyleDiff Fade(float alpha) => new() { Opacity = alpha };
+        Pressable Control() => new(Surface(hover: Fade(0.8f), focus: Fade(0.6f), pressed: Fade(0.4f)), () => { });
 
+        var host = Host(Control());
+        Frame(host);
         host.PointerMove(20, 20);
         LayerAlpha(Frame(host)).Should().Be(0.8f, "hovered");
         host.FocusNext().Should().BeTrue();
         LayerAlpha(Frame(host)).Should().Be(0.6f, "focus beats hover");
+
+        // A pointer press keeps the focus and hides it, as :focus-visible does on the web, so the
+        // three states are never held together by input on either target: the order between press
+        // and focus is asked of a picture.
         host.PressDown(20, 20);
-        LayerAlpha(Frame(host)).Should().Be(0.4f, "pressed beats focus");
+        host.Focused.Should().NotBeNull("the control keeps its focus");
+        host.FocusVisible.Should().BeFalse("a pointer press hides it, as the web's :focus-visible does");
+        LayerAlpha(Frame(host)).Should().Be(0.4f, "pressed beats hover");
+        LayerAlpha(Frame(Host(new Simulated(
+                SimulatedState.Hovered | SimulatedState.Focused | SimulatedState.Pressed, Control()))))
+            .Should().Be(0.4f, "pressed beats focus");
     }
 
     /// <summary>The control's state is its SUBTREE's: a box beside the pressed control, with a press of
