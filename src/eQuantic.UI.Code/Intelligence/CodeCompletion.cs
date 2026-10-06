@@ -186,9 +186,10 @@ public sealed class CodeCompletion
                 {
                     list = await answer;
                 }
-                catch (OperationCanceledException)
+                catch (OperationCanceledException) when (cancellation.IsCancellationRequested)
                 {
-                    // Cancelled because the answer was no longer wanted: the generation drops it.
+                    // Cancelled because the answer was no longer wanted: the generation drops it. One
+                    // the provider threw on its own, with this request still wanted, is its failure.
                 }
                 catch (Exception error)
                 {
@@ -528,8 +529,10 @@ public sealed class CodeCompletion
         {
             resolved = await offer.Answer.Provider.ResolveAsync(offer.Item, cancellation);
         }
-        catch (OperationCanceledException)
+        catch (OperationCanceledException) when (cancellation.IsCancellationRequested)
         {
+            // The list it was resolving for closed. Thrown with the list still open, it is the
+            // provider's failure, and goes on to the clause below.
             return;
         }
         catch (Exception error)

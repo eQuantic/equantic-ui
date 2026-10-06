@@ -17,6 +17,13 @@ import { exception } from './exceptions';
 
 type Callback = () => void;
 
+/**
+ * What a disposed source keeps in place of a callback: the registration still answers `unregister`
+ * as .NET's does, true once for a callback that never ran, and what the callback captured can be
+ * collected.
+ */
+const released: Callback = () => {};
+
 /** A delay in milliseconds, or a `TimeSpan`. */
 type Delay = number | { readonly totalMilliseconds: number };
 
@@ -101,6 +108,9 @@ export class CancellationTokenSource {
     // those tokens cancelled, which a token that lives as long as the app never does.
     for (const link of this._links) link.dispose();
     this._links = [];
+    // .NET lets go of the callbacks of a source it disposes (`_registrations = null`): a token or a
+    // registration kept somewhere held the disposed source, and every capture of its callbacks.
+    for (const at of this._callbacks.keys()) this._callbacks.set(at, released);
   }
 
   /**

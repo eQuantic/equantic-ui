@@ -58,6 +58,9 @@ public class CancellationConformanceTests
     // A method group keeps its receiver: the source it names is the one cancelled.
     [InlineData("var outer = new CTS(); var inner = new CTS(); outer.Token.Register(inner.Cancel); outer.Cancel(); "
         + "return $\"{inner.IsCancellationRequested}|{outer.IsCancellationRequested}\";")]
+    // A disposed source lets go of its callbacks, and a registration still unregisters once after it.
+    [InlineData("var cts = new CTS(); var r = cts.Token.Register(() => { }); cts.Dispose(); "
+        + "return $\"{r.Unregister()}|{r.Unregister()}\";")]
     public void Callbacks_RunAsDotNetRunsThem(string program) => SameAsDotNet(program);
 
     [SkippableTheory]

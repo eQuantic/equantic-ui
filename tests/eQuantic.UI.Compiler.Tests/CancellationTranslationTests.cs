@@ -89,6 +89,7 @@ public class CancellationTranslationTests
     [InlineData("var s = new CancellationTokenSource(); var ok = s.TryReset();")]
     [InlineData("var h = given.WaitHandle;")]
     [InlineData("given.Register(state => { }, null);")]
+    [InlineData("var s = new CancellationTokenSource(TimeSpan.FromSeconds(1), TimeProvider.System);")]
     public void AnyOtherMember_IsRefusedAtTheBuild(string body)
     {
         var (_, errors) = Convert(body);

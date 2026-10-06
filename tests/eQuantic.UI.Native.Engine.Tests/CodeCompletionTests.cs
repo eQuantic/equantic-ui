@@ -546,6 +546,35 @@ public class CodeCompletionTests : IDisposable
     }
 
     [Fact]
+    public void ACancellationAProviderThrowsOnItsOwn_IsItsFailure()
+    {
+        // Nothing cancelled the request: the provider gave up by itself, and that is a failure.
+        var editor = Editor("", new Provider { Faults = new OperationCanceledException("gave up") }, Offering("Column"));
+        var failures = new List<Exception>();
+        editor.Completion.Failed += failures.Add;
+
+        Type(editor, "Co");
+
+        failures.Select(failure => failure.Message).Should().Equal("gave up");
+        Labels(editor).Should().Equal("Column");
+    }
+
+    [Fact]
+    public void ACancellationAProviderThrowsOnItsOwn_WhileResolving_IsItsFailure()
+    {
+        var provider = new Provider { Resolver = _ => throw new OperationCanceledException("gave up resolving") };
+        provider.Items.Add(new CodeCompletionItem("Column"));
+        var editor = Editor("", provider);
+        var failures = new List<Exception>();
+        editor.Completion.Failed += failures.Add;
+
+        Type(editor, "Co");
+
+        editor.Completion.IsOpen.Should().BeTrue("the list it was resolving for is still open");
+        failures.Select(failure => failure.Message).Should().Equal("gave up resolving");
+    }
+
+    [Fact]
     public void ACancellationThatThrows_IsReported_AndTheKeyThatClosedTheListStillTypes()
     {
         var provider = new Provider { ThrowsOnCancel = true };

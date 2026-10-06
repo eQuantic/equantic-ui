@@ -132,7 +132,7 @@ export class CodeCompletion {
                     list = await answer;
                 } catch ($e: any) {
                     let error = $e;
-                    if ($eq.exceptions.is($e, 'System.OperationCanceledException')) {} else {
+                    if ($eq.exceptions.is($e, 'System.OperationCanceledException') && $eq.exceptions.filter(() => cancellation.isCancellationRequested)) {} else {
                         errors.push(error);
                     }
                 }
@@ -347,7 +347,7 @@ export class CodeCompletion {
             resolved = await offer.answer.provider.resolveAsync(offer.item, cancellation);
         } catch ($e: any) {
             let error = $e;
-            if ($eq.exceptions.is($e, 'System.OperationCanceledException')) {
+            if ($eq.exceptions.is($e, 'System.OperationCanceledException') && $eq.exceptions.filter(() => cancellation.isCancellationRequested)) {
                 return;
             } else {
                 CodeCompletion.onUiThread(() => this.failed?.(error));

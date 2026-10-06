@@ -98,6 +98,16 @@ public class CancellationStrategy : IExpressionIrStrategy
     /// <c>new CancellationToken(canceled)</c>: the one cancelled token, or the one that never is.</summary>
     private static JsExpr Creation(BaseObjectCreationExpressionSyntax creation, ConversionContext context)
     {
+        // The runtime's source takes a delay or nothing, and its token a flag. A constructor that takes
+        // more (a TimeProvider beside the delay) went out without it, and the source was timed by the
+        // real clock where the C# chose another.
+        if (context.SemanticHelper.GetSymbol(creation) is IMethodSymbol { Parameters.Length: > 1 } constructor)
+        {
+            context.Report(creation, ConversionSeverity.Error, "EQ2004",
+                $"'new {constructor.ContainingType.Name}({string.Join(", ", constructor.Parameters.Select(parameter => parameter.Type.Name))})' "
+                + "has no JavaScript translation: the runtime's source takes a delay or nothing, and its token a flag.");
+            return JsExpr.Opaque("undefined");
+        }
         var arguments = (creation.ArgumentList?.Arguments ?? default)
             .Select(argument => context.Converter.ConvertIr(argument.Expression)).ToList();
         if (context.SemanticHelper.GetType(creation).IsNamed(Token))

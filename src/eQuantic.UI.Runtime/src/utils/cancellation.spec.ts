@@ -126,6 +126,22 @@ describe('CancellationTokenSource and CancellationToken', () => {
     expect(() => CancellationTokenSource.createLinkedTokenSource([])).toThrow('No tokens were supplied.');
   });
 
+  it('lets go of what its callbacks captured when disposed, and answers unregister as .NET does after', () => {
+    const source = new CancellationTokenSource();
+    const captured = { rows: new Array(1000).fill(0) };
+    const callback = () => void captured.rows.length;
+    const registration = source.token.register(callback);
+
+    source.dispose();
+
+    const held = [...(source as unknown as { _callbacks: Map<number, () => void> })._callbacks.values()];
+    expect(held).toHaveLength(1);
+    expect(held).not.toContain(callback);
+    // Measured with dotnet fsi: Unregister after Dispose answers true, then false.
+    expect(registration.unregister()).toBe(true);
+    expect(registration.unregister()).toBe(false);
+  });
+
   it('lets go of the tokens a linked source follows once it is disposed, and keeps no slot for them', () => {
     // A token that lives as long as the app, and a linked source per request, disposed after it.
     const app = new CancellationTokenSource();
