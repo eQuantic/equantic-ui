@@ -60,6 +60,8 @@ interface Sent {
   readonly url: string;
   readonly topic: string;
   readonly answer: (status: number, body?: unknown) => void;
+  /** Whether the page read the answer's body: one left unread shows as aborted in the network panel. */
+  read: boolean;
 }
 
 let sources: FakeSource[];
@@ -76,7 +78,14 @@ function events(): WebServerEvents {
           url,
           topic: (JSON.parse(init.body as string) as { topic: string }).topic,
           answer: (status, body) =>
-            resolve({ status, json: async () => body } as unknown as Response),
+            resolve({
+              status,
+              text: async () => {
+                request.read = true;
+                return body === undefined ? '' : JSON.stringify(body);
+              },
+            } as unknown as Response),
+          read: false,
         };
         sent.push(request);
         respond?.(request);
@@ -157,6 +166,33 @@ describe('WebServerEvents', () => {
 
     expect(sent.map((request) => request.topic)).toEqual(['room:a']);
     expect(heard).toEqual(['first hello', 'second hello']);
+  });
+
+  it('reads every answer whole, an empty one included', async () => {
+    respond = (request) =>
+      request.topic === 'room:b' ? request.answer(403, { reason: 'unknown' }) : request.answer(204);
+    const page = events();
+    const refusals: ServerTopicRefusal[] = [];
+    page.subscribe(prices, () => {});
+    const leaving = page.subscribe(room('a'), () => {});
+    page.subscribe(
+      room('b'),
+      () => {},
+      (refusal) => refusals.push(refusal),
+    );
+    sources[0].connect('c1');
+    await settle();
+    leaving.dispose();
+    await settle();
+
+    expect(sent.map((request) => request.url.slice(request.url.lastIndexOf('/') + 1))).toEqual([
+      'subscribe',
+      'subscribe',
+      'subscribe',
+      'release',
+    ]);
+    expect(sent.filter((request) => !request.read)).toEqual([]);
+    expect(refusals).toEqual([new ServerTopicRefusal('room:b', 'unknown')]);
   });
 
   it('reports a refusal with why, after which the topic hears nothing', async () => {

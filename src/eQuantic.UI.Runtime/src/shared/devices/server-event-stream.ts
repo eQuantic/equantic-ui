@@ -13,6 +13,12 @@ const LAST_RETRY_MS = 30_000;
 type OpenSource = (url: string) => EventSource;
 type Request = (url: string, init: RequestInit) => Promise<Response>;
 
+/** A request's answer, read whole. */
+interface Answer {
+  readonly status: number;
+  readonly text: string;
+}
+
 /**
  * The page's connection to the server's events over Server-Sent Events: one `EventSource`, the
  * browser's own client, which the server opens with a `connection` event naming the connection's id
@@ -49,18 +55,17 @@ export class ServerEventStream implements ServerEventsTransport {
   }
 
   async bind(connection: string, topic: string): Promise<BindOutcome> {
-    let response: Response;
+    let answer: Answer;
     try {
-      response = await this.post(connection, 'subscribe', topic);
+      answer = await this.post(connection, 'subscribe', topic);
     } catch {
       return 'failed';
     }
-    if (response.status === 204) return 'bound';
-    if (response.status === 404) return 'gone';
-    if (response.status !== 403) return 'failed';
+    if (answer.status === 204) return 'bound';
+    if (answer.status === 404) return 'gone';
+    if (answer.status !== 403) return 'failed';
     // A 403 the server's own refusal did not write (a proxy's, a firewall's) is still a refusal.
-    const reason = ((await response.json().catch(() => null)) as { reason?: unknown } | null)
-      ?.reason;
+    const reason = (read(answer.text) as { reason?: unknown } | undefined)?.reason;
     return reason === 'unknown' || reason === 'limitReached' ? reason : 'forbidden';
   }
 
@@ -73,17 +78,23 @@ export class ServerEventStream implements ServerEventsTransport {
     }
   }
 
-  private post(
+  /**
+   * Makes the request and reads its answer whole, an empty one included: the browser reports a
+   * response nobody read as aborted, and a network panel full of failed subscriptions that worked
+   * sends whoever looks there after the wrong problem.
+   */
+  private async post(
     connection: string,
     action: 'subscribe' | 'release',
     topic: string,
-  ): Promise<Response> {
-    return this.request(`${PATH}/${encodeURIComponent(connection)}/${action}`, {
+  ): Promise<Answer> {
+    const response = await this.request(`${PATH}/${encodeURIComponent(connection)}/${action}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ topic }),
       credentials: 'same-origin',
     });
+    return { status: response.status, text: await response.text() };
   }
 
   private connect(): void {
