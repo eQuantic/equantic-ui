@@ -479,8 +479,9 @@ public class CodeEditorCompletionTests
         var frame = Type(host, "Co");
         var offered = frame.CodeRegions.Single().Offered!.Value;
 
-        // The frame's padding, above the first row.
-        PressAt(host, offered.X + offered.Width / 2, offered.Y + 2);
+        // The page mark's column, at the list's right edge and beside every row: no row reaches it,
+        // even with the touch margin a pointer's target keeps.
+        PressAt(host, offered.Right - 2, offered.Y + offered.Height / 2);
 
         editor.Editor.Caret.Should().Be(new CodePosition(1, 2), "the code under the list was not pressed");
         editor.Editor.Completion.IsOpen.Should().BeTrue();
