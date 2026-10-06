@@ -111,9 +111,9 @@ public class RecordTypeEmitter
     /// then hold a different value in the twin than on the server, silently. It goes through the
     /// converter, which registers every struct the zero constructs for this module's imports.
     /// </summary>
-    private string DefaultOf(TypeSyntax type) =>
+    private string DefaultOf(TypeSyntax type, Func<ITypeParameterSymbol, string?>? typeParameter = null) =>
         ModelFor(type)?.GetTypeInfo(type).Type is { } symbol
-            ? _converter.DefaultOf(symbol)
+            ? typeParameter is null ? _converter.DefaultOf(symbol) : _converter.DefaultOf(symbol, typeParameter)
             : TypeDeclarationExtensions.DefaultFor(type);
 
     /// <summary>
@@ -808,12 +808,20 @@ public class RecordTypeEmitter
             // type's initialization, and a struct twin from another assembly zeroed through its
             // constructor's defaults (`CodeCollapse`'s Placeholder true where .NET has false).
             // Member by member: measured in bun, 2.9 ns, where Object.assign over Object.create took 40.
+            // A GENERIC struct's zero takes the zero of each type argument from its caller, which alone
+            // knows the closed type (`Pair.$zero(0)` for a `Pair<int>`): a member of type `T` is that
+            // zero, and a `Pair<T>` passes it on. The open declaration's `T` gave null, so
+            // `default(Pair<int>).First == 0` was false (found by Copilot's review of #608).
             if (IsStruct(type))
             {
+                var typeParameters = type.TypeParameterList?.Parameters.Select(parameter => parameter.Identifier.ValueText).ToList() ?? [];
+                var zeros = string.Join(", ", typeParameters.Select(parameter =>
+                    $"$z{parameter}{(tsTypeDeclarations ? ": any" : "")} = null"));
                 sb.Append(tsTypeDeclarations
-                    ? $"static $zero(): {name} {{ const zero: any = Object.create({name}.prototype); "
-                    : $"static $zero() {{ const zero = Object.create({name}.prototype); ");
-                foreach (var m in members) sb.Append($"zero.{m.Js} = {ZeroOf(m)}; ");
+                    ? $"static $zero({zeros}): {name} {{ const zero: any = Object.create({name}.prototype); "
+                    : $"static $zero({zeros}) {{ const zero = Object.create({name}.prototype); ");
+                foreach (var m in members)
+                    sb.Append($"zero.{m.Js} = {ZeroOf(m, typeParameters.Count == 0 ? null : parameter => typeParameters.Contains(parameter.Name) && parameter.TypeParameterKind == TypeParameterKind.Type ? $"$z{parameter.Name}" : null)}; ");
                 sb.Append("return zero; } ");
             }
 
@@ -930,7 +938,7 @@ public class RecordTypeEmitter
                     sb.Append($"static {store.Name} = {(store.Initializer is { } init ? StaticValue(init, store.Type) : DefaultOf(store.Type))}; ");
         }
         if (ordered)
-            foreach (var member in TypeInitializer.Members(type, name, TypeInitializer.Collect(type, TsTypeOf, DefaultOf, StaticValue),
+            foreach (var member in TypeInitializer.Members(type, name, TypeInitializer.Collect(type, TsTypeOf, typeSyntax => DefaultOf(typeSyntax), StaticValue),
                          _converter, _lowering, _annotations, JsLayout.Compact))
                 sb.Append(Written(member));
 
@@ -1059,12 +1067,13 @@ public class RecordTypeEmitter
         type is StructDeclarationSyntax
         || type is RecordDeclarationSyntax record && record.ClassOrStructKeyword.IsKind(SyntaxKind.StructKeyword);
 
-    /// <summary>A member's zero, the value <c>default</c> gives it.</summary>
-    private string ZeroOf(ValueMember member) => member.Declaration switch
+    /// <summary>A member's zero, the value <c>default</c> gives it, a type parameter's taken from
+    /// <paramref name="typeParameter"/> where the struct's <c>$zero</c> is handed one.</summary>
+    private string ZeroOf(ValueMember member, Func<ITypeParameterSymbol, string?>? typeParameter = null) => member.Declaration switch
     {
-        ParameterSyntax { Type: { } type } => DefaultOf(type),
-        PropertyDeclarationSyntax property => DefaultOf(property.Type),
-        VariableDeclaratorSyntax { Parent: VariableDeclarationSyntax declaration } => DefaultOf(declaration.Type),
+        ParameterSyntax { Type: { } type } => DefaultOf(type, typeParameter),
+        PropertyDeclarationSyntax property => DefaultOf(property.Type, typeParameter),
+        VariableDeclaratorSyntax { Parent: VariableDeclarationSyntax declaration } => DefaultOf(declaration.Type, typeParameter),
         _ => "null",
     };
 

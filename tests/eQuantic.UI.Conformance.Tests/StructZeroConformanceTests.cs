@@ -24,6 +24,7 @@ public class StructZeroConformanceTests
         public struct Gauge2 { public int Level = 5; public int Count; public Gauge2(int level) { Level = level; } }
         public struct Wrap { public Pair<int> Inner; public P Point; }
         public partial struct Lone { }
+        public struct GWrap<T> { public Pair<T> Inner; public T Own; }
         public record struct Holds(Lone Inner, int Count);
         """;
 
@@ -36,6 +37,9 @@ public class StructZeroConformanceTests
     // A partial struct declared once and empty is the whole type: it has a twin and a zero (Copilot's
     // review of #608).
     [InlineData("object o = new Holds().Inner; object d = default(Lone); object n = new Lone(); return (o is Lone) + \"|\" + (d is Lone) + \"|\" + (n is Lone);")] // "True|True|True"
+    // A generic struct's zero holds each type argument's zero, which only the closed type knows,
+    // passed on to a generic struct it holds (found by Copilot's review of #608).
+    [InlineData("var d = default(Pair<int>); var n = new Pair<int>(); var a = new Pair<double>[1]; var w = default(GWrap<int>); return (d.First == 0) + \"|\" + (n.First == 0) + \"|\" + (a[0].First == 0.0) + \"|\" + (w.Inner.First == 0) + \"|\" + (w.Own == 0) + \"|\" + (default(Pair<string>).First == null) + \"|\" + (default(GWrap<long>).Own == 0L);")] // "True|True|True|True|True|True|True"
     // An all-optional constructor is not the zero: `new P()`, `default(P)` and an array's slot are (0, 0).
     [InlineData("var d = default(P); var arr = new P[2]; return d.X + \"|\" + arr[1].Y + \"|\" + new P(3).X;")] // "0|0|3"
     [InlineData("var n = new P(); return n.X + \"|\" + n.Y;")]                                              // "0|0"

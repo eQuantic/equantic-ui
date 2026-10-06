@@ -189,6 +189,11 @@ public class CSharpToJsConverter
     /// </summary>
     public string DefaultOf(ITypeSymbol? type) => DefaultValue.Of(type, _context);
 
+    /// <summary>The default of <paramref name="type"/> where a type parameter's zero is given
+    /// (a generic struct's <c>$zero</c>, <see cref="DefaultValue"/>).</summary>
+    internal string DefaultOf(ITypeSymbol? type, Func<ITypeParameterSymbol, string?> typeParameter) =>
+        DefaultValue.Of(type, _context, typeParameter);
+
     /// <summary>A compile-time constant of <paramref name="type"/> as its JavaScript value, by the one
     /// writer of every constant's value (<see cref="ConstantLiteral"/>), the runtime import a decimal
     /// needs registered; null where the value has no spelling here.</summary>

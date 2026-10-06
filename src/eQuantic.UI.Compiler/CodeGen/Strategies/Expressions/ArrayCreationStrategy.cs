@@ -61,13 +61,16 @@ public class ArrayCreationStrategy : IConversionStrategy
     /// </summary>
     private static string Sized(ArrayCreationExpressionSyntax sized, string size, ConversionContext context)
     {
-        var fill = context.SemanticHelper.GetType(sized) is IArrayTypeSymbol array
-            ? Strategies.DefaultValue.Of(array.ElementType, context)
-            : Unbound(sized.Type, context);
+        var element = (context.SemanticHelper.GetType(sized) as IArrayTypeSymbol)?.ElementType;
+        var fill = element is not null ? Strategies.DefaultValue.Of(element, context) : Unbound(sized.Type, context);
         // A struct's zero and a tuple's (an array on this side) are objects: each slot builds its own,
-        // whether the twin's constructor builds it or its `$zero()` does (#413).
-        return fill.StartsWith("new ", StringComparison.Ordinal) || fill.StartsWith('[')
-            || fill.EndsWith(".$zero()", StringComparison.Ordinal)
+        // whether the twin's constructor builds it or its `$zero(…)` does (#413). Asked of the type
+        // where the model can say it: the zero's TEXT was read, and a generic struct's, which takes
+        // its type arguments' zeros (`Pair.$zero(0)`), filled every slot with one instance.
+        var builds = element is not null
+            ? Strategies.DefaultValue.Constructs(element) || fill.StartsWith('[')
+            : fill.StartsWith("new ", StringComparison.Ordinal) || fill.StartsWith('[') || fill.Contains(".$zero(", StringComparison.Ordinal);
+        return builds
             ? $"Array.from({{ length: {size} }}, () => {fill})"
             : $"new Array({size}).fill({fill})";
     }
