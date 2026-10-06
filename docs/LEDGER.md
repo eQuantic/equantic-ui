@@ -1557,7 +1557,7 @@ record of a release, the wiki's Upgrading page is the distillate.
   ([#634](https://github.com/eQuantic/equantic-ui/issues/634)). The server writes the format culture's
   `NumberFormatInfo` and `DateTimeFormatInfo` on every page and answers a switch from
   `/_equantic/culture/{name}.json`; the browser draws every number and date from them, a calendar's
-  names among them, and a page with no culture installed is in the invariant culture. 182 of the 217
+  names among them, and a page with no culture installed is in the invariant culture. 187 of the 222
   conformance cases, run on both sides, failed against main with the culture installed as main installs
   it on a page with a catalog; the other 35 are neighbours that already held, kept as pins. EQ2109 is
   retired. The served runtime grew about 3.5 KB gzipped. Proposed and archived through OpenSpec

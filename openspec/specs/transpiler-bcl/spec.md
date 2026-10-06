@@ -520,8 +520,9 @@ message that names the method and the comparison, after every check .NET makes b
 A number written into text with no format specifier SHALL be its text in the culture in force, as
 .NET writes it, wherever C# writes it: a concatenation, a plain or an aligned interpolation hole,
 `ToString()`, `Convert.ToString`, `string.Format("{0}")`, `string.Concat`, `string.Join`,
-`StringBuilder.Append`, `AppendLine` and `Insert`, and the text of a record, whose members are written
-as a concatenation writes them. It SHALL carry the culture's decimal separator, minus sign and words for
+`StringBuilder.Append`, `AppendLine` and `Insert` (the value written by position or by name, or an
+interpolated string handed to one), and the text of a record, whose members are written as a
+concatenation writes them. It SHALL carry the culture's decimal separator, minus sign and words for
 NaN and the infinities, a float SHALL be written in its own digits, a decimal with its scale, and an
 integer with no sign on a zero. The current culture or a null provider SHALL be the call with none, and
 the invariant culture SHALL write the invariant text. An unsigned integer SHALL read the same in every
@@ -548,6 +549,13 @@ culture.
 - **WHEN** `sb.Append(-1.5)` and the text of `record Point(double X, string? Name, bool On)` built with
   `(-1.5, null, true)` run with pt-BR in force
 - **THEN** they write `-1,5` and `Point { X = -1,5, Name = , On = True }`, as .NET does
+
+#### Scenario: A builder's value by name, and an interpolated string handed to it
+
+- **WHEN** `sb.Append(value: -1.5)`, `sb.Insert(value: V(), index: I())` and `sb.Append($"{d}|{on}")`
+  with `double d = -1.5; bool on = true;` run with pt-BR in force
+- **THEN** they write `-1,5`, evaluate V before I and insert V's value at I's index, and write
+  `-1,5|True`, as .NET does
 
 #### Scenario: An aligned hole
 
