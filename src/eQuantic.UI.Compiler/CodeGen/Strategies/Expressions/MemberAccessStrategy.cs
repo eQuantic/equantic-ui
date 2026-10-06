@@ -24,6 +24,13 @@ public class MemberAccessStrategy : IExpressionIrStrategy
     {
         var memberAccess = (MemberAccessExpressionSyntax)node;
         var name = memberAccess.Name.Identifier.Text;
+        // A nested type of the app's named through its owner (`Outer.Inner`) is its twin (#584), never a
+        // member of the owner's.
+        if (context.SemanticHelper.GetSymbol(node) is INamedTypeSymbol nested && nested.NestedTwinName() is { } twin)
+        {
+            nested.RegisterIntroduced(context);
+            return JsExpr.Identifier(twin);
+        }
         var receiver = context.Converter.ConvertIr(memberAccess.Expression);
         // The receiver's text, fenced for receiver position — what the template branches splice.
         var expr = JsExprWriter.WriteIn(receiver, JsPrecedence.Call);

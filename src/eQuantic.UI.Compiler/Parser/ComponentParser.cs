@@ -93,7 +93,9 @@ public class ComponentParser
             {
                 results.Add(new ComponentDefinition
                 {
-                    Name = typeDecl.Identifier.Text,
+                    // Its twin's name, its owners' and its own (#584): a nested record's module never
+                    // meets a top-level record's of its name.
+                    Name = typeDecl.TwinTypeName(),
                     SourcePath = sourcePath,
                     SyntaxTree = tree,
                     Namespace = ns ?? "",
@@ -119,14 +121,15 @@ public class ComponentParser
         }
 
         // Discover static utility classes (`static class Format { … }`) used from components — emitted as
-        // their own module of static members so `Format.Foo()` resolves at runtime.
-        // NESTED static classes are excluded: they are their owner's private scope (every section
-        // having its own `Copy` is the pattern), so they embed INSIDE the owner's module — as their
-        // own module, two same-named nested classes would overwrite each other's file.
+        // their own module of static members so `Format.Foo()` resolves at runtime. A NESTED one is a
+        // module of its own too, named by its owner (`Section$Copy`, #584), so two sections' `Copy`
+        // never write one file, where its owner crosses: one inside a server-only class has none.
         var helperModel = TryGetSemanticModel(tree);
         foreach (var classDecl in root.DescendantNodes().OfType<ClassDeclarationSyntax>())
         {
-            if (classDecl.Parent is ClassDeclarationSyntax) continue;
+            if (!Services.PlainClassModule.OwnersCross(classDecl)
+                || (ProjectSymbol(classDecl, model) is { } nestedHelper && Services.PlainClassModule.OwnerKeptOut(nestedHelper)))
+                continue;
             // Track L D2: a resx Designer class is NOT a static-helper module — its accessors
             // rewrite to $eq.str at the use site, and a module of ResourceManager.GetString calls
             // cannot run in a browser. Shape-detected, and checked FIRST because the Designer's
@@ -154,7 +157,7 @@ public class ComponentParser
             {
                 results.Add(new ComponentDefinition
                 {
-                    Name = classDecl.Identifier.Text,
+                    Name = classDecl.TwinTypeName(),
                     SourcePath = sourcePath,
                     SyntaxTree = tree,
                     Namespace = ns ?? "",
@@ -268,7 +271,7 @@ public class ComponentParser
 
             results.Add(new ComponentDefinition
             {
-                Name = classDecl.Identifier.Text,
+                Name = classDecl.TwinTypeName(),
                 SourcePath = sourcePath,
                 SyntaxTree = tree,
                 Namespace = ns ?? "",
@@ -290,7 +293,7 @@ public class ComponentParser
 
             var definition = new ComponentDefinition
             {
-                Name = classDecl.Identifier.Text,
+                Name = classDecl.TwinTypeName(),
                 TypeIdentity = ClrIdentity(classDecl),
                 SourcePath = sourcePath,
                 SyntaxTree = tree,

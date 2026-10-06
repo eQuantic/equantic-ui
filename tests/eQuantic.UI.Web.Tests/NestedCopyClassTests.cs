@@ -9,9 +9,9 @@ namespace eQuantic.UI.Web.Tests;
 /// The `private static class Copy` every section of a real site keeps its strings in.
 ///
 /// <para>
-/// It is emitted INLINE, above the component: as its own module, two same-named nested classes
-/// would overwrite each other's file, and C# scoping is lexical anyway. What that inlining has to
-/// carry with it is everything the nested body needs — and it did not.
+/// It is a module of its own, named by its section (`SiteFooter$Copy`, #584), so two sections'
+/// `Copy` never write one file. It was emitted inline above the component, unexported, and what that
+/// inlining had to carry with it, the helpers its body needs, it once did not.
 /// </para>
 /// </summary>
 public class NestedCopyClassTests
@@ -84,17 +84,18 @@ public class NestedCopyClassTests
     }
 
     /// <summary>
-    /// And it must not import ITSELF. The nested class is emitted in this module, so a
-    /// `from "./Copy"` names a module that was never written — which is a load failure on any path
-    /// that does not bundle the import away.
+    /// And it is imported from the module that is written. The section imports its `Copy` from
+    /// `./SiteFooter$Copy`, the module named by its owner, never from a `./Copy` nobody writes, which
+    /// is a load failure on any path that does not bundle the import away.
     /// </summary>
     [Fact]
-    public void ANestedClass_IsNotImportedFromAModuleThatDoesNotExist()
+    public void ANestedClass_IsImportedFromTheModuleNamedByItsOwner()
     {
         var section = Transpile(Localized);
 
-        section.Should().Contain("class Copy", "the nested class is emitted inline, by design");
-        section.Should().NotContain("from \"./Copy\"",
-            "there is no such module — the class is right here");
+        section.Should().Contain("export class SiteFooter$Copy", "the nested class is a module named by its owner (#584)");
+        section.Should().Contain("import { SiteFooter$Copy } from \"./SiteFooter$Copy\"")
+            .And.Contain("new Text(SiteFooter$Copy.about")
+            .And.NotContain("from \"./Copy\"", "there is no such module");
     }
 }

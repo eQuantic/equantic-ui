@@ -336,8 +336,8 @@ public static class PatternConverter
             // fails instanceof — pattern-match client-constructed values, not raw prefetch payloads.
             if (IsEmittedAppType(named))
             {
-                context.UsedAppTypes.Add(named.Name);
-                return $"{access} instanceof {named.Name}";
+                context.UsedAppTypes.Add(named.TwinTypeName());
+                return $"{access} instanceof {named.TwinTypeName()}";
             }
         }
 

@@ -14,7 +14,14 @@ namespace eQuantic.UI.Compiler.CodeGen;
 internal static class TypeSyntaxExtensions
 {
     internal static string TwinTypeName(this TypeSyntax type, SemanticModel? model) =>
-        model?.GetSymbolInfo(type).Symbol is INamedTypeSymbol symbol ? symbol.Name : SimpleName(Unaliased(type));
+        model?.GetSymbolInfo(type).Symbol is INamedTypeSymbol symbol ? symbol.TwinTypeName() : SimpleName(Unaliased(type));
+
+    /// <summary>A declared type's twin name (<see cref="TypeSymbolExtensions.TwinTypeName(INamedTypeSymbol)"/>),
+    /// read from the declarations that contain it, for a host with no model to ask.</summary>
+    internal static string TwinTypeName(this BaseTypeDeclarationSyntax declaration) =>
+        declaration.Parent is BaseTypeDeclarationSyntax owner
+            ? owner.TwinTypeName() + "$" + declaration.Identifier.ValueText
+            : declaration.Identifier.ValueText;
 
     /// <summary>
     /// Without a model, an alias the file declares (<c>using UiBase = …StatelessComponent;</c>) is

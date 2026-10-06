@@ -115,7 +115,7 @@ internal sealed class TwinConstructor
         PrimaryConstructorBaseTypeSyntax? clause, JsStatement? first)
     {
         var constructors = ConstructorsOf(type);
-        _converter.SetCurrentClass(type.Identifier.Text);
+        _converter.SetCurrentClass(type.TwinTypeName());
         var single = constructors.Roots.Count == 1 ? constructors.Roots[0] : null;
         var arrived = single is null ? "$a" : "arguments";
 

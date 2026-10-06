@@ -73,6 +73,27 @@ public static class TypeSymbolExtensions
             && marker.ContainingNamespace?.ToDisplayString() == "eQuantic.UI.Primitives");
 
     /// <summary>
+    /// The name a type's twin is written under: its own name after the chain of the types that contain
+    /// it, joined by <c>$</c> (<c>Cart$Item</c>, <c>A$B$C</c>, #584), which no C# type can take, so a
+    /// nested type's twin never meets a top-level type's. Generic arguments are erased
+    /// (<c>Box&lt;T&gt;.Node</c> is <c>Box$Node</c>). Its module is named the same, so a reference
+    /// imports it as it imports any type's. A top-level type's is its own name.
+    /// </summary>
+    internal static string TwinTypeName(this INamedTypeSymbol type) =>
+        type.ContainingType is { } owner ? owner.TwinTypeName() + "$" + type.Name : type.Name;
+
+    /// <summary>The twin name of a class, record or struct declared inside another type whose twin eqc
+    /// writes (in the source, or in a namespace it transpiles whole), which differs from the name it is
+    /// written with (<see cref="TwinTypeName(INamedTypeSymbol)"/>); null for any other type, whose name a
+    /// reference keeps.</summary>
+    internal static string? NestedTwinName(this INamedTypeSymbol type) =>
+        type is { ContainingType: not null, TypeKind: TypeKind.Class or TypeKind.Struct }
+        && (type.Locations.Any(location => location.IsInSource)
+            || Services.RuntimeProvidedTypeScanner.IsTranspiledNamespace(type.ContainingNamespace?.ToDisplayString() ?? string.Empty))
+            ? type.TwinTypeName()
+            : null;
+
+    /// <summary>
     /// True when the type derives (transitively) from a framework component/state base. Walking the base
     /// chain recognises a component that extends another user or library component without enumerating
     /// every intermediate base — replacing brittle direct-base-name matching.
@@ -310,9 +331,9 @@ public static class TypeSymbolExtensions
     public static void RegisterIntroduced(this INamedTypeSymbol home, ConversionContext context)
     {
         if (home.IsRuntimeProvided())
-            context.UsedRuntimeTypes.Add(home.Name);
+            context.UsedRuntimeTypes.Add(home.TwinTypeName());
         else
-            context.UsedAppTypes.Add(home.Name);
+            context.UsedAppTypes.Add(home.TwinTypeName());
     }
 
     /// <summary>

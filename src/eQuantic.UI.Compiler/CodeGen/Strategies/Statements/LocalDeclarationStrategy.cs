@@ -209,7 +209,7 @@ public class LocalDeclarationStrategy : IStatementStrategy
         // `VisualNode?` crosses as the union it is — an annotation that rejects the null the C#
         // explicitly allowed would refuse `VisualNode? icon = selected ? new Icon(…) : null`.
         var nullable = decl.Declaration.Type is NullableTypeSyntax ? " | null" : "";
-        return $": {named.Name}{nullable}";
+        return $": {named.NestedTwinName() ?? named.Name}{nullable}";
     }
 
     public int Priority => 0;

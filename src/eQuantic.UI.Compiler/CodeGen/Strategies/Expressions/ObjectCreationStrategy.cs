@@ -624,8 +624,17 @@ public class ObjectCreationStrategy : IExpressionIrStrategy
         type.IsValueType && ctor is { IsImplicitlyDeclared: true, Parameters.Length: 0 } && TwinIsWritten(type)
             ? JsExpr.Opaque(DefaultValue.Of(type, context))
             : BoundArguments.Of(context.SemanticHelper.GetOperation(creation), argument => context.Converter.ConvertIr(argument)) is { } bound
-                ? bound.New(type.Name, context.TypeAnnotations)
-                : JsExpr.New(JsExpr.Identifier(type.Name), ConstructorArguments(creation, ctor, context));
+                ? bound.New(TwinOf(type, context), context.TypeAnnotations)
+                : JsExpr.New(JsExpr.Identifier(TwinOf(type, context)), ConstructorArguments(creation, ctor, context));
+
+    /// <summary>The name a construction calls, its type's twin's: named by its owner where it is nested
+    /// (#584), and imported from there.</summary>
+    private static string TwinOf(ITypeSymbol type, ConversionContext context)
+    {
+        if (type is not INamedTypeSymbol named) return type.Name;
+        if (named.NestedTwinName() is not null) named.RegisterIntroduced(context);
+        return named.TwinTypeName();
+    }
 
     /// <summary>
     /// Whether <paramref name="type"/> is a class whose twin eqc writes with its C# constructors

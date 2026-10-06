@@ -756,28 +756,11 @@ public class TypeScriptEmitter
         // Generate component code without imports
         var componentCode = _builder.ToString();
 
-        // NESTED static classes (each section's private `Copy` et al.) embed in THIS module as
-        // plain (non-exported) classes above the component — as their own modules, two same-named
-        // nested classes would overwrite each other's file, and the C# scoping is lexical anyway.
-        var nestedCode = string.Empty;
-        TypeScriptCodeBuilder? nb = null;
-        if (component.BuildMethodNode?.Parent is ClassDeclarationSyntax ownerClass)
-        {
-            nb = new TypeScriptCodeBuilder { TypeAnnotations = TypeAnnotations, Layout = _converter.Layout };
-            foreach (var nested in ownerClass.Members.OfType<ClassDeclarationSyntax>()
-                         .Where(n => n.Modifiers.Any(Microsoft.CodeAnalysis.CSharp.SyntaxKind.StaticKeyword)))
-            {
-                nb.Class(nested.Identifier.Text, null, c => EmitStaticMembers(nested, c),
-                    sourceNode: nested, export: false);
-            }
-            nestedCode = nb.ToString();
-        }
+        // A NESTED class (a section's private `Copy`) is a module of its own, named by its owner
+        // (`Section$Copy`, #584): it was written into this module unexported, where a reference from
+        // anywhere else named a class nothing wrote.
 
-        // The helpers the converter collected, transferred once ALL code is generated — the nested
-        // classes above included. Transferred before them, a `Copy.About` that reads a resx emitted
-        // `$eq.str(…)` into a module whose import line had already been decided without it: the
-        // browser answered "$eq is not defined" and the whole module failed to load, taking the page
-        // with it. The nested body is code like any other and registers what it needs.
+        // The helpers the converter collected, transferred once ALL code is generated.
         foreach (var helper in _converter.UsedHelpers)
         {
             component.UsedHelpers.Add(helper);
@@ -785,16 +768,13 @@ public class TypeScriptEmitter
 
         // Generate imports based on populated UsedHelpers. The emitted body is the authority on what is
         // actually referenced, so it is passed in to drop imports the scan over-collected.
-        var imports = Imports(component, nestedCode + componentCode);
+        var imports = Imports(component, componentCode);
 
-        // Return imports + nested scope classes + component code. The two builders recorded their
-        // mappings against their own text, and the module puts the imports above both and the
-        // nested classes above the component: every segment moves down by what stands above it,
-        // or a frame read through the map lands that many lines too early (#293).
-        var module = new JsModule(imports, nestedCode + componentCode);
-        var bodyLine = JsModuleWriter.BodyLine(module);
-        _builder.ShiftMappings(bodyLine + nestedCode.Count(c => c == '\n'));
-        if (nb is not null) _builder.AddMappings(nb.GetMappings(), bodyLine);
+        // The builder recorded its mappings against its own text, and the module puts the imports above
+        // it: every segment moves down by what stands above it, or a frame read through the map lands
+        // that many lines too early (#293).
+        var module = new JsModule(imports, componentCode);
+        _builder.ShiftMappings(JsModuleWriter.BodyLine(module));
         return JsModuleWriter.Write(module);
     }
     
@@ -1410,6 +1390,14 @@ public class TypeScriptEmitter
         // where a vocabulary slot expects it. See EnumUnion for why the width matters.
         if (component.EnumTypes.Contains(ts)) return VocabularyEnumUnion(ts) + suffix;
 
+        // A type the component declares inside itself is its twin, named by it (#584): `CodeMetrics`
+        // inside CodeBlock is `CodeBlock$CodeMetrics`, and the bare name resolves to nothing.
+        var nullable = ts.EndsWith(" | null", StringComparison.Ordinal);
+        var bare = nullable ? ts[..^" | null".Length] : ts;
+        if (component.ClassSyntax?.Members.OfType<BaseTypeDeclarationSyntax>()
+                .FirstOrDefault(nested => nested is not EnumDeclarationSyntax && nested.Identifier.ValueText == bare) is { } declared)
+            return (nullable ? OrNull(declared.TwinTypeName()) : declared.TwinTypeName()) + suffix;
+
         return (IsResolvableTsName(component, ts) ? ts : "any") + suffix;
     }
 
@@ -1627,7 +1615,7 @@ public class TypeScriptEmitter
     private void EmitStaticMembers(ClassDeclarationSyntax cls, TypeScriptCodeBuilder.ClassBuilder c,
         bool asStatic = true)
     {
-        var name = cls.Identifier.Text;
+        var name = cls.TwinTypeName();
         if (!asStatic) EmitInstanceConstructor(cls, c);
 
             // A type whose statics can observe one another starts each at its zero and initializes
@@ -2285,6 +2273,8 @@ public class TypeScriptEmitter
             { TypeKind: TypeKind.Enum } => IsFlags(resolved!) ? "number" : EnumUnion(resolved!),
             { TypeKind: TypeKind.Interface } => "any",
             { TypeKind: TypeKind.TypeParameter } => resolved!.Name,
+            // A nested type is its twin, named by its owner (#584).
+            INamedTypeSymbol nested when nested.NestedTwinName() is { } twin => twin,
             // A name nothing here can VERIFY is a name the module may not resolve. Annotating with
             // it trades a missing type for a broken one, so it stays open.
             null when echoed && !Resolvable(mapped) => "any",
@@ -2434,7 +2424,7 @@ public class TypeScriptEmitter
         if (semanticModel != null) { _semanticModel = semanticModel; _converter.SetSemanticModel(semanticModel); }
         _converter.EmitTypeAnnotations(TypeAnnotations);
         _converter.EmitDesignOrigins(DesignMode);
-        _converter.SetCurrentClass(cls.Identifier.Text);
+        _converter.SetCurrentClass(cls.TwinTypeName());
         _converter.UsedHelpers.Clear();
         _converter.UsedAppTypes.Clear();
         _converter.UsedRuntimeTypes.Clear();
@@ -2442,7 +2432,8 @@ public class TypeScriptEmitter
         // plain-class/static-helper emit still carried the PREVIOUS component's entries, and now
         // that ComponentCompiler drains every branch, a leak here would fail the wrong file.
         _converter.ClearDiagnostics();
-        var name = cls.Identifier.Text;
+        // Its twin's name, its owners' and its own (#584): a nested class is a module of its own too.
+        var name = cls.TwinTypeName();
 
         // The BASE class travels. Dropping it is how `CSharpLanguage : CurlyBraceLanguage` came out
         // as an empty class that answered "tokenize is not a function" — from very far away from the

@@ -188,6 +188,9 @@ public static class TypeDeclarationExtensions
                 return type is NullableTypeSyntax ? $"{lowered} | null" : lowered;
             }
             if (core.TypeKind == TypeKind.Interface) return "any";
+            // A nested type is its twin, named by its owner (#584).
+            if (core is INamedTypeSymbol nested && nested.NestedTwinName() is { } twin)
+                return type is NullableTypeSyntax ? $"{twin} | null" : twin;
         }
 
         // ONE mapper for the whole emission. This used to keep its own short list and answer `any`

@@ -110,8 +110,8 @@ public static class HydrationSpec
         // own `static $hydration` says which.
         if (IsEmittedValueType(named) && HasHydratableMember(named, visiting))
         {
-            referenced.InSource.Add(named.Name);
-            return named.Name;
+            referenced.InSource.Add(named.TwinTypeName());
+            return named.TwinTypeName();
         }
 
         // A type the runtime ships no export for is fenced (EQ2010) wherever a component names it,

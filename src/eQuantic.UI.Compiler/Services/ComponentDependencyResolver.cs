@@ -62,6 +62,10 @@ public class ComponentDependencyResolver
 
     /// <summary>A declaration's type in the project's compilation, found by its CLR name; null where
     /// the host has no compilation, or the compilation does not know the type.</summary>
+    /// <summary>Marked <c>[ServerOnly]</c>, which the parser writes no module for, as it reads it.</summary>
+    private static bool IsServerOnlyDeclaration(MemberDeclarationSyntax declaration) =>
+        declaration.AttributeLists.SelectMany(list => list.Attributes).Any(attribute => attribute.IsNamed("ServerOnly"));
+
     private INamedTypeSymbol? SymbolOf(TypeDeclarationSyntax declaration) =>
         _projectCompilation?.GetTypeByMetadataName(Parser.ComponentParser.ClrIdentity(declaration));
 
@@ -82,7 +86,7 @@ public class ComponentDependencyResolver
         var modules = new HashSet<string>(StringComparer.Ordinal);
         foreach (var scanned in _classes)
             if (PlainClassModule.Is(scanned.Declared, _projectCompilation?.GetTypeByMetadataName(scanned.MetadataName), _scan))
-                modules.Add(scanned.Declared.Name);
+                modules.Add(scanned.Declared.Module);
         _plainClassesSettled = modules;
         return modules;
     }
@@ -160,7 +164,7 @@ public class ComponentDependencyResolver
         {
             if (valueType is (RecordDeclarationSyntax or StructDeclarationSyntax)
                 && CodeGen.RecordTypeEmitter.CanEmit(valueType, SymbolOf(valueType)))
-                _recordTypes.Add(valueType.Identifier.Text);
+                _recordTypes.Add(valueType.TwinTypeName());
         }
 
         _scan.Add(root);
@@ -185,12 +189,13 @@ public class ComponentDependencyResolver
             }
 
             // Static utility classes are emitted as their own module — register so referencers
-            // import. NESTED static classes embed in their owner's module (private scope, every
-            // section has its own `Copy`) and must never register as importable.
-            if (classDecl.Parent is not Microsoft.CodeAnalysis.CSharp.Syntax.ClassDeclarationSyntax
-                && classDecl.Modifiers.Any(m => m.IsKind(Microsoft.CodeAnalysis.CSharp.SyntaxKind.StaticKeyword)))
+            // import. A NESTED one is a module of its own too, named by its owner (`Section$Copy`,
+            // #584), where its owner crosses.
+            if (classDecl.Modifiers.Any(m => m.IsKind(Microsoft.CodeAnalysis.CSharp.SyntaxKind.StaticKeyword)))
             {
-                _staticHelpers.Add(className);
+                if (PlainClassModule.OwnersCross(classDecl) && !IsServerOnlyDeclaration(classDecl)
+                    && !(SymbolOf(classDecl) is { } helper && PlainClassModule.OwnerKeptOut(helper)))
+                    _staticHelpers.Add(classDecl.TwinTypeName());
             }
 
             // A component is a module of its own, as the parser writes one for every component it
@@ -198,7 +203,7 @@ public class ComponentDependencyResolver
             // called: a nested `static class Copy` with a `Build` helper is its owner's scope.
             else if (!classDecl.Modifiers.Any(SyntaxKind.StaticKeyword) && IsComponentLike(classDecl))
             {
-                _componentLike.Add(className);
+                _componentLike.Add(classDecl.TwinTypeName());
             }
 
             // A PLAIN class is a module too — a referencing module has to import it, or the page

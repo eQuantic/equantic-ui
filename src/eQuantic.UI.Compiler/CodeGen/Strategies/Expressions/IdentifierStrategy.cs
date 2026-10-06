@@ -35,6 +35,14 @@ public class IdentifierStrategy : IExpressionIrStrategy
         // mapped first it read the inherited value instead (Copilot's review of #399).
         if (name == "Component" && !BoundInScope(symbol, identifier, name)) return JsExpr.ThisMember("_component");
 
+        // A nested type of the app's is its twin, named by its owner (#584): `Ops` inside Calc is
+        // `Calc$Ops`, which a top-level `Ops` can never be.
+        if (symbol is INamedTypeSymbol nested && nested.NestedTwinName() is { } twin)
+        {
+            nested.RegisterIntroduced(context);
+            return JsExpr.Identifier(twin);
+        }
+
         // If it's a type symbol, return as is (to allow EnumStrategy to work)
         if (symbol is ITypeSymbol || symbol is INamedTypeSymbol) return JsExpr.Identifier(name);
 
@@ -93,7 +101,7 @@ public class IdentifierStrategy : IExpressionIrStrategy
                         return JsExpr.Literal("undefined");
                     return isMemberName
                         ? JsExpr.Identifier(name.ToCamelCase())
-                        : JsExpr.Member(JsExpr.Identifier(symbol.ContainingType.Name), name.ToCamelCase());
+                        : JsExpr.Member(JsExpr.Identifier(StaticHome(symbol.ContainingType, context)), name.ToCamelCase());
                 }
 
                 // If it's a member of the current class and not static, add 'this.'
@@ -178,4 +186,14 @@ public class IdentifierStrategy : IExpressionIrStrategy
     };
 
     public int Priority => 10;
+
+    /// <summary>The twin a static member reached bare lives on: its type's, named by its owner where it is
+    /// nested (#584), and imported where it is another type's, as an owner's static read from inside a
+    /// nested type is.</summary>
+    private static string StaticHome(INamedTypeSymbol type, ConversionContext context)
+    {
+        if (type.Locations.Any(location => location.IsInSource)) type.RegisterIntroduced(context);
+        return type.TwinTypeName();
+    }
+
 }

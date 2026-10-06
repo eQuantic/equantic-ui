@@ -245,8 +245,8 @@ public class InvocationStrategy : IExpressionIrStrategy
             if (RuntimeProvidedTypeScanner.IsRuntimeProvidedNamespace(declaringNamespace))
                 context.UsedRuntimeTypes.Add(declaring.Name);
             else
-                context.UsedAppTypes.Add(declaring.Name);
-            return JsExpr.Call(JsExpr.Member(JsExpr.Identifier(declaring.Name), methodName.ToCamelCase()), argIrs);
+                context.UsedAppTypes.Add(declaring.TwinTypeName());
+            return JsExpr.Call(JsExpr.Member(JsExpr.Identifier(declaring.TwinTypeName()), methodName.ToCamelCase()), argIrs);
         }
 
         // STANDALONE factory calls (no semantic model — the playground's mode): nothing can RESOLVE

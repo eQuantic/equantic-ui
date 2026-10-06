@@ -1542,6 +1542,19 @@ record of a release, the wiki's Upgrading page is the distillate.
   documented: `base.Name` over an auto-property overridden by another reads the override's value.
   Proposed and archived through OpenSpec (`openspec/specs/transpiler-classes`,
   `openspec/specs/transpiler-records`).
+- **2026-10-06 · A nested class is a module of its own, named by its owner**: a class declared inside
+  another one had no module, so `Roster.First()` building a private `Row` threw, and where a top-level
+  class had its name the nested one resolved to it, so `new Cart().Size()` read the top-level `Item`'s
+  3 for its own 9 ([#584](https://github.com/eQuantic/equantic-ui/issues/584)); a nested record wrote
+  the module a top-level record of its name writes, and the two were refused (EQ2009); a nested static
+  class outside a component had no module. Every class, static class, record and struct declared
+  inside another type is a module named by the types that contain it and its own name joined by `$`
+  (`Cart$Item`), which no C# type can take, and every reference to it, a construction, a type test, a
+  static member, an operator, a zero and an annotation alike, names that twin and imports it, through
+  one name the parser, the resolver and the emitters read; one inside a server-only class, an
+  exception or an attribute has none. A record's text keeps its C# name. The runtime's one nested
+  type is `CodeBlock$CodeMetrics`. Proposed and archived through OpenSpec
+  (`openspec/specs/transpiler-classes`).
 
 ## Retired documents
 

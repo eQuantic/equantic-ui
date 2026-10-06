@@ -68,7 +68,9 @@ public class RecordTypeEmitter
         && !(type.Modifiers.Any(SyntaxKind.PartialKeyword) && type.Members.Count == 0 && type.ParameterList is null
              && HasAnotherDeclaration(type, symbol))
         && !type.AttributeLists.SelectMany(list => list.Attributes).Any(attribute => attribute.IsNamed("ServerOnly"))
-        && !(symbol is not null && Services.PlainClassModule.ServerOnlyAlongChain(symbol));
+        && !(symbol is not null && Services.PlainClassModule.ServerOnlyAlongChain(symbol))
+        && Services.PlainClassModule.OwnersCross(type)
+        && !(symbol is not null && Services.PlainClassModule.OwnerKeptOut(symbol));
 
     /// <summary>Whether the type of <paramref name="declaration"/> has another declaration: by its symbol,
     /// or, where the host has no compilation, in the declaration's own file.</summary>
@@ -175,7 +177,7 @@ public class RecordTypeEmitter
         // every set above has been merged in. It was struck right after the scan, and the names the
         // conversion introduced put it back: a runtime-provided record calling its own static helper
         // (`CodeDiffLayout.addGaps(…)`) imported itself, which TypeScript refuses as a conflict.
-        runtimeProvided.Remove(type.Identifier.Text);
+        runtimeProvided.Remove(type.TwinTypeName());
         // Only what the emitted text actually NAMES: a type mentioned in the C# and erased on the
         // way out (an interface, an enum) would otherwise import a name nothing uses, which the
         // runtime's own build rejects.
@@ -210,7 +212,7 @@ public class RecordTypeEmitter
             foreach (var appType in appTypes)
                 if (_modules?.IsModule(appType) == true && Names(appType))
                     specReferences.Add(appType);
-            specReferences.Remove(type.Identifier.Text);
+            specReferences.Remove(type.TwinTypeName());
             if (baseName != null) specReferences.Remove(baseName);
             // A reference the RUNTIME provides is imported from there already, and a second import
             // of the same name from a sibling module is a duplicate identifier. Latent until a
@@ -252,7 +254,10 @@ public class RecordTypeEmitter
     {
         _converter.EmitTypeAnnotations(tsTypeDeclarations);
         _annotations = tsTypeDeclarations;
-        var name = type.Identifier.Text;
+        // The twin's name, its owners' and its own (#584), which every reference writes; the text of a
+        // record prints its C# name, as .NET's does.
+        var name = type.TwinTypeName();
+        var printedName = type.Identifier.Text;
         _startsInitialization = TypeInitializer.HasStaticConstructor(type) ? name : null;
         var members = type.ValueMembers(ModelFor(type));
         var (baseName, clause) = BaseInfo(type);
@@ -514,7 +519,7 @@ public class RecordTypeEmitter
             var inner = printed.Count == 0
                 ? ""
                 : string.Join(", ", printed.Select(m => $"{m.Display} = ${{this.{m.Js}}}")) + " ";
-            sb.Append($"toString() {{ return `{name} {{ {inner}}}`; }} ");
+            sb.Append($"toString() {{ return `{printedName} {{ {inner}}}`; }} ");
         }
 
         sb.Append('}');

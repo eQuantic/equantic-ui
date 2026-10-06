@@ -95,7 +95,9 @@ namespace eQuantic.UI.Web.Tests
             foreach (var module in modules)
             {
                 var text = File.ReadAllText(module);
-                var name = Regex.Match(text, @"export class (\w+)").Groups[1].Value;
+                // A twin's name can hold a `$` (a nested type's, `CodeBlock$CodeMetrics`, #584), which is
+                // no component's: read whole, it is skipped rather than taken for its owner.
+                var name = Regex.Match(text, @"export class ([\w$]+)").Groups[1].Value;
                 if (!components.TryGetValue(name, out var types)) continue;
 
                 Identity(text).Should().BeOneOf(types.Select(ComponentIdentity.Of),
