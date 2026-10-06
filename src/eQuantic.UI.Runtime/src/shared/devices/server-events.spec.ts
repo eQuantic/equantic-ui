@@ -514,8 +514,32 @@ describe('WebServerEvents', () => {
     expect(sources).toHaveLength(2);
     sources[1].connect('c2');
     await vi.advanceTimersByTimeAsync(0);
-    expect(sent[sent.length - 1]).toMatchObject({ url: '/_equantic/events/c2/subscribe', topic: 'room:b' });
+    expect(sent[sent.length - 1]).toMatchObject({
+      url: '/_equantic/events/c2/subscribe',
+      topic: 'room:b',
+    });
     expect(page.connection.state).toBe('connected');
+  });
+
+  it('releases a topic whose unanswered bind may have bound it, once the page lets go of it', async () => {
+    vi.useFakeTimers();
+    respond = (request) => {
+      if (request.url.endsWith('/release')) request.answer(204);
+      // The server bound it, and the answer was lost on the way back.
+      else request.answer(request.topic === 'room:a' ? 503 : 204);
+    };
+    const page = events();
+    const a = page.subscribe(room('a'), () => {});
+    page.subscribe(room('b'), () => {});
+    sources[0].connect('c1');
+    await vi.advanceTimersByTimeAsync(0);
+
+    a.dispose();
+    await vi.advanceTimersByTimeAsync(500);
+
+    expect(
+      sent.filter((request) => request.url.endsWith('/release')).map((request) => request.topic),
+    ).toEqual(['room:a']);
   });
 
   it('binds on the new connection a topic whose bind on the old one never answered', async () => {

@@ -87,6 +87,12 @@ export class WebServerEvents {
   private readonly syncing = new Map<string, Promise<void>>();
   /** How many binds in a row of each topic the server could not answer for. */
   private readonly misses = new Map<string, number>();
+  /**
+   * The topics a bind may have bound although its answer never came: the request can reach the
+   * server and its answer be lost. One the page lets go of is released as a bound one is, or the
+   * server kept it, in a slot of the page's limit and in a room's presence.
+   */
+  private readonly uncertain = new Set<string>();
   private readonly listeners = new Set<ConnectionListener>();
   private readonly reports: ServerEventsListener = {
     connected: (connection) => this.connected(connection),
@@ -181,6 +187,7 @@ export class WebServerEvents {
       this.transport.close();
       this.connectionId = null;
       this.bound.clear();
+      this.uncertain.clear();
       this.change('disconnected');
     }, 0);
   }
@@ -188,6 +195,7 @@ export class WebServerEvents {
   private connected(connection: string): void {
     this.connectionId = connection;
     this.bound.clear();
+    this.uncertain.clear();
     void this.settle(connection);
   }
 
@@ -213,6 +221,7 @@ export class WebServerEvents {
     this.transport.close();
     this.connectionId = null;
     this.bound.clear();
+    this.uncertain.clear();
     this.change('reconnecting');
     this.transport.open(this.reports);
   }
@@ -220,6 +229,7 @@ export class WebServerEvents {
   private dropped(): void {
     this.connectionId = null;
     this.bound.clear();
+    this.uncertain.clear();
     if (this.state !== 'disconnected') this.change('reconnecting');
   }
 
@@ -258,7 +268,9 @@ export class WebServerEvents {
       for (;;) {
         const connection = this.connectionId;
         const wanted = this.topics.has(name);
-        if (connection === null || wanted === this.bound.has(name)) return;
+        // Held as far as the page can tell: bound, or bound perhaps, which a release settles.
+        const held = this.bound.has(name) || (!wanted && this.uncertain.has(name));
+        if (connection === null || wanted === held) return;
         if (!wanted) {
           // A page that holds nothing closes its connection at the end of the task, and the server
           // releases what a connection held when it ends; a subscription that arrives first keeps it
@@ -268,6 +280,7 @@ export class WebServerEvents {
           if (connection !== this.connectionId) continue;
           if (released !== 'failed') {
             this.bound.delete(name);
+            this.uncertain.delete(name);
             this.misses.delete(name);
             continue;
           }
@@ -288,8 +301,13 @@ export class WebServerEvents {
         if (connection !== this.connectionId) continue;
         if (outcome === 'bound') {
           this.bound.add(name);
+          this.uncertain.delete(name);
           this.misses.delete(name);
         } else if (outcome === 'gone' || outcome === 'failed') {
+          // A failed request may have bound it before its answer was lost. A server that does not
+          // know the connection bound nothing.
+          if (outcome === 'failed') this.uncertain.add(name);
+          else this.uncertain.delete(name);
           // No answer about the topic itself. A stream that has just ended is unknown to the server
           // before the browser sees it end, and a proxy answers for an instance that is going away:
           // asked again, the page's next connection binds it. A page whose requests keep missing its
@@ -330,7 +348,8 @@ export class WebServerEvents {
     // A reason the app has to act on is an error; a refusal no subscriber listens for, a warning.
     if (why !== undefined)
       console.error(`[eQuantic.UI] the server did not bind the topic '${name}' (${reason})${why}`);
-    else if (unheard) console.warn(`[eQuantic.UI] the server did not bind the topic '${name}' (${reason})`);
+    else if (unheard)
+      console.warn(`[eQuantic.UI] the server did not bind the topic '${name}' (${reason})`);
     this.closeWhenIdle();
   }
 

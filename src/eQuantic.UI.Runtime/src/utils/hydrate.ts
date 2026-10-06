@@ -145,7 +145,9 @@ export function hydrate(incoming: unknown, spec: HydrationSpec): unknown {
     // The specs of the type arguments the twin revives, which the wire never carries: the C# type
     // knows them and JSON does not. A topic that crossed without them revived no payload.
     if (of?.$typeArguments !== undefined && typeArguments !== undefined)
-      of.$typeArguments.forEach((member, i) => adoptMember(result, member, typeArguments[i] ?? null));
+      of.$typeArguments.forEach((member, i) =>
+        adoptMember(result, member, typeArguments[i] ?? null),
+      );
     return result;
   }
   if ('dict' in (spec as DictionarySpec)) return dictionary(incoming, spec as DictionarySpec);
