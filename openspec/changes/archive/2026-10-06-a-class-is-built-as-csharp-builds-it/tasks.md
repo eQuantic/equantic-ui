@@ -18,11 +18,11 @@
 
 ## 4. The runtime and the real thing
 
-- [ ] 4.1 Regenerate the runtime's transpiled classes (`EQ_UPDATE_TRANSPILED=1`) and run `dotnet build src/eQuantic.UI.Runtime -t:TestRuntime`, the Server suite (the served runtime's budget) and the Web suite
-- [ ] 4.2 The dashboard sample in a browser: every screen by client navigation with no console error, the code editor, the form, the sheet and the markdown screen exercised, since their models are transpiled classes
+- [x] 4.1 Regenerate the runtime's transpiled classes (`EQ_UPDATE_TRANSPILED=1`) and run `dotnet build src/eQuantic.UI.Runtime -t:TestRuntime`, the Server suite (the served runtime's budget) and the Web suite
+- [x] 4.2 The dashboard sample in a browser: every screen by client navigation with no console error, the code editor, the form, the sheet and the markdown screen exercised, since their models are transpiled classes
 
 ## 5. Documentation and archive
 
 - [x] 5.1 The wiki's SupportedFeatures and Compiler pages, and Diagnostics for EQ1007 and EQ1009 on a class, in English and Portuguese, on the wiki branch named like this change's branch; the base-constructor difference documented on SupportedFeatures
 - [x] 5.2 docs/DIAGNOSTICS.md for EQ1007 and EQ1009 on a class, and one docs/LEDGER.md line citing #571, #582, #583 and #587
-- [ ] 5.3 `./scripts/check-openspec.sh` green, then `openspec archive a-class-is-built-as-csharp-builds-it --yes` before the merge
+- [x] 5.3 `./scripts/check-openspec.sh` green, then `openspec archive a-class-is-built-as-csharp-builds-it --yes` before the merge
