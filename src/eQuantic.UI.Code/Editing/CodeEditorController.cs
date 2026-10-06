@@ -357,10 +357,13 @@ public sealed class CodeEditorController : ICodeSurfaceModel
     /// the line's cells (<see cref="CellsOf"/>), on the nearer side of whatever the point hit. So a
     /// click on the right half of a character, a tab or a wide character puts the caret after it,
     /// which is what makes a click feel aimed rather than approximate, and no click lands inside a
-    /// text element. Past the end of a line it lands at the end; past the last line, on the last.
+    /// text element. Past the end of a line it lands at the end; below the last line, at the end of
+    /// the document, as a press under the code does in any editor.
     /// </summary>
     public CodePosition PositionAt(Point point)
     {
+        var last = _document.LineCount - 1;
+        if (point.Y >= Grid.PointOf(last, 0).Y + Grid.Cell.Height) return _document.End;
         var target = _document.Clamp(new CodePosition(Math.Max(0, Grid.LineAt(point.Y)), 0)).Line;
         return new CodePosition(target, CellsOf(target).ColumnAt((point.X - Grid.Origin.X) / Grid.Cell.Width));
     }

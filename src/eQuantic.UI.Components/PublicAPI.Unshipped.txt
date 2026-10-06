@@ -1,1 +1,3 @@
 #nullable enable
+eQuantic.UI.Components.CodeBlock.MinHeight.get -> float
+eQuantic.UI.Components.CodeBlock.MinHeight.init -> void

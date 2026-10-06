@@ -323,6 +323,11 @@ public sealed class CodeEditor : StatefulComponent
             ViewportOffset = _offset,
             ViewportHeight = _viewport,
             ViewportWidth = _viewportWidth,
+            // A bounded editor's code fills its viewport however short the file: a press under the
+            // last line is in the code, and the completion list has the viewport's room under it. A
+            // hugging editor's viewport is its code, and taking its height as a floor would keep it
+            // from ever shrinking.
+            MinHeight = bounded ? _viewport : 0,
             // The caret's line is washed while the editor holds it, and the selection is drawn under
             // the text — the two pieces of state the read-only block cannot know about. Both are the
             // ENGINE's measurements, on the grid handed to it above.
