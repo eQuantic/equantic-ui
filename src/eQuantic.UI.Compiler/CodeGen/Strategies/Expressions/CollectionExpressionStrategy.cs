@@ -11,9 +11,10 @@ namespace eQuantic.UI.Compiler.CodeGen.Strategies.Expressions;
 /// Handles:
 /// - [1, 2, 3] -> [1, 2, 3]
 /// - [..items, 4] -> [...items, 4]
-/// - a SET target -> new Set([…]), because the elements are only half of what `[…]` means: the
-///   TARGET TYPE says what is being built. `HashSet&lt;string&gt; _selected = ["#3841"]` lowered to a
-///   plain array, and every `Add`/`Remove`/`Count` on it then threw at the first click.
+/// - a SET target -> the runtime's set, each element added in turn as C# adds it, found by the
+///   element type's equality, because the elements are only half of what `[…]` means: the TARGET
+///   TYPE says what is being built. `HashSet&lt;string&gt; _selected = ["#3841"]` lowered to a plain
+///   array, and every `Add`/`Remove`/`Count` on it then threw at the first click.
 /// <para>
 /// Built as IR (#384): the elements are the lists a screen composes, `children: [ … ]`, and a
 /// lambda among them reaches the writer as an arrow whose block maps line by line.
@@ -67,7 +68,13 @@ public class CollectionExpressionStrategy : IExpressionIrStrategy
         if (definition.StartsWith("System.Collections.Generic.HashSet")
             || definition.StartsWith("System.Collections.Generic.ISet")
             || definition.StartsWith("System.Collections.Generic.IReadOnlySet"))
-            return JsExpr.Template("new Set({0})", array);
+        {
+            context.UsedHelpers.Add(Eq.Import);
+            var element = target is INamedTypeSymbol { TypeArguments: [var item] } ? item : null;
+            return ElementEquality.Of(element) is { } equality
+                ? JsExpr.Call(JsExpr.Identifier(Eq.HashSetOf), array, JsExpr.Literal(equality))
+                : JsExpr.Call(JsExpr.Identifier(Eq.HashSetOf), array);
+        }
 
         return array;
     }

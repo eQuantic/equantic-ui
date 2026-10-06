@@ -273,7 +273,8 @@ public class HydrationSpecEmissionTests
         var map = page.TypeScript.Substring(page.TypeScript.IndexOf("$hydration"));
         Assert.Contains("_roles: { collection: 'set', of: null }", map);
         Assert.Contains("_ids: { collection: 'set', of: 'long' }", map);
-        Assert.Contains("_days: { collection: 'set', of: 'dateTime' }", map);
+        // A set finds its elements as its element type's default comparer does: a date by value (#531).
+        Assert.Contains("_days: { collection: 'set', of: 'dateTime', byValue: true }", map);
         Assert.Contains("_stack: { collection: 'stack', of: null }", map);
         Assert.Contains("_queue: { collection: 'queue', of: 'decimal' }", map);
         Assert.Contains("_list: { collection: 'linkedList', of: null }", map);
@@ -286,6 +287,42 @@ public class HydrationSpecEmissionTests
         // And which of the two it is: a SortedList refuses a repeated key in its own words.
         Assert.Contains("_index: { dict: null, sorted: 'dictionary', order: 'text' }", map);
         Assert.Contains("_ranks: { dict: null, sorted: 'list', order: 'text' }", map);
+    }
+
+    [Fact]
+    public void AGeneratedEquality_ImportsTheRuntimeItCalls()
+    {
+        // A tuple holding an array is found by a comparison eqc generates, a call into $eq, written
+        // into the hydration map and into a ContainsValue. Neither registered the import, and the
+        // module that names $eq nowhere else failed to load on "$eq is not defined".
+        const string source = """
+            using System;
+            using System.Collections.Generic;
+            using eQuantic.UI.Primitives;
+
+            [Page("/seen")]
+            public sealed class Seen : StatefulComponent, IServerPrefetch
+            {
+                [ServerOnly]
+                public System.Threading.Tasks.Task PrefetchAsync(System.IServiceProvider services, System.Threading.CancellationToken cancellationToken)
+                    => System.Threading.Tasks.Task.CompletedTask;
+
+                private HashSet<(int[] Cells, int Row)> _seen;
+
+                public bool Holds(Dictionary<string, (int[] Cells, int Row)> rows, (int[] Cells, int Row) row)
+                    => rows.ContainsValue(row);
+
+                public override VisualNode Build(ComponentContext context)
+                    => new Text("", TypeRole.BodyM, context.Theme.TextPrimary);
+            }
+            """;
+        var compiler = new ComponentCompiler();
+        compiler.SetProjectCompilation(GeneratedProject.Of(source, "Seen.cs"));
+        var page = compiler.CompileSource(source, "Seen.cs").Single(r => r.ComponentName == "Seen");
+        Assert.True(page.Success, string.Join("\n", page.Errors.Select(e => e.Message)));
+        Assert.Contains("byValue: $eq.collections.tupleEquality(false, false) }", page.TypeScript);
+        Assert.Contains("rows.containsValue(row, $eq.collections.tupleEquality(false, false))", page.TypeScript);
+        Assert.Matches(@"import \{[^}]*\$eq\b[^}]*\} from ""@equantic/runtime""", page.TypeScript);
     }
 
     private static string Compile()

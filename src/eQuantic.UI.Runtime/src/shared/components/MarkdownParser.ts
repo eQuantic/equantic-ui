@@ -6,7 +6,7 @@ export class MarkdownParser {
         if (!source) return blocks;
         let lines = MarkdownParser.stripComments($eq.text.replace(source, '\r\n', '\n', 'ordinal').split('\n'));
         let paragraph = '';
-        let usedIds: Set<string> = new Set();
+        let usedIds: Set<string> = $eq.collections.hashSet();
         for (let i = 0; i < lines.length; i++) {
             let line = lines[i];
             let trimmed = $eq.text.trim(line);
@@ -19,7 +19,7 @@ export class MarkdownParser {
                     body.push(lines[i]);
                     i++;
                 }
-                blocks.push(new MarkdownBlock({ kind: 'code', lang: lang.length === 0 ? 'text' : lang, raw: body.join('\n') }));
+                blocks.push(new MarkdownBlock({ kind: 'code', lang: lang.length === 0 ? 'text' : lang, raw: $eq.text.join('\n', body) }));
                 continue;
             }
             if (trimmed.length === 0) {

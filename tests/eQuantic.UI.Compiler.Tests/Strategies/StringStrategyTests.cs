@@ -203,10 +203,27 @@ public class StringStrategyTests
     }
 
     [Fact]
-    public void Join_MapsToArrayJoin()
+    public void Join_ReadsTheSequenceInTheRuntime()
     {
+        // A sequence of strings needs no conversion, and the runtime refuses a null one by name.
         var result = TestHelper.ConvertExpression("string.Join(\", \", items)");
-        result.Should().Be("this.items.join(', ')");
+        result.Should().Be("$eq.text.join(', ', this.items)");
+    }
+
+    [Fact]
+    public void Join_WritesEachValueByItsElementType()
+    {
+        // A bool as True or False: the conversion a concatenation applies, per element (#441).
+        TestHelper.ConvertExpression("string.Join(\",\", new[] { true, false })")
+            .Should().Be("$eq.text.join(',', [true, false], (value) => $eq.text.format(value, null))");
+    }
+
+    [Fact]
+    public void Join_WritesValuesPassedOneByOneByTheirOwnTypes()
+    {
+        // The params array in its expanded form: each value its own text, then the array's join.
+        TestHelper.ConvertExpression("string.Join(\",\", 1, true)")
+            .Should().Be("[1, $eq.text.format(true, null)].join(',')");
     }
 
     [Fact]

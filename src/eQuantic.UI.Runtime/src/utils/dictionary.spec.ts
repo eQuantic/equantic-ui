@@ -187,7 +187,7 @@ describe('Dictionary — keys found by value', () => {
 });
 
 describe("Dictionary — keys found by their own equality ('own')", () => {
-  /** A record's twin: a class with its own `equals`. */
+  /** A record's twin: a class with its own `equals`, and the `getHashCode` eqc writes beside it. */
   class Point {
     constructor(
       readonly x: number,
@@ -195,6 +195,17 @@ describe("Dictionary — keys found by their own equality ('own')", () => {
     ) {}
     equals(other: unknown): boolean {
       return other instanceof Point && other.x === this.x && other.y === this.y;
+    }
+    getHashCode(): number {
+      return Math.imul(this.x, 31) + this.y;
+    }
+  }
+  /** A class that overrides Equals and not GetHashCode (CS0659): .NET's table never compares two of
+   *  them, since they hash by their identities. */
+  class Unhashed {
+    constructor(readonly v: number) {}
+    equals(other: unknown): boolean {
+      return other instanceof Unhashed && other.v === this.v;
     }
   }
   /** A class that keeps object's Equals: no `equals` of its own. */
@@ -210,6 +221,15 @@ describe("Dictionary — keys found by their own equality ('own')", () => {
     expect(d.get(new Point(1, 2))).toBe('b');
     expect(d.delete(new Point(1, 2))).toBe(true);
     expect(d.size).toBe(0);
+  });
+
+  it('finds a key whose equals has no hash beside it only as itself, as .NET hashes it by its identity', () => {
+    const d = dictionary<unknown, number>(null, 'own');
+    const first = new Unhashed(1);
+    d.set(first, 1);
+    d.set(new Unhashed(1), 2);
+    expect(d.size).toBe(2);
+    expect(d.get(first)).toBe(1);
   });
 
   it('finds an instance with no equals of its own by reference', () => {

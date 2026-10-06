@@ -128,17 +128,26 @@ public class LinqStrategyTests
     }
 
     [Fact]
-    public void Contains_MapsTo_Includes()
+    public void Contains_OfAnIdentityElement_MapsTo_Includes()
     {
-        var result = TestHelper.ConvertExpression("list.Contains(item)");
-        result.Should().Be("this.list.includes(this.item)");
+        var result = TestHelper.ConvertExpression("items.Contains(str)");
+        result.Should().Be("this.items.includes(this.str)");
     }
 
     [Fact]
     public void Contains_WithLiteral_MapsCorrectly()
     {
-        var result = TestHelper.ConvertExpression("list.Contains(5)");
-        result.Should().Be("this.list.includes(5)");
+        var result = TestHelper.ConvertExpression("numbers.Contains(5)");
+        result.Should().Be("this.numbers.includes(5)");
+    }
+
+    [Fact]
+    public void Contains_OfAClass_AsksTheElementsOwnEquality()
+    {
+        // A class may override Equals, as its subclasses may: the element's own equality is asked,
+        // as EqualityComparer<T>.Default asks it (#425).
+        var result = TestHelper.ConvertExpression("list.Contains(item)");
+        result.Should().Be("$eq.collections.contains(this.list, this.item, 'own')");
     }
 
     [Fact]
