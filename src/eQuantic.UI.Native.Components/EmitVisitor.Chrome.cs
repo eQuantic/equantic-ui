@@ -378,10 +378,11 @@ internal sealed partial class EmitVisitor
         if (box.Style.Hover is { IsEmpty: false } hover
             && (press.IsHovered(s.Node, box) || (press.Simulated & SimulatedState.Hovered) != 0))
             style = Over(style, hover);
-        if (box.Style.Focus is { IsEmpty: false } focus
+        // Inside a disabled control, its boxes show neither of the control's states (#508).
+        if (box.Style.Focus is { IsEmpty: false } focus && !press.InDisabledControl
             && (press.InFocusedControl || (press.Simulated & SimulatedState.Focused) != 0))
             style = Over(style, focus);
-        if (box.Style.Pressed is { IsEmpty: false } pressed
+        if (box.Style.Pressed is { IsEmpty: false } pressed && !press.InDisabledControl
             && (press.InPressedControl || (press.Simulated & SimulatedState.Pressed) != 0))
             style = Over(style, pressed);
         return style;

@@ -71,6 +71,9 @@ public class ComponentParityFixtureTests
         ("control-states", ControlStates(), NoPresses),
         ("control-states-simulated",
             new Simulated(SimulatedState.Pressed | SimulatedState.Focused, ControlStates()), NoPresses),
+        // A picture of a DISABLED control: both producers mask the control's states for its subtree.
+        ("control-states-disabled-simulated",
+            new Simulated(SimulatedState.Pressed | SimulatedState.Focused, DisabledControlStates()), NoPresses),
         // A state that leaves nothing to draw writes the ring's slot alone: a hover that sets the
         // elevation to 0 over a box whose only shadow was its elevation.
         ("box-hover-drops-shadow", new Box(new BoxStyle
@@ -220,6 +223,12 @@ public class ComponentParityFixtureTests
         Pressed = new StyleDiff { Transform = Transform2D.Scale(0.985f), Elevation = 1 },
     }), () => { })
     {
+        PressedBackground = Theme.SurfaceSubtle,
+    };
+
+    private static Pressable DisabledControlStates() => new(ControlStates().Child, () => { })
+    {
+        Disabled = true,
         PressedBackground = Theme.SurfaceSubtle,
     };
 

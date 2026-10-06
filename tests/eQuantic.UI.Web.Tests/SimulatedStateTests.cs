@@ -66,6 +66,39 @@ public class SimulatedStateTests
         html.Should().MatchRegex("class=\"[^\"]*eq-focused", "the control is marked, so the ring is drawn");
     }
 
+    /// <summary>A picture of a DISABLED control shows no press and no focus: the control's simulated
+    /// states are masked for its subtree, as the real ones never select under it (found by Copilot
+    /// on #617). A hover is the box's own state and is still pictured.</summary>
+    [Fact]
+    public void ASimulatedPressAndFocusOfADisabledControl_DrawNothing()
+    {
+        var (html, css) = Render(new Simulated(SimulatedState.Pressed | SimulatedState.Focused | SimulatedState.Hovered,
+            new Primitives.Pressable(new Primitives.Box(new BoxStyle
+            {
+                Pressed = new StyleDiff { Transform = Transform2D.Scale(0.985f) },
+                Focus = new StyleDiff { Opacity = 0.9f },
+                Hover = new StyleDiff { Opacity = 0.7f },
+            }, new Text("x", TypeRole.BodyM)), () => { }) { Disabled = true }));
+
+        css.Should().NotContain("scale(0.985)", "a disabled control is never pressed, pictured or real");
+        css.Should().NotContain("opacity:0.9", "nor focused");
+        css.Should().Contain("{opacity:0.7}", "the box's own hover is still pictured");
+        html.Should().NotContain("eq-pressed").And.NotContain("eq-focused");
+    }
+
+    /// <summary>A disabled control inside an ENABLED one: the outer control's press selects every box
+    /// inside it, and the disabled control's boxes write no press rule for it to select (#508).</summary>
+    [Fact]
+    public void ADisabledControlInsideAnEnabledOne_WritesNoPressForItsBoxes()
+    {
+        var (_, css) = Render(new Primitives.Pressable(new Primitives.Pressable(new Primitives.Box(new BoxStyle
+        {
+            Pressed = new StyleDiff { Transform = Transform2D.Scale(0.985f) },
+        }, new Text("x", TypeRole.BodyM)), () => { }) { Disabled = true }, () => { }));
+
+        css.Should().NotContain("scale(0.985)");
+    }
+
     /// <summary>
     /// Every member a diff can set has a place in the simulated style. The pseudo path writes a
     /// state's declarations as they come; the simulated one maps each back onto the element's style,

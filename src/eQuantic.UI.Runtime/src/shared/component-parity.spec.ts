@@ -181,6 +181,15 @@ function cases(): Record<string, { node: unknown; presses: number[] }> {
     'control-states': still(controlStates()),
     // SimulatedState.Pressed | SimulatedState.Focused
     'control-states-simulated': still(new Simulated(2 | 4, controlStates())),
+    'control-states-disabled-simulated': still(
+      new Simulated(
+        2 | 4,
+        new Pressable(controlStates().child, () => {}, {
+          disabled: true,
+          pressedBackground: photonTheme.surfaceSubtle,
+        }),
+      ),
+    ),
     'box-hover-drops-shadow': still(
       new Box(
         new BoxStyle({ width: 40, height: 40, elevation: 2, hover: new StyleDiff({ elevation: 0 }) }),

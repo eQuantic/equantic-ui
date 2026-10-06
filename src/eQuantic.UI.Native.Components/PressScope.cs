@@ -113,4 +113,9 @@ internal sealed class PressScope
     /// <summary>True while the subtree of the FOCUSED control is drawn — its boxes show their
     /// <c>Focus</c> diff, as <see cref="InPressedControl"/>'s show their press.</summary>
     public bool InFocusedControl { get; set; }
+
+    /// <summary>True while a DISABLED control's subtree is drawn: its boxes show no focus and no
+    /// press, pictured or real, whatever control around it is in that state (#508). The web twin
+    /// lowers no focus or press rule for them.</summary>
+    public bool InDisabledControl { get; set; }
 }

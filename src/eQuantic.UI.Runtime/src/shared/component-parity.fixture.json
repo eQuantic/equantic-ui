@@ -656,6 +656,26 @@
       ]
     }
   ],
+  "control-states-disabled-simulated": [
+    {
+      "tag": "button",
+      "attrs": {
+        "class": "eq-1esejbi eq-1etnzxl eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw",
+        "disabled": ""
+      },
+      "events": [],
+      "children": [
+        {
+          "tag": "div",
+          "attrs": {
+            "class": "eq-12u4tcw eq-1b16wwz eq-1eb13m5 eq-1eviv88 eq-1p2uoqo eq-1xrfuoj eq-5hocaj eq-bo3n4y eq-cl6mtg eq-g7fowl"
+          },
+          "events": [],
+          "children": []
+        }
+      ]
+    }
+  ],
   "box-hover-drops-shadow": [
     {
       "tag": "div",

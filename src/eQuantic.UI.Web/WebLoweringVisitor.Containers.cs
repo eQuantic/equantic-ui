@@ -727,12 +727,12 @@ internal sealed partial class WebLoweringVisitor
         // Focus and press are the CONTROL's states, so they go to the families that select every box
         // inside the control (#508), and they are laid over the base in the handoff's order: a
         // simulated press is written last, and wins, as the real one wins by specificity.
-        if (box.Style.Focus is { IsEmpty: false } focus)
+        if (box.Style.Focus is { IsEmpty: false } focus && !_inDisabledControl)
         {
             if (simulated.HasFlag(SimulatedState.Focused)) ApplyDiff(element.Style, focus, box.Style);
             else AppendDiff(element, StyleSink.ControlFocus, focus, box.Style);
         }
-        if (box.Style.Pressed is { IsEmpty: false } pressed)
+        if (box.Style.Pressed is { IsEmpty: false } pressed && !_inDisabledControl)
         {
             if (simulated.HasFlag(SimulatedState.Pressed)) ApplyDiff(element.Style, pressed, box.Style);
             else AppendDiff(element, StyleSink.ControlPressed, pressed, box.Style);

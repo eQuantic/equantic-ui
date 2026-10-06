@@ -197,11 +197,37 @@ public class ControlStateNativeTests
     public void ASimulatedPressOfADisabledControl_DrawsNothing()
     {
         var host = Host(new Simulated(SimulatedState.Pressed | SimulatedState.Focused,
-            new Pressable(Surface(), () => { }) { Disabled = true, PressedBackground = PressedFill }));
+            new Pressable(Surface(
+                focus: new StyleDiff { Opacity = 0.5f },
+                pressed: new StyleDiff { Transform = Transform2D.Scale(0.5f) }), () => { })
+            { Disabled = true, PressedBackground = PressedFill }));
         var frame = Frame(host);
 
         Paints(frame, PressedFill).Should().BeFalse("the web gives a disabled control no eq-pressed");
         Rings(frame).Should().BeFalse("nor eq-focused");
+        LayerAlpha(frame).Should().Be(1, "and its boxes picture no focus (found by Copilot on #617)");
+        Fills(frame).Single().Transform.M11.Should().Be(1, "and no press");
+    }
+
+    /// <summary>A disabled control inside an ENABLED one that is pressed: the outer press reaches
+    /// every box inside the outer control except those of the disabled one, as the web writes them no
+    /// press rule (#508).</summary>
+    [Fact]
+    public void ADisabledControlInsideAPressedOne_ShowsNoPress()
+    {
+        var row = new Row(gap: 0)
+        {
+            new Pressable(Surface(pressed: new StyleDiff { Transform = Transform2D.Scale(0.5f) }), () => { }) { Disabled = true },
+            Surface(pressed: new StyleDiff { Transform = Transform2D.Scale(0.5f) }),
+        };
+        var host = Host(new Pressable(row, () => { }), width: 80);
+        Frame(host);
+
+        host.PressDown(60, 20);
+        var fills = Fills(Frame(host));
+        fills.Should().HaveCount(2);
+        fills[0].Transform.M11.Should().Be(1, "the disabled control's box shows no press");
+        fills[1].Transform.M11.Should().BeApproximately(0.5f, 1e-5f, "the pressed control's own box does");
     }
 
     /// <summary>The state lends its subtree nothing when the thing focused is not a control: a Link

@@ -126,13 +126,25 @@ internal sealed partial class EmitVisitor : IVisualNodeVisitor<EmitState, Nothin
         // ring, and lends its subtree no state.
         var pressedHere = pressTracked && node.Source is Pressable;
         var focusedHere = focusTracked && node.Source is Pressable;
+        // And a disabled control's subtree is drawn with the control's SIMULATED states masked, so a
+        // picture of a disabled control shows no press and no focus either, as the web lowers it. A
+        // hover is the box's own state and stays.
         var outerPressed = press.InPressedControl;
         var outerFocused = press.InFocusedControl;
+        var outerSimulated = press.Simulated;
+        var outerDisabled = press.InDisabledControl;
         if (pressedHere) press.InPressedControl = true;
         if (focusedHere) press.InFocusedControl = true;
+        if (disabledControl)
+        {
+            press.Simulated &= ~(SimulatedState.Pressed | SimulatedState.Focused);
+            press.InDisabledControl = true;
+        }
         node.Source.Accept(this, s);
         press.InPressedControl = outerPressed;
         press.InFocusedControl = outerFocused;
+        press.Simulated = outerSimulated;
+        press.InDisabledControl = outerDisabled;
     }
 
     /// <summary>Paint the children where they were laid out. The default arm of the old dispatch,

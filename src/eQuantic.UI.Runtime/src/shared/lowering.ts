@@ -2376,17 +2376,19 @@ function lowerBox(box: BoxNode, context: LoweringContext, path: string): HtmlNod
   // every atomic class has equal specificity — and would emit a class set the C# side does not.
   // Hover, then the control's focus, then its press: the order a real one wins by specificity (C#).
   if (style.hover && simulatedState & SIMULATED_HOVERED) applyDiff(entries, style.hover, style);
-  if (style.focus && simulatedState & SIMULATED_FOCUSED) applyDiff(entries, style.focus, style);
-  if (style.pressed && simulatedState & SIMULATED_PRESSED) applyDiff(entries, style.pressed, style);
+  // A box inside a disabled control shows neither of its control's states (C# twin, #508).
+  const focus = inDisabledControl ? null : style.focus;
+  const pressed = inDisabledControl ? null : style.pressed;
+  if (focus && simulatedState & SIMULATED_FOCUSED) applyDiff(entries, focus, style);
+  if (pressed && simulatedState & SIMULATED_PRESSED) applyDiff(entries, pressed, style);
 
   const result = element('div', entries);
 
   if (style.hover && !(simulatedState & SIMULATED_HOVERED))
     appendDiff(result, ':hover', style.hover, style);
-  if (style.focus && !(simulatedState & SIMULATED_FOCUSED))
-    appendDiff(result, CONTROL_FOCUS, style.focus, style);
-  if (style.pressed && !(simulatedState & SIMULATED_PRESSED))
-    appendDiff(result, CONTROL_PRESSED, style.pressed, style);
+  if (focus && !(simulatedState & SIMULATED_FOCUSED)) appendDiff(result, CONTROL_FOCUS, focus, style);
+  if (pressed && !(simulatedState & SIMULATED_PRESSED))
+    appendDiff(result, CONTROL_PRESSED, pressed, style);
 
   if (box.child) {
     const child = lowerNode(box.child, context, null, path + '/0');
@@ -2885,7 +2887,22 @@ function lowerPressable(
   const disabled = pressable.disabled === true;
   const fill = fills(pressable.child);
   const cap = capsAt(pressable.child);
-  const child = lowerNode(pressable.child, context, null, path + '/0');
+  // A disabled control shows no press and no focus, pictured or real (C# twin, #508): its subtree is
+  // lowered with the control's simulated states masked and its boxes writing no focus or press rule.
+  // A hover is the box's own and stays.
+  const outerSimulated = simulatedState;
+  const outerDisabled = inDisabledControl;
+  if (disabled) {
+    simulatedState &= ~(SIMULATED_PRESSED | SIMULATED_FOCUSED);
+    inDisabledControl = true;
+  }
+  let child: HtmlNode | null;
+  try {
+    child = lowerNode(pressable.child, context, null, path + '/0');
+  } finally {
+    simulatedState = outerSimulated;
+    inDisabledControl = outerDisabled;
+  }
 
   // HTML forbids a button inside a button (and an anchor inside an anchor): the parser closes the
   // outer one and hands back an empty shell. A Pressable AROUND a control — a Menu making its
@@ -3536,6 +3553,8 @@ const SIMULATED_FOCUSED = 4;
 
 /** What the subtree being lowered right now is being DRAWN as (the C# WebRealizer ambient twin). */
 let simulatedState = 0;
+/** True while a DISABLED control's subtree is lowered (C# `_inDisabledControl`, #508). */
+let inDisabledControl = false;
 
 /**
  * Draws the subtree in the given states (the C# `LowerSimulated`). `:hover` and `:focus-visible`
