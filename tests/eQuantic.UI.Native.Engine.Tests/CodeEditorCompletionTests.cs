@@ -186,6 +186,52 @@ public class CodeEditorCompletionTests
             "with no room below, the list ends at the top of the line it completes");
     }
 
+    /// <summary>A word typed near the viewport's right edge keeps its list inside it.</summary>
+    [Fact]
+    public void AWordNearTheRightEdge_KeepsItsListInsideTheView()
+    {
+        var editor = Editor("var Column = 1;\n" + new string(' ', 88), new CodeCompletionItem("Column"),
+            new CodeCompletionItem("ColorToken"));
+        var host = Host(editor);
+        Settle(host);
+        ClickAt(host, editor, 1, 88);
+
+        var frame = Type(host, "Co");
+
+        var region = frame.CodeRegions.Single();
+        var visible = region.Visible ?? region.Bounds;
+        var offered = region.Offered!.Value;
+        (WordOnScreen(frame, editor).X - LabelInset(editor) + offered.Width).Should().BeGreaterThan(visible.Right,
+            "where its word stands, the list would run past the view's right edge");
+        offered.Right.Should().BeLessThanOrEqualTo(visible.Right + 0.5f, "the list's right edge stays in the view");
+    }
+
+    /// <summary>
+    /// Code scrolled sideways takes the list's left edge with the view: the editor tracks how far it
+    /// slid, and a list whose word has gone off the left stands at the view's left edge.
+    /// </summary>
+    [Fact]
+    public void CodeScrolledSideways_KeepsTheListInsideTheView()
+    {
+        var editor = Editor("var line = \"" + new string('x', 300) + "\";\n", new CodeCompletionItem("Column"),
+            new CodeCompletionItem("ColorToken"));
+        var host = Host(editor);
+        Settle(host);
+        ClickAt(host, editor, 1, 0);
+        Type(host, "Co");
+
+        host.ScrollBy(300, 30, 200).Should().BeTrue("the long first line scrolls the code sideways");
+        var frame = Settle(host);
+
+        editor.Editor.Completion.IsOpen.Should().BeTrue("a scroll moves no caret");
+        var region = frame.CodeRegions.Single();
+        var visible = region.Visible ?? region.Bounds;
+        var offered = region.Offered!.Value;
+        offered.Left.Should().BeGreaterThanOrEqualTo(visible.Left - 0.5f,
+            "the list stands at the view's left edge, not with its word off the left of it");
+        offered.Width.Should().BeGreaterThan(100, "and all of it is in the view");
+    }
+
     [Fact]
     public void WhereNeitherSideHoldsAPage_TheRoomierOneShowsWhatFits()
     {
