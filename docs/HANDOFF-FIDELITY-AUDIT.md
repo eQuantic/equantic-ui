@@ -1353,7 +1353,7 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  TokenCss.cs:389  css.AppendLine(".eq-pressable > :first-child { transition: background-color var(--eq-motion-fast) ease-out; }");   with TokenCss.cs:328  --eq-motion-fast: {Motion.FastMs}ms;
+  TokenCss.cs:393  css.AppendLine(":where(.eq-pressable > :first-child) { transition: background-color var(--eq-motion-fast) ease-out; }");   with TokenCss.cs:328  --eq-motion-fast: {Motion.FastMs}ms;
   ```
 
 ### A12 Button · missing-feature · **unverified**
@@ -1446,8 +1446,8 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  TokenCss.cs:389  css.AppendLine(".eq-pressable > :first-child { transition: background-color var(--eq-motion-fast) ease-out; }");
-  TokenCss.cs:394  css.AppendLine(".eq-press-fill:active > :first-child { background-color: var(--eq-pressed-bg) !important; }");
+  TokenCss.cs:393  css.AppendLine(":where(.eq-pressable > :first-child) { transition: background-color var(--eq-motion-fast) ease-out; }");
+  TokenCss.cs:398  css.AppendLine(".eq-press-fill:active > :first-child { background-color: var(--eq-pressed-bg) !important; }");
   ```
 
 ### B2 List · ListItem · missing-feature · **CONFIRMED**
@@ -2205,7 +2205,7 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  TokenCss.cs:533        css.AppendLine(".eq-presence-slideup { animation: eq-presence-slideup var(--eq-motion-base) ease-out; }");
+  TokenCss.cs:537        css.AppendLine(".eq-presence-slideup { animation: eq-presence-slideup var(--eq-motion-base) ease-out; }");
   ```
 
 ### C5 Drawer · missing-feature · **unverified**
@@ -2579,7 +2579,7 @@ the pill's 40 down.
 
   ```
   Tooltip.cs:39  }, new Text(Text, TypeRole.Caption, theme.TextInverse, maxLines: 1));
-  TokenCss.cs:473  css.AppendLine(".eq-anchor-panel { position: absolute; z-index: 1050; width: max-content; max-width: min(92vw, 420px); }");
+  TokenCss.cs:477  css.AppendLine(".eq-anchor-panel { position: absolute; z-index: 1050; width: max-content; max-width: min(92vw, 420px); }");
   ```
 
 ### C13 Tooltip · metric · **unverified**
@@ -3334,7 +3334,7 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  TokenCss.cs:553  css.AppendLine($".eq-spinner {{ opacity: 0; animation: eq-appear 1ms linear {Spinner.AppearDelayMs}ms forwards; }}");
+  TokenCss.cs:557  css.AppendLine($".eq-spinner {{ opacity: 0; animation: eq-appear 1ms linear {Spinner.AppearDelayMs}ms forwards; }}");
   EmitVisitor.Media.cs:289  motion.Active = true;   // EmitSpinner — no AppearDelayMs anywhere
   ```
 
@@ -3391,7 +3391,7 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  TokenCss.cs:539        css.AppendLine(".eq-presence-exit-fade { animation: eq-presence-exit-fade var(--eq-motion-fast) ease-in forwards; }");
+  TokenCss.cs:543        css.AppendLine(".eq-presence-exit-fade { animation: eq-presence-exit-fade var(--eq-motion-fast) ease-in forwards; }");
   ```
 
 ### C2 Modal · metric · **unverified**
@@ -3586,7 +3586,7 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  TokenCss.cs:488  css.AppendLine(".eq-hoverreveal > .eq-anchor-panel { opacity: 0; pointer-events: none; transition: opacity 120ms ease-out; }");
+  TokenCss.cs:492  css.AppendLine(".eq-hoverreveal > .eq-anchor-panel { opacity: 0; pointer-events: none; transition: opacity 120ms ease-out; }");
   Tokens.cs:260  public const int FastMs = 100;
   ```
 
@@ -3599,7 +3599,7 @@ the pill's 40 down.
 
   ```
   Tooltip.cs:16  /// v1 fences: show/hide delay, arrow caret.
-  TokenCss.cs:489  css.AppendLine(".eq-hoverreveal:hover > .eq-anchor-panel { opacity: 1; }");
+  TokenCss.cs:493  css.AppendLine(".eq-hoverreveal:hover > .eq-anchor-panel { opacity: 1; }");
   ```
 
 ### C13 Tooltip · documented-deviation · **unverified**
