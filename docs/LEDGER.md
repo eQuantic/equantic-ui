@@ -1566,9 +1566,9 @@ record of a release, the wiki's Upgrading page is the distillate.
   second `UseServerEvents` made every route ambiguous; a page whose app served no events retried
   silently forever; the refusal followed the app's JSON naming; and the body had no cap. The served
   runtime grew 2,582 gzipped bytes.
-  Migration: `ServerActionHub`, its route `/_equantic/hub` and `AddSignalR` are gone; an app that
-  injected `IHubContext<ServerActionHub>`, which nothing documented, publishes through
-  `IServerEventPublisher`. Proposed and archived through OpenSpec (`openspec/specs/server-events`).
+  Migration: `ServerActionHub`, its route `/_equantic/hub` and the `AddSignalR()` call `AddUI` made
+  are gone; an app that injected `IHubContext<ServerActionHub>`, which nothing documented, publishes
+  through `IServerEventPublisher`, and an app that maps hubs of its own calls `AddSignalR()` itself. Proposed and archived through OpenSpec (`openspec/specs/server-events`).
 
 ## Retired documents
 
