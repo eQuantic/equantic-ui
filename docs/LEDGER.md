@@ -1542,6 +1542,57 @@ record of a release, the wiki's Upgrading page is the distillate.
   documented: `base.Name` over an auto-property overridden by another reads the override's value.
   Proposed and archived through OpenSpec (`openspec/specs/transpiler-classes`,
   `openspec/specs/transpiler-records`).
+- **2026-10-06 · The code engine completes**: the engine half of the code editor's slice 3
+  ([#296](https://github.com/eQuantic/equantic-ui/issues/296)). `CodeCompletion`, a session on the
+  controller, asks its providers once when a word starts, filters and ranks what they answered on
+  every keystroke (`CodeFuzzyMatch`), asks an incomplete answer again, and drops a late answer by its
+  generation while its request is cancelled; the keymap routes the list's keys, Enter accepting only
+  what changes the text; the contracts are LSP's, typed; the language's words and the document's are
+  built-in providers, and an editor starts with none until the view
+  ([#297](https://github.com/eQuantic/equantic-ui/issues/297)) draws a list. Held by keystroke
+  sequences, by Roslyn's answer in the playground recorded as a fixture, and by the twin compared with
+  .NET in the embedded Bun over 6,000 patterns and 60 seeded sessions. Found on the way: eqc called a
+  method named `Invoke` as a delegate, named an exception, an interface, an enum and a delegate by
+  their C# names in annotations no module defines (one rule, `TsStandIn`, decides it on every path
+  now), and knew nothing of the cancellation trio, which is now the runtime's, measured with
+  `dotnet fsi` and run on both sides by the conformance suite; and the shared library's twins were
+  transpiled with three of the SDK's seven implicit usings. The author's review found ten defects,
+  each proved failing without its fix: the trap on Tab after ⌃Space, a provider's cancellation that
+  threw into the keystroke, a commit during an input method's composition, a duplicate that hid a
+  match, the filter's work per keystroke, and the document's words read whole at every word started
+  (46 ms in Bun for 45,000 lines, now 50,000 characters nearest the caret) among them. The first
+  review round found three more: a provider's range that moved with the caret, a minified line read
+  from its start, and a linked source that kept its callbacks on a long-lived token; the second, a
+  cancellation a provider threw by itself taken for the request's own, a `TimeProvider` source that
+  compiled and dropped its clock, and a disposed source that kept its callbacks; the third, a word of
+  megabytes that walked past the window, a month's delay that a browser's timer fired at once, and a
+  default registration that was undefined. Proposed and archived through OpenSpec
+  (`openspec/specs/code-completion`).
+- **2026-10-06 · A target under a pointer keeps a 24dp floor**: under a mouse a target was its visual
+  bounds, so a Checkbox or a Radio without a label was a 20dp target on Photon and on the web, under
+  the 24 × 24 WCAG 2.2 SC 2.5.8 asks, and the cross-pin passed because both agreed on 20
+  ([#430](https://github.com/eQuantic/equantic-ui/issues/430), decided by Edgar on 2026-09-26).
+  `Touch.MinPointerTarget` is the floor Photon's Compact hit rect, `Sizing.HitTarget` and a fine
+  pointer's slop on the web grow to, published in the handoff at `touch.minPointerTarget`. Measuring
+  it in a browser found the web's slop drawn over the control's content: under a fine pointer the
+  centre of a Button hit the button element itself, so its box never matched `:hover` and no button
+  showed its hover fill, and a Pressable around an IconButton took the inner control's hits. The slop
+  is now the `::before` with the content lifted above it, and answers only around the control.
+  Proposed and archived through OpenSpec (`openspec/specs/hit-targets`).
+- **2026-10-06 · A char's search checks its start and its count**: `IndexOf(char, int)`,
+  `IndexOf(char, int, int)`, `LastIndexOf(char, int)` and `LastIndexOf(char, int, int)` were
+  JavaScript's `indexOf` and `lastIndexOf`, which take no count and clamp a start outside the string,
+  so `"abcabc".IndexOf('c', 0, 2)` answered 2 where .NET answers -1 and `"abc".IndexOf('a', 4)`
+  answered -1 where .NET throws ([#534](https://github.com/eQuantic/equantic-ui/issues/534)). They
+  reach the runtime's `indexOfChar` and `lastIndexOfChar`, ported from .NET 10's
+  `String.Searching.cs` and measured with `dotnet fsi`: `IndexOf`'s start may stand at the end of the
+  string, `LastIndexOf`'s must stand on a char of it (the string overloads step back from one past
+  the end instead), an empty string's `LastIndexOf` answers -1 for any start and count, and each
+  refusal is in .NET's words, the start checked before the count. The call is built by the runtime
+  call the comparing overloads use. 9 of the 16 conformance cases fail on main. The Markdown, Mermaid
+  and curly-brace parsers and the SDK's strings, which search a char from a start, now throw where
+  the same C# throws on the server. Proposed and archived through OpenSpec
+  (`openspec/specs/transpiler-bcl`).
 - **2026-10-06 · A nested class is a module of its own, named by its owner**: a class declared inside
   another one had no module, so `Roster.First()` building a private `Row` threw, and where a top-level
   class had its name the nested one resolved to it, so `new Cart().Size()` read the top-level `Item`'s

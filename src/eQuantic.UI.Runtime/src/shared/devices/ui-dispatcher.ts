@@ -26,3 +26,13 @@ export class WebUiDispatcher {
     void Promise.resolve().then(work);
   }
 }
+
+/**
+ * C#'s `UiDispatcher`, the dispatcher of the process: null on the web, as its own documentation says
+ * it is wherever there is only one thread. A twin that asks for it (the code engine's completion,
+ * applying a provider's answer on the thread the list is read on) reads null and runs the work at
+ * once, which is exactly what one thread means.
+ */
+export class UiDispatcher {
+  static current: { readonly isOnUiThread: boolean; post(work: () => void): void } | null = null;
+}

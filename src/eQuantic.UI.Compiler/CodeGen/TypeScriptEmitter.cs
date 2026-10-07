@@ -281,6 +281,9 @@ public class TypeScriptEmitter
     private static readonly HashSet<string> RuntimeValueTypes = new(StringComparer.Ordinal)
     {
         "DateTime", "DateOnly", "TimeOnly", "TimeSpan", "DateTimeOffset", "Decimal",
+        // The cancellation trio (utils/cancellation.ts): built through `$eq.cancellation`, named by
+        // the parameter a provider takes its token in.
+        "CancellationToken", "CancellationTokenSource", "CancellationTokenRegistration",
     };
 
     /// <summary>
@@ -2254,13 +2257,9 @@ public class TypeScriptEmitter
         {
             foreach (var argument in generic.TypeArguments.SelectMany(Nested))
             {
-                var crossesAs = argument.TypeKind switch
-                {
-                    TypeKind.Interface => "any",
-                    TypeKind.Enum => IsFlags(argument) ? "number" : EnumUnion(argument),
-                    _ => null,
-                };
-                if (crossesAs is null) continue;
+                // An exception and a delegate are the same defect two kinds along (TsStandIn):
+                // `Action<Exception>` named an `Exception` no module defines.
+                if (TsStandIn.Inside(argument, _converter.UsedRuntimeTypes) is not { } crossesAs) continue;
                 mapped = System.Text.RegularExpressions.Regex.Replace(
                     mapped, $@"\b{System.Text.RegularExpressions.Regex.Escape(argument.Name)}\b", crossesAs);
             }
@@ -2268,10 +2267,9 @@ public class TypeScriptEmitter
 
         var core = (echoed ? resolved : null) switch
         {
-            // An enum crosses as its member STRING — unless it is [Flags], whose members COMBINE
-            // and therefore cross as the number the bitwise operators need.
-            { TypeKind: TypeKind.Enum } => IsFlags(resolved!) ? "number" : EnumUnion(resolved!),
-            { TypeKind: TypeKind.Interface } => "any",
+            // An enum crosses as its member STRING (or the number a [Flags] one combines into), an
+            // interface as any, an exception as Error and a delegate as its function: TsStandIn.
+            { } kind when TsStandIn.For(kind, _converter.UsedRuntimeTypes) is { } standIn => standIn,
             { TypeKind: TypeKind.TypeParameter } => resolved!.Name,
             // A nested type is its twin, named by its owner (#584).
             INamedTypeSymbol nested when nested.NestedTwinName() is { } twin => twin,
@@ -2309,22 +2307,18 @@ public class TypeScriptEmitter
     }
 
     /// <summary>
-    /// What a non-flags enum is called on the other side. The runtime mirrors every VOCABULARY enum
-    /// as a string union named <c>&lt;Enum&gt;Value</c>, and declaring that union instead of a bare
-    /// <c>string</c> is what lets a component FORWARD its own enum property into a vocabulary slot:
-    /// `string` is wider than the slot, so the twin stopped compiling the first time a component
-    /// passed one on (a rail's alignment, straight into a Column's `main`). Comparing against enum
-    /// MEMBERS never needed it, which is why it took this long to surface.
+    /// What a non-flags VOCABULARY enum is called on the other side, or null when the enum is an
+    /// app's own, the one question every emission path asks (TsStandIn). The runtime mirrors every
+    /// vocabulary enum as a string union named <c>&lt;Enum&gt;Value</c>, and declaring that union
+    /// instead of a bare <c>string</c> is what lets a component FORWARD its own enum property into a
+    /// vocabulary slot: `string` is wider than the slot, so the twin stopped compiling the first time
+    /// a component passed one on (a rail's alignment, straight into a Column's `main`). Comparing
+    /// against enum MEMBERS never needed it, which is why it took this long to surface.
     /// <para>
-    /// An APP's own enum has no union in the runtime — it still crosses as its member string, which
-    /// is exactly what it is.
+    /// An APP's own enum has no union in the runtime — it crosses as its member string, which is
+    /// exactly what it is.
     /// </para>
     /// </summary>
-    private string EnumUnion(ITypeSymbol type) =>
-        VocabularyUnionFor(type) is { } union ? Union(type.Name) : "string";
-
-    /// <summary>The union name for a VOCABULARY enum, or null when the enum is an app's own — the
-    /// one question three emission paths ask (components, plain classes, records).</summary>
     internal static string? VocabularyUnionFor(ITypeSymbol type) =>
         RuntimeProvidedTypeScanner.IsVocabularyNamespace(type.ContainingNamespace?.ToDisplayString() ?? "")
             ? $"{type.Name}Value"

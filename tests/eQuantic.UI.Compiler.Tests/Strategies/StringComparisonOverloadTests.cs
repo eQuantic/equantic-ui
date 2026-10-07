@@ -31,6 +31,21 @@ public class StringComparisonOverloadTests
     public void AComparingOverload_GoesToTheRuntime(string code, string expected) =>
         TestHelper.ConvertExpression(code).Should().Contain(expected);
 
+    [Theory]
+    [InlineData("var r = a.IndexOf('x', 1)", "$eq.text.indexOfChar(this.a, 'x', 1)")]
+    [InlineData("var r = a.IndexOf('x', 1, 2)", "$eq.text.indexOfChar(this.a, 'x', 1, 2)")]
+    [InlineData("var r = a.LastIndexOf('x', 3)", "$eq.text.lastIndexOfChar(this.a, 'x', 3)")]
+    [InlineData("var r = a.LastIndexOf('x', 3, 2)", "$eq.text.lastIndexOfChar(this.a, 'x', 3, 2)")]
+    [InlineData("var r = a.IndexOf(count: Id, value: 'x', startIndex: 1)", "$eq.text.indexOfChar(this.a, 'x', 1, this.id)")]
+    public void ACharSearchWithAStart_GoesToTheRuntime(string code, string expected) =>
+        TestHelper.ConvertExpression(code).Should().Contain(expected);
+
+    [Theory]
+    [InlineData("var r = a.IndexOf('x')", "this.a.indexOf('x')")]
+    [InlineData("var r = a.LastIndexOf('x')", "this.a.lastIndexOf('x')")]
+    public void ACharSearchWithNoStart_StaysJavaScript(string code, string expected) =>
+        TestHelper.ConvertExpression(code).Should().Contain(expected);
+
     [Fact]
     public void ACharacterReplacement_StaysAJavaScriptReplacement() =>
         TestHelper.ConvertExpression("var r = a.Replace('x', 'y')").Should().Contain("this.a.replaceAll('x', 'y')");

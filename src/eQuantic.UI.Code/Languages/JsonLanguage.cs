@@ -14,6 +14,9 @@ public sealed class JsonLanguage : ICodeLanguage
     /// parser will reject.</summary>
     public CodeLanguageRules Rules { get; } = new() { IndentWidth = 2, Quotes = ['"'] };
 
+    /// <summary>The three literal names JSON has.</summary>
+    public IReadOnlyList<string> Keywords { get; } = ["true", "false", "null"];
+
     public int Tokenize(string line, int state, List<CodeToken> into)
     {
         var i = 0;

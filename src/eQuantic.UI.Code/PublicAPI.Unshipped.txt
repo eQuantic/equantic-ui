@@ -1,1 +1,121 @@
 #nullable enable
+abstract eQuantic.UI.Code.CurlyBraceLanguage.ReservedWords.get -> System.Collections.Generic.IReadOnlySet<string!>!
+eQuantic.UI.Code.CodeCompletion
+eQuantic.UI.Code.CodeCompletion.Accept() -> bool
+eQuantic.UI.Code.CodeCompletion.Changed -> System.Action?
+eQuantic.UI.Code.CodeCompletion.Dismiss() -> bool
+eQuantic.UI.Code.CodeCompletion.Failed -> System.Action<System.Exception!>?
+eQuantic.UI.Code.CodeCompletion.Invoke() -> bool
+eQuantic.UI.Code.CodeCompletion.IsLoading.get -> bool
+eQuantic.UI.Code.CodeCompletion.IsOpen.get -> bool
+eQuantic.UI.Code.CodeCompletion.Items.get -> System.Collections.Generic.IReadOnlyList<eQuantic.UI.Code.CodeCompletionMatch!>!
+eQuantic.UI.Code.CodeCompletion.Move(int delta) -> bool
+eQuantic.UI.Code.CodeCompletion.MovePage(int pages) -> bool
+eQuantic.UI.Code.CodeCompletion.OpensAsYouType.get -> bool
+eQuantic.UI.Code.CodeCompletion.OpensAsYouType.set -> void
+eQuantic.UI.Code.CodeCompletion.PageSize.get -> int
+eQuantic.UI.Code.CodeCompletion.PageSize.set -> void
+eQuantic.UI.Code.CodeCompletion.Providers.get -> System.Collections.Generic.IList<eQuantic.UI.Code.ICodeCompletionProvider!>!
+eQuantic.UI.Code.CodeCompletion.Select(int index) -> bool
+eQuantic.UI.Code.CodeCompletion.Selected.get -> int
+eQuantic.UI.Code.CodeCompletion.Start.get -> eQuantic.UI.Code.CodePosition
+eQuantic.UI.Code.CodeCompletionContext
+eQuantic.UI.Code.CodeCompletionContext.<Clone>$() -> eQuantic.UI.Code.CodeCompletionContext!
+eQuantic.UI.Code.CodeCompletionContext.Character.get -> char?
+eQuantic.UI.Code.CodeCompletionContext.Character.init -> void
+eQuantic.UI.Code.CodeCompletionContext.CodeCompletionContext(eQuantic.UI.Code.CodeCompletionTrigger Trigger, eQuantic.UI.Code.ICodeLanguage! Language) -> void
+eQuantic.UI.Code.CodeCompletionContext.Deconstruct(out eQuantic.UI.Code.CodeCompletionTrigger Trigger, out eQuantic.UI.Code.ICodeLanguage! Language) -> void
+eQuantic.UI.Code.CodeCompletionContext.Equals(eQuantic.UI.Code.CodeCompletionContext? other) -> bool
+eQuantic.UI.Code.CodeCompletionContext.Language.get -> eQuantic.UI.Code.ICodeLanguage!
+eQuantic.UI.Code.CodeCompletionContext.Language.init -> void
+eQuantic.UI.Code.CodeCompletionContext.Trigger.get -> eQuantic.UI.Code.CodeCompletionTrigger
+eQuantic.UI.Code.CodeCompletionContext.Trigger.init -> void
+eQuantic.UI.Code.CodeCompletionItem.CommitCharacters.get -> System.Collections.Generic.IReadOnlyList<char>?
+eQuantic.UI.Code.CodeCompletionItem.CommitCharacters.init -> void
+eQuantic.UI.Code.CodeCompletionItem.FilterText.get -> string?
+eQuantic.UI.Code.CodeCompletionItem.FilterText.init -> void
+eQuantic.UI.Code.CodeCompletionItem.Preselect.get -> bool
+eQuantic.UI.Code.CodeCompletionItem.Preselect.init -> void
+eQuantic.UI.Code.CodeCompletionList
+eQuantic.UI.Code.CodeCompletionList.<Clone>$() -> eQuantic.UI.Code.CodeCompletionList!
+eQuantic.UI.Code.CodeCompletionList.CodeCompletionList(System.Collections.Generic.IReadOnlyList<eQuantic.UI.Code.CodeCompletionItem!>! Items, bool IsIncomplete = false) -> void
+eQuantic.UI.Code.CodeCompletionList.Deconstruct(out System.Collections.Generic.IReadOnlyList<eQuantic.UI.Code.CodeCompletionItem!>! Items, out bool IsIncomplete) -> void
+eQuantic.UI.Code.CodeCompletionList.Equals(eQuantic.UI.Code.CodeCompletionList? other) -> bool
+eQuantic.UI.Code.CodeCompletionList.IsIncomplete.get -> bool
+eQuantic.UI.Code.CodeCompletionList.IsIncomplete.init -> void
+eQuantic.UI.Code.CodeCompletionList.Items.get -> System.Collections.Generic.IReadOnlyList<eQuantic.UI.Code.CodeCompletionItem!>!
+eQuantic.UI.Code.CodeCompletionList.Items.init -> void
+eQuantic.UI.Code.CodeCompletionMatch
+eQuantic.UI.Code.CodeCompletionMatch.<Clone>$() -> eQuantic.UI.Code.CodeCompletionMatch!
+eQuantic.UI.Code.CodeCompletionMatch.CodeCompletionMatch(eQuantic.UI.Code.CodeCompletionItem! Item, int Score, System.Collections.Generic.IReadOnlyList<int>! Highlights) -> void
+eQuantic.UI.Code.CodeCompletionMatch.Deconstruct(out eQuantic.UI.Code.CodeCompletionItem! Item, out int Score, out System.Collections.Generic.IReadOnlyList<int>! Highlights) -> void
+eQuantic.UI.Code.CodeCompletionMatch.Equals(eQuantic.UI.Code.CodeCompletionMatch? other) -> bool
+eQuantic.UI.Code.CodeCompletionMatch.Highlights.get -> System.Collections.Generic.IReadOnlyList<int>!
+eQuantic.UI.Code.CodeCompletionMatch.Highlights.init -> void
+eQuantic.UI.Code.CodeCompletionMatch.Item.get -> eQuantic.UI.Code.CodeCompletionItem!
+eQuantic.UI.Code.CodeCompletionMatch.Item.init -> void
+eQuantic.UI.Code.CodeCompletionMatch.Score.get -> int
+eQuantic.UI.Code.CodeCompletionMatch.Score.init -> void
+eQuantic.UI.Code.CodeCompletionTrigger
+eQuantic.UI.Code.CodeCompletionTrigger.Character = 2 -> eQuantic.UI.Code.CodeCompletionTrigger
+eQuantic.UI.Code.CodeCompletionTrigger.Incomplete = 3 -> eQuantic.UI.Code.CodeCompletionTrigger
+eQuantic.UI.Code.CodeCompletionTrigger.Invoked = 0 -> eQuantic.UI.Code.CodeCompletionTrigger
+eQuantic.UI.Code.CodeCompletionTrigger.Typing = 1 -> eQuantic.UI.Code.CodeCompletionTrigger
+eQuantic.UI.Code.CodeEditorController.Completion.get -> eQuantic.UI.Code.CodeCompletion!
+eQuantic.UI.Code.CodeFuzzyMatch
+eQuantic.UI.Code.CodeFuzzyMatch.<Clone>$() -> eQuantic.UI.Code.CodeFuzzyMatch!
+eQuantic.UI.Code.CodeFuzzyMatch.CodeFuzzyMatch(int Score, System.Collections.Generic.IReadOnlyList<int>! Positions) -> void
+eQuantic.UI.Code.CodeFuzzyMatch.Deconstruct(out int Score, out System.Collections.Generic.IReadOnlyList<int>! Positions) -> void
+eQuantic.UI.Code.CodeFuzzyMatch.Equals(eQuantic.UI.Code.CodeFuzzyMatch? other) -> bool
+eQuantic.UI.Code.CodeFuzzyMatch.Positions.get -> System.Collections.Generic.IReadOnlyList<int>!
+eQuantic.UI.Code.CodeFuzzyMatch.Positions.init -> void
+eQuantic.UI.Code.CodeFuzzyMatch.Score.get -> int
+eQuantic.UI.Code.CodeFuzzyMatch.Score.init -> void
+eQuantic.UI.Code.CodeKeywordCompletionProvider
+eQuantic.UI.Code.CodeKeywordCompletionProvider.CodeKeywordCompletionProvider() -> void
+eQuantic.UI.Code.CodeKeywordCompletionProvider.CompleteAsync(eQuantic.UI.Code.CodeDocument! document, eQuantic.UI.Code.CodePosition position, eQuantic.UI.Code.CodeCompletionContext! context, System.Threading.CancellationToken cancellation) -> System.Threading.Tasks.Task<eQuantic.UI.Code.CodeCompletionList!>!
+eQuantic.UI.Code.CodeWordCompletionProvider
+eQuantic.UI.Code.CodeWordCompletionProvider.CodeWordCompletionProvider() -> void
+eQuantic.UI.Code.CodeWordCompletionProvider.CompleteAsync(eQuantic.UI.Code.CodeDocument! document, eQuantic.UI.Code.CodePosition position, eQuantic.UI.Code.CodeCompletionContext! context, System.Threading.CancellationToken cancellation) -> System.Threading.Tasks.Task<eQuantic.UI.Code.CodeCompletionList!>!
+eQuantic.UI.Code.CurlyBraceLanguage.Keywords.get -> System.Collections.Generic.IReadOnlyList<string!>!
+eQuantic.UI.Code.ICodeCompletionProvider.CompleteAsync(eQuantic.UI.Code.CodeDocument! document, eQuantic.UI.Code.CodePosition position, eQuantic.UI.Code.CodeCompletionContext! context, System.Threading.CancellationToken cancellation) -> System.Threading.Tasks.Task<eQuantic.UI.Code.CodeCompletionList!>!
+eQuantic.UI.Code.ICodeCompletionProvider.ResolveAsync(eQuantic.UI.Code.CodeCompletionItem! item, System.Threading.CancellationToken cancellation) -> System.Threading.Tasks.Task<eQuantic.UI.Code.CodeCompletionItem!>!
+eQuantic.UI.Code.ICodeLanguage.Keywords.get -> System.Collections.Generic.IReadOnlyList<string!>!
+eQuantic.UI.Code.JsonLanguage.Keywords.get -> System.Collections.Generic.IReadOnlyList<string!>!
+eQuantic.UI.Code.PythonLanguage.Keywords.get -> System.Collections.Generic.IReadOnlyList<string!>!
+override eQuantic.UI.Code.CodeCompletionContext.Equals(object? obj) -> bool
+override eQuantic.UI.Code.CodeCompletionContext.GetHashCode() -> int
+override eQuantic.UI.Code.CodeCompletionContext.ToString() -> string!
+override eQuantic.UI.Code.CodeCompletionList.Equals(object? obj) -> bool
+override eQuantic.UI.Code.CodeCompletionList.GetHashCode() -> int
+override eQuantic.UI.Code.CodeCompletionList.ToString() -> string!
+override eQuantic.UI.Code.CodeCompletionMatch.Equals(object? obj) -> bool
+override eQuantic.UI.Code.CodeCompletionMatch.GetHashCode() -> int
+override eQuantic.UI.Code.CodeCompletionMatch.ToString() -> string!
+override eQuantic.UI.Code.CodeFuzzyMatch.Equals(object? obj) -> bool
+override eQuantic.UI.Code.CodeFuzzyMatch.GetHashCode() -> int
+override eQuantic.UI.Code.CodeFuzzyMatch.ToString() -> string!
+static eQuantic.UI.Code.CodeCompletionContext.operator !=(eQuantic.UI.Code.CodeCompletionContext? left, eQuantic.UI.Code.CodeCompletionContext? right) -> bool
+static eQuantic.UI.Code.CodeCompletionContext.operator ==(eQuantic.UI.Code.CodeCompletionContext? left, eQuantic.UI.Code.CodeCompletionContext? right) -> bool
+static eQuantic.UI.Code.CodeCompletionList.operator !=(eQuantic.UI.Code.CodeCompletionList? left, eQuantic.UI.Code.CodeCompletionList? right) -> bool
+static eQuantic.UI.Code.CodeCompletionList.operator ==(eQuantic.UI.Code.CodeCompletionList? left, eQuantic.UI.Code.CodeCompletionList? right) -> bool
+static eQuantic.UI.Code.CodeCompletionMatch.operator !=(eQuantic.UI.Code.CodeCompletionMatch? left, eQuantic.UI.Code.CodeCompletionMatch? right) -> bool
+static eQuantic.UI.Code.CodeCompletionMatch.operator ==(eQuantic.UI.Code.CodeCompletionMatch? left, eQuantic.UI.Code.CodeCompletionMatch? right) -> bool
+static eQuantic.UI.Code.CodeFuzzyMatch.Of(string! pattern, string! word, bool anywhere = false) -> eQuantic.UI.Code.CodeFuzzyMatch?
+static eQuantic.UI.Code.CodeFuzzyMatch.operator !=(eQuantic.UI.Code.CodeFuzzyMatch? left, eQuantic.UI.Code.CodeFuzzyMatch? right) -> bool
+static eQuantic.UI.Code.CodeFuzzyMatch.operator ==(eQuantic.UI.Code.CodeFuzzyMatch? left, eQuantic.UI.Code.CodeFuzzyMatch? right) -> bool
+static readonly eQuantic.UI.Code.CodeCompletionList.Empty -> eQuantic.UI.Code.CodeCompletionList!
+*REMOVED*abstract eQuantic.UI.Code.CurlyBraceLanguage.Keywords.get -> System.Collections.Generic.IReadOnlySet<string!>!
+*REMOVED*eQuantic.UI.Code.ICodeCompletionProvider.CompleteAsync(eQuantic.UI.Code.CodeDocument! document, eQuantic.UI.Code.CodePosition position, System.Threading.CancellationToken cancellation) -> System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<eQuantic.UI.Code.CodeCompletionItem!>!>!
+eQuantic.UI.Code.CodeCompletion.AcceptChangesText.get -> bool
+eQuantic.UI.Code.CodeCompletionKind.Color = 22 -> eQuantic.UI.Code.CodeCompletionKind
+eQuantic.UI.Code.CodeCompletionKind.Constant = 16 -> eQuantic.UI.Code.CodeCompletionKind
+eQuantic.UI.Code.CodeCompletionKind.EnumMember = 15 -> eQuantic.UI.Code.CodeCompletionKind
+eQuantic.UI.Code.CodeCompletionKind.Event = 17 -> eQuantic.UI.Code.CodeCompletionKind
+eQuantic.UI.Code.CodeCompletionKind.Folder = 24 -> eQuantic.UI.Code.CodeCompletionKind
+eQuantic.UI.Code.CodeCompletionKind.Operator = 18 -> eQuantic.UI.Code.CodeCompletionKind
+eQuantic.UI.Code.CodeCompletionKind.Reference = 23 -> eQuantic.UI.Code.CodeCompletionKind
+eQuantic.UI.Code.CodeCompletionKind.Struct = 14 -> eQuantic.UI.Code.CodeCompletionKind
+eQuantic.UI.Code.CodeCompletionKind.TypeParameter = 19 -> eQuantic.UI.Code.CodeCompletionKind
+eQuantic.UI.Code.CodeCompletionKind.Unit = 21 -> eQuantic.UI.Code.CodeCompletionKind
+eQuantic.UI.Code.CodeCompletionKind.Value = 20 -> eQuantic.UI.Code.CodeCompletionKind

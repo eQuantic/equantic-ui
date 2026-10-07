@@ -4,13 +4,26 @@ export class CodeKeymap {
     static handle(editor: CodeEditorController, key: string, modifiers: number, convention: KeyboardConventionValue, clipboard: any = null) {
         let shift = (modifiers & 1) !== 0;
         let command = (modifiers & 4) !== 0;
+        let control = (modifiers & 8) !== 0;
         let alt = (modifiers & 2) !== 0;
         let apple = convention === 'apple';
+        if (key !== 'Tab' && key !== 'Escape' && !CodeKeymap.isModifierKey(key)) editor.tabMovesFocus = false;
+        let completion = editor.completion;
+        if (completion.isOpen && !command && !control && !alt) {
+            if (key === 'ArrowDown' && !shift && completion.move(1)) return true;
+            if (key === 'ArrowUp' && !shift && completion.move(-1)) return true;
+            if (key === 'PageDown' && !shift && completion.movePage(1)) return true;
+            if (key === 'PageUp' && !shift && completion.movePage(-1)) return true;
+            if (key === 'Tab' && completion.accept()) return true;
+            if (key === 'Enter' && completion.acceptChangesText && completion.accept()) return true;
+            if (key === 'Escape') return completion.dismiss();
+        }
+        if (key === ' ' && (command || control) && !shift && !alt) return completion.invoke();
         if (key === 'Escape') {
+            completion.dismiss();
             editor.tabMovesFocus = true;
             return false;
         }
-        if (key !== 'Tab' && !CodeKeymap.isModifierKey(key)) editor.tabMovesFocus = false;
         if (command && key.length === 1) {
             {
                 let pasted: any;
@@ -32,7 +45,7 @@ export class CodeKeymap {
                         return true;
                     case 'v':
                         if (clipboard == null) return false;
-                        if ((($v4120) => (($v4120 != null && $v4120.length > 0) && (pasted = $v4120, true)))(clipboard.read())) editor.paste(pasted);
+                        if ((($v6199) => (($v6199 != null && $v6199.length > 0) && (pasted = $v6199, true)))(clipboard.read())) editor.paste(pasted);
                         return true;
                     case '/':
                         return editor.toggleLineComment();
