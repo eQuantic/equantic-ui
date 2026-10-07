@@ -67,3 +67,13 @@ holds open.
   runs, as `dotnet watch` stops an app it restarts
 - **THEN** no rebuild is left running, and the app exits in about three seconds, where before the
   rebuild went on writing and the app took fourteen
+
+#### Scenario: A rebuild past its limit
+
+- **WHEN** a rebuild runs past the time it is allowed
+- **THEN** it is stopped, and no process of it is left, where releasing it ended nothing
+
+#### Scenario: A stream that opens as the app stops
+
+- **WHEN** a page's stream registers after the app began stopping
+- **THEN** it ends at once instead of holding the shutdown
