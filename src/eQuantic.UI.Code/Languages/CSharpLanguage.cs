@@ -16,7 +16,7 @@ public sealed class CSharpLanguage : CurlyBraceLanguage
         BlockComment = ("/*", "*/"),
     };
 
-    protected override IReadOnlySet<string> Keywords { get; } = new HashSet<string>
+    protected override IReadOnlySet<string> ReservedWords { get; } = new HashSet<string>
     {
         "abstract", "as", "async", "await", "base", "break", "case", "catch", "checked", "class",
         "const", "continue", "default", "delegate", "do", "else", "enum", "event", "explicit",

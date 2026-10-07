@@ -1,4 +1,5 @@
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using eQuantic.UI.Compiler.CodeGen.Ir;
 
@@ -16,8 +17,9 @@ namespace eQuantic.UI.Compiler.CodeGen.Strategies.Expressions;
 /// message is the one bound to the constructor's <c>message</c> parameter (signatures differ:
 /// <c>ArgumentException(message, paramName)</c> and <c>ArgumentOutOfRangeException(paramName,
 /// message)</c>), the last argument where the constructor cannot be asked, and the one argument of a
-/// constructor that takes one. The others run and are carried nowhere: a parameter name, an inner
-/// exception and an initializer are not carried yet (#558).
+/// constructor that takes one. The others run and are carried nowhere: a parameter name and an inner
+/// exception are not carried yet (#558). An object initializer is applied to the exception once it is
+/// built (#587); the members an app exception declares are not written yet (#611).
 /// </para>
 /// </summary>
 public class ExceptionCreationStrategy : IExpressionIrStrategy
@@ -33,7 +35,12 @@ public class ExceptionCreationStrategy : IExpressionIrStrategy
     {
         var creation = (BaseObjectCreationExpressionSyntax)node;
         var type = (INamedTypeSymbol)context.SemanticHelper.GetType(node)!;
-        return ExceptionTypes.Construction(ExceptionTypes.ChainOf(type), creation, context);
+        var built = ExceptionTypes.Construction(ExceptionTypes.ChainOf(type), creation, context);
+        // Its object initializer, applied to what that built, as a record's is (#587): it was dropped,
+        // so `new Retry { Attempts = 3 }.Attempts` read nothing.
+        return creation.Initializer is { } initializer && initializer.IsKind(SyntaxKind.ObjectInitializerExpression)
+            ? ObjectInitializer.Apply(built, initializer, context)
+            : built;
     }
 
     /// <summary>The position of the message among the written arguments, or -1 where none was

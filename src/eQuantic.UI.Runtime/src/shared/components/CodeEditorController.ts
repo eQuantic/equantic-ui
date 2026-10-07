@@ -1,47 +1,65 @@
-import { $eq, CodeDirectionValue, CodeDocument, CodeEdit, CodeGrid, CodeHighlighter, CodeHistory, CodeKeymap, CodeLanguageRules, CodeLanguages, CodeLineCells, CodeMotionValue, CodePosition, CodeRange, KeyboardConventionValue, Point, PointerPhaseValue, Rect } from "../runtime-exports";
+import { $eq, CodeCompletion, CodeDirectionValue, CodeDocument, CodeEdit, CodeGrid, CodeHighlighter, CodeHistory, CodeKeymap, CodeLanguageRules, CodeLanguages, CodeLineCells, CodeMotionValue, CodePosition, CodeRange, KeyboardConventionValue, Point, PointerPhaseValue, Rect } from "../runtime-exports";
 
 export class CodeEditorController {
-    constructor(text: string = '', language: any = null, props?: any) {
-        this._selection = new CodeRange();
+    constructor(text: string = '', language: any = null) {
+        this._document = null!;
+        this._selection = CodeRange.$zero();
+        this.highlighter = null!;
+        this.history = new CodeHistory();
+        this.completion = null!;
+        this.readOnly = false;
+        this.tabMovesFocus = false;
+        this.changed = null;
+        this.selectionChanged = null;
         this._desiredCell = -1;
         this._cells = $eq.collections.dictionary();
         this._widths = null;
         this._widthsTabs = 0;
         this._widest = 0;
+        this.grid = CodeGrid.default;
         this._dragging = false;
         this._revealVersion = 0;
         this._focusVersion = 0;
         this._composition = null;
         this._compositionReplaced = '';
-        this._compositionSelection = new CodeRange();
+        this._compositionSelection = CodeRange.$zero();
         this._wholeLineCopy = null;
         this._document = CodeDocument.fromText(text);
         this._selection = new CodeRange(CodePosition.start);
         this.highlighter = new CodeHighlighter(language ?? CodeLanguages.plainText);
-        if (props && typeof props === 'object') Object.assign(this, props);
+        this.completion = new CodeCompletion(this);
     }
 
-    _document: CodeDocument;
-    _selection: CodeRange;
-    _desiredCell: number;
-    _cells: any;
-    _widths: number[] | null;
-    _widthsTabs: number;
-    _widest: number;
+    _document!: CodeDocument;
+    _selection!: CodeRange;
+    highlighter!: CodeHighlighter;
+    history!: CodeHistory;
+    completion!: CodeCompletion;
+    readOnly!: boolean;
+    tabMovesFocus!: boolean;
+    changed!: ((codeEdit: CodeEdit | null) => void) | null;
+    selectionChanged!: ((codeRange: CodeRange) => void) | null;
+    _desiredCell!: number;
+    _cells!: any;
+    _widths!: number[] | null;
+    _widthsTabs!: number;
+    _widest!: number;
+    grid!: CodeGrid;
+    _dragging!: boolean;
+    _revealVersion!: number;
+    _focusVersion!: number;
+    _composition!: CodeRange | null;
+    _compositionReplaced!: string;
+    _compositionSelection!: CodeRange;
+    _wholeLineCopy!: string | null;
     static caretWidth: number = 2;
-    _dragging: boolean;
-    _revealVersion: number;
-    _focusVersion: number;
-    _composition: CodeRange | null;
-    _compositionReplaced: string;
-    _compositionSelection: CodeRange;
-    _wholeLineCopy: string | null;
 
     get document(): CodeDocument {
         return this._document;
     }
 
     set document(value: CodeDocument) {
+        this.completion.dismiss();
         this._document = value;
         this._widths = null;
         this._selection = new CodeRange(this._document.clamp(this._selection.focus));
@@ -64,15 +82,9 @@ export class CodeEditorController {
         return this._selection.focus;
     }
 
-    declare highlighter: CodeHighlighter;
-    history: CodeHistory = new CodeHistory();
-
     get rules(): CodeLanguageRules {
         return this.highlighter.language.rules;
     }
-
-    readOnly: boolean = false;
-    tabMovesFocus: boolean = false;
 
     get widestLine(): number {
         let tabSize = this.rules.indentWidth;
@@ -84,8 +96,6 @@ export class CodeEditorController {
         }
         return this._widest;
     }
-
-    grid: CodeGrid = CodeGrid.default;
 
     get carets(): Rect[] {
         return [this.caretRect(this.caret)];
@@ -102,9 +112,6 @@ export class CodeEditorController {
     get composition(): CodeRange | null {
         return this._composition;
     }
-
-    changed: ((codeEdit: CodeEdit | null) => void) | null = null;
-    selectionChanged: ((codeRange: CodeRange) => void) | null = null;
 
     select(value: CodeRange, keepCell: boolean) {
         if (!keepCell) this._desiredCell = -1;
@@ -228,6 +235,7 @@ export class CodeEditorController {
         this.tabMovesFocus = false;
         let committing = !(this._composition == null);
         this.endComposition();
+        if (text.length === 1 && this.completion.acceptsOn(text[0])) this.completion.accept();
         let typed = false;
         let starts = $eq.text.textElementStarts(text);
         for (let i = 0; i < starts.length; i++) {
@@ -235,6 +243,7 @@ export class CodeEditorController {
             typed = $eq.logic.or(typed, end - starts[i] === 1 ? this.type(text[starts[i]]) : this.edit(this._selection, $eq.text.substring(text, starts[i], end - starts[i]), true));
         }
         if (committing) this.history.break();
+        if (typed) this.completion.typed(text[text.length - 1]);
         return typed;
     }
 
@@ -295,6 +304,7 @@ export class CodeEditorController {
         this.history.break();
         this.tabMovesFocus = false;
         if (focused) return;
+        this.completion.dismiss();
         if (!(this._composition == null)) this.setComposition('');
         this._dragging = false;
     }
@@ -506,7 +516,7 @@ export class CodeEditorController {
         let anchor = this._selection.anchor;
         let focus = this._selection.focus;
         let range = new CodeRange(new CodePosition(first, 0), new CodePosition(last, this._document.line(last).length));
-        if (!this.apply(range, lines.join('\n'))) return false;
+        if (!this.apply(range, $eq.text.join('\n', lines))) return false;
         this.selection = new CodeRange(CodeEditorController.shiftedBy(anchor, first, last, changes, add), CodeEditorController.shiftedBy(focus, first, last, changes, add));
         return true;
     }
@@ -575,7 +585,7 @@ export class CodeEditorController {
         let anchor = this._selection.anchor;
         let focus = this._selection.focus;
         let range = new CodeRange(new CodePosition(first, 0), new CodePosition(last, this._document.line(last).length));
-        if (!this.apply(range, lines.join('\n'))) return false;
+        if (!this.apply(range, $eq.text.join('\n', lines))) return false;
         this.selection = new CodeRange(CodeEditorController.commented(anchor, first, last, ats, removals, insertions), CodeEditorController.commented(focus, first, last, ats, removals, insertions));
         return true;
     }

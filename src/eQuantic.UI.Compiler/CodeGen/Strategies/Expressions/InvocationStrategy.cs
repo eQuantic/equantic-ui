@@ -164,8 +164,12 @@ public class InvocationStrategy : IExpressionIrStrategy
             var callerIr = context.Converter.ConvertIr(genAccess.Expression);
             var caller = JsExprWriter.WriteIn(callerIr, JsPrecedence.Call);
 
-            // Handle delegate/action Invoke() calls
-            if (methodName == "Invoke")
+            // `handler.Invoke(x)` CALLS the delegate, which is `handler(x)` on the other side. Only a
+            // delegate's Invoke: a method of that name on a class is a method like any other, and the
+            // code engine's `Completion.Invoke()` went out as a call of the object it lives on, which
+            // has no call signature (#296). The name decides only where the model cannot be asked.
+            if (methodName == "Invoke"
+                && (symbol is { MethodKind: MethodKind.DelegateInvoke } || (symbol is null && context.CanGuess(invocation))))
             {
                 var proven = ProvenNotNull(context.SemanticHelper.GetSymbol(genAccess.Expression), genAccess.Expression, context);
                 return proven.Length == 0
@@ -184,83 +188,8 @@ public class InvocationStrategy : IExpressionIrStrategy
                 return JsExpr.Callish($"{dataType.Name}.{methodName.ToCamelCase()}({valueFirst})");
             }
 
-            // EXTENSION METHOD in reduced form (`node.Also(x => …)`): JS has no extensions, so the
-            // call goes back to its static home with the receiver as the first argument —
-            // `NodeExtensions.also(node, x => …)`. The declaring static class is emitted as its own
-            // module by the app-type pipeline, and the qualified name here is what makes the
-            // import scanner pick it up. BCL extensions (LINQ et al.) never reach this branch —
-            // their dedicated strategies run at higher priority.
-            if (symbol is { IsExtensionMethod: true, ReducedFrom: not null, ContainingType: not null })
-            {
-                // An extension over the RUNTIME VOCABULARY goes home too — but only when the runtime
-                // SAYS it provides the home, which is what [RuntimeProvided] declares and what its
-                // own doc requires ("the TS export must carry the SAME name"). `Centered` used to
-                // survive as a reduced form on the reasoning that the runtime carries the behaviour
-                // as an instance method; it did, because the runtime mirrored it there FOR this
-                // lowering, and that mirror is what made `centered` a member of every component for
-                // a primary-constructor parameter to shadow (#245).
-                //
-                // The namespace alone is not enough to decide it. `eQuantic.UI.Primitives` routes
-                // to the runtime IMPLICITLY, and the namespace holds types the runtime deliberately
-                // does not export — `CurveEvaluator` among them, the cubic-bezier solver a page
-                // never asks for because a web transition is a CSS timing function. Sending its
-                // `Ease` home would import a name the bundle has no export for, which fails the
-                // whole module at load rather than at the call. So a home without the attribute
-                // keeps the reduced form it always had.
-                var declaredHere = symbol.ContainingType.Locations.Any(location => location.IsInSource);
-
-                // An extension declared OUTSIDE this compilation has no module to go home to:
-                // emitting `MemoryExtensions.startsWith(...)` names a class the bundle never
-                // contains, and the failure surfaces as a bare "is not defined" in the browser.
-                // This stays FIRST: it is the verdict `BclSurfaceAuditTests` records for the BCL's
-                // own extensions, and reordering it around the clause below silently turned
-                // `Enumerable.Index` and `Enumerable.Shuffle` from fenced into emitted. Measured.
-                if (!declaredHere && !IsFrameworkProvided(symbol.ContainingType))
-                {
-                    context.Report(invocation, ConversionSeverity.Error, "EQ2004",
-                        $"'{symbol.ContainingType.ToDisplayString()}.{symbol.Name}' is an extension "
-                        + "method with no JavaScript translation — the class that declares it is not "
-                        + "part of this compilation, so nothing emits it. Use an instance member, or "
-                        + "add a strategy for it.");
-                }
-                // A FRAMEWORK home the runtime does not EXPORT keeps the reduced form it always
-                // had, and only the ATTRIBUTE can answer that. The namespace cannot: `CurveEvaluator`
-                // sits in `eQuantic.UI.Primitives` and the runtime exports no twin for it, so
-                // asking `IsRuntimeProvided()` here — which is the broader namespace-or-attribute
-                // rule the IMPORT routing uses — sent its `Ease` home again and imported a name the
-                // bundle has not. Measured: `AHomeTheRuntimeDoesNotProvide_KeepsTheReducedCall`
-                // failed on `import { Curve, CurveEvaluator }`.
-                //
-                // The two questions are genuinely different, which is why the predicates are. This
-                // one is "does the runtime export a home under this name", answered by the
-                // attribute's own contract. `RegisterIntroduced` answers "given that we emitted a
-                // qualified call, where does its import come from", and there the namespace counts
-                // too — a home the attribute marks must reach `UsedRuntimeTypes` whatever namespace
-                // it lives in, which is the half that was missing.
-                else if (!declaredHere && !symbol.ContainingType.GetAttributes()
-                             .Any(a => a.AttributeClass?.Name == "RuntimeProvidedAttribute"))
-                {
-                    return JsExpr.Call(JsExpr.Member(callerIr, methodName.ToCamelCase()), argIrs);
-                }
-                // The declaring class never appears in the SOURCE (the call is reduced), so the
-                // syntax-walking import collector can't see it — register the name we introduced,
-                // in the bucket its namespace decides (runtime-provided or app-level).
-                symbol.ContainingType.RegisterIntroduced(context);
-                var receiverFirst = string.IsNullOrEmpty(args) ? caller : $"{caller}, {args}";
-                return JsExpr.Callish($"{symbol.ContainingType.Name}.{methodName.ToCamelCase()}({receiverFirst})");
-            }
-
-            // C# 14 extension-BLOCK method (`extension(T receiver) { … }`): the emitter lowers it
-            // to a static on the declaring class with the receiver first, and the call follows it
-            // there. A STATIC extension member (receiver-type-only block) takes no receiver.
-            if (symbol.ExtensionBlockHome() is { } extensionHome)
-            {
-                extensionHome.RegisterIntroduced(context);
-                var extensionArgs = symbol!.IsStatic
-                    ? args
-                    : string.IsNullOrEmpty(args) ? caller : $"{caller}, {args}";
-                return JsExpr.Callish($"{extensionHome.Name}.{methodName.ToCamelCase()}({extensionArgs})");
-            }
+            if (Extension(symbol, methodName, callerIr, argIrs, invocation, context) is { } extension)
+                return extension;
 
             ReportIfUntranslatable(symbol, methodName, invocation, context);
             return JsExpr.Call(JsExpr.Member(callerIr, methodName.ToCamelCase()), argIrs);
@@ -384,6 +313,104 @@ public class InvocationStrategy : IExpressionIrStrategy
         if (symbol is { MethodKind: MethodKind.LocalFunction })
             return JsExpr.Call(JsExpr.Identifier(LocalFunctionName.Of(symbol)), argIrs);
         return JsExpr.Call(JsExpr.Identifier(methodName.ToCamelCase()), argIrs);
+    }
+
+    /// <summary>
+    /// A call to an EXTENSION method in reduced form, or to a C# 14 extension block's member, as every
+    /// call to one lowers: its home's static, with the receiver first. Null for a method that is
+    /// neither. ONE lowering, which an object initializer's element shares when the bound tree binds
+    /// its <c>Add</c> to an extension (<c>Tags = { 1, 2 }</c> over <c>Add(this List&lt;string&gt;,
+    /// int)</c>), with its fences and the import of the home it introduces.
+    /// </summary>
+    /// <param name="symbol">The method the call binds.</param>
+    /// <param name="methodName">Its name as the call writes it.</param>
+    /// <param name="receiver">What the call is made on, converted.</param>
+    /// <param name="arguments">The call's arguments, converted, in the order the method takes them.</param>
+    /// <param name="at">Where a refusal is reported.</param>
+    /// <param name="context">The conversion.</param>
+    internal static JsExpr? Extension(IMethodSymbol? symbol, string methodName, JsExpr receiver,
+        IReadOnlyList<JsExpr> arguments, SyntaxNode at, ConversionContext context)
+    {
+        var caller = JsExprWriter.WriteIn(receiver, JsPrecedence.Call);
+        var args = string.Join(", ", arguments.Select(a => JsExprWriter.WriteIn(a, JsPrecedence.Assignment)));
+        // EXTENSION METHOD in reduced form (`node.Also(x => …)`): JS has no extensions, so the
+        // call goes back to its static home with the receiver as the first argument —
+        // `NodeExtensions.also(node, x => …)`. The declaring static class is emitted as its own
+        // module by the app-type pipeline, and the qualified name here is what makes the
+        // import scanner pick it up. BCL extensions (LINQ et al.) never reach this branch —
+        // their dedicated strategies run at higher priority.
+        if (symbol is { IsExtensionMethod: true, ReducedFrom: not null, ContainingType: not null })
+        {
+            // An extension over the RUNTIME VOCABULARY goes home too — but only when the runtime
+            // SAYS it provides the home, which is what [RuntimeProvided] declares and what its
+            // own doc requires ("the TS export must carry the SAME name"). `Centered` used to
+            // survive as a reduced form on the reasoning that the runtime carries the behaviour
+            // as an instance method; it did, because the runtime mirrored it there FOR this
+            // lowering, and that mirror is what made `centered` a member of every component for
+            // a primary-constructor parameter to shadow (#245).
+            //
+            // The namespace alone is not enough to decide it. `eQuantic.UI.Primitives` routes
+            // to the runtime IMPLICITLY, and the namespace holds types the runtime deliberately
+            // does not export — `CurveEvaluator` among them, the cubic-bezier solver a page
+            // never asks for because a web transition is a CSS timing function. Sending its
+            // `Ease` home would import a name the bundle has no export for, which fails the
+            // whole module at load rather than at the call. So a home without the attribute
+            // keeps the reduced form it always had.
+            var declaredHere = symbol.ContainingType.Locations.Any(location => location.IsInSource);
+
+            // An extension declared OUTSIDE this compilation has no module to go home to:
+            // emitting `MemoryExtensions.startsWith(...)` names a class the bundle never
+            // contains, and the failure surfaces as a bare "is not defined" in the browser.
+            // This stays FIRST: it is the verdict `BclSurfaceAuditTests` records for the BCL's
+            // own extensions, and reordering it around the clause below silently turned
+            // `Enumerable.Index` and `Enumerable.Shuffle` from fenced into emitted. Measured.
+            if (!declaredHere && !IsFrameworkProvided(symbol.ContainingType))
+            {
+                context.Report(at, ConversionSeverity.Error, "EQ2004",
+                    $"'{symbol.ContainingType.ToDisplayString()}.{symbol.Name}' is an extension "
+                    + "method with no JavaScript translation — the class that declares it is not "
+                    + "part of this compilation, so nothing emits it. Use an instance member, or "
+                    + "add a strategy for it.");
+            }
+            // A FRAMEWORK home the runtime does not EXPORT keeps the reduced form it always
+            // had, and only the ATTRIBUTE can answer that. The namespace cannot: `CurveEvaluator`
+            // sits in `eQuantic.UI.Primitives` and the runtime exports no twin for it, so
+            // asking `IsRuntimeProvided()` here — which is the broader namespace-or-attribute
+            // rule the IMPORT routing uses — sent its `Ease` home again and imported a name the
+            // bundle has not. Measured: `AHomeTheRuntimeDoesNotProvide_KeepsTheReducedCall`
+            // failed on `import { Curve, CurveEvaluator }`.
+            //
+            // The two questions are genuinely different, which is why the predicates are. This
+            // one is "does the runtime export a home under this name", answered by the
+            // attribute's own contract. `RegisterIntroduced` answers "given that we emitted a
+            // qualified call, where does its import come from", and there the namespace counts
+            // too — a home the attribute marks must reach `UsedRuntimeTypes` whatever namespace
+            // it lives in, which is the half that was missing.
+            else if (!declaredHere && !symbol.ContainingType.GetAttributes()
+                         .Any(a => a.AttributeClass?.Name == "RuntimeProvidedAttribute"))
+            {
+                return JsExpr.Call(JsExpr.Member(receiver, methodName.ToCamelCase()), arguments);
+            }
+            // The declaring class never appears in the SOURCE (the call is reduced), so the
+            // syntax-walking import collector can't see it — register the name we introduced,
+            // in the bucket its namespace decides (runtime-provided or app-level).
+            symbol.ContainingType.RegisterIntroduced(context);
+            var receiverFirst = string.IsNullOrEmpty(args) ? caller : $"{caller}, {args}";
+            return JsExpr.Callish($"{symbol.ContainingType.Name}.{methodName.ToCamelCase()}({receiverFirst})");
+        }
+
+        // C# 14 extension-BLOCK method (`extension(T receiver) { … }`): the emitter lowers it
+        // to a static on the declaring class with the receiver first, and the call follows it
+        // there. A STATIC extension member (receiver-type-only block) takes no receiver.
+        if (symbol.ExtensionBlockHome() is { } extensionHome)
+        {
+            extensionHome.RegisterIntroduced(context);
+            var extensionArgs = symbol!.IsStatic
+                ? args
+                : string.IsNullOrEmpty(args) ? caller : $"{caller}, {args}";
+            return JsExpr.Callish($"{extensionHome.Name}.{methodName.ToCamelCase()}({extensionArgs})");
+        }
+        return null;
     }
 
     /// <summary>

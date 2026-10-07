@@ -2,16 +2,12 @@ import { $eq, Box, BoxStyle, BuildContext, CodeDecoration, CodeDecorationKindVal
 
 export class CodeBlock extends StatelessComponent {
     static $typeId = 'eQuantic.UI.Components.CodeBlock';
-    static selectionAlpha: number = Math.fround(0.28);
+    static selectionAlpha: number = 0.2800000011920929;
     _cells: any = $eq.collections.dictionary();
     _fillerCells: any = $eq.collections.dictionary();
     static linePass: number = 0;
     static highlightPass: number = 1;
     static outlinePass: number = 2;
-    static codeSlab: ColorToken = new ColorToken({ r: 0x10, g: 0x14, b: 0x18, a: 0xFF });
-    static codeInk: ColorToken = new ColorToken({ r: 0xC9, g: 0xD4, b: 0xDE, a: 0xFF });
-    static codeInkMuted: ColorToken = new ColorToken({ r: 0x7C, g: 0x8A, b: 0x99, a: 0xFF });
-    static codeSlabActive: ColorToken = new ColorToken({ r: 0x1B, g: 0x22, b: 0x2B, a: 0xFF });
     declare document: CodeDocument;
     declare language: any;
     declare showLineNumbers: boolean;
@@ -49,6 +45,62 @@ export class CodeBlock extends StatelessComponent {
 
     get rowCount() {
         return this.rows?.rowCount ?? this.document.lineCount;
+    }
+
+    static $slots: any = null;
+    static $failure: any = null;
+
+    static $init(): any {
+        if (CodeBlock.$slots === null) {
+            if (CodeBlock.$failure !== null) throw CodeBlock.$failure;
+            let $slots: any = CodeBlock.$slots = {};
+            try {
+                $slots.codeSlab = undefined;
+                $slots.codeInk = undefined;
+                $slots.codeInkMuted = undefined;
+                $slots.codeSlabActive = undefined;
+                $slots.codeSlab = new ColorToken({ r: 0x10, g: 0x14, b: 0x18, a: 0xFF });
+                $slots.codeInk = new ColorToken({ r: 0xC9, g: 0xD4, b: 0xDE, a: 0xFF });
+                $slots.codeInkMuted = new ColorToken({ r: 0x7C, g: 0x8A, b: 0x99, a: 0xFF });
+                $slots.codeSlabActive = new ColorToken({ r: 0x1B, g: 0x22, b: 0x2B, a: 0xFF });
+            } catch ($error) {
+                CodeBlock.$slots = null;
+                throw CodeBlock.$failure = $eq.exceptions.typeInitialization('eQuantic.UI.Components.CodeBlock', $error);
+            }
+        }
+        return CodeBlock.$slots;
+    }
+
+    static get codeSlab(): ColorToken {
+        return CodeBlock.$init().codeSlab;
+    }
+
+    static set codeSlab(value: ColorToken) {
+        CodeBlock.$init().codeSlab = value;
+    }
+
+    static get codeInk(): ColorToken {
+        return CodeBlock.$init().codeInk;
+    }
+
+    static set codeInk(value: ColorToken) {
+        CodeBlock.$init().codeInk = value;
+    }
+
+    static get codeInkMuted(): ColorToken {
+        return CodeBlock.$init().codeInkMuted;
+    }
+
+    static set codeInkMuted(value: ColorToken) {
+        CodeBlock.$init().codeInkMuted = value;
+    }
+
+    static get codeSlabActive(): ColorToken {
+        return CodeBlock.$init().codeSlabActive;
+    }
+
+    static set codeSlabActive(value: ColorToken) {
+        CodeBlock.$init().codeSlabActive = value;
     }
 
     constructor(code?: any, language: any = null, props?: any) {

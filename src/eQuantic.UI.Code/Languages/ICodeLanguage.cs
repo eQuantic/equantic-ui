@@ -27,4 +27,12 @@ public interface ICodeLanguage
     /// built from. Defaulted, so a language that only wants colours writes nothing.
     /// </summary>
     CodeLanguageRules Rules => CodeLanguageRules.Default;
+
+    /// <summary>
+    /// The words the language itself owns (its reserved words, its built-in types, its constants),
+    /// which a completion offers wherever a word starts (<see cref="CodeKeywordCompletionProvider"/>).
+    /// One list, read by the colours and the completion alike where a language keeps both. None by
+    /// default.
+    /// </summary>
+    IReadOnlyList<string> Keywords => [];
 }

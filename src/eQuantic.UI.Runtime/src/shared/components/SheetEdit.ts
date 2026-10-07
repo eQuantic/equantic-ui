@@ -1,19 +1,28 @@
 import { SheetCellSnapshot, SheetEditKindValue, SheetRange } from "../runtime-exports";
 
 export class SheetEdit {
-    constructor(props?: any) {
-        if (props && typeof props === 'object') Object.assign(this, props);
+    constructor() {
+        this.kind = 'setCells';
+        this.before = [];
+        this.after = [];
+        this.at = 0;
+        this.count = 0;
+        this.removed = [];
+        this.oldSize = 0;
+        this.newSize = 0;
+        this.selectionBefore = SheetRange.$zero();
+        this.selectionAfter = SheetRange.$zero();
     }
 
-    kind: SheetEditKindValue = 'setCells';
-    before: SheetCellSnapshot[] = [];
-    after: SheetCellSnapshot[] = [];
-    at: number = 0;
-    count: number = 0;
-    removed: SheetCellSnapshot[] = [];
-    oldSize: number = 0;
-    newSize: number = 0;
-    selectionBefore: SheetRange = new SheetRange();
-    selectionAfter: SheetRange = new SheetRange();
+    kind!: SheetEditKindValue;
+    before!: SheetCellSnapshot[];
+    after!: SheetCellSnapshot[];
+    at!: number;
+    count!: number;
+    removed!: SheetCellSnapshot[];
+    oldSize!: number;
+    newSize!: number;
+    selectionBefore!: SheetRange;
+    selectionAfter!: SheetRange;
 }
 

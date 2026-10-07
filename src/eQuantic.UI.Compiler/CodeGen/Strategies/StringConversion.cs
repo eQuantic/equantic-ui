@@ -26,12 +26,9 @@ public static class StringConversion
         var type = context.SemanticHelper.GetType(operand);
         if (type is null) return converted;
 
-        var text = JsExprWriter.Write(converted);
+        // A member written by name folds to the name it is.
         if (type is INamedTypeSymbol { TypeKind: TypeKind.Enum } enumType)
-            return JsExpr.Callish(Invocation.ToStringStrategy.EnumNameLookup(enumType, operand, text, context));
-        // A NULLABLE enum prints its value's name, and nothing for null (#452).
-        if (type.UnwrapNullable() is INamedTypeSymbol { TypeKind: TypeKind.Enum } nullableEnum)
-            return JsExpr.Callish(Types.EnumShape.Text(nullableEnum, text, context));
+            return JsExpr.Callish(Invocation.ToStringStrategy.EnumNameLookup(enumType, operand, JsExprWriter.Write(converted), context));
 
         // A string that MAY be null reads as itself or as nothing — the cheapest faithful spelling.
         // Annotated `string?` says so; a string from code with no nullable context (annotation
@@ -41,6 +38,22 @@ public static class StringConversion
                 || operand is LiteralExpressionSyntax or InterpolatedStringExpressionSyntax
                 ? converted
                 : JsExpr.Binary(converted, "??", JsExpr.Literal("''"));
+
+        return Of(type, converted, context);
+    }
+
+    /// <summary>
+    /// A value of <paramref name="type"/> as the string C# would make of it, the type alone deciding:
+    /// what a concatenation applies once its operand's syntax has had its say, and what
+    /// <c>string.Join</c> applies to each element of a sequence of that type (#441).
+    /// </summary>
+    internal static JsExpr Of(ITypeSymbol type, JsExpr converted, ConversionContext context)
+    {
+        var text = JsExprWriter.Write(converted);
+        // An enum prints its value's name, a [Flags] one its set flags, and a NULLABLE one nothing for
+        // null (#452).
+        if (type.UnwrapNullable() is INamedTypeSymbol { TypeKind: TypeKind.Enum } enumType)
+            return JsExpr.Callish(Types.EnumShape.Text(enumType, text, context));
 
         // A fractional number, or a nullable one, reads the way .NET writes it (#336). JavaScript's
         // String() keeps fixed notation up to 1e21, drops the sign of -0, and gives a float the

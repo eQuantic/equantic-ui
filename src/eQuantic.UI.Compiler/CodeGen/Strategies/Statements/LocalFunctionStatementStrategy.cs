@@ -72,7 +72,7 @@ public class LocalFunctionStatementStrategy : IStatementStrategy
     private static string Parameter(ParameterSyntax parameter, ConversionContext context)
     {
         var name = parameter.Identifier.Text.ToJsIdentifier();
-        var type = TypeScriptEmitter.CSharpTypeToTypeScript(parameter.Type?.ToString());
+        var type = ParameterType(parameter.Type, context);
         var rest = parameter.Modifiers.Any(modifier => modifier.IsKind(SyntaxKind.ParamsKeyword));
         var name_ = context.TypeAnnotations ? $"{name}: {type}" : name;
 
@@ -83,6 +83,24 @@ public class LocalFunctionStatementStrategy : IStatementStrategy
         if (value is "undefined" or "null")
             return context.TypeAnnotations ? $"{name}?: {type}" : $"{name} = {value}";
         return $"{name_} = {value}";
+    }
+
+    /// <summary>
+    /// A parameter's type: the mapper's spelling, and where the mapper only echoed the name, what the
+    /// type crosses as (<see cref="TsStandIn"/>): a local function taking an exception, an interface,
+    /// an enum or a delegate of its own named a type no module defines.
+    /// </summary>
+    private static string ParameterType(TypeSyntax? declared, ConversionContext context)
+    {
+        var mapped = TypeScriptEmitter.CSharpTypeToTypeScript(declared?.ToString());
+        var asked = declared is NullableTypeSyntax wrapper ? wrapper.ElementType : declared;
+        if (asked is null) return mapped;
+        var spelled = TypeScriptEmitter.NormalizeQualification(asked.ToString());
+        if (TypeScriptEmitter.CSharpTypeToTypeScript(spelled) != spelled
+            || context.SemanticHelper.GetType(asked) is not { } resolved
+            || TsStandIn.For(resolved, context.UsedRuntimeTypes) is not { } standIn)
+            return mapped;
+        return declared is NullableTypeSyntax && standIn != "any" ? TypeScriptEmitter.OrNull(standIn) : standIn;
     }
 
     public int Priority => 10;

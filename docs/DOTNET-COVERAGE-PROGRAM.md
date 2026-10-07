@@ -126,12 +126,17 @@ Design notes:
   — `hydrateValue` rebuilds a record instance from the plain SSR JSON on the field's prototype (witness
   = the field default), recursively, so nested records and compat-typed members are restored and the
   instance methods / `instanceof` survive hydration. Records (positional **and body**) and **plain
-  structs** are all covered — a shared `ValueMembers` extraction (positional params + body
-  auto-properties + public fields, in one canonical order) drives the constructor, equality, `with`,
-  `toString` and the construction site (object-initializer mapped onto the constructor by member order,
-  with per-member defaults). Record inheritance (`record Dog(…) : Animal(Name)` → `class Dog extends
-  Animal` with a `super(…)` call, only own members re-assigned) and generic records (`record Box<T>` —
-  type args erased) are covered too. **Record-keyed dictionaries** ✅ (`Dictionary<RecordKey,V>` →
+  structs** are all covered. The twin's constructor is the C# constructor (#413): a branch per C#
+  constructor on how many arguments arrive, every initializer run in declaration order (a derived
+  record's before its base's constructor), then the body, the arguments landing by parameter as the
+  bound tree binds them; a construction calls it and then applies the object initializer to what it
+  built. `ValueMembers` (the positional properties, the primary constructor's parameters a member
+  reads, the instance fields, private ones included, and the auto-properties) is the state the
+  constructor writes, equality compares and the hash combines; the text prints what `PrintMembers`
+  prints, read from the symbol; `with` copies onto the prototype and runs nothing; a struct's zero is
+  its `$zero()`, which runs nothing. Record inheritance (`record Dog(…) : Animal(Name)` → `class Dog
+  extends Animal` with a `super(…)` call, only own members re-assigned) and generic records
+  (`record Box<T>` — type args erased) are covered too. **Record-keyed dictionaries** ✅ (`Dictionary<RecordKey,V>` →
   `$eq.collections.dictionary(…, true)`, structural-equality keys) and **semantic (base-walk) component
   detection** ✅ are both landed.
 - **Control flow**: expression-level ✅; statement-level ✅ — the harness now runs statement blocks

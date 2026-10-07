@@ -14,6 +14,7 @@ namespace eQuantic.UI.Primitives;
 /// its resx. The SDK's own chrome is the only text this framework translates on your behalf.
 /// </para>
 /// </summary>
+[TwinIsTranspiled]
 public sealed record FieldRule(string Message, Func<string, bool> Holds);
 
 /// <summary>
@@ -26,6 +27,7 @@ public sealed record FieldRule(string Message, Func<string, bool> Holds);
 /// box is the single most common false alarm in form validation.
 /// </para>
 /// </summary>
+[TwinIsTranspiled]
 public static class Rules
 {
     public static FieldRule Required(string message = "This field is required.") =>
@@ -104,6 +106,7 @@ public static class Rules
 /// "are there unsaved changes".
 /// </para>
 /// </summary>
+[TwinIsTranspiled]
 public sealed class FormField
 {
     private readonly List<FieldRule> _rules;

@@ -1,17 +1,17 @@
 import { $eq, CodeDocument, CodeEdit, CodePosition, CodeRange } from "../runtime-exports";
 
 export class CodeHistory {
-    constructor(props?: any) {
+    constructor() {
         this._past = [];
         this._future = [];
         this._runEnd = new CodePosition(-1, -1);
-        if (props && typeof props === 'object') Object.assign(this, props);
+        this.limit = 500;
     }
 
-    _past: CodeEdit[];
-    _future: CodeEdit[];
-    _runEnd: CodePosition;
-    limit: number = 500;
+    _past!: CodeEdit[];
+    _future!: CodeEdit[];
+    _runEnd!: CodePosition;
+    limit!: number;
 
     get canUndo(): boolean {
         return this._past.length > 0;
@@ -43,9 +43,9 @@ export class CodeHistory {
     undo(document: CodeDocument) {
         let selection, replaced, written;
         const $r = (() => {
-            selection = new CodeRange();
-            replaced = new CodeRange();
-            written = new CodeRange();
+            selection = CodeRange.$zero();
+            replaced = CodeRange.$zero();
+            written = CodeRange.$zero();
             if (this._past.length === 0) return null;
             let edit = this._past[this._past.length - 1];
             this._past.splice(this._past.length - 1, 1);
@@ -64,9 +64,9 @@ export class CodeHistory {
     redo(document: CodeDocument) {
         let selection, replaced, written;
         const $r = (() => {
-            selection = new CodeRange();
-            replaced = new CodeRange();
-            written = new CodeRange();
+            selection = CodeRange.$zero();
+            replaced = CodeRange.$zero();
+            written = CodeRange.$zero();
             if (this._future.length === 0) return null;
             let edit = this._future[this._future.length - 1];
             this._future.splice(this._future.length - 1, 1);

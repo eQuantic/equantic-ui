@@ -1,9 +1,7 @@
 import { CodeLanguageRules, CodeToken } from "../runtime-exports";
 
 export class PlainTextLanguage {
-    constructor(props?: any) {
-        if (props && typeof props === 'object') Object.assign(this, props);
-    }
+    constructor() {}
 
     get name(): string {
         return 'Text';
@@ -16,6 +14,10 @@ export class PlainTextLanguage {
 
     get rules(): CodeLanguageRules {
         return CodeLanguageRules.default;
+    }
+
+    get keywords(): string[] {
+        return [];
     }
 }
 

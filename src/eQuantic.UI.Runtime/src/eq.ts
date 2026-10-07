@@ -8,6 +8,7 @@ import {
 } from './utils/decimal';
 import { combineDelegate, removeDelegate } from './utils/delegates';
 import { hydrate } from './utils/hydrate';
+import { twinJson } from './utils/twin-json';
 import { long } from './utils/long';
 import {
   round,
@@ -75,6 +76,7 @@ import {
   compareRange,
   compareRangeBy,
   equals as stringEquals,
+  join,
   joinRange,
 } from './utils/string-statics';
 import {
@@ -82,8 +84,10 @@ import {
   contains as textContains,
   endsWith,
   indexOf,
+  indexOfChar,
   instanceEquals,
   lastIndexOf,
+  lastIndexOfChar,
   replace,
   startsWith,
 } from './utils/string-search';
@@ -121,12 +125,40 @@ import {
   zip,
 } from './utils/collections';
 import { dictionary, pair } from './utils/dictionary';
+import { hashSet, hashSetOf } from './utils/hash-set';
+import { memberEquality, sameKey, tupleEquality } from './utils/key-equality';
+import {
+  arrayFind,
+  arrayFindIndex,
+  arrayFindLast,
+  arrayFindLastIndex,
+  arrayIndexOf,
+  arrayLastIndexOf,
+  arraySort,
+  arraySortBy,
+  binarySearch,
+  comparerOrder,
+  copyRangeTo,
+  copyTo,
+  find,
+  findIndex,
+  findLast,
+  findLastIndex,
+  indexOf as listIndexOf,
+  lastIndexOf as listLastIndexOf,
+  listSort,
+  listSortBy,
+  order,
+  removeAll,
+  stringOrder,
+} from './utils/list';
 import { boolConvert, boolParse, boolTryParse } from './utils/boolean-text';
 import { sortedSet, sortedDictionary, sortedList } from './utils/sorted';
 import { liftArith, liftCmp, liftUnary } from './utils/nullable';
 import { equals } from './utils/equals';
 import { hash, hashCombine, hashFields, hashGroup, identityHash, instanceHash } from './utils/hash';
 import { guidParse, guidTryParse } from './utils/guid';
+import { CancellationToken, CancellationTokenRegistration, CancellationTokenSource } from './utils/cancellation';
 import {
   bases as exceptionBases,
   create as createException,
@@ -135,6 +167,7 @@ import {
   is as isException,
   raise,
   thrown,
+  typeInitialization,
 } from './utils/exceptions';
 import {
   isDefined as enumIsDefined,
@@ -228,6 +261,8 @@ export const $eq = {
   linq: { enumerable, max, min, seq, toArray, toDictionary, range, repeat },
   /** C# `with` over a runtime value type — prototype preserved. */
   withPatch,
+  /** A twin's JSON, a property's store under the property's name — see utils/twin-json. */
+  json: twinJson,
   /** `new object()`, an identity of its own, and a `lock` statement's gate, refused when null. */
   newObject,
   lockGate,
@@ -327,11 +362,14 @@ export const $eq = {
     compareRange,
     compareRangeBy,
     equals: stringEquals,
+    join,
     joinRange,
     startsWith,
     endsWith,
     indexOf,
     lastIndexOf,
+    indexOfChar,
+    lastIndexOfChar,
     contains: textContains,
     replace,
     instanceEquals,
@@ -372,6 +410,38 @@ export const $eq = {
     remove,
     sameItem,
     pairComparer,
+    /** `new HashSet<T>(…)`, and a set an initializer or a collection expression builds. */
+    hashSet,
+    hashSetOf,
+    /** The equalities eqc generates for a tuple and an anonymous type, and the one a type that does
+     * not decide is compared by (`utils/key-equality.ts`). */
+    tupleEquality,
+    memberEquality,
+    sameKey,
+    /** `List<T>`'s and `Array`'s searches, sorts and copies, as .NET answers them (`utils/list.ts`). */
+    indexOf: listIndexOf,
+    lastIndexOf: listLastIndexOf,
+    arrayIndexOf,
+    arrayLastIndexOf,
+    find,
+    findLast,
+    findIndex,
+    findLastIndex,
+    arrayFind,
+    arrayFindLast,
+    arrayFindIndex,
+    arrayFindLastIndex,
+    removeAll,
+    copyTo,
+    copyRangeTo,
+    order,
+    stringOrder,
+    comparerOrder,
+    listSort,
+    listSortBy,
+    arraySort,
+    arraySortBy,
+    binarySearch,
     /** `new KeyValuePair<K, V>(key, value)` and `KeyValuePair.Create`: the shape a dictionary yields. */
     pair,
   },
@@ -405,10 +475,24 @@ export const $eq = {
   /** A Guid's canonical text, the lowercase `D` format, from any format .NET reads. */
   guid: { parse: guidParse, tryParse: guidTryParse },
   /**
+   * The cancellation pair, built where C# builds it: `new CancellationTokenSource(delay?)`,
+   * `CancellationToken.None` (and `default`), `new CancellationToken(canceled)`,
+   * `default(CancellationTokenRegistration)` and `CancellationTokenSource.CreateLinkedTokenSource(…)`.
+   * Their members are their own, in camelCase.
+   */
+  cancellation: {
+    source: (delay?: number | { readonly totalMilliseconds: number }) => new CancellationTokenSource(delay),
+    none: CancellationToken.none,
+    registration: CancellationTokenRegistration.none,
+    token: CancellationToken.of,
+    linked: CancellationTokenSource.createLinkedTokenSource,
+  },
+  /**
    * .NET exceptions: one built from its type and the types it derives from (`new T(…)`), one of a
    * type the runtime knows, the test a typed `catch` and a type pattern write, a `throw`
-   * expression, what a `throw` statement throws when its exception may be null, and an exception
-   * filter, which answers false where it throws.
+   * expression, what a `throw` statement throws when its exception may be null, an exception
+   * filter, which answers false where it throws, and what a type whose initializer threw throws on
+   * every use.
    */
   exceptions: {
     create: createException,
@@ -417,6 +501,7 @@ export const $eq = {
     raise,
     thrown,
     filter: exceptionFilter,
+    typeInitialization,
     bases: exceptionBases,
   },
   /** CSS class composition (the styling subsystem). */

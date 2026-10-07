@@ -50,6 +50,10 @@ public static class DotNetEvaluator
         // runtime `format` helper formats with an invariant/dot convention, so we match that here.
         CultureInfo.DefaultThreadCurrentCulture = CultureInfo.InvariantCulture;
         CultureInfo.CurrentCulture = CultureInfo.InvariantCulture;
+        // A value is written as JSON.stringify writes the runtime's representation of it, where
+        // System.Text.Json's own JSON differs (a long as a BigInt's text, a decimal's text, an enum's
+        // twin name, a double as JavaScript writes it, a tuple and a pair as arrays): RuntimeJson.
+        foreach (var converter in RuntimeJson.Converters) JsonOptions.Converters.Add(converter);
     }
 
     public static string EvaluateToJson(string csharpExpression, string prelude = "")
@@ -58,6 +62,9 @@ public static class DotNetEvaluator
         // CSharpScript returns the value of that final expression.
         var script = string.IsNullOrWhiteSpace(prelude) ? csharpExpression : $"{prelude}\n{csharpExpression}";
         var value = CSharpScript.EvaluateAsync<object?>(script, Options).GetAwaiter().GetResult();
-        return JsonSerializer.Serialize(value, JsonOptions);
+        return ToJson(value);
     }
+
+    /// <summary>A .NET value as the canonical JSON a case's answers are compared in.</summary>
+    public static string ToJson(object? value) => JsonSerializer.Serialize(value, JsonOptions);
 }

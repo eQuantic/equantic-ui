@@ -1,36 +1,85 @@
 import { $eq, CodeDocument, CodeLanguageRules, CodeToken, CodeTokenKindValue } from "../runtime-exports";
 
 export class PythonLanguage {
-    constructor(props?: any) {
-        if (props && typeof props === 'object') Object.assign(this, props);
+    constructor() {
+        this.rules = (() => {
+        const $o = new CodeLanguageRules();
+        $o.lineComment = '#';
+        $o.indentAfter = [':', '(', '[', '{'];
+        $o.outdentOn = [')', ']', '}'];
+        $o.indentWidth = 4;
+        return $o;
+    })();
     }
 
+    rules!: CodeLanguageRules;
     static normal: number = 0;
     static tripleDouble: number = 1;
     static tripleSingle: number = 2;
-    static _keywords: Set<string> | undefined;
-
-    static get keywords(): Set<string> {
-        return PythonLanguage._keywords ??= new Set(['and', 'as', 'assert', 'async', 'await', 'break', 'class', 'continue', 'def', 'del', 'elif', 'else', 'except', 'finally', 'for', 'from', 'global', 'if', 'import', 'in', 'is', 'lambda', 'match', 'nonlocal', 'not', 'or', 'pass', 'raise', 'return', 'try', 'while', 'with', 'yield']);
-    }
-
-    static _builtins: Set<string> | undefined;
-
-    static get builtins(): Set<string> {
-        return PythonLanguage._builtins ??= new Set(['bool', 'bytes', 'dict', 'float', 'frozenset', 'int', 'list', 'object', 'set', 'str', 'tuple', 'type']);
-    }
-
-    static _constants: Set<string> | undefined;
-
-    static get constants(): Set<string> {
-        return PythonLanguage._constants ??= new Set(['True', 'False', 'None', 'self', 'cls']);
-    }
 
     get name(): string {
         return 'Python';
     }
 
-    rules: CodeLanguageRules = new CodeLanguageRules('#', undefined, undefined, undefined, [':', '(', '[', '{'], [')', ']', '}'], 4);
+    get keywords(): string[] {
+        return PythonLanguage.words;
+    }
+
+    static $slots: any = null;
+    static $failure: any = null;
+
+    static $init(): any {
+        if (PythonLanguage.$slots === null) {
+            if (PythonLanguage.$failure !== null) throw PythonLanguage.$failure;
+            let $slots: any = PythonLanguage.$slots = {};
+            try {
+                $slots.reserved = null;
+                $slots.builtins = null;
+                $slots.constants = null;
+                $slots.words = null;
+                $slots.reserved = $eq.collections.hashSetOf(['and', 'as', 'assert', 'async', 'await', 'break', 'class', 'continue', 'def', 'del', 'elif', 'else', 'except', 'finally', 'for', 'from', 'global', 'if', 'import', 'in', 'is', 'lambda', 'match', 'nonlocal', 'not', 'or', 'pass', 'raise', 'return', 'try', 'while', 'with', 'yield']);
+                $slots.builtins = $eq.collections.hashSetOf(['bool', 'bytes', 'dict', 'float', 'frozenset', 'int', 'list', 'object', 'set', 'str', 'tuple', 'type']);
+                $slots.constants = $eq.collections.hashSetOf(['True', 'False', 'None', 'self', 'cls']);
+                $slots.words = [...[...$eq.linq.seq(PythonLanguage.reserved), ...$eq.linq.seq(PythonLanguage.builtins)], ...$eq.linq.seq(PythonLanguage.constants)].slice();
+            } catch ($error) {
+                PythonLanguage.$slots = null;
+                throw PythonLanguage.$failure = $eq.exceptions.typeInitialization('eQuantic.UI.Code.PythonLanguage', $error);
+            }
+        }
+        return PythonLanguage.$slots;
+    }
+
+    static get reserved(): Set<string> {
+        return PythonLanguage.$init().reserved;
+    }
+
+    static set reserved(value: Set<string>) {
+        PythonLanguage.$init().reserved = value;
+    }
+
+    static get builtins(): Set<string> {
+        return PythonLanguage.$init().builtins;
+    }
+
+    static set builtins(value: Set<string>) {
+        PythonLanguage.$init().builtins = value;
+    }
+
+    static get constants(): Set<string> {
+        return PythonLanguage.$init().constants;
+    }
+
+    static set constants(value: Set<string>) {
+        PythonLanguage.$init().constants = value;
+    }
+
+    static get words(): string[] {
+        return PythonLanguage.$init().words;
+    }
+
+    static set words(value: string[]) {
+        PythonLanguage.$init().words = value;
+    }
 
     tokenize(line: string, state: number, into: CodeToken[]) {
         let i = 0;
@@ -93,7 +142,7 @@ export class PythonLanguage {
                 let start = i;
                 while (i < line.length && CodeDocument.isWordChar(line[i])) i++;
                 let word = line.slice(start, i);
-                let kind: CodeTokenKindValue = PythonLanguage.keywords.has(word) ? 'keyword' : PythonLanguage.constants.has(word) ? 'constant' : PythonLanguage.builtins.has(word) ? 'type' : PythonLanguage.nextNonSpace(line, i) === '(' ? 'function' : (/^\p{Lu}$/u.test(word[0])) ? 'type' : 'plain';
+                let kind: CodeTokenKindValue = PythonLanguage.reserved.has(word) ? 'keyword' : PythonLanguage.constants.has(word) ? 'constant' : PythonLanguage.builtins.has(word) ? 'type' : PythonLanguage.nextNonSpace(line, i) === '(' ? 'function' : (/^\p{Lu}$/u.test(word[0])) ? 'type' : 'plain';
                 PythonLanguage.add(into, start, i - start, kind);
                 continue;
             }

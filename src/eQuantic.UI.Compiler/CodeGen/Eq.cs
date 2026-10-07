@@ -168,6 +168,9 @@ public static class Eq
     public const string StringEquals = "$eq.text.equals";
     /// <summary><c>string.Join(separator, value, startIndex, count)</c>: the range, checked.</summary>
     public const string StringJoinRange = "$eq.text.joinRange";
+    /// <summary><c>string.Join</c> over any sequence or a params array: each value written as .NET's
+    /// <c>ToString</c> writes it, by the conversion the compiler passes, and a null one as nothing.</summary>
+    public const string StringJoin = "$eq.text.join";
     /// <summary>A string's own <c>StartsWith(value, comparisonType)</c>.</summary>
     public const string StringStartsWith = "$eq.text.startsWith";
     /// <summary>A string's own <c>EndsWith(value, comparisonType)</c>.</summary>
@@ -178,6 +181,12 @@ public static class Eq
     /// <summary>A string's own <c>LastIndexOf</c> by a comparison, with its start and count,
     /// normalized as .NET's <c>CompareInfo</c> normalizes them.</summary>
     public const string StringLastIndexOf = "$eq.text.lastIndexOf";
+    /// <summary>A string's own <c>IndexOf(char, startIndex[, count])</c>: ordinal, the start and the
+    /// count checked as .NET 10 checks a char's search.</summary>
+    public const string StringIndexOfChar = "$eq.text.indexOfChar";
+    /// <summary>A string's own <c>LastIndexOf(char, startIndex[, count])</c>: ordinal, -1 for an empty
+    /// string, and a start that stands on a char of the string.</summary>
+    public const string StringLastIndexOfChar = "$eq.text.lastIndexOfChar";
     /// <summary>A string's own <c>Contains(value, comparisonType)</c>, and the char overload.</summary>
     public const string StringContains = "$eq.text.contains";
     /// <summary>A string's own <c>Replace(oldValue, newValue[, comparisonType])</c>: the replacement
@@ -200,6 +209,22 @@ public static class Eq
     /// and <c>X</c> writes a negative one at its type's width (#445).</summary>
     public const string AsInteger = "$eq.text.asInteger";
     public const string StringBuilder = "$eq.text.stringBuilder";
+
+    /// <summary><c>new CancellationTokenSource(delay?)</c> (<c>utils/cancellation.ts</c>).</summary>
+    public const string CancellationSource = "$eq.cancellation.source";
+
+    /// <summary><c>CancellationToken.None</c>, which is also <c>default(CancellationToken)</c>.</summary>
+    public const string CancellationNone = "$eq.cancellation.none";
+
+    /// <summary><c>new CancellationToken(canceled)</c>: the one cancelled token, or the one that never is.</summary>
+    public const string CancellationToken = "$eq.cancellation.token";
+
+    /// <summary><c>CancellationTokenSource.CreateLinkedTokenSource(…)</c>.</summary>
+    public const string CancellationLinked = "$eq.cancellation.linked";
+
+    /// <summary><c>default(CancellationTokenRegistration)</c>: the registration of nothing, whose token
+    /// is <c>None</c>.</summary>
+    public const string CancellationRegistration = "$eq.cancellation.registration";
     public const string DateTime = "$eq.time.dateTime";
     public const string TimeSpan = "$eq.time.timeSpan";
     public const string DateTimeOffset = "$eq.time.dateTimeOffset";
@@ -256,6 +281,11 @@ public static class Eq
     /// twin has no generated <c>with</c>, and a spread would drop its prototype and its methods.</summary>
     public const string With = "$eq.withPatch";
 
+    /// <summary>A twin's JSON, as System.Text.Json writes the C# value: the twin's own properties, a
+    /// property's store (<c>$name</c>) written under the property's name and read through it (#591).
+    /// What a twin that keeps a store answers <c>toJSON</c> with.</summary>
+    public const string Json = "$eq.json";
+
     /// <summary>Structural (value) equality for records/structs/tuples — backs ==, Contains, Distinct.
     /// <c>new</c> because this table names JS HELPERS, and one of them is called what
     /// <c>object</c> calls a method — hiding it is the point, and saying so is what stops the
@@ -305,6 +335,65 @@ public static class Eq
     /// <summary><c>HashSet&lt;T&gt;.Add</c>, which answers whether the value was NEW — a JS
     /// <c>Set.add</c> returns the set, so the toggle idiom silently stops removing.</summary>
     public const string SetAdd = "$eq.collections.setAdd";
+
+    /// <summary><c>new HashSet&lt;T&gt;(…)</c>: the runtime's set, its elements found by the element
+    /// type's equality and held by slot as .NET's are (#438, #531). Args: the equality, then what the
+    /// constructor is handed, if anything.</summary>
+    public const string HashSet = "$eq.collections.hashSet";
+    /// <summary>A set an initializer or a collection expression builds: made empty, each element added.
+    /// Args: the elements, then the equality where it is not identity.</summary>
+    public const string HashSetOf = "$eq.collections.hashSetOf";
+    /// <summary>A tuple's <c>Equals</c>, generated from its element types' equalities (#425).</summary>
+    public const string TupleEquality = "$eq.collections.tupleEquality";
+    /// <summary>An anonymous type's <c>Equals</c>, generated from its members' equalities.</summary>
+    public const string MemberEquality = "$eq.collections.memberEquality";
+
+    /// <summary><c>List&lt;T&gt;.IndexOf</c> and its ranges, by the element type's equality (#425).</summary>
+    public const string ListIndexOf = "$eq.collections.indexOf";
+    /// <summary><c>List&lt;T&gt;.LastIndexOf</c> and its ranges, by the element type's equality.</summary>
+    public const string ListLastIndexOf = "$eq.collections.lastIndexOf";
+    /// <summary><c>Array.IndexOf</c> and its ranges, by the element type's equality.</summary>
+    public const string ArrayIndexOf = "$eq.collections.arrayIndexOf";
+    /// <summary><c>Array.LastIndexOf</c> and its ranges, by the element type's equality.</summary>
+    public const string ArrayLastIndexOf = "$eq.collections.arrayLastIndexOf";
+    /// <summary><c>List&lt;T&gt;.Find</c>: the first match, or the element type's default (#488).</summary>
+    public const string ListFind = "$eq.collections.find";
+    /// <summary><c>List&lt;T&gt;.FindLast</c>: the last match, or the element type's default.</summary>
+    public const string ListFindLast = "$eq.collections.findLast";
+    /// <summary><c>List&lt;T&gt;.FindIndex</c> over a range, checked as .NET checks it.</summary>
+    public const string ListFindIndex = "$eq.collections.findIndex";
+    /// <summary><c>List&lt;T&gt;.FindLastIndex</c> over a range, checked as .NET checks it.</summary>
+    public const string ListFindLastIndex = "$eq.collections.findLastIndex";
+    /// <summary><c>Array.Find</c>, which refuses a null array first.</summary>
+    public const string ArrayFind = "$eq.collections.arrayFind";
+    /// <summary><c>Array.FindLast</c>.</summary>
+    public const string ArrayFindLast = "$eq.collections.arrayFindLast";
+    /// <summary><c>Array.FindIndex</c> and its ranges.</summary>
+    public const string ArrayFindIndex = "$eq.collections.arrayFindIndex";
+    /// <summary><c>Array.FindLastIndex</c> and its ranges.</summary>
+    public const string ArrayFindLastIndex = "$eq.collections.arrayFindLastIndex";
+    /// <summary><c>List&lt;T&gt;.RemoveAll</c>: .NET's single pass, answering how many it removed.</summary>
+    public const string ListRemoveAll = "$eq.collections.removeAll";
+    /// <summary><c>List&lt;T&gt;.CopyTo(array)</c> and <c>CopyTo(array, arrayIndex)</c>, into the array handed.</summary>
+    public const string ListCopyTo = "$eq.collections.copyTo";
+    /// <summary><c>List&lt;T&gt;.CopyTo(index, array, arrayIndex, count)</c>.</summary>
+    public const string ListCopyRangeTo = "$eq.collections.copyRangeTo";
+    /// <summary>A type's default comparer for a sort or a search: its ordering and .NET's helper for it.</summary>
+    public const string SortOrder = "$eq.collections.order";
+    /// <summary>A <c>StringComparer</c> handed to a sort or a search, by its <c>StringComparison</c>.</summary>
+    public const string StringOrder = "$eq.collections.stringOrder";
+    /// <summary>An <c>IComparer&lt;T&gt;</c> value handed to a sort or a search, or the default for a null one.</summary>
+    public const string ComparerOrder = "$eq.collections.comparerOrder";
+    /// <summary><c>List&lt;T&gt;.Sort()</c>, <c>Sort(IComparer)</c> and <c>Sort(index, count, IComparer)</c>: .NET's introsort.</summary>
+    public const string ListSort = "$eq.collections.listSort";
+    /// <summary><c>List&lt;T&gt;.Sort(Comparison)</c>.</summary>
+    public const string ListSortBy = "$eq.collections.listSortBy";
+    /// <summary><c>Array.Sort(array)</c>, <c>(array, IComparer)</c> and <c>(array, index, length, IComparer)</c>.</summary>
+    public const string ArraySort = "$eq.collections.arraySort";
+    /// <summary><c>Array.Sort(array, Comparison)</c>.</summary>
+    public const string ArraySortBy = "$eq.collections.arraySortBy";
+    /// <summary><c>List&lt;T&gt;.BinarySearch</c>: .NET's midpoint, the complement of the insertion point for a miss.</summary>
+    public const string ListBinarySearch = "$eq.collections.binarySearch";
 
     /// <summary><c>List&lt;T&gt;.Remove</c>: takes out the first item <c>EqualityComparer&lt;T&gt;.Default</c>
     /// finds equal to the value, and answers whether there was one (#400).</summary>
@@ -357,6 +446,11 @@ public static class Eq
     /// <summary>What a <c>throw</c> statement throws when its exception may be null: the exception, or the
     /// NullReferenceException the CLR throws in its place.</summary>
     public const string Thrown = "$eq.exceptions.thrown";
+
+    /// <summary>The TypeInitializationException a type whose static initializers or static constructor
+    /// threw throws on every use from then on, the first included. Two args: the type's full name, and
+    /// the exception the initializer threw, its InnerException.</summary>
+    public const string TypeInitialization = "$eq.exceptions.typeInitialization";
 
     /// <summary>An exception filter, <c>when (…)</c>: the filter's answer, or false where it throws, as
     /// .NET answers it. One arg: the filter, as a function.</summary>

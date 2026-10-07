@@ -42,9 +42,7 @@ public class ConstructorInjectionTests
     private static string Transpile(string source)
     {
         var tree = CSharpSyntaxTree.ParseText(source, path: "DependentPage.cs");
-        var usings = CSharpSyntaxTree.ParseText(
-            "global using System;\nglobal using System.Collections.Generic;\nglobal using System.Linq;",
-            path: "GlobalUsings.g.cs");
+        var usings = SdkImplicitUsings.Tree();
 
         var references = ((string)AppContext.GetData("TRUSTED_PLATFORM_ASSEMBLIES")!)
             .Split(Path.PathSeparator)
@@ -68,9 +66,7 @@ public class ConstructorInjectionTests
     private static string TranspileAll(string source)
     {
         var tree = CSharpSyntaxTree.ParseText(source, path: "DependentPage.cs");
-        var usings = CSharpSyntaxTree.ParseText(
-            "global using System;\nglobal using System.Collections.Generic;\nglobal using System.Linq;",
-            path: "GlobalUsings.g.cs");
+        var usings = SdkImplicitUsings.Tree();
 
         var references = ((string)AppContext.GetData("TRUSTED_PLATFORM_ASSEMBLIES")!)
             .Split(Path.PathSeparator)

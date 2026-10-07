@@ -1,9 +1,10 @@
 export class MarkdownBulletMatch {
-    constructor(props?: any) {
-        if (props && typeof props === 'object') Object.assign(this, props);
+    constructor() {
+        this.marker = '•';
+        this.content = '';
     }
 
-    marker: string = '•';
-    content: string = '';
+    marker!: string;
+    content!: string;
 }
 

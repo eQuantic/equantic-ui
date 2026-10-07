@@ -281,6 +281,9 @@ public class TypeScriptEmitter
     private static readonly HashSet<string> RuntimeValueTypes = new(StringComparer.Ordinal)
     {
         "DateTime", "DateOnly", "TimeOnly", "TimeSpan", "DateTimeOffset", "Decimal",
+        // The cancellation trio (utils/cancellation.ts): built through `$eq.cancellation`, named by
+        // the parameter a provider takes its token in.
+        "CancellationToken", "CancellationTokenSource", "CancellationTokenRegistration",
     };
 
     /// <summary>
@@ -356,16 +359,32 @@ public class TypeScriptEmitter
                 // the class. Skipped for primitives' INSTANCE fields, whose base ctor sets every prop via
                 // Object.assign — an uninitialised instance field would clobber that after super(); a static
                 // field is class-level and carries its own initializer, so it is always safe.
+                // A component's statics initialize as any type's do (TypeInitializer, #417): when one
+                // of them can observe another, each starts at its zero and they run in declaration
+                // order on first use. A primitive keeps its fields, as its statics are its tag's.
+                // The statics are collected in ONE pass, in declaration order (TypeInitializer.Stores):
+                // every field and then every property ran a property's initializer after a field's
+                // written below it.
+                var orderedStatics = !component.IsPrimitive && component.ClassSyntax is { } staticsOf
+                    && TypeInitializer.Orders(staticsOf, ModelFor);
+                _converter.SetCurrentClass(component.Name);
+                var initializedStatics = orderedStatics
+                    ? TypeInitializer.Collect(component.ClassSyntax!, type => DeclarationType(component, type.ToString()),
+                        type => ValueTypeDefault(type.ToString(), type) ?? "null", StaticValue)
+                    : [];
+                var slots = initializedStatics.Select(member => member.Name).ToHashSet(StringComparer.Ordinal);
                 if (component.ComponentFields.Count > 0)
                 {
                     _converter.SetCurrentClass(component.Name);
                     foreach (var field in component.ComponentFields)
                     {
                         if (component.IsPrimitive && !field.IsStatic) continue;
+                        // A static that initializes in order is its slot's, and holds no field.
+                        if (field.IsStatic && slots.Contains(field.Name.ToCamelCase())) continue;
                         var tsType = DeclarationType(component, field.Type);
-                        var tsDefault = field.DefaultValueNode != null
-                            ? Initializer(field.DefaultValueNode, _converter.ConvertExpression(field.DefaultValueNode, field.Type))
-                            : null;
+                        var tsDefault = field.DefaultValueNode is not { Parent: EqualsValueClauseSyntax given } ? null
+                            : field.IsStatic && field.TypeNode is { } declared ? StaticValue(given, declared)
+                            : Initializer(given.Value, _converter.ConvertExpression(given.Value, field.Type));
                         // C# value types default without an initializer (`private int _count;` is 0);
                         // an uninitialized TS field is `undefined` and would poison arithmetic (NaN).
                         tsDefault ??= ValueTypeDefault(field.Type, field.TypeNode);
@@ -514,7 +533,20 @@ public class TypeScriptEmitter
                 {
                     // Computed/get-set/static properties become real TS members (auto-props flow through
                     // the base Object.assign(props) instead).
-                    EmitComponentProperties(component, c);
+                    EmitComponentProperties(component, c, slots);
+                    if (orderedStatics)
+                    {
+                        component.UsedHelpers.Add(Eq.Import);
+                        foreach (var member in TypeInitializer.Members(component.ClassSyntax!, component.Name, initializedStatics,
+                                     _converter, Lowering, TypeAnnotations, _converter.Layout))
+                            c.Member(member, member.Origin?.Member);
+                    }
+                    if (component.ClassSyntax is { } indexed)
+                    {
+                        _converter.SetCurrentClass(component.Name);
+                        foreach (var indexer in indexed.Members.OfType<IndexerDeclarationSyntax>())
+                            EmitIndexer(indexer, c);
+                    }
 
                     // Constructor: assign positional params, apply auto-property defaults (only when a prop
                     // wasn't supplied — the base ctor's Object.assign runs first), then run the C# ctor body.
@@ -531,7 +563,11 @@ public class TypeScriptEmitter
                     // written with. Only the block was read, so `public Chart(x) => _x = x;` emitted a
                     // constructor that assigned nothing and left the field undefined.
                     var hasCtorBody = ctorDef?.BodyNode != null || ctorDef?.ExpressionBodyNode != null;
-                    if (ctorParams.Count > 0 || autoDefaults.Count > 0 || hasCtorBody)
+                    // A type with a static constructor runs it before its first instance, so the twin has
+                    // a constructor to start it in (TypeInitializer.StartedIn) whether or not C# wrote one:
+                    // without, `new Dial()` ran the static constructor never.
+                    var startsOnConstruction = orderedStatics && TypeInitializer.HasStaticConstructor(component.ClassSyntax!);
+                    if (ctorParams.Count > 0 || autoDefaults.Count > 0 || hasCtorBody || startsOnConstruction)
                     {
                         // C# optional parameters keep their defaults as JS default parameters
                         // (`variant: any = 'primary'`) — without them `new Button("x")` would run the
@@ -713,6 +749,11 @@ public class TypeScriptEmitter
 
                 _converter.SetCurrentClass(component.Name);
                 EmitInheritedDefaults(component.ClassSyntax, c);
+
+                // A static constructor runs before the first instance and the first use of any
+                // static member, a method included, and not only before the first read of a static.
+                if (orderedStatics && TypeInitializer.HasStaticConstructor(component.ClassSyntax!))
+                    c.Rewrite(member => TypeInitializer.StartedIn(member, component.Name, slots));
             }, component.TypeParameters);
 
         // Generate component code without imports
@@ -1061,6 +1102,11 @@ public class TypeScriptEmitter
         // parseEnum) are emitted as `$eq.*` and provided by the global `$eq` namespace, so they are
         // NOT imported here. Only the remaining runtime utilities (e.g. StyleBuilder/ClassBuilder,
         // tracked in UsedHelpers by RuntimeUtilityStrategy) are imported.
+        // `$eq` itself is imported wherever the body names it, whoever wrote the name: a strategy that
+        // writes a `$eq.*` call without registering the import (a dictionary's ContainsValue handed a
+        // generated tuple equality, a hydration map's `byValue`) is otherwise a module that fails to
+        // load on "$eq is not defined", which this emitter has met more than once.
+        if (referenced.Contains(Eq.Import)) coreImports.Add(Eq.Import);
         foreach (var helper in component.UsedHelpers)
         {
             coreImports.Add(helper);
@@ -1450,7 +1496,8 @@ public class TypeScriptEmitter
     /// becomes a static field. Pure instance auto-properties are intentionally NOT emitted — the base
     /// Object.assign(props) populates them (with the ctor applying any default).
     /// </summary>
-    private void EmitComponentProperties(ComponentDefinition component, TypeScriptCodeBuilder.ClassBuilder c)
+    private void EmitComponentProperties(ComponentDefinition component, TypeScriptCodeBuilder.ClassBuilder c,
+        IReadOnlySet<string> slots)
     {
         foreach (var prop in component.Properties)
         {
@@ -1491,7 +1538,9 @@ public class TypeScriptEmitter
                         // holds its initializer or its type's default from the start, as a static
                         // auto-property's does: declared on the instance, the slot they wrote did not
                         // exist, and declared alone it read undefined until the first write (#483).
-                        if (prop.IsStatic && StaticInitial(component, prop) is { } initial)
+                        // A store that initializes in order is its slot, and the accessors read it.
+                        if (prop.IsStatic && slots.Contains(slot)) { }
+                        else if (prop.IsStatic && StaticInitial(component, prop) is { } initial)
                             c.Field(slot, DeclarationType(component, prop.Type), initial, node, isStatic: true);
                         else
                             c.Field(slot, DeclarationType(component, prop.Type), null, node, isStatic: prop.IsStatic, isDeclare: true);
@@ -1522,7 +1571,11 @@ public class TypeScriptEmitter
                 // emitted TYPE-ONLY — the declaration restores type checking on `this.x` without emitting
                 // runtime code that would clobber the assigned value under useDefineForClassFields.
                 _converter.SetCurrentClass(component.Name);
-                if (prop.IsStatic)
+                if (prop.IsStatic && slots.Contains(name))
+                {
+                    // Its slot's, in the type initializer.
+                }
+                else if (prop.IsStatic)
                 {
                     c.Field(name, DeclarationType(component, prop.Type), StaticInitial(component, prop), node, isStatic: true);
                 }
@@ -1542,8 +1595,8 @@ public class TypeScriptEmitter
     /// </summary>
     private string? StaticInitial(ComponentDefinition component, PropertyDefinition prop)
     {
-        var initial = prop.DefaultValueNode != null
-            ? Initializer(prop.DefaultValueNode, _converter.ConvertExpression(prop.DefaultValueNode, prop.Type))
+        var initial = prop.DefaultValueNode is { Parent: EqualsValueClauseSyntax given } && prop.Node is { } declared
+            ? StaticValue(given, declared.Type)
             : ValueTypeDefault(prop.Type, prop.Node?.Type);
         if (initial is not null && initial.Contains("$eq.")) component.UsedHelpers.Add(Eq.Import);
         return initial;
@@ -1563,7 +1616,7 @@ public class TypeScriptEmitter
     /// <para>
     /// <see cref="TypeScriptCodeBuilder.ClassBuilder.Field"/> asks this question for the members it
     /// writes, but the members written through <c>Raw</c> — getters, setters, abstract and declare
-    /// members, lazy statics — each have to ask it themselves, and for a long time none of them did.
+    /// members, a type initializer's slots — each have to ask it themselves, and for a long time none of them did.
     /// A leaked <c>: T</c> is not a cosmetic problem in that mode: the browser rejects the module at
     /// parse time, so nothing in the file runs and the only symptom is an empty frame.
     /// </para>
@@ -1580,13 +1633,23 @@ public class TypeScriptEmitter
         var name = cls.Identifier.Text;
         if (!asStatic) EmitInstanceConstructor(cls, c);
 
+            // A type whose statics can observe one another starts each at its zero and initializes
+            // them in declaration order on first use (TypeInitializer, #417). A static that
+            // CONSTRUCTS something kept a lazy getter of its own, which survived the library's import
+            // cycles (its modules import each other through one barrel, and whichever loads first
+            // sees the other's class as undefined) but initialized each static on its own first read,
+            // in no order, and again whenever it held null. The type initializer is lazy too, so the
+            // cycle is survived as it was. The statics are collected in ONE pass, in declaration order
+            // (TypeInitializer.Stores): every field and then every property ran a property's
+            // initializer after a field's written below it.
+            var ordered = TypeInitializer.Orders(cls, ModelFor);
+            _converter.SetCurrentClass(name);
+            var initialized = ordered ? TypeInitializer.Collect(cls, DeclaredType, DefaultOf, StaticValue) : [];
+            var slots = initialized.Select(member => member.Name).ToHashSet(StringComparer.Ordinal);
             foreach (var f in cls.Members.OfType<FieldDeclarationSyntax>())
             {
                 foreach (var v in f.Declaration.Variables)
                 {
-                    var def = v.Initializer != null
-                        ? Initializer(v.Initializer.Value, _converter.ConvertExpression(v.Initializer.Value, f.Declaration.Type.ToString()))
-                        : null;
                     // The TYPE is emitted either way. Without it every field of a plain class is
                     // implicitly `any`, and the first thing that goes is the checking the whole
                     // two-layer design exists for.
@@ -1598,28 +1661,15 @@ public class TypeScriptEmitter
                         || f.Modifiers.Any(Microsoft.CodeAnalysis.CSharp.SyntaxKind.StaticKeyword)
                         || f.Modifiers.Any(Microsoft.CodeAnalysis.CSharp.SyntaxKind.ConstKeyword);
                     var fieldName = v.Identifier.Text.ToCamelCase();
-                    // A static field that CONSTRUCTS something runs at module-evaluation time, and
-                    // the library's modules import each other through one barrel: whichever loads
-                    // first sees the other's class as undefined. C# initialises a type's statics on
-                    // FIRST USE, so a lazy getter is both the faithful translation and the only one
-                    // that survives the cycle. (`static x = 0` stays a field: nothing to break.)
-                    if (isStaticMember && def is not null && NeedsLazyInit(def))
-                    {
-                        var slot = $"_{fieldName}";
-                        // Raw output, so the annotation gate Field() applies has to be applied by
-                        // hand. In plain-JavaScript mode this text is run by a browser, where
-                        // `static _x: T | undefined;` is a syntax error that takes the WHOLE module
-                        // with it — one static collection in a helper class blanked the preview and
-                        // reported only "Unexpected strict mode reserved word".
-                        c.Member(JsClassMember.Field("static ", slot, Annotation($"{DeclaredType(f.Declaration.Type)} | undefined")), v);
-                        c.Member(JsClassMember.Getter("static ", fieldName, Annotation(DeclaredType(f.Declaration.Type)),
-                            JsStatement.Raw($"return {name}.{slot} ??= {def};")), v);
-                    }
-                    else
-                    {
-                        c.Field(fieldName, DeclaredType(f.Declaration.Type),
-                            isStaticMember ? def : null, v, isStatic: isStaticMember);
-                    }
+                    // A static that initializes in order is its slot's, and holds no field.
+                    if (isStaticMember && slots.Contains(fieldName)) continue;
+                    // An instance field is state, declared and started with the class's other state, in
+                    // declaration order (InstanceState, #571, #582).
+                    if (!isStaticMember) continue;
+                    var def = v.Initializer is { } given ? StaticValue(given, f.Declaration.Type) : null;
+                    // A static with no initializer holds its type's zero, as C# starts it (#417):
+                    // `static int Count;` read undefined, and its first `++` made it NaN.
+                    c.Field(fieldName, DeclaredType(f.Declaration.Type), def ?? DefaultOf(f.Declaration.Type), v, isStatic: true);
                 }
             }
             foreach (var p in cls.Members.OfType<PropertyDeclarationSyntax>())
@@ -1652,25 +1702,27 @@ public class TypeScriptEmitter
                     // The slot has to exist before the getter names it — see FieldExpressionStrategy
                     // for why it is called `$name` (a name no C# field can take).
                     var backed = Strategies.Expressions.FieldExpressionStrategy.UsesBackingField(p);
-                    if (backed)
+                    var isStaticProperty = accessorQualifier.Length > 0;
+                    if (backed && isStaticProperty)
                     {
                         var slot = Strategies.Expressions.FieldExpressionStrategy.BackingSlot(p);
                         // The store starts as the property's initializer, which C# writes into it
                         // directly, or as its type's default. The initializer was dropped: the
                         // accessors are emitted, so nothing below writes it (#483).
-                        var slotDefault = p.Initializer != null
-                            ? Initializer(p.Initializer.Value, _converter.ConvertExpression(p.Initializer.Value, p.Type.ToString()))
-                            : DefaultOf(p.Type);
                         // On the class for a static property, where its accessors' `this` is the
                         // class: on the instance, a static `field` read undefined (#483).
-                        var slotIsStatic = accessorQualifier.Length > 0;
-                        if (slotDefault == "null")
+                        // A store that initializes in order is its slot, and the accessors read it.
+                        if (!slots.Contains(slot))
                         {
-                            if (CanDeclareTypeOnly)
-                                c.Member(JsClassMember.Field(slotIsStatic ? "declare static " : "declare ", slot, $": {DeclaredType(p.Type)}"), p);
+                            var slotDefault = p.Initializer is { } given ? StaticValue(given, p.Type) : DefaultOf(p.Type);
+                            if (slotDefault == "null")
+                            {
+                                if (CanDeclareTypeOnly)
+                                    c.Member(JsClassMember.Field("declare static ", slot, $": {DeclaredType(p.Type)}"), p);
+                            }
+                            else
+                                c.Field(slot, DeclaredType(p.Type), slotDefault, p, isStatic: true);
                         }
-                        else
-                            c.Field(slot, DeclaredType(p.Type), slotDefault, p, isStatic: slotIsStatic);
                         // An automatic getter reads the store. Without one the class fell to the
                         // auto-property's field below, named like the property, which shadows the
                         // setter: a write skipped it, and `Total = 3` read back 3 where C# reads 6.
@@ -1678,48 +1730,57 @@ public class TypeScriptEmitter
                             c.Member(JsClassMember.Getter(accessorQualifier, pn, Annotation(DeclaredType(p.Type)),
                                 JsStatement.Return(JsExpr.ThisMember(slot))), p);
                     }
+                    // An instance property that keeps a store, which the constructor starts with the
+                    // class's other state (InstanceState), reads and writes it through accessors
+                    // (EmitCompilerAccessors, below).
+                    var stored = !isStaticProperty && PropertyStore.KeepsAStore(p);
 
                     // A property guarding a store has its accessors, and no field of its name.
-                    if (EmitGetter(p, c, accessorQualifier) || backed) { }
-                    else if (p.Initializer != null)
-                        c.Field(pn, DeclaredType(p.Type),
-                            Initializer(p.Initializer.Value, _converter.ConvertExpression(p.Initializer.Value, p.Type.ToString())), p,
-                            isStatic: asStatic || p.Modifiers.Any(Microsoft.CodeAnalysis.CSharp.SyntaxKind.StaticKeyword));
-                    // An AUTO-property — `{ get; set; }`, `{ get; private set; }`, `{ get; }` — is a
-                    // field with a name. Emitting nothing for it left the class without the member
-                    // its own constructor assigns: `Property 'readOnly' does not exist`.
+                    if (EmitGetter(p, c, accessorQualifier) || backed || stored) { }
+                    // A static that initializes in order is its slot's.
+                    else if (isStaticProperty && slots.Contains(pn)) { }
+                    // An instance auto-property is state, declared and started with the class's other
+                    // state, in declaration order (InstanceState, #582).
+                    else if (!isStaticProperty) { }
+                    else if (p.Initializer is { } initial)
+                        c.Field(pn, DeclaredType(p.Type), StaticValue(initial, p.Type), p, isStatic: true);
+                    // A static AUTO-property — `{ get; set; }`, `{ get; private set; }`, `{ get; }` — is a
+                    // field with a name, holding its type's default until something assigns it: `static
+                    // bool ReadOnly { get; set; }` IS false, and undefined is not false to `===`.
                     else
-                    {
-                        // A VALUE type carries its C# default — `public bool ReadOnly { get; set; }`
-                        // IS false before anyone assigns it, and leaving it undefined is not false
-                        // to `===`. A reference type is DECLARED only: its C# default is null, but
-                        // the declared type is non-nullable and the constructor is what assigns.
-                        var defaulted = DefaultOf(p.Type);
-                        var isStaticProperty = asStatic
-                            || p.Modifiers.Any(Microsoft.CodeAnalysis.CSharp.SyntaxKind.StaticKeyword);
-                        if (defaulted == "null" && !isStaticProperty)
-                        {
-                            if (CanDeclareTypeOnly) c.Member(JsClassMember.Field("declare ", pn, $": {DeclaredType(p.Type)}"), p);
-                        }
-                        else
-                            c.Field(pn, DeclaredType(p.Type), defaulted, p, isStatic: isStaticProperty);
-                    }
+                        c.Field(pn, DeclaredType(p.Type), DefaultOf(p.Type), p, isStatic: true);
 
                     EmitSetter(p, c, accessorQualifier);
                 }
+                if (accessorQualifier.Length == 0) EmitCompilerAccessors(p, c);
             }
             // `event Action<T>? Changed;` — a member the model raises and a caller subscribes to.
             // Nothing emitted it, so `this.changed?.(edit)` reached a property that did not exist.
+            // A static one is a static like any other where the type initializes in order: a
+            // subscription is a use of the type, which runs its static constructor first, and the
+            // handlers that constructor adds come before the subscriber's, as in .NET. As a plain
+            // field, it was subscribed to before the constructor ran.
             foreach (var e in cls.Members.OfType<EventFieldDeclarationSyntax>())
             {
+                var isStaticEvent = asStatic || e.Modifiers.Any(Microsoft.CodeAnalysis.CSharp.SyntaxKind.StaticKeyword);
                 foreach (var v in e.Declaration.Variables)
                 {
-                    c.Field(v.Identifier.Text.ToCamelCase(), DeclaredType(e.Declaration.Type), "null", v,
-                        isStatic: asStatic || e.Modifiers.Any(Microsoft.CodeAnalysis.CSharp.SyntaxKind.StaticKeyword));
+                    if (isStaticEvent && slots.Contains(v.Identifier.Text.ToCamelCase())) continue;
+                    // An instance one is state, declared and started with the class's other state
+                    // (InstanceState).
+                    if (isStaticEvent) c.Field(v.Identifier.Text.ToCamelCase(), DeclaredType(e.Declaration.Type), "null", v, isStatic: true);
                 }
+            }
+            if (ordered)
+            {
+                _converter.UsedHelpers.Add(Eq.Import);
+                foreach (var member in TypeInitializer.Members(cls, name, initialized, _converter, Lowering, TypeAnnotations, _converter.Layout))
+                    c.Member(member, member.Origin?.Member);
             }
             foreach (var m in cls.Members.OfType<MethodDeclarationSyntax>())
                 EmitClassMethod(m, c, asStatic);
+            foreach (var indexer in cls.Members.OfType<IndexerDeclarationSyntax>())
+                EmitIndexer(indexer, c);
             // USER-DEFINED OPERATORS — the same family a record's twin already carries, and for the
             // same reason: JavaScript cannot overload an operator, so the call site lowers `a + b`
             // on two in-source objects to `T.opAdd(a, b)` whatever kind of type T is. It did that
@@ -1758,8 +1819,30 @@ public class TypeScriptEmitter
                 c.Member(JsClassMember.Method("static ", convName, "", convPar, "", convBody), conversion);
             }
 
+            // A twin that keeps a store (PropertyStore, #591) writes it in JSON under its property's
+            // name, read through the property, as System.Text.Json writes the property: JSON.stringify
+            // writes an object's own properties, so a server action received `$name` and bound nothing.
+            // A derived class inherits it.
+            if (!asStatic && cls.Members.OfType<PropertyDeclarationSyntax>().Any(PropertyStore.KeepsAStore))
+            {
+                _converter.UsedHelpers.Add(Eq.Import);
+                c.Member(JsClassMember.Method("", "toJSON", "", "", "",
+                    JsStatement.Return(JsExpr.Call(JsExpr.Opaque(Eq.Json), JsExpr.This))), cls);
+            }
+
             EmitExtensionBlocks(cls, c);
+
+            // A static constructor runs before the first instance and the first use of any static
+            // member, a method included, and not only before the first read of a static.
+            if (ordered && TypeInitializer.HasStaticConstructor(cls))
+                c.Rewrite(member => TypeInitializer.StartedIn(member, name, slots));
     }
+
+    /// <summary>A static's initializer: its VALUE where C# folds it to a constant
+    /// (<see cref="TypeInitializer.Constant"/>), and the expression converted otherwise.</summary>
+    private string StaticValue(EqualsValueClauseSyntax initializer, TypeSyntax type) =>
+        TypeInitializer.Constant(initializer, ModelFor(initializer), _converter)
+        ?? Initializer(initializer.Value, _converter.ConvertExpression(initializer.Value, type.ToString()));
 
     /// <summary>
     /// A property's getter where it has one with a body: its expression body, or its get
@@ -1809,11 +1892,34 @@ public class TypeScriptEmitter
                 Lowering.AccessorBody(setter.Body)), setter);
     }
 
+    /// <summary>
+    /// The accessors the compiler writes for an instance property (<see cref="PropertyStore.CompilerAccessors"/>,
+    /// #591): over the store of one that keeps one, and the half an override inherits, forwarded to
+    /// <c>super</c>. A record's twin takes the same ones. The accessors C# writes a body for are lowered by
+    /// <see cref="EmitGetter"/> and <see cref="EmitSetter"/>.
+    /// </summary>
+    private void EmitCompilerAccessors(PropertyDeclarationSyntax p, TypeScriptCodeBuilder.ClassBuilder c)
+    {
+        var annotation = Annotation(DeclaredType(p.Type));
+        foreach (var accessor in PropertyStore.CompilerAccessors(p, ModelFor(p), annotation, $"value{annotation}"))
+            c.Member(accessor, p);
+    }
+
     /// <summary>A method of a class module, or of a component's twin when an interface's default
     /// supplies it.</summary>
     private void EmitClassMethod(MethodDeclarationSyntax m, TypeScriptCodeBuilder.ClassBuilder c, bool asStatic)
     {
         if (Lowering.Method(m, asStatic, DeclaredType, returns: TupleReturn) is { } member) c.Member(member, m);
+    }
+
+    /// <summary>
+    /// An instance indexer as the methods every element access bound to it calls, <c>item</c> and
+    /// <c>setItem</c> (#427), in a class, a component, or a default an interface supplies. It was
+    /// written into no twin, and `grid[3]` read a property named "3" that nothing had.
+    /// </summary>
+    private void EmitIndexer(IndexerDeclarationSyntax indexer, TypeScriptCodeBuilder.ClassBuilder c)
+    {
+        foreach (var member in Lowering.Indexer(indexer, DeclaredType)) c.Member(member, member.Origin?.Member ?? indexer);
     }
 
     /// <summary>A vocabulary default the class takes from the interface's ASSEMBLY, where eqc has no
@@ -1852,12 +1958,6 @@ public class TypeScriptEmitter
             return;
         foreach (var (implementation, member, _) in DefaultInterfaceMembers.Of(self, model.Compilation))
         {
-            if (implementation is IPropertySymbol { IsIndexer: true })
-            {
-                _converter.Report(declaration, ConversionSeverity.Error, "EQ1008",
-                    DefaultInterfaceMembers.NoIndexer(self, implementation));
-                continue;
-            }
             if (member is not null && ModelFor(member) is { } memberModel
                 && DefaultInterfaceMembers.InterfaceStaticIn(member, memberModel) is { } reached)
             {
@@ -1877,6 +1977,10 @@ public class TypeScriptEmitter
                     break;
                 case MethodDeclarationSyntax method when method.Body != null || method.ExpressionBody != null:
                     _converter.InFileOf(method, () => EmitClassMethod(method, c, asStatic: false));
+                    break;
+                // A default indexer, as the class's own is written (#427).
+                case IndexerDeclarationSyntax indexer:
+                    _converter.InFileOf(indexer, () => EmitIndexer(indexer, c));
                     break;
                 case null when DefaultInterfaceMembers.RuntimeCarries(implementation.ContainingType):
                     EmitDelegatedDefault(implementation, c);
@@ -2007,74 +2111,74 @@ public class TypeScriptEmitter
     }
 
     /// <summary>
-    /// The user-declared constructors of a plain class, plus the field initialisers that C# runs
-    /// before them. JS has ONE constructor, so overloads collapse to the widest; a class that
-    /// declares none still needs one, or its initialised fields would never be assigned.
+    /// A plain class's constructor: its C# constructors as the twin's one (<see cref="TwinConstructor"/>,
+    /// #583), the builder a record's twin is built with, which starts the class's state
+    /// (<see cref="InstanceState"/>) and runs its base's constructor with its own arguments. It kept the
+    /// widest constructor, a trailing config object assigned last and a `super()` with no arguments:
+    /// `Money() : this(100)` built a Money of no cents, `: base(x * 2)` passed the base nothing, and a
+    /// primary constructor was not read at all, its first argument taken for the config. An object
+    /// initializer is applied by the construction site once the constructor returns, as C# applies it.
     /// </summary>
     private void EmitInstanceConstructor(ClassDeclarationSyntax cls, TypeScriptCodeBuilder.ClassBuilder c)
     {
-        // Each initialiser and each statement of the body is its own statement, carrying the C# it
-        // came from, so a frame thrown in one leads to its line (#293).
-        var initialisers = new List<JsStatement>();
-        foreach (var field in cls.Members.OfType<FieldDeclarationSyntax>())
+        var twin = new TwinConstructor(_converter, Lowering, ModelFor, TypeAnnotations, _converter.Layout, DeclaredType);
+        var clause = cls.BaseList?.Types.OfType<PrimaryConstructorBaseTypeSyntax>().FirstOrDefault();
+        var state = InstanceState(cls);
+        c.Member(twin.Build(cls, state.Select(member => twin.StartOf(member.Slot, member.Declaration, member.TsType)).ToList(),
+            HasEmittedBase(cls), clause, first: null), cls);
+        // The same members, each a class field JavaScript defines on the instance before the constructor
+        // writes it, so the write never reaches an accessor of its name (ClassBuilder.State). A store
+        // a base's twin already defines is declared for TypeScript only: defined again, it would be
+        // undefined once `super()` returned, until the constructor wrote it (TypeScript refuses that,
+        // TS2612).
+        foreach (var member in state)
         {
-            // `const` is static in C#. Assigning one per instance shadowed the class member the
-            // subclasses read, so `StateNormal` was undefined on the class and 0 on the instance.
-            if (field.Modifiers.Any(Microsoft.CodeAnalysis.CSharp.SyntaxKind.StaticKeyword)
-                || field.Modifiers.Any(Microsoft.CodeAnalysis.CSharp.SyntaxKind.ConstKeyword)) continue;
-            foreach (var variable in field.Declaration.Variables)
+            if (member.DefinedByBase) c.Field(member.Slot, member.TsType, null, member.Declaration, isDeclare: true);
+            else c.State(member.Slot, member.TsType, member.Declaration);
+        }
+    }
+
+    /// <summary>One member of a plain class's instance state: the slot it lives in on each instance, what
+    /// TypeScript reads it as, the C# that declares it, and whether a base's twin defines the slot, as it
+    /// does the store an override shares with the property it overrides.</summary>
+    private readonly record struct InstanceMember(string Slot, string TsType, SyntaxNode Declaration, bool DefinedByBase = false);
+
+    /// <summary>
+    /// What a plain class's constructor starts, in the order C# starts it (#571, #582): the primary
+    /// constructor's parameters a member reads, which C# holds before anything runs, then each instance
+    /// field, auto-property, store of a property that keeps one (<see cref="PropertyStore"/>), and
+    /// field-like event, in declaration order, its initializer or its type's default. A field's and a
+    /// property's alike: the property's was a class field with its initializer, which ran before every
+    /// field's initializer the constructor wrote, and in a derived class after its base's constructor.
+    /// </summary>
+    private IReadOnlyList<InstanceMember> InstanceState(ClassDeclarationSyntax cls)
+    {
+        var state = new List<InstanceMember>();
+        var model = ModelFor(cls);
+        foreach (var parameter in cls.ParameterList?.Parameters ?? default)
+            if (cls.HoldsParameter(parameter, model))
+                state.Add(new(parameter.Identifier.ValueText.ToCamelCase(), DeclaredType(parameter.Type), parameter));
+        foreach (var member in cls.Members)
+        {
+            if (member.Modifiers.Any(Microsoft.CodeAnalysis.CSharp.SyntaxKind.StaticKeyword)
+                || member.Modifiers.Any(Microsoft.CodeAnalysis.CSharp.SyntaxKind.ConstKeyword)) continue;
+            switch (member)
             {
-                // A field with NO initializer still has a value in C#: its type's default. Skipping
-                // it left the member `undefined` — a `bool` that was neither true nor false, which
-                // `!flag` reads as true and `flag === false` as false, and which tsc refuses to
-                // compile at all (TS2564) the moment nothing in the constructor assigns it. The
-                // component path has answered this from the type for a while (FieldDefaultTests);
-                // a plain class is the same C#.
-                var value = variable.Initializer is { } init
-                    ? Initializer(init.Value, _converter.InBlock(() => _converter.ConvertExpression(init.Value, field.Declaration.Type.ToString())))
-                    : ValueTypeDefault(field.Declaration.Type.ToString(), field.Declaration.Type);
-                if (value is null) continue;
-                if (value.Contains("$eq.")) _converter.UsedHelpers.Add(Eq.Import);
-                // The SAME casing the field declaration uses, or the constructor writes a second,
-                // differently-spelled member beside the one every read goes through.
-                initialisers.Add(JsStatement.Raw($"this.{variable.Identifier.Text.ToCamelCase()} = {value};") with { Origin = variable });
+                case FieldDeclarationSyntax field:
+                    foreach (var variable in field.Declaration.Variables)
+                        state.Add(new(variable.Identifier.Text.ToCamelCase(), DeclaredType(field.Declaration.Type), variable));
+                    break;
+                case EventFieldDeclarationSyntax handler:
+                    foreach (var variable in handler.Declaration.Variables)
+                        state.Add(new(variable.Identifier.Text.ToCamelCase(), DeclaredType(handler.Declaration.Type), variable));
+                    break;
+                case PropertyDeclarationSyntax property when PropertyStore.SlotOf(property) is { } slot:
+                    state.Add(new(slot, DeclaredType(property.Type), property,
+                        PropertyStore.KeepsAStore(property) && PropertyStore.BaseKeepsTheStore(property, model)));
+                    break;
             }
         }
-
-        var ctor = cls.Members.OfType<ConstructorDeclarationSyntax>()
-            .Where(x => !x.Modifiers.Any(Microsoft.CodeAnalysis.CSharp.SyntaxKind.StaticKeyword))
-            .OrderByDescending(x => x.ParameterList.Parameters.Count)
-            .FirstOrDefault();
-
-        var parameters = ctor is null
-            ? ""
-            : string.Join(", ", ctor.ParameterList.Parameters.Select(p =>
-                Lowering.ParamWithDefault(p.Identifier.Text.ToJsIdentifier(), DeclaredType(p.Type),
-                    p.Default is null ? null : _converter.ConvertExpression(p.Default.Value),
-                    p.Modifiers.Any(Microsoft.CodeAnalysis.CSharp.SyntaxKind.ParamsKeyword))));
-
-        IReadOnlyList<JsStatement> body = ctor?.Body is { } block
-            ? _converter.ConvertBlockIr(block) switch
-            {
-                JsBlock converted => converted.Statements,
-                var other => [other],
-            }
-            : ctor?.ExpressionBody is { } expression
-                ? Lowering.ExpressionBody(expression.Expression, returns: false).Statements
-                : [];
-
-        // `new Editor(text) { ReadOnly = true }` — an object initialiser is an ordinary way to
-        // construct one of these, and it arrives as a trailing config object exactly as it does for
-        // a component. A constructor that did not take one made the emitted call arity-wrong.
-        var configName = ConfigParameter(ctor?.ParameterList.Parameters.Select(p => p.Identifier.Text.ToJsIdentifier()) ?? [],
-            ctor?.ParameterList);
-        var config = parameters.Length == 0 ? OptionalParam(configName, "any") : $", {OptionalParam(configName, "any")}";
-        // A derived class must call super() before it touches `this`.
-        JsStatement[] superCall = HasEmittedBase(cls) ? [JsStatement.Raw("super();")] : [];
-        c.Member(JsClassMember.Constructor($"{parameters}{config}", JsStatement.Block([
-                .. superCall, .. initialisers, .. body,
-                JsStatement.Raw($"if ({configName} && typeof {configName} === 'object') Object.assign(this, {configName});")])),
-            ctor ?? (SyntaxNode)cls);
+        return state;
     }
 
     /// <summary>
@@ -2165,13 +2269,9 @@ public class TypeScriptEmitter
         {
             foreach (var argument in generic.TypeArguments.SelectMany(Nested))
             {
-                var crossesAs = argument.TypeKind switch
-                {
-                    TypeKind.Interface => "any",
-                    TypeKind.Enum => IsFlags(argument) ? "number" : EnumUnion(argument),
-                    _ => null,
-                };
-                if (crossesAs is null) continue;
+                // An exception and a delegate are the same defect two kinds along (TsStandIn):
+                // `Action<Exception>` named an `Exception` no module defines.
+                if (TsStandIn.Inside(argument, _converter.UsedRuntimeTypes) is not { } crossesAs) continue;
                 mapped = System.Text.RegularExpressions.Regex.Replace(
                     mapped, $@"\b{System.Text.RegularExpressions.Regex.Escape(argument.Name)}\b", crossesAs);
             }
@@ -2179,10 +2279,9 @@ public class TypeScriptEmitter
 
         var core = (echoed ? resolved : null) switch
         {
-            // An enum crosses as its member STRING — unless it is [Flags], whose members COMBINE
-            // and therefore cross as the number the bitwise operators need.
-            { TypeKind: TypeKind.Enum } => IsFlags(resolved!) ? "number" : EnumUnion(resolved!),
-            { TypeKind: TypeKind.Interface } => "any",
+            // An enum crosses as its member STRING (or the number a [Flags] one combines into), an
+            // interface as any, an exception as Error and a delegate as its function: TsStandIn.
+            { } kind when TsStandIn.For(kind, _converter.UsedRuntimeTypes) is { } standIn => standIn,
             { TypeKind: TypeKind.TypeParameter } => resolved!.Name,
             // A name nothing here can VERIFY is a name the module may not resolve. Annotating with
             // it trades a missing type for a broken one, so it stays open.
@@ -2218,22 +2317,18 @@ public class TypeScriptEmitter
     }
 
     /// <summary>
-    /// What a non-flags enum is called on the other side. The runtime mirrors every VOCABULARY enum
-    /// as a string union named <c>&lt;Enum&gt;Value</c>, and declaring that union instead of a bare
-    /// <c>string</c> is what lets a component FORWARD its own enum property into a vocabulary slot:
-    /// `string` is wider than the slot, so the twin stopped compiling the first time a component
-    /// passed one on (a rail's alignment, straight into a Column's `main`). Comparing against enum
-    /// MEMBERS never needed it, which is why it took this long to surface.
+    /// What a non-flags VOCABULARY enum is called on the other side, or null when the enum is an
+    /// app's own, the one question every emission path asks (TsStandIn). The runtime mirrors every
+    /// vocabulary enum as a string union named <c>&lt;Enum&gt;Value</c>, and declaring that union
+    /// instead of a bare <c>string</c> is what lets a component FORWARD its own enum property into a
+    /// vocabulary slot: `string` is wider than the slot, so the twin stopped compiling the first time
+    /// a component passed one on (a rail's alignment, straight into a Column's `main`). Comparing
+    /// against enum MEMBERS never needed it, which is why it took this long to surface.
     /// <para>
-    /// An APP's own enum has no union in the runtime — it still crosses as its member string, which
-    /// is exactly what it is.
+    /// An APP's own enum has no union in the runtime — it crosses as its member string, which is
+    /// exactly what it is.
     /// </para>
     /// </summary>
-    private string EnumUnion(ITypeSymbol type) =>
-        VocabularyUnionFor(type) is { } union ? Union(type.Name) : "string";
-
-    /// <summary>The union name for a VOCABULARY enum, or null when the enum is an app's own — the
-    /// one question three emission paths ask (components, plain classes, records).</summary>
     internal static string? VocabularyUnionFor(ITypeSymbol type) =>
         RuntimeProvidedTypeScanner.IsVocabularyNamespace(type.ContainingNamespace?.ToDisplayString() ?? "")
             ? $"{type.Name}Value"
@@ -2312,19 +2407,6 @@ public class TypeScriptEmitter
     /// <summary>Whether the class extends one this compilation EMITS — an interface in the base
     /// list is not a base class, and calling super() for one would call Object's.</summary>
     private bool HasEmittedBase(ClassDeclarationSyntax cls) => BaseClassOf(cls) is not null;
-
-    /// <summary>Whether a bare NAME is something the emitted module can actually name: a type this
-    /// compilation emits, or one the runtime provides.</summary>
-    /// <summary>
-    /// Whether an initialiser has to wait for first USE. Anything that NAMES another module — by
-    /// constructing it, calling it, or just reading one of its members — is unsafe at
-    /// module-evaluation time, because the library's modules import each other through one barrel
-    /// and whichever loads first sees the other as undefined. Only a self-contained literal is
-    /// safe where it stands, so that is what the test asks for.
-    /// </summary>
-    private static bool NeedsLazyInit(string initialiser) =>
-        !System.Text.RegularExpressions.Regex.IsMatch(initialiser.Trim(),
-            @"^(-?\d+(\.\d+)?|'[^']*'|""[^""]*""|`[^`]*`|true|false|null|undefined|\[\]|\{\})$");
 
     /// <summary>Whether the per-app scan knows this name became one of the app's OWN modules — the
     /// only kind a <c>./Name</c> import may point at.</summary>

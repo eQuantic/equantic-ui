@@ -429,7 +429,8 @@ public static class PatternConverter
     private static bool LowersToAJsClass(INamedTypeSymbol type)
     {
         if (Services.RuntimeProvidedTypeScanner.IsTranspiledNamespace(
-                type.ContainingNamespace?.ToDisplayString() ?? ""))
+                type.ContainingNamespace?.ToDisplayString() ?? "")
+            || type.TwinIsTranspiled())
             return true;
         for (var baseType = type.BaseType; baseType != null; baseType = baseType.BaseType)
         {
