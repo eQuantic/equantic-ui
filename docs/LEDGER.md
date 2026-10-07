@@ -1593,6 +1593,17 @@ record of a release, the wiki's Upgrading page is the distillate.
   and curly-brace parsers and the SDK's strings, which search a char from a start, now throw where
   the same C# throws on the server. Proposed and archived through OpenSpec
   (`openspec/specs/transpiler-bcl`).
+- **2026-10-07 · A null-conditional answers null, and a method group reads its receiver once**: a
+  null-conditional read that is JavaScript's optional chain was `undefined` in the browser where C#
+  answers `null`, and the two part ways where the value is used: a parameter typed `T | null` refuses
+  it in the runtime's build, JSON drops the key, and a dictionary looking for null missed it
+  ([#633](https://github.com/eQuantic/equantic-ui/issues/633)). It answers null there now, and stays a
+  bare chain where nothing can tell (a call that returns nothing, a statement, the left of a `??`, the
+  tail of another chain). A method group bound to a receiver that is a call ran the call twice,
+  `c.make().value.bind(c.make())` answering 4 where .NET answers 2
+  ([#619](https://github.com/eQuantic/equantic-ui/issues/619)); the bind is a template that reads the
+  receiver once. Two twins move, `CodeDiffLayout` and `Spreadsheet`. Proposed and archived through
+  OpenSpec (`openspec/specs/transpiler-expressions`).
 
 ## Retired documents
 
