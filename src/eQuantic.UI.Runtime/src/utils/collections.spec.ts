@@ -13,6 +13,8 @@ import {
   add,
   clear,
   count,
+  item,
+  setItem,
 } from './collections';
 
 describe('Queue<T> — FIFO', () => {
@@ -230,5 +232,34 @@ describe("ICollection<T>'s Add and Clear, as the collection behind the interface
     expect(count(twin)).toBe(1);
     clear(twin);
     expect(count(twin)).toBe(0);
+  });
+});
+
+// A list face's indexer (IList<T>, IReadOnlyList<T>), which reaches the runtime with whichever list the
+// face holds when it runs (#586): a subscript was all it had, which a twin does not answer.
+describe("a list face's indexer, as the list behind the face answers it", () => {
+  it('reads and writes an array or an array-like by subscript, a twin by item and setItem', () => {
+    const array = [1, 2, 3];
+    expect(item(array, 1)).toBe(2);
+    expect(setItem(array, 1, 5)).toBe(5);
+    expect(array).toEqual([1, 5, 3]);
+    const held = [7, 8, 9];
+    const twin = {
+      item: (index: number) => held[index],
+      setItem: (index: number, value: number) => {
+        held[index] = Math.min(value, 10);
+      },
+      get count() {
+        return held.length;
+      },
+    };
+    expect(item(twin, 2)).toBe(9);
+    expect(setItem(twin, 0, 42)).toBe(42);
+    expect(held[0]).toBe(10);
+    expect(count(twin)).toBe(3);
+    const typed = new Float64Array([1, 2]);
+    expect(item(typed, 1)).toBe(2);
+    expect(setItem(typed, 0, 3)).toBe(3);
+    expect(typed[0]).toBe(3);
   });
 });

@@ -370,6 +370,38 @@ export function clear(collection: unknown): void {
   else (collection as { clear(): void }).clear();
 }
 
+/** What may stand behind a list's face: an array, or a twin, whose indexer is `item` and `setItem`. */
+type Indexed<T> = {
+  [index: number]: T;
+  item?: (index: number) => T;
+  setItem?: (index: number, value: T) => unknown;
+};
+
+/**
+ * An element read through a list's face (`IList<T>`, `IReadOnlyList<T>`), for whichever list the face
+ * holds when the read runs (#586): an array, which stands for a `List<T>` and a `T[]`, by its subscript,
+ * and a twin of the app's own by its indexer's getter, `item` (#427). The subscript alone read a
+ * property named after the index, which no twin has. Anything else indexed, a typed array a hand-written
+ * caller handed over, is read by its subscript as before.
+ */
+export function item<T>(list: unknown, index: number): T {
+  const indexed = list as Indexed<T>;
+  return Array.isArray(list) || typeof indexed.item !== 'function'
+    ? indexed[index]
+    : indexed.item(index);
+}
+
+/**
+ * The write beside {@link item}: an array's subscript, or a twin's indexer setter, `setItem`. It answers
+ * the value written, as C#'s assignment does, whatever the setter does with its own copy.
+ */
+export function setItem<T>(list: unknown, index: number, value: T): T {
+  const indexed = list as Indexed<T>;
+  if (Array.isArray(list) || typeof indexed.setItem !== 'function') indexed[index] = value;
+  else indexed.setItem(index, value);
+  return value;
+}
+
 /**
  * LINQ's Zip: pairs run out with the SHORTER sequence. A `map` over the receiver instead walks the
  * longer one and hands the selector `undefined` for the missing partner, which for numbers is a

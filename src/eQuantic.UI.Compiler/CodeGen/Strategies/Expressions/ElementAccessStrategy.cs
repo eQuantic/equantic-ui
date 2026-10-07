@@ -36,7 +36,9 @@ public class ElementAccessStrategy : IExpressionIrStrategy
         }
 
         // An INSTANCE indexer a twin carries (#427) reads through its getter, `receiver.item(keys)`:
-        // a subscript read a property named after the key, which no twin had. A DICTIONARY READ fails
+        // a subscript read a property named after the key, which no twin had. A list face's indexer
+        // (IList<T>, IReadOnlyList<T>) reads through the runtime, an array's subscript and a twin's
+        // getter alike, whichever the face holds (#586). A DICTIONARY READ fails
         // for a key that is not there, where the class's own `get` answers `undefined`, so the absence
         // would spread through the program instead of stopping it where .NET stops it. Only a READ: the
         // same syntax on the left of an assignment is how a key is ADDED. Both are a Place's read.

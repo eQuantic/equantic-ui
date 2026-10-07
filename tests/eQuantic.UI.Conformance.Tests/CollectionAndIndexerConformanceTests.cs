@@ -157,6 +157,90 @@ public class CollectionAndIndexerConformanceTests
     public void ICollectionsAddAndClear_ReachAClassOfTheAppsOwn(string name, bool typeAnnotations) =>
         ModuleGraph.AssertSameAsDotNet(Bags, typeAnnotations, BagCases.Single(c => c.Name == name));
 
+    private const string Lists = """
+        using System.Collections;
+        using System.Collections.Generic;
+
+        public class Ring : IReadOnlyList<int>
+        {
+            private readonly int[] _v = { 7, 8, 9 };
+            public int Count => _v.Length;
+            public int this[int i] => _v[i];
+            public IEnumerator<int> GetEnumerator() { foreach (var v in _v) yield return v; }
+            IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+        }
+
+        public class Cells : IList<int>
+        {
+            public static string Text = "";
+            private readonly List<int> _v = new() { 1, 2, 3 };
+            public int Count => _v.Count;
+            public bool IsReadOnly => false;
+            public int this[int i] { get { Text += "g" + i; return _v[i]; } set { Text += "s" + i; _v[i] = value; } }
+            public int IndexOf(int item) => _v.IndexOf(item);
+            public void Insert(int index, int item) => _v.Insert(index, item);
+            public void RemoveAt(int index) => _v.RemoveAt(index);
+            public void Add(int item) => _v.Add(item);
+            public void Clear() => _v.Clear();
+            public bool Contains(int item) => _v.Contains(item);
+            public void CopyTo(int[] array, int arrayIndex) => _v.CopyTo(array, arrayIndex);
+            public bool Remove(int item) => _v.Remove(item);
+            public IEnumerator<int> GetEnumerator() { foreach (var v in _v) yield return v; }
+            IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+            public static IList<int> R(IList<int> l) { Text += "R"; return l; }
+            public static int At(string step, int value) { Text += step; return value; }
+        }
+
+        public class Shelf
+        {
+            public IList<int> L { get; } = new Cells();
+        }
+
+        public static class Sums
+        {
+            public static int Of(IReadOnlyList<int> xs) { var s = 0; for (var i = 0; i < xs.Count; i++) s += xs[i]; return s; }
+        }
+        """;
+
+    private static readonly (string Name, string Statements)[] ListCases =
+    [
+        // 19: the twin's item and count, where a subscript and a length answered undefined
+        ("the row of #586", "IReadOnlyList<int> r = new Ring(); return r[0] + r[2] + r.Count;"),
+        // 97
+        ("a read from the end", "IReadOnlyList<int> r = new Ring(); return r[^1] * 10 + r[^3];"),
+        // 30: a twin, an array and a list through one parameter
+        ("a parameter typed as the interface", "return Sums.Of(new Ring()) + Sums.Of(new[] { 1, 2 }) + Sums.Of(new List<int> { 3 });"),
+        // "5|4|4"
+        ("a read, a write, a compound and a step through IList<T>", "IList<int> l = new Cells(); l[0] = 5; l[1] += 2; l[2]++; return l[0] + \"|\" + l[1] + \"|\" + l[2];"),
+        // "7|7"
+        ("a write answers the value written", "IList<int> l = new Cells(); var y = (l[0] = 7); return y + \"|\" + l[0];"),
+        // "3|6"
+        ("a write from the end", "IList<int> l = new Cells(); l[^1] = 6; l[^2] += 1; return l[1] + \"|\" + l[2];"),
+        // "RKVs0": the receiver, the key, the value, then the setter
+        ("a write's order", "Cells.Text = \"\"; IList<int> l = new Cells(); Cells.R(l)[Cells.At(\"K\", 0)] = Cells.At(\"V\", 4); return Cells.Text;"),
+        // "RKg1Vs1|4"
+        ("a compound's order", "Cells.Text = \"\"; IList<int> l = new Cells(); Cells.R(l)[Cells.At(\"K\", 1)] += Cells.At(\"V\", 2); return Cells.Text + \"|\" + l[1];"),
+        // "8|-1"
+        ("a null-conditional read", "IReadOnlyList<int> r = new Ring(); IReadOnlyList<int> none = null; return (r?[1] ?? -1) + \"|\" + (none?[1] ?? -1);"),
+        // 9: an object initializer's entry written through the twin's setter, read back through its own indexer
+        ("an object initializer's entry", "var s = new Shelf { L = { [0] = 9 } }; return ((Cells)s.L)[0];"),
+        // 19: an array and a list behind the interfaces keep their subscript
+        ("an array and a list behind the interfaces", "IList<int> l = new List<int> { 1, 2 }; l[0] = 5; l[1] += 2; IReadOnlyList<int> a = new[] { 1, 2, 3 }; return l[0] + l[1] + l[^1] + a[^1] + a.Count;"),
+    ];
+
+    public static TheoryData<string, bool> ListCaseNames() => Each(ListCases);
+
+    /// <summary>
+    /// An access through the indexer of a BCL interface (<c>IReadOnlyList&lt;T&gt;</c>, <c>IList&lt;T&gt;</c>)
+    /// reaches a twin's <c>item</c> and <c>setItem</c> (#427), and an array's subscript, whichever the
+    /// interface holds when it runs, its count alike. It was a subscript, which a twin does not answer:
+    /// <c>r[0] + r[2] + r.Count</c> over a twin was null where .NET says 19 (#586).
+    /// </summary>
+    [SkippableTheory]
+    [MemberData(nameof(ListCaseNames))]
+    public void AnIndexerOfABclInterface_ReachesTheTwinBehindIt(string name, bool typeAnnotations) =>
+        ModuleGraph.AssertSameAsDotNet(Lists, typeAnnotations, ListCases.Single(c => c.Name == name));
+
     /// <summary>Each case by its name, in the SDK's TypeScript and in plain JavaScript.</summary>
     private static TheoryData<string, bool> Each(IEnumerable<(string Name, string Statements)> cases)
     {

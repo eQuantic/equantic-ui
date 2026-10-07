@@ -278,6 +278,16 @@ public static class TypeSymbolExtensions
             || def.StartsWith("System.Collections.Generic.HashSet");
     }
 
+    /// <summary>
+    /// Whether <paramref name="type"/> is a LIST'S FACE: <c>IList&lt;T&gt;</c>, <c>IReadOnlyList&lt;T&gt;</c>
+    /// or the non-generic <c>IList</c>. An array and a list are arrays on this side and answer one through
+    /// a subscript and a <c>length</c>, but a twin of the app's own implements the face as readily, and
+    /// answers through its <c>item</c>, its <c>setItem</c> and its <c>count</c> (#586).
+    /// </summary>
+    internal static bool IsListFace(this ITypeSymbol? type) =>
+        type?.OriginalDefinition.ToDisplayString() is "System.Collections.Generic.IList<T>"
+            or "System.Collections.Generic.IReadOnlyList<T>" or "System.Collections.IList";
+
     /// <summary>The element type of an array or <c>IEnumerable&lt;T&gt;</c>, or <c>null</c>.</summary>
     public static ITypeSymbol? GetEnumerableElementType(this ITypeSymbol? collectionType)
     {

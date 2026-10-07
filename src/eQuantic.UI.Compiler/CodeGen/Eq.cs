@@ -408,6 +408,14 @@ public static class Eq
     /// empties itself (#593).</summary>
     public const string CollectionClear = "$eq.collections.clear";
 
+    /// <summary>A list face's indexer read (<c>IList&lt;T&gt;</c>, <c>IReadOnlyList&lt;T&gt;</c>), for the
+    /// list the face holds when it runs: an array's subscript, a twin's <c>item</c> (#586).</summary>
+    public const string ListItem = "$eq.collections.item";
+
+    /// <summary>A list face's indexer write, an array's subscript or a twin's <c>setItem</c>, which answers
+    /// the value written, as C#'s assignment does (#586).</summary>
+    public const string ListSetItem = "$eq.collections.setItem";
+
     /// <summary><c>EqualityComparer&lt;T&gt;.Default</c> for a type compared by reference or by its own
     /// <c>Equals</c>: identity, NaN equal to NaN, and a twin's own <c>equals</c>.</summary>
     public const string SameItem = "$eq.collections.sameItem";

@@ -120,6 +120,8 @@ import {
   remove,
   add as collectionAdd,
   clear as collectionClear,
+  item as listItem,
+  setItem as listSetItem,
   sameItem,
   pairComparer,
   count,
@@ -413,6 +415,9 @@ export const $eq = {
     /** `ICollection<T>`'s `Add` and `Clear`, for whichever collection the interface holds (#593). */
     add: collectionAdd,
     clear: collectionClear,
+    /** A list face's indexer, read and written, for an array and a twin alike (#586). */
+    item: listItem,
+    setItem: listSetItem,
     sameItem,
     pairComparer,
     /** `new HashSet<T>(…)`, and a set an initializer or a collection expression builds. */

@@ -7,10 +7,10 @@ namespace eQuantic.UI.Compiler.CodeGen.Strategies;
 /// <summary>
 /// A <c>Count</c> read, as the browser's form of its receiver answers it: a dictionary's and a set's
 /// <c>size</c>, the runtime queue's, stack's, linked list's and sorted set's <c>count</c>, the helper
-/// that reads either an array or a Set for a face both answer to (<c>ICollection</c>), the own
-/// <c>count</c> of a type the app or a library it references declares, and an array's <c>length</c>
-/// for .NET's own types, which the browser holds as one (a list, a lookup), and for a receiver the
-/// model cannot type.
+/// that reads an array, a Set or a twin for a face more than one of them answers to (<c>ICollection</c>,
+/// <c>IReadOnlyList</c>), the own <c>count</c> of a type the app or a library it references declares,
+/// and an array's <c>length</c> for .NET's own types, which the browser holds as one (a list, a
+/// lookup), and for a receiver the model cannot type.
 /// <para>
 /// ONE table, for a member access and a property pattern alike. Each kept its own, and a pattern
 /// counted a set by <c>length</c> while the member read beside it said <c>size</c>, so
@@ -26,8 +26,9 @@ internal static class CountSpelling
 
         // A receiver typed only as a collection may be a Set at run time, whose count is `size`.
         // `.length` on one is undefined, and `undefined > 0` is false, so the header checkbox
-        // simply never noticed a selection.
-        if (type.HasOpenCollectionShape())
+        // simply never noticed a selection. One typed as a list's face may be a twin of the app's own,
+        // whose count is its `count` (#586): an IReadOnlyList<T> over one counted undefined.
+        if (type.HasOpenCollectionShape() || type.IsListFace())
         {
             context.UsedHelpers.Add(Eq.Import);
             return JsExpr.Call(JsExpr.Identifier(Eq.Count), receiver);

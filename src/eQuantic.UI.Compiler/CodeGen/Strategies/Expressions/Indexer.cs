@@ -83,15 +83,26 @@ internal static class Indexer
             || declaring.TwinIsTranspiled();
     }
 
+    /// <summary>
+    /// Whether an indexer is a list FACE's (<c>IList&lt;T&gt;</c>, <c>IReadOnlyList&lt;T&gt;</c>,
+    /// <c>IList</c>), which the interface reaches on whatever implements it when the access runs: an
+    /// array's subscript and a twin's <c>item</c> alike, through the runtime (#586). It was a subscript,
+    /// which an array answers and a twin does not, so a twin read through the face was undefined.
+    /// </summary>
+    public static bool IsListFace(IPropertySymbol? indexer) =>
+        indexer is { IsIndexer: true, IsStatic: false } && indexer.ContainingType.IsListFace();
+
     /// <summary>The indexer this lowering carries that the bound tree binds an element access to, or
     /// null: an access written with its receiver, a null-conditional's binding or an object
     /// initializer's entry, and a from-the-end key over a type that counts its elements, which C#
-    /// binds to its <c>this[int]</c> (<c>ring[^1]</c> is <c>ring[ring.Count - 1]</c>).</summary>
+    /// binds to its <c>this[int]</c> (<c>ring[^1]</c> is <c>ring[ring.Count - 1]</c>). A twin's own
+    /// indexer, and a list face's, which the <see cref="Place"/> reads through the runtime.</summary>
     public static IPropertySymbol? LoweredAt(SyntaxNode access, ConversionContext context) =>
         context.SemanticHelper.GetOperation(access) switch
         {
-            IPropertyReferenceOperation { Property: var property } when IsLowered(property) => property,
-            IImplicitIndexerReferenceOperation { IndexerSymbol: IPropertySymbol property } when IsLowered(property) => property,
+            IPropertyReferenceOperation { Property: var property } when IsLowered(property) || IsListFace(property) => property,
+            IImplicitIndexerReferenceOperation { IndexerSymbol: IPropertySymbol property }
+                when IsLowered(property) || IsListFace(property) => property,
             _ => null,
         };
 }
