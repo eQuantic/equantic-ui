@@ -181,6 +181,12 @@ public static class Eq
     /// <summary>A string's own <c>LastIndexOf</c> by a comparison, with its start and count,
     /// normalized as .NET's <c>CompareInfo</c> normalizes them.</summary>
     public const string StringLastIndexOf = "$eq.text.lastIndexOf";
+    /// <summary>A string's own <c>IndexOf(char, startIndex[, count])</c>: ordinal, the start and the
+    /// count checked as .NET 10 checks a char's search.</summary>
+    public const string StringIndexOfChar = "$eq.text.indexOfChar";
+    /// <summary>A string's own <c>LastIndexOf(char, startIndex[, count])</c>: ordinal, -1 for an empty
+    /// string, and a start that stands on a char of the string.</summary>
+    public const string StringLastIndexOfChar = "$eq.text.lastIndexOfChar";
     /// <summary>A string's own <c>Contains(value, comparisonType)</c>, and the char overload.</summary>
     public const string StringContains = "$eq.text.contains";
     /// <summary>A string's own <c>Replace(oldValue, newValue[, comparisonType])</c>: the replacement
@@ -203,6 +209,22 @@ public static class Eq
     /// and <c>X</c> writes a negative one at its type's width (#445).</summary>
     public const string AsInteger = "$eq.text.asInteger";
     public const string StringBuilder = "$eq.text.stringBuilder";
+
+    /// <summary><c>new CancellationTokenSource(delay?)</c> (<c>utils/cancellation.ts</c>).</summary>
+    public const string CancellationSource = "$eq.cancellation.source";
+
+    /// <summary><c>CancellationToken.None</c>, which is also <c>default(CancellationToken)</c>.</summary>
+    public const string CancellationNone = "$eq.cancellation.none";
+
+    /// <summary><c>new CancellationToken(canceled)</c>: the one cancelled token, or the one that never is.</summary>
+    public const string CancellationToken = "$eq.cancellation.token";
+
+    /// <summary><c>CancellationTokenSource.CreateLinkedTokenSource(…)</c>.</summary>
+    public const string CancellationLinked = "$eq.cancellation.linked";
+
+    /// <summary><c>default(CancellationTokenRegistration)</c>: the registration of nothing, whose token
+    /// is <c>None</c>.</summary>
+    public const string CancellationRegistration = "$eq.cancellation.registration";
     public const string DateTime = "$eq.time.dateTime";
     public const string TimeSpan = "$eq.time.timeSpan";
     public const string DateTimeOffset = "$eq.time.dateTimeOffset";
@@ -258,6 +280,11 @@ public static class Eq
     /// <summary>C# <c>with</c> over a runtime VALUE TYPE (TypeStyle, ColorToken) — a hand-written
     /// twin has no generated <c>with</c>, and a spread would drop its prototype and its methods.</summary>
     public const string With = "$eq.withPatch";
+
+    /// <summary>A twin's JSON, as System.Text.Json writes the C# value: the twin's own properties, a
+    /// property's store (<c>$name</c>) written under the property's name and read through it (#591).
+    /// What a twin that keeps a store answers <c>toJSON</c> with.</summary>
+    public const string Json = "$eq.json";
 
     /// <summary>Structural (value) equality for records/structs/tuples — backs ==, Contains, Distinct.
     /// <c>new</c> because this table names JS HELPERS, and one of them is called what
@@ -419,6 +446,11 @@ public static class Eq
     /// <summary>What a <c>throw</c> statement throws when its exception may be null: the exception, or the
     /// NullReferenceException the CLR throws in its place.</summary>
     public const string Thrown = "$eq.exceptions.thrown";
+
+    /// <summary>The TypeInitializationException a type whose static initializers or static constructor
+    /// threw throws on every use from then on, the first included. Two args: the type's full name, and
+    /// the exception the initializer threw, its InnerException.</summary>
+    public const string TypeInitialization = "$eq.exceptions.typeInitialization";
 
     /// <summary>An exception filter, <c>when (…)</c>: the filter's answer, or false where it throws, as
     /// .NET answers it. One arg: the filter, as a function.</summary>

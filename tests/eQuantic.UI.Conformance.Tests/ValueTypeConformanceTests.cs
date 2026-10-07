@@ -6,8 +6,8 @@ namespace eQuantic.UI.Conformance.Tests;
 /// <summary>
 /// Conformance for the broader user value types beyond positional records: <b>body records</b>
 /// (declared with property members, constructed via an object initializer) and <b>plain structs</b>.
-/// Both emit as named JS classes; construction maps the initializer to the constructor by member order,
-/// with per-member defaults for omitted ones.
+/// Both emit as named JS classes; a construction runs the C# constructor, then applies the object
+/// initializer to what it built (#413).
 /// </summary>
 public class ValueTypeConformanceTests
 {

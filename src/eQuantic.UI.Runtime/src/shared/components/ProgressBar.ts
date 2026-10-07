@@ -2,8 +2,8 @@ import { $eq, Box, BoxStyle, BuildContext, CornerRadii, Flexible, LoopMotion, Pr
 
 export class ProgressBar extends StatefulComponent {
     static $typeId = 'eQuantic.UI.Components.ProgressBar';
-    static sweepFromX: number = -Math.fround(0.35);
-    static sweepToX: number = Math.fround(1.05);
+    static sweepFromX: number = -0.3499999940395355;
+    static sweepToX: number = 1.0499999523162842;
     static sweepDurationMs: number = 1200;
     _snapNext: boolean = false;
     _prominent: boolean = false;

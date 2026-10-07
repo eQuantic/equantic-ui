@@ -1,3 +1,6 @@
 #nullable enable
 eQuantic.UI.Primitives.BoxStyle.Pressed.get -> eQuantic.UI.Primitives.StyleDiff?
 eQuantic.UI.Primitives.BoxStyle.Pressed.init -> void
+const eQuantic.UI.Primitives.Touch.MinPointerTarget = 24 -> float
+eQuantic.UI.Primitives.TwinIsTranspiledAttribute
+eQuantic.UI.Primitives.TwinIsTranspiledAttribute.TwinIsTranspiledAttribute() -> void

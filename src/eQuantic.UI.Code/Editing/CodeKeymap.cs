@@ -35,21 +35,51 @@ public static class CodeKeymap
     {
         var shift = (modifiers & KeyModifiers.Shift) != 0;
         var command = (modifiers & KeyModifiers.Command) != 0;
+        var control = (modifiers & KeyModifiers.Control) != 0;
         var alt = (modifiers & KeyModifiers.Alt) != 0;
         var apple = convention == KeyboardConvention.Apple;
 
         // ---- the Tab trap --------------------------------------------------------------------
         // An editor TAKES Tab, which is the point — and a keyboard user must still be able to leave
         // it. Escape is the door (the handoff's rule for every editing surface): it releases the
-        // trap, so the NEXT Tab moves focus on instead of indenting. Unclaimed, so the host can go on
-        // meaning what Escape means around the editor. Any other key re-arms the trap; a modifier on
-        // its own is not "another key", or Shift+Tab could never leave backwards.
+        // trap (below), so the NEXT Tab moves focus on instead of indenting. Any other key re-arms
+        // it, and does so before anything else here can claim the key: the list's own keys and
+        // ⌃Space return early, and re-arming after them left Escape, ⌃Space, Escape (the list asked
+        // for, then closed) with Tab leaving the editor. A modifier on its own is not "another key",
+        // or Shift+Tab could never leave backwards.
+        if (key != "Tab" && key != "Escape" && !IsModifierKey(key)) editor.TabMovesFocus = false;
+
+        // ---- an open completion list ---------------------------------------------------------
+        // While a list shows, the keys that walk it are ITS keys: the arrows and the page keys step
+        // through it, Tab accepts, and Escape closes it, only it, so the trap on Tab stays armed and
+        // a dialog around the editor stays open. An arrow goes back to the caret when one entry
+        // shows, as VS Code has it. Enter accepts only what would change the text: a word typed out
+        // in full ends its line (the list closes as the caret leaves it).
+        var completion = editor.Completion;
+        if (completion.IsOpen && !command && !control && !alt)
+        {
+            if (key == "ArrowDown" && !shift && completion.Move(1)) return true;
+            if (key == "ArrowUp" && !shift && completion.Move(-1)) return true;
+            if (key == "PageDown" && !shift && completion.MovePage(1)) return true;
+            if (key == "PageUp" && !shift && completion.MovePage(-1)) return true;
+            if (key == "Tab" && completion.Accept()) return true;
+            if (key == "Enter" && completion.AcceptChangesText && completion.Accept()) return true;
+            if (key == "Escape") return completion.Dismiss();
+        }
+
+        // ⌃Space, which a browser reports as the command key and a Mac's own shell as Control: asks
+        // for the list where the caret is. Before the chords, which would take a space as a letter.
+        if (key == " " && (command || control) && !shift && !alt) return completion.Invoke();
+
+        // Escape with no list showing releases the trap, unclaimed, so the host can go on meaning
+        // what Escape means around the editor.
         if (key == "Escape")
         {
+            // A list asked for and not yet showing is dropped: Escape means it was not wanted.
+            completion.Dismiss();
             editor.TabMovesFocus = true;
             return false;
         }
-        if (key != "Tab" && !IsModifierKey(key)) editor.TabMovesFocus = false;
 
         // ---- the chords ------------------------------------------------------------------------
         if (command && key.Length == 1)

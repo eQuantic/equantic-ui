@@ -28,10 +28,14 @@ export const IAppTheme = {
 export const ICodeLanguage = {
   /** `CodeLanguageRules Rules => CodeLanguageRules.Default;` */
   rules: (_language: unknown): CodeLanguageRules => CodeLanguageRules.default,
+  /** `IReadOnlyList<string> Keywords => [];` — a language that only wants colours offers no words. */
+  keywords: (_language: unknown): string[] => [],
 };
 
 /** `ICodeCompletionProvider`'s defaults. */
 export const ICodeCompletionProvider = {
-  /** `IReadOnlyList<char> TriggerCharacters => ['.'];` — a new list per read, as C#'s is. */
-  triggerCharacters: (_provider: unknown): string[] => ['.'],
+  /** `IReadOnlyList<char> TriggerCharacters => [];` — a new list per read, as C#'s is. */
+  triggerCharacters: (_provider: unknown): string[] => [],
+  /** `Task<CodeCompletionItem> ResolveAsync(item, cancellation) => Task.FromResult(item);` */
+  resolveAsync: <T>(_provider: unknown, item: T, _cancellation?: unknown): Promise<T> => Promise.resolve(item),
 };

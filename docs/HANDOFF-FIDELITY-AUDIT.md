@@ -218,7 +218,7 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  Button.cs:62  var height = Sizing.Height(Size, context.Density);   //  vs EmitVisitor.Interaction.cs:168  var minimum = density == Density.Compact ? 0 : Touch.MinTarget;
+  Button.cs:62  var height = Sizing.Height(Size, context.Density);   //  vs EmitVisitor.Interaction.cs:169  var minimum = density == Density.Compact ? Touch.MinPointerTarget : Touch.MinTarget;
   ```
 
 ### A12 Button · behaviour · **unverified**
@@ -1181,7 +1181,7 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  Tokens.cs:205  public const float PressCancelSlop = 12;
+  Tokens.cs:214  public const float PressCancelSlop = 12;
   PhotonHost.cs:1626  if (!pan.Active && MathF.Abs(travelled) > Touch.PressCancelSlop)
   ```
 
@@ -1723,7 +1723,7 @@ the pill's 40 down.
   ```
   Chip.cs:73  content.Add(new Pressable(new Icon(Icons.Close, IconSize.Dense, textColor), OnRemove)
   WebLoweringVisitor.Interaction.cs:496  Padding = "0",
-  EmitVisitor.Interaction.cs:168  var minimum = density == Density.Compact ? 0 : Touch.MinTarget;
+  EmitVisitor.Interaction.cs:169  var minimum = density == Density.Compact ? Touch.MinPointerTarget : Touch.MinTarget;
   ```
 
 ### B9 TextInput · metric · **CONFIRMED**
@@ -2205,7 +2205,7 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  TokenCss.cs:537        css.AppendLine(".eq-presence-slideup { animation: eq-presence-slideup var(--eq-motion-base) ease-out; }");
+  TokenCss.cs:535        css.AppendLine(".eq-presence-slideup { animation: eq-presence-slideup var(--eq-motion-base) ease-out; }");
   ```
 
 ### C5 Drawer · missing-feature · **unverified**
@@ -2579,7 +2579,7 @@ the pill's 40 down.
 
   ```
   Tooltip.cs:39  }, new Text(Text, TypeRole.Caption, theme.TextInverse, maxLines: 1));
-  TokenCss.cs:477  css.AppendLine(".eq-anchor-panel { position: absolute; z-index: 1050; width: max-content; max-width: min(92vw, 420px); }");
+  TokenCss.cs:475  css.AppendLine(".eq-anchor-panel { position: absolute; z-index: 1050; width: max-content; max-width: min(92vw, 420px); }");
   ```
 
 ### C13 Tooltip · metric · **unverified**
@@ -2631,7 +2631,7 @@ the pill's 40 down.
 
 - **Component**: `src/eQuantic.UI.Components/NavigationRail.cs`
 - **Handoff**: "Selection: pill crossfade + glyph fill swap, Motion.State 200ms."
-- **Code**: The pill's BoxStyle declares no Transition, so the Primary-subtle background and the tint snap between destinations instead of crossfading. The vocabulary exists and is used by siblings — `Transition = TransitionSpec.Of(StyleChannels.Colors | StyleChannels.Size, Motion.State)` in PageIndicator.cs:62 — and Motion.State resolves to exactly the handoff's 200ms (Tokens.cs:262 BaseMs = 200, Tokens.cs:279 Motion.State = new(BaseMs, Curve.Standard)). The glyph fill swap itself is implemented (line 85 picks SelectedIcon), only its 200ms motion is absent.
+- **Code**: The pill's BoxStyle declares no Transition, so the Primary-subtle background and the tint snap between destinations instead of crossfading. The vocabulary exists and is used by siblings — `Transition = TransitionSpec.Of(StyleChannels.Colors | StyleChannels.Size, Motion.State)` in PageIndicator.cs:62 — and Motion.State resolves to exactly the handoff's 200ms (Tokens.cs:271 BaseMs = 200, Tokens.cs:288 Motion.State = new(BaseMs, Curve.Standard)). The glyph fill swap itself is implemented (line 85 picks SelectedIcon), only its 200ms motion is absent.
 - **Evidence**:
 
   ```
@@ -3334,7 +3334,7 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  TokenCss.cs:557  css.AppendLine($".eq-spinner {{ opacity: 0; animation: eq-appear 1ms linear {Spinner.AppearDelayMs}ms forwards; }}");
+  TokenCss.cs:555  css.AppendLine($".eq-spinner {{ opacity: 0; animation: eq-appear 1ms linear {Spinner.AppearDelayMs}ms forwards; }}");
   EmitVisitor.Media.cs:289  motion.Active = true;   // EmitSpinner — no AppearDelayMs anywhere
   ```
 
@@ -3391,7 +3391,7 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  TokenCss.cs:543        css.AppendLine(".eq-presence-exit-fade { animation: eq-presence-exit-fade var(--eq-motion-fast) ease-in forwards; }");
+  TokenCss.cs:541        css.AppendLine(".eq-presence-exit-fade { animation: eq-presence-exit-fade var(--eq-motion-fast) ease-in forwards; }");
   ```
 
 ### C2 Modal · metric · **unverified**
@@ -3586,8 +3586,8 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  TokenCss.cs:492  css.AppendLine(".eq-hoverreveal > .eq-anchor-panel { opacity: 0; pointer-events: none; transition: opacity 120ms ease-out; }");
-  Tokens.cs:260  public const int FastMs = 100;
+  TokenCss.cs:490  css.AppendLine(".eq-hoverreveal > .eq-anchor-panel { opacity: 0; pointer-events: none; transition: opacity 120ms ease-out; }");
+  Tokens.cs:269  public const int FastMs = 100;
   ```
 
 ### C13 Tooltip · documented-deviation · **unverified**
@@ -3599,7 +3599,7 @@ the pill's 40 down.
 
   ```
   Tooltip.cs:16  /// v1 fences: show/hide delay, arrow caret.
-  TokenCss.cs:493  css.AppendLine(".eq-hoverreveal:hover > .eq-anchor-panel { opacity: 1; }");
+  TokenCss.cs:491  css.AppendLine(".eq-hoverreveal:hover > .eq-anchor-panel { opacity: 1; }");
   ```
 
 ### C13 Tooltip · documented-deviation · **unverified**

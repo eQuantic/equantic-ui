@@ -264,16 +264,16 @@ function cases(): Record<string, { node: unknown; presses: number[] }> {
     'drawer-open': still(new Drawer(new Text('side', 'bodyM', photonTheme.textPrimary), true)),
     accordion: still(
       new Accordion([
-        new AccordionItem('First', new Text('one', 'bodyM', photonTheme.textPrimary)),
-        new AccordionItem('Second', new Text('two', 'bodyM', photonTheme.textPrimary)),
+        Object.assign(new AccordionItem('First'), { content: new Text('one', 'bodyM', photonTheme.textPrimary) }),
+        Object.assign(new AccordionItem('Second'), { content: new Text('two', 'bodyM', photonTheme.textPrimary) }),
       ]),
     ),
     'select-opens': { node: new Select(['alpha', 'beta', 'gamma'], 0), presses: [0] },
     'accordion-switches': {
       node: new Accordion(
         [
-          new AccordionItem('One', new Text('body one', 'bodyM', photonTheme.textPrimary)),
-          new AccordionItem('Two', new Text('body two', 'bodyM', photonTheme.textPrimary)),
+          Object.assign(new AccordionItem('One'), { content: new Text('body one', 'bodyM', photonTheme.textPrimary) }),
+          Object.assign(new AccordionItem('Two'), { content: new Text('body two', 'bodyM', photonTheme.textPrimary) }),
         ],
         0,
       ),

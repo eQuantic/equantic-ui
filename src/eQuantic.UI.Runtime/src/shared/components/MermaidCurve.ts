@@ -1,13 +1,18 @@
 export class MermaidCurve {
-    constructor(props?: any) {
-        if (props && typeof props === 'object') Object.assign(this, props);
+    constructor() {
+        this.x = 0;
+        this.y = 0;
+        this.w = 0;
+        this.h = 0;
+        this.path = '';
+        this.viewBox = '';
     }
 
-    x: number = 0;
-    y: number = 0;
-    w: number = 0;
-    h: number = 0;
-    path: string = '';
-    viewBox: string = '';
+    x!: number;
+    y!: number;
+    w!: number;
+    h!: number;
+    path!: string;
+    viewBox!: string;
 }
 

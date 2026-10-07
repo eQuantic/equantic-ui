@@ -98,10 +98,18 @@ public class UnaryExpressionStrategy : IExpressionIrStrategy
     /// by code unit (`'a'++` is NaN here), a DECIMAL steps on the type (JavaScript's `++` coerces it
     /// through its text into a plain number), a FLOAT rounds to single precision (`0.1f + 1` is not
     /// exact), a narrow width wraps and a checked context throws — the result type decides
-    /// (IntegerWidth). A NULLABLE number steps its value by the same rule inside the lift, so null
-    /// stays null (#372). A DICTIONARY ENTRY is read first, and .NET throws for a key that is not
-    /// there, so it steps through the guard whatever its type computes. Null leaves the native
-    /// `++`, which is what every loop counter wants.
+    /// (IntegerWidth), an ENUM steps its value, which the browser holds by its member's name, and a
+    /// type with a user-defined <c>operator ++</c> steps through the static its twin carries. A
+    /// NULLABLE number steps its value by the same rule inside the lift, so null stays null (#372).
+    /// Null leaves the native `++`, which is what every loop counter wants.
+    /// <para>
+    /// A PLACE (a dictionary's entry, an entry of an indexer a twin carries, #427) has no target
+    /// JavaScript's own step can write, so every step of one is a read-modify-write, the step being
+    /// the one a local of its type gets: an indexer's enum went to the native `++`, which wrote
+    /// <c>m.item(0)++</c>, and the module did not parse. A dictionary's entry is read first, and .NET
+    /// throws for a key that is not there, so it steps through the guard whatever its type computes.
+    /// A step with no form here is refused rather than written as JavaScript's own.
+    /// </para>
     /// The target is evaluated once and a postfix step in value position answers the value BEFORE
     /// it, as C# does (ReadModifyWrite): `values[i++]++` steps `i` once, and `byte b = 255;
     /// var old = b++;` is 255, not the wrapped 0.
@@ -111,29 +119,56 @@ public class UnaryExpressionStrategy : IExpressionIrStrategy
         var type = context.SemanticHelper.GetType(operandSyntax);
         var delta = op == "++" ? "+" : "-";
         var answerOld = node is PostfixUnaryExpressionSyntax && ValueUsed(node);
-        var entry = DictionaryEntry.Of(operandSyntax, context);
-        JsExpr Stepped(Func<JsExpr, JsExpr> next) => entry is { } found
-            ? ReadModifyWrite.AssignEntry(context.Converter.ConvertIr(found.Expression),
-                context.Converter.ConvertIr(found.ArgumentList.Arguments[0].Expression), [], (current, _) => next(current),
-                answerOld, context)
+        var place = Place.Of(operandSyntax, context);
+        JsExpr Stepped(Func<JsExpr, JsExpr> next) => place is not null
+            ? place.Modify([], (current, _) => next(current), answerOld)
             : ReadModifyWrite.Assign(context.Converter.ConvertIr(operandSyntax), [], (current, _) => next(current),
                 answerOld, context);
         JsExpr Plain(ITypeSymbol number, JsExpr current) =>
             JsExpr.Binary(current, delta, JsExpr.Literal(number.IsLong() ? "1n" : "1"));
 
+        // A user-defined step goes through the static its twin carries, for a type the source
+        // declares; a framework type's (Int128, Half) keeps the rules below, which have none for it,
+        // and a host-only one stops here.
+        if (context.SemanticHelper.GetOperation(node) is Microsoft.CodeAnalysis.Operations.IIncrementOrDecrementOperation
+            { OperatorMethod: { } method } increment)
+        {
+            if (method.ReportIfHostOnly(node, context)) return JsExpr.Callish("undefined");
+            if (UserDefinedOperators.IsInSource(method))
+            {
+                // C# 14's instance `void operator ++()` steps the value in place, which no twin carries yet.
+                if (!method.IsStatic || UserDefinedOperators.Unary(method, op, "") is null)
+                    return JsExpr.Callish(context.Unhandled(node, "user-defined step"));
+                method.ContainingType.RegisterIntroduced(context);
+                JsExpr Operator(JsExpr current) => UserDefinedOperators.Unary(method, op, JsExprWriter.Write(current))!;
+                return Stepped(current => increment.IsLifted ? NullableLift.Unary(current, Operator, context) : Operator(current));
+            }
+        }
         if (NullableLift.IsNullableNumber(type, out var value))
         {
             var rule = StepRule(value, delta, node, context) ?? (current => Plain(value, current));
             return Stepped(current => NullableLift.Unary(current, rule, context));
         }
+        // A nullable enum steps its value inside the lift, as a nullable number does.
+        if (type.IsNullableValue() && type.UnwrapNullable() is INamedTypeSymbol { TypeKind: TypeKind.Enum } nullableEnum
+            && StepRule(nullableEnum, delta, node, context) is { } enumRule)
+            return Stepped(current => NullableLift.Unary(current, enumRule, context));
         if (StepRule(type, delta, node, context) is { } typed) return Stepped(typed);
-        return entry is not null && NullableLift.IsNumber(type) ? Stepped(current => Plain(type, current)) : null;
+        if (place is null) return null;
+        if (NullableLift.IsNumber(type)) return Stepped(current => Plain(type, current));
+        return JsExpr.Callish(context.Unhandled(node, "step"));
     }
 
     /// <summary>The value one step computes from the current one on <paramref name="type"/>, where
     /// JavaScript's own step would compute another; null where it computes C#'s.</summary>
     private static Func<JsExpr, JsExpr>? StepRule(ITypeSymbol? type, string delta, SyntaxNode node, ConversionContext context)
     {
+        // An enum steps its value, as its arithmetic computes it: `mode + 1`, the name behind the value
+        // where one has it (Types.EnumShape). JavaScript's step read the name as a number, NaN.
+        if (type is INamedTypeSymbol { TypeKind: TypeKind.Enum } enumType)
+            return current => Types.EnumShape.Held(enumType,
+                JsExpr.Binary(Types.EnumShape.ValueOf(enumType, current, context), delta, JsExpr.Literal("1")), context);
+
         if (type is { SpecialType: SpecialType.System_Char })
             return current => JsExpr.Callish(
                 $"String.fromCharCode({JsExprWriter.WriteIn(current, JsPrecedence.Call)}.charCodeAt(0) {delta} 1)");

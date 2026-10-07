@@ -34,14 +34,16 @@ public class LocalFunctionNameTests
     }
 
     [Fact]
-    public void InAConstructor_ALocalNamedPropsMovesTheConfigObject()
+    public void InAConstructor_ALocalNamedProps_IsTheBodysOwn()
     {
         // The body shares the block the parameters are declared in, so a local `props` was `let props`
-        // beside the config parameter, a module that did not parse (found in review, #399).
+        // beside the config parameter, a module that did not parse (found in review, #399). A plain
+        // class takes no config object since #583, so the name is the body's; a component's still
+        // moves (AuthoringCoverageTests.AComponentParameterNamedProps_LeavesTheConfigObjectANameOfItsOwn).
         var ts = TestHelper.ConvertClass(
             "public int Value { get; set; } public Setup(int seed) { var props = seed; Value = props; }", "Setup");
 
-        ts.Should().Contain("$props?: any)").And.Contain("Object.assign(this, $props)");
+        ts.Should().Contain("let props = seed;").And.NotContain("$props").And.NotContain("Object.assign");
     }
 
     [Fact]

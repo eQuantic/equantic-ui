@@ -1226,6 +1226,60 @@ record of a release, the wiki's Upgrading page is the distillate.
   back (`Cast`, `DefaultIfEmpty`) and a read-only face hiding a list, and both copy now. Each is a
   conformance case on both sides that failed against main. Proposed and archived through OpenSpec
   (`openspec/specs/transpiler-sequences`).
+- **2026-10-04 · A class and a record are built as C# builds them**: a plain class that declared no
+  member got no module while its users imported one ([#423](https://github.com/eQuantic/equantic-ui/issues/423)),
+  a record that declared only methods got no twin ([#428](https://github.com/eQuantic/equantic-ui/issues/428)),
+  an instance indexer reached no twin and `grid[3]` read a property named "3"
+  ([#427](https://github.com/eQuantic/equantic-ui/issues/427)), and a positional record that declared
+  its own property for a parameter emitted it twice and did not load
+  ([#546](https://github.com/eQuantic/equantic-ui/issues/546)). The twin's constructor took one
+  argument per member with each initializer as its default, so an object initializer skipped the
+  initializer of the member it set, a `with` ran them again and an explicit constructor's body never
+  ran ([#413](https://github.com/eQuantic/equantic-ui/issues/413)); a nested collection initializer
+  replaced the member's collection ([#462](https://github.com/eQuantic/equantic-ui/issues/462)); and
+  statics were defined where declared, so `A = B + 1` above `B = 2` answered NaN
+  ([#417](https://github.com/eQuantic/equantic-ui/issues/417)). The twin's constructor is now a branch
+  per C# constructor on how many arguments arrive, one with a body of its own and one that chains
+  alike, and a count two of them share is refused (EQ1009); the object initializer is applied once it
+  returns, its parts the arguments of the function that applies it, so an `await` in one still parses;
+  a `with` is a copy, a record's equality and text are .NET's, an indexer is the twin's `item` and
+  `setItem`, and a type's statics are one initializer that starts them at their zero and runs them in
+  order on first use, before any static member of a type with a static constructor is used, in the
+  record, class and component emitters alike. One predicate decides a plain class's module for the
+  parser and the resolver, by the chain of bases. Each is a conformance case on both sides that failed
+  against main, the class cases through the module graph an app's build writes. Proposed and archived
+  through OpenSpec (`openspec/specs/transpiler-records`, `openspec/specs/transpiler-interfaces`). Its review, at max effort before the pull request (eleven finders, verifiers and a sweep, every
+  finding measured on both sides with a probe over the real conformance harness), found twenty-odd
+  defects in the new emission, seven of them regressions against main, all fixed in the same pull
+  request with a case that failed before: a refused class's simple name vetoed a component's import,
+  and the resolver judged an interface or a library's base by its name; a record or a struct marked
+  [ServerOnly] got a twin; a static constructor ran inside its type initializer's block (an early return
+  threw, a local named `slots` did not parse, a throw left the type half-initialized, a static event did
+  not start it), a constant-valued static read a later constant as NaN, statics initialized every field
+  before every property, and a component's static constructor ran per instance; a struct's zero ran its
+  constructor, its static constructor or an all-optional alternate, and a generic struct's was undefined;
+  a constructor's arguments landed by written position in `new`, `: this(…)`, `: base(…)` and a base
+  clause (BoundArguments places them as the bound tree binds them), an alternate bound its parameters as
+  constants, and generated locals met members' names; an indexer's keys landed by written position, its
+  assignment answered the setter's own value, `^n`, a step on an enum and a deconstruction into an
+  indexer bypassed it or did not parse (one place every writer takes now); EQ1007 misjudged an indexer's
+  names, and refuses two members of a record or a struct on one name; a nested initializer's extension
+  Add, an ICollection member's Add and one under `?.` went wrong; a record printed an override twice and
+  dropped a non-public getter; a copy constructor was refused with EQ1009; `this =` in a struct and a
+  `with` on a plain struct or the code engine's records did not work. What predates the batch is filed:
+  [#582](https://github.com/eQuantic/equantic-ui/issues/582) to [#587](https://github.com/eQuantic/equantic-ui/issues/587),
+  [#589](https://github.com/eQuantic/equantic-ui/issues/589), [#591](https://github.com/eQuantic/equantic-ui/issues/591) and
+  [#592](https://github.com/eQuantic/equantic-ui/issues/592), and so is one consequence of it,
+  [#590](https://github.com/eQuantic/equantic-ui/issues/590): a hydrated record has none of the private fields its
+  equality now compares. Copilot's first review found two more, fixed in the same pull request: an
+  initializer applied every element after evaluating all their parts, where C# applies each before
+  evaluating the next, and a record over a `[ServerOnly]` record got a twin. Its second found three: a
+  lone empty partial class, record or struct got no module or twin, eleven named arguments out of
+  their order ran in the signature's, and a nested initializer read its member after the element's
+  parts, so the initializer is now a sequence over a temporary of its function, which
+  [#588](https://github.com/eQuantic/equantic-ui/pull/588) brought. Its third found two: a field-like event's
+  delegate was no state of a record's equality, and a generic struct's zero held its open type
+  parameter's default (`default(Pair<int>).First` was null), so `$zero` takes each type argument's zero.
 - **2026-10-04 · The compiler suite's aborts are gone**: under load its test host crashed in 2 of 6
   runs on macOS arm64, and `dotnet test` still printed `Passed!` with the count that ran
   ([#473](https://github.com/eQuantic/equantic-ui/issues/473)). Measured after #481 cut the suite's own
@@ -1440,6 +1494,105 @@ record of a release, the wiki's Upgrading page is the distillate.
   a generated equality in a hydration map or a `ContainsValue` did not register; and `CopyTo` through
   an `ICollection<T>` copies a set. The served runtime grew about 7 KB gzipped. Proposed and archived
   through OpenSpec (`openspec/specs/runtime-sets`, `runtime-dictionaries`, `transpiler-bcl`).
+- **2026-10-06 · A class is built as C# builds it**: a plain class kept its widest constructor and
+  called its base's with no arguments, and a C# 12 primary constructor on a class was not read, so
+  `Money() : this(100)` built no cents, `: base(x * 2)` passed nothing and `new Greeter("ada").Hello()`
+  answered "hi " ([#583](https://github.com/eQuantic/equantic-ui/issues/583)); a derived class ran its
+  initializers after its base's constructor ([#571](https://github.com/eQuantic/equantic-ui/issues/571));
+  an object initializer was a trailing config object, evaluated before the constructor ran, and a
+  property's initializer ran before every field's ([#582](https://github.com/eQuantic/equantic-ui/issues/582));
+  an exception dropped its initializer ([#587](https://github.com/eQuantic/equantic-ui/issues/587));
+  and the vocabulary's types the runtime transpiles (the spreadsheet's and the forms' models) were
+  taken by an app for hand-written twins, so `new CellRef(1, 2) { Col = 3 }` kept its 2 and
+  `default(CellRef)` threw ([#592](https://github.com/eQuantic/equantic-ui/issues/592)).
+  The record twin's constructor (#413) moved into one builder written as IR, which a plain class's
+  constructor comes from too: every constructor is reached by its counts, the class's state starts in
+  declaration order, each member a class field with no initializer that the constructor writes, a
+  derived class's initializers run before `super()` and land after it, and a construction builds, then
+  applies its initializer. A class's held primary parameter on another member's name is EQ1007, as a
+  struct's is. The vocabulary marks its transpiled types `[TwinIsTranspiled]`, a test holding the mark
+  on exactly those, and every decision about a twin eqc writes reads it: without it, this change would
+  have dropped `new SheetController(10, 4) { Changed = … }`'s handler too. Of the 25 conformance cases
+  of a class this adds, run through the module graph on both sides, 18 fail on #608's head, a `params`
+  constructor not even loading (its rest parameter was written before the config), and the other 7 are
+  neighbours kept as pins; of the 6 of a transpiled vocabulary type, 3 fail there. Found on the way:
+  an app exception's own members
+  ([#611](https://github.com/eQuantic/equantic-ui/issues/611)) and enumerating a class that implements
+  `IEnumerable<T>` ([#612](https://github.com/eQuantic/equantic-ui/issues/612)). Proposed and archived
+  through OpenSpec (`openspec/specs/transpiler-classes`, `openspec/specs/transpiler-exceptions`).
+- **2026-10-06 · A property keeps its value in a store of its own**: a twin's constructor wrote each
+  member onto the instance under its name, which reached any accessor of that name along the chain. A
+  record's auto-property over a base's computed `virtual` one, or a computed override over a base's
+  auto-property, threw at `new` ([#591](https://github.com/eQuantic/equantic-ui/issues/591)), and a plain
+  class of those shapes answered its base's value; an override that declared only a getter lost the
+  setter it inherits, and one that read `base.Name` read nothing; and a record's or a struct's property
+  that uses `field` ran none of its accessors' bodies, so `new FRec { X = 5 }` over
+  `set => field = value * 2` held 5 for 10 ([#615](https://github.com/eQuantic/equantic-ui/issues/615)).
+  Building a class as C# builds it had also declared its state for TypeScript only, so
+  `int count; int Count => count;`, one name in the twin, threw at `new`, where #608's head answered
+  right. A class's state is a class field with no initializer again, which JavaScript defines before
+  the constructor writes it, in the order the constructor always wrote it; a property that can be
+  overridden, or that has an accessor of its own over a backing field, keeps a store, `$name`, under
+  accessors on the prototype, which the constructor starts, a record compares and copies and a
+  struct's zero zeroes; an override that declares one accessor forwards the other to `super`; and a
+  twin with a store answers `toJSON` with `$eq.json`, which writes the store under its property's
+  name, as System.Text.Json writes the property (a class's `field` property was sent to a server action
+  as `$name`). Of the 15 conformance cases this adds, 10 fail on #608's head, 3 of them throwing, and
+  the one of a field beside its property, which passes there, pins the regression. One difference stays,
+  documented: `base.Name` over an auto-property overridden by another reads the override's value.
+  Proposed and archived through OpenSpec (`openspec/specs/transpiler-classes`,
+  `openspec/specs/transpiler-records`).
+- **2026-10-06 · The code engine completes**: the engine half of the code editor's slice 3
+  ([#296](https://github.com/eQuantic/equantic-ui/issues/296)). `CodeCompletion`, a session on the
+  controller, asks its providers once when a word starts, filters and ranks what they answered on
+  every keystroke (`CodeFuzzyMatch`), asks an incomplete answer again, and drops a late answer by its
+  generation while its request is cancelled; the keymap routes the list's keys, Enter accepting only
+  what changes the text; the contracts are LSP's, typed; the language's words and the document's are
+  built-in providers, and an editor starts with none until the view
+  ([#297](https://github.com/eQuantic/equantic-ui/issues/297)) draws a list. Held by keystroke
+  sequences, by Roslyn's answer in the playground recorded as a fixture, and by the twin compared with
+  .NET in the embedded Bun over 6,000 patterns and 60 seeded sessions. Found on the way: eqc called a
+  method named `Invoke` as a delegate, named an exception, an interface, an enum and a delegate by
+  their C# names in annotations no module defines (one rule, `TsStandIn`, decides it on every path
+  now), and knew nothing of the cancellation trio, which is now the runtime's, measured with
+  `dotnet fsi` and run on both sides by the conformance suite; and the shared library's twins were
+  transpiled with three of the SDK's seven implicit usings. The author's review found ten defects,
+  each proved failing without its fix: the trap on Tab after ⌃Space, a provider's cancellation that
+  threw into the keystroke, a commit during an input method's composition, a duplicate that hid a
+  match, the filter's work per keystroke, and the document's words read whole at every word started
+  (46 ms in Bun for 45,000 lines, now 50,000 characters nearest the caret) among them. The first
+  review round found three more: a provider's range that moved with the caret, a minified line read
+  from its start, and a linked source that kept its callbacks on a long-lived token; the second, a
+  cancellation a provider threw by itself taken for the request's own, a `TimeProvider` source that
+  compiled and dropped its clock, and a disposed source that kept its callbacks; the third, a word of
+  megabytes that walked past the window, a month's delay that a browser's timer fired at once, and a
+  default registration that was undefined. Proposed and archived through OpenSpec
+  (`openspec/specs/code-completion`).
+- **2026-10-06 · A target under a pointer keeps a 24dp floor**: under a mouse a target was its visual
+  bounds, so a Checkbox or a Radio without a label was a 20dp target on Photon and on the web, under
+  the 24 × 24 WCAG 2.2 SC 2.5.8 asks, and the cross-pin passed because both agreed on 20
+  ([#430](https://github.com/eQuantic/equantic-ui/issues/430), decided by Edgar on 2026-09-26).
+  `Touch.MinPointerTarget` is the floor Photon's Compact hit rect, `Sizing.HitTarget` and a fine
+  pointer's slop on the web grow to, published in the handoff at `touch.minPointerTarget`. Measuring
+  it in a browser found the web's slop drawn over the control's content: under a fine pointer the
+  centre of a Button hit the button element itself, so its box never matched `:hover` and no button
+  showed its hover fill, and a Pressable around an IconButton took the inner control's hits. The slop
+  is now the `::before` with the content lifted above it, and answers only around the control.
+  Proposed and archived through OpenSpec (`openspec/specs/hit-targets`).
+- **2026-10-06 · A char's search checks its start and its count**: `IndexOf(char, int)`,
+  `IndexOf(char, int, int)`, `LastIndexOf(char, int)` and `LastIndexOf(char, int, int)` were
+  JavaScript's `indexOf` and `lastIndexOf`, which take no count and clamp a start outside the string,
+  so `"abcabc".IndexOf('c', 0, 2)` answered 2 where .NET answers -1 and `"abc".IndexOf('a', 4)`
+  answered -1 where .NET throws ([#534](https://github.com/eQuantic/equantic-ui/issues/534)). They
+  reach the runtime's `indexOfChar` and `lastIndexOfChar`, ported from .NET 10's
+  `String.Searching.cs` and measured with `dotnet fsi`: `IndexOf`'s start may stand at the end of the
+  string, `LastIndexOf`'s must stand on a char of it (the string overloads step back from one past
+  the end instead), an empty string's `LastIndexOf` answers -1 for any start and count, and each
+  refusal is in .NET's words, the start checked before the count. The call is built by the runtime
+  call the comparing overloads use. 9 of the 16 conformance cases fail on main. The Markdown, Mermaid
+  and curly-brace parsers and the SDK's strings, which search a char from a start, now throw where
+  the same C# throws on the server. Proposed and archived through OpenSpec
+  (`openspec/specs/transpiler-bcl`).
 - **2026-10-06 · A control's press and focus show on its boxes on every target**: the handoff presses
   its buttons with `scale(.985)` and there was no way to say it, and measuring the focus state found
   it dead on both targets ([#508](https://github.com/eQuantic/equantic-ui/issues/508), the second

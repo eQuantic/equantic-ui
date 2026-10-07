@@ -54,13 +54,20 @@ public class WithExpressionStrategy : IConversionStrategy
                 return $"{Eq.With}({receiver}, {{ {entries} }})";
             }
 
+            // A record of the vocabulary's namespace the compiler WRITES (the code engine's are written
+            // whole) carries its own `with`: rebuilt through its parameterless constructor, the copy
+            // handed to it as a config was dropped, and the patch with it (`CodeLanguageRules.Default
+            // with { LineComment = "--" }` was a fresh default).
+            if (ObjectCreationStrategy.TwinIsWritten(type)) return $"{receiver}.with({{ {entries} }})";
+
             return $"new {type.Name}({{ ...{receiver}, {entries} }})";
         }
 
-        // Records the compiler EMITS are JS classes — copy via their generated `with` so the
-        // prototype (methods) survives. Other value shapes (non-record structs, anonymous types) are
-        // plain objects — spread is fine.
-        if (type is { IsRecord: true })
+        // Records and structs the compiler EMITS are JS classes — copy via their generated `with` so
+        // the prototype (methods) survives: a plain struct was spread into an object with none of its
+        // methods. Other value shapes (anonymous types) are plain objects — spread is fine.
+        if (type is { IsRecord: true }
+            || type is { TypeKind: TypeKind.Struct } && ObjectCreationStrategy.TwinIsWritten(type))
         {
             return $"{receiver}.with({{ {entries} }})";
         }

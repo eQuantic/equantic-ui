@@ -68,6 +68,36 @@ public class InstanceStringComparisonConformanceTests
         ConformanceRunner.AssertStatementsSameAsDotNet(statements);
     }
 
+    /// <summary>
+    /// A char's search with a start, and with a count (#534): ordinal, as every char search is, with the
+    /// range checked as .NET 10's <c>String.Searching.cs</c> checks it. JavaScript's <c>indexOf</c> and
+    /// <c>lastIndexOf</c> clamped a start outside the string and took no count. <c>LastIndexOf</c>'s start
+    /// must stand on a char of the string, where the string overloads step back from one past the end,
+    /// and an empty string answers -1 whatever the start and the count.
+    /// </summary>
+    [SkippableTheory]
+    [InlineData("return \"abcabc\".IndexOf('c', 0, 2);")] // -1: the count ends the search
+    [InlineData("return \"abcabc\".IndexOf('c', 1);")] // 2
+    [InlineData("return \"abcabc\".IndexOf('c', 6);")] // -1: a start at the end
+    [InlineData("return \"abcabc\".IndexOf('c', 6, 0);")] // -1
+    [InlineData("var s = \"abcabc\"; var at = 2; return s.IndexOf('a', at, s.Length - at);")] // 3
+    [InlineData("try { return \"abc\".IndexOf('a', -1).ToString(); } catch (ArgumentOutOfRangeException e) { return e.Message; }")] // startIndex
+    [InlineData("try { return \"abc\".IndexOf('a', 4).ToString(); } catch (ArgumentOutOfRangeException e) { return e.Message; }")] // startIndex
+    [InlineData("try { return \"abcabc\".IndexOf('c', 2, 5).ToString(); } catch (ArgumentOutOfRangeException e) { return e.Message; }")] // count
+    [InlineData("try { return \"abcabc\".IndexOf('c', 7, 0).ToString(); } catch (ArgumentOutOfRangeException e) { return e.Message; }")] // startIndex, before the count
+    [InlineData("return \"abcabc\".LastIndexOf('a', 5, 2);")] // -1: the count ends the search back
+    [InlineData("return \"abcabc\".LastIndexOf('a', 5);")] // 3
+    [InlineData("return \"abcabc\".LastIndexOf('a', 5, 6);")] // 3
+    [InlineData("try { return \"abc\".LastIndexOf('c', 3).ToString(); } catch (ArgumentOutOfRangeException e) { return e.Message; }")] // startIndex: one past the end throws
+    [InlineData("try { return \"abc\".LastIndexOf('c', 5).ToString(); } catch (ArgumentOutOfRangeException e) { return e.Message; }")] // startIndex
+    [InlineData("try { return \"abcabc\".LastIndexOf('a', 5, 7).ToString(); } catch (ArgumentOutOfRangeException e) { return e.Message; }")] // count
+    [InlineData("return \"\".LastIndexOf('c', 0) + \"|\" + \"\".LastIndexOf('c', 5) + \"|\" + \"\".LastIndexOf('c', -1) + \"|\" + \"\".LastIndexOf('c', 0, 3);")] // -1|-1|-1|-1: an empty string
+    public void ACharSearch_ChecksItsStartAndItsCountAsDotNetDoes(string statements)
+    {
+        Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
+        ConformanceRunner.AssertStatementsSameAsDotNet(statements);
+    }
+
     [SkippableTheory]
     [InlineData("return \"aBc\".Replace(\"b\", \"x\", StringComparison.OrdinalIgnoreCase);")] // "axc"
     [InlineData("return \"aAaA\".Replace(\"AA\", \"x\", StringComparison.OrdinalIgnoreCase);")] // "xx"

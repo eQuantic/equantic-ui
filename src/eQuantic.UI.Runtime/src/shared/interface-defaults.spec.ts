@@ -53,13 +53,13 @@ describe('the vocabulary interface defaults (cross-pinned with VocabularyInterfa
     });
   }
 
-  it('answers each default as C# does', () => {
+  it('answers each default as C# does', async () => {
     expect(defaults.ICodeLanguage.rules({}).indentWidth).toBe(4);
-    expect(defaults.ICodeCompletionProvider.triggerCharacters({})).toEqual(['.']);
-    // A new list per read, as a C# expression-bodied member builds one.
-    expect(defaults.ICodeCompletionProvider.triggerCharacters({})).not.toBe(
-      defaults.ICodeCompletionProvider.triggerCharacters({}),
-    );
+    expect(defaults.ICodeLanguage.keywords({})).toEqual([]);
+    // A trigger character is a claim about a language, so a provider makes none unless it says so.
+    expect(defaults.ICodeCompletionProvider.triggerCharacters({})).toEqual([]);
+    const item = { label: 'Theme' };
+    await expect(defaults.ICodeCompletionProvider.resolveAsync({}, item, null)).resolves.toBe(item);
     expect(defaults.IAppTheme.monoFamily(photonTheme)).toBeNull();
     expect(defaults.IAppTheme.data(photonTheme)).toBe(DataPalette.default);
     expect(defaults.IAppTheme.code(photonTheme, 'keyword')).toEqual(

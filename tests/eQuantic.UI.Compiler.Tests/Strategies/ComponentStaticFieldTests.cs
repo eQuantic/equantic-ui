@@ -37,8 +37,10 @@ public class Widget : StatelessComponent {
         var result = new ComponentCompiler().CompileSource(src).Single(r => r.ComponentName == "Widget");
         _out.WriteLine("=== Widget.ts ===");
         _out.WriteLine(result.TypeScript);
-        // Static field emitted as a static class member, with its initializer transpiled.
-        result.TypeScript.Should().Contain("static items");
+        // Static field emitted as a static class member, with its initializer transpiled: through the
+        // type initializer, since it constructs something (#417), and the const as a field.
+        result.TypeScript.Should().Contain("static get items");
+        result.TypeScript.Should().Contain("slots.items = ['a', 'b', 'c'];");
         result.TypeScript.Should().Contain("static limit");
         // Static access qualified by the class name, never `this.` (which would be undefined at runtime).
         result.TypeScript.Should().Contain("Widget.items");

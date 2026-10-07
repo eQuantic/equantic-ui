@@ -346,6 +346,8 @@ public class HandoffTokenPinTests
                 Value($"icon.{name}", value, want);
 
         Value("touch.minTarget", Touch.MinTarget, Handoff.GetProperty("touch").GetProperty("minTarget"));
+        Value("touch.minPointerTarget", Touch.MinPointerTarget,
+            Handoff.GetProperty("touch").GetProperty("minPointerTarget"));
         Value("touch.pressCancelSlop", Touch.PressCancelSlop,
             Handoff.GetProperty("touch").GetProperty("pressCancelSlop"));
         Value("disabledOpacity", Theme.DisabledOpacity, Handoff.GetProperty("disabledOpacity"));

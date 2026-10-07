@@ -241,6 +241,9 @@ public class ComponentCompiler
     {
         _dependencyResolver = resolver;
         _tsEmitter.SetDependencyResolver(resolver);
+        // The parser of a host with no project compilation reads the resolver's chains of bases, which
+        // reach every file it scanned, so the two answer the plain-class rule alike (#423).
+        _parser.SetChains(resolver.Chains);
     }
 
     /// <summary>

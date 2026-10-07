@@ -1,11 +1,14 @@
 export class MermaidEdge {
-    constructor(props?: any) {
-        if (props && typeof props === 'object') Object.assign(this, props);
+    constructor() {
+        this.from = '';
+        this.to = '';
+        this.label = '';
+        this.arrow = true;
     }
 
-    from: string = '';
-    to: string = '';
-    label: string = '';
-    arrow: boolean = true;
+    from!: string;
+    to!: string;
+    label!: string;
+    arrow!: boolean;
 }
 

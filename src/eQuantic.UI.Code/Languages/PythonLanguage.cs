@@ -24,7 +24,7 @@ public sealed class PythonLanguage : ICodeLanguage
         IndentWidth = 4,
     };
 
-    private static readonly HashSet<string> Keywords =
+    private static readonly HashSet<string> Reserved =
     [
         "and", "as", "assert", "async", "await", "break", "class", "continue", "def", "del",
         "elif", "else", "except", "finally", "for", "from", "global", "if", "import", "in", "is",
@@ -39,6 +39,12 @@ public sealed class PythonLanguage : ICodeLanguage
     ];
 
     private static readonly HashSet<string> Constants = ["True", "False", "None", "self", "cls"];
+
+    private static readonly IReadOnlyList<string> Words = Reserved.Concat(Builtins).Concat(Constants).ToList();
+
+    /// <summary>The tables the colours read, as one list: the reserved words, the built-in types and
+    /// the constants.</summary>
+    public IReadOnlyList<string> Keywords => Words;
 
     public int Tokenize(string line, int state, List<CodeToken> into)
     {
@@ -119,7 +125,7 @@ public sealed class PythonLanguage : ICodeLanguage
                 var start = i;
                 while (i < line.Length && CodeDocument.IsWordChar(line[i])) i++;
                 var word = line[start..i];
-                var kind = Keywords.Contains(word) ? CodeTokenKind.Keyword
+                var kind = Reserved.Contains(word) ? CodeTokenKind.Keyword
                     : Constants.Contains(word) ? CodeTokenKind.Constant
                     : Builtins.Contains(word) ? CodeTokenKind.Type
                     : NextNonSpace(line, i) == '(' ? CodeTokenKind.Function
