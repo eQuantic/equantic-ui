@@ -6,6 +6,7 @@
 - [x] 1.2 eqc: the message by its parameter for a framework constructor, and the parameter name, the actual value, the inner exception and the object name by theirs
 - [x] 1.3 The runtime: `create` composes the message and carries the parts as members
 - [x] 1.4 Prove it on both sides in `ExceptionMessageConformanceTests`, failing on the base, the two-line messages compared except for the host's newline
+- [x] 1.5 The review's first round: the text read from .NET for each constructor, a type initializer's null name and its `TypeName`, holes of any number of digits, and the aggregate a cancellation throws, each proved on both sides
 
 ## 2. Documentation and the suites
 

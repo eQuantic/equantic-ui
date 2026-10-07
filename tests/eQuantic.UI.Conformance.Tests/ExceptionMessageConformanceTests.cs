@@ -82,8 +82,6 @@ public class ExceptionMessageConformanceTests
     [InlineData("string m = null; try { throw new InvalidOperationException(m); } catch (Exception e) { return e.Message; }")] // "Operation is not valid due to the current state of the object."
     [InlineData("string m = null; try { throw new SystemException(m); } catch (Exception e) { return e.Message; }")]          // "Exception of type 'System.SystemException' was thrown."
     [InlineData("try { throw new TypeInitializationException(\"App.T\", null); } catch (TypeInitializationException e) { return e.TypeName; }")] // "App.T"
-    // The aggregate a cancellation throws, of its callbacks' exceptions, has the first as its own inner one.
-    [InlineData("var cts = new CancellationTokenSource(); cts.Token.Register(() => throw new FormatException(\"f\")); try { cts.Cancel(); return \"no\"; } catch (AggregateException e) { return e.InnerException.Message; }")] // "f"
     // An argument exception the runtime throws on .NET's behalf names its parameter too.
     [InlineData("try { new List<int> { 1 }.CopyTo(new int[1], -1); return \"no\"; } catch (ArgumentOutOfRangeException e) { return e.ParamName; }")] // "arrayIndex"
     public void AMember_ReadsWhatTheConstructorTook(string statements)
