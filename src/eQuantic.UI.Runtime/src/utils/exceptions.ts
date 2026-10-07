@@ -46,6 +46,11 @@ export const bases = {
   // cannot (#528): no .NET exception for the same call, so the one that says the platform lacks it.
   'System.NotSupportedException': 'System.SystemException',
   'System.Collections.Generic.KeyNotFoundException': 'System.SystemException',
+  // The cancellation pair's own (utils/cancellation): a token that throws when cancelled, a source
+  // used after it was disposed, and the callbacks of one cancellation that threw.
+  'System.OperationCanceledException': 'System.SystemException',
+  'System.ObjectDisposedException': 'System.InvalidOperationException',
+  'System.AggregateException': 'System.Exception',
   // A type initializer that threw: what every access to the type throws from then on (typeInitialization).
   'System.TypeInitializationException': 'System.SystemException',
 } as const satisfies Record<string, string | null>;

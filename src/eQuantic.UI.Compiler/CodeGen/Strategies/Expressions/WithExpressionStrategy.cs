@@ -45,10 +45,12 @@ public class WithExpressionStrategy : IConversionStrategy
             // Two shapes of hand-written twin, and the difference matters. A type built from an
             // OBJECT INITIALIZER has a twin taking a trailing config, and it must be REBUILT through
             // that constructor: the constructor is where a raw `44` becomes `SizeValue.fixed(44)`,
-            // and a copy that skips it silently loses the value. A POSITIONAL record's twin takes
-            // its arguments in order and cannot be built from one object, so it gets a
-            // prototype-preserving patch instead.
-            if (IsPositional(type))
+            // and a copy that skips it silently loses the value. A twin built from ARGUMENTS takes
+            // them in order and cannot be built from one object, so it gets a prototype-preserving
+            // patch instead: a positional record, and a record with no parameterless constructor.
+            // `topic with { }` rebuilt a ServerTopic from the copy as its name, and dropped the
+            // spec it revives with; `palette with { }` threw in DataPalette's constructor (#647).
+            if (IsPositional(type) || !IsBuiltFromAnInitializer(type))
             {
                 context.UsedHelpers.Add(Eq.Import);
                 return $"{Eq.With}({receiver}, {{ {entries} }})";
@@ -85,6 +87,16 @@ public class WithExpressionStrategy : IConversionStrategy
     /// </summary>
     private static bool IsPositional(ITypeSymbol type) =>
         type.GetMembers("Deconstruct").Any();
+
+    /// <summary>
+    /// Whether the type can be built from an object initializer alone: it has a public constructor
+    /// that takes nothing, as every struct does. A record whose constructors all take arguments has a
+    /// twin that takes them too, never a config.
+    /// </summary>
+    private static bool IsBuiltFromAnInitializer(ITypeSymbol type) =>
+        type is INamedTypeSymbol named
+        && named.InstanceConstructors.Any(constructor =>
+            constructor is { Parameters.Length: 0, DeclaredAccessibility: Accessibility.Public });
 
     private static bool IsRuntimeVocabulary(ITypeSymbol type)
     {

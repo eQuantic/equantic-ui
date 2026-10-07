@@ -1041,11 +1041,19 @@ export class DateTimeOffset {
     return hash(this.utcTicks);
   }
 
-  toUnixTimeSeconds(): number {
-    return Number((this.utcTicks - UNIX_EPOCH_TICKS) / TICKS_PER_SECOND);
+  /**
+   * `ToUnixTimeSeconds()`, a long and so a BigInt (#596): the number it answered met the first long
+   * it was mixed with as a TypeError. The ticks are cut to whole seconds from 0001-01-01 before the
+   * epoch is taken off, as .NET does, so an instant before 1970 with a fraction of a second rounds
+   * down, where a division after the subtraction rounded it toward the epoch: 23:59:59.001 on
+   * 1969-12-31 is -1, not 0.
+   */
+  toUnixTimeSeconds(): bigint {
+    return this.utcTicks / TICKS_PER_SECOND - UNIX_EPOCH_TICKS / TICKS_PER_SECOND;
   }
-  toUnixTimeMilliseconds(): number {
-    return Number((this.utcTicks - UNIX_EPOCH_TICKS) / TICKS_PER_MILLISECOND);
+  /** `ToUnixTimeMilliseconds()`, a BigInt, cut as {@link toUnixTimeSeconds} is. */
+  toUnixTimeMilliseconds(): bigint {
+    return this.utcTicks / TICKS_PER_MILLISECOND - UNIX_EPOCH_TICKS / TICKS_PER_MILLISECOND;
   }
 
   /** .NET invariant: `MM/dd/yyyy HH:mm:ss zzz`. */

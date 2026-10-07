@@ -81,6 +81,7 @@ public class HandoffSdkCoverageTests
         ["Sizing.RadioDot"] = "selection.comfortable.radioDot",
 
         ["Touch.MinTarget"] = "touch.minTarget",
+        ["Touch.MinPointerTarget"] = "touch.minPointerTarget",
         ["Touch.PressCancelSlop"] = "touch.pressCancelSlop",
         ["Touch.WheelLine"] = "touch.wheelLine",
 

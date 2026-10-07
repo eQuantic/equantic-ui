@@ -16,6 +16,10 @@ export class PlainTextLanguage {
         return CodeLanguageRules.default;
     }
 
+    get keywords(): string[] {
+        return [];
+    }
+
     toString(): string {
         return 'eQuantic.UI.Code.PlainTextLanguage';
     }

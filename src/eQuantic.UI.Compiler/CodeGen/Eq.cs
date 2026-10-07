@@ -181,6 +181,12 @@ public static class Eq
     /// <summary>A string's own <c>LastIndexOf</c> by a comparison, with its start and count,
     /// normalized as .NET's <c>CompareInfo</c> normalizes them.</summary>
     public const string StringLastIndexOf = "$eq.text.lastIndexOf";
+    /// <summary>A string's own <c>IndexOf(char, startIndex[, count])</c>: ordinal, the start and the
+    /// count checked as .NET 10 checks a char's search.</summary>
+    public const string StringIndexOfChar = "$eq.text.indexOfChar";
+    /// <summary>A string's own <c>LastIndexOf(char, startIndex[, count])</c>: ordinal, -1 for an empty
+    /// string, and a start that stands on a char of the string.</summary>
+    public const string StringLastIndexOfChar = "$eq.text.lastIndexOfChar";
     /// <summary>A string's own <c>Contains(value, comparisonType)</c>, and the char overload.</summary>
     public const string StringContains = "$eq.text.contains";
     /// <summary>A string's own <c>Replace(oldValue, newValue[, comparisonType])</c>: the replacement
@@ -201,6 +207,22 @@ public static class Eq
     /// <c>X</c> and <c>B</c> (#455).</summary>
     public const string AsNumber = "$eq.text.asNumber";
     public const string StringBuilder = "$eq.text.stringBuilder";
+
+    /// <summary><c>new CancellationTokenSource(delay?)</c> (<c>utils/cancellation.ts</c>).</summary>
+    public const string CancellationSource = "$eq.cancellation.source";
+
+    /// <summary><c>CancellationToken.None</c>, which is also <c>default(CancellationToken)</c>.</summary>
+    public const string CancellationNone = "$eq.cancellation.none";
+
+    /// <summary><c>new CancellationToken(canceled)</c>: the one cancelled token, or the one that never is.</summary>
+    public const string CancellationToken = "$eq.cancellation.token";
+
+    /// <summary><c>CancellationTokenSource.CreateLinkedTokenSource(…)</c>.</summary>
+    public const string CancellationLinked = "$eq.cancellation.linked";
+
+    /// <summary><c>default(CancellationTokenRegistration)</c>: the registration of nothing, whose token
+    /// is <c>None</c>.</summary>
+    public const string CancellationRegistration = "$eq.cancellation.registration";
     public const string DateTime = "$eq.time.dateTime";
     public const string TimeSpan = "$eq.time.timeSpan";
     public const string DateTimeOffset = "$eq.time.dateTimeOffset";

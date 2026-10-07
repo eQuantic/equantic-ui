@@ -43,6 +43,15 @@ public static class DotNetEvaluator
         Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
     };
 
+    static DotNetEvaluator()
+    {
+        // A value is written as JSON.stringify writes the runtime's representation of it, where
+        // System.Text.Json's own JSON differs (a long as a BigInt's text, a decimal's text, an enum's
+        // twin name, a double as JavaScript writes it, a tuple and a pair as arrays): RuntimeJson. The
+        // culture a case runs in is its own (EvaluateToJson), never set here for the whole process.
+        foreach (var converter in RuntimeJson.Converters) JsonOptions.Converters.Add(converter);
+    }
+
     /// <summary>
     /// The JSON as <c>JSON.stringify</c> spells it, which escapes only what JSON requires: a quote, a
     /// backslash, a control character and a lone surrogate. Even the relaxed encoder escapes more —

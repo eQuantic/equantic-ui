@@ -588,3 +588,91 @@ holds. The per mille sign, the signs of an exponent and the percent sign SHALL b
 
 - **WHEN** `object o = 2;` is written with `string.Format("{0:D3}", o)`
 - **THEN** it writes `002`, as .NET does
+
+### Requirement: The cancellation trio cancels as .NET does
+
+`CancellationTokenSource`, `CancellationToken` and `CancellationTokenRegistration` SHALL cross as the
+runtime's, which SHALL behave as .NET's: callbacks run once, the last registered first; one registered
+after the cancellation runs at once, and its registration is the default one, whose token is `None`;
+a method group of the three keeps its receiver, read once; the callbacks that throw are gathered into an
+`AggregateException` after the others ran; `ThrowIfCancellationRequested` throws an
+`OperationCanceledException`; a disposed source refuses to cancel and lets go of its callbacks, a
+registration still unregistering once after it, and a linked one lets go of the tokens it follows;
+a delay is taken up to 4294967294 ms, its fraction cut, refused past it, and waited out past what a
+browser's timer holds; `default(CancellationTokenRegistration)` is the registration of nothing,
+whose token is `None`; and `CancellationToken.None`,
+`default` and `new CancellationToken(false)` are one token that never cancels. A member of the three
+the runtime does not carry SHALL be refused at the build (EQ2004), a constructor among them: the
+runtime's source takes a delay or nothing, and a `TimeProvider` beside the delay is refused.
+
+#### Scenario: Three callbacks
+
+- **WHEN** browser-side code registers callbacks writing `a`, `b` and `c` on a token and cancels its
+  source twice
+- **THEN** the log reads `cba`, as in .NET
+
+#### Scenario: A source's Cancel as a callback
+
+- **WHEN** browser-side code registers `inner.Cancel` on another source's token and cancels that source
+- **THEN** `inner` is cancelled, as in .NET
+
+#### Scenario: A registration after the cancellation
+
+- **WHEN** a callback is registered on a token already cancelled
+- **THEN** it runs at once, and its registration's token is `CancellationToken.None`, which cannot be
+  cancelled, as in .NET
+
+#### Scenario: A cancelled token asked to throw
+
+- **WHEN** a cancelled token's `ThrowIfCancellationRequested` is caught as an
+  `OperationCanceledException`
+- **THEN** its message is `The operation was canceled.`, as in .NET
+
+#### Scenario: A member with no twin
+
+- **WHEN** client code calls `TryReset` on a source, or reads a token's `WaitHandle`
+- **THEN** the build fails with EQ2004
+
+### Requirement: A char's search checks its start and its count as .NET does
+
+`IndexOf(char, int)`, `IndexOf(char, int, int)`, `LastIndexOf(char, int)` and
+`LastIndexOf(char, int, int)` SHALL search the range their start and count give, ordinally, and SHALL
+throw .NET's `ArgumentOutOfRangeException`, with its message, for a start or a count outside the
+string, the start checked first. `IndexOf`'s start MAY stand at the end of the string.
+`LastIndexOf`'s start SHALL stand on a char of the string, and an empty string's `LastIndexOf` SHALL
+answer -1 for any start and count.
+
+#### Scenario: The count ends the search
+
+- **WHEN** `"abcabc".IndexOf('c', 0, 2)` runs
+- **THEN** it answers -1
+
+#### Scenario: A start at the end
+
+- **WHEN** `"abcabc".IndexOf('c', 6)` runs
+- **THEN** it answers -1
+
+#### Scenario: A start past the end
+
+- **WHEN** `"abc".IndexOf('a', 4)` runs
+- **THEN** it throws with the message `Index was out of range. Must be non-negative and less than or equal to the size of the collection. (Parameter 'startIndex')`
+
+#### Scenario: A count past the end
+
+- **WHEN** `"abcabc".IndexOf('c', 2, 5)` runs
+- **THEN** it throws with the message `Count must be positive and count must refer to a location within the string/array/collection. (Parameter 'count')`
+
+#### Scenario: The count ends the search back
+
+- **WHEN** `"abcabc".LastIndexOf('a', 5, 2)` runs
+- **THEN** it answers -1
+
+#### Scenario: LastIndexOf from one past the end
+
+- **WHEN** `"abc".LastIndexOf('c', 3)` runs
+- **THEN** it throws with the message `Index was out of range. Must be non-negative and less than the size of the collection. (Parameter 'startIndex')`
+
+#### Scenario: An empty string
+
+- **WHEN** `"".LastIndexOf('c', 5)` runs
+- **THEN** it answers -1

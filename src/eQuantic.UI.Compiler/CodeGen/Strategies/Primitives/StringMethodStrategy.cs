@@ -1,5 +1,6 @@
 using System.Text.RegularExpressions;
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using eQuantic.UI.Compiler.CodeGen.Ir;
 
@@ -73,6 +74,8 @@ public class StringMethodStrategy : IConversionStrategy
         // matched a k, a comparison in a variable was dropped, and so was Replace's (#528).
         if (ComparingShape(invocation, methodName, context) is { } shape)
             return ComparingCall(invocation, methodName, shape, context);
+        if (CharSearch(invocation, methodName, context) is { } charSearch)
+            return charSearch;
 
         var caller = context.Converter.ConvertExpression(memberAccess.Expression);
         var args = invocation.ArgumentList.Arguments.Select(a => context.Converter.ConvertExpression(a.Expression)).ToList();
@@ -197,9 +200,43 @@ public class StringMethodStrategy : IConversionStrategy
             return context.Unhandled(invocation,
                 $"string.{methodName} (a culture comparison has no search in the browser: search by Ordinal or OrdinalIgnoreCase)");
 
+        return RuntimeCall(invocation, helper, shape.Split(',').Length, shape == "s,s" ? ", 'ordinal'" : "", bound, context);
+    }
+
+    /// <summary>
+    /// A char's search with a start, and with a count: ordinal, as every char search is, through the
+    /// runtime, which checks the range as .NET 10 checks it. JavaScript's <c>indexOf</c> and
+    /// <c>lastIndexOf</c> clamped a start outside the string and take no count, so the count was
+    /// dropped (#534). The bound method says it is the char overload; with no model to ask, a char
+    /// literal written as the value is the only evidence there is.
+    /// </summary>
+    private static string? CharSearch(InvocationExpressionSyntax invocation, string methodName, ConversionContext context)
+    {
+        if (methodName is not ("IndexOf" or "LastIndexOf")) return null;
+        var arguments = invocation.ArgumentList.Arguments;
+        var bound = context.SemanticHelper.GetSymbol(invocation) as IMethodSymbol;
+        var isCharSearch = bound is not null
+            ? bound.Parameters.Length is 2 or 3
+                && bound.Parameters[0].Type.SpecialType == SpecialType.System_Char
+                && bound.Parameters.Skip(1).All(parameter => parameter.Type.SpecialType == SpecialType.System_Int32)
+            : arguments.Count is 2 or 3 && arguments[0].Expression.IsKind(SyntaxKind.CharacterLiteralExpression);
+        if (!isCharSearch) return null;
+        var helper = methodName == "IndexOf" ? Eq.StringIndexOfChar : Eq.StringLastIndexOfChar;
+        return RuntimeCall(invocation, helper, bound?.Parameters.Length ?? arguments.Count, "", bound, context);
+    }
+
+    /// <summary>
+    /// A call of the runtime's <paramref name="helper"/> with the receiver first and the overload's
+    /// <paramref name="arity"/> arguments after it, as C# lists them, then <paramref name="extra"/>.
+    /// A named argument goes to its parameter's place and still runs where it is written, so a call
+    /// binds nothing to keep the order its arguments run in.
+    /// </summary>
+    private static string RuntimeCall(InvocationExpressionSyntax invocation, string helper, int arity, string extra,
+        IMethodSymbol? bound, ConversionContext context)
+    {
         context.UsedHelpers.Add(Eq.Import);
-        var parameters = Enumerable.Range(0, shape.Split(',').Length).Select(slot => $"{{{slot}}}");
-        var template = $"{helper}({{R}}, {string.Join(", ", parameters)}{(shape == "s,s" ? ", 'ordinal'" : "")})";
+        var parameters = Enumerable.Range(0, arity).Select(slot => $"{{{slot}}}");
+        var template = $"{helper}({{R}}, {string.Join(", ", parameters)}{extra})";
         var access = (MemberAccessExpressionSyntax)invocation.Expression;
         var parts = new List<JsExpr> { context.Converter.ConvertIr(access.Expression) };
         parts.AddRange(invocation.ArgumentList.Arguments.Select(argument => context.Converter.ConvertIr(argument.Expression)));

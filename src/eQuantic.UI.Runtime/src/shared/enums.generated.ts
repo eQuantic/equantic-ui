@@ -24,7 +24,11 @@ export type BiometricResultValue =
 
 export type CodeCompletionKindValue =
   'text' | 'method' | 'function' | 'constructor' | 'field' | 'variable' | 'class' | 'interface'
-  | 'module' | 'property' | 'enum' | 'keyword' | 'snippet' | 'file';
+  | 'module' | 'property' | 'enum' | 'keyword' | 'snippet' | 'file' | 'struct' | 'enumMember'
+  | 'constant' | 'event' | 'operator' | 'typeParameter' | 'value' | 'unit' | 'color' | 'reference'
+  | 'folder';
+
+export type CodeCompletionTriggerValue = 'invoked' | 'typing' | 'character' | 'incomplete';
 
 export type CodeDecorationKindValue =
   'highlight' | 'squiggle' | 'outline' | 'strike' | 'underline' | 'line';
@@ -114,6 +118,11 @@ export type SemanticRoleValue =
   'staticText' | 'button' | 'link' | 'textField' | 'codeField' | 'slider' | 'image' | 'checkbox'
   | 'switch' | 'gridCell' | 'progressIndicator' | 'group' | 'radio' | 'tab' | 'menuItem' | 'option'
   | 'destination' | 'tabBar' | 'radioGroup' | 'comboBox' | 'dialog' | 'alertDialog';
+
+export type ServerConnectionStateValue =
+  'disconnected' | 'connecting' | 'connected' | 'reconnecting';
+
+export type ServerTopicRefusalReasonValue = 'forbidden' | 'unknown' | 'limitReached' | 'failed';
 
 export type ShapeScaleValue =
   'none' | 'extraSmall' | 'small' | 'medium' | 'large' | 'extraLarge' | 'full';

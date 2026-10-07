@@ -331,6 +331,7 @@ public class CSharpToJsConverter
         _strategyRegistry.Register<DateOnlyTimeOnlyStrategy>();
         _strategyRegistry.Register<DateTimeOffsetStrategy>();
         _strategyRegistry.Register<StringBuilderStrategy>();
+        _strategyRegistry.Register<CancellationStrategy>();
         _strategyRegistry.Register<QueueStackStrategy>();
         _strategyRegistry.Register<DictionaryStrategy>(); // Priority 25 - every dictionary, a runtime class
         _strategyRegistry.Register<RegexStrategy>();

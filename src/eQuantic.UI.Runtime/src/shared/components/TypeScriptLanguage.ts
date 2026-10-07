@@ -10,18 +10,18 @@ export class TypeScriptLanguage extends CurlyBraceLanguage {
         $o.indentWidth = 2;
         return $o;
     })();
-        const $$$keywords = $eq.collections.hashSetOf(['abstract', 'any', 'as', 'async', 'await', 'break', 'case', 'catch', 'class', 'const', 'constructor', 'continue', 'debugger', 'declare', 'default', 'delete', 'do', 'else', 'enum', 'export', 'extends', 'finally', 'for', 'from', 'function', 'get', 'if', 'implements', 'import', 'in', 'infer', 'instanceof', 'interface', 'is', 'keyof', 'let', 'namespace', 'new', 'of', 'private', 'protected', 'public', 'readonly', 'return', 'satisfies', 'set', 'static', 'super', 'switch', 'this', 'throw', 'try', 'type', 'typeof', 'var', 'while', 'yield']);
+        const $$$reservedWords = $eq.collections.hashSetOf(['abstract', 'any', 'as', 'async', 'await', 'break', 'case', 'catch', 'class', 'const', 'constructor', 'continue', 'debugger', 'declare', 'default', 'delete', 'do', 'else', 'enum', 'export', 'extends', 'finally', 'for', 'from', 'function', 'get', 'if', 'implements', 'import', 'in', 'infer', 'instanceof', 'interface', 'is', 'keyof', 'let', 'namespace', 'new', 'of', 'private', 'protected', 'public', 'readonly', 'return', 'satisfies', 'set', 'static', 'super', 'switch', 'this', 'throw', 'try', 'type', 'typeof', 'var', 'while', 'yield']);
         const $$$typeWords = $eq.collections.hashSetOf(['bigint', 'boolean', 'never', 'number', 'object', 'string', 'symbol', 'unknown', 'void']);
         const $$$constantWords = $eq.collections.hashSetOf(['true', 'false', 'null', 'undefined', 'NaN', 'Infinity']);
         super();
         this.$rules = $$$rules;
-        this.$keywords = $$$keywords;
+        this.$reservedWords = $$$reservedWords;
         this.$typeWords = $$$typeWords;
         this.$constantWords = $$$constantWords;
     }
 
     declare $rules: CodeLanguageRules;
-    $keywords!: Set<string>;
+    $reservedWords!: Set<string>;
     $typeWords!: Set<string>;
     $constantWords!: Set<string>;
 
@@ -45,12 +45,12 @@ export class TypeScriptLanguage extends CurlyBraceLanguage {
         this.$rules = value;
     }
 
-    get keywords(): Set<string> {
-        return this.$keywords;
+    get reservedWords(): Set<string> {
+        return this.$reservedWords;
     }
 
-    set keywords(value: Set<string>) {
-        this.$keywords = value;
+    set reservedWords(value: Set<string>) {
+        this.$reservedWords = value;
     }
 
     get typeWords(): Set<string> {

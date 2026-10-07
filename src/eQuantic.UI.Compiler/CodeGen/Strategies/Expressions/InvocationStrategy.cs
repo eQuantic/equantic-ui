@@ -164,8 +164,12 @@ public class InvocationStrategy : IExpressionIrStrategy
             var callerIr = context.Converter.ConvertIr(genAccess.Expression);
             var caller = JsExprWriter.WriteIn(callerIr, JsPrecedence.Call);
 
-            // Handle delegate/action Invoke() calls
-            if (methodName == "Invoke")
+            // `handler.Invoke(x)` CALLS the delegate, which is `handler(x)` on the other side. Only a
+            // delegate's Invoke: a method of that name on a class is a method like any other, and the
+            // code engine's `Completion.Invoke()` went out as a call of the object it lives on, which
+            // has no call signature (#296). The name decides only where the model cannot be asked.
+            if (methodName == "Invoke"
+                && (symbol is { MethodKind: MethodKind.DelegateInvoke } || (symbol is null && context.CanGuess(invocation))))
             {
                 var proven = ProvenNotNull(context.SemanticHelper.GetSymbol(genAccess.Expression), genAccess.Expression, context);
                 return proven.Length == 0

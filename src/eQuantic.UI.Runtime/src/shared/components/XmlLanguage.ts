@@ -85,6 +85,10 @@ export class XmlLanguage {
         return '\u0000';
     }
 
+    get keywords(): string[] {
+        return [];
+    }
+
     toString(): string {
         return 'eQuantic.UI.Code.XmlLanguage';
     }

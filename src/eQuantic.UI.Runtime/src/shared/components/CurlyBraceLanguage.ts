@@ -3,9 +3,11 @@ import { $eq, CodeDocument, CodeLanguageRules, CodeToken, CodeTokenKindValue } f
 export abstract class CurlyBraceLanguage {
     constructor() {
         this.$rules = CodeLanguageRules.default;
+        this._keywords = null;
     }
 
     $rules!: CodeLanguageRules;
+    _keywords!: string[] | null;
     static stateNormal: number = 0;
     static stateBlockComment: number = 1;
     static stateMultilineString: number = 2;
@@ -20,9 +22,13 @@ export abstract class CurlyBraceLanguage {
         this.$rules = value;
     }
 
-    abstract keywords: Set<string>;
+    abstract reservedWords: Set<string>;
     abstract typeWords: Set<string>;
     abstract constantWords: Set<string>;
+
+    get keywords(): string[] {
+        return this._keywords ?? (this._keywords = [...new Set([...[...$eq.linq.seq(this.reservedWords), ...$eq.linq.seq(this.typeWords)], ...$eq.linq.seq(this.constantWords)])].slice());
+    }
 
     get hasVerbatimStrings(): boolean {
         return false;
@@ -187,7 +193,7 @@ export abstract class CurlyBraceLanguage {
                 continue;
             }
             if (this.hasBracketAttributes && c === '[' && CurlyBraceLanguage.isLineHead(line, i)) {
-                let close = line.indexOf(']', i);
+                let close = $eq.text.indexOfChar(line, ']', i);
                 if (close > 0) {
                     CurlyBraceLanguage.add(into, i, close + 1 - i, 'attribute');
                     i = close + 1;
@@ -202,7 +208,7 @@ export abstract class CurlyBraceLanguage {
 
     wordKind(word: string, line: string, afterIndex: number) {
         if (word.length > 1 && word[0] === '@') return 'attribute';
-        if (this.keywords.has(word)) return 'keyword';
+        if (this.reservedWords.has(word)) return 'keyword';
         if (this.constantWords.has(word)) return 'constant';
         if (this.typeWords.has(word)) return 'type';
         let next = CurlyBraceLanguage.nextNonSpace(line, afterIndex);

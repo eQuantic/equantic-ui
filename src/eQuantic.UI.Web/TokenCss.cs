@@ -87,6 +87,15 @@ public static class TokenCss
     public static string Padding(EdgeInsets insets) =>
         $"{Px(insets.Top)} {Px(insets.End)} {Px(insets.Bottom)} {Px(insets.Start)}";
 
+    /// <summary>
+    /// The focus ring's place in a box's shadow list (#508). A transparent zero shadow until the
+    /// control the box is the surface of takes keyboard focus, when the generated stylesheet sets
+    /// <c>--eq-ring</c> to the handoff's double ring: the ring is drawn INSIDE the list, beside the
+    /// box's elevation and glow, where a rule of its own replaced them. The TypeScript twin is
+    /// <c>RING_SLOT</c>.
+    /// </summary>
+    internal const string RingSlot = "var(--eq-ring, 0 0 #0000)";
+
     /// <summary>An elevation level as a box-shadow value (offset/blur/spread + light-dark color).</summary>
     public static string Shadow(ShadowSpec spec) => spec.IsNone
         ? "none"
@@ -377,21 +386,40 @@ public static class PhotonCssGenerator
         // Interaction mechanics (spec §01 pressed = token swap; feedback at Fast motion). The VALUES
         // arrive per element as custom properties set by the realizers; only the mechanics live here.
         css.AppendLine(".eq-pressable { -webkit-tap-highlight-color: transparent; }");
-        css.AppendLine(".eq-pressable > :first-child { transition: background-color var(--eq-motion-fast) ease-out; }");
-        css.AppendLine(".eq-pressable:active > :first-child { background-color: var(--eq-pressed-bg) !important; }");
+        // The fill's fade is a DEFAULT, at zero specificity: at (0,2,0) it replaced the surface's own
+        // transition (0,1,0), so a press that scales and a hover that lifts a control snapped,
+        // measured in Chromium as `background-color 0.1s ease-out` on a surface that declared
+        // `transform 0.2s` (#508). A surface that declares a transition keeps it.
+        css.AppendLine(":where(.eq-pressable > :first-child) { transition: background-color var(--eq-motion-fast) ease-out; }");
+        // Only a control that HAS a pressed fill swaps to it (eq-press-fill, set beside the custom
+        // property): a var() with no value and no fallback makes the declaration compute to the
+        // property's initial value, so every pressable without one went TRANSPARENT while pressed,
+        // measured in Chromium as rgba(0, 0, 0, 0) (#508).
+        css.AppendLine(".eq-press-fill:active > :first-child { background-color: var(--eq-pressed-bg) !important; }");
         // A SIMULATED press (the Simulated node) reuses the same declaration rather than a copy of
         // it: a documentation gallery showing a state that drifted from the real one is worse than
         // showing none, and one selector list cannot drift from itself.
-        css.AppendLine(".eq-pressed > :first-child { background-color: var(--eq-pressed-bg) !important; }");
+        css.AppendLine(".eq-pressed.eq-press-fill > :first-child { background-color: var(--eq-pressed-bg) !important; }");
         // Focus (spec §01): the double ring — 2dp Surface gap + 2dp FocusRing — on keyboard focus only
-        // (:focus-visible). The shadow sits on the CHILD so it follows the control's border-radius.
+        // (:focus-visible). It sits on the CHILD so it follows the control's border-radius.
         css.AppendLine(".eq-pressable { outline: none; }");
         // INERT yields to its wrapper (the native dispatch twin): a disabled control inside an
         // enabled pressable lets the click reach the pressable that composed it — a Menu whose
         // trigger is a disabled-looking Button still opens. Without this the browser suppresses
         // the click on the disabled control entirely and the wrapper never hears it.
         css.AppendLine(".eq-pressable [disabled], .eq-pressable [aria-disabled=\"true\"] { pointer-events: none; }");
-        css.AppendLine(".eq-pressable:focus-visible > :first-child { box-shadow: 0 0 0 2px var(--eq-color-surface), 0 0 0 4px var(--eq-color-focus); }");
+        // The ring is a slot in the child's OWN shadow list (TokenCss.RingSlot leads every list the
+        // realizers write), never a rule of its own: a box-shadow rule here outranked the box's, so
+        // keyboard focus took a raised or glowing control's elevation and glow away, where the
+        // handoff has the ring "coexist with any fill" (#508). The property does not inherit, so a
+        // shadowed box INSIDE the control draws no ring of its own, and a child with no shadow list
+        // takes the ring from a rule of zero specificity that any list of its own outranks. A
+        // SIMULATED focus (eq-focused) draws the same ring, as Photon's does.
+        css.AppendLine("@property --eq-ring { syntax: \"*\"; inherits: false; }");
+        css.AppendLine(".eq-pressable:focus-visible > :first-child, .eq-focused > :first-child "
+            + "{ --eq-ring: 0 0 0 2px var(--eq-color-surface), 0 0 0 4px var(--eq-color-focus); }");
+        css.AppendLine(":where(.eq-pressable:focus-visible > :first-child, .eq-focused > :first-child) "
+            + "{ box-shadow: var(--eq-ring); }");
 
         // HIT SLOP (spec §08). `Touch.MinTarget`'s own doc promised it — "visuals may be smaller, the
         // framework expands hit-slop symmetrically" — and on the web nothing kept the promise: every
@@ -403,18 +431,16 @@ public static class PhotonCssGenerator
         // padding is layout. It is centred on the control and at least the minimum on each side, so
         // the growth is symmetric and needs to know nothing about the control's own size.
         //
-        // Gated on a COARSE pointer, which is the browser answering the question Photon answers with
-        // Density: a pointer lands where it is aimed, and expanding a dense toolbar's buttons would
-        // grow each one into its neighbour. A finger gets the minimum, always.
-        css.AppendLine("@media (pointer: coarse) {");
-        // The containing block for the target below. It is the framework's own wrapper element, and
-        // an absolutely positioned descendant of a pressable anchoring to the pressable is the more
-        // correct answer anyway (a badge on a button); fixed layers are unaffected by `relative`.
-        css.AppendLine("  .eq-pressable { position: relative; }");
-        css.AppendLine("  .eq-pressable::after { content: \"\"; position: absolute; top: 50%; left: 50%; "
-            + $"width: 100%; height: 100%; min-width: {TokenCss.Px(Touch.MinTarget)}; min-height: {TokenCss.Px(Touch.MinTarget)}; "
-            + "transform: translate(-50%, -50%); }");
-        css.AppendLine("}");
+        // The finger's minimum is gated on a COARSE pointer, which is the browser answering the
+        // question Photon answers with Density: a pointer lands where it is aimed, and expanding a
+        // dense toolbar's buttons to it would grow each one into its neighbour. A finger gets the
+        // minimum, always.
+        //
+        // A FINE pointer keeps a floor of its own, Touch.MinPointerTarget, the minimum WCAG 2.2 SC
+        // 2.5.8 asks of a target: a 20px checkbox was a 20px target, while a dense toolbar's 26px
+        // buttons are past it and grow nothing (#430). Photon's Compact density is the same rule.
+        HitSlop(css, "coarse", Touch.MinTarget);
+        HitSlop(css, "fine", Touch.MinPointerTarget);
 
         // Overlay layer (Phase C): the viewport-fixed stacking layer — composition (scrim,
         // centering) belongs to the component; only the layer mechanics live here. The single
@@ -599,6 +625,37 @@ public static class PhotonCssGenerator
 
     private static void AppendColor(StringBuilder css, string name, ColorToken token) =>
         css.AppendLine($"  --eq-color-{name}: {TokenCss.Value(token)};");
+
+    /// <summary>
+    /// The hit slop for one kind of pointer: a pressable's target, centred on it and at least
+    /// <paramref name="minimum"/> on each side, without moving anything. The pressable is the slop's
+    /// containing block, and the child the lift below positions is the containing block of what the
+    /// content positions absolutely: the same box, since the pressable is a button with no padding
+    /// around one child (a badge on a button anchors to the button either way), and fixed layers are
+    /// unaffected by `relative`.
+    /// <para>
+    /// The target lies UNDER the control's own content, so it answers only where the control draws
+    /// nothing: the slop around a small one. It is the `::before`, first in tree order, and the
+    /// content is positioned like it, so the content paints and is hit after it, as Flutter's hit test
+    /// asks a child before its parent. A target over the content took every hit the content
+    /// should have had: under a fine pointer a Button's own box never matched `:hover`, so no button
+    /// showed its hover fill, and a Pressable around an IconButton took the inner control's hits
+    /// (#430, measured in a browser). The lift has no specificity, so a child that positions itself
+    /// (a raised box, a layer of a Stack) keeps its own. It reaches the pressable's child and no
+    /// deeper, so content behind a child that draws no box of its own (`display: contents`: an
+    /// InView, an Adaptive, a light and dark Image) stays under the slop (#622).
+    /// </para>
+    /// </summary>
+    private static void HitSlop(StringBuilder css, string pointer, float minimum)
+    {
+        css.AppendLine($"@media (pointer: {pointer}) {{");
+        css.AppendLine("  .eq-pressable { position: relative; }");
+        css.AppendLine("  .eq-pressable::before { content: \"\"; position: absolute; top: 50%; left: 50%; "
+            + $"width: 100%; height: 100%; min-width: {TokenCss.Px(minimum)}; min-height: {TokenCss.Px(minimum)}; "
+            + "transform: translate(-50%, -50%); }");
+        css.AppendLine("  :where(.eq-pressable) > * { position: relative; }");
+        css.AppendLine("}");
+    }
 
     private static string Cubic(Curve curve) =>
         string.Create(CultureInfo.InvariantCulture, $"{curve.X1}, {curve.Y1}, {curve.X2}, {curve.Y2}");
