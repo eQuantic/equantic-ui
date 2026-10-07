@@ -78,6 +78,8 @@ public static class ConsoleShell
         new(Icons.Copy, "Code editor", "/code"),
         new(Icons.Copy, "Code diff", "/diff"),
         new(Icons.Refresh, "Time", "/clock"),
+        // What a service on the server publishes, arriving over the page's one stream.
+        new(Icons.Notifications, "Live", "/live"),
         // Declared screens that the nav never listed: reachable only by typing the address, which
         // is the same defect as advertising a route that 404s, pointing the other way.
         new(Icons.Check, "Forms", "/form"),

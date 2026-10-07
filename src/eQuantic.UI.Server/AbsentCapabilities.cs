@@ -122,6 +122,21 @@ internal static class AbsentCapabilities
         public IDisposable Subscribe(Action<NetworkState> onChanged) => NoSubscription.Instance;
     }
 
+    /// <summary>
+    /// Server rendering has no page to keep a connection for: a component that subscribes in
+    /// <c>OnMount</c> renders here and connects nothing, and the browser subscribes once the page runs
+    /// there. The connection reads as disconnected, with no event received.
+    /// </summary>
+    internal sealed class ServerEvents : IServerEvents
+    {
+        public ServerConnection Connection => ServerConnection.Disconnected;
+
+        public IDisposable Subscribe<T>(ServerTopic<T> topic, Action<T> onEvent, Action<ServerTopicRefusal>? onRefused = null) =>
+            NoSubscription.Instance;
+
+        public IDisposable OnConnectionChanged(Action<ServerConnection> onChanged) => NoSubscription.Instance;
+    }
+
     /// <summary>Nothing will ever be delivered, so unsubscribing has nothing to undo.</summary>
     private sealed class NoSubscription : IDisposable
     {
