@@ -371,6 +371,8 @@ async function loadAndMountPage(
   if (hmrReplay && hmrState) {
     const page: object = component instanceof EscapeHatchPage ? component.page : component;
     const saved = hmrState[`${componentIdentity(page)}#0`];
+    // Once: the fields are the ones the page held before this reload, and nothing later may be handed them.
+    hmrState = null;
     if (saved) restorePageState(page, saved);
   }
 

@@ -17,6 +17,9 @@ server-data adoption, takes only what the hydration manifest lists.
   reloaded page before it builds, each rebuilt in the shape its initializer gives it.
 - A field the edit removed is left behind, a field it added keeps its initializer, and a field JSON
   cannot carry is left alone while the others cross.
+- Only data crosses: a primitive, an array or a plain object of data, a record or a struct, and the
+  runtime's value types, a `long` among them. A controller or a service keeps the one its initializer
+  makes, since its JSON is not it (found by the review before the pull request opened).
 
 For a developer: save a component, and the page comes back with the edit and the state it had.
 

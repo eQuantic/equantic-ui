@@ -1,7 +1,11 @@
 import { StatefulComponent, StatelessComponent } from '../core/component';
 import { Component } from '../core/types';
 import { adoptMember } from '../utils/adopt-member';
+import { DateOnly, DateTime, DateTimeOffset, TimeOnly, TimeSpan } from '../utils/datetime';
+import { Decimal } from '../utils/decimal';
+import { Dictionary } from '../utils/dictionary';
 import { hydrateValue } from '../utils/hydrate-value';
+import { SortedMap } from '../utils/sorted';
 
 /**
  * What a hot reload carries across for a page: the fields its C# declares. A write-once page keeps
@@ -27,9 +31,53 @@ function runtimeKeys(page: object): Set<string> {
   return new Set();
 }
 
+/** The value types the runtime holds as classes and `hydrateValue` rebuilds from their text. */
+const runtimeValues: ReadonlyArray<abstract new (...args: never[]) => object> = [
+  Decimal,
+  DateTime,
+  DateTimeOffset,
+  DateOnly,
+  TimeOnly,
+  TimeSpan,
+  Dictionary,
+  SortedMap,
+];
+
 /**
- * The page's fields, each as JSON can carry it across the reload. One that cannot cross (a cycle, a
- * bigint inside a plain object) is left behind alone, and the others still cross.
+ * Whether a value is DATA, which JSON carries and the reloaded page's initializer rebuilds as it was: a
+ * primitive, an array or a plain object of data, a record or a struct (whose twin has `with` and
+ * `equals`) of data, or one of the runtime's value types. Anything else is an object with a life of
+ * its own, a controller or a service, whose JSON is not it: rebuilt from that, its maps came back as
+ * objects no map method accepts and its callbacks as nothing, so it keeps its initializer instead.
+ */
+function isData(value: unknown, depth = 0): boolean {
+  if (depth > 64) return false;
+  if (value === null || value === undefined) return true;
+  switch (typeof value) {
+    case 'string':
+    case 'number':
+    case 'boolean':
+    case 'bigint':
+      return true;
+    case 'object':
+      break;
+    default:
+      return false;
+  }
+  if (Array.isArray(value)) return value.every((item) => isData(item, depth + 1));
+  if (runtimeValues.some((type) => value instanceof type)) return true;
+  const prototype = Object.getPrototypeOf(value) as { with?: unknown; equals?: unknown } | null;
+  const plain = prototype === Object.prototype || prototype === null;
+  const record = !plain && typeof prototype?.with === 'function' && typeof prototype.equals === 'function';
+  return (plain || record) && Object.values(value as object).every((member) => isData(member, depth + 1));
+}
+
+/** A `long` is a BigInt here, which JSON refuses: it crosses as its digits, which `hydrateValue` reads back. */
+const wire = (_: string, value: unknown): unknown => (typeof value === 'bigint' ? value.toString() : value);
+
+/**
+ * The page's fields that are data, each already in the form JSON carries across the reload. One that
+ * cannot cross (a cycle) is left behind alone, and the others still cross.
  */
 export function capturePageState(page: object): Record<string, unknown> {
   const skip = runtimeKeys(page);
@@ -37,13 +85,12 @@ export function capturePageState(page: object): Record<string, unknown> {
   for (const key of Object.keys(page)) {
     if (skip.has(key)) continue;
     const value = (page as Record<string, unknown>)[key];
-    if (typeof value === 'function') continue;
+    if (value === undefined || !isData(value)) continue;
     try {
-      JSON.stringify(value);
+      state[key] = JSON.parse(JSON.stringify(value, wire));
     } catch {
       continue;
     }
-    state[key] = value;
   }
   return state;
 }

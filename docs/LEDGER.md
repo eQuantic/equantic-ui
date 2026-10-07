@@ -1651,8 +1651,9 @@ record of a release, the wiki's Upgrading page is the distillate.
   the dashboard's `Count: 3` came back `Count: 0`, under `dotnet run` and under `dotnet watch` alike
   ([#664](https://github.com/eQuantic/equantic-ui/issues/664)). The page's own fields cross now,
   without the runtime's beside them, and the reloaded page gets them before it builds, each rebuilt
-  in the shape its initializer gives it. Proposed and archived through OpenSpec
-  (`openspec/specs/hot-reload`).
+  in the shape its initializer gives it: data only, a record and a `long` included, since a
+  controller rebuilt from its JSON came back with maps no map method accepts, as the review before
+  the pull request found. Proposed and archived through OpenSpec (`openspec/specs/hot-reload`).
 
 ## Retired documents
 

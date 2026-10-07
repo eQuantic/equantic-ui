@@ -72,6 +72,52 @@ describe('a hot reload carries a page across in the fields its C# declares', () 
     expect(Object.prototype.hasOwnProperty.call(after, '_label')).toBe(false);
   });
 
+  it('carries a record and a long, and leaves a controller with its initializer', () => {
+    // A record's twin has `with` and `equals`; a controller is an object with a life of its own, whose
+    // JSON is not it: rebuilt from that, a map member came back as an object no map method accepts.
+    class Point {
+      constructor(
+        public x = 0,
+        public y = 0,
+      ) {}
+      with(patch: Partial<Point>): Point {
+        return Object.assign(new Point(this.x, this.y), patch);
+      }
+      equals(other: unknown): boolean {
+        return other instanceof Point && other.x === this.x && other.y === this.y;
+      }
+    }
+    class Controller {
+      readonly seen = new Map<string, number>();
+      readonly listeners: Array<() => void> = [];
+    }
+    class Drawing extends StatefulComponent {
+      static $typeId = 'App.Drawing';
+      _at = new Point();
+      _total = 0n;
+      _controller = new Controller();
+      build(): Component {
+        throw new Error('not built here');
+      }
+    }
+
+    const before = new Drawing();
+    before._at = new Point(3, 4);
+    before._total = 5n;
+    before._controller.seen.set('a', 1);
+    const state = throughJson(capturePageState(before));
+
+    const after = new Drawing();
+    const fresh = after._controller;
+    restorePageState(after, state);
+
+    expect('_controller' in state).toBe(false);
+    expect(after._controller).toBe(fresh);
+    expect(after._at).toBeInstanceOf(Point);
+    expect(after._at.equals(new Point(3, 4))).toBe(true);
+    expect(after._total).toBe(5n);
+  });
+
   it('leaves behind alone a field JSON cannot carry', () => {
     const page = new Counter() as Counter & { _loop?: unknown };
     const loop: Record<string, unknown> = {};
