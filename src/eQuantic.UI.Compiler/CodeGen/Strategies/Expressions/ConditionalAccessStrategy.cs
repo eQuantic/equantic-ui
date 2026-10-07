@@ -81,10 +81,15 @@ public class ConditionalAccessStrategy : IConversionStrategy
         // `a?.(x)`. Anything not rooted at the receiver — `$eq.collections.contains($n0, x)`,
         // `[...$n0, x]` — is guarded so the receiver is still evaluated once and null still answers null.
         if (converted.StartsWith(placeholder + ".", StringComparison.Ordinal))
-            return $"{receiver}?.{converted[(placeholder.Length + 1)..]}";
+            return AnswersNull(conditionalAccess, $"{receiver}?.{converted[(placeholder.Length + 1)..]}", context);
         if (converted.StartsWith(placeholder + "[", StringComparison.Ordinal)
             || converted.StartsWith(placeholder + "(", StringComparison.Ordinal))
-            return $"{receiver}?.{converted[placeholder.Length..]}";
+            return AnswersNull(conditionalAccess, $"{receiver}?.{converted[placeholder.Length..]}", context);
+        // A tail that is a chain of its own was left bare for this access to settle, and a guard
+        // hands it out as it is: `(h == null ? null : Ext.pick(h.name)?.length)` answered undefined
+        // where Pick answered null. So the guard settles it, where its value is used.
+        if (whenNotNull is ConditionalAccessExpressionSyntax)
+            converted = AnswersNull(conditionalAccess, converted, context);
         // No function around the tail: it runs in the function it is written in, so an argument that
         // awaits is awaited there, only when the receiver is not null, and nothing the call answers
         // is awaited (an arrow made async did both, and a task the call returned came back as its
@@ -104,6 +109,30 @@ public class ConditionalAccessStrategy : IConversionStrategy
             return context.Unhandled(node,
                 "null-conditional access (an argument that awaits, where no statement can declare the receiver's temporary)");
         return $"(({placeholder}) => {placeholder} == null ? null : {converted})({receiver})";
+    }
+
+    /// <summary>
+    /// JavaScript's optional chain answers <c>undefined</c> where C# answers <c>null</c>, and the two
+    /// part ways where the value is used: a parameter typed <c>T | null</c> refuses it, JSON drops the
+    /// key that holds it, and <c>=== null</c> is false for it (#633). So the chain answers null, except
+    /// where nothing can tell: a call that returns nothing (<c>onChanged?.Invoke(x)</c>, whose value C#
+    /// never lets anyone use), a statement that discards its value, the left of a <c>??</c>, and the
+    /// tail of another chain, which that chain settles, whether it ends as a chain or behind a guard.
+    /// </summary>
+    private static string AnswersNull(ConditionalAccessExpressionSyntax access, string chain, ConversionContext context)
+    {
+        if (context.SemanticHelper.GetType(access) is { SpecialType: SpecialType.System_Void }) return chain;
+        SyntaxNode node = access;
+        while (node.Parent is ParenthesizedExpressionSyntax parenthesized) node = parenthesized;
+        var settled = node.Parent switch
+        {
+            null => true,
+            ExpressionStatementSyntax => true,
+            ConditionalAccessExpressionSyntax => true,
+            BinaryExpressionSyntax coalesce when coalesce.IsKind(SyntaxKind.CoalesceExpression) && coalesce.Left == node => true,
+            _ => false,
+        };
+        return settled ? chain : $"({chain} ?? null)";
     }
 
     /// <summary>A receiver whose second read nobody can observe, and that nothing between the null
