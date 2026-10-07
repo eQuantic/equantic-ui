@@ -75,6 +75,40 @@ public class JsTemplateTests
             .Should().Be("(($v, _provider) => $eq.bool.convert($v))(f(), g())");
     }
 
+    /// <summary>
+    /// A plain name inside the template's function is read again on each call: a selector that
+    /// reassigns its own variable made the later elements call the new delegate, where C# read the
+    /// argument once (Copilot's review of #661).
+    /// </summary>
+    [Fact]
+    public void APlainNameInsideTheTemplatesOwnFunction_IsReadOnce()
+    {
+        Write(JsExpr.Template("{0}.reduce(($sum, $x) => $sum + {1}($x), 0)", JsExpr.Identifier("xs"), JsExpr.Identifier("selector")))
+            .Should().Be("(($0, $1) => $0.reduce(($sum, $x) => $sum + $1($x), 0))(xs, selector)");
+    }
+
+    /// <summary>
+    /// A part holding a template of its own declares that template's names, and its <c>$x</c> is not
+    /// the <c>$x</c> of the function around it: <c>Intersect(Other().DistinctBy(x => x))</c> stayed in
+    /// the filter and called <c>Other()</c> once per element (Copilot's review of #661).
+    /// </summary>
+    [Fact]
+    public void APartThatDeclaresTheFunctionsNameItself_IsBoundOnce()
+    {
+        Write(JsExpr.Template("[...new Set({0})].filter(($x) => {1}.includes($x))",
+                Call("f()"), Call("(($arr) => $arr.filter(($x) => $x > 0))(g())")))
+            .Should().Be("(($0, $1) => [...new Set($0)].filter(($x) => $1.includes($x)))(f(), (($arr) => $arr.filter(($x) => $x > 0))(g()))");
+    }
+
+    /// <summary>A hole past nine: a comparator with eleven keys held `{10}` as text (Copilot's review of #661).</summary>
+    [Fact]
+    public void AHoleNumberedPastNine_IsFilled()
+    {
+        var parts = Enumerable.Range(0, 12).Select(i => (JsExpr)JsExpr.Literal(i.ToString())).ToArray();
+        Write(JsExpr.Template(string.Join(", ", Enumerable.Range(0, 12).Select(i => $"{{{i}}}")), parts))
+            .Should().Be(string.Join(", ", Enumerable.Range(0, 12)));
+    }
+
     [Fact]
     public void BindingALaterPart_BindsTheEarlierOnes_ToKeepEvaluationOrder()
     {

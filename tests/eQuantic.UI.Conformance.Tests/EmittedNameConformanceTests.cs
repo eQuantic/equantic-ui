@@ -32,6 +32,10 @@ public class EmittedNameConformanceTests
         { "Average's source, once", "int calls = 0; int[] Items() { calls++; return new[] { 1, 2, 3 }; } var avg = Items().Average(); return avg * 10 + calls;" },
         { "Sum's selector, once", "int calls = 0; Func<int, int> Make() { calls++; return v => v * 2; } var total = new[] { 1, 2, 3 }.Sum(Make()); return total * 10 + calls;" },
         { "GroupBy's key selector, once", "int calls = 0; Func<int, int> Key() { calls++; return v => v % 2; } var groups = new[] { 1, 2, 3 }.GroupBy(Key()).Count(); return groups * 10 + calls;" },
+        { "Intersect's sequence with a lowering of its own, once", "int calls = 0; int[] Other() { calls++; return new[] { 1, 2 }; } var r = new[] { 1, 2, 3 }.Intersect(Other().DistinctBy(x => x)).ToArray(); return calls * 100 + r.Length;" },
+        { "Except's sequence with a lowering of its own, once", "int calls = 0; int[] Other() { calls++; return new[] { 1, 2 }; } var r = new[] { 1, 2, 3 }.Except(Other().DistinctBy(x => x)).ToArray(); return calls * 100 + r.Length;" },
+        { "a selector variable, read once", "Func<int, int> selector = null; selector = x => { selector = y => 100; return x; }; return new[] { 1, 2, 3 }.Sum(selector);" },
+        { "eleven ordering keys", "var r = new[] { 3, 1, 2 }.OrderBy(x => x % 2).ThenBy(x => x).ThenBy(x => x).ThenBy(x => x).ThenBy(x => x).ThenBy(x => x).ThenBy(x => x).ThenBy(x => x).ThenBy(x => x).ThenBy(x => x).ThenBy(x => x).ToArray(); return string.Join(\",\", r);" },
         { "a label named package", "int n = 0; package: for (int i = 0; i < 3; i++) { for (int j = 0; j < 3; j++) { if (j == 1) continue package; if (i == 2) break package; n++; } } return n;" },
         { "a member written @class", "return new R2(3).@class;" },
         { "a with key written @class", "return (new R2(3) with { @class = 5 }).ToString();" },
@@ -44,4 +48,21 @@ public class EmittedNameConformanceTests
         _ = name;
         ConformanceRunner.AssertStatementsSameAsDotNet(statements, Prelude);
     }
+
+    /// <summary>
+    /// A type parameter written <c>@class</c> is declared <c>class$</c>, and a reference one level down
+    /// kept the C# spelling (<c>IReadOnlyList&lt;@class&gt;</c> and <c>@class[]</c> annotated
+    /// <c>@class[]</c>), which no module parses (Copilot's review of #661). Through the module graph,
+    /// which declares a class, and with the annotations TypeScript reads.
+    /// </summary>
+    [SkippableTheory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void ATypeParameterWrittenVerbatim_IsNamedAsDeclared_AtAnyDepth(bool typeAnnotations) =>
+        ModuleGraph.AssertSameAsDotNet("""
+            public static class Typed
+            {
+                public static int Count<@class>(System.Collections.Generic.IReadOnlyList<@class> values, @class[] more) => values.Count + more.Length;
+            }
+            """, typeAnnotations, ("a type parameter written @class, one level down", "return Typed.Count(new[] { 1, 2, 3 }, new[] { 4 });"));
 }

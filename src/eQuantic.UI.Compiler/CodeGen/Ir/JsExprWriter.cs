@@ -117,7 +117,7 @@ public static class JsExprWriter
         return (block.Text.Contains('\n') ? text.Resume() : text).Done();
     }
 
-    private static readonly Regex Hole = new(@"\{(\d)\}", RegexOptions.Compiled);
+    private static readonly Regex Hole = new(@"\{(\d+)\}", RegexOptions.Compiled);
 
     /// <summary>
     /// Single evaluation, decided here and nowhere else. A part the template mentions more than
@@ -131,9 +131,12 @@ public static class JsExprWriter
     /// A part whose hole sits inside a function the template itself defines is bound the same way,
     /// however many times it is mentioned: there it ran once per call of that function, where C#
     /// evaluated it once, before the call it is an argument of (<see cref="InsideAFunction"/>, #657).
-    /// Two stay where they are: a lambda written in place, and a part that reads a name the template's
-    /// own function declares, which only exists in there: <c>(($v, _provider) => {0})(…)</c> hands its
-    /// <c>{0}</c> the <c>$v</c> it converts (<see cref="DeclaredBy"/>).
+    /// A plain name too: read again on each call, it is whatever the function's earlier calls left in
+    /// it, where C# read it once (a selector that reassigns its own variable). Only what is
+    /// <see cref="IsFixed">fixed</see> stays where it is, a lambda written in place among it, and so
+    /// does a part that reads a name the template's own function declares, which only exists in there:
+    /// <c>(($v, _provider) => {0})(…)</c> hands its <c>{0}</c> the <c>$v</c> it converts
+    /// (<see cref="DeclaredBy"/>).
     /// </para>
     /// </summary>
     private static JsWritten RenderTemplate(JsTemplate template)
@@ -153,8 +156,8 @@ public static class JsExprWriter
 
         var bound = new bool[parts.Count];
         for (var i = 0; i < parts.Count; i++)
-            bound[i] = (uses[i] > 1 || deferred[i] && !IsFunctionLiteral(parts[i]) && !Reads(parts[i], declared))
-                && !IsInlinable(parts[i]);
+            bound[i] = uses[i] > 1 && !IsInlinable(parts[i])
+                || deferred[i] && !IsFixed(parts[i]) && !Reads(parts[i], declared);
         var last = Array.LastIndexOf(bound, true);
         // A bound part runs FIRST, as the arrow's argument, and a name left inline is read later,
         // in the body, after whatever that part did. C# had read the name before it: a key whose
@@ -300,12 +303,17 @@ public static class JsExprWriter
         }
     }
 
-    /// <summary>Whether <paramref name="part"/> reads one of <paramref name="names"/>.</summary>
+    /// <summary>Whether <paramref name="part"/> reads one of <paramref name="names"/>: one it does not
+    /// declare itself. A part holding a template of its own declares that template's names, and its
+    /// <c>$x</c> is not the <c>$x</c> of the function around it: <c>Intersect</c>'s second sequence,
+    /// <c>Other().DistinctBy(…)</c>, read as reading the filter's element, stayed inside the filter
+    /// and called <c>Other()</c> once per element.</summary>
     private static bool Reads(JsExpr part, HashSet<string> names)
     {
         if (names.Count == 0) return false;
         var text = Written(part).Text;
-        return names.Any(name => Regex.IsMatch(text, $@"(?<![\w$]){Regex.Escape(name)}(?![\w$])"));
+        var own = DeclaredBy(text);
+        return names.Any(name => !own.Contains(name) && Regex.IsMatch(text, $@"(?<![\w$]){Regex.Escape(name)}(?![\w$])"));
     }
 
     /// <summary>The index of the quote that closes the string opening at <paramref name="open"/>,
