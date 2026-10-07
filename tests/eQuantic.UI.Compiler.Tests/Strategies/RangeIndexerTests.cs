@@ -1,4 +1,7 @@
+using eQuantic.UI.Compiler.Services;
 using FluentAssertions;
+using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
 using Xunit;
 
 namespace eQuantic.UI.Compiler.Tests.Strategies;
@@ -48,5 +51,50 @@ public class RangeIndexerTests
             .Should().Be("line(index).slice(at, end)",
                 "a slice that called the method twice would do the work twice — and disagree with "
                 + "itself when the method is not pure");
+    }
+
+    /// <summary>
+    /// A range over an indexer that takes the <c>Range</c> itself hands it a System.Range value, which has
+    /// no translation here: it is refused (EQ2004) at the range, where it was a call of a <c>slice</c>
+    /// the twin does not have, or of a <c>Slice</c> that takes a length beside it (#585).
+    /// </summary>
+    [Fact]
+    public void ARangeHandedToAnIndexerOverRange_IsRefused()
+    {
+        var errors = ErrorsOf("""
+            public class Ranged
+            {
+                public int Count => 5;
+                public string this[System.Range r] => "ranged";
+                public int[] Slice(int start, int length) => new int[length];
+            }
+
+            public sealed class Probe
+            {
+                public object Run() => new Ranged()[1..3];
+            }
+            """);
+
+        errors.Should().Contain("EQ2004");
+    }
+
+    /// <summary>Compiled with the framework referenced, so the access BINDS: the bound tree names the
+    /// member the range reaches, which a standalone parse cannot.</summary>
+    private static IReadOnlyList<string> ErrorsOf(string source)
+    {
+        var tree = CSharpSyntaxTree.ParseText(source, ParseDefaults.Options, path: "Probe.cs");
+        var references = ((string)AppContext.GetData("TRUSTED_PLATFORM_ASSEMBLIES")!)
+            .Split(Path.PathSeparator)
+            .Where(p => p.EndsWith(".dll", StringComparison.OrdinalIgnoreCase))
+            .Select(p => (MetadataReference)TestReferences.Of(p))
+            .Append(TestReferences.Of(typeof(eQuantic.UI.Primitives.VisualNode).Assembly.Location));
+        var compilation = CSharpCompilation.Create("Probe", [tree], references,
+            new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
+        var compiler = new ComponentCompiler();
+        compiler.SetProjectCompilation(compilation);
+        return compiler.CompileSource(source, "Probe.cs")
+            .SelectMany(result => result.Errors)
+            .Select(error => error.Code)
+            .ToList();
     }
 }

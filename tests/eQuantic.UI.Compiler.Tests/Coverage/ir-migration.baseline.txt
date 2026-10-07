@@ -42,7 +42,6 @@ OrderByStrategy
 QueryExpressionStrategy
 QueueStackStrategy
 RangeExpressionStrategy
-RangeIndexerStrategy
 ReferenceEqualsStrategy
 RegexStrategy
 ResourceAccessorStrategy

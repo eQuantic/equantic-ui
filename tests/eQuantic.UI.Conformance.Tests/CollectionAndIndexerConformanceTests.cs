@@ -157,6 +157,74 @@ public class CollectionAndIndexerConformanceTests
     public void ICollectionsAddAndClear_ReachAClassOfTheAppsOwn(string name, bool typeAnnotations) =>
         ModuleGraph.AssertSameAsDotNet(Bags, typeAnnotations, BagCases.Single(c => c.Name == name));
 
+    private const string Slices = """
+        using System.Collections.Generic;
+
+        public class Strip
+        {
+            public static string Text = "";
+            private readonly int[] _v = { 1, 2, 3, 4, 5 };
+            public int Length { get { Text += "L"; return _v.Length; } }
+            public int this[int i] => _v[i];
+            public int[] Slice(int start, int length)
+            {
+                Text += "S" + start + "," + length;
+                var r = new int[length];
+                for (var i = 0; i < length; i++) r[i] = _v[start + i];
+                return r;
+            }
+            public static Strip R(Strip s) { Text += "R"; return s; }
+            public static int At(string step, int value) { Text += step; return value; }
+        }
+
+        public class Words
+        {
+            private readonly List<string> _v;
+            public Words(params string[] v) { _v = new List<string>(v); }
+            public int Count => _v.Count;
+            public string this[int i] => _v[i];
+            public Words Slice(int start, int length) => new Words(_v.GetRange(start, length).ToArray());
+            public override string ToString() => string.Join(",", _v);
+        }
+        """;
+
+    private static readonly (string Name, string Statements)[] SliceCases =
+    [
+        // "2|2,3": Slice(1, 2), where JavaScript's slice(1, 3) is three elements
+        ("the row of #585", "var part = new Strip()[1..3]; return part.Length + \"|\" + string.Join(\",\", part);"),
+        // "3,4"
+        ("a range from the end", "var p = new Strip()[^3..^1]; return string.Join(\",\", p);"),
+        // "1,2|4,5|1,2,3,4,5"
+        ("an open start, an open end and both", "var s = new Strip(); return string.Join(\",\", s[..2]) + \"|\" + string.Join(\",\", s[3..]) + \"|\" + string.Join(\",\", s[..]);"),
+        // "3,4,5|0"
+        ("an end from the end at zero", "var s = new Strip(); return string.Join(\",\", s[2..^0]) + \"|\" + s[^0..].Length;"),
+        // "2,3,4|2,3,4"
+        ("named endpoints", "int a = 1, b = 4; var s = new Strip(); return string.Join(\",\", s[a..b]) + \"|\" + string.Join(\",\", s[^b..^a]);"),
+        // the receiver once, then the endpoints in their order, then the length and the slice, as .NET reads them
+        ("the order a range is read in", "Strip.Text = \"\"; var s = new Strip(); var p = Strip.R(s)[Strip.At(\"A\", 1)..Strip.At(\"B\", 3)]; return Strip.Text + \"|\" + p.Length;"),
+        ("the order a range from the end is read in", "Strip.Text = \"\"; var s = new Strip(); var p = Strip.R(s)[^Strip.At(\"A\", 3)..^Strip.At(\"B\", 1)]; return Strip.Text + \"|\" + p.Length;"),
+        ("the order an open range is read in", "Strip.Text = \"\"; var s = new Strip(); var p = Strip.R(s)[Strip.At(\"A\", 1)..]; return Strip.Text + \"|\" + p.Length;"),
+        // "threw": Slice(3, -2) refuses a negative length, where slice(3, 1) answered one element
+        ("a range that ends before it starts", "try { var p = new Strip()[3..1]; return \"sliced \" + p.Length; } catch (System.Exception) { return \"threw\"; }"),
+        // "b,c|c,d": a type that counts and slices into itself
+        ("a type that counts and slices into itself", "return new Words(\"a\", \"b\", \"c\", \"d\")[1..^1].ToString() + \"|\" + new Words(\"a\", \"b\", \"c\", \"d\")[1..][1..].ToString();"),
+        // "2,3|2,3|bc|bc": a string, an array and a list keep JavaScript's slice, which answers alike there
+        ("a string, an array and a list keep their slice", "var arr = new[] { 1, 2, 3, 4 }; var l = new List<int> { 1, 2, 3, 4 }; return string.Join(\",\", arr[1..3]) + \"|\" + string.Join(\",\", l[1..3]) + \"|\" + \"abcd\"[1..3] + \"|\" + \"abcd\"[^3..^1];"),
+    ];
+
+    public static TheoryData<string, bool> SliceCaseNames() => Each(SliceCases);
+
+    /// <summary>
+    /// A range over a type eqc writes, with a <c>Length</c> or a <c>Count</c> and a
+    /// <c>Slice(int start, int length)</c>, calls that <c>Slice</c> as C# lowers the range: the receiver
+    /// once, the start and the LENGTH computed from the endpoints and the count the bound tree names. It
+    /// called the twin's <c>slice</c> with the range's end where <c>Slice</c> takes a length (#585).
+    /// </summary>
+    [SkippableTheory]
+    [MemberData(nameof(SliceCaseNames))]
+    public void ARangeOverATypeWithSlice_CallsItsSliceWithALength(string name, bool typeAnnotations) =>
+        ModuleGraph.AssertSameAsDotNet(Slices, typeAnnotations, SliceCases.Single(c => c.Name == name));
+
     private const string Lists = """
         using System.Collections;
         using System.Collections.Generic;

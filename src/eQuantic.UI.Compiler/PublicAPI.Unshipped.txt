@@ -60,3 +60,5 @@ const eQuantic.UI.Compiler.CodeGen.Eq.CollectionAdd = "$eq.collections.add" -> s
 const eQuantic.UI.Compiler.CodeGen.Eq.CollectionClear = "$eq.collections.clear" -> string!
 const eQuantic.UI.Compiler.CodeGen.Eq.ListItem = "$eq.collections.item" -> string!
 const eQuantic.UI.Compiler.CodeGen.Eq.ListSetItem = "$eq.collections.setItem" -> string!
+eQuantic.UI.Compiler.CodeGen.Strategies.Expressions.RangeIndexerStrategy.ConvertIr(Microsoft.CodeAnalysis.SyntaxNode! node, eQuantic.UI.Compiler.CodeGen.ConversionContext! context) -> eQuantic.UI.Compiler.CodeGen.Ir.JsExpr!
+*REMOVED*eQuantic.UI.Compiler.CodeGen.Strategies.Expressions.RangeIndexerStrategy.Convert(Microsoft.CodeAnalysis.SyntaxNode! node, eQuantic.UI.Compiler.CodeGen.ConversionContext! context) -> string!
