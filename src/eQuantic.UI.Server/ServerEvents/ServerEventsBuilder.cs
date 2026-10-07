@@ -22,8 +22,9 @@ public sealed class ServerEventsBuilder
     /// <summary>
     /// Who may subscribe to the topics <paramref name="template"/> matches. The template is in
     /// ASP.NET Core's route syntax (<c>room:{roomId}</c>), its values reach the rule, and of two
-    /// templates that match one topic the one whose literals fix more of it rules. A topic no template
-    /// matches is refused.
+    /// templates that match one topic the one whose literals fix more of it rules. Templates that fix as
+    /// much all rule, and each must allow the subscription: an app tightens a topic a library declared,
+    /// and nothing loosens it. A topic no template matches is refused.
     /// </summary>
     /// <exception cref="ArgumentException">The template does not parse, constrains a parameter, or its
     /// rule says neither anonymous access nor a policy nor a delegate.</exception>

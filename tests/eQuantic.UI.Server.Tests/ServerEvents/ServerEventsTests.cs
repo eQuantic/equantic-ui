@@ -161,6 +161,60 @@ public class ServerEventsTests
         (await app.SubscribeAsync(stream.ConnectionId, "room:a")).Should().BeNull();
     }
 
+    /// <summary>
+    /// Two rules for one template, a library's and the app's, both rule, and each must allow the
+    /// subscription: the first one registered decided alone, so the library's anonymous <c>prices</c>
+    /// hid the app's, which requires a signed-in user (Copilot on #647).
+    /// </summary>
+    [Fact]
+    public async Task TwoRulesForOneTemplate_BothRule_AcrossTwoUseServerEventsCalls()
+    {
+        await using var app = await ServerEventsApp.StartAsync(
+            events => events.Topic("prices", rule => rule.RequireAuthorization()),
+            services =>
+            {
+                services.AddAuthentication(BearerHeader.Name).AddScheme<AuthenticationSchemeOptions, BearerHeader>(BearerHeader.Name, null);
+                services.AddAuthorization();
+            },
+            ui: library => library.UseServerEvents(events => events.Topic("prices", rule => rule.AllowAnonymous())));
+        await using var stream = await app.OpenStreamAsync();
+
+        (await app.SubscribeAsync(stream.ConnectionId, "prices")).Should().Be("forbidden",
+            "the app requires a signed-in user for prices, whatever the library registered first");
+        (await app.SubscribeAsync(stream.ConnectionId, "prices", request => request.Headers.Add("X-Bearer", "token")))
+            .Should().BeNull();
+    }
+
+    /// <summary>
+    /// Templates of different shapes that fix as much of a topic both rule on it, and the topic carries
+    /// the values of each: <c>{kind}:hall</c> and <c>room:{roomId}</c> each fix five characters of
+    /// <c>room:hall</c>.
+    /// </summary>
+    [Fact]
+    public async Task TemplatesThatFixAsMuch_EachMustAllow_AndTheTopicCarriesTheValuesOfEach()
+    {
+        RecordingHandler.Heard.Clear();
+        await using var app = await ServerEventsApp.StartAsync(events => events
+            .Topic("{kind}:hall", rule => rule.Authorize(topic => topic.Values["kind"] != "attic"))
+            .Topic("room:{roomId}", rule => rule.AllowAnonymous())
+            .AddHandler<RecordingHandler>());
+        await using var stream = await app.OpenStreamAsync();
+
+        (await app.SubscribeAsync(stream.ConnectionId, "room:hall")).Should().BeNull();
+        RecordingHandler.Heard.Should().Contain(heard => heard.StartsWith("subscribed room:hall roomId=hall "),
+            "the handler reads roomId, which only the template registered second gives");
+        (await app.SubscribeAsync(stream.ConnectionId, "attic:hall")).Should().Be("forbidden");
+
+        await using var tighter = await ServerEventsApp.StartAsync(events => events
+            .Topic("room:{roomId}", rule => rule.AllowAnonymous())
+            .Topic("{kind}:hall", rule => rule.Authorize(topic => topic.Values["kind"] != "room")));
+        await using var second = await tighter.OpenStreamAsync();
+
+        (await tighter.SubscribeAsync(second.ConnectionId, "room:hall")).Should().Be("forbidden",
+            "the anonymous room rule was registered first, and the hall rule that refuses it rules too");
+        (await tighter.SubscribeAsync(second.ConnectionId, "room:attic")).Should().BeNull("only room:{roomId} matches it");
+    }
+
     /// <summary>A parameter's default, which the route syntax gives, matches a topic that leaves it out.</summary>
     [Fact]
     public async Task ATemplatesDefault_FillsAParameterTheTopicLeavesOut()

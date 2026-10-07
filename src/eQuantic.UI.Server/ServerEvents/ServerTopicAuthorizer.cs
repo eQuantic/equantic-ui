@@ -7,31 +7,52 @@ using Microsoft.Extensions.DependencyInjection;
 namespace eQuantic.UI.Server;
 
 /// <summary>
-/// Decides one subscription against the configured templates: the most specific template that
-/// matches the topic rules on it, and a topic no template matches is refused. Subscribing fails
-/// closed: an app that configured nothing for a topic has not said anyone may hear it.
+/// Decides one subscription against the configured templates: the templates that match the topic and fix
+/// the most of it rule on it, each of their rules must allow the subscription, and a topic no template
+/// matches is refused. Subscribing fails closed: an app that configured nothing for a topic has not said
+/// anyone may hear it, and of two rules for one topic, a library's and the app's, neither opens what the
+/// other closes.
 /// </summary>
 internal sealed class ServerTopicAuthorizer(IReadOnlyList<ServerTopicTemplate> templates)
 {
     public async ValueTask<ServerTopicAuthorization> AuthorizeAsync(HttpContext http, string connectionId, string topic)
     {
-        ServerTopicTemplate? rule = null;
-        IReadOnlyDictionary<string, string?> values = new Dictionary<string, string?>();
+        // Two templates that fix as much of the topic both rule on it. The first one registered decided
+        // alone, so a library's anonymous `prices` hid the app's `prices` that required a signed-in user
+        // (Copilot on #647). Their values meet in the topic's context, the first registered keeping a
+        // name both give.
+        var ruling = new List<ServerTopicRule>();
+        var values = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase);
+        var specificity = -1;
         foreach (var template in templates)
         {
-            if (template.TryMatch(topic, out var matched) && (rule is null || template.Specificity > rule.Specificity))
+            if (!template.TryMatch(topic, out var matched) || template.Specificity < specificity) continue;
+            if (template.Specificity > specificity)
             {
-                rule = template;
-                values = matched;
+                ruling.Clear();
+                values.Clear();
+                specificity = template.Specificity;
             }
+            ruling.Add(template.Rule);
+            foreach (var (name, value) in matched) values.TryAdd(name, value);
         }
 
-        if (rule is null) return ServerTopicAuthorization.Refused(ServerTopicRefusalReason.Unknown);
+        if (ruling.Count == 0) return ServerTopicAuthorization.Refused(ServerTopicRefusalReason.Unknown);
 
         var context = new ServerTopicContext(connectionId, topic, values, http);
-        if (rule.Rule.IsAnonymous) return ServerTopicAuthorization.Allowed(context);
+        foreach (var rule in ruling)
+        {
+            if (!await AllowsAsync(rule, context, http)) return ServerTopicAuthorization.Refused(ServerTopicRefusalReason.Forbidden);
+        }
+        return ServerTopicAuthorization.Allowed(context);
+    }
 
-        if (rule.Rule.RequiresAuthenticatedUser || rule.Rule.Policies.Count > 0)
+    /// <summary>Whether <paramref name="rule"/> lets the request hear the topic.</summary>
+    private static async ValueTask<bool> AllowsAsync(ServerTopicRule rule, ServerTopicContext context, HttpContext http)
+    {
+        if (rule.IsAnonymous) return true;
+
+        if (rule.RequiresAuthenticatedUser || rule.Policies.Count > 0)
         {
             // As ASP.NET Core's authorization middleware evaluates an endpoint's: the policies combined,
             // their authentication schemes authenticated (the request's principal becomes the one they
@@ -41,19 +62,17 @@ internal sealed class ServerTopicAuthorizer(IReadOnlyList<ServerTopicTemplate> t
             // registered means no policy can be met: refused, not waved through.
             var provider = http.RequestServices.GetService<IAuthorizationPolicyProvider>();
             var evaluator = http.RequestServices.GetService<IPolicyEvaluator>();
-            if (provider is null || evaluator is null) return ServerTopicAuthorization.Refused(ServerTopicRefusalReason.Forbidden);
-            var policy = await PolicyOf(rule.Rule, provider);
+            if (provider is null || evaluator is null) return false;
+            var policy = await PolicyOf(rule, provider);
             var authenticated = await evaluator.AuthenticateAsync(policy, http);
-            if (!(await evaluator.AuthorizeAsync(policy, authenticated, http, context)).Succeeded)
-                return ServerTopicAuthorization.Refused(ServerTopicRefusalReason.Forbidden);
+            if (!(await evaluator.AuthorizeAsync(policy, authenticated, http, context)).Succeeded) return false;
         }
 
-        foreach (var authorize in rule.Rule.Delegates)
+        foreach (var authorize in rule.Delegates)
         {
-            if (!await authorize(context)) return ServerTopicAuthorization.Refused(ServerTopicRefusalReason.Forbidden);
+            if (!await authorize(context)) return false;
         }
-
-        return ServerTopicAuthorization.Allowed(context);
+        return true;
     }
 
     /// <summary>The rule's policies as one, the app's default policy standing for a rule that asks only
