@@ -18,6 +18,7 @@ public sealed class HotReloadService : IDisposable
     private readonly Func<Process?> _startRebuild;
     private readonly TimeSpan _limit;
     private readonly ConcurrentDictionary<Guid, Channel<string>> _clients = new();
+    private readonly object _gate = new();
     private FileSystemWatcher? _watcher;
     private Timer? _debounce;
     private Timer? _keepAlive;
@@ -77,15 +78,17 @@ public sealed class HotReloadService : IDisposable
         if (_disposed || Interlocked.Exchange(ref _building, 1) == 1) return;
         try
         {
-            using var process = _startRebuild();
-            if (process is null) return;
-            _rebuild = process;
-            // Disposed while it started: the read in Dispose may have missed it.
-            if (_disposed)
+            // Started under the gate Dispose takes: a shutdown that comes while the process is starting
+            // waits for it to exist, and then finds it to stop.
+            Process? launched;
+            lock (_gate)
             {
-                Stop(process);
-                return;
+                if (_disposed) return;
+                launched = _startRebuild();
+                _rebuild = launched;
             }
+            using var process = launched;
+            if (process is null) return;
             // The pipes are read BEFORE waiting: a build that says more than the pipe buffer holds
             // (~64KB — any real error list) used to block writing while we blocked waiting, and the
             // whole thing sat there until the 2-minute timeout.
@@ -164,15 +167,24 @@ public sealed class HotReloadService : IDisposable
     }
 
     /// <summary>Stops watching, and stops a rebuild still running: it belongs to this app, and the
-    /// build that follows a restart writes the same files. Every parked stream ends too, or each open
-    /// tab holds the app's graceful shutdown until the host gives up on it.</summary>
+    /// build that follows a restart writes the same files. It returns once that rebuild has stopped,
+    /// since the host awaits this and nothing after it, and a rebuild still starting is waited for and
+    /// stopped too. Every parked stream ends as well, or each open tab holds the app's graceful
+    /// shutdown until the host gives up on it.</summary>
     public void Dispose()
     {
-        _disposed = true;
+        Process? rebuild;
+        lock (_gate)
+        {
+            _disposed = true;
+            rebuild = _rebuild;
+        }
         _watcher?.Dispose();
         _debounce?.Dispose();
         _keepAlive?.Dispose();
-        if (_rebuild is { } rebuild) Stop(rebuild);
+        if (rebuild is not null) Stop(rebuild);
+        // The rebuild ends once its process exits, which the kill makes quick.
+        SpinWait.SpinUntil(() => Volatile.Read(ref _building) == 0, TimeSpan.FromSeconds(10));
         foreach (var (_, channel) in _clients)
             channel.Writer.TryComplete();
     }
