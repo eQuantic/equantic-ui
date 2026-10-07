@@ -28,9 +28,11 @@ public sealed class CodeEditor : StatefulComponent
     private float _viewportWidth;
     // How far the code has scrolled sideways: where the completion list's right edge has to stop.
     private float _scrollX;
-    // The completion list's first row in view, and the most columns it has needed since it opened.
+    // The completion list's first row in view, the most columns it has needed since it opened, and
+    // the list of entries those columns were last measured over.
     private int _listTop;
     private int _listColumns;
+    private IReadOnlyList<CodeCompletionMatch>? _measured;
 
     public CodeEditor(string code = "", string? language = null)
     {
@@ -432,8 +434,16 @@ public sealed class CodeEditor : StatefulComponent
         {
             var items = completion.Items;
             // The list only widens while it shows, so it never narrows under the pointer as the
-            // word filters it.
-            _listColumns = Math.Max(_listColumns, CodeCompletionView.ColumnsOf(items));
+            // word filters it. Measured once for each list the completion holds (a keystroke's filter
+            // makes a new one), and for the selected entry on every build, the one a resolve fills
+            // in where it stands: a language service's thousands of entries were walked on every
+            // arrow key (found by Copilot reviewing #653).
+            if (!ReferenceEquals(items, _measured))
+            {
+                _measured = items;
+                _listColumns = Math.Max(_listColumns, CodeCompletionView.ColumnsOf(items));
+            }
+            _listColumns = Math.Max(_listColumns, CodeCompletionView.EntryColumns(items[completion.Selected].Item));
             var width = CodeCompletionView.WidthOf(metrics, _listColumns);
             if (_viewportWidth > 0) width = MathF.Min(width, _viewportWidth);
             var documentation = items[completion.Selected].Item.Documentation;
@@ -468,6 +478,7 @@ public sealed class CodeEditor : StatefulComponent
         {
             _listTop = 0;
             _listColumns = 0;
+            _measured = null;
         }
 
         VisualNode surface = new CodeSurface(block, editor)

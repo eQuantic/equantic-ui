@@ -53,6 +53,22 @@ public class CodeEditorCompletionTests
         public void Answer() => _answer.TrySetResult(new CodeCompletionList(items));
     }
 
+    /// <summary>Offers its entries at once and resolves the selected one when the test says so, with
+    /// the detail a language service fills in on resolve.</summary>
+    private sealed class ResolvingProvider(CodeCompletionItem item, string detail) : ICodeCompletionProvider
+    {
+        private readonly TaskCompletionSource<CodeCompletionItem> _resolved = new();
+
+        public Task<CodeCompletionList> CompleteAsync(CodeDocument document, CodePosition position,
+            CodeCompletionContext context, CancellationToken cancellation) =>
+            Task.FromResult(new CodeCompletionList([item]));
+
+        public Task<CodeCompletionItem> ResolveAsync(CodeCompletionItem asked, CancellationToken cancellation) =>
+            _resolved.Task;
+
+        public void Resolve() => _resolved.TrySetResult(item with { Detail = detail });
+    }
+
     private static PhotonHost Host(VisualNode root, float width = 600, float height = 400) =>
         new(root, PhotonTheme.Instance, ThemeMode.Light, width, height)
         {
@@ -391,6 +407,33 @@ public class CodeEditorCompletionTests
         labels.Should().OnlyContain(label => CodeLineCells.WidthOf(label, 4) <= 60,
             "and no label takes more cells than the list has");
         labels.Should().OnlyContain(label => label.EndsWith("…"), "both are longer than the list, and cut");
+    }
+
+    /// <summary>
+    /// The list measures its entries once for each list the completion holds, and the selected one on
+    /// every build: a resolve fills the selected entry in where it stands, in the same list, and the
+    /// detail it brings widens the list (Copilot's third round on #653 asked for the list's width to be
+    /// kept across the rebuilds the arrows make).
+    /// </summary>
+    [Fact]
+    public void ADetailTheResolveFillsIn_WidensTheList()
+    {
+        var provider = new ResolvingProvider(new CodeCompletionItem("Column"), new string('d', 40));
+        var editor = new CodeEditor(Lines(20), "csharp")
+        {
+            ShowLineNumbers = false,
+            Height = SizeValue.Fill,
+            Completions = [provider],
+        };
+        var host = Host(editor);
+        Settle(host);
+        ClickAt(host, editor, 1, 0);
+        var before = Type(host, "Co").CodeRegions.Single().Offered!.Value.Width;
+
+        provider.Resolve();
+        var after = Settle(host).CodeRegions.Single().Offered!.Value.Width;
+
+        after.Should().BeGreaterThan(before, "the detail the resolve brought takes columns the list did not have");
     }
 
     /// <summary>Whether every surrogate in <paramref name="text"/> is half of a pair.</summary>
