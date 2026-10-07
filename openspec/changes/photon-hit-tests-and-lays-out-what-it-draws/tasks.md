@@ -15,7 +15,7 @@
       tilting one in a side table the frame creates only when it needs it
 - [x] 2.2 The host tests a point against a transformed region's shape, at every place it reads a region
 - [x] 2.3 A pressable that wraps a single box takes the pointer where that box is drawn
-- [ ] 2.4 Check: a translated, a scaled and a rotated square pressed and hovered at their drawn edges,
+- [x] 2.4 Check: a translated, a scaled and a rotated square pressed and hovered at their drawn edges,
       proved failing without the fix, and the pooled frame measured
 
 ## 3. Editing surfaces past their view (#635)
@@ -28,17 +28,17 @@
 
 - [x] 4.1 A box's insets are its padding and its border on the sides it draws, in the measure, the
       reflow and the min-content width
-- [ ] 4.2 Check: a border on every side and on one side, and the goldens that move read one by one and
+- [x] 4.2 Check: a border on every side and on one side, and the goldens that move read one by one and
       regenerated with what moved
 
 ## 5. Spaces (#285)
 
 - [x] 5.1 The stand-in charges every space its advance, and a break drops the spaces it falls on
-- [ ] 5.2 Check: a rich paragraph measures as its plain twin, the space against CoreText's on a Mac, and
+- [x] 5.2 Check: a rich paragraph measures as its plain twin, the space against CoreText's on a Mac, and
       the goldens that move read and regenerated
 
 ## 6. Documentation
 
-- [ ] 6.1 The wiki's Photon and Styling pages, in English and Portuguese
-- [ ] 6.2 One `docs/LEDGER.md` line citing the five issues
+- [x] 6.1 The wiki's Photon and Styling pages, in English and Portuguese
+- [x] 6.2 One `docs/LEDGER.md` line citing the five issues
 - [ ] 6.3 Archive this change before the merge
