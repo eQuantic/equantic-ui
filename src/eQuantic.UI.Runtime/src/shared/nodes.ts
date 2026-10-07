@@ -71,6 +71,8 @@ export interface TypeStyleValue {
   italic?: boolean;
   /** The FACE by name (C# `TypeStyle.Family`), or absent for the platform's own. */
   family?: string;
+  /** A size that follows the window (C# `TypeStyle.Fluid`): `clamp(min, Nvw, max)`. */
+  fluid?: { min: number; percentOfWindow: number; max: number } | null;
 }
 
 export type { MainAlignValue } from './enums.generated';

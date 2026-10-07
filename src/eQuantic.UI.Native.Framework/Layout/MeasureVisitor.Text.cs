@@ -15,7 +15,8 @@ internal sealed partial class MeasureVisitor
         // The SAME resolver the realizers use. This built the merge by hand and therefore measured
         // without the theme's code face while PhotonRealizer rasterized with it — wrapping, widths
         // and a caret column computed against one face and drawn in another.
-        var style = text.Resolve(ctx.Theme);
+        // A size that follows the window is measured at THIS window, as the emit pass paints it.
+        var style = text.Resolve(ctx.Theme).AtWindow(ctx.WindowWidth);
         var maxLines = LineCap(text, constraints);
         if (text.Spans is { Count: > 0 } spans)
             return MeasureRuns(result, text, spans, style, maxW, maxLines, ctx);

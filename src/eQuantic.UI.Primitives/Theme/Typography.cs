@@ -92,10 +92,47 @@ public readonly record struct TypeStyle(float Size, float LineHeight, FontWeight
     /// `line-height` does. Patching only the size leaves a bigger glyph in the old box: a 17dp
     /// label in a 16dp line has its descender outside the line, and whoever rasterizes it has to
     /// decide whether to clip the 'g'. Nobody should have to decide that.
+    /// <para>A size given here is a size in dp: a <see cref="Fluid"/> size the style carried gives way to it.</para>
     /// </summary>
     public TypeStyle WithSize(float size) => Size <= 0
-        ? this with { Size = size }
-        : this with { Size = size, LineHeight = MathF.Round(LineHeight * size / Size * 2f) / 2f };
+        ? this with { Size = size, Fluid = null }
+        : this with { Size = size, LineHeight = MathF.Round(LineHeight * size / Size * 2f) / 2f, Fluid = null };
+
+    /// <summary>
+    /// A size that follows the window, when the style has one: <see cref="FluidSize.At"/> the window's
+    /// width, with the line box at the style's own ratio. Null for a size in dp. <see cref="Size"/>
+    /// and <see cref="LineHeight"/> then hold the CEILING, which is what a target that knows no window
+    /// (an email) sets.
+    /// </summary>
+    public FluidSize? Fluid { get; init; }
+
+    /// <summary>
+    /// The same style at a size that follows the window: <paramref name="percentOfWindow"/> percent
+    /// of its width between <paramref name="min"/> and <paramref name="max"/> dp, CSS's
+    /// <c>clamp(min, Nvw, max)</c>. The line box keeps the style's ratio at every size.
+    /// </summary>
+    public TypeStyle WithFluidSize(float min, float percentOfWindow, float max)
+    {
+        if (!(min > 0)) throw new ArgumentOutOfRangeException(nameof(min), "A fluid size needs a positive floor.");
+        if (!(percentOfWindow > 0))
+            throw new ArgumentOutOfRangeException(nameof(percentOfWindow), "A fluid size needs a positive share of the window.");
+        if (!(max >= min)) throw new ArgumentOutOfRangeException(nameof(max), "A fluid size's ceiling cannot be under its floor.");
+        return WithSize(max) with { Fluid = new FluidSize(min, percentOfWindow, max) };
+    }
+
+    /// <summary>
+    /// The style a window <paramref name="windowWidth"/> dp wide sets: a fluid size resolved to dp,
+    /// the line box and the tracking following it at the style's own ratio (the web's unitless
+    /// <c>line-height</c> and <c>em</c> letter-spacing), or this style unchanged when its size is
+    /// already in dp. What a target that lays out against a known window (Photon) measures and
+    /// paints with.
+    /// </summary>
+    public TypeStyle AtWindow(float windowWidth)
+    {
+        if (Fluid is not { } fluid || Size <= 0) return this;
+        var size = fluid.At(windowWidth);
+        return WithSize(size) with { Tracking = Tracking * size / Size };
+    }
 
     /// <summary>
     /// A style from a SIZE alone, with the typographic default line box (1.25×) — the ratio that

@@ -365,10 +365,11 @@ internal sealed partial class WebLoweringVisitor
         // System table override (e.g. Button labels) — inline styles beat the role class.
         if (text.StyleOverride is { } style)
         {
-            element.Style!.FontSize = TokenCss.Px(style.Size);
-            element.Style.LineHeight = TokenCss.Px(style.LineHeight);
+            // A size that follows the window is a `clamp()` and its line box a ratio (#652).
+            element.Style!.FontSize = TokenCss.FontSize(style);
+            element.Style.LineHeight = TokenCss.LineHeight(style);
             element.Style.FontWeight = ((int)style.Weight).ToString();
-            element.Style.LetterSpacing = TokenCss.Px(style.Tracking);
+            element.Style.LetterSpacing = TokenCss.LetterSpacing(style);
         }
 
         return element;
