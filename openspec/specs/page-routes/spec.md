@@ -90,3 +90,23 @@ serves and comes alive under an app-wide `FallbackPolicy`.
 - **WHEN** an app requires an authenticated user by fallback policy and an anonymous visitor loads a
   page marked `[AllowAnonymous]`
 - **THEN** the page and `/_equantic/runtime.js` are answered 200
+
+### Requirement: A registered error page is asked as its own route asks
+
+The 404 and 500 pages an app registers SHALL be drawn in place of a route only for a visitor their own
+route would serve: a page that names no requirement SHALL be under the app's `FallbackPolicy`, the
+request SHALL be the policy's resource, and a page the visitor may not see SHALL NOT be drawn, nor its
+`IServerPrefetch` run.
+
+#### Scenario: A plain 500 page under a fallback policy
+
+- **WHEN** an app requires an authenticated user by fallback policy, and a page marked
+  `[AllowAnonymous]` fails for an anonymous visitor
+- **THEN** the app's 500 page, which names no requirement, is not drawn, and its prefetched fields are
+  not in the response
+
+#### Scenario: A 404 page whose policy reads the request
+
+- **WHEN** the app's 404 page requires a policy that reads the request, and a visitor that policy
+  allows asks for a URL that matches nothing
+- **THEN** the answer is 404, with the page drawn

@@ -7,6 +7,8 @@
 - [x] 1.3 The runtime and the page modules allow anonymous access
 - [x] 1.4 Pinned by `PageAuthorizationTests` over the real pipeline, with a scheme that challenges by
   redirect: anonymous, forbidden, allowed, navigation, `MapPage<T>` and a fallback policy
+- [x] 1.5 A registered 404 or 500 page is asked its requirement as its own route asks it, the
+  fallback policy and the request as the resource included, pinned by `PageAuthorizationTests`
 
 ## 2. The router
 
