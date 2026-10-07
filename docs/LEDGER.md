@@ -1593,6 +1593,21 @@ record of a release, the wiki's Upgrading page is the distillate.
   and curly-brace parsers and the SDK's strings, which search a char from a start, now throw where
   the same C# throws on the server. Proposed and archived through OpenSpec
   (`openspec/specs/transpiler-bcl`).
+- **2026-10-06 · The conformance harness compares a value as the runtime holds it**: the .NET side
+  wrote a value as System.Text.Json writes it and the JS side as `JSON.stringify` writes the runtime's,
+  so a long, a decimal, an enum and a float compared backwards: a long that crossed as a BigInt
+  printed `"5"` against `5` and failed, and one that became a JS number passed
+  ([#596](https://github.com/eQuantic/equantic-ui/issues/596)). The cases returned `.ToString()`
+  instead, which hid it. The .NET side writes each kind as the runtime holds it now (`RuntimeJson`: a
+  BigInt's digits, a decimal's text, an enum's twin name, a double as JavaScript's `Number::toString`
+  writes it, a tuple and a pair as arrays), and the JS side prints a BigInt the same way whether or
+  not it imported the runtime, where `return 5L;` threw. 33 of the first 37 cases returning each kind
+  directly failed against the old harness, and the double writer matches bun's `String` on 5,000 doubles. Of
+  the 3,557 cases already there, one newly failed, and it was a real bug:
+  `DateTimeOffset.ToUnixTimeSeconds()` answered a JS number for a long, and rounded an instant before
+  1970 toward the epoch; it answers a BigInt cut as .NET cuts it now. Found on the way: the date
+  constructors past the second ([#606](https://github.com/eQuantic/equantic-ui/issues/606)).
+  Proposed and archived through OpenSpec (`openspec/specs/runtime-dates`).
 
 ## Retired documents
 
