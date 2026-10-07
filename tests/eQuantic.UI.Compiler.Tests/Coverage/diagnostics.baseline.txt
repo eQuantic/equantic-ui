@@ -22,6 +22,7 @@ EQ2009 eQuantic.UI.Compiler/ComponentCompiler.cs
 EQ2010 eQuantic.UI.Compiler/CodeGen/Extensions/HostOnlySymbolExtensions.cs eQuantic.UI.Compiler/CodeGen/TypeScriptEmitter.cs
 EQ2011 eQuantic.UI.Compiler/Services/ShadowedRuntimeMembers.cs
 EQ2012 eQuantic.UI.Compiler/ComponentCompiler.cs
+EQ2013 eQuantic.UI.Compiler/CodeGen/Strategies/Expressions/ObjectCreationStrategy.cs
 EQ2100 eQuantic.UI.Compiler/CodeGen/Strategies/Primitives/StringStaticStrategy.cs
 EQ2101 eQuantic.UI.Compiler/CodeGen/Strategies/Primitives/StringStaticStrategy.cs
 EQ2102 eQuantic.UI.Compiler/Services/SemanticValidator.cs

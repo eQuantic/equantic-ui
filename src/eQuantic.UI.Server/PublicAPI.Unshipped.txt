@@ -1,1 +1,95 @@
 #nullable enable
+*REMOVED*eQuantic.UI.Server.Hubs.ServerActionHub
+*REMOVED*eQuantic.UI.Server.Hubs.ServerActionHub.ServerActionHub() -> void
+eQuantic.UI.Server.IServerEventBackplane
+eQuantic.UI.Server.IServerEventBackplane.PublishAsync(eQuantic.UI.Server.ServerEventEnvelope! envelope, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.ValueTask
+eQuantic.UI.Server.IServerEventBackplane.SubscribeAsync(System.Func<eQuantic.UI.Server.ServerEventEnvelope!, System.Threading.Tasks.ValueTask>! receive, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.ValueTask<System.IAsyncDisposable!>
+eQuantic.UI.Server.IServerEventHandler
+eQuantic.UI.Server.IServerEventHandler.OnConnectedAsync(eQuantic.UI.Server.ServerEventConnectionContext! connection) -> System.Threading.Tasks.ValueTask
+eQuantic.UI.Server.IServerEventHandler.OnSubscribedAsync(eQuantic.UI.Server.ServerTopicContext! topic) -> System.Threading.Tasks.ValueTask
+eQuantic.UI.Server.IServerEventHandler.OnReleasedAsync(eQuantic.UI.Server.ServerTopicContext! topic) -> System.Threading.Tasks.ValueTask
+eQuantic.UI.Server.IServerEventHandler.OnDisconnectedAsync(eQuantic.UI.Server.ServerEventConnectionContext! connection) -> System.Threading.Tasks.ValueTask
+eQuantic.UI.Server.IServerEventPublisher
+eQuantic.UI.Server.IServerEventPublisher.PublishAsync<T>(eQuantic.UI.Primitives.ServerTopic<T>! topic, T payload, eQuantic.UI.Server.ServerEventPublishOptions? options = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.ValueTask
+eQuantic.UI.Server.ServerEventConnectionContext
+eQuantic.UI.Server.ServerEventConnectionContext.<Clone>$() -> eQuantic.UI.Server.ServerEventConnectionContext!
+eQuantic.UI.Server.ServerEventConnectionContext.Deconstruct(out string! ConnectionId, out Microsoft.AspNetCore.Http.HttpContext! HttpContext) -> void
+eQuantic.UI.Server.ServerEventConnectionContext.Equals(eQuantic.UI.Server.ServerEventConnectionContext? other) -> bool
+eQuantic.UI.Server.ServerEventConnectionContext.ServerEventConnectionContext(string! ConnectionId, Microsoft.AspNetCore.Http.HttpContext! HttpContext) -> void
+override eQuantic.UI.Server.ServerEventConnectionContext.Equals(object? obj) -> bool
+override eQuantic.UI.Server.ServerEventConnectionContext.GetHashCode() -> int
+override eQuantic.UI.Server.ServerEventConnectionContext.ToString() -> string!
+static eQuantic.UI.Server.ServerEventConnectionContext.operator !=(eQuantic.UI.Server.ServerEventConnectionContext? left, eQuantic.UI.Server.ServerEventConnectionContext? right) -> bool
+static eQuantic.UI.Server.ServerEventConnectionContext.operator ==(eQuantic.UI.Server.ServerEventConnectionContext? left, eQuantic.UI.Server.ServerEventConnectionContext? right) -> bool
+eQuantic.UI.Server.ServerEventConnectionContext.ConnectionId.get -> string!
+eQuantic.UI.Server.ServerEventConnectionContext.ConnectionId.init -> void
+eQuantic.UI.Server.ServerEventConnectionContext.HttpContext.get -> Microsoft.AspNetCore.Http.HttpContext!
+eQuantic.UI.Server.ServerEventConnectionContext.HttpContext.init -> void
+eQuantic.UI.Server.ServerEventEnvelope
+eQuantic.UI.Server.ServerEventEnvelope.<Clone>$() -> eQuantic.UI.Server.ServerEventEnvelope!
+eQuantic.UI.Server.ServerEventEnvelope.Deconstruct(out string! Topic, out string! Payload, out string? Id) -> void
+eQuantic.UI.Server.ServerEventEnvelope.Equals(eQuantic.UI.Server.ServerEventEnvelope? other) -> bool
+eQuantic.UI.Server.ServerEventEnvelope.ServerEventEnvelope(string! Topic, string! Payload, string? Id) -> void
+override eQuantic.UI.Server.ServerEventEnvelope.Equals(object? obj) -> bool
+override eQuantic.UI.Server.ServerEventEnvelope.GetHashCode() -> int
+override eQuantic.UI.Server.ServerEventEnvelope.ToString() -> string!
+static eQuantic.UI.Server.ServerEventEnvelope.operator !=(eQuantic.UI.Server.ServerEventEnvelope? left, eQuantic.UI.Server.ServerEventEnvelope? right) -> bool
+static eQuantic.UI.Server.ServerEventEnvelope.operator ==(eQuantic.UI.Server.ServerEventEnvelope? left, eQuantic.UI.Server.ServerEventEnvelope? right) -> bool
+eQuantic.UI.Server.ServerEventEnvelope.Topic.get -> string!
+eQuantic.UI.Server.ServerEventEnvelope.Topic.init -> void
+eQuantic.UI.Server.ServerEventEnvelope.Payload.get -> string!
+eQuantic.UI.Server.ServerEventEnvelope.Payload.init -> void
+eQuantic.UI.Server.ServerEventEnvelope.Id.get -> string?
+eQuantic.UI.Server.ServerEventEnvelope.Id.init -> void
+eQuantic.UI.Server.ServerEventPublishOptions.Id.get -> string?
+eQuantic.UI.Server.ServerEventPublishOptions.Id.init -> void
+eQuantic.UI.Server.ServerEventPublishOptions
+eQuantic.UI.Server.ServerEventPublishOptions.<Clone>$() -> eQuantic.UI.Server.ServerEventPublishOptions!
+eQuantic.UI.Server.ServerEventPublishOptions.Equals(eQuantic.UI.Server.ServerEventPublishOptions? other) -> bool
+eQuantic.UI.Server.ServerEventPublishOptions.ServerEventPublishOptions() -> void
+override eQuantic.UI.Server.ServerEventPublishOptions.Equals(object? obj) -> bool
+override eQuantic.UI.Server.ServerEventPublishOptions.GetHashCode() -> int
+override eQuantic.UI.Server.ServerEventPublishOptions.ToString() -> string!
+static eQuantic.UI.Server.ServerEventPublishOptions.operator !=(eQuantic.UI.Server.ServerEventPublishOptions? left, eQuantic.UI.Server.ServerEventPublishOptions? right) -> bool
+static eQuantic.UI.Server.ServerEventPublishOptions.operator ==(eQuantic.UI.Server.ServerEventPublishOptions? left, eQuantic.UI.Server.ServerEventPublishOptions? right) -> bool
+eQuantic.UI.Server.ServerEventsBuilder
+eQuantic.UI.Server.ServerEventsBuilder.Topic(string! template, System.Action<eQuantic.UI.Server.ServerTopicRule!>! rule) -> eQuantic.UI.Server.ServerEventsBuilder!
+eQuantic.UI.Server.ServerEventsBuilder.UseBackplane<TBackplane>() -> eQuantic.UI.Server.ServerEventsBuilder!
+eQuantic.UI.Server.ServerEventsBuilder.AddHandler<THandler>() -> eQuantic.UI.Server.ServerEventsBuilder!
+eQuantic.UI.Server.ServerEventsBuilder.Configure(System.Action<eQuantic.UI.Server.ServerEventsOptions!>! configure) -> eQuantic.UI.Server.ServerEventsBuilder!
+const eQuantic.UI.Server.ServerEventsOptions.SectionName = "EQuantic:ServerEvents" -> string!
+eQuantic.UI.Server.ServerEventsOptions.HeartbeatInterval.get -> System.TimeSpan
+eQuantic.UI.Server.ServerEventsOptions.HeartbeatInterval.set -> void
+eQuantic.UI.Server.ServerEventsOptions.MaxTopicsPerConnection.get -> int
+eQuantic.UI.Server.ServerEventsOptions.MaxTopicsPerConnection.set -> void
+eQuantic.UI.Server.ServerEventsOptions.MaxPayloadBytes.get -> int
+eQuantic.UI.Server.ServerEventsOptions.MaxPayloadBytes.set -> void
+eQuantic.UI.Server.ServerEventsOptions.MaxQueuedEventsPerConnection.get -> int
+eQuantic.UI.Server.ServerEventsOptions.MaxQueuedEventsPerConnection.set -> void
+eQuantic.UI.Server.ServerEventsOptions
+eQuantic.UI.Server.ServerEventsOptions.ServerEventsOptions() -> void
+eQuantic.UI.Server.ServerTopicContext
+eQuantic.UI.Server.ServerTopicContext.<Clone>$() -> eQuantic.UI.Server.ServerTopicContext!
+eQuantic.UI.Server.ServerTopicContext.Deconstruct(out string! ConnectionId, out string! Topic, out System.Collections.Generic.IReadOnlyDictionary<string!, string?>! Values, out Microsoft.AspNetCore.Http.HttpContext! HttpContext) -> void
+eQuantic.UI.Server.ServerTopicContext.Equals(eQuantic.UI.Server.ServerTopicContext? other) -> bool
+eQuantic.UI.Server.ServerTopicContext.ServerTopicContext(string! ConnectionId, string! Topic, System.Collections.Generic.IReadOnlyDictionary<string!, string?>! Values, Microsoft.AspNetCore.Http.HttpContext! HttpContext) -> void
+override eQuantic.UI.Server.ServerTopicContext.Equals(object? obj) -> bool
+override eQuantic.UI.Server.ServerTopicContext.GetHashCode() -> int
+override eQuantic.UI.Server.ServerTopicContext.ToString() -> string!
+static eQuantic.UI.Server.ServerTopicContext.operator !=(eQuantic.UI.Server.ServerTopicContext? left, eQuantic.UI.Server.ServerTopicContext? right) -> bool
+static eQuantic.UI.Server.ServerTopicContext.operator ==(eQuantic.UI.Server.ServerTopicContext? left, eQuantic.UI.Server.ServerTopicContext? right) -> bool
+eQuantic.UI.Server.ServerTopicContext.ConnectionId.get -> string!
+eQuantic.UI.Server.ServerTopicContext.ConnectionId.init -> void
+eQuantic.UI.Server.ServerTopicContext.Topic.get -> string!
+eQuantic.UI.Server.ServerTopicContext.Topic.init -> void
+eQuantic.UI.Server.ServerTopicContext.Values.get -> System.Collections.Generic.IReadOnlyDictionary<string!, string?>!
+eQuantic.UI.Server.ServerTopicContext.Values.init -> void
+eQuantic.UI.Server.ServerTopicContext.HttpContext.get -> Microsoft.AspNetCore.Http.HttpContext!
+eQuantic.UI.Server.ServerTopicContext.HttpContext.init -> void
+eQuantic.UI.Server.ServerTopicRule.Template.get -> string!
+eQuantic.UI.Server.ServerTopicRule.AllowAnonymous() -> eQuantic.UI.Server.ServerTopicRule!
+eQuantic.UI.Server.ServerTopicRule.RequireAuthorization(params string![]! policies) -> eQuantic.UI.Server.ServerTopicRule!
+eQuantic.UI.Server.ServerTopicRule.Authorize(System.Func<eQuantic.UI.Server.ServerTopicContext!, System.Threading.Tasks.ValueTask<bool>>! authorize) -> eQuantic.UI.Server.ServerTopicRule!
+eQuantic.UI.Server.ServerTopicRule.Authorize(System.Func<eQuantic.UI.Server.ServerTopicContext!, bool>! authorize) -> eQuantic.UI.Server.ServerTopicRule!
+eQuantic.UI.Server.ServerTopicRule
+eQuantic.UI.Server.UIOptions.UseServerEvents(System.Action<eQuantic.UI.Server.ServerEventsBuilder!>! configure) -> eQuantic.UI.Server.UIOptions!
