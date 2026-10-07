@@ -1724,9 +1724,17 @@ function lowerImage(node: ImageNode): HtmlNode {
   light.attributes['class'] = light.attributes['class']
     ? `${light.attributes['class']} eq-themed-light`
     : 'eq-themed-light';
+  // The dark artwork takes the light one's SIZING as well as its own class (C# twin: one Style for
+  // both). Spread first and then replaced, the class lost the sizing, so on a client-rendered page in
+  // dark mode the artwork drew at its natural size.
   const dark: HtmlNode = {
     tag: 'img',
-    attributes: { ...sizing, class: 'eq-themed-dark', src: node.darkSource, alt: node.label ?? '' },
+    attributes: {
+      ...sizing,
+      class: sizing.class ? `${sizing.class} eq-themed-dark` : 'eq-themed-dark',
+      src: node.darkSource,
+      alt: node.label ?? '',
+    },
     events: {},
     children: [],
   };

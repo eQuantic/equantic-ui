@@ -21,6 +21,7 @@ import { lowerVisualNode } from './lowering';
 import { setPhotonTheme } from './photon-context';
 import type { HtmlNode } from '../core/types';
 import {
+  AdaptiveNode,
   Box,
   BoxStyle,
   Column,
@@ -29,6 +30,8 @@ import {
   GridTrack,
   Icon,
   IconGlyph,
+  Image,
+  InView,
   LinearGradient,
   Link,
   Pinned,
@@ -124,6 +127,9 @@ function cases(): Record<string, { node: unknown; presses: number[] }> {
       () => {},
       { pressedBackground: photonTheme.surfaceSubtle },
     );
+  // The C# LiftCard of the pressable-through-wrappers case.
+  const liftCard = () =>
+    new Box(new BoxStyle({ width: 40, height: 40, background: photonTheme.surface }));
   // The C# HoverLift: every shadow part, a pattern layer and a resting transform at its base, and
   // a hover and a focus that change each of them (#504).
   const hoverLift = () =>
@@ -235,6 +241,17 @@ function cases(): Record<string, { node: unknown; presses: number[] }> {
           borderSides: 4, // BorderSides.Bottom
           hover: new StyleDiff({ borderWidth: 2 }),
         }),
+      ),
+    ),
+    'pressable-through-wrappers': still(
+      column(
+        8,
+        new Pressable(new InView(liftCard(), () => {}), () => {}),
+        new Pressable(new AdaptiveNode(liftCard(), liftCard()), () => {}),
+        new Pressable(
+          Object.assign(new Image('/light.png', 40, 40, 'cover', 'logo'), { darkSource: '/dark.png' }),
+          () => {},
+        ),
       ),
     ),
     'box-hover-drops-shadow': still(
@@ -460,8 +477,9 @@ function canonical(node: HtmlNode): unknown {
   const attrs: Record<string, string> = {};
   for (const key of Object.keys(node.attributes ?? {}).sort()) {
     // The channel KEY itself goes with the channel — a path the client stamps to find the element
-    // again after it mounts, which the server has no reason to write.
-    if (key === 'data-eq-scroll') continue;
+    // again after it mounts, which the server has no reason to write. An InView's observer key is
+    // the same kind (the C# LowerInView says so): only the client can watch anything.
+    if (key === 'data-eq-scroll' || key === 'data-eq-inview') continue;
     const value = node.attributes[key];
     if (value !== undefined && value !== null) attrs[key] = normalize(key, value);
   }

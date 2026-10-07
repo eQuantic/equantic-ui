@@ -103,6 +103,14 @@ public class ComponentParityFixtureTests
             Width = 40, Height = 40, BorderWidth = 1, BorderColor = Theme.Border, BorderSides = BorderSides.Bottom,
             Hover = new StyleDiff { BorderWidth = 2 },
         }), NoPresses),
+        // A control around wrappers that draw no box (#622): both producers mark the first
+        // descendants that draw one, through an InView, every arm of an Adaptive and both images
+        // of a light and dark pair, so the hit slop's lift reaches them.
+        ("pressable-through-wrappers", Stack(Space.S2,
+            new Pressable(new InView(LiftCard(), _ => { }), () => { }),
+            new Pressable(new AdaptiveNode(LiftCard(), medium: LiftCard()), () => { }),
+            new Pressable(new Image("/light.png", 40, 40, label: "logo") { DarkSource = "/dark.png" }, () => { })),
+            NoPresses),
         // A state that leaves nothing to draw writes the ring's slot alone: a hover that sets the
         // elevation to 0 over a box whose only shadow was its elevation.
         ("box-hover-drops-shadow", new Box(new BoxStyle
@@ -238,6 +246,9 @@ public class ComponentParityFixtureTests
         },
         Focus = new StyleDiff { Elevation = 0, Transform = Transform2D.Scale(1) },
     });
+
+    /// <summary>The card of the pressable-through-wrappers case.</summary>
+    private static Box LiftCard() => new(new BoxStyle { Width = 40, Height = 40, Background = Theme.Surface });
 
     /// <summary>The control of the control-states cases: a raised surface with a hover, a focus and a
     /// press, each changing what the others do not, and the pressed fill it has always had.</summary>
