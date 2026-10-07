@@ -116,7 +116,10 @@ public class MemberAccessStrategy : IExpressionIrStrategy
                     var home = JsExpr.Identifier(dataType.Name);
                     return JsExpr.Call(JsExpr.Member(JsExpr.Member(home, name), "bind"), home, receiver);
                 }
-                return JsExpr.Call(JsExpr.Member(member, "bind"), receiver);
+                // The receiver is read ONCE, as C# reads it when the delegate is made: written twice,
+                // a receiver that is a call ran twice (`make().value.bind(make())`, #619). The
+                // template binds a part used twice and inlines a plain name (`this.value.bind(this)`).
+                return JsExpr.Template($"{{0}}.{name}.bind({{0}})", receiver);
             }
         }
 
