@@ -11,5 +11,5 @@
 
 ## 3. Proof and records
 
-- [ ] 3.1 A/B against main on the same cases, and the five suites
-- [ ] 3.2 The ledger line, the wiki in English and Portuguese, and the archive of this change
+- [x] 3.1 A/B against main on the same cases, and the five suites
+- [x] 3.2 The ledger line, the wiki in English and Portuguese, and the archive of this change

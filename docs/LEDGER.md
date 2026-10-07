@@ -1688,6 +1688,18 @@ record of a release, the wiki's Upgrading page is the distillate.
   1970 toward the epoch; it answers a BigInt cut as .NET cuts it now. Found on the way: the date
   constructors past the second ([#606](https://github.com/eQuantic/equantic-ui/issues/606)).
   Proposed and archived through OpenSpec (`openspec/specs/runtime-dates`).
+- **2026-10-07 · A record and a struct copy as C# copies them**: a record that declares its own copy
+  constructor was copied by `with` onto its prototype, every member and none of the constructor's body,
+  so a deep copy it wrote was shared and a member it leaves alone kept the original's value
+  ([#589](https://github.com/eQuantic/equantic-ui/issues/589)); and a mutable struct or a value tuple
+  was the same object behind every name C# copies it into, an assignment, an argument, a return or a
+  boxing, so a write through one showed through all ([#560](https://github.com/eQuantic/equantic-ui/issues/560)).
+  `with` copies through a step per level of a record whose chain declares a copy constructor, and the
+  twin copies a mutable struct or tuple on write (`ValueCopies`, beside `ValueFlow`), with `this` copied
+  where it leaves its struct's member. 15 of the 16 conformance cases fail on main and all pass here;
+  the one that holds on main is a closure reading the variable, kept as a pin. The runtime's structs are
+  all readonly, so its twins do not change. Proposed and archived through OpenSpec
+  (`openspec/specs/transpiler-records`).
 
 ## Retired documents
 
