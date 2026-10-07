@@ -1,5 +1,6 @@
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using eQuantic.UI.Compiler.CodeGen.Extensions;
 
 namespace eQuantic.UI.Compiler.CodeGen.Strategies.Special;
 
@@ -34,7 +35,13 @@ public class NamespaceRemovalStrategy : IConversionStrategy
     public string Convert(SyntaxNode node, ConversionContext context)
     {
         var memberAccess = (MemberAccessExpressionSyntax)node;
-        // Just return the identifier name, effectively stripping the namespace
+        // A TYPE reached through its namespace is imported by the symbol it binds, however much of the
+        // namespace the C# spells (#625): inside `Falei.Web.Chat`, `Portal.Fold.Text(n)` wrote
+        // `Fold.text(n)` and imported nothing, because the import was decided by the name as written,
+        // while `Fold.Text(n)` under a using imported it. A namespace reached through another is only
+        // stripped.
+        if (context.SemanticHelper.GetSymbol(memberAccess) is INamedTypeSymbol type)
+            type.RegisterIntroduced(context);
         return memberAccess.Name.Identifier.Text;
     }
 
