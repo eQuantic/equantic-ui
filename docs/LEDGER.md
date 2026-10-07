@@ -1470,6 +1470,16 @@ record of a release, the wiki's Upgrading page is the distillate.
   another, in a lambda run three times at once over an array's elements, and behind a call that
   answers null and must not suspend the method, fail on main. #539's other sites closed in #561 and
   #566. Proposed and archived through OpenSpec (`openspec/specs/transpiler-expressions`).
+- **2026-10-06 · A page answers HEAD as it answers GET**: every page route and the modules under
+  `/_equantic/` were mapped with `MapGet`, so a HEAD fell through to the fallback and answered 404
+  where the GET answered 200, measured in the 0.2.0-preview.60 release proof on a fresh app
+  ([#575](https://github.com/eQuantic/equantic-ui/issues/575)): an uptime monitor, a link checker or
+  a crawler that asks with HEAD read every page as missing. A `[Page]` route and its culture twin, a
+  `MapPage<T>` route, `runtime.js`, an app's module and its source map are mapped for GET and HEAD
+  now, with the GET's handler, and Kestrel writes no body for a HEAD. `HeadRequestTests` runs on
+  Kestrel, because the test host answers a HEAD with the whole body (measured), and its four HEAD
+  cases fail against main's routes. Proposed and archived through OpenSpec
+  (`openspec/specs/page-routes`).
 - **2026-10-05 · A list, a set and a join answer as .NET's do**: a `List<T>` sorted by its elements'
   text and stably, `RemoveAll` threw a ReferenceError, `BinarySearch` was a `findIndex`, a comparer
   named a class nothing defines, `FindIndex`'s range reached its predicate, `CopyTo` wrote nowhere and
