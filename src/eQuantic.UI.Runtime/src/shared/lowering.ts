@@ -2707,6 +2707,10 @@ function faceStack(family: string, mono: boolean): string {
 
 function lowerText(text: TextNode, context: LoweringContext): HtmlNode {
   const style: StyleEntries = {
+    // A BLOCK, wherever it sits (C# twin, #495): a Text is never inline in the vocabulary, and as an
+    // inline span inside a block parent it sat on the parent's line box and its body-font strut. The
+    // multi-line clamp below replaces it with the box the clamp needs.
+    display: 'block',
     color: tokenValue(text.color ?? context.textPrimary),
     // Line alignment inside the paragraph (C# twin) — wrapped lines of a centered headline
     // must center too.
@@ -2757,11 +2761,7 @@ function lowerText(text: TextNode, context: LoweringContext): HtmlNode {
     style['white-space'] = nodeMono(text) ? 'pre' : 'nowrap';
     style.overflow = 'hidden';
     style['text-overflow'] = 'ellipsis';
-    // BLOCK, or the other two do nothing (C# twin): a Text lowers to a `span`, and `overflow` and
-    // `text-overflow` are inert on a non-replaced inline box, so a squeezed single-line Text
-    // painted its full width out of its parent instead of ellipsising inside it. Block takes the
-    // width the parent allows; inline-block would size to content and spill again.
-    style.display = 'block';
+    // The other two need the BLOCK every Text is (C# twin): they are inert on an inline box.
   } else if (text.maxLines > 1) {
     // MULTI-LINE clamp (C# twin): exactly N lines, then an ellipsis — what keeps a grid of cards
     // on one baseline when the copy is not the site's to control.
