@@ -76,13 +76,80 @@ const EXCEPTION = chainOf('System.Exception');
 const NULL_REFERENCE = chainOf('System.NullReferenceException');
 
 /**
+ * The text a .NET exception type gives when it is built with no message, or with a null one: each
+ * type's own. A type with none, an app's own derived straight from `Exception` included, is
+ * `Exception of type '<its full name>' was thrown.`, as `Exception.Message` words it.
+ */
+const DEFAULT_MESSAGES: Readonly<Record<string, string>> = {
+  'System.SystemException': 'System error.',
+  'System.ArgumentException': 'Value does not fall within the expected range.',
+  'System.ArgumentNullException': 'Value cannot be null.',
+  'System.ArgumentOutOfRangeException': 'Specified argument was out of the range of valid values.',
+  'System.ArithmeticException': 'Overflow or underflow in the arithmetic operation.',
+  'System.DivideByZeroException': 'Attempted to divide by zero.',
+  'System.OverflowException': 'Arithmetic operation resulted in an overflow.',
+  'System.FormatException': 'One of the identified items was in an invalid format.',
+  'System.InvalidCastException': 'Specified cast is not valid.',
+  'System.InvalidOperationException': 'Operation is not valid due to the current state of the object.',
+  'System.NullReferenceException': 'Object reference not set to an instance of an object.',
+  'System.NotSupportedException': 'Specified method is not supported.',
+  'System.NotImplementedException': 'The method or operation is not implemented.',
+  'System.IndexOutOfRangeException': 'Index was outside the bounds of the array.',
+  'System.TimeoutException': 'The operation has timed out.',
+  'System.UnauthorizedAccessException': 'Attempted to perform an unauthorized operation.',
+  'System.Collections.Generic.KeyNotFoundException': 'The given key was not present in the dictionary.',
+  'System.OperationCanceledException': 'The operation was canceled.',
+  'System.ObjectDisposedException': 'Cannot access a disposed object.',
+  'System.AggregateException': 'One or more errors occurred.',
+};
+
+/**
+ * What a framework exception's constructor was handed besides its message, by the parameter that took
+ * it (#558): `ArgumentException.ParamName` and `ArgumentOutOfRangeException.ActualValue`, which its
+ * message ends with, an `InnerException`, and `ObjectDisposedException.ObjectName`.
+ */
+export interface ExceptionParts {
+  readonly paramName?: string | null;
+  readonly actualValue?: unknown;
+  readonly innerException?: unknown;
+  readonly objectName?: string | null;
+}
+
+/** A value as `string.Format("{0}", value)` writes it in an exception's message. */
+function valueText(value: unknown): string {
+  if (typeof value === 'boolean') return value ? 'True' : 'False';
+  return String(value);
+}
+
+/**
+ * The message .NET composes: the one given, or the type's own where none or null was, then the
+ * parameter's name, ` (Parameter 'x')`, the actual value on a line of its own, and a disposed object's
+ * name. Each was dropped: `new ArgumentNullException(nameof(x)).Message` was "x", the parameter's name
+ * taken for the message, and an `InvalidOperationException()` had none at all (#558).
+ */
+function composed(types: readonly string[], message: string | null | undefined, parts: ExceptionParts | undefined): string {
+  let text = message ?? types.map((type) => DEFAULT_MESSAGES[type]).find((own) => own !== undefined)
+    ?? `Exception of type '${types[0]}' was thrown.`;
+  if (parts?.objectName) text += `\nObject name: '${parts.objectName}'.`;
+  if (parts?.paramName) text += ` (Parameter '${parts.paramName}')`;
+  if (parts?.actualValue != null) text += `\nActual value was ${valueText(parts.actualValue)}.`;
+  return text;
+}
+
+/**
  * `new T(message)` for an exception type the compiler resolved: `types` is T, the most derived, and
  * every type it derives from, `System.Exception` last. The error's `name` is T's simple name, so the
  * console and a contained component print `InvalidOperationException: …` as the C# side does, where
- * they printed `Error: …`.
+ * they printed `Error: …`. `parts` carries what a framework type's constructor took besides the
+ * message, which the message and its members read.
  */
-export function create(types: readonly string[], message?: string | null, ..._evaluated: unknown[]): Error {
-  const error = new Error(message ?? undefined) as Tagged;
+export function create(
+  types: readonly string[],
+  message?: string | null,
+  parts?: ExceptionParts,
+  ..._evaluated: unknown[]
+): Error {
+  const error = new Error(composed(types, message, parts)) as Tagged;
   // Defined rather than assigned: an assignment makes `name` an own enumerable property, which an
   // Error's own `name` (its prototype's) is not, and JSON would start writing it.
   Object.defineProperty(error, 'name', {
@@ -91,6 +158,11 @@ export function create(types: readonly string[], message?: string | null, ..._ev
     configurable: true,
   });
   Object.defineProperty(error, TYPES, { value: types });
+  if (parts !== undefined) {
+    for (const [member, value] of Object.entries(parts)) {
+      Object.defineProperty(error, member, { value, writable: true, configurable: true });
+    }
+  }
   return error;
 }
 

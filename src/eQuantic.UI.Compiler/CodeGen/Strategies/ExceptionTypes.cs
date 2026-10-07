@@ -78,12 +78,44 @@ internal static class ExceptionTypes
         if (arguments.Count == 0) return Construction(chain, (JsExpr?)null, context);
         context.UsedHelpers.Add(Eq.Import);
         var message = Expressions.ExceptionCreationStrategy.MessageIndex(creation, context);
+        var taken = new HashSet<int> { message };
+        // What a framework constructor takes besides the message, each by its parameter: the message
+        // is composed from them as .NET composes it, and the members read them (#558).
+        var members = new List<string>();
+        if (context.SemanticHelper.GetSymbol(creation) is IMethodSymbol constructor && IsFramework(constructor.ContainingType))
+        {
+            foreach (var (parameter, member) in Parts)
+            {
+                var at = Expressions.ExceptionCreationStrategy.ArgumentIndex(creation, constructor, parameter);
+                if (at < 0) continue;
+                members.Add($"{member}: {{{at}}}");
+                taken.Add(at);
+            }
+        }
         var holes = new List<string> { message < 0 ? "undefined" : $"{{{message}}}" };
-        holes.AddRange(Enumerable.Range(0, arguments.Count).Where(index => index != message).Select(index => $"{{{index}}}"));
+        var rest = Enumerable.Range(0, arguments.Count).Where(index => !taken.Contains(index)).Select(index => $"{{{index}}}").ToList();
+        if (members.Count > 0 || rest.Count > 0) holes.Add(members.Count > 0 ? $"{{ {string.Join(", ", members)} }}" : "undefined");
+        holes.AddRange(rest);
         var types = $"[{string.Join(", ", chain.Select(JsStringLiteral.Quote))}]";
         var parts = arguments.Select(argument => context.Converter.ConvertIr(argument.Expression)).ToList();
         return JsExpr.Template($"{Eq.ExceptionCreate}({types}, {string.Join(", ", holes)})", parts, context.TypeAnnotations);
     }
+
+    /// <summary>A framework exception constructor's parameters besides the message, and the member
+    /// of the runtime's exception each one fills.</summary>
+    private static readonly (string Parameter, string Member)[] Parts =
+    [
+        ("paramName", "paramName"),
+        ("actualValue", "actualValue"),
+        ("innerException", "innerException"),
+        ("objectName", "objectName"),
+    ];
+
+    /// <summary>A type of the framework's, which says its arguments by its parameters' names and
+    /// composes its message from them: one in a <c>System</c> namespace.</summary>
+    internal static bool IsFramework(INamedTypeSymbol type) =>
+        type.ContainingNamespace?.ToDisplayString() is { } space
+        && (space == "System" || space.StartsWith("System.", StringComparison.Ordinal));
 
     /// <summary>The construction from a chain the caller already has.</summary>
     public static JsExpr Construction(IReadOnlyList<string> chain, JsExpr? message, ConversionContext context)

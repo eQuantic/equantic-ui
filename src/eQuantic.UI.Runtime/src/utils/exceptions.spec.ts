@@ -38,8 +38,20 @@ describe('a .NET exception carries the types it is', () => {
     expect(create(['App.Pair<App.Box<int>, string>.Gone', 'System.Exception']).name).toBe('Gone');
   });
 
-  it('takes a null message as no message', () => {
-    expect(create(ARGUMENT_NULL, null).message).toBe('');
+  it('takes a null message as the type\'s own, as .NET does (#558)', () => {
+    expect(create(ARGUMENT_NULL, null).message).toBe('Value cannot be null.');
+    expect(create(ARGUMENT_NULL, undefined, { paramName: 'x' }).message).toBe("Value cannot be null. (Parameter 'x')");
+  });
+
+  it('composes the parameter, the actual value and the object name as .NET does', () => {
+    const range = ['System.ArgumentOutOfRangeException', 'System.ArgumentException', 'System.SystemException', 'System.Exception'];
+    const error = create(range, 'm', { paramName: 'x', actualValue: 5 }) as Error & { paramName: string; actualValue: number };
+    expect(error.message).toBe("m (Parameter 'x')\nActual value was 5.");
+    expect(error.paramName).toBe('x');
+    expect(error.actualValue).toBe(5);
+    const disposed = ['System.ObjectDisposedException', 'System.InvalidOperationException', 'System.SystemException', 'System.Exception'];
+    expect(create(disposed, null, { objectName: 'thing' }).message).toBe("Cannot access a disposed object.\nObject name: 'thing'.");
+    expect(create(['App.Oops', 'System.Exception']).message).toBe("Exception of type 'App.Oops' was thrown.");
   });
 });
 
@@ -151,7 +163,7 @@ describe('a throw expression and an exception filter', () => {
 describe('every throw of the .NET twins carries its .NET type', () => {
   /** The untyped errors there are, each by its file and its words, and why it is no .NET exception. */
   const notDotNet: { file: string; words: string; why: string }[] = [
-    { file: 'exceptions.ts', words: 'new Error(message', why: 'where every .NET exception is made, its type with it' },
+    { file: 'exceptions.ts', words: 'new Error(composed(', why: 'where every .NET exception is made, its type with it' },
     { file: 'assert-never.ts', words: 'Unhandled', why: 'a case the code never reaches; reaching it is a defect of the runtime' },
     { file: 'decimal.ts', words: 'Invalid decimal literal', why: 'a literal the compiler wrote, valid by construction' },
     { file: 'linq.ts', words: 'A sequence was expected', why: 'a value that crossed as a plain object where C# holds a sequence' },
