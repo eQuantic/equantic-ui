@@ -171,6 +171,11 @@ public class ComponentParityFixtureTests
         ("flexible-zero-weight-from-content", Line(wrap: false,
             new Flexible(new Text("label", TypeRole.BodyM, Theme.TextPrimary), flex: 0),
             new Flexible(new Text("rest", TypeRole.BodyM, Theme.TextPrimary), flex: 1)), NoPresses),
+        // A FRACTIONAL basis (#692): the server wrote it through TokenCss.Px, two decimals at most,
+        // and the twin wrote it raw, so 540.125 and the float 540.12 each hydrated as another class.
+        ("flexible-fractional-basis", Line(wrap: true,
+            new Flexible(new Text("half", TypeRole.BodyM, Theme.TextPrimary), flex: 1, basis: 540.125f),
+            new Flexible(new Text("float", TypeRole.BodyM, Theme.TextPrimary), flex: 1, basis: 540.12f)), NoPresses),
     ];
 
     /// <summary>

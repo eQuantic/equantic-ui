@@ -294,6 +294,14 @@ function cases(): Record<string, { node: unknown; presses: number[] }> {
         new Flexible(new Text('rest', 'bodyM', photonTheme.textPrimary), 1),
       ),
     ),
+    // A FRACTIONAL basis (#692): the C# float 540.12f arrives as the single the transpiler writes.
+    'flexible-fractional-basis': still(
+      line(
+        true,
+        new Flexible(new Text('half', 'bodyM', photonTheme.textPrimary), 1, 540.125),
+        new Flexible(new Text('float', 'bodyM', photonTheme.textPrimary), 1, Math.fround(540.12)),
+      ),
+    ),
   };
 }
 

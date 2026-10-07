@@ -65,3 +65,14 @@ describe('the Flexible twin refuses what the C# refuses', () => {
     expect(() => new Flexible(new Text('t'), 1, 0, 0.5)).toThrow(RangeError);
   });
 });
+
+describe('a basis is written by the rule every other length uses (C# cross-pin, #692)', () => {
+  it('rounds to two decimals as TokenCss.Px does, so both sides mint one class', () => {
+    // Written raw, the twin wrote `540.125px` where the server wrote `540.13px`, and a float basis
+    // the transpiled code produces (`Math.fround(540.12)`) wrote all of its digits.
+    expect(styleOf(new Flexible(new Text('t'), 1, 540.125))).toContain('flex: 1 1 540.13px');
+    expect(styleOf(new Flexible(new Text('t'), 1, Math.fround(540.12)))).toContain(
+      'flex: 1 1 540.12px',
+    );
+  });
+});

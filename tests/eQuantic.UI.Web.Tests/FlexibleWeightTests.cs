@@ -57,6 +57,16 @@ public class FlexibleWeightTests
         initialized.Should().Be(StyleOf(new Flexible(new Text("t"), flex: 0, basis: 540)));
     }
 
+    /// <summary>A basis is a length like any other, written through <c>TokenCss.Px</c>: two decimals
+    /// at most. The twin wrote it raw, so a basis of 540.125, or a float such as 540.12, minted a
+    /// second class for the same style (#692); it now writes the same declarations.</summary>
+    [Fact]
+    public void AFractionalBasis_IsWrittenWithTheRuleEveryLengthUses()
+    {
+        StyleOf(new Flexible(new Text("t"), flex: 1, basis: 540.125f)).Should().Contain("flex: 1 1 540.13px");
+        StyleOf(new Flexible(new Text("t"), flex: 1, basis: 540.12f)).Should().Contain("flex: 1 1 540.12px");
+    }
+
     /// <summary>A negative weight, basis or shrink means nothing on any target (CSS drops the
     /// declaration whole), so it is refused where it is written, through the constructor and through
     /// an initializer, and never clamped into a number nobody wrote.</summary>
