@@ -267,22 +267,61 @@ export function mergeAtomicDeclaration(
  * expanded from 1024), which is what lets a design bring its own breakpoints with no shared
  * registry: both twins derive the identical name and CSS from the same thresholds.
  * Byte-identical to the C# `AdaptiveGates`.
+ *
+ * A threshold need not be whole, so it travels as ten-thousandths of a dp and the NAME spells its
+ * point as an underscore (`eq-vc703_7037`): a dot in a selector opens a second class, and
+ * `.eq-vc703.7037` named no gate at all — the browser dropped every rule of it (#669).
  */
 export function gateCompactUntil(until: number): string {
-  return `eq-vc${gateNum(until)}`;
+  return `eq-vc${gateName(until)}`;
 }
 
 export function gateMediumFrom(from: number, until: number): string {
-  return until > 0 ? `eq-vm${gateNum(from)}-${gateNum(until)}` : `eq-vm${gateNum(from)}`;
+  return until > 0 ? `eq-vm${gateName(from)}-${gateName(until)}` : `eq-vm${gateName(from)}`;
 }
 
 export function gateExpandedFrom(from: number): string {
-  return `eq-vx${gateNum(from)}`;
+  return `eq-vx${gateName(from)}`;
 }
 
-/** Invariant number formatting — the C# TokenCss.Number twin ("0.####"). */
-function gateNum(value: number): string {
-  return `${parseFloat(value.toFixed(4))}`;
+/** A dp in the units a threshold travels in (the C# `AdaptiveGates.Scale`). */
+const GATE_SCALE = 10000;
+
+/**
+ * The threshold in ten-thousandths of a dp, rounded from the value's exact binary form — the C#
+ * twin's integer, computed from the same single (eqc writes a float constant through `Math.fround`).
+ * Halves round away from zero, as `MidpointRounding.AwayFromZero` does.
+ */
+function gateUnits(dp: number): number {
+  return Math.sign(dp) * Math.round(Math.abs(dp) * GATE_SCALE);
+}
+
+/** The threshold as text, its point spelled `point` (the C# `AdaptiveGates.Spell` twin). */
+function spellGateUnits(units: number, point: string): string {
+  if (units < 0) return `-${spellGateUnits(-units, point)}`;
+  const whole = Math.floor(units / GATE_SCALE);
+  const fraction = units % GATE_SCALE;
+  return fraction === 0
+    ? `${whole}`
+    : `${whole}${point}${String(fraction).padStart(4, '0').replace(/0+$/, '')}`;
+}
+
+/** A threshold as a NAME spells it — the inverse of `spellGateUnits` with an underscore. */
+function readGateUnits(spelled: string): number {
+  const point = spelled.indexOf('_');
+  if (point < 0) return Number(spelled) * GATE_SCALE;
+  return (
+    Number(spelled.slice(0, point)) * GATE_SCALE + Number(spelled.slice(point + 1).padEnd(4, '0'))
+  );
+}
+
+function gateName(dp: number): string {
+  return spellGateUnits(gateUnits(dp), '_');
+}
+
+/** A threshold as the media condition's length. */
+function gatePx(units: number): string {
+  return `${spellGateUnits(units, '.')}px`;
 }
 
 /**
@@ -294,17 +333,17 @@ function gateCondition(gate: string): { media: string; shownOutside: boolean } |
   if (!gate.startsWith('eq-v') || gate.length < 6) return null;
   const kind = gate[4];
   const range = gate.slice(5).split('-');
-  const first = parseFloat(range[0]);
-  const second = range.length > 1 ? parseFloat(range[1]) : 0;
-  const below = (dp: number) => `${parseFloat((dp - 0.02).toFixed(4))}px`;
-  if (kind === 'c') return { media: `(min-width: ${gateNum(first)}px)`, shownOutside: true };
+  const first = readGateUnits(range[0]);
+  const second = range.length > 1 ? readGateUnits(range[1]) : 0;
+  if (kind === 'c') return { media: `(min-width: ${gatePx(first)})`, shownOutside: true };
+  // A middle range closes 0.02dp short of the next threshold (the C# `Below`).
   if (kind === 'm' && second > 0)
     return {
-      media: `(min-width: ${gateNum(first)}px) and (max-width: ${below(second)})`,
+      media: `(min-width: ${gatePx(first)}) and (max-width: ${gatePx(second - 200)})`,
       shownOutside: false,
     };
   if (kind === 'm' || kind === 'x')
-    return { media: `(min-width: ${gateNum(first)}px)`, shownOutside: false };
+    return { media: `(min-width: ${gatePx(first)})`, shownOutside: false };
   return null;
 }
 

@@ -47,4 +47,55 @@ public class S6AdaptiveRealizerTests
         sink.Css.Should().NotContain("@media", "a lone Compact IS the tree at every size");
         element.ClassName.Should().NotContain("eq-v");
     }
+
+    /// <summary>
+    /// A threshold is a NUMBER, and a design whose sizes are fluid switches where a clamp() crosses
+    /// a value that is rarely whole. The gate's NAME carries it, and a dot in a selector opens a
+    /// second class: <c>.eq-vc703.7037</c> is the class <c>eq-vc703</c> followed by <c>.7037</c>,
+    /// which cannot be one, so the browser dropped every rule of the gate and each arm showed at
+    /// every width — measured in Chromium (#669). The point is an underscore in the name and a dot
+    /// in the media condition. CROSS-PIN: s6-adaptive.spec.ts asserts the same literals.
+    /// </summary>
+    [Fact]
+    public void AFractionalThreshold_NamesAGateASelectorCanReach()
+    {
+        var sink = new StyleSink();
+        var element = WebRealizer.Lower(
+            new AdaptiveNode(Marker(), Marker(), Marker()) { ExpandedFrom = 703.7037f },
+            PhotonTheme.Instance, 1f, sink);
+
+        var gates = element.Children.Cast<HtmlElement>().Select(gate => gate.ClassName).ToList();
+        gates.Should().Equal("eq-vc600", "eq-vm600-703_7037", "eq-vx703_7037");
+        gates.Should().OnlyContain(gate => CssIdentifier.IsMatch(gate!),
+            "a gate is reached through a class selector, so its name has to be one identifier");
+        sink.Css.Should()
+            .Contain(".eq-vm600-703_7037{display:none}@media (min-width: 600px) and (max-width: 703.6837px)"
+                + "{.eq-vm600-703_7037{display:contents}}")
+            .And.Contain(".eq-vx703_7037{display:none}@media (min-width: 703.7037px){.eq-vx703_7037{display:contents}}");
+    }
+
+    /// <summary>
+    /// …and spelled the SAME by both producers. The name was C#'s <c>"0.####"</c> of a float, which
+    /// rounds to seven significant digits before it rounds to four decimals: 1066.6667 came out
+    /// <c>1066.667</c> here and <c>1066.6667</c> in the TypeScript twin, two classes for one gate,
+    /// so the server's DOM and the client's disagreed past a thousand dp. CROSS-PIN:
+    /// s6-adaptive.spec.ts asserts the same literals.
+    /// </summary>
+    [Theory]
+    [InlineData(1066.6667f, "eq-vx1066_6667", "@media (min-width: 1066.6667px)")]
+    [InlineData(2133.3333f, "eq-vx2133_3333", "@media (min-width: 2133.3333px)")]
+    [InlineData(1279.9999f, "eq-vx1279_9999", "@media (min-width: 1279.9999px)")]
+    public void AThresholdPastAThousand_KeepsItsFourDecimals(float threshold, string gate, string media)
+    {
+        var sink = new StyleSink();
+        var element = WebRealizer.Lower(
+            new AdaptiveNode(Marker(), null, Marker()) { ExpandedFrom = threshold }, PhotonTheme.Instance, 1f, sink);
+
+        ((HtmlElement)element.Children[1]).ClassName.Should().Be(gate);
+        sink.Css.Should().Contain($"{media}{{.{gate}{{display:contents}}}}");
+    }
+
+    /// <summary>The CSS identifier grammar, which is what a class selector can name.</summary>
+    private static readonly System.Text.RegularExpressions.Regex CssIdentifier =
+        new("^-?[_a-zA-Z][_a-zA-Z0-9-]*$");
 }

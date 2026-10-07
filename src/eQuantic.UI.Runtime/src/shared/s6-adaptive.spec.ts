@@ -75,6 +75,51 @@ describe('S6 adaptive lowering (C# cross-pin)', () => {
     expect(node.attributes['class'] ?? '').not.toContain('eq-v');
   });
 
+  it('a fractional threshold names a gate a selector can reach (#669)', () => {
+    // A dot in a selector opens a second class: `.eq-vc703.7037` is `eq-vc703` followed by
+    // `.7037`, which cannot be one, so the browser dropped every rule of the gate and each arm
+    // showed at every width. The SAME literals S6AdaptiveRealizerTests pins on the server.
+    const node = lowerVisualNode(
+      {
+        nodeKind: 'adaptive',
+        compact: marker(),
+        medium: marker(),
+        expanded: marker(),
+        expandedFrom: Math.fround(703.7037),
+      } as unknown as VisualNodeValue,
+      ctx,
+    );
+    const gates = node.children.map((gate) => gate.attributes['class']);
+    expect(gates).toEqual(['eq-vc600', 'eq-vm600-703_7037', 'eq-vx703_7037']);
+    for (const gate of gates) expect(gate).toMatch(/^-?[_a-zA-Z][_a-zA-Z0-9-]*$/);
+    expect(adaptiveGateRules('eq-vm600-703_7037').join('')).toBe(
+      '.eq-vm600-703_7037{display:none}@media (min-width: 600px) and (max-width: 703.6837px){.eq-vm600-703_7037{display:contents}}',
+    );
+    expect(adaptiveGateRules('eq-vx703_7037').join('')).toBe(
+      '.eq-vx703_7037{display:none}@media (min-width: 703.7037px){.eq-vx703_7037{display:contents}}',
+    );
+  });
+
+  it.each([
+    [1066.6667, 'eq-vx1066_6667', '@media (min-width: 1066.6667px)'],
+    [2133.3333, 'eq-vx2133_3333', '@media (min-width: 2133.3333px)'],
+    [1279.9999, 'eq-vx1279_9999', '@media (min-width: 1279.9999px)'],
+  ])('a threshold of %d keeps its four decimals, as the server spells it', (from, gate, media) => {
+    // The value arrives as the C# float it was authored as (eqc writes a float constant through
+    // Math.fround), and both producers spell that single's exact value.
+    const node = lowerVisualNode(
+      {
+        nodeKind: 'adaptive',
+        compact: marker(),
+        expanded: marker(),
+        expandedFrom: Math.fround(from),
+      } as unknown as VisualNodeValue,
+      ctx,
+    );
+    expect(node.children[1].attributes['class']).toBe(gate);
+    expect(adaptiveGateRules(gate)[1]).toBe(`${media}{.${gate}{display:contents}}`);
+  });
+
   it('the rules are the C# AdaptiveGates.Css blobs, byte for byte', () => {
     // The SAME literals S6AdaptiveRealizerTests pins on the server. The registry's cssText cannot
     // say this — a stylesheet reformats what it is given — so the strings are read before insertion.
@@ -122,6 +167,15 @@ describe('S6 which arm is on screen', () => {
     expect(adaptiveGateOpen('eq-vm600')).toBe(true);
     at(599);
     expect(adaptiveGateOpen('eq-vm600')).toBe(false);
+  });
+
+  it('a fractional threshold is read back from the name at its decimals', () => {
+    at(703);
+    expect(adaptiveGateOpen('eq-vc703_7037')).toBe(true);
+    expect(adaptiveGateOpen('eq-vx703_7037')).toBe(false);
+    at(704);
+    expect(adaptiveGateOpen('eq-vc703_7037')).toBe(false);
+    expect(adaptiveGateOpen('eq-vx703_7037')).toBe(true);
   });
 
   it('a name that is not a gate hides nothing', () => {
