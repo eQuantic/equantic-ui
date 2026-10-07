@@ -32,6 +32,8 @@
 - [x] 5.2 The server builds the page at it and says so in the page's configuration
 - [x] 5.3 The boot hydrates at the served density and switches the whole page at once
 - [x] 5.4 Pinned by `DensityHandoffTests` and `density-handoff.spec.ts`; measured in Chromium across a reload
+- [x] 5.5 The density holds for the whole request, so a client navigation finds its data in the tree
+  the browser builds, pinned by `DensityHandoffTests`
 
 ## 6. Documentation
 

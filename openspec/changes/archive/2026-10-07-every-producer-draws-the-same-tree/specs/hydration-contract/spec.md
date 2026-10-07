@@ -6,7 +6,8 @@
 
 The server SHALL build a page at the density the browser's pointer asks for, as the browser reported
 it, and SHALL say in the page's configuration which density it used. Hydration SHALL lower at that
-density, and when the browser's own differs SHALL switch the whole page to it at once.
+density, and when the browser's own differs SHALL switch the whole page to it at once. A client
+navigation's server data SHALL be found in the tree built at the same density.
 
 #### Scenario: The first request of a session under a mouse
 
@@ -18,3 +19,8 @@ density, and when the browser's own differs SHALL switch the whole page to it at
 
 - **WHEN** the same session requests a page again
 - **THEN** the server builds it Compact, the configuration says so, and nothing switches
+
+#### Scenario: A client navigation into a page that composes by its density
+
+- **WHEN** a compact session navigates to a page whose components differ by density
+- **THEN** the navigation carries the server data of the components the compact tree holds

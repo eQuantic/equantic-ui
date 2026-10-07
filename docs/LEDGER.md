@@ -1699,9 +1699,10 @@ record of a release, the wiki's Upgrading page is the distillate.
   its box's transform and its hover's, and a swipe that changes nothing glides home
   ([#511](https://github.com/eQuantic/equantic-ui/issues/511)). The hit slop's lift reaches through
   wrappers that draw no box ([#622](https://github.com/eQuantic/equantic-ui/issues/622)); its parity
-  case found the browser twin dropping a dark artwork's size. And a served page is built at the
-  density the browser reports in a session cookie, hydrating at it and switching the whole page at
-  once when they differ ([#623](https://github.com/eQuantic/equantic-ui/issues/623)). Measured in
+  case found the browser twin dropping a dark artwork's size. And the server builds at the density
+  the browser reports in a session cookie, a served page and the tree a client navigation finds its
+  data in alike, and hydration adopts it, switching the whole page at once when they differ
+  ([#623](https://github.com/eQuantic/equantic-ui/issues/623)). Measured in
   Chromium on a served page and after a client navigation. Proposed and archived through OpenSpec
   (`layout`, `interaction-states`, `gestures`, `hit-targets`, `hydration-contract`).
 
