@@ -100,6 +100,47 @@ public class JsTemplateTests
             .Should().Be("(($0, $1) => [...new Set($0)].filter(($x) => $1.includes($x)))(f(), (($arr) => $arr.filter(($x) => $x > 0))(g()))");
     }
 
+    /// <summary>
+    /// A plain name read twice is inlined only while nothing else in the template runs code between
+    /// the reads. A lambda the template calls, or a part that is not a name or a literal, can reassign
+    /// it: <c>xs.Average(x => { xs = new[] { 1 }; return x; })</c> divided the first array's total by
+    /// the second array's length (Copilot's second review of #661).
+    /// </summary>
+    [Fact]
+    public void APlainNameReadTwice_IsBound_WhenTheTemplateRunsCodeBetweenTheReads()
+    {
+        Write(JsExpr.Template("({0}.reduce(($sum, $x) => $sum + ({1})($x), 0) / {0}.length)",
+                JsExpr.Identifier("xs"), JsExpr.Arrow("v", JsExpr.Identifier("v"))))
+            .Should().Be("(($0) => ($0.reduce(($sum, $x) => $sum + ((v) => v)($x), 0) / $0.length))(xs)");
+        Write(JsExpr.Template("({0}.indexOf({1}) + {0}.length)", JsExpr.Identifier("xs"), Call("f()")))
+            .Should().Be("(($0) => ($0.indexOf(f()) + $0.length))(xs)");
+        Write(JsExpr.Template("{0}[{0}.length - {1}]", JsExpr.Identifier("xs"), JsExpr.Literal("1")))
+            .Should().Be("xs[xs.length - 1]");
+        // A call that runs after the last read cannot change what the reads saw.
+        Write(JsExpr.Template("({0}.length > 0 ? {0} : [{1}])", JsExpr.Identifier("xs"), Call("f()")))
+            .Should().Be("(xs.length > 0 ? xs : [f()])");
+    }
+
+    /// <summary>
+    /// A name a string quotes is not a read of it: <c>Intersect(Other("$x"))</c> kept <c>Other</c> inside
+    /// the filter, which declares <c>$x</c>, and called it once per element (Copilot's second review of
+    /// #661). An interpolation is code, and a string that does not close leaves the text as it is, so
+    /// a real read is never missed.
+    /// </summary>
+    [Fact]
+    public void ANameAStringQuotes_IsNotARead()
+    {
+        const string filter = "[...new Set({0})].filter(($x) => {1}.includes($x))";
+        Write(JsExpr.Template(filter, Call("f()"), Call("other(\"$x\")")))
+            .Should().Be("(($0, $1) => [...new Set($0)].filter(($x) => $1.includes($x)))(f(), other(\"$x\"))");
+        Write(JsExpr.Template(filter, Call("f()"), Call("other('$x')")))
+            .Should().Be("(($0, $1) => [...new Set($0)].filter(($x) => $1.includes($x)))(f(), other('$x'))");
+        Write(JsExpr.Template(filter, Call("f()"), Call("other(`a${$x}`)")))
+            .Should().Be("[...new Set(f())].filter(($x) => other(`a${$x}`).includes($x))");
+        Write(JsExpr.Template(filter, Call("f()"), Call("split(/\"/).concat($x)")))
+            .Should().Be("[...new Set(f())].filter(($x) => split(/\"/).concat($x).includes($x))");
+    }
+
     /// <summary>A hole past nine: a comparator with eleven keys held `{10}` as text (Copilot's review of #661).</summary>
     [Fact]
     public void AHoleNumberedPastNine_IsFilled()
@@ -135,9 +176,10 @@ public class JsTemplateTests
         // A call C# evaluates AFTER the name must not run before the name is read.
         Write(JsExpr.Template("f({1}, {0})", JsExpr.Identifier("a"), Call("g()")))
             .Should().Be("(($0, $1) => f($1, $0))(a, g())");
-        // Nor may a name be read a second time after a call that runs between its two reads.
+        // Nor may a name be read a second time after a call that runs between its two reads: the name
+        // is bound, read once before the call, which then stays where C# runs it.
         Write(JsExpr.Template("({0} === {1} ? {0} : 0)", JsExpr.Identifier("a"), Call("g()")))
-            .Should().Be("(($0, $1) => ($0 === $1 ? $0 : 0))(a, g())");
+            .Should().Be("(($0) => ($0 === g() ? $0 : 0))(a)");
     }
 
     [Fact]
