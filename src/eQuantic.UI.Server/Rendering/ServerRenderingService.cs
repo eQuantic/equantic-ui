@@ -136,6 +136,10 @@ public class ServerRenderingService : IServerRenderingService
             // Where a component in the MIDDLE of the tree finds a capability — the REQUEST's
             // container, so a scoped one resolves and a page's own registrations win.
             Primitives.CapabilityScope.Current = context.RequestServices.GetService;
+            // And the density the browser reported (#623), for the whole request: every write-once
+            // bridge is built at it, the drawing's and the navigation's discovery walk alike, or a page
+            // that composes by its density answers a navigation from a tree the browser never builds.
+            Web.VisualNodeComponent.AmbientDensity = DensityCookie.Resolve(context);
             // Every in-app href picks up THIS request's language prefix. The culture is the one
             // UseRequestLocalization negotiated — from the path segment first — so a page served
             // at /pt-BR/pricing links to /pt-BR/about without any page saying so.
@@ -216,9 +220,6 @@ public class ServerRenderingService : IServerRenderingService
                         // component — collects its atomic rules into this one per-page set.
                         var styles = new Web.StyleSink();
                         Web.StyleSink.Ambient = styles;
-                        // And the density the browser reported (#623): every write-once bridge in the
-                        // tree is built at it, so hydration adopts markup built for the pointer it has.
-                        Web.VisualNodeComponent.AmbientDensity = DensityCookie.Resolve(context);
                         // The same shape, for the same reason, one layer over: every gradient the page
                         // paints with, declared ONCE for the document instead of once per drawing.
                         var gradients = new Web.GradientSink();
@@ -248,7 +249,6 @@ public class ServerRenderingService : IServerRenderingService
                             Web.ComponentExpansionScope.Ambient = null;
                             Web.StyleSink.Ambient = null;
                             Web.GradientSink.Ambient = null;
-                            Web.VisualNodeComponent.AmbientDensity = null;
                             Primitives.ComponentBoundary.Report = null;
                         }
 
@@ -410,6 +410,7 @@ public class ServerRenderingService : IServerRenderingService
                 RenderContext.SetLinkPolicy(null);
                 Primitives.RouteValues.ClearCurrent();
                 Primitives.CapabilityScope.Current = null;
+                Web.VisualNodeComponent.AmbientDensity = null;
             }
         }
         catch (Exception ex)
