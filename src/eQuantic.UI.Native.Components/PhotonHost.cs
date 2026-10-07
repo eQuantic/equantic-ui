@@ -496,8 +496,7 @@ public sealed class PhotonHost
             var carets = region.Surface.Model.Carets;
             if (carets.Count == 0) continue;
             var caret = carets[0];
-            scrolled |= RevealRect(region.Path, new Rect(region.Bounds.X + caret.X,
-                region.Bounds.Y + caret.Y, caret.Width, caret.Height));
+            scrolled |= RevealRect(region.Path, ToScreen(regions, i, region.Bounds, caret));
         }
         return scrolled;
     }
@@ -758,29 +757,29 @@ public sealed class PhotonHost
     /// <summary>A press that grabbed the fill handle is dragging a fill preview until it lifts.</summary>
     private bool _sheetFilling;
 
-    /// <summary>The bottom-right corner of the selection's bottom-right CELL, in host space —
-    /// where Excel's little square sits. Prefix-sum arithmetic, the inverse of CellAt.</summary>
+    /// <summary>The bottom-right corner of the selection's bottom-right CELL, in the sheet's own
+    /// space — where Excel's little square sits. Prefix-sum arithmetic, the inverse of CellAt.</summary>
     private static Point FillHandleCorner(SheetRegion region, SheetRange selection)
     {
         var surface = region.Surface;
         var document = surface.Controller.Document;
-        var x = region.Bounds.X + surface.HeaderWidth;
+        var x = surface.HeaderWidth;
         for (var c = surface.FirstCol; c <= selection.RightCol; c++) x += document.ColWidth(c);
-        var y = region.Bounds.Y + surface.HeaderHeight;
+        var y = surface.HeaderHeight;
         for (var r = surface.FirstRow; r <= selection.BottomRow; r++) y += document.RowHeight(r);
         return new Point(x, y);
     }
 
     private const float FillHandleGrab = 8f;
 
-    /// <summary>The cell a point lands on: prefix-sum arithmetic from the window's origin,
-    /// clamped into the grid so a drag past the edge holds the edge.</summary>
-    private static CellRef CellAt(SheetRegion region, float x, float y)
+    /// <summary>The cell a point in the sheet's own space lands on: prefix-sum arithmetic from the
+    /// window's origin, clamped into the grid so a drag past the edge holds the edge.</summary>
+    private static CellRef CellAt(SheetRegion region, Point local)
     {
         var surface = region.Surface;
         var document = surface.Controller.Document;
-        var gridX = x - region.Bounds.X - surface.HeaderWidth;
-        var gridY = y - region.Bounds.Y - surface.HeaderHeight;
+        var gridX = local.X - surface.HeaderWidth;
+        var gridY = local.Y - surface.HeaderHeight;
 
         var col = surface.FirstCol;
         var acc = 0f;
@@ -798,14 +797,6 @@ public sealed class PhotonHost
         }
         return document.Clamp(new CellRef(row, col));
     }
-
-    /// <summary>
-    /// A window point in the surface's OWN coordinates — the only arithmetic a host does for a code
-    /// surface. What the point MEANS (which line, which column, whether it extends the selection) is
-    /// the model's, so it is the same answer on every host.
-    /// </summary>
-    private static Point LocalTo(CodeRegion region, float x, float y) =>
-        new(x - region.Bounds.X, y - region.Bounds.Y);
 
     private void BeginCodeEditing(CodeRegion region)
     {
@@ -924,8 +915,8 @@ public sealed class PhotonHost
     private readonly System.Runtime.CompilerServices.ConditionalWeakTable<ICodeSurfaceModel,
         System.Runtime.CompilerServices.StrongBox<int>> _focusRequests = new();
 
-    private void BeginEditing(TextRegion field, float? atX = null) =>
-        BeginEditing(field.Entry, field.Path, atX is { } x ? IndexAt(field.Entry, x - field.Bounds.X) : null);
+    private void BeginEditing(TextRegion field, float? localX = null) =>
+        BeginEditing(field.Entry, field.Path, localX is { } x ? IndexAt(field.Entry, x) : null);
 
     private void BeginEditing(TextEntry entry, string path, int? caret = null)
     {
@@ -1108,8 +1099,9 @@ public sealed class PhotonHost
                 if (raster is not null) advance = raster.Texture.Width / RenderScale;
             }
             // The same window-follows-caret clamp the realizer applies while editing.
-            advance = MathF.Min(advance, bounds.Width - 8f);
-            return new Rect(bounds.X + MathF.Max(advance, 0), bounds.Y, 2f, style.LineHeight);
+            // The field's own width: under a transform, its box on screen is another size.
+            advance = MathF.Min(advance, (TransformedAt(fields, i)?.Local.Width ?? bounds.Width) - 8f);
+            return ToScreen(fields, i, bounds, new Rect(MathF.Max(advance, 0), 0, 2f, style.LineHeight));
         }
 
         var surfaces = _lastFrame.CodeRegions;
@@ -1118,9 +1110,7 @@ public sealed class PhotonHost
             if (surfaces[i].Path != _textPath) continue;
             var carets = surfaces[i].Surface.Model.Carets;
             if (carets.Count == 0) return null;
-            var caret = carets[0];
-            return new Rect(surfaces[i].Bounds.X + caret.X, surfaces[i].Bounds.Y + caret.Y,
-                caret.Width, caret.Height);
+            return ToScreen(surfaces, i, surfaces[i].Bounds, carets[0]);
         }
         return null;
     }
@@ -1510,7 +1500,7 @@ public sealed class PhotonHost
             {
                 if (fillRegions[i].Path != _textPath) continue;
                 var sheet = fillRegions[i].Surface.Controller;
-                sheet.UpdateFill(CellAt(fillRegions[i], x, y));
+                sheet.UpdateFill(CellAt(fillRegions[i], ToLocal(fillRegions, i, fillRegions[i].Bounds, new Point(x, y))));
                 fillRegions[i].Surface.OnChanged?.Invoke();
                 NeedsRender = true;
                 break;
@@ -1526,7 +1516,7 @@ public sealed class PhotonHost
             {
                 if (sheetRegions[i].Path != _textPath) continue;
                 var sheet = sheetRegions[i].Surface.Controller;
-                var cell = CellAt(sheetRegions[i], x, y);
+                var cell = CellAt(sheetRegions[i], ToLocal(sheetRegions, i, sheetRegions[i].Bounds, new Point(x, y)));
                 if (cell == sheet.Selection.Focus) break;
                 sheet.Selection = new SheetRange(sheet.Selection.Anchor, cell);
                 sheetRegions[i].Surface.OnChanged?.Invoke();
@@ -1544,8 +1534,8 @@ public sealed class PhotonHost
             for (var i = 0; i < surfaces.Count; i++)
             {
                 if (surfaces[i].Path != _textPath) continue;
-                if (!surfaces[i].Surface.Model.HandlePointer(PointerPhase.Move, LocalTo(surfaces[i], x, y),
-                        KeyModifiers.None, 1)) break;
+                if (!surfaces[i].Surface.Model.HandlePointer(PointerPhase.Move,
+                        ToLocal(surfaces, i, surfaces[i].Bounds, new Point(x, y)), KeyModifiers.None, 1)) break;
                 surfaces[i].Surface.OnChanged?.Invoke();
                 NeedsRender = true;
                 break;
@@ -1562,7 +1552,7 @@ public sealed class PhotonHost
             for (var i = 0; i < fields.Count; i++)
             {
                 if (fields[i].Path != _textPath) continue;
-                var index = IndexAt(editing, x - fields[i].Bounds.X);
+                var index = IndexAt(editing, ToLocal(fields, i, fields[i].Bounds, new Point(x, y)).X);
                 if (index == Caret) break;
                 Caret = index;
                 NeedsRender = true;
@@ -1931,7 +1921,7 @@ public sealed class PhotonHost
         for (var i = fields.Count - 1; i >= 0; i--)
         {
             if (!Covers(fields, i, fields[i].Visible ?? fields[i].Bounds, point)) continue;
-            BeginEditing(fields[i], x);
+            BeginEditing(fields[i], ToLocal(fields, i, fields[i].Bounds, point).X);
             // Double-click: the word under the point. Triple: everything. The platform counts the
             // clicks (its double-click interval is a system setting, not ours to guess).
             if (clickCount >= 3) { _anchor = 0; Caret = fields[i].Entry.Value.Length; }
@@ -1958,7 +1948,7 @@ public sealed class PhotonHost
             // What the press MEANS — a caret, a word, a line, a shift-extended selection — is the
             // model's to decide. The platform counts the clicks: its double-click interval is a
             // system setting, never ours to guess.
-            surfaces[i].Surface.Model.HandlePointer(PointerPhase.Down, LocalTo(surfaces[i], x, y),
+            surfaces[i].Surface.Model.HandlePointer(PointerPhase.Down, ToLocal(surfaces, i, surfaces[i].Bounds, point),
                 modifiers, clickCount);
             _codeDragging = true;
             RestartBlink();
@@ -1978,13 +1968,14 @@ public sealed class PhotonHost
             _textPath = sheetRegions[i].Path;
             _focused = null;
             _focusedPath = null;
-            var cell = CellAt(sheetRegions[i], x, y);
+            var local = ToLocal(sheetRegions, i, sheetRegions[i].Bounds, point);
+            var cell = CellAt(sheetRegions[i], local);
             if (sheet.Editing) sheet.CommitEdit();   // clicking away lands the draft, like Excel
 
             // Excel's little square: a grab near the selection's bottom-right corner starts a
             // FILL drag, not a new selection.
             var corner = FillHandleCorner(sheetRegions[i], sheet.Selection);
-            if (Math.Abs(x - corner.X) <= FillHandleGrab && Math.Abs(y - corner.Y) <= FillHandleGrab)
+            if (Math.Abs(local.X - corner.X) <= FillHandleGrab && Math.Abs(local.Y - corner.Y) <= FillHandleGrab)
             {
                 sheet.BeginFill();
                 _sheetFilling = true;
@@ -2079,8 +2070,8 @@ public sealed class PhotonHost
             for (var i = 0; i < codeRegions.Count; i++)
             {
                 if (codeRegions[i].Path != _textPath) continue;
-                codeRegions[i].Surface.Model.HandlePointer(PointerPhase.Up, LocalTo(codeRegions[i], x, y),
-                    KeyModifiers.None, 1);
+                codeRegions[i].Surface.Model.HandlePointer(PointerPhase.Up,
+                    ToLocal(codeRegions, i, codeRegions[i].Bounds, new Point(x, y)), KeyModifiers.None, 1);
                 break;
             }
         }
@@ -2236,10 +2227,22 @@ public sealed class PhotonHost
     }
 
     /// <summary>The point in the CANVAS's coordinates — the translation that makes the arithmetic
-    /// the app's. Outside the box the numbers go negative or past the size, which is correct: a
-    /// drag that left still has a position.</summary>
-    private static CanvasPointer Local(CanvasRegion region, Point point, bool pressedNow, KeyModifiers modifiers) =>
-        new(point.X - region.Bounds.X, point.Y - region.Bounds.Y, pressedNow, modifiers);
+    /// the app's, through the transform that draws the canvas when one does (#658). Outside the box
+    /// the numbers go negative or past the size, which is correct: a drag that left still has a
+    /// position. The canvas is found in the current frame by its path, as a code surface is, since the
+    /// region a drag began on is a frame old.</summary>
+    private CanvasPointer Local(CanvasRegion region, Point point, bool pressedNow, KeyModifiers modifiers)
+    {
+        var local = new Point(point.X - region.Bounds.X, point.Y - region.Bounds.Y);
+        var canvases = _lastFrame?.CanvasRegions ?? [];
+        for (var i = 0; i < canvases.Count; i++)
+        {
+            if (canvases[i].Path != region.Path) continue;
+            local = ToLocal(canvases, i, canvases[i].Bounds, point);
+            break;
+        }
+        return new(local.X, local.Y, pressedNow, modifiers);
+    }
 
     public bool Tap(float x, float y)
     {
@@ -2291,6 +2294,36 @@ public sealed class PhotonHost
         if (!box.Contains(point)) return false;
         if (TransformedAt(regions, index) is not { } region) return true;
         return (drawn ? region.LocalDrawn : region.Local).Contains(region.Inverse.Transform(point));
+    }
+
+    /// <summary>
+    /// <paramref name="point"/>, on screen, in the own space of the <paramref name="index"/>th region
+    /// of <paramref name="regions"/>, whose box on screen is <paramref name="bounds"/>: its offset from
+    /// the region's corner, taken back through the transform that drew the region when one did. It is
+    /// the only arithmetic a host does for a press on a surface: what the point MEANS (a caret, a line
+    /// and a column, a cell, a canvas's coordinates) is the surface's, and the same on every host.
+    /// Subtracting the box's corner alone was exact for a translation, and a field drawn twice as
+    /// large put the caret at twice the column the press was on (#658).
+    /// </summary>
+    private Point ToLocal(object regions, int index, Rect bounds, Point point)
+    {
+        if (TransformedAt(regions, index) is not { } region) return new Point(point.X - bounds.X, point.Y - bounds.Y);
+        var local = region.Inverse.Transform(point);
+        return new Point(local.X - region.Local.X, local.Y - region.Local.Y);
+    }
+
+    /// <summary>
+    /// The box on screen that <paramref name="rect"/>, in the own space of the <paramref name="index"/>th
+    /// region of <paramref name="regions"/>, is drawn in: <see cref="ToLocal"/> the other way, for
+    /// what the host places by a surface's content: the platform's candidate window by its caret, and
+    /// the caret a scroll view reveals. The frame keeps the inverse, which every pointer move asks
+    /// for, so the rare way out inverts it back.
+    /// </summary>
+    private Rect ToScreen(object regions, int index, Rect bounds, Rect rect)
+    {
+        if (TransformedAt(regions, index) is not { } region || region.Inverse.Invert() is not { } matrix)
+            return rect with { X = bounds.X + rect.X, Y = bounds.Y + rect.Y };
+        return matrix.TransformBounds(rect with { X = region.Local.X + rect.X, Y = region.Local.Y + rect.Y });
     }
 
     /// <summary>

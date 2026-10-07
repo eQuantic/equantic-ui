@@ -55,19 +55,7 @@ internal readonly struct InputSink(FrameRegions regions, Rect? clip = null, bool
 
     /// <summary>The box <paramref name="rect"/>, laid out in this subtree, is drawn in on screen: the
     /// box around its four corners under the transform, which is the rect itself where none is.</summary>
-    private Rect Place(Rect rect)
-    {
-        if (Transform is not { } m) return rect;
-        var a = m.Transform(new Point(rect.Left, rect.Top));
-        var b = m.Transform(new Point(rect.Right, rect.Top));
-        var c = m.Transform(new Point(rect.Left, rect.Bottom));
-        var d = m.Transform(new Point(rect.Right, rect.Bottom));
-        var left = MathF.Min(MathF.Min(a.X, b.X), MathF.Min(c.X, d.X));
-        var top = MathF.Min(MathF.Min(a.Y, b.Y), MathF.Min(c.Y, d.Y));
-        var right = MathF.Max(MathF.Max(a.X, b.X), MathF.Max(c.X, d.X));
-        var bottom = MathF.Max(MathF.Max(a.Y, b.Y), MathF.Max(c.Y, d.Y));
-        return Rect.FromLTRB(left, top, right, bottom);
-    }
+    private Rect Place(Rect rect) => Transform is { } m ? m.TransformBounds(rect) : rect;
 
     /// <summary>
     /// Records what turns a point on screen back into the space of the region about to be the
