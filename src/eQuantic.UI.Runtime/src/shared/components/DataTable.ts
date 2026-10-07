@@ -38,7 +38,7 @@ export class DataTable extends StatelessComponent {
         let table = new Column(0, 'start', 'stretch', false, null, null, { width: SizeValue.fill });
         table.add(this.header(theme, tracks));
         let empty: any; 
-        if (this.rows.length === 0 && this.pendingRows === 0 && (empty = this.empty) != null) {
+        if ($eq.collections.count(this.rows) === 0 && this.pendingRows === 0 && (empty = this.empty) != null) {
             table.add(empty);
             return table;
         }
@@ -48,10 +48,10 @@ export class DataTable extends StatelessComponent {
     }
 
     tracks() {
-        let tracks = new Array(this.columns.length + (this.selectable ? 1 : 0)).fill(undefined);
+        let tracks = new Array($eq.collections.count(this.columns) + (this.selectable ? 1 : 0)).fill(undefined);
         let offset = 0;
         if (this.selectable) tracks[offset++] = GridTrack.fixed(DataTable.checkboxTrack);
-        for (let i = 0; i < this.columns.length; i++) tracks[offset + i] = this.columns[i].track;
+        for (let i = 0; i < $eq.collections.count(this.columns); i++) tracks[offset + i] = $eq.collections.item(this.columns, i).track;
         return tracks;
     }
 
@@ -59,10 +59,10 @@ export class DataTable extends StatelessComponent {
         let grid = new Grid(tracks, 0, null, { width: SizeValue.fill });
         if (this.selectable) {
             let anySelected = $eq.collections.count(this.selection!) > 0;
-            grid.add(DataTable.cell(new Box(new BoxStyle(), new Checkbox(anySelected, this.onToggleAll, null, { indeterminate: anySelected && $eq.collections.count(this.selection) < this.rows.length })), 'center'));
+            grid.add(DataTable.cell(new Box(new BoxStyle(), new Checkbox(anySelected, this.onToggleAll, null, { indeterminate: anySelected && $eq.collections.count(this.selection) < $eq.collections.count(this.rows) })), 'center'));
         }
-        for (let i = 0; i < this.columns.length; i++) {
-            let column = this.columns[i];
+        for (let i = 0; i < $eq.collections.count(this.columns); i++) {
+            let column = $eq.collections.item(this.columns, i);
             let sorted = i === this.sortColumn && this.sortDirection !== 'none';
             let label = new Row(4, 'start', 'center', false, null, null, { width: SizeValue.fill, cross: 'center', main: column.align === 'start' ? 'start' : 'end' });
             label.add(new Text(column.header.toUpperCase(), 'caption', sorted ? theme.textPrimary : theme.textMuted, 1));
@@ -83,7 +83,7 @@ export class DataTable extends StatelessComponent {
             let toggle = this.onToggleRow;
             grid.add(DataTable.cell(new Box(new BoxStyle(), new Checkbox(selected, () => toggle?.(row), null, { disabled: toggle == null })), 'center'));
         }
-        for (let i = 0; i < this.columns.length && i < row.cells.length; i++) grid.add(DataTable.cell(row.cells[i], this.columns[i].align));
+        for (let i = 0; i < $eq.collections.count(this.columns) && i < $eq.collections.count(row.cells); i++) grid.add(DataTable.cell($eq.collections.item(row.cells, i), $eq.collections.item(this.columns, i).align));
         let box = new Box(new BoxStyle({ width: SizeValue.fill, minHeight: DataTable.rowHeight, background: selected ? theme.colors('primary').subtle : null, borderWidth: 1, borderColor: theme.border, hover: new StyleDiff({ background: theme.surfaceSubtle }), transition: TransitionSpec.of(1, Motion.press) }), grid, { key: row.key });
         return this.onRowPressed == null ? box : new Pressable(box, () => this.onRowPressed!(row));
     }
@@ -91,8 +91,8 @@ export class DataTable extends StatelessComponent {
     pending(theme: any, tracks: GridTrack[], index: number) {
         let grid = new Grid(tracks, 0, null, { width: SizeValue.fill });
         if (this.selectable) grid.add(DataTable.cell(new Box(new BoxStyle(), new Skeleton('block', 16, 16)), 'center'));
-        for (let i = 0; i < this.columns.length; i++) {
-            grid.add(DataTable.cell(new Box(new BoxStyle(), new Skeleton('line', i % 2 === 0 ? 96 : 64)), this.columns[i].align));
+        for (let i = 0; i < $eq.collections.count(this.columns); i++) {
+            grid.add(DataTable.cell(new Box(new BoxStyle(), new Skeleton('line', i % 2 === 0 ? 96 : 64)), $eq.collections.item(this.columns, i).align));
         }
         return new Box(new BoxStyle({ width: SizeValue.fill, minHeight: DataTable.rowHeight, borderWidth: 1, borderColor: theme.border }), grid, { key: `pending-${index}` });
     }

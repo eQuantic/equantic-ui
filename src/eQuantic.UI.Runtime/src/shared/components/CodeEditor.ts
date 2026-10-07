@@ -131,14 +131,14 @@ export class CodeEditor extends StatefulComponent {
     }
 
     marks(editor: CodeEditorController, matches: CodeRange[], first: number, last: number) {
-        if (matches.length === 0 && !this.matchBrackets && editor.composition == null) return this.decorations;
+        if ($eq.collections.count(matches) === 0 && !this.matchBrackets && editor.composition == null) return this.decorations;
         let marks: CodeDecoration[] = [...this.decorations];
         let composition: any; 
         if ((composition = editor.composition) != null) marks.push(new CodeDecoration(composition, 'underline'));
-        if (matches.length > 0) {
+        if ($eq.collections.count(matches) > 0) {
             let current = editor.selection;
-            for (let i = CodeEditor.firstEndingOnOrAfter(matches, first); i < matches.length && matches[i].start.line <= last; i++) {
-                let match = matches[i];
+            for (let i = CodeEditor.firstEndingOnOrAfter(matches, first); i < $eq.collections.count(matches) && $eq.collections.item(matches, i).start.line <= last; i++) {
+                let match = $eq.collections.item(matches, i);
                 marks.push(new CodeDecoration(match, $eq.equals(match.start, current.start) && $eq.equals(match.end, current.end) ? 'outline' : 'highlight'));
             }
         }
@@ -186,10 +186,10 @@ export class CodeEditor extends StatefulComponent {
 
     static firstEndingOnOrAfter(matches: CodeRange[], line: number) {
         let low = 0;
-        let high = matches.length;
+        let high = $eq.collections.count(matches);
         while (low < high) {
             let middle = Math.trunc((low + high) / 2);
-            if (matches[middle].end.line < line) low = middle + 1; else high = middle;
+            if ($eq.collections.item(matches, middle).end.line < line) low = middle + 1; else high = middle;
         }
         return low;
     }
@@ -216,15 +216,15 @@ export class CodeEditor extends StatefulComponent {
         let index = 0;
         let current = editor.selection.start;
         let low = 0;
-        let high = matches.length;
+        let high = $eq.collections.count(matches);
         while (low < high) {
             let middle = Math.trunc((low + high) / 2);
-            if (matches[middle].start.compareTo(current) < 0) low = middle + 1; else high = middle;
+            if ($eq.collections.item(matches, middle).start.compareTo(current) < 0) low = middle + 1; else high = middle;
         }
-        if (low < matches.length && $eq.equals(matches[low].start, current)) index = low + 1;
+        if (low < $eq.collections.count(matches) && $eq.equals($eq.collections.item(matches, low).start, current)) index = low + 1;
         let row = new Row(8, 'start', 'center', false, null, null, { cross: 'center' });
         row.add(new Box(new BoxStyle({ width: 168 }), new TextEntry(this._findText, (value: string) => this.setState(() => this._findText = value), { placeholder: SdkStrings.find, label: SdkStrings.find, autofocus: true, onSubmit: () => step(true) })));
-        row.add(new Text(matches.length === 0 ? this._findText.length === 0 ? '' : '0' : `${index}/${matches.length}`, 'labelSmall', theme.textMuted, 1, 'start', false, false, null, 0, { tabular: true }));
+        row.add(new Text($eq.collections.count(matches) === 0 ? this._findText.length === 0 ? '' : '0' : `${index}/${$eq.collections.count(matches)}`, 'labelSmall', theme.textMuted, 1, 'start', false, false, null, 0, { tabular: true }));
         row.add(new IconButton(new Icon(IconGlyph.fromIcons('chevronUp')), SdkStrings.previousMatch, 'standard', 'medium', null, { size: 'small', onPressed: () => step(false) }));
         row.add(new IconButton(new Icon(IconGlyph.fromIcons('chevronDown')), SdkStrings.nextMatch, 'standard', 'medium', null, { size: 'small', onPressed: () => step(true) }));
         row.add(new IconButton(new Icon(IconGlyph.fromIcons('close')), SdkStrings.closeFind, 'standard', 'medium', null, { size: 'small', onPressed: () => this.closeFind(editor) }));

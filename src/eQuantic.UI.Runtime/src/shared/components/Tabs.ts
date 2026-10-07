@@ -22,19 +22,19 @@ export class Tabs extends StatelessComponent {
         let theme = context.theme;
         let primary = theme.colors('primary');
         let row = new Row(0, 'start', 'center', false, null, null, { width: SizeValue.fill, height: 48 });
-        for (let i = 0; i < this.labels.length; i++) {
+        for (let i = 0; i < $eq.collections.count(this.labels); i++) {
             let isActive = i === this.selected;
             let index = i;
-            let label = new Text(this.labels[i], 'caption', isActive ? primary.base : theme.textMuted, 1, 'start', false, false, null, 0, { styleOverride: new TypeStyle(14, 18, isActive ? 'bold' : 'semiBold', Math.fround(0.1), Math.fround(1.3)) });
+            let label = new Text($eq.collections.item(this.labels, i), 'caption', isActive ? primary.base : theme.textMuted, 1, 'start', false, false, null, 0, { styleOverride: new TypeStyle(14, 18, isActive ? 'bold' : 'semiBold', Math.fround(0.1), Math.fround(1.3)) });
             let labelRow = new Row(0, 'start', 'center', false, null, null, { main: 'center', height: SizeValue.fill });
             labelRow.add(label);
             let cell = new Column(0, 'start', 'stretch', false, null, null, { height: SizeValue.fill });
             cell.add(new Flexible(labelRow));
             cell.add(new Box(new BoxStyle({ width: SizeValue.fill, height: 3, padding: EdgeInsets.symmetric(16, 0) }), isActive ? new Box(new BoxStyle({ width: SizeValue.fill, height: 3, background: primary.base, cornerRadius: new CornerRadii(2, 2, 0, 0) })) : null));
-            row.add(new Flexible(new Pressable(cell, this.onSelect == null ? null : () => this.onSelect!(index), { label: this.labels[i], pressedBackground: theme.surfaceSubtle, role: 'tab', selected: isActive })));
+            row.add(new Flexible(new Pressable(cell, this.onSelect == null ? null : () => this.onSelect!(index), { label: $eq.collections.item(this.labels, i), pressedBackground: theme.surfaceSubtle, role: 'tab', selected: isActive })));
         }
-        if (this.onSelect == null || this.labels.length === 0) return row;
-        let count = this.labels.length;
+        if (this.onSelect == null || $eq.collections.count(this.labels) === 0) return row;
+        let count = $eq.collections.count(this.labels);
         return new Adjustable(row, (direction: number) => this.onSelect!($eq.num.intRem(this.selected + direction + count, count)), { role: 'tablist' });
     }
 }

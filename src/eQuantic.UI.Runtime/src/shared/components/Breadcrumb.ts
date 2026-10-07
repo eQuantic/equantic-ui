@@ -1,4 +1,4 @@
-import { BuildContext, Crumb, Icon, IconGlyph, Link, Row, StatelessComponent, Text } from "../runtime-exports";
+import { $eq, BuildContext, Crumb, Icon, IconGlyph, Link, Row, StatelessComponent, Text } from "../runtime-exports";
 
 export class Breadcrumb extends StatelessComponent {
     static $typeId = 'eQuantic.UI.Components.Breadcrumb';
@@ -14,9 +14,9 @@ export class Breadcrumb extends StatelessComponent {
     build(context: BuildContext) {
         let theme = context.theme;
         let row = new Row(4, 'start', 'center', false, null, null, { cross: 'center' });
-        for (let i = 0; i < this.crumbs.length; i++) {
-            let crumb = this.crumbs[i];
-            let last = i === this.crumbs.length - 1;
+        for (let i = 0; i < $eq.collections.count(this.crumbs); i++) {
+            let crumb = $eq.collections.item(this.crumbs, i);
+            let last = i === $eq.collections.count(this.crumbs) - 1;
             if (i > 0) row.add(new Icon(IconGlyph.fromIcons('chevronRight'), 16, theme.borderStrong));
             let text = new Text(crumb.label, 'caption', last ? theme.textPrimary : theme.textSecondary, 1);
             let destination: any; 

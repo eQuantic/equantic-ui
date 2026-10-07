@@ -157,7 +157,7 @@ export class CodeBlock extends StatelessComponent {
             marks.add(new Positioned(new Box(new BoxStyle({ width: width, height: lineHeight, background: this.inverse ? CodeBlock.codeSlabActive : theme.colors('primary').subtle })), Math.fround(metrics.contentTop + Math.fround(Math.fround(this.rowOf(activeLine)) * lineHeight)), null, null, 0));
         }
         this.addMarks(marks, CodeBlock.highlightPass, metrics, theme, first, last, firstLine, lastLine, width);
-        if (this.selectionBands.length > 0) {
+        if ($eq.collections.count(this.selectionBands) > 0) {
             let band = CodeBlock.selectionFor(this.inverse, theme).withOpacity(CodeBlock.selectionAlpha);
             let windowTop = Math.fround(metrics.contentTop + Math.fround(Math.fround(first) * lineHeight));
             let windowBottom = Math.fround(metrics.contentTop + Math.fround(Math.fround(last + 1) * lineHeight));
@@ -355,7 +355,7 @@ export class CodeBlock extends StatelessComponent {
             for (const mark of this.marks(decoration, this.document, (line: number) => this.cellsOf(line), (line: number) => this.shows(line) ? this.rowOf(line) : -1, firstLine, lastLine, metrics, theme, width)) marks.add(mark);
         }
         let fillers: any; 
-        if (!((fillers = this.fillerDocument) != null) || this.fillerDecorations.length === 0) return;
+        if (!((fillers = this.fillerDocument) != null) || $eq.collections.count(this.fillerDecorations) === 0) return;
         let sources: number[] = [];
         let rows: number[] = [];
         let lowest = 2147483647;

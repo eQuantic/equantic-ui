@@ -57,7 +57,7 @@ export class CodeDocument {
     }
 
     static fromLines(lines: string[]) {
-        return new CodeDocument(lines.length === 0 ? [''] : lines.slice());
+        return new CodeDocument($eq.collections.count(lines) === 0 ? [''] : lines.slice());
     }
 
     static fromText(text: string) {

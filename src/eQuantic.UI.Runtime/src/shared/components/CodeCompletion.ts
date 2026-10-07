@@ -72,14 +72,14 @@ export class CodeCompletion {
     }
 
     invoke() {
-        if (this._editor.readOnly || this.providers.length === 0) return false;
+        if (this._editor.readOnly || $eq.collections.count(this.providers) === 0) return false;
         this.open(this.wordStart(this._editor.caret));
         this.ask('invoked', null, this.providers.slice());
         return true;
     }
 
     typed(typed: string) {
-        if (this._editor.readOnly || this._active || this.providers.length === 0 || !this._editor.selection.isEmpty) return;
+        if (this._editor.readOnly || this._active || $eq.collections.count(this.providers) === 0 || !this._editor.selection.isEmpty) return;
         let triggered: any[] = [];
         for (const provider of this.providers) {
             if (provider.triggerCharacters.includes(typed)) triggered.push(provider);

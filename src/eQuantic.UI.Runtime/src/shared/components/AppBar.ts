@@ -11,7 +11,7 @@ export class AppBar extends StatelessComponent {
     }
 
     set actions(value) {
-        this.$actions = (value != null && value.length > 3) ? $eq.exceptions.raise($eq.exceptions.create(['System.ArgumentException', 'System.SystemException', 'System.Exception'], 'AppBar takes at most 3 actions (spec B3) — overflow belongs in an ActionSheet.', 'Actions')) : value;
+        this.$actions = (value != null && $eq.collections.count(value) > 3) ? $eq.exceptions.raise($eq.exceptions.create(['System.ArgumentException', 'System.SystemException', 'System.Exception'], 'AppBar takes at most 3 actions (spec B3) — overflow belongs in an ActionSheet.', 'Actions')) : value;
     }
 
     declare scrolled: boolean;

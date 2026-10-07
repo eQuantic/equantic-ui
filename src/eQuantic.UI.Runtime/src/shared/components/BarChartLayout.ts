@@ -1,4 +1,4 @@
-import { BarChartGeometry, BarRect, ChartSeries, Rect, ValueAxis, ValueScale, ValueTicks } from "../runtime-exports";
+import { $eq, BarChartGeometry, BarRect, ChartSeries, Rect, ValueAxis, ValueScale, ValueTicks } from "../runtime-exports";
 
 export class BarChartLayout {
     static maxThickness: number = 24;
@@ -17,9 +17,9 @@ export class BarChartLayout {
         for (let c = 0; c < categoryCount; c++) {
             let positive = 0;
             let negative = 0;
-            for (let s = 0; s < series.length; s++) {
-                if (!visible[s]) continue;
-                let v = series[s].at(c);
+            for (let s = 0; s < $eq.collections.count(series); s++) {
+                if (!$eq.collections.item(visible, s)) continue;
+                let v = $eq.collections.item(series, s).at(c);
                 if (layout === 'stacked') {
                     if (v >= 0) positive += v; else negative += v;
                 } else {
@@ -45,8 +45,8 @@ export class BarChartLayout {
         let baseValue = ticks.min > 0 ? ticks.min : ticks.max < 0 ? ticks.max : 0;
         let baseline = BarChartLayout.offset(ticks, baseValue, across);
         let shown: number[] = [];
-        for (let s = 0; s < series.length; s++) {
-            if (visible[s]) shown.push(s);
+        for (let s = 0; s < $eq.collections.count(series); s++) {
+            if ($eq.collections.item(visible, s)) shown.push(s);
         }
         let slot = categoryCount === 0 ? along : Math.fround(along / Math.fround(categoryCount));
         let bars: BarRect[] = [];
@@ -61,7 +61,7 @@ export class BarChartLayout {
                 let start = Math.fround(categoryStart + Math.fround(Math.fround(slot - group) / 2));
                 for (let k = 0; k < n; k++) {
                     let s = shown[k];
-                    let v = series[s].at(c);
+                    let v = $eq.collections.item(series, s).at(c);
                     let from = BarChartLayout.offset(ticks, baseValue, across);
                     let to = BarChartLayout.offset(ticks, v, across);
                     bars.push(BarChartLayout.rect(vertical, across, c, s, Math.fround(start + Math.fround(Math.fround(k) * Math.fround(thickness + BarChartLayout.gap))), thickness, Math.min(from, to), Math.max(from, to), v < baseValue, true));
@@ -73,12 +73,12 @@ export class BarChartLayout {
                 let lastPositive = -1;
                 let lastNegative = -1;
                 for (const s of shown) {
-                    if (series[s].at(c) >= 0) lastPositive = s; else lastNegative = s;
+                    if ($eq.collections.item(series, s).at(c) >= 0) lastPositive = s; else lastNegative = s;
                 }
                 let positiveTop = baseValue;
                 let negativeBottom = baseValue;
                 for (const s of shown) {
-                    let v = series[s].at(c);
+                    let v = $eq.collections.item(series, s).at(c);
                     let from = null;
                     let to = null;
                     let dataEnd = null;
@@ -108,8 +108,8 @@ export class BarChartLayout {
 
     static hitTest(geometry: BarChartGeometry, x: number, y: number) {
         let bars = geometry.bars;
-        for (let i = 0; i < bars.length; i++) {
-            let box = bars[i].box;
+        for (let i = 0; i < $eq.collections.count(bars); i++) {
+            let box = $eq.collections.item(bars, i).box;
             if (x >= Math.fround(box.left - BarChartLayout.hitSlack) && x <= Math.fround(box.right + BarChartLayout.hitSlack) && y >= Math.fround(box.top - BarChartLayout.hitSlack) && y <= Math.fround(box.bottom + BarChartLayout.hitSlack)) return i;
         }
         return -1;
