@@ -19,27 +19,21 @@ public sealed class VisualNodeComponent : HtmlElement
 
     private readonly IAppTheme _theme;
     private readonly float _typeScale;
-    private readonly Density? _density;
 
-    /// <param name="node">The write-once subtree this component lowers.</param>
-    /// <param name="theme">The token source; <see cref="PhotonTheme.Instance"/> when none is given.</param>
-    /// <param name="typeScale">The type scale the subtree is built at.</param>
-    /// <param name="density">The density the subtree is built at, or null for the render's
-    /// (<see cref="AmbientDensity"/>), which is the request's.</param>
-    public VisualNodeComponent(VisualNode node, IAppTheme? theme = null, float typeScale = 1f,
-        Density? density = null)
+    public VisualNodeComponent(VisualNode node, IAppTheme? theme = null, float typeScale = 1f)
     {
         Node = node;
         _theme = theme ?? PhotonTheme.Instance;
         _typeScale = typeScale;
-        _density = density;
     }
 
     /// <summary>
     /// The render-scoped density: the SSR pipeline arms the request's around a page render (#623), the
     /// density the browser reported, so EVERY bridge in the tree is built at it, the page's root and one
     /// an escape-hatch page composes itself alike, and the page's configuration says the same density
-    /// hydration lowers at. Null outside an SSR render, which builds Comfortable.
+    /// hydration lowers at. Null outside an SSR render, which builds Comfortable. It is the only way
+    /// in: the browser's twin lowers at the runtime's own density, so a density a page passed to one
+    /// bridge would be honoured by the server and dropped by the browser (found by Copilot on #688).
     /// </summary>
     public static Density? AmbientDensity
     {
@@ -60,5 +54,5 @@ public sealed class VisualNodeComponent : HtmlElement
 
     public override HtmlNode Render() =>
         WebRealizer.Lower(Node, _theme, _typeScale, StyleSink.Ambient ?? Styles,
-            _density ?? AmbientDensity ?? Density.Comfortable).Render();
+            AmbientDensity ?? Density.Comfortable).Render();
 }

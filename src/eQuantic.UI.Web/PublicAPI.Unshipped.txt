@@ -1,8 +1,6 @@
 #nullable enable
 eQuantic.UI.Web.HtmlStyle.Translate.get -> string?
 eQuantic.UI.Web.HtmlStyle.Translate.set -> void
-*REMOVED*eQuantic.UI.Web.VisualNodeComponent.VisualNodeComponent(eQuantic.UI.Primitives.VisualNode! node, eQuantic.UI.Primitives.IAppTheme? theme = null, float typeScale = 1) -> void
-eQuantic.UI.Web.VisualNodeComponent.VisualNodeComponent(eQuantic.UI.Primitives.VisualNode! node, eQuantic.UI.Primitives.IAppTheme? theme = null, float typeScale = 1, eQuantic.UI.Primitives.Density? density = null) -> void
 static eQuantic.UI.Web.VisualNodeComponent.AmbientDensity.get -> eQuantic.UI.Primitives.Density?
 static eQuantic.UI.Web.VisualNodeComponent.AmbientDensity.set -> void
 *REMOVED*static eQuantic.UI.Web.WebRealizer.Lower(eQuantic.UI.Primitives.VisualNode! node, eQuantic.UI.Primitives.IAppTheme! theme, float typeScale = 1, eQuantic.UI.Web.StyleSink? styles = null) -> eQuantic.UI.Web.HtmlElement!

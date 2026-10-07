@@ -51,13 +51,13 @@ already made.
 - The web realizer (C#) and its TypeScript twin, the drag controller, a new runtime module for the
   scrolled state, the boot, the server's render and its page configuration, and Photon's emit pass.
 - Public surface: `HtmlStyle.Translate` (the DOM escape hatch transcribes `translate`),
-  `Pinned.ScrolledThreshold` and `Pinned.ScrolledBase`, and a `density` parameter on
-  `WebRealizer.Lower` and `VisualNodeComponent`. The developer surface (csproj, appsettings,
-  templates) does not move.
+  `Pinned.ScrolledThreshold` and `Pinned.ScrolledBase`, a `density` parameter on
+  `WebRealizer.Lower`, and `VisualNodeComponent.AmbientDensity`, the request's density every bridge
+  of a render is built at. The developer surface (csproj, appsettings, templates) does not move.
 
 ## Migration
 
 - A Text is a block on the web: a sentence composed of several Texts inside an `HtmlElement` puts
   each on its own line. A sentence is one Text with `Spans`.
-- `WebRealizer.Lower` and `VisualNodeComponent` take a trailing `density` (Comfortable by default).
+- `WebRealizer.Lower` takes a trailing `density` (Comfortable by default).
 - The scrolled rules select on the header's `data-eq-scrolled` instead of `html.eq-scrolled`.
