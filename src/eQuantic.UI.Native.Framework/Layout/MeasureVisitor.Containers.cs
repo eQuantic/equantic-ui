@@ -268,10 +268,10 @@ internal sealed partial class MeasureVisitor
             // sat against the top of its own bar. The fix used to be `Height = Fill` on the child,
             // written by hand, in every bar, remembered every time.
             //
-            // It reaches exactly what an auto-sized CONTAINER is: a Box, a Row, a Column. Text,
-            // images and icons never took these flags (they size themselves), and a button, a link
-            // or an input hugs, because a Block stretch stops at an inline-block — the same fence
-            // the width has always respected.
+            // It reaches exactly what an auto-sized CONTAINER is: a Box, a Row, a Column. A Text
+            // takes the WIDTH (it is a block, #659) and keeps the height of its lines, images and
+            // icons size themselves, and a button, a link or an input hugs, because a Block stretch
+            // stops at an inline-block — the same fence the width has always respected.
             var boxStretchH = boxIndetH ? StretchKind.None : StretchKind.Block;
             child = Measure(
                 box.Child,
