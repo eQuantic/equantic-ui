@@ -2265,6 +2265,11 @@ public class TypeScriptEmitter
             }
         }
 
+        // A nested type inside an array or a generic is its twin too, echoed or not: the mapper
+        // reduced `Outer.Inner[]` to `Inner[]`, which names nothing (#584).
+        if (resolved is IArrayTypeSymbol or INamedTypeSymbol { TypeArguments.Length: > 0 })
+            mapped = NestedTwinsInside(mapped, resolved, Annotated);
+
         var core = (echoed ? resolved : null) switch
         {
             // An enum crosses as its member STRING (or the number a [Flags] one combines into), an
@@ -2272,7 +2277,7 @@ public class TypeScriptEmitter
             { } kind when TsStandIn.For(kind, _converter.UsedRuntimeTypes) is { } standIn => standIn,
             { TypeKind: TypeKind.TypeParameter } => resolved!.Name,
             // A nested type is its twin, named by its owner (#584).
-            INamedTypeSymbol nested when nested.NestedTwinName() is { } twin => twin,
+            INamedTypeSymbol nested when nested.NestedTwinName() is { } twin => Annotated(nested, twin),
             // A name nothing here can VERIFY is a name the module may not resolve. Annotating with
             // it trades a missing type for a broken one, so it stays open.
             null when echoed && !Resolvable(mapped) => "any",
@@ -2280,6 +2285,46 @@ public class TypeScriptEmitter
         };
         if (!nullable || core == "any") return core;
         return OrNull(core);
+    }
+
+    /// <summary>
+    /// A nested type's twin named in an annotation, which the module imports as it imports any type
+    /// an annotation names alone (#418), from the runtime where the runtime carries it.
+    /// </summary>
+    private string Annotated(INamedTypeSymbol nested, string twin)
+    {
+        (nested.IsRuntimeProvided() ? _converter.UsedRuntimeTypes : _converter.UsedAppTypes).Add(twin);
+        return twin;
+    }
+
+    /// <summary>
+    /// <paramref name="mapped"/> with each nested type inside <paramref name="resolved"/> (an array's
+    /// element, a generic's arguments, to any depth) written as its twin (<c>Outer$Inner</c>), where the
+    /// mapper had left the simple name it reduces every qualified one to (#584). Each name is taken in
+    /// the order the type spells its parts, which the mapper keeps, so <c>Dictionary&lt;A.Inner,
+    /// B.Inner&gt;</c> names two twins, and a top-level <c>Inner</c> beside a nested one keeps its own.
+    /// </summary>
+    internal static string NestedTwinsInside(string mapped, ITypeSymbol? resolved,
+        Func<INamedTypeSymbol, string, string>? named = null)
+    {
+        var from = 0;
+        foreach (var part in Parts(resolved))
+        {
+            var at = new System.Text.RegularExpressions.Regex(
+                $@"(?<![\w$]){System.Text.RegularExpressions.Regex.Escape(part.Name)}(?![\w$])").Match(mapped, from);
+            if (!at.Success) continue;
+            var twin = part.NestedTwinName() is { } nested ? named?.Invoke(part, nested) ?? nested : part.Name;
+            mapped = mapped[..at.Index] + twin + mapped[(at.Index + at.Length)..];
+            from = at.Index + twin.Length;
+        }
+        return mapped;
+
+        static IEnumerable<INamedTypeSymbol> Parts(ITypeSymbol? type) => type switch
+        {
+            IArrayTypeSymbol array => Parts(array.ElementType),
+            INamedTypeSymbol generic => generic.TypeArguments.SelectMany(Parts).Prepend(generic),
+            _ => [],
+        };
     }
 
     /// <summary>

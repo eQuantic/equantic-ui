@@ -26,6 +26,8 @@ public class MemberAccessStrategy : IExpressionIrStrategy
         var name = memberAccess.Name.Identifier.Text;
         // A nested type of the app's named through its owner (`Outer.Inner`) is its twin (#584), never a
         // member of the owner's.
+        if (context.SemanticHelper.GetSymbol(node) is INamedTypeSymbol keptOut && keptOut.ReportIfKeptOut(node, context))
+            return JsExpr.Identifier("undefined");
         if (context.SemanticHelper.GetSymbol(node) is INamedTypeSymbol nested && nested.NestedTwinName() is { } twin)
         {
             nested.RegisterIntroduced(context);

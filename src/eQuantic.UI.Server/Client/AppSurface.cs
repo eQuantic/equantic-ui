@@ -35,6 +35,7 @@ internal sealed class AppSurface
     private static List<ClientRoute> RoutesOf(UIOptions options, Func<string, IEnumerable<string>> clientPatterns) =>
         options.AssembliesToScan
             .SelectMany(assembly => assembly.GetTypes())
+            .Where(TwinName.OwnersCross)
             .SelectMany(type => type.GetCustomAttributes<PageAttribute>()
                 .Select(attribute => (Pattern: attribute.Route, Page: TwinName.OfType(type), attribute.Title)))
             .Concat(options.DeclaredRoutes.Select(route => (route.Pattern, Page: TwinName.OfType(route.Page), route.Title)))

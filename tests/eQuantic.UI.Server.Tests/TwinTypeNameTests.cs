@@ -29,4 +29,32 @@ public class TwinTypeNameTests
         TwinName.OfType(typeof(Shelf.Crate<int>)).Should().Be("TwinTypeNameTests$Shelf$Crate");
         TwinName.OfType(typeof(Shelf.Crate<int>.Slot)).Should().Be("TwinTypeNameTests$Shelf$Crate$Slot");
     }
+
+    [eQuantic.UI.Primitives.ServerOnly]
+    public class Vault { public class Key { } }
+
+    /// <summary>A type declared inside one that never crosses, a [ServerOnly] owner here, has no twin, so
+    /// the server publishes no route and maps no page for it (found by Copilot's review of #654).</summary>
+    [Fact]
+    public void ATypeInsideAServerOnlyOwner_DoesNotCross()
+    {
+        TwinName.OwnersCross(typeof(Vault.Key)).Should().BeFalse();
+        TwinName.OwnersCross(typeof(Shelf.Box)).Should().BeTrue();
+        TwinName.OwnersCross(typeof(Shelf.Crate<int>.Slot)).Should().BeTrue();
+    }
+
+    /// <summary>The client's route table names a page inside an owner that crosses by its twin, and has
+    /// no route to one inside a [ServerOnly] owner, whose module eqc never writes (found by Copilot's
+    /// review of #654), where navigating to it asked for <c>ServerVault$Door</c>.</summary>
+    [Fact]
+    public void APageInsideAServerOnlyOwner_IsNoRoute()
+    {
+        var options = new UIOptions();
+        options.ScanAssembly(typeof(TwinTypeNameTests).Assembly);
+
+        var routes = eQuantic.UI.Server.Client.AppSurface.Of(options, pattern => [pattern]).Routes;
+
+        routes.Should().ContainSingle(route => route.Pattern == "/kept-out/open").Which.Page.Should().Be("OpenShelf$Gate");
+        routes.Should().NotContain(route => route.Pattern == "/kept-out/vault");
+    }
 }

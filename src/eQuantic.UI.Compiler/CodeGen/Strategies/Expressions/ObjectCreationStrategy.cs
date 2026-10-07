@@ -127,6 +127,7 @@ public class ObjectCreationStrategy : IExpressionIrStrategy
         var createdType = context.SemanticHelper.GetType(creation);
         // A nested type, a component among them, is constructed by its twin's name and imported from
         // there, whichever branch below builds it (#584): `new Host.Page()` constructed `Page`.
+        if (createdType is INamedTypeSymbol keptOut && keptOut.ReportIfKeptOut(creation, context)) return Undefined;
         if (createdType is INamedTypeSymbol nestedType && nestedType.NestedTwinName() is not null)
         {
             typeName = nestedType.IntroduceTwin(context);
@@ -762,6 +763,7 @@ public class ObjectCreationStrategy : IExpressionIrStrategy
         // guarding some of the ways a symbol can be named and reading like protection for all.
         // Found in review of that fix.
         if (ms?.ContainingType.ReportIfHostOnlyType(creation, context) == true) return Undefined;
+        if (ms?.ContainingType is { } keptOutTarget && keptOutTarget.ReportIfKeptOut(creation, context)) return Undefined;
 
         // `Color c = new(1, 2, 3, 4)` builds the data as the explicit form does.
         if (ms?.ContainingType is { } dataTarget && dataTarget.TwinIsData())

@@ -35,6 +35,22 @@ internal static class TwinName
     public static string OfNested(string? ownerTwin, string name) =>
         ownerTwin is null ? name : ownerTwin + "$" + name;
 
+    /// <summary>
+    /// Whether a type's owners let it cross (#584): one declared inside a type marked <c>[ServerOnly]</c>
+    /// or <c>[RuntimeProvided]</c>, or inside an exception or an attribute, has no twin, as its owner has
+    /// none, the rule eqc writes modules by. The server publishes no route and maps no page for it.
+    /// </summary>
+    public static bool OwnersCross(System.Type type)
+    {
+        for (var owner = type.DeclaringType; owner is not null; owner = owner.DeclaringType)
+        {
+            if (owner.GetCustomAttributes(true).Any(attribute => attribute.GetType().Name is "ServerOnlyAttribute" or "RuntimeProvidedAttribute"))
+                return false;
+            if (typeof(System.Exception).IsAssignableFrom(owner) || typeof(System.Attribute).IsAssignableFrom(owner)) return false;
+        }
+        return true;
+    }
+
     /// <summary>The twin name of a CLR type (<see cref="OfNested"/>): its declaring types' names and its
     /// own, without the generic arity the CLR spells (<c>Box`1</c> is <c>Box</c>).</summary>
     public static string OfType(System.Type type)

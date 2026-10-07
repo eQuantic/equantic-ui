@@ -183,8 +183,8 @@ Every class, record and struct declared inside another type SHALL have a twin of
 of its own, named by the chain of the types that contain it and its own name joined by `$`
 (`Cart$Item`), which no C# type can take. Every reference to it, inside its owner or out, SHALL name
 that twin: a construction, a type test, a static member, a default and an annotation alike. A nested
-type of an owner that never crosses (`[ServerOnly]`, an exception, an attribute) SHALL have none. A
-record's text SHALL print its C# name, as .NET's does. The server SHALL name the page it serves by the
+type of an owner that never crosses (`[ServerOnly]`, an exception, an attribute) SHALL have none, and
+client code that names it SHALL be refused. A record's text SHALL print its C# name, as .NET's does. The server SHALL name the page it serves by the
 same rule, so a page declared inside a class loads the module the build wrote for it.
 
 #### Scenario: A nested class beside a top-level class of its name
@@ -220,7 +220,8 @@ same rule, so a page declared inside a class loads the module the build wrote fo
 #### Scenario: A nested type of a server-only owner
 
 - **WHEN** `[ServerOnly] class Vault { public class Key { } }`
-- **THEN** the build writes no module for `Key`, as it writes none for `Vault`
+- **THEN** the build writes no module for `Key`, as it writes none for `Vault`, client code that builds a
+  `Vault.Key` or tests for one is refused with EQ2010, and a page declared inside `Vault` has no route
 
 #### Scenario: A page declared inside a class
 
@@ -243,3 +244,9 @@ same rule, so a page declared inside a class loads the module the build wrote fo
   nested `Outer.Amount` that no expression names, and `default(Alias)` is the zero of a nested struct through
   `using Alias = Outer.Pair;`
 - **THEN** each module imports `Outer$Amount` and `Outer$Pair`, as it imports a twin the syntax names
+
+#### Scenario: A nested type inside an array or a generic
+
+- **WHEN** a member is typed `A.Inner[]`, `List<A.Inner>` or `Func<A.Inner, B.Inner>`, in a class or a record
+- **THEN** its annotation names `A$Inner` and `B$Inner`, each where its type stands, and a top-level `Inner`
+  beside them keeps its own name

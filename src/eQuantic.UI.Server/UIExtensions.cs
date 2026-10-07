@@ -290,7 +290,7 @@ public static class UIExtensions
         foreach (var assembly in options.AssembliesToScan)
         {
             var pageTypes = assembly.GetTypes()
-                .Where(t => t.GetCustomAttributes<PageAttribute>().Any());
+                .Where(t => t.GetCustomAttributes<PageAttribute>().Any() && TwinName.OwnersCross(t));
 
             foreach (var pageType in pageTypes)
             {
@@ -1357,7 +1357,7 @@ public class UIOptions
 
         // Scan for Error Pages
         var pageTypes = assembly.GetTypes()
-            .Where(t => t.GetCustomAttributes<PageAttribute>().Any());
+            .Where(t => t.GetCustomAttributes<PageAttribute>().Any() && TwinName.OwnersCross(t));
 
         foreach (var type in pageTypes)
         {

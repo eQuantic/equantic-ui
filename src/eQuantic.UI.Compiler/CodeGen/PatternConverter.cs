@@ -4,6 +4,7 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Operations;
+using eQuantic.UI.Compiler.CodeGen.Extensions;
 using eQuantic.UI.Compiler.CodeGen.Ir;
 using eQuantic.UI.Compiler.CodeGen.Strategies;
 
@@ -330,6 +331,7 @@ public static class PatternConverter
             // Either way the name is the twin's, which a nested component's is too (`o is Host.Page`
             // tests `Host$Page`, #584), and it reaches the import list, or the module references a
             // free variable.
+            if (named.ReportIfKeptOut(typeSyntax, context)) return "false";
             if (LowersToAJsClass(named) || IsEmittedAppType(named))
                 return $"{access} instanceof {named.IntroduceTwin(context)}";
         }

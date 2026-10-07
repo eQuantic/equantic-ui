@@ -27,10 +27,13 @@ measured through the module graph an app's build writes, both sides executed:
   to it, inside its owner or out, a construction, a type test, a static member, a default and an
   annotation alike, names it so, importing it from there.
 - A nested type of an owner that never crosses (`[ServerOnly]`, an exception, an attribute) has none,
-  as its owner has none.
+  as its owner has none: client code that names it is refused with EQ2010, and the server publishes no
+  route to a page declared in it.
 - A record's text still prints its C# name (`Line { Qty = 2 }`), as .NET's does.
 - The runtime's one nested type, `CodeBlock.CodeMetrics`, is written as `CodeBlock$CodeMetrics`. The
-  public surface of `eQuantic.UI.Compiler` and the developer surface do not move.
+  developer surface does not move. `eQuantic.UI.Compiler`'s does: `UserDefinedOperators.Unary` and
+  `Binary` take the conversion context, so the twin an operator names is imported, and
+  `TypeSymbolExtensions.IntroduceTwin` is new.
 
 ## Capabilities
 
