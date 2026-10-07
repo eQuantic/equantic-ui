@@ -370,12 +370,15 @@ export function clear(collection: unknown): void {
   else (collection as { clear(): void }).clear();
 }
 
-/** What may stand behind a list's face: an array, or a twin, whose indexer is `item` and `setItem`. */
-type Indexed<T> = {
-  [index: number]: T;
-  item?: (index: number) => T;
-  setItem?: (index: number, value: T) => unknown;
-};
+/**
+ * What may stand behind a list's face: an array or another array-like, or a twin, whose indexer is
+ * `item` and `setItem`. Typed by its element, so a twin's TypeScript reads what the face holds, and
+ * the element is `any` where the receiver is untyped, as `mapGet`'s value is.
+ */
+type Indexed<T> = ArrayLike<T> | { item(index: number): T };
+
+/** What a list's face may be written through: an array's subscript, or a twin's `setItem`. */
+type WritablyIndexed<T> = { [index: number]: T } | { setItem(index: number, value: T): unknown };
 
 /**
  * An element read through a list's face (`IList<T>`, `IReadOnlyList<T>`), for whichever list the face
@@ -384,21 +387,20 @@ type Indexed<T> = {
  * property named after the index, which no twin has. Anything else indexed, a typed array a hand-written
  * caller handed over, is read by its subscript as before.
  */
-export function item<T>(list: unknown, index: number): T {
-  const indexed = list as Indexed<T>;
-  return Array.isArray(list) || typeof indexed.item !== 'function'
-    ? indexed[index]
-    : indexed.item(index);
+export function item<T = any>(list: Indexed<T>, index: number): T {
+  if (Array.isArray(list)) return list[index] as T;
+  const twin = list as ArrayLike<T> & { item?: (index: number) => T };
+  return typeof twin.item === 'function' ? twin.item(index) : twin[index];
 }
 
 /**
  * The write beside {@link item}: an array's subscript, or a twin's indexer setter, `setItem`. It answers
  * the value written, as C#'s assignment does, whatever the setter does with its own copy.
  */
-export function setItem<T>(list: unknown, index: number, value: T): T {
-  const indexed = list as Indexed<T>;
-  if (Array.isArray(list) || typeof indexed.setItem !== 'function') indexed[index] = value;
-  else indexed.setItem(index, value);
+export function setItem<T = any>(list: WritablyIndexed<T>, index: number, value: T): T {
+  const target = list as { [index: number]: T } & { setItem?: (index: number, value: T) => unknown };
+  if (!Array.isArray(list) && typeof target.setItem === 'function') target.setItem(index, value);
+  else target[index] = value;
   return value;
 }
 
