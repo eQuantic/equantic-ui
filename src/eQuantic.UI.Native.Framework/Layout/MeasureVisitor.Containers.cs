@@ -364,15 +364,17 @@ internal sealed partial class MeasureVisitor
             : float.PositiveInfinity;
         var gapTotal = grid.Gap * MathF.Max(0, count - 1);
 
-        // Place children into (column, span) slots — auto-flow with span clamping.
-        var placements = new (VisualNode Node, int Column, int Span, int Row)[grid.Children.Count];
+        // Place children into (column, span) slots — auto-flow with span clamping. An AdaptiveNode's
+        // place is its arm's, span included (see LaidOutChildren).
+        var children = new LaidOutChildren(grid.Children, ctx);
+        var placements = new (VisualNode Node, int Column, int Span, int Row)[children.Count];
         var col = 0;
         var row = 0;
-        for (var i = 0; i < grid.Children.Count; i++)
+        for (var i = 0; i < children.Count; i++)
         {
-            var span = Math.Clamp(grid.Children[i].GridSpan < 1 ? 1 : grid.Children[i].GridSpan, 1, count);
+            var span = Math.Clamp(children[i].GridSpan < 1 ? 1 : children[i].GridSpan, 1, count);
             if (col + span > count) { col = 0; row++; }
-            placements[i] = (grid.Children[i], col, span, row);
+            placements[i] = (children[i], col, span, row);
             col += span;
             if (col >= count) { col = 0; row++; }
         }
@@ -410,7 +412,7 @@ internal sealed partial class MeasureVisitor
             var (node, c, span, r) = placements[i];
             var cellW = grid.Gap * (span - 1);
             for (var k = c; k < c + span; k++) cellW += widths[k];
-            var child = Measure(node, constraints.ForChild(cellW, maxH), ctx, ctx.ChildPath(path, i, node));
+            var child = Measure(node, constraints.ForChild(cellW, maxH), ctx, children.PathOf(path, i));
             // A Fill-width child pins to the cell (the realizer paints the full extent).
             if (CrossSizeKind(node, horizontal: false) == SizeKind.Fill || WidthKind(node) == SizeKind.Fill)
                 child.Bounds = child.Bounds with { Width = cellW };

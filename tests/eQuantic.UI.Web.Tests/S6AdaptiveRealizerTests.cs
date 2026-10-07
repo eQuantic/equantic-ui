@@ -95,6 +95,86 @@ public class S6AdaptiveRealizerTests
         sink.Css.Should().Contain($"{media}{{.{gate}{{display:contents}}}}");
     }
 
+    /// <summary>
+    /// An arm is laid out by the adaptive node's PARENT — the gates are display:contents — so it is
+    /// lowered on the axis the parent gave the node. A Spacer needs that axis to know whether it is
+    /// a width or a height; lowered on none, it lowered to NOTHING, the arm was skipped, and the
+    /// space was gone at every width it served (#670). CROSS-PIN: s6-adaptive.spec.ts.
+    /// </summary>
+    [Fact]
+    public void ASpacerArm_KeepsItsSpaceOnTheParentsAxis()
+    {
+        var column = new Column();
+        column.Add(new Primitives.Text("above", TypeRole.BodyM));
+        column.Add(new AdaptiveNode(Spacer.Fixed(24), null, Spacer.Fixed(64)) { ExpandedFrom = 980 });
+        column.Add(new Primitives.Text("below", TypeRole.BodyM));
+        var row = new Row();
+        row.Add(new AdaptiveNode(Spacer.Fixed(24), null, Spacer.Fixed(64)) { ExpandedFrom = 980 });
+
+        var down = WebRealizer.Lower(column, PhotonTheme.Instance).Render().Children[1].Children;
+        var across = WebRealizer.Lower(row, PhotonTheme.Instance).Render().Children[0].Children;
+
+        down.Should().HaveCount(2, "both arms are mounted, each behind its gate");
+        down[0].Children.Single().Attributes["style"].Should().Be("flex-shrink: 0; height: 24px");
+        down[1].Children.Single().Attributes["style"].Should().Be("flex-shrink: 0; height: 64px");
+        across[0].Children.Single().Attributes["style"].Should().Be("flex-shrink: 0; width: 24px",
+            "the axis is the parent's: across a row, the same arm is a width");
+    }
+
+    /// <summary>
+    /// A Stack decides whether a child is positioned by looking at it, through any component it
+    /// builds, and an AdaptiveNode is neither: the stack made it one ordinary layer, so each arm's
+    /// Positioned reached the realizer as a Positioned outside a Stack, degraded to its child and
+    /// joined the flow (#671). The gates are display:contents, so each ARM is a layer of the stack,
+    /// placed as a direct child would be: the Positioned at its anchor, anything else in its cell.
+    /// CROSS-PIN: s6-adaptive.spec.ts.
+    /// </summary>
+    [Fact]
+    public void APositionedArm_IsAnchoredInItsStack()
+    {
+        var stack = new Stack();
+        stack.Add(new Primitives.Box(new BoxStyle { Width = 400, Height = 300 }));
+        stack.Add(new AdaptiveNode(new Primitives.Box(), null,
+            new Positioned(new Primitives.Box(new BoxStyle { Width = 32, Height = 32 }), top: 0, end: 0))
+        {
+            ExpandedFrom = 980,
+        });
+
+        var layer = WebRealizer.Lower(stack, PhotonTheme.Instance).Render().Children[1];
+
+        layer.Attributes["style"].Should().Be("display: contents", "an adaptive node is no layer of its own");
+        layer.Children[0].Children.Single().Attributes["style"].Should().Contain("grid-area: 1 / 1",
+            "an ordinary arm takes the cell a direct child would");
+        layer.Children[1].Children.Single().Attributes["style"].Should().Be(
+            "position: absolute; top: 0; right: 0; z-index: 2",
+            "the positioned arm is anchored at its offsets, at the depth of the node it stands in for");
+    }
+
+    /// <summary>
+    /// The same rule for the rest of what a parent reads off a direct child: an arm aligns itself
+    /// in its line and spans the columns of its grid. Lowered as a node of its own, an arm's
+    /// align-self and span were never written. CROSS-PIN: s6-adaptive.spec.ts.
+    /// </summary>
+    [Fact]
+    public void AnArm_AlignsItselfInItsLine_AndSpansItsGrid()
+    {
+        var row = new Row(cross: CrossAlign.Start);
+        row.Add(new AdaptiveNode(Marker(), null, new Primitives.Box(new BoxStyle { Width = 10, Height = 10 })
+        {
+            AlignSelf = CrossAlign.End,
+        }));
+        var grid = new Grid([GridTrack.Flex(), GridTrack.Flex()]);
+        grid.Add(new AdaptiveNode(Marker(), null, new Primitives.Box(new BoxStyle { Height = 10 }) { GridSpan = 2 }));
+
+        var line = WebRealizer.Lower(row, PhotonTheme.Instance).Render().Children[0].Children;
+        var cells = WebRealizer.Lower(grid, PhotonTheme.Instance).Render().Children[0].Children;
+
+        line[1].Children.Single().Attributes["style"].Should().Contain("align-self: flex-end");
+        line[0].Children.Single().Attributes["style"].Should().NotContain("align-self");
+        cells[1].Children.Single().Attributes["style"].Should().Contain("grid-column: span 2");
+        cells[0].Children.Single().Attributes["style"].Should().NotContain("grid-column");
+    }
+
     /// <summary>The CSS identifier grammar, which is what a class selector can name.</summary>
     private static readonly System.Text.RegularExpressions.Regex CssIdentifier =
         new("^-?[_a-zA-Z][_a-zA-Z0-9-]*$");

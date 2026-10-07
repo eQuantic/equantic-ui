@@ -112,4 +112,24 @@ public class FlexBasisWrapLayoutTests
         node.Children[2].Bounds.Y.Should().BeGreaterThan(node.Children[0].Bounds.Y);
         node.Children[2].Bounds.X.Should().Be(0);
     }
+
+    /// <summary>
+    /// A child the second pass measures again keeps the path it was first measured at. The pass
+    /// counts the items its lines hold, which skip a Spacer, and it spelled that count as the
+    /// child's index: behind a Spacer, a pane that grew was measured again at the Spacer's own
+    /// path, and whatever is remembered by path (focus, hover, a scroll offset) followed a slot that
+    /// was not the pane's.
+    /// </summary>
+    [Fact]
+    public void AChildMeasuredAgain_KeepsItsOwnPath_BehindASpacer()
+    {
+        var row = new Row(gap: 0) { Wrap = true, Width = SizeValue.Fill };
+        row.Add(Spacer.Fixed(10));
+        row.Add(new Flexible(Pane(), flex: 1, basis: 200));
+
+        var node = Layout(row, viewportW: 1000);
+
+        node.Children[0].Bounds.Width.Should().BeGreaterThan(200, "the pane grew, so it was measured again");
+        node.Children[0].Path.Should().EndWith("/1", "the pane is the row's second child");
+    }
 }

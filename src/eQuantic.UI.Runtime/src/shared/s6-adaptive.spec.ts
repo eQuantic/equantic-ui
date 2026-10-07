@@ -1,6 +1,11 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { lowerVisualNode } from './lowering';
-import { adaptiveGateOpen, adaptiveGateRules, resetAtomizerForTests } from './style-atomizer';
+import {
+  adaptiveGateOpen,
+  adaptiveGateRules,
+  effectiveStyle,
+  resetAtomizerForTests,
+} from './style-atomizer';
 import { photonTheme } from './design-system.generated';
 import type { LoweringContext } from './lowering';
 import type { VisualNodeValue } from './nodes';
@@ -118,6 +123,107 @@ describe('S6 adaptive lowering (C# cross-pin)', () => {
     );
     expect(node.children[1].attributes['class']).toBe(gate);
     expect(adaptiveGateRules(gate)[1]).toBe(`${media}{.${gate}{display:contents}}`);
+  });
+
+  it("a spacer arm keeps its space on the parent's axis (#670)", () => {
+    // The gates are display:contents, so an arm is laid out by the adaptive node's PARENT, and a
+    // Spacer lowered on no axis lowered to nothing. Same literals as S6AdaptiveRealizerTests.
+    const fixed = (length: number) =>
+      ({ nodeKind: 'spacer', flex: 0, fixedLength: length }) as unknown as VisualNodeValue;
+    const arms = () =>
+      ({
+        nodeKind: 'adaptive',
+        compact: fixed(24),
+        expanded: fixed(64),
+        expandedFrom: 980,
+      }) as unknown as VisualNodeValue;
+    const flex = (nodeKind: string, children: VisualNodeValue[]) =>
+      ({
+        nodeKind,
+        gap: 0,
+        main: 'start',
+        cross: 'stretch',
+        children,
+      }) as unknown as VisualNodeValue;
+    const text = (content: string) =>
+      ({ nodeKind: 'text', content, role: 'bodyM' }) as unknown as VisualNodeValue;
+
+    const down = lowerVisualNode(flex('column', [text('above'), arms(), text('below')]), ctx)
+      .children[1].children;
+    const across = lowerVisualNode(flex('row', [arms()]), ctx).children[0].children;
+
+    expect(down).toHaveLength(2);
+    expect(effectiveStyle(down[0].children[0])).toBe('flex-shrink: 0; height: 24px');
+    expect(effectiveStyle(down[1].children[0])).toBe('flex-shrink: 0; height: 64px');
+    expect(effectiveStyle(across[0].children[0])).toBe('flex-shrink: 0; width: 24px');
+  });
+
+  it('a positioned arm is anchored in its stack (#671)', () => {
+    // An AdaptiveNode is no layer of its own: each ARM is, placed as a direct child would be.
+    // Same literals as S6AdaptiveRealizerTests (the order is effectiveStyle's, alphabetical).
+    const sized = (width: number, height: number) =>
+      ({
+        nodeKind: 'box',
+        style: { width: { kind: 'fixed', value: width }, height: { kind: 'fixed', value: height } },
+      }) as unknown as VisualNodeValue;
+    const stack = {
+      nodeKind: 'stack',
+      align: 'topStart',
+      children: [
+        sized(400, 300),
+        {
+          nodeKind: 'adaptive',
+          compact: { nodeKind: 'box', style: {} },
+          expanded: { nodeKind: 'positioned', child: sized(32, 32), top: 0, end: 0 },
+          expandedFrom: 980,
+        },
+      ],
+    } as unknown as VisualNodeValue;
+
+    const layer = lowerVisualNode(stack, ctx).children[1];
+
+    expect(effectiveStyle(layer)).toBe('display: contents');
+    expect(effectiveStyle(layer.children[0].children[0])).toContain('grid-area: 1 / 1');
+    expect(effectiveStyle(layer.children[1].children[0])).toBe(
+      'position: absolute; right: 0; top: 0; z-index: 2',
+    );
+  });
+
+  it('an arm aligns itself in its line and spans its grid', () => {
+    // The rest of what a parent reads off a direct child, placed on the arm. Same assertions as
+    // S6AdaptiveRealizerTests.AnArm_AlignsItselfInItsLine_AndSpansItsGrid.
+    const sized = (extra: Record<string, unknown>) =>
+      ({
+        nodeKind: 'box',
+        style: { width: { kind: 'fixed', value: 10 }, height: { kind: 'fixed', value: 10 } },
+        ...extra,
+      }) as unknown as VisualNodeValue;
+    const row = {
+      nodeKind: 'row',
+      gap: 0,
+      main: 'start',
+      cross: 'start',
+      children: [
+        { nodeKind: 'adaptive', compact: marker(), expanded: sized({ alignSelf: 'end' }) },
+      ],
+    } as unknown as VisualNodeValue;
+    const grid = {
+      nodeKind: 'grid',
+      columns: [
+        { kind: 'fill', value: 1 },
+        { kind: 'fill', value: 1 },
+      ],
+      gap: 0,
+      children: [{ nodeKind: 'adaptive', compact: marker(), expanded: sized({ gridSpan: 2 }) }],
+    } as unknown as VisualNodeValue;
+
+    const line = lowerVisualNode(row, ctx).children[0].children;
+    const cells = lowerVisualNode(grid, ctx).children[0].children;
+
+    expect(effectiveStyle(line[1].children[0])).toContain('align-self: flex-end');
+    expect(effectiveStyle(line[0].children[0])).not.toContain('align-self');
+    expect(effectiveStyle(cells[1].children[0])).toContain('grid-column: span 2');
+    expect(effectiveStyle(cells[0].children[0])).not.toContain('grid-column');
   });
 
   it('the rules are the C# AdaptiveGates.Css blobs, byte for byte', () => {

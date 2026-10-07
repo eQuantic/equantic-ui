@@ -147,6 +147,11 @@ internal sealed partial class MeasureVisitor
     /// Read from the MEASURED tree rather than by rebuilding: the build already happened, through
     /// the instance store, and building a second time would hand back a different instance.
     /// </para>
+    /// <para>
+    /// The measured node is asked FIRST, because it can already be the Positioned when the child is
+    /// not one: an AdaptiveNode measures as the arm its window resolves (spec S6). Walking only
+    /// through components, a Positioned arm was laid out at the stack's alignment (#671).
+    /// </para>
     /// </summary>
     private Positioned? PositionedOf(VisualNode child, LayoutNode measured)
     {
@@ -154,10 +159,11 @@ internal sealed partial class MeasureVisitor
 
         var node = measured;
         // Bounded: a component wrapping a component wrapping one is ordinary; a cycle is not.
-        for (var hops = 0; hops < 8 && node.Source is UiComponent && node.Children.Count == 1; hops++)
+        for (var hops = 0; hops <= 8; hops++)
         {
-            node = node.Children[0];
             if (node.Source is Positioned found) return found;
+            if (node.Source is not UiComponent || node.Children.Count != 1) return null;
+            node = node.Children[0];
         }
         return null;
     }
