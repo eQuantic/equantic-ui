@@ -1589,6 +1589,48 @@ record of a release, the wiki's Upgrading page is the distillate.
   showed its hover fill, and a Pressable around an IconButton took the inner control's hits. The slop
   is now the `::before` with the content lifted above it, and answers only around the control.
   Proposed and archived through OpenSpec (`openspec/specs/hit-targets`).
+- **2026-10-06 · A component hears the server on a typed topic**: the only door from the browser to
+  the server was a Server Action, so no component could hear what someone else did, and an empty
+  SignalR hub, a CDN script nothing called and an unbundled client stood where the door would be
+  ([#291](https://github.com/eQuantic/equantic-ui/issues/291)). `ServerTopic<T>` names a topic and its
+  payload's type; `IServerEvents` is the capability a component subscribes through, over one
+  Server-Sent Events stream per page that reconnects by itself and binds every live topic again
+  before it reports connected; `IServerEventPublisher` publishes from any server code; a topic is
+  authorized by route templates with ASP.NET Core policies (the topic as their resource), anonymous
+  access or a delegate, closed by default; `IServerEventBackplane` and `IServerEventHandler` are the
+  seams for several instances and for presence; the limits bind from `EQuantic:ServerEvents`. eqc
+  hands the twin the payload's hydration spec through `[HydratesTypeArgument]`, and two defects of its
+  own met on the way went at the root: a generic vocabulary type was imported from a sibling module,
+  and a target-typed one whose argument is a list was built as a collection expression. Proving it in
+  a browser found five defects of the server's half, each fixed with a test that fails without it: an
+  app's fallback policy refused the stream, a bind authorized after its stream ended was never
+  released, binds sent at once passed the topic limit, a payload's U+2028 split its JSON, and a stream
+  held a graceful shutdown until the host's timeout. The review before it opened found nine more,
+  each fixed with a test that fails without it: a bind read a body of any type, so another site could
+  bind its visitor's topics to a stream it opened itself; a bind that met the end of its stream was
+  refused for good; a topic built in a generic helper lost its payload's type with a green build (now
+  EQ2013), and one that crossed the wire lost it too; limits nothing could run with started cleanly; a
+  second `UseServerEvents` made every route ambiguous; a page whose app served no events retried
+  silently forever; the refusal followed the app's JSON naming; and the body had no cap. Copilot's
+  first round found seven: a record none of whose members needed coercion crossed as a plain object,
+  as a topic's payload and as a Server Action's result alike, and is now rebuilt on its twin wherever
+  it crosses; `topic with { }` lost its spec and `DataPalette.Default with { }` threw; a handler still
+  awaiting a join heard the leave first; an overflow waited for the write it was blocking; an
+  unanswered release left the topic held; a request that never answered held the next one; and
+  connected came before a topic subscribed meanwhile was bound. The equality of two topics of one name
+  and different payload types is the erasure every generic record has (#651). Its second round found
+  six: a topic's policies ran against the request's principal without their own schemes, so the
+  cookie's user met a bearer-only policy, and they are now evaluated as the authorization middleware
+  evaluates an endpoint's; a generic record's type argument crossed unrevived, and a constructed one is
+  now described by its own members; a bind whose answer was lost was never released; a reading and a
+  refusal nobody assigned were null in the browser; a template's defaults never reached its matcher;
+  and the test stream's wait for an event never failed while heartbeats came. Its third found one: of
+  two rules for one topic, a library's and the app's, the first registered decided alone, so a
+  library's anonymous topic hid the app's that required a user; every rule that fixes as much of a topic
+  now rules on it, each allowing it or not. The served runtime grew 3,124 gzipped bytes.
+  Migration: `ServerActionHub`, its route `/_equantic/hub` and the `AddSignalR()` call `AddUI` made
+  are gone; an app that injected `IHubContext<ServerActionHub>`, which nothing documented, publishes
+  through `IServerEventPublisher`, and an app that maps hubs of its own calls `AddSignalR()` itself. Proposed and archived through OpenSpec (`openspec/specs/server-events`).
 - **2026-10-06 · A char's search checks its start and its count**: `IndexOf(char, int)`,
   `IndexOf(char, int, int)`, `LastIndexOf(char, int)` and `LastIndexOf(char, int, int)` were
   JavaScript's `indexOf` and `lastIndexOf`, which take no count and clamp a start outside the string,
