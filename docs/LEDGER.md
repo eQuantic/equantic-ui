@@ -1645,6 +1645,14 @@ record of a release, the wiki's Upgrading page is the distillate.
   under any runner ([#664](https://github.com/eQuantic/equantic-ui/issues/664)).
   Proposed and archived through OpenSpec (`openspec/specs/hot-reload`, `generated-files` and
   `hydration-contract`).
+- **2026-10-07 · A hot reload keeps the page's state**: the reload captured the page's `_state` bag,
+  which no write-once page has, and sent it back through the server-data door, which takes only what
+  the hydration manifest lists, so a page's own fields went back to their initializers on every save:
+  the dashboard's `Count: 3` came back `Count: 0`, under `dotnet run` and under `dotnet watch` alike
+  ([#664](https://github.com/eQuantic/equantic-ui/issues/664)). The page's own fields cross now,
+  without the runtime's beside them, and the reloaded page gets them before it builds, each rebuilt
+  in the shape its initializer gives it. Proposed and archived through OpenSpec
+  (`openspec/specs/hot-reload`).
 
 ## Retired documents
 
