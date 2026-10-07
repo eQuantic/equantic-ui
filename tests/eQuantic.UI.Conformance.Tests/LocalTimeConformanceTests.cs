@@ -72,6 +72,10 @@ public class LocalTimeConformanceTests
             "new DateTime(2026, 7, 1, 12, 0, 0).ToString(\"%z\")",
             "new DateTime(2026, 7, 1, 12, 0, 0, DateTimeKind.Utc).ToString(\"U\")",
             "new DateTime(2026, 7, 1, 12, 0, 0, DateTimeKind.Local).ToString(\"U\")",
+            // U moves to UTC as ToUniversalTime moves, clamped to the calendar: MinValue east of UTC
+            // printed year 0000.
+            "DateTime.MinValue.ToString(\"U\")",
+            "DateTime.MaxValue.ToString(\"U\")",
         ];
         var data = new TheoryData<string, string>();
         foreach (var zone in zones)

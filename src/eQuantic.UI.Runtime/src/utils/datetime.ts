@@ -770,11 +770,17 @@ export const dateTime: DateTimeFactory = {
   fromJson: (text) => dateTimeFromJson(text),
 };
 
-/** An ISO-8601 clock time (the wire form, `yyyy-MM-dd[Thh:mm:ss[.fffffff]]`) and the zone written
- * after it: `Z`, an offset in ticks, or nothing. Nothing may follow the zone, and an offset past
- * fourteen hours or with a minute past 59 is no zone, so the text is refused as .NET refuses it,
- * where `Zjunk` and `+15:00` were read (found by review, #606). */
-function readIso(text: string): { ticks: bigint; zone: 'utc' | bigint | null } | null {
+/**
+ * What reading ISO-8601 text found: a clock time (the wire form, `yyyy-MM-dd[Thh:mm:ss[.fffffff]]`)
+ * with the zone written after it (`Z`, an offset in ticks, or nothing); `'date'` or `'time'` for text of
+ * that form whose date or clock does not exist, which .NET refuses in different words; or null for text
+ * of another form. Nothing may follow the zone, and an offset past fourteen hours or with a minute past
+ * 59 is no zone (found by review, #606). A component out of range normalized into the next day or
+ * month, so `2026-02-29` read as March 1 (found by review, #606).
+ */
+type IsoRead = { ticks: bigint; zone: 'utc' | bigint | null } | 'date' | 'time' | null;
+
+function readIso(text: string): IsoRead {
   // The trailing white space is cut before the pattern reads the text, and the white space before a
   // zone is only read when a zone follows it: two runs of `\s*` either side of an optional zone made
   // a line of spaces cost the square of its length (CodeQL).
@@ -782,8 +788,11 @@ function readIso(text: string): { ticks: bigint; zone: 'utc' | bigint | null } |
     text.trimEnd(),
   );
   if (!m) return null;
+  const [year, month, day, hour, minute, second] = [+m[1], +m[2], +m[3], +(m[4] ?? 0), +(m[5] ?? 0), +(m[6] ?? 0)];
+  if (year < 1 || month < 1 || month > 12 || day < 1 || day > daysInMonth(year, month)) return 'date';
+  if (hour > 23 || minute > 59 || second > 59) return 'time';
   const frac = m[7] ? BigInt(m[7].padEnd(7, '0').slice(0, 7)) : 0n;
-  const ticks = fromComponents(+m[1], +m[2], +m[3], +(m[4] ?? 0), +(m[5] ?? 0), +(m[6] ?? 0)).ticks + frac;
+  const ticks = fromComponents(year, month, day, hour, minute, second).ticks + frac;
   if (m[8] === undefined) return { ticks, zone: null };
   if (m[8] === 'Z') return { ticks, zone: 'utc' };
   const digits = m[8].slice(1).replace(':', '');
@@ -807,11 +816,30 @@ function parseDateTime(text: string): DateTime {
   if (text == null) throw exception('System.ArgumentNullException', NULL_S);
   const t = text.trim();
   const iso = readIso(t);
+  if (iso === 'date') throw unrecognized(text);
+  if (iso === 'time') throw unsupported(text);
   if (iso) return iso.zone === null ? new DateTime(iso.ticks) : localFrom(iso.ticks, iso.zone);
-  // Invariant default: MM/dd/yyyy[ HH:mm:ss]
-  const m = /^(\d{1,2})\/(\d{1,2})\/(\d{4})(?:\s+(\d{1,2}):(\d{2}):(\d{2}))?/.exec(t);
-  if (m) return fromComponents(+m[3], +m[1], +m[2], +(m[4] ?? 0), +(m[5] ?? 0), +(m[6] ?? 0));
-  throw exception('System.FormatException', `Unrecognized DateTime format: '${text}'`);
+  // The invariant culture's own: MM/dd/yyyy[ HH:mm:ss], and nothing after it, where trailing text was
+  // read past.
+  const m = /^(\d{1,2})\/(\d{1,2})\/(\d{4})(?:\s+(\d{1,2}):(\d{2}):(\d{2}))?$/.exec(t);
+  if (!m) throw unrecognized(text);
+  const [month, day, year, hour, minute, second] = [+m[1], +m[2], +m[3], +(m[4] ?? 0), +(m[5] ?? 0), +(m[6] ?? 0)];
+  if (year < 1 || month < 1 || month > 12 || day < 1 || day > daysInMonth(year, month)) throw unrecognized(text);
+  if (hour > 23 || minute > 59 || second > 59) throw unsupported(text);
+  return fromComponents(year, month, day, hour, minute, second);
+}
+
+/** .NET's refusal of text that names no date it can read. */
+function unrecognized(text: string): Error {
+  return exception('System.FormatException', `String '${text}' was not recognized as a valid DateTime.`);
+}
+
+/** .NET's refusal of text whose clock does not exist: an hour of 24, a minute or a second of 60. */
+function unsupported(text: string): Error {
+  return exception(
+    'System.FormatException',
+    `The DateTime represented by the string '${text}' is not supported in calendar 'System.Globalization.GregorianCalendar'.`,
+  );
 }
 
 /**
@@ -822,7 +850,11 @@ function parseDateTime(text: string): DateTime {
  */
 function dateTimeFromJson(text: string): DateTime {
   const iso = readIso(text.trim());
-  if (iso === null) return parseDateTime(text);
+  // System.Text.Json reads ISO-8601 and nothing else: the parser's own forms, `01/15/2024 09:30:00`
+  // among them, were accepted (found by review, #606).
+  if (iso === null || typeof iso === 'string') {
+    throw exception('System.Text.Json.JsonException', 'The JSON value could not be converted to System.DateTime.');
+  }
   if (iso.zone === null) return new DateTime(iso.ticks);
   return iso.zone === 'utc' ? new DateTime(iso.ticks, 'utc') : localFrom(iso.ticks, iso.zone);
 }

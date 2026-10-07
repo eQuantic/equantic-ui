@@ -107,6 +107,9 @@ function wallClock(
 }
 
 const TICKS_PER_SECOND = 10_000_000n;
+/** DateTime.MinValue's and MaxValue's wall clocks, which a conversion to UTC stays between. */
+const FIRST_WALL = wallClock(1, 0, 1, 0, 0, 0, 0).getTime();
+const LAST_WALL = wallClock(9999, 11, 31, 23, 59, 59, 999).getTime();
 const TICKS_PER_MILLISECOND = 10_000n;
 
 /**
@@ -976,8 +979,10 @@ function formatDate(value: Date, format: string, fraction: () => string, zone: D
       // The full date and time of the value in UTC, as .NET's ToUniversalTime moves it: a UTC time as
       // it is, and any other by its offset, whose UTC fields are then the parts to print. A repeated
       // hour is read as its standard occurrence unless it is marked as its daylight one.
-      const utc = zone.kind === 'utc' ? value : new Date(value.getTime() - zone.offset());
-      return formatDate(utc, 'F', fraction, zone);
+      // Clamped to the calendar, as ToUniversalTime clamps: DateTime.MinValue east of UTC printed year
+      // 0000 (found by review, #606).
+      const moved = zone.kind === 'utc' ? value.getTime() : value.getTime() - zone.offset();
+      return formatDate(new Date(Math.min(Math.max(moved, FIRST_WALL), LAST_WALL)), 'F', fraction, zone);
     }
   }
 

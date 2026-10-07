@@ -107,4 +107,5 @@ offset are that instant's.
 
 - **WHEN** `new DateTime(2026, 10, 25, 0, 30, 0, DateTimeKind.Utc).ToLocalTime().ToUniversalTime()` is
   computed in Europe/Lisbon, whose clocks repeat 01:00 to 01:59 that night
-- **THEN** it is 00:30 UTC again, as in .NET, where it landed on the standard occurrence, an hour later
+- **THEN** it is 00:30 UTC again, the instant it came from, as in .NET, where it was read as the
+  standard occurrence and went back to 01:30 UTC, an hour later

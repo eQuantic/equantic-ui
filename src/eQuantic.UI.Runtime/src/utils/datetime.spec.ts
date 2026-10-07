@@ -234,3 +234,34 @@ describe('DateTime — a text read in linear time', () => {
     expect(performance.now() - started).toBeLessThan(200);
   });
 });
+
+// .NET 10's refusals: a date or a clock that does not exist normalized into the next day or month.
+describe('DateTime — text that names no date', () => {
+  const refusal = (act: () => unknown): string => {
+    try {
+      act();
+      return 'no throw';
+    } catch (e) {
+      return (e as Error).message;
+    }
+  };
+
+  it('refuses a date or a clock that does not exist, each in .NET\'s words', () => {
+    expect(dateTime.parse('2028-02-29').toJSON()).toBe('2028-02-29T00:00:00');
+    expect(refusal(() => dateTime.parse('2026-02-29'))).toBe("String '2026-02-29' was not recognized as a valid DateTime.");
+    expect(refusal(() => dateTime.parse('2026-01-01T24:00:00'))).toBe(
+      "The DateTime represented by the string '2026-01-01T24:00:00' is not supported in calendar 'System.Globalization.GregorianCalendar'.",
+    );
+    expect(refusal(() => dateTime.parse('01/15/2024 09:30:00 junk'))).toBe(
+      "String '01/15/2024 09:30:00 junk' was not recognized as a valid DateTime.",
+    );
+  });
+
+  it('reads the wire as System.Text.Json does, ISO-8601 and nothing else', () => {
+    const json = 'The JSON value could not be converted to System.DateTime.';
+    expect(refusal(() => dateTime.fromJson('01/15/2024 09:30:00'))).toBe(json);
+    expect(refusal(() => dateTime.fromJson('2026-02-29'))).toBe(json);
+    expect(dateTime.fromJson('2028-02-29T10:00:00Z').toJSON()).toBe('2028-02-29T10:00:00Z');
+  });
+});
+

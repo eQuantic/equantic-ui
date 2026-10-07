@@ -306,6 +306,16 @@ describe("a date's kind, which o, K, z and U read", () => {
     expect(format(second, 'U')).toBe('Sunday, 25 October 2026 01:30:00');
   });
 
+  it('clamps U to the calendar, as ToUniversalTime clamps', () => {
+    process.env.TZ = 'Asia/Kolkata';
+    installCulture('', '', {});
+    expect(format(dateTime.minValue(), 'U')).toBe('Monday, 01 January 0001 00:00:00');
+    expect(format(dateTime.maxValue(), 'U')).toBe('Friday, 31 December 9999 18:29:59');
+    process.env.TZ = 'America/Sao_Paulo';
+    installCulture('', '', {});
+    expect(format(dateTime.maxValue(), 'U')).toBe('Friday, 31 December 9999 23:59:59');
+  });
+
   it('refuses a letter alone that is no standard specifier, as .NET does', () => {
     expect(() => format(dateTime.of(2026, 7, 1, 12, 0, 0), 'K')).toThrow('Input string was not in a correct format.');
   });
