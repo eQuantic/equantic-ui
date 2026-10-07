@@ -68,6 +68,34 @@ public class TransformedHitTests
         Hovered(host, 20, 10).Should().BeFalse("and over the strip it left, nothing");
     }
 
+    /// <summary>
+    /// The case the issue was filed for: a pressable over a box whose HOVER moves it. The box's own
+    /// hover region followed it, and the pressable's target was placed with the box's resting
+    /// transform, read through the pressable's node, which no hover region carries (found reviewing
+    /// the change).
+    /// </summary>
+    [Fact]
+    public void APressableOverABoxItsHoverMoves_TakesThePressWhereTheBoxIsDrawn()
+    {
+        var pressed = new List<string>();
+        var square = new Pressable(new Box(new BoxStyle
+        {
+            Width = 40,
+            Height = 40,
+            Background = BaseFill,
+            Hover = new StyleDiff { Transform = Transform2D.Translate(0, 20) },
+        }), () => pressed.Add("square"));
+        var host = new PhotonHost(square, PhotonTheme.Instance, ThemeMode.Light, 100, 100) { Density = Density.Compact };
+        host.RenderFrame(new DisplayListBuilder());
+
+        // Over the square at rest, from 0 to 40: the hover draws it from 20 to 60.
+        host.PointerMove(20, 30);
+        host.RenderFrame(new DisplayListBuilder());
+        host.Tap(20, 50);
+
+        pressed.Should().Equal(["square"], "y 50 is inside the square as its hover draws it");
+    }
+
     [Fact]
     public void AScaledBox_TakesThePointerAcrossAllItDraws()
     {

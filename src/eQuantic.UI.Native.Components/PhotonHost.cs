@@ -2289,16 +2289,35 @@ public sealed class PhotonHost
     private bool Covers(object regions, int index, Rect box, Point point, bool drawn = false)
     {
         if (!box.Contains(point)) return false;
-        var transformed = _lastFrame?.TransformedRegions;
-        if (transformed is null) return true;
-        for (var i = 0; i < transformed.Count; i++)
-        {
-            var region = transformed[i];
-            if (region.Index != index || !ReferenceEquals(region.Regions, regions)) continue;
-            return (drawn ? region.LocalDrawn : region.Local).Contains(region.Inverse.Transform(point));
-        }
-        return true;
+        if (TransformedAt(regions, index) is not { } region) return true;
+        return (drawn ? region.LocalDrawn : region.Local).Contains(region.Inverse.Transform(point));
     }
+
+    /// <summary>
+    /// What turns a point back into the space of the <paramref name="index"/>th region of
+    /// <paramref name="regions"/>, if a transform drew it. Looked up through an index built once per
+    /// frame, and only for a frame that transformed something: scanned, the table cost every region
+    /// test a pass over it, and a page sliding in, all of whose regions are transformed, made a
+    /// pointer move quadratic.
+    /// </summary>
+    private TransformedRegion? TransformedAt(object regions, int index)
+    {
+        var frame = _lastFrame;
+        if (frame is null || frame.TransformedRegions.Count == 0) return null;
+        if (!ReferenceEquals(_transformedFor, frame))
+        {
+            _transformedAt ??= new Dictionary<(object, int), TransformedRegion>();
+            _transformedAt.Clear();
+            foreach (var region in frame.TransformedRegions)
+                _transformedAt[(region.Regions, region.Index)] = region;
+            _transformedFor = frame;
+        }
+        return _transformedAt!.TryGetValue((regions, index), out var found) ? found : null;
+    }
+
+    // The frame the index of its transformed regions was built for, and the index.
+    private RealizeResult? _transformedFor;
+    private Dictionary<(object, int), TransformedRegion>? _transformedAt;
 
     /// <summary>Whether <paramref name="inner"/> lies wholly inside <paramref name="outer"/>.</summary>
     private static bool Encloses(Rect outer, Rect inner) =>

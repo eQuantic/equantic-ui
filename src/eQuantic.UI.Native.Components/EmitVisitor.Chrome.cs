@@ -425,12 +425,14 @@ internal sealed partial class EmitVisitor
     /// The matrix a box draws its subtree under this frame: its effective transform (a state's
     /// included) where its transition has glided it, about its centre. Null for a node that is no
     /// box, or a box drawn where it was laid out. Asking twice in a frame answers the same: a glide
-    /// resolves to the same value at the same time.
+    /// resolves to the same value at the same time. The box's states are read as ITS OWN emission
+    /// reads them, through its node: read through the pressable's, a hover lift never reached the
+    /// pressable's target, since no hover region carries a pressable's path.
     /// </summary>
     private static Matrix2D? DrawnUnder(LayoutNode node, in EmitState s)
     {
         if (node.Source is not Box box) return null;
-        var style = EffectiveStyle(box, s);
+        var style = EffectiveStyle(box, s with { Node = node });
         var transform = style.Transform ?? IdentityTransform;
         if (style.Transition is { } glide && s.Motion.Transitions is { } store
             && (glide.Channels & StyleChannels.Transform) != 0)
