@@ -1703,6 +1703,13 @@ record of a release, the wiki's Upgrading page is the distillate.
   1970 toward the epoch; it answers a BigInt cut as .NET cuts it now. Found on the way: the date
   constructors past the second ([#606](https://github.com/eQuantic/equantic-ui/issues/606)).
   Proposed and archived through OpenSpec (`openspec/specs/runtime-dates`).
+- **2026-10-07 · A type reached through its namespace is imported by what it binds**: inside
+  `Falei.Web.Chat`, `Portal.Fold.Text(n)` wrote `Fold.text(n)` and imported nothing, so the page threw
+  `Fold is not defined`, while `Fold.Text(n)` under a using worked
+  ([#625](https://github.com/eQuantic/equantic-ui/issues/625)). The strategy that strips a namespace now
+  registers the type the name binds, which every emitter imports, through part of the namespace, the
+  whole of it or `global::`, the expression's case of what #479 did for a base class. Proposed and
+  archived through OpenSpec (`openspec/specs/transpiler-names`).
 
 ## Retired documents
 
