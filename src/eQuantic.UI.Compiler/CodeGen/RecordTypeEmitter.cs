@@ -300,6 +300,10 @@ public class RecordTypeEmitter
                 : $"equals(o) {{ return o instanceof {name}");
             if (baseName != null) sb.Append(" && super.equals(o)");
             else if (type is RecordDeclarationSyntax) sb.Append(" && o.constructor === this.constructor");
+            // A generic one's closed type too: one twin class serves every type argument, so `Box<int>`
+            // equalled `Box<double>` holding the same 1 (#651). The build marks each value C# names the
+            // type arguments of, and an unmarked one is not taken for another type.
+            if (type.TypeParameterList is { Parameters.Count: > 0 }) sb.Append($" && {Eq.SameClosure}(this, o)");
             foreach (var m in members) sb.Append($" && $eq.equals(this.{m.Store}, o.{m.Store})");
             sb.Append("; } ");
 
