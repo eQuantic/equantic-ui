@@ -581,6 +581,7 @@ public class ObjectCreationStrategy : IExpressionIrStrategy
             var parts = new List<JsExpr>();
             if (creation.ArgumentList != null)
                 parts.AddRange(OrderedArguments(creation, context));
+            var specs = HydrationSpecs(creation, type, context);
             if (creation.Initializer != null)
             {
                 // The config object rides the TRAILING slot: a call that supplied fewer positional
@@ -592,6 +593,7 @@ public class ObjectCreationStrategy : IExpressionIrStrategy
                     var supplied = creation.ArgumentList?.Arguments.Count ?? 0;
                     for (var i = supplied; i < ctor.Parameters.Length; i++)
                         parts.Add(DefaultOf(ctor.Parameters[i], context));
+                    parts.AddRange(specs);
                     parts.Add(context.Converter.ConvertIr(creation.Initializer));
                     return JsExpr.New(constructed, parts);
                 }
@@ -604,6 +606,14 @@ public class ObjectCreationStrategy : IExpressionIrStrategy
                 var config = context.Converter.ConvertIr(creation.Initializer);
                 return JsExpr.Call(JsExpr.Identifier("Object.assign"), JsExpr.New(constructed, parts), config);
             }
+            if (specs.Count > 0)
+            {
+                // The specs follow EVERY constructor parameter, so a skipped one is filled first.
+                if (ctor is not null)
+                    for (var i = parts.Count; i < ctor.Parameters.Length; i++)
+                        parts.Add(DefaultOf(ctor.Parameters[i], context));
+                parts.AddRange(specs);
+            }
             return JsExpr.New(constructed, parts);
         }
 
@@ -611,6 +621,34 @@ public class ObjectCreationStrategy : IExpressionIrStrategy
         return creation.Initializer is { } initializer
             ? ObjectInitializer.Apply(construction, initializer, context)
             : construction;
+    }
+
+    /// <summary>
+    /// The hydration specs a vocabulary twin takes after its constructor's parameters, one for each
+    /// type argument whose parameter carries <c>[HydratesTypeArgument]</c> (#291): the C# type is
+    /// erased in JavaScript, and the twin revives what it receives of that type with the spec a Server
+    /// Action's result is revived with. <c>null</c> where the argument needs no revival.
+    /// <para>
+    /// An argument that names a type parameter is refused (EQ2013): where the twin is built, the type
+    /// is erased, so its spec would be null and every value it receives would pass through unrevived.
+    /// A helper as natural as <c>static ServerTopic&lt;T&gt; Topic&lt;T&gt;(string name) =&gt; new(name)</c>
+    /// built every topic that way, and the build was green.
+    /// </para>
+    /// </summary>
+    private static IReadOnlyList<JsExpr> HydrationSpecs(BaseObjectCreationExpressionSyntax creation, ITypeSymbol type,
+        ConversionContext context)
+    {
+        var specs = new List<JsExpr>();
+        foreach (var argument in type.HydratedTypeArguments())
+        {
+            if (argument.MentionsTypeParameter())
+                context.Report(creation, ConversionSeverity.Error, "EQ2013",
+                    $"'{type.ToDisplayString()}' is built where its type argument '{argument.ToDisplayString()}' is a type " +
+                    "parameter, which JavaScript erases, so what it receives could not be revived as that type. Build it " +
+                    "where the type argument is a concrete type, as in a static member of the type that declares the topic.");
+            specs.Add(JsExpr.Opaque(HydrationSpec.Of(argument, context.UsedAppTypes, context.UsedRuntimeTypes) ?? "null"));
+        }
+        return specs;
     }
 
     /// <summary>
@@ -698,7 +736,10 @@ public class ObjectCreationStrategy : IExpressionIrStrategy
     private JsExpr ConvertImplicit(ImplicitObjectCreationExpressionSyntax creation, ConversionContext context)
     {
         var ms = context.SemanticHelper.GetSymbol(creation) as IMethodSymbol;
-        var typeDisplay = ms?.ContainingType.ToDisplayString() ?? context.ExpectedType ?? "";
+        // The constructed type's OWN definition, its type parameters and not its arguments: a list is a
+        // list by what it is, and `ServerTopic<List<long>>` was built as an empty array because its
+        // argument's text holds `List<`.
+        var typeDisplay = ms?.ContainingType.OriginalDefinition.ToDisplayString() ?? context.ExpectedType ?? "";
 
         // TARGET-TYPED construction is the same naming, spelled shorter: `Matrix2D m = new(…)`.
         // The explicit path was fenced and this one was not, so the type came back by inference and

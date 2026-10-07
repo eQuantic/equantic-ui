@@ -109,6 +109,20 @@ public class MemberAccessStrategy : IExpressionIrStrategy
                                   invocation.Expression == memberAccess;
             if (!isDirectInvocation)
             {
+                // `base.M` is the base's method called on THIS object, with no virtual dispatch, and
+                // `super` is not a value JavaScript lets anything be passed: `super.m.bind(super)`
+                // failed the whole module at parse.
+                if (memberAccess.Expression is BaseExpressionSyntax)
+                    return JsExpr.Call(JsExpr.Member(member, "bind"), JsExpr.This);
+                // An extension's method lives on the home its call goes to, so the group binds the
+                // receiver there, read once: `Ext.twice.bind(Ext, s)`. Bound to the receiver itself,
+                // it named a member the receiver never had, and making the delegate threw.
+                if (InvocationStrategy.ExtensionHome(method, node, context) is { } extension)
+                {
+                    var homeClass = JsExpr.Identifier(extension.Home.Name);
+                    var bind = JsExpr.Member(JsExpr.Member(homeClass, name), "bind");
+                    return extension.TakesReceiver ? JsExpr.Call(bind, homeClass, receiver) : JsExpr.Call(bind, homeClass);
+                }
                 // A method of a value the browser holds as DATA lives on its companion, value first,
                 // so the group binds the value there, read once, as C# copies the receiver into the
                 // delegate when it is made: `Color.withOpacity.bind(Color, value)`.
@@ -118,7 +132,10 @@ public class MemberAccessStrategy : IExpressionIrStrategy
                     var home = JsExpr.Identifier(dataType.Name);
                     return JsExpr.Call(JsExpr.Member(JsExpr.Member(home, name), "bind"), home, receiver);
                 }
-                return JsExpr.Call(JsExpr.Member(member, "bind"), receiver);
+                // The receiver is read ONCE, as C# reads it when the delegate is made: written twice,
+                // a receiver that is a call ran twice (`make().value.bind(make())`, #619). The
+                // template binds a part used twice and inlines a plain name (`this.value.bind(this)`).
+                return JsExpr.Template($"{{0}}.{name}.bind({{0}})", receiver);
             }
         }
 
