@@ -1614,8 +1614,9 @@ record of a release, the wiki's Upgrading page is the distillate.
   an empty one ([#558](https://github.com/eQuantic/equantic-ui/issues/558)). eqc binds them by their
   parameters, and the runtime composes the message .NET writes: the type's own text where none was
   given, ` (Parameter 'x')`, and the actual value and a disposed object's name on lines of their own,
-  with `ParamName`, `ActualValue` and `InnerException` reading what the constructor took. Proposed and
-  archived through OpenSpec (`openspec/specs/transpiler-exceptions`).
+  with `ParamName`, `ActualValue` and `InnerException` reading what the constructor took, an
+  aggregate's inner messages and a type initializer's sentence included. Proposed and archived through
+  OpenSpec (`openspec/specs/transpiler-exceptions`).
 
 ## Retired documents
 
