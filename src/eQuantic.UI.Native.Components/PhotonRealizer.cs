@@ -67,13 +67,17 @@ public readonly record struct ShortcutBinding(KeyChord Chord, Action OnPressed, 
 /// <summary>An editable field. A text entry is not a pressable — a click puts a CARET in it and the
 /// keys that follow belong to it — so it registers its own kind of region, and the host keeps the
 /// caret against the <paramref name="Path"/> for the same reason the press does: the tree is rebuilt
-/// on every keystroke.</summary>
-public readonly record struct TextRegion(Rect Bounds, TextEntry Entry, string Path);
+/// on every keystroke. <paramref name="Visible"/> is the part of <paramref name="Bounds"/> the clips
+/// around the field leave on screen, which is all a press can land on, as a code surface's. Null where
+/// nothing clips it.</summary>
+public readonly record struct TextRegion(Rect Bounds, TextEntry Entry, string Path, Rect? Visible = null);
 
 /// <summary>An editable SPREADSHEET surface: a click takes the selection (a cell resolved by
 /// prefix-sum arithmetic over the window), a drag extends it, and the keys that follow speak
-/// Excel through the shared controller.</summary>
-public readonly record struct SheetRegion(Rect Bounds, SheetSurface Surface, string Path);
+/// Excel through the shared controller. <paramref name="Visible"/> is the part of
+/// <paramref name="Bounds"/> on screen, which is all a press can land on. Null where nothing clips
+/// it.</summary>
+public readonly record struct SheetRegion(Rect Bounds, SheetSurface Surface, string Path, Rect? Visible = null);
 
 /// <summary>A surface that changes what the mouse pointer looks like (BoxStyle.Cursor — the CSS
 /// cursor mirror). The host answers CursorAt from these, topmost first.</summary>

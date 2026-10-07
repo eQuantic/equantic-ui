@@ -105,7 +105,7 @@ internal readonly struct InputSink(FrameRegions regions, Rect? clip = null, bool
         if (!suppressFocusStops && !region.Entry.Disabled)
             regions.Stops.Add(new FocusStop(region.Path, null, region.Entry, region.Bounds));
         if (!Visible(region.Bounds)) return;
-        regions.Texts.Add(region);
+        regions.Texts.Add(Clipped(region));
     }
 
     public void Add(CodeRegion region)
@@ -137,7 +137,7 @@ internal readonly struct InputSink(FrameRegions regions, Rect? clip = null, bool
         if (!suppressFocusStops)
             regions.Stops.Add(new FocusStop(region.Path, null, null, region.Bounds, Sheet: region.Surface));
         if (!Visible(region.Bounds)) return;
-        regions.Sheets.Add(region);
+        regions.Sheets.Add(Clipped(region));
     }
 
     /// <summary>Whether any of the region survives the clip. A region entirely outside it is drawn
@@ -169,6 +169,18 @@ internal readonly struct InputSink(FrameRegions regions, Rect? clip = null, bool
                 Offered = region.Offered is { } offered ? Intersect(clip, offered) : null,
             }
             : region;
+
+    /// <summary>
+    /// A field and a sheet keep their whole bounds, which place the caret and the cells, and carry
+    /// the part on screen, which is all a press can land on: as a code surface did until #297, one
+    /// that ran past its scroll view took the presses aimed at whatever stands outside it (#635).
+    /// </summary>
+    private TextRegion Clipped(TextRegion region) =>
+        Clip is { } clip ? region with { Visible = Intersect(clip, region.Bounds) } : region;
+
+    /// <inheritdoc cref="Clipped(TextRegion)"/>
+    private SheetRegion Clipped(SheetRegion region) =>
+        Clip is { } clip ? region with { Visible = Intersect(clip, region.Bounds) } : region;
 
     /// <inheritdoc cref="Clipped(HitRegion)"/>
     private LinkRegion Clipped(LinkRegion region) =>

@@ -1780,7 +1780,7 @@ public sealed class PhotonHost
         if (HitAt(hits, point) is var hit and >= 0)
             return hits[hit].Node.Disabled ? CursorShape.NotAllowed : CursorShape.Pointer;
         for (var i = fields.Count - 1; i >= 0; i--)
-            if (fields[i].Bounds.Contains(point))
+            if ((fields[i].Visible ?? fields[i].Bounds).Contains(point))
                 return fields[i].Entry.Disabled ? CursorShape.NotAllowed : CursorShape.Text;
         // Code you place a caret in is a field too, and was the one kind this list forgot: the
         // pointer stayed an arrow over an editor, where every editor shows the beam. A read-only
@@ -1930,7 +1930,7 @@ public sealed class PhotonHost
         var fields = _lastFrame.TextRegions;
         for (var i = fields.Count - 1; i >= 0; i--)
         {
-            if (!fields[i].Bounds.Contains(point)) continue;
+            if (!(fields[i].Visible ?? fields[i].Bounds).Contains(point)) continue;
             BeginEditing(fields[i], x);
             // Double-click: the word under the point. Triple: everything. The platform counts the
             // clicks (its double-click interval is a system setting, not ours to guess).
@@ -1971,7 +1971,7 @@ public sealed class PhotonHost
         var sheetRegions = _lastFrame.SheetRegions;
         for (var i = sheetRegions.Count - 1; i >= 0; i--)
         {
-            if (!sheetRegions[i].Bounds.Contains(point)) continue;
+            if (!(sheetRegions[i].Visible ?? sheetRegions[i].Bounds).Contains(point)) continue;
             var sheet = sheetRegions[i].Surface.Controller;
             var changed = _textPath != sheetRegions[i].Path;
             if (changed) EndEditing();
