@@ -1618,6 +1618,26 @@ record of a release, the wiki's Upgrading page is the distillate.
   1970 toward the epoch; it answers a BigInt cut as .NET cuts it now. Found on the way: the date
   constructors past the second ([#606](https://github.com/eQuantic/equantic-ui/issues/606)).
   Proposed and archived through OpenSpec (`openspec/specs/runtime-dates`).
+- **2026-10-07 · An edit under dotnet watch reaches the browser**: hot reload was on in the
+  Development environment alone, and an app run under `dotnet watch` without a launch profile is a
+  Production one, so eqc never ran again and the page kept the module from before the edit
+  ([#627](https://github.com/eQuantic/equantic-ui/issues/627)). It is on under `dotnet watch` too,
+  read from the `DOTNET_WATCH` the watcher sets, and that one decision (`UIOptions.HotReloads`) maps
+  the stream, sets the modules' cache and tells the page, whose boot listened by `__EQ_DEV__` before.
+  Two more defects stood in the way, measured on the dashboard sample. Every file eqc wrote again was
+  a file added to the project, and `dotnet watch` stopped on the first one (dotnet/sdk#55335; a plain
+  `dotnet new web` app stops the same way): eqc's output folder is declared in `DefaultItemExcludes`,
+  which `dotnet watch` ignores, in place of the Content removal, and eqc writes it in place, removing
+  what it stopped writing after the rest, where the folder was emptied first and every module
+  answered 404 while eqc compiled. And in the watcher's workspace, where a referenced project is
+  another compilation, the hydration manifest asked a semantic model of that project's tree and threw
+  on every edit (CS8785, [#663](https://github.com/eQuantic/equantic-ui/issues/663)); it reads the
+  declarations the compilation holds now (`CompilationSource`). On the sample under
+  `dotnet watch --no-launch-profile`, an edit reloads the page with it and `dotnet watch` stays up, a
+  shared component's renamed chunk included. Found on the way: a write-once page's state does not
+  survive a hot reload under any runner ([#664](https://github.com/eQuantic/equantic-ui/issues/664)).
+  Proposed and archived through OpenSpec (`openspec/specs/hot-reload`, `generated-files` and
+  `hydration-contract`).
 
 ## Retired documents
 
