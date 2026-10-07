@@ -152,7 +152,9 @@ public static class RuntimeProvidedTypeScanner
                 appTypes.Add(named.TwinReference());
         }
 
-        foreach (var identifier in root.DescendantNodes().OfType<IdentifierNameSyntax>())
+        // A SIMPLE name, generic ones included: `ServerTopic<Quote>` is a GenericNameSyntax, and a generic
+        // vocabulary type walked past as an identifier was imported from a sibling module nothing writes.
+        foreach (var identifier in root.DescendantNodes().OfType<SimpleNameSyntax>())
         {
             ISymbol? symbol;
             try { symbol = model.GetSymbolInfo(identifier).Symbol; }

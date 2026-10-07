@@ -136,6 +136,7 @@ public static class UIExtensions
         services.TryAddSingleton<eQuantic.UI.Primitives.IMotionSensor, AbsentCapabilities.MotionSensor>();
         services.TryAddSingleton<eQuantic.UI.Primitives.IBiometrics, AbsentCapabilities.Biometrics>();
         services.TryAddSingleton<eQuantic.UI.Primitives.INetworkStatus, AbsentCapabilities.NetworkStatus>();
+        services.TryAddSingleton<eQuantic.UI.Primitives.IServerEvents, AbsentCapabilities.ServerEvents>();
         services.TryAddSingleton<eQuantic.UI.Primitives.IAnalytics, AbsentCapabilities.Analytics>();
         services.TryAddSingleton<eQuantic.UI.Primitives.IClock, AbsentCapabilities.Clock>();
         services.TryAddSingleton<eQuantic.UI.Primitives.IFrameTicker, AbsentCapabilities.FrameTicker>();
@@ -153,9 +154,6 @@ public static class UIExtensions
         });
         services.Configure<BrotliCompressionProviderOptions>(opts => opts.Level = CompressionLevel.Fastest);
         services.Configure<GzipCompressionProviderOptions>(opts => opts.Level = CompressionLevel.Fastest);
-
-        // Add SignalR services
-        services.AddSignalR();
 
         // Register explicit asset providers first (WithAssetProvider<T> takes priority)
         foreach (var (serviceType, implType) in options.AssetProviders)
@@ -239,9 +237,18 @@ public static class UIExtensions
 
         // The same two endpoints a [Page] gets — the route, and its language-prefixed twin.
         foreach (var pattern in CultureEndpointPatterns(options, route))
-            endpoints.MapGet(pattern, async context => await ServeAppShell(context, pageType, new DeclaredPage(title, null)));
+            endpoints.MapGetAndHead(pattern, async context => await ServeAppShell(context, pageType, new DeclaredPage(title, null)));
         return endpoints;
     }
+
+    /// <summary>
+    /// GET and HEAD at <paramref name="pattern"/>. HTTP defines HEAD as GET without the content (RFC
+    /// 9110, section 9.3.2), and an uptime monitor, a link checker or a crawler asks with it: mapped
+    /// for GET alone, a HEAD fell through to the fallback and every page answered 404 (#575). The
+    /// handler is the GET's, and the server writes no body for a HEAD.
+    /// </summary>
+    private static IEndpointConventionBuilder MapGetAndHead(this IEndpointRouteBuilder endpoints, string pattern, RequestDelegate handler) =>
+        endpoints.MapMethods(pattern, [HttpMethods.Get, HttpMethods.Head], handler);
 
     /// <summary>
     /// The endpoints one page route answers at: itself, and — when the app declared language
@@ -296,16 +303,13 @@ public static class UIExtensions
                     // The endpoint carries the page's TYPE: by its simple name, two pages of one name in
                     // two namespaces rendered as one (#514).
                     foreach (var route in CultureEndpointPatterns(options, pageAttr.Route))
-                        endpoints.MapGet(route, async context => await ServeAppShell(context, pageType, declared));
+                        endpoints.MapGetAndHead(route, async context => await ServeAppShell(context, pageType, declared));
                 }
             }
         }
 
-        // Map SignalR Hub
-        endpoints.MapHub<Hubs.ServerActionHub>("/_equantic/hub");
-
         // Map Runtime JS (immutable via BuildId in URL, long cache)
-        endpoints.MapGet("/_equantic/runtime.js", async context =>
+        endpoints.MapGetAndHead("/_equantic/runtime.js", async context =>
         {
             context.Response.ContentType = "application/javascript";
             context.Response.Headers["Cache-Control"] = "public, max-age=31536000, immutable";
@@ -324,7 +328,7 @@ public static class UIExtensions
         });
 
         // Debug/Fallback: Manually serve component files if StaticFiles misses them
-        endpoints.MapGet("/_equantic/{name}.js", async context =>
+        endpoints.MapGetAndHead("/_equantic/{name}.js", async context =>
         {
             var name = (string?)context.GetRouteValue("name");
             var path = Path.Combine(context.RequestServices.GetRequiredService<IWebHostEnvironment>().WebRootPath, "_equantic", $"{name}.js");
@@ -363,7 +367,7 @@ public static class UIExtensions
         // via client-side (SPA) navigation, where the page bundle is dynamically imported. Without this,
         // the `.js` loads but its `.js.map` 404s and the debugger can't map back to C#. Not cached
         // immutably (the map URL carries no version query, so a stale map must be revalidated).
-        endpoints.MapGet("/_equantic/{name}.js.map", async context =>
+        endpoints.MapGetAndHead("/_equantic/{name}.js.map", async context =>
         {
             var name = (string?)context.GetRouteValue("name");
             var webRoot = context.RequestServices.GetRequiredService<IWebHostEnvironment>().WebRootPath;
@@ -859,7 +863,11 @@ public static class UIExtensions
             CultureRoutes: options.CultureRoutes is { } cultureMap
                 ? new ClientCultureRoutes(cultureMap.Default, cultureMap.Prefixed.ToList())
                 : null,
-            Routes: surface.Routes), ClientConfig.Json);
+            Routes: surface.Routes,
+            // Whether the server serves events crosses because only the server knows: without it, a
+            // page whose app never called UseServerEvents opened a stream the app's fallback
+            // answered, and retried it forever while no subscription heard why.
+            ServerEvents: options.ServerEvents is not null), ClientConfig.Json);
 
         // Render HTML using template engine with conditionals
         var isDevelopment = context.RequestServices.GetRequiredService<IWebHostEnvironment>().IsDevelopment();
@@ -1272,6 +1280,33 @@ public class UIOptions
         EndpointConfigurations.Add(configuration);
         return this;
     }
+
+    /// <summary>
+    /// Lets the server publish to topics the app's components subscribe to (<c>IServerEvents</c> in a
+    /// component, <see cref="IServerEventPublisher"/> on the server), over one stream per page.
+    /// <paramref name="configure"/> says who may subscribe to which topics (a topic no template
+    /// matches is refused) and fills the seams an app may need: its own backplane, lifecycle
+    /// handlers, the limits read from <c>EQuantic:ServerEvents</c>.
+    /// </summary>
+    public UIOptions UseServerEvents(Action<ServerEventsBuilder> configure)
+    {
+        ArgumentNullException.ThrowIfNull(configure);
+        // One builder however many times this is called: a library and the app may each declare
+        // their topics. A builder per call mapped the endpoints twice, which made every request to
+        // them ambiguous, and the last call's templates replaced the others'.
+        if (ServerEvents is null)
+        {
+            ServerEvents = new ServerEventsBuilder();
+            RegisterServices(ServerEvents.Register);
+            RegisterEndpoints(endpoints => endpoints.MapServerEvents());
+        }
+        configure(ServerEvents);
+        return this;
+    }
+
+    /// <summary>The server events the app configured, or null when it called no
+    /// <see cref="UseServerEvents"/>: the page is told, so a subscription is refused at once.</summary>
+    internal ServerEventsBuilder? ServerEvents { get; private set; }
 
     /// <summary>
     /// Routes the app declared in <c>Program.cs</c> with <c>MapPage&lt;T&gt;</c>, rather than on the

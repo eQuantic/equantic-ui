@@ -105,18 +105,44 @@ public static class HydrationSpec
                 : null;
         }
 
-        // An IN-SOURCE record or struct has an emitted twin (a class, a prototype, methods); it
-        // appears in the spec by NAME when any member transitively needs hydration — the twin's
-        // own `static $hydration` says which.
-        if (IsEmittedValueType(named) && HasHydratableMember(named, visiting))
+        // An IN-SOURCE record or struct has an emitted twin (a class, a prototype, methods), and it
+        // appears in the spec by NAME whenever it crosses, so the value is rebuilt on that
+        // prototype; the twin's own `static $hydration` says which members coerce. It was named
+        // only when a member needed coercion, so `record Notice(string Text)` arrived as the plain
+        // object JSON made of it: no method, no `equals`, no `with`, on a Server Action's result
+        // and on a topic's payload alike (#647).
+        if (IsEmittedValueType(named) && !named.IsHostOnly())
         {
             referenced.InSource.Add(named.TwinTypeName());
+            // A CONSTRUCTED generic record shares its twin with the open declaration, whose
+            // `$hydration` cannot know what T is: `Box<long>`'s value arrived as the text the wire
+            // writes. Its own members, T substituted, describe it on that twin. A record that holds
+            // itself is described once, and below that by its twin's own map.
+            if (!SymbolEqualityComparer.Default.Equals(named, named.OriginalDefinition) && visiting.Add(named))
+            {
+                try
+                {
+                    return $"{{ of: {named.TwinTypeName()}, members: {MemberMap(MemberEntries(named, referenced, visiting))} }}";
+                }
+                finally
+                {
+                    visiting.Remove(named);
+                }
+            }
             return named.TwinTypeName();
         }
 
         // A type the runtime ships no export for is fenced (EQ2010) wherever a component names it,
         // and a map that described it would put its name, or its members', in the emitted module.
         if (named.IsHostOnly()) return null;
+
+        // A vocabulary twin that revives what it receives of a type argument (ServerTopic<T>, #291)
+        // is rebuilt on its prototype WITH the arguments' specs, which eqc hands its constructor where
+        // the browser builds it. One that crossed the wire instead, a Server Action's result or a
+        // page's state, arrived as the plain object EqJson wrote, and handed every payload through
+        // unrevived.
+        if (named.IsRuntimeProvided() && !named.TwinIsData() && named.HydratedTypeArguments() is { Count: > 0 } arguments)
+            return TypedTwinSpec(named, arguments, referenced, visiting);
 
         // A data type from a REFERENCED assembly has no twin to name — a page library's domain
         // record is the ordinary case — but the model still knows its members, so the boundary
@@ -158,16 +184,39 @@ public static class HydrationSpec
     private static string? MembersSpec(INamedTypeSymbol named, References referenced, HashSet<INamedTypeSymbol> visiting,
         string? twin)
     {
-        var entries = DataMembers(named)
-            .Select(member => (member.Name, Spec: Of(member.Type, referenced, visiting)))
-            .Where(member => member.Spec is not null)
-            .Select(member => $"{member.Name.ToCamelCase()}: {member.Spec}")
-            .ToList();
+        var entries = MemberEntries(named, referenced, visiting);
         if (entries.Count == 0) return null;
         if (twin is null) return $"{{ members: {{ {string.Join(", ", entries)} }} }}";
         referenced.Runtime.Add(twin);
         return $"{{ of: {twin}, members: {{ {string.Join(", ", entries)} }} }}";
     }
+
+    /// <summary>The <c>name: spec</c> entries of the members that need coercion, named as EqJson writes them.</summary>
+    private static List<string> MemberEntries(INamedTypeSymbol named, References referenced, HashSet<INamedTypeSymbol> visiting) =>
+        DataMembers(named)
+            .Select(member => (member.Name, Spec: Of(member.Type, referenced, visiting)))
+            .Where(member => member.Spec is not null)
+            .Select(member => $"{member.Name.ToCamelCase()}: {member.Spec}")
+            .ToList();
+
+    /// <summary>
+    /// <c>{ of: Twin, members: { … }, typeArguments: [ … ] }</c>: a vocabulary twin rebuilt on its
+    /// prototype, its members coerced as any twin's are, and the specs of the type arguments it
+    /// revives (<c>[HydratesTypeArgument]</c>), in their parameters' order, null where one needs no
+    /// revival. The twin names the members that hold them (<c>$typeArguments</c>).
+    /// </summary>
+    private static string TypedTwinSpec(INamedTypeSymbol named, IReadOnlyList<ITypeSymbol> arguments, References referenced,
+        HashSet<INamedTypeSymbol> visiting)
+    {
+        var members = MemberEntries(named, referenced, visiting);
+        var typeArguments = arguments.Select(argument => Of(argument, referenced, visiting) ?? "null");
+        referenced.Runtime.Add(named.Name);
+        return $"{{ of: {named.Name}, members: {MemberMap(members)}, typeArguments: [{string.Join(", ", typeArguments)}] }}";
+    }
+
+    /// <summary>The <c>{ name: spec, … }</c> map a <c>{ of, members }</c> spec carries, <c>{}</c> when empty.</summary>
+    private static string MemberMap(List<string> entries) =>
+        entries.Count == 0 ? "{}" : $"{{ {string.Join(", ", entries)} }}";
 
     /// <summary>The date/time compat scalars, by their one full name each.</summary>
     private static string? Scalar(INamedTypeSymbol named) => named.ToDisplayString() switch
@@ -254,11 +303,6 @@ public static class HydrationSpec
         named.Locations.Any(location => location.IsInSource)
         && (named.IsRecord || named.TypeKind == TypeKind.Struct);
 
-    /// <summary>Whether any public data member (transitively) has a spec — a cycle answers no for
-    /// its own path, so a self-referential record still specs on its OTHER members.</summary>
-    private static bool HasHydratableMember(INamedTypeSymbol named, HashSet<INamedTypeSymbol> visiting) =>
-        visiting.Add(named) && HasHydratableMemberOf(named, visiting);
-
     /// <summary>The members a twin carries as DATA — public instance settable properties
     /// (positional record parameters included) and fields. A get-only computed property is a
     /// method on the twin, never a payload slot.</summary>
@@ -271,13 +315,6 @@ public static class HydrationSpec
                 _ => default((string, ITypeSymbol)?),
             })
             .OfType<(string, ITypeSymbol)>();
-
-    /// <summary>Whether any data member (transitively) has a spec — see the visiting guard above.</summary>
-    private static bool HasHydratableMemberOf(INamedTypeSymbol named, HashSet<INamedTypeSymbol> visiting)
-    {
-        var throwaway = new References(new HashSet<string>(), new HashSet<string>());
-        return DataMembers(named).Any(member => Of(member.Type, throwaway, visiting) is not null);
-    }
 
     /// <summary>The member map for a record/struct twin — <c>{ id: 'long', price: Money }</c> with
     /// the twin's camelCased member names — or null when no member needs hydration.</summary>
