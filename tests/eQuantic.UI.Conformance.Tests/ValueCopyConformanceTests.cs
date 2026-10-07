@@ -16,7 +16,7 @@ public class ValueCopyConformanceTests
     private const string Types =
         "public struct Pt { public int X; public int Y; public void Move(int by) { X += by; } public int Sum() => X + Y; }\n"
         + "public struct Line { public Pt A; public Pt B; }\n"
-        + "public class Holder { public Pt P; public Pt Prop { get; set; } }\n"
+        + "public record Holder { public Pt P; public Pt Prop { get; set; } }\n"
         + "public struct Snapper { public int V; public int Snap() { var copy = this; V = 5; return copy.V; } }\n";
 
     [SkippableTheory]
