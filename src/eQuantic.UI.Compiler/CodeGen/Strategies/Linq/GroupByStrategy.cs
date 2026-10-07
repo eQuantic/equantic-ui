@@ -1,6 +1,7 @@
 using System.Collections.Immutable;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using eQuantic.UI.Compiler.CodeGen.Extensions;
 
 namespace eQuantic.UI.Compiler.CodeGen.Strategies.Linq;
 
@@ -12,8 +13,9 @@ namespace eQuantic.UI.Compiler.CodeGen.Strategies.Linq;
 /// LINQ's do. The element selector transforms what goes INTO a group; the result selector maps
 /// each finished group through <c>(key, group)</c>. Which role an argument plays is read from the
 /// bound overload's parameter names, and from lambda arity where nothing binds. Keys group by the
-/// key type's equality (<see cref="LinqKeys"/>). A custom key comparer has no translation and is
-/// fenced, never dropped.
+/// key type's equality (<see cref="LinqKeys"/>). A key comparer is the collection fence's to judge:
+/// one that asks for that equality is dropped, and any other has no translation and is refused (EQ2007),
+/// never dropped.
 /// <para>
 /// The element selector used to be silently ignored — <c>GroupBy(w => w.Length, w => w.ToUpper())</c>
 /// grouped the raw words — which the query-syntax differential (<c>group w.ToUpper() by w.Length</c>
@@ -53,10 +55,13 @@ public class GroupByStrategy : IConversionStrategy
                     resultSelector = context.Converter.ConvertExpression(args[i].Expression);
                     break;
                 default:
-                    context.Report(args[i], ConversionSeverity.Error, "EQ2008",
-                        "GroupBy with a custom key comparer has no JavaScript translation — keys "
-                        + "group by === here. Drop the comparer, or normalize the key inside the "
-                        + "key selector.");
+                    // A key comparer is the collection fence's to judge (#578): one that asks for the
+                    // key type's own equality, which the groups below are found by, is dropped, and any
+                    // other is refused, as a ToDictionary's is. Every comparer was refused here,
+                    // StringComparer.Ordinal included.
+                    if (context.SemanticHelper.GetOperation(args[i].Expression) is not { } comparer)
+                        return context.Unhandled(invocation, "GroupBy with a comparer");
+                    if (comparer.RefusesAsUntranslatable("GroupBy", context)) return invocation.ToString();
                     break;
             }
         }

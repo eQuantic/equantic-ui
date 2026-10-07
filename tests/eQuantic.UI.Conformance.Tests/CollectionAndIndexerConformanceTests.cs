@@ -47,4 +47,41 @@ public class CollectionAndIndexerConformanceTests
         Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
         ConformanceRunner.AssertStatementsSameAsDotNet(statements);
     }
+
+    /// <summary>
+    /// A comparer handed to a LINQ operator that builds a keyed result passes the collection fence's own
+    /// test: one that asks for the default (the key type's own, ordinal strings, null) answers as the
+    /// operator does without it. <c>ToDictionary</c> refused every comparer, <c>StringComparer.Ordinal</c>
+    /// included (EQ1004), <c>GroupBy</c> refused every one too (EQ2008), <c>ToLookup</c> took a comparer
+    /// for an element selector and called it, or had no form at all after one, and <c>Distinct</c> dropped
+    /// it, whatever it asked for (#578).
+    /// </summary>
+    [SkippableTheory]
+    // The row of #578, and the comparers the fence passes: the default's, ordinal strings, and null.
+    [InlineData("var d = new[] { \"a\", \"bb\" }.ToDictionary(w => w, StringComparer.Ordinal); return d[\"bb\"] + \"|\" + d.Count;")]          // bb|2
+    [InlineData("var d = new[] { \"a\", \"bb\" }.ToDictionary(w => w, w => w.Length, StringComparer.Ordinal); return d[\"bb\"] + d[\"a\"];")]   // 3
+    [InlineData("var d = new[] { \"a\", \"bb\" }.ToDictionary(w => w.Length, EqualityComparer<int>.Default); return d[2];")]                  // bb
+    [InlineData("var d = new[] { \"a\", \"bb\" }.ToDictionary(w => w, (IEqualityComparer<string>)null); return d.Count;")]                    // 2
+    // Named and out of order: each selector in its parameter, the comparer dropped.
+    [InlineData("var d = new[] { \"a\", \"bb\" }.ToDictionary(comparer: StringComparer.Ordinal, keySelector: w => w + \"!\"); return d[\"bb!\"];")] // bb
+    [InlineData("var d = new[] { \"a\", \"bb\" }.ToDictionary(comparer: EqualityComparer<int>.Default, elementSelector: w => w + \"?\", keySelector: w => w.Length); return d[2];")] // bb?
+    // A key twice is refused as it is without a comparer.
+    [InlineData("try { new[] { \"a\", \"a\" }.ToDictionary(w => w, StringComparer.Ordinal); return \"built\"; } catch (Exception e) { return e.Message; }")]
+    // ToLookup takes a comparer where it takes an element selector, and after one.
+    [InlineData("var l = new[] { \"a\", \"bb\", \"cc\" }.ToLookup(w => w.Length, EqualityComparer<int>.Default); return string.Join(\",\", l[2]) + \"|\" + l.Count;")] // bb,cc|2
+    [InlineData("var l = new[] { \"a\", \"A\", \"a\" }.ToLookup(w => w, StringComparer.Ordinal); return l.Count + \"|\" + l[\"a\"].Count();")] // 2|2
+    [InlineData("var l = new[] { \"a\", \"bb\", \"cc\" }.ToLookup(w => w.Length, w => w.ToUpper(), EqualityComparer<int>.Default); return string.Join(\",\", l[2]);")] // BB,CC
+    // Distinct, GroupBy in its four shapes, and ToHashSet alike.
+    [InlineData("return new[] { \"a\", \"A\", \"a\" }.Distinct(StringComparer.Ordinal).Count();")]                                          // 2
+    [InlineData("return string.Join(\",\", new[] { 3, 1, 3 }.Distinct(EqualityComparer<int>.Default));")]                                   // 3,1
+    [InlineData("return string.Join(\",\", new[] { \"a\", \"A\", \"a\" }.GroupBy(w => w, StringComparer.Ordinal).Select(g => g.Key + g.Count()));")] // a2,A1
+    [InlineData("return string.Join(\",\", new[] { \"a\", \"bb\", \"cc\" }.GroupBy(w => w.Length, w => w.ToUpper(), EqualityComparer<int>.Default).Select(g => string.Join(\"\", g)));")] // A,BBCC
+    [InlineData("return string.Join(\",\", new[] { \"a\", \"bb\", \"cc\" }.GroupBy(w => w.Length, (k, g) => k + \":\" + g.Count(), EqualityComparer<int>.Default));")] // 1:1,2:2
+    [InlineData("return string.Join(\",\", new[] { \"a\", \"bb\", \"cc\" }.GroupBy(w => w.Length, w => w[0], (k, g) => k + new string(g.ToArray()), EqualityComparer<int>.Default));")] // 1a,2bc
+    [InlineData("return new[] { \"a\", \"A\", \"a\" }.ToHashSet(StringComparer.Ordinal).Count;")]                                           // 2
+    public void ALinqOperatorHandedTheDefaultsComparer_AnswersAsItDoesWithoutOne(string statements)
+    {
+        Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
+        ConformanceRunner.AssertStatementsSameAsDotNet(statements);
+    }
 }

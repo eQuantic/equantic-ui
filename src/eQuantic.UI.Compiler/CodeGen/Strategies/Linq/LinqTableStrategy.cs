@@ -1,5 +1,6 @@
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using Microsoft.CodeAnalysis.Operations;
 using eQuantic.UI.Compiler.CodeGen.Extensions;
 using eQuantic.UI.Compiler.CodeGen.Ir;
 using eQuantic.UI.Compiler.CodeGen.Strategies.Types;
@@ -30,10 +31,12 @@ public class LinqTableStrategy : IExpressionIrStrategy
     {
         if (node is not InvocationExpressionSyntax invocation) return false;
         if (!invocation.TryGetInstanceCall(out _, out var name)) return false;
-        // A ToDictionary of three arguments has no shape of its own: its third is a comparer, which
-        // ConvertIr refuses in the words it refuses the shorter overloads with.
-        if (Template(name.Identifier.Text, invocation.ArgumentList.Arguments.Count) is null
-            && !IsToDictionaryWithAComparer(name.Identifier.Text, invocation.ArgumentList.Arguments.Count)
+        // The shape is the one of the arguments the template takes, a key comparer the fence passes
+        // being dropped. A ToDictionary of three arguments no model binds has no shape of its own: its
+        // third is a comparer, which nothing can judge without a model, and ConvertIr refuses it.
+        var shaped = Shaped(name.Identifier.Text, invocation, context).Count;
+        if (Template(name.Identifier.Text, shaped) is null
+            && !IsToDictionaryWithAComparer(name.Identifier.Text, shaped)
             && name.Identifier.Text != "ToHashSet") return false;
 
         // The SYMBOL decides when there is one; a NAME may decide only where the model cannot be
@@ -51,19 +54,27 @@ public class LinqTableStrategy : IExpressionIrStrategy
 
         if (name.Identifier.Text == "ToHashSet") return ToHashSet(invocation, receiverSyntax, context);
 
+        // A key comparer is the collection fence's to judge (#578): one that asks for what the shape
+        // already does is dropped, and any other is refused, the call written as its own C# text, as
+        // ToHashSet's is. ToDictionary refused every comparer, StringComparer.Ordinal included, and
+        // ToLookup took one for an element selector and called it.
+        foreach (var comparer in KeyComparers(name.Identifier.Text, invocation, context))
+            if (comparer.RefusesAsUntranslatable(name.Identifier.Text, context)) return JsExpr.Opaque(invocation.ToString());
+        var shaped = Shaped(name.Identifier.Text, invocation, context);
+
         var receiver = LinqSource.Ir(receiverSyntax, context);
-        var args = invocation.ArgumentList.Arguments
+        var args = shaped
             .Select(a => LinqSource.Argument(a, invocation, context))
             .ToArray();
 
         var template = Template(name.Identifier.Text, args.Length);
-        if (name.Identifier.Text == "ToDictionary" && ToDictionary(invocation, context) is var (dictionary, refusal))
+        if (name.Identifier.Text == "ToDictionary" && ToDictionary(invocation, args.Length, context) is var (dictionary, refusal))
         {
             if (refusal is not null) return JsExpr.Opaque(context.Unhandled(invocation, refusal));
             template = dictionary;
         }
-        // Only a ToDictionary of three arguments reaches here without a shape, and its third is a
-        // comparer: a call no model binds has nothing to refuse it with but its count.
+        // Only a ToDictionary of three arguments no model binds reaches here without a shape, and its
+        // third is a comparer: a call no model binds has nothing to judge it by but its count.
         if (template is null) return JsExpr.Opaque(context.Unhandled(invocation, "ToDictionary with a comparer"));
         // A lookup groups by the key type's equality, as GroupBy does: by === two equal records
         // were two groups.
@@ -75,8 +86,38 @@ public class LinqTableStrategy : IExpressionIrStrategy
         if (template.Contains("$eq.")) context.UsedHelpers.Add(Eq.Import);
 
         // {0} is the receiver; {1}… the arguments. The writer binds whatever is reused.
-        return JsExpr.Template(BindNamedArguments(template, invocation, context),
+        return JsExpr.Template(BindNamedArguments(template, shaped, invocation, context),
             new[] { receiver }.Concat(args).ToArray(), context.TypeAnnotations);
+    }
+
+    /// <summary>The operators of the table that take a key COMPARER beside their selectors, whose
+    /// overloads with one share their argument counts with the ones with an element selector.</summary>
+    private static bool TakesAKeyComparer(string name) => name is "ToDictionary" or "ToLookup";
+
+    /// <summary>The key comparers a call hands an operator that takes one, as the bound tree passes
+    /// them: each argument that fills an <c>IEqualityComparer&lt;TKey&gt;</c>.</summary>
+    private static IEnumerable<IOperation> KeyComparers(string name, InvocationExpressionSyntax invocation, ConversionContext context) =>
+        TakesAKeyComparer(name) && context.SemanticHelper.GetOperation(invocation) is IInvocationOperation call
+            ? call.Arguments
+                .Where(argument => argument.ArgumentKind != ArgumentKind.DefaultValue && argument.Parameter?.Type.IsEqualityComparer() == true)
+                .Select(argument => argument.Value)
+            : [];
+
+    /// <summary>
+    /// The arguments the template takes, in the order they are written: every one but the key comparer
+    /// of an operator that takes one, which the fence has passed (<see cref="KeyComparers"/>) and which
+    /// asks for what the template already does. <c>ToDictionary(k, comparer)</c> is
+    /// <c>ToDictionary(k)</c>'s shape, where its count made it the shape of <c>ToDictionary(k, e)</c>.
+    /// </summary>
+    private static IReadOnlyList<ArgumentSyntax> Shaped(string name, InvocationExpressionSyntax invocation, ConversionContext context)
+    {
+        var arguments = invocation.ArgumentList.Arguments;
+        if (!TakesAKeyComparer(name) || context.SemanticHelper.GetOperation(invocation) is not IInvocationOperation call) return arguments;
+        var comparers = call.Arguments
+            .Where(argument => argument.Parameter?.Type.IsEqualityComparer() == true)
+            .Select(argument => argument.Syntax)
+            .ToHashSet();
+        return arguments.Where(argument => !comparers.Contains(argument)).ToList();
     }
 
     /// <summary>
@@ -85,11 +126,13 @@ public class LinqTableStrategy : IExpressionIrStrategy
     /// <c>Aggregate(func: f, seed: s)</c> reduced with the seed as the function and
     /// <c>ToDictionary(elementSelector: e, keySelector: k)</c> keyed by the element. Each parameter
     /// hole is pointed at the argument that fills it, and the arguments stay in the order C#
-    /// evaluates them, which the template writer keeps.
+    /// evaluates them, which the template writer keeps. <paramref name="arguments"/> are the ones the
+    /// template takes (<see cref="Shaped"/>), a dropped comparer, which is always the last parameter,
+    /// filling no hole.
     /// </summary>
-    private static string BindNamedArguments(string template, InvocationExpressionSyntax invocation, ConversionContext context)
+    private static string BindNamedArguments(string template, IReadOnlyList<ArgumentSyntax> arguments,
+        InvocationExpressionSyntax invocation, ConversionContext context)
     {
-        var arguments = invocation.ArgumentList.Arguments;
         if (arguments.All(argument => argument.NameColon is null)) return template;
         if (context.SemanticHelper.GetSymbol(invocation) is not IMethodSymbol { MethodKind: MethodKind.ReducedExtension } method)
             return template;
@@ -117,24 +160,23 @@ public class LinqTableStrategy : IExpressionIrStrategy
     /// <summary>
     /// <c>ToDictionary</c> by the runtime, which refuses a null key and a key twice as .NET does, into
     /// the dictionary class a constructed one is, its keys found by value where the key type's default
-    /// comparer finds them so (<see cref="ElementEquality"/>). A comparer has no form
-    /// here and is refused, and so is an enum with aliases, whose two names for one value are two keys
-    /// on this side. Null is a call no model binds, which keeps the table's shape.
+    /// comparer finds them so (<see cref="ElementEquality"/>). A comparer reaches here only when it asks
+    /// for that, the fence having refused any other, and is dropped (#578); an enum with aliases is
+    /// refused, whose two names for one value are two keys on this side. <paramref name="selectors"/> is
+    /// how many selectors the call passes. Null is a call no model binds, which keeps the table's shape.
     /// </summary>
-    private static (string? Template, string? Refusal)? ToDictionary(InvocationExpressionSyntax invocation,
+    private static (string? Template, string? Refusal)? ToDictionary(InvocationExpressionSyntax invocation, int selectors,
         ConversionContext context)
     {
-        if (context.SemanticHelper.GetSymbol(invocation) is not IMethodSymbol { TypeArguments: [_, var key, ..] } method)
+        if (context.SemanticHelper.GetSymbol(invocation) is not IMethodSymbol { TypeArguments: [_, var key, ..] })
             return null;
-        if (method.Parameters.Any(parameter => parameter.Type.Name == "IEqualityComparer"))
-            return (null, "ToDictionary with a comparer");
         if ((key.UnwrapNullable() ?? key) is INamedTypeSymbol { TypeKind: TypeKind.Enum } keyEnum && LinqKeys.HasAliases(keyEnum))
             return (null, $"ToDictionary keyed by {key.ToDisplayString()}, an enum with aliases");
-        var selectors = invocation.ArgumentList.Arguments.Count == 2 ? "{1}, {2}" : "{1}";
+        var holes = selectors == 2 ? "{1}, {2}" : "{1}";
         var byValue = ElementEquality.Of(key) is { } equality
-            ? invocation.ArgumentList.Arguments.Count == 2 ? $", {equality}" : $", null, {equality}"
+            ? selectors == 2 ? $", {equality}" : $", null, {equality}"
             : "";
-        return ($"{Eq.LinqToDictionary}({{0}}, {selectors}{byValue})", null);
+        return ($"{Eq.LinqToDictionary}({{0}}, {holes}{byValue})", null);
     }
 
     private static bool IsToDictionaryWithAComparer(string name, int argCount) => name == "ToDictionary" && argCount == 3;

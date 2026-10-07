@@ -1,6 +1,7 @@
 using System.Linq;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using eQuantic.UI.Compiler.CodeGen.Extensions;
 
 namespace eQuantic.UI.Compiler.CodeGen.Strategies.Linq;
 
@@ -41,6 +42,17 @@ public class DistinctStrategy : IConversionStrategy
     {
         var invocation = (InvocationExpressionSyntax)node;
         var memberAccess = (MemberAccessExpressionSyntax)invocation.Expression;
+
+        // A comparer is the collection fence's to judge (#578): one that asks for the element type's own
+        // equality, which the shapes below already are, is dropped, and any other is refused, the call
+        // written as its own C# text, as ToHashSet's is. It was dropped whatever it asked for, so
+        // `Distinct(StringComparer.OrdinalIgnoreCase)` kept "a" and "A" in the browser alone.
+        foreach (var argument in invocation.ArgumentList.Arguments)
+        {
+            if (context.SemanticHelper.GetOperation(argument.Expression) is not { } comparer)
+                return context.Unhandled(invocation, "Distinct with a comparer");
+            if (comparer.RefusesAsUntranslatable("Distinct", context)) return invocation.ToString();
+        }
 
         var caller = LinqSource.Text(memberAccess.Expression, context);
 
