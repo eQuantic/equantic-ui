@@ -40,7 +40,9 @@ the five defects is a region, or a layout, that disagrees with what is drawn.
 - **A box's insets** are its padding and its border on the sides it draws, one helper read by the
   measure, the reflow and the min-content width.
 - **The stand-in charges every space**: between two words, at the paragraph's ends, and a run that is
-  only a space. A break drops the spaces it falls on.
+  only a space. A break drops the spaces it falls on. It stands in for the shells' measurers, and
+  CoreText's typographic width counts a trailing space where CSS hangs it, so a plain text that ends
+  in a space measures that space on Photon and not on the web.
 
 ## Fences
 
@@ -49,3 +51,9 @@ the five defects is a region, or a layout, that disagrees with what is drawn.
   into this change.
 - A region a `Draggable` moves, mid-drag, stays at its layout rect: a tap there is cancelled by the
   slop rule before it lands, as the emit's own comment says.
+- A clip under a rotation is the box around its corners: a scroll view inside a rotated box admits a
+  press in the corners of that box, outside its drawn viewport. Nothing in the SDK rotates a scroll
+  view, and a clip of any shape is a change of its own.
+- A state's `BorderWidth` (a focus ring drawn as a thicker border) draws over the content on Photon,
+  which keeps the base border's inset, where the web reflows the content inside it. The layout reads
+  the box's declared style, as it does for every member a state changes.
