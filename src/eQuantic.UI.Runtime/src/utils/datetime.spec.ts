@@ -185,6 +185,13 @@ describe('DateTime — the zone a text writes (#606)', () => {
     expect(dateTime.fromJson(local.toJSON()).ticks).toBe(local.ticks);
   });
 
+  it('refuses a zone past fourteen hours and text after the zone, as .NET does', () => {
+    expect(() => dateTime.parse('2026-07-01T12:00:00+15:00')).toThrow();
+    expect(() => dateTime.parse('2026-07-01T12:00:00Zjunk')).toThrow();
+    expect(() => dateTime.fromJson('2026-07-01T12:00:00+14:01')).toThrow();
+    expect(dateTime.fromJson('2026-07-01T12:00:00+14:00').kind).toBe('local');
+  });
+
   it('moves a written zone to the local time on Parse, as .NET does', () => {
     const parsed = dateTime.parse('2026-07-01T12:00:00Z');
     expect(parsed.kind).toBe('local');

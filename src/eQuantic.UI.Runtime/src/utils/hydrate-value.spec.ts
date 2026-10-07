@@ -29,6 +29,12 @@ describe('hydrateValue', () => {
     expect((result as DateTime).toString()).toBe('01/15/2024 09:30:00');
   });
 
+  it('restores a UTC DateTime field as UTC, its clock time kept (#606)', () => {
+    const result = hydrateValue(dateTime.of(1, 1, 1), '2024-01-15T09:30:00Z') as DateTime;
+    expect(result.kind).toBe('utc');
+    expect(result.toString()).toBe('01/15/2024 09:30:00');
+  });
+
   it('restores a TimeSpan field from its "c" wire string', () => {
     const result = hydrateValue(timeSpan.zero, '1.01:00:00');
     expect(result).toBeInstanceOf(TimeSpan);

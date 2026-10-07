@@ -733,16 +733,21 @@ export const dateTime: DateTimeFactory = {
 };
 
 /** An ISO-8601 clock time (the wire form, `yyyy-MM-dd[Thh:mm:ss[.fffffff]]`) and the zone written
- * after it: `Z`, an offset in ticks, or nothing. */
+ * after it: `Z`, an offset in ticks, or nothing. Nothing may follow the zone, and an offset past
+ * fourteen hours or with a minute past 59 is no zone, so the text is refused as .NET refuses it,
+ * where `Zjunk` and `+15:00` were read (found by review, #606). */
 function readIso(text: string): { ticks: bigint; zone: 'utc' | bigint | null } | null {
-  const m = /^(\d{4})-(\d{2})-(\d{2})(?:[T ](\d{2}):(\d{2}):(\d{2})(?:\.(\d+))?)?\s*(Z|[+-]\d{2}:?\d{2})?/.exec(text);
+  const m = /^(\d{4})-(\d{2})-(\d{2})(?:[T ](\d{2}):(\d{2}):(\d{2})(?:\.(\d+))?)?\s*(Z|[+-]\d{2}:?\d{2})?\s*$/.exec(text);
   if (!m) return null;
   const frac = m[7] ? BigInt(m[7].padEnd(7, '0').slice(0, 7)) : 0n;
   const ticks = fromComponents(+m[1], +m[2], +m[3], +(m[4] ?? 0), +(m[5] ?? 0), +(m[6] ?? 0)).ticks + frac;
   if (m[8] === undefined) return { ticks, zone: null };
   if (m[8] === 'Z') return { ticks, zone: 'utc' };
   const digits = m[8].slice(1).replace(':', '');
-  const offset = BigInt(digits.slice(0, 2)) * TICKS_PER_HOUR + BigInt(digits.slice(2)) * TICKS_PER_MINUTE;
+  const hours = Number(digits.slice(0, 2));
+  const minutes = Number(digits.slice(2));
+  if (minutes > 59 || hours * 60 + minutes > 14 * 60) return null;
+  const offset = BigInt(hours) * TICKS_PER_HOUR + BigInt(minutes) * TICKS_PER_MINUTE;
   return { ticks, zone: m[8][0] === '-' ? -offset : offset };
 }
 
