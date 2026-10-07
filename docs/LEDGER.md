@@ -1599,8 +1599,13 @@ record of a release, the wiki's Upgrading page is the distillate.
   differently on each target; and the whole documentation was measured on every build. Copilot's
   first round found three more: the documentation ran out of the view where the rows just fitted,
   and now takes only the room they leave; a list of providers the parent changed in place never
-  handed what it gained; and turning an editor read-only left its list open. Proposed and archived
-  through OpenSpec (`openspec/specs/code-completion`, `openspec/specs/code-editor`).
+  handed what it gained; and turning an editor read-only left its list open. Its second round found
+  three in what it had not read before: a press under the code was measured from the last line, so a
+  diff's fillers after it went to the end instead of to that line; a row was cut by UTF-16 units,
+  splitting an emoji and leaving wide characters uncut, and is now cut by the cells the code's grid
+  gives each text element; and the editor took its providers out by equality, so one the app added
+  that equalled the editor's went in its place. Proposed and archived through OpenSpec
+  (`openspec/specs/code-completion`, `openspec/specs/code-editor`).
 
 ## Retired documents
 

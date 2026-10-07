@@ -303,8 +303,8 @@ none, and the rows SHALL NOT yield to it.
 
 A row SHALL show the entry's kind, its label with the characters the word matched marked, and its
 detail, and SHALL be named by its label and its detail. A row longer than the list SHALL cut its
-detail before its label, each with an ellipsis, by the code face's columns, and its name SHALL keep
-both whole. The selected entry's documentation, once its provider resolved it, SHALL show with the list,
+detail before its label, each with an ellipsis, by the cells the code's grid gives its text elements
+(a wide character or an emoji takes two) and between two of them, and its name SHALL keep both whole. The selected entry's documentation, once its provider resolved it, SHALL show with the list,
 laid out only as far as it shows.
 
 #### Scenario: Three letters of Column
@@ -323,6 +323,13 @@ laid out only as far as it shows.
   list, are listed
 - **THEN** the long label is cut with an ellipsis and its detail is not drawn, `Column`'s detail is cut
   with an ellipsis, and the long row's name still reads `<label>, string`
+
+#### Scenario: An emoji at the cut, and wide characters
+
+- **WHEN** a label whose sixtieth cell falls inside an emoji, and a label of forty wide characters, are
+  listed
+- **THEN** each is cut with an ellipsis before the text element that does not fit, no half of a
+  surrogate pair is drawn, and neither takes more than the list's sixty columns
 
 #### Scenario: The selected entry's documentation
 
@@ -372,8 +379,8 @@ announce as options after the code field, the selected one selected.
 words and the document's; an empty list, nothing. A read-only editor SHALL complete nothing, and an
 editor turned read-only SHALL close the list it shows and drop an answer still on its way. The editor
 SHALL hand a list of the same providers to its completion only once, comparing the providers rather than
-the list, so a list changed in place hands what it gained, and SHALL take out of it only the providers
-it put in.
+the list, so a list changed in place hands what it gained, and SHALL take out of it only the very
+providers it put in, by reference.
 
 #### Scenario: A new C# editor
 
@@ -400,6 +407,12 @@ it put in.
 
 - **WHEN** a parent adds a provider to the list it handed the editor, and rebuilds it with that list
 - **THEN** the completion's providers are the list's, the one it gained included
+
+#### Scenario: A provider that equals the editor's
+
+- **WHEN** an app adds a provider to `Editor.Completion.Providers` that equals the one the editor was
+  given, and the parent rebuilds the editor with no providers
+- **THEN** the app's provider stays, and the editor's is the one taken out
 
 #### Scenario: Turned read-only while the list shows
 
