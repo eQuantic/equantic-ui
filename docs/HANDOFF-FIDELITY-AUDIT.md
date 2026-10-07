@@ -3263,7 +3263,7 @@ the pill's 40 down.
 
 - **Component**: `src/eQuantic.UI.Components/Switch.cs`
 - **Handoff**: "Toggle: thumb slides Base 200ms standard + track crossfades."
-- **Code**: The two ends are rendered as two different trees (Positioned start vs Positioned end) with no tween between them, and no crossfade on the track fill — the component's doc names this as its fence, deferred to the animation system. Switch.cs:12, :74-76. (The drag RELEASE glide the block asks for does exist: draggable.ts:19 `const GLIDE_MS = 200;` applied at draggable.ts:110.)
+- **Code**: The two ends are rendered as two different trees (Positioned start vs Positioned end) with no tween between them, and no crossfade on the track fill — the component's doc names this as its fence, deferred to the animation system. Switch.cs:12, :74-76. (The drag RELEASE glide the block asks for does exist: the lowering declares it beside the rest offset, WebLoweringVisitor.Interaction.cs:815 `var glide = $"translate {Motion.BaseMs}ms";` and its twin at lowering.ts:1117, and the release hands the surface back to that markup at draggable.ts:136, `handBack`.)
 - **Evidence**:
 
   ```
