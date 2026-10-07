@@ -89,6 +89,32 @@ describe('scrolled pinned headers', () => {
     expect(scrolled(bar)).toBe(true);
   });
 
+  // A horizontal ScrollView lowers to `overflow-x: auto` and `overflow-y: hidden`. It is the surface
+  // `position: sticky` pins to, and Photon's nearest scroll view, and it never scrolls along the axis a
+  // header pins on (found by Copilot on #688).
+  it('is never scrolled inside a horizontal scroller, whatever the page under it does', async () => {
+    const bar = header();
+    const row = document.createElement('div');
+    row.style.overflowX = 'auto';
+    row.style.overflowY = 'hidden';
+    row.append(bar);
+    document.body.append(row);
+
+    await scrollPageTo(300);
+    expect(scrolled(bar)).toBe(false);
+  });
+
+  it('is decided by a box that only clips, never: it is not a surface', async () => {
+    const bar = header();
+    const card = document.createElement('div');
+    card.style.overflow = 'hidden';
+    card.append(bar);
+    document.body.append(card);
+
+    await scrollPageTo(300);
+    expect(scrolled(bar), 'the page is its surface').toBe(true);
+  });
+
   it('sets a header mounted on a page that is already scrolled, without a scroll event', async () => {
     Object.defineProperty(window, 'scrollY', { value: 120, configurable: true });
     const bar = header();
