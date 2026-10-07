@@ -94,8 +94,9 @@ public class HitSlopTests
     {
         var block = Gate(pointer);
 
-        block.Should().Contain(":where(.eq-pressable)>*{position:relative;}",
-            "the content is lifted to the target's level, where tree order puts it on top");
+        block.Should().Contain(":where(.eq-pressable)>*,:where(.eq-lift){position:relative;}",
+            "the content is lifted to the target's level, where tree order puts it on top, and so is "
+            + "the content behind a child that draws no box (#622)");
         Css().Should().NotContain(".eq-pressable::after",
             "a target that comes after the content in tree order paints, and is hit, over it");
     }

@@ -530,6 +530,7 @@ internal sealed partial class WebLoweringVisitor
                 + (pressable.PressedBackground is not null ? " eq-press-fill" : "")
                 + (_simulated.HasFlag(SimulatedState.Pressed) ? " eq-pressed" : "")
                 + (_simulated.HasFlag(SimulatedState.Focused) ? " eq-focused" : "");
+            if (child is not null) LiftThroughBoxlessWrappers(child);
             if (pressable.PressedBackground is { } pressedFill)
             {
                 element.Style!.CustomProperties = new Dictionary<string, string>
@@ -737,6 +738,30 @@ internal sealed partial class WebLoweringVisitor
         }
         return child;
     }
+
+    /// <summary>
+    /// The hit slop lies UNDER a control's content, and the stylesheet lifts the content above it by
+    /// positioning the pressable's child (TokenCss.HitSlop). A child that draws no box of its own
+    /// (<c>display: contents</c>: an InView, an Adaptive's arms, a light and dark Image) cannot be
+    /// positioned, so its content stayed under the slop: under a mouse the centre of a card inside
+    /// <c>Pressable(InView(card))</c> hit the pressable, and the card never matched <c>:hover</c>
+    /// (#622). The lift goes THROUGH such wrappers, any chain of them, to the first descendants that
+    /// draw a box, which carry <c>eq-lift</c>. The TypeScript twin marks the same elements.
+    /// </summary>
+    private static void LiftThroughBoxlessWrappers(HtmlElement child)
+    {
+        if (!DrawsNoBox(child)) return;
+        foreach (var inner in child.Children.OfType<HtmlElement>())
+        {
+            if (DrawsNoBox(inner)) LiftThroughBoxlessWrappers(inner);
+            else inner.ClassName = string.IsNullOrEmpty(inner.ClassName) ? "eq-lift" : $"eq-lift {inner.ClassName}";
+        }
+    }
+
+    /// <summary>An element that lays out as its children and draws no box: <c>display: contents</c>,
+    /// or an Adaptive arm's gate, whose rules make it contents in its range and nothing outside it.</summary>
+    private static bool DrawsNoBox(HtmlElement element) =>
+        element.Style?.Display == Display.Contents || element is IAdaptiveGated { AdaptiveGate: not null };
 
     /// <summary>
     /// A continuous gesture: the child carries its RULES as data, and one document-level controller

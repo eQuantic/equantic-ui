@@ -48,6 +48,7 @@ import {
   gateExpandedFrom,
   gateMediumFrom,
   hashDeclaration,
+  isAdaptiveGate,
   mergeAtomicDeclaration,
   replaceAtomicDeclaration,
 } from './style-atomizer';
@@ -2903,6 +2904,28 @@ function fills(node: VisualNodeValue): { width: boolean; height: boolean } {
   }
 }
 
+/**
+ * C# twin (#622): the hit slop lies UNDER a control's content, and the stylesheet lifts the content
+ * above it by positioning the pressable's child. A child that draws no box (`display: contents`: an
+ * InView, an Adaptive's arms, a light and dark Image) cannot be positioned, so the lift goes THROUGH
+ * any chain of them to the first descendants that draw a box, which carry `eq-lift`.
+ */
+function liftThroughBoxlessWrappers(child: HtmlNode): void {
+  if (!drawsNoBox(child)) return;
+  for (const inner of child.children ?? []) {
+    if (typeof inner !== 'object' || inner === null || !('attributes' in inner)) continue;
+    if (drawsNoBox(inner)) liftThroughBoxlessWrappers(inner);
+    else prependClass(inner, 'eq-lift');
+  }
+}
+
+/** An element that lays out as its children and draws no box: `display: contents`, or an Adaptive
+ * arm's gate, whose rules make it contents in its range and nothing outside it (C# twin). */
+function drawsNoBox(node: HtmlNode): boolean {
+  if (atomicDeclaration(node, 'display') === 'contents') return true;
+  return (node.attributes['class'] ?? '').split(' ').some((cls) => isAdaptiveGate(cls));
+}
+
 function lowerPressable(
   pressable: PressableNode,
   context: LoweringContext,
@@ -3027,6 +3050,7 @@ function lowerPressable(
       const existing = node.attributes['style'];
       node.attributes['style'] = existing ? `${existing}; ${tail}` : tail;
     }
+    if (child) liftThroughBoxlessWrappers(child);
   }
 
   if (child) node.children.push(child);

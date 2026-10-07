@@ -344,6 +344,11 @@ function gateCondition(gate: string): { media: string; shownOutside: boolean } |
   return null;
 }
 
+/** Whether a class is an Adaptive arm's gate (`eq-vc600`, `eq-vm600-840`, `eq-vx840`). */
+export function isAdaptiveGate(className: string): boolean {
+  return gateCondition(className) !== null;
+}
+
 /** The gate's rules, derived from its NAME (the C# AdaptiveGates.Css twin: joined, the same blob). */
 export function adaptiveGateRules(gate: string): string[] {
   const condition = gateCondition(gate);
