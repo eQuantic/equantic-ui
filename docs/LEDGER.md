@@ -1876,6 +1876,13 @@ record of a release, the wiki's Upgrading page is the distillate.
   undefined element, which eqc writes for `Array.Resize` and a vocabulary struct's `default`, came back
   with nulls, so it keeps its initializer. Proposed and archived through OpenSpec
   (`openspec/specs/hot-reload`).
+- **2026-10-07 · A Photon Text takes the width its parent decides**: Photon measured a Text at its
+  own width in every parent, so a centred line in a sized Box or a stretching Column sat at the start,
+  centred inside a box as wide as itself ([#659](https://github.com/eQuantic/equantic-ui/issues/659),
+  found while fixing #495). A Text takes the width a Box, a stretching Row or Column and the page
+  decide, as a block does on the web and as Flutter's does under a tight constraint, keeps the height
+  of its lines, and still hugs inside a button. Proposed and archived through OpenSpec
+  (`openspec/specs/layout`).
 
 ## Retired documents
 
