@@ -1,4 +1,6 @@
 #nullable enable
+eQuantic.UI.Primitives.BoxStyle.Pressed.get -> eQuantic.UI.Primitives.StyleDiff?
+eQuantic.UI.Primitives.BoxStyle.Pressed.init -> void
 eQuantic.UI.Primitives.HydratesTypeArgumentAttribute
 eQuantic.UI.Primitives.HydratesTypeArgumentAttribute.HydratesTypeArgumentAttribute() -> void
 eQuantic.UI.Primitives.IServerEvents
