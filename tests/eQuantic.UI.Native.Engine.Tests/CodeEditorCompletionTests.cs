@@ -136,9 +136,8 @@ public class CodeEditorCompletionTests
 
     /// <summary>
     /// From the list's left edge to its labels: the frame's hairline, the row's padding, the letter's
-    /// cell a line wide and the gap after it. The web lays the labels there. Photon lays a bordered
-    /// box's child over its border (#629), so until that is fixed its labels stand one border left of
-    /// the word, and the placement, which is the component's, is what is pinned here.
+    /// cell a line wide and the gap after it. Both targets lay the labels there, now that Photon keeps
+    /// a bordered box's child inside its border (#629).
     /// </summary>
     private static float LabelInset(CodeEditor editor) => 1 + Space.S2 + editor.Editor.Grid.Cell.Height + Space.S1;
 
@@ -181,11 +180,12 @@ public class CodeEditorCompletionTests
         offered.Should().NotBeNull();
         var word = WordOnScreen(frame, editor);
         var rows = Shown(host).Count;
-        // The list's height on the web: its rows, its padding and its frame. Photon's frame comes out
-        // two borders short until #629, so the top is what is pinned.
+        // The list's height on both targets: its rows, its padding and its frame (#629).
         var height = rows * grid.Cell.Height + 2 * (Space.S1 + 1);
         offered!.Value.Y.Should().BeApproximately(word.Y - height, 0.5f,
-            "with no room below, the list ends at the top of the line it completes");
+            "with no room below, the list stands its own height above the line");
+        (offered.Value.Y + offered.Value.Height).Should().BeApproximately(word.Y, 0.5f,
+            "and ends at the top of the line it completes, its frame counted");
     }
 
     /// <summary>A word typed near the viewport's right edge keeps its list inside it.</summary>
