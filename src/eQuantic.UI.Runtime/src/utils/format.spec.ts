@@ -218,13 +218,13 @@ describe('a date in a time zone that skips or repeats an hour', () => {
   it('prints its own parts, and U moves it to UTC as .NET does', () => {
     process.env.TZ = 'America/New_York';
     installCulture('', '', {});
-    const gap = dateTime(2026, 3, 8, 2, 30, 0);
+    const gap = dateTime.of(2026, 3, 8, 2, 30, 0);
     expect(format(gap, 'HH:mm')).toBe('02:30');
     expect(format(gap, 's')).toBe('2026-03-08T02:30:00');
     expect(format(gap, 'o')).toBe('2026-03-08T02:30:00.0000000');
     expect(format(gap, 'F')).toBe('Sunday, 08 March 2026 02:30:00');
     expect(format(gap, 'U')).toBe('Sunday, 08 March 2026 07:30:00');
-    expect(format(dateTime(2026, 7, 1, 12, 0, 0), 'U')).toBe('Wednesday, 01 July 2026 16:00:00');
+    expect(format(dateTime.of(2026, 7, 1, 12, 0, 0), 'U')).toBe('Wednesday, 01 July 2026 16:00:00');
   });
 
   // A repeated hour is standard time to .NET's ToUniversalTime, where the Date constructor took the
@@ -232,10 +232,10 @@ describe('a date in a time zone that skips or repeats an hour', () => {
   it('reads the hour a fall-back repeats as standard time for U, as .NET does', () => {
     process.env.TZ = 'America/New_York';
     installCulture('', '', {});
-    expect(format(dateTime(2026, 11, 1, 1, 30, 0), 'U')).toBe('Sunday, 01 November 2026 06:30:00');
-    expect(format(dateTime(2026, 11, 1, 0, 59, 59), 'U')).toBe('Sunday, 01 November 2026 04:59:59');
-    expect(format(dateTime(2026, 11, 1, 2, 0, 0), 'U')).toBe('Sunday, 01 November 2026 07:00:00');
-    expect(format(dateTime(2026, 11, 1, 1, 30, 0), 'HH:mm')).toBe('01:30');
+    expect(format(dateTime.of(2026, 11, 1, 1, 30, 0), 'U')).toBe('Sunday, 01 November 2026 06:30:00');
+    expect(format(dateTime.of(2026, 11, 1, 0, 59, 59), 'U')).toBe('Sunday, 01 November 2026 04:59:59');
+    expect(format(dateTime.of(2026, 11, 1, 2, 0, 0), 'U')).toBe('Sunday, 01 November 2026 07:00:00');
+    expect(format(dateTime.of(2026, 11, 1, 1, 30, 0), 'HH:mm')).toBe('01:30');
   });
 });
 
