@@ -1608,6 +1608,14 @@ record of a release, the wiki's Upgrading page is the distillate.
   1970 toward the epoch; it answers a BigInt cut as .NET cuts it now. Found on the way: the date
   constructors past the second ([#606](https://github.com/eQuantic/equantic-ui/issues/606)).
   Proposed and archived through OpenSpec (`openspec/specs/runtime-dates`).
+- **2026-10-07 · An exception's message is composed as .NET composes it**: a framework exception's
+  arguments were read by position, so `new ArgumentNullException(nameof(x)).Message` was the
+  parameter's name, a parameter's name never reached a message and a constructor with no message gave
+  an empty one ([#558](https://github.com/eQuantic/equantic-ui/issues/558)). eqc binds them by their
+  parameters, and the runtime composes the message .NET writes: the type's own text where none was
+  given, ` (Parameter 'x')`, and the actual value and a disposed object's name on lines of their own,
+  with `ParamName`, `ActualValue` and `InnerException` reading what the constructor took. Proposed and
+  archived through OpenSpec (`openspec/specs/transpiler-exceptions`).
 
 ## Retired documents
 
