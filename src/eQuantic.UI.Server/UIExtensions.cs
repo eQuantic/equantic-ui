@@ -344,9 +344,11 @@ public static class UIExtensions
         endpoints.MapGetAndHead("/_equantic/{name}.js", async context =>
         {
             var name = (string?)context.GetRouteValue("name");
-            var path = Path.Combine(context.RequestServices.GetRequiredService<IWebHostEnvironment>().WebRootPath, "_equantic", $"{name}.js");
+            var path = AssetPaths.Resolve(
+                Path.Combine(context.RequestServices.GetRequiredService<IWebHostEnvironment>().WebRootPath, "_equantic"),
+                name, ".js");
 
-            if (File.Exists(path))
+            if (path is not null && File.Exists(path))
             {
                 context.Response.ContentType = "application/javascript";
                 // Hot reload rewrites fixed-name bundles in place — immutable caching would pin the
@@ -363,8 +365,9 @@ public static class UIExtensions
             {
                 context.Response.StatusCode = 404;
                 // Try finding it in the local directory (Dev scenario)
-                var localPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "_equantic", $"{name}.js");
-                 if (File.Exists(localPath))
+                var localPath = AssetPaths.Resolve(
+                    Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "_equantic"), name, ".js");
+                if (localPath is not null && File.Exists(localPath))
                 {
                     context.Response.ContentType = "application/javascript";
                     await context.Response.SendFileAsync(localPath);
@@ -386,10 +389,10 @@ public static class UIExtensions
             var webRoot = context.RequestServices.GetRequiredService<IWebHostEnvironment>().WebRootPath;
             var candidates = new[]
             {
-                Path.Combine(webRoot, "_equantic", $"{name}.js.map"),
-                Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "_equantic", $"{name}.js.map"),
+                AssetPaths.Resolve(Path.Combine(webRoot, "_equantic"), name, ".js.map"),
+                AssetPaths.Resolve(Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "_equantic"), name, ".js.map"),
             };
-            var mapPath = candidates.FirstOrDefault(File.Exists);
+            var mapPath = candidates.FirstOrDefault(candidate => candidate is not null && File.Exists(candidate));
 
             if (mapPath != null)
             {
