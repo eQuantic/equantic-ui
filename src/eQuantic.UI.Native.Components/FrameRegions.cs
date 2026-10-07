@@ -65,4 +65,17 @@ internal sealed class FrameRegions
         (IReadOnlyList<LiveRegionMark>?)_lives ?? Array.Empty<LiveRegionMark>();
 
     private List<LiveRegionMark>? _lives;
+
+    /// <summary>
+    /// The regions registered under a transform, each with what turns a point back into its own
+    /// space (#513). LAZY like the live regions, and for the same ceiling: a frame where nothing
+    /// interactive is transformed, which is nearly every frame, allocates nothing for it.
+    /// </summary>
+    public List<TransformedRegion> Transformed => _transformed ??= [];
+
+    /// <summary>What the frame reads back, without creating the list to find out it is empty.</summary>
+    public IReadOnlyList<TransformedRegion> TransformedOrEmpty =>
+        (IReadOnlyList<TransformedRegion>?)_transformed ?? Array.Empty<TransformedRegion>();
+
+    private List<TransformedRegion>? _transformed;
 }

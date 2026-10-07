@@ -1665,7 +1665,7 @@ public sealed class PhotonHost
         {
             for (var i = regions.Count - 1; i >= 0; i--)
             {
-                if (!regions[i].Bounds.Contains(new Point(x, y))) continue;
+                if (!Covers(regions, i, regions[i].Bounds, new Point(x, y))) continue;
                 chainPaths.Add(regions[i].Path);
                 chainNodes.Add(regions[i].Node);
             }
@@ -1728,7 +1728,7 @@ public sealed class PhotonHost
         for (var i = regions.Count - 1; i >= 0; i--)
         {
             var region = regions[i];
-            if (!region.Bounds.Contains(new Point(x, y))) continue;
+            if (!Covers(regions, i, region.Bounds, new Point(x, y))) continue;
             if (!_scrolls.ScrollBy(region.Path, delta, region.MaxOffset, region.Fallback)) return false;
             NeedsRender = true;
             return true;
@@ -1758,7 +1758,7 @@ public sealed class PhotonHost
         var cursors = _lastFrame.CursorRegions;
         for (var i = cursors.Count - 1; i >= 0; i--)
         {
-            if (!cursors[i].Bounds.Contains(point)) continue;
+            if (!Covers(cursors, i, cursors[i].Bounds, point)) continue;
             return cursors[i].Cursor switch
             {
                 PointerCursor.Pointer => CursorShape.Pointer,
@@ -1780,7 +1780,7 @@ public sealed class PhotonHost
         if (HitAt(hits, point) is var hit and >= 0)
             return hits[hit].Node.Disabled ? CursorShape.NotAllowed : CursorShape.Pointer;
         for (var i = fields.Count - 1; i >= 0; i--)
-            if ((fields[i].Visible ?? fields[i].Bounds).Contains(point))
+            if (Covers(fields, i, fields[i].Visible ?? fields[i].Bounds, point))
                 return fields[i].Entry.Disabled ? CursorShape.NotAllowed : CursorShape.Text;
         // Code you place a caret in is a field too, and was the one kind this list forgot: the
         // pointer stayed an arrow over an editor, where every editor shows the beam. A read-only
@@ -1790,10 +1790,10 @@ public sealed class PhotonHost
         {
             // Over what a surface offers, where no row is, the pointer is the list's and not the code's.
             if (code[i].Offered is { } offered && offered.Contains(point)) return CursorShape.Default;
-            if ((code[i].Visible ?? code[i].Bounds).Contains(point)) return CursorShape.Text;
+            if (Covers(code, i, code[i].Visible ?? code[i].Bounds, point)) return CursorShape.Text;
         }
         for (var i = links.Count - 1; i >= 0; i--)
-            if (links[i].Bounds.Contains(point)) return CursorShape.Pointer;
+            if (Covers(links, i, links[i].Bounds, point)) return CursorShape.Pointer;
 
         return CursorShape.Default;
     }
@@ -1850,7 +1850,7 @@ public sealed class PhotonHost
         var dragRegions = _lastFrame.DragRegions;
         for (var i = dragRegions.Count - 1; i >= 0; i--)
         {
-            if (!dragRegions[i].Bounds.Contains(point)) continue;
+            if (!Covers(dragRegions, i, dragRegions[i].Bounds, point)) continue;
             // The surface's own extent along the axis — what a NORMALIZED gesture divides by.
             var horizontalSurface = dragRegions[i].Node is Draggable { Axis: DragAxis.Horizontal };
             var extent = horizontalSurface ? dragRegions[i].Bounds.Width : dragRegions[i].Bounds.Height;
@@ -1867,7 +1867,7 @@ public sealed class PhotonHost
             for (var i = scrollRegions.Count - 1; i >= 0; i--)
             {
                 var region = scrollRegions[i];
-                if (!region.Bounds.Contains(point) || region.MaxOffset <= 0) continue;
+                if (!Covers(scrollRegions, i, region.Bounds, point) || region.MaxOffset <= 0) continue;
                 var along = region.Axis == ScrollAxis.Horizontal ? x : y;
                 _pan = (region.Path, region.Axis, region.MaxOffset, along,
                     _scrolls.Get(region.Path) ?? region.Fallback, along, _lastTimeMs, 0, false);
@@ -1883,7 +1883,7 @@ public sealed class PhotonHost
         for (var i = HitAt(regions, point); i >= 0; i--)
         {
             var region = regions[i];
-            if (!region.Bounds.Contains(point)) continue;
+            if (!Covers(regions, i, region.Bounds, point)) continue;
             if (region.Node.Disabled || region.Node.OnPressed is null)
             {
                 // INERT — disabled, or enabled with nothing to run (a Button used as a Menu's
@@ -1930,7 +1930,7 @@ public sealed class PhotonHost
         var fields = _lastFrame.TextRegions;
         for (var i = fields.Count - 1; i >= 0; i--)
         {
-            if (!(fields[i].Visible ?? fields[i].Bounds).Contains(point)) continue;
+            if (!Covers(fields, i, fields[i].Visible ?? fields[i].Bounds, point)) continue;
             BeginEditing(fields[i], x);
             // Double-click: the word under the point. Triple: everything. The platform counts the
             // clicks (its double-click interval is a system setting, not ours to guess).
@@ -1953,7 +1953,7 @@ public sealed class PhotonHost
                 _pressSwallowed = true;
                 return true;
             }
-            if (!(surfaces[i].Visible ?? surfaces[i].Bounds).Contains(point)) continue;
+            if (!Covers(surfaces, i, surfaces[i].Visible ?? surfaces[i].Bounds, point)) continue;
             BeginCodeEditing(surfaces[i]);
             // What the press MEANS — a caret, a word, a line, a shift-extended selection — is the
             // model's to decide. The platform counts the clicks: its double-click interval is a
@@ -1971,7 +1971,7 @@ public sealed class PhotonHost
         var sheetRegions = _lastFrame.SheetRegions;
         for (var i = sheetRegions.Count - 1; i >= 0; i--)
         {
-            if (!(sheetRegions[i].Visible ?? sheetRegions[i].Bounds).Contains(point)) continue;
+            if (!Covers(sheetRegions, i, sheetRegions[i].Visible ?? sheetRegions[i].Bounds, point)) continue;
             var sheet = sheetRegions[i].Surface.Controller;
             var changed = _textPath != sheetRegions[i].Path;
             if (changed) EndEditing();
@@ -2182,7 +2182,7 @@ public sealed class PhotonHost
             // and failed for every press that outlived its frame — which is every real one, because
             // showing the pressed state repaints and the next Build hands back new nodes.
             if (!IsTheSamePressable(region, pressed, pressedPath)) continue;
-            if (!region.Bounds.Contains(point)) return false; // canceled by releasing outside
+            if (!Covers(regions, i, region.Bounds, point)) return false; // canceled by releasing outside
             region.Node.OnPressed?.Invoke();
             return true;
         }
@@ -2204,7 +2204,7 @@ public sealed class PhotonHost
         var point = new Point(x, y);
         for (var i = regions.Count - 1; i >= 0; i--)
         {
-            if (!regions[i].Bounds.Contains(point)) continue;
+            if (!Covers(regions, i, regions[i].Bounds, point)) continue;
             _navigationRequested(regions[i].Destination);
             return true;
         }
@@ -2231,7 +2231,7 @@ public sealed class PhotonHost
         if (_lastFrame is null) return null;
         var regions = _lastFrame.CanvasRegions;
         for (var i = regions.Count - 1; i >= 0; i--)
-            if (regions[i].Bounds.Contains(point)) return regions[i];
+            if (Covers(regions, i, regions[i].Bounds, point)) return regions[i];
         return null;
     }
 
@@ -2262,21 +2262,42 @@ public sealed class PhotonHost
     /// shorter than the minimum target, each row's slop reached over its neighbours, and the row
     /// drawn after took their presses, the lower two thirds of every row under a finger (#630).
     /// </summary>
-    private static int HitAt(IReadOnlyList<HitRegion> regions, Point point)
+    private int HitAt(IReadOnlyList<HitRegion> regions, Point point)
     {
         var drawn = -1;
         for (var i = regions.Count - 1; i >= 0; i--)
         {
-            if (!regions[i].Drawn.Contains(point)) continue;
+            if (!Covers(regions, i, regions[i].Drawn, point, drawn: true)) continue;
             drawn = i;
             break;
         }
         for (var i = regions.Count - 1; i > drawn; i--)
         {
-            if (!regions[i].Bounds.Contains(point)) continue;
+            if (!Covers(regions, i, regions[i].Bounds, point)) continue;
             if (drawn < 0 || Encloses(regions[drawn].Drawn, regions[i].Drawn)) return i;
         }
         return drawn;
+    }
+
+    /// <summary>
+    /// Whether <paramref name="point"/> lands on the <paramref name="index"/>th region of
+    /// <paramref name="regions"/>, whose box on screen is <paramref name="box"/>: inside the box and,
+    /// for a region a transform drew, inside its own rect once the point is taken back into its
+    /// space, since a tilted region's box holds corners its drawing does not (#513).
+    /// <paramref name="drawn"/> asks about a hit region's drawn box rather than its target.
+    /// </summary>
+    private bool Covers(object regions, int index, Rect box, Point point, bool drawn = false)
+    {
+        if (!box.Contains(point)) return false;
+        var transformed = _lastFrame?.TransformedRegions;
+        if (transformed is null) return true;
+        for (var i = 0; i < transformed.Count; i++)
+        {
+            var region = transformed[i];
+            if (region.Index != index || !ReferenceEquals(region.Regions, regions)) continue;
+            return (drawn ? region.LocalDrawn : region.Local).Contains(region.Inverse.Transform(point));
+        }
+        return true;
     }
 
     /// <summary>Whether <paramref name="inner"/> lies wholly inside <paramref name="outer"/>.</summary>

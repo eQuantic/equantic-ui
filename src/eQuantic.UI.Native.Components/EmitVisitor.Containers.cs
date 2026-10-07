@@ -150,9 +150,15 @@ internal sealed partial class EmitVisitor
         // static-placeholder behavior; positional loops render a still frame instead.
         if (s.Motion.Reduced && loop.HideAtRest) return;
         var offset = ResolveLoopOffset(loop, s.Node.Bounds.Width, s.Motion);
-        if (offset != 0) s.Builder.PushTransform(Matrix2D.Translation(offset, 0));
+        var input = s.Input;
+        if (offset != 0)
+        {
+            var matrix = Matrix2D.Translation(offset, 0);
+            s.Builder.PushTransform(matrix);
+            input = input.Under(matrix);
+        }
         foreach (var child in s.Node)
-            Emit(s with { Node = child });
+            Emit(s with { Node = child, Input = input });
         if (offset != 0) s.Builder.Pop();
     }
 
@@ -170,10 +176,16 @@ internal sealed partial class EmitVisitor
         var rise = entering && presence.Enter == PresenceMotion.SlideUp && !s.Motion.Reduced
             ? (1f - s.Node.Presence) * Presence.SlideDistance
             : 0f;
-        if (rise != 0) s.Builder.PushTransform(Matrix2D.Translation(0, rise));
+        var input = s.Input;
+        if (rise != 0)
+        {
+            var matrix = Matrix2D.Translation(0, rise);
+            s.Builder.PushTransform(matrix);
+            input = input.Under(matrix);
+        }
         if (entering) s.Builder.PushLayer(s.Node.Presence);
         foreach (var child in s.Node)
-            Emit(s with { Node = child });
+            Emit(s with { Node = child, Input = input });
         if (entering) s.Builder.PopLayer();
         if (rise != 0) s.Builder.Pop();
         if (s.Motion.Presences != null && s.Node.PresencePath is { } presencePath)

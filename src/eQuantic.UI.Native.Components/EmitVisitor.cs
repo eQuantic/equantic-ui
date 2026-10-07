@@ -77,10 +77,16 @@ internal sealed partial class EmitVisitor : IVisualNodeVisitor<EmitState, Nothin
             var opacity = opacityNow < 1f ? opacityNow : (float?)null;
             if (opacity is { } layerAlpha) s.Builder.PushLayer(layerAlpha);
             var transformed = !transformNow.IsIdentity;
+            var drawn = s;
             if (transformed)
-                s.Builder.PushTransform(CenterAnchored(transformNow, node.Bounds.Center));
+            {
+                var matrix = CenterAnchored(transformNow, node.Bounds.Center);
+                s.Builder.PushTransform(matrix);
+                // What the box draws transformed takes the pointer where it is drawn (#513).
+                drawn = s with { Input = s.Input.Under(matrix) };
+            }
 
-            Dispatch(s);
+            Dispatch(drawn);
 
             if (transformed) s.Builder.Pop();
             if (opacity is not null) s.Builder.PopLayer();

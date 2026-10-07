@@ -158,6 +158,10 @@ public sealed class RealizeResult
     /// </summary>
     internal IReadOnlyList<LiveRegionMark> LiveRegions { get; init; } = Array.Empty<LiveRegionMark>();
 
+    /// <summary>The regions registered under a transform, and what turns a point on screen back into
+    /// each one's own space (#513). Empty in a frame that transforms nothing interactive.</summary>
+    internal IReadOnlyList<TransformedRegion> TransformedRegions { get; init; } = Array.Empty<TransformedRegion>();
+
     /// <summary>Editable code surfaces, in paint order (topmost last).</summary>
     public IReadOnlyList<CodeRegion> CodeRegions { get; }
 
@@ -425,6 +429,7 @@ public static class PhotonRealizer
             // of this frame), and a public constructor cannot take one. The public shape is
             // unchanged, which is also what every existing caller wants.
             LiveRegions = regions.LivesOrEmpty,
+            TransformedRegions = regions.TransformedOrEmpty,
         };
     }
 
