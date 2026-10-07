@@ -26,7 +26,7 @@ public class S5StateRealizerTests
 
         var subtle = TokenCss.Value(Theme.SurfaceSubtle);
         sink.Css.Should().Contain($":hover{{background-color:var(--eq-color-surface-subtle, {subtle})}}");
-        sink.Css.Should().Contain(":hover{box-shadow:0 2px 8px 0");
+        sink.Css.Should().Contain($":hover{{box-shadow:{TokenCss.RingSlot}, 0 2px 8px 0");
         element.ClassName.Should().NotBeNullOrEmpty();
         // The pseudo classes ride the SAME element, after the base atomic set (TS parity order).
         var classes = element.ClassName!.Split(' ');
@@ -42,8 +42,13 @@ public class S5StateRealizerTests
         gatedRules.Should().Be(hoverRules, "every hover rule rides its own gate");
     }
 
+    /// <summary>
+    /// A focus is the CONTROL's: a box is never focusable, so a rule on the box's own
+    /// <c>:focus-visible</c> could not match, and the diff applied nowhere. It applies to every box
+    /// inside the focused control (#508).
+    /// </summary>
     [Fact]
-    public void FocusDiff_UsesFocusVisible()
+    public void FocusDiff_AppliesUnderTheFocusedControl()
     {
         var sink = new StyleSink();
         WebRealizer.Lower(new Primitives.Box(new BoxStyle
@@ -52,7 +57,76 @@ public class S5StateRealizerTests
             Width = 10, Height = 10,
         }), Theme, 1f, sink);
 
-        sink.Css.Should().Contain($":focus-visible{{border:2px solid var(--eq-color-focus, {TokenCss.Value(Theme.FocusRing)})}}");
+        sink.Css.Should().MatchRegex(
+            $@"\.eq-pressable:focus-visible \.eq-[0-9a-z]+\{{border:2px solid var\(--eq-color-focus, {System.Text.RegularExpressions.Regex.Escape(TokenCss.Value(Theme.FocusRing))}\)\}}");
+        sink.Css.Should().NotContain("}:focus-visible{", "no rule on the box's own focus, which it never has");
+    }
+
+    /// <summary>A press is the CONTROL's: every box inside the pressed control shows its diff (#508).</summary>
+    [Fact]
+    public void PressedDiff_AppliesUnderThePressedControl()
+    {
+        var sink = new StyleSink();
+        WebRealizer.Lower(new Primitives.Box(new BoxStyle
+        {
+            Pressed = new StyleDiff { Transform = Transform2D.Scale(0.985f) },
+            Width = 10, Height = 10,
+        }), Theme, 1f, sink);
+
+        sink.Css.Should().MatchRegex(@"\.eq-pressable\.eq-pressable:active \.eq-[0-9a-z]+\{transform:scale\(0\.985\)\}");
+    }
+
+    /// <summary>
+    /// The handoff's §10 order, held by SPECIFICITY: the server writes its rules sorted by class and
+    /// the browser inserts them in the order it lowers, so a tie between two states would be decided
+    /// by whichever class sorted or lowered later. Hover under focus under pressed, on every page.
+    /// </summary>
+    [Fact]
+    public void TheStates_RankBySpecificity_PressedOverFocusOverHover()
+    {
+        var sink = new StyleSink();
+        WebRealizer.Lower(new Primitives.Box(new BoxStyle
+        {
+            Hover = new StyleDiff { Opacity = 0.8f },
+            Focus = new StyleDiff { Opacity = 0.6f },
+            Pressed = new StyleDiff { Opacity = 0.4f },
+            Width = 10, Height = 10,
+        }), Theme, 1f, sink);
+
+        int SpecificityOf(string declaration)
+        {
+            var rule = System.Text.RegularExpressions.Regex.Match(sink.Css, $@"([^{{}}]+)\{{{declaration}\}}");
+            rule.Success.Should().BeTrue($"a rule writes {declaration}");
+            var selector = rule.Groups[1].Value;
+            // Classes and pseudo-classes: every selector here is made of those and combinators.
+            return selector.Count(c => c == '.') + System.Text.RegularExpressions.Regex.Count(selector, @"(?<!:):(?!:)");
+        }
+
+        var hover = SpecificityOf("opacity:0\\.8");
+        var focus = SpecificityOf("opacity:0\\.6");
+        var pressed = SpecificityOf("opacity:0\\.4");
+        hover.Should().BeLessThan(focus, "focus beats hover");
+        focus.Should().BeLessThan(pressed, "pressed beats focus");
+    }
+
+    /// <summary>
+    /// The ring is a slot in the surface's own shadow list, never a rule of its own: a box-shadow rule
+    /// on the focused control's child outranked the box's list, and keyboard focus took a raised or
+    /// glowing control's elevation and glow away (#508). The handoff has it "coexist with any fill".
+    /// </summary>
+    [Fact]
+    public void TheFocusRing_IsASlotInTheSurfacesShadowList()
+    {
+        var css = PhotonCssGenerator.Generate(Theme);
+
+        css.Should().Contain("@property --eq-ring { syntax: \"*\"; inherits: false; }",
+            "a shadowed box inside the control draws no ring of its own");
+        css.Should().Contain(".eq-pressable:focus-visible > :first-child, .eq-focused > :first-child "
+            + "{ --eq-ring: 0 0 0 2px var(--eq-color-surface), 0 0 0 4px var(--eq-color-focus); }");
+        css.Should().Contain(":where(.eq-pressable:focus-visible > :first-child, .eq-focused > :first-child) "
+            + "{ box-shadow: var(--eq-ring); }", "a surface with no list of its own still draws the ring");
+        css.Should().NotMatchRegex(@"(?<!:where\()\.eq-pressable:focus-visible > :first-child \{ box-shadow",
+            "no rule may replace the surface's own list");
     }
 
     // ---- #504: a state writes every member of its diff, and the lists it shares with the base ---
@@ -86,7 +160,7 @@ public class S5StateRealizerTests
         });
 
         css.Should().Contain(
-            $":hover{{box-shadow:{TokenCss.Shadow(Theme.Elevation(3))}, {TokenCss.Shadow(new ShadowSpec(0, 24, 0, Glow))}, {Inset}}}");
+            $":hover{{box-shadow:{TokenCss.RingSlot}, {TokenCss.Shadow(Theme.Elevation(3))}, {TokenCss.Shadow(new ShadowSpec(0, 24, 0, Glow))}, {Inset}}}");
     }
 
     [Fact]
@@ -102,16 +176,17 @@ public class S5StateRealizerTests
         });
 
         css.Should().Contain(
-            $":hover{{box-shadow:{TokenCss.Shadow(Theme.Elevation(1))}, {TokenCss.Shadow(new ShadowSpec(4, 32, 2, Glow))}, {Inset}}}");
+            $":hover{{box-shadow:{TokenCss.RingSlot}, {TokenCss.Shadow(Theme.Elevation(1))}, {TokenCss.Shadow(new ShadowSpec(4, 32, 2, Glow))}, {Inset}}}");
     }
 
     [Fact]
-    public void AStateThatLeavesNothingToDraw_WritesNone()
+    public void AStateThatLeavesNothingToDraw_WritesTheRingsSlotAlone()
     {
         var css = Css(new BoxStyle { Elevation = 2, Hover = new StyleDiff { Elevation = 0 } });
 
-        css.Should().Contain(":hover{box-shadow:none}",
-            "a hover that drops the shadow has to say so: leaving the property out keeps the base's");
+        css.Should().Contain($":hover{{box-shadow:{TokenCss.RingSlot}}}",
+            "a hover that drops the shadow has to say so, leaving the property out keeps the base's, "
+            + "and the slot alone draws nothing until the control is focused (#508)");
     }
 
     [Fact]
@@ -125,7 +200,8 @@ public class S5StateRealizerTests
         });
 
         css.Should().Contain(":hover{transform:translate(0, -2px)}");
-        css.Should().Contain(":focus-visible{transform:none}", "an identity transform undoes the base's");
+        css.Should().MatchRegex(@"\.eq-pressable:focus-visible \.eq-[0-9a-z]+\{transform:none\}",
+            "an identity transform undoes the base's");
     }
 
     /// <summary>The gradient is the first of the background's layers: a hover that wrote it alone
@@ -166,7 +242,7 @@ public class S5StateRealizerTests
             Shadows = [new ShadowSpec(0, 0, 0, Glow), new ShadowSpec(2, 4, 0, Halo)],
         });
 
-        css.Should().Contain($"{{box-shadow:{TokenCss.Shadow(new ShadowSpec(2, 4, 0, Halo))}}}")
+        css.Should().Contain($"{{box-shadow:{TokenCss.RingSlot}, {TokenCss.Shadow(new ShadowSpec(2, 4, 0, Halo))}}}")
             .And.NotContain("none, ").And.NotContain(", none");
     }
 
