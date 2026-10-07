@@ -46,6 +46,35 @@ public class JsTemplateTests
             .Should().Be("(($0) => ($0 === $0.normalize()))(this.text)");
     }
 
+    /// <summary>
+    /// A part inside a function the template defines ran once per call of that function, where C#
+    /// evaluated it once: <c>Intersect</c>'s second sequence ran once per element (#657). It is bound,
+    /// and the earlier parts with it, so the order holds.
+    /// </summary>
+    [Fact]
+    public void APartInsideTheTemplatesOwnFunction_IsBoundOnce()
+    {
+        Write(JsExpr.Template("[...new Set({0})].filter(($x) => {1}.includes($x))", Call("f()"), Call("g()")))
+            .Should().Be("(($0, $1) => [...new Set($0)].filter(($x) => $1.includes($x)))(f(), g())");
+        Write(JsExpr.Template("(function($arr) { return $arr.filter({1}); })({0})", Call("f()"), Call("g()")))
+            .Should().StartWith("(($0, $1) => ");
+    }
+
+    /// <summary>
+    /// Two parts stay inside the function: a lambda written in place, whose making again nobody can
+    /// tell, and which keeps there the parameter types a call around it gives; and a part that reads a
+    /// name the function declares, which exists nowhere else (<c>Convert.ToBoolean(v, provider)</c>
+    /// converts the function's own <c>$v</c>).
+    /// </summary>
+    [Fact]
+    public void ALambdaOrAPartThatReadsTheFunctionsOwnName_StaysInsideIt()
+    {
+        Write(JsExpr.Template("{0}.filter(($x) => ({1})($x))", Call("f()"), JsExpr.Arrow("v", JsExpr.Identifier("v"))))
+            .Should().Be("f().filter(($x) => ((v) => v)($x))");
+        Write(JsExpr.Template("(($v, _provider) => {0})({1}, {2})", Call("$eq.bool.convert($v)"), Call("f()"), Call("g()")))
+            .Should().Be("(($v, _provider) => $eq.bool.convert($v))(f(), g())");
+    }
+
     [Fact]
     public void BindingALaterPart_BindsTheEarlierOnes_ToKeepEvaluationOrder()
     {

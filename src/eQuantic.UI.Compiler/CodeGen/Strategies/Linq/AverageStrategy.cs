@@ -68,11 +68,12 @@ public class AverageStrategy : IExpressionIrStrategy
                     ? $"Math.fround({sum} / {{0}}.length)"
                     : $"({sum} / {{0}}.length)";
 
-        // Average(x => x.Value): the lambda's body is the callback's, its parameter the element.
-        if (args.Count > 0 && args[0].Expression is SimpleLambdaExpressionSyntax lambda)
+        // Average(x => x.Value): the lambda's body is the callback's, its parameter the element. A lambda
+        // with a block goes down the selector's path, where it stays a lambda written in place.
+        if (args.Count > 0 && args[0].Expression is SimpleLambdaExpressionSyntax { ExpressionBody: { } expression } lambda)
         {
             var param = lambda.Parameter.Identifier.Text.ToJsIdentifier();
-            var body = context.Converter.ConvertIr(lambda.Body as ExpressionSyntax ?? lambda.ExpressionBody!);
+            var body = context.Converter.ConvertIr(expression);
             var callback = JsExpr.Arrow($"$sum, {param}", LinqAccumulation.Add(JsExpr.Identifier("$sum"), body, exact));
             return JsExpr.Template(Divide($"{{0}}.reduce({{1}}, {seed})"), [source, callback], context.TypeAnnotations);
         }

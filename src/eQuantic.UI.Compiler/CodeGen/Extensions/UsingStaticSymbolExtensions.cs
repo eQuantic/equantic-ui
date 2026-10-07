@@ -67,7 +67,13 @@ internal static class UsingStaticSymbolExtensions
         context.Diagnostics.RemoveRange(reported, raised.Count);
         if (raised.Any(diagnostic => diagnostic.Severity == ConversionSeverity.Error)) return null;
         foreach (var diagnostic in raised) context.Report(bare, diagnostic.Severity, diagnostic.Code, diagnostic.Message);
-        return JsExprWriter.Write(converted).StartsWith(declaring.Name + ".", StringComparison.Ordinal) ? null : converted;
+        // The class-static rule's own shape, `Type.member`, and not any text that starts with the type's
+        // name: `Object`, `Array` and `String` are JavaScript globals a translation may call.
+        var fallback = $"{declaring.Name}.{symbol.Name.ToCamelCase()}";
+        var written = JsExprWriter.Write(converted);
+        var untranslated = written.StartsWith(fallback, StringComparison.Ordinal)
+            && (written.Length == fallback.Length || written[fallback.Length] is not ('_' or '$') && !char.IsLetterOrDigit(written[fallback.Length]));
+        return untranslated ? null : converted;
     }
 
     /// <summary>Reports EQ2004 and returns true when <paramref name="symbol"/> is a platform type's

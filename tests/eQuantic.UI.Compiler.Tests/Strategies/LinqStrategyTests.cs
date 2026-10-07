@@ -207,6 +207,17 @@ public class LinqStrategyTests
         result.Should().Be("this.list.reduce(($sum, x) => $sum + x.amount, 0)");
     }
 
+    /// <summary>A selector with a block has no expression body to write into the callback: it was read as
+    /// null and the compile crashed. It is called as the lambda it is.</summary>
+    [Fact]
+    public void Sum_AndAverage_WithABlockSelector_CallTheLambda()
+    {
+        TestHelper.ConvertExpression("numbers.Sum(x => { return x * 2; })")
+            .Should().Contain("$sum + ((x) => {").And.Contain("return x * 2;");
+        TestHelper.ConvertExpression("numbers.Average(x => { return x * 2; })")
+            .Should().Contain("$sum + ((x) => {").And.Contain("$0.length");
+    }
+
     [Fact]
     public void Average_NoPredicate_MapsToReduceDivide()
     {

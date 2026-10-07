@@ -2252,7 +2252,7 @@ public class TypeScriptEmitter
         if (resolved is ITypeParameterSymbol typeParameter)
         {
             var named = typeParameter.Name.ToJsIdentifier();
-            return nullable ? $"{named} | null" : named;
+            return nullable ? OrNull(named) : named;
         }
 
         // A generic's TYPE ARGUMENTS are symbols here even when the string mapper already rewrote

@@ -131,6 +131,9 @@ public static class JsExprWriter
     /// A part whose hole sits inside a function the template itself defines is bound the same way,
     /// however many times it is mentioned: there it ran once per call of that function, where C#
     /// evaluated it once, before the call it is an argument of (<see cref="InsideAFunction"/>, #657).
+    /// Two stay where they are: a lambda written in place, and a part that reads a name the template's
+    /// own function declares, which only exists in there: <c>(($v, _provider) => {0})(…)</c> hands its
+    /// <c>{0}</c> the <c>$v</c> it converts (<see cref="DeclaredBy"/>).
     /// </para>
     /// </summary>
     private static JsWritten RenderTemplate(JsTemplate template)
@@ -140,6 +143,7 @@ public static class JsExprWriter
         var uses = new int[parts.Count];
         var deferred = new bool[parts.Count];
         var inside = InsideAFunction(template.Text, holes);
+        var declared = DeclaredBy(template.Text);
         for (var at = 0; at < holes.Count; at++)
         {
             var index = int.Parse(holes[at].Groups[1].Value);
@@ -149,7 +153,8 @@ public static class JsExprWriter
 
         var bound = new bool[parts.Count];
         for (var i = 0; i < parts.Count; i++)
-            bound[i] = (uses[i] > 1 || deferred[i] && !IsFunctionLiteral(parts[i])) && !IsInlinable(parts[i]);
+            bound[i] = (uses[i] > 1 || deferred[i] && !IsFunctionLiteral(parts[i]) && !Reads(parts[i], declared))
+                && !IsInlinable(parts[i]);
         var last = Array.LastIndexOf(bound, true);
         // A bound part runs FIRST, as the arrow's argument, and a name left inline is read later,
         // in the body, after whatever that part did. C# had read the name before it: a key whose
@@ -262,6 +267,45 @@ public static class JsExprWriter
             }
         }
         return inside;
+    }
+
+    private static readonly Regex ParenthesizedParameters = new(@"\(([^()]*)\)\s*=>", RegexOptions.Compiled);
+    private static readonly Regex BareParameter = new(@"(?<![\w$.)])([A-Za-z_$][\w$]*)\s*=>", RegexOptions.Compiled);
+    private static readonly Regex Declaration = new(@"\b(?:const|let|var)\s+([A-Za-z_$][\w$]*)", RegexOptions.Compiled);
+    private static readonly Regex FunctionParameters = new(@"\bfunction\s*\*?\s*[A-Za-z_$]*\s*\(([^()]*)\)", RegexOptions.Compiled);
+
+    /// <summary>The names the template's own text declares: its functions' parameters and its
+    /// <c>const</c>, <c>let</c> and <c>var</c>. A part that reads one belongs inside the function that
+    /// declares it.</summary>
+    private static HashSet<string> DeclaredBy(string text)
+    {
+        var names = new HashSet<string>(StringComparer.Ordinal);
+        foreach (Match list in ParenthesizedParameters.Matches(text)) AddParameters(list.Groups[1].Value, names);
+        foreach (Match list in FunctionParameters.Matches(text)) AddParameters(list.Groups[1].Value, names);
+        foreach (Match single in BareParameter.Matches(text)) names.Add(single.Groups[1].Value);
+        foreach (Match declaration in Declaration.Matches(text)) names.Add(declaration.Groups[1].Value);
+        names.RemoveWhere(name => Hole.IsMatch(name) || name == "async");
+        return names;
+    }
+
+    private static void AddParameters(string list, HashSet<string> names)
+    {
+        foreach (var raw in list.Split(','))
+        {
+            var name = raw.Trim().TrimStart('.');
+            var cut = name.IndexOfAny([':', '=']);
+            if (cut >= 0) name = name[..cut];
+            name = name.Trim();
+            if (name.Length > 0 && Regex.IsMatch(name, @"^[A-Za-z_$][\w$]*$")) names.Add(name);
+        }
+    }
+
+    /// <summary>Whether <paramref name="part"/> reads one of <paramref name="names"/>.</summary>
+    private static bool Reads(JsExpr part, HashSet<string> names)
+    {
+        if (names.Count == 0) return false;
+        var text = Written(part).Text;
+        return names.Any(name => Regex.IsMatch(text, $@"(?<![\w$]){Regex.Escape(name)}(?![\w$])"));
     }
 
     /// <summary>The index of the quote that closes the string opening at <paramref name="open"/>,
