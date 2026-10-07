@@ -169,6 +169,8 @@ describe('StringBuilder — capacity, indexer, length, equality and copy', () =>
     expect(b.toString()).toBe('x');
     expect(stringBuilder('12').equalsBuilder(stringBuilder('12', 100))).toBe(true);
     expect(stringBuilder('12').equalsBuilder(null)).toBe(false);
+    const same = stringBuilder('12');
+    expect([same.equals(same), same.equals(stringBuilder('12'))]).toEqual([true, false]);
     const copy = ['-', '-', '-', '-'];
     stringBuilder('12').copyTo(0, copy, 1, 2);
     expect(copy.join('')).toBe('-12-');

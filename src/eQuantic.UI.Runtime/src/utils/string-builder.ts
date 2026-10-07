@@ -133,9 +133,15 @@ export class StringBuilder {
     this.value = this.value.slice(0, index) + value + this.value.slice(index + 1);
   }
 
-  /** `Equals(StringBuilder)`: the same text, whatever either's capacity. `Equals(object)` is identity. */
+  /** `Equals(StringBuilder)`: the same text, whatever either's capacity. */
   equalsBuilder(other: StringBuilder | null): boolean {
     return other != null && other.value === this.value;
+  }
+
+  /** `Equals(object)`: identity, as a class that does not override it has, which a collection and
+   *  `$eq.equals` read too. It was a TypeError where a call reached it as a method. */
+  equals(other: unknown): boolean {
+    return this === other;
   }
 
   /** `CopyTo(sourceIndex, char[] destination, destinationIndex, count)`, refused as .NET refuses it. */
