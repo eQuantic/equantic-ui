@@ -68,22 +68,27 @@ export function scheduleScrolledSync(): void {
 export function syncScrolledPinned(): void {
   if (typeof document === 'undefined') return;
   for (const header of document.querySelectorAll<HTMLElement>(`[${PINNED_MARKER}]`)) {
-    const surface = surfaceOf(header);
-    const offset = surface ? surface.scrollTop : window.scrollY;
-    const scrolled = offset > SCROLLED_THRESHOLD;
+    const scrolled = surfaceOffset(header) > SCROLLED_THRESHOLD;
     if (header.hasAttribute(SCROLLED_MARKER) !== scrolled) header.toggleAttribute(SCROLLED_MARKER, scrolled);
   }
 }
 
 /**
- * The surface a header pins to: its nearest ancestor that scrolls on the vertical axis, which is what
- * a ScrollView lowers to, or null for the page.
+ * How far the surface a header pins to has scrolled, along the axis a header pins on. The surface is
+ * the nearest ancestor that scrolls on EITHER axis, which is what a ScrollView lowers to (`auto` on
+ * the axis it scrolls), or the page when there is none. A horizontal one is a surface too, the one
+ * `position: sticky` pins to and Photon's nearest scroll view, and it never scrolls vertically, so a
+ * header inside it is never scrolled, whatever the page under it does (found by Copilot on #688). A
+ * box that only clips is hidden on both axes, and is not one.
  */
-function surfaceOf(header: HTMLElement): HTMLElement | null {
+function surfaceOffset(header: HTMLElement): number {
   for (let element = header.parentElement; element; element = element.parentElement) {
-    if (element === document.body || element === document.documentElement) return null;
-    const overflow = getComputedStyle(element).overflowY;
-    if (overflow === 'auto' || overflow === 'scroll') return element;
+    if (element === document.body || element === document.documentElement) break;
+    const style = getComputedStyle(element);
+    const vertical = scrolls(style.overflowY);
+    if (vertical || scrolls(style.overflowX)) return vertical ? element.scrollTop : 0;
   }
-  return null;
+  return window.scrollY;
 }
+
+const scrolls = (overflow: string): boolean => overflow === 'auto' || overflow === 'scroll';
