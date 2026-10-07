@@ -147,7 +147,7 @@ public class LinqStrategyTests
         // A class may override Equals, as its subclasses may: the element's own equality is asked,
         // as EqualityComparer<T>.Default asks it (#425).
         var result = TestHelper.ConvertExpression("list.Contains(item)");
-        result.Should().Be("$eq.collections.contains(this.list, this.item, 'own')");
+        result.Should().Be("$eq.collections.contains(this.list, this.item, 'item')");
     }
 
     [Fact]

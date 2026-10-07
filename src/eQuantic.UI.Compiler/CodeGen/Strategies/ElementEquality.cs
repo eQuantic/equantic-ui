@@ -9,10 +9,10 @@ namespace eQuantic.UI.Compiler.CodeGen.Strategies;
 /// number with NaN equal to NaN, a string, a char, a bool, a long, an enum, a Guid, an array, a
 /// delegate), <c>true</c> for VALUE (<c>$eq.equals</c>: a record, a struct, a decimal, a date, and a
 /// tuple, an anonymous type or a pair whose members all compare so), <c>'own'</c> where the type does not
-/// decide (<c>object</c>, an interface a tuple implements, a type parameter, a class a subclass may
-/// override <c>Equals</c> in), <c>'item'</c> for an interface no tuple implements, whose value is found
-/// by reference or by its own <c>Equals</c> and never by its members (a list behind
-/// <c>IReadOnlyList&lt;int&gt;</c> is an array on the web), and a comparison GENERATED from the member
+/// decide (<c>object</c>, an interface a tuple implements, a type parameter), <c>'item'</c> for a class
+/// and an interface no tuple implements, whose value is found by reference or by its own
+/// <c>Equals</c> and never by its members (a <c>List&lt;int&gt;</c> is an array on the web, and two
+/// lists of the same items were one key), and a comparison GENERATED from the member
 /// types for a tuple, an anonymous type or a pair with a member <c>$eq.equals</c> would compare otherwise.
 /// <para>
 /// ONE decision for every search the comparer decides in .NET: a dictionary's keys and its
@@ -58,7 +58,6 @@ internal static class ElementEquality
             // An array, and a class: its own Equals where a twin carries one, and identity otherwise,
             // never its members, which `sameKey` walks for a value that may be a tuple.
             null => $"{Eq.SameItem}({left}, {right})",
-            "'own'" when value is { TypeKind: TypeKind.Class, SpecialType: SpecialType.None } => $"{Eq.SameItem}({left}, {right})",
             "'item'" => $"{Eq.SameItem}({left}, {right})",
             "'own'" => $"{Eq.SameKey}({left}, {right})",
             _ => $"{hoist?.Invoke(equality) ?? equality}({left}, {right})",
@@ -67,6 +66,19 @@ internal static class ElementEquality
 
     /// <summary>The equality, and whether <c>$eq.equals</c> answers what it answers for a value of the
     /// type: what lets a tuple of such members be compared by <c>$eq.equals</c> whole.</summary>
+    /// <summary>Whether a class, or a base of it below <c>object</c>, overrides <c>Equals(object)</c>,
+    /// which <c>EqualityComparer&lt;T&gt;.Default</c> then asks.</summary>
+    private static bool OverridesEquals(INamedTypeSymbol type)
+    {
+        for (var at = type; at is not null && at.SpecialType != SpecialType.System_Object; at = at.BaseType)
+        {
+            if (at.GetMembers("Equals").OfType<IMethodSymbol>()
+                .Any(method => method.IsOverride && method.Parameters is [{ Type.SpecialType: SpecialType.System_Object }]))
+                return true;
+        }
+        return false;
+    }
+
     /// <summary>
     /// Whether a value of this interface may be a value tuple, which is an array on the web and is
     /// compared by its elements: one of the interfaces <c>ValueTuple</c> implements, read from
@@ -111,9 +123,12 @@ internal static class ElementEquality
             INamedTypeSymbol { TypeKind: TypeKind.Interface } face when !MayHoldATuple(face) => ("'item'", false),
             { TypeKind: TypeKind.Interface or TypeKind.TypeParameter or TypeKind.Dynamic } => ("'own'", false),
             // A class of the app's or a library's, never a special one: `string` overrides Equals too,
-            // and is a primitive on this side, which SameValueZero compares by value already. One with no
-            // Equals of its own is found by identity, which `$eq.equals` would walk member by member.
-            { TypeKind: TypeKind.Class, SpecialType: SpecialType.None } => ("'own'", false),
+            // and is a primitive on this side, which SameValueZero compares by value already. One that
+            // overrides Equals is asked it, its twin's or a reference tuple's members; one that does not
+            // is found by reference: a List<int> is an array here, which the members' comparison found
+            // equal to another list of the same items, in a set or a Contains alike.
+            INamedTypeSymbol { TypeKind: TypeKind.Class, SpecialType: SpecialType.None } named =>
+                (OverridesEquals(named) ? "'own'" : "'item'", false),
             // Everything else by identity, a delegate included, which `$eq.equals` compares the same way.
             _ => (null, true),
         };

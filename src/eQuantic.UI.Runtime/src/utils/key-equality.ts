@@ -7,11 +7,11 @@
  *  - `true`: by VALUE, through `$eq.equals` — a record, a struct, a decimal, a date, and a tuple or an
  *    anonymous type whose members all compare so;
  *  - `'own'`: by what the value turns out to be, for a type that does not decide (`object`, an
- *    interface a tuple implements, a type parameter, a class a subclass may override `Equals` in): its
- *    twin's own `equals`, a tuple's or an anonymous type's members, and identity for anything else;
- *  - `'item'`: by identity or the twin's own `equals`, never by members, for an interface no tuple
- *    implements (a collection's, an app's): a list behind `IReadOnlyList<int>` is an array here, and
- *    .NET finds it by reference where its elements found another;
+ *    interface a tuple implements, a type parameter): its twin's own `equals`, a tuple's or an
+ *    anonymous type's members, and identity for anything else;
+ *  - `'item'`: by identity or the twin's own `equals`, never by members, for a class and an interface
+ *    no tuple implements: a `List<int>` is an array here, and .NET finds it by reference where its
+ *    elements found another;
  *  - a function: a tuple, an anonymous type or a pair with a member that compares otherwise, an array
  *    inside a tuple by reference above all, generated from the member types ({@link tupleEquality}).
  *    `$eq.equals` walks an array element by element, and `ValueTuple.Equals` compares an array member

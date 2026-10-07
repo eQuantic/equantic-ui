@@ -218,6 +218,9 @@ export class Dictionary<K, V> implements Iterable<Pair<K, V>> {
       get: (_target, property) => {
         if (property === Symbol.iterator) return walk;
         if (property === 'contains' && collection === 'key') return contains;
+        // ICollection<T>.IsReadOnly: a dictionary's collections are, as .NET's answer, where it read
+        // undefined and a caller that asked before changing one went on to change it.
+        if (property === 'isReadOnly') return true;
         // The count without a snapshot: a loop that changes the dictionary and reads the count each
         // pass would copy every entry each time.
         if (property === 'length') return this.size;

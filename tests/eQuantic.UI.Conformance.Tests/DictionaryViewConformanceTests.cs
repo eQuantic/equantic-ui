@@ -44,6 +44,11 @@ public class DictionaryViewConformanceTests
     [InlineData("ICollection<string> keys = new Dictionary<string, int> { [\"a\"] = 1 }.Keys; try { keys.Clear(); return \"no\"; } catch (NotSupportedException e) { return e.Message; }")]     // the same
     [InlineData("ICollection<int> values = new Dictionary<string, int> { [\"a\"] = 1 }.Values; try { values.Add(2); return \"no\"; } catch (NotSupportedException e) { return e.Message; }")] // "Mutating a value collection derived from a dictionary is not allowed."
     [InlineData("ICollection<int> values = new Dictionary<string, int> { [\"a\"] = 1 }.Values; try { values.Remove(1); return \"no\"; } catch (NotSupportedException e) { return e.Message; }")] // the same
+    // Both views say they are read-only, as ICollection<T>.IsReadOnly does for them.
+    [InlineData("var d = new Dictionary<string, int> { [\"a\"] = 1 }; ICollection<string> keys = d.Keys; ICollection<int> values = d.Values; return keys.IsReadOnly + \",\" + values.IsReadOnly;")] // "True,True"
+    // The values' Contains finds a value by its type's equality.
+    [InlineData("var d = new Dictionary<string, int> { [\"a\"] = 1 }; return d.Values.Contains(1) + \",\" + d.Values.Contains(2);")] // "True,False"
+    [InlineData("var l = new List<int>(); var d = new Dictionary<string, List<int>> { [\"a\"] = l }; return d.Values.Contains(l) + \",\" + d.Values.Contains(new List<int>());")] // "True,False": a list by reference
     [InlineData("return new Dictionary<string, int>().EnsureCapacity(10);")]                                                                              // 11
     [InlineData("var d = new Dictionary<string, int> { [\"a\"] = 1 }; return d.EnsureCapacity(2);")]                                                     // 3
     [InlineData("return new Dictionary<string, int>(10).EnsureCapacity(0);")]                                                                             // 11: the constructor's

@@ -94,7 +94,8 @@ public class DictionaryStrategyTests
     [InlineData("char", "$eq.collections.dictionary()")]
     [InlineData("DayOfWeek", "$eq.collections.dictionary()")]
     [InlineData("Guid", "$eq.collections.dictionary()")]
-    [InlineData("TestClass", "$eq.collections.dictionary(null, 'own')")]
+    [InlineData("TestClass", "$eq.collections.dictionary(null, 'item')")]
+    [InlineData("List<int>", "$eq.collections.dictionary(null, 'item')")]
     [InlineData("object", "$eq.collections.dictionary(null, 'own')")]
     [InlineData("IComparable", "$eq.collections.dictionary(null, 'own')")]
     public void AKey_IsFound_AsItsDefaultComparerFindsIt(string key, string factory)
