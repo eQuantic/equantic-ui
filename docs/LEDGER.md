@@ -1617,7 +1617,7 @@ record of a release, the wiki's Upgrading page is the distillate.
   words. A `DateTime` carries its `Kind`. `DateTimeOffset.Now` carried offset zero with the local
   clock, `LocalDateTime` read the value's own clock and `ToLocalTime()` did not exist
   ([#626](https://github.com/eQuantic/equantic-ui/issues/626), from the Falei.pt app): each reads
-  the browser's time zone now, proved on both sides in three zones set through `TZ`. 103 of the 110
+  the browser's time zone now, proved on both sides in three zones set through `TZ`. 117 of the 125
   new cases failed on the base. Proposed and archived through OpenSpec (`openspec/specs/runtime-dates`).
 
 ## Retired documents
