@@ -67,4 +67,34 @@ describe('twinJson', () => {
   it('writes a nested twin through its own toJSON', () => {
     expect(JSON.parse(JSON.stringify({ items: [new Base()] }))).toEqual({ items: [{ count: 2, kind: 'base' }] });
   });
+
+  /**
+   * A field that moved a case apart from a member (`value$` beside the accessors of `value`, #396) is
+   * storage the serializer never writes; the property it gave its name up to is written, read through
+   * its getter, as System.Text.Json reads it. A method of that name writes nothing.
+   */
+  class Moved {
+    declare value$: number;
+    declare size$: number;
+    constructor() {
+      this.value$ = 6;
+      this.size$ = 3;
+    }
+    get value(): number {
+      return this.value$;
+    }
+    set value(given: number) {
+      this.value$ = given * 2;
+    }
+    size(): number {
+      return this.size$ * 2;
+    }
+    toJSON(): Record<string, unknown> {
+      return twinJson(this);
+    }
+  }
+
+  it('writes a moved field as the property it gave its name to, and never the field', () => {
+    expect(JSON.parse(JSON.stringify(new Moved()))).toEqual({ value: 6 });
+  });
 });

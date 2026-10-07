@@ -11,12 +11,22 @@ import { adoptMember, declaresMember } from './adopt-member';
  * along the chain is copied as it is. Each key is defined, as every wire object the runtime builds
  * is, so a member called `__proto__` stays a member.
  *
+ * A key with a `$` AFTER its name is a field that moved a case apart from a member of its class
+ * (`value$` beside `value`, #396): storage the serializer never writes, since it is not a public
+ * property. The member whose name the field gave up is written instead, read through its accessor,
+ * where the class declares one.
+ *
  * What a twin that keeps a store answers `toJSON` with, so a type derived from it answers the same.
  */
 export function twinJson(value: object): Record<string, unknown> {
   const json: Record<string, unknown> = {};
   const source = value as Record<string, unknown>;
   for (const key of Object.keys(value)) {
+    if (key.endsWith('$')) {
+      const member = key.slice(0, -1);
+      if (declaresMember(value, member)) adoptMember(json, member, source[member]);
+      continue;
+    }
     const property = key.startsWith('$') ? key.slice(1) : '';
     if (property !== '' && declaresMember(value, property)) adoptMember(json, property, source[property]);
     else adoptMember(json, key, source[key]);

@@ -98,6 +98,9 @@ public class MemberAccessStrategy : IExpressionIrStrategy
 
         if (string.IsNullOrEmpty(name)) return receiver;
 
+        // A field is read in its slot, which moves a case apart from another member (#396).
+        if (symbol is IFieldSymbol field) name = field.TwinSlot();
+
         var member = JsExpr.Member(receiver, name);
 
         // A method REFERENCE (not being called) is a method group: bind it to its receiver.
