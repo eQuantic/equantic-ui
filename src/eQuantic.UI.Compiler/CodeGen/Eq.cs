@@ -459,6 +459,10 @@ public static class Eq
     /// <summary><c>Enumerable.Range(start, count)</c>, its arguments evaluated once.</summary>
     public const string LinqRange = "$eq.linq.range";
 
+    /// <summary>The JavaScript iterator a twin's <c>[Symbol.iterator]</c> hands out, walking the enumerator
+    /// its type's own <c>GetEnumerator()</c> returns (#612). One arg: the enumerator.</summary>
+    public const string LinqIterate = "$eq.linq.iterate";
+
     /// <summary><c>Enumerable.Repeat(element, count)</c>: the one element, count times.</summary>
     public const string LinqRepeat = "$eq.linq.repeat";
 }

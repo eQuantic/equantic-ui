@@ -170,6 +170,40 @@ export function enumerable<T>(source: Iterable<T> | string): Iterable<T> {
   return typeof source === 'string' ? (source.split('') as unknown as T[]) : source;
 }
 
+/** An enumerator the app wrote: its twin's `MoveNext`, `Current` and, where it has one, `Dispose`. */
+interface Enumerator<T> {
+  moveNext(): boolean;
+  readonly current: T;
+  dispose?(): void;
+}
+
+/**
+ * The iteration of a twin whose type implements `IEnumerable<T>` (#612): its `[Symbol.iterator]` hands
+ * this the enumerator the type's own `GetEnumerator()` returned, so a `for…of`, a spread and every
+ * sequence helper here walk the class as a `foreach` walks it. An enumerator an iterator method filled,
+ * or a sequence's own, is iterated as it is; one the app wrote is walked by its `MoveNext` and
+ * `Current`, and disposed when the walk ends, however it ends, as a `foreach` disposes it. A null one
+ * is .NET's NullReferenceException, which `MoveNext` on it throws.
+ */
+export function iterate<T>(enumerator: Iterable<T> | Enumerator<T>): Iterator<T> {
+  if (enumerator == null) {
+    throw exception(
+      'System.NullReferenceException',
+      'Object reference not set to an instance of an object.',
+    );
+  }
+  const own = (enumerator as Partial<Iterable<T>>)[Symbol.iterator];
+  return typeof own === 'function' ? own.call(enumerator) : walk(enumerator as Enumerator<T>);
+}
+
+function* walk<T>(enumerator: Enumerator<T>): Generator<T> {
+  try {
+    while (enumerator.moveNext()) yield enumerator.current;
+  } finally {
+    enumerator.dispose?.();
+  }
+}
+
 /**
  * A NEW array of a sequence's elements, as `ToList` and `ToArray` make one: an array is copied too, so
  * the copy and its source are two arrays, as in .NET, whatever the static type hid it behind.

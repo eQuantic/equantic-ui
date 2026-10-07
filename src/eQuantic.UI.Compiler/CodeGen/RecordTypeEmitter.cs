@@ -379,9 +379,17 @@ public class RecordTypeEmitter
         var userToString = false;
         foreach (var method in type.Members.OfType<MethodDeclarationSyntax>())
         {
+            // The non-generic IEnumerable.GetEnumerator() beside the generic one holds its name, and is
+            // the same sequence (#612).
+            if (ModelFor(method)?.GetDeclaredSymbol(method) is IMethodSymbol declared && IterableTwin.LeavesOut(declared)) continue;
             if (method.Identifier.Text == "ToString") userToString = true;
             sb.Append(EmitMethod(method, name));
         }
+
+        // A sequence is iterable as its own GetEnumerator() says (#612).
+        if (ModelFor(type)?.GetDeclaredSymbol(type) is INamedTypeSymbol sequence
+            && IterableTwin.IteratorOf(sequence, _converter.UsedHelpers) is { } iterator)
+            sb.Append(Written(iterator));
 
         // An INSTANCE INDEXER, as the methods every element access bound to it calls (#427). It was
         // written into no twin, and `new Grid()[3]` read a property named "3" that nothing had.
@@ -468,7 +476,11 @@ public class RecordTypeEmitter
         // or static (`static Foo Empty => …`, the factory idiom). A record is a value with
         // BEHAVIOUR; emitting only its positional members threw the behaviour away.
         foreach (var property in type.Members.OfType<PropertyDeclarationSyntax>())
+        {
+            // An enumerator's explicit IEnumerator.Current beside its generic one holds its name (#612).
+            if (ModelFor(property)?.GetDeclaredSymbol(property) is IPropertySymbol declared && IterableTwin.LeavesOut(declared)) continue;
             sb.Append(ComputedProperty(property, name));
+        }
 
         // The DEFAULT INTERFACE MEMBERS the type relies on (#414): JavaScript has no interface to
         // hold them, so a record or a struct that did not declare one had no such member at all.

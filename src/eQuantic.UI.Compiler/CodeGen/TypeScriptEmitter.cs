@@ -1674,6 +1674,10 @@ public class TypeScriptEmitter
             }
             foreach (var p in cls.Members.OfType<PropertyDeclarationSyntax>())
             {
+                // An enumerator's explicit IEnumerator.Current beside its generic one holds its name, and
+                // answers alike: written, it replaced the generic one and read itself (#612).
+                if (ModelFor(p)?.GetDeclaredSymbol(p) is IPropertySymbol declaredProperty && IterableTwin.LeavesOut(declaredProperty))
+                    continue;
                 // An ABSTRACT property is DECLARED, never emitted. The derived class supplies the
                 // getter, and a field here would become an OWN property on the instance — which
                 // shadows the prototype's getter, so the base would answer for every subclass.
@@ -1781,6 +1785,10 @@ public class TypeScriptEmitter
                 EmitClassMethod(m, c, asStatic);
             foreach (var indexer in cls.Members.OfType<IndexerDeclarationSyntax>())
                 EmitIndexer(indexer, c);
+            // A sequence of the app's is iterable as its own GetEnumerator() says (#612).
+            if (!asStatic && ModelFor(cls)?.GetDeclaredSymbol(cls) is INamedTypeSymbol sequence
+                && IterableTwin.IteratorOf(sequence, _converter.UsedHelpers) is { } iterator)
+                c.Member(iterator, cls);
             // USER-DEFINED OPERATORS — the same family a record's twin already carries, and for the
             // same reason: JavaScript cannot overload an operator, so the call site lowers `a + b`
             // on two in-source objects to `T.opAdd(a, b)` whatever kind of type T is. It did that
@@ -1909,6 +1917,9 @@ public class TypeScriptEmitter
     /// supplies it.</summary>
     private void EmitClassMethod(MethodDeclarationSyntax m, TypeScriptCodeBuilder.ClassBuilder c, bool asStatic)
     {
+        // The non-generic IEnumerable.GetEnumerator() beside the generic one holds its name, and is the
+        // same sequence: written, it replaced the generic one and called itself (#612).
+        if (ModelFor(m)?.GetDeclaredSymbol(m) is IMethodSymbol declared && IterableTwin.LeavesOut(declared)) return;
         if (Lowering.Method(m, asStatic, DeclaredType, returns: TupleReturn) is { } member) c.Member(member, m);
     }
 

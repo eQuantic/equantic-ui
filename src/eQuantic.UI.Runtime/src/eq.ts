@@ -68,7 +68,7 @@ import {
   realParse,
   realTryParse,
 } from './utils/number-parse';
-import { enumerable, max, min, seq, toArray, toDictionary } from './utils/linq';
+import { enumerable, iterate, max, min, seq, toArray, toDictionary } from './utils/linq';
 import { range, repeat } from './utils/sequence-factories';
 import {
   chars,
@@ -256,9 +256,9 @@ export const $eq = {
   str,
   /** LINQ Zip: pairs stop with the shorter sequence. */
   zip,
-  /** LINQ's Max and Min by the type they answer, ToDictionary with .NET's refusals, and Range and
-   * Repeat over arguments evaluated once. */
-  linq: { enumerable, max, min, seq, toArray, toDictionary, range, repeat },
+  /** LINQ's Max and Min by the type they answer, ToDictionary with .NET's refusals, Range and
+   * Repeat over arguments evaluated once, and the iteration of a twin that implements IEnumerable<T>. */
+  linq: { enumerable, iterate, max, min, seq, toArray, toDictionary, range, repeat },
   /** C# `with` over a runtime value type — prototype preserved. */
   withPatch,
   /** A twin's JSON, a property's store under the property's name — see utils/twin-json. */
