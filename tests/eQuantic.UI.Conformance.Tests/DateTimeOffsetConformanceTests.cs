@@ -24,7 +24,15 @@ public class DateTimeOffsetConformanceTests
     [InlineData("new DateTimeOffset(2024, 1, 15, 13, 30, 0, TimeSpan.FromHours(-3)).AddHours(2).Hour")] // 15
     // Unix time round-trip
     [InlineData("DateTimeOffset.FromUnixTimeSeconds(0).UtcDateTime.ToString()")]                     // "01/01/1970 00:00:00"
-    [InlineData("new DateTimeOffset(1970, 1, 1, 0, 0, 0, TimeSpan.Zero).ToUnixTimeSeconds()")]        // 0
+    [InlineData("new DateTimeOffset(1970, 1, 1, 0, 0, 0, TimeSpan.Zero).ToUnixTimeSeconds()")]        // "0": a long, so a BigInt (#596)
+    // Whole seconds counted from 0001-01-01 before the epoch is taken off: a fraction before 1970 rounds
+    // down. (The instants are built from ticks: the constructor with a millisecond is #606.)
+    [InlineData("DateTimeOffset.FromUnixTimeMilliseconds(-999).ToUnixTimeSeconds()")]                  // "-1"
+    [InlineData("new DateTimeOffset(new DateTime(621355967999999999), TimeSpan.Zero).ToUnixTimeMilliseconds()")] // "-1"
+    [InlineData("new DateTimeOffset(new DateTime(621355967999999999), TimeSpan.Zero).ToUnixTimeSeconds()")]      // "-1"
+    [InlineData("new DateTimeOffset(2026, 1, 2, 3, 4, 5, TimeSpan.FromHours(1)).ToUnixTimeMilliseconds()")]
+    // A long it answers meets another long, which the number it answered met as a TypeError.
+    [InlineData("DateTimeOffset.FromUnixTimeSeconds(10).ToUnixTimeSeconds() * 1000L")]                // "10000"
     // Subtraction (instant) -> TimeSpan
     [InlineData("(new DateTimeOffset(2024, 1, 15, 15, 0, 0, TimeSpan.Zero) - new DateTimeOffset(2024, 1, 15, 12, 0, 0, TimeSpan.Zero)).ToString()")] // "03:00:00"
     // Comparison/equality by instant (different wall-clock, same moment)

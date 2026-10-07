@@ -42,6 +42,44 @@ public class WikiClaimsCompile
             Text(_network.Online ? "online" : "offline", TypeRole.BodyM);
     }
 
+    // ServerEvents.md (#291): a component hearing a typed topic, as the page writes it.
+    private sealed record RoomMessage(string Author, string Text, long Sequence);
+
+    private static class Topics
+    {
+        public static ServerTopic<RoomMessage> Room(string id) => new($"room:{id}");
+    }
+
+    private sealed class RoomScreen(IServerEvents? events) : Primitives.StatefulComponent
+    {
+        private readonly List<RoomMessage> _messages = [];
+        private IDisposable? _room;
+        private IDisposable? _connection;
+        private ServerConnectionState _state;
+        private bool _refused;
+
+        protected override void OnMount()
+        {
+            _room = events?.Subscribe(Topics.Room("lobby"),
+                message => SetState(() => _messages.Add(message)),
+                refusal => SetState(() => _refused = true));
+            _connection = events?.OnConnectionChanged(connection => SetState(() => _state = connection.State));
+        }
+
+        protected override void OnUnmount()
+        {
+            _room?.Dispose();
+            _connection?.Dispose();
+        }
+
+        public override VisualNode Build(ComponentContext context) => _refused
+            ? Text("This room is not open to you.", TypeRole.BodyM)
+            : Column(gap: Space.S2, children: [
+                Text(_state == ServerConnectionState.Connected ? "Live" : "Catching up", TypeRole.Caption),
+                .. _messages.Select(message => Text(message.Text, TypeRole.BodyM)),
+            ]);
+    }
+
     private sealed class ProfilePage(IPhotoLibrary photos) : Primitives.StatefulComponent
     {
         public override VisualNode Build(ComponentContext context) =>
