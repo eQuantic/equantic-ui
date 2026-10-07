@@ -163,10 +163,18 @@ export class CodeEditor extends StatefulComponent {
         if (this._handedAny && CodeEditor.sameProviders(this.completions, this._handed)) return;
         this._handedAny = true;
         let providers = completion.providers;
-        for (const provider of this._put) $eq.collections.remove(providers, provider, 'own');
+        for (const provider of this._put) CodeEditor.removeInstance(providers, provider);
         this._put = this.completions == null ? [new CodeKeywordCompletionProvider(), new CodeWordCompletionProvider()] : [...this.completions];
         this._handed = this.completions == null ? null : this._put;
         for (const provider of this._put) providers.push(provider);
+    }
+
+    static removeInstance(providers: any[], provider: any) {
+        for (let i = 0; i < providers.length; i++) {
+            if (!(providers[i] === provider)) continue;
+            providers.splice(i, 1);
+            return;
+        }
     }
 
     static sameProviders(one: any, other: any) {

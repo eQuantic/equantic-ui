@@ -1,4 +1,4 @@
-import { $eq, Box, BoxStyle, BuildContext, CodeCompletion, CodeCompletionKindValue, CodeCompletionMatch, CodeMetrics, ColorToken, Column, CornerRadii, EdgeInsets, Flexible, Pressable, Rect, Row, SizeValue, Spacer, StyleDiff, Text, TextRun } from "../runtime-exports";
+import { $eq, Box, BoxStyle, BuildContext, CodeCompletion, CodeCompletionKindValue, CodeCompletionMatch, CodeLineCells, CodeMetrics, ColorToken, Column, CornerRadii, EdgeInsets, Flexible, Pressable, Rect, Row, SizeValue, Spacer, StyleDiff, Text, TextRun } from "../runtime-exports";
 
 export class CodeCompletionView {
     static pageRows: number = 12;
@@ -9,6 +9,7 @@ export class CodeCompletionView {
     static border: number = 1;
     static pageMarkWidth: number = 3;
     static documentationChrome: number = 9;
+    static labelTabSize: number = 4;
 
     static labelInset(metrics: CodeMetrics) {
         return Math.fround(Math.fround(Math.fround(CodeCompletionView.border + 8) + metrics.lineHeight) + 4);
@@ -19,7 +20,7 @@ export class CodeCompletionView {
         for (const match of items) {
             let item = match.item;
             let detail: any; 
-            let columns = item.label.length + (((item.detail != null && item.detail.length > 0) && (detail = item.detail, true)) ? 2 + detail.length : 0);
+            let columns = CodeCompletionView.cellsOf(item.label) + (((item.detail != null && item.detail.length > 0) && (detail = item.detail, true)) ? 2 + CodeCompletionView.cellsOf(detail) : 0);
             if (columns > widest) widest = columns;
         }
         return Math.min(widest, CodeCompletionView.maxColumns);
@@ -112,7 +113,7 @@ export class CodeCompletionView {
         let row = new Row(4, 'start', 'center', false, null, null, { width: SizeValue.fill, height: SizeValue.fill });
         row.add(CodeCompletionView.glyph(theme, metrics, item.kind));
         row.add(new Text(label, 'labelSmall', ink, 1, 'start', false, false, null, 0, { mono: true, styleOverride: metrics.style, spans: CodeCompletionView.marked(label, match.highlights, ink, theme.colors('primary').base) }));
-        let room = columns - label.length - 2;
+        let room = columns - CodeCompletionView.cellsOf(label) - 2;
         let said: any; 
         let detail = ((item.detail != null && item.detail.length > 0) && (said = item.detail, true)) && room >= 2 ? CodeCompletionView.fit(said, room) : null;
         if (!(detail == null)) {
@@ -123,8 +124,21 @@ export class CodeCompletionView {
         return new Pressable(new Box(new BoxStyle({ width: SizeValue.fill, height: metrics.lineHeight, padding: EdgeInsets.symmetric(8, 0), background: selected ? theme.colors('primary').subtle : null, hover: selected ? null : new StyleDiff({ background: theme.surfaceSubtle }) }), row), pressed, { role: 'option', selected: selected, canRequestFocus: false, label: ((item.detail != null && item.detail.length > 0) && (whole = item.detail, true)) ? item.label + ', ' + whole : item.label });
     }
 
+    static cellsOf(text: string) {
+        return CodeLineCells.widthOf(text, CodeCompletionView.labelTabSize);
+    }
+
     static fit(text: string, columns: number) {
-        return text.length <= columns ? text : columns <= 1 ? '…' : $eq.text.substring(text, 0, columns - 1) + '…';
+        if (CodeCompletionView.cellsOf(text) <= columns) return text;
+        if (columns <= 1) return '…';
+        let cells = new CodeLineCells(text, CodeCompletionView.labelTabSize);
+        let end = 0;
+        for (let i = 0; i < cells.count; i++) {
+            let element = cells.elementAt(i);
+            if (element.cell + element.width > columns - 1) break;
+            end = element.end;
+        }
+        return $eq.text.substring(text, 0, end) + '…';
     }
 
     static glyph(theme: any, metrics: CodeMetrics, kind: CodeCompletionKindValue) {

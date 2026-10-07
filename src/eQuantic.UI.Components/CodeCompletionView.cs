@@ -43,6 +43,9 @@ internal static class CodeCompletionView
     /// padding above and below them.</summary>
     private const float DocumentationChrome = 1 + 2 * Space.S1;
 
+    /// <summary>The stops a tab in a label or a detail runs to, which no language puts there.</summary>
+    private const int LabelTabSize = 4;
+
     /// <summary>From the list's left edge to where its labels start: the frame, the row's padding,
     /// the letter's cell and the gap after it. The list stands this far left of the word, so its
     /// labels line up with what was typed.</summary>
@@ -58,7 +61,7 @@ internal static class CodeCompletionView
         foreach (var match in items)
         {
             var item = match.Item;
-            var columns = item.Label.Length + (item.Detail is { Length: > 0 } detail ? 2 + detail.Length : 0);
+            var columns = CellsOf(item.Label) + (item.Detail is { Length: > 0 } detail ? 2 + CellsOf(detail) : 0);
             if (columns > widest) widest = columns;
         }
         return Math.Min(widest, MaxColumns);
@@ -233,7 +236,7 @@ internal static class CodeCompletionView
             Spans = Marked(label, match.Highlights, ink, theme.Colors(Variant.Primary).Base),
         });
         // The detail has what the label left, less the two columns between them.
-        var room = columns - label.Length - 2;
+        var room = columns - CellsOf(label) - 2;
         var detail = item.Detail is { Length: > 0 } said && room >= 2 ? Fit(said, room) : null;
         if (detail is not null)
         {
@@ -263,10 +266,29 @@ internal static class CodeCompletionView
         };
     }
 
+    /// <summary>How many columns of the code face <paramref name="text"/> takes, counted as the code's
+    /// grid counts its cells: a wide character or an emoji takes two, a mark none.</summary>
+    private static int CellsOf(string text) => CodeLineCells.WidthOf(text, LabelTabSize);
+
     /// <summary><paramref name="text"/> in no more than <paramref name="columns"/> columns of the code
-    /// face, its end replaced by an ellipsis when it is longer.</summary>
-    internal static string Fit(string text, int columns) =>
-        text.Length <= columns ? text : columns <= 1 ? "…" : text.Substring(0, columns - 1) + "…";
+    /// face, its end replaced by an ellipsis when it is longer. The cut falls between two text
+    /// elements, never inside one: counting UTF-16 units split a surrogate pair, and drew half an
+    /// emoji as a replacement glyph.</summary>
+    internal static string Fit(string text, int columns)
+    {
+        if (CellsOf(text) <= columns) return text;
+        if (columns <= 1) return "…";
+        var cells = new CodeLineCells(text, LabelTabSize);
+        var end = 0;
+        for (var i = 0; i < cells.Count; i++)
+        {
+            var element = cells.ElementAt(i);
+            // One column is the ellipsis's.
+            if (element.Cell + element.Width > columns - 1) break;
+            end = element.End;
+        }
+        return text.Substring(0, end) + "…";
+    }
 
     /// <summary>The entry's kind, as its letter in its colour, centred in a square cell a line tall.</summary>
     private static VisualNode Glyph(IAppTheme theme, CodeBlock.CodeMetrics metrics, CodeCompletionKind kind)

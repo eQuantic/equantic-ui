@@ -140,7 +140,7 @@ public sealed class CodeEditor : StatefulComponent
         if (_handedAny && SameProviders(Completions, _handed)) return;
         _handedAny = true;
         var providers = completion.Providers;
-        foreach (var provider in _put) providers.Remove(provider);
+        foreach (var provider in _put) RemoveInstance(providers, provider);
         _put = Completions is null
             ? [new CodeKeywordCompletionProvider(), new CodeWordCompletionProvider()]
             : [.. Completions];
@@ -148,6 +148,19 @@ public sealed class CodeEditor : StatefulComponent
         // would always hold the same providers, and the ones it gained would never be handed.
         _handed = Completions is null ? null : _put;
         foreach (var provider in _put) providers.Add(provider);
+    }
+
+    /// <summary>Takes <paramref name="provider"/> itself out of <paramref name="providers"/>: by
+    /// reference, since <c>Remove</c> takes the first one that EQUALS it, which for a provider that
+    /// is a record can be one the app added.</summary>
+    private static void RemoveInstance(IList<ICodeCompletionProvider> providers, ICodeCompletionProvider provider)
+    {
+        for (var i = 0; i < providers.Count; i++)
+        {
+            if (!ReferenceEquals(providers[i], provider)) continue;
+            providers.RemoveAt(i);
+            return;
+        }
     }
 
     /// <summary>Whether two lists hold the same providers in the same order: a parent's build makes

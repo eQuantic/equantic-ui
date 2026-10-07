@@ -364,6 +364,46 @@ public class CodeEditorCompletionTests
         Shown(host).Should().Contain($"{name}, string", "the name keeps both whole");
     }
 
+    /// <summary>
+    /// A row is cut between two text elements, by the cells the code's grid gives them. Counted in
+    /// UTF-16 units, the cut fell inside an emoji's surrogate pair and drew half of it, and a label of
+    /// wide characters, twice as wide as its length, ran past the list uncut (found by Copilot
+    /// reviewing #653).
+    /// </summary>
+    [Fact]
+    public void ARowIsCutBetweenTextElements_ByTheCellsTheyTake()
+    {
+        var emoji = "Co" + new string('x', 56) + "😀😀😀";
+        var wide = "Co" + new string('中', 40);
+        var editor = Editor(Lines(20), new CodeCompletionItem(emoji), new CodeCompletionItem(wide));
+        var host = Host(editor);
+        Settle(host);
+        ClickAt(host, editor, 1, 0);
+
+        var frame = Type(host, "Co");
+
+        // The list's two labels, and not the code's own words that begin like them.
+        var labels = Descendants(frame.Root).Select(node => node.Source).OfType<Text>()
+            .Select(text => text.Content).Where(text => text.StartsWith("Cox") || text.StartsWith("Co中")).ToList();
+        labels.Should().HaveCount(2);
+        labels.Should().OnlyContain(label => Whole(label), "no cut falls inside a surrogate pair");
+        // The widest a list grows is sixty columns of the code face.
+        labels.Should().OnlyContain(label => CodeLineCells.WidthOf(label, 4) <= 60,
+            "and no label takes more cells than the list has");
+        labels.Should().OnlyContain(label => label.EndsWith("…"), "both are longer than the list, and cut");
+    }
+
+    /// <summary>Whether every surrogate in <paramref name="text"/> is half of a pair.</summary>
+    private static bool Whole(string text)
+    {
+        for (var i = 0; i < text.Length; i++)
+        {
+            if (char.IsHighSurrogate(text[i]) && i + 1 < text.Length && char.IsLowSurrogate(text[i + 1])) i++;
+            else if (char.IsSurrogate(text[i])) return false;
+        }
+        return true;
+    }
+
     private static IEnumerable<LayoutNode> Descendants(LayoutNode node)
     {
         yield return node;
@@ -745,6 +785,41 @@ public class CodeEditorCompletionTests
 
         editor.Editor.Completion.IsOpen.Should().BeTrue();
         editor.Editor.Completion.Providers.Should().Equal(handed, "the same providers are not handed again");
+    }
+
+    /// <summary>
+    /// The editor takes out the very providers it put in. Taken out by equality, a provider that
+    /// equals one of them, a record with the same values, went in their place though the app had
+    /// added it (found by Copilot reviewing #653).
+    /// </summary>
+    [Fact]
+    public void AProviderThatEqualsTheEditors_StaysWhenTheEditorTakesItsOwnOut()
+    {
+        var apps = new EqualProvider("words");
+        var editor = new CodeEditor(Lines(20), "csharp")
+        {
+            ShowLineNumbers = false,
+            Height = SizeValue.Fill,
+            Completions = [new EqualProvider("words")],
+        };
+        editor.Editor.Completion.Providers.Add(apps);
+        var host = Host(editor);
+        Settle(host);
+        editor.Editor.Completion.Providers.Should().HaveCount(2, "the app's provider and the editor's");
+
+        editor.AdoptConfig(new CodeEditor(Lines(20), "csharp") { Completions = [] });
+        Settle(host);
+
+        editor.Editor.Completion.Providers.Should().ContainSingle()
+            .Which.Should().BeSameAs(apps, "the editor took out its own, and only its own");
+    }
+
+    /// <summary>A provider that equals any other of the same name, as a record does.</summary>
+    private sealed record EqualProvider(string Name) : ICodeCompletionProvider
+    {
+        public Task<CodeCompletionList> CompleteAsync(CodeDocument document, CodePosition position,
+            CodeCompletionContext context, CancellationToken cancellation) =>
+            Task.FromResult(new CodeCompletionList(Array.Empty<CodeCompletionItem>()));
     }
 
     /// <summary>

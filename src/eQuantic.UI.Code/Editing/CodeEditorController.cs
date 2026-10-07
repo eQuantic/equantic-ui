@@ -368,13 +368,14 @@ public sealed class CodeEditorController : ICodeSurfaceModel
     /// the line's cells (<see cref="CellsOf"/>), on the nearer side of whatever the point hit. So a
     /// click on the right half of a character, a tab or a wide character puts the caret after it,
     /// which is what makes a click feel aimed rather than approximate, and no click lands inside a
-    /// text element. Past the end of a line it lands at the end; below the last line, at the end of
-    /// the document, as a press under the code does in any editor.
+    /// text element. Past the end of a line it lands at the end; below every row the grid draws, at
+    /// the end of the document, as a press under the code does in any editor. A diff's fillers after
+    /// the last line are rows, and land on the last line as any filler lands on its line.
     /// </summary>
     public CodePosition PositionAt(Point point)
     {
-        var last = _document.LineCount - 1;
-        if (point.Y >= Grid.PointOf(last, 0).Y + Grid.Cell.Height) return _document.End;
+        var rows = Grid.Rows?.RowCount ?? _document.LineCount;
+        if (point.Y >= Grid.Origin.Y + rows * Grid.Cell.Height) return _document.End;
         var target = _document.Clamp(new CodePosition(Math.Max(0, Grid.LineAt(point.Y)), 0)).Line;
         return new CodePosition(target, CellsOf(target).ColumnAt((point.X - Grid.Origin.X) / Grid.Cell.Width));
     }
