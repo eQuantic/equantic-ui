@@ -134,6 +134,49 @@ public class PageAuthorizationTests
         public override Ui.VisualNode Build(Ui.ComponentContext context) => new Ui.Text("failing", Ui.TypeRole.BodyM);
     }
 
+    /// <summary>A PUBLIC page whose server data fails to load: under a fallback policy it serves anyone.</summary>
+    [Ui.AllowAnonymous]
+    public sealed class PublicFailingPage : Ui.StatelessComponent, Ui.IServerPrefetch
+    {
+        public Task PrefetchAsync(IServiceProvider services, CancellationToken cancellationToken) =>
+            throw new InvalidOperationException("the database is down");
+
+        public override Ui.VisualNode Build(Ui.ComponentContext context) => new Ui.Text("failing", Ui.TypeRole.BodyM);
+    }
+
+    /// <summary>A 500 page that says nothing about authorization, with data of its own: the app's
+    /// fallback policy is its requirement, as it is at the page's own route.</summary>
+    public sealed class PlainErrorPage : Ui.StatelessComponent, Ui.IServerPrefetch
+    {
+        public string Row = "";
+
+        public Task PrefetchAsync(IServiceProvider services, CancellationToken cancellationToken)
+        {
+            Row = "PLAIN-ERROR-DATA";
+            return Task.CompletedTask;
+        }
+
+        public override Ui.VisualNode Build(Ui.ComponentContext context) =>
+            new Ui.Text(Row.Length > 0 ? Row : "nothing loaded", Ui.TypeRole.BodyM);
+    }
+
+    /// <summary>A 404 page under a policy that reads the request, as a handler for an
+    /// <c>HttpContext</c> resource does.</summary>
+    [Ui.Authorize(Policy = "Staff")]
+    public sealed class StaffNotFoundPage : Ui.StatelessComponent, Ui.IServerPrefetch
+    {
+        public string Row = "";
+
+        public Task PrefetchAsync(IServiceProvider services, CancellationToken cancellationToken)
+        {
+            Row = "STAFF-NOT-FOUND";
+            return Task.CompletedTask;
+        }
+
+        public override Ui.VisualNode Build(Ui.ComponentContext context) =>
+            new Ui.Text(Row.Length > 0 ? Row : "nothing loaded", Ui.TypeRole.BodyM);
+    }
+
     /// <summary>A request-scoped service, the kind a scoped result handler depends on.</summary>
     private sealed class RequestClock
     {
@@ -166,7 +209,8 @@ public class PageAuthorizationTests
     }
 
     private static async Task<(WebApplication App, HttpClient Client)> StartAsync(bool fallbackPolicy = false,
-        bool teapot = false, bool cultures = false, bool protectedErrorPages = false, bool scopedTeapot = false)
+        bool teapot = false, bool cultures = false, bool protectedErrorPages = false, bool scopedTeapot = false,
+        bool plainErrorPage = false, bool staffNotFoundPage = false)
     {
         var builder = WebApplication.CreateBuilder();
         builder.WebHost.UseTestServer();
@@ -183,6 +227,8 @@ public class PageAuthorizationTests
         builder.Services.AddAuthorization(options =>
         {
             options.AddPolicy("Backoffice", policy => policy.RequireRole("backoffice"));
+            options.AddPolicy("Staff", policy => policy.RequireAssertion(context =>
+                context.Resource is HttpContext http && http.Request.Headers.ContainsKey("X-Staff")));
             if (fallbackPolicy) options.FallbackPolicy = new AuthorizationPolicyBuilder().RequireAuthenticatedUser().Build();
         });
         builder.Services.AddUI(options =>
@@ -194,6 +240,8 @@ public class PageAuthorizationTests
                 options.RegisterErrorPage(typeof(ProtectedNotFoundPage), "/404");
                 options.RegisterErrorPage(typeof(ProtectedErrorPage), "/500");
             }
+            if (plainErrorPage) options.RegisterErrorPage(typeof(PlainErrorPage), "/500");
+            if (staffNotFoundPage) options.RegisterErrorPage(typeof(StaffNotFoundPage), "/404");
         });
         var app = builder.Build();
         if (cultures) app.UseRequestLocalization();
@@ -206,14 +254,22 @@ public class PageAuthorizationTests
             app.MapPage<ProtectedNotFoundPage>("/protected-404");
             app.MapPage<ProtectedErrorPage>("/protected-500");
         }
+        if (plainErrorPage)
+        {
+            app.MapPage<PublicFailingPage>("/public/failing");
+            app.MapPage<PlainErrorPage>("/plain-500");
+        }
+        if (staffNotFoundPage) app.MapPage<StaffNotFoundPage>("/staff-404");
         await app.StartAsync();
         var client = app.GetTestClient();
         return (app, client);
     }
 
-    private static HttpRequestMessage Get(string path, string? user = null, string? role = null, bool navigate = false)
+    private static HttpRequestMessage Get(string path, string? user = null, string? role = null, bool navigate = false,
+        bool staff = false)
     {
         var request = new HttpRequestMessage(HttpMethod.Get, path);
+        if (staff) request.Headers.Add("X-Staff", "1");
         if (user is not null) request.Headers.Add("X-Test-User", user);
         if (role is not null) request.Headers.Add("X-Test-Role", role);
         if (navigate) request.Headers.Add("X-EQ-Navigate", "1");
@@ -367,6 +423,44 @@ public class PageAuthorizationTests
         (await (await client.SendAsync(Get("/failing"))).Content.ReadAsStringAsync()).Should().NotContain("ERROR-SECRET");
         (await (await client.SendAsync(Get("/failing", user: "ana", role: "backoffice"))).Content.ReadAsStringAsync())
             .Should().Contain("ERROR-SECRET");
+    }
+
+    /// <summary>A 500 page that names no requirement is under the app's fallback policy, as it is at its
+    /// own route: a public page that fails does not draw it, its data included, for a visitor that
+    /// policy refuses (found by Copilot on #686).</summary>
+    [Fact]
+    public async Task UnderAFallbackPolicy_APlain500PageIsNotDrawnForAVisitorItRefuses()
+    {
+        var (app, client) = await StartAsync(fallbackPolicy: true, plainErrorPage: true);
+        await using var _ = app;
+
+        (await client.SendAsync(Get("/plain-500"))).StatusCode.Should().Be(HttpStatusCode.Redirect,
+            "at its own route the fallback policy challenges an anonymous visitor");
+        var anonymous = await client.SendAsync(Get("/public/failing"));
+        (await anonymous.Content.ReadAsStringAsync()).Should().NotContain("PLAIN-ERROR-DATA");
+
+        var signedIn = await client.SendAsync(Get("/public/failing", user: "ana"));
+        signedIn.StatusCode.Should().Be(HttpStatusCode.InternalServerError);
+        (await signedIn.Content.ReadAsStringAsync()).Should().Contain("PLAIN-ERROR-DATA");
+    }
+
+    /// <summary>The request is the policy's resource, as the authorization middleware passes it: a 404
+    /// page under a policy that reads the request is drawn for the visitor its own route serves (found
+    /// by Copilot on #686).</summary>
+    [Fact]
+    public async Task A404PagesPolicy_ReadsTheRequestAsItsResource()
+    {
+        var (app, client) = await StartAsync(staffNotFoundPage: true);
+        await using var _ = app;
+
+        (await (await client.SendAsync(Get("/staff-404", staff: true))).Content.ReadAsStringAsync())
+            .Should().Contain("STAFF-NOT-FOUND", "its own route serves the visitor the policy allows");
+        var staff = await client.SendAsync(Get("/no/such/route", staff: true));
+        staff.StatusCode.Should().Be(HttpStatusCode.NotFound);
+        (await staff.Content.ReadAsStringAsync()).Should().Contain("STAFF-NOT-FOUND");
+
+        (await (await client.SendAsync(Get("/no/such/route"))).Content.ReadAsStringAsync())
+            .Should().NotContain("STAFF-NOT-FOUND");
     }
 
     [Fact]
