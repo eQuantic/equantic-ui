@@ -1631,6 +1631,26 @@ record of a release, the wiki's Upgrading page is the distillate.
   and curly-brace parsers and the SDK's strings, which search a char from a start, now throw where
   the same C# throws on the server. Proposed and archived through OpenSpec
   (`openspec/specs/transpiler-bcl`).
+- **2026-10-07 · Photon hit-tests and lays out what it draws**: five places where Photon took the
+  pointer, or laid a child, where the web does not. A target's slop took its neighbours' presses: in a
+  list of 20dp rows under a finger, a press in the middle of a row ran the row below it
+  ([#630](https://github.com/eQuantic/equantic-ui/issues/630)); a hit region now carries the box its
+  pressable is drawn in, and the box under the point wins unless a slop in front of it stands inside
+  it, the rule a padded target gives in Flutter. The frame's region lists are sized like the frame
+  before's, which pays for that box and brings the pooled steady frame from 73.2 KB to 71.2, its
+  ceiling down to 72. A transformed box registered its regions at its layout rect
+  ([#513](https://github.com/eQuantic/equantic-ui/issues/513)); the sink places every region kind
+  where a transform draws it, a rotated one is tested against its shape through an inverse the frame
+  keeps only when something interactive is transformed, and a pressable follows the box it wraps. A
+  text field and a sheet past their scroll view took presses outside it
+  ([#635](https://github.com/eQuantic/equantic-ui/issues/635)), and carry their visible part as a code
+  surface does. A bordered box laid its child over its border
+  ([#629](https://github.com/eQuantic/equantic-ui/issues/629)), and the stand-in measurer gave a lone
+  space zero width, so a rich paragraph measured narrower than its plain twin
+  ([#285](https://github.com/eQuantic/equantic-ui/issues/285)). Reported: an editing surface under a
+  scale or a rotation still turns a press into a caret or a cell through its layout rect
+  ([#658](https://github.com/eQuantic/equantic-ui/issues/658)). Proposed and archived through OpenSpec
+  (`openspec/specs/hit-targets`, `openspec/specs/box-layout`, `openspec/specs/text-measurement`).
 
 ## Retired documents
 
