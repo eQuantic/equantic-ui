@@ -372,9 +372,15 @@ public static class UIExtensions
                     context.Response.ContentType = "application/javascript";
                     await context.Response.SendFileAsync(localPath);
                 }
-                else
+                else if (path is not null)
                 {
-                    await context.Response.WriteAsync($"// 404: Component {name} not found at {path} or {localPath}");
+                    // The paths are the server's own, and this route serves anyone: they are for a
+                    // developer, so only Development writes them.
+                    context.Response.ContentType = "application/javascript";
+                    await context.Response.WriteAsync(
+                        context.RequestServices.GetRequiredService<IWebHostEnvironment>().IsDevelopment()
+                            ? $"// 404: Component {name} not found at {path} or {localPath}"
+                            : $"// 404: Component {name} not found");
                 }
             }
         }).AllowAnonymous();
