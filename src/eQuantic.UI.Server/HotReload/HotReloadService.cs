@@ -6,7 +6,7 @@ using Microsoft.AspNetCore.Http;
 namespace eQuantic.UI.Server.HotReload;
 
 /// <summary>
-/// Phase 3 hot reload (v1, DEVELOPMENT only): watches the app's C# sources, re-runs the SDK's own
+/// Phase 3 hot reload (v1, in Development and under dotnet watch): watches the app's C# sources, re-runs the SDK's own
 /// eqc target (<c>dotnet msbuild -t:CompileEQuanticUI</c> — the exact pipeline a normal build
 /// uses, nothing bespoke), and notifies connected browsers over SSE. The RUNTIME side captures the
 /// live page state before reloading and replays it through the ordinary SSR-hydration mechanic —
@@ -15,6 +15,8 @@ namespace eQuantic.UI.Server.HotReload;
 public sealed class HotReloadService : IDisposable
 {
     private readonly string _contentRoot;
+    private readonly Func<Process?> _startRebuild;
+    private readonly TimeSpan _limit;
     private readonly ConcurrentDictionary<Guid, Channel<string>> _clients = new();
     private FileSystemWatcher? _watcher;
     private Timer? _debounce;
@@ -23,7 +25,25 @@ public sealed class HotReloadService : IDisposable
     private Process? _rebuild;
     private volatile bool _disposed;
 
-    public HotReloadService(string contentRoot) => _contentRoot = contentRoot;
+    public HotReloadService(string contentRoot)
+        : this(contentRoot, () => Process.Start(new ProcessStartInfo
+        {
+            FileName = "dotnet",
+            Arguments = "msbuild -t:CompileEQuanticUI -v:q -nologo",
+            WorkingDirectory = contentRoot,
+            RedirectStandardOutput = true,
+            RedirectStandardError = true,
+        }), TimeSpan.FromMinutes(2))
+    {
+    }
+
+    /// <summary>The service with the rebuild it starts and how long it may take, which a test sets.</summary>
+    internal HotReloadService(string contentRoot, Func<Process?> startRebuild, TimeSpan limit)
+    {
+        _contentRoot = contentRoot;
+        _startRebuild = startRebuild;
+        _limit = limit;
+    }
 
     public void Start()
     {
@@ -52,19 +72,12 @@ public sealed class HotReloadService : IDisposable
         _debounce = new Timer(_ => Rebuild(), null, 400, Timeout.Infinite);
     }
 
-    private void Rebuild()
+    internal void Rebuild()
     {
         if (_disposed || Interlocked.Exchange(ref _building, 1) == 1) return;
         try
         {
-            using var process = Process.Start(new ProcessStartInfo
-            {
-                FileName = "dotnet",
-                Arguments = "msbuild -t:CompileEQuanticUI -v:q -nologo",
-                WorkingDirectory = _contentRoot,
-                RedirectStandardOutput = true,
-                RedirectStandardError = true,
-            });
+            using var process = _startRebuild();
             if (process is null) return;
             _rebuild = process;
             // Disposed while it started: the read in Dispose may have missed it.
@@ -79,7 +92,15 @@ public sealed class HotReloadService : IDisposable
             var stdout = process.StandardOutput.ReadToEndAsync();
             var stderr = process.StandardError.ReadToEndAsync();
             var started = Stopwatch.StartNew();
-            process.WaitForExit(120_000);
+            if (!process.WaitForExit(_limit))
+            {
+                // Stopped, not abandoned: releasing the wrapper ends nothing, and a build left running
+                // writes beside the next one, where shutdown can no longer reach it.
+                Stop(process);
+                process.WaitForExit(5_000);
+                Console.WriteLine($"[eQuantic.HotReload] eqc rebuild stopped after {_limit.TotalSeconds:F0}s");
+                return;
+            }
             if (_disposed) return;
             if (process.ExitCode == 0)
             {
@@ -121,6 +142,9 @@ public sealed class HotReloadService : IDisposable
         var id = Guid.NewGuid();
         var channel = Channel.CreateUnbounded<string>();
         _clients[id] = channel;
+        // Registered after Dispose completed every channel it found: this one ends here, or it holds
+        // the shutdown until the host gives up on it.
+        if (_disposed) channel.Writer.TryComplete();
         try
         {
             await foreach (var frame in channel.Reader.ReadAllAsync(context.RequestAborted))
