@@ -1604,7 +1604,9 @@ record of a release, the wiki's Upgrading page is the distillate.
   diff's fillers after it went to the end instead of to that line; a row was cut by UTF-16 units,
   splitting an emoji and leaving wide characters uncut, and is now cut by the cells the code's grid
   gives each text element; and the editor took its providers out by equality, so one the app added
-  that equalled the editor's went in its place. Proposed and archived through OpenSpec
+  that equalled the editor's went in its place. Its third round found two more: every class module
+  imported the runtime's `BuildContext`, which an app's own class of that name then declared twice,
+  and the list measured all its entries on every arrow key. Proposed and archived through OpenSpec
   (`openspec/specs/code-completion`, `openspec/specs/code-editor`).
 
 ## Retired documents

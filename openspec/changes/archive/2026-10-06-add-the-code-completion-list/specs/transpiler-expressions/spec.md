@@ -31,7 +31,8 @@ members and parameters, a record's members, parameters and setters, a local, the
 list, and a local function's parameters. A record's static that starts as null SHALL be annotated with
 its type and the null. The build context, which C# names `ComponentContext`, SHALL be annotated
 `BuildContext`, the name the runtime exports to every module, and a module that writes it SHALL import
-it; its `typeScale` SHALL be the number C# holds.
+it; its `typeScale` SHALL be the number C# holds. An app's own type named `BuildContext` SHALL be the
+app's: no module SHALL import that name from the runtime for it.
 
 #### Scenario: An event of exceptions and lists of an interface and of exceptions
 
@@ -53,3 +54,8 @@ it; its `typeScale` SHALL be the number C# holds.
   scales a `TypeStyle`'s line height by its `TypeScale`
 - **THEN** the twin annotates the parameter `BuildContext`, imports it, and passes the runtime's type
   check
+
+#### Scenario: An app's own class named BuildContext
+
+- **WHEN** an app declares a class named `BuildContext`
+- **THEN** its module declares the class, and imports nothing of that name from the runtime
