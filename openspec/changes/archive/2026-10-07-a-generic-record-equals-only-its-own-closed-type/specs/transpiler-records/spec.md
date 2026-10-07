@@ -20,6 +20,17 @@ SHALL keep the closed type of the value it copies. A value whose type arguments 
 - **WHEN** `record struct Pair<T>(T A);` and `new Pair<int>(1).Equals((object)new Pair<double>(1))` runs
 - **THEN** it answers false, as in .NET
 
+#### Scenario: One closed type under two spellings
+
+- **WHEN** `new Box<(int A, int B)>((1, 2)).Equals((object)new Box<(int, int)>((1, 2)))` runs
+- **THEN** it answers true, as in .NET, whose closed type erases a tuple's element names (and takes
+  `dynamic` as `object`)
+
+#### Scenario: A target-typed construction
+
+- **WHEN** `Box<int> box = new(1);` is compared with `new Box<double>(1)`
+- **THEN** it answers false, as in .NET
+
 #### Scenario: One closed type
 
 - **WHEN** `new Box<int>(1)` is compared with `new Box<int>(1)`, and with a `Box<int>` built by
