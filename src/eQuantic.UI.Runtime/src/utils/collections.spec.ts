@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
-import { sortedDictionary } from './sorted';
-import { dictionary } from './dictionary';
+import { sortedDictionary, sortedList, sortedSet } from './sorted';
+import { dictionary, pair } from './dictionary';
+import { hashSetOf } from './hash-set';
 import {
   Queue,
   queue,
@@ -9,6 +10,9 @@ import {
   LinkedList,
   linkedList,
   remove,
+  add,
+  clear,
+  count,
 } from './collections';
 
 describe('Queue<T> — FIFO', () => {
@@ -169,5 +173,62 @@ describe('remove over a dictionary, as ICollection<KeyValuePair<K, V>> removes',
     expect(remove(sorted as never, { key: 2, value: 'b' } as never)).toBe(true);
     expect(sorted.size).toBe(1);
     expect(sorted.has(2)).toBe(false);
+  });
+});
+
+// ICollection<T>'s Add and Clear, which reach the runtime with whichever collection the interface holds
+// when the call runs (#593): an array's push and splice were all they had.
+describe("ICollection<T>'s Add and Clear, as the collection behind the interface answers them", () => {
+  it('adds as each collection adds its own: appended, a value a set holds ignored, a linked list last', () => {
+    const list = [1];
+    add(list, 2);
+    expect(list).toEqual([1, 2]);
+    const set = hashSetOf([1]);
+    add(set, 2);
+    add(set, 1);
+    expect([...set]).toEqual([1, 2]);
+    const linked = linkedList([1]);
+    add(linked, 2);
+    expect(linked.toArray()).toEqual([1, 2]);
+    const sorted = sortedSet([3]);
+    add(sorted, 1);
+    add(sorted, 3);
+    expect(sorted.toArray()).toEqual([1, 3]);
+  });
+
+  it("adds a dictionary's pair, and refuses a key already there in each dictionary's words", () => {
+    const dict = dictionary<string, number>();
+    add(dict, pair('a', 1));
+    expect(dict.get('a')).toBe(1);
+    expect(() => add(dict, pair('a', 2))).toThrow('An item with the same key has already been added. Key: a');
+    const sorted = sortedDictionary<number, string>();
+    add(sorted, pair(2, 'b'));
+    add(sorted, pair(1, 'a'));
+    expect(sorted.keys()).toEqual([1, 2]);
+    expect(() => add(sortedList<number, string>([[2, 'b']]), pair(2, 'c'))).toThrow("Key: 2 (Parameter 'key')");
+  });
+
+  it('clears each in place, and a twin through its own members', () => {
+    const list = [1, 2];
+    clear(list);
+    expect(list).toEqual([]);
+    const set = hashSetOf([1]);
+    clear(set);
+    expect(set.size).toBe(0);
+    const linked = linkedList([1, 2]);
+    clear(linked);
+    expect(linked.count).toBe(0);
+    const held: number[] = [];
+    const twin = {
+      add: (item: number) => held.push(item),
+      clear: () => (held.length = 0),
+      get count() {
+        return held.length;
+      },
+    };
+    add(twin, 7);
+    expect(count(twin)).toBe(1);
+    clear(twin);
+    expect(count(twin)).toBe(0);
   });
 });

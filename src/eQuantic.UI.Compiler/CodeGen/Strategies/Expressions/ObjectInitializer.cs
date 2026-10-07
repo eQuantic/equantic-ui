@@ -157,8 +157,8 @@ internal static class ObjectInitializer
         /// One element added to the collection a member holds, as every call to the <c>Add</c> the bound
         /// tree binds it to lowers: an EXTENSION's through its home's static, with the collection first
         /// (<see cref="InvocationStrategy.Extension"/>), a dictionary's pair through the lowering every
-        /// call to its <c>Add</c> has, a set's value through its <c>add</c>, a list's or a collection
-        /// interface's through the array's <c>push</c>, as <c>Items.Add(1)</c> lowers
+        /// call to its <c>Add</c> has, a set's value through its <c>add</c>, a list's through the array's
+        /// <c>push</c> and a collection interface's through the runtime's, as <c>Items.Add(1)</c> lowers
         /// (<see cref="Primitives.ListMethodStrategy"/>), and the <c>Add</c> of a type whose twin eqc
         /// writes, or of a vocabulary node, through the method itself. Each collection's own lowering
         /// applies only to its own <c>Add</c>: an extension <c>Add(this List&lt;string&gt;, int)</c> was
@@ -189,7 +189,7 @@ internal static class ObjectInitializer
                 or "System.Collections.Generic.SortedSet<T>")
                 return arguments.Count == 1 ? JsExpr.Call(JsExpr.Member(receiver, "add"), Part(arguments[0])) : null;
             if (Primitives.ListMethodStrategy.Lowers(add))
-                return Primitives.ListMethodStrategy.Add(receiver, [.. arguments.Select(Part)]);
+                return Primitives.ListMethodStrategy.Add(add, receiver, [.. arguments.Select(Part)], context);
 
             if (declaring is not null && TwinCarries(declaring))
                 return JsExpr.Call(JsExpr.Member(receiver, add!.Name.ToCamelCase()), [.. arguments.Select(Part)]);

@@ -118,6 +118,8 @@ import {
   linkedList,
   contains,
   remove,
+  add as collectionAdd,
+  clear as collectionClear,
   sameItem,
   pairComparer,
   count,
@@ -408,6 +410,9 @@ export const $eq = {
     count,
     setAdd,
     remove,
+    /** `ICollection<T>`'s `Add` and `Clear`, for whichever collection the interface holds (#593). */
+    add: collectionAdd,
+    clear: collectionClear,
     sameItem,
     pairComparer,
     /** `new HashSet<T>(…)`, and a set an initializer or a collection expression builds. */

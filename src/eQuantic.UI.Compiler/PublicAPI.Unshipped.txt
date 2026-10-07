@@ -56,3 +56,5 @@ eQuantic.UI.Compiler.CodeGen.ValueMember.ValueMember(string! Display, string! Js
 eQuantic.UI.Compiler.CodeGen.ValueMember.Store.get -> string!
 eQuantic.UI.Compiler.CodeGen.ValueMember.Store.init -> void
 eQuantic.UI.Compiler.Services.TypeScriptCodeBuilder.ClassBuilder.State(string! name, string? type, Microsoft.CodeAnalysis.SyntaxNode? sourceNode = null) -> void
+const eQuantic.UI.Compiler.CodeGen.Eq.CollectionAdd = "$eq.collections.add" -> string!
+const eQuantic.UI.Compiler.CodeGen.Eq.CollectionClear = "$eq.collections.clear" -> string!

@@ -84,4 +84,88 @@ public class CollectionAndIndexerConformanceTests
         Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
         ConformanceRunner.AssertStatementsSameAsDotNet(statements);
     }
+
+    /// <summary>
+    /// <c>ICollection&lt;T&gt;</c>'s <c>Add</c> and <c>Clear</c> answer for the collection the interface
+    /// holds when the call runs, as <c>Contains</c>, <c>Remove</c> and <c>CopyTo</c> already did: a set
+    /// adds what it does not hold, a linked list adds last, a dictionary adds the pair's key and refuses
+    /// one already there. They were an array's <c>push</c> and <c>splice</c>, which none of those has
+    /// (#593).
+    /// </summary>
+    [SkippableTheory]
+    // The rows of #593.
+    [InlineData("ICollection<int> c = new HashSet<int> { 1 }; c.Add(2); c.Add(1); return c.Count + \"|\" + string.Join(\",\", c);")]         // 2|1,2
+    [InlineData("ICollection<int> c = new LinkedList<int>(new[] { 1 }); c.Add(2); return c.Count + \"|\" + string.Join(\",\", c);")]         // 2|1,2
+    [InlineData("ICollection<int> c = new HashSet<int> { 1 }; c.Clear(); return c.Count;")]                                                // 0
+    // The same two over a linked list, a sorted set and a dictionary's pairs.
+    [InlineData("ICollection<int> c = new LinkedList<int>(new[] { 1, 2 }); c.Clear(); c.Add(3); return c.Count + \"|\" + string.Join(\",\", c);")] // 1|3
+    [InlineData("ICollection<int> c = new SortedSet<int> { 3 }; c.Add(1); c.Add(3); return string.Join(\",\", c);")]                       // 1,3
+    [InlineData("ICollection<int> c = new SortedSet<int> { 3 }; c.Clear(); return c.Count;")]                                               // 0
+    [InlineData("ICollection<KeyValuePair<string, int>> c = new Dictionary<string, int>(); c.Add(new KeyValuePair<string, int>(\"a\", 1)); return c.Count + \"|\" + string.Join(\",\", c.Select(p => p.Key + p.Value));")] // 1|a1
+    [InlineData("ICollection<KeyValuePair<string, int>> c = new Dictionary<string, int> { [\"a\"] = 1 }; try { c.Add(new KeyValuePair<string, int>(\"a\", 2)); return \"added\"; } catch (Exception e) { return e.Message; }")]
+    [InlineData("ICollection<KeyValuePair<string, int>> c = new Dictionary<string, int> { [\"a\"] = 1 }; c.Clear(); return c.Count;")]       // 0
+    [InlineData("ICollection<KeyValuePair<int, string>> c = new SortedDictionary<int, string>(); c.Add(new KeyValuePair<int, string>(2, \"b\")); c.Add(new KeyValuePair<int, string>(1, \"a\")); return string.Join(\",\", c.Select(p => p.Value));")] // a,b
+    [InlineData("ICollection<KeyValuePair<int, string>> c = new SortedList<int, string> { [2] = \"b\" }; try { c.Add(new KeyValuePair<int, string>(2, \"c\")); return \"added\"; } catch (Exception e) { return e.Message; }")]
+    // A list behind the interface as before, and a set behind ISet<T>, whose Clear is ICollection<T>'s.
+    [InlineData("ICollection<int> c = new List<int> { 1 }; c.Add(2); c.Clear(); c.Add(3); return string.Join(\",\", c);")]                 // 3
+    [InlineData("IList<int> l = new List<int> { 1 }; l.Add(2); return string.Join(\",\", l) + \"|\" + l.Count;")]                          // 1,2|2
+    [InlineData("ISet<int> s = new HashSet<int> { 1, 2 }; s.Clear(); return s.Count;")]                                                     // 0
+    public void ICollectionsAddAndClear_AnswerForTheCollectionBehindIt(string statements)
+    {
+        Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
+        ConformanceRunner.AssertStatementsSameAsDotNet(statements);
+    }
+
+    private const string Bags = """
+        using System.Collections;
+        using System.Collections.Generic;
+
+        public class Bag : ICollection<int>
+        {
+            private readonly List<int> _items = new();
+            public int Adds;
+            public int Count => _items.Count;
+            public bool IsReadOnly => false;
+            public void Add(int item) { Adds++; _items.Add(item); }
+            public void Clear() => _items.Clear();
+            public bool Contains(int item) => _items.Contains(item);
+            public void CopyTo(int[] array, int arrayIndex) => _items.CopyTo(array, arrayIndex);
+            public bool Remove(int item) => _items.Remove(item);
+            public IEnumerator<int> GetEnumerator() { foreach (var item in _items) yield return item; }
+            IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+        }
+
+        public class Holder
+        {
+            public ICollection<int> Items { get; } = new HashSet<int> { 1 };
+            public ICollection<int> Bagged { get; } = new Bag();
+        }
+        """;
+
+    private static readonly (string Name, string Statements)[] BagCases =
+    [
+        // "2|0|2"
+        ("a class of the app's own behind the interface", "ICollection<int> c = new Bag(); c.Add(1); c.Add(2); var n = c.Count; c.Clear(); return n + \"|\" + c.Count + \"|\" + ((Bag)c).Adds;"),
+        // "2|1": a member's collection initializer adds through the interface's Add
+        ("a member's initializer adds through the interface", "var h = new Holder { Items = { 1, 2 }, Bagged = { 5 } }; return h.Items.Count + \"|\" + h.Bagged.Count;"),
+    ];
+
+    public static TheoryData<string, bool> BagCaseNames() => Each(BagCases);
+
+    [SkippableTheory]
+    [MemberData(nameof(BagCaseNames))]
+    public void ICollectionsAddAndClear_ReachAClassOfTheAppsOwn(string name, bool typeAnnotations) =>
+        ModuleGraph.AssertSameAsDotNet(Bags, typeAnnotations, BagCases.Single(c => c.Name == name));
+
+    /// <summary>Each case by its name, in the SDK's TypeScript and in plain JavaScript.</summary>
+    private static TheoryData<string, bool> Each(IEnumerable<(string Name, string Statements)> cases)
+    {
+        var data = new TheoryData<string, bool>();
+        foreach (var (name, _) in cases)
+        {
+            data.Add(name, true);
+            data.Add(name, false);
+        }
+        return data;
+    }
 }

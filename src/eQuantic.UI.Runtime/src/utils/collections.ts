@@ -7,10 +7,12 @@
  * `new Queue<T>(...)` / `new Stack<T>(...)` and maps the instance methods to camelCase.
  */
 
+import { Dictionary as RuntimeDictionary } from './dictionary';
 import { equals } from './equals';
 import { exception } from './exceptions';
 import { HashSet } from './hash-set';
 import { sameBy, sameItem, type KeyEquality } from './key-equality';
+import { SortedMap } from './sorted';
 
 export { pairComparer, sameItem } from './key-equality';
 
@@ -342,10 +344,32 @@ export function remove<T>(
 }
 
 /**
- * `HashSet<T>.Add` — which answers whether the value was NEW, and is the whole reason
- * `if (!set.Add(x)) set.Remove(x)` toggles. A JS `Set.add` returns the set itself, always truthy,
- * so that idiom silently became "add, and never remove".
+ * `ICollection<T>.Add`, for the collection the interface holds when the call runs, each adding as its
+ * own `ICollection<T>.Add` does in .NET (#593): an array (a `List<T>`) appends; a set adds a value it
+ * does not hold and ignores one it does, a `HashSet` and a `SortedSet` alike; a linked list adds LAST;
+ * a dictionary (`ICollection<KeyValuePair<K, V>>`) adds the pair's key and value and refuses a key
+ * already there in its own words, the runtime's `Dictionary` and a sorted map alike; and a twin calls
+ * its own `add`. It was an array's `push`, which none of the others has.
  */
+export function add<T>(collection: unknown, item: T): void {
+  if (Array.isArray(collection)) collection.push(item);
+  else if (collection instanceof LinkedList) collection.addLast(item);
+  else if (collection instanceof RuntimeDictionary || collection instanceof SortedMap) {
+    const { key, value } = item as { key: unknown; value: unknown };
+    collection.add(key, value);
+  } else (collection as { add(item: T): unknown }).add(item);
+}
+
+/**
+ * `ICollection<T>.Clear`, for the collection the interface holds when the call runs: an array (a
+ * `List<T>`) is emptied in place, and every other collection, the runtime's and a twin, by its own
+ * `clear` (#593). It was an array's `splice`, which a set, a linked list and a dictionary lack.
+ */
+export function clear(collection: unknown): void {
+  if (Array.isArray(collection)) collection.length = 0;
+  else (collection as { clear(): void }).clear();
+}
+
 /**
  * LINQ's Zip: pairs run out with the SHORTER sequence. A `map` over the receiver instead walks the
  * longer one and hands the selector `undefined` for the missing partner, which for numbers is a
@@ -362,6 +386,11 @@ export function zip<A, B, R>(
   return result;
 }
 
+/**
+ * `HashSet<T>.Add` — which answers whether the value was NEW, and is the whole reason
+ * `if (!set.Add(x)) set.Remove(x)` toggles. A JS `Set.add` returns the set itself, always truthy,
+ * so that idiom silently became "add, and never remove".
+ */
 export function setAdd<T>(set: Set<T>, value: T): boolean {
   if (set instanceof HashSet) return set.tryAdd(value);
   if (set.has(value)) return false;
@@ -370,16 +399,19 @@ export function setAdd<T>(set: Set<T>, value: T): boolean {
 }
 
 /**
- * How many a collection holds — `length`, `size`, or a walk. Same reason as {@link contains}: a C#
- * receiver typed as a collection may be an array or a Set here, and each keeps its count under a
- * different name. Null counts as none, so a guarded `xs?.Count` needs no guard at all.
+ * How many a collection holds — `length`, `size`, `count`, or a walk. Same reason as {@link contains}:
+ * a C# receiver typed as a collection may be an array or a Set here, and each keeps its count under a
+ * different name. The runtime's linked list, queue, stack and sorted set, and a twin of the app's own
+ * behind an `ICollection<T>` or an `IReadOnlyList<T>`, keep it as `count`, which a twin that cannot be
+ * walked answers alone (#586, #593). Null counts as none, so a guarded `xs?.Count` needs no guard at all.
  */
 export function count(collection: unknown): number {
   if (collection == null) return 0;
   if (Array.isArray(collection) || typeof collection === 'string') return collection.length;
-  const sized = collection as { size?: unknown; length?: unknown };
+  const sized = collection as { size?: unknown; length?: unknown; count?: unknown };
   if (typeof sized.size === 'number') return sized.size;
   if (typeof sized.length === 'number') return sized.length;
+  if (typeof sized.count === 'number') return sized.count;
   let total = 0;
   if (typeof (collection as Iterable<unknown>)[Symbol.iterator] === 'function')
     for (const _ of collection as Iterable<unknown>) total++;
