@@ -27,6 +27,7 @@ public sealed class TransitionStore
     }
 
     private readonly Dictionary<string, Transition> _tracks = new();
+    private readonly Dictionary<string, int> _positions = new();
 
     /// <summary>True when any transition was mid-flight during the current frame — the host keeps
     /// scheduling frames while set. Reset by <see cref="BeginFrame"/>.</summary>
@@ -117,6 +118,29 @@ public sealed class TransitionStore
             Byte(Resolve(path + ".b", target.B, timeMs, spec, false)),
             Byte(Resolve(path + ".a", target.A, timeMs, spec, false)));
     }
+
+    /// <summary>
+    /// How many positions a gliding LIST had the last frame it was drawn, or null the first time.
+    /// A list that grows seeds its new positions at nothing, so they glide in instead of mounting
+    /// at their target, and one that shrinks keeps drawing the positions it lost until they have
+    /// glided out: CSS pads the shorter of two <c>box-shadow</c> lists with transparent shadows,
+    /// and the custom shadows glide the same way (#508).
+    /// </summary>
+    public int? Positions(string path) => _positions.TryGetValue(path, out var count) ? count : null;
+
+    /// <summary>The count <see cref="Positions"/> answers next frame.</summary>
+    public void RememberPositions(string path, int count) => _positions[path] = count;
+
+    /// <summary>The value a track is gliding TOWARD, or null when <paramref name="path"/> has no
+    /// track — what a position that left its list fades from.</summary>
+    public float? Target(string path) => _tracks.TryGetValue(path, out var track) ? track.To : null;
+
+    /// <summary>The colour a <see cref="ResolveColor"/> track is gliding TOWARD, or null when it has
+    /// none, rounded as the track rounds what it draws.</summary>
+    public Color? TargetColor(string path) =>
+        Target(path + ".r") is { } r
+            ? new Color(Byte(r), Byte(Target(path + ".g") ?? 0), Byte(Target(path + ".b") ?? 0), Byte(Target(path + ".a") ?? 0))
+            : null;
 
     private static byte Byte(float channel) => (byte)Math.Clamp(MathF.Round(channel), 0, 255);
 
