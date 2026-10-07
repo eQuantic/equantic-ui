@@ -71,7 +71,7 @@ public class OverlayDialogRealizerTests
         var card = Find(node, n =>
             n.Tag == "div" && n.Attributes.TryGetValue("style", out var s) && s!.Contains("border-radius: 20px"))!;
         card.Attributes["style"].Should().Contain("max-width: 480px");
-        card.Attributes["style"].Should().Contain($"box-shadow: {TokenCss.Shadow(Theme.Elevation(5))}");
+        card.Attributes["style"].Should().Contain($"box-shadow: {TokenCss.RingSlot}, {TokenCss.Shadow(Theme.Elevation(5))}");
         card.Attributes["style"].Should().Contain("padding: 20px 20px 20px 20px");
 
         // Actions: right-aligned Medium buttons — Ghost first, Destructive commits.
