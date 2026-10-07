@@ -20,6 +20,7 @@ public class MemberCaseConformanceTests
         public class Pair { int value = 1; public int Value => value * 10; public int Sum(Pair other) => other.value + value; }
         public class Base { public int Total { get; set; } = 5; }
         public class Derived : Base { int total = 7; public int Own() => total + Total; }
+        public class Made { int value; public int Value { get => value; set => this.value = value * 2; } public static Made Make() => new Made { value = 5 }; }
         """;
 
     public static TheoryData<string, string, bool> Cases()
@@ -32,6 +33,7 @@ public class MemberCaseConformanceTests
             ("a getter beside its field", "var c = new Counted(); c.Set(); return c.Count;"),
             ("another instance's field", "var a = new Pair(); return a.Sum(new Pair()) + a.Value;"),
             ("a field beside a base's property", "return new Derived().Own();"),
+            ("an initializer naming the field", "return Made.Make().Value;"),
         };
         var data = new TheoryData<string, string, bool>();
         foreach (var (name, statements) in cases)
