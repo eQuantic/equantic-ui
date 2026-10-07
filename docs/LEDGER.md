@@ -1470,6 +1470,16 @@ record of a release, the wiki's Upgrading page is the distillate.
   another, in a lambda run three times at once over an array's elements, and behind a call that
   answers null and must not suspend the method, fail on main. #539's other sites closed in #561 and
   #566. Proposed and archived through OpenSpec (`openspec/specs/transpiler-expressions`).
+- **2026-10-06 · A page answers HEAD as it answers GET**: every page route and the modules under
+  `/_equantic/` were mapped with `MapGet`, so a HEAD fell through to the fallback and answered 404
+  where the GET answered 200, measured in the 0.2.0-preview.60 release proof on a fresh app
+  ([#575](https://github.com/eQuantic/equantic-ui/issues/575)): an uptime monitor, a link checker or
+  a crawler that asks with HEAD read every page as missing. A `[Page]` route and its culture twin, a
+  `MapPage<T>` route, `runtime.js`, an app's module and its source map are mapped for GET and HEAD
+  now, with the GET's handler, and Kestrel writes no body for a HEAD. `HeadRequestTests` runs on
+  Kestrel, because the test host answers a HEAD with the whole body (measured), and its four HEAD
+  cases fail against main's routes. Proposed and archived through OpenSpec
+  (`openspec/specs/page-routes`).
 - **2026-10-05 · A list, a set and a join answer as .NET's do**: a `List<T>` sorted by its elements'
   text and stably, `RemoveAll` threw a ReferenceError, `BinarySearch` was a `findIndex`, a comparer
   named a class nothing defines, `FindIndex`'s range reached its predicate, `CopyTo` wrote nowhere and
@@ -1621,6 +1631,35 @@ record of a release, the wiki's Upgrading page is the distillate.
   Migration: `ServerActionHub`, its route `/_equantic/hub` and the `AddSignalR()` call `AddUI` made
   are gone; an app that injected `IHubContext<ServerActionHub>`, which nothing documented, publishes
   through `IServerEventPublisher`, and an app that maps hubs of its own calls `AddSignalR()` itself. Proposed and archived through OpenSpec (`openspec/specs/server-events`).
+- **2026-10-06 · A char's search checks its start and its count**: `IndexOf(char, int)`,
+  `IndexOf(char, int, int)`, `LastIndexOf(char, int)` and `LastIndexOf(char, int, int)` were
+  JavaScript's `indexOf` and `lastIndexOf`, which take no count and clamp a start outside the string,
+  so `"abcabc".IndexOf('c', 0, 2)` answered 2 where .NET answers -1 and `"abc".IndexOf('a', 4)`
+  answered -1 where .NET throws ([#534](https://github.com/eQuantic/equantic-ui/issues/534)). They
+  reach the runtime's `indexOfChar` and `lastIndexOfChar`, ported from .NET 10's
+  `String.Searching.cs` and measured with `dotnet fsi`: `IndexOf`'s start may stand at the end of the
+  string, `LastIndexOf`'s must stand on a char of it (the string overloads step back from one past
+  the end instead), an empty string's `LastIndexOf` answers -1 for any start and count, and each
+  refusal is in .NET's words, the start checked before the count. The call is built by the runtime
+  call the comparing overloads use. 9 of the 16 conformance cases fail on main. The Markdown, Mermaid
+  and curly-brace parsers and the SDK's strings, which search a char from a start, now throw where
+  the same C# throws on the server. Proposed and archived through OpenSpec
+  (`openspec/specs/transpiler-bcl`).
+- **2026-10-06 · The conformance harness compares a value as the runtime holds it**: the .NET side
+  wrote a value as System.Text.Json writes it and the JS side as `JSON.stringify` writes the runtime's,
+  so a long, a decimal, an enum and a float compared backwards: a long that crossed as a BigInt
+  printed `"5"` against `5` and failed, and one that became a JS number passed
+  ([#596](https://github.com/eQuantic/equantic-ui/issues/596)). The cases returned `.ToString()`
+  instead, which hid it. The .NET side writes each kind as the runtime holds it now (`RuntimeJson`: a
+  BigInt's digits, a decimal's text, an enum's twin name, a double as JavaScript's `Number::toString`
+  writes it, a tuple and a pair as arrays), and the JS side prints a BigInt the same way whether or
+  not it imported the runtime, where `return 5L;` threw. 33 of the first 37 cases returning each kind
+  directly failed against the old harness, and the double writer matches bun's `String` on 5,000 doubles. Of
+  the 3,557 cases already there, one newly failed, and it was a real bug:
+  `DateTimeOffset.ToUnixTimeSeconds()` answered a JS number for a long, and rounded an instant before
+  1970 toward the epoch; it answers a BigInt cut as .NET cuts it now. Found on the way: the date
+  constructors past the second ([#606](https://github.com/eQuantic/equantic-ui/issues/606)).
+  Proposed and archived through OpenSpec (`openspec/specs/runtime-dates`).
 
 ## Retired documents
 

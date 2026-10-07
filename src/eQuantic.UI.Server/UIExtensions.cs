@@ -237,9 +237,18 @@ public static class UIExtensions
 
         // The same two endpoints a [Page] gets — the route, and its language-prefixed twin.
         foreach (var pattern in CultureEndpointPatterns(options, route))
-            endpoints.MapGet(pattern, async context => await ServeAppShell(context, pageType, new DeclaredPage(title, null)));
+            endpoints.MapGetAndHead(pattern, async context => await ServeAppShell(context, pageType, new DeclaredPage(title, null)));
         return endpoints;
     }
+
+    /// <summary>
+    /// GET and HEAD at <paramref name="pattern"/>. HTTP defines HEAD as GET without the content (RFC
+    /// 9110, section 9.3.2), and an uptime monitor, a link checker or a crawler asks with it: mapped
+    /// for GET alone, a HEAD fell through to the fallback and every page answered 404 (#575). The
+    /// handler is the GET's, and the server writes no body for a HEAD.
+    /// </summary>
+    private static IEndpointConventionBuilder MapGetAndHead(this IEndpointRouteBuilder endpoints, string pattern, RequestDelegate handler) =>
+        endpoints.MapMethods(pattern, [HttpMethods.Get, HttpMethods.Head], handler);
 
     /// <summary>
     /// The endpoints one page route answers at: itself, and — when the app declared language
@@ -294,13 +303,13 @@ public static class UIExtensions
                     // The endpoint carries the page's TYPE: by its simple name, two pages of one name in
                     // two namespaces rendered as one (#514).
                     foreach (var route in CultureEndpointPatterns(options, pageAttr.Route))
-                        endpoints.MapGet(route, async context => await ServeAppShell(context, pageType, declared));
+                        endpoints.MapGetAndHead(route, async context => await ServeAppShell(context, pageType, declared));
                 }
             }
         }
 
         // Map Runtime JS (immutable via BuildId in URL, long cache)
-        endpoints.MapGet("/_equantic/runtime.js", async context =>
+        endpoints.MapGetAndHead("/_equantic/runtime.js", async context =>
         {
             context.Response.ContentType = "application/javascript";
             context.Response.Headers["Cache-Control"] = "public, max-age=31536000, immutable";
@@ -319,7 +328,7 @@ public static class UIExtensions
         });
 
         // Debug/Fallback: Manually serve component files if StaticFiles misses them
-        endpoints.MapGet("/_equantic/{name}.js", async context =>
+        endpoints.MapGetAndHead("/_equantic/{name}.js", async context =>
         {
             var name = (string?)context.GetRouteValue("name");
             var path = Path.Combine(context.RequestServices.GetRequiredService<IWebHostEnvironment>().WebRootPath, "_equantic", $"{name}.js");
@@ -358,7 +367,7 @@ public static class UIExtensions
         // via client-side (SPA) navigation, where the page bundle is dynamically imported. Without this,
         // the `.js` loads but its `.js.map` 404s and the debugger can't map back to C#. Not cached
         // immutably (the map URL carries no version query, so a stale map must be revalidated).
-        endpoints.MapGet("/_equantic/{name}.js.map", async context =>
+        endpoints.MapGetAndHead("/_equantic/{name}.js.map", async context =>
         {
             var name = (string?)context.GetRouteValue("name");
             var webRoot = context.RequestServices.GetRequiredService<IWebHostEnvironment>().WebRootPath;

@@ -1,4 +1,6 @@
 #nullable enable
+const eQuantic.UI.Compiler.CodeGen.Eq.StringIndexOfChar = "$eq.text.indexOfChar" -> string!
+const eQuantic.UI.Compiler.CodeGen.Eq.StringLastIndexOfChar = "$eq.text.lastIndexOfChar" -> string!
 const eQuantic.UI.Compiler.CodeGen.Eq.CancellationLinked = "$eq.cancellation.linked" -> string!
 const eQuantic.UI.Compiler.CodeGen.Eq.CancellationNone = "$eq.cancellation.none" -> string!
 const eQuantic.UI.Compiler.CodeGen.Eq.CancellationRegistration = "$eq.cancellation.registration" -> string!
