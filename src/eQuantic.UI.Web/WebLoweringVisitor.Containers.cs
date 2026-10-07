@@ -1087,7 +1087,13 @@ internal sealed partial class WebLoweringVisitor
         // and Shrink were hardcoded here (`{Flex} 1 0%`) while the TS twin emitted them, so SSR and
         // hydration disagreed on the class, and on the first paint a wrapping row measured ZERO for
         // a child asking for 220: it never broke the line and shrank the child to nothing instead.
-        var basis = flexible.Basis > 0 ? TokenCss.Px(flexible.Basis) : "0%";
+        //
+        // A ZERO weight takes no share (#680): it keeps its basis, and without one it starts from
+        // its content, `auto`. `0%` would size an item that never grows at nothing, where Photon
+        // measures the child, as Flutter lets an inflexible child determine its own size.
+        var basis = flexible.Basis > 0 ? TokenCss.Px(flexible.Basis)
+            : flexible.Flex == 0 ? "auto"
+            : "0%";
         var element = new RealizedElement("div")
         {
             Style = new HtmlStyle

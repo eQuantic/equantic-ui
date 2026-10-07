@@ -161,6 +161,16 @@ public class ComponentParityFixtureTests
                     new TextRun("cdn") { Destination = "//cdn.example.com/x" },
                 ],
             }), NoPresses),
+
+        // A ZERO WEIGHT (#680): the server raised it to 1 while the twin wrote the zero, so the two
+        // disagreed about whether the item grows. At a basis it keeps the basis; without one it
+        // starts from its content, which is a declaration of its own on each side.
+        ("flexible-zero-weight-at-a-basis", Line(wrap: true,
+            new Flexible(new Text("picture", TypeRole.BodyM, Theme.TextPrimary), flex: 0, basis: 540),
+            new Flexible(new Text("story", TypeRole.BodyM, Theme.TextPrimary), flex: 1, basis: 380)), NoPresses),
+        ("flexible-zero-weight-from-content", Line(wrap: false,
+            new Flexible(new Text("label", TypeRole.BodyM, Theme.TextPrimary), flex: 0),
+            new Flexible(new Text("rest", TypeRole.BodyM, Theme.TextPrimary), flex: 1)), NoPresses),
     ];
 
     /// <summary>
@@ -206,6 +216,13 @@ public class ComponentParityFixtureTests
         var column = new Column(gap);
         foreach (var child in children) column.Add(child);
         return column;
+    }
+
+    private static VisualNode Line(bool wrap, params VisualNode[] children)
+    {
+        var row = new Row(gap: 0) { Wrap = wrap };
+        foreach (var child in children) row.Add(child);
+        return row;
     }
 
     [Fact]

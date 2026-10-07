@@ -89,12 +89,15 @@ internal sealed partial class MeasureVisitor
     /// <summary>
     /// Whether a flex item gives up width when the line overflows. CSS shrinks every item by
     /// default; what it never shrinks is a size the AUTHOR pinned — so a Fixed extent, a Spacer
-    /// and a Flexible (which is sized from leftover, not from content) all stay put.
+    /// and a weighted Flexible (which is sized from leftover, not from content) all stay put.
     /// </summary>
     private bool Shrinkable(VisualNode child) => child switch
     {
         Text => false,                       // already asked, above
-        Spacer or Flexible => false,
+        Spacer => false,
+        // A weight of ZERO took no leftover (#680): it is an item at its basis, or at its own size,
+        // and it gives space back by its own Shrink, as `flex: 0 1 540px` does in CSS.
+        Flexible flexible => flexible is { Flex: 0, Shrink: > 0 },
         Box box => box.Style.Width.Kind != SizeKind.Fixed,
         FlexNode flex => flex.Width.Kind != SizeKind.Fixed,
         // NO WRAPPER ARM, and that is measured rather than left out. #225 assumed four readers

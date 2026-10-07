@@ -1838,12 +1838,17 @@ export class Positioned extends VisualNode {
 }
 
 interface FlexibleConfig {
+  /** C#'s object initializer can set the three numbers too (they are `init` there). */
+  flex?: number;
+  basis?: number;
+  shrink?: number;
   animateChanges?: boolean;
 }
 
 export class Flexible extends VisualNode {
   readonly nodeKind = 'flexible';
   child: VisualChild;
+  /** CSS flex-grow. 0 takes no share of the leftover: the child keeps its basis, or its content. */
   flex: number;
   /** CSS flex-basis in dp — the size the line breaker measures against when the parent wraps. */
   basis: number;
@@ -1858,6 +1863,28 @@ export class Flexible extends VisualNode {
     this.basis = basis;
     this.shrink = shrink;
     if (config) Object.assign(this, config);
+    // LAST, after every path that writes a number, for the reason Text checks its heading level
+    // there: the trailing config is the C# object initializer, and it runs after the parameters.
+    refuseFlexNumbers(this);
+  }
+}
+
+/**
+ * A Flexible's numbers as the C# accepts them (#680), refused where C# refuses them rather than
+ * clamped: a clamp once turned `flex: 0` into an item that grew. A weight and a shrink are whole
+ * numbers, zero or more; a basis is a finite size, zero or more. The lowering reads plain objects
+ * and degrades instead, like Text's heading level.
+ */
+function refuseFlexNumbers(flexible: Flexible): void {
+  const whole = (value: number) => Number.isInteger(value) && value >= 0;
+  if (!whole(flexible.flex)) {
+    throw new RangeError(`A flex weight is zero or more, not ${flexible.flex}.`);
+  }
+  if (!Number.isFinite(flexible.basis) || flexible.basis < 0) {
+    throw new RangeError(`A flex basis is a size in dp, zero or more, not ${flexible.basis}.`);
+  }
+  if (!whole(flexible.shrink)) {
+    throw new RangeError(`A flex shrink is zero or more, not ${flexible.shrink}.`);
   }
 }
 

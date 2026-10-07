@@ -2993,8 +2993,15 @@ function lowerFlexible(
   // matches the native leftover-by-weight distribution. A non-zero basis is the size the line
   // breaker measures against in a WRAPPING container, which is what lets two panes sit side by
   // side while there is room and take a line each when there is not. min-size 0 lets text shrink to
-  // ellipsis instead of pushing siblings (the truncation contract).
-  const basis = flexible.basis !== undefined && flexible.basis > 0 ? `${flexible.basis}px` : '0%';
+  // ellipsis instead of pushing siblings (the truncation contract). A ZERO weight takes no share
+  // (#680): it keeps its basis, and without one starts from its content, `auto`, as the C# twin
+  // writes it — `0%` would size an item that never grows at nothing.
+  const basis =
+    flexible.basis !== undefined && flexible.basis > 0
+      ? `${flexible.basis}px`
+      : flexible.flex === 0
+        ? 'auto'
+        : '0%';
   const shrink = flexible.shrink ?? 1;
   const node = element('div', {
     flex: `${flexible.flex} ${shrink} ${basis}`,

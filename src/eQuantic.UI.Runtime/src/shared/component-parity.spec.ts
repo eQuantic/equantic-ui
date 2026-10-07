@@ -24,12 +24,14 @@ import {
   Box,
   BoxStyle,
   Column,
+  Flexible,
   GridPattern,
   GridTrack,
   Icon,
   IconGlyph,
   LinearGradient,
   Link,
+  Row,
   ScrollView,
   ShadowSpec,
   Simulated,
@@ -99,6 +101,11 @@ const lower = (node: unknown): HtmlNode =>
 function cases(): Record<string, { node: unknown; presses: number[] }> {
   const column = (gap: number, ...children: unknown[]) => {
     const node = new Column(gap);
+    for (const child of children) node.add(child as never);
+    return node;
+  };
+  const line = (wrap: boolean, ...children: unknown[]) => {
+    const node = new Row(0, 'start', 'center', wrap);
     for (const child of children) node.add(child as never);
     return node;
   };
@@ -270,6 +277,21 @@ function cases(): Record<string, { node: unknown; presses: number[] }> {
             new TextRun('cdn', null, false, { destination: '//cdn.example.com/x' }),
           ],
         }),
+      ),
+    ),
+    // A ZERO WEIGHT (#680): the server raised it to 1 while this twin wrote the zero.
+    'flexible-zero-weight-at-a-basis': still(
+      line(
+        true,
+        new Flexible(new Text('picture', 'bodyM', photonTheme.textPrimary), 0, 540),
+        new Flexible(new Text('story', 'bodyM', photonTheme.textPrimary), 1, 380),
+      ),
+    ),
+    'flexible-zero-weight-from-content': still(
+      line(
+        false,
+        new Flexible(new Text('label', 'bodyM', photonTheme.textPrimary), 0),
+        new Flexible(new Text('rest', 'bodyM', photonTheme.textPrimary), 1),
       ),
     ),
   };

@@ -30,10 +30,11 @@ internal sealed partial class MeasureVisitor
         // flexibles declare the intent to fill, so the container takes the available extent (CSS parity —
         // a stretched row with a flex-grow child distributes over the stretched width). Flexibles
         // collapse to 0 only in genuinely unbounded space (e.g. inside scroll content), and Spacers
-        // additionally "lose to content" when space is tight (leftover floors at 0).
+        // additionally "lose to content" when space is tight (leftover floors at 0). A Flexible of
+        // weight ZERO declares no such intent: it takes no share, so it is a rigid item (#680).
         var hasFlexibles = false;
         foreach (var c in flex)
-            if (c is Flexible or Spacer { Flex: > 0 }) { hasFlexibles = true; break; }
+            if (c is Flexible { Flex: > 0 } or Spacer { Flex: > 0 }) { hasFlexibles = true; break; }
         // On an INDETERMINATE main axis the available maximum is not a size anyone granted — it is
         // the measuring parent's upper bound. Distributing leftover against it made a Flexible
         // spacer swallow the viewport: an option row's Fill (inherited-indeterminate) inside a
@@ -91,15 +92,16 @@ internal sealed partial class MeasureVisitor
 
         // Every child measures under the flags THIS container restated. A flexible's share is a
         // size the container genuinely granted, so the main axis is determinate inside the slot
-        // regardless of how the container itself is sized.
+        // regardless of how the container itself is sized. A zero weight without a basis is the
+        // opposite case: its main size is its content's, so that axis is decided by the content.
         LayoutNode MeasureChild(VisualNode child, float w, float h, string childPath,
             bool mainGranted = false, StretchKind stretchW = StretchKind.None,
-            StretchKind stretchH = StretchKind.None, bool truncating = false)
+            StretchKind stretchH = StretchKind.None, bool truncating = false, bool contentMain = false)
         {
             var forChild = constraints.ForChild(w, h)
                 .DecidedByContent(
-                    childIndetW && !(mainGranted && horizontal),
-                    childIndetH && !(mainGranted && !horizontal))
+                    (childIndetW && !(mainGranted && horizontal)) || (contentMain && horizontal),
+                    (childIndetH && !(mainGranted && !horizontal)) || (contentMain && !horizontal))
                 .Stretched(stretchW, stretchH);
             return Measure(child, truncating ? forChild.Truncated() : forChild, ctx, childPath);
         }
@@ -109,6 +111,44 @@ internal sealed partial class MeasureVisitor
         var mains = new float[children.Count];
         var flexWeights = new float[children.Count];
         var gapTotal = flex.Gap * MathF.Max(0, children.Count - 1);
+
+        // The SLOT a Flexible occupies: its child laid out in a main extent this row granted — a
+        // weight's share of the leftover, or a zero weight's basis — and pinned to it.
+        LayoutNode Slot(Flexible flexible, int i, float main, bool truncating = false)
+        {
+            // A Flexible is layout-transparent: whatever the container would stretch, it
+            // stretches THROUGH it. Without this the wrapper grew to the cell and the content
+            // inside it stayed at its own width, which is exactly what the tab labels did.
+            var (fsW, fsH) = CrossStretch(flexible);
+            // The extent IS the slot's main size (the bounds are pinned to it below), so the child
+            // is stretched on the main axis too, on top of whatever the cross axis granted: an
+            // auto-sized cell takes the extent and lays out inside it — a flex item's autos fill
+            // the cell, per CSS.
+            var child = MeasureChild(flexible.Child, horizontal ? main : crossAvail,
+                horizontal ? crossAvail : main,
+                ctx.ChildPath(ctx.ChildPath(path, i, flexible), 0), mainGranted: true,
+                stretchW: horizontal ? StretchKind.Flex : fsW,
+                stretchH: horizontal ? fsH : StretchKind.Flex, truncating: truncating);
+            child.Bounds = horizontal
+                ? child.Bounds with { Width = main }
+                : child.Bounds with { Height = main };
+            var wrapper = ctx.Node(flexible, child.Bounds);
+            wrapper.Adopt(child);
+            return wrapper;
+        }
+
+        // A RIGID item measured again inside the extent an overflowing line leaves it. A zero
+        // weight laid out at its basis went into a slot, so it goes into one again: measured through
+        // its wrapper it would hug its content and drop the size it was given.
+        LayoutNode Remeasure(int i, float main, bool truncating = false)
+        {
+            if (children[i] is Flexible { Basis: > 0 } atBasis && flexWeights[i] == 0)
+                return Slot(atBasis, i, main, truncating);
+            var (sW, sH) = CrossStretch(children[i]);
+            return MeasureChild(children[i], horizontal ? main : crossAvail,
+                horizontal ? crossAvail : main, ctx.ChildPath(path, i, children[i]),
+                stretchW: sW, stretchH: sH, truncating: truncating);
+        }
 
         // Pass 1 — rigid children (flexibles deferred; text measured at full availability first).
         var rigidSum = 0f;
@@ -121,6 +161,30 @@ internal sealed partial class MeasureVisitor
                     // value — forward changes glide over Motion.Base, everything else snaps.
                     flexWeights[i] = ctx.Transitions?.Resolve(ctx.ChildPath(path, i, f), f.Flex, ctx.TimeMs,
                         f.AnimateChanges, ctx.ReducedMotion) ?? f.Flex;
+                    if (flexWeights[i] > 0) continue;
+                    // A ZERO weight takes no share (#680) — Flutter's inflexible child, CSS's
+                    // `flex-grow: 0` — so it is a rigid item, laid out here. Deferred with the
+                    // weighted ones, it vanished: pass 2 skips a weight of zero, and nothing else
+                    // laid it out. With a basis it sits in a slot of exactly that size; without one
+                    // it starts from its CONTENT (`flex-basis: auto`), so the main axis is decided
+                    // by what goes in it and a Fill inside has nothing to fill — as in a browser,
+                    // and as Flutter, which lays an inflexible child out unbounded, refuses it.
+                    flexWeights[i] = 0;
+                    LayoutNode inflexible;
+                    if (f.Basis > 0)
+                    {
+                        inflexible = Slot(f, i, f.Basis);
+                    }
+                    else
+                    {
+                        var (zsW, zsH) = CrossStretch(f);
+                        inflexible = MeasureChild(f, horizontal ? mainAvail : crossAvail,
+                            horizontal ? crossAvail : mainAvail, ctx.ChildPath(path, i, f),
+                            stretchW: zsW, stretchH: zsH, contentMain: true);
+                    }
+                    laid[i] = inflexible;
+                    mains[i] = horizontal ? inflexible.Bounds.Width : inflexible.Bounds.Height;
+                    rigidSum += mains[i];
                     continue;
                 case Spacer { Flex: > 0 } s:
                     flexWeights[i] = ctx.Transitions?.Resolve(ctx.ChildPath(path, i, s), s.Flex, ctx.TimeMs,
@@ -147,29 +211,30 @@ internal sealed partial class MeasureVisitor
         // finite — a Hug row inside a bounded parent must not overflow it either.
         if (!float.IsPositiveInfinity(mainAvail) && rigidSum + gapTotal > mainAvail && horizontal)
         {
+            // A TEXT CHILD, seen through layout-transparent wrappers. Asking `is Text` here is what
+            // made `Pressable(Text(…))` run past the end of a fixed row: not a text, so not cut, so
+            // its floor was its longest word and nothing could shrink it. A zero weight that says
+            // `shrink: 0` pinned its size, and is not cut either, as CSS does not shrink it.
+            bool Cuttable(int i) =>
+                TextWithin(children[i]) is not null && children[i] is not Flexible { Flex: 0, Shrink: 0 };
+
             var deficit = rigidSum + gapTotal - mainAvail;
             var textTotal = 0f;
             for (var i = 0; i < children.Count; i++)
-                if (TextWithin(children[i]) is not null) textTotal += mains[i];
+                if (Cuttable(i)) textTotal += mains[i];
 
             if (textTotal > 0)
             {
                 for (var i = 0; i < children.Count; i++)
                 {
-                    // A TEXT CHILD, seen through layout-transparent wrappers. Asking `is Text` here
-                    // is what made `Pressable(Text(…))` run past the end of a fixed row: not a text,
-                    // so not cut, so its floor was its longest word and nothing could shrink it.
-                    if (TextWithin(children[i]) is null) continue;
+                    if (!Cuttable(i)) continue;
                     var reduced = MathF.Max(0, mains[i] - deficit * (mains[i] / textTotal));
                     // The cut is a RE-MEASURE of the item, through the same pass everything else
                     // takes, carrying the line cap on the constraints. It used to be built here by
                     // hand from `ctx.Measurer` — which could only ever cut a bare Text, dropped a
                     // rich text's runs on the floor by rebuilding the node from PlainContent, and
                     // had already once measured against a different face than the one drawn.
-                    var (tsW, tsH) = CrossStretch(children[i]);
-                    var recut = MeasureChild(children[i], horizontal ? reduced : crossAvail,
-                        horizontal ? crossAvail : reduced, ctx.ChildPath(path, i, children[i]),
-                        stretchW: tsW, stretchH: tsH, truncating: true);
+                    var recut = Remeasure(i, reduced, truncating: true);
                     laid[i] = recut;
                     rigidSum -= mains[i] - (horizontal ? recut.Bounds.Width : recut.Bounds.Height);
                     mains[i] = horizontal ? recut.Bounds.Width : recut.Bounds.Height;
@@ -212,11 +277,7 @@ internal sealed partial class MeasureVisitor
                             var room = mains[i] - floors[i];
                             if (room <= 0) continue;
                             var bound = MathF.Max(floors[i], mains[i] - taking * (room / yielding));
-                            var childMaxW2 = horizontal ? bound : crossAvail;
-                            var childMaxH2 = horizontal ? crossAvail : bound;
-                            var (rsW, rsH) = CrossStretch(children[i]);
-                            var reflowed = MeasureChild(children[i], childMaxW2, childMaxH2,
-                                ctx.ChildPath(path, i, children[i]), stretchW: rsW, stretchH: rsH);
+                            var reflowed = Remeasure(i, bound);
                             laid[i] = reflowed;
                             var shrunk = horizontal ? reflowed.Bounds.Width : reflowed.Bounds.Height;
                             rigidSum -= mains[i] - shrunk;
@@ -260,28 +321,8 @@ internal sealed partial class MeasureVisitor
 
             if (children[i] is Flexible flexible)
             {
-                var childMaxW = horizontal ? share : crossAvail;
-                var childMaxH = horizontal ? crossAvail : share;
-                // A Flexible is layout-transparent: whatever the container would stretch, it
-                // stretches THROUGH it. Without this the wrapper grew to the cell and the content
-                // inside it stayed at its own width, which is exactly what the tab labels did.
-                var (fsW, fsH) = CrossStretch(flexible);
-                // The share IS the slot's main size (the bounds are pinned to it below), so the
-                // child is stretched on the main axis too: an auto-sized cell takes the share and
-                // lays out inside it — a flex-grow item's autos fill the cell, per CSS.
-                // The share IS the slot's main size, so the child is stretched on the main axis
-                // too, on top of whatever the cross axis granted.
-                var child = MeasureChild(flexible.Child, childMaxW, childMaxH,
-                    ctx.ChildPath(ctx.ChildPath(path, i, flexible), 0), mainGranted: true,
-                    stretchW: horizontal ? StretchKind.Flex : fsW,
-                    stretchH: horizontal ? fsH : StretchKind.Flex);
                 // The flexible slot IS the share on the main axis (the child fills it).
-                child.Bounds = horizontal
-                    ? child.Bounds with { Width = share }
-                    : child.Bounds with { Height = share };
-                var wrapper = ctx.Node(flexible, child.Bounds);
-                wrapper.Adopt(child);
-                laid[i] = wrapper;
+                laid[i] = Slot(flexible, i, share);
             }
             else
             {
@@ -419,7 +460,14 @@ internal sealed partial class MeasureVisitor
             // is going to get rather than at the whole line's.
             var basis = flexible is { Basis: > 0 } ? flexible.Basis : 0f;
             var constraint = basis > 0 ? MathF.Min(basis, mainAvail) : mainAvail;
-            var node = Measure(child, constraints.ForChild(constraint, crossMax - padCross), ctx, ctx.ChildPath(path, i, source));
+            var forChild = constraints.ForChild(constraint, crossMax - padCross);
+            // A zero weight without a basis starts from its CONTENT (#680), as the single-line pass
+            // measures it: the main axis is decided by what goes in it, so a Fill has nothing to fill.
+            if (flexible is { Flex: 0, Basis: 0 })
+                forChild = horizontal
+                    ? forChild with { Width = forChild.Width.DecidedByContent(true) }
+                    : forChild with { Height = forChild.Height.DecidedByContent(true) };
+            var node = Measure(child, forChild, ctx, ctx.ChildPath(path, i, source));
 
             measured.Add(node);
             sources.Add(source);
