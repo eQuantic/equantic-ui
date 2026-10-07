@@ -46,15 +46,32 @@ describe('a navigation reads the page state the server marks as its answer', () 
     expect(await fetchPageState('/backoffice')).toEqual({ refused: 403 });
   });
 
-  it('leaves a refused route by REPLACING the entry the router pushed, and stays for any other', () => {
-    const location = { replace: vi.fn() };
+  it('leaves a refused route by RELOADING the entry the router pushed, and stays for any other', () => {
+    const location = { reload: vi.fn(), replace: vi.fn() };
+    const history = { state: { from: 'router' }, replaceState: vi.fn() };
 
-    expect(leaveForRefusal({ refused: 401 }, '/backoffice', location)).toBe(true);
-    expect(location.replace).toHaveBeenCalledWith('/backoffice');
+    expect(leaveForRefusal({ refused: 401 }, '/backoffice', location, history)).toBe(true);
+    expect(history.replaceState).toHaveBeenCalledWith({ from: 'router' }, '', '/backoffice');
+    expect(location.reload).toHaveBeenCalledOnce();
 
-    location.replace.mockClear();
-    expect(leaveForRefusal({ title: 'Queue' }, '/backoffice', location)).toBe(false);
-    expect(leaveForRefusal(null, '/backoffice', location)).toBe(false);
+    location.reload.mockClear();
+    history.replaceState.mockClear();
+    expect(leaveForRefusal({ title: 'Queue' }, '/backoffice', location, history)).toBe(false);
+    expect(leaveForRefusal(null, '/backoffice', location, history)).toBe(false);
+    expect(location.reload).not.toHaveBeenCalled();
+    expect(history.replaceState).not.toHaveBeenCalled();
+  });
+
+  // Measured in Chromium (#686): once the router has pushed `/backoffice/queue#row-17`, a
+  // `location.replace` to that URL is a same-document navigation, which keeps the document and never asks
+  // the server, while a reload of the entry loads it from the server.
+  it('reloads a refused route with a fragment, where a replace to the same URL only scrolls to it', () => {
+    const location = { reload: vi.fn(), replace: vi.fn() };
+    const history = { state: null, replaceState: vi.fn() };
+
+    expect(leaveForRefusal({ refused: 403 }, '/backoffice/queue#row-17', location, history)).toBe(true);
+    expect(history.replaceState).toHaveBeenCalledWith(null, '', '/backoffice/queue#row-17');
+    expect(location.reload).toHaveBeenCalledOnce();
     expect(location.replace).not.toHaveBeenCalled();
   });
 
