@@ -16,8 +16,9 @@ namespace eQuantic.UI.Native.Engine.Tests;
 /// typed, the arrows, a press on a row. Where the list stands is read from the frame (the region of
 /// what the surface offered) against where the engine says the word starts.
 /// <para>
-/// The hosts run <see cref="Density.Compact"/>, the desktop shells' density, where a press lands
-/// where it is aimed. Under Comfortable a row's §08 margin reaches over the row above it (#630).
+/// The hosts run <see cref="Density.Compact"/>, the desktop shells' density. A row is shorter than
+/// the target either density keeps, so its margin reaches over the row above it, 3dp under a pointer
+/// and 13dp under a finger (#630): the presses here land on a row's middle.
 /// </para>
 /// </summary>
 public class CodeEditorCompletionTests

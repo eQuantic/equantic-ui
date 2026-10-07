@@ -1597,9 +1597,10 @@ record of a release, the wiki's Upgrading page is the distillate.
   build context named a type its module could not import, read an optional `typeScale` and called
   `TypeStyle` measures its twin did not have
   ([#632](https://github.com/eQuantic/equantic-ui/issues/632)). Reported: Photon lays a bordered
-  box's child over its border ([#629](https://github.com/eQuantic/equantic-ui/issues/629)), under
-  Comfortable density a dense row's margin takes the presses of the row above it
-  ([#630](https://github.com/eQuantic/equantic-ui/issues/630)), and a null-conditional read is
+  box's child over its border ([#629](https://github.com/eQuantic/equantic-ui/issues/629)), a dense
+  row's margin takes the presses of the row above it, under a finger and, since a pointer's target
+  keeps a 24dp floor, by 3dp under a pointer ([#630](https://github.com/eQuantic/equantic-ui/issues/630)),
+  and a null-conditional read is
   `undefined` in the browser ([#633](https://github.com/eQuantic/equantic-ui/issues/633)). The
   author's review found five defects and two holes in the net, each proved failing without its fix:
   on Photon a press under a scrolled editor landed in its code, which ran past the view unclipped
