@@ -41,4 +41,4 @@
 
 - [x] 6.1 The wiki's Photon and Styling pages, in English and Portuguese
 - [x] 6.2 One `docs/LEDGER.md` line citing the five issues
-- [ ] 6.3 Archive this change before the merge
+- [x] 6.3 Archive this change before the merge
