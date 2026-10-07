@@ -1608,6 +1608,17 @@ record of a release, the wiki's Upgrading page is the distillate.
   1970 toward the epoch; it answers a BigInt cut as .NET cuts it now. Found on the way: the date
   constructors past the second ([#606](https://github.com/eQuantic/equantic-ui/issues/606)).
   Proposed and archived through OpenSpec (`openspec/specs/runtime-dates`).
+- **2026-10-07 · A date is built by its constructor and read in the browser's zone**: the runtime's
+  `dateTime` and `dateTimeOffset` factories took a constructor's components by how many arguments
+  they got, so a kind was read as the millisecond, a `DateTimeOffset`'s millisecond as its offset, and
+  a microsecond was dropped ([#606](https://github.com/eQuantic/equantic-ui/issues/606)). eqc reads
+  the bound constructor and calls one factory per shape, each argument in its parameter's place, a
+  `Calendar` overload refused at the build (EQ1004), and the factories refuse what .NET refuses in its
+  words. A `DateTime` carries its `Kind`. `DateTimeOffset.Now` carried offset zero with the local
+  clock, `LocalDateTime` read the value's own clock and `ToLocalTime()` did not exist
+  ([#626](https://github.com/eQuantic/equantic-ui/issues/626), from the Falei.pt app): each reads
+  the browser's time zone now, proved on both sides in three zones set through `TZ`. 103 of the 110
+  new cases failed on the base. Proposed and archived through OpenSpec (`openspec/specs/runtime-dates`).
 
 ## Retired documents
 
