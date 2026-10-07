@@ -4,6 +4,7 @@
 export * from '../../eQuantic.UI.Runtime/src/index';
 
 import { installErrorOverlay } from '../../eQuantic.UI.Runtime/src/dev/error-overlay';
+import { capturePageState, restorePageState } from '../../eQuantic.UI.Runtime/src/dev/hot-reload-state';
 import {
   getReconciler,
   Router,
@@ -87,6 +88,9 @@ let currentComponent: MountableComponent | null = null;
 /** True when THIS boot re-entered through a hot-reload refresh — see initHotReload. */
 let hmrReplay = false;
 
+/** The page fields the refresh carried across, by the root's key, for the page this boot builds. */
+let hmrState: Record<string, Record<string, unknown>> | null = null;
+
 /**
  * Bootstraps the eQuantic application
  */
@@ -119,6 +123,7 @@ export async function boot(): Promise<void> {
             __INITIAL_STATE__?: Record<string, Record<string, unknown>>;
           };
           w.__INITIAL_STATE__ = { ...(w.__INITIAL_STATE__ ?? {}), ...parsed.state };
+          hmrState = parsed.state;
         }
       }
     } catch {
@@ -360,6 +365,15 @@ async function loadAndMountPage(
 
   const component = asPage(new ComponentClass());
 
+  // A hot reload's replay hands the page the fields it held before the refresh, before it builds. The
+  // server-data door above takes only what the hydration manifest lists, and a write-once page's own
+  // state is in none of it, so its counter went back to its initializer (#664).
+  if (hmrReplay && hmrState) {
+    const page: object = component instanceof EscapeHatchPage ? component.page : component;
+    const saved = hmrState[`${componentIdentity(page)}#0`];
+    if (saved) restorePageState(page, saved);
+  }
+
   // Hydration: attach events to existing SSR HTML. Prefer the component's own hydrate() so its render
   // manager owns the tree — that lets the first SPA navigation away diff against it (getCurrentTree) and
   // preserve a shared shell. Fall back to a direct reconciler hydrate for older component shapes.
@@ -584,22 +598,15 @@ function initHotReload(): void {
       // NEW code instead of hydrating the stale SSR. Gating it on captured state left every
       // write-once page (which keeps no _state bag) hydrating old HTML after the reload —
       // the pixels never changed, and the whole feature read as broken.
-      const data: Record<string, unknown> = {};
+      let data: Record<string, unknown> = {};
       // The PAGE, not its host: an escape-hatch page is mounted through EscapeHatchPage, and what it
-      // holds — and the key it is named by — are the hosted page's own.
+      // holds — and the key it is named by — are the hosted page's own. Its fields are what crosses,
+      // the ones its C# declares: a `_state` bag, which this read before, is something no write-once
+      // page has (#664).
       const pageRoot: object | null =
         currentComponent instanceof EscapeHatchPage ? currentComponent.page : currentComponent;
       try {
-        const holder = pageRoot as unknown as { _state?: Record<string, unknown> } | null;
-        const state = holder?._state;
-        if (state) {
-          for (const key of Object.keys(state)) {
-            const value = state[key];
-            if (typeof value === 'function') continue;
-            if (key === '_component' || key === '_context' || key === '_needsRender') continue;
-            data[key] = value;
-          }
-        }
+        if (pageRoot) data = capturePageState(pageRoot);
       } catch {
         /* reload without state rather than not at all */
       }
