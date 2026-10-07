@@ -141,7 +141,7 @@ public class EqcOutputIsBuildOutputTests
             "eqc's output is replaced in place, and only _EQuanticPruneStaleOutput removes what it stopped writing");
     }
 
-    private static (string Excludes, string[] Content) Evaluate(string directory, params string[] properties)
+    private static (string Excludes, string[] Content) Evaluate(string directory, string body = "", params string[] properties)
     {
         File.WriteAllText(Path.Combine(directory, "Consumer.csproj"), $"""
             <Project>
@@ -149,6 +149,7 @@ public class EqcOutputIsBuildOutputTests
                 <PropertyGroup>
                     <TargetFramework>net10.0</TargetFramework>
                 </PropertyGroup>
+                {body}
                 <Import Project="{Path.Combine(SdkDir(), "Sdk.targets")}" />
             </Project>
             """);
@@ -183,13 +184,33 @@ public class EqcOutputIsBuildOutputTests
     }
 
     [Fact]
+    public void AnAppThatIncludesWwwrootByHand_StillLeavesTheFolderOutOfContent()
+    {
+        // No default glob reaches an app's own include, so the exclusion alone would hand the folder
+        // back to the static web assets pipeline (#352, #361).
+        InATemporaryFolder(directory =>
+        {
+            File.WriteAllText(Path.Combine(directory, "wwwroot", "_equantic", "Page.js"), "");
+            File.WriteAllText(Path.Combine(directory, "wwwroot", "site.css"), "");
+
+            var (_, content) = Evaluate(directory, """
+                <PropertyGroup><EnableDefaultContentItems>false</EnableDefaultContentItems></PropertyGroup>
+                <ItemGroup><Content Include="wwwroot/**" /></ItemGroup>
+                """);
+
+            content.Should().Contain("wwwroot/site.css");
+            content.Should().NotContain(path => path.Contains("_equantic"));
+        });
+    }
+
+    [Fact]
     public void WithTheCompilerOff_TheFolderIsWhatAnyFileUnderWwwrootIs()
     {
         InATemporaryFolder(directory =>
         {
             File.WriteAllText(Path.Combine(directory, "wwwroot", "_equantic", "Page.js"), "");
 
-            var (excludes, content) = Evaluate(directory, "EnableEQuanticUICompilation=false");
+            var (excludes, content) = Evaluate(directory, properties: "EnableEQuanticUICompilation=false");
 
             excludes.Split(';').Should().NotContain("wwwroot/_equantic/**");
             content.Should().Contain("wwwroot/_equantic/Page.js");

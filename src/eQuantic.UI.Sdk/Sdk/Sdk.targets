@@ -28,13 +28,18 @@
         - dotnet watch, which ignores a change that matches it. Without it, every module, map or
           chunk eqc wrote again under dotnet watch was a file added to the project, and dotnet
           watch stopped on the first one (#627, dotnet/sdk#55335).
+        An app that includes wwwroot by hand reaches the folder through no default glob, so the
+        folder also leaves Content after the project's own items, as it always has.
         `_EQuanticOutputAsStaticWebAssets` below defines the folder from what is on disk once its
-        writers have run. Both halves take the compiler's switch: with it off, no writer runs and
+        writers have run. All of it takes the compiler's switch: with it off, no writer runs and
         nothing defines the folder again, so its files stay what any file under wwwroot is.
     -->
     <PropertyGroup Condition="'$(EnableEQuanticUICompilation)' == 'true'">
         <DefaultItemExcludes>$(DefaultItemExcludes);$(EQuanticOutputPath)**</DefaultItemExcludes>
     </PropertyGroup>
+    <ItemGroup Condition="'$(EnableEQuanticUICompilation)' == 'true'">
+        <Content Remove="$(EQuanticOutputPath)**" />
+    </ItemGroup>
 
     <!--
         WHOSE SOURCE, AND ON WHICH BRANCH. Dev mode swaps the packages for the tree beside the SDK,
