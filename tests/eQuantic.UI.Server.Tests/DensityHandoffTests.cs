@@ -1,4 +1,5 @@
 using System.Reflection;
+using System.Text.Json;
 using System.Text.RegularExpressions;
 using eQuantic.UI.Primitives;
 using Microsoft.AspNetCore.Builder;
@@ -36,7 +37,43 @@ public class DensityHandoffTests
             => new() { Tag = "div", Children = Children.Select(child => child.Render()).ToList() };
     }
 
-    private static async Task<string> GetAsync(string? cookie, string path = "/density")
+    /// <summary>What a page composes at compact density, as a dense table is to a card list.</summary>
+    public sealed class CompactRows : StatelessComponent, IServerPrefetch
+    {
+        public string Loaded = "";
+
+        public Task PrefetchAsync(IServiceProvider services, CancellationToken cancellationToken)
+        {
+            Loaded = "compact rows";
+            return Task.CompletedTask;
+        }
+
+        public override VisualNode Build(ComponentContext context) => new Text(Loaded, TypeRole.BodyM);
+    }
+
+    /// <summary>What the same page composes at comfortable density.</summary>
+    public sealed class ComfortableCards : StatelessComponent, IServerPrefetch
+    {
+        public string Loaded = "";
+
+        public Task PrefetchAsync(IServiceProvider services, CancellationToken cancellationToken)
+        {
+            Loaded = "comfortable cards";
+            return Task.CompletedTask;
+        }
+
+        public override VisualNode Build(ComponentContext context) => new Text(Loaded, TypeRole.BodyM);
+    }
+
+    /// <summary>A page that composes by its density, which every component can read.</summary>
+    [Page("/density-branch")]
+    public sealed class DensityBranchPage : StatelessComponent
+    {
+        public override VisualNode Build(ComponentContext context) =>
+            context.Density == Density.Compact ? new CompactRows() : new ComfortableCards();
+    }
+
+    private static async Task<string> GetAsync(string? cookie, string path = "/density", bool navigate = false)
     {
         var builder = WebApplication.CreateBuilder();
         builder.WebHost.UseTestServer();
@@ -47,6 +84,7 @@ public class DensityHandoffTests
         await app.StartAsync();
         var request = new HttpRequestMessage(HttpMethod.Get, path);
         if (cookie is not null) request.Headers.Add("Cookie", cookie);
+        if (navigate) request.Headers.Add("X-EQ-Navigate", "1");
         var response = await app.GetTestClient().SendAsync(request);
         return await response.Content.ReadAsStringAsync();
     }
@@ -77,6 +115,23 @@ public class DensityHandoffTests
 
         html.Should().Contain("width:20px").And.NotContain("width:22px");
         ShellConfig.In(html).GetProperty("density").GetString().Should().Be("compact");
+    }
+
+    /// <summary>A client navigation finds its server data in the tree the browser builds, at the
+    /// browser's density. The walk that discovers it expanded the page comfortable, so a page that
+    /// composes by density loaded the branch the browser does not build, and the one it builds showed
+    /// its empty state (found by Copilot on #688).</summary>
+    [Fact]
+    public async Task AClientNavigation_FindsItsDataAtTheBrowsersDensity()
+    {
+        var state = JsonDocument.Parse(await GetAsync("eq-density=compact", "/density-branch", navigate: true))
+            .RootElement.GetProperty("state");
+
+        state.TryGetProperty(eQuantic.UI.Web.ComponentIdentity.Key(typeof(CompactRows), 0), out var rows)
+            .Should().BeTrue("the browser builds the compact branch");
+        rows.GetProperty("loaded").GetString().Should().Be("compact rows");
+        state.TryGetProperty(eQuantic.UI.Web.ComponentIdentity.Key(typeof(ComfortableCards), 0), out _)
+            .Should().BeFalse("nothing in the browser's tree asks for it");
     }
 
     [Fact]
