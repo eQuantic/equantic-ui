@@ -442,11 +442,11 @@ public sealed class PhotonHost
         }
         if (best < 0) return;
 
-        var viewport = regions[best].Bounds;
+        var (own, viewport) = InScrollSpace(regions, best, stop.Bounds);
         var horizontal = regions[best].Axis == ScrollAxis.Horizontal;
         var (start, end, viewStart, viewEnd) = horizontal
-            ? (stop.Bounds.X, stop.Bounds.X + stop.Bounds.Width, viewport.X, viewport.X + viewport.Width)
-            : (stop.Bounds.Y, stop.Bounds.Y + stop.Bounds.Height, viewport.Y, viewport.Y + viewport.Height);
+            ? (own.X, own.X + own.Width, viewport.X, viewport.X + viewport.Width)
+            : (own.Y, own.Y + own.Height, viewport.Y, viewport.Y + viewport.Height);
 
         // Scrolled to just inside the near edge, with a control's worth of margin, rather than to
         // the exact edge: a field flush against the top of a viewport looks like the first one, and
@@ -516,13 +516,13 @@ public sealed class PhotonHost
             var region = regions[i];
             if (region.MaxOffset <= 0 || !IsAncestorPath(region.Path, path)) continue;
 
-            var viewport = region.Bounds;
+            var (own, viewport) = InScrollSpace(regions, i, rect);
             var horizontal = region.Axis == ScrollAxis.Horizontal;
             var (start, end, viewStart, viewEnd) = horizontal
-                ? (rect.X, rect.X + rect.Width, viewport.X, viewport.X + viewport.Width)
-                : (rect.Y, rect.Y + rect.Height, viewport.Y, viewport.Y + viewport.Height);
+                ? (own.X, own.X + own.Width, viewport.X, viewport.X + viewport.Width)
+                : (own.Y, own.Y + own.Height, viewport.Y, viewport.Y + viewport.Height);
 
-            var margin = MathF.Min(horizontal ? rect.Height : rect.Height / 2, (viewEnd - viewStart) / 4);
+            var margin = MathF.Min(horizontal ? own.Height : own.Height / 2, (viewEnd - viewStart) / 4);
             var delta = 0f;
             if (start < viewStart + margin) delta = start - viewStart - margin;
             else if (end > viewEnd - margin) delta = end - viewEnd + margin;
@@ -534,6 +534,17 @@ public sealed class PhotonHost
         }
         return scrolled;
     }
+
+    /// <summary>
+    /// <paramref name="rect"/>, on screen, and the viewport of the <paramref name="index"/>th scroll
+    /// region, both in the space the region was laid out in. A scroll offset is a distance in that
+    /// space: measured on screen, a scroll view drawn twice as large scrolled a focused control or a
+    /// caret twice as far as it had to (#658).
+    /// </summary>
+    private (Rect Rect, Rect Viewport) InScrollSpace(IReadOnlyList<ScrollRegion> regions, int index, Rect rect) =>
+        TransformedAt(regions, index) is { } turned
+            ? (turned.Inverse.TransformBounds(rect), turned.Local)
+            : (rect, regions[index].Bounds);
 
     /// <summary>Whether the keyboard focus (a field or code being edited, or the control wearing the
     /// ring) is inside the subtree at <paramref name="scope"/>: a focus-scoped shortcut's question.

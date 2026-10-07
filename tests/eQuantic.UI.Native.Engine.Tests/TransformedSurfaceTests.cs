@@ -225,6 +225,18 @@ public class TransformedSurfaceTests
     }
 
     [Fact]
+    public void AFillDraggedOnASheetDrawnTwiceAsLarge_ReachesTheCellUnderThePointer()
+    {
+        var (host, sheet, bounds) = OpenSheet(Transform2D.Scale(2));
+
+        host.PressDown(bounds.X + 2 * Col, bounds.Y + 2 * Row);
+        host.PointerMove(bounds.X + 2 * 0.5f * Col, bounds.Y + 2 * 2.5f * Row);
+
+        sheet.FillTarget.Should().Be(new SheetRange(new CellRef(1, 0), new CellRef(2, 0)),
+            "the pointer is over row 2 of the first column, as drawn");
+    }
+
+    [Fact]
     public void ASheetTurnedAQuarter_SelectsTheCellPressed_AlongItsOwnAxes()
     {
         // A square sheet turned about its centre covers the same square, its rows now running down
@@ -237,6 +249,71 @@ public class TransformedSurfaceTests
         Click(host, bounds.Center.X + drawn.X, bounds.Center.Y + drawn.Y);
 
         sheet.Selection.Focus.Should().Be(new CellRef(2, 1));
+    }
+
+    // ---- a reveal -------------------------------------------------------------------------------
+
+    /// <summary>
+    /// How far a scroll view scrolled to reveal the sixth of ten controls Tab reached, drawn under
+    /// <paramref name="transform"/>. A scroll offset is a distance in the space the scroll view was
+    /// laid out in, so a scroll view drawn twice as large scrolls exactly as far: measured on screen,
+    /// it scrolled twice as far as it had to.
+    /// </summary>
+    private static float ScrolledToTheSixthControl(Transform2D transform)
+    {
+        var column = new Column(gap: 0) { Width = SizeValue.Fill };
+        for (var i = 0; i < 10; i++)
+            column.Add(new Pressable(new Box(new BoxStyle { Width = SizeValue.Fill, Height = 40 }), () => { }));
+        var host = Mount(new ScrollView(column) { Width = SizeValue.Fill, Height = SizeValue.Fixed(100) }, transform);
+
+        for (var i = 0; i < 6; i++)
+        {
+            host.KeyDown("Tab");
+            host.RenderFrame(new DisplayListBuilder());
+        }
+        return host.ScrollOffsetOf(host.LastFrame!.ScrollRegions.Single(r => r.MaxOffset > 0).Path);
+    }
+
+    [Fact]
+    public void AScrollViewDrawnTwiceAsLarge_RevealsAFocusedControlAsFarAsItWouldUnscaled()
+    {
+        var plain = ScrolledToTheSixthControl(Transform2D.Translate(0, 0));
+        plain.Should().BeGreaterThan(0, "the sixth control is below the view");
+
+        ScrolledToTheSixthControl(Transform2D.Scale(2)).Should().BeApproximately(plain, 0.01f);
+    }
+
+    /// <summary>How far a code editor's own view scrolled to follow a caret twenty lines down,
+    /// with the editor drawn under <paramref name="transform"/>, <paramref name="scale"/> times as
+    /// large.</summary>
+    private static float ScrolledToFollowTheCaret(Transform2D transform, float scale)
+    {
+        var code = string.Join("\n", Enumerable.Range(0, 80).Select(i => $"line {i}"));
+        var host = Mount(new CodeEditor(code, "csharp") { ShowLineNumbers = false, MaxHeight = 100 }, transform,
+            width: 300);
+        var region = host.LastFrame!.CodeRegions.Single();
+        var grid = region.Surface.Grid();
+        Click(host, region.Bounds.X + scale * (grid.Origin.X + grid.Cell.Width),
+            region.Bounds.Y + scale * (grid.Origin.Y + grid.Cell.Height / 2));
+
+        for (var i = 0; i < 20; i++)
+        {
+            host.KeyDown("ArrowDown");
+            host.RenderFrame(new DisplayListBuilder());
+        }
+        host.RenderFrame(new DisplayListBuilder());
+        var viewport = host.LastFrame!.ScrollRegions.First(r => r.Axis == ScrollAxis.Vertical
+            && region.Path.StartsWith(r.Path, StringComparison.Ordinal) && r.MaxOffset > 0);
+        return host.ScrollOffsetOf(viewport.Path);
+    }
+
+    [Fact]
+    public void ACodeEditorDrawnTwiceAsLarge_FollowsItsCaretAsFarAsItWouldUnscaled()
+    {
+        var plain = ScrolledToFollowTheCaret(Transform2D.Translate(0, 0), scale: 1);
+        plain.Should().BeGreaterThan(0, "the caret went twenty lines down a view of five");
+
+        ScrolledToFollowTheCaret(Transform2D.Scale(2), scale: 2).Should().BeApproximately(plain, 0.01f);
     }
 
     // ---- a canvas -------------------------------------------------------------------------------
