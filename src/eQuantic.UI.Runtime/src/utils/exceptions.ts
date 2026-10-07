@@ -42,6 +42,8 @@ export const bases = {
   'System.InvalidCastException': 'System.SystemException',
   'System.InvalidOperationException': 'System.SystemException',
   'System.NullReferenceException': 'System.SystemException',
+  // A StringBuilder's char read past its text, as an array's bounds refuse it.
+  'System.IndexOutOfRangeException': 'System.SystemException',
   // A string's search by a culture comparison, which .NET makes with ICU's collation and the browser
   // cannot (#528): no .NET exception for the same call, so the one that says the platform lacks it.
   'System.NotSupportedException': 'System.SystemException',

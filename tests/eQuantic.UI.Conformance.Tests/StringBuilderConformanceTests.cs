@@ -115,6 +115,68 @@ public class StringBuilderConformanceTests
     }
 
     /// <summary>
+    /// The members a page reaches that the runtime's builder did not have (#679): AppendFormat and
+    /// AppendJoin append what string.Format and string.Join write, Capacity follows .NET's chunks
+    /// through every edit, MaxCapacity and EnsureCapacity answer, the Chars indexer reads and writes,
+    /// Length cuts or fills, Equals(StringBuilder) compares the text and CopyTo copies. Each was a
+    /// TypeError, an undefined or a write nobody read.
+    /// </summary>
+    [SkippableTheory]
+    [InlineData("return new StringBuilder(\"12\").AppendFormat(\"{0}-{1}\", 1, 2).ToString();")]                           // "121-2"
+    [InlineData("return new StringBuilder(\"12\").AppendFormat(\"[{0}]\", (object)null).ToString();")]                      // "12[]"
+    [InlineData("return new StringBuilder(\"12\").AppendJoin(\",\", 1, \"a\", null, true).ToString();")]                  // "121,a,,True"
+    [InlineData("return new StringBuilder(\"12\").AppendJoin(';', new[] { \"a\", \"b\" }).ToString();")]                  // "12a;b"
+    [InlineData("return new StringBuilder(\"12\").AppendJoin(\", \", new List<int> { 1, 2, 3 }).ToString();")]              // "121, 2, 3"
+    [InlineData("return new StringBuilder().Capacity + \",\" + new StringBuilder(100).Capacity + \",\" + new StringBuilder(new string('x', 20)).Capacity + \",\" + new StringBuilder(\"x\", 5).Capacity + \",\" + new StringBuilder(0).Capacity;")] // "16,100,20,5,16"
+    [InlineData("var b = new StringBuilder(); var seen = new List<int>(); for (var i = 0; i < 100; i++) { b.Append('x'); if (!seen.Contains(b.Capacity)) seen.Add(b.Capacity); } return string.Join(\",\", seen);")] // "16,32,64,128"
+    [InlineData("return new StringBuilder().Append(new string('x', 40)).Capacity;")]                                         // 40
+    [InlineData("var b = new StringBuilder(); for (var i = 0; i < 40; i++) b.Append('x'); b.Clear(); return b.Capacity;")]     // 48
+    [InlineData("var b = new StringBuilder().Append(new string('x', 20)); b.Remove(0, 5); return b.Capacity;")]              // 27
+    [InlineData("return new StringBuilder(\"12\").Insert(1, new string('x', 20)).Capacity;")]                                // 36
+    [InlineData("return new StringBuilder(\"ab\").Replace(\"b\", \"cccc\").Capacity;")]                                     // 19
+    [InlineData("var b = new StringBuilder(\"12\"); b.Capacity = 100; return b.Capacity + \",\" + b.EnsureCapacity(5) + \",\" + b.EnsureCapacity(200);")] // "100,100,200"
+    [InlineData("return new StringBuilder(4, 8).MaxCapacity + \",\" + new StringBuilder().MaxCapacity;")]                  // "8,2147483647"
+    [InlineData("var b = new StringBuilder(\"12\"); b[0] = 'x'; return b[0] + b.ToString();")]                               // "xx2"
+    [InlineData("var b = new StringBuilder(\"12\"); b.Length = 4; var four = b.ToString().Replace(\"\\0\", \"0\"); b.Length = 1; return four + \",\" + b;")] // "1200,1"
+    [InlineData("return new StringBuilder(\"12\").Equals(new StringBuilder(\"12\", 100)) + \",\" + new StringBuilder(\"12\").Equals((object)new StringBuilder(\"12\"));")] // "True,False"
+    [InlineData("var a = new[] { '-', '-', '-', '-' }; new StringBuilder(\"12\").CopyTo(0, a, 1, 2); return new string(a);")] // "-12-"
+    public void AMemberThePageReaches_AnswersAsDotNet(string statements)
+    {
+        Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
+        ConformanceRunner.AssertStatementsSameAsDotNet(statements);
+    }
+
+    /// <summary>Their refusals, each .NET's.</summary>
+    [SkippableTheory]
+    [InlineData("var b = new StringBuilder(\"12\"); try { var c = b[2]; return \"no\"; } catch (IndexOutOfRangeException e) { return e.Message; }")]            // "Index was outside the bounds of the array."
+    [InlineData("var b = new StringBuilder(\"12\"); try { b[2] = 'x'; return \"no\"; } catch (ArgumentOutOfRangeException e) { return e.Message; }")]        // "Index was out of range. … (Parameter 'index')"
+    [InlineData("var b = new StringBuilder(\"12\"); try { b.Capacity = 1; return \"no\"; } catch (ArgumentOutOfRangeException e) { return e.Message; }")]    // "capacity was less than the current size. (Parameter 'value')"
+    [InlineData("try { var b = new StringBuilder(9, 8); return \"no\"; } catch (ArgumentOutOfRangeException e) { return e.Message; }")]                     // "Capacity exceeds maximum capacity. (Parameter 'capacity')"
+    [InlineData("try { new StringBuilder(4, 8).Append(\"123456789\"); return \"no\"; } catch (ArgumentOutOfRangeException e) { return e.Message; }")]       // "The length cannot be greater than the capacity. (Parameter 'valueCount')"
+    [InlineData("var a = new char[1]; try { new StringBuilder(\"12\").CopyTo(0, a, 0, 2); return \"no\"; } catch (ArgumentException e) { return e.Message; }")] // "Either offset did not refer to a position in the string, …"
+    [InlineData("var a = new char[4]; try { new StringBuilder(\"12\").CopyTo(3, a, 0, 0); return \"no\"; } catch (ArgumentException e) { return e.Message; }")] // "Index was out of range. … (Parameter 'sourceIndex')"
+    [InlineData("try { new StringBuilder(\"12\").AppendFormat(\"{1}\", 1); return \"no\"; } catch (FormatException e) { return e.Message; }")]            // "Index (zero based) must be …"
+    public void ARefusalOfAMemberThePageReaches_IsDotNets(string statements)
+    {
+        Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
+        ConformanceRunner.AssertStatementsSameAsDotNet(statements);
+    }
+
+    /// <summary>The refusals that write their actual value on a line of their own.</summary>
+    [SkippableTheory]
+    [InlineData("var b = new StringBuilder(\"12\"); try { b.Length = -1; return \"no\"; } catch (ArgumentOutOfRangeException e) { return e.Message; }")]      // "value ('-1') must be a non-negative value. …"
+    [InlineData("try { new StringBuilder(\"12\").EnsureCapacity(-1); return \"no\"; } catch (ArgumentOutOfRangeException e) { return e.Message; }")]         // "capacity ('-1') …"
+    [InlineData("try { var b = new StringBuilder(-1); return \"no\"; } catch (ArgumentOutOfRangeException e) { return e.Message; }")]                          // "capacity ('-1') …"
+    [InlineData("try { var b = new StringBuilder(0, 0); return \"no\"; } catch (ArgumentOutOfRangeException e) { return e.Message; }")]                         // "maxCapacity ('0') must be a non-negative and non-zero value. …"
+    [InlineData("var a = new char[4]; try { new StringBuilder(\"12\").CopyTo(0, a, 0, -1); return \"no\"; } catch (ArgumentOutOfRangeException e) { return e.Message; }")] // "count ('-1') …"
+    public void ARefusalOfAMemberThePageReachesOnTwoLines_IsDotNets(string statements)
+    {
+        Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
+        ConformanceRunner.AssertStatementsSameAsDotNetExceptTheHostsNewline(statements,
+            ".NET ends the message's first line with Environment.NewLine");
+    }
+
+    /// <summary>
     /// The expressions whose .NET answer is the HOST's newline.
     ///
     /// <para>

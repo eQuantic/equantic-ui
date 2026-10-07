@@ -134,3 +134,69 @@ describe('StringBuilder — counted and ranged overloads', () => {
     );
   });
 });
+
+/** The members a page reaches, as .NET 10 answers them (#679). */
+describe('StringBuilder — capacity, indexer, length, equality and copy', () => {
+  const x = (n: number) => 'x'.repeat(n);
+
+  it("follows .NET's chunks through every edit", () => {
+    expect([stringBuilder().capacity, stringBuilder(100).capacity, stringBuilder(x(20)).capacity]).toEqual([16, 100, 20]);
+    expect([stringBuilder('x', 5).capacity, stringBuilder(0).capacity, stringBuilder(0, 8).capacity]).toEqual([5, 16, 8]);
+    const grown = stringBuilder();
+    const seen = new Set<number>();
+    for (let i = 0; i < 100; i++) seen.add(grown.append('x').capacity);
+    expect([...seen]).toEqual([16, 32, 64, 128]);
+    expect(stringBuilder().append(x(40)).capacity).toBe(40);
+    const cleared = stringBuilder();
+    for (let i = 0; i < 40; i++) cleared.append('x');
+    expect(cleared.clear().capacity).toBe(48);
+    expect(stringBuilder().append(x(20)).remove(0, 5).capacity).toBe(27);
+    expect(stringBuilder('12').insert(1, x(20)).capacity).toBe(36);
+    expect(stringBuilder('ab').replace('b', 'cccc').capacity).toBe(19);
+    const set = stringBuilder('12');
+    set.capacity = 100;
+    expect([set.capacity, set.ensureCapacity(5), set.ensureCapacity(200)]).toEqual([100, 100, 200]);
+    expect([stringBuilder(4, 8).maxCapacity, stringBuilder().maxCapacity]).toEqual([8, 2147483647]);
+  });
+
+  it('reads and writes a char, cuts and fills its length, and compares and copies its text', () => {
+    const b = stringBuilder('12');
+    b.setItem(0, 'x');
+    expect(b.item(0) + b.toString()).toBe('xx2');
+    b.length = 4;
+    expect(b.toString()).toBe('x2\0\0');
+    b.length = 1;
+    expect(b.toString()).toBe('x');
+    expect(stringBuilder('12').equalsBuilder(stringBuilder('12', 100))).toBe(true);
+    expect(stringBuilder('12').equalsBuilder(null)).toBe(false);
+    const copy = ['-', '-', '-', '-'];
+    stringBuilder('12').copyTo(0, copy, 1, 2);
+    expect(copy.join('')).toBe('-12-');
+  });
+
+  it('refuses as .NET refuses', () => {
+    const refusal = (act: () => unknown): string => {
+      try {
+        act();
+        return 'no throw';
+      } catch (e) {
+        return (e as Error).message;
+      }
+    };
+    expect(refusal(() => stringBuilder('12').item(2))).toBe('Index was outside the bounds of the array.');
+    expect(refusal(() => stringBuilder('12').setItem(2, 'x'))).toBe(
+      "Index was out of range. Must be non-negative and less than the size of the collection. (Parameter 'index')",
+    );
+    expect(refusal(() => stringBuilder(9, 8))).toBe("Capacity exceeds maximum capacity. (Parameter 'capacity')");
+    expect(refusal(() => stringBuilder(4, 8).append('123456789'))).toBe(
+      "The length cannot be greater than the capacity. (Parameter 'valueCount')",
+    );
+    expect(refusal(() => stringBuilder(0, 0))).toBe(
+      "maxCapacity ('0') must be a non-negative and non-zero value. (Parameter 'maxCapacity')\nActual value was 0.",
+    );
+    expect(refusal(() => stringBuilder('12').copyTo(0, ['-'], 0, 2))).toBe(
+      'Either offset did not refer to a position in the string, or there is an insufficient length of destination character array.',
+    );
+  });
+});
+
