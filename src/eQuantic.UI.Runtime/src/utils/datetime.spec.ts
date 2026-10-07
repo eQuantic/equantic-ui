@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { afterEach, describe, it, expect } from 'vitest';
 import { dateTime, TimeSpan, timeSpan } from './datetime';
 
 describe('TimeSpan — .NET "c" format and component math', () => {
@@ -196,5 +196,41 @@ describe('DateTime — the zone a text writes (#606)', () => {
     const parsed = dateTime.parse('2026-07-01T12:00:00Z');
     expect(parsed.kind).toBe('local');
     expect(parsed.toUniversalTime().ticks).toBe(dateTime.of(2026, 7, 1, 12, 0, 0).ticks);
+  });
+});
+
+// .NET 10's answers with TZ=Europe/Lisbon, where 2026-10-25 01:00 to 01:59 happens twice: a local time
+// made from an instant forgot which of the two it was, so its way back to UTC landed an hour off.
+describe("DateTime — a repeated hour's daylight occurrence (#606)", () => {
+  const zone = process.env.TZ;
+  afterEach(() => {
+    if (zone === undefined) delete process.env.TZ;
+    else process.env.TZ = zone;
+  });
+
+  it('goes back to the instant it came from, through arithmetic and Date, until SpecifyKind', () => {
+    process.env.TZ = 'Europe/Lisbon';
+    const first = dateTime.of(2026, 10, 25, 0, 30, 0, 0, 0, 'utc').toLocalTime();
+    expect(first.hour).toBe(1);
+    expect(first.toJSON()).toBe('2026-10-25T01:30:00+01:00');
+    expect(first.toUniversalTime().toJSON()).toBe('2026-10-25T00:30:00Z');
+    expect(first.addMinutes(10).toUniversalTime().toJSON()).toBe('2026-10-25T00:40:00Z');
+    expect(first.date.addHours(1.5).toUniversalTime().toJSON()).toBe('2026-10-25T00:30:00Z');
+    expect(dateTime.specifyKind(first, 'local').toUniversalTime().toJSON()).toBe('2026-10-25T01:30:00Z');
+    expect(dateTime.parse('2026-10-25T00:30:00Z').toUniversalTime().toJSON()).toBe('2026-10-25T00:30:00Z');
+    const second = dateTime.of(2026, 10, 25, 1, 30, 0, 0, 0, 'utc').toLocalTime();
+    expect(second.toUniversalTime().toJSON()).toBe('2026-10-25T01:30:00Z');
+    expect(first.equals(dateTime.specifyKind(first, 'local'))).toBe(true);
+  });
+});
+
+describe('DateTime — a text read in linear time', () => {
+  // Two runs of white space either side of an optional zone made a line of spaces cost the square
+  // of its length: 50,000 of them took 1.5 s (CodeQL).
+  it('refuses a long run of spaces at once', () => {
+    const text = '2026-10-07' + ' '.repeat(100_000) + 'x';
+    const started = performance.now();
+    expect(() => dateTime.parse(text)).toThrow();
+    expect(performance.now() - started).toBeLessThan(200);
   });
 });

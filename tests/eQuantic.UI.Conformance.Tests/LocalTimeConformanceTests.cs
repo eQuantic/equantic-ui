@@ -51,6 +51,27 @@ public class LocalTimeConformanceTests
             // A DateTimeOffset of a DateTime that is not UTC takes the zone's offset for it.
             "new DateTimeOffset(new DateTime(2026, 7, 1, 12, 0, 0)).Offset.ToString()",
             "new DateTimeOffset(new DateTime(2026, 1, 15, 12, 0, 0, DateTimeKind.Local)).Offset.ToString()",
+            // Lisbon's clocks repeat 01:00 to 01:59 on 2026-10-25: a local time made from an instant in
+            // the first of them goes back to that instant, through arithmetic and its JSON, until
+            // SpecifyKind drops what it knew. It went back to the standard occurrence, an hour off.
+            "new DateTime(2026, 10, 25, 0, 30, 0, DateTimeKind.Utc).ToLocalTime().ToUniversalTime().ToString()",
+            "new DateTime(2026, 10, 25, 0, 30, 0, DateTimeKind.Utc).ToLocalTime()",
+            "new DateTime(2026, 10, 25, 0, 30, 0, DateTimeKind.Utc).ToLocalTime().AddMinutes(10).ToUniversalTime().ToString()",
+            "DateTime.SpecifyKind(new DateTime(2026, 10, 25, 0, 30, 0, DateTimeKind.Utc).ToLocalTime(), DateTimeKind.Local).ToUniversalTime().ToString()",
+            "new DateTimeOffset(new DateTime(2026, 10, 25, 0, 30, 0, DateTimeKind.Utc).ToLocalTime()).Offset.ToString()",
+            "new DateTimeOffset(2026, 10, 25, 0, 30, 0, TimeSpan.Zero).LocalDateTime.ToUniversalTime().ToString()",
+            "DateTime.Parse(\"2026-10-25T00:30:00Z\").ToUniversalTime().ToString()",
+            "new DateTime(2026, 10, 25, 0, 30, 0, DateTimeKind.Utc).ToLocalTime().ToString(\"o\")",
+            // A date's text by its kind: o and K end a UTC time with Z and a local one with its offset,
+            // z writes the zone's offset for anything not UTC, and U moves only what is not UTC.
+            "new DateTime(2026, 7, 1, 12, 0, 0, DateTimeKind.Utc).ToString(\"o\")",
+            "new DateTime(2026, 7, 1, 12, 0, 0, DateTimeKind.Local).ToString(\"o\")",
+            "new DateTime(2026, 7, 1, 12, 0, 0).ToString(\"o\")",
+            "new DateTime(2026, 7, 1, 12, 0, 0, DateTimeKind.Utc).ToString(\"yyyy-MM-ddTHH:mm:ssK\")",
+            "new DateTime(2026, 7, 1, 12, 0, 0, DateTimeKind.Local).ToString(\"HH:mm zzz\")",
+            "new DateTime(2026, 7, 1, 12, 0, 0).ToString(\"%z\")",
+            "new DateTime(2026, 7, 1, 12, 0, 0, DateTimeKind.Utc).ToString(\"U\")",
+            "new DateTime(2026, 7, 1, 12, 0, 0, DateTimeKind.Local).ToString(\"U\")",
         ];
         var data = new TheoryData<string, string>();
         foreach (var zone in zones)
