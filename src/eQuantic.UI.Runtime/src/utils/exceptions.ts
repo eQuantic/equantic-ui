@@ -113,6 +113,10 @@ export interface ExceptionParts {
   readonly actualValue?: unknown;
   readonly innerException?: unknown;
   readonly objectName?: string | null;
+  /** `TypeInitializationException`'s type, which its message names. */
+  readonly fullTypeName?: string | null;
+  /** `AggregateException`'s inner exceptions, whose messages its own ends with. */
+  readonly innerExceptions?: Iterable<unknown> | null;
 }
 
 /** A value as `string.Format("{0}", value)` writes it in an exception's message. */
@@ -128,8 +132,11 @@ function valueText(value: unknown): string {
  * taken for the message, and an `InvalidOperationException()` had none at all (#558).
  */
 function composed(types: readonly string[], message: string | null | undefined, parts: ExceptionParts | undefined): string {
+  if (parts?.fullTypeName != null) return `The type initializer for '${parts.fullTypeName}' threw an exception.`;
   let text = message ?? types.map((type) => DEFAULT_MESSAGES[type]).find((own) => own !== undefined)
     ?? `Exception of type '${types[0]}' was thrown.`;
+  const inners = parts?.innerExceptions == null ? [] : [...parts.innerExceptions];
+  if (inners.length > 0) text += ' ' + inners.map((inner) => `(${(inner as Error).message})`).join(' ');
   if (parts?.objectName) text += `\nObject name: '${parts.objectName}'.`;
   if (parts?.paramName) text += ` (Parameter '${parts.paramName}')`;
   if (parts?.actualValue != null) text += `\nActual value was ${valueText(parts.actualValue)}.`;
@@ -160,7 +167,13 @@ export function create(
   Object.defineProperty(error, TYPES, { value: types });
   if (parts !== undefined) {
     for (const [member, value] of Object.entries(parts)) {
-      Object.defineProperty(error, member, { value, writable: true, configurable: true });
+      const held = member === 'innerExceptions' && value != null ? [...(value as Iterable<unknown>)] : value;
+      Object.defineProperty(error, member, { value: held, writable: true, configurable: true });
+    }
+    // An AggregateException's InnerException is its first inner one, as .NET's is.
+    const first = (error as { innerExceptions?: unknown[] }).innerExceptions?.[0];
+    if (parts.innerException === undefined && first !== undefined) {
+      Object.defineProperty(error, 'innerException', { value: first, writable: true, configurable: true });
     }
   }
   return error;
@@ -185,7 +198,14 @@ function simpleName(qualified: string): string {
 
 /** An exception the runtime throws on .NET's behalf, of the type .NET throws for the same operation. */
 export function exception(type: RuntimeException, message: string): Error {
-  return create(chainOf(type), message);
+  const error = create(chainOf(type), message);
+  // An argument exception names its parameter in its message, which `ParamName` reads too, as .NET's
+  // does: the runtime's own throws wrote the name into the text alone (#558).
+  const parameter = /\(Parameter '([^']*)'\)/.exec(message);
+  if (parameter !== null && chainOf(type).includes('System.ArgumentException')) {
+    Object.defineProperty(error, 'paramName', { value: parameter[1], writable: true, configurable: true });
+  }
+  return error;
 }
 
 /**

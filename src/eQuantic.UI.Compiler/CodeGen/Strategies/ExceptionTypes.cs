@@ -88,8 +88,17 @@ internal static class ExceptionTypes
             {
                 var at = Expressions.ExceptionCreationStrategy.ArgumentIndex(creation, constructor, parameter);
                 if (at < 0) continue;
-                members.Add($"{member}: {{{at}}}");
-                taken.Add(at);
+                // A params array written out takes every argument from its own on: `new
+                // AggregateException(a, b)` hands both to `innerExceptions`.
+                var spread = constructor.Parameters.FirstOrDefault(p => p.Name == parameter) is { IsParams: true }
+                    && (arguments.Count > constructor.Parameters.Length
+                        || context.SemanticHelper.GetType(arguments[at].Expression) is not IArrayTypeSymbol)
+                    ? Enumerable.Range(at, arguments.Count - at).ToList()
+                    : null;
+                members.Add(spread is null
+                    ? $"{member}: {{{at}}}"
+                    : $"{member}: [{string.Join(", ", spread.Select(index => $"{{{index}}}"))}]");
+                foreach (var index in spread ?? [at]) taken.Add(index);
             }
         }
         var holes = new List<string> { message < 0 ? "undefined" : $"{{{message}}}" };
@@ -109,6 +118,8 @@ internal static class ExceptionTypes
         ("actualValue", "actualValue"),
         ("innerException", "innerException"),
         ("objectName", "objectName"),
+        ("fullTypeName", "fullTypeName"),
+        ("innerExceptions", "innerExceptions"),
     ];
 
     /// <summary>A type of the framework's, which says its arguments by its parameters' names and

@@ -34,6 +34,11 @@ public class ExceptionMessageConformanceTests
     [InlineData("new KeyNotFoundException()")]                                    // "The given key was not present in the dictionary."
     [InlineData("new Exception()")]                                               // "Exception of type 'System.Exception' was thrown."
     [InlineData("new Exception(\"plain\")")]                                      // "plain"
+    // A message .NET builds from the other arguments.
+    [InlineData("new AggregateException(new FormatException(\"f\"))")]            // "One or more errors occurred. (f)"
+    [InlineData("new AggregateException(new FormatException(\"a\"), new InvalidOperationException(\"b\"))")] // "One or more errors occurred. (a) (b)"
+    [InlineData("new AggregateException(\"msg\", new[] { new FormatException(\"a\") })")] // "msg (a)": the array as it is
+    [InlineData("new TypeInitializationException(\"App.T\", null)")]           // "The type initializer for 'App.T' threw an exception."
     public void AMessage_IsComposedAsDotNet(string creation)
     {
         Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
@@ -60,6 +65,9 @@ public class ExceptionMessageConformanceTests
     [InlineData("try { throw new ArgumentOutOfRangeException(\"x\", 5, \"m\"); } catch (ArgumentOutOfRangeException e) { return e.ActualValue; }")] // 5
     [InlineData("try { throw new InvalidOperationException(\"io\", new FormatException(\"inner\")); } catch (Exception e) { return e.InnerException.Message; }")] // "inner"
     [InlineData("try { throw new ArgumentException(\"bad\"); } catch (ArgumentException e) { return e.ParamName == null; }")]                 // true
+    [InlineData("try { throw new AggregateException(new FormatException(\"f\")); } catch (AggregateException e) { return e.InnerException.Message; }")] // "f": the first inner one
+    // An argument exception the runtime throws on .NET's behalf names its parameter too.
+    [InlineData("try { new List<int> { 1 }.CopyTo(new int[1], -1); return \"no\"; } catch (ArgumentOutOfRangeException e) { return e.ParamName; }")] // "arrayIndex"
     public void AMember_ReadsWhatTheConstructorTook(string statements)
     {
         Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
