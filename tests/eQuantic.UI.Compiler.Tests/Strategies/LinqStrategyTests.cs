@@ -197,21 +197,21 @@ public class LinqStrategyTests
     public void Sum_NoPredicate_MapsToReduce()
     {
         var result = TestHelper.ConvertExpression("numbers.Sum()");
-        result.Should().Be("this.numbers.reduce((_a, _b) => _a + _b, 0)");
+        result.Should().Be("this.numbers.reduce(($a, $b) => $a + $b, 0)");
     }
 
     [Fact]
     public void Sum_WithSelector_MapsToReduceWithSelector()
     {
         var result = TestHelper.ConvertExpression("list.Sum(x => x.Amount)");
-        result.Should().Be("this.list.reduce((_sum, x) => _sum + x.amount, 0)");
+        result.Should().Be("this.list.reduce(($sum, x) => $sum + x.amount, 0)");
     }
 
     [Fact]
     public void Average_NoPredicate_MapsToReduceDivide()
     {
         var result = TestHelper.ConvertExpression("numbers.Average()");
-        result.Should().Be("(this.numbers.reduce((_a, _b) => _a + _b, 0) / this.numbers.length)");
+        result.Should().Be("(($0) => ($0.reduce(($a, $b) => $a + $b, 0) / $0.length))(this.numbers)");
     }
 
     [Fact]

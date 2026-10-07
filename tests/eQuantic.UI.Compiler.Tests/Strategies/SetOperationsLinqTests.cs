@@ -62,7 +62,7 @@ public class SetOperationsLinqTests
     public void Intersect_MapsToFilterWithIncludes()
     {
         var result = TestHelper.ConvertExpression("list.Intersect(otherList)");
-        result.Should().Be("[...new Set(this.list)].filter(x => this.otherList.includes(x))");
+        result.Should().Be("(($0, $1) => [...new Set($0)].filter(($x) => $1.includes($x)))(this.list, this.otherList)");
     }
 
     [Fact]
@@ -70,14 +70,14 @@ public class SetOperationsLinqTests
     {
         // Intersect should filter source by items that exist in other
         var result = TestHelper.ConvertExpression("items.Intersect(list1)");
-        result.Should().Contain("filter(x => this.list1.includes(x))");
+        result.Should().Contain("(($0, $1) => [...new Set($0)].filter(($x) => $1.includes($x)))(this.items, this.list1)");
     }
 
     [Fact]
     public void Intersect_WithSelect_MapsCorrectly()
     {
         var result = TestHelper.ConvertExpression("list.Intersect(otherList).Select(x => x.Name)");
-        result.Should().Contain("filter(x => this.otherList.includes(x))");
+        result.Should().Contain("(($0, $1) => [...new Set($0)].filter(($x) => $1.includes($x)))(this.list, this.otherList)");
         result.Should().Contain("map");
     }
 
@@ -87,7 +87,7 @@ public class SetOperationsLinqTests
     public void Except_MapsToFilterWithNegatedIncludes()
     {
         var result = TestHelper.ConvertExpression("list.Except(otherList)");
-        result.Should().Be("[...new Set(this.list)].filter(x => !this.otherList.includes(x))");
+        result.Should().Be("(($0, $1) => [...new Set($0)].filter(($x) => !$1.includes($x)))(this.list, this.otherList)");
     }
 
     [Fact]
@@ -95,14 +95,14 @@ public class SetOperationsLinqTests
     {
         // Except should filter out items that exist in other
         var result = TestHelper.ConvertExpression("items.Except(excludeList)");
-        result.Should().Contain("filter(x => !this.excludeList.includes(x))");
+        result.Should().Contain("filter(($x) => !$1.includes($x)))(") .And.Contain(", this.excludeList)");
     }
 
     [Fact]
     public void Except_WithCount_MapsCorrectly()
     {
         var result = TestHelper.ConvertExpression("list.Except(otherList).Count()");
-        result.Should().Contain("filter(x => !this.otherList.includes(x))");
+        result.Should().Contain("(($0, $1) => [...new Set($0)].filter(($x) => !$1.includes($x)))(this.list, this.otherList)");
         result.Should().Contain(".length");
     }
 
@@ -114,7 +114,7 @@ public class SetOperationsLinqTests
         // Union then Except
         var result = TestHelper.ConvertExpression("items.Union(list1).Except(excludeList)");
         result.Should().Contain("new Set");
-        result.Should().Contain("filter(x => !this.excludeList.includes(x))");
+        result.Should().Contain("filter(($x) => !$1.includes($x)))(") .And.Contain(", this.excludeList)");
     }
 
     [Fact]

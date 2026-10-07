@@ -32,14 +32,14 @@ src/eQuantic.UI.Compiler/CodeGen/Strategies/Expressions/ObjectCreationStrategy.c
 src/eQuantic.UI.Compiler/CodeGen/Strategies/Expressions/SwitchExpressionStrategy.cs  1  not looked at yet
 src/eQuantic.UI.Compiler/CodeGen/Strategies/Expressions/TupleEquality.cs  1  arguments only
 src/eQuantic.UI.Compiler/CodeGen/Strategies/Invocation/ToStringStrategy.cs  1  not looked at yet
-src/eQuantic.UI.Compiler/CodeGen/Strategies/Linq/AverageStrategy.cs  3  not looked at yet
-src/eQuantic.UI.Compiler/CodeGen/Strategies/Linq/DistinctStrategy.cs  2  not looked at yet
+src/eQuantic.UI.Compiler/CodeGen/Strategies/Linq/AverageStrategy.cs  2  not looked at yet
+src/eQuantic.UI.Compiler/CodeGen/Strategies/Linq/DistinctStrategy.cs  1  not looked at yet
 src/eQuantic.UI.Compiler/CodeGen/Strategies/Linq/GroupByStrategy.cs  3  not looked at yet
 src/eQuantic.UI.Compiler/CodeGen/Strategies/Linq/LinqTableStrategy.cs  21  not looked at yet
 src/eQuantic.UI.Compiler/CodeGen/Strategies/Linq/LookupIndexerStrategy.cs  1  not looked at yet
 src/eQuantic.UI.Compiler/CodeGen/Strategies/Linq/OfTypeStrategy.cs  2  not looked at yet
 src/eQuantic.UI.Compiler/CodeGen/Strategies/Linq/OrderByStrategy.cs  2  not looked at yet
-src/eQuantic.UI.Compiler/CodeGen/Strategies/Linq/SumStrategy.cs  3  not looked at yet
+src/eQuantic.UI.Compiler/CodeGen/Strategies/Linq/SumStrategy.cs  2  not looked at yet
 src/eQuantic.UI.Compiler/CodeGen/Strategies/NullableLift.cs  2  not looked at yet
 src/eQuantic.UI.Compiler/CodeGen/Strategies/Primitives/BclSurfaceTailStrategy.cs  3  not looked at yet
 src/eQuantic.UI.Compiler/CodeGen/Strategies/Primitives/ConvertStrategy.cs  3  arguments only

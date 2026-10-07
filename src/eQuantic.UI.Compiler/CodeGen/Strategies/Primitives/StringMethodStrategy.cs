@@ -324,7 +324,7 @@ public class StringMethodStrategy : IConversionStrategy
 
         // Handle StringSplitOptions.RemoveEmptyEntries
         if (args.Count >= 2 && args[1].Contains("RemoveEmptyEntries"))
-            return $"{caller}.split({args[0]}).filter(s => s !== '')";
+            return $"{caller}.split({args[0]}).filter(($s) => $s !== '')";
 
         return $"{caller}.split({args[0]})";
     }

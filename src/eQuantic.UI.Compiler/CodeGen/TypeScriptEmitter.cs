@@ -2247,6 +2247,14 @@ public class TypeScriptEmitter
             ? lifted.TypeArguments[0]
             : resolvedRaw;
 
+        // A type parameter is named as its declaration names it: `@class` is declared `class$`, a name
+        // TypeScript takes, and a parameter of that type said `class`, which it does not (#467).
+        if (resolved is ITypeParameterSymbol typeParameter)
+        {
+            var named = typeParameter.Name.ToJsIdentifier();
+            return nullable ? $"{named} | null" : named;
+        }
+
         // A generic's TYPE ARGUMENTS are symbols here even when the string mapper already rewrote
         // the shape around them (`Action<IPainter>` → `(iPainter: IPainter) => void`). An interface
         // among them must answer the same `any` a bare interface parameter does, or the module

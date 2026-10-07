@@ -1,14 +1,18 @@
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using eQuantic.UI.Compiler.CodeGen.Ir;
 
 namespace eQuantic.UI.Compiler.CodeGen.Strategies.Linq;
 
 /// <summary>
 /// Converts LINQ .Sum() to JavaScript .reduce().
-/// - Sum() -> array.reduce((a, b) => a + b, 0)
-/// - Sum(selector) -> array.reduce((sum, x) => sum + selector(x), 0)
+/// - Sum() -> array.reduce(($a, $b) => $a + $b, 0)
+/// - Sum(x => x.Amount) -> array.reduce(($sum, x) => $sum + x.amount, 0), the lambda's body the callback's
+/// - Sum(selector) -> array.reduce(($sum, $x) => $sum + selector($x), 0), the selector evaluated once
+/// The names the reduce declares take a `$`, which no C# name holds: the accumulator was `_sum`, and a
+/// captured local of that name read the running total instead (#397).
 /// </summary>
-public class SumStrategy : IConversionStrategy
+public class SumStrategy : IExpressionIrStrategy
 {
     public bool CanConvert(SyntaxNode node, ConversionContext context)
     {
@@ -31,55 +35,47 @@ public class SumStrategy : IConversionStrategy
         return false;
     }
 
-    public string Convert(SyntaxNode node, ConversionContext context)
+    public JsExpr ConvertIr(SyntaxNode node, ConversionContext context)
     {
         var invocation = (InvocationExpressionSyntax)node;
         var memberAccess = (MemberAccessExpressionSyntax)invocation.Expression;
 
-        var caller = LinqSource.Text(memberAccess.Expression, context);
+        var source = LinqSource.Ir(memberAccess.Expression, context);
         var args = invocation.ArgumentList.Arguments;
 
         // WHAT is being added decides how. A decimal is a runtime Decimal, not a JS number, so
-        // `_sum + amount` concatenates their text: a payments total read "R$ 01240.50640.00" —
+        // `$sum + amount` concatenates their text: a payments total read "R$ 01240.50640.00" —
         // the seed, then each amount, glued end to end. A long is a BigInt, whose `+` throws next
         // to a NUMBER seed — the seed must be 0n. The result type of the call answers for both
         // forms, with and without a selector.
         var summed = context.SemanticHelper.GetType(invocation);
         var exact = summed.IsDecimal();
-
-        // The accumulator starts as the Decimal seed and each element IS a Decimal (typed world) —
-        // the method applies directly.
-        string Add(string left, string right) => exact
-            ? $"{left}.add({right})"
-            : $"{left} + {right}";
-        var seed = exact ? $"{Eq.Dec}(0)" : summed.IsLong() ? "0n" : "0";
         if (exact) context.UsedHelpers.Add(Eq.Import);
+        var seed = exact ? $"{Eq.Dec}(0)" : summed.IsLong() ? "0n" : "0";
 
         // A FLOAT sum is .NET's: accumulated in a DOUBLE and converted once at the end
         // (`(float)Sum<float, double>(source)`), so the reduce stays in doubles and only its
         // answer rounds to the single the call returns (SinglePrecision).
-        string Settle(string total) => SinglePrecision.Is(summed) ? $"Math.fround({total})" : total;
+        JsExpr Settle(JsExpr total) => SinglePrecision.Is(summed) ? JsExpr.Template("Math.fround({0})", [total]) : total;
 
-        if (args.Count > 0)
+        // Sum(x => x.Amount): the lambda's body is the callback's, its parameter the element.
+        if (args.Count > 0 && args[0].Expression is SimpleLambdaExpressionSyntax lambda)
         {
-            // Sum(x => x.Amount) -> reduce((sum, x) => sum + x.amount, 0)
-            var selector = args[0].Expression;
-
-            // Extract lambda parameter and body
-            if (selector is SimpleLambdaExpressionSyntax lambda)
-            {
-                var param = lambda.Parameter.Identifier.Text.ToJsIdentifier();
-                var body = context.Converter.ConvertExpression(lambda.Body as ExpressionSyntax ?? lambda.ExpressionBody!);
-                return Settle($"{caller}.reduce((_sum, {param}) => {Add("_sum", body)}, {seed})");
-            }
-
-            // Fallback for other expression types
-            var selectorConverted = context.Converter.ConvertExpression(selector);
-            return Settle($"{caller}.reduce((_sum, _x) => {Add("_sum", $"{selectorConverted}(_x)")}, {seed})");
+            var param = lambda.Parameter.Identifier.Text.ToJsIdentifier();
+            var body = context.Converter.ConvertIr(lambda.Body as ExpressionSyntax ?? lambda.ExpressionBody!);
+            var callback = JsExpr.Arrow($"$sum, {param}", LinqAccumulation.Add(JsExpr.Identifier("$sum"), body, exact));
+            return Settle(JsExpr.Template($"{{0}}.reduce({{1}}, {seed})", [source, callback], context.TypeAnnotations));
         }
 
+        // Any other selector is evaluated once, before the reduce runs, as C# evaluates an argument.
+        if (args.Count > 0)
+            return Settle(JsExpr.Template(
+                $"{{0}}.reduce(($sum, $x) => {LinqAccumulation.Add("$sum", "{1}($x)", exact)}, {seed})",
+                [source, context.Converter.ConvertIr(args[0].Expression)], context.TypeAnnotations));
+
         // Sum() without selector - the elements themselves.
-        return Settle($"{caller}.reduce((_a, _b) => {Add("_a", "_b")}, {seed})");
+        return Settle(JsExpr.Template($"{{0}}.reduce(($a, $b) => {LinqAccumulation.Add("$a", "$b", exact)}, {seed})",
+            [source], context.TypeAnnotations));
     }
 
     public int Priority => 10;

@@ -330,7 +330,7 @@ public class StringStaticStrategy : IConversionStrategy
         string Passed((int Slot, ExpressionSyntax Value, bool Spread) value, string text) =>
             value.Spread
                 ? BoxOf(ElementTypeOf(context.SemanticHelper.GetType(value.Value))) is { } spreadBox
-                    ? $"...Array.from({text}, (value) => {spreadBox("value")})"
+                    ? $"...Array.from({text}, ($value) => {spreadBox("$value")})"
                     : $"...{text}"
                 : BoxOf(Boxed(value.Value, context)) is { } box
                     ? box(text)
@@ -638,8 +638,8 @@ public class StringStaticStrategy : IConversionStrategy
         // The runtime asks the conversion of a value that is not null, so a nullable element type is
         // its value type, and a string needs none.
         var element = valuesType.GetEnumerableElementType()?.UnwrapNullable()?.WithNullableAnnotation(NullableAnnotation.NotAnnotated);
-        var probe = element is null ? null : StringConversion.Of(element, JsExpr.Identifier("value"), context);
-        var text = probe is null or JsIdentifier { Name: "value" } ? null : JsExpr.Arrow("value", probe);
+        var probe = element is null ? null : StringConversion.Of(element, JsExpr.Identifier("$value"), context);
+        var text = probe is null or JsIdentifier { Name: "$value" } ? null : JsExpr.Arrow("$value", probe);
         var parameter = valuesParameter.Name == "value" ? "'value'" : null;
 
         var call = (text, parameter) switch

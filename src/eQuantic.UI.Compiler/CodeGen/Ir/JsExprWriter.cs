@@ -127,18 +127,29 @@ public static class JsExprWriter
     /// too, so the arguments are still evaluated in the order C# evaluates them (receiver first,
     /// then each argument). The fill is ONE pass — a part's text is never scanned for holes of its
     /// own.
+    /// <para>
+    /// A part whose hole sits inside a function the template itself defines is bound the same way,
+    /// however many times it is mentioned: there it ran once per call of that function, where C#
+    /// evaluated it once, before the call it is an argument of (<see cref="InsideAFunction"/>, #657).
+    /// </para>
     /// </summary>
     private static JsWritten RenderTemplate(JsTemplate template)
     {
         var parts = template.Parts;
         var holes = Hole.Matches(template.Text);
         var uses = new int[parts.Count];
-        foreach (Match match in holes)
-            uses[int.Parse(match.Groups[1].Value)]++;
+        var deferred = new bool[parts.Count];
+        var inside = InsideAFunction(template.Text, holes);
+        for (var at = 0; at < holes.Count; at++)
+        {
+            var index = int.Parse(holes[at].Groups[1].Value);
+            uses[index]++;
+            deferred[index] |= inside[at];
+        }
 
         var bound = new bool[parts.Count];
         for (var i = 0; i < parts.Count; i++)
-            bound[i] = uses[i] > 1 && !IsInlinable(parts[i]);
+            bound[i] = (uses[i] > 1 || deferred[i] && !IsFunctionLiteral(parts[i])) && !IsInlinable(parts[i]);
         var last = Array.LastIndexOf(bound, true);
         // A bound part runs FIRST, as the arrow's argument, and a name left inline is read later,
         // in the body, after whatever that part did. C# had read the name before it: a key whose
@@ -189,6 +200,90 @@ public static class JsExprWriter
     }
 
     /// <summary>
+    /// For each hole, whether it sits inside a function the template itself defines, an arrow's body
+    /// or a <c>function</c>'s, where its part runs once per call: <c>Intersect</c> wrote its second
+    /// sequence inside the filter's arrow, so a call there ran once per element where C# made it once
+    /// (#657). A string is skipped, and a hole is not a brace.
+    /// </summary>
+    private static bool[] InsideAFunction(string text, MatchCollection holes)
+    {
+        var inside = new bool[holes.Count];
+        var holeAt = new Dictionary<int, int>();
+        for (var at = 0; at < holes.Count; at++) holeAt[holes[at].Index] = at;
+
+        // The open brackets, each saying whether it opened a function's block, and the depths at which
+        // an arrow whose body is an expression opened: a comma or a semicolon at that depth ends it,
+        // and so does a bracket closing below it.
+        var brackets = new Stack<bool>();
+        var expressionBodies = new List<int>();
+        var blockIsABody = false;
+        var parametersAt = -1;
+        for (var i = 0; i < text.Length; i++)
+        {
+            if (holeAt.TryGetValue(i, out var hole))
+            {
+                inside[hole] = expressionBodies.Count > 0 || brackets.Contains(true);
+                i += holes[hole].Length - 1;
+                continue;
+            }
+
+            switch (text[i])
+            {
+                case '\'' or '"' or '`':
+                    i = ClosingQuote(text, i);
+                    break;
+                case '(' or '[' or '{':
+                    brackets.Push(text[i] == '{' && blockIsABody);
+                    blockIsABody = false;
+                    break;
+                case ')' or ']' or '}':
+                    if (brackets.Count > 0) brackets.Pop();
+                    expressionBodies.RemoveAll(depth => depth > brackets.Count);
+                    if (text[i] == ')' && parametersAt == brackets.Count)
+                    {
+                        parametersAt = -1;
+                        blockIsABody = true;
+                    }
+                    break;
+                case ',' or ';':
+                    expressionBodies.RemoveAll(depth => depth == brackets.Count);
+                    break;
+                case '=' when i + 1 < text.Length && text[i + 1] == '>':
+                    i++;
+                    var next = i + 1;
+                    while (next < text.Length && char.IsWhiteSpace(text[next])) next++;
+                    if (next < text.Length && text[next] == '{' && !holeAt.ContainsKey(next)) blockIsABody = true;
+                    else expressionBodies.Add(brackets.Count);
+                    break;
+                case 'f' when IsWordAt(text, i, "function"):
+                    parametersAt = brackets.Count;
+                    i += "function".Length - 1;
+                    break;
+            }
+        }
+        return inside;
+    }
+
+    /// <summary>The index of the quote that closes the string opening at <paramref name="open"/>,
+    /// past every escaped character.</summary>
+    private static int ClosingQuote(string text, int open)
+    {
+        for (var i = open + 1; i < text.Length; i++)
+        {
+            if (text[i] == '\\') i++;
+            else if (text[i] == text[open]) return i;
+        }
+        return text.Length - 1;
+    }
+
+    private static bool IsWordAt(string text, int at, string word) =>
+        string.CompareOrdinal(text, at, word, 0, word.Length) == 0
+        && (at == 0 || !IsIdentifierChar(text[at - 1]))
+        && (at + word.Length >= text.Length || !IsIdentifierChar(text[at + word.Length]));
+
+    private static bool IsIdentifierChar(char c) => char.IsLetterOrDigit(c) || c is '_' or '$';
+
+    /// <summary>
     /// How tightly the text around a hole binds the part that fills it. Between an opening bracket
     /// or a comma and a closing bracket or a comma, the part is a whole argument or element, which
     /// only a sequence expression could break. Anywhere else an operator or a member access touches
@@ -213,12 +308,18 @@ public static class JsExprWriter
     internal static bool IsInlinable(JsExpr part) =>
         part is JsLiteral || part is JsIdentifier { Name: var name } && !name.Contains('.');
 
+    /// <summary>A lambda written where the template uses it: making it again on each call of the
+    /// template's function is a closure nobody can tell from the first, and in place it keeps the
+    /// parameter types a call around it gives (<c>((x) => x.name)(item)</c>), which an argument passed
+    /// from outside would lose to an implicit any.</summary>
+    private static bool IsFunctionLiteral(JsExpr part) => part is JsArrow or JsArrowBlock;
+
     /// <summary>A part whose value nothing else in the template can change: a literal, or
     /// <c>this</c> and <c>super</c>, which are keywords — and <c>super</c> is not a value an arrow
-    /// could even be passed. A local's name is NOT fixed: a call among the other parts can
-    /// reassign it.</summary>
+    /// could even be passed — or a lambda written in place, whose making no other part can see or
+    /// reorder. A local's name is NOT fixed: a call among the other parts can reassign it.</summary>
     private static bool IsFixed(JsExpr part) =>
-        part is JsLiteral || part is JsIdentifier { Name: "this" or "super" };
+        part is JsLiteral || part is JsIdentifier { Name: "this" or "super" } || IsFunctionLiteral(part);
 
     /// <summary>A receiver must be at least call-shaped; a bare number additionally needs
     /// parentheses, because <c>1.toString()</c> reads the dot as a decimal point.</summary>

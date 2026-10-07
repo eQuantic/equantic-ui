@@ -1,6 +1,7 @@
 using System.Collections.Immutable;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using eQuantic.UI.Compiler.CodeGen.Ir;
 
 namespace eQuantic.UI.Compiler.CodeGen.Strategies.Linq;
 
@@ -19,26 +20,32 @@ namespace eQuantic.UI.Compiler.CodeGen.Strategies.Linq;
 /// grouped the raw words — which the query-syntax differential (<c>group w.ToUpper() by w.Length</c>
 /// lowers to exactly that call) was the first to catch.
 /// </para>
+/// <para>
+/// The names the reduce declares take a `$`, which no C# name holds: a key selector that read a captured
+/// <c>key</c> met the reduce's own <c>const key</c> before it was set and threw (#397). A selector that is
+/// not a lambda is evaluated once, before the reduce runs, where it ran once per element.
+/// </para>
 /// </summary>
-public class GroupByStrategy : IConversionStrategy
+public class GroupByStrategy : IExpressionIrStrategy
 {
     public bool CanConvert(SyntaxNode node, ConversionContext context)
     {
         return context.IsLinqMethod(node, "GroupBy");
     }
 
-    public string Convert(SyntaxNode node, ConversionContext context)
+    public JsExpr ConvertIr(SyntaxNode node, ConversionContext context)
     {
         var invocation = (InvocationExpressionSyntax)node;
         var memberAccess = (MemberAccessExpressionSyntax)invocation.Expression;
-        var source = LinqSource.Text(memberAccess.Expression, context);
+        var source = LinqSource.Ir(memberAccess.Expression, context);
         var args = invocation.ArgumentList.Arguments;
 
         if (args.Count == 0) return source;
 
-        var keySelector = context.Converter.ConvertExpression(args[0].Expression);
-        string? elementSelector = null;
-        string? resultSelector = null;
+        // {0} is the source and the selectors follow it, in the order C# evaluates them.
+        var parts = new List<JsExpr> { source, context.Converter.ConvertIr(args[0].Expression) };
+        int? elementSelector = null;
+        int? resultSelector = null;
 
         var bound = context.SemanticHelper.GetSymbol(invocation) as IMethodSymbol;
         var parameters = bound?.Parameters;
@@ -47,10 +54,12 @@ public class GroupByStrategy : IConversionStrategy
             switch (Role(parameters, args.Count, i, args[i].Expression))
             {
                 case "elementSelector":
-                    elementSelector = context.Converter.ConvertExpression(args[i].Expression);
+                    elementSelector = parts.Count;
+                    parts.Add(context.Converter.ConvertIr(args[i].Expression));
                     break;
                 case "resultSelector":
-                    resultSelector = context.Converter.ConvertExpression(args[i].Expression);
+                    resultSelector = parts.Count;
+                    parts.Add(context.Converter.ConvertIr(args[i].Expression));
                     break;
                 default:
                     context.Report(args[i], ConversionSeverity.Error, "EQ2008",
@@ -61,20 +70,21 @@ public class GroupByStrategy : IConversionStrategy
             }
         }
 
-        var pushed = elementSelector is null ? "item" : $"({elementSelector})(item)";
+        var pushed = elementSelector is { } element ? $"({{{element}}})($item)" : "$item";
         // A key that is an object here (a record, a date, a decimal) groups by its VALUE, as .NET's
         // default equality does: by === two equal records were two groups.
         var key = bound is { TypeArguments.Length: > 1 } ? bound.TypeArguments[1] : null;
         if (LinqKeys.ComparesByValue(key)) context.UsedHelpers.Add(Eq.Import);
-        var grouped = $"{source}.reduce((groups, item) => {{ " +
-                      $"const key = ({keySelector})(item); " +
-                      $"let g = groups.find(x => {LinqKeys.Matches(key, "x.key", "key")}); " +
-                      "if (!g) { g = []; g.key = key; groups.push(g); } " +
-                      $"g.push({pushed}); return groups; }}, [])";
+        var grouped = "{0}.reduce(($groups, $item) => { " +
+                      "const $key = ({1})($item); " +
+                      $"let $g = $groups.find(($x) => {LinqKeys.Matches(key, "$x.key", "$key")}); " +
+                      "if (!$g) { $g = []; $g.key = $key; $groups.push($g); } " +
+                      $"$g.push({pushed}); return $groups; }}, [])";
 
-        return resultSelector is null
-            ? grouped
-            : $"{grouped}.map((g) => ({resultSelector})(g.key, g))";
+        // A selector that is a lambda is written where it is called; the writer binds any other.
+        return JsExpr.Template(
+            resultSelector is { } result ? $"{grouped}.map(($g) => ({{{result}}})($g.key, $g))" : grouped,
+            parts, context.TypeAnnotations);
     }
 
     /// <summary>The role of the argument after the key selector. The bound overload names it;

@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using eQuantic.UI.Compiler.CodeGen.Ir;
 
 namespace eQuantic.UI.Compiler.CodeGen.Strategies.Linq;
 
@@ -12,8 +13,13 @@ namespace eQuantic.UI.Compiler.CodeGen.Strategies.Linq;
 /// key alone keeps the primary order only among secondary-equal items, inverting the precedence.)
 /// The source is copied first ([...src]) so the original sequence is never mutated, matching LINQ; JS's
 /// stable sort makes items equal on all keys keep their input order, matching LINQ's stable ordering.
+/// <para>
+/// The comparator's names take a `$`, which no C# name holds: it was <c>(a, b)</c>, and a key selector
+/// that read a captured <c>a</c> read the element being compared instead (#397). A selector that is not
+/// a lambda is evaluated once, before the sort runs, where it ran on every comparison.
+/// </para>
 /// </summary>
-public class OrderByStrategy : IConversionStrategy
+public class OrderByStrategy : IExpressionIrStrategy
 {
     private static readonly HashSet<string> OrderMethods = new()
     {
@@ -26,11 +32,11 @@ public class OrderByStrategy : IConversionStrategy
             && OrderMethods.Contains(access.Name.Identifier.Text);
     }
 
-    public string Convert(SyntaxNode node, ConversionContext context)
+    public JsExpr ConvertIr(SyntaxNode node, ConversionContext context)
     {
         // Walk the ordering chain from outermost (this node) inward, collecting each key selector and
         // its direction; the deepest receiver is the base source.
-        var keys = new List<(string Selector, bool Descending)>();
+        var keys = new List<(JsExpr Selector, bool Descending)>();
         ExpressionSyntax current = (InvocationExpressionSyntax)node;
         ExpressionSyntax source = current;
 
@@ -41,7 +47,7 @@ public class OrderByStrategy : IConversionStrategy
             var method = acc.Name.Identifier.Text;
             if (inv.ArgumentList.Arguments.Count > 0)
             {
-                var selector = context.Converter.ConvertExpression(inv.ArgumentList.Arguments[0].Expression);
+                var selector = context.Converter.ConvertIr(inv.ArgumentList.Arguments[0].Expression);
                 var descending = method.EndsWith("Descending");
                 keys.Insert(0, (selector, descending)); // outer call = later (lower-priority) key
             }
@@ -58,24 +64,27 @@ public class OrderByStrategy : IConversionStrategy
 
         // Through the one place every operator reads its source: a string spread by code point, and
         // it was spread here, where .NET sorts its chars.
-        var src = LinqSource.Text(source, context);
-        if (keys.Count == 0) return $"[...{src}].sort()";
+        var src = LinqSource.Ir(source, context);
+        if (keys.Count == 0) return JsExpr.Template("[...{0}].sort()", [src]);
 
         // The key selector is typed through the comparator's own parameter, which the sorted array
-        // types. Alone in `const _k = (filler) => …` nothing gave the lambda a type, and the
+        // types. Alone in `const $k = (filler) => …` nothing gave the lambda a type, and the
         // runtime's own build refused the implicit any; plain JavaScript carries no annotation.
-        var keyType = context.TypeAnnotations ? ": (x: typeof a) => any" : "";
+        var keyType = context.TypeAnnotations ? ": ($element: typeof $a) => any" : "";
         var body = new System.Text.StringBuilder();
-        foreach (var (selector, descending) in keys)
+        for (var i = 0; i < keys.Count; i++)
         {
-            var lt = descending ? "1" : "-1";
-            var gt = descending ? "-1" : "1";
-            body.Append($"{{ const _k{keyType} = {selector}; const _a = _k(a), _b = _k(b); ");
-            body.Append($"if (_a < _b) return {lt}; if (_a > _b) return {gt}; }} ");
+            var lt = keys[i].Descending ? "1" : "-1";
+            var gt = keys[i].Descending ? "-1" : "1";
+            body.Append($"{{ const $k{keyType} = {{{i + 1}}}; const $x = $k($a), $y = $k($b); ");
+            body.Append($"if ($x < $y) return {lt}; if ($x > $y) return {gt}; }} ");
         }
         body.Append("return 0;");
 
-        return $"[...{src}].sort((a, b) => {{ {body} }})";
+        // {0} is the source and {1}… the key selectors, in the order C# evaluates them: the writer
+        // binds a selector that is not a lambda, which the comparator would otherwise run each time.
+        return JsExpr.Template($"[...{{0}}].sort(($a, $b) => {{ {body} }})",
+            [src, .. keys.Select(key => key.Selector)], context.TypeAnnotations);
     }
 
     public int Priority => 10;

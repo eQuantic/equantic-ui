@@ -328,11 +328,11 @@ public class RecordTypeEmitter
                 var zeros = string.Join(", ", typeParameters.Select(parameter =>
                     $"$z{parameter}{(tsTypeDeclarations ? ": any" : "")} = null"));
                 sb.Append(tsTypeDeclarations
-                    ? $"static $zero({zeros}): {name} {{ const zero: any = Object.create({name}.prototype); "
-                    : $"static $zero({zeros}) {{ const zero = Object.create({name}.prototype); ");
+                    ? $"static $zero({zeros}): {name} {{ const $self: any = Object.create({name}.prototype); "
+                    : $"static $zero({zeros}) {{ const $self = Object.create({name}.prototype); ");
                 foreach (var m in members)
-                    sb.Append($"zero.{m.Store} = {ZeroOf(m, typeParameters.Count == 0 ? null : parameter => typeParameters.Contains(parameter.Name) && parameter.TypeParameterKind == TypeParameterKind.Type ? $"$z{parameter.Name}" : null)}; ");
-                sb.Append("return zero; } ");
+                    sb.Append($"$self.{m.Store} = {ZeroOf(m, typeParameters.Count == 0 ? null : parameter => typeParameters.Contains(parameter.Name) && parameter.TypeParameterKind == TypeParameterKind.Type ? $"$z{parameter.Name}" : null)}; ");
+                sb.Append("return $self; } ");
             }
 
             // getHashCode: the members `equals` reads, combined, as the record's synthesized GetHashCode
