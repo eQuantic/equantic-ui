@@ -313,9 +313,7 @@ public class RecordTypeEmitter
             foreach (var m in members) sb.Append($" && {ElementEquality.Compare(TypeOf(m), $"this.{m.Store}", $"o.{m.Store}", Hoist)}");
             sb.Append("; } ");
             for (var i = 0; i < generated.Count; i++)
-                sb.Append(tsTypeDeclarations
-                    ? $"static $equality{i}: (a: unknown, b: unknown) => boolean = {generated[i]}; "
-                    : $"static $equality{i} = {generated[i]}; ");
+                sb.Append($"static $equality{i} = {generated[i]}; ");
 
             // with(patch): a COPY, onto the prototype (a spread would drop the methods), then the
             // members the patch names. C# copies the fields and runs no initializer, and building it
