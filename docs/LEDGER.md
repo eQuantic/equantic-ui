@@ -1726,7 +1726,10 @@ record of a release, the wiki's Upgrading page is the distillate.
   mid-rebuild, as `dotnet watch` restarts an app, left eqc writing beside the next build and the app
   took 14 s to exit (3 s now). Copilot's first round found two more in that shutdown: a rebuild past
   its two-minute limit was released, not stopped, and a stream that registered as the app stopped
-  waited out the host. Found on the way: a write-once page's state does not survive a hot reload
+  waited out the host. Its second round found one more: a shutdown that came while the rebuild's
+  process was starting returned before the process existed, and the host waits for nothing after it,
+  so the rebuild now starts under the gate the shutdown takes, and the shutdown returns once it ended.
+  Found on the way: a write-once page's state does not survive a hot reload
   under any runner ([#664](https://github.com/eQuantic/equantic-ui/issues/664)).
   Proposed and archived through OpenSpec (`openspec/specs/hot-reload`, `generated-files` and
   `hydration-contract`).

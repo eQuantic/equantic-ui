@@ -77,3 +77,9 @@ holds open.
 
 - **WHEN** a page's stream registers after the app began stopping
 - **THEN** it ends at once instead of holding the shutdown
+
+#### Scenario: A rebuild that is starting as the app stops
+
+- **WHEN** the app begins stopping while a rebuild's process is still starting
+- **THEN** stopping waits for the process to exist, stops it, and returns only once the rebuild has
+  ended, since the host waits for nothing after it
