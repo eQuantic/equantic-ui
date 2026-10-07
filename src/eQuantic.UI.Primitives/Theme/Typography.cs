@@ -109,7 +109,13 @@ public readonly record struct TypeStyle(float Size, float LineHeight, FontWeight
     /// <summary>
     /// The same style at a size that follows the window: <paramref name="percentOfWindow"/> percent
     /// of its width between <paramref name="min"/> and <paramref name="max"/> dp, CSS's
-    /// <c>clamp(min, Nvw, max)</c>. The line box keeps the style's ratio at every size.
+    /// <c>clamp(min, Nvw, max)</c>. The line box and the tracking keep the style's ratio at every
+    /// size.
+    /// <para>
+    /// For a paragraph or a role, not a run: a <see cref="TextRun"/> inside a paragraph takes only a
+    /// size from its override, so a fluid run override is set at its ceiling. A run that should grow
+    /// with the window grows with its paragraph.
+    /// </para>
     /// </summary>
     public TypeStyle WithFluidSize(float min, float percentOfWindow, float max)
     {
@@ -117,7 +123,12 @@ public readonly record struct TypeStyle(float Size, float LineHeight, FontWeight
         if (!(percentOfWindow > 0))
             throw new ArgumentOutOfRangeException(nameof(percentOfWindow), "A fluid size needs a positive share of the window.");
         if (!(max >= min)) throw new ArgumentOutOfRangeException(nameof(max), "A fluid size's ceiling cannot be under its floor.");
-        return WithSize(max) with { Fluid = new FluidSize(min, percentOfWindow, max) };
+        // The ceiling keeps the style's EXACT line-box ratio rather than WithSize's half-dp
+        // rounding: the web writes that ratio unitless, and AtWindow rounds once, at the size it
+        // resolves to, instead of twice.
+        var lineHeight = Size > 0 ? LineHeight * max / Size : LineHeight;
+        var tracking = Size > 0 ? Tracking * max / Size : Tracking;
+        return this with { Size = max, LineHeight = lineHeight, Tracking = tracking, Fluid = new FluidSize(min, percentOfWindow, max) };
     }
 
     /// <summary>

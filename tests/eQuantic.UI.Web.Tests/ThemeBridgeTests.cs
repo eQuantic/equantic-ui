@@ -20,6 +20,20 @@ public class ThemeBridgeTests
         return Path.Combine(repoRoot, "src", "eQuantic.UI.Runtime", "src", "shared", "theme-bridge.photon.json");
     }
 
+    /// <summary>
+    /// A role whose size follows the window crosses with its clamp (#652): without it the browser's
+    /// role is the ceiling while the server's is fluid, and a component that sets the role as its
+    /// override hydrates to another size. The family slot is held open with a null.
+    /// </summary>
+    [Fact]
+    public void AFluidRole_CarriesItsClamp_AfterAnOpenFamilySlot()
+    {
+        var theme = new NamedFaceTests.RoleTheme(PhotonTheme.Instance, TypeRole.Display,
+            PhotonTheme.Instance.Type(TypeRole.Display).WithFluidSize(34, 4.2f, 54));
+
+        ThemeBridge.SerializeJson(theme).Should().Contain(",false,false,null,[34,4.2,54]]");
+    }
+
     [Fact]
     public void PhotonSerialization_MatchesTheSharedFixture()
     {

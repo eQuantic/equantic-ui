@@ -420,17 +420,21 @@ export class TypeStyle implements TypeStyleValue {
     if (!(min > 0)) throw new RangeError('A fluid size needs a positive floor.');
     if (!(percentOfWindow > 0)) throw new RangeError('A fluid size needs a positive share of the window.');
     if (!(max >= min)) throw new RangeError("A fluid size's ceiling cannot be under its floor.");
-    return Object.assign(this.withSize(max), { fluid: new FluidSize(min, percentOfWindow, max) });
+    // The ceiling keeps the EXACT ratios (C# twin): the web writes them unitless and in em, and
+    // atWindow rounds once, at the size it resolves to.
+    const ratio = (value: number) => (this.size > 0 ? (value * max) / this.size : value);
+    return Object.assign(
+      new TypeStyle(max, ratio(this.lineHeight), this.weight, ratio(this.tracking), this.maxScale, this.mono, this.italic, this.family),
+      { fluid: new FluidSize(min, percentOfWindow, max) },
+    );
   }
 
   /** C# `TypeStyle.AtWindow` twin: the fluid size resolved at a window `windowWidth` dp wide. */
   atWindow(windowWidth: number): TypeStyle {
     if (!this.fluid || this.size <= 0) return this;
     const size = this.fluid.at(windowWidth);
-    const resized = this.withSize(size);
     // The tracking follows the size at the style's own ratio, as the line box does.
-    return new TypeStyle(resized.size, resized.lineHeight, resized.weight, (this.tracking * size) / this.size,
-      resized.maxScale, resized.mono, resized.italic, resized.family);
+    return Object.assign(this.withSize(size), { tracking: (this.tracking * size) / this.size });
   }
 
   /** A style from a SIZE alone, with the typographic default line box (1.25×). */

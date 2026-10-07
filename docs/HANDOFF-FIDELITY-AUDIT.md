@@ -214,7 +214,7 @@ the pill's 40 down.
 
 - **Component**: `src/eQuantic.UI.Components/Button.cs`
 - **Handoff**: Hit rect: Small "≥48 (slop)", Medium "≥48 (slop)" — "Sizes — toggle "Hit areas" in the top bar: Small 32 · hit 48 / Medium 40 · hit 48".
-- **Code**: The Button never asks for the hit rect: Button.cs:62-66 reads the size ladder for height, padding, gap and the two type sizes and asks for no hit slot at all — `Touch.MinTarget` has zero references in Button.cs, and no min-size reaches the tree. (The row was filed against `ButtonStyles.Metrics`, a tuple whose seventh slot the Button discarded; the tuple is gone and the seven calls are read straight, which changes the mechanism and not the outcome.) Only the Photon realizer expands (EmitVisitor.Interaction.cs:162-170 ExpandHitRect, called at :15). The web path has no equivalent: `Touch.MinTarget` has zero references in src/eQuantic.UI.Web and src/eQuantic.UI.Runtime, and neither lowerPressable (lowering.ts:2301-2394) nor LowerPressable (WebLoweringVisitor.Interaction.cs:461-497 LowerPressable) nor the generated `.eq-pressable` rules (TokenCss.cs:341-356) set any minimum. On web a Small button's tap target is 32×32 and a Medium's is 40×40.
+- **Code**: The Button never asks for the hit rect: Button.cs:62-66 reads the size ladder for height, padding, gap and the two type sizes and asks for no hit slot at all — `Touch.MinTarget` has zero references in Button.cs, and no min-size reaches the tree. (The row was filed against `ButtonStyles.Metrics`, a tuple whose seventh slot the Button discarded; the tuple is gone and the seven calls are read straight, which changes the mechanism and not the outcome.) Only the Photon realizer expands (EmitVisitor.Interaction.cs:162-170 ExpandHitRect, called at :15). The web path has no equivalent: `Touch.MinTarget` has zero references in src/eQuantic.UI.Web and src/eQuantic.UI.Runtime, and neither lowerPressable (lowering.ts:2301-2394) nor LowerPressable (WebLoweringVisitor.Interaction.cs:461-497 LowerPressable) nor the generated `.eq-pressable` rules (TokenCss.cs:345-360) set any minimum. On web a Small button's tap target is 32×32 and a Medium's is 40×40.
 - **Evidence**:
 
   ```
@@ -247,7 +247,7 @@ the pill's 40 down.
 
 - **Component**: `src/eQuantic.UI.Components/IconButton.cs`
 - **Handoff**: "32/icon16 · 40/20 · 48/24 · 56/24 — hit ≥ 48 always".
-- **Code**: The visual sizes and icon steps are right (side = Sizing.Height → 32/40/48/56, iconSize → 16/20/24/24), but "hit ≥ 48 always" holds only on Photon. IconButton hands the Pressable a Box whose Width/Height are the side, and the web realizer applies no hit expansion anywhere (no use of Touch.MinTarget in src/eQuantic.UI.Web or the TS runtime; no min-width/min-height in TokenCss.cs:341-356). A Small (32) or Medium (40) IconButton — the AppBar/toolbar default the block recommends — is a sub-48 tap target on the web.
+- **Code**: The visual sizes and icon steps are right (side = Sizing.Height → 32/40/48/56, iconSize → 16/20/24/24), but "hit ≥ 48 always" holds only on Photon. IconButton hands the Pressable a Box whose Width/Height are the side, and the web realizer applies no hit expansion anywhere (no use of Touch.MinTarget in src/eQuantic.UI.Web or the TS runtime; no min-width/min-height in TokenCss.cs:345-360). A Small (32) or Medium (40) IconButton — the AppBar/toolbar default the block recommends — is a sub-48 tap target on the web.
 - **Evidence**:
 
   ```
@@ -398,7 +398,7 @@ the pill's 40 down.
 
 - **Component**: `src/eQuantic.UI.Components/Chip.cs`
 - **Handoff**: "Hover: outlined/quiet chips = SurfaceSubtle; filled chips = fill→pressed midpoint (§10). The remove ✕ is its own hover target inside the chip."
-- **Code**: The chip's BoxStyle sets no Hover diff at all (Chip.cs:79-87), so a pointer gets no hover feedback on any chip kind. The capability exists and is used by the sibling control: BoxStyle.Hover (src/eQuantic.UI.Primitives/Nodes/BoxStyle.cs) is set by Button (src/eQuantic.UI.Components/Button.cs:126). The generated stylesheet has no chip/pressable hover rule either — only :active and :focus-visible (src/eQuantic.UI.Web/TokenCss.cs:341-356).
+- **Code**: The chip's BoxStyle sets no Hover diff at all (Chip.cs:79-87), so a pointer gets no hover feedback on any chip kind. The capability exists and is used by the sibling control: BoxStyle.Hover (src/eQuantic.UI.Primitives/Nodes/BoxStyle.cs) is set by Button (src/eQuantic.UI.Components/Button.cs:126). The generated stylesheet has no chip/pressable hover rule either — only :active and :focus-visible (src/eQuantic.UI.Web/TokenCss.cs:345-360).
 - **Evidence**:
 
   ```
@@ -450,7 +450,7 @@ the pill's 40 down.
 
 - **Component**: `src/eQuantic.UI.Components/Checkbox.cs`
 - **Handoff**: "the whole row is the target (hit ≥ 48 tall)"
-- **Code**: The row is laid out with no height and no min-height, so it measures its tallest child — the 22dp box (the BodyM label's line box is 20) — giving a 22dp-tall target. The Photon realizer rescues this (EmitVisitor.Interaction.cs:166 `var minimum = density == Density.Compact ? 0 : Touch.MinTarget;` expands the hit rect to 48), but the web realizer emits no minimum at all: WebLoweringVisitor.Interaction.cs:464-481 LowerPressable sets only padding/border/background/font/cursor/text-align, and TokenCss.cs:341-356 (.eq-pressable rules) adds no sizing. Checkbox.cs:60. The component's own doc comment (Checkbox.cs:9) asserts "hit ≥ 48 via the Pressable contract", which holds on Photon and not on web.
+- **Code**: The row is laid out with no height and no min-height, so it measures its tallest child — the 22dp box (the BodyM label's line box is 20) — giving a 22dp-tall target. The Photon realizer rescues this (EmitVisitor.Interaction.cs:166 `var minimum = density == Density.Compact ? 0 : Touch.MinTarget;` expands the hit rect to 48), but the web realizer emits no minimum at all: WebLoweringVisitor.Interaction.cs:464-481 LowerPressable sets only padding/border/background/font/cursor/text-align, and TokenCss.cs:345-360 (.eq-pressable rules) adds no sizing. Checkbox.cs:60. The component's own doc comment (Checkbox.cs:9) asserts "hit ≥ 48 via the Pressable contract", which holds on Photon and not on web.
 - **Evidence**:
 
   ```
@@ -461,7 +461,7 @@ the pill's 40 down.
 
 - **Component**: `src/eQuantic.UI.Components/Switch.cs`
 - **Handoff**: "Hit rect 48, extends over the paired label row in ListItems."
-- **Code**: The pressable's subtree is the 52×32 track, so the web target's hit rect is 32dp tall: WebRealizer.LowerPressable emits no min sizing (WebLoweringVisitor.Interaction.cs:464-481 LowerPressable) and TokenCss's .eq-pressable rules add none (TokenCss.cs:341-356). Photon does honour it (EmitVisitor.Interaction.cs:166 expands to Touch.MinTarget = 48), so the contract holds on native and breaks on web. Switch.cs:46-52, :72-87.
+- **Code**: The pressable's subtree is the 52×32 track, so the web target's hit rect is 32dp tall: WebRealizer.LowerPressable emits no min sizing (WebLoweringVisitor.Interaction.cs:464-481 LowerPressable) and TokenCss's .eq-pressable rules add none (TokenCss.cs:345-360). Photon does honour it (EmitVisitor.Interaction.cs:166 expands to Touch.MinTarget = 48), so the contract holds on native and breaks on web. Switch.cs:46-52, :72-87.
 - **Evidence**:
 
   ```
@@ -1113,7 +1113,7 @@ the pill's 40 down.
 
 - **Component**: `src/eQuantic.UI.Components/NavigationRail.cs`
 - **Handoff**: "Pointer — Item hover = SurfaceSubtle pill (§10); cursor pointer."
-- **Code**: The destination carries only a PRESSED fill (line 123). BoxStyle.Hover (the StyleDiff that lowers to CSS :hover — src/eQuantic.UI.Primitives/Nodes/BoxStyle.cs) is never set on the pill, the cell or the Pressable, and the generated stylesheet gives .eq-pressable only :active and :focus-visible rules (TokenCss.cs:341-356). Result: on a desktop pointer the rail gives no hover feedback at all — the fill only appears while the mouse button is held. The other pointer-tier components do set it (Menu.cs:88, Pagination.cs:108, Accordion.cs:76, DataTable.cs:199 all use `Hover = new StyleDiff { Background = theme.SurfaceSubtle }`). The `cursor: pointer` half of the clause IS satisfied — lowerPressable emits it unconditionally (lowering.ts:2322).
+- **Code**: The destination carries only a PRESSED fill (line 123). BoxStyle.Hover (the StyleDiff that lowers to CSS :hover — src/eQuantic.UI.Primitives/Nodes/BoxStyle.cs) is never set on the pill, the cell or the Pressable, and the generated stylesheet gives .eq-pressable only :active and :focus-visible rules (TokenCss.cs:345-360). Result: on a desktop pointer the rail gives no hover feedback at all — the fill only appears while the mouse button is held. The other pointer-tier components do set it (Menu.cs:88, Pagination.cs:108, Accordion.cs:76, DataTable.cs:199 all use `Hover = new StyleDiff { Background = theme.SurfaceSubtle }`). The `cursor: pointer` half of the clause IS satisfied — lowerPressable emits it unconditionally (lowering.ts:2322).
 - **Evidence**:
 
   ```
@@ -1253,12 +1253,12 @@ the pill's 40 down.
 
 - **Component**: `src/eQuantic.UI.Primitives/Theme/Typography.cs`
 - **Handoff**: Dynamic Type — "Scales by OS factor to the role cap; re-shape + re-layout, atlas re-uses whitelist sizes. Never scales below ×1."
-- **Code**: The scaling helper clamps the OS factor to a FLOOR of 0.5, not 1 — an OS factor below ×1 (iOS xSmall ≈ 0.82, Android fontScale 0.85) shrinks the type down to half the role's dp size. ScaledLineHeight applies the same 0.5 floor at Typography.cs:146-149 ScaledLineHeight, and no caller re-clamps: the shells pass the factor straight through (src/eQuantic.UI.Native.Shell.Apple/CoreTextService.cs:180-181, src/eQuantic.UI.Native.Shell.Android/AndroidTextService.cs:27-28) and the summary comment only documents `Size × min(factor, MaxScale)`, so the extra lower bound is unstated as well as wrong.
+- **Code**: The scaling helper clamps the OS factor to a FLOOR of 0.5, not 1 — an OS factor below ×1 (iOS xSmall ≈ 0.82, Android fontScale 0.85) shrinks the type down to half the role's dp size. ScaledLineHeight applies the same 0.5 floor at Typography.cs:157-160 ScaledLineHeight, and no caller re-clamps: the shells pass the factor straight through (src/eQuantic.UI.Native.Shell.Apple/CoreTextService.cs:180-181, src/eQuantic.UI.Native.Shell.Android/AndroidTextService.cs:27-28) and the summary comment only documents `Size × min(factor, MaxScale)`, so the extra lower bound is unstated as well as wrong.
 - **Evidence**:
 
   ```
   src/eQuantic.UI.Primitives/Theme/Typography.cs:86  var scaled = Size * MathF.Min(MathF.Max(osFactor, 0.5f), MaxScale);
-  src/eQuantic.UI.Primitives/Theme/Typography.cs:148  var scaled = LineHeight * MathF.Min(MathF.Max(osFactor, 0.5f), MaxScale);
+  src/eQuantic.UI.Primitives/Theme/Typography.cs:159  var scaled = LineHeight * MathF.Min(MathF.Max(osFactor, 0.5f), MaxScale);
   ```
 
 ### A8 Text · behaviour · **unverified**
@@ -1353,7 +1353,7 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  TokenCss.cs:404  css.AppendLine(".eq-pressable > :first-child { transition: background-color var(--eq-motion-fast) ease-out; }");   with TokenCss.cs:343  --eq-motion-fast: {Motion.FastMs}ms;
+  TokenCss.cs:408  css.AppendLine(".eq-pressable > :first-child { transition: background-color var(--eq-motion-fast) ease-out; }");   with TokenCss.cs:347  --eq-motion-fast: {Motion.FastMs}ms;
   ```
 
 ### A12 Button · missing-feature · **unverified**
@@ -1446,8 +1446,8 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  TokenCss.cs:404  css.AppendLine(".eq-pressable > :first-child { transition: background-color var(--eq-motion-fast) ease-out; }");
-  TokenCss.cs:405  css.AppendLine(".eq-pressable:active > :first-child { background-color: var(--eq-pressed-bg) !important; }");
+  TokenCss.cs:408  css.AppendLine(".eq-pressable > :first-child { transition: background-color var(--eq-motion-fast) ease-out; }");
+  TokenCss.cs:409  css.AppendLine(".eq-pressable:active > :first-child { background-color: var(--eq-pressed-bg) !important; }");
   ```
 
 ### B2 List · ListItem · missing-feature · **CONFIRMED**
@@ -1521,7 +1521,7 @@ the pill's 40 down.
 
 - **Component**: `src/eQuantic.UI.Components/BottomNavigation.cs`
 - **Handoff**: Select: pill scales-in from 0.6 + fades, Base 200ms standard; glyph crossfades outline→filled 100ms. Press-down shows the pill at 40% instantly.
-- **Code**: The pill BoxStyle has no Transform and no TransitionSpec, and the glyph swap is a bare conditional — the only motion in the rendered output is the global `.eq-pressable > :first-child` background-color transition (TokenCss.cs:342). Press-down is also the wrong shape: that :first-child is the item COLUMN, so the SurfaceSubtle wash covers the whole (hugged) column rather than showing the pill at 40%. Neither is among the two fences the class doc names (E2 shadow, safe-area); PageIndicator.cs:62 shows the Colors|Size + Motion.State facility this needs.
+- **Code**: The pill BoxStyle has no Transform and no TransitionSpec, and the glyph swap is a bare conditional — the only motion in the rendered output is the global `.eq-pressable > :first-child` background-color transition (TokenCss.cs:346). Press-down is also the wrong shape: that :first-child is the item COLUMN, so the SurfaceSubtle wash covers the whole (hugged) column rather than showing the pill at 40%. Neither is among the two fences the class doc names (E2 shadow, safe-area); PageIndicator.cs:62 shows the Colors|Size + Motion.State facility this needs.
 - **Evidence**:
 
   ```
@@ -1532,7 +1532,7 @@ the pill's 40 down.
 
 - **Component**: `src/eQuantic.UI.Components/BottomNavigation.cs`
 - **Handoff**: Pointer: Item hover = SurfaceSubtle pill (§10); cursor pointer.
-- **Code**: No BoxStyle.Hover anywhere in the component and no `.eq-pressable:hover` rule in the generated stylesheet (TokenCss.cs:341-356 covers only :active, :focus-visible and tap-highlight), so the item has NO hover state on pointer devices; the rendered item carries no hover declaration. Hover-as-StyleDiff is the established pattern in eight sibling components (IconButton.cs:108, Menu.cs:88, Pagination.cs:108…). `cursor: pointer` is present and correct.
+- **Code**: No BoxStyle.Hover anywhere in the component and no `.eq-pressable:hover` rule in the generated stylesheet (TokenCss.cs:345-360 covers only :active, :focus-visible and tap-highlight), so the item has NO hover state on pointer devices; the rendered item carries no hover declaration. Hover-as-StyleDiff is the established pattern in eight sibling components (IconButton.cs:108, Menu.cs:88, Pagination.cs:108…). `cursor: pointer` is present and correct.
 - **Evidence**:
 
   ```
@@ -1609,7 +1609,7 @@ the pill's 40 down.
 
 - **Component**: `src/eQuantic.UI.Components/Tabs.cs`
 - **Handoff**: Pointer: Tab hover = SurfaceSubtle wash behind the label (§10); cursor pointer.
-- **Code**: The cell carries PressedBackground but no BoxStyle.Hover, and there is no `.eq-pressable:hover` rule in the generated stylesheet (TokenCss.cs:341-356) — the rendered tab has no hover declaration, so pointer hover shows nothing. Hover-as-StyleDiff is used by eight sibling components (e.g. Pagination.cs:108, which is the closest analogue). `cursor: pointer` is present.
+- **Code**: The cell carries PressedBackground but no BoxStyle.Hover, and there is no `.eq-pressable:hover` rule in the generated stylesheet (TokenCss.cs:345-360) — the rendered tab has no hover declaration, so pointer hover shows nothing. Hover-as-StyleDiff is used by eight sibling components (e.g. Pagination.cs:108, which is the closest analogue). `cursor: pointer` is present.
 - **Evidence**:
 
   ```
@@ -1840,7 +1840,7 @@ the pill's 40 down.
 
 - **Component**: `src/eQuantic.UI.Components/Checkbox.cs`
 - **Handoff**: "press-down tints the box border Primary instantly"
-- **Code**: No pressed feedback of any kind is wired: the Pressable is built without `PressedBackground`, and the box's BorderColor is a pure function of Error (Checkbox.cs:43) — nothing swaps it on press. The mechanism exists and is used elsewhere (Chip.cs:95, BottomNavigation.cs:86 set PressedBackground; the CSS swap lives at TokenCss.cs:343). The doc comment's v1 fence (Checkbox.cs:10-11) covers only the scale-pop motion, not the press tint.
+- **Code**: No pressed feedback of any kind is wired: the Pressable is built without `PressedBackground`, and the box's BorderColor is a pure function of Error (Checkbox.cs:43) — nothing swaps it on press. The mechanism exists and is used elsewhere (Chip.cs:95, BottomNavigation.cs:86 set PressedBackground; the CSS swap lives at TokenCss.cs:347). The doc comment's v1 fence (Checkbox.cs:10-11) covers only the scale-pop motion, not the press tint.
 - **Evidence**:
 
   ```
@@ -1895,7 +1895,7 @@ the pill's 40 down.
 
 - **Component**: `src/eQuantic.UI.Components/Switch.cs`
 - **Handoff**: "Hover = SurfaceSubtle wash over the hit area (§10)"
-- **Code**: Neither the track nor the thumb declares BoxStyle.Hover (src/eQuantic.UI.Primitives/Nodes/BoxStyle.cs), and the framework has no blanket hover rule for pressables — TokenCss.cs:341-356 emits :active and :focus-visible only. Switch.cs:46-61.
+- **Code**: Neither the track nor the thumb declares BoxStyle.Hover (src/eQuantic.UI.Primitives/Nodes/BoxStyle.cs), and the framework has no blanket hover rule for pressables — TokenCss.cs:345-360 emits :active and :focus-visible only. Switch.cs:46-61.
 - **Evidence**:
 
   ```
@@ -1917,7 +1917,7 @@ the pill's 40 down.
 
 - **Component**: `src/eQuantic.UI.Components/RadioGroup.cs`
 - **Handoff**: "Row hover = SurfaceSubtle wash (§10); cursor pointer; the label row toggles."
-- **Code**: Neither the row nor the circle declares BoxStyle.Hover (src/eQuantic.UI.Primitives/Nodes/BoxStyle.cs), and there is no framework-level hover wash for pressables (TokenCss.cs:341-356 covers :active and :focus-visible only). The pointer cursor IS set (WebLoweringVisitor.Interaction.cs:480 LowerPressable). RadioGroup.cs:56-65.
+- **Code**: Neither the row nor the circle declares BoxStyle.Hover (src/eQuantic.UI.Primitives/Nodes/BoxStyle.cs), and there is no framework-level hover wash for pressables (TokenCss.cs:345-360 covers :active and :focus-visible only). The pointer cursor IS set (WebLoweringVisitor.Interaction.cs:480 LowerPressable). RadioGroup.cs:56-65.
 - **Evidence**:
 
   ```
@@ -2128,7 +2128,7 @@ the pill's 40 down.
 
 - **Component**: `src/eQuantic.UI.Components/Dialog.cs`
 - **Handoff**: Enter: scale 0.96→1 + fade, Base 200ms decelerate
-- **Code**: The dialog enters with fade ONLY — no scale. Dialog.cs:120 wraps the layer in `new Presence(layers)` whose default is PresenceMotion.Fade, and the enum has exactly two members, Fade and SlideUp (src/eQuantic.UI.Primitives/Nodes/PresenceMotion.cs): no scale motion exists to ask for. Duration is right (200ms, --eq-motion-base) but the curve lowers to CSS `ease-out` (0,0,0.58,1), not the spec's Decelerate (0,0,0,1) — TokenCss.cs:435.
+- **Code**: The dialog enters with fade ONLY — no scale. Dialog.cs:120 wraps the layer in `new Presence(layers)` whose default is PresenceMotion.Fade, and the enum has exactly two members, Fade and SlideUp (src/eQuantic.UI.Primitives/Nodes/PresenceMotion.cs): no scale motion exists to ask for. Duration is right (200ms, --eq-motion-base) but the curve lowers to CSS `ease-out` (0,0,0.58,1), not the spec's Decelerate (0,0,0,1) — TokenCss.cs:439.
 - **Evidence**:
 
   ```
@@ -2201,11 +2201,11 @@ the pill's 40 down.
 
 - **Component**: `src/eQuantic.UI.Components/Toast.cs`
 - **Handoff**: enter rise+fade Slow 300ms decelerate; exit fade ⅔
-- **Code**: PresenceMotion.SlideUp lowers to `.eq-presence-slideup { animation: ... var(--eq-motion-base) ease-out; }` — Motion.BaseMs = 200ms, not Slow 300ms, and CSS ease-out rather than the Decelerate curve (TokenCss.cs:436). The paired exit runs --eq-motion-fast = 100ms instead of ⅔ (TokenCss.cs:443). Motion.Enter = (SlowMs, Curve.Decelerate) already exists in Tokens.cs:261 and is not used by Presence. The rise distance (Presence.SlideDistance = 16dp) and the Reduce-Motion crossfade are correct.
+- **Code**: PresenceMotion.SlideUp lowers to `.eq-presence-slideup { animation: ... var(--eq-motion-base) ease-out; }` — Motion.BaseMs = 200ms, not Slow 300ms, and CSS ease-out rather than the Decelerate curve (TokenCss.cs:440). The paired exit runs --eq-motion-fast = 100ms instead of ⅔ (TokenCss.cs:447). Motion.Enter = (SlowMs, Curve.Decelerate) already exists in Tokens.cs:261 and is not used by Presence. The rise distance (Presence.SlideDistance = 16dp) and the Reduce-Motion crossfade are correct.
 - **Evidence**:
 
   ```
-  TokenCss.cs:533        css.AppendLine(".eq-presence-slideup { animation: eq-presence-slideup var(--eq-motion-base) ease-out; }");
+  TokenCss.cs:537        css.AppendLine(".eq-presence-slideup { animation: eq-presence-slideup var(--eq-motion-base) ease-out; }");
   ```
 
 ### C5 Drawer · missing-feature · **unverified**
@@ -2579,7 +2579,7 @@ the pill's 40 down.
 
   ```
   Tooltip.cs:39  }, new Text(Text, TypeRole.Caption, theme.TextInverse, maxLines: 1));
-  TokenCss.cs:473  css.AppendLine(".eq-anchor-panel { position: absolute; z-index: 1050; width: max-content; max-width: min(92vw, 420px); }");
+  TokenCss.cs:477  css.AppendLine(".eq-anchor-panel { position: absolute; z-index: 1050; width: max-content; max-width: min(92vw, 420px); }");
   ```
 
 ### C13 Tooltip · metric · **unverified**
@@ -3138,7 +3138,7 @@ the pill's 40 down.
 
 - **Component**: `src/eQuantic.UI.Components/Chip.cs`
 - **Handoff**: "selection change animates check-in Fast 100ms"
-- **Code**: The check glyph is added to / removed from the Row unconditionally on rebuild with no motion wrapper (Chip.cs:66-69), so it pops in and out. Only the background transitions (the generated .eq-pressable rule animates background-color alone, src/eQuantic.UI.Web/TokenCss.cs:342).
+- **Code**: The check glyph is added to / removed from the Row unconditionally on rebuild with no motion wrapper (Chip.cs:66-69), so it pops in and out. Only the background transitions (the generated .eq-pressable rule animates background-color alone, src/eQuantic.UI.Web/TokenCss.cs:346).
 - **Evidence**:
 
   ```
@@ -3329,11 +3329,11 @@ the pill's 40 down.
 
 - **Component**: `src/eQuantic.UI.Primitives/Nodes/Spinner.cs`
 - **Handoff**: Appears only after a 400ms delay (skip flash for fast ops).
-- **Code**: Spinner.AppearDelayMs has exactly one consumer, the generated web stylesheet (TokenCss.cs:452). EmitVisitor.EmitSpinner (EmitVisitor.Media.cs:286-314) paints the bars from frame 0 with no appear gate, so the native spinner flashes on fast operations. The Spinner doc names the fence: the delay "is generated CSS on web and joins the native transition animator".
+- **Code**: Spinner.AppearDelayMs has exactly one consumer, the generated web stylesheet (TokenCss.cs:456). EmitVisitor.EmitSpinner (EmitVisitor.Media.cs:286-314) paints the bars from frame 0 with no appear gate, so the native spinner flashes on fast operations. The Spinner doc names the fence: the delay "is generated CSS on web and joins the native transition animator".
 - **Evidence**:
 
   ```
-  TokenCss.cs:553  css.AppendLine($".eq-spinner {{ opacity: 0; animation: eq-appear 1ms linear {Spinner.AppearDelayMs}ms forwards; }}");
+  TokenCss.cs:557  css.AppendLine($".eq-spinner {{ opacity: 0; animation: eq-appear 1ms linear {Spinner.AppearDelayMs}ms forwards; }}");
   EmitVisitor.Media.cs:289  motion.Active = true;   // EmitSpinner — no AppearDelayMs anywhere
   ```
 
@@ -3390,7 +3390,7 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  TokenCss.cs:539        css.AppendLine(".eq-presence-exit-fade { animation: eq-presence-exit-fade var(--eq-motion-fast) ease-in forwards; }");
+  TokenCss.cs:543        css.AppendLine(".eq-presence-exit-fade { animation: eq-presence-exit-fade var(--eq-motion-fast) ease-in forwards; }");
   ```
 
 ### C2 Modal · metric · **unverified**
@@ -3481,13 +3481,13 @@ the pill's 40 down.
 
 - **Component**: `src/eQuantic.UI.Components/Stepper.cs`
 - **Handoff**: Hit: 48dp per half, split at cell boundary.
-- **Code**: the 48dp hit expansion the Pressable contract promises (src/eQuantic.UI.Primitives/Nodes/Pressable.cs) is implemented only in the native realizer, EmitVisitor.ExpandHitRect (EmitVisitor.Interaction.cs:162-170). The web realizer emits the visual box as the button's box with no min-width/min-height (WebLoweringVisitor.Interaction.cs:461-475 LowerPressable), the TS twin does the same (lowering.ts:2316-2326), and the generated .eq-pressable rules add none (TokenCss.cs:341-356) — so on the web an arm's hit rect is its visual 40×40. The same gap defeats C6's "Whole control = one hit strip (≥ 48 with slop)".
+- **Code**: the 48dp hit expansion the Pressable contract promises (src/eQuantic.UI.Primitives/Nodes/Pressable.cs) is implemented only in the native realizer, EmitVisitor.ExpandHitRect (EmitVisitor.Interaction.cs:162-170). The web realizer emits the visual box as the button's box with no min-width/min-height (WebLoweringVisitor.Interaction.cs:461-475 LowerPressable), the TS twin does the same (lowering.ts:2316-2326), and the generated .eq-pressable rules add none (TokenCss.cs:345-360) — so on the web an arm's hit rect is its visual 40×40. The same gap defeats C6's "Whole control = one hit strip (≥ 48 with slop)".
 - **Evidence**:
 
   ```
   EmitVisitor.Interaction.cs:164  private static Rect ExpandHitRect(Rect bounds, Density density = Density.Comfortable)   // native only
   WebLoweringVisitor.Interaction.cs:470-478  Padding = "0", Border = "none", Background = "none", ... Width = fills.Width ? "100%" : null, Height = fills.Height ? "100%" : null,
-  TokenCss.cs:403  css.AppendLine(".eq-pressable { -webkit-tap-highlight-color: transparent; }");
+  TokenCss.cs:407  css.AppendLine(".eq-pressable { -webkit-tap-highlight-color: transparent; }");
   ```
 
 ### C9 PullToRefresh · missing-feature · **unverified**
@@ -3585,7 +3585,7 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  TokenCss.cs:488  css.AppendLine(".eq-hoverreveal > .eq-anchor-panel { opacity: 0; pointer-events: none; transition: opacity 120ms ease-out; }");
+  TokenCss.cs:492  css.AppendLine(".eq-hoverreveal > .eq-anchor-panel { opacity: 0; pointer-events: none; transition: opacity 120ms ease-out; }");
   Tokens.cs:260  public const int FastMs = 100;
   ```
 
@@ -3598,7 +3598,7 @@ the pill's 40 down.
 
   ```
   Tooltip.cs:16  /// v1 fences: show/hide delay, arrow caret.
-  TokenCss.cs:489  css.AppendLine(".eq-hoverreveal:hover > .eq-anchor-panel { opacity: 1; }");
+  TokenCss.cs:493  css.AppendLine(".eq-hoverreveal:hover > .eq-anchor-panel { opacity: 1; }");
   ```
 
 ### C13 Tooltip · documented-deviation · **unverified**

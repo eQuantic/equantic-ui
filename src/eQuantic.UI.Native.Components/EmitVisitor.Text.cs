@@ -198,7 +198,7 @@ internal sealed partial class EmitVisitor
         var effectiveCaret = Math.Min(caretInValue + marked.Length, value.Length);
         var shown = value.Length > 0 ? value : entry.Placeholder ?? "";
         var token = value.Length > 0 ? theme.TextPrimary : theme.TextMuted;
-        var style = theme.Type(entry.Role);
+        var style = theme.Type(entry.Role).AtWindow(motion.ViewportW);
 
         var advance = 0f;
         var shift = 0f;

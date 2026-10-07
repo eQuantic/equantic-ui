@@ -95,6 +95,41 @@ public class FluidTypeTests
         echo.Rasterized.Should().ContainSingle().Which.Size.Should().Be(42);
     }
 
+    /// <summary>A field set in a fluid role is measured at the window too, as the text beside it is.</summary>
+    [Fact]
+    public void Photon_MeasuresAFieldInAFluidRole_AtTheWindow()
+    {
+        var theme = new FluidRoleTheme(PhotonTheme.Instance, Display);
+        var field = new TextEntry("", _ => { }) { Role = TypeRole.BodyL };
+
+        var node = LayoutEngine.Layout(field, 400, 800, new LayoutContext(theme, new SizeEcho()));
+
+        node.Bounds.Height.Should().BeLessThan(67.5f, "a field at the ceiling would be the 54dp line box");
+    }
+
+    /// <summary>Photon's theme with BodyL set in a fluid style.</summary>
+    private sealed class FluidRoleTheme(IAppTheme inner, TypeStyle bodyL) : IAppTheme
+    {
+        public ColorToken Background => inner.Background;
+        public ColorToken Surface => inner.Surface;
+        public ColorToken SurfaceSubtle => inner.SurfaceSubtle;
+        public ColorToken SurfaceHighlight => inner.SurfaceHighlight;
+        public ColorToken Border => inner.Border;
+        public ColorToken BorderStrong => inner.BorderStrong;
+        public ColorToken TextPrimary => inner.TextPrimary;
+        public ColorToken TextSecondary => inner.TextSecondary;
+        public ColorToken TextMuted => inner.TextMuted;
+        public ColorToken TextInverse => inner.TextInverse;
+        public ColorToken FocusRing => inner.FocusRing;
+        public ColorToken LinkColor => inner.LinkColor;
+        public ColorToken Scrim => inner.Scrim;
+        public float DisabledOpacity => inner.DisabledOpacity;
+        public VariantColors Colors(Variant variant) => inner.Colors(variant);
+        public TypeStyle Type(TypeRole role) => role == TypeRole.BodyL ? bodyL : inner.Type(role);
+        public ShadowSpec Elevation(int level) => inner.Elevation(level);
+        public float Shape(ShapeScale scale) => inner.Shape(scale);
+    }
+
     private sealed class Heading : StatelessComponent
     {
         public override VisualNode Build(ComponentContext context) =>

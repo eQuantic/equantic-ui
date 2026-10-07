@@ -67,11 +67,21 @@ public static class ThemeBridge
             // whose roles are all proportional, upright and unnamed — which every shipped one is —
             // and lossy for the first branded theme, which is the whole point of a face. Appended
             // rather than always emitted so the common payload stays byte-identical.
-            if (s.Mono || s.Italic || s.Family is { Length: > 0 })
+            if (s.Mono || s.Italic || s.Family is { Length: > 0 } || s.Fluid is not null)
             {
                 sb.Append(',').Append(s.Mono ? "true" : "false")
                   .Append(',').Append(s.Italic ? "true" : "false");
-                if (FaceName.Usable(s.Family) is { } face) sb.Append(",\"").Append(Escape(face)).Append('"');
+                var face = FaceName.Usable(s.Family);
+                if (face is not null) sb.Append(",\"").Append(Escape(face)).Append('"');
+                // A size that follows the window rides last, after a family slot it may have to
+                // hold open: without it the browser's role is the ceiling while the server's is the
+                // clamp, and a component that sets a role as its override hydrates to another size.
+                if (s.Fluid is { } fluid)
+                {
+                    if (face is null) sb.Append(",null");
+                    sb.Append(",[").Append(Num(fluid.Min)).Append(',').Append(Num(fluid.PercentOfWindow))
+                      .Append(',').Append(Num(fluid.Max)).Append(']');
+                }
             }
             sb.Append(']');
         }

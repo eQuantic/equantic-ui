@@ -109,7 +109,7 @@ public static class TokenCss
     /// since a line box in px stays put while the glyphs grow. The TS <c>lineHeight()</c> twin.
     /// </summary>
     public static string LineHeight(TypeStyle style) => style.Fluid is not null && style.Size > 0
-        ? Number(style.LineHeight / style.Size)
+        ? Ratio(style.LineHeight, style.Size)
         : Px(style.LineHeight);
 
     /// <summary>
@@ -117,8 +117,12 @@ public static class TokenCss
     /// window, so the tracking tightens with the glyphs. The TS <c>letterSpacing()</c> twin.
     /// </summary>
     public static string LetterSpacing(TypeStyle style) => style.Fluid is not null && style.Size > 0
-        ? $"{Number(style.Tracking / style.Size)}em"
+        ? $"{Ratio(style.Tracking, style.Size)}em"
         : Px(style.Tracking);
+
+    /// <summary>A ratio divided in DOUBLE, as the TS twin divides, so both print the same digits.</summary>
+    private static string Ratio(float part, float whole) =>
+        ((double)part / whole).ToString("0.####", CultureInfo.InvariantCulture);
 
     /// <summary>A bare invariant number ("0.####") — opacity, aspect-ratio, scale factors.</summary>
     public static string Number(float value) => value.ToString("0.####", CultureInfo.InvariantCulture);

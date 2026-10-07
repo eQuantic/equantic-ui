@@ -15,6 +15,9 @@ public sealed class TextRasterCache
     /// <summary>Fallback for callers that pass no cache (single-shot renders).</summary>
     public static readonly TextRasterCache Shared = new();
 
+    /// <summary>The most rasters kept at once; a screen's text fits many times over.</summary>
+    private const int MaxEntries = 4096;
+
     private readonly Dictionary<(string Content, TypeStyle Style, float TypeScale, float MaxWidth, int MaxLines, float Scale, TextAlignment Align), Entry?> _entries = new();
 
     /// <param name="Texture">The A8 coverage the draw command samples.</param>
@@ -45,6 +48,10 @@ public sealed class TextRasterCache
         var key = (content, style, typeScale, MathF.Round(maxWidth, 1), maxLines, scale, align);
         if (_entries.TryGetValue(key, out var cached)) return cached;
 
+        // A heading whose size follows the window (TypeStyle.Fluid), or a paragraph that wraps to it,
+        // is a new key at every width a resize passes through; past the cap the cache starts over
+        // rather than keeping each of them for the session.
+        if (_entries.Count >= MaxEntries) _entries.Clear();
         var raster = rasterizer.Rasterize(content, style, typeScale, maxWidth, maxLines, scale, align);
         var entry = raster is null || raster.Width <= 0 || raster.Height <= 0
             ? null
