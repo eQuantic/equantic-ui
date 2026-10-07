@@ -1723,6 +1723,15 @@ record of a release, the wiki's Upgrading page is the distillate.
   46 new conformance cases fail on the base. The members the runtime does not have are
   [#679](https://github.com/eQuantic/equantic-ui/issues/679). Proposed and archived through OpenSpec
   (`openspec/specs/transpiler-bcl`).
+- **2026-10-07 · A builder has the members a page reaches**: `AppendFormat`, `AppendJoin`,
+  `Capacity`, `MaxCapacity`, `EnsureCapacity`, the `Chars` indexer, `Length`'s setter,
+  `Equals(StringBuilder)` and `CopyTo` transpiled to members the runtime's builder did not have, a
+  TypeError or an undefined behind a green build
+  ([#679](https://github.com/eQuantic/equantic-ui/issues/679)). `AppendFormat` and `AppendJoin`
+  append what `string.Format` and `string.Join` write, by the same lowering, and `Capacity` follows the
+  chunks .NET allocates through every edit, matching .NET on 41 measured sequences. A provider other
+  than the current culture on `Append`, `GetChunks` and the span overloads fail the build. Proposed and
+  archived through OpenSpec (`openspec/specs/transpiler-bcl`).
 
 ## Retired documents
 
