@@ -30,6 +30,9 @@ builder.Services.AddUI(options =>
            // serving each language on its own path says PathPrefix() instead, and one whose
            // translations are separate pages answers with its own lambda.
            .UseAlternateLinks(AlternateUrls.QueryString(), "en", "pt-BR", "es")
+           // What the server publishes, heard by the live screen: the topics a page may subscribe
+           // to, each with who may hear it. Anyone may hear the console's quotes.
+           .UseServerEvents(events => events.Topic("console:{feed}", rule => rule.AllowAnonymous()))
            .ConfigureHtmlShell(shell =>
            {
                shell.SetTitle("eQuantic Console")
@@ -44,6 +47,9 @@ builder.Services.AddUI(options =>
            });
 
 });
+
+// The service that publishes the live screen's quotes, one a second.
+builder.Services.AddHostedService<eQuantic.Console.LiveQuotePublisher>();
 
 var app = builder.Build();
 
