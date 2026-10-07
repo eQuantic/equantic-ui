@@ -39,6 +39,18 @@ public class ExceptionMessageConformanceTests
     [InlineData("new AggregateException(new FormatException(\"a\"), new InvalidOperationException(\"b\"))")] // "One or more errors occurred. (a) (b)"
     [InlineData("new AggregateException(\"msg\", new[] { new FormatException(\"a\") })")] // "msg (a)": the array as it is
     [InlineData("new TypeInitializationException(\"App.T\", null)")]           // "The type initializer for 'App.T' threw an exception."
+    [InlineData("new TypeInitializationException(null, null)")]                // "The type initializer for '' threw an exception."
+    [InlineData("new AggregateException(new FormatException(\"0\"), new FormatException(\"1\"), new FormatException(\"2\"), new FormatException(\"3\"), new FormatException(\"4\"), new FormatException(\"5\"), new FormatException(\"6\"), new FormatException(\"7\"), new FormatException(\"8\"), new FormatException(\"9\"), new FormatException(\"10\"))")] // "… (9) (10)": eleven arguments
+    // Each constructor's own text, read from .NET: a type's base has another, and the same type's
+    // parameterless constructor and its null message can write two.
+    [InlineData("new System.Threading.Tasks.TaskCanceledException()")]         // "A task was canceled.", not its base's
+    [InlineData("new PlatformNotSupportedException()")]                        // "Operation is not supported on this platform."
+    [InlineData("new RankException()")]                                        // "Attempted to operate on an array with the incorrect number of dimensions."
+    [InlineData("new System.Globalization.CultureNotFoundException()")]        // "Culture is not supported."
+    [InlineData("new ApplicationException()")]                                 // "Error in the application."
+    [InlineData("new SystemException()")]                                      // "System error."
+    [InlineData("new SystemException(null)")]                                  // "Exception of type 'System.SystemException' was thrown."
+    [InlineData("new System.Threading.LockRecursionException()")]              // "Exception of type 'System.Threading.LockRecursionException' was thrown."
     public void AMessage_IsComposedAsDotNet(string creation)
     {
         Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
@@ -66,6 +78,12 @@ public class ExceptionMessageConformanceTests
     [InlineData("try { throw new InvalidOperationException(\"io\", new FormatException(\"inner\")); } catch (Exception e) { return e.InnerException.Message; }")] // "inner"
     [InlineData("try { throw new ArgumentException(\"bad\"); } catch (ArgumentException e) { return e.ParamName == null; }")]                 // true
     [InlineData("try { throw new AggregateException(new FormatException(\"f\")); } catch (AggregateException e) { return e.InnerException.Message; }")] // "f": the first inner one
+    // A message that is null when it runs falls back to its constructor's text, as .NET's does.
+    [InlineData("string m = null; try { throw new InvalidOperationException(m); } catch (Exception e) { return e.Message; }")] // "Operation is not valid due to the current state of the object."
+    [InlineData("string m = null; try { throw new SystemException(m); } catch (Exception e) { return e.Message; }")]          // "Exception of type 'System.SystemException' was thrown."
+    [InlineData("try { throw new TypeInitializationException(\"App.T\", null); } catch (TypeInitializationException e) { return e.TypeName; }")] // "App.T"
+    // The aggregate a cancellation throws, of its callbacks' exceptions, has the first as its own inner one.
+    [InlineData("var cts = new CancellationTokenSource(); cts.Token.Register(() => throw new FormatException(\"f\")); try { cts.Cancel(); return \"no\"; } catch (AggregateException e) { return e.InnerException.Message; }")] // "f"
     // An argument exception the runtime throws on .NET's behalf names its parameter too.
     [InlineData("try { new List<int> { 1 }.CopyTo(new int[1], -1); return \"no\"; } catch (ArgumentOutOfRangeException e) { return e.ParamName; }")] // "arrayIndex"
     public void AMember_ReadsWhatTheConstructorTook(string statements)

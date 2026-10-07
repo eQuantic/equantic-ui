@@ -76,35 +76,7 @@ const EXCEPTION = chainOf('System.Exception');
 const NULL_REFERENCE = chainOf('System.NullReferenceException');
 
 /**
- * The text a .NET exception type gives when it is built with no message, or with a null one: each
- * type's own. A type with none, an app's own derived straight from `Exception` included, is
- * `Exception of type '<its full name>' was thrown.`, as `Exception.Message` words it.
- */
-const DEFAULT_MESSAGES: Readonly<Record<string, string>> = {
-  'System.SystemException': 'System error.',
-  'System.ArgumentException': 'Value does not fall within the expected range.',
-  'System.ArgumentNullException': 'Value cannot be null.',
-  'System.ArgumentOutOfRangeException': 'Specified argument was out of the range of valid values.',
-  'System.ArithmeticException': 'Overflow or underflow in the arithmetic operation.',
-  'System.DivideByZeroException': 'Attempted to divide by zero.',
-  'System.OverflowException': 'Arithmetic operation resulted in an overflow.',
-  'System.FormatException': 'One of the identified items was in an invalid format.',
-  'System.InvalidCastException': 'Specified cast is not valid.',
-  'System.InvalidOperationException': 'Operation is not valid due to the current state of the object.',
-  'System.NullReferenceException': 'Object reference not set to an instance of an object.',
-  'System.NotSupportedException': 'Specified method is not supported.',
-  'System.NotImplementedException': 'The method or operation is not implemented.',
-  'System.IndexOutOfRangeException': 'Index was outside the bounds of the array.',
-  'System.TimeoutException': 'The operation has timed out.',
-  'System.UnauthorizedAccessException': 'Attempted to perform an unauthorized operation.',
-  'System.Collections.Generic.KeyNotFoundException': 'The given key was not present in the dictionary.',
-  'System.OperationCanceledException': 'The operation was canceled.',
-  'System.ObjectDisposedException': 'Cannot access a disposed object.',
-  'System.AggregateException': 'One or more errors occurred.',
-};
-
-/**
- * What a framework exception's constructor was handed besides its message, by the parameter that took
+ * What a framework exception's constructor was handed besides its message, by the member that reads
  * it (#558): `ArgumentException.ParamName` and `ArgumentOutOfRangeException.ActualValue`, which its
  * message ends with, an `InnerException`, and `ObjectDisposedException.ObjectName`.
  */
@@ -113,8 +85,8 @@ export interface ExceptionParts {
   readonly actualValue?: unknown;
   readonly innerException?: unknown;
   readonly objectName?: string | null;
-  /** `TypeInitializationException`'s type, which its message names. */
-  readonly fullTypeName?: string | null;
+  /** `TypeInitializationException.TypeName`, which its message names, a null one as ''. */
+  readonly typeName?: string | null;
   /** `AggregateException`'s inner exceptions, whose messages its own ends with. */
   readonly innerExceptions?: Iterable<unknown> | null;
 }
@@ -126,17 +98,20 @@ function valueText(value: unknown): string {
 }
 
 /**
- * The message .NET composes: the one given, or the type's own where none or null was, then the
- * parameter's name, ` (Parameter 'x')`, the actual value on a line of its own, and a disposed object's
- * name. Each was dropped: `new ArgumentNullException(nameof(x)).Message` was "x", the parameter's name
- * taken for the message, and an `InvalidOperationException()` had none at all (#558).
+ * The message .NET composes: the one given, then the parameter's name, ` (Parameter 'x')`, the actual
+ * value on a line of its own, and a disposed object's name. Each was dropped:
+ * `new ArgumentNullException(nameof(x)).Message` was "x", the parameter's name taken for the message,
+ * and an `InvalidOperationException()` had none at all (#558). Where no message is given, the text a
+ * type's constructor writes then is the compiler's to hand, read from .NET itself, and what is left
+ * is `Exception.Message`'s own, which names the type.
  */
 function composed(types: readonly string[], message: string | null | undefined, parts: ExceptionParts | undefined): string {
-  if (parts?.fullTypeName != null) return `The type initializer for '${parts.fullTypeName}' threw an exception.`;
-  let text = message ?? types.map((type) => DEFAULT_MESSAGES[type]).find((own) => own !== undefined)
-    ?? `Exception of type '${types[0]}' was thrown.`;
+  if (parts !== undefined && 'typeName' in parts) {
+    return `The type initializer for '${parts.typeName ?? ''}' threw an exception.`;
+  }
+  let text = message ?? `Exception of type '${types[0]}' was thrown.`;
   const inners = parts?.innerExceptions == null ? [] : [...parts.innerExceptions];
-  if (inners.length > 0) text += ' ' + inners.map((inner) => `(${(inner as Error).message})`).join(' ');
+  if (inners.length > 0) text += ' ' + inners.map((inner) => `(${messageOf(inner)})`).join(' ');
   if (parts?.objectName) text += `\nObject name: '${parts.objectName}'.`;
   if (parts?.paramName) text += ` (Parameter '${parts.paramName}')`;
   if (parts?.actualValue != null) text += `\nActual value was ${valueText(parts.actualValue)}.`;
@@ -196,9 +171,17 @@ function simpleName(qualified: string): string {
   return plain.slice(plain.lastIndexOf('.') + 1);
 }
 
-/** An exception the runtime throws on .NET's behalf, of the type .NET throws for the same operation. */
-export function exception(type: RuntimeException, message: string): Error {
-  const error = create(chainOf(type), message);
+/** What a thrown value says: an error's message, and anything else's text. */
+function messageOf(value: unknown): string {
+  return isError(value) ? value.message : String(value);
+}
+
+/**
+ * An exception the runtime throws on .NET's behalf, of the type .NET throws for the same operation,
+ * with what .NET's constructor would have been handed besides the message.
+ */
+export function exception(type: RuntimeException, message: string, parts?: ExceptionParts): Error {
+  const error = create(chainOf(type), message, parts);
   // An argument exception names its parameter in its message, which `ParamName` reads too, as .NET's
   // does: the runtime's own throws wrote the name into the text alone (#558).
   const parameter = /\(Parameter '([^']*)'\)/.exec(message);
@@ -215,9 +198,10 @@ export function exception(type: RuntimeException, message: string): Error {
  * exception the initializer threw, which `InnerException` reads.
  */
 export function typeInitialization(typeName: string, inner: unknown): Error {
-  const error = exception('System.TypeInitializationException', `The type initializer for '${typeName}' threw an exception.`);
-  Object.defineProperty(error, 'innerException', { value: inner, writable: true, configurable: true });
-  return error;
+  return exception('System.TypeInitializationException', `The type initializer for '${typeName}' threw an exception.`, {
+    typeName,
+    innerException: inner,
+  });
 }
 
 /**

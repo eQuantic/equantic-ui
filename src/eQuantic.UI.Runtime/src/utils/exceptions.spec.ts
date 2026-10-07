@@ -38,9 +38,29 @@ describe('a .NET exception carries the types it is', () => {
     expect(create(['App.Pair<App.Box<int>, string>.Gone', 'System.Exception']).name).toBe('Gone');
   });
 
-  it('takes a null message as the type\'s own, as .NET does (#558)', () => {
-    expect(create(ARGUMENT_NULL, null).message).toBe('Value cannot be null.');
-    expect(create(ARGUMENT_NULL, undefined, { paramName: 'x' }).message).toBe("Value cannot be null. (Parameter 'x')");
+  it('writes a null message as Exception.Message does, a type\'s own text being the compiler\'s to hand', () => {
+    expect(create(ARGUMENT_NULL, null).message).toBe("Exception of type 'System.ArgumentNullException' was thrown.");
+    expect(create(['App.Oops', 'System.Exception']).message).toBe("Exception of type 'App.Oops' was thrown.");
+    expect(create(ARGUMENT_NULL, 'Value cannot be null.', { paramName: 'x' }).message).toBe(
+      "Value cannot be null. (Parameter 'x')",
+    );
+  });
+
+  it("names a type initializer's type, a null one as '', and reads it as TypeName", () => {
+    const initializer = ['System.TypeInitializationException', 'System.SystemException', 'System.Exception'];
+    const failed = create(initializer, undefined, { typeName: 'App.T', innerException: null }) as Error & { typeName: string };
+    expect(failed.message).toBe("The type initializer for 'App.T' threw an exception.");
+    expect(failed.typeName).toBe('App.T');
+    expect(create(initializer, undefined, { typeName: null }).message).toBe("The type initializer for '' threw an exception.");
+  });
+
+  it("gives an aggregate its first inner exception, the runtime's own included", () => {
+    const first = new Error('f');
+    const aggregate = exception('System.AggregateException', 'One or more errors occurred.', {
+      innerExceptions: [first, new Error('g')],
+    }) as Error & { innerException: unknown };
+    expect(aggregate.message).toBe('One or more errors occurred. (f) (g)');
+    expect(aggregate.innerException).toBe(first);
   });
 
   it('composes the parameter, the actual value and the object name as .NET does', () => {
@@ -50,8 +70,9 @@ describe('a .NET exception carries the types it is', () => {
     expect(error.paramName).toBe('x');
     expect(error.actualValue).toBe(5);
     const disposed = ['System.ObjectDisposedException', 'System.InvalidOperationException', 'System.SystemException', 'System.Exception'];
-    expect(create(disposed, null, { objectName: 'thing' }).message).toBe("Cannot access a disposed object.\nObject name: 'thing'.");
-    expect(create(['App.Oops', 'System.Exception']).message).toBe("Exception of type 'App.Oops' was thrown.");
+    expect(create(disposed, 'Cannot access a disposed object.', { objectName: 'thing' }).message).toBe(
+      "Cannot access a disposed object.\nObject name: 'thing'.",
+    );
   });
 });
 
