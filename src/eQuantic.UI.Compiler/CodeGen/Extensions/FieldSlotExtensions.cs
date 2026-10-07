@@ -37,7 +37,10 @@ internal static class FieldSlotExtensions
     private static bool Moves(IFieldSymbol field, string name)
     {
         if (field.IsStatic || field.IsConst || field.IsImplicitlyDeclared) return false;
-        if (field.ContainingType is not { TypeKind: TypeKind.Class, IsRecord: false } type || IsComponent(type)) return false;
+        // A type the source declares, whose twin eqc writes by this same rule: a framework type's twin is
+        // the runtime's, and names its members as they are.
+        if (field.ContainingType is not { TypeKind: TypeKind.Class, IsRecord: false } type || IsComponent(type)
+            || !type.Locations.Any(location => location.IsInSource)) return false;
         for (var holder = type; holder is not null && holder.SpecialType != SpecialType.System_Object; holder = holder.BaseType)
         {
             foreach (var member in holder.GetMembers())
