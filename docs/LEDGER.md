@@ -1711,7 +1711,8 @@ record of a release, the wiki's Upgrading page is the distillate.
   for an anonymous full load, 403 without the policy, and the page is never built for a refused
   request. A refused client navigation is a marked 401 or 403, which the router answers with a full
   load, and the runtime and the page modules serve anyone, so a sign-in page comes alive under a
-  fallback policy. Proposed and archived through OpenSpec (`openspec/specs/page-routes`).
+  fallback policy; an asset route serves a file name inside its own directory and nothing else.
+  Proposed and archived through OpenSpec (`openspec/specs/page-routes`).
 
 ## Retired documents
 

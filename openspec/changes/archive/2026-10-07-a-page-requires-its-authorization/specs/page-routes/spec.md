@@ -48,6 +48,11 @@ serves and comes alive under an app-wide `FallbackPolicy`.
   page marked `[AllowAnonymous]`
 - **THEN** the page and `/_equantic/runtime.js` are answered 200
 
+#### Scenario: A name that is not a file name
+
+- **WHEN** an asset route is asked for a name with a separator in it, such as `..\..\secret`
+- **THEN** it answers 404 and serves nothing outside its own directory
+
 ### Requirement: A registered error page is asked as its own route asks
 
 The 404 and 500 pages an app registers SHALL be drawn in place of a route only for a visitor their own
