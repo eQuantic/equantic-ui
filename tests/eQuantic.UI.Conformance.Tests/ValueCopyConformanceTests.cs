@@ -17,7 +17,8 @@ public class ValueCopyConformanceTests
         "public struct Pt { public int X; public int Y; public void Move(int by) { X += by; } public int Sum() => X + Y; }\n"
         + "public struct Line { public Pt A; public Pt B; }\n"
         + "public record Holder { public Pt P; public Pt Prop { get; set; } }\n"
-        + "public struct Snapper { public int V; public int Snap() { var copy = this; V = 5; return copy.V; } }\n";
+        + "public struct Snapper { public int V; public int Snap() { var copy = this; V = 5; return copy.V; } }\n"
+        + "public struct Pair { public int A; public int B; static void Swap(ref int x, ref int y) { var t = x; x = y; y = t; } public void Flip() => Swap(ref A, ref B); }\n";
 
     [SkippableTheory]
     // A tuple and a struct read into another variable keep their value when the first is written.
@@ -37,6 +38,13 @@ public class ValueCopyConformanceTests
     // `this` leaving its member is a copy, and a mutating call on a property's value runs on a copy.
     [InlineData("var s = new Snapper { V = 1 }; return s.Snap() + \"|\" + s.V;")]                              // "1|5"
     [InlineData("var h = new Holder(); h.Prop = new Pt { X = 1 }; h.Prop.Move(5); return h.Prop.X;")]         // 1
+    // A mutating call on a foreach variable runs on a copy, and a deconstruction writes its values' copies.
+    [InlineData("var arr = new Pt[] { new Pt { X = 1 } }; foreach (var p in arr) p.Move(5); return arr[0].X;")] // 1
+    [InlineData("var a = new Pt { X = 1, Y = 2 }; var b = a; (a.X, a.Y) = (5, 6); return b.X + \"|\" + a.X;")] // "1|5"
+    // A method that writes the value through a ref argument writes the caller's copy only.
+    [InlineData("var p = new Pair { A = 1, B = 2 }; var q = p; p.Flip(); return q.A + \"|\" + p.A;")]       // "1|2"
+    // A write handed to a builder as its value is one argument.
+    [InlineData("var sb = new System.Text.StringBuilder(); var p = new Pt { X = 3 }; var q = p; sb.Append(p.X++); return sb + \"|\" + p.X + \"|\" + q.X;")] // "3|4|3"
     public void AMutableValue_IsCopiedWhereCSharpCopiesIt(string statements)
     {
         Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");

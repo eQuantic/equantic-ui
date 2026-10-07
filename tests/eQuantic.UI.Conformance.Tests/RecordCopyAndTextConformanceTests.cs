@@ -60,6 +60,8 @@ public class RecordCopyAndTextConformanceTests
         "var x = new Derived2(); x.D = 5; var y = x with { }; return y.B + \"|\" + y.Copied + \"|\" + y.D;")]   // "0|107|5"
     [InlineData("public record Counter { public int N; public int Copies; public Counter() { } protected Counter(Counter o) { N = o.N; Copies = o.Copies + 1; } }",
         "var c = new Counter { N = 4 }; var d = c with { N = 9 }; var e = d with { }; return d.N + \"|\" + d.Copies + \"|\" + e.N + \"|\" + e.Copies + \"|\" + c.Copies;")] // "9|1|9|2|0"
+    [InlineData("public record B0 { public int A = 1; } public record D0 : B0 { public int X = 5; public int Y; public D0() { } protected D0(D0 o) : base(o) { Y = o.X; } }",
+        "var x = new D0(); x.A = 2; x.X = 7; var y = x with { }; return y.A + \"|\" + y.X + \"|\" + y.Y;")]   // "2|0|7"
     [InlineData("public record P6(int X) { public int Extra = 5; protected P6(P6 o) { X = o.X * 2; } }",
         "var p = new P6(3) with { }; return p.X + \"|\" + p.Extra;")]                // "6|0"
     public void AWith_CopiesThroughTheRecordsOwnCopyConstructor(string prelude, string statements)

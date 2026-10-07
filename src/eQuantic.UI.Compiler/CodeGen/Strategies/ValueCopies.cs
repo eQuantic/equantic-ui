@@ -41,17 +41,56 @@ internal static class ValueCopies
         if (operation is IInstanceReferenceOperation self && IsMutableValue(self.Type) && FlowsAway(self))
             return Copy(self.Type!, translated);
 
+        // A deconstruction into members of values (`(a.X, a.Y) = (1, 2)`) writes each value it names.
+        if (operation is IDeconstructionAssignmentOperation deconstruction)
+        {
+            var before = new List<JsExpr>();
+            foreach (var element in Elements(deconstruction.Target))
+                if (Owner(element) is { } elementOwner && IsMutableValue(elementOwner.Type))
+                    CopiesBefore(elementOwner, node, before, context);
+            return Sequence(before, translated);
+        }
+
         if (Written(operation, context) is not { } owner || !IsMutableValue(owner.Type)) return translated;
 
-        // A mutating call on a temporary runs on a copy of it, as C# runs it on the temporary.
-        if (operation is IInvocationOperation && owner is IPropertyReferenceOperation or IInvocationOperation
+        // A mutating call on a temporary (a property's or a call's result), or on storage C# never writes
+        // through (a foreach or using variable, an `in` parameter, a readonly field outside its
+        // constructor), runs on a copy, as C# runs it on the temporary or on a defensive copy.
+        if (operation is IInvocationOperation
+            && (owner is IPropertyReferenceOperation or IInvocationOperation || ReadOnlyStorage(owner, node, context))
             && translated is JsCall { Target: JsMember callee } call)
             return call with { Target = callee with { Target = Copy(owner.Type!, callee.Target) } };
 
         var copies = new List<JsExpr>();
-        if (!CopiesBefore(owner, node, copies, context) || copies.Count == 0) return translated;
-        return copies.Append(translated).Aggregate((before, next) => JsExpr.Binary(before, ",", next));
+        if (!CopiesBefore(owner, node, copies, context)) return translated;
+        return Sequence(copies, translated);
     }
+
+    /// <summary>The copies, then the write, as one expression. Fenced in its own parentheses: a strategy
+    /// that splices it as text into an argument list would otherwise read its comma as the next
+    /// argument's (`sb.append(p = p.$clone(), p.x++)`).</summary>
+    private static JsExpr Sequence(List<JsExpr> copies, JsExpr write)
+    {
+        var distinct = copies.DistinctBy(JsExprWriter.Write).ToList();
+        if (distinct.Count == 0) return write;
+        var sequence = distinct.Append(write).Aggregate((before, next) => JsExpr.Binary(before, ",", next));
+        return JsExpr.Callish($"({JsExprWriter.Write(sequence)})");
+    }
+
+    /// <summary>The targets a deconstruction writes, a nested tuple's included.</summary>
+    private static IEnumerable<IOperation> Elements(IOperation target) => target is ITupleOperation tuple
+        ? tuple.Elements.SelectMany(Elements)
+        : [target];
+
+    /// <summary>Storage C# never writes through, and calls a mutating method of on a defensive copy: a
+    /// foreach or using variable, an `in` parameter, and a readonly field outside its constructor.</summary>
+    private static bool ReadOnlyStorage(IOperation storage, SyntaxNode at, ConversionContext context) => storage switch
+    {
+        ILocalReferenceOperation local => local.Local.IsForEach || local.Local.IsUsing,
+        IParameterReferenceOperation parameter => parameter.Parameter.RefKind is RefKind.In or RefKind.RefReadOnlyParameter,
+        IFieldReferenceOperation field => field.Field.IsReadOnly && (field.Field.IsStatic || !Writable(field, at, context)),
+        _ => false,
+    };
 
     /// <summary>
     /// Whether the twin holds values of <paramref name="type"/> as objects a write changes in place: a
@@ -202,6 +241,10 @@ internal static class ValueCopies
                     _ => null,
                 };
                 if (target is IInstanceReferenceOperation || (target is not null && OfThis(Owner(target)))) return true;
+                // A member of `this` handed by reference to a method that may write it (`Swap(ref A, ref B)`).
+                if (operation is IArgumentOperation { Parameter.RefKind: RefKind.Ref or RefKind.Out } byReference
+                    && (byReference.Value is IInstanceReferenceOperation || OfThis(Owner(byReference.Value))))
+                    return true;
                 if (operation is IInvocationOperation { Instance: { } receiver, TargetMethod: var called }
                     && OfThis(receiver) && !called.IsStatic && !called.IsReadOnly
                     && IsMutableValue(called.ContainingType) && Writes(called, compilation, seen))

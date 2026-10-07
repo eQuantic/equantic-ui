@@ -314,7 +314,7 @@ public class RecordTypeEmitter
                 sb.Append(tsTypeDeclarations
                     ? $"with(patch: any): {name} {{ const copy: any = Object.create(Object.getPrototypeOf(this)); copy.$copy(this); return Object.assign(copy, patch); }} "
                     : "with(patch) { const copy = Object.create(Object.getPrototypeOf(this)); copy.$copy(this); return Object.assign(copy, patch); } ");
-                _converter.InFileOf(record, () => sb.Append(Written(CopyStep(record, copied, members, baseName is not null))));
+                _converter.InFileOf(record, () => sb.Append(Written(CopyStep(copied, members, baseName is not null))));
             }
             else
                 sb.Append(tsTypeDeclarations ? $"with(patch: any): {name} {{ return {Eq.With}(this, patch); }} "
@@ -712,9 +712,14 @@ public class RecordTypeEmitter
     }
 
     private static IMethodSymbol? DeclaredCopy(INamedTypeSymbol type) =>
-        type.InstanceConstructors.FirstOrDefault(constructor => !constructor.IsImplicitlyDeclared
-            && constructor.Parameters is [{ } parameter]
-            && SymbolEqualityComparer.Default.Equals(parameter.Type, type));
+        type.InstanceConstructors.FirstOrDefault(constructor => !constructor.IsImplicitlyDeclared && IsCopyConstructor(constructor));
+
+    /// <summary>Whether a constructor is a record's copy constructor: one parameter, of the record's own
+    /// type. The one rule the twin's constructor (which no copy constructor is a branch of) and `with`'s
+    /// copy step read.</summary>
+    internal static bool IsCopyConstructor(IMethodSymbol constructor) =>
+        constructor is { MethodKind: MethodKind.Constructor, IsStatic: false, ContainingType.IsRecord: true, Parameters: [{ } parameter] }
+        && SymbolEqualityComparer.Default.Equals(parameter.Type, constructor.ContainingType);
 
     /// <summary>
     /// The step `with` copies one level of a record through, as its copy constructor builds the copy in
@@ -725,7 +730,7 @@ public class RecordTypeEmitter
     /// copy, so the twin's `with` copied the members a declared constructor never assigns, and never ran
     /// its body.
     /// </summary>
-    private JsClassMember CopyStep(RecordDeclarationSyntax type, INamedTypeSymbol self, IReadOnlyList<ValueMember> members, bool hasBase)
+    private JsClassMember CopyStep(INamedTypeSymbol self, IReadOnlyList<ValueMember> members, bool hasBase)
     {
         var declared = DeclaredCopy(self)?.DeclaringSyntaxReferences
             .Select(reference => reference.GetSyntax()).OfType<ConstructorDeclarationSyntax>().FirstOrDefault();
@@ -744,7 +749,8 @@ public class RecordTypeEmitter
         }
         else
         {
-            statements.AddRange(members.Select(member => Assign(member.Store, JsExpr.Literal(ZeroOf(member)))));
+            // The base's step first: a base whose chain declares none copies every member the original
+            // holds, this level's among them, so the level's own zeros come after it.
             var passed = declared.Initializer is { ArgumentList.Arguments: [var argument] }
                 ? _converter.ConvertIr(argument.Expression)
                 : original;
@@ -752,6 +758,7 @@ public class RecordTypeEmitter
             else if (hasBase)
                 statements.Add(JsStatement.Expression(JsExpr.Call(JsExpr.Member(JsExpr.Identifier("Object"), "assign"),
                     [JsExpr.This, passed])));
+            statements.AddRange(members.Select(member => Assign(member.Store, JsExpr.Literal(ZeroOf(member)))));
             if (declared.Body is { Statements.Count: > 0 } block)
                 statements.AddRange(_converter.ConvertBlockIr(block) is JsBlock converted ? converted.Statements : [_converter.ConvertBlockIr(block)]);
             else if (declared.ExpressionBody is { } arrow)
