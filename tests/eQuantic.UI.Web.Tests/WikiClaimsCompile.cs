@@ -155,6 +155,16 @@ public class WikiClaimsCompile
         }, Text("content", TypeRole.BodyM));
         _ = new StyleDiff { Transform = Transform2D.Rotate(2).WithTranslate(0, -2) };
         _ = new StyleDiff { Transform = Transform2D.Scale(1) };
+
+        // WriteOnceComponents, "A weight of zero takes no share" (preview.61, #680): a picture that
+        // starts at 540 and never grows, beside text that takes the rest.
+        var story = new Row(gap: Space.S6) { Wrap = true, Width = SizeValue.Fill };
+        story.Add(Flexible(Text("picture", TypeRole.BodyM), flex: 0, basis: 540));
+        story.Add(Flexible(Text("story", TypeRole.BodyM), flex: 1, basis: 380));
+
+        // EmailRealizer, the welcome email's logo (#684): an Image takes its height as well as its
+        // width, and the page's example used to give the width alone.
+        _ = Image("https://cdn.example.com/logo.png", width: 132, height: 26);
     }
 
     /// <summary>The theme the DesignSystem page shows, whose body is elided there as "the rest

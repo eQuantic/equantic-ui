@@ -1660,6 +1660,21 @@ record of a release, the wiki's Upgrading page is the distillate.
   1970 toward the epoch; it answers a BigInt cut as .NET cuts it now. Found on the way: the date
   constructors past the second ([#606](https://github.com/eQuantic/equantic-ui/issues/606)).
   Proposed and archived through OpenSpec (`openspec/specs/runtime-dates`).
+- **2026-10-07 · A Flexible keeps the weight it was given**: the constructor raised a zero weight
+  to 1, so `Flexible(child, flex: 0, basis: 540)` rendered on the server as `flex: 1 1 540px` and
+  grew, while the browser's twin, which never clamped, wrote `flex: 0 1 540px` for the same node;
+  Cura's picture grew from 540 to 657 at a 1440 window and squeezed the text beside it
+  ([#680](https://github.com/eQuantic/equantic-ui/issues/680)). A zero weight takes no share now, as
+  Flutter's flex 0 and CSS's flex-grow 0 take none: it keeps its basis, or starts from its content
+  (`auto` on the web, the main axis decided by the content on Photon), on the server, in the twin
+  and on Photon, whose single-line pass used to drop a zero that reached it through an object
+  initializer. A negative weight, basis or shrink, and a basis that is not finite, is refused where
+  it is written, on the C# accessor and in the twin after its trailing config. Measured in Chrome,
+  pinned on each side, in the component parity fixture and on Photon, and proved both ways. Riding
+  along, the wiki stopped describing an Image that does not ship: SupportedFeatures names
+  `eQuantic.UI.Images` and what it ships, and the email example's logo has the height `Image`
+  requires ([#684](https://github.com/eQuantic/equantic-ui/issues/684)). Proposed and archived
+  through OpenSpec (`openspec/specs/flex-layout`).
 
 ## Retired documents
 
