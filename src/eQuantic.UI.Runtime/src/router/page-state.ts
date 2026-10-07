@@ -19,6 +19,12 @@ export interface PageStatePayload {
    * two components holding a field of the same name keep their own values.
    */
   state?: Record<string, Record<string, unknown>>;
+  /**
+   * Set when the server REFUSED the navigation (#673): 401 when the visitor is not signed in, 403 when
+   * they lack the page's policy. The page is never rendered from it: the router loads the route in
+   * full instead, which the server challenges or forbids as it would any visit.
+   */
+  refused?: 401 | 403;
 }
 
 /**
@@ -58,6 +64,10 @@ export async function fetchPageState(url?: string): Promise<PageStatePayload | n
       headers: { [NAVIGATION_HEADER]: '1' },
       credentials: 'same-origin',
     });
+    // A page that requires authorization refuses a visitor without it, marked like every answer: a
+    // fetch cannot follow a sign-in redirect, so the router is told, and loads the route in full.
+    if ((response.status === 401 || response.status === 403) && response.headers.get(NAVIGATION_HEADER) === '1')
+      return { refused: response.status };
     // A page answers with its own status, a 404 for content that does not exist among them, and
     // still sends its payload, which the server marks with the header the request carried. Anything
     // else that fails (a proxy's error page) is no payload.

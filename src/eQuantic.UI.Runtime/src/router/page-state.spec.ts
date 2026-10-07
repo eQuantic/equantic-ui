@@ -38,6 +38,14 @@ describe('a navigation reads the page state the server marks as its answer', () 
     expect(await fetchPageState('/behind-a-proxy')).toBeNull();
   });
 
+  it('reads a marked 401 or 403 as a REFUSAL, never as a page to render (#673)', async () => {
+    answer(401, true, {});
+    expect(await fetchPageState('/backoffice')).toEqual({ refused: 401 });
+
+    answer(403, true, {});
+    expect(await fetchPageState('/backoffice')).toEqual({ refused: 403 });
+  });
+
   it('asks with the header the server answers by', async () => {
     answer(200, true, {});
 

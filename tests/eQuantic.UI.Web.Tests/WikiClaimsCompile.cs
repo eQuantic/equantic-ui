@@ -157,6 +157,17 @@ public class WikiClaimsCompile
         _ = new StyleDiff { Transform = Transform2D.Scale(1) };
     }
 
+    /// <summary>Security, "A page that requires authorization" (preview.61): a page that only the
+    /// backoffice may open, which says so itself.</summary>
+    [Page("/backoffice/queue")]
+    [Primitives.Authorize(Policy = "Backoffice")]
+    private sealed class VerificationQueuePage : Primitives.StatefulComponent, IServerPrefetch
+    {
+        public Task PrefetchAsync(IServiceProvider services, CancellationToken cancellationToken) => Task.CompletedTask;
+
+        public override VisualNode Build(ComponentContext context) => Text("queue", TypeRole.BodyM);
+    }
+
     /// <summary>The theme the DesignSystem page shows, whose body is elided there as "the rest
     /// delegates to inner" — written out here so the two lines that are NOT elided compile.</summary>
     private sealed class BrandTheme(IAppTheme inner) : IAppTheme

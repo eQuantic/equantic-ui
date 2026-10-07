@@ -99,6 +99,10 @@ public static class UIExtensions
         // Add authorization service for Server Actions
         // TryAdd allows users to override with their own implementation
         services.TryAddSingleton<IServerActionAuthorizationService, ServerActionAuthorizationService>();
+        // A refused CLIENT NAVIGATION into a page that requires authorization is answered 401 or 403,
+        // which the router acts on, instead of a challenge a fetch cannot follow (#673).
+        services.AddSingleton<Microsoft.AspNetCore.Authorization.IAuthorizationMiddlewareResultHandler,
+            NavigationAuthorizationResultHandler>();
 
         // Add SSR rendering service
         services.TryAddSingleton<IServerRenderingService, ServerRenderingService>();
@@ -236,8 +240,10 @@ public static class UIExtensions
         options.DeclareRoute(route, pageType, title);
 
         // The same two endpoints a [Page] gets — the route, and its language-prefixed twin.
+        // The page's own [Authorize] travels with it, wherever it is routed from (#673).
         foreach (var pattern in CultureEndpointPatterns(options, route))
-            endpoints.MapGetAndHead(pattern, async context => await ServeAppShell(context, pageType, new DeclaredPage(title, null)));
+            endpoints.MapGetAndHead(pattern, async context => await ServeAppShell(context, pageType, new DeclaredPage(title, null)))
+                .WithPageAuthorization(pageType);
         return endpoints;
     }
 
@@ -302,8 +308,11 @@ public static class UIExtensions
                     var declared = new DeclaredPage(pageAttr.Title, pageAttr.Description);
                     // The endpoint carries the page's TYPE: by its simple name, two pages of one name in
                     // two namespaces rendered as one (#514).
+                    // And its [Authorize], as the endpoint's metadata: the app's authorization
+                    // middleware refuses a request before the page is built (#673).
                     foreach (var route in CultureEndpointPatterns(options, pageAttr.Route))
-                        endpoints.MapGetAndHead(route, async context => await ServeAppShell(context, pageType, declared));
+                        endpoints.MapGetAndHead(route, async context => await ServeAppShell(context, pageType, declared))
+                            .WithPageAuthorization(pageType);
                 }
             }
         }
@@ -325,7 +334,10 @@ public static class UIExtensions
                 return;
             }
             await stream.CopyToAsync(context.Response.Body);
-        });
+        })
+        // The SDK's own code is public: a sign-in page under an app's fallback policy has to load it
+        // to come alive (#673). What a page may show is the page's route's to decide.
+        .AllowAnonymous();
 
         // Debug/Fallback: Manually serve component files if StaticFiles misses them
         endpoints.MapGetAndHead("/_equantic/{name}.js", async context =>
@@ -361,7 +373,7 @@ public static class UIExtensions
                     await context.Response.WriteAsync($"// 404: Component {name} not found at {path} or {localPath}");
                 }
             }
-        });
+        }).AllowAnonymous();
 
         // Debug/Fallback: serve component source maps so C# breakpoints bind — including on pages reached
         // via client-side (SPA) navigation, where the page bundle is dynamically imported. Without this,
@@ -388,7 +400,7 @@ public static class UIExtensions
             {
                 context.Response.StatusCode = 404;
             }
-        });
+        }).AllowAnonymous();
 
         return endpoints;
     }
@@ -411,7 +423,7 @@ public static class UIExtensions
         {
             var hotReload = new HotReload.HotReloadService(environment.ContentRootPath);
             hotReload.Start();
-            endpoints.MapGet("/_equantic/hmr", hotReload.HandleClient);
+            endpoints.MapGet("/_equantic/hmr", hotReload.HandleClient).AllowAnonymous();
 
             // The stage-one source maps (TS intermediate → C#, C# text embedded) for the error
             // overlay's second hop. Name-only — no separators survive the check, so nothing above
@@ -432,7 +444,7 @@ public static class UIExtensions
                 context.Response.ContentType = "application/json";
                 context.Response.Headers.CacheControl = "no-cache";
                 await context.Response.SendFileAsync(path);
-            });
+            }).AllowAnonymous();
         }
 
         // Apply package endpoint configurations
