@@ -19,7 +19,8 @@ public class BorderInsetTests
     private static LayoutNode Layout(BoxStyle style)
     {
         var box = new Box(style, new Box(new BoxStyle { Width = 10, Height = 10 }));
-        var page = new Column(gap: 0) { Width = SizeValue.Fill };
+        // A row, where a box hugs its child: in a column it would stretch across like a block.
+        var page = new Row(gap: 0, cross: CrossAlign.Start);
         page.Add(box);
         var root = PhotonRealizer.Realize(page, 200, 200, PhotonTheme.Instance, ThemeMode.Light,
             new DisplayListBuilder()).Root;
