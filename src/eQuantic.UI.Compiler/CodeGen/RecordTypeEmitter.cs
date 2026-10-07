@@ -749,16 +749,26 @@ public class RecordTypeEmitter
         }
         else
         {
-            // The base's step first: a base whose chain declares none copies every member the original
-            // holds, this level's among them, so the level's own zeros come after it.
+            // C# zeroes the whole object before any copy constructor runs, so a base's declared step, which
+            // can reach this level through a virtual member, meets this level's zeros: they come first.
+            // A base whose chain declares none runs no code of the app's, and copies every member the
+            // original holds, this level's among them, so there the zeros come after it.
             var passed = declared.Initializer is { ArgumentList.Arguments: [var argument] }
                 ? _converter.ConvertIr(argument.Expression)
                 : original;
-            if (baseCopies) statements.Add(BaseStep(passed));
-            else if (hasBase)
-                statements.Add(JsStatement.Expression(JsExpr.Call(JsExpr.Member(JsExpr.Identifier("Object"), "assign"),
-                    [JsExpr.This, passed])));
-            statements.AddRange(members.Select(member => Assign(member.Store, JsExpr.Literal(ZeroOf(member)))));
+            var zeros = members.Select(member => Assign(member.Store, JsExpr.Literal(ZeroOf(member)))).ToList();
+            if (baseCopies)
+            {
+                statements.AddRange(zeros);
+                statements.Add(BaseStep(passed));
+            }
+            else
+            {
+                if (hasBase)
+                    statements.Add(JsStatement.Expression(JsExpr.Call(JsExpr.Member(JsExpr.Identifier("Object"), "assign"),
+                        [JsExpr.This, passed])));
+                statements.AddRange(zeros);
+            }
             if (declared.Body is { Statements.Count: > 0 } block)
                 statements.AddRange(_converter.ConvertBlockIr(block) is JsBlock converted ? converted.Statements : [_converter.ConvertBlockIr(block)]);
             else if (declared.ExpressionBody is { } arrow)

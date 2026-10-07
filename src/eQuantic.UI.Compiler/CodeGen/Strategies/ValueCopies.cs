@@ -41,6 +41,13 @@ internal static class ValueCopies
         if (operation is IInstanceReferenceOperation self && IsMutableValue(self.Type) && FlowsAway(self))
             return Copy(self.Type!, translated);
 
+        // A boxing makes a box of its own: `object a = p; object b = p;` are two boxes in C#, which
+        // ReferenceEquals tells apart, where the twin handed both the one object (found by Copilot's
+        // review of #697).
+        if (IsMutableValue(operation.Type) && operation.Parent is IConversionOperation { Type.IsReferenceType: true } boxing
+            && ReferenceEquals(boxing.Operand, operation))
+            return Copy(operation.Type!, translated);
+
         // A deconstruction into members of values (`(a.X, a.Y) = (1, 2)`) writes each value it names.
         if (operation is IDeconstructionAssignmentOperation deconstruction)
         {

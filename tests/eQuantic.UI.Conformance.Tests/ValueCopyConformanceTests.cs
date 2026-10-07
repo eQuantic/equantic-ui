@@ -34,7 +34,8 @@ public class ValueCopyConformanceTests
     [InlineData("var h = new Holder(); var q = h.P; h.P.X = 3; h.P.Y++; return h.P.X + \"|\" + h.P.Y + \"|\" + q.X;")] // "3|1|0"
     // A boxing is a copy, and a capture reads the variable.
     [InlineData("var a = new Pt { X = 1 }; object o = a; a.X = 2; return ((Pt)o).X + \"|\" + a.X;")]          // "1|2"
-    [InlineData("var t = (1, 2); System.Func<int> f = () => t.Item1; t.Item1 = 9; return f();")]              // 9
+    [InlineData("var t = (1, 2); System.Func<int> f = () => t.Item1; t.Item1 = 9; return f();")]
+    [InlineData("var p = new Pt { X = 1 }; object a = p; object b = p; return object.ReferenceEquals(a, b) + \"|\" + ((Pt)a).X;")] // "False|1"              // 9
     // `this` leaving its member is a copy, and a mutating call on a property's value runs on a copy.
     [InlineData("var s = new Snapper { V = 1 }; return s.Snap() + \"|\" + s.V;")]                              // "1|5"
     [InlineData("var h = new Holder(); h.Prop = new Pt { X = 1 }; h.Prop.Move(5); return h.Prop.X;")]         // 1
