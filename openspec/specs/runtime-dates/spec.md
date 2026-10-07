@@ -202,7 +202,10 @@ takes a `Calendar` SHALL be a build error.
 A `DateTime` SHALL carry its `Kind` as .NET's does: `Now` and `Today` are local, `UtcNow` is UTC, a
 constructor or `SpecifyKind` sets it, arithmetic keeps it, and equality, ordering and the hash leave
 it out. `ToLocalTime()` and `ToUniversalTime()` SHALL convert by it, a value of no kind read as UTC
-on the way to local time and as local time on the way to UTC.
+on the way to local time and as local time on the way to UTC. Its text SHALL write it as .NET's does:
+`o` and `K` end a UTC time with `Z` and a local one with its offset, `z` writes the zone's offset for
+anything not UTC, `U` moves only what is not UTC, and a letter alone that is no standard specifier is
+refused.
 
 #### Scenario: Equality leaves the kind out
 
@@ -221,12 +224,22 @@ on the way to local time and as local time on the way to UTC.
 - **THEN** the first is "2026-01-02T03:04:05.006007Z" and the second a UTC time, as System.Text.Json
   writes and reads them
 
+#### Scenario: The kind in a date's text
+
+- **WHEN** `new DateTime(2026, 7, 1, 12, 0, 0, DateTimeKind.Utc).ToString("o")` and the same of the
+  local kind are read in Europe/Lisbon
+- **THEN** they are "2026-07-01T12:00:00.0000000Z" and "2026-07-01T12:00:00.0000000+01:00", as in .NET,
+  where neither wrote a zone
+
 ### Requirement: The local time is the browser's time zone
 
 `DateTimeOffset.Now` SHALL be the instant now at the browser's offset for it, and `LocalDateTime` and
 `ToLocalTime()` SHALL read the browser's time zone at the value's instant, daylight saving included. A
 `DateTimeOffset` built from a `DateTime` that is not UTC, without an offset, SHALL take the zone's
-offset for its clock time, as .NET's `TimeZoneInfo.GetUtcOffset` reads it.
+offset for its clock time, as .NET's `TimeZoneInfo.GetUtcOffset` reads it. A local time made from an
+instant SHALL keep which occurrence of an hour the zone repeats it is, as .NET keeps it beside the
+kind, through arithmetic and `Date` until `SpecifyKind`, so its way back to UTC, its JSON and its
+offset are that instant's.
 
 #### Scenario: Now is the right instant
 
@@ -245,3 +258,9 @@ offset for its clock time, as .NET's `TimeZoneInfo.GetUtcOffset` reads it.
 - **WHEN** `new DateTimeOffset(2026, 1, 15, 12, 0, 0, TimeSpan.Zero).ToLocalTime().Offset` and the
   same in July are read in Europe/Lisbon
 - **THEN** they are 00:00:00 and 01:00:00, as in .NET
+
+#### Scenario: A repeated hour
+
+- **WHEN** `new DateTime(2026, 10, 25, 0, 30, 0, DateTimeKind.Utc).ToLocalTime().ToUniversalTime()` is
+  computed in Europe/Lisbon, whose clocks repeat 01:00 to 01:59 that night
+- **THEN** it is 00:30 UTC again, as in .NET, where it landed on the standard occurrence, an hour later

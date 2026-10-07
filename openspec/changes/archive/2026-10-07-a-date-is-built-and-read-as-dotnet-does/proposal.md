@@ -35,12 +35,18 @@ time.
   the JSON writes a UTC value with `Z` and a local one with its offset, as System.Text.Json writes
   them. Hydration reads them back as System.Text.Json does, `Z` a UTC time and an offset moved to the
   local time, where it dropped the zone, and `DateTime.Parse` moves a written zone to the local time,
-  as .NET's Parse does.
+  as .NET's Parse does. The formatter reads the kind too: `o` and `K` end a UTC time with `Z` and a
+  local one with its offset, `z` writes the zone's offset, `U` moves only what is not UTC, and a letter
+  alone that is no standard specifier is refused, where the kind was invisible to every text.
 - **The local time is the browser's time zone.** `DateTimeOffset.Now` is the instant now at the
   browser's offset for it, `LocalDateTime` and `ToLocalTime()` read the zone at the value's instant,
   daylight saving included, and a `DateTimeOffset` of a `DateTime` that is not UTC takes the zone's
   offset for its clock time, a clock time a transition skips or repeats taking the standard one, as
-  .NET's `TimeZoneInfo.GetUtcOffset` does.
+  .NET's `TimeZoneInfo.GetUtcOffset` does. A local time made from an instant keeps which of two
+  repeated hours it is, as .NET keeps it beside the kind, through arithmetic and `Date` until
+  `SpecifyKind`, so its way back to UTC is that instant.
+- **A date's text is read in linear time.** The ISO reader cut the trailing white space first and
+  reads the space before a zone only when a zone follows, where a line of 50,000 spaces took 1.5 s.
 
 For a developer using the SDK: every `new DateTime(...)` and `new DateTimeOffset(...)` C# accepts
 builds the value .NET builds, `DateTimeOffset.Now` and `ToLocalTime()` show the user's local time,
@@ -64,7 +70,9 @@ None.
 - eqc: `DateTimeConstructionStrategy` (new), `ParameterTemplate` (a creation's arguments),
   `DateTimeStrategy` and `DateTimeOffsetStrategy` (no longer build), the diagnostics baseline (EQ1004
   gains the strategy as a reporting site).
-- The runtime: `utils/datetime.ts`, and the specs that called the factories by count.
-- Tests: `DateTimeConstructionConformanceTests` and `LocalTimeConformanceTests` (both sides, the local
-  ones in three time zones), `DateTimeConstructionTests` in the compiler suite.
+- The runtime: `utils/datetime.ts`, `utils/format.ts` (the kind in a date's text, one reading of the
+  browser's offset), and the specs that called the factories by count.
+- Tests: `DateTimeConstructionConformanceTests`, `LocalTimeConformanceTests` (the local ones in three
+  time zones) and `DateTimeToStringConformanceTests`, both sides, `DateTimeConstructionTests` in the
+  compiler suite, and `datetime.spec.ts` and `format.spec.ts`.
 - The wiki's SupportedFeatures page, English and Portuguese.

@@ -13,6 +13,7 @@
 - [x] 2.2 `DateTimeOffset.Now`, `LocalDateTime` and `ToLocalTime` read the browser's zone; a `DateTimeOffset` of a `DateTime` takes the zone's offset as `TimeZoneInfo.GetUtcOffset` does
 - [x] 2.3 Prove it on both sides in three time zones (`LocalTimeConformanceTests`: Asia/Kolkata, America/Sao_Paulo, Europe/Lisbon), the zone set through `TZ` for .NET and the engine alike
 - [x] 2.4 The JSON reads a zone back as System.Text.Json does, in hydration, and `DateTime.Parse` moves a written zone to local time, proved by the cases that return a value of a kind and parse a zone
+- [x] 2.5 The review's rounds: a zone read as .NET reads one, a repeated hour kept as the occurrence it is, the kind in a date's text (`o`, `K`, `z`, `U`) from one reading of the browser's offset, and the ISO reader in linear time, each proved on both sides
 
 ## 3. Documentation and the suites
 
