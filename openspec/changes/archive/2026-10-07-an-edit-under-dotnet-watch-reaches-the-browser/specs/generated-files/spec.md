@@ -23,6 +23,11 @@ build does not write) SHALL be removed after it has written, never the runtime a
   name
 - **THEN** `dotnet watch` stays up and the page reloads with the edit
 
+#### Scenario: An app that includes wwwroot by hand
+
+- **WHEN** an app turns the default content items off and includes `wwwroot/**` itself
+- **THEN** eqc's output folder is still not Content
+
 #### Scenario: The compiler off
 
 - **WHEN** an app turns `EnableEQuanticUICompilation` off

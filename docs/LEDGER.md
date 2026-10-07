@@ -1634,8 +1634,13 @@ record of a release, the wiki's Upgrading page is the distillate.
   on every edit (CS8785, [#663](https://github.com/eQuantic/equantic-ui/issues/663)); it reads the
   declarations the compilation holds now (`CompilationSource`). On the sample under
   `dotnet watch --no-launch-profile`, an edit reloads the page with it and `dotnet watch` stays up, a
-  shared component's renamed chunk included. Found on the way: a write-once page's state does not
-  survive a hot reload under any runner ([#664](https://github.com/eQuantic/equantic-ui/issues/664)).
+  shared component's renamed chunk included. The review before it opened found three more: the
+  folder's Content removal stays beside the exclusion, for an app that includes wwwroot by hand; the
+  stage-one maps, which carry the C#, are served in Development alone, where the overlay reading them
+  installs; and stopping the app stops a rebuild still running and ends the streams, where SIGTERM
+  mid-rebuild, as `dotnet watch` restarts an app, left eqc writing beside the next build and the app
+  took 14 s to exit (3 s now). Found on the way: a write-once page's state does not survive a hot
+  reload under any runner ([#664](https://github.com/eQuantic/equantic-ui/issues/664)).
   Proposed and archived through OpenSpec (`openspec/specs/hot-reload`, `generated-files` and
   `hydration-contract`).
 

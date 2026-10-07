@@ -38,3 +38,37 @@ replay its state after a reload only when told so, whatever the environment says
 - **THEN** its page carries `hotReload: false` and opens no stream, and the server maps none
 - **WHEN** an app in Production sets `HotReload = true`
 - **THEN** its page carries `hotReload: true` and opens `/_equantic/hmr`, which the server streams
+
+#### Scenario: The modules' cache
+
+- **WHEN** an app streams rebuilds
+- **THEN** its modules are served `no-cache`, since a rebuild rewrites them under the same URL; any
+  other app serves them `immutable`
+
+### Requirement: The app's C# source maps are served in Development alone
+
+The stage-one source maps at `/_equantic/src-map/{name}`, which carry the app's C#, SHALL be served in
+the Development environment, where the error overlay that reads them installs, and nowhere else,
+whatever the hot reload decision.
+
+#### Scenario: dotnet watch in another environment
+
+- **WHEN** an app in Production streams rebuilds
+- **THEN** `/_equantic/src-map/Probe.ts.map` is not served
+
+#### Scenario: Development with hot reload off
+
+- **WHEN** an app in Development sets `HotReload = false`
+- **THEN** the map is served, so the overlay's second hop finds it
+
+### Requirement: Stopping the app stops its rebuild and its streams
+
+When the app stops, the server SHALL stop a rebuild still running and end every rebuild stream it
+holds open.
+
+#### Scenario: SIGTERM to the app alone, mid-rebuild
+
+- **WHEN** the dashboard sample, with a page holding the stream open, receives SIGTERM while a rebuild
+  runs, as `dotnet watch` stops an app it restarts
+- **THEN** no rebuild is left running, and the app exits in about three seconds, where before the
+  rebuild went on writing and the app took fourteen

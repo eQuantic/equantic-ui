@@ -22,9 +22,19 @@
 - [x] 3.2 Check: `AWorkspace_ReadsTheAppTheBuildReads` compiles a page against a referenced project as
       metadata and as a compilation; on main's generators both cases fail with CS8785
 
-## 4. Against the real thing
+## 4. What the review found
 
-- [x] 4.1 The dashboard sample under `dotnet watch --no-launch-profile` (Production): an edit to a
+- [x] 4.1 Keep the Content removal beside the exclusion, for an app that includes wwwroot by hand
+      (`AnAppThatIncludesWwwrootByHand_StillLeavesTheFolderOutOfContent`)
+- [x] 4.2 Serve the C# source maps in Development alone, and pin the modules' cache
+      (`TheModulesCache_FollowsTheDecision_AndTheCSharpMapsStayInDevelopment`)
+- [x] 4.3 Stop a rebuild in flight and end the streams when the app stops; check: SIGTERM to the
+      sample's app alone mid-rebuild leaves no rebuild and exits in about 3 s, against an orphaned
+      rebuild and 14 s before
+
+## 5. Against the real thing
+
+- [x] 5.1 The dashboard sample under `dotnet watch --no-launch-profile` (Production): an edit to a
       component reloads the page with it, no CS8785, `dotnet watch` stays up; a shared component's edit
       renames its chunk and `dotnet watch` stays up
-- [x] 4.2 The wiki's hot reload pages in English and Portuguese, and one `docs/LEDGER.md` line
+- [x] 5.2 The wiki's hot reload pages in English and Portuguese, and one `docs/LEDGER.md` line

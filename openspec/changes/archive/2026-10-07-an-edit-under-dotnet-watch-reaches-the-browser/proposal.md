@@ -36,6 +36,11 @@ and the page:
   is removed after it wrote the rest, by its timestamp, as the generated sources already are.
 - The hydration manifest reads the declarations the compilation holds (`CompilationSource`), so a
   workspace describes the app a build describes, with the same diagnostics.
+- Found by the review before the pull request opened: the folder still leaves Content after an app's
+  own items, for an app that includes wwwroot by hand; the C# source maps are served in Development
+  alone, where the overlay reading them installs, since hot reload now runs in other environments;
+  and stopping the app stops a rebuild still running and ends the streams, where an orphaned eqc went
+  on writing beside the restart's own build and an open tab held the shutdown for seconds.
 
 For a developer: `dotnet watch` with no launch profile now rebuilds the edited component and reloads
 the page, and stays up. Nothing to write. An app that set `HotReload = false` keeps it off.
