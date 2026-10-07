@@ -462,7 +462,27 @@ internal sealed partial class WebLoweringVisitor
     {
         var fills = Fills(pressable.Child);
         var cap = CapsAt(pressable.Child);
-        var child = Lower(pressable.Child, horizontalAxis: null);
+        // A disabled control shows no press and no focus, pictured or real (#508): its subtree is
+        // lowered with the CONTROL's simulated states masked and its boxes writing no focus or press
+        // rule, so neither a picture nor an enabled control around it reaches them. A hover is the
+        // box's own state and stays.
+        var outerSimulated = _simulated;
+        var outerDisabled = _inDisabledControl;
+        if (pressable.Disabled)
+        {
+            _simulated &= ~(SimulatedState.Pressed | SimulatedState.Focused);
+            _inDisabledControl = true;
+        }
+        HtmlElement? child;
+        try
+        {
+            child = Lower(pressable.Child, horizontalAxis: null);
+        }
+        finally
+        {
+            _simulated = outerSimulated;
+            _inDisabledControl = outerDisabled;
+        }
 
         // A Pressable AROUND a control — a Menu making its trigger open the panel — is ordinary
         // composition, and the trigger is usually a Button. The OUTER one yields: it keeps the
@@ -501,11 +521,15 @@ internal sealed partial class WebLoweringVisitor
         // the pressed swap additionally needs its token value as a per-element custom property.
         if (!pressable.Disabled)
         {
-            // eq-pressed carries the same declaration :active does — see TokenCss. It is added, not
-            // substituted, so a simulated control still behaves like the control it is picturing.
-            element.ClassName = _simulated.HasFlag(SimulatedState.Pressed)
-                ? "eq-pressable eq-pressed"
-                : "eq-pressable";
+            // eq-pressed carries the same declaration :active does, and eq-focused the ring
+            // :focus-visible draws — see TokenCss. They are added, not substituted, so a simulated
+            // control still behaves like the control it is picturing.
+            // eq-press-fill marks a control that HAS a pressed fill: the stylesheet's swap selects it,
+            // so a control without one keeps its own fill while pressed.
+            element.ClassName = "eq-pressable"
+                + (pressable.PressedBackground is not null ? " eq-press-fill" : "")
+                + (_simulated.HasFlag(SimulatedState.Pressed) ? " eq-pressed" : "")
+                + (_simulated.HasFlag(SimulatedState.Focused) ? " eq-focused" : "");
             if (pressable.PressedBackground is { } pressedFill)
             {
                 element.Style!.CustomProperties = new Dictionary<string, string>

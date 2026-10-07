@@ -75,10 +75,7 @@ public class VocabularyMirrorShapeTests
         var mirror = MirrorClasses();
         mirror.Should().HaveCountGreaterThan(10, "the mirror has to be parsed at all");
 
-        var primitives = typeof(Primitives.VisualNode).Assembly.GetTypes()
-            .Where(type => type.IsPublic)
-            .GroupBy(type => type.Name)
-            .ToDictionary(group => group.Key, group => group.First(), StringComparer.Ordinal);
+        var primitives = VocabularyTypesByTwinName.Get();
 
         var offenders = new List<string>();
         foreach (var (name, body) in mirror)

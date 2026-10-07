@@ -30,6 +30,7 @@ import {
   IconGlyph,
   LinearGradient,
   Link,
+  Pressable,
   ScrollView,
   ShadowSpec,
   Simulated,
@@ -103,6 +104,23 @@ function cases(): Record<string, { node: unknown; presses: number[] }> {
     return node;
   };
   const still = (node: unknown) => ({ node, presses: [] });
+  // The C# ControlStates: a raised surface with a hover, a focus and a press, and its pressed fill.
+  const controlStates = () =>
+    new Pressable(
+      new Box(
+        new BoxStyle({
+          width: 40,
+          height: 40,
+          background: photonTheme.surface,
+          elevation: 2,
+          hover: new StyleDiff({ elevation: 3 }),
+          focus: new StyleDiff({ borderColor: photonTheme.focusRing, borderWidth: 2, opacity: 0.95 }),
+          pressed: new StyleDiff({ transform: Transform2D.scale(0.985), elevation: 1 }),
+        }),
+      ),
+      () => {},
+      { pressedBackground: photonTheme.surfaceSubtle },
+    );
   // The C# HoverLift: every shadow part, a pattern layer and a resting transform at its base, and
   // a hover and a focus that change each of them (#504).
   const hoverLift = () =>
@@ -160,6 +178,18 @@ function cases(): Record<string, { node: unknown; presses: number[] }> {
     'box-hover-lift': still(hoverLift()),
     // SimulatedState.Hovered | SimulatedState.Focused
     'box-hover-lift-simulated': still(new Simulated(1 | 4, hoverLift())),
+    'control-states': still(controlStates()),
+    // SimulatedState.Pressed | SimulatedState.Focused
+    'control-states-simulated': still(new Simulated(2 | 4, controlStates())),
+    'control-states-disabled-simulated': still(
+      new Simulated(
+        2 | 4,
+        new Pressable(controlStates().child, () => {}, {
+          disabled: true,
+          pressedBackground: photonTheme.surfaceSubtle,
+        }),
+      ),
+    ),
     'box-hover-drops-shadow': still(
       new Box(
         new BoxStyle({ width: 40, height: 40, elevation: 2, hover: new StyleDiff({ elevation: 0 }) }),

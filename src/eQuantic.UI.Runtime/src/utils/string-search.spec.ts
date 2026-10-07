@@ -4,8 +4,10 @@ import {
   contains,
   endsWith,
   indexOf,
+  indexOfChar,
   instanceEquals,
   lastIndexOf,
+  lastIndexOfChar,
   replace,
   startsWith,
 } from './string-search';
@@ -93,6 +95,60 @@ describe('the start and the count, checked and normalized as .NET does', () => {
     expect(() => lastIndexOf('abc', 'b', 4, 'ordinalIgnoreCase')).toThrow(less);
     expect(() => lastIndexOf('abc', 'b', -1, 'ordinalIgnoreCase')).toThrow(less);
     expect(() => lastIndexOf('abc', 'b', 2, 4, 'ordinalIgnoreCase')).toThrow(count);
+  });
+});
+
+describe("a char's search with a start and a count, as .NET 10's String.Searching.cs", () => {
+  const atMost =
+    "Index was out of range. Must be non-negative and less than or equal to the size of the collection. (Parameter 'startIndex')";
+  const below =
+    "Index was out of range. Must be non-negative and less than the size of the collection. (Parameter 'startIndex')";
+  const count =
+    "Count must be positive and count must refer to a location within the string/array/collection. (Parameter 'count')";
+
+  it('searches forward inside the count, from a start that may be the end', () => {
+    expect(indexOfChar('abcabc', 'c', 0, 2)).toBe(-1);
+    expect(indexOfChar('abcabc', 'c', 1)).toBe(2);
+    expect(indexOfChar('abcabc', 'c', 3)).toBe(5);
+    expect(indexOfChar('abcabc', 'c', 6)).toBe(-1);
+    expect(indexOfChar('abcabc', 'c', 6, 0)).toBe(-1);
+    expect(indexOfChar('', 'c', 0)).toBe(-1);
+    expect(indexOfChar('x\ud83d\ude00', '\ud83d', 0)).toBe(1);
+  });
+
+  it('searches back count chars from a start that stands on one', () => {
+    expect(lastIndexOfChar('abcabc', 'a', 5, 2)).toBe(-1);
+    expect(lastIndexOfChar('abcabc', 'a', 5)).toBe(3);
+    expect(lastIndexOfChar('abcabc', 'a', 5, 6)).toBe(3);
+    expect(lastIndexOfChar('abcabc', 'a', 2)).toBe(0);
+    expect(lastIndexOfChar('abcabc', 'a', 5, 0)).toBe(-1);
+  });
+
+  it('answers -1 for an empty string, whatever the start and the count', () => {
+    expect(lastIndexOfChar('', 'c', 0)).toBe(-1);
+    expect(lastIndexOfChar('', 'c', 5)).toBe(-1);
+    expect(lastIndexOfChar('', 'c', -1)).toBe(-1);
+    expect(lastIndexOfChar('', 'c', 0, 3)).toBe(-1);
+  });
+
+  it("throws .NET's words, the start before the count", () => {
+    expect(() => indexOfChar('abcabc', 'c', 7)).toThrow(atMost);
+    expect(() => indexOfChar('abcabc', 'c', -1)).toThrow(atMost);
+    expect(() => indexOfChar('abcabc', 'c', 7, 0)).toThrow(atMost);
+    expect(() => indexOfChar('', 'c', 1)).toThrow(atMost);
+    expect(() => indexOfChar('abcabc', 'c', 2, 5)).toThrow(count);
+    expect(() => indexOfChar('abcabc', 'c', 2, -1)).toThrow(count);
+    expect(() => lastIndexOfChar('abcabc', 'a', 6)).toThrow(below);
+    expect(() => lastIndexOfChar('abcabc', 'a', -1)).toThrow(below);
+    expect(() => lastIndexOfChar('abcabc', 'a', 5, 7)).toThrow(count);
+    expect(() => lastIndexOfChar('abcabc', 'a', 5, -1)).toThrow(count);
+  });
+
+  it('refuses a null receiver as .NET does before the method runs', () => {
+    expect(() => indexOfChar(null, 'c', 0)).toThrow('Object reference not set to an instance of an object.');
+    expect(() => lastIndexOfChar(undefined, 'c', 0)).toThrow(
+      'Object reference not set to an instance of an object.',
+    );
   });
 });
 
