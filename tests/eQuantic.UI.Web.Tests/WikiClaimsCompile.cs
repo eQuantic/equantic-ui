@@ -155,6 +155,18 @@ public class WikiClaimsCompile
         }, Text("content", TypeRole.BodyM));
         _ = new StyleDiff { Transform = Transform2D.Rotate(2).WithTranslate(0, -2) };
         _ = new StyleDiff { Transform = Transform2D.Scale(1) };
+
+        // Styling, "A control's press and focus" (preview.61): a control that presses in and takes a
+        // focus border from the keyboard.
+        Action save = () => { };
+        _ = Pressable(Box(new BoxStyle
+        {
+            Background = theme.Surface,
+            Elevation = 2,
+            Transition = new TransitionSpec(StyleChannels.Transform, Motion.BaseMs),
+            Pressed = new StyleDiff { Transform = Transform2D.Scale(0.985f) },
+            Focus = new StyleDiff { BorderColor = theme.FocusRing, BorderWidth = 2 },
+        }, Text("label", TypeRole.BodyM)), onPressed: save);
     }
 
     /// <summary>The theme the DesignSystem page shows, whose body is elided there as "the rest
