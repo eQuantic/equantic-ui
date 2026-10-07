@@ -1660,7 +1660,7 @@ record of a release, the wiki's Upgrading page is the distillate.
   1970 toward the epoch; it answers a BigInt cut as .NET cuts it now. Found on the way: the date
   constructors past the second ([#606](https://github.com/eQuantic/equantic-ui/issues/606)).
   Proposed and archived through OpenSpec (`openspec/specs/runtime-dates`).
-- **2026-10-08 · A page requires its authorization**: `[Authorize]` held on Server Actions only, so
+- **2026-10-07 · A page requires its authorization**: `[Authorize]` held on Server Actions only, so
   a page's route served anyone and its `IServerPrefetch` ran for an anonymous visitor, writing its
   fields into the HTML ([#673](https://github.com/eQuantic/equantic-ui/issues/673), asked by Cura for
   its backoffice). A `[Page]` and a `MapPage<T>` route carry the page's `[Authorize]` and
