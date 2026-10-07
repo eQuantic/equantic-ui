@@ -1622,8 +1622,13 @@ record of a release, the wiki's Upgrading page is the distillate.
   inside the template's own function is bound outside it, so `Intersect`'s and `Except`'s second
   sequence, `Average`'s source and a selector that is a call run once, in C#'s order
   ([#657](https://github.com/eQuantic/equantic-ui/issues/657)). `Sum`, `Average`, `OrderBy`, `GroupBy`,
-  `Distinct` and the lookup's indexer moved to the IR. The runtime's twins are regenerated. Proposed and
-  archived through OpenSpec (`openspec/specs/transpiler-names`, `openspec/specs/transpiler-sequences`).
+  `Distinct` and the lookup's indexer moved to the IR. The runtime's twins are regenerated. Copilot's
+  first round found four more, each measured: a plain name inside the template's function was read
+  per call (a selector that reassigned its own variable summed 201 where .NET sums 6), a part holding
+  a lowering of its own was taken to read the function's `$x` and called `Other()` per element, a
+  hole past `{9}` stayed text in a comparator of eleven keys, and a type parameter written `@class`
+  kept its spelling one level down and in a component's declaration. Proposed and archived through
+  OpenSpec (`openspec/specs/transpiler-names`, `openspec/specs/transpiler-sequences`).
 
 ## Retired documents
 
