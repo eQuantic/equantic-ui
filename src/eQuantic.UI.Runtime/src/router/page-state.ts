@@ -83,14 +83,21 @@ export async function fetchPageState(url?: string): Promise<PageStatePayload | n
  * full, which the server challenges (a sign-in) or forbids (a 403), and never rendered client-side,
  * where its empty state would stand in for a refusal. The load REPLACES the entry the router already
  * pushed for this URL: a second entry would send Back from the sign-in page into another challenge.
+ *
+ * It is a RELOAD of that entry, at the URL the navigation asked for. A `location.replace` to it was
+ * the first answer, and the router has pushed the URL before it asks: a replace to the URL the
+ * document is already at, fragment and all, is a same-document navigation, which only scrolls to the
+ * fragment and never asks the server (measured in Chromium, found by Copilot on #686).
  */
 export function leaveForRefusal(
   payload: PageStatePayload | null,
   url: string | undefined,
-  location: Pick<Location, 'replace'> = window.location,
+  location: Pick<Location, 'reload'> = window.location,
+  history: Pick<History, 'replaceState' | 'state'> = window.history,
 ): boolean {
   if (!payload?.refused || !url) return false;
-  location.replace(url);
+  history.replaceState(history.state, '', url);
+  location.reload();
   return true;
 }
 
