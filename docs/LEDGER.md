@@ -1618,6 +1618,15 @@ record of a release, the wiki's Upgrading page is the distillate.
   1970 toward the epoch; it answers a BigInt cut as .NET cuts it now. Found on the way: the date
   constructors past the second ([#606](https://github.com/eQuantic/equantic-ui/issues/606)).
   Proposed and archived through OpenSpec (`openspec/specs/runtime-dates`).
+- **2026-10-07 · A generic record equals only its own closed type**: .NET compares a record's
+  EqualityContract, its closed type, and the twin is one class for every type argument, so
+  `new Box<int>(1).Equals((object)new Box<double>(1))`, a `List<object>`'s `Contains` and a `with` copy
+  answered true where .NET answers false ([#651](https://github.com/eQuantic/equantic-ui/issues/651)).
+  Where C# names the type arguments the value is marked with them (`$eq.closing`), held aside so its
+  members and JSON stay its own, and a generic record's or struct's `equals` compares the marks; a
+  value built inside generic code carries none and is not taken for another type. Four of the six
+  conformance cases fail on main. Proposed and archived through OpenSpec
+  (`openspec/specs/transpiler-records`).
 
 ## Retired documents
 
