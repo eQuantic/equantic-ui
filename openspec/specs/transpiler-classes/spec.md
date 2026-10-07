@@ -226,3 +226,20 @@ same rule, so a page declared inside a class loads the module the build wrote fo
 
 - **WHEN** `public static class Admin { [Page("/admin/users")] public class Users : StatelessComponent { … } }` is served
 - **THEN** the page's configuration and its route name `Admin$Users`, the module the build wrote
+
+#### Scenario: A nested component, tested and built by its twin
+
+- **WHEN** `class Host { public class Page : StatelessComponent { … } }`, `object o = new Host.Page();` and `Host.Page p = new();`
+- **THEN** `o is Host.Page` tests `Host$Page`, and both constructions build `Host$Page`, imported where it is used
+
+#### Scenario: A component beside a nested class of its name
+
+- **WHEN** `class Item : StatelessComponent { … }` and `class Cart { public class Item { } }`
+- **THEN** `Item` is the component's module and `Cart$Item` a plain class's, neither taken for the other
+
+#### Scenario: A nested type the syntax never names
+
+- **WHEN** `Factory.Make() + Factory.Make()`, `-Factory.Make()` and `total += Factory.Make()` bind the operators of a
+  nested `Outer.Amount` that no expression names, and `default(Alias)` is the zero of a nested struct through
+  `using Alias = Outer.Pair;`
+- **THEN** each module imports `Outer$Amount` and `Outer$Pair`, as it imports a twin the syntax names

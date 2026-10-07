@@ -322,23 +322,16 @@ public static class PatternConverter
             // same test: was `!= null`, so the first arm took every exception (#474).
             if (ExceptionTypes.Is(named)) return ExceptionTypes.Test(access, named, context);
 
-            if (LowersToAJsClass(named))
-            {
-                // The name has to reach the import list, or the module references a free variable.
-                context.UsedRuntimeTypes.Add(named.Name);
-                return $"{access} instanceof {named.Name}";
-            }
-
             // The APP's own classes, records and structs are emitted as real JS classes too, so the
             // honest test is the same `instanceof` — without it, `state switch { ClosedGate => …,
             // OpenGate o => … }` emitted `!= null` for every arm and the FIRST one always won.
             // Known caveat: a value that crossed the SERVER boundary as JSON is a plain object and
             // fails instanceof — pattern-match client-constructed values, not raw prefetch payloads.
-            if (IsEmittedAppType(named))
-            {
-                context.UsedAppTypes.Add(named.TwinTypeName());
-                return $"{access} instanceof {named.TwinTypeName()}";
-            }
+            // Either way the name is the twin's, which a nested component's is too (`o is Host.Page`
+            // tests `Host$Page`, #584), and it reaches the import list, or the module references a
+            // free variable.
+            if (LowersToAJsClass(named) || IsEmittedAppType(named))
+                return $"{access} instanceof {named.IntroduceTwin(context)}";
         }
 
         return $"{access} != null";

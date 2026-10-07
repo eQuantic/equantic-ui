@@ -332,6 +332,18 @@ public static class TypeSymbolExtensions
         symbol is { ContainingType: { IsExtension: true, ContainingType: { } home } } ? home : null;
 
     /// <summary>
+    /// The name a twin is written by where the code names it, said once for the import too (#584): every
+    /// site that writes a type's twin into the output names it through this, so a twin reached only by
+    /// inference (an operator on what a call returned, the zero of a type an alias names, a nested
+    /// component's construction or type test) is imported as one the syntax names is.
+    /// </summary>
+    public static string IntroduceTwin(this INamedTypeSymbol type, ConversionContext context)
+    {
+        type.RegisterIntroduced(context);
+        return type.TwinReference();
+    }
+
+    /// <summary>
     /// Registers a type name the conversion INTRODUCED into the output (the source never names the
     /// extension home — the call is written on the receiver), in the bucket its namespace decides,
     /// so the import scanner can see it. Same routing the static-call path uses.

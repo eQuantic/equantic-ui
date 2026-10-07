@@ -137,9 +137,9 @@ public class AssignmentExpressionStrategy : IExpressionIrStrategy
         // COMPOUND assignment through a USER-DEFINED operator: `m += other` is `m = Money.opAdd(m, other)`.
         if (context.SemanticHelper.GetOperation(assignment) is Microsoft.CodeAnalysis.Operations.ICompoundAssignmentOperation
             { OperatorMethod: { } compoundMethod }
-            && UserDefinedOperators.Binary(compoundMethod, op[..^1], left, right) is not null)
+            && UserDefinedOperators.Binary(compoundMethod, op[..^1], left, right, context) is not null)
             return Compound((current, operand) => UserDefinedOperators.Binary(compoundMethod, op[..^1],
-                JsExprWriter.Write(current), JsExprWriter.Write(operand))!);
+                JsExprWriter.Write(current), JsExprWriter.Write(operand), context)!);
 
         var leftType = context.SemanticHelper.GetType(assignment.Left);
 

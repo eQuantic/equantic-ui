@@ -30,7 +30,7 @@ public static class DefaultValue
     internal static string Of(ITypeSymbol? type, ConversionContext context, Func<ITypeParameterSymbol, string?>? typeParameter)
     {
         var value = Of(type, named => (IsRuntimeProvided(named) ? context.UsedRuntimeTypes : context.UsedAppTypes)
-            .Add(named.Name), typeParameter);
+            .Add(named.TwinReference()), typeParameter);
         if (value.Contains("$eq.")) context.UsedHelpers.Add(Eq.Import);
         return value;
     }

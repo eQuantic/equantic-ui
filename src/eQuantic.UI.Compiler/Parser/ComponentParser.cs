@@ -177,6 +177,10 @@ public class ComponentParser
         // any class extending another in-file component (so a subclass of a user component is recognized even
         // without its own Build and without relying on the semantic model resolving the full base chain).
         string? BaseName(ClassDeclarationSyntax c) => c.BaseList?.Types.FirstOrDefault()?.Type.TwinTypeName(model);
+        bool OwnersAdmit(ClassDeclarationSyntax c) =>
+            c.Parent is not TypeDeclarationSyntax
+            || PlainClassModule.OwnersCross(c) && !PlainClassModule.IsServerOnlyDeclaration(c)
+               && !(model?.GetDeclaredSymbol(c) is INamedTypeSymbol nested && PlainClassModule.OwnerKeptOut(nested));
         var componentNames = new HashSet<string>();
         foreach (var c in classes)
         {
@@ -190,16 +194,19 @@ public class ComponentParser
             bool direct = model?.GetDeclaredSymbol(c) is INamedTypeSymbol s
                 ? (s.IsUiComponent() || hasBR)
                 : (bn is "StatefulComponent" or "StatelessComponent" or "HtmlElement" or "Flex" or "Container" or "Stack" || hasBR);
-            if (direct) componentNames.Add(c.Identifier.Text);
+            // A component is known by its twin's name, a nested one by its owner's too, so a top-level
+            // component and a nested plain class of the same simple name are never taken for each
+            // other (#584); and a nested one crosses where its owner does, as a nested class does.
+            if (direct && OwnersAdmit(c)) componentNames.Add(c.TwinTypeName());
         }
         for (var changed = true; changed;)
         {
             changed = false;
             foreach (var c in classes)
             {
-                if (componentNames.Contains(c.Identifier.Text)) continue;
+                if (componentNames.Contains(c.TwinTypeName())) continue;
                 var bn = BaseName(c);
-                if (bn != null && componentNames.Contains(bn)) { componentNames.Add(c.Identifier.Text); changed = true; }
+                if (bn != null && componentNames.Contains(bn) && OwnersAdmit(c)) { componentNames.Add(c.TwinTypeName()); changed = true; }
             }
         }
 
@@ -209,7 +216,7 @@ public class ComponentParser
         // over an app-owned base was classified by a name the walk had already seen past — #268,
         // #269 and #245 are that one disagreement reached three ways.
         var writtenBaseByName = new Dictionary<string, string?>(StringComparer.Ordinal);
-        foreach (var c in classes) writtenBaseByName[c.Identifier.Text] = BaseName(c);
+        foreach (var c in classes) writtenBaseByName[c.TwinTypeName()] = BaseName(c);
 
         ComponentBaseKind ResolveBaseKind(ClassDeclarationSyntax c)
         {
@@ -249,7 +256,7 @@ public class ComponentParser
         // named something that did not exist. Identity, not value: no structural equals, no `with`.
         foreach (var classDecl in classes)
         {
-            if (componentNames.Contains(classDecl.Identifier.Text)) continue; // component path
+            if (componentNames.Contains(classDecl.TwinTypeName())) continue; // component path
             if (stateNames.Contains(classDecl.Identifier.Text)) continue;     // owned by its page
             // The one rule the resolver reads too (#423): what the class IS decides, never whether it
             // declares a member. A class that declared none was skipped here while the resolver had
@@ -282,7 +289,7 @@ public class ComponentParser
 
         foreach (var classDecl in classes)
         {
-            if (!componentNames.Contains(classDecl.Identifier.Text)) continue;
+            if (!componentNames.Contains(classDecl.TwinTypeName())) continue;
 
             // The WRITTEN base, which is what the emitter puts after `extends` and what the relative
             // import beside it names. Never the resolved KIND: a component over `CardBase` must keep

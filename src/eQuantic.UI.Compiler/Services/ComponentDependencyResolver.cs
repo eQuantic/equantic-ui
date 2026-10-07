@@ -199,7 +199,12 @@ public class ComponentDependencyResolver
             // called: a nested `static class Copy` with a `Build` helper is its owner's scope.
             else if (!classDecl.Modifiers.Any(SyntaxKind.StaticKeyword) && IsComponentLike(classDecl))
             {
-                _componentLike.Add(classDecl.TwinTypeName());
+                // A nested one crosses where its owner does, by the rule a nested class follows: a
+                // component inside a [ServerOnly] class has no module, as its owner has none.
+                if (classDecl.Parent is not TypeDeclarationSyntax
+                    || PlainClassModule.OwnersCross(classDecl) && !PlainClassModule.IsServerOnlyDeclaration(classDecl)
+                       && !(SymbolOf(classDecl) is { } nested && PlainClassModule.OwnerKeptOut(nested)))
+                    _componentLike.Add(classDecl.TwinTypeName());
             }
 
             // A PLAIN class is a module too — a referencing module has to import it, or the page

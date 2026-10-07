@@ -78,4 +78,71 @@ public class NestedTypeConformanceTests
     [InlineData(false)]
     public void AComponentsNestedTypes_AreModulesNamedByIt(bool typeAnnotations) =>
         ModuleGraph.AssertSameAsDotNet(Component, typeAnnotations, ComponentCases);
+
+    private const string NestedComponents = """
+        using eQuantic.UI.Primitives;
+        public sealed class Item : StatelessComponent
+        {
+            public static string Kind() => "component";
+            public override VisualNode Build(ComponentContext context) => new Text("item", TypeRole.BodyM);
+        }
+        public class Cart { public class Item { public int Qty = 2; } public static int Size() => new Item().Qty; }
+        public static class Host
+        {
+            public sealed class Page : StatelessComponent
+            {
+                public int Hits = 7;
+                public override VisualNode Build(ComponentContext context) => new Text("page", TypeRole.BodyM);
+            }
+            public static int Made() { Page p = new(); return p.Hits; }
+        }
+        """;
+
+    private static readonly (string Name, string Statements)[] NestedComponentCases =
+    [
+        ("a component beside a nested plain class of its name", "return Item.Kind() + \"|\" + Cart.Size();"),
+        ("a nested component, built and tested by its twin",
+            "object o = new Host.Page(); return (o is Host.Page) + \"|\" + Host.Made() + \"|\" + ((Host.Page)o).Hits;"),
+    ];
+
+    /// <summary>A component is known by its twin's name, so a nested plain class of a component's simple
+    /// name is never taken for it, and a nested component is built, tested and imported as
+    /// <c>Host$Page</c> (found by Copilot's review of #654).</summary>
+    [SkippableTheory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void ANestedComponent_IsItsTwin(bool typeAnnotations) =>
+        ModuleGraph.AssertSameAsDotNet(NestedComponents, typeAnnotations, NestedComponentCases);
+
+    private const string Inferred = """
+        using Alias = Outer.Pair;
+        public class Outer
+        {
+            public record Amount(int V)
+            {
+                public static Amount operator +(Amount a, Amount b) => new(a.V + b.V);
+                public static Amount operator -(Amount a) => new(-a.V);
+                public static implicit operator int(Amount a) => a.V;
+            }
+            public struct Pair { public int A; public int B; }
+        }
+        public static class Factory { public static Outer.Amount Make() => new(2); public static Alias Zero() => default; }
+        """;
+
+    private static readonly (string Name, string Statements)[] InferredCases =
+    [
+        ("an operator of a nested type no expression names", "var s = Factory.Make() + Factory.Make(); return s.V;"),
+        ("a unary operator, then a conversion, of it", "int n = -Factory.Make(); return n;"),
+        ("a compound assignment through it", "var t = Factory.Make(); t += Factory.Make(); return t.V;"),
+        ("the zero of a nested struct through an alias", "Alias p = Factory.Zero(); Alias q = default; return p.A + q.B;"),
+    ];
+
+    /// <summary>A twin the syntax never names, reached by an operator on what a call returned or by the
+    /// zero of a type an alias names, is imported as a named one is (found by Copilot's review of
+    /// #654): the module called <c>Outer$Amount.opAdd</c> with no import.</summary>
+    [SkippableTheory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void ANestedTwinReachedByInference_IsImported(bool typeAnnotations) =>
+        ModuleGraph.AssertSameAsDotNet(Inferred, typeAnnotations, InferredCases);
 }
