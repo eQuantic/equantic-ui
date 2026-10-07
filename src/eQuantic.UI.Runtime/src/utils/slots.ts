@@ -47,6 +47,22 @@ function isPrime(candidate: number): boolean {
   return true;
 }
 
+/**
+ * How many a collection holds, where .NET reads an `ICollection<T>`'s `Count` to size what it copies
+ * into: an array (a list, an array, a dictionary's keys or values), a set or a dictionary by its
+ * size, a linked list or a sorted set by its count. Null for any other sequence, which .NET reads
+ * only by walking it, a queue and a stack among them, which are no `ICollection<T>`. A dictionary and
+ * a set both copy by it, so it lives where both find it.
+ */
+export function collectionCount(source: unknown): number | null {
+  if (Array.isArray(source)) return source.length;
+  if (source == null || typeof source !== 'object') return null;
+  const counted = source as { size?: unknown; count?: unknown; dequeue?: unknown; pop?: unknown };
+  if (typeof counted.size === 'number') return counted.size;
+  if (typeof counted.count !== 'number') return null;
+  return typeof counted.dequeue === 'function' || typeof counted.pop === 'function' ? null : counted.count;
+}
+
 /** .NET's `HashHelpers.GetPrime`: the size a table asked to hold `min` entries allocates. */
 export function getPrime(min: number): number {
   for (const prime of PRIMES) if (prime >= min) return prime;

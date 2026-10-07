@@ -2,7 +2,7 @@ import { adoptMember } from './adopt-member';
 import { exception } from './exceptions';
 import { identityHash } from './hash';
 import { sameBy, type KeyEquality } from './key-equality';
-import { getPrime, SlotTable } from './slots';
+import { collectionCount, getPrime, SlotTable } from './slots';
 
 /**
  * How a dictionary finds a key, as .NET's default comparer for the key type does, which eqc says
@@ -21,6 +21,9 @@ export type Pair<K, V> = [K, V] & { readonly key: K; readonly value: V };
 export function pair<K, V>(key: K, value: V): Pair<K, V> {
   return Object.assign([key, value] as [K, V], { key, value });
 }
+
+/** The array methods that change an array, which a dictionary's view refuses. */
+const MUTATORS: ReadonlySet<string> = new Set(['push', 'pop', 'shift', 'unshift', 'splice', 'sort', 'reverse', 'fill', 'copyWithin']);
 
 /**
  * .NET's `Dictionary<TKey, TValue>`, the class every C# `Dictionary`, `IDictionary` and
@@ -55,10 +58,10 @@ export class Dictionary<K, V> implements Iterable<Pair<K, V>> {
 
   constructor(entries?: Iterable<readonly [K, V]> | null, byValue: KeyEquality = false) {
     this.table = new SlotTable(byValue);
-    // A copy is sized for what it copies first, as .NET's sizes a dictionary's copy and a collection's
-    // by their count: it grew one insertion at a time, so eight entries copied made a capacity of 17
-    // where .NET makes 11. A LINQ result is an array here, and is sized like one.
-    const count = entries instanceof Dictionary ? entries.size : Array.isArray(entries) ? entries.length : 0;
+    // A copy is sized for what it copies first, as .NET's sizes a dictionary's copy and any
+    // ICollection<T>'s by their count: it grew one insertion at a time, so eight entries copied made a
+    // capacity of 17 where .NET makes 11. A LINQ result is an array here, and is sized like one.
+    const count = collectionCount(entries) ?? 0;
     if (count > 0) this.table.capacity = getPrime(count);
     // A constructor adds what it copies and what a collection initializer lists, as .NET's `Add`
     // does: a key already there is refused, where the indexer's write would replace it (#440).
@@ -206,6 +209,9 @@ export class Dictionary<K, V> implements Iterable<Pair<K, V>> {
       return snapshot;
     };
     const walk = (): Iterator<T> => this.walk(pick);
+    const refuseMutation = (): never => {
+      throw exception('System.NotSupportedException', `Mutating a ${collection} collection derived from a dictionary is not allowed.`);
+    };
     // `KeyCollection.Contains`: a key found as the dictionary finds one, by its own comparison.
     const contains = (key: K): boolean => this.has(key);
     return new Proxy([] as T[], {
@@ -215,6 +221,10 @@ export class Dictionary<K, V> implements Iterable<Pair<K, V>> {
         // The count without a snapshot: a loop that changes the dictionary and reads the count each
         // pass would copy every entry each time.
         if (property === 'length') return this.size;
+        // A method that would change the view is refused as .NET's collections of a dictionary refuse
+        // ICollection<T>'s Add, Remove and Clear, where the frozen snapshot threw a TypeError, read as
+        // a NullReferenceException.
+        if (typeof property === 'string' && MUTATORS.has(property)) return refuseMutation;
         const array = current();
         // An element as it is, a delegate held as a value included: only the array's own methods
         // are bound to the snapshot they read, where every function was, and a delegate read back
