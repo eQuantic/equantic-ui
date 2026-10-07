@@ -101,8 +101,20 @@ public static class UIExtensions
         services.TryAddSingleton<IServerActionAuthorizationService, ServerActionAuthorizationService>();
         // A refused CLIENT NAVIGATION into a page that requires authorization is answered 401 or 403,
         // which the router acts on, instead of a challenge a fetch cannot follow (#673).
-        services.AddSingleton<Microsoft.AspNetCore.Authorization.IAuthorizationMiddlewareResultHandler,
-            NavigationAuthorizationResultHandler>();
+        // It WRAPS the handler the app registered before AddUI, so the app's own answers stand for
+        // every request that is not a navigation; the framework's when there is none.
+        var appHandler = services.LastOrDefault(d =>
+            d.ServiceType == typeof(Microsoft.AspNetCore.Authorization.IAuthorizationMiddlewareResultHandler));
+        services.AddSingleton<Microsoft.AspNetCore.Authorization.IAuthorizationMiddlewareResultHandler>(provider =>
+            new NavigationAuthorizationResultHandler(appHandler switch
+            {
+                { ImplementationInstance: Microsoft.AspNetCore.Authorization.IAuthorizationMiddlewareResultHandler instance } => instance,
+                { ImplementationFactory: { } factory } =>
+                    (Microsoft.AspNetCore.Authorization.IAuthorizationMiddlewareResultHandler)factory(provider),
+                { ImplementationType: { } type } =>
+                    (Microsoft.AspNetCore.Authorization.IAuthorizationMiddlewareResultHandler)ActivatorUtilities.CreateInstance(provider, type),
+                _ => new Microsoft.AspNetCore.Authorization.Policy.AuthorizationMiddlewareResultHandler(),
+            }));
 
         // Add SSR rendering service
         services.TryAddSingleton<IServerRenderingService, ServerRenderingService>();

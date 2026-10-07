@@ -79,6 +79,22 @@ export async function fetchPageState(url?: string): Promise<PageStatePayload | n
 }
 
 /**
+ * Leaves for a route the server REFUSED (#673), and answers whether it did. The route is loaded in
+ * full, which the server challenges (a sign-in) or forbids (a 403), and never rendered client-side,
+ * where its empty state would stand in for a refusal. The load REPLACES the entry the router already
+ * pushed for this URL: a second entry would send Back from the sign-in page into another challenge.
+ */
+export function leaveForRefusal(
+  payload: PageStatePayload | null,
+  url: string | undefined,
+  location: Pick<Location, 'replace'> = window.location,
+): boolean {
+  if (!payload?.refused || !url) return false;
+  location.replace(url);
+  return true;
+}
+
+/**
  * Hands the payload to the two places that read it: the hydration door the SSR state comes through,
  * and the document head.
  *

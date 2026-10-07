@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { applyPageState, fetchPageState, NAVIGATION_HEADER } from './page-state';
+import { applyPageState, fetchPageState, leaveForRefusal, NAVIGATION_HEADER } from './page-state';
 
 /**
  * The client half of a navigation's page state, the half ClientNavigationStateTests cannot reach: what
@@ -44,6 +44,18 @@ describe('a navigation reads the page state the server marks as its answer', () 
 
     answer(403, true, {});
     expect(await fetchPageState('/backoffice')).toEqual({ refused: 403 });
+  });
+
+  it('leaves a refused route by REPLACING the entry the router pushed, and stays for any other', () => {
+    const location = { replace: vi.fn() };
+
+    expect(leaveForRefusal({ refused: 401 }, '/backoffice', location)).toBe(true);
+    expect(location.replace).toHaveBeenCalledWith('/backoffice');
+
+    location.replace.mockClear();
+    expect(leaveForRefusal({ title: 'Queue' }, '/backoffice', location)).toBe(false);
+    expect(leaveForRefusal(null, '/backoffice', location)).toBe(false);
+    expect(location.replace).not.toHaveBeenCalled();
   });
 
   it('asks with the header the server answers by', async () => {

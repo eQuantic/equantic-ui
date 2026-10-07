@@ -27,6 +27,7 @@ import { EscapeHatchPage, componentIdentity } from '../../eQuantic.UI.Runtime/sr
 import {
   applyPageState,
   fetchPageState,
+  leaveForRefusal,
   warmPageState,
 } from '../../eQuantic.UI.Runtime/src/router/page-state';
 import { Component } from '../../eQuantic.UI.Runtime/src/core/types';
@@ -408,12 +409,8 @@ async function navigateToPage(
     // A newer navigation started while this bundle was loading — don't clobber it.
     if (isCurrent && !isCurrent()) return;
     // The server REFUSED this route (#673): the page requires an authorization the visitor does not
-    // have. It is never rendered client-side, where its empty state would stand in for a refusal;
-    // the route is loaded in full, which the server challenges (a sign-in) or forbids (a 403).
-    if (payload?.refused && url) {
-      window.location.assign(url);
-      return;
-    }
+    // have, and it is loaded in full instead of rendered (leaveForRefusal says how).
+    if (leaveForRefusal(payload, url)) return;
     if (!ComponentClass) {
       render404(root, pageName);
       currentComponent = null;

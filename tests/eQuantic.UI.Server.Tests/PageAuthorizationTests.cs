@@ -5,6 +5,7 @@ using System.Text.Encodings.Web;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -91,10 +92,24 @@ public class PageAuthorizationTests
         }
     }
 
-    private static async Task<(WebApplication App, HttpClient Client)> StartAsync(bool fallbackPolicy = false)
+    /// <summary>An app's own result handler, which answers a refusal with a teapot.</summary>
+    private sealed class TeapotHandler : IAuthorizationMiddlewareResultHandler
+    {
+        public Task HandleAsync(RequestDelegate next, HttpContext context, AuthorizationPolicy policy,
+            Microsoft.AspNetCore.Authorization.Policy.PolicyAuthorizationResult authorizeResult)
+        {
+            if (authorizeResult.Succeeded) return next(context);
+            context.Response.StatusCode = 418;
+            return Task.CompletedTask;
+        }
+    }
+
+    private static async Task<(WebApplication App, HttpClient Client)> StartAsync(bool fallbackPolicy = false,
+        bool teapot = false, bool cultures = false)
     {
         var builder = WebApplication.CreateBuilder();
         builder.WebHost.UseTestServer();
+        if (teapot) builder.Services.AddSingleton<IAuthorizationMiddlewareResultHandler, TeapotHandler>();
         builder.Services.AddAuthentication(TestScheme.Name)
             .AddScheme<AuthenticationSchemeOptions, TestScheme>(TestScheme.Name, null);
         builder.Services.AddAuthorization(options =>
@@ -102,8 +117,13 @@ public class PageAuthorizationTests
             options.AddPolicy("Backoffice", policy => policy.RequireRole("backoffice"));
             if (fallbackPolicy) options.FallbackPolicy = new AuthorizationPolicyBuilder().RequireAuthenticatedUser().Build();
         });
-        builder.Services.AddUI(options => options.ScanAssembly(Assembly.GetExecutingAssembly()));
+        builder.Services.AddUI(options =>
+        {
+            options.ScanAssembly(Assembly.GetExecutingAssembly());
+            if (cultures) options.UseCultureRoutes("en", "pt-BR");
+        });
         var app = builder.Build();
+        if (cultures) app.UseRequestLocalization();
         app.MapUI();
         app.MapPage<DeclaredBackofficePage>("/declared/backoffice");
         await app.StartAsync();
@@ -210,6 +230,28 @@ public class PageAuthorizationTests
         (await client.SendAsync(Get("/declared/backoffice", user: "ana"))).StatusCode.Should().Be(HttpStatusCode.Forbidden);
         var allowed = await client.SendAsync(Get("/declared/backoffice", user: "ana", role: "backoffice"));
         (await allowed.Content.ReadAsStringAsync()).Should().Contain("DECLARED-SECRET");
+    }
+
+    /// <summary>An app's own result handler, registered before AddUI, keeps answering every refusal that
+    /// is not a navigation.</summary>
+    [Fact]
+    public async Task AnAppsOwnResultHandler_KeepsAnsweringFullLoads()
+    {
+        var (app, client) = await StartAsync(teapot: true);
+        await using var _ = app;
+
+        ((int)(await client.SendAsync(Get("/backoffice/queue"))).StatusCode).Should().Be(418);
+        (await client.SendAsync(Get("/backoffice/queue", navigate: true))).StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+    }
+
+    [Fact]
+    public async Task ALanguagePrefixedRoute_CarriesTheSameRequirement()
+    {
+        var (app, client) = await StartAsync(cultures: true);
+        await using var _ = app;
+
+        (await client.SendAsync(Get("/pt-BR/backoffice/queue"))).StatusCode.Should().Be(HttpStatusCode.Redirect);
+        (await client.SendAsync(Get("/pt-BR/backoffice/queue", user: "ana"))).StatusCode.Should().Be(HttpStatusCode.Forbidden);
     }
 
     /// <summary>Under an app's fallback policy, the page that allows anonymous visitors still serves,
