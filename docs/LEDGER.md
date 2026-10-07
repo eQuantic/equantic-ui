@@ -1608,6 +1608,17 @@ record of a release, the wiki's Upgrading page is the distillate.
   1970 toward the epoch; it answers a BigInt cut as .NET cuts it now. Found on the way: the date
   constructors past the second ([#606](https://github.com/eQuantic/equantic-ui/issues/606)).
   Proposed and archived through OpenSpec (`openspec/specs/runtime-dates`).
+- **2026-10-07 · A collection crosses and compares as .NET's does**: a `Queue`, a `Stack`, a
+  `LinkedList` and a `SortedSet` had no `toJSON`, so a Server Action argument was written as the
+  class's fields or its node graph ([#597](https://github.com/eQuantic/equantic-ui/issues/597)); each
+  writes the array .NET writes now. A dictionary's `Keys` and `Values` were arrays copied when read,
+  `EnsureCapacity` answered the capacity asked for and `TrimExcess` did nothing
+  ([#463](https://github.com/eQuantic/equantic-ui/issues/463)): the views are live, through a Proxy
+  over a snapshot taken again only after a change, and the capacity is .NET's prime. A record's twin
+  compared an array member element by element, where .NET compares it by reference
+  ([#554](https://github.com/eQuantic/equantic-ui/issues/554)): each member is compared by its type's
+  default comparer now (`ElementEquality.Compare`), and so is a tuple's `Equals`. Proposed and archived
+  through OpenSpec (`openspec/specs/runtime-collections`, `runtime-dictionaries`, `transpiler-records`).
 
 ## Retired documents
 
