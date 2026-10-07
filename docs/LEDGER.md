@@ -1579,6 +1579,20 @@ record of a release, the wiki's Upgrading page is the distillate.
   showed its hover fill, and a Pressable around an IconButton took the inner control's hits. The slop
   is now the `::before` with the content lifted above it, and answers only around the control.
   Proposed and archived through OpenSpec (`openspec/specs/hit-targets`).
+- **2026-10-06 · A char's search checks its start and its count**: `IndexOf(char, int)`,
+  `IndexOf(char, int, int)`, `LastIndexOf(char, int)` and `LastIndexOf(char, int, int)` were
+  JavaScript's `indexOf` and `lastIndexOf`, which take no count and clamp a start outside the string,
+  so `"abcabc".IndexOf('c', 0, 2)` answered 2 where .NET answers -1 and `"abc".IndexOf('a', 4)`
+  answered -1 where .NET throws ([#534](https://github.com/eQuantic/equantic-ui/issues/534)). They
+  reach the runtime's `indexOfChar` and `lastIndexOfChar`, ported from .NET 10's
+  `String.Searching.cs` and measured with `dotnet fsi`: `IndexOf`'s start may stand at the end of the
+  string, `LastIndexOf`'s must stand on a char of it (the string overloads step back from one past
+  the end instead), an empty string's `LastIndexOf` answers -1 for any start and count, and each
+  refusal is in .NET's words, the start checked before the count. The call is built by the runtime
+  call the comparing overloads use. 9 of the 16 conformance cases fail on main. The Markdown, Mermaid
+  and curly-brace parsers and the SDK's strings, which search a char from a start, now throw where
+  the same C# throws on the server. Proposed and archived through OpenSpec
+  (`openspec/specs/transpiler-bcl`).
 - **2026-10-06 · The conformance harness compares a value as the runtime holds it**: the .NET side
   wrote a value as System.Text.Json writes it and the JS side as `JSON.stringify` writes the runtime's,
   so a long, a decimal, an enum and a float compared backwards: a long that crossed as a BigInt

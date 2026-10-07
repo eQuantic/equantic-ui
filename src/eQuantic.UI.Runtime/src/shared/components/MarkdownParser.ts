@@ -234,7 +234,7 @@ export class MarkdownParser {
         while (i < text.length) {
             let c = text[i];
             if (c === '`') {
-                let end = text.indexOf('`', i + 1);
+                let end = $eq.text.indexOfChar(text, '`', i + 1);
                 if (end > i) {
                     buffer = MarkdownParser.flushText(runs, buffer);
                     let $n13: any; 
@@ -312,9 +312,9 @@ export class MarkdownParser {
     }
 
     static matchLink(text: string, open: number) {
-        let close = text.indexOf(']', open + 1);
+        let close = $eq.text.indexOfChar(text, ']', open + 1);
         if (close <= open || close + 1 >= text.length || text[close + 1] !== '(') return null;
-        let hrefEnd = text.indexOf(')', close + 2);
+        let hrefEnd = $eq.text.indexOfChar(text, ')', close + 2);
         if (hrefEnd <= close) return null;
         let $n15: any; 
         return ($n15 = new MarkdownLinkMatch(), $n15.label = text.slice((open + 1), close), $n15.href = text.slice((close + 2), hrefEnd), $n15.end = hrefEnd + 1, $n15);
