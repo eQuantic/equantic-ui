@@ -87,3 +87,13 @@ The source of a LINQ call and each of its arguments SHALL be evaluated once, in 
 
 - **WHEN** an `OrderBy` is followed by ten `ThenBy`
 - **THEN** the module parses, and the order is .NET's
+
+#### Scenario: A source a selector reassigns
+
+- **WHEN** `xs.Average(x => { xs = new[] { 1 }; return x; })` runs over `{ 1, 2, 3, 4 }`
+- **THEN** it answers 2.5, as in .NET, which read `xs` once
+
+#### Scenario: A string that quotes a lowering's own name
+
+- **WHEN** `new[] { 1, 2, 3, 4 }.Intersect(Other("$x"))` runs, where `Other` counts its calls
+- **THEN** `Other` has run once, as in .NET, and so it has when the string is interpolated
