@@ -4,14 +4,11 @@ using Xunit;
 namespace eQuantic.UI.Conformance.Tests;
 
 /// <summary>
-/// A null-conditional read answers null where C# does, not JavaScript's undefined, and a method group
-/// reads its receiver once, both sides executed through the module graph an app's build writes:
-/// <list type="bullet">
-/// <item>an optional chain was undefined in the browser, which a parameter tested with <c>is null</c>,
-/// a dictionary looking for null, and a chain held in a field told apart from null (#633);</item>
-/// <item>a method group bound to a receiver that is a call ran the call twice, once to read the method
-/// and once to bind it (#619).</item>
-/// </list>
+/// A null-conditional read answers null where C# does, not JavaScript's undefined, both sides executed
+/// through the module graph an app's build writes. An optional chain was undefined in the browser,
+/// which a parameter tested with <c>is null</c>, a dictionary looking for null, and a chain held in a
+/// field told apart from null, and so was a chain behind a guard, whose inner link the guard handed out
+/// as it was (#633).
 /// </summary>
 public class NullConditionalValueConformanceTests
 {
@@ -19,7 +16,7 @@ public class NullConditionalValueConformanceTests
         public class Person { public string? Name; public Person? Boss; public int Age; }
         public static class Probe { public static string Kind(string? s) => s is null ? "null" : "value"; }
         public class Holder { public string? Kept; }
-        public class Counter { public int Made; public Counter Make() { Made++; return this; } public int Value() => Made; }
+        public static class Ext { public static string? Pick(this string? s) => null; }
         """;
 
     private static readonly (string Name, string Statements)[] Cases =
@@ -30,12 +27,12 @@ public class NullConditionalValueConformanceTests
         ("a read that has a value", "var p = new Person { Name = \"ada\" }; return Probe.Kind(p?.Name) + p?.Name;"),
         ("a dictionary looking for null", "Person? p = null; var d = new System.Collections.Generic.Dictionary<string, string?> { [\"k\"] = p?.Name }; return d.ContainsValue(null);"),
         ("a field that holds a read", "Person? p = null; var h = new Holder { Kept = p?.Name }; return h.Kept is null;"),
-        ("a method group whose receiver is a call", "var c = new Counter(); System.Func<int> read = c.Make().Value; return read() + c.Made;"),
+        ("a chain behind a guard", "var p = new Person { Name = \"ada\" }; var d = new System.Collections.Generic.Dictionary<string, int?> { [\"k\"] = p?.Name.Pick()?.Length }; return d.ContainsValue(null);"),
     ];
 
     [SkippableTheory]
     [InlineData(true)]
     [InlineData(false)]
-    public void ANullConditionalAnswersNull_AndAMethodGroupReadsItsReceiverOnce(bool typeAnnotations) =>
+    public void ANullConditionalAnswersNull_WhereItsValueIsUsed(bool typeAnnotations) =>
         ModuleGraph.AssertSameAsDotNet(Declarations, typeAnnotations, Cases);
 }

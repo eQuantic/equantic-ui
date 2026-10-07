@@ -85,6 +85,11 @@ public class ConditionalAccessStrategy : IConversionStrategy
         if (converted.StartsWith(placeholder + "[", StringComparison.Ordinal)
             || converted.StartsWith(placeholder + "(", StringComparison.Ordinal))
             return AnswersNull(conditionalAccess, $"{receiver}?.{converted[placeholder.Length..]}", context);
+        // A tail that is a chain of its own was left bare for this access to settle, and a guard
+        // hands it out as it is: `(h == null ? null : Ext.pick(h.name)?.length)` answered undefined
+        // where Pick answered null. So the guard settles it, where its value is used.
+        if (whenNotNull is ConditionalAccessExpressionSyntax)
+            converted = AnswersNull(conditionalAccess, converted, context);
         // No function around the tail: it runs in the function it is written in, so an argument that
         // awaits is awaited there, only when the receiver is not null, and nothing the call answers
         // is awaited (an arrow made async did both, and a task the call returned came back as its
@@ -112,7 +117,7 @@ public class ConditionalAccessStrategy : IConversionStrategy
     /// key that holds it, and <c>=== null</c> is false for it (#633). So the chain answers null, except
     /// where nothing can tell: a call that returns nothing (<c>onChanged?.Invoke(x)</c>, whose value C#
     /// never lets anyone use), a statement that discards its value, the left of a <c>??</c>, and the
-    /// tail of another chain, whose own answer is settled where it ends.
+    /// tail of another chain, which that chain settles, whether it ends as a chain or behind a guard.
     /// </summary>
     private static string AnswersNull(ConditionalAccessExpressionSyntax access, string chain, ConversionContext context)
     {
