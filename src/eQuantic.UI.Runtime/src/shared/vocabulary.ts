@@ -1909,15 +1909,25 @@ export class Spacer extends VisualNode {
   /** Spec B14: weight changes animate over Motion.Base (pairs with an animated Flexible). */
   animateChanges = false;
 
-  constructor(flex = 1, config?: { animateChanges?: boolean; key?: string | null }) {
+  constructor(
+    flex = 1,
+    config?: { flex?: number; animateChanges?: boolean; key?: string | null },
+  ) {
     super();
-    this.flex = Math.max(1, flex);
+    this.flex = flex;
     this.fixedLength = 0;
     if (config) Object.assign(this, config);
+    // LAST, after the trailing config the C# initializer becomes, as the C# accessor refuses it:
+    // a weight below 1 used to be raised to 1 here without a word (#691).
+    if (!Number.isInteger(this.flex) || this.flex < 1) {
+      throw new RangeError(`A spacer's weight is 1 or more, not ${this.flex}.`);
+    }
   }
 
   static fixed(length: number): Spacer {
     const spacer = new Spacer();
+    // The rigid form's weight, the one zero a spacer holds, written past the constructor's check
+    // as the C# writes it past the accessor's.
     spacer.flex = 0;
     spacer.fixedLength = length;
     return spacer;

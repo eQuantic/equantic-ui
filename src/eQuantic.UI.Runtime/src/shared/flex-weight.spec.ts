@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { Flexible, Row, Text } from '../index';
+import { Flexible, Row, Spacer, Text } from '../index';
 import { UI } from './components/UI';
 import { photonTheme } from './design-system.generated';
 import { lowerVisualNode } from './lowering';
@@ -74,5 +74,23 @@ describe('a basis is written by the rule every other length uses (C# cross-pin, 
     expect(styleOf(new Flexible(new Text('t'), 1, Math.fround(540.12)))).toContain(
       'flex: 1 1 540.12px',
     );
+  });
+});
+
+describe('the Spacer twin refuses a weight below one (C# cross-pin: SpacerWeightTests, #691)', () => {
+  it('through the parameter, the factory and the trailing config', () => {
+    const doors: (() => Spacer)[] = [
+      () => new Spacer(0),
+      () => new Spacer(-3),
+      () => new Spacer(0.5),
+      () => UI.spacer(0),
+      () => new Spacer(1, { flex: 0 }),
+    ];
+    for (const door of doors) expect(door).toThrow(RangeError);
+  });
+
+  it('keeps the rigid form at weight zero and a weight as written', () => {
+    expect(Spacer.fixed(24)).toMatchObject({ flex: 0, fixedLength: 24 });
+    expect(new Spacer(3).flex).toBe(3);
   });
 });
