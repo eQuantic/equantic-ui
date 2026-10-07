@@ -1627,8 +1627,13 @@ record of a release, the wiki's Upgrading page is the distillate.
   over a snapshot taken again only after a change, and the capacity is .NET's prime. A record's twin
   compared an array member element by element, where .NET compares it by reference
   ([#554](https://github.com/eQuantic/equantic-ui/issues/554)): each member is compared by its type's
-  default comparer now (`ElementEquality.Compare`), and so is a tuple's `Equals`. Proposed and archived
-  through OpenSpec (`openspec/specs/runtime-collections`, `runtime-dictionaries`, `transpiler-records`).
+  default comparer now (`ElementEquality.Compare`), and so is a tuple's `Equals`: an interface no tuple
+  implements, `IReadOnlyList<int>` first among them, by reference or its own `Equals`, a tuple of
+  another arity unequal and a null pair equal only to another. A view hands back each element as it
+  is, a delegate included, and a copy is sized for what it copies. A LINQ query reading its whole
+  source before its first callback is [#685](https://github.com/eQuantic/equantic-ui/issues/685).
+  Proposed and archived through OpenSpec (`openspec/specs/runtime-collections`, `runtime-dictionaries`,
+  `transpiler-records`).
 
 ## Retired documents
 

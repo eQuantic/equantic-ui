@@ -16,6 +16,7 @@
 
 - [x] 3.1 `ElementEquality.Compare`, and a record's members and a tuple's `Equals` compared through it
 - [x] 3.2 Prove it on both sides in `ArrayMemberEqualityConformanceTests`, failing on the base
+- [x] 3.3 The review's first round: an interface no tuple implements compared by reference or its own `Equals` (the `'item'` equality, read from the interfaces `ValueTuple` implements), a tuple's `Equals(object)` checking its arity, a null pair equal only to another, a view handing back each element as it is, and a copy sized for its count, each proved on both sides
 
 ## 4. Documentation and the suites
 
