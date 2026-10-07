@@ -1,5 +1,8 @@
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Authorization.Policy;
 using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace eQuantic.UI.Server.Authorization;
 
@@ -47,6 +50,29 @@ internal static class PageAuthorization
             }
         }
         return [.. metadata];
+    }
+
+    /// <summary>
+    /// Whether the request may see a page it reaches WITHOUT the page's own route: the 404 page the
+    /// fallback draws for a URL that matches nothing, and the 500 page that stands in for one that
+    /// failed. No endpoint carries their requirement there, so it is asked here, of the app's own
+    /// policy provider and evaluator, before the page is built (found by Copilot on #686). A page that
+    /// requires authorization where the app configured none is refused, never drawn.
+    /// </summary>
+    public static async Task<bool> AllowsAsync(HttpContext context, Type pageType)
+    {
+        var metadata = MetadataFor(pageType);
+        if (metadata.OfType<IAllowAnonymous>().Any()) return true;
+        var requirements = metadata.OfType<IAuthorizeData>().ToArray();
+        if (requirements.Length == 0) return true;
+
+        var provider = context.RequestServices.GetService<IAuthorizationPolicyProvider>();
+        var evaluator = context.RequestServices.GetService<IPolicyEvaluator>();
+        if (provider is null || evaluator is null) return false;
+        var policy = await AuthorizationPolicy.CombineAsync(provider, requirements);
+        if (policy is null) return true;
+        var authentication = await evaluator.AuthenticateAsync(policy, context);
+        return (await evaluator.AuthorizeAsync(policy, authentication, context, resource: null)).Succeeded;
     }
 
     /// <summary>The page's requirement on the endpoint that serves it.</summary>

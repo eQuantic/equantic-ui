@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Ui = eQuantic.UI.Primitives;
@@ -92,6 +93,66 @@ public class PageAuthorizationTests
         }
     }
 
+    /// <summary>A 404 page that only the backoffice may see, with data of its own.</summary>
+    [Ui.Authorize(Policy = "Backoffice")]
+    public sealed class ProtectedNotFoundPage : Ui.StatelessComponent, Ui.IServerPrefetch
+    {
+        public string Row = "";
+
+        public Task PrefetchAsync(IServiceProvider services, CancellationToken cancellationToken)
+        {
+            Row = "NOT-FOUND-SECRET";
+            return Task.CompletedTask;
+        }
+
+        public override Ui.VisualNode Build(Ui.ComponentContext context) =>
+            new Ui.Text(Row.Length > 0 ? Row : "nothing loaded", Ui.TypeRole.BodyM);
+    }
+
+    /// <summary>A 500 page that only the backoffice may see.</summary>
+    [Ui.Authorize(Policy = "Backoffice")]
+    public sealed class ProtectedErrorPage : Ui.StatelessComponent, Ui.IServerPrefetch
+    {
+        public string Row = "";
+
+        public Task PrefetchAsync(IServiceProvider services, CancellationToken cancellationToken)
+        {
+            Row = "ERROR-SECRET";
+            return Task.CompletedTask;
+        }
+
+        public override Ui.VisualNode Build(Ui.ComponentContext context) =>
+            new Ui.Text(Row.Length > 0 ? Row : "nothing loaded", Ui.TypeRole.BodyM);
+    }
+
+    /// <summary>A public page whose server data fails to load, so the 500 page stands in for it.</summary>
+    public sealed class FailingPage : Ui.StatelessComponent, Ui.IServerPrefetch
+    {
+        public Task PrefetchAsync(IServiceProvider services, CancellationToken cancellationToken) =>
+            throw new InvalidOperationException("the database is down");
+
+        public override Ui.VisualNode Build(Ui.ComponentContext context) => new Ui.Text("failing", Ui.TypeRole.BodyM);
+    }
+
+    /// <summary>A request-scoped service, the kind a scoped result handler depends on.</summary>
+    private sealed class RequestClock
+    {
+        public string Stamp { get; } = Guid.NewGuid().ToString("N");
+    }
+
+    /// <summary>An app's own result handler registered SCOPED, with a scoped dependency.</summary>
+    private sealed class ScopedTeapotHandler(RequestClock clock) : IAuthorizationMiddlewareResultHandler
+    {
+        public Task HandleAsync(RequestDelegate next, HttpContext context, AuthorizationPolicy policy,
+            Microsoft.AspNetCore.Authorization.Policy.PolicyAuthorizationResult authorizeResult)
+        {
+            if (authorizeResult.Succeeded) return next(context);
+            context.Response.StatusCode = 418;
+            context.Response.Headers["X-Clock"] = clock.Stamp;
+            return Task.CompletedTask;
+        }
+    }
+
     /// <summary>An app's own result handler, which answers a refusal with a teapot.</summary>
     private sealed class TeapotHandler : IAuthorizationMiddlewareResultHandler
     {
@@ -105,11 +166,18 @@ public class PageAuthorizationTests
     }
 
     private static async Task<(WebApplication App, HttpClient Client)> StartAsync(bool fallbackPolicy = false,
-        bool teapot = false, bool cultures = false)
+        bool teapot = false, bool cultures = false, bool protectedErrorPages = false, bool scopedTeapot = false)
     {
         var builder = WebApplication.CreateBuilder();
         builder.WebHost.UseTestServer();
+        // Scope validation on, as Development turns it on: a captive scoped dependency throws here.
+        builder.Host.UseDefaultServiceProvider(provider => provider.ValidateScopes = true);
         if (teapot) builder.Services.AddSingleton<IAuthorizationMiddlewareResultHandler, TeapotHandler>();
+        if (scopedTeapot)
+        {
+            builder.Services.AddScoped<RequestClock>();
+            builder.Services.AddScoped<IAuthorizationMiddlewareResultHandler, ScopedTeapotHandler>();
+        }
         builder.Services.AddAuthentication(TestScheme.Name)
             .AddScheme<AuthenticationSchemeOptions, TestScheme>(TestScheme.Name, null);
         builder.Services.AddAuthorization(options =>
@@ -121,11 +189,23 @@ public class PageAuthorizationTests
         {
             options.ScanAssembly(Assembly.GetExecutingAssembly());
             if (cultures) options.UseCultureRoutes("en", "pt-BR");
+            if (protectedErrorPages)
+            {
+                options.RegisterErrorPage(typeof(ProtectedNotFoundPage), "/404");
+                options.RegisterErrorPage(typeof(ProtectedErrorPage), "/500");
+            }
         });
         var app = builder.Build();
         if (cultures) app.UseRequestLocalization();
         app.MapUI();
         app.MapPage<DeclaredBackofficePage>("/declared/backoffice");
+        app.MapPage<FailingPage>("/failing");
+        if (protectedErrorPages)
+        {
+            // Routed too, as an app's /404 and /500 pages are, so the server knows how to draw them.
+            app.MapPage<ProtectedNotFoundPage>("/protected-404");
+            app.MapPage<ProtectedErrorPage>("/protected-500");
+        }
         await app.StartAsync();
         var client = app.GetTestClient();
         return (app, client);
@@ -242,6 +322,51 @@ public class PageAuthorizationTests
 
         ((int)(await client.SendAsync(Get("/backoffice/queue"))).StatusCode).Should().Be(418);
         (await client.SendAsync(Get("/backoffice/queue", navigate: true))).StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+    }
+
+    /// <summary>A SCOPED handler of the app's, with a scoped dependency, is still built from the
+    /// request's scope once it is wrapped (found by Copilot on #686).</summary>
+    [Fact]
+    public async Task AnAppsScopedResultHandler_IsResolvedFromTheRequestsScope()
+    {
+        var (app, client) = await StartAsync(scopedTeapot: true);
+        await using var _ = app;
+
+        var first = await client.SendAsync(Get("/backoffice/queue"));
+        var second = await client.SendAsync(Get("/backoffice/queue"));
+
+        ((int)first.StatusCode).Should().Be(418);
+        first.Headers.GetValues("X-Clock").Single().Should().NotBe(second.Headers.GetValues("X-Clock").Single(),
+            "each request builds the handler's scoped dependency of its own");
+        (await client.SendAsync(Get("/backoffice/queue", navigate: true))).StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+    }
+
+    /// <summary>The 404 page a URL that matches nothing reaches through the fallback carries no endpoint
+    /// of its own: its requirement is asked before it is built (found by Copilot on #686).</summary>
+    [Fact]
+    public async Task AProtected404Page_IsNotDrawnForAVisitorItRefuses()
+    {
+        var (app, client) = await StartAsync(protectedErrorPages: true);
+        await using var _ = app;
+
+        var anonymous = await client.SendAsync(Get("/no/such/route"));
+        anonymous.StatusCode.Should().Be(HttpStatusCode.NotFound);
+        (await anonymous.Content.ReadAsStringAsync()).Should().NotContain("NOT-FOUND-SECRET");
+
+        var allowed = await client.SendAsync(Get("/no/such/route", user: "ana", role: "backoffice"));
+        allowed.StatusCode.Should().Be(HttpStatusCode.NotFound);
+        (await allowed.Content.ReadAsStringAsync()).Should().Contain("NOT-FOUND-SECRET");
+    }
+
+    [Fact]
+    public async Task AProtected500Page_IsNotDrawnForAVisitorItRefuses()
+    {
+        var (app, client) = await StartAsync(protectedErrorPages: true);
+        await using var _ = app;
+
+        (await (await client.SendAsync(Get("/failing"))).Content.ReadAsStringAsync()).Should().NotContain("ERROR-SECRET");
+        (await (await client.SendAsync(Get("/failing", user: "ana", role: "backoffice"))).Content.ReadAsStringAsync())
+            .Should().Contain("ERROR-SECRET");
     }
 
     [Fact]

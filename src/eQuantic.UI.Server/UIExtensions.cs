@@ -103,18 +103,7 @@ public static class UIExtensions
         // which the router acts on, instead of a challenge a fetch cannot follow (#673).
         // It WRAPS the handler the app registered before AddUI, so the app's own answers stand for
         // every request that is not a navigation; the framework's when there is none.
-        var appHandler = services.LastOrDefault(d =>
-            d.ServiceType == typeof(Microsoft.AspNetCore.Authorization.IAuthorizationMiddlewareResultHandler));
-        services.AddSingleton<Microsoft.AspNetCore.Authorization.IAuthorizationMiddlewareResultHandler>(provider =>
-            new NavigationAuthorizationResultHandler(appHandler switch
-            {
-                { ImplementationInstance: Microsoft.AspNetCore.Authorization.IAuthorizationMiddlewareResultHandler instance } => instance,
-                { ImplementationFactory: { } factory } =>
-                    (Microsoft.AspNetCore.Authorization.IAuthorizationMiddlewareResultHandler)factory(provider),
-                { ImplementationType: { } type } =>
-                    (Microsoft.AspNetCore.Authorization.IAuthorizationMiddlewareResultHandler)ActivatorUtilities.CreateInstance(provider, type),
-                _ => new Microsoft.AspNetCore.Authorization.Policy.AuthorizationMiddlewareResultHandler(),
-            }));
+        NavigationAuthorizationResultHandler.Decorate(services);
 
         // Add SSR rendering service
         services.TryAddSingleton<IServerRenderingService, ServerRenderingService>();
@@ -777,7 +766,9 @@ public static class UIExtensions
         {
             // 404 Not Found Handling — the fallback endpoint already set the status; here the
             // app's registered /404 page (if any) takes over the CONTENT.
-            if (options.NotFoundPageType != null)
+            // Only one the visitor may see: no endpoint carries its requirement on this path (#673).
+            if (options.NotFoundPageType != null
+                && await PageAuthorization.AllowsAsync(context, options.NotFoundPageType))
             {
                 page = options.NotFoundPageType;
                 
@@ -827,7 +818,8 @@ public static class UIExtensions
             // Actually, the SSR catch block above sets ssrEnabled = false.
             // If we are in Production and SSR failed, we should render the 500 page.
             var isDev = context.RequestServices.GetRequiredService<IWebHostEnvironment>().IsDevelopment();
-            if (!isDev && options.ErrorPageType != null && ssrContent.Contains("Loading..."))
+            if (!isDev && options.ErrorPageType != null && ssrContent.Contains("Loading...")
+                && await PageAuthorization.AllowsAsync(context, options.ErrorPageType))
             {
                 // Re-attempt SSR with the 500 page
                 try
