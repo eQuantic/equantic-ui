@@ -75,6 +75,81 @@ public class JsTemplateTests
             .Should().Be("(($v, _provider) => $eq.bool.convert($v))(f(), g())");
     }
 
+    /// <summary>
+    /// A plain name inside the template's function is read again on each call: a selector that
+    /// reassigns its own variable made the later elements call the new delegate, where C# read the
+    /// argument once (Copilot's review of #661).
+    /// </summary>
+    [Fact]
+    public void APlainNameInsideTheTemplatesOwnFunction_IsReadOnce()
+    {
+        Write(JsExpr.Template("{0}.reduce(($sum, $x) => $sum + {1}($x), 0)", JsExpr.Identifier("xs"), JsExpr.Identifier("selector")))
+            .Should().Be("(($0, $1) => $0.reduce(($sum, $x) => $sum + $1($x), 0))(xs, selector)");
+    }
+
+    /// <summary>
+    /// A part holding a template of its own declares that template's names, and its <c>$x</c> is not
+    /// the <c>$x</c> of the function around it: <c>Intersect(Other().DistinctBy(x => x))</c> stayed in
+    /// the filter and called <c>Other()</c> once per element (Copilot's review of #661).
+    /// </summary>
+    [Fact]
+    public void APartThatDeclaresTheFunctionsNameItself_IsBoundOnce()
+    {
+        Write(JsExpr.Template("[...new Set({0})].filter(($x) => {1}.includes($x))",
+                Call("f()"), Call("(($arr) => $arr.filter(($x) => $x > 0))(g())")))
+            .Should().Be("(($0, $1) => [...new Set($0)].filter(($x) => $1.includes($x)))(f(), (($arr) => $arr.filter(($x) => $x > 0))(g()))");
+    }
+
+    /// <summary>
+    /// A plain name read twice is inlined only while nothing else in the template runs code between
+    /// the reads. A lambda the template calls, or a part that is not a name or a literal, can reassign
+    /// it: <c>xs.Average(x => { xs = new[] { 1 }; return x; })</c> divided the first array's total by
+    /// the second array's length (Copilot's second review of #661).
+    /// </summary>
+    [Fact]
+    public void APlainNameReadTwice_IsBound_WhenTheTemplateRunsCodeBetweenTheReads()
+    {
+        Write(JsExpr.Template("({0}.reduce(($sum, $x) => $sum + ({1})($x), 0) / {0}.length)",
+                JsExpr.Identifier("xs"), JsExpr.Arrow("v", JsExpr.Identifier("v"))))
+            .Should().Be("(($0) => ($0.reduce(($sum, $x) => $sum + ((v) => v)($x), 0) / $0.length))(xs)");
+        Write(JsExpr.Template("({0}.indexOf({1}) + {0}.length)", JsExpr.Identifier("xs"), Call("f()")))
+            .Should().Be("(($0) => ($0.indexOf(f()) + $0.length))(xs)");
+        Write(JsExpr.Template("{0}[{0}.length - {1}]", JsExpr.Identifier("xs"), JsExpr.Literal("1")))
+            .Should().Be("xs[xs.length - 1]");
+        // A call that runs after the last read cannot change what the reads saw.
+        Write(JsExpr.Template("({0}.length > 0 ? {0} : [{1}])", JsExpr.Identifier("xs"), Call("f()")))
+            .Should().Be("(xs.length > 0 ? xs : [f()])");
+    }
+
+    /// <summary>
+    /// A name a string quotes is not a read of it: <c>Intersect(Other("$x"))</c> kept <c>Other</c> inside
+    /// the filter, which declares <c>$x</c>, and called it once per element (Copilot's second review of
+    /// #661). An interpolation is code, and a string that does not close leaves the text as it is, so
+    /// a real read is never missed.
+    /// </summary>
+    [Fact]
+    public void ANameAStringQuotes_IsNotARead()
+    {
+        const string filter = "[...new Set({0})].filter(($x) => {1}.includes($x))";
+        Write(JsExpr.Template(filter, Call("f()"), Call("other(\"$x\")")))
+            .Should().Be("(($0, $1) => [...new Set($0)].filter(($x) => $1.includes($x)))(f(), other(\"$x\"))");
+        Write(JsExpr.Template(filter, Call("f()"), Call("other('$x')")))
+            .Should().Be("(($0, $1) => [...new Set($0)].filter(($x) => $1.includes($x)))(f(), other('$x'))");
+        Write(JsExpr.Template(filter, Call("f()"), Call("other(`a${$x}`)")))
+            .Should().Be("[...new Set(f())].filter(($x) => other(`a${$x}`).includes($x))");
+        Write(JsExpr.Template(filter, Call("f()"), Call("split(/\"/).concat($x)")))
+            .Should().Be("[...new Set(f())].filter(($x) => split(/\"/).concat($x).includes($x))");
+    }
+
+    /// <summary>A hole past nine: a comparator with eleven keys held `{10}` as text (Copilot's review of #661).</summary>
+    [Fact]
+    public void AHoleNumberedPastNine_IsFilled()
+    {
+        var parts = Enumerable.Range(0, 12).Select(i => (JsExpr)JsExpr.Literal(i.ToString())).ToArray();
+        Write(JsExpr.Template(string.Join(", ", Enumerable.Range(0, 12).Select(i => $"{{{i}}}")), parts))
+            .Should().Be(string.Join(", ", Enumerable.Range(0, 12)));
+    }
+
     [Fact]
     public void BindingALaterPart_BindsTheEarlierOnes_ToKeepEvaluationOrder()
     {
@@ -101,9 +176,10 @@ public class JsTemplateTests
         // A call C# evaluates AFTER the name must not run before the name is read.
         Write(JsExpr.Template("f({1}, {0})", JsExpr.Identifier("a"), Call("g()")))
             .Should().Be("(($0, $1) => f($1, $0))(a, g())");
-        // Nor may a name be read a second time after a call that runs between its two reads.
+        // Nor may a name be read a second time after a call that runs between its two reads: the name
+        // is bound, read once before the call, which then stays where C# runs it.
         Write(JsExpr.Template("({0} === {1} ? {0} : 0)", JsExpr.Identifier("a"), Call("g()")))
-            .Should().Be("(($0, $1) => ($0 === $1 ? $0 : 0))(a, g())");
+            .Should().Be("(($0) => ($0 === g() ? $0 : 0))(a)");
     }
 
     [Fact]

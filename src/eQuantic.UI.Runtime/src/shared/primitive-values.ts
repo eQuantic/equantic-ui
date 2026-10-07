@@ -12,7 +12,9 @@
  * interfaces, which are resolved by name and never imported.
  */
 
+import { exception } from '../utils/exceptions';
 import { hashesByValue } from '../utils/hash';
+import type { HydrationSpec } from '../utils/hydrate';
 
 /** The C# `ImageData` — a picture the user chose, as bytes plus what they are. */
 export class ImageData {
@@ -105,6 +107,64 @@ export class WindowSizeClasses {
   }
 }
 
+/**
+ * The C# `ServerTopic<T>` — a topic's name, and the hydration spec of what it carries. `T` is erased
+ * here, so eqc passes its spec after the name (`[HydratesTypeArgument]`), the one a Server Action's
+ * result is revived with, and `IServerEvents` revives every payload published to the topic with it.
+ * Null where the payload needs no revival. Two topics are equal when their names and specs are, as two
+ * C# topics are when their names and payload types are.
+ */
+export class ServerTopic {
+  constructor(
+    readonly name: string,
+    readonly spec: HydrationSpec | null = null,
+  ) {
+    // `ArgumentException.ThrowIfNullOrEmpty(name)`, as the C# constructor refuses it.
+    if (name == null)
+      throw exception('System.ArgumentNullException', "Value cannot be null. (Parameter 'name')");
+    if (name.length === 0)
+      throw exception(
+        'System.ArgumentException',
+        "The value cannot be an empty string. (Parameter 'name')",
+      );
+  }
+
+  toString(): string {
+    return this.name;
+  }
+
+  /** Where a topic that crossed the wire keeps the spec it revives with (`hydrate`). */
+  static readonly $typeArguments = ['spec'] as const;
+}
+
+/**
+ * The C# `ServerConnection` — where the page's connection to the server's events stands, as the
+ * `ServerConnectionState` enum's wire string ('disconnected' | 'connecting' | 'connected' |
+ * 'reconnecting'), and the id of the last event received.
+ */
+export class ServerConnection {
+  /** With no arguments, the C# struct's zero: disconnected, no event received (`[ZeroConstructs]`). */
+  constructor(
+    readonly state: string = 'disconnected',
+    readonly lastEventId: string | null = null,
+  ) {}
+
+  static readonly disconnected = new ServerConnection('disconnected', null);
+}
+
+/** The C# `ServerTopicRefusal` — a topic the server did not bind, and why, as the
+ * `ServerTopicRefusalReason` enum's wire string ('forbidden' | 'unknown' | 'limitReached' | 'failed'). */
+export class ServerTopicRefusal {
+  readonly topic: string;
+  readonly reason: string;
+
+  /** With no arguments, the C# struct's zero: no topic, and the enum's first reason (`[ZeroConstructs]`). */
+  constructor(topic: string | null = null, reason = 'forbidden') {
+    this.topic = topic as string;
+    this.reason = reason;
+  }
+}
+
 /** The twins of the vocabulary's records and structs: each hashes by its members, as `equals`
  * compares it (`ValueTwinHashTests` holds this list to the C#). */
 hashesByValue(
@@ -115,4 +175,7 @@ hashesByValue(
   NetworkState,
   SpringSpec,
   MotionSpec,
+  ServerTopic,
+  ServerConnection,
+  ServerTopicRefusal,
 );

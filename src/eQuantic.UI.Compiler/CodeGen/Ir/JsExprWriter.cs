@@ -117,12 +117,16 @@ public static class JsExprWriter
         return (block.Text.Contains('\n') ? text.Resume() : text).Done();
     }
 
-    private static readonly Regex Hole = new(@"\{(\d)\}", RegexOptions.Compiled);
+    private static readonly Regex Hole = new(@"\{(\d+)\}", RegexOptions.Compiled);
 
     /// <summary>
     /// Single evaluation, decided here and nowhere else. A part the template mentions more than
-    /// once is bound to a parameter of an arrow and passed exactly once — unless it is a plain name
-    /// or a literal, whose repeated read no program can observe, in which case it is inlined. Once
+    /// once is bound to a parameter of an arrow and passed exactly once — unless it is a literal, or a
+    /// plain name that nothing can reassign between its reads, in which case it is inlined. A lambda
+    /// among the parts can, since the template may call it anywhere, and so can a part that runs code
+    /// where it stands between the first read and the last:
+    /// <c>xs.Average(x => { xs = new[] { 1 }; return x; })</c> divided the first array's total by the
+    /// second array's length. Once
     /// any part is bound, every earlier part that is not <see cref="IsFixed">fixed</see> is bound
     /// too, so the arguments are still evaluated in the order C# evaluates them (receiver first,
     /// then each argument). The fill is ONE pass — a part's text is never scanned for holes of its
@@ -131,9 +135,12 @@ public static class JsExprWriter
     /// A part whose hole sits inside a function the template itself defines is bound the same way,
     /// however many times it is mentioned: there it ran once per call of that function, where C#
     /// evaluated it once, before the call it is an argument of (<see cref="InsideAFunction"/>, #657).
-    /// Two stay where they are: a lambda written in place, and a part that reads a name the template's
-    /// own function declares, which only exists in there: <c>(($v, _provider) => {0})(…)</c> hands its
-    /// <c>{0}</c> the <c>$v</c> it converts (<see cref="DeclaredBy"/>).
+    /// A plain name too: read again on each call, it is whatever the function's earlier calls left in
+    /// it, where C# read it once (a selector that reassigns its own variable). Only what is
+    /// <see cref="IsFixed">fixed</see> stays where it is, a lambda written in place among it, and so
+    /// does a part that reads a name the template's own function declares, which only exists in there:
+    /// <c>(($v, _provider) => {0})(…)</c> hands its <c>{0}</c> the <c>$v</c> it converts
+    /// (<see cref="DeclaredBy"/>).
     /// </para>
     /// </summary>
     private static JsWritten RenderTemplate(JsTemplate template)
@@ -153,8 +160,11 @@ public static class JsExprWriter
 
         var bound = new bool[parts.Count];
         for (var i = 0; i < parts.Count; i++)
-            bound[i] = (uses[i] > 1 || deferred[i] && !IsFunctionLiteral(parts[i]) && !Reads(parts[i], declared))
-                && !IsInlinable(parts[i]);
+            bound[i] = uses[i] > 1 && !IsInlinable(parts[i])
+                || deferred[i] && !IsFixed(parts[i]) && !Reads(parts[i], declared);
+        // A plain name read twice, once the parts that run first are known.
+        for (var i = 0; i < parts.Count; i++)
+            bound[i] |= uses[i] > 1 && !IsFixed(parts[i]) && Reassignable(i, parts, holes, bound);
         var last = Array.LastIndexOf(bound, true);
         // A bound part runs FIRST, as the arrow's argument, and a name left inline is read later,
         // in the body, after whatever that part did. C# had read the name before it: a key whose
@@ -202,6 +212,24 @@ public static class JsExprWriter
         var names = string.Join(", ", indexes.Select(i => "$" + i + (template.Annotate ? ": any" : "")));
         return new JsWrittenBuilder().Add($"(({names}) => ").Add(body.Done()).Add(")(")
             .AddJoined(", ", indexes.Select(i => Written(parts[i]))).Add(")").Done();
+    }
+
+    /// <summary>Whether something in the template can reassign the plain name of part
+    /// <paramref name="name"/> between its first read and its last: a lambda among the parts, which the
+    /// template may call anywhere, or a part that runs code (neither a name nor a literal) with a hole
+    /// between the two reads. A part whose holes all come after the last read runs after it, and one
+    /// bound for its own reasons runs before the first.</summary>
+    private static bool Reassignable(int name, IReadOnlyList<JsExpr> parts, MatchCollection holes, bool[] bound)
+    {
+        var reads = holes.Where(hole => int.Parse(hole.Groups[1].Value) == name).Select(hole => hole.Index).ToArray();
+        var (first, last) = (reads.Min(), reads.Max());
+        for (var i = 0; i < parts.Count; i++)
+        {
+            if (i == name || IsInlinable(parts[i]) || bound[i]) continue;
+            if (IsFunctionLiteral(parts[i])) return true;
+            if (holes.Any(hole => int.Parse(hole.Groups[1].Value) == i && hole.Index > first && hole.Index < last)) return true;
+        }
+        return false;
     }
 
     /// <summary>
@@ -300,12 +328,87 @@ public static class JsExprWriter
         }
     }
 
-    /// <summary>Whether <paramref name="part"/> reads one of <paramref name="names"/>.</summary>
+    /// <summary>Whether <paramref name="part"/> reads one of <paramref name="names"/>: one it does not
+    /// declare itself. A part holding a template of its own declares that template's names, and its
+    /// <c>$x</c> is not the <c>$x</c> of the function around it: <c>Intersect</c>'s second sequence,
+    /// <c>Other().DistinctBy(…)</c>, read as reading the filter's element, stayed inside the filter
+    /// and called <c>Other()</c> once per element. A name a string quotes is not read either
+    /// (<see cref="CodeOf"/>).</summary>
     private static bool Reads(JsExpr part, HashSet<string> names)
     {
         if (names.Count == 0) return false;
-        var text = Written(part).Text;
-        return names.Any(name => Regex.IsMatch(text, $@"(?<![\w$]){Regex.Escape(name)}(?![\w$])"));
+        var code = CodeOf(Written(part).Text);
+        var own = DeclaredBy(code);
+        return names.Any(name => !own.Contains(name) && Regex.IsMatch(code, $@"(?<![\w$]){Regex.Escape(name)}(?![\w$])"));
+    }
+
+    /// <summary>
+    /// The text with every string's characters blanked, so a name a string quotes is not taken for a
+    /// read of it: <c>Other("$x")</c> does not read the filter's <c>$x</c>. A template string's
+    /// interpolations are code and stay. A string that does not close (a quote inside a regular
+    /// expression literal) leaves the whole text as it is, so a real read is never missed: a part
+    /// taken for a reader stays where it was, and only a part taken for a non-reader moves.
+    /// </summary>
+    private static string CodeOf(string text)
+    {
+        var code = text.ToCharArray();
+        for (var i = 0; i < code.Length; i++)
+        {
+            if (code[i] is not ('\'' or '"' or '`')) continue;
+            i = BlankString(code, i);
+            if (i < 0) return text;
+        }
+        return new string(code);
+    }
+
+    /// <summary>Blanks the string opening at <paramref name="open"/> and answers the index of its closing
+    /// quote, or -1 when it does not close. In a template string, <c>${…}</c> is code: it is passed
+    /// over to its closing brace, through the braces and strings inside it.</summary>
+    private static int BlankString(char[] code, int open)
+    {
+        var quote = code[open];
+        for (var i = open + 1; i < code.Length; i++)
+        {
+            if (code[i] == quote) return i;
+            if (code[i] == '\\')
+            {
+                code[i] = ' ';
+                if (++i < code.Length) code[i] = ' ';
+                continue;
+            }
+            if (quote == '`' && code[i] == '$' && i + 1 < code.Length && code[i + 1] == '{')
+            {
+                i = ClosingBrace(code, i + 2);
+                if (i < 0) return -1;
+                continue;
+            }
+            code[i] = ' ';
+        }
+        return -1;
+    }
+
+    private static int ClosingBrace(char[] code, int from)
+    {
+        var depth = 0;
+        for (var i = from; i < code.Length; i++)
+        {
+            switch (code[i])
+            {
+                case '\'' or '"' or '`':
+                    i = BlankString(code, i);
+                    if (i < 0) return -1;
+                    break;
+                case '{':
+                    depth++;
+                    break;
+                case '}' when depth == 0:
+                    return i;
+                case '}':
+                    depth--;
+                    break;
+            }
+        }
+        return -1;
     }
 
     /// <summary>The index of the quote that closes the string opening at <paramref name="open"/>,

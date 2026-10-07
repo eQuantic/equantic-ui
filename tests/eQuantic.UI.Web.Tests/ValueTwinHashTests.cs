@@ -28,10 +28,7 @@ public class ValueTwinHashTests
     public void EveryHandWrittenTwinOfAValueType_HashesByValue_AndNoOtherClassDoes()
     {
         var shared = Path.Combine(RepoRoot(), "src", "eQuantic.UI.Runtime", "src", "shared");
-        var vocabulary = typeof(Primitives.VisualNode).Assembly.GetTypes()
-            .Where(type => type.IsPublic)
-            .GroupBy(type => type.Name)
-            .ToDictionary(group => group.Key, group => group.First(), StringComparer.Ordinal);
+        var vocabulary = VocabularyTypesByTwinName.Get();
 
         var offenders = new List<string>();
         var twins = 0;

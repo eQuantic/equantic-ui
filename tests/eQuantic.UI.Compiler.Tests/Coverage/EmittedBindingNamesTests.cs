@@ -20,10 +20,6 @@ namespace eQuantic.UI.Compiler.Tests.Coverage;
 /// </summary>
 public class EmittedBindingNamesTests
 {
-    /// <summary>The bindings the emitter declares that are C#'s own names: a setter's parameter is
-    /// <c>value</c> because the setter's body, which the developer wrote, reads it by that name.</summary>
-    private static readonly HashSet<string> CSharpsOwn = new(StringComparer.Ordinal) { "value" };
-
     private static string RepoRoot([CallerFilePath] string sourcePath = "") =>
         Path.GetFullPath(Path.Combine(Path.GetDirectoryName(sourcePath)!, "..", "..", ".."));
 
@@ -101,7 +97,7 @@ public class EmittedBindingNamesTests
     public void EveryBindingTheEmittedCodeDeclares_StartsWithADollar()
     {
         var offenders = DeclaredBindings()
-            .Where(binding => !binding.Name.StartsWith('$') && !CSharpsOwn.Contains(binding.Name))
+            .Where(binding => !binding.Name.StartsWith('$'))
             .Select(binding => $"{binding.Name} at {binding.Where}")
             .Distinct()
             .ToList();

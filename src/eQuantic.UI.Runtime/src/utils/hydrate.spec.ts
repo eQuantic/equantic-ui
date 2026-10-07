@@ -165,6 +165,26 @@ describe('typed hydration', () => {
     const rect = new Rect(1, 2, 3, 4);
     expect(hydrate(rect, { of: Rect, members: { x: 'single' } })).toBe(rect);
   });
+
+  // A twin that revives what it receives of a type argument (ServerTopic<T>) keeps each argument's
+  // spec in the member its `$typeArguments` names: the wire never carries one, and a twin rebuilt
+  // without it revived nothing it received.
+  it('keeps the specs of the type arguments a twin revives, in the members it names', () => {
+    class Holder {
+      declare readonly name: string;
+      declare readonly first: HydrationSpec | null;
+      declare readonly second: HydrationSpec | null;
+      static readonly $typeArguments = ['first', 'second'] as const;
+    }
+    const spec: HydrationSpec = { of: Holder, members: {}, typeArguments: ['decimal', null] };
+
+    const holder = hydrate({ name: 'x' }, spec) as Holder;
+
+    expect(holder).toBeInstanceOf(Holder);
+    expect(holder.name).toBe('x');
+    expect(holder.first).toBe('decimal');
+    expect(holder.second).toBeNull();
+  });
 });
 
 describe('a tuple', () => {

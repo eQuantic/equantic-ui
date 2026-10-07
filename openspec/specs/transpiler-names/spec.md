@@ -151,6 +151,13 @@ A name written with C#'s verbatim escape SHALL be written without it: a member a
 - **WHEN** a loop labeled `package` is left with `continue package` and `break package`
 - **THEN** the module parses and the loop counts as in .NET
 
+#### Scenario: A type parameter written @class, one level down
+
+- **WHEN** a method declares `Count<@class>(IReadOnlyList<@class> values, @class[] more)`, in a plain
+  class or in a component
+- **THEN** it is declared `count<class$>`, its annotations say `class$[]`, the module parses, and it
+  counts as in .NET
+
 ### Requirement: A member reached through using static translates as its qualified spelling
 
 A .NET type's member reached bare through `using static` SHALL be converted as its qualified spelling is. One the qualified spelling does not translate either SHALL fail the build with EQ2004, reported where the bare spelling is written.
