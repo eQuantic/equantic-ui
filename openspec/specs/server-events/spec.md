@@ -75,9 +75,11 @@ it.
 
 Every subscription SHALL be authorized by the server before the topic is bound to the connection.
 A topic SHALL be matched against templates in ASP.NET Core's route syntax, each with a policy,
-anonymous access or a delegate that receives the `HttpContext` and the template's values. A topic no
-template matches SHALL be refused. A refused subscription SHALL be reported to the component that
-asked, and SHALL receive nothing.
+anonymous access or a delegate that receives the `HttpContext` and the template's values. Of the
+templates that match a topic, the ones whose literals fix the most of it SHALL rule, each of their
+rules SHALL allow the subscription, and the topic SHALL carry the values of each. A topic no template
+matches SHALL be refused. A refused subscription SHALL be reported to the component that asked, and
+SHALL receive nothing.
 
 #### Scenario: A policy the user meets
 
@@ -119,6 +121,13 @@ asked, and SHALL receive nothing.
 
 - **WHEN** a library and the app each call `UseServerEvents` with their own topics
 - **THEN** both sets of topics are authorized, over one set of endpoints
+
+#### Scenario: Two rules for one topic
+
+- **WHEN** a library lets anyone hear `prices`, and the app, calling `UseServerEvents` after it,
+  requires a signed-in user for `prices`
+- **THEN** an anonymous page is refused `prices` and a signed-in one is bound: the app tightens a topic
+  a library declared, and nothing loosens it
 
 #### Scenario: A policy restricted to a scheme
 

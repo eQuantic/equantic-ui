@@ -1614,8 +1614,10 @@ record of a release, the wiki's Upgrading page is the distillate.
   evaluates an endpoint's; a generic record's type argument crossed unrevived, and a constructed one is
   now described by its own members; a bind whose answer was lost was never released; a reading and a
   refusal nobody assigned were null in the browser; a template's defaults never reached its matcher;
-  and the test stream's wait for an event never failed while heartbeats came. The served runtime grew
-  3,124 gzipped bytes.
+  and the test stream's wait for an event never failed while heartbeats came. Its third found one: of
+  two rules for one topic, a library's and the app's, the first registered decided alone, so a
+  library's anonymous topic hid the app's that required a user; every rule that fixes as much of a topic
+  now rules on it, each allowing it or not. The served runtime grew 3,124 gzipped bytes.
   Migration: `ServerActionHub`, its route `/_equantic/hub` and the `AddSignalR()` call `AddUI` made
   are gone; an app that injected `IHubContext<ServerActionHub>`, which nothing documented, publishes
   through `IServerEventPublisher`, and an app that maps hubs of its own calls `AddSignalR()` itself. Proposed and archived through OpenSpec (`openspec/specs/server-events`).
