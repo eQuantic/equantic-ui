@@ -341,12 +341,12 @@ public static class UIExtensions
             if (File.Exists(path))
             {
                 context.Response.ContentType = "application/javascript";
-                // Hot reload rewrites fixed-name bundles in place — immutable caching would pin the
-                // browser to the pre-edit code forever. Dev revalidates; prod stays immutable.
-                var uiOptions = context.RequestServices.GetRequiredService<UIOptions>();
-                var dev = uiOptions.HotReload
-                    ?? context.RequestServices.GetRequiredService<IWebHostEnvironment>().IsDevelopment();
-                context.Response.Headers["Cache-Control"] = dev
+                // Hot reload rewrites fixed-name bundles in place, and the build id in their URL is
+                // the process's — immutable caching would pin the browser to the pre-edit code
+                // forever. A rebuilding app revalidates; any other stays immutable.
+                var hotReloads = context.RequestServices.GetRequiredService<UIOptions>()
+                    .HotReloads(context.RequestServices.GetRequiredService<IWebHostEnvironment>());
+                context.Response.Headers["Cache-Control"] = hotReloads
                     ? "no-cache"
                     : "public, max-age=31536000, immutable";
                 await context.Response.SendFileAsync(path);
@@ -409,10 +409,11 @@ public static class UIExtensions
     {
         var options = endpoints.ServiceProvider.GetRequiredService<UIOptions>();
 
-        // Phase 3 hot reload — DEVELOPMENT only unless forced: watch sources, re-run the SDK's
-        // eqc target, notify browsers over SSE (the runtime replays live state after the reload).
+        // Phase 3 hot reload — in Development and under dotnet watch, unless the app says: watch
+        // sources, re-run the SDK's eqc target, notify browsers over SSE (the runtime replays live
+        // state after the reload).
         var environment = endpoints.ServiceProvider.GetRequiredService<Microsoft.AspNetCore.Hosting.IWebHostEnvironment>();
-        if (options.HotReload ?? environment.IsDevelopment())
+        if (options.HotReloads(environment))
         {
             var hotReload = new HotReload.HotReloadService(environment.ContentRootPath);
             hotReload.Start();
@@ -857,6 +858,8 @@ public static class UIExtensions
             Page: page?.Name,
             Version: BuildId,
             Ssr: ssrEnabled,
+            // Whether this server streams rebuilds, so the page listens exactly when there is a stream.
+            HotReload: options.HotReloads(context.RequestServices.GetRequiredService<IWebHostEnvironment>()),
             // The cookie config crosses to the browser because the browser is what WRITES it while the
             // server READS it. Two places to configure would drift, and a drifted name fails silently:
             // the server reads a cookie nobody writes, so persistence stops while everything still
@@ -1066,8 +1069,26 @@ public class UIOptions
     /// </remarks>
     public bool EnableSsr { get; set; } = true;
 
-    /// <summary>Phase 3 hot reload (SSE + eqc rebuild on save). Null = auto: ON in Development.</summary>
+    /// <summary>
+    /// Phase 3 hot reload (SSE + eqc rebuild on save). Null = auto: on in Development, and under
+    /// <c>dotnet watch</c> whatever the environment, since an app run without a launch profile is a
+    /// Production one.
+    /// </summary>
     public bool? HotReload { get; set; }
+
+    /// <summary>
+    /// Whether this app rebuilds its modules on a save and reloads the browsers watching it:
+    /// <see cref="HotReload"/> when the app says, otherwise the Development environment or a run under
+    /// <c>dotnet watch</c>, which sets <c>DOTNET_WATCH</c> to 1 on the app it runs. One decision, read
+    /// by the stream that announces a rebuild, the cache of the modules a rebuild rewrites and the
+    /// client that listens, which agreed before only while nothing set them apart (#627).
+    /// </summary>
+    internal bool HotReloads(IHostEnvironment environment) =>
+        HotReloads(environment, Environment.GetEnvironmentVariable("DOTNET_WATCH"));
+
+    /// <summary><see cref="HotReloads(IHostEnvironment)"/> with the variable dotnet watch sets given.</summary>
+    internal bool HotReloads(IHostEnvironment environment, string? dotnetWatch) =>
+        HotReload ?? (environment.IsDevelopment() || dotnetWatch == "1");
 
     public UIOptions WithSsr(bool enabled = true)
     {

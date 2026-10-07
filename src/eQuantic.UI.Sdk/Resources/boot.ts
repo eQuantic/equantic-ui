@@ -70,6 +70,11 @@ function isDev(): boolean {
   return typeof window !== 'undefined' && window.__EQ_DEV__ === true;
 }
 
+/** Whether the server streams rebuilds at /_equantic/hmr: its own decision, sent in the configuration. */
+function hotReloads(): boolean {
+  return typeof window !== 'undefined' && window.__EQ_CONFIG?.hotReload === true;
+}
+
 // --- Initialization ---
 let initialized = false;
 
@@ -92,11 +97,14 @@ export async function boot(): Promise<void> {
   // Phase 3 hot reload replay: state captured just before the HMR reload re-enters through the
   // ORDINARY SSR-hydration mechanic (window.__INITIAL_STATE__ + hydrateValue) — zero new paths.
   //
-  // BOTH HALVES OF HOT RELOAD ASK isDev(), like every other developer facility in this file. They
-  // did not, and a production page paid for it on every load: a request to /_equantic/hmr that the
-  // server maps only in development, so a 404 in the console of every shipped app (#240), plus a
-  // sessionStorage marker read on a page that can never have written one.
-  if (isDev()) {
+  // BOTH HALVES OF HOT RELOAD ASK THE SERVER whether it streams rebuilds, the one decision that also
+  // maps the stream. Asking nothing, a production page paid on every load: a request to
+  // /_equantic/hmr the server had not mapped, so a 404 in the console of every shipped app (#240),
+  // plus a sessionStorage marker read on a page that can never have written one. Asking isDev()
+  // matched the server only while the app left HotReload unset: set either way, one half ran without
+  // the other, and under dotnet watch outside Development, where the server streams rebuilds since
+  // #627, the page would never have listened.
+  if (hotReloads()) {
     try {
       const saved = sessionStorage.getItem('__eq_hmr__');
       if (saved) {
@@ -559,9 +567,9 @@ function escapeHtml(unsafe: string): string {
 }
 
 /**
- * Phase 3 hot reload (v1): listen on the DEV-only SSE endpoint; on a rebuild, capture the live
- * page state (the stateful page's data fields) and reload — the boot replays it through the
- * SSR-hydration mechanic. In production the endpoint 404s and the source closes itself.
+ * Phase 3 hot reload (v1): listen on the SSE endpoint the server maps when it streams rebuilds; on a
+ * rebuild, capture the live page state (the stateful page's data fields) and reload — the boot
+ * replays it through the SSR-hydration mechanic. Called only when the server said it streams them.
  */
 function initHotReload(): void {
   if (typeof EventSource === 'undefined') return;
@@ -569,8 +577,8 @@ function initHotReload(): void {
     const source = new EventSource('/_equantic/hmr');
     // No close-on-error: EventSource RECONNECTS by itself after a transient drop, which is the
     // whole point of the API — closing on the first hiccup left hot reload silently dead minutes
-    // into every session. In production the endpoint 404s, and the browser abandons a non-200
-    // stream on its own (readyState CLOSED, no retries) — nothing leaks.
+    // into every session. A server restarted without the endpoint answers 404, and the browser
+    // abandons a non-200 stream on its own (readyState CLOSED, no retries) — nothing leaks.
     source.onmessage = () => {
       // The marker is written UNCONDITIONALLY: it is what tells the next boot to render with the
       // NEW code instead of hydrating the stale SSR. Gating it on captured state left every
