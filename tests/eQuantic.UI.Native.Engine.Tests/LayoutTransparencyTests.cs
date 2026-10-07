@@ -391,11 +391,9 @@ public class LayoutTransparencyTests
     /// </para>
     ///
     /// <para>
-    /// THE WIDTHS HERE ARE THE ONES WHERE THE ROOM BINDS, and the reason is a SEPARATE defect this
-    /// test found and does not fix — see
-    /// <see cref="ARichParagraphMeasuresNarrowerThanItsPlainTwin_BecauseItsSpacesCostNothing"/>.
-    /// Given room to spare the two disagree for a reason that has nothing to do with clamping, so
-    /// asserting parity there would be asserting two things and blaming this one.
+    /// THE WIDTHS HERE ARE THE ONES WHERE THE ROOM BINDS. Given room to spare the two agree as well,
+    /// which <see cref="ARichParagraphMeasuresAsItsPlainTwin"/> says on its own: it took the stand-in
+    /// measurer charging a space its advance (#285).
     /// </para>
     /// </summary>
     [Theory]
@@ -424,45 +422,23 @@ public class LayoutTransparencyTests
     }
 
     /// <summary>
-    /// A DEFECT THIS PR FOUND AND DELIBERATELY DOES NOT FIX, pinned so it cannot change unnoticed
-    /// and so the number is on the record.
-    ///
-    /// <para>
-    /// Every inter-word space in a RICH paragraph measures zero. <c>MeasureRuns</c> asks the
-    /// measurer for each piece including the spaces, and <c>ApproximateTextMeasurer</c> splits its
-    /// input on <c>' '</c> with <c>RemoveEmptyEntries</c> — so a lone space is an empty word list
-    /// and comes back 0 wide. The plain path never asks: it adds <c>Advance(' ')</c> between words
-    /// itself.
-    /// </para>
-    ///
-    /// <para>
-    /// Measured: identical for one word, and exactly 5.1dp short per GAP after that. A paragraph
-    /// with emphasis in it therefore claims less room than the same sentence without, which is a
-    /// different mechanism from the clamp this PR is about — it lives in the measurer, and changing
-    /// it moves every rich paragraph's geometry. Left for its own change rather than widened into
-    /// this one.
-    /// </para>
+    /// A rich paragraph measures as the same sentence without emphasis (#285). Every gap between its
+    /// words measured zero: <c>MeasureRuns</c> asks the measurer for each piece, the spaces included,
+    /// and <c>ApproximateTextMeasurer</c> split its input on spaces and threw them away, so a lone
+    /// space was an empty word list. The stand-in charges a space its advance now, as the shells'
+    /// measurers do, and the 5.1dp a gap was short is gone.
     /// </summary>
     [Fact]
-    public void ARichParagraphMeasuresNarrowerThanItsPlainTwin_BecauseItsSpacesCostNothing()
+    public void ARichParagraphMeasuresAsItsPlainTwin()
     {
         static float Unbounded(VisualNode t) => LayoutEngine.Layout(t, 4000, 300, Ctx).Bounds.Width;
 
-        static (float Rich, float Plain) Pair(string content) =>
-            (Unbounded(new Text("x") { Spans = [new TextRun(content)] }),
-             Unbounded(new Text(content, TypeRole.BodyL)));
-
-        var one = Pair("alpha");
-        var two = Pair("alpha beta");
-        var four = Pair("alpha beta gamma delta");
-
-        one.Rich.Should().BeApproximately(one.Plain, 0.01f,
-            "with no space in it there is nothing to lose, which is what says the loss is the spaces");
-
-        var perGap = two.Plain - two.Rich;
-        perGap.Should().BeGreaterThan(0, "a space costs nothing on the runs path and something on the other");
-        (four.Plain - four.Rich).Should().BeApproximately(perGap * 3, 0.01f,
-            "and it is exactly one space's width per gap — three gaps, three times the shortfall");
+        foreach (var content in new[] { "alpha", "alpha beta", "alpha beta gamma delta" })
+        {
+            var rich = Unbounded(new Text("x") { Spans = [new TextRun(content)] });
+            var plain = Unbounded(new Text(content, TypeRole.BodyL));
+            rich.Should().BeApproximately(plain, 0.01f, $"\"{content}\" is one sentence on either path");
+        }
     }
 
     /// <summary>
