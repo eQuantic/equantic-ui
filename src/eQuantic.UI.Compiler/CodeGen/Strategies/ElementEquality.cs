@@ -41,9 +41,13 @@ internal static class ElementEquality
     /// comparison generated from its element types. A record's member and a tuple's <c>Equals</c> are
     /// compared through it: <c>$eq.equals</c> walks an array element by element, so two records holding
     /// two arrays of the same items were equal where .NET compares the arrays by reference (#554).
+    /// A type the model could not give keeps <c>$eq.equals</c>, what every member was compared by.
+    /// <paramref name="hoist"/> names a generated comparison once, where a caller can hold it, so it is
+    /// not rebuilt on every call.
     /// </summary>
-    internal static string Compare(ITypeSymbol? type, string left, string right)
+    internal static string Compare(ITypeSymbol? type, string left, string right, Func<string, string>? hoist = null)
     {
+        if (type is null) return $"{Eq.Equals}({left}, {right})";
         var (equality, valueSafe) = Describe(type);
         if (valueSafe) return $"{Eq.Equals}({left}, {right})";
         var value = type.UnwrapNullable() ?? type;
@@ -54,7 +58,7 @@ internal static class ElementEquality
             null => $"{Eq.SameItem}({left}, {right})",
             "'own'" when value is { TypeKind: TypeKind.Class, SpecialType: SpecialType.None } => $"{Eq.SameItem}({left}, {right})",
             "'own'" => $"{Eq.SameKey}({left}, {right})",
-            _ => $"{equality}({left}, {right})",
+            _ => $"{hoist?.Invoke(equality) ?? equality}({left}, {right})",
         };
     }
 

@@ -301,9 +301,21 @@ public class RecordTypeEmitter
             if (baseName != null) sb.Append(" && super.equals(o)");
             else if (type is RecordDeclarationSyntax) sb.Append(" && o.constructor === this.constructor");
             // Each member as EqualityComparer<T>.Default compares its type (ElementEquality): an array
-            // by reference, where `$eq.equals` walked it element by element (#554).
-            foreach (var m in members) sb.Append($" && {ElementEquality.Compare(TypeOf(m), $"this.{m.Store}", $"o.{m.Store}")}");
+            // by reference, where `$eq.equals` walked it element by element (#554). A comparison
+            // generated from a tuple's element types is made once, a static of the twin, where it was
+            // looked up again on every call.
+            var generated = new List<string>();
+            string Hoist(string equality)
+            {
+                generated.Add(equality);
+                return $"{name}.$equality{generated.Count - 1}";
+            }
+            foreach (var m in members) sb.Append($" && {ElementEquality.Compare(TypeOf(m), $"this.{m.Store}", $"o.{m.Store}", Hoist)}");
             sb.Append("; } ");
+            for (var i = 0; i < generated.Count; i++)
+                sb.Append(tsTypeDeclarations
+                    ? $"static $equality{i}: (a: unknown, b: unknown) => boolean = {generated[i]}; "
+                    : $"static $equality{i} = {generated[i]}; ");
 
             // with(patch): a COPY, onto the prototype (a spread would drop the methods), then the
             // members the patch names. C# copies the fields and runs no initializer, and building it

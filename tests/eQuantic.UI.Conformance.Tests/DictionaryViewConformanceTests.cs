@@ -29,6 +29,7 @@ public class DictionaryViewConformanceTests
     // A key added while the keys are walked ends the walk; a value replaced does not.
     [InlineData("var d = new Dictionary<string, int> { [\"a\"] = 1 }; try { foreach (var k in d.Keys) d[\"z\"] = 2; return \"no\"; } catch (InvalidOperationException e) { return e.Message; }")] // "Collection was modified; enumeration operation may not execute."
     [InlineData("var d = new Dictionary<string, int> { [\"a\"] = 1 }; foreach (var v in d.Values) d[\"a\"] = 5; return d[\"a\"];")]                        // 5
+    [InlineData("var d = new Dictionary<int, int> { [1] = 1, [2] = 2, [3] = 3 }; foreach (var k in d.Keys) d.Remove(k); return d.Count;")]               // 0: a removal leaves the walk running
     // The capacity .NET settles on.
     [InlineData("return new Dictionary<string, int>().EnsureCapacity(10);")]                                                                              // 11
     [InlineData("var d = new Dictionary<string, int> { [\"a\"] = 1 }; return d.EnsureCapacity(2);")]                                                     // 3
