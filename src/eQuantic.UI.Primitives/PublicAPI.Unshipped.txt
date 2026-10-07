@@ -7,5 +7,6 @@ eQuantic.UI.Primitives.CodeSurface.Options.get -> eQuantic.UI.Primitives.VisualN
 eQuantic.UI.Primitives.CodeSurface.Options.init -> void
 eQuantic.UI.Primitives.CodeSurface.OptionsOrigin.get -> eQuantic.UI.Primitives.Point
 eQuantic.UI.Primitives.CodeSurface.OptionsOrigin.init -> void
+const eQuantic.UI.Primitives.Touch.MinPointerTarget = 24 -> float
 eQuantic.UI.Primitives.TwinIsTranspiledAttribute
 eQuantic.UI.Primitives.TwinIsTranspiledAttribute.TwinIsTranspiledAttribute() -> void

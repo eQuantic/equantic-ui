@@ -160,13 +160,14 @@ internal sealed partial class EmitVisitor
         if (dragOffset != 0) s.Builder.Pop();
     }
 
-    /// <summary>Hit contract (spec §08): every interactive node exposes ≥ 48dp per side — visual bounds
-    /// may be smaller; the hit rect expands symmetrically.</summary>
+    /// <summary>Hit contract (spec §08): every interactive node exposes ≥ 48dp per side under a finger,
+    /// and ≥ 24dp under a pointer — visual bounds may be smaller; the hit rect expands symmetrically.</summary>
     private static Rect ExpandHitRect(Rect bounds, Density density = Density.Comfortable)
     {
         // A POINTER lands where it is aimed: the §08 minimum is a FINGER's contract, and applying
-        // it to a dense toolbar grew every 26dp button into its neighbour's margin.
-        var minimum = density == Density.Compact ? 0 : Touch.MinTarget;
+        // it to a dense toolbar grew every 26dp button into its neighbour's margin. A pointer's target
+        // keeps WCAG 2.2's floor instead, which a 20dp checkbox needs and a 26dp button is past (#430).
+        var minimum = density == Density.Compact ? Touch.MinPointerTarget : Touch.MinTarget;
         var growX = MathF.Max(0, minimum - bounds.Width) / 2;
         var growY = MathF.Max(0, minimum - bounds.Height) / 2;
         return new Rect(bounds.X - growX, bounds.Y - growY, bounds.Width + growX * 2, bounds.Height + growY * 2);
