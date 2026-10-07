@@ -252,8 +252,8 @@ describe('DateTime — text that names no date', () => {
     expect(refusal(() => dateTime.parse('2026-01-01T24:00:00'))).toBe(
       "The DateTime represented by the string '2026-01-01T24:00:00' is not supported in calendar 'System.Globalization.GregorianCalendar'.",
     );
-    expect(refusal(() => dateTime.parse('01/15/2024 09:30:00 junk'))).toBe(
-      "String '01/15/2024 09:30:00 junk' was not recognized as a valid DateTime.",
+    expect(refusal(() => dateTime.parse('2026-01-15T09:30:00 junk'))).toBe(
+      "String '2026-01-15T09:30:00 junk' was not recognized as a valid DateTime.",
     );
   });
 

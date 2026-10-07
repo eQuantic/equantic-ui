@@ -125,7 +125,7 @@ public class DateTimeConformanceTests
     [InlineData("try { DateTime.Parse(\"0000-01-01\"); return \"no\"; } catch (FormatException e) { return e.Message; }")]          // the same
     [InlineData("try { DateTime.Parse(\"2026-01-01T24:00:00\"); return \"no\"; } catch (FormatException e) { return e.Message; }")] // "The DateTime represented by the string … is not supported in calendar 'System.Globalization.GregorianCalendar'."
     [InlineData("try { DateTime.Parse(\"2026-01-01T23:60:00\"); return \"no\"; } catch (FormatException e) { return e.Message; }")] // the same
-    [InlineData("try { DateTime.Parse(\"01/15/2024 09:30:00 junk\"); return \"no\"; } catch (FormatException e) { return e.Message; }")] // "String '…' was not recognized as a valid DateTime."
+    [InlineData("try { DateTime.Parse(\"2026-01-15T09:30:00 junk\"); return \"no\"; } catch (FormatException e) { return e.Message; }")] // "String '…' was not recognized as a valid DateTime."
     public void ADatesText_IsReadAsDotNetReadsIt(string statements)
     {
         Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
