@@ -30,7 +30,11 @@ public class DictionaryViewConformanceTests
     [InlineData("var d = new Dictionary<string, int> { [\"a\"] = 1 }; try { foreach (var k in d.Keys) d[\"z\"] = 2; return \"no\"; } catch (InvalidOperationException e) { return e.Message; }")] // "Collection was modified; enumeration operation may not execute."
     [InlineData("var d = new Dictionary<string, int> { [\"a\"] = 1 }; foreach (var v in d.Values) d[\"a\"] = 5; return d[\"a\"];")]                        // 5
     [InlineData("var d = new Dictionary<int, int> { [1] = 1, [2] = 2, [3] = 3 }; foreach (var k in d.Keys) d.Remove(k); return d.Count;")]               // 0: a removal leaves the walk running
-    // The capacity .NET settles on.
+    // An element as it is: a delegate read back from the values is the one stored, where it was bound
+    // to the snapshot and was another.
+    [InlineData("Func<int> f = () => 1; var d = new Dictionary<int, Func<int>> { [0] = f }; return d.Values.First() == f;")] // true
+    // The capacity .NET settles on, a copy's sized for what it copies.
+    [InlineData("var s = new Dictionary<string, int>(); for (var i = 0; i < 8; i++) s[\"k\" + i] = i; return new Dictionary<string, int>(s).EnsureCapacity(0);")] // 11, where it grew to 17
     [InlineData("return new Dictionary<string, int>().EnsureCapacity(10);")]                                                                              // 11
     [InlineData("var d = new Dictionary<string, int> { [\"a\"] = 1 }; return d.EnsureCapacity(2);")]                                                     // 3
     [InlineData("return new Dictionary<string, int>(10).EnsureCapacity(0);")]                                                                             // 11: the constructor's

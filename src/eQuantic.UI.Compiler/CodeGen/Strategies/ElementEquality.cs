@@ -9,9 +9,11 @@ namespace eQuantic.UI.Compiler.CodeGen.Strategies;
 /// number with NaN equal to NaN, a string, a char, a bool, a long, an enum, a Guid, an array, a
 /// delegate), <c>true</c> for VALUE (<c>$eq.equals</c>: a record, a struct, a decimal, a date, and a
 /// tuple, an anonymous type or a pair whose members all compare so), <c>'own'</c> where the type does not
-/// decide (<c>object</c>, an interface, a type parameter, a class a subclass may override <c>Equals</c>
-/// in), and a comparison GENERATED from the member types for a tuple, an anonymous type or a pair with a
-/// member <c>$eq.equals</c> would compare otherwise.
+/// decide (<c>object</c>, an interface a tuple implements, a type parameter, a class a subclass may
+/// override <c>Equals</c> in), <c>'item'</c> for an interface no tuple implements, whose value is found
+/// by reference or by its own <c>Equals</c> and never by its members (a list behind
+/// <c>IReadOnlyList&lt;int&gt;</c> is an array on the web), and a comparison GENERATED from the member
+/// types for a tuple, an anonymous type or a pair with a member <c>$eq.equals</c> would compare otherwise.
 /// <para>
 /// ONE decision for every search the comparer decides in .NET: a dictionary's keys and its
 /// <c>ContainsValue</c>, a set's elements, a list's and an array's <c>IndexOf</c>, <c>LastIndexOf</c>,
@@ -57,6 +59,7 @@ internal static class ElementEquality
             // never its members, which `sameKey` walks for a value that may be a tuple.
             null => $"{Eq.SameItem}({left}, {right})",
             "'own'" when value is { TypeKind: TypeKind.Class, SpecialType: SpecialType.None } => $"{Eq.SameItem}({left}, {right})",
+            "'item'" => $"{Eq.SameItem}({left}, {right})",
             "'own'" => $"{Eq.SameKey}({left}, {right})",
             _ => $"{hoist?.Invoke(equality) ?? equality}({left}, {right})",
         };
@@ -64,6 +67,17 @@ internal static class ElementEquality
 
     /// <summary>The equality, and whether <c>$eq.equals</c> answers what it answers for a value of the
     /// type: what lets a tuple of such members be compared by <c>$eq.equals</c> whole.</summary>
+    /// <summary>
+    /// Whether a value of this interface may be a value tuple, which is an array on the web and is
+    /// compared by its elements: one of the interfaces <c>ValueTuple</c> implements, read from
+    /// <c>ValueTuple</c> in the interface's own assembly. A collection's interface, or an app's, is
+    /// none of them.
+    /// </summary>
+    private static bool MayHoldATuple(INamedTypeSymbol face) =>
+        face.ContainingAssembly?.GetTypeByMetadataName("System.ValueTuple`2") is { } tuple
+        && tuple.AllInterfaces.Any(implemented =>
+            SymbolEqualityComparer.Default.Equals(implemented.OriginalDefinition, face.OriginalDefinition));
+
     private static (string? Equality, bool ValueSafe) Describe(ITypeSymbol? type)
     {
         var value = type.UnwrapNullable() ?? type;
@@ -92,6 +106,9 @@ internal static class ElementEquality
         return value switch
         {
             { SpecialType: SpecialType.System_Object or SpecialType.System_ValueType or SpecialType.System_Enum } => ("'own'", false),
+            // An interface no tuple implements holds a value found by reference or its own Equals: a
+            // list behind IReadOnlyList<int> compared by its elements found another list equal (#554).
+            INamedTypeSymbol { TypeKind: TypeKind.Interface } face when !MayHoldATuple(face) => ("'item'", false),
             { TypeKind: TypeKind.Interface or TypeKind.TypeParameter or TypeKind.Dynamic } => ("'own'", false),
             // A class of the app's or a library's, never a special one: `string` overrides Equals too,
             // and is a primitive on this side, which SameValueZero compares by value already. One with no

@@ -55,6 +55,11 @@ export class Dictionary<K, V> implements Iterable<Pair<K, V>> {
 
   constructor(entries?: Iterable<readonly [K, V]> | null, byValue: KeyEquality = false) {
     this.table = new SlotTable(byValue);
+    // A copy is sized for what it copies first, as .NET's sizes a dictionary's copy and a collection's
+    // by their count: it grew one insertion at a time, so eight entries copied made a capacity of 17
+    // where .NET makes 11. A LINQ result is an array here, and is sized like one.
+    const count = entries instanceof Dictionary ? entries.size : Array.isArray(entries) ? entries.length : 0;
+    if (count > 0) this.table.capacity = getPrime(count);
     // A constructor adds what it copies and what a collection initializer lists, as .NET's `Add`
     // does: a key already there is refused, where the indexer's write would replace it (#440).
     if (entries) for (const [key, value] of entries) this.add(key, value);
@@ -211,6 +216,10 @@ export class Dictionary<K, V> implements Iterable<Pair<K, V>> {
         // pass would copy every entry each time.
         if (property === 'length') return this.size;
         const array = current();
+        // An element as it is, a delegate held as a value included: only the array's own methods
+        // are bound to the snapshot they read, where every function was, and a delegate read back
+        // was another one.
+        if (Object.prototype.hasOwnProperty.call(array, property)) return Reflect.get(array, property, array);
         const value: unknown = Reflect.get(array, property, array);
         return typeof value === 'function' ? value.bind(array) : value;
       },
