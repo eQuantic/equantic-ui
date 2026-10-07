@@ -178,7 +178,10 @@ public class PinnedScrolledNativeTests
 
         page.ScrollTo(0);
         Frame(host, 2000);
-        Fill(Frame(host, 2050))!.Value.A.Should().BeInRange(1, 254, "and it fades out rather than vanishing");
+        var leaving = Fill(Frame(host, 2050))!.Value;
+        leaving.A.Should().BeInRange(1, 254, "and it fades out rather than vanishing");
+        (leaving.R, leaving.G, leaving.B).Should().Be((Veil.Light.R, Veil.Light.G, Veil.Light.B),
+            "keeping its hue, as the browser's premultiplied fade does, rather than darkening toward black");
         Fill(Frame(host, 2200)).Should().BeNull("gone once the glide ends");
     }
 }

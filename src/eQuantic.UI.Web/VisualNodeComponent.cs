@@ -15,22 +15,36 @@ namespace eQuantic.UI.Web;
 [Primitives.RuntimeProvided]
 public sealed class VisualNodeComponent : HtmlElement
 {
+    private static readonly AsyncLocal<Density?> _ambientDensity = new();
+
     private readonly IAppTheme _theme;
     private readonly float _typeScale;
-    private readonly Density _density;
+    private readonly Density? _density;
 
     /// <param name="node">The write-once subtree this component lowers.</param>
     /// <param name="theme">The token source; <see cref="PhotonTheme.Instance"/> when none is given.</param>
     /// <param name="typeScale">The type scale the subtree is built at.</param>
-    /// <param name="density">The density the subtree is built at: the request's, which the browser
-    /// reports (#623), so the client hydrates markup built for the pointer it has.</param>
+    /// <param name="density">The density the subtree is built at, or null for the render's
+    /// (<see cref="AmbientDensity"/>), which is the request's.</param>
     public VisualNodeComponent(VisualNode node, IAppTheme? theme = null, float typeScale = 1f,
-        Density density = Density.Comfortable)
+        Density? density = null)
     {
         Node = node;
         _theme = theme ?? PhotonTheme.Instance;
         _typeScale = typeScale;
         _density = density;
+    }
+
+    /// <summary>
+    /// The render-scoped density: the SSR pipeline arms the request's around a page render (#623), the
+    /// density the browser reported, so EVERY bridge in the tree is built at it, the page's root and one
+    /// an escape-hatch page composes itself alike, and the page's configuration says the same density
+    /// hydration lowers at. Null outside an SSR render, which builds Comfortable.
+    /// </summary>
+    public static Density? AmbientDensity
+    {
+        get => _ambientDensity.Value;
+        set => _ambientDensity.Value = value;
     }
 
     /// <summary>The wrapped abstract subtree — hosts unwrap it (e.g. the SSR pipeline probing the
@@ -45,5 +59,6 @@ public sealed class VisualNodeComponent : HtmlElement
     public StyleSink Styles { get; } = new();
 
     public override HtmlNode Render() =>
-        WebRealizer.Lower(Node, _theme, _typeScale, StyleSink.Ambient ?? Styles, _density).Render();
+        WebRealizer.Lower(Node, _theme, _typeScale, StyleSink.Ambient ?? Styles,
+            _density ?? AmbientDensity ?? Density.Comfortable).Render();
 }

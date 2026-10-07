@@ -202,6 +202,8 @@ export {
   setPhotonDensity,
   pointerDensity,
   rememberDensity,
+  densityForHydration,
+  settleDensity,
   getPhotonDensity,
   detectPhotonDensity,
   photonComponentContext,

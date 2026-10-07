@@ -77,6 +77,19 @@ public class DraggableRealizerTests
         StyleOf(node).Should().NotContain("translate");
     }
 
+    /// <summary>A NORMALIZED rest is a fraction of the surface's own extent, which a percentage of its own
+    /// box is, the extent the controller measures while it drags.</summary>
+    [Fact]
+    public void ANormalizedRest_IsAPercentageOfTheSurface()
+    {
+        var node = new Draggable(new Box(new BoxStyle { Width = 40, Height = 40 }), _ => { })
+        {
+            Axis = DragAxis.Horizontal, Min = 0, Max = 1, RestOffset = 0.25f, Normalized = true,
+        };
+
+        StyleOf(node).Should().Contain("translate: 25%");
+    }
+
     /// <summary>The server-rendered row under the pointer: the box's hover moves it, and the open
     /// offset stays, since the two are different properties now.</summary>
     [Fact]

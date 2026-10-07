@@ -801,9 +801,12 @@ internal sealed partial class WebLoweringVisitor
             // Photon translates the subtree it wraps and composes the box's own transforms inside it.
             if (draggable.RestOffset != 0)
             {
-                child.Style.Translate = draggable.Axis == DragAxis.Horizontal
-                    ? TokenCss.Px(draggable.RestOffset)
-                    : $"0 {TokenCss.Px(draggable.RestOffset)}";
+                // A NORMALIZED rest is a fraction of the surface's own extent, which a percentage of
+                // its own box is: written as pixels it rested a fraction of a pixel from zero.
+                var offset = draggable.Normalized
+                    ? $"{TokenCss.Number(draggable.RestOffset * 100)}%"
+                    : TokenCss.Px(draggable.RestOffset);
+                child.Style.Translate = draggable.Axis == DragAxis.Horizontal ? offset : $"0 {offset}";
             }
             // Declared at zero too: a release hands the position back to this markup, and the
             // surface glides to its rest from wherever the finger left it. JOINED to the box's own

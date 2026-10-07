@@ -1,6 +1,13 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { DENSITY_COOKIE } from './markers';
-import { pointerDensity, rememberDensity } from './photon-context';
+import {
+  densityForHydration,
+  getPhotonDensity,
+  pointerDensity,
+  rememberDensity,
+  setPhotonDensity,
+  settleDensity,
+} from './photon-context';
 
 /**
  * The density the SERVER is told (#623). It cannot see the pointer, so it rendered every page
@@ -57,5 +64,30 @@ describe('the density the server is told', () => {
 
     expect(written).toHaveLength(2);
     expect(document.cookie).toContain(`${DENSITY_COOKIE}=comfortable`);
+  });
+});
+
+describe('hydration at the served density, then one switch (#623)', () => {
+  it('hydrates at the density the server built the page at', () => {
+    expect(densityForHydration('comfortable', true, 'compact')).toBe('comfortable');
+    expect(densityForHydration('compact', true, 'comfortable')).toBe('compact');
+  });
+
+  it("lowers at the pointer's own when nothing is being hydrated, or nothing was said", () => {
+    expect(densityForHydration('comfortable', false, 'compact')).toBe('compact');
+    expect(densityForHydration(undefined, true, 'compact')).toBe('compact');
+    expect(densityForHydration('<script>', true, 'compact')).toBe('compact');
+  });
+
+  it("switches the whole page ONCE to the pointer's density when it was hydrated at another", () => {
+    setPhotonDensity('comfortable');
+    const rerender = vi.fn();
+
+    expect(settleDensity('compact', rerender)).toBe(true);
+    expect(getPhotonDensity()).toBe('compact');
+    expect(rerender).toHaveBeenCalledTimes(1);
+
+    expect(settleDensity('compact', rerender)).toBe(false);
+    expect(rerender).toHaveBeenCalledTimes(1);
   });
 });

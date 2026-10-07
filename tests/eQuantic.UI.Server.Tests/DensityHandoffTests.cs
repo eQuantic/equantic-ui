@@ -25,15 +25,27 @@ public class DensityHandoffTests
             new Box(new BoxStyle { Width = context.Density == Density.Compact ? 20 : 22, Height = 10 });
     }
 
-    private static async Task<string> GetAsync(string? cookie)
+    /// <summary>An escape-hatch page composing a write-once bridge of its own (routed with MapPage, as an
+    /// escape-hatch page is): the bridge is built at the request's density too, or hydration lowers it at a
+    /// density its markup was not built at.</summary>
+    public sealed class BridgePage : eQuantic.UI.Web.HtmlElement
+    {
+        public BridgePage() => AddChild(new eQuantic.UI.Web.VisualNodeComponent(new DensityPage()));
+
+        public override eQuantic.UI.Web.HtmlNode Render()
+            => new() { Tag = "div", Children = Children.Select(child => child.Render()).ToList() };
+    }
+
+    private static async Task<string> GetAsync(string? cookie, string path = "/density")
     {
         var builder = WebApplication.CreateBuilder();
         builder.WebHost.UseTestServer();
         builder.Services.AddUI(options => options.ScanAssembly(Assembly.GetExecutingAssembly()));
         await using var app = builder.Build();
+        app.MapPage<BridgePage>("/density-bridge");
         app.MapUI();
         await app.StartAsync();
-        var request = new HttpRequestMessage(HttpMethod.Get, "/density");
+        var request = new HttpRequestMessage(HttpMethod.Get, path);
         if (cookie is not null) request.Headers.Add("Cookie", cookie);
         var response = await app.GetTestClient().SendAsync(request);
         return await response.Content.ReadAsStringAsync();
@@ -56,6 +68,15 @@ public class DensityHandoffTests
         html.Should().Contain("width:20px").And.NotContain("width:22px");
         ShellConfig.In(html).GetProperty("density").GetString().Should().Be("compact",
             "hydration lowers at the density the markup was built at");
+    }
+
+    [Fact]
+    public async Task ABridgeAnEscapeHatchPageComposes_IsBuiltAtTheRequestsDensity()
+    {
+        var html = await GetAsync("eq-density=compact", "/density-bridge");
+
+        html.Should().Contain("width:20px").And.NotContain("width:22px");
+        ShellConfig.In(html).GetProperty("density").GetString().Should().Be("compact");
     }
 
     [Fact]

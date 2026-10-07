@@ -1111,7 +1111,9 @@ function lowerDraggable(
   // box's own transition list. This wrote both inline, which beat every class: a client-rendered
   // open row never lifted under the pointer while the server's slid closed.
   if (node.follows !== false) {
-    if (rest !== 0) mergeAtomicDeclaration(child, 'translate', horizontal ? px(rest) : `0 ${px(rest)}`);
+    // A NORMALIZED rest is a fraction of the surface's own extent, which a percentage of its own box is.
+    const offset = node.normalized ? `${num(rest * 100)}%` : px(rest);
+    if (rest !== 0) mergeAtomicDeclaration(child, 'translate', horizontal ? offset : `0 ${offset}`);
     const glide = `translate ${Motion.baseMs}ms`;
     const own = atomicDeclaration(child, 'transition');
     replaceAtomicDeclaration(child, 'transition', own ? `${own}, ${glide}` : glide);
@@ -2920,8 +2922,7 @@ function fills(node: VisualNodeValue): { width: boolean; height: boolean } {
  */
 function liftThroughBoxlessWrappers(child: HtmlNode): void {
   if (!drawsNoBox(child)) return;
-  for (const inner of child.children ?? []) {
-    if (typeof inner !== 'object' || inner === null || !('attributes' in inner)) continue;
+  for (const inner of child.children) {
     if (drawsNoBox(inner)) liftThroughBoxlessWrappers(inner);
     else prependClass(inner, 'eq-lift');
   }

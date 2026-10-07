@@ -12,7 +12,7 @@ internal sealed partial class EmitVisitor
 {
     // Everything a box paints is its EFFECTIVE style: its own, with the diff of every state it is in
     // laid over it — every member, not the colours alone (#504, #508).
-    private void EmitBoxChrome(Box box, EmitState s) => EmitChrome(EffectiveStyle(box, s), box, s);
+    private void EmitBoxChrome(Box box, EmitState s) => EmitStyledChrome(EffectiveStyle(box, s), box, s);
 
     /// <summary>
     /// The chrome a style draws, at the node's bounds: a box's, and a pinned header's while its
@@ -20,7 +20,7 @@ internal sealed partial class EmitVisitor
     /// <see cref="Pinned.ScrolledBase"/> (#506). A control's pending fill and ring are a BOX's to
     /// take, the first one under the control, so a header leaves them where they are.
     /// </summary>
-    private void EmitChrome(BoxStyle style, Box? box, EmitState s)
+    private void EmitStyledChrome(BoxStyle style, Box? box, EmitState s)
     {
         if (style.Cursor != PointerCursor.Default)
             s.Input.Add(new CursorRegion(s.Node.Bounds, style.Cursor));
@@ -140,9 +140,11 @@ internal sealed partial class EmitVisitor
     /// <summary>
     /// The style a pinned header draws its chrome with (#506), or null when it draws none: its
     /// <c>ScrolledStyle</c> over <see cref="Pinned.ScrolledBase"/> while the surface it pins to has
-    /// scrolled past the threshold. Under a <c>Transition</c> it draws the base at rest too, with a
-    /// transparent fill where the diff has one, so the veil glides in AND out, as the web's
-    /// <c>background-color</c> glides to its initial transparent when the rule stops applying.
+    /// scrolled past the threshold. Under a <c>Transition</c> it draws the base at rest too, with the
+    /// diff's own fill at alpha 0 where it has one, so the veil glides in AND out, as the web's
+    /// <c>background-color</c> glides to its initial transparent when the rule stops applying. Its own
+    /// colour rather than transparent black: Photon interpolates without premultiplying, and toward
+    /// black the veil darkened as it faded, where the browser keeps its hue.
     /// </summary>
     private static BoxStyle? PinnedStyle(Pinned pinned, bool scrolled)
     {
@@ -150,13 +152,11 @@ internal sealed partial class EmitVisitor
         if (!scrolled && pinned.Transition is null) return null;
         var resting = Pinned.ScrolledBase with
         {
-            Background = diff.Background is null ? null : Transparent,
+            Background = diff.Background?.WithOpacity(0),
             Transition = pinned.Transition,
         };
         return scrolled ? Over(resting, diff) : resting;
     }
-
-    private static readonly ColorToken Transparent = new(default(Color));
 
     /// <summary>
     /// The focus ring of spec §01, from ONE place: 2dp of Surface then 2dp of FocusRing outside the

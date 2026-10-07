@@ -18,22 +18,36 @@ import { PINNED_MARKER, SCROLLED_MARKER } from './markers';
 export const SCROLLED_THRESHOLD = 8;
 
 let installed = false;
+let pending = false;
 
 /**
  * Listens once per page. In the CAPTURE phase, since a scroll event does not bubble: one listener on
- * the document hears the page and every scrolling element alike.
+ * the document hears the page and every scrolling element alike, a code editor's and a sheet's among
+ * them, so the work is coalesced to one sync per frame however many scroll events the frame brought.
  */
 export function installScrolledController(): void {
   if (installed || typeof document === 'undefined') return;
   installed = true;
-  document.addEventListener('scroll', syncScrolledPinned, { capture: true, passive: true });
+  document.addEventListener('scroll', onScroll, { capture: true, passive: true });
 }
 
 /** For a suite: forget the listener, as a new page would. */
 export function resetScrolledController(): void {
   if (typeof document === 'undefined') return;
   installed = false;
-  document.removeEventListener('scroll', syncScrolledPinned, { capture: true });
+  pending = false;
+  document.removeEventListener('scroll', onScroll, { capture: true });
+}
+
+function onScroll(): void {
+  if (pending) return;
+  pending = true;
+  const sync = (): void => {
+    pending = false;
+    syncScrolledPinned();
+  };
+  if (typeof requestAnimationFrame === 'function') requestAnimationFrame(sync);
+  else sync();
 }
 
 /**

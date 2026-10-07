@@ -10,10 +10,11 @@ import {
   matchRoute,
   setCurrentRouteFrom,
   registerDeviceCapabilities,
-  getPhotonDensity,
+  densityForHydration,
   pointerDensity,
   rememberDensity,
   setPhotonDensity,
+  settleDensity,
   setPhotonTheme,
   materializeTheme,
   type EqConfig,
@@ -221,13 +222,12 @@ export async function boot(): Promise<void> {
     // from the start, each component kept the server's density until it next re-rendered, and then
     // snapped: under a mouse a page showed a mix of both.
     const hydrating = servedContent && config.ssr !== false && !hmrReplay;
-    if (hydrating && config.density) setPhotonDensity(config.density);
+    const atHydration = densityForHydration(config.density, hydrating, ownDensity);
+    if (atHydration) setPhotonDensity(atHydration);
     await loadAndMountPage(root, pageName, config);
-    if (ownDensity && getPhotonDensity() !== ownDensity) {
-      setPhotonDensity(ownDensity);
-      const page = currentComponent as unknown as { _scheduleRender?: () => void } | null;
-      page?._scheduleRender?.();
-    }
+    settleDensity(ownDensity, () =>
+      (currentComponent as unknown as { _scheduleRender?: () => void } | null)?._scheduleRender?.(),
+    );
 
     // Phase 2: when the server provided a route table, enable client-side (SPA) navigation —
     // internal link clicks swap the page bundle in place instead of triggering a full reload.

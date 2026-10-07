@@ -24,13 +24,17 @@ describe('scrolled pinned headers', () => {
     element.append(...children);
     return element;
   };
-  const scrollPageTo = (y: number): void => {
+  // The controller syncs once per frame, so a scroll is read after the frame that follows it.
+  const frame = (): Promise<void> => new Promise((resolve) => requestAnimationFrame(() => resolve()));
+  const scrollPageTo = async (y: number): Promise<void> => {
     Object.defineProperty(window, 'scrollY', { value: y, configurable: true });
     document.dispatchEvent(new Event('scroll'));
+    await frame();
   };
-  const scrollTo = (element: HTMLElement, y: number): void => {
+  const scrollTo = async (element: HTMLElement, y: number): Promise<void> => {
     element.scrollTop = y;
     element.dispatchEvent(new Event('scroll'));
+    await frame();
   };
   const scrolled = (element: HTMLElement): boolean => element.hasAttribute(SCROLLED_MARKER);
 
@@ -42,50 +46,50 @@ describe('scrolled pinned headers', () => {
 
   afterEach(() => resetScrolledController());
 
-  it('follows the page for a header in no scroller', () => {
+  it('follows the page for a header in no scroller', async () => {
     const bar = header();
     document.body.append(bar);
 
-    scrollPageTo(20);
+    await scrollPageTo(20);
     expect(scrolled(bar)).toBe(true);
-    scrollPageTo(0);
+    await scrollPageTo(0);
     expect(scrolled(bar)).toBe(false);
   });
 
-  it('is scrolled PAST the threshold, as Photon draws it past 8dp', () => {
+  it('is scrolled PAST the threshold, as Photon draws it past 8dp', async () => {
     const bar = header();
     document.body.append(bar);
 
-    scrollPageTo(SCROLLED_THRESHOLD);
+    await scrollPageTo(SCROLLED_THRESHOLD);
     expect(scrolled(bar)).toBe(false);
-    scrollPageTo(SCROLLED_THRESHOLD + 1);
+    await scrollPageTo(SCROLLED_THRESHOLD + 1);
     expect(scrolled(bar)).toBe(true);
   });
 
-  it('follows its own scroller, which the page does not move', () => {
+  it('follows its own scroller, which the page does not move', async () => {
     const bar = header();
     const panel = scroller(bar);
     document.body.append(panel);
 
-    scrollPageTo(300);
+    await scrollPageTo(300);
     expect(scrolled(bar), 'the panel has not scrolled').toBe(false);
-    scrollTo(panel, 40);
+    await scrollTo(panel, 40);
     expect(scrolled(bar), 'its own surface has').toBe(true);
   });
 
-  it('is decided by the NEAREST scroller', () => {
+  it('is decided by the NEAREST scroller', async () => {
     const bar = header();
     const inner = scroller(bar);
     const outer = scroller(inner);
     document.body.append(outer);
 
-    scrollTo(outer, 40);
+    await scrollTo(outer, 40);
     expect(scrolled(bar), 'the panel it pins to is at its top').toBe(false);
-    scrollTo(inner, 40);
+    await scrollTo(inner, 40);
     expect(scrolled(bar)).toBe(true);
   });
 
-  it('sets a header mounted on a page that is already scrolled, without a scroll event', () => {
+  it('sets a header mounted on a page that is already scrolled, without a scroll event', async () => {
     Object.defineProperty(window, 'scrollY', { value: 120, configurable: true });
     const bar = header();
     document.body.append(bar);

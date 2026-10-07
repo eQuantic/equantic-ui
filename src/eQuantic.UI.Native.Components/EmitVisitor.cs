@@ -179,7 +179,7 @@ internal sealed partial class EmitVisitor : IVisualNodeVisitor<EmitState, Nothin
     /// to is scrolled the header draws its <c>ScrolledStyle</c> under its content (#506).</summary>
     public Nothing Visit(Pinned node, EmitState s)
     {
-        if (PinnedStyle(node, s.Press.SurfaceScrolled) is { } chrome) EmitChrome(chrome, box: null, s);
+        if (PinnedStyle(node, s.Press.SurfaceScrolled) is { } chrome) EmitStyledChrome(chrome, box: null, s);
         Descend(s);
         return Nothing.Value;
     }

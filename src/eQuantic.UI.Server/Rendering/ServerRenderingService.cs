@@ -121,8 +121,7 @@ public class ServerRenderingService : IServerRenderingService
             }
 
             // Create the component instance with DI
-            // At the density the browser said it has (#623), so hydration adopts markup built for it.
-            var component = CreateComponentInstance(pageType, context.RequestServices, DensityCookie.Resolve(context));
+            var component = CreateComponentInstance(pageType, context.RequestServices);
 
             object metadataSource = component is Web.VisualNodeComponent bridge ? bridge.Node : component;
 
@@ -217,6 +216,9 @@ public class ServerRenderingService : IServerRenderingService
                         // component — collects its atomic rules into this one per-page set.
                         var styles = new Web.StyleSink();
                         Web.StyleSink.Ambient = styles;
+                        // And the density the browser reported (#623): every write-once bridge in the
+                        // tree is built at it, so hydration adopts markup built for the pointer it has.
+                        Web.VisualNodeComponent.AmbientDensity = DensityCookie.Resolve(context);
                         // The same shape, for the same reason, one layer over: every gradient the page
                         // paints with, declared ONCE for the document instead of once per drawing.
                         var gradients = new Web.GradientSink();
@@ -246,6 +248,7 @@ public class ServerRenderingService : IServerRenderingService
                             Web.ComponentExpansionScope.Ambient = null;
                             Web.StyleSink.Ambient = null;
                             Web.GradientSink.Ambient = null;
+                            Web.VisualNodeComponent.AmbientDensity = null;
                             Primitives.ComponentBoundary.Report = null;
                         }
 
@@ -612,7 +615,7 @@ public class ServerRenderingService : IServerRenderingService
     /// shared by every later one.
     /// </para>
     /// </summary>
-    private IComponent CreateComponentInstance(Type componentType, IServiceProvider services, Primitives.Density density)
+    private IComponent CreateComponentInstance(Type componentType, IServiceProvider services)
     {
         object? instance;
         try
@@ -640,7 +643,7 @@ public class ServerRenderingService : IServerRenderingService
         // hydrates directly (v1 fence: no server-driven initial state — field defaults render).
         if (instance is Primitives.UiComponent visual)
         {
-            return new Web.VisualNodeComponent(visual, _options.Theme, density: density);
+            return new Web.VisualNodeComponent(visual, _options.Theme);
         }
 
         throw new InvalidOperationException($"Cannot create instance of component type: {componentType.Name}");

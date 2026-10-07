@@ -185,6 +185,31 @@ export function detectPhotonDensity(): void {
 }
 
 /**
+ * The density hydration lowers at (#623): the one the server built the page at, while hydrating, so
+ * the served markup is adopted as it is; the pointer's otherwise.
+ */
+export function densityForHydration(
+  served: string | undefined,
+  hydrating: boolean,
+  own: DensityValue | null,
+): DensityValue | null {
+  if (hydrating && (served === 'compact' || served === 'comfortable')) return served;
+  return own;
+}
+
+/**
+ * After hydration the whole page switches to the pointer's density AT ONCE when it was hydrated at
+ * another (#623): one re-render of the page, never each component as it next re-renders, which showed
+ * a mix of both. Answers whether it switched.
+ */
+export function settleDensity(own: DensityValue | null, rerender: () => void): boolean {
+  if (!own || activeDensity === own) return false;
+  setPhotonDensity(own);
+  rerender();
+  return true;
+}
+
+/**
  * Leaves the density for the SERVER, which cannot see the pointer: every later request of the
  * session renders at it from its first byte (#623). A session cookie holding a display fact about
  * the device, gone when the browser closes, and written only when it changes.
