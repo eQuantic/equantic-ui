@@ -53,8 +53,26 @@ public class ObjectCreationStrategy : IExpressionIrStrategy
         && (named.IsRecord || named.TypeKind == TypeKind.Struct)
         && named.Locations.Any(location => location.IsInSource)
         && !named.TypeArguments.Any(ContainsTypeParameter)
-            ? string.Join(", ", named.TypeArguments.Select(argument => argument.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)))
+            ? string.Join(", ", named.TypeArguments.Select(RuntimeName))
             : null;
+
+    /// <summary>
+    /// A type as the runtime tells types apart, which is what .NET's closed type compares: a tuple's
+    /// element names and <c>dynamic</c> are erased, so <c>Box&lt;(int A, int B)&gt;</c> and
+    /// <c>Box&lt;(int, int)&gt;</c> are one type, as are <c>Box&lt;dynamic&gt;</c> and <c>Box&lt;object&gt;</c>.
+    /// </summary>
+    private static string RuntimeName(ITypeSymbol type) => type switch
+    {
+        { TypeKind: TypeKind.Dynamic } => "object",
+        IArrayTypeSymbol array => $"{RuntimeName(array.ElementType)}[{new string(',', array.Rank - 1)}]",
+        INamedTypeSymbol { IsTupleType: true, TupleUnderlyingType: { } underlying } => RuntimeName(underlying),
+        INamedTypeSymbol { IsGenericType: true } generic =>
+            $"{generic.ConstructedFrom.ToDisplayString(GenericDefinition)}<{string.Join(", ", generic.TypeArguments.Select(RuntimeName))}>",
+        _ => type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat),
+    };
+
+    private static readonly SymbolDisplayFormat GenericDefinition =
+        SymbolDisplayFormat.FullyQualifiedFormat.WithGenericsOptions(SymbolDisplayGenericsOptions.None);
 
     private static bool ContainsTypeParameter(ITypeSymbol type) => type switch
     {
