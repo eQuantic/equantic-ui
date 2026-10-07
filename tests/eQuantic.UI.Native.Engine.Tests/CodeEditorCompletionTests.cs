@@ -16,8 +16,8 @@ namespace eQuantic.UI.Native.Engine.Tests;
 /// typed, the arrows, a press on a row. Where the list stands is read from the frame (the region of
 /// what the surface offered) against where the engine says the word starts.
 /// <para>
-/// The hosts run <see cref="Density.Compact"/>, the desktop shells' density, where a press lands
-/// where it is aimed. Under Comfortable a row's §08 margin reaches over the row above it (#630).
+/// The hosts run <see cref="Density.Compact"/>, the desktop shells' density. A row is shorter than
+/// a target under a finger or a pointer, and a press on it is that row's under both (#630).
 /// </para>
 /// </summary>
 public class CodeEditorCompletionTests
@@ -564,6 +564,33 @@ public class CodeEditorCompletionTests
         editor.Editor.Completion.IsOpen.Should().BeFalse("accepting closes the list");
         host.CodeTarget.Should().NotBeNull("the code still has the keyboard");
         told.Should().Contain("Column", "the app hears of the edit as it does of a key's");
+    }
+
+    /// <summary>
+    /// Under a finger a row's target reaches 13dp past each side of its box, over the rows beside it,
+    /// and the row drawn after took the press: a press on the lower part of a row accepted the one
+    /// under it (#630).
+    /// </summary>
+    [Fact]
+    public void UnderAFinger_APressOnTheLowerPartOfARow_AcceptsThatRow()
+    {
+        var editor = Editor(Lines(20), new CodeCompletionItem("Column"), new CodeCompletionItem("ColorToken"),
+            new CodeCompletionItem("Count"));
+        var host = new PhotonHost(editor, PhotonTheme.Instance, ThemeMode.Light, 600, 400)
+        {
+            TextRasterizer = new FixedWidthRasterizer(),
+            Density = Density.Comfortable,
+            SmoothScroll = false,
+        };
+        Settle(host);
+        ClickAt(host, editor, 1, 0);
+        Type(host, "Co");
+        var rows = host.Semantics().Where(node => node.Role == SemanticRole.Option).ToList();
+        rows.Select(row => row.Label).Should().Equal(["ColorToken", "Column", "Count"]);
+
+        PressAt(host, rows[0].Bounds.X + 4, rows[0].Bounds.Bottom - 2);
+
+        editor.Editor.Document.Line(1).Should().Be("ColorToken", "the press was on the first row's box");
     }
 
     [Fact]
