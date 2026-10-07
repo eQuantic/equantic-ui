@@ -1624,6 +1624,15 @@ record of a release, the wiki's Upgrading page is the distillate.
   ([#657](https://github.com/eQuantic/equantic-ui/issues/657)). `Sum`, `Average`, `OrderBy`, `GroupBy`,
   `Distinct` and the lookup's indexer moved to the IR. The runtime's twins are regenerated. Proposed and
   archived through OpenSpec (`openspec/specs/transpiler-names`, `openspec/specs/transpiler-sequences`).
+- **2026-10-07 · A field a case apart from a member keeps its own slot**: a plain class's field and a
+  property or a method a case apart lowered to one member of the twin, the shape a C# class has most:
+  the own field hid a setter, which never ran, an auto-property and its field shared one slot, and a
+  call reached the number a field held. Three apps met the component's form of it (equantic-web,
+  Falei.pt, Cura), which EQ1007 has refused since #621, while a plain class built silently
+  ([#396](https://github.com/eQuantic/equantic-ui/issues/396)). The field moves to a slot with a `$`
+  after its name, read and written through its symbol everywhere, and a class with a moved field writes
+  its JSON through `twinJson`, which writes the property and never the field. A component, a record and
+  a struct keep EQ1007. Proposed and archived through OpenSpec (`openspec/specs/transpiler-classes`).
 
 ## Retired documents
 
