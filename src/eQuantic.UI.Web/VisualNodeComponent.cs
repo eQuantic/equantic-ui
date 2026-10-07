@@ -17,12 +17,20 @@ public sealed class VisualNodeComponent : HtmlElement
 {
     private readonly IAppTheme _theme;
     private readonly float _typeScale;
+    private readonly Density _density;
 
-    public VisualNodeComponent(VisualNode node, IAppTheme? theme = null, float typeScale = 1f)
+    /// <param name="node">The write-once subtree this component lowers.</param>
+    /// <param name="theme">The token source; <see cref="PhotonTheme.Instance"/> when none is given.</param>
+    /// <param name="typeScale">The type scale the subtree is built at.</param>
+    /// <param name="density">The density the subtree is built at: the request's, which the browser
+    /// reports (#623), so the client hydrates markup built for the pointer it has.</param>
+    public VisualNodeComponent(VisualNode node, IAppTheme? theme = null, float typeScale = 1f,
+        Density density = Density.Comfortable)
     {
         Node = node;
         _theme = theme ?? PhotonTheme.Instance;
         _typeScale = typeScale;
+        _density = density;
     }
 
     /// <summary>The wrapped abstract subtree — hosts unwrap it (e.g. the SSR pipeline probing the
@@ -37,5 +45,5 @@ public sealed class VisualNodeComponent : HtmlElement
     public StyleSink Styles { get; } = new();
 
     public override HtmlNode Render() =>
-        WebRealizer.Lower(Node, _theme, _typeScale, StyleSink.Ambient ?? Styles).Render();
+        WebRealizer.Lower(Node, _theme, _typeScale, StyleSink.Ambient ?? Styles, _density).Render();
 }

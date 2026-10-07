@@ -852,6 +852,9 @@ public static class UIExtensions
             Page: page?.Name,
             Version: BuildId,
             Ssr: ssrEnabled,
+            // What the page was rendered at: hydration adopts this markup, so it lowers at the same
+            // density and then switches the whole page to the browser's own at once (#623).
+            Density: DensityCookie.NameOf(DensityCookie.Resolve(context)),
             // The cookie config crosses to the browser because the browser is what WRITES it while the
             // server READS it. Two places to configure would drift, and a drifted name fails silently:
             // the server reads a cookie nobody writes, so persistence stops while everything still

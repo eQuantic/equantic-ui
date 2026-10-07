@@ -200,6 +200,8 @@ export {
   setPhotonTheme,
   getPhotonTheme,
   setPhotonDensity,
+  pointerDensity,
+  rememberDensity,
   getPhotonDensity,
   detectPhotonDensity,
   photonComponentContext,
@@ -283,6 +285,11 @@ export interface EqConfig {
   page?: string | null;
   version?: string;
   ssr?: boolean;
+  /**
+   * The density the server rendered the page at (#623): hydration lowers at it, so the served
+   * markup is adopted as it is, and then switches the whole page to the browser's own at once.
+   */
+  density?: 'compact' | 'comfortable';
   /**
    * How the theme is remembered — `false` when the app turned it off (a consent banner, a policy
    * that forbids a cookie before it is granted). Absent means the defaults.

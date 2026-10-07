@@ -25,3 +25,9 @@ export const PINNED_MARKER = 'data-eq-pinned';
  * threshold; the header's scrolled rules select on it (C# `StyleSink.ScrolledMarker`, #506).
  */
 export const SCROLLED_MARKER = 'data-eq-scrolled';
+
+/**
+ * The SESSION cookie the runtime leaves for the server with the density the browser's pointer asks
+ * for, so a later request renders at it from its first byte (C# `DensityCookie.Name`, #623).
+ */
+export const DENSITY_COOKIE = 'eq-density';

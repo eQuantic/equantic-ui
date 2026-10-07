@@ -121,7 +121,8 @@ public class ServerRenderingService : IServerRenderingService
             }
 
             // Create the component instance with DI
-            var component = CreateComponentInstance(pageType, context.RequestServices);
+            // At the density the browser said it has (#623), so hydration adopts markup built for it.
+            var component = CreateComponentInstance(pageType, context.RequestServices, DensityCookie.Resolve(context));
 
             object metadataSource = component is Web.VisualNodeComponent bridge ? bridge.Node : component;
 
@@ -611,7 +612,7 @@ public class ServerRenderingService : IServerRenderingService
     /// shared by every later one.
     /// </para>
     /// </summary>
-    private IComponent CreateComponentInstance(Type componentType, IServiceProvider services)
+    private IComponent CreateComponentInstance(Type componentType, IServiceProvider services, Primitives.Density density)
     {
         object? instance;
         try
@@ -639,7 +640,7 @@ public class ServerRenderingService : IServerRenderingService
         // hydrates directly (v1 fence: no server-driven initial state — field defaults render).
         if (instance is Primitives.UiComponent visual)
         {
-            return new Web.VisualNodeComponent(visual, _options.Theme);
+            return new Web.VisualNodeComponent(visual, _options.Theme, density: density);
         }
 
         throw new InvalidOperationException($"Cannot create instance of component type: {componentType.Name}");
