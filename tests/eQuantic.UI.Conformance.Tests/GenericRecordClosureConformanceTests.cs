@@ -29,6 +29,7 @@ public class GenericRecordClosureConformanceTests
             ("a generic struct", "return new Pair<int>(1).Equals((object)new Pair<double>(1));"),
             ("a target-typed new", "Box<int> box = new(1); return box.Equals((object)new Box<double>(1));"),
             ("tuple element names, which the runtime type erases", "return new Box<(int A, int B)>((1, 2)).Equals((object)new Box<(int, int)>((1, 2)));"),
+            ("dynamic, which the runtime type takes as object", "return new Box<dynamic>(1).Equals((object)new Box<object>(1));"),
             ("a box built in generic code, against its own type", "return Make.Boxed(1).Equals((object)new Box<int>(1));"),
         };
         var data = new TheoryData<string, string, bool>();

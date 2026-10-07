@@ -12,6 +12,9 @@
 
 ## 2. Against the real thing
 
-- [x] 2.1 `GenericRecordClosureConformanceTests`, both sides executed: the four cases across type
-      arguments fail on main and pass here, and the two of one type pass on both
+- [x] 2.1 `GenericRecordClosureConformanceTests`, both sides executed, nine cases with and without
+      type annotations: the five across type arguments (explicit, `with`, a list, a struct and a
+      target-typed `new`) fail on main and pass here, and the four of one closed type (two `Box<int>`,
+      a value built in generic code, a named tuple and `dynamic`) pass on both. The tuple and `dynamic`
+      cases fail on the first mark, which kept the type arguments' display text
 - [x] 2.2 The wiki's SupportedFeatures in English and Portuguese, and one `docs/LEDGER.md` line

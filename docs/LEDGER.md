@@ -1624,8 +1624,10 @@ record of a release, the wiki's Upgrading page is the distillate.
   answered true where .NET answers false ([#651](https://github.com/eQuantic/equantic-ui/issues/651)).
   Where C# names the type arguments the value is marked with them (`$eq.closing`), held aside so its
   members and JSON stay its own, and a generic record's or struct's `equals` compares the marks; a
-  value built inside generic code carries none and is not taken for another type. Four of the six
-  conformance cases fail on main. Proposed and archived through OpenSpec
+  value built inside generic code carries none and is not taken for another type. The mark is the
+  closed type as .NET erases it, a tuple's element names and `dynamic` gone. Of the nine conformance
+  cases, the five across type arguments fail on main, and the tuple and `dynamic` cases fail on the
+  first mark, which kept the display text. Proposed and archived through OpenSpec
   (`openspec/specs/transpiler-records`).
 
 ## Retired documents
