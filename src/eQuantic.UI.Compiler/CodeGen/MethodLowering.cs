@@ -100,7 +100,8 @@ internal sealed class MethodLowering
         var body = Body(method.Body, method.ExpressionBody?.Expression, isIterator, byReference);
         var modifiers = (method.Modifiers.Any(SyntaxKind.StaticKeyword) || asStatic ? "static " : "")
             + (isAsync ? "async " : "");
-        return JsClassMember.Method(modifiers, method.Identifier.Text.ToCamelCase(), generics, parameters,
+        // The name every call bound to it reaches: a method that hides one holds a name of its own (#563).
+        return JsClassMember.Method(modifiers, TwinMethodName.Of(method, _modelFor(method)), generics, parameters,
             returns?.Invoke(method.ReturnType) ?? "", body);
     }
 

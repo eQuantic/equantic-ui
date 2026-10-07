@@ -367,6 +367,73 @@ public class OverloadedMethodTests
         results.SelectMany(result => result.Errors).Should().NotContain(error => error.Code == "EQ1007");
     }
 
+    /// <summary>
+    /// A method that HIDES an inherited one, with <c>new</c> or with the same signature and no
+    /// <c>override</c>, holds a name of its own on its twin (#563): it takes no name a base holds, so it
+    /// is not refused, and a call bound to the hidden one keeps reaching it. It was refused, legal C# and
+    /// all, where the base was the app's, and where it was not, it answered for the hidden one.
+    /// </summary>
+    [Fact]
+    public void AMethodThatHidesAnInheritedOne_HoldsANameOfItsOwn()
+    {
+        var results = new ComponentCompiler().CompileSource("""
+            public class Base
+            {
+                public virtual string Name() => "base";
+            }
+
+            public class Hiding : Base
+            {
+                public new string Name() => "hiding";
+                public string Both() => Name() + base.Name();
+            }
+
+            public class Again : Hiding
+            {
+                public new virtual string Name() => "again";
+            }
+
+            public sealed class Last : Again
+            {
+                public override string Name() => "last";
+            }
+            """, "Probe.cs");
+
+        results.SelectMany(result => result.Errors).Should().NotContain(error => error.Code == "EQ1007");
+        var hiding = results.Single(result => result.ComponentName == "Hiding").TypeScript;
+        hiding.Should().Contain("name$1()").And.Contain("this.name$1()").And.Contain("super.name()");
+        results.Single(result => result.ComponentName == "Again").TypeScript.Should().Contain("name$2()");
+        results.Single(result => result.ComponentName == "Last").TypeScript.Should().Contain("name$2()",
+            "an override fills the slot of the method it overrides, whatever that one is named");
+    }
+
+    /// <summary>
+    /// A method that hides an inherited one and answers an interface is refused: a call through the
+    /// interface reaches the member by the interface's name, which the hidden one holds on the twin, so it
+    /// would reach the hidden one where C# reaches the one that hides it.
+    /// </summary>
+    [Fact]
+    public void AMethodThatHidesOne_AndAnswersAnInterface_IsRefused()
+    {
+        var results = new ComponentCompiler().CompileSource("""
+            public interface INamed { string Name(); }
+
+            public class Base
+            {
+                public string Name() => "base";
+            }
+
+            public sealed class Hiding : Base, INamed
+            {
+                public new string Name() => "hiding";
+            }
+            """, "Probe.cs");
+
+        var error = results.Single(result => result.ComponentName == "Hiding").Errors.Should().ContainSingle().Subject;
+        error.Code.Should().Be("EQ1007");
+        error.Message.Should().Contain("'Hiding.Name' answers 'INamed.Name'").And.Contain("`name$1()`");
+    }
+
     /// <summary>An override is the method it overrides, and replacing it is what it is for.</summary>
     [Fact]
     public void AnOverride_IsNotASecondMethod()

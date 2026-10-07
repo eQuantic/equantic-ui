@@ -192,7 +192,7 @@ internal static class ObjectInitializer
                 return Primitives.ListMethodStrategy.Add(receiver, [.. arguments.Select(Part)]);
 
             if (declaring is not null && TwinCarries(declaring))
-                return JsExpr.Call(JsExpr.Member(receiver, add!.Name.ToCamelCase()), [.. arguments.Select(Part)]);
+                return JsExpr.Call(JsExpr.Member(receiver, TwinMethodName.Of(add!)), [.. arguments.Select(Part)]);
             return null;
         }
 

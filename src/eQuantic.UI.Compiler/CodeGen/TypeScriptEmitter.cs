@@ -2567,7 +2567,10 @@ public class TypeScriptEmitter
             return Lowering.ParamWithDefault(name, DeclarationType(component, p.Type),
                 defaultValue is null ? null : _converter.ConvertExpression(defaultValue), isRest);
         }));
-        var methodName = method.Name.ToCamelCase();
+        // The name every call bound to it reaches: a method that hides one holds a name of its own (#563).
+        var methodName = method.SyntaxNode is { } declared
+            ? TwinMethodName.Of(declared, ModelFor(declared))
+            : method.Name.ToCamelCase();
 
         // The lifecycle keeps its own name across the crossing. It used to arrive as `onInit`, from
         // the days when the only base was the legacy page state, and that name is the reason

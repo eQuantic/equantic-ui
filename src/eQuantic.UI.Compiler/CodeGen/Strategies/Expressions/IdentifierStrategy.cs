@@ -91,17 +91,18 @@ public class IdentifierStrategy : IExpressionIrStrategy
                     // the class-static rule below is for the types the transpiler EMITS (#485).
                     if (!isMemberName && symbol.ReportIfPlatformReachedBare(identifier, context))
                         return JsExpr.Literal("undefined");
+                    var staticName = Named(symbol, name);
                     return isMemberName
-                        ? JsExpr.Identifier(name.ToCamelCase())
-                        : JsExpr.Member(JsExpr.Identifier(symbol.ContainingType.Name), name.ToCamelCase());
+                        ? JsExpr.Identifier(staticName)
+                        : JsExpr.Member(JsExpr.Identifier(symbol.ContainingType.Name), staticName);
                 }
 
                 // If it's a member of the current class and not static, add 'this.'
                 if (!symbol.IsStatic && symbol.ContainingType != null)
                 {
-                    if (isMemberName) return JsExpr.Identifier(name.ToCamelCase());
+                    if (isMemberName) return JsExpr.Identifier(Named(symbol, name));
 
-                    var member = JsExpr.ThisMember(name.ToCamelCase());
+                    var member = JsExpr.ThisMember(Named(symbol, name));
 
                     // A method REFERENCE (not being called) is a method group: bind it to the instance.
                     if (symbol is IMethodSymbol)
@@ -163,6 +164,11 @@ public class IdentifierStrategy : IExpressionIrStrategy
 
         return JsExpr.Identifier(name.ToJsIdentifier());
     }
+
+    /// <summary>The name a member holds on its twin: a method's own, which one that hides a member has of
+    /// its own (#563), and any other member's camelCased.</summary>
+    private static string Named(ISymbol symbol, string name) =>
+        symbol is IMethodSymbol method ? TwinMethodName.Of(method, name) : name.ToCamelCase();
 
     /// <summary>Whether <paramref name="name"/> reaches a binding of the scope it is read in, a local,
     /// a parameter, a range variable or a local function, rather than a member.</summary>
