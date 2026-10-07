@@ -17,9 +17,12 @@ public class HeadRequestTests
 {
     [Theory]
     [InlineData("/same-named/admin")] // a [Page] route
+    [InlineData("/pt-BR/same-named/admin")] // its language-prefixed twin
     [InlineData("/same-named/mapped")] // a MapPage<T> route
+    [InlineData("/pt-BR/same-named/mapped")] // its language-prefixed twin
     [InlineData("/_equantic/runtime.js")] // the runtime
     [InlineData("/_equantic/Probe.js")] // an app's module
+    [InlineData("/_equantic/Probe.js.map")] // its source map
     public async Task AHead_AnswersAsTheGetDoes_WithNoBody(string route)
     {
         await using var app = await StartAsync();
@@ -52,6 +55,8 @@ public class HeadRequestTests
         var webRoot = Directory.CreateTempSubdirectory("eq-head-").FullName;
         Directory.CreateDirectory(Path.Combine(webRoot, "_equantic"));
         await File.WriteAllTextAsync(Path.Combine(webRoot, "_equantic", "Probe.js"), "export const probe = 1;\n");
+        await File.WriteAllTextAsync(Path.Combine(webRoot, "_equantic", "Probe.js.map"),
+            "{\"version\":3,\"sources\":[],\"names\":[],\"mappings\":\"\"}\n");
 
         var builder = WebApplication.CreateBuilder(new WebApplicationOptions { WebRootPath = webRoot });
         builder.WebHost.UseUrls("http://127.0.0.1:0");
@@ -59,8 +64,10 @@ public class HeadRequestTests
         {
             options.EnableSsr = true;
             options.ScanAssembly(typeof(HeadRequestTests).Assembly);
+            options.UseCultureRoutes("en", "pt-BR");
         });
         var app = builder.Build();
+        app.UseRequestLocalization();
         app.MapPage<SameNamedPages.Mapped.Report>("/same-named/mapped");
         app.MapUI();
         await app.StartAsync();
