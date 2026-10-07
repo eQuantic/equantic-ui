@@ -10,11 +10,18 @@ namespace eQuantic.UI.Native.Components;
 /// </summary>
 internal sealed partial class EmitVisitor
 {
-    private void EmitBoxChrome(Box box, EmitState s)
+    // Everything a box paints is its EFFECTIVE style: its own, with the diff of every state it is in
+    // laid over it — every member, not the colours alone (#504, #508).
+    private void EmitBoxChrome(Box box, EmitState s) => EmitChrome(EffectiveStyle(box, s), box, s);
+
+    /// <summary>
+    /// The chrome a style draws, at the node's bounds: a box's, and a pinned header's while its
+    /// surface is scrolled (<paramref name="box"/> null), which is its scrolled diff over
+    /// <see cref="Pinned.ScrolledBase"/> (#506). A control's pending fill and ring are a BOX's to
+    /// take, the first one under the control, so a header leaves them where they are.
+    /// </summary>
+    private void EmitChrome(BoxStyle style, Box? box, EmitState s)
     {
-        // Everything below paints the EFFECTIVE style: the box's own, with the diff of every state
-        // it is in laid over it — every member, not the colours alone (#504, #508).
-        var style = EffectiveStyle(box, s);
         if (style.Cursor != PointerCursor.Default)
             s.Input.Add(new CursorRegion(s.Node.Bounds, style.Cursor));
 
@@ -93,12 +100,16 @@ internal sealed partial class EmitVisitor
 
         // The pressed swap beats the hover's fill (§10): the hover diff is already in the effective
         // style, and a pending press replaces whatever fill that left.
-        var fill = s.Press.PendingFill ?? style.Background;
-        s.Press.PendingFill = null;
+        var fill = style.Background;
+        if (box is not null)
+        {
+            fill = s.Press.PendingFill ?? fill;
+            s.Press.PendingFill = null;
+        }
         var borderColor = style.BorderColor;
         var borderWidth = style.BorderWidth;
         // Spec S5: hover-reactive boxes register for the host's pointer tracking.
-        if (box.Style.Hover is { IsEmpty: false })
+        if (box?.Style.Hover is { IsEmpty: false })
             s.Input.Add(new HoverRegion(s.Node.Bounds, box, s.Node.Path ?? ""));
 
         // Colours glide as resolved sRGB (what CSS does), wrapped back into a token that
@@ -119,12 +130,33 @@ internal sealed partial class EmitVisitor
         // Focus double ring (spec §01): 2dp Surface gap + 2dp FocusRing OUTSIDE the control,
         // following the control's own radius — the first Box under the focused Pressable
         // carries it (the same convention as the pressed fill swap).
-        if (s.Press.PendingFocusRing)
+        if (box is not null && s.Press.PendingFocusRing)
         {
             s.Press.PendingFocusRing = false;
             FocusRing(s, s.Node.Bounds, box.Style.CornerRadius);
         }
     }
+
+    /// <summary>
+    /// The style a pinned header draws its chrome with (#506), or null when it draws none: its
+    /// <c>ScrolledStyle</c> over <see cref="Pinned.ScrolledBase"/> while the surface it pins to has
+    /// scrolled past the threshold. Under a <c>Transition</c> it draws the base at rest too, with a
+    /// transparent fill where the diff has one, so the veil glides in AND out, as the web's
+    /// <c>background-color</c> glides to its initial transparent when the rule stops applying.
+    /// </summary>
+    private static BoxStyle? PinnedStyle(Pinned pinned, bool scrolled)
+    {
+        if (pinned.ScrolledStyle is not { IsEmpty: false } diff) return null;
+        if (!scrolled && pinned.Transition is null) return null;
+        var resting = Pinned.ScrolledBase with
+        {
+            Background = diff.Background is null ? null : Transparent,
+            Transition = pinned.Transition,
+        };
+        return scrolled ? Over(resting, diff) : resting;
+    }
+
+    private static readonly ColorToken Transparent = new(default(Color));
 
     /// <summary>
     /// The focus ring of spec §01, from ONE place: 2dp of Surface then 2dp of FocusRing outside the

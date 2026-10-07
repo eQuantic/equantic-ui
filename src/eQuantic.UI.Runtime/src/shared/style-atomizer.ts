@@ -9,6 +9,7 @@
 
 import type { AppTheme, ColorToken } from './value-types';
 import { getPhotonTheme } from './photon-context';
+import { SCROLLED_MARKER } from './markers';
 
 /** FNV-1a 32-bit over UTF-16 code units, base36 — the exact C# `StyleAtomizer.Hash`. */
 export function hashDeclaration(text: string): string {
@@ -457,8 +458,9 @@ export function atomizePseudo(pseudo: string, entries: Record<string, string | u
 }
 
 /**
- * SCROLL-LINKED variant (Sticky.ScrolledStyle) — the C# ClassForScrolled twin: `scrolled|` in the
- * hash, rules gated by the root's `eq-scrolled` class (the runtime scroll listener toggles it).
+ * SCROLL-LINKED variant (Pinned.ScrolledStyle) — the C# ClassForScrolled twin: `scrolled|` in the
+ * hash, rules gated by the header's own SCROLLED_MARKER, which the runtime sets from the surface the
+ * header pins to (scrolled-pinned.ts, #506).
  */
 export function atomizeScrolled(entries: Record<string, string | undefined>): string {
   const vars = varMapFor(getPhotonTheme());
@@ -481,7 +483,7 @@ export function atomizeScrolled(entries: Record<string, string | undefined>): st
       const target = registry();
       try {
         target?.insertRule(
-          `html.eq-scrolled .${className}{${declaration}}`,
+          `.${className}[${SCROLLED_MARKER}]{${declaration}}`,
           target.cssRules.length,
         );
       } catch {

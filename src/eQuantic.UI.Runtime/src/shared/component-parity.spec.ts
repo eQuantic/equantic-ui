@@ -31,6 +31,7 @@ import {
   IconGlyph,
   LinearGradient,
   Link,
+  Pinned,
   Pressable,
   ScrollView,
   ShadowSpec,
@@ -206,6 +207,34 @@ function cases(): Record<string, { node: unknown; presses: number[] }> {
         ),
         () => {},
         { axis: 'horizontal', min: -80, max: 0, restOffset: -80 },
+      ),
+    ),
+    'pinned-scrolled': still(
+      new Pinned(new Box(new BoxStyle({ height: 40 })), 0, {
+        scrolledStyle: new StyleDiff({
+          background: photonTheme.surface,
+          borderWidth: 1,
+          borderColor: photonTheme.border,
+          elevation: 2,
+          opacity: 0.9,
+          backdropBlur: 24,
+          gradient: new LinearGradient(photonTheme.surface, photonTheme.surfaceSubtle),
+          transform: Transform2D.translate(0, -2),
+          shadows: [new ShadowSpec(0, 12, 0, photonTheme.focusRing)],
+        }),
+        transition: new TransitionSpec(StyleChannels.colors),
+      }),
+    ),
+    'box-hover-border-edge': still(
+      new Box(
+        new BoxStyle({
+          width: 40,
+          height: 40,
+          borderWidth: 1,
+          borderColor: photonTheme.border,
+          borderSides: 4, // BorderSides.Bottom
+          hover: new StyleDiff({ borderWidth: 2 }),
+        }),
       ),
     ),
     'box-hover-drops-shadow': still(

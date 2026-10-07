@@ -692,6 +692,36 @@
       "children": []
     }
   ],
+  "pinned-scrolled": [
+    {
+      "tag": "div",
+      "attrs": {
+        "class": "eq-121dast eq-1767gpy eq-1ms9lgu eq-1s003ms eq-1xlbso6 eq-1yhij0h eq-2jl817 eq-4dc22k eq-582abp eq-ao1p0x eq-j954vq eq-wdx8t3 eq-xiroop",
+        "data-eq-pinned": "1"
+      },
+      "events": [],
+      "children": [
+        {
+          "tag": "div",
+          "attrs": {
+            "class": "eq-1eb13m5 eq-bo3n4y eq-cl6mtg eq-kngwsg"
+          },
+          "events": [],
+          "children": []
+        }
+      ]
+    }
+  ],
+  "box-hover-border-edge": [
+    {
+      "tag": "div",
+      "attrs": {
+        "class": "eq-16mikyw eq-1a36pxa eq-1eb13m5 eq-1wwwkk6 eq-1xrfuoj eq-1ylvgyo eq-bo3n4y eq-cl6mtg eq-dy3byz eq-g7fowl eq-mtu8q4"
+      },
+      "events": [],
+      "children": []
+    }
+  ],
   "box-hover-drops-shadow": [
     {
       "tag": "div",

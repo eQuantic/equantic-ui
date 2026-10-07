@@ -84,6 +84,25 @@ public class ComponentParityFixtureTests
             Transition = new TransitionSpec(StyleChannels.Colors),
             Hover = new StyleDiff { Transform = Transform2D.Translate(0, -2) },
         }), _ => { }) { Axis = DragAxis.Horizontal, Min = -80, Max = 0, RestOffset = -80 }, NoPresses),
+        // A pinned header's scrolled diff with every member (#506), through the builder a box's
+        // states use, over the header's base, whose border is its bottom edge.
+        ("pinned-scrolled", new Pinned(new Box(new BoxStyle { Height = 40 }))
+        {
+            ScrolledStyle = new StyleDiff
+            {
+                Background = Theme.Surface, BorderWidth = 1, BorderColor = Theme.Border, Elevation = 2,
+                Opacity = 0.9f, BackdropBlur = 24, Gradient = new LinearGradient(Theme.Surface, Theme.SurfaceSubtle),
+                Transform = Transform2D.Translate(0, -2), Shadows = [new ShadowSpec(0, 12, 0, Theme.FocusRing)],
+            },
+            Transition = new TransitionSpec(StyleChannels.Colors),
+        }, NoPresses),
+        // The same builder writes a hover border along the edges the box draws, and a width alone
+        // in the base's colour, as Photon draws them (#506).
+        ("box-hover-border-edge", new Box(new BoxStyle
+        {
+            Width = 40, Height = 40, BorderWidth = 1, BorderColor = Theme.Border, BorderSides = BorderSides.Bottom,
+            Hover = new StyleDiff { BorderWidth = 2 },
+        }), NoPresses),
         // A state that leaves nothing to draw writes the ring's slot alone: a hover that sets the
         // elevation to 0 over a box whose only shadow was its elevation.
         ("box-hover-drops-shadow", new Box(new BoxStyle

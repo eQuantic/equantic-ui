@@ -112,6 +112,7 @@ import type {
   VisualNodeValue,
 } from './nodes';
 import { declareShortcut, shortcutMark } from '../dom/shortcuts';
+import { installScrolledController } from './scrolled-pinned';
 import { declareScrollViewport } from './scroll-viewports';
 import { SheetKeymap } from './components/SheetKeymap';
 import { CellRef as CellRefCtor } from './components/CellRef';
@@ -2514,11 +2515,27 @@ function appendDiff(node: HtmlNode, pseudo: string, diff: StyleDiffValue, style:
 
 /** The C# `DiffDeclarations`: the declarations a state's diff carries over the base it changes, in
  * the same order — one builder, so the pseudo path and the simulated path cannot drift apart. */
+/** C# `default(ColorToken)`: transparent black in both modes. */
+const NO_COLOR: ColorTokenValue = {
+  light: { r: 0, g: 0, b: 0, a: 0 },
+  dark: { r: 0, g: 0, b: 0, a: 0 },
+} as ColorTokenValue;
+
 function diffEntries(diff: StyleDiffValue, style: BoxStyleValue): Record<string, string | undefined> {
   const entries: Record<string, string | undefined> = {};
   if (diff.background) entries['background-color'] = tokenValue(diff.background);
-  if (diff.borderWidth != null && diff.borderColor) {
-    entries['border'] = `${px(diff.borderWidth)} solid ${tokenValue(diff.borderColor)}`;
+  // The border along the edges the BASE draws, in the base's own shape (C# twin, #506): the
+  // shorthand for every edge, per-side widths for some, and a width alone in the base's colour.
+  if (diff.borderWidth != null) {
+    // C#'s base colour is a struct that is never absent: an unset one is transparent black.
+    const value = tokenValue(diff.borderColor ?? style.borderColor ?? NO_COLOR);
+    if (sidesAreAll(style)) {
+      entries['border'] = `${px(diff.borderWidth)} solid ${value}`;
+    } else {
+      entries['border-width'] = sideWidths(diff.borderWidth, style.borderSides ?? BORDER_ALL);
+      entries['border-style'] = 'solid';
+      entries['border-color'] = value;
+    }
   } else if (diff.borderColor) {
     entries['border-color'] = tokenValue(diff.borderColor);
   }
@@ -3785,6 +3802,13 @@ function lowerSafeArea(node: SafeAreaNode, context: LoweringContext, path: strin
   return wrapper;
 }
 
+/**
+ * C# `Pinned.ScrolledBase`: what a header's scrolled diff is laid over. A header draws nothing of its
+ * own, and its border is the hairline along its BOTTOM edge (BorderSides.Bottom = 4), the edge the
+ * content scrolls under.
+ */
+const PINNED_BASE: BoxStyleValue = { borderSides: 4 } as BoxStyleValue;
+
 function lowerPinned(node: PinnedNode, context: LoweringContext, path: string): HtmlNode {
   const float = node.float === true;
   const wrapper = element('div', {
@@ -3802,20 +3826,11 @@ function lowerPinned(node: PinnedNode, context: LoweringContext, path: string): 
     transition: node.transition ? transitionValue(node.transition) : undefined,
   });
 
-  // SCROLL-LINKED diff (C# twin): declarations land under the root-gated scrolled variant, and
-  // the tiny window listener that toggles `eq-scrolled` installs once per page.
+  // SCROLL-LINKED diff (C# twin, #506): every member of it, through the builder a box's states
+  // use, over the header's own base. The variant applies while the runtime marks the header
+  // scrolled, from the surface the header pins to (scrolled-pinned.ts).
   if (node.scrolledStyle) {
-    const diff = node.scrolledStyle;
-    const entries: Record<string, string | undefined> = {};
-    if (diff.background) entries['background-color'] = tokenValue(diff.background);
-    if (diff.borderWidth != null && diff.borderColor)
-      entries['border-bottom'] = `${px(diff.borderWidth)} solid ${tokenValue(diff.borderColor)}`;
-    if (diff.opacity != null) entries['opacity'] = num(diff.opacity);
-    if (diff.backdropBlur != null && diff.backdropBlur > 0) {
-      entries['backdrop-filter'] = `blur(${px(diff.backdropBlur)})`;
-      entries['-webkit-backdrop-filter'] = `blur(${px(diff.backdropBlur)})`;
-    }
-    const classes = atomizeScrolled(entries);
+    const classes = atomizeScrolled(diffEntries(node.scrolledStyle, PINNED_BASE));
     if (classes) mergeScrolledClasses(wrapper, classes);
     installScrolledController();
   }
@@ -3836,16 +3851,6 @@ function mergeScrolledClasses(node: HtmlNode, classes: string): void {
   node.attributes['class'] = existing ? `${existing} ${classes}` : classes;
 }
 
-let scrolledControllerInstalled = false;
-
-/** The scroll listener behind Pinned.ScrolledStyle: `eq-scrolled` on <html> past 8px. */
-function installScrolledController(): void {
-  if (scrolledControllerInstalled || typeof window === 'undefined') return;
-  scrolledControllerInstalled = true;
-  const apply = () => document.documentElement.classList.toggle('eq-scrolled', window.scrollY > 8);
-  window.addEventListener('scroll', apply, { passive: true });
-  apply();
-}
 
 /**
  * The gates around the subtree being lowered, outermost first — empty outside every AdaptiveNode

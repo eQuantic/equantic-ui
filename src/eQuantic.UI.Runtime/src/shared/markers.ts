@@ -19,3 +19,9 @@
 
 /** Marks scroll-anchored chrome (the `Pinned` node) so the anchor offset can measure it. */
 export const PINNED_MARKER = 'data-eq-pinned';
+
+/**
+ * Set by the runtime on a pinned header while the surface it pins to has scrolled past the
+ * threshold; the header's scrolled rules select on it (C# `StyleSink.ScrolledMarker`, #506).
+ */
+export const SCROLLED_MARKER = 'data-eq-scrolled';
