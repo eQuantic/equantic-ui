@@ -2400,7 +2400,9 @@ public class TypeScriptEmitter
         type.GetAttributes().Any(a => a.AttributeClass?.Name == "FlagsAttribute");
 
     /// <summary>The base CLASS of a declaration, or null. An interface in the base list is not one,
-    /// and a generic base loses its arguments — TypeScript needs none of them to extend.</summary>
+    /// and a generic base loses its arguments — TypeScript needs none of them to extend. An exception
+    /// class of the app's over one of .NET's, which has no twin, extends the runtime's exception base
+    /// (<see cref="Eq.ExceptionBase"/>, #611).</summary>
     private string? BaseClassOf(ClassDeclarationSyntax cls)
     {
         if (cls.BaseList is null) return null;
@@ -2409,6 +2411,8 @@ public class TypeScriptEmitter
             // Named as its twin: a namespace in the spelling is no name the module has (#479).
             var candidate = entry.Type.TwinTypeName(_semanticModel);
             var resolved = _semanticModel?.GetSymbolInfo(entry.Type).Symbol as INamedTypeSymbol;
+            if (resolved is not null && ExceptionTypes.Is(resolved) && !ExceptionTypes.HasTwin(resolved))
+                return Eq.ExceptionBase;
             if (resolved is not null ? resolved.TypeKind == TypeKind.Class : Resolvable(candidate))
                 return candidate;
         }
@@ -2455,6 +2459,10 @@ public class TypeScriptEmitter
         var builder = new TypeScriptCodeBuilder { TypeAnnotations = TypeAnnotations, Layout = _converter.Layout };
         builder.Class(name, BaseClassOf(cls), c =>
             {
+                // An exception class of the app's says the .NET types it is, which the runtime's base
+                // reads off the class an exception is constructed as, for a typed catch (#611).
+                if (!asStatic && semanticModel?.GetDeclaredSymbol(cls) is INamedTypeSymbol self && ExceptionTypes.HasTwin(self))
+                    c.Field("$types", null, JsExprWriter.Write(ExceptionTypes.TypesOf(self)), cls, isStatic: true);
                 EmitStaticMembers(cls, c, asStatic);
                 if (!asStatic) EmitInheritedDefaults(cls, c);
             },
@@ -2509,6 +2517,13 @@ public class TypeScriptEmitter
         // body is fine through it (it dereferences when called); a base class is not.
         var baseName = BaseClassOf(cls);
         if (baseName is not null) runtimeProvided.Remove(baseName);
+        // The runtime's exception base is reached through `$eq`, which the module imports, and is no
+        // module of its own (#611).
+        if (baseName == Eq.ExceptionBase)
+        {
+            core.Add(Eq.Import);
+            baseName = null;
+        }
         // Only what the emitted text NAMES. A type the C# mentions and the emission erases (an
         // interface, an enum) would otherwise import a name nothing uses — which the runtime's own
         // build rejects. Lookarounds rather than `\b`: `$eq` starts with a non-word character.

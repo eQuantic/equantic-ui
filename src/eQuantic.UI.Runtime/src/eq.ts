@@ -163,10 +163,12 @@ import {
   bases as exceptionBases,
   create as createException,
   exception,
+  Exception,
   filter as exceptionFilter,
   is as isException,
   raise,
   thrown,
+  typed as typedException,
   typeInitialization,
 } from './utils/exceptions';
 import {
@@ -492,7 +494,8 @@ export const $eq = {
    * type the runtime knows, the test a typed `catch` and a type pattern write, a `throw`
    * expression, what a `throw` statement throws when its exception may be null, an exception
    * filter, which answers false where it throws, and what a type whose initializer threw throws on
-   * every use.
+   * every use; and the base an exception class of the app's extends, with the chain a construction
+   * of a generic one tags it with.
    */
   exceptions: {
     create: createException,
@@ -503,6 +506,8 @@ export const $eq = {
     filter: exceptionFilter,
     typeInitialization,
     bases: exceptionBases,
+    Exception,
+    typed: typedException,
   },
   /** CSS class composition (the styling subsystem). */
   css: { styleBuilder: StyleBuilder, classBuilder: ClassBuilder, joinClasses, whenClass },

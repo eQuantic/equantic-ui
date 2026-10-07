@@ -435,6 +435,15 @@ public static class Eq
     /// throws on .NET's behalf. Two args: the type, the message.</summary>
     public const string ExceptionOf = "$eq.exceptions.of";
 
+    /// <summary>The class the twin of an exception class of the app's extends where its base is not the
+    /// app's (#611): the browser's Error, carrying the .NET types the twin's <c>static $types</c> says.
+    /// Its constructor is System.Exception's: the message, the inner exception.</summary>
+    public const string ExceptionBase = "$eq.exceptions.Exception";
+
+    /// <summary>An exception of a constructed generic class of the app's, tagged with that construction's
+    /// types, which its twin's <c>$types</c> cannot say. Two args: the exception, the types.</summary>
+    public const string ExceptionTyped = "$eq.exceptions.typed";
+
     /// <summary>Whether a value is of an exception type, by the type's full name: the test a typed
     /// <c>catch</c>, a type pattern and an <c>as</c> write.</summary>
     public const string ExceptionIs = "$eq.exceptions.is";

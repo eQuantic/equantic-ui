@@ -6,12 +6,13 @@ using eQuantic.UI.Compiler.CodeGen.Ir;
 namespace eQuantic.UI.Compiler.CodeGen.Strategies.Expressions;
 
 /// <summary>
-/// <c>new T(…)</c>, and the target-typed <c>new(…)</c>, where T is an exception: the browser's
+/// <c>new T(…)</c>, and the target-typed <c>new(…)</c>, where T is an exception of .NET's: the browser's
 /// exception, an <c>Error</c> carrying T and every type it derives from
 /// (<see cref="ExceptionTypes.Construction(IReadOnlyList{string}, BaseObjectCreationExpressionSyntax, ConversionContext)"/>),
-/// so a typed <c>catch</c> can tell it from another. Decided by the created type's SYMBOL: an exception
-/// of the app's own is one whatever its name, and <c>Exception e = new("x")</c> is one too, where it
-/// constructed a class named <c>Exception</c> that JavaScript does not have.
+/// so a typed <c>catch</c> can tell it from another. Decided by the created type's SYMBOL, and
+/// <c>Exception e = new("x")</c> is one too, where it constructed a class named <c>Exception</c> that
+/// JavaScript does not have. An exception class of the app's is a class, built as one is by
+/// <see cref="ObjectCreationStrategy"/>, over the base the runtime gives its twin (#611).
 /// <para>
 /// Every argument is evaluated, in the order it is written, as C# evaluates a constructor's: the
 /// message is the one bound to the constructor's <c>message</c> parameter (signatures differ:
@@ -19,7 +20,7 @@ namespace eQuantic.UI.Compiler.CodeGen.Strategies.Expressions;
 /// message)</c>), the last argument where the constructor cannot be asked, and the one argument of a
 /// constructor that takes one. The others run and are carried nowhere: a parameter name and an inner
 /// exception are not carried yet (#558). An object initializer is applied to the exception once it is
-/// built (#587); the members an app exception declares are not written yet (#611).
+/// built (#587).
 /// </para>
 /// </summary>
 public class ExceptionCreationStrategy : IExpressionIrStrategy
@@ -29,7 +30,8 @@ public class ExceptionCreationStrategy : IExpressionIrStrategy
 
     public bool CanConvert(SyntaxNode node, ConversionContext context) =>
         node is BaseObjectCreationExpressionSyntax
-        && ExceptionTypes.Is(context.SemanticHelper.GetType(node));
+        && context.SemanticHelper.GetType(node) is var type
+        && ExceptionTypes.Is(type) && !ExceptionTypes.HasTwin(type);
 
     public JsExpr ConvertIr(SyntaxNode node, ConversionContext context)
     {

@@ -7,11 +7,13 @@ namespace eQuantic.UI.Compiler.CodeGen.Strategies;
 /// <summary>
 /// An exception type as the browser knows it: a JavaScript <c>Error</c> that carries the .NET types it
 /// is, the most derived first and <c>System.Exception</c> last (the runtime's <c>utils/exceptions</c>).
-/// ONE place for the three things the translation asks of a type that derives from
-/// <c>System.Exception</c>, each answered from its SYMBOL:
+/// ONE place for what the translation asks of a type that derives from <c>System.Exception</c>, each
+/// answered from its SYMBOL:
 /// <list type="bullet">
-/// <item><see cref="Construction(INamedTypeSymbol, JsExpr?, ConversionContext)"/>: <c>new T(message)</c>,
-/// with T's chain written out.</item>
+/// <item><see cref="Construction(INamedTypeSymbol, JsExpr?, ConversionContext)"/>: <c>new T(message)</c>
+/// for a type of .NET's, with T's chain written out.</item>
+/// <item><see cref="HasTwin"/>: whether T is a class of the app's, which is built as any class is, over
+/// the runtime's <see cref="Eq.ExceptionBase"/>, its twin saying its chain (<see cref="TypesOf"/>, #611).</item>
 /// <item><see cref="Test"/>: whether a value is a T, which a typed <c>catch</c>, a type pattern and an
 /// <c>as</c> write alike.</item>
 /// <item><see cref="IsRoot"/>: whether T is <c>System.Exception</c> itself, which a <c>catch</c> takes
@@ -32,6 +34,43 @@ internal static class ExceptionTypes
         for (var at = type as INamedTypeSymbol; at is not null; at = at.BaseType)
             if (IsRoot(at)) return true;
         return false;
+    }
+
+    /// <summary>
+    /// Whether <paramref name="type"/> is an exception class whose twin eqc writes, one the app declares
+    /// on its own: a class like any other (#611), its members, its constructors and its methods its
+    /// twin's, built with <c>new</c> as a class is. It was an <c>Error</c> built by its symbol, with no
+    /// member of its own. A class with no module of its own (<see cref="Services.PlainClassModule"/>), a
+    /// nested one or one that stays on the server, is still built as that <c>Error</c>.
+    /// </summary>
+    public static bool HasTwin(ITypeSymbol? type) =>
+        type is INamedTypeSymbol { TypeKind: TypeKind.Class, ContainingType: null } named && Is(named)
+        && Expressions.ObjectCreationStrategy.TwinIsWritten(named)
+        && !Services.PlainClassModule.ServerOnlyAlongChain(named)
+        && !named.GetAttributes().Any(attribute => attribute.AttributeClass?.Name is "RuntimeProvided" or "RuntimeProvidedAttribute");
+
+    /// <summary>
+    /// The twin's <c>static $types</c>: the chain of the class the twin is written from, which the
+    /// runtime's base reads off the class an exception is constructed as, so an exception of a derived
+    /// class carries the derived class's. A generic class's says its type parameters (<c>Failed&lt;T&gt;</c>),
+    /// and each construction of it is tagged with its own (<see cref="Typed"/>).
+    /// </summary>
+    public static JsExpr TypesOf(INamedTypeSymbol type) =>
+        JsExpr.Array(ChainOf(type.OriginalDefinition).Select(name => JsExpr.Literal(JsStringLiteral.Quote(name))).ToList());
+
+    /// <summary>
+    /// A construction of an exception class of the app's, tagged with the chain its type has where the
+    /// twin's <c>$types</c> cannot say it: a constructed generic class (<c>new Failed&lt;int&gt;()</c>),
+    /// whose twin knows only <c>Failed&lt;T&gt;</c>, while a typed <c>catch</c> tells
+    /// <c>Failed&lt;int&gt;</c> from <c>Failed&lt;string&gt;</c>. Any other is the construction as it is.
+    /// </summary>
+    public static JsExpr Typed(JsExpr construction, INamedTypeSymbol type, ConversionContext context)
+    {
+        var chain = ChainOf(type);
+        if (chain.SequenceEqual(ChainOf(type.OriginalDefinition))) return construction;
+        context.UsedHelpers.Add(Eq.Import);
+        return JsExpr.Call(JsExpr.Identifier(Eq.ExceptionTyped), construction,
+            JsExpr.Array(chain.Select(name => JsExpr.Literal(JsStringLiteral.Quote(name))).ToList()));
     }
 
     /// <summary>Whether <paramref name="type"/> is <c>System.Exception</c> itself.</summary>

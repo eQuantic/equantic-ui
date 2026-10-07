@@ -630,15 +630,14 @@ public class ObjectCreationStrategy : IExpressionIrStrategy
     /// <summary>
     /// Whether <paramref name="type"/> is a class whose twin eqc writes with its C# constructors
     /// (<see cref="TwinConstructor"/>, #583), which is built as a record is
-    /// (<see cref="BuildClassConstruction"/>). A node of the tree, a component and a component's state
-    /// take their initializer as the props the runtime's classes take, an exception is built by its
-    /// symbol (<see cref="ExceptionCreationStrategy"/>), and the vocabulary's hand-written twins take a
-    /// config object of their own.
+    /// (<see cref="BuildClassConstruction"/>), an exception class of the app's among them (#611). A node
+    /// of the tree, a component and a component's state take their initializer as the props the
+    /// runtime's classes take, and the vocabulary's hand-written twins take a config object of their own.
     /// </summary>
     internal static bool IsBuiltAsCSharp(INamedTypeSymbol type) =>
         type is { TypeKind: TypeKind.Class, IsRecord: false, IsStatic: false }
         && TwinIsWritten(type)
-        && !type.IsVisualNode() && !type.IsComponentState() && !ExceptionTypes.Is(type);
+        && !type.IsVisualNode() && !type.IsComponentState();
 
     /// <summary>
     /// A plain class built as C# builds it (#582): the constructor the call binds, then the object
@@ -649,6 +648,8 @@ public class ObjectCreationStrategy : IExpressionIrStrategy
         ConversionContext context)
     {
         var construction = Construction(creation, type, context.SemanticHelper.GetSymbol(creation) as IMethodSymbol, context);
+        // An exception of a constructed generic class carries that construction's types (#611).
+        if (ExceptionTypes.HasTwin(type)) construction = ExceptionTypes.Typed(construction, type, context);
         return creation.Initializer switch
         {
             null => construction,

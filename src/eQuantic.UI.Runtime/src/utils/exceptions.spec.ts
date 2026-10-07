@@ -1,6 +1,17 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import { bases, create, exception, filter, is, raise, typeInitialization, typesOf } from './exceptions';
+import {
+  bases,
+  create,
+  exception,
+  Exception,
+  filter,
+  is,
+  raise,
+  typed,
+  typeInitialization,
+  typesOf,
+} from './exceptions';
 
 const ARGUMENT_NULL = [
   'System.ArgumentNullException',
@@ -40,6 +51,65 @@ describe('a .NET exception carries the types it is', () => {
 
   it('takes a null message as no message', () => {
     expect(create(ARGUMENT_NULL, null).message).toBe('');
+  });
+});
+
+describe("an exception class of the app's own is a class over the browser's Error (#611)", () => {
+  // The shape of the twin eqc writes for `class Failure : Exception`: its chain in `static $types`.
+  class Failure extends Exception {
+    static $types = ['App.Failure', 'System.Exception'];
+    code = 7;
+  }
+  class Retry extends Failure {
+    static $types = ['App.Retry', 'App.Failure', 'System.Exception'];
+  }
+  class Custom extends Exception {
+    static $types = ['App.Custom', 'System.Exception'];
+    get message(): string {
+      return 'custom:' + super.message;
+    }
+  }
+
+  it('is an Error carrying the types its class says, and a derived class its own', () => {
+    const retry = new Retry('r');
+    expect(retry).toBeInstanceOf(Error);
+    expect(retry.name).toBe('Retry');
+    expect(typesOf(retry)).toEqual(['App.Retry', 'App.Failure', 'System.Exception']);
+    expect(is(new Failure(), 'App.Retry')).toBe(false);
+    expect(retry.code).toBe(7);
+  });
+
+  it('keeps the message and the inner exception it was handed, and null for none', () => {
+    const inner = exception('System.InvalidOperationException', 'inner');
+    const outer = new Failure('outer', inner) as Failure & { innerException: unknown };
+    expect(outer.message).toBe('outer');
+    const alone = new Failure('alone') as Failure & { innerException: unknown };
+    expect(outer.innerException).toBe(inner);
+    expect(alone.innerException).toBe(null);
+  });
+
+  it("reads a missing message as .NET's default for the type it is", () => {
+    expect(new Failure().message).toBe("Exception of type 'App.Failure' was thrown.");
+    expect(new Retry(null).message).toBe("Exception of type 'App.Retry' was thrown.");
+  });
+
+  it('lets a class override Message, which the Error constructor would have hidden', () => {
+    expect(new Custom('text').message).toBe('custom:text');
+  });
+
+  it('keeps its members and its chain out of the way of JSON', () => {
+    expect(JSON.stringify(new Failure('m'))).toBe('{"code":7}');
+  });
+
+  it("tags a construction of a generic class with that construction's types", () => {
+    class Failed extends Exception {
+      static $types = ['App.Failed<T>', 'System.Exception'];
+    }
+    const failed = typed(new Failed('x'), ['App.Failed<int>', 'System.Exception']);
+    expect(is(failed, 'App.Failed<int>')).toBe(true);
+    expect(is(failed, 'App.Failed<string>')).toBe(false);
+    expect(failed.name).toBe('Failed');
+    expect(failed.message).toBe('x');
   });
 });
 

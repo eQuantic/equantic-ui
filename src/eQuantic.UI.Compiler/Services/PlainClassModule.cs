@@ -1,6 +1,5 @@
 using eQuantic.UI.Compiler.CodeGen;
 using eQuantic.UI.Compiler.CodeGen.Extensions;
-using eQuantic.UI.Compiler.CodeGen.Strategies;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
@@ -28,20 +27,24 @@ namespace eQuantic.UI.Compiler.Services;
 /// the type carries its members, and one module per declaration is what <see cref="EmittedTwins"/>
 /// reports as divided;</item>
 /// <item>and a class over a base that keeps it out has none: an ATTRIBUTE is metadata the browser never
-/// reads, an EXCEPTION is built as the JavaScript <c>Error</c> its construction lowers to, and a class
-/// whose base stays on the server could not extend it. Each is a fact of the whole CHAIN of base
-/// CLASSES, not of the name the class's first base has: <c>class Retry : Failure</c> over
-/// <c>class Failure : Exception</c> is an exception too, and was given a module extending one nothing
-/// wrote, while <c>class ColorAttribute : IProductAttribute</c> derives from no attribute at all, an
-/// interface in a base list being no base class.</item>
+/// reads, and a class whose base stays on the server could not extend it. Each is a fact of the whole
+/// CHAIN of base CLASSES, not of the name the class's first base has: <c>class Underline : Mark</c> over
+/// <c>class Mark : Attribute</c> is an attribute too, while <c>class ColorAttribute :
+/// IProductAttribute</c> derives from no attribute at all, an interface in a base list being no base
+/// class.</item>
 /// </list>
+/// <para>
+/// An EXCEPTION class of the app's is a class (#611): its twin extends the runtime's exception base,
+/// or the twin of the app's exception it derives from, and carries the members it declares. It was kept
+/// out, built as an <c>Error</c> with no member, and everything it declared was gone.
+/// </para>
 /// <para>
 /// The chain is asked of the SYMBOL wherever the host has the project's compilation, which sees every
 /// declaration of the app and every assembly it references: the parser asks its model, and the
 /// resolver the same compilation, so the two read one answer by construction. A base from a library
 /// is judged as what it is there, whatever its name says: <c>ColorAttribute : ProductAttribute</c>
-/// over a library's plain class is a class, and <c>OrderFailed : DomainError</c> over a library's
-/// exception is an exception. Only a host with no compilation at all walks the chain by NAME, through
+/// over a library's plain class is a class, and <c>Underline : Emphasis</c> over a library's attribute
+/// is an attribute. Only a host with no compilation at all walks the chain by NAME, through
 /// the <see cref="Scan"/> of every file it read, and judges by its name only a base the scan never saw
 /// declared (<see cref="KeepsOutByName"/>); the parser of such a host reads the resolver's scan, which
 /// reaches across files where its own file does not.
@@ -102,16 +105,16 @@ internal static class PlainClassModule
     /// <summary>
     /// Whether the type's own declarations, or its chain of base CLASSES, keep it out: the type or a
     /// class it derives from is marked <c>[ServerOnly]</c> (on any of its partial declarations), or it
-    /// derives from <c>System.Attribute</c> or <c>System.Exception</c>. An interface is never on the
-    /// chain. A base the compilation cannot bind is an error type, known by its name alone, and the
-    /// walk goes on through the scan from that name.
+    /// derives from <c>System.Attribute</c>. An exception is a class like any other (#611). An interface
+    /// is never on the chain. A base the compilation cannot bind is an error type, known by its name
+    /// alone, and the walk goes on through the scan from that name.
     /// </summary>
     private static bool KeptOut(INamedTypeSymbol type, Scan scan)
     {
         for (var at = type; at is not null; at = at.BaseType)
         {
             if (at.TypeKind == TypeKind.Error) return scan.KeepsOutFrom(at.Name);
-            if (IsServerOnly(at) || ExceptionTypes.IsRoot(at) || IsAttributeRoot(at)) return true;
+            if (IsServerOnly(at) || IsAttributeRoot(at)) return true;
         }
         return false;
     }
@@ -141,14 +144,12 @@ internal static class PlainClassModule
 
     /// <summary>
     /// Whether a type that no declaration in sight declares, known by its name alone, keeps a class over
-    /// it out: an attribute or an exception of .NET, named so by the convention every one of them
-    /// follows. Asked only at the end of a chain the caller could not walk further, by a host with no
-    /// compilation to ask.
+    /// it out: an attribute of .NET, named so by the convention every one of them follows. Asked only at
+    /// the end of a chain the caller could not walk further, by a host with no compilation to ask. An
+    /// exception keeps nothing out, a class over one being a class (#611).
     /// </summary>
     internal static bool KeepsOutByName(string name) =>
-        name is "Attribute" or "Exception"
-        || name.EndsWith("Attribute", StringComparison.Ordinal)
-        || name.EndsWith("Exception", StringComparison.Ordinal);
+        name == "Attribute" || name.EndsWith("Attribute", StringComparison.Ordinal);
 
     /// <summary>
     /// What a scan saw of the app's type declarations, by simple name, every file it read together: the

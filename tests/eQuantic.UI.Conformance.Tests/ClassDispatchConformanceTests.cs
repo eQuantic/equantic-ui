@@ -12,7 +12,10 @@ namespace eQuantic.UI.Conformance.Tests;
 /// (#563);</item>
 /// <item>a class that implements <c>IEnumerable&lt;T&gt;</c> is enumerated as its own
 /// <c>GetEnumerator()</c> says, by a <c>foreach</c>, a spread, <c>string.Join</c> and LINQ alike
-/// (#612).</item>
+/// (#612);</item>
+/// <item>an exception class of the app's is a class, with its fields, its constructors, its base's
+/// message, its inner exception and its methods, over the browser's <c>Error</c>, and a typed
+/// <c>catch</c> takes it (#611).</item>
 /// </list>
 /// </summary>
 public class ClassDispatchConformanceTests
@@ -160,4 +163,66 @@ public class ClassDispatchConformanceTests
     [InlineData(false)]
     public void AClassThatImplementsIEnumerable_IsEnumeratedAsItsGetEnumeratorSays(bool typeAnnotations) =>
         ModuleGraph.AssertSameAsDotNet(Sequences, typeAnnotations, SequenceCases);
+
+    private const string Exceptions = """
+        using System;
+        using System.Collections.Generic;
+        using App;
+        namespace App
+        {
+            public class Failure : Exception
+            {
+                public int Code = 7;
+                public List<int> Ids { get; } = new();
+                public Failure() : base("failed") { Ids.Add(1); }
+                public Failure(string message, Exception inner) : base(message, inner) { }
+                public string Describe() => "f" + Code + ":" + Ids.Count;
+            }
+            public class Retry : Failure { public int Attempts { get; init; } = 3; public Retry() { Code = 9; } }
+            public class Oops : Exception { }
+            public class Custom : Exception
+            {
+                public Custom() : base("inner text") { }
+                public override string Message => "custom:" + base.Message;
+            }
+            public class Gate : InvalidOperationException { public Gate(string m) : base(m) { } }
+            public class Failed<T> : Exception
+            {
+                public T Value;
+                public Failed(T value) : base("failed " + value) { Value = value; }
+            }
+            public class Coded(int number) : Exception("code " + number) { public int Code => number; }
+        }
+        """;
+
+    private static readonly (string Name, string Statements)[] ExceptionCases =
+    [
+        ("a field", "return new Failure().Code;"),
+        ("a property with an initializer", "return new Failure(\"m\", null!).Ids.Count;"),
+        ("a constructor's body", "return string.Join(\",\", new Failure().Ids);"),
+        ("the base's message", "return new Failure().Message;"),
+        ("an inner exception",
+            "var f = new Failure(\"outer\", new InvalidOperationException(\"inner\")); return f.Message + \"|\" + f.InnerException!.Message + \"|\" + (f.InnerException is InvalidOperationException);"),
+        ("no inner exception is null", "return new Failure().InnerException == null;"),
+        ("a method", "return new Failure().Describe();"),
+        ("a derived class's constructor over its base's", "var r = new Retry(); return r.Code + \"|\" + r.Attempts + \"|\" + r.Describe();"),
+        ("an object initializer", "var r = new Retry { Attempts = 5 }; return r.Attempts + \"|\" + r.Code;"),
+        ("a typed catch of the class",
+            "try { throw new Retry(); } catch (ArgumentException) { return \"argument\"; } catch (Failure f) { return f.Describe() + \"|\" + (f is Retry) + \"|\" + f.Message; }"),
+        ("a catch of the .NET type it derives from",
+            "try { throw new Gate(\"closed\"); } catch (ArgumentException) { return \"argument\"; } catch (InvalidOperationException e) { return e.Message + \"|\" + (e is Gate); }"),
+        ("a filter that reads a member",
+            "try { throw new Coded(7); } catch (Coded c) when (c.Code == 8) { return \"eight\"; } catch (Coded c) when (c.Code == 7) { return \"seven\"; }"),
+        ("the default message", "return new Oops().Message;"),
+        ("an override of Message", "return new Custom().Message;"),
+        ("a generic class, caught by its construction",
+            "try { throw new Failed<int>(3); } catch (Failed<string>) { return \"string\"; } catch (Failed<int> f) { return f.Value + \"|\" + f.Message; }"),
+        ("a primary constructor and its base clause", "var c = new Coded(4); return c.Code + \"|\" + c.Message;"),
+    ];
+
+    [SkippableTheory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void AnExceptionOfTheAppsOwn_IsAClassOverTheBrowsersError(bool typeAnnotations) =>
+        ModuleGraph.AssertSameAsDotNet(Exceptions, typeAnnotations, ExceptionCases);
 }

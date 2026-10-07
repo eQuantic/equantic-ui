@@ -3,6 +3,7 @@ using System.Linq;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using Microsoft.CodeAnalysis.Operations;
 using eQuantic.UI.Compiler.CodeGen.Extensions;
 using eQuantic.UI.Compiler.CodeGen.Ir;
 using eQuantic.UI.Compiler.CodeGen.Strategies;
@@ -525,27 +526,44 @@ internal sealed class TwinConstructor
     private IReadOnlyList<JsStatement> SuperCall(Root root, PrimaryConstructorBaseTypeSyntax? clause)
     {
         if (root.Explicit?.Initializer is { } chain && chain.ThisOrBaseKeyword.IsKind(SyntaxKind.BaseKeyword))
-            return Super(chain.ArgumentList, BoundArguments.Of(_modelFor(chain)?.GetOperation(chain),
-                argument => JsExpr.Opaque(_converter.ConvertExpression(argument))),
-                argument => _converter.ConvertExpression(argument));
+        {
+            var called = _modelFor(chain)?.GetOperation(chain);
+            return Super(chain.ArgumentList, BoundArguments.Of(called, argument => JsExpr.Opaque(_converter.ConvertExpression(argument))),
+                argument => _converter.ConvertExpression(argument), ExceptionBase(called));
+        }
         if (clause?.ArgumentList is { } list)
-            return Super(list, BoundArguments.Of(_modelFor(clause)?.GetOperation(clause),
-                    argument => JsExpr.Opaque(InPrimaryScope(argument))),
-                InPrimaryScope);
+        {
+            var called = _modelFor(clause)?.GetOperation(clause);
+            return Super(list, BoundArguments.Of(called, argument => JsExpr.Opaque(InPrimaryScope(argument))),
+                InPrimaryScope, ExceptionBase(called));
+        }
         return [CallSuper([])];
     }
+
+    /// <summary>
+    /// The constructor of an exception of .NET's that a base call reaches, which the runtime's exception
+    /// base stands for in the twin of an exception class of the app's (#611); null for any other.
+    /// </summary>
+    private static IMethodSymbol? ExceptionBase(IOperation? called) =>
+        called is IInvocationOperation { TargetMethod: { MethodKind: MethodKind.Constructor } constructor }
+        && ExceptionTypes.Is(constructor.ContainingType) && !ExceptionTypes.HasTwin(constructor.ContainingType)
+            ? constructor
+            : null;
 
     /// <summary>An argument of the base clause, which runs before `super()`, where the parameters are
     /// the constructor's own and `this` cannot be read: `: Base(X + 1)` wrote `super(this.x + 1)`.</summary>
     private string InPrimaryScope(ExpressionSyntax argument) =>
         _converter.WithConstructorParametersInScope(() => _converter.ConvertExpression(argument));
 
-    private IReadOnlyList<JsStatement> Super(ArgumentListSyntax list, BoundArguments? bound, Func<ExpressionSyntax, string> convert)
+    private IReadOnlyList<JsStatement> Super(ArgumentListSyntax list, BoundArguments? bound, Func<ExpressionSyntax, string> convert,
+        IMethodSymbol? exceptionBase = null)
     {
         var statements = list.Arguments.Select(argument => Declarations(argument.Expression)).OfType<JsStatement>().ToList();
         // No model: the arguments in the order they are written.
         if (bound is null)
             statements.Add(CallSuper(list.Arguments.Select(argument => JsExpr.Opaque(convert(argument.Expression))).ToList()));
+        else if (exceptionBase is not null)
+            statements.AddRange(ExceptionSuper(exceptionBase, bound));
         else if (bound.InWrittenOrder)
             statements.Add(CallSuper(bound.InParameterOrder()));
         else
@@ -553,6 +571,32 @@ internal sealed class TwinConstructor
             statements.AddRange(bound.Written.Select((value, i) => JsStatement.Const($"$s{i}", value)));
             statements.Add(CallSuper(bound.InParameterOrder(i => JsExpr.Identifier($"$s{i}"))));
         }
+        return statements;
+    }
+
+    /// <summary>
+    /// The call of the runtime's exception base (<see cref="Eq.ExceptionBase"/>, #611), whose constructor
+    /// is <c>System.Exception</c>'s, from the constructor of the exception of .NET's the base call binds:
+    /// the argument bound to its <c>message</c> and the one bound to its <c>innerException</c>, whatever
+    /// their places in its signature (<c>ArgumentOutOfRangeException(paramName, message)</c>). Every
+    /// argument is still evaluated, in the order it is written, each into a temporary of its own unless
+    /// the two are all there is, written in that order; one that is neither runs and is carried nowhere,
+    /// as an exception of .NET's built by its symbol carries it nowhere (#558).
+    /// </summary>
+    private static IReadOnlyList<JsStatement> ExceptionSuper(IMethodSymbol constructor, BoundArguments bound)
+    {
+        int? WrittenFor(string parameter) =>
+            constructor.Parameters.FirstOrDefault(candidate => candidate.Name == parameter) is { } found
+            && bound.ByParameter[found.Ordinal] is [{ Written: >= 0 } slot, ..]
+                ? slot.Written
+                : null;
+        var passed = new[] { WrittenFor("message"), WrittenFor("innerException") };
+        var count = passed[1] is not null ? 2 : passed[0] is not null ? 1 : 0;
+        if (passed.Take(count).Select(written => written ?? -1).SequenceEqual(Enumerable.Range(0, bound.Written.Count)))
+            return [CallSuper(passed.Take(count).Select(written => bound.Written[written!.Value]).ToList())];
+        var statements = bound.Written.Select((value, i) => JsStatement.Const($"$s{i}", value)).ToList<JsStatement>();
+        statements.Add(CallSuper(passed.Take(count)
+            .Select(written => written is { } index ? JsExpr.Identifier($"$s{index}") : JsExpr.Identifier("undefined")).ToList()));
         return statements;
     }
 

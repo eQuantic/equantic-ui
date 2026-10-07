@@ -5,9 +5,11 @@
  * `catch (InvalidOperationException)` caught an `ArgumentException`, and two clauses could not be
  * told apart at all.
  *
- * Two doors make one, and both carry the whole chain:
- * - the translated code's `new T(message)`, where the compiler writes T and the types it derives from,
- *   read off T's symbol ({@link create}), an exception of the app's own included;
+ * Three doors make one, and each carries the whole chain:
+ * - the translated code's `new T(message)` for a type of .NET's, where the compiler writes T and the
+ *   types it derives from, read off T's symbol ({@link create});
+ * - an exception class of the app's own, which is a class like any other: its twin extends
+ *   {@link Exception}, and says its chain in `static $types` (#611);
  * - the runtime's own throws on .NET's behalf, each of the type .NET throws for the same operation
  *   ({@link exception}), from the table below, which the conformance suite compares with .NET's own
  *   hierarchy.
@@ -82,15 +84,72 @@ const NULL_REFERENCE = chainOf('System.NullReferenceException');
  * they printed `Error: …`.
  */
 export function create(types: readonly string[], message?: string | null, ..._evaluated: unknown[]): Error {
-  const error = new Error(message ?? undefined) as Tagged;
-  // Defined rather than assigned: an assignment makes `name` an own enumerable property, which an
-  // Error's own `name` (its prototype's) is not, and JSON would start writing it.
+  const error = new Error(message ?? undefined);
+  tag(error, types);
+  return error;
+}
+
+/**
+ * Gives an error its .NET types and the `name` the first one's simple name is. Defined rather than
+ * assigned: an assignment makes `name` an own enumerable property, which an Error's own `name` (its
+ * prototype's) is not, and JSON would start writing it.
+ */
+function tag(error: Error, types: readonly string[]): void {
   Object.defineProperty(error, 'name', {
     value: simpleName(types[0]),
     writable: true,
     configurable: true,
   });
-  Object.defineProperty(error, TYPES, { value: types });
+  Object.defineProperty(error, TYPES, { value: types, configurable: true });
+}
+
+/** Where an app exception keeps the message its constructor was handed: null for none. */
+const MESSAGE = Symbol('eq.exception.message');
+
+/** An app exception's twin, as the base reads it: the chain its class says. */
+type Twin = { readonly $types?: readonly string[] };
+
+/**
+ * The base of the twin of an exception class of the app's own (#611): the browser's `Error`, carrying
+ * the .NET types the class is, which its twin says in `static $types` (itself first, `System.Exception`
+ * last), so a typed `catch` reads it as it reads one {@link create} built, and an exception of a
+ * derived class carries the derived class's. The class's members are its twin's: it was an `Error`
+ * built by its symbol, with no members at all, so its fields, its constructor's body and its methods
+ * were gone.
+ *
+ * The constructor is `System.Exception`'s, a message and an inner exception, which `Message` and
+ * `InnerException` read. A message that is null or missing is .NET's default, composed when it is read
+ * from the type the exception is. `Message` is virtual in .NET, so it is an accessor on the prototype,
+ * which the twin of a class that overrides it replaces: a message the `Error` constructor wrote would be
+ * the instance's own, and would hide every override.
+ */
+export class Exception extends Error {
+  constructor(message?: string | null, innerException?: unknown) {
+    super();
+    tag(this, (new.target as unknown as Twin).$types ?? EXCEPTION);
+    Object.defineProperty(this, MESSAGE, { value: message ?? null, writable: true });
+    Object.defineProperty(this, 'innerException', {
+      value: innerException ?? null,
+      writable: true,
+      configurable: true,
+    });
+  }
+}
+
+Object.defineProperty(Exception.prototype, 'message', {
+  get(this: Exception & { [MESSAGE]: string | null }): string {
+    return this[MESSAGE] ?? `Exception of type '${(this as Tagged)[TYPES]?.[0]}' was thrown.`;
+  },
+  configurable: true,
+});
+
+/**
+ * An exception of a generic class of the app's, built as one of its constructions (`new Failed<int>()`),
+ * tagged with that construction's chain: its twin's `$types` can only say the class
+ * (`Failed<T>`), and a typed `catch` tells `Failed<int>` from `Failed<string>`.
+ */
+export function typed<E extends Error>(error: E, types: readonly string[]): E {
+  tag(error, types);
   return error;
 }
 
