@@ -108,16 +108,19 @@ public class LinqTableStrategy : IExpressionIrStrategy
     /// of an operator that takes one, which the fence has passed (<see cref="KeyComparers"/>) and which
     /// asks for what the template already does. <c>ToDictionary(k, comparer)</c> is
     /// <c>ToDictionary(k)</c>'s shape, where its count made it the shape of <c>ToDictionary(k, e)</c>.
+    /// The comparer is found by its POSITION among the arguments the bound tree names, so a call a
+    /// strategy rebuilt (a <c>?.</c>'s, which copies its arguments position by position) drops its own.
     /// </summary>
     private static IReadOnlyList<ArgumentSyntax> Shaped(string name, InvocationExpressionSyntax invocation, ConversionContext context)
     {
         var arguments = invocation.ArgumentList.Arguments;
         if (!TakesAKeyComparer(name) || context.SemanticHelper.GetOperation(invocation) is not IInvocationOperation call) return arguments;
+        var written = (context.SemanticHelper.Original(invocation) as InvocationExpressionSyntax)?.ArgumentList.Arguments ?? arguments;
         var comparers = call.Arguments
-            .Where(argument => argument.Parameter?.Type.IsEqualityComparer() == true)
-            .Select(argument => argument.Syntax)
+            .Where(argument => argument.Parameter?.Type.IsEqualityComparer() == true && argument.Syntax is ArgumentSyntax)
+            .Select(argument => written.IndexOf((ArgumentSyntax)argument.Syntax))
             .ToHashSet();
-        return arguments.Where(argument => !comparers.Contains(argument)).ToList();
+        return arguments.Where((_, at) => !comparers.Contains(at)).ToList();
     }
 
     /// <summary>

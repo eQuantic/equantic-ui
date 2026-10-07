@@ -67,6 +67,8 @@ public class CollectionAndIndexerConformanceTests
     [InlineData("var d = new[] { \"a\", \"bb\" }.ToDictionary(comparer: EqualityComparer<int>.Default, elementSelector: w => w + \"?\", keySelector: w => w.Length); return d[2];")] // bb?
     // A key twice is refused as it is without a comparer.
     [InlineData("try { new[] { \"a\", \"a\" }.ToDictionary(w => w, StringComparer.Ordinal); return \"built\"; } catch (Exception e) { return e.Message; }")]
+    // After a null-conditional, whose call is rebuilt over its receiver, the comparer is still the one dropped.
+    [InlineData("string[] none = null; var words = new[] { \"a\", \"bb\" }; var d = none?.ToDictionary(w => w, StringComparer.Ordinal); var e = words?.ToDictionary(w => w.Length, EqualityComparer<int>.Default); var l = words?.ToLookup(w => w.Length, EqualityComparer<int>.Default); return (d == null) + \"|\" + e[2] + \"|\" + l[1].Count();")] // True|bb|1
     // ToLookup takes a comparer where it takes an element selector, and after one.
     [InlineData("var l = new[] { \"a\", \"bb\", \"cc\" }.ToLookup(w => w.Length, EqualityComparer<int>.Default); return string.Join(\",\", l[2]) + \"|\" + l.Count;")] // bb,cc|2
     [InlineData("var l = new[] { \"a\", \"A\", \"a\" }.ToLookup(w => w, StringComparer.Ordinal); return l.Count + \"|\" + l[\"a\"].Count();")] // 2|2
