@@ -12,7 +12,8 @@ internal sealed partial class EmitVisitor
 {
     private void EmitPressable(Pressable pressable, EmitState s)
     {
-        s.Input.Add(new HitRegion(ExpandHitRect(s.Node.Bounds, s.Press.Density), pressable, s.Node.Path ?? ""));
+        s.Input.Add(new HitRegion(ExpandHitRect(s.Node.Bounds, s.Press.Density), s.Node.Bounds, pressable,
+            s.Node.Path ?? ""));
 
         // A PRESSABLE IS THE STOP FOR ITS SUBTREE, exactly as a link, an Adjustable and a Navigable
         // are, and for the reason all four share: `Visit(Pressable)` announces and CONSUMES, so

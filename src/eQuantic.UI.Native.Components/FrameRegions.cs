@@ -14,18 +14,41 @@ namespace eQuantic.UI.Native.Components;
 /// </summary>
 internal sealed class FrameRegions
 {
-    public List<HitRegion> Hits { get; } = [];
-    public List<HoverRegion> Hovers { get; } = [];
-    public List<ScrollRegion> Scrolls { get; } = [];
-    public List<DragRegion> Drags { get; } = [];
-    public List<LinkRegion> Links { get; } = [];
-    public List<ShortcutBinding> Shortcuts { get; } = [];
-    public List<TextRegion> Texts { get; } = [];
-    public List<FocusStop> Stops { get; } = [];
-    public List<CodeRegion> Codes { get; } = [];
-    public List<SheetRegion> Sheets { get; } = [];
-    public List<CursorRegion> Cursors { get; } = [];
-    public List<CanvasRegion> Canvases { get; } = [];
+    /// <summary>
+    /// The lists, each as long as <paramref name="sizedLike"/>'s, the frame before this one. A steady
+    /// frame registers what the last one did, and a list grown from empty by doubling allocates near
+    /// three times what it ends up holding: the hit regions alone were four arrays a frame, of which
+    /// three were thrown away, and sized once they make room for what a region carries (its drawn
+    /// box, #630) at less than they cost before.
+    /// </summary>
+    public FrameRegions(RealizeResult? sizedLike = null)
+    {
+        Hits = new List<HitRegion>(sizedLike?.HitRegions.Count ?? 0);
+        Hovers = new List<HoverRegion>(sizedLike?.HoverRegions.Count ?? 0);
+        Scrolls = new List<ScrollRegion>(sizedLike?.ScrollRegions.Count ?? 0);
+        Drags = new List<DragRegion>(sizedLike?.DragRegions.Count ?? 0);
+        Links = new List<LinkRegion>(sizedLike?.LinkRegions.Count ?? 0);
+        Shortcuts = new List<ShortcutBinding>(sizedLike?.Shortcuts.Count ?? 0);
+        Texts = new List<TextRegion>(sizedLike?.TextRegions.Count ?? 0);
+        Stops = new List<FocusStop>(sizedLike?.FocusStops.Count ?? 0);
+        Codes = new List<CodeRegion>(sizedLike?.CodeRegions.Count ?? 0);
+        Sheets = new List<SheetRegion>(sizedLike?.SheetRegions.Count ?? 0);
+        Cursors = new List<CursorRegion>(sizedLike?.CursorRegions.Count ?? 0);
+        Canvases = new List<CanvasRegion>(sizedLike?.CanvasRegions.Count ?? 0);
+    }
+
+    public List<HitRegion> Hits { get; }
+    public List<HoverRegion> Hovers { get; }
+    public List<ScrollRegion> Scrolls { get; }
+    public List<DragRegion> Drags { get; }
+    public List<LinkRegion> Links { get; }
+    public List<ShortcutBinding> Shortcuts { get; }
+    public List<TextRegion> Texts { get; }
+    public List<FocusStop> Stops { get; }
+    public List<CodeRegion> Codes { get; }
+    public List<SheetRegion> Sheets { get; }
+    public List<CursorRegion> Cursors { get; }
+    public List<CanvasRegion> Canvases { get; }
 
     /// <summary>
     /// The live regions this frame holds — LAZY, alone among the thirteen, and measured rather than

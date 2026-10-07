@@ -232,7 +232,7 @@ public sealed class PhotonHost
             Selection.Start, Selection.End, density: Density,
             scrollOffset: path => _scrolls.Get(path), markedText: _marked, pathCache: _pathCache, hoveredPaths: _hoverPaths,
             nodePool: RecycleFrames ? _nodePool : null, inViewStore: _inView,
-            windowControlsInsets: WindowControlsInsets);
+            windowControlsInsets: WindowControlsInsets, sizedLike: previousFrame);
         if (RenderScale != 1f) builder.Pop();
         // The frame we just replaced is OURS to discard — nobody else holds production frames.
         // (Opt-in: anything that retains RealizeResults — tests, tooling — leaves this off and
@@ -1775,13 +1775,10 @@ public sealed class PhotonHost
         var hits = _lastFrame.HitRegions;
         var links = _lastFrame.LinkRegions;
 
-        for (var i = hits.Count - 1; i >= 0; i--)
-        {
-            if (!hits[i].Bounds.Contains(point)) continue;
-            // A disabled control says so: the pointer is the only warning before the click that
-            // does nothing.
-            return hits[i].Node.Disabled ? CursorShape.NotAllowed : CursorShape.Pointer;
-        }
+        // A disabled control says so: the pointer is the only warning before the click that does
+        // nothing.
+        if (HitAt(hits, point) is var hit and >= 0)
+            return hits[hit].Node.Disabled ? CursorShape.NotAllowed : CursorShape.Pointer;
         for (var i = fields.Count - 1; i >= 0; i--)
             if (fields[i].Bounds.Contains(point))
                 return fields[i].Entry.Disabled ? CursorShape.NotAllowed : CursorShape.Text;
@@ -1881,7 +1878,9 @@ public sealed class PhotonHost
         var regions = _lastFrame.HitRegions;
         _pressSwallowed = false;
         string? swallowedBy = null;
-        for (var i = regions.Count - 1; i >= 0; i--)
+        // From the region the point lands on (HitAt), down: a slop above it that lost the point to a
+        // box drawn beside it takes no part, inert or not.
+        for (var i = HitAt(regions, point); i >= 0; i--)
         {
             var region = regions[i];
             if (!region.Bounds.Contains(point)) continue;
@@ -2248,15 +2247,42 @@ public sealed class PhotonHost
 
         var point = new Point(x, y);
         var regions = _lastFrame.HitRegions;
+        var hit = HitAt(regions, point);
+        if (hit < 0) return false;
+        if (!regions[hit].Node.Disabled) regions[hit].Node.OnPressed?.Invoke();
+        return true;
+    }
+
+    /// <summary>
+    /// The hit region <paramref name="point"/> lands on, as an index into <paramref name="regions"/>,
+    /// or -1. The topmost region DRAWN under the point takes it, unless a region in front of that one
+    /// reaches the point only with its slop (the target a control keeps beyond its box, §08) and
+    /// stands inside its box: an icon button's target over the card it sits in, a dialog's button
+    /// over its barrier. A slop never takes a press from a box drawn BESIDE it: in a list of rows
+    /// shorter than the minimum target, each row's slop reached over its neighbours, and the row
+    /// drawn after took their presses, the lower two thirds of every row under a finger (#630).
+    /// </summary>
+    private static int HitAt(IReadOnlyList<HitRegion> regions, Point point)
+    {
+        var drawn = -1;
         for (var i = regions.Count - 1; i >= 0; i--)
         {
-            var region = regions[i];
-            if (!region.Bounds.Contains(point)) continue;
-            if (!region.Node.Disabled) region.Node.OnPressed?.Invoke();
-            return true;
+            if (!regions[i].Drawn.Contains(point)) continue;
+            drawn = i;
+            break;
         }
-        return false;
+        for (var i = regions.Count - 1; i > drawn; i--)
+        {
+            if (!regions[i].Bounds.Contains(point)) continue;
+            if (drawn < 0 || Encloses(regions[drawn].Drawn, regions[i].Drawn)) return i;
+        }
+        return drawn;
     }
+
+    /// <summary>Whether <paramref name="inner"/> lies wholly inside <paramref name="outer"/>.</summary>
+    private static bool Encloses(Rect outer, Rect inner) =>
+        inner.Left >= outer.Left && inner.Top >= outer.Top && inner.Right <= outer.Right
+        && inner.Bottom <= outer.Bottom;
 
     /// <summary>
     /// WHERE the keyboard focus is, as the stable path the frame's <see cref="FocusStop"/>s carry

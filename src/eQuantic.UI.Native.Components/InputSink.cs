@@ -150,7 +150,9 @@ internal readonly struct InputSink(FrameRegions regions, Rect? clip = null, bool
     /// <summary>A region straddling the clip edge keeps only the part on screen — the half-scrolled
     /// row takes a tap on the half you can see, and none on the half you cannot.</summary>
     private HitRegion Clipped(HitRegion region) =>
-        Clip is { } clip ? region with { Bounds = Intersect(clip, region.Bounds) } : region;
+        Clip is { } clip
+            ? region with { Bounds = Intersect(clip, region.Bounds), Drawn = Intersect(clip, region.Drawn) }
+            : region;
 
     /// <summary>
     /// A code surface keeps its whole bounds, which place its caret and turn a point into a position,
