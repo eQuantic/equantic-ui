@@ -101,10 +101,32 @@ public class NullConditionalTailTests
         diagnostics.Should().BeEmpty();
     }
 
+    private const string Bell = "public class Bell { public string? Tag; public Bell? Next; public void Ring() { } }";
+
+    /// <summary>
+    /// An optional chain answers null where its value is used, as C# does, and stays bare where nothing
+    /// can tell undefined from null: a call that returns nothing, a statement, the left of a
+    /// <c>??</c>, and the tail of another chain (#633).
+    /// </summary>
+    [Fact]
+    public void AChain_AnswersNullWhereItsValueIsUsed_AndOnlyThere()
+    {
+        var js = Convert(
+            "Bell? b = null; string? tag = b?.Tag; string? deep = b?.Next?.Tag; var named = b?.Tag ?? \"none\"; "
+            + "b?.Ring(); System.Action ring = () => b?.Ring(); return tag + deep + named;", Bell).Js;
+
+        js.Should().Contain("let tag = (b?.tag ?? null);");
+        js.Should().Contain("let deep = (b?.next?.tag ?? null);", "the chain answers null where it ends, once");
+        js.Should().Contain("let named = b?.tag ?? 'none';");
+        js.Should().Contain("b?.ring();");
+        js.Should().Contain("() => b?.ring()");
+        js.Should().NotContain("ring() ?? null", "a call that returns nothing has no value to tell apart");
+    }
+
     [Fact]
     public void AConciseLambda_ThatBindsNothing_StaysAnExpression() =>
         Convert("Func<Holder, int?> f = h => h.Name?.Length; return f(new Holder());", Holder).Js
-            .Should().Contain("(h) => h.name?.length");
+            .Should().Contain("(h) => (h.name?.length ?? null)", "the lambda answers null where h.Name is, as C# does (#633)");
 
     [Fact]
     public void AStatementConvertedAgain_DeclaresTheTemporaryItsTranslationNames()
