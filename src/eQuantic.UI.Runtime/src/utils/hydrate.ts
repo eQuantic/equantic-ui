@@ -217,7 +217,7 @@ function scalar(incoming: unknown, tag: HydrationTag): unknown {
     case 'single':
       return typeof incoming === 'number' ? Math.fround(incoming) : incoming;
     case 'dateTime':
-      return typeof incoming === 'string' ? dateTime.parse(incoming) : incoming;
+      return typeof incoming === 'string' ? dateTime.fromJson(incoming) : incoming;
     case 'timeSpan':
       return typeof incoming === 'string' ? timeSpan.parse(incoming) : incoming;
     case 'dateOnly':

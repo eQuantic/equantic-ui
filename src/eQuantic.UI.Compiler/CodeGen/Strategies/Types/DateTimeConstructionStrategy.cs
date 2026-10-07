@@ -38,7 +38,11 @@ public class DateTimeConstructionStrategy : IExpressionIrStrategy
     {
         var creation = (BaseObjectCreationExpressionSyntax)node;
         if (context.SemanticHelper.GetSymbol(creation) is not IMethodSymbol constructor)
-            return JsExpr.Opaque(context.Unhandled(node, "DateTime constructor"));
+        {
+            var created = context.SemanticHelper.GetType(node)?.Name
+                ?? (creation as ObjectCreationExpressionSyntax)?.Type.ToString();
+            return JsExpr.Opaque(context.Unhandled(node, $"{created} constructor"));
+        }
 
         var offset = constructor.ContainingType.IsNamed("System.DateTimeOffset");
         var type = offset ? "DateTimeOffset" : "DateTime";

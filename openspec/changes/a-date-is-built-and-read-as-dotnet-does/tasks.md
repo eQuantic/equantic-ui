@@ -12,6 +12,7 @@
 - [x] 2.1 `Kind` on the runtime's `DateTime`: set by the constructors, `Now`, `UtcNow` and `SpecifyKind`, kept by arithmetic, left out of equality, ordering and the hash; `ToLocalTime`, `ToUniversalTime`, `Microsecond`, `Nanosecond`, and the JSON's `Z` and offset
 - [x] 2.2 `DateTimeOffset.Now`, `LocalDateTime` and `ToLocalTime` read the browser's zone; a `DateTimeOffset` of a `DateTime` takes the zone's offset as `TimeZoneInfo.GetUtcOffset` does
 - [x] 2.3 Prove it on both sides in three time zones (`LocalTimeConformanceTests`: Asia/Kolkata, America/Sao_Paulo, Europe/Lisbon), the zone set through `TZ` for .NET and the engine alike
+- [x] 2.4 The JSON reads a zone back as System.Text.Json does, in hydration, and `DateTime.Parse` moves a written zone to local time, proved by the cases that return a value of a kind and parse a zone
 
 ## 3. Documentation and the suites
 

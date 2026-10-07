@@ -33,7 +33,9 @@ time.
   sets it, arithmetic keeps it, and equality, ordering and the hash leave it out, as .NET's do.
   `ToLocalTime()` and `ToUniversalTime()` convert by it, `Microsecond` and `Nanosecond` answer, and
   the JSON writes a UTC value with `Z` and a local one with its offset, as System.Text.Json writes
-  them.
+  them. Hydration reads them back as System.Text.Json does, `Z` a UTC time and an offset moved to the
+  local time, where it dropped the zone, and `DateTime.Parse` moves a written zone to the local time,
+  as .NET's Parse does.
 - **The local time is the browser's time zone.** `DateTimeOffset.Now` is the instant now at the
   browser's offset for it, `LocalDateTime` and `ToLocalTime()` read the zone at the value's instant,
   daylight saving included, and a `DateTimeOffset` of a `DateTime` that is not UTC takes the zone's

@@ -638,6 +638,8 @@ export interface DateTimeFactory {
   minValue(): DateTime;
   maxValue(): DateTime;
   parse(text: string): DateTime;
+  /** A `DateTime` as System.Text.Json reads it from the wire: see {@link dateTimeFromJson}. */
+  fromJson(text: string): DateTime;
   daysInMonth(year: number, month: number): number;
   isLeapYear(year: number): boolean;
 }
@@ -691,7 +693,7 @@ function fromComponents(
 
 /** Ticks the calendar holds, or .NET's refusal of a count outside it. */
 function calendarTicksOf(ticks: bigint | number): bigint {
-  const value = typeof ticks === 'bigint' ? ticks : BigInt(Math.trunc(ticks));
+  const value = asBigInt(ticks);
   if (value < 0n || value > MAX_DATETIME_TICKS) throw exception('System.ArgumentOutOfRangeException', BAD_TICKS);
   return value;
 }
@@ -727,23 +729,55 @@ export const dateTime: DateTimeFactory = {
   daysInMonth,
   isLeapYear,
   parse: (text) => parseDateTime(text),
+  fromJson: (text) => dateTimeFromJson(text),
 };
 
+/** An ISO-8601 clock time (the wire form, `yyyy-MM-dd[Thh:mm:ss[.fffffff]]`) and the zone written
+ * after it: `Z`, an offset in ticks, or nothing. */
+function readIso(text: string): { ticks: bigint; zone: 'utc' | bigint | null } | null {
+  const m = /^(\d{4})-(\d{2})-(\d{2})(?:[T ](\d{2}):(\d{2}):(\d{2})(?:\.(\d+))?)?\s*(Z|[+-]\d{2}:?\d{2})?/.exec(text);
+  if (!m) return null;
+  const frac = m[7] ? BigInt(m[7].padEnd(7, '0').slice(0, 7)) : 0n;
+  const ticks = fromComponents(+m[1], +m[2], +m[3], +(m[4] ?? 0), +(m[5] ?? 0), +(m[6] ?? 0)).ticks + frac;
+  if (m[8] === undefined) return { ticks, zone: null };
+  if (m[8] === 'Z') return { ticks, zone: 'utc' };
+  const digits = m[8].slice(1).replace(':', '');
+  const offset = BigInt(digits.slice(0, 2)) * TICKS_PER_HOUR + BigInt(digits.slice(2)) * TICKS_PER_MINUTE;
+  return { ticks, zone: m[8][0] === '-' ? -offset : offset };
+}
+
+/** The local clock time of the instant a clock time written with a zone names, of the local kind. */
+function localFrom(ticks: bigint, zone: 'utc' | bigint): DateTime {
+  const utc = zone === 'utc' ? ticks : ticks - zone;
+  return new DateTime(clampedTicks(utc + localOffsetAt(utc)), 'local');
+}
+
+/**
+ * `DateTime.Parse`: a time zone written in the text moves the value to the browser's local time, of
+ * the local kind, as .NET's Parse does, where the zone was dropped and the clock time kept.
+ */
 function parseDateTime(text: string): DateTime {
   if (text == null) throw exception('System.ArgumentNullException', NULL_S);
   const t = text.trim();
-  // ISO-8601: yyyy-MM-dd[Thh:mm:ss[.fffffff]] (the wire form).
-  let m = /^(\d{4})-(\d{2})-(\d{2})(?:[T ](\d{2}):(\d{2}):(\d{2})(?:\.(\d+))?)?/.exec(t);
-  if (m) {
-    const frac = m[7] ? BigInt(m[7].padEnd(7, '0').slice(0, 7)) : 0n;
-    return new DateTime(
-      fromComponents(+m[1], +m[2], +m[3], +(m[4] ?? 0), +(m[5] ?? 0), +(m[6] ?? 0)).ticks + frac,
-    );
-  }
+  const iso = readIso(t);
+  if (iso) return iso.zone === null ? new DateTime(iso.ticks) : localFrom(iso.ticks, iso.zone);
   // Invariant default: MM/dd/yyyy[ HH:mm:ss]
-  m = /^(\d{1,2})\/(\d{1,2})\/(\d{4})(?:\s+(\d{1,2}):(\d{2}):(\d{2}))?/.exec(t);
+  const m = /^(\d{1,2})\/(\d{1,2})\/(\d{4})(?:\s+(\d{1,2}):(\d{2}):(\d{2}))?/.exec(t);
   if (m) return fromComponents(+m[3], +m[1], +m[2], +(m[4] ?? 0), +(m[5] ?? 0), +(m[6] ?? 0));
   throw exception('System.FormatException', `Unrecognized DateTime format: '${text}'`);
+}
+
+/**
+ * A `DateTime` as System.Text.Json reads one, what the server renders and a Server Action answers: `Z`
+ * is a UTC time, an offset is moved to the browser's local time, and no zone is a clock time of no
+ * kind. Hydration dropped the zone, so a UTC value came back of no kind and `ToUniversalTime()` moved
+ * it again.
+ */
+function dateTimeFromJson(text: string): DateTime {
+  const iso = readIso(text.trim());
+  if (iso === null) return parseDateTime(text);
+  if (iso.zone === null) return new DateTime(iso.ticks);
+  return iso.zone === 'utc' ? new DateTime(iso.ticks, 'utc') : localFrom(iso.ticks, iso.zone);
 }
 
 // ---------------------------------------------------------------------------------------------

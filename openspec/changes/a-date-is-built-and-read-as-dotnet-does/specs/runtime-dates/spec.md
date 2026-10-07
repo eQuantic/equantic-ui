@@ -58,6 +58,13 @@ on the way to local time and as local time on the way to UTC.
 - **WHEN** `new DateTime(2026, 1, 2, 0, 0, 0, DateTimeKind.Utc).AddDays(1).Kind` is read
 - **THEN** it is `Utc`, as in .NET
 
+#### Scenario: The kind crosses the wire
+
+- **WHEN** `new DateTime(2026, 1, 2, 3, 4, 5, 6, 7, DateTimeKind.Utc)` is written to JSON and the
+  page reads "2026-07-01T12:00:00Z" back from the server
+- **THEN** the first is "2026-01-02T03:04:05.006007Z" and the second a UTC time, as System.Text.Json
+  writes and reads them
+
 ### Requirement: The local time is the browser's time zone
 
 `DateTimeOffset.Now` SHALL be the instant now at the browser's offset for it, and `LocalDateTime` and

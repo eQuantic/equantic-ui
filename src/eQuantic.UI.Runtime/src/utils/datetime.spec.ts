@@ -166,3 +166,28 @@ describe('DateTime.Add* — a fraction lands on the tick', () => {
     expect(dateTime.minValue().addMilliseconds(-0.00001).ticks).toBe(0n); // truncates to no tick
   });
 });
+
+describe('DateTime — the zone a text writes (#606)', () => {
+  it('reads the JSON as System.Text.Json reads it: Z is UTC, an offset the instant it names, none no kind', () => {
+    const utc = dateTime.fromJson('2026-07-01T12:00:00Z');
+    expect(utc.kind).toBe('utc');
+    expect(utc.ticks).toBe(dateTime.of(2026, 7, 1, 12, 0, 0).ticks);
+    const offset = dateTime.fromJson('2026-07-01T12:00:00-03:00');
+    expect(offset.kind).toBe('local');
+    expect(offset.toUniversalTime().ticks).toBe(dateTime.of(2026, 7, 1, 15, 0, 0).ticks);
+    expect(dateTime.fromJson('2026-07-01T12:00:00').kind).toBe('unspecified');
+  });
+
+  it('writes the JSON System.Text.Json writes, the kind as its suffix', () => {
+    expect(JSON.stringify(dateTime.of(2026, 1, 2, 3, 4, 5, 6, 7, 'utc'))).toBe('"2026-01-02T03:04:05.006007Z"');
+    expect(JSON.stringify(dateTime.of(2026, 1, 2, 3, 4, 5, 6, 7))).toBe('"2026-01-02T03:04:05.006007"');
+    const local = dateTime.of(2026, 7, 1, 12, 0, 0, 0, 0, 'local');
+    expect(dateTime.fromJson(local.toJSON()).ticks).toBe(local.ticks);
+  });
+
+  it('moves a written zone to the local time on Parse, as .NET does', () => {
+    const parsed = dateTime.parse('2026-07-01T12:00:00Z');
+    expect(parsed.kind).toBe('local');
+    expect(parsed.toUniversalTime().ticks).toBe(dateTime.of(2026, 7, 1, 12, 0, 0).ticks);
+  });
+});

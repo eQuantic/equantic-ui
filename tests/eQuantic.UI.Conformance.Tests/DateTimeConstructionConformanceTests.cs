@@ -52,6 +52,10 @@ public class DateTimeConstructionConformanceTests
     [InlineData("new DateTime(2026, 1, 2, 0, 0, 0, DateTimeKind.Utc).Equals(new DateTime(2026, 1, 2, 0, 0, 0, DateTimeKind.Local))")] // true
     [InlineData("new DateTime(2026, 1, 2, 0, 0, 0, DateTimeKind.Utc).CompareTo(new DateTime(2026, 1, 2, 0, 0, 0, DateTimeKind.Local))")] // 0
     [InlineData("new DateTime(2026, 1, 2, 0, 0, 0, DateTimeKind.Utc).GetHashCode() == new DateTime(2026, 1, 2).GetHashCode()")] // true
+    // The JSON System.Text.Json writes: the kind as its suffix, `Z` for UTC and none for no kind.
+    [InlineData("new DateTime(2026, 1, 2, 3, 4, 5, 6, 7, DateTimeKind.Utc)")]                          // "2026-01-02T03:04:05.006007Z"
+    [InlineData("new DateTime(2026, 1, 2, 3, 4, 5, 6, 7)")]                                            // "2026-01-02T03:04:05.006007"
+    [InlineData("DateTime.SpecifyKind(new DateTime(2026, 1, 2), DateTimeKind.Utc)")]                   // "2026-01-02T00:00:00Z"
     // A kind that stays where it is converts to nothing.
     [InlineData("new DateTime(2026, 1, 2, 3, 4, 5, DateTimeKind.Utc).ToUniversalTime().Ticks")]         // 639029198450000000
     [InlineData("new DateTime(2026, 1, 2, 3, 4, 5, DateTimeKind.Local).ToLocalTime().Ticks")]           // 639029198450000000

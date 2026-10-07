@@ -4,17 +4,6 @@ using Xunit;
 namespace eQuantic.UI.Conformance.Tests;
 
 /// <summary>
-/// The time zone the local-time cases run in, one at a time: the cases change it for the whole process,
-/// so they must not overlap anything else. Collections that disable parallelization run after every
-/// parallel one has finished.
-/// </summary>
-[CollectionDefinition(Name, DisableParallelization = true)]
-public sealed class LocalTimeZoneCollection
-{
-    public const string Name = "Local time zone";
-}
-
-/// <summary>
 /// <c>DateTimeOffset.Now</c>, <c>LocalDateTime</c> and <c>ToLocalTime</c>, and a <c>DateTime</c>'s own
 /// conversions, answer as .NET does for the machine's time zone (#626, reported by the Falei.pt app):
 /// <c>Now</c> carried offset zero with the local clock, so it named the wrong instant anywhere east or
@@ -54,6 +43,11 @@ public class LocalTimeConformanceTests
             "new DateTime(2026, 7, 1, 12, 0, 0).ToUniversalTime().ToString()",
             "new DateTime(2026, 7, 1, 12, 0, 0, DateTimeKind.Local).ToUniversalTime().Kind",
             "new DateTime(2026, 1, 15, 12, 0, 0).ToLocalTime().ToString()",
+            // A local value's JSON carries the zone's offset, and Parse moves a written zone to local time.
+            "new DateTime(2026, 7, 1, 12, 0, 0, DateTimeKind.Local)",
+            "DateTime.Parse(\"2026-07-01T12:00:00Z\").ToString()",
+            "DateTime.Parse(\"2026-07-01T12:00:00Z\").Kind",
+            "DateTime.Parse(\"2026-01-15T12:00:00-03:00\").ToString()",
             // A DateTimeOffset of a DateTime that is not UTC takes the zone's offset for it.
             "new DateTimeOffset(new DateTime(2026, 7, 1, 12, 0, 0)).Offset.ToString()",
             "new DateTimeOffset(new DateTime(2026, 1, 15, 12, 0, 0, DateTimeKind.Local)).Offset.ToString()",
