@@ -1,4 +1,4 @@
-import { $eq, Box, BoxStyle, BuildContext, CodeCompletion, CodeCompletionKindValue, CodeCompletionMatch, CodeLineCells, CodeMetrics, ColorToken, Column, CornerRadii, EdgeInsets, Flexible, Pressable, Rect, Row, SizeValue, Spacer, StyleDiff, Text, TextRun } from "../runtime-exports";
+import { $eq, Box, BoxStyle, BuildContext, CodeCompletion, CodeCompletionItem, CodeCompletionKindValue, CodeCompletionMatch, CodeLineCells, CodeMetrics, ColorToken, Column, CornerRadii, EdgeInsets, Flexible, Pressable, Rect, Row, SizeValue, Spacer, StyleDiff, Text, TextRun } from "../runtime-exports";
 
 export class CodeCompletionView {
     static pageRows: number = 12;
@@ -18,12 +18,15 @@ export class CodeCompletionView {
     static columnsOf(items: CodeCompletionMatch[]) {
         let widest = CodeCompletionView.minColumns;
         for (const match of items) {
-            let item = match.item;
-            let detail: any; 
-            let columns = CodeCompletionView.cellsOf(item.label) + (((item.detail != null && item.detail.length > 0) && (detail = item.detail, true)) ? 2 + CodeCompletionView.cellsOf(detail) : 0);
+            let columns = CodeCompletionView.entryColumns(match.item);
             if (columns > widest) widest = columns;
         }
         return Math.min(widest, CodeCompletionView.maxColumns);
+    }
+
+    static entryColumns(item: CodeCompletionItem) {
+        let detail: any; 
+        return Math.min(CodeCompletionView.cellsOf(item.label) + (((item.detail != null && item.detail.length > 0) && (detail = item.detail, true)) ? 2 + CodeCompletionView.cellsOf(detail) : 0), CodeCompletionView.maxColumns);
     }
 
     static widthOf(metrics: CodeMetrics, columns: number) {

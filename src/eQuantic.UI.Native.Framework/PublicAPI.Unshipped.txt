@@ -1,1 +1,5 @@
 #nullable enable
+eQuantic.UI.Native.Framework.TransitionStore.Positions(string! path) -> int?
+eQuantic.UI.Native.Framework.TransitionStore.RememberPositions(string! path, int count) -> void
+eQuantic.UI.Native.Framework.TransitionStore.Target(string! path) -> float?
+eQuantic.UI.Native.Framework.TransitionStore.TargetColor(string! path) -> eQuantic.UI.Primitives.Color?

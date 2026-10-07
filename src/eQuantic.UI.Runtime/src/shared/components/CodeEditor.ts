@@ -11,6 +11,7 @@ export class CodeEditor extends StatefulComponent {
     _scrollX: number = 0;
     _listTop: number = 0;
     _listColumns: number = 0;
+    _measured: any = null;
     _handed: any = null;
     _handedAny: boolean = false;
     _put: any[] = [];
@@ -90,7 +91,11 @@ export class CodeEditor extends StatefulComponent {
         let highlighted = -1;
         if (completion.isOpen && completion.selected >= 0) {
             let items = completion.items;
-            this._listColumns = Math.max(this._listColumns, CodeCompletionView.columnsOf(items));
+            if (!(items === this._measured)) {
+                this._measured = items;
+                this._listColumns = Math.max(this._listColumns, CodeCompletionView.columnsOf(items));
+            }
+            this._listColumns = Math.max(this._listColumns, CodeCompletionView.entryColumns(items[completion.selected].item));
             let width = CodeCompletionView.widthOf(metrics, this._listColumns);
             if (this._viewportWidth > 0) width = Math.min(width, this._viewportWidth);
             let documentation = items[completion.selected].item.documentation;
@@ -111,6 +116,7 @@ export class CodeEditor extends StatefulComponent {
         } else {
             this._listTop = 0;
             this._listColumns = 0;
+            this._measured = null;
         }
         let surface: VisualNode = new CodeSurface(block, editor, { autofocus: this.autofocus, label: this.caption ?? SdkStrings.codeEditor, caretColor: CodeBlock.inkFor(this.inverse, context.theme), onChanged: () => this.setState(() => this.notify(editor)), options: offered, optionsOrigin: offeredAt, highlightedOption: highlighted });
         let viewport: VisualNode = new ScrollView(surface, 'horizontal', { width: SizeValue.fill, onViewportChanged: (width: number) => {

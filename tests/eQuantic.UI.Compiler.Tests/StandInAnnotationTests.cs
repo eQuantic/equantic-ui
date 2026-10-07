@@ -138,6 +138,31 @@ public class StandInAnnotationTests
         twin.Should().NotContain("RenderContext");
     }
 
+    /// <summary>
+    /// An app's own class named <c>BuildContext</c> is the app's: its module declares it and imports
+    /// nothing of that name from the runtime. Every class module imported the runtime's
+    /// <c>BuildContext</c>, and this one declared the name twice (found by Copilot reviewing #653).
+    /// </summary>
+    [Fact]
+    public void AnAppsOwnBuildContext_IsNotImportedFromTheRuntime()
+    {
+        const string helper = """
+            public class BuildContext
+            {
+                public int Depth { get; init; }
+
+                public BuildContext Deeper() => new() { Depth = Depth + 1 };
+            }
+            """;
+        var compiler = new ComponentCompiler();
+        compiler.SetProjectCompilation(GeneratedProject.Of(helper, "BuildContext.cs"));
+        var twin = compiler.CompileSource(helper, "BuildContext.cs")
+            .Single(result => result.ComponentName == "BuildContext").TypeScript;
+
+        twin.Should().Contain("class BuildContext");
+        twin.Should().NotMatchRegex(@"import \{[^}]*\bBuildContext\b[^}]*\} from ""@equantic/runtime""");
+    }
+
     [Fact]
     public void ARecord_DeclaresItsMembersAndParameters_ByWhatTheyCrossAs()
     {

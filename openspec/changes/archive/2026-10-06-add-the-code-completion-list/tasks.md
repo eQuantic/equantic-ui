@@ -51,7 +51,7 @@
 - [x] 5.2 eqc and the runtime: a helper class that takes the build context compiles in the runtime's
       build, `typeScale` is required, and `TypeStyle` scales as .NET does (#632)
 - [x] 5.3 Reported, with what the tests fence: a bordered box on Photon (#629), a dense row's touch
-      margin under Comfortable density (#630), a null-conditional read that is `undefined` (#633)
+      margin, under either density since #628 (#630), a null-conditional read that is `undefined` (#633)
 
 ## 6. The author's review
 

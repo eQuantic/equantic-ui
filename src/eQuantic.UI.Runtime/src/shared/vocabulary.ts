@@ -176,6 +176,7 @@ interface BoxStyleConfig {
   transition?: TransitionSpec | null;
   hover?: StyleDiff | null;
   focus?: StyleDiff | null;
+  pressed?: StyleDiff | null;
   /** CSS cursor mirror — the C# PointerCursor member name in camelCase ('crosshair', 'colResize'). */
   cursor?: string;
 }
@@ -220,9 +221,10 @@ export class BoxStyle {
   blur = 0;
   /** Spec S6: animates changes to the covered channels (null = snap). */
   transition?: TransitionSpec | null;
-  /** Spec S5 hover/focus diffs. */
+  /** Spec S5 state diffs: the box's own hover, and its control's focus and press. */
   hover?: StyleDiff | null;
   focus?: StyleDiff | null;
+  pressed?: StyleDiff | null;
   cursor?: string;
 
   constructor(config?: BoxStyleConfig) {

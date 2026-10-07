@@ -60,12 +60,17 @@ internal static class CodeCompletionView
         var widest = MinColumns;
         foreach (var match in items)
         {
-            var item = match.Item;
-            var columns = CellsOf(item.Label) + (item.Detail is { Length: > 0 } detail ? 2 + CellsOf(detail) : 0);
+            var columns = EntryColumns(match.Item);
             if (columns > widest) widest = columns;
         }
         return Math.Min(widest, MaxColumns);
     }
+
+    /// <summary>How many columns of code one entry takes: its label, and its detail with two columns
+    /// between them, no more than <see cref="MaxColumns"/>.</summary>
+    internal static int EntryColumns(CodeCompletionItem item) =>
+        Math.Min(CellsOf(item.Label) + (item.Detail is { Length: > 0 } detail ? 2 + CellsOf(detail) : 0),
+            MaxColumns);
 
     /// <summary>How wide a list of <paramref name="columns"/> is: the inset to its labels, the
     /// columns, the row's padding after them, the page mark and the gap before it, and the frame. The

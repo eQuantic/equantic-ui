@@ -246,6 +246,7 @@ public class FlutterParityPinTests
         ["Transform"] = () => Has("Transform2D") && HasMember("BoxStyle", "Transform")
             && HasMember("StyleDiff", "Transform"),
         ["WidgetStateProperty"] = () => HasMember("BoxStyle", "Hover") && HasMember("BoxStyle", "Focus")
+            && HasMember("BoxStyle", "Pressed")
             && HasMember("StyleDiff", "Shadows") && HasMember("StyleDiff", "Transform"),
 
         // 3 — state

@@ -128,7 +128,8 @@ session in flight is not dropped by a rebuild.
 - Photon lays a bordered box's child over its border, where the web insets it (#629): the list's labels
   stand one border's width left of the word there until it is fixed, and the placement, which is the
   component's, is what the tests pin.
-- Under `Density.Comfortable` (a phone's), a row's §08 touch margin reaches over the row above it and
-  takes its presses (#630). The desktop shells run `Compact`, where a press lands where it is aimed.
+- A row's touch margin reaches over the row above it and takes its presses (#630): 13dp of an 18dp
+  row under `Density.Comfortable` (a phone's), and 3dp under `Compact`, the desktop shells', since a
+  pointer's target keeps a 24dp floor (#628).
 - A null-conditional read is `undefined` in the browser where C# answers `null` (#633): the list's
   view takes the documentation the editor already read rather than reaching for it through `?.`.
