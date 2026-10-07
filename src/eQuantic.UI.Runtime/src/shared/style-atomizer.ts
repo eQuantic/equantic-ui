@@ -263,6 +263,41 @@ export function mergeAtomicDeclaration(
 }
 
 /**
+ * The value of ONE resting declaration an atomized element carries, or undefined: the read half of
+ * mergeAtomicDeclaration, for a parent that joins its own value to the one its child already has (a
+ * draggable's glide to its box's transition list, #511). A state's or the scrolled variant's
+ * declaration is not the resting one, and is skipped as effectiveStyle skips it.
+ */
+export function atomicDeclaration(
+  node: { attributes: Record<string, string | undefined> },
+  prop: string,
+): string | undefined {
+  for (const cls of (node.attributes['class'] ?? '').split(' ')) {
+    const rule = ruleTexts.get(cls);
+    if (rule && !rule.includes('\u0001') && rule.startsWith(`${prop}:`)) return rule.slice(prop.length + 1);
+  }
+  return undefined;
+}
+
+/**
+ * Replace ONE resting declaration of an atomized element: the class that carried the old value
+ * goes, and the new one is merged in as mergeAtomicDeclaration merges it, so the class attribute is
+ * the one the C# post-pass writes for the same final style.
+ */
+export function replaceAtomicDeclaration(
+  node: { attributes: Record<string, string | undefined> },
+  prop: string,
+  value: string,
+): void {
+  const kept = (node.attributes['class'] ?? '').split(' ').filter((cls) => {
+    const rule = ruleTexts.get(cls);
+    return !(rule && !rule.includes('\u0001') && rule.startsWith(`${prop}:`));
+  });
+  node.attributes['class'] = kept.join(' ');
+  mergeAtomicDeclaration(node, prop, value);
+}
+
+/**
  * Spec S6 gate names — the range is IN the name (`eq-vc600` = compact until 600, `eq-vx1024` =
  * expanded from 1024), which is what lets a design bring its own breakpoints with no shared
  * registry: both twins derive the identical name and CSS from the same thresholds.

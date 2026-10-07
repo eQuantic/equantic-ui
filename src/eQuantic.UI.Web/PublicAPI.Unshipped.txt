@@ -1,1 +1,3 @@
 #nullable enable
+eQuantic.UI.Web.HtmlStyle.Translate.get -> string?
+eQuantic.UI.Web.HtmlStyle.Translate.set -> void

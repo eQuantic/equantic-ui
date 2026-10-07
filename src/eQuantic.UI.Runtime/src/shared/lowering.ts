@@ -37,6 +37,7 @@ import { declareInView } from './in-view';
 import { cssFontWeight, isWellFormedFace } from './value-types';
 import {
   adaptiveGateOpen,
+  atomicDeclaration,
   atomizeEntries,
   atomizePseudo,
   atomizeScrolled,
@@ -48,6 +49,7 @@ import {
   gateMediumFrom,
   hashDeclaration,
   mergeAtomicDeclaration,
+  replaceAtomicDeclaration,
 } from './style-atomizer';
 import type {
   BoxNode,
@@ -1102,10 +1104,15 @@ function lowerDraggable(
   if (node.follows === false) child.attributes['data-eq-drag-follows'] = '0';
   if (node.onMoved) child.attributes['data-eq-drag-moves'] = '1';
 
-  if (rest !== 0 && node.follows !== false) {
-    const shift = horizontal ? `translateX(${rest}px)` : `translateY(${rest}px)`;
-    const existing = child.attributes.style ? `${child.attributes.style};` : '';
-    child.attributes.style = `${existing}transform:${shift};transition:transform ${Motion.baseMs}ms`;
+  // C# twin (#511): the offset rides the individual `translate` property, which CSS applies
+  // TOGETHER with the box's `transform`, and the glide is declared at zero too and JOINED to the
+  // box's own transition list. This wrote both inline, which beat every class: a client-rendered
+  // open row never lifted under the pointer while the server's slid closed.
+  if (node.follows !== false) {
+    if (rest !== 0) mergeAtomicDeclaration(child, 'translate', horizontal ? px(rest) : `0 ${px(rest)}`);
+    const glide = `translate ${Motion.baseMs}ms`;
+    const own = atomicDeclaration(child, 'transition');
+    replaceAtomicDeclaration(child, 'transition', own ? `${own}, ${glide}` : glide);
   }
 
   if (node.onReleased) {

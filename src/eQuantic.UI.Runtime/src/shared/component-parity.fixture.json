@@ -155,7 +155,7 @@
                 {
                   "tag": "div",
                   "attrs": {
-                    "class": "eq-11kg7e8 eq-17a2pwz eq-1amv73n eq-1eb13m5 eq-1eviv88 eq-1pwthtl eq-5hocaj eq-bo3n4y eq-d7k4c7 eq-g7fowl",
+                    "class": "eq-11kg7e8 eq-17a2pwz eq-1afasck eq-1amv73n eq-1eb13m5 eq-1eviv88 eq-1pwthtl eq-5hocaj eq-bo3n4y eq-d7k4c7 eq-g7fowl",
                     "data-eq-drag": "x",
                     "data-eq-drag-max": "0",
                     "data-eq-drag-min": "-20",
@@ -217,7 +217,7 @@
                 {
                   "tag": "div",
                   "attrs": {
-                    "class": "eq-11kg7e8 eq-17a2pwz eq-1amv73n eq-1eb13m5 eq-1eviv88 eq-1pwthtl eq-5hocaj eq-bo3n4y eq-d7k4c7 eq-g7fowl",
+                    "class": "eq-11kg7e8 eq-17a2pwz eq-1afasck eq-1amv73n eq-1eb13m5 eq-1eviv88 eq-1pwthtl eq-5hocaj eq-bo3n4y eq-d7k4c7 eq-g7fowl",
                     "data-eq-drag": "x",
                     "data-eq-drag-max": "20",
                     "data-eq-drag-min": "0",
@@ -674,6 +674,22 @@
           "children": []
         }
       ]
+    }
+  ],
+  "draggable-open": [
+    {
+      "tag": "div",
+      "attrs": {
+        "class": "eq-13sfa1s eq-1eb13m5 eq-1sxrvu1 eq-1xrfuoj eq-5hocaj eq-bo3n4y eq-cl6mtg eq-g7fowl eq-t1kanp eq-wy95di",
+        "data-eq-drag": "x",
+        "data-eq-drag-max": "0",
+        "data-eq-drag-min": "-80",
+        "data-eq-drag-rest": "-80"
+      },
+      "events": [
+        "eq-drag-released"
+      ],
+      "children": []
     }
   ],
   "box-hover-drops-shadow": [

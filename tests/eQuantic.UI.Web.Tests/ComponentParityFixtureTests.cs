@@ -74,6 +74,16 @@ public class ComponentParityFixtureTests
         // A picture of a DISABLED control: both producers mask the control's states for its subtree.
         ("control-states-disabled-simulated",
             new Simulated(SimulatedState.Pressed | SimulatedState.Focused, DisabledControlStates()), NoPresses),
+        // A draggable resting OPEN over a box with its own transform, a colour fade and a hover that
+        // lifts it (#511): the offset rides `translate` on both producers, beside the box's
+        // `transform`, and its glide joins the box's transition list instead of replacing it.
+        ("draggable-open", new Draggable(new Box(new BoxStyle
+        {
+            Width = 40, Height = 40, Background = Theme.Surface,
+            Transform = Transform2D.Scale(0.5f),
+            Transition = new TransitionSpec(StyleChannels.Colors),
+            Hover = new StyleDiff { Transform = Transform2D.Translate(0, -2) },
+        }), _ => { }) { Axis = DragAxis.Horizontal, Min = -80, Max = 0, RestOffset = -80 }, NoPresses),
         // A state that leaves nothing to draw writes the ring's slot alone: a hover that sets the
         // elevation to 0 over a box whose only shadow was its elevation.
         ("box-hover-drops-shadow", new Box(new BoxStyle

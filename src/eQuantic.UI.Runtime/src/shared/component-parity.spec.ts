@@ -24,6 +24,7 @@ import {
   Box,
   BoxStyle,
   Column,
+  Draggable,
   GridPattern,
   GridTrack,
   Icon,
@@ -37,8 +38,9 @@ import {
   StyleDiff,
   Text,
   TextRun,
+  TransitionSpec,
 } from './vocabulary';
-import { SizeValue, Transform2D } from './value-types';
+import { SizeValue, StyleChannels, Transform2D } from './value-types';
 import { Accordion } from './components/Accordion';
 import { AccordionItem } from './components/AccordionItem';
 import { Badge } from './components/Badge';
@@ -188,6 +190,22 @@ function cases(): Record<string, { node: unknown; presses: number[] }> {
           disabled: true,
           pressedBackground: photonTheme.surfaceSubtle,
         }),
+      ),
+    ),
+    'draggable-open': still(
+      new Draggable(
+        new Box(
+          new BoxStyle({
+            width: 40,
+            height: 40,
+            background: photonTheme.surface,
+            transform: Transform2D.scale(0.5),
+            transition: new TransitionSpec(StyleChannels.colors),
+            hover: new StyleDiff({ transform: Transform2D.translate(0, -2) }),
+          }),
+        ),
+        () => {},
+        { axis: 'horizontal', min: -80, max: 0, restOffset: -80 },
       ),
     ),
     'box-hover-drops-shadow': still(

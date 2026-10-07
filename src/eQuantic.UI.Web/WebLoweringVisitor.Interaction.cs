@@ -740,8 +740,8 @@ internal sealed partial class WebLoweringVisitor
 
     /// <summary>
     /// A continuous gesture: the child carries its RULES as data, and one document-level controller
-    /// in the runtime does the tracking. The rest offset is a plain transform, so a row that is
-    /// already open renders open on the server too, before any script has run.
+    /// in the runtime does the tracking. The rest offset is markup, so a row that is already open
+    /// renders open on the server too, before any script has run.
     /// </summary>
     private HtmlElement? LowerDraggable(Draggable draggable,
         bool? horizontalAxis)
@@ -766,13 +766,26 @@ internal sealed partial class WebLoweringVisitor
 
         // A gesture the caller paints itself is already where it belongs — translating the rest as
         // well would move it twice.
-        if (draggable.RestOffset != 0 && draggable.Follows)
+        if (draggable.Follows)
         {
             child.Style ??= new HtmlStyle();
-            child.Style.Transform = draggable.Axis == DragAxis.Horizontal
-                ? $"translateX({TokenCss.Px(draggable.RestOffset)})"
-                : $"translateY({TokenCss.Px(draggable.RestOffset)})";
-            child.Style.Transition = $"transform {Motion.BaseMs}ms";
+            // The individual `translate` property, which CSS applies TOGETHER with `transform`. The
+            // offset used to be written into the transform, and the two replaced each other: a box
+            // with a resting transform inside an open row lost it, and the box's hover rule (0,2,0)
+            // beat the offset's class (0,1,0), sliding an open row closed under the pointer (#511).
+            // Photon translates the subtree it wraps and composes the box's own transforms inside it.
+            if (draggable.RestOffset != 0)
+            {
+                child.Style.Translate = draggable.Axis == DragAxis.Horizontal
+                    ? TokenCss.Px(draggable.RestOffset)
+                    : $"0 {TokenCss.Px(draggable.RestOffset)}";
+            }
+            // Declared at zero too: a release hands the position back to this markup, and the
+            // surface glides to its rest from wherever the finger left it. JOINED to the box's own
+            // list, since an element keeps one `transition` as well, and the glide used to replace
+            // the box's colour fade.
+            var glide = $"translate {Motion.BaseMs}ms";
+            child.Style.Transition = child.Style.Transition is { Length: > 0 } own ? $"{own}, {glide}" : glide;
         }
 
         // The release callback rides the SSR bridge the same way every other handler does; the
