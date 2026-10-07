@@ -1608,6 +1608,22 @@ record of a release, the wiki's Upgrading page is the distillate.
   1970 toward the epoch; it answers a BigInt cut as .NET cuts it now. Found on the way: the date
   constructors past the second ([#606](https://github.com/eQuantic/equantic-ui/issues/606)).
   Proposed and archived through OpenSpec (`openspec/specs/runtime-dates`).
+- **2026-10-07 · A name in the browser is the name C# means**: the emitted code declared bindings of
+  its own as a C# local would be named and read globals no C# name was kept away from, so a captured
+  `_sum` read the running total, a captured `key` threw before the reduce had set its own, a captured
+  `a` sorted by the comparator's element, and a local named `crypto`, `undefined` or `Math` hid the
+  global a lowering beside it read ([#397](https://github.com/eQuantic/equantic-ui/issues/397)). Every
+  binding the output declares now starts with a `$`, a local named like a global it reads takes one,
+  and two guards read the compiler's source for both. A label, a member, a `with` key and a type
+  parameter written with the verbatim escape are written without it
+  ([#467](https://github.com/eQuantic/equantic-ui/issues/467)); a member reached bare through
+  `using static` converts as its qualified spelling, `Now` as `DateTime.Now`
+  ([#556](https://github.com/eQuantic/equantic-ui/issues/556)); and a part of a template that sits
+  inside the template's own function is bound outside it, so `Intersect`'s and `Except`'s second
+  sequence, `Average`'s source and a selector that is a call run once, in C#'s order
+  ([#657](https://github.com/eQuantic/equantic-ui/issues/657)). `Sum`, `Average`, `OrderBy`, `GroupBy`,
+  `Distinct` and the lookup's indexer moved to the IR. The runtime's twins are regenerated. Proposed and
+  archived through OpenSpec (`openspec/specs/transpiler-names`, `openspec/specs/transpiler-sequences`).
 
 ## Retired documents
 
