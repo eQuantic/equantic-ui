@@ -333,6 +333,18 @@ public class RecordTypeEmitter
             // knows the closed type (`Pair.$zero(0)` for a `Pair<int>`): a member of type `T` is that
             // zero, and a `Pair<T>` passes it on. The open declaration's `T` gave null, so
             // `default(Pair<int>).First == 0` was false (found by Copilot's review of #608).
+            // A mutable struct's copy, which ValueCopies takes before a write (#560): member by member,
+            // shallow, as a value inside is copied when it is written in turn.
+            if (IsStruct(type) && ModelFor(type)?.GetDeclaredSymbol(type) is INamedTypeSymbol valueType
+                && Strategies.ValueCopies.IsMutableValue(valueType))
+            {
+                sb.Append(tsTypeDeclarations
+                    ? $"$clone(): {name} {{ const copy: any = Object.create({name}.prototype); "
+                    : $"$clone() {{ const copy = Object.create({name}.prototype); ");
+                foreach (var m in members) sb.Append($"copy.{m.Store} = this.{m.Store}; ");
+                sb.Append("return copy; } ");
+            }
+
             if (IsStruct(type))
             {
                 var typeParameters = type.TypeParameterList?.Parameters.Select(parameter => parameter.Identifier.ValueText).ToList() ?? [];
