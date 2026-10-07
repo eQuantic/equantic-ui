@@ -6,5 +6,9 @@ export class MarkdownBulletMatch {
 
     marker!: string;
     content!: string;
+
+    toString(): string {
+        return 'eQuantic.UI.Components.MarkdownBulletMatch';
+    }
 }
 

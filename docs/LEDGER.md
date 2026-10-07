@@ -1552,16 +1552,18 @@ record of a release, the wiki's Upgrading page is the distillate.
   ([#469](https://github.com/eQuantic/equantic-ui/issues/469)); a custom date picture wrote `/`, `:`,
   `z` and `g` as they stand ([#470](https://github.com/eQuantic/equantic-ui/issues/470)); a page had a
   culture only when the app had a string catalog, and formatted in its host's locale otherwise
-  ([#471](https://github.com/eQuantic/equantic-ui/issues/471)); and `N`, `F`, `C` and `P` were laid out
+  ([#471](https://github.com/eQuantic/equantic-ui/issues/471)); `N`, `F`, `C` and `P` were laid out
   by `Intl`, with ar-EG's own digits, a no-break space and two digits where .NET reads three
-  ([#634](https://github.com/eQuantic/equantic-ui/issues/634)). The server writes the format culture's
+  ([#634](https://github.com/eQuantic/equantic-ui/issues/634)); and a plain class wrote `[object Object]`
+  and a plain struct a record's text, where .NET writes the type's full name
+  ([#570](https://github.com/eQuantic/equantic-ui/issues/570)). The server writes the format culture's
   `NumberFormatInfo` and `DateTimeFormatInfo` on every page and answers a switch from
   `/_equantic/culture/{name}.json`; the browser draws every number and date from them, a calendar's
   names among them, and a page with no culture installed is in the invariant culture. 187 of the 222
   conformance cases, run on both sides, failed against main with the culture installed as main installs
   it on a page with a catalog; the other 35 are neighbours that already held, kept as pins. EQ2109 is
-  retired. The served runtime grew about 3.5 KB gzipped. Proposed and archived through OpenSpec
-  (`openspec/specs/page-culture`, `runtime-dates`, `transpiler-bcl`).
+  retired. The served runtime grew about 3.9 KB gzipped. Proposed and archived through OpenSpec
+  (`openspec/specs/page-culture`, `runtime-dates`, `transpiler-bcl`, `transpiler-records`).
 
 ## Retired documents
 

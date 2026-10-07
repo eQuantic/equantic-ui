@@ -24,5 +24,9 @@ export class MarkdownBlock {
     raw!: string;
     head!: MarkdownCell[];
     rows!: MarkdownRow[];
+
+    toString(): string {
+        return 'eQuantic.UI.Components.MarkdownBlock';
+    }
 }
 

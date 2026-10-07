@@ -508,9 +508,19 @@ public class RecordTypeEmitter
         // .NET record ToString ("Name { X = …, Y = … }") unless the user overrode it: the members
         // PrintMembers writes, a base's first, each once (#546), and `Name { }` for none, as .NET
         // writes it, where the twin wrote two spaces. The runtime's record text writes it, each member
-        // as a concatenation would (#454): a template hole wrote JavaScript's own text of each.
+        // as a concatenation would (#454): a template hole wrote JavaScript's own text of each. A
+        // plain struct is no record: it writes its full name, as ValueType.ToString does (#570).
         if (!userToString)
-            sb.Append($"toString() {{ return {_converter.RecordText("this", name, Printed(type))}; }} ");
+        {
+            var plainStruct = type is StructDeclarationSyntax
+                && ModelFor(type)?.GetDeclaredSymbol(type) is INamedTypeSymbol declared
+                && DefaultText.Of(declared) is { } fullName
+                    ? fullName
+                    : null;
+            sb.Append(plainStruct is not null
+                ? $"toString(){(tsTypeDeclarations ? ": string" : "")} {{ return {JsStringLiteral.Quote(plainStruct)}; }} "
+                : $"toString() {{ return {_converter.RecordText("this", name, Printed(type))}; }} ");
+        }
 
         sb.Append('}');
         return sb.ToString();

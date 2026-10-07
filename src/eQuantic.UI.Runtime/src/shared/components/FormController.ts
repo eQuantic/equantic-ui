@@ -97,5 +97,9 @@ export class FormController {
         this.submitError = formError;
         this.changed?.();
     }
+
+    toString(): string {
+        return 'eQuantic.UI.Primitives.FormController';
+    }
 }
 

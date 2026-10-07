@@ -6,5 +6,9 @@ export class MarkdownRow {
     }
 
     cells!: MarkdownCell[];
+
+    toString(): string {
+        return 'eQuantic.UI.Components.MarkdownRow';
+    }
 }
 

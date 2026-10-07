@@ -75,5 +75,9 @@ export class CSharpLanguage extends CurlyBraceLanguage {
     toJSON() {
         return $eq.json(this);
     }
+
+    toString(): string {
+        return 'eQuantic.UI.Code.CSharpLanguage';
+    }
 }
 

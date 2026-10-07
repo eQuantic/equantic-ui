@@ -16,5 +16,9 @@ export class MarkdownRun {
     get isLink(): boolean {
         return this.href.length > 0;
     }
+
+    toString(): string {
+        return 'eQuantic.UI.Components.MarkdownRun';
+    }
 }
 

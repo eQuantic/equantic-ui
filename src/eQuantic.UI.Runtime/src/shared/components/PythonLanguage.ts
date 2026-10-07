@@ -166,5 +166,9 @@ export class PythonLanguage {
         }
         into.push(new CodeToken(start, length, kind));
     }
+
+    toString(): string {
+        return 'eQuantic.UI.Code.PythonLanguage';
+    }
 }
 

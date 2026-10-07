@@ -42,5 +42,9 @@ export class SheetHistory {
         this._undo.splice(0);
         this._redo.splice(0);
     }
+
+    toString(): string {
+        return 'eQuantic.UI.Primitives.SheetHistory';
+    }
 }
 

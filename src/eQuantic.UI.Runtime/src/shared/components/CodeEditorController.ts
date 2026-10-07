@@ -835,5 +835,9 @@ export class CodeEditorController {
             column = forward ? 0 : this._document.line(line).length - 1;
         }
     }
+
+    toString(): string {
+        return 'eQuantic.UI.Code.CodeEditorController';
+    }
 }
 

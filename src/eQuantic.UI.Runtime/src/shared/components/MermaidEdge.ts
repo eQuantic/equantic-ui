@@ -10,5 +10,9 @@ export class MermaidEdge {
     to!: string;
     label!: string;
     arrow!: boolean;
+
+    toString(): string {
+        return 'eQuantic.UI.Components.MermaidEdge';
+    }
 }
 

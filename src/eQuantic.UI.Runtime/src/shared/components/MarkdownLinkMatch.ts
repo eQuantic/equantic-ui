@@ -8,5 +8,9 @@ export class MarkdownLinkMatch {
     label!: string;
     href!: string;
     end!: number;
+
+    toString(): string {
+        return 'eQuantic.UI.Components.MarkdownLinkMatch';
+    }
 }
 

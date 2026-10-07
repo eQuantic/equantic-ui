@@ -322,5 +322,9 @@ export abstract class CurlyBraceLanguage {
     toJSON() {
         return $eq.json(this);
     }
+
+    toString(): string {
+        return 'eQuantic.UI.Code.CurlyBraceLanguage';
+    }
 }
 

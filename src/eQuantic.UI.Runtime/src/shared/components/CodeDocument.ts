@@ -196,5 +196,9 @@ export class CodeDocument {
     static isWordChar(c: string) {
         return (/^[\p{L}\p{Nd}]$/u.test(c)) || c === '_';
     }
+
+    toString(): string {
+        return 'eQuantic.UI.Code.CodeDocument';
+    }
 }
 

@@ -72,6 +72,8 @@ could print it two ways itself:
 
 - `transpiler-bcl`: a number's text with no specifier is the culture's, and a number's kind decides
   what its format writes.
+- `transpiler-records`: a plain class or struct that writes no text of its own writes its type's full
+  name, as .NET does (#570).
 - `runtime-dates`: a `DateOnly`, a `TimeOnly` and a `DateTimeOffset` print as .NET prints them, and a
   custom picture writes the culture's separators, the offset and the era.
 

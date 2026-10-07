@@ -140,5 +140,9 @@ export class CodeRows {
         while (found > 0 && this._rowCounts[found] === 0) found--;
         return found;
     }
+
+    toString(): string {
+        return 'eQuantic.UI.Code.CodeRows';
+    }
 }
 

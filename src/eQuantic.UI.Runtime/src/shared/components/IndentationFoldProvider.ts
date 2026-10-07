@@ -20,5 +20,9 @@ export class IndentationFoldProvider {
         }
         return folds;
     }
+
+    toString(): string {
+        return 'eQuantic.UI.Code.IndentationFoldProvider';
+    }
 }
 
