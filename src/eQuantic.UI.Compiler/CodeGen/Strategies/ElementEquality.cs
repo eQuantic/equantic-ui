@@ -33,6 +33,31 @@ internal static class ElementEquality
     /// JavaScript that writes it; null for identity, which every runtime helper takes by default.</summary>
     internal static string? Of(ITypeSymbol? type) => Describe(type).Equality;
 
+    /// <summary>
+    /// JavaScript asking whether two values of <paramref name="type"/> are equal as
+    /// <c>EqualityComparer&lt;T&gt;.Default.Equals</c> answers it: <c>$eq.equals</c> where that answers
+    /// what .NET answers, an array and a class by reference or the class's own <c>Equals</c>, a type
+    /// that does not decide by what the value turns out to be, and a tuple holding an array by the
+    /// comparison generated from its element types. A record's member and a tuple's <c>Equals</c> are
+    /// compared through it: <c>$eq.equals</c> walks an array element by element, so two records holding
+    /// two arrays of the same items were equal where .NET compares the arrays by reference (#554).
+    /// </summary>
+    internal static string Compare(ITypeSymbol? type, string left, string right)
+    {
+        var (equality, valueSafe) = Describe(type);
+        if (valueSafe) return $"{Eq.Equals}({left}, {right})";
+        var value = type.UnwrapNullable() ?? type;
+        return equality switch
+        {
+            // An array, and a class: its own Equals where a twin carries one, and identity otherwise,
+            // never its members, which `sameKey` walks for a value that may be a tuple.
+            null => $"{Eq.SameItem}({left}, {right})",
+            "'own'" when value is { TypeKind: TypeKind.Class, SpecialType: SpecialType.None } => $"{Eq.SameItem}({left}, {right})",
+            "'own'" => $"{Eq.SameKey}({left}, {right})",
+            _ => $"{equality}({left}, {right})",
+        };
+    }
+
     /// <summary>The equality, and whether <c>$eq.equals</c> answers what it answers for a value of the
     /// type: what lets a tuple of such members be compared by <c>$eq.equals</c> whole.</summary>
     private static (string? Equality, bool ValueSafe) Describe(ITypeSymbol? type)

@@ -300,7 +300,9 @@ public class RecordTypeEmitter
                 : $"equals(o) {{ return o instanceof {name}");
             if (baseName != null) sb.Append(" && super.equals(o)");
             else if (type is RecordDeclarationSyntax) sb.Append(" && o.constructor === this.constructor");
-            foreach (var m in members) sb.Append($" && $eq.equals(this.{m.Store}, o.{m.Store})");
+            // Each member as EqualityComparer<T>.Default compares its type (ElementEquality): an array
+            // by reference, where `$eq.equals` walked it element by element (#554).
+            foreach (var m in members) sb.Append($" && {ElementEquality.Compare(TypeOf(m), $"this.{m.Store}", $"o.{m.Store}")}");
             sb.Append("; } ");
 
             // with(patch): a COPY, onto the prototype (a spread would drop the methods), then the
@@ -588,6 +590,19 @@ public class RecordTypeEmitter
     internal static bool IsStruct(TypeDeclarationSyntax type) =>
         type is StructDeclarationSyntax
         || type is RecordDeclarationSyntax record && record.ClassOrStructKeyword.IsKind(SyntaxKind.StructKeyword);
+
+    /// <summary>A value member's type, as the model binds its declaration's type syntax.</summary>
+    private ITypeSymbol? TypeOf(ValueMember member)
+    {
+        var syntax = member.Declaration switch
+        {
+            ParameterSyntax { Type: { } type } => type,
+            PropertyDeclarationSyntax property => property.Type,
+            VariableDeclaratorSyntax { Parent: VariableDeclarationSyntax declaration } => declaration.Type,
+            _ => null,
+        };
+        return syntax is null ? null : ModelFor(syntax)?.GetTypeInfo(syntax).Type;
+    }
 
     /// <summary>A member's zero, the value <c>default</c> gives it, a type parameter's taken from
     /// <paramref name="typeParameter"/> where the struct's <c>$zero</c> is handed one.</summary>

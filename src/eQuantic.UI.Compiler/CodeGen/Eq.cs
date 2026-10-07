@@ -403,6 +403,11 @@ public static class Eq
     /// <c>Equals</c>: identity, NaN equal to NaN, and a twin's own <c>equals</c>.</summary>
     public const string SameItem = "$eq.collections.sameItem";
 
+    /// <summary><c>EqualityComparer&lt;T&gt;.Default</c> for a type that does not decide (<c>object</c>,
+    /// an interface, a type parameter): a twin's own <c>equals</c>, a tuple's or an anonymous type's
+    /// members, and identity for anything else.</summary>
+    public const string SameKey = "$eq.collections.sameKey";
+
     /// <summary>A <c>KeyValuePair&lt;K, V&gt;</c>'s comparer, from each half's (#421).</summary>
     public const string PairComparer = "$eq.collections.pairComparer";
 
