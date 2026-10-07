@@ -20,6 +20,8 @@ public sealed class HotReloadService : IDisposable
     private Timer? _debounce;
     private Timer? _keepAlive;
     private int _building;
+    private Process? _rebuild;
+    private volatile bool _disposed;
 
     public HotReloadService(string contentRoot) => _contentRoot = contentRoot;
 
@@ -52,10 +54,10 @@ public sealed class HotReloadService : IDisposable
 
     private void Rebuild()
     {
-        if (Interlocked.Exchange(ref _building, 1) == 1) return;
+        if (_disposed || Interlocked.Exchange(ref _building, 1) == 1) return;
         try
         {
-            var process = Process.Start(new ProcessStartInfo
+            using var process = Process.Start(new ProcessStartInfo
             {
                 FileName = "dotnet",
                 Arguments = "msbuild -t:CompileEQuanticUI -v:q -nologo",
@@ -64,6 +66,13 @@ public sealed class HotReloadService : IDisposable
                 RedirectStandardError = true,
             });
             if (process is null) return;
+            _rebuild = process;
+            // Disposed while it started: the read in Dispose may have missed it.
+            if (_disposed)
+            {
+                Stop(process);
+                return;
+            }
             // The pipes are read BEFORE waiting: a build that says more than the pipe buffer holds
             // (~64KB — any real error list) used to block writing while we blocked waiting, and the
             // whole thing sat there until the 2-minute timeout.
@@ -71,6 +80,7 @@ public sealed class HotReloadService : IDisposable
             var stderr = process.StandardError.ReadToEndAsync();
             var started = Stopwatch.StartNew();
             process.WaitForExit(120_000);
+            if (_disposed) return;
             if (process.ExitCode == 0)
             {
                 Console.WriteLine($"[eQuantic.HotReload] rebuilt in {started.Elapsed.TotalSeconds:F1}s — reloading browsers");
@@ -84,6 +94,7 @@ public sealed class HotReloadService : IDisposable
         }
         finally
         {
+            _rebuild = null;
             Interlocked.Exchange(ref _building, 0);
         }
     }
@@ -128,10 +139,29 @@ public sealed class HotReloadService : IDisposable
         }
     }
 
+    /// <summary>Stops watching, and stops a rebuild still running: it belongs to this app, and the
+    /// build that follows a restart writes the same files. Every parked stream ends too, or each open
+    /// tab holds the app's graceful shutdown until the host gives up on it.</summary>
     public void Dispose()
     {
+        _disposed = true;
         _watcher?.Dispose();
         _debounce?.Dispose();
         _keepAlive?.Dispose();
+        if (_rebuild is { } rebuild) Stop(rebuild);
+        foreach (var (_, channel) in _clients)
+            channel.Writer.TryComplete();
+    }
+
+    private static void Stop(Process process)
+    {
+        try
+        {
+            process.Kill(entireProcessTree: true);
+        }
+        catch (InvalidOperationException)
+        {
+            // It exited, or was released, between the read and the kill.
+        }
     }
 }

@@ -417,11 +417,21 @@ public static class UIExtensions
         {
             var hotReload = new HotReload.HotReloadService(environment.ContentRootPath);
             hotReload.Start();
+            // Its lifetime is the app's. dotnet watch stops an app it restarts with SIGTERM to that
+            // process alone, and a rebuild still running would go on writing the files the restart's
+            // own build writes.
+            endpoints.ServiceProvider.GetRequiredService<IHostApplicationLifetime>()
+                .ApplicationStopping.Register(hotReload.Dispose);
             endpoints.MapGet("/_equantic/hmr", hotReload.HandleClient);
+        }
 
+        if (environment.IsDevelopment())
+        {
             // The stage-one source maps (TS intermediate → C#, C# text embedded) for the error
-            // overlay's second hop. Name-only — no separators survive the check, so nothing above
-            // obj/eQuantic/ts is reachable. 404s in production along with the whole dev block.
+            // overlay's second hop, mapped where the overlay installs, in Development alone: the
+            // maps carry the app's C#, and a run under dotnet watch in another environment streams
+            // rebuilds without serving its source. Name-only — no separators survive the check, so
+            // nothing above obj/eQuantic/ts is reachable.
             endpoints.MapGet("/_equantic/src-map/{name}", async context =>
             {
                 var name = context.Request.RouteValues["name"] as string ?? "";
@@ -1081,10 +1091,14 @@ public class UIOptions
     /// <see cref="HotReload"/> when the app says, otherwise the Development environment or a run under
     /// <c>dotnet watch</c>, which sets <c>DOTNET_WATCH</c> to 1 on the app it runs. One decision, read
     /// by the stream that announces a rebuild, the cache of the modules a rebuild rewrites and the
-    /// client that listens, which agreed before only while nothing set them apart (#627).
+    /// client that listens, which agreed before only while nothing set them apart (#627). Its first
+    /// answer, the one MapUI maps the stream by at startup, is every later reader's, whatever the
+    /// process's environment does after.
     /// </summary>
     internal bool HotReloads(IHostEnvironment environment) =>
-        HotReloads(environment, Environment.GetEnvironmentVariable("DOTNET_WATCH"));
+        _hotReloads ??= HotReloads(environment, Environment.GetEnvironmentVariable("DOTNET_WATCH"));
+
+    private bool? _hotReloads;
 
     /// <summary><see cref="HotReloads(IHostEnvironment)"/> with the variable dotnet watch sets given.</summary>
     internal bool HotReloads(IHostEnvironment environment, string? dotnetWatch) =>

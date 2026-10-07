@@ -52,9 +52,14 @@ public class HotReloadDecisionTests
         options.HotReloads(new Host(environment), dotnetWatch).Should().Be(hotReloads);
     }
 
-    private static async Task<(WebApplication App, HttpClient Client)> StartAsync(string environment, bool? hotReload)
+    private static async Task<(WebApplication App, HttpClient Client)> StartAsync(
+        string environment, bool? hotReload, string? contentRoot = null)
     {
-        var builder = WebApplication.CreateBuilder(new WebApplicationOptions { EnvironmentName = environment });
+        var builder = WebApplication.CreateBuilder(new WebApplicationOptions
+        {
+            EnvironmentName = environment,
+            ContentRootPath = contentRoot,
+        });
         builder.WebHost.UseTestServer();
         builder.Services.AddUI(options =>
         {
@@ -85,5 +90,39 @@ public class HotReloadDecisionTests
         config.GetProperty("hotReload").GetBoolean().Should().Be(hotReloads);
         (answer.Content.Headers.ContentType?.MediaType == "text/event-stream").Should().Be(hotReloads,
             "the page is told to listen exactly when the stream is mapped");
+    }
+
+    /// <summary>
+    /// The modules a rebuild rewrites revalidate exactly when the app rebuilds them, and the stage-one
+    /// maps, which carry the app's C#, are served where the error overlay that reads them installs:
+    /// in Development, and nowhere else, a run under dotnet watch included.
+    /// </summary>
+    [Theory]
+    [InlineData("Production", true, "no-cache", false)]
+    [InlineData("Development", false, "public, max-age=31536000, immutable", true)]
+    [InlineData("Production", null, "public, max-age=31536000, immutable", false)]
+    public async Task TheModulesCache_FollowsTheDecision_AndTheCSharpMapsStayInDevelopment(
+        string environment, bool? hotReload, string cacheControl, bool mapsServed)
+    {
+        var root = Path.Combine(Path.GetTempPath(), $"eq-hot-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(Path.Combine(root, "wwwroot", "_equantic"));
+        Directory.CreateDirectory(Path.Combine(root, "obj", "eQuantic", "ts"));
+        File.WriteAllText(Path.Combine(root, "wwwroot", "_equantic", "Probe.js"), "export {};");
+        File.WriteAllText(Path.Combine(root, "obj", "eQuantic", "ts", "Probe.ts.map"), "{\"sourcesContent\":[\"// C#\"]}");
+        try
+        {
+            var (app, client) = await StartAsync(environment, hotReload, root);
+            await using var _ = app;
+
+            using var module = await client.GetAsync("/_equantic/Probe.js");
+            using var map = await client.GetAsync("/_equantic/src-map/Probe.ts.map");
+
+            module.Headers.CacheControl!.ToString().Should().Be(cacheControl);
+            (map.Content.Headers.ContentType?.MediaType == "application/json").Should().Be(mapsServed);
+        }
+        finally
+        {
+            Directory.Delete(root, recursive: true);
+        }
     }
 }
