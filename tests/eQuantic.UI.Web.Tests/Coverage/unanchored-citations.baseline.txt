@@ -75,6 +75,6 @@ docs/HANDOFF-FIDELITY-AUDIT.md Tokens.cs 22
 docs/HANDOFF-FIDELITY-AUDIT.md UIExtensions.cs 1
 docs/HANDOFF-FIDELITY-AUDIT.md WalletApp.cs 1
 docs/HANDOFF-FIDELITY-AUDIT.md Wave2ComponentTests.cs 1
-docs/HANDOFF-FIDELITY-AUDIT.md draggable.ts 6
+docs/HANDOFF-FIDELITY-AUDIT.md draggable.ts 5
 docs/HANDOFF-FIDELITY-AUDIT.md lowering.ts 24
 docs/HANDOFF-FIDELITY-AUDIT.md reconciler.ts 1
