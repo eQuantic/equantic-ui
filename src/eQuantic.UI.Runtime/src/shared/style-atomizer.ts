@@ -364,6 +364,23 @@ function addOnce(classes: string[], className: string): void {
   if (!classes.includes(className)) classes.push(className);
 }
 
+/** The family of a CONTROL's focus (C# `StyleSink.ControlFocus`). */
+export const CONTROL_FOCUS = 'focus';
+
+/** The family of a CONTROL's press (C# `StyleSink.ControlPressed`). */
+export const CONTROL_PRESSED = 'pressed';
+
+/**
+ * The C# `StyleSink.StateSelector`: a hover is the box's own pseudo-class, and a focus and a press
+ * are its control's, selecting every box inside an enabled control in that state. Specificity orders
+ * them (hover 0,2,0 under focus 0,3,0 under pressed 0,4,0), never their order in the sheet.
+ */
+export function stateSelector(family: string, className: string): string {
+  if (family === CONTROL_FOCUS) return `.eq-pressable:focus-visible .${className}`;
+  if (family === CONTROL_PRESSED) return `.eq-pressable.eq-pressable:active .${className}`;
+  return `.${className}${family}`;
+}
+
 /** Spec S5: pseudo-variant rules of the same atomic family — `.eq-x:hover{decl}`; the pseudo is
  * part of the hash so hover/base variants of one declaration are distinct classes. */
 export function atomizePseudo(pseudo: string, entries: Record<string, string | undefined>): string {
@@ -386,10 +403,11 @@ export function atomizePseudo(pseudo: string, entries: Record<string, string | u
         // C# twin (StyleAtomizer.Css): §10 — hover never fires on touch, and a touch browser's
         // tap leaves a STICKY emulated :hover behind, so the family only exists for devices that
         // can hover. The gate wraps the rule, never the hash: the class string stays identical.
+        const selector = stateSelector(pseudo, className);
         const rule =
           pseudo === ':hover'
-            ? `@media (hover: hover){.${className}${pseudo}{${declaration}}}`
-            : `.${className}${pseudo}{${declaration}}`;
+            ? `@media (hover: hover){${selector}{${declaration}}}`
+            : `${selector}{${declaration}}`;
         target?.insertRule(rule, target.cssRules.length);
       } catch {
         /* unparsable pseudo rules must never take the app down */
