@@ -293,6 +293,47 @@ public class ImageOptimizerTests
     }
 
     [Fact]
+    public async Task GetDimensionsAsync_ReadsAStreamThatRefusesSynchronousReads()
+    {
+        // An ASP.NET Core request body with AllowSynchronousIO off, its default. Skia reads
+        // synchronously, so the header is read here first, asynchronously.
+        var jpeg = TestImages.WithOrientation(TestImages.Solid(1920, 1080, SKColors.Red), 6);
+        await using var source = new AsyncOnlyStream(jpeg);
+
+        var (width, height) = await _optimizer.GetDimensionsAsync(source);
+
+        (width, height).Should().Be((1080, 1920));
+    }
+
+    [Fact]
+    public async Task GetDimensionsAsync_ReadsOneBlock_NotTheWholeSource()
+    {
+        // A PNG followed by a megabyte its codec never needs.
+        byte[] bytes = [.. TestImages.Solid(64, 32, SKColors.Red, SKEncodedImageFormat.Png), .. new byte[1024 * 1024]];
+        await using var source = new AsyncOnlyStream(bytes);
+
+        var (width, height) = await _optimizer.GetDimensionsAsync(source);
+
+        (width, height).Should().Be((64, 32));
+        source.BytesRead.Should().Be(16 * 1024);
+    }
+
+    [Fact]
+    public async Task GetDimensionsAsync_ReadsOnWhileTheHeaderOutgrowsTheBlock()
+    {
+        // 60 KB of metadata before the frame header: the blocks double (16, 16, 32 KB) until the
+        // codec has it, the EXIF orientation included, and stop there.
+        var jpeg = TestImages.WithOrientation(TestImages.WithPadding(TestImages.Solid(400, 200, SKColors.Red), 60_000), 6);
+        byte[] bytes = [.. jpeg, .. new byte[1024 * 1024]];
+        await using var source = new AsyncOnlyStream(bytes);
+
+        var (width, height) = await _optimizer.GetDimensionsAsync(source);
+
+        (width, height).Should().Be((200, 400));
+        source.BytesRead.Should().Be(64 * 1024);
+    }
+
+    [Fact]
     public async Task GetDimensionsAsync_AnswersTheSizeAsDisplayed()
     {
         using var source = TestImages.Stream(TestImages.WithOrientation(TestImages.Solid(1920, 1080, SKColors.Red), 6));

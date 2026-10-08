@@ -40,13 +40,13 @@ public class ImageOptimizer
     }
 
     /// <summary>
-    /// Gets the dimensions of a source image as displayed, its orientation applied, from its header:
-    /// no pixel is decoded, and the stream is left open.
+    /// Gets the dimensions of a source image as displayed, its orientation applied, from its header,
+    /// read asynchronously: no pixel is decoded, and the stream is left open.
     /// </summary>
     /// <exception cref="InvalidDataException">The source is not one of the formats read.</exception>
-    public Task<(int Width, int Height)> GetDimensionsAsync(Stream source)
+    public async Task<(int Width, int Height)> GetDimensionsAsync(Stream source)
     {
-        var size = SourceImage.Measure(source);
-        return Task.FromResult((size.Width, size.Height));
+        var size = await SourceImage.MeasureAsync(source);
+        return (size.Width, size.Height);
     }
 }

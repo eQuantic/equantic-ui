@@ -68,21 +68,39 @@ internal sealed class SourceImage : IDisposable
     }
 
     /// <summary>
-    /// The size a source is displayed at, read from its header alone. Nothing is decoded, so the
-    /// pixel ceiling does not apply, and the stream is read no further than the header and left
-    /// open for its owner.
+    /// The size a source is displayed at, read from its header alone. The stream is read
+    /// asynchronously, since a request body refuses a synchronous read, and in blocks that double
+    /// until the codec has what it needs: a PNG's first 64 bytes, a JPEG's markers up to its first
+    /// scan, a camera's EXIF included. Nothing is decoded, so the pixel ceiling does not apply, and
+    /// the stream is left open for its owner.
     /// </summary>
     /// <exception cref="InvalidDataException">The source is not one of the formats read.</exception>
-    public static SKSizeI Measure(Stream source)
+    public static async Task<SKSizeI> MeasureAsync(Stream source)
     {
-        using SKStream stream = source.CanSeek
-            ? new SKManagedStream(source, disposeManagedStream: false)
-            : new SKFrontBufferedManagedStream(source, SKCodec.MinBufferedBytesNeeded, disposeUnderlyingStream: false);
-        using var codec = SKCodec.Create(stream);
-        if (codec is null || ImageFormats.ContentTypeOf(codec.EncodedFormat) is null)
-            throw new InvalidDataException($"The source is not a {ImageFormats.Names} image.");
+        var header = new MemoryStream();
+        while (true)
+        {
+            var block = new byte[Math.Max(16 * 1024, (int)header.Length)];
+            var read = await source.ReadAtLeastAsync(block, block.Length, throwOnEndOfStream: false);
+            header.Write(block, 0, read);
 
-        return Displayed(codec.Info.Width, codec.Info.Height, codec.EncodedOrigin);
+            using var data = SKData.CreateCopy(header.GetBuffer(), (ulong)header.Length);
+            using var stream = new SKMemoryStream(data);
+            using var codec = SKCodec.Create(stream, out var result);
+            if (codec is not null)
+            {
+                if (ImageFormats.ContentTypeOf(codec.EncodedFormat) is null)
+                    break;
+                return Displayed(codec.Info.Width, codec.Info.Height, codec.EncodedOrigin);
+            }
+
+            // A codec short of its header says so; anything else, or a stream that ended, is not
+            // an image it reads.
+            if (result != SKCodecResult.IncompleteInput || read < block.Length)
+                break;
+        }
+
+        throw new InvalidDataException($"The source is not a {ImageFormats.Names} image.");
     }
 
     /// <summary>The first frame's pixels in sRGB, oriented as displayed.</summary>

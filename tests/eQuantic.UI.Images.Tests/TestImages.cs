@@ -124,6 +124,16 @@ internal static class TestImages
     }
 
     /// <summary>
+    /// A JPEG with an APP13 segment of the given size inserted after its SOI marker: a header past
+    /// what one read takes, as a camera's thumbnail or an editor's metadata makes it.
+    /// </summary>
+    public static byte[] WithPadding(byte[] jpeg, int size)
+    {
+        var length = size + 2;
+        return [.. jpeg[..2], 0xFF, 0xED, (byte)(length >> 8), (byte)length, .. new byte[size], .. jpeg[2..]];
+    }
+
+    /// <summary>
     /// A 1 × 1 GIF of two frames, red then blue. SkiaSharp writes no GIF, so the bytes are written
     /// here: each frame's LZW data is the three 3-bit codes clear, the colour's index and end.
     /// </summary>

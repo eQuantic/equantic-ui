@@ -122,7 +122,7 @@ public static class ImageOptimizationMiddleware
             {
                 logger?.LogInformation(
                     "Optimizing image: {Url} -> {Width}px, q={Quality}, format={Format}",
-                    urlParam, width, quality, outputFormat);
+                    ForLog(urlParam), width, quality, outputFormat);
 
                 await using var stream = File.OpenRead(sourcePath);
                 return await optimizer.OptimizeAsync(stream, width, quality, outputFormat);
@@ -152,13 +152,13 @@ public static class ImageOptimizationMiddleware
         {
             // The source is not an image the optimizer reads, or holds too many pixels to decode:
             // the request's fault, not the server's.
-            logger?.LogWarning("Refused to optimize image {Url}: {Reason}", urlParam, ex.Message);
+            logger?.LogWarning("Refused to optimize image {Url}: {Reason}", ForLog(urlParam), ex.Message);
             context.Response.StatusCode = 400;
             await context.Response.WriteAsync($"Invalid image: {ex.Message}");
         }
         catch (Exception ex)
         {
-            logger?.LogError(ex, "Failed to optimize image: {Url}", urlParam);
+            logger?.LogError(ex, "Failed to optimize image: {Url}", ForLog(urlParam));
             context.Response.StatusCode = 500;
             await context.Response.WriteAsync("Failed to optimize image");
         }
@@ -182,6 +182,13 @@ public static class ImageOptimizationMiddleware
         // Fallback: if the client accepts any image, use JPEG
         return "image/jpeg";
     }
+
+    /// <summary>
+    /// The url as a log line takes it. It comes from the query, so a CR or an LF in it would
+    /// otherwise start a line of its own in a plain-text log.
+    /// </summary>
+    private static string ForLog(string value) =>
+        value.Replace("\r", string.Empty).Replace("\n", string.Empty);
 
     /// <summary>
     /// Computes a weak ETag from the image data using SHA256.
