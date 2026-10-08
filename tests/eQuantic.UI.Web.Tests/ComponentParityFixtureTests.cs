@@ -65,8 +65,17 @@ public class ComponentParityFixtureTests
         ("box-hover-lift", HoverLift(), NoPresses),
         ("box-hover-lift-simulated",
             new Simulated(SimulatedState.Hovered | SimulatedState.Focused, HoverLift()), NoPresses),
-        // A state that leaves nothing to draw writes "none": a hover that sets the elevation to 0
-        // over a box whose only shadow was its elevation.
+        // A CONTROL in every state (#508): its box's hover, and its focus and press in the families
+        // that select under the control, with the ring's slot leading every shadow list. Simulated,
+        // the press and the focus land on the base and the control is marked eq-focused.
+        ("control-states", ControlStates(), NoPresses),
+        ("control-states-simulated",
+            new Simulated(SimulatedState.Pressed | SimulatedState.Focused, ControlStates()), NoPresses),
+        // A picture of a DISABLED control: both producers mask the control's states for its subtree.
+        ("control-states-disabled-simulated",
+            new Simulated(SimulatedState.Pressed | SimulatedState.Focused, DisabledControlStates()), NoPresses),
+        // A state that leaves nothing to draw writes the ring's slot alone: a hover that sets the
+        // elevation to 0 over a box whose only shadow was its elevation.
         ("box-hover-drops-shadow", new Box(new BoxStyle
         {
             Width = 40, Height = 40, Elevation = 2,
@@ -215,6 +224,28 @@ public class ComponentParityFixtureTests
         },
         Focus = new StyleDiff { Elevation = 0, Transform = Transform2D.Scale(1) },
     });
+
+    /// <summary>The control of the control-states cases: a raised surface with a hover, a focus and a
+    /// press, each changing what the others do not, and the pressed fill it has always had.</summary>
+    private static Pressable ControlStates() => new(new Box(new BoxStyle
+    {
+        Width = 40,
+        Height = 40,
+        Background = Theme.Surface,
+        Elevation = 2,
+        Hover = new StyleDiff { Elevation = 3 },
+        Focus = new StyleDiff { BorderColor = Theme.FocusRing, BorderWidth = 2, Opacity = 0.95f },
+        Pressed = new StyleDiff { Transform = Transform2D.Scale(0.985f), Elevation = 1 },
+    }), () => { })
+    {
+        PressedBackground = Theme.SurfaceSubtle,
+    };
+
+    private static Pressable DisabledControlStates() => new(ControlStates().Child, () => { })
+    {
+        Disabled = true,
+        PressedBackground = Theme.SurfaceSubtle,
+    };
 
     private static VisualNode Stack(float gap, params VisualNode[] children)
     {

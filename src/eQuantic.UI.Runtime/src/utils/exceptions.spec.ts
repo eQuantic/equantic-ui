@@ -38,8 +38,41 @@ describe('a .NET exception carries the types it is', () => {
     expect(create(['App.Pair<App.Box<int>, string>.Gone', 'System.Exception']).name).toBe('Gone');
   });
 
-  it('takes a null message as no message', () => {
-    expect(create(ARGUMENT_NULL, null).message).toBe('');
+  it('writes a null message as Exception.Message does, a type\'s own text being the compiler\'s to hand', () => {
+    expect(create(ARGUMENT_NULL, null).message).toBe("Exception of type 'System.ArgumentNullException' was thrown.");
+    expect(create(['App.Oops', 'System.Exception']).message).toBe("Exception of type 'App.Oops' was thrown.");
+    expect(create(ARGUMENT_NULL, 'Value cannot be null.', { paramName: 'x' }).message).toBe(
+      "Value cannot be null. (Parameter 'x')",
+    );
+  });
+
+  it("names a type initializer's type, a null one as '', and reads it as TypeName", () => {
+    const initializer = ['System.TypeInitializationException', 'System.SystemException', 'System.Exception'];
+    const failed = create(initializer, undefined, { typeName: 'App.T', innerException: null }) as Error & { typeName: string };
+    expect(failed.message).toBe("The type initializer for 'App.T' threw an exception.");
+    expect(failed.typeName).toBe('App.T');
+    expect(create(initializer, undefined, { typeName: null }).message).toBe("The type initializer for '' threw an exception.");
+  });
+
+  it("gives an aggregate its first inner exception, the runtime's own included", () => {
+    const first = new Error('f');
+    const aggregate = exception('System.AggregateException', 'One or more errors occurred.', {
+      innerExceptions: [first, new Error('g')],
+    }) as Error & { innerException: unknown };
+    expect(aggregate.message).toBe('One or more errors occurred. (f) (g)');
+    expect(aggregate.innerException).toBe(first);
+  });
+
+  it('composes the parameter, the actual value and the object name as .NET does', () => {
+    const range = ['System.ArgumentOutOfRangeException', 'System.ArgumentException', 'System.SystemException', 'System.Exception'];
+    const error = create(range, 'm', { paramName: 'x', actualValue: 5 }) as Error & { paramName: string; actualValue: number };
+    expect(error.message).toBe("m (Parameter 'x')\nActual value was 5.");
+    expect(error.paramName).toBe('x');
+    expect(error.actualValue).toBe(5);
+    const disposed = ['System.ObjectDisposedException', 'System.InvalidOperationException', 'System.SystemException', 'System.Exception'];
+    expect(create(disposed, 'Cannot access a disposed object.', { objectName: 'thing' }).message).toBe(
+      "Cannot access a disposed object.\nObject name: 'thing'.",
+    );
   });
 });
 
@@ -151,7 +184,7 @@ describe('a throw expression and an exception filter', () => {
 describe('every throw of the .NET twins carries its .NET type', () => {
   /** The untyped errors there are, each by its file and its words, and why it is no .NET exception. */
   const notDotNet: { file: string; words: string; why: string }[] = [
-    { file: 'exceptions.ts', words: 'new Error(message', why: 'where every .NET exception is made, its type with it' },
+    { file: 'exceptions.ts', words: 'new Error(composed(', why: 'where every .NET exception is made, its type with it' },
     { file: 'assert-never.ts', words: 'Unhandled', why: 'a case the code never reaches; reaching it is a defect of the runtime' },
     { file: 'decimal.ts', words: 'Invalid decimal literal', why: 'a literal the compiler wrote, valid by construction' },
     { file: 'linq.ts', words: 'A sequence was expected', why: 'a value that crossed as a plain object where C# holds a sequence' },

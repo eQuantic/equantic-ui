@@ -1645,6 +1645,49 @@ record of a release, the wiki's Upgrading page is the distillate.
   and curly-brace parsers and the SDK's strings, which search a char from a start, now throw where
   the same C# throws on the server. Proposed and archived through OpenSpec
   (`openspec/specs/transpiler-bcl`).
+- **2026-10-07 · A null-conditional answers null, and a method group is the delegate C# makes**: a
+  null-conditional read that is JavaScript's optional chain was `undefined` in the browser where C#
+  answers `null`, and the two part ways where the value is used: a parameter typed `T | null` refuses
+  it in the runtime's build, JSON drops the key, and a dictionary looking for null missed it
+  ([#633](https://github.com/eQuantic/equantic-ui/issues/633)). It answers null there now, behind a
+  guard too, and stays a bare chain where nothing can tell (a call that returns nothing, a statement,
+  the left of a `??`, the tail of another chain). A method group bound to a receiver that is a call ran
+  the call twice, `c.make().value.bind(c.make())` answering 4 where .NET answers 2
+  ([#619](https://github.com/eQuantic/equantic-ui/issues/619)); the bind is a template that reads the
+  receiver once. A group on `base` bound `super`, which JavaScript refuses at parse, and an extension's
+  group bound a member its receiver never has: the first binds `this` now, and the second goes to the
+  home its call goes to, so a BCL extension's group fails the build with EQ2004 instead of throwing in
+  the browser ([#655](https://github.com/eQuantic/equantic-ui/issues/655)). Two twins move,
+  `CodeDiffLayout` and `Spreadsheet`. Proposed and archived through OpenSpec
+  (`openspec/specs/transpiler-expressions`).
+- **2026-10-06 · A control's press and focus show on its boxes on every target**: the handoff presses
+  its buttons with `scale(.985)` and there was no way to say it, and measuring the focus state found
+  it dead on both targets ([#508](https://github.com/eQuantic/equantic-ui/issues/508), the second
+  slice of [#504](https://github.com/eQuantic/equantic-ui/issues/504)). `BoxStyle` gains `Pressed`,
+  and `Focus` becomes the control's: a box is never focusable, so the web's `.cls:focus-visible` could
+  not match, and Photon never drew the diff. Both apply to every box inside the `Pressable` while it
+  is pressed or focused, in the handoff's order, pressed over focus over hover, which the web holds by
+  specificity (0,4,0 over 0,3,0 over 0,2,0) because the server sorts its rules by class and the
+  browser inserts them as it lowers. The focus ring was a `box-shadow` rule that replaced a raised
+  control's elevation and glow; it is now a slot that leads every shadow list,
+  `var(--eq-ring, 0 0 #0000)`, set to the same double ring on focus through a property that does not
+  inherit, and a simulated focus draws it too. A control without `PressedBackground` went transparent
+  while pressed on the web, because a `var()` with no value computes to the initial value, measured
+  in Chromium as `rgba(0, 0, 0, 0)`; only a control with a fill is marked for the swap now. Photon
+  glides a state's custom shadows as one list, a shadow a state adds or takes away fading in or out as
+  CSS pads the shorter list. The A/B caught a test of the order that passed with the order
+  reversed, because a pointer press hides the focus on Photon as `:focus-visible` does on the web; the
+  order between press and focus is now asked of a `Simulated` picture. The review found a control
+  disabled while it held focus still showing its states on Photon, where the web's families never
+  select under a disabled control, and two mechanisms saying one pressed fill, now
+  [#616](https://github.com/eQuantic/equantic-ui/issues/616). Copilot's rounds found a surface's
+  own transition replaced by the fill's fade (a pressed scale snapped, measured in Chromium), a
+  disabled control still arming its fill and ring, shadows with no geometry paired as glide
+  positions, and a picture of a disabled control, or an enabled control around one, still reaching
+  its boxes; a disabled control's subtree is muted now on all three producers. The group hover and the inherited
+  foreground of [#498](https://github.com/eQuantic/equantic-ui/issues/498) are
+  [#614](https://github.com/eQuantic/equantic-ui/issues/614). Proposed and archived through OpenSpec
+  (`openspec/specs/interaction-states`).
 - **2026-10-06 · The conformance harness compares a value as the runtime holds it**: the .NET side
   wrote a value as System.Text.Json writes it and the JS side as `JSON.stringify` writes the runtime's,
   so a long, a decimal, an enum and a float compared backwards: a long that crossed as a BigInt
@@ -1660,6 +1703,26 @@ record of a release, the wiki's Upgrading page is the distillate.
   1970 toward the epoch; it answers a BigInt cut as .NET cuts it now. Found on the way: the date
   constructors past the second ([#606](https://github.com/eQuantic/equantic-ui/issues/606)).
   Proposed and archived through OpenSpec (`openspec/specs/runtime-dates`).
+- **2026-10-07 · An exception's message is composed as .NET composes it**: a framework exception's
+  arguments were read by position, so `new ArgumentNullException(nameof(x)).Message` was the
+  parameter's name, a parameter's name never reached a message and a constructor with no message gave
+  an empty one ([#558](https://github.com/eQuantic/equantic-ui/issues/558)). eqc binds them by their
+  parameters and reads the text .NET writes where no message, or a null one, was given from .NET
+  itself, for the constructor the call binds, where a table gave a `TaskCanceledException` its base's.
+  The runtime composes the message .NET writes: ` (Parameter 'x')`, and the actual value and a disposed
+  object's name on lines of their own, with `ParamName`, `ActualValue`, `InnerException` and
+  `TypeName` reading what the constructor took, an aggregate's inner messages and a type initializer's
+  sentence included. Proposed and archived through OpenSpec (`openspec/specs/transpiler-exceptions`).
+- **2026-10-07 · A builder's counted and ranged overloads write what .NET writes**: the runtime's
+  `StringBuilder` had one shape per method, so `Append('x', 3)` appended one `x`, and
+  `Append(text, start, count)`, `Insert(i, text, count)`, `Replace` over a range and
+  `ToString(start, length)` took the whole value, a `char[]` written as JavaScript's text of an array
+  and a null as `null` ([#650](https://github.com/eQuantic/equantic-ui/issues/650)). The builder takes
+  each overload shape by its count of arguments, the `char[]` overloads are methods of their own that
+  eqc names from the overload the call binds, and each refusal is .NET's, in .NET's order. 45 of the
+  46 new conformance cases fail on the base. The members the runtime does not have are
+  [#679](https://github.com/eQuantic/equantic-ui/issues/679). Proposed and archived through OpenSpec
+  (`openspec/specs/transpiler-bcl`).
 - **2026-10-07 · A Flexible keeps the weight it was given**: the constructor raised a zero weight
   to 1, so `Flexible(child, flex: 0, basis: 540)` rendered on the server as `flex: 1 1 540px` and
   grew, while the browser's twin, which never clamped, wrote `flex: 0 1 540px` for the same node;
