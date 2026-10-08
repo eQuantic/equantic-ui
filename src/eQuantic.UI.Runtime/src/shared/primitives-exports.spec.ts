@@ -76,10 +76,10 @@ const NO_TWIN_OWED = new Set([
   // and the browser has no IWorkspace at all — a link there is an anchor the browser already
   // routes, and nothing in a page bundle ever asks this.
   'OpenUrlPolicy',
-  // The cubic-bezier solver behind `Curve`. On the web a transition IS a CSS
-  // `transition-timing-function`, so the browser evaluates the curve and nothing in a page bundle
-  // ever asks this — it exists for the targets that have to do the arithmetic themselves.
-  'CurveEvaluator',
+  // `CurveEvaluator`, the cubic-bezier solver behind `Curve`, used to be named here. A web transition
+  // IS a CSS timing function, so nothing in a page bundle asks it, and it is `[ServerOnly]` now: the
+  // compiler REFUSES `curve.Ease(t)` in a component (EQ2010), where the call built and threw in the
+  // browser (#518), and the C# side drops it from the pinned list by that rule.
   // The frame clock's tick payload. `IFrameTicker` is realized per target (requestAnimationFrame
   // here), and the web realization defines its own tick shape in devices/frame-ticker.ts rather
   // than importing a C# record's twin.

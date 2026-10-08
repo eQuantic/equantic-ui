@@ -329,8 +329,9 @@ public static class TypeSymbolExtensions
     /// extension-home lowering asks. That one is "does the runtime export a home under this name",
     /// which only the attribute can answer: the namespace is too broad, because
     /// <c>eQuantic.UI.Primitives</c> also holds types the runtime exports no twin for
-    /// (<c>CurveEvaluator</c>). Collapsing the two into this predicate sends that type's extension
-    /// home again — measured, and caught by the case written for it.
+    /// (<c>CurveEvaluator</c>). Collapsing the two into this predicate sent that type's extension
+    /// home again — measured, and caught by the case written for it, before the type was marked
+    /// host-only and its extension refused ahead of either question (#518).
     /// </para>
     /// <para>
     /// What the attribute half fixes HERE is the other direction: a home the attribute marks,

@@ -401,7 +401,7 @@ public class SharedComponentTranspilationTests
     /// <summary>
     /// A Primitives extension whose home the runtime does NOT provide. `CurveEvaluator` is the
     /// cubic-bezier solver behind `Curve`; on the web a transition IS a CSS timing function, so the
-    /// browser evaluates the curve and the runtime exports no twin.
+    /// browser evaluates the curve, the runtime exports no twin, and the home is `[ServerOnly]`.
     /// </summary>
     private const string CurveSource = """
         using eQuantic.UI.Primitives;
@@ -415,33 +415,36 @@ public class SharedComponentTranspilationTests
         """;
 
     /// <summary>
-    /// A HOME GOES HOME ONLY IF THE RUNTIME SAYS IT PROVIDES ONE. The namespace cannot decide it:
-    /// `eQuantic.UI.Primitives` routes to the runtime implicitly, and it also holds types the
-    /// runtime deliberately does not export. Sending `CurveEvaluator.Ease` home would emit
-    /// `import { CurveEvaluator } from "@equantic/runtime"` against a bundle with no such export —
-    /// which fails the whole module at LOAD, where the reduced form it had before fails only at the
-    /// call. Neither works; one is strictly worse, and this PR must not introduce it.
+    /// A HOME GOES HOME ONLY IF THE RUNTIME SAYS IT PROVIDES ONE, and one the vocabulary keeps on the
+    /// host is REFUSED. The namespace cannot decide it: `eQuantic.UI.Primitives` routes to the
+    /// runtime implicitly, and it also holds types the runtime deliberately does not export. Sending
+    /// `CurveEvaluator.Ease` home would emit `import { CurveEvaluator } from "@equantic/runtime"`
+    /// against a bundle with no such export, which fails the whole module at LOAD. The reduced form
+    /// this case pinned until #518 failed at the CALL instead, `curve.ease is not a function`, in a
+    /// build that reported nothing. Neither works, so the build says so: EQ2010, and no import.
     /// <para>
-    /// `[RuntimeProvided]` is what decides, and it is the attribute's own contract ("the TS export
-    /// must carry the SAME name"). `VisualNodeExtensions` carries it; `CurveEvaluator` does not.
+    /// `[RuntimeProvided]` is what sends a home home, and it is the attribute's own contract ("the
+    /// TS export must carry the SAME name"). `VisualNodeExtensions` carries it; `CurveEvaluator`
+    /// carries `[ServerOnly]`.
     /// </para>
     /// <para>Mutation: take the attribute off `VisualNodeExtensions` and the shared twins revert to
-    /// `.centered()`, failing the byte fixtures and the pin above; put one on `CurveEvaluator` and
-    /// this case fails instead.</para>
+    /// `.centered()`, failing the byte fixtures and the pin above; take `[ServerOnly]` off
+    /// `CurveEvaluator` and this case fails instead, on a build with no error.</para>
     /// </summary>
     [Fact]
-    public void AHomeTheRuntimeDoesNotProvide_KeepsTheReducedCall()
+    public void AHostOnlyHome_IsRefused_AndNamesNoImport()
     {
         var path = Path.Combine(RepoRoot(), "tests", "eQuantic.UI.Web.Tests", "Fixtures", "Curves.cs");
         var compiler = new ComponentCompiler { SymbolsAreAuthoritative = false };
         compiler.SetProjectCompilation(BindingCompilation(CurveSource, path));
 
-        var emitted = compiler.CompileSource(CurveSource, path)
-            .Single(result => result.ComponentName == "Curves").TypeScript;
+        var result = compiler.CompileSource(CurveSource, path)
+            .Single(result => result.ComponentName == "Curves");
 
-        emitted.Should().NotContain("CurveEvaluator",
-            "the runtime exports no twin, so naming the home would import what the bundle has not");
-        emitted.Should().Contain(".ease(", "it keeps the reduced form it always had");
+        result.Errors.Should().Contain(error => error.Code == "EQ2010" && error.Message.Contains("CurveEvaluator.Ease"),
+            "the call names a home the runtime keeps no twin of, and the build is where to say so");
+        result.TypeScript.Should().NotContain("CurveEvaluator",
+            "and nothing names, or imports, what the bundle has not");
     }
 
     /// <summary>The semantic setup the SDK gives eqc, for a source of this test's own.</summary>

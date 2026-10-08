@@ -348,8 +348,9 @@ public class InvocationStrategy : IExpressionIrStrategy
     /// <summary>
     /// Where a member of an extension lives in JavaScript, which has no extensions: the static home a
     /// call to it goes to, and whether that static takes the receiver first. Null for a method that is
-    /// neither a reduced extension method nor an extension block's member, and for a framework home the
-    /// runtime does not export, whose member stays on the receiver. A call and a method group
+    /// neither a reduced extension method nor an extension block's member, for a host-only home, which
+    /// is refused (EQ2010), and for any other framework home the runtime does not export, whose member
+    /// stays on the receiver. A call and a method group
     /// (<c>Func&lt;string&gt; f = s.Twice</c>) go where this says, so the fences and the import of the
     /// home it introduces are here.
     /// </summary>
@@ -380,8 +381,9 @@ public class InvocationStrategy : IExpressionIrStrategy
             // does not export — `CurveEvaluator` among them, the cubic-bezier solver a page
             // never asks for because a web transition is a CSS timing function. Sending its
             // `Ease` home would import a name the bundle has no export for, which fails the
-            // whole module at load rather than at the call. So a home without the attribute
-            // keeps the reduced form it always had.
+            // whole module at load rather than at the call. A home the vocabulary keeps on the
+            // host says so with [ServerOnly] and is refused below; any other home without the
+            // attribute keeps the reduced form it always had.
             var declaredHere = symbol.ContainingType.Locations.Any(location => location.IsInSource);
 
             // An extension declared OUTSIDE this compilation has no module to go home to:
@@ -404,13 +406,26 @@ public class InvocationStrategy : IExpressionIrStrategy
                           + "that calls it, which is translated as the call is."
                         : "Use an instance member, or add a strategy for it."));
             }
+            // A HOST-ONLY home is named by the reduced call as surely as by a qualified one:
+            // `curve.Ease(t)` IS `CurveEvaluator.Ease(curve, t)`, and the receiver is its first
+            // argument, not a type the member was reached through. So the fence asks about the
+            // home's own static, with no receiver to look through: asked with the receiver, a
+            // `Curve`, a `TypeStyle` or a `Text`, it saw a type that crosses and waved the call
+            // on. This was the way of naming a host-only symbol the fence did not count, and the
+            // call stayed on the receiver as `curve.ease(t)`, built with no diagnostic and threw
+            // in the browser (#518). A method group goes where a call goes, so it is refused here
+            // too.
+            else if (symbol.ReducedFrom.ReportIfHostOnly(at, context))
+            {
+                return null;
+            }
             // A FRAMEWORK home the runtime does not EXPORT keeps the reduced form it always
             // had, and only the ATTRIBUTE can answer that. The namespace cannot: `CurveEvaluator`
             // sits in `eQuantic.UI.Primitives` and the runtime exports no twin for it, so
             // asking `IsRuntimeProvided()` here — which is the broader namespace-or-attribute
             // rule the IMPORT routing uses — sent its `Ease` home again and imported a name the
-            // bundle has not. Measured: `AHomeTheRuntimeDoesNotProvide_KeepsTheReducedCall`
-            // failed on `import { Curve, CurveEvaluator }`.
+            // bundle has not. Measured, before `CurveEvaluator` was marked host-only and refused
+            // above: the case written for it failed on `import { Curve, CurveEvaluator }`.
             //
             // The two questions are genuinely different, which is why the predicates are. This
             // one is "does the runtime export a home under this name", answered by the

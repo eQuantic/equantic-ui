@@ -109,10 +109,10 @@ public static class RuntimeProvidedTypeScanner
     /// types are kept OUT of <paramref name="runtimeProvided"/>: the runtime ships no export for
     /// them, so importing the name is the hydration failure the fence exists to prevent.
     /// <para>
-    /// A type POSITION is the seventh way to name a symbol, and the one no expression strategy can
+    /// A type POSITION is the eighth way to name a symbol, and the one no expression strategy can
     /// see — `public Matrix2D Placement { get; init; }` on a component compiled, emitted
     /// `import { Matrix2D } from "@equantic/runtime"`, and took the page down. Measured. The other
-    /// six are counted in <c>HostOnlySymbolExtensions</c>.
+    /// seven are counted in <c>HostOnlySymbolExtensions</c>.
     /// </para>
     /// </param>
     public static void Collect(SyntaxNode root, SemanticModel model,
