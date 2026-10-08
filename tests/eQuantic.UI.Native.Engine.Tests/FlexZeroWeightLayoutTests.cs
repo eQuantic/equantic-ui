@@ -115,20 +115,22 @@ public class FlexZeroWeightLayoutTests
     /// A zero weight's floor is zero, not its child's min-content: the web writes the item
     /// <c>min-width: 0</c>, so a child wider than the item lets it shrink, and overflows it. A rigid
     /// 100 and a zero weight around a 400-wide box, in 400, are 100 and 300 in Chrome 154, at a basis
-    /// of 540 and without one. Photon stopped the item at its child's 400, and the line ran 100 past
-    /// its row. Around a text the item was already 300, cut as text, and stays 300.
+    /// of 540 and without one, and the box inside stays 400 from x 100, past the item's end. Photon
+    /// stopped the item at its child's 400, and the line ran 100 past its row; then, shrinking it,
+    /// it painted the box at 300. Around a text the item was already 300, cut as text, and stays
+    /// 300.
     /// </summary>
     [Fact]
     public void AZeroWeight_ShrinksPastItsChildsMinContent_AsTheWebsMinWidthZeroLetsIt()
     {
-        var items = new (string Name, Flexible Item)[]
+        var items = new (string Name, Flexible Item, float? Child)[]
         {
-            ("a box at a basis", new Flexible(FixedBox(400), flex: 0, basis: 540)),
-            ("a box without a basis", new Flexible(FixedBox(400), flex: 0)),
-            ("a word at a basis", new Flexible(new Text(new string('a', 48), TypeRole.BodyM), flex: 0, basis: 540)),
+            ("a box at a basis", new Flexible(FixedBox(400), flex: 0, basis: 540), 400),
+            ("a box without a basis", new Flexible(FixedBox(400), flex: 0), 400),
+            ("a word at a basis", new Flexible(new Text(new string('a', 48), TypeRole.BodyM), flex: 0, basis: 540), null),
         };
 
-        foreach (var (name, item) in items)
+        foreach (var (name, item, child) in items)
         {
             var node = Layout(Line(400, FixedBox(100), item));
 
@@ -136,6 +138,12 @@ public class FlexZeroWeightLayoutTests
             node.Children[1].Bounds.Width.Should().BeApproximately(300, 0.5f, name);
             (node.Children[1].Bounds.X + node.Children[1].Bounds.Width).Should()
                 .BeApproximately(400, 0.5f, $"{name}: the line fits its row");
+            if (child is { } width)
+            {
+                var inside = node.Children[1].Children[0];
+                inside.Bounds.X.Should().BeApproximately(100, 0.5f, $"{name}: the child starts where the item does");
+                inside.Bounds.Width.Should().Be(width, $"{name}: a fixed child keeps its width and overflows the item");
+            }
         }
     }
 

@@ -113,7 +113,8 @@ internal sealed partial class MeasureVisitor
         var gapTotal = flex.Gap * MathF.Max(0, children.Count - 1);
 
         // The SLOT a Flexible occupies: its child laid out in a main extent this row granted — a
-        // weight's share of the leftover, or a zero weight's basis — and pinned to it.
+        // weight's share of the leftover, a zero weight's basis, or what an overflowing line left
+        // it — and the wrapper pinned to it.
         LayoutNode Slot(Flexible flexible, int i, float main, bool truncating = false)
         {
             // A Flexible is layout-transparent: whatever the container would stretch, it
@@ -129,10 +130,20 @@ internal sealed partial class MeasureVisitor
                 ctx.ChildPath(ctx.ChildPath(path, i, flexible), 0), mainGranted: true,
                 stretchW: horizontal ? StretchKind.Flex : fsW,
                 stretchH: horizontal ? fsH : StretchKind.Flex, truncating: truncating);
-            child.Bounds = horizontal
+            // The WRAPPER is the item and takes the slot. A child that declares its own main size
+            // (a fixed width, an Image, an Icon, through transparent wrappers) keeps the size it
+            // measured, wider than the slot or narrower: the web keeps a fixed child at its width
+            // inside the item and lets it overflow, so a 400 box in an item shrunk to 300 is still
+            // 400 there. Any other child is pinned to the slot. An auto or Fill child measured to it
+            // already, being stretched, and a Text sizes itself to its lines, so the slot is the line
+            // box it fills and aligns them in.
+            if (MainSizeKind(flexible.Child, horizontal) != SizeKind.Fixed)
+                child.Bounds = horizontal
+                    ? child.Bounds with { Width = main }
+                    : child.Bounds with { Height = main };
+            var wrapper = ctx.Node(flexible, horizontal
                 ? child.Bounds with { Width = main }
-                : child.Bounds with { Height = main };
-            var wrapper = ctx.Node(flexible, child.Bounds);
+                : child.Bounds with { Height = main });
             wrapper.Adopt(child);
             return wrapper;
         }

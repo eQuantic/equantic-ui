@@ -205,6 +205,10 @@ internal sealed partial class MeasureVisitor
         _ => SizeKind.Hug,
     };
 
+    /// <summary>The same statement on the flex MAIN axis: the size kind a node declares along the
+    /// line it sits in, which is the cross axis of the other direction.</summary>
+    private SizeKind MainSizeKind(VisualNode node, bool horizontal) => CrossSizeKind(node, !horizontal);
+
     /// <summary>A cap as a NUMBER, or 0 for unbounded — the one place a window-relative cap turns
     /// into dp, from the window the pass was handed rather than the space the parent had left.</summary>
     private float CapDp(SizeValue cap, float window) => cap.Kind switch

@@ -56,6 +56,39 @@ public class FlexLayoutTests
         node.Bounds.Width.Should().Be(200);
     }
 
+    /// <summary>
+    /// The ITEM takes its share and a child with a fixed width keeps it, wider than the share or
+    /// narrower. Two weights of one in 600 share 300 each. In Chrome 154 a 400-wide box stays 400 in
+    /// its 300 item, overflowing it, and a 100-wide box stays 100; Photon used to pin both to 300. A
+    /// box that fills, and a Text, still span the slot, which they always did.
+    /// </summary>
+    [Fact]
+    public void AFlexibleTakesItsShare_AndAFixedChildKeepsItsWidth()
+    {
+        static (LayoutNode Item, LayoutNode Child) First(VisualNode child)
+        {
+            var row = new Row(gap: 0) { Width = 600 };
+            row.Add(new Flexible(child, flex: 1));
+            row.Add(new Flexible(new Box(new BoxStyle { Width = SizeValue.Fill, Height = 20 }), flex: 1));
+            var item = Layout(row, w: 600).Children[0];
+            return (item, item.Children[0]);
+        }
+
+        var (widerItem, wider) = First(FixedBox(400, 20));
+        widerItem.Bounds.Width.Should().BeApproximately(300, 0.01f, "the item takes its share");
+        wider.Bounds.X.Should().BeApproximately(0, 0.01f);
+        wider.Bounds.Width.Should().Be(400, "a fixed child keeps its width and overflows the item");
+
+        var (narrowerItem, narrower) = First(FixedBox(100, 20));
+        narrowerItem.Bounds.Width.Should().BeApproximately(300, 0.01f);
+        narrower.Bounds.Width.Should().Be(100, "a fixed child is not stretched to the item either");
+
+        First(new Box(new BoxStyle { Width = SizeValue.Fill, Height = 20 })).Child.Bounds.Width
+            .Should().BeApproximately(300, 0.01f, "a box that fills fills the slot");
+        First(new Text("Title", TypeRole.BodyM, align: TextAlignment.Center)).Child.Bounds.Width
+            .Should().BeApproximately(300, 0.01f, "a Text's line box is the slot, where its lines align");
+    }
+
     [Fact]
     public void Row_SpaceBetween_DistributesFreeSpace()
     {
