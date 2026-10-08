@@ -1,66 +1,53 @@
-using SixLabors.ImageSharp;
-using SixLabors.ImageSharp.Formats.Jpeg;
-using SixLabors.ImageSharp.Formats.Png;
-using SixLabors.ImageSharp.Formats.Webp;
-using SixLabors.ImageSharp.Processing;
-
 namespace eQuantic.UI.Images;
 
 /// <summary>
-/// Core image processing service using SixLabors.ImageSharp.
-/// Handles resizing and format conversion.
+/// Core image processing service, on SkiaSharp: resizes a source and encodes it in the format the
+/// browser asked for.
 /// </summary>
 public class ImageOptimizer
 {
     /// <summary>
     /// Optimizes an image by resizing to the specified width and encoding in the target format.
+    /// <para>
+    /// An animated source is handed back as it is, as the Next.js optimizer hands one back: no
+    /// encoder here writes frames, and the first frame alone would stop the animation. Read the
+    /// format of the result from its bytes.
+    /// </para>
     /// </summary>
-    /// <param name="source">Source image stream.</param>
-    /// <param name="width">Target width in pixels. Height is auto-calculated to maintain aspect ratio.</param>
+    /// <param name="source">Source image stream: a JPEG, PNG, GIF, WebP or BMP.</param>
+    /// <param name="width">Target width in pixels, as displayed. Height is auto-calculated to maintain aspect ratio.</param>
     /// <param name="quality">Output quality (1-100).</param>
-    /// <param name="outputFormat">Target MIME type (e.g., "image/webp", "image/jpeg", "image/png").</param>
+    /// <param name="outputFormat">Target MIME type ("image/webp", "image/png"); any other is JPEG.</param>
     /// <returns>Optimized image bytes.</returns>
+    /// <exception cref="InvalidDataException">The source is not one of the formats read, or holds too many pixels to decode.</exception>
     public async Task<byte[]> OptimizeAsync(Stream source, int width, int quality, string outputFormat)
     {
-        using var image = await Image.LoadAsync(source);
+        using var image = await SourceImage.ReadAsync(source);
+        if (image.IsAnimated)
+            return image.Bytes;
+
+        using var decoded = image.Decode();
 
         // Only resize if the target width is smaller than the source
-        if (image.Width > width)
+        if (decoded.Width > width)
         {
-            image.Mutate(x => x.Resize(new ResizeOptions
-            {
-                Size = new Size(width, 0), // 0 = auto height maintaining aspect ratio
-                Mode = ResizeMode.Max
-            }));
+            var height = Math.Max(1, (int)Math.Round((double)decoded.Height * width / decoded.Width));
+            using var resized = SourceImage.Scaled(decoded, width, height);
+            return ImageEncoder.Encode(resized, outputFormat, quality);
         }
 
-        using var output = new MemoryStream();
-
-        switch (outputFormat)
-        {
-            case "image/webp":
-                await image.SaveAsWebpAsync(output, new WebpEncoder { Quality = quality });
-                break;
-            case "image/png":
-                await image.SaveAsPngAsync(output, new PngEncoder
-                {
-                    CompressionLevel = PngCompressionLevel.BestCompression
-                });
-                break;
-            default: // image/jpeg and fallback
-                await image.SaveAsJpegAsync(output, new JpegEncoder { Quality = quality });
-                break;
-        }
-
-        return output.ToArray();
+        return ImageEncoder.Encode(decoded, outputFormat, quality);
     }
 
     /// <summary>
-    /// Gets the dimensions of a source image without fully decoding it.
+    /// Gets the dimensions of a source image as displayed, its orientation applied, without decoding
+    /// its pixels.
     /// </summary>
+    /// <exception cref="InvalidDataException">The source is not one of the formats read, or holds too many pixels to decode.</exception>
     public async Task<(int Width, int Height)> GetDimensionsAsync(Stream source)
     {
-        var info = await Image.IdentifyAsync(source);
-        return (info.Width, info.Height);
+        using var image = await SourceImage.ReadAsync(source);
+        var size = image.Size;
+        return (size.Width, size.Height);
     }
 }

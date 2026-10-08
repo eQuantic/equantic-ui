@@ -13,9 +13,12 @@ namespace eQuantic.UI.Images;
 /// </summary>
 public static class ImageOptimizationMiddleware
 {
+    // The extensions of the formats the optimizer reads (ImageFormats): a file of another format is
+    // refused here, before it is opened, and one whose bytes disagree with its name is refused by
+    // the optimizer.
     private static readonly HashSet<string> AllowedExtensions = new(StringComparer.OrdinalIgnoreCase)
     {
-        ".jpg", ".jpeg", ".png", ".gif", ".webp", ".bmp", ".tiff"
+        ".jpg", ".jpeg", ".png", ".gif", ".webp", ".bmp"
     };
 
     /// <summary>
@@ -144,13 +147,22 @@ public static class ImageOptimizationMiddleware
                 return;
             }
 
-            // Set response headers
-            context.Response.ContentType = outputFormat;
+            // Set response headers. The type is read from the bytes: an animated source comes back
+            // as it was, and a format no encoder writes comes back as JPEG.
+            context.Response.ContentType = ImageFormats.ContentTypeOf(data) ?? outputFormat;
             context.Response.Headers["Cache-Control"] = $"public, max-age={options.CacheTtlSeconds}";
             context.Response.Headers["Vary"] = "Accept";
             context.Response.ContentLength = data.Length;
 
             await context.Response.Body.WriteAsync(data);
+        }
+        catch (InvalidDataException ex)
+        {
+            // The source is not an image the optimizer reads, or holds too many pixels to decode:
+            // the request's fault, not the server's.
+            logger?.LogWarning("Refused to optimize image {Url}: {Reason}", urlParam, ex.Message);
+            context.Response.StatusCode = 400;
+            await context.Response.WriteAsync($"Invalid image: {ex.Message}");
         }
         catch (Exception ex)
         {

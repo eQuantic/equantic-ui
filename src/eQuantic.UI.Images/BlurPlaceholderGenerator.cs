@@ -1,7 +1,3 @@
-using SixLabors.ImageSharp;
-using SixLabors.ImageSharp.Formats.Jpeg;
-using SixLabors.ImageSharp.Processing;
-
 namespace eQuantic.UI.Images;
 
 /// <summary>
@@ -15,18 +11,21 @@ public class BlurPlaceholderGenerator
 
     /// <summary>
     /// Generates a tiny blur placeholder as a base64 data URL.
-    /// The output is an 8px-wide JPEG suitable for CSS background-image.
+    /// The output is an 8px-wide JPEG suitable for CSS background-image, from the source's first
+    /// frame as displayed.
     /// </summary>
-    /// <param name="source">Source image stream.</param>
+    /// <param name="source">Source image stream: a JPEG, PNG, GIF, WebP or BMP.</param>
     /// <returns>A data URL like "data:image/jpeg;base64,..."</returns>
+    /// <exception cref="InvalidDataException">The source is not one of the formats read, or holds too many pixels to decode.</exception>
     public async Task<string> GenerateAsync(Stream source)
     {
-        using var image = await Image.LoadAsync(source);
+        using var image = await SourceImage.ReadAsync(source);
+        using var decoded = image.Decode();
 
-        var ratio = (double)image.Height / image.Width;
+        var ratio = (double)decoded.Height / decoded.Width;
         int blurWidth, blurHeight;
 
-        if (image.Width >= image.Height)
+        if (decoded.Width >= decoded.Height)
         {
             blurWidth = MaxDimension;
             blurHeight = Math.Max(1, (int)(MaxDimension * ratio));
@@ -37,12 +36,9 @@ public class BlurPlaceholderGenerator
             blurWidth = Math.Max(1, (int)(MaxDimension / ratio));
         }
 
-        image.Mutate(x => x.Resize(blurWidth, blurHeight));
+        using var blurred = SourceImage.Scaled(decoded, blurWidth, blurHeight);
 
-        using var output = new MemoryStream();
-        await image.SaveAsJpegAsync(output, new JpegEncoder { Quality = BlurQuality });
-
-        var base64 = Convert.ToBase64String(output.ToArray());
+        var base64 = Convert.ToBase64String(ImageEncoder.Encode(blurred, "image/jpeg", BlurQuality));
         return $"data:image/jpeg;base64,{base64}";
     }
 
