@@ -3,7 +3,7 @@
 ## 1. The server writes and reads the pairs
 
 - [x] 1.1 A dictionary converter in `EqJson`: pairs written in enumeration order, keys and values by
-      their own converters, pairs or an object read back, for the six types and none other
+      their own converters, read back only as pairs, for every dictionary of .NET's own collections
 - [x] 1.2 The state payload written as objects by name, each field's value through `EqJson`
 - [x] 1.3 A projected service's members as `ProjectedMembers`, which the converter does not match
 - [x] 1.4 `EqJsonTests`: integer and integer-like string keys in slot order, each key type, both
