@@ -21,6 +21,7 @@ import { lowerVisualNode } from './lowering';
 import { setPhotonTheme } from './photon-context';
 import type { HtmlNode } from '../core/types';
 import {
+  AdaptiveNode,
   Box,
   BoxStyle,
   Column,
@@ -30,9 +31,12 @@ import {
   IconGlyph,
   LinearGradient,
   Link,
+  Positioned,
   ScrollView,
   ShadowSpec,
   Simulated,
+  Spacer,
+  Stack,
   StyleDiff,
   Text,
   TextRun,
@@ -271,6 +275,39 @@ function cases(): Record<string, { node: unknown; presses: number[] }> {
           ],
         }),
       ),
+    ),
+    // An adaptive node's arms (#669, #670, #671), the issues' own trees. A threshold arrives as the
+    // C# float it was authored as, since eqc writes a float constant through Math.fround.
+    'adaptive-fractional-thresholds': still(
+      column(
+        0,
+        new AdaptiveNode(
+          new Text('narrow', 'bodyM', photonTheme.textPrimary),
+          new Text('middle', 'bodyM', photonTheme.textPrimary),
+          new Text('wide', 'bodyM', photonTheme.textPrimary),
+          { mediumFrom: Math.fround(703.7037), expandedFrom: Math.fround(1066.6667) },
+        ),
+      ),
+    ),
+    'adaptive-gaps-in-column': still(
+      column(
+        0,
+        new Text('above', 'bodyM', photonTheme.textPrimary),
+        new AdaptiveNode(Spacer.fixed(24), null, Spacer.fixed(64), { expandedFrom: 980 }),
+        new Text('below', 'bodyM', photonTheme.textPrimary),
+      ),
+    ),
+    'adaptive-positioned-in-stack': still(
+      new Stack()
+        .with(new Box(new BoxStyle({ width: 400, height: 300, background: photonTheme.surface })))
+        .with(
+          new AdaptiveNode(
+            new Box(),
+            null,
+            new Positioned(new Text('corner', 'bodyM', photonTheme.textPrimary), 0, 0),
+            { expandedFrom: 980 },
+          ),
+        ),
     ),
   };
 }
