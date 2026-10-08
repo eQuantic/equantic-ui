@@ -34,7 +34,7 @@ public class ServerActionsMiddleware
     private readonly IServerActionAuthorizationService _authorizationService;
     private readonly ILogger<ServerActionsMiddleware> _logger;
     private readonly HashSet<Assembly> _allowedAssemblies;
-    private readonly ServerActionOrigins _origins;
+    private ServerActionOrigins _origins;
 
     private const string ActionsPath = "/api/_equantic/actions";
 
@@ -49,7 +49,7 @@ public class ServerActionsMiddleware
         IServiceProvider serviceProvider,
         IServerActionAuthorizationService authorizationService,
         UIOptions options,
-        IOptions<ServerActionsOptions> actions,
+        IOptionsMonitor<ServerActionsOptions> actions,
         ILogger<ServerActionsMiddleware> logger)
     {
         _next = next;
@@ -62,7 +62,9 @@ public class ServerActionsMiddleware
         // application's own (scanned) assemblies or an explicitly opted-in assembly.
         _allowedAssemblies = new HashSet<Assembly>(options.AssembliesToScan);
         _allowedAssemblies.UnionWith(options.AllowedDeserializationAssemblies);
-        _origins = new ServerActionOrigins(actions.Value.AllowedOrigins);
+        // A reloaded appsettings.json changes the allowed origins without a restart.
+        _origins = new ServerActionOrigins(actions.CurrentValue.AllowedOrigins);
+        actions.OnChange(changed => _origins = new ServerActionOrigins(changed.AllowedOrigins));
     }
 
     public async Task InvokeAsync(HttpContext context)

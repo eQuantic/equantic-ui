@@ -14,9 +14,10 @@ namespace eQuantic.UI.Server;
 /// <item>With neither, the request is not a browser's, since every browser sends <c>Origin</c> on a
 /// POST, and it runs.</item>
 /// </list>
-/// The app's own host is the request's <c>Host</c>, or the first <c>X-Forwarded-Host</c>: a browser
-/// sends that header from another site only after a CORS preflight, which the endpoint never answers.
-/// Only the host and the port are compared, a scheme's default port left out, since a proxy that ends
+/// The app's own host is the request's <c>Host</c>. Behind a proxy that rewrites it, ASP.NET Core's
+/// <c>UseForwardedHeaders</c> restores it from the proxies the app trusts; the raw
+/// <c>X-Forwarded-Host</c> is never read here, since a site the app's CORS policy lets through could
+/// write its own host into it. Only the host and the port are compared, a scheme's default port left out, since a proxy that ends
 /// TLS hands the app an <c>http</c> request for an <c>https</c> page.
 /// </summary>
 internal sealed class ServerActionOrigins(IEnumerable<string> allowed)
@@ -35,8 +36,7 @@ internal sealed class ServerActionOrigins(IEnumerable<string> allowed)
         if (!TryParse(origin, out var uri)) return false;
         if (_allowed.Contains(OriginOf(uri))) return true;
         var host = HostOf(uri);
-        return string.Equals(host, OwnHost(request.Host), StringComparison.OrdinalIgnoreCase)
-            || ForwardedHost(request) is { } forwarded && string.Equals(host, forwarded, StringComparison.OrdinalIgnoreCase);
+        return string.Equals(host, OwnHost(request.Host), StringComparison.OrdinalIgnoreCase);
     }
 
     /// <summary>
@@ -58,12 +58,4 @@ internal sealed class ServerActionOrigins(IEnumerable<string> allowed)
     private static string HostOf(Uri uri) => uri.IsDefaultPort ? uri.IdnHost : $"{uri.IdnHost}:{uri.Port}";
 
     private static string OwnHost(HostString host) => host.Port is 80 or 443 ? host.Host : host.Value ?? "";
-
-    private static string? ForwardedHost(HttpRequest request)
-    {
-        var forwarded = request.Headers["X-Forwarded-Host"].ToString();
-        if (forwarded.Length == 0) return null;
-        var first = forwarded.Split(',', 2)[0].Trim();
-        return first.Length == 0 ? null : OwnHost(new HostString(first));
-    }
 }
