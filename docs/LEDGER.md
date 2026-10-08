@@ -1702,8 +1702,13 @@ record of a release, the wiki's Upgrading page is the distillate.
   inside the template's own function is bound outside it, so `Intersect`'s and `Except`'s second
   sequence, `Average`'s source and a selector that is a call run once, in C#'s order
   ([#657](https://github.com/eQuantic/equantic-ui/issues/657)). `Sum`, `Average`, `OrderBy`, `GroupBy`,
-  `Distinct` and the lookup's indexer moved to the IR. The runtime's twins are regenerated. Proposed and
-  archived through OpenSpec (`openspec/specs/transpiler-names`, `openspec/specs/transpiler-sequences`).
+  `Distinct` and the lookup's indexer moved to the IR. The runtime's twins are regenerated. Copilot's
+  first round found four more, each measured: a plain name inside the template's function was read
+  per call (a selector that reassigned its own variable summed 201 where .NET sums 6), a part holding
+  a lowering of its own was taken to read the function's `$x` and called `Other()` per element, a
+  hole past `{9}` stayed text in a comparator of eleven keys, and a type parameter written `@class`
+  kept its spelling one level down and in a component's declaration. Proposed and archived through
+  OpenSpec (`openspec/specs/transpiler-names`, `openspec/specs/transpiler-sequences`).
 - **2026-10-07 · A field a case apart from a member keeps its own slot**: a plain class's field and a
   property or a method a case apart lowered to one member of the twin, the shape a C# class has most:
   the own field hid a setter, which never ran, an auto-property and its field shared one slot, and a
@@ -1712,14 +1717,11 @@ record of a release, the wiki's Upgrading page is the distillate.
   ([#396](https://github.com/eQuantic/equantic-ui/issues/396)). The field moves to a slot with a `$`
   after its name, read and written through its symbol everywhere, and a class with a moved field writes
   its JSON through `twinJson`, which writes the property and never the field. A component, a record and
-  a struct keep EQ1007. Proposed and archived through OpenSpec (`openspec/specs/transpiler-classes`).
-  `Distinct` and the lookup's indexer moved to the IR. The runtime's twins are regenerated. Copilot's
-  first round found four more, each measured: a plain name inside the template's function was read
-  per call (a selector that reassigned its own variable summed 201 where .NET sums 6), a part holding
-  a lowering of its own was taken to read the function's `$x` and called `Other()` per element, a
-  hole past `{9}` stayed text in a comparator of eleven keys, and a type parameter written `@class`
-  kept its spelling one level down and in a component's declaration. Proposed and archived through
-  OpenSpec (`openspec/specs/transpiler-names`, `openspec/specs/transpiler-sequences`).
+  a struct keep EQ1007. Copilot's first round found a pattern reading the property: a property
+  subpattern named the member by its text, so `this is { value: 1 }` was false where .NET is true, and a
+  positional one read the members its `Deconstruct`'s outs are named after, so a `Deconstruct` the app
+  wrote is called now, as a deconstruction calls it. Proposed and archived through OpenSpec
+  (`openspec/specs/transpiler-classes`).
 
 ## Retired documents
 
