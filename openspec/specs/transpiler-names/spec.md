@@ -128,8 +128,8 @@ reached that way SHALL import no module.
 
 #### Scenario: A type reached through a using alias
 
-- **WHEN** `using F = App.Portal.Fold;` and `F.Text(4)`, `F.Max`
-- **THEN** the module writes and imports `Fold`, and each answers what .NET answers
+- **WHEN** `using F = App.Portal.Fold;` and `F.Text(4)`, `F.Max`, and `using Counter = App.Portal.Tally;` and `new Counter().N`
+- **THEN** the module writes and imports `Fold` and `Tally`, and each answers what .NET answers
 
 #### Scenario: An enum's member reached through its namespace
 
