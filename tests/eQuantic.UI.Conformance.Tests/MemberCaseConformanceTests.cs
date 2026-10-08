@@ -10,7 +10,10 @@ namespace eQuantic.UI.Conformance.Tests;
 /// and a call reached the number the field held (#396). The field moves now, to a slot with a `$` after
 /// its name, and a pattern reads it there too: a property subpattern named the member by its text, and
 /// read the property, and a positional one read the members its Deconstruct's outs are named after,
-/// the property again once the field had moved (Copilot's first review of #696).
+/// the property again once the field had moved (Copilot's first review of #696). So does a call of a
+/// delegate field, which named the method a case apart from it, and a method that forwards to its
+/// delegate field called itself and never returned, and a field called Count, which the collections'
+/// table read as the method `count()` (found in the same review's sweep).
 /// </summary>
 public class MemberCaseConformanceTests
 {
@@ -34,7 +37,17 @@ public class MemberCaseConformanceTests
             public string Case() { switch (this) { case { value: 1 }: return "field"; default: return "none"; } }
             public bool Through() => this is { next.value: 1 };
         }
-        public class Tally { public int Count = 2; public int count() => Count * 3; }
+        public class Tally { public int Count = 2; public int count() => Count * 3; public int Twice() => this.Count * 2; }
+        public class Validator { System.Func<int, bool> validate = n => n > 2; public bool Validate(int n) => validate(n); }
+        public class Checked
+        {
+            System.Func<int, bool> check = n => n > 2;
+            public bool Check(int n) => n > 100;
+            public bool Bare(int n) => check(n);
+            public bool Through(int n) => this.check(n);
+            public bool Other(Checked other, int n) => other.check(n);
+            public bool Guarded(Checked other, int n) => other?.check(n) == true;
+        }
         public class Point { int x; int y; public int X => x * 10; public int Y => y * 10; public Point(int x, int y) { this.x = x; this.y = y; } public void Deconstruct(out int x, out int y) { x = this.x; y = this.y; } }
         public class Gauge { int low = 1; int high = 2; public int Low => low * 10; public int High => high * 10; public int RawLow() => low; public int RawHigh() => high; }
         public static class GaugeParts { public static void Deconstruct(this Gauge gauge, out int low, out int high) { low = gauge.RawLow(); high = gauge.RawHigh(); } }
@@ -60,6 +73,12 @@ public class MemberCaseConformanceTests
             ("a positional pattern through the app's Deconstruct", "return new Point(1, 2) is (1, 2);"),
             ("a positional pattern binding through the app's Deconstruct", "return new Point(1, 2) is (var a, var b) ? a * 100 + b : -1;"),
             ("a positional pattern through an extension Deconstruct", "return new Gauge() is (1, 2);"),
+            ("a method forwarding to its delegate field", "return new Validator().Validate(3);"),
+            ("a delegate field called by its name", "return new Checked().Bare(3);"),
+            ("a delegate field called through this", "return new Checked().Through(3);"),
+            ("another instance's delegate field, called", "return new Checked().Other(new Checked(), 3);"),
+            ("a delegate field called through ?.", "return new Checked().Guarded(new Checked(), 3);"),
+            ("a field called Count, read", "var t = new Tally(); return t.Count + t.count() + t.Twice();"),
         };
         var data = new TheoryData<string, string, bool>();
         foreach (var (name, statements) in cases)
