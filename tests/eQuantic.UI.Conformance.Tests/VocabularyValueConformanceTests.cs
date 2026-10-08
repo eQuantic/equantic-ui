@@ -88,6 +88,36 @@ public class VocabularyValueConformanceTests
         ConformanceRunner.AssertVocabularyStatementsSameAsDotNet(statements);
     }
 
+    /// <summary>
+    /// A METHOD GROUP of a value the browser holds as data is the delegate its call is: <c>Equals</c>,
+    /// <c>ToString</c> and <c>GetHashCode</c> answer through the helpers a direct call uses, and the
+    /// receiver is read once, when the delegate is made, as C# copies it into the delegate. The
+    /// companion carries the type's own methods and its presets, never these three, so
+    /// <c>Curve.Standard.Equals</c> bound <c>Curve.equals</c>, which is missing, and threw making the
+    /// delegate, and <c>ToString</c> bound the object's own <c>toString</c>, which answered
+    /// <c>[object Object]</c>, on a <c>Color</c> as on a <c>Curve</c> (#518's review).
+    /// </summary>
+    [SkippableTheory]
+    // ---- Equals, ToString and GetHashCode as delegates ----
+    [InlineData("Func<Curve, bool> same = Curve.Standard.Equals; return same(new Curve(0.2f, 0f, 0f, 1f));")]
+    [InlineData("Func<object, bool> same = Curve.Standard.Equals; return same(Curve.Standard) && !same(\"standard\");")]
+    [InlineData("Func<string> text = Curve.Standard.ToString; return text();")]
+    [InlineData("Func<int> hash = Curve.Standard.GetHashCode; return hash() == Curve.Standard.GetHashCode();")]
+    [InlineData("Func<Color, bool> same = Color.White.Equals; return same(Color.FromRgb(255, 255, 255));")]
+    [InlineData("Func<object, bool> same = Color.White.Equals; return same(Color.White) && !same(\"white\");")]
+    [InlineData("Func<string> text = Color.FromRgba(1, 2, 3, 4).ToString; return text();")]
+    [InlineData("Func<int> hash = Color.White.GetHashCode; return hash() == Color.White.GetHashCode();")]
+    // ---- the receiver is read once, when the delegate is made ----
+    [InlineData("int n = 0; Curve Make() { n++; return Curve.Accelerate; } Func<string> text = Make().ToString; var twice = text() + text(); return n + \" \" + twice;")]
+    [InlineData("int n = 0; Color Make() { n++; return Color.White; } Func<Color, bool> same = Make().Equals; var both = same(Color.White) && same(Color.White); return n + \" \" + both;")]
+    [InlineData("var c = Curve.Standard; Func<string> text = c.ToString; c = Curve.Decelerate; return text();")]
+    [InlineData("var c = Color.White; Func<Color, bool> same = c.Equals; c = Color.FromRgb(0, 0, 0); return same(Color.White);")]
+    public void AMethodGroupOfAValueHeldAsData_IsTheDelegateItsCallIs(string statements)
+    {
+        Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
+        ConformanceRunner.AssertVocabularyStatementsSameAsDotNet(statements);
+    }
+
     [SkippableFact]
     public void AnAppsOwnColor_IsTheAppsOwn()
     {

@@ -121,6 +121,13 @@ public class MemberAccessStrategy : IExpressionIrStrategy
                     var bind = JsExpr.Member(JsExpr.Member(homeClass, name), "bind");
                     return extension.TakesReceiver ? JsExpr.Call(bind, homeClass, receiver) : JsExpr.Call(bind, homeClass);
                 }
+                // A RECORD member of a value the browser holds as DATA is not on its companion, which
+                // holds the type's methods and its presets: `Equals` bound there named a member it has
+                // not, and making the delegate threw, and `ToString` bound the object's own
+                // `toString`, which answered `[object Object]`. Each answers through the helper its
+                // call uses.
+                if (RecordMemberGroup(method, memberAccess, receiver, context) is { } recordGroup)
+                    return recordGroup;
                 // A method of a value the browser holds as DATA lives on its companion, value first,
                 // so the group binds the value there, read once, as C# copies the receiver into the
                 // delegate when it is made: `Color.withOpacity.bind(Color, value)`.
@@ -138,6 +145,41 @@ public class MemberAccessStrategy : IExpressionIrStrategy
         }
 
         return member;
+    }
+
+    /// <summary>
+    /// The method group of a record member of a value the browser holds as DATA (<c>[TwinIsData]</c>,
+    /// <c>Color</c> and <c>Curve</c>): the delegate its call is. <c>Equals</c> answers through
+    /// <c>$eq.equals</c>, as <c>StructuralEqualsStrategy</c> lowers <c>a.Equals(b)</c>, and
+    /// <c>ToString</c> through the record text <c>ToStringStrategy</c> writes, each member's number
+    /// kind included, so a <c>Curve</c>'s points print as singles. The receiver is the argument of the
+    /// function that makes the delegate, so it is read once, when the delegate is made, as C# copies it
+    /// into the delegate: a receiver that is a call runs once, and a local reassigned afterwards leaves
+    /// the delegate holding the value it was made with. <c>GetHashCode</c> never reaches here: its group
+    /// is <c>GetHashCodeStrategy</c>'s. Null for any other member, and for a receiver of another type,
+    /// a <c>Nullable</c> of a data twin among them, whose members are <c>Nullable</c>'s.
+    /// </summary>
+    private static JsExpr? RecordMemberGroup(IMethodSymbol method, MemberAccessExpressionSyntax group,
+        JsExpr receiver, ConversionContext context)
+    {
+        if (method.IsStatic
+            || context.SemanticHelper.GetType(group.Expression) is not INamedTypeSymbol data
+            || !data.TwinIsData())
+            return null;
+
+        // `$value` and `$other`: no C# name can take either, so nothing the receiver names is shadowed.
+        if (method is { Name: "Equals", Parameters.Length: 1 })
+        {
+            context.UsedHelpers.Add(Eq.Import);
+            var other = context.TypeAnnotations ? "$other: unknown" : "$other";
+            return JsExpr.Template($"(($value) => ({other}) => {Eq.Equals}($value, $other))({{0}})", receiver);
+        }
+        if (method is { Name: "ToString", Parameters.Length: 0 })
+        {
+            var text = StringConversion.ToDotNetString(group.Expression, JsExpr.Identifier("$value"), context);
+            return JsExpr.Template($"(($value) => () => {JsExprWriter.Write(text)})({{0}})", receiver);
+        }
+        return null;
     }
 
     public int Priority => 0; // Low priority (fallback)

@@ -80,6 +80,43 @@ public class TwinIsDataEmissionTests
         ts.Should().Contain("Curve.standard.x1");
     }
 
+    private const string Groups = """
+        using System;
+        using eQuantic.UI.Primitives;
+        namespace App;
+        public sealed class Groups : StatelessComponent
+        {
+            public override VisualNode Build(ComponentContext context)
+            {
+                Func<Curve, bool> sameCurve = Curve.Standard.Equals;
+                Func<string> curveText = Curve.Standard.ToString;
+                Func<Color, bool> sameColor = Color.White.Equals;
+                Func<string> colorText = Color.White.ToString;
+                return new Text($"{sameCurve(Curve.Standard)} {curveText()} {sameColor(Color.White)} {colorText()}", TypeRole.BodyM);
+            }
+        }
+        """;
+
+    /// <summary>
+    /// A record member of a data twin as a METHOD GROUP is the delegate its call is: <c>Equals</c>
+    /// over <c>$eq.equals</c> and <c>ToString</c> over the record text, each member's number kind
+    /// included, the receiver passed once to the function that makes the delegate. Bound to the
+    /// companion, which carries neither, <c>Curve.equals.bind(…)</c> threw making the delegate and
+    /// <c>Curve.toString.bind(…)</c> answered <c>[object Object]</c>, on a <c>Color</c> as on a
+    /// <c>Curve</c>. <c>VocabularyValueConformanceTests</c> runs the delegates on both sides.
+    /// </summary>
+    [Fact]
+    public void ARecordMemberGroupOfADataTwin_IsTheDelegateItsCallIs()
+    {
+        var ts = Compile(Groups, "Groups");
+
+        ts.Should().Contain("(($value) => ($other: unknown) => $eq.equals($value, $other))(Curve.standard)");
+        ts.Should().Contain("(($value) => () => $eq.text.record($value, 'Curve', ['X1', 'Y1', 'X2', 'Y2'], ['single', 'single', 'single', 'single']))(Curve.standard)");
+        ts.Should().Contain("(($value) => ($other: unknown) => $eq.equals($value, $other))(Color.white)");
+        ts.Should().Contain("(($value) => () => $eq.text.record($value, 'Color', ['R', 'G', 'B', 'A']))(Color.white)");
+        ts.Should().NotContain(".equals.bind(").And.NotContain(".toString.bind(");
+    }
+
     [Fact]
     public void AnAppsOwnColor_IsBuiltAsTheAppsType()
     {
