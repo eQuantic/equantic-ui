@@ -257,7 +257,7 @@ export class SortedMap<K, V> implements Iterable<Pair<K, V>> {
   }
 
   /** Its pairs in key order, as the server writes and reads a sorted dictionary (#437). */
-  toJSON(): [K, V][] {
+  toJSON(): [K | string, V][] {
     return pairsOf(this.entries);
   }
 }

@@ -175,15 +175,23 @@ export class Dictionary<K, V> implements Iterable<Pair<K, V>> {
    * each key and value written as a value of its type. A JSON object would have listed every
    * integer-like key first and ascending, and a page parses one before any code sees it.
    */
-  toJSON(): [K, V][] {
+  toJSON(): [K | string, V][] {
     return pairsOf(this.table.entries);
   }
 }
 
-/** The `[key, value]` pairs of a dictionary's live entries, in the order they enumerate. */
-export function pairsOf<K, V>(entries: Iterable<{ key: K; value: V } | undefined>): [K, V][] {
-  const pairs: [K, V][] = [];
-  for (const entry of entries) if (entry !== undefined) pairs.push([entry.key, entry.value]);
+/**
+ * The `[key, value]` pairs of a dictionary's live entries, in the order they enumerate. A NaN or an
+ * infinite number key, which JSON would write as null, is written as its text, "NaN", "Infinity" or
+ * "-Infinity", which .NET reads back.
+ */
+export function pairsOf<K, V>(entries: Iterable<{ key: K; value: V } | undefined>): [K | string, V][] {
+  const pairs: [K | string, V][] = [];
+  for (const entry of entries) {
+    if (entry === undefined) continue;
+    const key = entry.key;
+    pairs.push([typeof key === 'number' && !Number.isFinite(key) ? String(key) : key, entry.value]);
+  }
   return pairs;
 }
 

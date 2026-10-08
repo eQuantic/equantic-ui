@@ -245,22 +245,20 @@ public static class RuntimeJson
 
     /// <summary>
     /// A dictionary as the runtime's <c>toJSON</c> writes its class, <c>Dictionary</c> or <c>SortedMap</c>:
-    /// its pairs in the order it enumerates, each one an array of its key and its value (#437).
+    /// its pairs in the order it enumerates, each one an array of its key and its value, a NaN or an
+    /// infinite number key written as its text (#437). Which .NET values are dictionaries is the wire's own
+    /// rule, <c>EqJson.DictionaryEntries</c>.
     /// </summary>
     private sealed class DictionaryAsPairs : JsonConverterFactory
     {
-        private static readonly HashSet<Type> Shapes =
-        [
-            typeof(Dictionary<,>), typeof(IDictionary<,>), typeof(IReadOnlyDictionary<,>),
-            typeof(SortedDictionary<,>), typeof(SortedList<,>),
-        ];
-
         public override bool CanConvert(Type typeToConvert) =>
-            typeToConvert.IsGenericType && Shapes.Contains(typeToConvert.GetGenericTypeDefinition());
+            eQuantic.UI.Server.Json.EqJson.DictionaryEntries(typeToConvert) is not null;
 
-        public override JsonConverter CreateConverter(Type typeToConvert, JsonSerializerOptions options) =>
-            (JsonConverter)Activator.CreateInstance(
-                typeof(Of<,,>).MakeGenericType([typeToConvert, .. typeToConvert.GetGenericArguments()]))!;
+        public override JsonConverter CreateConverter(Type typeToConvert, JsonSerializerOptions options)
+        {
+            var (key, value) = eQuantic.UI.Server.Json.EqJson.DictionaryEntries(typeToConvert)!.Value;
+            return (JsonConverter)Activator.CreateInstance(typeof(Of<,,>).MakeGenericType(typeToConvert, key, value))!;
+        }
 
         private sealed class Of<TDictionary, TKey, TValue> : JsonConverter<TDictionary>
             where TDictionary : IEnumerable<KeyValuePair<TKey, TValue>>
@@ -271,7 +269,16 @@ public static class RuntimeJson
             public override void Write(Utf8JsonWriter writer, TDictionary value, JsonSerializerOptions options)
             {
                 writer.WriteStartArray();
-                foreach (var pair in value) JsonSerializer.Serialize(writer, pair, options);
+                foreach (var (key, item) in value)
+                {
+                    writer.WriteStartArray();
+                    // NaN and the infinities: .NET's invariant text, which is JavaScript's String() too.
+                    if (key is double d && !double.IsFinite(d)) writer.WriteStringValue(d.ToString(CultureInfo.InvariantCulture));
+                    else if (key is float f && !float.IsFinite(f)) writer.WriteStringValue(f.ToString(CultureInfo.InvariantCulture));
+                    else JsonSerializer.Serialize(writer, key, options);
+                    JsonSerializer.Serialize(writer, item, options);
+                    writer.WriteEndArray();
+                }
                 writer.WriteEndArray();
             }
         }

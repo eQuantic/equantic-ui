@@ -204,16 +204,18 @@ function dictionary(incoming: unknown, spec: DictionarySpec): unknown {
 
 /**
  * A dictionary key from the value the server wrote for it in a pair: a number and a bool are already
- * themselves, a single rounds back to the single it was, and a compat scalar is revived from its text.
+ * themselves, a NaN or an infinite number arrives as its text ("NaN", "Infinity", "-Infinity"), a
+ * single rounds back to the single it was, and a compat scalar is revived from its text.
  */
 function pairKey(key: unknown, tag: HydrationKey | undefined): unknown {
   switch (tag) {
     case undefined:
-    case 'number':
     case 'bool':
       return key;
+    case 'number':
+      return typeof key === 'string' ? Number(key) : key;
     case 'single':
-      return Math.fround(key as number);
+      return Math.fround(typeof key === 'string' ? Number(key) : (key as number));
     default:
       return scalar(key, tag);
   }
