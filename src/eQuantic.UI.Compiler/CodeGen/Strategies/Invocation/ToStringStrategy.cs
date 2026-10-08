@@ -119,14 +119,16 @@ public class ToStringStrategy : IConversionStrategy
 
         // A DATE goes through the formatter whatever it is given, as .NET formats it: a standard
         // specifier from the culture's patterns, a custom picture drawn token by token, and with
-        // none, which is `G`, the current culture's general pattern, the current culture and a null
-        // being the call with none; the invariant culture writes the invariant patterns. With no
-        // specifier it wrote the twin's invariant text, where .NET writes the culture's (found in
-        // review, #472). A null DateTime? writes nothing (#388).
-        if (IsDateTime(receiverType))
+        // none, or a null or an empty one, its type's own text, which the formatter knows (`G` of a
+        // DateTime, `d` of a DateOnly, `t` of a TimeOnly, and a DateTimeOffset's `G` with its offset),
+        // the current culture and a null being the call with none; the invariant culture writes the
+        // invariant patterns. A DateTime with no specifier wrote the twin's invariant text where .NET
+        // writes the culture's (found in review, #472), and the other three types never reached the
+        // formatter at all (#469). A null date writes nothing (#388).
+        if (receiverType.IsDate())
         {
             context.UsedHelpers.Add(Eq.Import);
-            var specifier = formatArg is null ? "'G'" : DateSpecifier(formatArg.Expression, context);
+            var specifier = formatArg is null ? "null" : context.Converter.ConvertExpression(formatArg.Expression);
             return invariant
                 ? $"{Eq.Format}({caller}, {specifier}, undefined, true)"
                 : $"{Eq.Format}({caller}, {specifier})";
@@ -137,66 +139,27 @@ public class ToStringStrategy : IConversionStrategy
             var fmt = context.Converter.ConvertExpression(formatArg.Expression);
             context.UsedHelpers.Add(Eq.Import);
             // The alignment slot stays empty: this shape has none, and the invariant flag is what
-            // makes the helper stop reading the culture the reader happens to be in. A float and an
-            // integer say what they are (FormatKind).
+            // makes the helper stop reading the culture the reader happens to be in. A number says
+            // which it is (FormatKind): a double takes no `D`, a float writes its own digits, an
+            // integer rounds a half away from zero.
             var kind = FormatKind.Of(receiverType) is { } named ? $", '{named}'" : "";
             return invariant || kind.Length > 0
                 ? $"{Eq.Format}({caller}, {fmt}, undefined, {(invariant ? "true" : "undefined")}{kind})"
                 : $"{Eq.Format}({caller}, {fmt})";
         }
 
-        if (provider is not null)
-        {
-            // A provider with NO specifier. JavaScript's `String(x)` is already the invariant
-            // rendering of a number, so the invariant ask is answered exactly; the CURRENT culture's
-            // general format is not in the tested subset, and asking for it by name is how a page
-            // gets digits nobody pinned.
-            if (invariant) return RealText(memberAccess.Expression, context) ?? $"String({caller})";
+        // With no specifier, the INVARIANT culture's text: JavaScript's `String(x)` is already the
+        // invariant rendering of an integer and a decimal, and a float's and a double's are .NET's
+        // notation (`1E+17`, `-0`, a float's own digits).
+        if (invariant) return RealText(memberAccess.Expression, context) ?? $"String({caller})";
 
-            context.Report(node, ConversionSeverity.Error, "EQ2109",
-                "ToString(CultureInfo.CurrentCulture) has no specifier to pin, and the general "
-                + "format is outside the tested Intl subset. Name the format — ToString(\"N2\"), "
-                + "ToString(\"F1\") — which reads the same on the server and in the browser.");
-            return $"String({caller})";
-        }
-
-        // A FRACTIONAL number with no culture at all is the quiet one. C# renders it in whatever
-        // culture the thread is in — a pt request renders "0,55" from the server — and JavaScript's
-        // `String(x)` is always invariant, so the browser re-renders "0.55" over it. Two targets,
-        // two answers, from source that looks obviously correct. A warning rather than an error:
-        // this compiles in apps today, and the fix is one argument away.
-        if (context.SemanticHelper.GetType(memberAccess.Expression).UnwrapNullable() is
-            { SpecialType: SpecialType.System_Single or SpecialType.System_Double
-                or SpecialType.System_Decimal })
-        {
-            context.Report(node, ConversionSeverity.Warning, "EQ2110",
-                "A fractional number converted with no culture reads differently on each target: "
-                + "C# follows the request's culture (a comma, in pt) and JavaScript is always "
-                + "invariant. Say which you mean — ToString(CultureInfo.InvariantCulture) for a "
-                + "value a machine reads, or ToString(\"N2\") for one a person reads.");
-        }
-
-        // A FLOAT prints as the shortest decimal that reads back as the same single — `0.1f + 0.2f`
-        // is "0.3", where String() of the same bits would spell the double underneath — and a
-        // DOUBLE in .NET's notation, which turns scientific at 1e17 where String() waits for 1e21.
-        if (invocation.ArgumentList.Arguments.Count == 0 && RealText(memberAccess.Expression, context) is { } real)
-            return real;
-
-        return $"String({caller})";
-    }
-
-    /// <summary>
-    /// A DateTime's format as .NET reads it: a null or an empty one is <c>G</c>, the general pattern.
-    /// A constant says which at build time and a variable at run time, where the formatter took
-    /// either for no format at all and wrote the twin's invariant text (found in Copilot's second
-    /// round, #472).
-    /// </summary>
-    private static string DateSpecifier(ExpressionSyntax format, ConversionContext context)
-    {
-        if (context.SemanticHelper.IsNullConstant(format)) return "'G'";
-        if (context.SemanticHelper.TryGetConstantValue(format, out var constant) && constant is string text)
-            return text.Length == 0 ? "'G'" : context.Converter.ConvertExpression(format);
-        return JsExprWriter.Write(JsExpr.Binary(JsExpr.Group(context.Converter.ConvertIr(format)), "||", JsExpr.Literal("'G'")));
+        // With no specifier and no culture named, or the current one, or a null: the value's text in
+        // the culture in force, which is what a concatenation writes (StringConversion) and what the
+        // server writes for the same call (#454). It was the invariant text, under a warning (EQ2110)
+        // that the two targets disagreed, and the current culture named with no specifier was refused
+        // (EQ2109) because the general format was not pinned; it is now, on both sides.
+        return JsExprWriter.Write(StringConversion.ToText(memberAccess.Expression,
+            context.Converter.ConvertIr(memberAccess.Expression), context));
     }
 
     /// <summary>
@@ -218,21 +181,24 @@ public class ToStringStrategy : IConversionStrategy
         || provider is IdentifierNameSyntax && context.SemanticHelper.GetSymbol(provider) is ILocalSymbol or IParameterSymbol or IFieldSymbol
         || NamedCulture.IsInvariant(provider, context) || NamedCulture.IsCurrent(provider, context);
 
-    /// <summary>Whether the receiver is a DateTime, a nullable one's included.</summary>
-    private static bool IsDateTime(ITypeSymbol? type) =>
-        type.UnwrapNullable()?.ToDisplayString() == "System.DateTime";
-
     /// <summary>
-    /// A float's or a double's text as .NET writes it, a nullable one's included, which is nothing
-    /// for a null (<c>Nullable&lt;T&gt;.ToString()</c> is "", where String() spelled "null"): the
-    /// same conversion a concatenation takes. Null for any other receiver.
+    /// A float's or a double's text in the INVARIANT culture, as .NET writes it: the shortest digits
+    /// that read back, in .NET's notation (<c>1E+17</c>, <c>-0</c>), a float in its own digits, and
+    /// nothing for a null one (<c>Nullable&lt;T&gt;.ToString()</c> is "", where String() spelled
+    /// "null"). Null for any other receiver, whose invariant text is <c>String()</c>'s.
     /// </summary>
     private static string? RealText(ExpressionSyntax receiver, ConversionContext context)
     {
-        if (context.SemanticHelper.GetType(receiver).UnwrapNullable()?.SpecialType
-            is not (SpecialType.System_Single or SpecialType.System_Double)) return null;
-        return Ir.JsExprWriter.Write(
-            StringConversion.ToDotNetString(receiver, context.Converter.ConvertIr(receiver), context));
+        var type = context.SemanticHelper.GetType(receiver);
+        var real = type.UnwrapNullable();
+        if (real?.SpecialType is not (SpecialType.System_Single or SpecialType.System_Double)) return null;
+        context.UsedHelpers.Add(Eq.Import);
+        var printer = real.SpecialType == SpecialType.System_Single ? Eq.Single : Eq.Double;
+        var converted = context.Converter.ConvertIr(receiver);
+        return ReferenceEquals(real, type)
+            ? $"{printer}({JsExprWriter.Write(converted)})"
+            : JsExprWriter.Write(JsExpr.Template($"({{0}} == null ? '' : {printer}({{0}}))", [converted],
+                context.TypeAnnotations));
     }
 
     /// <summary>

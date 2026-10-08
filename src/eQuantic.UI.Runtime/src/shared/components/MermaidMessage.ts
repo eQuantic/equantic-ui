@@ -10,5 +10,9 @@ export class MermaidMessage {
     to!: string;
     label!: string;
     dashed!: boolean;
+
+    toString(): string {
+        return 'eQuantic.UI.Components.MermaidMessage';
+    }
 }
 

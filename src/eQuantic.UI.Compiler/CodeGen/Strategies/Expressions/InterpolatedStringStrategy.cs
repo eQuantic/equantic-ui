@@ -69,11 +69,11 @@ public class InterpolatedStringStrategy : IConversionStrategy
                         // The format is a string like any other: `dd 'de' MMMM` closed the quotes it
                         // was written between, and Bun refused the module (#520).
                         var fmtArg = format != null ? JsStringLiteral.Quote(format) : "null";
-                        // A float says it is one: its own digits are not the double's (#378). An
-                        // integer says so where a specifier is written, since it rounds a half away
-                        // from zero (#393); with none, its text is its digits whatever it is.
-                        var kind = FormatKind.Of(context.SemanticHelper.GetType(interpolation.Expression));
-                        if (FormatKind.IsInteger(kind) && format == null) kind = null;
+                        // A number says what it is where a specifier is written: a double takes no
+                        // `D` (#455), a float writes its own digits (#378), an integer rounds a half
+                        // away from zero (#393). With none, only a float's text is its own; every
+                        // other number's is its digits, in the culture in force (#454).
+                        var kind = format == null ? FormatKind.OfText(holeType) : FormatKind.Of(holeType);
                         var alignArg = alignment != null ? $", {alignment}" : kind != null ? ", undefined" : "";
                         var kindArg = kind != null ? $", undefined, '{kind}'" : "";
                         sb.Append($"{Eq.Format}({expr}, {fmtArg}{alignArg}{kindArg})");

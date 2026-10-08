@@ -1,4 +1,4 @@
-import { BuildContext, Button, Column, StatefulComponent, Text, UiComponent } from "@equantic/runtime";
+import { $eq, BuildContext, Button, Column, StatefulComponent, Text, UiComponent } from "@equantic/runtime";
 
 export class NestedChild extends StatefulComponent {
     static $typeId = 'eQuantic.UI.Web.Tests.Fixtures.NestedChild';
@@ -13,7 +13,7 @@ export class NestedChild extends StatefulComponent {
 
     build(_context: BuildContext) {
         let column = new Column(8);
-        column.add(new Text(`${this._label}:${this._count}`, 'caption'));
+        column.add(new Text(`${this._label}:${$eq.text.format(this._count, null, undefined, undefined, 'int32')}`, 'caption'));
         column.add(new Button('Add', 'primary', 'medium', () => this.setState(() => this._count++)));
         return column;
     }

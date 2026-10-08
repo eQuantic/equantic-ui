@@ -314,19 +314,19 @@ public class StringStaticStrategy : IConversionStrategy
         // same formatter the interpolation path uses, so `{0:F2}` works) and unescapes {{/}}.
         context.UsedHelpers.Add(Eq.Import);
         var passed = values.OrderBy(value => value.Slot).ToList();
-        // A float is boxed with its kind wherever its static type is float: an argument, an element
-        // written in place, and each element of a spread collection of floats.
-        // An integer is boxed with its kind too, where the template writes a specifier, since it rounds
-        // a formatted half away from zero where a double rounds it to even (#393).
+        // A number is boxed with its kind wherever its static type says what it is: an argument, an
+        // element written in place, and each element of a spread collection. With no specifier in the
+        // template, a value's text needs the kind of every number but a double, as an interpolation
+        // hole's does (FormatKind.OfText): a float writes its own digits, and an integer no sign on a
+        // zero. Where the template writes a specifier, a double says so too: an integer rounds a
+        // formatted half away from zero where a double rounds it to even (#393), and only an integer
+        // takes D, X and B, at its type's width (#445, #455).
         var specified = MayWriteASpecifier(template, context);
-        // The call that boxes one value of the type, or null where the value goes as it is. An
-        // integer's box carries its kind, whose width is what X writes a negative one at.
-        Func<string, string>? BoxOf(ITypeSymbol? type) => FormatKind.Of(type) switch
-        {
-            "single" => text => $"{Eq.AsSingle}({text})",
-            { } integer when specified => text => $"{Eq.AsInteger}({text}, '{integer}')",
-            _ => null,
-        };
+        // The call that boxes one value of the type, or null where the value goes as it is.
+        Func<string, string>? BoxOf(ITypeSymbol? type) =>
+            (specified ? FormatKind.Of(type) : FormatKind.OfText(type)) is { } kind
+                ? text => $"{Eq.AsNumber}({text}, '{kind}')"
+                : null;
         string Passed((int Slot, ExpressionSyntax Value, bool Spread) value, string text) =>
             value.Spread
                 ? BoxOf(ElementTypeOf(context.SemanticHelper.GetType(value.Value))) is { } spreadBox

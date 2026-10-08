@@ -111,5 +111,9 @@ export class SheetDocument {
             $eq.mapSet(sizes, entry.key + delta, entry.value);
         }
     }
+
+    toString(): string {
+        return 'eQuantic.UI.Primitives.SheetDocument';
+    }
 }
 

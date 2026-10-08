@@ -1,1 +1,3 @@
 #nullable enable
+eQuantic.UI.Web.CultureFormatBridge
+static eQuantic.UI.Web.CultureFormatBridge.SerializeJson(System.Globalization.CultureInfo! culture) -> string!

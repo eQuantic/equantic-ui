@@ -1,4 +1,5 @@
 using System.Reflection;
+using System.Text.Json;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.TestHost;
 
@@ -79,8 +80,14 @@ public class CultureBridgeTests
             "no fr.json exists — the neutral catalog answers, exactly as ResourceManager would");
     }
 
+    /// <summary>
+    /// The FORMAT culture travels on every page, catalog or not (#471): an app with no resx was
+    /// handed no culture at all, so the browser formatted in its host's locale while the server
+    /// formatted in the request's, and the SSR markup and the hydrated page printed one number two
+    /// ways. The strings travel only when there are some.
+    /// </summary>
     [Fact]
-    public async Task NoCatalogsAtAll_MeansNoCultureBridge_AndTheShellStillServes()
+    public async Task NoCatalogsAtAll_StillCarriesTheFormatCulture_AndNoStrings()
     {
         var (app, client, _) = await StartAppAsync(withCatalogs: false);
         await using var _1 = app;
@@ -88,7 +95,68 @@ public class CultureBridgeTests
         var html = await (await GetWithLanguage(client, "pt-BR")).Content.ReadAsStringAsync();
 
         html.Should().Contain("<html lang=\"pt-BR\"", "the language is true even with no strings");
-        html.Should().NotContain("__EQ_CULTURE__",
-            "an app with no resx pays nothing for the bridge");
+        var data = CultureData(html);
+        data.GetProperty("formatName").GetString().Should().Be("pt-BR");
+        data.TryGetProperty("strings", out _).Should().BeFalse("an app with no resx has no strings to send");
+        var format = data.GetProperty("format");
+        format.GetProperty("numberFormat").GetProperty("currencySymbol").GetString().Should().Be("R$");
+        format.GetProperty("numberFormat").GetProperty("numberDecimalSeparator").GetString().Should().Be(",");
+        format.GetProperty("dateTimeFormat").GetProperty("shortDatePattern").GetString().Should().Be("dd/MM/yyyy");
+    }
+
+    /// <summary>The format half is the request's FORMAT culture's, written from .NET's own data for
+    /// it, beside the catalog the UI culture picks.</summary>
+    [Fact]
+    public async Task TheFormatHalf_IsTheFormatCulturesOwnData()
+    {
+        var (app, client, _) = await StartAppAsync();
+        await using var _1 = app;
+
+        var data = CultureData(await (await GetWithLanguage(client, "fr")).Content.ReadAsStringAsync());
+
+        var culture = System.Globalization.CultureInfo.GetCultureInfo("fr");
+        data.GetProperty("format").GetRawText().Should().Be(eQuantic.UI.Web.CultureFormatBridge.SerializeJson(culture));
+        data.GetProperty("format").GetProperty("numberFormat").GetProperty("currencySymbol").GetString().Should().Be("¤",
+            "a neutral culture has no currency of its own, and .NET writes the generic ¤ for it");
+        data.GetProperty("strings").GetProperty("Strings/Hero.Title").GetString().Should().StartWith("Build products");
+    }
+
+    /// <summary>
+    /// A culture switch fetches the format half of the culture it switches to: what the shell would
+    /// write for a request in it, from the server that renders the next one. A name that is no
+    /// culture is not found.
+    /// </summary>
+    [Fact]
+    public async Task TheCultureEndpoint_AnswersAFormatCulturesHalf()
+    {
+        var (app, client, _) = await StartAppAsync(withCatalogs: false);
+        await using var _1 = app;
+
+        var response = await client.GetAsync("/_equantic/culture/de-DE.json");
+        response.StatusCode.Should().Be(System.Net.HttpStatusCode.OK);
+        response.Content.Headers.ContentType!.MediaType.Should().Be("application/json");
+        using var document = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        document.RootElement.GetProperty("formatName").GetString().Should().Be("de-DE");
+        document.RootElement.GetProperty("format").GetRawText().Should().Be(
+            eQuantic.UI.Web.CultureFormatBridge.SerializeJson(System.Globalization.CultureInfo.GetCultureInfo("de-DE")));
+        document.RootElement.GetProperty("format").GetProperty("dateTimeFormat").GetProperty("firstDayOfWeek").GetInt32()
+            .Should().Be(1, "a calendar's first day travels in the culture's date data, its names' one source");
+        document.RootElement.TryGetProperty("calendar", out _).Should().BeFalse(
+            "the calendar's names were a second copy of the format data's, beside it");
+
+        (await client.GetAsync("/_equantic/culture/not-a-culture.json")).StatusCode
+            .Should().Be(System.Net.HttpStatusCode.NotFound);
+    }
+
+    /// <summary>The object the shell assigns to <c>window.__EQ_CULTURE__</c>.</summary>
+    private static JsonElement CultureData(string html)
+    {
+        const string marker = "window.__EQ_CULTURE__ = ";
+        var start = html.IndexOf(marker, StringComparison.Ordinal);
+        start.Should().BeGreaterThan(0, "every page carries the culture bridge");
+        // One JSON value from there, whatever the script writes after it.
+        var reader = new Utf8JsonReader(System.Text.Encoding.UTF8.GetBytes(html[(start + marker.Length)..]));
+        using var document = JsonDocument.ParseValue(ref reader);
+        return document.RootElement.Clone();
     }
 }

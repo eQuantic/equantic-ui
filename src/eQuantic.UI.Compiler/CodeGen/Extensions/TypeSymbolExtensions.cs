@@ -138,6 +138,12 @@ public static class TypeSymbolExtensions
     public static bool IsNamed(this ITypeSymbol? type, string fullName) =>
         type.UnwrapNullable()?.WithNullableAnnotation(NullableAnnotation.NotAnnotated).ToDisplayString() == fullName;
 
+    /// <summary>A date the runtime's formatter writes: a DateTime, a DateOnly, a TimeOnly or a
+    /// DateTimeOffset, transparently unwrapping <c>Nullable&lt;T&gt;</c>.</summary>
+    public static bool IsDate(this ITypeSymbol? type) =>
+        type.IsNamed("System.DateTime") || type.IsNamed("System.DateOnly")
+        || type.IsNamed("System.TimeOnly") || type.IsNamed("System.DateTimeOffset");
+
     /// <summary>An integral type (signed/unsigned 8–64 bit), unwrapping <c>Nullable&lt;T&gt;</c>.</summary>
     public static bool IsIntegral(this ITypeSymbol? type)
     {

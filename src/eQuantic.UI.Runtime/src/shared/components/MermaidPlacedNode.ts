@@ -14,5 +14,9 @@ export class MermaidPlacedNode {
     y!: number;
     w!: number;
     h!: number;
+
+    toString(): string {
+        return 'eQuantic.UI.Components.MermaidPlacedNode';
+    }
 }
 

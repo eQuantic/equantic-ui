@@ -36,8 +36,9 @@ public static class ValueFlow
         // bool as "True", an enum as its member name (StringConversion). The bound tree shows the
         // three ways a value gets there: boxed into a concatenation (`"v=" + n`, `s += flag`), a
         // string operand of one (no conversion — a string is already a string), or the expression
-        // of an interpolation hole, which has no conversion either (the handler is generic). Only
-        // the VALUE of a compound assignment flows; its target is being written, not printed.
+        // of an interpolation hole, which has no conversion either (the handler is generic), in a
+        // string or in one that builds a handler. Only the VALUE of a compound assignment flows; its
+        // target is being written, not printed.
         if (FlowsIntoText(operation)) return StringConversion.ToDotNetString(node, translated, context);
 
         if (operation.Parent is not IConversionOperation { IsImplicit: true } conversion) return translated;
@@ -71,7 +72,11 @@ public static class ValueFlow
     /// <summary>Whether this operation's value is on its way into TEXT: through the boxing a
     /// concatenation wraps it in, directly as a string operand of one, or as a plain hole of an
     /// interpolated string (a hole with a format or an alignment hands the raw value to the
-    /// formatter instead).</summary>
+    /// formatter instead). An interpolated string handed to a parameter of a HANDLER type
+    /// (<c>sb.Append($"{d}")</c> builds StringBuilder's) shows the same hole as the argument of the
+    /// handler's <c>AppendFormatted</c>, and the browser writes it into the same template: it printed
+    /// <c>1.5</c> and <c>true</c> on a pt-BR page where the server printed <c>1,5</c> and
+    /// <c>True</c>.</summary>
     private static bool FlowsIntoText(IOperation operation)
     {
         var parent = operation.Parent;
@@ -86,6 +91,17 @@ public static class ValueFlow
             ICompoundAssignmentOperation { OperatorKind: BinaryOperatorKind.Add, Type.SpecialType: SpecialType.System_String } compound
                 => ReferenceEquals(compound.Value, operation),
             IInterpolationOperation { FormatString: null, Alignment: null } hole => ReferenceEquals(hole.Expression, operation),
+            IArgumentOperation
+            {
+                Parent: IInvocationOperation
+                {
+                    Parent: IInterpolatedStringAppendOperation
+                    {
+                        Kind: OperationKind.InterpolatedStringAppendFormatted,
+                        Syntax: InterpolationSyntax { AlignmentClause: null, FormatClause: null },
+                    },
+                },
+            } argument => ReferenceEquals(argument.Value, operation),
             _ => false,
         };
     }

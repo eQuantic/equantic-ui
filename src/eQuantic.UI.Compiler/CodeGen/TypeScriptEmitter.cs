@@ -2446,6 +2446,12 @@ public class TypeScriptEmitter
             {
                 EmitStaticMembers(cls, c, asStatic);
                 if (!asStatic) EmitInheritedDefaults(cls, c);
+                // A class that never says what its text is writes its full name, as Object.ToString
+                // does: the twin wrote JavaScript's `[object Object]` (#570).
+                if (!asStatic && semanticModel?.GetDeclaredSymbol(cls) is INamedTypeSymbol declared
+                    && DefaultText.Of(declared) is { } fullName)
+                    c.Member(JsClassMember.Method("", "toString", "", "", TypeAnnotations ? ": string" : "",
+                        JsStatement.Block([JsStatement.Return(JsExpr.Literal(JsStringLiteral.Quote(fullName)))])), cls);
             },
             isAbstract: cls.Modifiers.Any(Microsoft.CodeAnalysis.CSharp.SyntaxKind.AbstractKeyword));
         var emitted = builder.ToString();

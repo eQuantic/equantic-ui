@@ -50,6 +50,10 @@ const eQuantic.UI.Compiler.CodeGen.Eq.ArraySort = "$eq.collections.arraySort" ->
 const eQuantic.UI.Compiler.CodeGen.Eq.ArraySortBy = "$eq.collections.arraySortBy" -> string!
 const eQuantic.UI.Compiler.CodeGen.Eq.ListBinarySearch = "$eq.collections.binarySearch" -> string!
 eQuantic.UI.Compiler.CodeGen.Strategies.Types.HashSetStrategy.ConvertIr(Microsoft.CodeAnalysis.SyntaxNode! node, eQuantic.UI.Compiler.CodeGen.ConversionContext! context) -> eQuantic.UI.Compiler.CodeGen.Ir.JsExpr!
+*REMOVED*const eQuantic.UI.Compiler.CodeGen.Eq.AsInteger = "$eq.text.asInteger" -> string!
+*REMOVED*const eQuantic.UI.Compiler.CodeGen.Eq.AsSingle = "$eq.text.asSingle" -> string!
+const eQuantic.UI.Compiler.CodeGen.Eq.AsNumber = "$eq.text.asNumber" -> string!
+static eQuantic.UI.Compiler.CodeGen.TypeSymbolExtensions.IsDate(this Microsoft.CodeAnalysis.ITypeSymbol? type) -> bool
 const eQuantic.UI.Compiler.CodeGen.Eq.Json = "$eq.json" -> string!
 eQuantic.UI.Compiler.CodeGen.ValueMember.Deconstruct(out string! Display, out string! Js, out string! Store, out string! TsType, out Microsoft.CodeAnalysis.SyntaxNode! Declaration) -> void
 eQuantic.UI.Compiler.CodeGen.ValueMember.ValueMember(string! Display, string! Js, string! Store, string! TsType, Microsoft.CodeAnalysis.SyntaxNode! Declaration) -> void

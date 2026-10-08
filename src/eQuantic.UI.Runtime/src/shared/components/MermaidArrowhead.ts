@@ -8,5 +8,9 @@ export class MermaidArrowhead {
     x!: number;
     y!: number;
     direction!: number;
+
+    toString(): string {
+        return 'eQuantic.UI.Components.MermaidArrowhead';
+    }
 }
 

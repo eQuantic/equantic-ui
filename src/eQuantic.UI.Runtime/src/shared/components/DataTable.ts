@@ -94,7 +94,7 @@ export class DataTable extends StatelessComponent {
         for (let i = 0; i < this.columns.length; i++) {
             grid.add(DataTable.cell(new Box(new BoxStyle(), new Skeleton('line', i % 2 === 0 ? 96 : 64)), this.columns[i].align));
         }
-        return new Box(new BoxStyle({ width: SizeValue.fill, minHeight: DataTable.rowHeight, borderWidth: 1, borderColor: theme.border }), grid, { key: `pending-${index}` });
+        return new Box(new BoxStyle({ width: SizeValue.fill, minHeight: DataTable.rowHeight, borderWidth: 1, borderColor: theme.border }), grid, { key: `pending-${$eq.text.format(index, null, undefined, undefined, 'int32')}` });
     }
 
     static cell(child: VisualNode, align: TextAlignmentValue) {

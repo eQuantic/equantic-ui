@@ -38,7 +38,7 @@ export class MarkdownParser {
                     let n = 1;
                     while (usedIds.has(unique)) {
                         n++;
-                        unique = id + '-' + n;
+                        unique = id + '-' + $eq.text.format(n, null, undefined, undefined, 'int32');
                     }
                     $eq.collections.setAdd(usedIds, unique);
                     let $n2: any; 

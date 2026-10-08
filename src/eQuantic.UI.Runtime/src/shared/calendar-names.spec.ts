@@ -2,26 +2,17 @@ import { describe, expect, it, afterEach } from 'vitest';
 import { CalendarNames } from './calendar-names';
 import { SdkStrings } from './components/SdkStrings';
 import { installCulture } from '../utils/culture';
+import { calendarFormat, type CalendarSnapshot } from './__fixtures__/calendar-format';
 import pinned from './calendar-names.fixture.json';
 
-type Snapshot = {
-  firstDayOfWeek: number;
-  dayNamesShort: string[];
-  dayNamesLong: string[];
-  monthNames: string[];
-  monthNamesShort: string[];
-  shortDatePattern: string;
-  dateFormatLetters: string;
-  dateFormatHint: string;
-};
-
-const fixture = pinned as Record<string, Snapshot>;
+const fixture = pinned as Record<string, CalendarSnapshot>;
 
 /**
  * What a calendar SAYS, against what the C# side says (C# cross-pin: CalendarNamesFixtureTests).
  *
  * The split below IS the finding that shaped the design. A server-rendered page gets the names
- * SHIPPED, and those are asserted exactly, per culture. The Intl fallback is asserted only for its
+ * SHIPPED, in the format culture's data a date's names come from too, and those are asserted
+ * exactly, per culture. The Intl fallback is asserted only for its
  * SHAPE, because it is the host engine's ICU and that is not one thing: between bun and node alone
  * the probe found four disagreements — ar-EG's abbreviations differ by the definite article,
  * ru-RU's differ in case, en-GB abbreviates September differently, and zh-CN does not agree on
@@ -34,7 +25,7 @@ describe('calendar names (C# CalendarNamesFixtureTests cross-pin)', () => {
   for (const [culture, expected] of Object.entries(fixture)) {
     it(`answers the server's catalog exactly for ${culture}`, () => {
       // The SSR path: whatever the server said IS the answer, ICU version notwithstanding.
-      installCulture(culture, culture, {}, expected);
+      installCulture(culture, culture, {}, calendarFormat(expected));
       expect(CalendarNames.firstDayOfWeek).toBe(expected.firstDayOfWeek);
       expect(CalendarNames.dayNamesShort).toEqual(expected.dayNamesShort);
       expect(CalendarNames.dayNamesLong).toEqual(expected.dayNamesLong);
@@ -50,11 +41,8 @@ describe('calendar names (C# CalendarNamesFixtureTests cross-pin)', () => {
       installCulture(
         culture,
         culture,
-        {
-          $dateShort: expected.shortDatePattern,
-          'SdkResources/DateFormatLetters': expected.dateFormatLetters,
-        },
-        expected,
+        { 'SdkResources/DateFormatLetters': expected.dateFormatLetters },
+        calendarFormat(expected),
       );
       expect(CalendarNames.shortDatePattern).toBe(expected.shortDatePattern);
       expect(SdkStrings.dateFormatHint).toBe(expected.dateFormatHint);
@@ -81,26 +69,24 @@ describe('calendar names (C# CalendarNamesFixtureTests cross-pin)', () => {
     });
   }
 
-  it('the shipped catalog OVERRIDES the host ICU, which is the whole point', () => {
+  it('the shipped data OVERRIDES the host ICU, which is the whole point', () => {
     // ar-EG under this runner's ICU says "الأحد" where .NET says "أحد" — both correct Arabic, one
     // with the definite article. The server's answer has to win, or the SSR HTML and the hydrated
     // tree carry different day names.
-    installCulture('ar-EG', 'ar-EG', {}, fixture['ar-EG']);
+    installCulture('ar-EG', 'ar-EG', {}, calendarFormat(fixture['ar-EG']));
     expect(CalendarNames.dayNamesShort).toEqual(fixture['ar-EG'].dayNamesShort);
     expect(CalendarNames.firstDayOfWeek).toBe(6);
   });
 
-  it('with nothing installed, the week start follows the same locale as the names', () => {
-    // The fallback used to hard-code en-US for the first day while the names resolved the host's
-    // locale — one render could show German day names over a week starting on Sunday.
+  it('with nothing installed, a calendar is the invariant culture’s, as a date is', () => {
+    // A page with no culture installed is in the invariant culture (#471), and a calendar says what
+    // a date's names say: the host's locale named the days of a calendar while the formatter wrote
+    // the invariant culture's names beside it.
     installCulture('', '', {});
-    const host = new Intl.DateTimeFormat().resolvedOptions().locale;
-    const asHost = new Intl.DateTimeFormat(host, { weekday: 'short', timeZone: 'UTC' });
-    expect(CalendarNames.dayNamesShort[0]).toBe(asHost.format(new Date(Date.UTC(2026, 7, 16))));
-    // …and the first day is whatever THAT locale says, not a constant.
-    const info = (new Intl.Locale(host) as Intl.Locale & { weekInfo?: { firstDay: number } })
-      .weekInfo;
-    if (info) expect(CalendarNames.firstDayOfWeek).toBe(info.firstDay === 7 ? 0 : info.firstDay);
+    expect(CalendarNames.dayNamesShort[0]).toBe('Sun');
+    expect(CalendarNames.monthNames[0]).toBe('January');
+    expect(CalendarNames.firstDayOfWeek).toBe(0);
+    expect(CalendarNames.shortDatePattern).toBe('MM/dd/yyyy');
   });
 
   it('answers even where Intl.Locale does not exist', () => {
@@ -118,10 +104,10 @@ describe('calendar names (C# CalendarNamesFixtureTests cross-pin)', () => {
     }
   });
 
-  it('a culture switch without a catalog does not keep the OLD culture’s names', () => {
-    installCulture('fr-FR', 'fr-FR', {}, fixture['fr-FR']);
+  it('a culture switch without its data does not keep the OLD culture’s names', () => {
+    installCulture('fr-FR', 'fr-FR', {}, calendarFormat(fixture['fr-FR']));
     expect(CalendarNames.monthNames[0]).toBe('janvier');
-    // Switching in the browser carries no catalog; falling back to Intl is right, keeping the
+    // A switch with no server to ask carries no data; falling back to Intl is right, keeping the
     // French names would be the one answer that is certainly wrong.
     installCulture('de-DE', 'de-DE', {});
     expect(CalendarNames.monthNames[0]).toBe('Januar');

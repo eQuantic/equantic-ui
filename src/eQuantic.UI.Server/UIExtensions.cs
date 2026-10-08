@@ -308,6 +308,24 @@ public static class UIExtensions
             }
         }
 
+        // A culture switch's format half (#471): what the culture a page switches to with no reload
+        // formats with and what its calendar is called, written from .NET as the shell writes them
+        // for a request in that culture, so a number reads after the switch as the server writes it
+        // on the next request. A name that is no culture .NET knows is not found.
+        endpoints.MapGetAndHead("/_equantic/culture/{name}.json", async context =>
+        {
+            var name = (string?)context.GetRouteValue("name");
+            var document = string.IsNullOrEmpty(name) ? null : CultureBridge.FormatDocument(name);
+            if (document is null)
+            {
+                context.Response.StatusCode = 404;
+                return;
+            }
+            context.Response.ContentType = "application/json";
+            context.Response.Headers["Cache-Control"] = "no-cache";
+            await context.Response.WriteAsync(document);
+        });
+
         // Map Runtime JS (immutable via BuildId in URL, long cache)
         endpoints.MapGetAndHead("/_equantic/runtime.js", async context =>
         {
@@ -666,10 +684,12 @@ public static class UIExtensions
         }
 
         // Track L D4/D5: the request's culture rides the shell — <html lang> for assistive tech
-        // (pronunciation follows it), and window.__EQ_CULTURE__ with the ACTIVE catalog inlined so
-        // the client resolves exactly the strings the server rendered, before hydration. The
-        // culture itself is ASP.NET's answer (RequestLocalization when the app wired it, the
-        // process default otherwise) — the SDK only reads the statics, per the plan.
+        // (pronunciation follows it), and window.__EQ_CULTURE__ with the format culture's data and
+        // the ACTIVE catalog inlined, so the client writes every number and date as the server wrote
+        // them and resolves exactly the strings it rendered, before hydration. The format culture
+        // travels on every page, catalog or not (#471). The culture itself is ASP.NET's answer
+        // (RequestLocalization when the app wired it, the process default otherwise) — the SDK
+        // only reads the statics, per the plan.
         var uiCulture = System.Globalization.CultureInfo.CurrentUICulture;
         var formatCulture = System.Globalization.CultureInfo.CurrentCulture;
         var htmlLang = uiCulture.Name.Length > 0 ? uiCulture.Name : "en";
@@ -892,7 +912,7 @@ public static class UIExtensions
                .Set("IsDevelopmentBool", isDevelopment ? "true" : "false")
                .SetOrEmpty("InitialState", serializedState != null ? $"window.__INITIAL_STATE__ = {serializedState};" : null)
                .SetOrEmpty("ThemeData", themeDataJson != null ? $"window.__EQ_THEME__ = {themeDataJson};" : null)
-               .SetOrEmpty("CultureData", cultureDataJson != null ? $"window.__EQ_CULTURE__ = {cultureDataJson};" : null);
+               .SetOrEmpty("CultureData", $"window.__EQ_CULTURE__ = {cultureDataJson};");
 
             // Conditions
             ctx.When("IsDevelopment", isDevelopment)

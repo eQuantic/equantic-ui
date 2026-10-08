@@ -1,6 +1,11 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { setNavigationHandler } from '../../router/navigator';
-import { setCultureCatalogLoader } from '../../utils/culture';
+import {
+  activeFormatData,
+  INVARIANT_FORMAT,
+  setCultureCatalogLoader,
+  setCultureFormatLoader,
+} from '../../utils/culture';
 import { WebCultureController } from './culture-controller';
 
 /**
@@ -16,6 +21,13 @@ describe('WebCultureController.apply with culture routes', () => {
   const navigated: string[] = [];
   /** What the loader had already answered by the time the navigation was asked for. */
   let catalogAtNavigation: string[] = [];
+  /** The format data in force when the navigation was asked for. */
+  let formatAtNavigation: unknown = null;
+  /** The format culture's data the server answers in these specs: pt-BR's decimal comma. */
+  const PT_BR = {
+    ...INVARIANT_FORMAT,
+    numberFormat: { ...INVARIANT_FORMAT.numberFormat, numberDecimalSeparator: ',' },
+  };
 
   beforeEach(() => {
     loaded.length = 0;
@@ -28,9 +40,12 @@ describe('WebCultureController.apply with culture routes', () => {
       loaded.push(culture);
       return { Greeting: `hello-${culture}` };
     });
+    // The format culture's data comes from the server too, beside the catalog (#471).
+    setCultureFormatLoader(async (culture) => (culture === 'pt-BR' ? { format: PT_BR } : null));
     setNavigationHandler((href) => {
       navigated.push(href);
       catalogAtNavigation = [...loaded];
+      formatAtNavigation = activeFormatData();
     });
     window.history.replaceState(null, '', '/');
   });
@@ -46,6 +61,8 @@ describe('WebCultureController.apply with culture routes', () => {
 
     expect(navigated).toEqual(['/pt-BR']);
     expect(catalogAtNavigation).toContain('pt-BR');
+    // And the culture's format data: the page it lands on writes its numbers in it.
+    expect(formatAtNavigation).toEqual(PT_BR);
   });
 
   it('carries the rest of the path, the query and the hash across', async () => {

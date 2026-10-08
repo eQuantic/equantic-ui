@@ -50,5 +50,9 @@ export class CodeWordCompletionProvider {
     async resolveAsync(item: CodeCompletionItem, _cancellation: CancellationToken) {
         return Promise.resolve(item);
     }
+
+    toString(): string {
+        return 'eQuantic.UI.Code.CodeWordCompletionProvider';
+    }
 }
 
