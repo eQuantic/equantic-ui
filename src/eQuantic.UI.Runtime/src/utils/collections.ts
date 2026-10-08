@@ -433,19 +433,21 @@ export function setAdd<T>(set: Set<T>, value: T): boolean {
 }
 
 /**
- * How many a collection holds — `length`, `size`, `count`, or a walk. Same reason as {@link contains}:
+ * How many a collection holds — `length`, `count`, `size`, or a walk. Same reason as {@link contains}:
  * a C# receiver typed as a collection may be an array or a Set here, and each keeps its count under a
  * different name. The runtime's linked list, queue, stack and sorted set, and a twin of the app's own
  * behind an `ICollection<T>` or an `IReadOnlyList<T>`, keep it as `count`, which a twin that cannot be
- * walked answers alone (#586, #593). Null counts as none, so a guarded `xs?.Count` needs no guard at all.
+ * walked answers alone (#586, #593). It is asked before a `size` or a `length`, which are a twin's own
+ * members when it has them: a polyline's `Length` is how long it is, and its `Count` how many points
+ * it holds. Null counts as none, so a guarded `xs?.Count` needs no guard at all.
  */
 export function count(collection: unknown): number {
   if (collection == null) return 0;
   if (Array.isArray(collection) || typeof collection === 'string') return collection.length;
   const sized = collection as { size?: unknown; length?: unknown; count?: unknown };
+  if (typeof sized.count === 'number') return sized.count;
   if (typeof sized.size === 'number') return sized.size;
   if (typeof sized.length === 'number') return sized.length;
-  if (typeof sized.count === 'number') return sized.count;
   let total = 0;
   if (typeof (collection as Iterable<unknown>)[Symbol.iterator] === 'function')
     for (const _ of collection as Iterable<unknown>) total++;

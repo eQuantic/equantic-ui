@@ -261,6 +261,17 @@ public class CollectionAndIndexerConformanceTests
             public static int At(string step, int value) { Text += step; return value; }
         }
 
+        public class Polyline : IReadOnlyList<int>
+        {
+            private readonly int[] _v = { 3, 4 };
+            public double Length => 12.5;
+            public int Size => 7;
+            public int Count => _v.Length;
+            public int this[int i] => _v[i];
+            public IEnumerator<int> GetEnumerator() { foreach (var v in _v) yield return v; }
+            IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+        }
+
         public class Shelf
         {
             public IList<int> L { get; } = new Cells();
@@ -280,6 +291,8 @@ public class CollectionAndIndexerConformanceTests
         ("a read from the end", "IReadOnlyList<int> r = new Ring(); return r[^1] * 10 + r[^3];"),
         // 30: a twin, an array and a list through one parameter
         ("a parameter typed as the interface", "return Sums.Of(new Ring()) + Sums.Of(new[] { 1, 2 }) + Sums.Of(new List<int> { 3 });"),
+        // "2|4|7": the face counts by the twin's own Count, never by a Length or a Size beside it
+        ("a type of the app's own with a Length and a Size beside its count", "IReadOnlyList<int> p = new Polyline(); return p.Count + \"|\" + p[^1] + \"|\" + Sums.Of(p);"),
         // "5|4|4"
         ("a read, a write, a compound and a step through IList<T>", "IList<int> l = new Cells(); l[0] = 5; l[1] += 2; l[2]++; return l[0] + \"|\" + l[1] + \"|\" + l[2];"),
         // "7|7"

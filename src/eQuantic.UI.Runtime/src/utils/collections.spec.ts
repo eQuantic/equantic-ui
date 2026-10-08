@@ -262,4 +262,22 @@ describe("a list face's indexer, as the list behind the face answers it", () => 
     expect(setItem(typed, 0, 3)).toBe(3);
     expect(typed[0]).toBe(3);
   });
+
+  it('counts a twin by its own count, never by a length or a size beside it', () => {
+    const polyline = {
+      item: (index: number) => [3, 4][index],
+      get length() {
+        return 12.5;
+      },
+      get size() {
+        return 7;
+      },
+      get count() {
+        return 2;
+      },
+    };
+    expect(count(polyline)).toBe(2);
+    expect(count(new Float64Array([1, 2, 3]))).toBe(3);
+    expect(count(new Set([1, 2]))).toBe(2);
+  });
 });
