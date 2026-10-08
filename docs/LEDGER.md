@@ -1740,7 +1740,9 @@ record of a release, the wiki's Upgrading page is the distillate.
   frame of the perf harness fell from 73.2 to 71.1 KB on the way: the flex pass's `foreach` over its
   node boxed an enumerator on every measure. Measured in Chromium on the server's own output of the
   issues' trees, before and after. Found, not changed: Photon ignores `MediumFrom` and
-  `ExpandedFrom`, and a component that builds a Spacer takes no space in a Photon column. Proposed and
+  `ExpandedFrom` ([#735](https://github.com/eQuantic/equantic-ui/issues/735)), and a component that
+  builds a Spacer takes no space in a Photon column
+  ([#736](https://github.com/eQuantic/equantic-ui/issues/736)). Proposed and
   archived through OpenSpec (`openspec/specs/adaptive-layout`).
 
 ## Retired documents
