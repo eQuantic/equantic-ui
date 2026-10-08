@@ -14,6 +14,7 @@ import { WebUiDispatcher } from './ui-dispatcher';
 import { WebClock } from './clock';
 import { WebFrameTicker } from './frame-ticker';
 import { WebThemeController } from './theme-controller';
+import { WebServerEvents } from './server-events';
 
 /**
  * Registers what a BROWSER can do, under the same names the C# interfaces have.
@@ -60,4 +61,7 @@ export function registerDeviceCapabilities(): void {
   // The UI thread's door. On the web it reports itself already on it — JavaScript has one thread —
   // so SetState never marshals here; a page can still post work to run after the current task.
   services.registerSingleton('IUiDispatcher', () => new WebUiDispatcher());
+  // What the server publishes: one stream for the whole page, opened by the first subscription, so
+  // a page that subscribes to nothing never connects.
+  services.registerSingleton('IServerEvents', () => new WebServerEvents());
 }

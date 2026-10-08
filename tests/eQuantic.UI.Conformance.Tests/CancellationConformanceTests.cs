@@ -57,6 +57,10 @@ public class CancellationConformanceTests
     [InlineData("var log = \"\"; var cts = new CTS(); cts.Token.Register(() => log += \"1\"); "
         + "cts.Token.Register(() => throw new InvalidOperationException(\"boom\")); cts.Token.Register(() => log += \"3\"); "
         + "try { cts.Cancel(); return \"ran\"; } catch (AggregateException e) { return $\"{log}|{e.Message}\"; }")]
+    // …and the first of them is its InnerException, as a constructed aggregate's is.
+    [InlineData("var cts = new CTS(); cts.Token.Register(() => throw new FormatException(\"f\")); "
+        + "cts.Token.Register(() => throw new InvalidOperationException(\"g\")); "
+        + "try { cts.Cancel(); return \"ran\"; } catch (AggregateException e) { return $\"{e.InnerException.Message}|{e.InnerExceptions.Count}\"; }")]
     // A method group keeps its receiver: the source it names is the one cancelled.
     [InlineData("var outer = new CTS(); var inner = new CTS(); outer.Token.Register(inner.Cancel); outer.Cancel(); "
         + "return $\"{inner.IsCancellationRequested}|{outer.IsCancellationRequested}\";")]
