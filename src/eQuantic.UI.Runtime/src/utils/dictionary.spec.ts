@@ -1,5 +1,6 @@
+import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import { bagEntries, bagSize, Dictionary, dictionary, keyText, pair, wireKey } from './dictionary';
+import { bagEntries, bagSize, Dictionary, dictionary, keyText, pair } from './dictionary';
 import { dec } from './decimal';
 import { dateTime, TimeSpan } from './datetime';
 import { equals } from './equals';
@@ -417,30 +418,62 @@ describe('Dictionary — the pairs it enumerates', () => {
 });
 
 describe('Dictionary — the JSON it writes', () => {
-  it('writes the object System.Text.Json reads, by each key wire text', () => {
+  // A JSON object lists every integer-like name first, ascending, whatever order its text had, and a
+  // page parses one before any code sees it (#437). The pairs keep the order the dictionary
+  // enumerates in, and each key is written as a value of its type: a long, a decimal and a date by
+  // their own toJSON, a bool as true or false, as the server writes them.
+  it('writes its pairs in slot order, each key as a value of its type', () => {
     const d = dictionary<unknown, number>([
       ['b', 1],
       [3, 2],
       [true, 3],
       [9007199254740993n, 4],
       [dec('1.50'), 5],
+      [dateTime(2026, 1, 2), 6],
     ]);
     expect(JSON.stringify(d)).toBe(
-      '{"3":2,"b":1,"True":3,"9007199254740993":4,"1.50":5}',
+      '[["b",1],[3,2],[true,3],["9007199254740993",4],["1.50",5],["2026-01-02T00:00:00",6]]',
     );
   });
 
-  it('writes "__proto__" as an entry, not as the prototype', () => {
-    const json = dictionary<string, number>([['__proto__', 1]]).toJSON();
-    expect(Object.keys(json)).toEqual(['__proto__']);
-    expect(JSON.stringify(json)).toBe('{"__proto__":1}');
+  it('writes a key the slot a removal freed took where the dictionary enumerates it', () => {
+    const d = dictionary<number, string>([
+      [3, 'c'],
+      [1, 'a'],
+      [2, 'b'],
+    ]);
+    d.delete(1);
+    d.set(5, 'e');
+    expect(JSON.stringify(d)).toBe('[[3,"c"],[5,"e"],[2,"b"]]');
   });
 
-  it('writes a key the way .NET writes it in a message and on the wire', () => {
+  it('writes "__proto__" as a key like any other', () => {
+    expect(JSON.stringify(dictionary<string, number>([['__proto__', 1]]))).toBe('[["__proto__",1]]');
+  });
+
+  // The bytes a Server Action receives for these arguments, which the server's own test posts
+  // (ServerActionDictionaryTests): the two halves are held to one text.
+  it('writes the arguments of a Server Action as the server reads them', () => {
+    const body = JSON.stringify({
+      actionId: 'OrderActions/Echo',
+      arguments: [
+        dictionary<number, string>([
+          [3, 'c'],
+          [1, 'a'],
+        ]),
+        dictionary<string, number>([
+          ['b', 1],
+          ['10', 2],
+          ['9', 3],
+        ]),
+      ],
+    });
+    expect(body).toBe(readFileSync('src/utils/__fixtures__/action-arguments.json', 'utf8').trim());
+  });
+
+  it('writes a key the way .NET writes it in a message', () => {
     expect(keyText(true)).toBe('True');
     expect(keyText(3)).toBe('3');
-    expect(wireKey(false)).toBe('False');
-    expect(wireKey(dateTime(2026, 1, 2))).toBe('2026-01-02T00:00:00');
   });
 });
 
