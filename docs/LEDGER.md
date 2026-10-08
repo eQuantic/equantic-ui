@@ -1667,6 +1667,21 @@ record of a release, the wiki's Upgrading page is the distillate.
   and curly-brace parsers and the SDK's strings, which search a char from a start, now throw where
   the same C# throws on the server. Proposed and archived through OpenSpec
   (`openspec/specs/transpiler-bcl`).
+- **2026-10-07 · A null-conditional answers null, and a method group is the delegate C# makes**: a
+  null-conditional read that is JavaScript's optional chain was `undefined` in the browser where C#
+  answers `null`, and the two part ways where the value is used: a parameter typed `T | null` refuses
+  it in the runtime's build, JSON drops the key, and a dictionary looking for null missed it
+  ([#633](https://github.com/eQuantic/equantic-ui/issues/633)). It answers null there now, behind a
+  guard too, and stays a bare chain where nothing can tell (a call that returns nothing, a statement,
+  the left of a `??`, the tail of another chain). A method group bound to a receiver that is a call ran
+  the call twice, `c.make().value.bind(c.make())` answering 4 where .NET answers 2
+  ([#619](https://github.com/eQuantic/equantic-ui/issues/619)); the bind is a template that reads the
+  receiver once. A group on `base` bound `super`, which JavaScript refuses at parse, and an extension's
+  group bound a member its receiver never has: the first binds `this` now, and the second goes to the
+  home its call goes to, so a BCL extension's group fails the build with EQ2004 instead of throwing in
+  the browser ([#655](https://github.com/eQuantic/equantic-ui/issues/655)). Two twins move,
+  `CodeDiffLayout` and `Spreadsheet`. Proposed and archived through OpenSpec
+  (`openspec/specs/transpiler-expressions`).
 - **2026-10-06 · A control's press and focus show on its boxes on every target**: the handoff presses
   its buttons with `scale(.985)` and there was no way to say it, and measuring the focus state found
   it dead on both targets ([#508](https://github.com/eQuantic/equantic-ui/issues/508), the second
