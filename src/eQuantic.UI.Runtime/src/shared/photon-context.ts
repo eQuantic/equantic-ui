@@ -267,3 +267,16 @@ export function ambientLoweringContext(): LoweringContext {
     componentContext: photonComponentContext(),
   };
 }
+
+/**
+ * The lowering context for a bridge given its OWN theme: that theme's tokens at the page's density,
+ * in the same ComponentContext the ambient one hands out. A bare `{ theme, typeScale }` carried no
+ * density, so a stateful component it expanded drew Comfortable in a Compact page, where the server,
+ * which builds every bridge at the request's density (#623), drew Compact.
+ */
+export function themedLoweringContext(theme: AppTheme): LoweringContext {
+  return {
+    textPrimary: theme.textPrimary,
+    componentContext: new ComponentContext(theme, 1, activeDensity),
+  };
+}

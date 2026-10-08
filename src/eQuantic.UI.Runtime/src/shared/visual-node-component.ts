@@ -11,7 +11,7 @@ import type { HtmlNode } from '../core/types';
 import type { ComponentChild, VisualNodeValue } from './nodes';
 import { ComponentInstanceStore, enterPass, exitPass } from './instance-store';
 import { lowerVisualNode } from './lowering';
-import { ambientLoweringContext } from './photon-context';
+import { ambientLoweringContext, themedLoweringContext } from './photon-context';
 import type { AppTheme } from './value-types';
 
 /**
@@ -43,12 +43,7 @@ export class VisualNodeComponent extends HtmlElement {
   }
 
   render(): HtmlNode {
-    const context = this.theme
-      ? {
-          textPrimary: this.theme.textPrimary,
-          componentContext: { theme: this.theme, typeScale: 1 },
-        }
-      : ambientLoweringContext();
+    const context = this.theme ? themedLoweringContext(this.theme) : ambientLoweringContext();
     // Reconciler pass join (W6 slice 2): inside a host page render this JOINS the page's pass —
     // the page owns retention (bridges are rebuilt every pass and cannot). Standalone (tests,
     // direct embedding) this instance's own store carries retention across its renders.
