@@ -5,8 +5,8 @@
 - [x] 1.1 The rule: an `Origin` that is not the app's own host or an allowed origin is refused, the
       opaque `null` included; without one, `Sec-Fetch-Site: cross-site` or `same-site` is refused;
       with neither, the request runs
-- [x] 1.2 The app's own host: the request's `Host`, or the first `X-Forwarded-Host`, host and port
-      compared with a scheme's default port left out
+- [x] 1.2 The app's own host: the request's `Host`, host and port compared with a scheme's default
+      port left out, and a raw `X-Forwarded-Host` never read
 - [x] 1.3 A refusal is a 403 with the endpoint's error body, logged at warning level, before the
       body is read
 - [x] 1.4 Check: `eQuantic.UI.Server.Tests`, a test per case of the rule, each asserting whether the

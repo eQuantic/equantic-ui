@@ -24,8 +24,8 @@ to write its own middleware comparing `Origin` and `Sec-Fetch-Site` with the hos
   `appsettings.json` under `EQuantic:ServerActions:AllowedOrigins`, or in `Program.cs` with
   `AddUI(options => options.AllowServerActionOrigins("https://admin.example.com"))`. An origin that
   is not a bare `scheme://host[:port]` stops the app at start, saying which one.
-- **The app's own host** is the request's `Host`, or the first `X-Forwarded-Host` a proxy sets, so an
-  app behind a proxy that keeps or forwards the public host needs no setting.
+- **The app's own host** is the request's `Host`, which ASP.NET Core's `UseForwardedHeaders` restores
+  behind a proxy the app trusts. A raw `X-Forwarded-Host` is never read.
 
 ## Parts reached
 

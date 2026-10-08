@@ -1727,11 +1727,11 @@ record of a release, the wiki's Upgrading page is the distillate.
   request came from, and the endpoint read a body whatever its content type, so another site's page
   could post a "simple" request, with no CORS preflight, and an anonymous action ran for it as for the
   app's own page ([#678](https://github.com/eQuantic/equantic-ui/issues/678), met on Cura). The endpoint
-  answers 403 before reading anything when the `Origin` is neither the app's host (or its first
-  `X-Forwarded-Host`, host and port compared) nor an allowed origin, `null` included, or, with no
+  answers 403 before reading anything when the `Origin` is neither the app's host (host and port
+  compared, a raw `X-Forwarded-Host` never read) nor an allowed origin, `null` included, or, with no
   `Origin`, when `Sec-Fetch-Site` says `cross-site` or `same-site`. An app allows origins in
   `EQuantic:ServerActions:AllowedOrigins` or with `AllowServerActionOrigins`, and a malformed one stops
-  it at start. 11 of the 31 server cases fail on the base, the refusals and the start-up check; in a
+  it at start. 12 of the 31 server cases fail on the base, the refusals and the start-up check; in a
   browser, a `text/plain` post from `localhost` to `127.0.0.1` is refused in 1 ms and the same post from
   the page's own origin runs. Proposed and archived through OpenSpec (`openspec/specs/server-actions`).
 

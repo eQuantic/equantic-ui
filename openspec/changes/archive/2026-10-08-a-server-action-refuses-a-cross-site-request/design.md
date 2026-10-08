@@ -4,7 +4,7 @@
 
 Flutter has no server and no endpoint of its own, so `docs/FLUTTER-PARITY.md` has no row for this.
 The frameworks that do have server actions answer it the same way: Next.js compares a Server
-Action's `Origin` with its `Host` (or `X-Forwarded-Host`) and allows `serverActions.allowedOrigins`,
+Action's `Origin` with its `Host` and allows `serverActions.allowedOrigins`,
 and SvelteKit checks the origin of a form action (`csrf.checkOrigin`). ASP.NET Core's own answer for
 forms is an antiforgery token, which needs a token in every page and every request. The SDK writes
 both ends of the call, but a token would have to be minted per session, rendered into the page and
@@ -27,10 +27,11 @@ scheme would refuse every action behind it.
 
 ## The app's own host
 
-It is the request's `Host`, or the first value of `X-Forwarded-Host` when a proxy set one. A
-forwarded host cannot be used to forge: a browser sends it on a request from another site only after
-a CORS preflight, which the action endpoint never answers. An app whose proxy rewrites `Host` and sets
-no forwarded host lists its public origin instead.
+It is the request's `Host`. Behind a proxy that rewrites it, ASP.NET Core's `UseForwardedHeaders`
+restores it from the proxies the app trusts, which is .NET's own answer and the only safe one: the raw
+`X-Forwarded-Host` is never read, since a site the app's CORS policy lets through a preflight could
+write its own host into it (found by the self-review). An app that cannot use the forwarded headers
+lists its public origin instead.
 
 ## Configuration
 
