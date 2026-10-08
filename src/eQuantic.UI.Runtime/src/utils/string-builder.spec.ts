@@ -200,5 +200,61 @@ describe('StringBuilder — capacity, indexer, length, equality and copy', () =>
       'Either offset did not refer to a position in the string, or there is an insufficient length of destination character array.',
     );
   });
+
+  // Each measured on .NET 10 (#679's review): the room an insert or a replace opens, the refusals in
+  // .NET's order, and the maximum checked only where a block is opened.
+  it('opens a chunk of at least 16 for an insert or a replace, as .NET does', () => {
+    const inserted = stringBuilder(5).append('abcde');
+    inserted.insert(0, 'x');
+    inserted.clear();
+    expect(inserted.capacity).toBe(16);
+    const replaced = stringBuilder(5).append('abcde');
+    replaced.replace('e', 'ff');
+    const before = replaced.capacity;
+    replaced.clear();
+    expect([before, replaced.capacity]).toEqual([6, 16]);
+    const removed = stringBuilder('a'.repeat(20));
+    removed.insert(5, 'x'.repeat(20));
+    removed.remove(3, 30);
+    expect([removed.length, removed.capacity]).toEqual([10, 23]);
+  });
+
+  it('lets text that fits the last chunk past MaxCapacity, as .NET does', () => {
+    const b = stringBuilder(16, 20).append('x'.repeat(17));
+    const capacity = b.capacity;
+    b.append('y'.repeat(10));
+    expect([capacity, b.length]).toEqual([32, 27]);
+  });
+
+  it('refuses in .NET order and words what the review found', () => {
+    const refusal = (act: () => unknown): string => {
+      try {
+        act();
+        return 'no throw';
+      } catch (e) {
+        return (e as Error).message;
+      }
+    };
+    expect(refusal(() => stringBuilder(5, 0))).toBe("Capacity exceeds maximum capacity. (Parameter 'capacity')");
+    expect(refusal(() => stringBuilder(-1, 0))).toBe(
+      "maxCapacity ('0') must be a non-negative and non-zero value. (Parameter 'maxCapacity')\nActual value was 0.",
+    );
+    expect(refusal(() => stringBuilder('abc', 2, 5, 0))).toBe(
+      "Index and length must refer to a location within the string. (Parameter 'length')",
+    );
+    expect(refusal(() => stringBuilder('abc', -1, 1, 0))).toBe(
+      "startIndex ('-1') must be a non-negative value. (Parameter 'startIndex')\nActual value was -1.",
+    );
+    expect(refusal(() => stringBuilder('12').copyTo(5, ['-'], 0, 2))).toBe(
+      'Either offset did not refer to a position in the string, or there is an insufficient length of destination character array.',
+    );
+    expect(refusal(() => stringBuilder(4, 8).append('1234').insert(0, '56789'))).toBe(
+      "capacity was less than the current size. (Parameter 'requiredLength')",
+    );
+    expect(refusal(() => stringBuilder(4, 8).append('1234').insert(0, '56789', 2))).toBe(
+      'Insufficient memory to continue the execution of the program.',
+    );
+    expect(refusal(() => stringBuilder().append('x', 2147483647))).toBe('Array dimensions exceeded supported range.');
+  });
 });
 

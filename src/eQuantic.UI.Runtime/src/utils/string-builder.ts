@@ -26,11 +26,15 @@
  */
 
 import { exception } from './exceptions';
-import { INDEX_AT_MOST_LENGTH, outOfRange, requireNonNegative } from './string-statics';
+import { INDEX_AND_LENGTH, INDEX_AT_MOST_LENGTH, outOfRange, requireNonNegative } from './string-statics';
 
 const DEFAULT_CAPACITY = 16;
 const MAX_CHUNK = 8000;
 const MAX_CAPACITY = 2147483647;
+/** The longest array of chars .NET allocates (`Array.MaxLength`). */
+const ARRAY_MAX = 0x7fffffc7;
+const ARRAY_DIMENSIONS = 'Array dimensions exceeded supported range.';
+const INSUFFICIENT_MEMORY = 'Insufficient memory to continue the execution of the program.';
 /** An insert goes in place only in a chunk holding at most this many characters, as .NET's MakeRoom. */
 const SMALL_CHUNK = 2 * DEFAULT_CAPACITY;
 
@@ -38,6 +42,21 @@ const SMALL_CHUNK = 2 * DEFAULT_CAPACITY;
 interface Chunk {
   size: number;
   used: number;
+}
+
+function outOfMemory(message: string): Error {
+  return exception('System.OutOfMemoryException', message);
+}
+
+/** `text` `count` times, and .NET's OutOfMemoryException where the browser's string cannot hold it,
+ *  in place of JavaScript's RangeError, which no catch of a .NET exception would see. */
+function repeated(text: string, count: number): string {
+  try {
+    return text.repeat(count);
+  } catch (error) {
+    if (error instanceof RangeError) throw outOfMemory(INSUFFICIENT_MEMORY);
+    throw error;
+  }
 }
 
 function stringify(value: unknown): string {
@@ -82,8 +101,7 @@ export class StringBuilder {
     if (value > this.max) throw outOfRange('value', 'capacity was less than the current size.');
     const delta = value - this.value.length;
     if (delta > 0) {
-      this.grew(delta, 'repeatCount');
-      this.value += '\0'.repeat(delta);
+      this.appendRepeated('\0', delta, 'repeatCount');
     } else if (delta < 0) {
       this.cut(value);
       this.value = this.value.slice(0, value);
@@ -149,15 +167,17 @@ export class StringBuilder {
     if (destination == null) throw nullValue('destination');
     requireNonNegative('count', count);
     requireNonNegative('destinationIndex', destinationIndex);
-    if (sourceIndex < 0 || sourceIndex > this.value.length) throw outOfRange('sourceIndex', INDEX_AT_MOST_LENGTH);
-    if (sourceIndex > this.value.length - count) {
-      throw exception('System.ArgumentException', 'Source string was not long enough. Check sourceIndex and count.');
-    }
+    // The destination's room first: .NET's char[] overload checks it before the span overload it
+    // hands the rest to checks the source.
     if (destinationIndex > destination.length - count) {
       throw exception(
         'System.ArgumentException',
         'Either offset did not refer to a position in the string, or there is an insufficient length of destination character array.',
       );
+    }
+    if (sourceIndex < 0 || sourceIndex > this.value.length) throw outOfRange('sourceIndex', INDEX_AT_MOST_LENGTH);
+    if (sourceIndex > this.value.length - count) {
+      throw exception('System.ArgumentException', 'Source string was not long enough. Check sourceIndex and count.');
     }
     for (let i = 0; i < count; i++) destination[destinationIndex + i] = this.value[sourceIndex + i];
   }
@@ -171,7 +191,7 @@ export class StringBuilder {
     if (startOrCount === undefined) return this.appendText(stringify(value), 'valueCount');
     if (count === undefined) {
       requireNonNegative('repeatCount', startOrCount);
-      return this.appendText(stringify(value).repeat(startOrCount), 'repeatCount');
+      return this.appendRepeated(stringify(value), startOrCount, 'repeatCount');
     }
     const startIndex = startOrCount;
     requireNonNegative('startIndex', startIndex);
@@ -214,7 +234,12 @@ export class StringBuilder {
     if (count !== undefined) requireNonNegative('count', count);
     this.requireIndex(index);
     const text = stringify(value);
-    return this.insertText(index, count === undefined ? text : text.repeat(count));
+    if (count === undefined) return this.insertText(index, text);
+    if (text.length === 0 || count === 0) return this;
+    // .NET counts what the copies need before it makes room for them, and past the maximum it is out
+    // of memory there, where a single insert is refused as too long.
+    if (text.length * count > this.max - this.value.length) throw outOfMemory(INSUFFICIENT_MEMORY);
+    return this.insertText(index, repeated(text, count));
   }
 
   /** `Insert(index, char[])` and `Insert(index, char[], startIndex, charCount)`. */
@@ -275,16 +300,30 @@ export class StringBuilder {
     }
     const replacement = newValue ?? '';
     const delta = replacement.length - oldValue.length;
+    // The matches, each with the chunk it starts in: .NET scans chunk by chunk and replaces a chunk's
+    // matches together (ReplaceAllInChunk).
+    const groups: { chunk: number; count: number }[] = [];
     let text = '';
     let from = start;
-    let shift = 0;
     for (let at = this.value.indexOf(oldValue, start); at >= 0 && at + oldValue.length <= end; at = this.value.indexOf(oldValue, at + oldValue.length)) {
       text += this.value.slice(from, at) + replacement;
       from = at + oldValue.length;
-      if (delta > 0) this.chunks.splice(this.chunkAt(at + shift), 0, { size: delta, used: delta });
-      else if (delta < 0) this.taken(at + shift, -delta);
-      shift += delta;
+      const chunk = this.chunkAt(at);
+      const group = groups[groups.length - 1];
+      if (group?.chunk === chunk) group.count++;
+      else groups.push({ chunk, count: 1 });
     }
+    const matches = groups.reduce((sum, group) => sum + group.count, 0);
+    if (delta > 0 && this.value.length + delta * matches > this.max) {
+      throw outOfRange('requiredLength', 'capacity was less than the current size.');
+    }
+    // Right to left, so a chunk opened before one group leaves the indices of the groups before it.
+    for (let i = groups.length - 1; i >= 0; i--) {
+      const total = delta * groups[i].count;
+      if (total > 0) this.chunks.splice(groups[i].chunk, 0, { size: Math.max(total, DEFAULT_CAPACITY), used: total });
+      else if (total < 0) this.takenFrom(groups[i].chunk, -total);
+    }
+    this.dropEmpty();
     this.value = this.value.slice(0, start) + text + this.value.slice(from);
     return this;
   }
@@ -313,29 +352,53 @@ export class StringBuilder {
   }
 
   private appendText(text: string, parameter: string): StringBuilder {
-    this.grew(text.length, parameter);
+    this.room(text.length, parameter);
+    this.grow(text.length);
     this.value += text;
+    return this;
+  }
+
+  /** `text` appended `count` times, refused before the text is built, as .NET refuses it. */
+  private appendRepeated(text: string, count: number, parameter: string): StringBuilder {
+    if (text.length === 0 || count === 0) return this;
+    this.room(text.length * count, parameter);
+    const built = repeated(text, count);
+    this.grow(built.length);
+    this.value += built;
     return this;
   }
 
   private insertText(index: number, text: string): StringBuilder {
     if (text.length === 0) return this;
+    // MakeRoom's own refusal, for any insert that would pass the maximum.
     if (this.value.length + text.length > this.max) {
-      throw outOfRange('valueCount', 'The length cannot be greater than the capacity.');
+      throw outOfRange('requiredLength', 'capacity was less than the current size.');
     }
     const at = this.chunkAt(index);
     const chunk = this.chunks[at];
     if (chunk.used <= SMALL_CHUNK && chunk.size - chunk.used >= text.length) chunk.used += text.length;
-    else this.chunks.splice(at, 0, { size: text.length, used: text.length });
+    else this.chunks.splice(at, 0, { size: Math.max(text.length, DEFAULT_CAPACITY), used: text.length });
     this.value = this.value.slice(0, index) + text + this.value.slice(index);
     return this;
   }
 
-  /** `count` characters added at the end: the last chunk filled, and one opened for what is left as
-   * large as the text so far, up to 8,000, as .NET's ExpandByABlock opens it. */
-  private grew(count: number, parameter: string): void {
-    if (count <= 0) return;
+  /**
+   * Whether `count` characters may be added at the end. What fits the last chunk's array goes in
+   * unchecked, as on .NET, past `MaxCapacity` too when an earlier block made the capacity larger;
+   * past it, .NET refuses a length over the maximum and a block longer than an array can be.
+   */
+  private room(count: number, parameter: string): void {
+    const last = this.chunks[this.chunks.length - 1];
+    const free = last.size - last.used;
+    if (count <= free) return;
     if (this.value.length + count > this.max) throw outOfRange(parameter, 'The length cannot be greater than the capacity.');
+    if (Math.max(count - free, Math.min(this.value.length + free, MAX_CHUNK)) > ARRAY_MAX) throw outOfMemory(ARRAY_DIMENSIONS);
+  }
+
+  /** `count` characters added at the end, `room` having allowed them: the last chunk filled, and one
+   * opened for what is left as large as the text so far, up to 8,000, as .NET's ExpandByABlock opens it. */
+  private grow(count: number): void {
+    if (count <= 0) return;
     const last = this.chunks[this.chunks.length - 1];
     const fits = Math.min(count, last.size - last.used);
     last.used += fits;
@@ -357,7 +420,8 @@ export class StringBuilder {
     this.chunks[at].used = length - offset;
   }
 
-  /** `count` characters taken out at `index`, from each chunk the range crosses. */
+  /** `count` characters taken out at `index`, from each chunk the range crosses; a chunk it empties is
+   *  unlinked, as .NET's Remove unlinks it. */
   private taken(index: number, count: number): void {
     let offset = 0;
     for (const chunk of this.chunks) {
@@ -367,6 +431,22 @@ export class StringBuilder {
       if (to > from) chunk.used -= to - from;
       offset += used;
     }
+    this.dropEmpty();
+  }
+
+  /** `count` characters taken from the chunk at `at`, and from the ones after it where a match ran on. */
+  private takenFrom(at: number, count: number): void {
+    for (let i = at; count > 0 && i < this.chunks.length; i++) {
+      const take = Math.min(count, this.chunks[i].used);
+      this.chunks[i].used -= take;
+      count -= take;
+    }
+  }
+
+  /** The chunks a removal emptied, unlinked; the last stays, since it holds the capacity. */
+  private dropEmpty(): void {
+    const last = this.chunks[this.chunks.length - 1];
+    this.chunks = this.chunks.filter((chunk) => chunk.used > 0 || chunk === last);
   }
 
   /** The chunk that holds `index`: the last whose text starts at or before it. */
@@ -399,18 +479,26 @@ export function stringBuilder(
   fourth?: number,
 ): StringBuilder {
   if (typeof first === 'number') {
-    requireNonNegative('capacity', first);
-    if (second === undefined) return new StringBuilder('', first);
+    if (second === undefined) {
+      requireNonNegative('capacity', first);
+      return new StringBuilder('', first);
+    }
+    // .NET's order: the capacity against the maximum, then the maximum, then the capacity's sign.
+    if (first > second) throw outOfRange('capacity', 'Capacity exceeds maximum capacity.');
     if (second < 1) {
       throw outOfRange('maxCapacity', `maxCapacity ('${second}') must be a non-negative and non-zero value.`, second);
     }
-    if (first > second) throw outOfRange('capacity', 'Capacity exceeds maximum capacity.');
+    requireNonNegative('capacity', first);
     return new StringBuilder('', first, second);
   }
   const text = first ?? '';
   if (third !== undefined && fourth !== undefined) {
+    const startIndex = second ?? 0;
     requireNonNegative('capacity', fourth);
-    return new StringBuilder(text.slice(second ?? 0, (second ?? 0) + third), fourth);
+    requireNonNegative('length', third);
+    requireNonNegative('startIndex', startIndex);
+    if (startIndex > text.length - third) throw outOfRange('length', INDEX_AND_LENGTH);
+    return new StringBuilder(text.slice(startIndex, startIndex + third), fourth);
   }
   if (second !== undefined) requireNonNegative('capacity', second);
   return new StringBuilder(text, second ?? 0);

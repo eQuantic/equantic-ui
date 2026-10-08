@@ -140,6 +140,10 @@ public class StringBuilderConformanceTests
     [InlineData("var b = new StringBuilder(\"12\"); b.Length = 4; var four = b.ToString().Replace(\"\\0\", \"0\"); b.Length = 1; return four + \",\" + b;")] // "1200,1"
     [InlineData("return new StringBuilder(\"12\").Equals(new StringBuilder(\"12\", 100)) + \",\" + new StringBuilder(\"12\").Equals((object)new StringBuilder(\"12\"));")] // "True,False"
     [InlineData("var a = new[] { '-', '-', '-', '-' }; new StringBuilder(\"12\").CopyTo(0, a, 1, 2); return new string(a);")] // "-12-"
+    [InlineData("var b = new StringBuilder(5).Append(\"abcde\"); b.Insert(0, \"x\"); b.Clear(); return b.Capacity;")]   // 16
+    [InlineData("var b = new StringBuilder(5).Append(\"abcde\"); b.Replace(\"e\", \"ff\"); var c = b.Capacity; b.Clear(); return c + \",\" + b.Capacity;")] // "6,16"
+    [InlineData("var b = new StringBuilder(new string('a', 20)); b.Insert(5, new string('x', 20)); b.Remove(3, 30); return b.Length + \",\" + b.Capacity;")] // "10,23"
+    [InlineData("var b = new StringBuilder(16, 20).Append(new string('x', 17)); var c = b.Capacity; b.Append(new string('y', 10)); return c + \",\" + b.Length;")] // "32,27"
     public void AMemberThePageReaches_AnswersAsDotNet(string statements)
     {
         Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
@@ -156,6 +160,12 @@ public class StringBuilderConformanceTests
     [InlineData("var a = new char[1]; try { new StringBuilder(\"12\").CopyTo(0, a, 0, 2); return \"no\"; } catch (ArgumentException e) { return e.Message; }")] // "Either offset did not refer to a position in the string, …"
     [InlineData("var a = new char[4]; try { new StringBuilder(\"12\").CopyTo(3, a, 0, 0); return \"no\"; } catch (ArgumentException e) { return e.Message; }")] // "Index was out of range. … (Parameter 'sourceIndex')"
     [InlineData("try { new StringBuilder(\"12\").AppendFormat(\"{1}\", 1); return \"no\"; } catch (FormatException e) { return e.Message; }")]            // "Index (zero based) must be …"
+    [InlineData("try { new StringBuilder(4, 8).Append(\"1234\").Insert(0, \"56789\"); return \"no\"; } catch (ArgumentOutOfRangeException e) { return e.Message; }")] // "capacity was less than the current size. (Parameter 'requiredLength')"
+    [InlineData("try { new StringBuilder(4, 8).Append(\"1234\").Insert(0, \"56789\", 2); return \"no\"; } catch (OutOfMemoryException e) { return e.Message; }")] // "Insufficient memory to continue the execution of the program."
+    [InlineData("try { var b = new StringBuilder(5, 0); return \"no\"; } catch (ArgumentOutOfRangeException e) { return e.Message; }")]                     // "Capacity exceeds maximum capacity. (Parameter 'capacity')"
+    [InlineData("var a = new char[1]; try { new StringBuilder(\"12\").CopyTo(5, a, 0, 2); return \"no\"; } catch (ArgumentException e) { return e.Message; }")] // "Either offset did not refer to a position…"
+    [InlineData("try { var b = new StringBuilder(\"abc\", 2, 5, 0); return \"no\"; } catch (ArgumentOutOfRangeException e) { return e.Message; }")]         // "Index and length must refer to a location within the string. (Parameter 'length')"
+    [InlineData("try { new StringBuilder().Append('x', int.MaxValue); return \"no\"; } catch (OutOfMemoryException e) { return e.Message; }")]            // "Array dimensions exceeded supported range."
     public void ARefusalOfAMemberThePageReaches_IsDotNets(string statements)
     {
         Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
@@ -169,6 +179,8 @@ public class StringBuilderConformanceTests
     [InlineData("try { var b = new StringBuilder(-1); return \"no\"; } catch (ArgumentOutOfRangeException e) { return e.Message; }")]                          // "capacity ('-1') …"
     [InlineData("try { var b = new StringBuilder(0, 0); return \"no\"; } catch (ArgumentOutOfRangeException e) { return e.Message; }")]                         // "maxCapacity ('0') must be a non-negative and non-zero value. …"
     [InlineData("var a = new char[4]; try { new StringBuilder(\"12\").CopyTo(0, a, 0, -1); return \"no\"; } catch (ArgumentOutOfRangeException e) { return e.Message; }")] // "count ('-1') …"
+    [InlineData("try { var b = new StringBuilder(-1, 0); return \"no\"; } catch (ArgumentOutOfRangeException e) { return e.Message; }")]                    // "maxCapacity ('0') …"
+    [InlineData("try { var b = new StringBuilder(\"abc\", -1, 1, 0); return \"no\"; } catch (ArgumentOutOfRangeException e) { return e.Message; }")]        // "startIndex ('-1') …"
     public void ARefusalOfAMemberThePageReachesOnTwoLines_IsDotNets(string statements)
     {
         Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
