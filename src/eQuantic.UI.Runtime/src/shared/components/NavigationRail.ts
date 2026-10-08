@@ -9,7 +9,7 @@ export class NavigationRail extends StatelessComponent {
     }
 
     set items(value) {
-        this.$items = (($v2470) => ($v2470 < 3 || $v2470 > 7))($eq.collections.count(value)) ? $eq.exceptions.raise($eq.exceptions.create(['System.ArgumentException', 'System.SystemException', 'System.Exception'], 'NavigationRail takes 3-7 destinations (spec B4): 2 → Tabs, 8+ → Drawer.', 'Items')) : value;
+        this.$items = (($v2470) => ($v2470 < 3 || $v2470 > 7))($eq.collections.count(value)) ? $eq.exceptions.raise($eq.exceptions.create(['System.ArgumentException', 'System.SystemException', 'System.Exception'], 'NavigationRail takes 3-7 destinations (spec B4): 2 → Tabs, 8+ → Drawer.', { paramName: 'Items' })) : value;
     }
 
     declare selected: number;

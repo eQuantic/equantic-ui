@@ -9,7 +9,7 @@ export class BottomNavigation extends StatelessComponent {
     }
 
     set items(value) {
-        this.$items = (($v1760) => ($v1760 < 3 || $v1760 > 5))($eq.collections.count(value)) ? $eq.exceptions.raise($eq.exceptions.create(['System.ArgumentException', 'System.SystemException', 'System.Exception'], 'BottomNavigation takes 3-5 destinations (spec B4): 2 → Tabs, 6+ → Drawer.', 'Items')) : value;
+        this.$items = (($v1760) => ($v1760 < 3 || $v1760 > 5))($eq.collections.count(value)) ? $eq.exceptions.raise($eq.exceptions.create(['System.ArgumentException', 'System.SystemException', 'System.Exception'], 'BottomNavigation takes 3-5 destinations (spec B4): 2 → Tabs, 6+ → Drawer.', { paramName: 'Items' })) : value;
     }
 
     declare selected: number;
