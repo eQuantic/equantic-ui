@@ -461,10 +461,15 @@ internal sealed partial class MeasureVisitor
     }
 
     /// <summary>
-    /// Spec S3 — the wrapping flex pass (CSS flex-wrap twin, v1 scope): children measure at their
-    /// NATURAL size and break onto a new line when the next one would overflow the main extent.
-    /// Each line arranges with the container's <see cref="FlexNode.Main"/>; within its line a child
-    /// follows <see cref="FlexNode.Cross"/> (or its own AlignSelf); lines stack with RunGap.
+    /// Spec S3 — the wrapping flex pass (the CSS flex-wrap twin), as it stands. A child breaks onto a
+    /// new line when the size it asks for would overflow the main extent: a Flexible's basis when it
+    /// declares one, and the size the child measures otherwise. That is CSS's hypothetical size for
+    /// every child but one: a WEIGHTED Flexible without a basis starts from zero in CSS
+    /// (<c>flex: n 1 0%</c>), and this pass breaks it at its child's natural size, so two of them
+    /// that share a line in a browser can take a line each here (#728). Each line is then resolved
+    /// on its own (below) and arranged with the container's <see cref="FlexNode.Main"/>; within its
+    /// line a child follows <see cref="FlexNode.Cross"/> (or its own AlignSelf); lines stack with
+    /// RunGap.
     /// </summary>
     private LayoutNode MeasureFlexWrapped(FlexNode flex, LayoutConstraints constraints, LayoutContext ctx, string path)
     {
@@ -482,12 +487,13 @@ internal sealed partial class MeasureVisitor
             : !float.IsPositiveInfinity(mainMax) ? mainMax - padMain
             : float.PositiveInfinity;
 
-        // Measure every child at its HYPOTHETICAL main size — its basis when it declares one, its
-        // natural size otherwise. This is the number the line breaker works from, exactly as CSS
-        // does: a pane with a basis of 440 asks for 440 whatever its content happens to measure, so
-        // two of them share a line while there is room for both and take a line each when there is
-        // not. A basis of 0 (the default) reproduces the old behaviour, where a Flexible simply
-        // degraded to its child.
+        // Measure every child at the size the line breaker works from: its basis when it declares
+        // one, its natural size otherwise. With a basis that is CSS's hypothetical size exactly: a
+        // pane with a basis of 440 asks for 440 whatever its content happens to measure, so two of
+        // them share a line while there is room for both and take a line each when there is not.
+        // Without one it is CSS's for every child but a WEIGHTED Flexible, which CSS starts from
+        // zero (`flex: n 1 0%`) and this starts from its child's natural size, the v1 behaviour in
+        // which a Flexible simply degraded to its child (#728).
         var measured = new List<LayoutNode>(flex.Children.Count);
         var sources = new List<VisualNode>(flex.Children.Count);
         var hypothetical = new List<float>(flex.Children.Count);
@@ -548,9 +554,12 @@ internal sealed partial class MeasureVisitor
 
         // Resolve each LINE on its own — the second pass CSS makes, and the piece that was missing.
         // Leftover goes to the growers by weight; an overflowing line is taken back from the
-        // shrinkers weighted by basis (as CSS scales it) and never past the min-content floor the
-        // engine already computes. A child whose main size actually moved is measured again, so its
-        // text re-wraps and its cross size is the one it will really occupy.
+        // shrinkers weighted by basis (as CSS scales it), never past the min-content floor the
+        // engine already computes. That floor is this pass's and not the web's: the web writes every
+        // Flexible `min-width: 0`, so a browser takes a shrinking one past its child's min-content,
+        // and a Flexible around a 400-wide box in a wrapping row of 300 is 300 there and 400 here.
+        // A child whose main size actually moved is measured again, so its text re-wraps and its
+        // cross size is the one it will really occupy.
         if (!float.IsPositiveInfinity(mainAvail))
         {
             for (var l = 0; l < lines.Count; l++)

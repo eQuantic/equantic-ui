@@ -47,11 +47,18 @@ public abstract class FlexNode : VisualNode, IEnumerable<VisualNode>
 
     /// <summary>
     /// Spec S3 flow wrapping (the CSS <c>flex-wrap: wrap</c> twin): children that overflow the main
-    /// extent break onto the next line. A child breaks against its hypothetical size: a
-    /// <see cref="Flexible"/>'s basis when it declares one, zero for a weighted Flexible that declares
-    /// none, and its natural size otherwise. Each line is then resolved on its own: the line's
-    /// leftover goes to its Flexibles by weight, and an overflowing line is taken back from its
-    /// shrinkers, weighted by basis and never past the min-content floor.
+    /// extent break onto the next line. The contract is CSS's, and the web realizes it as written. A
+    /// child breaks against its hypothetical size: a <see cref="Flexible"/>'s basis when it declares
+    /// one, zero for a weighted Flexible that declares none, and its natural size otherwise. Each line
+    /// is then resolved on its own: its leftover goes to its Flexibles by weight, and an overflow is
+    /// taken back from them by shrink times basis, as far as nothing, because a Flexible's minimum
+    /// width is zero.
+    /// <para>
+    /// Photon does not follow the contract in two places yet. It breaks a weighted Flexible without
+    /// a basis at its natural size, so two that share a line in a browser can take a line each there
+    /// (#728). And it stops a shrinking Flexible at its child's min-content, where a browser lets the
+    /// item shrink past it and the child overflow it.
+    /// </para>
     /// </summary>
     public bool Wrap { get; init; }
 
