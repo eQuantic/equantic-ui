@@ -2697,14 +2697,14 @@ the pill's 40 down.
 
 - **Component**: `src/eQuantic.UI.Primitives/Nodes/Box.cs`
 - **Handoff**: Pointer — Inert — arrow cursor, no hover, right-click falls through. A Box gains pointer states only by composing Pressable.
-- **Code**: A bare Box carries three pointer facilities of its own: Hover and Focus style diffs (src/eQuantic.UI.Primitives/Nodes/BoxStyle.cs) and Cursor. The web realizer lowers them to :hover/:focus-visible rules and a cursor declaration (WebLoweringVisitor.Containers.cs:717 LowerBox, 1324-1333) and Photon registers a HoverRegion and a CursorRegion for the box (EmitVisitor.Chrome.cs:16, 89) — no Pressable involved.
+- **Code**: A bare Box carries two pointer facilities of its own: a Hover style diff and a Cursor (src/eQuantic.UI.Primitives/Nodes/BoxStyle.cs). The web realizer lowers them to the box's own :hover rule and a cursor declaration (WebLoweringVisitor.Containers.cs:740-744 LowerBox; WebLoweringVisitor.Containers.cs:709 LowerBox) and Photon registers a HoverRegion and a CursorRegion for the box (EmitVisitor.Chrome.cs:100-102 EmitBoxChrome; EmitVisitor.Chrome.cs:18-19 EmitBoxChrome) — no Pressable involved. Its Focus and Pressed diffs are not facilities of its own: a box never takes focus, so they apply only while the Pressable around it is focused or pressed (BoxStyle.cs:156-162 BoxStyle.Focus), through the selector `.eq-pressable:focus-visible .<class>` on the web (StyleAtomizer.cs:252 StyleSink.StateSelector) and the control's state on Photon (EmitVisitor.Chrome.cs:382-387 EffectiveStyle).
 - **Evidence**:
 
   ```
-  public StyleDiff? Hover { get; init; }
-  public StyleDiff? Focus { get; init; }
-  public StyleDiff? Pressed { get; init; }
-  public PointerCursor Cursor { get; init; }
+  BoxStyle.cs:154  public StyleDiff? Hover { get; init; }
+  BoxStyle.cs:176  public PointerCursor Cursor { get; init; }
+  BoxStyle.cs:157  /// Spec S5: style DIFF applied while the CONTROL this box is inside has keyboard focus (the
+  StyleAtomizer.cs:252  ControlFocus => $".eq-pressable:focus-visible .{className}",
   ```
 
 ### A1 Box · missing-feature · **unverified**
