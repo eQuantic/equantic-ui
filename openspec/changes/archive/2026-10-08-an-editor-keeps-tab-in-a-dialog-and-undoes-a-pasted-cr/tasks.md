@@ -17,4 +17,4 @@
 
 - [x] 3.1 The wiki's CodeEditor page, in English and Portuguese
 - [x] 3.2 One `docs/LEDGER.md` line citing both issues
-- [ ] 3.3 Archive this change before the merge
+- [x] 3.3 Archive this change before the merge
