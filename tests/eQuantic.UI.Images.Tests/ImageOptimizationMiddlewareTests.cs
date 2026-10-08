@@ -35,14 +35,12 @@ public class ImageOptimizationMiddlewareTests : IDisposable
         string? url = null,
         string? width = null,
         string? quality = null,
-        string accept = "image/webp,image/*",
-        string[]? formats = null)
+        string accept = "image/webp,image/*")
     {
         var options = new ImageOptimizationOptions
         {
             CacheDirectory = _cacheDir
         };
-        if (formats != null) options.Formats = formats;
 
         var services = new ServiceCollection();
         services.AddSingleton(options);
@@ -297,21 +295,5 @@ public class ImageOptimizationMiddlewareTests : IDisposable
         context.Response.StatusCode.Should().Be(200);
         context.Response.ContentType.Should().Be("image/gif");
         ((MemoryStream)context.Response.Body).ToArray().Should().Equal(TestImages.AnimatedGif());
-    }
-
-    [Fact]
-    public async Task HandleAsync_AFormatNoEncoderWrites_IsServedAsJpeg_AndLabelledSo()
-    {
-        // AVIF is a valid option and no encoder here writes it: the optimizer falls back to JPEG,
-        // and the response says JPEG rather than the format that was asked for.
-        var context = CreateHttpContext(
-            url: "/images/test.jpg", width: "640", accept: "image/avif,image/*",
-            formats: ["image/avif"]);
-
-        await ImageOptimizationMiddleware.HandleAsync(context);
-
-        context.Response.StatusCode.Should().Be(200);
-        context.Response.ContentType.Should().Be("image/jpeg");
-        TestImages.FormatOf(((MemoryStream)context.Response.Body).ToArray()).Should().Be(SKEncodedImageFormat.Jpeg);
     }
 }

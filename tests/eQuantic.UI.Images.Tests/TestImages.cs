@@ -34,6 +34,48 @@ internal static class TestImages
         return Encoded(bitmap, format);
     }
 
+    /// <summary>
+    /// A JPEG of four quadrants, each a whole number of the encoder's 16-pixel blocks so no block
+    /// mixes two colours, and encoded at quality 100.
+    /// </summary>
+    public static byte[] Quadrants(int width, int height, SKColor topLeft, SKColor topRight,
+        SKColor bottomLeft, SKColor bottomRight)
+    {
+        using var bitmap = new SKBitmap(width, height);
+        using (var canvas = new SKCanvas(bitmap))
+        {
+            var (w, h) = (width / 2f, height / 2f);
+            Fill(canvas, new SKRect(0, 0, w, h), topLeft);
+            Fill(canvas, new SKRect(w, 0, width, h), topRight);
+            Fill(canvas, new SKRect(0, h, w, height), bottomLeft);
+            Fill(canvas, new SKRect(w, h, width, height), bottomRight);
+        }
+        using var data = bitmap.Encode(SKEncodedImageFormat.Jpeg, 100)
+            ?? throw new InvalidOperationException("SkiaSharp writes no JPEG");
+        return data.ToArray();
+    }
+
+    /// <summary>A PNG of vertical stripes, <paramref name="stripe"/> columns wide, alternating two colours.</summary>
+    public static byte[] Stripes(int width, int height, int stripe, SKColor first, SKColor second)
+    {
+        using var bitmap = new SKBitmap(width, height);
+        for (var x = 0; x < width; x++)
+            for (var y = 0; y < height; y++)
+                bitmap.SetPixel(x, y, x / stripe % 2 == 0 ? first : second);
+        return Encoded(bitmap, SKEncodedImageFormat.Png);
+    }
+
+    /// <summary>The name of the colour nearest a pixel, among the four the quadrant images use.</summary>
+    public static string NameOf(SKColor pixel)
+    {
+        (string Name, SKColor Color)[] named =
+            [("red", SKColors.Red), ("lime", SKColors.Lime), ("blue", SKColors.Blue), ("yellow", SKColors.Yellow)];
+        return named.MinBy(n => Square(n.Color.Red - pixel.Red) + Square(n.Color.Green - pixel.Green)
+            + Square(n.Color.Blue - pixel.Blue)).Name;
+
+        static int Square(int value) => value * value;
+    }
+
     public static MemoryStream Stream(byte[] bytes) => new(bytes);
 
     /// <summary>The stored size, read from the header: no orientation applied.</summary>
@@ -133,6 +175,12 @@ internal static class TestImages
                 crc = (crc & 1) != 0 ? (crc >> 1) ^ 0xEDB88320u : crc >> 1;
         }
         return ~crc;
+    }
+
+    private static void Fill(SKCanvas canvas, SKRect rect, SKColor color)
+    {
+        using var paint = new SKPaint { Color = color };
+        canvas.DrawRect(rect, paint);
     }
 
     private static byte[] Encoded(SKBitmap bitmap, SKEncodedImageFormat format)

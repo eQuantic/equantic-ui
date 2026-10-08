@@ -148,20 +148,68 @@ public class ImageOptimizerTests
         TestImages.PixelAt(result, 320, 180).Should().Be(SKColors.Blue);
     }
 
-    [Fact]
-    public async Task OptimizeAsync_AppliesTheExifOrientation_BeforeItResizes()
+    // Stored 64 × 32 in four quadrants: red, lime / blue, yellow. Each EXIF orientation is the turn
+    // or mirror a viewer applies to show it, so the corners as displayed are known without Skia:
+    // 2 mirrors left to right, 3 turns half way, 4 mirrors top to bottom, 5 transposes, 6 turns a
+    // quarter clockwise, 7 transverses, 8 turns a quarter anticlockwise.
+    [Theory]
+    [InlineData(1, "red", "lime", "blue", "yellow")]
+    [InlineData(2, "lime", "red", "yellow", "blue")]
+    [InlineData(3, "yellow", "blue", "lime", "red")]
+    [InlineData(4, "blue", "yellow", "red", "lime")]
+    [InlineData(5, "red", "blue", "lime", "yellow")]
+    [InlineData(6, "blue", "red", "yellow", "lime")]
+    [InlineData(7, "yellow", "lime", "blue", "red")]
+    [InlineData(8, "lime", "yellow", "red", "blue")]
+    public async Task OptimizeAsync_AppliesEveryExifOrientation_ToThePixels(
+        ushort orientation, string topLeft, string topRight, string bottomLeft, string bottomRight)
     {
-        // Stored 40 × 20, red on the left, with orientation 6: a camera held upright, whose
-        // picture is shown turned a quarter clockwise, 20 × 40 with red on top. The encoders
-        // write no EXIF, so the turn has to be in the pixels.
-        var jpeg = TestImages.Halves(40, 20, SKColors.Red, SKColors.Blue, SKEncodedImageFormat.Jpeg);
-        using var source = TestImages.Stream(TestImages.WithOrientation(jpeg, 6));
+        // The encoders write no EXIF, so the turn has to be in the pixels.
+        var jpeg = TestImages.Quadrants(64, 32, SKColors.Red, SKColors.Lime, SKColors.Blue, SKColors.Yellow);
+        using var source = TestImages.Stream(TestImages.WithOrientation(jpeg, orientation));
 
         var result = await _optimizer.OptimizeAsync(source, 640, 100, "image/png");
 
-        TestImages.SizeOf(result).Should().Be((20, 40));
-        TestImages.PixelAt(result, 10, 5).Red.Should().BeGreaterThan(200, "the stored left edge is the displayed top");
-        TestImages.PixelAt(result, 10, 35).Blue.Should().BeGreaterThan(200, "the stored right edge is the displayed bottom");
+        var (width, height) = TestImages.SizeOf(result);
+        (width, height).Should().Be(orientation >= 5 ? (32, 64) : (64, 32));
+        TestImages.NameOf(TestImages.PixelAt(result, width / 4, height / 4)).Should().Be(topLeft);
+        TestImages.NameOf(TestImages.PixelAt(result, width * 3 / 4, height / 4)).Should().Be(topRight);
+        TestImages.NameOf(TestImages.PixelAt(result, width / 4, height * 3 / 4)).Should().Be(bottomLeft);
+        TestImages.NameOf(TestImages.PixelAt(result, width * 3 / 4, height * 3 / 4)).Should().Be(bottomRight);
+    }
+
+    [Fact]
+    public async Task OptimizeAsync_AnExactHalving_KeepsItsEdgeSharp()
+    {
+        // 1280 to 640 is one halving that lands on the size. A cubic pass after it would mix
+        // 1/18 of each neighbour into every pixel, Mitchell not being interpolating.
+        using var source = TestImages.Stream(
+            TestImages.Halves(1280, 720, SKColors.Red, SKColors.Blue, SKEncodedImageFormat.Png));
+
+        var result = await _optimizer.OptimizeAsync(source, 640, 75, "image/png");
+
+        TestImages.SizeOf(result).Should().Be((640, 360));
+        TestImages.PixelAt(result, 319, 180).Should().Be(SKColors.Red);
+        TestImages.PixelAt(result, 320, 180).Should().Be(SKColors.Blue);
+    }
+
+    [Fact]
+    public async Task OptimizeAsync_AnExtremeBanner_IsAveragedAlongItsLength()
+    {
+        // 4000 × 2 in two-pixel stripes, asked for at 100 wide (1 high). Its height stops halving
+        // after one step; its length must keep halving, or one cubic step reads 4 of every 20
+        // columns and the stripes alias into red and blue patches.
+        using var source = TestImages.Stream(TestImages.Stripes(4000, 2, 2, SKColors.Red, SKColors.Blue));
+
+        var result = await _optimizer.OptimizeAsync(source, 100, 75, "image/png");
+
+        TestImages.SizeOf(result).Should().Be((100, 1));
+        for (var x = 0; x < 100; x++)
+        {
+            var pixel = TestImages.PixelAt(result, x, 0);
+            pixel.Red.Should().BeInRange(90, 165, $"column {x} averages red and blue");
+            pixel.Blue.Should().BeInRange(90, 165, $"column {x} averages red and blue");
+        }
     }
 
     [Fact]
@@ -230,6 +278,18 @@ public class ImageOptimizerTests
 
         width.Should().Be(1920);
         height.Should().Be(1080);
+    }
+
+    [Fact]
+    public async Task GetDimensionsAsync_ReadsOnlyTheHeader_AndLeavesTheStreamOpen()
+    {
+        // Measuring decodes nothing, so a size past the decode ceiling is answered.
+        using var source = TestImages.Stream(TestImages.PngHeaderOnly(20_000, 20_000));
+
+        var (width, height) = await _optimizer.GetDimensionsAsync(source);
+
+        (width, height).Should().Be((20_000, 20_000));
+        source.CanRead.Should().BeTrue("the caller owns the stream");
     }
 
     [Fact]

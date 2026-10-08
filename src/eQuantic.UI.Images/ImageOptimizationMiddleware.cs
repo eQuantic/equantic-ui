@@ -13,14 +13,6 @@ namespace eQuantic.UI.Images;
 /// </summary>
 public static class ImageOptimizationMiddleware
 {
-    // The extensions of the formats the optimizer reads (ImageFormats): a file of another format is
-    // refused here, before it is opened, and one whose bytes disagree with its name is refused by
-    // the optimizer.
-    private static readonly HashSet<string> AllowedExtensions = new(StringComparer.OrdinalIgnoreCase)
-    {
-        ".jpg", ".jpeg", ".png", ".gif", ".webp", ".bmp"
-    };
-
     /// <summary>
     /// Handles an image optimization request.
     /// Query params: url (source path), w (width), q (quality).
@@ -54,7 +46,7 @@ public static class ImageOptimizationMiddleware
 
         // Security: only allow image file extensions
         var ext = Path.GetExtension(urlParam);
-        if (string.IsNullOrEmpty(ext) || !AllowedExtensions.Contains(ext))
+        if (string.IsNullOrEmpty(ext) || !ImageFormats.IsReadableExtension(ext))
         {
             context.Response.StatusCode = 400;
             await context.Response.WriteAsync("Invalid url: must be an image file (.jpg, .png, .webp, etc.)");
@@ -147,8 +139,8 @@ public static class ImageOptimizationMiddleware
                 return;
             }
 
-            // Set response headers. The type is read from the bytes: an animated source comes back
-            // as it was, and a format no encoder writes comes back as JPEG.
+            // Set response headers. The type is read from the bytes, since an animated source comes
+            // back as it was.
             context.Response.ContentType = ImageFormats.ContentTypeOf(data) ?? outputFormat;
             context.Response.Headers["Cache-Control"] = $"public, max-age={options.CacheTtlSeconds}";
             context.Response.Headers["Vary"] = "Accept";

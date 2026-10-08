@@ -45,7 +45,7 @@ internal sealed class SourceImage : IDisposable
     {
         using var buffer = new MemoryStream();
         await source.CopyToAsync(buffer);
-        var data = SKData.CreateCopy(buffer.ToArray());
+        var data = SKData.CreateCopy(buffer.GetBuffer(), (ulong)buffer.Length);
         var codec = SKCodec.Create(data);
         try
         {
@@ -67,6 +67,24 @@ internal sealed class SourceImage : IDisposable
         }
     }
 
+    /// <summary>
+    /// The size a source is displayed at, read from its header alone. Nothing is decoded, so the
+    /// pixel ceiling does not apply, and the stream is read no further than the header and left
+    /// open for its owner.
+    /// </summary>
+    /// <exception cref="InvalidDataException">The source is not one of the formats read.</exception>
+    public static SKSizeI Measure(Stream source)
+    {
+        using SKStream stream = source.CanSeek
+            ? new SKManagedStream(source, disposeManagedStream: false)
+            : new SKFrontBufferedManagedStream(source, SKCodec.MinBufferedBytesNeeded, disposeUnderlyingStream: false);
+        using var codec = SKCodec.Create(stream);
+        if (codec is null || ImageFormats.ContentTypeOf(codec.EncodedFormat) is null)
+            throw new InvalidDataException($"The source is not a {ImageFormats.Names} image.");
+
+        return Displayed(codec.Info.Width, codec.Info.Height, codec.EncodedOrigin);
+    }
+
     /// <summary>The first frame's pixels in sRGB, oriented as displayed.</summary>
     /// <exception cref="InvalidDataException">The pixels could not be decoded.</exception>
     public SKImage Decode()
@@ -78,6 +96,8 @@ internal sealed class SourceImage : IDisposable
 
         using var bitmap = SKBitmap.Decode(_codec, info)
             ?? throw new InvalidDataException("The source's pixels could not be decoded.");
+        // Immutable, the image shares the decoded pixels; mutable, it would copy every one of them.
+        bitmap.SetImmutable();
 
         var origin = _codec.EncodedOrigin;
         if (origin == SKEncodedOrigin.TopLeft)
@@ -93,28 +113,49 @@ internal sealed class SourceImage : IDisposable
     }
 
     /// <summary>
-    /// The image at the given size: halved with a linear filter while it is twice the target or
-    /// more, which averages each 2 × 2 block, then brought to the size with Mitchell's cubic. A
-    /// cubic alone reads sixteen pixels however far it shrinks, and drops every other one.
+    /// The image at the given size, a new one the caller disposes. Each axis is halved with a
+    /// linear filter while it is twice its target or more, which averages each pair of pixels, and
+    /// the rest of the way is Mitchell's cubic: a cubic alone reads four pixels along an axis however
+    /// far it shrinks it, and drops every other one.
     /// </summary>
     public static SKImage Scaled(SKImage image, int width, int height)
     {
         var current = image;
+        SKImage? made = null;
         try
         {
-            while (current.Width / 2 >= width && current.Height / 2 >= height)
+            // An axis that cannot halve any more stays as it is while the other goes on, so a
+            // banner keeps averaging along its length after its height has stopped.
+            while (true)
             {
-                var halved = Drawn(current, current.Width / 2, current.Height / 2,
-                    new SKSamplingOptions(SKFilterMode.Linear));
-                if (!ReferenceEquals(current, image)) current.Dispose();
-                current = halved;
+                var halfWidth = current.Width / 2 >= width ? current.Width / 2 : current.Width;
+                var halfHeight = current.Height / 2 >= height ? current.Height / 2 : current.Height;
+                if (halfWidth == current.Width && halfHeight == current.Height)
+                    break;
+
+                var halved = Drawn(current, halfWidth, halfHeight, new SKSamplingOptions(SKFilterMode.Linear));
+                made?.Dispose();
+                made = current = halved;
+            }
+
+            if (current.Width == width && current.Height == height)
+            {
+                // Mitchell is not interpolating, so a pass at 1:1 would soften every pixel: the
+                // halving that landed on the size is the answer, and an image already at it is
+                // copied exactly.
+                if (made is null)
+                    return Drawn(current, width, height, new SKSamplingOptions(SKFilterMode.Nearest));
+
+                var result = made;
+                made = null;
+                return result;
             }
 
             return Drawn(current, width, height, new SKSamplingOptions(SKCubicResampler.Mitchell));
         }
         finally
         {
-            if (!ReferenceEquals(current, image)) current.Dispose();
+            made?.Dispose();
         }
     }
 
