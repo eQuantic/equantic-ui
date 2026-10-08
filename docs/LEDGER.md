@@ -1707,7 +1707,12 @@ record of a release, the wiki's Upgrading page is the distillate.
   per call (a selector that reassigned its own variable summed 201 where .NET sums 6), a part holding
   a lowering of its own was taken to read the function's `$x` and called `Other()` per element, a
   hole past `{9}` stayed text in a comparator of eleven keys, and a type parameter written `@class`
-  kept its spelling one level down and in a component's declaration. Proposed and archived through
+  kept its spelling one level down and in a component's declaration. The second round found a source
+  a selector reassigns and a string that quotes a lowering's name. The third found that a receiver
+  bound once was typed `any` in TypeScript, which left the callbacks a lowering hands it untyped
+  under a strict tsc: it is written bare now, typed by its argument, and a fixture the runtime's tsc
+  reads proves it. Found on the way: a grouping's accumulator has no type tsc accepts
+  ([#727](https://github.com/eQuantic/equantic-ui/issues/727)). Proposed and archived through
   OpenSpec (`openspec/specs/transpiler-names`, `openspec/specs/transpiler-sequences`).
 
 ## Retired documents
