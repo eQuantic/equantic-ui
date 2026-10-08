@@ -1670,11 +1670,19 @@ record of a release, the wiki's Upgrading page is the distillate.
   and on Photon, whose single-line pass used to drop a zero that reached it through an object
   initializer. A negative weight, basis or shrink, and a basis that is not finite, is refused where
   it is written, on the C# accessor and in the twin after its trailing config. Measured in Chrome,
-  pinned on each side, in the component parity fixture and on Photon, and proved both ways. Riding
+  pinned on each side, in the component parity fixture and on Photon, and proved both ways. The same
+  question, asked of the other flex numbers, found two more. A Spacer raised a weight below 1 to 1,
+  in C# and in the twin, and now refuses it where it is written, as Flutter asserts `flex > 0`
+  ([#691](https://github.com/eQuantic/equantic-ui/issues/691)). And the twin wrote a basis raw where
+  the server wrote it through `TokenCss.Px`, so a basis of 540.125, or the float 540.12 the twin
+  holds as 540.1199951171875, hydrated as another class; it goes through `px` now, the twin every
+  other length already used ([#692](https://github.com/eQuantic/equantic-ui/issues/692)). Riding
   along, the wiki stopped describing an Image that does not ship: SupportedFeatures names
   `eQuantic.UI.Images` and what it ships, and the email example's logo has the height `Image`
-  requires ([#684](https://github.com/eQuantic/equantic-ui/issues/684)). Proposed and archived
-  through OpenSpec (`openspec/specs/flex-layout`).
+  requires ([#684](https://github.com/eQuantic/equantic-ui/issues/684)); and its button is a Link
+  around a painted Box, because an email refuses a Button
+  ([#694](https://github.com/eQuantic/equantic-ui/issues/694)). Proposed and archived through
+  OpenSpec in two changes (`openspec/specs/flex-layout`).
 
 ## Retired documents
 

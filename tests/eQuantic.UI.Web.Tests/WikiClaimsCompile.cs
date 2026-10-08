@@ -162,9 +162,29 @@ public class WikiClaimsCompile
         story.Add(Flexible(Text("picture", TypeRole.BodyM), flex: 0, basis: 540));
         story.Add(Flexible(Text("story", TypeRole.BodyM), flex: 1, basis: 380));
 
-        // EmailRealizer, the welcome email's logo (#684): an Image takes its height as well as its
-        // width, and the page's example used to give the width alone.
-        _ = Image("https://cdn.example.com/logo.png", width: 132, height: 26);
+        // EmailRealizer, the welcome email, whole (#684, #694).
+        _ = new WelcomeEmail("Edgar");
+    }
+
+    /// <summary>
+    /// The EmailRealizer page's welcome email, as the page writes it, with an address standing in
+    /// for its generated <c>Assets.Logo</c>. Its logo gave a width and no height (#684), and its
+    /// button was a <c>Button</c> with an <c>href</c> the factory does not have, which an email
+    /// refuses anyway because a Button is a Pressable (#694): the bulletproof button is a Link
+    /// around a painted Box.
+    /// </summary>
+    private sealed class WelcomeEmail(string name) : Primitives.StatelessComponent
+    {
+        public override VisualNode Build(ComponentContext context) =>
+            Column(gap: Space.S4, children: [
+                Image("https://cdn.example.com/logo.png", width: 132, height: 26),
+                Text($"Welcome, {name}", TypeRole.Heading),
+                Link("https://example.com/confirm", Box(new BoxStyle
+                {
+                    Background = context.Theme.Colors(Variant.Primary).Base,
+                    Padding = EdgeInsets.Symmetric(Space.S4, Space.S2),
+                }, Text("Confirm your address", TypeRole.Label, context.Theme.Colors(Variant.Primary).OnBase))),
+            ]);
     }
 
     /// <summary>The theme the DesignSystem page shows, whose body is elided there as "the rest
