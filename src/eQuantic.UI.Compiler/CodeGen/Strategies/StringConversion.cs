@@ -62,12 +62,22 @@ public static class StringConversion
 
         // A value the browser holds as DATA (`[TwinIsData]`, `Color`) is a plain object, whose own
         // string is `[object Object]`. It reads as the record text .NET writes, from the members
-        // .NET prints, and a null one as nothing.
+        // .NET prints, and a null one as nothing. A member whose own text its type decides is
+        // written by that kind, as an interpolation hole writes it: a `Curve`'s points are floats,
+        // and JavaScript's digits for 0.2f are the double's, 0.20000000298023224 (#518). An
+        // integer's text is its digits whatever its width, so only a single is named, and a type
+        // with none passes no kinds at all.
         if (real is INamedTypeSymbol data && data.TwinIsData())
         {
             context.UsedHelpers.Add(Eq.Import);
-            var members = string.Join(", ", data.PrintedMembers().Select(member => $"'{member.Name}'"));
-            return JsExpr.Callish($"{Eq.RecordText}({text}, '{data.Name}', [{members}])");
+            var printed = data.PrintedMembers();
+            var members = string.Join(", ", printed.Select(member => $"'{member.Name}'"));
+            var kinds = printed.Select(member => FormatKind.Of(TwinData.TypeOf(member)) is { } kind && !FormatKind.IsInteger(kind)
+                ? $"'{kind}'"
+                : "null").ToList();
+            return JsExpr.Callish(kinds.All(kind => kind == "null")
+                ? $"{Eq.RecordText}({text}, '{data.Name}', [{members}])"
+                : $"{Eq.RecordText}({text}, '{data.Name}', [{members}], [{string.Join(", ", kinds)}])");
         }
 
         if (real.SpecialType is SpecialType.System_Double or SpecialType.System_Single)

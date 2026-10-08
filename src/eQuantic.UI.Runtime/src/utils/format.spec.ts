@@ -252,6 +252,22 @@ describe('recordText', () => {
     );
   });
 
+  // A curve's points are floats (#518): without its kind a member writes the double's digits.
+  it("writes a member by the number kind the compiler names, a single's own digits", () => {
+    const curve = { x1: Math.fround(0.2), y1: 0, x2: Math.fround(0.3), y2: 1.25 };
+    const members = ['X1', 'Y1', 'X2', 'Y2'];
+
+    expect(recordText(curve, 'Curve', members, ['single', 'single', 'single', 'single'])).toBe(
+      'Curve { X1 = 0.2, Y1 = 0, X2 = 0.3, Y2 = 1.25 }',
+    );
+    expect(recordText(curve, 'Curve', members)).toBe(
+      'Curve { X1 = 0.20000000298023224, Y1 = 0, X2 = 0.30000001192092896, Y2 = 1.25 }',
+    );
+    expect(recordText(curve, 'Curve', members, ['single', null, null, null])).toBe(
+      'Curve { X1 = 0.2, Y1 = 0, X2 = 0.30000001192092896, Y2 = 1.25 }',
+    );
+  });
+
   it('writes a record with no members, and nothing for a null value', () => {
     expect(recordText({}, 'Empty', [])).toBe('Empty { }');
     expect(recordText(null, 'Color', ['R'])).toBe('');
