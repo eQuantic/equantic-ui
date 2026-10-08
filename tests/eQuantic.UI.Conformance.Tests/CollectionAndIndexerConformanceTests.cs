@@ -82,6 +82,14 @@ public class CollectionAndIndexerConformanceTests
     [InlineData("return string.Join(\",\", new[] { \"a\", \"bb\", \"cc\" }.GroupBy(w => w.Length, w => w.ToUpper(), EqualityComparer<int>.Default).Select(g => string.Join(\"\", g)));")] // A,BBCC
     [InlineData("return string.Join(\",\", new[] { \"a\", \"bb\", \"cc\" }.GroupBy(w => w.Length, (k, g) => k + \":\" + g.Count(), EqualityComparer<int>.Default));")] // 1:1,2:2
     [InlineData("return string.Join(\",\", new[] { \"a\", \"bb\", \"cc\" }.GroupBy(w => w.Length, w => w[0], (k, g) => k + new string(g.ToArray()), EqualityComparer<int>.Default));")] // 1a,2bc
+    // GroupBy's arguments named and out of order: each in its own parameter, the comparer dropped. The
+    // first argument was taken for the key selector and the rest matched from the end.
+    [InlineData("return string.Join(\",\", new[] { \"a\", \"bb\", \"cc\" }.GroupBy(comparer: EqualityComparer<int>.Default, keySelector: w => w.Length).Select(g => g.Key + \":\" + g.Count()));")] // 1:1,2:2
+    [InlineData("return string.Join(\",\", new[] { \"a\", \"bb\", \"cc\" }.GroupBy(elementSelector: w => w.ToUpper(), keySelector: w => w.Length).Select(g => string.Join(\"\", g)));")] // A,BBCC
+    [InlineData("return string.Join(\",\", new[] { \"a\", \"bb\", \"cc\" }.GroupBy(resultSelector: (k, g) => k + \":\" + g.Count(), comparer: EqualityComparer<int>.Default, keySelector: w => w.Length));")] // 1:1,2:2
+    [InlineData("return string.Join(\",\", new[] { \"a\", \"bb\", \"cc\" }.GroupBy(comparer: EqualityComparer<int>.Default, resultSelector: (k, g) => k + new string(g.ToArray()), elementSelector: w => w[0], keySelector: w => w.Length));")] // 1a,2bc
+    // After a null-conditional, which rebuilds the call with copies of its arguments.
+    [InlineData("string[] words = new[] { \"a\", \"bb\", \"cc\" }; var g = words?.GroupBy(comparer: EqualityComparer<int>.Default, keySelector: w => w.Length); return string.Join(\",\", g.Select(x => x.Key + \":\" + x.Count()));")] // 1:1,2:2
     [InlineData("return new[] { \"a\", \"A\", \"a\" }.ToHashSet(StringComparer.Ordinal).Count;")]                                           // 2
     public void ALinqOperatorHandedTheDefaultsComparer_AnswersAsItDoesWithoutOne(string statements)
     {

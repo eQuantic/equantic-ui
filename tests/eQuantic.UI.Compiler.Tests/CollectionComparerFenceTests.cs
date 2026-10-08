@@ -32,6 +32,8 @@ public class CollectionComparerFenceTests
     [InlineData("var l = new[] { \"a\" }.ToLookup(w => w, w => w.Length, StringComparer.OrdinalIgnoreCase);")]
     [InlineData("var g = new[] { \"a\" }.GroupBy(w => w, StringComparer.OrdinalIgnoreCase);")]
     [InlineData("var x = new[] { \"a\" }.Distinct(StringComparer.OrdinalIgnoreCase);")]
+    // Named and written before the key selector, where it is the comparer that is refused (see below).
+    [InlineData("var g = new[] { \"a\" }.GroupBy(comparer: StringComparer.OrdinalIgnoreCase, keySelector: w => w);")]
     public void AComparerThatChangesEqualityIsRefused(string statement)
     {
         // The FENCE's refusal, and only it: a strategy that refuses the same construction again says the
@@ -59,6 +61,8 @@ public class CollectionComparerFenceTests
     [InlineData("var l = new[] { \"a\" }.ToLookup(w => w.Length, EqualityComparer<int>.Default);")]
     [InlineData("var g = new[] { \"a\" }.GroupBy(w => w, w => w.Length, (k, n) => k, StringComparer.Ordinal);")]
     [InlineData("var x = new[] { \"a\" }.Distinct((IEqualityComparer<string>)null);")]
+    // GroupBy's comparer named and written first: the key selector was refused as a comparer.
+    [InlineData("var g = new[] { \"a\" }.GroupBy(comparer: StringComparer.Ordinal, keySelector: w => w);")]
     public void AComparerThatAsksForWhatTheLoweringDoesPasses(string statement)
     {
         // No error at all, not merely no EQ2007: #443's refusal was EQ1004, which a check for the
@@ -66,9 +70,34 @@ public class CollectionComparerFenceTests
         ErrorsOf(statement).Should().BeEmpty();
     }
 
+    /// <summary>
+    /// A comparer named and written before GroupBy's key selector is refused where it is written, and the
+    /// key selector is not. The arguments after the first were matched to the parameters from the end, so
+    /// the key selector was the one refused as a comparer, and the comparer was converted as the key
+    /// selector (#578).
+    /// </summary>
+    [Fact]
+    public void ANamedComparerWrittenFirst_IsRefusedWhereItIsWritten()
+    {
+        var refusals = ErrorsAt("var g = new[] { \"a\" }.GroupBy(comparer: StringComparer.OrdinalIgnoreCase, keySelector: w => w);");
+
+        refusals.Should().ContainSingle().Which.Should().StartWith("EQ2007 at StringComparer.OrdinalIgnoreCase");
+    }
+
     /// <summary>Compiled with the framework referenced, so the constructor BINDS: the fence reads the
     /// parameter a comparer lands in, which a standalone parse cannot see.</summary>
-    private static IReadOnlyList<string> ErrorsOf(string statement)
+    private static IReadOnlyList<string> ErrorsOf(string statement) =>
+        Compile(statement).Errors.Select(error => error.Code).ToList();
+
+    /// <summary>Each error as its code and the source it is reported at, to the end of that line.</summary>
+    private static IReadOnlyList<string> ErrorsAt(string statement)
+    {
+        var (source, errors) = Compile(statement);
+        var lines = source.Split('\n');
+        return errors.Select(error => $"{error.Code} at {lines[error.Line - 1][(error.Column - 1)..]}").ToList();
+    }
+
+    private static (string Source, IReadOnlyList<CompilationError> Errors) Compile(string statement)
     {
         var source = $$"""
             using System;
@@ -93,9 +122,6 @@ public class CollectionComparerFenceTests
             new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
         var compiler = new ComponentCompiler();
         compiler.SetProjectCompilation(compilation);
-        return compiler.CompileSource(source, "Probe.cs")
-            .SelectMany(result => result.Errors)
-            .Select(error => error.Code)
-            .ToList();
+        return (source, compiler.CompileSource(source, "Probe.cs").SelectMany(result => result.Errors).ToList());
     }
 }

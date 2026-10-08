@@ -1,6 +1,6 @@
-using System.Collections.Immutable;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using Microsoft.CodeAnalysis.Operations;
 using eQuantic.UI.Compiler.CodeGen.Extensions;
 
 namespace eQuantic.UI.Compiler.CodeGen.Strategies.Linq;
@@ -11,8 +11,8 @@ namespace eQuantic.UI.Compiler.CodeGen.Strategies.Linq;
 /// with a <c>key</c> property attached, so a group works as a sequence (iterate, g.Select(…),
 /// g.Count()) AND exposes g.Key — matching .NET; groups stay in first-occurrence key order, as
 /// LINQ's do. The element selector transforms what goes INTO a group; the result selector maps
-/// each finished group through <c>(key, group)</c>. Which role an argument plays is read from the
-/// bound overload's parameter names, and from lambda arity where nothing binds. Keys group by the
+/// each finished group through <c>(key, group)</c>. Which role an argument plays is the parameter the
+/// bound tree hands it to, named or not, and from lambda arity where nothing binds. Keys group by the
 /// key type's equality (<see cref="LinqKeys"/>). A key comparer is the collection fence's to judge:
 /// one that asks for that equality is dropped, and any other has no translation and is refused (EQ2007),
 /// never dropped.
@@ -38,16 +38,19 @@ public class GroupByStrategy : IConversionStrategy
 
         if (args.Count == 0) return source;
 
-        var keySelector = context.Converter.ConvertExpression(args[0].Expression);
+        string? keySelector = null;
         string? elementSelector = null;
         string? resultSelector = null;
 
         var bound = context.SemanticHelper.GetSymbol(invocation) as IMethodSymbol;
-        var parameters = bound?.Parameters;
-        for (var i = 1; i < args.Count; i++)
+        var roles = Roles(invocation, context);
+        for (var i = 0; i < args.Count; i++)
         {
-            switch (Role(parameters, args.Count, i, args[i].Expression))
+            switch (roles[i])
             {
+                case "keySelector":
+                    keySelector = context.Converter.ConvertExpression(args[i].Expression);
+                    break;
                 case "elementSelector":
                     elementSelector = context.Converter.ConvertExpression(args[i].Expression);
                     break;
@@ -65,6 +68,7 @@ public class GroupByStrategy : IConversionStrategy
                     break;
             }
         }
+        if (keySelector is null) return context.Unhandled(invocation, "GroupBy without a key selector");
 
         var pushed = elementSelector is null ? "item" : $"({elementSelector})(item)";
         // A key that is an object here (a record, a date, a decimal) groups by its VALUE, as .NET's
@@ -82,26 +86,40 @@ public class GroupByStrategy : IConversionStrategy
             : $"{grouped}.map((g) => ({resultSelector})(g.key, g))";
     }
 
-    /// <summary>The role of the argument after the key selector. The bound overload names it;
-    /// without a binding the lambda's arity does — <c>(key, group)</c> is a result selector, a
-    /// one-parameter lambda an element selector, anything else a comparer.</summary>
-    private static string Role(ImmutableArray<IParameterSymbol>? parameters, int argCount, int index,
-        ExpressionSyntax argument)
+    /// <summary>
+    /// The role of each argument, by the position it is written at: the parameter the bound tree hands
+    /// it to, so a named argument written out of order plays its own part,
+    /// <c>GroupBy(comparer: c, keySelector: k)</c> included (#578). Read by position among the arguments
+    /// the bound tree names, as <see cref="LinqTableStrategy"/> reads a key comparer, so a call a
+    /// null-conditional rebuilt, whose arguments are copies, keeps its roles. The first argument was
+    /// always the key selector and the rest were matched to the parameters from the end, so a named
+    /// comparer was converted as the key selector and the key selector refused as a comparer. Without a
+    /// binding, the first is the key selector and the lambda's arity names the rest: <c>(key, group)</c>
+    /// is a result selector, a one-parameter lambda an element selector, anything else a comparer.
+    /// </summary>
+    private static IReadOnlyList<string> Roles(InvocationExpressionSyntax invocation, ConversionContext context)
     {
-        // Aligned from the END, so the reduced (receiver-less) and the static forms both map.
-        if (parameters is { } bound && bound.Length >= argCount
-            && bound[bound.Length - argCount + index].Name is ("elementSelector" or "resultSelector" or "comparer") and var name)
+        var args = invocation.ArgumentList.Arguments;
+        if (context.SemanticHelper.GetOperation(invocation) is IInvocationOperation call)
         {
-            return name;
+            var written = (context.SemanticHelper.Original(invocation) as InvocationExpressionSyntax)?.ArgumentList.Arguments ?? args;
+            var roles = new string?[args.Count];
+            foreach (var argument in call.Arguments)
+            {
+                if (argument is { Syntax: ArgumentSyntax syntax, Parameter.Name: var name }
+                    && written.IndexOf(syntax) is var at && at >= 0 && at < roles.Length)
+                    roles[at] = name;
+            }
+            if (roles.All(role => role is not null)) return Array.ConvertAll(roles, role => role!);
         }
 
-        return argument switch
+        return [.. args.Select((argument, at) => at == 0 ? "keySelector" : argument.Expression switch
         {
             SimpleLambdaExpressionSyntax => "elementSelector",
             ParenthesizedLambdaExpressionSyntax { ParameterList.Parameters.Count: 1 } => "elementSelector",
             ParenthesizedLambdaExpressionSyntax { ParameterList.Parameters.Count: 2 } => "resultSelector",
             _ => "comparer",
-        };
+        })];
     }
 
     public int Priority => 10;
