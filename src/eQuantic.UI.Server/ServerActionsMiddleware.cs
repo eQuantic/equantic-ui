@@ -9,6 +9,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Features;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 
 namespace eQuantic.UI.Server;
 
@@ -33,6 +34,7 @@ public class ServerActionsMiddleware
     private readonly IServerActionAuthorizationService _authorizationService;
     private readonly ILogger<ServerActionsMiddleware> _logger;
     private readonly HashSet<Assembly> _allowedAssemblies;
+    private readonly ServerActionOrigins _origins;
 
     private const string ActionsPath = "/api/_equantic/actions";
 
@@ -47,6 +49,7 @@ public class ServerActionsMiddleware
         IServiceProvider serviceProvider,
         IServerActionAuthorizationService authorizationService,
         UIOptions options,
+        IOptions<ServerActionsOptions> actions,
         ILogger<ServerActionsMiddleware> logger)
     {
         _next = next;
@@ -59,6 +62,7 @@ public class ServerActionsMiddleware
         // application's own (scanned) assemblies or an explicitly opted-in assembly.
         _allowedAssemblies = new HashSet<Assembly>(options.AssembliesToScan);
         _allowedAssemblies.UnionWith(options.AllowedDeserializationAssemblies);
+        _origins = new ServerActionOrigins(actions.Value.AllowedOrigins);
     }
 
     public async Task InvokeAsync(HttpContext context)
@@ -74,6 +78,18 @@ public class ServerActionsMiddleware
 
     private async Task HandleServerAction(HttpContext context)
     {
+        // A request another site's page sends is refused before anything of it is read (#678).
+        if (!_origins.Allows(context.Request))
+        {
+            _logger.LogWarning(
+                "Server Action request refused - it came from another site: Origin {Origin}, Sec-Fetch-Site {FetchSite}",
+                context.Request.Headers.Origin.ToString(),
+                context.Request.Headers["Sec-Fetch-Site"].ToString());
+            context.Response.StatusCode = StatusCodes.Status403Forbidden;
+            await WriteErrorResponse(context, "A request from another site cannot call a Server Action.");
+            return;
+        }
+
         // Validate Content-Length to prevent oversized payloads
         if (context.Request.ContentLength > MaxRequestBodySize)
         {
