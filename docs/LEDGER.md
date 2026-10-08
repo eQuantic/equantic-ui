@@ -1578,47 +1578,6 @@ record of a release, the wiki's Upgrading page is the distillate.
   megabytes that walked past the window, a month's delay that a browser's timer fired at once, and a
   default registration that was undefined. Proposed and archived through OpenSpec
   (`openspec/specs/code-completion`).
-- **2026-10-06 · The code editor shows its completion list**: the view half of the code editor's
-  slice 3 ([#297](https://github.com/eQuantic/equantic-ui/issues/297)). `CodeEditor` draws the list
-  at the word it completes, through the code surface and in the code's own coordinates
-  (`CodeSurface.Options`, `OptionsOrigin`, `HighlightedOption`): one line under the word with its
-  labels lined up with it, over the line when a page fits only there, as many rows as fit when
-  neither side holds one, and a page that follows the selection; each row is the entry's kind as a
-  letter, its label with what the word matched marked, and its detail, and the selected entry's
-  documentation shows once it is resolved. A press on a row accepts it while the code keeps the
-  keyboard (`Pressable.CanRequestFocus`, Flutter's `canRequestFocus`, in the declarative factory
-  too), and the list is the code input's listbox on the web and options after the code field on
-  Photon. `CodeEditor.Completions` says what an editor completes from: the language's words and the
-  document's unless it says otherwise. Found on the way and fixed: a bounded editor's code was as
-  tall as the file, so a press under it landed nowhere
-  ([#599](https://github.com/eQuantic/equantic-ui/issues/599)) and a short file left a list no room;
-  eqc wrote an enum member named `Value` as a read of an object nothing defines
-  ([#631](https://github.com/eQuantic/equantic-ui/issues/631)); and a helper class that takes the
-  build context named a type its module could not import, read an optional `typeScale` and called
-  `TypeStyle` measures its twin did not have
-  ([#632](https://github.com/eQuantic/equantic-ui/issues/632)). Reported: Photon lays a bordered
-  box's child over its border ([#629](https://github.com/eQuantic/equantic-ui/issues/629)), a dense
-  row's margin takes the presses of the row above it, under a finger and, since a pointer's target
-  keeps a 24dp floor, by 3dp under a pointer ([#630](https://github.com/eQuantic/equantic-ui/issues/630)),
-  and a null-conditional read is
-  `undefined` in the browser ([#633](https://github.com/eQuantic/equantic-ui/issues/633)). The
-  author's review found five defects and two holes in the net, each proved failing without its fix:
-  on Photon a press under a scrolled editor landed in its code, which ran past the view unclipped
-  (fields and sheets do the same, [#635](https://github.com/eQuantic/equantic-ui/issues/635));
-  `aria-expanded` sat on the code input, which ARIA does not allow on a textbox; the first build
-  wiped a provider an app added to the controller itself; a row longer than the list was cut
-  differently on each target; and the whole documentation was measured on every build. Copilot's
-  first round found three more: the documentation ran out of the view where the rows just fitted,
-  and now takes only the room they leave; a list of providers the parent changed in place never
-  handed what it gained; and turning an editor read-only left its list open. Its second round found
-  three in what it had not read before: a press under the code was measured from the last line, so a
-  diff's fillers after it went to the end instead of to that line; a row was cut by UTF-16 units,
-  splitting an emoji and leaving wide characters uncut, and is now cut by the cells the code's grid
-  gives each text element; and the editor took its providers out by equality, so one the app added
-  that equalled the editor's went in its place. Its third round found two more: every class module
-  imported the runtime's `BuildContext`, which an app's own class of that name then declared twice,
-  and the list measured all its entries on every arrow key. Proposed and archived through OpenSpec
-  (`openspec/specs/code-completion`, `openspec/specs/code-editor`).
 - **2026-10-06 · A target under a pointer keeps a 24dp floor**: under a mouse a target was its visual
   bounds, so a Checkbox or a Radio without a label was a 20dp target on Photon and on the web, under
   the 24 × 24 WCAG 2.2 SC 2.5.8 asks, and the cross-pin passed because both agreed on 20
@@ -1686,6 +1645,21 @@ record of a release, the wiki's Upgrading page is the distillate.
   and curly-brace parsers and the SDK's strings, which search a char from a start, now throw where
   the same C# throws on the server. Proposed and archived through OpenSpec
   (`openspec/specs/transpiler-bcl`).
+- **2026-10-07 · A null-conditional answers null, and a method group is the delegate C# makes**: a
+  null-conditional read that is JavaScript's optional chain was `undefined` in the browser where C#
+  answers `null`, and the two part ways where the value is used: a parameter typed `T | null` refuses
+  it in the runtime's build, JSON drops the key, and a dictionary looking for null missed it
+  ([#633](https://github.com/eQuantic/equantic-ui/issues/633)). It answers null there now, behind a
+  guard too, and stays a bare chain where nothing can tell (a call that returns nothing, a statement,
+  the left of a `??`, the tail of another chain). A method group bound to a receiver that is a call ran
+  the call twice, `c.make().value.bind(c.make())` answering 4 where .NET answers 2
+  ([#619](https://github.com/eQuantic/equantic-ui/issues/619)); the bind is a template that reads the
+  receiver once. A group on `base` bound `super`, which JavaScript refuses at parse, and an extension's
+  group bound a member its receiver never has: the first binds `this` now, and the second goes to the
+  home its call goes to, so a BCL extension's group fails the build with EQ2004 instead of throwing in
+  the browser ([#655](https://github.com/eQuantic/equantic-ui/issues/655)). Two twins move,
+  `CodeDiffLayout` and `Spreadsheet`. Proposed and archived through OpenSpec
+  (`openspec/specs/transpiler-expressions`).
 - **2026-10-06 · A control's press and focus show on its boxes on every target**: the handoff presses
   its buttons with `scale(.985)` and there was no way to say it, and measuring the focus state found
   it dead on both targets ([#508](https://github.com/eQuantic/equantic-ui/issues/508), the second
@@ -1729,6 +1703,67 @@ record of a release, the wiki's Upgrading page is the distillate.
   1970 toward the epoch; it answers a BigInt cut as .NET cuts it now. Found on the way: the date
   constructors past the second ([#606](https://github.com/eQuantic/equantic-ui/issues/606)).
   Proposed and archived through OpenSpec (`openspec/specs/runtime-dates`).
+- **2026-10-07 · An exception's message is composed as .NET composes it**: a framework exception's
+  arguments were read by position, so `new ArgumentNullException(nameof(x)).Message` was the
+  parameter's name, a parameter's name never reached a message and a constructor with no message gave
+  an empty one ([#558](https://github.com/eQuantic/equantic-ui/issues/558)). eqc binds them by their
+  parameters and reads the text .NET writes where no message, or a null one, was given from .NET
+  itself, for the constructor the call binds, where a table gave a `TaskCanceledException` its base's.
+  The runtime composes the message .NET writes: ` (Parameter 'x')`, and the actual value and a disposed
+  object's name on lines of their own, with `ParamName`, `ActualValue`, `InnerException` and
+  `TypeName` reading what the constructor took, an aggregate's inner messages and a type initializer's
+  sentence included. Proposed and archived through OpenSpec (`openspec/specs/transpiler-exceptions`).
+- **2026-10-07 · A builder's counted and ranged overloads write what .NET writes**: the runtime's
+  `StringBuilder` had one shape per method, so `Append('x', 3)` appended one `x`, and
+  `Append(text, start, count)`, `Insert(i, text, count)`, `Replace` over a range and
+  `ToString(start, length)` took the whole value, a `char[]` written as JavaScript's text of an array
+  and a null as `null` ([#650](https://github.com/eQuantic/equantic-ui/issues/650)). The builder takes
+  each overload shape by its count of arguments, the `char[]` overloads are methods of their own that
+  eqc names from the overload the call binds, and each refusal is .NET's, in .NET's order. 45 of the
+  46 new conformance cases fail on the base. The members the runtime does not have are
+  [#679](https://github.com/eQuantic/equantic-ui/issues/679). Proposed and archived through OpenSpec
+  (`openspec/specs/transpiler-bcl`).
+- **2026-10-06 · The code editor shows its completion list**: the view half of the code editor's
+  slice 3 ([#297](https://github.com/eQuantic/equantic-ui/issues/297)). `CodeEditor` draws the list
+  at the word it completes, through the code surface and in the code's own coordinates
+  (`CodeSurface.Options`, `OptionsOrigin`, `HighlightedOption`): one line under the word with its
+  labels lined up with it, over the line when a page fits only there, as many rows as fit when
+  neither side holds one, and a page that follows the selection; each row is the entry's kind as a
+  letter, its label with what the word matched marked, and its detail, and the selected entry's
+  documentation shows once it is resolved. A press on a row accepts it while the code keeps the
+  keyboard (`Pressable.CanRequestFocus`, Flutter's `canRequestFocus`, in the declarative factory
+  too), and the list is the code input's listbox on the web and options after the code field on
+  Photon. `CodeEditor.Completions` says what an editor completes from: the language's words and the
+  document's unless it says otherwise. Found on the way and fixed: a bounded editor's code was as
+  tall as the file, so a press under it landed nowhere
+  ([#599](https://github.com/eQuantic/equantic-ui/issues/599)) and a short file left a list no room;
+  eqc wrote an enum member named `Value` as a read of an object nothing defines
+  ([#631](https://github.com/eQuantic/equantic-ui/issues/631)); and a helper class that takes the
+  build context named a type its module could not import, read an optional `typeScale` and called
+  `TypeStyle` measures its twin did not have
+  ([#632](https://github.com/eQuantic/equantic-ui/issues/632)). Reported: Photon lays a bordered
+  box's child over its border ([#629](https://github.com/eQuantic/equantic-ui/issues/629)), a dense
+  row's margin takes the presses of the row above it, under a finger and, since a pointer's target
+  keeps a 24dp floor, by 3dp under a pointer ([#630](https://github.com/eQuantic/equantic-ui/issues/630)),
+  and a null-conditional read is
+  `undefined` in the browser ([#633](https://github.com/eQuantic/equantic-ui/issues/633)). The
+  author's review found five defects and two holes in the net, each proved failing without its fix:
+  on Photon a press under a scrolled editor landed in its code, which ran past the view unclipped
+  (fields and sheets do the same, [#635](https://github.com/eQuantic/equantic-ui/issues/635));
+  `aria-expanded` sat on the code input, which ARIA does not allow on a textbox; the first build
+  wiped a provider an app added to the controller itself; a row longer than the list was cut
+  differently on each target; and the whole documentation was measured on every build. Copilot's
+  first round found three more: the documentation ran out of the view where the rows just fitted,
+  and now takes only the room they leave; a list of providers the parent changed in place never
+  handed what it gained; and turning an editor read-only left its list open. Its second round found
+  three in what it had not read before: a press under the code was measured from the last line, so a
+  diff's fillers after it went to the end instead of to that line; a row was cut by UTF-16 units,
+  splitting an emoji and leaving wide characters uncut, and is now cut by the cells the code's grid
+  gives each text element; and the editor took its providers out by equality, so one the app added
+  that equalled the editor's went in its place. Its third round found two more: every class module
+  imported the runtime's `BuildContext`, which an app's own class of that name then declared twice,
+  and the list measured all its entries on every arrow key. Proposed and archived through OpenSpec
+  (`openspec/specs/code-completion`, `openspec/specs/code-editor`).
 
 ## Retired documents
 
