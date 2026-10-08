@@ -176,8 +176,8 @@ public class EqJsonTests
     public void AnEnumTextNoMemberHas_IsRefused_AsAValueAndAsAKey()
     {
         var asValue = () => JsonSerializer.Deserialize<Shelf>("\"gone\"", EqJson.Options);
-        var asKey = () => JsonSerializer.Deserialize<Dictionary<Shelf, int>>("{\"gone\":1,\"old\":2}", EqJson.Options);
-        var asFlagsKey = () => JsonSerializer.Deserialize<Dictionary<Channels, int>>("{\"Nope\":1}", EqJson.Options);
+        var asKey = () => JsonSerializer.Deserialize<Dictionary<Shelf, int>>("[[\"gone\",1],[\"old\",2]]", EqJson.Options);
+        var asFlagsKey = () => JsonSerializer.Deserialize<Dictionary<Channels, int>>("[[\"Nope\",1]]", EqJson.Options);
 
         asValue.Should().Throw<JsonException>().WithMessage("*'gone'*");
         asKey.Should().Throw<JsonException>().WithMessage("*'gone'*");

@@ -447,6 +447,18 @@ describe('Dictionary — the JSON it writes', () => {
     expect(JSON.stringify(d)).toBe('[[3,"c"],[5,"e"],[2,"b"]]');
   });
 
+  // JSON has no number for NaN or the infinities, and JSON.stringify writes null for one: the key is
+  // written as its text, which .NET reads back and writes the same way (DictionaryWireTests).
+  it('writes a NaN or an infinite number key as its text', () => {
+    const d = dictionary<number, string>([
+      [NaN, 'n'],
+      [Infinity, 'p'],
+      [-Infinity, 'm'],
+      [1.5, 'x'],
+    ]);
+    expect(JSON.stringify(d)).toBe('[["NaN","n"],["Infinity","p"],["-Infinity","m"],[1.5,"x"]]');
+  });
+
   it('writes "__proto__" as a key like any other', () => {
     expect(JSON.stringify(dictionary<string, number>([['__proto__', 1]]))).toBe('[["__proto__",1]]');
   });

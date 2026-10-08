@@ -1,6 +1,10 @@
+using System.Collections.Concurrent;
+using System.Collections.Frozen;
 using System.Collections.Immutable;
 using System.Collections.ObjectModel;
+using System.Dynamic;
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using eQuantic.UI.Server.Json;
 using FluentAssertions;
 using Xunit;
@@ -66,12 +70,48 @@ public class DictionaryWireTests
     }
 
     [Fact]
-    public void ADictionaryLikeTypeOutsideThem_IsWrittenAsSystemTextJsonWritesIt()
+    public void EveryDictionaryOfDotNetsCollections_IsWrittenAsItsPairs_InTheOrderDotNetEnumeratesIt()
     {
-        // An object, as before: an immutable dictionary has no order .NET defines, and hydration
-        // still builds the class from an object.
-        object immutable = ImmutableDictionary<string, int>.Empty.Add("a", 1);
-        Write(immutable).Should().Be("""{"a":1}""");
+        // Behind a member typed object, as a page's state and an action's answer hold them: the browser
+        // builds its class from whatever the declared type says, so the order is .NET's for each.
+        var source = new Dictionary<int, string> { [3] = "c", [1] = "a", [2] = "b" };
+        foreach (var dictionary in new IEnumerable<KeyValuePair<int, string>>[]
+                 {
+                     source.ToFrozenDictionary(),
+                     source.ToImmutableDictionary(),
+                     new ConcurrentDictionary<int, string>(source),
+                 })
+        {
+            var expected = "[" + string.Join(",", dictionary.Select(pair => $"[{pair.Key},\"{pair.Value}\"]")) + "]";
+            Write<object>(dictionary).Should().Be(expected, dictionary.GetType().Name);
+        }
+    }
+
+    [Fact]
+    public void ADictionaryOnlyInShape_IsWrittenAsTheObjectItIs()
+    {
+        var expando = new ExpandoObject();
+        var members = (IDictionary<string, object?>)expando;
+        members["b"] = 1;
+        members["a"] = 2;
+
+        Write<object>(expando).Should().Be("""{"b":1,"a":2}""");
+        Write(new JsonObject { ["b"] = 1, ["a"] = 2 }).Should().Be("""{"b":1,"a":2}""");
+    }
+
+    [Fact]
+    public void ANonFiniteKey_CrossesAsItsText_BothWays()
+    {
+        var keys = new Dictionary<double, string>
+        {
+            [double.NaN] = "n", [double.PositiveInfinity] = "p", [double.NegativeInfinity] = "m", [1.5] = "x",
+        };
+
+        var json = Write(keys);
+
+        json.Should().Be("""[["NaN","n"],["Infinity","p"],["-Infinity","m"],[1.5,"x"]]""");
+        Read<Dictionary<double, string>>(json).Should().Equal(keys);
+        Write(new Dictionary<float, int> { [float.NaN] = 1 }).Should().Be("""[["NaN",1]]""");
     }
 
     [Fact]
@@ -86,10 +126,20 @@ public class DictionaryWireTests
     }
 
     [Fact]
-    public void ADictionary_IsStillReadFromAnObject()
+    public void AnObject_IsNotReadAsADictionary_TheShapeThePairsReplaced()
     {
-        Read<Dictionary<int, string>>("""{"3":"c","1":"a"}""").Keys.Should().Equal(3, 1);
-        Read<Dictionary<Channels, int>>("""{"3":3}""").Keys.Should().Equal(Channels.Colors | Channels.Shadow);
+        // The browser writes nothing else since #437, and the preview keeps no shim for the old shape.
+        var read = () => Read<Dictionary<int, string>>("""{"3":"c","1":"a"}""");
+
+        read.Should().Throw<JsonException>().WithMessage("*pairs*");
+    }
+
+    [Fact]
+    public void ADictionaryTheBrowserNeverSends_IsRefused_RatherThanBuiltAsAnother()
+    {
+        var read = () => Read<ImmutableDictionary<string, int>>("""[["a",1]]""");
+
+        read.Should().Throw<JsonException>().WithMessage("*ImmutableDictionary*");
     }
 
     [Fact]

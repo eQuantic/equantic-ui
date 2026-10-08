@@ -41,7 +41,7 @@ public class ServerActionDictionaryTests
     [Fact]
     public async Task TheArgumentsTheBrowserWrites_ArriveInTheOrderTheBrowserHeldThem()
     {
-        var (status, body) = await Invoke("Echo", File.ReadAllText(Path.Combine(RepoRoot(), Fixture)));
+        var (status, body) = await Invoke("Echo", File.ReadAllText(Path.Combine(RepoRoot.Find(), Fixture)));
 
         status.Should().Be(StatusCodes.Status200OK, body);
         body.Should().Be("""{"success":true,"result":"3,1 | b,10,9"}""");
@@ -83,14 +83,5 @@ public class ServerActionDictionaryTests
         await middleware.InvokeAsync(context);
 
         return (context.Response.StatusCode, Encoding.UTF8.GetString(response.ToArray()));
-    }
-
-    private static string RepoRoot()
-    {
-        var here = new DirectoryInfo(AppContext.BaseDirectory);
-        while (here is not null && !Directory.Exists(Path.Combine(here.FullName, "src", "eQuantic.UI.Runtime")))
-            here = here.Parent;
-        here.Should().NotBeNull("the suite runs inside the repository");
-        return here!.FullName;
     }
 }

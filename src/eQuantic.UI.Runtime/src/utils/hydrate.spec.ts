@@ -124,6 +124,17 @@ describe('typed hydration', () => {
     expect(codes.keys()).toEqual(['b', '10', '9']);
     const big = hydrate([['9007199254740993', 'x']], { dict: null, key: 'long' }) as Dictionary<bigint, string>;
     expect(big.get(9007199254740993n)).toBe('x');
+    // A NaN or an infinite key arrives as its text, which no JSON number holds.
+    const odd = hydrate(
+      [
+        ['NaN', 'n'],
+        ['-Infinity', 'm'],
+        [1.5, 'x'],
+      ],
+      { dict: null, key: 'number' },
+    ) as Dictionary<number, string>;
+    expect(odd.keys()).toEqual([NaN, -Infinity, 1.5]);
+    expect(odd.get(NaN)).toBe('n');
     const flags = hydrate(
       [
         [true, 1],
