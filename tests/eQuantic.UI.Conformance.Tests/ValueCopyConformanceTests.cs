@@ -14,7 +14,8 @@ namespace eQuantic.UI.Conformance.Tests;
 public class ValueCopyConformanceTests
 {
     private const string Types =
-        "public struct Pt { public int X; public int Y; public void Move(int by) { X += by; } public int Sum() => X + Y; }\n"
+        "public struct Pt { public int X; public int Y; public void Move(int by) { X += by; } public int Sum() => X + Y; "
+        + "public int Twice() { System.Action<int> f = Move; f(3); f(3); return X; } public int Once() { System.Action<int> f = this.Move; f(2); return X; } }\n"
         + "public struct Line { public Pt A; public Pt B; }\n"
         + "public record Holder { public Pt P; public Pt Prop { get; set; } }\n"
         + "public struct Snapper { public int V; public int Snap() { var copy = this; V = 5; return copy.V; } }\n"
@@ -46,6 +47,8 @@ public class ValueCopyConformanceTests
     [InlineData("var p = new Pair { A = 1, B = 2 }; var q = p; p.Flip(); return q.A + \"|\" + p.A;")]       // "1|2"
     // A write handed to a builder as its value is one argument.
     [InlineData("var sb = new System.Text.StringBuilder(); var p = new Pt { X = 3 }; var q = p; sb.Append(p.X++); return sb + \"|\" + p.X + \"|\" + q.X;")] // "3|4|3"
+    [InlineData("var p = new Pt { X = 1 }; System.Action<int> f = p.Move; f(4); f(4); return p.X;")]           // 1: the delegate moves its own copy
+    [InlineData("var p = new Pt { X = 1 }; return p.Twice() + \"|\" + p.Once() + \"|\" + p.X;")]           // "1|1|1": over a copy of `this`
     public void AMutableValue_IsCopiedWhereCSharpCopiesIt(string statements)
     {
         Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");

@@ -66,6 +66,8 @@ public class RecordCopyAndTextConformanceTests
         "var p = new P6(3) with { }; return p.X + \"|\" + p.Extra;")]                // "6|0"
     [InlineData("public record VBase { public int Seen; public VBase() { } protected VBase(VBase o) { Seen = Peek(); } protected virtual int Peek() => -1; } public record VDerived : VBase { public int D = 5; public VDerived() { } protected VDerived(VDerived o) : base(o) { D = o.D; } protected override int Peek() => D; }",
         "var x = new VDerived(); var y = x with { }; return y.Seen + \"|\" + y.D;")]   // "0|5": the base's step meets the derived level's zero
+    [InlineData("public record WBase { public int Seen; public WBase() { } protected WBase(WBase o) { Seen = Peek(); } protected virtual int Peek() => -1; } public record WDerived : WBase { public int D = 5; protected override int Peek() => D; }",
+        "var x = new WDerived(); var y = x with { }; return y.Seen + \"|\" + y.D;")]   // "0|5": a synthesized step's level is zeroed before the base's runs
     public void AWith_CopiesThroughTheRecordsOwnCopyConstructor(string prelude, string statements)
     {
         Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");

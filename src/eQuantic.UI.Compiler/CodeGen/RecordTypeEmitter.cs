@@ -741,9 +741,14 @@ public class RecordTypeEmitter
         JsStatement BaseStep(JsExpr passed) => JsStatement.Expression(JsExpr.Call(JsExpr.Member(JsExpr.Identifier("super"), "$copy"), [passed]));
 
         var statements = new List<JsStatement>();
+        var zeros = members.Select(member => Assign(member.Store, JsExpr.Literal(ZeroOf(member)))).ToList();
         if (declared is null)
         {
-            // Only a level whose base's chain declares a copy constructor carries a synthesized step.
+            // Only a level whose base's chain declares a copy constructor carries a synthesized step, and
+            // that constructor is the app's code, which can reach this level through a virtual member. C#
+            // has zeroed the whole object before it runs, so this level's zeros come first, then the base's
+            // step, then the copy of this level's members (found by Copilot's second review of #697).
+            statements.AddRange(zeros);
             statements.Add(BaseStep(original));
             statements.AddRange(members.Select(member => Assign(member.Store, JsExpr.Member(original, member.Store))));
         }
@@ -756,7 +761,6 @@ public class RecordTypeEmitter
             var passed = declared.Initializer is { ArgumentList.Arguments: [var argument] }
                 ? _converter.ConvertIr(argument.Expression)
                 : original;
-            var zeros = members.Select(member => Assign(member.Store, JsExpr.Literal(ZeroOf(member)))).ToList();
             if (baseCopies)
             {
                 statements.AddRange(zeros);

@@ -48,6 +48,14 @@ internal static class ValueCopies
             && ReferenceEquals(boxing.Operand, operation))
             return Copy(operation.Type!, translated);
 
+        // A delegate made from a method of a value is made over a copy of it, as C# boxes the receiver when
+        // it makes the delegate: `Action<int> f = p.Move; f(4);` moves the delegate's copy and leaves `p` as
+        // it was, where the twin bound the delegate to `p` itself (found by Copilot's second review of #697).
+        // An implicit `this` is the identifier's to copy (Captured).
+        if (IsMutableValue(operation.Type) && operation.Parent is IMethodReferenceOperation { Method.IsStatic: false } reference
+            && ReferenceEquals(reference.Instance, operation))
+            return Copy(operation.Type!, translated);
+
         // A deconstruction into members of values (`(a.X, a.Y) = (1, 2)`) writes each value it names.
         if (operation is IDeconstructionAssignmentOperation deconstruction)
         {
@@ -111,6 +119,11 @@ internal static class ValueCopies
             => named.Locations.Any(location => location.IsInSource) && !named.TwinIsData(),
         _ => false,
     };
+
+    /// <summary>The receiver a delegate made from one of its methods is bound to: a copy of a mutable value,
+    /// as C# boxes the receiver when it makes the delegate, and the receiver itself otherwise.</summary>
+    internal static JsExpr Captured(ITypeSymbol? type, JsExpr receiver) =>
+        IsMutableValue(type) ? Copy(type!, receiver) : receiver;
 
     /// <summary>A copy of a value of <paramref name="type"/>: a tuple's array spread into a new one, a
     /// struct's twin through its <c>$clone</c>. Both are shallow: a value inside is copied when it is
