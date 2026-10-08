@@ -40,6 +40,11 @@ receiver and the key evaluated once and in C#'s order, and a write SHALL answer 
 - **WHEN** browser-side code runs `l[0] = 5; l[1] += 2; l[2]++;` over `IList<int> l` holding a twin of `{ 1, 2, 3 }`
 - **THEN** `l[0]`, `l[1]` and `l[2]` are `5`, `4` and `4`, as in .NET
 
+#### Scenario: A twin with a Length beside its Count
+
+- **WHEN** browser-side code reads `p.Count` and `p[^1]` over `IReadOnlyList<int> p` holding a twin of `{ 3, 4 }` that also declares `Length => 12.5` and `Size => 7`
+- **THEN** the answers are `2` and `4`, as in .NET
+
 ### Requirement: ICollection's Add and Clear answer for the collection behind it
 
 `ICollection<T>.Add` and `ICollection<T>.Clear` SHALL add and empty as the collection the interface

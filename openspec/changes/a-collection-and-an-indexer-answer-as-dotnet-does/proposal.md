@@ -42,7 +42,8 @@ Measured on main (fc8f0fdc), both sides executed by the conformance suite:
 - An access through a list's face (`IList<T>`, `IReadOnlyList<T>`, `IList`) reads and writes through
   the runtime's `$eq.collections.item` and `setItem`, which answer an array's subscript and a twin's
   `item` and `setItem` alike, from the end too, and its `Count` through `$eq.collections.count`, which
-  reads a twin's own `count`. A receiver typed as an array or a list keeps its subscript.
+  reads a twin's own `count` before a `size` or a `length` it may also declare. A receiver typed as an
+  array or a list keeps its subscript.
 - `ICollection<T>`'s own `Add` and `Clear` go through the runtime's `$eq.collections.add` and `clear`,
   which add and empty as the collection behind the interface does, a member's collection initializer
   included.

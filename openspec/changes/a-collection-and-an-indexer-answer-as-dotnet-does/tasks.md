@@ -25,12 +25,13 @@
 
 ## 4. A list's face (#586)
 
-- [x] 4.1 The runtime's `item` and `setItem`, and `count` reading a twin's own `count`; the `Place` of a
-  list face's indexer reads and writes through them, from the end too, and a `Count` through the face
-  counts through the runtime. Verified by conformance cases through the module graph (the row of #586,
-  from the end, a parameter, a write, a compound, a step, the order of a write and of a compound, a
-  null-conditional read, an object initializer's entry, an array and a list behind the faces), failing
-  on main and green here, and by runtime specs
+- [x] 4.1 The runtime's `item` and `setItem`, and `count` reading a twin's own `count` before a `size` or
+  a `length` beside it; the `Place` of a list face's indexer reads and writes through them, from the end
+  too, and a `Count` through the face counts through the runtime. Verified by conformance cases through
+  the module graph (the row of #586, from the end, a parameter, a write, a compound, a step, the order of
+  a write and of a compound, a null-conditional read, an object initializer's entry, an array and a list
+  behind the faces, a twin with a `Length` and a `Size` beside its `Count`), failing on main and green
+  here, and by runtime specs
 
 ## 5. ICollection's Add and Clear (#593)
 
@@ -49,5 +50,7 @@
 ## 7. Documentation and archive
 
 - [x] 7.1 docs/DIAGNOSTICS.md for EQ2004 (a range handed to an indexer over `Range`) and EQ2007 (a LINQ
-  operator's comparer), and one docs/LEDGER.md line citing the five issues with the A/B counts
+  operator's comparer), the wiki's Supported Features, Compiler and Diagnostics pages in English and
+  Portuguese, on the wiki branch of the same name, and one docs/LEDGER.md line citing the five issues
+  with the A/B counts
 - [x] 7.2 `openspec archive a-collection-and-an-indexer-answer-as-dotnet-does --yes`
