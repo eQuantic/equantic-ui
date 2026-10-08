@@ -80,8 +80,9 @@ export function hydrateValue(current: unknown, incoming: unknown): unknown {
   }
 
   // A dictionary field the compiler gave no spec: rebuilt as its class, never on its prototype, which
-  // would be an instance with no entries to hold. Nothing here says the key type, so a key stays the
-  // property name; every field the compiler types carries `{ dict, key }` and never reaches this.
+  // would be an instance with no entries to hold. Nothing here says the key type, so a key stays as it
+  // arrived, the value a pair holds or a property name; every field the compiler types carries
+  // `{ dict, key }` and never reaches this.
   if (current instanceof Dictionary || current instanceof SortedMap) {
     return hydrate(incoming, current instanceof SortedMap ? { dict: null, sorted: current.kind } : { dict: null });
   }

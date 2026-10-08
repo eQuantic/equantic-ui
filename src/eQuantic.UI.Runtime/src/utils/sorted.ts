@@ -16,8 +16,8 @@ import {
   containsValue,
   keyText,
   pair,
+  pairsOf,
   requireKey,
-  wireObject,
   type KeyEquality,
   type Pair,
 } from './dictionary';
@@ -256,9 +256,9 @@ export class SortedMap<K, V> implements Iterable<Pair<K, V>> {
     return identityHash(this);
   }
 
-  /** The JSON object System.Text.Json writes for it, in key order. */
-  toJSON(): Record<string, V> {
-    return wireObject(this.entries);
+  /** Its pairs in key order, as the server writes and reads a sorted dictionary (#437). */
+  toJSON(): [K, V][] {
+    return pairsOf(this.entries);
   }
 }
 

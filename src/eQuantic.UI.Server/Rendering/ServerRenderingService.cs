@@ -891,6 +891,11 @@ public class ServerRenderingService : IServerRenderingService
     /// name would overwrite each other, silently and in whichever order reflection happened to
     /// return them.
     /// </para>
+    /// <para>
+    /// The payload and each component's fields are OBJECTS, written here by name rather than handed to
+    /// the serializer whole: the browser reads them by name, while a dictionary held in a field crosses
+    /// as its pairs (#437), and the two are the same .NET type.
+    /// </para>
     /// </summary>
     private string? SerializeState(IReadOnlyDictionary<string, IReadOnlyDictionary<string, object?>> byComponent)
     {
@@ -898,8 +903,25 @@ public class ServerRenderingService : IServerRenderingService
 
         try
         {
-            var json = System.Text.Json.JsonSerializer.Serialize(
-                byComponent, eQuantic.UI.Server.Json.EqJson.Options);
+            var options = eQuantic.UI.Server.Json.EqJson.Options;
+            using var buffer = new MemoryStream();
+            using (var writer = new System.Text.Json.Utf8JsonWriter(buffer,
+                       new System.Text.Json.JsonWriterOptions { Encoder = options.Encoder, Indented = options.WriteIndented }))
+            {
+                writer.WriteStartObject();
+                foreach (var (component, fields) in byComponent)
+                {
+                    writer.WriteStartObject(component);
+                    foreach (var (name, value) in fields)
+                    {
+                        writer.WritePropertyName(name);
+                        System.Text.Json.JsonSerializer.Serialize(writer, value, options);
+                    }
+                    writer.WriteEndObject();
+                }
+                writer.WriteEndObject();
+            }
+            var json = System.Text.Encoding.UTF8.GetString(buffer.ToArray());
             _logger.LogDebug("[SSR Hydration] Serialized state for {Count} component(s)", byComponent.Count);
             return json;
         }

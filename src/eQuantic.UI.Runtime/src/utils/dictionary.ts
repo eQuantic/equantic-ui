@@ -1,8 +1,10 @@
-import { adoptMember } from './adopt-member';
 import { exception } from './exceptions';
 import { identityHash } from './hash';
 import { sameBy, type KeyEquality } from './key-equality';
 import { SlotTable } from './slots';
+// The pairs carry a long key as the BigInt it is, which JSON.stringify writes through the `toJSON`
+// this module installs: without it, a dictionary keyed by a long could not be written at all.
+import './long';
 
 /**
  * How a dictionary finds a key, as .NET's default comparer for the key type does, which eqc says
@@ -169,23 +171,20 @@ export class Dictionary<K, V> implements Iterable<Pair<K, V>> {
   }
 
   /**
-   * The JSON object System.Text.Json writes and reads for a dictionary: each key by its wire text,
-   * in slot order, which a JSON object keeps for every key but an integer-like one (#437). Each
-   * entry is DEFINED, since assigning "__proto__" would reach the prototype's setter.
+   * The pairs the server reads and writes for a dictionary (#437): `[key, value]` arrays in slot order,
+   * each key and value written as a value of its type. A JSON object would have listed every
+   * integer-like key first and ascending, and a page parses one before any code sees it.
    */
-  toJSON(): Record<string, V> {
-    return wireObject(this.table.entries);
+  toJSON(): [K, V][] {
+    return pairsOf(this.table.entries);
   }
 }
 
-/**
- * The JSON object of a dictionary's entries, each keyed by its wire text and DEFINED, since assigning
- * "__proto__" would reach the prototype's setter. A freed slot is skipped.
- */
-export function wireObject<K, V>(entries: Iterable<{ key: K; value: V } | undefined>): Record<string, V> {
-  const json: Record<string, V> = {};
-  for (const entry of entries) if (entry !== undefined) adoptMember(json, wireKey(entry.key), entry.value);
-  return json;
+/** The `[key, value]` pairs of a dictionary's live entries, in the order they enumerate. */
+export function pairsOf<K, V>(entries: Iterable<{ key: K; value: V } | undefined>): [K, V][] {
+  const pairs: [K, V][] = [];
+  for (const entry of entries) if (entry !== undefined) pairs.push([entry.key, entry.value]);
+  return pairs;
 }
 
 /** .NET's InvalidOperationException for a collection changed under a walk over it. */
@@ -223,16 +222,6 @@ export function containsValue<V>(
 /** A key as .NET's messages write it, by its `ToString`: a bool as True or False. */
 export function keyText(key: unknown): string {
   return typeof key === 'boolean' ? (key ? 'True' : 'False') : String(key);
-}
-
-/**
- * A key's text on the wire, as System.Text.Json writes a dictionary key: a bool as True or False, and
- * a long, a decimal or a date by its own `toJSON`.
- */
-export function wireKey(key: unknown): string {
-  if (typeof key === 'boolean') return key ? 'True' : 'False';
-  const own = (key as { toJSON?: () => unknown } | null | undefined)?.toJSON;
-  return typeof own === 'function' ? String(own.call(key)) : String(key);
 }
 
 /**
