@@ -1723,6 +1723,16 @@ record of a release, the wiki's Upgrading page is the distillate.
   46 new conformance cases fail on the base. The members the runtime does not have are
   [#679](https://github.com/eQuantic/equantic-ui/issues/679). Proposed and archived through OpenSpec
   (`openspec/specs/transpiler-bcl`).
+- **2026-10-08 · A code editor keeps its Tab in a dialog, and undo after a pasted carriage return
+  restores the text**: on the web a modal layer's focus trap heard Tab in the capture phase, before
+  the editor's input, so a code editor at either end of a dialog lost Tab and Shift+Tab to it
+  ([#598](https://github.com/eQuantic/equantic-ui/issues/598)); the trap now hears the key on its
+  way back up and cycles only a Tab nothing consumed, the question Photon's host asks its code target.
+  And an edit recorded a paste as it was handed, which the history split on LF alone while the
+  document breaks lines on CR, CRLF and LF: undo after pasting "x\ry" into "abc" left "a" and "ybc"
+  ([#600](https://github.com/eQuantic/equantic-ui/issues/600)); an edit now carries the text the
+  document holds, and its range breaks lines as the document does. Proposed and archived through
+  OpenSpec (`openspec/specs/code-history`, `openspec/specs/modal-focus`).
 
 ## Retired documents
 
