@@ -72,7 +72,11 @@ public sealed class Flexible : SingleChildNode
     /// How readily this child gives space back when the line overflows — CSS <c>flex-shrink</c>.
     /// Defaults to 1, matching what the web realizer has always emitted. Zero refuses to shrink, and
     /// a negative shrink means nothing on any target, so it is refused where it is written.
-    /// Shrinking is weighted by the basis, as CSS does, and never crosses the min-content floor.
+    /// Shrinking is weighted by the shrink times the size, as CSS scales it. A Flexible's minimum
+    /// width is zero (the web writes it <c>min-width: 0</c>), so a weight of zero shrinks past its
+    /// child's min-content on both targets, and a child with a fixed width overflows it. The other
+    /// items Photon shrinks keep their min-content floor, and so, for now, does a Flexible in a
+    /// wrapping row, where the web lets it go past (see <see cref="FlexNode.Wrap"/>).
     /// </summary>
     /// <exception cref="ArgumentOutOfRangeException">The shrink is negative.</exception>
     public int Shrink
