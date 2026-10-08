@@ -1733,8 +1733,14 @@ record of a release, the wiki's Upgrading page is the distillate.
   and on Photon, whose single-line pass used to drop a zero that reached it through an object
   initializer. A negative weight, basis or shrink, and a basis that is not finite, is refused where
   it is written, on the C# accessor and in the twin after its trailing config. Measured in Chrome,
-  pinned on each side, in the component parity fixture and on Photon, and proved both ways. The same
-  question, asked of the other flex numbers, found two more. A Spacer raised a weight below 1 to 1,
+  pinned on each side, in the component parity fixture and on Photon, and proved both ways. The
+  review then found Photon taking an overflow back from a zero weight by rules of its own: it stopped
+  the item at its child's min-content and ignored its shrink factor, and a zero weight holding text
+  was cut first. It gives space back now as the web's `min-width: 0` and shrink factor let it,
+  together with the other items that shrink, on Chrome's numbers; and `FlexNode.Wrap` says where
+  Photon's wrapping pass still departs from the web
+  ([#728](https://github.com/eQuantic/equantic-ui/issues/728)). The same question, asked of the
+  other flex numbers, found two more. A Spacer raised a weight below 1 to 1,
   in C# and in the twin, and now refuses it where it is written, as Flutter asserts `flex > 0`
   ([#691](https://github.com/eQuantic/equantic-ui/issues/691)). And the twin wrote a basis raw where
   the server wrote it through `TokenCss.Px`, so a basis of 540.125, or the float 540.12 the twin
@@ -1745,7 +1751,7 @@ record of a release, the wiki's Upgrading page is the distillate.
   requires ([#684](https://github.com/eQuantic/equantic-ui/issues/684)); and its button is a Link
   around a painted Box, because an email refuses a Button
   ([#694](https://github.com/eQuantic/equantic-ui/issues/694)). Proposed and archived through
-  OpenSpec in two changes (`openspec/specs/flex-layout`).
+  OpenSpec in three changes (`openspec/specs/flex-layout`).
 
 ## Retired documents
 
