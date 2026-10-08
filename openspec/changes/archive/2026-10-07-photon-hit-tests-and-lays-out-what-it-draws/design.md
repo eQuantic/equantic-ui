@@ -50,7 +50,9 @@ the five defects is a region, or a layout, that disagrees with what is drawn.
   viewport's edge, which "stood inside" the last row shown and took its lower presses: a box with no
   area encloses nothing. And the rich paragraph added each space to its line as it came, so a break
   kept the space it fell on, and skipped the spaces a paragraph opens with: it now holds the spaces
-  after a word until the next word takes them or a break drops them, as the plain path does.
+  after a word until the next word takes them, and a break leaves them hanging past its line, out of
+  the width, as the plain path measures and CSS hangs them. They stay fragments, since a link's name
+  is its fragments joined.
 
 ## Fences
 

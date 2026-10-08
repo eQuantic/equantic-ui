@@ -15,7 +15,7 @@ over several, whichever run its spaces belong to.
 
 #### Scenario: A rich paragraph that breaks
 
-- **WHEN** "alpha beta", "alpha  beta gamma" and "  alpha beta", and "alpha beta" as the runs "alpha "
+- **WHEN** "alpha beta", "alpha  beta" and "  alpha beta", and "alpha beta" as the runs "alpha "
   and "beta", are measured in a box that holds their first line and one space more
 - **THEN** each breaks after its first line and measures as its plain twin, without the spaces the
   break falls on

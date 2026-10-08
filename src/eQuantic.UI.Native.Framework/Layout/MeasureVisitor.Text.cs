@@ -73,11 +73,13 @@ internal sealed partial class MeasureVisitor
         var cut = false;
         var lineHasWord = false;
         // The spaces since the line's last word, already among the fragments: the next word on the
-        // line takes them, a break or a cut drops them, and the paragraph's end keeps them, which is
-        // what the plain measurer charges (WrapParagraph). Added to the line as they came, a break
-        // committed the space it fell on, so a paragraph wrapped after "alpha" claimed the width of
-        // "alpha "; and skipped at the start of a line, the spaces a paragraph opens with were never
-        // charged at all.
+        // line takes them, the paragraph's end keeps them, and a break leaves them hanging past the
+        // end of its line, out of the width, which is what the plain measurer charges (WrapParagraph)
+        // and how CSS hangs them. They stay fragments because a link's name is its fragments joined:
+        // dropped, a link wrapped after "alpha" was read as "alphabeta". Added to the line as they
+        // came, a break committed the space it fell on, so a paragraph wrapped after "alpha" claimed
+        // the width of "alpha "; and skipped at the start of a line, the spaces a paragraph opens with
+        // were never charged at all.
         var spaces = 0;
         var spacesWidth = 0f;
 
@@ -113,15 +115,16 @@ internal sealed partial class MeasureVisitor
                 }
                 if (lineHasWord && x + spacesWidth + width > limit)
                 {
-                    // A space that lands at a break is DROPPED rather than carried to the next line,
-                    // which is what keeps a wrapped paragraph's left edge straight.
-                    fragments.RemoveRange(fragments.Count - spaces, spaces);
+                    // A space that lands at a break is never carried to the next line, which is
+                    // what keeps a wrapped paragraph's left edge straight.
+                    var hanging = spaces;
                     spaces = 0;
                     spacesWidth = 0;
                     // The line is full, and a cap says there is no next one: the paragraph ends
-                    // HERE, with the mark inside the measurement.
+                    // HERE, with the mark inside the measurement, right after the last word.
                     if (maxLines > 0 && line + 1 >= maxLines)
                     {
+                        fragments.RemoveRange(fragments.Count - hanging, hanging);
                         x = Ellipsize(fragments, runStyle, x, limit, line, lineHeight, ctx);
                         cut = true;
                         break;

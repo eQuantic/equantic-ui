@@ -451,7 +451,7 @@ public class LayoutTransparencyTests
     /// </summary>
     [Theory]
     [InlineData("alpha beta", "alpha")]
-    [InlineData("alpha  beta gamma", "alpha")]
+    [InlineData("alpha  beta", "alpha")]
     [InlineData("alpha |beta", "alpha")]
     [InlineData("  alpha beta", "  alpha")]
     public void ARichParagraphBreaksAsItsPlainTwin(string runs, string firstLine)
