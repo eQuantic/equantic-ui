@@ -359,6 +359,19 @@ public class TransformedSurfaceTests
         ScrolledToTheSixthControl(Transform2D.Scale(2)).Should().BeApproximately(plain, 0.01f);
     }
 
+    /// <summary>
+    /// ...and turned (Copilot's second round on #690). The control crossed into the scroll view's
+    /// space as the box around it on screen, taken back through the inverse: under a turn that box grew
+    /// a control at the foot of the view into one reaching above its top, and the view scrolled up.
+    /// </summary>
+    [Fact]
+    public void AScrollViewTurned_RevealsAFocusedControlAsFarAsItWouldUnturned()
+    {
+        var plain = ScrolledToTheSixthControl(Transform2D.Translate(0, 0));
+
+        ScrolledToTheSixthControl(Transform2D.Rotate(45)).Should().BeApproximately(plain, 0.01f);
+    }
+
     /// <summary>How far a code editor's own view scrolled to follow a caret twenty lines down,
     /// with the editor drawn under <paramref name="transform"/>, <paramref name="scale"/> times as
     /// large.</summary>
@@ -390,6 +403,40 @@ public class TransformedSurfaceTests
         plain.Should().BeGreaterThan(0, "the caret went twenty lines down a view of five");
 
         ScrolledToFollowTheCaret(Transform2D.Scale(2), scale: 2).Should().BeApproximately(plain, 0.01f);
+    }
+
+    /// <summary>How far a code editor's own view scrolled to follow its caret twenty lines down, with
+    /// the editor drawn under <paramref name="transform"/> and handed the keyboard by its controller,
+    /// so no press has to be aimed through a turn.</summary>
+    private static float ScrolledToFollowTheCaretOnRequest(Transform2D transform)
+    {
+        var code = string.Join("\n", Enumerable.Range(0, 80).Select(i => $"line {i}"));
+        var editor = new CodeEditor(code, "csharp") { ShowLineNumbers = false, MaxHeight = 100 };
+        var host = Mount(editor, transform, width: 300);
+        editor.Editor.RequestFocus();
+        host.RenderFrame(new DisplayListBuilder());
+
+        for (var i = 0; i < 20; i++)
+        {
+            host.KeyDown("ArrowDown");
+            host.RenderFrame(new DisplayListBuilder());
+        }
+        host.RenderFrame(new DisplayListBuilder());
+        var region = host.LastFrame!.CodeRegions.Single();
+        var viewport = host.LastFrame!.ScrollRegions.First(r => r.Axis == ScrollAxis.Vertical
+            && region.Path.StartsWith(r.Path, StringComparison.Ordinal) && r.MaxOffset > 0);
+        return host.ScrollOffsetOf(viewport.Path);
+    }
+
+    /// <summary>...and turned (Copilot's second round on #690): the caret crossed as the box around
+    /// it on screen, which a turn grows, and the view did not follow it as far as it would unturned.</summary>
+    [Fact]
+    public void ACodeEditorTurned_FollowsItsCaretAsFarAsItWouldUnturned()
+    {
+        var plain = ScrolledToFollowTheCaretOnRequest(Transform2D.Translate(0, 0));
+        plain.Should().BeGreaterThan(0, "the caret went twenty lines down a view of five");
+
+        ScrolledToFollowTheCaretOnRequest(Transform2D.Rotate(45)).Should().BeApproximately(plain, 0.01f);
     }
 
     // ---- a canvas -------------------------------------------------------------------------------

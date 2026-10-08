@@ -97,7 +97,9 @@ internal readonly struct InputSink(FrameRegions regions, Rect? clip = null, bool
     /// </summary>
     public void Add(FocusStop stop)
     {
-        if (!suppressFocusStops) regions.Stops.Add(stop with { Bounds = Place(stop.Bounds) });
+        if (suppressFocusStops) return;
+        Note(regions.Stops, regions.Stops.Count, stop.Bounds, stop.Bounds);
+        regions.Stops.Add(stop with { Bounds = Place(stop.Bounds) });
     }
 
     public void Add(HitRegion region)
@@ -109,7 +111,7 @@ internal readonly struct InputSink(FrameRegions regions, Rect? clip = null, bool
         var placed = region with { Bounds = Place(region.Bounds), Drawn = Place(region.Drawn) };
         if (!suppressFocusStops && !region.Node.Disabled && region.Node.OnPressed is not null
             && region.Node.CanRequestFocus)
-            regions.Stops.Add(new FocusStop(region.Path, region.Node, null, placed.Bounds));
+            AddStop(new FocusStop(region.Path, region.Node, null, placed.Bounds), region.Bounds);
         if (!Visible(placed.Bounds)) return;
         Note(regions.Hits, regions.Hits.Count, region.Bounds, region.Drawn);
         regions.Hits.Add(Clipped(placed));
@@ -182,7 +184,7 @@ internal readonly struct InputSink(FrameRegions regions, Rect? clip = null, bool
     {
         var placed = region with { Bounds = Place(region.Bounds) };
         if (!suppressFocusStops && !region.Entry.Disabled)
-            regions.Stops.Add(new FocusStop(region.Path, null, region.Entry, placed.Bounds));
+            AddStop(new FocusStop(region.Path, null, region.Entry, placed.Bounds), region.Bounds);
         if (!Visible(placed.Bounds)) return;
         Note(regions.Texts, regions.Texts.Count, region.Bounds, region.Bounds);
         regions.Texts.Add(Clipped(placed));
@@ -196,10 +198,19 @@ internal readonly struct InputSink(FrameRegions regions, Rect? clip = null, bool
             Offered = region.Offered is { } offered ? Place(offered) : null,
         };
         if (!suppressFocusStops)
-            regions.Stops.Add(new FocusStop(region.Path, null, null, placed.Bounds, null, region.Surface));
+            AddStop(new FocusStop(region.Path, null, null, placed.Bounds, null, region.Surface), region.Bounds);
         if (!Visible(placed.Bounds)) return;
         Note(regions.Codes, regions.Codes.Count, region.Bounds, region.Bounds, region.Offered);
         regions.Codes.Add(Clipped(placed));
+    }
+
+    /// <summary>A stop a region implies, already placed, noted with the box it was laid out in: a
+    /// reveal carries that box into its scroll view's space by its own corners, and the box around
+    /// them on screen, taken back under a turn, grew enough to scroll the wrong way.</summary>
+    private void AddStop(FocusStop stop, Rect local)
+    {
+        Note(regions.Stops, regions.Stops.Count, local, local);
+        regions.Stops.Add(stop);
     }
 
     /// <summary>A chord is not a place — being on screen is the whole subscription (spec S8), and a
@@ -222,7 +233,7 @@ internal readonly struct InputSink(FrameRegions regions, Rect? clip = null, bool
         // through a branch meant for editing surfaces and put a calendar into text mode.
         var placed = region with { Bounds = Place(region.Bounds) };
         if (!suppressFocusStops)
-            regions.Stops.Add(new FocusStop(region.Path, null, null, placed.Bounds, Sheet: region.Surface));
+            AddStop(new FocusStop(region.Path, null, null, placed.Bounds, Sheet: region.Surface), region.Bounds);
         if (!Visible(placed.Bounds)) return;
         Note(regions.Sheets, regions.Sheets.Count, region.Bounds, region.Bounds);
         regions.Sheets.Add(Clipped(placed));

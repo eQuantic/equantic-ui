@@ -146,4 +146,31 @@ public class NeighbourSlopTests
 
         pressed.Should().Equal([4], "the press is inside the last row shown, and nothing of row 5 is drawn there");
     }
+
+    /// <summary>
+    /// Turned together, a narrow row under a wide one stands beside it, not inside it (Copilot's
+    /// second round on #690). The box around the turned narrow row nests in the box around the turned
+    /// wide one, and a press near the wide row's foot, inside the narrow row's slop, ran the narrow row.
+    /// </summary>
+    [Fact]
+    public void TwoRowsTurnedTogether_ARowsSlopTakesNoPressFromTheRowBesideIt()
+    {
+        var pressed = new List<string>();
+        var column = new Column(gap: 0, cross: CrossAlign.Center);
+        column.Add(new Pressable(new Box(new BoxStyle { Width = 200, Height = 20 }), () => pressed.Add("wide")));
+        column.Add(new Pressable(new Box(new BoxStyle { Width = 20, Height = 20 }), () => pressed.Add("narrow")));
+        // Laid out at 150, 150: the wide row from 150 to 350 across and 150 to 170 down, the narrow one
+        // from 240 to 260 across and 170 to 190 down, both turned 45° about the box's centre, (250, 170).
+        var turned = new Box(new BoxStyle { Width = 200, Height = 40, Transform = Transform2D.Rotate(45) }, column);
+        var host = new PhotonHost(new Box(new BoxStyle { Padding = EdgeInsets.All(150) }, turned),
+            PhotonTheme.Instance, ThemeMode.Light, 500, 400) { Density = Density.Comfortable };
+        host.RenderFrame(new DisplayListBuilder());
+
+        // 2dp above the wide row's foot, at its middle: inside the wide row as drawn, and inside the
+        // target the narrow row keeps beyond its box.
+        var at = Matrix2D.Rotation(MathF.PI / 4).Transform(new Point(0, -2));
+        host.Tap(250 + at.X, 170 + at.Y);
+
+        pressed.Should().Equal(["wide"], "the press is on the wide row as drawn, and the narrow row is drawn beside it");
+    }
 }

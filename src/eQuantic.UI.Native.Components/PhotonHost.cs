@@ -442,7 +442,8 @@ public sealed class PhotonHost
         }
         if (best < 0) return;
 
-        var (own, viewport) = InScrollSpace(regions, best, stop.Bounds);
+        var (laid, toScreen) = Laid(stop);
+        var (own, viewport) = InScrollSpace(regions, best, laid, toScreen);
         var horizontal = regions[best].Axis == ScrollAxis.Horizontal;
         var (start, end, viewStart, viewEnd) = horizontal
             ? (own.X, own.X + own.Width, viewport.X, viewport.X + viewport.Width)
@@ -496,7 +497,8 @@ public sealed class PhotonHost
             var carets = region.Surface.Model.Carets;
             if (carets.Count == 0) continue;
             var caret = carets[0];
-            scrolled |= RevealRect(region.Path, ToScreen(regions, i, region.Bounds, caret));
+            var (laid, toScreen) = Laid(regions, i, region.Bounds, caret);
+            scrolled |= RevealRect(region.Path, laid, toScreen);
         }
         return scrolled;
     }
@@ -507,7 +509,7 @@ public sealed class PhotonHost
     /// for the same caret, which is why this is not <see cref="ScrollIntoView"/>'s innermost-only
     /// rule. A small margin keeps the caret off the very edge, so the line after it is seen coming.
     /// </summary>
-    private bool RevealRect(string path, Rect rect)
+    private bool RevealRect(string path, Rect rect, Matrix2D? toScreen)
     {
         var regions = _lastFrame!.ScrollRegions;
         var scrolled = false;
@@ -516,7 +518,7 @@ public sealed class PhotonHost
             var region = regions[i];
             if (region.MaxOffset <= 0 || !IsAncestorPath(region.Path, path)) continue;
 
-            var (own, viewport) = InScrollSpace(regions, i, rect);
+            var (own, viewport) = InScrollSpace(regions, i, rect, toScreen);
             var horizontal = region.Axis == ScrollAxis.Horizontal;
             var (start, end, viewStart, viewEnd) = horizontal
                 ? (own.X, own.X + own.Width, viewport.X, viewport.X + viewport.Width)
@@ -536,15 +538,39 @@ public sealed class PhotonHost
     }
 
     /// <summary>
-    /// <paramref name="rect"/>, on screen, and the viewport of the <paramref name="index"/>th scroll
-    /// region, both in the space the region was laid out in. A scroll offset is a distance in that
-    /// space: measured on screen, a scroll view drawn twice as large scrolled a focused control or a
-    /// caret twice as far as it had to (#658).
+    /// <paramref name="rect"/> and the viewport of the <paramref name="index"/>th scroll region, both
+    /// in the space the region was laid out in. <paramref name="toScreen"/> takes
+    /// <paramref name="rect"/> to the screen when a transform drew what it measures, and null says it
+    /// is on screen already. A scroll offset is a distance in the scroll view's own space: measured on
+    /// screen, a scroll view drawn twice as large scrolled a focused control or a caret twice as far as
+    /// it had to (#700). The rect crosses by its own corners, never as the box around them on screen:
+    /// under a turn, that box taken back through the inverse grew a control at the foot of the view
+    /// into one reaching above its top, and the view scrolled the wrong way.
     /// </summary>
-    private (Rect Rect, Rect Viewport) InScrollSpace(IReadOnlyList<ScrollRegion> regions, int index, Rect rect) =>
-        TransformedAt(regions, index) is { } turned
-            ? (turned.Inverse.TransformBounds(rect), turned.Local)
-            : (rect, regions[index].Bounds);
+    private (Rect Rect, Rect Viewport) InScrollSpace(IReadOnlyList<ScrollRegion> regions, int index, Rect rect,
+        Matrix2D? toScreen)
+    {
+        var view = TransformedAt(regions, index);
+        if (view is null && toScreen is null) return (rect, regions[index].Bounds);
+        var carry = toScreen ?? Matrix2D.Identity;
+        if (view is { } turned) carry *= turned.Inverse;
+        return (carry.TransformBounds(rect), view?.Local ?? regions[index].Bounds);
+    }
+
+    /// <summary>A focus stop's box as it was laid out, and what takes it to the screen when a
+    /// transform drew it: the box on screen and nothing otherwise.</summary>
+    private (Rect Rect, Matrix2D? ToScreen) Laid(FocusStop stop)
+    {
+        var stops = _lastFrame!.FocusStops;
+        for (var i = 0; i < stops.Count; i++)
+        {
+            if (stops[i].Path != stop.Path) continue;
+            if (TransformedAt(stops, i) is { } turned && turned.Inverse.Invert() is { } forward)
+                return (turned.Local, forward);
+            break;
+        }
+        return (stop.Bounds, null);
+    }
 
     /// <summary>Whether the keyboard focus (a field or code being edited, or the control wearing the
     /// ring) is inside the subtree at <paramref name="scope"/>: a focus-scoped shortcut's question.
@@ -2288,7 +2314,7 @@ public sealed class PhotonHost
         for (var i = regions.Count - 1; i > drawn; i--)
         {
             if (!Covers(regions, i, regions[i].Bounds, point)) continue;
-            if (drawn < 0 || Encloses(regions[drawn].Drawn, regions[i].Drawn)) return i;
+            if (drawn < 0 || StandsInside(regions, i, drawn)) return i;
         }
         return drawn;
     }
@@ -2346,10 +2372,21 @@ public sealed class PhotonHost
     /// </summary>
     private Rect ToScreen(object regions, int index, Rect bounds, Rect rect)
     {
-        if (TransformedAt(regions, index) is not { } region || region.Inverse.Invert() is not { } matrix)
-            return rect with { X = bounds.X + rect.X, Y = bounds.Y + rect.Y };
-        return matrix.TransformBounds(rect with { X = region.Local.X + rect.X, Y = region.Local.Y + rect.Y });
+        var (laid, toScreen) = Laid(regions, index, bounds, rect);
+        return toScreen is { } matrix ? matrix.TransformBounds(laid) : laid;
     }
+
+    /// <summary>
+    /// <paramref name="rect"/>, in the own space of the <paramref name="index"/>th region of
+    /// <paramref name="regions"/> and measured from its corner, as it was laid out, with what takes it
+    /// to the screen when a transform drew the region: the rect on screen, at the corner of the box
+    /// <paramref name="bounds"/>, and nothing otherwise. What carries it on (to the screen, to a scroll
+    /// view's space) moves its four corners, so a turn never widens it twice.
+    /// </summary>
+    private (Rect Rect, Matrix2D? ToScreen) Laid(object regions, int index, Rect bounds, Rect rect) =>
+        TransformedAt(regions, index) is { } region && region.Inverse.Invert() is { } forward
+            ? (rect with { X = region.Local.X + rect.X, Y = region.Local.Y + rect.Y }, forward)
+            : (rect with { X = bounds.X + rect.X, Y = bounds.Y + rect.Y }, null);
 
     /// <summary>
     /// What turns a point back into the space of the <paramref name="index"/>th region of
@@ -2377,14 +2414,41 @@ public sealed class PhotonHost
     private RealizeResult? _transformedFor;
     private Dictionary<(object, int), TransformedRegion>? _transformedAt;
 
-    /// <summary>Whether <paramref name="inner"/> lies wholly inside <paramref name="outer"/>. A box with
-    /// no area lies nowhere: a row its scroll view clipped away keeps a sliver of slop on screen and a
-    /// drawn box of zero height on the viewport's edge, which lay "inside" the last row shown, and took
-    /// its presses for a row nobody could see.</summary>
-    private static bool Encloses(Rect outer, Rect inner) =>
-        inner.Width > 0 && inner.Height > 0
-        && inner.Left >= outer.Left && inner.Top >= outer.Top && inner.Right <= outer.Right
-        && inner.Bottom <= outer.Bottom;
+    /// <summary>
+    /// Whether the box the <paramref name="inner"/>th hit region is drawn in lies wholly inside the box
+    /// the <paramref name="outer"/>th is drawn in, compared as they are drawn: a region a transform drew
+    /// is taken by its own four corners, carried into the other's space, since the boxes around two
+    /// turned rows nest while the rows lie side by side, and the narrower row's slop took the wider
+    /// one's presses. A box with no area lies nowhere: a row its scroll view clipped away keeps a sliver
+    /// of slop on screen and a drawn box of zero height on the viewport's edge, which lay "inside" the
+    /// last row shown, and took its presses for a row nobody could see.
+    /// </summary>
+    private bool StandsInside(IReadOnlyList<HitRegion> regions, int inner, int outer)
+    {
+        var box = regions[inner].Drawn;
+        if (box.Width <= 0 || box.Height <= 0) return false;
+        var innerTurned = TransformedAt(regions, inner);
+        var outerTurned = TransformedAt(regions, outer);
+        var within = outerTurned?.LocalDrawn ?? regions[outer].Drawn;
+        if (innerTurned is null && outerTurned is null) return Holds(within, box.Left, box.Top, box.Right, box.Bottom);
+
+        var local = innerTurned?.LocalDrawn ?? box;
+        var carry = innerTurned?.Inverse.Invert() ?? Matrix2D.Identity;
+        if (outerTurned is { } turned) carry *= turned.Inverse;
+        var a = carry.Transform(new Point(local.Left, local.Top));
+        var b = carry.Transform(new Point(local.Right, local.Top));
+        var c = carry.Transform(new Point(local.Left, local.Bottom));
+        var d = carry.Transform(new Point(local.Right, local.Bottom));
+        return Holds(within, a.X, a.Y, a.X, a.Y) && Holds(within, b.X, b.Y, b.X, b.Y)
+            && Holds(within, c.X, c.Y, c.X, c.Y) && Holds(within, d.X, d.Y, d.X, d.Y);
+    }
+
+    /// <summary>Whether <paramref name="box"/> holds the rect from (<paramref name="left"/>,
+    /// <paramref name="top"/>) to (<paramref name="right"/>, <paramref name="bottom"/>), edges included,
+    /// within the hundredth of a point a matrix and its inverse round to.</summary>
+    private static bool Holds(Rect box, float left, float top, float right, float bottom) =>
+        left >= box.Left - 0.01f && top >= box.Top - 0.01f && right <= box.Right + 0.01f
+        && bottom <= box.Bottom + 0.01f;
 
     /// <summary>
     /// WHERE the keyboard focus is, as the stable path the frame's <see cref="FocusStop"/>s carry
