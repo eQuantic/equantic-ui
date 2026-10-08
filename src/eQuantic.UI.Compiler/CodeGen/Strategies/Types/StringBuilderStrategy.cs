@@ -9,7 +9,10 @@ namespace eQuantic.UI.Compiler.CodeGen.Strategies.Types;
 /// Maps <c>System.Text.StringBuilder</c> to the runtime <c>StringBuilder</c> compat type.
 /// <c>new StringBuilder(...)</c> becomes the <c>stringBuilder(...)</c> factory; instance methods
 /// (<c>Append</c>, <c>AppendLine</c>, <c>Insert</c>, <c>Remove</c>, <c>Replace</c>, <c>Clear</c>,
-/// <c>ToString</c>) and <c>Length</c> become their camelCase equivalents on the value.
+/// <c>ToString</c>) and <c>Length</c> become their camelCase equivalents on the value, which take each
+/// overload by its count of arguments. The <c>char[]</c> overloads of <c>Append</c> and <c>Insert</c>
+/// are named for what they are (<c>appendChars</c>, <c>insertChars</c>): the runtime cannot tell a null
+/// array from a null string, and .NET refuses the two in different words (#650).
 /// </summary>
 /// <remarks>
 /// Priority 15 so it wins over the generic ToString (10), ObjectCreation (5) and member-access (0)
@@ -50,26 +53,28 @@ public class StringBuilderStrategy : ConversionStrategyBase
             case InvocationExpressionSyntax { Expression: MemberAccessExpressionSyntax ma } inv:
             {
                 var name = ma.Name.Identifier.Text;
+                var runtimeName = RuntimeName(context.SemanticHelper.GetSymbol(ma) as IMethodSymbol, name);
                 // The VALUE `Append`, `AppendLine` and `Insert` write is its ToString, in the culture in
                 // force: what a concatenation writes (StringConversion), a number in the culture's
                 // symbols (#454), a bool as True, an enum as its name, a null as nothing. It is the
                 // argument the bound tree binds to the `value` parameter, written by position or by
                 // name, and the call passes every argument where C# binds it, each evaluated in the
                 // order it is written. The runtime's builder took JavaScript's String() of it, so
-                // `Append(1.5)` read `1.5` on a pt-BR page.
+                // `Append(1.5)` read `1.5` on a pt-BR page. A char[] is written char by char, never as
+                // its text, so its overloads keep their own method (#650).
                 if (name is "Append" or "AppendLine" or "Insert"
                     && context.SemanticHelper.GetOperation(inv) is IInvocationOperation operation
-                    && operation.Arguments.FirstOrDefault(argument => argument.Parameter?.Name == "value"
+                    && operation.Arguments.FirstOrDefault(argument => argument.Parameter is { Name: "value", Type: not IArrayTypeSymbol }
                         && argument.ArgumentKind == ArgumentKind.Explicit)?.Value.Syntax is ExpressionSyntax value
                     && BoundArguments.Of(operation, argument => argument == value
                         ? StringConversion.ToDotNetString(argument, context.Converter.ConvertIr(argument), context)
                         : context.Converter.ConvertIr(argument)) is { } bound)
                 {
                     return Ir.JsExprWriter.Write(bound.Call(context.Converter.ConvertIr(ma.Expression),
-                        name.ToCamelCase(), context.TypeAnnotations));
+                        runtimeName, context.TypeAnnotations));
                 }
                 var receiver = context.Converter.ConvertExpression(ma.Expression);
-                return $"{receiver}.{name.ToCamelCase()}({ConvertArgs(inv.ArgumentList, context)})";
+                return $"{receiver}.{runtimeName}({ConvertArgs(inv.ArgumentList, context)})";
             }
 
             case MemberAccessExpressionSyntax member:
@@ -82,6 +87,14 @@ public class StringBuilderStrategy : ConversionStrategyBase
                 return context.Unhandled(node, "StringBuilder");
         }
     }
+
+    /// <summary>The runtime method an overload is: its name in camelCase, and the <c>char[]</c>
+    /// overloads of <c>Append</c> and <c>Insert</c> as their own method.</summary>
+    private static string RuntimeName(IMethodSymbol? method, string name) =>
+        method is { Name: "Append" or "Insert" }
+            && method.Parameters.Any(parameter => parameter is { Name: "value", Type: IArrayTypeSymbol })
+            ? $"{name.ToCamelCase()}Chars"
+            : name.ToCamelCase();
 
     private static bool IsMember(MemberAccessExpressionSyntax ma, ConversionContext context)
     {

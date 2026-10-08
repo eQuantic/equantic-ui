@@ -1552,28 +1552,6 @@ record of a release, the wiki's Upgrading page is the distillate.
   documented: `base.Name` over an auto-property overridden by another reads the override's value.
   Proposed and archived through OpenSpec (`openspec/specs/transpiler-classes`,
   `openspec/specs/transpiler-records`).
-- **2026-10-06 · A number and a date print in the page's culture**: the browser wrote a number with no
-  specifier as JavaScript's invariant text wherever C# writes one, a concatenation, an interpolation
-  hole, `ToString()`, `Convert.ToString`, a `StringBuilder` and a record's text
-  ([#454](https://github.com/eQuantic/equantic-ui/issues/454)); the formatter guessed what the compiler
-  knew, so a whole double took `D`, a `nint` was a double and the per mille sign was `‰` everywhere
-  ([#455](https://github.com/eQuantic/equantic-ui/issues/455)); `DateOnly`, `TimeOnly` and
-  `DateTimeOffset` printed through twins that knew no culture
-  ([#469](https://github.com/eQuantic/equantic-ui/issues/469)); a custom date picture wrote `/`, `:`,
-  `z` and `g` as they stand ([#470](https://github.com/eQuantic/equantic-ui/issues/470)); a page had a
-  culture only when the app had a string catalog, and formatted in its host's locale otherwise
-  ([#471](https://github.com/eQuantic/equantic-ui/issues/471)); `N`, `F`, `C` and `P` were laid out
-  by `Intl`, with ar-EG's own digits, a no-break space and two digits where .NET reads three
-  ([#634](https://github.com/eQuantic/equantic-ui/issues/634)); and a plain class wrote `[object Object]`
-  and a plain struct a record's text, where .NET writes the type's full name
-  ([#570](https://github.com/eQuantic/equantic-ui/issues/570)). The server writes the format culture's
-  `NumberFormatInfo` and `DateTimeFormatInfo` on every page and answers a switch from
-  `/_equantic/culture/{name}.json`; the browser draws every number and date from them, a calendar's
-  names among them, and a page with no culture installed is in the invariant culture. 187 of the 222
-  conformance cases, run on both sides, failed against main with the culture installed as main installs
-  it on a page with a catalog; the other 35 are neighbours that already held, kept as pins. EQ2109 is
-  retired. The served runtime grew about 3.9 KB gzipped. Proposed and archived through OpenSpec
-  (`openspec/specs/page-culture`, `runtime-dates`, `transpiler-bcl`, `transpiler-records`).
 - **2026-10-06 · The code engine completes**: the engine half of the code editor's slice 3
   ([#296](https://github.com/eQuantic/equantic-ui/issues/296)). `CodeCompletion`, a session on the
   controller, asks its providers once when a word starts, filters and ranks what they answered on
@@ -1725,6 +1703,48 @@ record of a release, the wiki's Upgrading page is the distillate.
   1970 toward the epoch; it answers a BigInt cut as .NET cuts it now. Found on the way: the date
   constructors past the second ([#606](https://github.com/eQuantic/equantic-ui/issues/606)).
   Proposed and archived through OpenSpec (`openspec/specs/runtime-dates`).
+- **2026-10-07 · An exception's message is composed as .NET composes it**: a framework exception's
+  arguments were read by position, so `new ArgumentNullException(nameof(x)).Message` was the
+  parameter's name, a parameter's name never reached a message and a constructor with no message gave
+  an empty one ([#558](https://github.com/eQuantic/equantic-ui/issues/558)). eqc binds them by their
+  parameters and reads the text .NET writes where no message, or a null one, was given from .NET
+  itself, for the constructor the call binds, where a table gave a `TaskCanceledException` its base's.
+  The runtime composes the message .NET writes: ` (Parameter 'x')`, and the actual value and a disposed
+  object's name on lines of their own, with `ParamName`, `ActualValue`, `InnerException` and
+  `TypeName` reading what the constructor took, an aggregate's inner messages and a type initializer's
+  sentence included. Proposed and archived through OpenSpec (`openspec/specs/transpiler-exceptions`).
+- **2026-10-07 · A builder's counted and ranged overloads write what .NET writes**: the runtime's
+  `StringBuilder` had one shape per method, so `Append('x', 3)` appended one `x`, and
+  `Append(text, start, count)`, `Insert(i, text, count)`, `Replace` over a range and
+  `ToString(start, length)` took the whole value, a `char[]` written as JavaScript's text of an array
+  and a null as `null` ([#650](https://github.com/eQuantic/equantic-ui/issues/650)). The builder takes
+  each overload shape by its count of arguments, the `char[]` overloads are methods of their own that
+  eqc names from the overload the call binds, and each refusal is .NET's, in .NET's order. 45 of the
+  46 new conformance cases fail on the base. The members the runtime does not have are
+  [#679](https://github.com/eQuantic/equantic-ui/issues/679). Proposed and archived through OpenSpec
+  (`openspec/specs/transpiler-bcl`).
+- **2026-10-06 · A number and a date print in the page's culture**: the browser wrote a number with no
+  specifier as JavaScript's invariant text wherever C# writes one, a concatenation, an interpolation
+  hole, `ToString()`, `Convert.ToString`, a `StringBuilder` and a record's text
+  ([#454](https://github.com/eQuantic/equantic-ui/issues/454)); the formatter guessed what the compiler
+  knew, so a whole double took `D`, a `nint` was a double and the per mille sign was `‰` everywhere
+  ([#455](https://github.com/eQuantic/equantic-ui/issues/455)); `DateOnly`, `TimeOnly` and
+  `DateTimeOffset` printed through twins that knew no culture
+  ([#469](https://github.com/eQuantic/equantic-ui/issues/469)); a custom date picture wrote `/`, `:`,
+  `z` and `g` as they stand ([#470](https://github.com/eQuantic/equantic-ui/issues/470)); a page had a
+  culture only when the app had a string catalog, and formatted in its host's locale otherwise
+  ([#471](https://github.com/eQuantic/equantic-ui/issues/471)); `N`, `F`, `C` and `P` were laid out
+  by `Intl`, with ar-EG's own digits, a no-break space and two digits where .NET reads three
+  ([#634](https://github.com/eQuantic/equantic-ui/issues/634)); and a plain class wrote `[object Object]`
+  and a plain struct a record's text, where .NET writes the type's full name
+  ([#570](https://github.com/eQuantic/equantic-ui/issues/570)). The server writes the format culture's
+  `NumberFormatInfo` and `DateTimeFormatInfo` on every page and answers a switch from
+  `/_equantic/culture/{name}.json`; the browser draws every number and date from them, a calendar's
+  names among them, and a page with no culture installed is in the invariant culture. 187 of the 222
+  conformance cases, run on both sides, failed against main with the culture installed as main installs
+  it on a page with a catalog; the other 35 are neighbours that already held, kept as pins. EQ2109 is
+  retired. The served runtime grew about 3.9 KB gzipped. Proposed and archived through OpenSpec
+  (`openspec/specs/page-culture`, `runtime-dates`, `transpiler-bcl`, `transpiler-records`).
 
 ## Retired documents
 
