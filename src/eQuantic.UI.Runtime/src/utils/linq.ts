@@ -180,10 +180,11 @@ interface Enumerator<T> {
 /**
  * The iteration of a twin whose type implements `IEnumerable<T>` (#612): its `[Symbol.iterator]` hands
  * this the enumerator the type's own `GetEnumerator()` returned, so a `for…of`, a spread and every
- * sequence helper here walk the class as a `foreach` walks it. An enumerator an iterator method filled,
- * or a sequence's own, is iterated as it is; one the app wrote is walked by its `MoveNext` and
- * `Current`, and disposed when the walk ends, however it ends, as a `foreach` disposes it. A null one
- * is .NET's NullReferenceException, which `MoveNext` on it throws.
+ * sequence helper here walk the class as a `foreach` walks it. An enumerator the app wrote is walked by
+ * its `MoveNext` and `Current`, and disposed when the walk ends, however it ends, as a `foreach`
+ * disposes it, even where its class is a sequence too (`GetEnumerator() => this`), whose own iteration
+ * would hand it back here without end. An enumerator an iterator method filled, or a sequence's own,
+ * is iterated as it is. A null one is .NET's NullReferenceException, which `MoveNext` on it throws.
  */
 export function iterate<T>(enumerator: Iterable<T> | Enumerator<T>): Iterator<T> {
   if (enumerator == null) {
@@ -192,6 +193,7 @@ export function iterate<T>(enumerator: Iterable<T> | Enumerator<T>): Iterator<T>
       'Object reference not set to an instance of an object.',
     );
   }
+  if (typeof (enumerator as Partial<Enumerator<T>>).moveNext === 'function') return walk(enumerator as Enumerator<T>);
   const own = (enumerator as Partial<Iterable<T>>)[Symbol.iterator];
   return typeof own === 'function' ? own.call(enumerator) : walk(enumerator as Enumerator<T>);
 }

@@ -36,7 +36,9 @@ namespace eQuantic.UI.Compiler.Services;
 /// <para>
 /// An EXCEPTION class of the app's is a class (#611): its twin extends the runtime's exception base,
 /// or the twin of the app's exception it derives from, and carries the members it declares. It was kept
-/// out, built as an <c>Error</c> with no member, and everything it declared was gone.
+/// out, built as an <c>Error</c> with no member, and everything it declared was gone. A host with no
+/// compilation still keeps it out by its base's name (<see cref="KeepsOutByName"/>): nothing there
+/// knows the constructors of the base its twin would call.
 /// </para>
 /// <para>
 /// The chain is asked of the SYMBOL wherever the host has the project's compilation, which sees every
@@ -144,12 +146,17 @@ internal static class PlainClassModule
 
     /// <summary>
     /// Whether a type that no declaration in sight declares, known by its name alone, keeps a class over
-    /// it out: an attribute of .NET, named so by the convention every one of them follows. Asked only at
-    /// the end of a chain the caller could not walk further, by a host with no compilation to ask. An
-    /// exception keeps nothing out, a class over one being a class (#611).
+    /// it out: an attribute or an exception of .NET, named so by the convention every one of them
+    /// follows. Asked only at the end of a chain the caller could not walk further, by a host with no
+    /// compilation to ask, or for a base no compilation in hand can bind. An exception class is a class
+    /// wherever the model sees its chain (#611); with none to ask, nothing knows the constructors of the
+    /// base its twin would call, so it is built by its name as the runtime's exception it always was,
+    /// where a module of its own extended nothing and threw a plain object no typed <c>catch</c> took.
     /// </summary>
     internal static bool KeepsOutByName(string name) =>
-        name == "Attribute" || name.EndsWith("Attribute", StringComparison.Ordinal);
+        name is "Attribute" or "Exception"
+        || name.EndsWith("Attribute", StringComparison.Ordinal)
+        || name.EndsWith("Exception", StringComparison.Ordinal);
 
     /// <summary>
     /// What a scan saw of the app's type declarations, by simple name, every file it read together: the

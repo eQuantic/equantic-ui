@@ -141,6 +141,37 @@ describe("an exception class of the app's own is a class over the browser's Erro
     expect(new Custom('text').message).toBe('custom:text');
   });
 
+  it("lets a member the class declares answer under the name of one of the base's", () => {
+    // The twins of `class Lookup : Exception { public string Name => key; }` and of
+    // `class Renamed : ArgumentException { public override string ParamName => "q"; }`: an own
+    // property of the instance, as `create` writes one, hid both.
+    class Lookup extends Exception {
+      static $types = ['App.Lookup', 'System.Exception'];
+      get name(): string {
+        return 'key';
+      }
+    }
+    class Renamed extends Exception {
+      static $types = ['App.Renamed', 'System.ArgumentException', 'System.SystemException', 'System.Exception'];
+      get paramName(): string {
+        return 'q';
+      }
+    }
+    expect(new Lookup('m').name).toBe('key');
+    const renamed = new Renamed('m', { paramName: 'p' });
+    expect(renamed.paramName).toBe('q');
+    expect(renamed.message).toBe("m (Parameter 'p')");
+  });
+
+  it("reads an aggregate's first inner exception as its InnerException, and none as null", () => {
+    const first = exception('System.FormatException', 'f');
+    const many = new Failure('m', { innerExceptions: [first, exception('System.FormatException', 'g')] }) as Failure & {
+      innerException: unknown;
+    };
+    expect(many.innerException).toBe(first);
+    expect((new Failure('m') as Failure & { innerException: unknown }).innerException).toBe(null);
+  });
+
   it('keeps its members and its chain out of the way of JSON', () => {
     expect(JSON.stringify(new Failure('m'))).toBe('{"code":7}');
   });

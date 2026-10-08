@@ -163,9 +163,11 @@ public class PlainClassModuleTests
 
     /// <summary>
     /// A host with no compilation at all walks the chain by NAME, and the parser walks the resolver's
-    /// scan, which reaches the other file: it walked its own file only, stopped at a base another file
-    /// declares, and wrote a module the resolver refused. An attribute two levels down, across files, is
-    /// none, and an exception class of the app's is a class there too (#611).
+    /// scan, which reaches the other file: it walked its own file only, stopped at `Failure`, which
+    /// another file declares over `Exception`, and wrote `Retry` as a module the resolver refused. An
+    /// attribute two levels down, across files, is none either. An exception class is a class wherever
+    /// the model sees its chain (#611), and no model is here: nothing knows the constructors of the base
+    /// its twin would call, so a module of its own extended nothing and threw a plain object.
     /// </summary>
     [Fact]
     public void WithoutACompilation_TheParserWalksTheResolversScan() =>
@@ -180,8 +182,8 @@ public class PlainClassModuleTests
             },
             library: null,
             projectCompilation: false,
-            modules: ["ColorAttribute", "Failure", "Retry"],
-            notModules: ["Mark", "Underline"]);
+            modules: ["ColorAttribute"],
+            notModules: ["Failure", "Retry", "Mark", "Underline"]);
 
     private static void AssertTheRule(IReadOnlyDictionary<string, string> files, string? library, bool projectCompilation,
         string[] modules, string[] notModules)

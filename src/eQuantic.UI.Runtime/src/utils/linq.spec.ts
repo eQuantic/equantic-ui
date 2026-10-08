@@ -111,6 +111,27 @@ describe("iterate (a twin's [Symbol.iterator], #612)", () => {
     expect(log).toEqual(['disposed']);
   });
 
+  it('walks a class that is its own enumerator by its MoveNext, where its own iteration came back here', () => {
+    // The twin of a class that implements IEnumerable<int> and IEnumerator<int>, `GetEnumerator() => this`.
+    class Ticker {
+      private at = 0;
+      [Symbol.iterator](): Iterator<number> {
+        return iterate(this.getEnumerator());
+      }
+      getEnumerator(): Ticker {
+        this.at = 0;
+        return this;
+      }
+      moveNext(): boolean {
+        return ++this.at <= 3;
+      }
+      get current(): number {
+        return this.at;
+      }
+    }
+    expect([...new Ticker()]).toEqual([1, 2, 3]);
+  });
+
   it('disposes it when a loop leaves early, as a foreach does', () => {
     const log: string[] = [];
     for (const n of { [Symbol.iterator]: () => iterate(countdown(5, log)) }) if (n === 4) break;

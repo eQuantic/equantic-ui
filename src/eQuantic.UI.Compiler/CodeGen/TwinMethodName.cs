@@ -129,24 +129,20 @@ internal static class TwinMethodName
     };
 
     /// <summary>Whether two methods have the signature C# hides by: as many type parameters, and the same
-    /// parameters, each of the same type, by value or by reference alike. A method's own type parameter is
-    /// matched by its position, since each method declares its own.</summary>
+    /// parameters, each of the same type, by value or by reference alike. Each method declares its own type
+    /// parameters, so the other's are read as this one's, by position: <c>F&lt;U&gt;(List&lt;U&gt;)</c> hides
+    /// <c>F&lt;T&gt;(List&lt;T&gt;)</c>, where comparing a bare type parameter alone saw two signatures and
+    /// left the method that hides one refused (EQ1007).</summary>
     private static bool SameSignature(IMethodSymbol method, IMethodSymbol other)
     {
         if (method.Arity != other.Arity || method.Parameters.Length != other.Parameters.Length) return false;
+        if (method.Arity > 0) other = other.Construct([.. method.TypeParameters]);
         for (var i = 0; i < method.Parameters.Length; i++)
         {
             var (mine, theirs) = (method.Parameters[i], other.Parameters[i]);
             if ((mine.RefKind == RefKind.None) != (theirs.RefKind == RefKind.None)) return false;
-            if (!SameType(mine.Type, theirs.Type)) return false;
+            if (!SymbolEqualityComparer.Default.Equals(mine.Type, theirs.Type)) return false;
         }
         return true;
     }
-
-    private static bool SameType(ITypeSymbol mine, ITypeSymbol theirs) => (mine, theirs) switch
-    {
-        (ITypeParameterSymbol { TypeParameterKind: TypeParameterKind.Method } a,
-            ITypeParameterSymbol { TypeParameterKind: TypeParameterKind.Method } b) => a.Ordinal == b.Ordinal,
-        _ => SymbolEqualityComparer.Default.Equals(mine, theirs),
-    };
 }

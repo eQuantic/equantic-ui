@@ -39,6 +39,8 @@ public class ClassDispatchConformanceTests
         public class IntBox : Box<int> { public new string Get(int x) => "int"; }
         public class Counter { public int Calls; public new int GetHashCode() => ++Calls; }
         public class Labelled { public new string ToString() => "hidden"; }
+        public class Gen { public virtual string F<T>(List<T> x) => "base"; }
+        public class GenHiding : Gen { public new string F<U>(List<U> x) => "hiding"; }
         """;
 
     private static readonly (string Name, string Statements)[] HidingCases =
@@ -61,6 +63,8 @@ public class ClassDispatchConformanceTests
         ("a combined hash asks object's, not the method that hides it", "var c = new Counter(); HashCode.Combine(c, 1); return c.Calls;"),
         ("the method that hides GetHashCode, called through its type", "var c = new Counter(); c.GetHashCode(); return c.GetHashCode();"),
         ("the method that hides ToString, called through its type", "return new Labelled().ToString();"),
+        ("a generic method that hides one over its own type parameter",
+            "Gen g = new GenHiding(); return g.F(new List<int>()) + new GenHiding().F(new List<int>());"),
     ];
 
     [SkippableTheory]
@@ -134,6 +138,34 @@ public class ClassDispatchConformanceTests
             public IEnumerator<int> GetEnumerator() { yield return First; yield return Second; }
             IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
         }
+        public struct Walk : IEnumerator<int>
+        {
+            private int at;
+            private readonly int to;
+            public Walk(int to) { this.to = to; at = 0; }
+            public int Current => at * 2;
+            object IEnumerator.Current => Current;
+            public bool MoveNext() => ++at <= to;
+            public void Reset() { at = 0; }
+            public void Dispose() { }
+        }
+        public class Fast : IEnumerable<int>
+        {
+            public Walk GetEnumerator() => new Walk(3);
+            IEnumerator<int> IEnumerable<int>.GetEnumerator() => GetEnumerator();
+            IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+        }
+        public class Ticker : IEnumerable<int>, IEnumerator<int>
+        {
+            private int at;
+            public IEnumerator<int> GetEnumerator() { at = 0; return this; }
+            IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+            public int Current => at;
+            object IEnumerator.Current => Current;
+            public bool MoveNext() => ++at <= 3;
+            public void Reset() { at = 0; }
+            public void Dispose() { }
+        }
         """;
 
     private static readonly (string Name, string Statements)[] SequenceCases =
@@ -156,6 +188,9 @@ public class ClassDispatchConformanceTests
             "Shelf s = new Books(); var r = \"\"; foreach (var b in s) r += b; return r + string.Join(\"\", new Books().Reverse());"),
         ("a class that implements only IEnumerable", "var r = \"\"; foreach (var o in new Loose()) r += o; return r;"),
         ("a record's sequence", "var p = new Pair(3, 4); return string.Join(\",\", p) + \"|\" + p.Sum();"),
+        ("a public GetEnumerator of a struct beside the explicit ones",
+            "var t = 0; foreach (var x in new Fast()) t += x; return t + \"|\" + string.Join(\",\", new Fast()) + \"|\" + new Fast().Sum();"),
+        ("a class that is its own enumerator", "return string.Join(\",\", new Ticker()) + \"|\" + new Ticker().Count();"),
     ];
 
     [SkippableTheory]
@@ -198,6 +233,17 @@ public class ClassDispatchConformanceTests
             public class Maybe : InvalidOperationException { public Maybe(string? m) : base(m) { } }
             public class Bad : ArgumentException { public Bad(string name) : base("bad", name) { } }
             public class Missing : ArgumentNullException { public Missing(string name) : base(name) { } }
+            public class Lookup : Exception
+            {
+                private readonly string key;
+                public Lookup(string key) : base("missing " + key) { this.key = key; }
+                public string Name => key;
+            }
+            public class Renamed : ArgumentException
+            {
+                public Renamed() : base("m", "p") { }
+                public override string ParamName => "q";
+            }
         }
         """;
 
@@ -230,6 +276,8 @@ public class ClassDispatchConformanceTests
             "return new Nulled().Message + \"|\" + new Maybe(null).Message + \"|\" + new Maybe(\"m\").Message;"),
         ("a parameter's name its .NET base takes", "var b = new Bad(\"x\"); return b.Message + \"|\" + b.ParamName;"),
         ("a .NET base that takes no message", "var m = new Missing(\"y\"); return m.Message + \"|\" + m.ParamName;"),
+        ("a member named Name", "var l = new Lookup(\"k\"); return l.Name + \"|\" + l.Message;"),
+        ("an override of ParamName", "var r = new Renamed(); return r.ParamName + \"|\" + r.Message;"),
     ];
 
     [SkippableTheory]

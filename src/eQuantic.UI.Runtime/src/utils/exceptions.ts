@@ -133,9 +133,10 @@ export function create(
   parts?: ExceptionParts,
   ..._evaluated: unknown[]
 ): Error {
-  const error = new Error(composed(types, message, parts));
+  const kept = parts === undefined ? undefined : held(parts);
+  const error = new Error(composed(types, message, kept));
   tag(error, types);
-  if (parts !== undefined) hold(error, parts);
+  if (kept !== undefined) hold(error, kept);
   return error;
 }
 
@@ -154,21 +155,23 @@ function tag(error: Error, types: readonly string[]): void {
 }
 
 /**
- * What a framework constructor took besides the message, each held as the member that reads it, and
- * what was held: the inner exceptions read once, into an array.
+ * What a framework constructor took besides the message, read once: its inner exceptions into an
+ * array, which the message and the members both read.
  */
-function hold(error: Error, parts: ExceptionParts): ExceptionParts {
-  const held: Record<string, unknown> = {};
+function held(parts: ExceptionParts): ExceptionParts {
+  return parts.innerExceptions == null ? parts : { ...parts, innerExceptions: [...parts.innerExceptions] };
+}
+
+/** What a framework constructor took besides the message, each held as the member that reads it. */
+function hold(error: Error, parts: ExceptionParts): void {
   for (const [member, value] of Object.entries(parts)) {
-    held[member] = member === 'innerExceptions' && value != null ? [...(value as Iterable<unknown>)] : value;
-    Object.defineProperty(error, member, { value: held[member], writable: true, configurable: true });
+    Object.defineProperty(error, member, { value, writable: true, configurable: true });
   }
   // An AggregateException's InnerException is its first inner one, as .NET's is.
-  const first = (held as { innerExceptions?: unknown[] }).innerExceptions?.[0];
+  const first = (parts.innerExceptions as readonly unknown[] | null | undefined)?.[0];
   if (parts.innerException === undefined && first !== undefined) {
     Object.defineProperty(error, 'innerException', { value: first, writable: true, configurable: true });
   }
-  return held as ExceptionParts;
 }
 
 /** Where an app exception keeps the message its constructor was handed: null for none. */
@@ -179,6 +182,9 @@ const PARTS = Symbol('eq.exception.parts');
 
 /** An app exception's twin, as the base reads it: the chain its class says. */
 type Twin = { readonly $types?: readonly string[] };
+
+/** An app exception as the base's members read it. */
+type Kept = Tagged & { [MESSAGE]?: string | null; [PARTS]?: ExceptionParts };
 
 /**
  * The base of the twin of an exception class of the app's own (#611): the browser's `Error`, carrying
@@ -191,36 +197,58 @@ type Twin = { readonly $types?: readonly string[] };
  * The constructor takes what a `new` of the exception of .NET's the class derives from hands
  * {@link create}: the message, which the compiler hands with the text that type's constructor writes
  * where none is given, and what that constructor takes besides it (#558), an inner exception or a
- * parameter's name, which `InnerException` and `ParamName` read. A message still missing is
- * `Exception.Message`'s own, which names the class. The message is composed when it is read: `Message`
- * is virtual in .NET, so it is an accessor on the prototype, which the twin of a class that overrides it
- * replaces, where a message the `Error` constructor wrote would be the instance's own and would hide
- * every override.
+ * parameter's name. A message still missing is `Exception.Message`'s own, which names the class.
+ *
+ * Every member it answers is an accessor on its prototype, read from what its constructor kept: the
+ * message, composed when it is read, the members a framework constructor's parts fill, and the `name`
+ * the console prints. A member the twin declares under one of those names is its own then: an override
+ * of the virtual `Message` or `ParamName` answers for it, and a `Name` of the app's is the app's, where
+ * an instance's own property, as {@link create} writes one, would hide each of them.
  */
 export class Exception extends Error {
   constructor(message?: string | null, parts?: ExceptionParts) {
     super();
-    tag(this, (new.target as unknown as Twin).$types ?? EXCEPTION);
+    Object.defineProperty(this, TYPES, { value: (new.target as unknown as Twin).$types ?? EXCEPTION, configurable: true });
     Object.defineProperty(this, MESSAGE, { value: message ?? null, writable: true });
-    Object.defineProperty(this, 'innerException', { value: null, writable: true, configurable: true });
-    Object.defineProperty(this, PARTS, { value: parts === undefined ? undefined : hold(this, parts), writable: true });
+    Object.defineProperty(this, PARTS, { value: parts === undefined ? undefined : held(parts), writable: true });
   }
 }
 
-Object.defineProperty(Exception.prototype, 'message', {
-  get(this: Exception & { [MESSAGE]: string | null; [PARTS]: ExceptionParts | undefined }): string {
-    return composed((this as Tagged)[TYPES] ?? EXCEPTION, this[MESSAGE], this[PARTS]);
-  },
-  configurable: true,
-});
+/**
+ * The members of the base, each read from what the constructor kept. Every member of
+ * {@link ExceptionParts} is one, which `satisfies` holds to: a part added there and not here fails
+ * the type check.
+ */
+const members = {
+  message: (kept: Kept) => composed(kept[TYPES] ?? EXCEPTION, kept[MESSAGE], kept[PARTS]),
+  name: (kept: Kept) => simpleName((kept[TYPES] ?? EXCEPTION)[0]),
+  // An AggregateException's InnerException is its first inner one, as .NET's is, and none is null.
+  innerException: (kept: Kept) =>
+    kept[PARTS]?.innerException ?? (kept[PARTS]?.innerExceptions as readonly unknown[] | null | undefined)?.[0] ?? null,
+  paramName: (kept: Kept) => kept[PARTS]?.paramName,
+  actualValue: (kept: Kept) => kept[PARTS]?.actualValue,
+  objectName: (kept: Kept) => kept[PARTS]?.objectName,
+  typeName: (kept: Kept) => kept[PARTS]?.typeName,
+  innerExceptions: (kept: Kept) => kept[PARTS]?.innerExceptions,
+} satisfies Record<keyof ExceptionParts | 'message' | 'name', (kept: Kept) => unknown>;
+
+for (const [member, read] of Object.entries(members)) {
+  Object.defineProperty(Exception.prototype, member, {
+    get(this: Kept): unknown {
+      return read(this);
+    },
+    configurable: true,
+  });
+}
 
 /**
  * An exception of a generic class of the app's, built as one of its constructions (`new Failed<int>()`),
  * tagged with that construction's chain: its twin's `$types` can only say the class
- * (`Failed<T>`), and a typed `catch` tells `Failed<int>` from `Failed<string>`.
+ * (`Failed<T>`), and a typed `catch` tells `Failed<int>` from `Failed<string>`. Its `name` reads the
+ * chain, so it follows.
  */
 export function typed<E extends Error>(error: E, types: readonly string[]): E {
-  tag(error, types);
+  Object.defineProperty(error, TYPES, { value: types, configurable: true });
   return error;
 }
 
