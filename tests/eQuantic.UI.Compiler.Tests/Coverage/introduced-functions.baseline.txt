@@ -48,7 +48,7 @@ src/eQuantic.UI.Compiler/CodeGen/Strategies/Primitives/PrimitiveStaticStrategy.c
 src/eQuantic.UI.Compiler/CodeGen/Strategies/Primitives/StringMethodStrategy.cs  1  no C# inside
 src/eQuantic.UI.Compiler/CodeGen/Strategies/Primitives/StringStaticStrategy.cs  1  not looked at yet
 src/eQuantic.UI.Compiler/CodeGen/Strategies/ReadModifyWrite.cs  1  not looked at yet
-src/eQuantic.UI.Compiler/CodeGen/Strategies/Types/EnumMethodStrategy.cs  2  arguments only
+src/eQuantic.UI.Compiler/CodeGen/Strategies/Types/EnumMethodStrategy.cs  1  arguments only
 src/eQuantic.UI.Compiler/CodeGen/Strategies/ValueFlow.cs  1  not looked at yet
 src/eQuantic.UI.Compiler/CodeGen/TsStandIn.cs  2  a type, not a function
 src/eQuantic.UI.Compiler/CodeGen/TypeScriptEmitter.cs  7  not looked at yet
