@@ -1728,8 +1728,9 @@ record of a release, the wiki's Upgrading page is the distillate.
   `Fold is not defined`, while `Fold.Text(n)` under a using worked
   ([#625](https://github.com/eQuantic/equantic-ui/issues/625)). The strategy that strips a namespace now
   registers the type the name binds, which every emitter imports, through part of the namespace, the
-  whole of it or `global::`, the expression's case of what #479 did for a base class. Proposed and
-  archived through OpenSpec (`openspec/specs/transpiler-names`).
+  whole of it or `global::`, the expression's case of what #479 did for a base class. A using alias
+  wrote its own name, `F.text(n)`, which nothing defines: it writes the type's and imports it. Proposed
+  and archived through OpenSpec (`openspec/specs/transpiler-names`).
 
 ## Retired documents
 
