@@ -47,8 +47,11 @@ public abstract class FlexNode : VisualNode, IEnumerable<VisualNode>
 
     /// <summary>
     /// Spec S3 flow wrapping (the CSS <c>flex-wrap: wrap</c> twin): children that overflow the main
-    /// extent break onto the next line. v1 scope: children keep their NATURAL main size — Flexible
-    /// weights don't distribute inside a wrapping container (use a non-wrapping Row for that).
+    /// extent break onto the next line. A child breaks against its hypothetical size: a
+    /// <see cref="Flexible"/>'s basis when it declares one, zero for a weighted Flexible that declares
+    /// none, and its natural size otherwise. Each line is then resolved on its own: the line's
+    /// leftover goes to its Flexibles by weight, and an overflowing line is taken back from its
+    /// shrinkers, weighted by basis and never past the min-content floor.
     /// </summary>
     public bool Wrap { get; init; }
 
