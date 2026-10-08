@@ -84,7 +84,7 @@ public class OrderByStrategy : IExpressionIrStrategy
         // {0} is the source and {1}… the key selectors, in the order C# evaluates them: the writer
         // binds a selector that is not a lambda, which the comparator would otherwise run each time.
         return JsExpr.Template($"[...{{0}}].sort(($a, $b) => {{ {body} }})",
-            [src, .. keys.Select(key => key.Selector)], context.TypeAnnotations);
+            [src, .. keys.Select(key => key.Selector)]);
     }
 
     public int Priority => 10;

@@ -82,7 +82,7 @@ internal static class ExceptionTypes
         holes.AddRange(Enumerable.Range(0, arguments.Count).Where(index => index != message).Select(index => $"{{{index}}}"));
         var types = $"[{string.Join(", ", chain.Select(JsStringLiteral.Quote))}]";
         var parts = arguments.Select(argument => context.Converter.ConvertIr(argument.Expression)).ToList();
-        return JsExpr.Template($"{Eq.ExceptionCreate}({types}, {string.Join(", ", holes)})", parts, context.TypeAnnotations);
+        return JsExpr.Template($"{Eq.ExceptionCreate}({types}, {string.Join(", ", holes)})", parts);
     }
 
     /// <summary>The construction from a chain the caller already has.</summary>

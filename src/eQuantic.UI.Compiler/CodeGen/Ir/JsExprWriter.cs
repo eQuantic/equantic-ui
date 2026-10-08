@@ -209,7 +209,11 @@ public static class JsExprWriter
         if (last < 0) return body.Done();
 
         var indexes = Enumerable.Range(0, parts.Count).Where(i => bound[i]).ToArray();
-        var names = string.Join(", ", indexes.Select(i => "$" + i + (template.Annotate ? ": any" : "")));
+        // Bare in TypeScript too: a strict tsc types an arrow called where it is written from the
+        // arguments it is called with, so `$0` keeps the receiver's type and a callback the template
+        // hands it is typed from there. Annotated `any`, the receiver lost its type, and the template's
+        // own callbacks fell to TS7006 (Copilot's third review of #661).
+        var names = string.Join(", ", indexes.Select(i => "$" + i));
         return new JsWrittenBuilder().Add($"(({names}) => ").Add(body.Done()).Add(")(")
             .AddJoined(", ", indexes.Select(i => Written(parts[i]))).Add(")").Done();
     }

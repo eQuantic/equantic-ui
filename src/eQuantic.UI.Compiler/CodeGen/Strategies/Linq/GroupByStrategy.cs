@@ -84,7 +84,7 @@ public class GroupByStrategy : IExpressionIrStrategy
         // A selector that is a lambda is written where it is called; the writer binds any other.
         return JsExpr.Template(
             resultSelector is { } result ? $"{grouped}.map(($g) => ({{{result}}})($g.key, $g))" : grouped,
-            parts, context.TypeAnnotations);
+            parts);
     }
 
     /// <summary>The role of the argument after the key selector. The bound overload names it;

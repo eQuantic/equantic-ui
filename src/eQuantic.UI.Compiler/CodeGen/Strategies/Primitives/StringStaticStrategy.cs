@@ -352,7 +352,7 @@ public class StringStaticStrategy : IConversionStrategy
         string Hole(ExpressionSyntax argument) => "{" + written.IndexOf(argument) + "}";
         var holes = passed.Select(value => Passed(value, Hole(value.Value)));
         var call = $"{function}({string.Join(", ", holes.Prepend(Hole(template)))})";
-        return JsExprWriter.Write(JsExpr.Template(call, parts, context.TypeAnnotations));
+        return JsExprWriter.Write(JsExpr.Template(call, parts));
     }
 
     /// <summary>Whether the spelling alone proves an array written in place binds as the params
@@ -549,7 +549,7 @@ public class StringStaticStrategy : IConversionStrategy
         var template = "''" + string.Concat(Enumerable.Range(0, parts.Length).Select(i => " + {" + i + "}"));
         if (context.SemanticHelper.GetSymbol(node) is IMethodSymbol method)
             template = PrimitiveStaticStrategy.BindNamedArguments(template, node, method);
-        return JsExprWriter.Write(JsExpr.Template(template, parts, context.TypeAnnotations));
+        return JsExprWriter.Write(JsExpr.Template(template, parts));
     }
 
     /// <summary>
@@ -631,7 +631,7 @@ public class StringStaticStrategy : IConversionStrategy
             var template = IsConstantText(separatorArgument.Expression, context)
                 ? $"[{holes}].join({{0}})"
                 : $"{Eq.StringJoin}({{0}}, [{holes}])";
-            return JsExprWriter.Write(JsExpr.Template(template, parts, context.TypeAnnotations));
+            return JsExprWriter.Write(JsExpr.Template(template, parts));
         }
 
         var valuesType = context.SemanticHelper.GetType((ExpressionSyntax)bound.Value.Syntax) ?? valuesParameter.Type;
@@ -663,6 +663,6 @@ public class StringStaticStrategy : IConversionStrategy
         context.UsedHelpers.Add(Eq.Import);
         var parts = node.ArgumentList.Arguments.Select(argument => context.Converter.ConvertIr(argument.Expression)).ToArray();
         return JsExprWriter.Write(JsExpr.Template(PrimitiveStaticStrategy.BindNamedArguments(template, node, method),
-            parts, context.TypeAnnotations));
+            parts));
     }
 }

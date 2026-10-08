@@ -198,14 +198,15 @@ public class JsTemplateTests
     }
 
     [Fact]
-    public void BoundParameters_AreAnnotated_WhereTheOutputIsTypeChecked()
+    public void BoundParameters_AreBare_TheArgumentsTypeThem()
     {
-        // A strict TypeScript refuses an implicitly-any parameter (TS7006), so the arrow the
-        // writer introduces must type its own parameters where the file will be checked.
-        JsExprWriter.Write(JsExpr.Template("({0} === {0}.trim())", new[] { Call("f()") }, annotate: true))
-            .Should().Be("(($0: any) => ($0 === $0.trim()))(f())");
-        JsExprWriter.Write(JsExpr.Template("({0} === {0}.trim())", new[] { Call("f()") }, annotate: false))
-            .Should().Be("(($0) => ($0 === $0.trim()))(f())");
+        // TypeScript types an immediately-invoked arrow's parameters from the arguments it is called
+        // with, so a bare `$0` keeps the receiver's type, and a callback the template hands it is
+        // typed from there. Annotated `any`, the receiver lost its type and the template's own
+        // callbacks fell to TS7006 under a strict tsc (Copilot's third review of #661). That is
+        // proved by type-checking, not by this text: the BoundReceivers fixture the runtime's tsc reads.
+        Write(JsExpr.Template("({0}.reduce(($a, $b) => $a + $b, 0) / {0}.length)", Call("f()")))
+            .Should().Be("(($0) => ($0.reduce(($a, $b) => $a + $b, 0) / $0.length))(f())");
     }
 
     [Fact]
