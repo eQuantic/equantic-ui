@@ -20,6 +20,7 @@ using Microsoft.AspNetCore.ResponseCompression;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.Options;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 
@@ -83,12 +84,18 @@ public static class UIExtensions
             services.AddTransient<Microsoft.AspNetCore.Hosting.IStartupFilter, PoweredByHeader>();
 
         services.AddSingleton(options);
+        // The origins whose pages may call the app's actions besides its own host (#678): read from
+        // configuration, added to in Program.cs, and checked at start, so a malformed one stops the app
+        // instead of refusing the page it was written for.
         services.AddOptions<ServerActionsOptions>()
             .BindConfiguration(ServerActionsOptions.SectionName)
             .Configure(actions =>
             {
                 foreach (var origin in options.ServerActionOrigins) actions.AllowedOrigins.Add(origin);
-            });
+            })
+            .ValidateOnStart();
+        services.TryAddEnumerable(
+            ServiceDescriptor.Singleton<IValidateOptions<ServerActionsOptions>, ServerActionsOptionsValidator>());
         services.AddSingleton<IServerActionRegistry>(sp =>
         {
             var registry = new ServerActionRegistry();
