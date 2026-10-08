@@ -34,3 +34,7 @@ recorded the raw text in the `CodeEdit`, whose `InsertedRange` split on LF alone
 
 - No control in the SDK stops a Tab keydown's propagation, which would now hide it from the trap; the
   `focusin` guard still pulls the focus back into the layer if one ever did.
+- A spreadsheet takes every Tab and releases none, on both targets. Inside a dialog on the web it now
+  keeps Tab as it already did on Photon and outside a dialog, so the keyboard cannot leave a sheet
+  there either: reported as #732, for a release on Escape that both targets share through the
+  keymap, as the code editor's.

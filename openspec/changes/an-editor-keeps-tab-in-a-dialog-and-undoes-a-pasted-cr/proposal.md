@@ -40,4 +40,5 @@ None.
 ## Impact
 
 The engine and the runtime only. A control that consumes Tab inside a dialog (a code editor, a
-spreadsheet walking its cells) now keeps it on the web as it does on Photon.
+spreadsheet walking its cells) now keeps it on the web as it does on Photon. A spreadsheet releases
+no Tab on either target, so the keyboard cannot leave one inside a dialog either, reported as #732.
