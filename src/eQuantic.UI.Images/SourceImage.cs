@@ -69,10 +69,11 @@ internal sealed class SourceImage : IDisposable
 
     /// <summary>
     /// The size a source is displayed at, read from its header alone. The stream is read
-    /// asynchronously, since a request body refuses a synchronous read, and in blocks that double
-    /// until the codec has what it needs: a PNG's first 64 bytes, a JPEG's markers up to its first
-    /// scan, a camera's EXIF included. Nothing is decoded, so the pixel ceiling does not apply, and
-    /// the stream is left open for its owner.
+    /// asynchronously, since a request body refuses a synchronous read (and a throw inside Skia's
+    /// read callback takes the process down), in blocks that double until the codec has what it
+    /// needs: a PNG's first 64 bytes, a JPEG's markers up to its first scan, its EXIF and an
+    /// editor's metadata included. Nothing is decoded, so the pixel ceiling does not apply, and the
+    /// stream is left open for its owner.
     /// </summary>
     /// <exception cref="InvalidDataException">The source is not one of the formats read.</exception>
     public static async Task<SKSizeI> MeasureAsync(Stream source)
@@ -84,9 +85,13 @@ internal sealed class SourceImage : IDisposable
             var read = await source.ReadAtLeastAsync(block, block.Length, throwOnEndOfStream: false);
             header.Write(block, 0, read);
 
+            // Bytes that do not open with one of the five signatures are refused at once, not read
+            // to their end.
+            if (ImageFormats.ContentTypeOf(header.GetBuffer().AsSpan(0, (int)header.Length)) is null)
+                break;
+
             using var data = SKData.CreateCopy(header.GetBuffer(), (ulong)header.Length);
-            using var stream = new SKMemoryStream(data);
-            using var codec = SKCodec.Create(stream, out var result);
+            using var codec = SKCodec.Create(data);
             if (codec is not null)
             {
                 if (ImageFormats.ContentTypeOf(codec.EncodedFormat) is null)
@@ -94,9 +99,10 @@ internal sealed class SourceImage : IDisposable
                 return Displayed(codec.Info.Width, codec.Info.Height, codec.EncodedOrigin);
             }
 
-            // A codec short of its header says so; anything else, or a stream that ended, is not
-            // an image it reads.
-            if (result != SKCodecResult.IncompleteInput || read < block.Length)
+            // Short of its header, a codec answers IncompleteInput, or InvalidInput for a JPEG cut
+            // inside a segment it does not keep (an APP13, a comment), so it reads on whatever it
+            // answered, and only a source that ended without a header is refused.
+            if (read < block.Length)
                 break;
         }
 

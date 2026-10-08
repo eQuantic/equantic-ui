@@ -334,6 +334,18 @@ public class ImageOptimizerTests
     }
 
     [Fact]
+    public async Task GetDimensionsAsync_RefusesBytesWithNoImageSignature_AfterOneBlock()
+    {
+        var text = System.Text.Encoding.ASCII.GetBytes(new string('x', 1024 * 1024));
+        await using var source = new AsyncOnlyStream(text);
+
+        var act = () => _optimizer.GetDimensionsAsync(source);
+
+        await act.Should().ThrowAsync<InvalidDataException>().WithMessage("*JPEG, PNG, GIF, WebP or BMP*");
+        source.BytesRead.Should().Be(16 * 1024);
+    }
+
+    [Fact]
     public async Task GetDimensionsAsync_AnswersTheSizeAsDisplayed()
     {
         using var source = TestImages.Stream(TestImages.WithOrientation(TestImages.Solid(1920, 1080, SKColors.Red), 6));

@@ -35,9 +35,10 @@ internal static class ImageFormats
         Readable.GetValueOrDefault(format);
 
     /// <summary>
-    /// The content type of bytes the optimizer handed back, from their signature: the format it was
-    /// asked for, or an animated source as it was. Twelve bytes answer it, so a cached response is
-    /// labelled without being copied or parsed.
+    /// The content type of bytes, from their signature: a response the optimizer handed back (the
+    /// format it was asked for, or an animated source as it was), or the start of a source being
+    /// measured. Twelve bytes answer it, so a cached response is labelled without being copied or
+    /// parsed.
     /// </summary>
     internal static string? ContentTypeOf(ReadOnlySpan<byte> bytes) => bytes switch
     {

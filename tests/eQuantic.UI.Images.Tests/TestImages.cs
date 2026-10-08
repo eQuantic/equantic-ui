@@ -125,7 +125,8 @@ internal static class TestImages
 
     /// <summary>
     /// A JPEG with an APP13 segment of the given size inserted after its SOI marker: a header past
-    /// what one read takes, as a camera's thumbnail or an editor's metadata makes it.
+    /// what one read takes, as an editor's metadata makes it. Cut inside an APP13, Skia's codec
+    /// answers InvalidInput rather than IncompleteInput.
     /// </summary>
     public static byte[] WithPadding(byte[] jpeg, int size)
     {
