@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text.RegularExpressions;
 using Microsoft.CodeAnalysis;
 
+using eQuantic.UI.Compiler.CodeGen.Extensions;
 namespace eQuantic.UI.Compiler.CodeGen;
 
 /// <summary>
@@ -339,7 +340,11 @@ public static class TypeSymbolExtensions
     /// </summary>
     public static string IntroduceTwin(this INamedTypeSymbol type, ConversionContext context)
     {
-        type.RegisterIntroduced(context);
+        // A nested type whose owner never crosses has no twin: EQ2010 where the code names it, however
+        // it is reached (an alias, using static, an operator), found by Copilot's third review of #654.
+        // A twin it reported is not imported, so the module's import net, which catches a path that
+        // reaches no fence, does not say it twice.
+        if (context.Converting is not { } at || !type.ReportIfKeptOut(at, context)) type.RegisterIntroduced(context);
         return type.TwinReference();
     }
 
@@ -384,7 +389,14 @@ public static class TypeSymbolExtensions
     public static bool IsRuntimeProvided(this INamedTypeSymbol type) =>
         Services.RuntimeProvidedTypeScanner.IsRuntimeProvidedNamespace(
             type.ContainingNamespace?.ToDisplayString() ?? string.Empty)
-        || type.GetAttributes().Any(a => a.AttributeClass?.Name == "RuntimeProvidedAttribute");
+        // By its name as written too, where the attribute binds to an error type (a compilation that
+        // does not reference it), as PlainClassModule reads [ServerOnly].
+        || type.GetAttributes().Any(a => a.AttributeClass?.Name is "RuntimeProvidedAttribute" or "RuntimeProvided")
+        // A nested type is the runtime's where its owner is, by the rule the parser reads
+        // (PlainClassModule.OwnersCross), and the runtime carries it under its owner's twin name
+        // (`CodeBlock$CodeMetrics`). Where the owner said so by the attribute, the reference imported
+        // a sibling module nothing writes (found by Copilot's third review of #654).
+        || type.ContainingType?.IsRuntimeProvided() == true;
 
     /// <summary>
     /// A vocabulary value type whose browser twin is its data alone, as <c>[TwinIsData]</c> declares

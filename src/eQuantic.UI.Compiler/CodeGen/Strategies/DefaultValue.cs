@@ -3,6 +3,7 @@ using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using eQuantic.UI.Compiler.CodeGen.Ir;
 
+using eQuantic.UI.Compiler.CodeGen.Extensions;
 namespace eQuantic.UI.Compiler.CodeGen.Strategies;
 
 /// <summary>
@@ -29,8 +30,19 @@ public static class DefaultValue
     /// </summary>
     internal static string Of(ITypeSymbol? type, ConversionContext context, Func<ITypeParameterSymbol, string?>? typeParameter)
     {
-        var value = Of(type, named => (IsRuntimeProvided(named) ? context.UsedRuntimeTypes : context.UsedAppTypes)
-            .Add(named.TwinReference()), typeParameter);
+        // A nested type whose owner never crosses has no zero in the browser, and none was written:
+        // `default(Vault.Pair)`, an array's fill and a field's zero were undefined where C# has a
+        // value, silently. EQ2010 where the code asks for one (found by Copilot's third review of #654).
+        if (type is INamedTypeSymbol keptOut && context.Converting is { } asked && keptOut.ReportIfKeptOut(asked, context))
+            return "undefined";
+        var value = Of(type, named =>
+        {
+            // The zero of a nested struct whose owner never crosses names a twin nothing writes: EQ2010
+            // where an expression asks for it, and the module's import net where an emitter does (a
+            // field's zero), found by Copilot's third review of #654.
+            if (context.Converting is { } at && named.ReportIfKeptOut(at, context)) return;
+            (IsRuntimeProvided(named) ? context.UsedRuntimeTypes : context.UsedAppTypes).Add(named.TwinReference());
+        }, typeParameter);
         if (value.Contains("$eq.")) context.UsedHelpers.Add(Eq.Import);
         return value;
     }
@@ -41,9 +53,7 @@ public static class DefaultValue
     /// source does not decide it: a source-tree build compiles the library's own structs from source,
     /// and they still come from <c>@equantic/runtime</c> (found in review, #405).</summary>
     private static bool IsRuntimeProvided(INamedTypeSymbol type) =>
-        Services.RuntimeProvidedTypeScanner.IsRuntimeProvidedNamespace(type.ContainingNamespace?.ToDisplayString() ?? "")
-        || type.GetAttributes().Any(attribute => attribute.AttributeClass?.Name == "RuntimeProvidedAttribute")
-        || !type.Locations.Any(location => location.IsInSource);
+        TypeSymbolExtensions.IsRuntimeProvided(type) || !type.Locations.Any(location => location.IsInSource);
 
     /// <param name="type">The type whose default to write.</param>
     /// <param name="named">Told of every struct the value constructs, for its import.</param>

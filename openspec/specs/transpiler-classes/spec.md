@@ -184,8 +184,13 @@ of its own, named by the chain of the types that contain it and its own name joi
 (`Cart$Item`), which no C# type can take. Every reference to it, inside its owner or out, SHALL name
 that twin: a construction, a type test, a static member, a default and an annotation alike. A nested
 type of an owner that never crosses (`[ServerOnly]`, an exception, an attribute) SHALL have none, and
-client code that names it SHALL be refused. A record's text SHALL print its C# name, as .NET's does. The server SHALL name the page it serves by the
-same rule, so a page declared inside a class loads the module the build wrote for it.
+client code that reaches its twin SHALL be refused: one that builds it, tests for it, reads its statics,
+takes its zero or calls an operator or a conversion its value brings, however the code names the type
+(an alias, `using static`, inference). A module that would import such a twin SHALL report it rather
+than import it. A nested type of an owner the runtime provides SHALL be the runtime's,
+imported from it under its twin name. A record's text SHALL print its C# name, as .NET's does. The server SHALL name the page it serves by the
+same rule, so a page declared inside a class loads the module the build wrote for it, and SHALL refuse to
+map a page declared inside an owner that never crosses.
 
 #### Scenario: A nested class beside a top-level class of its name
 
@@ -221,7 +226,22 @@ same rule, so a page declared inside a class loads the module the build wrote fo
 
 - **WHEN** `[ServerOnly] class Vault { public class Key { } }`
 - **THEN** the build writes no module for `Key`, as it writes none for `Vault`, client code that builds a
-  `Vault.Key` or tests for one is refused with EQ2010, and a page declared inside `Vault` has no route
+  `Vault.Key` or tests for one is refused with EQ2010, and a page declared inside `Vault` has no route,
+  and mapping it with `MapPage` fails at startup
+
+#### Scenario: A kept-out nested type the syntax never names
+
+- **WHEN** `[ServerOnly] class Vault` holds `Key`, `Pair` and `Amount`, and client code reads `K.Count` through
+  `using K = Vault.Key;`, reads `Count` or calls `Make()` through `using static Vault.Key;`, asks for
+  `default(Vault.Pair)`, declares a field of type `Vault.Pair`, or adds or converts a `Vault.Amount` that
+  another class's method returns
+- **THEN** each is refused with EQ2010, and no module imports a twin of `Vault`'s
+
+#### Scenario: A nested type of a runtime-provided owner
+
+- **WHEN** `[RuntimeProvided] class Kit { public class Part { } }` and client code builds a `Kit.Part`
+- **THEN** the module imports `Kit$Part` from the runtime, which carries it as it carries
+  `CodeBlock$CodeMetrics`, and the build writes no module for it
 
 #### Scenario: A page declared inside a class
 

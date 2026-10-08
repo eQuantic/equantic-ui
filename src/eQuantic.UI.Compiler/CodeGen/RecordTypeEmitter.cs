@@ -115,7 +115,7 @@ public class RecordTypeEmitter
     /// </summary>
     private string DefaultOf(TypeSyntax type, Func<ITypeParameterSymbol, string?>? typeParameter = null) =>
         ModelFor(type)?.GetTypeInfo(type).Type is { } symbol
-            ? typeParameter is null ? _converter.DefaultOf(symbol) : _converter.DefaultOf(symbol, typeParameter)
+            ? _converter.DefaultAt(symbol, type, typeParameter)
             : TypeDeclarationExtensions.DefaultFor(type);
 
     /// <summary>
@@ -203,7 +203,18 @@ public class RecordTypeEmitter
             // own module, and the call names it without ever mentioning it in the C#.
             foreach (var introduced in _converter.UsedAppTypes)
                 if (Names(introduced))
+                {
+                    // The net under the fences, as a class module has it (TypeScriptEmitter): a twin
+                    // the build writes no module for is reported, never imported (#584).
+                    if (_modules?.IsKeptOut(introduced) == true)
+                    {
+                        if (!_converter.RefusedTwins.Contains(introduced))
+                            _converter.Report(type, ConversionSeverity.Error, "EQ2010",
+                                Extensions.HostOnlySymbolExtensions.KeptOutMessage(introduced.Replace('$', '.')));
+                        continue;
+                    }
                     specReferences.Add(introduced);
+                }
             // And the app's own types the BODY names: a sibling record a method constructs, and a
             // struct member's zero (`span: any = new Span2()`), which the constructor writes for a
             // member that has no default of its own. This path imported only what the hydration map

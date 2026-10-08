@@ -62,6 +62,10 @@ public class ComponentDependencyResolver
 
     /// <summary>A declaration's type in the project's compilation, found by its CLR name; null where
     /// the host has no compilation, or the compilation does not know the type.</summary>
+    /// <summary>The twin names of the nested types the build writes no module for because they sit
+    /// inside a type that never crosses (#584): see <see cref="IsKeptOut"/>.</summary>
+    private readonly HashSet<string> _keptOut = new(StringComparer.Ordinal);
+
     private INamedTypeSymbol? SymbolOf(TypeDeclarationSyntax declaration) =>
         _projectCompilation?.GetTypeByMetadataName(Parser.ComponentParser.ClrIdentity(declaration));
 
@@ -161,6 +165,7 @@ public class ComponentDependencyResolver
             if (valueType is (RecordDeclarationSyntax or StructDeclarationSyntax)
                 && CodeGen.RecordTypeEmitter.CanEmit(valueType, SymbolOf(valueType)))
                 _recordTypes.Add(valueType.TwinTypeName());
+            if (KeptOut(valueType)) _keptOut.Add(valueType.TwinTypeName());
         }
 
         _scan.Add(root);
@@ -340,6 +345,22 @@ public class ComponentDependencyResolver
         || _staticHelpers.Contains(name)
         || _componentLike.Contains(name)
         || PlainClasses().Contains(name);
+
+    /// <summary>
+    /// Whether <paramref name="name"/> is the twin of a nested type the build writes no module for: it,
+    /// or a type it is declared in, is [ServerOnly], an exception or an attribute (#584). A module that
+    /// would import it names a twin nothing declares, so the emitters report it there (EQ2010), the net
+    /// under the fences a strategy raises where an expression names the type.
+    /// </summary>
+    internal bool IsKeptOut(string name) => _keptOut.Contains(name);
+
+    /// <summary>A nested declaration inside a type that never crosses, by the compilation where the
+    /// scan has one, and by a [ServerOnly] owner as written where it has none.</summary>
+    private bool KeptOut(TypeDeclarationSyntax declaration) =>
+        declaration.Parent is TypeDeclarationSyntax
+        && (SymbolOf(declaration) is { } symbol
+            ? PlainClassModule.OwnerKeptOut(symbol) || PlainClassModule.ServerOnlyAlongChain(symbol)
+            : declaration.AncestorsAndSelf().OfType<TypeDeclarationSyntax>().Any(PlainClassModule.IsServerOnlyDeclaration));
 
     /// <summary>
     /// Whether the class is (or extends) something the COMPONENT path emits. Syntactic on purpose:

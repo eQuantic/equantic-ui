@@ -175,6 +175,10 @@ public class CSharpToJsConverter
     /// <summary>See <see cref="ConversionContext.UsedAppTypes"/> — output-introduced app-type names.</summary>
     public HashSet<string> UsedAppTypes => _context.UsedAppTypes;
 
+    /// <summary>See <see cref="ConversionContext.RefusedTwins"/>: the twins a fence already refused in
+    /// this module.</summary>
+    internal IReadOnlySet<string> RefusedTwins => _context.RefusedTwins;
+
     /// <summary>See <see cref="ConversionContext.UsedRuntimeTypes"/> — output-introduced names the
     /// RUNTIME provides (the declarative factory surface).</summary>
     public HashSet<string> UsedRuntimeTypes => _context.UsedRuntimeTypes;
@@ -189,10 +193,25 @@ public class CSharpToJsConverter
     /// </summary>
     public string DefaultOf(ITypeSymbol? type) => DefaultValue.Of(type, _context);
 
-    /// <summary>The default of <paramref name="type"/> where a type parameter's zero is given
-    /// (a generic struct's <c>$zero</c>, <see cref="DefaultValue"/>).</summary>
-    internal string DefaultOf(ITypeSymbol? type, Func<ITypeParameterSymbol, string?> typeParameter) =>
-        DefaultValue.Of(type, _context, typeParameter);
+    /// <summary>
+    /// The default an emitter writes for a declaration (a field's, a property's), reported at
+    /// <paramref name="at"/> where a fence refuses its type: no expression is being converted there,
+    /// so a fence has no other node to name (#584). Where a type parameter's zero is given (a generic
+    /// struct's <c>$zero</c>, <see cref="DefaultValue"/>), a member of type <c>T</c> takes it.
+    /// </summary>
+    internal string DefaultAt(ITypeSymbol? type, SyntaxNode at, Func<ITypeParameterSymbol, string?>? typeParameter = null)
+    {
+        var outer = _context.Converting;
+        _context.Converting = at;
+        try
+        {
+            return DefaultValue.Of(type, _context, typeParameter);
+        }
+        finally
+        {
+            _context.Converting = outer;
+        }
+    }
 
     /// <summary>A compile-time constant of <paramref name="type"/> as its JavaScript value, by the one
     /// writer of every constant's value (<see cref="ConstantLiteral"/>), the runtime import a decimal
@@ -475,12 +494,24 @@ public class CSharpToJsConverter
         if (strategy != null)
         {
             var mark = _context.Temporaries.Mark();
-            var result = strategy is IExpressionIrStrategy ir
-                ? StampIr(expression, ir.ConvertIr(expression, _context))
-                : JsExpr.Opaque(Stamp(expression, strategy.Convert(expression, _context)));
-            // The bound tree has the last word: the implicit conversion C# applied around this
-            // expression, the string it flows into — settled once here, for every site.
-            result = ValueFlow.Settle(expression, result, _context);
+            // The node every fence reports at, the settling included: an implicit conversion C# applied
+            // around this expression is written below, and the twin it calls is named there.
+            var outer = _context.Converting;
+            _context.Converting = expression;
+            JsExpr result;
+            try
+            {
+                result = strategy is IExpressionIrStrategy ir
+                    ? StampIr(expression, ir.ConvertIr(expression, _context))
+                    : JsExpr.Opaque(Stamp(expression, strategy.Convert(expression, _context)));
+                // The bound tree has the last word: the implicit conversion C# applied around this
+                // expression, the string it flows into — settled once here, for every site.
+                result = ValueFlow.Settle(expression, result, _context);
+            }
+            finally
+            {
+                _context.Converting = outer;
+            }
             _context.Temporaries.Remember(expression, mark);
             _context.SetCached(expression, result);
             return result;

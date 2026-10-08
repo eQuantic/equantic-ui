@@ -85,7 +85,7 @@ public class TypeScriptEmitter
     /// member (#483).
     /// </summary>
     private string DefaultOf(TypeSyntax type) =>
-        BindType(type) is { } symbol ? _converter.DefaultOf(symbol) : TypeDeclarationExtensions.DefaultFor(type);
+        BindType(type) is { } symbol ? _converter.DefaultAt(symbol, type) : TypeDeclarationExtensions.DefaultFor(type);
 
     /// <summary>The VALUE a [ServerAction] resolves to on the client: its return type with the
     /// task unwrapped — <c>Task&lt;List&lt;Todo&gt;&gt;</c> is <c>List&lt;Todo&gt;</c>; void and a
@@ -1108,7 +1108,10 @@ public class TypeScriptEmitter
             // static-field names read as ClassName.X, helper-class names, etc. — instead of inventing a
             // bogus `./X`. (Without a resolver we keep the old permissive behavior for isolated snippets.)
             if (_dependencyResolver != null && !isEmittedType)
+            {
+                if (referenced.Contains(userComp)) ReportIfKeptOut(userComp, component.ClassSyntax);
                 continue;
+            }
             if (!referenced.Contains(userComp))
                 continue;
             // …and never a type this module DECLARES: the nested `Copy` classes are emitted inline
@@ -2447,6 +2450,23 @@ public class TypeScriptEmitter
     /// only kind a <c>./Name</c> import may point at.</summary>
     private bool IsAppModule(string name) => _dependencyResolver?.IsModule(name) == true;
 
+    /// <summary>
+    /// The net under every fence (#584): a twin this module would import that the build writes no
+    /// module for, because the type sits inside one that never crosses, reaches the browser as a name
+    /// nothing declares. The fences say EQ2010 where an expression names the type; a path that meets
+    /// none (a field's zero, a name a later strategy introduces) arrives here, where every reference a
+    /// module makes is imported, and is said at the declaration that holds it.
+    /// </summary>
+    private bool ReportIfKeptOut(string name, SyntaxNode? at)
+    {
+        if (at is null || _dependencyResolver?.IsKeptOut(name) != true) return false;
+        // A fence that refused it where the code named it said it there already.
+        if (!_converter.RefusedTwins.Contains(name))
+            _converter.Report(at, ConversionSeverity.Error, "EQ2010",
+                CodeGen.Extensions.HostOnlySymbolExtensions.KeptOutMessage(name.Replace('$', '.')));
+        return true;
+    }
+
     /// <summary>Whether the per-app scan knows this name at all: one of the app's own modules, or a
     /// type the app declares <c>[RuntimeProvided]</c>, which the runtime exports instead.</summary>
     private bool Resolvable(string name) =>
@@ -2560,6 +2580,7 @@ public class TypeScriptEmitter
                 || ct == "HtmlNode" || NonImportableTypes.Contains(ct)) continue;
             if (runtimeProvided.Contains(ct) || referencedEnums.Contains(ct)) continue;
             if (IsAppModule(ct)) imports.Add(new JsImport([ct], $"./{ct}"));
+            else ReportIfKeptOut(ct, cls);
         }
         var module = new JsModule(imports, builder.ToString());
         // The class's mappings were recorded against its own text; the imports stand above it.

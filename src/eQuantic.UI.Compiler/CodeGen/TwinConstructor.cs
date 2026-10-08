@@ -621,6 +621,6 @@ internal sealed class TwinConstructor
     /// </summary>
     private string DefaultOf(TypeSyntax type) =>
         _modelFor(type)?.GetTypeInfo(type).Type is { } symbol
-            ? _converter.DefaultOf(symbol)
+            ? _converter.DefaultAt(symbol, type)
             : TypeDeclarationExtensions.DefaultFor(type);
 }

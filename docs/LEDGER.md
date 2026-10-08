@@ -1698,10 +1698,13 @@ record of a release, the wiki's Upgrading page is the distillate.
   (`Cart$Item`), which no C# type can take, and every reference to it, a construction, a type test, a
   static member, an operator, a zero and an annotation alike, names that twin and imports it, through
   one name the parser, the resolver and the emitters read; one inside a server-only class, an
-  exception or an attribute has none. A record's text keeps its C# name. The runtime's one nested
-  type is `CodeBlock$CodeMetrics`. The server names the page it serves by the same rule, one file
-  linked into both (`TwinName.OfType`): a page declared inside a class asked the browser for a module
-  named by its simple name, which nothing writes any more. Proposed and archived through OpenSpec
+  exception or an attribute has none, and client code that reaches it, by a name, an alias, `using
+  static`, an operator or a zero, is refused with EQ2010, the import every module makes being the net
+  under the fences; one inside a type the runtime provides is the runtime's. A record's text keeps its
+  C# name. The runtime's one nested type is `CodeBlock$CodeMetrics`. The server names the page it
+  serves by the same rule, one file linked into both (`TwinName.OfType`): a page declared inside a
+  class asked the browser for a module named by its simple name, which nothing writes any more, and
+  one inside an owner that never crosses has no route and cannot be mapped. Proposed and archived through OpenSpec
   (`openspec/specs/transpiler-classes`).
 
 ## Retired documents

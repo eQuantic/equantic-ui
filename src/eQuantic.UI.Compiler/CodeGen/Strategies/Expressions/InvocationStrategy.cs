@@ -245,6 +245,8 @@ public class InvocationStrategy : IExpressionIrStrategy
             // class-static rule below is for the types the transpiler EMITS (#485).
             if (symbol.ReportIfPlatformReachedBare(invocation, context))
                 return JsExpr.Literal("undefined");
+            // A nested type whose owner never crosses has no twin to call (EQ2010).
+            if (declaring.ReportIfKeptOut(invocation, context)) return JsExpr.Literal("undefined");
             var declaringNamespace = declaring.ContainingNamespace?.ToDisplayString() ?? string.Empty;
             // One name for the import and the call (#584): a nested type's twin, or the name a top-level
             // type and a hand-written runtime twin keep.

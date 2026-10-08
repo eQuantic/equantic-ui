@@ -232,6 +232,17 @@ public static class UIExtensions
                 + "StatefulComponent, or a write-once UiComponent).", nameof(TPage));
         }
 
+        // A page declared inside a [ServerOnly] class, an exception or an attribute has no module the
+        // browser can load, as the build writes none for its owner (#584): refused here, where a
+        // [Page] of the same shape is left out of the route table, rather than served and broken.
+        if (!TwinName.OwnersCross(pageType))
+        {
+            throw new ArgumentException(
+                $"{pageType.FullName} is declared inside a type that never reaches the browser ([ServerOnly], an "
+                + "exception or an attribute), so the build writes no module for it: declare the page outside it.",
+                nameof(TPage));
+        }
+
         var options = endpoints.ServiceProvider.GetRequiredService<UIOptions>();
         options.DeclareRoute(route, pageType, title);
 
