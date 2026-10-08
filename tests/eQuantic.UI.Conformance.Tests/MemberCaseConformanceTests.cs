@@ -8,7 +8,9 @@ namespace eQuantic.UI.Conformance.Tests;
 /// through the module graph an app's build writes, one case at a time. They lowered to one name: the
 /// own field hid the accessors, so a setter never ran, an auto-property and its field shared one slot,
 /// and a call reached the number the field held (#396). The field moves now, to a slot with a `$` after
-/// its name.
+/// its name, and a pattern reads it there too: a property subpattern named the member by its text, and
+/// read the property, and a positional one read the members its Deconstruct's outs are named after,
+/// the property again once the field had moved (Copilot's first review of #696).
 /// </summary>
 public class MemberCaseConformanceTests
 {
@@ -21,6 +23,21 @@ public class MemberCaseConformanceTests
         public class Base { public int Total { get; set; } = 5; }
         public class Derived : Base { int total = 7; public int Own() => total + Total; }
         public class Made { int value; public int Value { get => value; set => this.value = value * 2; } public static Made Make() => new Made { value = 5 }; }
+        public class Matched
+        {
+            int value = 1; public int Value => value * 10;
+            Matched next; public Matched Next => null;
+            public Matched(Matched next) { this.next = next; }
+            public bool Field() => this is { value: 1 };
+            public int Bound() => this is { value: var v } ? v : -1;
+            public string Arm() => this switch { { value: 1 } => "field", { Value: 10 } => "property", _ => "none" };
+            public string Case() { switch (this) { case { value: 1 }: return "field"; default: return "none"; } }
+            public bool Through() => this is { next.value: 1 };
+        }
+        public class Tally { public int Count = 2; public int count() => Count * 3; }
+        public class Point { int x; int y; public int X => x * 10; public int Y => y * 10; public Point(int x, int y) { this.x = x; this.y = y; } public void Deconstruct(out int x, out int y) { x = this.x; y = this.y; } }
+        public class Gauge { int low = 1; int high = 2; public int Low => low * 10; public int High => high * 10; public int RawLow() => low; public int RawHigh() => high; }
+        public static class GaugeParts { public static void Deconstruct(this Gauge gauge, out int low, out int high) { low = gauge.RawLow(); high = gauge.RawHigh(); } }
         """;
 
     public static TheoryData<string, string, bool> Cases()
@@ -34,6 +51,15 @@ public class MemberCaseConformanceTests
             ("another instance's field", "var a = new Pair(); return a.Sum(new Pair()) + a.Value;"),
             ("a field beside a base's property", "return new Derived().Own();"),
             ("an initializer naming the field", "return Made.Make().Value;"),
+            ("a property pattern naming the field", "return new Matched(null).Field();"),
+            ("a pattern binding the field", "return new Matched(null).Bound();"),
+            ("a switch arm naming the field", "return new Matched(null).Arm();"),
+            ("a case label naming the field", "return new Matched(null).Case();"),
+            ("an extended pattern through a field", "return new Matched(new Matched(null)).Through();"),
+            ("a pattern naming a field called Count", "return new Tally() is { Count: 2 };"),
+            ("a positional pattern through the app's Deconstruct", "return new Point(1, 2) is (1, 2);"),
+            ("a positional pattern binding through the app's Deconstruct", "return new Point(1, 2) is (var a, var b) ? a * 100 + b : -1;"),
+            ("a positional pattern through an extension Deconstruct", "return new Gauge() is (1, 2);"),
         };
         var data = new TheoryData<string, string, bool>();
         foreach (var (name, statements) in cases)
