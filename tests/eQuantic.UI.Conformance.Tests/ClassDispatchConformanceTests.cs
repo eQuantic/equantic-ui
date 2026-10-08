@@ -272,7 +272,7 @@ public class ClassDispatchConformanceTests
         ("a primary constructor and its base clause", "var c = new Coded(4); return c.Code + \"|\" + c.Message;"),
         // What a .NET base's constructor writes and takes, as a `new` of that type hands it (#558).
         ("the text of the .NET base its constructor calls", "return new Closed().Message + \"|\" + new Shut().Message;"),
-        ("a null message is .NET's default for the class",
+        ("a null message reads the text the .NET base writes for it",
             "return new Nulled().Message + \"|\" + new Maybe(null).Message + \"|\" + new Maybe(\"m\").Message;"),
         ("a parameter's name its .NET base takes", "var b = new Bad(\"x\"); return b.Message + \"|\" + b.ParamName;"),
         ("a .NET base that takes no message", "var m = new Missing(\"y\"); return m.Message + \"|\" + m.ParamName;"),
