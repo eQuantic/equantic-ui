@@ -136,7 +136,9 @@ export class TimeSpan {
     return new TimeSpan(this.ticks < 0n ? -this.ticks : this.ticks);
   }
 
-  compareTo(other: TimeSpan): number {
+  /** `CompareTo(TimeSpan)` and `CompareTo(object)`, where a null is less than every value (#569). */
+  compareTo(other: TimeSpan | null): number {
+    if (other == null) return 1;
     return this.ticks < other.ticks ? -1 : this.ticks > other.ticks ? 1 : 0;
   }
   /** `Equals(object)`: a TimeSpan of the same ticks, and nothing of another kind (a date has ticks too). */
@@ -465,7 +467,9 @@ export class DateTime {
     return new DateTime(calendarTicks(this.ticks - span.ticks, parameter));
   }
 
-  compareTo(other: DateTime): number {
+  /** `CompareTo(DateTime)` and `CompareTo(object)`, where a null is less than every value (#569). */
+  compareTo(other: DateTime | null): number {
+    if (other == null) return 1;
     return this.ticks < other.ticks ? -1 : this.ticks > other.ticks ? 1 : 0;
   }
   /** `Equals(object)`: a DateTime of the same ticks, and nothing of another kind. */
@@ -663,7 +667,9 @@ export class DateOnly {
     return new DateTime(BigInt(this.dayNumber) * TICKS_PER_DAY);
   }
 
-  compareTo(other: DateOnly): number {
+  /** `CompareTo(DateOnly)` and `CompareTo(object)`, where a null is less than every value (#569). */
+  compareTo(other: DateOnly | null): number {
+    if (other == null) return 1;
     return this.dayNumber < other.dayNumber ? -1 : this.dayNumber > other.dayNumber ? 1 : 0;
   }
   /** `Equals(object)`: a DateOnly of the same day, and nothing of another kind. */
@@ -826,7 +832,9 @@ export class TimeOnly {
     return this.wrap(toLong(value * Number(TICKS_PER_MINUTE)));
   }
 
-  compareTo(other: TimeOnly): number {
+  /** `CompareTo(TimeOnly)` and `CompareTo(object)`, where a null is less than every value (#569). */
+  compareTo(other: TimeOnly | null): number {
+    if (other == null) return 1;
     return this.ticks < other.ticks ? -1 : this.ticks > other.ticks ? 1 : 0;
   }
   /** `Equals(object)`: a TimeOnly of the same ticks, and nothing of another kind. */

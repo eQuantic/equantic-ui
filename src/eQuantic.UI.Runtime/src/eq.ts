@@ -157,7 +157,7 @@ import { sortedSet, sortedDictionary, sortedList } from './utils/sorted';
 import { liftArith, liftCmp, liftUnary } from './utils/nullable';
 import { equals } from './utils/equals';
 import { hash, hashCombine, hashFields, hashGroup, identityHash, instanceHash } from './utils/hash';
-import { guidParse, guidTryParse } from './utils/guid';
+import { guidOf, guidParse, guidTryParse } from './utils/guid';
 import { CancellationToken, CancellationTokenRegistration, CancellationTokenSource } from './utils/cancellation';
 import {
   bases as exceptionBases,
@@ -473,7 +473,7 @@ export const $eq = {
     fields: hashFields,
   },
   /** A Guid's canonical text, the lowercase `D` format, from any format .NET reads. */
-  guid: { parse: guidParse, tryParse: guidTryParse },
+  guid: { parse: guidParse, tryParse: guidTryParse, of: guidOf },
   /**
    * The cancellation pair, built where C# builds it: `new CancellationTokenSource(delay?)`,
    * `CancellationToken.None` (and `default`), `new CancellationToken(canceled)`,

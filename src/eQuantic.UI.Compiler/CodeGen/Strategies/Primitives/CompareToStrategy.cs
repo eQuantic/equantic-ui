@@ -63,6 +63,11 @@ public class CompareToStrategy : IExpressionIrStrategy
             SpecialType.System_Char => "({0}.charCodeAt(0) - {1}.charCodeAt(0))",
             _ => "({0} < {1} ? -1 : {0} > {1} ? 1 : 0)",
         };
+        // CompareTo(object) answers 1 for a null, a null being less than every value, as each of these
+        // types' does: the char's subtraction read it through null, and `false` and a negative number
+        // answered -1 (#569).
+        if (context.SemanticHelper.GetSymbol(invocation) is IMethodSymbol { Parameters: [{ Type.SpecialType: SpecialType.System_Object }] })
+            template = $"({{1}} == null ? 1 : {template})";
         return JsExpr.Template(template, new[] { left, right }, context.TypeAnnotations);
     }
 

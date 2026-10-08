@@ -24,10 +24,6 @@ Array.Reverse(T[]) array  type  lowered to the array's own method, which reads a
 Array.Reverse(T[],Int32,Int32) array  type  lowered to the array's own method, which reads a null array or delegate through null: refusing it by name is a guard at every call, which is a design decision
 Array.TrueForAll(T[],Predicate<T>) array  type  lowered to the array's own method, which reads a null array or delegate through null: refusing it by name is a guard at every call, which is a design decision
 Array.TrueForAll(T[],Predicate<T>) match  type  lowered to the array's own method, which reads a null array or delegate through null: refusing it by name is a guard at every call, which is a design decision
-CancellationToken.Register(Action) callback  type  not looked at yet
-CancellationTokenSource.CreateLinkedTokenSource(CancellationToken[]) tokens  type  not looked at yet
-Char.CompareTo(Object) value  type  not looked at yet
-Char.GetUnicodeCategory(String,Int32) s  type  not looked at yet
 Char.IsControl(String,Int32) s  type  the (string, index) overloads read the code point inline, through null: refusing it by name is a guard at every call, which is a design decision
 Char.IsDigit(String,Int32) s  type  the (string, index) overloads read the code point inline, through null: refusing it by name is a guard at every call, which is a design decision
 Char.IsLetter(String,Int32) s  type  the (string, index) overloads read the code point inline, through null: refusing it by name is a guard at every call, which is a design decision
@@ -81,7 +77,6 @@ Convert.ToUInt32(Object,IFormatProvider) value  value  Convert of an object is l
 Convert.ToUInt64(Object) value  value  Convert of an object is lowered to a Math.round, a String() or a comparison of it, which reads a null otherwise than .NET (#401)
 Convert.ToUInt64(Object,IFormatProvider) value  value  Convert of an object is lowered to a Math.round, a String() or a comparison of it, which reads a null otherwise than .NET (#401)
 DateOnly..ctor(Int32,Int32,Int32,Calendar) calendar  type  the lowering drops the calendar argument, so its null is never read
-DateOnly.CompareTo(Object) value  type  not looked at yet
 DateOnly.Parse(String,IFormatProvider) s  type  the provider is written as the name CultureInfo, which the runtime does not export: eqc reads a culture only where it formats or parses a number
 DateOnly.Parse(String,IFormatProvider,DateTimeStyles) s  type  the provider is written as the name CultureInfo, which the runtime does not export: eqc reads a culture only where it formats or parses a number
 DateOnly.ToString(String,IFormatProvider) format  control  the provider is written as the name CultureInfo, which the runtime does not export: eqc reads a culture only where it formats or parses a number
@@ -96,7 +91,6 @@ DateTime..ctor(Int32,Int32,Int32,Int32,Int32,Int32,Int32,Calendar) calendar  typ
 DateTime..ctor(Int32,Int32,Int32,Int32,Int32,Int32,Int32,Calendar,DateTimeKind) calendar  type  the lowering drops the calendar argument, so its null is never read
 DateTime..ctor(Int32,Int32,Int32,Int32,Int32,Int32,Int32,Int32,Calendar) calendar  type  the lowering drops the calendar argument, so its null is never read
 DateTime..ctor(Int32,Int32,Int32,Int32,Int32,Int32,Int32,Int32,Calendar,DateTimeKind) calendar  type  the lowering drops the calendar argument, so its null is never read
-DateTime.CompareTo(Object) value  type  not looked at yet
 DateTime.GetDateTimeFormats(IFormatProvider) provider  control  the provider is written as the name CultureInfo, which the runtime does not export: eqc reads a culture only where it formats or parses a number
 DateTime.Parse(String,IFormatProvider) s  type  the provider is written as the name CultureInfo, which the runtime does not export: eqc reads a culture only where it formats or parses a number
 DateTime.Parse(String,IFormatProvider,DateTimeStyles) s  type  the provider is written as the name CultureInfo, which the runtime does not export: eqc reads a culture only where it formats or parses a number
@@ -183,7 +177,6 @@ Enumerable.Average(IEnumerable<TSource>,Func<TSource,Single>) source  type  LINQ
 Enumerable.Cast(IEnumerable) source  type  LINQ over a list is lowered to the array's own method, which reads a null source or delegate through null: refusing it by name is a guard at every call, which is a design decision
 Enumerable.Chunk(IEnumerable<TSource>,Int32) source  type  LINQ over a list is lowered to the array's own method, which reads a null source or delegate through null: refusing it by name is a guard at every call, which is a design decision
 Enumerable.Concat(IEnumerable<TSource>,IEnumerable<TSource>) first  type  LINQ over a list is lowered to the array's own method, which reads a null source or delegate through null: refusing it by name is a guard at every call, which is a design decision
-Enumerable.Concat(IEnumerable<TSource>,IEnumerable<TSource>) second  param  not looked at yet
 Enumerable.Contains(IEnumerable<TSource>,TSource) source  type  Contains over a sequence is the runtime's collections.contains, which answers false for a null source
 Enumerable.Count(IEnumerable<TSource>) source  type  LINQ over a list is lowered to the array's own method, which reads a null source or delegate through null: refusing it by name is a guard at every call, which is a design decision
 Enumerable.Count(IEnumerable<TSource>,Func<TSource,Boolean>) predicate  type  LINQ over a list is lowered to the array's own method, which reads a null source or delegate through null: refusing it by name is a guard at every call, which is a design decision
@@ -196,10 +189,8 @@ Enumerable.DistinctBy(IEnumerable<TSource>,Func<TSource,TKey>) source  type  LIN
 Enumerable.ElementAt(IEnumerable<TSource>,Int32) source  type  LINQ over a list is lowered to the array's own method, which reads a null source or delegate through null: refusing it by name is a guard at every call, which is a design decision
 Enumerable.ElementAtOrDefault(IEnumerable<TSource>,Int32) source  type  LINQ over a list is lowered to the array's own method, which reads a null source or delegate through null: refusing it by name is a guard at every call, which is a design decision
 Enumerable.Except(IEnumerable<TSource>,IEnumerable<TSource>) first  type  LINQ over a list is lowered to the array's own method, which reads a null source or delegate through null: refusing it by name is a guard at every call, which is a design decision
-Enumerable.Except(IEnumerable<TSource>,IEnumerable<TSource>) second  param  not looked at yet
 Enumerable.ExceptBy(IEnumerable<TSource>,IEnumerable<TKey>,Func<TSource,TKey>) first  type  LINQ over a list is lowered to the array's own method, which reads a null source or delegate through null: refusing it by name is a guard at every call, which is a design decision
 Enumerable.ExceptBy(IEnumerable<TSource>,IEnumerable<TKey>,Func<TSource,TKey>) keySelector  type  LINQ over a list is lowered to the array's own method, which reads a null source or delegate through null: refusing it by name is a guard at every call, which is a design decision
-Enumerable.ExceptBy(IEnumerable<TSource>,IEnumerable<TKey>,Func<TSource,TKey>) second  param  not looked at yet
 Enumerable.First(IEnumerable<TSource>) source  type  LINQ over a list is lowered to the array's own method, which reads a null source or delegate through null: refusing it by name is a guard at every call, which is a design decision
 Enumerable.First(IEnumerable<TSource>,Func<TSource,Boolean>) predicate  type  LINQ over a list is lowered to the array's own method, which reads a null source or delegate through null: refusing it by name is a guard at every call, which is a design decision
 Enumerable.First(IEnumerable<TSource>,Func<TSource,Boolean>) source  type  LINQ over a list is lowered to the array's own method, which reads a null source or delegate through null: refusing it by name is a guard at every call, which is a design decision
@@ -221,17 +212,13 @@ Enumerable.GroupBy(IEnumerable<TSource>,Func<TSource,TKey>,Func<TSource,TElement
 Enumerable.GroupBy(IEnumerable<TSource>,Func<TSource,TKey>,Func<TSource,TElement>,Func<TKey,IEnumerable<TElement>,TResult>) keySelector  type  LINQ over a list is lowered to the array's own method, which reads a null source or delegate through null: refusing it by name is a guard at every call, which is a design decision
 Enumerable.GroupBy(IEnumerable<TSource>,Func<TSource,TKey>,Func<TSource,TElement>,Func<TKey,IEnumerable<TElement>,TResult>) resultSelector  type  LINQ over a list is lowered to the array's own method, which reads a null source or delegate through null: refusing it by name is a guard at every call, which is a design decision
 Enumerable.GroupBy(IEnumerable<TSource>,Func<TSource,TKey>,Func<TSource,TElement>,Func<TKey,IEnumerable<TElement>,TResult>) source  type  LINQ over a list is lowered to the array's own method, which reads a null source or delegate through null: refusing it by name is a guard at every call, which is a design decision
-Enumerable.GroupJoin(IEnumerable<TOuter>,IEnumerable<TInner>,Func<TOuter,TKey>,Func<TInner,TKey>,Func<TOuter,IEnumerable<TInner>,TResult>) inner  param  not looked at yet
 Enumerable.GroupJoin(IEnumerable<TOuter>,IEnumerable<TInner>,Func<TOuter,TKey>,Func<TInner,TKey>,Func<TOuter,IEnumerable<TInner>,TResult>) innerKeySelector  type  LINQ over a list is lowered to the array's own method, which reads a null source or delegate through null: refusing it by name is a guard at every call, which is a design decision
 Enumerable.GroupJoin(IEnumerable<TOuter>,IEnumerable<TInner>,Func<TOuter,TKey>,Func<TInner,TKey>,Func<TOuter,IEnumerable<TInner>,TResult>) outer  type  LINQ over a list is lowered to the array's own method, which reads a null source or delegate through null: refusing it by name is a guard at every call, which is a design decision
 Enumerable.GroupJoin(IEnumerable<TOuter>,IEnumerable<TInner>,Func<TOuter,TKey>,Func<TInner,TKey>,Func<TOuter,IEnumerable<TInner>,TResult>) outerKeySelector  type  LINQ over a list is lowered to the array's own method, which reads a null source or delegate through null: refusing it by name is a guard at every call, which is a design decision
 Enumerable.GroupJoin(IEnumerable<TOuter>,IEnumerable<TInner>,Func<TOuter,TKey>,Func<TInner,TKey>,Func<TOuter,IEnumerable<TInner>,TResult>) resultSelector  type  LINQ over a list is lowered to the array's own method, which reads a null source or delegate through null: refusing it by name is a guard at every call, which is a design decision
 Enumerable.Intersect(IEnumerable<TSource>,IEnumerable<TSource>) first  type  LINQ over a list is lowered to the array's own method, which reads a null source or delegate through null: refusing it by name is a guard at every call, which is a design decision
-Enumerable.Intersect(IEnumerable<TSource>,IEnumerable<TSource>) second  param  not looked at yet
 Enumerable.IntersectBy(IEnumerable<TSource>,IEnumerable<TKey>,Func<TSource,TKey>) first  type  LINQ over a list is lowered to the array's own method, which reads a null source or delegate through null: refusing it by name is a guard at every call, which is a design decision
 Enumerable.IntersectBy(IEnumerable<TSource>,IEnumerable<TKey>,Func<TSource,TKey>) keySelector  type  LINQ over a list is lowered to the array's own method, which reads a null source or delegate through null: refusing it by name is a guard at every call, which is a design decision
-Enumerable.IntersectBy(IEnumerable<TSource>,IEnumerable<TKey>,Func<TSource,TKey>) second  param  not looked at yet
-Enumerable.Join(IEnumerable<TOuter>,IEnumerable<TInner>,Func<TOuter,TKey>,Func<TInner,TKey>,Func<TOuter,TInner,TResult>) inner  param  not looked at yet
 Enumerable.Join(IEnumerable<TOuter>,IEnumerable<TInner>,Func<TOuter,TKey>,Func<TInner,TKey>,Func<TOuter,TInner,TResult>) innerKeySelector  type  LINQ over a list is lowered to the array's own method, which reads a null source or delegate through null: refusing it by name is a guard at every call, which is a design decision
 Enumerable.Join(IEnumerable<TOuter>,IEnumerable<TInner>,Func<TOuter,TKey>,Func<TInner,TKey>,Func<TOuter,TInner,TResult>) outer  type  LINQ over a list is lowered to the array's own method, which reads a null source or delegate through null: refusing it by name is a guard at every call, which is a design decision
 Enumerable.Join(IEnumerable<TOuter>,IEnumerable<TInner>,Func<TOuter,TKey>,Func<TInner,TKey>,Func<TOuter,TInner,TResult>) outerKeySelector  type  LINQ over a list is lowered to the array's own method, which reads a null source or delegate through null: refusing it by name is a guard at every call, which is a design decision
@@ -248,50 +235,8 @@ Enumerable.LastOrDefault(IEnumerable<TSource>,TSource) source  control  the defa
 Enumerable.LongCount(IEnumerable<TSource>) source  type  LINQ over a list is lowered to the array's own method, which reads a null source or delegate through null: refusing it by name is a guard at every call, which is a design decision
 Enumerable.LongCount(IEnumerable<TSource>,Func<TSource,Boolean>) predicate  type  LINQ over a list is lowered to the array's own method, which reads a null source or delegate through null: refusing it by name is a guard at every call, which is a design decision
 Enumerable.LongCount(IEnumerable<TSource>,Func<TSource,Boolean>) source  type  LINQ over a list is lowered to the array's own method, which reads a null source or delegate through null: refusing it by name is a guard at every call, which is a design decision
-Enumerable.Max(IEnumerable<Int32>) source  type  not looked at yet
-Enumerable.Max(IEnumerable<TSource>,Func<TSource,Decimal>) selector  type  not looked at yet
-Enumerable.Max(IEnumerable<TSource>,Func<TSource,Decimal>) source  type  not looked at yet
-Enumerable.Max(IEnumerable<TSource>,Func<TSource,Double>) selector  type  not looked at yet
-Enumerable.Max(IEnumerable<TSource>,Func<TSource,Double>) source  type  not looked at yet
-Enumerable.Max(IEnumerable<TSource>,Func<TSource,Int32>) selector  type  not looked at yet
-Enumerable.Max(IEnumerable<TSource>,Func<TSource,Int32>) source  type  not looked at yet
-Enumerable.Max(IEnumerable<TSource>,Func<TSource,Int64>) selector  type  not looked at yet
-Enumerable.Max(IEnumerable<TSource>,Func<TSource,Int64>) source  type  not looked at yet
-Enumerable.Max(IEnumerable<TSource>,Func<TSource,Nullable<Decimal>>) selector  type  not looked at yet
-Enumerable.Max(IEnumerable<TSource>,Func<TSource,Nullable<Decimal>>) source  type  not looked at yet
-Enumerable.Max(IEnumerable<TSource>,Func<TSource,Nullable<Double>>) selector  type  not looked at yet
-Enumerable.Max(IEnumerable<TSource>,Func<TSource,Nullable<Double>>) source  type  not looked at yet
-Enumerable.Max(IEnumerable<TSource>,Func<TSource,Nullable<Int64>>) selector  type  not looked at yet
-Enumerable.Max(IEnumerable<TSource>,Func<TSource,Nullable<Int64>>) source  type  not looked at yet
-Enumerable.Max(IEnumerable<TSource>,Func<TSource,Nullable<Single>>) selector  type  not looked at yet
-Enumerable.Max(IEnumerable<TSource>,Func<TSource,Nullable<Single>>) source  type  not looked at yet
-Enumerable.Max(IEnumerable<TSource>,Func<TSource,Nullable<int>>) selector  type  not looked at yet
-Enumerable.Max(IEnumerable<TSource>,Func<TSource,Nullable<int>>) source  type  not looked at yet
-Enumerable.Max(IEnumerable<TSource>,Func<TSource,Single>) selector  type  not looked at yet
-Enumerable.Max(IEnumerable<TSource>,Func<TSource,Single>) source  type  not looked at yet
 Enumerable.MaxBy(IEnumerable<TSource>,Func<TSource,TKey>) keySelector  type  LINQ over a list is lowered to the array's own method, which reads a null source or delegate through null: refusing it by name is a guard at every call, which is a design decision
 Enumerable.MaxBy(IEnumerable<TSource>,Func<TSource,TKey>) source  type  LINQ over a list is lowered to the array's own method, which reads a null source or delegate through null: refusing it by name is a guard at every call, which is a design decision
-Enumerable.Min(IEnumerable<Int32>) source  type  not looked at yet
-Enumerable.Min(IEnumerable<TSource>,Func<TSource,Decimal>) selector  type  not looked at yet
-Enumerable.Min(IEnumerable<TSource>,Func<TSource,Decimal>) source  type  not looked at yet
-Enumerable.Min(IEnumerable<TSource>,Func<TSource,Double>) selector  type  not looked at yet
-Enumerable.Min(IEnumerable<TSource>,Func<TSource,Double>) source  type  not looked at yet
-Enumerable.Min(IEnumerable<TSource>,Func<TSource,Int32>) selector  type  not looked at yet
-Enumerable.Min(IEnumerable<TSource>,Func<TSource,Int32>) source  type  not looked at yet
-Enumerable.Min(IEnumerable<TSource>,Func<TSource,Int64>) selector  type  not looked at yet
-Enumerable.Min(IEnumerable<TSource>,Func<TSource,Int64>) source  type  not looked at yet
-Enumerable.Min(IEnumerable<TSource>,Func<TSource,Nullable<Decimal>>) selector  type  not looked at yet
-Enumerable.Min(IEnumerable<TSource>,Func<TSource,Nullable<Decimal>>) source  type  not looked at yet
-Enumerable.Min(IEnumerable<TSource>,Func<TSource,Nullable<Double>>) selector  type  not looked at yet
-Enumerable.Min(IEnumerable<TSource>,Func<TSource,Nullable<Double>>) source  type  not looked at yet
-Enumerable.Min(IEnumerable<TSource>,Func<TSource,Nullable<Int64>>) selector  type  not looked at yet
-Enumerable.Min(IEnumerable<TSource>,Func<TSource,Nullable<Int64>>) source  type  not looked at yet
-Enumerable.Min(IEnumerable<TSource>,Func<TSource,Nullable<Single>>) selector  type  not looked at yet
-Enumerable.Min(IEnumerable<TSource>,Func<TSource,Nullable<Single>>) source  type  not looked at yet
-Enumerable.Min(IEnumerable<TSource>,Func<TSource,Nullable<int>>) selector  type  not looked at yet
-Enumerable.Min(IEnumerable<TSource>,Func<TSource,Nullable<int>>) source  type  not looked at yet
-Enumerable.Min(IEnumerable<TSource>,Func<TSource,Single>) selector  type  not looked at yet
-Enumerable.Min(IEnumerable<TSource>,Func<TSource,Single>) source  type  not looked at yet
 Enumerable.MinBy(IEnumerable<TSource>,Func<TSource,TKey>) keySelector  type  LINQ over a list is lowered to the array's own method, which reads a null source or delegate through null: refusing it by name is a guard at every call, which is a design decision
 Enumerable.MinBy(IEnumerable<TSource>,Func<TSource,TKey>) source  type  LINQ over a list is lowered to the array's own method, which reads a null source or delegate through null: refusing it by name is a guard at every call, which is a design decision
 Enumerable.OfType(IEnumerable) source  type  LINQ over a list is lowered to the array's own method, which reads a null source or delegate through null: refusing it by name is a guard at every call, which is a design decision
@@ -312,7 +257,6 @@ Enumerable.SelectMany(IEnumerable<TSource>,Func<TSource,IEnumerable<TResult>>) s
 Enumerable.SelectMany(IEnumerable<TSource>,Func<TSource,Int32,IEnumerable<TResult>>) selector  type  LINQ over a list is lowered to the array's own method, which reads a null source or delegate through null: refusing it by name is a guard at every call, which is a design decision
 Enumerable.SelectMany(IEnumerable<TSource>,Func<TSource,Int32,IEnumerable<TResult>>) source  type  LINQ over a list is lowered to the array's own method, which reads a null source or delegate through null: refusing it by name is a guard at every call, which is a design decision
 Enumerable.SequenceEqual(IEnumerable<TSource>,IEnumerable<TSource>) first  type  LINQ over a list is lowered to the array's own method, which reads a null source or delegate through null: refusing it by name is a guard at every call, which is a design decision
-Enumerable.SequenceEqual(IEnumerable<TSource>,IEnumerable<TSource>) second  param  not looked at yet
 Enumerable.SequenceEqual(IEnumerable<TSource>,IEnumerable<TSource>,IEqualityComparer<TSource>) comparer  value  LINQ over a list is lowered to the array's own method, which reads a null source or delegate through null: refusing it by name is a guard at every call, which is a design decision
 Enumerable.Single(IEnumerable<TSource>) source  type  LINQ over a list is lowered to the array's own method, which reads a null source or delegate through null: refusing it by name is a guard at every call, which is a design decision
 Enumerable.Single(IEnumerable<TSource>,Func<TSource,Boolean>) predicate  type  LINQ over a list is lowered to the array's own method, which reads a null source or delegate through null: refusing it by name is a guard at every call, which is a design decision
@@ -360,11 +304,7 @@ Enumerable.ThenBy(IOrderedEnumerable<TSource>,Func<TSource,TKey>) keySelector  t
 Enumerable.ThenBy(IOrderedEnumerable<TSource>,Func<TSource,TKey>) source  type  LINQ over a list is lowered to the array's own method, which reads a null source or delegate through null: refusing it by name is a guard at every call, which is a design decision
 Enumerable.ThenByDescending(IOrderedEnumerable<TSource>,Func<TSource,TKey>) keySelector  type  LINQ over a list is lowered to the array's own method, which reads a null source or delegate through null: refusing it by name is a guard at every call, which is a design decision
 Enumerable.ThenByDescending(IOrderedEnumerable<TSource>,Func<TSource,TKey>) source  type  LINQ over a list is lowered to the array's own method, which reads a null source or delegate through null: refusing it by name is a guard at every call, which is a design decision
-Enumerable.ToDictionary(IEnumerable<TSource>,Func<TSource,TKey>) keySelector  type  not looked at yet
-Enumerable.ToDictionary(IEnumerable<TSource>,Func<TSource,TKey>) source  type  not looked at yet
 Enumerable.ToDictionary(IEnumerable<TSource>,Func<TSource,TKey>,Func<TSource,TElement>) elementSelector  type  the twin reads a null element selector as none: the lowering writes null for the overload without one
-Enumerable.ToDictionary(IEnumerable<TSource>,Func<TSource,TKey>,Func<TSource,TElement>) keySelector  type  not looked at yet
-Enumerable.ToDictionary(IEnumerable<TSource>,Func<TSource,TKey>,Func<TSource,TElement>) source  type  not looked at yet
 Enumerable.ToHashSet(IEnumerable<TSource>) source  param  ToHashSet hands its source to the set's constructor, which refuses it as its own collection
 Enumerable.ToList(IEnumerable<TSource>) source  type  LINQ over a list is lowered to the array's own method, which reads a null source or delegate through null: refusing it by name is a guard at every call, which is a design decision
 Enumerable.ToLookup(IEnumerable<TSource>,Func<TSource,TKey>) keySelector  type  LINQ over a list is lowered to the array's own method, which reads a null source or delegate through null: refusing it by name is a guard at every call, which is a design decision
@@ -374,10 +314,8 @@ Enumerable.ToLookup(IEnumerable<TSource>,Func<TSource,TKey>,Func<TSource,TElemen
 Enumerable.ToLookup(IEnumerable<TSource>,Func<TSource,TKey>,Func<TSource,TElement>) source  type  LINQ over a list is lowered to the array's own method, which reads a null source or delegate through null: refusing it by name is a guard at every call, which is a design decision
 Enumerable.ToLookup(IEnumerable<TSource>,Func<TSource,TKey>,IEqualityComparer<TKey>) comparer  type  LINQ over a list is lowered to the array's own method, which reads a null source or delegate through null: refusing it by name is a guard at every call, which is a design decision
 Enumerable.Union(IEnumerable<TSource>,IEnumerable<TSource>) first  type  LINQ over a list is lowered to the array's own method, which reads a null source or delegate through null: refusing it by name is a guard at every call, which is a design decision
-Enumerable.Union(IEnumerable<TSource>,IEnumerable<TSource>) second  param  not looked at yet
 Enumerable.UnionBy(IEnumerable<TSource>,IEnumerable<TSource>,Func<TSource,TKey>) first  type  LINQ over a list is lowered to the array's own method, which reads a null source or delegate through null: refusing it by name is a guard at every call, which is a design decision
 Enumerable.UnionBy(IEnumerable<TSource>,IEnumerable<TSource>,Func<TSource,TKey>) keySelector  type  LINQ over a list is lowered to the array's own method, which reads a null source or delegate through null: refusing it by name is a guard at every call, which is a design decision
-Enumerable.UnionBy(IEnumerable<TSource>,IEnumerable<TSource>,Func<TSource,TKey>) second  param  not looked at yet
 Enumerable.Where(IEnumerable<TSource>,Func<TSource,Boolean>) predicate  type  LINQ over a list is lowered to the array's own method, which reads a null source or delegate through null: refusing it by name is a guard at every call, which is a design decision
 Enumerable.Where(IEnumerable<TSource>,Func<TSource,Boolean>) source  type  LINQ over a list is lowered to the array's own method, which reads a null source or delegate through null: refusing it by name is a guard at every call, which is a design decision
 Enumerable.Where(IEnumerable<TSource>,Func<TSource,Int32,Boolean>) predicate  type  LINQ over a list is lowered to the array's own method, which reads a null source or delegate through null: refusing it by name is a guard at every call, which is a design decision
@@ -386,13 +324,10 @@ Enumerable.Zip(IEnumerable<TFirst>,IEnumerable<TSecond>) first  type  LINQ over 
 Enumerable.Zip(IEnumerable<TFirst>,IEnumerable<TSecond>) second  type  LINQ over a list is lowered to the array's own method, which reads a null source or delegate through null: refusing it by name is a guard at every call, which is a design decision
 Enumerable.Zip(IEnumerable<TFirst>,IEnumerable<TSecond>,Func<TFirst,TSecond,TResult>) first  type  Zip is the runtime's zip, which reads a null first sequence or result selector through null
 Enumerable.Zip(IEnumerable<TFirst>,IEnumerable<TSecond>,Func<TFirst,TSecond,TResult>) resultSelector  type  Zip is the runtime's zip, which reads a null first sequence or result selector through null
-Enumerable.Zip(IEnumerable<TFirst>,IEnumerable<TSecond>,Func<TFirst,TSecond,TResult>) second  param  not looked at yet
 Enumerable.Zip(IEnumerable<TFirst>,IEnumerable<TSecond>,IEnumerable<TThird>) first  control  the Zip of three sequences is lowered as the Zip with a result selector
-Enumerable.Zip(IEnumerable<TFirst>,IEnumerable<TSecond>,IEnumerable<TThird>) second  control  not looked at yet
 Enumerable.Zip(IEnumerable<TFirst>,IEnumerable<TSecond>,IEnumerable<TThird>) third  control  the Zip of three sequences is lowered as the Zip with a result selector
 Guid..ctor(Byte[]) b  type  new Guid of bytes is written as a class the runtime does not export
 Guid..ctor(Int32,Int16,Int16,Byte[]) d  type  new Guid of bytes is written as a class the runtime does not export
-Guid..ctor(String) g  param  not looked at yet
 List<Int32>..ctor(IEnumerable<Int32>) collection  type  lowered to a spread, which reads a null collection through null: refusing it by name is a guard at every call, which is a design decision
 List<Int32>.AddRange(IEnumerable<Int32>) collection  type  lowered to a spread, which reads a null collection through null: refusing it by name is a guard at every call, which is a design decision
 List<Int32>.Exists(Predicate<Int32>) match  type  lowered to the array's own method, which reads a null array or delegate through null: refusing it by name is a guard at every call, which is a design decision
@@ -486,7 +421,6 @@ StringBuilder.AppendJoin(String,String[]) separator  control  #679: the runtime'
 StringBuilder.AppendJoin(String,String[]) values  control  #679: the runtime's builder has no appendJoin
 StringBuilder.CopyTo(Int32,Char[],Int32,Int32) destination  control  #679: the runtime's builder has no copyTo
 StringBuilder.Equals(StringBuilder) sb  control  #679: the runtime's builder has no equals
-TimeOnly.CompareTo(Object) value  type  not looked at yet
 TimeOnly.Parse(String,IFormatProvider) s  type  the provider is written as the name CultureInfo, which the runtime does not export: eqc reads a culture only where it formats or parses a number
 TimeOnly.Parse(String,IFormatProvider,DateTimeStyles) s  type  the provider is written as the name CultureInfo, which the runtime does not export: eqc reads a culture only where it formats or parses a number
 TimeOnly.ToString(String,IFormatProvider) format  control  the provider is written as the name CultureInfo, which the runtime does not export: eqc reads a culture only where it formats or parses a number
@@ -496,7 +430,6 @@ TimeOnly.TryParse(String,IFormatProvider,DateTimeStyles,TimeOnly&) s  control  t
 TimeOnly.TryParse(String,IFormatProvider,TimeOnly&) provider  control  the provider is written as the name CultureInfo, which the runtime does not export: eqc reads a culture only where it formats or parses a number
 TimeOnly.TryParse(String,IFormatProvider,TimeOnly&) s  control  the provider is written as the name CultureInfo, which the runtime does not export: eqc reads a culture only where it formats or parses a number
 TimeOnly.TryParse(String,TimeOnly&) s  control  the runtime has no tryParse for a timeOnly
-TimeSpan.CompareTo(Object) value  type  not looked at yet
 TimeSpan.Parse(String,IFormatProvider) input  type  the provider is written as the name CultureInfo, which the runtime does not export: eqc reads a culture only where it formats or parses a number
 TimeSpan.ParseExact(String,String,IFormatProvider) format  type  the provider is written as the name CultureInfo, which the runtime does not export: eqc reads a culture only where it formats or parses a number
 TimeSpan.ParseExact(String,String,IFormatProvider) input  type  the provider is written as the name CultureInfo, which the runtime does not export: eqc reads a culture only where it formats or parses a number

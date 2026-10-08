@@ -253,6 +253,37 @@ public class NullArgumentConformanceTests(ITestOutputHelper output)
     private static string? Canonical(string? json) =>
         json is null ? null : JsonSerializer.Serialize(JsonDocument.Parse(json).RootElement, CanonicalJson);
 
+    // ---- What one canonical value cannot reach -------------------------------------------------
+
+    /// <summary>
+    /// The probes hand every receiver one canonical value, a positive number and <c>true</c>, and every
+    /// LINQ receiver a list, which the lowering reads as the array it is. So <c>CompareTo(object)</c>
+    /// answered 1 for a null there by luck, a subtraction of null from a positive number, while
+    /// <c>false</c>, a negative number and a char answered otherwise; and a sequence that is not a list
+    /// is read through <c>seq</c>, which named every null <c>source</c>. Each through a typed catch,
+    /// where the difference shows in a page (#569). A value still compares as it did.
+    /// </summary>
+    [SkippableTheory]
+    [InlineData("object o = null; int n = -5; return n.CompareTo(o);")]                       // 1
+    [InlineData("object o = null; long n = -5L; return n.CompareTo(o);")]                     // 1
+    [InlineData("object o = null; double n = -1.5; return n.CompareTo(o);")]                  // 1
+    [InlineData("object o = null; bool b = false; return b.CompareTo(o);")]                   // 1
+    [InlineData("object o = null; char c = 'a'; return c.CompareTo(o);")]                     // 1
+    [InlineData("object o = 3; int n = -5; return n.CompareTo(o) < 0;")]                      // true: a value compares as it did
+    [InlineData("object o = null; return new DateTime(2026, 1, 2).CompareTo(o);")]            // 1
+    [InlineData("object o = null; return TimeSpan.FromMinutes(-90).CompareTo(o);")]           // 1
+    [InlineData("IEnumerable<int> a = null; try { return a.Zip(new[] { 1 }).Count().ToString(); } catch (ArgumentNullException e) { return e.ParamName; }")] // first
+    [InlineData("HashSet<int> a = null; try { return a.Concat(new[] { 1 }).Count().ToString(); } catch (ArgumentNullException e) { return e.ParamName; }")] // first
+    [InlineData("var a = new List<int> { 1 }; HashSet<int> b = null; try { return a.Concat(b).Count().ToString(); } catch (ArgumentNullException e) { return e.ParamName; }")] // second
+    [InlineData("var a = new List<int> { 1 }; Func<int, int> f = null; try { return a.Max(f).ToString(); } catch (ArgumentNullException e) { return e.ParamName; }")] // selector
+    [InlineData("List<int> a = null; try { return a.ToDictionary(x => x).Count.ToString(); } catch (ArgumentNullException e) { return e.ParamName; }")] // source
+    [InlineData("string text = null; try { return new Guid(text).ToString(); } catch (ArgumentNullException e) { return e.ParamName; }")] // g
+    public void ANullNoCanonicalProbeReaches_IsAnsweredAsDotNetAnswersIt(string statements)
+    {
+        Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
+        ConformanceRunner.AssertStatementsSameAsDotNet(statements);
+    }
+
     // ---- The instrument, checked against itself ------------------------------------------------
 
     /// <summary>
