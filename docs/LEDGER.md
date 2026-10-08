@@ -1720,8 +1720,11 @@ record of a release, the wiki's Upgrading page is the distillate.
   a struct keep EQ1007. Copilot's first round found a pattern reading the property: a property
   subpattern named the member by its text, so `this is { value: 1 }` was false where .NET is true, and a
   positional one read the members its `Deconstruct`'s outs are named after, so a `Deconstruct` the app
-  wrote is called now, as a deconstruction calls it. Proposed and archived through OpenSpec
-  (`openspec/specs/transpiler-classes`).
+  wrote is called now, as a deconstruction calls it. The sweep after it found two reads the move itself
+  had broken: a call of a delegate field went to the method a case apart from it, so a method that
+  forwards to its delegate field (`bool Validate(int n) => validate(n)`) called itself and never
+  returned, and a field called `Count` was read as the method `count()`; both reach the field's slot
+  now. Proposed and archived through OpenSpec (`openspec/specs/transpiler-classes`).
 
 ## Retired documents
 
