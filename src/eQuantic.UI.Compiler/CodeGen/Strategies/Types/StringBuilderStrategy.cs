@@ -60,12 +60,12 @@ public class StringBuilderStrategy : ConversionStrategyBase
                 // argument the bound tree binds to the `value` parameter, written by position or by
                 // name, and the call passes every argument where C# binds it, each evaluated in the
                 // order it is written. The runtime's builder took JavaScript's String() of it, so
-                // `Append(1.5)` read `1.5` on a pt-BR page. A char[] is written char by char, never as
-                // its text, so its overloads keep their own method (#650).
+                // `Append(1.5)` read `1.5` on a pt-BR page. A value that is text already passes as it
+                // is (IsText), a null included, which a ranged overload refuses as .NET does (#650).
                 if (name is "Append" or "AppendLine" or "Insert"
                     && context.SemanticHelper.GetOperation(inv) is IInvocationOperation operation
-                    && operation.Arguments.FirstOrDefault(argument => argument.Parameter is { Name: "value", Type: not IArrayTypeSymbol }
-                        && argument.ArgumentKind == ArgumentKind.Explicit)?.Value.Syntax is ExpressionSyntax value
+                    && operation.Arguments.FirstOrDefault(argument => argument.Parameter is { Name: "value" } parameter
+                        && !IsText(parameter.Type) && argument.ArgumentKind == ArgumentKind.Explicit)?.Value.Syntax is ExpressionSyntax value
                     && BoundArguments.Of(operation, argument => argument == value
                         ? StringConversion.ToDotNetString(argument, context.Converter.ConvertIr(argument), context)
                         : context.Converter.ConvertIr(argument)) is { } bound)
@@ -95,6 +95,18 @@ public class StringBuilderStrategy : ConversionStrategyBase
             && method.Parameters.Any(parameter => parameter is { Name: "value", Type: IArrayTypeSymbol })
             ? $"{name.ToCamelCase()}Chars"
             : name.ToCamelCase();
+
+    /// <summary>
+    /// Whether a builder's <c>value</c> is text already, written as it is: a string, a char, a char[],
+    /// another builder or a span of chars. Only the rest (a number, a bool, an enum, an object) is a
+    /// value whose text the culture writes. A null string or builder handed to a ranged overload is a
+    /// refusal .NET makes, which the text conversion turned into an empty string.
+    /// </summary>
+    private static bool IsText(ITypeSymbol type) =>
+        type.SpecialType is SpecialType.System_String or SpecialType.System_Char
+        || type is IArrayTypeSymbol
+        || type is INamedTypeSymbol { Name: "StringBuilder", ContainingNamespace: { Name: "Text", ContainingNamespace.Name: "System" } }
+        || type is INamedTypeSymbol { Name: "ReadOnlySpan" or "ReadOnlyMemory", TypeArguments: [{ SpecialType: SpecialType.System_Char }] };
 
     private static bool IsMember(MemberAccessExpressionSyntax ma, ConversionContext context)
     {
