@@ -15,6 +15,12 @@ its lines broken where the document breaks them, and its range SHALL end where t
 - **WHEN** an edit inserting "x\ry" at line 0, column 1 is built by hand
 - **THEN** its inserted range ends at line 1, column 1, and it is not a simple insert
 
+#### Scenario: A typed carriage return ends a run of typing
+
+- **WHEN** a typed edit inserting "\r" after the "a" of "ab" is recorded by hand, then a typed "x"
+  where it ends
+- **THEN** one undo takes back the "x" alone
+
 ### Requirement: Undo after a paste restores the document exactly
 
 Undo after a paste SHALL restore the document exactly, and redo SHALL replay it, whatever breaks the

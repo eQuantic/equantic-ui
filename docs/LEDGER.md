@@ -1731,8 +1731,10 @@ record of a release, the wiki's Upgrading page is the distillate.
   And an edit recorded a paste as it was handed, which the history split on LF alone while the
   document breaks lines on CR, CRLF and LF: undo after pasting "x\ry" into "abc" left "a" and "ybc"
   ([#600](https://github.com/eQuantic/equantic-ui/issues/600)); an edit now carries the text the
-  document holds, and its range breaks lines as the document does. Proposed and archived through
-  OpenSpec (`openspec/specs/code-history`, `openspec/specs/modal-focus`).
+  document holds, and its range breaks lines as the document does. Copilot's first round found the
+  history's run of typing still ending at LF alone, so a typed lone CR a host recorded ran on into the
+  next character: the edit now says whether it breaks a line, and the history asks it. Proposed and
+  archived through OpenSpec (`openspec/specs/code-history`, `openspec/specs/modal-focus`).
 
 ## Retired documents
 

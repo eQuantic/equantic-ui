@@ -27,8 +27,10 @@ recorded the raw text in the `CodeEdit`, whose `InsertedRange` split on LF alone
   back from the new document (`TextIn` over the range it now occupies), so the history and every
   listener see one shape of line break.
 - **`CodeEdit` breaks its lines where the document does.** `InsertedRange` counts lines through
-  `CodeDocument.FromText`, and `IsSimpleInsert` treats a CR as a break too, so an edit a host builds
-  by hand with a lone CR measures what the document will hold.
+  `CodeDocument.FromText`, and whether an edit breaks a line (`BreaksLine`, CR or LF) is asked by
+  `IsSimpleInsert` and by the history's run of typing alike, so an edit a host builds by hand with a
+  lone CR measures what the document will hold and ends a run as a typed LF does (Copilot's first
+  round found the history still asking for LF alone).
 
 ## Fences
 

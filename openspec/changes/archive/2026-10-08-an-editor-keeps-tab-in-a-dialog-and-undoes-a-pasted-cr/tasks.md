@@ -12,6 +12,8 @@
 - [x] 2.2 The engine's twins regenerated, and the runtime's suite run on them
 - [x] 2.3 Check: undo and redo after pasting a lone CR, a CRLF, a LF and a mix, the edit a listener
       hears, and the range of an edit built by hand, failing on the engine before the fix
+- [x] 2.4 The history ends a run of typing at a CR as at a LF, checked with a typed lone CR recorded by
+      hand, failing on the history before the fix
 
 ## 3. Documentation
 
