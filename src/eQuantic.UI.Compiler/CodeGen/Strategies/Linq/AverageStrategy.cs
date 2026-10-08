@@ -75,18 +75,18 @@ public class AverageStrategy : IExpressionIrStrategy
             var param = lambda.Parameter.Identifier.Text.ToJsIdentifier();
             var body = context.Converter.ConvertIr(expression);
             var callback = JsExpr.Arrow($"$sum, {param}", LinqAccumulation.Add(JsExpr.Identifier("$sum"), body, exact));
-            return JsExpr.Template(Divide($"{{0}}.reduce({{1}}, {seed})"), [source, callback], context.TypeAnnotations);
+            return JsExpr.Template(Divide($"{{0}}.reduce({{1}}, {seed})"), [source, callback]);
         }
 
         // Any other selector is evaluated once, before the reduce runs, as C# evaluates an argument.
         if (args.Count > 0)
             return JsExpr.Template(
                 Divide($"{{0}}.reduce(($sum, $x) => {LinqAccumulation.Add("$sum", "{1}($x)", exact)}, {seed})"),
-                [source, context.Converter.ConvertIr(args[0].Expression)], context.TypeAnnotations);
+                [source, context.Converter.ConvertIr(args[0].Expression)]);
 
         // Average() without selector
         return JsExpr.Template(Divide($"{{0}}.reduce(($a, $b) => {LinqAccumulation.Add("$a", "$b", exact)}, {seed})"),
-            [source], context.TypeAnnotations);
+            [source]);
     }
 
     public int Priority => 10;

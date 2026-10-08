@@ -76,7 +76,7 @@ public class LinqTableStrategy : IExpressionIrStrategy
 
         // {0} is the receiver; {1}… the arguments. The writer binds whatever is reused.
         return JsExpr.Template(BindNamedArguments(template, invocation, context),
-            new[] { receiver }.Concat(args).ToArray(), context.TypeAnnotations);
+            new[] { receiver }.Concat(args).ToArray());
     }
 
     /// <summary>

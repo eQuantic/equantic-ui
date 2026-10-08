@@ -44,3 +44,9 @@ The source of a LINQ call and each of its arguments SHALL be evaluated once, in 
 
 - **WHEN** `new[] { 1, 2, 3, 4 }.Intersect(Other("$x"))` runs, where `Other` counts its calls
 - **THEN** `Other` has run once, as in .NET, and so it has when the string is interpolated
+
+#### Scenario: A source bound once keeps its type
+
+- **WHEN** a shared component computes `Items().Average()`, where `Items()` answers a `List<int>`
+- **THEN** the module eqc writes passes the runtime's strict tsc: the source is bound bare, typed by
+  the list, so the callback the lowering hands it is typed too
