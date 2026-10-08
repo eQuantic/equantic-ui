@@ -22,3 +22,8 @@ SHALL fail the build with EQ2007, never be dropped or called as a selector.
 
 - **WHEN** a component computes `words.Distinct(StringComparer.OrdinalIgnoreCase)`
 - **THEN** the build fails with EQ2007 at the comparer
+
+#### Scenario: Arguments named out of order
+
+- **WHEN** browser-side code computes `new[] { "a", "bb", "cc" }.GroupBy(comparer: EqualityComparer<int>.Default, keySelector: w => w.Length)` and joins each key with its count
+- **THEN** the answer is `1:1,2:2`, as in .NET

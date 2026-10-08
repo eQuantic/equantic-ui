@@ -678,6 +678,11 @@ receiver and the key evaluated once and in C#'s order, and a write SHALL answer 
 - **WHEN** browser-side code reads `p.Count` and `p[^1]` over `IReadOnlyList<int> p` holding a twin of `{ 3, 4 }` that also declares `Length => 12.5` and `Size => 7`
 - **THEN** the answers are `2` and `4`, as in .NET
 
+#### Scenario: A face that holds null
+
+- **WHEN** browser-side code reads `r.Count`, `r[0]` and `r?.Count` over `IReadOnlyList<int> r = null`
+- **THEN** the first two throw a NullReferenceException, "Object reference not set to an instance of an object.", and the null-conditional answers null, as in .NET
+
 ### Requirement: ICollection's Add and Clear answer for the collection behind it
 
 `ICollection<T>.Add` and `ICollection<T>.Clear` SHALL add and empty as the collection the interface
