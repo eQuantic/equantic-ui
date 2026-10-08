@@ -190,7 +190,9 @@ describe('S6 adaptive lowering (C# cross-pin)', () => {
   });
 
   it('an arm aligns itself in its line and spans its grid', () => {
-    // The rest of what a parent reads off a direct child, placed on the arm. Same assertions as
+    // The rest of what a parent reads off a direct child, placed on the arm. The node carries a
+    // placement of its own that no arm asks for, and it is never read, so the compact arm stays
+    // unaligned and unspanned. Same assertions as
     // S6AdaptiveRealizerTests.AnArm_AlignsItselfInItsLine_AndSpansItsGrid.
     const sized = (extra: Record<string, unknown>) =>
       ({
@@ -204,7 +206,12 @@ describe('S6 adaptive lowering (C# cross-pin)', () => {
       main: 'start',
       cross: 'start',
       children: [
-        { nodeKind: 'adaptive', compact: marker(), expanded: sized({ alignSelf: 'end' }) },
+        {
+          nodeKind: 'adaptive',
+          alignSelf: 'center',
+          compact: marker(),
+          expanded: sized({ alignSelf: 'end' }),
+        },
       ],
     } as unknown as VisualNodeValue;
     const grid = {
@@ -214,7 +221,9 @@ describe('S6 adaptive lowering (C# cross-pin)', () => {
         { kind: 'fill', value: 1 },
       ],
       gap: 0,
-      children: [{ nodeKind: 'adaptive', compact: marker(), expanded: sized({ gridSpan: 2 }) }],
+      children: [
+        { nodeKind: 'adaptive', gridSpan: 2, compact: marker(), expanded: sized({ gridSpan: 2 }) },
+      ],
     } as unknown as VisualNodeValue;
 
     const line = lowerVisualNode(row, ctx).children[0].children;
