@@ -37,6 +37,9 @@ public sealed record CodeEdit(
 
     /// <summary>True when this edit only ADDED text at the caret — the case undo coalesces, so a
     /// sentence typed letter by letter comes back in one press rather than forty.</summary>
-    public bool IsSimpleInsert =>
-        RemovedText.Length == 0 && !InsertedText.Contains('\n') && !InsertedText.Contains('\r');
+    public bool IsSimpleInsert => RemovedText.Length == 0 && !BreaksLine;
+
+    /// <summary>Whether the inserted text breaks a line, on CR, CRLF or LF, as the document breaks
+    /// them: what ends a run of typing.</summary>
+    internal bool BreaksLine => InsertedText.Contains('\n') || InsertedText.Contains('\r');
 }
