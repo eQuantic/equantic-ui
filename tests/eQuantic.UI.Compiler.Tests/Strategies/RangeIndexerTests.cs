@@ -75,11 +75,13 @@ public class RangeIndexerTests
             }
             """);
 
-        errors.Should().Contain("EQ2004");
+        // The strategy's own refusal, and not merely its code: EQ2004 is every untranslated member's, so a
+        // test of the code alone passes over any other refusal that reaches the same access.
+        errors.Should().Contain(error => error.StartsWith("EQ2004: `1..3` is handed to Ranged's indexer over System.Range"));
     }
 
-    /// <summary>Compiled with the framework referenced, so the access BINDS: the bound tree names the
-    /// member the range reaches, which a standalone parse cannot.</summary>
+    /// <summary>Each error as its code and its message, compiled with the framework referenced, so the
+    /// access BINDS: the bound tree names the member the range reaches, which a standalone parse cannot.</summary>
     private static IReadOnlyList<string> ErrorsOf(string source)
     {
         var tree = CSharpSyntaxTree.ParseText(source, ParseDefaults.Options, path: "Probe.cs");
@@ -94,7 +96,7 @@ public class RangeIndexerTests
         compiler.SetProjectCompilation(compilation);
         return compiler.CompileSource(source, "Probe.cs")
             .SelectMany(result => result.Errors)
-            .Select(error => error.Code)
+            .Select(error => $"{error.Code}: {error.Message}")
             .ToList();
     }
 }
