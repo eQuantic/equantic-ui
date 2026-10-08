@@ -1470,6 +1470,16 @@ record of a release, the wiki's Upgrading page is the distillate.
   another, in a lambda run three times at once over an array's elements, and behind a call that
   answers null and must not suspend the method, fail on main. #539's other sites closed in #561 and
   #566. Proposed and archived through OpenSpec (`openspec/specs/transpiler-expressions`).
+- **2026-10-06 · A page answers HEAD as it answers GET**: every page route and the modules under
+  `/_equantic/` were mapped with `MapGet`, so a HEAD fell through to the fallback and answered 404
+  where the GET answered 200, measured in the 0.2.0-preview.60 release proof on a fresh app
+  ([#575](https://github.com/eQuantic/equantic-ui/issues/575)): an uptime monitor, a link checker or
+  a crawler that asks with HEAD read every page as missing. A `[Page]` route and its culture twin, a
+  `MapPage<T>` route, `runtime.js`, an app's module and its source map are mapped for GET and HEAD
+  now, with the GET's handler, and Kestrel writes no body for a HEAD. `HeadRequestTests` runs on
+  Kestrel, because the test host answers a HEAD with the whole body (measured), and its four HEAD
+  cases fail against main's routes. Proposed and archived through OpenSpec
+  (`openspec/specs/page-routes`).
 - **2026-10-05 · A list, a set and a join answer as .NET's do**: a `List<T>` sorted by its elements'
   text and stably, `RemoveAll` threw a ReferenceError, `BinarySearch` was a `findIndex`, a comparer
   named a class nothing defines, `FindIndex`'s range reached its predicate, `CopyTo` wrote nowhere and
@@ -1579,6 +1589,48 @@ record of a release, the wiki's Upgrading page is the distillate.
   showed its hover fill, and a Pressable around an IconButton took the inner control's hits. The slop
   is now the `::before` with the content lifted above it, and answers only around the control.
   Proposed and archived through OpenSpec (`openspec/specs/hit-targets`).
+- **2026-10-06 · A component hears the server on a typed topic**: the only door from the browser to
+  the server was a Server Action, so no component could hear what someone else did, and an empty
+  SignalR hub, a CDN script nothing called and an unbundled client stood where the door would be
+  ([#291](https://github.com/eQuantic/equantic-ui/issues/291)). `ServerTopic<T>` names a topic and its
+  payload's type; `IServerEvents` is the capability a component subscribes through, over one
+  Server-Sent Events stream per page that reconnects by itself and binds every live topic again
+  before it reports connected; `IServerEventPublisher` publishes from any server code; a topic is
+  authorized by route templates with ASP.NET Core policies (the topic as their resource), anonymous
+  access or a delegate, closed by default; `IServerEventBackplane` and `IServerEventHandler` are the
+  seams for several instances and for presence; the limits bind from `EQuantic:ServerEvents`. eqc
+  hands the twin the payload's hydration spec through `[HydratesTypeArgument]`, and two defects of its
+  own met on the way went at the root: a generic vocabulary type was imported from a sibling module,
+  and a target-typed one whose argument is a list was built as a collection expression. Proving it in
+  a browser found five defects of the server's half, each fixed with a test that fails without it: an
+  app's fallback policy refused the stream, a bind authorized after its stream ended was never
+  released, binds sent at once passed the topic limit, a payload's U+2028 split its JSON, and a stream
+  held a graceful shutdown until the host's timeout. The review before it opened found nine more,
+  each fixed with a test that fails without it: a bind read a body of any type, so another site could
+  bind its visitor's topics to a stream it opened itself; a bind that met the end of its stream was
+  refused for good; a topic built in a generic helper lost its payload's type with a green build (now
+  EQ2013), and one that crossed the wire lost it too; limits nothing could run with started cleanly; a
+  second `UseServerEvents` made every route ambiguous; a page whose app served no events retried
+  silently forever; the refusal followed the app's JSON naming; and the body had no cap. Copilot's
+  first round found seven: a record none of whose members needed coercion crossed as a plain object,
+  as a topic's payload and as a Server Action's result alike, and is now rebuilt on its twin wherever
+  it crosses; `topic with { }` lost its spec and `DataPalette.Default with { }` threw; a handler still
+  awaiting a join heard the leave first; an overflow waited for the write it was blocking; an
+  unanswered release left the topic held; a request that never answered held the next one; and
+  connected came before a topic subscribed meanwhile was bound. The equality of two topics of one name
+  and different payload types is the erasure every generic record has (#651). Its second round found
+  six: a topic's policies ran against the request's principal without their own schemes, so the
+  cookie's user met a bearer-only policy, and they are now evaluated as the authorization middleware
+  evaluates an endpoint's; a generic record's type argument crossed unrevived, and a constructed one is
+  now described by its own members; a bind whose answer was lost was never released; a reading and a
+  refusal nobody assigned were null in the browser; a template's defaults never reached its matcher;
+  and the test stream's wait for an event never failed while heartbeats came. Its third found one: of
+  two rules for one topic, a library's and the app's, the first registered decided alone, so a
+  library's anonymous topic hid the app's that required a user; every rule that fixes as much of a topic
+  now rules on it, each allowing it or not. The served runtime grew 3,124 gzipped bytes.
+  Migration: `ServerActionHub`, its route `/_equantic/hub` and the `AddSignalR()` call `AddUI` made
+  are gone; an app that injected `IHubContext<ServerActionHub>`, which nothing documented, publishes
+  through `IServerEventPublisher`, and an app that maps hubs of its own calls `AddSignalR()` itself. Proposed and archived through OpenSpec (`openspec/specs/server-events`).
 - **2026-10-06 · A char's search checks its start and its count**: `IndexOf(char, int)`,
   `IndexOf(char, int, int)`, `LastIndexOf(char, int)` and `LastIndexOf(char, int, int)` were
   JavaScript's `indexOf` and `lastIndexOf`, which take no count and clamp a start outside the string,
@@ -1593,6 +1645,64 @@ record of a release, the wiki's Upgrading page is the distillate.
   and curly-brace parsers and the SDK's strings, which search a char from a start, now throw where
   the same C# throws on the server. Proposed and archived through OpenSpec
   (`openspec/specs/transpiler-bcl`).
+- **2026-10-07 · A null-conditional answers null, and a method group is the delegate C# makes**: a
+  null-conditional read that is JavaScript's optional chain was `undefined` in the browser where C#
+  answers `null`, and the two part ways where the value is used: a parameter typed `T | null` refuses
+  it in the runtime's build, JSON drops the key, and a dictionary looking for null missed it
+  ([#633](https://github.com/eQuantic/equantic-ui/issues/633)). It answers null there now, behind a
+  guard too, and stays a bare chain where nothing can tell (a call that returns nothing, a statement,
+  the left of a `??`, the tail of another chain). A method group bound to a receiver that is a call ran
+  the call twice, `c.make().value.bind(c.make())` answering 4 where .NET answers 2
+  ([#619](https://github.com/eQuantic/equantic-ui/issues/619)); the bind is a template that reads the
+  receiver once. A group on `base` bound `super`, which JavaScript refuses at parse, and an extension's
+  group bound a member its receiver never has: the first binds `this` now, and the second goes to the
+  home its call goes to, so a BCL extension's group fails the build with EQ2004 instead of throwing in
+  the browser ([#655](https://github.com/eQuantic/equantic-ui/issues/655)). Two twins move,
+  `CodeDiffLayout` and `Spreadsheet`. Proposed and archived through OpenSpec
+  (`openspec/specs/transpiler-expressions`).
+- **2026-10-06 · A control's press and focus show on its boxes on every target**: the handoff presses
+  its buttons with `scale(.985)` and there was no way to say it, and measuring the focus state found
+  it dead on both targets ([#508](https://github.com/eQuantic/equantic-ui/issues/508), the second
+  slice of [#504](https://github.com/eQuantic/equantic-ui/issues/504)). `BoxStyle` gains `Pressed`,
+  and `Focus` becomes the control's: a box is never focusable, so the web's `.cls:focus-visible` could
+  not match, and Photon never drew the diff. Both apply to every box inside the `Pressable` while it
+  is pressed or focused, in the handoff's order, pressed over focus over hover, which the web holds by
+  specificity (0,4,0 over 0,3,0 over 0,2,0) because the server sorts its rules by class and the
+  browser inserts them as it lowers. The focus ring was a `box-shadow` rule that replaced a raised
+  control's elevation and glow; it is now a slot that leads every shadow list,
+  `var(--eq-ring, 0 0 #0000)`, set to the same double ring on focus through a property that does not
+  inherit, and a simulated focus draws it too. A control without `PressedBackground` went transparent
+  while pressed on the web, because a `var()` with no value computes to the initial value, measured
+  in Chromium as `rgba(0, 0, 0, 0)`; only a control with a fill is marked for the swap now. Photon
+  glides a state's custom shadows as one list, a shadow a state adds or takes away fading in or out as
+  CSS pads the shorter list. The A/B caught a test of the order that passed with the order
+  reversed, because a pointer press hides the focus on Photon as `:focus-visible` does on the web; the
+  order between press and focus is now asked of a `Simulated` picture. The review found a control
+  disabled while it held focus still showing its states on Photon, where the web's families never
+  select under a disabled control, and two mechanisms saying one pressed fill, now
+  [#616](https://github.com/eQuantic/equantic-ui/issues/616). Copilot's rounds found a surface's
+  own transition replaced by the fill's fade (a pressed scale snapped, measured in Chromium), a
+  disabled control still arming its fill and ring, shadows with no geometry paired as glide
+  positions, and a picture of a disabled control, or an enabled control around one, still reaching
+  its boxes; a disabled control's subtree is muted now on all three producers. The group hover and the inherited
+  foreground of [#498](https://github.com/eQuantic/equantic-ui/issues/498) are
+  [#614](https://github.com/eQuantic/equantic-ui/issues/614). Proposed and archived through OpenSpec
+  (`openspec/specs/interaction-states`).
+- **2026-10-06 · The conformance harness compares a value as the runtime holds it**: the .NET side
+  wrote a value as System.Text.Json writes it and the JS side as `JSON.stringify` writes the runtime's,
+  so a long, a decimal, an enum and a float compared backwards: a long that crossed as a BigInt
+  printed `"5"` against `5` and failed, and one that became a JS number passed
+  ([#596](https://github.com/eQuantic/equantic-ui/issues/596)). The cases returned `.ToString()`
+  instead, which hid it. The .NET side writes each kind as the runtime holds it now (`RuntimeJson`: a
+  BigInt's digits, a decimal's text, an enum's twin name, a double as JavaScript's `Number::toString`
+  writes it, a tuple and a pair as arrays), and the JS side prints a BigInt the same way whether or
+  not it imported the runtime, where `return 5L;` threw. 33 of the first 37 cases returning each kind
+  directly failed against the old harness, and the double writer matches bun's `String` on 5,000 doubles. Of
+  the 3,557 cases already there, one newly failed, and it was a real bug:
+  `DateTimeOffset.ToUnixTimeSeconds()` answered a JS number for a long, and rounded an instant before
+  1970 toward the epoch; it answers a BigInt cut as .NET cuts it now. Found on the way: the date
+  constructors past the second ([#606](https://github.com/eQuantic/equantic-ui/issues/606)).
+  Proposed and archived through OpenSpec (`openspec/specs/runtime-dates`).
 
 ## Retired documents
 
