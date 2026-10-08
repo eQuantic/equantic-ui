@@ -1743,7 +1743,7 @@ record of a release, the wiki's Upgrading page is the distillate.
   names among them, and a page with no culture installed is in the invariant culture. 187 of the 222
   conformance cases, run on both sides, failed against main with the culture installed as main installs
   it on a page with a catalog; the other 35 are neighbours that already held, kept as pins. EQ2109 is
-  retired. The served runtime grew 5,273 gzipped bytes. Proposed and archived through OpenSpec
+  retired. The served runtime grew 4,037 gzipped bytes. Proposed and archived through OpenSpec
   (`openspec/specs/page-culture`, `runtime-dates`, `transpiler-bcl`, `transpiler-records`).
 
 ## Retired documents
