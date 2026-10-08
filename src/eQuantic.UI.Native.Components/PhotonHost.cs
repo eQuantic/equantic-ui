@@ -2429,8 +2429,12 @@ public sealed class PhotonHost
         if (box.Width <= 0 || box.Height <= 0) return false;
         var innerTurned = TransformedAt(regions, inner);
         var outerTurned = TransformedAt(regions, outer);
+        // The boxes on screen are exact, their clips included, unless a turn tilts one of them: a
+        // translation, a scale and a quarter turn keep a box a box. Compared by their own corners, a
+        // moved child that runs past its card lost the clip that kept it inside on screen.
+        if (!Tilted(innerTurned) && !Tilted(outerTurned))
+            return Holds(regions[outer].Drawn, box.Left, box.Top, box.Right, box.Bottom);
         var within = outerTurned?.LocalDrawn ?? regions[outer].Drawn;
-        if (innerTurned is null && outerTurned is null) return Holds(within, box.Left, box.Top, box.Right, box.Bottom);
 
         var local = innerTurned?.LocalDrawn ?? box;
         var carry = innerTurned?.Inverse.Invert() ?? Matrix2D.Identity;
@@ -2441,6 +2445,19 @@ public sealed class PhotonHost
         var d = carry.Transform(new Point(local.Right, local.Bottom));
         return Holds(within, a.X, a.Y, a.X, a.Y) && Holds(within, b.X, b.Y, b.X, b.Y)
             && Holds(within, c.X, c.Y, c.X, c.Y) && Holds(within, d.X, d.Y, d.X, d.Y);
+    }
+
+    /// <summary>Whether a turn or a shear drew <paramref name="region"/>, tilting its box: its box on
+    /// screen then holds corners it does not. A translation, a scale and a quarter turn keep a box a box,
+    /// and a region nothing transformed is its box.</summary>
+    private static bool Tilted(TransformedRegion? region)
+    {
+        if (region is not { } turned) return false;
+        var m = turned.Inverse;
+        const float flat = 1e-4f;
+        var straight = MathF.Abs(m.M12) < flat && MathF.Abs(m.M21) < flat;
+        var quarter = MathF.Abs(m.M11) < flat && MathF.Abs(m.M22) < flat;
+        return !straight && !quarter;
     }
 
     /// <summary>Whether <paramref name="box"/> holds the rect from (<paramref name="left"/>,

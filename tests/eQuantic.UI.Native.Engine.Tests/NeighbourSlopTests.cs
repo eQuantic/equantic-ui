@@ -173,4 +173,41 @@ public class NeighbourSlopTests
 
         pressed.Should().Equal(["wide"], "the press is on the wide row as drawn, and the narrow row is drawn beside it");
     }
+
+    /// <summary>A card 200 by 100 in a view that clips at its right edge, holding a 40 by 20 button
+    /// placed 180 in, which runs past the card and is drawn only up to the clip; the subtree is moved by
+    /// <paramref name="moved"/> when one is given. Taps 185 in and 35 down, in the button's slop and on
+    /// the card's box, and answers what took the tap.</summary>
+    private static List<string> TapBesideAClippedButton(Transform2D? moved)
+    {
+        var pressed = new List<string>();
+        var stack = new Stack();
+        stack.Add(new Positioned(new Pressable(new Box(new BoxStyle { Width = 40, Height = 20 }),
+            () => pressed.Add("button")), top: 10, start: 180));
+        var card = new Pressable(new Box(new BoxStyle { Width = 200, Height = 100 }, stack), () => pressed.Add("card"));
+        var view = new Box(new BoxStyle { Width = 200, Height = 100, Clip = true }, card);
+        VisualNode subtree = moved is { } transform ? new Box(new BoxStyle { Transform = transform }, view) : view;
+        var host = new PhotonHost(new Box(new BoxStyle { Padding = EdgeInsets.All(100) }, subtree),
+            PhotonTheme.Instance, ThemeMode.Light, 500, 400) { Density = Density.Comfortable };
+        host.RenderFrame(new DisplayListBuilder());
+
+        var shift = moved is { } by ? new Point(by.TranslateX, by.TranslateY) : new Point(0, 0);
+        host.Tap(100 + 185 + shift.X, 100 + 35 + shift.Y);
+        return pressed;
+    }
+
+    /// <summary>
+    /// A control that runs past its card and is clipped at the card's edge stands inside the card as
+    /// drawn, moved or not (Copilot's third round on #690). Moved, the two boxes were compared by their
+    /// own corners, unclipped: the button reached past the card, and the card took the tap its slop
+    /// takes unmoved.
+    /// </summary>
+    [Fact]
+    public void AClippedButtonInACard_TakesTheTapBesideIt_MovedOrNot()
+    {
+        TapBesideAClippedButton(null).Should().Equal(["button"],
+            "beside the button is its target, and what is drawn of it lies inside the card");
+        TapBesideAClippedButton(Transform2D.Translate(100, 100)).Should().Equal(["button"],
+            "and moving the whole subtree changes nothing about it");
+    }
 }
