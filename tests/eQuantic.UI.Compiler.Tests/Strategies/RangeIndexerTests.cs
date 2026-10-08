@@ -58,14 +58,16 @@ public class RangeIndexerTests
     /// no translation here: it is refused (EQ2004) at the range, where it was a call of a <c>slice</c>
     /// the twin does not have, or of a <c>Slice</c> that takes a length beside it (#585).
     /// </summary>
-    [Fact]
-    public void ARangeHandedToAnIndexerOverRange_IsRefused()
+    [Theory]
+    [InlineData("System.Range")]
+    [InlineData("System.Range?")]   // reached by the range's implicit conversion, and refused the same way
+    public void ARangeHandedToAnIndexerOverRange_IsRefused(string key)
     {
-        var errors = ErrorsOf("""
+        var errors = ErrorsOf($$"""
             public class Ranged
             {
                 public int Count => 5;
-                public string this[System.Range r] => "ranged";
+                public string this[{{key}} r] => "ranged";
                 public int[] Slice(int start, int length) => new int[length];
             }
 

@@ -314,9 +314,7 @@ public class ObjectCreationStrategy : IExpressionIrStrategy
         type?.OriginalDefinition.ToDisplayString() == "System.Collections.Generic.List<T>";
 
     /// <summary>A list's type as it is written, where no model can say what it binds to.</summary>
-    private static bool IsListTypeName(string typeName) =>
-        typeName.StartsWith("List<") || typeName.Contains(".List<")
-        || typeName.StartsWith("IEnumerable<") || typeName.Contains(".IEnumerable<");
+    private static bool IsListTypeName(string typeName) => typeName.StartsWith("List<") || typeName.Contains(".List<");
 
     /// <summary>
     /// A list as C# builds it, as one array: what its constructor copies (<see cref="ListSeed"/>), then
@@ -336,9 +334,20 @@ public class ObjectCreationStrategy : IExpressionIrStrategy
             { RawKind: (int)SyntaxKind.ObjectInitializerExpression, Expressions.Count: > 0 } members =>
                 ObjectInitializer.Apply(JsExpr.Array(seed), members, context),
             null => JsExpr.Array(seed),
-            var initializer => JsExpr.Array([.. seed, .. initializer.Expressions.Select(element => context.Converter.ConvertIr(element))]),
+            var initializer => JsExpr.Array([.. seed, .. initializer.Expressions.Select(element => context.Converter.ConvertIr(Added(element)))]),
         };
     }
+
+    /// <summary>
+    /// What an initializer's element hands the list's <c>Add</c>: the element itself, or the one
+    /// expression of a complex element initializer, <c>{ 1 }</c>, which C# hands <c>Add</c> as its
+    /// argument. Converted as an initializer, <c>new List&lt;int&gt; { { 1 }, 2 }</c> held an empty
+    /// object where .NET holds 1.
+    /// </summary>
+    private static ExpressionSyntax Added(ExpressionSyntax element) =>
+        element is InitializerExpressionSyntax { RawKind: (int)SyntaxKind.ComplexElementInitializerExpression, Expressions: [var only] }
+            ? only
+            : element;
 
     /// <summary>
     /// What a list's constructor puts in it: a COPY of the source, spread, never an alias of it (a

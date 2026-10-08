@@ -34,7 +34,8 @@ public class CollectionAndIndexerConformanceTests
     [InlineData("var source = new List<int> { 1 }; List<int> c = new(source); c.Add(9); return string.Join(\",\", c) + \"|\" + source.Count;")]      // 1,9|1
     [InlineData("var source = new List<int> { 1 }; var c = new List<int>(source) { }; c.Add(9); return string.Join(\",\", c) + \"|\" + source.Count;")] // 1,9|1
     // In an argument, where the copy and the elements were two arguments, and with a named capacity.
-    [InlineData("return string.Join(\",\", new List<int>(new[] { 1 }) { 2 });")]                                                              // 1,2
+    [InlineData("return string.Join(\",\", new List<int>(new[] { 1 }) { 2 });")]
+    [InlineData("var a = new List<int> { { 1 }, 2 }; List<int> b = new() { { 3 } }; return string.Join(\",\", a) + \"|\" + (a[0] + 1) + \"|\" + b[0];")] // 1,2|2|3                                                              // 1,2
     [InlineData("return new List<string>(capacity: 4) { \"a\" }.Count;")]                                                                     // 1
     // A source of any shape: a set, a dictionary's pairs, a string's chars.
     [InlineData("var l = new List<int>(new HashSet<int> { 7, 8 }) { 9 }; return string.Join(\",\", l);")]                                    // 7,8,9

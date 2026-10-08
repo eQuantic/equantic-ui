@@ -349,7 +349,9 @@ export function remove<T>(
  * does not hold and ignores one it does, a `HashSet` and a `SortedSet` alike; a linked list adds LAST;
  * a dictionary (`ICollection<KeyValuePair<K, V>>`) adds the pair's key and value and refuses a key
  * already there in its own words, the runtime's `Dictionary` and a sorted map alike; and a twin calls
- * its own `add`. It was an array's `push`, which none of the others has.
+ * its own `add`. It was an array's `push`, which none of the others has. An array stands for a `T[]`
+ * as well as a `List<T>`, so a fixed-size array behind the face grows here where .NET refuses the call
+ * (NotSupportedException): the value carries nothing that tells the two apart.
  */
 export function add<T>(collection: unknown, item: T): void {
   if (Array.isArray(collection)) collection.push(item);

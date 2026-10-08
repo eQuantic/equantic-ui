@@ -54,8 +54,9 @@ public class RangeIndexerStrategy : IExpressionIrStrategy
             case IImplicitIndexerReferenceOperation { IndexerSymbol: IMethodSymbol slice, LengthSymbol: IPropertySymbol length }
                 when ObjectCreationStrategy.TwinIsWritten(slice.ContainingType):
                 return Sliced(access, range, slice, length, context);
+            // Over `Range?` too, which a range reaches by its implicit conversion.
             case IPropertyReferenceOperation { Property: { IsIndexer: true, Parameters: [{ Type: var key }] } indexer }
-                when key.ToDisplayString() == "System.Range":
+                when key.IsNamed("System.Range"):
                 RangeExpressionStrategy.RefuseAsAKey(range, indexer, context);
                 return JsExpr.Opaque(access.ToString());
         }
