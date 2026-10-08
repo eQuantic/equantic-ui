@@ -180,14 +180,6 @@ public class TransformedSurfaceTests
 
     // ---- what a code surface offers ---------------------------------------------------------------
 
-    /// <summary>Offers what it was made with, whatever was typed: the list is the view's to test.</summary>
-    private sealed class ListProvider(params CodeCompletionItem[] items) : ICodeCompletionProvider
-    {
-        public Task<CodeCompletionList> CompleteAsync(CodeDocument document, CodePosition position,
-            CodeCompletionContext context, CancellationToken cancellation) =>
-            Task.FromResult(new CodeCompletionList(items));
-    }
-
     /// <summary>A code editor in a box of 300 by 200 at 200, 200, turned <paramref name="degrees"/>
     /// about its centre, under a pointer, whose rows are no taller than the list.</summary>
     private static PhotonHost MountList(float degrees)
@@ -195,7 +187,7 @@ public class TransformedSurfaceTests
         var host = Mount(new CodeEditor("var Column = 1;\n        \n\n\n\n\n\n", "csharp")
         {
             ShowLineNumbers = false,
-            Completions = [new ListProvider(new CodeCompletionItem("Column"), new CodeCompletionItem("ColorToken"))],
+            Completions = [new ListCompletionProvider(new CodeCompletionItem("Column"), new CodeCompletionItem("ColorToken"))],
         }, Transform2D.Rotate(degrees), width: 300, height: 200);
         host.Density = Density.Compact;
         return host;
@@ -406,13 +398,15 @@ public class TransformedSurfaceTests
     public void ACanvasDrawnTwiceAsLarge_HearsThePointerInItsOwnCoordinates()
     {
         var seen = new List<CanvasPointer>();
-        var host = Mount(new Canvas(_ => { }) { OnPointerDown = seen.Add, OnPointerUp = seen.Add },
+        var host = Mount(new Canvas(_ => { }) { OnPointerDown = seen.Add, OnPointerMove = seen.Add, OnPointerUp = seen.Add },
             Transform2D.Scale(2), width: 100, height: 100);
         var bounds = host.LastFrame!.CanvasRegions.Single().Bounds;
 
-        Click(host, bounds.X + 2 * 30, bounds.Y + 2 * 40);
+        // A drag that spans frames: the canvas it began on is found again in each one.
+        Drag(host, bounds.X + 2 * 30, bounds.Y + 2 * 40, bounds.X + 2 * 45, bounds.Y + 2 * 20);
 
-        seen.Select(p => (p.X, p.Y)).Should().Equal([(30f, 40f), (30f, 40f)],
-            "the press is 30 and 40 into the canvas as drawn, twice as large");
+        seen.Select(p => (p.X, p.Y)).Should().Equal([(30f, 40f), (45f, 20f), (45f, 20f)],
+            "the press is 30 and 40 into the canvas as drawn, twice as large, and the drag and the "
+            + "release 45 and 20");
     }
 }

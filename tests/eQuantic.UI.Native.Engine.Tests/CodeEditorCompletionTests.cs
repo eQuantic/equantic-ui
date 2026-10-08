@@ -34,14 +34,6 @@ public class CodeEditorCompletionTests
         }
     }
 
-    /// <summary>Offers what it was made with, whatever was typed: the list is the view's to test.</summary>
-    private sealed class ListProvider(params CodeCompletionItem[] items) : ICodeCompletionProvider
-    {
-        public Task<CodeCompletionList> CompleteAsync(CodeDocument document, CodePosition position,
-            CodeCompletionContext context, CancellationToken cancellation) =>
-            Task.FromResult(new CodeCompletionList(items));
-    }
-
     /// <summary>Answers when the test says so, as a language server answers after the keystroke.</summary>
     private sealed class LateProvider(params CodeCompletionItem[] items) : ICodeCompletionProvider
     {
@@ -128,7 +120,7 @@ public class CodeEditorCompletionTests
         {
             ShowLineNumbers = false,
             Height = SizeValue.Fill,
-            Completions = offered.Length == 0 ? null : [new ListProvider(offered)],
+            Completions = offered.Length == 0 ? null : [new ListCompletionProvider(offered)],
         };
 
     private static CodeCompletionItem[] Items(int count) =>
@@ -240,7 +232,7 @@ public class CodeEditorCompletionTests
         var editor = new CodeEditor("var Column = 1;\n\n\n", "csharp")
         {
             ShowLineNumbers = false,
-            Completions = [new ListProvider(Items(30))],
+            Completions = [new ListCompletionProvider(Items(30))],
         };
         var host = Host(editor);
         Settle(host);
@@ -641,7 +633,7 @@ public class CodeEditorCompletionTests
             // sideways scroll is the topmost one and takes it.
             ShowLineNumbers = true,
             Height = SizeValue.Fixed(200),
-            Completions = [new ListProvider(new CodeCompletionItem("Column"), new CodeCompletionItem("ColorToken"))],
+            Completions = [new ListCompletionProvider(new CodeCompletionItem("Column"), new CodeCompletionItem("ColorToken"))],
         };
         var page = new Column(gap: 0) { Width = SizeValue.Fill };
         page.Add(editor);
@@ -778,7 +770,7 @@ public class CodeEditorCompletionTests
     public void AProviderAddedToTheController_StaysBesideTheBuiltIns()
     {
         var editor = new CodeEditor(Lines(20), "csharp") { ShowLineNumbers = false, Height = SizeValue.Fill };
-        editor.Editor.Completion.Providers.Add(new ListProvider(new CodeCompletionItem("Cobalt")));
+        editor.Editor.Completion.Providers.Add(new ListCompletionProvider(new CodeCompletionItem("Cobalt")));
         var host = Host(editor);
         Settle(host);
         ClickAt(host, editor, 1, 0);
@@ -792,7 +784,7 @@ public class CodeEditorCompletionTests
     [Fact]
     public void AParentRebuildingWithTheSameProviders_KeepsTheListOpen()
     {
-        var provider = new ListProvider(new CodeCompletionItem("Column"), new CodeCompletionItem("ColorToken"));
+        var provider = new ListCompletionProvider(new CodeCompletionItem("Column"), new CodeCompletionItem("ColorToken"));
         var editor = new CodeEditor(Lines(20), "csharp")
         {
             ShowLineNumbers = false,
@@ -857,7 +849,7 @@ public class CodeEditorCompletionTests
     [Fact]
     public void AListOfProvidersChangedInPlace_HandsWhatItGained()
     {
-        var providers = new List<ICodeCompletionProvider> { new ListProvider(new CodeCompletionItem("Column")) };
+        var providers = new List<ICodeCompletionProvider> { new ListCompletionProvider(new CodeCompletionItem("Column")) };
         var editor = new CodeEditor(Lines(20), "csharp")
         {
             ShowLineNumbers = false,
@@ -868,7 +860,7 @@ public class CodeEditorCompletionTests
         Settle(host);
         editor.Editor.Completion.Providers.Should().Equal(providers, "the first build hands the list");
 
-        var gained = new ListProvider(new CodeCompletionItem("Cobalt"));
+        var gained = new ListCompletionProvider(new CodeCompletionItem("Cobalt"));
         providers.Add(gained);
         editor.AdoptConfig(new CodeEditor(Lines(20), "csharp") { Completions = providers });
         Settle(host);
