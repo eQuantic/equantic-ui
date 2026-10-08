@@ -1723,6 +1723,17 @@ record of a release, the wiki's Upgrading page is the distillate.
   46 new conformance cases fail on the base. The members the runtime does not have are
   [#679](https://github.com/eQuantic/equantic-ui/issues/679). Proposed and archived through OpenSpec
   (`openspec/specs/transpiler-bcl`).
+- **2026-10-08 · A null argument is measured over the translated surface, and a twin refuses it by
+  name**: one measurement instead of one fix per report
+  ([#569](https://github.com/eQuantic/equantic-ui/issues/569)). `NullArgumentConformanceTests` derives
+  the surface from the BCL audit's record and reflection, lets eqc's own diagnostics say what it
+  translates, and calls each member with a null for each reference parameter on both sides, a control
+  without the null beside it. LINQ's `Max`, `Min` and `ToDictionary`, a sequence named by its
+  parameter, `CompareTo(object)`, `new Guid(text)`, `GetUnicodeCategory` and the cancellation pair refuse
+  a null as .NET does now, 67 probes. The 443 left are a baseline that only shrinks, each with its
+  reason, most of them members lowered to JavaScript's own method, where refusing a null by name is a
+  guard at every call, a decision. Proposed and archived through OpenSpec
+  (`openspec/specs/transpiler-exceptions`).
 
 ## Retired documents
 
