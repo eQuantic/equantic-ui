@@ -434,6 +434,41 @@ public class OverloadedMethodTests
         error.Message.Should().Contain("'Hiding.Name' answers 'INamed.Name'").And.Contain("`name$1()`");
     }
 
+    /// <summary>
+    /// A method beside an explicit implementation of its name holds a name of its own (Copilot's review of
+    /// #708): the explicit one holds the interface member's name, which a call through the interface
+    /// reaches, and a call through the class reaches the method by its own. Both were written under one
+    /// name, the later replacing the other. One that answers another interface is refused, since a call
+    /// through that interface would reach the explicit one.
+    /// </summary>
+    [Fact]
+    public void AMethodBesideAnExplicitImplementation_HoldsANameOfItsOwn()
+    {
+        var results = new ComponentCompiler().CompileSource("""
+            public interface INamedThing { string Name(); }
+            public interface ITitled { string Name(); }
+
+            public sealed class Labeled : INamedThing
+            {
+                public string Name() => "own";
+                string INamedThing.Name() => "interface";
+            }
+
+            public sealed class Answering : INamedThing, ITitled
+            {
+                public string Name() => "own";
+                string INamedThing.Name() => "interface";
+            }
+            """, "Probe.cs");
+
+        var labeled = results.Single(result => result.ComponentName == "Labeled");
+        labeled.Errors.Should().BeEmpty();
+        labeled.TypeScript.Should().Contain("name$1()").And.Contain("name()");
+        var error = results.Single(result => result.ComponentName == "Answering").Errors.Should().ContainSingle().Subject;
+        error.Code.Should().Be("EQ1007");
+        error.Message.Should().Contain("'Answering.Name' answers 'ITitled.Name'").And.Contain("explicit implementation of 'INamedThing.Name'");
+    }
+
     /// <summary>An override is the method it overrides, and replacing it is what it is for.</summary>
     [Fact]
     public void AnOverride_IsNotASecondMethod()

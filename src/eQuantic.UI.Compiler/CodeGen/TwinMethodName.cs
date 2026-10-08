@@ -24,6 +24,12 @@ namespace eQuantic.UI.Compiler.CodeGen;
 /// An override holds the name of the method it overrides, whatever that one holds, so an override of a
 /// <c>new virtual</c> method fills that method's slot; every other method holds its own name.
 /// </para>
+/// <para>
+/// The same holds beside an explicit interface implementation of the same name (<see cref="ExplicitBeside"/>):
+/// the explicit one holds the interface member's name, which every call through the interface reaches,
+/// and the method of the type's own holds a name of its own. C# lets the two answer differently, and a
+/// <c>foreach</c> over the class binds the public <c>GetEnumerator()</c> where LINQ binds the interface's.
+/// </para>
 /// </summary>
 internal static class TwinMethodName
 {
@@ -31,7 +37,9 @@ internal static class TwinMethodName
     public static string Of(IMethodSymbol method)
     {
         var slot = Slot(method);
-        return Hidden(slot) is { } hidden ? Next(NameOf(hidden)) : SimpleName(slot).ToCamelCase();
+        if (Hidden(slot) is { } hidden) return Next(NameOf(hidden));
+        var own = SimpleName(slot).ToCamelCase();
+        return ExplicitBeside(slot) is not null ? Next(own) : own;
     }
 
     /// <summary>The name a declared method holds, asked of its symbol where the model knows it, and its
@@ -49,9 +57,37 @@ internal static class TwinMethodName
             : written.ToCamelCase();
 
     /// <summary>Whether <paramref name="method"/> holds a name of its own on its twin, because it hides a
-    /// member or fills the slot of one that does: a call bound to it is the app's own method, whatever the
-    /// name it is written with means to the runtime (<c>ToString</c>, <c>GetHashCode</c>).</summary>
-    public static bool HoldsANameOfItsOwn(IMethodSymbol method) => Hidden(Slot(method)) is not null;
+    /// member, stands beside an explicit implementation of its name (<see cref="ExplicitBeside"/>), or fills
+    /// the slot of one that does: a call bound to it is the app's own method, whatever the name it is
+    /// written with means to the runtime (<c>ToString</c>, <c>GetHashCode</c>).</summary>
+    public static bool HoldsANameOfItsOwn(IMethodSymbol method)
+    {
+        var slot = Slot(method);
+        return Hidden(slot) is not null || ExplicitBeside(slot) is not null;
+    }
+
+    /// <summary>
+    /// The explicit interface implementation that <paramref name="method"/> shares its name with in its
+    /// type, or null: one the twin writes (<see cref="IterableTwin.LeavesOut"/>), on the same side of the
+    /// twin, under the name of the interface member it implements. That one holds the name, which every call
+    /// through the interface reaches, so the method holds a name of its own beside it. They were written
+    /// under one name and the later replaced the other: a class whose public <c>GetEnumerator()</c> and
+    /// explicit <c>IEnumerable&lt;T&gt;.GetEnumerator()</c> answer differently, which C# allows, walked one
+    /// sequence for a <c>foreach</c> over the class and for LINQ alike (Copilot's review of #708). Only a
+    /// method this compilation declares can be given a name of its own, as with one that hides a member.
+    /// An override is asked of the slot it fills, whose name it holds.
+    /// </summary>
+    public static IMethodSymbol? ExplicitBeside(IMethodSymbol method)
+    {
+        method = Slot(method);
+        if (method.MethodKind != MethodKind.Ordinary || !method.Locations.Any(location => location.IsInSource)
+            || method.ContainingType is not { TypeKind: TypeKind.Class or TypeKind.Struct, IsExtension: false } type)
+            return null;
+        var name = SimpleName(method).ToCamelCase();
+        return type.GetMembers().OfType<IMethodSymbol>().FirstOrDefault(member =>
+            member.MethodKind == MethodKind.ExplicitInterfaceImplementation && member.IsStatic == method.IsStatic
+            && SimpleName(member).ToCamelCase() == name && !IterableTwin.LeavesOut(member));
+    }
 
     /// <summary>
     /// The member <paramref name="method"/> hides, as C# decides it, or null: the nearest base that

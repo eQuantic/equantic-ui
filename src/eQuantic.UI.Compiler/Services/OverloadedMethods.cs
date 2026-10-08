@@ -615,15 +615,22 @@ internal static class OverloadedMethods
                 || !TwinMethodName.HoldsANameOfItsOwn(answer))
                 continue;
             var position = type.Identifier.GetLocation().GetLineSpan().StartLinePosition;
+            var answers = $"'{answer.ContainingType.Name}.{answer.Name}' answers '{contract.ContainingType.Name}.{contract.Name}' "
+                + $"for '{declared.Name}'";
             errors.Add(new CompilationError
             {
                 Code = "EQ1007",
-                Message = $"'{answer.ContainingType.Name}.{answer.Name}' answers '{contract.ContainingType.Name}.{contract.Name}' "
-                    + $"for '{declared.Name}', and it hides an inherited member, so its twin holds it as "
-                    + $"`{TwinMethodName.Of(answer)}()` and leaves `{Lowered(contract)}` to the member it hides. A call "
-                    + "through the interface reaches the member by its own name, so it would reach the hidden one. "
-                    + "Answer the interface with a method that hides nothing: give this one its own name, or override "
-                    + "the member it hides.",
+                // Beside an explicit implementation of its name, the explicit one holds that name (#708).
+                Message = TwinMethodName.ExplicitBeside(answer) is { ExplicitInterfaceImplementations: [var other, ..] }
+                    ? $"{answers}, and the explicit implementation of '{other.ContainingType.Name}.{other.Name}' beside it holds "
+                        + $"`{Lowered(contract)}`, so its twin holds it as `{TwinMethodName.Of(answer)}()`. A call through "
+                        + $"'{contract.ContainingType.Name}' reaches the member by its own name, so it would reach the explicit one. "
+                        + $"Answer '{contract.ContainingType.Name}.{contract.Name}' explicitly too, or give this method a name of its own."
+                    : $"{answers}, and it hides an inherited member, so its twin holds it as "
+                        + $"`{TwinMethodName.Of(answer)}()` and leaves `{Lowered(contract)}` to the member it hides. A call "
+                        + "through the interface reaches the member by its own name, so it would reach the hidden one. "
+                        + "Answer the interface with a method that hides nothing: give this one its own name, or override "
+                        + "the member it hides.",
                 SourcePath = sourcePath,
                 Line = position.Line + 1,
                 Column = position.Character + 1,

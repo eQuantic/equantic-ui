@@ -41,6 +41,8 @@ public class ClassDispatchConformanceTests
         public class Labelled { public new string ToString() => "hidden"; }
         public class Gen { public virtual string F<T>(List<T> x) => "base"; }
         public class GenHiding : Gen { public new string F<U>(List<U> x) => "hiding"; }
+        public interface INamedThing { string Name(); }
+        public class Labeled : INamedThing { public string Name() => "own"; string INamedThing.Name() => "interface"; }
         """;
 
     private static readonly (string Name, string Statements)[] HidingCases =
@@ -65,6 +67,8 @@ public class ClassDispatchConformanceTests
         ("the method that hides ToString, called through its type", "return new Labelled().ToString();"),
         ("a generic method that hides one over its own type parameter",
             "Gen g = new GenHiding(); return g.F(new List<int>()) + new GenHiding().F(new List<int>());"),
+        ("a public method beside an explicit implementation of its name",
+            "var l = new Labeled(); INamedThing n = l; return l.Name() + \"|\" + n.Name();"),
     ];
 
     [SkippableTheory]
@@ -155,6 +159,19 @@ public class ClassDispatchConformanceTests
             IEnumerator<int> IEnumerable<int>.GetEnumerator() => GetEnumerator();
             IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
         }
+        public class Split : IEnumerable<int>
+        {
+            public IEnumerator<int> GetEnumerator() { yield return 1; }
+            IEnumerator<int> IEnumerable<int>.GetEnumerator() { yield return 2; }
+            IEnumerator IEnumerable.GetEnumerator() => ((IEnumerable<int>)this).GetEnumerator();
+        }
+        public class SplitPairs : IEnumerable<(int, int)>
+        {
+            public IEnumerator<(int, int)> GetEnumerator() { yield return (1, 1); }
+            IEnumerator<(int, int)> IEnumerable<(int, int)>.GetEnumerator() { yield return (2, 2); }
+            IEnumerator IEnumerable.GetEnumerator() => ((IEnumerable<(int, int)>)this).GetEnumerator();
+        }
+        public class OnlyPattern { public Walk GetEnumerator() => new Walk(2); }
         public class Ticker : IEnumerable<int>, IEnumerator<int>
         {
             private int at;
@@ -191,6 +208,12 @@ public class ClassDispatchConformanceTests
         ("a public GetEnumerator of a struct beside the explicit ones",
             "var t = 0; foreach (var x in new Fast()) t += x; return t + \"|\" + string.Join(\",\", new Fast()) + \"|\" + new Fast().Sum();"),
         ("a class that is its own enumerator", "return string.Join(\",\", new Ticker()) + \"|\" + new Ticker().Count();"),
+        ("a foreach over the class walks its public GetEnumerator", "var t = 0; foreach (var x in new Split()) t += x; return t;"),
+        ("the interface's consumers walk the explicit GetEnumerator",
+            "var s = new Split(); IEnumerable<int> e = s; var i = 0; foreach (var x in e) i += x; int[] all = [.. s]; return i + \"|\" + string.Join(\",\", s) + \"|\" + s.Sum() + \"|\" + string.Join(\",\", all) + \"|\" + new List<int>(s).Count;"),
+        ("a deconstructing foreach over the class walks its public GetEnumerator",
+            "var r = 0; foreach (var (a, b) in new SplitPairs()) r += a + b; return r + \"|\" + new SplitPairs().Sum(p => p.Item1);"),
+        ("a class with only a public GetEnumerator", "var t = 0; foreach (var x in new OnlyPattern()) t += x; return t;"),
     ];
 
     [SkippableTheory]

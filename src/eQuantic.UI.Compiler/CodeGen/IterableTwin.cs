@@ -1,4 +1,5 @@
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
 using eQuantic.UI.Compiler.CodeGen.Ir;
 
 namespace eQuantic.UI.Compiler.CodeGen;
@@ -11,23 +12,25 @@ namespace eQuantic.UI.Compiler.CodeGen;
 /// <c>GetEnumerator</c>s under one name: the explicit <c>IEnumerable.GetEnumerator()</c> was written
 /// after the generic one, over it, and called itself.
 /// <para>
-/// So the twin of the type that declares the method its iteration goes through carries a
-/// <c>[Symbol.iterator]</c> that calls it, by the name it holds (<see cref="TwinMethodName"/>), and walks
-/// what it returns (<c>$eq.linq.iterate</c>): an enumerator an iterator method filled, or one the app
-/// wrote, by its <c>MoveNext</c> and <c>Current</c>. The method is the one C#'s <c>foreach</c> binds: the
-/// type's own public <c>GetEnumerator()</c>, which a struct enumerator rides on as <c>List&lt;T&gt;</c>'s
-/// does, or else its implementation of <c>IEnumerable&lt;T&gt;.GetEnumerator()</c> (or of the non-generic
-/// one, for a type that implements no <c>IEnumerable&lt;T&gt;</c>). A derived type inherits it, and its
-/// override of the method answers.
+/// So the twin of the type that declares the method its iteration goes through, its implementation of
+/// <c>IEnumerable&lt;T&gt;.GetEnumerator()</c> (or of the non-generic one, for a type that implements no
+/// <c>IEnumerable&lt;T&gt;</c>), carries a <c>[Symbol.iterator]</c> that calls it, by the name it holds
+/// (<see cref="TwinMethodName"/>), and walks what it returns (<c>$eq.linq.iterate</c>): an enumerator an
+/// iterator method filled, or one the app wrote, by its <c>MoveNext</c> and <c>Current</c>. That is what
+/// LINQ, a spread, <c>string.Join</c> and a <c>foreach</c> over the interface reach in .NET. A
+/// <c>foreach</c> over the class itself binds the type's own public <c>GetEnumerator()</c> where it has
+/// one, which may answer another sequence, and calls it (<see cref="ForEachSource"/>). A derived type
+/// inherits the iterator, and its override of the method answers.
 /// </para>
 /// <para>
-/// An explicit implementation of a member of the enumeration interfaces (<c>GetEnumerator()</c>,
-/// <c>Current</c>) beside the member that answers that name for the type is not written at all: the twin
-/// holds one member per name, and the two answer alike, by the contract of the generic interfaces, which
-/// derive from the non-generic ones, and by the pattern every .NET collection keeps for its own public
-/// one. Written after it, the explicit one replaced it and called itself: the non-generic
-/// <c>IEnumerable.GetEnumerator()</c> after the generic one, and <c>IEnumerable&lt;T&gt;.GetEnumerator()</c>
-/// after a public <c>GetEnumerator()</c> that returns a struct, whose loop then ran out of stack.
+/// The two <c>GetEnumerator</c>s are two members. An explicit <c>IEnumerable&lt;T&gt;.GetEnumerator()</c>
+/// holds the interface's name and the public one beside it a name of its own
+/// (<see cref="TwinMethodName.ExplicitBeside"/>): merged into one, the public one answered for LINQ too,
+/// where C# lets the two walk different sequences (Copilot's review of #708). The non-generic member beside
+/// the generic interface's is not written: <c>IEnumerable&lt;T&gt;</c> derives from <c>IEnumerable</c>, so
+/// by its contract the two answer alike, and written after the generic one it replaced it and called
+/// itself. Nor is an explicit <c>Current</c> beside the type's own public one, since the twin holds one
+/// property per name: the public one answers for both.
 /// </para>
 /// </summary>
 internal static class IterableTwin
@@ -36,20 +39,48 @@ internal static class IterableTwin
     private const string Iterator = "[Symbol.iterator]";
 
     /// <summary>
-    /// The method <paramref name="type"/>'s iteration goes through, as C#'s <c>foreach</c> binds it
-    /// (<see cref="Answering"/>); null for a type that implements no <c>IEnumerable</c>.
+    /// The method <paramref name="type"/>'s iteration goes through: what implements
+    /// <c>IEnumerable&lt;T&gt;.GetEnumerator()</c> for it, or the non-generic <c>IEnumerable</c>'s where it
+    /// implements no <c>IEnumerable&lt;T&gt;</c>; null for a type that is no sequence.
     /// </summary>
-    public static IMethodSymbol? EnumeratorOf(INamedTypeSymbol type) =>
-        type.AllInterfaces.Any(face => face.SpecialType == SpecialType.System_Collections_IEnumerable)
-            ? Answering(type, "GetEnumerator", sequence: true) as IMethodSymbol
-            : null;
+    public static IMethodSymbol? EnumeratorOf(INamedTypeSymbol type)
+    {
+        var generic = type.AllInterfaces.FirstOrDefault(face =>
+            face.OriginalDefinition.SpecialType == SpecialType.System_Collections_Generic_IEnumerable_T);
+        var plain = type.AllInterfaces.FirstOrDefault(face => face.SpecialType == SpecialType.System_Collections_IEnumerable);
+        foreach (var face in new[] { generic, plain })
+        {
+            if (face?.GetMembers("GetEnumerator").OfType<IMethodSymbol>().FirstOrDefault() is { } contract
+                && type.FindImplementationForInterfaceMember(contract) is IMethodSymbol answer)
+                return answer;
+        }
+        return null;
+    }
 
     /// <summary>
-    /// Whether the twin leaves <paramref name="member"/> out: an explicit implementation of a member of
-    /// <c>IEnumerable</c>, <c>IEnumerable&lt;T&gt;</c>, <c>IEnumerator</c> or <c>IEnumerator&lt;T&gt;</c>
-    /// (<c>GetEnumerator()</c>, <c>Current</c>) in a type where another member answers that name
-    /// (<see cref="Answering"/>). The two hold one name on the twin and answer alike: written after the
-    /// other, the explicit one replaced it and called itself.
+    /// What a <c>foreach</c> walks where the <c>GetEnumerator()</c> it binds is a method of the app's other
+    /// than the one the collection's <c>[Symbol.iterator]</c> calls: <c>$eq.linq.iterate</c> over that
+    /// method's enumerator, called by the name it holds. A <c>foreach</c> over a class with a public
+    /// <c>GetEnumerator()</c> beside an explicit <c>IEnumerable&lt;T&gt;.GetEnumerator()</c> walks the public
+    /// one, as C# binds it. Null for every other loop, which walks the collection's own iteration.
+    /// </summary>
+    public static JsExpr? ForEachSource(ForEachStatementInfo info, ITypeSymbol? collection, JsExpr source, HashSet<string> usedHelpers)
+    {
+        if (info.GetEnumeratorMethod is not { MethodKind: MethodKind.Ordinary, IsStatic: false, IsExtensionMethod: false } bound
+            || !bound.Locations.Any(location => location.IsInSource)
+            || collection is INamedTypeSymbol named && EnumeratorOf(named) is { } iterated
+               && SymbolEqualityComparer.Default.Equals(iterated.OriginalDefinition, bound.OriginalDefinition))
+            return null;
+        usedHelpers.Add(Eq.Import);
+        return JsExpr.Call(JsExpr.Identifier(Eq.LinqIterate), JsExpr.Call(JsExpr.Member(source, TwinMethodName.Of(bound))));
+    }
+
+    /// <summary>
+    /// Whether the twin leaves <paramref name="member"/> out, an explicit implementation of a member of the
+    /// enumeration interfaces: the non-generic <c>IEnumerable</c>'s or <c>IEnumerator</c>'s beside the
+    /// generic interface's member of its name, which another member answers, and a <c>Current</c> beside
+    /// the type's own public one. Each holds one name on the twin with the member that stays, and answers
+    /// alike by the interfaces' contract: written after it, the explicit one replaced it and read itself.
     /// </summary>
     public static bool LeavesOut(ISymbol member)
     {
@@ -61,44 +92,35 @@ internal static class IterableTwin
         };
         foreach (var contract in implemented)
         {
-            bool? sequence = contract.ContainingType.OriginalDefinition.SpecialType switch
+            var generic = contract.ContainingType.OriginalDefinition.SpecialType switch
             {
-                SpecialType.System_Collections_IEnumerable or SpecialType.System_Collections_Generic_IEnumerable_T => true,
-                SpecialType.System_Collections_IEnumerator or SpecialType.System_Collections_Generic_IEnumerator_T => false,
-                _ => null,
+                SpecialType.System_Collections_IEnumerable => SpecialType.System_Collections_Generic_IEnumerable_T,
+                SpecialType.System_Collections_IEnumerator => SpecialType.System_Collections_Generic_IEnumerator_T,
+                SpecialType.System_Collections_Generic_IEnumerator_T => SpecialType.System_Collections_Generic_IEnumerator_T,
+                _ => SpecialType.None,
             };
-            if (sequence is { } kind && Answering(member.ContainingType, contract.Name, kind) is { } answer
+            if (generic == SpecialType.None) continue;
+            if (member is IPropertySymbol && OwnProperty(member.ContainingType, contract.Name) is { } own
+                && !SymbolEqualityComparer.Default.Equals(own.OriginalDefinition, member.OriginalDefinition))
+                return true;
+            if (contract.ContainingType.OriginalDefinition.SpecialType == generic) continue;
+            if (member.ContainingType.AllInterfaces.FirstOrDefault(face => face.OriginalDefinition.SpecialType == generic)
+                    ?.GetMembers(contract.Name).FirstOrDefault() is { } counterpart
+                && member.ContainingType.FindImplementationForInterfaceMember(counterpart) is { } answer
                 && !SymbolEqualityComparer.Default.Equals(answer.OriginalDefinition, member.OriginalDefinition))
                 return true;
         }
         return false;
     }
 
-    /// <summary>
-    /// The member that answers <paramref name="name"/> (<c>GetEnumerator</c>, <c>Current</c>) for
-    /// <paramref name="type"/>'s enumeration, as C# binds it: the type's own public instance member of
-    /// that name, which <c>foreach</c> binds first, or else what implements the generic interface's member
-    /// for it (<c>IEnumerable&lt;T&gt;</c>, or <c>IEnumerator&lt;T&gt;</c> where <paramref name="sequence"/>
-    /// is false), or else the non-generic one's.
-    /// </summary>
-    private static ISymbol? Answering(INamedTypeSymbol type, string name, bool sequence)
+    /// <summary>The type's own public instance property of <paramref name="name"/>, declared on it or a
+    /// base, or null.</summary>
+    private static IPropertySymbol? OwnProperty(INamedTypeSymbol type, string name)
     {
         for (var at = type; at is not null; at = at.BaseType)
-            foreach (var own in at.GetMembers(name))
-                if (own is { IsStatic: false, DeclaredAccessibility: Accessibility.Public }
-                    and (IMethodSymbol { MethodKind: MethodKind.Ordinary, Parameters.IsEmpty: true, Arity: 0 }
-                        or IPropertySymbol { IsIndexer: false }))
-                    return own;
-        var faces = sequence
-            ? (Generic: SpecialType.System_Collections_Generic_IEnumerable_T, Plain: SpecialType.System_Collections_IEnumerable)
-            : (Generic: SpecialType.System_Collections_Generic_IEnumerator_T, Plain: SpecialType.System_Collections_IEnumerator);
-        foreach (var special in new[] { faces.Generic, faces.Plain })
-        {
-            var face = type.AllInterfaces.FirstOrDefault(candidate => candidate.OriginalDefinition.SpecialType == special);
-            if (face?.GetMembers(name).FirstOrDefault() is { } contract
-                && type.FindImplementationForInterfaceMember(contract) is { } answer)
-                return answer;
-        }
+            foreach (var property in at.GetMembers(name).OfType<IPropertySymbol>())
+                if (property is { IsStatic: false, IsIndexer: false, DeclaredAccessibility: Accessibility.Public })
+                    return property;
         return null;
     }
 
