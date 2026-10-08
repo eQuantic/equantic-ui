@@ -121,4 +121,23 @@ public class TransformedHitTests
         host.Tap(25, 25);
         pressed.Should().BeEmpty("the corner of the box around the diamond is not the diamond");
     }
+
+    /// <summary>
+    /// A transform that collapses a box draws nothing, and nothing there takes the pointer (Copilot
+    /// on #690). Squashed to no width and turned 45°, the square is a diagonal the renderer skips,
+    /// since it cannot invert the transform, and the 28dp box around that diagonal took the presses
+    /// and the hover.
+    /// </summary>
+    [Fact]
+    public void ABoxCollapsedOntoALine_TakesNoPointer()
+    {
+        // Laid out at 30 to 70, squashed flat and turned about its centre: a diagonal through
+        // (50, 50) whose box runs from 35.9 to 64.1 on each axis.
+        var (host, pressed) = Mount(Transform2D.Scale(0, 1).WithRotate(45), inset: 30);
+
+        host.Tap(50, 50);
+        host.Tap(44, 52);
+        pressed.Should().BeEmpty("nothing of the square is drawn, on the diagonal or beside it");
+        Hovered(host, 44, 52).Should().BeFalse("and nothing is hovered");
+    }
 }

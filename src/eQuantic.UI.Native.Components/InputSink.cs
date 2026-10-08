@@ -54,8 +54,17 @@ internal readonly struct InputSink(FrameRegions regions, Rect? clip = null, bool
     public InputSink WithoutFocusStops() => new(regions, Clip, suppressFocusStops: true, Transform);
 
     /// <summary>The box <paramref name="rect"/>, laid out in this subtree, is drawn in on screen: the
-    /// box around its four corners under the transform, which is the rect itself where none is.</summary>
-    private Rect Place(Rect rect) => Transform is { } m ? m.TransformBounds(rect) : rect;
+    /// box around its four corners under the transform, which is the rect itself where none is. A
+    /// transform that collapses the subtree onto a line or a point draws nothing, since the renderer
+    /// skips a shape it cannot invert, so the box keeps its corner and loses its area: squashed flat and
+    /// turned, a 40dp square stood in a 28dp box no pixel of it was drawn in, and took the presses
+    /// there.</summary>
+    private Rect Place(Rect rect)
+    {
+        if (Transform is not { } m) return rect;
+        var box = m.TransformBounds(rect);
+        return m.Invert() is null ? box with { Width = 0, Height = 0 } : box;
+    }
 
     /// <summary>
     /// Records what turns a point on screen back into the space of the region about to be the
@@ -63,10 +72,10 @@ internal readonly struct InputSink(FrameRegions regions, Rect? clip = null, bool
     /// drawn in is exact for a translation and a scale, and a tilted region is tested against its
     /// own shape through this.
     /// </summary>
-    private void Note(object list, int index, Rect local, Rect localDrawn)
+    private void Note(object list, int index, Rect local, Rect localDrawn, Rect? localOffered = null)
     {
         if (Transform is not { } m || m.Invert() is not { } inverse) return;
-        regions.Transformed.Add(new TransformedRegion(list, index, inverse, local, localDrawn));
+        regions.Transformed.Add(new TransformedRegion(list, index, inverse, local, localDrawn, localOffered));
     }
 
     /// <summary>
@@ -189,7 +198,7 @@ internal readonly struct InputSink(FrameRegions regions, Rect? clip = null, bool
         if (!suppressFocusStops)
             regions.Stops.Add(new FocusStop(region.Path, null, null, placed.Bounds, null, region.Surface));
         if (!Visible(placed.Bounds)) return;
-        Note(regions.Codes, regions.Codes.Count, region.Bounds, region.Bounds);
+        Note(regions.Codes, regions.Codes.Count, region.Bounds, region.Bounds, region.Offered);
         regions.Codes.Add(Clipped(placed));
     }
 

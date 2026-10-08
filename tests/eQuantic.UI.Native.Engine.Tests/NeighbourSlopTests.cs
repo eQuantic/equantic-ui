@@ -116,4 +116,34 @@ public class NeighbourSlopTests
         pressed.Should().Equal(["control", "card"],
             "beside the control is its target, as a padded target is in Flutter, and the card's corner is the card's");
     }
+
+    /// <summary>
+    /// A row its scroll view clipped away whole takes no press from the last row shown (Copilot on
+    /// #690). Its slop reaches back over the viewport's edge, and its drawn box, clipped, is a line of
+    /// no height on that edge, which lay inside the last row's box by the rule that lets a slop in
+    /// front win: a press low in the last row ran the row under it, which nobody could see.
+    /// </summary>
+    [Fact]
+    public void ARowClippedAwayWhole_TakesNoPressFromTheLastRowShown()
+    {
+        var pressed = new List<int>();
+        var column = new Column(gap: 0) { Width = SizeValue.Fixed(200) };
+        for (var i = 0; i < 10; i++)
+        {
+            var index = i;
+            column.Add(new Pressable(new Box(new BoxStyle { Width = SizeValue.Fill, Height = 20 }),
+                () => pressed.Add(index)));
+        }
+        // A viewport 100dp tall: rows 0 to 4 fill it, and row 5 starts on its bottom edge.
+        var page = new Box(new BoxStyle { Padding = EdgeInsets.All(60) },
+            new ScrollView(column) { Width = SizeValue.Fixed(200), Height = SizeValue.Fixed(100) });
+        var host = new PhotonHost(page, PhotonTheme.Instance, ThemeMode.Light, 400, 400) { Density = Density.Comfortable };
+        var rows = host.RenderFrame(new DisplayListBuilder()).HitRegions;
+        rows.Should().HaveCount(6, "row 5's slop still reaches into the viewport, so it is registered");
+        rows[5].Drawn.Height.Should().Be(0, "and nothing of its box is on screen");
+
+        host.Tap(rows[4].Drawn.X + 10, rows[4].Drawn.Bottom - 5);
+
+        pressed.Should().Equal([4], "the press is inside the last row shown, and nothing of row 5 is drawn there");
+    }
 }

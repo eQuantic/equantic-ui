@@ -1790,7 +1790,7 @@ public sealed class PhotonHost
         for (var i = code.Count - 1; i >= 0; i--)
         {
             // Over what a surface offers, where no row is, the pointer is the list's and not the code's.
-            if (code[i].Offered is { } offered && offered.Contains(point)) return CursorShape.Default;
+            if (OnOffered(code, i, point)) return CursorShape.Default;
             if (Covers(code, i, code[i].Visible ?? code[i].Bounds, point)) return CursorShape.Text;
         }
         for (var i = links.Count - 1; i >= 0; i--)
@@ -1949,7 +1949,7 @@ public sealed class PhotonHost
         {
             // A press on what the surface offers, that none of its rows took (between them, on the
             // documentation), is the list's: it moves no caret under it, and the code keeps the keyboard.
-            if (surfaces[i].Offered is { } offered && offered.Contains(point))
+            if (OnOffered(surfaces, i, point))
             {
                 _pressSwallowed = true;
                 return true;
@@ -2308,6 +2308,20 @@ public sealed class PhotonHost
     }
 
     /// <summary>
+    /// Whether <paramref name="point"/> lands on what the <paramref name="index"/>th code surface
+    /// offers at its caret: inside the box on screen the list is drawn in and, for a surface a
+    /// transform drew, inside the list itself once the point is taken back into the surface's space,
+    /// as <see cref="Covers"/> tests the surface: the box around a turned list holds corners no row is
+    /// drawn in, and the code drawn there lost its presses and its beam to the list.
+    /// </summary>
+    private bool OnOffered(IReadOnlyList<CodeRegion> surfaces, int index, Point point)
+    {
+        if (surfaces[index].Offered is not { } offered || !offered.Contains(point)) return false;
+        return TransformedAt(surfaces, index) is not { LocalOffered: { } local } region
+            || local.Contains(region.Inverse.Transform(point));
+    }
+
+    /// <summary>
     /// <paramref name="point"/>, on screen, in the own space of the <paramref name="index"/>th region
     /// of <paramref name="regions"/>, whose box on screen is <paramref name="bounds"/>: its offset from
     /// the region's corner, taken back through the transform that drew the region when one did. It is
@@ -2363,9 +2377,13 @@ public sealed class PhotonHost
     private RealizeResult? _transformedFor;
     private Dictionary<(object, int), TransformedRegion>? _transformedAt;
 
-    /// <summary>Whether <paramref name="inner"/> lies wholly inside <paramref name="outer"/>.</summary>
+    /// <summary>Whether <paramref name="inner"/> lies wholly inside <paramref name="outer"/>. A box with
+    /// no area lies nowhere: a row its scroll view clipped away keeps a sliver of slop on screen and a
+    /// drawn box of zero height on the viewport's edge, which lay "inside" the last row shown, and took
+    /// its presses for a row nobody could see.</summary>
     private static bool Encloses(Rect outer, Rect inner) =>
-        inner.Left >= outer.Left && inner.Top >= outer.Top && inner.Right <= outer.Right
+        inner.Width > 0 && inner.Height > 0
+        && inner.Left >= outer.Left && inner.Top >= outer.Top && inner.Right <= outer.Right
         && inner.Bottom <= outer.Bottom;
 
     /// <summary>

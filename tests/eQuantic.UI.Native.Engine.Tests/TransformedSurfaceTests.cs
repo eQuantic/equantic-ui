@@ -178,6 +178,90 @@ public class TransformedSurfaceTests
             2 * caret.Width, 2 * caret.Height));
     }
 
+    // ---- what a code surface offers ---------------------------------------------------------------
+
+    /// <summary>Offers what it was made with, whatever was typed: the list is the view's to test.</summary>
+    private sealed class ListProvider(params CodeCompletionItem[] items) : ICodeCompletionProvider
+    {
+        public Task<CodeCompletionList> CompleteAsync(CodeDocument document, CodePosition position,
+            CodeCompletionContext context, CancellationToken cancellation) =>
+            Task.FromResult(new CodeCompletionList(items));
+    }
+
+    /// <summary>A code editor in a box of 300 by 200 at 200, 200, turned <paramref name="degrees"/>
+    /// about its centre, under a pointer, whose rows are no taller than the list.</summary>
+    private static PhotonHost MountList(float degrees)
+    {
+        var host = Mount(new CodeEditor("var Column = 1;\n        \n\n\n\n\n\n", "csharp")
+        {
+            ShowLineNumbers = false,
+            Completions = [new ListProvider(new CodeCompletionItem("Column"), new CodeCompletionItem("ColorToken"))],
+        }, Transform2D.Rotate(degrees), width: 300, height: 200);
+        host.Density = Density.Compact;
+        return host;
+    }
+
+    /// <summary>Where <paramref name="point"/>, laid out in the box of <see cref="MountList"/>, is
+    /// drawn with the box turned <paramref name="degrees"/> about its centre, (350, 300).</summary>
+    private static Point Turned(Point point, float degrees)
+    {
+        var drawn = Matrix2D.Rotation(degrees * MathF.PI / 180).Transform(new Point(point.X - 350, point.Y - 300));
+        return new Point(350 + drawn.X, 300 + drawn.Y);
+    }
+
+    /// <summary>Types <paramref name="text"/> and settles the frames its list needs.</summary>
+    private static CodeRegion Type(PhotonHost host, string text)
+    {
+        foreach (var c in text) host.TextInput(c.ToString());
+        host.RenderFrame(new DisplayListBuilder());
+        return host.RenderFrame(new DisplayListBuilder()).CodeRegions.Single();
+    }
+
+    /// <summary>
+    /// What a code surface offers at its caret takes the pointer in its own shape, as the surface does
+    /// (Copilot on #690): the box around a turned list holds corners no row is drawn in, and the code
+    /// drawn there lost its beam and its presses to the list.
+    /// </summary>
+    [Fact]
+    public void AListOnATurnedCodeSurface_TakesThePointerInItsOwnShape()
+    {
+        // Laid out unturned first, to read where the code and its list stand in the space they keep.
+        var plain = MountList(0);
+        var region = plain.LastFrame!.CodeRegions.Single();
+        var code = region.Bounds;
+        var grid = region.Surface.Grid();
+        var word = new Point(code.X + grid.Origin.X + 9.5f * grid.Cell.Width,
+            code.Y + grid.Origin.Y + 1.5f * grid.Cell.Height);   // past the end of line 1
+        Click(plain, word.X, word.Y);
+        var list = Type(plain, "Co").Offered!.Value;
+
+        const float degrees = 30;
+        var host = MountList(degrees);
+        var surface = host.LastFrame!.CodeRegions.Single().Surface;
+        var at = Turned(word, degrees);
+        Click(host, at.X, at.Y);
+        var box = Type(host, "Co").Offered!.Value;
+        surface.Engine().Caret.Should().Be(new CodePosition(1, 10), "the press put the caret after line 1 and the word followed");
+
+        // The corner of the box around the turned list that lies farthest from the list, once taken
+        // back into the surface's space, and inside the code: no row reaches it, even with a target's
+        // margin.
+        float Outside(Point local) =>
+            MathF.Max(MathF.Max(list.Left - local.X, local.X - list.Right), MathF.Max(list.Top - local.Y, local.Y - list.Bottom));
+        var corner = new Point[]
+            {
+                new(box.Left + 2, box.Top + 2), new(box.Right - 2, box.Top + 2),
+                new(box.Left + 2, box.Bottom - 2), new(box.Right - 2, box.Bottom - 2),
+            }
+            .Where(p => code.Contains(Turned(p, -degrees)))
+            .MaxBy(p => Outside(Turned(p, -degrees)));
+        Outside(Turned(corner, -degrees)).Should().BeGreaterThan(8, "the corner is well outside the list, in its own space");
+
+        host.CursorAt(corner.X, corner.Y).Should().Be(CursorShape.Text, "the code is drawn there, and no row of the list");
+        Click(host, corner.X, corner.Y);
+        surface.Engine().Caret.Should().NotBe(new CodePosition(1, 10), "the press landed on the code and moved its caret");
+    }
+
     // ---- a spreadsheet --------------------------------------------------------------------------
 
     private const float Col = SheetDocument.DefaultColWidth;
