@@ -138,12 +138,14 @@ internal sealed partial class MeasureVisitor
         }
 
         // A RIGID item measured again inside the extent an overflowing line leaves it. A zero
-        // weight laid out at its basis went into a slot, so it goes into one again: measured through
-        // its wrapper it would hug its content and drop the size it was given.
+        // weight goes into a slot of that extent, with a basis or without one: measured through its
+        // wrapper it would hug its content, so a child wider than the extent would hold the item at
+        // the child's width, where the web shrinks the item (`min-width: 0`) and lets the child
+        // overflow it.
         LayoutNode Remeasure(int i, float main, bool truncating = false)
         {
-            if (children[i] is Flexible { Basis: > 0 } atBasis && flexWeights[i] == 0)
-                return Slot(atBasis, i, main, truncating);
+            if (children[i] is Flexible zero && flexWeights[i] == 0)
+                return Slot(zero, i, main, truncating);
             var (sW, sH) = CrossStretch(children[i]);
             return MeasureChild(children[i], horizontal ? main : crossAvail,
                 horizontal ? crossAvail : main, ctx.ChildPath(path, i, children[i]),
@@ -213,10 +215,12 @@ internal sealed partial class MeasureVisitor
         {
             // A TEXT CHILD, seen through layout-transparent wrappers. Asking `is Text` here is what
             // made `Pressable(Text(…))` run past the end of a fixed row: not a text, so not cut, so
-            // its floor was its longest word and nothing could shrink it. A zero weight that says
-            // `shrink: 0` pinned its size, and is not cut either, as CSS does not shrink it.
+            // its floor was its longest word and nothing could shrink it. A ZERO weight is not cut
+            // here, whatever it holds: the web writes it `flex: 0 <shrink> <basis>; min-width: 0`,
+            // an item that gives space back by its shrink TOGETHER with the other items that
+            // shrink, so it gives it in the flex-shrink pass below, and never first, as text.
             bool Cuttable(int i) =>
-                TextWithin(children[i]) is not null && children[i] is not Flexible { Flex: 0, Shrink: 0 };
+                TextWithin(children[i]) is not null && children[i] is not Flexible { Flex: 0 };
 
             var deficit = rigidSum + gapTotal - mainAvail;
             var textTotal = 0f;
@@ -249,40 +253,80 @@ internal sealed partial class MeasureVisitor
             deficit = rigidSum + gapTotal - mainAvail;
             if (deficit > 0.5f)
             {
-                var shrinkTotal = 0f;
+                // What each item may give, and how hard it is asked. An item that is not a zero
+                // weight stops at its min-content floor (`min-width: auto` on the web) and is asked
+                // in proportion to the ROOM it has above it: a floor one item refuses to cross is
+                // width the others have to give, which is what makes a hugging button keep its word
+                // while the stretchy one beside it absorbs the overflow. A ZERO weight is written
+                // `flex: 0 <shrink> <basis>; min-width: 0`, so its floor is zero, a child wider than
+                // the item no longer holds it up (the web lets the child overflow it), and it is
+                // asked by its shrink times its size, as CSS scales a shrink factor: `shrink: 3`
+                // gives three times what `shrink: 1` of the same size gives.
+                var floors = new float[children.Count];
+                var weights = new float[children.Count];
+                var yielding = 0f;
                 for (var i = 0; i < children.Count; i++)
-                    if (Shrinkable(children[i])) shrinkTotal += mains[i];
-
-                if (shrinkTotal > 0)
                 {
-                    // Two passes, because a floor one item refuses to cross is width the OTHERS
-                    // have to give: pass 1 finds how much is really available to take, pass 2
-                    // takes it. This is what makes a hugging button keep its word while the
-                    // stretchy one beside it absorbs the overflow, exactly as a browser does.
-                    var floors = new float[children.Count];
-                    var yielding = 0f;
-                    for (var i = 0; i < children.Count; i++)
+                    if (!Shrinkable(children[i])) continue;
+                    if (children[i] is Flexible { Flex: 0 } zero)
                     {
-                        if (!Shrinkable(children[i])) continue;
-                        floors[i] = MathF.Min(mains[i], MinContentWidth(children[i], ctx));
-                        yielding += mains[i] - floors[i];
+                        weights[i] = zero.Shrink * mains[i];
                     }
-
-                    var taking = MathF.Min(deficit, yielding);
-                    if (taking > 0)
+                    else
                     {
+                        floors[i] = MathF.Min(mains[i], MinContentWidth(children[i], ctx));
+                        weights[i] = mains[i] - floors[i];
+                    }
+                    yielding += mains[i] - floors[i];
+                }
+
+                var taking = MathF.Min(deficit, yielding);
+                if (taking > 0)
+                {
+                    // CSS's loop (Flexbox §9.7): what is taken is shared by weight; an item whose
+                    // share would carry it past its floor stops AT the floor, and what it could not
+                    // give is shared again among the rest. A share weighted by room never passes a
+                    // floor, so a line without a zero weight settles in the first round, on the
+                    // numbers it always had; only a zero weight's share is ever cut short.
+                    var given = new float[children.Count];
+                    var settled = new bool[children.Count];
+                    var remaining = taking;
+                    while (remaining > 0.01f)
+                    {
+                        var weightSum = 0f;
+                        for (var i = 0; i < children.Count; i++)
+                            if (!settled[i] && weights[i] > 0) weightSum += weights[i];
+                        if (weightSum <= 0) break;
+
+                        var stopping = 0f;
                         for (var i = 0; i < children.Count; i++)
                         {
-                            if (!Shrinkable(children[i])) continue;
-                            var room = mains[i] - floors[i];
-                            if (room <= 0) continue;
-                            var bound = MathF.Max(floors[i], mains[i] - taking * (room / yielding));
-                            var reflowed = Remeasure(i, bound);
-                            laid[i] = reflowed;
-                            var shrunk = horizontal ? reflowed.Bounds.Width : reflowed.Bounds.Height;
-                            rigidSum -= mains[i] - shrunk;
-                            mains[i] = shrunk;
+                            if (settled[i] || weights[i] <= 0) continue;
+                            if (remaining * (weights[i] / weightSum) <= mains[i] - floors[i]) continue;
+                            given[i] = mains[i] - floors[i];
+                            stopping += given[i];
+                            settled[i] = true;
                         }
+                        if (stopping > 0)
+                        {
+                            remaining -= stopping;
+                            continue;
+                        }
+
+                        for (var i = 0; i < children.Count; i++)
+                            if (!settled[i] && weights[i] > 0) given[i] = remaining * (weights[i] / weightSum);
+                        break;
+                    }
+
+                    for (var i = 0; i < children.Count; i++)
+                    {
+                        if (given[i] <= 0) continue;
+                        var bound = MathF.Max(floors[i], mains[i] - given[i]);
+                        var reflowed = Remeasure(i, bound);
+                        laid[i] = reflowed;
+                        var shrunk = horizontal ? reflowed.Bounds.Width : reflowed.Bounds.Height;
+                        rigidSum -= mains[i] - shrunk;
+                        mains[i] = shrunk;
                     }
                 }
             }

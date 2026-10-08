@@ -111,6 +111,77 @@ public class FlexZeroWeightLayoutTests
         pinned.Children[0].Bounds.Width.Should().BeApproximately(540, 0.5f, "shrink 0 refuses to give space back");
     }
 
+    /// <summary>
+    /// A zero weight's floor is zero, not its child's min-content: the web writes the item
+    /// <c>min-width: 0</c>, so a child wider than the item lets it shrink, and overflows it. A rigid
+    /// 100 and a zero weight around a 400-wide box, in 400, are 100 and 300 in Chrome 154, at a basis
+    /// of 540 and without one. Photon stopped the item at its child's 400, and the line ran 100 past
+    /// its row. Around a text the item was already 300, cut as text, and stays 300.
+    /// </summary>
+    [Fact]
+    public void AZeroWeight_ShrinksPastItsChildsMinContent_AsTheWebsMinWidthZeroLetsIt()
+    {
+        var items = new (string Name, Flexible Item)[]
+        {
+            ("a box at a basis", new Flexible(FixedBox(400), flex: 0, basis: 540)),
+            ("a box without a basis", new Flexible(FixedBox(400), flex: 0)),
+            ("a word at a basis", new Flexible(new Text(new string('a', 48), TypeRole.BodyM), flex: 0, basis: 540)),
+        };
+
+        foreach (var (name, item) in items)
+        {
+            var node = Layout(Line(400, FixedBox(100), item));
+
+            node.Children[0].Bounds.Width.Should().BeApproximately(100, 0.5f, $"{name}: a fixed size never shrinks");
+            node.Children[1].Bounds.Width.Should().BeApproximately(300, 0.5f, name);
+            (node.Children[1].Bounds.X + node.Children[1].Bounds.Width).Should()
+                .BeApproximately(400, 0.5f, $"{name}: the line fits its row");
+        }
+    }
+
+    /// <summary>
+    /// A zero weight is asked to give in proportion to its shrink times its size, as CSS scales a
+    /// shrink factor. Two at a basis of 540, <c>shrink: 3</c> and <c>shrink: 1</c>, in 1000, are 480
+    /// and 520 in Chrome 154, where Photon split the 80 evenly. And <c>shrink: 3</c> beside a box that
+    /// fills the row, whose own floor is zero, is 206.11 beside 793.89, where Photon gave 473.68 and
+    /// 526.32.
+    /// </summary>
+    [Fact]
+    public void AZeroWeight_GivesSpaceBackByItsShrinkTimesItsSize()
+    {
+        var factors = Layout(Line(1000, new Flexible(Pane(), flex: 0, basis: 540, shrink: 3),
+            new Flexible(Pane(), flex: 0, basis: 540, shrink: 1)));
+        factors.Children[0].Bounds.Width.Should().BeApproximately(480, 0.5f, "shrink 3 gives 60 of the 80");
+        factors.Children[1].Bounds.Width.Should().BeApproximately(520, 0.5f, "shrink 1 gives 20");
+
+        var besideAFill = Layout(Line(1000, new Flexible(FixedBox(400), flex: 0, basis: 540, shrink: 3),
+            new Box(new BoxStyle { Width = SizeValue.Fill })));
+        besideAFill.Children[0].Bounds.Width.Should().BeApproximately(206.11f, 0.5f);
+        besideAFill.Children[1].Bounds.Width.Should().BeApproximately(793.89f, 0.5f);
+    }
+
+    /// <summary>
+    /// What a zero weight holds does not change how it shrinks: one holding text gives space back
+    /// together with the others, by its shrink, where Photon used to cut it first, as text. A text
+    /// and a box at a basis of 300 each, in 400, are 200 and 200 in Chrome 154 (Photon gave 100 and
+    /// 300). Two texts at 300 and 200, <c>shrink: 3</c> and <c>shrink: 1</c>, in 300, are 136.37 and
+    /// 163.63 (Photon gave 180 and 120).
+    /// </summary>
+    [Fact]
+    public void AZeroWeight_HoldingText_ShrinksWithTheOthers_ByItsShrink()
+    {
+        var mixed = Layout(Line(400, new Flexible(new Text("aaaa", TypeRole.BodyM), flex: 0, basis: 300),
+            new Flexible(FixedBox(300), flex: 0, basis: 300)));
+        mixed.Children[0].Bounds.Width.Should().BeApproximately(200, 0.5f);
+        mixed.Children[1].Bounds.Width.Should().BeApproximately(200, 0.5f);
+
+        var texts = Layout(Line(300,
+            new Flexible(new Text("aaaa", TypeRole.BodyM), flex: 0, basis: 300, shrink: 3),
+            new Flexible(new Text("bbbb", TypeRole.BodyM), flex: 0, basis: 200, shrink: 1)));
+        texts.Children[0].Bounds.Width.Should().BeApproximately(136.36f, 0.5f);
+        texts.Children[1].Bounds.Width.Should().BeApproximately(163.64f, 0.5f);
+    }
+
     /// <summary>A weight declares the intent to fill, which is why a hugging row that holds one takes
     /// the available extent. A zero weight declares no such intent, so the row keeps hugging.</summary>
     [Fact]
