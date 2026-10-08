@@ -1741,11 +1741,15 @@ record of a release, the wiki's Upgrading page is the distillate.
   length, in the order C# reads its parts, and one handed to an indexer over `Range` fails the build
   (EQ2004); a list's face reads, writes and counts through the runtime's `item`, `setItem` and
   `count`, which answer an array and a twin alike, a twin counted by its own `Count` before a `Length`
-  beside it; and `ICollection<T>`'s `Add` and `Clear` reach the runtime's `add` and `clear`. 78 of the
-  94 new conformance cases fail on main, and 10 of the 12 new Compiler cases; all of them pass here.
-  The served runtime grows 629 gzipped bytes over main's, the twins' reads through a list's face.
-  Proposed and archived through OpenSpec (`openspec/specs/transpiler-bcl`, `transpiler-sequences` and
-  `transpiler-expressions`).
+  beside it; and `ICollection<T>`'s `Add` and `Clear` reach the runtime's `add` and `clear`. The
+  review before the pull request opened found a complex element initializer written as an empty object
+  and an indexer over `Range?` taking the slice path, and Copilot's first round a read through a null
+  face answering 0 and GroupBy's named arguments read by their position, all fixed; a `T[]` behind the
+  faces grows where .NET refuses, as it did before,
+  [#711](https://github.com/eQuantic/equantic-ui/issues/711). 91 of the 109 new conformance cases fail
+  on main, and 14 of the 16 new Compiler cases; all of them pass here. The served runtime grows 629
+  gzipped bytes over main's, the twins' reads through a list's face. Proposed and archived through
+  OpenSpec (`openspec/specs/transpiler-bcl`, `transpiler-sequences` and `transpiler-expressions`).
 
 ## Retired documents
 
