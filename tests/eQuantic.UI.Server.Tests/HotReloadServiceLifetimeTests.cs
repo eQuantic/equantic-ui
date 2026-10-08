@@ -87,6 +87,46 @@ public class HotReloadServiceLifetimeTests
         }
     }
 
+    /// <summary>
+    /// The host awaits Dispose and nothing after it. A shutdown that came while a rebuild's process was
+    /// starting returned at once, before the process existed, and the kill the rebuild ran afterwards
+    /// was nobody's to wait for (Copilot's second review of #666).
+    /// </summary>
+    [Fact]
+    public async Task Disposing_WhileARebuildStarts_ReturnsOnlyOnceItHasStopped()
+    {
+        var pid = 0;
+        var entered = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        using var release = new ManualResetEventSlim();
+        var service = new HotReloadService(Path.GetTempPath(), () =>
+        {
+            entered.SetResult();
+            release.Wait(TimeSpan.FromSeconds(30));
+            var process = Process.Start(Sleeping())!;
+            pid = process.Id;
+            return process;
+        }, TimeSpan.FromMinutes(1));
+        try
+        {
+            var rebuild = Task.Run(service.Rebuild);
+            await entered.Task.WaitAsync(TimeSpan.FromSeconds(30));
+
+            var disposing = Task.Run(service.Dispose);
+            await Task.Delay(300);
+            disposing.IsCompleted.Should().BeFalse("Dispose waits for the rebuild that is starting, or it returns before there is anything to stop");
+
+            release.Set();
+            await disposing.WaitAsync(TimeSpan.FromSeconds(30));
+            Running(pid).Should().BeFalse("by the time Dispose returns, the rebuild it found starting has stopped");
+            await rebuild.WaitAsync(TimeSpan.FromSeconds(30));
+        }
+        finally
+        {
+            release.Set();
+            if (pid != 0) EndIfRunning(pid);
+        }
+    }
+
     [Fact]
     public async Task AStreamThatRegistersAfterShutdown_EndsAtOnce()
     {

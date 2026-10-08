@@ -300,6 +300,11 @@ export interface EqConfig {
   hotReload?: boolean;
   /** Client route table (generated from `[Page]` attributes) — enables SPA navigation. */
   routes?: import('./router/route-table').RouteEntry[];
+  /**
+   * Whether the server serves events (`UseServerEvents`). `false` refuses every subscription at once,
+   * with an error that says so, rather than opening a stream nothing answers.
+   */
+  serverEvents?: boolean;
 }
 
 declare global {
@@ -320,6 +325,9 @@ export {
   MotionSpec,
   MotionVector,
   NetworkState,
+  ServerConnection,
+  ServerTopic,
+  ServerTopicRefusal,
   SpringSpec,
   WindowSizeClasses,
 } from './shared/primitive-values';

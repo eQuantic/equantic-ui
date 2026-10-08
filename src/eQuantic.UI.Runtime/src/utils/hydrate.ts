@@ -45,7 +45,11 @@ import type { KeyEquality } from './key-equality';
  *    they are);
  *  - a class reference — a record/struct twin: the plain JSON object is rebuilt on the class's
  *    prototype (so `instanceof`, `equals`, `with` survive the wire) and each member hydrates by
- *    the class's own static `$hydration` map.
+ *    the class's own static `$hydration` map;
+ *  - `{ members, of, typeArguments }` — a type from a referenced assembly, coerced member by member
+ *    onto a copy, built on its twin `of` when the runtime ships one; `typeArguments` are the specs
+ *    of the type arguments that twin revives (`ServerTopic<T>`), kept in the members its
+ *    `$typeArguments` names, as the constructor eqc calls keeps them.
  *
  * Every branch is idempotent: a value that already has its runtime type passes through, so
  * hydrating twice (or hydrating a value that never crossed the wire) is harmless.
@@ -94,6 +98,8 @@ export interface CollectionSpec {
 export interface HydratableConstructor {
   readonly prototype: object;
   readonly $hydration?: Readonly<Record<string, HydrationSpec>>;
+  /** The members that hold the specs of the type arguments it revives, in their parameters' order. */
+  readonly $typeArguments?: readonly string[];
 }
 
 export type HydrationSpec =
@@ -105,6 +111,7 @@ export type HydrationSpec =
   | {
       readonly members: Readonly<Record<string, HydrationSpec>>;
       readonly of?: HydratableConstructor;
+      readonly typeArguments?: readonly (HydrationSpec | null)[];
     }
   | HydratableConstructor;
 
@@ -130,9 +137,10 @@ export function hydrate(incoming: unknown, spec: HydrationSpec): unknown {
   // prototype; without it a Rect in a payload arrived as a plain object, and its getters and
   // methods were gone.
   if ('members' in (spec as { members?: Readonly<Record<string, HydrationSpec>> })) {
-    const { members, of } = spec as {
+    const { members, of, typeArguments } = spec as {
       members: Readonly<Record<string, HydrationSpec>>;
       of?: HydratableConstructor;
+      typeArguments?: readonly (HydrationSpec | null)[];
     };
     if (typeof incoming !== 'object' || Array.isArray(incoming)) return incoming;
     if (of && incoming instanceof (of as unknown as new (...args: never[]) => object))
@@ -144,6 +152,12 @@ export function hydrate(incoming: unknown, spec: HydrationSpec): unknown {
         result,
         key,
         ownSpec(members, key) !== undefined ? hydrate(source[key], members[key]) : source[key],
+      );
+    // The specs of the type arguments the twin revives, which the wire never carries: the C# type
+    // knows them and JSON does not. A topic that crossed without them revived no payload.
+    if (of?.$typeArguments !== undefined && typeArguments !== undefined)
+      of.$typeArguments.forEach((member, i) =>
+        adoptMember(result, member, typeArguments[i] ?? null),
       );
     return result;
   }

@@ -153,9 +153,22 @@ public readonly record struct BoxStyle
     /// CSS <c>:hover</c> on web, the pointer-over interaction on Photon. <c>null</c> = none.</summary>
     public StyleDiff? Hover { get; init; }
 
-    /// <summary>Spec S5: style DIFF applied while focused — CSS <c>:focus-visible</c> on web,
-    /// the focus interaction on Photon. <c>null</c> = none.</summary>
+    /// <summary>
+    /// Spec S5: style DIFF applied while the CONTROL this box is inside has keyboard focus (the
+    /// <see cref="Pressable"/> around it, which is what takes focus; a box never does). On the web
+    /// the control's <c>:focus-visible</c>, on Photon the focus walk's control. <c>null</c> = none.
+    /// The focus ring is drawn beside it either way (#508).
+    /// </summary>
     public StyleDiff? Focus { get; init; }
+
+    /// <summary>
+    /// Style DIFF applied while the CONTROL this box is inside is pressed: a pointer held down on it
+    /// on both targets, and a held key on the web (Photon activates on the key's way down and has no
+    /// held press). The handoff's <c>:active { transform: scale(.985) }</c>. Pressed beats focus,
+    /// and focus beats hover, member by member. <c>Pressable.PressedBackground</c> stays the
+    /// strongest fill. <c>null</c> = none (#508).
+    /// </summary>
+    public StyleDiff? Pressed { get; init; }
 
     /// <summary>What the mouse pointer looks like over this box — the CSS <c>cursor</c> mirror.
     /// Web emits the declaration; Photon registers a cursor region the host answers from.
