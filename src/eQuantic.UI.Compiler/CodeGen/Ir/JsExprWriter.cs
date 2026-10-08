@@ -117,6 +117,8 @@ public static class JsExprWriter
         return (block.Text.Contains('\n') ? text.Resume() : text).Done();
     }
 
+    /// <summary>A hole is its part's index, of any number of digits: a call of eleven arguments has a
+    /// <c>{10}</c>, which a single digit left in the text as code.</summary>
     private static readonly Regex Hole = new(@"\{(\d+)\}", RegexOptions.Compiled);
 
     /// <summary>

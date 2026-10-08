@@ -22,6 +22,15 @@ public class JsTemplateTests
             .Should().Be("f().replace(/x/g, g())");
     }
 
+    /// <summary>A hole is its part's index in any number of digits: the eleventh part is <c>{10}</c>,
+    /// which a hole of one digit left in the code as text.</summary>
+    [Fact]
+    public void AHoleOfTwoDigits_IsFilled()
+    {
+        var parts = Enumerable.Range(0, 11).Select(index => (JsExpr)JsExpr.Identifier("p" + index)).ToArray();
+        Write(JsExpr.Template("f({0}, {9}, {10})", parts)).Should().Be("f(p0, p9, p10)");
+    }
+
     [Fact]
     public void APartUsedTwice_IsBoundOnce()
     {

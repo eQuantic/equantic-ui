@@ -319,10 +319,10 @@ public class InvocationStrategy : IExpressionIrStrategy
 
     /// <summary>
     /// A call to an EXTENSION method in reduced form, or to a C# 14 extension block's member, as every
-    /// call to one lowers: its home's static, with the receiver first. Null for a method that is
-    /// neither. ONE lowering, which an object initializer's element shares when the bound tree binds
-    /// its <c>Add</c> to an extension (<c>Tags = { 1, 2 }</c> over <c>Add(this List&lt;string&gt;,
-    /// int)</c>), with its fences and the import of the home it introduces.
+    /// call to one lowers: its home's static, with the receiver first (<see cref="ExtensionHome"/>).
+    /// Null for a method that is neither. ONE lowering, which an object initializer's element shares
+    /// when the bound tree binds its <c>Add</c> to an extension (<c>Tags = { 1, 2 }</c> over
+    /// <c>Add(this List&lt;string&gt;, int)</c>), with its fences and the import of the home it introduces.
     /// </summary>
     /// <param name="symbol">The method the call binds.</param>
     /// <param name="methodName">Its name as the call writes it.</param>
@@ -333,8 +333,34 @@ public class InvocationStrategy : IExpressionIrStrategy
     internal static JsExpr? Extension(IMethodSymbol? symbol, string methodName, JsExpr receiver,
         IReadOnlyList<JsExpr> arguments, SyntaxNode at, ConversionContext context)
     {
+        if (ExtensionHome(symbol, at, context) is not { } extension)
+        {
+            // A framework home the runtime does not export keeps the reduced form it always had.
+            return symbol is { IsExtensionMethod: true, ReducedFrom: not null, ContainingType: not null }
+                ? JsExpr.Call(JsExpr.Member(receiver, methodName.ToCamelCase()), arguments)
+                : null;
+        }
         var caller = JsExprWriter.WriteIn(receiver, JsPrecedence.Call);
         var args = string.Join(", ", arguments.Select(a => JsExprWriter.WriteIn(a, JsPrecedence.Assignment)));
+        var homeArgs = !extension.TakesReceiver ? args
+            : string.IsNullOrEmpty(args) ? caller : $"{caller}, {args}";
+        return JsExpr.Callish($"{extension.Home.Name}.{methodName.ToCamelCase()}({homeArgs})");
+    }
+
+    /// <summary>
+    /// Where a member of an extension lives in JavaScript, which has no extensions: the static home a
+    /// call to it goes to, and whether that static takes the receiver first. Null for a method that is
+    /// neither a reduced extension method nor an extension block's member, and for a framework home the
+    /// runtime does not export, whose member stays on the receiver. A call and a method group
+    /// (<c>Func&lt;string&gt; f = s.Twice</c>) go where this says, so the fences and the import of the
+    /// home it introduces are here.
+    /// </summary>
+    /// <param name="symbol">The method a call or a method group binds.</param>
+    /// <param name="at">Where a refusal is reported.</param>
+    /// <param name="context">The conversion.</param>
+    internal static (INamedTypeSymbol Home, bool TakesReceiver)? ExtensionHome(IMethodSymbol? symbol,
+        SyntaxNode at, ConversionContext context)
+    {
         // EXTENSION METHOD in reduced form (`node.Also(x => …)`): JS has no extensions, so the
         // call goes back to its static home with the receiver as the first argument —
         // `NodeExtensions.also(node, x => …)`. The declaring static class is emitted as its own
@@ -368,11 +394,17 @@ public class InvocationStrategy : IExpressionIrStrategy
             // `Enumerable.Index` and `Enumerable.Shuffle` from fenced into emitted. Measured.
             if (!declaredHere && !IsFrameworkProvided(symbol.ContainingType))
             {
+                // A method GROUP (`Func<bool> any = list.Any`) reports at its member access, and what
+                // its developer writes instead is the lambda that calls it: a strategy translates the
+                // call where one exists, and nothing can translate a bare function value.
                 context.Report(at, ConversionSeverity.Error, "EQ2004",
                     $"'{symbol.ContainingType.ToDisplayString()}.{symbol.Name}' is an extension "
                     + "method with no JavaScript translation — the class that declares it is not "
-                    + "part of this compilation, so nothing emits it. Use an instance member, or "
-                    + "add a strategy for it.");
+                    + "part of this compilation, so nothing emits it. "
+                    + (at is MemberAccessExpressionSyntax
+                        ? "A method group over it has nothing to bind in the browser: write the lambda "
+                          + "that calls it, which is translated as the call is."
+                        : "Use an instance member, or add a strategy for it."));
             }
             // A FRAMEWORK home the runtime does not EXPORT keeps the reduced form it always
             // had, and only the ATTRIBUTE can answer that. The namespace cannot: `CurveEvaluator`
@@ -391,14 +423,13 @@ public class InvocationStrategy : IExpressionIrStrategy
             else if (!declaredHere && !symbol.ContainingType.GetAttributes()
                          .Any(a => a.AttributeClass?.Name == "RuntimeProvidedAttribute"))
             {
-                return JsExpr.Call(JsExpr.Member(receiver, methodName.ToCamelCase()), arguments);
+                return null;
             }
             // The declaring class never appears in the SOURCE (the call is reduced), so the
             // syntax-walking import collector can't see it — register the name we introduced,
             // in the bucket its namespace decides (runtime-provided or app-level).
             symbol.ContainingType.RegisterIntroduced(context);
-            var receiverFirst = string.IsNullOrEmpty(args) ? caller : $"{caller}, {args}";
-            return JsExpr.Callish($"{symbol.ContainingType.Name}.{methodName.ToCamelCase()}({receiverFirst})");
+            return (symbol.ContainingType, true);
         }
 
         // C# 14 extension-BLOCK method (`extension(T receiver) { … }`): the emitter lowers it
@@ -407,10 +438,7 @@ public class InvocationStrategy : IExpressionIrStrategy
         if (symbol.ExtensionBlockHome() is { } extensionHome)
         {
             extensionHome.RegisterIntroduced(context);
-            var extensionArgs = symbol!.IsStatic
-                ? args
-                : string.IsNullOrEmpty(args) ? caller : $"{caller}, {args}";
-            return JsExpr.Callish($"{extensionHome.Name}.{methodName.ToCamelCase()}({extensionArgs})");
+            return (extensionHome, !symbol!.IsStatic);
         }
         return null;
     }
