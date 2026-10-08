@@ -433,12 +433,43 @@ public class LayoutTransparencyTests
     {
         static float Unbounded(VisualNode t) => LayoutEngine.Layout(t, 4000, 300, Ctx).Bounds.Width;
 
-        foreach (var content in new[] { "alpha", "alpha beta", "alpha beta gamma delta" })
+        foreach (var content in new[] { "alpha", "alpha beta", "alpha beta gamma delta", " alpha", "  alpha beta" })
         {
             var rich = Unbounded(new Text("x") { Spans = [new TextRun(content)] });
             var plain = Unbounded(new Text(content, TypeRole.BodyL));
             rich.Should().BeApproximately(plain, 0.01f, $"\"{content}\" is one sentence on either path");
         }
+    }
+
+    /// <summary>
+    /// ...and where it breaks (Copilot on #690). The runs path added each space to its line as it
+    /// came, so a break committed the space it fell on: "alpha beta" broken after "alpha" claimed
+    /// the width of "alpha ", 5.1dp more than its plain twin, whose break drops it. The room holds
+    /// the first line and one space more, and not the word after it, so a kept space would fit.
+    /// A <c>|</c> splits the paragraph into runs: the space a break falls on can end the run
+    /// before it.
+    /// </summary>
+    [Theory]
+    [InlineData("alpha beta", "alpha")]
+    [InlineData("alpha  beta gamma", "alpha")]
+    [InlineData("alpha |beta", "alpha")]
+    [InlineData("  alpha beta", "  alpha")]
+    public void ARichParagraphBreaksAsItsPlainTwin(string runs, string firstLine)
+    {
+        static Text Plain(string content) => new(content, TypeRole.BodyL);
+        static float Unbounded(VisualNode t) => LayoutEngine.Layout(t, 4000, 300, Ctx).Bounds.Width;
+        static float WidthIn(VisualNode text, float room) =>
+            LayoutEngine.Layout(new Box(new BoxStyle { Width = SizeValue.Fixed(room) }, text),
+                400, 300, Ctx).Children[0].Bounds.Width;
+
+        var content = runs.Replace("|", "");
+        var room = Unbounded(Plain(firstLine + " ")) + 1f;
+        WidthIn(Plain(content), room).Should().BeApproximately(Unbounded(Plain(firstLine)), 0.01f,
+            "the plain paragraph breaks after its first line, and drops the space the break falls on");
+
+        var rich = new Text("x") { Spans = [.. runs.Split('|').Select(run => new TextRun(run))] };
+        WidthIn(rich, room).Should().BeApproximately(WidthIn(Plain(content), room), 0.01f,
+            $"\"{content}\" breaks in the same place on either path, and charges the same spaces");
     }
 
     /// <summary>

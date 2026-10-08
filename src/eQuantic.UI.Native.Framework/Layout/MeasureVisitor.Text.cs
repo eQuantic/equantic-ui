@@ -71,6 +71,15 @@ internal sealed partial class MeasureVisitor
         var line = 0;
         float widest = 0;
         var cut = false;
+        var lineHasWord = false;
+        // The spaces since the line's last word, already among the fragments: the next word on the
+        // line takes them, a break or a cut drops them, and the paragraph's end keeps them, which is
+        // what the plain measurer charges (WrapParagraph). Added to the line as they came, a break
+        // committed the space it fell on, so a paragraph wrapped after "alpha" claimed the width of
+        // "alpha "; and skipped at the start of a line, the spaces a paragraph opens with were never
+        // charged at all.
+        var spaces = 0;
+        var spacesWidth = 0f;
 
         // EVERY line is reported at no more than the room it had, which is what the plain path does
         // with `Min(candidate, maxWidth)` on each line it commits. The runs path clamped none of
@@ -92,11 +101,23 @@ internal sealed partial class MeasureVisitor
 
             foreach (var word in Words(run.Content))
             {
-                // A space that lands at a break is DROPPED rather than carried to the next line,
-                // which is what keeps a wrapped paragraph's left edge straight.
                 var width = ctx.Measurer.Measure(word, runStyle, ctx.TypeScale, float.PositiveInfinity, 1).Width;
-                if (x > 0 && x + width > limit && word != " ")
+                var fragment = new TextFragment(word, runStyle, x + spacesWidth, line * lineHeight, width, line,
+                    run.Color, run.Destination is { Length: > 0 } ? run.Destination : null);
+                if (word == " ")
                 {
+                    fragments.Add(fragment);
+                    spaces++;
+                    spacesWidth += width;
+                    continue;
+                }
+                if (lineHasWord && x + spacesWidth + width > limit)
+                {
+                    // A space that lands at a break is DROPPED rather than carried to the next line,
+                    // which is what keeps a wrapped paragraph's left edge straight.
+                    fragments.RemoveRange(fragments.Count - spaces, spaces);
+                    spaces = 0;
+                    spacesWidth = 0;
                     // The line is full, and a cap says there is no next one: the paragraph ends
                     // HERE, with the mark inside the measurement.
                     if (maxLines > 0 && line + 1 >= maxLines)
@@ -108,16 +129,19 @@ internal sealed partial class MeasureVisitor
                     CommitLine(x, ellipsized: false);
                     line++;
                     x = 0;
+                    fragment = fragment with { X = 0, Y = line * lineHeight, Line = line };
                 }
-                if (x == 0 && word == " ") continue;
 
-                fragments.Add(new TextFragment(word, runStyle, x, line * lineHeight, width, line,
-                    run.Color, run.Destination is { Length: > 0 } ? run.Destination : null));
-                x += width;
+                fragments.Add(fragment);
+                x += spacesWidth + width;
+                spaces = 0;
+                spacesWidth = 0;
+                lineHasWord = true;
             }
         }
 
-        CommitLine(x, cut);
+        // The spaces a paragraph ends with are charged, as the plain path charges them.
+        CommitLine(x + spacesWidth, cut);
 
         result.TextRuns = fragments;
         result.Text = new TextMeasurement(widest, lines.Count * lineHeight, lineHeight, lines);
