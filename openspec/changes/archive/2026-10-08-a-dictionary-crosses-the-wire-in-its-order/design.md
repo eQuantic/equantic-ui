@@ -30,18 +30,24 @@ its number, a date as its ISO text, a bool as `true` or `false`. The browser rev
 the hydration spec already carries (`key`), with one rule for keys and values. A bool key, which the
 property name wrote `"True"`, is the visible change.
 
+A double's or a single's NaN and infinities are the exception: no JSON number holds them,
+System.Text.Json refuses them as values, and `JSON.stringify` writes `null` for one. As a property
+name they crossed as their text, so they still do: `"NaN"`, `"Infinity"` and `"-Infinity"`, which
+.NET's invariant parse and the browser's `Number` both read back.
+
 ## Which types cross as pairs
 
-The converter matches, by generic definition, the five shapes the browser holds as its class
-(`BoundaryShape.DictionaryName`: `Dictionary`, `IDictionary`, `IReadOnlyDictionary`,
-`SortedDictionary`, `SortedList`) and `ReadOnlyDictionary`, the read-only view of one. Matching every
-type that implements `IDictionary<,>` would also take an `ExpandoObject` and a `JsonObject`, which
-are objects by meaning. A dictionary-like type outside the six is written as System.Text.Json writes
-it, an object: a `FrozenDictionary`, an `ImmutableDictionary` and a `ConcurrentDictionary` have no
-order .NET defines, and hydration still builds the class from the object.
-
-The converter enumerates the value it is given, so a member declared `IReadOnlyDictionary` crosses
-as pairs whatever implements it.
+The server writes by a value's run-time type, since a page's state and an action's answer hold
+their values as `object`, while the browser revives by the declared type. So the rule is not a list
+of the five shapes the browser holds as its class (`BoundaryShape.DictionaryName`): a member
+declared `IReadOnlyDictionary` may hold a `ReadOnlyDictionary`, a `FrozenDictionary`, an
+`ImmutableDictionary` or a `ConcurrentDictionary`, and a list of the five would have written each of
+those as an object, losing the order again. The converter takes every dictionary of .NET's own
+collections, a generic type in `System.Collections.*` that implements `IDictionary<,>` or
+`IReadOnlyDictionary<,>` (`EqJson.DictionaryEntries`), and writes each in the order .NET enumerates
+it. A type that is a dictionary only in shape, an `ExpandoObject`, a `JsonObject` or a type of an
+app's own, is written as System.Text.Json writes it, an object, and hydration still builds the class
+from one. The conformance harness writes a .NET value by the same rule, so the two cannot drift.
 
 ## The server's own maps
 
@@ -50,12 +56,15 @@ member names. Those are objects by meaning, and the browser reads them by name. 
 written as objects by name, field by field, each value through `EqJson`, and a projected value's
 members are a `ProjectedMembers`, a type of their own that the converter does not match.
 
-## Reads stay lenient
+## The server reads the pairs alone
 
-`EqJson` reads a long from text or a number. The dictionary converter reads the pairs or an object,
-and hydration reads either, since the server still writes an object for the types outside the six.
-Duplicate keys in the pairs keep the last value, as System.Text.Json does for a repeated property
-name.
+The browser writes nothing else, and the object form is the shape this change replaces: in preview,
+no shim keeps it readable. Reading it was also wrong for half the keys, since `EqJson`'s converters
+for a long, an unsigned long and a decimal have no property-name read, and System.Text.Json refused
+those keys. A read builds the shapes the browser holds as its class and a read-only view, and refuses
+a dictionary type the browser never sends. A repeated key keeps its last value, as System.Text.Json
+does for a repeated property name. Hydration keeps reading an object, which the server still writes
+for a dictionary only in shape.
 
 ## The proof
 

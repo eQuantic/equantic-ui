@@ -30,7 +30,12 @@ of `[key, value]` pairs, each key and each value written as a value of its type 
 - **WHEN** a `Dictionary<long, string>` keyed by 9007199254740993 crosses in either direction
 - **THEN** the key is written as its text, "9007199254740993", and arrives as that long
 
-#### Scenario: A dictionary-like value of another type
+#### Scenario: A dictionary behind a member typed as its interface
 
-- **WHEN** a member declared `IReadOnlyDictionary<int, string>` holds an `ImmutableDictionary`, which System.Text.Json writes as a JSON object
-- **THEN** it still hydrates into the dictionary class, in the order the parsed object holds
+- **WHEN** a member declared `IReadOnlyDictionary<int, string>` holds a `FrozenDictionary`
+- **THEN** it crosses as its pairs, in the order .NET enumerates it, and hydrates into the dictionary class
+
+#### Scenario: A NaN key
+
+- **WHEN** a `Dictionary<double, string>` keyed by `double.NaN` crosses in either direction
+- **THEN** the key is written as its text, "NaN", and arrives as NaN

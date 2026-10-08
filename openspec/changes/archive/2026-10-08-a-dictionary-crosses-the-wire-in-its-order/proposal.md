@@ -28,14 +28,13 @@ The keys affected are the ones JavaScript reads as array indices: every non-nega
   answer and arguments, and a topic's payload. A key is written as a value of its type is, so a bool
   key is `true` where it was the property name `"True"`, a long, a decimal and a date are their text,
   an enum is its camelCase name and a `[Flags]` enum its number.
-- **The server writes the pairs** for the dictionary types the browser holds as its class
-  (`Dictionary`, `IDictionary`, `IReadOnlyDictionary`, `SortedDictionary` and `SortedList`) and for
-  `ReadOnlyDictionary`, the view `AsReadOnly()` answers, and reads them back. It still reads a JSON
-  object for any of them, as it reads a long from text or a number.
+- **The server writes the pairs** for every dictionary of .NET's own collections, whatever a member
+  typed `object` holds: the shapes the browser holds as its class, a read-only view, a frozen, an
+  immutable or a concurrent dictionary. It reads the pairs back, and no longer reads a JSON object.
+  A NaN or an infinite number key crosses as its text, which no JSON number holds.
 - **The browser writes and reads the pairs**: `Dictionary` and `SortedMap` write them with `toJSON`,
   and hydration builds the class from them. Hydration still reads a JSON object, which the server
-  writes for a dictionary-like type outside those six (a `FrozenDictionary`, an
-  `ImmutableDictionary`, a `ConcurrentDictionary`, a subclass).
+  writes for a type that is a dictionary only in shape (an `ExpandoObject`, a type of an app's own).
 - **The server's own maps stay objects**: the state of a page by component, a component's fields and
   the members of a projected service are written by name, and only the values inside them go
   through the dictionary rule.
@@ -53,5 +52,6 @@ The keys affected are the ones JavaScript reads as array indices: every non-nega
 
 The JSON shape of a dictionary on the SDK's own wire changes from an object to an array of pairs.
 Inside the SDK nothing needs to change. A client outside the SDK that calls a Server Action by hand
-and reads a dictionary from its answer reads `[[key, value], …]` now: read the pairs, or answer a
+and reads a dictionary from its answer reads `[[key, value], …]` now, and one that sends a dictionary
+as an argument sends its pairs, since an object is refused: read and write the pairs, or exchange a
 record whose members are named.
