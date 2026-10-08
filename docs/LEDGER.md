@@ -1653,7 +1653,11 @@ record of a release, the wiki's Upgrading page is the distillate.
   without the runtime's beside them, and the reloaded page gets them before it builds, each rebuilt
   in the shape its initializer gives it: data only, a record and a `long` included, since a
   controller rebuilt from its JSON came back with maps no map method accepts, as the review before
-  the pull request found. Proposed and archived through OpenSpec (`openspec/specs/hot-reload`).
+  the pull request found. Copilot's first round found four values the reload changed instead of
+  keeping (a NaN back as null, a controller inside a dictionary back as a plain object, the
+  vocabulary's `Point` back at its initializer, a `long[]` back as strings), so each value now crosses
+  with the hydration spec of its runtime type and comes back through `hydrate` as the type it was, or
+  keeps its initializer. Proposed and archived through OpenSpec (`openspec/specs/hot-reload`).
 
 ## Retired documents
 
