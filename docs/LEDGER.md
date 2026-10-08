@@ -1723,6 +1723,17 @@ record of a release, the wiki's Upgrading page is the distillate.
   46 new conformance cases fail on the base. The members the runtime does not have are
   [#679](https://github.com/eQuantic/equantic-ui/issues/679). Proposed and archived through OpenSpec
   (`openspec/specs/transpiler-bcl`).
+- **2026-10-08 · A dictionary crosses the wire in its order**: a dictionary crossed as a JSON object,
+  which the browser parses with every integer-like key first and ascending, so a
+  `Dictionary<int, string>` holding 3, then 1 reached a page's state, a Server Action's answer or a
+  topic's payload as 1, 3, and the browser reordered one it sent
+  ([#437](https://github.com/eQuantic/equantic-ui/issues/437)). It crosses as its `[key, value]` pairs
+  both ways, each key written as a value of its type: `EqJson` writes and reads the pairs for the
+  dictionaries the browser holds as its class and `ReadOnlyDictionary`, the page's state and a
+  projected service stay objects by name, and the runtime's `Dictionary` and `SortedMap` write the
+  pairs that hydration reads. 23 of the 28 new and updated cases fail on the base, on the server, in
+  the runtime and in the conformance suite with both sides executed. Proposed and archived through
+  OpenSpec (`openspec/specs/runtime-dictionaries`).
 
 ## Retired documents
 

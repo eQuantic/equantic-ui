@@ -64,5 +64,8 @@ name.
 - `EqJsonTests` pins the pairs written in slot order for integer and integer-like string keys, each
   key type, both reads, and the state payload's objects.
 - The conformance suite's `Json_MatchesDotNet` gets integer and integer-like keys, executed on both
-  sides, once `RuntimeJson` writes a dictionary as the runtime does.
-- A Server Action round trip in a browser, on a sample.
+  sides, once `RuntimeJson` writes a dictionary as the runtime does, and a crossing page renders
+  integer and integer-like keys on the server and builds its twin in Bun on that payload.
+- A Server Action's request is pinned in one file, `action-arguments.json`: the runtime's spec writes
+  those bytes for its two dictionaries, and the server's test posts them to the middleware and reads
+  the keys back in the browser's order. Its answer is checked as the pairs, in order.
