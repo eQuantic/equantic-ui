@@ -280,4 +280,17 @@ describe("a list face's indexer, as the list behind the face answers it", () => 
     expect(count(new Float64Array([1, 2, 3]))).toBe(3);
     expect(count(new Set([1, 2]))).toBe(2);
   });
+
+  // A read or a call through null throws .NET's NullReferenceException in its words: the count of null
+  // was none, 0 where `xs.Count` throws, and the others threw JavaScript's own TypeError. A
+  // null-conditional and a pattern test the receiver before they reach any of them.
+  it('refuses a null as .NET does, for a count, a read, a write, an Add and a Clear', () => {
+    const message = 'Object reference not set to an instance of an object.';
+    expect(() => count(null)).toThrow(message);
+    expect(() => count(undefined)).toThrow(message);
+    expect(() => item(null as unknown as number[], 0)).toThrow(message);
+    expect(() => setItem(null as unknown as number[], 0, 1)).toThrow(message);
+    expect(() => add(null, 1)).toThrow(message);
+    expect(() => clear(null)).toThrow(message);
+  });
 });

@@ -343,6 +343,11 @@ export function remove<T>(
   return false;
 }
 
+/** What .NET throws for a member read or a call through null, in its words. */
+function nullReference(): Error {
+  return exception('System.NullReferenceException', 'Object reference not set to an instance of an object.');
+}
+
 /**
  * `ICollection<T>.Add`, for the collection the interface holds when the call runs, each adding as its
  * own `ICollection<T>.Add` does in .NET (#593): an array (a `List<T>`) appends; a set adds a value it
@@ -351,9 +356,11 @@ export function remove<T>(
  * already there in its own words, the runtime's `Dictionary` and a sorted map alike; and a twin calls
  * its own `add`. It was an array's `push`, which none of the others has. An array stands for a `T[]`
  * as well as a `List<T>`, so a fixed-size array behind the face grows here where .NET refuses the call
- * (NotSupportedException): the value carries nothing that tells the two apart.
+ * (NotSupportedException): the value carries nothing that tells the two apart (#711). A null throws the
+ * NullReferenceException a call through null throws in .NET.
  */
 export function add<T>(collection: unknown, item: T): void {
+  if (collection == null) throw nullReference();
   if (Array.isArray(collection)) collection.push(item);
   else if (collection instanceof LinkedList) collection.addLast(item);
   else if (collection instanceof RuntimeDictionary || collection instanceof SortedMap) {
@@ -365,9 +372,11 @@ export function add<T>(collection: unknown, item: T): void {
 /**
  * `ICollection<T>.Clear`, for the collection the interface holds when the call runs: an array (a
  * `List<T>`) is emptied in place, and every other collection, the runtime's and a twin, by its own
- * `clear` (#593). It was an array's `splice`, which a set, a linked list and a dictionary lack.
+ * `clear` (#593). It was an array's `splice`, which a set, a linked list and a dictionary lack. A null
+ * throws as {@link add} does.
  */
 export function clear(collection: unknown): void {
+  if (collection == null) throw nullReference();
   if (Array.isArray(collection)) collection.length = 0;
   else (collection as { clear(): void }).clear();
 }
@@ -387,9 +396,11 @@ type WritablyIndexed<T> = { [index: number]: T } | { setItem(index: number, valu
  * holds when the read runs (#586): an array, which stands for a `List<T>` and a `T[]`, by its subscript,
  * and a twin of the app's own by its indexer's getter, `item` (#427). The subscript alone read a
  * property named after the index, which no twin has. Anything else indexed, a typed array a hand-written
- * caller handed over, is read by its subscript as before.
+ * caller handed over, is read by its subscript as before. A null throws as {@link add} does, where a
+ * read of a member through it threw JavaScript's own TypeError, in its own words.
  */
 export function item<T = any>(list: Indexed<T>, index: number): T {
+  if (list == null) throw nullReference();
   if (Array.isArray(list)) return list[index] as T;
   const twin = list as ArrayLike<T> & { item?: (index: number) => T };
   return typeof twin.item === 'function' ? twin.item(index) : twin[index];
@@ -397,9 +408,11 @@ export function item<T = any>(list: Indexed<T>, index: number): T {
 
 /**
  * The write beside {@link item}: an array's subscript, or a twin's indexer setter, `setItem`. It answers
- * the value written, as C#'s assignment does, whatever the setter does with its own copy.
+ * the value written, as C#'s assignment does, whatever the setter does with its own copy. A null throws
+ * as {@link add} does.
  */
 export function setItem<T = any>(list: WritablyIndexed<T>, index: number, value: T): T {
+  if (list == null) throw nullReference();
   const target = list as { [index: number]: T } & { setItem?: (index: number, value: T) => unknown };
   if (!Array.isArray(list) && typeof target.setItem === 'function') target.setItem(index, value);
   else target[index] = value;
@@ -441,10 +454,12 @@ export function setAdd<T>(set: Set<T>, value: T): boolean {
  * behind an `ICollection<T>` or an `IReadOnlyList<T>`, keep it as `count`, which a twin that cannot be
  * walked answers alone (#586, #593). It is asked before a `size` or a `length`, which are a twin's own
  * members when it has them: a polyline's `Length` is how long it is, and its `Count` how many points
- * it holds. Null counts as none, so a guarded `xs?.Count` needs no guard at all.
+ * it holds. A null throws the NullReferenceException `xs.Count` throws in .NET: a null-conditional
+ * `xs?.Count` and a property pattern test the receiver before they count, so only a read through null
+ * reaches here, and counting it as none answered 0 where .NET throws.
  */
 export function count(collection: unknown): number {
-  if (collection == null) return 0;
+  if (collection == null) throw nullReference();
   if (Array.isArray(collection) || typeof collection === 'string') return collection.length;
   const sized = collection as { size?: unknown; length?: unknown; count?: unknown };
   if (typeof sized.count === 'number') return sized.count;

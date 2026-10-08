@@ -34,8 +34,9 @@ public class CollectionAndIndexerConformanceTests
     [InlineData("var source = new List<int> { 1 }; List<int> c = new(source); c.Add(9); return string.Join(\",\", c) + \"|\" + source.Count;")]      // 1,9|1
     [InlineData("var source = new List<int> { 1 }; var c = new List<int>(source) { }; c.Add(9); return string.Join(\",\", c) + \"|\" + source.Count;")] // 1,9|1
     // In an argument, where the copy and the elements were two arguments, and with a named capacity.
-    [InlineData("return string.Join(\",\", new List<int>(new[] { 1 }) { 2 });")]
-    [InlineData("var a = new List<int> { { 1 }, 2 }; List<int> b = new() { { 3 } }; return string.Join(\",\", a) + \"|\" + (a[0] + 1) + \"|\" + b[0];")] // 1,2|2|3                                                              // 1,2
+    [InlineData("return string.Join(\",\", new List<int>(new[] { 1 }) { 2 });")]                                                              // 1,2
+    // A complex element initializer hands its one expression to Add.
+    [InlineData("var a = new List<int> { { 1 }, 2 }; List<int> b = new() { { 3 } }; return string.Join(\",\", a) + \"|\" + (a[0] + 1) + \"|\" + b[0];")] // 1,2|2|3
     [InlineData("return new List<string>(capacity: 4) { \"a\" }.Count;")]                                                                     // 1
     // A source of any shape: a set, a dictionary's pairs, a string's chars.
     [InlineData("var l = new List<int>(new HashSet<int> { 7, 8 }) { 9 }; return string.Join(\",\", l);")]                                    // 7,8,9
@@ -83,6 +84,29 @@ public class CollectionAndIndexerConformanceTests
     [InlineData("return string.Join(\",\", new[] { \"a\", \"bb\", \"cc\" }.GroupBy(w => w.Length, w => w[0], (k, g) => k + new string(g.ToArray()), EqualityComparer<int>.Default));")] // 1a,2bc
     [InlineData("return new[] { \"a\", \"A\", \"a\" }.ToHashSet(StringComparer.Ordinal).Count;")]                                           // 2
     public void ALinqOperatorHandedTheDefaultsComparer_AnswersAsItDoesWithoutOne(string statements)
+    {
+        Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
+        ConformanceRunner.AssertStatementsSameAsDotNet(statements);
+    }
+
+    /// <summary>
+    /// A read or a call through a list's face, or a collection's, that holds null throws .NET's
+    /// NullReferenceException in its words, and a null-conditional one answers null. The runtime's count
+    /// counted a null as none, so <c>r.Count</c> answered 0 where .NET throws, and the element reads and
+    /// the calls threw JavaScript's own TypeError (#586, #593).
+    /// </summary>
+    [SkippableTheory]
+    [InlineData("IReadOnlyList<int> r = null; try { return r.Count.ToString(); } catch (NullReferenceException e) { return e.Message; }")]
+    [InlineData("ICollection<int> c = null; try { return c.Count.ToString(); } catch (NullReferenceException e) { return e.Message; }")]
+    [InlineData("IList<int> l = null; try { return l[^1].ToString(); } catch (NullReferenceException e) { return e.Message; }")]
+    [InlineData("IReadOnlyList<int> r = null; try { return r[0].ToString(); } catch (NullReferenceException e) { return e.Message; }")]
+    [InlineData("IList<int> l = null; try { l[0] = 1; return \"written\"; } catch (NullReferenceException e) { return e.Message; }")]
+    [InlineData("ICollection<int> c = null; try { c.Add(1); return \"added\"; } catch (NullReferenceException e) { return e.Message; }")]
+    [InlineData("ICollection<int> c = null; try { c.Clear(); return \"cleared\"; } catch (NullReferenceException e) { return e.Message; }")]
+    // A null-conditional answers null, never 0, and counts what is there; a pattern tests for null first.
+    [InlineData("IReadOnlyList<int> r = null; IReadOnlyList<int> s = new List<int> { 1, 2 }; var d = new Dictionary<string, int?> { [\"r\"] = r?.Count, [\"s\"] = s?.Count }; return d.ContainsValue(null) + \"|\" + d[\"s\"];")] // True|2
+    [InlineData("ICollection<int> c = null; IReadOnlyList<int> r = null; return (c?.Count ?? -1) + \"|\" + (c?.Count > 0) + \"|\" + (r?[0] ?? -1) + \"|\" + (r is { Count: > 0 });")] // -1|False|-1|False
+    public void AReadThroughANullFace_ThrowsAsDotNetDoes(string statements)
     {
         Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
         ConformanceRunner.AssertStatementsSameAsDotNet(statements);
