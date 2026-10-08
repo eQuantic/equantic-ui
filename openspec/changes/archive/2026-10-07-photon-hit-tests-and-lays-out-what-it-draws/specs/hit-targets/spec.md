@@ -38,6 +38,13 @@ SHALL stand in front of no box: its slop takes a point only where no box is draw
   wide row is pressed 2dp above its foot, where the narrow row's slop reaches
 - **THEN** the wide row runs, since the narrow one is drawn beside it
 
+#### Scenario: A clipped control in a moved card
+
+- **WHEN** a 40dp button placed 180dp into a 200dp card runs past it and is clipped at the card's edge,
+  under a finger, and the card is tapped 185dp in and 35dp down, in the button's slop, with the whole
+  subtree moved 100dp across and down and without
+- **THEN** the button runs both times
+
 ### Requirement: A transformed box takes the pointer where it is drawn
 
 Every region a box registers under a transform, its own and its subtree's, SHALL take the pointer

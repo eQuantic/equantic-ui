@@ -1718,7 +1718,10 @@ record of a release, the wiki's Upgrading page is the distillate.
   under a turn: the boxes around two rows turned together nest while the rows lie side by side, so the
   narrow row's slop took the wide row's presses, and a reveal carried a control into its scroll view's
   space as the box around it on screen, which a turn grows until the view scrolls the wrong way; both
-  now go by the boxes' own corners. Proposed and archived
+  now go by the boxes' own corners. Its third round found that the corners had lost the clips, so a
+  moved button clipped at its card's edge reached past the card: the boxes on screen are compared,
+  clips included, unless a turn tilts one. Reported: a drag and a pan under a scale or a turn measure
+  their travel on the screen ([#734](https://github.com/eQuantic/equantic-ui/issues/734)). Proposed and archived
   through OpenSpec (`openspec/specs/hit-targets`, `openspec/specs/box-layout`,
   `openspec/specs/text-measurement`, `openspec/specs/transformed-surfaces`).
 - **2026-10-06 · A control's press and focus show on its boxes on every target**: the handoff presses

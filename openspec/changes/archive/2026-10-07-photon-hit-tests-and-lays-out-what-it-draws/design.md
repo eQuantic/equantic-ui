@@ -57,8 +57,15 @@ the five defects is a region, or a layout, that disagrees with what is drawn.
   inside the box around the row under the point, and turned together a narrow row's box nests in a
   wide one's while the rows lie side by side. The drawn boxes are compared by their own corners,
   carried into one space.
+- **Its third round found one more:** compared by their corners, the boxes lost their clips, and a
+  moved button clipped at its card's edge reached past the card. The boxes on screen are exact, clips
+  included, unless a turn or a shear tilts one of them, so only then are the corners compared.
 
 ## Fences
+
+- A drag and a pan under a scale or a turn measure their travel on the screen: a draggable's travel and
+  normalization, and a scroll view's pan and fling. Copilot's third round found it in code this change
+  leaves alone, reported as #734.
 
 - An editing surface under a scale or a rotation takes the press in the right place and still turns
   it into a caret or a cell through its layout rect. Reported on its own (#658) rather than widened

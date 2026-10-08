@@ -46,6 +46,8 @@
       shows, and rich paragraphs that break and open with spaces, each proved failing without its fix
 - [x] 6.5 The second round: two drawn boxes compared by their own corners, checked with a wide and a
       narrow row turned together, failing without the fix
+- [x] 6.6 The third round: the boxes on screen, clips included, unless a turn tilts one, checked with a
+      clipped button in a moved card, failing without the fix
 
 ## 7. Documentation
 
