@@ -68,6 +68,16 @@ public static class TypeSymbolExtensions
     /// the vocabulary's, whose other twins are hand-written (#592). Asked of the symbol, since an app
     /// reaches it as metadata.
     /// </summary>
+    /// <summary>
+    /// Whether the browser has a twin of <paramref name="type"/> a module can import: one eqc writes (the
+    /// app's, a transpiled library's) or one the runtime exports. A .NET type has none, so naming it
+    /// registers no import (#625): an alias of <c>List&lt;int&gt;</c> introduced <c>List</c>, and a module of
+    /// the app's of that name was imported in its place, as <c>System.Math.PI</c> imported an app's
+    /// <c>Math</c> over the browser's own (found by Copilot's second review of #705).
+    /// </summary>
+    internal static bool HasTwin(this INamedTypeSymbol type) =>
+        Strategies.Expressions.ObjectCreationStrategy.TwinIsWritten(type) || type.IsRuntimeProvided();
+
     internal static bool TwinIsTranspiled(this ITypeSymbol type) =>
         type.GetAttributes().Any(attribute => attribute.AttributeClass is { Name: "TwinIsTranspiledAttribute" } marker
             && marker.ContainingNamespace?.ToDisplayString() == "eQuantic.UI.Primitives");

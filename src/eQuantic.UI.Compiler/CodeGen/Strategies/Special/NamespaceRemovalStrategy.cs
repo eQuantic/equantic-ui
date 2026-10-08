@@ -42,7 +42,7 @@ public class NamespaceRemovalStrategy : IConversionStrategy
         // stripped, and a type with no JavaScript value (an interface, an enum) or one the runtime ships no
         // twin for (host-only) is left to the strategies that handle it however it is spelled.
         if (context.SemanticHelper.GetSymbol(memberAccess) is INamedTypeSymbol { TypeKind: TypeKind.Class or TypeKind.Struct } type
-            && !type.IsHostOnly())
+            && !type.IsHostOnly() && type.HasTwin())
             type.RegisterIntroduced(context);
         // ValueText, as every other name: a verbatim `@Shelf` is `Shelf`.
         return memberAccess.Name.Identifier.ValueText;

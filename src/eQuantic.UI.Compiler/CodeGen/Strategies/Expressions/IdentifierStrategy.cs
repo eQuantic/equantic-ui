@@ -39,7 +39,7 @@ public class IdentifierStrategy : IExpressionIrStrategy
         // namespace (#625): `using F = Falei.Web.Portal.Fold;` then `F.Text(1)` wrote `F.text(1)`, a name
         // nothing defines. A name that differs from the type's own is only ever an alias.
         if (symbol is INamedTypeSymbol { TypeKind: TypeKind.Class or TypeKind.Struct } aliased && aliased.Name != name
-            && !aliased.IsHostOnly())
+            && !aliased.IsHostOnly() && aliased.HasTwin())
         {
             aliased.RegisterIntroduced(context);
             return JsExpr.Identifier(aliased.Name);

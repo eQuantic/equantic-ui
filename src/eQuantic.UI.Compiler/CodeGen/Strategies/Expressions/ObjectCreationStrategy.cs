@@ -129,7 +129,7 @@ public class ObjectCreationStrategy : IExpressionIrStrategy
         // A type named through a using alias is built by its own name and imported by it, as a read of
         // its static is (#625): `using F = N.Fold;` then `new F()` wrote `new F()`, a name nothing defines.
         if (createdType is INamedTypeSymbol { TypeKind: TypeKind.Class or TypeKind.Struct } aliased && !aliased.IsHostOnly()
-            && creation.Type is IdentifierNameSyntax { Identifier.ValueText: var written } && written != aliased.Name)
+            && aliased.HasTwin() && creation.Type is IdentifierNameSyntax { Identifier.ValueText: var written } && written != aliased.Name)
         {
             aliased.RegisterIntroduced(context);
             typeName = aliased.Name;
