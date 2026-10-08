@@ -1735,7 +1735,10 @@ record of a release, the wiki's Upgrading page is the distillate.
   host-only fence asks about an extension's home instead of its receiver, so `curve.Ease(t)` fails the
   build with EQ2010 where it built and threw; the same hole had let `EffectiveTypeStyle`'s extensions
   through on a `Text` and a `TypeStyle`. 16 of the 19 new conformance cases fail on the base, the other
-  three comparing a preset with itself. Proposed and archived through OpenSpec
+  three comparing a preset with itself. The review found a record member's method group bound to the
+  companion, which carries neither `equals` nor `toString`, so `Curve.Standard.Equals` threw making the
+  delegate and `ToString` answered `[object Object]`, on a `Color` as on a `Curve`: each group answers
+  through the helper its call uses, the receiver read once. Proposed and archived through OpenSpec
   (`openspec/specs/transpiler-vocabulary-values`).
 
 ## Retired documents

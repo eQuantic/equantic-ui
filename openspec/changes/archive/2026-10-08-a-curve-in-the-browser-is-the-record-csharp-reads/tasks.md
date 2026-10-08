@@ -8,6 +8,7 @@
 - [x] 1.4 The runtime's `CurveValue`, `MotionSpec`, `TransitionSpec` and the easing lowering read that shape; proved by the S6 cross-pins on both sides (`S6TransitionRealizerTests`, `s6-transition.spec.ts`)
 - [x] 1.5 A construction builds the data and a page's state crosses a curve as its members; proved by `TwinIsDataEmissionTests.ACurve_IsBuiltAsItsData_AndPrintsItsPointsAsSingles` and `HydrationSpecEmissionTests.ARuntimeValueTypeHeldAsData_CrossesAsItsMembers`
 - [x] 1.6 Run both sides through the conformance harness: `VocabularyValueConformanceTests.ACurveAnswersAsInDotNet`, failing before the fix, and the member coverage, which enumerates `Curve` now
+- [x] 1.7 A record member of a data twin as a method group is the delegate its call is, found in review: `Equals` over `$eq.equals` and `ToString` over the record text, the receiver read once; proved by `VocabularyValueConformanceTests.AMethodGroupOfAValueHeldAsData_IsTheDelegateItsCallIs`, failing before the fix on a `Color` as on a `Curve`, and `TwinIsDataEmissionTests.ARecordMemberGroupOfADataTwin_IsTheDelegateItsCallIs`
 
 ## 2. The evaluator stays on the host
 

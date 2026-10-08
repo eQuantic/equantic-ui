@@ -38,6 +38,11 @@ listed `Curve` as its one exception, with this issue's number.
 - **A record's text writes a float member as a single.** eqc passes each member's number kind to the
   runtime's record text, so `$"{curve}"` prints `X1 = 0.2`, as .NET does, where JavaScript's own
   digits are the double's.
+- **A record member as a method group is the delegate its call is.** `Func<Curve, bool> same =
+  Curve.Standard.Equals` and `Func<string> text = Color.White.ToString` answer what their calls
+  answer, through `$eq.equals` and the record text, with the receiver read once when the delegate
+  is made. Bound to the companion, which carries neither, the first threw and the second answered
+  `[object Object]`, on a `Color` as on a `Curve`. Found in review.
 - **The evaluator stays on the host.** `CurveEvaluator` is `[ServerOnly]`: a web transition is a CSS
   timing function, and the browser evaluates the curve itself. A component that calls
   `curve.Ease(t)` or `CurveEvaluator.Ease(curve, t)`, or makes a delegate of either, fails the build

@@ -71,3 +71,39 @@ home. The value it is reached on SHALL still cross.
 
 - **WHEN** a component reads `Curve.Standard.X1` or makes `new Curve(0.2f, 0.9f, 0.3f, 1.25f)`
 - **THEN** the build reports nothing: only the evaluator stays on the host
+
+### Requirement: A record member of a value the browser holds as data is the delegate its call is
+
+`Equals`, `ToString` and `GetHashCode` of a vocabulary value type the browser holds as plain data,
+made into a delegate, SHALL answer what their calls answer, through the helpers the calls use, on a
+`Color` as on a `Curve`. The delegate SHALL read its receiver once, when it is made, as C# copies the
+receiver into the delegate.
+
+#### Scenario: Equals as a delegate
+
+- **WHEN** a component's browser-side code makes `Func<Curve, bool> same = Curve.Standard.Equals` and
+  calls `same(new Curve(0.2f, 0f, 0f, 1f))`
+- **THEN** it answers `true`, as in .NET, where making the delegate threw
+
+#### Scenario: ToString as a delegate
+
+- **WHEN** it makes `Func<string> text = Color.FromRgba(1, 2, 3, 4).ToString` and calls it
+- **THEN** it answers `Color { R = 1, G = 2, B = 3, A = 4 }`, as in .NET, where it answered
+  `[object Object]`
+
+#### Scenario: A curve's text as a delegate keeps its singles
+
+- **WHEN** it makes `Func<string> text = Curve.Standard.ToString` and calls it
+- **THEN** it answers `Curve { X1 = 0.2, Y1 = 0, X2 = 0, Y2 = 1 }`, as in .NET
+
+#### Scenario: The receiver is read once
+
+- **WHEN** it makes `Func<string> text = Make().ToString`, where `Make` counts its runs, and calls the
+  delegate twice
+- **THEN** `Make` has run once, as in .NET
+
+#### Scenario: The value the delegate was made with
+
+- **WHEN** it makes `Func<string> text = c.ToString` over a local `c` holding `Curve.Standard`, assigns
+  `Curve.Decelerate` to `c`, and calls the delegate
+- **THEN** it answers the standard curve's text, as in .NET
