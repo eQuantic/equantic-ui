@@ -53,6 +53,10 @@ the five defects is a region, or a layout, that disagrees with what is drawn.
   after a word until the next word takes them, and a break leaves them hanging past its line, out of
   the width, as the plain path measures and CSS hangs them. They stay fragments, since a link's name
   is its fragments joined.
+- **Its second round found one more:** a slop in front won a press when the box around its row lay
+  inside the box around the row under the point, and turned together a narrow row's box nests in a
+  wide one's while the rows lie side by side. The drawn boxes are compared by their own corners,
+  carried into one space.
 
 ## Fences
 

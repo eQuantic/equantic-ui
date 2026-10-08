@@ -37,13 +37,15 @@
 - [x] 5.2 Check: a rich paragraph measures as its plain twin, the space against CoreText's on a Mac, and
       the goldens that move read and regenerated
 
-## 6. Copilot's first round
+## 6. Copilot's review
 
 - [x] 6.1 A transform that collapses a box leaves its regions no area
 - [x] 6.2 A box with no area encloses nothing, so a row clipped away whole wins no press
 - [x] 6.3 The rich paragraph holds the spaces after a word until the next word or a break
 - [x] 6.4 Check: a collapsed square pressed and hovered, a press low in the last row a scroll view
       shows, and rich paragraphs that break and open with spaces, each proved failing without its fix
+- [x] 6.5 The second round: two drawn boxes compared by their own corners, checked with a wide and a
+      narrow row turned together, failing without the fix
 
 ## 7. Documentation
 

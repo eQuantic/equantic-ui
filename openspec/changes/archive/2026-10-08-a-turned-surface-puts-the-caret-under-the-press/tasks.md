@@ -18,6 +18,8 @@
 - [x] 2.3 Check: the anchor under a 2× scale, and a scroll view drawn twice as large scrolling to a
       control Tab reached and following a caret exactly as far as unscaled, each reveal site reverted
       alone
+- [x] 2.4 The control and the caret cross into the scroll view's space by their own corners, with the
+      focus stops noted in the side table, checked turned 45° and failing without the fix
 
 ## 3. Documentation
 

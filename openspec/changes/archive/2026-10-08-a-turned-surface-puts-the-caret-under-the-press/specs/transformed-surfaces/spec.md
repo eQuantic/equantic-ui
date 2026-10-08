@@ -73,3 +73,8 @@ measure the control or the caret, the viewport and its margins in the scroll vie
 - **WHEN** a code editor whose view is 100dp tall is drawn twice as large, and its caret goes twenty
   lines down
 - **THEN** its view scrolls exactly as far as the same editor's drawn unscaled
+
+#### Scenario: Turned
+
+- **WHEN** the same scroll view and the same editor are turned 45°
+- **THEN** each scrolls exactly as far as it does unturned

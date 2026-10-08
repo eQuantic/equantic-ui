@@ -1714,7 +1714,11 @@ record of a release, the wiki's Upgrading page is the distillate.
   around the line taking the pointer; a row its scroll view clipped away whole kept a drawn box of no
   height on the viewport's edge, which took the lower presses of the last row shown; a turned
   completion list took the presses in the corners of the box around it; and a rich paragraph kept the
-  space a break fell on in its width, and skipped the spaces it opens with. Proposed and archived
+  space a break fell on in its width, and skipped the spaces it opens with. Its second round found two
+  under a turn: the boxes around two rows turned together nest while the rows lie side by side, so the
+  narrow row's slop took the wide row's presses, and a reveal carried a control into its scroll view's
+  space as the box around it on screen, which a turn grows until the view scrolls the wrong way; both
+  now go by the boxes' own corners. Proposed and archived
   through OpenSpec (`openspec/specs/hit-targets`, `openspec/specs/box-layout`,
   `openspec/specs/text-measurement`, `openspec/specs/transformed-surfaces`).
 - **2026-10-06 · A control's press and focus show on its boxes on every target**: the handoff presses

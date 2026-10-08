@@ -40,13 +40,17 @@ fixed at the centre); its note gains that input reads a transform too.
   list through the inverse, as they read the surface.
 - **A reveal measures in the scroll view's own space** (`InScrollSpace`): the control or the caret and
   the viewport are both taken back through the scroll view's inverse, the margins with them, so a
-  scroll view drawn twice as large scrolls exactly as far as it would unscaled.
+  scroll view drawn twice as large scrolls exactly as far as it would unscaled. The control or the
+  caret crosses by its own corners, from the space it was laid out in, never as the box around it
+  on screen: Copilot's second round on #690 measured that box, taken back under a turn, growing a
+  control at the foot of the view into one reaching above its top, and the view scrolled up. The
+  frame's side table notes the focus stops for that, as it notes every other region.
 - `InputSink.Place` reuses `Matrix2D.TransformBounds`, which it had copied.
 
 ## Fences
 
-- A scroll view inside a rotated box reveals along its own axis, and the clip it registers is still
-  the box around its corners (the #513 fence).
+- The clip a scroll view inside a rotated box registers is still the box around its corners (the
+  #513 fence).
 - The editor model's release ignores the point it is given, so nothing observable proves the
   release's conversion: it goes through `ToLocal` like the press and the drag, for a model that
   reads it.

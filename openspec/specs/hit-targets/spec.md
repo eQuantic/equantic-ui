@@ -94,6 +94,12 @@ SHALL stand in front of no box: its slop takes a point only where no box is draw
   bottom edge, and the fifth row is pressed 5dp above its bottom
 - **THEN** the fifth row runs, and the sixth does not
 
+#### Scenario: Rows turned together
+
+- **WHEN** a 200dp row and a 20dp row centred under it are turned 45° together under a finger, and the
+  wide row is pressed 2dp above its foot, where the narrow row's slop reaches
+- **THEN** the wide row runs, since the narrow one is drawn beside it
+
 ### Requirement: A transformed box takes the pointer where it is drawn
 
 Every region a box registers under a transform, its own and its subtree's, SHALL take the pointer
