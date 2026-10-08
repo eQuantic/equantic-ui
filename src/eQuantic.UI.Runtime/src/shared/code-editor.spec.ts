@@ -26,6 +26,7 @@ import { CodeDocument } from './components/CodeDocument';
 import type { HtmlNode } from '../core/types';
 import { Reconciler } from '../dom/reconciler';
 import { activeShortcuts, commitShortcuts, resetShortcuts } from '../dom/shortcuts';
+import { commitFocusTraps, resetFocusTraps } from '../dom/focus-trap';
 
 setPhotonTheme(photonTheme);
 
@@ -1256,5 +1257,80 @@ describe('the find bar', () => {
       parent.remove();
       resetShortcuts();
     }
+  });
+});
+
+/**
+ * A code editor at either end of a dialog keeps its Tab (#598). The dialog's focus trap heard Tab in
+ * the capture phase, before the editor's input: with the editor last, Tab moved the focus to the
+ * first control and the line was never indented, and Shift+Tab did the same with the editor first.
+ * The trap now hears the key after the control that has the focus, as Photon's host asks its code
+ * target before it cycles.
+ */
+describe('a code editor at either end of a dialog', () => {
+  const lowerEditor = (editor: CodeEditorController) =>
+    lowerVisualNode(new CodeSurface(new Text('', 'labelSmall'), editor) as never, {
+      textPrimary: photonTheme.textPrimary,
+      componentContext: { theme: photonTheme, typeScale: 1 },
+    });
+
+  /** A modal layer as the lowerings mark one, the editor at one end and a button at the other, with
+   * the editor's input holding the focus. */
+  function inDialog(code: string, editorFirst: boolean) {
+    document.body.innerHTML = '';
+    resetFocusTraps();
+    const editor = new CodeEditorController(code, CodeLanguages.for('csharp'));
+    const layer = document.createElement('div');
+    layer.setAttribute('role', 'dialog');
+    layer.setAttribute('aria-modal', 'true');
+    layer.setAttribute('tabindex', '-1');
+    layer.setAttribute('data-eq-trap', '');
+    const host = document.createElement('div');
+    const button = document.createElement('button');
+    button.textContent = 'Close';
+    if (editorFirst) layer.append(host, button);
+    else layer.append(button, host);
+    document.body.appendChild(layer);
+    new Reconciler().reconcile(host, null, lowerEditor(editor));
+    commitFocusTraps();
+    const input = host.querySelector('textarea')!;
+    input.focus();
+    return { editor, input, button };
+  }
+
+  const key = (target: HTMLElement, name: string, shift = false) =>
+    target.dispatchEvent(
+      new KeyboardEvent('keydown', { key: name, shiftKey: shift, bubbles: true, cancelable: true }),
+    );
+
+  it('indents on Tab when it is the last control', () => {
+    const { editor, input } = inDialog('one', false);
+
+    key(input, 'Tab');
+
+    expect(document.activeElement, 'the editor keeps the keyboard').toBe(input);
+    expect(editor.document.text).toBe('    one');
+  });
+
+  it('outdents on Shift+Tab when it is the first control', () => {
+    const { editor, input } = inDialog('    one', true);
+
+    key(input, 'Tab', true);
+
+    expect(document.activeElement, 'the editor keeps the keyboard').toBe(input);
+    expect(editor.document.text).toBe('one');
+  });
+
+  it('lets Escape release Tab, and the trap cycles it then', () => {
+    const last = inDialog('one', false);
+    key(last.input, 'Escape');
+    key(last.input, 'Tab');
+    expect(document.activeElement, 'Tab from the last control wraps to the first').toBe(last.button);
+    expect(last.editor.document.text).toBe('one');
+
+    const first = inDialog('one', true);
+    key(first.input, 'Escape');
+    key(first.input, 'Tab', true);
+    expect(document.activeElement, 'Shift+Tab from the first control wraps to the last').toBe(first.button);
   });
 });
