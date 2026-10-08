@@ -440,9 +440,10 @@ public static class Eq
     /// Its constructor is System.Exception's: the message, the inner exception.</summary>
     public const string ExceptionBase = "$eq.exceptions.Exception";
 
-    /// <summary>An exception of a constructed generic class of the app's, tagged with that construction's
-    /// types, which its twin's <c>$types</c> cannot say. Two args: the exception, the types.</summary>
-    public const string ExceptionTyped = "$eq.exceptions.typed";
+    /// <summary>A construction of a constructed generic exception class of the app's, which hands its base
+    /// the types the construction is, which its twin's <c>$types</c> cannot say, before the constructor's
+    /// body runs. Args: the class, the types, then the constructor's own arguments.</summary>
+    public const string ExceptionConstruct = "$eq.exceptions.construct";
 
     /// <summary>Whether a value is of an exception type, by the type's full name: the test a typed
     /// <c>catch</c>, a type pattern and an <c>as</c> write.</summary>

@@ -143,19 +143,26 @@ internal sealed class BoundArguments
     /// holds ten parts; past them the same function is written out, its parameters `$a0`, `$a1`… in
     /// the order the arguments are written. It kept the parameter order instead, so eleven named
     /// arguments out of their order ran in the signature's (found by Copilot's review of #608).
+    /// <paramref name="types"/>, for a construction of a generic exception class of the app's, builds it
+    /// through <see cref="Eq.ExceptionConstruct"/> with the types it is, the arguments evaluated as they
+    /// are for a <c>new</c>.
     /// </summary>
-    public JsExpr New(string type, bool annotate)
+    public JsExpr New(string type, bool annotate, JsExpr? types = null)
     {
+        JsExpr Built(IReadOnlyList<JsExpr> arguments) => types is null
+            ? JsExpr.New(JsExpr.Identifier(type), arguments)
+            : JsExpr.Call(JsExpr.Identifier(Eq.ExceptionConstruct), [JsExpr.Identifier(type), types, .. arguments]);
         // Literals and names alone can be read in any order: nothing among them runs.
         if (InWrittenOrder || Written.All(part => part is JsLiteral or JsIdentifier))
-            return JsExpr.New(JsExpr.Identifier(type), InParameterOrder());
+            return Built(InParameterOrder());
         if (Written.Count > 10)
         {
             var parameters = string.Join(", ", Written.Select((_, index) => $"$a{index}" + (annotate ? ": any" : "")));
-            var construction = JsExpr.New(JsExpr.Identifier(type), InParameterOrder(index => JsExpr.Identifier($"$a{index}")));
+            var construction = Built(InParameterOrder(index => JsExpr.Identifier($"$a{index}")));
             return JsExpr.Call(JsExpr.Arrow(parameters, construction), Written);
         }
         var holes = Slots.Select(slot => slot.Written < 0 ? "undefined" : (slot.Spread ? "..." : "") + $"{{{slot.Written}}}");
-        return JsExpr.Template($"(new {type}({string.Join(", ", holes)}))", Written, annotate);
+        var head = types is null ? $"new {type}(" : $"{Eq.ExceptionConstruct}({type}, {JsExprWriter.Write(types)}, ";
+        return JsExpr.Template($"({head}{string.Join(", ", holes)}))", Written, annotate);
     }
 }

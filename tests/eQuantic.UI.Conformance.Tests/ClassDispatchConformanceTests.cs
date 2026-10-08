@@ -267,6 +267,12 @@ public class ClassDispatchConformanceTests
                 public Renamed() : base("m", "p") { }
                 public override string ParamName => "q";
             }
+            public class Rethrown<T> : Exception
+            {
+                public string Seen = "";
+                public Rethrown(T value, bool throwSelf) { Seen = Message; if (throwSelf) throw this; }
+            }
+            public class Holder { public class Nested : Exception { } }
         }
         """;
 
@@ -301,6 +307,10 @@ public class ClassDispatchConformanceTests
         ("a .NET base that takes no message", "var m = new Missing(\"y\"); return m.Message + \"|\" + m.ParamName;"),
         ("a member named Name", "var l = new Lookup(\"k\"); return l.Name + \"|\" + l.Message;"),
         ("an override of ParamName", "var r = new Renamed(); return r.ParamName + \"|\" + r.Message;"),
+        ("a generic class that throws itself from its constructor",
+            "try { new Rethrown<int>(1, true); return \"not thrown\"; } catch (Rethrown<string>) { return \"string\"; } catch (Rethrown<int> r) { return \"int|\" + r.Seen; }"),
+        ("a generic class's default message", "return new Rethrown<int>(2, false).Message;"),
+        ("a nested class's default message", "return new Holder.Nested().Message;"),
     ];
 
     [SkippableTheory]

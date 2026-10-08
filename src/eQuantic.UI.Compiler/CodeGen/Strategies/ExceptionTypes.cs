@@ -53,25 +53,27 @@ internal static class ExceptionTypes
     /// <summary>
     /// The twin's <c>static $types</c>: the chain of the class the twin is written from, which the
     /// runtime's base reads off the class an exception is constructed as, so an exception of a derived
-    /// class carries the derived class's. A generic class's says its type parameters (<c>Failed&lt;T&gt;</c>),
-    /// and each construction of it is tagged with its own (<see cref="Typed"/>).
+    /// class carries the derived class's. A generic class's says its type parameters (<c>Failed`1[T]</c>),
+    /// and each construction of it hands its own (<see cref="ConstructedTypes"/>).
     /// </summary>
     public static JsExpr TypesOf(INamedTypeSymbol type) =>
         JsExpr.Array(ChainOf(type.OriginalDefinition).Select(name => JsExpr.Literal(JsStringLiteral.Quote(name))).ToList());
 
     /// <summary>
-    /// A construction of an exception class of the app's, tagged with the chain its type has where the
-    /// twin's <c>$types</c> cannot say it: a constructed generic class (<c>new Failed&lt;int&gt;()</c>),
-    /// whose twin knows only <c>Failed&lt;T&gt;</c>, while a typed <c>catch</c> tells
-    /// <c>Failed&lt;int&gt;</c> from <c>Failed&lt;string&gt;</c>. Any other is the construction as it is.
+    /// The types a construction of an exception class of the app's hands its base where the twin's
+    /// <c>$types</c> cannot say them: a constructed generic class (<c>new Failed&lt;int&gt;()</c>), whose
+    /// twin knows only <c>Failed`1[T]</c>, while a typed <c>catch</c> tells <c>Failed&lt;int&gt;</c> from
+    /// <c>Failed&lt;string&gt;</c>. It is built through <see cref="Eq.ExceptionConstruct"/>, which hands
+    /// them before the constructor's body runs: tagged after the construction returned, an exception its
+    /// body threw (<c>throw this</c>) missed <c>catch (Failed&lt;int&gt;)</c>, and a <c>Message</c> it read
+    /// named the class (Copilot's review of #708). Null for any other, which is built as it is.
     /// </summary>
-    public static JsExpr Typed(JsExpr construction, INamedTypeSymbol type, ConversionContext context)
+    public static JsExpr? ConstructedTypes(INamedTypeSymbol type, ConversionContext context)
     {
         var chain = ChainOf(type);
-        if (chain.SequenceEqual(ChainOf(type.OriginalDefinition))) return construction;
+        if (chain.SequenceEqual(ChainOf(type.OriginalDefinition))) return null;
         context.UsedHelpers.Add(Eq.Import);
-        return JsExpr.Call(JsExpr.Identifier(Eq.ExceptionTyped), construction,
-            JsExpr.Array(chain.Select(name => JsExpr.Literal(JsStringLiteral.Quote(name))).ToList()));
+        return JsExpr.Array(chain.Select(name => JsExpr.Literal(JsStringLiteral.Quote(name))).ToList());
     }
 
     /// <summary>Whether <paramref name="type"/> is <c>System.Exception</c> itself.</summary>
@@ -80,12 +82,37 @@ internal static class ExceptionTypes
         && named.ContainingNamespace is { Name: "System", ContainingNamespace.IsGlobalNamespace: true };
 
     /// <summary>
-    /// The name a type is known by in the browser: its C# name in full, as <c>ToDisplayString</c>
-    /// writes it (<c>System.Collections.Generic.KeyNotFoundException</c>, <c>App.Outer.Inner</c>,
-    /// <c>App.Failed&lt;int&gt;</c>), which is also how the runtime names the exceptions it throws.
+    /// The name a type is known by in the browser: the one .NET gives it at run time, as
+    /// <c>Type.ToString()</c> writes it, its namespace, its containing types joined by <c>+</c>, its arity
+    /// after a backtick and its type arguments by that same name in brackets
+    /// (<c>System.Collections.Generic.KeyNotFoundException</c>, <c>App.Outer+Inner</c>,
+    /// <c>App.Failed`1[System.Int32]</c>). It is how the runtime names the exceptions it throws, and what
+    /// <c>Exception.Message</c> prints for one given no message: the C# spelling
+    /// (<c>App.Failed&lt;int&gt;</c>, <c>App.Outer.Inner</c>) named a type .NET does not (#708).
     /// </summary>
-    public static string NameOf(ITypeSymbol type) =>
-        type.WithNullableAnnotation(NullableAnnotation.NotAnnotated).ToDisplayString();
+    public static string NameOf(ITypeSymbol type) => type switch
+    {
+        IArrayTypeSymbol array => NameOf(array.ElementType) + "[" + new string(',', array.Rank - 1) + "]",
+        INamedTypeSymbol named when ArgumentsOf(named) is { Count: > 0 } arguments =>
+            DefinedName(named) + "[" + string.Join(",", arguments.Select(NameOf)) + "]",
+        INamedTypeSymbol named => DefinedName(named),
+        _ => type.Name,
+    };
+
+    /// <summary>A type's namespace, its containing types joined by <c>+</c>, and its metadata name, which
+    /// carries its arity after a backtick.</summary>
+    private static string DefinedName(INamedTypeSymbol type) =>
+        type.ContainingType is { } outer ? DefinedName(outer) + "+" + type.MetadataName
+        : type.ContainingNamespace is { IsGlobalNamespace: false } space ? space.ToDisplayString() + "." + type.MetadataName
+        : type.MetadataName;
+
+    /// <summary>A type's arguments and its containing types', the outermost first, as .NET lists them.</summary>
+    private static List<ITypeSymbol> ArgumentsOf(INamedTypeSymbol type)
+    {
+        var all = type.ContainingType is { } outer ? ArgumentsOf(outer) : [];
+        all.AddRange(type.TypeArguments);
+        return all;
+    }
 
     /// <summary>The type and every type it derives from, the most derived first, down to
     /// <c>System.Exception</c>.</summary>

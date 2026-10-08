@@ -187,6 +187,12 @@ type Twin = { readonly $types?: readonly string[] };
 type Kept = Tagged & { [MESSAGE]?: string | null; [PARTS]?: ExceptionParts };
 
 /**
+ * The construction {@link construct} is building, which the base of its class reads before the
+ * constructor's body runs: the class constructed and the types it is.
+ */
+let constructing: { readonly type: unknown; readonly types: readonly string[] } | undefined;
+
+/**
  * The base of the twin of an exception class of the app's own (#611): the browser's `Error`, carrying
  * the .NET types the class is, which its twin says in `static $types` (itself first, `System.Exception`
  * last), so a typed `catch` reads it as it reads one {@link create} built, and an exception of a
@@ -208,7 +214,15 @@ type Kept = Tagged & { [MESSAGE]?: string | null; [PARTS]?: ExceptionParts };
 export class Exception extends Error {
   constructor(message?: string | null, parts?: ExceptionParts) {
     super();
-    Object.defineProperty(this, TYPES, { value: (new.target as unknown as Twin).$types ?? EXCEPTION, configurable: true });
+    // A construction of a generic class carries its own types, taken here so that its constructor's
+    // body already throws and reads the exception it is (construct).
+    const pending = constructing;
+    let types = (new.target as unknown as Twin).$types ?? EXCEPTION;
+    if (pending !== undefined && pending.type === new.target) {
+      types = pending.types;
+      constructing = undefined;
+    }
+    Object.defineProperty(this, TYPES, { value: types, configurable: true });
     Object.defineProperty(this, MESSAGE, { value: message ?? null, writable: true });
     Object.defineProperty(this, PARTS, { value: parts === undefined ? undefined : held(parts), writable: true });
   }
@@ -242,31 +256,39 @@ for (const [member, read] of Object.entries(members)) {
 }
 
 /**
- * An exception of a generic class of the app's, built as one of its constructions (`new Failed<int>()`),
- * tagged with that construction's chain: its twin's `$types` can only say the class
- * (`Failed<T>`), and a typed `catch` tells `Failed<int>` from `Failed<string>`. Its `name` reads the
- * chain, so it follows.
+ * `new type(...args)` for a construction of a generic exception class of the app's
+ * (`new Failed<int>(3)`), with the types it is, which its twin's `$types` cannot say, the class's own,
+ * while a typed `catch` tells `Failed<int>` from `Failed<string>`. The base takes them before the
+ * constructor's body runs: tagged once the construction returned, an exception the body threw
+ * (`throw this`) or a `Message` it read was still the class's. The arguments are evaluated before, where
+ * C# evaluates them, and a construction in a field's initializer, which runs before the base's
+ * constructor, keeps its own.
  */
-export function typed<E extends Error>(error: E, types: readonly string[]): E {
-  Object.defineProperty(error, TYPES, { value: types, configurable: true });
-  return error;
+export function construct<T>(type: new (...args: never[]) => T, types: readonly string[], ...args: unknown[]): T {
+  const outer = constructing;
+  constructing = { type, types };
+  try {
+    return new type(...(args as never[]));
+  } finally {
+    constructing = outer;
+  }
 }
 
 /**
- * A type's own name, its namespace, its containing types and every generic argument list left out:
- * `App.Outer<int>.Inner` is `Inner`, as .NET's `Type.Name` is, where cutting at the first `<` named it
- * `Outer`. The arguments of the constructor past the message (`..._evaluated`) are only evaluated,
- * where C# evaluates them, and carried nowhere.
+ * A type's own name, as .NET's `Type.Name` is, from the name `Type.ToString()` writes, which the compiler
+ * hands: its namespace, its containing types and its type arguments left out (App.Failed`1[System.Int32]
+ * is Failed`1, and App.Outer+Inner is Inner). The arguments of the constructor past the message
+ * (`..._evaluated`) are only evaluated, where C# evaluates them, and carried nowhere.
  */
 function simpleName(qualified: string): string {
   let plain = '';
   let depth = 0;
   for (const character of qualified) {
-    if (character === '<') depth++;
-    else if (character === '>') depth--;
+    if (character === '[') depth++;
+    else if (character === ']') depth--;
     else if (depth === 0) plain += character;
   }
-  return plain.slice(plain.lastIndexOf('.') + 1);
+  return plain.slice(Math.max(plain.lastIndexOf('.'), plain.lastIndexOf('+')) + 1);
 }
 
 /** What a thrown value says: an error's message, and anything else's text. */

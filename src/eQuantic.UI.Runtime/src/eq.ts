@@ -168,7 +168,7 @@ import {
   is as isException,
   raise,
   thrown,
-  typed as typedException,
+  construct as constructException,
   typeInitialization,
 } from './utils/exceptions';
 import {
@@ -494,8 +494,8 @@ export const $eq = {
    * type the runtime knows, the test a typed `catch` and a type pattern write, a `throw`
    * expression, what a `throw` statement throws when its exception may be null, an exception
    * filter, which answers false where it throws, and what a type whose initializer threw throws on
-   * every use; and the base an exception class of the app's extends, with the chain a construction
-   * of a generic one tags it with.
+   * every use; and the base an exception class of the app's extends, with the construction of a
+   * generic one, which hands it the types it is before its constructor's body runs.
    */
   exceptions: {
     create: createException,
@@ -507,7 +507,7 @@ export const $eq = {
     typeInitialization,
     bases: exceptionBases,
     Exception,
-    typed: typedException,
+    construct: constructException,
   },
   /** CSS class composition (the styling subsystem). */
   css: { styleBuilder: StyleBuilder, classBuilder: ClassBuilder, joinClasses, whenClass },

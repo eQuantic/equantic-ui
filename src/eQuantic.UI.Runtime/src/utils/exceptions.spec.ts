@@ -2,13 +2,13 @@ import { readdirSync, readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import {
   bases,
+  construct,
   create,
   exception,
   Exception,
   filter,
   is,
   raise,
-  typed,
   typeInitialization,
   typesOf,
 } from './exceptions';
@@ -42,11 +42,16 @@ describe('a .NET exception carries the types it is', () => {
     expect(Object.keys({ ...error })).toEqual([]);
   });
 
-  it('names a nested or a generic type by its own simple name', () => {
-    expect(create(['App.Outer.Inner', 'System.Exception']).name).toBe('Inner');
-    expect(create(['App.Failed<App.Item>', 'System.Exception']).name).toBe('Failed');
-    expect(create(['App.Outer<int>.Inner', 'System.Exception']).name).toBe('Inner');
-    expect(create(['App.Pair<App.Box<int>, string>.Gone', 'System.Exception']).name).toBe('Gone');
+  it("names a nested or a generic type by its own simple name, as .NET's Type.Name does", () => {
+    // The names Type.ToString() writes, which the compiler hands.
+    expect(create(['App.Outer+Inner', 'System.Exception']).name).toBe('Inner');
+    expect(create(['App.Failed`1[App.Item]', 'System.Exception']).name).toBe('Failed`1');
+    expect(create(['App.Outer`1+Inner[System.Int32]', 'System.Exception']).name).toBe('Inner');
+    expect(create(['App.Pair`2+Gone[App.Box`1[System.Int32],System.String]', 'System.Exception']).name).toBe('Gone');
+  });
+
+  it('writes the default message of a nested or a generic type by the name .NET writes', () => {
+    expect(create(['App.Outer+Inner', 'System.Exception']).message).toBe("Exception of type 'App.Outer+Inner' was thrown.");
   });
 
   it('writes a null message as Exception.Message does, a type\'s own text being the compiler\'s to hand', () => {
@@ -176,15 +181,48 @@ describe("an exception class of the app's own is a class over the browser's Erro
     expect(JSON.stringify(new Failure('m'))).toBe('{"code":7}');
   });
 
-  it("tags a construction of a generic class with that construction's types", () => {
+  it("hands a construction of a generic class its construction's types before its constructor's body runs", () => {
+    const INT = ['App.Failed`1[System.Int32]', 'System.Exception'];
+    // The twin of `class Failed<T> : Exception`, whose constructor reads Message and throws itself.
     class Failed extends Exception {
-      static $types = ['App.Failed<T>', 'System.Exception'];
+      static $types = ['App.Failed`1[T]', 'System.Exception'];
+      seen: string;
+      constructor(message: string | null, rethrow: boolean) {
+        super(message);
+        this.seen = this.message;
+        if (rethrow) throw this;
+      }
     }
-    const failed = typed(new Failed('x'), ['App.Failed<int>', 'System.Exception']);
-    expect(is(failed, 'App.Failed<int>')).toBe(true);
-    expect(is(failed, 'App.Failed<string>')).toBe(false);
-    expect(failed.name).toBe('Failed');
+    const failed = construct(Failed, INT, 'x', false);
+    expect(is(failed, 'App.Failed`1[System.Int32]')).toBe(true);
+    expect(is(failed, 'App.Failed`1[System.String]')).toBe(false);
+    expect(failed.name).toBe('Failed`1');
     expect(failed.message).toBe('x');
+    expect(construct(Failed, INT, null, false).seen).toBe("Exception of type 'App.Failed`1[System.Int32]' was thrown.");
+    let thrown: unknown;
+    try {
+      construct(Failed, INT, null, true);
+    } catch (error) {
+      thrown = error;
+    }
+    expect(is(thrown, 'App.Failed`1[System.Int32]')).toBe(true);
+  });
+
+  it('leaves the types a construction hands to the class it constructs', () => {
+    class Inner extends Exception {
+      static $types = ['App.Inner', 'System.Exception'];
+    }
+    // A field initializer runs before the base's constructor, and builds another exception there.
+    class Outer extends Exception {
+      static $types = ['App.Outer`1[T]', 'System.Exception'];
+      constructor(readonly made = new Inner()) {
+        super();
+      }
+    }
+    const outer = construct(Outer, ['App.Outer`1[System.Int32]', 'System.Exception']);
+    expect(typesOf(outer)).toEqual(['App.Outer`1[System.Int32]', 'System.Exception']);
+    expect(typesOf(outer.made)).toEqual(['App.Inner', 'System.Exception']);
+    expect(typesOf(new Outer())).toEqual(['App.Outer`1[T]', 'System.Exception']);
   });
 });
 
