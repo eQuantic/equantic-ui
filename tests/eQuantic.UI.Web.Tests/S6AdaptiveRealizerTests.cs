@@ -153,7 +153,9 @@ public class S6AdaptiveRealizerTests
     /// <summary>
     /// The same rule for the rest of what a parent reads off a direct child: an arm aligns itself
     /// in its line and spans the columns of its grid. Lowered as a node of its own, an arm's
-    /// align-self and span were never written. CROSS-PIN: s6-adaptive.spec.ts.
+    /// align-self and span were never written. The node carries a placement of its own that no arm
+    /// asks for, and it is never read, so the compact arm stays unaligned and unspanned.
+    /// CROSS-PIN: s6-adaptive.spec.ts.
     /// </summary>
     [Fact]
     public void AnArm_AlignsItselfInItsLine_AndSpansItsGrid()
@@ -162,17 +164,26 @@ public class S6AdaptiveRealizerTests
         row.Add(new AdaptiveNode(Marker(), null, new Primitives.Box(new BoxStyle { Width = 10, Height = 10 })
         {
             AlignSelf = CrossAlign.End,
-        }));
+        })
+        {
+            AlignSelf = CrossAlign.Center,
+        });
         var grid = new Grid([GridTrack.Flex(), GridTrack.Flex()]);
-        grid.Add(new AdaptiveNode(Marker(), null, new Primitives.Box(new BoxStyle { Height = 10 }) { GridSpan = 2 }));
+        grid.Add(new AdaptiveNode(Marker(), null, new Primitives.Box(new BoxStyle { Height = 10 }) { GridSpan = 2 })
+        {
+            GridSpan = 2,
+        });
 
         var line = WebRealizer.Lower(row, PhotonTheme.Instance).Render().Children[0].Children;
         var cells = WebRealizer.Lower(grid, PhotonTheme.Instance).Render().Children[0].Children;
 
-        line[1].Children.Single().Attributes["style"].Should().Contain("align-self: flex-end");
-        line[0].Children.Single().Attributes["style"].Should().NotContain("align-self");
+        line[1].Children.Single().Attributes["style"].Should().Contain("align-self: flex-end",
+            "the arm's own alignment, not the node's center");
+        line[0].Children.Single().Attributes["style"].Should().NotContain("align-self",
+            "the compact arm asks for no alignment, and the node's own is not read");
         cells[1].Children.Single().Attributes["style"].Should().Contain("grid-column: span 2");
-        cells[0].Children.Single().Attributes["style"].Should().NotContain("grid-column");
+        cells[0].Children.Single().Attributes["style"].Should().NotContain("grid-column",
+            "the compact arm asks for no span, and the node's own is not read");
     }
 
     /// <summary>The CSS identifier grammar, which is what a class selector can name.</summary>
