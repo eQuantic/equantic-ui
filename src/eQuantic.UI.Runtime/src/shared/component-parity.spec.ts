@@ -332,6 +332,14 @@ function cases(): Record<string, { node: unknown; presses: number[] }> {
         new Flexible(new Text('float', 'bodyM', photonTheme.textPrimary), 1, Math.fround(540.12)),
       ),
     ),
+    // A zero weight's SHRINK FACTOR, the declarations the native layout tests take Chrome's numbers from.
+    'flexible-zero-weight-shrink-factor': still(
+      line(
+        false,
+        new Flexible(new Text('three', 'bodyM', photonTheme.textPrimary), 0, 540, 3),
+        new Flexible(new Text('one', 'bodyM', photonTheme.textPrimary), 0, 540, 1),
+      ),
+    ),
   };
 }
 

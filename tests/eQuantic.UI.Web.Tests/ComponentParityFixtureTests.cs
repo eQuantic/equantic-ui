@@ -185,6 +185,11 @@ public class ComponentParityFixtureTests
         ("flexible-fractional-basis", Line(wrap: true,
             new Flexible(new Text("half", TypeRole.BodyM, Theme.TextPrimary), flex: 1, basis: 540.125f),
             new Flexible(new Text("float", TypeRole.BodyM, Theme.TextPrimary), flex: 1, basis: 540.12f)), NoPresses),
+        // A zero weight's SHRINK FACTOR: the declarations Chrome lays out at 480 and 520 in a row of
+        // 1000, the numbers FlexZeroWeightLayoutTests holds Photon to.
+        ("flexible-zero-weight-shrink-factor", Line(wrap: false,
+            new Flexible(new Text("three", TypeRole.BodyM, Theme.TextPrimary), flex: 0, basis: 540, shrink: 3),
+            new Flexible(new Text("one", TypeRole.BodyM, Theme.TextPrimary), flex: 0, basis: 540, shrink: 1)), NoPresses),
     ];
 
     /// <summary>
