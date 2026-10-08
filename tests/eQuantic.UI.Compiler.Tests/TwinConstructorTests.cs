@@ -1,6 +1,9 @@
 using System.Linq;
 using eQuantic.UI.Compiler;
+using eQuantic.UI.Compiler.CodeGen;
 using FluentAssertions;
+using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Xunit;
 
 namespace eQuantic.UI.Compiler.Tests;
@@ -207,5 +210,30 @@ public class TwinConstructorTests
 
         result.Errors.Should().BeEmpty();
         result.TypeScript.Should().Contain("constructor(capacity: any)").And.NotContain("original");
+    }
+
+    /// <summary>
+    /// The constructor only .NET's serialization calls is no branch of the twin, and only the model can say
+    /// its types are .NET's. With none to ask, a constructor whose own types the app happened to name
+    /// SerializationInfo and StreamingContext is one C# can call, and it stays a branch: matching the names
+    /// alone erased it (Copilot's review of #708).
+    /// </summary>
+    [Fact]
+    public void WithNoModel_AConstructorOfTypesNamedLikeSerializations_IsABranch()
+    {
+        var tree = CSharpSyntaxTree.ParseText("""
+            public class SerializationInfo { public string Name = ""; }
+            public struct StreamingContext { }
+            public class Snapshot
+            {
+                public string Taken = "";
+                public Snapshot(SerializationInfo info, StreamingContext context) { Taken = info.Name; }
+            }
+            """);
+        var snapshot = tree.GetRoot().DescendantNodes().OfType<ClassDeclarationSyntax>().Single(type => type.Identifier.Text == "Snapshot");
+
+        var emitted = new TypeScriptEmitter().EmitPlainClassModule(snapshot, semanticModel: null);
+
+        emitted.Should().Contain("info.name", "the constructor's body runs, where matching the names alone erased it");
     }
 }

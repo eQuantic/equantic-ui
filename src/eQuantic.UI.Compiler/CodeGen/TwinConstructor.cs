@@ -278,28 +278,20 @@ internal sealed class TwinConstructor
     /// <c>new</c> in the browser reaches it, since the browser has no <c>SerializationInfo</c>, so it is no
     /// branch of the twin, as a record's copy constructor is not. Taken for one, it met
     /// <c>(string, Exception)</c>, which takes as many arguments, and refused the class (EQ1009), so the
-    /// template had to be edited before the class could build. Asked of the model and, without one, of the
-    /// types' names as written.
+    /// template had to be edited before the class could build. Only the model can say the two types are
+    /// .NET's: with none to ask, a constructor whose own types the app happened to name so is one C# can
+    /// call, and it stays a branch, where matching the names erased it (Copilot's review of #708).
     /// </summary>
-    private bool IsSerializationConstructor(ConstructorDeclarationSyntax constructor)
-    {
-        if (constructor.ParameterList.Parameters is not [{ Type: { } info }, { Type: { } context }]) return false;
-        if (_modelFor(constructor)?.GetDeclaredSymbol(constructor) is IMethodSymbol { Parameters: [var first, var second] })
-            return IsSerialization(first.Type, "SerializationInfo") && IsSerialization(second.Type, "StreamingContext");
-        return Written(info) == "SerializationInfo" && Written(context) == "StreamingContext";
+    private bool IsSerializationConstructor(ConstructorDeclarationSyntax constructor) =>
+        constructor.ParameterList.Parameters.Count == 2
+        && _modelFor(constructor)?.GetDeclaredSymbol(constructor) is IMethodSymbol { Parameters: [var info, var context] }
+        && IsSerialization(info.Type, "SerializationInfo") && IsSerialization(context.Type, "StreamingContext");
 
-        static bool IsSerialization(ITypeSymbol type, string name) =>
-            type is INamedTypeSymbol { Name: var declared, ContainingNamespace: var space }
-            && declared == name && space.ToDisplayString() == "System.Runtime.Serialization";
-
-        static string? Written(TypeSyntax type) => type switch
-        {
-            QualifiedNameSyntax qualified => qualified.Right.Identifier.ValueText,
-            AliasQualifiedNameSyntax aliased => aliased.Name.Identifier.ValueText,
-            SimpleNameSyntax simple => simple.Identifier.ValueText,
-            _ => null,
-        };
-    }
+    /// <summary>Whether <paramref name="type"/> is the type of <c>System.Runtime.Serialization</c> named
+    /// <paramref name="name"/>.</summary>
+    private static bool IsSerialization(ITypeSymbol type, string name) =>
+        type is INamedTypeSymbol { Name: var declared, ContainingNamespace: var space, ContainingType: null }
+        && declared == name && space.ToDisplayString() == "System.Runtime.Serialization";
 
     /// <summary>Whether a record's constructor is its copy constructor: one parameter, of the record's own
     /// type, asked of the model and, without one, of the type's name.</summary>
