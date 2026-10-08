@@ -59,7 +59,12 @@ export function outOfRange(parameter: string, message: string, actual?: number):
   return exception('System.ArgumentOutOfRangeException', `${message} (Parameter '${parameter}')${value}`);
 }
 
-function requireNonNegative(parameter: string, value: number): void {
+/** .NET's text for an index or a range that reaches past the end of what it reads. */
+export const INDEX_AT_MOST_LENGTH =
+  'Index was out of range. Must be non-negative and less than or equal to the size of the collection.';
+
+/** `ArgumentOutOfRangeException.ThrowIfNegative`, in .NET's words. */
+export function requireNonNegative(parameter: string, value: number): void {
   if (value < 0)
     throw outOfRange(parameter, `${parameter} ('${value}') must be a non-negative value.`, value);
 }
@@ -274,10 +279,8 @@ export function compareRangeBy(
   requireNonNegative('length', length);
   requireNonNegative('indexA', indexA);
   requireNonNegative('indexB', indexB);
-  const tooFar =
-    'Index was out of range. Must be non-negative and less than or equal to the size of the collection.';
-  if (a.length - indexA < 0) throw outOfRange('indexA', tooFar);
-  if (b.length - indexB < 0) throw outOfRange('indexB', tooFar);
+  if (a.length - indexA < 0) throw outOfRange('indexA', INDEX_AT_MOST_LENGTH);
+  if (b.length - indexB < 0) throw outOfRange('indexB', INDEX_AT_MOST_LENGTH);
   if (length === 0) return 0;
   const lengthA = Math.min(length, a.length - indexA);
   const lengthB = Math.min(length, b.length - indexB);
