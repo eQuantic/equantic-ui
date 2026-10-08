@@ -38,7 +38,7 @@ describe('the boot only reaches for hot reload when the server streams rebuilds'
       }
       public close(): void {}
     };
-    sessionStorage.setItem(marker, JSON.stringify({ url: location.href, state: {} }));
+    sessionStorage.setItem(marker, JSON.stringify({ url: location.href, pages: {} }));
     // Every READ is recorded, not just the removal. Leaving the marker in place is what a boot
     // that skipped the replay looks like — and also what a boot that read it and found nothing to
     // do looks like, so the removal alone pins only half the contract.

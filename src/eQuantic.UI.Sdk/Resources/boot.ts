@@ -4,7 +4,11 @@
 export * from '../../eQuantic.UI.Runtime/src/index';
 
 import { installErrorOverlay } from '../../eQuantic.UI.Runtime/src/dev/error-overlay';
-import { capturePageState, restorePageState } from '../../eQuantic.UI.Runtime/src/dev/hot-reload-state';
+import {
+  capturePageState,
+  restorePageState,
+  type PageState,
+} from '../../eQuantic.UI.Runtime/src/dev/hot-reload-state';
 import {
   getReconciler,
   Router,
@@ -89,7 +93,7 @@ let currentComponent: MountableComponent | null = null;
 let hmrReplay = false;
 
 /** The page fields the refresh carried across, by the root's key, for the page this boot builds. */
-let hmrState: Record<string, Record<string, unknown>> | null = null;
+let hmrState: Record<string, PageState> | null = null;
 
 /**
  * Bootstraps the eQuantic application
@@ -98,8 +102,9 @@ export async function boot(): Promise<void> {
   if (initialized) return;
   initialized = true;
 
-  // Phase 3 hot reload replay: state captured just before the HMR reload re-enters through the
-  // ORDINARY SSR-hydration mechanic (window.__INITIAL_STATE__ + hydrateValue) — zero new paths.
+  // Phase 3 hot reload replay: the page's fields, captured just before the HMR reload, re-enter before
+  // it builds (restorePageState), each rebuilt by the spec its value had, and the ones its hydration
+  // manifest lists through the ORDINARY server-data door as well (window.__INITIAL_STATE__).
   //
   // BOTH HALVES OF HOT RELOAD ASK THE SERVER whether it streams rebuilds, the one decision that also
   // maps the stream. Asking nothing, a production page paid on every load: a request to
@@ -114,16 +119,16 @@ export async function boot(): Promise<void> {
       if (saved) {
         sessionStorage.removeItem('__eq_hmr__');
         hmrReplay = true;
-        const parsed = JSON.parse(saved) as {
-          url: string;
-          state: Record<string, Record<string, unknown>>;
-        };
+        const parsed = JSON.parse(saved) as { url: string; pages: Record<string, PageState> };
         if (parsed.url === location.href) {
           const w = window as unknown as {
             __INITIAL_STATE__?: Record<string, Record<string, unknown>>;
           };
-          w.__INITIAL_STATE__ = { ...(w.__INITIAL_STATE__ ?? {}), ...parsed.state };
-          hmrState = parsed.state;
+          // Each page's fields as JSON wrote them, the form a server payload has.
+          const fields: Record<string, Record<string, unknown>> = {};
+          for (const key of Object.keys(parsed.pages)) fields[key] = parsed.pages[key].fields;
+          w.__INITIAL_STATE__ = { ...(w.__INITIAL_STATE__ ?? {}), ...fields };
+          hmrState = parsed.pages;
         }
       }
     } catch {
@@ -600,7 +605,7 @@ function initHotReload(): void {
       // NEW code instead of hydrating the stale SSR. Gating it on captured state left every
       // write-once page (which keeps no _state bag) hydrating old HTML after the reload —
       // the pixels never changed, and the whole feature read as broken.
-      let data: Record<string, unknown> = {};
+      let data: PageState = { fields: {}, specs: {} };
       // The PAGE, not its host: an escape-hatch page is mounted through EscapeHatchPage, and what it
       // holds — and the key it is named by — are the hosted page's own. Its fields are what crosses,
       // the ones its C# declares: a `_state` bag, which this read before, is something no write-once
@@ -620,7 +625,7 @@ function initHotReload(): void {
         const rootKey = `${pageRoot ? componentIdentity(pageRoot) : ''}#0`;
         sessionStorage.setItem(
           '__eq_hmr__',
-          JSON.stringify({ url: location.href, state: { [rootKey]: data } }),
+          JSON.stringify({ url: location.href, pages: { [rootKey]: data } }),
         );
       } catch {
         /* private mode etc. — the reload still shows the new code, only via hydration */
