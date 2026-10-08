@@ -66,7 +66,8 @@ and a control inside a Pressable takes its own press.
 
 A point inside the box a control is drawn in SHALL be that control's, before any neighbour's slop.
 A slop SHALL take a point only where no box beside it is drawn, or in front of the box it stands in,
-for a press, a tap and the pointer's shape alike.
+for a press, a tap and the pointer's shape alike. A control whose box its clips leave nothing of
+SHALL stand in front of no box: its slop takes a point only where no box is drawn.
 
 #### Scenario: Rows shorter than the minimum target
 
@@ -87,12 +88,19 @@ for a press, a tap and the pointer's shape alike.
   control and at its own corner
 - **THEN** the first press runs the control and the second runs the card
 
+#### Scenario: A row its scroll view clipped away
+
+- **WHEN** a scroll view 100dp tall shows five 20dp rows under a finger, the sixth starting on its
+  bottom edge, and the fifth row is pressed 5dp above its bottom
+- **THEN** the fifth row runs, and the sixth does not
+
 ### Requirement: A transformed box takes the pointer where it is drawn
 
 Every region a box registers under a transform, its own and its subtree's, SHALL take the pointer
 where it is drawn: a press, a hover, the pointer's shape, a drag and a scroll. A rotated region SHALL
 be tested against its shape. A pressable that wraps a single box SHALL take the pointer where that box
-is drawn.
+is drawn. A transform that collapses a box onto a line or a point SHALL leave it nowhere to take the
+pointer, since nothing of it is drawn.
 
 #### Scenario: A translated box
 
@@ -108,6 +116,13 @@ is drawn.
 
 - **WHEN** a 40dp square laid out from 30 to 70 is turned 45° about its centre
 - **THEN** a tap 27dp above its centre presses it, and a tap at the corner of the box around it does not
+
+#### Scenario: A box collapsed onto a line
+
+- **WHEN** a 40dp pressable square that fills on hover is squashed to no width and turned 45° about its
+  centre
+- **THEN** a tap on the line it collapsed onto, and one beside it, press nothing, and the pointer beside
+  it hovers nothing
 
 ### Requirement: An editing surface takes presses only where it is on screen
 

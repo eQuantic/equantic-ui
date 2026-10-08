@@ -43,6 +43,14 @@ the five defects is a region, or a layout, that disagrees with what is drawn.
   only a space. A break drops the spaces it falls on. It stands in for the shells' measurers, and
   CoreText's typographic width counts a trailing space where CSS hangs it, so a plain text that ends
   in a space measures that space on Photon and not on the web.
+- **Copilot's first round on the pull request found three holes, each proved failing without its
+  fix.** A transform that collapses a box onto a line draws nothing, since the renderer skips a shape
+  it cannot invert, and the box around the line took the pointer: the sink now gives such a region its
+  corner and no area. A row its scroll view clipped away whole kept a drawn box of no height on the
+  viewport's edge, which "stood inside" the last row shown and took its lower presses: a box with no
+  area encloses nothing. And the rich paragraph added each space to its line as it came, so a break
+  kept the space it fell on, and skipped the spaces a paragraph opens with: it now holds the spaces
+  after a word until the next word takes them or a break drops them, as the plain path does.
 
 ## Fences
 

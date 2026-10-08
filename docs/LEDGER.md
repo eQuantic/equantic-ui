@@ -1686,8 +1686,8 @@ record of a release, the wiki's Upgrading page is the distillate.
   and curly-brace parsers and the SDK's strings, which search a char from a start, now throw where
   the same C# throws on the server. Proposed and archived through OpenSpec
   (`openspec/specs/transpiler-bcl`).
-- **2026-10-07 · Photon hit-tests and lays out what it draws**: five places where Photon took the
-  pointer, or laid a child, where the web does not. A target's slop took its neighbours' presses: in a
+- **2026-10-07 · Photon hit-tests and lays out what it draws**: seven places where Photon took the
+  pointer, read it, or laid a child, where the web does not. A target's slop took its neighbours' presses: in a
   list of 20dp rows under a finger, a press in the middle of a row ran the row below it
   ([#630](https://github.com/eQuantic/equantic-ui/issues/630)); a hit region now carries the box its
   pressable is drawn in, and the box under the point wins unless a slop in front of it stands inside
@@ -1702,10 +1702,21 @@ record of a release, the wiki's Upgrading page is the distillate.
   surface does. A bordered box laid its child over its border
   ([#629](https://github.com/eQuantic/equantic-ui/issues/629)), and the stand-in measurer gave a lone
   space zero width, so a rich paragraph measured narrower than its plain twin
-  ([#285](https://github.com/eQuantic/equantic-ui/issues/285)). Reported: an editing surface under a
-  scale or a rotation still turns a press into a caret or a cell through its layout rect
-  ([#658](https://github.com/eQuantic/equantic-ui/issues/658)). Proposed and archived through OpenSpec
-  (`openspec/specs/hit-targets`, `openspec/specs/box-layout`, `openspec/specs/text-measurement`).
+  ([#285](https://github.com/eQuantic/equantic-ui/issues/285)). A field, a code surface, a sheet and a
+  canvas under a scale or a rotation turned a press into a caret, a position, a cell or a point by
+  subtracting the corner of their box on screen, so a field drawn twice as large put the caret at twice
+  the column pressed ([#658](https://github.com/eQuantic/equantic-ui/issues/658)); every conversion
+  now goes through the inverse the frame keeps. A scroll view drawn scaled revealed a focused control
+  and a caret by their distance on screen, where its offset is one in its own space, and the platform's
+  candidate window stood by the caret's unscaled offset
+  ([#700](https://github.com/eQuantic/equantic-ui/issues/700)). Copilot's first round found four
+  more, each proved failing without its fix: a transform that collapses a box onto a line left the box
+  around the line taking the pointer; a row its scroll view clipped away whole kept a drawn box of no
+  height on the viewport's edge, which took the lower presses of the last row shown; a turned
+  completion list took the presses in the corners of the box around it; and a rich paragraph kept the
+  space a break fell on in its width, and skipped the spaces it opens with. Proposed and archived
+  through OpenSpec (`openspec/specs/hit-targets`, `openspec/specs/box-layout`,
+  `openspec/specs/text-measurement`, `openspec/specs/transformed-surfaces`).
 - **2026-10-06 · A control's press and focus show on its boxes on every target**: the handoff presses
   its buttons with `scale(.985)` and there was no way to say it, and measuring the focus state found
   it dead on both targets ([#508](https://github.com/eQuantic/equantic-ui/issues/508), the second
