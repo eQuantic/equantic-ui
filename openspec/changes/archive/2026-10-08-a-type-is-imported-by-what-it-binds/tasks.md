@@ -7,4 +7,4 @@
 ## 2. Proof and documentation
 
 - [ ] 2.1 Run the five suites
-- [ ] 2.2 One `docs/LEDGER.md` line citing #625
+- [x] 2.2 One `docs/LEDGER.md` line citing #625
