@@ -1747,7 +1747,7 @@ record of a release, the wiki's Upgrading page is the distillate.
   face answering 0 and GroupBy's named arguments read by their position, all fixed; a `T[]` behind the
   faces grows where .NET refuses, as it did before,
   [#711](https://github.com/eQuantic/equantic-ui/issues/711). 91 of the 109 new conformance cases fail
-  on main, and 14 of the 16 new Compiler cases; all of them pass here. The served runtime grows 629
+  on main, and 14 of the 16 new Compiler cases; all of them pass here. The served runtime grows 683
   gzipped bytes over main's, the twins' reads through a list's face. Proposed and archived through
   OpenSpec (`openspec/specs/transpiler-bcl`, `transpiler-sequences` and `transpiler-expressions`).
 
