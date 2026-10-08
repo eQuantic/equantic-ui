@@ -1731,9 +1731,10 @@ record of a release, the wiki's Upgrading page is the distillate.
   boxing, so a write through one showed through all ([#560](https://github.com/eQuantic/equantic-ui/issues/560)).
   `with` copies through a step per level of a record whose chain declares a copy constructor, and the
   twin copies a mutable struct or tuple on write (`ValueCopies`, beside `ValueFlow`), with `this` copied
-  where it leaves its struct's member, and a boxing a box of its own. 21 of the 23 conformance cases fail
-  on main and all pass here; the two that hold on main are a closure reading the variable and a base's
-  copy constructor reaching the derived level, kept as pins. The runtime's structs are
+  where it leaves its struct's member, a boxing a box of its own, and a delegate made from a method of the
+  value bound to a copy of it. 23 of the 26 conformance cases fail on main and all pass here; the three
+  that hold on main are a closure reading the variable and a base's copy constructor reaching the derived
+  level, declared and synthesized, kept as pins. The runtime's structs are
   all readonly, so its twins do not change. Proposed and archived through OpenSpec
   (`openspec/specs/transpiler-records`).
 
