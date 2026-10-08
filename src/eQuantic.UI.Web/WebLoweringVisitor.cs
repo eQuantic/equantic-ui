@@ -30,6 +30,10 @@ internal sealed partial class WebLoweringVisitor(ComponentContext context, Fontl
     /// </summary>
     private SimulatedState _simulated;
 
+    /// <summary>True while a DISABLED control's subtree is lowered: its boxes write no focus and no
+    /// press, pictured or real, so neither a picture nor a control around it reaches them (#508).</summary>
+    private bool _inDisabledControl;
+
     /// <summary>
     /// The single dispatch every node passes through — and therefore the one place the design-mode
     /// origin is attached, once, rather than in each of the branches below.

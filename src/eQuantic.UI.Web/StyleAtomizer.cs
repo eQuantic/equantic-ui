@@ -230,6 +230,30 @@ public sealed class StyleSink
         return className;
     }
 
+    /// <summary>The family of a CONTROL's focus: the box's diff applies while the
+    /// <see cref="Primitives.Pressable"/> it is inside has keyboard focus (#508).</summary>
+    internal const string ControlFocus = "focus";
+
+    /// <summary>The family of a CONTROL's press: the box's diff applies while the
+    /// <see cref="Primitives.Pressable"/> it is inside is pressed (#508).</summary>
+    internal const string ControlPressed = "pressed";
+
+    /// <summary>
+    /// The selector a state family's rule takes for a class. A hover is the box's OWN state, so it
+    /// is the class's own pseudo-class. A focus and a press happen to the CONTROL, and only an
+    /// enabled control carries <c>eq-pressable</c>, so they select every box inside one in that
+    /// state. The order of the three is their SPECIFICITY, never their order in the sheet, which the
+    /// server sorts by class and the browser fills in the order it lowers: hover (0,2,0) under focus
+    /// (0,3,0) under pressed (0,4,0), the control's class written twice for it — the handoff's
+    /// "pressed beats hover". The TypeScript twin is <c>stateSelector</c>.
+    /// </summary>
+    internal static string StateSelector(string family, string className) => family switch
+    {
+        ControlFocus => $".eq-pressable:focus-visible .{className}",
+        ControlPressed => $".eq-pressable.eq-pressable:active .{className}",
+        _ => $".{className}{family}",
+    };
+
     /// <summary>Every collected rule, sorted by class name (deterministic output for tests/caching).</summary>
     public string Css
     {
@@ -255,7 +279,7 @@ public sealed class StyleSink
                     var pseudo = rule.Value[..split];
                     var gated = pseudo == ":hover";
                     if (gated) css.Append("@media (hover: hover){");
-                    css.Append('.').Append(rule.Key).Append(pseudo)
+                    css.Append(StateSelector(pseudo, rule.Key))
                        .Append('{').Append(rule.Value[(split + 1)..]).Append('}');
                     if (gated) css.Append('}');
                 }
