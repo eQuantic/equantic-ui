@@ -41,8 +41,9 @@ public class ExceptionConstructionTests
     [Fact]
     public void AMessageThatCannotBeNull_IsAllThereIs()
     {
+        // The hole is the number's text in the page's culture, as .NET's interpolation writes it (#454).
         TestHelper.ConvertExpression("new InvalidOperationException($\"a{Id}\")").Should().Be(
-            $"$eq.exceptions.create({InvalidOperation}, `a${{this.id}}`)");
+            $"$eq.exceptions.create({InvalidOperation}, `a${{$eq.text.format(this.id, null, undefined, undefined, 'int32')}}`)");
         TestHelper.ConvertExpression("new InvalidOperationException(\"a\" + str)").Should().Be(
             $"$eq.exceptions.create({InvalidOperation}, 'a' + (this.str ?? ''))");
     }
