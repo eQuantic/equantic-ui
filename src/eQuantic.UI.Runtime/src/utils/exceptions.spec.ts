@@ -114,11 +114,22 @@ describe("an exception class of the app's own is a class over the browser's Erro
 
   it('keeps the message and the inner exception it was handed, and null for none', () => {
     const inner = exception('System.InvalidOperationException', 'inner');
-    const outer = new Failure('outer', inner) as Failure & { innerException: unknown };
+    const outer = new Failure('outer', { innerException: inner }) as Failure & { innerException: unknown };
     expect(outer.message).toBe('outer');
     const alone = new Failure('alone') as Failure & { innerException: unknown };
     expect(outer.innerException).toBe(inner);
     expect(alone.innerException).toBe(null);
+  });
+
+  it("composes the message from what its .NET base's constructor took, as a create does (#558)", () => {
+    // The twin of `class Bad : ArgumentException { public Bad(string name) : base("bad", name) { } }`.
+    class Bad extends Exception {
+      static $types = ['App.Bad', 'System.ArgumentException', 'System.SystemException', 'System.Exception'];
+    }
+    const bad = new Bad('bad', { paramName: 'x' }) as Bad & { paramName: unknown };
+    expect(bad.message).toBe("bad (Parameter 'x')");
+    expect(bad.paramName).toBe('x');
+    expect(JSON.stringify(bad)).toBe('{}');
   });
 
   it("reads a missing message as .NET's default for the type it is", () => {

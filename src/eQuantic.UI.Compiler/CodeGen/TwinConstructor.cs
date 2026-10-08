@@ -166,14 +166,15 @@ internal sealed class TwinConstructor
             // member `A` or `K` was `const $a` beside the rest parameter `$a`, and the module did not load.
             foreach (var start in state)
                 if (start.RunsCode) statements.Add(JsStatement.Const(Evaluated(start.Slot), start.Value) with { Origin = start.Origin });
+            var implicitException = ImplicitExceptionBase(type);
             if (single is not null)
-                statements.AddRange(SuperCall(single, clause));
+                statements.AddRange(SuperCall(single, clause, implicitException));
             else
                 // Every branch calls it, the last one whatever arrived, as JavaScript requires of a
                 // derived class's constructor.
                 statements.Add(Chain(constructors.Roots.Select((root, i) => (
                     i == constructors.Roots.Count - 1 ? null : (JsExpr?)JsExpr.Binary(JsExpr.Identifier("$k"), "===", JsExpr.Literal(i.ToString())),
-                    SuperCall(root, clause))).ToList()));
+                    SuperCall(root, clause, implicitException))).ToList()));
             foreach (var start in state)
                 statements.Add(Assign(JsExpr.ThisMember(start.Slot), start.RunsCode ? JsExpr.Identifier(Evaluated(start.Slot)) : start.Value)
                     with { Origin = start.Origin });
@@ -523,7 +524,7 @@ internal sealed class TwinConstructor
     /// `super('square', 'red')`, handing Sides the color, and a base clause took every bare name for a
     /// forwarded parameter, so a constant was a variable nothing declared.
     /// </summary>
-    private IReadOnlyList<JsStatement> SuperCall(Root root, PrimaryConstructorBaseTypeSyntax? clause)
+    private IReadOnlyList<JsStatement> SuperCall(Root root, PrimaryConstructorBaseTypeSyntax? clause, IMethodSymbol? implicitException)
     {
         if (root.Explicit?.Initializer is { } chain && chain.ThisOrBaseKeyword.IsKind(SyntaxKind.BaseKeyword))
         {
@@ -537,7 +538,9 @@ internal sealed class TwinConstructor
             return Super(list, BoundArguments.Of(called, argument => JsExpr.Opaque(InPrimaryScope(argument))),
                 InPrimaryScope, ExceptionBase(called));
         }
-        return [CallSuper([])];
+        // The implicit call of the base's parameterless constructor, which over an exception of .NET's
+        // writes that constructor's own text (#611).
+        return implicitException is not null ? ExceptionSuper(implicitException, bound: null) : [CallSuper([])];
     }
 
     /// <summary>
@@ -548,6 +551,18 @@ internal sealed class TwinConstructor
         called is IInvocationOperation { TargetMethod: { MethodKind: MethodKind.Constructor } constructor }
         && ExceptionTypes.Is(constructor.ContainingType) && !ExceptionTypes.HasTwin(constructor.ContainingType)
             ? constructor
+            : null;
+
+    /// <summary>
+    /// The constructor an IMPLICIT base call reaches, the base's parameterless one, where
+    /// <paramref name="type"/> is an exception class of the app's directly over an exception no twin
+    /// stands for, one of .NET's (#611): a constructor with no `: base(…)` and the implicit one call it.
+    /// Null for any other type, and where no model can be asked.
+    /// </summary>
+    private IMethodSymbol? ImplicitExceptionBase(TypeDeclarationSyntax type) =>
+        _modelFor(type)?.GetDeclaredSymbol(type) is INamedTypeSymbol { BaseType: { } baseType }
+        && ExceptionTypes.Is(baseType) && !ExceptionTypes.HasTwin(baseType)
+            ? baseType.InstanceConstructors.FirstOrDefault(constructor => constructor.Parameters.IsEmpty)
             : null;
 
     /// <summary>An argument of the base clause, which runs before `super()`, where the parameters are
@@ -576,27 +591,66 @@ internal sealed class TwinConstructor
 
     /// <summary>
     /// The call of the runtime's exception base (<see cref="Eq.ExceptionBase"/>, #611), whose constructor
-    /// is <c>System.Exception</c>'s, from the constructor of the exception of .NET's the base call binds:
-    /// the argument bound to its <c>message</c> and the one bound to its <c>innerException</c>, whatever
-    /// their places in its signature (<c>ArgumentOutOfRangeException(paramName, message)</c>). Every
-    /// argument is still evaluated, in the order it is written, each into a temporary of its own unless
-    /// the two are all there is, written in that order; one that is neither runs and is carried nowhere,
-    /// as an exception of .NET's built by its symbol carries it nowhere (#558).
+    /// takes what a <c>new</c> of the exception of .NET's the base call binds hands the runtime (#558):
+    /// the argument bound to its <c>message</c>, with the text that constructor writes where none is
+    /// given or the one given may be null (<see cref="ExceptionTypes.FrameworkText"/>), and what it takes
+    /// besides, each by its parameter (<see cref="ExceptionTypes.Parts"/>), whatever their places in its
+    /// signature (<c>ArgumentOutOfRangeException(paramName, message)</c>). So `: base("bad", name)` over
+    /// <c>ArgumentException</c> reads "bad (Parameter 'x')" and its <c>ParamName</c> "x", and a class over
+    /// <c>InvalidOperationException</c> that calls its base implicitly reads that type's own text, where
+    /// both read only the message, or .NET's default for the class. Every argument is evaluated in the
+    /// order it is written, each into a temporary of its own unless the call reads them in that order;
+    /// one that is none of these runs and is carried nowhere. <paramref name="bound"/> is null for the
+    /// implicit call, which passes nothing.
     /// </summary>
-    private static IReadOnlyList<JsStatement> ExceptionSuper(IMethodSymbol constructor, BoundArguments bound)
+    private IReadOnlyList<JsStatement> ExceptionSuper(IMethodSymbol constructor, BoundArguments? bound)
     {
-        int? WrittenFor(string parameter) =>
-            constructor.Parameters.FirstOrDefault(candidate => candidate.Name == parameter) is { } found
-            && bound.ByParameter[found.Ordinal] is [{ Written: >= 0 } slot, ..]
-                ? slot.Written
+        var written = bound?.Written ?? [];
+        IReadOnlyList<BoundArguments.Slot>? SlotsOf(string parameter) =>
+            bound is not null && constructor.Parameters.FirstOrDefault(candidate => candidate.Name == parameter) is { } found
+                ? bound.ByParameter[found.Ordinal]
                 : null;
-        var passed = new[] { WrittenFor("message"), WrittenFor("innerException") };
-        var count = passed[1] is not null ? 2 : passed[0] is not null ? 1 : 0;
-        if (passed.Take(count).Select(written => written ?? -1).SequenceEqual(Enumerable.Range(0, bound.Written.Count)))
-            return [CallSuper(passed.Take(count).Select(written => bound.Written[written!.Value]).ToList())];
-        var statements = bound.Written.Select((value, i) => JsStatement.Const($"$s{i}", value)).ToList<JsStatement>();
-        statements.Add(CallSuper(passed.Take(count)
-            .Select(written => written is { } index ? JsExpr.Identifier($"$s{index}") : JsExpr.Identifier("undefined")).ToList()));
+        var message = SlotsOf("message") is [{ Written: >= 0 } slot, ..] ? slot.Written : -1;
+        // A framework constructor says what it takes by its parameters' names, as a `new` of it reads them;
+        // an exception of a library's, which no twin stands for either, hands its inner exception alone.
+        var framework = ExceptionTypes.IsFramework(constructor.ContainingType);
+        var parts = (framework ? ExceptionTypes.Parts : [("innerException", "innerException")])
+            .Select(part => (part.Member, Slots: SlotsOf(part.Parameter),
+                IsParams: constructor.Parameters.Any(candidate => candidate.Name == part.Parameter && candidate.IsParams)))
+            .Where(part => part.Slots is not null)
+            .ToList();
+        var reads = (message >= 0 ? [message] : Enumerable.Empty<int>())
+            .Concat(parts.SelectMany(part => part.Slots!.Select(slot => slot.Written)));
+        var direct = reads.SequenceEqual(Enumerable.Range(0, written.Count));
+        JsExpr Read(int index) => direct ? written[index] : JsExpr.Identifier($"$s{index}");
+
+        var text = framework && ExceptionTypes.FrameworkText(constructor) is { } fallback
+            ? JsExpr.Literal(JsStringLiteral.Quote(fallback))
+            : null;
+        var given = message < 0 ? null : _modelFor(bound!.Sources[message])?.GetOperation(bound.Sources[message]);
+        var messageValue = message < 0 ? text
+            : text is null || given is not null && ExceptionTypes.NeverNull(given) ? Read(message)
+            : given is { ConstantValue: { HasValue: true, Value: null } } ? text
+            : JsExpr.Binary(Read(message), "??", text);
+
+        var arguments = new List<JsExpr>();
+        if (parts.Count > 0)
+        {
+            arguments.Add(messageValue ?? JsExpr.Identifier("undefined"));
+            arguments.Add(JsExpr.Object(parts.Select(part => new JsProperty(part.Member, part.Slots switch
+            {
+                // An array passed whole to a params parameter is the array; elements C# packs into one are
+                // gathered (`new AggregateException(a, b)`).
+                [{ Spread: true } whole] => Read(whole.Written),
+                var slots when part.IsParams => JsExpr.Array(slots!.Select(slot => Read(slot.Written)).ToList()),
+                [var one, ..] => Read(one.Written),
+                _ => JsExpr.Identifier("undefined"),
+            })).ToList()));
+        }
+        else if (messageValue is not null)
+            arguments.Add(messageValue);
+        var statements = direct ? [] : written.Select((value, i) => JsStatement.Const($"$s{i}", value)).ToList<JsStatement>();
+        statements.Add(CallSuper(arguments));
         return statements;
     }
 

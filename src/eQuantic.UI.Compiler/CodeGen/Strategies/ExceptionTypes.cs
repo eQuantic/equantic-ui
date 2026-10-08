@@ -168,7 +168,7 @@ internal static class ExceptionTypes
 
     /// <summary>A message no run can find null: a constant with a value, an interpolated string, or a
     /// concatenation, which C# never makes null.</summary>
-    private static bool NeverNull(IOperation operation) => operation switch
+    internal static bool NeverNull(IOperation operation) => operation switch
     {
         { ConstantValue: { HasValue: true, Value: var value } } => value is not null,
         IInterpolatedStringOperation => true,
@@ -177,30 +177,38 @@ internal static class ExceptionTypes
     };
 
     /// <summary>
-    /// The text .NET writes for this creation where its message is absent or null
-    /// (<see cref="ExceptionDefaultMessage"/>). A framework type's is its constructor's own, save
-    /// <c>TypeInitializationException</c>'s, which the runtime composes from the type's name. An app's
-    /// type built with no argument takes the text of the nearest framework type it derives from, whose
-    /// parameterless constructor its own calls unless it says otherwise (#611); one with arguments
-    /// hands its message as it always did.
+    /// The text .NET writes for this creation where its message is absent or null. A framework type's
+    /// is its constructor's own (<see cref="FrameworkText"/>). An app's type with no twin of its own (a
+    /// nested one) built with no argument takes the text of the nearest framework type it derives from,
+    /// whose parameterless constructor its own calls unless it says otherwise; one with arguments hands
+    /// its message as it always did. An app's type with a twin is no creation of this kind: its base
+    /// call hands the text (<see cref="TwinConstructor"/>, #611).
     /// </summary>
     private static string? DefaultMessage(IMethodSymbol constructor, int written)
     {
-        if (IsFramework(constructor.ContainingType))
-            return constructor.Parameters.Any(parameter => parameter.Name == "fullTypeName")
-                ? null
-                : ExceptionDefaultMessage.Of(constructor);
+        if (IsFramework(constructor.ContainingType)) return FrameworkText(constructor);
         if (written > 0) return null;
         var framework = constructor.ContainingType.BaseType;
         while (framework is not null && !IsFramework(framework)) framework = framework.BaseType;
         return framework?.InstanceConstructors.FirstOrDefault(candidate => candidate.Parameters.IsEmpty) is { } parameterless
-            ? ExceptionDefaultMessage.Of(parameterless)
+            ? FrameworkText(parameterless)
             : null;
     }
 
+    /// <summary>
+    /// The text .NET writes where a framework exception constructor is handed no message, or a null
+    /// one, read from .NET itself (<see cref="ExceptionDefaultMessage"/>), or null where there is none
+    /// to hand: <c>TypeInitializationException</c>'s, which the runtime composes from the type's name,
+    /// and <c>Exception.Message</c>'s own, which names the type the app created. The same for a
+    /// <c>new</c> of the type and for the base call of an exception class of the app's over it (#611).
+    /// </summary>
+    internal static string? FrameworkText(IMethodSymbol constructor) =>
+        constructor.Parameters.Any(parameter => parameter.Name == "fullTypeName") ? null : ExceptionDefaultMessage.Of(constructor);
+
     /// <summary>A framework exception constructor's parameters besides the message, and the member
-    /// of the runtime's exception each one fills.</summary>
-    private static readonly (string Parameter, string Member)[] Parts =
+    /// of the runtime's exception each one fills: by a <c>new</c> of the type, and by the base call of an
+    /// exception class of the app's over it (<see cref="TwinConstructor"/>, #611).</summary>
+    internal static readonly (string Parameter, string Member)[] Parts =
     [
         ("paramName", "paramName"),
         ("actualValue", "actualValue"),

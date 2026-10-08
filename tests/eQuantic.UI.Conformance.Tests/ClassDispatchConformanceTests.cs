@@ -192,6 +192,12 @@ public class ClassDispatchConformanceTests
                 public Failed(T value) : base("failed " + value) { Value = value; }
             }
             public class Coded(int number) : Exception("code " + number) { public int Code => number; }
+            public class Closed : InvalidOperationException { }
+            public class Shut : InvalidOperationException { public Shut() : base() { } }
+            public class Nulled : InvalidOperationException { public Nulled() : base(null) { } }
+            public class Maybe : InvalidOperationException { public Maybe(string? m) : base(m) { } }
+            public class Bad : ArgumentException { public Bad(string name) : base("bad", name) { } }
+            public class Missing : ArgumentNullException { public Missing(string name) : base(name) { } }
         }
         """;
 
@@ -218,6 +224,12 @@ public class ClassDispatchConformanceTests
         ("a generic class, caught by its construction",
             "try { throw new Failed<int>(3); } catch (Failed<string>) { return \"string\"; } catch (Failed<int> f) { return f.Value + \"|\" + f.Message; }"),
         ("a primary constructor and its base clause", "var c = new Coded(4); return c.Code + \"|\" + c.Message;"),
+        // What a .NET base's constructor writes and takes, as a `new` of that type hands it (#558).
+        ("the text of the .NET base its constructor calls", "return new Closed().Message + \"|\" + new Shut().Message;"),
+        ("a null message is .NET's default for the class",
+            "return new Nulled().Message + \"|\" + new Maybe(null).Message + \"|\" + new Maybe(\"m\").Message;"),
+        ("a parameter's name its .NET base takes", "var b = new Bad(\"x\"); return b.Message + \"|\" + b.ParamName;"),
+        ("a .NET base that takes no message", "var m = new Missing(\"y\"); return m.Message + \"|\" + m.ParamName;"),
     ];
 
     [SkippableTheory]

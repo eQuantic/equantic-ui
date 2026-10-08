@@ -153,21 +153,29 @@ function tag(error: Error, types: readonly string[]): void {
   Object.defineProperty(error, TYPES, { value: types, configurable: true });
 }
 
-/** What a framework constructor took besides the message, each held as the member that reads it. */
-function hold(error: Error, parts: ExceptionParts): void {
+/**
+ * What a framework constructor took besides the message, each held as the member that reads it, and
+ * what was held: the inner exceptions read once, into an array.
+ */
+function hold(error: Error, parts: ExceptionParts): ExceptionParts {
+  const held: Record<string, unknown> = {};
   for (const [member, value] of Object.entries(parts)) {
-    const held = member === 'innerExceptions' && value != null ? [...(value as Iterable<unknown>)] : value;
-    Object.defineProperty(error, member, { value: held, writable: true, configurable: true });
+    held[member] = member === 'innerExceptions' && value != null ? [...(value as Iterable<unknown>)] : value;
+    Object.defineProperty(error, member, { value: held[member], writable: true, configurable: true });
   }
   // An AggregateException's InnerException is its first inner one, as .NET's is.
-  const first = (error as { innerExceptions?: unknown[] }).innerExceptions?.[0];
+  const first = (held as { innerExceptions?: unknown[] }).innerExceptions?.[0];
   if (parts.innerException === undefined && first !== undefined) {
     Object.defineProperty(error, 'innerException', { value: first, writable: true, configurable: true });
   }
+  return held as ExceptionParts;
 }
 
 /** Where an app exception keeps the message its constructor was handed: null for none. */
 const MESSAGE = Symbol('eq.exception.message');
+
+/** Where an app exception keeps what its base's constructor took besides the message. */
+const PARTS = Symbol('eq.exception.parts');
 
 /** An app exception's twin, as the base reads it: the chain its class says. */
 type Twin = { readonly $types?: readonly string[] };
@@ -180,28 +188,28 @@ type Twin = { readonly $types?: readonly string[] };
  * built by its symbol, with no members at all, so its fields, its constructor's body and its methods
  * were gone.
  *
- * The constructor is `System.Exception`'s, a message and an inner exception, which `Message` and
- * `InnerException` read. A message that is null or missing is .NET's default, composed when it is read
- * from the type the exception is. `Message` is virtual in .NET, so it is an accessor on the prototype,
- * which the twin of a class that overrides it replaces: a message the `Error` constructor wrote would be
- * the instance's own, and would hide every override.
+ * The constructor takes what a `new` of the exception of .NET's the class derives from hands
+ * {@link create}: the message, which the compiler hands with the text that type's constructor writes
+ * where none is given, and what that constructor takes besides it (#558), an inner exception or a
+ * parameter's name, which `InnerException` and `ParamName` read. A message still missing is
+ * `Exception.Message`'s own, which names the class. The message is composed when it is read: `Message`
+ * is virtual in .NET, so it is an accessor on the prototype, which the twin of a class that overrides it
+ * replaces, where a message the `Error` constructor wrote would be the instance's own and would hide
+ * every override.
  */
 export class Exception extends Error {
-  constructor(message?: string | null, innerException?: unknown) {
+  constructor(message?: string | null, parts?: ExceptionParts) {
     super();
     tag(this, (new.target as unknown as Twin).$types ?? EXCEPTION);
     Object.defineProperty(this, MESSAGE, { value: message ?? null, writable: true });
-    Object.defineProperty(this, 'innerException', {
-      value: innerException ?? null,
-      writable: true,
-      configurable: true,
-    });
+    Object.defineProperty(this, 'innerException', { value: null, writable: true, configurable: true });
+    Object.defineProperty(this, PARTS, { value: parts === undefined ? undefined : hold(this, parts), writable: true });
   }
 }
 
 Object.defineProperty(Exception.prototype, 'message', {
-  get(this: Exception & { [MESSAGE]: string | null }): string {
-    return composed((this as Tagged)[TYPES] ?? EXCEPTION, this[MESSAGE], undefined);
+  get(this: Exception & { [MESSAGE]: string | null; [PARTS]: ExceptionParts | undefined }): string {
+    return composed((this as Tagged)[TYPES] ?? EXCEPTION, this[MESSAGE], this[PARTS]);
   },
   configurable: true,
 });
