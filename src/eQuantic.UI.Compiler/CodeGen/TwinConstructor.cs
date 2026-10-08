@@ -3,6 +3,7 @@ using System.Linq;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using Microsoft.CodeAnalysis.Operations;
 using eQuantic.UI.Compiler.CodeGen.Extensions;
 using eQuantic.UI.Compiler.CodeGen.Ir;
 using eQuantic.UI.Compiler.CodeGen.Strategies;
@@ -165,14 +166,15 @@ internal sealed class TwinConstructor
             // member `A` or `K` was `const $a` beside the rest parameter `$a`, and the module did not load.
             foreach (var start in state)
                 if (start.RunsCode) statements.Add(JsStatement.Const(Evaluated(start.Slot), start.Value) with { Origin = start.Origin });
+            var implicitException = ImplicitExceptionBase(type);
             if (single is not null)
-                statements.AddRange(SuperCall(single, clause));
+                statements.AddRange(SuperCall(single, clause, implicitException));
             else
                 // Every branch calls it, the last one whatever arrived, as JavaScript requires of a
                 // derived class's constructor.
                 statements.Add(Chain(constructors.Roots.Select((root, i) => (
                     i == constructors.Roots.Count - 1 ? null : (JsExpr?)JsExpr.Binary(JsExpr.Identifier("$k"), "===", JsExpr.Literal(i.ToString())),
-                    SuperCall(root, clause))).ToList()));
+                    SuperCall(root, clause, implicitException))).ToList()));
             foreach (var start in state)
                 statements.Add(Assign(JsExpr.ThisMember(start.Slot), start.RunsCode ? JsExpr.Identifier(Evaluated(start.Slot)) : start.Value)
                     with { Origin = start.Origin });
@@ -219,9 +221,11 @@ internal sealed class TwinConstructor
     {
         // A record's copy constructor (its one parameter the record's own type) is what `with` copies
         // through in C#, and no `new` reaches it: taken for a branch, it met any other constructor of
-        // one argument and refused the type (EQ1009), which compiled before.
+        // one argument and refused the type (EQ1009), which compiled before. Nor does a `new` reach
+        // the constructor only .NET's serialization calls (IsSerializationConstructor).
         var declared = type.Members.OfType<ConstructorDeclarationSyntax>()
-            .Where(constructor => !constructor.Modifiers.Any(SyntaxKind.StaticKeyword) && !IsCopyConstructor(type, constructor))
+            .Where(constructor => !constructor.Modifiers.Any(SyntaxKind.StaticKeyword) && !IsCopyConstructor(type, constructor)
+                && !IsSerializationConstructor(constructor))
             .ToList();
 
         var roots = new List<Root>();
@@ -266,6 +270,28 @@ internal sealed class TwinConstructor
         }
         return new Constructors(roots, alternates);
     }
+
+    /// <summary>
+    /// Whether a constructor is the one only .NET's serialization calls: the <c>ISerializable</c>
+    /// pattern's <c>(SerializationInfo info, StreamingContext context)</c>, which Visual Studio's
+    /// exception template writes beside <c>()</c>, <c>(string)</c> and <c>(string, Exception)</c>. No
+    /// <c>new</c> in the browser reaches it, since the browser has no <c>SerializationInfo</c>, so it is no
+    /// branch of the twin, as a record's copy constructor is not. Taken for one, it met
+    /// <c>(string, Exception)</c>, which takes as many arguments, and refused the class (EQ1009), so the
+    /// template had to be edited before the class could build. Only the model can say the two types are
+    /// .NET's: with none to ask, a constructor whose own types the app happened to name so is one C# can
+    /// call, and it stays a branch, where matching the names erased it (Copilot's review of #708).
+    /// </summary>
+    private bool IsSerializationConstructor(ConstructorDeclarationSyntax constructor) =>
+        constructor.ParameterList.Parameters.Count == 2
+        && _modelFor(constructor)?.GetDeclaredSymbol(constructor) is IMethodSymbol { Parameters: [var info, var context] }
+        && IsSerialization(info.Type, "SerializationInfo") && IsSerialization(context.Type, "StreamingContext");
+
+    /// <summary>Whether <paramref name="type"/> is the type of <c>System.Runtime.Serialization</c> named
+    /// <paramref name="name"/>.</summary>
+    private static bool IsSerialization(ITypeSymbol type, string name) =>
+        type is INamedTypeSymbol { Name: var declared, ContainingNamespace: var space, ContainingType: null }
+        && declared == name && space.ToDisplayString() == "System.Runtime.Serialization";
 
     /// <summary>Whether a record's constructor is its copy constructor: one parameter, of the record's own
     /// type, asked of the model and, without one, of the type's name.</summary>
@@ -522,30 +548,61 @@ internal sealed class TwinConstructor
     /// `super('square', 'red')`, handing Sides the color, and a base clause took every bare name for a
     /// forwarded parameter, so a constant was a variable nothing declared.
     /// </summary>
-    private IReadOnlyList<JsStatement> SuperCall(Root root, PrimaryConstructorBaseTypeSyntax? clause)
+    private IReadOnlyList<JsStatement> SuperCall(Root root, PrimaryConstructorBaseTypeSyntax? clause, IMethodSymbol? implicitException)
     {
         if (root.Explicit?.Initializer is { } chain && chain.ThisOrBaseKeyword.IsKind(SyntaxKind.BaseKeyword))
-            return Super(chain.ArgumentList, BoundArguments.Of(_modelFor(chain)?.GetOperation(chain),
-                argument => JsExpr.Opaque(_converter.ConvertExpression(argument))),
-                argument => _converter.ConvertExpression(argument));
+        {
+            var called = _modelFor(chain)?.GetOperation(chain);
+            return Super(chain.ArgumentList, BoundArguments.Of(called, argument => JsExpr.Opaque(_converter.ConvertExpression(argument))),
+                argument => _converter.ConvertExpression(argument), ExceptionBase(called));
+        }
         if (clause?.ArgumentList is { } list)
-            return Super(list, BoundArguments.Of(_modelFor(clause)?.GetOperation(clause),
-                    argument => JsExpr.Opaque(InPrimaryScope(argument))),
-                InPrimaryScope);
-        return [CallSuper([])];
+        {
+            var called = _modelFor(clause)?.GetOperation(clause);
+            return Super(list, BoundArguments.Of(called, argument => JsExpr.Opaque(InPrimaryScope(argument))),
+                InPrimaryScope, ExceptionBase(called));
+        }
+        // The implicit call of the base's parameterless constructor, which over an exception of .NET's
+        // writes that constructor's own text (#611).
+        return implicitException is not null ? ExceptionSuper(implicitException, bound: null) : [CallSuper([])];
     }
+
+    /// <summary>
+    /// The constructor of an exception of .NET's that a base call reaches, which the runtime's exception
+    /// base stands for in the twin of an exception class of the app's (#611); null for any other.
+    /// </summary>
+    private static IMethodSymbol? ExceptionBase(IOperation? called) =>
+        called is IInvocationOperation { TargetMethod: { MethodKind: MethodKind.Constructor } constructor }
+        && ExceptionTypes.Is(constructor.ContainingType) && !ExceptionTypes.HasTwin(constructor.ContainingType)
+            ? constructor
+            : null;
+
+    /// <summary>
+    /// The constructor an IMPLICIT base call reaches, the base's parameterless one, where
+    /// <paramref name="type"/> is an exception class of the app's directly over an exception no twin
+    /// stands for, one of .NET's (#611): a constructor with no `: base(…)` and the implicit one call it.
+    /// Null for any other type, and where no model can be asked.
+    /// </summary>
+    private IMethodSymbol? ImplicitExceptionBase(TypeDeclarationSyntax type) =>
+        _modelFor(type)?.GetDeclaredSymbol(type) is INamedTypeSymbol { BaseType: { } baseType }
+        && ExceptionTypes.Is(baseType) && !ExceptionTypes.HasTwin(baseType)
+            ? baseType.InstanceConstructors.FirstOrDefault(constructor => constructor.Parameters.IsEmpty)
+            : null;
 
     /// <summary>An argument of the base clause, which runs before `super()`, where the parameters are
     /// the constructor's own and `this` cannot be read: `: Base(X + 1)` wrote `super(this.x + 1)`.</summary>
     private string InPrimaryScope(ExpressionSyntax argument) =>
         _converter.WithConstructorParametersInScope(() => _converter.ConvertExpression(argument));
 
-    private IReadOnlyList<JsStatement> Super(ArgumentListSyntax list, BoundArguments? bound, Func<ExpressionSyntax, string> convert)
+    private IReadOnlyList<JsStatement> Super(ArgumentListSyntax list, BoundArguments? bound, Func<ExpressionSyntax, string> convert,
+        IMethodSymbol? exceptionBase = null)
     {
         var statements = list.Arguments.Select(argument => Declarations(argument.Expression)).OfType<JsStatement>().ToList();
         // No model: the arguments in the order they are written.
         if (bound is null)
             statements.Add(CallSuper(list.Arguments.Select(argument => JsExpr.Opaque(convert(argument.Expression))).ToList()));
+        else if (exceptionBase is not null)
+            statements.AddRange(ExceptionSuper(exceptionBase, bound));
         else if (bound.InWrittenOrder)
             statements.Add(CallSuper(bound.InParameterOrder()));
         else
@@ -553,6 +610,71 @@ internal sealed class TwinConstructor
             statements.AddRange(bound.Written.Select((value, i) => JsStatement.Const($"$s{i}", value)));
             statements.Add(CallSuper(bound.InParameterOrder(i => JsExpr.Identifier($"$s{i}"))));
         }
+        return statements;
+    }
+
+    /// <summary>
+    /// The call of the runtime's exception base (<see cref="Eq.ExceptionBase"/>, #611), whose constructor
+    /// takes what a <c>new</c> of the exception of .NET's the base call binds hands the runtime (#558):
+    /// the argument bound to its <c>message</c>, with the text that constructor writes where none is
+    /// given or the one given may be null (<see cref="ExceptionTypes.FrameworkText"/>), and what it takes
+    /// besides, each by its parameter (<see cref="ExceptionTypes.Parts"/>), whatever their places in its
+    /// signature (<c>ArgumentOutOfRangeException(paramName, message)</c>). So `: base("bad", name)` over
+    /// <c>ArgumentException</c> reads "bad (Parameter 'x')" and its <c>ParamName</c> "x", and a class over
+    /// <c>InvalidOperationException</c> that calls its base implicitly reads that type's own text, where
+    /// both read only the message, or .NET's default for the class. Every argument is evaluated in the
+    /// order it is written, each into a temporary of its own unless the call reads them in that order;
+    /// one that is none of these runs and is carried nowhere. <paramref name="bound"/> is null for the
+    /// implicit call, which passes nothing.
+    /// </summary>
+    private IReadOnlyList<JsStatement> ExceptionSuper(IMethodSymbol constructor, BoundArguments? bound)
+    {
+        var written = bound?.Written ?? [];
+        IReadOnlyList<BoundArguments.Slot>? SlotsOf(string parameter) =>
+            bound is not null && constructor.Parameters.FirstOrDefault(candidate => candidate.Name == parameter) is { } found
+                ? bound.ByParameter[found.Ordinal]
+                : null;
+        var message = SlotsOf("message") is [{ Written: >= 0 } slot, ..] ? slot.Written : -1;
+        // A framework constructor says what it takes by its parameters' names, as a `new` of it reads them;
+        // an exception of a library's, which no twin stands for either, hands its inner exception alone.
+        var framework = ExceptionTypes.IsFramework(constructor.ContainingType);
+        var parts = (framework ? ExceptionTypes.Parts : [("innerException", "innerException")])
+            .Select(part => (part.Member, Slots: SlotsOf(part.Parameter),
+                IsParams: constructor.Parameters.Any(candidate => candidate.Name == part.Parameter && candidate.IsParams)))
+            .Where(part => part.Slots is not null)
+            .ToList();
+        var reads = (message >= 0 ? [message] : Enumerable.Empty<int>())
+            .Concat(parts.SelectMany(part => part.Slots!.Select(slot => slot.Written)));
+        var direct = reads.SequenceEqual(Enumerable.Range(0, written.Count));
+        JsExpr Read(int index) => direct ? written[index] : JsExpr.Identifier($"$s{index}");
+
+        var text = framework && ExceptionTypes.FrameworkText(constructor) is { } fallback
+            ? JsExpr.Literal(JsStringLiteral.Quote(fallback))
+            : null;
+        var given = message < 0 ? null : _modelFor(bound!.Sources[message])?.GetOperation(bound.Sources[message]);
+        var messageValue = message < 0 ? text
+            : text is null || given is not null && ExceptionTypes.NeverNull(given) ? Read(message)
+            : given is { ConstantValue: { HasValue: true, Value: null } } ? text
+            : JsExpr.Binary(Read(message), "??", text);
+
+        var arguments = new List<JsExpr>();
+        if (parts.Count > 0)
+        {
+            arguments.Add(messageValue ?? JsExpr.Identifier("undefined"));
+            arguments.Add(JsExpr.Object(parts.Select(part => new JsProperty(part.Member, part.Slots switch
+            {
+                // An array passed whole to a params parameter is the array; elements C# packs into one are
+                // gathered (`new AggregateException(a, b)`).
+                [{ Spread: true } whole] => Read(whole.Written),
+                var slots when part.IsParams => JsExpr.Array(slots!.Select(slot => Read(slot.Written)).ToList()),
+                [var one, ..] => Read(one.Written),
+                _ => JsExpr.Identifier("undefined"),
+            })).ToList()));
+        }
+        else if (messageValue is not null)
+            arguments.Add(messageValue);
+        var statements = direct ? [] : written.Select((value, i) => JsStatement.Const($"$s{i}", value)).ToList<JsStatement>();
+        statements.Add(CallSuper(arguments));
         return statements;
     }
 

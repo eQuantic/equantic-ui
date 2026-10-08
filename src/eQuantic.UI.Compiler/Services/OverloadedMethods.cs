@@ -40,7 +40,9 @@ namespace eQuantic.UI.Compiler.Services;
 /// The name is taken along the CHAIN too: <c>Derived extends Base</c> has one member per name, so a
 /// derived <c>Format(int)</c> beside the base's <c>Format(string)</c> answered every call on both.
 /// With a model, the bases declared in the source are walked, the runtime's own being EQ2011's to
-/// hold, and an override is the method it overrides rather than a second one.
+/// hold, and an override is the method it overrides rather than a second one. A method that HIDES an
+/// inherited member holds a name of its own on the twin (<see cref="TwinMethodName"/>, #563), so it
+/// takes no other's: what is compared is the name each one holds there.
 /// </para>
 ///
 /// <para>
@@ -65,6 +67,7 @@ internal static class OverloadedMethods
         CheckOne(type, sourcePath, isComponent, model, errors);
         if (errors.Count == 0) CheckState(type, sourcePath, model, errors);
         if (errors.Count == 0 && model is not null) CheckInherited(type, sourcePath, isComponent, model, errors);
+        if (errors.Count == 0 && model is not null) CheckHidingImplementations(type, sourcePath, model, errors);
         if (errors.Count == 0 && model is not null) CheckDefaults(type, sourcePath, isComponent, model, errors);
         if (errors.Count == 0 && model is not null) CheckInterfaceIndexers(type, sourcePath, model, errors);
         if (isComponent)
@@ -145,8 +148,10 @@ internal static class OverloadedMethods
     /// </summary>
     private static IEnumerable<Name> Names(TypeDeclarationSyntax type, bool allStatic, bool isComponent, SemanticModel? model)
     {
+        // Each by the name it holds on the twin: one that hides an inherited member holds its own (#563).
         foreach (var (method, isStatic) in Methods(type, allStatic, isComponent))
-            yield return new(method.Identifier.Text.ToCamelCase(), isStatic, Signature(method), method.Identifier, Bearer.Method);
+            yield return new(TwinMethodName.Of(method, model?.SyntaxTree == method.SyntaxTree ? model : null), isStatic,
+                Signature(method), method.Identifier, Bearer.Method);
 
         var taken = new HashSet<string>(StringComparer.Ordinal);
         foreach (var indexer in type.Members.OfType<IndexerDeclarationSyntax>())
@@ -545,7 +550,7 @@ internal static class OverloadedMethods
         foreach (var (method, isStatic) in Methods(type, allStatic, isComponent))
         {
             if (model.GetDeclaredSymbol(method) is not IMethodSymbol symbol) continue;
-            var name = method.Identifier.Text.ToCamelCase();
+            var name = TwinMethodName.Of(symbol);
             if (Inherited(declared, symbol, name, isStatic, isComponent) is not { } inherited) continue;
             var position = method.Identifier.GetLocation().GetLineSpan().StartLinePosition;
             var where = inherited.Locations.FirstOrDefault(location => location.IsInSource)?.GetLineSpan();
@@ -566,8 +571,9 @@ internal static class OverloadedMethods
         }
     }
 
-    /// <summary>The inherited method <paramref name="method"/> would take over, or null. A base the
-    /// source does not declare ends the walk: its twin is the runtime's. A server-only method is left
+    /// <summary>The inherited method <paramref name="method"/> would take over, or null: one that holds
+    /// the name it holds on the twin (<see cref="TwinMethodName"/>) and that it does not override. A base
+    /// the source does not declare ends the walk: its twin is the runtime's. A server-only method is left
     /// out of a COMPONENT's twin only: a plain class's twin writes it like any other, so along a plain
     /// chain it takes its name.</summary>
     private static IMethodSymbol? Inherited(INamedTypeSymbol declared, IMethodSymbol method, string name, bool isStatic,
@@ -581,7 +587,7 @@ internal static class OverloadedMethods
             foreach (var member in current.GetMembers().OfType<IMethodSymbol>())
             {
                 if (member.MethodKind != MethodKind.Ordinary || member.IsImplicitlyDeclared) continue;
-                if (member.IsStatic != isStatic || member.Name.ToCamelCase() != name) continue;
+                if (member.IsStatic != isStatic || TwinMethodName.Of(member) != name) continue;
                 if (member.ExplicitInterfaceImplementations.Length > 0 || Overrides(method, member)) continue;
                 // A defining half of a partial method reaches no twin, nor does a component's server-only one.
                 if (member.IsPartialDefinition && member.PartialImplementationPart is null) continue;
@@ -591,6 +597,46 @@ internal static class OverloadedMethods
             }
         }
         return null;
+    }
+
+    /// <summary>
+    /// A member of an interface the type answers with a method that holds a name of its own because it
+    /// hides one (<see cref="TwinMethodName"/>, #563): a call through the interface reaches the member by
+    /// the interface's name, which the hidden member holds on the twin, so it would reach the hidden one,
+    /// where C# reaches the method that hides it. Refused, as a name the twin cannot hold twice is.
+    /// </summary>
+    private static void CheckHidingImplementations(TypeDeclarationSyntax type, string sourcePath, SemanticModel model,
+        List<CompilationError> errors)
+    {
+        if (model.SyntaxTree != type.SyntaxTree || model.GetDeclaredSymbol(type) is not INamedTypeSymbol declared) return;
+        foreach (var contract in declared.AllInterfaces.SelectMany(face => face.GetMembers().OfType<IMethodSymbol>()))
+        {
+            if (declared.FindImplementationForInterfaceMember(contract) is not IMethodSymbol { MethodKind: MethodKind.Ordinary } answer
+                || !TwinMethodName.HoldsANameOfItsOwn(answer))
+                continue;
+            var position = type.Identifier.GetLocation().GetLineSpan().StartLinePosition;
+            var answers = $"'{answer.ContainingType.Name}.{answer.Name}' answers '{contract.ContainingType.Name}.{contract.Name}' "
+                + $"for '{declared.Name}'";
+            errors.Add(new CompilationError
+            {
+                Code = "EQ1007",
+                // Beside an explicit implementation of its name, the explicit one holds that name (#708).
+                Message = TwinMethodName.ExplicitBeside(answer) is { ExplicitInterfaceImplementations: [var other, ..] }
+                    ? $"{answers}, and the explicit implementation of '{other.ContainingType.Name}.{other.Name}' beside it holds "
+                        + $"`{Lowered(contract)}`, so its twin holds it as `{TwinMethodName.Of(answer)}()`. A call through "
+                        + $"'{contract.ContainingType.Name}' reaches the member by its own name, so it would reach the explicit one. "
+                        + $"Answer '{contract.ContainingType.Name}.{contract.Name}' explicitly too, or give this method a name of its own."
+                    : $"{answers}, and it hides an inherited member, so its twin holds it as "
+                        + $"`{TwinMethodName.Of(answer)}()` and leaves `{Lowered(contract)}` to the member it hides. A call "
+                        + "through the interface reaches the member by its own name, so it would reach the hidden one. "
+                        + "Answer the interface with a method that hides nothing: give this one its own name, or override "
+                        + "the member it hides.",
+                SourcePath = sourcePath,
+                Line = position.Line + 1,
+                Column = position.Character + 1,
+            });
+            return;
+        }
     }
 
     private static bool Overrides(IMethodSymbol method, IMethodSymbol candidate)

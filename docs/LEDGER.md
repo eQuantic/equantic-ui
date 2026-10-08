@@ -1723,6 +1723,24 @@ record of a release, the wiki's Upgrading page is the distillate.
   46 new conformance cases fail on the base. The members the runtime does not have are
   [#679](https://github.com/eQuantic/equantic-ui/issues/679). Proposed and archived through OpenSpec
   (`openspec/specs/transpiler-bcl`).
+- **2026-10-08 · A class of the app's dispatches, enumerates and throws as .NET does**: a method that
+  hides an inherited one, with `new` or the same signature and no `override`, was the override of the
+  hidden one on its twin, so the build refused `A a = new B(); a.Name()` where A was the app's (EQ1007)
+  and ran B's where it was .NET's, `public new int GetHashCode()` answering every hash of the object
+  ([#563](https://github.com/eQuantic/equantic-ui/issues/563)). It holds a name of its own on its twin
+  (`name$1`), which every call the model binds to it reaches. A class that implements `IEnumerable<T>`
+  had no `[Symbol.iterator]`, so `foreach`, a spread, `string.Join` and LINQ threw over it
+  ([#612](https://github.com/eQuantic/equantic-ui/issues/612)): each consumer walks the
+  `GetEnumerator()` C# binds for it, a `foreach` over the class its public one and LINQ the interface's,
+  an enumerator the app wrote and a struct's included. An exception class of the app's was an `Error`
+  built by its symbol, with none of its members
+  ([#611](https://github.com/eQuantic/equantic-ui/issues/611)): it is a class over the runtime's
+  exception base, whose base call hands what a `new` of its .NET base hands since #558, a generic one
+  carrying its construction's types before its constructor runs. Visual Studio's exception template
+  builds as it is written: the constructor only .NET's serialization calls is no branch of the twin. 51
+  of the first 55 new conformance cases fail on main, and the four that pass are answers main had right.
+  Proposed and archived through OpenSpec (`openspec/specs/transpiler-classes`, `transpiler-sequences`
+  and `transpiler-exceptions`).
 
 ## Retired documents
 

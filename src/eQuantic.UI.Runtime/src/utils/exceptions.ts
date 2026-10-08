@@ -5,9 +5,11 @@
  * `catch (InvalidOperationException)` caught an `ArgumentException`, and two clauses could not be
  * told apart at all.
  *
- * Two doors make one, and both carry the whole chain:
- * - the translated code's `new T(message)`, where the compiler writes T and the types it derives from,
- *   read off T's symbol ({@link create}), an exception of the app's own included;
+ * Three doors make one, and each carries the whole chain:
+ * - the translated code's `new T(message)` for a type of .NET's, where the compiler writes T and the
+ *   types it derives from, read off T's symbol ({@link create});
+ * - an exception class of the app's own, which is a class like any other: its twin extends
+ *   {@link Exception}, and says its chain in `static $types` (#611);
  * - the runtime's own throws on .NET's behalf, each of the type .NET throws for the same operation
  *   ({@link exception}), from the table below, which the conformance suite compares with .NET's own
  *   hierarchy.
@@ -131,44 +133,162 @@ export function create(
   parts?: ExceptionParts,
   ..._evaluated: unknown[]
 ): Error {
-  const error = new Error(composed(types, message, parts)) as Tagged;
-  // Defined rather than assigned: an assignment makes `name` an own enumerable property, which an
-  // Error's own `name` (its prototype's) is not, and JSON would start writing it.
+  const kept = parts === undefined ? undefined : held(parts);
+  const error = new Error(composed(types, message, kept));
+  tag(error, types);
+  if (kept !== undefined) hold(error, kept);
+  return error;
+}
+
+/**
+ * Gives an error its .NET types and the `name` the first one's simple name is. Defined rather than
+ * assigned: an assignment makes `name` an own enumerable property, which an Error's own `name` (its
+ * prototype's) is not, and JSON would start writing it.
+ */
+function tag(error: Error, types: readonly string[]): void {
   Object.defineProperty(error, 'name', {
     value: simpleName(types[0]),
     writable: true,
     configurable: true,
   });
-  Object.defineProperty(error, TYPES, { value: types });
-  if (parts !== undefined) {
-    for (const [member, value] of Object.entries(parts)) {
-      const held = member === 'innerExceptions' && value != null ? [...(value as Iterable<unknown>)] : value;
-      Object.defineProperty(error, member, { value: held, writable: true, configurable: true });
-    }
-    // An AggregateException's InnerException is its first inner one, as .NET's is.
-    const first = (error as { innerExceptions?: unknown[] }).innerExceptions?.[0];
-    if (parts.innerException === undefined && first !== undefined) {
-      Object.defineProperty(error, 'innerException', { value: first, writable: true, configurable: true });
-    }
-  }
-  return error;
+  Object.defineProperty(error, TYPES, { value: types, configurable: true });
 }
 
 /**
- * A type's own name, its namespace, its containing types and every generic argument list left out:
- * `App.Outer<int>.Inner` is `Inner`, as .NET's `Type.Name` is, where cutting at the first `<` named it
- * `Outer`. The arguments of the constructor past the message (`..._evaluated`) are only evaluated,
- * where C# evaluates them, and carried nowhere.
+ * What a framework constructor took besides the message, read once: its inner exceptions into an
+ * array, which the message and the members both read.
+ */
+function held(parts: ExceptionParts): ExceptionParts {
+  return parts.innerExceptions == null ? parts : { ...parts, innerExceptions: [...parts.innerExceptions] };
+}
+
+/** What a framework constructor took besides the message, each held as the member that reads it. */
+function hold(error: Error, parts: ExceptionParts): void {
+  for (const [member, value] of Object.entries(parts)) {
+    Object.defineProperty(error, member, { value, writable: true, configurable: true });
+  }
+  // An AggregateException's InnerException is its first inner one, as .NET's is.
+  const first = (parts.innerExceptions as readonly unknown[] | null | undefined)?.[0];
+  if (parts.innerException === undefined && first !== undefined) {
+    Object.defineProperty(error, 'innerException', { value: first, writable: true, configurable: true });
+  }
+}
+
+/** Where an app exception keeps the message its constructor was handed: null for none. */
+const MESSAGE = Symbol('eq.exception.message');
+
+/** Where an app exception keeps what its base's constructor took besides the message. */
+const PARTS = Symbol('eq.exception.parts');
+
+/** An app exception's twin, as the base reads it: the chain its class says. */
+type Twin = { readonly $types?: readonly string[] };
+
+/** An app exception as the base's members read it. */
+type Kept = Tagged & { [MESSAGE]?: string | null; [PARTS]?: ExceptionParts };
+
+/**
+ * The construction {@link construct} is building, which the base of its class reads before the
+ * constructor's body runs: the class constructed and the types it is.
+ */
+let constructing: { readonly type: unknown; readonly types: readonly string[] } | undefined;
+
+/**
+ * The base of the twin of an exception class of the app's own (#611): the browser's `Error`, carrying
+ * the .NET types the class is, which its twin says in `static $types` (itself first, `System.Exception`
+ * last), so a typed `catch` reads it as it reads one {@link create} built, and an exception of a
+ * derived class carries the derived class's. The class's members are its twin's: it was an `Error`
+ * built by its symbol, with no members at all, so its fields, its constructor's body and its methods
+ * were gone.
+ *
+ * The constructor takes what a `new` of the exception of .NET's the class derives from hands
+ * {@link create}: the message, which the compiler hands with the text that type's constructor writes
+ * where none is given, and what that constructor takes besides it (#558), an inner exception or a
+ * parameter's name. A message still missing is `Exception.Message`'s own, which names the class.
+ *
+ * Every member it answers is an accessor on its prototype, read from what its constructor kept: the
+ * message, composed when it is read, the members a framework constructor's parts fill, and the `name`
+ * the console prints. A member the twin declares under one of those names is its own then: an override
+ * of the virtual `Message` or `ParamName` answers for it, and a `Name` of the app's is the app's, where
+ * an instance's own property, as {@link create} writes one, would hide each of them.
+ */
+export class Exception extends Error {
+  constructor(message?: string | null, parts?: ExceptionParts) {
+    super();
+    // A construction of a generic class carries its own types, taken here so that its constructor's
+    // body already throws and reads the exception it is (construct).
+    const pending = constructing;
+    let types = (new.target as unknown as Twin).$types ?? EXCEPTION;
+    if (pending !== undefined && pending.type === new.target) {
+      types = pending.types;
+      constructing = undefined;
+    }
+    Object.defineProperty(this, TYPES, { value: types, configurable: true });
+    Object.defineProperty(this, MESSAGE, { value: message ?? null, writable: true });
+    Object.defineProperty(this, PARTS, { value: parts === undefined ? undefined : held(parts), writable: true });
+  }
+}
+
+/**
+ * The members of the base, each read from what the constructor kept. Every member of
+ * {@link ExceptionParts} is one, which `satisfies` holds to: a part added there and not here fails
+ * the type check.
+ */
+const members = {
+  message: (kept: Kept) => composed(kept[TYPES] ?? EXCEPTION, kept[MESSAGE], kept[PARTS]),
+  name: (kept: Kept) => simpleName((kept[TYPES] ?? EXCEPTION)[0]),
+  // An AggregateException's InnerException is its first inner one, as .NET's is, and none is null.
+  innerException: (kept: Kept) =>
+    kept[PARTS]?.innerException ?? (kept[PARTS]?.innerExceptions as readonly unknown[] | null | undefined)?.[0] ?? null,
+  paramName: (kept: Kept) => kept[PARTS]?.paramName,
+  actualValue: (kept: Kept) => kept[PARTS]?.actualValue,
+  objectName: (kept: Kept) => kept[PARTS]?.objectName,
+  typeName: (kept: Kept) => kept[PARTS]?.typeName,
+  innerExceptions: (kept: Kept) => kept[PARTS]?.innerExceptions,
+} satisfies Record<keyof ExceptionParts | 'message' | 'name', (kept: Kept) => unknown>;
+
+for (const [member, read] of Object.entries(members)) {
+  Object.defineProperty(Exception.prototype, member, {
+    get(this: Kept): unknown {
+      return read(this);
+    },
+    configurable: true,
+  });
+}
+
+/**
+ * `new type(...args)` for a construction of a generic exception class of the app's
+ * (`new Failed<int>(3)`), with the types it is, which its twin's `$types` cannot say, the class's own,
+ * while a typed `catch` tells `Failed<int>` from `Failed<string>`. The base takes them before the
+ * constructor's body runs: tagged once the construction returned, an exception the body threw
+ * (`throw this`) or a `Message` it read was still the class's. The arguments are evaluated before, where
+ * C# evaluates them, and a construction in a field's initializer, which runs before the base's
+ * constructor, keeps its own.
+ */
+export function construct<T>(type: new (...args: never[]) => T, types: readonly string[], ...args: unknown[]): T {
+  const outer = constructing;
+  constructing = { type, types };
+  try {
+    return new type(...(args as never[]));
+  } finally {
+    constructing = outer;
+  }
+}
+
+/**
+ * A type's own name, as .NET's `Type.Name` is, from the name `Type.ToString()` writes, which the compiler
+ * hands: its namespace, its containing types and its type arguments left out (App.Failed`1[System.Int32]
+ * is Failed`1, and App.Outer+Inner is Inner). The arguments of the constructor past the message
+ * (`..._evaluated`) are only evaluated, where C# evaluates them, and carried nowhere.
  */
 function simpleName(qualified: string): string {
   let plain = '';
   let depth = 0;
   for (const character of qualified) {
-    if (character === '<') depth++;
-    else if (character === '>') depth--;
+    if (character === '[') depth++;
+    else if (character === ']') depth--;
     else if (depth === 0) plain += character;
   }
-  return plain.slice(plain.lastIndexOf('.') + 1);
+  return plain.slice(Math.max(plain.lastIndexOf('.'), plain.lastIndexOf('+')) + 1);
 }
 
 /** What a thrown value says: an error's message, and anything else's text. */

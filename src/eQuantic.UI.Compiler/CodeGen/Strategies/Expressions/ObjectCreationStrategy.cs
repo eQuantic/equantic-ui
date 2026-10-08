@@ -658,25 +658,27 @@ public class ObjectCreationStrategy : IExpressionIrStrategy
     /// constructor is its zero.
     /// </summary>
     private static JsExpr Construction(BaseObjectCreationExpressionSyntax creation, ITypeSymbol type, IMethodSymbol? ctor,
-        ConversionContext context) =>
+        ConversionContext context, JsExpr? types = null) =>
         type.IsValueType && ctor is { IsImplicitlyDeclared: true, Parameters.Length: 0 } && TwinIsWritten(type)
             ? JsExpr.Opaque(DefaultValue.Of(type, context))
             : BoundArguments.Of(context.SemanticHelper.GetOperation(creation), argument => context.Converter.ConvertIr(argument)) is { } bound
-                ? bound.New(type.Name, context.TypeAnnotations)
-                : JsExpr.New(JsExpr.Identifier(type.Name), ConstructorArguments(creation, ctor, context));
+                ? bound.New(type.Name, context.TypeAnnotations, types)
+                : types is null
+                    ? JsExpr.New(JsExpr.Identifier(type.Name), ConstructorArguments(creation, ctor, context))
+                    : JsExpr.Call(JsExpr.Identifier(Eq.ExceptionConstruct),
+                        [JsExpr.Identifier(type.Name), types, .. ConstructorArguments(creation, ctor, context)]);
 
     /// <summary>
     /// Whether <paramref name="type"/> is a class whose twin eqc writes with its C# constructors
     /// (<see cref="TwinConstructor"/>, #583), which is built as a record is
-    /// (<see cref="BuildClassConstruction"/>). A node of the tree, a component and a component's state
-    /// take their initializer as the props the runtime's classes take, an exception is built by its
-    /// symbol (<see cref="ExceptionCreationStrategy"/>), and the vocabulary's hand-written twins take a
-    /// config object of their own.
+    /// (<see cref="BuildClassConstruction"/>), an exception class of the app's among them (#611). A node
+    /// of the tree, a component and a component's state take their initializer as the props the
+    /// runtime's classes take, and the vocabulary's hand-written twins take a config object of their own.
     /// </summary>
     internal static bool IsBuiltAsCSharp(INamedTypeSymbol type) =>
         type is { TypeKind: TypeKind.Class, IsRecord: false, IsStatic: false }
         && TwinIsWritten(type)
-        && !type.IsVisualNode() && !type.IsComponentState() && !ExceptionTypes.Is(type);
+        && !type.IsVisualNode() && !type.IsComponentState();
 
     /// <summary>
     /// A plain class built as C# builds it (#582): the constructor the call binds, then the object
@@ -686,7 +688,10 @@ public class ObjectCreationStrategy : IExpressionIrStrategy
     private static JsExpr BuildClassConstruction(BaseObjectCreationExpressionSyntax creation, INamedTypeSymbol type,
         ConversionContext context)
     {
-        var construction = Construction(creation, type, context.SemanticHelper.GetSymbol(creation) as IMethodSymbol, context);
+        // A construction of a generic exception class hands its base the types it is, before the
+        // constructor's body runs (#611, #708).
+        var construction = Construction(creation, type, context.SemanticHelper.GetSymbol(creation) as IMethodSymbol, context,
+            ExceptionTypes.HasTwin(type) ? ExceptionTypes.ConstructedTypes(type, context) : null);
         return creation.Initializer switch
         {
             null => construction,

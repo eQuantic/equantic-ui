@@ -1674,6 +1674,10 @@ public class TypeScriptEmitter
             }
             foreach (var p in cls.Members.OfType<PropertyDeclarationSyntax>())
             {
+                // An enumerator's explicit IEnumerator.Current beside its generic one holds its name, and
+                // answers alike: written, it replaced the generic one and read itself (#612).
+                if (ModelFor(p)?.GetDeclaredSymbol(p) is IPropertySymbol declaredProperty && IterableTwin.LeavesOut(declaredProperty))
+                    continue;
                 // An ABSTRACT property is DECLARED, never emitted. The derived class supplies the
                 // getter, and a field here would become an OWN property on the instance — which
                 // shadows the prototype's getter, so the base would answer for every subclass.
@@ -1781,6 +1785,10 @@ public class TypeScriptEmitter
                 EmitClassMethod(m, c, asStatic);
             foreach (var indexer in cls.Members.OfType<IndexerDeclarationSyntax>())
                 EmitIndexer(indexer, c);
+            // A sequence of the app's is iterable as its own GetEnumerator() says (#612).
+            if (!asStatic && ModelFor(cls)?.GetDeclaredSymbol(cls) is INamedTypeSymbol sequence
+                && IterableTwin.IteratorOf(sequence, _converter.UsedHelpers) is { } iterator)
+                c.Member(iterator, cls);
             // USER-DEFINED OPERATORS — the same family a record's twin already carries, and for the
             // same reason: JavaScript cannot overload an operator, so the call site lowers `a + b`
             // on two in-source objects to `T.opAdd(a, b)` whatever kind of type T is. It did that
@@ -1909,6 +1917,9 @@ public class TypeScriptEmitter
     /// supplies it.</summary>
     private void EmitClassMethod(MethodDeclarationSyntax m, TypeScriptCodeBuilder.ClassBuilder c, bool asStatic)
     {
+        // The non-generic IEnumerable.GetEnumerator() beside the generic one holds its name, and is the
+        // same sequence: written, it replaced the generic one and called itself (#612).
+        if (ModelFor(m)?.GetDeclaredSymbol(m) is IMethodSymbol declared && IterableTwin.LeavesOut(declared)) return;
         if (Lowering.Method(m, asStatic, DeclaredType, returns: TupleReturn) is { } member) c.Member(member, m);
     }
 
@@ -2389,7 +2400,9 @@ public class TypeScriptEmitter
         type.GetAttributes().Any(a => a.AttributeClass?.Name == "FlagsAttribute");
 
     /// <summary>The base CLASS of a declaration, or null. An interface in the base list is not one,
-    /// and a generic base loses its arguments — TypeScript needs none of them to extend.</summary>
+    /// and a generic base loses its arguments — TypeScript needs none of them to extend. An exception
+    /// class of the app's over one of .NET's, which has no twin, extends the runtime's exception base
+    /// (<see cref="Eq.ExceptionBase"/>, #611).</summary>
     private string? BaseClassOf(ClassDeclarationSyntax cls)
     {
         if (cls.BaseList is null) return null;
@@ -2398,6 +2411,8 @@ public class TypeScriptEmitter
             // Named as its twin: a namespace in the spelling is no name the module has (#479).
             var candidate = entry.Type.TwinTypeName(_semanticModel);
             var resolved = _semanticModel?.GetSymbolInfo(entry.Type).Symbol as INamedTypeSymbol;
+            if (resolved is not null && ExceptionTypes.Is(resolved) && !ExceptionTypes.HasTwin(resolved))
+                return Eq.ExceptionBase;
             if (resolved is not null ? resolved.TypeKind == TypeKind.Class : Resolvable(candidate))
                 return candidate;
         }
@@ -2444,6 +2459,10 @@ public class TypeScriptEmitter
         var builder = new TypeScriptCodeBuilder { TypeAnnotations = TypeAnnotations, Layout = _converter.Layout };
         builder.Class(name, BaseClassOf(cls), c =>
             {
+                // An exception class of the app's says the .NET types it is, which the runtime's base
+                // reads off the class an exception is constructed as, for a typed catch (#611).
+                if (!asStatic && semanticModel?.GetDeclaredSymbol(cls) is INamedTypeSymbol self && ExceptionTypes.HasTwin(self))
+                    c.Field("$types", null, JsExprWriter.Write(ExceptionTypes.TypesOf(self)), cls, isStatic: true);
                 EmitStaticMembers(cls, c, asStatic);
                 if (!asStatic) EmitInheritedDefaults(cls, c);
             },
@@ -2498,6 +2517,13 @@ public class TypeScriptEmitter
         // body is fine through it (it dereferences when called); a base class is not.
         var baseName = BaseClassOf(cls);
         if (baseName is not null) runtimeProvided.Remove(baseName);
+        // The runtime's exception base is reached through `$eq`, which the module imports, and is no
+        // module of its own (#611).
+        if (baseName == Eq.ExceptionBase)
+        {
+            core.Add(Eq.Import);
+            baseName = null;
+        }
         // Only what the emitted text NAMES. A type the C# mentions and the emission erases (an
         // interface, an enum) would otherwise import a name nothing uses — which the runtime's own
         // build rejects. Lookarounds rather than `\b`: `$eq` starts with a non-word character.
@@ -2567,7 +2593,10 @@ public class TypeScriptEmitter
             return Lowering.ParamWithDefault(name, DeclarationType(component, p.Type),
                 defaultValue is null ? null : _converter.ConvertExpression(defaultValue), isRest);
         }));
-        var methodName = method.Name.ToCamelCase();
+        // The name every call bound to it reaches: a method that hides one holds a name of its own (#563).
+        var methodName = method.SyntaxNode is { } declared
+            ? TwinMethodName.Of(declared, ModelFor(declared))
+            : method.Name.ToCamelCase();
 
         // The lifecycle keeps its own name across the crossing. It used to arrive as `onInit`, from
         // the days when the only base was the legacy page state, and that name is the reason

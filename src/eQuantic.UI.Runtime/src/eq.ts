@@ -68,7 +68,7 @@ import {
   realParse,
   realTryParse,
 } from './utils/number-parse';
-import { enumerable, max, min, seq, toArray, toDictionary } from './utils/linq';
+import { enumerable, iterate, max, min, seq, toArray, toDictionary } from './utils/linq';
 import { range, repeat } from './utils/sequence-factories';
 import {
   chars,
@@ -163,10 +163,12 @@ import {
   bases as exceptionBases,
   create as createException,
   exception,
+  Exception,
   filter as exceptionFilter,
   is as isException,
   raise,
   thrown,
+  construct as constructException,
   typeInitialization,
 } from './utils/exceptions';
 import {
@@ -256,9 +258,9 @@ export const $eq = {
   str,
   /** LINQ Zip: pairs stop with the shorter sequence. */
   zip,
-  /** LINQ's Max and Min by the type they answer, ToDictionary with .NET's refusals, and Range and
-   * Repeat over arguments evaluated once. */
-  linq: { enumerable, max, min, seq, toArray, toDictionary, range, repeat },
+  /** LINQ's Max and Min by the type they answer, ToDictionary with .NET's refusals, Range and
+   * Repeat over arguments evaluated once, and the iteration of a twin that implements IEnumerable<T>. */
+  linq: { enumerable, iterate, max, min, seq, toArray, toDictionary, range, repeat },
   /** C# `with` over a runtime value type — prototype preserved. */
   withPatch,
   /** A twin's JSON, a property's store under the property's name — see utils/twin-json. */
@@ -492,7 +494,8 @@ export const $eq = {
    * type the runtime knows, the test a typed `catch` and a type pattern write, a `throw`
    * expression, what a `throw` statement throws when its exception may be null, an exception
    * filter, which answers false where it throws, and what a type whose initializer threw throws on
-   * every use.
+   * every use; and the base an exception class of the app's extends, with the construction of a
+   * generic one, which hands it the types it is before its constructor's body runs.
    */
   exceptions: {
     create: createException,
@@ -503,6 +506,8 @@ export const $eq = {
     filter: exceptionFilter,
     typeInitialization,
     bases: exceptionBases,
+    Exception,
+    construct: constructException,
   },
   /** CSS class composition (the styling subsystem). */
   css: { styleBuilder: StyleBuilder, classBuilder: ClassBuilder, joinClasses, whenClass },

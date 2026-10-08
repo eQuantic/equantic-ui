@@ -170,6 +170,46 @@ export function enumerable<T>(source: Iterable<T> | string): Iterable<T> {
   return typeof source === 'string' ? (source.split('') as unknown as T[]) : source;
 }
 
+/** An enumerator the app wrote: its twin's `MoveNext`, `Current` and, where it has one, `Dispose`. */
+interface Enumerator<T> {
+  moveNext(): boolean;
+  readonly current: T;
+  dispose?(): void;
+}
+
+/**
+ * The iteration of a twin whose type implements `IEnumerable<T>` (#612): its `[Symbol.iterator]`
+ * hands this the enumerator the type's own `GetEnumerator()` returned, so a `for…of`, a spread and
+ * every sequence helper here walk the class as a `foreach` walks it, and so does a `foreach` that
+ * calls the class's own public `GetEnumerator()` beside the interface's, as C# binds it. An
+ * enumerator the app wrote is walked by its `MoveNext` and `Current`, and disposed when the walk
+ * ends, however it ends, as a `foreach` disposes it, even where its class is a sequence too
+ * (`GetEnumerator() => this`), whose own iteration would hand it back here without end. An
+ * enumerator an iterator method filled, or a sequence's own, is iterated as it is. A null one is
+ * .NET's NullReferenceException, which `MoveNext` on it throws.
+ */
+export function iterate<T>(enumerator: Iterable<T> | Enumerator<T>): IterableIterator<T> {
+  if (enumerator == null) {
+    throw exception(
+      'System.NullReferenceException',
+      'Object reference not set to an instance of an object.',
+    );
+  }
+  if (typeof (enumerator as Partial<Enumerator<T>>).moveNext === 'function') return walk(enumerator as Enumerator<T>);
+  const own = (enumerator as Partial<Iterable<T>>)[Symbol.iterator];
+  // Every iterator the platform and the runtime hand out is iterable itself, so a foreach that calls
+  // the GetEnumerator() it binds walks what this answers as it is.
+  return typeof own === 'function' ? (own.call(enumerator) as IterableIterator<T>) : walk(enumerator as Enumerator<T>);
+}
+
+function* walk<T>(enumerator: Enumerator<T>): Generator<T> {
+  try {
+    while (enumerator.moveNext()) yield enumerator.current;
+  } finally {
+    enumerator.dispose?.();
+  }
+}
+
 /**
  * A NEW array of a sequence's elements, as `ToList` and `ToArray` make one: an array is copied too, so
  * the copy and its source are two arrays, as in .NET, whatever the static type hid it behind.

@@ -192,7 +192,9 @@ public class InvocationStrategy : IExpressionIrStrategy
                 return extension;
 
             ReportIfUntranslatable(symbol, methodName, invocation, context);
-            return JsExpr.Call(JsExpr.Member(callerIr, methodName.ToCamelCase()), argIrs);
+            // By the name the bound method holds on its twin: one that hides a member holds a name of
+            // its own, and a call bound to the hidden one keeps reaching it (#563).
+            return JsExpr.Call(JsExpr.Member(callerIr, TwinMethodName.Of(symbol, methodName)), argIrs);
         }
 
         // Invoking a DELEGATE VALUE by bare name (`configure(node)`, `OnSelect(i)`): the invocation
@@ -250,7 +252,7 @@ public class InvocationStrategy : IExpressionIrStrategy
                 context.UsedRuntimeTypes.Add(declaring.Name);
             else
                 context.UsedAppTypes.Add(declaring.Name);
-            return JsExpr.Call(JsExpr.Member(JsExpr.Identifier(declaring.Name), methodName.ToCamelCase()), argIrs);
+            return JsExpr.Call(JsExpr.Member(JsExpr.Identifier(declaring.Name), TwinMethodName.Of(symbol, methodName)), argIrs);
         }
 
         // STANDALONE factory calls (no semantic model — the playground's mode): nothing can RESOLVE
@@ -304,7 +306,7 @@ public class InvocationStrategy : IExpressionIrStrategy
             // `_tick?.Dispose()` raised EQ2004 while the shipped translation was fine.
             if (!invocation.IsNullConditional())
                 ReportIfUntranslatable(symbol, methodName, invocation, context);
-            return JsExpr.Call(JsExpr.ThisMember(methodName.ToCamelCase()), argIrs);
+            return JsExpr.Call(JsExpr.ThisMember(TwinMethodName.Of(symbol, methodName)), argIrs);
         }
 
         ReportIfUntranslatable(symbol, methodName, invocation, context);

@@ -435,6 +435,16 @@ public static class Eq
     /// throws on .NET's behalf. Two args: the type, the message.</summary>
     public const string ExceptionOf = "$eq.exceptions.of";
 
+    /// <summary>The class the twin of an exception class of the app's extends where its base is not the
+    /// app's (#611): the browser's Error, carrying the .NET types the twin's <c>static $types</c> says.
+    /// Its constructor is System.Exception's: the message, the inner exception.</summary>
+    public const string ExceptionBase = "$eq.exceptions.Exception";
+
+    /// <summary>A construction of a constructed generic exception class of the app's, which hands its base
+    /// the types the construction is, which its twin's <c>$types</c> cannot say, before the constructor's
+    /// body runs. Args: the class, the types, then the constructor's own arguments.</summary>
+    public const string ExceptionConstruct = "$eq.exceptions.construct";
+
     /// <summary>Whether a value is of an exception type, by the type's full name: the test a typed
     /// <c>catch</c>, a type pattern and an <c>as</c> write.</summary>
     public const string ExceptionIs = "$eq.exceptions.is";
@@ -458,6 +468,10 @@ public static class Eq
 
     /// <summary><c>Enumerable.Range(start, count)</c>, its arguments evaluated once.</summary>
     public const string LinqRange = "$eq.linq.range";
+
+    /// <summary>The JavaScript iterator a twin's <c>[Symbol.iterator]</c> hands out, walking the enumerator
+    /// its type's own <c>GetEnumerator()</c> returns (#612). One arg: the enumerator.</summary>
+    public const string LinqIterate = "$eq.linq.iterate";
 
     /// <summary><c>Enumerable.Repeat(element, count)</c>: the one element, count times.</summary>
     public const string LinqRepeat = "$eq.linq.repeat";

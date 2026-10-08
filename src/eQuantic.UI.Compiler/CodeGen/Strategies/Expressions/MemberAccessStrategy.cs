@@ -93,6 +93,8 @@ public class MemberAccessStrategy : IExpressionIrStrategy
         {
             "Length" => "length",
             "Count" => "length", // Arrays/Lists (fallback when type is unknown)
+            // A method by the name it holds on its twin, which a method that hides one has of its own (#563).
+            _ when symbol is IMethodSymbol bound => TwinMethodName.Of(bound, name),
             _ => name.ToCamelCase()
         };
 
