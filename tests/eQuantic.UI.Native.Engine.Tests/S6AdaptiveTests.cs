@@ -92,7 +92,9 @@ public class S6AdaptiveTests
     /// <summary>
     /// The same rule for the rest of what a parent reads off a direct child: the arm's own
     /// align-self places it in its line, and the arm's own span in its grid. Before, the row and
-    /// the grid read both off the AdaptiveNode.
+    /// the grid read both off the AdaptiveNode. The node here carries a placement of its own that
+    /// no arm asks for, and it is never read: at a compact width the compact arm, which asks for
+    /// neither, stays unaligned and unspanned.
     /// </summary>
     [Fact]
     public void AnArm_AlignsItselfInItsLine_AndSpansItsGrid()
@@ -100,18 +102,32 @@ public class S6AdaptiveTests
         var row = new Row(cross: CrossAlign.Start);
         row.Add(new Box(new BoxStyle { Width = 40, Height = 100 }));
         row.Add(new AdaptiveNode(Marker(0x10), medium: null,
-            expanded: new Box(new BoxStyle { Width = 40, Height = 10 }) { AlignSelf = CrossAlign.End }));
+            expanded: new Box(new BoxStyle { Width = 40, Height = 10 }) { AlignSelf = CrossAlign.End })
+        {
+            AlignSelf = CrossAlign.Center,
+        });
         var grid = new Grid([GridTrack.Fixed(100), GridTrack.Fixed(100)]);
-        grid.Add(new AdaptiveNode(Marker(0x10), medium: null,
-            expanded: new Box(new BoxStyle { Width = SizeValue.Fill, Height = 10 }) { GridSpan = 2 }));
+        grid.Add(new AdaptiveNode(new Box(new BoxStyle { Width = SizeValue.Fill, Height = 12 }), medium: null,
+            expanded: new Box(new BoxStyle { Width = SizeValue.Fill, Height = 10 }) { GridSpan = 2 })
+        {
+            GridSpan = 2,
+        });
         grid.Add(new Box(new BoxStyle { Width = 40, Height = 10 }));
 
-        LayoutNode Lay(VisualNode root) => PhotonRealizer.Realize(root, 1200, 800, PhotonTheme.Instance,
-            ThemeMode.Light, new DisplayListBuilder()).Root;
+        LayoutNode Lay(VisualNode root, float width) => PhotonRealizer.Realize(root, width, 800,
+            PhotonTheme.Instance, ThemeMode.Light, new DisplayListBuilder()).Root;
 
-        Lay(row).Children[1].Bounds.Y.Should().Be(90, "the arm aligns to the end of a 100dp line");
-        var cells = Lay(grid).Children;
+        Lay(row, 1200).Children[1].Bounds.Y.Should().Be(90,
+            "the arm aligns to the end of a 100dp line, not to the node's center");
+        var cells = Lay(grid, 1200).Children;
         cells[0].Bounds.Width.Should().Be(200, "the arm spans both columns");
         cells[1].Bounds.Y.Should().Be(10, "so the next child starts the next row");
+
+        Lay(row, 400).Children[1].Bounds.Y.Should().Be(0,
+            "the compact arm asks for no alignment, so it sits at the line's start, not at the node's center");
+        var compact = Lay(grid, 400).Children;
+        compact[0].Bounds.Width.Should().Be(100,
+            "the compact arm asks for no span, so it fills one column, not the node's two");
+        compact[1].Bounds.Y.Should().Be(0, "and the next child shares its row");
     }
 }
