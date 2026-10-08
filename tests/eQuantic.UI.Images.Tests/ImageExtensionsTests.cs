@@ -29,7 +29,7 @@ public class ImageExtensionsTests
         {
             opts.DefaultQuality = 90;
             opts.CacheTtlSeconds = 86400;
-            opts.Formats = ["image/avif", "image/webp"];
+            opts.Formats = ["image/png", "image/webp"];
         });
 
         var provider = services.BuildServiceProvider();
@@ -37,7 +37,7 @@ public class ImageExtensionsTests
 
         options.DefaultQuality.Should().Be(90);
         options.CacheTtlSeconds.Should().Be(86400);
-        options.Formats.Should().BeEquivalentTo(["image/avif", "image/webp"]);
+        options.Formats.Should().BeEquivalentTo(["image/png", "image/webp"]);
     }
 
     [Fact]
