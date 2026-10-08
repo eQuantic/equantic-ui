@@ -221,9 +221,11 @@ internal sealed class TwinConstructor
     {
         // A record's copy constructor (its one parameter the record's own type) is what `with` copies
         // through in C#, and no `new` reaches it: taken for a branch, it met any other constructor of
-        // one argument and refused the type (EQ1009), which compiled before.
+        // one argument and refused the type (EQ1009), which compiled before. Nor does a `new` reach
+        // the constructor only .NET's serialization calls (IsSerializationConstructor).
         var declared = type.Members.OfType<ConstructorDeclarationSyntax>()
-            .Where(constructor => !constructor.Modifiers.Any(SyntaxKind.StaticKeyword) && !IsCopyConstructor(type, constructor))
+            .Where(constructor => !constructor.Modifiers.Any(SyntaxKind.StaticKeyword) && !IsCopyConstructor(type, constructor)
+                && !IsSerializationConstructor(constructor))
             .ToList();
 
         var roots = new List<Root>();
@@ -267,6 +269,36 @@ internal sealed class TwinConstructor
             alternates.Add(new Alternate(constructor, arity, target));
         }
         return new Constructors(roots, alternates);
+    }
+
+    /// <summary>
+    /// Whether a constructor is the one only .NET's serialization calls: the <c>ISerializable</c>
+    /// pattern's <c>(SerializationInfo info, StreamingContext context)</c>, which Visual Studio's
+    /// exception template writes beside <c>()</c>, <c>(string)</c> and <c>(string, Exception)</c>. No
+    /// <c>new</c> in the browser reaches it, since the browser has no <c>SerializationInfo</c>, so it is no
+    /// branch of the twin, as a record's copy constructor is not. Taken for one, it met
+    /// <c>(string, Exception)</c>, which takes as many arguments, and refused the class (EQ1009), so the
+    /// template had to be edited before the class could build. Asked of the model and, without one, of the
+    /// types' names as written.
+    /// </summary>
+    private bool IsSerializationConstructor(ConstructorDeclarationSyntax constructor)
+    {
+        if (constructor.ParameterList.Parameters is not [{ Type: { } info }, { Type: { } context }]) return false;
+        if (_modelFor(constructor)?.GetDeclaredSymbol(constructor) is IMethodSymbol { Parameters: [var first, var second] })
+            return IsSerialization(first.Type, "SerializationInfo") && IsSerialization(second.Type, "StreamingContext");
+        return Written(info) == "SerializationInfo" && Written(context) == "StreamingContext";
+
+        static bool IsSerialization(ITypeSymbol type, string name) =>
+            type is INamedTypeSymbol { Name: var declared, ContainingNamespace: var space }
+            && declared == name && space.ToDisplayString() == "System.Runtime.Serialization";
+
+        static string? Written(TypeSyntax type) => type switch
+        {
+            QualifiedNameSyntax qualified => qualified.Right.Identifier.ValueText,
+            AliasQualifiedNameSyntax aliased => aliased.Name.Identifier.ValueText,
+            SimpleNameSyntax simple => simple.Identifier.ValueText,
+            _ => null,
+        };
     }
 
     /// <summary>Whether a record's constructor is its copy constructor: one parameter, of the record's own

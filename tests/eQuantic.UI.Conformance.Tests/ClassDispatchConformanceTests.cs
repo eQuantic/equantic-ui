@@ -285,4 +285,51 @@ public class ClassDispatchConformanceTests
     [InlineData(false)]
     public void AnExceptionOfTheAppsOwn_IsAClassOverTheBrowsersError(bool typeAnnotations) =>
         ModuleGraph.AssertSameAsDotNet(Exceptions, typeAnnotations, ExceptionCases);
+
+    /// <summary>
+    /// Visual Studio's exception template, as the developer gets it: <c>()</c>, <c>(string)</c>,
+    /// <c>(string, Exception)</c> and the protected <c>(SerializationInfo, StreamingContext)</c> only .NET's
+    /// serialization calls, and a plain class with a constructor of that shape beside its own. The browser
+    /// has no <c>SerializationInfo</c>, so that one is no branch of the twin: taken for one, it met the
+    /// constructor of two arguments beside it and the build refused the class (EQ1009).
+    /// </summary>
+    private const string Template = """
+        using System;
+        using System.Runtime.Serialization;
+        using App;
+        namespace App
+        {
+            [Serializable]
+            public class TemplatedException : Exception
+            {
+                public TemplatedException() { }
+                public TemplatedException(string message) : base(message) { }
+                public TemplatedException(string message, Exception inner) : base(message, inner) { }
+        #pragma warning disable SYSLIB0051
+                protected TemplatedException(SerializationInfo info, StreamingContext context) : base(info, context) { }
+        #pragma warning restore SYSLIB0051
+            }
+            public class Snapshot
+            {
+                public string First = "", Second = "";
+                public Snapshot(string first, string second) { First = first; Second = second; }
+                protected Snapshot(SerializationInfo info, StreamingContext context) : this(info.GetString("first")!, info.GetString("second")!) { }
+            }
+        }
+        """;
+
+    private static readonly (string Name, string Statements)[] TemplateCases =
+    [
+        ("each of the template's constructors",
+            "var a = new TemplatedException(); var b = new TemplatedException(\"m\"); var c = new TemplatedException(\"outer\", new InvalidOperationException(\"inner\")); return a.Message + \"|\" + b.Message + \"|\" + c.Message + \"|\" + c.InnerException!.Message;"),
+        ("a typed catch of the template's exception",
+            "try { throw new TemplatedException(\"t\"); } catch (ArgumentException) { return \"argument\"; } catch (TemplatedException e) { return e.Message; }"),
+        ("a plain class beside a constructor of the same shape", "var s = new Snapshot(\"a\", \"b\"); return s.First + s.Second;"),
+    ];
+
+    [SkippableTheory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void VisualStudiosExceptionTemplate_BuildsAsItIsWritten(bool typeAnnotations) =>
+        ModuleGraph.AssertSameAsDotNet(Template, typeAnnotations, TemplateCases);
 }
