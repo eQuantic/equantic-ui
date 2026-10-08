@@ -1,4 +1,5 @@
 using System.Text;
+using eQuantic.UI.Primitives;
 using eQuantic.UI.Server.Authorization;
 using FluentAssertions;
 using Microsoft.AspNetCore.Http;
@@ -17,13 +18,17 @@ public class ServerActionDictionaryTests
 {
     private const string Fixture = "src/eQuantic.UI.Runtime/src/utils/__fixtures__/action-arguments.json";
 
-    public sealed class OrderActions
+    public sealed class OrderActions : StatelessComponent
     {
+        [ServerAction]
         public Task<string> Echo(Dictionary<int, string> scores, IDictionary<string, int> codes) =>
             Task.FromResult($"{string.Join(",", scores.Keys)} | {string.Join(",", codes.Keys)}");
 
+        [ServerAction]
         public Task<Dictionary<int, string>> Scores() =>
             Task.FromResult(new Dictionary<int, string> { [3] = "c", [1] = "a" });
+
+        public override VisualNode Build(ComponentContext context) => new Column(gap: 0);
     }
 
     private sealed class AlwaysAllowed : IServerActionAuthorizationService
@@ -53,14 +58,10 @@ public class ServerActionDictionaryTests
 
     private static async Task<(int Status, string Body)> Invoke(string method, string request)
     {
-        var actionId = $"{nameof(OrderActions)}/{method}";
+        // Registered as an app's actions are, by the scan, so the descriptor is the one the scan builds.
         var registry = new ServerActionRegistry();
-        registry.RegisterAction(actionId, new ServerActionDescriptor
-        {
-            ActionId = actionId,
-            ComponentType = typeof(OrderActions),
-            Method = typeof(OrderActions).GetMethod(method)!,
-        });
+        registry.ScanAssembly(typeof(ServerActionDictionaryTests).Assembly);
+        registry.GetAction($"{nameof(OrderActions)}/{method}").Should().NotBeNull();
 
         var root = new ServiceCollection().BuildServiceProvider(validateScopes: true);
         var middleware = new ServerActionsMiddleware(
