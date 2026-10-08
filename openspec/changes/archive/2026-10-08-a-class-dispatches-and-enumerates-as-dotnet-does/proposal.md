@@ -1,7 +1,7 @@
 # Proposal
 
-Closes #563, a sub-issue of #164 (the transpiler answers as .NET does), and #611 and #612, sub-issues
-of #565 (the transpiler's fences hold on every path, continued). One family: what a class of the
+Closes #563, a sub-issue of #164 (the transpiler's fences hold on every path), and #611 and #612,
+sub-issues of #565 (the same, continued). One family: what a class of the
 app's IS in the browser, how a call reaches its members, how it is enumerated, and what an exception
 class of the app's carries.
 
