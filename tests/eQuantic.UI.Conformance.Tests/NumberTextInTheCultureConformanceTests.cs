@@ -50,11 +50,13 @@ public class NumberTextInTheCultureConformanceTests
         // The value a builder's call binds BY NAME is the same value, and an Insert written out of its
         // parameters' order evaluates its arguments in the order they are written. An interpolated
         // string handed to Append builds StringBuilder's own handler, whose holes are the same holes.
+        // AppendLine writes the host's line break, which is "\r\n" on Windows and "\n" in the browser
+        // (the writer asks for it), so the case reads it as one.
         "var sb = new System.Text.StringBuilder(); var log = \"\"; double d = -1234.5; bool on = true; object? none = null; "
             + "double V() { log += \"v\"; return -1.5; } int I() { log += \"i\"; return 0; } "
             + "sb.Append(value: d).Append(value: none).Append('|').Insert(value: V(), index: I()).Insert(index: 0, value: 2.5); "
             + "sb.Append($\"|{d}|{on}|{none}|\").AppendLine($\"{-5}\"); "
-            + "return sb.ToString() + \"|\" + log;",
+            + "return sb.ToString().Replace(System.Environment.NewLine, \"\\n\") + \"|\" + log;",
         // An unsigned integer reads the same in every culture.
         "uint u = 7; byte y = 8; ushort h = 9; ulong w = 10; return $\"{u}|{y}|{h}|{w}|\" + u + y + \"|\" + w.ToString();",
         // An aligned hole pads the culture's text, and so does a composite placeholder.
