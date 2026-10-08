@@ -8,7 +8,10 @@ namespace eQuantic.UI.Compiler.CodeGen.Strategies.Types;
 /// Maps <c>System.Text.StringBuilder</c> to the runtime <c>StringBuilder</c> compat type.
 /// <c>new StringBuilder(...)</c> becomes the <c>stringBuilder(...)</c> factory; instance methods
 /// (<c>Append</c>, <c>AppendLine</c>, <c>Insert</c>, <c>Remove</c>, <c>Replace</c>, <c>Clear</c>,
-/// <c>ToString</c>) and <c>Length</c> become their camelCase equivalents on the value.
+/// <c>ToString</c>) and <c>Length</c> become their camelCase equivalents on the value, which take each
+/// overload by its count of arguments. The <c>char[]</c> overloads of <c>Append</c> and <c>Insert</c>
+/// are named for what they are (<c>appendChars</c>, <c>insertChars</c>): the runtime cannot tell a null
+/// array from a null string, and .NET refuses the two in different words (#650).
 /// </summary>
 /// <remarks>
 /// Priority 15 so it wins over the generic ToString (10), ObjectCreation (5) and member-access (0)
@@ -49,8 +52,8 @@ public class StringBuilderStrategy : ConversionStrategyBase
             case InvocationExpressionSyntax { Expression: MemberAccessExpressionSyntax ma } inv:
             {
                 var receiver = context.Converter.ConvertExpression(ma.Expression);
-                var name = ma.Name.Identifier.Text;
-                return $"{receiver}.{name.ToCamelCase()}({ConvertArgs(inv.ArgumentList, context)})";
+                var name = RuntimeName(context.SemanticHelper.GetSymbol(ma) as IMethodSymbol, ma.Name.Identifier.Text);
+                return $"{receiver}.{name}({ConvertArgs(inv.ArgumentList, context)})";
             }
 
             case MemberAccessExpressionSyntax member:
@@ -63,6 +66,14 @@ public class StringBuilderStrategy : ConversionStrategyBase
                 return context.Unhandled(node, "StringBuilder");
         }
     }
+
+    /// <summary>The runtime method an overload is: its name in camelCase, and the <c>char[]</c>
+    /// overloads of <c>Append</c> and <c>Insert</c> as their own method.</summary>
+    private static string RuntimeName(IMethodSymbol? method, string name) =>
+        method is { Name: "Append" or "Insert" }
+            && method.Parameters.Any(parameter => parameter is { Name: "value", Type: IArrayTypeSymbol })
+            ? $"{name.ToCamelCase()}Chars"
+            : name.ToCamelCase();
 
     private static bool IsMember(MemberAccessExpressionSyntax ma, ConversionContext context)
     {
