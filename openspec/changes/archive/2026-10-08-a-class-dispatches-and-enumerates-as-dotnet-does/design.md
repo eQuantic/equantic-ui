@@ -123,6 +123,19 @@ A host with no compilation keeps an exception class out by its base's name, as b
 no model, nothing knows the constructors of the base its twin would call, and a module of its own
 extended nothing.
 
+### A constructor only .NET's serialization calls is no branch of the twin
+
+Visual Studio's exception template writes `()`, `(string)`, `(string, Exception)` and the protected
+`(SerializationInfo, StreamingContext)` of the `ISerializable` pattern. Once an exception class is a
+class, the last two take as many arguments, and the twin, which tells its constructors apart by how many
+arguments arrive, refused the class (EQ1009). Only .NET's serialization calls that constructor, and the
+browser has no `SerializationInfo`, so no `new` there reaches it: it is no branch of the twin, as a
+record's copy constructor is not, for an exception class and a plain class alike. The developer who
+copied the template builds it as it is written, by the product principle: the SDK knows the platform,
+so the developer does not have to. Alternative: refuse it and tell the developer to delete it, which
+the first draft of this change did. Rejected: it asked for an edit of what the IDE wrote, for a
+constructor nothing in the browser can call.
+
 A generic class's twin knows only its definition (`Failed<T>`), and a typed `catch` tells `Failed<int>`
 from `Failed<string>`, so a construction of a constructed generic class is tagged with its own chain
 (`$eq.exceptions.typed`). Alternative: tag every construction at its site and keep no `$types`.
@@ -141,8 +154,7 @@ Rejected: a construction through a base call is no site, and the class is what k
 - An exception class is transpiled as any class is, which is the break this change makes: one whose
   members reach what the browser cannot run fails the build as any class does, until it is marked
   `[ServerOnly]`, and two constructors the twin cannot tell apart by their count of arguments are refused
-  (EQ1009), the serialization constructor of the old `ISerializable` pattern, obsolete since .NET 8
-  (SYSLIB0051), beside `(string, Exception)` among them. Both are said by the build, never in silence.
+  (EQ1009), as a class's are. Both are said by the build, never in silence.
 - A field of the app's class named like a member of the base (`message`) is an own property of the
   instance, which hides the base's accessor, where C# keeps the two apart.
 - A collection's own `GetEnumerator()` (`=> items.GetEnumerator()`) has no translation (EQ2004), so a

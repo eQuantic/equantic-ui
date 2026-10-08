@@ -55,12 +55,11 @@ module graph an app's build writes, both sides executed:
   (`$eq.exceptions.typed`).
 - What breaks, in preview: an exception class of the app's is transpiled as any class is. One the
   browser never uses, whose members reach what it cannot run, is marked `[ServerOnly]`, as any such
-  class is; and two of its constructors that take as many arguments are refused (EQ1009), as a class's
-  are, the serialization constructor obsolete since .NET 8 (SYSLIB0051) beside `(string, Exception)`
-  among them. The migration line: delete the serialization constructor, or mark the exception
-  `[ServerOnly]` where the browser never sees it. The emitted twin of a hiding method has a name of
-  its own, and an app exception's twin is a class: TypeScript written by hand against either would
-  move, and nothing in the runtime or the templates is.
+  class is, which is the migration line. The constructor only .NET's serialization calls,
+  `(SerializationInfo, StreamingContext)`, is no branch of the twin, as a record's copy constructor is
+  not, so Visual Studio's exception template builds as it is written. The emitted twin of a hiding
+  method has a name of its own, and an app exception's twin is a class: TypeScript written by hand
+  against either would move, and nothing in the runtime or the templates is.
 
 ## Capabilities
 

@@ -24,6 +24,7 @@
 - [x] 4.2 A generic method that hides one over its own type parameter is seen as hiding it. Conformance case
 - [x] 4.3 The runtime's exception base answers its members from accessors on its prototype, so a member of the class's own under one of their names answers. Conformance cases: a `Name` of the app's and an override of `ParamName`; verified by the runtime's specs
 - [x] 4.4 A host with no compilation keeps an exception class out by its base's name, and builds it as the runtime's exception; verified by the Compiler's module rule tests
+- [x] 4.5 The constructor only .NET's serialization calls, `(SerializationInfo, StreamingContext)`, is no branch of the twin, for an exception class and a plain class alike. Conformance cases built from Visual Studio's exception template: each of its constructors, a typed catch of it, and a plain class beside a constructor of that shape; failing before the change and green after
 
 ## 5. The real thing
 
