@@ -4,12 +4,15 @@
 
 A class, a record or a struct that implements `IEnumerable<T>`, or only `IEnumerable`, SHALL be
 enumerated in the browser by a `foreach`, a spread, `string.Join` and every LINQ operator as its own
-`GetEnumerator()` says, the one C#'s `foreach` binds: its own public one, or else the interface's.
-Through the enumerator an iterator method fills, or one the app writes, a class that is its own
-enumerator included, it SHALL be walked by its `MoveNext` and `Current` and disposed when the walk
-ends, however it ends. A derived type SHALL be enumerated through its override of the method. An
-explicit implementation of `GetEnumerator()` or `Current` beside the member that answers that name for
-the type SHALL NOT replace it.
+`GetEnumerator()` says, each through the one C# binds for it: a `foreach` over the class through the
+type's own public `GetEnumerator()` where it has one, and LINQ, a spread, `string.Join` and a `foreach`
+over the interface through the interface's implementation, explicit or not, so that the two walk
+different sequences where they answer differently. Through the enumerator an iterator method fills, or
+one the app writes, a class that is its own enumerator included, it SHALL be walked by its `MoveNext`
+and `Current` and disposed when the walk ends, however it ends. A derived type SHALL be enumerated
+through its override of the method. The non-generic `IEnumerable.GetEnumerator()` beside the generic
+interface's member, and an explicit `Current` beside a public one, SHALL NOT replace the member that
+answers that name.
 
 #### Scenario: A foreach over an iterator method
 
@@ -37,3 +40,11 @@ the type SHALL NOT replace it.
   `IEnumerable` ones, and a `foreach`, `string.Join` and `Sum()` walk it
 - **THEN** they answer 12, `2,4,6` and 12, as .NET does, where the explicit one replaced the public one,
   called itself and ran out of stack
+
+#### Scenario: A public GetEnumerator and an explicit one that walk different sequences
+
+- **WHEN** `class Split : IEnumerable<int>` yields 1 from its public `GetEnumerator()` and 2 from its
+  explicit `IEnumerable<int>.GetEnumerator()`
+- **THEN** a `foreach` over `new Split()` walks 1, and a `foreach` over it as `IEnumerable<int>`,
+  `string.Join`, `Sum()`, a spread and `new List<int>(split)` walk 2, as .NET does, where every one of
+  them walked the public one

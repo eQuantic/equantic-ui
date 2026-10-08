@@ -26,11 +26,17 @@
 - [x] 4.4 A host with no compilation keeps an exception class out by its base's name, and builds it as the runtime's exception; verified by the Compiler's module rule tests
 - [x] 4.5 The constructor only .NET's serialization calls, `(SerializationInfo, StreamingContext)`, is no branch of the twin, for an exception class and a plain class alike. Conformance cases built from Visual Studio's exception template: each of its constructors, a typed catch of it, and a plain class beside a constructor of that shape; failing before the change and green after
 
-## 5. The real thing
+## 5. Copilot's first round on #708
 
-- [x] 5.1 `dotnet build src/eQuantic.UI.Runtime -t:TestRuntime`, and the Compiler, Server, Web (against this change's wiki branch) and Conformance suites, each through the machine's suite lock, every one green
+- [x] 5.1 The two `GetEnumerator()`s are two members: the explicit one holds the interface member's name and a method beside an explicit implementation of its name one of its own (`TwinMethodName.ExplicitBeside`), EQ1007 refusing one that also answers another interface; `[Symbol.iterator]` walks the interface's, and a `foreach` whose bound `GetEnumerator()` is another method of the app's calls it (`IterableTwin.ForEachSource`). Conformance cases: a `foreach` over the class and the interface's consumers over two `GetEnumerator()`s that differ, a deconstructing `foreach`, a class with only a public `GetEnumerator()`, and a public method beside an explicit implementation of its name; a Compiler test for the refusal; failing on the previous head and green after
+- [x] 5.2 A construction of a generic exception class hands its types before its constructor's body runs (`$eq.exceptions.construct`), and an exception type is named as .NET names it at run time. Conformance cases: a generic class that throws itself from its constructor, its default message, and a nested class's; verified by the runtime's specs; failing on the previous head and green after
+- [x] 5.3 With no model, a constructor of types named like .NET's serialization stays a branch. A Compiler test, failing on the previous head and green after
 
-## 6. Documentation and archive
+## 6. The real thing
 
-- [x] 6.1 docs/DIAGNOSTICS.md for EQ1007, the wiki's SupportedFeatures page in English and Portuguese on the wiki branch named like this change's branch, and one docs/LEDGER.md line citing #563, #611 and #612
-- [x] 6.2 `./scripts/check-openspec.sh` green, then `openspec archive a-class-dispatches-and-enumerates-as-dotnet-does --yes` before the merge
+- [x] 6.1 `dotnet build src/eQuantic.UI.Runtime -t:TestRuntime`, and the Compiler, Server, Web (against this change's wiki branch) and Conformance suites, each through the machine's suite lock, every one green
+
+## 7. Documentation and archive
+
+- [x] 7.1 docs/DIAGNOSTICS.md for EQ1007, the wiki's SupportedFeatures page in English and Portuguese on the wiki branch named like this change's branch, and one docs/LEDGER.md line citing #563, #611 and #612
+- [x] 7.2 `./scripts/check-openspec.sh` green, then `openspec archive a-class-dispatches-and-enumerates-as-dotnet-does --yes` before the merge

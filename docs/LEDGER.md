@@ -1730,15 +1730,17 @@ record of a release, the wiki's Upgrading page is the distillate.
   ([#563](https://github.com/eQuantic/equantic-ui/issues/563)). It holds a name of its own on its twin
   (`name$1`), which every call the model binds to it reaches. A class that implements `IEnumerable<T>`
   had no `[Symbol.iterator]`, so `foreach`, a spread, `string.Join` and LINQ threw over it
-  ([#612](https://github.com/eQuantic/equantic-ui/issues/612)): its twin walks the `GetEnumerator()`
-  `foreach` binds, an enumerator the app wrote and a struct's included. An exception class of the app's
-  was an `Error` built by its symbol, with none of its members
+  ([#612](https://github.com/eQuantic/equantic-ui/issues/612)): each consumer walks the
+  `GetEnumerator()` C# binds for it, a `foreach` over the class its public one and LINQ the interface's,
+  an enumerator the app wrote and a struct's included. An exception class of the app's was an `Error`
+  built by its symbol, with none of its members
   ([#611](https://github.com/eQuantic/equantic-ui/issues/611)): it is a class over the runtime's
-  exception base, whose base call hands what a `new` of its .NET base hands since #558. Visual Studio's
-  exception template builds as it is written: the constructor only .NET's serialization calls is no
-  branch of the twin. 51 of the first 55 new conformance cases fail on main, and the four that pass are
-  answers main had right. Proposed and archived through OpenSpec (`openspec/specs/transpiler-classes`,
-  `transpiler-sequences` and `transpiler-exceptions`).
+  exception base, whose base call hands what a `new` of its .NET base hands since #558, a generic one
+  carrying its construction's types before its constructor runs. Visual Studio's exception template
+  builds as it is written: the constructor only .NET's serialization calls is no branch of the twin. 51
+  of the first 55 new conformance cases fail on main, and the four that pass are answers main had right.
+  Proposed and archived through OpenSpec (`openspec/specs/transpiler-classes`, `transpiler-sequences`
+  and `transpiler-exceptions`).
 
 ## Retired documents
 

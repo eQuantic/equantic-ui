@@ -197,7 +197,10 @@ through the hiding type, the hiding one. An override of a method that hides one 
 method. A member of .NET's that the runtime reads by its name (`GetHashCode`, `ToString`, `Equals`)
 SHALL be answered where the runtime reads it by the member, never by a method of the app's that hides
 it. eqc SHALL refuse with EQ1007 a method that hides an inherited member and answers an interface's
-member, which a call through the interface reaches by the hidden member's name.
+member, which a call through the interface reaches by the hidden member's name. A method beside an
+explicit interface implementation of its name SHALL hold a name of its own too, the explicit one
+keeping the interface member's, and eqc SHALL refuse with EQ1007 one that also answers another
+interface.
 
 #### Scenario: A call through the base
 
@@ -231,3 +234,9 @@ member, which a call through the interface reaches by the hidden member's name.
   `class GenHiding : Gen { public new string F<U>(List<U> x) => "hiding"; }` and
   `Gen g = new GenHiding(); return g.F(new List<int>()) + new GenHiding().F(new List<int>());`
 - **THEN** it answers `basehiding`, as .NET does, where the build refused `GenHiding` with EQ1007
+
+#### Scenario: A public method beside an explicit implementation of its name
+
+- **WHEN** `class Labeled : INamedThing { public string Name() => "own"; string INamedThing.Name() => "interface"; }`
+  and `var l = new Labeled(); INamedThing n = l; return l.Name() + "|" + n.Name();`
+- **THEN** it answers `own|interface`, as .NET does, where both calls answered the one written last

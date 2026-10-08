@@ -9,11 +9,12 @@ implicit, SHALL hand what a `new` of that type hands: the message bound to the c
 or, where none or null was given, the text that constructor writes, and what it takes besides, each by
 its parameter, every argument evaluated in the order it is written; `Message`, `InnerException` and
 `ParamName` SHALL answer them as they answer for that type. A message still missing SHALL answer .NET's
-default, `Exception of type '<its full name>' was thrown.`, and a member the class declares under the
-name of one of the base's, an override of `Message` or of `ParamName` and a `Name` of its own, SHALL
-answer for it. An exception of the class SHALL carry its .NET types, a derived class's its own and a
-constructed generic class's those of its construction, which a typed `catch`, a type pattern and an
-`as` read.
+default, `Exception of type '<its name>' was thrown.`, the type named as .NET names it at run time
+(``App.Failed`1[System.Int32]``, `App.Outer+Inner`), and a member the class declares under the name of
+one of the base's, an override of `Message` or of `ParamName` and a `Name` of its own, SHALL answer for
+it. An exception of the class SHALL carry its .NET types, a derived class's its own and a constructed
+generic class's those of its construction from before its constructor's body runs, which a typed
+`catch`, a type pattern and an `as` read.
 
 #### Scenario: Its members
 
@@ -57,3 +58,10 @@ constructed generic class's those of its construction, which a typed `catch`, a 
   `class Renamed : ArgumentException { public Renamed() : base("m", "p") { } public override string ParamName => "q"; }`
 - **THEN** `new Lookup("k").Name` is `k`, and `new Renamed()`'s `ParamName` is `q` and its `Message`
   "m (Parameter 'p')", as in .NET, where they read `Lookup` and `p`
+
+#### Scenario: A generic class that throws itself from its constructor
+
+- **WHEN** `class Rethrown<T> : Exception` reads `Message` and throws `this` from its constructor, and
+  `new Rethrown<int>(1, true)` is caught by `catch (Rethrown<string>) { … } catch (Rethrown<int> r) { … }`
+- **THEN** the second clause takes it, and the message it read is
+  "Exception of type 'App.Rethrown`1[System.Int32]' was thrown.", as in .NET, where neither clause took it

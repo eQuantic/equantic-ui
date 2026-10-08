@@ -67,25 +67,38 @@ of its own would be needed to answer it, which no other path has yet.
 
 ### A sequence's twin is iterable through its own GetEnumerator()
 
-`IterableTwin` finds the method the type's iteration goes through, the one C#'s `foreach` binds: the
-type's own public `GetEnumerator()`, which a struct enumerator rides on as `List<T>`'s does, or else the
-implementation of `IEnumerable<T>.GetEnumerator()` (or of the non-generic one for a type that implements
-no `IEnumerable<T>`), and the twin of the type that declares it carries
+`IterableTwin` finds the method the type's iteration goes through, the implementation of
+`IEnumerable<T>.GetEnumerator()` (or of the non-generic one for a type that implements no
+`IEnumerable<T>`), which LINQ, a spread, `string.Join` and a `foreach` over the interface reach in .NET,
+and the twin of the type that declares it carries
 `[Symbol.iterator]() { return $eq.linq.iterate(this.<its name>()); }`. `iterate` walks what it is handed:
 an enumerator the app wrote by its `MoveNext` and `Current`, in a generator whose `finally` disposes it,
 so a loop that breaks disposes it as `foreach` does, and anything else iterable (an iterator method's
 array, a sequence's own iterator) as it is. `MoveNext` is asked first: a class that is its own enumerator
-(`GetEnumerator() => this`) is iterable too, and its own iteration would hand it back without end. A derived type inherits the member, and its override of the
-method answers through `this`. How Dart answers it: an `Iterable` hands out an `Iterator` with
-`moveNext()` and `current`, .NET's shape, and dart2js compiles `for-in` to that protocol; eqc writes ES
-classes and arrays, so the twin speaks JavaScript's protocol and adapts .NET's enumerator to it.
+(`GetEnumerator() => this`) is iterable too, and its own iteration would hand it back without end. A
+derived type inherits the member, and its override of the method answers through `this`. How Dart
+answers it: an `Iterable` hands out an `Iterator` with `moveNext()` and `current`, .NET's shape, and
+dart2js compiles `for-in` to that protocol; eqc writes ES classes and arrays, so the twin speaks
+JavaScript's protocol and adapts .NET's enumerator to it.
 
-An explicit implementation of a member of the enumeration interfaces (`GetEnumerator()`, `Current`)
-beside the member that answers that name for the type, its own public one or the generic interface's,
-is not written: the twin holds one member per name, and the two answer alike, by the contract of the
-generic interfaces, which derive from the non-generic ones, and by the pattern every .NET collection
-keeps for its own public one. Written after it, the explicit one replaced it and called itself. Any
-other explicit implementation is unchanged.
+A `foreach` over the class binds what C# binds, the type's own public `GetEnumerator()` where it has one,
+which may walk another sequence than the interface's (measured: a public one yielding 1 beside an explicit
+`IEnumerable<int>` one yielding 2 sums 1 in a `foreach` over the class, and 2 in LINQ, `string.Join`, a
+spread, `new List<int>(x)` and a `foreach` over the interface). The loop reads that method from the bound
+tree (`ForEachStatementInfo.GetEnumeratorMethod`) and, where it is a method of the app's other than the
+one the twin's iteration goes through, calls it through `iterate` (`IterableTwin.ForEachSource`); a class
+with only a public `GetEnumerator()` is walked the same way. The two methods are two members: the explicit
+implementation holds the interface member's name, which every call through the interface reaches, and a
+method beside an explicit implementation of its name holds a name of its own
+(`TwinMethodName.ExplicitBeside`), for every interface. One that answers another interface too is refused
+(EQ1007): a call through that interface would reach the explicit one. Alternative: merge the two into the
+public one, which the first draft did, assuming they agree, as .NET's collections keep them. Rejected:
+C# does not require it, and every consumer walked the public one (Copilot's review of #708).
+
+The non-generic `IEnumerable.GetEnumerator()` and `IEnumerator.Current` implemented explicitly beside the
+generic interface's member are not written: the generic interfaces derive from the non-generic ones, so by
+their contract the two answer alike, and written after the generic one the explicit one replaced it and
+called itself. Nor is an explicit `Current` beside a public one, the twin holding one property per name.
 
 ### An exception class is a class over the runtime's exception base
 
@@ -136,10 +149,17 @@ so the developer does not have to. Alternative: refuse it and tell the developer
 the first draft of this change did. Rejected: it asked for an edit of what the IDE wrote, for a
 constructor nothing in the browser can call.
 
-A generic class's twin knows only its definition (`Failed<T>`), and a typed `catch` tells `Failed<int>`
-from `Failed<string>`, so a construction of a constructed generic class is tagged with its own chain
-(`$eq.exceptions.typed`). Alternative: tag every construction at its site and keep no `$types`.
-Rejected: a construction through a base call is no site, and the class is what knows what it is.
+A generic class's twin knows only its definition (``Failed`1[T]``), and a typed `catch` tells
+`Failed<int>` from `Failed<string>`, so a construction of a constructed generic class hands its own chain
+to the base before the constructor's body runs (`$eq.exceptions.construct(type, types, ...args)`, which the
+base reads off a pending construction of that class): tagged once it returned, which the first draft did,
+an exception the constructor threw (`throw this`) missed `catch (Failed<int>)`, and a `Message` it read
+named the class (Copilot's review of #708). Alternative: tag every construction at its site and keep no
+`$types`. Rejected: a construction through a base call is no site, and the class is what knows what it is.
+
+A type is named as .NET names it at run time, `Type.ToString()` (``App.Failed`1[System.Int32]``,
+`App.Outer+Inner`), for the chain a typed `catch` reads and for the message .NET writes where none is
+given, `Exception of type '<that name>' was thrown.`: its C# spelling named a type .NET does not.
 
 ## Risks / Trade-offs
 

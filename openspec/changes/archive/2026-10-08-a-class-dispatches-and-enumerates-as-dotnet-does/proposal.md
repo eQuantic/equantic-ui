@@ -37,13 +37,13 @@ module graph an app's build writes, both sides executed:
   one that hides one and answers an interface is, since a call through the interface reaches the
   hidden member's name.
 - The twin of a type that implements `IEnumerable<T>` (or only `IEnumerable`) carries a
-  `[Symbol.iterator]` that calls the method its iteration goes through, the one C#'s `foreach` binds
-  (its own public `GetEnumerator()`, or the interface's), and walks what it returns
+  `[Symbol.iterator]` that calls the interface's `GetEnumerator()` and walks what it returns
   (`$eq.linq.iterate`): an enumerator an iterator method filled, or one the app wrote, by its
   `MoveNext` and `Current`, disposed when the walk ends, a class that is its own enumerator included.
-  A class, a record and a struct alike. An explicit enumeration member (`GetEnumerator()`, `Current`)
-  beside the member that answers its name is not written: they answer alike, and the twin holds one
-  name.
+  A class, a record and a struct alike. A `foreach` over the class calls the public `GetEnumerator()`
+  C# binds there where it is another method, so the two walk different sequences where they answer
+  differently, as in .NET, and a method beside an explicit implementation of its name holds a name of
+  its own. The non-generic member beside the generic one is not written: they answer alike by contract.
 - An exception class the app declares on its own is a class: it gets a module and the twin a class
   gets, which extends `$eq.exceptions.Exception` (the browser's `Error`, carrying the .NET types the
   twin's `static $types` says) where its base is .NET's. Its base call hands what a `new` of that
@@ -52,7 +52,8 @@ module graph an app's build writes, both sides executed:
   `ParamName`, and where no message or a null one is given, the text that base's constructor writes,
   an implicit call included; a message still missing is .NET's default for the class; `Message` is an
   accessor an override replaces; and a construction of a generic class is tagged with its own types
-  (`$eq.exceptions.typed`).
+  (`$eq.exceptions.construct`), before its constructor's body runs; a type is named as .NET names it at
+  run time (``App.Failed`1[System.Int32]``), in the chain and in a missing message.
 - What breaks, in preview: an exception class of the app's is transpiled as any class is. One the
   browser never uses, whose members reach what it cannot run, is marked `[ServerOnly]`, as any such
   class is, which is the migration line. The constructor only .NET's serialization calls,
@@ -86,9 +87,9 @@ None.
   with what a `new` of the .NET base takes, the text and the parts `ExceptionTypes` reads for both,
   `ObjectCreationStrategy` builds the class, and `TsStandIn` annotates it by its own name.
 - The runtime: `$eq.linq.iterate`, `$eq.exceptions.Exception` (its constructor takes the message and
-  the parts `create` takes) and `$eq.exceptions.typed`, with specs.
+  the parts `create` takes) and `$eq.exceptions.construct`, with specs.
 - Public surface of `eQuantic.UI.Compiler`: `Eq.LinqIterate`, `Eq.ExceptionBase` and
-  `Eq.ExceptionTyped` are new. The developer surface does not move.
+  `Eq.ExceptionConstruct` are new. The developer surface does not move.
 - Tests: conformance cases through the module graph for each issue, both sides executed; the catch
   cases over the app's own exceptions move from the statement harness, which writes no class, to the
   module graph; the compiler's module rule tests count an exception class as a module.
