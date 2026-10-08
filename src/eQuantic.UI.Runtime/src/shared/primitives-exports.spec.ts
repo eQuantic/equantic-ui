@@ -18,8 +18,16 @@ import { describe, expect, it } from 'vitest';
 import * as runtimeExports from './runtime-exports';
 import primitivesTypes from './primitives-types.fixture.json';
 import pinnedValues from './primitive-values.fixture.json';
-import { ImageData, NetworkState, SpringSpec, WindowSizeClasses } from './primitive-values';
+import {
+  ImageData,
+  MotionSpec,
+  NetworkState,
+  SpringSpec,
+  WindowSizeClasses,
+} from './primitive-values';
 import { Point, Rect } from './value-types';
+import { Curve, Motion } from './design-system.generated';
+import { TransitionSpec } from './vocabulary';
 
 /**
  * Types that owe no export, each for a stated reason — a list of names, so the next one cannot slip
@@ -137,6 +145,39 @@ describe('Primitives value twins carry the C# values', () => {
       damping: SpringSpec.default.damping,
       mass: SpringSpec.default.mass,
     }).toEqual(pinnedValues.springDefault);
+  });
+
+  // ONE shape for a curve, the record's data, holding the singles C# holds (#518). A preset was an
+  // array, so `Curve.Standard.X1` read undefined in browser code, and a motion role's curve was
+  // declared a preset name, a shape no C# `MotionSpec` has.
+  it('Curve presets are the C# records, as data', () => {
+    expect({
+      standard: { ...Curve.standard },
+      decelerate: { ...Curve.decelerate },
+      accelerate: { ...Curve.accelerate },
+    }).toEqual(pinnedValues.curves);
+  });
+
+  it('a motion role is a MotionSpec holding the C# duration and curve', () => {
+    const roles = {
+      press: Motion.press,
+      state: Motion.state,
+      enter: Motion.enter,
+      exit: Motion.exit,
+    };
+    for (const role of Object.values(roles)) expect(role).toBeInstanceOf(MotionSpec);
+    expect(
+      Object.fromEntries(
+        Object.entries(roles).map(([name, role]) => [
+          name,
+          { durationMs: role.durationMs, curve: { ...role.curve } },
+        ]),
+      ),
+    ).toEqual(pinnedValues.motion);
+  });
+
+  it("a transition's default easing is the standard curve, as C#'s is", () => {
+    expect(new TransitionSpec(1).easing).toEqual(pinnedValues.curves.standard);
   });
 
   it('NetworkState.offline is the C# NetworkState.Offline', () => {

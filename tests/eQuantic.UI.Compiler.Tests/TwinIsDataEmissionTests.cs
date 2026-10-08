@@ -45,6 +45,41 @@ public class TwinIsDataEmissionTests
         ts.Should().NotContain(".withOpacity(Math").And.NotContain("String(mid)");
     }
 
+    private const string Glide = """
+        using eQuantic.UI.Primitives;
+        namespace App;
+        public sealed class Glide : StatelessComponent
+        {
+            public override VisualNode Build(ComponentContext context)
+            {
+                var easing = new Curve(0.2f, 0.9f, 0.3f, 1.25f);
+                return new Box(new BoxStyle
+                {
+                    Transition = new TransitionSpec(StyleChannels.Colors, 150) { Easing = easing },
+                }, new Text($"{easing} {Curve.Standard.X1}", TypeRole.BodyM));
+            }
+        }
+        """;
+
+    /// <summary>
+    /// A <c>Curve</c> is data too (#518): a construction builds its four control points, where it was
+    /// <c>new Curve(…)</c> against the design system's object and threw "is not a constructor", and
+    /// its text writes each point as the single it is, where JavaScript's own digits are the
+    /// double's (<c>0.20000000298023224</c> for <c>0.2f</c>).
+    /// </summary>
+    [Fact]
+    public void ACurve_IsBuiltAsItsData_AndPrintsItsPointsAsSingles()
+    {
+        var ts = Compile(Glide, "Glide");
+
+        ts.Should().MatchRegex(@"import \{[^}]*\bCurve\b[^}]*\} from ""@equantic/runtime""");
+        ts.Should().MatchRegex(@"\{ x1: [^,]+, y1: [^,]+, x2: [^,]+, y2: [^}]+ \}");
+        ts.Should().NotContain("new Curve(");
+        ts.Should().Contain("{ easing: easing }");
+        ts.Should().Contain("$eq.text.record(easing, 'Curve', ['X1', 'Y1', 'X2', 'Y2'], ['single', 'single', 'single', 'single'])");
+        ts.Should().Contain("Curve.standard.x1");
+    }
+
     [Fact]
     public void AnAppsOwnColor_IsBuiltAsTheAppsType()
     {

@@ -17,6 +17,7 @@ import type {
   ColorTokenValue,
   ColorValue,
   CrossAlignValue,
+  CurveValue,
   EdgeInsetsValue,
   LiveRegionUrgencyValue,
   MainAlignValue,
@@ -28,6 +29,7 @@ import { lowerVisualNode } from './lowering';
 import { ambientLoweringContext } from './photon-context';
 import { CornerRadii, EdgeInsets, SizeValue, StyleChannels, WebContent } from './value-types';
 import { Curve, Motion } from './design-system.generated';
+import type { MotionSpec } from './primitive-values';
 import { hashesByValue } from '../utils/hash';
 
 export { StyleChannels } from './value-types';
@@ -1045,7 +1047,7 @@ export class LinearGradient {
 }
 
 interface TransitionSpecConfig {
-  easing?: readonly number[];
+  easing?: CurveValue;
 }
 
 /**
@@ -1059,12 +1061,12 @@ export const CuratedIcons = {
 };
 
 /** Mirror of the C# `TransitionSpec` record struct (spec S6): which channels glide, for how long,
- * along which bezier. `easing` is the 4-number control-point tuple the generated `Curve` exports. */
+ * along which bezier. `easing` is the curve's own data, as the generated `Curve` exports a preset. */
 export class TransitionSpec {
   channels: number;
   durationMs: number;
   delayMs: number;
-  easing: readonly number[] = Curve.standard;
+  easing: CurveValue = Curve.standard;
 
   constructor(
     channels: number,
@@ -1079,10 +1081,7 @@ export class TransitionSpec {
   }
 
   /** C# twin: `TransitionSpec.Of(channels, Motion.Press)` — a NAMED role, duration AND curve. */
-  static of(
-    channels: number,
-    motion: { durationMs: number; curve: readonly number[] },
-  ): TransitionSpec {
+  static of(channels: number, motion: MotionSpec): TransitionSpec {
     return new TransitionSpec(channels, motion.durationMs, 0, { easing: motion.curve });
   }
 
