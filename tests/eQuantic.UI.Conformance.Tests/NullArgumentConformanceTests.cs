@@ -21,7 +21,12 @@ namespace eQuantic.UI.Conformance.Tests;
 /// threw and the exception's type (<c>type</c>), its <c>ParamName</c> (<c>param</c>), its message
 /// (<c>message</c>, the host's newline folded, and only for a message the SDK composes: an engine's
 /// own TypeError words its message as the engine does), and, for a call that returned a string, a bool,
-/// a char or a number, what it returned (<c>value</c>): a null .NET accepts is answered too.
+/// a char or a number, what it returned (<c>value</c>): a null .NET accepts is answered too. Beside each
+/// probe runs its control, the same call with the null replaced by a canonical value: where .NET answers
+/// the control and the browser answers it otherwise, the member differs whatever the argument, and the
+/// gap is <c>control</c> rather than charged to the null (<see cref="AspectOf"/>). A probe whose other
+/// arguments .NET refuses on their own measures them and not the null, and is counted rather than
+/// compared (<see cref="MeasuresTheNull"/>).
 /// </para>
 /// <para>
 /// The gaps left are a COMMITTED baseline, <c>null-argument-gaps.baseline.txt</c>, one line per probe

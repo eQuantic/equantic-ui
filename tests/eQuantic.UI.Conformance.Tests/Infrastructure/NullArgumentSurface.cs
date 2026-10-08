@@ -20,8 +20,8 @@ namespace eQuantic.UI.Conformance.Tests.Infrastructure;
 /// <para>
 /// Each probe declares its arguments as typed locals and passes them by name, as a page passes a value
 /// that happens to be null: a literal could take a path no variable takes. The other arguments are one
-/// canonical value per type, and a receiver holds enough (three characters, three items) that an index
-/// of 1 is in range, so what the probe measures is the null and not a range check before it.
+/// canonical value per type, and a receiver holds enough (four characters, four items) that an index
+/// and a count of 2 are in range, so what the probe measures is the null and not a range check before it.
 /// </para>
 /// </summary>
 internal static class NullArgumentSurface
@@ -40,8 +40,8 @@ internal static class NullArgumentSurface
     internal sealed record Probe(string Id, string MemberId, string Parameter, string Statements, string? Control,
         bool ComparesValue, MethodBase Target);
 
-    /// <summary>A member none of whose probes can be written, and why: an argument no canonical value
-    /// speaks, or a parameter passed by reference.</summary>
+    /// <summary>A probe that cannot be written, and why: an argument no canonical value speaks, or a
+    /// parameter passed by reference.</summary>
     internal sealed record Unspoken(string MemberId, string Why);
 
     /// <summary>The namespaces a probe reads: the ones the audit's probe file opens, and the one the
@@ -112,7 +112,8 @@ internal static class NullArgumentSurface
         return (owners.Distinct().OrderBy(Label, StringComparer.Ordinal).ToList(), unresolved);
     }
 
-    /// <summary>The C# keywords the audit's labels use for the two receivers it names by them.</summary>
+    /// <summary>The C# keywords a label may hold: the audit spells two receivers with them,
+    /// <c>Nullable&lt;int&gt;</c> and <c>int[]</c>.</summary>
     private static readonly Dictionary<string, Type> Keywords = new(StringComparer.Ordinal)
     {
         ["int"] = typeof(int), ["long"] = typeof(long), ["double"] = typeof(double),
@@ -323,7 +324,10 @@ internal static class NullArgumentSurface
             control.Append($"{CSharp(owner)} __receiver = {receiver}; ");
         }
 
+        // The probe's arguments and its control's: they differ only where the control hands the
+        // target's canonical value at the call, as a culture is handed.
         var arguments = new List<string>();
+        var controlArguments = new List<string>();
         var controlled = true;
         foreach (var parameter in parameters)
         {
@@ -331,6 +335,7 @@ internal static class NullArgumentSurface
             if (parameter.IsOut)
             {
                 arguments.Add($"out {CSharp(parameter.ParameterType.GetElementType()!)} {name}");
+                controlArguments.Add(arguments[^1]);
                 continue;
             }
 
@@ -340,8 +345,14 @@ internal static class NullArgumentSurface
             if (parameter == target)
             {
                 statements.Append($"{CSharp(declared)} {name} = null; ");
+                arguments.Add(name);
                 if (value is null) controlled = false;
-                else control.Append($"{CSharp(declared)} {name} = {value}; ");
+                else if (WrittenAtTheCall(declared)) controlArguments.Add(value);
+                else
+                {
+                    control.Append($"{CSharp(declared)} {name} = {value}; ");
+                    controlArguments.Add(name);
+                }
             }
             else if (value is null)
             {
@@ -350,20 +361,22 @@ internal static class NullArgumentSurface
             else if (WrittenAtTheCall(declared))
             {
                 arguments.Add(value);
-                continue;
+                controlArguments.Add(value);
             }
             else
             {
                 statements.Append($"{CSharp(declared)} {name} = {value}; ");
                 control.Append($"{CSharp(declared)} {name} = {value}; ");
+                arguments.Add(name);
+                controlArguments.Add(name);
             }
-
-            arguments.Add(name);
         }
 
-        var call = Call(owner, member, receiver is not null, isExtension, arguments);
-        return new Probe($"{memberId} {target.Name}", memberId, target.Name!, statements.Append(call).ToString(),
-            controlled ? control.Append(call).ToString() : null, ComparesValue(member), member);
+        var onReceiver = receiver is not null;
+        return new Probe($"{memberId} {target.Name}", memberId, target.Name!,
+            statements.Append(Call(owner, member, onReceiver, isExtension, arguments)).ToString(),
+            controlled ? control.Append(Call(owner, member, onReceiver, isExtension, controlArguments)).ToString() : null,
+            ComparesValue(member), member);
     }
 
     /// <summary>

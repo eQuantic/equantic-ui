@@ -36,8 +36,8 @@ Char.IsSurrogatePair(String,Int32) s  type  the (string, index) overloads read t
 Char.IsSymbol(String,Int32) s  type  the (string, index) overloads read the code point inline, through null: refusing it by name is a guard at every call, which is a design decision
 Char.IsUpper(String,Int32) s  type  the (string, index) overloads read the code point inline, through null: refusing it by name is a guard at every call, which is a design decision
 Char.IsWhiteSpace(String,Int32) s  type  the (string, index) overloads read the code point inline, through null: refusing it by name is a guard at every call, which is a design decision
-Char.ToLower(Char,CultureInfo) culture  control  the provider is written as the name CultureInfo, which the runtime does not export: eqc reads a culture only where it formats or parses a number
-Char.ToUpper(Char,CultureInfo) culture  control  the provider is written as the name CultureInfo, which the runtime does not export: eqc reads a culture only where it formats or parses a number
+Char.ToLower(Char,CultureInfo) culture  type  the lowering drops the culture argument, so its null is never read
+Char.ToUpper(Char,CultureInfo) culture  type  the lowering drops the culture argument, so its null is never read
 Convert.ToBase64CharArray(Byte[],Int32,Int32,Char[],Int32) inArray  type  Convert.ToBase64CharArray is lowered to String() of its first argument
 Convert.ToBase64CharArray(Byte[],Int32,Int32,Char[],Int32) outArray  type  Convert.ToBase64CharArray is lowered to String() of its first argument
 Convert.ToBase64CharArray(Byte[],Int32,Int32,Char[],Int32,Base64FormattingOptions) inArray  type  Convert.ToBase64CharArray is lowered to String() of its first argument
@@ -62,10 +62,10 @@ Convert.ToInt32(Object) value  value  Convert of an object is lowered to a Math.
 Convert.ToInt32(Object,IFormatProvider) value  value  Convert of an object is lowered to a Math.round, a String() or a comparison of it, which reads a null otherwise than .NET (#401)
 Convert.ToInt64(Object) value  value  Convert of an object is lowered to a Math.round, a String() or a comparison of it, which reads a null otherwise than .NET (#401)
 Convert.ToInt64(Object,IFormatProvider) value  value  Convert of an object is lowered to a Math.round, a String() or a comparison of it, which reads a null otherwise than .NET (#401)
-Convert.ToSByte(Object) value  value  Convert.ToSByte of a string reads a null as 0, where .NET 10 refuses it for this overload alone (#401)
-Convert.ToSByte(Object,IFormatProvider) value  value  Convert.ToSByte of a string reads a null as 0, where .NET 10 refuses it for this overload alone (#401)
+Convert.ToSByte(Object) value  value  Convert of an object is lowered to a Math.round, a String() or a comparison of it, which reads a null otherwise than .NET (#401)
+Convert.ToSByte(Object,IFormatProvider) value  value  Convert of an object is lowered to a Math.round, a String() or a comparison of it, which reads a null otherwise than .NET (#401)
 Convert.ToSByte(String,IFormatProvider) value  type  Convert.ToSByte of a string reads a null as 0, where .NET 10 refuses it for this overload alone (#401)
-Convert.ToString(Boolean,IFormatProvider) provider  control  the provider is written as the name CultureInfo, which the runtime does not export: eqc reads a culture only where it formats or parses a number
+Convert.ToString(Boolean,IFormatProvider) provider  control  Convert.ToString of a bool is String() of it, which writes true where .NET writes True (#401)
 Convert.ToString(Object) value  value  Convert of an object is lowered to a Math.round, a String() or a comparison of it, which reads a null otherwise than .NET (#401)
 Convert.ToString(Object,IFormatProvider) value  value  Convert of an object is lowered to a Math.round, a String() or a comparison of it, which reads a null otherwise than .NET (#401)
 Convert.ToString(String) value  value  Convert of an object is lowered to a Math.round, a String() or a comparison of it, which reads a null otherwise than .NET (#401)
@@ -257,7 +257,7 @@ Enumerable.SelectMany(IEnumerable<TSource>,Func<TSource,IEnumerable<TResult>>) s
 Enumerable.SelectMany(IEnumerable<TSource>,Func<TSource,Int32,IEnumerable<TResult>>) selector  type  LINQ over a list is lowered to the array's own method, which reads a null source or delegate through null: refusing it by name is a guard at every call, which is a design decision
 Enumerable.SelectMany(IEnumerable<TSource>,Func<TSource,Int32,IEnumerable<TResult>>) source  type  LINQ over a list is lowered to the array's own method, which reads a null source or delegate through null: refusing it by name is a guard at every call, which is a design decision
 Enumerable.SequenceEqual(IEnumerable<TSource>,IEnumerable<TSource>) first  type  LINQ over a list is lowered to the array's own method, which reads a null source or delegate through null: refusing it by name is a guard at every call, which is a design decision
-Enumerable.SequenceEqual(IEnumerable<TSource>,IEnumerable<TSource>,IEqualityComparer<TSource>) comparer  value  LINQ over a list is lowered to the array's own method, which reads a null source or delegate through null: refusing it by name is a guard at every call, which is a design decision
+Enumerable.SequenceEqual(IEnumerable<TSource>,IEnumerable<TSource>,IEqualityComparer<TSource>) comparer  value  SequenceEqual with a comparer is lowered to its first sequence
 Enumerable.Single(IEnumerable<TSource>) source  type  LINQ over a list is lowered to the array's own method, which reads a null source or delegate through null: refusing it by name is a guard at every call, which is a design decision
 Enumerable.Single(IEnumerable<TSource>,Func<TSource,Boolean>) predicate  type  LINQ over a list is lowered to the array's own method, which reads a null source or delegate through null: refusing it by name is a guard at every call, which is a design decision
 Enumerable.Single(IEnumerable<TSource>,Func<TSource,Boolean>) source  type  LINQ over a list is lowered to the array's own method, which reads a null source or delegate through null: refusing it by name is a guard at every call, which is a design decision
@@ -312,7 +312,7 @@ Enumerable.ToLookup(IEnumerable<TSource>,Func<TSource,TKey>) source  type  LINQ 
 Enumerable.ToLookup(IEnumerable<TSource>,Func<TSource,TKey>,Func<TSource,TElement>) elementSelector  type  LINQ over a list is lowered to the array's own method, which reads a null source or delegate through null: refusing it by name is a guard at every call, which is a design decision
 Enumerable.ToLookup(IEnumerable<TSource>,Func<TSource,TKey>,Func<TSource,TElement>) keySelector  type  LINQ over a list is lowered to the array's own method, which reads a null source or delegate through null: refusing it by name is a guard at every call, which is a design decision
 Enumerable.ToLookup(IEnumerable<TSource>,Func<TSource,TKey>,Func<TSource,TElement>) source  type  LINQ over a list is lowered to the array's own method, which reads a null source or delegate through null: refusing it by name is a guard at every call, which is a design decision
-Enumerable.ToLookup(IEnumerable<TSource>,Func<TSource,TKey>,IEqualityComparer<TKey>) comparer  type  LINQ over a list is lowered to the array's own method, which reads a null source or delegate through null: refusing it by name is a guard at every call, which is a design decision
+Enumerable.ToLookup(IEnumerable<TSource>,Func<TSource,TKey>,IEqualityComparer<TKey>) comparer  type  ToLookup with a comparer is lowered as the ToLookup with an element selector
 Enumerable.Union(IEnumerable<TSource>,IEnumerable<TSource>) first  type  LINQ over a list is lowered to the array's own method, which reads a null source or delegate through null: refusing it by name is a guard at every call, which is a design decision
 Enumerable.UnionBy(IEnumerable<TSource>,IEnumerable<TSource>,Func<TSource,TKey>) first  type  LINQ over a list is lowered to the array's own method, which reads a null source or delegate through null: refusing it by name is a guard at every call, which is a design decision
 Enumerable.UnionBy(IEnumerable<TSource>,IEnumerable<TSource>,Func<TSource,TKey>) keySelector  type  LINQ over a list is lowered to the array's own method, which reads a null source or delegate through null: refusing it by name is a guard at every call, which is a design decision
@@ -344,7 +344,7 @@ SortedSet<Int32>..ctor(IEnumerable<Int32>) collection  type  the collection's tw
 SortedSet<Int32>.CopyTo(int[]) array  control  the runtime's sorted set has no copyTo
 SortedSet<Int32>.CopyTo(int[],Int32) array  type  the runtime's sorted set has no copyTo
 SortedSet<Int32>.CopyTo(int[],Int32,Int32) array  control  the runtime's sorted set has no copyTo
-SortedSet<Int32>.CreateSetComparer(IEqualityComparer<Int32>) memberEqualityComparer  type  SortedSet.CreateSetComparer is written as a class the runtime does not export
+SortedSet<Int32>.CreateSetComparer(IEqualityComparer<Int32>) memberEqualityComparer  type  the runtime's sorted set has no createSetComparer
 SortedSet<Int32>.ExceptWith(IEnumerable<Int32>) other  control  the runtime's sorted set has no exceptWith
 SortedSet<Int32>.IntersectWith(IEnumerable<Int32>) other  control  the runtime's sorted set has no intersectWith
 SortedSet<Int32>.IsProperSubsetOf(IEnumerable<Int32>) other  control  the runtime's sorted set has no isProperSubsetOf

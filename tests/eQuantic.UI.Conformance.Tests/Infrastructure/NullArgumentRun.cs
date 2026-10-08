@@ -73,16 +73,16 @@ internal static class NullArgumentRun
             .ToList();
 
         // A case whose C# does not compile, or whose call binds elsewhere, says nothing about eqc.
-        var (_, firstModel, firstTree, firstErrors) = Compile(cases);
+        var (_, firstModel, firstMethods, firstErrors) = Compile(cases);
         var invalid = new Dictionary<Case, string>();
         for (var i = 0; i < cases.Count; i++)
         {
             if (firstErrors.TryGetValue(i, out var error)) invalid[cases[i]] = error;
-            else if (BindingMismatch(firstModel, Method(firstTree, i), cases[i].Target) is { } elsewhere) invalid[cases[i]] = elsewhere;
+            else if (BindingMismatch(firstModel, firstMethods[i], cases[i].Target) is { } elsewhere) invalid[cases[i]] = elsewhere;
         }
 
         var valid = cases.Where(c => !invalid.ContainsKey(c)).ToList();
-        var (compilation, model, tree, errors) = Compile(valid);
+        var (compilation, model, methods, errors) = Compile(valid);
         if (errors.Count > 0)
             throw new InvalidOperationException("the valid probes do not compile together: " + string.Join("; ", errors.Values));
 
@@ -95,7 +95,7 @@ internal static class NullArgumentRun
             converter.SetSemanticModel(model);
             try
             {
-                var js = converter.Convert(Method(tree, i).Body!);
+                var js = converter.Convert(methods[i].Body!);
                 var refusals = converter.Diagnostics.Where(d => d.Severity == ConversionSeverity.Error).ToList();
                 if (refusals.Count > 0) refused[valid[i]] = string.Join("; ", refusals.Select(d => $"{d.Code} {d.Message}"));
                 else translated.Add((valid[i], i, js));
@@ -145,8 +145,10 @@ internal static class NullArgumentRun
         return source.Append("}\n").ToString();
     }
 
-    private static (CSharpCompilation Compilation, SemanticModel Model, SyntaxTree Tree, Dictionary<int, string> Errors)
-        Compile(IReadOnlyList<Case> cases)
+    /// <summary>The cases compiled as one library, each case's method at its own index (they are
+    /// declared in order), and the errors each one's C# has.</summary>
+    private static (CSharpCompilation Compilation, SemanticModel Model, IReadOnlyList<MethodDeclarationSyntax> Methods,
+        Dictionary<int, string> Errors) Compile(IReadOnlyList<Case> cases)
     {
         var tree = CSharpSyntaxTree.ParseText(Source(cases), ParseDefaults.Options);
         var compilation = CSharpCompilation.Create("NullArgumentProbes", [tree], References.Value,
@@ -159,15 +161,11 @@ internal static class NullArgumentRun
         {
             var index = methods.FindIndex(m => m.Span.Contains(diagnostic.Location.SourceSpan));
             if (index < 0) throw new InvalidOperationException($"a diagnostic outside every probe: {diagnostic}");
-            errors.TryAdd(int.Parse(methods[index].Identifier.Text["Case".Length..], CultureInfo.InvariantCulture),
-                $"{diagnostic.Id} {diagnostic.GetMessage(CultureInfo.InvariantCulture)}");
+            errors.TryAdd(index, $"{diagnostic.Id} {diagnostic.GetMessage(CultureInfo.InvariantCulture)}");
         }
 
-        return (compilation, compilation.GetSemanticModel(tree), tree, errors);
+        return (compilation, compilation.GetSemanticModel(tree), methods, errors);
     }
-
-    private static MethodDeclarationSyntax Method(SyntaxTree tree, int index) =>
-        tree.GetRoot().DescendantNodes().OfType<MethodDeclarationSyntax>().Single(m => m.Identifier.Text == $"Case{index}");
 
     /// <summary>
     /// Why the probe's call does not bind to its member, or null when it does: the symbol the model
