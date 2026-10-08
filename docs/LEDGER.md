@@ -1732,9 +1732,10 @@ record of a release, the wiki's Upgrading page is the distillate.
   WebP and BMP and answers 400 for the rest, TIFF included, where an unreadable source was a 500;
   refuses a header past 16,383 × 16,383 pixels before it decodes; applies an EXIF orientation to the
   pixels, since its encoders write no EXIF; serves an animated source as it is, as Next.js does,
-  where ImageSharp re-encoded the frames; labels a response by its bytes, where `image/avif` came
-  back a JPEG labelled AVIF; and writes sRGB untagged, where a tagged result carried a 472-byte
-  profile. Proposed and archived through OpenSpec (`openspec/specs/image-optimization`).
+  where ImageSharp re-encoded the frames; refuses `image/avif` in `Formats` at startup, which no
+  encoder writes and which, listed first, answered every browser with a JPEG labelled AVIF; and
+  writes sRGB untagged, where a tagged result carried a 472-byte profile. Proposed and archived
+  through OpenSpec (`openspec/specs/image-optimization`).
 
 ## Retired documents
 

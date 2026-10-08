@@ -13,10 +13,10 @@ Seven GitHub advisories against SixLabors.ImageSharp were published on 2026-10-0
 - **A source past 268,402,689 pixels (16,383 × 16,383, sharp's default) is refused from its header**, before a pixel is allocated, with 400.
 - **The orientation a camera recorded is applied to the pixels.** SkiaSharp's encoders write no EXIF, so an image is turned before it is resized, a requested width is the displayed width, and `GetDimensionsAsync` answers the size as displayed.
 - **An animated source is served as it is**, with its own content type, as the Next.js optimizer serves one. No encoder here writes frames, and the first frame alone would stop the animation; ImageSharp re-encoded the frames (measured: a two-frame GIF came back a two-frame WebP).
-- **The response's content type is read from its bytes**: a format in `Formats` that no encoder writes (`image/avif`) comes back as a JPEG labelled `image/jpeg`, where it was a JPEG labelled `image/avif`.
+- **`Formats` takes only what an encoder writes**: `image/webp`, `image/png` and `image/jpeg`. `image/avif` stops the app at startup, where, listed first, it was negotiated with every browser that takes it and answered with a JPEG labelled AVIF, past the WebP listed after it. The response's content type is read from its bytes, which an animated source needs.
 - **The pixels are converted to sRGB and written untagged**, which browsers read as sRGB, as sharp writes them. Tagged, every result carried a 472-byte ICC profile, more than an 8-pixel placeholder's whole picture.
 
-For a developer using the SDK: nothing they write changes, and the public surface does not move. A `.tiff` under `wwwroot` is no longer optimized, and an animated GIF comes back as the GIF it was.
+For a developer using the SDK: the public surface does not move. A `.tiff` under `wwwroot` is no longer optimized, and an animated GIF comes back as the GIF it was. The one break: an app that listed `image/avif` in `ImageOptimizationOptions.Formats` removes it, since it was answered with JPEG and now stops the app at startup.
 
 ## Capabilities
 

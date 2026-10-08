@@ -64,14 +64,16 @@ endpoint SHALL serve it with its own content type.
 - **WHEN** `/_equantic/image?url=/images/animated.gif&w=640` is requested with `Accept: image/webp`
 - **THEN** the answer is the GIF's own bytes, with `Content-Type: image/gif`
 
-### Requirement: A response is labelled by its bytes
+### Requirement: Formats takes only what an encoder writes
 
-The endpoint SHALL label a response with the content type of the bytes it sends.
+`ImageOptimizationOptions.Formats` SHALL accept `image/webp`, `image/png` and `image/jpeg`, and its
+validation SHALL refuse any other, `image/avif` included, so an app that asks for a format no encoder
+writes stops at startup. The endpoint SHALL label a response with the content type of its bytes.
 
-#### Scenario: A format no encoder writes
+#### Scenario: AVIF listed first
 
-- **WHEN** `Formats` is `["image/avif"]` and the browser accepts `image/avif`
-- **THEN** the answer is a JPEG labelled `image/jpeg`, where it was a JPEG labelled `image/avif`
+- **WHEN** the optimizer is configured with `Formats = ["image/avif", "image/webp"]`
+- **THEN** validation throws an `ArgumentException` naming `image/avif`, where every browser that takes AVIF was answered with a JPEG labelled `image/avif`
 
 ### Requirement: The optimizer builds without a license key
 
