@@ -1645,6 +1645,21 @@ record of a release, the wiki's Upgrading page is the distillate.
   and curly-brace parsers and the SDK's strings, which search a char from a start, now throw where
   the same C# throws on the server. Proposed and archived through OpenSpec
   (`openspec/specs/transpiler-bcl`).
+- **2026-10-07 · A null-conditional answers null, and a method group is the delegate C# makes**: a
+  null-conditional read that is JavaScript's optional chain was `undefined` in the browser where C#
+  answers `null`, and the two part ways where the value is used: a parameter typed `T | null` refuses
+  it in the runtime's build, JSON drops the key, and a dictionary looking for null missed it
+  ([#633](https://github.com/eQuantic/equantic-ui/issues/633)). It answers null there now, behind a
+  guard too, and stays a bare chain where nothing can tell (a call that returns nothing, a statement,
+  the left of a `??`, the tail of another chain). A method group bound to a receiver that is a call ran
+  the call twice, `c.make().value.bind(c.make())` answering 4 where .NET answers 2
+  ([#619](https://github.com/eQuantic/equantic-ui/issues/619)); the bind is a template that reads the
+  receiver once. A group on `base` bound `super`, which JavaScript refuses at parse, and an extension's
+  group bound a member its receiver never has: the first binds `this` now, and the second goes to the
+  home its call goes to, so a BCL extension's group fails the build with EQ2004 instead of throwing in
+  the browser ([#655](https://github.com/eQuantic/equantic-ui/issues/655)). Two twins move,
+  `CodeDiffLayout` and `Spreadsheet`. Proposed and archived through OpenSpec
+  (`openspec/specs/transpiler-expressions`).
 - **2026-10-06 · A control's press and focus show on its boxes on every target**: the handoff presses
   its buttons with `scale(.985)` and there was no way to say it, and measuring the focus state found
   it dead on both targets ([#508](https://github.com/eQuantic/equantic-ui/issues/508), the second
@@ -1688,6 +1703,26 @@ record of a release, the wiki's Upgrading page is the distillate.
   1970 toward the epoch; it answers a BigInt cut as .NET cuts it now. Found on the way: the date
   constructors past the second ([#606](https://github.com/eQuantic/equantic-ui/issues/606)).
   Proposed and archived through OpenSpec (`openspec/specs/runtime-dates`).
+- **2026-10-07 · An exception's message is composed as .NET composes it**: a framework exception's
+  arguments were read by position, so `new ArgumentNullException(nameof(x)).Message` was the
+  parameter's name, a parameter's name never reached a message and a constructor with no message gave
+  an empty one ([#558](https://github.com/eQuantic/equantic-ui/issues/558)). eqc binds them by their
+  parameters and reads the text .NET writes where no message, or a null one, was given from .NET
+  itself, for the constructor the call binds, where a table gave a `TaskCanceledException` its base's.
+  The runtime composes the message .NET writes: ` (Parameter 'x')`, and the actual value and a disposed
+  object's name on lines of their own, with `ParamName`, `ActualValue`, `InnerException` and
+  `TypeName` reading what the constructor took, an aggregate's inner messages and a type initializer's
+  sentence included. Proposed and archived through OpenSpec (`openspec/specs/transpiler-exceptions`).
+- **2026-10-07 · A builder's counted and ranged overloads write what .NET writes**: the runtime's
+  `StringBuilder` had one shape per method, so `Append('x', 3)` appended one `x`, and
+  `Append(text, start, count)`, `Insert(i, text, count)`, `Replace` over a range and
+  `ToString(start, length)` took the whole value, a `char[]` written as JavaScript's text of an array
+  and a null as `null` ([#650](https://github.com/eQuantic/equantic-ui/issues/650)). The builder takes
+  each overload shape by its count of arguments, the `char[]` overloads are methods of their own that
+  eqc names from the overload the call binds, and each refusal is .NET's, in .NET's order. 45 of the
+  46 new conformance cases fail on the base. The members the runtime does not have are
+  [#679](https://github.com/eQuantic/equantic-ui/issues/679). Proposed and archived through OpenSpec
+  (`openspec/specs/transpiler-bcl`).
 - **2026-10-06 · A nested class is a module of its own, named by its owner**: a class declared inside
   another one had no module, so `Roster.First()` building a private `Row` threw, and where a top-level
   class had its name the nested one resolved to it, so `new Cart().Size()` read the top-level `Item`'s
