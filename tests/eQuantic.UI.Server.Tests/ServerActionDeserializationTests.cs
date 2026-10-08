@@ -40,7 +40,7 @@ public class ServerActionDeserializationTests
             serviceProvider: null!,
             authorizationService: null!,
             options: options,
-            actions: Microsoft.Extensions.Options.Options.Create(new ServerActionsOptions()),
+            actions: new FixedOptions<ServerActionsOptions>(new ServerActionsOptions()),
             logger: NullLogger<ServerActionsMiddleware>.Instance);
     }
 

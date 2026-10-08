@@ -81,7 +81,7 @@ public class ServerActionScopeTests
             serviceProvider: root,
             authorizationService: new AlwaysAllowed(),
             options: options,
-            actions: Microsoft.Extensions.Options.Options.Create(new ServerActionsOptions()),
+            actions: new FixedOptions<ServerActionsOptions>(new ServerActionsOptions()),
             logger: NullLogger<ServerActionsMiddleware>.Instance);
 
         using var scope = root.CreateScope();

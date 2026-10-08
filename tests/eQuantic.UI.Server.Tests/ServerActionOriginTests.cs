@@ -101,21 +101,22 @@ public class ServerActionOriginTests
         calls.Should().Be(1);
     }
 
-    [Theory]
-    [InlineData("app.example")]
-    [InlineData("app.example, proxy.internal")]
-    public async Task BehindAProxy_TheForwardedHostIsTheAppsOwn(string forwardedHost)
+    [Fact]
+    public async Task ARawForwardedHost_IsNotTheAppsOwn()
     {
-        var (status, calls) = await Invoke("localhost:5000",
-            ("Origin", "https://app.example"), ("X-Forwarded-Host", forwardedHost));
+        // A site the app's CORS policy lets through could write its own host into the header. Behind a
+        // proxy, UseForwardedHeaders restores Request.Host from the proxies the app trusts.
+        var (status, calls) = await Invoke("app.example",
+            ("Origin", "https://evil.example"), ("X-Forwarded-Host", "evil.example"));
 
-        status.Should().Be(StatusCodes.Status200OK);
-        calls.Should().Be(1);
+        status.Should().Be(StatusCodes.Status403Forbidden);
+        calls.Should().Be(0);
     }
 
     [Theory]
     [InlineData("https://admin.example")]
     [InlineData("https://Admin.Example/")]
+    [InlineData("https://admin.example:443")]
     public async Task AnAllowedOrigin_Runs(string allowed)
     {
         var (status, calls) = await Invoke("api.example", [allowed], ("Origin", "https://admin.example"));
@@ -207,7 +208,7 @@ public class ServerActionOriginTests
             serviceProvider: root,
             authorizationService: new AlwaysAllowed(),
             options: new UIOptions(),
-            actions: Options.Create(actions),
+            actions: new FixedOptions<ServerActionsOptions>(actions),
             logger: NullLogger<ServerActionsMiddleware>.Instance);
 
         using var scope = root.CreateScope();
