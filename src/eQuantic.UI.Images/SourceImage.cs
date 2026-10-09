@@ -21,6 +21,13 @@ internal sealed class SourceImage : IDisposable
     /// </summary>
     internal const long MaxPixels = 16_383L * 16_383L;
 
+    /// <summary>
+    /// The most a header may take before its image starts, when a size is measured: a JPEG's metadata
+    /// (an editor's XMP history, a phone's depth map) runs to megabytes, and past this the source is
+    /// refused rather than read on, so a stream that only looks like an image cannot fill the memory.
+    /// </summary>
+    internal const int MaxHeaderBytes = 16 * 1024 * 1024;
+
     private readonly SKData _data;
     private readonly SKCodec _codec;
 
@@ -72,26 +79,35 @@ internal sealed class SourceImage : IDisposable
     /// asynchronously, since a request body refuses a synchronous read (and a throw inside Skia's
     /// read callback takes the process down), in blocks that double until the codec has what it
     /// needs: a PNG's first 64 bytes, a JPEG's markers up to its first scan, its EXIF and an
-    /// editor's metadata included. Nothing is decoded, so the pixel ceiling does not apply, and the
-    /// stream is left open for its owner.
+    /// editor's metadata included, and never past <see cref="MaxHeaderBytes"/>. Nothing is decoded,
+    /// so the pixel ceiling does not apply, and the stream is left open for its owner.
     /// </summary>
-    /// <exception cref="InvalidDataException">The source is not one of the formats read.</exception>
+    /// <exception cref="InvalidDataException">The source is not one of the formats read, or its header
+    /// runs past <see cref="MaxHeaderBytes"/>.</exception>
     public static async Task<SKSizeI> MeasureAsync(Stream source)
     {
         var header = new MemoryStream();
         while (true)
         {
-            var block = new byte[Math.Max(16 * 1024, (int)header.Length)];
+            var room = MaxHeaderBytes - (int)header.Length;
+            if (room == 0)
+                throw new InvalidDataException(
+                    $"The source's header runs past {MaxHeaderBytes / (1024 * 1024)} MB before its image starts.");
+
+            var block = new byte[Math.Min(room, Math.Max(16 * 1024, (int)header.Length))];
             var read = await source.ReadAtLeastAsync(block, block.Length, throwOnEndOfStream: false);
             header.Write(block, 0, read);
+            var bytes = header.GetBuffer().AsSpan(0, (int)header.Length);
 
             // Bytes that do not open with one of the five signatures are refused at once, not read
             // to their end.
-            if (ImageFormats.ContentTypeOf(header.GetBuffer().AsSpan(0, (int)header.Length)) is null)
+            var type = ImageFormats.ContentTypeOf(bytes);
+            if (type is null)
                 break;
 
             using var data = SKData.CreateCopy(header.GetBuffer(), (ulong)header.Length);
-            using var codec = SKCodec.Create(data);
+            using var stream = new SKMemoryStream(data);
+            using var codec = SKCodec.Create(stream, out var result);
             if (codec is not null)
             {
                 if (ImageFormats.ContentTypeOf(codec.EncodedFormat) is null)
@@ -99,14 +115,95 @@ internal sealed class SourceImage : IDisposable
                 return Displayed(codec.Info.Width, codec.Info.Height, codec.EncodedOrigin);
             }
 
-            // Short of its header, a codec answers IncompleteInput, or InvalidInput for a JPEG cut
-            // inside a segment it does not keep (an APP13, a comment), so it reads on whatever it
-            // answered, and only a source that ended without a header is refused.
-            if (read < block.Length)
+            // Short of its header, a codec answers IncompleteInput, and Skia's JPEG codec answers
+            // InvalidInput too when the cut falls inside a segment it does not keep (an APP13, a
+            // comment), while its PNG codec answers IncompleteInput for a signature and garbage. So
+            // a JPEG and a PNG read on while their segments and chunks are well formed, the rest
+            // while the codec says it is short, and a stream that ended is refused either way.
+            var shortOfHeader = type switch
+            {
+                "image/jpeg" => JpegSegmentsRunOn(bytes),
+                "image/png" => PngChunksRunOn(bytes),
+                _ => result == SKCodecResult.IncompleteInput,
+            };
+            if (!shortOfHeader || read < block.Length)
                 break;
         }
 
         throw new InvalidDataException($"The source is not a {ImageFormats.Names} image.");
+    }
+
+    /// <summary>
+    /// Whether a PNG's bytes so far are its signature and whole chunks, the last of them cut short,
+    /// before its first IDAT: each a length, a type of four letters, the data and a CRC, IHDR first.
+    /// A chunk that is not one, or an IDAT reached with the codec still refusing, is no PNG it reads.
+    /// </summary>
+    private static bool PngChunksRunOn(ReadOnlySpan<byte> bytes)
+    {
+        var at = 8;
+        while (true)
+        {
+            if (at + 8 > bytes.Length)
+                return true;
+
+            var length = (uint)((bytes[at] << 24) | (bytes[at + 1] << 16) | (bytes[at + 2] << 8) | bytes[at + 3]);
+            var type = bytes.Slice(at + 4, 4);
+            if (length > int.MaxValue || !IsChunkType(type) || (at == 8 && !type.SequenceEqual("IHDR"u8)))
+                return false;
+            if (type.SequenceEqual("IDAT"u8))
+                return false;
+            if (at + 12 + (long)length > bytes.Length)
+                return true;
+            at += 12 + (int)length;
+        }
+
+        static bool IsChunkType(ReadOnlySpan<byte> type)
+        {
+            foreach (var b in type)
+                if (b is not (>= (byte)'A' and <= (byte)'Z' or >= (byte)'a' and <= (byte)'z'))
+                    return false;
+            return true;
+        }
+    }
+
+    /// <summary>
+    /// Whether a JPEG's bytes so far are its SOI and whole segments, the last of them cut short, so
+    /// more of the stream may complete its header: each segment a marker (0xFF, any fill bytes, a
+    /// code) and, but for the standalone ones, a length. Bytes that are no marker where one belongs
+    /// are no JPEG, and a header whole through its scan's that the codec still refused is not one
+    /// either.
+    /// </summary>
+    private static bool JpegSegmentsRunOn(ReadOnlySpan<byte> bytes)
+    {
+        var at = 2;
+        while (true)
+        {
+            if (at >= bytes.Length)
+                return true;
+            if (bytes[at] != 0xFF)
+                return false;
+            while (at < bytes.Length && bytes[at] == 0xFF)
+                at++;
+            if (at >= bytes.Length)
+                return true;
+
+            var code = bytes[at++];
+            if (code == 0x01 || code is >= 0xD0 and <= 0xD7)
+                continue;
+            if (code < 0xC0 || code is 0xD8 or 0xD9)
+                return false;
+            if (at + 2 > bytes.Length)
+                return true;
+
+            var length = (bytes[at] << 8) | bytes[at + 1];
+            if (length < 2)
+                return false;
+            if (at + length > bytes.Length)
+                return true;
+            at += length;
+            if (code == 0xDA)
+                return false;
+        }
     }
 
     /// <summary>The first frame's pixels in sRGB, oriented as displayed.</summary>

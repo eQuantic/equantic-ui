@@ -345,6 +345,36 @@ public class ImageOptimizerTests
         source.BytesRead.Should().Be(16 * 1024);
     }
 
+    [Theory]
+    [InlineData("png")]
+    [InlineData("jpeg")]
+    public async Task GetDimensionsAsync_RefusesASignatureFollowedByGarbage_AfterOneBlock(string format)
+    {
+        // A signature the codec recognises, then a megabyte no codec reads: the read stops at the
+        // first block, where it once went on to the end of the stream.
+        byte[] signature = format == "png" ? [0x89, (byte)'P', (byte)'N', (byte)'G', 0x0D, 0x0A, 0x1A, 0x0A] : [0xFF, 0xD8, 0xFF];
+        await using var source = new AsyncOnlyStream([.. signature, .. new byte[1024 * 1024]]);
+
+        var act = () => _optimizer.GetDimensionsAsync(source);
+
+        await act.Should().ThrowAsync<InvalidDataException>().WithMessage("*JPEG, PNG, GIF, WebP or BMP*");
+        source.BytesRead.Should().Be(16 * 1024);
+    }
+
+    [Fact]
+    public async Task GetDimensionsAsync_RefusesAHeaderPastItsBudget()
+    {
+        // 257 whole APP13 segments before the frame header, 16.8 MB of well-formed header: read no
+        // further than the 16 MB budget, then refused.
+        var jpeg = TestImages.WithPaddingSegments(TestImages.Solid(64, 32, SKColors.Red), 257);
+        await using var source = new AsyncOnlyStream(jpeg);
+
+        var act = () => _optimizer.GetDimensionsAsync(source);
+
+        await act.Should().ThrowAsync<InvalidDataException>().WithMessage("*header runs past 16 MB*");
+        source.BytesRead.Should().Be(16 * 1024 * 1024);
+    }
+
     [Fact]
     public async Task GetDimensionsAsync_AnswersTheSizeAsDisplayed()
     {

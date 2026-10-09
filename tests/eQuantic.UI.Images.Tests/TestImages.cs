@@ -135,6 +135,22 @@ internal static class TestImages
     }
 
     /// <summary>
+    /// A JPEG with the given number of whole APP13 segments, each as long as a segment may be
+    /// (65,537 bytes with its marker), after its SOI: a header as large as a test needs, well formed.
+    /// </summary>
+    public static byte[] WithPaddingSegments(byte[] jpeg, int segments)
+    {
+        var segment = new byte[65_537];
+        (segment[0], segment[1], segment[2], segment[3]) = (0xFF, 0xED, 0xFF, 0xFF);
+        var bytes = new List<byte>(segments * segment.Length + jpeg.Length);
+        bytes.AddRange(jpeg[..2]);
+        for (var i = 0; i < segments; i++)
+            bytes.AddRange(segment);
+        bytes.AddRange(jpeg[2..]);
+        return [.. bytes];
+    }
+
+    /// <summary>
     /// A 1 × 1 GIF of two frames, red then blue. SkiaSharp writes no GIF, so the bytes are written
     /// here: each frame's LZW data is the three 3-bit codes clear, the colour's index and end.
     /// </summary>
