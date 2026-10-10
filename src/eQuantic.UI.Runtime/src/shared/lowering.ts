@@ -107,6 +107,7 @@ import type {
   StyleDiffValue,
   TextEntryNode,
   TextNode,
+  TypeStyleValue,
   TransformValue,
   TransitionSpecValue,
   ShortcutNode,
@@ -1404,6 +1405,22 @@ function gridPatternSize(pattern: GridPatternValue): string {
 /** Fraction → CSS percentage, mirroring C# TokenCss.Percent ("0.##": -0.35 → "-35%"). */
 function pct(fraction: number): string {
   return `${parseFloat((fraction * 100).toFixed(2))}%`;
+}
+
+/** A style's font size: px, or `clamp(min, Nvw, max)` when it follows the window (C# TokenCss.FontSize twin). */
+function fontSize(style: TypeStyleValue): string {
+  const fluid = style.fluid;
+  return fluid ? `clamp(${px(fluid.min)}, ${num(fluid.percentOfWindow)}vw, ${px(fluid.max)})` : px(style.size);
+}
+
+/** A style's letter spacing: px, or `em` at its ratio when the size follows the window (C# TokenCss.LetterSpacing twin). */
+function letterSpacing(style: TypeStyleValue): string {
+  return style.fluid && style.size > 0 ? `${num(style.tracking / style.size)}em` : px(style.tracking);
+}
+
+/** A style's line height: px, or its ratio unitless when the size follows the window (C# TokenCss.LineHeight twin). */
+function lineHeight(style: TypeStyleValue): string {
+  return style.fluid && style.size > 0 ? num(style.lineHeight / style.size) : px(style.lineHeight);
 }
 
 /** One edge of a positioned box: a point, a fraction of the containing box, or both (C# TokenCss.Edge twin). */
@@ -2915,11 +2932,12 @@ function lowerText(text: TextNode, context: LoweringContext): HtmlNode {
   // System table override (e.g. Button labels) — inline styles beat the role class.
   if (text.styleOverride) {
     const override = text.styleOverride;
-    style['font-size'] = px(override.size);
-    style['line-height'] = px(override.lineHeight);
+    // A size that follows the window is a `clamp()` and its line box a ratio (#652, C# twin).
+    style['font-size'] = fontSize(override);
+    style['line-height'] = lineHeight(override);
     const weight = cssFontWeight(override.weight);
     style['font-weight'] = String(weight);
-    style['letter-spacing'] = px(override.tracking);
+    style['letter-spacing'] = letterSpacing(override);
   }
 
   // RICH runs (C# twin): inline spans with their own color/mono face; wrapping stays

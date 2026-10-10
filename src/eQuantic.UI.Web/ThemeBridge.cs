@@ -60,18 +60,33 @@ public static class ThemeBridge
             Comma(sb, ref first);
             Key(sb, Camel(role.ToString()));
             var s = theme.Type(role);
-            sb.Append('[').Append(Num(s.Size)).Append(',').Append(Num(s.LineHeight))
+            // A fluid role's size, line box and tracking cross whole: the browser divides them into
+            // the unitless line height and the em tracking, and four decimals of each are enough to
+            // move the quotient's last digit and the class it lands in. A fixed role keeps four, so
+            // the common payload stays byte-identical.
+            Func<float, string> exact = s.Fluid is null ? Num : Exact;
+            sb.Append('[').Append(exact(s.Size)).Append(',').Append(exact(s.LineHeight))
               .Append(",\"").Append(Camel(s.Weight.ToString())).Append("\",")
-              .Append(Num(s.Tracking)).Append(',').Append(Num(s.MaxScale));
+              .Append(exact(s.Tracking)).Append(',').Append(Num(s.MaxScale));
             // The TAIL rides only when it says something. Five values were lossless for a theme
             // whose roles are all proportional, upright and unnamed — which every shipped one is —
             // and lossy for the first branded theme, which is the whole point of a face. Appended
             // rather than always emitted so the common payload stays byte-identical.
-            if (s.Mono || s.Italic || s.Family is { Length: > 0 })
+            if (s.Mono || s.Italic || s.Family is { Length: > 0 } || s.Fluid is not null)
             {
                 sb.Append(',').Append(s.Mono ? "true" : "false")
                   .Append(',').Append(s.Italic ? "true" : "false");
-                if (FaceName.Usable(s.Family) is { } face) sb.Append(",\"").Append(Escape(face)).Append('"');
+                var face = FaceName.Usable(s.Family);
+                if (face is not null) sb.Append(",\"").Append(Escape(face)).Append('"');
+                // A size that follows the window rides last, after a family slot it may have to
+                // hold open: without it the browser's role is the ceiling while the server's is the
+                // clamp, and a component that sets a role as its override hydrates to another size.
+                if (s.Fluid is { } fluid)
+                {
+                    if (face is null) sb.Append(",null");
+                    sb.Append(",[").Append(Num(fluid.Min)).Append(',').Append(Num(fluid.PercentOfWindow))
+                      .Append(',').Append(Num(fluid.Max)).Append(']');
+                }
             }
             sb.Append(']');
         }
@@ -156,6 +171,9 @@ public static class ThemeBridge
     }
 
     private static string Num(float value) => value.ToString("0.####", CultureInfo.InvariantCulture);
+
+    /// <summary>A float as the shortest text that reads back as the same float.</summary>
+    private static string Exact(float value) => value.ToString("R", CultureInfo.InvariantCulture);
 
     /// <summary>A JSON string body. The only free-form text on this wire is a font family, and it
     /// has already passed <see cref="FaceName.IsWellFormed"/> — which is what keeps this simple:

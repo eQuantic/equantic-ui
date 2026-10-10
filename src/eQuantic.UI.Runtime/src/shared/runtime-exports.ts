@@ -86,6 +86,7 @@ export {
   SizeValue,
   EdgeInsets,
   CornerRadii,
+  FluidSize,
   TypeStyle,
   VariantColors,
 } from './value-types';
