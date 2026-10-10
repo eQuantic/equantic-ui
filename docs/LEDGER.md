@@ -1946,6 +1946,110 @@ record of a release, the wiki's Upgrading page is the distillate.
   cases, the five across type arguments fail on main, and the tuple and `dynamic` cases fail on the
   first mark, which kept the display text. Proposed and archived through OpenSpec
   (`openspec/specs/transpiler-records`).
+- **2026-10-07 · Photon hit-tests and lays out what it draws**: seven places where Photon took the
+  pointer, read it, or laid a child, where the web does not. A target's slop took its neighbours' presses: in a
+  list of 20dp rows under a finger, a press in the middle of a row ran the row below it
+  ([#630](https://github.com/eQuantic/equantic-ui/issues/630)); a hit region now carries the box its
+  pressable is drawn in, and the box under the point wins unless a slop in front of it stands inside
+  it, the rule a padded target gives in Flutter. The frame's region lists are sized like the frame
+  before's, which pays for that box and brings the pooled steady frame from 73.2 KB to 71.2, its
+  ceiling down to 72. A transformed box registered its regions at its layout rect
+  ([#513](https://github.com/eQuantic/equantic-ui/issues/513)); the sink places every region kind
+  where a transform draws it, a rotated one is tested against its shape through an inverse the frame
+  keeps only when something interactive is transformed, and a pressable follows the box it wraps. A
+  text field and a sheet past their scroll view took presses outside it
+  ([#635](https://github.com/eQuantic/equantic-ui/issues/635)), and carry their visible part as a code
+  surface does. A bordered box laid its child over its border
+  ([#629](https://github.com/eQuantic/equantic-ui/issues/629)), and the stand-in measurer gave a lone
+  space zero width, so a rich paragraph measured narrower than its plain twin
+  ([#285](https://github.com/eQuantic/equantic-ui/issues/285)). A field, a code surface, a sheet and a
+  canvas under a scale or a rotation turned a press into a caret, a position, a cell or a point by
+  subtracting the corner of their box on screen, so a field drawn twice as large put the caret at twice
+  the column pressed ([#658](https://github.com/eQuantic/equantic-ui/issues/658)); every conversion
+  now goes through the inverse the frame keeps. A scroll view drawn scaled revealed a focused control
+  and a caret by their distance on screen, where its offset is one in its own space, and the platform's
+  candidate window stood by the caret's unscaled offset
+  ([#700](https://github.com/eQuantic/equantic-ui/issues/700)). Copilot's first round found four
+  more, each proved failing without its fix: a transform that collapses a box onto a line left the box
+  around the line taking the pointer; a row its scroll view clipped away whole kept a drawn box of no
+  height on the viewport's edge, which took the lower presses of the last row shown; a turned
+  completion list took the presses in the corners of the box around it; and a rich paragraph kept the
+  space a break fell on in its width, and skipped the spaces it opens with. Its second round found two
+  under a turn: the boxes around two rows turned together nest while the rows lie side by side, so the
+  narrow row's slop took the wide row's presses, and a reveal carried a control into its scroll view's
+  space as the box around it on screen, which a turn grows until the view scrolls the wrong way; both
+  now go by the boxes' own corners. Its third round found that the corners had lost the clips, so a
+  moved button clipped at its card's edge reached past the card: the boxes on screen are compared,
+  clips included, unless a turn tilts one. Reported: a drag and a pan under a scale or a turn measure
+  their travel on the screen ([#734](https://github.com/eQuantic/equantic-ui/issues/734)). Proposed and archived
+  through OpenSpec (`openspec/specs/hit-targets`, `openspec/specs/box-layout`,
+  `openspec/specs/text-measurement`, `openspec/specs/transformed-surfaces`).
+- **2026-10-07 · A field a case apart from a member keeps its own slot**: a plain class's field and a
+  property or a method a case apart lowered to one member of the twin, the shape a C# class has most:
+  the own field hid a setter, which never ran, an auto-property and its field shared one slot, and a
+  call reached the number a field held. Three apps met the component's form of it (equantic-web,
+  Falei.pt, Cura), which EQ1007 has refused since #621, while a plain class built silently
+  ([#396](https://github.com/eQuantic/equantic-ui/issues/396)). The field moves to a slot with a `$`
+  after its name, read and written through its symbol everywhere, and a class with a moved field writes
+  its JSON through `twinJson`, which writes the property and never the field. A component, a record and
+  a struct keep EQ1007. Copilot's first round found a pattern reading the property: a property
+  subpattern named the member by its text, so `this is { value: 1 }` was false where .NET is true, and a
+  positional one read the members its `Deconstruct`'s outs are named after, so a `Deconstruct` the app
+  wrote is called now, as a deconstruction calls it. The sweep after it found two reads the move itself
+  had broken: a call of a delegate field went to the method a case apart from it, so a method that
+  forwards to its delegate field (`bool Validate(int n) => validate(n)`) called itself and never
+  returned, and a field called `Count` was read as the method `count()`; both reach the field's slot
+  now. The second round found a derived field that kept the slot of an inherited field a case apart,
+  which the derived constructor wrote over (a slot an ancestor holds is taken now, whatever the
+  spellings, and the field takes a `$` more), a `Deconstruct` called once per part in an initializer
+  and once per arm or alternative elsewhere where .NET calls it once (a pattern-matching operation
+  holds its parts once, in a scope of its own), and a twin's JSON that read a getter twice where a
+  moved field and the property's store both stood for it (each name is written once). The third round
+  found a field beside an explicit interface implementation a case apart, which the slot rule read by
+  the symbol's interface-qualified name (`IReads.Value`): a member's twin name is derived in one place
+  now, an explicit implementation's under the name of the member it implements, as the emitter writes
+  it. Proposed and archived through OpenSpec (`openspec/specs/transpiler-classes`).
+- **2026-10-08 · A code editor keeps its Tab in a dialog, and undo after a pasted carriage return
+  restores the text**: on the web a modal layer's focus trap heard Tab in the capture phase, before
+  the editor's input, so a code editor at either end of a dialog lost Tab and Shift+Tab to it
+  ([#598](https://github.com/eQuantic/equantic-ui/issues/598)); the trap now hears the key on its
+  way back up and cycles only a Tab nothing consumed, the question Photon's host asks its code target.
+  And an edit recorded a paste as it was handed, which the history split on LF alone while the
+  document breaks lines on CR, CRLF and LF: undo after pasting "x\ry" into "abc" left "a" and "ybc"
+  ([#600](https://github.com/eQuantic/equantic-ui/issues/600)); an edit now carries the text the
+  document holds, and its range breaks lines as the document does. Copilot's first round found the
+  history's run of typing still ending at LF alone, so a typed lone CR a host recorded ran on into the
+  next character: the edit now says whether it breaks a line, and the history asks it. Proposed and
+  archived through OpenSpec (`openspec/specs/code-history`, `openspec/specs/modal-focus`).
+- **2026-10-07 · A builder has the members a page reaches**: `AppendFormat`, `AppendJoin`,
+  `Capacity`, `MaxCapacity`, `EnsureCapacity`, the `Chars` indexer, `Length`'s setter,
+  `Equals(StringBuilder)` and `CopyTo` transpiled to members the runtime's builder did not have, a
+  TypeError or an undefined behind a green build
+  ([#679](https://github.com/eQuantic/equantic-ui/issues/679)). `AppendFormat` and `AppendJoin`
+  append what `string.Format` and `string.Join` write, by the same lowering, and `Capacity` follows the
+  chunks .NET allocates through every edit, matching .NET on 41 measured sequences. An interpolated
+  `Append` appends each part in turn, as .NET's handler does, where every hole was read first
+  (`$"{b.Length}{b.Length}"` held "00"), a named argument is bound to its parameter, and a text longer
+  than the browser's string is .NET's `OutOfMemoryException`. A provider other than the current
+  culture on `Append`, `GetChunks` and the span overloads fail the build. Proposed and archived
+  through OpenSpec (`openspec/specs/transpiler-bcl`).
+- **2026-10-08 · A curve in the browser is the record C# reads**: a `Curve` was two other shapes in the
+  browser, an array in the generated design system and a preset name in the runtime's `MotionSpec`, so
+  `Curve.Standard.X1` and `Motion.Press.Curve.X1` read undefined, and `new Curve(…)` as a transition's
+  easing built with no diagnostic and threw "is not a constructor" in Falei.pt
+  ([#518](https://github.com/eQuantic/equantic-ui/issues/518)). `Curve` carries `[TwinIsData]` now, as
+  `Color` does, and every producer writes its data, `{ x1, y1, x2, y2 }`, each point the single C#
+  holds: the design system's presets and motion roles, `TransitionSpec`'s default, the lowering and a
+  page's state, and a data twin's text writes a float member as a single. `CurveEvaluator` is
+  `[ServerOnly]`, because a web transition is a CSS timing function the browser evaluates, and the
+  host-only fence asks about an extension's home instead of its receiver, so `curve.Ease(t)` fails the
+  build with EQ2010 where it built and threw; the same hole had let `EffectiveTypeStyle`'s extensions
+  through on a `Text` and a `TypeStyle`. 16 of the 19 new conformance cases fail on the base, the other
+  three comparing a preset with itself. The review found a record member's method group bound to the
+  companion, which carries neither `equals` nor `toString`, so `Curve.Standard.Equals` threw making the
+  delegate and `ToString` answered `[object Object]`, on a `Color` as on a `Curve`: each group answers
+  through the helper its call uses, the receiver read once. Proposed and archived through OpenSpec
+  (`openspec/specs/transpiler-vocabulary-values`).
 
 ## Retired documents
 

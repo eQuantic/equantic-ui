@@ -505,7 +505,8 @@ public sealed class CodeEditorController : ICodeSurfaceModel
         WidthsChanged(line, linesInserted, linesRemoved);
         _revealVersion++;
         _desiredCell = -1;
-        var edit = new CodeEdit(ordered, removed, text, before, _selection, false);
+        var edit = new CodeEdit(ordered, removed, next.TextIn(new CodeRange(ordered.Start, caret)), before,
+            _selection, false);
         Changed?.Invoke(edit);
         SelectionChanged?.Invoke(_selection);
         return new CodeRange(ordered.Start, caret);
@@ -605,7 +606,11 @@ public sealed class CodeEditorController : ICodeSurfaceModel
         _document = next;
         _selection = new CodeRange(caret);
         _revealVersion++;
-        var edit = new CodeEdit(ordered, removed, text, before, _selection, typed);
+        // The edit carries the text the document HOLDS, its line breaks as the document broke them.
+        // Handed on raw, a pasted lone CR was one line to the history and two to the document, and
+        // undo after pasting "x\ry" into "abc" left "a" and "ybc" (#600).
+        var edit = new CodeEdit(ordered, removed, next.TextIn(new CodeRange(ordered.Start, caret)), before,
+            _selection, typed);
         History.Record(edit);
         Highlighter.LineChanged(_document, line, linesInserted, linesRemoved);
         WidthsChanged(line, linesInserted, linesRemoved);

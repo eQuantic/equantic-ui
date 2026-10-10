@@ -108,12 +108,14 @@ public class IdentifierStrategy : IExpressionIrStrategy
                         : JsExpr.Member(JsExpr.Identifier(symbol.ContainingType.Name), name.ToCamelCase());
                 }
 
-                // If it's a member of the current class and not static, add 'this.'
+                // If it's a member of the current class and not static, add 'this.'. A field is read in
+                // its slot, which moves a case apart from another member (FieldSlotExtensions, #396).
                 if (!symbol.IsStatic && symbol.ContainingType != null)
                 {
-                    if (isMemberName) return JsExpr.Identifier(name.ToCamelCase());
+                    var slot = symbol is IFieldSymbol field ? field.TwinSlot() : name.ToCamelCase();
+                    if (isMemberName) return JsExpr.Identifier(slot);
 
-                    var member = JsExpr.ThisMember(name.ToCamelCase());
+                    var member = JsExpr.ThisMember(slot);
 
                     // A method REFERENCE (not being called) is a method group: bind it to the instance.
                     if (symbol is IMethodSymbol)
