@@ -56,8 +56,10 @@ describe('fluid type', () => {
   });
 
   it('refuses a size that cannot be, as the C# does', () => {
-    expect(() => display.withFluidSize(0, 4, 54)).toThrow(/positive floor/);
+    expect(() => display.withFluidSize(0, 4, 54)).toThrow(/positive, finite floor/);
     expect(() => display.withFluidSize(34, 0, 54)).toThrow(/share of the window/);
     expect(() => display.withFluidSize(34, 4, 30)).toThrow(/under its floor/);
+    expect(() => display.withFluidSize(34, Infinity, 54)).toThrow(/finite share/);
+    expect(() => display.withFluidSize(34, 4, Infinity)).toThrow(/must be finite/);
   });
 });

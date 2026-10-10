@@ -71,6 +71,9 @@ public class FluidTypeTests
     [InlineData(0, 4, 54, "min")]
     [InlineData(34, 0, 54, "percentOfWindow")]
     [InlineData(34, 4, 30, "max")]
+    [InlineData(float.PositiveInfinity, 4, 54, "min")]
+    [InlineData(34, float.PositiveInfinity, 54, "percentOfWindow")]
+    [InlineData(34, 4, float.PositiveInfinity, "max")]
     public void ASizeThatCannotBe_IsRefused(float min, float percent, float max, string parameter)
     {
         var act = () => Display.WithFluidSize(min, percent, max);

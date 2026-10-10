@@ -8,7 +8,8 @@ namespace eQuantic.UI.Native.Components;
 /// Per-host cache of rasterized text blocks (W4): keyed by everything that shapes the pixels
 /// EXCEPT color (the tint lives on the draw command, so light/dark share one raster). Instances
 /// are stable across frames — the display-list texture table and the GPU upload cache both dedupe
-/// by identity. Unbounded for now; eviction joins the perf pass.
+/// by identity. Bounded: past a fixed number of rasters it starts over, so a resize that rasterizes
+/// a fluid heading at every width it passes through does not keep each of them.
 /// </summary>
 public sealed class TextRasterCache
 {

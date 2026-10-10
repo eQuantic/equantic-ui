@@ -417,9 +417,11 @@ export class TypeStyle implements TypeStyleValue {
 
   /** C# `TypeStyle.WithFluidSize` twin: `clamp(min, Nvw, max)`, the line box at the style's ratio. */
   withFluidSize(min: number, percentOfWindow: number, max: number): TypeStyle {
-    if (!(min > 0)) throw new RangeError('A fluid size needs a positive floor.');
-    if (!(percentOfWindow > 0)) throw new RangeError('A fluid size needs a positive share of the window.');
-    if (!(max >= min)) throw new RangeError("A fluid size's ceiling cannot be under its floor.");
+    // The C# refusals, word for word: an infinite one is `Infinityvw` or `Infinitypx`.
+    if (!(min > 0) || !Number.isFinite(min)) throw new RangeError('A fluid size needs a positive, finite floor.');
+    if (!(percentOfWindow > 0) || !Number.isFinite(percentOfWindow))
+      throw new RangeError('A fluid size needs a positive, finite share of the window.');
+    if (!(max >= min) || !Number.isFinite(max)) throw new RangeError("A fluid size's ceiling must be finite and not under its floor.");
     // The ceiling keeps the EXACT ratios (C# twin): the web writes them unitless and in em, and
     // atWindow rounds once, at the size it resolves to.
     // In single precision, each operation rounded as C# rounds it: a double here leaves a value a bit

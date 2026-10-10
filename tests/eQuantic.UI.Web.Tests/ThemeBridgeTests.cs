@@ -34,6 +34,21 @@ public class ThemeBridgeTests
         ThemeBridge.SerializeJson(theme).Should().Contain(",false,false,null,[34,4.2,54]]");
     }
 
+    /// <summary>
+    /// A fluid role's size, line box and tracking cross whole, so the browser divides the same
+    /// floats the server did: four decimals of 60.49904 move the line height's last digit.
+    /// </summary>
+    [Fact]
+    public void AFluidRole_CrossesItsSizeLineBoxAndTrackingWhole()
+    {
+        var style = new TypeStyle(79.49431f, 60.49904f, FontWeight.Bold, -1.234567f, 1.3f).WithFluidSize(10, 4.2f, 17.662743f);
+        var theme = new NamedFaceTests.RoleTheme(PhotonTheme.Instance, TypeRole.Display, style);
+
+        var json = ThemeBridge.SerializeJson(theme);
+
+        json.Should().Contain($"\"display\":[{style.Size.ToString("R", System.Globalization.CultureInfo.InvariantCulture)},{style.LineHeight.ToString("R", System.Globalization.CultureInfo.InvariantCulture)},");
+    }
+
     [Fact]
     public void PhotonSerialization_MatchesTheSharedFixture()
     {

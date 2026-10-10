@@ -1253,12 +1253,12 @@ the pill's 40 down.
 
 - **Component**: `src/eQuantic.UI.Primitives/Theme/Typography.cs`
 - **Handoff**: Dynamic Type — "Scales by OS factor to the role cap; re-shape + re-layout, atlas re-uses whitelist sizes. Never scales below ×1."
-- **Code**: The scaling helper clamps the OS factor to a FLOOR of 0.5, not 1 — an OS factor below ×1 (iOS xSmall ≈ 0.82, Android fontScale 0.85) shrinks the type down to half the role's dp size. ScaledLineHeight applies the same 0.5 floor at Typography.cs:157-160 ScaledLineHeight, and no caller re-clamps: the shells pass the factor straight through (src/eQuantic.UI.Native.Shell.Apple/CoreTextService.cs:180-181, src/eQuantic.UI.Native.Shell.Android/AndroidTextService.cs:27-28) and the summary comment only documents `Size × min(factor, MaxScale)`, so the extra lower bound is unstated as well as wrong.
+- **Code**: The scaling helper clamps the OS factor to a FLOOR of 0.5, not 1 — an OS factor below ×1 (iOS xSmall ≈ 0.82, Android fontScale 0.85) shrinks the type down to half the role's dp size. ScaledLineHeight applies the same 0.5 floor at Typography.cs:160-163 ScaledLineHeight, and no caller re-clamps: the shells pass the factor straight through (src/eQuantic.UI.Native.Shell.Apple/CoreTextService.cs:180-181, src/eQuantic.UI.Native.Shell.Android/AndroidTextService.cs:27-28) and the summary comment only documents `Size × min(factor, MaxScale)`, so the extra lower bound is unstated as well as wrong.
 - **Evidence**:
 
   ```
   src/eQuantic.UI.Primitives/Theme/Typography.cs:86  var scaled = Size * MathF.Min(MathF.Max(osFactor, 0.5f), MaxScale);
-  src/eQuantic.UI.Primitives/Theme/Typography.cs:159  var scaled = LineHeight * MathF.Min(MathF.Max(osFactor, 0.5f), MaxScale);
+  src/eQuantic.UI.Primitives/Theme/Typography.cs:162  var scaled = LineHeight * MathF.Min(MathF.Max(osFactor, 0.5f), MaxScale);
   ```
 
 ### A8 Text · behaviour · **unverified**

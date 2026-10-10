@@ -60,9 +60,14 @@ public static class ThemeBridge
             Comma(sb, ref first);
             Key(sb, Camel(role.ToString()));
             var s = theme.Type(role);
-            sb.Append('[').Append(Num(s.Size)).Append(',').Append(Num(s.LineHeight))
+            // A fluid role's size, line box and tracking cross whole: the browser divides them into
+            // the unitless line height and the em tracking, and four decimals of each are enough to
+            // move the quotient's last digit and the class it lands in. A fixed role keeps four, so
+            // the common payload stays byte-identical.
+            Func<float, string> exact = s.Fluid is null ? Num : Exact;
+            sb.Append('[').Append(exact(s.Size)).Append(',').Append(exact(s.LineHeight))
               .Append(",\"").Append(Camel(s.Weight.ToString())).Append("\",")
-              .Append(Num(s.Tracking)).Append(',').Append(Num(s.MaxScale));
+              .Append(exact(s.Tracking)).Append(',').Append(Num(s.MaxScale));
             // The TAIL rides only when it says something. Five values were lossless for a theme
             // whose roles are all proportional, upright and unnamed — which every shipped one is —
             // and lossy for the first branded theme, which is the whole point of a face. Appended
@@ -166,6 +171,9 @@ public static class ThemeBridge
     }
 
     private static string Num(float value) => value.ToString("0.####", CultureInfo.InvariantCulture);
+
+    /// <summary>A float as the shortest text that reads back as the same float.</summary>
+    private static string Exact(float value) => value.ToString("R", CultureInfo.InvariantCulture);
 
     /// <summary>A JSON string body. The only free-form text on this wire is a font family, and it
     /// has already passed <see cref="FaceName.IsWellFormed"/> — which is what keeps this simple:

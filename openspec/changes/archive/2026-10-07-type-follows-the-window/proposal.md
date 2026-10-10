@@ -33,5 +33,5 @@ window.
 ## Impact
 
 - New public API: `FluidSize`, `TypeStyle.Fluid`, `TypeStyle.WithFluidSize`, `TypeStyle.AtWindow`;
-  `TokenCss.FontSize` and `TokenCss.LineHeight` on the web. Nothing removed or renamed.
+  `TokenCss.FontSize`, `TokenCss.LineHeight` and `TokenCss.LetterSpacing` on the web. Nothing removed or renamed.
 - The runtime gains the `FluidSize` twin and `TypeStyle.fluid`, `withFluidSize`, `atWindow`.

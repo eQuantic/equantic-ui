@@ -119,10 +119,13 @@ public readonly record struct TypeStyle(float Size, float LineHeight, FontWeight
     /// </summary>
     public TypeStyle WithFluidSize(float min, float percentOfWindow, float max)
     {
-        if (!(min > 0)) throw new ArgumentOutOfRangeException(nameof(min), "A fluid size needs a positive floor.");
-        if (!(percentOfWindow > 0))
-            throw new ArgumentOutOfRangeException(nameof(percentOfWindow), "A fluid size needs a positive share of the window.");
-        if (!(max >= min)) throw new ArgumentOutOfRangeException(nameof(max), "A fluid size's ceiling cannot be under its floor.");
+        // Finite as well: an infinite one is `Infinityvw` or `Infinitypx` in CSS and in the theme's JSON.
+        if (!(min > 0) || !float.IsFinite(min))
+            throw new ArgumentOutOfRangeException(nameof(min), "A fluid size needs a positive, finite floor.");
+        if (!(percentOfWindow > 0) || !float.IsFinite(percentOfWindow))
+            throw new ArgumentOutOfRangeException(nameof(percentOfWindow), "A fluid size needs a positive, finite share of the window.");
+        if (!(max >= min) || !float.IsFinite(max))
+            throw new ArgumentOutOfRangeException(nameof(max), "A fluid size's ceiling must be finite and not under its floor.");
         // The ceiling keeps the style's EXACT line-box ratio rather than WithSize's half-dp
         // rounding: the web writes that ratio unitless, and AtWindow rounds once, at the size it
         // resolves to, instead of twice.
