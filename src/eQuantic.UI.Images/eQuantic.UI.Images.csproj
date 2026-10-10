@@ -17,8 +17,13 @@
         <Description>Next.js-style server-side image optimization for eQuantic.UI - resize, WebP conversion, and caching.</Description>
     </PropertyGroup>
 
+    <!-- SkiaSharp brings the macOS and Windows natives itself; the Linux ones are a package of their
+         own, referenced here so an app on a Linux server adds nothing (NoDependencies: no fontconfig,
+         since nothing here draws text). The managed and native versions move together, so both are
+         pinned to the same one. -->
     <ItemGroup>
-        <PackageReference Include="SixLabors.ImageSharp" Version="3.1.*" />
+        <PackageReference Include="SkiaSharp" Version="4.153.1" />
+        <PackageReference Include="SkiaSharp.NativeAssets.Linux.NoDependencies" Version="4.153.1" />
     </ItemGroup>
 
 </Project>

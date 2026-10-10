@@ -5,12 +5,21 @@ export * from '../../eQuantic.UI.Runtime/src/index';
 
 import { installErrorOverlay } from '../../eQuantic.UI.Runtime/src/dev/error-overlay';
 import {
+  capturePageState,
+  replayPageState,
+  type PageState,
+} from '../../eQuantic.UI.Runtime/src/dev/hot-reload-state';
+import {
   getReconciler,
   Router,
   matchRoute,
   setCurrentRouteFrom,
   registerDeviceCapabilities,
-  detectPhotonDensity,
+  densityForHydration,
+  pointerDensity,
+  rememberDensity,
+  setPhotonDensity,
+  settleDensity,
   setPhotonTheme,
   materializeTheme,
   type EqConfig,
@@ -27,6 +36,7 @@ import { EscapeHatchPage, componentIdentity } from '../../eQuantic.UI.Runtime/sr
 import {
   applyPageState,
   fetchPageState,
+  leaveForRefusal,
   warmPageState,
 } from '../../eQuantic.UI.Runtime/src/router/page-state';
 import { Component } from '../../eQuantic.UI.Runtime/src/core/types';
@@ -70,6 +80,11 @@ function isDev(): boolean {
   return typeof window !== 'undefined' && window.__EQ_DEV__ === true;
 }
 
+/** Whether the server streams rebuilds at /_equantic/hmr: its own decision, sent in the configuration. */
+function hotReloads(): boolean {
+  return typeof window !== 'undefined' && window.__EQ_CONFIG?.hotReload === true;
+}
+
 // --- Initialization ---
 let initialized = false;
 
@@ -82,6 +97,9 @@ let currentComponent: MountableComponent | null = null;
 /** True when THIS boot re-entered through a hot-reload refresh — see initHotReload. */
 let hmrReplay = false;
 
+/** The page fields the refresh carried across, by the root's key, for the page this boot builds. */
+let hmrState: Record<string, PageState> | null = null;
+
 /**
  * Bootstraps the eQuantic application
  */
@@ -89,29 +107,28 @@ export async function boot(): Promise<void> {
   if (initialized) return;
   initialized = true;
 
-  // Phase 3 hot reload replay: state captured just before the HMR reload re-enters through the
-  // ORDINARY SSR-hydration mechanic (window.__INITIAL_STATE__ + hydrateValue) — zero new paths.
+  // Phase 3 hot reload replay: the page's fields, captured just before the HMR reload, re-enter before
+  // it builds (replayPageState), each rebuilt by the spec its value had, and the server-data door
+  // (window.__INITIAL_STATE__) adopts none of the fields the replay decided on the first render.
   //
-  // BOTH HALVES OF HOT RELOAD ASK isDev(), like every other developer facility in this file. They
-  // did not, and a production page paid for it on every load: a request to /_equantic/hmr that the
-  // server maps only in development, so a 404 in the console of every shipped app (#240), plus a
-  // sessionStorage marker read on a page that can never have written one.
-  if (isDev()) {
+  // BOTH HALVES OF HOT RELOAD ASK THE SERVER whether it streams rebuilds, the one decision that also
+  // maps the stream. Asking nothing, a production page paid on every load: a request to
+  // /_equantic/hmr the server had not mapped, so a 404 in the console of every shipped app (#240),
+  // plus a sessionStorage marker read on a page that can never have written one. Asking isDev()
+  // matched the server only while the app left HotReload unset: set either way, one half ran without
+  // the other, and under dotnet watch outside Development, where the server streams rebuilds since
+  // #627, the page would never have listened.
+  if (hotReloads()) {
     try {
       const saved = sessionStorage.getItem('__eq_hmr__');
       if (saved) {
         sessionStorage.removeItem('__eq_hmr__');
         hmrReplay = true;
-        const parsed = JSON.parse(saved) as {
-          url: string;
-          state: Record<string, Record<string, unknown>>;
-        };
-        if (parsed.url === location.href) {
-          const w = window as unknown as {
-            __INITIAL_STATE__?: Record<string, Record<string, unknown>>;
-          };
-          w.__INITIAL_STATE__ = { ...(w.__INITIAL_STATE__ ?? {}), ...parsed.state };
-        }
+        const parsed = JSON.parse(saved) as { url: string; pages: Record<string, PageState> };
+        // The captured fields stay out of the server's payload: copied in, the first render's
+        // adoption wrote back a field the replay had left at its initializer, and the root's own
+        // server members went with the entry they replaced (Copilot's second round on #672).
+        if (parsed.url === location.href) hmrState = parsed.pages;
       }
     } catch {
       /* best effort */
@@ -128,8 +145,13 @@ export async function boot(): Promise<void> {
   // native shells' IPhotonCapabilities.
   registerDeviceCapabilities();
   // A desktop browser is driven by a POINTER: the controls tighten to the density a native
-  // desktop app has. Read once at boot, from what the browser says about the pointer.
-  detectPhotonDensity();
+  // desktop app has. Read once at boot, from what the browser says about the pointer, and left for
+  // the server, which cannot see the pointer, so the next request renders at it (#623).
+  const ownDensity = pointerDensity();
+  if (ownDensity) {
+    setPhotonDensity(ownDensity);
+    rememberDensity(ownDensity);
+  }
 
   if (isDev()) {
     console.log('eQuantic.UI Runtime initializing...');
@@ -208,7 +230,17 @@ export async function boot(): Promise<void> {
       if (initialMatch) setCurrentRouteFrom(initialMatch, initialUrl);
     }
 
+    // HYDRATION lowers at the density the server rendered at, so it adopts the served markup as it
+    // is; then the whole page switches to the browser's own at once (#623). Lowered at the browser's
+    // from the start, each component kept the server's density until it next re-rendered, and then
+    // snapped: under a mouse a page showed a mix of both.
+    const hydrating = servedContent && config.ssr !== false && !hmrReplay;
+    const atHydration = densityForHydration(config.density, hydrating, ownDensity);
+    if (atHydration) setPhotonDensity(atHydration);
     await loadAndMountPage(root, pageName, config);
+    settleDensity(ownDensity, () =>
+      (currentComponent as unknown as { _scheduleRender?: () => void } | null)?._scheduleRender?.(),
+    );
 
     // Phase 2: when the server provided a route table, enable client-side (SPA) navigation —
     // internal link clicks swap the page bundle in place instead of triggering a full reload.
@@ -223,7 +255,7 @@ export async function boot(): Promise<void> {
         onNavigate: (match, url, isCurrent) =>
           // The same STRING the hover warmed under, or the click looks in the wrong drawer and
           // fetches a second time — which made a warmed navigation the slower one.
-          navigateToPage(root, match.page, config, isCurrent, url.pathname + url.search),
+          navigateToPage(root, match.page, config, isCurrent, url.pathname + url.search, url.hash),
         // Hover/focus prefetch: warm the page bundle so a click navigates instantly. loadPageModule's
         // dynamic import is cached by the browser, so the later navigation resolves without a round-trip.
         onPrefetch: (match, url) => {
@@ -352,6 +384,18 @@ async function loadAndMountPage(
 
   const component = asPage(new ComponentClass());
 
+  // A hot reload's replay hands the page the fields it held before the refresh, before it builds. The
+  // server-data door above takes only what the hydration manifest lists, and a write-once page's own
+  // state is in none of it, so its counter went back to its initializer (#664).
+  if (hmrReplay && hmrState) {
+    const page: object = component instanceof EscapeHatchPage ? component.page : component;
+    const key = `${componentIdentity(page)}#0`;
+    const saved = hmrState[key];
+    // Once: the fields are the ones the page held before this reload, and nothing later may be handed them.
+    hmrState = null;
+    if (saved) replayPageState(page, saved, key);
+  }
+
   // Hydration: attach events to existing SSR HTML. Prefer the component's own hydrate() so its render
   // manager owns the tree — that lets the first SPA navigation away diff against it (getCurrentTree) and
   // preserve a shared shell. Fall back to a direct reconciler hydrate for older component shapes.
@@ -359,8 +403,8 @@ async function loadAndMountPage(
   // by the server's still-running old assembly, while the page bundle that just loaded is the new
   // code. Hydration ADOPTS the DOM it finds — which kept the pre-edit pixels on screen and made
   // the whole feature read as broken ("I saved, it reloaded, nothing changed"). A replay boot
-  // renders CLIENT-side instead: the new code paints, and the captured state re-enters through
-  // the same __INITIAL_STATE__ door the SSR mechanic already uses.
+  // renders CLIENT-side instead: the new code paints, with the fields the replay handed the page
+  // above (replayPageState).
   if (hasSSRContent && config.ssr !== false && component.getVirtualNode && !hmrReplay) {
     if (isDev()) {
       console.log(`Hydrating: ${pageName}`);
@@ -397,15 +441,22 @@ async function navigateToPage(
   config: EqConfig,
   isCurrent?: () => boolean,
   url?: string,
+  fragment?: string,
 ): Promise<void> {
   try {
     // The bundle and the page's SERVER DATA at the same time — the fetch is not on the critical
-    // path behind the import, and neither is behind the other.
-    const [ComponentClass, payload] = await Promise.all([
-      loadPageModule(pageName, config),
-      fetchPageState(url),
-    ]);
-    // A newer navigation started while this bundle was loading — don't clobber it.
+    // path behind the import, and neither is behind the other. The STATE is awaited first: a refusal
+    // decides the navigation whatever happens to the bundle, which may fail to load for a visitor the
+    // page refuses (#673). The bundle's failure, if it comes, is reported where it is awaited.
+    const bundle = loadPageModule(pageName, config);
+    bundle.catch(() => {});
+    const payload = await fetchPageState(url);
+    // A newer navigation started while this was loading — don't clobber it.
+    if (isCurrent && !isCurrent()) return;
+    // The server REFUSED this route (#673): the page requires an authorization the visitor does not
+    // have, and it is loaded in full instead of rendered (leaveForRefusal says how), fragment and all.
+    if (leaveForRefusal(payload, url === undefined ? undefined : url + (fragment ?? ''))) return;
+    const ComponentClass = await bundle;
     if (isCurrent && !isCurrent()) return;
     if (!ComponentClass) {
       render404(root, pageName);
@@ -559,9 +610,10 @@ function escapeHtml(unsafe: string): string {
 }
 
 /**
- * Phase 3 hot reload (v1): listen on the DEV-only SSE endpoint; on a rebuild, capture the live
- * page state (the stateful page's data fields) and reload — the boot replays it through the
- * SSR-hydration mechanic. In production the endpoint 404s and the source closes itself.
+ * Phase 3 hot reload (v1): listen on the SSE endpoint the server maps when it streams rebuilds; on a
+ * rebuild, capture the live page state (the stateful page's data fields) and reload — the boot
+ * replays it into the page before it builds (replayPageState). Called only when the server said it
+ * streams them.
  */
 function initHotReload(): void {
   if (typeof EventSource === 'undefined') return;
@@ -569,29 +621,22 @@ function initHotReload(): void {
     const source = new EventSource('/_equantic/hmr');
     // No close-on-error: EventSource RECONNECTS by itself after a transient drop, which is the
     // whole point of the API — closing on the first hiccup left hot reload silently dead minutes
-    // into every session. In production the endpoint 404s, and the browser abandons a non-200
-    // stream on its own (readyState CLOSED, no retries) — nothing leaks.
+    // into every session. A server restarted without the endpoint answers 404, and the browser
+    // abandons a non-200 stream on its own (readyState CLOSED, no retries) — nothing leaks.
     source.onmessage = () => {
       // The marker is written UNCONDITIONALLY: it is what tells the next boot to render with the
       // NEW code instead of hydrating the stale SSR. Gating it on captured state left every
       // write-once page (which keeps no _state bag) hydrating old HTML after the reload —
       // the pixels never changed, and the whole feature read as broken.
-      const data: Record<string, unknown> = {};
+      let data: PageState = { fields: {}, specs: {} };
       // The PAGE, not its host: an escape-hatch page is mounted through EscapeHatchPage, and what it
-      // holds — and the key it is named by — are the hosted page's own.
+      // holds — and the key it is named by — are the hosted page's own. Its fields are what crosses,
+      // the ones its C# declares: a `_state` bag, which this read before, is something no write-once
+      // page has (#664).
       const pageRoot: object | null =
         currentComponent instanceof EscapeHatchPage ? currentComponent.page : currentComponent;
       try {
-        const holder = pageRoot as unknown as { _state?: Record<string, unknown> } | null;
-        const state = holder?._state;
-        if (state) {
-          for (const key of Object.keys(state)) {
-            const value = state[key];
-            if (typeof value === 'function') continue;
-            if (key === '_component' || key === '_context' || key === '_needsRender') continue;
-            data[key] = value;
-          }
-        }
+        if (pageRoot) data = capturePageState(pageRoot);
       } catch {
         /* reload without state rather than not at all */
       }
@@ -603,7 +648,7 @@ function initHotReload(): void {
         const rootKey = `${pageRoot ? componentIdentity(pageRoot) : ''}#0`;
         sessionStorage.setItem(
           '__eq_hmr__',
-          JSON.stringify({ url: location.href, state: { [rootKey]: data } }),
+          JSON.stringify({ url: location.href, pages: { [rootKey]: data } }),
         );
       } catch {
         /* private mode etc. — the reload still shows the new code, only via hydration */

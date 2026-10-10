@@ -104,7 +104,7 @@ public class ObjectCreationStrategy : IExpressionIrStrategy
         }
         var placed = System.Text.RegularExpressions.Regex.Replace(template, @"\{(\d)\}",
             hole => $"{{{slots[hole.Groups[1].Value[0] - '0']}}}");
-        return JsExpr.Template(placed, parts, context.TypeAnnotations);
+        return JsExpr.Template(placed, parts);
     }
 
     private JsExpr ConvertExplicit(ObjectCreationExpressionSyntax creation, ConversionContext context)
@@ -671,7 +671,7 @@ public class ObjectCreationStrategy : IExpressionIrStrategy
         type.IsValueType && ctor is { IsImplicitlyDeclared: true, Parameters.Length: 0 } && TwinIsWritten(type)
             ? JsExpr.Opaque(DefaultValue.Of(type, context))
             : BoundArguments.Of(context.SemanticHelper.GetOperation(creation), argument => context.Converter.ConvertIr(argument)) is { } bound
-                ? bound.New(type.Name, context.TypeAnnotations)
+                ? bound.New(type.Name)
                 : JsExpr.New(JsExpr.Identifier(type.Name), ConstructorArguments(creation, ctor, context));
 
     /// <summary>
