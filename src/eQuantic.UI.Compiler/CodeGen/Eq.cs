@@ -289,6 +289,11 @@ public static class Eq
     /// one twin class serves every type argument, and <c>Box&lt;int&gt;</c> equalled <c>Box&lt;double&gt;</c> (#651).</summary>
     public const string Closing = "$eq.closing";
 
+    /// <summary>A copy of a generic record or struct, marked as the value it copies was: a struct's
+    /// <c>$clone</c> and a record's <c>with</c> build it without the constructor, and an unmarked copy
+    /// of a boxed <c>Pair&lt;double&gt;</c> equalled a <c>Pair&lt;int&gt;</c> (#751).</summary>
+    public const string ClosingLike = "$eq.closingLike";
+
     /// <summary>Whether two values of one generic record or struct are of one closed type; an unmarked
     /// value (built in generic code, or rebuilt from the wire) is not taken for another.</summary>
     public const string SameClosure = "$eq.sameClosure";

@@ -324,12 +324,17 @@ public class RecordTypeEmitter
             // through the constructor ran every one of them again (#413). A record whose chain declares
             // a copy constructor copies through it, as C#'s `with` does: each level of the chain
             // carries the step its copy constructor takes (#589).
+            // A copy of a GENERIC one is marked as its source was: built without the constructor, it went
+            // unmarked, and an unmarked value is never taken for another closed type, so a copied
+            // `Pair<double>` equalled a `Pair<int>` (#751).
+            string Closed(string copy) =>
+                type.TypeParameterList is { Parameters.Count: > 0 } ? $"{Eq.ClosingLike}({copy}, this)" : copy;
             if (type is RecordDeclarationSyntax record && !IsStruct(type)
                 && ModelFor(type)?.GetDeclaredSymbol(type) is INamedTypeSymbol copied && ChainDeclaresCopy(copied))
             {
                 sb.Append(tsTypeDeclarations
-                    ? $"with(patch: any): {name} {{ const copy: any = Object.create(Object.getPrototypeOf(this)); copy.$copy(this); return Object.assign(copy, patch); }} "
-                    : "with(patch) { const copy = Object.create(Object.getPrototypeOf(this)); copy.$copy(this); return Object.assign(copy, patch); } ");
+                    ? $"with(patch: any): {name} {{ const $copied: any = Object.create(Object.getPrototypeOf(this)); $copied.$copy(this); return {Closed("Object.assign($copied, patch)")}; }} "
+                    : $"with(patch) {{ const $copied = Object.create(Object.getPrototypeOf(this)); $copied.$copy(this); return {Closed("Object.assign($copied, patch)")}; }} ");
                 _converter.InFileOf(record, () => sb.Append(Written(CopyStep(copied, members, baseName is not null))));
             }
             else
@@ -356,15 +361,16 @@ public class RecordTypeEmitter
             // zero, and a `Pair<T>` passes it on. The open declaration's `T` gave null, so
             // `default(Pair<int>).First == 0` was false (found by Copilot's review of #608).
             // A mutable struct's copy, which ValueCopies takes before a write (#560): member by member,
-            // shallow, as a value inside is copied when it is written in turn.
+            // shallow, as a value inside is copied when it is written in turn, and of its source's
+            // closed type.
             if (IsStruct(type) && ModelFor(type)?.GetDeclaredSymbol(type) is INamedTypeSymbol valueType
                 && Strategies.ValueCopies.IsMutableValue(valueType))
             {
                 sb.Append(tsTypeDeclarations
-                    ? $"$clone(): {name} {{ const copy: any = Object.create({name}.prototype); "
-                    : $"$clone() {{ const copy = Object.create({name}.prototype); ");
-                foreach (var m in members) sb.Append($"copy.{m.Store} = this.{m.Store}; ");
-                sb.Append("return copy; } ");
+                    ? $"$clone(): {name} {{ const $copied: any = Object.create({name}.prototype); "
+                    : $"$clone() {{ const $copied = Object.create({name}.prototype); ");
+                foreach (var m in members) sb.Append($"$copied.{m.Store} = this.{m.Store}; ");
+                sb.Append($"return {Closed("$copied")}; }} ");
             }
 
             if (IsStruct(type))

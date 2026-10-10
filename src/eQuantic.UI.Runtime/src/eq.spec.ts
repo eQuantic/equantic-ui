@@ -44,4 +44,21 @@ describe('$eq namespace', () => {
     expect($eq.enums.text('pending', shape)).toBe('Pending');
     expect($eq.enums.zero(shape)).toBe('active');
   });
+
+  it('closingLike — a copy is of the closed type its source was built as (#751)', () => {
+    class Pair {
+      a: number;
+      constructor(a: number) {
+        this.a = a;
+      }
+    }
+    const ints = $eq.closing(new Pair(1), 'int');
+    const doubles = $eq.closing(new Pair(1), 'double');
+    const copy = $eq.closingLike(Object.assign(Object.create(Pair.prototype), ints), ints);
+    expect($eq.sameClosure(copy, doubles)).toBe(false);
+    expect($eq.sameClosure(copy, ints)).toBe(true);
+    expect($eq.sameClosure($eq.withPatch(ints, { a: 2 }), doubles)).toBe(false);
+    // An unmarked source makes an unmarked copy, which is not taken for another type.
+    expect($eq.sameClosure($eq.closingLike(new Pair(1), new Pair(1)), doubles)).toBe(true);
+  });
 });
