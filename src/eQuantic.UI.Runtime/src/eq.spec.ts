@@ -61,4 +61,22 @@ describe('$eq namespace', () => {
     // An unmarked source makes an unmarked copy, which is not taken for another type.
     expect($eq.sameClosure($eq.closingLike(new Pair(1), new Pair(1)), doubles)).toBe(true);
   });
+
+  it('withPatch — the copy is of its closed type before its patch is written (#751)', () => {
+    let seen: boolean | undefined;
+    class Step {
+      _at = 0;
+      get at() {
+        return this._at;
+      }
+      set at(value: number) {
+        this._at = value;
+        seen = $eq.sameClosure(this, doubles);
+      }
+    }
+    const doubles = $eq.closing(new Step(), 'double');
+    const ints = $eq.closing(new Step(), 'int');
+    expect($eq.withPatch(ints, { at: 2 }).at).toBe(2);
+    expect(seen).toBe(false);
+  });
 });

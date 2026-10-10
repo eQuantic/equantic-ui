@@ -11,7 +11,9 @@ namespace eQuantic.UI.Conformance.Tests;
 /// carries them now; one built inside generic code carries none and is not taken for another type. A
 /// copy is of the closed type of what it copies: a struct's copy before a write or into a box, and a
 /// record's <c>with</c> through a declared copy constructor, both built without the constructor, went
-/// unmarked (#751).
+/// unmarked (#751). And it is of that type from its allocation, as .NET's is: a copy constructor or an
+/// <c>init</c> accessor that compares the copy it is building met an unmarked one (found by Copilot's
+/// review of #752).
 /// </summary>
 public class GenericRecordClosureConformanceTests
 {
@@ -19,6 +21,9 @@ public class GenericRecordClosureConformanceTests
         public record Box<T>(T Value);
         public record struct Pair<T>(T A);
         public record Kept<T>(T Value) { protected Kept(Kept<T> original) { Value = original.Value; } }
+        public static class Seen { public static bool Equal; }
+        public record Copied<T>(T Value) { protected Copied(Copied<T> original) { Value = original.Value; Seen.Equal = Equals((object)new Copied<double>(1)); } }
+        public record Patched<T>(T Value) { private int _step; public int Step { get => _step; init { _step = value; Seen.Equal = Equals((object)new Patched<double>(1)); } } }
         public static class Make { public static Box<T> Boxed<T>(T value) => new Box<T>(value); }
         """;
 
@@ -40,6 +45,8 @@ public class GenericRecordClosureConformanceTests
             ("a generic struct copied into a box", "var pair = new Pair<double>(1); object boxed = pair; return new Pair<int>(1).Equals(boxed);"),
             ("with through a declared copy constructor", "return (new Kept<int>(1) with { Value = 2 }).Equals((object)new Kept<double>(2));"),
             ("with through a declared copy constructor, against its own type", "return (new Kept<int>(1) with { Value = 2 }).Equals((object)new Kept<int>(2));"),
+            ("a copy constructor that compares the copy it builds", "return (new Copied<int>(1) with { }).Value == 1 && Seen.Equal;"),
+            ("an init accessor that compares the copy it patches", "return (new Patched<int>(1) with { Step = 0 }).Step == 0 && Seen.Equal;"),
         };
         var data = new TheoryData<string, string, bool>();
         foreach (var (name, statements) in cases)

@@ -203,7 +203,7 @@ import { ClassBuilder, joinClasses, whenClass } from './utils/class-builder';
  * prototype, then the fields, then the patch.
  */
 export const withPatch = <T extends object>(value: T, patch: Partial<T>): T =>
-  closingLike(Object.assign(Object.create(Object.getPrototypeOf(value)), value, patch) as T, value);
+  Object.assign(closingLike(Object.create(Object.getPrototypeOf(value)) as T, value), value, patch);
 
 /**
  * The closed type a generic record or struct was built as, by instance (#651). C# compares a
@@ -224,6 +224,9 @@ export const closing = <T extends object>(value: T, typeArguments: string): T =>
  * `copy` as built for the closed type `source` was built as: a copy of a generic record or struct is a
  * value of its source's type. A struct's `$clone` and a record's `with` build the copy without its
  * constructor, so the copy went unmarked, and a boxed `Pair<double>` equalled a `Pair<int>` (#751).
+ * Called on the bare copy, before a member or a patch is written to it: .NET's copy is of its closed
+ * type from its allocation, so a copy constructor or an `init` accessor that compares the copy must
+ * not meet an unmarked one (found by Copilot's review of #752).
  */
 export const closingLike = <T extends object>(copy: T, source: object): T => {
   const closure = closures.get(source);

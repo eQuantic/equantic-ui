@@ -326,15 +326,18 @@ public class RecordTypeEmitter
             // carries the step its copy constructor takes (#589).
             // A copy of a GENERIC one is marked as its source was: built without the constructor, it went
             // unmarked, and an unmarked value is never taken for another closed type, so a copied
-            // `Pair<double>` equalled a `Pair<int>` (#751).
-            string Closed(string copy) =>
-                type.TypeParameterList is { Parameters.Count: > 0 } ? $"{Eq.ClosingLike}({copy}, this)" : copy;
+            // `Pair<double>` equalled a `Pair<int>` (#751). Marked where it is allocated, before a copy
+            // constructor's body or a patch's `init` accessor runs on it: .NET's copy is of its closed
+            // type throughout, and a body that compares the copy met an unmarked one (found by Copilot's
+            // review of #752).
+            string Closed(string allocated) =>
+                type.TypeParameterList is { Parameters.Count: > 0 } ? $"{Eq.ClosingLike}({allocated}, this)" : allocated;
             if (type is RecordDeclarationSyntax record && !IsStruct(type)
                 && ModelFor(type)?.GetDeclaredSymbol(type) is INamedTypeSymbol copied && ChainDeclaresCopy(copied))
             {
                 sb.Append(tsTypeDeclarations
-                    ? $"with(patch: any): {name} {{ const $copied: any = Object.create(Object.getPrototypeOf(this)); $copied.$copy(this); return {Closed("Object.assign($copied, patch)")}; }} "
-                    : $"with(patch) {{ const $copied = Object.create(Object.getPrototypeOf(this)); $copied.$copy(this); return {Closed("Object.assign($copied, patch)")}; }} ");
+                    ? $"with(patch: any): {name} {{ const $copied: any = {Closed("Object.create(Object.getPrototypeOf(this))")}; $copied.$copy(this); return Object.assign($copied, patch); }} "
+                    : $"with(patch) {{ const $copied = {Closed("Object.create(Object.getPrototypeOf(this))")}; $copied.$copy(this); return Object.assign($copied, patch); }} ");
                 _converter.InFileOf(record, () => sb.Append(Written(CopyStep(copied, members, baseName is not null))));
             }
             else
@@ -367,10 +370,10 @@ public class RecordTypeEmitter
                 && Strategies.ValueCopies.IsMutableValue(valueType))
             {
                 sb.Append(tsTypeDeclarations
-                    ? $"$clone(): {name} {{ const $copied: any = Object.create({name}.prototype); "
-                    : $"$clone() {{ const $copied = Object.create({name}.prototype); ");
+                    ? $"$clone(): {name} {{ const $copied: any = {Closed($"Object.create({name}.prototype)")}; "
+                    : $"$clone() {{ const $copied = {Closed($"Object.create({name}.prototype)")}; ");
                 foreach (var m in members) sb.Append($"$copied.{m.Store} = this.{m.Store}; ");
-                sb.Append($"return {Closed("$copied")}; }} ");
+                sb.Append("return $copied; } ");
             }
 
             if (IsStruct(type))
