@@ -472,6 +472,9 @@ export interface PressableNode extends VisualNodeValue {
   expanded?: boolean | null;
   /** §10 initial focus: when a trap opens around this pressable, focus lands HERE first. */
   initialFocus?: boolean;
+  /** False: a press leaves the keyboard where it is (Flutter's canRequestFocus), and the pressable
+   * leaves the Tab order. */
+  canRequestFocus?: boolean;
   /** Composite-item role ('button' | 'radio' | 'checkbox' | 'switch' | 'tab' | 'menuItem' |
    * 'option'): radio and tab lower with roving tabindex (the wrapping Adjustable is the one
    * stop); menuItem/option leave the tab order too (the keyboard lives on the trigger, the
@@ -719,6 +722,13 @@ export interface CodeSurfaceNode extends VisualNodeValue {
    * ink of its own, and the page theme's would vanish into the slab. The selection needs none here:
    * the component draws it, in the code's own layers. */
   caretColor?: ColorTokenValue | null;
+  /** What the surface offers at its caret (C# `CodeSurface.Options`): drawn over the code and its
+   * caret at `optionsOrigin`, the input naming it and pointing at `highlightedOption`. */
+  options?: VisualNodeValue | null;
+  /** Where the options stand: their top left, in the surface's coordinates. */
+  optionsOrigin?: { readonly x: number; readonly y: number } | null;
+  /** The option row the keyboard is on, in tree order over the options' option rows, or -1. */
+  highlightedOption?: number;
 }
 
 /** A rectangle the model answers, in the surface's own coordinates. */

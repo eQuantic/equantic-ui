@@ -200,7 +200,18 @@ internal sealed partial class EmitVisitor : IVisualNodeVisitor<EmitState, Nothin
 
     public Nothing Visit(Text node, EmitState s) { EmitTextNode(node, s); Descend(s); return Nothing.Value; }
     public Nothing Visit(TextEntry node, EmitState s) { EmitTextEntry(node, s); Descend(s); return Nothing.Value; }
-    public Nothing Visit(CodeSurface node, EmitState s) { EmitCode(node, s); Descend(s); EmitCodeCaret(node, s); return Nothing.Value; }
+    /// <summary>The code, then its caret, then what the surface offers at the caret (its second
+    /// child, when it has options): over the caret, and registered last, so a press on a row of the
+    /// list lands on the row and not on the code under it.</summary>
+    public Nothing Visit(CodeSurface node, EmitState s)
+    {
+        EmitCode(node, s);
+        var children = s.Node.Children;
+        if (children.Count > 0) Emit(s with { Node = children[0] });
+        EmitCodeCaret(node, s);
+        for (var i = 1; i < children.Count; i++) Emit(s with { Node = children[i] });
+        return Nothing.Value;
+    }
     public Nothing Visit(Image node, EmitState s) { EmitImageNode(node, s); Descend(s); return Nothing.Value; }
     public Nothing Visit(CameraPreview node, EmitState s) { EmitCamera(node, s); Descend(s); return Nothing.Value; }
     public Nothing Visit(Icon node, EmitState s) { EmitIcon(node, s); Descend(s); return Nothing.Value; }
