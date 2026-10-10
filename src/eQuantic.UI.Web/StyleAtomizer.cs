@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Text;
 
@@ -302,24 +303,68 @@ public sealed class StyleSink
 /// own gates with no registry to keep in sync; the TS twin derives the identical name and CSS from
 /// the same thresholds. Ranges encode the fallback chain: a variant is visible from its own
 /// threshold until the next DECLARED variant's threshold.
+/// <para>
+/// A threshold need not be whole — a fluid design switches where a clamp() crosses a value, which
+/// rarely is — so it travels as a whole number of ten-thousandths of a dp, and the name spells its
+/// point as an UNDERSCORE: <c>eq-vc703_7037</c>. A dot in a selector opens a second class, so
+/// <c>.eq-vc703.7037</c> named no gate at all, the browser dropped every rule of it, and each arm
+/// showed at every width (#669). The media condition, which is a length, spells it as a dot.
+/// </para>
 /// </summary>
 public static class AdaptiveGates
 {
-    /// <summary>The upper bound of a range, as CSS max-width (exclusive of the next threshold).</summary>
-    private static string Below(float dp) => $"{TokenCss.Number(dp - 0.02f)}px";
+    /// <summary>A dp in the units a threshold travels in: four decimals, the resolution a gate has
+    /// always been written to.</summary>
+    private const long Scale = 10_000;
 
-    private static string Dp(float dp) => TokenCss.Number(dp);
+    /// <summary>
+    /// The threshold in ten-thousandths of a dp, rounded from the single's EXACT value: the integer
+    /// the TypeScript twin computes from the same single (eqc writes a float constant through
+    /// <c>Math.fround</c>), so the two spellings agree by construction. Formatting the float
+    /// instead rounded it to seven significant digits first — 1066.6667 was <c>1066.667</c> here
+    /// and <c>1066.6667</c> there, two classes for one gate.
+    /// </summary>
+    private static long Units(float dp) => (long)Math.Round((double)dp * Scale, MidpointRounding.AwayFromZero);
+
+    /// <summary>The threshold as text, its point spelled <paramref name="point"/>.</summary>
+    private static string Spell(long units, char point)
+    {
+        if (units < 0) return "-" + Spell(-units, point);
+        var whole = (units / Scale).ToString(CultureInfo.InvariantCulture);
+        var fraction = units % Scale;
+        return fraction == 0
+            ? whole
+            : $"{whole}{point}{fraction.ToString("D4", CultureInfo.InvariantCulture).TrimEnd('0')}";
+    }
+
+    /// <summary>A threshold as a NAME spells it — the inverse of <see cref="Spell"/> with an underscore.</summary>
+    private static long Read(string spelled)
+    {
+        var point = spelled.IndexOf('_');
+        var whole = long.Parse(point < 0 ? spelled : spelled[..point], CultureInfo.InvariantCulture);
+        return point < 0
+            ? whole * Scale
+            : whole * Scale + long.Parse(spelled[(point + 1)..].PadRight(4, '0'), CultureInfo.InvariantCulture);
+    }
+
+    private static string Name(float dp) => Spell(Units(dp), '_');
+
+    /// <summary>A threshold as the media condition's length.</summary>
+    private static string Px(long units) => $"{Spell(units, '.')}px";
+
+    /// <summary>The upper bound of a range, as CSS max-width (0.02dp short of the next threshold).</summary>
+    private static string Below(long units) => Px(units - 200);
 
     /// <summary>The variant that serves the SMALLEST widths, hidden from <paramref name="until"/>.</summary>
-    public static string CompactUntil(float until) => $"eq-vc{Dp(until)}";
+    public static string CompactUntil(float until) => $"eq-vc{Name(until)}";
 
     /// <summary>The MIDDLE variant: from <paramref name="from"/>, hidden from <paramref name="until"/>
     /// (pass <c>0</c> for open-ended — no larger variant is declared).</summary>
     public static string MediumFrom(float from, float until) =>
-        until > 0 ? $"eq-vm{Dp(from)}-{Dp(until)}" : $"eq-vm{Dp(from)}";
+        until > 0 ? $"eq-vm{Name(from)}-{Name(until)}" : $"eq-vm{Name(from)}";
 
     /// <summary>The variant that serves the LARGEST widths, from <paramref name="from"/>.</summary>
-    public static string ExpandedFrom(float from) => $"eq-vx{Dp(from)}";
+    public static string ExpandedFrom(float from) => $"eq-vx{Name(from)}";
 
     /// <summary>The gate's rules — the NORMATIVE blob (the TS twin emits the same string).</summary>
     public static string Css(string gate)
@@ -327,27 +372,25 @@ public static class AdaptiveGates
         var (kind, from, until) = Parse(gate);
         return kind switch
         {
-            'c' => $".{gate}{{display:contents}}@media (min-width: {Dp(until)}px){{.{gate}{{display:none}}}}",
+            'c' => $".{gate}{{display:contents}}@media (min-width: {Px(until)}){{.{gate}{{display:none}}}}",
             'm' when until > 0 =>
-                $".{gate}{{display:none}}@media (min-width: {Dp(from)}px) and (max-width: {Below(until)}){{.{gate}{{display:contents}}}}",
-            'm' => $".{gate}{{display:none}}@media (min-width: {Dp(from)}px){{.{gate}{{display:contents}}}}",
-            'x' => $".{gate}{{display:none}}@media (min-width: {Dp(from)}px){{.{gate}{{display:contents}}}}",
+                $".{gate}{{display:none}}@media (min-width: {Px(from)}) and (max-width: {Below(until)}){{.{gate}{{display:contents}}}}",
+            'm' => $".{gate}{{display:none}}@media (min-width: {Px(from)}){{.{gate}{{display:contents}}}}",
+            'x' => $".{gate}{{display:none}}@media (min-width: {Px(from)}){{.{gate}{{display:contents}}}}",
             _ => throw new ArgumentOutOfRangeException(nameof(gate), gate, "Unknown adaptive gate."),
         };
     }
 
     /// <summary>(kind, from, until) parsed back out of the gate name — the name IS the spec.</summary>
-    private static (char Kind, float From, float Until) Parse(string gate)
+    private static (char Kind, long From, long Until) Parse(string gate)
     {
         if (gate.Length < 6 || !gate.StartsWith("eq-v", StringComparison.Ordinal))
             throw new ArgumentOutOfRangeException(nameof(gate), gate, "Unknown adaptive gate.");
         var kind = gate[4];
         var range = gate[5..].Split('-');
-        var first = float.Parse(range[0], System.Globalization.CultureInfo.InvariantCulture);
-        var second = range.Length > 1
-            ? float.Parse(range[1], System.Globalization.CultureInfo.InvariantCulture)
-            : 0f;
-        return kind == 'c' ? ('c', 0f, first) : (kind, first, second);
+        var first = Read(range[0]);
+        var second = range.Length > 1 ? Read(range[1]) : 0;
+        return kind == 'c' ? ('c', 0, first) : (kind, first, second);
     }
 }
 

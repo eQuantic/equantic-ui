@@ -290,8 +290,16 @@ function lowerNode(
   horizontalAxis: boolean | null,
   path: string,
 ): HtmlNode | null {
-  const lowered = lowerNodeKind(node, context, horizontalAxis, path);
+  return decorate(node, lowerNodeKind(node, context, horizontalAxis, path));
+}
 
+/**
+ * What the funnel writes on the element a node lowered to (the C# `WebLoweringVisitor.Decorate`
+ * twin). A function of its own, apart from the dispatch, for the one place that builds a node's
+ * element without dispatching the node: a container placing an AdaptiveNode's arms itself
+ * (`placeChild`), whose wrapper is still that node's element and carries its key, bookmark, origin.
+ */
+function decorate(node: VisualNodeValue, lowered: HtmlNode | null): HtmlNode | null {
   // A node's Key is its identity among siblings — the same one property Photon reads into a
   // keyed path segment — and here it becomes the reconciler's key, so a keyed row that moved
   // from the third position to the first is a MOVED row, not a rewritten one, and the focus,
@@ -430,7 +438,11 @@ function lowerNodeKind(
     case 'grid':
       return lowerGrid(node as unknown as GridNode, context, path);
     case 'adaptive':
-      return lowerAdaptive(node as unknown as AdaptiveNodeValue, context, path);
+      // Reached from a parent with no rule of its own for a direct child — the arms lower as the
+      // node was asked to, on the same axis. A flex, a grid and a stack place them themselves.
+      return lowerAdaptive(node as unknown as AdaptiveNodeValue, path, (arm, armPath) =>
+        lowerNode(arm, context, horizontalAxis, armPath),
+      );
     case 'shortcut':
       return lowerShortcut(node as unknown as ShortcutNode, context, horizontalAxis, path);
     case 'pinned':
@@ -2247,86 +2259,15 @@ function lowerStack(node: StackNode, context: LoweringContext, path: string): Ht
   const children: HtmlNode[] = [];
   const stackChildren = node.children ?? [];
   for (let i = 0; i < stackChildren.length; i++) {
-    // Through the COMPONENT to what it builds, exactly as the C# realizer does — `Positioned` is a
-    // contract with the parent, and one returned by a component was not recognised. Resolved ONCE,
-    // through the store, so the instance that builds here is the instance that stays.
-    const child = resolveStackChild(stackChildren[i], context, path + '/' + i);
-    if (child?.nodeKind === 'positioned') {
-      const positioned = child as PositionedNode;
-      const lowered = lowerNode(positioned.child, context, null, path + '/' + i + '/0');
-      if (!lowered) continue;
-      // An absolutely-positioned box with ONE edge shrink-wraps; with two it spans between them.
-      // Native measures a positioned child against the stack's full extent, so a child that FILLS
-      // is the stack's width there and its own content's width here — the same tree, two
-      // geometries (C# twin).
-      const filling = fills(positioned.child);
-      const has = (point: number | null | undefined, fraction: number | null | undefined) =>
-        point != null || fraction != null;
-      const spanX = filling.width && has(positioned.start, positioned.startFraction) !== has(positioned.end, positioned.endFraction);
-      const spanY = filling.height && has(positioned.top, positioned.topFraction) !== has(positioned.bottom, positioned.bottomFraction);
-      // A translate is of the element's own box: when both edges of an axis stretch the anchor
-      // around a child that does not fill, the shift goes on a child-sized wrapper (C# twin).
-      const stretched =
-        (has(positioned.start, positioned.startFraction) && has(positioned.end, positioned.endFraction) && !filling.width) ||
-        (has(positioned.top, positioned.topFraction) && has(positioned.bottom, positioned.bottomFraction) && !filling.height);
-      const shifted = shift(positioned.shiftX ?? 0, positioned.shiftY ?? 0);
-      children.push(
-        element(
-          'div',
-          {
-            position: 'absolute',
-            // Spec S7 (C# twin): explicit stacking WINS; otherwise the child's own depth.
-            'z-index': `${(positioned.layer ?? 0) !== 0 ? positioned.layer : i + 1}`,
-            // A point, a fraction of the stack, or both (C# TokenCss.Edge twin).
-            top: edge(positioned.top, positioned.topFraction) ?? (spanY ? '0' : undefined),
-            right: edge(positioned.end, positioned.endFraction) ?? (spanX ? '0' : undefined),
-            bottom: edge(positioned.bottom, positioned.bottomFraction) ?? (spanY ? '0' : undefined),
-            left: edge(positioned.start, positioned.startFraction) ?? (spanX ? '0' : undefined),
-            transform: stretched ? undefined : shifted,
-          },
-          [
-            stretched && shifted
-              ? element('div', { width: filling.width ? undefined : 'fit-content', transform: shifted }, [lowered])
-              : lowered,
-          ],
-        ),
-      );
-    } else if (child) {
-      const lowered = lowerNode(child, context, null, path + '/' + i);
-      if (!lowered) continue;
-      // The cell IS the stack's available space (native MeasureStack contract): stretched to the
-      // grid cell, aligning its child via flex — Fill children cover, hug children anchor.
-      children.push(
-        element(
-          'div',
-          {
-            'grid-area': '1 / 1',
-            display: 'flex',
-            'justify-content': cellJustify,
-            'align-items': cellAlign,
-            width: '100%',
-            height: '100%',
-            // …and may not grow PAST it: a grid item's automatic minimum size is min-content, so a
-            // layer holding a scroller would size the track to the scroller's CONTENT and swell the
-            // stack to the widest line in the file.
-            'min-width': '0',
-            'min-height': '0',
-            // Spec A3 (C# twin): paint order IS child order — a child with backdrop-filter/filter/
-            // opacity creates a stacking context that CSS would otherwise paint above every plain
-            // sibling drawn after it (a blurred scrim covering its own dialog).
-            'z-index': `${i + 1}`,
-            // A cell whose LAYER is intangible is intangible too (C# twin). The cell stretches to
-            // the whole stack and carries the layer's z-index, so a closed Drawer — a bare Box, see
-            // paintsNothing — covered the viewport with an invisible interactive rectangle.
-            'pointer-events':
-              (child as BoxNode).nodeKind === 'box' && paintsNothing(child as BoxNode)
-                ? 'none'
-                : undefined,
-          },
-          [lowered],
-        ),
-      );
-    }
+    const layer = lowerLayer(
+      stackChildren[i],
+      i + 1,
+      context,
+      path + '/' + i,
+      cellJustify,
+      cellAlign,
+    );
+    if (layer) children.push(layer);
   }
 
   return element(
@@ -2340,6 +2281,105 @@ function lowerStack(node: StackNode, context: LoweringContext, path: string): Ht
       'flex-shrink': rigid(node.width, node.height),
     },
     children,
+  );
+}
+
+/**
+ * One LAYER of a stack at `depth` (the C# `LowerLayer` twin): a Positioned child anchored at its
+ * offsets, anything else in the single cell. An AdaptiveNode is no layer of its own — its gates are
+ * display:contents, so each ARM is a layer, placed by this same rule inside its gate at the node's
+ * depth (#671).
+ */
+function lowerLayer(
+  raw: VisualNodeValue,
+  depth: number,
+  context: LoweringContext,
+  path: string,
+  cellJustify: string,
+  cellAlign: string,
+): HtmlNode | null {
+  // Through the COMPONENT to what it builds, exactly as the C# realizer does — `Positioned` is a
+  // contract with the parent, and one returned by a component was not recognised. Resolved ONCE,
+  // through the store, so the instance that builds here is the instance that stays.
+  const child = resolveStackChild(raw, context, path);
+  if (!child) return null;
+  if (child.nodeKind === 'adaptive') {
+    // Checked AFTER the component is resolved, because a component may build one: the arms are
+    // then the layers of the stack the component stands in.
+    return placeChild(child, path, (arm, armPath) =>
+      lowerLayer(arm, depth, context, armPath, cellJustify, cellAlign),
+    );
+  }
+  if (child.nodeKind === 'positioned') {
+    const positioned = child as PositionedNode;
+    const lowered = lowerNode(positioned.child, context, null, path + '/0');
+    if (!lowered) return null;
+    // An absolutely-positioned box with ONE edge shrink-wraps; with two it spans between them.
+    // Native measures a positioned child against the stack's full extent, so a child that FILLS is
+    // the stack's width there and its own content's width here — the same tree, two geometries
+    // (C# twin).
+    const filling = fills(positioned.child);
+    const has = (point: number | null | undefined, fraction: number | null | undefined) =>
+      point != null || fraction != null;
+    const spanX = filling.width && has(positioned.start, positioned.startFraction) !== has(positioned.end, positioned.endFraction);
+    const spanY = filling.height && has(positioned.top, positioned.topFraction) !== has(positioned.bottom, positioned.bottomFraction);
+    // A translate is of the element's own box: when both edges of an axis stretch the anchor around
+    // a child that does not fill, the shift goes on a child-sized wrapper (C# twin).
+    const stretched =
+      (has(positioned.start, positioned.startFraction) && has(positioned.end, positioned.endFraction) && !filling.width) ||
+      (has(positioned.top, positioned.topFraction) && has(positioned.bottom, positioned.bottomFraction) && !filling.height);
+    const shifted = shift(positioned.shiftX ?? 0, positioned.shiftY ?? 0);
+    return element(
+      'div',
+      {
+        position: 'absolute',
+        // Spec S7 (C# twin): explicit stacking WINS; otherwise the child's own depth.
+        'z-index': `${(positioned.layer ?? 0) !== 0 ? positioned.layer : depth}`,
+        // A point, a fraction of the stack, or both (C# TokenCss.Edge twin).
+        top: edge(positioned.top, positioned.topFraction) ?? (spanY ? '0' : undefined),
+        right: edge(positioned.end, positioned.endFraction) ?? (spanX ? '0' : undefined),
+        bottom: edge(positioned.bottom, positioned.bottomFraction) ?? (spanY ? '0' : undefined),
+        left: edge(positioned.start, positioned.startFraction) ?? (spanX ? '0' : undefined),
+        transform: stretched ? undefined : shifted,
+      },
+      [
+        stretched && shifted
+          ? element('div', { width: filling.width ? undefined : 'fit-content', transform: shifted }, [lowered])
+          : lowered,
+      ],
+    );
+  }
+  const lowered = lowerNode(child, context, null, path);
+  if (!lowered) return null;
+  // The cell IS the stack's available space (native MeasureStack contract): stretched to the grid
+  // cell, aligning its child via flex — Fill children cover, hug children anchor.
+  return element(
+    'div',
+    {
+      'grid-area': '1 / 1',
+      display: 'flex',
+      'justify-content': cellJustify,
+      'align-items': cellAlign,
+      width: '100%',
+      height: '100%',
+      // …and may not grow PAST it: a grid item's automatic minimum size is min-content, so a layer
+      // holding a scroller would size the track to the scroller's CONTENT and swell the stack to
+      // the widest line in the file.
+      'min-width': '0',
+      'min-height': '0',
+      // Spec A3 (C# twin): paint order IS child order — a child with backdrop-filter/filter/opacity
+      // creates a stacking context that CSS would otherwise paint above every plain sibling drawn
+      // after it (a blurred scrim covering its own dialog).
+      'z-index': `${depth}`,
+      // A cell whose LAYER is intangible is intangible too (C# twin). The cell stretches to the
+      // whole stack and carries the layer's z-index, so a closed Drawer — a bare Box, see
+      // paintsNothing — covered the viewport with an invisible interactive rectangle.
+      'pointer-events':
+        (child as BoxNode).nodeKind === 'box' && paintsNothing(child as BoxNode)
+          ? 'none'
+          : undefined,
+    },
+    [lowered],
   );
 }
 
@@ -2685,16 +2725,49 @@ function lowerFlex(flex: FlexNodeValue, context: LoweringContext, path: string):
         : undefined,
   });
 
+  const item = (child: VisualNodeValue, childPath: string) =>
+    lowerFlexItem(child, context, horizontal, childPath);
   for (let i = 0; i < flex.children.length; i++) {
-    const lowered = lowerNode(flex.children[i], context, horizontal, path + '/' + i);
-    if (lowered) {
-      // Spec S1 align-self: the child overrides the container's cross alignment for itself.
-      const self = flex.children[i].alignSelf;
-      if (self) mergeAtomicDeclaration(lowered, 'align-self', crossAlign(self));
-      result.children.push(lowered);
-    }
+    const lowered = placeChild(flex.children[i], path + '/' + i, item);
+    if (lowered) result.children.push(lowered);
   }
   return result;
+}
+
+/** One item of a flex line (the C# `LowerFlexItem` twin): lowered on the line's axis, and aligned
+ * on its own when it says so (spec S1 align-self). */
+function lowerFlexItem(
+  child: VisualNodeValue,
+  context: LoweringContext,
+  horizontal: boolean,
+  path: string,
+): HtmlNode | null {
+  const lowered = lowerNode(child, context, horizontal, path);
+  if (!lowered) return null;
+  const self = child.alignSelf;
+  if (self) mergeAtomicDeclaration(lowered, 'align-self', crossAlign(self));
+  return lowered;
+}
+
+/**
+ * A container's DIRECT child, placed by the container's own `rule` for one — the C# `Place` twin,
+ * and the one door that sees through an AdaptiveNode. Its gates are display:contents, so to the
+ * browser every ARM is the container's child and is owed the same rule: a flex's axis and
+ * align-self, a grid's span, a stack's anchor or cell (#670, #671). The wrapper is still the
+ * node's element, so it carries the node's own key, bookmark and origin.
+ */
+function placeChild(
+  child: VisualNodeValue,
+  path: string,
+  rule: (child: VisualNodeValue, path: string) => HtmlNode | null,
+): HtmlNode | null {
+  if ((child as { nodeKind?: string }).nodeKind !== 'adaptive') return rule(child, path);
+  return decorate(
+    child,
+    lowerAdaptive(child as unknown as AdaptiveNodeValue, path, (arm, armPath) =>
+      placeChild(arm, armPath, rule),
+    ),
+  );
 }
 
 function mainAlign(value: FlexNodeValue['main']): string {
@@ -3998,12 +4071,17 @@ function liveInEnclosingArms(): (() => boolean) | undefined {
   return gates.length === 0 ? undefined : () => gates.every(adaptiveGateOpen);
 }
 
-/** Spec S6 mirror of the C# LowerAdaptive: every declared variant gated by the fixed media rules. */
-function lowerAdaptive(node: AdaptiveNodeValue, context: LoweringContext, path: string): HtmlNode {
+/**
+ * Spec S6 mirror of the C# LowerAdaptive: every declared variant gated by the fixed media rules,
+ * each arm lowered by `place` — the rule of the parent that lays it out.
+ */
+function lowerAdaptive(
+  node: AdaptiveNodeValue,
+  path: string,
+  place: (arm: VisualNodeValue, path: string) => HtmlNode | null,
+): HtmlNode {
   if (!node.medium && !node.expanded) {
-    return (
-      lowerNode(node.compact, context, null, path + '/0') ?? element('div', { display: 'contents' })
-    );
+    return place(node.compact, path + '/0') ?? element('div', { display: 'contents' });
   }
   const wrapper = element('div', { display: 'contents' });
   const addVariant = (variant: VisualNodeValue, gate: string, index: number) => {
@@ -4013,7 +4091,7 @@ function lowerAdaptive(node: AdaptiveNodeValue, context: LoweringContext, path: 
     enclosingGates = [...outer, gate];
     let lowered: HtmlNode | null;
     try {
-      lowered = lowerNode(variant, context, null, `${path}/${index}`);
+      lowered = place(variant, `${path}/${index}`);
     } finally {
       enclosingGates = outer;
     }
@@ -4066,15 +4144,26 @@ function lowerGrid(grid: GridNode, context: LoweringContext, path: string): Html
     'flex-shrink': rigid(grid.width, grid.height),
     padding: grid.padding && !isZeroInsets(grid.padding) ? paddingValue(grid.padding) : undefined,
   });
+  const item = (child: VisualNodeValue, childPath: string) =>
+    lowerGridItem(child, context, childPath);
   for (let i = 0; i < grid.children.length; i++) {
-    const lowered = lowerNode(grid.children[i], context, null, path + '/' + i);
-    if (lowered) {
-      const span = grid.children[i].gridSpan;
-      if (span && span > 1) mergeAtomicDeclaration(lowered, 'grid-column', `span ${span}`);
-      result.children.push(lowered);
-    }
+    const lowered = placeChild(grid.children[i], path + '/' + i, item);
+    if (lowered) result.children.push(lowered);
   }
   return result;
+}
+
+/** One cell of a grid (the C# `LowerGridItem` twin): the child, spanning the columns it asks for. */
+function lowerGridItem(
+  child: VisualNodeValue,
+  context: LoweringContext,
+  path: string,
+): HtmlNode | null {
+  const lowered = lowerNode(child, context, null, path);
+  if (!lowered) return null;
+  const span = child.gridSpan;
+  if (span && span > 1) mergeAtomicDeclaration(lowered, 'grid-column', `span ${span}`);
+  return lowered;
 }
 
 function lowerSpacer(spacer: SpacerNode, horizontalAxis: boolean | null): HtmlNode | null {
