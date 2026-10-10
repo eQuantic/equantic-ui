@@ -56,6 +56,7 @@ eQuantic.UI.Compiler.CodeGen.ValueMember.ValueMember(string! Display, string! Js
 eQuantic.UI.Compiler.CodeGen.ValueMember.Store.get -> string!
 eQuantic.UI.Compiler.CodeGen.ValueMember.Store.init -> void
 eQuantic.UI.Compiler.Services.TypeScriptCodeBuilder.ClassBuilder.State(string! name, string? type, Microsoft.CodeAnalysis.SyntaxNode? sourceNode = null) -> void
+const eQuantic.UI.Compiler.CodeGen.Eq.SameKey = "$eq.collections.sameKey" -> string!
 eQuantic.UI.Compiler.CodeGen.Strategies.Types.DateTimeConstructionStrategy
 eQuantic.UI.Compiler.CodeGen.Strategies.Types.DateTimeConstructionStrategy.DateTimeConstructionStrategy() -> void
 eQuantic.UI.Compiler.CodeGen.Strategies.Types.DateTimeConstructionStrategy.Priority.get -> int

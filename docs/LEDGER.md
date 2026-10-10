@@ -1762,6 +1762,22 @@ record of a release, the wiki's Upgrading page is the distillate.
   twice. The ISO reader is linear, where 50,000 spaces took 1.5 s. 117 of the first 125 new cases
   failed on the base, and 29 of the review's 50 on the commit before them. Proposed and archived
   through OpenSpec (`openspec/specs/runtime-dates`).
+- **2026-10-07 · A collection crosses and compares as .NET's does**: a `Queue`, a `Stack`, a
+  `LinkedList` and a `SortedSet` had no `toJSON`, so a Server Action argument was written as the
+  class's fields or its node graph ([#597](https://github.com/eQuantic/equantic-ui/issues/597)); each
+  writes the array .NET writes now. A dictionary's `Keys` and `Values` were arrays copied when read,
+  `EnsureCapacity` answered the capacity asked for and `TrimExcess` did nothing
+  ([#463](https://github.com/eQuantic/equantic-ui/issues/463)): the views are live, through a Proxy
+  over a snapshot taken again only after a change, and the capacity is .NET's prime. A record's twin
+  compared an array member element by element, where .NET compares it by reference
+  ([#554](https://github.com/eQuantic/equantic-ui/issues/554)): each member is compared by its type's
+  default comparer now (`ElementEquality.Compare`), and so is a tuple's `Equals`: an interface no tuple
+  implements, `IReadOnlyList<int>` first among them, by reference or its own `Equals`, a tuple of
+  another arity unequal and a null pair equal only to another. A view hands back each element as it
+  is, a delegate included, and a copy is sized for what it copies. A LINQ query reading its whole
+  source before its first callback is [#685](https://github.com/eQuantic/equantic-ui/issues/685).
+  Proposed and archived through OpenSpec (`openspec/specs/runtime-collections`, `runtime-dictionaries`,
+  `transpiler-records`).
 
 ## Retired documents
 
