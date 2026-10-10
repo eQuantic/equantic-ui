@@ -14,8 +14,9 @@ namespace eQuantic.UI.Conformance.Tests;
 /// delegate field, which named the method a case apart from it, and a method that forwards to its
 /// delegate field called itself and never returned, and a field called Count, which the collections'
 /// table read as the method `count()` (found in the same review's sweep). A slot an ancestor holds is
-/// taken whatever the spellings, so a derived field beside an inherited one moves (Copilot's second
-/// review of #696).
+/// taken whatever the spellings, so a derived field beside an inherited one moves, and a pattern-matching
+/// operation calls a Deconstruct the app wrote once for each value, in an initializer, across the arms of
+/// a switch and the alternatives of an `or` (Copilot's second review of #696).
 /// </summary>
 public class MemberCaseConformanceTests
 {
@@ -59,6 +60,20 @@ public class MemberCaseConformanceTests
         public class Heir : Elder { int count = 5; public int Theirs() => count; }
         public class Store { int value = 1; public int Value => value * 10; }
         public class Shop : Store { int value = 4; public int Mine() => value; }
+        public class Tracked
+        {
+            public static int Calls;
+            int x; int y;
+            public Tracked(int x, int y) { this.x = x; this.y = y; }
+            public void Deconstruct(out int x, out int y) { Calls++; x = this.x; y = this.y; }
+        }
+        public class Initialized
+        {
+            public bool Matched = new Tracked(1, 2) is (1, 2);
+            public bool Also { get; } = new Tracked(1, 2) is (1, _);
+            public int Bound = new Tracked(1, 2) is (var a, var b) ? a * 10 + b : -1;
+            public string Arm = new Tracked(3, 4) switch { (1, _) => "one", (var a, var b) => $"{a}{b}" };
+        }
         """;
 
     public static TheoryData<string, string, bool> Cases()
@@ -90,6 +105,11 @@ public class MemberCaseConformanceTests
             ("a derived field a case apart from an inherited field", "var u = new Upper(); return u.Read() * 10 + u.Own();"),
             ("a derived field of an inherited field's own name", "var h = new Heir(); return h.Mine() * 10 + h.Theirs();"),
             ("a derived field past an inherited moved field", "var s = new Shop(); return s.Value + s.Mine();"),
+            ("a Deconstruct in initializers, called once each", "Tracked.Calls = 0; var i = new Initialized(); return $\"{i.Matched}|{i.Also}|{i.Bound}|{i.Arm}|{Tracked.Calls}\";"),
+            ("a Deconstruct across the arms of a switch expression, called once", "Tracked.Calls = 0; var t = new Tracked(3, 4); var r = t switch { (1, _) => \"one\", (var a, var b) => $\"{a}{b}\" }; return r + \":\" + Tracked.Calls;"),
+            ("a Deconstruct across the labels of a switch statement, called once", "Tracked.Calls = 0; var t = new Tracked(3, 4); string r; switch (t) { case (1, _): r = \"one\"; break; case (var a, var b): r = $\"{a}{b}\"; break; default: r = \"none\"; break; } return r + \":\" + Tracked.Calls;"),
+            ("a Deconstruct across the alternatives of an or, called once", "Tracked.Calls = 0; var t = new Tracked(3, 4); var r = t is (1, _) or (_, 4); return r + \":\" + Tracked.Calls;"),
+            ("a Deconstruct in a loop's test, called once a test", "Tracked.Calls = 0; var n = 0; for (var i = 0; i < 3; i++) { if (new Tracked(i, 0) is (1, _) or (2, _)) n++; } return n * 10 + Tracked.Calls;"),
         };
         var data = new TheoryData<string, string, bool>();
         foreach (var (name, statements) in cases)

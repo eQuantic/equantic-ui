@@ -273,11 +273,12 @@ public static class PatternConverter
     /// tree names: its outs come back as the object every method with outs returns, each under its
     /// parameter's name. Read off the value by those names instead, one that computes a part read
     /// nothing, and one whose out is named after a field that moved a case apart from a property
-    /// (#396) read the property: <c>new Point(1, 2) is (1, 2)</c> was false where .NET says true. The
-    /// object is held in a temporary the pattern names, so the test, which assigns it once after the
-    /// type test, and the bindings, read after the test, name the same one; where nothing can declare a
-    /// temporary (an initializer), each part calls it. A record's own <c>Deconstruct</c> and a BCL
-    /// type's read the members their outs name, and a tuple reads by index.
+    /// (#396) read the property: <c>new Point(1, 2) is (1, 2)</c> was false where .NET says true. What
+    /// it hands back is held where the pattern-matching operation keeps it (<see cref="MatchParts"/>),
+    /// assigned by the first test that reaches it, after the type test, and read by every other test
+    /// and binding of the operation, so the operation calls it once for the value, as .NET does. A
+    /// record's own <c>Deconstruct</c> and a BCL type's read the members their outs name, and a tuple
+    /// reads by index.
     /// </summary>
     private static Func<int, string> PositionalPart(RecursivePatternSyntax recursive, string access,
         ITypeSymbol? accessType, ConversionContext context, out string? called)
@@ -296,14 +297,9 @@ public static class PatternConverter
         var outs = deconstruct.Parameters.Where(parameter => parameter.RefKind == RefKind.Out).ToList();
         var parts = JsExprWriter.Write(
             Strategies.DeconstructionPattern.Through(deconstruct, JsExpr.Opaque(access), context));
-        if (context.Temporaries.CanBind)
-        {
-            var held = $"$p{recursive.SpanStart}";
-            context.Temporaries.Bind(held);
-            called = $"({held} = {parts}, true)";
-            parts = held;
-        }
-        return i => $"{parts}.{outs[i].Name.ToJsIdentifier()}";
+        var held = context.MatchParts.Held(access, deconstruct);
+        called = $"({held} ?? ({held} = {parts}))";
+        return i => $"{held}.{outs[i].Name.ToJsIdentifier()}";
     }
 
     /// <summary>Deconstruct element names of a non-tuple type (record/struct) for positional access, or
