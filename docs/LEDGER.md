@@ -1884,6 +1884,47 @@ record of a release, the wiki's Upgrading page is the distillate.
   undefined element, which eqc writes for `Array.Resize` and a vocabulary struct's `default`, came back
   with nulls, so it keeps its initializer. Proposed and archived through OpenSpec
   (`openspec/specs/hot-reload`).
+- **2026-10-06 · The code editor shows its completion list**: the view half of the code editor's
+  slice 3 ([#297](https://github.com/eQuantic/equantic-ui/issues/297)). `CodeEditor` draws the list
+  at the word it completes, through the code surface and in the code's own coordinates
+  (`CodeSurface.Options`, `OptionsOrigin`, `HighlightedOption`): one line under the word with its
+  labels lined up with it, over the line when a page fits only there, as many rows as fit when
+  neither side holds one, and a page that follows the selection; each row is the entry's kind as a
+  letter, its label with what the word matched marked, and its detail, and the selected entry's
+  documentation shows once it is resolved. A press on a row accepts it while the code keeps the
+  keyboard (`Pressable.CanRequestFocus`, Flutter's `canRequestFocus`, in the declarative factory
+  too), and the list is the code input's listbox on the web and options after the code field on
+  Photon. `CodeEditor.Completions` says what an editor completes from: the language's words and the
+  document's unless it says otherwise. Found on the way and fixed: a bounded editor's code was as
+  tall as the file, so a press under it landed nowhere
+  ([#599](https://github.com/eQuantic/equantic-ui/issues/599)) and a short file left a list no room;
+  eqc wrote an enum member named `Value` as a read of an object nothing defines
+  ([#631](https://github.com/eQuantic/equantic-ui/issues/631)); and a helper class that takes the
+  build context named a type its module could not import, read an optional `typeScale` and called
+  `TypeStyle` measures its twin did not have
+  ([#632](https://github.com/eQuantic/equantic-ui/issues/632)). Reported: Photon lays a bordered
+  box's child over its border ([#629](https://github.com/eQuantic/equantic-ui/issues/629)), a dense
+  row's margin takes the presses of the row above it, under a finger and, since a pointer's target
+  keeps a 24dp floor, by 3dp under a pointer ([#630](https://github.com/eQuantic/equantic-ui/issues/630)),
+  and a null-conditional read is
+  `undefined` in the browser ([#633](https://github.com/eQuantic/equantic-ui/issues/633)). The
+  author's review found five defects and two holes in the net, each proved failing without its fix:
+  on Photon a press under a scrolled editor landed in its code, which ran past the view unclipped
+  (fields and sheets do the same, [#635](https://github.com/eQuantic/equantic-ui/issues/635));
+  `aria-expanded` sat on the code input, which ARIA does not allow on a textbox; the first build
+  wiped a provider an app added to the controller itself; a row longer than the list was cut
+  differently on each target; and the whole documentation was measured on every build. Copilot's
+  first round found three more: the documentation ran out of the view where the rows just fitted,
+  and now takes only the room they leave; a list of providers the parent changed in place never
+  handed what it gained; and turning an editor read-only left its list open. Its second round found
+  three in what it had not read before: a press under the code was measured from the last line, so a
+  diff's fillers after it went to the end instead of to that line; a row was cut by UTF-16 units,
+  splitting an emoji and leaving wide characters uncut, and is now cut by the cells the code's grid
+  gives each text element; and the editor took its providers out by equality, so one the app added
+  that equalled the editor's went in its place. Its third round found two more: every class module
+  imported the runtime's `BuildContext`, which an app's own class of that name then declared twice,
+  and the list measured all its entries on every arrow key. Proposed and archived through OpenSpec
+  (`openspec/specs/code-completion`, `openspec/specs/code-editor`).
 
 ## Retired documents
 
