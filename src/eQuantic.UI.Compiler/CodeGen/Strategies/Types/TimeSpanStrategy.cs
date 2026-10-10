@@ -96,7 +96,7 @@ public class TimeSpanStrategy : ConversionStrategyBase
         var filled = places.Take(System.Array.FindLastIndex(places, place => place is not null) + 1)
             .Select(place => place ?? "undefined");
         var parts = arguments.Select(argument => context.Converter.ConvertIr(argument.Expression)).ToArray();
-        return JsExprWriter.Write(JsExpr.Template($"{callee}({string.Join(", ", filled)})", parts, context.TypeAnnotations));
+        return JsExprWriter.Write(JsExpr.Template($"{callee}({string.Join(", ", filled)})", parts));
     }
 
     private static bool IsTimeSpanMember(MemberAccessExpressionSyntax ma, ConversionContext context)
