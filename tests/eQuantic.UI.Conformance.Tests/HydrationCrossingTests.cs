@@ -140,6 +140,19 @@ public class HydrationCrossingTests(CrossingTwins twins) : IClassFixture<Crossin
         drawn[1].Should().Be(drawn[0]);
     }
 
+    [Fact]
+    public async Task ADictionaryKeyedByIntegers_CrossesInTheOrderTheServerDrewIt()
+    {
+        // Integer keys out of order, a slot a removal freed taken again, and text that looks like
+        // integers: a JSON object listed every such key first and ascending (#437).
+        var (html, drawn) = await CrossAsync("/crossing-key-order", nameof(CrossingKeyOrderPage));
+
+        var expected = "scores ,3=c,5=e,2=b | codes ,b=1,10=2,9=3".Split(" | ");
+        foreach (var line in expected) html.Should().Contain(line);
+        drawn[0].Split(" | ").Should().Equal(expected);
+        drawn[1].Should().Be(drawn[0]);
+    }
+
     /// <summary>
     /// The page served for a load, and what its twin draws on the payload of that load and on the state
     /// a navigation to it receives.

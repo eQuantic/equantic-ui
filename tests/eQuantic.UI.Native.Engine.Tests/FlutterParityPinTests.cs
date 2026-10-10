@@ -245,6 +245,11 @@ public class FlutterParityPinTests
         ["TextOverflow.ellipsis"] = () => HasMember("Text", "MaxLines") && Nothing("TextOverflow", "TextPainter"),
         ["Transform"] = () => Has("Transform2D") && HasMember("BoxStyle", "Transform")
             && HasMember("StyleDiff", "Transform"),
+        ["Align"] = () => HasMember("Positioned", "TopFraction") && HasMember("Positioned", "StartFraction")
+            && HasMember("Positioned", "ShiftX") && HasMember("Positioned", "ShiftY"),
+        ["SliverGridDelegateWithMaxCrossAxisExtent"] = () => HasMember("GridTrack", "AutoFill")
+            && HasMember("GridTrack", "Repeats"),
+        ["SvgPicture"] = () => HasMember("Drawing", "Aspect") && HasMember("Drawing", "HeightAt"),
         ["WidgetStateProperty"] = () => HasMember("BoxStyle", "Hover") && HasMember("BoxStyle", "Focus")
             && HasMember("BoxStyle", "Pressed")
             && HasMember("StyleDiff", "Shadows") && HasMember("StyleDiff", "Transform"),

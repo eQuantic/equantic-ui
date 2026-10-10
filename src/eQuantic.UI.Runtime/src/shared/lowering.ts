@@ -34,7 +34,7 @@ import {
 import { getActivePass } from './instance-store';
 import { getPhotonTheme, setInFlow } from './photon-context';
 import { declareInView } from './in-view';
-import { cssFontWeight, isWellFormedFace } from './value-types';
+import { artworkAspect, cssFontWeight, isWellFormedFace } from './value-types';
 import {
   adaptiveGateOpen,
   atomicDeclaration,
@@ -1411,6 +1411,19 @@ function lineHeight(style: TypeStyleValue): string {
   return style.fluid && style.size > 0 ? num(style.lineHeight / style.size) : px(style.lineHeight);
 }
 
+/** One edge of a positioned box: a point, a fraction of the containing box, or both (C# TokenCss.Edge twin). */
+function edge(point: number | null | undefined, fraction: number | null | undefined): string | undefined {
+  if (point == null && fraction == null) return undefined;
+  if (fraction == null) return px(point as number);
+  if (point == null || point === 0) return pct(fraction);
+  return `calc(${pct(fraction)} ${point < 0 ? '-' : '+'} ${px(Math.abs(point))})`;
+}
+
+/** A shift by fractions of the box's own size, or none (C# TokenCss.Shift twin). */
+function shift(x: number, y: number): string | undefined {
+  return x === 0 && y === 0 ? undefined : `translate(${x === 0 ? '0' : pct(x)}, ${y === 0 ? '0' : pct(y)})`;
+}
+
 /** Spec §06 mirror: the generated eq-slide-x keyframes animate the wrapper; endpoints ride custom
  * properties at the style TAIL (the C# cross-pin), duration rides the animation shorthand. */
 function lowerLoopMotion(node: LoopMotionNode, context: LoweringContext, path: string): HtmlNode {
@@ -2123,11 +2136,19 @@ function lowerCanvas(node: CanvasNodeValue, path: string): HtmlNode {
 
 function lowerDrawing(node: DrawingNode): HtmlNode {
   const artwork = node.artwork;
+  // The C# LowerDrawing twin: a dp width is the box, both axes in px; a fill width is `100%`, and
+  // the artwork's own aspect decides the height unless the author did.
+  const width = typeof node.width === 'number' ? { kind: 'fixed' as const, value: node.width } : node.width;
+  const aspect = artworkAspect(artwork);
+  const fixed = width.kind === 'fixed';
   const attributes: Record<string, string | undefined> = {
     ...atomicAttrs({
       display: 'block',
-      width: px(node.width),
-      height: px(node.height),
+      width: fixed ? px(width.value) : sizeValue(width),
+      height: fixed
+        ? px(node.height > 0 ? node.height : width.value / aspect)
+        : node.height > 0 ? px(node.height) : undefined,
+      'aspect-ratio': !fixed && !(node.height > 0) ? num(aspect) : undefined,
       color: node.tint ? tokenValue(node.tint) : undefined,
     }),
     viewBox: `${num(artwork.minX)} ${num(artwork.minY)} ${num(artwork.width)} ${num(artwork.height)}`,
@@ -2239,8 +2260,16 @@ function lowerStack(node: StackNode, context: LoweringContext, path: string): Ht
       // is the stack's width there and its own content's width here — the same tree, two
       // geometries (C# twin).
       const filling = fills(positioned.child);
-      const spanX = filling.width && (positioned.start == null) !== (positioned.end == null);
-      const spanY = filling.height && (positioned.top == null) !== (positioned.bottom == null);
+      const has = (point: number | null | undefined, fraction: number | null | undefined) =>
+        point != null || fraction != null;
+      const spanX = filling.width && has(positioned.start, positioned.startFraction) !== has(positioned.end, positioned.endFraction);
+      const spanY = filling.height && has(positioned.top, positioned.topFraction) !== has(positioned.bottom, positioned.bottomFraction);
+      // A translate is of the element's own box: when both edges of an axis stretch the anchor
+      // around a child that does not fill, the shift goes on a child-sized wrapper (C# twin).
+      const stretched =
+        (has(positioned.start, positioned.startFraction) && has(positioned.end, positioned.endFraction) && !filling.width) ||
+        (has(positioned.top, positioned.topFraction) && has(positioned.bottom, positioned.bottomFraction) && !filling.height);
+      const shifted = shift(positioned.shiftX ?? 0, positioned.shiftY ?? 0);
       children.push(
         element(
           'div',
@@ -2248,12 +2277,18 @@ function lowerStack(node: StackNode, context: LoweringContext, path: string): Ht
             position: 'absolute',
             // Spec S7 (C# twin): explicit stacking WINS; otherwise the child's own depth.
             'z-index': `${(positioned.layer ?? 0) !== 0 ? positioned.layer : i + 1}`,
-            top: positioned.top != null ? px(positioned.top) : spanY ? '0' : undefined,
-            right: positioned.end != null ? px(positioned.end) : spanX ? '0' : undefined,
-            bottom: positioned.bottom != null ? px(positioned.bottom) : spanY ? '0' : undefined,
-            left: positioned.start != null ? px(positioned.start) : spanX ? '0' : undefined,
+            // A point, a fraction of the stack, or both (C# TokenCss.Edge twin).
+            top: edge(positioned.top, positioned.topFraction) ?? (spanY ? '0' : undefined),
+            right: edge(positioned.end, positioned.endFraction) ?? (spanX ? '0' : undefined),
+            bottom: edge(positioned.bottom, positioned.bottomFraction) ?? (spanY ? '0' : undefined),
+            left: edge(positioned.start, positioned.startFraction) ?? (spanX ? '0' : undefined),
+            transform: stretched ? undefined : shifted,
           },
-          [lowered],
+          [
+            stretched && shifted
+              ? element('div', { width: filling.width ? undefined : 'fit-content', transform: shifted }, [lowered])
+              : lowered,
+          ],
         ),
       );
     } else if (child) {
@@ -2934,6 +2969,11 @@ function fills(node: VisualNodeValue): { width: boolean; height: boolean } {
     case 'stack': {
       const stack = node as StackNode;
       return { width: stack.width?.kind === 'fill', height: stack.height?.kind === 'fill' };
+    }
+    case 'drawing': {
+      // A drawing at its parent's width fills across; its height follows from its aspect (C# twin).
+      const width = (node as DrawingNode).width as unknown;
+      return { width: typeof width === 'object' && (width as { kind?: string } | null)?.kind === 'fill', height: false };
     }
     case 'pressable':
       return fills((node as PressableNode).child);
@@ -4001,7 +4041,13 @@ function lowerAdaptive(node: AdaptiveNodeValue, context: LoweringContext, path: 
 function lowerGrid(grid: GridNode, context: LoweringContext, path: string): HtmlNode {
   const tracks = grid.columns
     .map((t) =>
-      t.kind === 'fixed' ? px(t.value) : t.kind === 'fill' ? `${num(t.value)}fr` : 'auto',
+      t.repeats
+        ? `repeat(auto-fill, minmax(min(${px(t.min ?? 0)}, 100%), ${num(t.value)}fr))` // C# twin: shrinks in a narrow grid
+        : t.kind === 'fixed'
+          ? px(t.value)
+          : t.kind === 'fill'
+            ? `${num(t.value)}fr`
+            : 'auto',
     )
     .join(' ');
   const rowGap = grid.rowGap ?? grid.gap;

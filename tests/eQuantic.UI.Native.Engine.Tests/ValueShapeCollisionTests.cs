@@ -82,11 +82,6 @@ public class ValueShapeCollisionTests
             + "converts to, or is ever passed as another. FluidSize joined with #652, asked its own "
             + "reason too: a type size's floor, share of the window and ceiling, a clamp that "
             + "resolves to ONE number in dp and is read nowhere but a TypeStyle."),
-        ["SizeKind,Single"] = (
-            ["GridTrack", "SizeValue"],
-            "how wide a thing wants to be, and how wide a grid COLUMN wants to be. The second is "
-            + "the first plus what a track may do that a box may not (fractional units), and it "
-            + "stays its own type because a track is authored in a place a SizeValue is not."),
     };
 
     /// <summary>
