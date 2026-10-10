@@ -1743,7 +1743,11 @@ record of a release, the wiki's Upgrading page is the distillate.
   painting a fixed child at the item's size: a 400 box in an item shrunk to 300 was drawn at 300,
   where a browser keeps it at 400 and lets it overflow. The item takes the slot now and a fixed child
   keeps its own size, and `Flexible.Shrink` no longer says shrinking never crosses the min-content
-  floor. The same question, asked of the other flex numbers, found two more. A Spacer raised a weight below 1 to 1,
+  floor. Its second round found the classifier behind that rule reading the declared size of nine
+  of the fourteen node types that declare one, so a 320 camera preview was drawn at 300: it reads
+  all of them now, a scroller's width only up to the slot as the web caps it, and a test that
+  enumerates the vocabulary fails on the next one it misses. The same question, asked of the other
+  flex numbers, found two more. A Spacer raised a weight below 1 to 1,
   in C# and in the twin, and now refuses it where it is written, as Flutter asserts `flex > 0`
   ([#691](https://github.com/eQuantic/equantic-ui/issues/691)). And the twin wrote a basis raw where
   the server wrote it through `TokenCss.Px`, so a basis of 540.125, or the float 540.12 the twin
@@ -1754,7 +1758,7 @@ record of a release, the wiki's Upgrading page is the distillate.
   requires ([#684](https://github.com/eQuantic/equantic-ui/issues/684)); and its button is a Link
   around a painted Box, because an email refuses a Button
   ([#694](https://github.com/eQuantic/equantic-ui/issues/694)). Proposed and archived through
-  OpenSpec in four changes (`openspec/specs/flex-layout`).
+  OpenSpec in five changes (`openspec/specs/flex-layout`).
 
 ## Retired documents
 
