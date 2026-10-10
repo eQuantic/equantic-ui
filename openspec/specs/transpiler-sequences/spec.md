@@ -152,3 +152,37 @@ answers that name.
 - **THEN** a `foreach` over `new Split()` walks 1, and a `foreach` over it as `IEnumerable<int>`,
   `string.Join`, `Sum()`, a spread and `new List<int>(split)` walk 2, as .NET does, where every one of
   them walked the public one
+
+### Requirement: A sequence its twin would walk otherwise is refused
+
+A twin has one iteration, which LINQ, a spread, `string.Join` and a `foreach` over each interface of
+the type walk, and one `Current`. eqc SHALL refuse with EQ1007 a type that implements `IEnumerable<T>`,
+or `IEnumerator<T>`, over two types, and a non-generic `IEnumerable.GetEnumerator()` or a `Current` the
+twin holds as one with the member it keeps, where that member does not hand back what the kept one
+answers. One that returns what the kept member returns, through it, a cast to the interface included,
+SHALL be held as one and SHALL NOT be refused.
+
+#### Scenario: Two IEnumerable<T>
+
+- **WHEN** `class Both : IEnumerable<int>, IEnumerable<string>` implements each explicitly
+- **THEN** the build fails with EQ1007, naming both interfaces, where LINQ over one of them walked the
+  other's sequence
+
+#### Scenario: A non-generic GetEnumerator of its own
+
+- **WHEN** `class Odd : IEnumerable<int>` yields 1 from its public `GetEnumerator()` and `"x"` from its
+  explicit `IEnumerable.GetEnumerator()`
+- **THEN** the build fails with EQ1007, where a `foreach` over it as `IEnumerable` walked 1 for .NET's `x`
+
+#### Scenario: A Current of its own
+
+- **WHEN** an enumerator's explicit `object IEnumerator.Current => "other";` stands beside its public
+  `int Current`
+- **THEN** the build fails with EQ1007, where a walk of it as `IEnumerable` read the public one
+
+#### Scenario: Members that hand back the kept one's answer
+
+- **WHEN** `IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();`,
+  `IEnumerator IEnumerable.GetEnumerator() => ((IEnumerable<string>)this).GetEnumerator();` and
+  `object IEnumerator.Current => Current;`
+- **THEN** each is held as one with the member it hands back, and the type builds

@@ -32,11 +32,18 @@
 - [x] 5.2 A construction of a generic exception class hands its types before its constructor's body runs (`$eq.exceptions.construct`), and an exception type is named as .NET names it at run time. Conformance cases: a generic class that throws itself from its constructor, its default message, and a nested class's; verified by the runtime's specs; failing on the previous head and green after
 - [x] 5.3 With no model, a constructor of types named like .NET's serialization stays a branch. A Compiler test, failing on the previous head and green after
 
-## 6. The real thing
+## 6. Copilot's second round on #708
 
-- [x] 6.1 `dotnet build src/eQuantic.UI.Runtime -t:TestRuntime`, and the Compiler, Server, Web (against this change's wiki branch) and Conformance suites, each through the machine's suite lock, every one green
+- [x] 6.1 A type that implements `IEnumerable<T>` or `IEnumerator<T>` over two types, and a non-generic `GetEnumerator()` or a `Current` the twin holds as one with the member it keeps where it does not hand back that member's answer (`IterableTwin.AnswersAs`), are refused (EQ1007). Compiler tests for each, and for the shapes that hand the answer back; failing on the previous head and green after
+- [x] 6.2 An exception type built or tested where a type argument it carries is a type parameter is refused (EQ2013). Compiler tests for a construction in a generic method, a nested class of a generic class and a typed catch in a generic method; failing on the previous head and green after
+- [x] 6.3 A call of a serialization constructor the browser would make, a `new`, a base call, a chain or a base clause, is refused (EQ1009), and the template still builds. Compiler tests for each; failing on the previous head and green after
+- [x] 6.4 A field of an exception class named like a member its base answers (`message`) keeps a slot of its own since #696 merged. A conformance case
 
-## 7. Documentation and archive
+## 7. The real thing
 
-- [x] 7.1 docs/DIAGNOSTICS.md for EQ1007, the wiki's SupportedFeatures page in English and Portuguese on the wiki branch named like this change's branch, and one docs/LEDGER.md line citing #563, #611 and #612
-- [x] 7.2 `./scripts/check-openspec.sh` green, then `openspec archive a-class-dispatches-and-enumerates-as-dotnet-does --yes` before the merge
+- [x] 7.1 `dotnet build src/eQuantic.UI.Runtime -t:TestRuntime`, and the Compiler, Server, Web (against this change's wiki branch) and Conformance suites, each through the machine's suite lock, every one green
+
+## 8. Documentation and archive
+
+- [x] 8.1 docs/DIAGNOSTICS.md for EQ1007, EQ1009 and EQ2013, the wiki's SupportedFeatures and Diagnostics pages in English and Portuguese on the wiki branch named like this change's branch, and one docs/LEDGER.md line citing #563, #611 and #612
+- [x] 8.2 `./scripts/check-openspec.sh` green, then `openspec archive a-class-dispatches-and-enumerates-as-dotnet-does --yes` before the merge

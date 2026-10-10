@@ -100,6 +100,16 @@ generic interface's member are not written: the generic interfaces derive from t
 their contract the two answer alike, and written after the generic one the explicit one replaced it and
 called itself. Nor is an explicit `Current` beside a public one, the twin holding one property per name.
 
+C# does not hold a type to that contract, and one that breaks it walked, or read, the kept member's answer
+in the browser (Copilot's second review of #708), so the build holds it there: a member the twin holds as
+one with another answers as that one only where its body hands back what that one answers, with no
+argument, on the same object (`=> GetEnumerator();`, `=> Current;`, a cast to the interface included),
+each followed through every such hand-off (`IterableTwin.AnswersAs`), and any other is refused (EQ1007). So
+is a type that implements `IEnumerable<T>`, or `IEnumerator<T>`, over two types, whose twin would walk one
+sequence, or read one `Current`, for both. Alternative: keep each answer apart, the non-generic one under
+a name of its own that a `foreach` over `IEnumerable` and `Cast<T>()` would call. Rejected: every helper
+that reads a sequence reads JavaScript's one iteration, and the shapes C# writes hand the answer back.
+
 ### An exception class is a class over the runtime's exception base
 
 The module rule no longer keeps an exception out, on the symbol's path and the name's alike. Its twin
@@ -130,7 +140,9 @@ it builds, from the message, the parts and the types the instance carries: a mis
 default for the class. Every other member the base answers is an accessor too, `InnerException`,
 `ParamName` and the rest of the parts, and the `name` the console prints: a member the app's class
 declares under one of those names is its own then, an override of the virtual `ParamName` and a `Name`
-of the app's included, where an own property of the instance hid it.
+of the app's included, where an own property of the instance hid it. A field of the app's named like one
+of them a case apart (`message`) keeps a slot of its own (`message$`, #696, merged while this change was
+open), so it hides none of them.
 
 A host with no compilation keeps an exception class out by its base's name, as before this change: with
 no model, nothing knows the constructors of the base its twin would call, and a module of its own
@@ -149,6 +161,15 @@ so the developer does not have to. Alternative: refuse it and tell the developer
 the first draft of this change did. Rejected: it asked for an edit of what the IDE wrote, for a
 constructor nothing in the browser can call.
 
+C# can still call one, a public one by a `new` and a protected one by a derived constructor's base call,
+and with no branch for it the twin ran another constructor of two arguments
+(`new Snap(null!, new StreamingContext())` ran `(string, string)`, Copilot's second review of #708). So
+every call of one the browser would make is refused (EQ1009): a `new`, and the `: base(…)`, `: this(…)`
+or base clause of a constructor the twin writes. The template's own calls its base's, is no branch, and
+makes no call, so the template still builds as it is written. Alternative: leave out only a protected or
+a private one. Rejected: a protected one is reached by a base call, and a public one nothing calls costs
+nothing.
+
 A generic class's twin knows only its definition (``Failed`1[T]``), and a typed `catch` tells
 `Failed<int>` from `Failed<string>`, so a construction of a constructed generic class hands its own chain
 to the base before the constructor's body runs (`$eq.exceptions.construct(type, types, ...args)`, which the
@@ -156,6 +177,14 @@ base reads off a pending construction of that class): tagged once it returned, w
 an exception the constructor threw (`throw this`) missed `catch (Failed<int>)`, and a `Message` it read
 named the class (Copilot's review of #708). Alternative: tag every construction at its site and keep no
 `$types`. Rejected: a construction through a base call is no site, and the class is what knows what it is.
+
+A type parameter is erased in JavaScript, so an exception type whose type arguments, or those of a type it
+is nested in, are or hold one, built or tested (`new Failed<T>()` in a generic method, `catch (Failed<T>)`,
+`new Missing()` inside the generic class that declares it), carried, or compared, `T` itself:
+`catch (Failed<int>)` missed what `Of<int>()` threw (Copilot's second review of #708). It is refused
+(EQ2013, which says the same of a `ServerTopic<T>`). Alternative: carry the type arguments a generic method
+or class receives at run time. Rejected: nothing in a twin holds them, and threading them through every
+generic call is a change of its own.
 
 A type is named as .NET names it at run time, `Type.ToString()` (``App.Failed`1[System.Int32]``,
 `App.Outer+Inner`), for the chain a typed `catch` reads and for the message .NET writes where none is
@@ -175,7 +204,5 @@ given, `Exception of type '<that name>' was thrown.`: its C# spelling named a ty
   members reach what the browser cannot run fails the build as any class does, until it is marked
   `[ServerOnly]`, and two constructors the twin cannot tell apart by their count of arguments are refused
   (EQ1009), as a class's are. Both are said by the build, never in silence.
-- A field of the app's class named like a member of the base (`message`) is an own property of the
-  instance, which hides the base's accessor, where C# keeps the two apart.
 - A collection's own `GetEnumerator()` (`=> items.GetEnumerator()`) has no translation (EQ2004), so a
   sequence that hands out its list's enumerator still fails the build: it yields the items instead.

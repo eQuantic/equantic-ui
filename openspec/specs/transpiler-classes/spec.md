@@ -12,8 +12,9 @@ returns.
 
 A plain class's twin SHALL reach each constructor the class declares by the counts of arguments it
 takes, its optional parameters counted, as a record's twin does, save the constructor only .NET's
-serialization calls, `(SerializationInfo, StreamingContext)`, which no `new` in the browser reaches and
-which SHALL be no branch of the twin. A constructor that does its own work (the primary one, or an
+serialization calls, `(SerializationInfo, StreamingContext)`, which SHALL be no branch of the twin, and
+whose every call the browser would make, a `new`, or the `: base(…)`, `: this(…)` or base clause of a
+constructor the twin writes, SHALL be refused with EQ1009. A constructor that does its own work (the primary one, or an
 explicit one that does not chain with `: this(…)`) SHALL bind its parameters, start the class's
 instance members, call its base's constructor with its own arguments and run its body. One that chains
 with `: this(…)` SHALL evaluate the chain's arguments from the arguments that arrived, run the
@@ -55,6 +56,14 @@ that chains to a constructor that chains in turn.
   `new TemplatedException("outer", new InvalidOperationException("inner"))`
 - **THEN** it builds, and its `Message` is `outer` and its `InnerException`'s is `inner`, as in .NET,
   where the build refused the class with EQ1009
+
+#### Scenario: A call of the serialization constructor
+
+- **WHEN** `new Snap(null!, new StreamingContext())` calls a public `Snap(SerializationInfo, StreamingContext)`
+  beside `Snap(string, string)`, or `class Derived : Base` calls a protected one with
+  `: base(info, new StreamingContext())`
+- **THEN** the build fails with EQ1009, naming the constructor called, where the twin ran
+  `Snap(string, string)`
 
 ### Requirement: A class's instance members start in declaration order, before its base's constructor
 

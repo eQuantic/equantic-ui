@@ -236,3 +236,31 @@ generic class's those of its construction from before its constructor's body run
   `new Rethrown<int>(1, true)` is caught by `catch (Rethrown<string>) { … } catch (Rethrown<int> r) { … }`
 - **THEN** the second clause takes it, and the message it read is
   "Exception of type 'App.Rethrown`1[System.Int32]' was thrown.", as in .NET, where neither clause took it
+
+### Requirement: An exception type named where a type argument is a type parameter is refused
+
+An exception carries the types it is, its type arguments and those of the types it is nested in among
+them, which a typed `catch`, `is` and its name read, and JavaScript erases a type parameter. eqc SHALL
+refuse with EQ2013 the construction of an exception type, and a test for one, where a type argument it
+carries is, or holds, a type parameter.
+
+#### Scenario: A construction in a generic method
+
+- **WHEN** `static Exception Of<T>() => new Failed<T>();`
+- **THEN** the build fails with EQ2013, naming `T`, where the exception carried `T` itself and
+  `catch (Failed<int>)` missed what `Of<int>()` threw
+
+#### Scenario: A nested class of a generic class
+
+- **WHEN** `class Cache<T> { public class Missing : Exception { } public void Get() => throw new Missing(); }`
+- **THEN** the build fails with EQ2013 at the `new Missing()`
+
+#### Scenario: A test in a generic method
+
+- **WHEN** `catch (Failed<T>)` in `static string Run<T>(Exception e)`
+- **THEN** the build fails with EQ2013, where the test compared `T` itself
+
+#### Scenario: Concrete type arguments
+
+- **WHEN** `throw new Failed<int>()` is caught by `catch (Failed<string>)` and `catch (Failed<int>)`
+- **THEN** it builds, and the second clause takes it, as in .NET
