@@ -8,8 +8,8 @@ namespace eQuantic.UI.Native.Components;
 /// Per-host cache of rasterized text blocks (W4): keyed by everything that shapes the pixels
 /// EXCEPT color (the tint lives on the draw command, so light/dark share one raster). Instances
 /// are stable across frames — the display-list texture table and the GPU upload cache both dedupe
-/// by identity. Bounded: past a fixed number of rasters it starts over, so a resize that rasterizes
-/// a fluid heading at every width it passes through does not keep each of them.
+/// by identity. Bounded: past a fixed number of rasters the least recently used goes, so a resize that
+/// rasterizes a fluid heading at every width it passes through does not keep each of them.
 /// </summary>
 public sealed class TextRasterCache
 {
@@ -19,7 +19,10 @@ public sealed class TextRasterCache
     /// <summary>The most rasters kept at once; a screen's text fits many times over.</summary>
     private const int MaxEntries = 4096;
 
-    private readonly Dictionary<(string Content, TypeStyle Style, float TypeScale, float MaxWidth, int MaxLines, float Scale, TextAlignment Align), Entry?> _entries = new();
+    // Least recently used first out, so the text on screen stays while stale widths go.
+    private readonly Dictionary<(string Content, TypeStyle Style, float TypeScale, float MaxWidth, int MaxLines, float Scale, TextAlignment Align),
+        LinkedListNode<((string, TypeStyle, float, float, int, float, TextAlignment) Key, Entry? Raster)>> _entries = new();
+    private readonly LinkedList<((string, TypeStyle, float, float, int, float, TextAlignment) Key, Entry? Raster)> _recency = new();
 
     /// <param name="Texture">The A8 coverage the draw command samples.</param>
     /// <param name="PadTop">Device pixels of ink ABOVE the line box (see <see cref="TextRaster"/>)
@@ -47,21 +50,34 @@ public sealed class TextRasterCache
         float maxWidth, int maxLines, float scale, TextAlignment align)
     {
         var key = (content, style, typeScale, MathF.Round(maxWidth, 1), maxLines, scale, align);
-        if (_entries.TryGetValue(key, out var cached)) return cached;
+        if (_entries.TryGetValue(key, out var hit))
+        {
+            _recency.Remove(hit);
+            _recency.AddFirst(hit);
+            return hit.Value.Raster;
+        }
 
         // A heading whose size follows the window (TypeStyle.Fluid), or a paragraph that wraps to it,
-        // is a new key at every width a resize passes through; past the cap the cache starts over
-        // rather than keeping each of them for the session.
-        if (_entries.Count >= MaxEntries) _entries.Clear();
+        // is a new key at every width a resize passes through; past the cap the least recently used
+        // raster goes, rather than keeping each of them for the session or dropping the text on screen.
+        if (_entries.Count >= MaxEntries && _recency.Last is { } oldest)
+        {
+            _recency.RemoveLast();
+            _entries.Remove(oldest.Value.Key);
+        }
         var raster = rasterizer.Rasterize(content, style, typeScale, maxWidth, maxLines, scale, align);
         var entry = raster is null || raster.Width <= 0 || raster.Height <= 0
             ? null
             : new Entry(new TextureData(raster.Width, raster.Height, raster.Alpha), raster.PadTop);
-        _entries[key] = entry;
+        _entries[key] = _recency.AddFirst((key, entry));
         return entry;
     }
 
     /// <summary>Drops every entry — hot reload's cue: a patched rasterizer or an edited style
     /// would otherwise keep serving yesterday's pixels under today's keys.</summary>
-    public void Clear() => _entries.Clear();
+    public void Clear()
+    {
+        _entries.Clear();
+        _recency.Clear();
+    }
 }
