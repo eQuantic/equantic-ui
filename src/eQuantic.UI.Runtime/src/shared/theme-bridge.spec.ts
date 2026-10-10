@@ -79,6 +79,17 @@ describe('theme bridge: a distinct theme materializes to distinct values', () =>
   // The theme's CODE FACE, which a component may read as `context.Theme.MonoFamily`. It is the half
   // the C# side shipped first: `family` on a role crossed in the same slice, and the wire tuple
   // stopped one field short, so the client re-rendered the system font over the server's brand.
+  it('carries a role whose size follows the window, as the C# ThemeBridge writes it', () => {
+    const base = photonData as unknown as ThemeData;
+    const fluid = materializeTheme({
+      ...base,
+      type: { ...base.type, display: [54, 67.5, 'bold', 0, 1.3, false, false, null, [34, 4.2, 54]] },
+    } as ThemeData);
+    expect(fluid.type('display').fluid?.at(1000)).toBe(42);
+    expect(fluid.type('display').family).toBeUndefined();
+    expect(materializeTheme(base).type('display').fluid).toBeNull();
+  });
+
   it("carries the theme's code face, and omits it when there is none", () => {
     const base = photonData as unknown as ThemeData;
     const branded = materializeTheme({ ...base, monoFamily: 'JetBrains Mono' } as ThemeData);

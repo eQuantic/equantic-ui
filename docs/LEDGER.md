@@ -2081,6 +2081,15 @@ record of a release, the wiki's Upgrading page is the distillate.
   delegate and `ToString` answered `[object Object]`, on a `Color` as on a `Curve`: each group answers
   through the helper its call uses, the receiver read once. Proposed and archived through OpenSpec
   (`openspec/specs/transpiler-vocabulary-values`).
+
+- **2026-10-10 · Type that follows the window**: a handoff sizes its headings as
+  `clamp(34px, 4.2vw, 54px)`, and a `TypeStyle` had one size in points, so falei.pt sampled the
+  clamp per window class with an `AdaptiveNode` that put every heading in the document three times.
+  `TypeStyle.WithFluidSize(min, percentOfWindow, max)` carries a `FluidSize`; the web writes the
+  clamp, a unitless line height and an `em` letter spacing on both targets, Photon measures and paints at the window it lays
+  out against (`TypeStyle.AtWindow`), an email sets the ceiling, and `WithSize` gives the fluid size
+  way to a size in dp ([#652](https://github.com/eQuantic/equantic-ui/issues/652)). Proposed and
+  archived through OpenSpec (`openspec/specs/typography`).
 - **2026-10-10 · A layout follows its box**: the first external consumer, falei.pt, needed three
   things a fixed point could not say. A `Drawing` takes a `SizeValue` width, so `SizeValue.Fill` draws
   it at its column's width with the height its artwork's aspect gives; a `Positioned` child is placed

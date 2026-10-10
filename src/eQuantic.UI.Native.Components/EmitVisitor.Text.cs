@@ -104,7 +104,8 @@ internal sealed partial class EmitVisitor
 
         if (motion.TextRasterizer is { } rasterizer && node.Text is { } measured)
         {
-            var style = text.Resolve(theme);
+            // At the window layout measured it against, so the raster is the box layout made.
+            var style = text.Resolve(theme).AtWindow(motion.ViewportW);
         if (text.Italic) style = style with { Italic = true };
             var raster = (motion.TextCache ?? TextRasterCache.Shared).Get(
                 rasterizer, text.PlainContent, style, motion.TypeScale, node.Bounds.Width, text.MaxLines,
@@ -197,7 +198,7 @@ internal sealed partial class EmitVisitor
         var effectiveCaret = Math.Min(caretInValue + marked.Length, value.Length);
         var shown = value.Length > 0 ? value : entry.Placeholder ?? "";
         var token = value.Length > 0 ? theme.TextPrimary : theme.TextMuted;
-        var style = theme.Type(entry.Role);
+        var style = theme.Type(entry.Role).AtWindow(motion.ViewportW);
 
         var advance = 0f;
         var shift = 0f;

@@ -20,6 +20,35 @@ public class ThemeBridgeTests
         return Path.Combine(repoRoot, "src", "eQuantic.UI.Runtime", "src", "shared", "theme-bridge.photon.json");
     }
 
+    /// <summary>
+    /// A role whose size follows the window crosses with its clamp (#652): without it the browser's
+    /// role is the ceiling while the server's is fluid, and a component that sets the role as its
+    /// override hydrates to another size. The family slot is held open with a null.
+    /// </summary>
+    [Fact]
+    public void AFluidRole_CarriesItsClamp_AfterAnOpenFamilySlot()
+    {
+        var theme = new NamedFaceTests.RoleTheme(PhotonTheme.Instance, TypeRole.Display,
+            PhotonTheme.Instance.Type(TypeRole.Display).WithFluidSize(34, 4.2f, 54));
+
+        ThemeBridge.SerializeJson(theme).Should().Contain(",false,false,null,[34,4.2,54]]");
+    }
+
+    /// <summary>
+    /// A fluid role's size, line box and tracking cross whole, so the browser divides the same
+    /// floats the server did: four decimals of 60.49904 move the line height's last digit.
+    /// </summary>
+    [Fact]
+    public void AFluidRole_CrossesItsSizeLineBoxAndTrackingWhole()
+    {
+        var style = new TypeStyle(79.49431f, 60.49904f, FontWeight.Bold, -1.234567f, 1.3f).WithFluidSize(10, 4.2f, 17.662743f);
+        var theme = new NamedFaceTests.RoleTheme(PhotonTheme.Instance, TypeRole.Display, style);
+
+        var json = ThemeBridge.SerializeJson(theme);
+
+        json.Should().Contain($"\"display\":[{style.Size.ToString("R", System.Globalization.CultureInfo.InvariantCulture)},{style.LineHeight.ToString("R", System.Globalization.CultureInfo.InvariantCulture)},");
+    }
+
     [Fact]
     public void PhotonSerialization_MatchesTheSharedFixture()
     {

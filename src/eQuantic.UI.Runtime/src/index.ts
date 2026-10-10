@@ -187,6 +187,7 @@ export {
   EdgeInsets,
   CornerRadii,
   FaceName,
+  FluidSize,
   Point,
   Rect,
   Size,

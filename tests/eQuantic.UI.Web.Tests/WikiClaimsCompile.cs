@@ -88,6 +88,14 @@ public class WikiClaimsCompile
                 : Text("No library here", TypeRole.BodyM);
     }
 
+    /// <summary>DesignSystem (0.2.0-preview.61): a size that follows the window.</summary>
+    [Fact]
+    public void AFluidSize_Compiles()
+    {
+        var display = TypeStyle.OfSize(40, FontWeight.Bold).WithFluidSize(34, 4.2f, 54);
+        _ = Text("Escolha o seu distrito.", styleOverride: display, headingLevel: 1);
+    }
+
     /// <summary>Icons and Components (0.2.0-preview.61): a drawing at its column's width, a
     /// child placed by fraction and shifted by its own size, and an auto-filling grid.</summary>
     [Fact]
