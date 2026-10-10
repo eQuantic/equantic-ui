@@ -3,11 +3,13 @@ using System;
 namespace eQuantic.UI.Primitives;
 
 /// <summary>
-/// Specifies that the Server Action requires authorization.
-/// Can be applied to methods (Server Actions) or classes (Components) to require authentication.
+/// Specifies that a page or a Server Action requires authorization.
+/// Can be applied to methods (Server Actions) or classes (Components and pages).
 /// </summary>
 /// <remarks>
-/// When applied to a class, all Server Actions in that class require authorization.
+/// When applied to a class, all Server Actions in that class require authorization, and when the class
+/// is a <c>[Page]</c> its route does too: the server refuses the page before it is built, so its
+/// <c>IServerPrefetch</c> never runs for a visitor without the requirement.
 /// When applied to a method, only that specific Server Action requires authorization.
 /// Use <see cref="AllowAnonymousAttribute"/> to override class-level authorization for specific methods.
 /// </remarks>

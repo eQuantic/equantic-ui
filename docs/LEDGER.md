@@ -1703,6 +1703,16 @@ record of a release, the wiki's Upgrading page is the distillate.
   1970 toward the epoch; it answers a BigInt cut as .NET cuts it now. Found on the way: the date
   constructors past the second ([#606](https://github.com/eQuantic/equantic-ui/issues/606)).
   Proposed and archived through OpenSpec (`openspec/specs/runtime-dates`).
+- **2026-10-07 · A page requires its authorization**: `[Authorize]` held on Server Actions only, so
+  a page's route served anyone and its `IServerPrefetch` ran for an anonymous visitor, writing its
+  fields into the HTML ([#673](https://github.com/eQuantic/equantic-ui/issues/673), asked by Cura for
+  its backoffice). A `[Page]` and a `MapPage<T>` route carry the page's `[Authorize]` and
+  `[AllowAnonymous]` as endpoint metadata, so ASP.NET Core's own authorization decides: a challenge
+  for an anonymous full load, 403 without the policy, and the page is never built for a refused
+  request. A refused client navigation is a marked 401 or 403, which the router answers with a full
+  load, and the runtime and the page modules serve anyone, so a sign-in page comes alive under a
+  fallback policy; an asset route serves a file name inside its own directory and nothing else.
+  Proposed and archived through OpenSpec (`openspec/specs/page-routes`).
 - **2026-10-07 · An exception's message is composed as .NET composes it**: a framework exception's
   arguments were read by position, so `new ArgumentNullException(nameof(x)).Message` was the
   parameter's name, a parameter's name never reached a message and a constructor with no message gave
