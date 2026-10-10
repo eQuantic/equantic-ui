@@ -3,6 +3,7 @@ using eQuantic.UI.Compiler.CodeGen.Extensions;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using Microsoft.CodeAnalysis.Operations;
 using eQuantic.UI.Compiler.CodeGen.Ir;
 
 namespace eQuantic.UI.Compiler.CodeGen.Strategies.Expressions;
@@ -122,8 +123,13 @@ public class IdentifierStrategy : IExpressionIrStrategy
                     {
                         var isDirectInvocation = identifier.Parent is InvocationExpressionSyntax invocation &&
                                               invocation.Expression == identifier;
+                        // Over a copy of a mutable value's `this`, as C# boxes the receiver when it makes
+                        // the delegate (ValueCopies.Captured).
                         if (!isDirectInvocation)
-                            return JsExpr.Call(JsExpr.Member(member, "bind"), JsExpr.This);
+                            return JsExpr.Call(JsExpr.Member(member, "bind"),
+                                context.SemanticHelper.GetOperation(identifier) is IMethodReferenceOperation { Instance: { } self }
+                                    ? ValueCopies.Captured(self.Type, JsExpr.This)
+                                    : JsExpr.This);
                     }
 
                     return member;
