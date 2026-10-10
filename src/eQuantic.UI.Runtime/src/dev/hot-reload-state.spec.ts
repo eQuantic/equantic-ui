@@ -715,7 +715,7 @@ class Tally {
 }
 
 /** Copilot's third round on #672: each case fails on the commit before the fix. */
-describe('a hot reload carries a record by what eqc says it is', () => {
+describe('a hot reload carries a record by what eqc says it is, and a list only as it was', () => {
   it("leaves an app's class with its initializer, though it declares equals and with", () => {
     class Tallied extends StatefulComponent {
       static $typeId = 'App.Tallied';
@@ -736,5 +736,41 @@ describe('a hot reload carries a record by what eqc says it is', () => {
 
     expect('_tally' in state.fields).toBe(false);
     expect(after._tally).toBe(tally);
+  });
+
+  it('leaves a list holding an undefined element or a hole with its initializer', () => {
+    class Slots extends StatefulComponent {
+      static $typeId = 'App.Slots';
+      _dense: (string | undefined)[] = [];
+      _sparse: (string | null)[] = [];
+      _pair: [number, unknown] = [0, null];
+      _count = 0;
+      build(): Component {
+        throw new Error('not built here');
+      }
+    }
+
+    const before = new Slots();
+    // `list.Add(default)` of a vocabulary struct, as eqc writes it.
+    before._dense = ['a', undefined];
+    // `Array.Resize(ref a, 3)`, as eqc writes it: the slots it adds are holes.
+    const resized: (string | null)[] = new Array(1).fill(null);
+    resized.length = 3;
+    before._sparse = resized;
+    // `(1, default(WebContent))`, as eqc writes it.
+    before._pair = [1, undefined];
+    before._count = 2;
+    const state = throughJson(capturePageState(before));
+
+    const after = new Slots();
+    const dense = after._dense;
+    const sparse = after._sparse;
+    const pair = after._pair;
+    restorePageState(after, state);
+
+    expect(after._dense).toBe(dense);
+    expect(after._sparse).toBe(sparse);
+    expect(after._pair).toBe(pair);
+    expect(after._count).toBe(2);
   });
 });

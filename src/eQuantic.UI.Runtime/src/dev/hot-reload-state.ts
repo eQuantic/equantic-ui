@@ -112,7 +112,8 @@ function isPlain(value: unknown): value is Record<string, unknown> {
  *   the other infinity.
  * - A `long`, a `decimal` and the dates, by their tag, as their wire text.
  * - An array of data, element by element. One that holds anything but its elements (a pair's `key`
- *   and `value`) is not, since JSON writes the elements alone.
+ *   and `value`) is not, since JSON writes the elements alone, and neither is one with a hole or an
+ *   undefined element, which JSON writes as null.
  * - A dictionary of data whose keys share one type a key spec revives, found as it found them, written
  *   by its own `toJSON`, the form its hydration reads on any wire. A key that is a negative zero, and a
  *   value that is undefined, which an object drops, are not data.
@@ -175,15 +176,16 @@ function carry(value: unknown, placed: boolean, depth: number): Carried | typeof
 function list(items: unknown[], depth: number): Carried | typeof NOT_DATA {
   const specs: (CarriedSpec | null)[] = [];
   const json: unknown[] = [];
-  let present = 0;
   for (let at = 0; at < items.length; at++) {
-    if (at in items) present++;
+    // JSON writes a hole and an undefined element as null, which reads back as neither: eqc writes
+    // the first for `Array.Resize` and the second for a vocabulary struct's `default`.
+    if (!(at in items) || items[at] === undefined) return NOT_DATA;
     const carried = carry(items[at], false, depth + 1);
     if (carried === NOT_DATA) return NOT_DATA;
     specs.push(carried.spec);
     json.push(carried.json);
   }
-  if (Object.keys(items).length !== present) return NOT_DATA;
+  if (Object.keys(items).length !== items.length) return NOT_DATA;
   const one = oneSpec(items, specs);
   return { spec: one === null ? null : one === undefined ? { tuple: specs } : [one], json };
 }
