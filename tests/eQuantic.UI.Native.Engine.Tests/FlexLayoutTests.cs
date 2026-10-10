@@ -89,6 +89,38 @@ public class FlexLayoutTests
             .Should().BeApproximately(300, 0.01f, "a Text's line box is the slot, where its lines align");
     }
 
+    /// <summary>
+    /// The same rule for every node type that declares a width, not only a box: in a share of 300,
+    /// Chrome 154 keeps a 320 camera preview at 320, a stack and a canvas at 400 and at 100, a scroller
+    /// at 100, and a box as wide as the window less 32 at that width. A scroller of 400 is 300 there,
+    /// because the web writes it <c>max-width: 100%</c>: its width is a ceiling in its item. Photon
+    /// pinned all of these to 300, because its classifier did not read their widths.
+    /// </summary>
+    [Fact]
+    public void AFlexibleChild_KeepsTheSizeItDeclares_WhateverNodeDeclaresIt()
+    {
+        static float ChildIn300(VisualNode child)
+        {
+            var row = new Row(gap: 0) { Width = 600 };
+            row.Add(new Flexible(child, flex: 1));
+            row.Add(new Flexible(new Box(new BoxStyle { Width = SizeValue.Fill, Height = 20 }), flex: 1));
+            var item = Layout(row, w: 600).Children[0];
+            item.Bounds.Width.Should().BeApproximately(300, 0.01f, "the item takes its share");
+            return item.Children[0].Bounds.Width;
+        }
+
+        ChildIn300(new CameraPreview(null, 320, 240)).Should().Be(320);
+        ChildIn300(new Stack { Width = 400, Height = 20 }).Should().Be(400);
+        ChildIn300(new Stack { Width = 100, Height = 20 }).Should().Be(100);
+        ChildIn300(new Canvas(_ => { }, 400, 20)).Should().Be(400);
+        ChildIn300(new Canvas(_ => { }, 100, 20)).Should().Be(100);
+        ChildIn300(new ScrollView(FixedBox(50, 20)) { Width = 100, Height = 20 }).Should().Be(100);
+        ChildIn300(new ScrollView(FixedBox(50, 20)) { Width = 400, Height = 20 })
+            .Should().Be(300, "a scroller's width is a ceiling in its item");
+        ChildIn300(new Box(new BoxStyle { Width = SizeValue.WindowMinus(32), Height = 20 }))
+            .Should().Be(600 - 32, "a width the window decides is the box's own");
+    }
+
     [Fact]
     public void Row_SpaceBetween_DistributesFreeSpace()
     {

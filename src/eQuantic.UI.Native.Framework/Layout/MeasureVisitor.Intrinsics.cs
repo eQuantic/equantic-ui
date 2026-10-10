@@ -205,9 +205,49 @@ internal sealed partial class MeasureVisitor
         _ => SizeKind.Hug,
     };
 
-    /// <summary>The same statement on the flex MAIN axis: the size kind a node declares along the
-    /// line it sits in, which is the cross axis of the other direction.</summary>
-    private SizeKind MainSizeKind(VisualNode node, bool horizontal) => CrossSizeKind(node, !horizontal);
+    /// <summary>
+    /// The size KIND a node declares along the flex MAIN axis (its width in a row, its height in a
+    /// column), for every node type of the vocabulary that declares one: a <see cref="SizeValue"/> it
+    /// carries (a box's style, a flex container, a grid, a stack, a scroller, a canvas, a web frame),
+    /// or a size its constructor demands (an image, an icon, a vector, a drawing, a spinner, a camera
+    /// preview). A transparent wrapper looks through to its child, and anything else declares nothing,
+    /// which reads as Hug.
+    /// <para>
+    /// It is a list of arms, and a list is how a camera preview went unread when this asked
+    /// <see cref="CrossSizeKind"/> the cross-axis question instead, which still misses five of the
+    /// fourteen. So it does not stand alone: <c>MainSizeKindCoverageTests</c> enumerates the
+    /// vocabulary's node types by reflection and fails on any that declares a size of its own this
+    /// does not read.
+    /// </para>
+    /// </summary>
+    internal static SizeKind MainSizeKind(VisualNode node, bool horizontal) => node switch
+    {
+        Box box => (horizontal ? box.Style.Width : box.Style.Height).Kind,
+        FlexNode flex => (horizontal ? flex.Width : flex.Height).Kind,
+        Grid grid => (horizontal ? grid.Width : grid.Height).Kind,
+        Stack stack => (horizontal ? stack.Width : stack.Height).Kind,
+        ScrollView scroll => (horizontal ? scroll.Width : scroll.Height).Kind,
+        Canvas canvas => (horizontal ? canvas.Width : canvas.Height).Kind,
+        WebFrame frame => (horizontal ? frame.Width : frame.Height).Kind,
+        Image or Icon or Vector or Drawing or Spinner or CameraPreview => SizeKind.Fixed,
+        Anchored anchored => MainSizeKind(anchored.Anchor, horizontal),
+        SingleChildNode wrapper when wrapper.IsLayoutTransparent() => MainSizeKind(wrapper.Child, horizontal),
+        _ => SizeKind.Hug,
+    };
+
+    /// <summary>
+    /// Whether a node's declared main size is a CEILING inside its container rather than a size it
+    /// keeps whatever the container gives it. A <see cref="ScrollView"/>'s width is one: the web
+    /// realizer writes it <c>max-width: 100%</c> beside its width, so in a 300 item a 400-wide
+    /// scroller is 300 and a 100-wide one stays 100 (measured in Chrome 154). Its height is not
+    /// capped there.
+    /// </summary>
+    internal static bool MainSizeIsACeiling(VisualNode node, bool horizontal) => node switch
+    {
+        ScrollView => horizontal,
+        SingleChildNode wrapper when wrapper.IsLayoutTransparent() => MainSizeIsACeiling(wrapper.Child, horizontal),
+        _ => false,
+    };
 
     /// <summary>A cap as a NUMBER, or 0 for unbounded — the one place a window-relative cap turns
     /// into dp, from the window the pass was handed rather than the space the parent had left.</summary>

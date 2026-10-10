@@ -127,6 +127,7 @@ public class FlexZeroWeightLayoutTests
         {
             ("a box at a basis", new Flexible(FixedBox(400), flex: 0, basis: 540), 400),
             ("a box without a basis", new Flexible(FixedBox(400), flex: 0), 400),
+            ("a 320 camera preview at a basis", new Flexible(new CameraPreview(null, 320, 240), flex: 0, basis: 540), 320),
             ("a word at a basis", new Flexible(new Text(new string('a', 48), TypeRole.BodyM), flex: 0, basis: 540), null),
         };
 

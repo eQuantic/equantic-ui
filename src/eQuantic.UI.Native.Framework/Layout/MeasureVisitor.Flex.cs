@@ -131,16 +131,20 @@ internal sealed partial class MeasureVisitor
                 stretchW: horizontal ? StretchKind.Flex : fsW,
                 stretchH: horizontal ? fsH : StretchKind.Flex, truncating: truncating);
             // The WRAPPER is the item and takes the slot. A child that declares its own main size
-            // (a fixed width, an Image, an Icon, through transparent wrappers) keeps the size it
-            // measured, wider than the slot or narrower: the web keeps a fixed child at its width
-            // inside the item and lets it overflow, so a 400 box in an item shrunk to 300 is still
-            // 400 there. Any other child is pinned to the slot. An auto or Fill child measured to it
-            // already, being stretched, and a Text sizes itself to its lines, so the slot is the line
-            // box it fills and aligns them in.
-            if (MainSizeKind(flexible.Child, horizontal) != SizeKind.Fixed)
-                child.Bounds = horizontal
-                    ? child.Bounds with { Width = main }
-                    : child.Bounds with { Height = main };
+            // (a fixed or window-relative width, an Image, a CameraPreview: whatever MainSizeKind
+            // reads as declared) keeps the size it measured, wider than the slot or narrower: the
+            // web keeps such a child at its width inside the item and lets it overflow, so a 400 box
+            // in an item shrunk to 300 is still 400 there. A ScrollView keeps its width only up to
+            // the slot, which the web's `max-width: 100%` makes a ceiling. Any other child is pinned
+            // to the slot. An auto or Fill child measured to it already, being stretched, and a Text
+            // sizes itself to its lines, so the slot is the line box it fills and aligns them in.
+            var measuredMain = horizontal ? child.Bounds.Width : child.Bounds.Height;
+            var childMain = MainSizeKind(flexible.Child, horizontal) is not (SizeKind.Fixed or SizeKind.WindowMinus) ? main
+                : MainSizeIsACeiling(flexible.Child, horizontal) ? MathF.Min(measuredMain, main)
+                : measuredMain;
+            child.Bounds = horizontal
+                ? child.Bounds with { Width = childMain }
+                : child.Bounds with { Height = childMain };
             var wrapper = ctx.Node(flexible, horizontal
                 ? child.Bounds with { Width = main }
                 : child.Bounds with { Height = main });
