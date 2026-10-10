@@ -12,6 +12,7 @@ import {
   type HydrationSpec,
   type HydrationTag,
 } from '../utils/hydrate';
+import type { Equality, KeyEquality } from '../utils/key-equality';
 
 /**
  * What a hot reload carries across for a page: the fields its C# declares. A write-once page keeps
@@ -56,7 +57,7 @@ export type CarriedSpec =
   | {
       readonly dict: CarriedSpec | null;
       readonly key?: HydrationKey;
-      readonly byValue?: true | 'own';
+      readonly byValue?: Exclude<KeyEquality, false | Equality>;
     }
   | {
       readonly members: Readonly<Record<string, CarriedSpec>>;

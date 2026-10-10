@@ -297,7 +297,7 @@ describe('a hot reload gives back each value as it was, or leaves its initialize
     before._prices.set(dec('1.50'), 'a');
     before._meta = { tags: ['x'], last: { at: 3n } };
     before._maybe = 6n;
-    before._due = dateTime(2026, 10, 8);
+    before._due = dateTime.of(2026, 10, 8);
 
     const after = new Ledger();
     restorePageState(after, throughJson(capturePageState(before)));
@@ -314,7 +314,7 @@ describe('a hot reload gives back each value as it was, or leaves its initialize
     expect(after._meta.last.at).toBe(3n);
     expect(after._maybe).toBe(6n);
     expect(after._due).toBeInstanceOf(DateTime);
-    expect(after._due!.equals(dateTime(2026, 10, 8))).toBe(true);
+    expect(after._due!.equals(dateTime.of(2026, 10, 8))).toBe(true);
   });
 
   it("leaves a list of the app's records with its initializer, since only an initializer names their class", () => {
@@ -652,7 +652,7 @@ describe('a hot reload gives back a value exactly, into the type the reloaded pa
 
     const before = new Declared();
     before._ids = [5n];
-    before._due = dateTime(2026, 10, 8);
+    before._due = dateTime.of(2026, 10, 8);
     before._byId.set(1, 5n);
     before._names = ['a'];
     const state = throughJson(capturePageState(before));
