@@ -1764,7 +1764,13 @@ record of a release, the wiki's Upgrading page is the distillate.
   had broken: a call of a delegate field went to the method a case apart from it, so a method that
   forwards to its delegate field (`bool Validate(int n) => validate(n)`) called itself and never
   returned, and a field called `Count` was read as the method `count()`; both reach the field's slot
-  now. Proposed and archived through OpenSpec (`openspec/specs/transpiler-classes`).
+  now. The second round found a derived field that kept the slot of an inherited field a case apart,
+  which the derived constructor wrote over (a slot an ancestor holds is taken now, whatever the
+  spellings, and the field takes a `$` more), a `Deconstruct` called once per part in an initializer
+  and once per arm or alternative elsewhere where .NET calls it once (a pattern-matching operation
+  holds its parts once, in a scope of its own), and a twin's JSON that read a getter twice where a
+  moved field and the property's store both stood for it (each name is written once). Proposed and
+  archived through OpenSpec (`openspec/specs/transpiler-classes`).
 
 ## Retired documents
 
