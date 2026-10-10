@@ -72,8 +72,8 @@ function localOffsetAt(utcTicks: bigint): bigint {
  * `TimeZoneInfo.GetUtcOffset` reads a local time: the one offset that names that clock time, or, for
  * a clock time a transition skips or repeats, the standard one, the smaller of the two around it.
  * A repeated clock time marked as its daylight occurrence (`daylight`, see {@link localOf}) takes
- * the daylight one, the larger. The formatter's `U` reads a clock time the same way (`localOffset`
- * in format.ts, #472).
+ * the daylight one, the larger. The formatter reads a clock time's offset through it, by
+ * {@link utcOffsetOf} and {@link wallOffsetMs} (#472).
  */
 function localOffsetFor(localTicks: bigint, daylight = false): bigint {
   const before = localOffsetAt(localTicks - TICKS_PER_DAY);

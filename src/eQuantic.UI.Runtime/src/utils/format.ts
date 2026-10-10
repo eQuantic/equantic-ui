@@ -822,8 +822,8 @@ function sevenDigits(ticks: bigint): string {
 
 /**
  * The value as a moment, or null when it is no date. A native Date is an instant, and its local
- * parts are the ones it always printed; the compat `DateTime` keeps no zone, as a .NET DateTime of
- * no kind; a `DateOnly` is its day at midnight and a `TimeOnly` its time on the first day, which is
+ * parts are the ones it always printed; the compat `DateTime` is its clock and its kind (#606); a
+ * `DateOnly` is its day at midnight and a `TimeOnly` its time on the first day, which is
  * what .NET formats them as; and a `DateTimeOffset` is its own clock with its offset (#469). Without
  * this, `{Moment:d}` over a compat value fell through to `String(value)`, the invariant default.
  */
