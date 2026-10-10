@@ -32,7 +32,7 @@ public sealed class CodeHistory
         if (edit.Typed && edit.IsSimpleInsert && _past.Count > 0 && edit.Range.Start == _runEnd)
         {
             var previous = _past[^1];
-            if (previous.Typed && !previous.InsertedText.Contains('\n'))
+            if (previous.Typed && !previous.BreaksLine)
             {
                 _past[^1] = previous with
                 {
@@ -46,7 +46,7 @@ public sealed class CodeHistory
 
         _past.Add(edit);
         if (_past.Count > Limit) _past.RemoveAt(0);
-        _runEnd = edit.Typed && !edit.InsertedText.Contains('\n')
+        _runEnd = edit.Typed && !edit.BreaksLine
             ? edit.InsertedRange.End
             : new CodePosition(-1, -1);
     }
