@@ -185,14 +185,21 @@ internal sealed partial class MeasureVisitor
         result.Adopt(child);
 
         var width = ResolveSelf(scroll.Width, maxW, MathF.Min(child.Bounds.Width, maxW));
+        // A Flexible's slot caps a scroller's declared width at the slot, the web's `max-width:
+        // 100%` (LayoutConstraints.WidthIsACeiling): capped HERE, before the scroll range below is
+        // taken from it, so a horizontal scroller scrolls as far as its capped viewport needs.
+        if (constraints.WidthIsACeiling) width = MathF.Min(width, maxW);
         var height = ResolveSelf(scroll.Height, maxH, MathF.Min(child.Bounds.Height, maxH));
         result.Bounds = new Rect(0, 0, width, height);
 
         var maxOffset = MathF.Max(0, horizontal ? child.Bounds.Width - width : child.Bounds.Height - height);
         // Scroll compositor v1: the host's stored offset wins; the node's programmatic Offset is the
-        // default until the user scrolls. The realizer registers the region via ScrollMeta.
+        // default until the user scrolls. The realizer registers the region via ScrollMeta, with the
+        // range of the measure the tree KEEPS, which is the last one: a scroller measured again (a
+        // wrapping line that resolved, a Flexible's ceiling) kept the range of its first measure, so
+        // a viewport capped to 300 around 800 of content stopped scrolling at 400 instead of 500.
         var offset = Math.Clamp(ctx.ScrollOffsets?.Get(path) ?? scroll.Offset, 0, maxOffset);
-        ctx.ScrollMeta?.TryAdd(scroll, (path, maxOffset));
+        if (ctx.ScrollMeta is { } meta) meta[scroll] = (path, maxOffset);
         child.Bounds = child.Bounds with
         {
             X = horizontal ? -offset : 0,
