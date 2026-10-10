@@ -94,10 +94,81 @@ public class HitSlopTests
     {
         var block = Gate(pointer);
 
-        block.Should().Contain(":where(.eq-pressable)>*{position:relative;}",
-            "the content is lifted to the target's level, where tree order puts it on top");
+        block.Should().Contain(":where(.eq-pressable)>*,:where(.eq-lift){position:relative;}",
+            "the content is lifted to the target's level, where tree order puts it on top, and so is "
+            + "the content behind a child that draws no box (#622)");
         Css().Should().NotContain(".eq-pressable::after",
             "a target that comes after the content in tree order paints, and is hit, over it");
+    }
+
+    private static readonly PhotonTheme Theme = PhotonTheme.Instance;
+
+    private static Box Card() => new(new BoxStyle { Width = 40, Height = 40, Background = Theme.Surface });
+
+    /// <summary>The elements of a lowered control that carry the lift's mark.</summary>
+    private static List<HtmlNode> Lifted(VisualNode control)
+    {
+        var found = new List<HtmlNode>();
+        void Walk(HtmlNode node)
+        {
+            if (node.Attributes.TryGetValue("class", out var cls) && cls is not null
+                && cls.Split(' ').Contains("eq-lift"))
+                found.Add(node);
+            foreach (var child in node.Children) Walk(child);
+        }
+        Walk(WebRealizer.Lower(control, Theme).Render());
+        return found;
+    }
+
+    /// <summary>
+    /// The lift reaches the first descendants that DRAW A BOX, through a child that draws none
+    /// (#622). Under a mouse the slop sat over the content of <c>Pressable(InView(card))</c>: the
+    /// card's centre hit the pressable, the card never matched <c>:hover</c>, and under a finger its
+    /// own controls could not take a tap.
+    /// </summary>
+    [Fact]
+    public void TheLift_ReachesThroughAWrapperThatDrawsNoBox()
+    {
+        var lifted = Lifted(new Pressable(new InView(Card(), _ => { }), () => { }));
+
+        lifted.Should().ContainSingle("the card is the first thing under the InView that draws a box")
+            .Which.Tag.Should().Be("div");
+    }
+
+    [Fact]
+    public void TheLift_ReachesThroughAnyChainOfThem()
+    {
+        Lifted(new Pressable(new InView(new InView(Card(), _ => { }), _ => { }), () => { }))
+            .Should().ContainSingle();
+    }
+
+    [Fact]
+    public void TheLift_ReachesEveryArmOfAnAdaptive()
+    {
+        // Every declared arm is mounted on the web, each behind its gate, which draws no box.
+        Lifted(new Pressable(new AdaptiveNode(Card(), medium: Card()), () => { }))
+            .Should().HaveCount(2);
+    }
+
+    [Fact]
+    public void TheLift_ReachesBothImagesOfALightAndDarkPair()
+    {
+        Lifted(new Pressable(new Image("/light.png", 40, 40, label: "logo") { DarkSource = "/dark.png" }, () => { }))
+            .Should().HaveCount(2).And.OnlyContain(node => node.Tag == "img");
+    }
+
+    /// <summary>A child that draws a box is lifted by the sheet's rule alone, and nothing is marked.</summary>
+    [Fact]
+    public void AChildThatDrawsABox_NeedsNoMark()
+    {
+        Lifted(new Pressable(Card(), () => { })).Should().BeEmpty();
+    }
+
+    /// <summary>A disabled control has no slop (it carries no eq-pressable), so nothing is lifted.</summary>
+    [Fact]
+    public void ADisabledControl_LiftsNothing()
+    {
+        Lifted(new Pressable(new InView(Card(), _ => { }), () => { }) { Disabled = true }).Should().BeEmpty();
     }
 
     /// <summary>

@@ -54,6 +54,22 @@ public class MarkerParityTests
             + "publishes 0px and every Bookmark lands behind the chrome");
     }
 
+    /// <summary>The attribute the runtime SETS on a scrolled header, and the one this realizer's
+    /// scrolled rules select on (#506): a rename that reached one side only would leave every
+    /// header unfrosted, and both suites green.</summary>
+    [Fact]
+    public void TheScrolledMarker_IsTheOneTheRuntimeSets()
+    {
+        var sink = new StyleSink();
+        WebRealizer.Lower(new Pinned(new Box(new BoxStyle()))
+        {
+            ScrolledStyle = new StyleDiff { Opacity = 0.5f },
+        }, PhotonTheme.Instance, styles: sink);
+
+        sink.Css.Should().Contain($"[{MarkerFromTypeScript("SCROLLED_MARKER")}]{{",
+            "the realizer's scrolled rules select on what scrolled-pinned.ts sets");
+    }
+
     private static string Marker(VisualNode node)
     {
         var lowered = WebRealizer.Lower(node, PhotonTheme.Instance);
