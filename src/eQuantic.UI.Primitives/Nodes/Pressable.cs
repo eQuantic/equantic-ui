@@ -46,6 +46,16 @@ public sealed class Pressable : SingleChildNode
     public bool InitialFocus { get; init; }
 
     /// <summary>
+    /// Whether a press may take the keyboard. True, the default, focuses the pressable as a press on
+    /// any control does. False leaves the keyboard where it is (Flutter's <c>canRequestFocus</c>): a
+    /// row of the list a code editor shows at its caret, pointed at while the person types, whose
+    /// press would otherwise take the keyboard from the code and close the list it stands in. On the
+    /// web the press is cancelled before the browser moves the focus, and the pressable leaves the
+    /// Tab order; on Photon a press ends no editing and focuses nothing. The press itself still runs.
+    /// </summary>
+    public bool CanRequestFocus { get; init; } = true;
+
+    /// <summary>
     /// This pressable OPENS something, and whether it is open right now — an accordion header, a
     /// select's field, a menu's trigger. Painted state (a rotated chevron) says nothing to
     /// assistive tech; this lowers to <c>aria-expanded</c> on the web and the expanded bit of the

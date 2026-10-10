@@ -61,9 +61,11 @@ internal readonly struct InputSink(FrameRegions regions, Rect? clip = null, bool
     public void Add(HitRegion region)
     {
         // A control with nothing to DO is not somewhere Tab should ever land — disabled, or a
-        // handler-less pressable that only exists as another control's visual. Scrolled out of
-        // sight is NOT the same thing: see FocusStop.
-        if (!suppressFocusStops && !region.Node.Disabled && region.Node.OnPressed is not null)
+        // handler-less pressable that only exists as another control's visual — and neither is one
+        // that may not take the keyboard (Pressable.CanRequestFocus). Scrolled out of sight is NOT
+        // the same thing: see FocusStop.
+        if (!suppressFocusStops && !region.Node.Disabled && region.Node.OnPressed is not null
+            && region.Node.CanRequestFocus)
             regions.Stops.Add(new FocusStop(region.Path, region.Node, null, region.Bounds));
         if (!Visible(region.Bounds)) return;
         regions.Hits.Add(Clipped(region));
@@ -111,7 +113,7 @@ internal readonly struct InputSink(FrameRegions regions, Rect? clip = null, bool
         if (!suppressFocusStops)
             regions.Stops.Add(new FocusStop(region.Path, null, null, region.Bounds, null, region.Surface));
         if (!Visible(region.Bounds)) return;
-        regions.Codes.Add(region);
+        regions.Codes.Add(Clipped(region));
     }
 
     /// <summary>A chord is not a place — being on screen is the whole subscription (spec S8), and a
@@ -149,6 +151,22 @@ internal readonly struct InputSink(FrameRegions regions, Rect? clip = null, bool
     /// row takes a tap on the half you can see, and none on the half you cannot.</summary>
     private HitRegion Clipped(HitRegion region) =>
         Clip is { } clip ? region with { Bounds = Intersect(clip, region.Bounds) } : region;
+
+    /// <summary>
+    /// A code surface keeps its whole bounds, which place its caret and turn a point into a position,
+    /// and carries the part of them on screen, which is all a press can land on: unclipped, a long
+    /// file's surface took the presses aimed at whatever stands below the editor that shows it. What it
+    /// offers at its caret is clipped the same way, so a list that left the view with its line takes
+    /// no press outside it.
+    /// </summary>
+    private CodeRegion Clipped(CodeRegion region) =>
+        Clip is { } clip
+            ? region with
+            {
+                Visible = Intersect(clip, region.Bounds),
+                Offered = region.Offered is { } offered ? Intersect(clip, offered) : null,
+            }
+            : region;
 
     /// <inheritdoc cref="Clipped(HitRegion)"/>
     private LinkRegion Clipped(LinkRegion region) =>
