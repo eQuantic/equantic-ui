@@ -1703,6 +1703,16 @@ record of a release, the wiki's Upgrading page is the distillate.
   1970 toward the epoch; it answers a BigInt cut as .NET cuts it now. Found on the way: the date
   constructors past the second ([#606](https://github.com/eQuantic/equantic-ui/issues/606)).
   Proposed and archived through OpenSpec (`openspec/specs/runtime-dates`).
+- **2026-10-07 · A page requires its authorization**: `[Authorize]` held on Server Actions only, so
+  a page's route served anyone and its `IServerPrefetch` ran for an anonymous visitor, writing its
+  fields into the HTML ([#673](https://github.com/eQuantic/equantic-ui/issues/673), asked by Cura for
+  its backoffice). A `[Page]` and a `MapPage<T>` route carry the page's `[Authorize]` and
+  `[AllowAnonymous]` as endpoint metadata, so ASP.NET Core's own authorization decides: a challenge
+  for an anonymous full load, 403 without the policy, and the page is never built for a refused
+  request. A refused client navigation is a marked 401 or 403, which the router answers with a full
+  load, and the runtime and the page modules serve anyone, so a sign-in page comes alive under a
+  fallback policy; an asset route serves a file name inside its own directory and nothing else.
+  Proposed and archived through OpenSpec (`openspec/specs/page-routes`).
 - **2026-10-07 · An exception's message is composed as .NET composes it**: a framework exception's
   arguments were read by position, so `new ArgumentNullException(nameof(x)).Message` was the
   parameter's name, a parameter's name never reached a message and a constructor with no message gave
@@ -1723,6 +1733,110 @@ record of a release, the wiki's Upgrading page is the distillate.
   46 new conformance cases fail on the base. The members the runtime does not have are
   [#679](https://github.com/eQuantic/equantic-ui/issues/679). Proposed and archived through OpenSpec
   (`openspec/specs/transpiler-bcl`).
+- **2026-10-08 · The image optimizer runs on SkiaSharp**: seven GitHub advisories against
+  SixLabors.ImageSharp, five of them reaching the 3.1.12 `eQuantic.UI.Images` resolved, failed
+  `build-packages` on every pull request through NuGet's audit, and the only patched version needs a
+  Six Labors license key to build in Release
+  ([#710](https://github.com/eQuantic/equantic-ui/issues/710)). The optimizer decodes and encodes
+  with SkiaSharp now, MIT, its Linux natives referenced by the package. It reads JPEG, PNG, GIF,
+  WebP and BMP and answers 400 for the rest, TIFF included, where an unreadable source was a 500;
+  refuses a header past 16,383 × 16,383 pixels before it decodes, and a source past `MaxSourceSize`
+  whoever hands it over, a caller's own stream included; applies an EXIF orientation to the
+  pixels, since its encoders write no EXIF; serves an animated source as it is, as Next.js does,
+  where ImageSharp re-encoded the frames; refuses `image/avif` in `Formats` at startup, which no
+  encoder writes and which, listed first, answered every browser with a JPEG labelled AVIF; and
+  writes sRGB untagged, where a tagged result carried a 472-byte profile. Proposed and archived
+  through OpenSpec (`openspec/specs/image-optimization`).
+- **2026-10-07 · A date is built by its constructor and read in the browser's zone**: the runtime's
+  `dateTime` and `dateTimeOffset` factories took a constructor's components by how many arguments
+  they got, so a kind was read as the millisecond, a `DateTimeOffset`'s millisecond as its offset, and
+  a microsecond was dropped ([#606](https://github.com/eQuantic/equantic-ui/issues/606)). eqc reads
+  the bound constructor and calls one factory per shape, each argument in its parameter's place, a
+  `Calendar` overload refused at the build (EQ1004), and the factories refuse what .NET refuses in its
+  words. A `DateTime` carries its `Kind`. `DateTimeOffset.Now` carried offset zero with the local
+  clock, `LocalDateTime` read the value's own clock and `ToLocalTime()` did not exist
+  ([#626](https://github.com/eQuantic/equantic-ui/issues/626), from the Falei.pt app): each reads
+  the browser's time zone now, proved on both sides in three zones set through `TZ`. A local time made
+  from an instant keeps which of two repeated hours it is, as .NET keeps it beside the kind, and a
+  date's text writes its kind (`o`, `K`, `z`, `U`), where `o` wrote no zone and `U` moved a UTC time
+  twice. The ISO reader is linear, where 50,000 spaces took 1.5 s. 117 of the first 125 new cases
+  failed on the base, and 29 of the review's 50 on the commit before them. Proposed and archived
+  through OpenSpec (`openspec/specs/runtime-dates`).
+- **2026-10-07 · A collection crosses and compares as .NET's does**: a `Queue`, a `Stack`, a
+  `LinkedList` and a `SortedSet` had no `toJSON`, so a Server Action argument was written as the
+  class's fields or its node graph ([#597](https://github.com/eQuantic/equantic-ui/issues/597)); each
+  writes the array .NET writes now. A dictionary's `Keys` and `Values` were arrays copied when read,
+  `EnsureCapacity` answered the capacity asked for and `TrimExcess` did nothing
+  ([#463](https://github.com/eQuantic/equantic-ui/issues/463)): the views are live, through a Proxy
+  over a snapshot taken again only after a change, and the capacity is .NET's prime. A record's twin
+  compared an array member element by element, where .NET compares it by reference
+  ([#554](https://github.com/eQuantic/equantic-ui/issues/554)): each member is compared by its type's
+  default comparer now (`ElementEquality.Compare`), and so is a tuple's `Equals`: an interface no tuple
+  implements, `IReadOnlyList<int>` first among them, by reference or its own `Equals`, a tuple of
+  another arity unequal and a null pair equal only to another. A view hands back each element as it
+  is, a delegate included, and a copy is sized for what it copies. A LINQ query reading its whole
+  source before its first callback is [#685](https://github.com/eQuantic/equantic-ui/issues/685).
+  Proposed and archived through OpenSpec (`openspec/specs/runtime-collections`, `runtime-dictionaries`,
+  `transpiler-records`).
+- **2026-10-07 · A name in the browser is the name C# means**: the emitted code declared bindings of
+  its own as a C# local would be named and read globals no C# name was kept away from, so a captured
+  `_sum` read the running total, a captured `key` threw before the reduce had set its own, a captured
+  `a` sorted by the comparator's element, and a local named `crypto`, `undefined` or `Math` hid the
+  global a lowering beside it read ([#397](https://github.com/eQuantic/equantic-ui/issues/397)). Every
+  binding the output declares now starts with a `$`, a local named like a global it reads takes one,
+  and two guards read the compiler's source for both. A label, a member, a `with` key and a type
+  parameter written with the verbatim escape are written without it
+  ([#467](https://github.com/eQuantic/equantic-ui/issues/467)); a member reached bare through
+  `using static` converts as its qualified spelling, `Now` as `DateTime.Now`
+  ([#556](https://github.com/eQuantic/equantic-ui/issues/556)); and a part of a template that sits
+  inside the template's own function is bound outside it, so `Intersect`'s and `Except`'s second
+  sequence, `Average`'s source and a selector that is a call run once, in C#'s order
+  ([#657](https://github.com/eQuantic/equantic-ui/issues/657)). `Sum`, `Average`, `OrderBy`, `GroupBy`,
+  `Distinct` and the lookup's indexer moved to the IR. The runtime's twins are regenerated. Copilot's
+  first round found four more, each measured: a plain name inside the template's function was read
+  per call (a selector that reassigned its own variable summed 201 where .NET sums 6), a part holding
+  a lowering of its own was taken to read the function's `$x` and called `Other()` per element, a
+  hole past `{9}` stayed text in a comparator of eleven keys, and a type parameter written `@class`
+  kept its spelling one level down and in a component's declaration. The second round found a source
+  a selector reassigns and a string that quotes a lowering's name. The third found that a receiver
+  bound once was typed `any` in TypeScript, which left the callbacks a lowering hands it untyped
+  under a strict tsc: it is written bare now, typed by its argument, and a fixture the runtime's tsc
+  reads proves it. Found on the way: a grouping's accumulator has no type tsc accepts
+  ([#727](https://github.com/eQuantic/equantic-ui/issues/727)). Proposed and archived through
+  OpenSpec (`openspec/specs/transpiler-names`, `openspec/specs/transpiler-sequences`).
+- **2026-10-07 · An edit under dotnet watch reaches the browser**: hot reload was on in the
+  Development environment alone, and an app run under `dotnet watch` without a launch profile is a
+  Production one, so eqc never ran again and the page kept the module from before the edit
+  ([#627](https://github.com/eQuantic/equantic-ui/issues/627)). It is on under `dotnet watch` too,
+  read from the `DOTNET_WATCH` the watcher sets, and that one decision (`UIOptions.HotReloads`) maps
+  the stream, sets the modules' cache and tells the page, whose boot listened by `__EQ_DEV__` before.
+  Two more defects stood in the way, measured on the dashboard sample. Every file eqc wrote again was
+  a file added to the project, and `dotnet watch` stopped on the first one (dotnet/sdk#55335; a plain
+  `dotnet new web` app stops the same way): eqc's output folder is declared in `DefaultItemExcludes`,
+  which `dotnet watch` ignores, in place of the Content removal, and eqc writes it in place, removing
+  what it stopped writing after the rest, where the folder was emptied first and every module
+  answered 404 while eqc compiled. And in the watcher's workspace, where a referenced project is
+  another compilation, the hydration manifest asked a semantic model of that project's tree and threw
+  on every edit (CS8785, [#663](https://github.com/eQuantic/equantic-ui/issues/663)); it reads the
+  declarations the compilation holds now (`CompilationSource`). On the sample under
+  `dotnet watch --no-launch-profile`, an edit reloads the page with it and `dotnet watch` stays up, a
+  shared component's renamed chunk included. The review before it opened found three more: the
+  folder's Content removal stays beside the exclusion, for an app that includes wwwroot by hand; the
+  stage-one maps, which carry the C#, are served in Development alone, where the overlay reading them
+  installs; and stopping the app stops a rebuild still running and ends the streams, where SIGTERM
+  mid-rebuild, as `dotnet watch` restarts an app, left eqc writing beside the next build and the app
+  took 14 s to exit (3 s now). Copilot's first round found two more in that shutdown: a rebuild past
+  its two-minute limit was released, not stopped, and a stream that registered as the app stopped
+  waited out the host. Its second round found one more: a shutdown that came while the rebuild's
+  process was starting returned before the process existed, and the host waits for nothing after it,
+  so the rebuild now starts under the gate the shutdown takes, and the shutdown returns once it ended.
+  Its third found eqc itself emptying part of the folder first: the bundler deleted every map before
+  bun ran, so a bundle that failed left none; it removes the maps bun did not write only after bun
+  has written now, through the real bundler in its tests. Found on the way: a write-once page's state
+  does not survive a hot reload
+  under any runner ([#664](https://github.com/eQuantic/equantic-ui/issues/664)).
+  Proposed and archived through OpenSpec (`openspec/specs/hot-reload`, `generated-files` and
+  `hydration-contract`).
 - **2026-10-08 · A code editor keeps its Tab in a dialog, and undo after a pasted carriage return
   restores the text**: on the web a modal layer's focus trap heard Tab in the capture phase, before
   the editor's input, so a code editor at either end of a dialog lost Tab and Shift+Tab to it

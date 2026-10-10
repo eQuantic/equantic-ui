@@ -27,6 +27,7 @@ import { EscapeHatchPage, componentIdentity } from '../../eQuantic.UI.Runtime/sr
 import {
   applyPageState,
   fetchPageState,
+  leaveForRefusal,
   warmPageState,
 } from '../../eQuantic.UI.Runtime/src/router/page-state';
 import { Component } from '../../eQuantic.UI.Runtime/src/core/types';
@@ -70,6 +71,11 @@ function isDev(): boolean {
   return typeof window !== 'undefined' && window.__EQ_DEV__ === true;
 }
 
+/** Whether the server streams rebuilds at /_equantic/hmr: its own decision, sent in the configuration. */
+function hotReloads(): boolean {
+  return typeof window !== 'undefined' && window.__EQ_CONFIG?.hotReload === true;
+}
+
 // --- Initialization ---
 let initialized = false;
 
@@ -92,11 +98,14 @@ export async function boot(): Promise<void> {
   // Phase 3 hot reload replay: state captured just before the HMR reload re-enters through the
   // ORDINARY SSR-hydration mechanic (window.__INITIAL_STATE__ + hydrateValue) — zero new paths.
   //
-  // BOTH HALVES OF HOT RELOAD ASK isDev(), like every other developer facility in this file. They
-  // did not, and a production page paid for it on every load: a request to /_equantic/hmr that the
-  // server maps only in development, so a 404 in the console of every shipped app (#240), plus a
-  // sessionStorage marker read on a page that can never have written one.
-  if (isDev()) {
+  // BOTH HALVES OF HOT RELOAD ASK THE SERVER whether it streams rebuilds, the one decision that also
+  // maps the stream. Asking nothing, a production page paid on every load: a request to
+  // /_equantic/hmr the server had not mapped, so a 404 in the console of every shipped app (#240),
+  // plus a sessionStorage marker read on a page that can never have written one. Asking isDev()
+  // matched the server only while the app left HotReload unset: set either way, one half ran without
+  // the other, and under dotnet watch outside Development, where the server streams rebuilds since
+  // #627, the page would never have listened.
+  if (hotReloads()) {
     try {
       const saved = sessionStorage.getItem('__eq_hmr__');
       if (saved) {
@@ -223,7 +232,7 @@ export async function boot(): Promise<void> {
         onNavigate: (match, url, isCurrent) =>
           // The same STRING the hover warmed under, or the click looks in the wrong drawer and
           // fetches a second time — which made a warmed navigation the slower one.
-          navigateToPage(root, match.page, config, isCurrent, url.pathname + url.search),
+          navigateToPage(root, match.page, config, isCurrent, url.pathname + url.search, url.hash),
         // Hover/focus prefetch: warm the page bundle so a click navigates instantly. loadPageModule's
         // dynamic import is cached by the browser, so the later navigation resolves without a round-trip.
         onPrefetch: (match, url) => {
@@ -397,15 +406,22 @@ async function navigateToPage(
   config: EqConfig,
   isCurrent?: () => boolean,
   url?: string,
+  fragment?: string,
 ): Promise<void> {
   try {
     // The bundle and the page's SERVER DATA at the same time — the fetch is not on the critical
-    // path behind the import, and neither is behind the other.
-    const [ComponentClass, payload] = await Promise.all([
-      loadPageModule(pageName, config),
-      fetchPageState(url),
-    ]);
-    // A newer navigation started while this bundle was loading — don't clobber it.
+    // path behind the import, and neither is behind the other. The STATE is awaited first: a refusal
+    // decides the navigation whatever happens to the bundle, which may fail to load for a visitor the
+    // page refuses (#673). The bundle's failure, if it comes, is reported where it is awaited.
+    const bundle = loadPageModule(pageName, config);
+    bundle.catch(() => {});
+    const payload = await fetchPageState(url);
+    // A newer navigation started while this was loading — don't clobber it.
+    if (isCurrent && !isCurrent()) return;
+    // The server REFUSED this route (#673): the page requires an authorization the visitor does not
+    // have, and it is loaded in full instead of rendered (leaveForRefusal says how), fragment and all.
+    if (leaveForRefusal(payload, url === undefined ? undefined : url + (fragment ?? ''))) return;
+    const ComponentClass = await bundle;
     if (isCurrent && !isCurrent()) return;
     if (!ComponentClass) {
       render404(root, pageName);
@@ -559,9 +575,9 @@ function escapeHtml(unsafe: string): string {
 }
 
 /**
- * Phase 3 hot reload (v1): listen on the DEV-only SSE endpoint; on a rebuild, capture the live
- * page state (the stateful page's data fields) and reload — the boot replays it through the
- * SSR-hydration mechanic. In production the endpoint 404s and the source closes itself.
+ * Phase 3 hot reload (v1): listen on the SSE endpoint the server maps when it streams rebuilds; on a
+ * rebuild, capture the live page state (the stateful page's data fields) and reload — the boot
+ * replays it through the SSR-hydration mechanic. Called only when the server said it streams them.
  */
 function initHotReload(): void {
   if (typeof EventSource === 'undefined') return;
@@ -569,8 +585,8 @@ function initHotReload(): void {
     const source = new EventSource('/_equantic/hmr');
     // No close-on-error: EventSource RECONNECTS by itself after a transient drop, which is the
     // whole point of the API — closing on the first hiccup left hot reload silently dead minutes
-    // into every session. In production the endpoint 404s, and the browser abandons a non-200
-    // stream on its own (readyState CLOSED, no retries) — nothing leaks.
+    // into every session. A server restarted without the endpoint answers 404, and the browser
+    // abandons a non-200 stream on its own (readyState CLOSED, no retries) — nothing leaks.
     source.onmessage = () => {
       // The marker is written UNCONDITIONALLY: it is what tells the next boot to render with the
       // NEW code instead of hydrating the stale SSR. Gating it on captured state left every

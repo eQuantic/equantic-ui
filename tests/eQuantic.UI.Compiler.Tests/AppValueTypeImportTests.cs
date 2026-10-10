@@ -209,7 +209,7 @@ public class AppValueTypeImportTests
     {
         var ts = TypeScriptOf("Outer");
 
-        ts.Should().Contain("static $zero(): Outer { const zero: any = Object.create(Outer.prototype); zero.in = Inner.$zero(); zero.k = 0; return zero; }");
+        ts.Should().Contain("static $zero(): Outer { const $self: any = Object.create(Outer.prototype); $self.in = Inner.$zero(); $self.k = 0; return $self; }");
         ts.Should().Contain("import { Inner } from \"./Inner\"");
     }
 
