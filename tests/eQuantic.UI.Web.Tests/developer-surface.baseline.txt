@@ -28,6 +28,7 @@ msbuild eQuantic.UI.Sdk.Native EQuanticPackageFormat
 msbuild eQuantic.UI.Sdk.Native EQuanticSigningIdentity
 msbuild eQuantic.UI.Sdk.Native EQuanticUIVersion
 msbuild eQuantic.UI.Sdk.Native IsEQuanticDevMode
+config EQuantic:ServerActions
 config EQuantic:ServerEvents
 config Photon
 template equantic-app --shell

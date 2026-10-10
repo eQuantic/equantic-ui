@@ -37,8 +37,8 @@ describe('DateOnly — .NET semantics', () => {
   });
 
   it('fromDateTime drops the time', () => {
-    expect(dateOnly.fromDateTime(dateTime(2024, 1, 15, 13, 30, 0)).toString()).toBe('01/15/2024');
-    expect(dateOnly.fromDateTime(dateTime(2024, 1, 15, 13, 30, 0))).toBeInstanceOf(DateOnly);
+    expect(dateOnly.fromDateTime(dateTime.of(2024, 1, 15, 13, 30, 0)).toString()).toBe('01/15/2024');
+    expect(dateOnly.fromDateTime(dateTime.of(2024, 1, 15, 13, 30, 0))).toBeInstanceOf(DateOnly);
   });
 });
 

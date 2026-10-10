@@ -53,8 +53,8 @@ export class UI {
         return new TextEntry(value, onChanged, { label: label, placeholder: placeholder, disabled: disabled, obscure: obscure });
     }
 
-    static pressable(child: VisualNode, onPressed: (() => void) | null = null, label: string | null = null, selected: boolean | null = null, disabled: boolean = false, pressedBackground: ColorToken | null = null, expanded: boolean | null = null, role: PressableRoleValue = 'button') {
-        return new Pressable(child, onPressed, { label: label, selected: selected, disabled: disabled, pressedBackground: pressedBackground, expanded: expanded, role: role });
+    static pressable(child: VisualNode, onPressed: (() => void) | null = null, label: string | null = null, selected: boolean | null = null, disabled: boolean = false, pressedBackground: ColorToken | null = null, expanded: boolean | null = null, role: PressableRoleValue = 'button', canRequestFocus: boolean = true) {
+        return new Pressable(child, onPressed, { label: label, selected: selected, disabled: disabled, pressedBackground: pressedBackground, expanded: expanded, role: role, canRequestFocus: canRequestFocus });
     }
 
     static link(destination: string, child: VisualNode, label: string | null = null, current: boolean = false) {
@@ -69,7 +69,7 @@ export class UI {
         return new Vector(glyph, size, color, label, height);
     }
 
-    static drawing(artwork: VectorDrawing, width: number, height: number = 0, tint: ColorToken | null = null, label: string | null = null) {
+    static drawing(artwork: VectorDrawing, width: SizeValue, height: number = 0, tint: ColorToken | null = null, label: string | null = null) {
         return new Drawing(artwork, width, height, tint, label);
     }
 
@@ -93,8 +93,8 @@ export class UI {
         return Spacer.fixed(dp);
     }
 
-    static positioned(child: VisualNode, top: number | null = null, end: number | null = null, bottom: number | null = null, start: number | null = null) {
-        return new Positioned(child, top, end, bottom, start);
+    static positioned(child: VisualNode, top: number | null = null, end: number | null = null, bottom: number | null = null, start: number | null = null, topFraction: number | null = null, endFraction: number | null = null, bottomFraction: number | null = null, startFraction: number | null = null, shiftX: number = 0, shiftY: number = 0) {
+        return new Positioned(child, top, end, bottom, start, { topFraction: topFraction, endFraction: endFraction, bottomFraction: bottomFraction, startFraction: startFraction, shiftX: shiftX, shiftY: shiftY });
     }
 
     static scrollView(child: VisualNode, axis: ScrollAxisValue = 'vertical', width?: SizeValue, height?: SizeValue) {

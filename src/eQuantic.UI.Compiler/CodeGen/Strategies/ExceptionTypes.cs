@@ -108,7 +108,7 @@ internal static class ExceptionTypes
         if (members.Count > 0 || rest.Count > 0) holes.Add(members.Count > 0 ? $"{{ {string.Join(", ", members)} }}" : "undefined");
         holes.AddRange(rest);
         var types = $"[{string.Join(", ", chain.Select(JsStringLiteral.Quote))}]";
-        return JsExpr.Template($"{Eq.ExceptionCreate}({types}, {string.Join(", ", holes)})", parts, context.TypeAnnotations);
+        return JsExpr.Template($"{Eq.ExceptionCreate}({types}, {string.Join(", ", holes)})", parts);
     }
 
     /// <summary>

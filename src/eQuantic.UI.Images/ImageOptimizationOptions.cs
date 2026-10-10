@@ -5,9 +5,11 @@ namespace eQuantic.UI.Images;
 /// </summary>
 public class ImageOptimizationOptions
 {
+    // The formats the optimizer has an encoder for. AVIF is not one: listed first, it was negotiated
+    // with every browser that takes it and answered with JPEG, past the WebP listed after it.
     private static readonly HashSet<string> ValidFormats = new(StringComparer.OrdinalIgnoreCase)
     {
-        "image/webp", "image/avif", "image/png", "image/jpeg"
+        "image/webp", "image/png", "image/jpeg"
     };
 
     /// <summary>
@@ -21,7 +23,7 @@ public class ImageOptimizationOptions
     public int[] ImageSizes { get; set; } = [32, 48, 64, 96, 128, 256, 384];
 
     /// <summary>
-    /// Preferred output formats, ordered by priority.
+    /// Preferred output formats, ordered by priority: "image/webp", "image/png" or "image/jpeg".
     /// The first format that matches the browser's Accept header wins.
     /// </summary>
     public string[] Formats { get; set; } = ["image/webp"];

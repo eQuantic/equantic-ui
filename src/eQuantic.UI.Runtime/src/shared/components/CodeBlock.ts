@@ -40,6 +40,7 @@ export class CodeBlock extends StatelessComponent {
     declare viewportOffset: number;
     declare viewportHeight: number;
     declare viewportWidth: number;
+    declare minHeight: number;
     declare onScrolled: ((float: number) => void) | null;
     declare onViewportChanged: ((float: number) => void) | null;
 
@@ -119,6 +120,7 @@ export class CodeBlock extends StatelessComponent {
         if (this.viewportOffset === undefined) this.viewportOffset = 0;
         if (this.viewportHeight === undefined) this.viewportHeight = 0;
         if (this.viewportWidth === undefined) this.viewportWidth = 0;
+        if (this.minHeight === undefined) this.minHeight = 0;
         this.document = CodeDocument.fromText(code);
         this.language = CodeLanguages.for(language);
         if (props && typeof props === 'object') Object.assign(this, props);
@@ -173,7 +175,7 @@ export class CodeBlock extends StatelessComponent {
             layered.add(content);
             content = layered;
         }
-        let body: VisualNode = new Box(new BoxStyle({ width: SizeValue.fixed(width) }), content);
+        let body: VisualNode = new Box(new BoxStyle({ width: SizeValue.fixed(width), minHeight: this.minHeight }), content);
         if (!this.standalone) return body;
         body = new ScrollView(body, 'horizontal', { width: SizeValue.fill });
         if (this.showLineNumbers) {
@@ -198,7 +200,7 @@ export class CodeBlock extends StatelessComponent {
         return new CodeBlock('', null, { document: document, language: language });
     }
 
-    static metricsFor(context: any, size: SizeVariantValue, showLineNumbers: boolean, lastLineNumber: number) {
+    static metricsFor(context: BuildContext, size: SizeVariantValue, showLineNumbers: boolean, lastLineNumber: number) {
         let style = $eq.withPatch(TypeStyle.ofSize(Sizing.labelSize(size, context.density), 'regular'), { mono: true });
         let gutter = showLineNumbers ? Math.fround(Math.ceil(context.measureText(String(lastLineNumber) + '0', style)) + 12) : 0;
         return new CodeMetrics(style, $eq.math.roundSingle(Math.fround(style.lineHeight * Math.fround(1.15))), context.monoAdvance(style), gutter);
@@ -218,7 +220,7 @@ export class CodeBlock extends StatelessComponent {
         return new Positioned(new Box(new BoxStyle({ padding: EdgeInsets.symmetric(12, 8) }), corner), 0, 0);
     }
 
-    gutter(context: any, numberOf: ((value: CodeRow) => string | null) | null = null) {
+    gutter(context: BuildContext, numberOf: ((value: CodeRow) => string | null) | null = null) {
         let theme = context.theme;
         let metrics = this.metrics ?? CodeBlock.metricsFor(context, this.size, this.showLineNumbers, this.firstLineNumber + this.document.lineCount - 1);
         let lineHeight = metrics.lineHeight;
@@ -302,7 +304,7 @@ export class CodeBlock extends StatelessComponent {
 
     cellsOf(line: number) {
         let cells: any; 
-        if ((($0: any) => ($0.has(line) ? ((cells = $0.get(line)), true) : ((cells = null), false)))(this._cells)) return cells;
+        if ((($0) => ($0.has(line) ? ((cells = $0.get(line)), true) : ((cells = null), false)))(this._cells)) return cells;
         cells = new CodeLineCells(this.document.line(line), this.tabSize);
         $eq.mapSet(this._cells, line, cells);
         return cells;
@@ -310,7 +312,7 @@ export class CodeBlock extends StatelessComponent {
 
     fillerCellsOf(line: number) {
         let cells: any; 
-        if ((($0: any) => ($0.has(line) ? ((cells = $0.get(line)), true) : ((cells = null), false)))(this._fillerCells)) return cells;
+        if ((($0) => ($0.has(line) ? ((cells = $0.get(line)), true) : ((cells = null), false)))(this._fillerCells)) return cells;
         cells = new CodeLineCells((this.fillerDocument!).line(line), this.tabSize);
         $eq.mapSet(this._fillerCells, line, cells);
         return cells;

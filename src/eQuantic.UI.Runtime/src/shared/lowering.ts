@@ -34,9 +34,10 @@ import {
 import { getActivePass } from './instance-store';
 import { getPhotonTheme, setInFlow } from './photon-context';
 import { declareInView } from './in-view';
-import { cssFontWeight, isWellFormedFace } from './value-types';
+import { artworkAspect, cssFontWeight, isWellFormedFace } from './value-types';
 import {
   adaptiveGateOpen,
+  atomicDeclaration,
   atomizeEntries,
   atomizePseudo,
   atomizeScrolled,
@@ -47,7 +48,9 @@ import {
   gateExpandedFrom,
   gateMediumFrom,
   hashDeclaration,
+  isAdaptiveGate,
   mergeAtomicDeclaration,
+  replaceAtomicDeclaration,
 } from './style-atomizer';
 import type {
   BoxNode,
@@ -59,6 +62,7 @@ import type {
   VectorGradientValue,
   VectorPaintValue,
   CornerRadiiValue,
+  CurveValue,
   EdgeInsetsValue,
   FlexNodeValue,
   FlexibleNode,
@@ -110,6 +114,7 @@ import type {
   VisualNodeValue,
 } from './nodes';
 import { declareShortcut, shortcutMark } from '../dom/shortcuts';
+import { installScrolledController } from './scrolled-pinned';
 import { declareScrollViewport } from './scroll-viewports';
 import { SheetKeymap } from './components/SheetKeymap';
 import { CellRef as CellRefCtor } from './components/CellRef';
@@ -642,6 +647,36 @@ function lowerCodeSurface(node: CodeSurfaceNode, context: LoweringContext, path:
   }
   surface.children.push(input);
 
+  // What the surface OFFERS at its caret (C# twin: LowerCodeSurface): over the code and the caret, at
+  // its origin in the surface's coordinates, as the input's listbox. The rows are options, numbered
+  // as an Anchored listbox numbers its rows, and the input names the list and points at the one the
+  // keyboard is on. A press on the list is the list's: it never reaches the code under it, which
+  // would move the caret, and never takes the keyboard from the input.
+  if (node.options) {
+    const offered = lowerNode(node.options, context, null, path + '/1');
+    if (offered) {
+      const listId = `eq-options-${hashDeclaration(path)}`;
+      const origin = node.optionsOrigin ?? { x: 0, y: 0 };
+      const list = element('div', { position: 'absolute', left: px(origin.x), top: px(origin.y) }, [offered]);
+      list.attributes['role'] = 'listbox';
+      list.attributes['id'] = listId;
+      numberItemRows(list, listId, { next: 0 });
+      const keep = ((event: Event) => {
+        event.stopPropagation();
+        if (event.type === 'mousedown') event.preventDefault();
+      }) as unknown as EventHandler;
+      list.events['pointerdown'] = keep;
+      list.events['mousedown'] = keep;
+      // No aria-expanded: ARIA allows it on a combobox and not on the textbox a textarea is, and
+      // the list it controls and the option it points at already say that one is showing.
+      input.attributes['aria-autocomplete'] = 'list';
+      input.attributes['aria-controls'] = listId;
+      const highlighted = node.highlightedOption ?? -1;
+      if (highlighted >= 0) input.attributes['aria-activedescendant'] = `${listId}-${highlighted}`;
+      surface.children.push(list);
+    }
+  }
+
   if (typeof document === 'undefined') return surface; // SSR: the marks are enough
 
   // A caret the model MOVED since the last render is brought into view — by a key, a command, a
@@ -1102,10 +1137,17 @@ function lowerDraggable(
   if (node.follows === false) child.attributes['data-eq-drag-follows'] = '0';
   if (node.onMoved) child.attributes['data-eq-drag-moves'] = '1';
 
-  if (rest !== 0 && node.follows !== false) {
-    const shift = horizontal ? `translateX(${rest}px)` : `translateY(${rest}px)`;
-    const existing = child.attributes.style ? `${child.attributes.style};` : '';
-    child.attributes.style = `${existing}transform:${shift};transition:transform ${Motion.baseMs}ms`;
+  // C# twin (#511): the offset rides the individual `translate` property, which CSS applies
+  // TOGETHER with the box's `transform`, and the glide is declared at zero too and JOINED to the
+  // box's own transition list. This wrote both inline, which beat every class: a client-rendered
+  // open row never lifted under the pointer while the server's slid closed.
+  if (node.follows !== false) {
+    // A NORMALIZED rest is a fraction of the surface's own extent, which a percentage of its own box is.
+    const offset = node.normalized ? `${num(rest * 100)}%` : px(rest);
+    if (rest !== 0) mergeAtomicDeclaration(child, 'translate', horizontal ? offset : `0 ${offset}`);
+    const glide = `translate ${Motion.baseMs}ms`;
+    const own = atomicDeclaration(child, 'transition');
+    replaceAtomicDeclaration(child, 'transition', own ? `${own}, ${glide}` : glide);
   }
 
   if (node.onReleased) {
@@ -1277,10 +1319,10 @@ function gradientValue(gradient: LinearGradientValue): string {
   return `linear-gradient(${direction}, ${tokenValue(gradient.from)},${via} ${tokenValue(gradient.to)})`;
 }
 
-/** Mirror of C# TokenCss.Bezier. */
-function bezier(easing: readonly number[] | undefined): string {
+/** Mirror of C# TokenCss.Bezier: the curve's own data, its four points in the record's order. */
+function bezier(easing: CurveValue | undefined): string {
   const c = easing ?? Curve.standard;
-  return `cubic-bezier(${num(c[0])}, ${num(c[1])}, ${num(c[2])}, ${num(c[3])})`;
+  return `cubic-bezier(${num(c.x1)}, ${num(c.y1)}, ${num(c.x2)}, ${num(c.y2)})`;
 }
 
 /**
@@ -1350,6 +1392,19 @@ function gridPatternSize(pattern: GridPatternValue): string {
 /** Fraction → CSS percentage, mirroring C# TokenCss.Percent ("0.##": -0.35 → "-35%"). */
 function pct(fraction: number): string {
   return `${parseFloat((fraction * 100).toFixed(2))}%`;
+}
+
+/** One edge of a positioned box: a point, a fraction of the containing box, or both (C# TokenCss.Edge twin). */
+function edge(point: number | null | undefined, fraction: number | null | undefined): string | undefined {
+  if (point == null && fraction == null) return undefined;
+  if (fraction == null) return px(point as number);
+  if (point == null || point === 0) return pct(fraction);
+  return `calc(${pct(fraction)} ${point < 0 ? '-' : '+'} ${px(Math.abs(point))})`;
+}
+
+/** A shift by fractions of the box's own size, or none (C# TokenCss.Shift twin). */
+function shift(x: number, y: number): string | undefined {
+  return x === 0 && y === 0 ? undefined : `translate(${x === 0 ? '0' : pct(x)}, ${y === 0 ? '0' : pct(y)})`;
 }
 
 /** Spec §06 mirror: the generated eq-slide-x keyframes animate the wrapper; endpoints ride custom
@@ -1715,9 +1770,17 @@ function lowerImage(node: ImageNode): HtmlNode {
   light.attributes['class'] = light.attributes['class']
     ? `${light.attributes['class']} eq-themed-light`
     : 'eq-themed-light';
+  // The dark artwork takes the light one's SIZING as well as its own class (C# twin: one Style for
+  // both). Spread first and then replaced, the class lost the sizing, so on a client-rendered page in
+  // dark mode the artwork drew at its natural size.
   const dark: HtmlNode = {
     tag: 'img',
-    attributes: { ...sizing, class: 'eq-themed-dark', src: node.darkSource, alt: node.label ?? '' },
+    attributes: {
+      ...sizing,
+      class: sizing.class ? `${sizing.class} eq-themed-dark` : 'eq-themed-dark',
+      src: node.darkSource,
+      alt: node.label ?? '',
+    },
     events: {},
     children: [],
   };
@@ -2056,11 +2119,19 @@ function lowerCanvas(node: CanvasNodeValue, path: string): HtmlNode {
 
 function lowerDrawing(node: DrawingNode): HtmlNode {
   const artwork = node.artwork;
+  // The C# LowerDrawing twin: a dp width is the box, both axes in px; a fill width is `100%`, and
+  // the artwork's own aspect decides the height unless the author did.
+  const width = typeof node.width === 'number' ? { kind: 'fixed' as const, value: node.width } : node.width;
+  const aspect = artworkAspect(artwork);
+  const fixed = width.kind === 'fixed';
   const attributes: Record<string, string | undefined> = {
     ...atomicAttrs({
       display: 'block',
-      width: px(node.width),
-      height: px(node.height),
+      width: fixed ? px(width.value) : sizeValue(width),
+      height: fixed
+        ? px(node.height > 0 ? node.height : width.value / aspect)
+        : node.height > 0 ? px(node.height) : undefined,
+      'aspect-ratio': !fixed && !(node.height > 0) ? num(aspect) : undefined,
       color: node.tint ? tokenValue(node.tint) : undefined,
     }),
     viewBox: `${num(artwork.minX)} ${num(artwork.minY)} ${num(artwork.width)} ${num(artwork.height)}`,
@@ -2172,8 +2243,16 @@ function lowerStack(node: StackNode, context: LoweringContext, path: string): Ht
       // is the stack's width there and its own content's width here — the same tree, two
       // geometries (C# twin).
       const filling = fills(positioned.child);
-      const spanX = filling.width && (positioned.start == null) !== (positioned.end == null);
-      const spanY = filling.height && (positioned.top == null) !== (positioned.bottom == null);
+      const has = (point: number | null | undefined, fraction: number | null | undefined) =>
+        point != null || fraction != null;
+      const spanX = filling.width && has(positioned.start, positioned.startFraction) !== has(positioned.end, positioned.endFraction);
+      const spanY = filling.height && has(positioned.top, positioned.topFraction) !== has(positioned.bottom, positioned.bottomFraction);
+      // A translate is of the element's own box: when both edges of an axis stretch the anchor
+      // around a child that does not fill, the shift goes on a child-sized wrapper (C# twin).
+      const stretched =
+        (has(positioned.start, positioned.startFraction) && has(positioned.end, positioned.endFraction) && !filling.width) ||
+        (has(positioned.top, positioned.topFraction) && has(positioned.bottom, positioned.bottomFraction) && !filling.height);
+      const shifted = shift(positioned.shiftX ?? 0, positioned.shiftY ?? 0);
       children.push(
         element(
           'div',
@@ -2181,12 +2260,18 @@ function lowerStack(node: StackNode, context: LoweringContext, path: string): Ht
             position: 'absolute',
             // Spec S7 (C# twin): explicit stacking WINS; otherwise the child's own depth.
             'z-index': `${(positioned.layer ?? 0) !== 0 ? positioned.layer : i + 1}`,
-            top: positioned.top != null ? px(positioned.top) : spanY ? '0' : undefined,
-            right: positioned.end != null ? px(positioned.end) : spanX ? '0' : undefined,
-            bottom: positioned.bottom != null ? px(positioned.bottom) : spanY ? '0' : undefined,
-            left: positioned.start != null ? px(positioned.start) : spanX ? '0' : undefined,
+            // A point, a fraction of the stack, or both (C# TokenCss.Edge twin).
+            top: edge(positioned.top, positioned.topFraction) ?? (spanY ? '0' : undefined),
+            right: edge(positioned.end, positioned.endFraction) ?? (spanX ? '0' : undefined),
+            bottom: edge(positioned.bottom, positioned.bottomFraction) ?? (spanY ? '0' : undefined),
+            left: edge(positioned.start, positioned.startFraction) ?? (spanX ? '0' : undefined),
+            transform: stretched ? undefined : shifted,
           },
-          [lowered],
+          [
+            stretched && shifted
+              ? element('div', { width: filling.width ? undefined : 'fit-content', transform: shifted }, [lowered])
+              : lowered,
+          ],
         ),
       );
     } else if (child) {
@@ -2507,11 +2592,27 @@ function appendDiff(node: HtmlNode, pseudo: string, diff: StyleDiffValue, style:
 
 /** The C# `DiffDeclarations`: the declarations a state's diff carries over the base it changes, in
  * the same order — one builder, so the pseudo path and the simulated path cannot drift apart. */
+/** C# `default(ColorToken)`: transparent black in both modes. */
+const NO_COLOR: ColorTokenValue = {
+  light: { r: 0, g: 0, b: 0, a: 0 },
+  dark: { r: 0, g: 0, b: 0, a: 0 },
+} as ColorTokenValue;
+
 function diffEntries(diff: StyleDiffValue, style: BoxStyleValue): Record<string, string | undefined> {
   const entries: Record<string, string | undefined> = {};
   if (diff.background) entries['background-color'] = tokenValue(diff.background);
-  if (diff.borderWidth != null && diff.borderColor) {
-    entries['border'] = `${px(diff.borderWidth)} solid ${tokenValue(diff.borderColor)}`;
+  // The border along the edges the BASE draws, in the base's own shape (C# twin, #506): the
+  // shorthand for every edge, per-side widths for some, and a width alone in the base's colour.
+  if (diff.borderWidth != null) {
+    // C#'s base colour is a struct that is never absent: an unset one is transparent black.
+    const value = tokenValue(diff.borderColor ?? style.borderColor ?? NO_COLOR);
+    if (sidesAreAll(style)) {
+      entries['border'] = `${px(diff.borderWidth)} solid ${value}`;
+    } else {
+      entries['border-width'] = sideWidths(diff.borderWidth, style.borderSides ?? BORDER_ALL);
+      entries['border-style'] = 'solid';
+      entries['border-color'] = value;
+    }
   } else if (diff.borderColor) {
     entries['border-color'] = tokenValue(diff.borderColor);
   }
@@ -2674,6 +2775,10 @@ function faceStack(family: string, mono: boolean): string {
 
 function lowerText(text: TextNode, context: LoweringContext): HtmlNode {
   const style: StyleEntries = {
+    // A BLOCK, wherever it sits (C# twin, #495): a Text is never inline in the vocabulary, and as an
+    // inline span inside a block parent it sat on the parent's line box and its body-font strut. The
+    // multi-line clamp below replaces it with the box the clamp needs.
+    display: 'block',
     color: tokenValue(text.color ?? context.textPrimary),
     // Line alignment inside the paragraph (C# twin) — wrapped lines of a centered headline
     // must center too.
@@ -2724,11 +2829,7 @@ function lowerText(text: TextNode, context: LoweringContext): HtmlNode {
     style['white-space'] = nodeMono(text) ? 'pre' : 'nowrap';
     style.overflow = 'hidden';
     style['text-overflow'] = 'ellipsis';
-    // BLOCK, or the other two do nothing (C# twin): a Text lowers to a `span`, and `overflow` and
-    // `text-overflow` are inert on a non-replaced inline box, so a squeezed single-line Text
-    // painted its full width out of its parent instead of ellipsising inside it. Block takes the
-    // width the parent allows; inline-block would size to content and spill again.
-    style.display = 'block';
+    // The other two need the BLOCK every Text is (C# twin): they are inert on an inline box.
   } else if (text.maxLines > 1) {
     // MULTI-LINE clamp (C# twin): exactly N lines, then an ellipsis — what keeps a grid of cards
     // on one baseline when the copy is not the site's to control.
@@ -2851,6 +2952,11 @@ function fills(node: VisualNodeValue): { width: boolean; height: boolean } {
       const stack = node as StackNode;
       return { width: stack.width?.kind === 'fill', height: stack.height?.kind === 'fill' };
     }
+    case 'drawing': {
+      // A drawing at its parent's width fills across; its height follows from its aspect (C# twin).
+      const width = (node as DrawingNode).width as unknown;
+      return { width: typeof width === 'object' && (width as { kind?: string } | null)?.kind === 'fill', height: false };
+    }
     case 'pressable':
       return fills((node as PressableNode).child);
     case 'adjustable':
@@ -2877,6 +2983,27 @@ function fills(node: VisualNodeValue): { width: boolean; height: boolean } {
     default:
       return { width: false, height: false };
   }
+}
+
+/**
+ * C# twin (#622): the hit slop lies UNDER a control's content, and the stylesheet lifts the content
+ * above it by positioning the pressable's child. A child that draws no box (`display: contents`: an
+ * InView, an Adaptive's arms, a light and dark Image) cannot be positioned, so the lift goes THROUGH
+ * any chain of them to the first descendants that draw a box, which carry `eq-lift`.
+ */
+function liftThroughBoxlessWrappers(child: HtmlNode): void {
+  if (!drawsNoBox(child)) return;
+  for (const inner of child.children) {
+    if (drawsNoBox(inner)) liftThroughBoxlessWrappers(inner);
+    else prependClass(inner, 'eq-lift');
+  }
+}
+
+/** An element that lays out as its children and draws no box: `display: contents`, or an Adaptive
+ * arm's gate, whose rules make it contents in its range and nothing outside it (C# twin). */
+function drawsNoBox(node: HtmlNode): boolean {
+  if (atomicDeclaration(node, 'display') === 'contents') return true;
+  return (node.attributes['class'] ?? '').split(' ').some((cls) => isAdaptiveGate(cls));
 }
 
 function lowerPressable(
@@ -2982,6 +3109,13 @@ function lowerPressable(
   if (disabled && !wrapping) node.attributes['disabled'] = '';
   if (disabled && wrapping) node.attributes['aria-disabled'] = 'true';
   if (!disabled && pressable.onPressed) node.events['click'] = pressable.onPressed as EventHandler;
+  // A pressable that may not take the keyboard (Flutter's canRequestFocus): out of the Tab order, as
+  // the C# realizer writes it, and its press cancelled before the browser moves the focus to it, so
+  // the code a person is typing into keeps the keyboard while they point. The click still comes.
+  if (pressable.canRequestFocus === false) {
+    node.attributes['tabindex'] = '-1';
+    node.events['mousedown'] = ((event: MouseEvent) => event.preventDefault()) as unknown as EventHandler;
+  }
 
   // Interaction states (spec §01): mechanics live in the generated stylesheet — every enabled
   // pressable carries the class (:focus-visible double ring is an a11y DEFAULT); the pressed swap
@@ -3003,6 +3137,7 @@ function lowerPressable(
       const existing = node.attributes['style'];
       node.attributes['style'] = existing ? `${existing}; ${tail}` : tail;
     }
+    if (child) liftThroughBoxlessWrappers(child);
   }
 
   if (child) node.children.push(child);
@@ -3787,6 +3922,13 @@ function lowerSafeArea(node: SafeAreaNode, context: LoweringContext, path: strin
   return wrapper;
 }
 
+/**
+ * C# `Pinned.ScrolledBase`: what a header's scrolled diff is laid over. A header draws nothing of its
+ * own, and its border is the hairline along its BOTTOM edge (BorderSides.Bottom = 4), the edge the
+ * content scrolls under.
+ */
+const PINNED_BASE: BoxStyleValue = { borderSides: 4 } as BoxStyleValue;
+
 function lowerPinned(node: PinnedNode, context: LoweringContext, path: string): HtmlNode {
   const float = node.float === true;
   const wrapper = element('div', {
@@ -3804,20 +3946,11 @@ function lowerPinned(node: PinnedNode, context: LoweringContext, path: string): 
     transition: node.transition ? transitionValue(node.transition) : undefined,
   });
 
-  // SCROLL-LINKED diff (C# twin): declarations land under the root-gated scrolled variant, and
-  // the tiny window listener that toggles `eq-scrolled` installs once per page.
+  // SCROLL-LINKED diff (C# twin, #506): every member of it, through the builder a box's states
+  // use, over the header's own base. The variant applies while the runtime marks the header
+  // scrolled, from the surface the header pins to (scrolled-pinned.ts).
   if (node.scrolledStyle) {
-    const diff = node.scrolledStyle;
-    const entries: Record<string, string | undefined> = {};
-    if (diff.background) entries['background-color'] = tokenValue(diff.background);
-    if (diff.borderWidth != null && diff.borderColor)
-      entries['border-bottom'] = `${px(diff.borderWidth)} solid ${tokenValue(diff.borderColor)}`;
-    if (diff.opacity != null) entries['opacity'] = num(diff.opacity);
-    if (diff.backdropBlur != null && diff.backdropBlur > 0) {
-      entries['backdrop-filter'] = `blur(${px(diff.backdropBlur)})`;
-      entries['-webkit-backdrop-filter'] = `blur(${px(diff.backdropBlur)})`;
-    }
-    const classes = atomizeScrolled(entries);
+    const classes = atomizeScrolled(diffEntries(node.scrolledStyle, PINNED_BASE));
     if (classes) mergeScrolledClasses(wrapper, classes);
     installScrolledController();
   }
@@ -3838,16 +3971,6 @@ function mergeScrolledClasses(node: HtmlNode, classes: string): void {
   node.attributes['class'] = existing ? `${existing} ${classes}` : classes;
 }
 
-let scrolledControllerInstalled = false;
-
-/** The scroll listener behind Pinned.ScrolledStyle: `eq-scrolled` on <html> past 8px. */
-function installScrolledController(): void {
-  if (scrolledControllerInstalled || typeof window === 'undefined') return;
-  scrolledControllerInstalled = true;
-  const apply = () => document.documentElement.classList.toggle('eq-scrolled', window.scrollY > 8);
-  window.addEventListener('scroll', apply, { passive: true });
-  apply();
-}
 
 /**
  * The gates around the subtree being lowered, outermost first — empty outside every AdaptiveNode
@@ -3909,7 +4032,13 @@ function lowerAdaptive(node: AdaptiveNodeValue, context: LoweringContext, path: 
 function lowerGrid(grid: GridNode, context: LoweringContext, path: string): HtmlNode {
   const tracks = grid.columns
     .map((t) =>
-      t.kind === 'fixed' ? px(t.value) : t.kind === 'fill' ? `${num(t.value)}fr` : 'auto',
+      t.repeats
+        ? `repeat(auto-fill, minmax(min(${px(t.min ?? 0)}, 100%), ${num(t.value)}fr))` // C# twin: shrinks in a narrow grid
+        : t.kind === 'fixed'
+          ? px(t.value)
+          : t.kind === 'fill'
+            ? `${num(t.value)}fr`
+            : 'auto',
     )
     .join(' ');
   const rowGap = grid.rowGap ?? grid.gap;

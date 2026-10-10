@@ -39,7 +39,7 @@ let invariantDepth = 0;
 function activeFormatLocale(): string | undefined {
   return invariantDepth > 0 ? INVARIANT_LOCALE : formatLocale();
 }
-import { DateTime as DotNetDateTime } from './datetime';
+import { DateTime as DotNetDateTime, utcOffsetOf, wallOffsetMs, type DateTimeKind } from './datetime';
 import { Decimal } from './decimal';
 import {
   exactOfBigInt,
@@ -107,11 +107,49 @@ function wallClock(
 }
 
 const TICKS_PER_SECOND = 10_000_000n;
+/** DateTime.MinValue's and MaxValue's wall clocks, which a conversion to UTC stays between. */
+const FIRST_WALL = wallClock(1, 0, 1, 0, 0, 0, 0).getTime();
+const LAST_WALL = wallClock(9999, 11, 31, 23, 59, 59, 999).getTime();
+const TICKS_PER_MILLISECOND = 10_000n;
 
 /**
  * A date's fraction of a second as the seven digits .NET's `f` and `o` write: a compat DateTime's
  * from its ticks, exactly, and a native Date's from its milliseconds, which is all it has.
  */
+/**
+ * Where a date's clock time is read, which the formatter's `o`, `K`, `z` and `U` write from: its
+ * kind, and its offset east of UTC in milliseconds, asked only by what writes it. A native Date is a
+ * clock time of no kind, as the formatter reads its parts.
+ */
+interface DateZone {
+  readonly kind: DateTimeKind;
+  readonly offset: () => number;
+}
+
+function zoneOf(value: unknown, date: Date): DateZone {
+  if (value instanceof DotNetDateTime) {
+    return { kind: value.kind, offset: () => Number(utcOffsetOf(value) / TICKS_PER_MILLISECOND) };
+  }
+  return { kind: 'unspecified', offset: () => wallOffsetMs(date.getTime()) };
+}
+
+/** An offset as .NET's `z` (`+1`), `zz` (`+01`) and `zzz` (`+01:00`) write it, by the run's length. */
+function offsetText(milliseconds: number, length: number): string {
+  const sign = milliseconds < 0 ? '-' : '+';
+  const minutes = Math.abs(Math.trunc(milliseconds / 60_000));
+  const hours = Math.trunc(minutes / 60);
+  if (length <= 1) return sign + hours;
+  const text = sign + String(hours).padStart(2, '0');
+  return length >= 3 ? `${text}:${String(minutes % 60).padStart(2, '0')}` : text;
+}
+
+/** The zone the round-trip forms write after a clock time: `Z` for UTC, the offset for a local
+ * time, and nothing for a time of no kind, as .NET's `o` and `K` write it. */
+function roundTripZone(zone: DateZone): string {
+  if (zone.kind === 'utc') return 'Z';
+  return zone.kind === 'local' ? offsetText(zone.offset(), 3) : '';
+}
+
 function fractionOf(value: unknown, date: Date): string {
   if (value instanceof DotNetDateTime)
     return (value.ticks % TICKS_PER_SECOND).toString().padStart(7, '0');
@@ -223,7 +261,7 @@ function formatCore(
     if (typeof value === 'number' || typeof value === 'bigint' || value instanceof Decimal) {
       result = formatNumber(value, format, kind);
     } else if (date !== null) {
-      result = formatDate(date, format, () => fractionOf(value, date));
+      result = formatDate(date, format, () => fractionOf(value, date), zoneOf(value, date));
     }
   }
 
@@ -236,14 +274,39 @@ function formatCore(
  * compiler passes the members .NET prints, in its order, by their C# names, and each is read under
  * its twin's name and written as an interpolation hole writes it. A null value is the empty string,
  * as `$"{value}"` is.
+ *
+ * `kinds`, when given, holds each member's number kind, in the same order: a `Curve`'s points are
+ * floats, and a float writes the single's own digits, `0.2` where the double under it reads
+ * `0.20000000298023224` (#518). A member with none, or a type that passes none, writes as a double.
  */
-export function recordText(value: unknown, name: string, members: readonly string[]): string {
+export function recordText(
+  value: unknown,
+  name: string,
+  members: readonly string[],
+  kinds?: readonly (NumberKind | null)[],
+): string {
   if (value === null || value === undefined) return '';
   const data = value as Record<string, unknown>;
-  const written = members.map(
-    (member) => `${member} = ${format(data[member.charAt(0).toLowerCase() + member.slice(1)], null)}`,
-  );
+  const written = members.map((member, i) => {
+    const held = data[member.charAt(0).toLowerCase() + member.slice(1)];
+    return `${member} = ${format(held, null, undefined, undefined, kinds?.[i] ?? undefined)}`;
+  });
   return written.length === 0 ? `${name} { }` : `${name} { ${written.join(', ')} }`;
+}
+
+/**
+ * The method group `value.ToString` of a value the browser holds as data, `Func<string> text =
+ * curve.ToString`: a delegate writing the {@link recordText} of the value as it is when the delegate
+ * is made, each member by its kind. The compiler passes the receiver here, so it is read once, where
+ * C# copies it into the delegate.
+ */
+export function recordTextGroup(
+  value: unknown,
+  name: string,
+  members: readonly string[],
+  kinds?: readonly (NumberKind | null)[],
+): () => string {
+  return () => recordText(value, name, members, kinds);
 }
 
 /** Text in a field of `|alignment|` characters: a positive width aligns right, a negative left. */
@@ -739,10 +802,11 @@ function namePart(value: Date, options: Intl.DateTimeFormatOptions, type: string
  * Renders a .NET date/time PATTERN. The token set is the one the standard patterns of real
  * cultures use, and a custom picture's: a literal in quotes travels verbatim (pt-BR's long date is
  * `dddd, d 'de' MMMM 'de' yyyy`), `f` and `F` write the fraction of a second (`fraction`, seven
- * digits), `K` writes nothing for a value with no kind, `%` marks a lone token, and anything
- * unrecognized is a literal too.
+ * digits), `K` writes the zone a round trip writes, `z` the offset, a UTC time's zero and any other's
+ * the browser's zone's, as .NET's do, `%` marks a lone token, and anything unrecognized is a literal
+ * too. `K` wrote nothing and `z` was copied as a letter, whatever the kind.
  */
-function renderPattern(value: Date, pattern: string, fraction: () => string): string {
+function renderPattern(value: Date, pattern: string, fraction: () => string, zone: DateZone): string {
   const hours24 = value.getUTCHours();
   const hours12 = hours24 % 12 === 0 ? 12 : hours24 % 12;
   const out: string[] = [];
@@ -771,7 +835,15 @@ function renderPattern(value: Date, pattern: string, fraction: () => string): st
       continue;
     }
     if (ch === 'K') {
+      out.push(roundTripZone(zone));
       i++;
+      continue;
+    }
+    if (ch === 'z') {
+      let length = 1;
+      while (i + length < pattern.length && pattern[i + length] === 'z') length++;
+      out.push(offsetText(zone.kind === 'utc' ? 0 : zone.offset(), length));
+      i += length;
       continue;
     }
 
@@ -897,31 +969,15 @@ function sortableParts(value: Date): { date: string; time: string } {
   };
 }
 
-const DAY_MS = 86_400_000;
-
 /**
- * The host zone's offset, in milliseconds east of UTC, for wall-clock parts held as a Date's UTC
- * fields (`wall` is their time value), read as .NET's TimeZoneInfo.GetUtcOffset reads it: the
- * one offset that names those parts, or, for a time a transition skips or repeats, the standard one,
- * the smaller of the two around it. The Date constructor took the daylight instant of a repeated
- * hour, so 2026-11-01 01:30 in New York printed 05:30 UTC where .NET prints 06:30 (found in
- * Copilot's second round, #472).
+ * Formats a date through a standard specifier or a custom picture, as .NET formats a DateTime: the
+ * sortable and RFC 1123 forms write its own parts, the round-trip form ends them with the zone its
+ * kind names, and `U` converts to UTC a time that is not UTC already, a time of no kind read as
+ * local, as .NET does. The kind was not tracked here, so a UTC time's `o` had no `Z` and its `U` was
+ * moved by the browser's offset a second time (#606). `fraction` gives its fraction of a second,
+ * seven digits, asked only by what writes it (#388).
  */
-function localOffset(wall: number): number {
-  const offsetAt = (instant: number) => -new Date(instant).getTimezoneOffset() * 60_000;
-  const before = offsetAt(wall - DAY_MS);
-  const after = offsetAt(wall + DAY_MS);
-  const naming = [before, after].filter((offset) => offsetAt(wall - offset) === offset);
-  return naming.length === 1 ? naming[0] : Math.min(before, after);
-}
-
-/**
- * Formats a date through a standard specifier or a custom picture, as .NET formats a DateTime:
- * its kind is not tracked (a wall-clock value, .NET's `Unspecified`), so the round-trip, sortable
- * and RFC 1123 forms write its own parts, and only `U` converts, reading it as local time as .NET
- * does. `fraction` gives its fraction of a second, seven digits, asked only by what writes it (#388).
- */
-function formatDate(value: Date, format: string, fraction: () => string): string {
+function formatDate(value: Date, format: string, fraction: () => string, zone: DateZone): string {
   // The invariant forms first: they are DEFINED to ignore the culture, which is the whole reason a
   // wire format uses them. They wrote `toISOString()`, which is UTC, so a page off UTC shifted the
   // hour and `o` spelled a `Z` a wall-clock value does not have.
@@ -929,7 +985,7 @@ function formatDate(value: Date, format: string, fraction: () => string): string
     case 'O':
     case 'o': {
       const { date, time } = sortableParts(value);
-      return `${date}T${time}.${fraction()}`;
+      return `${date}T${time}.${fraction()}${roundTripZone(zone)}`;
     }
     case 's': {
       const { date, time } = sortableParts(value);
@@ -945,11 +1001,13 @@ function formatDate(value: Date, format: string, fraction: () => string): string
       return `${INVARIANT_DAYS[value.getUTCDay()]}, ${date.slice(8)} ${INVARIANT_MONTHS[value.getUTCMonth()]} ${date.slice(0, 4)} ${time} GMT`;
     }
     case 'U': {
-      // The full date and time of the value read as local time and moved to UTC, as .NET's
-      // ToUniversalTime moves an unspecified one: the instant those parts name in the host's zone,
-      // whose UTC fields are then the parts to print.
-      const wall = value.getTime();
-      return formatDate(new Date(wall - localOffset(wall)), 'F', fraction);
+      // The full date and time of the value in UTC, as .NET's ToUniversalTime moves it: a UTC time as
+      // it is, and any other by its offset, whose UTC fields are then the parts to print. A repeated
+      // hour is read as its standard occurrence unless it is marked as its daylight one.
+      // Clamped to the calendar, as ToUniversalTime clamps: DateTime.MinValue east of UTC printed year
+      // 0000 (found by review, #606).
+      const moved = zone.kind === 'utc' ? value.getTime() : value.getTime() - zone.offset();
+      return formatDate(new Date(Math.min(Math.max(moved, FIRST_WALL), LAST_WALL)), 'F', fraction, zone);
     }
   }
 
@@ -957,17 +1015,20 @@ function formatDate(value: Date, format: string, fraction: () => string): string
     const patterns = DATE_ROLES[format].map(patternFor);
     // Every role must have travelled; a half-known composite would print half a date.
     if (patterns.every((pattern) => pattern !== null))
-      return patterns.map((pattern) => renderPattern(value, pattern as string, fraction)).join(' ');
+      return patterns.map((pattern) => renderPattern(value, pattern as string, fraction, zone)).join(' ');
     return new Intl.DateTimeFormat(activeFormatLocale(), {
       ...DATE_STYLES[format],
       timeZone: 'UTC',
     }).format(value);
   }
+  // One letter is a standard specifier, and one .NET does not have is refused: `K` or `z` alone is
+  // written `%K` or `%z`.
+  if (format.length === 1) throw exception('System.FormatException', 'Input string was not in a correct format.');
 
   // A custom picture — `yyyy-MM-dd HH:mm`, `dd MMM yyyy`, `HH:mm:ss.fff` — drawn token by token as
   // a culture's own patterns are. It replaced six tokens by text, so `d/M/yyyy` printed `d/M/2026`
   // and `dd MMM yyyy` printed `24 09M 2026`.
-  return renderPattern(value, format, fraction);
+  return renderPattern(value, format, fraction, zone);
 }
 
 const FORMAT_INDEX =
@@ -1025,7 +1086,7 @@ function general(value: unknown): string {
   if (typeof value === 'bigint' || value instanceof Decimal) return plainDigits(value);
   if (typeof value === 'boolean') return value ? 'True' : 'False';
   const date = asJsDate(value);
-  if (date !== null) return formatDate(date, 'G', () => fractionOf(value, date));
+  if (date !== null) return formatDate(date, 'G', () => fractionOf(value, date), zoneOf(value, date));
   return String(value);
 }
 

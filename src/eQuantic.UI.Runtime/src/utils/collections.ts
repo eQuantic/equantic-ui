@@ -57,6 +57,15 @@ export class Queue<T> {
   [Symbol.iterator](): Iterator<T> {
     return this.items.slice()[Symbol.iterator]();
   }
+
+  /**
+   * The array System.Text.Json writes for a queue, front to back: with no `toJSON` a Server Action
+   * argument was written as the class's fields, `{"items":[...]}`, which the server reads as no queue
+   * (#597).
+   */
+  toJSON(): T[] {
+    return this.toArray();
+  }
 }
 
 export class Stack<T> {
@@ -101,6 +110,11 @@ export class Stack<T> {
   /** Enumerates from the top, as .NET's does, for a `foreach` and LINQ alike. */
   [Symbol.iterator](): Iterator<T> {
     return this.items.slice().reverse()[Symbol.iterator]();
+  }
+
+  /** The array System.Text.Json writes for a stack: its enumeration, from the top (#597). */
+  toJSON(): T[] {
+    return this.toArray();
   }
 }
 
@@ -233,6 +247,12 @@ export class LinkedList<T> implements Iterable<T> {
   /** Front-to-back order, matching .NET enumeration. */
   toArray(): T[] {
     return [...this];
+  }
+
+  /** The array System.Text.Json writes for a linked list, front to back: with no `toJSON` it was
+   * written as its node graph from the head (#597). */
+  toJSON(): T[] {
+    return this.toArray();
   }
 }
 

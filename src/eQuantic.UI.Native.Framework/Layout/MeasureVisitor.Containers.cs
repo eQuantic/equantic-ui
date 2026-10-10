@@ -65,14 +65,35 @@ internal sealed partial class MeasureVisitor
         var stackIndetH = stack.Height.Kind != SizeKind.Fixed && outerIndeterminateH;
         var contentW = 0f;
         var contentH = 0f;
+        // The stack's own extent where it is known before its children are: the box a positioned
+        // child's fractions are of, and the room a filling one is measured against.
+        float? knownW = stack.Width.Kind == SizeKind.Fixed ? stack.Width.Value
+            : stack.Width.Kind == SizeKind.Fill && !float.IsPositiveInfinity(maxW) ? maxW : null;
+        float? knownH = stack.Height.Kind == SizeKind.Fixed ? stack.Height.Value
+            : stack.Height.Kind == SizeKind.Fill && !float.IsPositiveInfinity(maxH) ? maxH : null;
 
         for (var stackIndex = 0; stackIndex < stack.Children.Count; stackIndex++)
         {
             var child = stack.Children[stackIndex];
+            var (roomW, roomH) = child is Positioned anchored
+                ? PositionedRoom(anchored, childMaxW, childMaxH, knownW, knownH)
+                : (childMaxW, childMaxH);
+            var childPath = ctx.ChildPath(path, stackIndex, child);
             var measured = Measure(
                 child,
-                constraints.ForChild(childMaxW, childMaxH).DecidedByContent(stackIndetW, stackIndetH),
-                ctx, ctx.ChildPath(path, stackIndex, child));
+                constraints.ForChild(roomW, roomH).DecidedByContent(stackIndetW, stackIndetH),
+                ctx, childPath);
+            // A component that builds a Positioned is one only once it has built: measured again in
+            // the room its anchors leave, when that room is not the one it was offered.
+            if (child is not Positioned && PositionedOf(child, measured) is { } built)
+            {
+                var (builtW, builtH) = PositionedRoom(built, childMaxW, childMaxH, knownW, knownH);
+                if (builtW != roomW || builtH != roomH)
+                    measured = Measure(
+                        child,
+                        constraints.ForChild(builtW, builtH).DecidedByContent(stackIndetW, stackIndetH),
+                        ctx, childPath);
+            }
             result.Adopt(measured);
             if (PositionedOf(child, measured) is not null) continue;
             contentW = MathF.Max(contentW, measured.Bounds.Width);
@@ -93,9 +114,25 @@ internal sealed partial class MeasureVisitor
 
             if (PositionedOf(child, measured) is { } positioned)
             {
-                var x = positioned.Start ?? (positioned.End is { } end ? width - cw - end : alignX);
-                var y = positioned.Top ?? (positioned.Bottom is { } bottom ? height - ch - bottom : alignY);
-                measured.Bounds = measured.Bounds with { X = x, Y = y };
+                // An edge is its point offset plus its fraction of the stack, the web's
+                // `calc(30% - 16px)`; then the shift moves the child by fractions of its OWN size,
+                // the web's `translate(-50%, -100%)`. Applied to the laid-out position, so the hit
+                // region follows the drawn box as it does under a CSS transform.
+                var x = positioned.AnchorsStart
+                    ? (positioned.Start ?? 0) + (positioned.StartFraction ?? 0) * width
+                    : positioned.AnchorsEnd
+                        ? width - cw - ((positioned.End ?? 0) + (positioned.EndFraction ?? 0) * width)
+                        : alignX;
+                var y = positioned.AnchorsTop
+                    ? (positioned.Top ?? 0) + (positioned.TopFraction ?? 0) * height
+                    : positioned.AnchorsBottom
+                        ? height - ch - ((positioned.Bottom ?? 0) + (positioned.BottomFraction ?? 0) * height)
+                        : alignY;
+                measured.Bounds = measured.Bounds with
+                {
+                    X = x + positioned.ShiftX * cw,
+                    Y = y + positioned.ShiftY * ch,
+                };
             }
             else
             {
@@ -195,6 +232,25 @@ internal sealed partial class MeasureVisitor
         }
     }
 
+    /// <summary>
+    /// What a box keeps between its edge and its child: its padding, and its border on every side the
+    /// border is drawn on. The web lowers a box <c>border-box</c>, and Flutter's <c>Container</c> insets
+    /// its child by its decoration's border too. Photon read the padding alone, so it laid the child
+    /// over the border and a hugging box came out two borders smaller than its web twin (#629).
+    /// </summary>
+    internal static EdgeInsets InsetsOf(BoxStyle style)
+    {
+        var padding = style.Padding;
+        var border = style.BorderWidth;
+        if (border <= 0) return padding;
+        var sides = style.BorderSides;
+        return new EdgeInsets(
+            padding.Start + ((sides & BorderSides.Start) != 0 ? border : 0),
+            padding.Top + ((sides & BorderSides.Top) != 0 ? border : 0),
+            padding.End + ((sides & BorderSides.End) != 0 ? border : 0),
+            padding.Bottom + ((sides & BorderSides.Bottom) != 0 ? border : 0));
+    }
+
     private LayoutNode MeasureBox(Box box, LayoutConstraints constraints, LayoutContext ctx, string path)
     {
         var (maxW, maxH) = (constraints.MaxWidth, constraints.MaxHeight);
@@ -215,6 +271,9 @@ internal sealed partial class MeasureVisitor
                 style = style with { Height = glide.Resolve(path + ":h", style.Height.Value, ctx.TimeMs, sizeSpec, ctx.ReducedMotion) };
         }
 
+        // Between the box's edge and its child: the padding, and the border where it is drawn (#629).
+        var insets = InsetsOf(style);
+
         // The indeterminate flags AS INHERITED — what the PARENT said about this axis, before this
         // box restates them for its own child below. A Fill on an axis the parent is sizing from
         // content has nothing to fill; the flex container has honoured that from the start, but a
@@ -231,10 +290,10 @@ internal sealed partial class MeasureVisitor
         // Content box the child may use (explicit/Fill pin it; Hug passes the available through).
         var childMaxW = (style.Width.Kind == SizeKind.WindowMinus
             ? WindowSize(style.Width, ctx.WindowWidth)
-            : ResolveForChild(style.Width, selfMaxW)) - style.Padding.Horizontal;
+            : ResolveForChild(style.Width, selfMaxW)) - insets.Horizontal;
         var childMaxH = (style.Height.Kind == SizeKind.WindowMinus
             ? WindowSize(style.Height, ctx.WindowHeight)
-            : ResolveForChild(style.Height, selfMaxH)) - style.Padding.Vertical;
+            : ResolveForChild(style.Height, selfMaxH)) - insets.Vertical;
 
         LayoutNode? child = null;
         if (box.Child is not null)
@@ -275,10 +334,10 @@ internal sealed partial class MeasureVisitor
             // sat against the top of its own bar. The fix used to be `Height = Fill` on the child,
             // written by hand, in every bar, remembered every time.
             //
-            // It reaches exactly what an auto-sized CONTAINER is: a Box, a Row, a Column. Text,
-            // images and icons never took these flags (they size themselves), and a button, a link
-            // or an input hugs, because a Block stretch stops at an inline-block — the same fence
-            // the width has always respected.
+            // It reaches exactly what an auto-sized CONTAINER is: a Box, a Row, a Column. A Text
+            // takes the WIDTH (it is a block, #659) and keeps the height of its lines, images and
+            // icons size themselves, and a button, a link or an input hugs, because a Block stretch
+            // stops at an inline-block — the same fence the width has always respected.
             var boxStretchH = boxIndetH ? StretchKind.None : StretchKind.Block;
             child = Measure(
                 box.Child,
@@ -286,13 +345,13 @@ internal sealed partial class MeasureVisitor
                     .DecidedByContent(boxIndetW, boxIndetH)
                     .Stretched(boxStretchW, boxStretchH),
                 ctx, ctx.ChildPath(path, 0));
-            child.Bounds = child.Bounds with { X = style.Padding.Start, Y = style.Padding.Top };
+            child.Bounds = child.Bounds with { X = insets.Start, Y = insets.Top };
             result.Adopt(child);
         }
 
-        var width = ResolveSelf(style.Width, selfMaxW, (child?.Bounds.Width ?? 0) + style.Padding.Horizontal, ctx.WindowWidth,
+        var width = ResolveSelf(style.Width, selfMaxW, (child?.Bounds.Width ?? 0) + insets.Horizontal, ctx.WindowWidth,
             indeterminate: inheritedIndeterminateW, stretched: stretchW != StretchKind.None);
-        var height = ResolveSelf(style.Height, selfMaxH, (child?.Bounds.Height ?? 0) + style.Padding.Vertical, ctx.WindowHeight,
+        var height = ResolveSelf(style.Height, selfMaxH, (child?.Bounds.Height ?? 0) + insets.Vertical, ctx.WindowHeight,
             indeterminate: inheritedIndeterminateH, stretched: stretchH != StretchKind.None);
         width = Clamp(width, style.MinWidth, maxWidthDp);
         height = Clamp(height, style.MinHeight, maxHeightDp);
@@ -305,9 +364,9 @@ internal sealed partial class MeasureVisitor
         // stays single-pass.
         if (child is not null
             && ((style.MinWidth > 0 || maxWidthDp >= 0)
-                && MathF.Abs(width - style.Padding.Horizontal - child.Bounds.Width) > 0.5f
+                && MathF.Abs(width - insets.Horizontal - child.Bounds.Width) > 0.5f
                 || (style.MinHeight > 0 || maxHeightDp >= 0)
-                && MathF.Abs(height - style.Padding.Vertical - child.Bounds.Height) > 0.5f))
+                && MathF.Abs(height - insets.Vertical - child.Bounds.Height) > 0.5f))
         {
             var outerH2 = constraints.Height.Indeterminate;
             var clampedIndetH = style.Height.Kind == SizeKind.Hug
@@ -317,12 +376,12 @@ internal sealed partial class MeasureVisitor
             result.ReleaseChildren();
             child = Measure(
                 box.Child!,
-                constraints.ForChild(MathF.Max(0, width - style.Padding.Horizontal),
-                        MathF.Max(0, height - style.Padding.Vertical))
+                constraints.ForChild(MathF.Max(0, width - insets.Horizontal),
+                        MathF.Max(0, height - insets.Vertical))
                     .DecidedByContent(false, clampedIndetH)
                     .Stretched(StretchKind.Block, StretchKind.None),
                 ctx, ctx.ChildPath(path, 0));
-            child.Bounds = child.Bounds with { X = style.Padding.Start, Y = style.Padding.Top };
+            child.Bounds = child.Bounds with { X = insets.Start, Y = insets.Top };
             result.Adopt(child);
         }
 
@@ -341,15 +400,87 @@ internal sealed partial class MeasureVisitor
         // A Fill child stretches to the resolved content box (its own measurement saw the max already;
         // pin the bounds so realizers paint the full extent).
         if (child?.Source is Box { Style.Width.Kind: SizeKind.Fill })
-            child.Bounds = child.Bounds with { Width = MathF.Max(0, width - style.Padding.Horizontal) };
+            child.Bounds = child.Bounds with { Width = MathF.Max(0, width - insets.Horizontal) };
         if (child?.Source is Box { Style.Height.Kind: SizeKind.Fill })
-            child.Bounds = child.Bounds with { Height = MathF.Max(0, height - style.Padding.Vertical) };
+            child.Bounds = child.Bounds with { Height = MathF.Max(0, height - insets.Vertical) };
 
         result.Bounds = new Rect(0, 0, width, height);
         return result;
     }
 
     // ---- flex ------------------------------------------------------------------------------------
+
+    /// <summary>
+    /// An auto-fill track (the grid's whole list, the constructor saw to that) becomes as many
+    /// flexible tracks as fit its minimum with the gap between them, at least one: CSS's
+    /// <c>repeat(auto-fill, minmax(min, 1fr))</c>. On a width the grid sizes from its content there
+    /// is nothing to divide, and it is one column at its minimum, as CSS answers for an intrinsic
+    /// width. Any other list passes through.
+    /// </summary>
+    private static IReadOnlyList<GridTrack> AutoFilled(IReadOnlyList<GridTrack> columns, float available, float gap)
+    {
+        if (columns.Count != 1 || !columns[0].Repeats) return columns;
+        var track = columns[0];
+        if (float.IsPositiveInfinity(available)) return [GridTrack.Fixed(track.Min)];
+        var count = Math.Max(1, (int)MathF.Floor((available + gap) / (track.Min + gap)));
+        var flexible = GridTrack.Flex(track.Value);
+        var tracks = new GridTrack[count];
+        Array.Fill(tracks, flexible);
+        return tracks;
+    }
+
+    /// <summary>
+    /// The room a positioned child is measured in. A child that FILLS an axis anchored on one side
+    /// fills from that edge to the opposite one, and anchored on both, the room between them: the
+    /// web pins the opposite edge (`left: 50%; right: 0`) for exactly this, so a filling child in a
+    /// 400dp stack at <c>StartFraction = 0.5</c> is 200 wide on both targets. Only where the stack's
+    /// extent is known before its children are (fixed, or filling a bounded parent); a stack that
+    /// sizes from its content has no edge to fill to yet, and the child takes the room it is offered.
+    /// </summary>
+    private (float Width, float Height) PositionedRoom(Positioned positioned, float maxW, float maxH,
+        float? knownW, float? knownH)
+    {
+        var (fillsW, fillsH) = FillsOf(positioned.Child);
+        var width = maxW;
+        var height = maxH;
+        if (fillsW && knownW is { } w && (positioned.AnchorsStart || positioned.AnchorsEnd))
+        {
+            var start = positioned.AnchorsStart ? (positioned.Start ?? 0) + (positioned.StartFraction ?? 0) * w : 0;
+            var end = positioned.AnchorsEnd ? (positioned.End ?? 0) + (positioned.EndFraction ?? 0) * w : 0;
+            width = MathF.Max(0, w - start - end);
+        }
+        if (fillsH && knownH is { } h && (positioned.AnchorsTop || positioned.AnchorsBottom))
+        {
+            var top = positioned.AnchorsTop ? (positioned.Top ?? 0) + (positioned.TopFraction ?? 0) * h : 0;
+            var bottom = positioned.AnchorsBottom ? (positioned.Bottom ?? 0) + (positioned.BottomFraction ?? 0) * h : 0;
+            height = MathF.Max(0, h - top - bottom);
+        }
+        return (width, height);
+    }
+
+    /// <summary>
+    /// Whether a node fills its parent's width and height, looking through the transparent
+    /// wrappers: the web realizer's <c>Fills</c>, case for case, so the two targets agree on which
+    /// positioned children span.
+    /// </summary>
+    private static (bool Width, bool Height) FillsOf(VisualNode node) => node switch
+    {
+        Box box => (box.Style.Width.Kind == SizeKind.Fill, box.Style.Height.Kind == SizeKind.Fill),
+        FlexNode flex => (flex.Width.Kind == SizeKind.Fill, flex.Height.Kind == SizeKind.Fill),
+        Stack stack => (stack.Width.Kind == SizeKind.Fill, stack.Height.Kind == SizeKind.Fill),
+        Drawing drawing => (drawing.Width.Kind == SizeKind.Fill, false),
+        Pressable pressable => FillsOf(pressable.Child),
+        Hoverable hoverable => FillsOf(hoverable.Child),
+        Adjustable adjustable => FillsOf(adjustable.Child),
+        Progress progress => FillsOf(progress.Child),
+        LiveRegion live => FillsOf(live.Child),
+        Flexible flexible => FillsOf(flexible.Child),
+        LoopMotion motion => FillsOf(motion.Child),
+        Simulated simulated => FillsOf(simulated.Child),
+        InFlow inFlow => FillsOf(inFlow.Child),
+        InView inView => FillsOf(inView.Child),
+        _ => (false, false),
+    };
 
     /// <summary>
     /// Spec S4 — the grid track-sizing pass (CSS Grid twin, v1 auto-flow): Fixed tracks take their
@@ -361,14 +492,14 @@ internal sealed partial class MeasureVisitor
     {
         var (maxW, maxH) = (constraints.MaxWidth, constraints.MaxHeight);
         var result = ctx.Node(grid);
-        var columns = grid.Columns;
-        var count = columns.Count;
         var rowGap = grid.RowGap ?? grid.Gap;
         var padH = grid.Padding.Horizontal;
 
         var avail = grid.Width.Kind == SizeKind.Fixed ? grid.Width.Value - padH
             : !float.IsPositiveInfinity(maxW) ? maxW - padH
             : float.PositiveInfinity;
+        var columns = AutoFilled(grid.Columns, avail, grid.Gap);
+        var count = columns.Count;
         var gapTotal = grid.Gap * MathF.Max(0, count - 1);
 
         // Place children into (column, span) slots — auto-flow with span clamping.

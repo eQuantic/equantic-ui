@@ -77,7 +77,6 @@ internal sealed partial class MeasureVisitor
         // stretch there means "as wide as the widest sibling", which is a second pass, not a size.
         bool StretchesCross(VisualNode child)
         {
-            if (child is Text) return false;                       // text sizes itself
             if ((child.AlignSelf ?? flex.Cross) != CrossAlign.Stretch) return false;
             if (float.IsPositiveInfinity(crossAvail)) return false;
             return !childIndetCross;
@@ -446,7 +445,7 @@ internal sealed partial class MeasureVisitor
                 CrossAlign.End => crossExtent - childCross,
                 _ => 0,
             };
-            if (alignment == CrossAlign.Stretch && children[i] is not Text
+            if (alignment == CrossAlign.Stretch
                 && CrossSizeKind(children[i], horizontal) != SizeKind.Fixed)
             {
                 // CSS parity: stretch fills AUTO cross sizes only — an explicit cross size is kept.
@@ -687,7 +686,7 @@ internal sealed partial class MeasureVisitor
                     CrossAlign.End => line.Cross - childCross,
                     _ => 0,
                 };
-                if (alignment == CrossAlign.Stretch && sources[i] is not Text)
+                if (alignment == CrossAlign.Stretch)
                 {
                     child.Bounds = horizontal
                         ? child.Bounds with { Height = line.Cross }

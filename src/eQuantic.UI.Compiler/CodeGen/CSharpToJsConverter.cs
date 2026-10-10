@@ -319,6 +319,7 @@ public class CSharpToJsConverter
         _strategyRegistry.Register<AnonymousMethodExpressionStrategy>();
         
         // Additional Types
+        _strategyRegistry.Register<DateTimeConstructionStrategy>(); // a constructor's shape, by its parameters (#606)
         _strategyRegistry.Register<DateTimeStrategy>();
         _strategyRegistry.Register<TimeSpanStrategy>();
         _strategyRegistry.Register<DateOnlyTimeOnlyStrategy>();
@@ -481,6 +482,8 @@ public class CSharpToJsConverter
             // The bound tree has the last word: the implicit conversion C# applied around this
             // expression, the string it flows into — settled once here, for every site.
             result = ValueFlow.Settle(expression, result, _context);
+            // A write of a mutable struct or tuple copies the value first, as C# copies it (#560).
+            result = ValueCopies.Settle(expression, result, _context);
             _context.Temporaries.Remember(expression, mark);
             _context.SetCached(expression, result);
             return result;

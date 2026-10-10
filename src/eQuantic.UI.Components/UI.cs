@@ -143,13 +143,16 @@ public static class UI
     /// navigation's items are radios to assistive tech, and a declarative screen could not say so).
     /// Without it a declarative screen could not name an icon-only button or mark a nav item
     /// selected at all (the OS Cleaner F1 report; the role joined after its full migration).
+    /// <paramref name="canRequestFocus"/> false is a control pressed while the keyboard stays
+    /// where it is: a formatting toolbar's buttons beside the text they format, a list of
+    /// suggestions under a field.
     /// Modal machinery — <see cref="Primitives.Pressable.Mixed"/>,
     /// <see cref="Primitives.Pressable.InitialFocus"/> — stays initializer-only: it belongs to the
     /// components that own the pattern.</summary>
     public static Pressable Pressable(VisualNode child, Action? onPressed = null,
         string? label = null, bool? selected = null, bool disabled = false,
         ColorToken? pressedBackground = null, bool? expanded = null,
-        PressableRole role = PressableRole.Button) =>
+        PressableRole role = PressableRole.Button, bool canRequestFocus = true) =>
         new Pressable(child, onPressed)
         {
             Label = label,
@@ -158,6 +161,7 @@ public static class UI
             PressedBackground = pressedBackground,
             Expanded = expanded,
             Role = role,
+            CanRequestFocus = canRequestFocus,
         };
 
     /// <summary>Navigation semantics: the child becomes a link to <paramref name="destination"/>.
@@ -194,7 +198,7 @@ public static class UI
 
     /// <summary>Vector ARTWORK — several shapes, each in the colour its designer chose. Give it one
     /// number and it keeps the drawing's own aspect, because a squashed logo is a wrong logo.</summary>
-    public static Drawing Drawing(VectorDrawing artwork, float width, float height = 0,
+    public static Drawing Drawing(VectorDrawing artwork, SizeValue width, float height = 0,
         ColorToken? tint = null, string? label = null) =>
         new Drawing(artwork, width, height, tint, label);
 
@@ -231,8 +235,17 @@ public static class UI
 
     /// <summary>Anchors a Stack child to the stack's edges with signed offsets (spec A3).</summary>
     public static Positioned Positioned(VisualNode child, float? top = null, float? end = null,
-        float? bottom = null, float? start = null) =>
-        new Positioned(child, top, end, bottom, start);
+        float? bottom = null, float? start = null, float? topFraction = null, float? endFraction = null,
+        float? bottomFraction = null, float? startFraction = null, float shiftX = 0, float shiftY = 0) =>
+        new Positioned(child, top, end, bottom, start)
+        {
+            TopFraction = topFraction,
+            EndFraction = endFraction,
+            BottomFraction = bottomFraction,
+            StartFraction = startFraction,
+            ShiftX = shiftX,
+            ShiftY = shiftY,
+        };
 
     /// <summary>A scrolling viewport over bounded content (spec A6).</summary>
     public static ScrollView ScrollView(VisualNode child, ScrollAxis axis = ScrollAxis.Vertical,

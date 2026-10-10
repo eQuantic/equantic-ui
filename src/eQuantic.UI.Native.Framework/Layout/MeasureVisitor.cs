@@ -129,10 +129,16 @@ internal sealed partial class MeasureVisitor : IVisualNodeVisitor<MeasureState, 
     public LayoutNode Visit(Vector node, MeasureState s) =>
         _ctx.Node(node, new Rect(0, 0, node.Size, node.Height));
 
-    // Artwork is an explicitly placed box too — its height comes from the drawing's own aspect when
-    // the author gave only a width, which the node already resolved.
-    public LayoutNode Visit(Drawing node, MeasureState s) =>
-        _ctx.Node(node, new Rect(0, 0, node.Width, node.Height));
+    // Artwork takes the width it asks for — dp, or the room it is offered the way a canvas takes
+    // it — and its height comes from the drawing's own aspect unless the author decided one. A fill
+    // on an axis the parent sizes from its content has nothing to fill, as a canvas has not.
+    public LayoutNode Visit(Drawing node, MeasureState s)
+    {
+        var width = node.Width.Kind == SizeKind.Fixed
+            ? node.Width.Value
+            : ResolveSelf(node.Width, s.Constraints.MaxWidth, 0, _ctx.WindowWidth, s.Constraints.Width.Indeterminate);
+        return _ctx.Node(node, new Rect(0, 0, width, node.HeightAt(width)));
+    }
 
     // The Spinner shares the icon em-box contract (spec B15: sizes = the §07 whitelist).
     public LayoutNode Visit(Spinner node, MeasureState s) => _ctx.Node(node, new Rect(0, 0, node.Size, node.Size));
@@ -150,9 +156,18 @@ internal sealed partial class MeasureVisitor : IVisualNodeVisitor<MeasureState, 
     public LayoutNode Visit(Pressable node, MeasureState s) =>
         MeasureWrapper(node, node.Child, s.Constraints.Inline(), _ctx, s.Path);
 
-    // Transparent to layout: the surface adds a caret and a selection, never a box.
-    public LayoutNode Visit(CodeSurface node, MeasureState s) =>
-        MeasureWrapper(node, node.Child, s.Constraints, _ctx, s.Path);
+    // Transparent to layout: the surface adds a caret and a selection, never a box. What it OFFERS at
+    // its caret (Options) stands at its origin, in the surface's coordinates, at the size it asks for,
+    // and takes no room: a list drawn under a line must not lengthen the code it is drawn over.
+    public LayoutNode Visit(CodeSurface node, MeasureState s)
+    {
+        var result = MeasureWrapper(node, node.Child, s.Constraints, _ctx, s.Path);
+        if (node.Options is not { } options) return result;
+        var offered = Measure(options, LayoutConstraints.Unbounded, _ctx, _ctx.ChildPath(s.Path, 1));
+        offered.Bounds = offered.Bounds with { X = node.OptionsOrigin.X, Y = node.OptionsOrigin.Y };
+        result.Adopt(offered);
+        return result;
+    }
 
     public LayoutNode Visit(SheetSurface node, MeasureState s) =>
         MeasureWrapper(node, node.Child, s.Constraints, _ctx, s.Path);

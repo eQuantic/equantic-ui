@@ -245,6 +245,11 @@ public class FlutterParityPinTests
         ["TextOverflow.ellipsis"] = () => HasMember("Text", "MaxLines") && Nothing("TextOverflow", "TextPainter"),
         ["Transform"] = () => Has("Transform2D") && HasMember("BoxStyle", "Transform")
             && HasMember("StyleDiff", "Transform"),
+        ["Align"] = () => HasMember("Positioned", "TopFraction") && HasMember("Positioned", "StartFraction")
+            && HasMember("Positioned", "ShiftX") && HasMember("Positioned", "ShiftY"),
+        ["SliverGridDelegateWithMaxCrossAxisExtent"] = () => HasMember("GridTrack", "AutoFill")
+            && HasMember("GridTrack", "Repeats"),
+        ["SvgPicture"] = () => HasMember("Drawing", "Aspect") && HasMember("Drawing", "HeightAt"),
         ["WidgetStateProperty"] = () => HasMember("BoxStyle", "Hover") && HasMember("BoxStyle", "Focus")
             && HasMember("BoxStyle", "Pressed")
             && HasMember("StyleDiff", "Shadows") && HasMember("StyleDiff", "Transform"),
@@ -273,6 +278,12 @@ public class FlutterParityPinTests
             && Has("Adjustable") && Has("Navigable"),
         ["RawGestureDetector"] = () => Nothing("RawGestureDetector"),
         ["FocusNode"] = () => HasMember("Pressable", "InitialFocus") && Nothing("FocusNode", "FocusScope"),
+        // The vocabulary's own word, and a realizer that honours it.
+        ["InkWell.canRequestFocus"] = () => HasMember("Pressable", "CanRequestFocus")
+            && WebRealizerCode().Contains("CanRequestFocus"),
+        // What a code surface offers, drawn by the surface itself: no overlay type to follow a field.
+        ["RawAutocomplete"] = () => HasMember("CodeSurface", "Options") && HasMember("CodeSurface", "OptionsOrigin")
+            && HasMember("CodeSurface", "HighlightedOption") && Nothing("RawAutocomplete", "Autocomplete"),
         ["Shortcuts"] = () => Has("Shortcut") && Has("KeyChord") && HasMember("Shortcut", "FocusScoped"),
         // The controllers are shared; the protocol that drives them is a HOST method.
         ["TextEditingController"] = () => Has("CodeEditorController") && Has("SheetController")

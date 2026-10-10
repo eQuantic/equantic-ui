@@ -42,6 +42,10 @@ export const bases = {
   'System.InvalidCastException': 'System.SystemException',
   'System.InvalidOperationException': 'System.SystemException',
   'System.NullReferenceException': 'System.SystemException',
+  // A StringBuilder's char read past its text, as an array's bounds refuse it.
+  'System.IndexOutOfRangeException': 'System.SystemException',
+  // A StringBuilder grown past what an array or the browser's string can hold.
+  'System.OutOfMemoryException': 'System.SystemException',
   // A string's search by a culture comparison, which .NET makes with ICU's collation and the browser
   // cannot (#528): no .NET exception for the same call, so the one that says the platform lacks it.
   'System.NotSupportedException': 'System.SystemException',
@@ -53,6 +57,8 @@ export const bases = {
   'System.AggregateException': 'System.Exception',
   // A type initializer that threw: what every access to the type throws from then on (typeInitialization).
   'System.TypeInitializationException': 'System.SystemException',
+  // A value read from the wire that System.Text.Json would refuse (a date that is not ISO-8601).
+  'System.Text.Json.JsonException': 'System.Exception',
 } as const satisfies Record<string, string | null>;
 
 /** A .NET exception type the runtime throws itself. */

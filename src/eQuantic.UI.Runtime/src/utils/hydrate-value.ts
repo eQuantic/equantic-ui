@@ -58,9 +58,10 @@ export function hydrateValue(current: unknown, incoming: unknown): unknown {
     return long(incoming);
   }
 
-  // DateTime field: parse the ISO-8601 string the server emitted back into the compat type.
+  // DateTime field: the ISO-8601 string the server emitted, read as System.Text.Json reads it, its
+  // zone included.
   if (current instanceof DateTime && typeof incoming === 'string') {
-    return dateTime.parse(incoming);
+    return dateTime.fromJson(incoming);
   }
 
   // TimeSpan field: parse the .NET "c" string ([-][d.]hh:mm:ss[.fffffff]) back into the compat type.
@@ -80,8 +81,9 @@ export function hydrateValue(current: unknown, incoming: unknown): unknown {
   }
 
   // A dictionary field the compiler gave no spec: rebuilt as its class, never on its prototype, which
-  // would be an instance with no entries to hold. Nothing here says the key type, so a key stays the
-  // property name; every field the compiler types carries `{ dict, key }` and never reaches this.
+  // would be an instance with no entries to hold. Nothing here says the key type, so a key stays as it
+  // arrived, the value a pair holds or a property name; every field the compiler types carries
+  // `{ dict, key }` and never reaches this.
   if (current instanceof Dictionary || current instanceof SortedMap) {
     return hydrate(incoming, current instanceof SortedMap ? { dict: null, sorted: current.kind } : { dict: null });
   }

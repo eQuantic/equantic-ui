@@ -31,6 +31,34 @@ public class RecordPipelineTests
     }
 
     /// <summary>
+    /// A record's and a struct's twin says it is one, and a class's never does, whatever methods it
+    /// declares: `with` and `equals` are names any class may have, so a hot reload that took them for a
+    /// record's carried an app's class with an <c>Equals</c> override and a <c>With(...)</c> of its own as
+    /// data, and rebuilt it without its constructor (Copilot's third round on #672).
+    /// </summary>
+    [Fact]
+    public void ARecordAndAStruct_SayTheyAreValues_AndAClassWithEqualsAndWith_DoesNot()
+    {
+        var src = """
+            public record Note(string Text);
+            public struct Spot { public int X; }
+            public record struct Pair(int A, int B);
+            public class Tally
+            {
+                public int Count;
+                public override bool Equals(object? obj) => obj is Tally other && other.Count == Count;
+                public override int GetHashCode() => Count;
+                public Tally With(int count) => new Tally { Count = count };
+            }
+            """;
+        var modules = new ComponentCompiler().CompileSource(src).ToDictionary(result => result.ComponentName, result => result.TypeScript);
+
+        foreach (var value in new[] { "Note", "Spot", "Pair" })
+            modules[value].Should().Contain("static $record = true;", $"{value} is a record or a struct");
+        modules["Tally"].Should().Contain("with(count").And.NotContain("$record", "Tally is a class");
+    }
+
+    /// <summary>
     /// A record the RUNTIME provides (its namespace says so) never imports its own name. A call to
     /// its own static helper is written qualified, <c>Layout.twice(…)</c>, and the conversion
     /// registers the name it wrote after the module had already struck its own: the code engine's

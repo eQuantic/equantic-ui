@@ -86,24 +86,46 @@ internal sealed partial class WebLoweringVisitor
                 // here — the same tree, two geometries. Pinning the opposite edge gives the box the
                 // definite width its filling child is asking to be 100% of.
                 var (fillsWidth, fillsHeight) = Fills(positioned.Child);
-                var spanX = fillsWidth && positioned.Start is null != positioned.End is null;
-                var spanY = fillsHeight && positioned.Top is null != positioned.Bottom is null;
+                var spanX = fillsWidth && positioned.AnchorsStart != positioned.AnchorsEnd;
+                var spanY = fillsHeight && positioned.AnchorsTop != positioned.AnchorsBottom;
+                // A translate's percentages are of the element's own box. The anchor shrink-wraps
+                // its child, except when both edges of an axis stretch it around a child that does
+                // not fill: then the shift goes on a child-sized wrapper, so -0.5 is half the CHILD,
+                // as Photon moves it.
+                var stretched = (positioned.AnchorsStart && positioned.AnchorsEnd && !fillsWidth)
+                    || (positioned.AnchorsTop && positioned.AnchorsBottom && !fillsHeight);
+                var shift = TokenCss.Shift(positioned.ShiftX, positioned.ShiftY);
                 var anchor = new RealizedElement("div")
                 {
                     Style = new HtmlStyle
                     {
                         Position = Position.Absolute,
-                        Top = positioned.Top is { } top ? TokenCss.Px(top) : spanY ? "0" : null,
-                        Right = positioned.End is { } end ? TokenCss.Px(end) : spanX ? "0" : null,
-                        Bottom = positioned.Bottom is { } bottom ? TokenCss.Px(bottom) : spanY ? "0" : null,
-                        Left = positioned.Start is { } start ? TokenCss.Px(start) : spanX ? "0" : null,
+                        // A point, a fraction of the stack, or both (`calc`); the stack is the
+                        // containing block, so a percentage is of ITS box, as on Photon.
+                        Top = TokenCss.Edge(positioned.Top, positioned.TopFraction) ?? (spanY ? "0" : null),
+                        Right = TokenCss.Edge(positioned.End, positioned.EndFraction) ?? (spanX ? "0" : null),
+                        Bottom = TokenCss.Edge(positioned.Bottom, positioned.BottomFraction) ?? (spanY ? "0" : null),
+                        Left = TokenCss.Edge(positioned.Start, positioned.StartFraction) ?? (spanX ? "0" : null),
+                        Transform = stretched ? null : shift,
                         // Spec S7: explicit stacking WINS; otherwise the child's own depth.
                         ZIndex = (positioned.Layer != 0 ? positioned.Layer : depth).ToString(),
                     },
                 };
                 // The ANCHOR is marked, not what it holds: its offsets came from the same Build.
                 if (unmeasured) MarkUnmeasured(anchor);
-                anchor.Children.Add(lowered);
+                if (stretched && shift is not null)
+                {
+                    var shifted = new RealizedElement("div")
+                    {
+                        Style = new HtmlStyle { Width = fillsWidth ? null : "fit-content", Transform = shift },
+                    };
+                    shifted.Children.Add(lowered);
+                    anchor.Children.Add(shifted);
+                }
+                else
+                {
+                    anchor.Children.Add(lowered);
+                }
                 element.Children.Add(anchor);
             }
             else
@@ -461,22 +483,13 @@ internal sealed partial class WebLoweringVisitor
             },
         };
 
-        // SCROLL-LINKED diff: each declaration lands under the root-gated scrolled variant; the
-        // runtime's scroll listener toggles `eq-scrolled` on <html>.
+        // SCROLL-LINKED diff: every member of it, through the builder a box's states use, over the
+        // header's own base (#506). It wrote four members of seven and a border alone, so an
+        // Elevation, the one a developer reaches for first (Flutter's `scrolledUnderElevation`), a
+        // Gradient, a Transform and the Shadows did nothing. Each declaration lands in the scrolled
+        // variant, which applies while the runtime marks the header scrolled.
         if (pinned.ScrolledStyle is { IsEmpty: false } scrolled)
-        {
-            if (scrolled.Background is { } bg)
-                element.ScrolledDeclarations.Add(("background-color", TokenCss.Value(bg)));
-            if (scrolled is { BorderWidth: { } bw, BorderColor: { } bc })
-                element.ScrolledDeclarations.Add(("border-bottom", $"{TokenCss.Px(bw)} solid {TokenCss.Value(bc)}"));
-            if (scrolled.Opacity is { } alpha)
-                element.ScrolledDeclarations.Add(("opacity", TokenCss.Number(alpha)));
-            if (scrolled.BackdropBlur is { } blur and > 0)
-            {
-                element.ScrolledDeclarations.Add(("backdrop-filter", $"blur({TokenCss.Px(blur)})"));
-                element.ScrolledDeclarations.Add(("-webkit-backdrop-filter", $"blur({TokenCss.Px(blur)})"));
-            }
-        }
+            element.ScrolledDeclarations.AddRange(DiffDeclarations(scrolled, Pinned.ScrolledBase));
 
         if (Lower(pinned.Child, horizontalAxis: null) is { } child)
             element.Children.Add(child);
@@ -849,8 +862,22 @@ internal sealed partial class WebLoweringVisitor
     {
         var declarations = new List<(string, string)>();
         if (diff.Background is { } bg) declarations.Add(("background-color", TokenCss.Value(bg)));
-        if (diff is { BorderWidth: { } bw, BorderColor: { } bc })
-            declarations.Add(("border", $"{TokenCss.Px(bw)} solid {TokenCss.Value(bc)}"));
+        // The border along the edges the BASE draws, in the base's own shape: the shorthand for every
+        // edge, per-side widths for some. The shorthand put a hover's border on all four edges of a
+        // box that draws one, and a width alone wrote nothing, where Photon draws it in the base's
+        // colour (#506).
+        if (diff.BorderWidth is { } bw)
+        {
+            var color = TokenCss.Value(diff.BorderColor ?? style.BorderColor);
+            if (style.BorderSides == BorderSides.All)
+                declarations.Add(("border", $"{TokenCss.Px(bw)} solid {color}"));
+            else
+            {
+                declarations.Add(("border-width", SideWidths(bw, style.BorderSides)));
+                declarations.Add(("border-style", "solid"));
+                declarations.Add(("border-color", color));
+            }
+        }
         else if (diff.BorderColor is { } onlyColor) declarations.Add(("border-color", TokenCss.Value(onlyColor)));
         if (StateShadowList(style, diff) is { } shadows) declarations.Add(("box-shadow", shadows));
         if (diff.Opacity is { } alpha) declarations.Add(("opacity", TokenCss.Number(alpha)));
@@ -885,6 +912,8 @@ internal sealed partial class WebLoweringVisitor
             {
                 case "background-color": style.BackgroundColor = value; break;
                 case "border": style.Border = value; break;
+                case "border-width": style.BorderWidth = value; break;
+                case "border-style": style.BorderStyle = value; break;
                 case "border-color": style.BorderColor = value; break;
                 case "box-shadow": style.BoxShadow = value; break;
                 case "opacity": style.Opacity = value; break;
@@ -1010,11 +1039,15 @@ internal sealed partial class WebLoweringVisitor
         return wrapper;
     }
 
-    /// <summary>Spec S4: CSS Grid — tracks as "px | Nfr | auto", the gap pair, spans per child.</summary>
+    /// <summary>Spec S4: CSS Grid — tracks as "px | Nfr | auto" or one auto-fill repeat, the gap pair, spans per child.</summary>
     private HtmlElement LowerGrid(Grid grid)
     {
         var tracks = string.Join(" ", grid.Columns.Select(t => t.Kind switch
         {
+            // An auto-fill track is the whole list: as many columns as fit the minimum, sharing the rest.
+            // `min(…, 100%)`: in a grid narrower than one track the column is the grid's width, as
+            // Photon draws it, rather than the minimum overflowing it.
+            _ when t.Repeats => $"repeat(auto-fill, minmax(min({TokenCss.Px(t.Min)}, 100%), {TokenCss.Number(t.Value)}fr))",
             SizeKind.Fixed => TokenCss.Px(t.Value),
             SizeKind.Fill => $"{TokenCss.Number(t.Value)}fr",
             _ => "auto",

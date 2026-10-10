@@ -74,6 +74,43 @@ public class ComponentParityFixtureTests
         // A picture of a DISABLED control: both producers mask the control's states for its subtree.
         ("control-states-disabled-simulated",
             new Simulated(SimulatedState.Pressed | SimulatedState.Focused, DisabledControlStates()), NoPresses),
+        // A draggable resting OPEN over a box with its own transform, a colour fade and a hover that
+        // lifts it (#511): the offset rides `translate` on both producers, beside the box's
+        // `transform`, and its glide joins the box's transition list instead of replacing it.
+        ("draggable-open", new Draggable(new Box(new BoxStyle
+        {
+            Width = 40, Height = 40, Background = Theme.Surface,
+            Transform = Transform2D.Scale(0.5f),
+            Transition = new TransitionSpec(StyleChannels.Colors),
+            Hover = new StyleDiff { Transform = Transform2D.Translate(0, -2) },
+        }), _ => { }) { Axis = DragAxis.Horizontal, Min = -80, Max = 0, RestOffset = -80 }, NoPresses),
+        // A pinned header's scrolled diff with every member (#506), through the builder a box's
+        // states use, over the header's base, whose border is its bottom edge.
+        ("pinned-scrolled", new Pinned(new Box(new BoxStyle { Height = 40 }))
+        {
+            ScrolledStyle = new StyleDiff
+            {
+                Background = Theme.Surface, BorderWidth = 1, BorderColor = Theme.Border, Elevation = 2,
+                Opacity = 0.9f, BackdropBlur = 24, Gradient = new LinearGradient(Theme.Surface, Theme.SurfaceSubtle),
+                Transform = Transform2D.Translate(0, -2), Shadows = [new ShadowSpec(0, 12, 0, Theme.FocusRing)],
+            },
+            Transition = new TransitionSpec(StyleChannels.Colors),
+        }, NoPresses),
+        // The same builder writes a hover border along the edges the box draws, and a width alone
+        // in the base's colour, as Photon draws them (#506).
+        ("box-hover-border-edge", new Box(new BoxStyle
+        {
+            Width = 40, Height = 40, BorderWidth = 1, BorderColor = Theme.Border, BorderSides = BorderSides.Bottom,
+            Hover = new StyleDiff { BorderWidth = 2 },
+        }), NoPresses),
+        // A control around wrappers that draw no box (#622): both producers mark the first
+        // descendants that draw one, through an InView, every arm of an Adaptive and both images
+        // of a light and dark pair, so the hit slop's lift reaches them.
+        ("pressable-through-wrappers", Stack(Space.S2,
+            new Pressable(new InView(LiftCard(), _ => { }), () => { }),
+            new Pressable(new AdaptiveNode(LiftCard(), medium: LiftCard()), () => { }),
+            new Pressable(new Image("/light.png", 40, 40, label: "logo") { DarkSource = "/dark.png" }, () => { })),
+            NoPresses),
         // A state that leaves nothing to draw writes the ring's slot alone: a hover that sets the
         // elevation to 0 over a box whose only shadow was its elevation.
         ("box-hover-drops-shadow", new Box(new BoxStyle
@@ -229,6 +266,9 @@ public class ComponentParityFixtureTests
         },
         Focus = new StyleDiff { Elevation = 0, Transform = Transform2D.Scale(1) },
     });
+
+    /// <summary>The card of the pressable-through-wrappers case.</summary>
+    private static Box LiftCard() => new(new BoxStyle { Width = 40, Height = 40, Background = Theme.Surface });
 
     /// <summary>The control of the control-states cases: a raised surface with a hover, a focus and a
     /// press, each changing what the others do not, and the pressed fill it has always had.</summary>

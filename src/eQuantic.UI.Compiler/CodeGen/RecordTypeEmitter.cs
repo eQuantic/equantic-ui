@@ -300,14 +300,47 @@ public class RecordTypeEmitter
                 : $"equals(o) {{ return o instanceof {name}");
             if (baseName != null) sb.Append(" && super.equals(o)");
             else if (type is RecordDeclarationSyntax) sb.Append(" && o.constructor === this.constructor");
-            foreach (var m in members) sb.Append($" && $eq.equals(this.{m.Store}, o.{m.Store})");
+            // A generic one's closed type too: one twin class serves every type argument, so `Box<int>`
+            // equalled `Box<double>` holding the same 1 (#651). The build marks each value C# names the
+            // type arguments of, and an unmarked one is not taken for another type.
+            if (type.TypeParameterList is { Parameters.Count: > 0 }) sb.Append($" && {Eq.SameClosure}(this, o)");
+            // Each member as EqualityComparer<T>.Default compares its type (ElementEquality): an array
+            // by reference, where `$eq.equals` walked it element by element (#554). A comparison
+            // generated from a tuple's element types is made once, a static of the twin, where it was
+            // looked up again on every call.
+            var generated = new List<string>();
+            string Hoist(string equality)
+            {
+                generated.Add(equality);
+                return $"{name}.$equality{generated.Count - 1}";
+            }
+            foreach (var m in members) sb.Append($" && {ElementEquality.Compare(TypeOf(m), $"this.{m.Store}", $"o.{m.Store}", Hoist)}");
             sb.Append("; } ");
+            for (var i = 0; i < generated.Count; i++)
+                sb.Append($"static $equality{i} = {generated[i]}; ");
 
             // with(patch): a COPY, onto the prototype (a spread would drop the methods), then the
             // members the patch names. C# copies the fields and runs no initializer, and building it
-            // through the constructor ran every one of them again (#413).
-            sb.Append(tsTypeDeclarations ? $"with(patch: any): {name} {{ return {Eq.With}(this, patch); }} "
-                : $"with(patch) {{ return {Eq.With}(this, patch); }} ");
+            // through the constructor ran every one of them again (#413). A record whose chain declares
+            // a copy constructor copies through it, as C#'s `with` does: each level of the chain
+            // carries the step its copy constructor takes (#589).
+            if (type is RecordDeclarationSyntax record && !IsStruct(type)
+                && ModelFor(type)?.GetDeclaredSymbol(type) is INamedTypeSymbol copied && ChainDeclaresCopy(copied))
+            {
+                sb.Append(tsTypeDeclarations
+                    ? $"with(patch: any): {name} {{ const copy: any = Object.create(Object.getPrototypeOf(this)); copy.$copy(this); return Object.assign(copy, patch); }} "
+                    : "with(patch) { const copy = Object.create(Object.getPrototypeOf(this)); copy.$copy(this); return Object.assign(copy, patch); } ");
+                _converter.InFileOf(record, () => sb.Append(Written(CopyStep(copied, members, baseName is not null))));
+            }
+            else
+                sb.Append(tsTypeDeclarations ? $"with(patch: any): {name} {{ return {Eq.With}(this, patch); }} "
+                    : $"with(patch) {{ return {Eq.With}(this, patch); }} ");
+
+            // The twin of a record or a struct SAYS so, which no method can: `with` and `equals` are
+            // names any class may declare (an `Equals` override, a `With(...)` of its own), and a hot
+            // reload carries a value's twin as its data while it leaves a class's object to its
+            // initializer (dev/hot-reload-state.ts).
+            sb.Append("static $record = true; ");
 
             // The zero C# gives a struct: `default(S)`, an array's slot, an OrDefault, and `new S()`
             // where S declares no parameterless constructor. Every struct twin carries it, built
@@ -322,17 +355,29 @@ public class RecordTypeEmitter
             // knows the closed type (`Pair.$zero(0)` for a `Pair<int>`): a member of type `T` is that
             // zero, and a `Pair<T>` passes it on. The open declaration's `T` gave null, so
             // `default(Pair<int>).First == 0` was false (found by Copilot's review of #608).
+            // A mutable struct's copy, which ValueCopies takes before a write (#560): member by member,
+            // shallow, as a value inside is copied when it is written in turn.
+            if (IsStruct(type) && ModelFor(type)?.GetDeclaredSymbol(type) is INamedTypeSymbol valueType
+                && Strategies.ValueCopies.IsMutableValue(valueType))
+            {
+                sb.Append(tsTypeDeclarations
+                    ? $"$clone(): {name} {{ const copy: any = Object.create({name}.prototype); "
+                    : $"$clone() {{ const copy = Object.create({name}.prototype); ");
+                foreach (var m in members) sb.Append($"copy.{m.Store} = this.{m.Store}; ");
+                sb.Append("return copy; } ");
+            }
+
             if (IsStruct(type))
             {
                 var typeParameters = type.TypeParameterList?.Parameters.Select(parameter => parameter.Identifier.ValueText).ToList() ?? [];
                 var zeros = string.Join(", ", typeParameters.Select(parameter =>
                     $"$z{parameter}{(tsTypeDeclarations ? ": any" : "")} = null"));
                 sb.Append(tsTypeDeclarations
-                    ? $"static $zero({zeros}): {name} {{ const zero: any = Object.create({name}.prototype); "
-                    : $"static $zero({zeros}) {{ const zero = Object.create({name}.prototype); ");
+                    ? $"static $zero({zeros}): {name} {{ const $self: any = Object.create({name}.prototype); "
+                    : $"static $zero({zeros}) {{ const $self = Object.create({name}.prototype); ");
                 foreach (var m in members)
-                    sb.Append($"zero.{m.Store} = {ZeroOf(m, typeParameters.Count == 0 ? null : parameter => typeParameters.Contains(parameter.Name) && parameter.TypeParameterKind == TypeParameterKind.Type ? $"$z{parameter.Name}" : null)}; ");
-                sb.Append("return zero; } ");
+                    sb.Append($"$self.{m.Store} = {ZeroOf(m, typeParameters.Count == 0 ? null : parameter => typeParameters.Contains(parameter.Name) && parameter.TypeParameterKind == TypeParameterKind.Type ? $"$z{parameter.Name}" : null)}; ");
+                sb.Append("return $self; } ");
             }
 
             // getHashCode: the members `equals` reads, combined, as the record's synthesized GetHashCode
@@ -589,6 +634,19 @@ public class RecordTypeEmitter
         type is StructDeclarationSyntax
         || type is RecordDeclarationSyntax record && record.ClassOrStructKeyword.IsKind(SyntaxKind.StructKeyword);
 
+    /// <summary>A value member's type, as the model binds its declaration's type syntax.</summary>
+    private ITypeSymbol? TypeOf(ValueMember member)
+    {
+        var syntax = member.Declaration switch
+        {
+            ParameterSyntax { Type: { } type } => type,
+            PropertyDeclarationSyntax property => property.Type,
+            VariableDeclaratorSyntax { Parent: VariableDeclarationSyntax declaration } => declaration.Type,
+            _ => null,
+        };
+        return syntax is null ? null : ModelFor(syntax)?.GetTypeInfo(syntax).Type;
+    }
+
     /// <summary>A member's zero, the value <c>default</c> gives it, a type parameter's taken from
     /// <paramref name="typeParameter"/> where the struct's <c>$zero</c> is handed one.</summary>
     private string ZeroOf(ValueMember member, Func<ITypeParameterSymbol, string?>? typeParameter = null) => member.Declaration switch
@@ -675,6 +733,88 @@ public class RecordTypeEmitter
 
     /// <summary>A member in the one-line layout this emitter writes a class in, and the space after it.</summary>
     private static string Written(JsClassMember member) => JsMemberWriter.Write(member, JsLayout.Compact) + " ";
+
+    /// <summary>
+    /// Whether <paramref name="type"/>, or a record of this compilation it derives from, declares a copy
+    /// constructor: its one parameter of its own type, which `with` copies through in C# (#589).
+    /// </summary>
+    private static bool ChainDeclaresCopy(INamedTypeSymbol type)
+    {
+        for (var at = type; at is { IsRecord: true, TypeKind: TypeKind.Class } && at.Locations.Any(location => location.IsInSource);
+             at = at.BaseType)
+            if (DeclaredCopy(at) is not null) return true;
+        return false;
+    }
+
+    private static IMethodSymbol? DeclaredCopy(INamedTypeSymbol type) =>
+        type.InstanceConstructors.FirstOrDefault(constructor => !constructor.IsImplicitlyDeclared && IsCopyConstructor(constructor));
+
+    /// <summary>Whether a constructor is a record's copy constructor: one parameter, of the record's own
+    /// type. The one rule the twin's constructor (which no copy constructor is a branch of) and `with`'s
+    /// copy step read.</summary>
+    internal static bool IsCopyConstructor(IMethodSymbol constructor) =>
+        constructor is { MethodKind: MethodKind.Constructor, IsStatic: false, ContainingType.IsRecord: true, Parameters: [{ } parameter] }
+        && SymbolEqualityComparer.Default.Equals(parameter.Type, constructor.ContainingType);
+
+    /// <summary>
+    /// The step `with` copies one level of a record through, as its copy constructor builds the copy in
+    /// C# (#589). The synthesized one runs its base's step, then copies the level's own members from the
+    /// original. A declared one starts the level's members at their zero, then runs its base's step with
+    /// what its `: base(…)` passes (a base whose chain declares none copies every member it holds, as its
+    /// synthesized constructor does), and then its body. Neither runs an initializer: C# runs none in a
+    /// copy, so the twin's `with` copied the members a declared constructor never assigns, and never ran
+    /// its body.
+    /// </summary>
+    private JsClassMember CopyStep(INamedTypeSymbol self, IReadOnlyList<ValueMember> members, bool hasBase)
+    {
+        var declared = DeclaredCopy(self)?.DeclaringSyntaxReferences
+            .Select(reference => reference.GetSyntax()).OfType<ConstructorDeclarationSyntax>().FirstOrDefault();
+        var parameter = declared?.ParameterList.Parameters[0].Identifier.ValueText.ToJsIdentifier() ?? "original";
+        var original = JsExpr.Identifier(parameter);
+        var baseCopies = hasBase && self.BaseType is { } baseType && ChainDeclaresCopy(baseType);
+        JsStatement Assign(string store, JsExpr value) => JsStatement.Expression(JsExpr.Binary(JsExpr.ThisMember(store), "=", value));
+        JsStatement BaseStep(JsExpr passed) => JsStatement.Expression(JsExpr.Call(JsExpr.Member(JsExpr.Identifier("super"), "$copy"), [passed]));
+
+        var statements = new List<JsStatement>();
+        var zeros = members.Select(member => Assign(member.Store, JsExpr.Literal(ZeroOf(member)))).ToList();
+        if (declared is null)
+        {
+            // Only a level whose base's chain declares a copy constructor carries a synthesized step, and
+            // that constructor is the app's code, which can reach this level through a virtual member. C#
+            // has zeroed the whole object before it runs, so this level's zeros come first, then the base's
+            // step, then the copy of this level's members (found by Copilot's second review of #697).
+            statements.AddRange(zeros);
+            statements.Add(BaseStep(original));
+            statements.AddRange(members.Select(member => Assign(member.Store, JsExpr.Member(original, member.Store))));
+        }
+        else
+        {
+            // C# zeroes the whole object before any copy constructor runs, so a base's declared step, which
+            // can reach this level through a virtual member, meets this level's zeros: they come first.
+            // A base whose chain declares none runs no code of the app's, and copies every member the
+            // original holds, this level's among them, so there the zeros come after it.
+            var passed = declared.Initializer is { ArgumentList.Arguments: [var argument] }
+                ? _converter.ConvertIr(argument.Expression)
+                : original;
+            if (baseCopies)
+            {
+                statements.AddRange(zeros);
+                statements.Add(BaseStep(passed));
+            }
+            else
+            {
+                if (hasBase)
+                    statements.Add(JsStatement.Expression(JsExpr.Call(JsExpr.Member(JsExpr.Identifier("Object"), "assign"),
+                        [JsExpr.This, passed])));
+                statements.AddRange(zeros);
+            }
+            if (declared.Body is { Statements.Count: > 0 } block)
+                statements.AddRange(_converter.ConvertBlockIr(block) is JsBlock converted ? converted.Statements : [_converter.ConvertBlockIr(block)]);
+            else if (declared.ExpressionBody is { } arrow)
+                statements.AddRange(_lowering.ExpressionBody(arrow.Expression, returns: false).Statements);
+        }
+        return JsClassMember.Method("", "$copy", "", _annotations ? $"{parameter}: any" : parameter, "", JsStatement.Block(statements));
+    }
 
     /// <summary>The name of the type being written when it declares a static constructor, which its static
     /// members start before anything else (<see cref="TypeInitializer.StartedIn"/>); null otherwise.</summary>

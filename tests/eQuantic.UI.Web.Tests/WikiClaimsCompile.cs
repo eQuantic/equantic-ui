@@ -88,6 +88,19 @@ public class WikiClaimsCompile
                 : Text("No library here", TypeRole.BodyM);
     }
 
+    /// <summary>Icons and Components (0.2.0-preview.61): a drawing at its column's width, a
+    /// child placed by fraction and shifted by its own size, and an auto-filling grid.</summary>
+    [Fact]
+    public void TheLayoutThatFollowsItsBox_Compiles()
+    {
+        var mark = new VectorDrawing(0, 0, 3, 1, []);
+        var tooltip = Text("Lisboa", TypeRole.Label);
+
+        _ = new Drawing(mark, SizeValue.Fill, label: "eQuantic");
+        _ = Positioned(tooltip, top: -16, startFraction: 0.5f, topFraction: 0.25f, shiftX: -0.5f, shiftY: -1f);
+        _ = Grid([GridTrack.AutoFill(210)], gap: 10, width: SizeValue.Fill, children: [tooltip]);
+    }
+
     [Fact]
     public void TheDeclarativeSnippets_Compile()
     {
@@ -168,6 +181,25 @@ public class WikiClaimsCompile
             Focus = new StyleDiff { BorderColor = theme.FocusRing, BorderWidth = 2 },
         }, Text("label", TypeRole.BodyM)), onPressed: save);
 
+        // Styling, "A header the content scrolls under" (preview.61): a floating header that frosts,
+        // raises and draws its bottom hairline once the page scrolls under it.
+        var header = Text("header", TypeRole.BodyM);
+        _ = new Pinned(header)
+        {
+            Float = true,
+            ScrolledStyle = new StyleDiff
+            {
+                Background = theme.Surface,
+                Elevation = 2,
+                BorderWidth = 1,
+                BorderColor = theme.Border,
+                BackdropBlur = 24,
+            },
+            Transition = new TransitionSpec(StyleChannels.Colors | StyleChannels.Shadow),
+        };
+        _ = Primitives.Pinned.ScrolledThreshold;
+        _ = Primitives.Pinned.ScrolledBase;
+
         // WriteOnceComponents, "A weight of zero takes no share" (preview.61, #680): a picture that
         // starts at 540 and never grows, beside text that takes the rest.
         var story = new Row(gap: Space.S6) { Wrap = true, Width = SizeValue.Fill };
@@ -176,6 +208,17 @@ public class WikiClaimsCompile
 
         // EmailRealizer, the welcome email, whole (#684, #694).
         _ = new WelcomeEmail("Edgar");
+    }
+
+    /// <summary>Security, "A page that requires authorization" (preview.61): a page that only the
+    /// backoffice may open, which says so itself.</summary>
+    [Page("/backoffice/queue")]
+    [Primitives.Authorize(Policy = "Backoffice")]
+    private sealed class VerificationQueuePage : Primitives.StatefulComponent, IServerPrefetch
+    {
+        public Task PrefetchAsync(IServiceProvider services, CancellationToken cancellationToken) => Task.CompletedTask;
+
+        public override VisualNode Build(ComponentContext context) => Text("queue", TypeRole.BodyM);
     }
 
     /// <summary>

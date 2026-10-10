@@ -47,7 +47,7 @@ public class CompareToStrategy : IExpressionIrStrategy
                 return JsExpr.Opaque(context.Unhandled(invocation, "string.CompareTo(object)"));
             }
             context.UsedHelpers.Add(Eq.Import);
-            return JsExpr.Template($"{Eq.StringCompareTo}({{0}}, {{1}})", new[] { left, right }, context.TypeAnnotations);
+            return JsExpr.Template($"{Eq.StringCompareTo}({{0}}, {{1}})", new[] { left, right });
         }
 
         // Numbers subtract; everything else ordered (chars by code unit, longs-as-BigInts) is a
@@ -63,7 +63,7 @@ public class CompareToStrategy : IExpressionIrStrategy
             SpecialType.System_Char => "({0}.charCodeAt(0) - {1}.charCodeAt(0))",
             _ => "({0} < {1} ? -1 : {0} > {1} ? 1 : 0)",
         };
-        return JsExpr.Template(template, new[] { left, right }, context.TypeAnnotations);
+        return JsExpr.Template(template, new[] { left, right });
     }
 
     /// <summary>The receiver's comparison FAMILY (subtraction, ordered, boolean), or null when it

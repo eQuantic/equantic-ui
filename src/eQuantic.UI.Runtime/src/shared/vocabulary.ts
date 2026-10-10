@@ -17,6 +17,7 @@ import type {
   ColorTokenValue,
   ColorValue,
   CrossAlignValue,
+  CurveValue,
   EdgeInsetsValue,
   LiveRegionUrgencyValue,
   MainAlignValue,
@@ -26,8 +27,9 @@ import { CanvasPointer } from './canvas-pointer';
 export { CanvasPointer };
 import { lowerVisualNode } from './lowering';
 import { ambientLoweringContext } from './photon-context';
-import { CornerRadii, EdgeInsets, SizeValue, StyleChannels, WebContent } from './value-types';
+import { artworkAspect, CornerRadii, EdgeInsets, Point, SizeValue, StyleChannels, WebContent } from './value-types';
 import { Curve, Motion } from './design-system.generated';
+import type { MotionSpec } from './primitive-values';
 import { hashesByValue } from '../utils/hash';
 
 export { StyleChannels } from './value-types';
@@ -407,6 +409,11 @@ export class SafeArea extends VisualNode {
 }
 
 export class Pinned extends VisualNode {
+  /** C# `Pinned.ScrolledThreshold`: how far, in dp, a header's surface scrolls before its scrolled style applies. */
+  static readonly ScrolledThreshold = 8;
+  /** C# `Pinned.ScrolledBase`: what the scrolled style is laid over, the hairline along the bottom edge
+   * (BorderSides.Bottom = 4). */
+  static readonly ScrolledBase = { borderSides: 4 } as const;
   readonly nodeKind = 'pinned';
   float = false;
   scrolledStyle: StyleDiff | null = null;
@@ -454,6 +461,11 @@ export class AdaptiveNode extends VisualNode {
 
 /** Mirror of the C# `GridTrack` statics. */
 export class GridTrack {
+  /** The narrowest an auto-fill track may be, in dp; 0 for every other track. */
+  readonly min: number = 0;
+  /** Whether this track repeats as often as it fits (`autoFill`). */
+  readonly repeats: boolean = false;
+
   constructor(
     readonly kind: 'fixed' | 'fill' | 'hug',
     readonly value: number,
@@ -473,6 +485,13 @@ export class GridTrack {
   }
   static repeat(count: number, track: GridTrack): GridTrack[] {
     return Array.from({ length: count }, () => track);
+  }
+  /** C# `GridTrack.AutoFill` twin: as many columns as fit `min`, sharing the rest by `weight`. */
+  static autoFill(min: number, weight = 1): GridTrack {
+    // The C# refusals, word for word: an infinite minimum or weight is `Infinitypx`/`Infinityfr`.
+    if (!(min >= 1) || !Number.isFinite(min)) throw new RangeError('An auto-fill track needs a finite minimum of at least 1dp.');
+    if (!(weight >= 1) || !Number.isFinite(weight)) throw new RangeError('An auto-fill track needs a finite weight of at least 1.');
+    return new GridTrack('fill', weight, { min, repeats: true });
   }
 }
 
@@ -496,6 +515,11 @@ export class Grid extends VisualNode {
 
   constructor(columns: GridTrack[], gap = 0, rowGap: number | null = null, config?: GridConfig) {
     super();
+    // The C# constructor's refusal, word for word: an auto-fill track is the whole column list.
+    if (columns?.length > 1 && columns.some((c) => c.repeats))
+      throw new Error(
+        'An auto-fill track (GridTrack.AutoFill) is the grid\'s whole column list; it cannot stand beside another track.',
+      );
     this.columns = columns;
     this.gap = gap;
     this.rowGap = rowGap;
@@ -686,6 +710,8 @@ interface PressableConfig {
   expanded?: boolean | null;
   /** §10 initial focus — the trap prefers this pressable when it opens. */
   initialFocus?: boolean;
+  /** False: a press leaves the keyboard where it is (Flutter's canRequestFocus). */
+  canRequestFocus?: boolean;
   /** Composite-item role — the C# initializer `{ Role = PressableRole.Radio }` lands here. */
   role?: string;
 }
@@ -704,6 +730,8 @@ export class Pressable extends VisualNode {
   expanded: boolean | null = null;
   /** §10 initial focus: when a trap opens around this pressable, focus lands here first. */
   initialFocus = false;
+  /** False: a press leaves the keyboard where it is, and the pressable leaves the Tab order. */
+  canRequestFocus = true;
   role = 'button';
 
   constructor(child: VisualChild, onPressed: (() => void) | null = null, config?: PressableConfig) {
@@ -726,6 +754,12 @@ export class CodeSurface extends VisualNode {
   onChanged: (() => void) | null = null;
   label: string | null = null;
   autofocus = false;
+  /** What the surface offers at its caret (C# `CodeSurface.Options`), over the code, at `optionsOrigin`. */
+  options: VisualChild | null = null;
+  /** Where the options stand, in the surface's coordinates. */
+  optionsOrigin: Point = Point.zero;
+  /** The option row the keyboard is on, in tree order over the options' option rows, or -1. */
+  highlightedOption = -1;
 
   constructor(child: VisualChild, model: unknown, config?: EqConfig) {
     super();
@@ -1045,7 +1079,7 @@ export class LinearGradient {
 }
 
 interface TransitionSpecConfig {
-  easing?: readonly number[];
+  easing?: CurveValue;
 }
 
 /**
@@ -1059,12 +1093,12 @@ export const CuratedIcons = {
 };
 
 /** Mirror of the C# `TransitionSpec` record struct (spec S6): which channels glide, for how long,
- * along which bezier. `easing` is the 4-number control-point tuple the generated `Curve` exports. */
+ * along which bezier. `easing` is the curve's own data, as the generated `Curve` exports a preset. */
 export class TransitionSpec {
   channels: number;
   durationMs: number;
   delayMs: number;
-  easing: readonly number[] = Curve.standard;
+  easing: CurveValue = Curve.standard;
 
   constructor(
     channels: number,
@@ -1079,10 +1113,7 @@ export class TransitionSpec {
   }
 
   /** C# twin: `TransitionSpec.Of(channels, Motion.Press)` — a NAMED role, duration AND curve. */
-  static of(
-    channels: number,
-    motion: { durationMs: number; curve: readonly number[] },
-  ): TransitionSpec {
+  static of(channels: number, motion: MotionSpec): TransitionSpec {
     return new TransitionSpec(channels, motion.durationMs, 0, { easing: motion.curve });
   }
 
@@ -1747,15 +1778,16 @@ export class VectorDrawing {
 export class Drawing extends VisualNode {
   readonly nodeKind = 'drawing';
   artwork: VectorDrawing;
-  width: number;
-  /** The box's HEIGHT — the artwork's own aspect unless the author decided. */
+  /** The box's width: dp, or a fill of the width the parent offers. */
+  width: SizeValue;
+  /** The height the author decided, in dp; 0 when the artwork's aspect decides it. */
   height: number;
   tint: ColorTokenValue | null;
   label: string | null;
 
   constructor(
     artwork: VectorDrawing,
-    width: number,
+    width: SizeValue | number,
     height = 0,
     tint: ColorTokenValue | null = null,
     label: string | null = null,
@@ -1763,14 +1795,33 @@ export class Drawing extends VisualNode {
   ) {
     super();
     this.artwork = artwork;
-    this.width = width;
-    // Defensive about the artwork itself: a drawing whose asset failed to generate is a page that
-    // should lose a logo, not a page that throws while building its tree.
-    const aspect = artwork && artwork.height > 0 ? artwork.width / artwork.height : 1;
-    this.height = height > 0 ? height : width / (aspect <= 0 ? 1 : aspect);
+    // A number arrives raw: the C# float → SizeValue conversion passes through to the twin. The
+    // C# constructor's refusals, word for word, so a bad width fails the same way on both targets.
+    // A width eqc never omits; only the vocabulary probe builds one without it.
+    const size = SizeValue.from(width) ?? SizeValue.fill;
+    if (size.kind === 'fixed' && !(size.value > 0)) throw new RangeError('A drawing needs a positive width.');
+    if (size.kind === 'hug')
+      throw new RangeError("A drawing has no content to hug: give it a width in dp, or SizeValue.Fill for its parent's.");
+    if (height < 0) throw new RangeError("A drawing's height cannot be negative.");
+    this.width = size;
+    this.height = height;
     this.tint = tint;
     this.label = label;
     if (config) Object.assign(this, config);
+  }
+
+  /**
+   * Width over height, the ratio a derived height keeps. Defensive about the artwork itself: a
+   * drawing whose asset failed to generate is a page that should lose a logo, not a page that
+   * throws while building its tree.
+   */
+  get aspect(): number {
+    return artworkAspect(this.artwork);
+  }
+
+  /** The height this drawing takes at `width` dp: the decided one, or the aspect's. */
+  heightAt(width: number): number {
+    return this.height > 0 ? this.height : width / this.aspect;
   }
 }
 
@@ -1811,6 +1862,14 @@ export class Positioned extends VisualNode {
   end: number | null;
   bottom: number | null;
   start: number | null;
+  /** Edges as fractions of the stack (0.3 = 30%), each added to its point offset. */
+  topFraction: number | null = null;
+  endFraction: number | null = null;
+  bottomFraction: number | null = null;
+  startFraction: number | null = null;
+  /** A move by fractions of the child's OWN size, after placement (-0.5 centres on the anchor). */
+  shiftX = 0;
+  shiftY = 0;
   /** Spec S7: explicit stacking order inside the Stack (0 = the child's own depth). */
   layer = 0;
 
@@ -1825,6 +1884,12 @@ export class Positioned extends VisualNode {
       end?: number | null;
       bottom?: number | null;
       start?: number | null;
+      topFraction?: number | null;
+      endFraction?: number | null;
+      bottomFraction?: number | null;
+      startFraction?: number | null;
+      shiftX?: number;
+      shiftY?: number;
       layer?: number;
       key?: string | null;
     },

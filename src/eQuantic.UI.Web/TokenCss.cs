@@ -105,6 +105,24 @@ public static class TokenCss
     public static string Percent(float fraction) =>
         $"{(fraction * 100).ToString("0.##", CultureInfo.InvariantCulture)}%";
 
+    /// <summary>
+    /// One edge of a positioned box: a point offset, a fraction of the containing box, or both
+    /// added (<c>calc(30% - 16px)</c>); null when neither is set. The TS <c>edge()</c> twin writes
+    /// the same string.
+    /// </summary>
+    public static string? Edge(float? point, float? fraction) => (point, fraction) switch
+    {
+        (null, null) => null,
+        ({ } p, null) => Px(p),
+        (null, { } f) => Percent(f),
+        ({ } p, { } f) when p == 0 => Percent(f),
+        ({ } p, { } f) => $"calc({Percent(f)} {(p < 0 ? "-" : "+")} {Px(Math.Abs(p))})",
+    };
+
+    /// <summary>A shift by fractions of the box's OWN size, or null for none (<c>translate(-50%, -100%)</c>).</summary>
+    public static string? Shift(float x, float y) =>
+        x == 0 && y == 0 ? null : $"translate({(x == 0 ? "0" : Percent(x))}, {(y == 0 ? "0" : Percent(y))})";
+
     /// <summary>A bare invariant number ("0.####") — opacity, aspect-ratio, scale factors.</summary>
     public static string Number(float value) => value.ToString("0.####", CultureInfo.InvariantCulture);
 
@@ -641,9 +659,10 @@ public static class PhotonCssGenerator
     /// should have had: under a fine pointer a Button's own box never matched `:hover`, so no button
     /// showed its hover fill, and a Pressable around an IconButton took the inner control's hits
     /// (#430, measured in a browser). The lift has no specificity, so a child that positions itself
-    /// (a raised box, a layer of a Stack) keeps its own. It reaches the pressable's child and no
-    /// deeper, so content behind a child that draws no box of its own (`display: contents`: an
-    /// InView, an Adaptive, a light and dark Image) stays under the slop (#622).
+    /// (a raised box, a layer of a Stack) keeps its own. A child that draws no box of its own
+    /// (`display: contents`: an InView, an Adaptive, a light and dark Image) cannot be positioned,
+    /// so the realizers mark the first descendants that draw one, through any chain of such
+    /// wrappers, with `eq-lift`, and the lift reaches them (#622).
     /// </para>
     /// </summary>
     private static void HitSlop(StringBuilder css, string pointer, float minimum)
@@ -653,7 +672,7 @@ public static class PhotonCssGenerator
         css.AppendLine("  .eq-pressable::before { content: \"\"; position: absolute; top: 50%; left: 50%; "
             + $"width: 100%; height: 100%; min-width: {TokenCss.Px(minimum)}; min-height: {TokenCss.Px(minimum)}; "
             + "transform: translate(-50%, -50%); }");
-        css.AppendLine("  :where(.eq-pressable) > * { position: relative; }");
+        css.AppendLine("  :where(.eq-pressable) > *, :where(.eq-lift) { position: relative; }");
         css.AppendLine("}");
     }
 

@@ -313,6 +313,26 @@ public class AuthoringCoverageTests
     }
 
     [Fact]
+    public void AVerbatimOrGlobalTypeParameter_IsRenamedInEveryAnnotationItAppearsIn()
+    {
+        // `@class` is declared `class$` (#467), and a reference one level down kept the C# spelling:
+        // `IReadOnlyList<@class>` and `@class[]` annotated `@class[]`, which no module parses, and a
+        // parameter named like a global (`Math`) annotated the global (Copilot's review of #661).
+        // A component's methods are written from the parser's model, a plain class's by the shared
+        // lowering, and both declared the C# spelling until the model took the twin's.
+        var component = Ts("public class C : StatelessComponent { " +
+                    "  private int Count<@class>(System.Collections.Generic.IReadOnlyList<@class> values, @class[] more) => values.Count + more.Length; " +
+                    "  public override IComponent Build(RenderContext c) => new Text(\"x\"); }");
+        component.Should().Contain("count<class$>(").And.NotContain("@class");
+
+        var plain = TestHelper.ConvertClass(
+            "public int Count<@class>(System.Collections.Generic.IReadOnlyList<@class> values, @class[] more) => values.Count + more.Length; "
+            + "public int Size<Math>(System.Collections.Generic.IReadOnlyList<Math> values) => values.Count;", "Box");
+        plain.Should().Contain("count<class$>(values: class$[], more: class$[])").And.NotContain("@class");
+        plain.Should().Contain("size<Math$>(values: Math$[])");
+    }
+
+    [Fact]
     public void OptionalParameters_KeepTheirDefaultsInTheSignature()
     {
         // C# lets a caller omit them; without the default in the signature a call the compiler

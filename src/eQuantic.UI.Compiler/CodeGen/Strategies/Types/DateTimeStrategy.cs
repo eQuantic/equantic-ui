@@ -6,8 +6,9 @@ namespace eQuantic.UI.Compiler.CodeGen.Strategies.Types;
 
 /// <summary>
 /// Maps <c>System.DateTime</c> to the runtime <c>DateTime</c> compat type (tick-precise, .NET-faithful).
-/// Construction and statics route through the <c>dateTime</c> factory; instance members/methods become
-/// camelCase calls on the value. Operators (+ - and comparisons) are handled by BinaryExpressionStrategy.
+/// Statics route through the <c>dateTime</c> factory; instance members/methods become camelCase calls on
+/// the value. A constructor is <see cref="DateTimeConstructionStrategy"/>'s, and operators (+ - and
+/// comparisons) are handled by BinaryExpressionStrategy.
 /// </summary>
 /// <remarks>
 /// Priority 15 so it wins over the generic ToString (10), ObjectCreation (5) and member-access (0)
@@ -30,14 +31,6 @@ public class DateTimeStrategy : ConversionStrategyBase
     {
         switch (node)
         {
-            // BaseObjectCreation, not ObjectCreation: `new DateTime(…)` and the TARGET-TYPED
-            // `DateTime x = new(…)` are different syntax nodes, and only the first was matched —
-            // so an ordinary modern-C# field emitted `new DateTime(…)` into JavaScript, where
-            // the type does not exist ("DateTime is not defined", at run time, far from here).
-            case BaseObjectCreationExpressionSyntax oc:
-                return IsType(context.SemanticHelper.GetType(oc))
-                    || (oc is ObjectCreationExpressionSyntax named && named.Type.ToString() == "DateTime");
-
             // A value's ToString is the formatter's (ToStringStrategy), as a number's is: the twin's
             // toString(pattern) knew custom tokens only, so `d.ToString("D")` printed `D`, and a
             // provider crossed to the browser as a name no browser has (#388).
@@ -60,9 +53,6 @@ public class DateTimeStrategy : ConversionStrategyBase
         context.UsedHelpers.Add(Eq.Import);
         switch (node)
         {
-            case BaseObjectCreationExpressionSyntax oc:
-                return $"{Eq.DateTime}({ConvertArgs(oc.ArgumentList, context)})";
-
             case InvocationExpressionSyntax { Expression: MemberAccessExpressionSyntax ma } inv:
             {
                 var name = ma.Name.Identifier.Text;

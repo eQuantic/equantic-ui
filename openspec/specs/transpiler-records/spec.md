@@ -264,8 +264,11 @@ code writes it.
 
 A `with` expression SHALL copy the record's members and then set the members it names, running no
 initializer and no constructor, as .NET's copy does, through the twin's own copy for a struct and for a
-record whose twin eqc writes in a namespace of the vocabulary. An assignment to `this` in a struct
-SHALL copy the value's state onto the instance.
+record whose twin eqc writes in a namespace of the vocabulary. A record whose chain declares a copy
+constructor SHALL be copied through it, as C#'s `with` is: a level whose copy constructor is
+synthesized copies its own members after its base's step, and a declared one starts the level's
+members at their zero, runs its base's step with what its `: base(…)` passes, and then its body. An
+assignment to `this` in a struct SHALL copy the value's state onto the instance.
 
 #### Scenario: A with over a counted record
 
@@ -282,6 +285,18 @@ SHALL copy the value's state onto the instance.
 
 - **WHEN** `struct P5 { public int X, Y; public P5(int x) { this = default; X = x; } public void Reset() { this = new P5(9); } }`
 - **THEN** `new P5(3)` holds `3` and `0`, and `Reset()` leaves `9` and `0`, as in .NET
+
+#### Scenario: A declared copy constructor over a base that declares one
+
+- **WHEN** `record Base1 { public int B = 7; public int Copied; protected Base1(Base1 o) { Copied = o.B + 100; } }`
+  and `record Derived1 : Base1 { public int D = 3; protected Derived1(Derived1 o) : base(o) { D = o.D * 10; } }`,
+  and `x.B = 1; var y = x with { };` over a `new Derived1()`
+- **THEN** `y` holds `B = 0`, `Copied = 101` and `D = 30`, as in .NET
+
+#### Scenario: A deep copy a copy constructor writes
+
+- **WHEN** a record's copy constructor builds its own list from the original's, and the copy's list is added to
+- **THEN** the original's list keeps its count
 
 ### Requirement: Every constructor a record or a struct declares is reached or refused
 
@@ -633,3 +648,104 @@ property's name.
 - **WHEN** `struct FSt { public int X { get; set => field = value * 2; } }` is built with
   `new FSt { X = 5 }`, and `FSt z = default;`
 - **THEN** the first holds `10` and `z.X` is `0`, as in .NET
+
+### Requirement: A member is compared by its type's default comparer
+
+A record's and a struct's equality, and a value tuple's `Equals`, SHALL compare each member as
+`EqualityComparer<T>.Default` compares its type: an array, a class and an interface no tuple
+implements (a collection's, an app's) by reference or their own `Equals`, and a tuple holding an array
+element by element with each element's own comparer. A tuple's `Equals(object)` SHALL find a tuple of
+another arity unequal, and a null `Nullable` pair SHALL be equal only to another.
+
+#### Scenario: An array member
+
+- **WHEN** `new Items(new[] { 1 }) == new Items(new[] { 1 })` is computed for `record Items(int[] Values)`
+- **THEN** it is false, as in .NET, where the arrays were compared element by element
+
+#### Scenario: A tuple holding an array
+
+- **WHEN** `(new[] { 1 }, 1).Equals((new[] { 1 }, 1))` is computed
+- **THEN** it is false, as in .NET
+
+#### Scenario: A collection behind its interface
+
+- **WHEN** `new Viewed(new List<int> { 1 }) == new Viewed(new List<int> { 1 })` is computed for
+  `record Viewed(IReadOnlyList<int> Values)`
+- **THEN** it is false, as in .NET, where the lists were compared element by element
+
+#### Scenario: A tuple of another arity
+
+- **WHEN** `(a, 1).Equals((object)(a, 1, 2))` is computed
+- **THEN** it is false, as in .NET, where the elements past the receiver's were not read
+
+#### Scenario: A null pair
+
+- **WHEN** `new Paired(null) == new Paired(null)` is computed for `record Paired(KeyValuePair<int, int[]>? Value)`
+- **THEN** it is true, as in .NET, where reading the null pair threw
+
+### Requirement: A generic record equals only a value of its own closed type
+
+A generic record's or struct's equality SHALL compare the closed type a value was built as, as .NET
+compares a record's EqualityContract, wherever C# names the type arguments at the construction; `with`
+SHALL keep the closed type of the value it copies. A value whose type arguments the build cannot know
+(built inside generic code) SHALL NOT be taken for another type.
+
+#### Scenario: One value under two type arguments
+
+- **WHEN** `record Box<T>(T Value);` and `new Box<int>(1).Equals((object)new Box<double>(1))` runs
+- **THEN** it answers false, as in .NET, and so does a `List<object>` holding the first asked to
+  `Contains` the second, and `(new Box<int>(1) with { Value = 2 })` against `new Box<double>(2)`
+
+#### Scenario: A generic struct
+
+- **WHEN** `record struct Pair<T>(T A);` and `new Pair<int>(1).Equals((object)new Pair<double>(1))` runs
+- **THEN** it answers false, as in .NET
+
+#### Scenario: One closed type under two spellings
+
+- **WHEN** `new Box<(int A, int B)>((1, 2)).Equals((object)new Box<(int, int)>((1, 2)))` runs
+- **THEN** it answers true, as in .NET, whose closed type erases a tuple's element names (and takes
+  `dynamic` as `object`)
+
+#### Scenario: A target-typed construction
+
+- **WHEN** `Box<int> box = new(1);` is compared with `new Box<double>(1)`
+- **THEN** it answers false, as in .NET
+
+#### Scenario: One closed type
+
+- **WHEN** `new Box<int>(1)` is compared with `new Box<int>(1)`, and with a `Box<int>` built by
+  `Make.Boxed(1)`, a generic method
+- **THEN** both answer true, as in .NET
+
+### Requirement: A mutable struct and a value tuple are copied where C# copies them
+
+A value tuple, and a struct of the compilation that is not readonly, SHALL behave as values: a write of
+a member through one name, or a call of a method that writes the value's own state, SHALL NOT show
+through any other name the value was assigned, passed, returned or boxed to. The twin SHALL copy on
+write: before such a write, the variable, parameter, field or array element that holds the value is
+given a copy of it, each value along the path first. `this` SHALL be copied where it leaves its struct's
+member for a variable, an argument, a return or a boxing, and a mutating call on a property's or a
+call's result SHALL run on a copy. A capture SHALL read the variable, as a C# closure does. A write
+through a readonly field outside its constructor, a `foreach` or `using` variable, an `in` or `ref`
+parameter, or a path whose evaluation has effects is done in place.
+
+#### Scenario: A tuple and a struct assigned to another variable
+
+- **WHEN** `var u = t; t.Item1 = 9;` over `var t = (1, 2);`, and `var b = a; a.X = 9;` over a mutable struct
+- **THEN** `u.Item1` stays `1` and `b.X` keeps its value, as in .NET
+
+#### Scenario: An argument and a mutating method
+
+- **WHEN** a method writes a field of the struct it is passed, and `c.Move(4)` writes `c` after `var d = c;`
+- **THEN** the caller's struct keeps its value, and `d` keeps the value `c` had
+
+#### Scenario: A value inside a value, an array element and a class's field
+
+- **WHEN** `l.A.X = 5` after `var m = l;`, `arr[0].X = 7` after `var p = arr[0];`, and `h.P.X = 3` after `var q = h.P;`
+- **THEN** `m.A.X`, `p.X` and `q.X` keep their values, as in .NET
+
+#### Scenario: this leaving its member
+
+- **WHEN** `public int Snap() { var copy = this; V = 5; return copy.V; }` runs on a value whose `V` is `1`
+- **THEN** it answers `1`, and the value holds `5`

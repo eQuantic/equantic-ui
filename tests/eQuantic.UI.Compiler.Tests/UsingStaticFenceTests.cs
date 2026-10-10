@@ -17,21 +17,49 @@ public class UsingStaticFenceTests
     public void AFrameworkMethodNoStrategyClaims_FailsTheBuild()
     {
         var result = Compile("""
-            using static System.Console;
+            using static System.Environment;
             using eQuantic.UI.Primitives;
             namespace App;
             public sealed class Logged : StatelessComponent
             {
-                public override VisualNode Build(ComponentContext context)
-                {
-                    WriteLine("built");
-                    return new Text("logged", TypeRole.BodyM);
-                }
+                public override VisualNode Build(ComponentContext context) =>
+                    new Text(GetEnvironmentVariable("HOME") ?? "none", TypeRole.BodyM);
             }
             """, "Logged");
 
         result.Errors.Should().ContainSingle(error => error.Code == "EQ2004")
-            .Which.Message.Should().Contain("System.Console.WriteLine").And.Contain("using static");
+            .Which.Message.Should().Contain("System.Environment.GetEnvironmentVariable").And.Contain("using static");
+    }
+
+    /// <summary>
+    /// A member reached bare goes where its qualified spelling goes, so every strategy that claims the
+    /// qualified form claims it too: <c>Now</c>, <c>NewGuid()</c> and <c>WriteLine(…)</c> failed the
+    /// build with EQ2004 while <c>DateTime.Now</c>, <c>Guid.NewGuid()</c> and <c>Console.WriteLine(…)</c>
+    /// translated, because their strategies match a member access only (#556).
+    /// </summary>
+    [Fact]
+    public void AFrameworkMemberItsQualifiedSpellingTranslates_TranslatesBare()
+    {
+        var result = Compile("""
+            using static System.Console;
+            using static System.DateTime;
+            using static System.Guid;
+            using eQuantic.UI.Primitives;
+            namespace App;
+            public sealed class Stamped : StatelessComponent
+            {
+                public override VisualNode Build(ComponentContext context)
+                {
+                    WriteLine("built");
+                    return new Text($"{Now.Year} {UtcNow.Month} {Today.Day} {NewGuid()} {Empty}", TypeRole.BodyM);
+                }
+            }
+            """, "Stamped");
+
+        result.Errors.Should().BeEmpty();
+        result.TypeScript.Should().Contain("console.").And.Contain("dateTime.now()").And.Contain("dateTime.utcNow()")
+            .And.Contain("dateTime.today()").And.Contain("crypto.randomUUID()").And.Contain("00000000-0000-0000-0000-000000000000")
+            .And.NotContain("DateTime.").And.NotContain("Guid.").And.NotContain("Console.");
     }
 
     [Fact]

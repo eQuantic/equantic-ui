@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using eQuantic.UI.Compiler.CodeGen.Extensions;
 using eQuantic.UI.Compiler.CodeGen.Ir;
 
 namespace eQuantic.UI.Compiler.CodeGen.Strategies.Expressions;
@@ -318,8 +319,8 @@ internal static class NullConditionalAssignment
 
         var target = assignment.Left switch
         {
-            MemberBindingExpressionSyntax binding => $"{t}.{binding.Name.Identifier.Text.ToCamelCase()}",
-            MemberAccessExpressionSyntax access when PathFromBinding(access) is { } path => $"{t}{path}",
+            MemberBindingExpressionSyntax binding => $"{t}.{binding.Name.MemberSlot(context)}",
+            MemberAccessExpressionSyntax access when PathFromBinding(access, context) is { } path => $"{t}{path}",
             ElementBindingExpressionSyntax element =>
                 $"{t}[{string.Join(", ", element.ArgumentList.Arguments.Select(a => context.Converter.ConvertExpression(a.Expression)))}]",
             _ => null,
@@ -343,7 +344,7 @@ internal static class NullConditionalAssignment
 
         var t = depth == 0 ? "$t" : $"$t{depth}";
         var parameter = context.TypeAnnotations ? $"({t}: any)" : t;
-        var innerReceiver = $"{t}.{binding.Name.Identifier.Text.ToCamelCase()}";
+        var innerReceiver = $"{t}.{binding.Name.MemberSlot(context)}";
         var inner = tail.WhenNotNull switch
         {
             AssignmentExpressionSyntax assignment => Guarded(innerReceiver, assignment, context, depth + 1),
@@ -362,7 +363,7 @@ internal static class NullConditionalAssignment
         if (tail.Expression is not MemberBindingExpressionSyntax binding) return null;
         var t = $"$t{depth}";
         var parameter = context.TypeAnnotations ? $"({t}: any)" : t;
-        var innerReceiver = $"{t}.{binding.Name.Identifier.Text.ToCamelCase()}";
+        var innerReceiver = $"{t}.{binding.Name.MemberSlot(context)}";
         var inner = tail.WhenNotNull switch
         {
             AssignmentExpressionSyntax assignment => Guarded(innerReceiver, assignment, context, depth + 1),
@@ -374,13 +375,13 @@ internal static class NullConditionalAssignment
 
     /// <summary>The member path of a <c>?.</c> tail (<c>a?.B.C</c> → <c>.b.c</c>), rooted at the
     /// binding; null when the chain roots anywhere else (a call, say — not an assignable target).</summary>
-    private static string? PathFromBinding(MemberAccessExpressionSyntax access)
+    private static string? PathFromBinding(MemberAccessExpressionSyntax access, ConversionContext context)
     {
-        var name = "." + access.Name.Identifier.Text.ToCamelCase();
+        var name = "." + access.Name.MemberSlot(context);
         return access.Expression switch
         {
-            MemberBindingExpressionSyntax binding => "." + binding.Name.Identifier.Text.ToCamelCase() + name,
-            MemberAccessExpressionSyntax nested when PathFromBinding(nested) is { } inner => inner + name,
+            MemberBindingExpressionSyntax binding => "." + binding.Name.MemberSlot(context) + name,
+            MemberAccessExpressionSyntax nested when PathFromBinding(nested, context) is { } inner => inner + name,
             _ => null,
         };
     }
