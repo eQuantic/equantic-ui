@@ -12,8 +12,8 @@ site makes for them.
 The Server Action endpoint SHALL refuse with 403, before the action runs, a request whose `Origin`
 is neither the app's own host nor an origin the app allows, the opaque `null` included, and a request
 without an `Origin` whose `Sec-Fetch-Site` is `cross-site` or `same-site`. A request with neither
-header SHALL run. The app's own host SHALL be the request's `Host`, compared by host and port with a
-scheme's default port left out, and a raw `X-Forwarded-Host` SHALL NOT be read.
+header SHALL run. The app's own host SHALL be the request's `Host`, compared by host and port, a `Host` without a
+port standing for the origin scheme's default one, and a raw `X-Forwarded-Host` SHALL NOT be read.
 
 #### Scenario: The app's own page
 
@@ -24,6 +24,11 @@ scheme's default port left out, and a raw `X-Forwarded-Host` SHALL NOT be read.
 
 - **WHEN** an action is posted with `Origin: https://[::1]:8443` to the host `[::1]:8443`
 - **THEN** it runs
+
+#### Scenario: The same host on another port
+
+- **WHEN** an action is posted with `Origin: https://app.example` to the host `app.example:80`
+- **THEN** the answer is 403 and the action does not run
 
 #### Scenario: Another site
 

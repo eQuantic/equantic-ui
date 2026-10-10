@@ -34,10 +34,12 @@ to write its own middleware comparing `Origin` and `Sec-Fetch-Site` with the hos
 - eqc, the runtime, the realizers, the Photon shells and the templates do not change: the browser
   already sends both headers on its own.
 - The public surface grows (`ServerActionsOptions`, `UIOptions.AllowServerActionOrigins`), and so
-  does the developer surface (the `EQuantic:ServerActions` section).
+  does the developer surface (the `EQuantic:ServerActions` section). One public signature changes:
+  `ServerActionsMiddleware`'s constructor takes an `IOptionsMonitor<ServerActionsOptions>`.
 
 ## The break
 
 A request from a page on another origin than the app's host is refused where it used to run. An app
 whose pages call its actions from another domain lists that origin in
-`EQuantic:ServerActions:AllowedOrigins`.
+`EQuantic:ServerActions:AllowedOrigins`. An app that constructs `ServerActionsMiddleware` itself,
+rather than through `UseServerActions()`, passes it an `IOptionsMonitor<ServerActionsOptions>`.
