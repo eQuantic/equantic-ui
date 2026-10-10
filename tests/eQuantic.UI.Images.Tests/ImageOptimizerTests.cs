@@ -4,7 +4,7 @@ namespace eQuantic.UI.Images.Tests;
 
 public class ImageOptimizerTests
 {
-    private readonly ImageOptimizer _optimizer = new();
+    private readonly ImageOptimizer _optimizer = new(new ImageOptimizationOptions());
 
     private static Stream CreateTestImage(int width, int height, string format = "jpeg") =>
         TestImages.Stream(TestImages.Solid(width, height, SKColors.Red,
@@ -267,6 +267,34 @@ public class ImageOptimizerTests
         var act = () => _optimizer.OptimizeAsync(source, 640, 75, "image/webp");
 
         await act.Should().ThrowAsync<InvalidDataException>().WithMessage("*20000 × 20000 pixels*");
+    }
+
+    [Fact]
+    public async Task OptimizeAsync_RefusesASourcePastMaxSourceSize_WithoutReadingItToItsEnd()
+    {
+        // A caller's own stream has no length for the endpoint's check to read, so the optimizer
+        // bounds the read itself: a well-formed JPEG of a megabyte, past a 64 KB budget, is refused
+        // once it passes the budget.
+        var jpeg = TestImages.WithPaddingSegments(TestImages.Solid(64, 32, SKColors.Red), 16);
+        await using var source = new AsyncOnlyStream(jpeg);
+        var optimizer = new ImageOptimizer(new ImageOptimizationOptions { MaxSourceSize = 64 * 1024 });
+
+        var act = () => optimizer.OptimizeAsync(source, 32, 75, "image/jpeg");
+
+        await act.Should().ThrowAsync<InvalidDataException>().WithMessage("*MaxSourceSize*");
+        source.BytesRead.Should().BeLessThan(256 * 1024);
+    }
+
+    [Fact]
+    public async Task OptimizeAsync_ReadsASourceAsLargeAsMaxSourceSize()
+    {
+        var jpeg = TestImages.Solid(64, 32, SKColors.Red);
+        await using var source = new AsyncOnlyStream(jpeg);
+        var optimizer = new ImageOptimizer(new ImageOptimizationOptions { MaxSourceSize = jpeg.Length });
+
+        var result = await optimizer.OptimizeAsync(source, 32, 75, "image/jpeg");
+
+        TestImages.SizeOf(result).Should().Be((32, 16));
     }
 
     [Fact]

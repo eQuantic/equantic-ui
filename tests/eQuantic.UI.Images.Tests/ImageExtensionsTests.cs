@@ -1,5 +1,6 @@
 using eQuantic.UI.Images;
 using Microsoft.Extensions.DependencyInjection;
+using SkiaSharp;
 
 namespace eQuantic.UI.Images.Tests;
 
@@ -69,5 +70,22 @@ public class ImageExtensionsTests
         var options = provider.GetRequiredService<ImageOptimizationOptions>();
 
         options.DefaultQuality.Should().Be(75);
+    }
+
+    [Fact]
+    public async Task AddImageOptimization_TheServicesReadTheAppsMaxSourceSize()
+    {
+        var services = new ServiceCollection();
+        services.AddImageOptimization(opts => opts.MaxSourceSize = 64 * 1024);
+        using var provider = services.BuildServiceProvider();
+        var jpeg = TestImages.WithPaddingSegments(TestImages.Solid(64, 32, SKColors.Red), 16);
+
+        var optimize = () => provider.GetRequiredService<ImageOptimizer>()
+            .OptimizeAsync(TestImages.Stream(jpeg), 32, 75, "image/jpeg");
+        var placeholder = () => provider.GetRequiredService<BlurPlaceholderGenerator>()
+            .GenerateAsync(TestImages.Stream(jpeg));
+
+        await optimize.Should().ThrowAsync<InvalidDataException>().WithMessage("*MaxSourceSize*");
+        await placeholder.Should().ThrowAsync<InvalidDataException>().WithMessage("*MaxSourceSize*");
     }
 }

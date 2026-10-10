@@ -4,7 +4,7 @@ namespace eQuantic.UI.Images.Tests;
 
 public class BlurPlaceholderGeneratorTests
 {
-    private readonly BlurPlaceholderGenerator _generator = new();
+    private readonly BlurPlaceholderGenerator _generator = new(new ImageOptimizationOptions());
 
     private static Stream CreateTestImage(int width, int height) =>
         TestImages.Stream(TestImages.Solid(width, height, SKColors.Blue));
@@ -149,5 +149,18 @@ public class BlurPlaceholderGeneratorTests
         {
             File.Delete(tempFile);
         }
+    }
+
+    [Fact]
+    public async Task GenerateAsync_RefusesASourcePastMaxSourceSize_WithoutReadingItToItsEnd()
+    {
+        var jpeg = TestImages.WithPaddingSegments(TestImages.Solid(64, 32, SKColors.Blue), 16);
+        await using var source = new AsyncOnlyStream(jpeg);
+        var generator = new BlurPlaceholderGenerator(new ImageOptimizationOptions { MaxSourceSize = 64 * 1024 });
+
+        var act = () => generator.GenerateAsync(source);
+
+        await act.Should().ThrowAsync<InvalidDataException>().WithMessage("*MaxSourceSize*");
+        source.BytesRead.Should().BeLessThan(256 * 1024);
     }
 }

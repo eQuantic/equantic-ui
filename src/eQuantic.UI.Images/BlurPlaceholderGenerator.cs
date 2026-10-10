@@ -9,6 +9,18 @@ public class BlurPlaceholderGenerator
     private const int MaxDimension = 8;
     private const int BlurQuality = 70;
 
+    private readonly ImageOptimizationOptions _options;
+
+    /// <summary>
+    /// A generator that reads no source past <see cref="ImageOptimizationOptions.MaxSourceSize"/>.
+    /// Resolved from the services <see cref="ImageExtensions.AddImageOptimization"/> registers, it
+    /// reads the app's own options.
+    /// </summary>
+    public BlurPlaceholderGenerator(ImageOptimizationOptions options)
+    {
+        _options = options;
+    }
+
     /// <summary>
     /// Generates a tiny blur placeholder as a base64 data URL.
     /// The output is an 8px-wide JPEG suitable for CSS background-image, from the source's first
@@ -16,10 +28,10 @@ public class BlurPlaceholderGenerator
     /// </summary>
     /// <param name="source">Source image stream: a JPEG, PNG, GIF, WebP or BMP.</param>
     /// <returns>A data URL like "data:image/jpeg;base64,..."</returns>
-    /// <exception cref="InvalidDataException">The source is not one of the formats read, or holds too many pixels to decode.</exception>
+    /// <exception cref="InvalidDataException">The source runs past <see cref="ImageOptimizationOptions.MaxSourceSize"/>, is not one of the formats read, or holds too many pixels to decode.</exception>
     public async Task<string> GenerateAsync(Stream source)
     {
-        using var image = await SourceImage.ReadAsync(source);
+        using var image = await SourceImage.ReadAsync(source, _options.MaxSourceSize);
         using var decoded = image.Decode();
 
         var ratio = (double)decoded.Height / decoded.Width;

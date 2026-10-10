@@ -6,6 +6,18 @@ namespace eQuantic.UI.Images;
 /// </summary>
 public class ImageOptimizer
 {
+    private readonly ImageOptimizationOptions _options;
+
+    /// <summary>
+    /// An optimizer that reads no source past <see cref="ImageOptimizationOptions.MaxSourceSize"/>.
+    /// Resolved from the services <see cref="ImageExtensions.AddImageOptimization"/> registers, it
+    /// reads the app's own options.
+    /// </summary>
+    public ImageOptimizer(ImageOptimizationOptions options)
+    {
+        _options = options;
+    }
+
     /// <summary>
     /// Optimizes an image by resizing to the specified width and encoding in the target format.
     /// <para>
@@ -19,10 +31,10 @@ public class ImageOptimizer
     /// <param name="quality">Output quality (1-100).</param>
     /// <param name="outputFormat">Target MIME type ("image/webp", "image/png"); any other is JPEG.</param>
     /// <returns>Optimized image bytes.</returns>
-    /// <exception cref="InvalidDataException">The source is not one of the formats read, or holds too many pixels to decode.</exception>
+    /// <exception cref="InvalidDataException">The source runs past <see cref="ImageOptimizationOptions.MaxSourceSize"/>, is not one of the formats read, or holds too many pixels to decode.</exception>
     public async Task<byte[]> OptimizeAsync(Stream source, int width, int quality, string outputFormat)
     {
-        using var image = await SourceImage.ReadAsync(source);
+        using var image = await SourceImage.ReadAsync(source, _options.MaxSourceSize);
         if (image.IsAnimated)
             return image.Bytes;
 

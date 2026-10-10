@@ -47,8 +47,10 @@ internal sealed class SourceImage : IDisposable
     public SKSizeI Size => Displayed(_codec.Info.Width, _codec.Info.Height, _codec.EncodedOrigin);
 
     /// <summary>Reads a source whole, refusing one that is not a web format or holds too many pixels.</summary>
+    /// <param name="source">The source, read to its end.</param>
+    /// <param name="maxSourceSize">The most bytes the source may run to, <see cref="ImageOptimizationOptions.MaxSourceSize"/>.</param>
     /// <exception cref="InvalidDataException">The source is not one of the formats read, or holds more than <see cref="MaxPixels"/> pixels.</exception>
-    public static async Task<SourceImage> ReadAsync(Stream source)
+    public static async Task<SourceImage> ReadAsync(Stream source, long maxSourceSize)
     {
         using var buffer = new MemoryStream();
         await source.CopyToAsync(buffer);
