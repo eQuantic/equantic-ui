@@ -273,6 +273,12 @@ public class ClassDispatchConformanceTests
                 public Rethrown(T value, bool throwSelf) { Seen = Message; if (throwSelf) throw this; }
             }
             public class Holder { public class Nested : Exception { } }
+            public class Keyed : Exception
+            {
+                private readonly string message;
+                public Keyed(string text) : base("base " + text) { message = "own " + text; }
+                public string Own => message;
+            }
         }
         """;
 
@@ -311,6 +317,8 @@ public class ClassDispatchConformanceTests
             "try { new Rethrown<int>(1, true); return \"not thrown\"; } catch (Rethrown<string>) { return \"string\"; } catch (Rethrown<int> r) { return \"int|\" + r.Seen; }"),
         ("a generic class's default message", "return new Rethrown<int>(2, false).Message;"),
         ("a nested class's default message", "return new Holder.Nested().Message;"),
+        // A field a case apart from a member the base answers keeps a slot of its own (#696).
+        ("a field named like a member its base answers", "var k = new Keyed(\"x\"); return k.Message + \"|\" + k.Own;"),
     ];
 
     [SkippableTheory]
