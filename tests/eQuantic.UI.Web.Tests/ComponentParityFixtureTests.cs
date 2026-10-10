@@ -208,6 +208,26 @@ public class ComponentParityFixtureTests
                 ],
             }), NoPresses),
 
+        // A ZERO WEIGHT (#680): the server raised it to 1 while the twin wrote the zero, so the two
+        // disagreed about whether the item grows. At a basis it keeps the basis; without one it
+        // starts from its content, which is a declaration of its own on each side.
+        ("flexible-zero-weight-at-a-basis", Line(wrap: true,
+            new Flexible(new Text("picture", TypeRole.BodyM, Theme.TextPrimary), flex: 0, basis: 540),
+            new Flexible(new Text("story", TypeRole.BodyM, Theme.TextPrimary), flex: 1, basis: 380)), NoPresses),
+        ("flexible-zero-weight-from-content", Line(wrap: false,
+            new Flexible(new Text("label", TypeRole.BodyM, Theme.TextPrimary), flex: 0),
+            new Flexible(new Text("rest", TypeRole.BodyM, Theme.TextPrimary), flex: 1)), NoPresses),
+        // A FRACTIONAL basis (#692): the server wrote it through TokenCss.Px, two decimals at most,
+        // and the twin wrote it raw, so 540.125 and the float 540.12 each hydrated as another class.
+        ("flexible-fractional-basis", Line(wrap: true,
+            new Flexible(new Text("half", TypeRole.BodyM, Theme.TextPrimary), flex: 1, basis: 540.125f),
+            new Flexible(new Text("float", TypeRole.BodyM, Theme.TextPrimary), flex: 1, basis: 540.12f)), NoPresses),
+        // A zero weight's SHRINK FACTOR: the declarations Chrome lays out at 480 and 520 in a row of
+        // 1000, the numbers FlexZeroWeightLayoutTests holds Photon to.
+        ("flexible-zero-weight-shrink-factor", Line(wrap: false,
+            new Flexible(new Text("three", TypeRole.BodyM, Theme.TextPrimary), flex: 0, basis: 540, shrink: 3),
+            new Flexible(new Text("one", TypeRole.BodyM, Theme.TextPrimary), flex: 0, basis: 540, shrink: 1)), NoPresses),
+
         // AN ADAPTIVE NODE'S ARMS (#669, #670, #671), the issues' own trees. Fractional thresholds
         // name their gates with an underscore, and past a thousand dp the two producers spelled one
         // differently; a Gap arm lowers on its column's axis; a Positioned arm is anchored in its
@@ -309,6 +329,13 @@ public class ComponentParityFixtureTests
         var column = new Column(gap);
         foreach (var child in children) column.Add(child);
         return column;
+    }
+
+    private static VisualNode Line(bool wrap, params VisualNode[] children)
+    {
+        var row = new Row(gap: 0) { Wrap = wrap };
+        foreach (var child in children) row.Add(child);
+        return row;
     }
 
     [Fact]

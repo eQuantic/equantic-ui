@@ -27,6 +27,8 @@ export function unicodeCategory(value: number | string, index?: number): string 
   } else if (index === undefined) {
     character = value;
   } else {
+    // The string overload refuses a null string by its name before it reads the index (#569).
+    if (value == null) throw exception('System.ArgumentNullException', "Value cannot be null. (Parameter 's')");
     if (index < 0 || index >= value.length) {
       throw exception(
         'System.ArgumentOutOfRangeException',

@@ -2114,24 +2114,6 @@ record of a release, the wiki's Upgrading page is the distillate.
   level, declared and synthesized, kept as pins. The runtime's structs are
   all readonly, so its twins do not change. Proposed and archived through OpenSpec
   (`openspec/specs/transpiler-records`).
-- **2026-10-06 · A nested class is a module of its own, named by its owner**: a class declared inside
-  another one had no module, so `Roster.First()` building a private `Row` threw, and where a top-level
-  class had its name the nested one resolved to it, so `new Cart().Size()` read the top-level `Item`'s
-  3 for its own 9 ([#584](https://github.com/eQuantic/equantic-ui/issues/584)); a nested record wrote
-  the module a top-level record of its name writes, and the two were refused (EQ2009); a nested static
-  class outside a component had no module. Every class, static class, record and struct declared
-  inside another type is a module named by the types that contain it and its own name joined by `$`
-  (`Cart$Item`), which no C# type can take, and every reference to it, a construction, a type test, a
-  static member, an operator, a zero and an annotation alike, names that twin and imports it, through
-  one name the parser, the resolver and the emitters read; one inside a server-only class, an
-  exception or an attribute has none, and client code that reaches it, by a name, an alias, `using
-  static`, an operator or a zero, is refused with EQ2010, the import every module makes being the net
-  under the fences; one inside a type the runtime provides is the runtime's. A record's text keeps its
-  C# name. The runtime's one nested type is `CodeBlock$CodeMetrics`. The server names the page it
-  serves by the same rule, one file linked into both (`TwinName.OfType`): a page declared inside a
-  class asked the browser for a module named by its simple name, which nothing writes any more, and
-  one inside an owner that never crosses has no route and cannot be mapped. Proposed and archived through OpenSpec
-  (`openspec/specs/transpiler-classes`).
 - **2026-10-07 · An adaptive arm is laid out where it stands**: three ways an `AdaptiveNode`'s arm
   was not laid out as written, found building eQuantic Auth's landing page
   ([#669](https://github.com/eQuantic/equantic-ui/issues/669),
@@ -2153,6 +2135,88 @@ record of a release, the wiki's Upgrading page is the distillate.
   builds a Spacer takes no space in a Photon column
   ([#736](https://github.com/eQuantic/equantic-ui/issues/736)). Proposed and
   archived through OpenSpec (`openspec/specs/adaptive-layout`).
+- **2026-10-07 · A Flexible keeps the weight it was given**: the constructor raised a zero weight
+  to 1, so `Flexible(child, flex: 0, basis: 540)` rendered on the server as `flex: 1 1 540px` and
+  grew, while the browser's twin, which never clamped, wrote `flex: 0 1 540px` for the same node;
+  Cura's picture grew from 540 to 657 at a 1440 window and squeezed the text beside it
+  ([#680](https://github.com/eQuantic/equantic-ui/issues/680)). A zero weight takes no share now, as
+  Flutter's flex 0 and CSS's flex-grow 0 take none: it keeps its basis, or starts from its content
+  (`auto` on the web, the main axis decided by the content on Photon), on the server, in the twin
+  and on Photon, whose single-line pass used to drop a zero that reached it through an object
+  initializer. A negative weight, basis or shrink, and a basis that is not finite, is refused where
+  it is written, on the C# accessor and in the twin after its trailing config. Measured in Chrome,
+  pinned on each side, in the component parity fixture and on Photon, and proved both ways. The
+  review then found Photon taking an overflow back from a zero weight by rules of its own: it stopped
+  the item at its child's min-content and ignored its shrink factor, and a zero weight holding text
+  was cut first. It gives space back now as the web's `min-width: 0` and shrink factor let it,
+  together with the other items that shrink, on Chrome's numbers; and `FlexNode.Wrap` says where
+  Photon's wrapping pass still departs from the web
+  ([#728](https://github.com/eQuantic/equantic-ui/issues/728)). Copilot's first round found the slot
+  painting a fixed child at the item's size: a 400 box in an item shrunk to 300 was drawn at 300,
+  where a browser keeps it at 400 and lets it overflow. The item takes the slot now and a fixed child
+  keeps its own size, and `Flexible.Shrink` no longer says shrinking never crosses the min-content
+  floor. Its second round found the classifier behind that rule reading the declared size of nine
+  of the fourteen node types that declare one, so a 320 camera preview was drawn at 300: it reads
+  all of them now, a scroller's width only up to the slot as the web caps it, and a test that
+  enumerates the vocabulary fails on the next one it misses. The last round found that ceiling
+  stopping at a wrapper (`Pinned(ScrollView(…))` kept painting at 400 in a 300 item) and a wrapping
+  line that holds still giving a Flexible its child's width instead of its basis: the ceiling now
+  reaches the scroller while it measures, a wrapping line builds its items as the slot does, and
+  the zero-weight shrink contract is stated for rows, Photon's single-line column taking nothing
+  back from an overflow yet. A rehearsal of the merge with #739, which lays an AdaptiveNode's arm out
+  in the node's place, found the classifier asking the AdaptiveNode, which declares no size, so an
+  arm of 400 was drawn at 300, and a scroller capped on a wrapping line scrolling by 400 where Chrome
+  scrolls by 500, because a scroller kept the range of its first measure: the classifiers now ask
+  the node a child measured to, the arm for an AdaptiveNode, and a scroller registers the range of
+  the measure the tree keeps. The same question, asked of the other flex numbers, found two more. A Spacer raised a weight below 1 to 1,
+  in C# and in the twin, and now refuses it where it is written, as Flutter asserts `flex > 0`
+  ([#691](https://github.com/eQuantic/equantic-ui/issues/691)). And the twin wrote a basis raw where
+  the server wrote it through `TokenCss.Px`, so a basis of 540.125, or the float 540.12 the twin
+  holds as 540.1199951171875, hydrated as another class; it goes through `px` now, the twin every
+  other length already used ([#692](https://github.com/eQuantic/equantic-ui/issues/692)). Riding
+  along, the wiki stopped describing an Image that does not ship: SupportedFeatures names
+  `eQuantic.UI.Images` and what it ships, and the email example's logo has the height `Image`
+  requires ([#684](https://github.com/eQuantic/equantic-ui/issues/684)); and its button is a Link
+  around a painted Box, because an email refuses a Button
+  ([#694](https://github.com/eQuantic/equantic-ui/issues/694)). Proposed and archived through
+  OpenSpec in seven changes (`openspec/specs/flex-layout`).
+- **2026-10-10 · A copy of a generic record or struct keeps its closed type**: main was red since #697
+  ([#751](https://github.com/eQuantic/equantic-ui/issues/751)). A mutable struct's `$clone` and a
+  record's `with` through a declared copy constructor build the copy without its constructor, so the
+  copy carried no closed type, and #689's `sameClosure` takes an unmarked value for any other: a boxed
+  `Pair<double>` equalled a `Pair<int>`. The copy is marked as its source was, where it is allocated
+  (`$eq.closingLike`, which `withPatch` uses too), so a copy constructor or an `init` accessor that
+  compares the copy meets its closed type, and both name their binding `$copied`, as #661's guard asks.
+  Main's CI runs had stayed queued, so the suites of the pull requests that merged main found it.
+- **2026-10-08 · A null argument is measured over the translated surface, and a twin refuses it by
+  name**: one measurement instead of one fix per report
+  ([#569](https://github.com/eQuantic/equantic-ui/issues/569)). `NullArgumentConformanceTests` derives
+  the surface from the BCL audit's record and reflection, lets eqc's own diagnostics say what it
+  translates, and calls each member with a null for each reference parameter on both sides, a control
+  without the null beside it. LINQ's `Max`, `Min` and `ToDictionary`, a sequence named by its
+  parameter, `CompareTo(object)`, `new Guid(text)`, `GetUnicodeCategory` and the cancellation pair refuse
+  a null as .NET does now, 67 probes. The 402 left are a baseline that only shrinks, each with its
+  reason, most of them members lowered to JavaScript's own method, where refusing a null by name is a
+  guard at every call, a decision. Proposed and archived through OpenSpec
+  (`openspec/specs/transpiler-exceptions`).
+- **2026-10-06 · A nested class is a module of its own, named by its owner**: a class declared inside
+  another one had no module, so `Roster.First()` building a private `Row` threw, and where a top-level
+  class had its name the nested one resolved to it, so `new Cart().Size()` read the top-level `Item`'s
+  3 for its own 9 ([#584](https://github.com/eQuantic/equantic-ui/issues/584)); a nested record wrote
+  the module a top-level record of its name writes, and the two were refused (EQ2009); a nested static
+  class outside a component had no module. Every class, static class, record and struct declared
+  inside another type is a module named by the types that contain it and its own name joined by `$`
+  (`Cart$Item`), which no C# type can take, and every reference to it, a construction, a type test, a
+  static member, an operator, a zero and an annotation alike, names that twin and imports it, through
+  one name the parser, the resolver and the emitters read; one inside a server-only class, an
+  exception or an attribute has none, and client code that reaches it, by a name, an alias, `using
+  static`, an operator or a zero, is refused with EQ2010, the import every module makes being the net
+  under the fences; one inside a type the runtime provides is the runtime's. A record's text keeps its
+  C# name. The runtime's one nested type is `CodeBlock$CodeMetrics`. The server names the page it
+  serves by the same rule, one file linked into both (`TwinName.OfType`): a page declared inside a
+  class asked the browser for a module named by its simple name, which nothing writes any more, and
+  one inside an owner that never crosses has no route and cannot be mapped. Proposed and archived through OpenSpec
+  (`openspec/specs/transpiler-classes`).
 
 ## Retired documents
 

@@ -115,6 +115,20 @@ public readonly record struct LayoutConstraints(AxisConstraint Width, AxisConstr
     /// </summary>
     public bool Truncating { get; init; }
 
+    /// <summary>
+    /// Whether a declared WIDTH is a ceiling at <see cref="MaxWidth"/> rather than a size kept
+    /// whatever the room: what a Flexible's slot asks of a scroller, which the web writes
+    /// <c>max-width: 100%</c> beside its width, so a 400-wide one in a 300 item is 300 there.
+    /// <para>
+    /// It travels as <see cref="Truncating"/> does, and for the same reason: the slot decides it and
+    /// only the node that declares the width can act on it, so it reaches the scroller through
+    /// layout-transparent wrappers (<c>Pinned(ScrollView(…))</c>), and through an AdaptiveNode to
+    /// the arm it measures to, and the scroller measures, clips and scrolls at the capped width.
+    /// <see cref="ForChild"/> clears it for every other door.
+    /// </para>
+    /// </summary>
+    internal bool WidthIsACeiling { get; init; }
+
     public float MaxWidth => Width.Max;
     public float MaxHeight => Height.Max;
 
@@ -135,7 +149,7 @@ public readonly record struct LayoutConstraints(AxisConstraint Width, AxisConstr
     /// </summary>
     public LayoutConstraints ForChild(float maxWidth, float maxHeight) =>
         new(Width.WithMax(maxWidth).Released(), Height.WithMax(maxHeight).Released())
-        { Truncating = false };
+        { Truncating = false, WidthIsACeiling = false };
 
     /// <summary>Being cut to fit. See <see cref="Truncating"/>.</summary>
     public LayoutConstraints Truncated() => this with { Truncating = true };

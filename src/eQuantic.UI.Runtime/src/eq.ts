@@ -158,7 +158,7 @@ import { sortedSet, sortedDictionary, sortedList } from './utils/sorted';
 import { liftArith, liftCmp, liftUnary } from './utils/nullable';
 import { equals, equalsGroup } from './utils/equals';
 import { hash, hashCombine, hashFields, hashGroup, identityHash, instanceHash } from './utils/hash';
-import { guidParse, guidTryParse } from './utils/guid';
+import { guidOf, guidParse, guidTryParse } from './utils/guid';
 import { CancellationToken, CancellationTokenRegistration, CancellationTokenSource } from './utils/cancellation';
 import {
   bases as exceptionBases,
@@ -202,12 +202,8 @@ import { ClassBuilder, joinClasses, whenClass } from './utils/class-builder';
  * plain object spread would drop the prototype, taking every method on it. This copies the
  * prototype, then the fields, then the patch.
  */
-export const withPatch = <T extends object>(value: T, patch: Partial<T>): T => {
-  const copy = Object.assign(Object.create(Object.getPrototypeOf(value)), value, patch) as T;
-  const closure = closures.get(value);
-  if (closure !== undefined) closures.set(copy, closure);
-  return copy;
-};
+export const withPatch = <T extends object>(value: T, patch: Partial<T>): T =>
+  Object.assign(closingLike(Object.create(Object.getPrototypeOf(value)) as T, value), value, patch);
 
 /**
  * The closed type a generic record or struct was built as, by instance (#651). C# compares a
@@ -222,6 +218,20 @@ const closures = new WeakMap<object, string>();
 export const closing = <T extends object>(value: T, typeArguments: string): T => {
   closures.set(value, typeArguments);
   return value;
+};
+
+/**
+ * `copy` as built for the closed type `source` was built as: a copy of a generic record or struct is a
+ * value of its source's type. A struct's `$clone` and a record's `with` build the copy without its
+ * constructor, so the copy went unmarked, and a boxed `Pair<double>` equalled a `Pair<int>` (#751).
+ * Called on the bare copy, before a member or a patch is written to it: .NET's copy is of its closed
+ * type from its allocation, so a copy constructor or an `init` accessor that compares the copy must
+ * not meet an unmarked one (found by Copilot's review of #752).
+ */
+export const closingLike = <T extends object>(copy: T, source: object): T => {
+  const closure = closures.get(source);
+  if (closure !== undefined) closures.set(copy, closure);
+  return copy;
 };
 
 /**
@@ -294,6 +304,7 @@ export const $eq = {
   withPatch,
   /** A generic record's closed type, by value, and the comparison of two — see `closing`. */
   closing,
+  closingLike,
   sameClosure,
   /** A twin's JSON, a property's store under the property's name — see utils/twin-json. */
   json: twinJson,
@@ -510,7 +521,7 @@ export const $eq = {
     fields: hashFields,
   },
   /** A Guid's canonical text, the lowercase `D` format, from any format .NET reads. */
-  guid: { parse: guidParse, tryParse: guidTryParse },
+  guid: { parse: guidParse, tryParse: guidTryParse, of: guidOf },
   /**
    * The cancellation pair, built where C# builds it: `new CancellationTokenSource(delay?)`,
    * `CancellationToken.None` (and `default`), `new CancellationToken(canceled)`,
