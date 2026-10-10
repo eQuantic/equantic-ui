@@ -95,7 +95,7 @@ internal sealed class MethodLowering
         // the constraints drop, since TypeScript needs none of them to bind. Plain JavaScript has no
         // type parameters, and `<T>` there is a syntax error.
         var generics = TypeAnnotations && method.TypeParameterList is { Parameters.Count: > 0 } list
-            ? $"<{string.Join(", ", list.Parameters.Select(parameter => parameter.Identifier.Text))}>"
+            ? $"<{string.Join(", ", list.Parameters.Select(parameter => parameter.Identifier.ValueText.ToJsIdentifier()))}>"
             : "";
         var body = Body(method.Body, method.ExpressionBody?.Expression, isIterator, byReference);
         var modifiers = (method.Modifiers.Any(SyntaxKind.StaticKeyword) || asStatic ? "static " : "")

@@ -112,6 +112,11 @@ public static class UIExtensions
         // Add authorization service for Server Actions
         // TryAdd allows users to override with their own implementation
         services.TryAddSingleton<IServerActionAuthorizationService, ServerActionAuthorizationService>();
+        // A refused CLIENT NAVIGATION into a page that requires authorization is answered 401 or 403,
+        // which the router acts on, instead of a challenge a fetch cannot follow (#673).
+        // It WRAPS the handler the app registered before AddUI, so the app's own answers stand for
+        // every request that is not a navigation; the framework's when there is none.
+        NavigationAuthorizationResultHandler.Decorate(services);
 
         // Add SSR rendering service
         services.TryAddSingleton<IServerRenderingService, ServerRenderingService>();
@@ -249,8 +254,10 @@ public static class UIExtensions
         options.DeclareRoute(route, pageType, title);
 
         // The same two endpoints a [Page] gets — the route, and its language-prefixed twin.
+        // The page's own [Authorize] travels with it, wherever it is routed from (#673).
         foreach (var pattern in CultureEndpointPatterns(options, route))
-            endpoints.MapGetAndHead(pattern, async context => await ServeAppShell(context, pageType, new DeclaredPage(title, null)));
+            endpoints.MapGetAndHead(pattern, async context => await ServeAppShell(context, pageType, new DeclaredPage(title, null)))
+                .WithPageAuthorization(pageType);
         return endpoints;
     }
 
@@ -315,8 +322,11 @@ public static class UIExtensions
                     var declared = new DeclaredPage(pageAttr.Title, pageAttr.Description);
                     // The endpoint carries the page's TYPE: by its simple name, two pages of one name in
                     // two namespaces rendered as one (#514).
+                    // And its [Authorize], as the endpoint's metadata: the app's authorization
+                    // middleware refuses a request before the page is built (#673).
                     foreach (var route in CultureEndpointPatterns(options, pageAttr.Route))
-                        endpoints.MapGetAndHead(route, async context => await ServeAppShell(context, pageType, declared));
+                        endpoints.MapGetAndHead(route, async context => await ServeAppShell(context, pageType, declared))
+                            .WithPageAuthorization(pageType);
                 }
             }
         }
@@ -338,15 +348,20 @@ public static class UIExtensions
                 return;
             }
             await stream.CopyToAsync(context.Response.Body);
-        });
+        })
+        // The SDK's own code is public: a sign-in page under an app's fallback policy has to load it
+        // to come alive (#673). What a page may show is the page's route's to decide.
+        .AllowAnonymous();
 
         // Debug/Fallback: Manually serve component files if StaticFiles misses them
         endpoints.MapGetAndHead("/_equantic/{name}.js", async context =>
         {
             var name = (string?)context.GetRouteValue("name");
-            var path = Path.Combine(context.RequestServices.GetRequiredService<IWebHostEnvironment>().WebRootPath, "_equantic", $"{name}.js");
+            var path = AssetPaths.Resolve(
+                Path.Combine(context.RequestServices.GetRequiredService<IWebHostEnvironment>().WebRootPath, "_equantic"),
+                name, ".js");
 
-            if (File.Exists(path))
+            if (path is not null && File.Exists(path))
             {
                 context.Response.ContentType = "application/javascript";
                 // Hot reload rewrites fixed-name bundles in place — immutable caching would pin the
@@ -363,18 +378,25 @@ public static class UIExtensions
             {
                 context.Response.StatusCode = 404;
                 // Try finding it in the local directory (Dev scenario)
-                var localPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "_equantic", $"{name}.js");
-                 if (File.Exists(localPath))
+                var localPath = AssetPaths.Resolve(
+                    Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "_equantic"), name, ".js");
+                if (localPath is not null && File.Exists(localPath))
                 {
                     context.Response.ContentType = "application/javascript";
                     await context.Response.SendFileAsync(localPath);
                 }
-                else
+                else if (path is not null)
                 {
-                    await context.Response.WriteAsync($"// 404: Component {name} not found at {path} or {localPath}");
+                    // The paths are the server's own, and this route serves anyone: they are for a
+                    // developer, so only Development writes them.
+                    context.Response.ContentType = "application/javascript";
+                    await context.Response.WriteAsync(
+                        context.RequestServices.GetRequiredService<IWebHostEnvironment>().IsDevelopment()
+                            ? $"// 404: Component {name} not found at {path} or {localPath}"
+                            : $"// 404: Component {name} not found");
                 }
             }
-        });
+        }).AllowAnonymous();
 
         // Debug/Fallback: serve component source maps so C# breakpoints bind — including on pages reached
         // via client-side (SPA) navigation, where the page bundle is dynamically imported. Without this,
@@ -386,10 +408,10 @@ public static class UIExtensions
             var webRoot = context.RequestServices.GetRequiredService<IWebHostEnvironment>().WebRootPath;
             var candidates = new[]
             {
-                Path.Combine(webRoot, "_equantic", $"{name}.js.map"),
-                Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "_equantic", $"{name}.js.map"),
+                AssetPaths.Resolve(Path.Combine(webRoot, "_equantic"), name, ".js.map"),
+                AssetPaths.Resolve(Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "_equantic"), name, ".js.map"),
             };
-            var mapPath = candidates.FirstOrDefault(File.Exists);
+            var mapPath = candidates.FirstOrDefault(candidate => candidate is not null && File.Exists(candidate));
 
             if (mapPath != null)
             {
@@ -401,7 +423,7 @@ public static class UIExtensions
             {
                 context.Response.StatusCode = 404;
             }
-        });
+        }).AllowAnonymous();
 
         return endpoints;
     }
@@ -424,7 +446,7 @@ public static class UIExtensions
         {
             var hotReload = new HotReload.HotReloadService(environment.ContentRootPath);
             hotReload.Start();
-            endpoints.MapGet("/_equantic/hmr", hotReload.HandleClient);
+            endpoints.MapGet("/_equantic/hmr", hotReload.HandleClient).AllowAnonymous();
 
             // The stage-one source maps (TS intermediate → C#, C# text embedded) for the error
             // overlay's second hop. Name-only — no separators survive the check, so nothing above
@@ -445,7 +467,7 @@ public static class UIExtensions
                 context.Response.ContentType = "application/json";
                 context.Response.Headers.CacheControl = "no-cache";
                 await context.Response.SendFileAsync(path);
-            });
+            }).AllowAnonymous();
         }
 
         // Apply package endpoint configurations
@@ -766,7 +788,9 @@ public static class UIExtensions
         {
             // 404 Not Found Handling — the fallback endpoint already set the status; here the
             // app's registered /404 page (if any) takes over the CONTENT.
-            if (options.NotFoundPageType != null)
+            // Only one the visitor may see: no endpoint carries its requirement on this path (#673).
+            if (options.NotFoundPageType != null
+                && await PageAuthorization.AllowsAsync(context, options.NotFoundPageType))
             {
                 page = options.NotFoundPageType;
                 
@@ -816,7 +840,8 @@ public static class UIExtensions
             // Actually, the SSR catch block above sets ssrEnabled = false.
             // If we are in Production and SSR failed, we should render the 500 page.
             var isDev = context.RequestServices.GetRequiredService<IWebHostEnvironment>().IsDevelopment();
-            if (!isDev && options.ErrorPageType != null && ssrContent.Contains("Loading..."))
+            if (!isDev && options.ErrorPageType != null && ssrContent.Contains("Loading...")
+                && await PageAuthorization.AllowsAsync(context, options.ErrorPageType))
             {
                 // Re-attempt SSR with the 500 page
                 try

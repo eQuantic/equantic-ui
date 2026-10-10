@@ -12,8 +12,8 @@ export class CodeRows {
         this.lineCount = 0;
         this.rowCount = 0;
         this.lineCount = Math.max(0, lineCount);
-        let sortedFillers = [...fillers.filter((filler) => filler.rows > 0)].sort((a, b) => { { const _k: (x: typeof a) => any = (filler) => filler.beforeLine; const _a = _k(a), _b = _k(b); if (_a < _b) return -1; if (_a > _b) return 1; } return 0; }).slice();
-        let sortedCollapses = [...collapses.filter((collapse) => collapse.lastLine >= collapse.firstLine)].sort((a, b) => { { const _k: (x: typeof a) => any = (collapse) => collapse.firstLine; const _a = _k(a), _b = _k(b); if (_a < _b) return -1; if (_a > _b) return 1; } return 0; }).slice();
+        let sortedFillers = [...fillers.filter((filler) => filler.rows > 0)].sort(($a, $b) => { { const $k: ($element: typeof $a) => any = ((filler) => filler.beforeLine); const $x = $k($a), $y = $k($b); if ($x < $y) return -1; if ($x > $y) return 1; } return 0; }).slice();
+        let sortedCollapses = [...collapses.filter((collapse) => collapse.lastLine >= collapse.firstLine)].sort(($a, $b) => { { const $k: ($element: typeof $a) => any = ((collapse) => collapse.firstLine); const $x = $k($a), $y = $k($b); if ($x < $y) return -1; if ($x > $y) return 1; } return 0; }).slice();
         let line = 0;
         let row = 0;
         let f = 0;
