@@ -34,6 +34,56 @@ public class ObjectCreationStrategy : IExpressionIrStrategy
 
     public JsExpr ConvertIr(SyntaxNode node, ConversionContext context)
     {
+        var built = Build(node, context);
+        // A generic record or struct built as the closed type C# names carries its type arguments: one
+        // twin class serves every one of them, and `Box<int>` equalled `Box<double>` holding the same 1
+        // (#651). Its `equals` compares the mark (Eq.SameClosure).
+        if (ClosureOf(context.SemanticHelper.GetType(node)) is not { } typeArguments) return built;
+        context.UsedHelpers.Add(Eq.Import);
+        return JsExpr.Call(JsExpr.Identifier(Eq.Closing), built, JsExpr.Literal($"'{typeArguments}'"));
+    }
+
+    /// <summary>
+    /// The type arguments a value of <paramref name="type"/> is marked with: a generic record or struct
+    /// the source declares, whose twin eqc writes with the comparison, closed over types the build knows.
+    /// A type argument that is a type parameter is known only at run time, and the value goes unmarked.
+    /// </summary>
+    private static string? ClosureOf(ITypeSymbol? type) =>
+        type is INamedTypeSymbol { IsGenericType: true } named
+        && (named.IsRecord || named.TypeKind == TypeKind.Struct)
+        && named.Locations.Any(location => location.IsInSource)
+        && !named.TypeArguments.Any(ContainsTypeParameter)
+            ? string.Join(", ", named.TypeArguments.Select(RuntimeName))
+            : null;
+
+    /// <summary>
+    /// A type as the runtime tells types apart, which is what .NET's closed type compares: a tuple's
+    /// element names and <c>dynamic</c> are erased, so <c>Box&lt;(int A, int B)&gt;</c> and
+    /// <c>Box&lt;(int, int)&gt;</c> are one type, as are <c>Box&lt;dynamic&gt;</c> and <c>Box&lt;object&gt;</c>.
+    /// </summary>
+    private static string RuntimeName(ITypeSymbol type) => type switch
+    {
+        { TypeKind: TypeKind.Dynamic } => "object",
+        IArrayTypeSymbol array => $"{RuntimeName(array.ElementType)}[{new string(',', array.Rank - 1)}]",
+        INamedTypeSymbol { IsTupleType: true, TupleUnderlyingType: { } underlying } => RuntimeName(underlying),
+        INamedTypeSymbol { IsGenericType: true } generic =>
+            $"{generic.ConstructedFrom.ToDisplayString(GenericDefinition)}<{string.Join(", ", generic.TypeArguments.Select(RuntimeName))}>",
+        _ => type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat),
+    };
+
+    private static readonly SymbolDisplayFormat GenericDefinition =
+        SymbolDisplayFormat.FullyQualifiedFormat.WithGenericsOptions(SymbolDisplayGenericsOptions.None);
+
+    private static bool ContainsTypeParameter(ITypeSymbol type) => type switch
+    {
+        ITypeParameterSymbol => true,
+        IArrayTypeSymbol array => ContainsTypeParameter(array.ElementType),
+        INamedTypeSymbol named => named.TypeArguments.Any(ContainsTypeParameter),
+        _ => false,
+    };
+
+    private JsExpr Build(SyntaxNode node, ConversionContext context)
+    {
         // C# 13's `System.Threading.Lock` — single-threaded JS drops the lock STATEMENT's
         // semantics already (the body just runs); the gate object itself is inert, and emitting
         // `new Lock()` named a class no browser has.
