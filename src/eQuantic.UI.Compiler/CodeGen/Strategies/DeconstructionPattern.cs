@@ -162,7 +162,7 @@ internal static class DeconstructionPattern
 
     /// <summary>A <c>Deconstruct</c> the app wrote, which its twin carries as a method. A record's
     /// own is the compiler's and has none, nor has a BCL type's.</summary>
-    private static bool IsTheApps(IMethodSymbol deconstruct) =>
+    internal static bool IsTheApps(IMethodSymbol deconstruct) =>
         !deconstruct.IsImplicitlyDeclared && deconstruct.Locations.Any(location => location.IsInSource);
 
     private static DeconstructionInfo? Nested(DeconstructionInfo? info, int index) =>
