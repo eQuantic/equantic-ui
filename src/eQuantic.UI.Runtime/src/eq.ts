@@ -96,6 +96,7 @@ import {
   asSingle,
   format,
   recordText,
+  recordTextGroup,
   stringFormat,
   stringFormatInvariant,
 } from './utils/format';
@@ -155,7 +156,7 @@ import {
 import { boolConvert, boolParse, boolTryParse } from './utils/boolean-text';
 import { sortedSet, sortedDictionary, sortedList } from './utils/sorted';
 import { liftArith, liftCmp, liftUnary } from './utils/nullable';
-import { equals } from './utils/equals';
+import { equals, equalsGroup } from './utils/equals';
 import { hash, hashCombine, hashFields, hashGroup, identityHash, instanceHash } from './utils/hash';
 import { guidParse, guidTryParse } from './utils/guid';
 import { CancellationToken, CancellationTokenRegistration, CancellationTokenSource } from './utils/cancellation';
@@ -382,6 +383,7 @@ export const $eq = {
     chars,
     format,
     record: recordText,
+    recordGroup: recordTextGroup,
     stringFormat,
     stringFormatInvariant,
     asSingle,
@@ -491,6 +493,8 @@ export const $eq = {
   delegates: { combine: combineDelegate, remove: removeDelegate },
   /** Structural (value) equality for records/structs/tuples — backs ==, Contains, Distinct. */
   equals,
+  /** The method group `value.Equals` of a value the browser holds as data: a delegate over it. */
+  equalsGroup,
   /**
    * `GetHashCode` by .NET's contract, values `equals` finds equal hashing equal (`hash`), an instance
    * call refused on null (`instance`), the method group (`group`), `HashCode.Combine` (`combine`),

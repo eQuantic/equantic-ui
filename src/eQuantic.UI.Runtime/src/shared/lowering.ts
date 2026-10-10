@@ -62,6 +62,7 @@ import type {
   VectorGradientValue,
   VectorPaintValue,
   CornerRadiiValue,
+  CurveValue,
   EdgeInsetsValue,
   FlexNodeValue,
   FlexibleNode,
@@ -1319,10 +1320,10 @@ function gradientValue(gradient: LinearGradientValue): string {
   return `linear-gradient(${direction}, ${tokenValue(gradient.from)},${via} ${tokenValue(gradient.to)})`;
 }
 
-/** Mirror of C# TokenCss.Bezier. */
-function bezier(easing: readonly number[] | undefined): string {
+/** Mirror of C# TokenCss.Bezier: the curve's own data, its four points in the record's order. */
+function bezier(easing: CurveValue | undefined): string {
   const c = easing ?? Curve.standard;
-  return `cubic-bezier(${num(c[0])}, ${num(c[1])}, ${num(c[2])}, ${num(c[3])})`;
+  return `cubic-bezier(${num(c.x1)}, ${num(c.y1)}, ${num(c.x2)}, ${num(c.y2)})`;
 }
 
 /**

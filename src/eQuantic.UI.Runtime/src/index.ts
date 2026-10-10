@@ -110,6 +110,7 @@ export type {
   ComponentNode,
   ColorTokenValue,
   ColorValue,
+  CurveValue,
 } from './shared/nodes';
 // Vocabulary classes — what eqc-transpiled shared components instantiate (imports from
 // "@equantic/runtime" routed by the compiler's runtime-provided-type discovery).

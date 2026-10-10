@@ -20,6 +20,20 @@ export interface ColorTokenValue {
   dark: ColorValue;
 }
 
+/**
+ * A cubic bézier's four control points — mirrors `eQuantic.UI.Primitives.Curve`, which the browser
+ * holds as the record's data and nothing else (`[TwinIsData]`): a design-system preset, a motion
+ * role's curve, a transition's easing and a curve a component makes are all this shape, and the
+ * lowering writes it as `cubic-bezier(x1, y1, x2, y2)`. A preset was an array and a motion role's
+ * curve was declared a preset name until #518, so a component that read a point read undefined.
+ */
+export interface CurveValue {
+  x1: number;
+  y1: number;
+  x2: number;
+  y2: number;
+}
+
 /** `SizeKind` transpiles to camelCase member strings. */
 // Re-exported so every importer of './nodes' keeps the name it always had, and IMPORTED because a
 // re-export alone does not bring a name into this module's own scope.
@@ -302,12 +316,12 @@ export interface LinearGradientValue {
 }
 
 /** Wire shape of the C# `TransitionSpec` (spec S6). `channels` carries the [Flags] StyleChannels
- * bits (the transpiler emits flags enums numerically); `easing` is a cubic-bezier control tuple. */
+ * bits (the transpiler emits flags enums numerically); `easing` is the curve's own data. */
 export interface TransitionSpecValue {
   channels: number;
   durationMs?: number;
   delayMs?: number;
-  easing?: readonly number[];
+  easing?: CurveValue;
 }
 
 /** Wire shape of the C# `RadialGradient`: two-stop elliptical spotlight, center as box fractions. */

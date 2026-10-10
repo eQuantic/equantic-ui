@@ -1758,6 +1758,16 @@ record of a release, the wiki's Upgrading page is the distillate.
   46 new conformance cases fail on the base. The members the runtime does not have are
   [#679](https://github.com/eQuantic/equantic-ui/issues/679). Proposed and archived through OpenSpec
   (`openspec/specs/transpiler-bcl`).
+- **2026-10-07 · A type reached through its namespace is imported by what it binds**: inside
+  `Falei.Web.Chat`, `Portal.Fold.Text(n)` wrote `Fold.text(n)` and imported nothing, so the page threw
+  `Fold is not defined`, while `Fold.Text(n)` under a using worked
+  ([#625](https://github.com/eQuantic/equantic-ui/issues/625)). The strategy that strips a namespace now
+  registers the type the name binds, which every emitter imports, through part of the namespace, the
+  whole of it or `global::`, the expression's case of what #479 did for a base class. A using alias
+  wrote its own name, `F.text(n)` and `new F()`, which nothing defines: it writes the type's name and imports it,
+  where the browser has a twin. A .NET type imports nothing, and neither does a type the runtime ships no twin
+  for: `[ServerOnly]`, as `CurveEvaluator` is since #731, fails with EQ2010 however it is named. Proposed
+  and archived through OpenSpec (`openspec/specs/transpiler-names`).
 - **2026-10-08 · The image optimizer runs on SkiaSharp**: seven GitHub advisories against
   SixLabors.ImageSharp, five of them reaching the 3.1.12 `eQuantic.UI.Images` resolved, failed
   `build-packages` on every pull request through NuGet's audit, and the only patched version needs a
@@ -1999,6 +2009,47 @@ record of a release, the wiki's Upgrading page is the distillate.
   the symbol's interface-qualified name (`IReads.Value`): a member's twin name is derived in one place
   now, an explicit implementation's under the name of the member it implements, as the emitter writes
   it. Proposed and archived through OpenSpec (`openspec/specs/transpiler-classes`).
+- **2026-10-08 · A code editor keeps its Tab in a dialog, and undo after a pasted carriage return
+  restores the text**: on the web a modal layer's focus trap heard Tab in the capture phase, before
+  the editor's input, so a code editor at either end of a dialog lost Tab and Shift+Tab to it
+  ([#598](https://github.com/eQuantic/equantic-ui/issues/598)); the trap now hears the key on its
+  way back up and cycles only a Tab nothing consumed, the question Photon's host asks its code target.
+  And an edit recorded a paste as it was handed, which the history split on LF alone while the
+  document breaks lines on CR, CRLF and LF: undo after pasting "x\ry" into "abc" left "a" and "ybc"
+  ([#600](https://github.com/eQuantic/equantic-ui/issues/600)); an edit now carries the text the
+  document holds, and its range breaks lines as the document does. Copilot's first round found the
+  history's run of typing still ending at LF alone, so a typed lone CR a host recorded ran on into the
+  next character: the edit now says whether it breaks a line, and the history asks it. Proposed and
+  archived through OpenSpec (`openspec/specs/code-history`, `openspec/specs/modal-focus`).
+- **2026-10-07 · A builder has the members a page reaches**: `AppendFormat`, `AppendJoin`,
+  `Capacity`, `MaxCapacity`, `EnsureCapacity`, the `Chars` indexer, `Length`'s setter,
+  `Equals(StringBuilder)` and `CopyTo` transpiled to members the runtime's builder did not have, a
+  TypeError or an undefined behind a green build
+  ([#679](https://github.com/eQuantic/equantic-ui/issues/679)). `AppendFormat` and `AppendJoin`
+  append what `string.Format` and `string.Join` write, by the same lowering, and `Capacity` follows the
+  chunks .NET allocates through every edit, matching .NET on 41 measured sequences. An interpolated
+  `Append` appends each part in turn, as .NET's handler does, where every hole was read first
+  (`$"{b.Length}{b.Length}"` held "00"), a named argument is bound to its parameter, and a text longer
+  than the browser's string is .NET's `OutOfMemoryException`. A provider other than the current
+  culture on `Append`, `GetChunks` and the span overloads fail the build. Proposed and archived
+  through OpenSpec (`openspec/specs/transpiler-bcl`).
+- **2026-10-08 · A curve in the browser is the record C# reads**: a `Curve` was two other shapes in the
+  browser, an array in the generated design system and a preset name in the runtime's `MotionSpec`, so
+  `Curve.Standard.X1` and `Motion.Press.Curve.X1` read undefined, and `new Curve(…)` as a transition's
+  easing built with no diagnostic and threw "is not a constructor" in Falei.pt
+  ([#518](https://github.com/eQuantic/equantic-ui/issues/518)). `Curve` carries `[TwinIsData]` now, as
+  `Color` does, and every producer writes its data, `{ x1, y1, x2, y2 }`, each point the single C#
+  holds: the design system's presets and motion roles, `TransitionSpec`'s default, the lowering and a
+  page's state, and a data twin's text writes a float member as a single. `CurveEvaluator` is
+  `[ServerOnly]`, because a web transition is a CSS timing function the browser evaluates, and the
+  host-only fence asks about an extension's home instead of its receiver, so `curve.Ease(t)` fails the
+  build with EQ2010 where it built and threw; the same hole had let `EffectiveTypeStyle`'s extensions
+  through on a `Text` and a `TypeStyle`. 16 of the 19 new conformance cases fail on the base, the other
+  three comparing a preset with itself. The review found a record member's method group bound to the
+  companion, which carries neither `equals` nor `toString`, so `Curve.Standard.Equals` threw making the
+  delegate and `ToString` answered `[object Object]`, on a `Color` as on a `Curve`: each group answers
+  through the helper its call uses, the receiver read once. Proposed and archived through OpenSpec
+  (`openspec/specs/transpiler-vocabulary-values`).
 
 - **2026-10-10 · Type that follows the window**: a handoff sizes its headings as
   `clamp(34px, 4.2vw, 54px)`, and a `TypeStyle` had one size in points, so falei.pt sampled the
