@@ -20,6 +20,11 @@ scheme's default port left out, and a raw `X-Forwarded-Host` SHALL NOT be read.
 - **WHEN** an action is posted with `Origin: https://app.example` to the host `app.example`
 - **THEN** it runs
 
+#### Scenario: The app's own page at an IPv6 address
+
+- **WHEN** an action is posted with `Origin: https://[::1]:8443` to the host `[::1]:8443`
+- **THEN** it runs
+
 #### Scenario: Another site
 
 - **WHEN** an action is posted with `Origin: https://evil.example` to the host `app.example`
