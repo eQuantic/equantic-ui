@@ -1723,6 +1723,35 @@ record of a release, the wiki's Upgrading page is the distillate.
   46 new conformance cases fail on the base. The members the runtime does not have are
   [#679](https://github.com/eQuantic/equantic-ui/issues/679). Proposed and archived through OpenSpec
   (`openspec/specs/transpiler-bcl`).
+- **2026-10-08 · The image optimizer runs on SkiaSharp**: seven GitHub advisories against
+  SixLabors.ImageSharp, five of them reaching the 3.1.12 `eQuantic.UI.Images` resolved, failed
+  `build-packages` on every pull request through NuGet's audit, and the only patched version needs a
+  Six Labors license key to build in Release
+  ([#710](https://github.com/eQuantic/equantic-ui/issues/710)). The optimizer decodes and encodes
+  with SkiaSharp now, MIT, its Linux natives referenced by the package. It reads JPEG, PNG, GIF,
+  WebP and BMP and answers 400 for the rest, TIFF included, where an unreadable source was a 500;
+  refuses a header past 16,383 × 16,383 pixels before it decodes, and a source past `MaxSourceSize`
+  whoever hands it over, a caller's own stream included; applies an EXIF orientation to the
+  pixels, since its encoders write no EXIF; serves an animated source as it is, as Next.js does,
+  where ImageSharp re-encoded the frames; refuses `image/avif` in `Formats` at startup, which no
+  encoder writes and which, listed first, answered every browser with a JPEG labelled AVIF; and
+  writes sRGB untagged, where a tagged result carried a 472-byte profile. Proposed and archived
+  through OpenSpec (`openspec/specs/image-optimization`).
+- **2026-10-07 · A date is built by its constructor and read in the browser's zone**: the runtime's
+  `dateTime` and `dateTimeOffset` factories took a constructor's components by how many arguments
+  they got, so a kind was read as the millisecond, a `DateTimeOffset`'s millisecond as its offset, and
+  a microsecond was dropped ([#606](https://github.com/eQuantic/equantic-ui/issues/606)). eqc reads
+  the bound constructor and calls one factory per shape, each argument in its parameter's place, a
+  `Calendar` overload refused at the build (EQ1004), and the factories refuse what .NET refuses in its
+  words. A `DateTime` carries its `Kind`. `DateTimeOffset.Now` carried offset zero with the local
+  clock, `LocalDateTime` read the value's own clock and `ToLocalTime()` did not exist
+  ([#626](https://github.com/eQuantic/equantic-ui/issues/626), from the Falei.pt app): each reads
+  the browser's time zone now, proved on both sides in three zones set through `TZ`. A local time made
+  from an instant keeps which of two repeated hours it is, as .NET keeps it beside the kind, and a
+  date's text writes its kind (`o`, `K`, `z`, `U`), where `o` wrote no zone and `U` moved a UTC time
+  twice. The ISO reader is linear, where 50,000 spaces took 1.5 s. 117 of the first 125 new cases
+  failed on the base, and 29 of the review's 50 on the commit before them. Proposed and archived
+  through OpenSpec (`openspec/specs/runtime-dates`).
 - **2026-10-07 · A collection crosses and compares as .NET's does**: a `Queue`, a `Stack`, a
   `LinkedList` and a `SortedSet` had no `toJSON`, so a Server Action argument was written as the
   class's fields or its node graph ([#597](https://github.com/eQuantic/equantic-ui/issues/597)); each
