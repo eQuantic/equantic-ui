@@ -2023,6 +2023,23 @@ record of a release, the wiki's Upgrading page is the distillate.
   than the browser's string is .NET's `OutOfMemoryException`. A provider other than the current
   culture on `Append`, `GetChunks` and the span overloads fail the build. Proposed and archived
   through OpenSpec (`openspec/specs/transpiler-bcl`).
+- **2026-10-08 · A curve in the browser is the record C# reads**: a `Curve` was two other shapes in the
+  browser, an array in the generated design system and a preset name in the runtime's `MotionSpec`, so
+  `Curve.Standard.X1` and `Motion.Press.Curve.X1` read undefined, and `new Curve(…)` as a transition's
+  easing built with no diagnostic and threw "is not a constructor" in Falei.pt
+  ([#518](https://github.com/eQuantic/equantic-ui/issues/518)). `Curve` carries `[TwinIsData]` now, as
+  `Color` does, and every producer writes its data, `{ x1, y1, x2, y2 }`, each point the single C#
+  holds: the design system's presets and motion roles, `TransitionSpec`'s default, the lowering and a
+  page's state, and a data twin's text writes a float member as a single. `CurveEvaluator` is
+  `[ServerOnly]`, because a web transition is a CSS timing function the browser evaluates, and the
+  host-only fence asks about an extension's home instead of its receiver, so `curve.Ease(t)` fails the
+  build with EQ2010 where it built and threw; the same hole had let `EffectiveTypeStyle`'s extensions
+  through on a `Text` and a `TypeStyle`. 16 of the 19 new conformance cases fail on the base, the other
+  three comparing a preset with itself. The review found a record member's method group bound to the
+  companion, which carries neither `equals` nor `toString`, so `Curve.Standard.Equals` threw making the
+  delegate and `ToString` answered `[object Object]`, on a `Color` as on a `Curve`: each group answers
+  through the helper its call uses, the receiver read once. Proposed and archived through OpenSpec
+  (`openspec/specs/transpiler-vocabulary-values`).
 
 ## Retired documents
 
