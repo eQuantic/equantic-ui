@@ -57,6 +57,8 @@ export const bases = {
   'System.AggregateException': 'System.Exception',
   // A type initializer that threw: what every access to the type throws from then on (typeInitialization).
   'System.TypeInitializationException': 'System.SystemException',
+  // A value read from the wire that System.Text.Json would refuse (a date that is not ISO-8601).
+  'System.Text.Json.JsonException': 'System.Exception',
 } as const satisfies Record<string, string | null>;
 
 /** A .NET exception type the runtime throws itself. */

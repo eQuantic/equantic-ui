@@ -181,8 +181,8 @@ describe('Dictionary — keys found by value', () => {
   it('finds a decimal and a date by their own equals', () => {
     const decimals = dictionary<unknown, string>([[dec('1.50'), 'd']], true);
     expect(decimals.get(dec('1.5'))).toBe('d');
-    const dates = dictionary<unknown, number>([[dateTime(2026, 1, 1), 1]], true);
-    expect(dates.get(dateTime(2026, 1, 1))).toBe(1);
+    const dates = dictionary<unknown, number>([[dateTime.of(2026, 1, 1), 1]], true);
+    expect(dates.get(dateTime.of(2026, 1, 1))).toBe(1);
   });
 });
 
@@ -255,10 +255,10 @@ describe("Dictionary — keys found by their own equality ('own')", () => {
     const d = dictionary<unknown, number>(null, 'own');
     d.set(dec('1.0'), 1);
     d.set(dec('1'), 2);
-    d.set(dateTime(2026, 1, 2), 3);
+    d.set(dateTime.of(2026, 1, 2), 3);
     expect(d.size).toBe(2);
     expect(d.get(dec('1.00'))).toBe(2);
-    expect(d.has(dateTime(2026, 1, 2))).toBe(true);
+    expect(d.has(dateTime.of(2026, 1, 2))).toBe(true);
   });
 
   it("compares a tuple and an anonymous type by their members, having no twin to carry an equals", () => {
@@ -271,7 +271,7 @@ describe("Dictionary — keys found by their own equality ('own')", () => {
   });
 
   it('tells a value from one of another kind, as Equals(object) does', () => {
-    const date = dateTime(2026, 1, 2);
+    const date = dateTime.of(2026, 1, 2);
     const span = new TimeSpan(date.ticks);
     expect(dec('1').equals(date)).toBe(false);
     expect(span.equals(date)).toBe(false);
@@ -440,7 +440,7 @@ describe('Dictionary — the JSON it writes', () => {
     expect(keyText(true)).toBe('True');
     expect(keyText(3)).toBe('3');
     expect(wireKey(false)).toBe('False');
-    expect(wireKey(dateTime(2026, 1, 2))).toBe('2026-01-02T00:00:00');
+    expect(wireKey(dateTime.of(2026, 1, 2))).toBe('2026-01-02T00:00:00');
   });
 });
 
