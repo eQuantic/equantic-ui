@@ -21,7 +21,7 @@ export class Markdown extends StatelessComponent {
         return column;
     }
 
-    static blockView(block: MarkdownBlock, theme: any, style: MarkdownStyle, context: any) {
+    static blockView(block: MarkdownBlock, theme: any, style: MarkdownStyle, context: BuildContext) {
         switch (block.kind) {
             case 'heading':
                 {
