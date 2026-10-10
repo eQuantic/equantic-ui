@@ -508,6 +508,8 @@ public class CSharpToJsConverter
                 // The bound tree has the last word: the implicit conversion C# applied around this
                 // expression, the string it flows into — settled once here, for every site.
                 result = ValueFlow.Settle(expression, result, _context);
+                // A write of a mutable struct or tuple copies the value first, as C# copies it (#560).
+                result = ValueCopies.Settle(expression, result, _context);
             }
             finally
             {
