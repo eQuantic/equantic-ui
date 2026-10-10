@@ -1758,6 +1758,19 @@ record of a release, the wiki's Upgrading page is the distillate.
   46 new conformance cases fail on the base. The members the runtime does not have are
   [#679](https://github.com/eQuantic/equantic-ui/issues/679). Proposed and archived through OpenSpec
   (`openspec/specs/transpiler-bcl`).
+- **2026-10-08 · A dictionary crosses the wire in its order**: a dictionary crossed as a JSON object,
+  which the browser parses with every integer-like key first and ascending, so a
+  `Dictionary<int, string>` holding 3, then 1 reached a page's state, a Server Action's answer or a
+  topic's payload as 1, 3, and the browser reordered one it sent
+  ([#437](https://github.com/eQuantic/equantic-ui/issues/437)). It crosses as its `[key, value]` pairs
+  both ways, each key written as a value of its type and a NaN or infinite one as its text: `EqJson`
+  writes the pairs for every dictionary of .NET's own collections, a frozen, immutable or concurrent
+  one behind an interface included, and reads only the pairs, the page's state and a projected service
+  stay objects by name, and the runtime's `Dictionary` and `SortedMap` write the pairs that hydration
+  reads. 28 of the 33 new and updated cases fail on the base, on the server, in the runtime and in the
+  conformance suite with both sides executed; the other 5 are guards. A record key still arrives as a
+  plain object ([#706](https://github.com/eQuantic/equantic-ui/issues/706)). Proposed and archived
+  through OpenSpec (`openspec/specs/runtime-dictionaries`).
 - **2026-10-07 · A type reached through its namespace is imported by what it binds**: inside
   `Falei.Web.Chat`, `Portal.Fold.Text(n)` wrote `Fold.text(n)` and imported nothing, so the page threw
   `Fold is not defined`, while `Fold.Text(n)` under a using worked
