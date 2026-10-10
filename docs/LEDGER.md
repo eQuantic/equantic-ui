@@ -1713,6 +1713,40 @@ record of a release, the wiki's Upgrading page is the distillate.
   load, and the runtime and the page modules serve anyone, so a sign-in page comes alive under a
   fallback policy; an asset route serves a file name inside its own directory and nothing else.
   Proposed and archived through OpenSpec (`openspec/specs/page-routes`).
+- **2026-10-07 · An exception's message is composed as .NET composes it**: a framework exception's
+  arguments were read by position, so `new ArgumentNullException(nameof(x)).Message` was the
+  parameter's name, a parameter's name never reached a message and a constructor with no message gave
+  an empty one ([#558](https://github.com/eQuantic/equantic-ui/issues/558)). eqc binds them by their
+  parameters and reads the text .NET writes where no message, or a null one, was given from .NET
+  itself, for the constructor the call binds, where a table gave a `TaskCanceledException` its base's.
+  The runtime composes the message .NET writes: ` (Parameter 'x')`, and the actual value and a disposed
+  object's name on lines of their own, with `ParamName`, `ActualValue`, `InnerException` and
+  `TypeName` reading what the constructor took, an aggregate's inner messages and a type initializer's
+  sentence included. Proposed and archived through OpenSpec (`openspec/specs/transpiler-exceptions`).
+- **2026-10-07 · A builder's counted and ranged overloads write what .NET writes**: the runtime's
+  `StringBuilder` had one shape per method, so `Append('x', 3)` appended one `x`, and
+  `Append(text, start, count)`, `Insert(i, text, count)`, `Replace` over a range and
+  `ToString(start, length)` took the whole value, a `char[]` written as JavaScript's text of an array
+  and a null as `null` ([#650](https://github.com/eQuantic/equantic-ui/issues/650)). The builder takes
+  each overload shape by its count of arguments, the `char[]` overloads are methods of their own that
+  eqc names from the overload the call binds, and each refusal is .NET's, in .NET's order. 45 of the
+  46 new conformance cases fail on the base. The members the runtime does not have are
+  [#679](https://github.com/eQuantic/equantic-ui/issues/679). Proposed and archived through OpenSpec
+  (`openspec/specs/transpiler-bcl`).
+- **2026-10-08 · The image optimizer runs on SkiaSharp**: seven GitHub advisories against
+  SixLabors.ImageSharp, five of them reaching the 3.1.12 `eQuantic.UI.Images` resolved, failed
+  `build-packages` on every pull request through NuGet's audit, and the only patched version needs a
+  Six Labors license key to build in Release
+  ([#710](https://github.com/eQuantic/equantic-ui/issues/710)). The optimizer decodes and encodes
+  with SkiaSharp now, MIT, its Linux natives referenced by the package. It reads JPEG, PNG, GIF,
+  WebP and BMP and answers 400 for the rest, TIFF included, where an unreadable source was a 500;
+  refuses a header past 16,383 × 16,383 pixels before it decodes, and a source past `MaxSourceSize`
+  whoever hands it over, a caller's own stream included; applies an EXIF orientation to the
+  pixels, since its encoders write no EXIF; serves an animated source as it is, as Next.js does,
+  where ImageSharp re-encoded the frames; refuses `image/avif` in `Formats` at startup, which no
+  encoder writes and which, listed first, answered every browser with a JPEG labelled AVIF; and
+  writes sRGB untagged, where a tagged result carried a 472-byte profile. Proposed and archived
+  through OpenSpec (`openspec/specs/image-optimization`).
 
 ## Retired documents
 
