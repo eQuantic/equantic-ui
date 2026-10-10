@@ -1991,6 +1991,31 @@ record of a release, the wiki's Upgrading page is the distillate.
   delegate and `ToString` answered `[object Object]`, on a `Color` as on a `Curve`: each group answers
   through the helper its call uses, the receiver read once. Proposed and archived through OpenSpec
   (`openspec/specs/transpiler-vocabulary-values`).
+- **2026-10-07 · A field a case apart from a member keeps its own slot**: a plain class's field and a
+  property or a method a case apart lowered to one member of the twin, the shape a C# class has most:
+  the own field hid a setter, which never ran, an auto-property and its field shared one slot, and a
+  call reached the number a field held. Three apps met the component's form of it (equantic-web,
+  Falei.pt, Cura), which EQ1007 has refused since #621, while a plain class built silently
+  ([#396](https://github.com/eQuantic/equantic-ui/issues/396)). The field moves to a slot with a `$`
+  after its name, read and written through its symbol everywhere, and a class with a moved field writes
+  its JSON through `twinJson`, which writes the property and never the field. A component, a record and
+  a struct keep EQ1007. Copilot's first round found a pattern reading the property: a property
+  subpattern named the member by its text, so `this is { value: 1 }` was false where .NET is true, and a
+  positional one read the members its `Deconstruct`'s outs are named after, so a `Deconstruct` the app
+  wrote is called now, as a deconstruction calls it. The sweep after it found two reads the move itself
+  had broken: a call of a delegate field went to the method a case apart from it, so a method that
+  forwards to its delegate field (`bool Validate(int n) => validate(n)`) called itself and never
+  returned, and a field called `Count` was read as the method `count()`; both reach the field's slot
+  now. The second round found a derived field that kept the slot of an inherited field a case apart,
+  which the derived constructor wrote over (a slot an ancestor holds is taken now, whatever the
+  spellings, and the field takes a `$` more), a `Deconstruct` called once per part in an initializer
+  and once per arm or alternative elsewhere where .NET calls it once (a pattern-matching operation
+  holds its parts once, in a scope of its own), and a twin's JSON that read a getter twice where a
+  moved field and the property's store both stood for it (each name is written once). The third round
+  found a field beside an explicit interface implementation a case apart, which the slot rule read by
+  the symbol's interface-qualified name (`IReads.Value`): a member's twin name is derived in one place
+  now, an explicit implementation's under the name of the member it implements, as the emitter writes
+  it. Proposed and archived through OpenSpec (`openspec/specs/transpiler-classes`).
 
 ## Retired documents
 
