@@ -965,7 +965,7 @@ public class TypeScriptEmitter
             componentTypes.Add(runtimeType);
         }
 
-        // …and the ones the parser kept OUT of that set. A type POSITION is the seventh way to name
+        // …and the ones the parser kept OUT of that set. A type POSITION is the eighth way to name
         // a host-only symbol and the only one no expression strategy can reach — the parser's
         // semantic sweep is what sees it, and this is the first place with a diagnostics channel.
         foreach (var (named, at) in component.HostOnlyTypes)
@@ -2519,11 +2519,11 @@ public class TypeScriptEmitter
         // helper emitted the qualified call with no import and died on "is not defined" at load.
         // Measured on `public static VisualNode Boxed() => new Text("x").Centered();`.
         runtimeProvided.UnionWith(_converter.UsedRuntimeTypes);
-        // A TYPE POSITION is the seventh way to name a host-only symbol and the one no expression
+        // A TYPE POSITION is the eighth way to name a host-only symbol and the one no expression
         // strategy can reach: `public Matrix2D Placement { get; init; }` on a component compiled,
         // emitted `import { Matrix2D } from "@equantic/runtime"`, and took the page down at
         // hydration. Measured. The scanner keeps the name out of the import list; this is where it
-        // gets said, in the same words the other six use.
+        // gets said, in the same words the other seven use.
         foreach (var (named, at) in hostOnlyInSignatures)
             _converter.Report(at, ConversionSeverity.Error, "EQ2010",
                 CodeGen.Extensions.HostOnlySymbolExtensions.Message(named));

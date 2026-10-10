@@ -274,14 +274,39 @@ function formatCore(
  * compiler passes the members .NET prints, in its order, by their C# names, and each is read under
  * its twin's name and written as an interpolation hole writes it. A null value is the empty string,
  * as `$"{value}"` is.
+ *
+ * `kinds`, when given, holds each member's number kind, in the same order: a `Curve`'s points are
+ * floats, and a float writes the single's own digits, `0.2` where the double under it reads
+ * `0.20000000298023224` (#518). A member with none, or a type that passes none, writes as a double.
  */
-export function recordText(value: unknown, name: string, members: readonly string[]): string {
+export function recordText(
+  value: unknown,
+  name: string,
+  members: readonly string[],
+  kinds?: readonly (NumberKind | null)[],
+): string {
   if (value === null || value === undefined) return '';
   const data = value as Record<string, unknown>;
-  const written = members.map(
-    (member) => `${member} = ${format(data[member.charAt(0).toLowerCase() + member.slice(1)], null)}`,
-  );
+  const written = members.map((member, i) => {
+    const held = data[member.charAt(0).toLowerCase() + member.slice(1)];
+    return `${member} = ${format(held, null, undefined, undefined, kinds?.[i] ?? undefined)}`;
+  });
   return written.length === 0 ? `${name} { }` : `${name} { ${written.join(', ')} }`;
+}
+
+/**
+ * The method group `value.ToString` of a value the browser holds as data, `Func<string> text =
+ * curve.ToString`: a delegate writing the {@link recordText} of the value as it is when the delegate
+ * is made, each member by its kind. The compiler passes the receiver here, so it is read once, where
+ * C# copies it into the delegate.
+ */
+export function recordTextGroup(
+  value: unknown,
+  name: string,
+  members: readonly string[],
+  kinds?: readonly (NumberKind | null)[],
+): () => string {
+  return () => recordText(value, name, members, kinds);
 }
 
 /** Text in a field of `|alignment|` characters: a positive width aligns right, a negative left. */

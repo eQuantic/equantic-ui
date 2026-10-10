@@ -89,7 +89,7 @@ prose, and cannot go on claiming an absence that has ended.
 |---|---|---|
 | `AnimationController` + `TickerProvider` | `IFrameTicker`, `LoopMotion`, `Presence`, `TransitionStore` | **DIFFERENT, and this is the deepest divergence.** Flutter's animation is IMPERATIVE — you hold a controller, drive it, dispose it. Ours is DECLARATIVE: a style diff plus a motion token, and the host interpolates. A component says what it looks like in each state, never how to get there. That is why there is no controller to leak and no `dispose` to forget. |
 | `Tween`, `ColorTween`, `Matrix4Tween` | — (the engine interpolates) | **DIFFERENT** — the consequence of the row above. Nothing holds a tween because nothing drives one. |
-| `Curves` | `Curve` enum + `Motion.Fast/Base/Slow` | **SAME**, on a fixed ladder: 100/200/300 and nothing between the rungs. |
+| `Curves` | `Curve`, a cubic's four control points (`Standard`, `Decelerate`, `Accelerate`) + `Motion.Fast/Base/Slow` | **SAME**, on a fixed ladder: 100/200/300 and nothing between the rungs. A curve is one value on every target, as a `Cubic` is: the web hands it to CSS as `cubic-bezier()`, and Photon evaluates it with `CurveEvaluator`, which stays on the host (#518). |
 | `AnimatedContainer` and the implicit family | `TransitionSpec?` — a `Transition` on the style, on `Text` and on the pressed/hover diffs | **SAME idea, smaller surface.** A property on the things that change rather than a parallel type per animatable property. |
 | `AnimatedBuilder` / `AnimatedWidget` | — | **GAP** (imperative-only concepts) |
 | `Hero` / shared element | — | **GAP** |
