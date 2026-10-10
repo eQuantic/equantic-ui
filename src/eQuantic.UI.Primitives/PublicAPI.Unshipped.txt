@@ -67,3 +67,5 @@ eQuantic.UI.Primitives.ServerTopicRefusalReason.Forbidden = 0 -> eQuantic.UI.Pri
 const eQuantic.UI.Primitives.Touch.MinPointerTarget = 24 -> float
 eQuantic.UI.Primitives.TwinIsTranspiledAttribute
 eQuantic.UI.Primitives.TwinIsTranspiledAttribute.TwinIsTranspiledAttribute() -> void
+const eQuantic.UI.Primitives.Pinned.ScrolledThreshold = 8 -> float
+static eQuantic.UI.Primitives.Pinned.ScrolledBase.get -> eQuantic.UI.Primitives.BoxStyle

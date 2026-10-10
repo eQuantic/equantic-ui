@@ -62,6 +62,18 @@ and a control inside a Pressable takes its own press.
   or a coarse pointer
 - **THEN** the hit lands on the IconButton's own content, not on the wrapper
 
+### Requirement: The lift reaches through wrappers that draw no box
+
+When a control's child draws no box of its own (`display: contents`: an InView, an Adaptive's arms, a
+light and dark Image), the first descendants that draw one SHALL be lifted above the slop, through any
+chain of such wrappers, so their hits and their hover stay theirs.
+
+#### Scenario: A card behind an InView
+
+- **WHEN** the mouse rests on the centre of the card in `Pressable(InView(card))` under a fine pointer
+- **THEN** the card is the element under the pointer and matches `:hover`, where the pressable took
+  the hit and the card's hover never showed
+
 ### Requirement: A press inside a control's own box is that control's
 
 A point inside the box a control is drawn in SHALL be that control's, before any neighbour's slop.
