@@ -32,7 +32,7 @@ internal sealed partial class MeasureVisitor
         Text text => LongestWordWidth(text, ctx),
         Box box => box.Style.Width.Kind == SizeKind.Fixed
             ? box.Style.Width.Value
-            : (box.Child is null ? 0 : MinContentWidth(box.Child, ctx)) + box.Style.Padding.Horizontal,
+            : (box.Child is null ? 0 : MinContentWidth(box.Child, ctx)) + InsetsOf(box.Style).Horizontal,
         Row row => RowMinContent(row, ctx),
         Column column => ColumnMinContent(column, ctx),
         Image image => image.Width,

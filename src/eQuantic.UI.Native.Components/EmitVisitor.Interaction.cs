@@ -12,7 +12,14 @@ internal sealed partial class EmitVisitor
 {
     private void EmitPressable(Pressable pressable, EmitState s)
     {
-        s.Input.Add(new HitRegion(ExpandHitRect(s.Node.Bounds, s.Press.Density), pressable, s.Node.Path ?? ""));
+        // A pressable answers where what it holds is DRAWN, as Flutter's GestureDetector defers to
+        // its child: the lone box it wraps, moved by a transform (a hover lift, a press), takes the
+        // pressable's target with it, where it stayed behind at the box's layout (#513).
+        var input = s.Node.Children.Count == 1 && DrawnUnder(s.Node.Children[0], s) is { } moved
+            ? s.Input.Under(moved)
+            : s.Input;
+        input.Add(new HitRegion(ExpandHitRect(s.Node.Bounds, s.Press.Density), s.Node.Bounds, pressable,
+            s.Node.Path ?? ""));
 
         // A PRESSABLE IS THE STOP FOR ITS SUBTREE, exactly as a link, an Adjustable and a Navigable
         // are, and for the reason all four share: `Visit(Pressable)` announces and CONSUMES, so
