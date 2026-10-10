@@ -96,6 +96,68 @@ describe('typed hydration', () => {
     expect(rebuilt.keys()).toEqual(['b', 'a']);
     expect(rebuilt.get('a')).toBe(1);
     expect(hydrateValue(sortedDictionary<string, number>(), { b: 2, a: 1 })).toBeInstanceOf(SortedMap);
+    const paired = hydrateValue(dictionary<number, string>(), [
+      [3, 'c'],
+      [1, 'a'],
+    ]) as Dictionary<number, string>;
+    expect(paired).toBeInstanceOf(Dictionary);
+    expect(paired.keys()).toEqual([3, 1]);
+  });
+
+  // The pairs keep the order an object loses: JSON.parse lists integer-like names first (#437). A key
+  // arrives as a value of its type, so a number and a bool are already themselves, and a long, a
+  // decimal or a date is revived from its text by the tag the spec carries.
+  it('builds a dictionary from its pairs, in their order, each key revived by its tag', () => {
+    const scores = hydrate(
+      [
+        [3, 'c'],
+        [1, 'a'],
+      ],
+      { dict: null, key: 'number' },
+    ) as Dictionary<number, string>;
+    expect(scores).toBeInstanceOf(Dictionary);
+    expect(scores.keys()).toEqual([3, 1]);
+    const codes = hydrate(
+      [
+        ['b', 1],
+        ['10', 2],
+        ['9', 3],
+      ],
+      { dict: null },
+    ) as Dictionary<string, number>;
+    expect(codes.keys()).toEqual(['b', '10', '9']);
+    const big = hydrate([['9007199254740993', 'x']], { dict: null, key: 'long' }) as Dictionary<bigint, string>;
+    expect(big.get(9007199254740993n)).toBe('x');
+    // A NaN or an infinite key arrives as its text, which no JSON number holds.
+    const odd = hydrate(
+      [
+        ['NaN', 'n'],
+        ['-Infinity', 'm'],
+        [1.5, 'x'],
+      ],
+      { dict: null, key: 'number' },
+    ) as Dictionary<number, string>;
+    expect(odd.keys()).toEqual([NaN, -Infinity, 1.5]);
+    expect(odd.get(NaN)).toBe('n');
+    const flags = hydrate(
+      [
+        [true, 1],
+        [false, 0],
+      ],
+      { dict: null, key: 'bool' },
+    ) as Dictionary<boolean, number>;
+    expect(flags.keys()).toEqual([true, false]);
+    const values = hydrate([['a', '1']], { dict: 'long' }) as Dictionary<string, bigint>;
+    expect(values.get('a')).toBe(1n);
+    const sorted = hydrate(
+      [
+        ['b', 2],
+        ['a', 1],
+      ],
+      { dict: null, sorted: 'dictionary' },
+    ) as SortedMap<string, number>;
+    expect(sorted).toBeInstanceOf(SortedMap);
+    expect(sorted.keys()).toEqual(['a', 'b']);
   });
 
   it('rebuilds a record twin on its prototype and hydrates its spec-named members', () => {
@@ -212,13 +274,13 @@ describe('a tuple', () => {
 // the bundler's business, not the question these cases ask.
 const wire = JSON.parse(readFileSync('src/utils/__fixtures__/server-payload.json', 'utf8')) as {
   rect: { right: number; bottom: number; center: { x: number; y: number } };
-  balances: Record<string, string>;
-  scores: Record<string, string>;
-  flags: Record<string, number>;
-  big: Record<string, string>;
-  prices: Record<string, number>;
-  days: Record<string, number>;
-  names: Record<string, number>;
+  balances: [string, string][];
+  scores: [number, string][];
+  flags: [boolean, number][];
+  big: [string, string][];
+  prices: [string, number][];
+  days: [string, number][];
+  names: [string, number][];
 };
 
 describe('a payload the server writes', () => {
@@ -253,10 +315,10 @@ describe('a payload the server writes', () => {
     expect(balances.get('__proto__')).toBe(9007199254740993n);
   });
 
-  it('turns each property name the server wrote into a key of its type', () => {
+  it('turns each key the server wrote into a key of its type, in the order it wrote them', () => {
     const scores = hydrate(wire.scores, { dict: null, key: 'number' }) as Dictionary<number, string>;
-    // The server wrote 3 before 1, and JSON.parse lists integer-like names ascending (#437).
-    expect(scores.keys()).toEqual([1, 3]);
+    // The server wrote 3 before 1, which a JSON object would have listed ascending (#437).
+    expect(scores.keys()).toEqual([3, 1]);
     expect(scores.get(3)).toBe('c');
     const flags = hydrate(wire.flags, { dict: null, key: 'bool' }) as Dictionary<boolean, number>;
     expect(flags.keys()).toEqual([true, false]);
@@ -279,6 +341,8 @@ describe('a payload the server writes', () => {
   it('writes back the JSON the server wrote', () => {
     for (const [value, spec] of [
       [wire.names, { dict: null }],
+      [wire.balances, { dict: 'long' }],
+      [wire.scores, { dict: null, key: 'number' }],
       [wire.flags, { dict: null, key: 'bool' }],
       [wire.big, { dict: null, key: 'long' }],
       [wire.prices, { dict: null, key: 'decimal', byValue: true }],

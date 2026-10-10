@@ -117,6 +117,9 @@
 
   <ItemGroup>
     <InternalsVisibleTo Include="eQuantic.UI.Server.Tests" />
+    <!-- The conformance harness writes a .NET dictionary as its pairs by the rule the wire uses,
+         EqJson.DictionaryEntries, rather than by a list of its own that could drift from it. -->
+    <InternalsVisibleTo Include="eQuantic.UI.Conformance.Tests" />
   </ItemGroup>
 
   <ItemGroup>

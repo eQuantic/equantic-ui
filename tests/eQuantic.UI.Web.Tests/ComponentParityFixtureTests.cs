@@ -207,6 +207,24 @@ public class ComponentParityFixtureTests
                     new TextRun("cdn") { Destination = "//cdn.example.com/x" },
                 ],
             }), NoPresses),
+
+        // AN ADAPTIVE NODE'S ARMS (#669, #670, #671), the issues' own trees. Fractional thresholds
+        // name their gates with an underscore, and past a thousand dp the two producers spelled one
+        // differently; a Gap arm lowers on its column's axis; a Positioned arm is anchored in its
+        // stack. Hydration adopts the server's gates and arms by these classes.
+        ("adaptive-fractional-thresholds", Stack(0, new AdaptiveNode(
+            new Text("narrow", TypeRole.BodyM, Theme.TextPrimary),
+            new Text("middle", TypeRole.BodyM, Theme.TextPrimary),
+            new Text("wide", TypeRole.BodyM, Theme.TextPrimary))
+        {
+            MediumFrom = 703.7037f,
+            ExpandedFrom = 1066.6667f,
+        }), NoPresses),
+        ("adaptive-gaps-in-column", Stack(0,
+            new Text("above", TypeRole.BodyM, Theme.TextPrimary),
+            new AdaptiveNode(Spacer.Fixed(24), null, Spacer.Fixed(64)) { ExpandedFrom = 980 },
+            new Text("below", TypeRole.BodyM, Theme.TextPrimary)), NoPresses),
+        ("adaptive-positioned-in-stack", AdaptiveCorner(), NoPresses),
     ];
 
     /// <summary>
@@ -249,6 +267,20 @@ public class ComponentParityFixtureTests
 
     /// <summary>The card of the pressable-through-wrappers case.</summary>
     private static Box LiftCard() => new(new BoxStyle { Width = 40, Height = 40, Background = Theme.Surface });
+
+    /// <summary>The stack of #671: a slab, and an AdaptiveNode whose wide arm is a Positioned in the
+    /// slab's top end corner.</summary>
+    private static Primitives.Stack AdaptiveCorner()
+    {
+        var stack = new Primitives.Stack();
+        stack.Add(new Box(new BoxStyle { Width = 400, Height = 300, Background = Theme.Surface }));
+        stack.Add(new AdaptiveNode(new Box(), null,
+            new Positioned(new Text("corner", TypeRole.BodyM, Theme.TextPrimary), top: 0, end: 0))
+        {
+            ExpandedFrom = 980,
+        });
+        return stack;
+    }
 
     /// <summary>The control of the control-states cases: a raised surface with a hover, a focus and a
     /// press, each changing what the others do not, and the pressed fill it has always had.</summary>

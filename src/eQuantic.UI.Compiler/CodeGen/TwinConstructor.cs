@@ -272,8 +272,8 @@ internal sealed class TwinConstructor
     private bool IsCopyConstructor(TypeDeclarationSyntax type, ConstructorDeclarationSyntax constructor)
     {
         if (type is not RecordDeclarationSyntax || constructor.ParameterList.Parameters is not [{ Type: { } parameter }]) return false;
-        if (_modelFor(constructor) is { } model && model.GetDeclaredSymbol(type) is { } self)
-            return SymbolEqualityComparer.Default.Equals(model.GetTypeInfo(parameter).Type, self);
+        if (_modelFor(constructor) is { } model && model.GetDeclaredSymbol(constructor) is { } method)
+            return RecordTypeEmitter.IsCopyConstructor(method);
         return parameter.ToString() == type.Identifier.Text;
     }
 

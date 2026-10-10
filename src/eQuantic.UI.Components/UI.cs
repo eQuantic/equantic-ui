@@ -198,7 +198,7 @@ public static class UI
 
     /// <summary>Vector ARTWORK — several shapes, each in the colour its designer chose. Give it one
     /// number and it keeps the drawing's own aspect, because a squashed logo is a wrong logo.</summary>
-    public static Drawing Drawing(VectorDrawing artwork, float width, float height = 0,
+    public static Drawing Drawing(VectorDrawing artwork, SizeValue width, float height = 0,
         ColorToken? tint = null, string? label = null) =>
         new Drawing(artwork, width, height, tint, label);
 
@@ -235,8 +235,17 @@ public static class UI
 
     /// <summary>Anchors a Stack child to the stack's edges with signed offsets (spec A3).</summary>
     public static Positioned Positioned(VisualNode child, float? top = null, float? end = null,
-        float? bottom = null, float? start = null) =>
-        new Positioned(child, top, end, bottom, start);
+        float? bottom = null, float? start = null, float? topFraction = null, float? endFraction = null,
+        float? bottomFraction = null, float? startFraction = null, float shiftX = 0, float shiftY = 0) =>
+        new Positioned(child, top, end, bottom, start)
+        {
+            TopFraction = topFraction,
+            EndFraction = endFraction,
+            BottomFraction = bottomFraction,
+            StartFraction = startFraction,
+            ShiftX = shiftX,
+            ShiftY = shiftY,
+        };
 
     /// <summary>A scrolling viewport over bounded content (spec A6).</summary>
     public static ScrollView ScrollView(VisualNode child, ScrollAxis axis = ScrollAxis.Vertical,

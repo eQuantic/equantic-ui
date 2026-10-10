@@ -181,8 +181,17 @@ internal sealed partial class WebLoweringVisitor
                 // Block for the same reason a glyph is: an inline svg sits on the text baseline of
                 // whatever holds it and picks up a line box it never asked for.
                 Display = Display.Block,
-                Width = TokenCss.Px(drawing.Width),
-                Height = TokenCss.Px(drawing.Height),
+                // A dp width is the box, both axes in px as ever. A fill width is the parent's:
+                // `100%`, and the artwork's own aspect decides the height unless the author did,
+                // the same derivation the dp form makes, left to the browser because only it knows
+                // the width it is deriving from.
+                Width = drawing.Width.Kind == SizeKind.Fixed ? TokenCss.Px(drawing.Width.Value) : Size(drawing.Width, vertical: false),
+                Height = drawing.Width.Kind == SizeKind.Fixed
+                    ? TokenCss.Px(drawing.HeightAt(drawing.Width.Value))
+                    : drawing.Height > 0 ? TokenCss.Px(drawing.Height) : null,
+                AspectRatio = drawing.Width.Kind != SizeKind.Fixed && drawing.Height <= 0
+                    ? TokenCss.Number(drawing.Aspect)
+                    : null,
                 Color = drawing.Tint is { } tint ? TokenCss.Value(tint) : null,
             },
         };

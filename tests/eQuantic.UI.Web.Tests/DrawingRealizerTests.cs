@@ -95,6 +95,36 @@ public class DrawingRealizerTests
         style.Should().Contain("width: 240px").And.Contain("height: 80px");
     }
 
+    /// <summary>A fill width is the parent's: `100%`, and the artwork's own aspect decides the
+    /// height — a map at the width of its column, which no number says for every window.</summary>
+    [Fact]
+    public void AFillWidthTakesTheParentsWidthAndKeepsTheArtworksAspect()
+    {
+        var map = new VectorDrawing(0, 8, 480, 832, Mark().Shapes);
+
+        var style = Walk(Render(new Drawing(map, SizeValue.Fill))).Single(node => node.Tag == "svg").Attributes["style"];
+
+        style.Should().Contain("width: 100%").And.Contain("aspect-ratio: 0.5769").And.NotContain("height");
+    }
+
+    /// <summary>A decided height still wins over the aspect at a fill width.</summary>
+    [Fact]
+    public void AFillWidthWithAHeightKeepsTheHeight()
+    {
+        var style = Walk(Render(new Drawing(Mark(), SizeValue.Fill, 120))).Single(node => node.Tag == "svg").Attributes["style"];
+
+        style.Should().Contain("width: 100%").And.Contain("height: 120px").And.NotContain("aspect-ratio");
+    }
+
+    /// <summary>A drawing has no content to hug, so a hug width is refused rather than drawn at zero.</summary>
+    [Fact]
+    public void AHugWidthIsRefused()
+    {
+        var act = () => new Drawing(Mark(), SizeValue.Hug);
+
+        act.Should().Throw<ArgumentOutOfRangeException>().WithMessage("*no content to hug*");
+    }
+
     /// <summary>Decorative unless it is told otherwise — a logo beside the wordmark it repeats is
     /// noise in a screen reader, and a label is the author saying it is not.</summary>
     [Fact]

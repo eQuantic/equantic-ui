@@ -14,8 +14,8 @@ namespace eQuantic.UI.Server.Tests;
 /// <c>right</c>, <c>center</c> and <c>isEmpty</c> beside its four fields. The twin declares those
 /// as getters, and assigning a member that only has a getter throws in a module: the clean payload
 /// passed and the real one failed hydration. A dictionary keyed by a page's own data can also carry
-/// the key <c>__proto__</c>, which JSON keeps as an entry and an assignment turned into a prototype,
-/// and each dictionary key arrives as the text System.Text.Json writes for its type.
+/// the key <c>__proto__</c>, which an assignment once turned into a prototype, and a dictionary crosses
+/// as its pairs, each key a value of its type, in the order the server enumerated it (#437).
 /// </para>
 /// <para>
 /// The file is one line of wire JSON, the bytes a page receives. It is compared, never rewritten in
@@ -39,7 +39,7 @@ public class ServerPayloadFixtureTests
             // page's data is free to hold.
             balances = new Dictionary<string, long> { ["__proto__"] = 9007199254740993L, ["a"] = 2L },
             // A key of each form the dictionary spec turns back into its type, integer keys written
-            // out of order, so the client reads what JSON.parse does to them (#437).
+            // out of order, which a JSON object would have listed ascending: the pairs keep them (#437).
             scores = new Dictionary<int, string> { [3] = "c", [1] = "a" },
             flags = new Dictionary<bool, int> { [true] = 1, [false] = 0 },
             big = new Dictionary<long, string> { [9007199254740993L] = "x" },
@@ -48,7 +48,7 @@ public class ServerPayloadFixtureTests
             names = new Dictionary<string, int> { ["b"] = 2, ["a"] = 1 },
         }, EqJson.Options) + "\n";
 
-        var path = Path.Combine(RepoRoot(), Fixture);
+        var path = Path.Combine(RepoRoot.Find(), Fixture);
         if (Environment.GetEnvironmentVariable("EQ_UPDATE_PAYLOAD_FIXTURE") == "1")
         {
             Directory.CreateDirectory(Path.GetDirectoryName(path)!);
@@ -59,14 +59,5 @@ public class ServerPayloadFixtureTests
             $"the runtime's hydration spec reads {Fixture}; write it once with EQ_UPDATE_PAYLOAD_FIXTURE=1");
         File.ReadAllText(path).Should().Be(actual,
             "what the server writes for these values changed; if that is intended, regenerate with EQ_UPDATE_PAYLOAD_FIXTURE=1 and run the vitest twin");
-    }
-
-    private static string RepoRoot()
-    {
-        var here = new DirectoryInfo(AppContext.BaseDirectory);
-        while (here is not null && !Directory.Exists(Path.Combine(here.FullName, "src", "eQuantic.UI.Runtime")))
-            here = here.Parent;
-        here.Should().NotBeNull("the suite runs inside the repository");
-        return here!.FullName;
     }
 }

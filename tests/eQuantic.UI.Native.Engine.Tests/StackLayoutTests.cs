@@ -64,6 +64,83 @@ public class StackLayoutTests
         badge.Bounds.Y.Should().Be(-4);
     }
 
+    /// <summary>
+    /// An edge is a point plus a fraction of the stack, and the shift a fraction of the child: a
+    /// 100 × 30 tooltip at 50% / 25% − 16 of a 400 × 800 stack, centred above its anchor, lands at
+    /// (150, 154) — what the web's `left: 50%; top: calc(25% - 16px); translate(-50%, -100%)` draws.
+    /// </summary>
+    [Fact]
+    public void FractionsOfTheStackAndAShiftOfTheChild_PlaceAsTheWebDoes()
+    {
+        var stack = new Stack { Width = SizeValue.Fixed(400), Height = SizeValue.Fixed(800) };
+        stack.Add(new Positioned(new Primitives.Box(new BoxStyle { Width = 100, Height = 30 }), top: -16)
+        {
+            StartFraction = 0.5f,
+            TopFraction = 0.25f,
+            ShiftX = -0.5f,
+            ShiftY = -1f,
+        });
+
+        var tip = Layout(stack).Children[0];
+
+        tip.Bounds.X.Should().Be(150);
+        tip.Bounds.Y.Should().Be(154);
+    }
+
+    /// <summary>An end fraction measures from the stack's end edge: 10% of 400 leaves a 40 × 20
+    /// child's right edge 40 from the stack's, at x = 320.</summary>
+    [Fact]
+    public void AnEndFraction_MeasuresFromTheEndEdge()
+    {
+        var stack = new Stack { Width = SizeValue.Fixed(400), Height = SizeValue.Fixed(800) };
+        stack.Add(new Positioned(new Primitives.Box(new BoxStyle { Width = 40, Height = 20 })) { EndFraction = 0.1f });
+
+        Layout(stack).Children[0].Bounds.X.Should().Be(320);
+    }
+
+    /// <summary>
+    /// A child that fills, anchored on one side, fills to the opposite edge: in a 400dp stack it is
+    /// 200 wide at 50% and 300 wide at 100dp, as the web's `left; right: 0` draws it (#648 review).
+    /// </summary>
+    [Theory]
+    [InlineData(null, 0.5f, 200f, 200f)]
+    [InlineData(100f, null, 100f, 300f)]
+    public void AFillingChildAnchoredOnOneSide_FillsToTheOppositeEdge(float? start, float? fraction, float x, float width)
+    {
+        var stack = new Stack { Width = SizeValue.Fixed(400), Height = SizeValue.Fixed(100) };
+        stack.Add(new Positioned(new Primitives.Box(new BoxStyle { Width = SizeValue.Fill, Height = 20 }), start: start)
+        {
+            StartFraction = fraction,
+        });
+
+        var child = Layout(stack).Children[0];
+
+        child.Bounds.X.Should().Be(x);
+        child.Bounds.Width.Should().Be(width);
+    }
+
+    /// <summary>
+    /// The same through a component that builds the Positioned: the contract is the parent's, and
+    /// the web resolves it through the component too (#648 review).
+    /// </summary>
+    [Fact]
+    public void AFillingChildPositionedByAComponent_FillsToTheOppositeEdge()
+    {
+        var stack = new Stack { Width = SizeValue.Fixed(400), Height = SizeValue.Fixed(100) };
+        stack.Add(new HalfwayBar());
+
+        var child = Layout(stack).Children[0];
+
+        child.Bounds.X.Should().Be(200);
+        child.Bounds.Width.Should().Be(200);
+    }
+
+    private sealed class HalfwayBar : StatelessComponent
+    {
+        public override VisualNode Build(ComponentContext context) =>
+            new Positioned(new Primitives.Box(new BoxStyle { Width = SizeValue.Fill, Height = 20 })) { StartFraction = 0.5f };
+    }
+
     [Fact]
     public void CenterAlignment_CentersNonPositionedChildren()
     {

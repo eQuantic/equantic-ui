@@ -94,7 +94,8 @@ internal sealed partial class EmitVisitor
         {
             var glyph = new IconGlyph("", shape.Path, style, drawing.Artwork.ViewBox,
                 shape.StrokeWidth);
-            if (cache.Get(drawingIcons, glyph, drawing.Width, drawing.Height,
+            // The laid-out box, not the node's own numbers: a filling drawing learns its size there.
+            if (cache.Get(drawingIcons, glyph, s.Node.Bounds.Width, s.Node.Bounds.Height,
                     s.Motion.RenderScale) is not { } raster) return;
             s.Builder.Texture(s.Node.Bounds, RunPaint(shape, paint, inherited), raster);
         }

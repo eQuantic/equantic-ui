@@ -176,6 +176,15 @@ public class ObjectCreationStrategy : IExpressionIrStrategy
             typeName = aliasQualified.Name.ToString();
         var createdType = context.SemanticHelper.GetType(creation);
 
+        // A type named through a using alias is built by its own name and imported by it, as a read of
+        // its static is (#625): `using F = N.Fold;` then `new F()` wrote `new F()`, a name nothing defines.
+        if (createdType is INamedTypeSymbol { TypeKind: TypeKind.Class or TypeKind.Struct } aliased && !aliased.IsHostOnly()
+            && aliased.HasTwin() && creation.Type is IdentifierNameSyntax { Identifier.ValueText: var written } && written != aliased.Name)
+        {
+            aliased.RegisterIntroduced(context);
+            typeName = aliased.Name;
+        }
+
         // A HOST-ONLY type constructed from client code. `new Matrix2D(...)` compiled, emitted an
         // import of a name the runtime deliberately ships no export for, and took the page down at
         // hydration — while the static-member read beside it (`Matrix2D.Identity`) was already

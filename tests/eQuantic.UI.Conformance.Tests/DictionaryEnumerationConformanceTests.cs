@@ -11,8 +11,8 @@ namespace eQuantic.UI.Conformance.Tests;
 /// order while nothing is removed, and a removed entry's slot is the next one reused, the last freed
 /// first.
 /// <para>
-/// A dictionary RETURNED here crosses JSON, whose parser lists integer-like names ascending whatever
-/// order they were written in (#437), so a case returns what it read out of the dictionary instead.
+/// A dictionary RETURNED here crosses JSON as its pairs, in the order it enumerates (#437), so a case
+/// may return the dictionary itself.
 /// </para>
 /// </summary>
 public class DictionaryEnumerationConformanceTests
@@ -127,11 +127,17 @@ public class DictionaryEnumerationConformanceTests
     }
 
     [SkippableTheory]
-    // A dictionary returned whole crosses JSON as the object System.Text.Json writes for it: every key
-    // but an integer-like one keeps its order (#437).
+    // A dictionary returned whole crosses JSON as its pairs, in the order it enumerates, each key a
+    // value of its type: an integer-like key, which a JSON object listed first and ascending, keeps
+    // its place too (#437).
     [InlineData("var d = new Dictionary<string, int>(); d[\"b\"] = 2; d[\"a\"] = 1; return d;")]
     [InlineData("var d = new Dictionary<bool, string>(); d[true] = \"yes\"; d[false] = \"no\"; return d;")]
     [InlineData("var d = new Dictionary<string, int> { [\"__proto__\"] = 1, [\"a\"] = 2 }; return d;")]
+    [InlineData("var d = new Dictionary<int, string>(); d[3] = \"c\"; d[1] = \"a\"; return d;")]
+    [InlineData("var d = new Dictionary<int, string> { [3] = \"c\", [1] = \"a\", [2] = \"b\" }; d.Remove(1); d[5] = \"e\"; return d;")]
+    [InlineData("var d = new Dictionary<string, int> { [\"b\"] = 1, [\"10\"] = 2, [\"9\"] = 3 }; return d;")]
+    [InlineData("var d = new Dictionary<long, string> { [9007199254740993L] = \"x\", [2L] = \"y\" }; return d;")]
+    [InlineData("var d = new SortedDictionary<string, int> { [\"b\"] = 3, [\"9\"] = 1, [\"10\"] = 2 }; return d;")]
     public void Json_MatchesDotNet(string statements)
     {
         Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");

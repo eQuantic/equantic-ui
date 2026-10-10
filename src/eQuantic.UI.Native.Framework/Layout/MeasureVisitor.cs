@@ -82,9 +82,11 @@ internal sealed partial class MeasureVisitor : IVisualNodeVisitor<MeasureState, 
     public LayoutNode Visit(Grid node, MeasureState s) => MeasureGrid(node, s.Constraints, _ctx, s.Path);
 
     // Spec S6: an AdaptiveNode IS its resolved variant on native — the other variants never measure,
-    // never paint (the web keeps them, CSS-gated).
+    // never paint (the web keeps them, CSS-gated). A line and a grid lay out the arm in its place
+    // (LaidOutChildren); every other parent measures the node through this door, a Stack included,
+    // which reads the arm off the node it measured (PositionedOf).
     public LayoutNode Visit(AdaptiveNode node, MeasureState s) =>
-        Measure(node.Resolve(_ctx.SizeClass), s.Constraints, _ctx, _ctx.ChildPath(s.Path, 0));
+        Measure(_ctx.ArmOf(node), s.Constraints, _ctx, _ctx.ChildPath(s.Path, 0));
 
     // Spec S7: Pinned renders IN FLOW on native until engine scrolling lands (correct at scroll
     // offset 0); the pinning joins the scroll compositor (fence on the node's doc).
@@ -129,10 +131,16 @@ internal sealed partial class MeasureVisitor : IVisualNodeVisitor<MeasureState, 
     public LayoutNode Visit(Vector node, MeasureState s) =>
         _ctx.Node(node, new Rect(0, 0, node.Size, node.Height));
 
-    // Artwork is an explicitly placed box too — its height comes from the drawing's own aspect when
-    // the author gave only a width, which the node already resolved.
-    public LayoutNode Visit(Drawing node, MeasureState s) =>
-        _ctx.Node(node, new Rect(0, 0, node.Width, node.Height));
+    // Artwork takes the width it asks for — dp, or the room it is offered the way a canvas takes
+    // it — and its height comes from the drawing's own aspect unless the author decided one. A fill
+    // on an axis the parent sizes from its content has nothing to fill, as a canvas has not.
+    public LayoutNode Visit(Drawing node, MeasureState s)
+    {
+        var width = node.Width.Kind == SizeKind.Fixed
+            ? node.Width.Value
+            : ResolveSelf(node.Width, s.Constraints.MaxWidth, 0, _ctx.WindowWidth, s.Constraints.Width.Indeterminate);
+        return _ctx.Node(node, new Rect(0, 0, width, node.HeightAt(width)));
+    }
 
     // The Spinner shares the icon em-box contract (spec B15: sizes = the §07 whitelist).
     public LayoutNode Visit(Spinner node, MeasureState s) => _ctx.Node(node, new Rect(0, 0, node.Size, node.Size));

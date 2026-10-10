@@ -29,12 +29,14 @@ namespace eQuantic.UI.Conformance.Tests.Infrastructure;
 /// float (so a float left a double passed), and threw on NaN.</description></item>
 /// <item><term>a value tuple, a <c>KeyValuePair</c></term><description>an array: <c>["5","x"]</c>,
 /// <c>["a",1]</c>. System.Text.Json wrote <c>{}</c> for the tuple, whose items are fields.</description></item>
+/// <item><term>a dictionary</term><description>its pairs, in the order it enumerates:
+/// <c>[[3,"c"],[1,"a"]]</c>, each pair written as a <c>KeyValuePair</c> is. System.Text.Json wrote an
+/// object, which the runtime wrote too until a JSON object lost the order of integer-like keys (#437).</description></item>
 /// </list>
 /// What both sides already wrote alike stays System.Text.Json's: an int, a bool, a string, a char (a
 /// one-character string), null, a <c>DateTime</c>, <c>DateOnly</c>, <c>TimeOnly</c>,
 /// <c>DateTimeOffset</c> and <c>TimeSpan</c> (each a twin whose <c>toJSON</c> writes .NET's ISO text), a
-/// <c>Guid</c> (its text), an array, a list, a record, an anonymous value and a dictionary (an object;
-/// its keys written as the runtime's <c>wireKey</c> writes them).
+/// <c>Guid</c> (its text), an array, a list, a record and an anonymous value.
 /// </summary>
 public static class RuntimeJson
 {
@@ -49,6 +51,7 @@ public static class RuntimeJson
         new EnumAsTwin(),
         new TupleAsArray(),
         new PairAsArray(),
+        new DictionaryAsPairs(),
     ];
 
     /// <summary>
@@ -235,6 +238,47 @@ public static class RuntimeJson
                 writer.WriteStartArray();
                 JsonSerializer.Serialize(writer, value.Key, options);
                 JsonSerializer.Serialize(writer, value.Value, options);
+                writer.WriteEndArray();
+            }
+        }
+    }
+
+    /// <summary>
+    /// A dictionary as the runtime's <c>toJSON</c> writes its class, <c>Dictionary</c> or <c>SortedMap</c>:
+    /// its pairs in the order it enumerates, each one an array of its key and its value, a NaN or an
+    /// infinite number key written as its text (#437). Which .NET values are dictionaries is the wire's own
+    /// rule, <c>EqJson.DictionaryEntries</c>.
+    /// </summary>
+    private sealed class DictionaryAsPairs : JsonConverterFactory
+    {
+        public override bool CanConvert(Type typeToConvert) =>
+            eQuantic.UI.Server.Json.EqJson.DictionaryEntries(typeToConvert) is not null;
+
+        public override JsonConverter CreateConverter(Type typeToConvert, JsonSerializerOptions options)
+        {
+            var (key, value) = eQuantic.UI.Server.Json.EqJson.DictionaryEntries(typeToConvert)!.Value;
+            return (JsonConverter)Activator.CreateInstance(typeof(Of<,,>).MakeGenericType(typeToConvert, key, value))!;
+        }
+
+        private sealed class Of<TDictionary, TKey, TValue> : JsonConverter<TDictionary>
+            where TDictionary : IEnumerable<KeyValuePair<TKey, TValue>>
+        {
+            public override TDictionary Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options) =>
+                throw new NotSupportedException("The harness only writes.");
+
+            public override void Write(Utf8JsonWriter writer, TDictionary value, JsonSerializerOptions options)
+            {
+                writer.WriteStartArray();
+                foreach (var (key, item) in value)
+                {
+                    writer.WriteStartArray();
+                    // NaN and the infinities: .NET's invariant text, which is JavaScript's String() too.
+                    if (key is double d && !double.IsFinite(d)) writer.WriteStringValue(d.ToString(CultureInfo.InvariantCulture));
+                    else if (key is float f && !float.IsFinite(f)) writer.WriteStringValue(f.ToString(CultureInfo.InvariantCulture));
+                    else JsonSerializer.Serialize(writer, key, options);
+                    JsonSerializer.Serialize(writer, item, options);
+                    writer.WriteEndArray();
+                }
                 writer.WriteEndArray();
             }
         }

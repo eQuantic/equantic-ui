@@ -1,6 +1,8 @@
 #nullable enable
 eQuantic.UI.Web.CultureFormatBridge
 static eQuantic.UI.Web.CultureFormatBridge.SerializeJson(System.Globalization.CultureInfo! culture) -> string!
+static eQuantic.UI.Web.TokenCss.Edge(float? point, float? fraction) -> string?
+static eQuantic.UI.Web.TokenCss.Shift(float x, float y) -> string?
 eQuantic.UI.Web.HtmlStyle.Translate.get -> string?
 eQuantic.UI.Web.HtmlStyle.Translate.set -> void
 static eQuantic.UI.Web.VisualNodeComponent.AmbientDensity.get -> eQuantic.UI.Primitives.Density?

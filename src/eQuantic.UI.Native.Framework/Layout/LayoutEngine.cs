@@ -165,6 +165,11 @@ public sealed class LayoutContext
     /// threshold, because the class is a pure function of the width).</summary>
     public WindowSizeClass SizeClass { get; init; }
 
+    /// <summary>The arm an AdaptiveNode is on this window — the one place layout decides it, read
+    /// by the node's own measurement and by the containers that lay the arm out in the node's place
+    /// (<see cref="LaidOutChildren"/>).</summary>
+    internal VisualNode ArmOf(AdaptiveNode adaptive) => adaptive.Resolve(SizeClass);
+
     /// <summary>
     /// The margins the SYSTEM owns — notch, status bar, home indicator. The HOST reports them; a
     /// desktop window has no cutouts, so the default of zero is the correct answer there, and the

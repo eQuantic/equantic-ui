@@ -3,6 +3,7 @@ using eQuantic.UI.Compiler.CodeGen.Extensions;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using Microsoft.CodeAnalysis.Operations;
 using eQuantic.UI.Compiler.CodeGen.Ir;
 
 namespace eQuantic.UI.Compiler.CodeGen.Strategies.Expressions;
@@ -34,6 +35,16 @@ public class IdentifierStrategy : IExpressionIrStrategy
         // scope: a local, a parameter or a local function called `Component` is that binding, and
         // mapped first it read the inherited value instead (Copilot's review of #399).
         if (name == "Component" && !BoundInScope(symbol, identifier, name)) return JsExpr.ThisMember("_component");
+
+        // A type named through a using alias is written by its own name and imported by it, as through its
+        // namespace (#625): `using F = Falei.Web.Portal.Fold;` then `F.Text(1)` wrote `F.text(1)`, a name
+        // nothing defines. A name that differs from the type's own is only ever an alias.
+        if (symbol is INamedTypeSymbol { TypeKind: TypeKind.Class or TypeKind.Struct } aliased && aliased.Name != name
+            && !aliased.IsHostOnly() && aliased.HasTwin())
+        {
+            aliased.RegisterIntroduced(context);
+            return JsExpr.Identifier(aliased.Name);
+        }
 
         // If it's a type symbol, return as is (to allow EnumStrategy to work)
         if (symbol is ITypeSymbol || symbol is INamedTypeSymbol) return JsExpr.Identifier(name);
@@ -112,8 +123,13 @@ public class IdentifierStrategy : IExpressionIrStrategy
                     {
                         var isDirectInvocation = identifier.Parent is InvocationExpressionSyntax invocation &&
                                               invocation.Expression == identifier;
+                        // Over a copy of a mutable value's `this`, as C# boxes the receiver when it makes
+                        // the delegate (ValueCopies.Captured).
                         if (!isDirectInvocation)
-                            return JsExpr.Call(JsExpr.Member(member, "bind"), JsExpr.This);
+                            return JsExpr.Call(JsExpr.Member(member, "bind"),
+                                context.SemanticHelper.GetOperation(identifier) is IMethodReferenceOperation { Instance: { } self }
+                                    ? ValueCopies.Captured(self.Type, JsExpr.This)
+                                    : JsExpr.This);
                     }
 
                     return member;

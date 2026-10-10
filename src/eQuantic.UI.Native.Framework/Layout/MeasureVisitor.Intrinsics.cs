@@ -38,7 +38,8 @@ internal sealed partial class MeasureVisitor
         Image image => image.Width,
         Icon icon => icon.Size,
         Vector vector => vector.Size,
-        Drawing drawing => drawing.Width,
+        // A drawing's floor is its dp width, or nothing when it fills — a canvas's rule.
+        Drawing drawing => drawing.Width.Kind == SizeKind.Fixed ? drawing.Width.Value : 0,
         // A canvas's floor is whatever it was told to be, or nothing when it fills.
         Canvas canvas => canvas.Width.Kind == SizeKind.Fixed ? canvas.Width.Value : 0,
         Spinner spinner => spinner.Size,
@@ -147,6 +148,11 @@ internal sealed partial class MeasureVisitor
     /// Read from the MEASURED tree rather than by rebuilding: the build already happened, through
     /// the instance store, and building a second time would hand back a different instance.
     /// </para>
+    /// <para>
+    /// The measured node is asked FIRST, because it can already be the Positioned when the child is
+    /// not one: an AdaptiveNode measures as the arm its window resolves (spec S6). Walking only
+    /// through components, a Positioned arm was laid out at the stack's alignment (#671).
+    /// </para>
     /// </summary>
     private Positioned? PositionedOf(VisualNode child, LayoutNode measured)
     {
@@ -154,10 +160,11 @@ internal sealed partial class MeasureVisitor
 
         var node = measured;
         // Bounded: a component wrapping a component wrapping one is ordinary; a cycle is not.
-        for (var hops = 0; hops < 8 && node.Source is UiComponent && node.Children.Count == 1; hops++)
+        for (var hops = 0; hops <= 8; hops++)
         {
-            node = node.Children[0];
             if (node.Source is Positioned found) return found;
+            if (node.Source is not UiComponent || node.Children.Count != 1) return null;
+            node = node.Children[0];
         }
         return null;
     }
@@ -174,6 +181,7 @@ internal sealed partial class MeasureVisitor
         Box box => box.Style.Width.Kind,
         FlexNode flex => flex.Width.Kind,
         Grid grid => grid.Width.Kind,
+        Drawing drawing => drawing.Width.Kind,
         _ => SizeKind.Hug,
     };
 
@@ -190,7 +198,8 @@ internal sealed partial class MeasureVisitor
         Image => SizeKind.Fixed,
         Icon => SizeKind.Fixed,
         Vector => SizeKind.Fixed,
-        Drawing => SizeKind.Fixed,
+        // A drawing's height always follows from its width, so only its width can stretch.
+        Drawing drawing => horizontal ? SizeKind.Fixed : drawing.Width.Kind,
         Spinner => SizeKind.Fixed,
         Grid grid => (horizontal ? grid.Height : grid.Width).Kind,
         Anchored anchored => CrossSizeKind(anchored.Anchor, horizontal),
