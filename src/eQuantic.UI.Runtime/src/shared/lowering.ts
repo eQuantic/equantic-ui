@@ -37,6 +37,7 @@ import { declareInView } from './in-view';
 import { artworkAspect, cssFontWeight, isWellFormedFace } from './value-types';
 import {
   adaptiveGateOpen,
+  atomicDeclaration,
   atomizeEntries,
   atomizePseudo,
   atomizeScrolled,
@@ -47,7 +48,9 @@ import {
   gateExpandedFrom,
   gateMediumFrom,
   hashDeclaration,
+  isAdaptiveGate,
   mergeAtomicDeclaration,
+  replaceAtomicDeclaration,
 } from './style-atomizer';
 import type {
   BoxNode,
@@ -110,6 +113,7 @@ import type {
   VisualNodeValue,
 } from './nodes';
 import { declareShortcut, shortcutMark } from '../dom/shortcuts';
+import { installScrolledController } from './scrolled-pinned';
 import { declareScrollViewport } from './scroll-viewports';
 import { SheetKeymap } from './components/SheetKeymap';
 import { CellRef as CellRefCtor } from './components/CellRef';
@@ -1102,10 +1106,17 @@ function lowerDraggable(
   if (node.follows === false) child.attributes['data-eq-drag-follows'] = '0';
   if (node.onMoved) child.attributes['data-eq-drag-moves'] = '1';
 
-  if (rest !== 0 && node.follows !== false) {
-    const shift = horizontal ? `translateX(${rest}px)` : `translateY(${rest}px)`;
-    const existing = child.attributes.style ? `${child.attributes.style};` : '';
-    child.attributes.style = `${existing}transform:${shift};transition:transform ${Motion.baseMs}ms`;
+  // C# twin (#511): the offset rides the individual `translate` property, which CSS applies
+  // TOGETHER with the box's `transform`, and the glide is declared at zero too and JOINED to the
+  // box's own transition list. This wrote both inline, which beat every class: a client-rendered
+  // open row never lifted under the pointer while the server's slid closed.
+  if (node.follows !== false) {
+    // A NORMALIZED rest is a fraction of the surface's own extent, which a percentage of its own box is.
+    const offset = node.normalized ? `${num(rest * 100)}%` : px(rest);
+    if (rest !== 0) mergeAtomicDeclaration(child, 'translate', horizontal ? offset : `0 ${offset}`);
+    const glide = `translate ${Motion.baseMs}ms`;
+    const own = atomicDeclaration(child, 'transition');
+    replaceAtomicDeclaration(child, 'transition', own ? `${own}, ${glide}` : glide);
   }
 
   if (node.onReleased) {
@@ -1728,9 +1739,17 @@ function lowerImage(node: ImageNode): HtmlNode {
   light.attributes['class'] = light.attributes['class']
     ? `${light.attributes['class']} eq-themed-light`
     : 'eq-themed-light';
+  // The dark artwork takes the light one's SIZING as well as its own class (C# twin: one Style for
+  // both). Spread first and then replaced, the class lost the sizing, so on a client-rendered page in
+  // dark mode the artwork drew at its natural size.
   const dark: HtmlNode = {
     tag: 'img',
-    attributes: { ...sizing, class: 'eq-themed-dark', src: node.darkSource, alt: node.label ?? '' },
+    attributes: {
+      ...sizing,
+      class: sizing.class ? `${sizing.class} eq-themed-dark` : 'eq-themed-dark',
+      src: node.darkSource,
+      alt: node.label ?? '',
+    },
     events: {},
     children: [],
   };
@@ -2542,11 +2561,27 @@ function appendDiff(node: HtmlNode, pseudo: string, diff: StyleDiffValue, style:
 
 /** The C# `DiffDeclarations`: the declarations a state's diff carries over the base it changes, in
  * the same order — one builder, so the pseudo path and the simulated path cannot drift apart. */
+/** C# `default(ColorToken)`: transparent black in both modes. */
+const NO_COLOR: ColorTokenValue = {
+  light: { r: 0, g: 0, b: 0, a: 0 },
+  dark: { r: 0, g: 0, b: 0, a: 0 },
+} as ColorTokenValue;
+
 function diffEntries(diff: StyleDiffValue, style: BoxStyleValue): Record<string, string | undefined> {
   const entries: Record<string, string | undefined> = {};
   if (diff.background) entries['background-color'] = tokenValue(diff.background);
-  if (diff.borderWidth != null && diff.borderColor) {
-    entries['border'] = `${px(diff.borderWidth)} solid ${tokenValue(diff.borderColor)}`;
+  // The border along the edges the BASE draws, in the base's own shape (C# twin, #506): the
+  // shorthand for every edge, per-side widths for some, and a width alone in the base's colour.
+  if (diff.borderWidth != null) {
+    // C#'s base colour is a struct that is never absent: an unset one is transparent black.
+    const value = tokenValue(diff.borderColor ?? style.borderColor ?? NO_COLOR);
+    if (sidesAreAll(style)) {
+      entries['border'] = `${px(diff.borderWidth)} solid ${value}`;
+    } else {
+      entries['border-width'] = sideWidths(diff.borderWidth, style.borderSides ?? BORDER_ALL);
+      entries['border-style'] = 'solid';
+      entries['border-color'] = value;
+    }
   } else if (diff.borderColor) {
     entries['border-color'] = tokenValue(diff.borderColor);
   }
@@ -2709,6 +2744,10 @@ function faceStack(family: string, mono: boolean): string {
 
 function lowerText(text: TextNode, context: LoweringContext): HtmlNode {
   const style: StyleEntries = {
+    // A BLOCK, wherever it sits (C# twin, #495): a Text is never inline in the vocabulary, and as an
+    // inline span inside a block parent it sat on the parent's line box and its body-font strut. The
+    // multi-line clamp below replaces it with the box the clamp needs.
+    display: 'block',
     color: tokenValue(text.color ?? context.textPrimary),
     // Line alignment inside the paragraph (C# twin) — wrapped lines of a centered headline
     // must center too.
@@ -2759,11 +2798,7 @@ function lowerText(text: TextNode, context: LoweringContext): HtmlNode {
     style['white-space'] = nodeMono(text) ? 'pre' : 'nowrap';
     style.overflow = 'hidden';
     style['text-overflow'] = 'ellipsis';
-    // BLOCK, or the other two do nothing (C# twin): a Text lowers to a `span`, and `overflow` and
-    // `text-overflow` are inert on a non-replaced inline box, so a squeezed single-line Text
-    // painted its full width out of its parent instead of ellipsising inside it. Block takes the
-    // width the parent allows; inline-block would size to content and spill again.
-    style.display = 'block';
+    // The other two need the BLOCK every Text is (C# twin): they are inert on an inline box.
   } else if (text.maxLines > 1) {
     // MULTI-LINE clamp (C# twin): exactly N lines, then an ellipsis — what keeps a grid of cards
     // on one baseline when the copy is not the site's to control.
@@ -2919,6 +2954,27 @@ function fills(node: VisualNodeValue): { width: boolean; height: boolean } {
   }
 }
 
+/**
+ * C# twin (#622): the hit slop lies UNDER a control's content, and the stylesheet lifts the content
+ * above it by positioning the pressable's child. A child that draws no box (`display: contents`: an
+ * InView, an Adaptive's arms, a light and dark Image) cannot be positioned, so the lift goes THROUGH
+ * any chain of them to the first descendants that draw a box, which carry `eq-lift`.
+ */
+function liftThroughBoxlessWrappers(child: HtmlNode): void {
+  if (!drawsNoBox(child)) return;
+  for (const inner of child.children) {
+    if (drawsNoBox(inner)) liftThroughBoxlessWrappers(inner);
+    else prependClass(inner, 'eq-lift');
+  }
+}
+
+/** An element that lays out as its children and draws no box: `display: contents`, or an Adaptive
+ * arm's gate, whose rules make it contents in its range and nothing outside it (C# twin). */
+function drawsNoBox(node: HtmlNode): boolean {
+  if (atomicDeclaration(node, 'display') === 'contents') return true;
+  return (node.attributes['class'] ?? '').split(' ').some((cls) => isAdaptiveGate(cls));
+}
+
 function lowerPressable(
   pressable: PressableNode,
   context: LoweringContext,
@@ -3043,6 +3099,7 @@ function lowerPressable(
       const existing = node.attributes['style'];
       node.attributes['style'] = existing ? `${existing}; ${tail}` : tail;
     }
+    if (child) liftThroughBoxlessWrappers(child);
   }
 
   if (child) node.children.push(child);
@@ -3818,6 +3875,13 @@ function lowerSafeArea(node: SafeAreaNode, context: LoweringContext, path: strin
   return wrapper;
 }
 
+/**
+ * C# `Pinned.ScrolledBase`: what a header's scrolled diff is laid over. A header draws nothing of its
+ * own, and its border is the hairline along its BOTTOM edge (BorderSides.Bottom = 4), the edge the
+ * content scrolls under.
+ */
+const PINNED_BASE: BoxStyleValue = { borderSides: 4 } as BoxStyleValue;
+
 function lowerPinned(node: PinnedNode, context: LoweringContext, path: string): HtmlNode {
   const float = node.float === true;
   const wrapper = element('div', {
@@ -3835,20 +3899,11 @@ function lowerPinned(node: PinnedNode, context: LoweringContext, path: string): 
     transition: node.transition ? transitionValue(node.transition) : undefined,
   });
 
-  // SCROLL-LINKED diff (C# twin): declarations land under the root-gated scrolled variant, and
-  // the tiny window listener that toggles `eq-scrolled` installs once per page.
+  // SCROLL-LINKED diff (C# twin, #506): every member of it, through the builder a box's states
+  // use, over the header's own base. The variant applies while the runtime marks the header
+  // scrolled, from the surface the header pins to (scrolled-pinned.ts).
   if (node.scrolledStyle) {
-    const diff = node.scrolledStyle;
-    const entries: Record<string, string | undefined> = {};
-    if (diff.background) entries['background-color'] = tokenValue(diff.background);
-    if (diff.borderWidth != null && diff.borderColor)
-      entries['border-bottom'] = `${px(diff.borderWidth)} solid ${tokenValue(diff.borderColor)}`;
-    if (diff.opacity != null) entries['opacity'] = num(diff.opacity);
-    if (diff.backdropBlur != null && diff.backdropBlur > 0) {
-      entries['backdrop-filter'] = `blur(${px(diff.backdropBlur)})`;
-      entries['-webkit-backdrop-filter'] = `blur(${px(diff.backdropBlur)})`;
-    }
-    const classes = atomizeScrolled(entries);
+    const classes = atomizeScrolled(diffEntries(node.scrolledStyle, PINNED_BASE));
     if (classes) mergeScrolledClasses(wrapper, classes);
     installScrolledController();
   }
@@ -3869,16 +3924,6 @@ function mergeScrolledClasses(node: HtmlNode, classes: string): void {
   node.attributes['class'] = existing ? `${existing} ${classes}` : classes;
 }
 
-let scrolledControllerInstalled = false;
-
-/** The scroll listener behind Pinned.ScrolledStyle: `eq-scrolled` on <html> past 8px. */
-function installScrolledController(): void {
-  if (scrolledControllerInstalled || typeof window === 'undefined') return;
-  scrolledControllerInstalled = true;
-  const apply = () => document.documentElement.classList.toggle('eq-scrolled', window.scrollY > 8);
-  window.addEventListener('scroll', apply, { passive: true });
-  apply();
-}
 
 /**
  * The gates around the subtree being lowered, outermost first — empty outside every AdaptiveNode
