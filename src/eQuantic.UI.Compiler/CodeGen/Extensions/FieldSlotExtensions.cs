@@ -55,20 +55,21 @@ internal static class FieldSlotExtensions
         && type.Locations.Any(location => location.IsInSource);
 
     /// <summary>Whether a member of the field's own type holds its twin name: a property, an event or a
-    /// method, or another field, of which the one whose name the casing changed moves.</summary>
+    /// method, an explicit implementation's included under the name of the member it implements
+    /// (<see cref="MemberTwinNameExtensions.MemberTwinName"/>), or another field, of which the one whose
+    /// name the casing changed moves.</summary>
     private static bool MovesInItsType(IFieldSymbol field, string name) =>
         field.ContainingType.GetMembers().Any(member =>
             !SymbolEqualityComparer.Default.Equals(member, field) && !member.IsStatic && !member.IsImplicitlyDeclared
-            && TwinName.Of(member.Name) == name
             && member switch
             {
-                IPropertySymbol or IEventSymbol or IMethodSymbol { MethodKind: MethodKind.Ordinary } => true,
-                IFieldSymbol { IsConst: false } => field.Name != name,
-                _ => false,
+                IFieldSymbol { IsConst: false } other => TwinName.Of(other.Name) == name && field.Name != name,
+                _ => HoldsAName(member) && member.MemberTwinName() == name,
             });
 
     /// <summary>The names the twins of <paramref name="type"/> and its bases hold on each instance: every
-    /// property's, event's and method's twin name, and every field's slot, which may have moved itself.</summary>
+    /// property's, event's and method's twin name, an explicit implementation's included, and every
+    /// field's slot, which may have moved itself.</summary>
     private static HashSet<string> HeldByAncestors(INamedTypeSymbol? type)
     {
         var held = new HashSet<string>(StringComparer.Ordinal);
@@ -77,19 +78,17 @@ internal static class FieldSlotExtensions
             foreach (var member in holder.GetMembers())
             {
                 if (member.IsStatic || member.IsImplicitlyDeclared) continue;
-                switch (member)
-                {
-                    case IFieldSymbol { IsConst: false } field:
-                        held.Add(field.TwinSlot());
-                        break;
-                    case IPropertySymbol or IEventSymbol or IMethodSymbol { MethodKind: MethodKind.Ordinary }:
-                        held.Add(TwinName.Of(member.Name));
-                        break;
-                }
+                if (member is IFieldSymbol { IsConst: false } || HoldsAName(member)) held.Add(member.MemberTwinName());
             }
         }
         return held;
     }
+
+    /// <summary>A member a twin holds under a name on each instance besides its fields: a property, an
+    /// event, or a method its class declares, an explicit implementation of an interface's included.</summary>
+    private static bool HoldsAName(ISymbol member) =>
+        member is IPropertySymbol or IEventSymbol
+            or IMethodSymbol { MethodKind: MethodKind.Ordinary or MethodKind.ExplicitInterfaceImplementation };
 
     /// <summary>A component, whose fields the server hydrates under their twin names.</summary>
     private static bool IsComponent(INamedTypeSymbol type)

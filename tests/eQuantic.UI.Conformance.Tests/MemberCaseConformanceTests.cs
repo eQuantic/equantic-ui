@@ -16,7 +16,8 @@ namespace eQuantic.UI.Conformance.Tests;
 /// table read as the method `count()` (found in the same review's sweep). A slot an ancestor holds is
 /// taken whatever the spellings, so a derived field beside an inherited one moves, and a pattern-matching
 /// operation calls a Deconstruct the app wrote once for each value, in an initializer, across the arms of
-/// a switch and the alternatives of an `or` (Copilot's second review of #696).
+/// a switch and the alternatives of an `or` (Copilot's second review of #696). An explicit implementation
+/// counts under the name of the member it implements, as the emitter writes it (Copilot's third review).
 /// </summary>
 public class MemberCaseConformanceTests
 {
@@ -67,6 +68,18 @@ public class MemberCaseConformanceTests
             public Tracked(int x, int y) { this.x = x; this.y = y; }
             public void Deconstruct(out int x, out int y) { Calls++; x = this.x; y = this.y; }
         }
+        public interface IReads { int Value(); }
+        public class ReadsExplicitly : IReads { int value = 3; int IReads.Value() => value * 10; public int Own() => value; }
+        public interface ISized { int Size { get; } }
+        public class SizedExplicitly : ISized { int size = 4; int ISized.Size => size * 10; public int Own() => size; }
+        public interface INotifies { event System.Action Changed; }
+        public class NotifiesExplicitly : INotifies
+        {
+            int changed = 5;
+            System.Action handlers;
+            event System.Action INotifies.Changed { add { handlers += value; } remove { handlers -= value; } }
+            public int Own() => changed;
+        }
         public class Initialized
         {
             public bool Matched = new Tracked(1, 2) is (1, 2);
@@ -110,6 +123,9 @@ public class MemberCaseConformanceTests
             ("a Deconstruct across the labels of a switch statement, called once", "Tracked.Calls = 0; var t = new Tracked(3, 4); string r; switch (t) { case (1, _): r = \"one\"; break; case (var a, var b): r = $\"{a}{b}\"; break; default: r = \"none\"; break; } return r + \":\" + Tracked.Calls;"),
             ("a Deconstruct across the alternatives of an or, called once", "Tracked.Calls = 0; var t = new Tracked(3, 4); var r = t is (1, _) or (_, 4); return r + \":\" + Tracked.Calls;"),
             ("a Deconstruct in a loop's test, called once a test", "Tracked.Calls = 0; var n = 0; for (var i = 0; i < 3; i++) { if (new Tracked(i, 0) is (1, _) or (2, _)) n++; } return n * 10 + Tracked.Calls;"),
+            ("a field beside an explicit method a case apart", "IReads r = new ReadsExplicitly(); return r.Value() + ((ReadsExplicitly)r).Own();"),
+            ("a field beside an explicit property a case apart", "ISized s = new SizedExplicitly(); return s.Size + ((SizedExplicitly)s).Own();"),
+            ("a field beside an explicit event a case apart", "var n = new NotifiesExplicitly(); INotifies i = n; i.Changed += () => { }; return n.Own();"),
         };
         var data = new TheoryData<string, string, bool>();
         foreach (var (name, statements) in cases)
