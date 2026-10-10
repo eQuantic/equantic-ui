@@ -1021,7 +1021,9 @@ internal sealed partial class WebLoweringVisitor
         var tracks = string.Join(" ", grid.Columns.Select(t => t.Kind switch
         {
             // An auto-fill track is the whole list: as many columns as fit the minimum, sharing the rest.
-            _ when t.Repeats => $"repeat(auto-fill, minmax({TokenCss.Px(t.Min)}, {TokenCss.Number(t.Value)}fr))",
+            // `min(…, 100%)`: in a grid narrower than one track the column is the grid's width, as
+            // Photon draws it, rather than the minimum overflowing it.
+            _ when t.Repeats => $"repeat(auto-fill, minmax(min({TokenCss.Px(t.Min)}, 100%), {TokenCss.Number(t.Value)}fr))",
             SizeKind.Fixed => TokenCss.Px(t.Value),
             SizeKind.Fill => $"{TokenCss.Number(t.Value)}fr",
             _ => "auto",

@@ -34,7 +34,7 @@ public class S4GridRealizerTests
 
         var style = WebRealizer.Lower(grid, PhotonTheme.Instance).Style!.ToCssString();
 
-        style.Should().Contain("grid-template-columns: repeat(auto-fill, minmax(210px, 1fr))");
+        style.Should().Contain("grid-template-columns: repeat(auto-fill, minmax(min(210px, 100%), 1fr))");
     }
 
     /// <summary>Beside another track an auto-fill track would need a solver: refused at construction.</summary>

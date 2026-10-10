@@ -3931,7 +3931,7 @@ function lowerGrid(grid: GridNode, context: LoweringContext, path: string): Html
   const tracks = grid.columns
     .map((t) =>
       t.repeats
-        ? `repeat(auto-fill, minmax(${px(t.min ?? 0)}, ${num(t.value)}fr))`
+        ? `repeat(auto-fill, minmax(min(${px(t.min ?? 0)}, 100%), ${num(t.value)}fr))` // C# twin: shrinks in a narrow grid
         : t.kind === 'fixed'
           ? px(t.value)
           : t.kind === 'fill'

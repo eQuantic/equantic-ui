@@ -73,6 +73,7 @@ public class S4GridLayoutTests
     /// <summary>A weight of 0 or less has no meaning both targets share, so the track refuses it.</summary>
     [Theory]
     [InlineData(0f)]
+    [InlineData(0.5f)]
     [InlineData(-1f)]
     [InlineData(float.PositiveInfinity)]
     [InlineData(float.NaN)]
@@ -83,11 +84,17 @@ public class S4GridLayoutTests
         act.Should().Throw<ArgumentOutOfRangeException>().WithParameterName("weight");
     }
 
-    /// <summary>An infinite minimum is `Infinitypx` on the web and NaN tracks on Photon: refused.</summary>
-    [Fact]
-    public void AutoFill_RefusesAnInfiniteMinimum()
+    /// <summary>
+    /// An infinite minimum is `Infinitypx` on the web and NaN tracks on Photon, and one under a dp a
+    /// track count no layout means: refused.
+    /// </summary>
+    [Theory]
+    [InlineData(float.PositiveInfinity)]
+    [InlineData(0.000001f)]
+    [InlineData(0.5f)]
+    public void AutoFill_RefusesAMinimumUnderADpOrInfinite(float min)
     {
-        var act = () => GridTrack.AutoFill(float.PositiveInfinity);
+        var act = () => GridTrack.AutoFill(min);
 
         act.Should().Throw<ArgumentOutOfRangeException>().WithParameterName("min");
     }

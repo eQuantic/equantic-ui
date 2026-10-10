@@ -482,8 +482,8 @@ export class GridTrack {
   /** C# `GridTrack.AutoFill` twin: as many columns as fit `min`, sharing the rest by `weight`. */
   static autoFill(min: number, weight = 1): GridTrack {
     // The C# refusals, word for word: an infinite minimum or weight is `Infinitypx`/`Infinityfr`.
-    if (!(min > 0) || !Number.isFinite(min)) throw new RangeError('An auto-fill track needs a positive, finite minimum width.');
-    if (!(weight > 0) || !Number.isFinite(weight)) throw new RangeError('An auto-fill track needs a positive, finite weight.');
+    if (!(min >= 1) || !Number.isFinite(min)) throw new RangeError('An auto-fill track needs a finite minimum of at least 1dp.');
+    if (!(weight >= 1) || !Number.isFinite(weight)) throw new RangeError('An auto-fill track needs a finite weight of at least 1.');
     return new GridTrack('fill', weight, { min, repeats: true });
   }
 }

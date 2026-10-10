@@ -9,7 +9,7 @@ public readonly record struct GridTrack(SizeKind Kind, float Value)
     public static GridTrack Auto => new(SizeKind.Hug, 0);
 
     /// <summary>
-    /// As many columns as fit tracks at least <paramref name="min"/> dp wide, the grid's gap between
+    /// As many columns as fit tracks at least <paramref name="min"/> dp wide (1 or more), the grid's gap between
     /// them, sharing what is left by <paramref name="weight"/> — CSS's
     /// <c>repeat(auto-fill, minmax(min, 1fr))</c>, the card grid every handoff draws. It is the
     /// grid's whole column list: a grid refuses it beside another track. On a width the grid sizes
@@ -17,13 +17,15 @@ public readonly record struct GridTrack(SizeKind Kind, float Value)
     /// </summary>
     public static GridTrack AutoFill(float min, float weight = 1)
     {
-        if (!(min > 0) || !float.IsFinite(min))
-            throw new ArgumentOutOfRangeException(nameof(min), "An auto-fill track needs a positive, finite minimum width.");
-        // A weight of 0 leaves the remainder empty on the web and collapses the tracks on Photon,
-        // and a negative or infinite one is CSS the browser drops (`Infinityfr`) and NaN tracks on
-        // Photon: refuse them rather than diverge.
-        if (!(weight > 0) || !float.IsFinite(weight))
-            throw new ArgumentOutOfRangeException(nameof(weight), "An auto-fill track needs a positive, finite weight.");
+        // At least a dp: a minimum finer than that is a track count no layout means (a grid a few
+        // hundred dp wide would ask Photon for millions of tracks), and CSS rounds it to 0px.
+        if (!(min >= 1) || !float.IsFinite(min))
+            throw new ArgumentOutOfRangeException(nameof(min), "An auto-fill track needs a finite minimum of at least 1dp.");
+        // At least 1: the repeated tracks are equal, so a weight only says that they share what is
+        // left, and below 1 CSS leaves part of it unused (a lone `0.5fr` is half a row) where
+        // Photon's normalised solver would fill it. Infinite is `Infinityfr` and NaN tracks.
+        if (!(weight >= 1) || !float.IsFinite(weight))
+            throw new ArgumentOutOfRangeException(nameof(weight), "An auto-fill track needs a finite weight of at least 1.");
         return new(SizeKind.Fill, weight) { Min = min, Repeats = true };
     }
 
