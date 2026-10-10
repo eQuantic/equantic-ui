@@ -79,7 +79,7 @@ internal sealed partial class MeasureVisitor
     /// <summary>The widest single word — text wraps between words and never inside one.</summary>
     private float LongestWordWidth(Text text, LayoutContext ctx)
     {
-        var style = text.Resolve(ctx.Theme);
+        var style = text.Resolve(ctx.Theme).AtWindow(ctx.WindowWidth);
         var widest = 0f;
         foreach (var word in text.PlainContent.Split(' ', StringSplitOptions.RemoveEmptyEntries))
             widest = MathF.Max(widest,

@@ -408,6 +408,41 @@ export class TypeStyle implements TypeStyleValue {
     );
   }
 
+  /**
+   * A size that follows the window (C# `TypeStyle.Fluid`), or null for a size in dp. Not a
+   * constructor parameter because it is not one in C#: an init property, set by `withFluidSize`
+   * or a `with`, and dropped by `withSize` — a size given there is a size in dp.
+   */
+  readonly fluid: FluidSize | null = null;
+
+  /** C# `TypeStyle.WithFluidSize` twin: `clamp(min, Nvw, max)`, the line box at the style's ratio. */
+  withFluidSize(min: number, percentOfWindow: number, max: number): TypeStyle {
+    // The C# refusals, word for word: an infinite one is `Infinityvw` or `Infinitypx`.
+    if (!(min > 0) || !Number.isFinite(min)) throw new RangeError('A fluid size needs a positive, finite floor.');
+    if (!(percentOfWindow > 0) || !Number.isFinite(percentOfWindow))
+      throw new RangeError('A fluid size needs a positive, finite share of the window.');
+    if (!(max >= min) || !Number.isFinite(max)) throw new RangeError("A fluid size's ceiling must be finite and not under its floor.");
+    // The ceiling keeps the EXACT ratios (C# twin): the web writes them unitless and in em, and
+    // atWindow rounds once, at the size it resolves to.
+    // In single precision, each operation rounded as C# rounds it: a double here leaves a value a bit
+    // away from the server's, and that bit can change a ratio's last printed digit on hydration.
+    const ratio = (value: number) => (this.size > 0 ? Math.fround(Math.fround(value * max) / this.size) : value);
+    return Object.assign(
+      new TypeStyle(max, ratio(this.lineHeight), this.weight, ratio(this.tracking), this.maxScale, this.mono, this.italic, this.family),
+      { fluid: new FluidSize(min, percentOfWindow, max) },
+    );
+  }
+
+  /** C# `TypeStyle.AtWindow` twin: the fluid size resolved at a window `windowWidth` dp wide. */
+  atWindow(windowWidth: number): TypeStyle {
+    if (!this.fluid || this.size <= 0) return this;
+    const size = this.fluid.at(windowWidth);
+    // The tracking follows the size at the style's own ratio, as the line box does.
+    return Object.assign(this.withSize(size), {
+      tracking: Math.fround(Math.fround(this.tracking * size) / this.size),
+    });
+  }
+
   /** A style from a SIZE alone, with the typographic default line box (1.25×). */
   static ofSize(size: number, weight: string | number, tracking = 0, maxScale = 1.3): TypeStyle {
     return new TypeStyle(size, dotnetRound(size * 1.25 * 2) / 2, weight, tracking, maxScale);
@@ -432,6 +467,25 @@ export class TypeStyle implements TypeStyleValue {
 function scaledBy(value: number, osFactor: number, maxScale: number): number {
   const scaled = f(value * f(Math.min(Math.max(osFactor, 0.5), maxScale)));
   return f(dotnetRound(f(scaled * 2)) / 2);
+}
+
+/**
+ * C# `FluidSize` twin: `percentOfWindow` percent of the window's width, between `min` and `max` dp
+ * — CSS's `clamp(min, Nvw, max)`.
+ */
+export class FluidSize {
+  constructor(
+    readonly min: number,
+    readonly percentOfWindow: number,
+    readonly max: number,
+  ) {}
+
+  /** The size at a window `windowWidth` dp wide. */
+  at(windowWidth: number): number {
+    // Single precision, as C#'s `windowWidth * PercentOfWindow / 100f`: 1000 × 4.2f is 42 there.
+    const share = Math.fround(Math.fround(windowWidth * this.percentOfWindow) / 100);
+    return Math.min(Math.max(share, this.min), this.max);
+  }
 }
 
 /** The five sub-tokens of an interactive variant (spec §01). */
@@ -602,6 +656,7 @@ hashesByValue(
   Transform2D,
   CornerRadii,
   TypeStyle,
+  FluidSize,
   VariantColors,
 );
 
