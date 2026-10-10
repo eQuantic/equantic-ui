@@ -29,6 +29,18 @@ The optimizer SHALL refuse a source whose header declares more than 268,402,689 
 - **WHEN** a PNG whose header declares 20,000 × 20,000 pixels is optimized
 - **THEN** an `InvalidDataException` names its 20000 × 20000 pixels, and the endpoint answers 400
 
+### Requirement: A source past MaxSourceSize is refused whoever hands it over
+
+The optimizer and the blur placeholder generator SHALL read a source to no more than
+`ImageOptimizationOptions.MaxSourceSize` bytes and SHALL refuse one that runs past it, whether the
+endpoint opened it or a caller handed its own stream over, and the instances `AddImageOptimization`
+registers SHALL read the app's own `MaxSourceSize`.
+
+#### Scenario: A caller's stream past the budget
+
+- **WHEN** a well-formed JPEG of a megabyte is optimized with `MaxSourceSize` at 64 KB
+- **THEN** an `InvalidDataException` names `MaxSourceSize`, and the stream is not read to its end
+
 ### Requirement: An image is optimized as it is displayed
 
 The optimizer SHALL apply a source's EXIF orientation to its pixels before it resizes them, SHALL
