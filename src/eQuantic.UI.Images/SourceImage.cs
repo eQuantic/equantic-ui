@@ -28,6 +28,9 @@ internal sealed class SourceImage : IDisposable
     /// </summary>
     internal const int MaxHeaderBytes = 16 * 1024 * 1024;
 
+    /// <summary>The block a whole source is read in: <see cref="Stream.CopyToAsync(Stream)"/>'s own.</summary>
+    private const int ReadBlockBytes = 81_920;
+
     private readonly SKData _data;
     private readonly SKCodec _codec;
 
@@ -46,14 +49,26 @@ internal sealed class SourceImage : IDisposable
     /// <summary>The width and height as displayed, the orientation applied.</summary>
     public SKSizeI Size => Displayed(_codec.Info.Width, _codec.Info.Height, _codec.EncodedOrigin);
 
-    /// <summary>Reads a source whole, refusing one that is not a web format or holds too many pixels.</summary>
+    /// <summary>
+    /// Reads a source whole, refusing one that runs past its budget, is not a web format or holds
+    /// too many pixels. The bytes are read a block at a time and refused once they pass the budget,
+    /// so a stream that never ends costs the budget and one block, its copy into Skia included.
+    /// </summary>
     /// <param name="source">The source, read to its end.</param>
     /// <param name="maxSourceSize">The most bytes the source may run to, <see cref="ImageOptimizationOptions.MaxSourceSize"/>.</param>
-    /// <exception cref="InvalidDataException">The source is not one of the formats read, or holds more than <see cref="MaxPixels"/> pixels.</exception>
+    /// <exception cref="InvalidDataException">The source runs past <paramref name="maxSourceSize"/>, is not one of the formats read, or holds more than <see cref="MaxPixels"/> pixels.</exception>
     public static async Task<SourceImage> ReadAsync(Stream source, long maxSourceSize)
     {
         using var buffer = new MemoryStream();
-        await source.CopyToAsync(buffer);
+        var block = new byte[ReadBlockBytes];
+        int read;
+        while ((read = await source.ReadAsync(block)) > 0)
+        {
+            if (buffer.Length + read > maxSourceSize)
+                throw new InvalidDataException($"The source runs past MaxSourceSize, {maxSourceSize:N0} bytes.");
+            buffer.Write(block, 0, read);
+        }
+
         var data = SKData.CreateCopy(buffer.GetBuffer(), (ulong)buffer.Length);
         var codec = SKCodec.Create(data);
         try
