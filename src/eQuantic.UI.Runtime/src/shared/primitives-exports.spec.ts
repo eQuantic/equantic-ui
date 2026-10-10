@@ -68,10 +68,9 @@ const NO_TWIN_OWED = new Set([
   // and the browser has no IWorkspace at all — a link there is an anchor the browser already
   // routes, and nothing in a page bundle ever asks this.
   'OpenUrlPolicy',
-  // The cubic-bezier solver behind `Curve`. On the web a transition IS a CSS
-  // `transition-timing-function`, so the browser evaluates the curve and nothing in a page bundle
-  // ever asks this — it exists for the targets that have to do the arithmetic themselves.
-  'CurveEvaluator',
+  // `CurveEvaluator`, the cubic-bezier solver behind `Curve`, left this list in #705 the way
+  // `RRect` and `Matrix2D` did: it is `[ServerOnly]` now, so the compiler refuses a page that names
+  // it (EQ2010) and the C# side drops it from the pinned list by that rule.
   // The frame clock's tick payload. `IFrameTicker` is realized per target (requestAnimationFrame
   // here), and the web realization defines its own tick shape in devices/frame-ticker.ts rather
   // than importing a C# record's twin.

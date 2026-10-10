@@ -63,21 +63,27 @@ public static class TypeSymbolExtensions
     }
 
     /// <summary>
-    /// Whether the vocabulary's assembly marks <paramref name="type"/> <c>[TwinIsTranspiled]</c>: its
-    /// twin is transpiled from its C# with the runtime, as an app's type's is, though its namespace is
-    /// the vocabulary's, whose other twins are hand-written (#592). Asked of the symbol, since an app
-    /// reaches it as metadata.
-    /// </summary>
-    /// <summary>
     /// Whether the browser has a twin of <paramref name="type"/> a module can import: one eqc writes (the
     /// app's, a transpiled library's) or one the runtime exports. A .NET type has none, so naming it
     /// registers no import (#625): an alias of <c>List&lt;int&gt;</c> introduced <c>List</c>, and a module of
     /// the app's of that name was imported in its place, as <c>System.Math.PI</c> imported an app's
     /// <c>Math</c> over the browser's own (found by Copilot's second review of #705).
+    /// <para>
+    /// A vocabulary type marked <c>[ServerOnly]</c> has none either, though its namespace routes to the
+    /// runtime: the runtime exports no twin of it, which is what the mark says (<c>CurveEvaluator</c>,
+    /// <c>Matrix2D</c>). Every caller is answered the same way, the construction path included.
+    /// </para>
     /// </summary>
     internal static bool HasTwin(this INamedTypeSymbol type) =>
-        Strategies.Expressions.ObjectCreationStrategy.TwinIsWritten(type) || type.IsRuntimeProvided();
+        (Strategies.Expressions.ObjectCreationStrategy.TwinIsWritten(type) || type.IsRuntimeProvided())
+        && !type.IsHostOnly();
 
+    /// <summary>
+    /// Whether the vocabulary's assembly marks <paramref name="type"/> <c>[TwinIsTranspiled]</c>: its
+    /// twin is transpiled from its C# with the runtime, as an app's type's is, though its namespace is
+    /// the vocabulary's, whose other twins are hand-written (#592). Asked of the symbol, since an app
+    /// reaches it as metadata.
+    /// </summary>
     internal static bool TwinIsTranspiled(this ITypeSymbol type) =>
         type.GetAttributes().Any(attribute => attribute.AttributeClass is { Name: "TwinIsTranspiledAttribute" } marker
             && marker.ContainingNamespace?.ToDisplayString() == "eQuantic.UI.Primitives");

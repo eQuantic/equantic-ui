@@ -15,7 +15,14 @@ namespace eQuantic.UI.Primitives;
 /// does what every browser does: Newton-Raphson from a good guess, falling back to bisection where
 /// the curve is too flat for the derivative to help.
 /// </para>
+/// <para>
+/// Host-only: on the web a transition IS a CSS timing function, so the browser evaluates the curve
+/// and the runtime exports no twin of this. The namespace would still route its name to the runtime,
+/// so a page that named it compiled and died at load on an export the bundle has not. Marked, a page
+/// that names it, bare, qualified or through an alias, fails the build where it is written (EQ2010).
+/// </para>
 /// </summary>
+[ServerOnly]
 public static class CurveEvaluator
 {
     // Browsers converge in a handful of steps; more iterations buy nothing a pixel can show.
