@@ -1703,6 +1703,23 @@ record of a release, the wiki's Upgrading page is the distillate.
   1970 toward the epoch; it answers a BigInt cut as .NET cuts it now. Found on the way: the date
   constructors past the second ([#606](https://github.com/eQuantic/equantic-ui/issues/606)).
   Proposed and archived through OpenSpec (`openspec/specs/runtime-dates`).
+- **2026-10-07 · Every producer draws the same tree**: five places where the server's realizer,
+  its browser twin and Photon drew one tree three ways, one family of the bug sweep. A Text lowers
+  as a block on the web, so a 10/15 label in a padded pill is 21px where it sat on the body font's
+  26.5px line ([#495](https://github.com/eQuantic/equantic-ui/issues/495)). A pinned header's
+  `ScrolledStyle` applies every member on both targets, from the surface it pins to, over
+  `Pinned.ScrolledBase`; the web wrote four of seven and Photon none
+  ([#506](https://github.com/eQuantic/equantic-ui/issues/506)), and the state builder now draws a
+  border along the edges its box draws. A draggable's offset rides `translate`, so an open row keeps
+  its box's transform and its hover's, and a swipe that changes nothing glides home
+  ([#511](https://github.com/eQuantic/equantic-ui/issues/511)). The hit slop's lift reaches through
+  wrappers that draw no box ([#622](https://github.com/eQuantic/equantic-ui/issues/622)); its parity
+  case found the browser twin dropping a dark artwork's size. And the server builds at the density
+  the browser reports in a session cookie, a served page and the tree a client navigation finds its
+  data in alike, and hydration adopts it, switching the whole page at once when they differ
+  ([#623](https://github.com/eQuantic/equantic-ui/issues/623)). Measured in
+  Chromium on a served page and after a client navigation. Proposed and archived through OpenSpec
+  (`layout`, `interaction-states`, `gestures`, `hit-targets`, `hydration-contract`).
 - **2026-10-07 · A page requires its authorization**: `[Authorize]` held on Server Actions only, so
   a page's route served anyone and its `IServerPrefetch` ran for an anonymous visitor, writing its
   fields into the HTML ([#673](https://github.com/eQuantic/equantic-ui/issues/673), asked by Cura for

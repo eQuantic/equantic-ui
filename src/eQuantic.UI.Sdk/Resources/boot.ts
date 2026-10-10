@@ -15,7 +15,11 @@ import {
   matchRoute,
   setCurrentRouteFrom,
   registerDeviceCapabilities,
-  detectPhotonDensity,
+  densityForHydration,
+  pointerDensity,
+  rememberDensity,
+  setPhotonDensity,
+  settleDensity,
   setPhotonTheme,
   materializeTheme,
   type EqConfig,
@@ -141,8 +145,13 @@ export async function boot(): Promise<void> {
   // native shells' IPhotonCapabilities.
   registerDeviceCapabilities();
   // A desktop browser is driven by a POINTER: the controls tighten to the density a native
-  // desktop app has. Read once at boot, from what the browser says about the pointer.
-  detectPhotonDensity();
+  // desktop app has. Read once at boot, from what the browser says about the pointer, and left for
+  // the server, which cannot see the pointer, so the next request renders at it (#623).
+  const ownDensity = pointerDensity();
+  if (ownDensity) {
+    setPhotonDensity(ownDensity);
+    rememberDensity(ownDensity);
+  }
 
   if (isDev()) {
     console.log('eQuantic.UI Runtime initializing...');
@@ -221,7 +230,17 @@ export async function boot(): Promise<void> {
       if (initialMatch) setCurrentRouteFrom(initialMatch, initialUrl);
     }
 
+    // HYDRATION lowers at the density the server rendered at, so it adopts the served markup as it
+    // is; then the whole page switches to the browser's own at once (#623). Lowered at the browser's
+    // from the start, each component kept the server's density until it next re-rendered, and then
+    // snapped: under a mouse a page showed a mix of both.
+    const hydrating = servedContent && config.ssr !== false && !hmrReplay;
+    const atHydration = densityForHydration(config.density, hydrating, ownDensity);
+    if (atHydration) setPhotonDensity(atHydration);
     await loadAndMountPage(root, pageName, config);
+    settleDensity(ownDensity, () =>
+      (currentComponent as unknown as { _scheduleRender?: () => void } | null)?._scheduleRender?.(),
+    );
 
     // Phase 2: when the server provided a route table, enable client-side (SPA) navigation —
     // internal link clicks swap the page bundle in place instead of triggering a full reload.
