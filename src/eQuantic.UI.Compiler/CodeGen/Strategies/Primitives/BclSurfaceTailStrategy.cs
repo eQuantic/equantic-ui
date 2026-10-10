@@ -41,7 +41,7 @@ public class BclSurfaceTailStrategy : IExpressionIrStrategy
 
         // Templates say what they compute; the writer decides what to evaluate once.
         var template = Template(method, name.Identifier.Text, args.Length)!;
-        return JsExpr.Template(template, new[] { receiver }.Concat(args).ToArray(), context.TypeAnnotations);
+        return JsExpr.Template(template, new[] { receiver }.Concat(args).ToArray());
     }
 
     /// <summary>{0} = receiver, {1}… = arguments; null = not ours, stays fenced.</summary>
@@ -103,13 +103,20 @@ public class BclSurfaceTailStrategy : IExpressionIrStrategy
                 ("ContainsValue", 1) => ElementEquality.Of(valueType) is { } equality
                     ? $"{{0}}.containsValue({{1}}, {equality})"
                     : "{0}.containsValue({1})",
-                // Capacity hints have no JS meaning; EnsureCapacity ANSWERS a capacity, so the
-                // requested one is the honest value.
-                ("EnsureCapacity", 1) when definition == "System.Collections.Generic.Dictionary<TKey, TValue>" => "{1}",
-                ("TrimExcess", 0 or 1) when definition == "System.Collections.Generic.Dictionary<TKey, TValue>" => "void 0",
+                // The runtime's dictionary keeps .NET's capacity, which decides where the next key
+                // goes after TrimExcess and what EnsureCapacity answers (#463): the requested
+                // capacity, answered as it was, was not the prime .NET settles on.
+                ("EnsureCapacity", 1) when definition == "System.Collections.Generic.Dictionary<TKey, TValue>" => "{0}.ensureCapacity({1})",
+                ("TrimExcess", 0) when definition == "System.Collections.Generic.Dictionary<TKey, TValue>" => "{0}.trimExcess()",
+                ("TrimExcess", 1) when definition == "System.Collections.Generic.Dictionary<TKey, TValue>" => "{0}.trimExcess({1})",
                 _ => null,
             };
         }
+
+        // The keys' own Contains, read through a variable that holds them, finds a key as the dictionary
+        // does: the view is an array to everything else, which has no `contains` (#463).
+        if (definition == "System.Collections.Generic.Dictionary<TKey, TValue>.KeyCollection" && (name, argCount) is ("Contains", 1))
+            return "{0}.contains({1})";
 
         if (definition == "System.Collections.Generic.List<T>")
         {
