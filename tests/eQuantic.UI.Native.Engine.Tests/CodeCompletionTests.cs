@@ -398,6 +398,32 @@ public class CodeCompletionTests : IDisposable
         provider.Asked.Should().BeEmpty();
     }
 
+    /// <summary>
+    /// Turning an editor read-only closes the list it shows and drops an answer still on its way: the
+    /// list stayed open, and a late answer opened one, in an editor that completes nothing (found by
+    /// Copilot reviewing #653).
+    /// </summary>
+    [Fact]
+    public void TurningReadOnly_ClosesTheList_AndDropsAnAnswerStillOnItsWay()
+    {
+        var editor = Editor("", Offering("Column"));
+        Type(editor, "Co");
+        editor.Completion.IsOpen.Should().BeTrue();
+
+        editor.ReadOnly = true;
+
+        editor.Completion.IsOpen.Should().BeFalse("a read-only editor completes nothing");
+
+        var late = new LateProvider();
+        var waiting = Editor("", late);
+        Type(waiting, "Co");
+        waiting.ReadOnly = true;
+        late.Cancellations[0].IsCancellationRequested.Should().BeTrue("the answer is no longer wanted");
+        late.Answer(0, "Column");
+
+        waiting.Completion.IsOpen.Should().BeFalse("an answer for an editor that reads only now opens nothing");
+    }
+
     [Fact]
     public void LeavingTheWord_ClosesTheList()
     {

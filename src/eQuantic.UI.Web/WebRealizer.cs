@@ -32,12 +32,13 @@ public static class WebRealizer
     /// </para>
     /// </summary>
     public static HtmlElement Lower(
-        VisualNode node, IAppTheme theme, float typeScale = 1f, StyleSink? styles = null)
+        VisualNode node, IAppTheme theme, float typeScale = 1f, StyleSink? styles = null,
+        Density density = Density.Comfortable)
     {
         // No font here to measure with: a component that asks is answered 0 and remembered, so the
         // client draws it again instead of adopting geometry built on zeros (FontlessMeasurer).
         var measurer = new FontlessMeasurer();
-        var context = new ComponentContext(theme, typeScale, measureText: measurer.Measure);
+        var context = new ComponentContext(theme, typeScale, density, measurer.Measure);
         var root = LowerRoot(node, context, measurer)
                ?? new RealizedElement("span"); // layout-only nodes outside a flex row lower to nothing
         if (styles != null)

@@ -14,7 +14,7 @@ export class SharedCounter extends StatefulComponent {
     }
 
     async bumpSoon() {
-        await new Promise(resolve => setTimeout(resolve, 140));
+        await new Promise(($resolve) => setTimeout($resolve, 140));
         this.setState(() => this._count++);
     }
 

@@ -9,6 +9,7 @@
 
 import type { AppTheme, ColorToken } from './value-types';
 import { getPhotonTheme } from './photon-context';
+import { SCROLLED_MARKER } from './markers';
 
 /** FNV-1a 32-bit over UTF-16 code units, base36 — the exact C# `StyleAtomizer.Hash`. */
 export function hashDeclaration(text: string): string {
@@ -263,6 +264,41 @@ export function mergeAtomicDeclaration(
 }
 
 /**
+ * The value of ONE resting declaration an atomized element carries, or undefined: the read half of
+ * mergeAtomicDeclaration, for a parent that joins its own value to the one its child already has (a
+ * draggable's glide to its box's transition list, #511). A state's or the scrolled variant's
+ * declaration is not the resting one, and is skipped as effectiveStyle skips it.
+ */
+export function atomicDeclaration(
+  node: { attributes: Record<string, string | undefined> },
+  prop: string,
+): string | undefined {
+  for (const cls of (node.attributes['class'] ?? '').split(' ')) {
+    const rule = ruleTexts.get(cls);
+    if (rule && !rule.includes('\u0001') && rule.startsWith(`${prop}:`)) return rule.slice(prop.length + 1);
+  }
+  return undefined;
+}
+
+/**
+ * Replace ONE resting declaration of an atomized element: the class that carried the old value
+ * goes, and the new one is merged in as mergeAtomicDeclaration merges it, so the class attribute is
+ * the one the C# post-pass writes for the same final style.
+ */
+export function replaceAtomicDeclaration(
+  node: { attributes: Record<string, string | undefined> },
+  prop: string,
+  value: string,
+): void {
+  const kept = (node.attributes['class'] ?? '').split(' ').filter((cls) => {
+    const rule = ruleTexts.get(cls);
+    return !(rule && !rule.includes('\u0001') && rule.startsWith(`${prop}:`));
+  });
+  node.attributes['class'] = kept.join(' ');
+  mergeAtomicDeclaration(node, prop, value);
+}
+
+/**
  * Spec S6 gate names — the range is IN the name (`eq-vc600` = compact until 600, `eq-vx1024` =
  * expanded from 1024), which is what lets a design bring its own breakpoints with no shared
  * registry: both twins derive the identical name and CSS from the same thresholds.
@@ -345,6 +381,11 @@ function gateCondition(gate: string): { media: string; shownOutside: boolean } |
   if (kind === 'm' || kind === 'x')
     return { media: `(min-width: ${gatePx(first)})`, shownOutside: false };
   return null;
+}
+
+/** Whether a class is an Adaptive arm's gate (`eq-vc600`, `eq-vm600-840`, `eq-vx840`). */
+export function isAdaptiveGate(className: string): boolean {
+  return gateCondition(className) !== null;
 }
 
 /** The gate's rules, derived from its NAME (the C# AdaptiveGates.Css twin: joined, the same blob). */
@@ -461,8 +502,9 @@ export function atomizePseudo(pseudo: string, entries: Record<string, string | u
 }
 
 /**
- * SCROLL-LINKED variant (Sticky.ScrolledStyle) — the C# ClassForScrolled twin: `scrolled|` in the
- * hash, rules gated by the root's `eq-scrolled` class (the runtime scroll listener toggles it).
+ * SCROLL-LINKED variant (Pinned.ScrolledStyle) — the C# ClassForScrolled twin: `scrolled|` in the
+ * hash, rules gated by the header's own SCROLLED_MARKER, which the runtime sets from the surface the
+ * header pins to (scrolled-pinned.ts, #506).
  */
 export function atomizeScrolled(entries: Record<string, string | undefined>): string {
   const vars = varMapFor(getPhotonTheme());
@@ -485,7 +527,7 @@ export function atomizeScrolled(entries: Record<string, string | undefined>): st
       const target = registry();
       try {
         target?.insertRule(
-          `html.eq-scrolled .${className}{${declaration}}`,
+          `.${className}[${SCROLLED_MARKER}]{${declaration}}`,
           target.cssRules.length,
         );
       } catch {

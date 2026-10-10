@@ -30,7 +30,7 @@ public class UnicodeCategoryStrategy : IExpressionIrStrategy
         // Each hole is a PARAMETER: a named argument written out of order fills its own.
         var method = (IMethodSymbol)context.SemanticHelper.GetSymbol(invocation)!;
         var emit = PrimitiveStaticStrategy.BindNamedArguments(Template(invocation, context)!, invocation, method);
-        return JsExpr.Template(emit, args, context.TypeAnnotations);
+        return JsExpr.Template(emit, args);
     }
 
     /// <summary>The emission for a supported overload, or null.</summary>

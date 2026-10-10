@@ -188,7 +188,7 @@ import { ClassBuilder, joinClasses, whenClass } from './utils/class-builder';
 /**
  * `$eq` — the single runtime namespace the transpiler emits for .NET-compat helpers, organised by
  * domain. Instead of scattering loose imports (`dec`, `long`, `dateTime`, …) into every generated
- * module — short, collision-prone names — the compiler emits `$eq.num.dec(...)`, `$eq.time.dateTime(...)`,
+ * module — short, collision-prone names — the compiler emits `$eq.num.dec(...)`, `$eq.time.dateTime.of(...)`,
  * etc., and the runtime exposes `$eq` once (globally on `window`, like `StyleBuilder`). No per-module
  * imports, no risk of shadowing a user identifier.
  *
@@ -201,8 +201,38 @@ import { ClassBuilder, joinClasses, whenClass } from './utils/class-builder';
  * plain object spread would drop the prototype, taking every method on it. This copies the
  * prototype, then the fields, then the patch.
  */
-export const withPatch = <T extends object>(value: T, patch: Partial<T>): T =>
-  Object.assign(Object.create(Object.getPrototypeOf(value)), value, patch);
+export const withPatch = <T extends object>(value: T, patch: Partial<T>): T => {
+  const copy = Object.assign(Object.create(Object.getPrototypeOf(value)), value, patch) as T;
+  const closure = closures.get(value);
+  if (closure !== undefined) closures.set(copy, closure);
+  return copy;
+};
+
+/**
+ * The closed type a generic record or struct was built as, by instance (#651). C# compares a
+ * record's EqualityContract, its closed type, so `Box<int>` never equals `Box<double>`; the twin is one
+ * `Box` class for every type argument, and both values were a `Box` holding 1. Where C# names the
+ * type arguments, the build marks the value with them; held aside, so its JSON and its members are
+ * the value's alone.
+ */
+const closures = new WeakMap<object, string>();
+
+/** `value` as built for the closed type `typeArguments` names. */
+export const closing = <T extends object>(value: T, typeArguments: string): T => {
+  closures.set(value, typeArguments);
+  return value;
+};
+
+/**
+ * Whether two values of one generic record or struct are of one closed type. A value built where the
+ * type arguments were only known at run time (inside generic code), or rebuilt from the wire, carries
+ * no mark: it is not taken for another type, only the two marked differently are.
+ */
+export const sameClosure = (value: object, other: object): boolean => {
+  const mine = closures.get(value);
+  const theirs = closures.get(other);
+  return mine === undefined || theirs === undefined || mine === theirs;
+};
 
 /**
  * C# `value[range]` where an endpoint may count from the END and may be ZERO. The direct shapes
@@ -261,6 +291,9 @@ export const $eq = {
   linq: { enumerable, max, min, seq, toArray, toDictionary, range, repeat },
   /** C# `with` over a runtime value type — prototype preserved. */
   withPatch,
+  /** A generic record's closed type, by value, and the comparison of two — see `closing`. */
+  closing,
+  sameClosure,
   /** A twin's JSON, a property's store under the property's name — see utils/twin-json. */
   json: twinJson,
   /** `new object()`, an identity of its own, and a `lock` statement's gate, refused when null. */

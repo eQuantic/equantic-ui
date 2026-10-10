@@ -149,17 +149,51 @@ export function hashGroup(value: unknown, byIdentity = false): () => number {
   return byIdentity ? () => identityHash(value as object) : () => hash(value);
 }
 
+/** A runtime class that twins a value type of the vocabulary by hand. */
+export interface ValueTwin {
+  readonly prototype: object;
+  readonly name: string;
+}
+
 /** The prototypes of the classes registered with {@link hashesByValue}. */
 const byValue = new WeakSet<object>();
+
+/**
+ * The same classes by name: what a value of one crosses a document reload by
+ * ({@link valueTwinNamed}).
+ */
+const twinsByName = new Map<string, ValueTwin>();
 
 /**
  * Registers the runtime classes that twin a .NET value type by hand: a record or a struct of the
  * vocabulary (`Point`, `TypeStyle`). `equals` compares an instance member by member, so its hash is
  * its members' too, where an unregistered class hashes by its identity, as a .NET class does. A twin
  * eqc emits carries its own `getHashCode` and needs none of this. Each mirror file registers its own,
- * and `VocabularyMirrorShapeTests` fails on a value type's twin left out and on a class registered
- * that is not one.
+ * and `ValueTwinHashTests` fails on a value type's twin left out and on a class registered that is
+ * not one.
  */
-export function hashesByValue(...types: { readonly prototype: object }[]): void {
-  for (const type of types) byValue.add(type.prototype);
+export function hashesByValue(...types: ValueTwin[]): void {
+  for (const type of types) {
+    byValue.add(type.prototype);
+    twinsByName.set(type.name, type);
+  }
+}
+
+/**
+ * The vocabulary value type a value is an instance of, as {@link hashesByValue} registered it, or
+ * undefined: an instance of the registered class itself, never of a class derived from it.
+ */
+export function valueTwinOf(value: object): ValueTwin | undefined {
+  const prototype = Object.getPrototypeOf(value) as { constructor?: ValueTwin } | null;
+  const twin = prototype === null || !byValue.has(prototype) ? undefined : prototype.constructor;
+  return twin !== undefined && twinsByName.get(twin.name) === twin ? twin : undefined;
+}
+
+/**
+ * The vocabulary value type registered under `name`. A hot reload names the class of a value it
+ * carries, since no class crosses a document reload, and the runtime that registered it is the same
+ * runtime on both sides of the reload, so the name finds the same class (`dev/hot-reload-state.ts`).
+ */
+export function valueTwinNamed(name: string): ValueTwin | undefined {
+  return twinsByName.get(name);
 }

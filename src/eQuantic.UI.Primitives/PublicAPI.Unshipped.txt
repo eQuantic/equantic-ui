@@ -1,4 +1,12 @@
 #nullable enable
+eQuantic.UI.Primitives.Pressable.CanRequestFocus.get -> bool
+eQuantic.UI.Primitives.Pressable.CanRequestFocus.init -> void
+eQuantic.UI.Primitives.CodeSurface.HighlightedOption.get -> int
+eQuantic.UI.Primitives.CodeSurface.HighlightedOption.init -> void
+eQuantic.UI.Primitives.CodeSurface.Options.get -> eQuantic.UI.Primitives.VisualNode?
+eQuantic.UI.Primitives.CodeSurface.Options.init -> void
+eQuantic.UI.Primitives.CodeSurface.OptionsOrigin.get -> eQuantic.UI.Primitives.Point
+eQuantic.UI.Primitives.CodeSurface.OptionsOrigin.init -> void
 eQuantic.UI.Primitives.BoxStyle.Pressed.get -> eQuantic.UI.Primitives.StyleDiff?
 eQuantic.UI.Primitives.BoxStyle.Pressed.init -> void
 eQuantic.UI.Primitives.HydratesTypeArgumentAttribute
@@ -59,3 +67,5 @@ eQuantic.UI.Primitives.ServerTopicRefusalReason.Forbidden = 0 -> eQuantic.UI.Pri
 const eQuantic.UI.Primitives.Touch.MinPointerTarget = 24 -> float
 eQuantic.UI.Primitives.TwinIsTranspiledAttribute
 eQuantic.UI.Primitives.TwinIsTranspiledAttribute.TwinIsTranspiledAttribute() -> void
+const eQuantic.UI.Primitives.Pinned.ScrolledThreshold = 8 -> float
+static eQuantic.UI.Primitives.Pinned.ScrolledBase.get -> eQuantic.UI.Primitives.BoxStyle

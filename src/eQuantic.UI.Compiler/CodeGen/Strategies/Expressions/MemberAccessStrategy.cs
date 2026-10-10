@@ -23,7 +23,7 @@ public class MemberAccessStrategy : IExpressionIrStrategy
     public JsExpr ConvertIr(SyntaxNode node, ConversionContext context)
     {
         var memberAccess = (MemberAccessExpressionSyntax)node;
-        var name = memberAccess.Name.Identifier.Text;
+        var name = memberAccess.Name.Identifier.ValueText;
         var receiver = context.Converter.ConvertIr(memberAccess.Expression);
         // The receiver's text, fenced for receiver position — what the template branches splice.
         var expr = JsExprWriter.WriteIn(receiver, JsPrecedence.Call);
@@ -71,8 +71,10 @@ public class MemberAccessStrategy : IExpressionIrStrategy
         if (expr == "Guid" && name == "Empty") return JsExpr.Literal("''");
         if ((expr == "string" || expr == "String") && name == "Empty") return JsExpr.Literal("''");
 
-        // .Count is type-dependent, and one table answers it for a member access and a pattern alike.
-        if (name == "Count")
+        // .Count is type-dependent, and one table answers it for a member access and a pattern alike. A
+        // FIELD called Count is no collection's: it is read in its slot below, as every field is, where the
+        // table answered `count`, the method a case apart from it (#396).
+        if (name == "Count" && symbol is not IFieldSymbol)
             return CountSpelling.Read(receiver, context.SemanticHelper.GetType(memberAccess.Expression), context);
 
         // The camelCase guess below is exactly the invocation fallback's story (EQ2006): an
@@ -97,6 +99,9 @@ public class MemberAccessStrategy : IExpressionIrStrategy
         };
 
         if (string.IsNullOrEmpty(name)) return receiver;
+
+        // A field is read in its slot, which moves a case apart from another member (#396).
+        if (symbol is IFieldSymbol field) name = field.TwinSlot();
 
         var member = JsExpr.Member(receiver, name);
 

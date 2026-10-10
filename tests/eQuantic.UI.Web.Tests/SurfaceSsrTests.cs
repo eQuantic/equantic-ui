@@ -82,6 +82,52 @@ public class SurfaceSsrTests
         html.Should().Contain("spellcheck=\"false\"");
     }
 
+    /// <summary>
+    /// What a surface offers at its caret is the input's LISTBOX (#297), written as the client
+    /// writes it (TS twin: lowerCodeSurface): the list stands at its origin over the code, its rows
+    /// are numbered options, and the input says it completes from that list and points at the row
+    /// the keyboard is on.
+    /// </summary>
+    [Fact]
+    public void WhatItOffers_IsTheInputsListbox()
+    {
+        var page = new Column(gap: 0);
+        page.Add(new Pressable(new Text("ColorToken", TypeRole.LabelSmall), () => { })
+            { Role = PressableRole.Option, Selected = false, CanRequestFocus = false });
+        page.Add(new Pressable(new Text("Column", TypeRole.LabelSmall), () => { })
+            { Role = PressableRole.Option, Selected = true, CanRequestFocus = false });
+        var surface = Code("one\nCo", new eQuantic.UI.Code.CodePosition(1, 2));
+        surface = new CodeSurface(surface.Child, surface.Model)
+        {
+            Label = "Program.cs",
+            Options = page,
+            OptionsOrigin = new Point(28, 48),
+            HighlightedOption = 1,
+        };
+
+        var html = Render(surface);
+
+        var listId = System.Text.RegularExpressions.Regex.Match(html, "id=\"(eq-options-[^\"]+)\"").Groups[1].Value;
+        listId.Should().NotBeEmpty("the list carries the id the input names");
+        html.Should().Contain("role=\"listbox\"");
+        html.Should().Contain("position:absolute;left:28px;top:48px;");
+        html.Should().Contain($"id=\"{listId}-0\"").And.Contain($"id=\"{listId}-1\"");
+        html.Should().Contain("aria-autocomplete=\"list\"");
+        html.Should().NotContain("aria-expanded", "ARIA allows it on a combobox, not on the textbox a textarea is");
+        html.Should().Contain($"aria-controls=\"{listId}\"");
+        html.Should().Contain($"aria-activedescendant=\"{listId}-1\"");
+        html.Should().Contain("tabindex=\"-1\"", "a row is no Tab stop: the arrows walk the list from the code");
+    }
+
+    [Fact]
+    public void WithNothingOffered_TheInputNamesNoList()
+    {
+        var html = Render(Code("one", eQuantic.UI.Code.CodePosition.Start));
+
+        html.Should().NotContain("aria-autocomplete").And.NotContain("aria-activedescendant")
+            .And.NotContain("role=\"listbox\"");
+    }
+
     [Fact]
     public void ItsCodeKeepsItsLayersUnderTheCaret()
     {

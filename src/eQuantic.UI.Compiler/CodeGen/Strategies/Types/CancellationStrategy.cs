@@ -87,8 +87,7 @@ public class CancellationStrategy : IExpressionIrStrategy
                 // A method REFERENCE is a method group, and a group keeps its receiver, read once, as
                 // C# reads it when the delegate is made: `register(inner.cancel)` lost it, and the
                 // callback threw a TypeError on `this` when the token cancelled.
-                return JsExpr.Template($"{{0}}.{symbol.Name.ToCamelCase()}.bind({{0}})", [receiver],
-                    context.TypeAnnotations);
+                return JsExpr.Template($"{{0}}.{symbol.Name.ToCamelCase()}.bind({{0}})", [receiver]);
             }
         }
         return JsExpr.Opaque(context.Unhandled(node, "the cancellation trio"));

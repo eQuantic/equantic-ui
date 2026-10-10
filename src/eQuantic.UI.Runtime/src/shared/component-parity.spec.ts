@@ -25,12 +25,16 @@ import {
   Box,
   BoxStyle,
   Column,
+  Draggable,
   GridPattern,
   GridTrack,
   Icon,
   IconGlyph,
+  Image,
+  InView,
   LinearGradient,
   Link,
+  Pinned,
   Positioned,
   Pressable,
   ScrollView,
@@ -41,8 +45,9 @@ import {
   StyleDiff,
   Text,
   TextRun,
+  TransitionSpec,
 } from './vocabulary';
-import { SizeValue, Transform2D } from './value-types';
+import { SizeValue, StyleChannels, Transform2D } from './value-types';
 import { Accordion } from './components/Accordion';
 import { AccordionItem } from './components/AccordionItem';
 import { Badge } from './components/Badge';
@@ -125,6 +130,9 @@ function cases(): Record<string, { node: unknown; presses: number[] }> {
       () => {},
       { pressedBackground: photonTheme.surfaceSubtle },
     );
+  // The C# LiftCard of the pressable-through-wrappers case.
+  const liftCard = () =>
+    new Box(new BoxStyle({ width: 40, height: 40, background: photonTheme.surface }));
   // The C# HoverLift: every shadow part, a pattern layer and a resting transform at its base, and
   // a hover and a focus that change each of them (#504).
   const hoverLift = () =>
@@ -192,6 +200,61 @@ function cases(): Record<string, { node: unknown; presses: number[] }> {
           disabled: true,
           pressedBackground: photonTheme.surfaceSubtle,
         }),
+      ),
+    ),
+    'draggable-open': still(
+      new Draggable(
+        new Box(
+          new BoxStyle({
+            width: 40,
+            height: 40,
+            background: photonTheme.surface,
+            transform: Transform2D.scale(0.5),
+            transition: new TransitionSpec(StyleChannels.colors),
+            hover: new StyleDiff({ transform: Transform2D.translate(0, -2) }),
+          }),
+        ),
+        () => {},
+        { axis: 'horizontal', min: -80, max: 0, restOffset: -80 },
+      ),
+    ),
+    'pinned-scrolled': still(
+      new Pinned(new Box(new BoxStyle({ height: 40 })), 0, {
+        scrolledStyle: new StyleDiff({
+          background: photonTheme.surface,
+          borderWidth: 1,
+          borderColor: photonTheme.border,
+          elevation: 2,
+          opacity: 0.9,
+          backdropBlur: 24,
+          gradient: new LinearGradient(photonTheme.surface, photonTheme.surfaceSubtle),
+          transform: Transform2D.translate(0, -2),
+          shadows: [new ShadowSpec(0, 12, 0, photonTheme.focusRing)],
+        }),
+        transition: new TransitionSpec(StyleChannels.colors),
+      }),
+    ),
+    'box-hover-border-edge': still(
+      new Box(
+        new BoxStyle({
+          width: 40,
+          height: 40,
+          borderWidth: 1,
+          borderColor: photonTheme.border,
+          borderSides: 4, // BorderSides.Bottom
+          hover: new StyleDiff({ borderWidth: 2 }),
+        }),
+      ),
+    ),
+    'pressable-through-wrappers': still(
+      column(
+        8,
+        new Pressable(new InView(liftCard(), () => {}), () => {}),
+        new Pressable(new AdaptiveNode(liftCard(), liftCard()), () => {}),
+        new Pressable(
+          Object.assign(new Image('/light.png', 40, 40, 'cover', 'logo'), { darkSource: '/dark.png' }),
+          () => {},
+        ),
       ),
     ),
     'box-hover-drops-shadow': still(
@@ -450,8 +513,9 @@ function canonical(node: HtmlNode): unknown {
   const attrs: Record<string, string> = {};
   for (const key of Object.keys(node.attributes ?? {}).sort()) {
     // The channel KEY itself goes with the channel — a path the client stamps to find the element
-    // again after it mounts, which the server has no reason to write.
-    if (key === 'data-eq-scroll') continue;
+    // again after it mounts, which the server has no reason to write. An InView's observer key is
+    // the same kind (the C# LowerInView says so): only the client can watch anything.
+    if (key === 'data-eq-scroll' || key === 'data-eq-inview') continue;
     const value = node.attributes[key];
     if (value !== undefined && value !== null) attrs[key] = normalize(key, value);
   }

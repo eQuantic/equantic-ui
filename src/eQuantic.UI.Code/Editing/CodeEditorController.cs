@@ -26,6 +26,7 @@ public sealed class CodeEditorController : ICodeSurfaceModel
 {
     private CodeDocument _document;
     private CodeRange _selection;
+    private bool _readOnly;
 
     public CodeEditorController(string text = "", ICodeLanguage? language = null)
     {
@@ -101,8 +102,18 @@ public sealed class CodeEditorController : ICodeSurfaceModel
     public CodeCompletion Completion { get; }
     public CodeLanguageRules Rules => Highlighter.Language.Rules;
 
-    /// <summary>Whether edits are refused — a viewer, a diff pane, a running debugger.</summary>
-    public bool ReadOnly { get; set; }
+    /// <summary>Whether edits are refused — a viewer, a diff pane, a running debugger. Turning it on
+    /// closes a list showing and drops an answer still on its way, since a read-only editor
+    /// completes nothing.</summary>
+    public bool ReadOnly
+    {
+        get => _readOnly;
+        set
+        {
+            _readOnly = value;
+            if (value) Completion.Dismiss();
+        }
+    }
 
     /// <summary>
     /// Whether the next Tab LEAVES the editor instead of indenting. Escape sets it — the one way out
@@ -357,10 +368,14 @@ public sealed class CodeEditorController : ICodeSurfaceModel
     /// the line's cells (<see cref="CellsOf"/>), on the nearer side of whatever the point hit. So a
     /// click on the right half of a character, a tab or a wide character puts the caret after it,
     /// which is what makes a click feel aimed rather than approximate, and no click lands inside a
-    /// text element. Past the end of a line it lands at the end; past the last line, on the last.
+    /// text element. Past the end of a line it lands at the end; below every row the grid draws, at
+    /// the end of the document, as a press under the code does in any editor. A diff's fillers after
+    /// the last line are rows, and land on the last line as any filler lands on its line.
     /// </summary>
     public CodePosition PositionAt(Point point)
     {
+        var rows = Grid.Rows?.RowCount ?? _document.LineCount;
+        if (point.Y >= Grid.Origin.Y + rows * Grid.Cell.Height) return _document.End;
         var target = _document.Clamp(new CodePosition(Math.Max(0, Grid.LineAt(point.Y)), 0)).Line;
         return new CodePosition(target, CellsOf(target).ColumnAt((point.X - Grid.Origin.X) / Grid.Cell.Width));
     }

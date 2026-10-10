@@ -87,8 +87,10 @@ public class IdentifierStrategy : IExpressionIrStrategy
                     if (!isMemberName && symbol is IFieldSymbol { ContainingType.TypeKind: TypeKind.Enum } enumMember)
                         return JsExpr.Literal(Types.EnumStrategy.MemberLiteral(enumMember));
 
-                    // A .NET type's member reached bare that no strategy claimed has no translation:
-                    // the class-static rule below is for the types the transpiler EMITS (#485).
+                    // A .NET type's member reached bare goes where its qualified spelling goes (#556),
+                    // and one that spelling does not translate either has no translation: the
+                    // class-static rule below is for the types the transpiler EMITS (#485).
+                    if (!isMemberName && symbol.AsQualified(identifier, context) is { } qualified) return qualified;
                     if (!isMemberName && symbol.ReportIfPlatformReachedBare(identifier, context))
                         return JsExpr.Literal("undefined");
                     return isMemberName
@@ -96,12 +98,14 @@ public class IdentifierStrategy : IExpressionIrStrategy
                         : JsExpr.Member(JsExpr.Identifier(symbol.ContainingType.Name), name.ToCamelCase());
                 }
 
-                // If it's a member of the current class and not static, add 'this.'
+                // If it's a member of the current class and not static, add 'this.'. A field is read in
+                // its slot, which moves a case apart from another member (FieldSlotExtensions, #396).
                 if (!symbol.IsStatic && symbol.ContainingType != null)
                 {
-                    if (isMemberName) return JsExpr.Identifier(name.ToCamelCase());
+                    var slot = symbol is IFieldSymbol field ? field.TwinSlot() : name.ToCamelCase();
+                    if (isMemberName) return JsExpr.Identifier(slot);
 
-                    var member = JsExpr.ThisMember(name.ToCamelCase());
+                    var member = JsExpr.ThisMember(slot);
 
                     // A method REFERENCE (not being called) is a method group: bind it to the instance.
                     if (symbol is IMethodSymbol)

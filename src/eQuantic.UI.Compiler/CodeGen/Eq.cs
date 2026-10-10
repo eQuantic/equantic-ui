@@ -281,6 +281,15 @@ public static class Eq
     /// twin has no generated <c>with</c>, and a spread would drop its prototype and its methods.</summary>
     public const string With = "$eq.withPatch";
 
+    /// <summary>A generic record or struct built as the closed type C# names (<c>new Box&lt;int&gt;(1)</c>),
+    /// marked with its type arguments, which its <c>equals</c> compares through <see cref="SameClosure"/>:
+    /// one twin class serves every type argument, and <c>Box&lt;int&gt;</c> equalled <c>Box&lt;double&gt;</c> (#651).</summary>
+    public const string Closing = "$eq.closing";
+
+    /// <summary>Whether two values of one generic record or struct are of one closed type; an unmarked
+    /// value (built in generic code, or rebuilt from the wire) is not taken for another.</summary>
+    public const string SameClosure = "$eq.sameClosure";
+
     /// <summary>A twin's JSON, as System.Text.Json writes the C# value: the twin's own properties, a
     /// property's store (<c>$name</c>) written under the property's name and read through it (#591).
     /// What a twin that keeps a store answers <c>toJSON</c> with.</summary>
@@ -402,6 +411,11 @@ public static class Eq
     /// <summary><c>EqualityComparer&lt;T&gt;.Default</c> for a type compared by reference or by its own
     /// <c>Equals</c>: identity, NaN equal to NaN, and a twin's own <c>equals</c>.</summary>
     public const string SameItem = "$eq.collections.sameItem";
+
+    /// <summary><c>EqualityComparer&lt;T&gt;.Default</c> for a type that does not decide (<c>object</c>,
+    /// an interface, a type parameter): a twin's own <c>equals</c>, a tuple's or an anonymous type's
+    /// members, and identity for anything else.</summary>
+    public const string SameKey = "$eq.collections.sameKey";
 
     /// <summary>A <c>KeyValuePair&lt;K, V&gt;</c>'s comparer, from each half's (#421).</summary>
     public const string PairComparer = "$eq.collections.pairComparer";
