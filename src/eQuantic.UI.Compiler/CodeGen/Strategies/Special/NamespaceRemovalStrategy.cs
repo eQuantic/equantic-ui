@@ -1,5 +1,6 @@
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using eQuantic.UI.Compiler.CodeGen.Extensions;
 
 namespace eQuantic.UI.Compiler.CodeGen.Strategies.Special;
 
@@ -34,8 +35,17 @@ public class NamespaceRemovalStrategy : IConversionStrategy
     public string Convert(SyntaxNode node, ConversionContext context)
     {
         var memberAccess = (MemberAccessExpressionSyntax)node;
-        // Just return the identifier name, effectively stripping the namespace
-        return memberAccess.Name.Identifier.Text;
+        // A TYPE reached through its namespace is imported by the symbol it binds, however much of the
+        // namespace the C# spells (#625): inside `Falei.Web.Chat`, `Portal.Fold.Text(n)` wrote
+        // `Fold.text(n)` and imported nothing, because the import was decided by the name as written,
+        // while `Fold.Text(n)` under a using imported it. A namespace reached through another is only
+        // stripped, and a type with no JavaScript value (an interface, an enum) or one the runtime ships no
+        // twin for (host-only) is left to the strategies that handle it however it is spelled.
+        if (context.SemanticHelper.GetSymbol(memberAccess) is INamedTypeSymbol { TypeKind: TypeKind.Class or TypeKind.Struct } type
+            && !type.IsHostOnly() && type.HasTwin())
+            type.RegisterIntroduced(context);
+        // ValueText, as every other name: a verbatim `@Shelf` is `Shelf`.
+        return memberAccess.Name.Identifier.ValueText;
     }
 
     public int Priority => 20; // High priority to strip namespaces early

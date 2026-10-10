@@ -6,6 +6,8 @@ const eQuantic.UI.Compiler.CodeGen.Eq.CancellationNone = "$eq.cancellation.none"
 const eQuantic.UI.Compiler.CodeGen.Eq.CancellationRegistration = "$eq.cancellation.registration" -> string!
 const eQuantic.UI.Compiler.CodeGen.Eq.CancellationSource = "$eq.cancellation.source" -> string!
 const eQuantic.UI.Compiler.CodeGen.Eq.CancellationToken = "$eq.cancellation.token" -> string!
+const eQuantic.UI.Compiler.CodeGen.Eq.EqualsGroup = "$eq.equalsGroup" -> string!
+const eQuantic.UI.Compiler.CodeGen.Eq.RecordTextGroup = "$eq.text.recordGroup" -> string!
 eQuantic.UI.Compiler.CodeGen.Strategies.Types.CancellationStrategy
 eQuantic.UI.Compiler.CodeGen.Strategies.Types.CancellationStrategy.CanConvert(Microsoft.CodeAnalysis.SyntaxNode! node, eQuantic.UI.Compiler.CodeGen.ConversionContext! context) -> bool
 eQuantic.UI.Compiler.CodeGen.Strategies.Types.CancellationStrategy.CancellationStrategy() -> void
@@ -56,6 +58,8 @@ eQuantic.UI.Compiler.CodeGen.ValueMember.ValueMember(string! Display, string! Js
 eQuantic.UI.Compiler.CodeGen.ValueMember.Store.get -> string!
 eQuantic.UI.Compiler.CodeGen.ValueMember.Store.init -> void
 eQuantic.UI.Compiler.Services.TypeScriptCodeBuilder.ClassBuilder.State(string! name, string? type, Microsoft.CodeAnalysis.SyntaxNode? sourceNode = null) -> void
+const eQuantic.UI.Compiler.CodeGen.Eq.Closing = "$eq.closing" -> string!
+const eQuantic.UI.Compiler.CodeGen.Eq.SameClosure = "$eq.sameClosure" -> string!
 *REMOVED*eQuantic.UI.Compiler.CodeGen.Strategies.Linq.DistinctStrategy.Convert(Microsoft.CodeAnalysis.SyntaxNode! node, eQuantic.UI.Compiler.CodeGen.ConversionContext! context) -> string!
 *REMOVED*eQuantic.UI.Compiler.CodeGen.Strategies.Linq.GroupByStrategy.Convert(Microsoft.CodeAnalysis.SyntaxNode! node, eQuantic.UI.Compiler.CodeGen.ConversionContext! context) -> string!
 *REMOVED*eQuantic.UI.Compiler.CodeGen.Strategies.Linq.LookupIndexerStrategy.Convert(Microsoft.CodeAnalysis.SyntaxNode! node, eQuantic.UI.Compiler.CodeGen.ConversionContext! context) -> string!

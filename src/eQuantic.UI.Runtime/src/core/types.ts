@@ -59,8 +59,11 @@ export interface RenderContext {
    * and REQUIRED like its C# original: a transpiled component reads it into a local of this type,
    * and an optional mirror of a non-nullable property is a twin that cannot compile. */
   density: import('../shared/enums.generated').DensityValue;
-  /** The type scale multiplier the target is rendering at (C# `context.TypeScale`). */
-  typeScale?: number;
+  /** The type scale multiplier the target is rendering at (C# `context.TypeScale`). REQUIRED for
+   * the reason `density` is: a twin multiplies by it, and an optional mirror of a non-nullable
+   * float is a `number | undefined` the twin cannot compile against. Every context the runtime
+   * builds sets it. */
+  typeScale: number;
   /** How wide a string WOULD be, in dp, at a given type style (C# `context.MeasureText`). A
    * component that has to size a column to its content — a code gutter, a numeric field — cannot
    * guess it, and guessing is how a gutter ends up too narrow for a four-digit line number. */

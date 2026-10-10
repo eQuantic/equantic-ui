@@ -70,6 +70,11 @@ export class Dictionary<K, V> implements Iterable<Pair<K, V>> {
     if (entries) for (const [key, value] of entries) this.add(key, value);
   }
 
+  /** How the keys are found, as a `HashSet` says how its elements are. */
+  get equality(): KeyEquality {
+    return this.table.equality;
+  }
+
   /**
    * `Add`: a new key, or .NET's refusal of one already there. The indexer's write replaces instead. It
    * answers the dictionary, so a collection initializer chains one call per entry and an entry that

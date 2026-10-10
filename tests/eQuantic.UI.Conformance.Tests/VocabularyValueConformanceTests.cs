@@ -8,7 +8,7 @@ namespace eQuantic.UI.Conformance.Tests;
 
 /// <summary>
 /// A member of a vocabulary value type the browser holds as plain data (<c>[TwinIsData]</c>,
-/// <c>Color</c>) answers in the browser what it answers in .NET (#494). eqc emitted an instance
+/// <c>Color</c> and <c>Curve</c>) answers in the browser what it answers in .NET (#494, #518). eqc emitted an instance
 /// method as a method of the value, which a plain <c>{ r, g, b, a }</c> does not have, so
 /// <c>Color.FromRgb(…).WithOpacity(0.8f)</c> rendered on the server and threw in the browser, and
 /// the value's text was <c>[object Object]</c>.
@@ -52,6 +52,72 @@ public class VocabularyValueConformanceTests
         ConformanceRunner.AssertVocabularyStatementsSameAsDotNet(statements);
     }
 
+    /// <summary>
+    /// A <c>Curve</c> is the record C# reads in browser code too (#518). The generated design system
+    /// exported a preset as an ARRAY and the runtime's <c>MotionSpec</c> declared its curve a preset
+    /// NAME, so <c>Curve.Standard.X1</c> and <c>Motion.Press.Curve.X1</c> read undefined, and
+    /// <c>new Curve(…)</c>, a transition's easing among them, threw "is not a constructor".
+    /// </summary>
+    [SkippableTheory]
+    // ---- a preset is the record, wherever the browser reads it ----
+    [InlineData("return Curve.Standard.X1;")]
+    [InlineData("return Curve.Accelerate;")]
+    [InlineData("return Motion.Press.Curve.X1;")]
+    [InlineData("return Motion.Exit;")]
+    [InlineData("object role = Motion.Exit; return role is MotionSpec spec ? spec.Curve.X1 : -1f;")]
+    // ---- a construction builds the record's data ----
+    [InlineData("return new Curve(0.2f, 0.9f, 0.3f, 1.25f).Y2;")]
+    [InlineData("return new Curve(0.2f, 0.9f, 0.3f, 1.25f);")]
+    [InlineData("Curve c = new(0.4f, 0f, 0.2f, 1f); return c.X1 + c.X2;")]
+    [InlineData("return default(Curve);")]
+    // ---- a curve held in a transition, and read back ----
+    [InlineData("var spec = new TransitionSpec(StyleChannels.Colors, 150) { Easing = new Curve(0.2f, 0.9f, 0.3f, 1.25f) }; return spec.Easing.X2;")]
+    [InlineData("return TransitionSpec.Of(StyleChannels.Opacity, Motion.Enter).Easing;")]
+    [InlineData("return new TransitionSpec(StyleChannels.All).Easing == Curve.Standard;")]
+    // ---- equality, text, a copy and a deconstruction ----
+    [InlineData("return new Curve(0.2f, 0f, 0f, 1f) == Curve.Standard;")]
+    [InlineData("return Curve.Standard != Curve.Decelerate;")]
+    [InlineData("return Motion.State.Curve.Equals(Curve.Standard);")]
+    [InlineData("return Curve.Standard.ToString();")]
+    [InlineData("return $\"{Curve.Accelerate}\";")]
+    [InlineData("return Curve.Standard with { Y2 = 1.5f };")]
+    [InlineData("var (x1, y1, x2, y2) = Curve.Accelerate; return x1 + y1 + x2 + y2;")]
+    public void ACurveAnswersAsInDotNet(string statements)
+    {
+        Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
+        ConformanceRunner.AssertVocabularyStatementsSameAsDotNet(statements);
+    }
+
+    /// <summary>
+    /// A METHOD GROUP of a value the browser holds as data is the delegate its call is: <c>Equals</c>,
+    /// <c>ToString</c> and <c>GetHashCode</c> answer through the helpers a direct call uses, and the
+    /// receiver is read once, when the delegate is made, as C# copies it into the delegate. The
+    /// companion carries the type's own methods and its presets, never these three, so
+    /// <c>Curve.Standard.Equals</c> bound <c>Curve.equals</c>, which is missing, and threw making the
+    /// delegate, and <c>ToString</c> bound the object's own <c>toString</c>, which answered
+    /// <c>[object Object]</c>, on a <c>Color</c> as on a <c>Curve</c> (#518's review).
+    /// </summary>
+    [SkippableTheory]
+    // ---- Equals, ToString and GetHashCode as delegates ----
+    [InlineData("Func<Curve, bool> same = Curve.Standard.Equals; return same(new Curve(0.2f, 0f, 0f, 1f));")]
+    [InlineData("Func<object, bool> same = Curve.Standard.Equals; return same(Curve.Standard) && !same(\"standard\");")]
+    [InlineData("Func<string> text = Curve.Standard.ToString; return text();")]
+    [InlineData("Func<int> hash = Curve.Standard.GetHashCode; return hash() == Curve.Standard.GetHashCode();")]
+    [InlineData("Func<Color, bool> same = Color.White.Equals; return same(Color.FromRgb(255, 255, 255));")]
+    [InlineData("Func<object, bool> same = Color.White.Equals; return same(Color.White) && !same(\"white\");")]
+    [InlineData("Func<string> text = Color.FromRgba(1, 2, 3, 4).ToString; return text();")]
+    [InlineData("Func<int> hash = Color.White.GetHashCode; return hash() == Color.White.GetHashCode();")]
+    // ---- the receiver is read once, when the delegate is made ----
+    [InlineData("int n = 0; Curve Make() { n++; return Curve.Accelerate; } Func<string> text = Make().ToString; var twice = text() + text(); return n + \" \" + twice;")]
+    [InlineData("int n = 0; Color Make() { n++; return Color.White; } Func<Color, bool> same = Make().Equals; var both = same(Color.White) && same(Color.White); return n + \" \" + both;")]
+    [InlineData("var c = Curve.Standard; Func<string> text = c.ToString; c = Curve.Decelerate; return text();")]
+    [InlineData("var c = Color.White; Func<Color, bool> same = c.Equals; c = Color.FromRgb(0, 0, 0); return same(Color.White);")]
+    public void AMethodGroupOfAValueHeldAsData_IsTheDelegateItsCallIs(string statements)
+    {
+        Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
+        ConformanceRunner.AssertVocabularyStatementsSameAsDotNet(statements);
+    }
+
     [SkippableFact]
     public void AnAppsOwnColor_IsTheAppsOwn()
     {
@@ -84,22 +150,16 @@ public class VocabularyValueConformanceTests
         marked.Should().NotBeEmpty("Color is plain data in the browser");
         marked.Select(type => type.Name).Should().BeSubsetOf(exports, "a value the browser holds as data has a companion to call");
 
-        var shipped = values.Where(type => exports.Contains(type.Name) && !NotYetOneShape.ContainsKey(type.Name)).ToList();
+        // Every one of them, with no exception left to list: `Curve` was the last value type whose
+        // twin was neither a class nor the record's data (#518), and the list that excused it could
+        // only shrink.
+        var shipped = values.Where(type => exports.Contains(type.Name)).ToList();
         var kinds = ConformanceRunner.RuntimeExportKinds(shipped.Select(type => type.Name));
         foreach (var type in shipped)
             (kinds[type.Name] == "object").Should().Be(IsData(type),
                 $"{type.Name}'s twin is a runtime {(kinds[type.Name] == "object" ? "object" : "class")}, "
                 + "and [TwinIsData] has to say exactly that, or eqc lowers its members to the wrong shape");
     }
-
-    /// <summary>
-    /// The value types whose browser twin is neither a class nor the record's data, each with why and
-    /// the issue that gives it one shape. The list may only shrink: a type leaves it when it does.
-    /// </summary>
-    private static readonly Dictionary<string, string> NotYetOneShape = new()
-    {
-        ["Curve"] = "a preset is an array in the design system and a name in MotionSpec (#518)",
-    };
 
     public static TheoryData<string, string> EveryMemberOfEveryDataTwin()
     {

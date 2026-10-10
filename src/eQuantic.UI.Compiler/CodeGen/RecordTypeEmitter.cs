@@ -300,6 +300,10 @@ public class RecordTypeEmitter
                 : $"equals(o) {{ return o instanceof {name}");
             if (baseName != null) sb.Append(" && super.equals(o)");
             else if (type is RecordDeclarationSyntax) sb.Append(" && o.constructor === this.constructor");
+            // A generic one's closed type too: one twin class serves every type argument, so `Box<int>`
+            // equalled `Box<double>` holding the same 1 (#651). The build marks each value C# names the
+            // type arguments of, and an unmarked one is not taken for another type.
+            if (type.TypeParameterList is { Parameters.Count: > 0 }) sb.Append($" && {Eq.SameClosure}(this, o)");
             // Each member as EqualityComparer<T>.Default compares its type (ElementEquality): an array
             // by reference, where `$eq.equals` walked it element by element (#554). A comparison
             // generated from a tuple's element types is made once, a static of the twin, where it was
@@ -320,6 +324,12 @@ public class RecordTypeEmitter
             // through the constructor ran every one of them again (#413).
             sb.Append(tsTypeDeclarations ? $"with(patch: any): {name} {{ return {Eq.With}(this, patch); }} "
                 : $"with(patch) {{ return {Eq.With}(this, patch); }} ");
+
+            // The twin of a record or a struct SAYS so, which no method can: `with` and `equals` are
+            // names any class may declare (an `Equals` override, a `With(...)` of its own), and a hot
+            // reload carries a value's twin as its data while it leaves a class's object to its
+            // initializer (dev/hot-reload-state.ts).
+            sb.Append("static $record = true; ");
 
             // The zero C# gives a struct: `default(S)`, an array's slot, an OrDefault, and `new S()`
             // where S declares no parameterless constructor. Every struct twin carries it, built
