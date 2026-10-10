@@ -44,8 +44,10 @@ public class AnchorPanelWidthTests
             .Where(r => r.Path.StartsWith("ov") && r.Node.Label != "Dismiss")
             .ToArray();
         options.Should().NotBeEmpty();
+        // The panel is the field's width, and its rows stand inside its hairline, one on each side, as
+        // they do on the web (#629).
         foreach (var option in options)
-            option.Bounds.Width.Should().BeApproximately(field.Width, 1,
+            option.Bounds.Width.Should().BeApproximately(field.Width - 2, 1,
                 "MatchAnchorWidth means the FIELD's width — a dropdown as wide as the window is a bug");
     }
 

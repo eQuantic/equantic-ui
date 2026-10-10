@@ -124,8 +124,9 @@ public class AnchoredNativeTests
         frame = host.RenderFrame(new DisplayListBuilder());
         frame.HitRegions.Count.Should().Be(5, "field + scrim + three option rows");
 
-        // The option panel matches the field width (the Select contract).
-        frame.HitRegions[^1].Bounds.Width.Should().BeGreaterThanOrEqualTo(field.Bounds.Width);
+        // The option panel matches the field width (the Select contract), and its rows stand inside the
+        // panel's hairline, one on each side, as they do on the web (#629).
+        frame.HitRegions[^1].Bounds.Width.Should().BeGreaterThanOrEqualTo(field.Bounds.Width - 2);
 
         host.PressDown(frame.HitRegions[^1].Bounds.Center.X, frame.HitRegions[^1].Bounds.Center.Y);
         host.PressUp(frame.HitRegions[^1].Bounds.Center.X, frame.HitRegions[^1].Bounds.Center.Y);
