@@ -39,6 +39,8 @@ public class ExceptionCreationStrategy : IExpressionIrStrategy
     {
         var creation = (BaseObjectCreationExpressionSyntax)node;
         var type = (INamedTypeSymbol)context.SemanticHelper.GetType(node)!;
+        // The types it carries cannot be a type parameter (EQ2013).
+        ExceptionTypes.RefuseOpen(type, creation, tested: false, context);
         var built = ExceptionTypes.Construction(ExceptionTypes.ChainOf(type), creation, context);
         // Its object initializer, applied to what that built, as a record's is (#587): it was dropped,
         // so `new Retry { Attempts = 3 }.Attempts` read nothing.

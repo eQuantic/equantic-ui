@@ -356,7 +356,11 @@ public static class PatternConverter
         {
             // `e is ArgumentException`, a switch arm over exceptions, `e as …` and a typed catch, the
             // same test: was `!= null`, so the first arm took every exception (#474).
-            if (ExceptionTypes.Is(named)) return ExceptionTypes.Test(access, named, context);
+            if (ExceptionTypes.Is(named))
+            {
+                ExceptionTypes.RefuseOpen(named, typeSyntax, tested: true, context);
+                return ExceptionTypes.Test(access, named, context);
+            }
 
             if (LowersToAJsClass(named))
             {

@@ -1,6 +1,7 @@
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Operations;
+using eQuantic.UI.Compiler.CodeGen.Extensions;
 using eQuantic.UI.Compiler.CodeGen.Ir;
 
 namespace eQuantic.UI.Compiler.CodeGen.Strategies;
@@ -74,6 +75,28 @@ internal static class ExceptionTypes
         if (chain.SequenceEqual(ChainOf(type.OriginalDefinition))) return null;
         context.UsedHelpers.Add(Eq.Import);
         return JsExpr.Array(chain.Select(name => JsExpr.Literal(JsStringLiteral.Quote(name))).ToList());
+    }
+
+    /// <summary>
+    /// Refuses (EQ2013) an exception type named where a type argument it carries is, or holds, a type
+    /// parameter: <c>new Failed&lt;T&gt;()</c> in a generic method, a <c>catch (Failed&lt;T&gt;)</c>, or
+    /// <c>new Missing()</c> inside the generic class that declares it, whose type arguments it carries. An
+    /// exception carries the types it is, which a typed <c>catch</c>, <c>is</c> and its name read, and
+    /// JavaScript erases a type parameter, so it carried, or a test compared, <c>T</c> itself:
+    /// <c>catch (Failed&lt;int&gt;)</c> missed what <c>Make&lt;int&gt;()</c> threw (Copilot's second review of
+    /// #708). What is refused is still written, and the build stops at the error. <paramref name="tested"/>
+    /// says whether <paramref name="at"/> tests for the type rather than building it.
+    /// </summary>
+    public static void RefuseOpen(INamedTypeSymbol type, SyntaxNode at, bool tested, ConversionContext context)
+    {
+        if (ArgumentsOf(type).FirstOrDefault(argument => argument.MentionsTypeParameter()) is not { } open) return;
+        var named = $"'{type.ToDisplayString()}' is {(tested ? "tested" : "built")} where its type argument "
+            + $"'{open.ToDisplayString()}' is a type parameter, which JavaScript erases, ";
+        context.Report(at, ConversionSeverity.Error, "EQ2013", tested
+            ? named + "so the test could not tell the exceptions it meets apart. Test for a type whose arguments are "
+                + "concrete types, or catch its base and read what it carries."
+            : named + "so the exception could not carry the type it is, which a typed catch, `is` and its name read. "
+                + "Build it where its type arguments are concrete types, or declare it outside the generic type that holds it.");
     }
 
     /// <summary>Whether <paramref name="type"/> is <c>System.Exception</c> itself.</summary>
