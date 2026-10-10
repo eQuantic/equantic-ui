@@ -1769,8 +1769,11 @@ record of a release, the wiki's Upgrading page is the distillate.
   spellings, and the field takes a `$` more), a `Deconstruct` called once per part in an initializer
   and once per arm or alternative elsewhere where .NET calls it once (a pattern-matching operation
   holds its parts once, in a scope of its own), and a twin's JSON that read a getter twice where a
-  moved field and the property's store both stood for it (each name is written once). Proposed and
-  archived through OpenSpec (`openspec/specs/transpiler-classes`).
+  moved field and the property's store both stood for it (each name is written once). The third round
+  found a field beside an explicit interface implementation a case apart, which the slot rule read by
+  the symbol's interface-qualified name (`IReads.Value`): a member's twin name is derived in one place
+  now, an explicit implementation's under the name of the member it implements, as the emitter writes
+  it. Proposed and archived through OpenSpec (`openspec/specs/transpiler-classes`).
 
 ## Retired documents
 
