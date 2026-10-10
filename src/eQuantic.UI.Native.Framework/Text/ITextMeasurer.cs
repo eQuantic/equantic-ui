@@ -123,13 +123,23 @@ public sealed class ApproximateTextMeasurer : ITextMeasurer
         return new TextMeasurement(maxLineWidth, lines.Count * lineHeight, lineHeight, lines);
     }
 
+    /// <summary>
+    /// Lays one paragraph into lines. Every space takes its advance, as a shell's measurer charges it:
+    /// the ones between two words on a line, the ones the paragraph starts or ends with, and a run that
+    /// is nothing but a space, which is how a rich paragraph asks for the gap between its words. A
+    /// break drops the spaces it falls on. Split on spaces and emptied of them, a lone space measured
+    /// zero, and every gap of a rich paragraph cost nothing (#285).
+    /// </summary>
     private static void WrapParagraph(string paragraph, float size, float tracking, float maxWidth, int maxLines,
         List<MeasuredLine> lines)
     {
-        var words = paragraph.Split(' ', StringSplitOptions.RemoveEmptyEntries);
         var spaceWidth = Advance(' ', size) + tracking;
+        var cap = maxWidth is float.PositiveInfinity ? float.MaxValue : maxWidth;
         var lineWidth = 0f;
         var lineHasContent = false;
+        // The spaces since the last word, which the next word on this line or the paragraph's end
+        // takes, and a break drops.
+        var spaces = 0f;
 
         void CommitLine(bool ellipsized = false)
         {
@@ -138,33 +148,46 @@ public sealed class ApproximateTextMeasurer : ITextMeasurer
             lineHasContent = false;
         }
 
-        foreach (var word in words)
+        var start = 0;
+        for (var i = 0; i <= paragraph.Length; i++)
         {
-            var wordWidth = WordWidth(word, size, tracking);
-            var candidate = lineHasContent ? lineWidth + spaceWidth + wordWidth : wordWidth;
-
-            if (candidate <= maxWidth || !lineHasContent)
+            if (i < paragraph.Length && paragraph[i] != ' ') continue;
+            if (i > start)
             {
-                // Fits (or is the first word — a single overlong word occupies the line, clipped by wrap).
-                lineWidth = MathF.Min(candidate, maxWidth is float.PositiveInfinity ? candidate : maxWidth);
-                lineHasContent = true;
-                continue;
+                var wordWidth = WordWidth(paragraph.Substring(start, i - start), size, tracking);
+                var candidate = lineWidth + spaces + wordWidth;
+                if (candidate <= maxWidth || !lineHasContent)
+                {
+                    // Fits (or is the line's first word — a single overlong word occupies the line,
+                    // clipped by wrap).
+                    lineWidth = MathF.Min(candidate, cap);
+                    lineHasContent = true;
+                }
+                else
+                {
+                    // Wrap. If the NEXT line would exceed maxLines, ellipsize this one instead (spec A8).
+                    if (maxLines > 0 && lines.Count + 1 >= maxLines)
+                    {
+                        lineWidth = MathF.Min(lineWidth + EllipsisAdvance * size, cap);
+                        CommitLine(ellipsized: true);
+                        return;
+                    }
+                    CommitLine();
+                    lineWidth = MathF.Min(wordWidth, cap);
+                    lineHasContent = true;
+                }
+                spaces = 0;
             }
-
-            // Wrap. If the NEXT line would exceed maxLines, ellipsize this one instead (spec A8).
-            if (maxLines > 0 && lines.Count + 1 >= maxLines)
-            {
-                lineWidth = MathF.Min(lineWidth + EllipsisAdvance * size,
-                    maxWidth is float.PositiveInfinity ? float.MaxValue : maxWidth);
-                CommitLine(ellipsized: true);
-                return;
-            }
-            CommitLine();
-            lineWidth = MathF.Min(wordWidth, maxWidth is float.PositiveInfinity ? wordWidth : maxWidth);
-            lineHasContent = true;
+            if (i < paragraph.Length) spaces += spaceWidth;
+            start = i + 1;
         }
 
-        if (lineHasContent || words.Length == 0) CommitLine();
+        if (spaces > 0)
+        {
+            lineWidth = MathF.Min(lineWidth + spaces, cap);
+            lineHasContent = true;
+        }
+        if (lineHasContent || paragraph.Length == 0) CommitLine();
     }
 
     private static float WordWidth(string word, float size, float tracking)

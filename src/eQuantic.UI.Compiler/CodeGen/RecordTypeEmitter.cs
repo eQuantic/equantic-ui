@@ -300,14 +300,36 @@ public class RecordTypeEmitter
                 : $"equals(o) {{ return o instanceof {name}");
             if (baseName != null) sb.Append(" && super.equals(o)");
             else if (type is RecordDeclarationSyntax) sb.Append(" && o.constructor === this.constructor");
-            foreach (var m in members) sb.Append($" && $eq.equals(this.{m.Store}, o.{m.Store})");
+            // A generic one's closed type too: one twin class serves every type argument, so `Box<int>`
+            // equalled `Box<double>` holding the same 1 (#651). The build marks each value C# names the
+            // type arguments of, and an unmarked one is not taken for another type.
+            if (type.TypeParameterList is { Parameters.Count: > 0 }) sb.Append($" && {Eq.SameClosure}(this, o)");
+            // Each member as EqualityComparer<T>.Default compares its type (ElementEquality): an array
+            // by reference, where `$eq.equals` walked it element by element (#554). A comparison
+            // generated from a tuple's element types is made once, a static of the twin, where it was
+            // looked up again on every call.
+            var generated = new List<string>();
+            string Hoist(string equality)
+            {
+                generated.Add(equality);
+                return $"{name}.$equality{generated.Count - 1}";
+            }
+            foreach (var m in members) sb.Append($" && {ElementEquality.Compare(TypeOf(m), $"this.{m.Store}", $"o.{m.Store}", Hoist)}");
             sb.Append("; } ");
+            for (var i = 0; i < generated.Count; i++)
+                sb.Append($"static $equality{i} = {generated[i]}; ");
 
             // with(patch): a COPY, onto the prototype (a spread would drop the methods), then the
             // members the patch names. C# copies the fields and runs no initializer, and building it
             // through the constructor ran every one of them again (#413).
             sb.Append(tsTypeDeclarations ? $"with(patch: any): {name} {{ return {Eq.With}(this, patch); }} "
                 : $"with(patch) {{ return {Eq.With}(this, patch); }} ");
+
+            // The twin of a record or a struct SAYS so, which no method can: `with` and `equals` are
+            // names any class may declare (an `Equals` override, a `With(...)` of its own), and a hot
+            // reload carries a value's twin as its data while it leaves a class's object to its
+            // initializer (dev/hot-reload-state.ts).
+            sb.Append("static $record = true; ");
 
             // The zero C# gives a struct: `default(S)`, an array's slot, an OrDefault, and `new S()`
             // where S declares no parameterless constructor. Every struct twin carries it, built
@@ -328,11 +350,11 @@ public class RecordTypeEmitter
                 var zeros = string.Join(", ", typeParameters.Select(parameter =>
                     $"$z{parameter}{(tsTypeDeclarations ? ": any" : "")} = null"));
                 sb.Append(tsTypeDeclarations
-                    ? $"static $zero({zeros}): {name} {{ const zero: any = Object.create({name}.prototype); "
-                    : $"static $zero({zeros}) {{ const zero = Object.create({name}.prototype); ");
+                    ? $"static $zero({zeros}): {name} {{ const $self: any = Object.create({name}.prototype); "
+                    : $"static $zero({zeros}) {{ const $self = Object.create({name}.prototype); ");
                 foreach (var m in members)
-                    sb.Append($"zero.{m.Store} = {ZeroOf(m, typeParameters.Count == 0 ? null : parameter => typeParameters.Contains(parameter.Name) && parameter.TypeParameterKind == TypeParameterKind.Type ? $"$z{parameter.Name}" : null)}; ");
-                sb.Append("return zero; } ");
+                    sb.Append($"$self.{m.Store} = {ZeroOf(m, typeParameters.Count == 0 ? null : parameter => typeParameters.Contains(parameter.Name) && parameter.TypeParameterKind == TypeParameterKind.Type ? $"$z{parameter.Name}" : null)}; ");
+                sb.Append("return $self; } ");
             }
 
             // getHashCode: the members `equals` reads, combined, as the record's synthesized GetHashCode
@@ -588,6 +610,19 @@ public class RecordTypeEmitter
     internal static bool IsStruct(TypeDeclarationSyntax type) =>
         type is StructDeclarationSyntax
         || type is RecordDeclarationSyntax record && record.ClassOrStructKeyword.IsKind(SyntaxKind.StructKeyword);
+
+    /// <summary>A value member's type, as the model binds its declaration's type syntax.</summary>
+    private ITypeSymbol? TypeOf(ValueMember member)
+    {
+        var syntax = member.Declaration switch
+        {
+            ParameterSyntax { Type: { } type } => type,
+            PropertyDeclarationSyntax property => property.Type,
+            VariableDeclaratorSyntax { Parent: VariableDeclarationSyntax declaration } => declaration.Type,
+            _ => null,
+        };
+        return syntax is null ? null : ModelFor(syntax)?.GetTypeInfo(syntax).Type;
+    }
 
     /// <summary>A member's zero, the value <c>default</c> gives it, a type parameter's taken from
     /// <paramref name="typeParameter"/> where the struct's <c>$zero</c> is handed one.</summary>

@@ -15,6 +15,8 @@ namespace eQuantic.UI.Web;
 [Primitives.RuntimeProvided]
 public sealed class VisualNodeComponent : HtmlElement
 {
+    private static readonly AsyncLocal<Density?> _ambientDensity = new();
+
     private readonly IAppTheme _theme;
     private readonly float _typeScale;
 
@@ -23,6 +25,20 @@ public sealed class VisualNodeComponent : HtmlElement
         Node = node;
         _theme = theme ?? PhotonTheme.Instance;
         _typeScale = typeScale;
+    }
+
+    /// <summary>
+    /// The render-scoped density: the SSR pipeline arms the request's around a page render (#623), the
+    /// density the browser reported, so EVERY bridge in the tree is built at it, the page's root and one
+    /// an escape-hatch page composes itself alike, and the page's configuration says the same density
+    /// hydration lowers at. Null outside an SSR render, which builds Comfortable. It is the only way
+    /// in: the browser's twin lowers at the runtime's own density, so a density a page passed to one
+    /// bridge would be honoured by the server and dropped by the browser (found by Copilot on #688).
+    /// </summary>
+    public static Density? AmbientDensity
+    {
+        get => _ambientDensity.Value;
+        set => _ambientDensity.Value = value;
     }
 
     /// <summary>The wrapped abstract subtree — hosts unwrap it (e.g. the SSR pipeline probing the
@@ -37,5 +53,6 @@ public sealed class VisualNodeComponent : HtmlElement
     public StyleSink Styles { get; } = new();
 
     public override HtmlNode Render() =>
-        WebRealizer.Lower(Node, _theme, _typeScale, StyleSink.Ambient ?? Styles).Render();
+        WebRealizer.Lower(Node, _theme, _typeScale, StyleSink.Ambient ?? Styles,
+            AmbientDensity ?? Density.Comfortable).Render();
 }

@@ -412,6 +412,26 @@ export class TypeStyle implements TypeStyleValue {
   static ofSize(size: number, weight: string | number, tracking = 0, maxScale = 1.3): TypeStyle {
     return new TypeStyle(size, dotnetRound(size * 1.25 * 2) / 2, weight, tracking, maxScale);
   }
+
+  /** The size under an OS text-scale factor: the C# twin of `TypeStyle.ScaledSize`. */
+  scaledSize(osFactor: number): number {
+    return scaledBy(this.size, osFactor, this.maxScale);
+  }
+
+  /** The line box under the same factor: the C# twin of `TypeStyle.ScaledLineHeight`. */
+  scaledLineHeight(osFactor: number): number {
+    return scaledBy(this.lineHeight, osFactor, this.maxScale);
+  }
+}
+
+/**
+ * `value` under an OS text-scale factor, as `TypeStyle` scales its size and its line box: the factor
+ * clamped from 0.5 to the style's `maxScale`, and the result snapped to the 0.5dp step, in the single
+ * precision the C# computes it in (`MathF`).
+ */
+function scaledBy(value: number, osFactor: number, maxScale: number): number {
+  const scaled = f(value * f(Math.min(Math.max(osFactor, 0.5), maxScale)));
+  return f(dotnetRound(f(scaled * 2)) / 2);
 }
 
 /** The five sub-tokens of an interactive variant (spec §01). */

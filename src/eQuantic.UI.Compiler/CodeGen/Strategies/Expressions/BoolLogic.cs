@@ -65,10 +65,10 @@ internal static class BoolLogic
             // refuses untyped — hence the annotation wherever the output is TypeScript.
             JsMember member => JsExpr.Template(
                 $"({{0}}.{member.Name} = {Combine(op, $"{{0}}.{member.Name}", "{1}")})",
-                [member.Target, right], context.TypeAnnotations),
+                [member.Target, right]),
             JsIndex index => JsExpr.Template(
                 $"({{0}}[{{1}}] = {Combine(op, "{0}[{1}]", "{2}")})",
-                [index.Target, index.IndexExpression, right], context.TypeAnnotations),
+                [index.Target, index.IndexExpression, right]),
             // A plain name has no receiver to evaluate twice.
             _ => JsExpr.Binary(left, "=", op == "^"
                 ? JsExpr.Binary(left, "!==", right)

@@ -201,6 +201,10 @@ export {
   setPhotonTheme,
   getPhotonTheme,
   setPhotonDensity,
+  pointerDensity,
+  rememberDensity,
+  densityForHydration,
+  settleDensity,
   getPhotonDensity,
   detectPhotonDensity,
   photonComponentContext,
@@ -285,6 +289,11 @@ export interface EqConfig {
   version?: string;
   ssr?: boolean;
   /**
+   * The density the server rendered the page at (#623): hydration lowers at it, so the served
+   * markup is adopted as it is, and then switches the whole page to the browser's own at once.
+   */
+  density?: 'compact' | 'comfortable';
+  /**
    * How the theme is remembered — `false` when the app turned it off (a consent banner, a policy
    * that forbids a cookie before it is granted). Absent means the defaults.
    *
@@ -293,6 +302,12 @@ export interface EqConfig {
    * reading a cookie nobody writes.
    */
   themeCookie?: { name: string; days: number } | false;
+  /**
+   * Whether the server streams rebuilds at `/_equantic/hmr`, which it decides once: in Development,
+   * under `dotnet watch`, or as the app's `HotReload` says. The boot listens, and replays a page's
+   * state after a reload, only then.
+   */
+  hotReload?: boolean;
   /** Client route table (generated from `[Page]` attributes) — enables SPA navigation. */
   routes?: import('./router/route-table').RouteEntry[];
   /**

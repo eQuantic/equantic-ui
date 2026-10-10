@@ -33,11 +33,11 @@ public class OfTypeStrategy : IConversionStrategy
                 if (IsPrimitiveType(typeName))
                 {
                     var jsType = MapToJsType(typeName);
-                    return $"{source}.filter(x => typeof x === '{jsType}')";
+                    return $"{source}.filter(($x) => typeof $x === '{jsType}')";
                 }
 
                 // For reference types, use instanceof
-                return $"{source}.filter(x => x instanceof {typeName})";
+                return $"{source}.filter(($x) => $x instanceof {typeName})";
             }
         }
 
