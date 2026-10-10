@@ -189,9 +189,9 @@ public class TwinConstructorTests
     }
 
     /// <summary>
-    /// A record's own copy constructor is what `with` copies through, and never a branch `new` reaches:
-    /// taken for a second constructor of one argument, it refused the type (EQ1009), which compiled
-    /// before.
+    /// A record's own copy constructor is what `with` copies through, its `$copy` step (#589), and never
+    /// a branch `new` reaches: taken for a second constructor of one argument, it refused the type
+    /// (EQ1009), which compiled before.
     /// </summary>
     [Fact]
     public void ACopyConstructor_IsNoBranch_AndIsNotRefused()
@@ -206,6 +206,8 @@ public class TwinConstructorTests
             """, "Doc");
 
         result.Errors.Should().BeEmpty();
-        result.TypeScript.Should().Contain("constructor(capacity: any)").And.NotContain("original");
+        result.TypeScript.Should().Contain("constructor(capacity: any)")
+            .And.Contain("$copy(original: any)")
+            .And.NotContain("constructor(original");
     }
 }
