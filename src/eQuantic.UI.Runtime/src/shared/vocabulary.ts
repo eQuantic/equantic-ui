@@ -26,7 +26,7 @@ import { CanvasPointer } from './canvas-pointer';
 export { CanvasPointer };
 import { lowerVisualNode } from './lowering';
 import { ambientLoweringContext } from './photon-context';
-import { CornerRadii, EdgeInsets, SizeValue, StyleChannels, WebContent } from './value-types';
+import { CornerRadii, EdgeInsets, Point, SizeValue, StyleChannels, WebContent } from './value-types';
 import { Curve, Motion } from './design-system.generated';
 import { hashesByValue } from '../utils/hash';
 
@@ -407,6 +407,11 @@ export class SafeArea extends VisualNode {
 }
 
 export class Pinned extends VisualNode {
+  /** C# `Pinned.ScrolledThreshold`: how far, in dp, a header's surface scrolls before its scrolled style applies. */
+  static readonly ScrolledThreshold = 8;
+  /** C# `Pinned.ScrolledBase`: what the scrolled style is laid over, the hairline along the bottom edge
+   * (BorderSides.Bottom = 4). */
+  static readonly ScrolledBase = { borderSides: 4 } as const;
   readonly nodeKind = 'pinned';
   float = false;
   scrolledStyle: StyleDiff | null = null;
@@ -686,6 +691,8 @@ interface PressableConfig {
   expanded?: boolean | null;
   /** §10 initial focus — the trap prefers this pressable when it opens. */
   initialFocus?: boolean;
+  /** False: a press leaves the keyboard where it is (Flutter's canRequestFocus). */
+  canRequestFocus?: boolean;
   /** Composite-item role — the C# initializer `{ Role = PressableRole.Radio }` lands here. */
   role?: string;
 }
@@ -704,6 +711,8 @@ export class Pressable extends VisualNode {
   expanded: boolean | null = null;
   /** §10 initial focus: when a trap opens around this pressable, focus lands here first. */
   initialFocus = false;
+  /** False: a press leaves the keyboard where it is, and the pressable leaves the Tab order. */
+  canRequestFocus = true;
   role = 'button';
 
   constructor(child: VisualChild, onPressed: (() => void) | null = null, config?: PressableConfig) {
@@ -726,6 +735,12 @@ export class CodeSurface extends VisualNode {
   onChanged: (() => void) | null = null;
   label: string | null = null;
   autofocus = false;
+  /** What the surface offers at its caret (C# `CodeSurface.Options`), over the code, at `optionsOrigin`. */
+  options: VisualChild | null = null;
+  /** Where the options stand, in the surface's coordinates. */
+  optionsOrigin: Point = Point.zero;
+  /** The option row the keyboard is on, in tree order over the options' option rows, or -1. */
+  highlightedOption = -1;
 
   constructor(child: VisualChild, model: unknown, config?: EqConfig) {
     super();

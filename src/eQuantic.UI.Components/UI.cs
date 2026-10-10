@@ -143,13 +143,16 @@ public static class UI
     /// navigation's items are radios to assistive tech, and a declarative screen could not say so).
     /// Without it a declarative screen could not name an icon-only button or mark a nav item
     /// selected at all (the OS Cleaner F1 report; the role joined after its full migration).
+    /// <paramref name="canRequestFocus"/> false is a control pressed while the keyboard stays
+    /// where it is: a formatting toolbar's buttons beside the text they format, a list of
+    /// suggestions under a field.
     /// Modal machinery — <see cref="Primitives.Pressable.Mixed"/>,
     /// <see cref="Primitives.Pressable.InitialFocus"/> — stays initializer-only: it belongs to the
     /// components that own the pattern.</summary>
     public static Pressable Pressable(VisualNode child, Action? onPressed = null,
         string? label = null, bool? selected = null, bool disabled = false,
         ColorToken? pressedBackground = null, bool? expanded = null,
-        PressableRole role = PressableRole.Button) =>
+        PressableRole role = PressableRole.Button, bool canRequestFocus = true) =>
         new Pressable(child, onPressed)
         {
             Label = label,
@@ -158,6 +161,7 @@ public static class UI
             PressedBackground = pressedBackground,
             Expanded = expanded,
             Role = role,
+            CanRequestFocus = canRequestFocus,
         };
 
     /// <summary>Navigation semantics: the child becomes a link to <paramref name="destination"/>.

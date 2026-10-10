@@ -367,6 +367,72 @@ public class CodeEditorComponentTests
     }
 
     /// <summary>
+    /// The room under a short file is the code's (#599). The surface was as tall as the code, so a
+    /// press under the last line landed on the scroll view around it: the caret stayed where it was
+    /// and the editor did not take the keyboard, where every code editor goes to the end of the
+    /// document.
+    /// </summary>
+    [Fact]
+    public void APressUnderABoundedEditorsCode_PutsTheCaretAtTheEnd_AndTakesTheKeyboard()
+    {
+        var editor = new CodeEditor("one\ntwo three", "csharp") { ShowLineNumbers = false, Height = SizeValue.Fill };
+        var host = Host(editor, 500, 400);
+        var region = Settle(host).CodeRegions.Single();
+        region.Bounds.Height.Should().BeApproximately(400, 1, "the code fills the editor's place, however short");
+        var second = editor.Editor.CaretRect(new CodePosition(1, 1));
+
+        // Under the second column of the last line, where a press on the line would land.
+        host.PressDown(region.Bounds.X + second.X, region.Bounds.Y + 300);
+        host.PressUp(region.Bounds.X + second.X, region.Bounds.Y + 300);
+        Settle(host);
+
+        editor.Editor.Caret.Should().Be(new CodePosition(1, 9), "a press under the code is the end of the document");
+        host.CodeTarget.Should().NotBeNull("and gives the editor the keyboard");
+    }
+
+    /// <summary>
+    /// A press OUTSIDE an editor is not the editor's, however far its code runs past the viewport that
+    /// shows it. The code region was registered whole, so a press on what stood below a scrolled
+    /// editor moved its caret and took the keyboard (found reviewing #297).
+    /// </summary>
+    [Fact]
+    public void APressBelowAScrolledEditor_LandsOutsideIt()
+    {
+        var text = string.Join("\n", Enumerable.Range(0, 60).Select(i => $"var line{i} = {i};"));
+        var editor = new CodeEditor(text, "csharp") { ShowLineNumbers = false, Height = SizeValue.Fixed(200) };
+        var page = new Column(gap: 0) { Width = SizeValue.Fill };
+        page.Add(editor);
+        page.Add(new Box(new BoxStyle { Width = SizeValue.Fill, Height = 200 }, new Text("below", TypeRole.BodyM)));
+        var host = Host(page, 500, 400);
+        var region = Settle(host).CodeRegions.Single();
+        region.Bounds.Bottom.Should().BeGreaterThan(300, "the code runs past the viewport, under the box below");
+
+        host.PressDown(100, 300);
+        host.PressUp(100, 300);
+        Settle(host);
+
+        editor.Editor.Caret.Should().Be(CodePosition.Start, "the press was on the box below the editor");
+        host.CodeTarget.Should().BeNull("and the editor did not take the keyboard");
+    }
+
+    [Fact]
+    public void ADragFromUnderTheCode_SelectsBackToWhereItStops()
+    {
+        var editor = new CodeEditor("one\ntwo three", "csharp") { ShowLineNumbers = false, Height = SizeValue.Fill };
+        var host = Host(editor, 500, 400);
+        var region = Settle(host).CodeRegions.Single();
+        var stop = editor.Editor.CaretRect(new CodePosition(0, 1));
+
+        host.PressDown(region.Bounds.X + stop.X, region.Bounds.Y + 300);
+        host.PointerMove(region.Bounds.X + stop.X, region.Bounds.Y + stop.Y + stop.Height / 2);
+        host.PressUp(region.Bounds.X + stop.X, region.Bounds.Y + stop.Y + stop.Height / 2);
+        Settle(host);
+
+        editor.Editor.Selection.Should().Be(new CodeRange(new CodePosition(1, 9), new CodePosition(0, 1)),
+            "the drag selects from the end of the document back to where it stopped");
+    }
+
+    /// <summary>
     /// A bounded editor with a cap is capped whole, slab and all. The cap was the inner viewport's
     /// alone, so a Fill editor in a pane taller than its MaxHeight scrolled its code in the top of a
     /// slab that went on, empty, to the bottom of the pane.

@@ -60,11 +60,18 @@ internal sealed partial class EmitVisitor : IVisualNodeVisitor<EmitState, Nothin
         // built keys for every box in every frame. Only a Transition opens the gliding path.
         // The values come from the box's EFFECTIVE style, so a hover that fades or moves the box does
         // it here, with the same answer the chrome reads (#504).
-        var box = node.Source as Box;
-        var style = box is null ? default : EffectiveStyle(box, s);
+        // A pinned header is styled like a box while its surface is scrolled (#506): it fades and
+        // moves by its scrolled diff, under its own Transition.
+        var styled = node.Source switch
+        {
+            Box box => EffectiveStyle(box, s),
+            Pinned pinned => PinnedStyle(pinned, s.Press.SurfaceScrolled),
+            _ => null,
+        };
+        var style = styled ?? default;
         var opacityNow = style.Opacity ?? 1f;
         var transformNow = style.Transform ?? IdentityTransform;
-        if (box is not null && style.Transition is { } glide && s.Motion.Transitions is { } store)
+        if (styled is not null && style.Transition is { } glide && s.Motion.Transitions is { } store)
         {
             var glidePath = node.Path ?? "";
             if ((glide.Channels & StyleChannels.Opacity) != 0)
@@ -72,7 +79,7 @@ internal sealed partial class EmitVisitor : IVisualNodeVisitor<EmitState, Nothin
             if ((glide.Channels & StyleChannels.Transform) != 0)
                 transformNow = GlideTransform(store, glidePath, transformNow, s.Motion.TimeMs, glide, s.Motion.Reduced);
         }
-        if (box is not null && (opacityNow < 1f || !transformNow.IsIdentity))
+        if (styled is not null && (opacityNow < 1f || !transformNow.IsIdentity))
         {
             var opacity = opacityNow < 1f ? opacityNow : (float?)null;
             if (opacity is { } layerAlpha) s.Builder.PushLayer(layerAlpha);
@@ -168,6 +175,15 @@ internal sealed partial class EmitVisitor : IVisualNodeVisitor<EmitState, Nothin
 
     // ---- chrome, then the children ----------------------------------------------------------
 
+    /// <summary>A pinned header: the pin is a position layout applied, and while the surface it pins
+    /// to is scrolled the header draws its <c>ScrolledStyle</c> under its content (#506).</summary>
+    public Nothing Visit(Pinned node, EmitState s)
+    {
+        if (PinnedStyle(node, s.Press.SurfaceScrolled) is { } chrome) EmitStyledChrome(chrome, box: null, s);
+        Descend(s);
+        return Nothing.Value;
+    }
+
     /// <summary>A flex container is chrome only when it declares a background; otherwise it is pure
     /// geometry that layout already resolved.</summary>
     public Nothing Visit(Row node, EmitState s) => FlexThenChildren(node, s);
@@ -184,7 +200,18 @@ internal sealed partial class EmitVisitor : IVisualNodeVisitor<EmitState, Nothin
 
     public Nothing Visit(Text node, EmitState s) { EmitTextNode(node, s); Descend(s); return Nothing.Value; }
     public Nothing Visit(TextEntry node, EmitState s) { EmitTextEntry(node, s); Descend(s); return Nothing.Value; }
-    public Nothing Visit(CodeSurface node, EmitState s) { EmitCode(node, s); Descend(s); EmitCodeCaret(node, s); return Nothing.Value; }
+    /// <summary>The code, then its caret, then what the surface offers at the caret (its second
+    /// child, when it has options): over the caret, and registered last, so a press on a row of the
+    /// list lands on the row and not on the code under it.</summary>
+    public Nothing Visit(CodeSurface node, EmitState s)
+    {
+        EmitCode(node, s);
+        var children = s.Node.Children;
+        if (children.Count > 0) Emit(s with { Node = children[0] });
+        EmitCodeCaret(node, s);
+        for (var i = 1; i < children.Count; i++) Emit(s with { Node = children[i] });
+        return Nothing.Value;
+    }
     public Nothing Visit(Image node, EmitState s) { EmitImageNode(node, s); Descend(s); return Nothing.Value; }
     public Nothing Visit(CameraPreview node, EmitState s) { EmitCamera(node, s); Descend(s); return Nothing.Value; }
     public Nothing Visit(Icon node, EmitState s) { EmitIcon(node, s); Descend(s); return Nothing.Value; }
@@ -241,7 +268,7 @@ internal sealed partial class EmitVisitor : IVisualNodeVisitor<EmitState, Nothin
 
     // ---- nothing left to draw ------------------------------------------------------------------
     //
-    // The eleven below were an array of exemption STRINGS in `VocabularyCoverageTests` until this
+    // The ten below were an array of exemption STRINGS in `VocabularyCoverageTests` until this
     // slice, with one sentence covering all of them. They have three different standings, which an
     // array of names could not show and a door can:
     //
@@ -267,9 +294,6 @@ internal sealed partial class EmitVisitor : IVisualNodeVisitor<EmitState, Nothin
 
     /// <summary>Resolved into geometry: in-flow is where the child already is.</summary>
     public Nothing Visit(InFlow node, EmitState s) { Descend(s); return Nothing.Value; }
-
-    /// <summary>Resolved into geometry: the pin is a position layout applied.</summary>
-    public Nothing Visit(Pinned node, EmitState s) { Descend(s); return Nothing.Value; }
 
     /// <summary>Resolved into geometry: a contract with a Stack, settled before paint.</summary>
     public Nothing Visit(Positioned node, EmitState s) { Descend(s); return Nothing.Value; }

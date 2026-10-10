@@ -1703,6 +1703,31 @@ record of a release, the wiki's Upgrading page is the distillate.
   1970 toward the epoch; it answers a BigInt cut as .NET cuts it now. Found on the way: the date
   constructors past the second ([#606](https://github.com/eQuantic/equantic-ui/issues/606)).
   Proposed and archived through OpenSpec (`openspec/specs/runtime-dates`).
+- **2026-10-07 · A spreadsheet cell sits under its header**: on the web the spreadsheet drew every
+  cell one column left of its header, over the row numbers
+  ([#613](https://github.com/eQuantic/equantic-ui/issues/613)). The row number strip hugged its row
+  headers, whose Stack layers may not grow past them, so its minimum was zero and the browser shrank it
+  to 0px beside a wider grid. It is as wide as its header now, a Fixed size that shrinks on neither
+  target, measured in Chromium on the dashboard sample. The general case, a hugging Stack that a flex
+  line can squeeze to nothing on the web, is [#698](https://github.com/eQuantic/equantic-ui/issues/698).
+  Proposed and archived through OpenSpec (`openspec/specs/spreadsheet`).
+- **2026-10-07 · Every producer draws the same tree**: five places where the server's realizer,
+  its browser twin and Photon drew one tree three ways, one family of the bug sweep. A Text lowers
+  as a block on the web, so a 10/15 label in a padded pill is 21px where it sat on the body font's
+  26.5px line ([#495](https://github.com/eQuantic/equantic-ui/issues/495)). A pinned header's
+  `ScrolledStyle` applies every member on both targets, from the surface it pins to, over
+  `Pinned.ScrolledBase`; the web wrote four of seven and Photon none
+  ([#506](https://github.com/eQuantic/equantic-ui/issues/506)), and the state builder now draws a
+  border along the edges its box draws. A draggable's offset rides `translate`, so an open row keeps
+  its box's transform and its hover's, and a swipe that changes nothing glides home
+  ([#511](https://github.com/eQuantic/equantic-ui/issues/511)). The hit slop's lift reaches through
+  wrappers that draw no box ([#622](https://github.com/eQuantic/equantic-ui/issues/622)); its parity
+  case found the browser twin dropping a dark artwork's size. And the server builds at the density
+  the browser reports in a session cookie, a served page and the tree a client navigation finds its
+  data in alike, and hydration adopts it, switching the whole page at once when they differ
+  ([#623](https://github.com/eQuantic/equantic-ui/issues/623)). Measured in
+  Chromium on a served page and after a client navigation. Proposed and archived through OpenSpec
+  (`layout`, `interaction-states`, `gestures`, `hit-targets`, `hydration-contract`).
 - **2026-10-07 · A page requires its authorization**: `[Authorize]` held on Server Actions only, so
   a page's route served anyone and its `IServerPrefetch` ran for an anonymous visitor, writing its
   fields into the HTML ([#673](https://github.com/eQuantic/equantic-ui/issues/673), asked by Cura for
@@ -1848,6 +1873,69 @@ record of a release, the wiki's Upgrading page is the distillate.
   under any runner ([#664](https://github.com/eQuantic/equantic-ui/issues/664)).
   Proposed and archived through OpenSpec (`openspec/specs/hot-reload`, `generated-files` and
   `hydration-contract`).
+- **2026-10-07 · A hot reload keeps the page's state**: the reload captured the page's `_state` bag,
+  which no write-once page has, and sent it back through the server-data door, which takes only what
+  the hydration manifest lists, so a page's own fields went back to their initializers on every save:
+  the dashboard's `Count: 3` came back `Count: 0`, under `dotnet run` and under `dotnet watch` alike
+  ([#664](https://github.com/eQuantic/equantic-ui/issues/664)). The page's own fields cross now,
+  without the runtime's beside them, and the reloaded page gets them before it builds, each rebuilt
+  in the shape its initializer gives it: data only, a record and a `long` included, since a
+  controller rebuilt from its JSON came back with maps no map method accepts, as the review before
+  the pull request found. Copilot's first round found four values the reload changed instead of
+  keeping (a NaN back as null, a controller inside a dictionary back as a plain object, the
+  vocabulary's `Point` back at its initializer, a `long[]` back as strings), so each value now crosses
+  with the hydration spec of its runtime type and comes back through `hydrate` as the type it was, or
+  keeps its initializer. The second round found four more (a negative zero back as 0, a record's store
+  back through its setter, `FRec`'s 10 as 20, BigInts handed to a list the edit had made text, and the
+  first render's server adoption writing back a field the replay had refused), so a record crosses as
+  its stores, a value comes back only into the type the reloaded page declares or initializes there,
+  and the server's payload never writes a field the replay decided. The third round found two more:
+  an app's class with an `Equals` override and a `With(...)` of its own passed for a record, so eqc's
+  record and struct twins now say they are one (`static $record`), and a list with a hole or an
+  undefined element, which eqc writes for `Array.Resize` and a vocabulary struct's `default`, came back
+  with nulls, so it keeps its initializer. Proposed and archived through OpenSpec
+  (`openspec/specs/hot-reload`).
+- **2026-10-06 · The code editor shows its completion list**: the view half of the code editor's
+  slice 3 ([#297](https://github.com/eQuantic/equantic-ui/issues/297)). `CodeEditor` draws the list
+  at the word it completes, through the code surface and in the code's own coordinates
+  (`CodeSurface.Options`, `OptionsOrigin`, `HighlightedOption`): one line under the word with its
+  labels lined up with it, over the line when a page fits only there, as many rows as fit when
+  neither side holds one, and a page that follows the selection; each row is the entry's kind as a
+  letter, its label with what the word matched marked, and its detail, and the selected entry's
+  documentation shows once it is resolved. A press on a row accepts it while the code keeps the
+  keyboard (`Pressable.CanRequestFocus`, Flutter's `canRequestFocus`, in the declarative factory
+  too), and the list is the code input's listbox on the web and options after the code field on
+  Photon. `CodeEditor.Completions` says what an editor completes from: the language's words and the
+  document's unless it says otherwise. Found on the way and fixed: a bounded editor's code was as
+  tall as the file, so a press under it landed nowhere
+  ([#599](https://github.com/eQuantic/equantic-ui/issues/599)) and a short file left a list no room;
+  eqc wrote an enum member named `Value` as a read of an object nothing defines
+  ([#631](https://github.com/eQuantic/equantic-ui/issues/631)); and a helper class that takes the
+  build context named a type its module could not import, read an optional `typeScale` and called
+  `TypeStyle` measures its twin did not have
+  ([#632](https://github.com/eQuantic/equantic-ui/issues/632)). Reported: Photon lays a bordered
+  box's child over its border ([#629](https://github.com/eQuantic/equantic-ui/issues/629)), a dense
+  row's margin takes the presses of the row above it, under a finger and, since a pointer's target
+  keeps a 24dp floor, by 3dp under a pointer ([#630](https://github.com/eQuantic/equantic-ui/issues/630)),
+  and a null-conditional read is
+  `undefined` in the browser ([#633](https://github.com/eQuantic/equantic-ui/issues/633)). The
+  author's review found five defects and two holes in the net, each proved failing without its fix:
+  on Photon a press under a scrolled editor landed in its code, which ran past the view unclipped
+  (fields and sheets do the same, [#635](https://github.com/eQuantic/equantic-ui/issues/635));
+  `aria-expanded` sat on the code input, which ARIA does not allow on a textbox; the first build
+  wiped a provider an app added to the controller itself; a row longer than the list was cut
+  differently on each target; and the whole documentation was measured on every build. Copilot's
+  first round found three more: the documentation ran out of the view where the rows just fitted,
+  and now takes only the room they leave; a list of providers the parent changed in place never
+  handed what it gained; and turning an editor read-only left its list open. Its second round found
+  three in what it had not read before: a press under the code was measured from the last line, so a
+  diff's fillers after it went to the end instead of to that line; a row was cut by UTF-16 units,
+  splitting an emoji and leaving wide characters uncut, and is now cut by the cells the code's grid
+  gives each text element; and the editor took its providers out by equality, so one the app added
+  that equalled the editor's went in its place. Its third round found two more: every class module
+  imported the runtime's `BuildContext`, which an app's own class of that name then declared twice,
+  and the list measured all its entries on every arrow key. Proposed and archived through OpenSpec
+  (`openspec/specs/code-completion`, `openspec/specs/code-editor`).
 
 ## Retired documents
 

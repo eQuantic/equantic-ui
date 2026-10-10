@@ -35,7 +35,7 @@ export class Spreadsheet extends StatefulComponent {
         headerRow.add(Spreadsheet.headerCell('', Spreadsheet.headerWidth, Spreadsheet.headerHeight, theme, false, () => this.setState((($0) => $0.selectAll.bind($0))(this.controller))));
         for (let c = 0; c < document.cols; c++) headerRow.add(this.columnHeader(c, document, theme));
         let windowRows = new Row(0, 'start', 'center', false, null, null, { key: 'window' });
-        let rowHeaders = new Column(0);
+        let rowHeaders = new Column(0, 'start', 'stretch', false, null, null, { width: SizeValue.fixed(Spreadsheet.headerWidth) });
         let grid = new Column(0);
         for (let r = this._first; r <= this._last; r++) {
             rowHeaders.add(this.rowHeader(r, document, theme));
