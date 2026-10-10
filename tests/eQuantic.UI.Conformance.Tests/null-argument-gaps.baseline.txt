@@ -85,12 +85,6 @@ DateOnly.TryParse(String,IFormatProvider,DateOnly&) provider  control  the provi
 DateOnly.TryParse(String,IFormatProvider,DateOnly&) s  control  the provider is written as the name CultureInfo, which the runtime does not export: eqc reads a culture only where it formats or parses a number
 DateOnly.TryParse(String,IFormatProvider,DateTimeStyles,DateOnly&) provider  control  the provider is written as the name CultureInfo, which the runtime does not export: eqc reads a culture only where it formats or parses a number
 DateOnly.TryParse(String,IFormatProvider,DateTimeStyles,DateOnly&) s  control  the provider is written as the name CultureInfo, which the runtime does not export: eqc reads a culture only where it formats or parses a number
-DateTime..ctor(Int32,Int32,Int32,Calendar) calendar  type  the lowering drops the calendar argument, so its null is never read
-DateTime..ctor(Int32,Int32,Int32,Int32,Int32,Int32,Calendar) calendar  type  the lowering drops the calendar argument, so its null is never read
-DateTime..ctor(Int32,Int32,Int32,Int32,Int32,Int32,Int32,Calendar) calendar  type  the lowering drops the calendar argument, so its null is never read
-DateTime..ctor(Int32,Int32,Int32,Int32,Int32,Int32,Int32,Calendar,DateTimeKind) calendar  type  the lowering drops the calendar argument, so its null is never read
-DateTime..ctor(Int32,Int32,Int32,Int32,Int32,Int32,Int32,Int32,Calendar) calendar  type  the lowering drops the calendar argument, so its null is never read
-DateTime..ctor(Int32,Int32,Int32,Int32,Int32,Int32,Int32,Int32,Calendar,DateTimeKind) calendar  type  the lowering drops the calendar argument, so its null is never read
 DateTime.GetDateTimeFormats(IFormatProvider) provider  control  the provider is written as the name CultureInfo, which the runtime does not export: eqc reads a culture only where it formats or parses a number
 DateTime.Parse(String,IFormatProvider) s  type  the provider is written as the name CultureInfo, which the runtime does not export: eqc reads a culture only where it formats or parses a number
 DateTime.Parse(String,IFormatProvider,DateTimeStyles) s  type  the provider is written as the name CultureInfo, which the runtime does not export: eqc reads a culture only where it formats or parses a number
@@ -114,8 +108,6 @@ DateTime.TryParseExact(String,String,IFormatProvider,DateTimeStyles,DateTime&) s
 DateTime.TryParseExact(String,String[],IFormatProvider,DateTimeStyles,DateTime&) formats  control  the provider is written as the name CultureInfo, which the runtime does not export: eqc reads a culture only where it formats or parses a number
 DateTime.TryParseExact(String,String[],IFormatProvider,DateTimeStyles,DateTime&) provider  control  the provider is written as the name CultureInfo, which the runtime does not export: eqc reads a culture only where it formats or parses a number
 DateTime.TryParseExact(String,String[],IFormatProvider,DateTimeStyles,DateTime&) s  control  the provider is written as the name CultureInfo, which the runtime does not export: eqc reads a culture only where it formats or parses a number
-DateTimeOffset..ctor(Int32,Int32,Int32,Int32,Int32,Int32,Int32,Calendar,TimeSpan) calendar  type  the lowering drops the calendar argument, so its null is never read
-DateTimeOffset..ctor(Int32,Int32,Int32,Int32,Int32,Int32,Int32,Int32,Calendar,TimeSpan) calendar  type  the lowering drops the calendar argument, so its null is never read
 DateTimeOffset.Parse(String,IFormatProvider) input  type  the provider is written as the name CultureInfo, which the runtime does not export: eqc reads a culture only where it formats or parses a number
 DateTimeOffset.Parse(String,IFormatProvider,DateTimeStyles) input  type  the provider is written as the name CultureInfo, which the runtime does not export: eqc reads a culture only where it formats or parses a number
 DateTimeOffset.ParseExact(String,String,IFormatProvider) format  control  the provider is written as the name CultureInfo, which the runtime does not export: eqc reads a culture only where it formats or parses a number
@@ -380,47 +372,8 @@ String.LastIndexOf(String,Int32,Int32) value  control  the search does not stop 
 String.LastIndexOfAny(Char[]) anyOf  type  lowered to a loop over the array, which reads a null array through null: refusing it by name is a guard at every call, which is a design decision
 String.ReplaceLineEndings(String) replacementText  type  lowered to String.replace, which takes a null replacement as the text "null": refusing it by name is a guard at every call, which is a design decision
 String.StartsWith(String) value  type  lowered to the string's own search, which reads a null as the text "null": refusing it by name is a guard at every call, which is a design decision
-StringBuilder.AppendFormat(IFormatProvider,CompositeFormat,Object[]) format  type  the provider is written as the name CultureInfo, which the runtime does not export: eqc reads a culture only where it formats or parses a number
-StringBuilder.AppendFormat(IFormatProvider,CompositeFormat,TArg0) format  type  the provider is written as the name CultureInfo, which the runtime does not export: eqc reads a culture only where it formats or parses a number
-StringBuilder.AppendFormat(IFormatProvider,CompositeFormat,TArg0,TArg1) format  type  the provider is written as the name CultureInfo, which the runtime does not export: eqc reads a culture only where it formats or parses a number
-StringBuilder.AppendFormat(IFormatProvider,CompositeFormat,TArg0,TArg1,TArg2) format  type  the provider is written as the name CultureInfo, which the runtime does not export: eqc reads a culture only where it formats or parses a number
-StringBuilder.AppendFormat(IFormatProvider,String,Object) arg0  control  the provider is written as the name CultureInfo, which the runtime does not export: eqc reads a culture only where it formats or parses a number
-StringBuilder.AppendFormat(IFormatProvider,String,Object) format  control  the provider is written as the name CultureInfo, which the runtime does not export: eqc reads a culture only where it formats or parses a number
-StringBuilder.AppendFormat(IFormatProvider,String,Object) provider  control  the provider is written as the name CultureInfo, which the runtime does not export: eqc reads a culture only where it formats or parses a number
-StringBuilder.AppendFormat(IFormatProvider,String,Object,Object) arg0  control  the provider is written as the name CultureInfo, which the runtime does not export: eqc reads a culture only where it formats or parses a number
-StringBuilder.AppendFormat(IFormatProvider,String,Object,Object) arg1  control  the provider is written as the name CultureInfo, which the runtime does not export: eqc reads a culture only where it formats or parses a number
-StringBuilder.AppendFormat(IFormatProvider,String,Object,Object) format  control  the provider is written as the name CultureInfo, which the runtime does not export: eqc reads a culture only where it formats or parses a number
-StringBuilder.AppendFormat(IFormatProvider,String,Object,Object) provider  control  the provider is written as the name CultureInfo, which the runtime does not export: eqc reads a culture only where it formats or parses a number
-StringBuilder.AppendFormat(IFormatProvider,String,Object,Object,Object) arg0  control  the provider is written as the name CultureInfo, which the runtime does not export: eqc reads a culture only where it formats or parses a number
-StringBuilder.AppendFormat(IFormatProvider,String,Object,Object,Object) arg1  control  the provider is written as the name CultureInfo, which the runtime does not export: eqc reads a culture only where it formats or parses a number
-StringBuilder.AppendFormat(IFormatProvider,String,Object,Object,Object) arg2  control  the provider is written as the name CultureInfo, which the runtime does not export: eqc reads a culture only where it formats or parses a number
-StringBuilder.AppendFormat(IFormatProvider,String,Object,Object,Object) format  control  the provider is written as the name CultureInfo, which the runtime does not export: eqc reads a culture only where it formats or parses a number
-StringBuilder.AppendFormat(IFormatProvider,String,Object,Object,Object) provider  control  the provider is written as the name CultureInfo, which the runtime does not export: eqc reads a culture only where it formats or parses a number
-StringBuilder.AppendFormat(IFormatProvider,String,Object[]) args  control  the provider is written as the name CultureInfo, which the runtime does not export: eqc reads a culture only where it formats or parses a number
-StringBuilder.AppendFormat(IFormatProvider,String,Object[]) format  control  the provider is written as the name CultureInfo, which the runtime does not export: eqc reads a culture only where it formats or parses a number
-StringBuilder.AppendFormat(IFormatProvider,String,Object[]) provider  control  the provider is written as the name CultureInfo, which the runtime does not export: eqc reads a culture only where it formats or parses a number
-StringBuilder.AppendFormat(String,Object) arg0  control  #679: the runtime's builder has no appendFormat
-StringBuilder.AppendFormat(String,Object) format  control  #679: the runtime's builder has no appendFormat
-StringBuilder.AppendFormat(String,Object,Object) arg0  control  #679: the runtime's builder has no appendFormat
-StringBuilder.AppendFormat(String,Object,Object) arg1  control  #679: the runtime's builder has no appendFormat
-StringBuilder.AppendFormat(String,Object,Object) format  control  #679: the runtime's builder has no appendFormat
-StringBuilder.AppendFormat(String,Object,Object,Object) arg0  control  #679: the runtime's builder has no appendFormat
-StringBuilder.AppendFormat(String,Object,Object,Object) arg1  control  #679: the runtime's builder has no appendFormat
-StringBuilder.AppendFormat(String,Object,Object,Object) arg2  control  #679: the runtime's builder has no appendFormat
-StringBuilder.AppendFormat(String,Object,Object,Object) format  control  #679: the runtime's builder has no appendFormat
-StringBuilder.AppendFormat(String,Object[]) args  control  #679: the runtime's builder has no appendFormat
-StringBuilder.AppendFormat(String,Object[]) format  control  #679: the runtime's builder has no appendFormat
-StringBuilder.AppendJoin(Char,IEnumerable<T>) values  control  #679: the runtime's builder has no appendJoin
-StringBuilder.AppendJoin(Char,Object[]) values  control  #679: the runtime's builder has no appendJoin
-StringBuilder.AppendJoin(Char,String[]) values  control  #679: the runtime's builder has no appendJoin
-StringBuilder.AppendJoin(String,IEnumerable<T>) separator  control  #679: the runtime's builder has no appendJoin
-StringBuilder.AppendJoin(String,IEnumerable<T>) values  control  #679: the runtime's builder has no appendJoin
-StringBuilder.AppendJoin(String,Object[]) separator  control  #679: the runtime's builder has no appendJoin
-StringBuilder.AppendJoin(String,Object[]) values  control  #679: the runtime's builder has no appendJoin
-StringBuilder.AppendJoin(String,String[]) separator  control  #679: the runtime's builder has no appendJoin
-StringBuilder.AppendJoin(String,String[]) values  control  #679: the runtime's builder has no appendJoin
-StringBuilder.CopyTo(Int32,Char[],Int32,Int32) destination  control  #679: the runtime's builder has no copyTo
-StringBuilder.Equals(StringBuilder) sb  control  #679: the runtime's builder has no equals
+StringBuilder.AppendFormat(IFormatProvider,String,Object[]) args  type  a params array handed whole is spread at the call, so a null one is read through null before the twin sees it
+StringBuilder.AppendFormat(String,Object[]) args  type  a params array handed whole is spread at the call, so a null one is read through null before the twin sees it
 TimeOnly.Parse(String,IFormatProvider) s  type  the provider is written as the name CultureInfo, which the runtime does not export: eqc reads a culture only where it formats or parses a number
 TimeOnly.Parse(String,IFormatProvider,DateTimeStyles) s  type  the provider is written as the name CultureInfo, which the runtime does not export: eqc reads a culture only where it formats or parses a number
 TimeOnly.ToString(String,IFormatProvider) format  control  the provider is written as the name CultureInfo, which the runtime does not export: eqc reads a culture only where it formats or parses a number
