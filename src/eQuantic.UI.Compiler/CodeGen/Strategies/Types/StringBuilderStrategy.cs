@@ -1,6 +1,7 @@
 using System.Linq;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using Microsoft.CodeAnalysis.Operations;
 using eQuantic.UI.Compiler.CodeGen.Strategies.Primitives;
 
 namespace eQuantic.UI.Compiler.CodeGen.Strategies.Types;
@@ -60,7 +61,8 @@ public class StringBuilderStrategy : ConversionStrategyBase
             case InvocationExpressionSyntax { Expression: MemberAccessExpressionSyntax ma } inv:
             {
                 var method = context.SemanticHelper.GetSymbol(ma) as IMethodSymbol;
-                if (method is not null && Uncrossable(method) is { } why) return context.Unhandled(node, why);
+                if (method is not null && Uncrossable(method, context.SemanticHelper.GetOperation(inv) as IInvocationOperation) is { } why)
+                    return context.Unhandled(node, why);
                 var receiver = context.Converter.ConvertExpression(ma.Expression);
                 switch (method)
                 {
@@ -121,16 +123,22 @@ public class StringBuilderStrategy : ConversionStrategyBase
     }
 
     /// <summary>Why a member cannot cross, or null: <c>GetChunks</c>, whose chunks the browser's
-    /// builder does not keep, and an overload that takes a span or a memory, which JavaScript does not
-    /// have. A <c>params</c> span is the values written one by one, which .NET 9 binds
-    /// <c>AppendJoin(",", "a", "b")</c> to.</summary>
-    private static string? Uncrossable(IMethodSymbol method)
+    /// builder does not keep, and a span or a memory handed to an overload, which JavaScript does not
+    /// have. A <c>params</c> span the call expands is the values written one by one, which .NET 9 binds
+    /// <c>AppendJoin(",", "a", "b")</c> to, and crosses; a span passed whole to it does not.</summary>
+    private static string? Uncrossable(IMethodSymbol method, IInvocationOperation? operation)
     {
         if (method.Name == "GetChunks") return "StringBuilder.GetChunks, whose chunks the browser's builder does not keep";
-        return method.Parameters.Any(parameter => !parameter.IsParams
-            && parameter.Type is INamedTypeSymbol { Name: "Span" or "ReadOnlySpan" or "Memory" or "ReadOnlyMemory" })
-            ? $"StringBuilder.{method.Name} over a span or a memory, which JavaScript does not have"
-            : null;
+        foreach (var parameter in method.Parameters)
+        {
+            if (parameter.Type is not INamedTypeSymbol { Name: "Span" or "ReadOnlySpan" or "Memory" or "ReadOnlyMemory" })
+                continue;
+            var argument = operation?.Arguments.FirstOrDefault(a => SymbolEqualityComparer.Default.Equals(a.Parameter, parameter));
+            if (parameter.IsParams && argument?.ArgumentKind is ArgumentKind.ParamArray or ArgumentKind.ParamCollection)
+                continue;
+            return $"StringBuilder.{method.Name} over a span or a memory, which JavaScript does not have";
+        }
+        return null;
     }
 
     /// <summary>Whether an indexer is the builder's <c>Chars</c>, which the runtime's builder carries

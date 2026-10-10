@@ -255,6 +255,14 @@ describe('StringBuilder — capacity, indexer, length, equality and copy', () =>
       'Insufficient memory to continue the execution of the program.',
     );
     expect(refusal(() => stringBuilder().append('x', 2147483647))).toBe('Array dimensions exceeded supported range.');
+    // A capacity .NET allocates whole is refused past an array's largest length, wherever it is set.
+    expect(refusal(() => stringBuilder(2147483647))).toBe('Array dimensions exceeded supported range.');
+    expect(refusal(() => stringBuilder().ensureCapacity(2147483647))).toBe('Array dimensions exceeded supported range.');
+    expect(
+      refusal(() => {
+        stringBuilder().capacity = 2147483647;
+      }),
+    ).toBe('Array dimensions exceeded supported range.');
   });
 });
 

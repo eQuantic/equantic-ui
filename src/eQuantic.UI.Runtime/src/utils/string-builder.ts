@@ -48,6 +48,13 @@ function outOfMemory(message: string): Error {
   return exception('System.OutOfMemoryException', message);
 }
 
+/** The size of a chunk .NET allocates, refused as .NET refuses an array longer than it can be: a
+ *  capacity the browser only records, but .NET allocates whole. */
+function allocated(size: number): number {
+  if (size > ARRAY_MAX) throw outOfMemory(ARRAY_DIMENSIONS);
+  return size;
+}
+
 /** `text` `count` times, and .NET's OutOfMemoryException where the browser's string cannot hold it,
  *  in place of JavaScript's RangeError, which no catch of a .NET exception would see. */
 function repeated(text: string, count: number): string {
@@ -88,7 +95,7 @@ export class StringBuilder {
     this.value = initial;
     this.max = maxCapacity;
     const size = Math.max(capacity === 0 ? Math.min(DEFAULT_CAPACITY, maxCapacity) : capacity, initial.length);
-    this.chunks = [{ size, used: initial.length }];
+    this.chunks = [{ size: allocated(size), used: initial.length }];
   }
 
   get length(): number {
@@ -120,7 +127,7 @@ export class StringBuilder {
     if (value > this.max) throw outOfRange('value', 'Capacity exceeds maximum capacity.');
     if (value < this.value.length) throw outOfRange('value', 'capacity was less than the current size.');
     const last = this.chunks[this.chunks.length - 1];
-    last.size = value - (this.value.length - last.used);
+    last.size = allocated(value - (this.value.length - last.used));
   }
 
   /** `MaxCapacity`. */

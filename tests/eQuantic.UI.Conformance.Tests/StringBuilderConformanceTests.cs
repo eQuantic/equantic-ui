@@ -166,6 +166,9 @@ public class StringBuilderConformanceTests
     [InlineData("var a = new char[1]; try { new StringBuilder(\"12\").CopyTo(5, a, 0, 2); return \"no\"; } catch (ArgumentException e) { return e.Message; }")] // "Either offset did not refer to a position…"
     [InlineData("try { var b = new StringBuilder(\"abc\", 2, 5, 0); return \"no\"; } catch (ArgumentOutOfRangeException e) { return e.Message; }")]         // "Index and length must refer to a location within the string. (Parameter 'length')"
     [InlineData("try { new StringBuilder().Append('x', int.MaxValue); return \"no\"; } catch (OutOfMemoryException e) { return e.Message; }")]            // "Array dimensions exceeded supported range."
+    [InlineData("try { var b = new StringBuilder(int.MaxValue); return \"no\"; } catch (OutOfMemoryException e) { return e.Message; }")]             // "Array dimensions exceeded supported range."
+    [InlineData("try { new StringBuilder().EnsureCapacity(int.MaxValue); return \"no\"; } catch (OutOfMemoryException e) { return e.Message; }")]   // "Array dimensions exceeded supported range."
+    [InlineData("try { var b = new StringBuilder(); b.Capacity = int.MaxValue; return \"no\"; } catch (OutOfMemoryException e) { return e.Message; }")] // "Array dimensions exceeded supported range."
     public void ARefusalOfAMemberThePageReaches_IsDotNets(string statements)
     {
         Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");

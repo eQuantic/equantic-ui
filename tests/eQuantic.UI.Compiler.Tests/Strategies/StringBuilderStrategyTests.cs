@@ -68,6 +68,7 @@ public class StringBuilderStrategyTests
     [Theory]
     [InlineData("new System.Text.StringBuilder().Append(System.Globalization.CultureInfo.InvariantCulture, $\"x{Id}\")", "EQ2108")]
     [InlineData("new System.Text.StringBuilder().GetChunks()", "")]
+    [InlineData("new System.Text.StringBuilder().AppendJoin(\",\", (System.ReadOnlySpan<object?>)[1, \"a\"])", "EQ1004")]
     public void WhatCannotCross_IsRefused(string code, string id)
     {
         var diagnostics = TestHelper.DiagnosticsFor(code);
