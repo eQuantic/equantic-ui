@@ -7,12 +7,14 @@
  * BigInt tick count, so arithmetic is exact (no float drift), `ToString()` matches .NET, and
  * `DateTime - DateTime` yields a `TimeSpan` to the tick.
  *
- * The transpiler emits `dateTime(...)` / `timeSpan(...)` for `new DateTime(...)` / `new TimeSpan(...)`
- * and routes operators (`+ - < > <= >= == !=`) to the methods here.
+ * The transpiler emits a factory per constructor shape for `new DateTime(...)` and
+ * `new DateTimeOffset(...)` (`dateTime.of`, `dateTime.fromTicks`, …), each argument in its parameter's
+ * place, and routes operators (`+ - < > <= >= == !=`) to the methods here.
  *
  * Scope: construction, calendar/component properties, Add* arithmetic, comparison, parameterless
- * `ToString()` (+ a common-pattern `format`), parse of ISO-8601 and the invariant default. Kind
- * (Utc/Local/Unspecified) is not tracked — values are treated as wall-clock, matching `Unspecified`.
+ * `ToString()` (+ a common-pattern `format`), parse of ISO-8601 and the invariant default. A
+ * `DateTime` carries its `Kind` (Utc/Local/Unspecified) as .NET's does, and the local time is the
+ * time zone the browser runs in, read through `Date`.
  */
 
 import { activePattern } from './culture';
@@ -38,6 +40,88 @@ const MAX_DAY_NUMBER = 3_652_058;
 
 // Days from 0001-01-01 to 1970-01-01 (Hinnant's algorithm is epoch-relative to 1970).
 const DAYS_0001_TO_1970 = 719_162;
+/** The ticks of 1970-01-01, where JavaScript's `Date` counts its milliseconds from. */
+const UNIX_EPOCH_TICKS = BigInt(DAYS_0001_TO_1970) * TICKS_PER_DAY;
+
+/**
+ * `DateTimeKind`, held as the browser holds a member of any enum that is not [Flags]: its twin name.
+ * A value no member names is held as its number, as `(DateTimeKind)7` crosses, and refused (#606).
+ */
+export type DateTimeKind = 'unspecified' | 'utc' | 'local';
+
+const KINDS: readonly unknown[] = ['unspecified', 'utc', 'local'];
+
+/** A kind that is no `DateTimeKind` member, refused in .NET's words. */
+function checkedKind(kind: unknown): DateTimeKind {
+  if (!KINDS.includes(kind)) throw exception('System.ArgumentException', "Invalid DateTimeKind value. (Parameter 'kind')");
+  return kind as DateTimeKind;
+}
+
+/**
+ * The offset from UTC the browser's time zone has at an instant, in ticks: what `Date` reads from the
+ * zone, daylight saving included. .NET reads the machine's zone the same way, through
+ * `TimeZoneInfo.Local` (#626).
+ */
+function localOffsetAt(utcTicks: bigint): bigint {
+  const ms = Number((utcTicks - UNIX_EPOCH_TICKS) / TICKS_PER_MILLISECOND);
+  return BigInt(Math.round(-new Date(ms).getTimezoneOffset() * 60_000)) * TICKS_PER_MILLISECOND;
+}
+
+/**
+ * The offset the browser's time zone has for a clock time it shows, as .NET's
+ * `TimeZoneInfo.GetUtcOffset` reads a local time: the one offset that names that clock time, or, for
+ * a clock time a transition skips or repeats, the standard one, the smaller of the two around it.
+ * A repeated clock time marked as its daylight occurrence (`daylight`, see {@link localOf}) takes
+ * the daylight one, the larger. The formatter's `U` reads a clock time the same way (`localOffset`
+ * in format.ts, #472).
+ */
+function localOffsetFor(localTicks: bigint, daylight = false): bigint {
+  const before = localOffsetAt(localTicks - TICKS_PER_DAY);
+  const after = localOffsetAt(localTicks + TICKS_PER_DAY);
+  const naming = [before, after].filter((offset) => localOffsetAt(localTicks - offset) === offset);
+  if (naming.length === 1) return naming[0];
+  const standard = before < after ? before : after;
+  return daylight && naming.length === 2 ? (before < after ? after : before) : standard;
+}
+
+/**
+ * How far east of UTC a date's clock time is, in ticks, as its kind reads it: nothing for a UTC time,
+ * and the browser's zone's offset for any other, the daylight one for a repeated hour marked so. A
+ * clock time of no kind is read as local, as .NET's `ToUniversalTime` and its `z` read it. The
+ * formatter's `o`, `K`, `z` and `U` write from it.
+ */
+export function utcOffsetOf(value: DateTime): bigint {
+  return value.kind === 'utc' ? 0n : localOffsetFor(value.ticks, value.ambiguousDaylight);
+}
+
+/** The same offset, in milliseconds, for a clock time held as a native Date's UTC fields (`wall` is
+ * their time value), which the formatter reads a native Date as. */
+export function wallOffsetMs(wall: number): number {
+  return Number(localOffsetFor(UNIX_EPOCH_TICKS + BigInt(wall) * TICKS_PER_MILLISECOND) / TICKS_PER_MILLISECOND);
+}
+
+/**
+ * The local clock time an instant shows, of the local kind, marked where it is the daylight
+ * occurrence of a clock time the zone repeats, as .NET marks it beside the kind: read back without
+ * the mark, a repeated hour is its standard occurrence, and `ToUniversalTime` landed an hour off the
+ * instant it came from (#606).
+ */
+function localOf(utcTicks: bigint): DateTime {
+  const offset = localOffsetAt(utcTicks);
+  const local = clampedTicks(utcTicks + offset);
+  return new DateTime(local, 'local', offset !== localOffsetFor(local));
+}
+
+/** Ticks clamped to the calendar, as .NET's `ToLocalTime` and `ToUniversalTime` clamp a conversion
+ * that runs past `MinValue` or `MaxValue`. */
+function clampedTicks(ticks: bigint): bigint {
+  return ticks < 0n ? 0n : ticks > MAX_DATETIME_TICKS ? MAX_DATETIME_TICKS : ticks;
+}
+
+/** The instant now, in UTC ticks, read once for every member that needs it. */
+function utcTicksNow(): bigint {
+  return UNIX_EPOCH_TICKS + BigInt(Date.now()) * TICKS_PER_MILLISECOND;
+}
 
 function idiv(a: number, b: number): number {
   return Math.trunc(a / b);
@@ -359,7 +443,25 @@ function calendarTicks(ticks: bigint, parameter = 'value'): bigint {
 }
 
 export class DateTime {
-  constructor(readonly ticks: bigint) {}
+  /**
+   * @param ticks the clock time, in ticks from 0001-01-01.
+   * @param kind where the clock time is read: `Kind`, which a conversion reads and equality, ordering
+   * and the hash leave out, as .NET's do (#606).
+   * @param ambiguousDaylight whether a local clock time made from an instant is the daylight
+   * occurrence of an hour the zone repeats, which .NET keeps beside the kind so the way back is that
+   * instant ({@link localOf}). Arithmetic and `Date` keep it, `SpecifyKind` drops it, and equality,
+   * ordering and the hash leave it out, as .NET's do.
+   */
+  constructor(
+    readonly ticks: bigint,
+    readonly kind: DateTimeKind = 'unspecified',
+    readonly ambiguousDaylight = false,
+  ) {}
+
+  /** The same kind, and its mark, at other ticks, as .NET's arithmetic keeps them. */
+  private at(ticks: bigint): DateTime {
+    return new DateTime(ticks, this.kind, this.ambiguousDaylight);
+  }
 
   private get totalDays(): number {
     return Number(this.ticks / TICKS_PER_DAY);
@@ -389,6 +491,14 @@ export class DateTime {
   get millisecond(): number {
     return Number((this.ticks / TICKS_PER_MILLISECOND) % 1000n);
   }
+  /** `Microsecond`: the microseconds past the millisecond, which no member of the twin read (#606). */
+  get microsecond(): number {
+    return Number((this.ticks / TICKS_PER_MICROSECOND) % 1000n);
+  }
+  /** `Nanosecond`: the nanoseconds past the microsecond, in steps of a tick's hundred. */
+  get nanosecond(): number {
+    return Number(this.ticks % TICKS_PER_MICROSECOND) * 100;
+  }
   /** Sunday = 0 (matches System.DayOfWeek). 0001-01-01 is a Monday. */
   get dayOfWeek(): number {
     return Number((BigInt(this.totalDays) + 1n) % 7n);
@@ -398,14 +508,31 @@ export class DateTime {
     return this.totalDays - daysFromCivil(year, 1, 1) + 1;
   }
   get date(): DateTime {
-    return new DateTime(BigInt(this.totalDays) * TICKS_PER_DAY);
+    return this.at(BigInt(this.totalDays) * TICKS_PER_DAY);
   }
   get timeOfDay(): TimeSpan {
     return new TimeSpan(this.ticks % TICKS_PER_DAY);
   }
 
+  /**
+   * `ToLocalTime()`: the clock time of this instant in the browser's time zone. A local time is
+   * itself, and a time of no kind is read as UTC, as .NET reads it.
+   */
+  toLocalTime(): DateTime {
+    if (this.kind === 'local') return this;
+    return localOf(this.ticks);
+  }
+  /**
+   * `ToUniversalTime()`: the UTC clock time of this instant. A UTC time is itself, and a time of no
+   * kind is read as local, as .NET reads it.
+   */
+  toUniversalTime(): DateTime {
+    if (this.kind === 'utc') return this;
+    return new DateTime(clampedTicks(this.ticks - localOffsetFor(this.ticks, this.ambiguousDaylight)), 'utc');
+  }
+
   addTicks(t: bigint): DateTime {
-    return new DateTime(calendarTicks(this.ticks + t));
+    return this.at(calendarTicks(this.ticks + t));
   }
   // A fractional count lands on the tick .NET 7 and later land on: see unitTicks.
   addDays(value: number): DateTime {
@@ -443,7 +570,7 @@ export class DateTime {
     if (year < 1 || year > 9999) throw exception('System.ArgumentOutOfRangeException', unrepresentable(parameter));
     const day = Math.min(c.day, daysInMonth(year, month));
     const datePart = BigInt(daysFromCivil(year, month, day)) * TICKS_PER_DAY;
-    return new DateTime(datePart + (this.ticks % TICKS_PER_DAY));
+    return this.at(datePart + (this.ticks % TICKS_PER_DAY));
   }
   /** `AddYears`: refused past 10000 years either way, and where the result leaves the calendar in
    * its own parameter's name. */
@@ -458,11 +585,11 @@ export class DateTime {
   }
   /** `Add(TimeSpan)`, and the `+` operator, which names its parameter `t`: refused off the calendar. */
   add(span: TimeSpan, parameter = 'value'): DateTime {
-    return new DateTime(calendarTicks(this.ticks + span.ticks, parameter));
+    return this.at(calendarTicks(this.ticks + span.ticks, parameter));
   }
   /** `Subtract(TimeSpan)`, and the `-` operator, which names its parameter `t`. */
   subtract(span: TimeSpan, parameter = 'value'): DateTime {
-    return new DateTime(calendarTicks(this.ticks - span.ticks, parameter));
+    return this.at(calendarTicks(this.ticks - span.ticks, parameter));
   }
 
   compareTo(other: DateTime): number {
@@ -505,46 +632,88 @@ export class DateTime {
     return pattern.replace(/yyyy|yy|MM|M|dd|d|HH|H|mm|m|ss|s/g, (t) => map[t]);
   }
 
-  /** ISO-8601 (what System.Text.Json reads). Fractional ticks appended only when non-zero. */
+  /**
+   * ISO-8601, as System.Text.Json writes a `DateTime`: fractional ticks only when non-zero, and the
+   * kind as its suffix, `Z` for UTC and the browser's offset for a local time, where every kind was
+   * written as a clock time of no kind.
+   */
   toJSON(): string {
     const c = this.civil();
     let s = `${pad(c.year, 4)}-${pad(c.month, 2)}-${pad(c.day, 2)}T${pad(this.hour, 2)}:${pad(this.minute, 2)}:${pad(this.second, 2)}`;
     const frac = this.ticks % TICKS_PER_SECOND;
     if (frac > 0n) s += '.' + frac.toString().padStart(7, '0').replace(/0+$/, '');
+    if (this.kind === 'utc') return s + 'Z';
+    if (this.kind === 'local') return s + offsetString(localOffsetFor(this.ticks, this.ambiguousDaylight));
     return s;
   }
 }
 
+/**
+ * `DateTime`'s constructors and statics. The compiler names the constructor a `new DateTime(...)`
+ * binds and writes each argument in its parameter's place, so no count of arguments has to stand for
+ * an overload: the factory took its components by how many it got, and every overload past the
+ * second read its arguments in the wrong places (#606).
+ */
 export interface DateTimeFactory {
-  (ticks: bigint): DateTime;
-  (year: number, month: number, day: number): DateTime;
-  (
+  /** `new DateTime(year, month, day[, hour, minute, second[, millisecond[, microsecond]]][, kind])`. */
+  of(
     year: number,
     month: number,
     day: number,
-    hour: number,
-    minute: number,
-    second: number,
+    hour?: number,
+    minute?: number,
+    second?: number,
+    millisecond?: number,
+    microsecond?: number,
+    kind?: DateTimeKind,
   ): DateTime;
-  (
-    year: number,
-    month: number,
-    day: number,
-    hour: number,
-    minute: number,
-    second: number,
-    millisecond: number,
-  ): DateTime;
+  /** `new DateTime(ticks[, kind])`. */
+  fromTicks(ticks: bigint | number, kind?: DateTimeKind): DateTime;
+  /** `new DateTime(date, time[, kind])`. */
+  fromDateAndTime(date: DateOnly, time: TimeOnly, kind?: DateTimeKind): DateTime;
+  /** `DateTime.SpecifyKind(value, kind)`: the same clock time, of another kind. */
+  specifyKind(value: DateTime, kind: DateTimeKind): DateTime;
   now(): DateTime;
   utcNow(): DateTime;
   today(): DateTime;
   minValue(): DateTime;
   maxValue(): DateTime;
   parse(text: string): DateTime;
+  /** A `DateTime` as System.Text.Json reads it from the wire: see {@link dateTimeFromJson}. */
+  fromJson(text: string): DateTime;
   daysInMonth(year: number, month: number): number;
   isLeapYear(year: number): boolean;
 }
 
+const BAD_DATE = 'Year, Month, and Day parameters describe an un-representable DateTime.';
+const BAD_TIME = 'Hour, Minute, and Second parameters describe an un-representable DateTime.';
+const BAD_TICKS = "Ticks must be between DateTime.MinValue.Ticks and DateTime.MaxValue.Ticks. (Parameter 'ticks')";
+
+/** A date's ticks, or .NET's refusal of a year, a month or a day outside the calendar. */
+function dateTicks(year: number, month: number, day: number): bigint {
+  if (year < 1 || year > 9999 || month < 1 || month > 12 || day < 1 || day > daysInMonth(year, month)) {
+    throw exception('System.ArgumentOutOfRangeException', BAD_DATE);
+  }
+  return BigInt(daysFromCivil(year, month, day)) * TICKS_PER_DAY;
+}
+
+/** A clock time's ticks, or .NET's refusal of an hour, a minute or a second outside the day. */
+function timeTicks(hour: number, minute: number, second: number): bigint {
+  if (hour < 0 || hour > 23 || minute < 0 || minute > 59 || second < 0 || second > 59) {
+    throw exception('System.ArgumentOutOfRangeException', BAD_TIME);
+  }
+  return BigInt(hour) * TICKS_PER_HOUR + BigInt(minute) * TICKS_PER_MINUTE + BigInt(second) * TICKS_PER_SECOND;
+}
+
+/** A millisecond or a microsecond, 0 to 999, or .NET's refusal naming the parameter. */
+function thousandth(value: number, parameter: string, ticksPerUnit: bigint): bigint {
+  if (value < 0 || value > 999) {
+    throw exception('System.ArgumentOutOfRangeException', `Valid values are between 0 and 999, inclusive. (Parameter '${parameter}')`);
+  }
+  return BigInt(value) * ticksPerUnit;
+}
+
+/** The components of a clock time, unchecked: what a parsed text and the offsets compute with. */
 function fromComponents(
   year: number,
   month: number,
@@ -563,59 +732,132 @@ function fromComponents(
   return new DateTime(ticks);
 }
 
-/** Mirrors C# `new DateTime(...)` overloads (dispatched by arity) plus the static members. */
-function dateTimeImpl(...args: number[] | [bigint]): DateTime {
-  if (args.length === 1 && typeof args[0] === 'bigint') return new DateTime(args[0]);
-  const n = args as number[];
-  return fromComponents(n[0], n[1], n[2], n[3] ?? 0, n[4] ?? 0, n[5] ?? 0, n[6] ?? 0);
+/** Ticks the calendar holds, or .NET's refusal of a count outside it. */
+function calendarTicksOf(ticks: bigint | number): bigint {
+  const value = asBigInt(ticks);
+  if (value < 0n || value > MAX_DATETIME_TICKS) throw exception('System.ArgumentOutOfRangeException', BAD_TICKS);
+  return value;
 }
 
-function fromJsDate(d: Date, utc: boolean): DateTime {
-  return utc
-    ? fromComponents(
-        d.getUTCFullYear(),
-        d.getUTCMonth() + 1,
-        d.getUTCDate(),
-        d.getUTCHours(),
-        d.getUTCMinutes(),
-        d.getUTCSeconds(),
-        d.getUTCMilliseconds(),
-      )
-    : fromComponents(
-        d.getFullYear(),
-        d.getMonth() + 1,
-        d.getDate(),
-        d.getHours(),
-        d.getMinutes(),
-        d.getSeconds(),
-        d.getMilliseconds(),
-      );
+export const dateTime: DateTimeFactory = {
+  // In the order .NET checks them: the millisecond, the kind, the date, the time, and the
+  // microsecond, which its constructor adds to what the shorter one built.
+  of(year, month, day, hour = 0, minute = 0, second = 0, millisecond = 0, microsecond = 0, kind = 'unspecified') {
+    const ms = thousandth(millisecond, 'millisecond', TICKS_PER_MILLISECOND);
+    const checked = checkedKind(kind);
+    const ticks = dateTicks(year, month, day) + timeTicks(hour, minute, second) + ms;
+    return new DateTime(ticks + thousandth(microsecond, 'microsecond', TICKS_PER_MICROSECOND), checked);
+  },
+  fromTicks(ticks, kind = 'unspecified') {
+    const value = calendarTicksOf(ticks);
+    return new DateTime(value, checkedKind(kind));
+  },
+  fromDateAndTime(date, time, kind = 'unspecified') {
+    return new DateTime(BigInt(date.dayNumber) * TICKS_PER_DAY + time.ticks, checkedKind(kind));
+  },
+  specifyKind(value, kind) {
+    return new DateTime(value.ticks, checkedKind(kind));
+  },
+  /** The browser's clock time now, local: `Date` reads both from one instant. */
+  now: () => localOf(utcTicksNow()),
+  utcNow: () => new DateTime(utcTicksNow(), 'utc'),
+  today: () => dateTime.now().date,
+  minValue: () => new DateTime(0n),
+  maxValue: () => new DateTime(MAX_DATETIME_TICKS),
+  daysInMonth,
+  isLeapYear,
+  parse: (text) => parseDateTime(text),
+  fromJson: (text) => dateTimeFromJson(text),
+};
+
+/**
+ * What reading ISO-8601 text found: a clock time (the wire form, `yyyy-MM-dd[Thh:mm:ss[.fffffff]]`)
+ * with the zone written after it (`Z`, an offset in ticks, or nothing); `'date'` or `'time'` for text of
+ * that form whose date or clock does not exist, which .NET refuses in different words; or null for text
+ * of another form. Nothing may follow the zone, and an offset past fourteen hours or with a minute past
+ * 59 is no zone (found by review, #606). A component out of range normalized into the next day or
+ * month, so `2026-02-29` read as March 1 (found by review, #606).
+ */
+type IsoRead = { ticks: bigint; zone: 'utc' | bigint | null } | 'date' | 'time' | null;
+
+function readIso(text: string): IsoRead {
+  // The trailing white space is cut before the pattern reads the text, and the white space before a
+  // zone is only read when a zone follows it: two runs of `\s*` either side of an optional zone made
+  // a line of spaces cost the square of its length (CodeQL).
+  const m = /^(\d{4})-(\d{2})-(\d{2})(?:[T ](\d{2}):(\d{2}):(\d{2})(?:\.(\d+))?)?(?:\s*(Z|[+-]\d{2}:?\d{2}))?$/.exec(
+    text.trimEnd(),
+  );
+  if (!m) return null;
+  const [year, month, day, hour, minute, second] = [+m[1], +m[2], +m[3], +(m[4] ?? 0), +(m[5] ?? 0), +(m[6] ?? 0)];
+  if (year < 1 || month < 1 || month > 12 || day < 1 || day > daysInMonth(year, month)) return 'date';
+  if (hour > 23 || minute > 59 || second > 59) return 'time';
+  const frac = m[7] ? BigInt(m[7].padEnd(7, '0').slice(0, 7)) : 0n;
+  const ticks = fromComponents(year, month, day, hour, minute, second).ticks + frac;
+  if (m[8] === undefined) return { ticks, zone: null };
+  if (m[8] === 'Z') return { ticks, zone: 'utc' };
+  const digits = m[8].slice(1).replace(':', '');
+  const hours = Number(digits.slice(0, 2));
+  const minutes = Number(digits.slice(2));
+  if (minutes > 59 || hours * 60 + minutes > 14 * 60) return null;
+  const offset = BigInt(hours) * TICKS_PER_HOUR + BigInt(minutes) * TICKS_PER_MINUTE;
+  return { ticks, zone: m[8][0] === '-' ? -offset : offset };
 }
 
-export const dateTime = dateTimeImpl as DateTimeFactory;
-dateTime.now = () => fromJsDate(new Date(), false);
-dateTime.utcNow = () => fromJsDate(new Date(), true);
-dateTime.today = () => dateTime.now().date;
-dateTime.minValue = () => new DateTime(0n);
-dateTime.maxValue = () => new DateTime(MAX_DATETIME_TICKS);
-dateTime.daysInMonth = daysInMonth;
-dateTime.isLeapYear = isLeapYear;
-dateTime.parse = (text: string): DateTime => {
+/** The local clock time of the instant a clock time written with a zone names, of the local kind. */
+function localFrom(ticks: bigint, zone: 'utc' | bigint): DateTime {
+  return localOf(zone === 'utc' ? ticks : ticks - zone);
+}
+
+/**
+ * `DateTime.Parse`: a time zone written in the text moves the value to the browser's local time, of
+ * the local kind, as .NET's Parse does, where the zone was dropped and the clock time kept.
+ */
+function parseDateTime(text: string): DateTime {
   if (text == null) throw exception('System.ArgumentNullException', NULL_S);
   const t = text.trim();
-  // ISO-8601: yyyy-MM-dd[Thh:mm:ss[.fffffff]] (the wire form).
-  let m = /^(\d{4})-(\d{2})-(\d{2})(?:[T ](\d{2}):(\d{2}):(\d{2})(?:\.(\d+))?)?/.exec(t);
-  if (m) {
-    const frac = m[7] ? BigInt(m[7].padEnd(7, '0').slice(0, 7)) : 0n;
-    return new DateTime(
-      fromComponents(+m[1], +m[2], +m[3], +(m[4] ?? 0), +(m[5] ?? 0), +(m[6] ?? 0)).ticks + frac,
-    );
+  const iso = readIso(t);
+  if (iso === 'date') throw unrecognized(text);
+  if (iso === 'time') throw unsupported(text);
+  if (iso) return iso.zone === null ? new DateTime(iso.ticks) : localFrom(iso.ticks, iso.zone);
+  // The invariant culture's own: MM/dd/yyyy[ HH:mm:ss], and nothing after it, where trailing text was
+  // read past.
+  const m = /^(\d{1,2})\/(\d{1,2})\/(\d{4})(?:\s+(\d{1,2}):(\d{2}):(\d{2}))?$/.exec(t);
+  if (!m) throw unrecognized(text);
+  const [month, day, year, hour, minute, second] = [+m[1], +m[2], +m[3], +(m[4] ?? 0), +(m[5] ?? 0), +(m[6] ?? 0)];
+  if (year < 1 || month < 1 || month > 12 || day < 1 || day > daysInMonth(year, month)) throw unrecognized(text);
+  if (hour > 23 || minute > 59 || second > 59) throw unsupported(text);
+  return fromComponents(year, month, day, hour, minute, second);
+}
+
+/** .NET's refusal of text that names no date it can read. */
+function unrecognized(text: string): Error {
+  return exception('System.FormatException', `String '${text}' was not recognized as a valid DateTime.`);
+}
+
+/** .NET's refusal of text whose clock does not exist: an hour of 24, a minute or a second of 60. */
+function unsupported(text: string): Error {
+  return exception(
+    'System.FormatException',
+    `The DateTime represented by the string '${text}' is not supported in calendar 'System.Globalization.GregorianCalendar'.`,
+  );
+}
+
+/**
+ * A `DateTime` as System.Text.Json reads one, what the server renders and a Server Action answers: `Z`
+ * is a UTC time, an offset is moved to the browser's local time, and no zone is a clock time of no
+ * kind. Hydration dropped the zone, so a UTC value came back of no kind and `ToUniversalTime()` moved
+ * it again.
+ */
+function dateTimeFromJson(text: string): DateTime {
+  const iso = readIso(text.trim());
+  // System.Text.Json reads ISO-8601 and nothing else: the parser's own forms, `01/15/2024 09:30:00`
+  // among them, were accepted (found by review, #606).
+  if (iso === null || typeof iso === 'string') {
+    throw exception('System.Text.Json.JsonException', 'The JSON value could not be converted to System.DateTime.');
   }
-  // Invariant default: MM/dd/yyyy[ HH:mm:ss]
-  m = /^(\d{1,2})\/(\d{1,2})\/(\d{4})(?:\s+(\d{1,2}):(\d{2}):(\d{2}))?/.exec(t);
-  if (m) return fromComponents(+m[3], +m[1], +m[2], +(m[4] ?? 0), +(m[5] ?? 0), +(m[6] ?? 0));
-  throw exception('System.FormatException', `Unrecognized DateTime format: '${text}'`);
-};
+  if (iso.zone === null) return new DateTime(iso.ticks);
+  return iso.zone === 'utc' ? new DateTime(iso.ticks, 'utc') : localFrom(iso.ticks, iso.zone);
+}
 
 // ---------------------------------------------------------------------------------------------
 // DateOnly (.NET 6+) — a calendar date with no time-of-day.
@@ -901,8 +1143,6 @@ timeOnly.parse = (text: string): TimeOnly => {
 // DateTimeOffset — a wall-clock DateTime plus an offset from UTC. Compared/equated by the instant.
 // ---------------------------------------------------------------------------------------------
 
-const UNIX_EPOCH_TICKS = BigInt(daysFromCivil(1970, 1, 1)) * TICKS_PER_DAY;
-
 function offsetString(offsetTicks: bigint): string {
   const neg = offsetTicks < 0n;
   const abs = neg ? -offsetTicks : offsetTicks;
@@ -945,6 +1185,13 @@ export class DateTimeOffset {
   get millisecond(): number {
     return Number((this.localTicks / TICKS_PER_MILLISECOND) % 1000n);
   }
+  /** `Microsecond` and `Nanosecond`, read from the clock time as a `DateTime`'s are (#606). */
+  get microsecond(): number {
+    return Number((this.localTicks / TICKS_PER_MICROSECOND) % 1000n);
+  }
+  get nanosecond(): number {
+    return Number(this.localTicks % TICKS_PER_MICROSECOND) * 100;
+  }
   get dayOfWeek(): number {
     return Number((BigInt(Number(this.localTicks / TICKS_PER_DAY)) + 1n) % 7n);
   }
@@ -957,11 +1204,16 @@ export class DateTimeOffset {
   get dateTime(): DateTime {
     return new DateTime(this.localTicks);
   }
+  /**
+   * `LocalDateTime`: this instant's clock time in the browser's time zone, of the local kind, where it
+   * answered this value's own clock time (#626). Clamped at the calendar's ends, as .NET clamps it.
+   */
   get localDateTime(): DateTime {
-    return new DateTime(this.localTicks);
+    return localOf(this.utcTicks);
   }
+  /** `UtcDateTime`: the UTC clock time, of the UTC kind. */
   get utcDateTime(): DateTime {
-    return new DateTime(this.utcTicks);
+    return new DateTime(this.utcTicks, 'utc');
   }
   get date(): DateTime {
     return new DateTime(BigInt(Number(this.localTicks / TICKS_PER_DAY)) * TICKS_PER_DAY);
@@ -1008,6 +1260,16 @@ export class DateTimeOffset {
   }
   addYears(years: number): DateTimeOffset {
     return this.atClock(new DateTime(this.localTicks).addYears(years).ticks);
+  }
+
+  /**
+   * `ToLocalTime()`: the same instant at the browser's offset for it, which no member answered: a
+   * TypeError at run time (#626). A clock time past the calendar's ends is clamped and keeps the
+   * offset, as .NET's is.
+   */
+  toLocalTime(): DateTimeOffset {
+    const offset = localOffsetAt(this.utcTicks);
+    return new DateTimeOffset(clampedTicks(this.utcTicks + offset), offset);
   }
 
   /** Same instant, expressed at a different offset. */
@@ -1065,20 +1327,33 @@ export class DateTimeOffset {
   }
 }
 
+/**
+ * `DateTimeOffset`'s constructors and statics, one factory per constructor shape, each argument in its
+ * parameter's place (#606): the factory took its components by how many it got, so a millisecond was
+ * read as the offset.
+ */
 export interface DateTimeOffsetFactory {
-  (dateTime: DateTime, offset: TimeSpan): DateTimeOffset;
-  (ticks: bigint, offset: TimeSpan): DateTimeOffset;
-  (
+  /** `new DateTimeOffset(year, month, day, hour, minute, second[, millisecond[, microsecond]], offset)`. */
+  of(
     year: number,
     month: number,
     day: number,
     hour: number,
     minute: number,
     second: number,
+    millisecond: number,
+    microsecond: number,
     offset: TimeSpan,
   ): DateTimeOffset;
+  /** `new DateTimeOffset(ticks, offset)`. */
+  fromTicks(ticks: bigint | number, offset: TimeSpan): DateTimeOffset;
+  /** `new DateTimeOffset(dateTime[, offset])`: without an offset, the browser's for a time that is not UTC. */
+  fromDateTime(dateTime: DateTime, offset?: TimeSpan): DateTimeOffset;
+  /** `new DateTimeOffset(date, time, offset)`. */
+  fromDateAndTime(date: DateOnly, time: TimeOnly, offset: TimeSpan): DateTimeOffset;
   fromUnixTimeSeconds(seconds: bigint | number): DateTimeOffset;
   fromUnixTimeMilliseconds(ms: bigint | number): DateTimeOffset;
+  /** `DateTimeOffset.Now`: the instant now, at the browser's offset for it. */
   now(): DateTimeOffset;
   utcNow(): DateTimeOffset;
   /** `DateTimeOffset.MinValue`, which is also `default(DateTimeOffset)`: 0001-01-01 at +00:00. */
@@ -1088,40 +1363,84 @@ export interface DateTimeOffsetFactory {
   parse(text: string): DateTimeOffset;
 }
 
-function dateTimeOffsetImpl(...args: unknown[]): DateTimeOffset {
-  if (args.length === 2 && args[0] instanceof DateTime)
-    return new DateTimeOffset(args[0].ticks, (args[1] as TimeSpan).ticks);
-  if (args.length === 2 && typeof args[0] === 'bigint')
-    return new DateTimeOffset(args[0], (args[1] as TimeSpan).ticks);
-  if (args.length === 1 && args[0] instanceof DateTime)
-    return new DateTimeOffset(args[0].ticks, 0n); // Unspecified → UTC
-  const n = args as unknown[];
-  const local = fromComponents(
-    n[0] as number,
-    n[1] as number,
-    n[2] as number,
-    n[3] as number,
-    n[4] as number,
-    n[5] as number,
-  );
-  return new DateTimeOffset(local.ticks, (n[6] as TimeSpan).ticks);
+/** The furthest an offset reaches from UTC, as .NET bounds it. */
+const MAX_OFFSET_TICKS = 14n * TICKS_PER_HOUR;
+
+/** An offset in whole minutes within fourteen hours of UTC, or .NET's refusal of it. */
+function checkedOffset(offset: TimeSpan): bigint {
+  const ticks = offset.ticks;
+  if (ticks % TICKS_PER_MINUTE !== 0n) {
+    throw exception('System.ArgumentException', "Offset must be specified in whole minutes. (Parameter 'offset')");
+  }
+  if (ticks < -MAX_OFFSET_TICKS || ticks > MAX_OFFSET_TICKS) {
+    throw exception('System.ArgumentOutOfRangeException', "Offset must be within plus or minus 14 hours. (Parameter 'offset')");
+  }
+  return ticks;
 }
 
-export const dateTimeOffset = dateTimeOffsetImpl as DateTimeOffsetFactory;
+/** A clock time at an offset whose UTC time the calendar holds, or .NET's refusal of it. */
+function atOffset(localTicks: bigint, offsetTicks: bigint): DateTimeOffset {
+  const utc = localTicks - offsetTicks;
+  if (utc < 0n || utc > MAX_DATETIME_TICKS) throw exception('System.ArgumentOutOfRangeException', UTC_OUT_OF_RANGE);
+  return new DateTimeOffset(localTicks, offsetTicks);
+}
+
 /** A `long` count kept EXACT — these two take a long in .NET, so a bigint must not round-trip
  * through a double on its way to ticks. */
 function asBigInt(value: bigint | number): bigint {
   return typeof value === 'bigint' ? value : BigInt(Math.trunc(value));
 }
-dateTimeOffset.fromUnixTimeSeconds = (s) =>
-  new DateTimeOffset(UNIX_EPOCH_TICKS + asBigInt(s) * TICKS_PER_SECOND, 0n);
-dateTimeOffset.fromUnixTimeMilliseconds = (ms) =>
-  new DateTimeOffset(UNIX_EPOCH_TICKS + asBigInt(ms) * TICKS_PER_MILLISECOND, 0n);
-dateTimeOffset.now = () => new DateTimeOffset(dateTime.now().ticks, 0n);
-dateTimeOffset.utcNow = () => new DateTimeOffset(dateTime.utcNow().ticks, 0n);
-dateTimeOffset.minValue = () => new DateTimeOffset(0n, 0n);
-dateTimeOffset.maxValue = () => new DateTimeOffset(MAX_DATETIME_TICKS, 0n);
-dateTimeOffset.parse = (text: string): DateTimeOffset => {
+
+export const dateTimeOffset: DateTimeOffsetFactory = {
+  // In the order .NET checks them: the offset, the clock time's own components as its DateTime's
+  // constructor checks them, the UTC time, and the microsecond its constructor adds last.
+  of(year, month, day, hour, minute, second, millisecond, microsecond, offset) {
+    const offsetTicks = checkedOffset(offset);
+    const clock = dateTime.of(year, month, day, hour, minute, second, millisecond);
+    const value = atOffset(clock.ticks, offsetTicks);
+    return atOffset(value.localTicks + thousandth(microsecond, 'microsecond', TICKS_PER_MICROSECOND), offsetTicks);
+  },
+  fromTicks(ticks, offset) {
+    const offsetTicks = checkedOffset(offset);
+    return atOffset(dateTime.fromTicks(ticks).ticks, offsetTicks);
+  },
+  // A local time must name the browser's offset for it, and a UTC time offset zero; without an
+  // offset, a time that is not UTC takes the browser's, as .NET reads Unspecified as local.
+  fromDateTime(value, offset) {
+    if (offset === undefined) {
+      const ticks = value.kind === 'utc' ? 0n : localOffsetFor(value.ticks, value.ambiguousDaylight);
+      return atOffset(value.ticks, checkedOffset(new TimeSpan(ticks)));
+    }
+    if (value.kind === 'local' && offset.ticks !== localOffsetFor(value.ticks, value.ambiguousDaylight)) {
+      throw exception(
+        'System.ArgumentException',
+        "The UTC Offset of the local dateTime parameter does not match the offset argument. (Parameter 'offset')",
+      );
+    }
+    if (value.kind === 'utc' && offset.ticks !== 0n) {
+      throw exception('System.ArgumentException', "The UTC Offset for Utc DateTime instances must be 0. (Parameter 'offset')");
+    }
+    return atOffset(value.ticks, checkedOffset(offset));
+  },
+  fromDateAndTime(date, time, offset) {
+    return dateTimeOffset.fromDateTime(dateTime.fromDateAndTime(date, time), offset);
+  },
+  fromUnixTimeSeconds: (s) => new DateTimeOffset(UNIX_EPOCH_TICKS + asBigInt(s) * TICKS_PER_SECOND, 0n),
+  fromUnixTimeMilliseconds: (ms) => new DateTimeOffset(UNIX_EPOCH_TICKS + asBigInt(ms) * TICKS_PER_MILLISECOND, 0n),
+  // One instant read for both the clock time and the offset: it carried offset zero with the local
+  // clock time, so it named the wrong instant anywhere east or west of UTC (#626).
+  now() {
+    const utc = utcTicksNow();
+    const offset = localOffsetAt(utc);
+    return new DateTimeOffset(utc + offset, offset);
+  },
+  utcNow: () => new DateTimeOffset(utcTicksNow(), 0n),
+  minValue: () => new DateTimeOffset(0n, 0n),
+  maxValue: () => new DateTimeOffset(MAX_DATETIME_TICKS, 0n),
+  parse: (text) => parseDateTimeOffset(text),
+};
+
+function parseDateTimeOffset(text: string): DateTimeOffset {
   if (text == null) throw exception('System.ArgumentNullException', NULL_INPUT);
   const t = text.trim();
   // yyyy-MM-ddTHH:mm:ss[.fff][(+|-)HH:mm | Z]
@@ -1141,4 +1460,4 @@ dateTimeOffset.parse = (text: string): DateTimeOffset => {
       (neg ? -1n : 1n);
   }
   return new DateTimeOffset(local, offsetTicks);
-};
+}
