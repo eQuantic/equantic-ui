@@ -15,6 +15,12 @@ public sealed class Grid : VisualNode, IEnumerable<VisualNode>
 
     public Grid(IReadOnlyList<GridTrack> columns, float gap = 0, float? rowGap = null)
     {
+        // An auto-fill track decides the column count from the width; beside another track it would
+        // need a solver to share the width with it, and no handoff asks for that.
+        if (columns.Count > 1 && columns.Any(c => c.Repeats))
+            throw new ArgumentException(
+                "An auto-fill track (GridTrack.AutoFill) is the grid's whole column list; it cannot stand beside another track.",
+                nameof(columns));
         Columns = columns;
         Gap = gap;
         RowGap = rowGap;
