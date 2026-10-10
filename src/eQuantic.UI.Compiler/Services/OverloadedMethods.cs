@@ -464,7 +464,7 @@ internal static class OverloadedMethods
             {
                 Refuse($"'{declared.Name}' takes the default {owner}, which lowers to `{name}`, and so does {earlier}. "
                     + "C# reaches a default through its interface, and the twin holds it as a member of its own, one "
-                    + $"per name, so it would keep one of them. Declare {Simple(implementation.Name)} in "
+                    + $"per name, so it would keep one of them. Declare {implementation.DeclaredName()} in "
                     + $"'{declared.Name}', or give one of them its own name.");
                 continue;
             }
@@ -495,11 +495,10 @@ internal static class OverloadedMethods
     /// interface member it answers (none for a member a class declares, or for a private helper).</summary>
     private readonly record struct Holder(string Owner, bool FromInterface, ISymbol? Contract);
 
-    /// <summary>An explicit implementation is named after its interface (`IShape.Describe`), and
-    /// lowers under the member's own name.</summary>
-    private static string Simple(string name) => name[(name.LastIndexOf('.') + 1)..];
-
-    private static string Lowered(ISymbol member) => Simple(member.Name).ToCamelCase();
+    /// <summary>The name a member is written under in its twin (<see cref="MemberTwinNameExtensions"/>): an
+    /// explicit implementation, which Roslyn names after its interface (`IShape.Describe`), under the
+    /// member's own name, and a field in its slot.</summary>
+    private static string Lowered(ISymbol member) => member.MemberTwinName();
 
     /// <summary>How a member reads in a message: an explicit implementation by its interface and its
     /// own name (<c>IOne.M</c>), which Roslyn names by the interface's full name.</summary>
@@ -511,7 +510,7 @@ internal static class OverloadedMethods
     };
 
     private static string Owner(ISymbol implementation) =>
-        $"'{implementation.ContainingType.Name}.{Simple(implementation.Name)}'";
+        $"'{implementation.ContainingType.Name}.{implementation.DeclaredName()}'";
 
     /// <summary>
     /// The members a twin writes on an instance or its prototype: fields, events, properties and
