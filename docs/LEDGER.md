@@ -1720,6 +1720,16 @@ record of a release, the wiki's Upgrading page is the distillate.
   ([#623](https://github.com/eQuantic/equantic-ui/issues/623)). Measured in
   Chromium on a served page and after a client navigation. Proposed and archived through OpenSpec
   (`layout`, `interaction-states`, `gestures`, `hit-targets`, `hydration-contract`).
+- **2026-10-07 · A page requires its authorization**: `[Authorize]` held on Server Actions only, so
+  a page's route served anyone and its `IServerPrefetch` ran for an anonymous visitor, writing its
+  fields into the HTML ([#673](https://github.com/eQuantic/equantic-ui/issues/673), asked by Cura for
+  its backoffice). A `[Page]` and a `MapPage<T>` route carry the page's `[Authorize]` and
+  `[AllowAnonymous]` as endpoint metadata, so ASP.NET Core's own authorization decides: a challenge
+  for an anonymous full load, 403 without the policy, and the page is never built for a refused
+  request. A refused client navigation is a marked 401 or 403, which the router answers with a full
+  load, and the runtime and the page modules serve anyone, so a sign-in page comes alive under a
+  fallback policy; an asset route serves a file name inside its own directory and nothing else.
+  Proposed and archived through OpenSpec (`openspec/specs/page-routes`).
 - **2026-10-07 · An exception's message is composed as .NET composes it**: a framework exception's
   arguments were read by position, so `new ArgumentNullException(nameof(x)).Message` was the
   parameter's name, a parameter's name never reached a message and a constructor with no message gave
@@ -1754,6 +1764,37 @@ record of a release, the wiki's Upgrading page is the distillate.
   encoder writes and which, listed first, answered every browser with a JPEG labelled AVIF; and
   writes sRGB untagged, where a tagged result carried a 472-byte profile. Proposed and archived
   through OpenSpec (`openspec/specs/image-optimization`).
+- **2026-10-07 · A date is built by its constructor and read in the browser's zone**: the runtime's
+  `dateTime` and `dateTimeOffset` factories took a constructor's components by how many arguments
+  they got, so a kind was read as the millisecond, a `DateTimeOffset`'s millisecond as its offset, and
+  a microsecond was dropped ([#606](https://github.com/eQuantic/equantic-ui/issues/606)). eqc reads
+  the bound constructor and calls one factory per shape, each argument in its parameter's place, a
+  `Calendar` overload refused at the build (EQ1004), and the factories refuse what .NET refuses in its
+  words. A `DateTime` carries its `Kind`. `DateTimeOffset.Now` carried offset zero with the local
+  clock, `LocalDateTime` read the value's own clock and `ToLocalTime()` did not exist
+  ([#626](https://github.com/eQuantic/equantic-ui/issues/626), from the Falei.pt app): each reads
+  the browser's time zone now, proved on both sides in three zones set through `TZ`. A local time made
+  from an instant keeps which of two repeated hours it is, as .NET keeps it beside the kind, and a
+  date's text writes its kind (`o`, `K`, `z`, `U`), where `o` wrote no zone and `U` moved a UTC time
+  twice. The ISO reader is linear, where 50,000 spaces took 1.5 s. 117 of the first 125 new cases
+  failed on the base, and 29 of the review's 50 on the commit before them. Proposed and archived
+  through OpenSpec (`openspec/specs/runtime-dates`).
+- **2026-10-07 · A collection crosses and compares as .NET's does**: a `Queue`, a `Stack`, a
+  `LinkedList` and a `SortedSet` had no `toJSON`, so a Server Action argument was written as the
+  class's fields or its node graph ([#597](https://github.com/eQuantic/equantic-ui/issues/597)); each
+  writes the array .NET writes now. A dictionary's `Keys` and `Values` were arrays copied when read,
+  `EnsureCapacity` answered the capacity asked for and `TrimExcess` did nothing
+  ([#463](https://github.com/eQuantic/equantic-ui/issues/463)): the views are live, through a Proxy
+  over a snapshot taken again only after a change, and the capacity is .NET's prime. A record's twin
+  compared an array member element by element, where .NET compares it by reference
+  ([#554](https://github.com/eQuantic/equantic-ui/issues/554)): each member is compared by its type's
+  default comparer now (`ElementEquality.Compare`), and so is a tuple's `Equals`: an interface no tuple
+  implements, `IReadOnlyList<int>` first among them, by reference or its own `Equals`, a tuple of
+  another arity unequal and a null pair equal only to another. A view hands back each element as it
+  is, a delegate included, and a copy is sized for what it copies. A LINQ query reading its whole
+  source before its first callback is [#685](https://github.com/eQuantic/equantic-ui/issues/685).
+  Proposed and archived through OpenSpec (`openspec/specs/runtime-collections`, `runtime-dictionaries`,
+  `transpiler-records`).
 
 ## Retired documents
 
