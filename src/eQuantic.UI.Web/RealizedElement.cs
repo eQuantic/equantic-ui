@@ -17,8 +17,8 @@ internal sealed class RealizedElement : HtmlElement, IPseudoStyled, IAdaptiveGat
     /// the atomizer pass (pseudo-classes need the ATOMIC pipeline — inline styles can't express them).</summary>
     public List<(string Pseudo, string Prop, string Value)> PseudoDeclarations { get; } = new();
 
-    /// <summary>Pinned.ScrolledStyle: declarations gated by the root's <c>eq-scrolled</c> class
-    /// (the runtime scroll listener) — converted by the atomizer like pseudo variants.</summary>
+    /// <summary>Pinned.ScrolledStyle: declarations gated by the header's own <c>data-eq-scrolled</c>
+    /// (the runtime scroll listener sets it) — converted by the atomizer like pseudo variants.</summary>
     public List<(string Prop, string Value)> ScrolledDeclarations { get; } = new();
 
     /// <summary>Attributes emitted VERBATIM (no data- prefix) — SVG needs viewBox/fill/d as-is.</summary>

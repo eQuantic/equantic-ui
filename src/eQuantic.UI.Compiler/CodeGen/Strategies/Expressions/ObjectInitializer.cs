@@ -90,8 +90,9 @@ internal static class ObjectInitializer
     /// <summary>The local the object lives in where no temporary can be declared.</summary>
     private const string Target = "$o";
 
-    /// <summary>A member's name on the twin.</summary>
-    private static string Member(ExpressionSyntax name) => ((IdentifierNameSyntax)name).Identifier.ValueText.ToCamelCase();
+    /// <summary>The member an initializer's entry writes on the twin: a field's slot, which moves a case apart
+    /// from another member (FieldSlotExtensions, #396), or the member's twin name.</summary>
+    private static string Member(IdentifierNameSyntax name, ConversionContext context) => name.MemberSlot(context);
 
     /// <summary>The expressions an initializer applies to the object, one per element, in its order,
     /// each with its parts converted where it stands.</summary>
@@ -131,11 +132,11 @@ internal static class ObjectInitializer
                     // `Name = { … }`: the initializer applied to what the member holds, read again for
                     // each element, as C# reads it.
                     case AssignmentExpressionSyntax { Left: IdentifierNameSyntax name, Right: InitializerExpressionSyntax nested }:
-                        Collect(JsExpr.Member(target, Member(name)), context.SemanticHelper.GetType(name), nested);
+                        Collect(JsExpr.Member(target, Member(name, context)), context.SemanticHelper.GetType(name), nested);
                         break;
 
                     case AssignmentExpressionSyntax { Left: IdentifierNameSyntax name } assignment:
-                        _elements.Add(JsExpr.Binary(JsExpr.Member(target, Member(name)), "=", Part(assignment.Right)));
+                        _elements.Add(JsExpr.Binary(JsExpr.Member(target, Member(name, context)), "=", Part(assignment.Right)));
                         break;
 
                     // An element of a collection initializer: its Add, with one argument or with several.

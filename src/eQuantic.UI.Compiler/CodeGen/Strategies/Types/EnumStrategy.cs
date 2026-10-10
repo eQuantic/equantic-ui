@@ -18,10 +18,6 @@ public class EnumStrategy : IConversionStrategy
             return false;
 
         var member = memberAccess.Name.Identifier.Text;
-        
-        // Exclude Nullable properties
-        if (member == "Value" || member == "HasValue")
-            return false;
 
         // Semantic check. When the semantic model resolved a symbol, TRUST it: it's an enum member only
         // if the symbol is an enum field. Anything else with the same PascalCase.Upper shape — a property
@@ -32,6 +28,12 @@ public class EnumStrategy : IConversionStrategy
         {
             return symbol.Kind == SymbolKind.Field && symbol.ContainingType?.TypeKind == TypeKind.Enum;
         }
+
+        // Nullable's two members, known by their names where the model cannot say. Read before the
+        // model was asked, they made an enum member called Value or HasValue a plain member access:
+        // CodeCompletionKind.Value reached the browser as a property of an object nothing defines.
+        if (member == "Value" || member == "HasValue")
+            return false;
 
         // Heuristic fallback — ONLY where guessing is honest (see ConversionContext.CanGuess).
         // Under an authoritative model, an in-tree PascalCase access that did not bind must NOT

@@ -273,6 +273,12 @@ public class FlutterParityPinTests
             && Has("Adjustable") && Has("Navigable"),
         ["RawGestureDetector"] = () => Nothing("RawGestureDetector"),
         ["FocusNode"] = () => HasMember("Pressable", "InitialFocus") && Nothing("FocusNode", "FocusScope"),
+        // The vocabulary's own word, and a realizer that honours it.
+        ["InkWell.canRequestFocus"] = () => HasMember("Pressable", "CanRequestFocus")
+            && WebRealizerCode().Contains("CanRequestFocus"),
+        // What a code surface offers, drawn by the surface itself: no overlay type to follow a field.
+        ["RawAutocomplete"] = () => HasMember("CodeSurface", "Options") && HasMember("CodeSurface", "OptionsOrigin")
+            && HasMember("CodeSurface", "HighlightedOption") && Nothing("RawAutocomplete", "Autocomplete"),
         ["Shortcuts"] = () => Has("Shortcut") && Has("KeyChord") && HasMember("Shortcut", "FocusScoped"),
         // The controllers are shared; the protocol that drives them is a HOST method.
         ["TextEditingController"] = () => Has("CodeEditorController") && Has("SheetController")

@@ -54,6 +54,26 @@ public sealed class CodeSurface : SingleChildNode
     /// </summary>
     public ColorToken? CaretColor { get; init; }
 
+    /// <summary>
+    /// What the surface OFFERS at its caret, a completion list: drawn over the code and its caret at
+    /// <see cref="OptionsOrigin"/>, in the surface's own coordinates (the ones the model's rectangles
+    /// are in), so it moves with the code as the code scrolls. The surface owns it, rather than a
+    /// node beside it, because its INPUT is what assistive technology asks: on the web the input says
+    /// it completes from a list and, while options show, names it and points at
+    /// <see cref="HighlightedOption"/>. Null offers nothing.
+    /// </summary>
+    public VisualNode? Options { get; init; }
+
+    /// <summary>Where <see cref="Options"/> stands: its top left, in the surface's coordinates.</summary>
+    public Point OptionsOrigin { get; init; }
+
+    /// <summary>
+    /// Which option the keyboard is on, counted in tree order over the pressables inside
+    /// <see cref="Options"/> whose role is <see cref="PressableRole.Option"/>, or -1. The web lowers it
+    /// as the input's <c>aria-activedescendant</c>, and Photon announces that row selected.
+    /// </summary>
+    public int HighlightedOption { get; init; } = -1;
+
     public sealed override TResult Accept<TState, TResult>(
         IVisualNodeVisitor<TState, TResult> visitor, TState state) => visitor.Visit(this, state);
 }

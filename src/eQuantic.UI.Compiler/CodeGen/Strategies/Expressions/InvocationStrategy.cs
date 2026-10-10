@@ -192,7 +192,10 @@ public class InvocationStrategy : IExpressionIrStrategy
                 return extension;
 
             ReportIfUntranslatable(symbol, methodName, invocation, context);
-            return JsExpr.Call(JsExpr.Member(callerIr, methodName.ToCamelCase()), argIrs);
+            // The member called is named as a member access names it: a delegate FIELD in its slot, which
+            // moves a case apart from a method (#396), so `other.check(n)` beside `Check(int)` called the
+            // method, and a method under its twin name.
+            return JsExpr.Call(JsExpr.Member(callerIr, genAccess.Name.MemberSlot(context)), argIrs);
         }
 
         // Invoking a DELEGATE VALUE by bare name (`configure(node)`, `OnSelect(i)`): the invocation
@@ -212,7 +215,9 @@ public class InvocationStrategy : IExpressionIrStrategy
             // refuses as a reserved word, beside the `package$` it had declared.
             if (delegateTarget.IsInScopeBinding())
                 return JsExpr.Callish($"{delegateIdentifier.Identifier.ValueText.ToJsIdentifier()}({args})");
-            return JsExpr.Callish($"this.{delegateIdentifier.Identifier.Text.ToCamelCase()}{ProvenNotNull(delegateTarget, delegateIdentifier, context)}({args})");
+            // A delegate FIELD is called in its slot, which moves a case apart from a method (#396):
+            // `check(n)` inside `Check(int n)` called the method itself, and never returned.
+            return JsExpr.Callish($"this.{delegateIdentifier.MemberSlot(context)}{ProvenNotNull(delegateTarget, delegateIdentifier, context)}({args})");
         }
 
         // A delegate VALUE reached any other way (`handlers[0](x)`, `Make()(x)`, `(f)(x)`) is called

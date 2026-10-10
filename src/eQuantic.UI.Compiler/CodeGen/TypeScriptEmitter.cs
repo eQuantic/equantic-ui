@@ -1822,8 +1822,11 @@ public class TypeScriptEmitter
             // A twin that keeps a store (PropertyStore, #591) writes it in JSON under its property's
             // name, read through the property, as System.Text.Json writes the property: JSON.stringify
             // writes an object's own properties, so a server action received `$name` and bound nothing.
-            // A derived class inherits it.
-            if (!asStatic && cls.Members.OfType<PropertyDeclarationSyntax>().Any(PropertyStore.KeepsAStore))
+            // So does one whose field moved a case apart from a member (`value$`, #396), whose own key
+            // is storage no server reads. A derived class inherits it.
+            if (!asStatic && (cls.Members.OfType<PropertyDeclarationSyntax>().Any(PropertyStore.KeepsAStore)
+                    || cls.Members.OfType<FieldDeclarationSyntax>().SelectMany(field => field.Declaration.Variables)
+                        .Any(variable => SlotOf(variable, ModelFor(cls)).EndsWith('$'))))
             {
                 _converter.UsedHelpers.Add(Eq.Import);
                 c.Member(JsClassMember.Method("", "toJSON", "", "", "",
@@ -2166,7 +2169,7 @@ public class TypeScriptEmitter
             {
                 case FieldDeclarationSyntax field:
                     foreach (var variable in field.Declaration.Variables)
-                        state.Add(new(variable.Identifier.Text.ToCamelCase(), DeclaredType(field.Declaration.Type), variable));
+                        state.Add(new(SlotOf(variable, model), DeclaredType(field.Declaration.Type), variable));
                     break;
                 case EventFieldDeclarationSyntax handler:
                     foreach (var variable in handler.Declaration.Variables)
@@ -2180,6 +2183,11 @@ public class TypeScriptEmitter
         }
         return state;
     }
+
+    /// <summary>The slot an instance field's variable lives in (<see cref="Extensions.FieldSlotExtensions"/>):
+    /// its twin name, or, a case apart from another member, the name with a <c>$</c> after it.</summary>
+    private static string SlotOf(VariableDeclaratorSyntax variable, SemanticModel? model) =>
+        model?.GetDeclaredSymbol(variable) is IFieldSymbol field ? field.TwinSlot() : variable.Identifier.Text.ToCamelCase();
 
     /// <summary>
     /// Whether <paramref name="method"/> reads <paramref name="parameter"/>. Asked of the model where
@@ -2769,9 +2777,12 @@ public class TypeScriptEmitter
             "Guid" => "string",
             "Task" => "void",
             // C# names the build argument `ComponentContext`; the runtime declares one interface
-            // for it, under the name the DOM side has always used. Emitting the C# name asked for
-            // a second, incompatible type with the same meaning.
-            "ComponentContext" or "BuildContext" => "RenderContext",
+            // for it, and exports it to modules as `BuildContext`, which a component's `build` is
+            // annotated with. Emitting the C# name asked for a second, incompatible type with the
+            // same meaning, and the interface's own name is exported to apps alone: a helper class
+            // of the shared library that took the context annotated it with a name its module
+            // could not import.
+            "ComponentContext" or "BuildContext" => "BuildContext",
             _ => baseType
         };
 

@@ -59,6 +59,9 @@ export function outOfRange(parameter: string, message: string, actual?: number):
   return exception('System.ArgumentOutOfRangeException', `${message} (Parameter '${parameter}')${value}`);
 }
 
+/** .NET's text for a start and a length that reach past the end of the text they read. */
+export const INDEX_AND_LENGTH = 'Index and length must refer to a location within the string.';
+
 /** .NET's text for an index or a range that reaches past the end of what it reads. */
 export const INDEX_AT_MOST_LENGTH =
   'Index was out of range. Must be non-negative and less than or equal to the size of the collection.';
@@ -386,11 +389,6 @@ export function chars(
   if (length < 0) {
     throw exception('System.ArgumentOutOfRangeException', "Length cannot be less than zero. (Parameter 'length')");
   }
-  if (startIndex > items.length - length) {
-    throw exception(
-      'System.ArgumentOutOfRangeException',
-      "Index and length must refer to a location within the string. (Parameter 'startIndex')",
-    );
-  }
+  if (startIndex > items.length - length) throw outOfRange('startIndex', INDEX_AND_LENGTH);
   return items.slice(startIndex, startIndex + length);
 }

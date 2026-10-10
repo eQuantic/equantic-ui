@@ -188,6 +188,13 @@ public class HtmlStyle
     public string? OverflowAnchor { get; set; }
     public string? Transition { get; set; }
     public string? Transform { get; set; }
+
+    /// <summary>
+    /// The individual <c>translate</c> property, which CSS applies TOGETHER with
+    /// <see cref="Transform"/> rather than in its place. A draggable's offset rides it, so the box it
+    /// moves keeps its own transform and its hover's (#511).
+    /// </summary>
+    public string? Translate { get; set; }
     public string? Animation { get; set; }
     public string? AnimationDelay { get; set; }
     public string? WhiteSpace { get; set; }
@@ -310,6 +317,7 @@ public class HtmlStyle
         AddProperty(properties, "overflow-y", OverflowY);
         AddProperty(properties, "transition", Transition);
         AddProperty(properties, "transform", Transform);
+        AddProperty(properties, "translate", Translate);
         AddProperty(properties, "animation", Animation);
         AddProperty(properties, "animation-delay", AnimationDelay);
         AddProperty(properties, "white-space", WhiteSpace);

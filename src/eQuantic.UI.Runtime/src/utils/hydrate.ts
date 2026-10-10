@@ -1,6 +1,17 @@
 import { dec, Decimal } from './decimal';
 import { long } from './long';
-import { dateTime, timeSpan, dateOnly, timeOnly, dateTimeOffset } from './datetime';
+import {
+  dateTime,
+  timeSpan,
+  dateOnly,
+  timeOnly,
+  dateTimeOffset,
+  DateOnly,
+  DateTime,
+  DateTimeOffset,
+  TimeOnly,
+  TimeSpan,
+} from './datetime';
 import { adoptMember } from './adopt-member';
 import { Dictionary } from './dictionary';
 import { SortedMap, SortedSet } from './sorted';
@@ -241,6 +252,22 @@ function scalar(incoming: unknown, tag: HydrationTag): unknown {
     case 'dateTimeOffset':
       return typeof incoming === 'string' ? dateTimeOffset.parse(incoming) : incoming;
   }
+}
+
+/**
+ * The tag of a compat scalar, from the value the runtime holds: the inverse of {@link scalar}, beside
+ * it so the two read one table. A `long` is a BigInt, and a `decimal` and the dates are classes;
+ * `'single'` has no type of its own here, a float being a number, so no value answers it.
+ */
+export function scalarTagOf(value: unknown): HydrationTag | undefined {
+  if (typeof value === 'bigint') return 'long';
+  if (value instanceof Decimal) return 'decimal';
+  if (value instanceof DateTime) return 'dateTime';
+  if (value instanceof TimeSpan) return 'timeSpan';
+  if (value instanceof DateOnly) return 'dateOnly';
+  if (value instanceof TimeOnly) return 'timeOnly';
+  if (value instanceof DateTimeOffset) return 'dateTimeOffset';
+  return undefined;
 }
 
 /**

@@ -219,11 +219,43 @@ internal sealed partial class WebLoweringVisitor
         };
         if (surface.Label is { Length: > 0 } label) input["aria-label"] = label;
         if (surface.Autofocus) input["autofocus"] = "";
+
+        // What the surface OFFERS at its caret (TS twin: lowerCodeSurface): over the code and the
+        // caret, at its origin in the surface's coordinates, as the input's listbox. The rows are
+        // options, numbered as LowerAnchored numbers a listbox's rows, and the input names the list and
+        // points at the one the keyboard is on. An open list never comes from the server in practice
+        // (it opens as someone types), so its id hashes its text, as LowerAnchored's does, and need not
+        // match the client's spelling.
+        RealizedElement? list = null;
+        if (surface.Options is { } options && Lower(options, null) is { } offered)
+        {
+            var listId = $"eq-options-{StyleAtomizer.Hash(TextContentOf(options))}";
+            list = new RealizedElement("div")
+            {
+                Id = listId,
+                Role = "listbox",
+                RawAttributes = new Dictionary<string, string>
+                {
+                    ["style"] = $"position:absolute;left:{TokenCss.Px(surface.OptionsOrigin.X)};"
+                        + $"top:{TokenCss.Px(surface.OptionsOrigin.Y)};",
+                },
+            };
+            list.Children.Add(offered);
+            var next = 0;
+            NumberItemRows(list, listId, ref next);
+            // No aria-expanded: ARIA allows it on a combobox and not on the textbox a textarea is,
+            // and the list it controls and the option it points at already say that one is showing.
+            input["aria-autocomplete"] = "list";
+            input["aria-controls"] = listId;
+            if (surface.HighlightedOption >= 0) input["aria-activedescendant"] = $"{listId}-{surface.HighlightedOption}";
+        }
+
         element.Children.Add(new RealizedElement("textarea")
         {
             ClassName = "eq-code-input",
             RawAttributes = input,
         });
+        if (list is not null) element.Children.Add(list);
         return element;
     }
 
@@ -254,6 +286,15 @@ internal sealed partial class WebLoweringVisitor
             InnerHtml = text.Spans is null ? text.Content : null,
             Style = new HtmlStyle
             {
+                // A BLOCK, wherever it sits: a Text is never inline in the vocabulary (inline runs
+                // live in Spans). As an inline span inside a block parent (a Box, a Flexible, a
+                // Link, a Pressable) it sat on the parent's line box, whose strut is the body font
+                // at line-height normal, so a 10/15 label in a padded pill measured 26.5px where its
+                // parts add up to 21 (#495). A flex or grid item is a block either way. As a block
+                // it takes the width its parent gives, as Flutter's Text does under a tight width:
+                // its alignment and its gradient read across that width. The multi-line clamp
+                // below replaces it with the box the clamp needs.
+                Display = Display.Block,
                 Color = TokenCss.Value(text.Color ?? _context.Theme.TextPrimary),
                 // Line alignment inside the paragraph: wrapped lines of a centered headline must
                 // center too — container alignment only places the block.
@@ -338,17 +379,10 @@ internal sealed partial class WebLoweringVisitor
             element.Style!.WhiteSpace = mono ? "pre" : "nowrap";
             element.Style.Overflow = "hidden";
             element.Style.TextOverflow = "ellipsis";
-            // BLOCK, or the other two do nothing. A Text lowers to a `span`, and `overflow` and
-            // `text-overflow` are inert on a non-replaced INLINE box — so a squeezed single-line
-            // Text painted its full width straight out of its parent instead of ellipsising inside
-            // it: in a topbar that ran the placeholder over the ⌘K chip and off the screen. The
-            // multi-line clamp below already sets a display for exactly this reason.
-            //
-            // Block rather than inline-block: block takes the width the parent allows, which is
-            // what gives overflow something to clip against. Inline-block sizes to its content and
-            // would spill again. Inside a flex row — where most single-line Texts live — the two
-            // are identical, because a flex item is blockified either way.
-            element.Style.Display = Display.Block;
+            // The other two need the BLOCK every Text is: `overflow` and `text-overflow` are inert
+            // on a non-replaced inline box, so a squeezed single-line Text painted its full width
+            // out of its parent instead of ellipsising inside it, and inline-block would size to
+            // its content and spill again.
         }
         // MULTI-LINE clamp: the paragraph occupies exactly N lines and ends in an ellipsis — what
         // keeps a grid of cards on one baseline when the copy is not the site's to control (a

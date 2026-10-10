@@ -14,16 +14,29 @@
     </PropertyGroup>
 
     <!--
-        Everything in eqc's output folder is written by THIS build, so none of it is taken from
-        Content. The static web assets pipeline registers what it finds under wwwroot while the
-        project EVALUATES, and the build then rewrites the folder: a file registered and then
-        deleted failed the next publish's compression. It happened to the maps a Release build
-        removes (#352), and to every shared chunk bun renames when a component two pages share
-        changes (#361), in the most ordinary sequence there is: edit, then publish.
+        Everything in eqc's output folder is written by THIS build: it is build output, as bin and
+        obj are, and it is declared where .NET declares that, in DefaultItemExcludes. Three readers
+        take it from there.
+        - The default Content glob. The static web assets pipeline registers what it finds under
+          wwwroot while the project EVALUATES, and the build then rewrites the folder: a file
+          registered and then deleted failed the next publish's compression. It happened to the
+          maps a Release build removes (#352), and to every shared chunk bun renames when a
+          component two pages share changes (#361), in the most ordinary sequence there is: edit,
+          then publish.
+        - The publish's pre-publish generated content, which takes what a build wrote under wwwroot
+          and is not Content, maps included.
+        - dotnet watch, which ignores a change that matches it. Without it, every module, map or
+          chunk eqc wrote again under dotnet watch was a file added to the project, and dotnet
+          watch stopped on the first one (#627, dotnet/sdk#55335).
+        An app that includes wwwroot by hand reaches the folder through no default glob, so the
+        folder also leaves Content after the project's own items, as it always has.
         `_EQuanticOutputAsStaticWebAssets` below defines the folder from what is on disk once its
-        writers have run. Both halves take the compiler's switch: with it off, no writer runs and
+        writers have run. All of it takes the compiler's switch: with it off, no writer runs and
         nothing defines the folder again, so its files stay what any file under wwwroot is.
     -->
+    <PropertyGroup Condition="'$(EnableEQuanticUICompilation)' == 'true'">
+        <DefaultItemExcludes>$(DefaultItemExcludes);$(EQuanticOutputPath)**</DefaultItemExcludes>
+    </PropertyGroup>
     <ItemGroup Condition="'$(EnableEQuanticUICompilation)' == 'true'">
         <Content Remove="$(EQuanticOutputPath)**" />
     </ItemGroup>
@@ -301,14 +314,6 @@
         <Error
             Text="eQuantic.UI: Standard components not found. Ensure the eQuantic.UI.Components package (version $(EQuanticUIVersion)) is installed."
             Condition="'$(_StandardComponentsDir)' == '' Or !Exists('$(_StandardComponentsDir)')" />
-        <!-- Clean old generated files before compiling -->
-        <ItemGroup>
-            <_OldGeneratedFiles Include="$(MSBuildProjectDirectory)/$(EQuanticOutputPath)*.js" />
-            <_OldGeneratedFiles Include="$(MSBuildProjectDirectory)/$(EQuanticOutputPath)*.js.map" />
-            <!-- Track L: a renamed or removed culture's catalog must not linger. -->
-            <_OldGeneratedFiles Include="$(MSBuildProjectDirectory)/$(EQuanticOutputPath)strings/*.json" />
-        </ItemGroup>
-        <Delete Files="@(_OldGeneratedFiles)" Condition="'@(_OldGeneratedFiles)' != ''" />
 
         <Message Text="eQuantic.UI: Compiling components..." Importance="high" />
         <MakeDir Directories="$(MSBuildProjectDirectory)/$(EQuanticOutputPath)" />
@@ -372,6 +377,36 @@
             Command="dotnet $(EqcCliPath) &quot;$(_EqcSourceDirs)&quot; $(MSBuildProjectDirectory)/$(EQuanticOutputPath) --refs &quot;$(_EqcRefsFile)&quot;$(_RefSourcesArg)$(_GeneratedArg)$(_BunArg) --source-maps $(EQuanticSourceMaps)"
             WorkingDirectory="$(MSBuildProjectDirectory)" ConsoleToMSBuild="true"
             StandardOutputImportance="High" />
+    </Target>
+
+    <!--
+        A module, a map, a chunk or a culture's catalog eqc STOPS writing is removed by the compile that
+        stopped writing it: a removed or renamed component, a shared chunk bun renamed, a culture taken
+        out, the maps a Release build does not write. Removed AFTER eqc has written, never before: the
+        compile takes seconds, and a folder emptied first served a 404 for every module in between,
+        which is where dotnet watch's own refresh of the browser landed on every edit (#627). Measured
+        on the dashboard sample, a compile rewrites every file it writes, the unchanged ones included,
+        so a file older than its start is one it did not write. "Stale" is two seconds before the start,
+        as in the prune of generated sources above: a file system that stores whole seconds can then
+        only keep a stale file one compile longer, never delete one the compile just wrote. The runtime
+        is not eqc's: CopyEQuanticRuntime writes it, and keeps its source's time when it is unchanged.
+    -->
+    <Target Name="_EQuanticMarkOutputStart" BeforeTargets="CompileEQuanticUI"
+            Condition="'$(EnableEQuanticUICompilation)' == 'true'">
+        <PropertyGroup>
+            <_EQuanticOutputStaleBeforeTicks>$([System.DateTime]::UtcNow.AddSeconds(-2).Ticks)</_EQuanticOutputStaleBeforeTicks>
+        </PropertyGroup>
+    </Target>
+
+    <Target Name="_EQuanticPruneStaleOutput" AfterTargets="CompileEQuanticUI"
+            Condition="'$(EnableEQuanticUICompilation)' == 'true' And '$(_EQuanticOutputStaleBeforeTicks)' != ''">
+        <ItemGroup>
+            <_EQuanticOutputFile Include="$(EQuanticOutputPath)*.js;$(EQuanticOutputPath)*.js.map;$(EQuanticOutputPath)strings/*.json"
+                Exclude="$(EQuanticOutputPath)runtime.js" />
+            <_EQuanticStaleOutputFile Include="@(_EQuanticOutputFile)"
+                Condition="$([System.IO.File]::GetLastWriteTime('%(FullPath)').ToUniversalTime().Ticks) &lt; $(_EQuanticOutputStaleBeforeTicks)" />
+        </ItemGroup>
+        <Delete Files="@(_EQuanticStaleOutputFile)" />
     </Target>
 
     <!--

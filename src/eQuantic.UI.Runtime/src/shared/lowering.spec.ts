@@ -212,6 +212,35 @@ describe('lowering — cross-pinned with the C# WebRealizer', () => {
     expect(fired).toBe(true);
   });
 
+  /** C# twin: WebLoweringVisitor's Pressable (tabindex) and CodeEditorCompletionTests (Photon). */
+  it('Pressable that may not take the keyboard leaves the Tab order and cancels the focus move of its press', () => {
+    let fired = false;
+    const pressable: VisualNodeValue = {
+      nodeKind: 'pressable',
+      child: { nodeKind: 'text', content: 'Bold', role: 'label', maxLines: 1 },
+      onPressed: () => {
+        fired = true;
+      },
+      canRequestFocus: false,
+    } as VisualNodeValue;
+
+    const node = lowerVisualNode(pressable, ctx);
+    expect(node.attributes['tabindex']).toBe('-1');
+    let prevented = false;
+    (node.events['mousedown'] as unknown as (event: unknown) => void)({
+      preventDefault: () => {
+        prevented = true;
+      },
+    });
+    expect(prevented, 'the browser would otherwise move the focus to the pressable').toBe(true);
+    (node.events['click'] as () => void)();
+    expect(fired, 'the press itself still runs').toBe(true);
+
+    const taking = lowerVisualNode({ ...pressable, canRequestFocus: undefined } as VisualNodeValue, ctx);
+    expect(taking.attributes['tabindex']).toBeUndefined();
+    expect(taking.events['mousedown']).toBeUndefined();
+  });
+
   it('Pressable disabled swallows the handler and sets the attribute', () => {
     const pressable: VisualNodeValue = {
       nodeKind: 'pressable',

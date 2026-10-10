@@ -426,7 +426,7 @@ internal sealed class ServerValueAnalysis
                 FollowLocal(local.Local, assignment, root, path, instance);
                 return;
         }
-        if (MemberOfThis(assignment.Target) is { } member && IsInSource(member.ContainingType))
+        if (MemberOfThis(assignment.Target) is { } member && member.ContainingType.IsDeclaredIn(_compilation))
         {
             FollowMember(member, root, path,
                 InConstruction(assignment) ? Construction.Followed : Construction.Ignored, instance, assignment);
@@ -469,7 +469,7 @@ internal sealed class ServerValueAnalysis
         }
 
         var definition = target.OriginalDefinition;
-        if (definition.DeclaringSyntaxReferences.Length == 0)
+        if (!definition.IsDeclaredIn(_compilation))
         {
             Stop(at, root, $"it is passed to {Describe(definition)}, whose source the build does not have");
             return;
@@ -595,10 +595,10 @@ internal sealed class ServerValueAnalysis
         if (method.MethodKind == MethodKind.Constructor)
         {
             var type = created ?? method.ContainingType;
-            var primary = method.DeclaringSyntaxReferences.Any(r => r.GetSyntax(_token) is TypeDeclarationSyntax);
+            var primary = method.SourceIn(_compilation).Any(r => r.GetSyntax(_token) is TypeDeclarationSyntax);
             var bodies = primary
                 ? Chain(type).SelectMany(Bodies).Select(b => (IOperation?)b.Body)
-                : method.DeclaringSyntaxReferences.Select(r => Model(r.SyntaxTree).GetOperation(r.GetSyntax(_token), _token));
+                : method.SourceIn(_compilation).Select(r => Model(r.SyntaxTree).GetOperation(r.GetSyntax(_token), _token));
             foreach (var body in bodies)
             {
                 if (body is null) continue;
@@ -613,7 +613,7 @@ internal sealed class ServerValueAnalysis
             return;
         }
 
-        foreach (var declaration in method.DeclaringSyntaxReferences)
+        foreach (var declaration in method.SourceIn(_compilation))
         {
             if (Model(declaration.SyntaxTree).GetOperation(declaration.GetSyntax(_token), _token) is not { } body) continue;
             foreach (var reference in ReferencesIn(body, parameter))
@@ -650,14 +650,14 @@ internal sealed class ServerValueAnalysis
             : null;
 
     /// <summary>The parameter of a constructor of the same object a constructing reference is handed to.</summary>
-    private static IParameterSymbol? HandedOn(IOperation reference) =>
+    private IParameterSymbol? HandedOn(IOperation reference) =>
         Climb(reference) is (IArgumentOperation
             {
                 Parent: IInvocationOperation { TargetMethod.MethodKind: MethodKind.Constructor } call,
                 Parameter: { } parameter,
                 ArgumentKind: not ArgumentKind.ParamArray,
             }, _)
-        && call.TargetMethod.OriginalDefinition.DeclaringSyntaxReferences.Length > 0
+        && call.TargetMethod.OriginalDefinition.IsDeclaredIn(_compilation)
             ? parameter.OriginalDefinition
             : null;
 
@@ -698,7 +698,7 @@ internal sealed class ServerValueAnalysis
     /// </summary>
     private IEnumerable<(IOperation Body, bool Construction)> Bodies(INamedTypeSymbol type)
     {
-        foreach (var reference in type.DeclaringSyntaxReferences)
+        foreach (var reference in type.SourceIn(_compilation))
         {
             if (reference.GetSyntax(_token) is not TypeDeclarationSyntax declaration) continue;
             var model = Model(declaration.SyntaxTree);
@@ -748,14 +748,12 @@ internal sealed class ServerValueAnalysis
                 yield return body;
     }
 
-    /// <summary>The type and its bases declared in source: the one object whose members read a value stored in it.</summary>
-    private static IEnumerable<INamedTypeSymbol> Chain(INamedTypeSymbol type)
+    /// <summary>The type and its bases this compilation declares: the one object whose members read a value stored in it.</summary>
+    private IEnumerable<INamedTypeSymbol> Chain(INamedTypeSymbol type)
     {
-        for (var current = type; current is not null && IsInSource(current); current = current.BaseType)
+        for (var current = type; current is not null && current.IsDeclaredIn(_compilation); current = current.BaseType)
             yield return current;
     }
-
-    private static bool IsInSource(INamedTypeSymbol type) => type.Locations.Any(location => location.IsInSource);
 
     private static bool RunsOnTheServer(ISymbol? symbol) =>
         symbol is not null && symbol.GetAttributes().Any(a => a.AttributeClass?.Name

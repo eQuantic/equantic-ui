@@ -317,7 +317,9 @@ internal sealed partial class EmitVisitor
     /// </summary>
     private static void EmitCodeSurface(LayoutNode node, CodeSurface surface, InputSink input)
     {
-        input.Add(new CodeRegion(node.Bounds, surface, node.Path ?? ""));
+        // The options are the surface's second child, laid where they stand (MeasureVisitor).
+        Rect? offered = surface.Options is not null && node.Children.Count > 1 ? node.Children[1].Bounds : null;
+        input.Add(new CodeRegion(node.Bounds, surface, node.Path ?? "", offered));
     }
 
     /// <summary>

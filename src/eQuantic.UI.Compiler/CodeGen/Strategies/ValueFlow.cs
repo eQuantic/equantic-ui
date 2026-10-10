@@ -72,11 +72,11 @@ public static class ValueFlow
     /// <summary>Whether this operation's value is on its way into TEXT: through the boxing a
     /// concatenation wraps it in, directly as a string operand of one, or as a plain hole of an
     /// interpolated string (a hole with a format or an alignment hands the raw value to the
-    /// formatter instead). An interpolated string handed to a parameter of a HANDLER type
-    /// (<c>sb.Append($"{d}")</c> builds StringBuilder's) shows the same hole as the argument of the
-    /// handler's <c>AppendFormatted</c>, and the browser writes it into the same template: it printed
-    /// <c>1.5</c> and <c>true</c> on a pt-BR page where the server printed <c>1,5</c> and
-    /// <c>True</c>.</summary>
+    /// formatter instead). A hole of an interpolated string a HANDLER takes
+    /// (<c>sb.Append($"{d}")</c> builds StringBuilder's) is the argument of the handler's
+    /// <c>AppendFormatted</c> rather than of an interpolation, and plain when it is that call's only
+    /// argument: it printed an enum as its camelCase key (#679's review), and <c>1.5</c> and
+    /// <c>true</c> on a pt-BR page where the server printed <c>1,5</c> and <c>True</c> (#454).</summary>
     private static bool FlowsIntoText(IOperation operation)
     {
         var parent = operation.Parent;
@@ -91,17 +91,9 @@ public static class ValueFlow
             ICompoundAssignmentOperation { OperatorKind: BinaryOperatorKind.Add, Type.SpecialType: SpecialType.System_String } compound
                 => ReferenceEquals(compound.Value, operation),
             IInterpolationOperation { FormatString: null, Alignment: null } hole => ReferenceEquals(hole.Expression, operation),
-            IArgumentOperation
-            {
-                Parent: IInvocationOperation
-                {
-                    Parent: IInterpolatedStringAppendOperation
-                    {
-                        Kind: OperationKind.InterpolatedStringAppendFormatted,
-                        Syntax: InterpolationSyntax { AlignmentClause: null, FormatClause: null },
-                    },
-                },
-            } argument => ReferenceEquals(argument.Value, operation),
+            IArgumentOperation { Parent: IInvocationOperation { Parent: IInterpolatedStringAppendOperation } call } argument
+                => ReferenceEquals(argument.Value, operation)
+                    && call.Arguments.All(other => ReferenceEquals(other, argument) || other.ArgumentKind == ArgumentKind.DefaultValue),
             _ => false,
         };
     }

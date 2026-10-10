@@ -9,9 +9,13 @@
  * The travel that counts is the one along the gesture's OWN axis. A sideways swipe must not arm on
  * a vertical scroll and a sheet must not arm on a sideways one — without that, every list with a
  * swipeable row becomes impossible to scroll.
+ *
+ * The surface moves by the individual `translate` property, the one the lowering writes the rest
+ * offset to, so the box keeps its own `transform` and its hover's for the whole gesture (#511). The
+ * inline value is the gesture's only while it lasts: a release or a cancel takes it away again and
+ * the markup's rest, with the markup's glide, decides where the surface ends.
  */
 const SLOP = 12; // Touch.PressCancelSlop — cross-pinned with the C# host
-const GLIDE_MS = 200; // Motion.BaseMs
 
 let installed = false;
 
@@ -69,7 +73,9 @@ function onPointerDown(down: Event): void {
     const offset = travelOf(ev);
     if (follows) {
       const px = normalized ? offset * extent : offset;
-      surface.style.transform = horizontal ? `translateX(${px}px)` : `translateY(${px}px)`;
+      // Through setProperty: the property is newer than the CSSOM's named accessors, and the
+      // generic one writes it on every engine.
+      surface.style.setProperty('translate', horizontal ? `${px}px` : `0 ${px}px`);
     }
     if (moves) surface.dispatchEvent(new CustomEvent('eq-drag-moved', { detail: offset }));
   };
@@ -82,15 +88,12 @@ function onPointerDown(down: Event): void {
 
   // The system can take a gesture away without ever lifting the finger — a browser claiming the
   // scroll, a call arriving. Nothing was decided, so nothing is reported: the surface returns to
-  // where the caller last put it.
+  // where the caller last put it, which is the rest its markup carries.
   const cancel = (): void => {
     detach();
     if (!active) return;
     active = false;
-    if (!follows) return;
-    surface.style.transition = `transform ${GLIDE_MS}ms`;
-    const px = normalized ? rest * extent : rest;
-    surface.style.transform = horizontal ? `translateX(${px}px)` : `translateY(${px}px)`;
+    if (follows) handBack(surface);
   };
 
   const up = (ev: Event): void => {
@@ -111,14 +114,28 @@ function onPointerDown(down: Event): void {
     setTimeout(() => host.removeEventListener('click', squashClick, { capture: true }), 50);
 
     // Report, then let the RE-RENDER place it: the caller's new RestOffset is the truth about where
-    // this belongs, and gliding to a guess here would fight the frame that follows.
-    if (follows) surface.style.transition = `transform ${GLIDE_MS}ms`;
+    // this belongs, and gliding to a guess here would fight the frame that follows. The gesture's
+    // own offset is handed back AFTER the report, so a re-render the report runs has already written
+    // the new rest by then, and the surface glides from the finger to it in one move. A caller that
+    // leaves the rest where it was (a swipe short of opening) changes no markup at all, and the
+    // surface still goes home: it used to stay where the finger left it, since nothing re-wrote the
+    // inline offset the drag had set.
     surface.dispatchEvent(new CustomEvent('eq-drag-released', { detail: travelOf(ev) }));
+    if (follows) handBack(surface);
   };
 
   document.addEventListener('pointermove', move, { passive: false });
   document.addEventListener('pointerup', up);
   document.addEventListener('pointercancel', cancel);
+}
+
+/**
+ * Gives the surface back to its markup: the drag's inline offset and its `transition: none` go, so
+ * the rest the lowering wrote applies again, under the glide it declared beside it.
+ */
+function handBack(surface: HTMLElement): void {
+  surface.style.removeProperty('translate');
+  surface.style.removeProperty('transition');
 }
 
 function squashClick(e: Event): void {

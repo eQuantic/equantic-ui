@@ -186,7 +186,7 @@ public class StringStaticStrategy : IConversionStrategy
     /// policy <c>ToString</c> has. A float value is boxed with its kind, as C# boxes it into the
     /// object it is passed as, so the formatter writes a float's own digits (#378).
     /// </summary>
-    private static string FormatCall(InvocationExpressionSyntax node, SeparatedSyntaxList<ArgumentSyntax> args,
+    internal static string FormatCall(InvocationExpressionSyntax node, SeparatedSyntaxList<ArgumentSyntax> args,
         ConversionContext context)
     {
         ExpressionSyntax? provider = null, template = null;
@@ -602,7 +602,7 @@ public class StringStaticStrategy : IConversionStrategy
     /// array's own <c>join</c> met a null with a TypeError.</item>
     /// </list>
     /// </summary>
-    private static string JoinCall(InvocationExpressionSyntax node, IMethodSymbol method, ConversionContext context)
+    internal static string JoinCall(InvocationExpressionSyntax node, IMethodSymbol method, ConversionContext context)
     {
         if (method.Parameters.Length != 2 || context.SemanticHelper.GetOperation(node) is not IInvocationOperation operation)
             return context.Unhandled(node, "string.Join of this overload");
