@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Reflection;
 using System.Text.Json;
@@ -36,6 +37,7 @@ public class ServerActionsMiddleware
     private readonly HashSet<Assembly> _allowedAssemblies;
     // Volatile: a reloaded configuration replaces the allow-list on its own thread while requests read it.
     private volatile ServerActionOrigins _origins;
+    private readonly object _originsGate = new();
 
     private const string ActionsPath = "/api/_equantic/actions";
 
@@ -63,9 +65,18 @@ public class ServerActionsMiddleware
         // application's own (scanned) assemblies or an explicitly opted-in assembly.
         _allowedAssemblies = new HashSet<Assembly>(options.AssembliesToScan);
         _allowedAssemblies.UnionWith(options.AllowedDeserializationAssemblies);
-        // A reloaded appsettings.json changes the allowed origins without a restart.
-        _origins = new ServerActionOrigins(actions.CurrentValue.AllowedOrigins);
-        actions.OnChange(changed => _origins = new ServerActionOrigins(changed.AllowedOrigins));
+        // A reloaded appsettings.json changes the allowed origins without a restart. Subscribed BEFORE
+        // the first read, so a reload between the two is heard, and each refresh reads the latest value
+        // under one lock, so two refreshes racing cannot leave the older list in place.
+        actions.OnChange(_ => RefreshOrigins(actions));
+        RefreshOrigins(actions);
+    }
+
+    [MemberNotNull(nameof(_origins))]
+    private void RefreshOrigins(IOptionsMonitor<ServerActionsOptions> actions)
+    {
+        lock (_originsGate)
+            _origins = new ServerActionOrigins(actions.CurrentValue.AllowedOrigins);
     }
 
     public async Task InvokeAsync(HttpContext context)
