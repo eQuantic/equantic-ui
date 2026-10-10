@@ -154,10 +154,10 @@ public static class ValueFlow
             var toUnwrapped = to.UnwrapNullable();
             if (!ReferenceEquals(fromUnwrapped, from))
             {
-                var name = JsExpr.Identifier("__v");
+                var name = JsExpr.Identifier("$v");
                 var converted = Numeric(fromUnwrapped, toUnwrapped, name, null, isChecked, context);
                 if (ReferenceEquals(converted, name)) return translated;   // identity under the lift
-                return JsExpr.Callish($"((__v) => __v == null ? null : {JsExprWriter.Write(converted)})"
+                return JsExpr.Callish($"(($v) => $v == null ? null : {JsExprWriter.Write(converted)})"
                     + $"({JsExprWriter.Write(translated)})");
             }
             return Numeric(fromUnwrapped, toUnwrapped, translated, operandConstant, isChecked, context);

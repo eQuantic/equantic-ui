@@ -188,7 +188,7 @@ import { ClassBuilder, joinClasses, whenClass } from './utils/class-builder';
 /**
  * `$eq` — the single runtime namespace the transpiler emits for .NET-compat helpers, organised by
  * domain. Instead of scattering loose imports (`dec`, `long`, `dateTime`, …) into every generated
- * module — short, collision-prone names — the compiler emits `$eq.num.dec(...)`, `$eq.time.dateTime(...)`,
+ * module — short, collision-prone names — the compiler emits `$eq.num.dec(...)`, `$eq.time.dateTime.of(...)`,
  * etc., and the runtime exposes `$eq` once (globally on `window`, like `StyleBuilder`). No per-module
  * imports, no risk of shadowing a user identifier.
  *

@@ -126,7 +126,7 @@ describe('HashSet — elements by slot, as .NET holds them (#438)', () => {
 
 describe('HashSet — elements found as the default comparer finds them (#531)', () => {
   it('finds a date, a decimal and a tuple by value where its equality says so', () => {
-    expect(hashSetOf([dateTime(2026, 1, 1)], true).has(dateTime(2026, 1, 1))).toBe(true);
+    expect(hashSetOf([dateTime.of(2026, 1, 1)], true).has(dateTime.of(2026, 1, 1))).toBe(true);
     expect(hashSetOf([dec('1.0')], true).has(dec('1.00'))).toBe(true);
     const decimals = hashSetOf([dec('1.0'), dec('1.00')], true);
     expect(decimals.size).toBe(1);

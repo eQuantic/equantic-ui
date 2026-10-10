@@ -20,7 +20,7 @@
 import { collectionModified } from './dictionary';
 import { exception } from './exceptions';
 import { sameEquality, type KeyEquality } from './key-equality';
-import { expandPrime, getPrime, SlotTable } from './slots';
+import { collectionCount, expandPrime, getPrime, SlotTable } from './slots';
 
 type Element<T> = { key: T };
 
@@ -43,20 +43,6 @@ function outOfRangeCapacity(): Error {
     'System.ArgumentOutOfRangeException',
     "Specified argument was out of the range of valid values. (Parameter 'capacity')",
   );
-}
-
-/**
- * How many a collection holds, where .NET would read an `ICollection<T>`'s `Count`: an array (a
- * list, an array, a dictionary's keys or values), a set, a linked list, a sorted set. Null for any
- * other sequence, which .NET reads only by walking it.
- */
-function collectionCount(source: unknown): number | null {
-  if (Array.isArray(source)) return source.length;
-  if (source instanceof HashSet || source instanceof Set) return source.size;
-  const counted = source as { count?: unknown; dequeue?: unknown; pop?: unknown } | null;
-  if (counted == null || typeof counted.count !== 'number') return null;
-  // A queue and a stack are no ICollection<T> in .NET, so their count is not read there either.
-  return typeof counted.dequeue === 'function' || typeof counted.pop === 'function' ? null : counted.count;
 }
 
 /** A sequence as C# enumerates it: a string by its chars (UTF-16 code units), anything else as it is. */
