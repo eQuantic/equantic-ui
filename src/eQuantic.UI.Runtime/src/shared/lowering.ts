@@ -2876,6 +2876,11 @@ function fills(node: VisualNodeValue): { width: boolean; height: boolean } {
       const stack = node as StackNode;
       return { width: stack.width?.kind === 'fill', height: stack.height?.kind === 'fill' };
     }
+    case 'drawing': {
+      // A drawing at its parent's width fills across; its height follows from its aspect (C# twin).
+      const width = (node as DrawingNode).width as unknown;
+      return { width: typeof width === 'object' && (width as { kind?: string } | null)?.kind === 'fill', height: false };
+    }
     case 'pressable':
       return fills((node as PressableNode).child);
     case 'adjustable':

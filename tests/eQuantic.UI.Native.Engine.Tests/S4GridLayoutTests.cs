@@ -74,11 +74,22 @@ public class S4GridLayoutTests
     [Theory]
     [InlineData(0f)]
     [InlineData(-1f)]
+    [InlineData(float.PositiveInfinity)]
+    [InlineData(float.NaN)]
     public void AutoFill_RefusesAWeightThatIsNotPositive(float weight)
     {
         var act = () => GridTrack.AutoFill(210, weight);
 
         act.Should().Throw<ArgumentOutOfRangeException>().WithParameterName("weight");
+    }
+
+    /// <summary>An infinite minimum is `Infinitypx` on the web and NaN tracks on Photon: refused.</summary>
+    [Fact]
+    public void AutoFill_RefusesAnInfiniteMinimum()
+    {
+        var act = () => GridTrack.AutoFill(float.PositiveInfinity);
+
+        act.Should().Throw<ArgumentOutOfRangeException>().WithParameterName("min");
     }
 
     [Fact]

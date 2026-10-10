@@ -1,6 +1,7 @@
 import { effectiveStyle } from './style-atomizer';
 import { describe, expect, it } from 'vitest';
-import { Box, BoxStyle, Positioned, Stack } from './vocabulary';
+import { Box, BoxStyle, Drawing, Positioned, Stack, VectorDrawing, VectorPaint, VectorShape } from './vocabulary';
+import { SizeValue } from './value-types';
 
 describe('Stack (spec A3) client lowering', () => {
   it('lowers to a single-cell grid with the cross-pinned positioned anchor', () => {
@@ -49,6 +50,16 @@ describe('Stack (spec A3) client lowering', () => {
     expect(anchor).toContain('left: 50%');
     expect(anchor).toContain('top: calc(25% - 16px)');
     expect(anchor).toContain('transform: translate(-50%, -100%)');
+  });
+
+  it('pins the opposite edge for a drawing at its parent width (the C# Fills twin)', () => {
+    const art = new VectorDrawing(0, 0, 10, 10, [new VectorShape('M0 0L10 0L10 10Z', VectorPaint.solid({ r: 0, g: 0, b: 0, a: 255 } as never))]);
+    const stack = new Stack();
+    stack.add(new Positioned(new Drawing(art, SizeValue.fill), null, null, null, null, { startFraction: 0.5 }));
+
+    const anchor = effectiveStyle(stack.render().children[0]);
+    expect(anchor).toContain('left: 50%');
+    expect(anchor).toContain('right: 0');
   });
 
   it('lowers an end fraction alone to a percentage, and no shift to no transform', () => {

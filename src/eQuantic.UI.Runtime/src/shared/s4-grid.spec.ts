@@ -43,6 +43,8 @@ describe('S4 grid lowering (C# cross-pin)', () => {
 
   it('refuses an auto-fill track beside another, as the C# constructor does', () => {
     expect(() => new Grid([GridTrack.autoFill(210), GridTrack.fixed(40)])).toThrow(/whole column list/);
-    expect(() => GridTrack.autoFill(210, 0)).toThrow(/positive weight/);
+    expect(() => GridTrack.autoFill(210, 0)).toThrow(/positive, finite weight/);
+    expect(() => GridTrack.autoFill(210, Infinity)).toThrow(/positive, finite weight/);
+    expect(() => GridTrack.autoFill(Infinity)).toThrow(/positive, finite minimum/);
   });
 });

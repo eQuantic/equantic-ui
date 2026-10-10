@@ -159,6 +159,21 @@ public class PositionedSpanTests
             .And.Contain("transform:translate(-50%, -100%)");
     }
 
+    /// <summary>
+    /// A drawing at its parent's width fills, through a pressable too: its anchor pins the opposite
+    /// edge, so `width: 100%` is the room between the two (the TS `fills` twin, #648 review).
+    /// </summary>
+    [Fact]
+    public void AFillingDrawing_ThroughAPressable_PinsTheOppositeEdge()
+    {
+        var art = new VectorDrawing(0, 0, 10, 10, [new VectorShape("M0 0L10 0L10 10Z", VectorPaint.Solid(Color.FromRgb(0, 0, 0)))]);
+        var stack = new Stack { Width = SizeValue.Fill };
+        stack.Add(new Positioned(new Pressable(new Drawing(art, SizeValue.Fill), () => { })) { StartFraction = 0.5f });
+
+        var css = Css(stack);
+        css.Should().Contain("left:50%").And.Contain("right:0");
+    }
+
     /// <summary>A fraction alone on the end edge, and no shift means no transform.</summary>
     [Fact]
     public void AnEndFractionAlone_IsAPercentage_AndNoShiftIsNoTransform()

@@ -17,12 +17,13 @@ public readonly record struct GridTrack(SizeKind Kind, float Value)
     /// </summary>
     public static GridTrack AutoFill(float min, float weight = 1)
     {
-        if (!(min > 0))
-            throw new ArgumentOutOfRangeException(nameof(min), "An auto-fill track needs a positive minimum width.");
+        if (!(min > 0) || !float.IsFinite(min))
+            throw new ArgumentOutOfRangeException(nameof(min), "An auto-fill track needs a positive, finite minimum width.");
         // A weight of 0 leaves the remainder empty on the web and collapses the tracks on Photon,
-        // and a negative one is CSS the browser drops: refuse both rather than diverge.
-        if (!(weight > 0))
-            throw new ArgumentOutOfRangeException(nameof(weight), "An auto-fill track needs a positive weight.");
+        // and a negative or infinite one is CSS the browser drops (`Infinityfr`) and NaN tracks on
+        // Photon: refuse them rather than diverge.
+        if (!(weight > 0) || !float.IsFinite(weight))
+            throw new ArgumentOutOfRangeException(nameof(weight), "An auto-fill track needs a positive, finite weight.");
         return new(SizeKind.Fill, weight) { Min = min, Repeats = true };
     }
 

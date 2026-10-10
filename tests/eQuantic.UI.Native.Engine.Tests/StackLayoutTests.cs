@@ -98,6 +98,27 @@ public class StackLayoutTests
         Layout(stack).Children[0].Bounds.X.Should().Be(320);
     }
 
+    /// <summary>
+    /// A child that fills, anchored on one side, fills to the opposite edge: in a 400dp stack it is
+    /// 200 wide at 50% and 300 wide at 100dp, as the web's `left; right: 0` draws it (#648 review).
+    /// </summary>
+    [Theory]
+    [InlineData(null, 0.5f, 200f, 200f)]
+    [InlineData(100f, null, 100f, 300f)]
+    public void AFillingChildAnchoredOnOneSide_FillsToTheOppositeEdge(float? start, float? fraction, float x, float width)
+    {
+        var stack = new Stack { Width = SizeValue.Fixed(400), Height = SizeValue.Fixed(100) };
+        stack.Add(new Positioned(new Primitives.Box(new BoxStyle { Width = SizeValue.Fill, Height = 20 }), start: start)
+        {
+            StartFraction = fraction,
+        });
+
+        var child = Layout(stack).Children[0];
+
+        child.Bounds.X.Should().Be(x);
+        child.Bounds.Width.Should().Be(width);
+    }
+
     [Fact]
     public void CenterAlignment_CentersNonPositionedChildren()
     {

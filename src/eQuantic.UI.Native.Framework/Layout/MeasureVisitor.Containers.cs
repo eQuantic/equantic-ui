@@ -65,13 +65,22 @@ internal sealed partial class MeasureVisitor
         var stackIndetH = stack.Height.Kind != SizeKind.Fixed && outerIndeterminateH;
         var contentW = 0f;
         var contentH = 0f;
+        // The stack's own extent where it is known before its children are: the box a positioned
+        // child's fractions are of, and the room a filling one is measured against.
+        float? knownW = stack.Width.Kind == SizeKind.Fixed ? stack.Width.Value
+            : stack.Width.Kind == SizeKind.Fill && !float.IsPositiveInfinity(maxW) ? maxW : null;
+        float? knownH = stack.Height.Kind == SizeKind.Fixed ? stack.Height.Value
+            : stack.Height.Kind == SizeKind.Fill && !float.IsPositiveInfinity(maxH) ? maxH : null;
 
         for (var stackIndex = 0; stackIndex < stack.Children.Count; stackIndex++)
         {
             var child = stack.Children[stackIndex];
+            var (roomW, roomH) = child is Positioned anchored
+                ? PositionedRoom(anchored, childMaxW, childMaxH, knownW, knownH)
+                : (childMaxW, childMaxH);
             var measured = Measure(
                 child,
-                constraints.ForChild(childMaxW, childMaxH).DecidedByContent(stackIndetW, stackIndetH),
+                constraints.ForChild(roomW, roomH).DecidedByContent(stackIndetW, stackIndetH),
                 ctx, ctx.ChildPath(path, stackIndex, child));
             result.Adopt(measured);
             if (PositionedOf(child, measured) is not null) continue;
@@ -378,6 +387,59 @@ internal sealed partial class MeasureVisitor
         Array.Fill(tracks, flexible);
         return tracks;
     }
+
+    /// <summary>
+    /// The room a positioned child is measured in. A child that FILLS an axis anchored on one side
+    /// fills from that edge to the opposite one, and anchored on both, the room between them: the
+    /// web pins the opposite edge (`left: 50%; right: 0`) for exactly this, so a filling child in a
+    /// 400dp stack at <c>StartFraction = 0.5</c> is 200 wide on both targets. Only where the stack's
+    /// extent is known before its children are (fixed, or filling a bounded parent); a stack that
+    /// sizes from its content has no edge to fill to yet, and the child takes the room it is offered.
+    /// </summary>
+    private (float Width, float Height) PositionedRoom(Positioned positioned, float maxW, float maxH,
+        float? knownW, float? knownH)
+    {
+        var (fillsW, fillsH) = FillsOf(positioned.Child);
+        var width = maxW;
+        var height = maxH;
+        if (fillsW && knownW is { } w && (positioned.AnchorsStart || positioned.AnchorsEnd))
+        {
+            var start = positioned.AnchorsStart ? (positioned.Start ?? 0) + (positioned.StartFraction ?? 0) * w : 0;
+            var end = positioned.AnchorsEnd ? (positioned.End ?? 0) + (positioned.EndFraction ?? 0) * w : 0;
+            width = MathF.Max(0, w - start - end);
+        }
+        if (fillsH && knownH is { } h && (positioned.AnchorsTop || positioned.AnchorsBottom))
+        {
+            var top = positioned.AnchorsTop ? (positioned.Top ?? 0) + (positioned.TopFraction ?? 0) * h : 0;
+            var bottom = positioned.AnchorsBottom ? (positioned.Bottom ?? 0) + (positioned.BottomFraction ?? 0) * h : 0;
+            height = MathF.Max(0, h - top - bottom);
+        }
+        return (width, height);
+    }
+
+    /// <summary>
+    /// Whether a node fills its parent's width and height, looking through the transparent
+    /// wrappers: the web realizer's <c>Fills</c>, case for case, so the two targets agree on which
+    /// positioned children span.
+    /// </summary>
+    private static (bool Width, bool Height) FillsOf(VisualNode node) => node switch
+    {
+        Box box => (box.Style.Width.Kind == SizeKind.Fill, box.Style.Height.Kind == SizeKind.Fill),
+        FlexNode flex => (flex.Width.Kind == SizeKind.Fill, flex.Height.Kind == SizeKind.Fill),
+        Stack stack => (stack.Width.Kind == SizeKind.Fill, stack.Height.Kind == SizeKind.Fill),
+        Drawing drawing => (drawing.Width.Kind == SizeKind.Fill, false),
+        Pressable pressable => FillsOf(pressable.Child),
+        Hoverable hoverable => FillsOf(hoverable.Child),
+        Adjustable adjustable => FillsOf(adjustable.Child),
+        Progress progress => FillsOf(progress.Child),
+        LiveRegion live => FillsOf(live.Child),
+        Flexible flexible => FillsOf(flexible.Child),
+        LoopMotion motion => FillsOf(motion.Child),
+        Simulated simulated => FillsOf(simulated.Child),
+        InFlow inFlow => FillsOf(inFlow.Child),
+        InView inView => FillsOf(inView.Child),
+        _ => (false, false),
+    };
 
     /// <summary>
     /// Spec S4 — the grid track-sizing pass (CSS Grid twin, v1 auto-flow): Fixed tracks take their
