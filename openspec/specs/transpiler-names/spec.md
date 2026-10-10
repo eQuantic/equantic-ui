@@ -136,6 +136,11 @@ reached that way SHALL import no module.
 - **WHEN** `Portal.Mood.Loud` and `App.Portal.Mood.Calm`
 - **THEN** each is its member's value, and the module imports no module of the enum's name
 
+#### Scenario: A vocabulary type the runtime ships no twin for
+
+- **WHEN** `CurveEvaluator`, which is `[ServerOnly]`, is named bare, through its namespace or through a using alias
+- **THEN** the build fails with EQ2010 where it is written, and no module imports its name
+
 ### Requirement: A binding the emitted code declares starts with a dollar
 
 Every name the emitted code declares where C# declared nothing, a lowering's accumulator, an arrow's or a comparator's parameter, a loop's variable, SHALL start with a `$`, which no C# identifier holds. The one exception SHALL be a setter's `value`, which is C#'s own name for the value the developer's setter reads.

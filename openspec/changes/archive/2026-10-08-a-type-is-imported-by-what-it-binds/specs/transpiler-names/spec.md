@@ -26,3 +26,8 @@ reached that way SHALL import no module.
 
 - **WHEN** `Portal.Mood.Loud` and `App.Portal.Mood.Calm`
 - **THEN** each is its member's value, and the module imports no module of the enum's name
+
+#### Scenario: A vocabulary type the runtime ships no twin for
+
+- **WHEN** `CurveEvaluator`, which is `[ServerOnly]`, is named bare, through its namespace or through a using alias
+- **THEN** the build fails with EQ2010 where it is written, and no module imports its name
