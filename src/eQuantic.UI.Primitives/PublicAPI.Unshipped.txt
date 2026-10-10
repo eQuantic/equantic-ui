@@ -94,5 +94,26 @@ eQuantic.UI.Primitives.ServerTopicRefusalReason.Forbidden = 0 -> eQuantic.UI.Pri
 const eQuantic.UI.Primitives.Touch.MinPointerTarget = 24 -> float
 eQuantic.UI.Primitives.TwinIsTranspiledAttribute
 eQuantic.UI.Primitives.TwinIsTranspiledAttribute.TwinIsTranspiledAttribute() -> void
+eQuantic.UI.Primitives.FluidSize
+eQuantic.UI.Primitives.FluidSize.Deconstruct(out float Min, out float PercentOfWindow, out float Max) -> void
+eQuantic.UI.Primitives.FluidSize.Equals(eQuantic.UI.Primitives.FluidSize other) -> bool
+eQuantic.UI.Primitives.FluidSize.FluidSize() -> void
+eQuantic.UI.Primitives.FluidSize.FluidSize(float Min, float PercentOfWindow, float Max) -> void
+override eQuantic.UI.Primitives.FluidSize.GetHashCode() -> int
+static eQuantic.UI.Primitives.FluidSize.operator !=(eQuantic.UI.Primitives.FluidSize left, eQuantic.UI.Primitives.FluidSize right) -> bool
+static eQuantic.UI.Primitives.FluidSize.operator ==(eQuantic.UI.Primitives.FluidSize left, eQuantic.UI.Primitives.FluidSize right) -> bool
+~override eQuantic.UI.Primitives.FluidSize.Equals(object obj) -> bool
+~override eQuantic.UI.Primitives.FluidSize.ToString() -> string
+eQuantic.UI.Primitives.FluidSize.Min.get -> float
+eQuantic.UI.Primitives.FluidSize.Min.init -> void
+eQuantic.UI.Primitives.FluidSize.PercentOfWindow.get -> float
+eQuantic.UI.Primitives.FluidSize.PercentOfWindow.init -> void
+eQuantic.UI.Primitives.FluidSize.Max.get -> float
+eQuantic.UI.Primitives.FluidSize.Max.init -> void
+eQuantic.UI.Primitives.FluidSize.At(float windowWidth) -> float
+eQuantic.UI.Primitives.TypeStyle.Fluid.get -> eQuantic.UI.Primitives.FluidSize?
+eQuantic.UI.Primitives.TypeStyle.Fluid.init -> void
+eQuantic.UI.Primitives.TypeStyle.WithFluidSize(float min, float percentOfWindow, float max) -> eQuantic.UI.Primitives.TypeStyle
+eQuantic.UI.Primitives.TypeStyle.AtWindow(float windowWidth) -> eQuantic.UI.Primitives.TypeStyle
 const eQuantic.UI.Primitives.Pinned.ScrolledThreshold = 8 -> float
 static eQuantic.UI.Primitives.Pinned.ScrolledBase.get -> eQuantic.UI.Primitives.BoxStyle

@@ -2081,6 +2081,15 @@ record of a release, the wiki's Upgrading page is the distillate.
   delegate and `ToString` answered `[object Object]`, on a `Color` as on a `Curve`: each group answers
   through the helper its call uses, the receiver read once. Proposed and archived through OpenSpec
   (`openspec/specs/transpiler-vocabulary-values`).
+
+- **2026-10-10 · Type that follows the window**: a handoff sizes its headings as
+  `clamp(34px, 4.2vw, 54px)`, and a `TypeStyle` had one size in points, so falei.pt sampled the
+  clamp per window class with an `AdaptiveNode` that put every heading in the document three times.
+  `TypeStyle.WithFluidSize(min, percentOfWindow, max)` carries a `FluidSize`; the web writes the
+  clamp, a unitless line height and an `em` letter spacing on both targets, Photon measures and paints at the window it lays
+  out against (`TypeStyle.AtWindow`), an email sets the ceiling, and `WithSize` gives the fluid size
+  way to a size in dp ([#652](https://github.com/eQuantic/equantic-ui/issues/652)). Proposed and
+  archived through OpenSpec (`openspec/specs/typography`).
 - **2026-10-10 · A layout follows its box**: the first external consumer, falei.pt, needed three
   things a fixed point could not say. A `Drawing` takes a `SizeValue` width, so `SizeValue.Fill` draws
   it at its column's width with the height its artwork's aspect gives; a `Positioned` child is placed
@@ -2123,6 +2132,27 @@ record of a release, the wiki's Upgrading page is the distillate.
   class asked the browser for a module named by its simple name, which nothing writes any more, and
   one inside an owner that never crosses has no route and cannot be mapped. Proposed and archived through OpenSpec
   (`openspec/specs/transpiler-classes`).
+- **2026-10-07 · An adaptive arm is laid out where it stands**: three ways an `AdaptiveNode`'s arm
+  was not laid out as written, found building eQuantic Auth's landing page
+  ([#669](https://github.com/eQuantic/equantic-ui/issues/669),
+  [#670](https://github.com/eQuantic/equantic-ui/issues/670),
+  [#671](https://github.com/eQuantic/equantic-ui/issues/671)). A gate's name kept a fractional
+  threshold's dot, `eq-vc703.7037`, which a selector reads as two classes, so Chromium dropped every
+  rule of the gate and each arm showed at every width; the point is an underscore now, and the
+  threshold travels as ten-thousandths of a dp, because C#'s `"0.####"` of a float had spelled
+  1066.6667 `1066.667` on the server where the browser wrote `1066.6667`. Every arm was lowered on no
+  axis and without its parent's rule, so a `Gap` arm vanished and a `Positioned` arm in a `Stack` fell
+  into the flow; a container now places each arm as a direct child, inside its gate, in both twins.
+  Photon had both of those, and a line and a grid now lay out the arm in the node's place
+  (`LaidOutChildren`) while a stack reads `Positioned` off the arm it measured. The node's own
+  `AlignSelf` and `GridSpan` are no longer read (Photon read them); an arm's own place it. The pooled
+  frame of the perf harness fell from 73.2 to 71.1 KB on the way: the flex pass's `foreach` over its
+  node boxed an enumerator on every measure. Measured in Chromium on the server's own output of the
+  issues' trees, before and after. Found, not changed: Photon ignores `MediumFrom` and
+  `ExpandedFrom` ([#735](https://github.com/eQuantic/equantic-ui/issues/735)), and a component that
+  builds a Spacer takes no space in a Photon column
+  ([#736](https://github.com/eQuantic/equantic-ui/issues/736)). Proposed and
+  archived through OpenSpec (`openspec/specs/adaptive-layout`).
 
 ## Retired documents
 
