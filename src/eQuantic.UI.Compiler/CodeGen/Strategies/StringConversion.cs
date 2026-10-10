@@ -76,7 +76,7 @@ public static class StringConversion
             var printer = real.SpecialType == SpecialType.System_Single ? Eq.Single : Eq.Double;
             return ReferenceEquals(real, type)
                 ? JsExpr.Callish($"{printer}({text})")
-                : JsExpr.Template($"({{0}} == null ? '' : {printer}({{0}}))", [converted], context.TypeAnnotations);
+                : JsExpr.Template($"({{0}} == null ? '' : {printer}({{0}}))", [converted]);
         }
 
         if (!NeedsFormatting(type)) return converted;

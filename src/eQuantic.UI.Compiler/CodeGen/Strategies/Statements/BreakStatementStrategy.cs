@@ -15,7 +15,7 @@ public class BreakStatementStrategy : IStatementStrategy
     public JsStatement Convert(StatementSyntax node, ConversionContext context)
     {
         var breakStatement = (BreakStatementSyntax)node;
-        return JsStatement.Break(breakStatement.Name?.Identifier.Text);
+        return JsStatement.Break(breakStatement.Name?.Identifier.ValueText.ToJsIdentifier());
     }
 
     public int Priority => 0;
