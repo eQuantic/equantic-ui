@@ -9,12 +9,16 @@ namespace eQuantic.UI.Images;
 /// </summary>
 internal static class ImageEncoder
 {
-    /// <summary>The image in the given content type: "image/webp", "image/png", and JPEG for any other.</summary>
+    /// <summary>
+    /// The image in the given content type: "image/webp", "image/png", and JPEG for any other. The
+    /// type is read without regard to case, as <see cref="ImageOptimizationOptions.Validate"/> accepts
+    /// it: a media type is case-insensitive, and "IMAGE/WEBP" was a valid setting answered with JPEG.
+    /// </summary>
     public static byte[] Encode(SKImage image, string contentType, int quality)
     {
         using var tagged = image.PeekPixels();
         using var pixels = new SKPixmap(tagged.Info.WithColorSpace(null), tagged.GetPixels(), tagged.RowBytes);
-        using var data = contentType switch
+        using var data = contentType.ToLowerInvariant() switch
         {
             "image/webp" => pixels.Encode(new SKWebpEncoderOptions(SKWebpEncoderCompression.Lossy, quality)),
             "image/png" => pixels.Encode(new SKPngEncoderOptions(SKPngEncoderFilterFlags.AllFilters, 9)),

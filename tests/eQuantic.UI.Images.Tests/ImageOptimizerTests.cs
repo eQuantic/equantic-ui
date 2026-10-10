@@ -224,6 +224,45 @@ public class ImageOptimizerTests
     }
 
     [Theory]
+    [InlineData("IMAGE/WEBP", SKEncodedImageFormat.Webp)]
+    [InlineData("Image/Png", SKEncodedImageFormat.Png)]
+    public async Task OptimizeAsync_ReadsTheFormatWithoutRegardToCase(string format, SKEncodedImageFormat written)
+    {
+        // Validate accepts a media type in any case, as media types are; the encoder must too.
+        using var source = CreateTestImage(800, 600);
+
+        var result = await _optimizer.OptimizeAsync(source, 400, 75, format);
+
+        TestImages.FormatOf(result).Should().Be(written);
+    }
+
+    [Fact]
+    public async Task OptimizeAsync_ConvertsAWideGamutSourceToSrgb_NotOnlyUntagsIt()
+    {
+        // A PNG tagged Display P3 holding a P3 colour: written untagged, its pixels must hold that
+        // colour in sRGB, which is what Skia's own conversion of the source gives. A profile merely
+        // dropped would leave the P3 values, read as sRGB, a different colour.
+        var p3 = SKColorSpace.CreateRgb(SKColorSpaceTransferFn.Srgb, SKColorSpaceXyz.DisplayP3);
+        var info = new SKImageInfo(16, 16, SKColorType.Rgba8888, SKAlphaType.Opaque, p3);
+        using var tagged = new SKBitmap(info);
+        tagged.Erase(new SKColor(200, 60, 40));
+        using var encoded = tagged.Encode(SKEncodedImageFormat.Png, 100);
+        var png = encoded.ToArray();
+        using var codec = SKCodec.Create(new SKMemoryStream(png));
+        using var expected = SKBitmap.Decode(codec, codec.Info.WithColorType(SKColorType.Rgba8888).WithColorSpace(SKColorSpace.CreateSrgb()));
+        var srgb = expected.GetPixel(8, 8);
+        srgb.Should().NotBe(new SKColor(200, 60, 40), "the source colour lies outside the plain sRGB values it was written with");
+        using var source = TestImages.Stream(png);
+
+        var result = await _optimizer.OptimizeAsync(source, 640, 100, "image/png");
+
+        var pixel = TestImages.PixelAt(result, 8, 8);
+        Math.Abs(pixel.Red - srgb.Red).Should().BeLessThanOrEqualTo(1);
+        Math.Abs(pixel.Green - srgb.Green).Should().BeLessThanOrEqualTo(1);
+        Math.Abs(pixel.Blue - srgb.Blue).Should().BeLessThanOrEqualTo(1);
+    }
+
+    [Theory]
     [InlineData("image/jpeg", "ICC_PROFILE")]
     [InlineData("image/webp", "ICCP")]
     public async Task OptimizeAsync_WritesTheSrgbPixelsUntagged(string format, string profileMarker)
