@@ -17,6 +17,10 @@ describe('typed hydration', () => {
     expect(m).toBeInstanceOf(Decimal);
     expect((m as Decimal).toString()).toBe('0.1');
     expect(hydrate('2026-08-22T10:30:00', 'dateTime')).toBeInstanceOf(DateTime);
+    // A UTC value the server wrote comes back UTC, its clock time kept, where the zone was dropped (#606).
+    const utc = hydrate('2026-08-22T10:30:00Z', 'dateTime') as DateTime;
+    expect(utc.kind).toBe('utc');
+    expect(utc.hour).toBe(10);
     expect(hydrate('01:02:03', 'timeSpan')).toBeInstanceOf(TimeSpan);
   });
 

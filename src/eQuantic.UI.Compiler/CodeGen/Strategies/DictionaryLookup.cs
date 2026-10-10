@@ -71,14 +71,14 @@ internal static class DictionaryLookup
         parts.Add(arguments.IndexOf(keyArgument), "k", context.Converter.ConvertIr(keyArgument.Expression));
         // A discard receives nothing, so nothing is read for it: the question is the answer.
         if (OutArgument.IsDiscard(valueArgument, context))
-            return parts.Template(discarded, context);
+            return parts.Template(discarded);
 
         // The parts the out reads (an element's array and index) are evaluated where it was written.
         var at = arguments.IndexOf(valueArgument);
         var place = OutArgument.Place(valueArgument, context, part => parts.Add(at, $"t{parts.Count}", part));
         var fallback = DefaultValue.Of(method?.Parameters.ElementAtOrDefault(key + 1)?.Type, context);
         return parts.Template(
-            $"({Has} ? (({place} = {Get}), {hit}) : (({place} = {fallback}), false))", context);
+            $"({Has} ? (({place} = {Get}), {hit}) : (({place} = {fallback}), false))");
     }
 
     /// <summary><c>dictionary.GetValueOrDefault(key)</c> and <c>dictionary.GetValueOrDefault(key, defaultValue)</c>.</summary>
@@ -97,7 +97,7 @@ internal static class DictionaryLookup
         if (Filling(arguments, method, key + 1) is not { } defaultArgument)
         {
             return parts.Template(
-                $"({Has} ? {Get} : {DefaultValue.Of(method?.ReturnType, context)})", context);
+                $"({Has} ? {Get} : {DefaultValue.Of(method?.ReturnType, context)})");
         }
 
         var value = context.Converter.ConvertIr(defaultArgument.Expression);
@@ -106,8 +106,8 @@ internal static class DictionaryLookup
         // evaluated whether or not it is needed, once, in its place among the arguments: every part
         // is then an argument of one arrow, where a hole in the miss branch would run only there.
         return JsExprWriter.IsInlinable(value)
-            ? parts.Template($"({Has} ? {Get} : {{d}})", context)
-            : parts.Arrow($"({Has} ? {Get} : {{d}})", context);
+            ? parts.Template($"({Has} ? {Get} : {{d}})")
+            : parts.Arrow($"({Has} ? {Get} : {{d}})");
     }
 
     /// <summary>The parts, started with the dictionary: first when it is the call's receiver, in
@@ -164,27 +164,28 @@ internal static class DictionaryLookup
             return hole;
         }
 
-        public JsExpr Template(string text, ConversionContext context)
+        public JsExpr Template(string text)
         {
             var ordered = Ordered();
             for (var index = 0; index < ordered.Count; index++)
                 text = text.Replace(ordered[index].Hole, "{" + index + "}");
-            return JsExpr.Template(text, [.. ordered.Select(part => part.Part)], context.TypeAnnotations);
+            return JsExpr.Template(text, [.. ordered.Select(part => part.Part)]);
         }
 
         /// <summary>Every part evaluated ONCE, as an argument of one arrow, in the order C# evaluates
         /// them, and <paramref name="body"/> reading each through its parameter — for a part that is
         /// evaluated whether or not the body reads it.</summary>
-        public JsExpr Arrow(string body, ConversionContext context)
+        public JsExpr Arrow(string body)
         {
             var ordered = Ordered();
             string Parameter(string hole) => "$" + hole[1..^1];
             foreach (var part in ordered) body = body.Replace(part.Hole, Parameter(part.Hole));
-            var parameters = string.Join(", ", ordered.Select(part =>
-                Parameter(part.Hole) + (context.TypeAnnotations ? ": any" : "")));
+            // Bare in TypeScript too: an arrow invoked where it is written takes its parameters'
+            // types from its arguments, the rule the writer's own bindings follow (JsExprWriter).
+            var parameters = string.Join(", ", ordered.Select(part => Parameter(part.Hole)));
             var holes = string.Join(", ", ordered.Select((_, index) => "{" + index + "}"));
             return JsExpr.Template($"(({parameters}) => {body})({holes})",
-                [.. ordered.Select(part => part.Part)], context.TypeAnnotations);
+                [.. ordered.Select(part => part.Part)]);
         }
 
         private List<(int Position, int Added, string Hole, JsExpr Part)> Ordered() =>
