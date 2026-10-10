@@ -289,6 +289,26 @@ public class NullArgumentConformanceTests(ITestOutputHelper output)
         ConformanceRunner.AssertStatementsSameAsDotNet(statements);
     }
 
+    /// <summary>
+    /// The receiver of <c>CompareTo(object)</c> runs before its null is read, as C# evaluates a call's
+    /// receiver first. Written into the comparison alone, a receiver the comparison reads once (an int's
+    /// subtraction, a char's) never ran when the argument was a null literal, the conditional answering
+    /// 1 before it reached the receiver (found by Copilot's review of #715). A bool's receiver, read
+    /// twice, was already bound, and a receiver and an argument that both have an effect ran in C#'s
+    /// order: they are the controls.
+    /// </summary>
+    [SkippableTheory]
+    [InlineData("var calls = 0; Func<int> next = () => { calls++; return 5; }; var answer = next().CompareTo((object)null); return answer * 10 + calls;")]       // 11
+    [InlineData("var calls = 0; Func<char> next = () => { calls++; return 'a'; }; var answer = next().CompareTo((object)null); return answer * 10 + calls;")]    // 11
+    [InlineData("var calls = 0; Func<bool> next = () => { calls++; return false; }; var answer = next().CompareTo((object)null); return answer * 10 + calls;")]  // 11
+    [InlineData("var log = \"\"; Func<int> left = () => { log += \"l\"; return 5; }; Func<object> right = () => { log += \"r\"; return null; }; var answer = left().CompareTo(right()); return answer + log;")] // 1lr
+    [InlineData("var log = \"\"; Func<int> left = () => { log += \"l\"; return 5; }; Func<object> right = () => { log += \"r\"; return 7; }; var answer = left().CompareTo(right()); return answer + log;")]    // -1lr
+    public void TheReceiverOfCompareToObject_RunsBeforeItsNullIsRead(string statements)
+    {
+        Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
+        ConformanceRunner.AssertStatementsSameAsDotNet(statements);
+    }
+
     // ---- The instrument, checked against itself ------------------------------------------------
 
     /// <summary>

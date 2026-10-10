@@ -65,9 +65,12 @@ public class CompareToStrategy : IExpressionIrStrategy
         };
         // CompareTo(object) answers 1 for a null, a null being less than every value, as each of these
         // types' does: the char's subtraction read it through null, and `false` and a negative number
-        // answered -1 (#569).
+        // answered -1 (#569). Receiver and argument are the arrow's own arguments, so both run, in C#'s
+        // order, whatever the argument is: written into the comparison alone, a receiver read once
+        // never ran when the argument was a null literal, the conditional answering before it reached
+        // the receiver (found by Copilot's review of #715).
         if (context.SemanticHelper.GetSymbol(invocation) is IMethodSymbol { Parameters: [{ Type.SpecialType: SpecialType.System_Object }] })
-            template = $"({{1}} == null ? 1 : {template})";
+            template = $"(($r, $o) => $o == null ? 1 : {string.Format(template, "$r", "$o")})({{0}}, {{1}})";
         return JsExpr.Template(template, new[] { left, right });
     }
 
