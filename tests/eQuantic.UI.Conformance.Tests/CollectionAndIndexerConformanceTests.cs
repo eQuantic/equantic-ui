@@ -44,6 +44,14 @@ public class CollectionAndIndexerConformanceTests
     [InlineData("var l = new List<char>(\"ab\") { 'c' }; return new string(l.ToArray());")]                                                   // abc
     // The source is read first, then each element in its order.
     [InlineData("var log = \"\"; List<int> Src() { log += \"s\"; return new List<int> { 0 }; } int At(string s, int v) { log += s; return v; } var l = new List<int>(Src()) { At(\"a\", 1), At(\"b\", 2) }; return log + \"|\" + string.Join(\",\", l);")] // sab|0,1,2
+    // A capacity is evaluated before the elements, though it puts nothing in the list, and a negative one
+    // is refused as the constructor refuses it: it was dropped unread.
+    [InlineData("var log = \"\"; int Cap() { log += \"c\"; return 4; } int At(string s, int v) { log += s; return v; } var l = new List<int>(Cap()) { At(\"a\", 1), At(\"b\", 2) }; return log + \"|\" + string.Join(\",\", l);")] // cab|1,2
+    [InlineData("var log = \"\"; int Cap() { log += \"c\"; return 4; } List<int> l = new(Cap()) { 7 }; var m = new List<int>(Cap()); m.Add(8); return log + \"|\" + l[0] + m[0];")] // cc|78
+    [InlineData("try { var l = new List<int>(-1) { 1 }; return \"built\"; } catch (ArgumentOutOfRangeException e) { return e.Message; }")]
+    [InlineData("int n = -2; try { List<string> l = new(n); return \"built \" + l.Count; } catch (ArgumentOutOfRangeException e) { return e.Message; }")]
+    [InlineData("int Bad() => throw new InvalidOperationException(\"no capacity\"); try { var l = new List<int>(Bad()) { 1 }; return \"built\"; } catch (InvalidOperationException e) { return e.Message; }")]
+    [InlineData("int n = 3; var l = new List<int>(n) { 7 }; return string.Join(\",\", l) + \"|\" + new List<string>(n).Count;")] // 7|0
     public void AListBuiltWithAnArgumentAndAnInitializer_HoldsBoth(string statements)
     {
         Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");

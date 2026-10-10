@@ -265,7 +265,7 @@ public class ObjectCreationStrategy : IExpressionIrStrategy
         // `Add` (ObjectInitializer), over the list the constructor built: as the list's literal, every
         // element was the list's own, 1 where .NET holds "#1".
         if (ListAddedByAnExtension(creation.Initializer, createdType, context) is { } listed)
-            return ObjectInitializer.Apply(JsExpr.Array(ListSeed(creation, arguments, context)), listed, context);
+            return ObjectInitializer.Apply(Listed(creation, arguments, [], context), listed, context);
 
         // A list is the array it holds: what its constructor copies, then its initializer's elements.
         if (IsList(createdType) || createdType is null or IErrorTypeSymbol && IsListTypeName(typeName))
@@ -376,7 +376,7 @@ public class ObjectCreationStrategy : IExpressionIrStrategy
     private static bool IsListTypeName(string typeName) => typeName.StartsWith("List<") || typeName.Contains(".List<");
 
     /// <summary>
-    /// A list as C# builds it, as one array: what its constructor copies (<see cref="ListSeed"/>), then
+    /// A list as C# builds it, as one array: what its constructor copies (<see cref="Listed"/>), then
     /// each element of its initializer, in order, as its <c>Add</c> appends them (#564). A capacity
     /// dropped the elements, <c>[]</c>, and a source was joined to them with a comma, <c>source, [3]</c>,
     /// a second declarator in a declaration and a second argument in a call; the target-typed form kept
@@ -384,18 +384,15 @@ public class ObjectCreationStrategy : IExpressionIrStrategy
     /// was asked for.
     /// </summary>
     private static JsExpr ListLiteral(BaseObjectCreationExpressionSyntax creation, IReadOnlyList<JsExpr> arguments,
-        ConversionContext context)
+        ConversionContext context) => creation.Initializer switch
     {
-        var seed = ListSeed(creation, arguments, context);
-        return creation.Initializer switch
-        {
-            // An object initializer assigns the list's members (`{ Capacity = 8 }`), once it is built.
-            { RawKind: (int)SyntaxKind.ObjectInitializerExpression, Expressions.Count: > 0 } members =>
-                ObjectInitializer.Apply(JsExpr.Array(seed), members, context),
-            null => JsExpr.Array(seed),
-            var initializer => JsExpr.Array([.. seed, .. initializer.Expressions.Select(element => context.Converter.ConvertIr(Added(element)))]),
-        };
-    }
+        // An object initializer assigns the list's members (`{ Capacity = 8 }`), once it is built.
+        { RawKind: (int)SyntaxKind.ObjectInitializerExpression, Expressions.Count: > 0 } members =>
+            ObjectInitializer.Apply(Listed(creation, arguments, [], context), members, context),
+        null => Listed(creation, arguments, [], context),
+        var initializer => Listed(creation, arguments,
+            [.. initializer.Expressions.Select(element => context.Converter.ConvertIr(Added(element)))], context),
+    };
 
     /// <summary>
     /// What an initializer's element hands the list's <c>Add</c>: the element itself, or the one
@@ -409,16 +406,36 @@ public class ObjectCreationStrategy : IExpressionIrStrategy
             : element;
 
     /// <summary>
-    /// What a list's constructor puts in it: a COPY of the source, spread, never an alias of it (a
-    /// dictionary spreads into its pairs, a string into its chars), and nothing for a capacity or for
-    /// no argument at all. The single argument means one of two opposite things, and only the bound
-    /// constructor can say which: <c>new List&lt;T&gt;(capacity)</c> is an empty list sized ahead, where
-    /// passing it through made the capacity the list, <c>var lines = 7;</c> followed by
-    /// <c>lines.push(…)</c>.
+    /// A list's array as its constructor builds it, then <paramref name="elements"/>: a COPY of the
+    /// source, spread, never an alias of it (a dictionary spreads into its pairs, a string into its
+    /// chars), and nothing for no argument at all. The single argument means one of two opposite things,
+    /// and only the bound constructor can say which: <c>new List&lt;T&gt;(capacity)</c> is an empty list
+    /// sized ahead, where passing it through made the capacity the list, <c>var lines = 7;</c> followed
+    /// by <c>lines.push(…)</c>.
+    /// <para>
+    /// A capacity puts nothing in the list, but C# evaluates it before the list's elements and the
+    /// constructor refuses a negative one, so a capacity that is not a constant the list takes reaches
+    /// the runtime first (<see cref="Eq.ListCapacity"/>), and the array after it. It was dropped unread:
+    /// <c>new List&lt;int&gt;(Capacity()) { Item() }</c> never called <c>Capacity</c>, and a negative one
+    /// built a list where .NET throws.
+    /// </para>
     /// </summary>
-    private static IReadOnlyList<JsExpr> ListSeed(BaseObjectCreationExpressionSyntax creation, IReadOnlyList<JsExpr> arguments,
-        ConversionContext context) =>
-        arguments.Count == 1 && !IsCapacityArgument(creation, context) ? [JsExpr.Spread(arguments[0])] : [];
+    private static JsExpr Listed(BaseObjectCreationExpressionSyntax creation, IReadOnlyList<JsExpr> arguments,
+        IReadOnlyList<JsExpr> elements, ConversionContext context)
+    {
+        if (arguments.Count != 1) return JsExpr.Array(elements);
+        if (!IsCapacityArgument(creation, context)) return JsExpr.Array([JsExpr.Spread(arguments[0]), .. elements]);
+        if (IsCapacityTaken(creation, context)) return JsExpr.Array(elements);
+        context.UsedHelpers.Add(Eq.Import);
+        return JsExpr.Template("({0}, {1})", [JsExpr.Call(JsExpr.Identifier(Eq.ListCapacity), arguments[0]), JsExpr.Array(elements)]);
+    }
+
+    /// <summary>Whether a list's capacity is a constant its constructor takes: nothing to evaluate,
+    /// nothing to refuse. Read from the bound tree, or from an integer literal where no model binds.</summary>
+    private static bool IsCapacityTaken(BaseObjectCreationExpressionSyntax creation, ConversionContext context) =>
+        creation.ArgumentList?.Arguments is [{ Expression: var capacity }]
+        && (context.SemanticHelper.GetOperation(capacity)?.ConstantValue is { HasValue: true, Value: int and >= 0 }
+            || capacity is LiteralExpressionSyntax { Token.Value: int and >= 0 });
 
     /// <summary>A target-typed list's constructor arguments, converted in its parameters' order.</summary>
     private static IReadOnlyList<JsExpr> ListArguments(BaseObjectCreationExpressionSyntax creation, ConversionContext context) =>
@@ -897,8 +914,7 @@ public class ObjectCreationStrategy : IExpressionIrStrategy
 
             // A list one of whose elements an extension adds, as the explicit form applies it.
             if (ListAddedByAnExtension(creation.Initializer, target, context) is { } listed)
-                return ObjectInitializer.Apply(JsExpr.Array(ListSeed(creation, ListArguments(creation, context), context)),
-                    listed, context);
+                return ObjectInitializer.Apply(Listed(creation, ListArguments(creation, context), [], context), listed, context);
 
             // A list, as the explicit form builds one: what its constructor copies, then its elements.
             if (IsList(target)) return ListLiteral(creation, ListArguments(creation, context), context);

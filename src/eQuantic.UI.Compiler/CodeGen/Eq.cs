@@ -432,6 +432,10 @@ public static class Eq
     /// the value written, as C#'s assignment does (#586).</summary>
     public const string ListSetItem = "$eq.collections.setItem";
 
+    /// <summary><c>new List&lt;T&gt;(capacity)</c>'s check, which refuses a negative capacity in .NET's words:
+    /// the capacity is evaluated where C# evaluates it, before the list's elements, and sizes nothing.</summary>
+    public const string ListCapacity = "$eq.collections.listCapacity";
+
     /// <summary><c>EqualityComparer&lt;T&gt;.Default</c> for a type compared by reference or by its own
     /// <c>Equals</c>: identity, NaN equal to NaN, and a twin's own <c>equals</c>.</summary>
     public const string SameItem = "$eq.collections.sameItem";
