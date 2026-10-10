@@ -2011,6 +2011,18 @@ record of a release, the wiki's Upgrading page is the distillate.
   history's run of typing still ending at LF alone, so a typed lone CR a host recorded ran on into the
   next character: the edit now says whether it breaks a line, and the history asks it. Proposed and
   archived through OpenSpec (`openspec/specs/code-history`, `openspec/specs/modal-focus`).
+- **2026-10-07 · A builder has the members a page reaches**: `AppendFormat`, `AppendJoin`,
+  `Capacity`, `MaxCapacity`, `EnsureCapacity`, the `Chars` indexer, `Length`'s setter,
+  `Equals(StringBuilder)` and `CopyTo` transpiled to members the runtime's builder did not have, a
+  TypeError or an undefined behind a green build
+  ([#679](https://github.com/eQuantic/equantic-ui/issues/679)). `AppendFormat` and `AppendJoin`
+  append what `string.Format` and `string.Join` write, by the same lowering, and `Capacity` follows the
+  chunks .NET allocates through every edit, matching .NET on 41 measured sequences. An interpolated
+  `Append` appends each part in turn, as .NET's handler does, where every hole was read first
+  (`$"{b.Length}{b.Length}"` held "00"), a named argument is bound to its parameter, and a text longer
+  than the browser's string is .NET's `OutOfMemoryException`. A provider other than the current
+  culture on `Append`, `GetChunks` and the span overloads fail the build. Proposed and archived
+  through OpenSpec (`openspec/specs/transpiler-bcl`).
 - **2026-10-08 · A curve in the browser is the record C# reads**: a `Curve` was two other shapes in the
   browser, an array in the generated design system and a preset name in the runtime's `MotionSpec`, so
   `Curve.Standard.X1` and `Motion.Press.Curve.X1` read undefined, and `new Curve(…)` as a transition's
@@ -2028,18 +2040,6 @@ record of a release, the wiki's Upgrading page is the distillate.
   delegate and `ToString` answered `[object Object]`, on a `Color` as on a `Curve`: each group answers
   through the helper its call uses, the receiver read once. Proposed and archived through OpenSpec
   (`openspec/specs/transpiler-vocabulary-values`).
-- **2026-10-07 · A builder has the members a page reaches**: `AppendFormat`, `AppendJoin`,
-  `Capacity`, `MaxCapacity`, `EnsureCapacity`, the `Chars` indexer, `Length`'s setter,
-  `Equals(StringBuilder)` and `CopyTo` transpiled to members the runtime's builder did not have, a
-  TypeError or an undefined behind a green build
-  ([#679](https://github.com/eQuantic/equantic-ui/issues/679)). `AppendFormat` and `AppendJoin`
-  append what `string.Format` and `string.Join` write, by the same lowering, and `Capacity` follows the
-  chunks .NET allocates through every edit, matching .NET on 41 measured sequences. An interpolated
-  `Append` appends each part in turn, as .NET's handler does, where every hole was read first
-  (`$"{b.Length}{b.Length}"` held "00"), a named argument is bound to its parameter, and a text longer
-  than the browser's string is .NET's `OutOfMemoryException`. A provider other than the current
-  culture on `Append`, `GetChunks` and the span overloads fail the build. Proposed and archived
-  through OpenSpec (`openspec/specs/transpiler-bcl`).
 
 ## Retired documents
 
