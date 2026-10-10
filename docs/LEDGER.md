@@ -1758,6 +1758,16 @@ record of a release, the wiki's Upgrading page is the distillate.
   46 new conformance cases fail on the base. The members the runtime does not have are
   [#679](https://github.com/eQuantic/equantic-ui/issues/679). Proposed and archived through OpenSpec
   (`openspec/specs/transpiler-bcl`).
+- **2026-10-07 · A type reached through its namespace is imported by what it binds**: inside
+  `Falei.Web.Chat`, `Portal.Fold.Text(n)` wrote `Fold.text(n)` and imported nothing, so the page threw
+  `Fold is not defined`, while `Fold.Text(n)` under a using worked
+  ([#625](https://github.com/eQuantic/equantic-ui/issues/625)). The strategy that strips a namespace now
+  registers the type the name binds, which every emitter imports, through part of the namespace, the
+  whole of it or `global::`, the expression's case of what #479 did for a base class. A using alias
+  wrote its own name, `F.text(n)` and `new F()`, which nothing defines: it writes the type's name and imports it,
+  where the browser has a twin. A .NET type imports nothing, and neither does a type the runtime ships no twin
+  for: `[ServerOnly]`, as `CurveEvaluator` is since #731, fails with EQ2010 however it is named. Proposed
+  and archived through OpenSpec (`openspec/specs/transpiler-names`).
 - **2026-10-08 · The image optimizer runs on SkiaSharp**: seven GitHub advisories against
   SixLabors.ImageSharp, five of them reaching the 3.1.12 `eQuantic.UI.Images` resolved, failed
   `build-packages` on every pull request through NuGet's audit, and the only patched version needs a

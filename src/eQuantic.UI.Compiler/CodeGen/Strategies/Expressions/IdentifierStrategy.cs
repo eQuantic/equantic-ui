@@ -35,6 +35,16 @@ public class IdentifierStrategy : IExpressionIrStrategy
         // mapped first it read the inherited value instead (Copilot's review of #399).
         if (name == "Component" && !BoundInScope(symbol, identifier, name)) return JsExpr.ThisMember("_component");
 
+        // A type named through a using alias is written by its own name and imported by it, as through its
+        // namespace (#625): `using F = Falei.Web.Portal.Fold;` then `F.Text(1)` wrote `F.text(1)`, a name
+        // nothing defines. A name that differs from the type's own is only ever an alias.
+        if (symbol is INamedTypeSymbol { TypeKind: TypeKind.Class or TypeKind.Struct } aliased && aliased.Name != name
+            && !aliased.IsHostOnly() && aliased.HasTwin())
+        {
+            aliased.RegisterIntroduced(context);
+            return JsExpr.Identifier(aliased.Name);
+        }
+
         // If it's a type symbol, return as is (to allow EnumStrategy to work)
         if (symbol is ITypeSymbol || symbol is INamedTypeSymbol) return JsExpr.Identifier(name);
 
