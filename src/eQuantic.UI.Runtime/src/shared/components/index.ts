@@ -34,6 +34,7 @@ export { CodeCompletionItem } from './CodeCompletionItem';
 export { CodeCompletionList } from './CodeCompletionList';
 export { CodeCompletionMatch } from './CodeCompletionMatch';
 export { CodeCompletionOffer } from './CodeCompletionOffer';
+export { CodeCompletionView } from './CodeCompletionView';
 export { CodeDecoration } from './CodeDecoration';
 export { CodeDiagnostic } from './CodeDiagnostic';
 export { CodeDiff } from './CodeDiff';

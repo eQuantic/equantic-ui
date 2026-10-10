@@ -99,13 +99,13 @@ public class TaskMethodStrategy : IConversionStrategy
             // — setTimeout(0) is the analogue that actually yields the loop, the same shape Delay
             // already uses. Untranslated it emitted `Task.yield()`, a name that exists nowhere, and
             // the module died at the first call.
-            return "new Promise(resolve => setTimeout(resolve, 0))";
+            return "new Promise(($resolve) => setTimeout($resolve, 0))";
         }
 
         if (name == "Delay")
         {
             var ms = context.Converter.ConvertExpression(args[0].Expression);
-            return $"new Promise(resolve => setTimeout(resolve, {ms}))";
+            return $"new Promise(($resolve) => setTimeout($resolve, {ms}))";
         }
         
         if (name == "Run")

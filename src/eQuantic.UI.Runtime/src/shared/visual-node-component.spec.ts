@@ -1,14 +1,24 @@
 import { effectiveStyle } from './style-atomizer';
 import { afterEach, describe, expect, it } from 'vitest';
 import { Card } from './components/Card';
+import { TextInput } from './components/TextInput';
 import { photonTheme } from './design-system.generated';
-import { getPhotonTheme, setPhotonTheme } from './photon-context';
+import { getPhotonTheme, setPhotonDensity, setPhotonTheme } from './photon-context';
 import { ColorToken } from './value-types';
 import { Text } from './vocabulary';
-import type { HtmlElement } from '../core/types';
+import type { HtmlElement, HtmlNode } from '../core/types';
 import { VisualNodeComponent } from './visual-node-component';
 
-afterEach(() => setPhotonTheme(photonTheme));
+afterEach(() => {
+  setPhotonTheme(photonTheme);
+  setPhotonDensity('comfortable');
+});
+
+/** Every pixel height the lowered tree declares, the node and all its descendants. */
+function heights(node: HtmlNode): string[] {
+  const own = effectiveStyle(node).match(/(?<![-\w])height: \d+px/g) ?? [];
+  return [...own, ...node.children.flatMap(heights)];
+}
 
 describe('VisualNodeComponent (the Core⇄Shared client bridge)', () => {
   it('renders an abstract subtree with the ambient theme — the SSR adapter parity pair', () => {
@@ -49,5 +59,21 @@ describe('VisualNodeComponent (the Core⇄Shared client bridge)', () => {
     const custom = { ...photonTheme, textPrimary: new ColorToken({ r: 0, g: 128, b: 0, a: 255 }) };
     const node = new VisualNodeComponent(new Text('hello'), custom).render();
     expect(effectiveStyle(node)).toContain('color: #008000');
+  });
+
+  // A bridge given its OWN theme is still a part of this page, so what it composes lowers at the
+  // page's density, as the C# twin builds every bridge at the request's (#623). A stateful component
+  // expands with the bridge's own context, which was a bare `{ theme, typeScale }` with no density:
+  // a large TextInput drew its Comfortable 48px field in a Compact page, where the server drew 40px
+  // (found by Copilot on #688). The bridge without a theme, which reads the runtime's context, is
+  // the control.
+  it.each([
+    ['without a theme', undefined],
+    ['with an explicit theme', photonTheme],
+  ])('lowers a stateful component %s at the page density, as the server does', (_, theme) => {
+    setPhotonDensity('compact');
+    const node = new VisualNodeComponent(new TextInput(''), theme).render();
+    expect(heights(node)).toContain('height: 40px');
+    expect(heights(node)).not.toContain('height: 48px');
   });
 });

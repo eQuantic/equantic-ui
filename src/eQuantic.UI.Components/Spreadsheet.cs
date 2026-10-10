@@ -131,7 +131,11 @@ public sealed class Spreadsheet : StatefulComponent
         // row 0, and would push this row from the first position to the second — a keyed row inside
         // a shifted parent is a moved row all the same.
         var windowRows = new Row(gap: 0) { Key = "window" };
-        var rowHeaders = new Column(gap: 0);
+        // As wide as the header, and SAID: a strip that hugged its row headers had a minimum of zero
+        // on the web (a row header is a Stack, whose layers may not grow past it), so beside a grid
+        // wider than the window the browser shrank it to nothing and every cell slid left over the
+        // numbers (#613). A Fixed size shrinks on neither target.
+        var rowHeaders = new Column(gap: 0) { Width = SizeValue.Fixed(HeaderWidth) };
         var grid = new Column(gap: 0);
         for (var r = _first; r <= _last; r++)
         {

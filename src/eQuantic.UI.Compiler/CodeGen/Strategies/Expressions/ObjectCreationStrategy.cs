@@ -34,6 +34,56 @@ public class ObjectCreationStrategy : IExpressionIrStrategy
 
     public JsExpr ConvertIr(SyntaxNode node, ConversionContext context)
     {
+        var built = Build(node, context);
+        // A generic record or struct built as the closed type C# names carries its type arguments: one
+        // twin class serves every one of them, and `Box<int>` equalled `Box<double>` holding the same 1
+        // (#651). Its `equals` compares the mark (Eq.SameClosure).
+        if (ClosureOf(context.SemanticHelper.GetType(node)) is not { } typeArguments) return built;
+        context.UsedHelpers.Add(Eq.Import);
+        return JsExpr.Call(JsExpr.Identifier(Eq.Closing), built, JsExpr.Literal($"'{typeArguments}'"));
+    }
+
+    /// <summary>
+    /// The type arguments a value of <paramref name="type"/> is marked with: a generic record or struct
+    /// the source declares, whose twin eqc writes with the comparison, closed over types the build knows.
+    /// A type argument that is a type parameter is known only at run time, and the value goes unmarked.
+    /// </summary>
+    private static string? ClosureOf(ITypeSymbol? type) =>
+        type is INamedTypeSymbol { IsGenericType: true } named
+        && (named.IsRecord || named.TypeKind == TypeKind.Struct)
+        && named.Locations.Any(location => location.IsInSource)
+        && !named.TypeArguments.Any(ContainsTypeParameter)
+            ? string.Join(", ", named.TypeArguments.Select(RuntimeName))
+            : null;
+
+    /// <summary>
+    /// A type as the runtime tells types apart, which is what .NET's closed type compares: a tuple's
+    /// element names and <c>dynamic</c> are erased, so <c>Box&lt;(int A, int B)&gt;</c> and
+    /// <c>Box&lt;(int, int)&gt;</c> are one type, as are <c>Box&lt;dynamic&gt;</c> and <c>Box&lt;object&gt;</c>.
+    /// </summary>
+    private static string RuntimeName(ITypeSymbol type) => type switch
+    {
+        { TypeKind: TypeKind.Dynamic } => "object",
+        IArrayTypeSymbol array => $"{RuntimeName(array.ElementType)}[{new string(',', array.Rank - 1)}]",
+        INamedTypeSymbol { IsTupleType: true, TupleUnderlyingType: { } underlying } => RuntimeName(underlying),
+        INamedTypeSymbol { IsGenericType: true } generic =>
+            $"{generic.ConstructedFrom.ToDisplayString(GenericDefinition)}<{string.Join(", ", generic.TypeArguments.Select(RuntimeName))}>",
+        _ => type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat),
+    };
+
+    private static readonly SymbolDisplayFormat GenericDefinition =
+        SymbolDisplayFormat.FullyQualifiedFormat.WithGenericsOptions(SymbolDisplayGenericsOptions.None);
+
+    private static bool ContainsTypeParameter(ITypeSymbol type) => type switch
+    {
+        ITypeParameterSymbol => true,
+        IArrayTypeSymbol array => ContainsTypeParameter(array.ElementType),
+        INamedTypeSymbol named => named.TypeArguments.Any(ContainsTypeParameter),
+        _ => false,
+    };
+
+    private JsExpr Build(SyntaxNode node, ConversionContext context)
+    {
         // C# 13's `System.Threading.Lock` — single-threaded JS drops the lock STATEMENT's
         // semantics already (the body just runs); the gate object itself is inert, and emitting
         // `new Lock()` named a class no browser has.
@@ -104,7 +154,7 @@ public class ObjectCreationStrategy : IExpressionIrStrategy
         }
         var placed = System.Text.RegularExpressions.Regex.Replace(template, @"\{(\d)\}",
             hole => $"{{{slots[hole.Groups[1].Value[0] - '0']}}}");
-        return JsExpr.Template(placed, parts, context.TypeAnnotations);
+        return JsExpr.Template(placed, parts);
     }
 
     private JsExpr ConvertExplicit(ObjectCreationExpressionSyntax creation, ConversionContext context)
@@ -132,6 +182,15 @@ public class ObjectCreationStrategy : IExpressionIrStrategy
         {
             typeName = nestedType.IntroduceTwin(context);
             genericTypeName = null;
+        }
+
+        // A type named through a using alias is built by its own name and imported by it, as a read of
+        // its static is (#625): `using F = N.Fold;` then `new F()` wrote `new F()`, a name nothing defines.
+        if (createdType is INamedTypeSymbol { TypeKind: TypeKind.Class or TypeKind.Struct } aliased && !aliased.IsHostOnly()
+            && aliased.HasTwin() && creation.Type is IdentifierNameSyntax { Identifier.ValueText: var written } && written != aliased.Name)
+        {
+            aliased.RegisterIntroduced(context);
+            typeName = aliased.Name;
         }
 
         // A HOST-ONLY type constructed from client code. `new Matrix2D(...)` compiled, emitted an
@@ -670,7 +729,7 @@ public class ObjectCreationStrategy : IExpressionIrStrategy
         type.IsValueType && ctor is { IsImplicitlyDeclared: true, Parameters.Length: 0 } && TwinIsWritten(type)
             ? JsExpr.Opaque(DefaultValue.Of(type, context))
             : BoundArguments.Of(context.SemanticHelper.GetOperation(creation), argument => context.Converter.ConvertIr(argument)) is { } bound
-                ? bound.New(TwinOf(type, context), context.TypeAnnotations)
+                ? bound.New(TwinOf(type, context))
                 : JsExpr.New(JsExpr.Identifier(TwinOf(type, context)), ConstructorArguments(creation, ctor, context));
 
     /// <summary>The name a construction calls, its type's twin's: named by its owner where it is nested

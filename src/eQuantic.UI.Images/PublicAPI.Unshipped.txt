@@ -1,1 +1,5 @@
 #nullable enable
+*REMOVED*eQuantic.UI.Images.BlurPlaceholderGenerator.BlurPlaceholderGenerator() -> void
+*REMOVED*eQuantic.UI.Images.ImageOptimizer.ImageOptimizer() -> void
+eQuantic.UI.Images.BlurPlaceholderGenerator.BlurPlaceholderGenerator(eQuantic.UI.Images.ImageOptimizationOptions! options) -> void
+eQuantic.UI.Images.ImageOptimizer.ImageOptimizer(eQuantic.UI.Images.ImageOptimizationOptions! options) -> void

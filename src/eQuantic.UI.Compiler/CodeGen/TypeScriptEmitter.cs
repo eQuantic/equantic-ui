@@ -945,7 +945,7 @@ public class TypeScriptEmitter
             componentTypes.Add(runtimeType);
         }
 
-        // …and the ones the parser kept OUT of that set. A type POSITION is the seventh way to name
+        // …and the ones the parser kept OUT of that set. A type POSITION is the eighth way to name
         // a host-only symbol and the only one no expression strategy can reach — the parser's
         // semantic sweep is what sees it, and this is the first place with a diagnostics channel.
         foreach (var (named, at) in component.HostOnlyTypes)
@@ -1813,8 +1813,11 @@ public class TypeScriptEmitter
             // A twin that keeps a store (PropertyStore, #591) writes it in JSON under its property's
             // name, read through the property, as System.Text.Json writes the property: JSON.stringify
             // writes an object's own properties, so a server action received `$name` and bound nothing.
-            // A derived class inherits it.
-            if (!asStatic && cls.Members.OfType<PropertyDeclarationSyntax>().Any(PropertyStore.KeepsAStore))
+            // So does one whose field moved a case apart from a member (`value$`, #396), whose own key
+            // is storage no server reads. A derived class inherits it.
+            if (!asStatic && (cls.Members.OfType<PropertyDeclarationSyntax>().Any(PropertyStore.KeepsAStore)
+                    || cls.Members.OfType<FieldDeclarationSyntax>().SelectMany(field => field.Declaration.Variables)
+                        .Any(variable => SlotOf(variable, ModelFor(cls)).EndsWith('$'))))
             {
                 _converter.UsedHelpers.Add(Eq.Import);
                 c.Member(JsClassMember.Method("", "toJSON", "", "", "",
@@ -2157,7 +2160,7 @@ public class TypeScriptEmitter
             {
                 case FieldDeclarationSyntax field:
                     foreach (var variable in field.Declaration.Variables)
-                        state.Add(new(variable.Identifier.Text.ToCamelCase(), DeclaredType(field.Declaration.Type), variable));
+                        state.Add(new(SlotOf(variable, model), DeclaredType(field.Declaration.Type), variable));
                     break;
                 case EventFieldDeclarationSyntax handler:
                     foreach (var variable in handler.Declaration.Variables)
@@ -2171,6 +2174,11 @@ public class TypeScriptEmitter
         }
         return state;
     }
+
+    /// <summary>The slot an instance field's variable lives in (<see cref="Extensions.FieldSlotExtensions"/>):
+    /// its twin name, or, a case apart from another member, the name with a <c>$</c> after it.</summary>
+    private static string SlotOf(VariableDeclaratorSyntax variable, SemanticModel? model) =>
+        model?.GetDeclaredSymbol(variable) is IFieldSymbol field ? field.TwinSlot() : variable.Identifier.Text.ToCamelCase();
 
     /// <summary>
     /// Whether <paramref name="method"/> reads <paramref name="parameter"/>. Asked of the model where
@@ -2238,6 +2246,14 @@ public class TypeScriptEmitter
             ? lifted.TypeArguments[0]
             : resolvedRaw;
 
+        // A type parameter is named as its declaration names it: `@class` is declared `class$`, a name
+        // TypeScript takes, and a parameter of that type said `class`, which it does not (#467).
+        if (resolved is ITypeParameterSymbol typeParameter)
+        {
+            var named = typeParameter.Name.ToJsIdentifier();
+            return nullable ? OrNull(named) : named;
+        }
+
         // A generic's TYPE ARGUMENTS are symbols here even when the string mapper already rewrote
         // the shape around them (`Action<IPainter>` → `(iPainter: IPainter) => void`). An interface
         // among them must answer the same `any` a bare interface parameter does, or the module
@@ -2268,6 +2284,15 @@ public class TypeScriptEmitter
             }
         }
 
+        // ...and at any depth: `IReadOnlyList<@class>` and `@class[]` mapped to `@class[]`, which
+        // TypeScript cannot parse, and a parameter named like a global (`Math`) named the global.
+        foreach (var parameter in TypeParametersIn(resolved))
+        {
+            var named = parameter.Name.ToJsIdentifier();
+            if (named == parameter.Name) continue;
+            mapped = System.Text.RegularExpressions.Regex.Replace(mapped,
+                $@"(?<![\w$.])@?{System.Text.RegularExpressions.Regex.Escape(parameter.Name)}(?![\w$])", named);
+        }
         // A nested type inside an array or a generic is its twin too, echoed or not: the mapper
         // reduced `Outer.Inner[]` to `Inner[]`, which names nothing (#584).
         if (resolved is IArrayTypeSymbol or INamedTypeSymbol { TypeArguments.Length: > 0 })
@@ -2338,6 +2363,16 @@ public class TypeScriptEmitter
     /// function that returns null rather than a function that may be missing.
     /// </summary>
     internal static string OrNull(string type) => type.Contains("=>") ? $"({type}) | null" : $"{type} | null";
+
+    /// <summary>The type parameters <paramref name="type"/> names, to any depth: in its type
+    /// arguments and in an array's element.</summary>
+    private static IEnumerable<ITypeParameterSymbol> TypeParametersIn(ITypeSymbol? type) => type switch
+    {
+        ITypeParameterSymbol parameter => [parameter],
+        IArrayTypeSymbol array => TypeParametersIn(array.ElementType),
+        INamedTypeSymbol { TypeArguments.Length: > 0 } generic => generic.TypeArguments.SelectMany(TypeParametersIn).Distinct<ITypeParameterSymbol>(SymbolEqualityComparer.Default),
+        _ => [],
+    };
 
     /// <summary>
     /// A type and every type argument BELOW it, to any depth — `IReadOnlyList&lt;NavigableMove&gt;`
@@ -2539,11 +2574,11 @@ public class TypeScriptEmitter
         // helper emitted the qualified call with no import and died on "is not defined" at load.
         // Measured on `public static VisualNode Boxed() => new Text("x").Centered();`.
         runtimeProvided.UnionWith(_converter.UsedRuntimeTypes);
-        // A TYPE POSITION is the seventh way to name a host-only symbol and the one no expression
+        // A TYPE POSITION is the eighth way to name a host-only symbol and the one no expression
         // strategy can reach: `public Matrix2D Placement { get; init; }` on a component compiled,
         // emitted `import { Matrix2D } from "@equantic/runtime"`, and took the page down at
         // hydration. Measured. The scanner keeps the name out of the import list; this is where it
-        // gets said, in the same words the other six use.
+        // gets said, in the same words the other seven use.
         foreach (var (named, at) in hostOnlyInSignatures)
             _converter.Report(at, ConversionSeverity.Error, "EQ2010",
                 CodeGen.Extensions.HostOnlySymbolExtensions.Message(named));
@@ -2792,9 +2827,12 @@ public class TypeScriptEmitter
             "Guid" => "string",
             "Task" => "void",
             // C# names the build argument `ComponentContext`; the runtime declares one interface
-            // for it, under the name the DOM side has always used. Emitting the C# name asked for
-            // a second, incompatible type with the same meaning.
-            "ComponentContext" or "BuildContext" => "RenderContext",
+            // for it, and exports it to modules as `BuildContext`, which a component's `build` is
+            // annotated with. Emitting the C# name asked for a second, incompatible type with the
+            // same meaning, and the interface's own name is exported to apps alone: a helper class
+            // of the shared library that took the context annotated it with a name its module
+            // could not import.
+            "ComponentContext" or "BuildContext" => "BuildContext",
             _ => baseType
         };
 

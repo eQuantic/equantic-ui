@@ -92,6 +92,10 @@ public class ConversionContext
     /// the statement or the concise body that holds it (#539).</summary>
     internal Temporaries Temporaries { get; } = new();
 
+    /// <summary>What each pattern-matching operation holds the parts of a <c>Deconstruct</c> the app
+    /// wrote in, once per value, declared by the operation itself.</summary>
+    internal MatchParts MatchParts { get; } = new();
+
     /// <summary>
     /// Set while converting an ITERATOR method's body. A C# iterator yields a sequence, and every
     /// sequence in the emitted world is an ARRAY — so the method fills this buffer and returns it,

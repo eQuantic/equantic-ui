@@ -18,6 +18,7 @@ internal static class TwinData
         "{ " + string.Join(", ", data.DataMembers().Select(member =>
             $"{TwinName.Of(member.Name)}: {valueOf(member) ?? zeroOf(TypeOf(member))}")) + " }";
 
-    private static ITypeSymbol TypeOf(ISymbol member) =>
+    /// <summary>The type of a member a data twin stores: a field's, or a property's.</summary>
+    internal static ITypeSymbol TypeOf(ISymbol member) =>
         member is IFieldSymbol field ? field.Type : ((IPropertySymbol)member).Type;
 }

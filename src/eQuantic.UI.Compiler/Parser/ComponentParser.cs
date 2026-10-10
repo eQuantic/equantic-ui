@@ -306,7 +306,7 @@ public class ComponentParser
                 SyntaxTree = tree,
                 ClassSyntax = classDecl,
                 Namespace = ns ?? "",
-                TypeParameters = classDecl.TypeParameterList?.Parameters.Select(p => p.Identifier.Text).ToList() ?? new List<string>(),
+                TypeParameters = classDecl.TypeParameterList?.Parameters.Select(p => p.Identifier.ValueText.ToJsIdentifier()).ToList() ?? new List<string>(),
                 IsAbstract = classDecl.Modifiers.Any(SyntaxKind.AbstractKeyword),
                 BaseClassName = baseType,
             };
@@ -428,7 +428,7 @@ public class ComponentParser
                     MethodName = method.Identifier.Text,
                     ActionId = $"{definition.Name}/{actionName}",
                     ReturnType = method.ReturnType.ToString(),
-                    TypeParameters = method.TypeParameterList?.Parameters.Select(p => p.Identifier.Text).ToList() ?? new List<string>(),
+                    TypeParameters = method.TypeParameterList?.Parameters.Select(p => p.Identifier.ValueText.ToJsIdentifier()).ToList() ?? new List<string>(),
                     IsAsync = method.Modifiers.Any(m => m.ValueText == "async"),
                     SyntaxNode = method
                 };
@@ -581,7 +581,7 @@ public class ComponentParser
             {
                 Name = methodName,
                 ReturnType = method.ReturnType.ToString(),
-                TypeParameters = method.TypeParameterList?.Parameters.Select(p => p.Identifier.Text).ToList() ?? new List<string>(),
+                TypeParameters = method.TypeParameterList?.Parameters.Select(p => p.Identifier.ValueText.ToJsIdentifier()).ToList() ?? new List<string>(),
                 Body = method.Body?.ToString() ?? method.ExpressionBody?.Expression.ToString() ?? "",
                 IsStatic = method.Modifiers.Any(SyntaxKind.StaticKeyword),
                 IsOverride = method.Modifiers.Any(SyntaxKind.OverrideKeyword),

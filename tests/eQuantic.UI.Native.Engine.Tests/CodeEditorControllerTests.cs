@@ -449,6 +449,28 @@ public class CodeEditorControllerTests
         editor.Document.Text.Should().Be("one", "the second run undoes on its own");
     }
 
+    /// <summary>
+    /// A line break ends a run of typing, whichever breaks it (Copilot on #733). The history asked
+    /// for LF alone, so a typed lone CR, which a host recording its own edits may hand it, ran on into
+    /// the character typed after it, and one undo took back both.
+    /// </summary>
+    [Fact]
+    public void ATypedLoneCarriageReturn_EndsTheRunOfTyping()
+    {
+        var history = new CodeHistory();
+        var start = CodeDocument.FromText("ab");
+        var broke = new CodeEdit(new CodeRange(new CodePosition(0, 1)), "", "\r", default, default, Typed: true);
+        var afterBreak = start.Replace(broke.Range, broke.InsertedText, out _);
+        var typed = new CodeEdit(new CodeRange(broke.InsertedRange.End), "", "x", default, default, Typed: true);
+        var afterTyping = afterBreak.Replace(typed.Range, typed.InsertedText, out _);
+        history.Record(broke);
+        history.Record(typed);
+
+        var undone = history.Undo(afterTyping, out _, out _, out _)!;
+
+        undone.Text.Should().Be(afterBreak.Text, "one undo takes back the character typed after the break, and only it");
+    }
+
     [Fact]
     public void RedoPutsItBack_AndTypingKillsTheBranch()
     {

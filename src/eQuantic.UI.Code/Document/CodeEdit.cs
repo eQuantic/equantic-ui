@@ -19,21 +19,27 @@ public sealed record CodeEdit(
     bool Typed)
 {
     /// <summary>The range the inserted text occupies AFTER the edit — what a decoration or a
-    /// language server has to shift to.</summary>
+    /// language server has to shift to. Its lines break where the document breaks them, on CR, CRLF
+    /// and LF alike, whoever made the edit: split on LF alone, a lone CR ended the range a line short
+    /// of the text the document held, and undo took back the wrong text (#600).</summary>
     public CodeRange InsertedRange
     {
         get
         {
             var start = Range.Start;
-            var lines = InsertedText.Split('\n');
-            var end = lines.Length == 1
+            var lines = CodeDocument.FromText(InsertedText).Lines;
+            var end = lines.Count == 1
                 ? new CodePosition(start.Line, start.Column + lines[0].Length)
-                : new CodePosition(start.Line + lines.Length - 1, lines[^1].Length);
+                : new CodePosition(start.Line + lines.Count - 1, lines[^1].Length);
             return new CodeRange(start, end);
         }
     }
 
     /// <summary>True when this edit only ADDED text at the caret — the case undo coalesces, so a
     /// sentence typed letter by letter comes back in one press rather than forty.</summary>
-    public bool IsSimpleInsert => RemovedText.Length == 0 && !InsertedText.Contains('\n');
+    public bool IsSimpleInsert => RemovedText.Length == 0 && !BreaksLine;
+
+    /// <summary>Whether the inserted text breaks a line, on CR, CRLF or LF, as the document breaks
+    /// them: what ends a run of typing.</summary>
+    internal bool BreaksLine => InsertedText.Contains('\n') || InsertedText.Contains('\r');
 }
