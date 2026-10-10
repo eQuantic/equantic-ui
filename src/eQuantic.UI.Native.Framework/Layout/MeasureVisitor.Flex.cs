@@ -525,6 +525,11 @@ internal sealed partial class MeasureVisitor
             shrink.Add(flexible?.Shrink ?? 0);
         }
 
+        // The size each item OCCUPIES: its hypothetical one until its line resolves it. A Flexible's
+        // item keeps it even when the line neither grows nor shrinks, so a zero weight at a basis of
+        // 540 around a 400 box occupies 540, as in a browser, and not the box's 400.
+        var resolved = new List<float>(hypothetical);
+
         // Break into lines, measuring against the hypothetical sizes.
         var lines = new List<(int Start, int Count, float Main, float Cross)>();
         var lineStart = 0;
@@ -592,16 +597,15 @@ internal sealed partial class MeasureVisitor
 
                     if (MathF.Abs(size - hypothetical[i]) > 0.01f)
                     {
+                        // Measured again inside the size it resolved to, so text re-wraps there. The
+                        // item built below OCCUPIES that size, even when its content is shorter:
+                        // otherwise the ones after it slide left and the line no longer fills what
+                        // it was given.
                         var child = sources[i] is Flexible f ? f.Child : sources[i];
-                        var remeasured = Measure(child, constraints.ForChild(horizontal ? size : crossMax - padCross,
-                            horizontal ? crossMax - padCross : size), ctx, ctx.ChildPath(path, i, sources[i]));
-                        // A flex item OCCUPIES the size it resolved to, even when its content is
-                        // shorter — otherwise the ones after it slide left and the line no longer
-                        // fills what it was given.
-                        remeasured.Bounds = horizontal
-                            ? remeasured.Bounds with { Width = size }
-                            : remeasured.Bounds with { Height = size };
-                        measured[i] = remeasured;
+                        measured[i] = Measure(child, constraints.ForChild(horizontal ? size : crossMax - padCross,
+                            horizontal ? crossMax - padCross : size) with { WidthIsACeiling = MainSizeIsACeiling(child, horizontal) },
+                            ctx, ctx.ChildPath(path, i, sources[i]));
+                        resolved[i] = size;
                     }
 
                     resolvedMain += size + (i > line.Start ? flex.Gap : 0);
@@ -611,6 +615,24 @@ internal sealed partial class MeasureVisitor
 
                 lines[l] = (line.Start, line.Count, resolvedMain, resolvedCross);
             }
+        }
+
+        // Each Flexible becomes an ITEM at the size it occupies, around its child, the shape the
+        // single-line slot builds: a child with a size of its own keeps it, any other is pinned to
+        // the item. Before this the child WAS the item, so on a line that neither grew nor shrank
+        // a zero weight at a basis of 540 occupied its 400 box's width (or a 600 one's), where a
+        // browser gives the item 540 and lets the box sit or overflow inside it. A scroller wider
+        // than its item is measured again under the ceiling the web's `max-width: 100%` puts on it.
+        for (var i = 0; i < measured.Count; i++)
+        {
+            if (sources[i] is not Flexible flexible) continue;
+            var child = measured[i];
+            if (MainSizeIsACeiling(flexible.Child, horizontal)
+                && (horizontal ? child.Bounds.Width : child.Bounds.Height) > resolved[i] + 0.01f)
+                child = Measure(flexible.Child, constraints.ForChild(horizontal ? resolved[i] : crossMax - padCross,
+                    horizontal ? crossMax - padCross : resolved[i]) with { WidthIsACeiling = true },
+                    ctx, ctx.ChildPath(path, i, flexible));
+            measured[i] = FlexItem(flexible, child, resolved[i], horizontal, ctx);
         }
 
         // Container extents.
@@ -662,6 +684,15 @@ internal sealed partial class MeasureVisitor
                     child.Bounds = horizontal
                         ? child.Bounds with { Height = line.Cross }
                         : child.Bounds with { Width = line.Cross };
+                    // A Flexible's item stretches THROUGH to its child, which is what this pass
+                    // stretched before the child had an item around it.
+                    if (sources[i] is Flexible && child.Children.Count > 0)
+                    {
+                        var inner = child.Children[0];
+                        inner.Bounds = horizontal
+                            ? inner.Bounds with { Height = line.Cross }
+                            : inner.Bounds with { Width = line.Cross };
+                    }
                     within = 0;
                 }
 

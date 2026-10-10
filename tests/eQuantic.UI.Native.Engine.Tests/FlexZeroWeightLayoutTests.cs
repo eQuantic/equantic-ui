@@ -97,6 +97,35 @@ public class FlexZeroWeightLayoutTests
         node.Children[1].Bounds.Width.Should().BeApproximately(614, 0.5f);
     }
 
+    /// <summary>
+    /// On a wrapping line that neither grows nor shrinks, a zero weight still OCCUPIES its basis.
+    /// In a wrapping row of 540, Chrome 154 gives <c>Flexible(400 box, flex: 0, basis: 540)</c> an
+    /// item of 540 with the box at 400 inside it, and a 600 box an item of 540 that the box overflows.
+    /// In a row of 1000 the next item, at a basis of 200, starts at 540. Photon had no item on such a
+    /// line: the box was the item, so it occupied 400 or 600, and the next one started at 400.
+    /// </summary>
+    [Fact]
+    public void InAWrappingRow_AZeroWeightOccupiesItsBasis_OnALineThatDoesNotMove()
+    {
+        foreach (var box in new[] { 400f, 600f })
+        {
+            var row = new Row(gap: 0) { Wrap = true, Width = 540 };
+            row.Add(new Flexible(FixedBox(box), flex: 0, basis: 540));
+            var item = Layout(row).Children[0];
+
+            item.Bounds.Width.Should().BeApproximately(540, 0.5f, $"the item around a {box} box takes its basis");
+            item.Children[0].Bounds.Width.Should().Be(box, "and the box keeps its own width inside it");
+        }
+
+        var two = new Row(gap: 0) { Wrap = true, Width = 1000 };
+        two.Add(new Flexible(FixedBox(400), flex: 0, basis: 540));
+        two.Add(new Flexible(FixedBox(100), flex: 0, basis: 200));
+        var next = Layout(two).Children[1];
+        next.Bounds.X.Should().BeApproximately(540, 0.5f, "the next item starts where the first one's basis ends");
+        next.Bounds.Width.Should().BeApproximately(200, 0.5f);
+        next.Children[0].Bounds.Width.Should().Be(100);
+    }
+
     /// <summary>A zero weight's basis is still a size an overflowing line can take back, by its own
     /// shrink (CSS <c>flex: 0 1 540px</c> after a rigid 100 in 400 is 300), and <c>shrink: 0</c>
     /// keeps every pixel of it (CSS <c>flex: 0 0 540px</c> in 400 stays 540).</summary>

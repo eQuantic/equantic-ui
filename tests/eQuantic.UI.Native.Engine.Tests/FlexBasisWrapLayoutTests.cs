@@ -23,6 +23,23 @@ public class FlexBasisWrapLayoutTests
         LayoutEngine.Layout(flex, viewportW, viewportH,
             new LayoutContext(PhotonTheme.Instance, new ApproximateTextMeasurer()));
 
+    /// <summary>
+    /// A weighted item whose basis fills its line exactly occupies that basis, although the line
+    /// neither grows nor shrinks: in a wrapping row of 540, Chrome 154 gives
+    /// <c>Flexible(400 box, flex: 1, basis: 540)</c> an item of 540 with the box at 400 inside it.
+    /// Photon had no item on such a line and occupied the box's 400.
+    /// </summary>
+    [Fact]
+    public void AWeightedItem_OccupiesItsBasis_OnALineItFitsExactly()
+    {
+        var row = new Row(gap: 0) { Wrap = true, Width = 540 };
+        row.Add(new Flexible(new Box(new BoxStyle { Width = 400, Height = 20 }), flex: 1, basis: 540));
+        var item = Layout(row, viewportW: 2000).Children[0];
+
+        item.Bounds.Width.Should().BeApproximately(540, 0.5f);
+        item.Children[0].Bounds.Width.Should().Be(400);
+    }
+
     /// <summary>Wide enough for both bases: one line, and the leftover is shared by weight.</summary>
     [Fact]
     public void WithRoomForBothBases_TheySitSideBySide()
