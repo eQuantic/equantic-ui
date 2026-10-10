@@ -92,12 +92,19 @@ holds open.
 ### Requirement: A page keeps its fields across a hot reload
 
 A hot reload SHALL hand the reloaded page the fields it held before the save that are data, the ones its C# declares,
-before it builds, each rebuilt as the type it was at every depth: the capture writes the hydration spec
-of each value's runtime type beside its JSON, and the reload rebuilds it with `hydrate`, the server
-payload's own machinery. A field the edit removed SHALL be left behind, a field the edit added SHALL
-keep its initializer, and a field the reload cannot give back as it was SHALL keep its initializer while
-the others cross: one holding a number JSON writes as null, a value with a life of its own, a record of
-the app's where the reloaded page's initializer holds none of its class, or a type the edit changed.
+before it builds, each rebuilt exactly as the type it was at every depth, and only into a field the
+reloaded page still types the same way. The capture writes the hydration spec of each value's runtime
+type beside its JSON, a record and a vocabulary value as their own members, a property's store
+included. The reload rebuilds each value with `hydrate`, the server payload's own machinery, and runs
+none of a record's accessors. The type the reloaded page gives a place is the hydration spec it
+declares there, which decides over an empty or a null initializer, or else what its initializer holds
+there. A field the edit removed SHALL be left behind, a field the edit added SHALL keep its
+initializer, and a field the reload cannot give back exactly, or into a type the page confirms, SHALL
+keep its initializer while the others cross: one holding a number JSON does not write as itself, a
+value with a life of its own, a record whose class the page does not hand back or whose saved member
+the edited class reaches through a setter, a type the edit changed, or a value the reload has to
+build where the page neither declares a type nor initializes a value. The first render's adoption of
+the server's payload SHALL NOT write a field the replay decided.
 
 #### Scenario: A counter across a save
 
@@ -129,16 +136,16 @@ the app's where the reloaded page's initializer holds none of its class, or a ty
 
 #### Scenario: The vocabulary's value types
 
-- **WHEN** a page holds a `Point`, an `EdgeInsets`, a `ColorToken`, a list of `Point` and a record holding
-  a `Rect`, and is reloaded
+- **WHEN** a page holds a `Point`, an `EdgeInsets`, a `ColorToken`, a list of `Point` it declares and a
+  record holding a `Rect`, and is reloaded
 - **THEN** each comes back an instance of its own class with its values, where every one of them went
   back to its initializer
 
 #### Scenario: Each value as its type at every depth
 
-- **WHEN** a page holds a `long[]`, a `Dictionary<int, long>`, a dictionary keyed by `decimal`, an
-  anonymous value holding a `long`, and a `long?` and a `DateTime?` its initializer left null, and is
-  reloaded
+- **WHEN** a page that declares its fields' types holds a `long[]`, a `Dictionary<int, long>`, a
+  dictionary keyed by `decimal`, an anonymous value holding a `long`, and a `long?` and a `DateTime?`
+  its initializer left null, and is reloaded
 - **THEN** each comes back as the type it was: the longs as longs, where they came back as strings, and
   the dictionary's keys as numbers and its values as longs, found as it found them
 
@@ -152,3 +159,40 @@ the app's where the reloaded page's initializer holds none of its class, or a ty
 
 - **WHEN** the edit changes `_size` from an `int` to a `string`
 - **THEN** the reloaded page's `_size` holds the initializer the edit gave it
+
+#### Scenario: A negative zero
+
+- **WHEN** a page holds a negative zero, alone, in a list, in a record or as a dictionary key, and is
+  reloaded
+- **THEN** the field that holds it keeps its initializer, where it came back as 0 and `1 / x` answered
+  the other infinity
+
+#### Scenario: A record that keeps a property's value in a store
+
+- **WHEN** a page holds eqc's `FRec`, whose setter doubles what it is given, set to 5, and `GRec`, whose
+  getter adds one, set to 3, and is reloaded
+- **THEN** they come back reading 10 and 4, equal to what they were, where `FRec` came back reading 20
+
+#### Scenario: A record whose member the edit gave a setter
+
+- **WHEN** the edit gives a record's member accessors with a setter over a store
+- **THEN** the field keeps its initializer and the setter does not run
+
+#### Scenario: A collection whose element type the edit changed
+
+- **WHEN** the edit changes a `long[]`, a `Dictionary<int, long>` and a `long?` left null to text, on a
+  page that declares no types
+- **THEN** each keeps the initializer the edit gave it, where the `long[]` handed the edited code BigInts,
+  and a list of text into a list of text still crosses
+
+#### Scenario: The type a page declares decides
+
+- **WHEN** a page declares a `long[]`, a `DateTime?` and a `Dictionary<int, long>` whose initializers are
+  null or empty, and is reloaded once as it was and once after an edit that declares other types there
+- **THEN** each comes back as the type it was the first time, and keeps its initializer the second
+
+#### Scenario: The server's payload on the first render
+
+- **WHEN** the replay leaves a field the server's payload lists at its initializer, and the page mounts
+- **THEN** the first render does not write the saved value back, and the page's other server members and
+  every other component's payload are adopted

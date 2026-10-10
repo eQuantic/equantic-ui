@@ -1768,7 +1768,12 @@ record of a release, the wiki's Upgrading page is the distillate.
   keeping (a NaN back as null, a controller inside a dictionary back as a plain object, the
   vocabulary's `Point` back at its initializer, a `long[]` back as strings), so each value now crosses
   with the hydration spec of its runtime type and comes back through `hydrate` as the type it was, or
-  keeps its initializer. Proposed and archived through OpenSpec (`openspec/specs/hot-reload`).
+  keeps its initializer. The second round found four more (a negative zero back as 0, a record's store
+  back through its setter, `FRec`'s 10 as 20, BigInts handed to a list the edit had made text, and the
+  first render's server adoption writing back a field the replay had refused), so a record crosses as
+  its stores, a value comes back only into the type the reloaded page declares or initializes there,
+  and the server's payload never writes a field the replay decided. Proposed and archived through
+  OpenSpec (`openspec/specs/hot-reload`).
 
 ## Retired documents
 
