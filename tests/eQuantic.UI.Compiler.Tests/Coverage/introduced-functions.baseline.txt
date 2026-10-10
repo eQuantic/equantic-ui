@@ -27,7 +27,7 @@ src/eQuantic.UI.Compiler/CodeGen/Strategies/Expressions/BinaryExpressionStrategy
 src/eQuantic.UI.Compiler/CodeGen/Strategies/Expressions/ConditionalAccessStrategy.cs  1  no statement there
 src/eQuantic.UI.Compiler/CodeGen/Strategies/Expressions/InitializerExpressionStrategy.cs  1  not looked at yet
 src/eQuantic.UI.Compiler/CodeGen/Strategies/Expressions/InvocationStrategy.cs  1  not looked at yet
-src/eQuantic.UI.Compiler/CodeGen/Strategies/Expressions/IsPatternStrategy.cs  1  arguments only
+src/eQuantic.UI.Compiler/CodeGen/Strategies/Expressions/IsPatternStrategy.cs  3  arguments only
 src/eQuantic.UI.Compiler/CodeGen/Strategies/Expressions/ObjectCreationStrategy.cs  2  not looked at yet
 src/eQuantic.UI.Compiler/CodeGen/Strategies/Expressions/SwitchExpressionStrategy.cs  1  not looked at yet
 src/eQuantic.UI.Compiler/CodeGen/Strategies/Expressions/TupleEquality.cs  1  arguments only
