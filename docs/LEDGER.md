@@ -1703,6 +1703,23 @@ record of a release, the wiki's Upgrading page is the distillate.
   1970 toward the epoch; it answers a BigInt cut as .NET cuts it now. Found on the way: the date
   constructors past the second ([#606](https://github.com/eQuantic/equantic-ui/issues/606)).
   Proposed and archived through OpenSpec (`openspec/specs/runtime-dates`).
+- **2026-10-07 · Every producer draws the same tree**: five places where the server's realizer,
+  its browser twin and Photon drew one tree three ways, one family of the bug sweep. A Text lowers
+  as a block on the web, so a 10/15 label in a padded pill is 21px where it sat on the body font's
+  26.5px line ([#495](https://github.com/eQuantic/equantic-ui/issues/495)). A pinned header's
+  `ScrolledStyle` applies every member on both targets, from the surface it pins to, over
+  `Pinned.ScrolledBase`; the web wrote four of seven and Photon none
+  ([#506](https://github.com/eQuantic/equantic-ui/issues/506)), and the state builder now draws a
+  border along the edges its box draws. A draggable's offset rides `translate`, so an open row keeps
+  its box's transform and its hover's, and a swipe that changes nothing glides home
+  ([#511](https://github.com/eQuantic/equantic-ui/issues/511)). The hit slop's lift reaches through
+  wrappers that draw no box ([#622](https://github.com/eQuantic/equantic-ui/issues/622)); its parity
+  case found the browser twin dropping a dark artwork's size. And the server builds at the density
+  the browser reports in a session cookie, a served page and the tree a client navigation finds its
+  data in alike, and hydration adopts it, switching the whole page at once when they differ
+  ([#623](https://github.com/eQuantic/equantic-ui/issues/623)). Measured in
+  Chromium on a served page and after a client navigation. Proposed and archived through OpenSpec
+  (`layout`, `interaction-states`, `gestures`, `hit-targets`, `hydration-contract`).
 - **2026-10-07 · A page requires its authorization**: `[Authorize]` held on Server Actions only, so
   a page's route served anyone and its `IServerPrefetch` ran for an anonymous visitor, writing its
   fields into the HTML ([#673](https://github.com/eQuantic/equantic-ui/issues/673), asked by Cura for
@@ -1837,6 +1854,28 @@ record of a release, the wiki's Upgrading page is the distillate.
   under any runner ([#664](https://github.com/eQuantic/equantic-ui/issues/664)).
   Proposed and archived through OpenSpec (`openspec/specs/hot-reload`, `generated-files` and
   `hydration-contract`).
+- **2026-10-07 · A hot reload keeps the page's state**: the reload captured the page's `_state` bag,
+  which no write-once page has, and sent it back through the server-data door, which takes only what
+  the hydration manifest lists, so a page's own fields went back to their initializers on every save:
+  the dashboard's `Count: 3` came back `Count: 0`, under `dotnet run` and under `dotnet watch` alike
+  ([#664](https://github.com/eQuantic/equantic-ui/issues/664)). The page's own fields cross now,
+  without the runtime's beside them, and the reloaded page gets them before it builds, each rebuilt
+  in the shape its initializer gives it: data only, a record and a `long` included, since a
+  controller rebuilt from its JSON came back with maps no map method accepts, as the review before
+  the pull request found. Copilot's first round found four values the reload changed instead of
+  keeping (a NaN back as null, a controller inside a dictionary back as a plain object, the
+  vocabulary's `Point` back at its initializer, a `long[]` back as strings), so each value now crosses
+  with the hydration spec of its runtime type and comes back through `hydrate` as the type it was, or
+  keeps its initializer. The second round found four more (a negative zero back as 0, a record's store
+  back through its setter, `FRec`'s 10 as 20, BigInts handed to a list the edit had made text, and the
+  first render's server adoption writing back a field the replay had refused), so a record crosses as
+  its stores, a value comes back only into the type the reloaded page declares or initializes there,
+  and the server's payload never writes a field the replay decided. The third round found two more:
+  an app's class with an `Equals` override and a `With(...)` of its own passed for a record, so eqc's
+  record and struct twins now say they are one (`static $record`), and a list with a hole or an
+  undefined element, which eqc writes for `Array.Resize` and a vocabulary struct's `default`, came back
+  with nulls, so it keeps its initializer. Proposed and archived through OpenSpec
+  (`openspec/specs/hot-reload`).
 - **2026-10-07 · A builder has the members a page reaches**: `AppendFormat`, `AppendJoin`,
   `Capacity`, `MaxCapacity`, `EnsureCapacity`, the `Chars` indexer, `Length`'s setter,
   `Equals(StringBuilder)` and `CopyTo` transpiled to members the runtime's builder did not have, a
