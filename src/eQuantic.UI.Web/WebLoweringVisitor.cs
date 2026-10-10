@@ -253,6 +253,8 @@ internal sealed partial class WebLoweringVisitor(ComponentContext context, Fontl
         Box box => (box.Style.Width.Kind == SizeKind.Fill, box.Style.Height.Kind == SizeKind.Fill),
         FlexNode flex => (flex.Width.Kind == SizeKind.Fill, flex.Height.Kind == SizeKind.Fill),
         Stack stack => (stack.Width.Kind == SizeKind.Fill, stack.Height.Kind == SizeKind.Fill),
+        // A drawing at its parent's width fills across; its height follows from its aspect.
+        Drawing drawing => (drawing.Width.Kind == SizeKind.Fill, false),
         Pressable pressable => Fills(pressable.Child),
         Hoverable hoverable => Fills(hoverable.Child),
         Adjustable adjustable => Fills(adjustable.Child),

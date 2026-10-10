@@ -1758,6 +1758,17 @@ record of a release, the wiki's Upgrading page is the distillate.
   46 new conformance cases fail on the base. The members the runtime does not have are
   [#679](https://github.com/eQuantic/equantic-ui/issues/679). Proposed and archived through OpenSpec
   (`openspec/specs/transpiler-bcl`).
+- **2026-10-08 · A Server Action refuses a request from another site**: nothing asked where an action's
+  request came from, and the endpoint read a body whatever its content type, so another site's page
+  could post a "simple" request, with no CORS preflight, and an anonymous action ran for it as for the
+  app's own page ([#678](https://github.com/eQuantic/equantic-ui/issues/678), met on Cura). The endpoint
+  answers 403 before reading anything when the `Origin` is neither the app's host (host and port
+  compared, a raw `X-Forwarded-Host` never read) nor an allowed origin, `null` included, or, with no
+  `Origin`, when `Sec-Fetch-Site` says `cross-site` or `same-site`. An app allows origins in
+  `EQuantic:ServerActions:AllowedOrigins` or with `AllowServerActionOrigins`, and a malformed one stops
+  it at start. 12 of the 31 server cases fail on the base, the refusals and the start-up check; in a
+  browser, a `text/plain` post from `localhost` to `127.0.0.1` is refused in 1 ms and the same post from
+  the page's own origin runs. Proposed and archived through OpenSpec (`openspec/specs/server-actions`).
 - **2026-10-08 · A dictionary crosses the wire in its order**: a dictionary crossed as a JSON object,
   which the browser parses with every integer-like key first and ascending, so a
   `Dictionary<int, string>` holding 3, then 1 reached a page's state, a Server Action's answer or a
@@ -1907,6 +1918,13 @@ record of a release, the wiki's Upgrading page is the distillate.
   undefined element, which eqc writes for `Array.Resize` and a vocabulary struct's `default`, came back
   with nulls, so it keeps its initializer. Proposed and archived through OpenSpec
   (`openspec/specs/hot-reload`).
+- **2026-10-07 · A Photon Text takes the width its parent decides**: Photon measured a Text at its
+  own width in every parent, so a centred line in a sized Box or a stretching Column sat at the start,
+  centred inside a box as wide as itself ([#659](https://github.com/eQuantic/equantic-ui/issues/659),
+  found while fixing #495). A Text takes the width a Box, a stretching Row or Column and the page
+  decide, as a block does on the web and as Flutter's does under a tight constraint, keeps the height
+  of its lines, and still hugs inside a button. Proposed and archived through OpenSpec
+  (`openspec/specs/layout`).
 - **2026-10-06 · The code editor shows its completion list**: the view half of the code editor's
   slice 3 ([#297](https://github.com/eQuantic/equantic-ui/issues/297)). `CodeEditor` draws the list
   at the word it completes, through the code surface and in the code's own coordinates
@@ -2063,6 +2081,17 @@ record of a release, the wiki's Upgrading page is the distillate.
   delegate and `ToString` answered `[object Object]`, on a `Color` as on a `Curve`: each group answers
   through the helper its call uses, the receiver read once. Proposed and archived through OpenSpec
   (`openspec/specs/transpiler-vocabulary-values`).
+
+- **2026-10-10 · A layout follows its box**: the first external consumer, falei.pt, needed three
+  things a fixed point could not say. A `Drawing` takes a `SizeValue` width, so `SizeValue.Fill` draws
+  it at its column's width with the height its artwork's aspect gives; a `Positioned` child is placed
+  by a fraction of its stack (`TopFraction`, `StartFraction`, …) plus a point offset, and shifted by a
+  fraction of its own size (`ShiftX`, `ShiftY`), the way a label centres on a map point; and
+  `GridTrack.AutoFill(min)` repeats a column as often as it fits, `repeat(auto-fill, minmax(…))` on the
+  web and the same count on Photon. Both web targets lower byte-identically and Photon measures the
+  same boxes. `Drawing.Width` is now a `SizeValue`, the one break, listed in Upgrading
+  ([#636](https://github.com/eQuantic/equantic-ui/issues/636)). Proposed and archived
+  through OpenSpec (`openspec/specs/layout`).
 - **2026-10-07 · An adaptive arm is laid out where it stands**: three ways an `AdaptiveNode`'s arm
   was not laid out as written, found building eQuantic Auth's landing page
   ([#669](https://github.com/eQuantic/equantic-ui/issues/669),
