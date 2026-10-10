@@ -646,6 +646,36 @@ function lowerCodeSurface(node: CodeSurfaceNode, context: LoweringContext, path:
   }
   surface.children.push(input);
 
+  // What the surface OFFERS at its caret (C# twin: LowerCodeSurface): over the code and the caret, at
+  // its origin in the surface's coordinates, as the input's listbox. The rows are options, numbered
+  // as an Anchored listbox numbers its rows, and the input names the list and points at the one the
+  // keyboard is on. A press on the list is the list's: it never reaches the code under it, which
+  // would move the caret, and never takes the keyboard from the input.
+  if (node.options) {
+    const offered = lowerNode(node.options, context, null, path + '/1');
+    if (offered) {
+      const listId = `eq-options-${hashDeclaration(path)}`;
+      const origin = node.optionsOrigin ?? { x: 0, y: 0 };
+      const list = element('div', { position: 'absolute', left: px(origin.x), top: px(origin.y) }, [offered]);
+      list.attributes['role'] = 'listbox';
+      list.attributes['id'] = listId;
+      numberItemRows(list, listId, { next: 0 });
+      const keep = ((event: Event) => {
+        event.stopPropagation();
+        if (event.type === 'mousedown') event.preventDefault();
+      }) as unknown as EventHandler;
+      list.events['pointerdown'] = keep;
+      list.events['mousedown'] = keep;
+      // No aria-expanded: ARIA allows it on a combobox and not on the textbox a textarea is, and
+      // the list it controls and the option it points at already say that one is showing.
+      input.attributes['aria-autocomplete'] = 'list';
+      input.attributes['aria-controls'] = listId;
+      const highlighted = node.highlightedOption ?? -1;
+      if (highlighted >= 0) input.attributes['aria-activedescendant'] = `${listId}-${highlighted}`;
+      surface.children.push(list);
+    }
+  }
+
   if (typeof document === 'undefined') return surface; // SSR: the marks are enough
 
   // A caret the model MOVED since the last render is brought into view — by a key, a command, a
@@ -3078,6 +3108,13 @@ function lowerPressable(
   if (disabled && !wrapping) node.attributes['disabled'] = '';
   if (disabled && wrapping) node.attributes['aria-disabled'] = 'true';
   if (!disabled && pressable.onPressed) node.events['click'] = pressable.onPressed as EventHandler;
+  // A pressable that may not take the keyboard (Flutter's canRequestFocus): out of the Tab order, as
+  // the C# realizer writes it, and its press cancelled before the browser moves the focus to it, so
+  // the code a person is typing into keeps the keyboard while they point. The click still comes.
+  if (pressable.canRequestFocus === false) {
+    node.attributes['tabindex'] = '-1';
+    node.events['mousedown'] = ((event: MouseEvent) => event.preventDefault()) as unknown as EventHandler;
+  }
 
   // Interaction states (spec §01): mechanics live in the generated stylesheet — every enabled
   // pressable carries the class (:focus-visible double ring is an a11y DEFAULT); the pressed swap

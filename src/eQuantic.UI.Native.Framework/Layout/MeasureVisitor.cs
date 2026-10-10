@@ -156,9 +156,18 @@ internal sealed partial class MeasureVisitor : IVisualNodeVisitor<MeasureState, 
     public LayoutNode Visit(Pressable node, MeasureState s) =>
         MeasureWrapper(node, node.Child, s.Constraints.Inline(), _ctx, s.Path);
 
-    // Transparent to layout: the surface adds a caret and a selection, never a box.
-    public LayoutNode Visit(CodeSurface node, MeasureState s) =>
-        MeasureWrapper(node, node.Child, s.Constraints, _ctx, s.Path);
+    // Transparent to layout: the surface adds a caret and a selection, never a box. What it OFFERS at
+    // its caret (Options) stands at its origin, in the surface's coordinates, at the size it asks for,
+    // and takes no room: a list drawn under a line must not lengthen the code it is drawn over.
+    public LayoutNode Visit(CodeSurface node, MeasureState s)
+    {
+        var result = MeasureWrapper(node, node.Child, s.Constraints, _ctx, s.Path);
+        if (node.Options is not { } options) return result;
+        var offered = Measure(options, LayoutConstraints.Unbounded, _ctx, _ctx.ChildPath(s.Path, 1));
+        offered.Bounds = offered.Bounds with { X = node.OptionsOrigin.X, Y = node.OptionsOrigin.Y };
+        result.Adopt(offered);
+        return result;
+    }
 
     public LayoutNode Visit(SheetSurface node, MeasureState s) =>
         MeasureWrapper(node, node.Child, s.Constraints, _ctx, s.Path);

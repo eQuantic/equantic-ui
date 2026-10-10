@@ -628,6 +628,11 @@ internal sealed partial class WebLoweringVisitor
             element.AriaPressed = null;
         }
 
+        // A pressable that may not take the keyboard (Flutter's canRequestFocus) leaves the Tab
+        // order. The press's own focus move is cancelled by the runtime's mousedown, which the server
+        // has no way to write. TS twin: lowerPressable.
+        if (!pressable.CanRequestFocus) element.TabIndex = -1;
+
         if (child is not null) element.Children.Add(child);
         return element;
     }
