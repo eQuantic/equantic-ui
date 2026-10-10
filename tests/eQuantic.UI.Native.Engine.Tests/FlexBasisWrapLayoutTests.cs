@@ -129,4 +129,31 @@ public class FlexBasisWrapLayoutTests
         node.Children[2].Bounds.Y.Should().BeGreaterThan(node.Children[0].Bounds.Y);
         node.Children[2].Bounds.X.Should().Be(0);
     }
+
+    /// <summary>
+    /// A scroller on a wrapping line scrolls as far as the viewport it is drawn at. In a wrapping row
+    /// of 300, Chrome 154 caps <c>Flexible(ScrollView { Width = 400 }, flex: 1)</c> around 800 of
+    /// content at 300, with a basis of 300 or of 200, and scrolls it by 500 either way. Photon capped
+    /// it when it measured it again, and kept the range its first measure had taken at 400.
+    /// </summary>
+    [Theory]
+    [InlineData(300f)] // the line holds it still
+    [InlineData(200f)] // the line grows it
+    public void AScrollerOnAWrappingLine_ScrollsAsFarAsItsViewportNeeds(float basis)
+    {
+        var scroller = new ScrollView(new Box(new BoxStyle { Width = 800, Height = 20 }), ScrollAxis.Horizontal)
+        {
+            Width = 400,
+            Height = 20,
+        };
+        var row = new Row(gap: 0) { Wrap = true, Width = 300 };
+        row.Add(new Flexible(scroller, flex: 1, basis: basis));
+        var ranges = new Dictionary<ScrollView, (string Path, float MaxOffset)>();
+
+        var item = LayoutEngine.Layout(row, 300, 800,
+            new LayoutContext(PhotonTheme.Instance, new ApproximateTextMeasurer()) { ScrollMeta = ranges }).Children[0];
+
+        item.Children[0].Bounds.Width.Should().BeApproximately(300, 0.01f, "the scroller is capped at its item");
+        ranges[scroller].MaxOffset.Should().BeApproximately(500, 0.01f, "800 of content in a 300 viewport");
+    }
 }

@@ -157,9 +157,12 @@ internal sealed partial class MeasureVisitor
 
         var maxOffset = MathF.Max(0, horizontal ? child.Bounds.Width - width : child.Bounds.Height - height);
         // Scroll compositor v1: the host's stored offset wins; the node's programmatic Offset is the
-        // default until the user scrolls. The realizer registers the region via ScrollMeta.
+        // default until the user scrolls. The realizer registers the region via ScrollMeta, with the
+        // range of the measure the tree KEEPS, which is the last one: a scroller measured again (a
+        // wrapping line that resolved, a Flexible's ceiling) kept the range of its first measure, so
+        // a viewport capped to 300 around 800 of content stopped scrolling at 400 instead of 500.
         var offset = Math.Clamp(ctx.ScrollOffsets?.Get(path) ?? scroll.Offset, 0, maxOffset);
-        ctx.ScrollMeta?.TryAdd(scroll, (path, maxOffset));
+        if (ctx.ScrollMeta is { } meta) meta[scroll] = (path, maxOffset);
         child.Bounds = child.Bounds with
         {
             X = horizontal ? -offset : 0,
