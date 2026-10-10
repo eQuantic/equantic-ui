@@ -22,6 +22,11 @@ elements. A target-typed list built from a source with no initializer SHALL be a
 - **WHEN** browser-side code builds `List<int> c = new(source)` over `source = new List<int> { 1 }` and runs `c.Add(9)`
 - **THEN** `c` holds `1,9` and `source` one element, as in .NET
 
+#### Scenario: A capacity is evaluated first
+
+- **WHEN** browser-side code builds `new List<int>(Cap()) { At("a", 1), At("b", 2) }`, each call logging its step, and `new List<int>(-1)`
+- **THEN** the log is `cab` before the list holds `1,2`, and the second throws an ArgumentOutOfRangeException, "Non-negative number required. (Parameter 'capacity')", as in .NET
+
 ### Requirement: A list's face reads and writes the list behind it
 
 An element read or written through the indexer of `IList<T>`, `IReadOnlyList<T>` or `IList`, and a
