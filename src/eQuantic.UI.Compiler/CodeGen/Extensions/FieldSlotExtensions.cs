@@ -10,8 +10,17 @@ namespace eQuantic.UI.Compiler.CodeGen.Extensions;
 /// this.value = value * 2; }</c> lowered both to <c>value</c>, the own field hid the accessors, and the
 /// setter never ran (#396). The field is the one that moves, storage the class's own code names, where
 /// a property's or a method's name is what callers and JSON read: it takes a <c>$</c> after its name,
-/// which no C# name holds and which a property's own store, <c>$name</c>, never meets. Of two fields a
-/// case apart, the one the casing changed moves.
+/// which no C# name holds and which a property's own store, <c>$name</c>, never meets. Of two fields of
+/// one type a case apart, the one the casing changed moves.
+/// <para>
+/// A slot an ancestor already holds is TAKEN, whatever the spellings: its twin's constructor writes it
+/// before the derived one runs, so a derived field on the same slot wrote over the inherited one, and
+/// two C# fields were one. The inherited slot is fixed by its own type, so the derived field moves, a
+/// <c>$</c> more each time the slot it would take is held: <c>value</c> beside an inherited field
+/// <c>Value</c> moved to <c>value$</c>, and beside an inherited <c>value$</c> to <c>value$$</c> (Copilot's
+/// second review of #696). A base never reads its derived types, so a derived member a case apart from
+/// an inherited field is not this rule's to settle.
+/// </para>
 /// <para>
 /// A component's fields, which the server hydrates by name, and a record's or a struct's, which
 /// equality, printing and <c>with</c> read, keep the refusal they have (EQ1007): renaming them would
@@ -24,7 +33,11 @@ internal static class FieldSlotExtensions
     internal static string TwinSlot(this IFieldSymbol field)
     {
         var name = TwinName.Of(field.Name);
-        return Moves(field, name) ? name + "$" : name;
+        if (!Movable(field)) return name;
+        var slot = MovesInItsType(field, name) ? name + "$" : name;
+        var taken = HeldByAncestors(field.ContainingType.BaseType);
+        while (taken.Contains(slot)) slot += "$";
+        return slot;
     }
 
     /// <summary>The name a member access writes for <paramref name="name"/>: a field's slot when the
@@ -34,31 +47,48 @@ internal static class FieldSlotExtensions
             ? field.TwinSlot()
             : name.Identifier.Text.ToCamelCase();
 
-    private static bool Moves(IFieldSymbol field, string name)
+    /// <summary>An instance field of a plain class the source declares, whose twin eqc writes by this
+    /// same rule: a framework type's twin is the runtime's, and names its members as they are.</summary>
+    private static bool Movable(IFieldSymbol field) =>
+        !field.IsStatic && !field.IsConst && !field.IsImplicitlyDeclared
+        && field.ContainingType is { TypeKind: TypeKind.Class, IsRecord: false } type && !IsComponent(type)
+        && type.Locations.Any(location => location.IsInSource);
+
+    /// <summary>Whether a member of the field's own type holds its twin name: a property, an event or a
+    /// method, or another field, of which the one whose name the casing changed moves.</summary>
+    private static bool MovesInItsType(IFieldSymbol field, string name) =>
+        field.ContainingType.GetMembers().Any(member =>
+            !SymbolEqualityComparer.Default.Equals(member, field) && !member.IsStatic && !member.IsImplicitlyDeclared
+            && TwinName.Of(member.Name) == name
+            && member switch
+            {
+                IPropertySymbol or IEventSymbol or IMethodSymbol { MethodKind: MethodKind.Ordinary } => true,
+                IFieldSymbol { IsConst: false } => field.Name != name,
+                _ => false,
+            });
+
+    /// <summary>The names the twins of <paramref name="type"/> and its bases hold on each instance: every
+    /// property's, event's and method's twin name, and every field's slot, which may have moved itself.</summary>
+    private static HashSet<string> HeldByAncestors(INamedTypeSymbol? type)
     {
-        if (field.IsStatic || field.IsConst || field.IsImplicitlyDeclared) return false;
-        // A type the source declares, whose twin eqc writes by this same rule: a framework type's twin is
-        // the runtime's, and names its members as they are.
-        if (field.ContainingType is not { TypeKind: TypeKind.Class, IsRecord: false } type || IsComponent(type)
-            || !type.Locations.Any(location => location.IsInSource)) return false;
+        var held = new HashSet<string>(StringComparer.Ordinal);
         for (var holder = type; holder is not null && holder.SpecialType != SpecialType.System_Object; holder = holder.BaseType)
         {
             foreach (var member in holder.GetMembers())
             {
-                if (SymbolEqualityComparer.Default.Equals(member, field) || member.IsStatic || member.IsImplicitlyDeclared) continue;
-                if (TwinName.Of(member.Name) != name) continue;
+                if (member.IsStatic || member.IsImplicitlyDeclared) continue;
                 switch (member)
                 {
+                    case IFieldSymbol { IsConst: false } field:
+                        held.Add(field.TwinSlot());
+                        break;
                     case IPropertySymbol or IEventSymbol or IMethodSymbol { MethodKind: MethodKind.Ordinary }:
-                        return true;
-                    case IFieldSymbol other when !other.IsConst:
-                        // Of two fields a case apart, the one whose name the casing changed.
-                        if (field.Name != name) return true;
+                        held.Add(TwinName.Of(member.Name));
                         break;
                 }
             }
         }
-        return false;
+        return held;
     }
 
     /// <summary>A component, whose fields the server hydrates under their twin names.</summary>

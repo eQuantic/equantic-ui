@@ -13,7 +13,9 @@ namespace eQuantic.UI.Conformance.Tests;
 /// the property again once the field had moved (Copilot's first review of #696). So does a call of a
 /// delegate field, which named the method a case apart from it, and a method that forwards to its
 /// delegate field called itself and never returned, and a field called Count, which the collections'
-/// table read as the method `count()` (found in the same review's sweep).
+/// table read as the method `count()` (found in the same review's sweep). A slot an ancestor holds is
+/// taken whatever the spellings, so a derived field beside an inherited one moves (Copilot's second
+/// review of #696).
 /// </summary>
 public class MemberCaseConformanceTests
 {
@@ -51,6 +53,12 @@ public class MemberCaseConformanceTests
         public class Point { int x; int y; public int X => x * 10; public int Y => y * 10; public Point(int x, int y) { this.x = x; this.y = y; } public void Deconstruct(out int x, out int y) { x = this.x; y = this.y; } }
         public class Gauge { int low = 1; int high = 2; public int Low => low * 10; public int High => high * 10; public int RawLow() => low; public int RawHigh() => high; }
         public static class GaugeParts { public static void Deconstruct(this Gauge gauge, out int low, out int high) { low = gauge.RawLow(); high = gauge.RawHigh(); } }
+        public class Lower { public int Value = 2; public int Read() => Value; }
+        public class Upper : Lower { int value = 3; public int Own() => value; }
+        public class Elder { int count = 1; public int Mine() => count; }
+        public class Heir : Elder { int count = 5; public int Theirs() => count; }
+        public class Store { int value = 1; public int Value => value * 10; }
+        public class Shop : Store { int value = 4; public int Mine() => value; }
         """;
 
     public static TheoryData<string, string, bool> Cases()
@@ -79,6 +87,9 @@ public class MemberCaseConformanceTests
             ("another instance's delegate field, called", "return new Checked().Other(new Checked(), 3);"),
             ("a delegate field called through ?.", "return new Checked().Guarded(new Checked(), 3);"),
             ("a field called Count, read", "var t = new Tally(); return t.Count + t.count() + t.Twice();"),
+            ("a derived field a case apart from an inherited field", "var u = new Upper(); return u.Read() * 10 + u.Own();"),
+            ("a derived field of an inherited field's own name", "var h = new Heir(); return h.Mine() * 10 + h.Theirs();"),
+            ("a derived field past an inherited moved field", "var s = new Shop(); return s.Value + s.Mine();"),
         };
         var data = new TheoryData<string, string, bool>();
         foreach (var (name, statements) in cases)
