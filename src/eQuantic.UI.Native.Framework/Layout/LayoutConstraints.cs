@@ -122,8 +122,9 @@ public readonly record struct LayoutConstraints(AxisConstraint Width, AxisConstr
     /// <para>
     /// It travels as <see cref="Truncating"/> does, and for the same reason: the slot decides it and
     /// only the node that declares the width can act on it, so it reaches the scroller through
-    /// layout-transparent wrappers (<c>Pinned(ScrollView(…))</c>) and the scroller measures, clips
-    /// and scrolls at the capped width. <see cref="ForChild"/> clears it for every other door.
+    /// layout-transparent wrappers (<c>Pinned(ScrollView(…))</c>), and through an AdaptiveNode to
+    /// the arm it measures to, and the scroller measures, clips and scrolls at the capped width.
+    /// <see cref="ForChild"/> clears it for every other door.
     /// </para>
     /// </summary>
     internal bool WidthIsACeiling { get; init; }

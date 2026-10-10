@@ -151,6 +151,45 @@ public class FlexLayoutTests
         ranges[sideways].MaxOffset.Should().BeApproximately(500, 0.01f, "800 of content in a 300 viewport");
     }
 
+    /// <summary>
+    /// A child that declares its size through an AdaptiveNode's arm keeps it as it would on its own:
+    /// the arm is what is laid out in the node's place. In a share of 300, Chrome 154 keeps an arm of
+    /// 400 at 400 and one of 100 at 100, caps a scroller arm of 400 at 300 and scrolls its 800 of
+    /// content by 500, and leaves a scroller arm of 100 at 100, scrolling by 700. Photon asked the
+    /// AdaptiveNode, which declares no size of its own, so it pinned all four to 300, and the capped
+    /// scroller kept the range it had measured at 400.
+    /// </summary>
+    [Fact]
+    public void AFlexibleChild_KeepsTheSizeItsArmDeclares()
+    {
+        static (float Width, float Range) ArmIn300(Func<VisualNode> arm)
+        {
+            var compact = arm();
+            var row = new Row(gap: 0) { Width = 600 };
+            row.Add(new Flexible(new AdaptiveNode(compact, medium: null, expanded: arm()), flex: 1));
+            row.Add(new Flexible(new Box(new BoxStyle { Width = SizeValue.Fill, Height = 20 }), flex: 1));
+            var ranges = new Dictionary<ScrollView, (string Path, float MaxOffset)>();
+            var item = LayoutEngine.Layout(row, 600, 300,
+                new LayoutContext(PhotonTheme.Instance, ApproximateTextMeasurer.Instance) { ScrollMeta = ranges }).Children[0];
+            item.Bounds.Width.Should().BeApproximately(300, 0.01f, "the item takes its share");
+            return (item.Children[0].Bounds.Width, compact is ScrollView scroller ? ranges[scroller].MaxOffset : 0);
+        }
+
+        static ScrollView Scroller(float width) =>
+            new(FixedBox(800, 20), ScrollAxis.Horizontal) { Width = width, Height = 20 };
+
+        ArmIn300(() => FixedBox(400, 20)).Width.Should().Be(400, "the arm keeps its width and overflows the item");
+        ArmIn300(() => FixedBox(100, 20)).Width.Should().Be(100, "the arm is not stretched to the item either");
+
+        var (capped, cappedRange) = ArmIn300(() => Scroller(400));
+        capped.Should().BeApproximately(300, 0.01f, "a scroller arm's width is a ceiling in its item");
+        cappedRange.Should().BeApproximately(500, 0.01f, "800 of content in a 300 viewport");
+
+        var (narrow, narrowRange) = ArmIn300(() => Scroller(100));
+        narrow.Should().BeApproximately(100, 0.01f, "a scroller arm under its ceiling keeps its width");
+        narrowRange.Should().BeApproximately(700, 0.01f, "800 of content in a 100 viewport");
+    }
+
     [Fact]
     public void Row_SpaceBetween_DistributesFreeSpace()
     {

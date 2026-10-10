@@ -74,6 +74,53 @@ public class MainSizeKindCoverageTests
         }
     }
 
+    /// <summary>
+    /// Each node type that takes its one child's size, so that the classifier is asked of the node
+    /// inside it: every layout-transparent wrapper, from the same statement the engine reads, and
+    /// an Anchored, whose anchor owns its layout.
+    /// </summary>
+    public static IEnumerable<object[]> PassThroughNodes() =>
+        typeof(VisualNode).Assembly.GetExportedTypes()
+            .Where(t => t is { IsAbstract: false, IsPublic: true } && typeof(SingleChildNode).IsAssignableFrom(t))
+            .Where(t => ((SingleChildNode)RuntimeHelpers.GetUninitializedObject(t)).IsLayoutTransparent())
+            .Append(typeof(Anchored))
+            .OrderBy(t => t.Name, StringComparer.Ordinal)
+            .Select(t => new object[] { t.Name });
+
+    /// <summary>
+    /// The classifier is asked of what was MEASURED, so a declared size is read through every node
+    /// that takes its child's size, in the measured tree: a wrapper's node holds the node of what it
+    /// wraps, and that one is asked.
+    /// </summary>
+    [Theory]
+    [MemberData(nameof(PassThroughNodes))]
+    public void ADeclaredMainSize_IsReadThroughANodeThatTakesItsChildsSize(string typeName)
+    {
+        var type = typeof(VisualNode).Assembly.GetExportedTypes().Single(t => t.Name == typeName);
+        var declared = Declared(typeof(Box), horizontal: true, 320);
+        var outer = new LayoutNode((VisualNode)RuntimeHelpers.GetUninitializedObject(type));
+        outer.Adopt(new LayoutNode(declared));
+
+        SizedBy(outer).Source.Should().BeSameAs(declared, $"a {typeName} takes the size of what it holds");
+        MainSizeKind(SizedBy(outer).Source, horizontal: true).Should().Be(SizeKind.Fixed);
+    }
+
+    /// <summary>
+    /// Why an AdaptiveNode needs no answer of its own: it is never in the measured tree. It measures
+    /// to the arm its window resolves, so the classifier asked of what was measured reads the arm's
+    /// size, as the web, which lays the arm out in the node's place, keeps it.
+    /// </summary>
+    [Fact]
+    public void AnAdaptiveNode_MeasuresToTheArmItsWindowResolves()
+    {
+        var arm = new Box(new BoxStyle { Width = 320, Height = 20 });
+        var measured = LayoutEngine.Layout(new AdaptiveNode(arm, medium: null, expanded: new Box()), 600, 300,
+            new LayoutContext(PhotonTheme.Instance, ApproximateTextMeasurer.Instance));
+
+        SizedBy(measured).Source.Should().BeSameAs(arm);
+        MainSizeKind(SizedBy(measured).Source, horizontal: true).Should().Be(SizeKind.Fixed);
+    }
+
     /// <summary>Where a node type declares its main size: a member of its own named for the axis (or
     /// <c>Size</c>, for a square one), or a style it carries that declares it.</summary>
     private static (PropertyInfo Member, PropertyInfo? Style, bool BySizeValue)? Declaration(Type type, bool horizontal)
@@ -135,6 +182,14 @@ public class MainSizeKindCoverageTests
                     ?? throw new InvalidOperationException(
                         $"{target.GetType().Name}.{property.Name} has neither a setter nor an auto-property field to declare it through.");
         field.SetValue(target, value);
+    }
+
+    private static LayoutNode SizedBy(LayoutNode measured)
+    {
+        var visitor = typeof(LayoutEngine).Assembly.GetType("eQuantic.UI.Native.Framework.MeasureVisitor", throwOnError: true)!;
+        var method = visitor.GetMethod("SizedBy", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static)
+                     ?? throw new InvalidOperationException("MeasureVisitor.SizedBy is gone; point this test at what replaced it.");
+        return (LayoutNode)method.Invoke(null, [measured])!;
     }
 
     private static SizeKind MainSizeKind(VisualNode node, bool horizontal)

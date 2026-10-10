@@ -122,17 +122,22 @@ internal sealed partial class MeasureVisitor
             // stretches THROUGH it. Without this the wrapper grew to the cell and the content
             // inside it stayed at its own width, which is exactly what the tab labels did.
             var (fsW, fsH) = CrossStretch(flexible);
+            var at = ctx.ChildPath(ctx.ChildPath(path, i, flexible), 0);
             // The extent IS the slot's main size (the item is pinned to it below), so the child is
             // stretched on the main axis too, on top of whatever the cross axis granted: an
             // auto-sized cell takes the extent and lays out inside it — a flex item's autos fill
-            // the cell, per CSS. A scroller whose width is a ceiling in the slot (the web's
-            // `max-width: 100%`) is told so, and the word reaches it through transparent wrappers.
-            var child = MeasureChild(flexible.Child, horizontal ? main : crossAvail,
-                horizontal ? crossAvail : main,
-                ctx.ChildPath(ctx.ChildPath(path, i, flexible), 0), mainGranted: true,
+            // the cell, per CSS.
+            LayoutNode Laid(bool ceiling) => MeasureChild(flexible.Child, horizontal ? main : crossAvail,
+                horizontal ? crossAvail : main, at, mainGranted: true,
                 stretchW: horizontal ? StretchKind.Flex : fsW,
-                stretchH: horizontal ? fsH : StretchKind.Flex, truncating: truncating,
-                ceiling: MainSizeIsACeiling(flexible.Child, horizontal));
+                stretchH: horizontal ? fsH : StretchKind.Flex, truncating: truncating, ceiling: ceiling);
+            var child = Laid(ceiling: false);
+            // A scroller's width is a ceiling in its item (the web's `max-width: 100%`): one that came
+            // out wider than the extent is measured again under it, so it draws and scrolls at the
+            // capped width. Asked of what was measured, which for an AdaptiveNode is its arm.
+            if (MainSizeIsACeiling(SizedBy(child).Source, horizontal)
+                && (horizontal ? child.Bounds.Width : child.Bounds.Height) > main + 0.01f)
+                child = Laid(ceiling: true);
             return FlexItem(flexible, child, main, horizontal, ctx);
         }
 
@@ -606,7 +611,7 @@ internal sealed partial class MeasureVisitor
                         // it was given.
                         var child = sources[i] is Flexible f ? f.Child : sources[i];
                         measured[i] = Measure(child, constraints.ForChild(horizontal ? size : crossMax - padCross,
-                            horizontal ? crossMax - padCross : size) with { WidthIsACeiling = MainSizeIsACeiling(child, horizontal) },
+                            horizontal ? crossMax - padCross : size) with { WidthIsACeiling = MainSizeIsACeiling(SizedBy(measured[i]).Source, horizontal) },
                             ctx, ctx.ChildPath(path, i, sources[i]));
                         resolved[i] = size;
                     }
@@ -630,7 +635,7 @@ internal sealed partial class MeasureVisitor
         {
             if (sources[i] is not Flexible flexible) continue;
             var child = measured[i];
-            if (MainSizeIsACeiling(flexible.Child, horizontal)
+            if (MainSizeIsACeiling(SizedBy(child).Source, horizontal)
                 && (horizontal ? child.Bounds.Width : child.Bounds.Height) > resolved[i] + 0.01f)
                 child = Measure(flexible.Child, constraints.ForChild(horizontal ? resolved[i] : crossMax - padCross,
                     horizontal ? crossMax - padCross : resolved[i]) with { WidthIsACeiling = true },
