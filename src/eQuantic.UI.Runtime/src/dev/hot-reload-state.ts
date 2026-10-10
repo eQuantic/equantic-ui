@@ -84,10 +84,15 @@ interface Carried {
 
 const NOTHING: Carried = { spec: null, json: null };
 
-/** A record or a struct the compiler emitted: its twin has `with` and `equals`. */
+/**
+ * A record or a struct eqc emitted, by what its twin SAYS: `static $record`, which RecordTypeEmitter
+ * writes on every one and on nothing else. Its methods cannot say it, since `with` and `equals` are
+ * names any class may declare: an app's class with an `Equals` override and a `With(...)` of its own
+ * was carried as data, and rebuilt without its constructor where its initializer made one.
+ */
 function isRecord(prototype: object | null): boolean {
-  const twin = prototype as { with?: unknown; equals?: unknown } | null;
-  return typeof twin?.with === 'function' && typeof twin.equals === 'function';
+  const type = (prototype as { constructor?: { $record?: unknown } } | null)?.constructor;
+  return type?.$record === true;
 }
 
 /** A plain object: an anonymous type's value, a colour. */
@@ -114,9 +119,10 @@ function isPlain(value: unknown): value is Record<string, unknown> {
  * - A plain object (an anonymous type, a colour) of data, member by member.
  * - A vocabulary value type (`Point`, `EdgeInsets`, `ColorToken`) of data, member by member, wherever
  *   it is: the runtime that registers it is the runtime after the reload.
- * - A record or a struct of the app's, member by member, only where the reloaded page can hand back its
- *   class (`placed`): a field, or a member of one. Its class is the app's own module's, which the
- *   reload evaluates again, and only the page's declarations and initializers name it.
+ * - A record or a struct of the app's, which its twin says it is ({@link isRecord}), member by member,
+ *   only where the reloaded page can hand back its class (`placed`): a field, or a member of one. Its
+ *   class is the app's own module's, which the reload evaluates again, and only the page's
+ *   declarations and initializers name it.
  *
  * A record and a vocabulary value cross as their OWN data members, a property's store included,
  * never through a `toJSON` or a getter: a store is the state, and an accessor's body is C# that would

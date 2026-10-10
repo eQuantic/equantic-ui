@@ -37,7 +37,7 @@ class EditedCounter extends StatefulComponent {
   }
 }
 
-/** A record of the app's: its twin has `with` and `equals`, as the compiler writes them. */
+/** A record of the app's: its twin has `with` and `equals`, and says it is one, as eqc writes it. */
 class Spot {
   constructor(
     public x = 0,
@@ -46,6 +46,7 @@ class Spot {
   with(patch: Partial<Spot>): Spot {
     return Object.assign(new Spot(this.x, this.y), patch);
   }
+  static $record = true;
   equals(other: unknown): boolean {
     return other instanceof Spot && other.x === this.x && other.y === this.y;
   }
@@ -214,6 +215,7 @@ describe('a hot reload gives back each value as it was, or leaves its initialize
       with(patch: Partial<Frame>): Frame {
         return Object.assign(new Frame(this.box, this.label), patch);
       }
+      static $record = true;
       equals(other: unknown): boolean {
         return other instanceof Frame && other.label === this.label;
       }
@@ -388,6 +390,7 @@ class FRec {
   with(patch: Partial<this>): FRec {
     return $eq.withPatch(this, patch);
   }
+  static $record = true;
   getHashCode(): number {
     return $eq.hash.combine(this.$x);
   }
@@ -415,6 +418,7 @@ class GRec {
   with(patch: Partial<this>): GRec {
     return $eq.withPatch(this, patch);
   }
+  static $record = true;
   getHashCode(): number {
     return $eq.hash.combine(this.$x);
   }
@@ -511,6 +515,7 @@ describe('a hot reload gives back a value exactly, into the type the reloaded pa
         with(patch: Partial<Mark>): Mark {
           return Object.assign(new Mark(this.x), patch);
         }
+        static $record = true;
         equals(other: unknown): boolean {
           return other instanceof Mark && other.x === this.x;
         }
@@ -533,6 +538,7 @@ describe('a hot reload gives back a value exactly, into the type the reloaded pa
         with(patch: Record<string, unknown>): Mark {
           return Object.assign(new Mark(), this, patch);
         }
+        static $record = true;
         equals(other: unknown): boolean {
           return other instanceof Mark && other.$x === this.$x;
         }
@@ -666,5 +672,69 @@ describe('a hot reload gives back a value exactly, into the type the reloaded pa
     expect(changed._due).toBeNull();
     expect(changed._byId).toBe(byId);
     expect(changed._names).toBe(names);
+  });
+});
+
+/**
+ * eqc's output for an app's ordinary class that overrides `Equals` and declares a `With` of its own
+ * (ComponentCompiler.CompileSource, laid out by the formatter and its `any`s typed): its twin has
+ * `equals` and `with` as a record's does, and is no record.
+ *
+ *     public class Tally
+ *     {
+ *         public int Count;
+ *         public string Name = "";
+ *         public override bool Equals(object? obj) => obj is Tally other && other.Count == Count && other.Name == Name;
+ *         public override int GetHashCode() => Count;
+ *         public Tally With(int count) => new Tally { Count = count, Name = Name };
+ *     }
+ */
+class Tally {
+  constructor() {
+    this.count = 0;
+    this.name = '';
+  }
+  count!: number;
+  name!: string;
+  equals(obj: unknown) {
+    let other: Tally;
+    return (
+      obj instanceof Tally &&
+      ((other = obj), true) &&
+      other.count === this.count &&
+      other.name === this.name
+    );
+  }
+  getHashCode() {
+    return this.count;
+  }
+  with(count: number) {
+    let $n0: Tally;
+    return (($n0 = new Tally()), ($n0.count = count), ($n0.name = this.name), $n0);
+  }
+}
+
+/** Copilot's third round on #672: each case fails on the commit before the fix. */
+describe('a hot reload carries a record by what eqc says it is', () => {
+  it("leaves an app's class with its initializer, though it declares equals and with", () => {
+    class Tallied extends StatefulComponent {
+      static $typeId = 'App.Tallied';
+      _tally = new Tally();
+      build(): Component {
+        throw new Error('not built here');
+      }
+    }
+
+    const before = new Tallied();
+    before._tally.count = 7;
+    before._tally.name = 'seven';
+    const state = throughJson(capturePageState(before));
+
+    const after = new Tallied();
+    const tally = after._tally;
+    restorePageState(after, state);
+
+    expect('_tally' in state.fields).toBe(false);
+    expect(after._tally).toBe(tally);
   });
 });
