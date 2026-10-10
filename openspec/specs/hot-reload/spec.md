@@ -196,3 +196,17 @@ the server's payload SHALL NOT write a field the replay decided.
 - **WHEN** the replay leaves a field the server's payload lists at its initializer, and the page mounts
 - **THEN** the first render does not write the saved value back, and the page's other server members and
   every other component's payload are adopted
+
+#### Scenario: An app's class that declares equals and with
+
+- **WHEN** a page holds an object of an app's class that overrides `Equals` and declares a `With(...)`,
+  and is reloaded
+- **THEN** the field keeps the object its initializer made: eqc's twin of a record or a struct says it is
+  one (`static $record`), and this class's twin, carried as a record before, was rebuilt without its
+  constructor
+
+#### Scenario: A list with a hole or an undefined element
+
+- **WHEN** a page holds a list with an undefined element (a vocabulary struct's `default`), a list
+  `Array.Resize` grew, or a tuple holding an undefined, and is reloaded
+- **THEN** each keeps its initializer, where JSON wrote the hole and the undefined as null

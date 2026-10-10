@@ -14,7 +14,8 @@ server-data adoption, takes only what the hydration manifest lists.
 ## What Changes
 
 - The reload captures the page's own fields, without the runtime's beside them, and hands them to the
-  reloaded page before it builds, each rebuilt in the shape its initializer gives it.
+  reloaded page before it builds, each rebuilt as the type it was by the typed `hydrate`, and only
+  into the type the reloaded page gives it.
 - A field the edit removed is left behind, a field it added keeps its initializer, and a field JSON
   cannot carry is left alone while the others cross.
 - Only data crosses: a primitive, an array or a plain object of data, a record or a struct, and the
@@ -25,6 +26,7 @@ For a developer: save a component, and the page comes back with the edit and the
 
 ## Impact
 
-- The runtime (`dev/hot-reload-state.ts`) and the boot (`Resources/boot.ts`). eqc, the Server and the
-  shells are untouched, and no public or developer surface moves.
+- The runtime (`dev/hot-reload-state.ts`) and the boot (`Resources/boot.ts`), and eqc's record and
+  struct twins, which say they are one (`static $record`, from Copilot's third round). The Server and
+  the shells are untouched, and no public or developer surface moves.
 - Stacked on #666, which decides when a page listens for rebuilds.

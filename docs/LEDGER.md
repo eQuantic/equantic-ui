@@ -1772,8 +1772,12 @@ record of a release, the wiki's Upgrading page is the distillate.
   back through its setter, `FRec`'s 10 as 20, BigInts handed to a list the edit had made text, and the
   first render's server adoption writing back a field the replay had refused), so a record crosses as
   its stores, a value comes back only into the type the reloaded page declares or initializes there,
-  and the server's payload never writes a field the replay decided. Proposed and archived through
-  OpenSpec (`openspec/specs/hot-reload`).
+  and the server's payload never writes a field the replay decided. The third round found two more:
+  an app's class with an `Equals` override and a `With(...)` of its own passed for a record, so eqc's
+  record and struct twins now say they are one (`static $record`), and a list with a hole or an
+  undefined element, which eqc writes for `Array.Resize` and a vocabulary struct's `default`, came back
+  with nulls, so it keeps its initializer. Proposed and archived through OpenSpec
+  (`openspec/specs/hot-reload`).
 
 ## Retired documents
 
