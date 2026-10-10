@@ -62,7 +62,7 @@ public static class SemanticsTree
     /// its subtree — its inner text is its name — so the descent is what the visitor declined to
     /// answer for.
     /// </summary>
-    private static void Walk(LayoutNode node, SemanticsVisitor visitor)
+    internal static void Walk(LayoutNode node, SemanticsVisitor visitor)
     {
         if (!node.Source.Accept(visitor, node)) return;
         foreach (var child in node)

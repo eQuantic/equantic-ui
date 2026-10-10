@@ -219,11 +219,43 @@ internal sealed partial class WebLoweringVisitor
         };
         if (surface.Label is { Length: > 0 } label) input["aria-label"] = label;
         if (surface.Autofocus) input["autofocus"] = "";
+
+        // What the surface OFFERS at its caret (TS twin: lowerCodeSurface): over the code and the
+        // caret, at its origin in the surface's coordinates, as the input's listbox. The rows are
+        // options, numbered as LowerAnchored numbers a listbox's rows, and the input names the list and
+        // points at the one the keyboard is on. An open list never comes from the server in practice
+        // (it opens as someone types), so its id hashes its text, as LowerAnchored's does, and need not
+        // match the client's spelling.
+        RealizedElement? list = null;
+        if (surface.Options is { } options && Lower(options, null) is { } offered)
+        {
+            var listId = $"eq-options-{StyleAtomizer.Hash(TextContentOf(options))}";
+            list = new RealizedElement("div")
+            {
+                Id = listId,
+                Role = "listbox",
+                RawAttributes = new Dictionary<string, string>
+                {
+                    ["style"] = $"position:absolute;left:{TokenCss.Px(surface.OptionsOrigin.X)};"
+                        + $"top:{TokenCss.Px(surface.OptionsOrigin.Y)};",
+                },
+            };
+            list.Children.Add(offered);
+            var next = 0;
+            NumberItemRows(list, listId, ref next);
+            // No aria-expanded: ARIA allows it on a combobox and not on the textbox a textarea is,
+            // and the list it controls and the option it points at already say that one is showing.
+            input["aria-autocomplete"] = "list";
+            input["aria-controls"] = listId;
+            if (surface.HighlightedOption >= 0) input["aria-activedescendant"] = $"{listId}-{surface.HighlightedOption}";
+        }
+
         element.Children.Add(new RealizedElement("textarea")
         {
             ClassName = "eq-code-input",
             RawAttributes = input,
         });
+        if (list is not null) element.Children.Add(list);
         return element;
     }
 
