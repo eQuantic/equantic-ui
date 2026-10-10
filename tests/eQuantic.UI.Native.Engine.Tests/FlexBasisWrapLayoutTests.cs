@@ -132,4 +132,37 @@ public class FlexBasisWrapLayoutTests
         node.Children[0].Bounds.Width.Should().BeGreaterThan(200, "the pane grew, so it was measured again");
         node.Children[0].Path.Should().EndWith("/1", "the pane is the row's second child");
     }
+
+    /// <summary>
+    /// An AdaptiveNode's arm keeps the path the first pass gave it, whether its line grows it,
+    /// shrinks it or holds it still. The node an AdaptiveNode measures to is its ARM's, stamped with
+    /// the arm's path one level under the node's own, so measuring the node again at the path read
+    /// back off that node put the arm a level further down: <c>r/0/0/0</c> on a line that moved it
+    /// and <c>r/0/0</c> on one that did not. Two identities for one arm, and whatever is remembered
+    /// by path (focus, a scroll offset, a component's state) changed hands whenever the line resolved.
+    /// </summary>
+    [Theory]
+    [InlineData(200f)]  // the line grows it
+    [InlineData(1000f)] // the line holds it still
+    [InlineData(1200f)] // the line shrinks it
+    public void AnArmMeasuredAgain_KeepsItsPath_WhateverItsLineDoes(float basis)
+    {
+        var arm = Pane();
+        var row = new Row(gap: 0) { Wrap = true, Width = SizeValue.Fill };
+        row.Add(new Flexible(new AdaptiveNode(arm, medium: null, expanded: Pane()), flex: 1, basis: basis));
+
+        var node = Find(Layout(row, viewportW: 1000), arm);
+
+        node.Should().NotBeNull("the compact arm is the one a window of 1000 lays out");
+        node!.Path.Should().Be("r/0/0", "the arm sits under its node, which sits in the Flexible's slot");
+    }
+
+    /// <summary>The node <paramref name="source"/> was measured to, wherever the pass put it.</summary>
+    private static LayoutNode? Find(LayoutNode node, VisualNode source)
+    {
+        if (ReferenceEquals(node.Source, source)) return node;
+        foreach (var child in node.Children)
+            if (Find(child, source) is { } found) return found;
+        return null;
+    }
 }

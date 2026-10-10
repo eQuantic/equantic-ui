@@ -411,6 +411,10 @@ internal sealed partial class MeasureVisitor
         var hypothetical = new List<float>(children.Count);
         var grow = new List<int>(children.Count);
         var shrink = new List<int>(children.Count);
+        // Where each item was measured, kept beside it for every later measure of it. Neither the
+        // count nor the node can say it again: the count skips a Spacer, and the node an
+        // AdaptiveNode measures to is its ARM's, stamped one level under the node's own path.
+        var paths = new List<string>(children.Count);
         for (var i = 0; i < children.Count; i++)
         {
             var source = children[i];
@@ -422,9 +426,11 @@ internal sealed partial class MeasureVisitor
             // is going to get rather than at the whole line's.
             var basis = flexible is { Basis: > 0 } ? flexible.Basis : 0f;
             var constraint = basis > 0 ? MathF.Min(basis, mainAvail) : mainAvail;
-            var node = Measure(child, constraints.ForChild(constraint, crossMax - padCross), ctx, children.PathOf(path, i));
+            var at = children.PathOf(path, i);
+            var node = Measure(child, constraints.ForChild(constraint, crossMax - padCross), ctx, at);
 
             measured.Add(node);
+            paths.Add(at);
             sources.Add(source);
             hypothetical.Add(basis > 0 ? basis : horizontal ? node.Bounds.Width : node.Bounds.Height);
             grow.Add(flexible?.Flex ?? 0);
@@ -496,10 +502,10 @@ internal sealed partial class MeasureVisitor
                     if (MathF.Abs(size - hypothetical[i]) > 0.01f)
                     {
                         var child = sources[i] is Flexible f ? f.Child : sources[i];
-                        // Measured again where it was measured first: `i` counts the items the
-                        // lines hold, which skip a Spacer, so it is not the child's own index.
+                        // Measured again where it was measured first, so whatever is remembered by
+                        // path stays with it.
                         var remeasured = Measure(child, constraints.ForChild(horizontal ? size : crossMax - padCross,
-                            horizontal ? crossMax - padCross : size), ctx, measured[i].Path!);
+                            horizontal ? crossMax - padCross : size), ctx, paths[i]);
                         // A flex item OCCUPIES the size it resolved to, even when its content is
                         // shorter — otherwise the ones after it slide left and the line no longer
                         // fills what it was given.
