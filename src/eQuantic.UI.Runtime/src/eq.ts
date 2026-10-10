@@ -8,6 +8,7 @@ import {
 } from './utils/decimal';
 import { combineDelegate, removeDelegate } from './utils/delegates';
 import { hydrate } from './utils/hydrate';
+import { twinJson } from './utils/twin-json';
 import { long } from './utils/long';
 import {
   round,
@@ -83,8 +84,10 @@ import {
   contains as textContains,
   endsWith,
   indexOf,
+  indexOfChar,
   instanceEquals,
   lastIndexOf,
+  lastIndexOfChar,
   replace,
   startsWith,
 } from './utils/string-search';
@@ -155,6 +158,7 @@ import { liftArith, liftCmp, liftUnary } from './utils/nullable';
 import { equals } from './utils/equals';
 import { hash, hashCombine, hashFields, hashGroup, identityHash, instanceHash } from './utils/hash';
 import { guidParse, guidTryParse } from './utils/guid';
+import { CancellationToken, CancellationTokenRegistration, CancellationTokenSource } from './utils/cancellation';
 import {
   bases as exceptionBases,
   create as createException,
@@ -257,6 +261,8 @@ export const $eq = {
   linq: { enumerable, max, min, seq, toArray, toDictionary, range, repeat },
   /** C# `with` over a runtime value type — prototype preserved. */
   withPatch,
+  /** A twin's JSON, a property's store under the property's name — see utils/twin-json. */
+  json: twinJson,
   /** `new object()`, an identity of its own, and a `lock` statement's gate, refused when null. */
   newObject,
   lockGate,
@@ -362,6 +368,8 @@ export const $eq = {
     endsWith,
     indexOf,
     lastIndexOf,
+    indexOfChar,
+    lastIndexOfChar,
     contains: textContains,
     replace,
     instanceEquals,
@@ -466,6 +474,19 @@ export const $eq = {
   },
   /** A Guid's canonical text, the lowercase `D` format, from any format .NET reads. */
   guid: { parse: guidParse, tryParse: guidTryParse },
+  /**
+   * The cancellation pair, built where C# builds it: `new CancellationTokenSource(delay?)`,
+   * `CancellationToken.None` (and `default`), `new CancellationToken(canceled)`,
+   * `default(CancellationTokenRegistration)` and `CancellationTokenSource.CreateLinkedTokenSource(…)`.
+   * Their members are their own, in camelCase.
+   */
+  cancellation: {
+    source: (delay?: number | { readonly totalMilliseconds: number }) => new CancellationTokenSource(delay),
+    none: CancellationToken.none,
+    registration: CancellationTokenRegistration.none,
+    token: CancellationToken.of,
+    linked: CancellationTokenSource.createLinkedTokenSource,
+  },
   /**
    * .NET exceptions: one built from its type and the types it derives from (`new T(…)`), one of a
    * type the runtime knows, the test a typed `catch` and a type pattern write, a `throw`

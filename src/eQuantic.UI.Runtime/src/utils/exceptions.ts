@@ -46,6 +46,11 @@ export const bases = {
   // cannot (#528): no .NET exception for the same call, so the one that says the platform lacks it.
   'System.NotSupportedException': 'System.SystemException',
   'System.Collections.Generic.KeyNotFoundException': 'System.SystemException',
+  // The cancellation pair's own (utils/cancellation): a token that throws when cancelled, a source
+  // used after it was disposed, and the callbacks of one cancellation that threw.
+  'System.OperationCanceledException': 'System.SystemException',
+  'System.ObjectDisposedException': 'System.InvalidOperationException',
+  'System.AggregateException': 'System.Exception',
   // A type initializer that threw: what every access to the type throws from then on (typeInitialization).
   'System.TypeInitializationException': 'System.SystemException',
 } as const satisfies Record<string, string | null>;
@@ -71,13 +76,62 @@ const EXCEPTION = chainOf('System.Exception');
 const NULL_REFERENCE = chainOf('System.NullReferenceException');
 
 /**
+ * What a framework exception's constructor was handed besides its message, by the member that reads
+ * it (#558): `ArgumentException.ParamName` and `ArgumentOutOfRangeException.ActualValue`, which its
+ * message ends with, an `InnerException`, and `ObjectDisposedException.ObjectName`.
+ */
+export interface ExceptionParts {
+  readonly paramName?: string | null;
+  readonly actualValue?: unknown;
+  readonly innerException?: unknown;
+  readonly objectName?: string | null;
+  /** `TypeInitializationException.TypeName`, which its message names, a null one as ''. */
+  readonly typeName?: string | null;
+  /** `AggregateException`'s inner exceptions, whose messages its own ends with. */
+  readonly innerExceptions?: Iterable<unknown> | null;
+}
+
+/** A value as `string.Format("{0}", value)` writes it in an exception's message. */
+function valueText(value: unknown): string {
+  if (typeof value === 'boolean') return value ? 'True' : 'False';
+  return String(value);
+}
+
+/**
+ * The message .NET composes: the one given, then the parameter's name, ` (Parameter 'x')`, the actual
+ * value on a line of its own, and a disposed object's name. Each was dropped:
+ * `new ArgumentNullException(nameof(x)).Message` was "x", the parameter's name taken for the message,
+ * and an `InvalidOperationException()` had none at all (#558). Where no message is given, the text a
+ * type's constructor writes then is the compiler's to hand, read from .NET itself, and what is left
+ * is `Exception.Message`'s own, which names the type.
+ */
+function composed(types: readonly string[], message: string | null | undefined, parts: ExceptionParts | undefined): string {
+  if (parts !== undefined && 'typeName' in parts) {
+    return `The type initializer for '${parts.typeName ?? ''}' threw an exception.`;
+  }
+  let text = message ?? `Exception of type '${types[0]}' was thrown.`;
+  const inners = parts?.innerExceptions == null ? [] : [...parts.innerExceptions];
+  if (inners.length > 0) text += ' ' + inners.map((inner) => `(${messageOf(inner)})`).join(' ');
+  if (parts?.objectName) text += `\nObject name: '${parts.objectName}'.`;
+  if (parts?.paramName) text += ` (Parameter '${parts.paramName}')`;
+  if (parts?.actualValue != null) text += `\nActual value was ${valueText(parts.actualValue)}.`;
+  return text;
+}
+
+/**
  * `new T(message)` for an exception type the compiler resolved: `types` is T, the most derived, and
  * every type it derives from, `System.Exception` last. The error's `name` is T's simple name, so the
  * console and a contained component print `InvalidOperationException: …` as the C# side does, where
- * they printed `Error: …`.
+ * they printed `Error: …`. `parts` carries what a framework type's constructor took besides the
+ * message, which the message and its members read.
  */
-export function create(types: readonly string[], message?: string | null, ..._evaluated: unknown[]): Error {
-  const error = new Error(message ?? undefined) as Tagged;
+export function create(
+  types: readonly string[],
+  message?: string | null,
+  parts?: ExceptionParts,
+  ..._evaluated: unknown[]
+): Error {
+  const error = new Error(composed(types, message, parts)) as Tagged;
   // Defined rather than assigned: an assignment makes `name` an own enumerable property, which an
   // Error's own `name` (its prototype's) is not, and JSON would start writing it.
   Object.defineProperty(error, 'name', {
@@ -86,6 +140,17 @@ export function create(types: readonly string[], message?: string | null, ..._ev
     configurable: true,
   });
   Object.defineProperty(error, TYPES, { value: types });
+  if (parts !== undefined) {
+    for (const [member, value] of Object.entries(parts)) {
+      const held = member === 'innerExceptions' && value != null ? [...(value as Iterable<unknown>)] : value;
+      Object.defineProperty(error, member, { value: held, writable: true, configurable: true });
+    }
+    // An AggregateException's InnerException is its first inner one, as .NET's is.
+    const first = (error as { innerExceptions?: unknown[] }).innerExceptions?.[0];
+    if (parts.innerException === undefined && first !== undefined) {
+      Object.defineProperty(error, 'innerException', { value: first, writable: true, configurable: true });
+    }
+  }
   return error;
 }
 
@@ -106,9 +171,24 @@ function simpleName(qualified: string): string {
   return plain.slice(plain.lastIndexOf('.') + 1);
 }
 
-/** An exception the runtime throws on .NET's behalf, of the type .NET throws for the same operation. */
-export function exception(type: RuntimeException, message: string): Error {
-  return create(chainOf(type), message);
+/** What a thrown value says: an error's message, and anything else's text. */
+function messageOf(value: unknown): string {
+  return isError(value) ? value.message : String(value);
+}
+
+/**
+ * An exception the runtime throws on .NET's behalf, of the type .NET throws for the same operation,
+ * with what .NET's constructor would have been handed besides the message.
+ */
+export function exception(type: RuntimeException, message: string, parts?: ExceptionParts): Error {
+  const error = create(chainOf(type), message, parts);
+  // An argument exception names its parameter in its message, which `ParamName` reads too, as .NET's
+  // does: the runtime's own throws wrote the name into the text alone (#558).
+  const parameter = /\(Parameter '([^']*)'\)/.exec(message);
+  if (parameter !== null && chainOf(type).includes('System.ArgumentException')) {
+    Object.defineProperty(error, 'paramName', { value: parameter[1], writable: true, configurable: true });
+  }
+  return error;
 }
 
 /**
@@ -118,9 +198,10 @@ export function exception(type: RuntimeException, message: string): Error {
  * exception the initializer threw, which `InnerException` reads.
  */
 export function typeInitialization(typeName: string, inner: unknown): Error {
-  const error = exception('System.TypeInitializationException', `The type initializer for '${typeName}' threw an exception.`);
-  Object.defineProperty(error, 'innerException', { value: inner, writable: true, configurable: true });
-  return error;
+  return exception('System.TypeInitializationException', `The type initializer for '${typeName}' threw an exception.`, {
+    typeName,
+    innerException: inner,
+  });
 }
 
 /**

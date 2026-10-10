@@ -21,9 +21,7 @@ public class LocalFunctionCrossingTests
     private static string Transpile(string source)
     {
         var tree = CSharpSyntaxTree.ParseText(source, path: "HelperPage.cs");
-        var usings = CSharpSyntaxTree.ParseText(
-            "global using System;\nglobal using System.Collections.Generic;\nglobal using System.Linq;",
-            path: "GlobalUsings.g.cs");
+        var usings = SdkImplicitUsings.Tree();
 
         var references = ((string)AppContext.GetData("TRUSTED_PLATFORM_ASSEMBLIES")!)
             .Split(Path.PathSeparator)

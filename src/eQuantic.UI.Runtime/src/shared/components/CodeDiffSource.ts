@@ -1,9 +1,15 @@
 import { CodeDiffer, CodeDiffGap, CodeDocument, CodeLineChange, CodePatchFile } from "../runtime-exports";
 
 export class CodeDiffSource {
-    constructor(original: CodeDocument, originalLineCount: number, modified: CodeDocument, modifiedLineCount: number, changes: CodeLineChange[], originalNumbers: number[] | null, modifiedNumbers: number[] | null, gaps: CodeDiffGap[], props?: any) {
+    constructor(original: CodeDocument, originalLineCount: number, modified: CodeDocument, modifiedLineCount: number, changes: CodeLineChange[], originalNumbers: number[] | null, modifiedNumbers: number[] | null, gaps: CodeDiffGap[]) {
         this._originalNumbers = null;
         this._modifiedNumbers = null;
+        this.original = null!;
+        this.modified = null!;
+        this.originalLineCount = 0;
+        this.modifiedLineCount = 0;
+        this.changes = null!;
+        this.gaps = null!;
         this.original = original;
         this.originalLineCount = originalLineCount;
         this.modified = modified;
@@ -12,17 +18,16 @@ export class CodeDiffSource {
         this._originalNumbers = originalNumbers;
         this._modifiedNumbers = modifiedNumbers;
         this.gaps = gaps;
-        if (props && typeof props === 'object') Object.assign(this, props);
     }
 
-    _originalNumbers: number[] | null;
-    _modifiedNumbers: number[] | null;
-    declare original: CodeDocument;
-    declare modified: CodeDocument;
-    originalLineCount: number = 0;
-    modifiedLineCount: number = 0;
-    declare changes: CodeLineChange[];
-    declare gaps: CodeDiffGap[];
+    _originalNumbers!: number[] | null;
+    _modifiedNumbers!: number[] | null;
+    original!: CodeDocument;
+    modified!: CodeDocument;
+    originalLineCount!: number;
+    modifiedLineCount!: number;
+    changes!: CodeLineChange[];
+    gaps!: CodeDiffGap[];
 
     originalNumber(line: number) {
         let numbers: any; 

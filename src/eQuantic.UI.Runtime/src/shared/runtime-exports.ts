@@ -109,6 +109,9 @@ export {
   MotionSpec,
   MotionVector,
   NetworkState,
+  ServerConnection,
+  ServerTopic,
+  ServerTopicRefusal,
   SpringSpec,
   WindowSizeClasses,
 } from './primitive-values';
@@ -136,6 +139,12 @@ export { VisualNodeComponent } from './visual-node-component';
 // does not compile — and a page that does not compile is a page that does not render.
 export { DateTime, DateOnly, TimeOnly, TimeSpan, DateTimeOffset } from '../utils/datetime';
 export { Decimal } from '../utils/decimal';
+// The cancellation pair, built through `$eq.cancellation` and NAMED by a twin's annotations.
+export {
+  CancellationToken,
+  CancellationTokenRegistration,
+  CancellationTokenSource,
+} from '../utils/cancellation';
 export { CalendarNames } from './calendar-names';
 // The vocabulary's interface defaults (#414): a twin that relies on one delegates to it by the
 // interface's name, and an embedded twin imports from this barrel, not from index (found in review,
@@ -148,4 +157,6 @@ export * from './components';
 // registered under the interface's own name so a transpiled page resolves the same thing.
 export { WebPhotoLibrary } from './devices/photo-library';
 export { registerDeviceCapabilities } from './devices/register';
+// The process's dispatcher, null where there is one thread: a twin that asks for it runs at once.
+export { UiDispatcher } from './devices/ui-dispatcher';
 export type { PickedImage } from './devices/photo-library';

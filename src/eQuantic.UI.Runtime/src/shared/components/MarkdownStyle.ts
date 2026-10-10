@@ -1,17 +1,24 @@
 import { TypeRoleValue } from "../runtime-exports";
 
 export class MarkdownStyle {
-    constructor(props?: any) {
-        if (props && typeof props === 'object') Object.assign(this, props);
+    constructor() {
+        this.heading1 = 'heading';
+        this.heading2 = 'title';
+        this.heading3 = 'titleSmall';
+        this.heading4 = 'label';
+        this.body = 'bodyM';
+        this.blockGap = 14;
+        this.codeLineNumbers = false;
+        this.codeInverse = false;
     }
 
-    heading1: TypeRoleValue = 'heading';
-    heading2: TypeRoleValue = 'title';
-    heading3: TypeRoleValue = 'titleSmall';
-    heading4: TypeRoleValue = 'label';
-    body: TypeRoleValue = 'bodyM';
-    blockGap: number = 14;
-    codeLineNumbers: boolean = false;
-    codeInverse: boolean = false;
+    heading1!: TypeRoleValue;
+    heading2!: TypeRoleValue;
+    heading3!: TypeRoleValue;
+    heading4!: TypeRoleValue;
+    body!: TypeRoleValue;
+    blockGap!: number;
+    codeLineNumbers!: boolean;
+    codeInverse!: boolean;
 }
 

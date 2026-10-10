@@ -15,7 +15,7 @@ public sealed class TypeScriptLanguage : CurlyBraceLanguage
         IndentWidth = 2,
     };
 
-    protected override IReadOnlySet<string> Keywords { get; } = new HashSet<string>
+    protected override IReadOnlySet<string> ReservedWords { get; } = new HashSet<string>
     {
         "abstract", "any", "as", "async", "await", "break", "case", "catch", "class", "const",
         "constructor", "continue", "debugger", "declare", "default", "delete", "do", "else",

@@ -34,6 +34,27 @@ public class HarnessSelfChecksTests
     }
 
     /// <summary>
+    /// A representation the translation got wrong FAILS (#596). The .NET side writes a value as the
+    /// runtime holds it, so a long that became a JS number, a decimal that became one, an enum written
+    /// as its number, a float left a double and a tuple written as an object each print what .NET's
+    /// value does not, where System.Text.Json's own JSON matched the first four. The right
+    /// representation, printed the same way, matches.
+    /// </summary>
+    [SkippableTheory]
+    [InlineData("return 5L;", "5", "5n")]
+    [InlineData("return 1.5m;", "1.5", null)]
+    [InlineData("return Day.Friday;", "1", "'friday'")]
+    [InlineData("return 0.1f;", "0.1", "Math.fround(0.1)")]
+    [InlineData("return (1, 2L);", "({ item1: 1, item2: 2n })", "[1, 2n]")]
+    public void AWrongRepresentation_Fails(string statements, string wrong, string? right)
+    {
+        Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
+        var expected = DotNetEvaluator.EvaluateToJson(statements, "public enum Day { Monday, Friday }");
+        Assert.NotEqual(expected, JsExecutor.Run(ConformanceRunner.Print(wrong)));
+        if (right is not null) Assert.Equal(expected, JsExecutor.Run(ConformanceRunner.Print(right)));
+    }
+
+    /// <summary>
     /// Both sides parse with <c>LanguageVersion.Preview</c>, the same as eqc. On Roslyn's default
     /// — the latest RELEASED version — a construct eqc accepts would fail to parse in the harness
     /// and read as a translation bug rather than as a harness that lags.

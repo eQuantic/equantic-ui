@@ -251,6 +251,7 @@ public class FlutterParityPinTests
             && HasMember("GridTrack", "Repeats"),
         ["SvgPicture"] = () => HasMember("Drawing", "Aspect") && HasMember("Drawing", "HeightAt"),
         ["WidgetStateProperty"] = () => HasMember("BoxStyle", "Hover") && HasMember("BoxStyle", "Focus")
+            && HasMember("BoxStyle", "Pressed")
             && HasMember("StyleDiff", "Shadows") && HasMember("StyleDiff", "Transform"),
 
         // 3 — state

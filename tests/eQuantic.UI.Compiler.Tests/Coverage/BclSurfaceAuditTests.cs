@@ -54,6 +54,12 @@ public class BclSurfaceAuditTests
         new(typeof(DateTimeOffset), "DateTimeOffset recvDto = new DateTimeOffset(new DateTime(2026, 1, 2), TimeSpan.Zero);", "recvDto"),
         new(typeof(int?), "int? recvNullable = 5;", "recvNullable"),
         new(typeof(int[]), "int[] recvArray = { 1, 2 };", "recvArray"),
+        // The cancellation trio a write-once request is made with (#296): what the runtime's twin
+        // carries crosses, and the rest is refused at the build.
+        new(typeof(System.Threading.CancellationTokenSource),
+            "CancellationTokenSource recvCts = new();", "recvCts"),
+        new(typeof(System.Threading.CancellationToken),
+            "CancellationToken recvToken = default;", "recvToken"),
     ];
 
     private static readonly Type[] StaticSurfaces =
@@ -61,6 +67,7 @@ public class BclSurfaceAuditTests
         typeof(Math), typeof(MathF), typeof(Convert), typeof(Guid), typeof(DateTime),
         typeof(TimeSpan), typeof(DateOnly), typeof(TimeOnly), typeof(string), typeof(int),
         typeof(double), typeof(bool), typeof(char), typeof(long), typeof(decimal), typeof(Array),
+        typeof(System.Threading.CancellationToken), typeof(System.Threading.CancellationTokenSource),
     ];
 
     /// <summary>LINQ over a materialized list — the shape client code overwhelmingly uses.</summary>
@@ -92,6 +99,8 @@ public class BclSurfaceAuditTests
         if (type == typeof(TimeSpan)) return "TimeSpan.FromMinutes(1)";
         if (type == typeof(DateOnly)) return "new DateOnly(2026, 1, 2)";
         if (type == typeof(TimeOnly)) return "new TimeOnly(10, 30)";
+        if (type == typeof(System.Threading.CancellationToken)) return "CancellationToken.None";
+        if (type == typeof(Action)) return "() => { }";
         if (type == typeof(int[])) return "new[] { 1 }";
         if (type == typeof(string[])) return "new[] { \"a\" }";
         if (type == typeof(char[])) return "new[] { 'a' }";
@@ -328,7 +337,7 @@ public class BclSurfaceAuditTests
         }
 
         var source = "using System;\nusing System.Collections.Generic;\nusing System.Linq;\nusing System.Text;\n"
-            + "using eQuantic.UI.Primitives;\n\n"
+            + "using System.Threading;\nusing eQuantic.UI.Primitives;\n\n"
             + "public sealed class Probe : StatelessComponent\n{\n"
             + "    public override VisualNode Build(ComponentContext context) => new Box();\n"
             + body

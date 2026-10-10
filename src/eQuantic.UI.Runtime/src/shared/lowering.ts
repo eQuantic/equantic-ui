@@ -40,6 +40,8 @@ import {
   atomizeEntries,
   atomizePseudo,
   atomizeScrolled,
+  CONTROL_FOCUS,
+  CONTROL_PRESSED,
   ensureAdaptiveGate,
   gateCompactUntil,
   gateExpandedFrom,
@@ -2397,15 +2399,21 @@ function lowerBox(box: BoxNode, context: LoweringContext, path: string): HtmlNod
   // A SIMULATED state REPLACES the base declarations, before they are atomized. Adding a second
   // class for the same property instead would leave the winner to stylesheet insertion order —
   // every atomic class has equal specificity — and would emit a class set the C# side does not.
+  // Hover, then the control's focus, then its press: the order a real one wins by specificity (C#).
   if (style.hover && simulatedState & SIMULATED_HOVERED) applyDiff(entries, style.hover, style);
-  if (style.focus && simulatedState & SIMULATED_FOCUSED) applyDiff(entries, style.focus, style);
+  // A box inside a disabled control shows neither of its control's states (C# twin, #508).
+  const focus = inDisabledControl ? null : style.focus;
+  const pressed = inDisabledControl ? null : style.pressed;
+  if (focus && simulatedState & SIMULATED_FOCUSED) applyDiff(entries, focus, style);
+  if (pressed && simulatedState & SIMULATED_PRESSED) applyDiff(entries, pressed, style);
 
   const result = element('div', entries);
 
   if (style.hover && !(simulatedState & SIMULATED_HOVERED))
     appendDiff(result, ':hover', style.hover, style);
-  if (style.focus && !(simulatedState & SIMULATED_FOCUSED))
-    appendDiff(result, ':focus-visible', style.focus, style);
+  if (focus && !(simulatedState & SIMULATED_FOCUSED)) appendDiff(result, CONTROL_FOCUS, focus, style);
+  if (pressed && !(simulatedState & SIMULATED_PRESSED))
+    appendDiff(result, CONTROL_PRESSED, pressed, style);
 
   if (box.child) {
     const child = lowerNode(box.child, context, null, path + '/0');
@@ -2450,6 +2458,9 @@ function appendAtomic(node: HtmlNode, entries: StyleEntries): void {
   node.attributes['class'] = existing ? `${existing} ${atomized.class}` : atomized.class;
 }
 
+/** The focus ring's place in a shadow list: the C# `TokenCss.RingSlot` (#508). */
+const RING_SLOT = 'var(--eq-ring, 0 0 #0000)';
+
 /** One shadow in the C# `TokenCss.Shadow` spelling. */
 function shadowValue(spec: ShadowSpecValue): string {
   return `0 ${px(spec.offsetY)} ${px(spec.blur)} ${px(spec.spread)} ${tokenValue(spec.color)}`;
@@ -2481,14 +2492,15 @@ function shadowList(
   if (shadow && !isNoShadow(shadow)) parts.push(shadowValue(shadow));
   if (shadows) for (const entry of shadows) if (!isNoShadow(entry)) parts.push(shadowValue(entry));
   if (inset) parts.push(`inset 0 1px 0 ${tokenValue(inset)}`);
-  return parts.length > 0 ? parts.join(', ') : undefined;
+  // The focus ring's slot leads the list (the C# twin), so a focused control keeps its shadows.
+  return parts.length > 0 ? `${RING_SLOT}, ${parts.join(', ')}` : undefined;
 }
 
 /**
  * The C# `StateShadowList`: the list while a state is active, or undefined when the state changes no
  * shadow and the base's stands. CSS replaces box-shadow whole, so a state that changes one part
- * writes every part again; its custom shadows replace both of the base's. "none" when nothing is
- * left to draw (#504).
+ * writes every part again; its custom shadows replace both of the base's. The ring's slot alone
+ * when nothing is left to draw (#504, #508).
  */
 function stateShadowList(style: BoxStyleValue, diff: StyleDiffValue): string | undefined {
   if (diff.elevation == null && diff.shadows == null) return undefined;
@@ -2497,7 +2509,7 @@ function stateShadowList(style: BoxStyleValue, diff: StyleDiffValue): string | u
     diff.shadows != null
       ? shadowList(elevation, null, diff.shadows, style.insetHighlight)
       : shadowList(elevation, style.shadow, style.shadows, style.insetHighlight);
-  return list ?? 'none';
+  return list ?? RING_SLOT;
 }
 
 /** A StyleDiff's set members, written over the given entries — what a simulated state does. */
@@ -2900,7 +2912,22 @@ function lowerPressable(
   const disabled = pressable.disabled === true;
   const fill = fills(pressable.child);
   const cap = capsAt(pressable.child);
-  const child = lowerNode(pressable.child, context, null, path + '/0');
+  // A disabled control shows no press and no focus, pictured or real (C# twin, #508): its subtree is
+  // lowered with the control's simulated states masked and its boxes writing no focus or press rule.
+  // A hover is the box's own and stays.
+  const outerSimulated = simulatedState;
+  const outerDisabled = inDisabledControl;
+  if (disabled) {
+    simulatedState &= ~(SIMULATED_PRESSED | SIMULATED_FOCUSED);
+    inDisabledControl = true;
+  }
+  let child: HtmlNode | null;
+  try {
+    child = lowerNode(pressable.child, context, null, path + '/0');
+  } finally {
+    simulatedState = outerSimulated;
+    inDisabledControl = outerDisabled;
+  }
 
   // HTML forbids a button inside a button (and an anchor inside an anchor): the parser closes the
   // outer one and hands back an empty shell. A Pressable AROUND a control — a Menu making its
@@ -2985,11 +3012,16 @@ function lowerPressable(
   // pressable carries the class (:focus-visible double ring is an a11y DEFAULT); the pressed swap
   // additionally ships its token value as a custom property at the style TAIL (the C# cross-pin).
   if (!disabled) {
-    // eq-pressed carries the same declaration :active does (see the generated stylesheet), so a
-    // simulated press cannot drift from a real one — it is the same selector list.
+    // eq-pressed carries the same declaration :active does, and eq-focused the ring :focus-visible
+    // draws (see the generated stylesheet), so a simulated state cannot drift from a real one.
+    // eq-press-fill marks a control that HAS a pressed fill (C# twin): the stylesheet's swap selects
+    // it, so a control without one keeps its own fill while pressed.
     prependClass(
       node,
-      simulatedState & SIMULATED_PRESSED ? 'eq-pressable eq-pressed' : 'eq-pressable',
+      'eq-pressable' +
+        (pressable.pressedBackground ? ' eq-press-fill' : '') +
+        (simulatedState & SIMULATED_PRESSED ? ' eq-pressed' : '') +
+        (simulatedState & SIMULATED_FOCUSED ? ' eq-focused' : ''),
     );
     if (pressable.pressedBackground) {
       const tail = `--eq-pressed-bg: ${tokenValue(pressable.pressedBackground)}`;
@@ -3546,6 +3578,8 @@ const SIMULATED_FOCUSED = 4;
 
 /** What the subtree being lowered right now is being DRAWN as (the C# WebRealizer ambient twin). */
 let simulatedState = 0;
+/** True while a DISABLED control's subtree is lowered (C# `_inDisabledControl`, #508). */
+let inDisabledControl = false;
 
 /**
  * Draws the subtree in the given states (the C# `LowerSimulated`). `:hover` and `:focus-visible`

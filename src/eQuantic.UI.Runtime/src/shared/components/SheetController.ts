@@ -1,18 +1,28 @@
 import { $eq, CellRef, SheetAxisValue, SheetCellSnapshot, SheetDocument, SheetEdit, SheetHistory, SheetMotionValue, SheetRange, TsvCodec } from "../runtime-exports";
 
 export class SheetController {
-    constructor(rows: number = 1000, cols: number = 26, props?: any) {
+    constructor(rows: number = 1000, cols: number = 26) {
         this._selection = new SheetRange(new CellRef(0, 0));
         this._active = new CellRef(0, 0);
+        this.document = null!;
+        this.history = new SheetHistory();
+        this.changed = null;
+        this.editing = false;
+        this.draft = '';
+        this.fillSource = null;
+        this.fillTarget = null;
         this.document = new SheetDocument(rows, cols);
-        if (props && typeof props === 'object') Object.assign(this, props);
     }
 
-    _selection: SheetRange;
-    _active: CellRef;
-    declare document: SheetDocument;
-    history: SheetHistory = new SheetHistory();
-    declare changed: ((sheetEdit: SheetEdit) => void) | null;
+    _selection!: SheetRange;
+    _active!: CellRef;
+    document!: SheetDocument;
+    history!: SheetHistory;
+    changed!: ((sheetEdit: SheetEdit) => void) | null;
+    editing!: boolean;
+    draft!: string;
+    fillSource!: SheetRange | null;
+    fillTarget!: SheetRange | null;
 
     get selection(): SheetRange {
         return this._selection;
@@ -26,11 +36,6 @@ export class SheetController {
     get activeCell(): CellRef {
         return this._active;
     }
-
-    editing: boolean = false;
-    draft: string = '';
-    declare fillSource: SheetRange | null;
-    declare fillTarget: SheetRange | null;
 
     get filling(): boolean {
         return !(this.fillSource == null);
@@ -147,14 +152,16 @@ export class SheetController {
         cell = this.document.clamp(cell);
         let old = this.document.getCell(cell);
         if (old === value) return false;
-        let edit = new SheetEdit({ kind: 'setCells', before: [new SheetCellSnapshot(cell, old)], after: [new SheetCellSnapshot(cell, value)], selectionBefore: this._selection, selectionAfter: this._selection });
+        let $n37: any; 
+        let edit = ($n37 = new SheetEdit(), $n37.kind = 'setCells', $n37.before = [new SheetCellSnapshot(cell, old)], $n37.after = [new SheetCellSnapshot(cell, value)], $n37.selectionBefore = this._selection, $n37.selectionAfter = this._selection, $n37);
         this.document.setCell(cell, value);
         this.commit(edit);
         return true;
     }
 
     clearSelection() {
-        let edit = new SheetEdit({ kind: 'setCells', selectionBefore: this._selection, selectionAfter: this._selection });
+        let $n38: any; 
+        let edit = ($n38 = new SheetEdit(), $n38.kind = 'setCells', $n38.selectionBefore = this._selection, $n38.selectionAfter = this._selection, $n38);
         for (let row = this._selection.topRow; row <= this._selection.bottomRow; row++) {
             for (let col = this._selection.leftCol; col <= this._selection.rightCol; col++) {
                 let cell = new CellRef(row, col);
@@ -174,7 +181,8 @@ export class SheetController {
         if (count < 1) return;
         let selectionBefore = this._selection;
         if (axis === 'rows') this.document.shiftRows(at, count); else this.document.shiftCols(at, count);
-        this.commit(new SheetEdit({ kind: axis === 'rows' ? 'insertRows' : 'insertCols', at: at, count: count, selectionBefore: selectionBefore, selectionAfter: this._selection }));
+        let $n39: any; 
+        this.commit(($n39 = new SheetEdit(), $n39.kind = axis === 'rows' ? 'insertRows' : 'insertCols', $n39.at = at, $n39.count = count, $n39.selectionBefore = selectionBefore, $n39.selectionAfter = this._selection, $n39));
     }
 
     delete(axis: SheetAxisValue, at: number, count: number = 1) {
@@ -182,14 +190,16 @@ export class SheetController {
         let selectionBefore = this._selection;
         let removed = axis === 'rows' ? this.document.shiftRows(at, -count) : this.document.shiftCols(at, -count);
         this.selection = this._selection;
-        this.commit(new SheetEdit({ kind: axis === 'rows' ? 'deleteRows' : 'deleteCols', at: at, count: count, removed: removed, selectionBefore: selectionBefore, selectionAfter: this._selection }));
+        let $n40: any; 
+        this.commit(($n40 = new SheetEdit(), $n40.kind = axis === 'rows' ? 'deleteRows' : 'deleteCols', $n40.at = at, $n40.count = count, $n40.removed = removed, $n40.selectionBefore = selectionBefore, $n40.selectionAfter = this._selection, $n40));
     }
 
     resize(axis: SheetAxisValue, index: number, size: number) {
         let old = axis === 'rows' ? this.document.rowHeight(index) : this.document.colWidth(index);
         if (Math.abs(Math.fround(old - size)) < Math.fround(0.01)) return;
         if (axis === 'rows') this.document.setRowHeight(index, size); else this.document.setColWidth(index, size);
-        this.commit(new SheetEdit({ kind: axis === 'rows' ? 'resizeRow' : 'resizeCol', at: index, oldSize: old, newSize: axis === 'rows' ? this.document.rowHeight(index) : this.document.colWidth(index), selectionBefore: this._selection, selectionAfter: this._selection }));
+        let $n41: any; 
+        this.commit(($n41 = new SheetEdit(), $n41.kind = axis === 'rows' ? 'resizeRow' : 'resizeCol', $n41.at = index, $n41.oldSize = old, $n41.newSize = axis === 'rows' ? this.document.rowHeight(index) : this.document.colWidth(index), $n41.selectionBefore = this._selection, $n41.selectionAfter = this._selection, $n41));
     }
 
     copyTsv() {
@@ -204,7 +214,8 @@ export class SheetController {
         for (const line of grid) maxCols = Math.max(maxCols, line.length);
         if (origin.row + grid.length > this.document.rows) this.document.rows = origin.row + grid.length;
         if (origin.col + maxCols > this.document.cols) this.document.cols = Math.min(origin.col + maxCols, 16384);
-        let edit = new SheetEdit({ kind: 'setCells', selectionBefore: this._selection });
+        let $n42: any; 
+        let edit = ($n42 = new SheetEdit(), $n42.kind = 'setCells', $n42.selectionBefore = this._selection, $n42);
         for (let r = 0; r < grid.length; r++) {
             let line = grid[r];
             for (let c = 0; c < line.length; c++) {
@@ -260,7 +271,8 @@ export class SheetController {
     }
 
     fill(source: SheetRange, target: SheetRange, selectionBefore: SheetRange | null = null) {
-        let edit = new SheetEdit({ kind: 'setCells', selectionBefore: selectionBefore ?? this._selection });
+        let $n43: any; 
+        let edit = ($n43 = new SheetEdit(), $n43.kind = 'setCells', $n43.selectionBefore = selectionBefore ?? this._selection, $n43);
         let sourceRows = source.bottomRow - source.topRow + 1;
         let sourceCols = source.rightCol - source.leftCol + 1;
         for (let row = target.topRow; row <= target.bottomRow; row++) {

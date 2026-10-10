@@ -60,6 +60,24 @@ public class DensityTests
         box.Bounds.Width.Should().BeApproximately(side, 0.5f);
     }
 
+    /// <summary>
+    /// Under a pointer a target is its visual bounds, grown to the floor WCAG 2.2 SC 2.5.8 asks of
+    /// any target (#430): a label-less checkbox, a table's row selection, is a 20dp box and was a
+    /// 20dp target. Under a finger it is the §08 minimum.
+    /// </summary>
+    [Theory]
+    [InlineData(Density.Compact, Touch.MinPointerTarget)]
+    [InlineData(Density.Comfortable, Touch.MinTarget)]
+    public void ALabelLessCheckbox_IsAtLeastItsPointersFloor(Density density, float side)
+    {
+        var realized = PhotonRealizer.Realize(new Checkbox(true, () => { }), 400, 200,
+            PhotonTheme.Instance, ThemeMode.Light, new DisplayListBuilder(), density: density);
+
+        var hit = realized.HitRegions.Should().ContainSingle().Subject.Bounds;
+        hit.Width.Should().BeApproximately(side, 0.5f);
+        hit.Height.Should().BeApproximately(side, 0.5f);
+    }
+
     [Fact]
     public void AControlsHitTargetStopsInflatingWhenThePointerIsPrecise()
     {

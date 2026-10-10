@@ -87,6 +87,13 @@ public static class DefaultValue
                 return $"{Eq.DateTimeOffset}.minValue()";
             case "System.Guid":
                 return "'00000000-0000-0000-0000-000000000000'";
+            // The token that never cancels: `default` and `None` are one value.
+            case "System.Threading.CancellationToken":
+                return Eq.CancellationNone;
+            // The registration of nothing, whose token is None: a field of the type that was never
+            // assigned was undefined, and threw on its first Dispose where .NET does nothing.
+            case "System.Threading.CancellationTokenRegistration":
+                return Eq.CancellationRegistration;
         }
 
         // A KeyValuePair is the pair a dictionary yields, so its zero is the pair of the two zeros (#433).
@@ -173,7 +180,8 @@ public static class DefaultValue
         // declaration has no class, and its zero would name one nothing wrote.
         var written = type.Locations.Any(location => location.IsInSource)
             ? RecordTypeEmitter.EmitsTwin(type)
-            : Services.RuntimeProvidedTypeScanner.IsTranspiledNamespace(type.ContainingNamespace?.ToDisplayString() ?? "");
+            : Services.RuntimeProvidedTypeScanner.IsTranspiledNamespace(type.ContainingNamespace?.ToDisplayString() ?? "")
+              || type.TwinIsTranspiled();
         if (!written) return null;
         var zeros = type.TypeArguments.Select(argument => Of(argument, named, typeParameter));
         return $"{type.Name}.$zero({string.Join(", ", zeros)})";

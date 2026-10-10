@@ -26,6 +26,7 @@ public enum SheetAxis : byte { Rows = 0, Cols = 1 }
 /// and routes input into it. Every mutation raises <see cref="Changed"/> with the edit.
 /// </para>
 /// </summary>
+[TwinIsTranspiled]
 public sealed class SheetController
 {
     private SheetRange _selection = new(new CellRef(0, 0));

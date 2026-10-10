@@ -63,6 +63,16 @@ public static class TypeSymbolExtensions
     }
 
     /// <summary>
+    /// Whether the vocabulary's assembly marks <paramref name="type"/> <c>[TwinIsTranspiled]</c>: its
+    /// twin is transpiled from its C# with the runtime, as an app's type's is, though its namespace is
+    /// the vocabulary's, whose other twins are hand-written (#592). Asked of the symbol, since an app
+    /// reaches it as metadata.
+    /// </summary>
+    internal static bool TwinIsTranspiled(this ITypeSymbol type) =>
+        type.GetAttributes().Any(attribute => attribute.AttributeClass is { Name: "TwinIsTranspiledAttribute" } marker
+            && marker.ContainingNamespace?.ToDisplayString() == "eQuantic.UI.Primitives");
+
+    /// <summary>
     /// True when the type derives (transitively) from a framework component/state base. Walking the base
     /// chain recognises a component that extends another user or library component without enumerating
     /// every intermediate base — replacing brittle direct-base-name matching.
@@ -347,6 +357,40 @@ public static class TypeSymbolExtensions
         && named.GetAttributes().Any(attribute => attribute.AttributeClass is
             { Name: "TwinIsDataAttribute", ContainingNamespace: { } space }
             && space.ToDisplayString() == "eQuantic.UI.Primitives");
+
+    /// <summary>
+    /// The type arguments of <paramref name="type"/> whose parameter carries <c>[HydratesTypeArgument]</c>,
+    /// in declaration order: the ones whose hydration spec the twin receives after its constructor's
+    /// arguments, the C# type being erased in JavaScript (<c>ServerTopic&lt;T&gt;</c>, #291). Asked of
+    /// the SYMBOL, so a parameter of the same name elsewhere means nothing.
+    /// </summary>
+    internal static IReadOnlyList<ITypeSymbol> HydratedTypeArguments(this ITypeSymbol? type)
+    {
+        if (type is not INamedTypeSymbol { IsGenericType: true } named) return [];
+        var parameters = named.OriginalDefinition.TypeParameters;
+        var hydrated = new List<ITypeSymbol>();
+        for (var i = 0; i < parameters.Length; i++)
+        {
+            if (parameters[i].GetAttributes().Any(attribute => attribute.AttributeClass is
+                    { Name: "HydratesTypeArgumentAttribute", ContainingNamespace: { } space }
+                    && space.ToDisplayString() == "eQuantic.UI.Primitives"))
+                hydrated.Add(named.TypeArguments[i]);
+        }
+        return hydrated;
+    }
+
+    /// <summary>
+    /// Whether <paramref name="type"/> names a type parameter anywhere in it (<c>T</c>, <c>List&lt;T&gt;</c>,
+    /// <c>T[]</c>): a type the browser cannot know, since a type argument is erased in JavaScript.
+    /// </summary>
+    internal static bool MentionsTypeParameter(this ITypeSymbol type) => type switch
+    {
+        ITypeParameterSymbol => true,
+        IArrayTypeSymbol array => array.ElementType.MentionsTypeParameter(),
+        INamedTypeSymbol named => named.TypeArguments.Any(argument => argument.MentionsTypeParameter())
+                                  || named.ContainingType?.MentionsTypeParameter() == true,
+        _ => false,
+    };
 
     /// <summary>
     /// The members .NET writes in a record's text: the public instance fields and readable properties,

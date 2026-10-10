@@ -74,7 +74,7 @@ the pill's 40 down.
 
 - **Component**: `src/eQuantic.UI.Native.Framework/Layout/LayoutEngine.cs`
 - **Handoff**: Positioned(top/end/bottom/start, width?, height?) — inset-anchored children; two opposite insets stretch the child.
-- **Code**: The native MeasureStack never stretches: with both Start and End set, End is discarded (the start edge decides first, `AnchorsStart ?`) and the child keeps the width it measured intrinsically; same for Top/Bottom (MeasureVisitor.Containers.cs:100-109 MeasureStack). The web realizer DOES honour it — it emits both left and right so CSS spans the box (WebLoweringVisitor.Containers.cs:98-101 LowerStack) — so the same tree has two geometries.
+- **Code**: The native MeasureStack never stretches: with both Start and End set, End is discarded (`Start ??` short-circuits) and the child keeps the width it measured intrinsically; same for Top/Bottom (MeasureVisitor.Containers.cs:96-97 MeasureStack). The web realizer DOES honour it — it emits both left and right so CSS spans the box (WebLoweringVisitor.Containers.cs:96-99 LowerStack) — so the same tree has two geometries.
 - **Evidence**:
 
   ```
@@ -107,7 +107,7 @@ the pill's 40 down.
   MeasureVisitor.Containers.cs:18  var host = ctx.SafeAreaInsets;
   LayoutEngine.cs:173  public EdgeInsets SafeAreaInsets { get; init; }
   WebLoweringVisitor.Containers.cs:393  var env = $"env(safe-area-inset-{name}, 0px)";
-  lowering.ts:3755  const env = `env(safe-area-inset-${name}, 0px)`;
+  lowering.ts:3789  const env = `env(safe-area-inset-${name}, 0px)`;
   ```
 
 ### A5 SafeArea · behaviour · **unverified**
@@ -218,7 +218,7 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  Button.cs:62  var height = Sizing.Height(Size, context.Density);   //  vs EmitVisitor.Interaction.cs:168  var minimum = density == Density.Compact ? 0 : Touch.MinTarget;
+  Button.cs:62  var height = Sizing.Height(Size, context.Density);   //  vs EmitVisitor.Interaction.cs:169  var minimum = density == Density.Compact ? Touch.MinPointerTarget : Touch.MinTarget;
   ```
 
 ### A12 Button · behaviour · **unverified**
@@ -229,7 +229,7 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  Button.cs:78  var inert = Disabled || Loading;  → Button.cs:132 `Disabled = inert` → WebLoweringVisitor.Interaction.cs:490  Disabled = pressable.Disabled && !wrapping ? true : null,  /  lowering.ts:2980  if (disabled && !wrapping) node.attributes['disabled'] = '';
+  Button.cs:78  var inert = Disabled || Loading;  → Button.cs:132 `Disabled = inert` → WebLoweringVisitor.Interaction.cs:510  Disabled = pressable.Disabled && !wrapping ? true : null,  /  lowering.ts:3007  if (disabled && !wrapping) node.attributes['disabled'] = '';
   ```
 
 ### A13 IconButton · semantics · **CONFIRMED**
@@ -378,7 +378,7 @@ the pill's 40 down.
   Chip.cs:92    {
   Chip.cs:107        Label = Label,
   Chip.cs:109        PressedBackground = Selected ? primary.Pressed.WithOpacity(0.24f) : theme.SurfaceSubtle,
-  WebLoweringVisitor.Interaction.cs:493  AriaPressed = pressable.Selected is { } selected ? (selected ? "true" : "false") : null,
+  WebLoweringVisitor.Interaction.cs:513  AriaPressed = pressable.Selected is { } selected ? (selected ? "true" : "false") : null,
   ```
 
 ### B8 Chip · behaviour · **CONFIRMED**
@@ -391,7 +391,7 @@ the pill's 40 down.
   ```
   Chip.cs:73  content.Add(new Pressable(new Icon(Icons.Close, IconSize.Dense, textColor), OnRemove)
   Chip.cs:104  return Kind == ChipKind.Filter && OnPressed != null
-  WebLoweringVisitor.Interaction.cs:471  var element = new RealizedElement(wrapping ? "span" : "button")
+  WebLoweringVisitor.Interaction.cs:491  var element = new RealizedElement(wrapping ? "span" : "button")
   ```
 
 ### B8 Chip · behaviour · **CONFIRMED**
@@ -422,7 +422,7 @@ the pill's 40 down.
 
 - **Component**: `src/eQuantic.UI.Components/TextInput.cs`
 - **Handoff**: Helper/error below: 12/500, 5dp gap — the line is always reserved so error swaps never shift layout.
-- **Code**: The caption line is a plain Text whose content is "" when there is neither helper nor error (TextInput.cs:91, :136). On the web target that lowers to an EMPTY span (src/eQuantic.UI.Web/WebLoweringVisitor.Text.cs:254 LowerText `InnerHtml = text.Spans is null ? text.Content : null`) which, with maxLines:1 forcing `display:block` (src/eQuantic.UI.Runtime/src/shared/lowering.ts:2182), generates no line box and measures 0dp tall — so a field authored without a helper grows by the Caption line height (16dp) the first time an error is set. The native target does reserve it: the measurer floors at one line (src/eQuantic.UI.Native.Framework/Text/ITextMeasurer.cs:92 `if (lines.Count == 0) lines.Add(new MeasuredLine(0, false));`), so the two targets also disagree with each other on the same tree.
+- **Code**: The caption line is a plain Text whose content is "" when there is neither helper nor error (TextInput.cs:91, :136). On the web target that lowers to an EMPTY span (src/eQuantic.UI.Web/WebLoweringVisitor.Text.cs:254 LowerText `InnerHtml = text.Spans is null ? text.Content : null`) which, with maxLines:1 forcing `display:block` (src/eQuantic.UI.Runtime/src/shared/lowering.ts:2205), generates no line box and measures 0dp tall — so a field authored without a helper grows by the Caption line height (16dp) the first time an error is set. The native target does reserve it: the measurer floors at one line (src/eQuantic.UI.Native.Framework/Text/ITextMeasurer.cs:92 `if (lines.Count == 0) lines.Add(new MeasuredLine(0, false));`), so the two targets also disagree with each other on the same tree.
 - **Evidence**:
 
   ```
@@ -623,7 +623,7 @@ the pill's 40 down.
 
   ```
   Drawer.cs:76  var overlay = new Overlay(layer);
-  lowering.ts:1165  if (node.label) layer.attributes['aria-label'] = node.label;
+  lowering.ts:1167  if (node.label) layer.attributes['aria-label'] = node.label;
   ```
 
 ### C5 Drawer · missing-feature · **unverified**
@@ -714,7 +714,7 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  lowering.ts:3371-3374  const value = role === 'slider' ? node.value : undefined; host.attributes['role'] = role === 'slider' && !value ? 'group' : role; host.attributes['tabindex'] = '0'; if (node.label) host.attributes['aria-label'] = node.label;
+  lowering.ts:3400-3403  const value = role === 'slider' ? node.value : undefined; host.attributes['role'] = role === 'slider' && !value ? 'group' : role; host.attributes['tabindex'] = '0'; if (node.label) host.attributes['aria-label'] = node.label;
   WebLoweringVisitor.Interaction.cs:127  var adjustableValue = adjustable.Role == AdjustableRole.Slider ? adjustable.Value : null;
   WebLoweringVisitor.Interaction.cs:288-290  AdjustableRole.Tablist => "tablist", AdjustableRole.Radiogroup => "radiogroup", _ => value is null ? "group" : "slider",
   Slider.cs:163-172              : new Adjustable(box, direction =>
@@ -1181,7 +1181,7 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  Tokens.cs:205  public const float PressCancelSlop = 12;
+  Tokens.cs:214  public const float PressCancelSlop = 12;
   PhotonHost.cs:1626  if (!pan.Active && MathF.Abs(travelled) > Touch.PressCancelSlop)
   ```
 
@@ -1304,7 +1304,7 @@ the pill's 40 down.
   src/eQuantic.UI.Web/WebLoweringVisitor.Graphics.cs:300-303 —
           svg.RawAttributes["role"] = "img";
           svg.RawAttributes["aria-label"] = label;
-  src/eQuantic.UI.Runtime/src/shared/lowering.ts:1835  attributes['role'] = 'img';
+  src/eQuantic.UI.Runtime/src/shared/lowering.ts:1837  attributes['role'] = 'img';
   ```
 
 ### A11 Image · missing-feature · **REFUTED**
@@ -1353,7 +1353,7 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  TokenCss.cs:398  css.AppendLine(".eq-pressable > :first-child { transition: background-color var(--eq-motion-fast) ease-out; }");   with TokenCss.cs:337  --eq-motion-fast: {Motion.FastMs}ms;
+  TokenCss.cs:411  css.AppendLine(":where(.eq-pressable > :first-child) { transition: background-color var(--eq-motion-fast) ease-out; }");   with TokenCss.cs:346  --eq-motion-fast: {Motion.FastMs}ms;
   ```
 
 ### A12 Button · missing-feature · **unverified**
@@ -1423,7 +1423,7 @@ the pill's 40 down.
 
   ```
   ListItem.cs:132  Label = Title,
-  WebLoweringVisitor.Interaction.cs:491  AriaLabel = pressable.Label,
+  WebLoweringVisitor.Interaction.cs:511  AriaLabel = pressable.Label,
   ```
 
 ### B2 List · ListItem · semantics · **CONFIRMED**
@@ -1446,8 +1446,8 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  TokenCss.cs:398  css.AppendLine(".eq-pressable > :first-child { transition: background-color var(--eq-motion-fast) ease-out; }");
-  TokenCss.cs:399  css.AppendLine(".eq-pressable:active > :first-child { background-color: var(--eq-pressed-bg) !important; }");
+  TokenCss.cs:411  css.AppendLine(":where(.eq-pressable > :first-child) { transition: background-color var(--eq-motion-fast) ease-out; }");
+  TokenCss.cs:416  css.AppendLine(".eq-press-fill:active > :first-child { background-color: var(--eq-pressed-bg) !important; }");
   ```
 
 ### B2 List · ListItem · missing-feature · **CONFIRMED**
@@ -1591,7 +1591,7 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  src/eQuantic.UI.Runtime/src/shared/lowering.ts:3394-3411  const direction = event.key === 'ArrowRight' ? 1 : event.key === 'ArrowLeft' ? -1 : event.key === 'ArrowUp' ? downIsNext ? -1 : 1 : event.key === 'ArrowDown' ? downIsNext ? 1 : -1 : 0; if (direction === 0) return;
+  src/eQuantic.UI.Runtime/src/shared/lowering.ts:3410-3427  const direction = event.key === 'ArrowRight' ? 1 : event.key === 'ArrowLeft' ? -1 : event.key === 'ArrowUp' ? downIsNext ? -1 : 1 : event.key === 'ArrowDown' ? downIsNext ? 1 : -1 : 0; if (direction === 0) return;
   ```
 
 ### B5 Tabs · semantics · **unverified**
@@ -1602,7 +1602,7 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  src/eQuantic.UI.Runtime/src/shared/lowering.ts:2944-2946  node.attributes['role'] = 'tab'; node.attributes['aria-selected'] = pressable.selected === true ? 'true' : 'false'; node.attributes['tabindex'] = '-1';
+  src/eQuantic.UI.Runtime/src/shared/lowering.ts:2970-2972  node.attributes['role'] = 'tab'; node.attributes['aria-selected'] = pressable.selected === true ? 'true' : 'false'; node.attributes['tabindex'] = '-1';
   ```
 
 ### B5 Tabs · missing-feature · **unverified**
@@ -1698,7 +1698,7 @@ the pill's 40 down.
   ```
   BottomNavigation.cs:60  var iconNode = item.BadgeCount > 0 ? Badge.Over(icon, item.BadgeCount) : (VisualNode)icon;
   BottomNavigation.cs:85  Label = item.Label,
-  WebLoweringVisitor.Interaction.cs:491  AriaLabel = pressable.Label,
+  WebLoweringVisitor.Interaction.cs:511  AriaLabel = pressable.Label,
   ```
 
 ### B8 Chip · semantics · **CONFIRMED**
@@ -1722,8 +1722,8 @@ the pill's 40 down.
 
   ```
   Chip.cs:73  content.Add(new Pressable(new Icon(Icons.Close, IconSize.Dense, textColor), OnRemove)
-  WebLoweringVisitor.Interaction.cs:476  Padding = "0",
-  EmitVisitor.Interaction.cs:168  var minimum = density == Density.Compact ? 0 : Touch.MinTarget;
+  WebLoweringVisitor.Interaction.cs:496  Padding = "0",
+  EmitVisitor.Interaction.cs:169  var minimum = density == Density.Compact ? Touch.MinPointerTarget : Touch.MinTarget;
   ```
 
 ### B9 TextInput · metric · **CONFIRMED**
@@ -2024,7 +2024,7 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  WebLoweringVisitor.Interaction.cs:465-483  var element = new RealizedElement(wrapping ? "span" : "button") { Style = new HtmlStyle { Padding = "0", Border = "none", Background = "none", FontFamily = "inherit", Cursor = ..., TextAlign = TextAlign.Start, Width = fills.Width ? "100%" : null, Height = fills.Height ? "100%" : null, } };
+  WebLoweringVisitor.Interaction.cs:485-503  var element = new RealizedElement(wrapping ? "span" : "button") { Style = new HtmlStyle { Padding = "0", Border = "none", Background = "none", FontFamily = "inherit", Cursor = ..., TextAlign = TextAlign.Start, Width = fills.Width ? "100%" : null, Height = fills.Height ? "100%" : null, } };
   ```
 
 ### B18 Banner · behaviour · **CONFIRMED**
@@ -2205,7 +2205,7 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  TokenCss.cs:527        css.AppendLine(".eq-presence-slideup { animation: eq-presence-slideup var(--eq-motion-base) ease-out; }");
+  TokenCss.cs:553        css.AppendLine(".eq-presence-slideup { animation: eq-presence-slideup var(--eq-motion-base) ease-out; }");
   ```
 
 ### C5 Drawer · missing-feature · **unverified**
@@ -2307,7 +2307,7 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  lowering.ts:3394-3411  const direction = event.key === 'ArrowRight' ? 1 : event.key === 'ArrowLeft' ? -1 : event.key === 'ArrowUp' ? downIsNext ? -1 : 1 : event.key === 'ArrowDown' ? downIsNext ? 1 : -1 : 0; if (direction === 0) return;
+  lowering.ts:3410-3427  const direction = event.key === 'ArrowRight' ? 1 : event.key === 'ArrowLeft' ? -1 : event.key === 'ArrowUp' ? downIsNext ? -1 : 1 : event.key === 'ArrowDown' ? downIsNext ? 1 : -1 : 0; if (direction === 0) return;
   PhotonHost.cs:2323  && (key is "ArrowLeft" or "ArrowRight" or "ArrowUp" or "ArrowDown")
   ```
 
@@ -2333,7 +2333,7 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  lowering.ts:3394-3411  const direction = event.key === 'ArrowRight' ? 1 : event.key === 'ArrowLeft' ? -1 : event.key === 'ArrowUp' ? downIsNext ? -1 : 1 : event.key === 'ArrowDown' ? downIsNext ? 1 : -1 : 0; if (direction === 0) return;
+  lowering.ts:3410-3427  const direction = event.key === 'ArrowRight' ? 1 : event.key === 'ArrowLeft' ? -1 : event.key === 'ArrowUp' ? downIsNext ? -1 : 1 : event.key === 'ArrowDown' ? downIsNext ? 1 : -1 : 0; if (direction === 0) return;
   PhotonHost.cs:2323  && (key is "ArrowLeft" or "ArrowRight" or "ArrowUp" or "ArrowDown")
   ```
 
@@ -2579,7 +2579,7 @@ the pill's 40 down.
 
   ```
   Tooltip.cs:39  }, new Text(Text, TypeRole.Caption, theme.TextInverse, maxLines: 1));
-  TokenCss.cs:467  css.AppendLine(".eq-anchor-panel { position: absolute; z-index: 1050; width: max-content; max-width: min(92vw, 420px); }");
+  TokenCss.cs:493  css.AppendLine(".eq-anchor-panel { position: absolute; z-index: 1050; width: max-content; max-width: min(92vw, 420px); }");
   ```
 
 ### C13 Tooltip · metric · **unverified**
@@ -2631,7 +2631,7 @@ the pill's 40 down.
 
 - **Component**: `src/eQuantic.UI.Components/NavigationRail.cs`
 - **Handoff**: "Selection: pill crossfade + glyph fill swap, Motion.State 200ms."
-- **Code**: The pill's BoxStyle declares no Transition, so the Primary-subtle background and the tint snap between destinations instead of crossfading. The vocabulary exists and is used by siblings — `Transition = TransitionSpec.Of(StyleChannels.Colors | StyleChannels.Size, Motion.State)` in PageIndicator.cs:62 — and Motion.State resolves to exactly the handoff's 200ms (Tokens.cs:262 BaseMs = 200, Tokens.cs:279 Motion.State = new(BaseMs, Curve.Standard)). The glyph fill swap itself is implemented (line 85 picks SelectedIcon), only its 200ms motion is absent.
+- **Code**: The pill's BoxStyle declares no Transition, so the Primary-subtle background and the tint snap between destinations instead of crossfading. The vocabulary exists and is used by siblings — `Transition = TransitionSpec.Of(StyleChannels.Colors | StyleChannels.Size, Motion.State)` in PageIndicator.cs:62 — and Motion.State resolves to exactly the handoff's 200ms (Tokens.cs:271 BaseMs = 200, Tokens.cs:288 Motion.State = new(BaseMs, Curve.Standard)). The glyph fill swap itself is implemented (line 85 picks SelectedIcon), only its 200ms motion is absent.
 - **Evidence**:
 
   ```
@@ -2697,12 +2697,13 @@ the pill's 40 down.
 
 - **Component**: `src/eQuantic.UI.Primitives/Nodes/Box.cs`
 - **Handoff**: Pointer — Inert — arrow cursor, no hover, right-click falls through. A Box gains pointer states only by composing Pressable.
-- **Code**: A bare Box carries three pointer facilities of its own: Hover and Focus style diffs (src/eQuantic.UI.Primitives/Nodes/BoxStyle.cs) and Cursor. The web realizer lowers them to :hover/:focus-visible rules and a cursor declaration (WebLoweringVisitor.Containers.cs:704 LowerBox, 1324-1333) and Photon registers a HoverRegion and a CursorRegion for the box (EmitVisitor.Chrome.cs:16, 89) — no Pressable involved.
+- **Code**: A bare Box carries two pointer facilities of its own: a Hover style diff (src/eQuantic.UI.Primitives/Nodes/BoxStyle.cs) and Cursor. The web realizer lowers them to a :hover rule and a cursor declaration (WebLoweringVisitor.Containers.cs:704 LowerBox, 1324-1333) and Photon registers a HoverRegion and a CursorRegion for the box (EmitVisitor.Chrome.cs:19, 102) — no Pressable involved. Its Focus and Pressed diffs are its CONTROL's since #508: they apply only while a Pressable around the box is focused or pressed, which is the handoff's "gains pointer states only by composing Pressable".
 - **Evidence**:
 
   ```
   public StyleDiff? Hover { get; init; }
   public StyleDiff? Focus { get; init; }
+  public StyleDiff? Pressed { get; init; }
   public PointerCursor Cursor { get; init; }
   ```
 
@@ -2736,7 +2737,7 @@ the pill's 40 down.
 
 - **Component**: `src/eQuantic.UI.Primitives/Nodes/Box.cs`
 - **Handoff**: A Box is the engine's rrect surfaced as a widget: 1 fill draw + optional border draw + optional shadow draw. … Paint order: shadow → fill (solid or 2-stop linear gradient) → border (inside stroke) → child.
-- **Code**: BoxStyle carries two further fill layers beyond the single fill: Pattern, a repeating hairline grid (src/eQuantic.UI.Primitives/Nodes/BoxStyle.cs), and Glow, a radial gradient (121). Both reach paint — EmitChrome takes gradient, pattern and glow together (EmitVisitor.Chrome.cs:115) and the web stacks them as background-image layers (WebLoweringVisitor.Containers.cs:1066-1073 BackgroundLayers). The documented order is grid below gradient, glow above the grid, which is a four-layer fill, not one.
+- **Code**: BoxStyle carries two further fill layers beyond the single fill: Pattern, a repeating hairline grid (src/eQuantic.UI.Primitives/Nodes/BoxStyle.cs), and Glow, a radial gradient (121). Both reach paint — EmitChrome takes gradient, pattern and glow together (EmitVisitor.Chrome.cs:115) and the web stacks them as background-image layers (WebLoweringVisitor.Containers.cs:1078-1085 BackgroundLayers). The documented order is grid below gradient, glow above the grid, which is a four-layer fill, not one.
 - **Evidence**:
 
   ```
@@ -2772,7 +2773,7 @@ the pill's 40 down.
 
 - **Component**: `src/eQuantic.UI.Primitives/Nodes/FlexNode.cs`
 - **Handoff**: wrap — … Line spacing = gap.
-- **Code**: RunGap lets line spacing differ from gap (src/eQuantic.UI.Primitives/Nodes/FlexNode.cs); the web emits the "run main" pair when they differ (WebLoweringVisitor.Containers.cs:1050-1060 GapValue) and native uses `flex.RunGap ?? flex.Gap` (MeasureVisitor.Flex.cs:394 MeasureFlexWrapped). The default matches the handoff, so this is an added override rather than a wrong default.
+- **Code**: RunGap lets line spacing differ from gap (src/eQuantic.UI.Primitives/Nodes/FlexNode.cs); the web emits the "run main" pair when they differ (WebLoweringVisitor.Containers.cs:1062-1072 GapValue) and native uses `flex.RunGap ?? flex.Gap` (MeasureVisitor.Flex.cs:394 MeasureFlexWrapped). The default matches the handoff, so this is an added override rather than a wrong default.
 - **Evidence**:
 
   ```
@@ -2796,7 +2797,7 @@ the pill's 40 down.
 
 - **Component**: `src/eQuantic.UI.Web/WebRealizer.cs`
 - **Handoff**: Pointer — Never hit-testable — clicks pass through to whatever sits beneath.
-- **Code**: The web Spacer is a plain div with no pointer-events:none (WebLoweringVisitor.Containers.cs:1117-1135 LowerSpacer, and the TS twin lowerSpacer at src/eQuantic.UI.Runtime/src/shared/lowering.ts:3038-3054), so it is the hit target over its own area and a click on it never reaches a layer beneath it in a Stack. The realizer already uses PointerEvents = "none" elsewhere for exactly this (WebLoweringVisitor.Containers.cs:263 LowerAnchored, 481, 1003). Native matches the handoff — a Spacer registers no region at all. "Announces nothing" is honoured on both (aria-hidden).
+- **Code**: The web Spacer is a plain div with no pointer-events:none (WebLoweringVisitor.Containers.cs:1129-1147 LowerSpacer, and the TS twin lowerSpacer at src/eQuantic.UI.Runtime/src/shared/lowering.ts:3038-3054), so it is the hit target over its own area and a click on it never reaches a layer beneath it in a Stack. The realizer already uses PointerEvents = "none" elsewhere for exactly this (WebLoweringVisitor.Containers.cs:263 LowerAnchored, 481, 1003). Native matches the handoff — a Spacer registers no region at all. "Announces nothing" is honoured on both (aria-hidden).
 - **Evidence**:
 
   ```
@@ -3333,7 +3334,7 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  TokenCss.cs:547  css.AppendLine($".eq-spinner {{ opacity: 0; animation: eq-appear 1ms linear {Spinner.AppearDelayMs}ms forwards; }}");
+  TokenCss.cs:573  css.AppendLine($".eq-spinner {{ opacity: 0; animation: eq-appear 1ms linear {Spinner.AppearDelayMs}ms forwards; }}");
   EmitVisitor.Media.cs:290  motion.Active = true;   // EmitSpinner — no AppearDelayMs anywhere
   ```
 
@@ -3390,7 +3391,7 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  TokenCss.cs:533        css.AppendLine(".eq-presence-exit-fade { animation: eq-presence-exit-fade var(--eq-motion-fast) ease-in forwards; }");
+  TokenCss.cs:559        css.AppendLine(".eq-presence-exit-fade { animation: eq-presence-exit-fade var(--eq-motion-fast) ease-in forwards; }");
   ```
 
 ### C2 Modal · metric · **unverified**
@@ -3486,8 +3487,8 @@ the pill's 40 down.
 
   ```
   EmitVisitor.Interaction.cs:164  private static Rect ExpandHitRect(Rect bounds, Density density = Density.Comfortable)   // native only
-  WebLoweringVisitor.Interaction.cs:470-478  Padding = "0", Border = "none", Background = "none", ... Width = fills.Width ? "100%" : null, Height = fills.Height ? "100%" : null,
-  TokenCss.cs:397  css.AppendLine(".eq-pressable { -webkit-tap-highlight-color: transparent; }");
+  WebLoweringVisitor.Interaction.cs:490-498  Padding = "0", Border = "none", Background = "none", ... Width = fills.Width ? "100%" : null, Height = fills.Height ? "100%" : null,
+  TokenCss.cs:406  css.AppendLine(".eq-pressable { -webkit-tap-highlight-color: transparent; }");
   ```
 
 ### C9 PullToRefresh · missing-feature · **unverified**
@@ -3585,8 +3586,8 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  TokenCss.cs:482  css.AppendLine(".eq-hoverreveal > .eq-anchor-panel { opacity: 0; pointer-events: none; transition: opacity 120ms ease-out; }");
-  Tokens.cs:260  public const int FastMs = 100;
+  TokenCss.cs:508  css.AppendLine(".eq-hoverreveal > .eq-anchor-panel { opacity: 0; pointer-events: none; transition: opacity 120ms ease-out; }");
+  Tokens.cs:269  public const int FastMs = 100;
   ```
 
 ### C13 Tooltip · documented-deviation · **unverified**
@@ -3598,7 +3599,7 @@ the pill's 40 down.
 
   ```
   Tooltip.cs:16  /// v1 fences: show/hide delay, arrow caret.
-  TokenCss.cs:483  css.AppendLine(".eq-hoverreveal:hover > .eq-anchor-panel { opacity: 1; }");
+  TokenCss.cs:509  css.AppendLine(".eq-hoverreveal:hover > .eq-anchor-panel { opacity: 1; }");
   ```
 
 ### C13 Tooltip · documented-deviation · **unverified**

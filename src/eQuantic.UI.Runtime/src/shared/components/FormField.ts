@@ -1,23 +1,29 @@
 import { FieldRule } from "../runtime-exports";
 
 export class FormField {
-    constructor(name: string, initial: string = '', rules: FieldRule[] | null = null, relevantWhen: (() => boolean) | null = null, props?: any) {
+    constructor(name: string, initial: string = '', rules: FieldRule[] | null = null, relevantWhen: (() => boolean) | null = null) {
+        this._rules = null!;
         this._relevantWhen = null;
+        this.name = null!;
+        this.initial = null!;
+        this.value = null!;
+        this.touched = false;
+        this.error = null;
         this.name = name;
         this.initial = initial;
         this.value = initial;
         this._rules = rules == null ? [] : [...rules];
         this._relevantWhen = relevantWhen;
         this.revalidate();
-        if (props && typeof props === 'object') Object.assign(this, props);
     }
 
-    _rules: FieldRule[];
-    _relevantWhen: (() => boolean) | null;
-    declare name: string;
-    declare initial: string;
-    declare value: string;
-    touched: boolean = false;
+    _rules!: FieldRule[];
+    _relevantWhen!: (() => boolean) | null;
+    name!: string;
+    initial!: string;
+    value!: string;
+    touched!: boolean;
+    error!: string | null;
 
     get dirty(): boolean {
         return this.value !== this.initial;
@@ -26,8 +32,6 @@ export class FormField {
     get relevant(): boolean {
         return this._relevantWhen == null || this._relevantWhen!();
     }
-
-    declare error: string | null;
 
     get visibleError(): string | null {
         return this.touched && this.relevant ? this.error : null;
