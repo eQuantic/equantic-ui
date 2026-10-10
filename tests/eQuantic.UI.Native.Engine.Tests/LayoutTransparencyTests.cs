@@ -458,9 +458,11 @@ public class LayoutTransparencyTests
     {
         static Text Plain(string content) => new(content, TypeRole.BodyL);
         static float Unbounded(VisualNode t) => LayoutEngine.Layout(t, 4000, 300, Ctx).Bounds.Width;
+        // The widest LINE, not the node: a Text in a sized Box takes the box's width (#659), as a block
+        // does, so its bounds say where the box ends and its lines say where the paragraph broke.
         static float WidthIn(VisualNode text, float room) =>
             LayoutEngine.Layout(new Box(new BoxStyle { Width = SizeValue.Fixed(room) }, text),
-                400, 300, Ctx).Children[0].Bounds.Width;
+                400, 300, Ctx).Children[0].Text!.Lines.Max(line => line.Width);
 
         var content = runs.Replace("|", "");
         var room = Unbounded(Plain(firstLine + " ")) + 1f;

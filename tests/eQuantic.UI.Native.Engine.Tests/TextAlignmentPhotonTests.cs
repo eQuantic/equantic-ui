@@ -60,7 +60,8 @@ public class TextAlignmentPhotonTests
     [Fact]
     public void Centred_TheShortLineMovesInByHalfTheDifference()
     {
-        var bars = Bars(new Text(TwoLines, TypeRole.BodyM, align: TextAlignment.Center));
+        // In a Row, which lays a Text on its main axis at its own width: the box cut to its content.
+        var bars = Bars(new Row(gap: 0) { new Text(TwoLines, TypeRole.BodyM, align: TextAlignment.Center) });
 
         bars.Should().HaveCount(2);
         // The block is the longest line — the box hugs it — so the long line does not move and the
@@ -81,32 +82,24 @@ public class TextAlignmentPhotonTests
     }
 
     /// <summary>
-    /// MEASURED while writing the case above, and worth pinning because it decides what "centred"
-    /// looks like here: a Photon <c>Text</c> is ALWAYS its content's width. Not inside a Column with
-    /// a width, not under <see cref="CrossAlign.Stretch"/>, not wrapped in a <c>Flexible</c> — all
-    /// four measured the same 160.8dp. So the block a line centres in is the longest line, and the
-    /// paragraph as a whole is placed by its container, which is exactly the screen this was
-    /// reported from.
-    /// <para>
-    /// It also means the widening branch of <see cref="TextAlignmentExtensions.BlockWidth"/> is not
-    /// reachable through the realizer today — only directly, which the CoreText fact below does. The
-    /// branch stays because it is what the rasterizer CONTRACT means, and because the vocabulary says
-    /// a Text "fills the available line box"; the day Photon makes that true, alignment is already
-    /// right rather than newly wrong.
-    /// </para>
+    /// A paragraph in a Column that stretches its children takes the column's width (#659), as a
+    /// block does on the web and as Flutter's Text does under a tight constraint, so EVERY line
+    /// centres across the column, the longest one included. It measured at its own width in every
+    /// parent, under <see cref="CrossAlign.Stretch"/>, in a sized Box and in a Flexible alike, so the
+    /// longest line was the block and only the short one moved. The widening branch of
+    /// <see cref="TextAlignmentExtensions.BlockWidth"/> is what draws it now.
     /// </summary>
     [Fact]
-    public void OnPhoton_AParagraphHugs_SoTheLongestLineIsTheBlock()
+    public void InAStretchingColumn_AParagraphTakesTheColumnsWidth()
     {
         var column = new Column(gap: 0) { Width = 380, Cross = CrossAlign.Stretch };
         column.Add(new Text(TwoLines, TypeRole.BodyM, align: TextAlignment.Center));
         var bars = Bars(column);
 
         bars.Should().HaveCount(2);
-        bars[0].Width.Should().BeLessThan(300, "the paragraph did not take the column's 380");
-        // The long line is the block, so it does not move, and the short one centres against it.
-        bars[0].X.Should().BeApproximately(0, 0.01f);
-        (bars[1].X - bars[0].X).Should().BeApproximately((bars[0].Width - bars[1].Width) / 2, 0.01f);
+        bars[0].X.Should().BeApproximately((380 - bars[0].Width) / 2, 0.01f,
+            "the longest line centres across the column too");
+        bars[1].X.Should().BeApproximately((380 - bars[1].Width) / 2, 0.01f);
     }
 
     [Fact]
