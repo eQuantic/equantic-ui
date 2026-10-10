@@ -2125,13 +2125,15 @@ record of a release, the wiki's Upgrading page is the distillate.
   `count`, which answer an array and a twin alike, a twin counted by its own `Count` before a `Length`
   beside it; and `ICollection<T>`'s `Add` and `Clear` reach the runtime's `add` and `clear`. The
   review before the pull request opened found a complex element initializer written as an empty object
-  and an indexer over `Range?` taking the slice path, and Copilot's first round a read through a null
-  face answering 0 and GroupBy's named arguments read by their position, all fixed; a `T[]` behind the
-  faces grows where .NET refuses, as it did before,
-  [#711](https://github.com/eQuantic/equantic-ui/issues/711). 91 of the 109 new conformance cases fail
-  on main, and 14 of the 16 new Compiler cases; all of them pass here. The served runtime grows 683
-  gzipped bytes over main's, the twins' reads through a list's face. Proposed and archived through
-  OpenSpec (`openspec/specs/transpiler-bcl`, `transpiler-sequences` and `transpiler-expressions`).
+  and an indexer over `Range?` taking the slice path, Copilot's first round a read through a null face
+  answering 0 and GroupBy's named arguments read by their position, and its second a list's capacity
+  dropped unread, which never ran its call and built a list where a negative one throws, all fixed; a
+  `T[]` behind the faces grows where .NET refuses, as it did before,
+  [#711](https://github.com/eQuantic/equantic-ui/issues/711). 97 of the 115 new conformance cases fail
+  on main, and 14 of the 16 new Compiler cases; all of them pass here. The served runtime grows 656
+  gzipped bytes over what main serves, the twins' reads through a list's face and the runtime's
+  helpers behind it. Proposed and archived through OpenSpec (`openspec/specs/transpiler-bcl`,
+  `transpiler-sequences` and `transpiler-expressions`).
 
 ## Retired documents
 
