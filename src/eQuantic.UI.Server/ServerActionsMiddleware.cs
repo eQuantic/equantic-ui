@@ -85,8 +85,8 @@ public class ServerActionsMiddleware
         {
             _logger.LogWarning(
                 "Server Action request refused - it came from another site: Origin {Origin}, Sec-Fetch-Site {FetchSite}",
-                context.Request.Headers.Origin.ToString(),
-                context.Request.Headers["Sec-Fetch-Site"].ToString());
+                ForLog(context.Request.Headers.Origin.ToString()),
+                ForLog(context.Request.Headers["Sec-Fetch-Site"].ToString()));
             context.Response.StatusCode = StatusCodes.Status403Forbidden;
             await WriteErrorResponse(context, "A request from another site cannot call a Server Action.");
             return;
@@ -263,6 +263,13 @@ public class ServerActionsMiddleware
             .Replace("\\", "")
             .Trim();
     }
+
+    /// <summary>
+    /// A header as a log line takes it. The request writes it, so a CR or an LF in it would otherwise
+    /// start a line of its own in a plain-text log.
+    /// </summary>
+    private static string ForLog(string value) =>
+        value.Replace("\r", string.Empty).Replace("\n", string.Empty);
 
     private static async Task WriteErrorResponse(HttpContext context, string error)
     {

@@ -55,7 +55,24 @@ internal sealed class ServerActionOrigins(IEnumerable<string> allowed)
 
     private static string OriginOf(Uri uri) => $"{uri.Scheme}://{HostOf(uri)}";
 
-    private static string HostOf(Uri uri) => uri.IsDefaultPort ? uri.IdnHost : $"{uri.IdnHost}:{uri.Port}";
+    private static string HostOf(Uri uri) => uri.IsDefaultPort ? Literal(uri) : $"{Literal(uri)}:{uri.Port}";
 
-    private static string OwnHost(HostString host) => host.Port is 80 or 443 ? host.Host : host.Value ?? "";
+    /// <summary>
+    /// The request's <c>Host</c>, read by the same parser as an origin, so the two sides compare in one
+    /// form, its port left out when it is 80 or 443. A host that does not parse is no host of the app's.
+    /// </summary>
+    private static string OwnHost(HostString host)
+    {
+        if (!host.HasValue || !Uri.TryCreate($"http://{host.Host}", UriKind.Absolute, out var uri))
+            return "";
+        var literal = Literal(uri);
+        return host.Port is null or 80 or 443 ? literal : $"{literal}:{host.Port}";
+    }
+
+    /// <summary>
+    /// A host in one form: an IPv6 literal compressed and in its brackets, as <see cref="Uri.Host"/>
+    /// writes it, and any other host in punycode. <see cref="Uri.IdnHost"/> drops an IPv6 literal's
+    /// brackets, and <see cref="HostString"/> keeps whatever form the request wrote.
+    /// </summary>
+    private static string Literal(Uri uri) => uri.HostNameType == UriHostNameType.IPv6 ? uri.Host : uri.IdnHost;
 }
