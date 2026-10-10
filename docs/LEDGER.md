@@ -1961,6 +1961,44 @@ record of a release, the wiki's Upgrading page is the distillate.
   the symbol's interface-qualified name (`IReads.Value`): a member's twin name is derived in one place
   now, an explicit implementation's under the name of the member it implements, as the emitter writes
   it. Proposed and archived through OpenSpec (`openspec/specs/transpiler-classes`).
+- **2026-10-07 · Photon hit-tests and lays out what it draws**: seven places where Photon took the
+  pointer, read it, or laid a child, where the web does not. A target's slop took its neighbours' presses: in a
+  list of 20dp rows under a finger, a press in the middle of a row ran the row below it
+  ([#630](https://github.com/eQuantic/equantic-ui/issues/630)); a hit region now carries the box its
+  pressable is drawn in, and the box under the point wins unless a slop in front of it stands inside
+  it, the rule a padded target gives in Flutter. The frame's region lists are sized like the frame
+  before's, which pays for that box and brings the pooled steady frame from 73.2 KB to 71.2, its
+  ceiling down to 72. A transformed box registered its regions at its layout rect
+  ([#513](https://github.com/eQuantic/equantic-ui/issues/513)); the sink places every region kind
+  where a transform draws it, a rotated one is tested against its shape through an inverse the frame
+  keeps only when something interactive is transformed, and a pressable follows the box it wraps. A
+  text field and a sheet past their scroll view took presses outside it
+  ([#635](https://github.com/eQuantic/equantic-ui/issues/635)), and carry their visible part as a code
+  surface does. A bordered box laid its child over its border
+  ([#629](https://github.com/eQuantic/equantic-ui/issues/629)), and the stand-in measurer gave a lone
+  space zero width, so a rich paragraph measured narrower than its plain twin
+  ([#285](https://github.com/eQuantic/equantic-ui/issues/285)). A field, a code surface, a sheet and a
+  canvas under a scale or a rotation turned a press into a caret, a position, a cell or a point by
+  subtracting the corner of their box on screen, so a field drawn twice as large put the caret at twice
+  the column pressed ([#658](https://github.com/eQuantic/equantic-ui/issues/658)); every conversion
+  now goes through the inverse the frame keeps. A scroll view drawn scaled revealed a focused control
+  and a caret by their distance on screen, where its offset is one in its own space, and the platform's
+  candidate window stood by the caret's unscaled offset
+  ([#700](https://github.com/eQuantic/equantic-ui/issues/700)). Copilot's first round found four
+  more, each proved failing without its fix: a transform that collapses a box onto a line left the box
+  around the line taking the pointer; a row its scroll view clipped away whole kept a drawn box of no
+  height on the viewport's edge, which took the lower presses of the last row shown; a turned
+  completion list took the presses in the corners of the box around it; and a rich paragraph kept the
+  space a break fell on in its width, and skipped the spaces it opens with. Its second round found two
+  under a turn: the boxes around two rows turned together nest while the rows lie side by side, so the
+  narrow row's slop took the wide row's presses, and a reveal carried a control into its scroll view's
+  space as the box around it on screen, which a turn grows until the view scrolls the wrong way; both
+  now go by the boxes' own corners. Its third round found that the corners had lost the clips, so a
+  moved button clipped at its card's edge reached past the card: the boxes on screen are compared,
+  clips included, unless a turn tilts one. Reported: a drag and a pan under a scale or a turn measure
+  their travel on the screen ([#734](https://github.com/eQuantic/equantic-ui/issues/734)). Proposed and archived
+  through OpenSpec (`openspec/specs/hit-targets`, `openspec/specs/box-layout`,
+  `openspec/specs/text-measurement`, `openspec/specs/transformed-surfaces`).
 
 ## Retired documents
 
