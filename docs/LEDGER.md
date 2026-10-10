@@ -1765,8 +1765,8 @@ record of a release, the wiki's Upgrading page is the distillate.
   registers the type the name binds, which every emitter imports, through part of the namespace, the
   whole of it or `global::`, the expression's case of what #479 did for a base class. A using alias
   wrote its own name, `F.text(n)` and `new F()`, which nothing defines: it writes the type's name and imports it,
-  where the browser has a twin. A .NET type imports nothing, and `CurveEvaluator`, which the runtime ships no
-  twin for, is `[ServerOnly]` now, so a page that names it fails with EQ2010 rather than at load. Proposed
+  where the browser has a twin. A .NET type imports nothing, and neither does a type the runtime ships no twin
+  for: `[ServerOnly]`, as `CurveEvaluator` is since #731, fails with EQ2010 however it is named. Proposed
   and archived through OpenSpec (`openspec/specs/transpiler-names`).
 - **2026-10-08 · The image optimizer runs on SkiaSharp**: seven GitHub advisories against
   SixLabors.ImageSharp, five of them reaching the 3.1.12 `eQuantic.UI.Images` resolved, failed
