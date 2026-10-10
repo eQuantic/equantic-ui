@@ -225,6 +225,25 @@ internal sealed partial class MeasureVisitor
         }
     }
 
+    /// <summary>
+    /// What a box keeps between its edge and its child: its padding, and its border on every side the
+    /// border is drawn on. The web lowers a box <c>border-box</c>, and Flutter's <c>Container</c> insets
+    /// its child by its decoration's border too. Photon read the padding alone, so it laid the child
+    /// over the border and a hugging box came out two borders smaller than its web twin (#629).
+    /// </summary>
+    internal static EdgeInsets InsetsOf(BoxStyle style)
+    {
+        var padding = style.Padding;
+        var border = style.BorderWidth;
+        if (border <= 0) return padding;
+        var sides = style.BorderSides;
+        return new EdgeInsets(
+            padding.Start + ((sides & BorderSides.Start) != 0 ? border : 0),
+            padding.Top + ((sides & BorderSides.Top) != 0 ? border : 0),
+            padding.End + ((sides & BorderSides.End) != 0 ? border : 0),
+            padding.Bottom + ((sides & BorderSides.Bottom) != 0 ? border : 0));
+    }
+
     private LayoutNode MeasureBox(Box box, LayoutConstraints constraints, LayoutContext ctx, string path)
     {
         var (maxW, maxH) = (constraints.MaxWidth, constraints.MaxHeight);
@@ -245,6 +264,9 @@ internal sealed partial class MeasureVisitor
                 style = style with { Height = glide.Resolve(path + ":h", style.Height.Value, ctx.TimeMs, sizeSpec, ctx.ReducedMotion) };
         }
 
+        // Between the box's edge and its child: the padding, and the border where it is drawn (#629).
+        var insets = InsetsOf(style);
+
         // The indeterminate flags AS INHERITED — what the PARENT said about this axis, before this
         // box restates them for its own child below. A Fill on an axis the parent is sizing from
         // content has nothing to fill; the flex container has honoured that from the start, but a
@@ -261,10 +283,10 @@ internal sealed partial class MeasureVisitor
         // Content box the child may use (explicit/Fill pin it; Hug passes the available through).
         var childMaxW = (style.Width.Kind == SizeKind.WindowMinus
             ? WindowSize(style.Width, ctx.WindowWidth)
-            : ResolveForChild(style.Width, selfMaxW)) - style.Padding.Horizontal;
+            : ResolveForChild(style.Width, selfMaxW)) - insets.Horizontal;
         var childMaxH = (style.Height.Kind == SizeKind.WindowMinus
             ? WindowSize(style.Height, ctx.WindowHeight)
-            : ResolveForChild(style.Height, selfMaxH)) - style.Padding.Vertical;
+            : ResolveForChild(style.Height, selfMaxH)) - insets.Vertical;
 
         LayoutNode? child = null;
         if (box.Child is not null)
@@ -316,13 +338,13 @@ internal sealed partial class MeasureVisitor
                     .DecidedByContent(boxIndetW, boxIndetH)
                     .Stretched(boxStretchW, boxStretchH),
                 ctx, ctx.ChildPath(path, 0));
-            child.Bounds = child.Bounds with { X = style.Padding.Start, Y = style.Padding.Top };
+            child.Bounds = child.Bounds with { X = insets.Start, Y = insets.Top };
             result.Adopt(child);
         }
 
-        var width = ResolveSelf(style.Width, selfMaxW, (child?.Bounds.Width ?? 0) + style.Padding.Horizontal, ctx.WindowWidth,
+        var width = ResolveSelf(style.Width, selfMaxW, (child?.Bounds.Width ?? 0) + insets.Horizontal, ctx.WindowWidth,
             indeterminate: inheritedIndeterminateW, stretched: stretchW != StretchKind.None);
-        var height = ResolveSelf(style.Height, selfMaxH, (child?.Bounds.Height ?? 0) + style.Padding.Vertical, ctx.WindowHeight,
+        var height = ResolveSelf(style.Height, selfMaxH, (child?.Bounds.Height ?? 0) + insets.Vertical, ctx.WindowHeight,
             indeterminate: inheritedIndeterminateH, stretched: stretchH != StretchKind.None);
         width = Clamp(width, style.MinWidth, maxWidthDp);
         height = Clamp(height, style.MinHeight, maxHeightDp);
@@ -335,9 +357,9 @@ internal sealed partial class MeasureVisitor
         // stays single-pass.
         if (child is not null
             && ((style.MinWidth > 0 || maxWidthDp >= 0)
-                && MathF.Abs(width - style.Padding.Horizontal - child.Bounds.Width) > 0.5f
+                && MathF.Abs(width - insets.Horizontal - child.Bounds.Width) > 0.5f
                 || (style.MinHeight > 0 || maxHeightDp >= 0)
-                && MathF.Abs(height - style.Padding.Vertical - child.Bounds.Height) > 0.5f))
+                && MathF.Abs(height - insets.Vertical - child.Bounds.Height) > 0.5f))
         {
             var outerH2 = constraints.Height.Indeterminate;
             var clampedIndetH = style.Height.Kind == SizeKind.Hug
@@ -347,12 +369,12 @@ internal sealed partial class MeasureVisitor
             result.ReleaseChildren();
             child = Measure(
                 box.Child!,
-                constraints.ForChild(MathF.Max(0, width - style.Padding.Horizontal),
-                        MathF.Max(0, height - style.Padding.Vertical))
+                constraints.ForChild(MathF.Max(0, width - insets.Horizontal),
+                        MathF.Max(0, height - insets.Vertical))
                     .DecidedByContent(false, clampedIndetH)
                     .Stretched(StretchKind.Block, StretchKind.None),
                 ctx, ctx.ChildPath(path, 0));
-            child.Bounds = child.Bounds with { X = style.Padding.Start, Y = style.Padding.Top };
+            child.Bounds = child.Bounds with { X = insets.Start, Y = insets.Top };
             result.Adopt(child);
         }
 
@@ -371,9 +393,9 @@ internal sealed partial class MeasureVisitor
         // A Fill child stretches to the resolved content box (its own measurement saw the max already;
         // pin the bounds so realizers paint the full extent).
         if (child?.Source is Box { Style.Width.Kind: SizeKind.Fill })
-            child.Bounds = child.Bounds with { Width = MathF.Max(0, width - style.Padding.Horizontal) };
+            child.Bounds = child.Bounds with { Width = MathF.Max(0, width - insets.Horizontal) };
         if (child?.Source is Box { Style.Height.Kind: SizeKind.Fill })
-            child.Bounds = child.Bounds with { Height = MathF.Max(0, height - style.Padding.Vertical) };
+            child.Bounds = child.Bounds with { Height = MathF.Max(0, height - insets.Vertical) };
 
         result.Bounds = new Rect(0, 0, width, height);
         return result;
