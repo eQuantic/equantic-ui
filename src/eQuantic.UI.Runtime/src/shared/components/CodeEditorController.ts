@@ -98,7 +98,7 @@ export class CodeEditorController {
     get widestLine(): number {
         let tabSize = this.rules.indentWidth;
         if (this._widths == null || this._widthsTabs !== tabSize) {
-            this._widths = [];
+            this._widths = ($eq.collections.listCapacity(this._document.lineCount), []);
             for (let line = 0; line < this._document.lineCount; line++) this._widths.push(CodeLineCells.widthOf(this._document.line(line), tabSize));
             this._widthsTabs = tabSize;
             this._widest = CodeEditorController.widest(this._widths);
@@ -151,7 +151,7 @@ export class CodeEditorController {
             if (lostTheWidest && widestHere < this._widest) this._widest = CodeEditorController.widest(old); else if (widestHere > this._widest) this._widest = widestHere;
             return;
         }
-        let next: number[] = [];
+        let next: number[] = ($eq.collections.listCapacity(old.length - gone + linesInserted + 1), []);
         for (let i = 0; i < line; i++) next.push(old[i]);
         let measuredWidest = 0;
         for (let i = line; i <= line + linesInserted; i++) {

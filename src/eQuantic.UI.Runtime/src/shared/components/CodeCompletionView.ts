@@ -94,13 +94,13 @@ export class CodeCompletionView {
         let items = completion.items;
         let columns = (Math.trunc(Math.floor(Math.fround(Math.fround(width - CodeCompletionView.widthOf(metrics, 0)) / metrics.columnWidth))) | 0);
         let page = new Column(0, 'start', 'stretch', false, null, null, { width: SizeValue.fill });
-        for (let i = top; i < top + rows && i < items.length; i++) {
+        for (let i = top; i < top + rows && i < $eq.collections.count(items); i++) {
             let index = i;
-            page.add(CodeCompletionView.option(theme, metrics, items[i], i === completion.selected, columns, () => pick(index)));
+            page.add(CodeCompletionView.option(theme, metrics, $eq.collections.item(items, i), i === completion.selected, columns, () => pick(index)));
         }
         let paged = new Row(4, 'start', 'start', false, null, null, { width: SizeValue.fill });
         paged.add(new Flexible(page));
-        paged.add(CodeCompletionView.pageMark(theme, metrics, top, rows, items.length));
+        paged.add(CodeCompletionView.pageMark(theme, metrics, top, rows, $eq.collections.count(items)));
         let list = new Column(0, 'start', 'stretch', false, null, null, { width: SizeValue.fill });
         let documented = CodeCompletionView.documentation(context, metrics, documentation, documentationLines, above);
         if (above && !(documented == null)) list.add(documented);

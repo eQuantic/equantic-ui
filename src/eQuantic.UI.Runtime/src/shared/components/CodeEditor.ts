@@ -95,20 +95,20 @@ export class CodeEditor extends StatefulComponent {
                 this._measured = items;
                 this._listColumns = Math.max(this._listColumns, CodeCompletionView.columnsOf(items));
             }
-            this._listColumns = Math.max(this._listColumns, CodeCompletionView.entryColumns(items[completion.selected].item));
+            this._listColumns = Math.max(this._listColumns, CodeCompletionView.entryColumns($eq.collections.item(items, completion.selected).item));
             let width = CodeCompletionView.widthOf(metrics, this._listColumns);
             if (this._viewportWidth > 0) width = Math.min(width, this._viewportWidth);
-            let documentation = items[completion.selected].item.documentation;
+            let documentation = $eq.collections.item(items, completion.selected).item.documentation;
             let documentationLines = (documentation != null && documentation.length > 0) ? CodeCompletionView.documentationLinesOf(context, metrics, documentation, width) : 0;
             let codeHeight = Math.fround(Math.fround(2 * metrics.contentTop) + Math.fround(Math.fround(editor.document.lineCount) * metrics.lineHeight));
             let surfaceHeight = bounded ? Math.max(codeHeight, this._viewport) : codeHeight;
             let viewTop = windowed ? this._offset : 0;
             let viewBottom = windowed && this._viewport > 0 ? Math.min(Math.fround(this._offset + this._viewport), surfaceHeight) : surfaceHeight;
-            let [x, y, rows, above, documentationShown] = CodeCompletionView.place(metrics, editor.caretRect(completion.start), viewTop, viewBottom, this._scrollX, this._viewportWidth, Math.min(12, items.length), width, documentationLines, CodeCompletionView.documentationLineOf(context, metrics));
+            let [x, y, rows, above, documentationShown] = CodeCompletionView.place(metrics, editor.caretRect(completion.start), viewTop, viewBottom, this._scrollX, this._viewportWidth, Math.min(12, $eq.collections.count(items)), width, documentationLines, CodeCompletionView.documentationLineOf(context, metrics));
             let selected = completion.selected;
             if (selected < this._listTop) this._listTop = selected;
             if (selected >= this._listTop + rows) this._listTop = selected - rows + 1;
-            this._listTop = Math.max(0, Math.min(this._listTop, items.length - rows));
+            this._listTop = Math.max(0, Math.min(this._listTop, $eq.collections.count(items) - rows));
             completion.pageSize = rows;
             offered = CodeCompletionView.build(context, completion, metrics, this._listTop, rows, width, above, documentation, documentationShown, (index: number) => this.pick(editor, index));
             offeredAt = new Point(x, y);
@@ -172,12 +172,12 @@ export class CodeEditor extends StatefulComponent {
         for (const provider of this._put) CodeEditor.removeInstance(providers, provider);
         this._put = this.completions == null ? [new CodeKeywordCompletionProvider(), new CodeWordCompletionProvider()] : [...this.completions];
         this._handed = this.completions == null ? null : this._put;
-        for (const provider of this._put) providers.push(provider);
+        for (const provider of this._put) $eq.collections.add(providers, provider);
     }
 
     static removeInstance(providers: any[], provider: any) {
-        for (let i = 0; i < providers.length; i++) {
-            if (!(providers[i] === provider)) continue;
+        for (let i = 0; i < $eq.collections.count(providers); i++) {
+            if (!($eq.collections.item(providers, i) === provider)) continue;
             providers.splice(i, 1);
             return;
         }
@@ -185,9 +185,9 @@ export class CodeEditor extends StatefulComponent {
 
     static sameProviders(one: any, other: any) {
         if (one == null || other == null) return one == null && other == null;
-        if (one.length !== other.length) return false;
-        for (let i = 0; i < one.length; i++) {
-            if (!(one[i] === other[i])) return false;
+        if ($eq.collections.count(one) !== $eq.collections.count(other)) return false;
+        for (let i = 0; i < $eq.collections.count(one); i++) {
+            if (!($eq.collections.item(one, i) === $eq.collections.item(other, i))) return false;
         }
         return true;
     }
