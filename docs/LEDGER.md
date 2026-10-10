@@ -1746,8 +1746,12 @@ record of a release, the wiki's Upgrading page is the distillate.
   floor. Its second round found the classifier behind that rule reading the declared size of nine
   of the fourteen node types that declare one, so a 320 camera preview was drawn at 300: it reads
   all of them now, a scroller's width only up to the slot as the web caps it, and a test that
-  enumerates the vocabulary fails on the next one it misses. The same question, asked of the other
-  flex numbers, found two more. A Spacer raised a weight below 1 to 1,
+  enumerates the vocabulary fails on the next one it misses. The last round found that ceiling
+  stopping at a wrapper (`Pinned(ScrollView(…))` kept painting at 400 in a 300 item) and a wrapping
+  line that holds still giving a Flexible its child's width instead of its basis: the ceiling now
+  reaches the scroller while it measures, a wrapping line builds its items as the slot does, and
+  the zero-weight shrink contract is stated for rows, Photon's single-line column taking nothing
+  back from an overflow yet. The same question, asked of the other flex numbers, found two more. A Spacer raised a weight below 1 to 1,
   in C# and in the twin, and now refuses it where it is written, as Flutter asserts `flex > 0`
   ([#691](https://github.com/eQuantic/equantic-ui/issues/691)). And the twin wrote a basis raw where
   the server wrote it through `TokenCss.Px`, so a basis of 540.125, or the float 540.12 the twin
@@ -1758,7 +1762,7 @@ record of a release, the wiki's Upgrading page is the distillate.
   requires ([#684](https://github.com/eQuantic/equantic-ui/issues/684)); and its button is a Link
   around a painted Box, because an email refuses a Button
   ([#694](https://github.com/eQuantic/equantic-ui/issues/694)). Proposed and archived through
-  OpenSpec in five changes (`openspec/specs/flex-layout`).
+  OpenSpec in six changes (`openspec/specs/flex-layout`).
 
 ## Retired documents
 
