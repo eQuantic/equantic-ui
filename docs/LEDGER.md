@@ -2105,6 +2105,27 @@ record of a release, the wiki's Upgrading page is the distillate.
   level, declared and synthesized, kept as pins. The runtime's structs are
   all readonly, so its twins do not change. Proposed and archived through OpenSpec
   (`openspec/specs/transpiler-records`).
+- **2026-10-07 · An adaptive arm is laid out where it stands**: three ways an `AdaptiveNode`'s arm
+  was not laid out as written, found building eQuantic Auth's landing page
+  ([#669](https://github.com/eQuantic/equantic-ui/issues/669),
+  [#670](https://github.com/eQuantic/equantic-ui/issues/670),
+  [#671](https://github.com/eQuantic/equantic-ui/issues/671)). A gate's name kept a fractional
+  threshold's dot, `eq-vc703.7037`, which a selector reads as two classes, so Chromium dropped every
+  rule of the gate and each arm showed at every width; the point is an underscore now, and the
+  threshold travels as ten-thousandths of a dp, because C#'s `"0.####"` of a float had spelled
+  1066.6667 `1066.667` on the server where the browser wrote `1066.6667`. Every arm was lowered on no
+  axis and without its parent's rule, so a `Gap` arm vanished and a `Positioned` arm in a `Stack` fell
+  into the flow; a container now places each arm as a direct child, inside its gate, in both twins.
+  Photon had both of those, and a line and a grid now lay out the arm in the node's place
+  (`LaidOutChildren`) while a stack reads `Positioned` off the arm it measured. The node's own
+  `AlignSelf` and `GridSpan` are no longer read (Photon read them); an arm's own place it. The pooled
+  frame of the perf harness fell from 73.2 to 71.1 KB on the way: the flex pass's `foreach` over its
+  node boxed an enumerator on every measure. Measured in Chromium on the server's own output of the
+  issues' trees, before and after. Found, not changed: Photon ignores `MediumFrom` and
+  `ExpandedFrom` ([#735](https://github.com/eQuantic/equantic-ui/issues/735)), and a component that
+  builds a Spacer takes no space in a Photon column
+  ([#736](https://github.com/eQuantic/equantic-ui/issues/736)). Proposed and
+  archived through OpenSpec (`openspec/specs/adaptive-layout`).
 
 ## Retired documents
 
