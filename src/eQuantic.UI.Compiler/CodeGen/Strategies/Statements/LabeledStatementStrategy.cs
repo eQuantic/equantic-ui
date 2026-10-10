@@ -13,7 +13,7 @@ public class LabeledStatementStrategy : IStatementStrategy
     public JsStatement Convert(StatementSyntax node, ConversionContext context)
     {
         var labeled = (LabeledStatementSyntax)node;
-        var label = $"{labeled.Identifier.Text}:";
+        var label = $"{labeled.Identifier.ValueText.ToJsIdentifier()}:";
         var inner = context.Converter.ConvertStatementIr(labeled.Statement);
         // A foreach whose collection declares a variable comes back as a BLOCK that declares it and
         // then runs the loop (ForEachStatementStrategy), since the variable is the loop's own, and so

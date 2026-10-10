@@ -24,13 +24,15 @@ namespace eQuantic.UI.Compiler.CodeGen.Extensions;
 ///
 /// <para>
 /// One function, asked from EVERY branch that can return a name — and counting them is the whole
-/// difficulty. There are SIX: a qualified call, a static member READ, an unqualified call through
-/// <c>using static</c>, a method GROUP passed as a delegate, a CONSTRUCTION, and an OPERATOR. Each
-/// returns early on its own path, so each had to be told, and every version of this fence has
-/// guarded some of them while reading like protection for all.
-/// <c>ComponentBoundary.Contained</c> compiled while <c>ComponentBoundary.ClearContained()</c> did
-/// not; <c>using static</c> compiled while a qualified call did not; <c>Matrix2D.Identity</c> was
-/// stopped while <c>new Matrix2D(…)</c> two lines above it was not.
+/// difficulty. There are SEVEN: a qualified call, a static member READ, an unqualified call through
+/// <c>using static</c>, a method GROUP passed as a delegate, a CONSTRUCTION, an OPERATOR, and an
+/// EXTENSION reached on its receiver, its call or its group, which names its home
+/// (<c>InvocationStrategy.ExtensionHome</c>). Each returns early on its own path, so each had to be
+/// told, and every version of this fence has guarded some of them while reading like protection
+/// for all. <c>ComponentBoundary.Contained</c> compiled while <c>ComponentBoundary.ClearContained()</c>
+/// did not; <c>using static</c> compiled while a qualified call did not; <c>Matrix2D.Identity</c> was
+/// stopped while <c>new Matrix2D(…)</c> two lines above it was not; and <c>curve.Ease(t)</c> compiled
+/// while <c>CurveEvaluator.Ease(curve, t)</c> did not, because the receiver crosses (#518).
 /// </para>
 /// <para>
 /// The OPERATOR branch is the one whose absence failed SILENTLY rather than loudly, and it is worth

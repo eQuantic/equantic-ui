@@ -115,8 +115,8 @@ export class CodeCompletion {
         this._request = cancellation;
         let document = this._editor.document;
         let position = this._editor.caret;
-        let $n14: any; 
-        let context = ($n14 = new CodeCompletionContext(trigger, this._editor.highlighter.language), $n14.character = character, $n14);
+        let $n15: any; 
+        let context = ($n15 = new CodeCompletionContext(trigger, this._editor.highlighter.language), $n15.character = character, $n15);
         this._askedWord = this.word();
         let asked = [];
         let errors: Error[] = [];
@@ -362,7 +362,7 @@ export class CodeCompletion {
         CodeCompletion.onUiThread(() => {
             if (!this._active || (resolved === offer.item)) return;
             offer.item = resolved;
-            let at = $eq.collections.indexOf(this._shown, offer, 'own');
+            let at = $eq.collections.indexOf(this._shown, offer, 'item');
             if (at < 0) return;
             this._items[at] = $eq.withPatch(this._items[at], { item: resolved });
             this.changed?.();

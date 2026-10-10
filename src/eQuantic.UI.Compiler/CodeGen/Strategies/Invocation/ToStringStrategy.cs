@@ -66,8 +66,7 @@ public class ToStringStrategy : IConversionStrategy
             // `$value`: no C# name can take it, so nothing the provider names is shadowed.
             var text = StringConversion.ToDotNetString(memberAccess.Expression, JsExpr.Identifier("$value"), context);
             return JsExprWriter.Write(JsExpr.Template($"(($value) => ({{1}}, {JsExprWriter.Write(text)}))({{0}})",
-                [context.Converter.ConvertIr(memberAccess.Expression), context.Converter.ConvertIr(ignored)],
-                context.TypeAnnotations));
+                [context.Converter.ConvertIr(memberAccess.Expression), context.Converter.ConvertIr(ignored)]));
         }
 
         var provider = args.FirstOrDefault(argument => IsFormatProvider(argument.Expression, context));
@@ -101,8 +100,7 @@ public class ToStringStrategy : IConversionStrategy
                 else continue;
                 parts.Add(context.Converter.ConvertIr(argument.Expression));
             }
-            return JsExprWriter.Write(JsExpr.Template($"({providerHole}, {Text("{0}", formatHole)})", parts,
-                context.TypeAnnotations));
+            return JsExprWriter.Write(JsExpr.Template($"({providerHole}, {Text("{0}", formatHole)})", parts));
         }
 
         var invariant = false;

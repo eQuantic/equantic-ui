@@ -1,5 +1,6 @@
+import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import { bagEntries, bagSize, Dictionary, dictionary, keyText, pair, wireKey } from './dictionary';
+import { bagEntries, bagSize, Dictionary, dictionary, keyText, pair } from './dictionary';
 import { dec } from './decimal';
 import { dateTime, TimeSpan } from './datetime';
 import { equals } from './equals';
@@ -181,8 +182,8 @@ describe('Dictionary — keys found by value', () => {
   it('finds a decimal and a date by their own equals', () => {
     const decimals = dictionary<unknown, string>([[dec('1.50'), 'd']], true);
     expect(decimals.get(dec('1.5'))).toBe('d');
-    const dates = dictionary<unknown, number>([[dateTime(2026, 1, 1), 1]], true);
-    expect(dates.get(dateTime(2026, 1, 1))).toBe(1);
+    const dates = dictionary<unknown, number>([[dateTime.of(2026, 1, 1), 1]], true);
+    expect(dates.get(dateTime.of(2026, 1, 1))).toBe(1);
   });
 });
 
@@ -255,10 +256,10 @@ describe("Dictionary — keys found by their own equality ('own')", () => {
     const d = dictionary<unknown, number>(null, 'own');
     d.set(dec('1.0'), 1);
     d.set(dec('1'), 2);
-    d.set(dateTime(2026, 1, 2), 3);
+    d.set(dateTime.of(2026, 1, 2), 3);
     expect(d.size).toBe(2);
     expect(d.get(dec('1.00'))).toBe(2);
-    expect(d.has(dateTime(2026, 1, 2))).toBe(true);
+    expect(d.has(dateTime.of(2026, 1, 2))).toBe(true);
   });
 
   it("compares a tuple and an anonymous type by their members, having no twin to carry an equals", () => {
@@ -271,7 +272,7 @@ describe("Dictionary — keys found by their own equality ('own')", () => {
   });
 
   it('tells a value from one of another kind, as Equals(object) does', () => {
-    const date = dateTime(2026, 1, 2);
+    const date = dateTime.of(2026, 1, 2);
     const span = new TimeSpan(date.ticks);
     expect(dec('1').equals(date)).toBe(false);
     expect(span.equals(date)).toBe(false);
@@ -417,30 +418,74 @@ describe('Dictionary — the pairs it enumerates', () => {
 });
 
 describe('Dictionary — the JSON it writes', () => {
-  it('writes the object System.Text.Json reads, by each key wire text', () => {
+  // A JSON object lists every integer-like name first, ascending, whatever order its text had, and a
+  // page parses one before any code sees it (#437). The pairs keep the order the dictionary
+  // enumerates in, and each key is written as a value of its type: a long, a decimal and a date by
+  // their own toJSON, a bool as true or false, as the server writes them.
+  it('writes its pairs in slot order, each key as a value of its type', () => {
     const d = dictionary<unknown, number>([
       ['b', 1],
       [3, 2],
       [true, 3],
       [9007199254740993n, 4],
       [dec('1.50'), 5],
+      [dateTime.of(2026, 1, 2), 6],
     ]);
     expect(JSON.stringify(d)).toBe(
-      '{"3":2,"b":1,"True":3,"9007199254740993":4,"1.50":5}',
+      '[["b",1],[3,2],[true,3],["9007199254740993",4],["1.50",5],["2026-01-02T00:00:00",6]]',
     );
   });
 
-  it('writes "__proto__" as an entry, not as the prototype', () => {
-    const json = dictionary<string, number>([['__proto__', 1]]).toJSON();
-    expect(Object.keys(json)).toEqual(['__proto__']);
-    expect(JSON.stringify(json)).toBe('{"__proto__":1}');
+  it('writes a key the slot a removal freed took where the dictionary enumerates it', () => {
+    const d = dictionary<number, string>([
+      [3, 'c'],
+      [1, 'a'],
+      [2, 'b'],
+    ]);
+    d.delete(1);
+    d.set(5, 'e');
+    expect(JSON.stringify(d)).toBe('[[3,"c"],[5,"e"],[2,"b"]]');
   });
 
-  it('writes a key the way .NET writes it in a message and on the wire', () => {
+  // JSON has no number for NaN or the infinities, and JSON.stringify writes null for one: the key is
+  // written as its text, which .NET reads back and writes the same way (DictionaryWireTests).
+  it('writes a NaN or an infinite number key as its text', () => {
+    const d = dictionary<number, string>([
+      [NaN, 'n'],
+      [Infinity, 'p'],
+      [-Infinity, 'm'],
+      [1.5, 'x'],
+    ]);
+    expect(JSON.stringify(d)).toBe('[["NaN","n"],["Infinity","p"],["-Infinity","m"],[1.5,"x"]]');
+  });
+
+  it('writes "__proto__" as a key like any other', () => {
+    expect(JSON.stringify(dictionary<string, number>([['__proto__', 1]]))).toBe('[["__proto__",1]]');
+  });
+
+  // The bytes a Server Action receives for these arguments, which the server's own test posts
+  // (ServerActionDictionaryTests): the two halves are held to one text.
+  it('writes the arguments of a Server Action as the server reads them', () => {
+    const body = JSON.stringify({
+      actionId: 'OrderActions/Echo',
+      arguments: [
+        dictionary<number, string>([
+          [3, 'c'],
+          [1, 'a'],
+        ]),
+        dictionary<string, number>([
+          ['b', 1],
+          ['10', 2],
+          ['9', 3],
+        ]),
+      ],
+    });
+    expect(body).toBe(readFileSync('src/utils/__fixtures__/action-arguments.json', 'utf8').trim());
+  });
+
+  it('writes a key the way .NET writes it in a message', () => {
     expect(keyText(true)).toBe('True');
     expect(keyText(3)).toBe('3');
-    expect(wireKey(false)).toBe('False');
-    expect(wireKey(dateTime(2026, 1, 2))).toBe('2026-01-02T00:00:00');
   });
 });
 

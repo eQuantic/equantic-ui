@@ -1,20 +1,13 @@
-using SixLabors.ImageSharp;
-using SixLabors.ImageSharp.PixelFormats;
+using SkiaSharp;
 
 namespace eQuantic.UI.Images.Tests;
 
 public class BlurPlaceholderGeneratorTests
 {
-    private readonly BlurPlaceholderGenerator _generator = new();
+    private readonly BlurPlaceholderGenerator _generator = new(new ImageOptimizationOptions());
 
-    private static Stream CreateTestImage(int width, int height)
-    {
-        var image = new Image<Rgba32>(width, height, Color.Blue);
-        var stream = new MemoryStream();
-        image.SaveAsJpeg(stream);
-        stream.Position = 0;
-        return stream;
-    }
+    private static Stream CreateTestImage(int width, int height) =>
+        TestImages.Stream(TestImages.Solid(width, height, SKColors.Blue));
 
     [Fact]
     public async Task GenerateAsync_ReturnsDataUrl()
@@ -48,7 +41,7 @@ public class BlurPlaceholderGeneratorTests
         var base64Part = result.Replace("data:image/jpeg;base64,", "");
         var bytes = Convert.FromBase64String(base64Part);
 
-        using var blurImage = Image.Load(bytes);
+        var blurImage = TestImages.SizeOf(bytes);
         blurImage.Width.Should().BeLessThanOrEqualTo(8);
         blurImage.Height.Should().BeLessThanOrEqualTo(8);
     }
@@ -62,7 +55,7 @@ public class BlurPlaceholderGeneratorTests
         var base64Part = result.Replace("data:image/jpeg;base64,", "");
         var bytes = Convert.FromBase64String(base64Part);
 
-        using var blurImage = Image.Load(bytes);
+        var blurImage = TestImages.SizeOf(bytes);
         blurImage.Width.Should().Be(8);
         blurImage.Height.Should().BeGreaterThan(0);
         blurImage.Height.Should().BeLessThanOrEqualTo(8);
@@ -77,7 +70,7 @@ public class BlurPlaceholderGeneratorTests
         var base64Part = result.Replace("data:image/jpeg;base64,", "");
         var bytes = Convert.FromBase64String(base64Part);
 
-        using var blurImage = Image.Load(bytes);
+        var blurImage = TestImages.SizeOf(bytes);
         blurImage.Height.Should().Be(8);
         blurImage.Width.Should().BeGreaterThan(0);
         blurImage.Width.Should().BeLessThanOrEqualTo(8);
@@ -92,7 +85,7 @@ public class BlurPlaceholderGeneratorTests
         var base64Part = result.Replace("data:image/jpeg;base64,", "");
         var bytes = Convert.FromBase64String(base64Part);
 
-        using var blurImage = Image.Load(bytes);
+        var blurImage = TestImages.SizeOf(bytes);
         blurImage.Width.Should().Be(8);
         blurImage.Height.Should().Be(8);
     }
@@ -108,9 +101,24 @@ public class BlurPlaceholderGeneratorTests
         var base64Part = result.Replace("data:image/jpeg;base64,", "");
         var bytes = Convert.FromBase64String(base64Part);
 
-        using var blurImage = Image.Load(bytes);
+        var blurImage = TestImages.SizeOf(bytes);
         blurImage.Width.Should().BeLessThanOrEqualTo(8);
         blurImage.Height.Should().BeLessThanOrEqualTo(8);
+    }
+
+    [Fact]
+    public async Task GenerateAsync_OrientedSource_IsShownAsDisplayed()
+    {
+        // Stored landscape with orientation 6: displayed portrait, so the placeholder is too.
+        var jpeg = TestImages.WithOrientation(TestImages.Solid(1920, 1080, SKColors.Blue), 6);
+        using var source = TestImages.Stream(jpeg);
+
+        var result = await _generator.GenerateAsync(source);
+        var bytes = Convert.FromBase64String(result.Replace("data:image/jpeg;base64,", ""));
+
+        var blurImage = TestImages.SizeOf(bytes);
+        blurImage.Height.Should().Be(8);
+        blurImage.Width.Should().BeLessThan(8);
     }
 
     [Fact]
@@ -131,10 +139,7 @@ public class BlurPlaceholderGeneratorTests
         try
         {
             // Write a test image to file
-            using (var image = new Image<Rgba32>(800, 600, Color.Green))
-            {
-                await image.SaveAsJpegAsync(tempFile);
-            }
+            await File.WriteAllBytesAsync(tempFile, TestImages.Solid(800, 600, SKColors.Green));
 
             var result = await _generator.GenerateFromFileAsync(tempFile);
 
@@ -144,5 +149,18 @@ public class BlurPlaceholderGeneratorTests
         {
             File.Delete(tempFile);
         }
+    }
+
+    [Fact]
+    public async Task GenerateAsync_RefusesASourcePastMaxSourceSize_WithoutReadingItToItsEnd()
+    {
+        var jpeg = TestImages.WithPaddingSegments(TestImages.Solid(64, 32, SKColors.Blue), 16);
+        await using var source = new AsyncOnlyStream(jpeg);
+        var generator = new BlurPlaceholderGenerator(new ImageOptimizationOptions { MaxSourceSize = 64 * 1024 });
+
+        var act = () => generator.GenerateAsync(source);
+
+        await act.Should().ThrowAsync<InvalidDataException>().WithMessage("*MaxSourceSize*");
+        source.BytesRead.Should().BeLessThan(256 * 1024);
     }
 }

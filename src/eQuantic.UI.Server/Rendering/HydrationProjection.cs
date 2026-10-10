@@ -35,13 +35,13 @@ internal static class HydrationProjection
     public static object? Of(object? value, string projection, Type declared, Action<string, string>? leftOut = null)
     {
         if (value is null) return null;
-        var projected = new Dictionary<string, object?>(StringComparer.Ordinal);
+        var projected = new ProjectedMembers();
         foreach (var read in projection.Split(',', StringSplitOptions.RemoveEmptyEntries))
             Write(projected, value, declared, read, leftOut);
         return projected;
     }
 
-    private static void Write(Dictionary<string, object?> into, object value, Type declared, string read,
+    private static void Write(ProjectedMembers into, object value, Type declared, string read,
         Action<string, string>? leftOut)
     {
         var presence = read.EndsWith('?');
@@ -68,8 +68,8 @@ internal static class HydrationProjection
                 }
                 target[name] = !presence ? next
                     : next is null ? null
-                    : target.TryGetValue(name, out var already) && already is Dictionary<string, object?> ? already
-                    : new Dictionary<string, object?>(StringComparer.Ordinal);
+                    : target.TryGetValue(name, out var already) && already is ProjectedMembers ? already
+                    : new ProjectedMembers();
                 return;
             }
             if (next is null)
@@ -77,10 +77,10 @@ internal static class HydrationProjection
                 target[name] = null;
                 return;
             }
-            if (target.TryGetValue(name, out var nested) && nested is not Dictionary<string, object?>)
+            if (target.TryGetValue(name, out var nested) && nested is not ProjectedMembers)
                 return;   // already crossing whole, which carries this read too
-            if (nested is not Dictionary<string, object?> child)
-                target[name] = child = new Dictionary<string, object?>(StringComparer.Ordinal);
+            if (nested is not ProjectedMembers child)
+                target[name] = child = new ProjectedMembers();
             target = child;
             current = next;
             type = member.Type;

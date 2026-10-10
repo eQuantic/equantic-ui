@@ -22,7 +22,7 @@ public class CollectionEqualityLoweringTests
         TestHelper.ConvertExpression("new HashSet<(int, string)>()").Should().Be("$eq.collections.hashSet(true)");
         TestHelper.ConvertExpression("new HashSet<object>()").Should().Be("$eq.collections.hashSet('own')");
         TestHelper.ConvertExpression("new HashSet<DistinctPoint>(10)").Should().Be("$eq.collections.hashSet(true, 10)");
-        TestHelper.ConvertExpression("new HashSet<TestClass>(list)").Should().Be("$eq.collections.hashSet('own', this.list)");
+        TestHelper.ConvertExpression("new HashSet<TestClass>(list)").Should().Be("$eq.collections.hashSet('item', this.list)");
     }
 
     [Fact]

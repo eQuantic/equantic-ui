@@ -15,7 +15,7 @@ public class ContinueStatementStrategy : IStatementStrategy
     public JsStatement Convert(StatementSyntax node, ConversionContext context)
     {
         var continueStatement = (ContinueStatementSyntax)node;
-        return JsStatement.Continue(continueStatement.Name?.Identifier.Text);
+        return JsStatement.Continue(continueStatement.Name?.Identifier.ValueText.ToJsIdentifier());
     }
 
     public int Priority => 0;

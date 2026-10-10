@@ -1,5 +1,6 @@
 using eQuantic.UI.Images;
 using Microsoft.Extensions.DependencyInjection;
+using SkiaSharp;
 
 namespace eQuantic.UI.Images.Tests;
 
@@ -29,7 +30,7 @@ public class ImageExtensionsTests
         {
             opts.DefaultQuality = 90;
             opts.CacheTtlSeconds = 86400;
-            opts.Formats = ["image/avif", "image/webp"];
+            opts.Formats = ["image/png", "image/webp"];
         });
 
         var provider = services.BuildServiceProvider();
@@ -37,7 +38,7 @@ public class ImageExtensionsTests
 
         options.DefaultQuality.Should().Be(90);
         options.CacheTtlSeconds.Should().Be(86400);
-        options.Formats.Should().BeEquivalentTo(["image/avif", "image/webp"]);
+        options.Formats.Should().BeEquivalentTo(["image/png", "image/webp"]);
     }
 
     [Fact]
@@ -69,5 +70,22 @@ public class ImageExtensionsTests
         var options = provider.GetRequiredService<ImageOptimizationOptions>();
 
         options.DefaultQuality.Should().Be(75);
+    }
+
+    [Fact]
+    public async Task AddImageOptimization_TheServicesReadTheAppsMaxSourceSize()
+    {
+        var services = new ServiceCollection();
+        services.AddImageOptimization(opts => opts.MaxSourceSize = 64 * 1024);
+        using var provider = services.BuildServiceProvider();
+        var jpeg = TestImages.WithPaddingSegments(TestImages.Solid(64, 32, SKColors.Red), 16);
+
+        var optimize = () => provider.GetRequiredService<ImageOptimizer>()
+            .OptimizeAsync(TestImages.Stream(jpeg), 32, 75, "image/jpeg");
+        var placeholder = () => provider.GetRequiredService<BlurPlaceholderGenerator>()
+            .GenerateAsync(TestImages.Stream(jpeg));
+
+        await optimize.Should().ThrowAsync<InvalidDataException>().WithMessage("*MaxSourceSize*");
+        await placeholder.Should().ThrowAsync<InvalidDataException>().WithMessage("*MaxSourceSize*");
     }
 }

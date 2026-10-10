@@ -245,7 +245,7 @@ public class StringMethodStrategy : IConversionStrategy
         // The holes now name WRITTEN arguments; the receiver is the first part, so each moves by one.
         template = Regex.Replace(template, @"\{(\d)\}", hole => "{" + (int.Parse(hole.Groups[1].Value) + 1) + "}")
             .Replace("{R}", "{0}");
-        return JsExprWriter.Write(JsExpr.Template(template, parts, context.TypeAnnotations));
+        return JsExprWriter.Write(JsExpr.Template(template, parts));
     }
 
     /// <summary>The written argument bound to the comparison parameter. A named one may be written
@@ -324,7 +324,7 @@ public class StringMethodStrategy : IConversionStrategy
 
         // Handle StringSplitOptions.RemoveEmptyEntries
         if (args.Count >= 2 && args[1].Contains("RemoveEmptyEntries"))
-            return $"{caller}.split({args[0]}).filter(s => s !== '')";
+            return $"{caller}.split({args[0]}).filter(($s) => $s !== '')";
 
         return $"{caller}.split({args[0]})";
     }

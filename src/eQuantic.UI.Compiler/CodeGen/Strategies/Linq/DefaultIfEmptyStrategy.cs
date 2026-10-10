@@ -34,7 +34,7 @@ public class DefaultIfEmptyStrategy : IConversionStrategy
 
         // The source read ONCE (see LastStrategy).
         return JsExprWriter.Write(JsExpr.Template("({0}.length > 0 ? {0} : [{1}])",
-            [LinqSource.Ir(memberAccess.Expression, context), JsExpr.Opaque(defaultVal)], context.TypeAnnotations));
+            [LinqSource.Ir(memberAccess.Expression, context), JsExpr.Opaque(defaultVal)]));
     }
 
     public int Priority => 10;

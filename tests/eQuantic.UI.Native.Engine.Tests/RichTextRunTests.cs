@@ -189,6 +189,28 @@ public class RichTextRunTests
     }
 
     /// <summary>
+    /// The stand-in measurer's space against the one CoreText draws (#285). The stand-in measures
+    /// every golden and every layout test, and it charges a gap between two words as a Mac does,
+    /// within a tenth of the font's size, the error its own letter advances already carry.
+    /// </summary>
+    [MacFact]
+    public void TheStandInsSpace_IsCoreTextsWithinATenthOfTheSize()
+    {
+        var service = new eQuantic.UI.Native.Shell.Apple.CoreTextService();
+        var body = PhotonTheme.Instance.Type(TypeRole.BodyM);
+
+        float Gap(ITextMeasurer measurer) =>
+            measurer.Measure("a b", body, 1f, float.PositiveInfinity, 1).Width
+            - measurer.Measure("ab", body, 1f, float.PositiveInfinity, 1).Width;
+
+        var drawn = Gap(service);
+        var stood = Gap(ApproximateTextMeasurer.Instance);
+
+        drawn.Should().BeGreaterThan(0, "CoreText charges the space");
+        stood.Should().BeApproximately(drawn, body.Size / 10, $"CoreText draws a {drawn}dp space and the stand-in charges {stood}");
+    }
+
+    /// <summary>
     /// A linked RUN is reached exactly like a <see cref="Link"/> node, which is the decision #255
     /// had to make: a run has no node, so <c>RichTextRuns</c> gives it the paragraph's path with the
     /// link's index after a <c>#</c> — a spelling <c>ChildPath</c> never produces, so it can collide

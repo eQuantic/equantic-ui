@@ -3,7 +3,7 @@
     {
       "tag": "span",
       "attrs": {
-        "class": "eq-7gvrt4 eq-type-bodym"
+        "class": "eq-16x7aca eq-7gvrt4 eq-type-bodym"
       },
       "events": [],
       "children": [
@@ -155,7 +155,7 @@
                 {
                   "tag": "div",
                   "attrs": {
-                    "class": "eq-11kg7e8 eq-17a2pwz eq-1amv73n eq-1eb13m5 eq-1eviv88 eq-1pwthtl eq-5hocaj eq-bo3n4y eq-d7k4c7 eq-g7fowl",
+                    "class": "eq-11kg7e8 eq-17a2pwz eq-1afasck eq-1amv73n eq-1eb13m5 eq-1eviv88 eq-1pwthtl eq-5hocaj eq-bo3n4y eq-d7k4c7 eq-g7fowl",
                     "data-eq-drag": "x",
                     "data-eq-drag-max": "0",
                     "data-eq-drag-min": "-20",
@@ -217,7 +217,7 @@
                 {
                   "tag": "div",
                   "attrs": {
-                    "class": "eq-11kg7e8 eq-17a2pwz eq-1amv73n eq-1eb13m5 eq-1eviv88 eq-1pwthtl eq-5hocaj eq-bo3n4y eq-d7k4c7 eq-g7fowl",
+                    "class": "eq-11kg7e8 eq-17a2pwz eq-1afasck eq-1amv73n eq-1eb13m5 eq-1eviv88 eq-1pwthtl eq-5hocaj eq-bo3n4y eq-d7k4c7 eq-g7fowl",
                     "data-eq-drag": "x",
                     "data-eq-drag-max": "20",
                     "data-eq-drag-min": "0",
@@ -398,7 +398,7 @@
         {
           "tag": "span",
           "attrs": {
-            "class": "eq-7gvrt4 eq-type-bodym"
+            "class": "eq-16x7aca eq-7gvrt4 eq-type-bodym"
           },
           "events": [],
           "children": [
@@ -414,7 +414,7 @@
         {
           "tag": "span",
           "attrs": {
-            "class": "eq-7gvrt4 eq-type-label"
+            "class": "eq-16x7aca eq-7gvrt4 eq-type-label"
           },
           "events": [],
           "children": [
@@ -556,7 +556,7 @@
                 {
                   "tag": "span",
                   "attrs": {
-                    "class": "eq-7gvrt4 eq-type-bodym"
+                    "class": "eq-16x7aca eq-7gvrt4 eq-type-bodym"
                   },
                   "events": [],
                   "children": [
@@ -572,7 +572,7 @@
                 {
                   "tag": "span",
                   "attrs": {
-                    "class": "eq-7gvrt4 eq-type-bodym"
+                    "class": "eq-16x7aca eq-7gvrt4 eq-type-bodym"
                   },
                   "events": [],
                   "children": [
@@ -676,6 +676,185 @@
       ]
     }
   ],
+  "draggable-open": [
+    {
+      "tag": "div",
+      "attrs": {
+        "class": "eq-13sfa1s eq-1eb13m5 eq-1sxrvu1 eq-1xrfuoj eq-5hocaj eq-bo3n4y eq-cl6mtg eq-g7fowl eq-t1kanp eq-wy95di",
+        "data-eq-drag": "x",
+        "data-eq-drag-max": "0",
+        "data-eq-drag-min": "-80",
+        "data-eq-drag-rest": "-80"
+      },
+      "events": [
+        "eq-drag-released"
+      ],
+      "children": []
+    }
+  ],
+  "pinned-scrolled": [
+    {
+      "tag": "div",
+      "attrs": {
+        "class": "eq-121dast eq-1767gpy eq-1ms9lgu eq-1s003ms eq-1xlbso6 eq-1yhij0h eq-2jl817 eq-4dc22k eq-582abp eq-ao1p0x eq-j954vq eq-wdx8t3 eq-xiroop",
+        "data-eq-pinned": "1"
+      },
+      "events": [],
+      "children": [
+        {
+          "tag": "div",
+          "attrs": {
+            "class": "eq-1eb13m5 eq-bo3n4y eq-cl6mtg eq-kngwsg"
+          },
+          "events": [],
+          "children": []
+        }
+      ]
+    }
+  ],
+  "box-hover-border-edge": [
+    {
+      "tag": "div",
+      "attrs": {
+        "class": "eq-16mikyw eq-1a36pxa eq-1eb13m5 eq-1wwwkk6 eq-1xrfuoj eq-1ylvgyo eq-bo3n4y eq-cl6mtg eq-dy3byz eq-g7fowl eq-mtu8q4"
+      },
+      "events": [],
+      "children": []
+    }
+  ],
+  "pressable-through-wrappers": [
+    {
+      "tag": "div",
+      "attrs": {
+        "class": "eq-11yg588 eq-19dgm5h eq-1eb13m5 eq-aexooi eq-kngwsg eq-m92pvu eq-mc2xdp"
+      },
+      "events": [],
+      "children": [
+        {
+          "tag": "button",
+          "attrs": {
+            "class": "eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw eq-pressable"
+          },
+          "events": [
+            "click"
+          ],
+          "children": [
+            {
+              "tag": "div",
+              "attrs": {
+                "class": "eq-1y88iiz"
+              },
+              "events": [],
+              "children": [
+                {
+                  "tag": "div",
+                  "attrs": {
+                    "class": "eq-1eb13m5 eq-1xrfuoj eq-5hocaj eq-bo3n4y eq-cl6mtg eq-g7fowl eq-lift"
+                  },
+                  "events": [],
+                  "children": []
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "tag": "button",
+          "attrs": {
+            "class": "eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw eq-pressable"
+          },
+          "events": [
+            "click"
+          ],
+          "children": [
+            {
+              "tag": "div",
+              "attrs": {
+                "class": "eq-1y88iiz"
+              },
+              "events": [],
+              "children": [
+                {
+                  "tag": "div",
+                  "attrs": {
+                    "class": "eq-vc600"
+                  },
+                  "events": [],
+                  "children": [
+                    {
+                      "tag": "div",
+                      "attrs": {
+                        "class": "eq-1eb13m5 eq-1xrfuoj eq-5hocaj eq-bo3n4y eq-cl6mtg eq-g7fowl eq-lift"
+                      },
+                      "events": [],
+                      "children": []
+                    }
+                  ]
+                },
+                {
+                  "tag": "div",
+                  "attrs": {
+                    "class": "eq-vm600"
+                  },
+                  "events": [],
+                  "children": [
+                    {
+                      "tag": "div",
+                      "attrs": {
+                        "class": "eq-1eb13m5 eq-1xrfuoj eq-5hocaj eq-bo3n4y eq-cl6mtg eq-g7fowl eq-lift"
+                      },
+                      "events": [],
+                      "children": []
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "tag": "button",
+          "attrs": {
+            "class": "eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-g7fowl eq-p7nbpw eq-pressable"
+          },
+          "events": [
+            "click"
+          ],
+          "children": [
+            {
+              "tag": "span",
+              "attrs": {
+                "class": "eq-1y88iiz"
+              },
+              "events": [],
+              "children": [
+                {
+                  "tag": "img",
+                  "attrs": {
+                    "alt": "logo",
+                    "class": "eq-1cnz5gh eq-1xrfuoj eq-cl6mtg eq-lift eq-themed-light",
+                    "src": "/light.png"
+                  },
+                  "events": [],
+                  "children": []
+                },
+                {
+                  "tag": "img",
+                  "attrs": {
+                    "alt": "logo",
+                    "class": "eq-1cnz5gh eq-1xrfuoj eq-cl6mtg eq-lift eq-themed-dark",
+                    "src": "/dark.png"
+                  },
+                  "events": [],
+                  "children": []
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
   "box-hover-drops-shadow": [
     {
       "tag": "div",
@@ -769,7 +948,7 @@
         {
           "tag": "span",
           "attrs": {
-            "class": "eq-7gvrt4 eq-type-bodym"
+            "class": "eq-16x7aca eq-7gvrt4 eq-type-bodym"
           },
           "events": [],
           "children": [
@@ -1190,7 +1369,7 @@
                                 {
                                   "tag": "span",
                                   "attrs": {
-                                    "class": "eq-k0ph0b eq-type-label"
+                                    "class": "eq-16x7aca eq-k0ph0b eq-type-label"
                                   },
                                   "events": [],
                                   "children": [
@@ -1928,7 +2107,7 @@
           "tag": "span",
           "attrs": {
             "aria-describedby": "eq-tip-1xtgw69",
-            "class": "eq-7gvrt4 eq-type-bodym"
+            "class": "eq-16x7aca eq-7gvrt4 eq-type-bodym"
           },
           "events": [],
           "children": [
@@ -2370,7 +2549,7 @@
             {
               "tag": "span",
               "attrs": {
-                "class": "eq-115fhry eq-type-label"
+                "class": "eq-115fhry eq-16x7aca eq-type-label"
               },
               "events": [],
               "children": [
@@ -2839,7 +3018,7 @@
                                 {
                                   "tag": "span",
                                   "attrs": {
-                                    "class": "eq-7gvrt4 eq-type-title"
+                                    "class": "eq-16x7aca eq-7gvrt4 eq-type-title"
                                   },
                                   "events": [],
                                   "children": [
@@ -3071,7 +3250,7 @@
             {
               "tag": "span",
               "attrs": {
-                "class": "eq-7gvrt4 eq-type-bodym"
+                "class": "eq-16x7aca eq-7gvrt4 eq-type-bodym"
               },
               "events": [],
               "children": [
@@ -3087,7 +3266,7 @@
             {
               "tag": "span",
               "attrs": {
-                "class": "eq-7gvrt4 eq-type-bodym"
+                "class": "eq-16x7aca eq-7gvrt4 eq-type-bodym"
               },
               "events": [],
               "children": [
@@ -3103,7 +3282,7 @@
             {
               "tag": "span",
               "attrs": {
-                "class": "eq-7gvrt4 eq-type-bodym"
+                "class": "eq-16x7aca eq-7gvrt4 eq-type-bodym"
               },
               "events": [],
               "children": [
@@ -3442,7 +3621,7 @@
                         {
                           "tag": "span",
                           "attrs": {
-                            "class": "eq-7gvrt4 eq-type-bodym"
+                            "class": "eq-16x7aca eq-7gvrt4 eq-type-bodym"
                           },
                           "events": [],
                           "children": [
@@ -3476,7 +3655,7 @@
                         {
                           "tag": "span",
                           "attrs": {
-                            "class": "eq-7gvrt4 eq-type-bodym"
+                            "class": "eq-16x7aca eq-7gvrt4 eq-type-bodym"
                           },
                           "events": [],
                           "children": [
@@ -3620,7 +3799,7 @@
                     {
                       "tag": "span",
                       "attrs": {
-                        "class": "eq-7gvrt4 eq-type-bodym"
+                        "class": "eq-16x7aca eq-7gvrt4 eq-type-bodym"
                       },
                       "events": [],
                       "children": [
@@ -3677,7 +3856,7 @@
                     {
                       "tag": "span",
                       "attrs": {
-                        "class": "eq-7gvrt4 eq-type-label"
+                        "class": "eq-16x7aca eq-7gvrt4 eq-type-label"
                       },
                       "events": [],
                       "children": [
@@ -3769,7 +3948,7 @@
                     {
                       "tag": "span",
                       "attrs": {
-                        "class": "eq-7gvrt4 eq-type-label"
+                        "class": "eq-16x7aca eq-7gvrt4 eq-type-label"
                       },
                       "events": [],
                       "children": [
@@ -4293,7 +4472,7 @@
                     {
                       "tag": "span",
                       "attrs": {
-                        "class": "eq-7gvrt4 eq-type-label"
+                        "class": "eq-16x7aca eq-7gvrt4 eq-type-label"
                       },
                       "events": [],
                       "children": [
@@ -4360,7 +4539,7 @@
             {
               "tag": "span",
               "attrs": {
-                "class": "eq-7gvrt4 eq-type-bodym"
+                "class": "eq-16x7aca eq-7gvrt4 eq-type-bodym"
               },
               "events": [],
               "children": [
@@ -4410,7 +4589,7 @@
                     {
                       "tag": "span",
                       "attrs": {
-                        "class": "eq-7gvrt4 eq-type-label"
+                        "class": "eq-16x7aca eq-7gvrt4 eq-type-label"
                       },
                       "events": [],
                       "children": [
@@ -4503,7 +4682,7 @@
                     {
                       "tag": "span",
                       "attrs": {
-                        "class": "eq-7gvrt4 eq-type-label"
+                        "class": "eq-16x7aca eq-7gvrt4 eq-type-label"
                       },
                       "events": [],
                       "children": [
@@ -4595,7 +4774,7 @@
                     {
                       "tag": "span",
                       "attrs": {
-                        "class": "eq-7gvrt4 eq-type-label"
+                        "class": "eq-16x7aca eq-7gvrt4 eq-type-label"
                       },
                       "events": [],
                       "children": [
@@ -4662,7 +4841,7 @@
             {
               "tag": "span",
               "attrs": {
-                "class": "eq-7gvrt4 eq-type-bodym"
+                "class": "eq-16x7aca eq-7gvrt4 eq-type-bodym"
               },
               "events": [],
               "children": [
@@ -13119,7 +13298,7 @@
             {
               "tag": "span",
               "attrs": {
-                "class": "eq-7gvrt4 eq-type-bodym"
+                "class": "eq-16x7aca eq-7gvrt4 eq-type-bodym"
               },
               "events": [],
               "children": [
@@ -13145,7 +13324,7 @@
             {
               "tag": "span",
               "attrs": {
-                "class": "eq-7gvrt4 eq-type-bodym"
+                "class": "eq-16x7aca eq-7gvrt4 eq-type-bodym"
               },
               "events": [],
               "children": [
@@ -13163,7 +13342,7 @@
         {
           "tag": "span",
           "attrs": {
-            "class": "eq-7gvrt4 eq-type-bodym"
+            "class": "eq-16x7aca eq-7gvrt4 eq-type-bodym"
           },
           "events": [],
           "children": [

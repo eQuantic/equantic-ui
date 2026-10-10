@@ -144,8 +144,9 @@ internal sealed class DictionaryStrategy : IExpressionIrStrategy
 
     /// <summary>
     /// <c>new Dictionary&lt;K, V&gt;(…) { … }</c>: the factory, seeded by the dictionary or the pairs the
-    /// constructor copies, and then the initializer's entries, one call each. A capacity has no meaning
-    /// here. A comparer is never the seed: the fence has judged it (see the type's summary), and a
+    /// constructor copies, or by the capacity a <c>Dictionary</c> is given, which decides what
+    /// <c>EnsureCapacity</c> answers and where <c>TrimExcess</c> puts the next key (#463), and then the
+    /// initializer's entries, one call each. A comparer is never the seed: the fence has judged it (see the type's summary), and a
     /// sorted dictionary takes the order it asks for (<see cref="CollectionComparerExtensions.OrderingAskedFor"/>),
     /// the code-unit order for <c>StringComparer.Ordinal</c>.
     /// </summary>
@@ -167,8 +168,9 @@ internal sealed class DictionaryStrategy : IExpressionIrStrategy
         if (context.SemanticHelper.GetOperation(creation) is IObjectCreationOperation operation)
         {
             // Read in PARAMETER order, which the bound operation gives whatever order a named argument
-            // was written in. Only the seed is converted: a capacity and a comparer are dropped, and
-            // the fence has already refused a comparer whose evaluation could matter.
+            // was written in. Only the seed is converted: a comparer is dropped, and so is a sorted
+            // one's capacity, which decides nothing there; the fence has already refused a comparer
+            // whose evaluation could matter.
             var key = factory != Eq.Dictionary && type is INamedTypeSymbol { TypeArguments: [var keyType, _] }
                 ? keyType
                 : null;
@@ -176,7 +178,7 @@ internal sealed class DictionaryStrategy : IExpressionIrStrategy
             {
                 if (argument.ArgumentKind == ArgumentKind.DefaultValue) continue;
                 var parameter = argument.Parameter?.Type;
-                if (parameter?.SpecialType == SpecialType.System_Int32) continue;
+                if (parameter?.SpecialType == SpecialType.System_Int32 && factory != Eq.Dictionary) continue;
                 if (parameter.IsCollectionComparer())
                 {
                     if (key is not null) ordering = argument.Value.OrderingAskedFor(key);
@@ -195,9 +197,10 @@ internal sealed class DictionaryStrategy : IExpressionIrStrategy
             for (var i = 0; i < arguments.Count; i++)
             {
                 var parameter = constructor?.Parameters.ElementAtOrDefault(i)?.Type;
-                var dropped = parameter is null
+                var capacity = parameter is null
                     ? arguments[i].Expression.IsKind(SyntaxKind.NumericLiteralExpression)
-                    : parameter.SpecialType == SpecialType.System_Int32 || parameter.IsCollectionComparer();
+                    : parameter.SpecialType == SpecialType.System_Int32;
+                var dropped = (capacity && factory != Eq.Dictionary) || parameter.IsCollectionComparer();
                 if (dropped) continue;
                 source = context.Converter.ConvertIr(arguments[i].Expression);
             }

@@ -8,12 +8,13 @@ using Xunit;
 namespace eQuantic.UI.Compiler.Tests;
 
 /// <summary>
-/// A host-only type named in a SIGNATURE, which is the seventh way to name a symbol and the only
+/// A host-only type named in a SIGNATURE, which is the eighth way to name a symbol and the only
 /// one no expression strategy can reach.
 ///
 /// <para>
-/// `HostOnlyFrameworkTypeTests` covers the six that are expressions — a qualified call, a static
-/// read, an unqualified call, a method group, a construction, an operator. A type POSITION is none
+/// `HostOnlyFrameworkTypeTests` covers the seven that are expressions — a qualified call, a static
+/// read, an unqualified call, a method group, a construction, an operator, an extension reached on
+/// its receiver. A type POSITION is none
 /// of those: `public Matrix2D Placement { get; init; }` names the type in the component's own
 /// shape, where the only thing that sees it is the parser's semantic sweep. Measured before the
 /// fix: it compiled, emitted `import { Matrix2D } from "@equantic/runtime"`, and would have taken

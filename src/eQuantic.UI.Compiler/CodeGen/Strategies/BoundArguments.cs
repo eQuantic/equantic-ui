@@ -147,7 +147,7 @@ internal sealed class BoundArguments
     /// through <see cref="Eq.ExceptionConstruct"/> with the types it is, the arguments evaluated as they
     /// are for a <c>new</c>.
     /// </summary>
-    public JsExpr New(string type, bool annotate, JsExpr? types = null)
+    public JsExpr New(string type, JsExpr? types = null)
     {
         JsExpr Built(IReadOnlyList<JsExpr> arguments) => types is null
             ? JsExpr.New(JsExpr.Identifier(type), arguments)
@@ -157,12 +157,12 @@ internal sealed class BoundArguments
             return Built(InParameterOrder());
         if (Written.Count > 10)
         {
-            var parameters = string.Join(", ", Written.Select((_, index) => $"$a{index}" + (annotate ? ": any" : "")));
+            var parameters = string.Join(", ", Written.Select((_, index) => $"$a{index}"));
             var construction = Built(InParameterOrder(index => JsExpr.Identifier($"$a{index}")));
             return JsExpr.Call(JsExpr.Arrow(parameters, construction), Written);
         }
         var holes = Slots.Select(slot => slot.Written < 0 ? "undefined" : (slot.Spread ? "..." : "") + $"{{{slot.Written}}}");
         var head = types is null ? $"new {type}(" : $"{Eq.ExceptionConstruct}({type}, {JsExprWriter.Write(types)}, ";
-        return JsExpr.Template($"({head}{string.Join(", ", holes)}))", Written, annotate);
+        return JsExpr.Template($"({head}{string.Join(", ", holes)}))", Written);
     }
 }

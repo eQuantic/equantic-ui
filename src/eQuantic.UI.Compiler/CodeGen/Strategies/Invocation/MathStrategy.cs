@@ -54,7 +54,7 @@ public class MathStrategy : IExpressionIrStrategy
             if (template.Contains("$eq.")) context.UsedHelpers.Add(Eq.Import);
             var irArgs = arguments.Select(a => context.Converter.ConvertIr(a.Expression)).ToArray();
             return JsExpr.Template(PrimitiveStaticStrategy.BindNamedArguments(template, invocation, method),
-                irArgs, context.TypeAnnotations);
+                irArgs);
         }
 
         var argsList = arguments
@@ -88,7 +88,7 @@ public class MathStrategy : IExpressionIrStrategy
             if (single && bound is null)
                 irArgs = irArgs.Select((argument, slot) => methodName == "ScaleB" && slot == 1 ? argument : Singled(argument)).ToArray();
             var placed = bound is null ? byName : PrimitiveStaticStrategy.BindNamedArguments(byName, invocation, bound);
-            return JsExpr.Template(placed, irArgs, context.TypeAnnotations);
+            return JsExpr.Template(placed, irArgs);
         }
         JsExpr Answer(JsExpr value) => single ? SinglePrecision.Round(value) : value;
 
@@ -160,12 +160,12 @@ public class MathStrategy : IExpressionIrStrategy
                 ? $"{(digits is { } d ? $"{{{d}}}" : "0")}, {{{m}}}"
                 : digits is { } only ? $"{{{only}}}" : "";
             if (context.SemanticHelper.GetType(arguments[at].Expression).IsDecimal())
-                return JsExpr.Template($"{{{at}}}.round({rest})", parts, context.TypeAnnotations);
+                return JsExpr.Template($"{{{at}}}.round({rest})", parts);
             context.UsedHelpers.Add(Eq.Import);
             var written = mode is { } onlyMode && digits is null
                 ? $"{(single ? Eq.RoundSingleWithMode : Eq.RoundWithMode)}({{{at}}}, {{{onlyMode}}})"
                 : rest.Length == 0 ? $"{round}({{{at}}})" : $"{round}({{{at}}}, {rest})";
-            return JsExpr.Template(written, parts, context.TypeAnnotations);
+            return JsExpr.Template(written, parts);
         }
 
         // Standard conversion: map .NET method names that differ from JS, else camelCase.

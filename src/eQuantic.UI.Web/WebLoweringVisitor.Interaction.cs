@@ -530,6 +530,7 @@ internal sealed partial class WebLoweringVisitor
                 + (pressable.PressedBackground is not null ? " eq-press-fill" : "")
                 + (_simulated.HasFlag(SimulatedState.Pressed) ? " eq-pressed" : "")
                 + (_simulated.HasFlag(SimulatedState.Focused) ? " eq-focused" : "");
+            if (child is not null) LiftThroughBoxlessWrappers(child);
             if (pressable.PressedBackground is { } pressedFill)
             {
                 element.Style!.CustomProperties = new Dictionary<string, string>
@@ -626,6 +627,11 @@ internal sealed partial class WebLoweringVisitor
                 : pressable.Selected == true ? "true" : "false";
             element.AriaPressed = null;
         }
+
+        // A pressable that may not take the keyboard (Flutter's canRequestFocus) leaves the Tab
+        // order. The press's own focus move is cancelled by the runtime's mousedown, which the server
+        // has no way to write. TS twin: lowerPressable.
+        if (!pressable.CanRequestFocus) element.TabIndex = -1;
 
         if (child is not null) element.Children.Add(child);
         return element;
@@ -739,9 +745,33 @@ internal sealed partial class WebLoweringVisitor
     }
 
     /// <summary>
+    /// The hit slop lies UNDER a control's content, and the stylesheet lifts the content above it by
+    /// positioning the pressable's child (TokenCss.HitSlop). A child that draws no box of its own
+    /// (<c>display: contents</c>: an InView, an Adaptive's arms, a light and dark Image) cannot be
+    /// positioned, so its content stayed under the slop: under a mouse the centre of a card inside
+    /// <c>Pressable(InView(card))</c> hit the pressable, and the card never matched <c>:hover</c>
+    /// (#622). The lift goes THROUGH such wrappers, any chain of them, to the first descendants that
+    /// draw a box, which carry <c>eq-lift</c>. The TypeScript twin marks the same elements.
+    /// </summary>
+    private static void LiftThroughBoxlessWrappers(HtmlElement child)
+    {
+        if (!DrawsNoBox(child)) return;
+        foreach (var inner in child.Children.OfType<HtmlElement>())
+        {
+            if (DrawsNoBox(inner)) LiftThroughBoxlessWrappers(inner);
+            else inner.ClassName = string.IsNullOrEmpty(inner.ClassName) ? "eq-lift" : $"eq-lift {inner.ClassName}";
+        }
+    }
+
+    /// <summary>An element that lays out as its children and draws no box: <c>display: contents</c>,
+    /// or an Adaptive arm's gate, whose rules make it contents in its range and nothing outside it.</summary>
+    private static bool DrawsNoBox(HtmlElement element) =>
+        element.Style?.Display == Display.Contents || element is IAdaptiveGated { AdaptiveGate: not null };
+
+    /// <summary>
     /// A continuous gesture: the child carries its RULES as data, and one document-level controller
-    /// in the runtime does the tracking. The rest offset is a plain transform, so a row that is
-    /// already open renders open on the server too, before any script has run.
+    /// in the runtime does the tracking. The rest offset is markup, so a row that is already open
+    /// renders open on the server too, before any script has run.
     /// </summary>
     private HtmlElement? LowerDraggable(Draggable draggable,
         bool? horizontalAxis)
@@ -766,13 +796,29 @@ internal sealed partial class WebLoweringVisitor
 
         // A gesture the caller paints itself is already where it belongs — translating the rest as
         // well would move it twice.
-        if (draggable.RestOffset != 0 && draggable.Follows)
+        if (draggable.Follows)
         {
             child.Style ??= new HtmlStyle();
-            child.Style.Transform = draggable.Axis == DragAxis.Horizontal
-                ? $"translateX({TokenCss.Px(draggable.RestOffset)})"
-                : $"translateY({TokenCss.Px(draggable.RestOffset)})";
-            child.Style.Transition = $"transform {Motion.BaseMs}ms";
+            // The individual `translate` property, which CSS applies TOGETHER with `transform`. The
+            // offset used to be written into the transform, and the two replaced each other: a box
+            // with a resting transform inside an open row lost it, and the box's hover rule (0,2,0)
+            // beat the offset's class (0,1,0), sliding an open row closed under the pointer (#511).
+            // Photon translates the subtree it wraps and composes the box's own transforms inside it.
+            if (draggable.RestOffset != 0)
+            {
+                // A NORMALIZED rest is a fraction of the surface's own extent, which a percentage of
+                // its own box is: written as pixels it rested a fraction of a pixel from zero.
+                var offset = draggable.Normalized
+                    ? $"{TokenCss.Number(draggable.RestOffset * 100)}%"
+                    : TokenCss.Px(draggable.RestOffset);
+                child.Style.Translate = draggable.Axis == DragAxis.Horizontal ? offset : $"0 {offset}";
+            }
+            // Declared at zero too: a release hands the position back to this markup, and the
+            // surface glides to its rest from wherever the finger left it. JOINED to the box's own
+            // list, since an element keeps one `transition` as well, and the glide used to replace
+            // the box's colour fade.
+            var glide = $"translate {Motion.BaseMs}ms";
+            child.Style.Transition = child.Style.Transition is { Length: > 0 } own ? $"{own}, {glide}" : glide;
         }
 
         // The release callback rides the SSR bridge the same way every other handler does; the

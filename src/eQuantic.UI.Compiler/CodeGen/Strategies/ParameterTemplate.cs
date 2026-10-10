@@ -20,9 +20,21 @@ internal static class ParameterTemplate
     /// </summary>
     internal static JsExpr Call(string template, JsExpr? receiver, InvocationExpressionSyntax invocation,
         IMethodSymbol? method, ConversionContext context, Func<ArgumentSyntax, JsExpr>? convert = null,
-        (string Name, string Text)? insert = null)
+        (string Name, string Text)? insert = null) =>
+        Call(template, receiver, invocation.ArgumentList.Arguments, method, context, convert, insert);
+
+    /// <summary>
+    /// The template over a constructor's arguments, as a call's: <c>{0}</c> is the constructor's first
+    /// parameter, since a creation has no receiver.
+    /// </summary>
+    internal static JsExpr Construction(string template, BaseObjectCreationExpressionSyntax creation,
+        IMethodSymbol constructor, ConversionContext context) =>
+        Call(template, null, creation.ArgumentList?.Arguments ?? default, constructor, context, null, null);
+
+    private static JsExpr Call(string template, JsExpr? receiver, SeparatedSyntaxList<ArgumentSyntax> arguments,
+        IMethodSymbol? method, ConversionContext context, Func<ArgumentSyntax, JsExpr>? convert,
+        (string Name, string Text)? insert)
     {
-        var arguments = invocation.ArgumentList.Arguments;
         var offset = receiver is null ? 0 : 1;
         var parts = new List<JsExpr>();
         if (receiver is not null) parts.Add(receiver);
@@ -30,7 +42,7 @@ internal static class ParameterTemplate
         var bound = Bind(template, arguments, method, offset);
         // Text inserted after the parameters are bound: its holes already name written positions.
         if (insert is { } inserted) bound = bound.Replace(inserted.Name, inserted.Text);
-        return JsExpr.Template(bound, parts, context.TypeAnnotations);
+        return JsExpr.Template(bound, parts);
     }
 
     /// <summary>The written position of the argument that fills each parameter, -1 for one not passed.</summary>

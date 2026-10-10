@@ -20,6 +20,20 @@ export interface ColorTokenValue {
   dark: ColorValue;
 }
 
+/**
+ * A cubic bézier's four control points — mirrors `eQuantic.UI.Primitives.Curve`, which the browser
+ * holds as the record's data and nothing else (`[TwinIsData]`): a design-system preset, a motion
+ * role's curve, a transition's easing and a curve a component makes are all this shape, and the
+ * lowering writes it as `cubic-bezier(x1, y1, x2, y2)`. A preset was an array and a motion role's
+ * curve was declared a preset name until #518, so a component that read a point read undefined.
+ */
+export interface CurveValue {
+  x1: number;
+  y1: number;
+  x2: number;
+  y2: number;
+}
+
 /** `SizeKind` transpiles to camelCase member strings. */
 // Re-exported so every importer of './nodes' keeps the name it always had, and IMPORTED because a
 // re-export alone does not bring a name into this module's own scope.
@@ -300,12 +314,12 @@ export interface LinearGradientValue {
 }
 
 /** Wire shape of the C# `TransitionSpec` (spec S6). `channels` carries the [Flags] StyleChannels
- * bits (the transpiler emits flags enums numerically); `easing` is a cubic-bezier control tuple. */
+ * bits (the transpiler emits flags enums numerically); `easing` is the curve's own data. */
 export interface TransitionSpecValue {
   channels: number;
   durationMs?: number;
   delayMs?: number;
-  easing?: readonly number[];
+  easing?: CurveValue;
 }
 
 /** Wire shape of the C# `RadialGradient`: two-stop elliptical spotlight, center as box fractions. */
@@ -472,6 +486,9 @@ export interface PressableNode extends VisualNodeValue {
   expanded?: boolean | null;
   /** §10 initial focus: when a trap opens around this pressable, focus lands HERE first. */
   initialFocus?: boolean;
+  /** False: a press leaves the keyboard where it is (Flutter's canRequestFocus), and the pressable
+   * leaves the Tab order. */
+  canRequestFocus?: boolean;
   /** Composite-item role ('button' | 'radio' | 'checkbox' | 'switch' | 'tab' | 'menuItem' |
    * 'option'): radio and tab lower with roving tabindex (the wrapping Adjustable is the one
    * stop); menuItem/option leave the tab order too (the keyboard lives on the trigger, the
@@ -719,6 +736,13 @@ export interface CodeSurfaceNode extends VisualNodeValue {
    * ink of its own, and the page theme's would vanish into the slab. The selection needs none here:
    * the component draws it, in the code's own layers. */
   caretColor?: ColorTokenValue | null;
+  /** What the surface offers at its caret (C# `CodeSurface.Options`): drawn over the code and its
+   * caret at `optionsOrigin`, the input naming it and pointing at `highlightedOption`. */
+  options?: VisualNodeValue | null;
+  /** Where the options stand: their top left, in the surface's coordinates. */
+  optionsOrigin?: { readonly x: number; readonly y: number } | null;
+  /** The option row the keyboard is on, in tree order over the options' option rows, or -1. */
+  highlightedOption?: number;
 }
 
 /** A rectangle the model answers, in the surface's own coordinates. */

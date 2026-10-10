@@ -7,8 +7,11 @@
  *  - `true`: by VALUE, through `$eq.equals` — a record, a struct, a decimal, a date, and a tuple or an
  *    anonymous type whose members all compare so;
  *  - `'own'`: by what the value turns out to be, for a type that does not decide (`object`, an
- *    interface, a type parameter, a class a subclass may override `Equals` in): its twin's own
- *    `equals`, a tuple's or an anonymous type's members, and identity for anything else;
+ *    interface a tuple implements, a type parameter): its twin's own `equals`, a tuple's or an
+ *    anonymous type's members, and identity for anything else;
+ *  - `'item'`: by identity or the twin's own `equals`, never by members, for a class and an interface
+ *    no tuple implements: a `List<int>` is an array here, and .NET finds it by reference where its
+ *    elements found another;
  *  - a function: a tuple, an anonymous type or a pair with a member that compares otherwise, an array
  *    inside a tuple by reference above all, generated from the member types ({@link tupleEquality}).
  *    `$eq.equals` walks an array element by element, and `ValueTuple.Equals` compares an array member
@@ -26,7 +29,7 @@ import { equals } from './equals';
 export type Equality = (a: unknown, b: unknown) => boolean;
 
 /** How a value of a type is found equal to another: see the module's description. */
-export type KeyEquality = boolean | 'own' | Equality;
+export type KeyEquality = boolean | 'own' | 'item' | Equality;
 
 /**
  * `EqualityComparer<T>.Default` for a type compared by reference or by its own `Equals`: identity, a
@@ -63,11 +66,12 @@ export function isPlainValue(value: unknown): boolean {
 
 /** Whether a value has an equality of its own, which under `'own'` is asked rather than identity. */
 export function hasOwnEquality(value: unknown): boolean {
-  return (
-    value !== null &&
-    typeof value === 'object' &&
-    (typeof (value as { equals?: unknown }).equals === 'function' || isPlainValue(value))
-  );
+  return hasEquals(value) || isPlainValue(value);
+}
+
+/** Whether a value's twin carries an `equals`, which under `'item'` is asked rather than identity. */
+export function hasEquals(value: unknown): boolean {
+  return value !== null && typeof value === 'object' && typeof (value as { equals?: unknown }).equals === 'function';
 }
 
 /** SameValueZero, a `Map`'s equality and a number's `Equals`: identity, NaN equal to NaN and -0 to 0. */
@@ -78,7 +82,8 @@ export function sameValueZero(a: unknown, b: unknown): boolean {
 /** The comparison an equality stands for. */
 export function sameBy(equality: KeyEquality | null | undefined): Equality {
   if (typeof equality === 'function') return equality;
-  return equality === true ? equals : equality === 'own' ? sameKey : sameValueZero;
+  if (equality === true) return equals;
+  return equality === 'own' ? sameKey : equality === 'item' ? sameItem : sameValueZero;
 }
 
 /**
@@ -89,13 +94,16 @@ export function sameBy(equality: KeyEquality | null | undefined): Equality {
 const shapes = new WeakMap<Equality, string>([
   [equals, 'v'],
   [sameKey, 'o'],
+  [sameItem, 'r'],
   [sameValueZero, 'i'],
 ]);
 const byShape = new Map<string, Equality>();
 let foreign = 0;
 
 function shapeOf(equality: KeyEquality | null | undefined): string {
-  if (typeof equality !== 'function') return equality === true ? 'v' : equality === 'own' ? 'o' : 'i';
+  if (typeof equality !== 'function') {
+    return equality === true ? 'v' : equality === 'own' ? 'o' : equality === 'item' ? 'r' : 'i';
+  }
   let shape = shapes.get(equality);
   if (shape === undefined) {
     shape = `f${++foreign}`;
@@ -131,6 +139,9 @@ export function tupleEquality(...elements: KeyEquality[]): Equality {
     const same = elements.map(sameBy);
     return (a, b) => {
       if (a == null || b == null) return a == null && b == null;
+      // `Equals(object)` with a tuple of another arity, which is another type to .NET: the elements
+      // past the receiver's were never read, so `(a, 1)` equalled `(a, 1, 2)`.
+      if (!Array.isArray(a) || !Array.isArray(b) || a.length !== same.length || b.length !== same.length) return false;
       const left = a as readonly unknown[];
       const right = b as readonly unknown[];
       for (let at = 0; at < same.length; at++) if (!same[at](left[at], right[at])) return false;
@@ -176,6 +187,8 @@ export function pairComparer<K, V>(
     const sameKeys = sameBy(key);
     const sameValues = sameBy(value);
     return (a, b) => {
+      // A null pair, a `Nullable` one, is equal only to another, before either is read.
+      if (a == null || b == null) return a == null && b == null;
       const left = a as { key: K; value: V };
       const right = b as { key: K; value: V };
       return sameKeys(left.key, right.key) && sameValues(left.value, right.value);

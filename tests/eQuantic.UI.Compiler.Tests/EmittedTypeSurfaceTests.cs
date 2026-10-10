@@ -104,10 +104,10 @@ public class EmittedTypeSurfaceTests
             """);
 
         // The lambda's own annotation, when it has one, is the same type: the key is typed either way.
-        System.Text.RegularExpressions.Regex.Matches(ts, @"const _k: \(x: typeof a\) => any = \(item(: string)?\) => item")
+        System.Text.RegularExpressions.Regex.Matches(ts, @"const \$k: \(\$element: typeof \$a\) => any = \(\(item(: string)?\) => item")
             .Count.Should().Be(2, "both keys of the ordering are typed through the element they compare");
         TestHelper.ConvertExpression("new List<string>().OrderBy(item => item.Length)")
-            .Should().Contain("const _k = (item) => item.length;").And.NotContain("typeof a");
+            .Should().Contain("const $k = ((item) => item.length);").And.NotContain("typeof a");
     }
 
     /// <summary>

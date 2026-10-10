@@ -79,7 +79,7 @@ internal static class OutArgument
     public static string TryAnswer(ArgumentSyntax result, int readStart, JsExpr read, string failed, ConversionContext context)
     {
         string Answer(string template, List<JsExpr> parts) =>
-            JsExprWriter.Write(JsExpr.Template(template, parts, context.TypeAnnotations));
+            JsExprWriter.Write(JsExpr.Template(template, parts));
         if (IsDiscard(result, context)) return Answer("({0} !== undefined)", [read]);
         var target = Target(result, context);
         if (IsBareName(target))

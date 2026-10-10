@@ -72,7 +72,7 @@ export class Calendar extends StatefulComponent {
         } }
     }
 
-    cell(day: DateOnly, context: any) {
+    cell(day: DateOnly, context: BuildContext) {
         let theme = context.theme;
         let size = SizeValue.fixed(Calendar.cellSize);
         if (day.month !== this._month.month) return new Box(new BoxStyle({ width: size, height: size }));

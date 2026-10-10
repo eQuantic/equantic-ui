@@ -14,6 +14,8 @@ internal sealed partial class EmitVisitor
     private void EmitScrollView(ScrollView scrollView, EmitState s)
     {
         // Scroll compositor v1: the host routes wheel/drag to the topmost region (paint order).
+        // Where the content actually is: layout clamps the offset to what the content can scroll.
+        var offset = 0f;
         if (s.ScrollMeta.TryGetValue(scrollView, out var meta))
         {
             s.Input.Add(new ScrollRegion(s.Node.Bounds, meta.Path, meta.MaxOffset, scrollView.Axis, scrollView.Offset));
@@ -22,8 +24,14 @@ internal sealed partial class EmitVisitor
             // first moment either is true.
             scrollView.OnViewportChanged?.Invoke(
                 scrollView.Axis == ScrollAxis.Horizontal ? s.Node.Bounds.Width : s.Node.Bounds.Height);
-            scrollView.OnScrolled?.Invoke(s.Press.ScrollOffsetOf(meta.Path) ?? scrollView.Offset);
+            var requested = s.Press.ScrollOffsetOf(meta.Path) ?? scrollView.Offset;
+            scrollView.OnScrolled?.Invoke(requested);
+            offset = Math.Clamp(requested, 0, meta.MaxOffset);
         }
+        // The surface a pinned header in here pins to: scrolled past the threshold on the axis a
+        // header pins along, it draws its ScrolledStyle (#506). The nearest scroll view decides.
+        var outerScrolled = s.Press.SurfaceScrolled;
+        s.Press.SurfaceScrolled = scrollView.Axis != ScrollAxis.Horizontal && offset > Pinned.ScrolledThreshold;
         s.Builder.PushClip(new RRect(s.Node.Bounds));
         // …and the SUBTREE'S INPUT to the same rectangle. A row scrolled out of the viewport is
         // drawn nowhere, so it takes no taps — otherwise it keeps taking the ones aimed at
@@ -38,6 +46,7 @@ internal sealed partial class EmitVisitor
         foreach (var child in s.Node)
             Emit(s with { Node = child, Input = scrolled });
         s.Press.Surface = outerSurface;
+        s.Press.SurfaceScrolled = outerScrolled;
         s.Builder.PopClip();
     }
 
@@ -150,9 +159,15 @@ internal sealed partial class EmitVisitor
         // static-placeholder behavior; positional loops render a still frame instead.
         if (s.Motion.Reduced && loop.HideAtRest) return;
         var offset = ResolveLoopOffset(loop, s.Node.Bounds.Width, s.Motion);
-        if (offset != 0) s.Builder.PushTransform(Matrix2D.Translation(offset, 0));
+        var input = s.Input;
+        if (offset != 0)
+        {
+            var matrix = Matrix2D.Translation(offset, 0);
+            s.Builder.PushTransform(matrix);
+            input = input.Under(matrix);
+        }
         foreach (var child in s.Node)
-            Emit(s with { Node = child });
+            Emit(s with { Node = child, Input = input });
         if (offset != 0) s.Builder.Pop();
     }
 
@@ -170,10 +185,16 @@ internal sealed partial class EmitVisitor
         var rise = entering && presence.Enter == PresenceMotion.SlideUp && !s.Motion.Reduced
             ? (1f - s.Node.Presence) * Presence.SlideDistance
             : 0f;
-        if (rise != 0) s.Builder.PushTransform(Matrix2D.Translation(0, rise));
+        var input = s.Input;
+        if (rise != 0)
+        {
+            var matrix = Matrix2D.Translation(0, rise);
+            s.Builder.PushTransform(matrix);
+            input = input.Under(matrix);
+        }
         if (entering) s.Builder.PushLayer(s.Node.Presence);
         foreach (var child in s.Node)
-            Emit(s with { Node = child });
+            Emit(s with { Node = child, Input = input });
         if (entering) s.Builder.PopLayer();
         if (rise != 0) s.Builder.Pop();
         if (s.Motion.Presences != null && s.Node.PresencePath is { } presencePath)

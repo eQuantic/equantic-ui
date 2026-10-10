@@ -30,12 +30,22 @@ public sealed class Pinned : SingleChildNode
     public bool Float { get; init; }
 
     /// <summary>
-    /// SCROLL-LINKED style (the handoff's transparent-until-scrolled header): this diff applies
-    /// while the window has scrolled past a small threshold. Web = a root-gated rule set
-    /// (<c>html.eq-scrolled …</c>) toggled by a tiny passive listener; Photon fence: joins the
-    /// host scroll compositor. <c>null</c> = none.
+    /// SCROLL-LINKED style (the handoff's transparent-until-scrolled header, Flutter's
+    /// <c>scrolledUnderElevation</c>): every member of this diff applies, over
+    /// <see cref="ScrolledBase"/>, while the surface the header pins to has scrolled past
+    /// <see cref="ScrolledThreshold"/>. That surface is the nearest <see cref="ScrollView"/> around
+    /// the header, or the page when it is in none. <c>null</c> = none.
     /// </summary>
     public StyleDiff? ScrolledStyle { get; init; }
+
+    /// <summary>How far, in dp, a header's surface scrolls before <see cref="ScrolledStyle"/> applies.</summary>
+    public const float ScrolledThreshold = 8;
+
+    /// <summary>
+    /// What <see cref="ScrolledStyle"/> is laid over. A header draws nothing of its own, and its
+    /// border is the hairline along its BOTTOM edge, the edge the content scrolls under.
+    /// </summary>
+    public static BoxStyle ScrolledBase { get; } = new() { BorderSides = BorderSides.Bottom };
 
     /// <summary>Spec S6: animates the swap INTO and out of <see cref="ScrolledStyle"/> — without it
     /// the bar flips from transparent to veiled in one frame. <c>null</c> = snap.</summary>

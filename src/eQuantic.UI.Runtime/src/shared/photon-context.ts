@@ -11,6 +11,7 @@ import { cssFontWeight, isWellFormedFace, type AppTheme } from './value-types';
 import type { TypeStyleValue } from './nodes';
 import type { DensityValue } from './enums.generated';
 import { photonTheme } from './design-system.generated';
+import { DENSITY_COOKIE } from './markers';
 
 /** Mirror of the C# `ComponentContext` — what a shared component's `build()` may read (mode-free). */
 export class ComponentContext {
@@ -170,10 +171,57 @@ export function getPhotonDensity(): DensityValue {
   return activeDensity;
 }
 
+/** The density the pointer the browser reports asks for (coarse = finger = comfortable), or null
+ * where nothing can be asked. */
+export function pointerDensity(): DensityValue | null {
+  if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') return null;
+  return window.matchMedia('(pointer: fine)').matches ? 'compact' : 'comfortable';
+}
+
 /** Resolves the density from the pointer the browser reports (coarse = finger = comfortable). */
 export function detectPhotonDensity(): void {
-  if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') return;
-  setPhotonDensity(window.matchMedia('(pointer: fine)').matches ? 'compact' : 'comfortable');
+  const density = pointerDensity();
+  if (density) setPhotonDensity(density);
+}
+
+/**
+ * The density hydration lowers at (#623): the one the server built the page at, while hydrating, so
+ * the served markup is adopted as it is; the pointer's otherwise.
+ */
+export function densityForHydration(
+  served: string | undefined,
+  hydrating: boolean,
+  own: DensityValue | null,
+): DensityValue | null {
+  if (hydrating && (served === 'compact' || served === 'comfortable')) return served;
+  return own;
+}
+
+/**
+ * After hydration the whole page switches to the pointer's density AT ONCE when it was hydrated at
+ * another (#623): one re-render of the page, never each component as it next re-renders, which showed
+ * a mix of both. Answers whether it switched.
+ */
+export function settleDensity(own: DensityValue | null, rerender: () => void): boolean {
+  if (!own || activeDensity === own) return false;
+  setPhotonDensity(own);
+  rerender();
+  return true;
+}
+
+/**
+ * Leaves the density for the SERVER, which cannot see the pointer: every later request of the
+ * session renders at it from its first byte (#623). A session cookie holding a display fact about
+ * the device, gone when the browser closes, and written only when it changes.
+ */
+export function rememberDensity(density: DensityValue): void {
+  if (typeof document === 'undefined') return;
+  try {
+    if (document.cookie.split('; ').includes(`${DENSITY_COOKIE}=${density}`)) return;
+    document.cookie = `${DENSITY_COOKIE}=${density}; path=/; samesite=lax`;
+  } catch {
+    /* cookies blocked by the browser: every load hydrates and then switches, as without one */
+  }
 }
 
 export function setPhotonTheme(theme: AppTheme, typeScale = 1): void {
@@ -217,5 +265,18 @@ export function ambientLoweringContext(): LoweringContext {
   return {
     textPrimary: activeTheme.textPrimary,
     componentContext: photonComponentContext(),
+  };
+}
+
+/**
+ * The lowering context for a bridge given its OWN theme: that theme's tokens at the page's density,
+ * in the same ComponentContext the ambient one hands out. A bare `{ theme, typeScale }` carried no
+ * density, so a stateful component it expanded drew Comfortable in a Compact page, where the server,
+ * which builds every bridge at the request's density (#623), drew Compact.
+ */
+export function themedLoweringContext(theme: AppTheme): LoweringContext {
+  return {
+    textPrimary: theme.textPrimary,
+    componentContext: new ComponentContext(theme, 1, activeDensity),
   };
 }

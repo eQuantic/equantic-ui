@@ -4,6 +4,7 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Operations;
+using eQuantic.UI.Compiler.CodeGen.Extensions;
 using eQuantic.UI.Compiler.CodeGen.Ir;
 using eQuantic.UI.Compiler.CodeGen.Strategies;
 
@@ -21,7 +22,9 @@ namespace eQuantic.UI.Compiler.CodeGen;
 /// </list>
 /// Positional subpatterns resolve their access from the matched type: a tuple is indexed (<c>[i]</c>),
 /// while a record/struct uses its <c>Deconstruct</c> element names (<c>.x</c>, <c>.y</c>) — a record is a
-/// plain object at runtime, so index access would read <c>undefined</c>.
+/// plain object at runtime, so index access would read <c>undefined</c> — and a <c>Deconstruct</c> the app
+/// wrote is called (<see cref="PositionalPart"/>). A property subpattern reads its member as a member
+/// access reads it, a field in its slot (<see cref="Access"/>).
 /// </summary>
 public static class PatternConverter
 {
@@ -141,15 +144,12 @@ public static class PatternConverter
             case RecursivePatternSyntax recursive:
                 if (recursive.Designation is SingleVariableDesignationSyntax r)
                     bindings.Add((r.Identifier.Text.ToJsIdentifier(), access));
-                if (recursive.PositionalPatternClause != null)
+                if (recursive.PositionalPatternClause is { } positional)
                 {
-                    // The pattern's OWN type decides the deconstruction names — the governing
-                    // expression's static type may be the base (`GateState`), which deconstructs
-                    // nothing and left positional access as `[i]` on a plain object: undefined.
-                    var names = PositionalNames(PatternType(recursive, context) ?? accessType);
-                    for (int i = 0; i < recursive.PositionalPatternClause.Subpatterns.Count; i++)
-                        CollectBindings(recursive.PositionalPatternClause.Subpatterns[i].Pattern,
-                            PositionalAccess(access, i, names), context, bindings);
+                    // Read after the test, which called the app's Deconstruct, if the pattern has one.
+                    var part = PositionalPart(recursive, access, accessType, context, out _);
+                    for (int i = 0; i < positional.Subpatterns.Count; i++)
+                        CollectBindings(positional.Subpatterns[i].Pattern, part(i), context, bindings);
                 }
                 if (recursive.PropertyPatternClause != null)
                     foreach (var sp in recursive.PropertyPatternClause.Subpatterns)
@@ -191,13 +191,13 @@ public static class PatternConverter
         else if (recursive.PropertyPatternClause != null || recursive.PositionalPatternClause != null)
             checks.Add($"{access} != null");
 
-        if (recursive.PositionalPatternClause != null)
+        if (recursive.PositionalPatternClause is { } positional)
         {
-            var names = PositionalNames(PatternType(recursive, context) ?? accessType);
-            for (int i = 0; i < recursive.PositionalPatternClause.Subpatterns.Count; i++)
+            var part = PositionalPart(recursive, access, accessType, context, out var called);
+            if (called is not null) checks.Add(called);
+            for (int i = 0; i < positional.Subpatterns.Count; i++)
             {
-                var sub = BuildCondition(recursive.PositionalPatternClause.Subpatterns[i].Pattern,
-                    PositionalAccess(access, i, names), context);
+                var sub = BuildCondition(positional.Subpatterns[i].Pattern, part(i), context);
                 if (sub != "true") checks.Add(sub);
             }
         }
@@ -264,6 +264,42 @@ public static class PatternConverter
             if (list.Patterns[i] is SlicePatternSyntax)
                 return (i, list.Patterns.Count - i - 1, i);
         return (list.Patterns.Count, 0, -1);
+    }
+
+    /// <summary>
+    /// How a positional pattern reads its part <c>i</c>, and, for a pattern that goes through a
+    /// <c>Deconstruct</c> the app wrote, the test that calls it. Such a <c>Deconstruct</c> is CALLED, as
+    /// a deconstruction calls it (<see cref="Strategies.DeconstructionPattern"/>), the one the bound
+    /// tree names: its outs come back as the object every method with outs returns, each under its
+    /// parameter's name. Read off the value by those names instead, one that computes a part read
+    /// nothing, and one whose out is named after a field that moved a case apart from a property
+    /// (#396) read the property: <c>new Point(1, 2) is (1, 2)</c> was false where .NET says true. What
+    /// it hands back is held where the pattern-matching operation keeps it (<see cref="MatchParts"/>),
+    /// assigned by the first test that reaches it, after the type test, and read by every other test
+    /// and binding of the operation, so the operation calls it once for the value, as .NET does. A
+    /// record's own <c>Deconstruct</c> and a BCL type's read the members their outs name, and a tuple
+    /// reads by index.
+    /// </summary>
+    private static Func<int, string> PositionalPart(RecursivePatternSyntax recursive, string access,
+        ITypeSymbol? accessType, ConversionContext context, out string? called)
+    {
+        called = null;
+        if (context.SemanticHelper.GetOperation(recursive)
+                is not IRecursivePatternOperation { DeconstructSymbol: IMethodSymbol deconstruct }
+            || !Strategies.DeconstructionPattern.IsTheApps(deconstruct))
+        {
+            // The pattern's OWN type decides the deconstruction names — the governing
+            // expression's static type may be the base (`GateState`), which deconstructs
+            // nothing and left positional access as `[i]` on a plain object: undefined.
+            var names = PositionalNames(PatternType(recursive, context) ?? accessType);
+            return i => PositionalAccess(access, i, names);
+        }
+        var outs = deconstruct.Parameters.Where(parameter => parameter.RefKind == RefKind.Out).ToList();
+        var parts = JsExprWriter.Write(
+            Strategies.DeconstructionPattern.Through(deconstruct, JsExpr.Opaque(access), context));
+        var held = context.MatchParts.Held(access, deconstruct);
+        called = $"({held} ?? ({held} = {parts}))";
+        return i => $"{held}.{outs[i].Name.ToJsIdentifier()}";
     }
 
     /// <summary>Deconstruct element names of a non-tuple type (record/struct) for positional access, or
@@ -445,23 +481,24 @@ public static class PatternConverter
 
     /// <summary>
     /// The members a subpattern names, outermost first: one for <c>{ X: … }</c>, the whole path for
-    /// the extended <c>{ A.B.C: … }</c>. The path was lower-cased as ONE name, so
-    /// <c>{ Changes.Count: > 0 }</c> read <c>changes.Count</c>, undefined, and was quietly always false.
+    /// the extended <c>{ A.B.C: … }</c>, each as the name the model binds to its member. The path was
+    /// lower-cased as ONE name, so <c>{ Changes.Count: > 0 }</c> read <c>changes.Count</c>, undefined,
+    /// and was quietly always false.
     /// </summary>
-    private static List<string>? MemberPath(SubpatternSyntax sp)
+    private static List<SimpleNameSyntax>? MemberPath(SubpatternSyntax sp)
     {
-        if (sp.NameColon is { } nameColon) return [nameColon.Name.Identifier.ValueText];
+        if (sp.NameColon is { } nameColon) return [nameColon.Name];
         if (sp.ExpressionColon is not { } expressionColon) return null;
-        var path = new List<string>();
+        var path = new List<SimpleNameSyntax>();
         var at = expressionColon.Expression;
         while (at is MemberAccessExpressionSyntax member)
         {
-            path.Insert(0, member.Name.Identifier.ValueText);
+            path.Insert(0, member.Name);
             at = member.Expression;
         }
         // C# accepts nothing else before the colon (CS8918): a name, then members of it.
         if (at is not IdentifierNameSyntax first) return null;
-        path.Insert(0, first.Identifier.ValueText);
+        path.Insert(0, first);
         return path;
     }
 
@@ -483,18 +520,25 @@ public static class PatternConverter
     }
 
     /// <summary>
-    /// A property pattern names a MEMBER, and a member's JS name is not always its camelCase: a
-    /// collection's <c>Count</c> is <c>length</c>, a string's <c>Length</c> likewise. Lower-casing
-    /// blindly emitted <c>actions.count</c> on a JS array — <c>undefined</c>, so
-    /// <c>Actions is { Count: > 3 }</c> was quietly always false, with nothing to see at build time.
-    /// A <c>Count</c> reads as a member access reads it (<see cref="Strategies.CountSpelling"/>, one
-    /// table for both): <c>{ Roles.Count: > 0 }</c> over a set read <c>length</c>, and was false in the
-    /// browser where the server had drawn the other branch (#516).
+    /// A property pattern names a MEMBER, read as a member access reads it. A FIELD, asked of the
+    /// model, is read in its slot (<see cref="FieldSlotExtensions.TwinSlot"/>), the one rule every read
+    /// of a field takes, ahead of the collections' table below: named by its text,
+    /// <c>this is { value: 1 }</c> beside a property <c>Value</c> read the property, and a field called
+    /// <c>Count</c> the method <c>count()</c> a case apart from it, each answering the opposite of .NET
+    /// (#396). Any other member's JS name is not always its camelCase: a collection's <c>Count</c> is
+    /// <c>length</c>, a string's <c>Length</c> likewise. Lower-casing blindly emitted
+    /// <c>actions.count</c> on a JS array — <c>undefined</c>, so <c>Actions is { Count: > 3 }</c> was
+    /// quietly always false, with nothing to see at build time. A <c>Count</c> reads as a member access
+    /// reads it (<see cref="Strategies.CountSpelling"/>, one table for both): <c>{ Roles.Count: > 0 }</c>
+    /// over a set read <c>length</c>, and was false in the browser where the server had drawn the other
+    /// branch (#516).
     /// </summary>
-    private static string Access(string at, string name, ITypeSymbol? receiver, ConversionContext context) => name switch
-    {
-        "Count" => JsExprWriter.Write(Strategies.CountSpelling.Read(JsExpr.Opaque(at), receiver, context)),
-        "Length" => $"{at}.length",
-        _ => $"{at}.{TwinName.Of(name)}",
-    };
+    private static string Access(string at, SimpleNameSyntax name, ITypeSymbol? receiver, ConversionContext context) =>
+        (context.SemanticHelper.GetSymbol(name), name.Identifier.ValueText) switch
+        {
+            (IFieldSymbol field, _) => $"{at}.{field.TwinSlot()}",
+            (_, "Count") => JsExprWriter.Write(Strategies.CountSpelling.Read(JsExpr.Opaque(at), receiver, context)),
+            (_, "Length") => $"{at}.length",
+            (_, var member) => $"{at}.{TwinName.Of(member)}",
+        };
 }

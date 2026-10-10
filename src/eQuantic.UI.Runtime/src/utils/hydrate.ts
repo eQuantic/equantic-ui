@@ -1,6 +1,17 @@
 import { dec, Decimal } from './decimal';
 import { long } from './long';
-import { dateTime, timeSpan, dateOnly, timeOnly, dateTimeOffset } from './datetime';
+import {
+  dateTime,
+  timeSpan,
+  dateOnly,
+  timeOnly,
+  dateTimeOffset,
+  DateOnly,
+  DateTime,
+  DateTimeOffset,
+  TimeOnly,
+  TimeSpan,
+} from './datetime';
 import { adoptMember } from './adopt-member';
 import { Dictionary } from './dictionary';
 import { SortedMap, SortedSet } from './sorted';
@@ -28,10 +39,10 @@ import type { KeyEquality } from './key-equality';
  *    array becomes the runtime's `HashSet` (its elements found as `byValue` says), `SortedSet` (in its
  *    element type's `order`), `Queue`, `Stack` or `LinkedList`, each element hydrated by `of` (null
  *    when elements arrive as they are);
- *  - `{ dict: spec, key, byValue, sorted, order }` — a dictionary: the JSON object becomes the
- *    runtime's `Dictionary` (a `SortedMap` in its key type's `order` when `sorted`), each property
- *    name turned into the key by `key` and each value hydrated by `dict` (null when values arrive as
- *    they are);
+ *  - `{ dict: spec, key, byValue, sorted, order }` — a dictionary: its `[key, value]` pairs (or a
+ *    JSON object) become the runtime's `Dictionary` (a `SortedMap` in its key type's `order` when
+ *    `sorted`), each key revived by `key` and each value hydrated by `dict` (null when values arrive
+ *    as they are);
  *  - a class reference — a record/struct twin: the plain JSON object is rebuilt on the class's
  *    prototype (so `instanceof`, `equals`, `with` survive the wire) and each member hydrates by
  *    the class's own static `$hydration` map;
@@ -56,13 +67,13 @@ export type HydrationTag =
   | 'dateTimeOffset';
 
 /**
- * How a JSON property name becomes a dictionary key: a number, a bool, or a compat scalar by its tag.
- * A spec that names none keeps the name itself, which is the key of a string, a char, a `Guid` and an
- * enum (its camelCase member name, the value transpiled code compares).
+ * How a dictionary's key is revived from the wire: a number, a bool, or a compat scalar by its tag. A
+ * spec that names none keeps what arrived, which is the key of a string, a char, a `Guid` and an enum
+ * (its camelCase member name, the value transpiled code compares).
  */
 export type HydrationKey = HydrationTag | 'number' | 'bool';
 
-/** A dictionary: how its values hydrate, how a property name becomes its key, and which class holds it. */
+/** A dictionary: how its values hydrate, how its keys are revived, and which class holds it. */
 export interface DictionarySpec {
   readonly dict: HydrationSpec | null;
   readonly key?: HydrationKey;
@@ -179,26 +190,49 @@ function collection(incoming: unknown, spec: CollectionSpec): unknown {
 }
 
 /**
- * A dictionary from the JSON object System.Text.Json wrote for it, its entries in the order the parsed
- * object holds them: every name but an integer-like one keeps the order it was written in (#437).
+ * A dictionary from the pairs the server writes for it, in their order (#437). A JSON object, which
+ * the server still writes for a dictionary-like type outside the ones the browser holds as its class,
+ * builds it too, in the order the parsed object holds: every name but an integer-like one keeps the
+ * order it was written in.
  */
 function dictionary(incoming: unknown, spec: DictionarySpec): unknown {
   if (incoming instanceof Dictionary || incoming instanceof SortedMap) return incoming;
-  if (typeof incoming !== 'object' || Array.isArray(incoming)) return incoming;
-  const source = incoming as Record<string, unknown>;
-  const entries = Object.keys(source).map(
-    (name) =>
-      [
-        spec.key === undefined ? name : dictionaryKey(name, spec.key),
-        spec.dict == null ? source[name] : hydrate(source[name], spec.dict),
-      ] as const,
-  );
+  if (typeof incoming !== 'object' || incoming === null) return incoming;
+  const value = (item: unknown): unknown => (spec.dict == null ? item : hydrate(item, spec.dict));
+  const entries = Array.isArray(incoming)
+    ? (incoming as [unknown, unknown][]).map(([key, item]) => [pairKey(key, spec.key), value(item)] as const)
+    : Object.keys(incoming).map(
+        (name) =>
+          [
+            spec.key === undefined ? name : dictionaryKey(name, spec.key),
+            value((incoming as Record<string, unknown>)[name]),
+          ] as const,
+      );
   return spec.sorted
     ? new SortedMap(entries, spec.order === undefined ? undefined : comparerOf(spec.order), spec.sorted)
     : new Dictionary(entries, spec.byValue ?? false);
 }
 
-/** A dictionary key from the property name System.Text.Json wrote for it. */
+/**
+ * A dictionary key from the value the server wrote for it in a pair: a number and a bool are already
+ * themselves, a NaN or an infinite number arrives as its text ("NaN", "Infinity", "-Infinity"), a
+ * single rounds back to the single it was, and a compat scalar is revived from its text.
+ */
+function pairKey(key: unknown, tag: HydrationKey | undefined): unknown {
+  switch (tag) {
+    case undefined:
+    case 'bool':
+      return key;
+    case 'number':
+      return typeof key === 'string' ? Number(key) : key;
+    case 'single':
+      return Math.fround(typeof key === 'string' ? Number(key) : (key as number));
+    default:
+      return scalar(key, tag);
+  }
+}
+
+/** A dictionary key from the property name System.Text.Json wrote for it in an object. */
 function dictionaryKey(name: string, key: HydrationKey): unknown {
   switch (key) {
     case 'number':
@@ -231,7 +265,7 @@ function scalar(incoming: unknown, tag: HydrationTag): unknown {
     case 'single':
       return typeof incoming === 'number' ? Math.fround(incoming) : incoming;
     case 'dateTime':
-      return typeof incoming === 'string' ? dateTime.parse(incoming) : incoming;
+      return typeof incoming === 'string' ? dateTime.fromJson(incoming) : incoming;
     case 'timeSpan':
       return typeof incoming === 'string' ? timeSpan.parse(incoming) : incoming;
     case 'dateOnly':
@@ -241,6 +275,22 @@ function scalar(incoming: unknown, tag: HydrationTag): unknown {
     case 'dateTimeOffset':
       return typeof incoming === 'string' ? dateTimeOffset.parse(incoming) : incoming;
   }
+}
+
+/**
+ * The tag of a compat scalar, from the value the runtime holds: the inverse of {@link scalar}, beside
+ * it so the two read one table. A `long` is a BigInt, and a `decimal` and the dates are classes;
+ * `'single'` has no type of its own here, a float being a number, so no value answers it.
+ */
+export function scalarTagOf(value: unknown): HydrationTag | undefined {
+  if (typeof value === 'bigint') return 'long';
+  if (value instanceof Decimal) return 'decimal';
+  if (value instanceof DateTime) return 'dateTime';
+  if (value instanceof TimeSpan) return 'timeSpan';
+  if (value instanceof DateOnly) return 'dateOnly';
+  if (value instanceof TimeOnly) return 'timeOnly';
+  if (value instanceof DateTimeOffset) return 'dateTimeOffset';
+  return undefined;
 }
 
 /**

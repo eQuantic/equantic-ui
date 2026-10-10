@@ -350,7 +350,8 @@ public class ServerValueCrossingTests
         entry.GetProperty("_plain").EnumerateArray().Select(role => role.GetString()).Should().Equal(["admin"]);
         entry.GetProperty("_ordinal").EnumerateArray().Select(role => role.GetString()).Should().Equal(["admin"]);
         entry.GetProperty("_sortedDefault").EnumerateArray().Select(name => name.GetString()).Should().Equal(["A", "b"]);
-        entry.GetProperty("_wrappedPlain").GetProperty("a").GetInt32().Should().Be(1);
+        // A dictionary crosses as its pairs (#437), and the read-only view of one does too.
+        entry.GetProperty("_wrappedPlain").GetRawText().Should().Be("""[["a",1]]""");
         // A plain object with a comparer of its own is no collection, and crosses as the data it is.
         entry.GetProperty("_spec").GetProperty("column").GetString().Should().Be("name");
         // What it would not: a case-insensitive set, read from a set, an immutable set and through a

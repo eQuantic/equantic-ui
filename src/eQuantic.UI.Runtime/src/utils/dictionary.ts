@@ -1,8 +1,10 @@
-import { adoptMember } from './adopt-member';
 import { exception } from './exceptions';
 import { identityHash } from './hash';
 import { sameBy, type KeyEquality } from './key-equality';
-import { SlotTable } from './slots';
+import { collectionCount, getPrime, SlotTable } from './slots';
+// The pairs carry a long key as the BigInt it is, which JSON.stringify writes through the `toJSON`
+// this module installs: without it, a dictionary keyed by a long could not be written at all.
+import './long';
 
 /**
  * How a dictionary finds a key, as .NET's default comparer for the key type does, which eqc says
@@ -21,6 +23,9 @@ export type Pair<K, V> = [K, V] & { readonly key: K; readonly value: V };
 export function pair<K, V>(key: K, value: V): Pair<K, V> {
   return Object.assign([key, value] as [K, V], { key, value });
 }
+
+/** The array methods that change an array, which a dictionary's view refuses. */
+const MUTATORS: ReadonlySet<string> = new Set(['push', 'pop', 'shift', 'unshift', 'splice', 'sort', 'reverse', 'fill', 'copyWithin']);
 
 /**
  * .NET's `Dictionary<TKey, TValue>`, the class every C# `Dictionary`, `IDictionary` and
@@ -46,12 +51,28 @@ export class Dictionary<K, V> implements Iterable<Pair<K, V>> {
   /** Bumped when a NEW key goes in, the one change .NET's enumerator refuses: an overwrite, a
    *  removal and `Clear` leave a walk over the pairs running (measured). */
   private version = 0;
+  /** Bumped by every change a view of the keys or the values must show: a key added or removed, a
+   *  value replaced, a `Clear` and a `TrimExcess`. */
+  private revision = 0;
+  /** The live views `Keys` and `Values` answer, made on the first read and answered after it. */
+  private keyView?: K[];
+  private valueView?: V[];
 
   constructor(entries?: Iterable<readonly [K, V]> | null, byValue: KeyEquality = false) {
     this.table = new SlotTable(byValue);
+    // A copy is sized for what it copies first, as .NET's sizes a dictionary's copy and any
+    // ICollection<T>'s by their count: it grew one insertion at a time, so eight entries copied made a
+    // capacity of 17 where .NET makes 11. A LINQ result is an array here, and is sized like one.
+    const count = collectionCount(entries) ?? 0;
+    if (count > 0) this.table.capacity = getPrime(count);
     // A constructor adds what it copies and what a collection initializer lists, as .NET's `Add`
     // does: a key already there is refused, where the indexer's write would replace it (#440).
     if (entries) for (const [key, value] of entries) this.add(key, value);
+  }
+
+  /** How the keys are found, as a `HashSet` says how its elements are. */
+  get equality(): KeyEquality {
+    return this.table.equality;
   }
 
   /**
@@ -93,6 +114,7 @@ export class Dictionary<K, V> implements Iterable<Pair<K, V>> {
   /** The indexer's write: a key already there keeps its slot, a new one takes the slot freed last. */
   set(key: K, value: V): this {
     const found = this.find(key);
+    this.revision++;
     if (found >= 0) {
       this.table.entries[found]!.value = value;
       return this;
@@ -122,26 +144,129 @@ export class Dictionary<K, V> implements Iterable<Pair<K, V>> {
     const slot = this.find(key);
     if (slot < 0) return false;
     this.table.release(slot);
+    this.revision++;
     return true;
   }
 
   /** `Clear`: every slot goes, the freed ones too, so the next insertion takes the first. */
   clear(): void {
     this.table.clear();
+    this.revision++;
   }
 
-  /** `Keys`, in slot order. */
+  /**
+   * `EnsureCapacity`: the capacity, grown to the prime .NET settles on for `capacity` entries, where
+   * the capacity asked for was answered as it was (#463). A negative one is refused.
+   */
+  ensureCapacity(capacity: number): number {
+    if (capacity < 0) throw outOfRangeCapacity();
+    if (this.table.capacity >= capacity) return this.table.capacity;
+    this.version++;
+    this.table.capacity = getPrime(capacity);
+    return this.table.capacity;
+  }
+
+  /**
+   * `TrimExcess()` and `TrimExcess(capacity)`: the entries packed into the first slots and no slot left
+   * free, where the prime the capacity asks for is smaller than the one there is, so the next key is
+   * appended as .NET appends it, where a freed slot took it (#463). A capacity below the count is
+   * refused.
+   */
+  trimExcess(capacity: number = this.size): void {
+    if (capacity < this.size) throw outOfRangeCapacity();
+    const newSize = getPrime(capacity);
+    if (newSize >= this.table.capacity) return;
+    this.version++;
+    this.revision++;
+    this.table.compact(newSize);
+  }
+
+  /**
+   * `Keys`, in slot order: a LIVE view, as .NET's `KeyCollection` is, where it was an array copied when
+   * it was read, so `var ks = d.Keys; d["z"] = 2;` left `ks` without `z` (#463). Walked as the pairs
+   * are, so a key added while the keys are walked ends the walk with .NET's
+   * InvalidOperationException. See {@link view}.
+   */
   keys(): K[] {
-    const keys: K[] = [];
-    for (const entry of this.table.entries) if (entry !== undefined) keys.push(entry.key);
-    return keys;
+    return (this.keyView ??= this.view('key', (entry) => entry.key));
   }
 
-  /** `Values`, in slot order. */
+  /** `Values`, in slot order: a live view, as .NET's `ValueCollection` is (#463). */
   values(): V[] {
-    const values: V[] = [];
-    for (const entry of this.table.entries) if (entry !== undefined) values.push(entry.value);
-    return values;
+    return (this.valueView ??= this.view('value', (entry) => entry.value));
+  }
+
+  /**
+   * A view that reads the dictionary when it is read. It is an array to everything a lowering hands
+   * it to, `length`, an index, the array methods and `JSON.stringify` alike, through a Proxy over a
+   * frozen snapshot taken again whenever the dictionary changed, so reading it costs a copy once per
+   * change and never per element. Read-only, as .NET's collections of a dictionary are: a write to it
+   * throws.
+   */
+  private view<T>(collection: 'key' | 'value', pick: (entry: { key: K; value: V }) => T): T[] {
+    let snapshot: readonly T[] = [];
+    let seen = -1;
+    const current = (): readonly T[] => {
+      if (seen !== this.revision) {
+        const items: T[] = [];
+        for (const entry of this.table.entries) if (entry !== undefined) items.push(pick(entry));
+        snapshot = Object.freeze(items);
+        seen = this.revision;
+      }
+      return snapshot;
+    };
+    const walk = (): Iterator<T> => this.walk(pick);
+    const refuseMutation = (): never => {
+      throw exception('System.NotSupportedException', `Mutating a ${collection} collection derived from a dictionary is not allowed.`);
+    };
+    // `KeyCollection.Contains`: a key found as the dictionary finds one, by its own comparison.
+    const contains = (key: K): boolean => this.has(key);
+    return new Proxy([] as T[], {
+      get: (_target, property) => {
+        if (property === Symbol.iterator) return walk;
+        if (property === 'contains' && collection === 'key') return contains;
+        // ICollection<T>.IsReadOnly: a dictionary's collections are, as .NET's answer, where it read
+        // undefined and a caller that asked before changing one went on to change it.
+        if (property === 'isReadOnly') return true;
+        // The count without a snapshot: a loop that changes the dictionary and reads the count each
+        // pass would copy every entry each time.
+        if (property === 'length') return this.size;
+        // A method that would change the view is refused as .NET's collections of a dictionary refuse
+        // ICollection<T>'s Add, Remove and Clear, where the frozen snapshot threw a TypeError, read as
+        // a NullReferenceException.
+        if (typeof property === 'string' && MUTATORS.has(property)) return refuseMutation;
+        const array = current();
+        // An element as it is, a delegate held as a value included: only the array's own methods
+        // are bound to the snapshot they read, where every function was, and a delegate read back
+        // was another one.
+        if (Object.prototype.hasOwnProperty.call(array, property)) return Reflect.get(array, property, array);
+        const value: unknown = Reflect.get(array, property, array);
+        return typeof value === 'function' ? value.bind(array) : value;
+      },
+      has: (_target, property) => Reflect.has(current(), property),
+      ownKeys: () => Reflect.ownKeys(current()),
+      // An index is reported configurable, as a proxy must report a property its target lacks, and
+      // the length as the target's own is, with the view's count.
+      getOwnPropertyDescriptor: (target, property) => {
+        const array = current();
+        if (property === 'length') return { ...Reflect.getOwnPropertyDescriptor(target, 'length'), value: array.length };
+        const own = Reflect.getOwnPropertyDescriptor(array, property);
+        return own === undefined ? undefined : { ...own, configurable: true };
+      },
+      set: () => {
+        throw exception('System.NotSupportedException', `Mutating a ${collection} collection derived from a dictionary is not allowed.`);
+      },
+    });
+  }
+
+  /** The keys or the values, walked as the pairs are: a key added during the walk ends it. */
+  private *walk<T>(pick: (entry: { key: K; value: V }) => T): Generator<T, undefined, unknown> {
+    const version = this.version;
+    for (const entry of this.table.entries) {
+      if (entry === undefined) continue;
+      yield pick(entry);
+      if (this.version !== version) throw collectionModified();
+    }
   }
 
   /**
@@ -169,23 +294,28 @@ export class Dictionary<K, V> implements Iterable<Pair<K, V>> {
   }
 
   /**
-   * The JSON object System.Text.Json writes and reads for a dictionary: each key by its wire text,
-   * in slot order, which a JSON object keeps for every key but an integer-like one (#437). Each
-   * entry is DEFINED, since assigning "__proto__" would reach the prototype's setter.
+   * The pairs the server reads and writes for a dictionary (#437): `[key, value]` arrays in slot order,
+   * each key and value written as a value of its type. A JSON object would have listed every
+   * integer-like key first and ascending, and a page parses one before any code sees it.
    */
-  toJSON(): Record<string, V> {
-    return wireObject(this.table.entries);
+  toJSON(): [K | string, V][] {
+    return pairsOf(this.table.entries);
   }
 }
 
 /**
- * The JSON object of a dictionary's entries, each keyed by its wire text and DEFINED, since assigning
- * "__proto__" would reach the prototype's setter. A freed slot is skipped.
+ * The `[key, value]` pairs of a dictionary's live entries, in the order they enumerate. A NaN or an
+ * infinite number key, which JSON would write as null, is written as its text, "NaN", "Infinity" or
+ * "-Infinity", which .NET reads back.
  */
-export function wireObject<K, V>(entries: Iterable<{ key: K; value: V } | undefined>): Record<string, V> {
-  const json: Record<string, V> = {};
-  for (const entry of entries) if (entry !== undefined) adoptMember(json, wireKey(entry.key), entry.value);
-  return json;
+export function pairsOf<K, V>(entries: Iterable<{ key: K; value: V } | undefined>): [K | string, V][] {
+  const pairs: [K | string, V][] = [];
+  for (const entry of entries) {
+    if (entry === undefined) continue;
+    const key = entry.key;
+    pairs.push([typeof key === 'number' && !Number.isFinite(key) ? String(key) : key, entry.value]);
+  }
+  return pairs;
 }
 
 /** .NET's InvalidOperationException for a collection changed under a walk over it. */
@@ -226,25 +356,28 @@ export function keyText(key: unknown): string {
 }
 
 /**
- * A key's text on the wire, as System.Text.Json writes a dictionary key: a bool as True or False, and
- * a long, a decimal or a date by its own `toJSON`.
- */
-export function wireKey(key: unknown): string {
-  if (typeof key === 'boolean') return key ? 'True' : 'False';
-  const own = (key as { toJSON?: () => unknown } | null | undefined)?.toJSON;
-  return typeof own === 'function' ? String(own.call(key)) : String(key);
-}
-
-/**
- * A new dictionary, from `[key, value]` pairs or another dictionary, whose keys are found as
- * `byValue` says ({@link KeyEquality}). A copy enumerates compacted, in the order of what it copies,
- * as .NET's does.
+ * A new dictionary, from `[key, value]` pairs or another dictionary, or of a capacity, whose keys are
+ * found as `byValue` says ({@link KeyEquality}). A copy enumerates compacted, in the order of what it
+ * copies, as .NET's does.
  */
 export function dictionary<K, V>(
-  entries?: Iterable<readonly [K, V]> | null,
+  entries?: Iterable<readonly [K, V]> | number | null,
   byValue: KeyEquality = false,
 ): Dictionary<K, V> {
-  return new Dictionary<K, V>(entries, byValue);
+  if (typeof entries !== 'number') return new Dictionary<K, V>(entries, byValue);
+  // `new Dictionary<K, V>(capacity)`: the arrays .NET allocates for it, which `EnsureCapacity` answers.
+  if (entries < 0) throw outOfRangeCapacity();
+  const sized = new Dictionary<K, V>(null, byValue);
+  if (entries > 0) sized.ensureCapacity(entries);
+  return sized;
+}
+
+/** `ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.capacity)`'s words. */
+function outOfRangeCapacity(): Error {
+  return exception(
+    'System.ArgumentOutOfRangeException',
+    "Specified argument was out of the range of valid values. (Parameter 'capacity')",
+  );
 }
 
 /** A bag of the DOM escape hatch: what a transpiled dictionary or the runtime's own code hands over. */

@@ -3,8 +3,9 @@ using System;
 namespace eQuantic.UI.Primitives;
 
 /// <summary>
-/// Specifies that the Server Action does not require authorization.
-/// Use this attribute to override class-level <see cref="AuthorizeAttribute"/> for specific methods.
+/// Specifies that a page or a Server Action does not require authorization.
+/// Use this attribute to override class-level <see cref="AuthorizeAttribute"/> for specific methods,
+/// or on a page that has to serve anyone under an app-wide fallback policy (the sign-in page).
 /// </summary>
 /// <remarks>
 /// This attribute takes precedence over <see cref="AuthorizeAttribute"/>.

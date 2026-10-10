@@ -30,6 +30,7 @@ public static class DesignSystemTsGenerator
         ts.AppendLine("import type { AppTheme, ShadowSpec } from './value-types';");
         ts.AppendLine("import type { ColorValue } from './nodes';");
         ts.AppendLine("import { DataPalette, DivergingScale, StatusScale } from './data-palette';");
+        ts.AppendLine("import { MotionSpec } from './primitive-values';");
         ts.AppendLine();
         ts.AppendLine("const c = (r: number, g: number, b: number, a: number): ColorValue => ({ r, g, b, a });");
         ts.AppendLine("const t = (light: ColorValue, dark: ColorValue): ColorToken => new ColorToken(light, dark);");
@@ -51,8 +52,19 @@ public static class DesignSystemTsGenerator
         return ts.ToString();
     }
 
-    /// <summary>The spec §06 easing curves → the CSS-ready control-point tuples the TS twin feeds
-    /// <c>cubic-bezier()</c> (the C# TokenCss.Bezier mirror).</summary>
+    /// <summary>
+    /// The spec §06 easing curves, each as the record's DATA, <c>{ x1, y1, x2, y2 }</c>: the one shape
+    /// a curve has in the browser (<c>[TwinIsData]</c>), which a component reads as C# does
+    /// (<c>Curve.Standard.X1</c>) and the lowering writes as <c>cubic-bezier()</c>. A preset was an
+    /// array until #518, so a component that read a point read undefined.
+    /// <para>
+    /// Each point is the SINGLE the record holds, written as the double it is, as eqc writes a float
+    /// constant (<c>ConstantLiteral</c>): <c>0.2f</c> is <c>0.20000000298023224</c>, and the
+    /// shortest text, <c>0.2</c>, names another number in JavaScript, so a preset would not equal
+    /// the same curve a component makes. The CSS reads the same either way: its number is rounded to
+    /// four places on both sides (<c>TokenCss.Number</c>).
+    /// </para>
+    /// </summary>
     private static void AppendCurves(CodeWriter ts)
     {
         ts.AppendLine();
@@ -61,7 +73,8 @@ public static class DesignSystemTsGenerator
                      .Where(f => f.FieldType == typeof(Curve)))
         {
             var curve = (Curve)field.GetValue(null)!;
-            ts.AppendLine($"  {Camel(field.Name)}: [{Num(curve.X1)}, {Num(curve.Y1)}, {Num(curve.X2)}, {Num(curve.Y2)}],");
+            ts.AppendLine($"  {Camel(field.Name)}: {{ x1: {Single(curve.X1)}, y1: {Single(curve.Y1)}, "
+                + $"x2: {Single(curve.X2)}, y2: {Single(curve.Y2)} }},");
         }
         ts.AppendLine("} as const;");
     }
@@ -79,12 +92,13 @@ public static class DesignSystemTsGenerator
         }
 
         // NAMED roles (Motion.Press, Motion.Enter, …) are `static readonly MotionSpec`, not consts —
-        // they carry a duration AND the curve the spec pairs with it, so they emit as objects.
+        // they carry a duration AND the curve the spec pairs with it, so each is the runtime's
+        // MotionSpec, as C#'s is, holding the preset it names.
         foreach (var field in scale.GetFields(BindingFlags.Public | BindingFlags.Static)
                      .Where(f => f.FieldType == typeof(MotionSpec)))
         {
             var role = (MotionSpec)field.GetValue(null)!;
-            ts.AppendLine($"  {Camel(field.Name)}: {{ durationMs: {Num(role.DurationMs)}, curve: Curve.{Camel(CurveName(role.Curve))} }},");
+            ts.AppendLine($"  {Camel(field.Name)}: new MotionSpec({Num(role.DurationMs)}, Curve.{Camel(CurveName(role.Curve))}),");
         }
 
         ts.AppendLine("} as const;");
@@ -301,6 +315,9 @@ public static class DesignSystemTsGenerator
     private static string Color(Color color) => $"c({color.R}, {color.G}, {color.B}, {color.A})";
 
     private static string Num(float value) => value.ToString("0.####", CultureInfo.InvariantCulture);
+
+    /// <summary>A float as the double that holds it, every digit kept, as eqc writes a float constant.</summary>
+    private static string Single(float value) => ((double)value).ToString("R", CultureInfo.InvariantCulture);
 
     private static string Camel(string name) =>
         string.IsNullOrEmpty(name) ? name : char.ToLowerInvariant(name[0]) + name[1..];

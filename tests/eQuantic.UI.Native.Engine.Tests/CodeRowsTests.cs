@@ -134,6 +134,27 @@ public class CodeRowsTests
         editor.CaretRect(new CodePosition(9, 0)).Y.Should().Be(10 * 18, "the three folded lines take one row");
     }
 
+    /// <summary>
+    /// A press on a filler after the last line lands on the last line at its column, as a press on
+    /// any filler lands on its line, and only a press below every row is under the code: the end of
+    /// the document. Taken from the last LINE, the end swallowed the fillers after it, the side of a
+    /// diff that ends in deletions (found by Copilot reviewing #653).
+    /// </summary>
+    [Fact]
+    public void AFillerAfterTheLastLine_TakesAPressAtItsColumn_AndBelowEveryRowIsTheEnd()
+    {
+        var rows = new CodeRows(3, [new CodeFiller(3, 2)], []);
+        var editor = new CodeEditorController("one\ntwo\nthree", CodeLanguages.For("csharp"))
+        {
+            Grid = new CodeGrid(new Primitives.Point(0, 0), new Primitives.Size(8, 18), rows),
+        };
+
+        editor.PositionAt(new Primitives.Point(2 * 8 + 1, 4 * 18 + 5)).Should().Be(new CodePosition(2, 2),
+            "a press on the second filler lands on the last line, at its column");
+        editor.PositionAt(new Primitives.Point(1, 5 * 18 + 5)).Should().Be(editor.Document.End,
+            "below every row is under the code");
+    }
+
     [Fact]
     public void AViewThatCannotBeDrawn_SaysSo()
     {

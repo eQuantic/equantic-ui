@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { equals } from './equals';
+import { equals, equalsGroup } from './equals';
 import { dec } from './decimal';
 import { dateTime } from './datetime';
 
@@ -42,8 +42,8 @@ describe('Structural equality ($eq.equals)', () => {
   it('delegates to compat types own .equals (Decimal, DateTime)', () => {
     expect(equals(dec('1.10'), dec('1.10'))).toBe(true);
     expect(equals(dec('1.10'), dec('1.11'))).toBe(false);
-    expect(equals(dateTime(2024, 1, 15), dateTime(2024, 1, 15))).toBe(true);
-    expect(equals(dateTime(2024, 1, 15), dateTime(2024, 1, 16))).toBe(false);
+    expect(equals(dateTime.of(2024, 1, 15), dateTime.of(2024, 1, 15))).toBe(true);
+    expect(equals(dateTime.of(2024, 1, 15), dateTime.of(2024, 1, 16))).toBe(false);
     // record holding a decimal field
     expect(equals({ price: dec('9.99') }, { price: dec('9.99') })).toBe(true);
   });
@@ -56,5 +56,19 @@ describe('Structural equality ($eq.equals)', () => {
     expect(equals(0, -0)).toBe(true);
     expect(equals(NaN, 0)).toBe(false);
     expect(equals(1, 2)).toBe(false);
+  });
+});
+
+// The method group `value.Equals` of a value the browser holds as data: the delegate compares the
+// value it was made with, as the call does, whatever happens to the variable afterwards (#731).
+describe('equalsGroup', () => {
+  it('compares the value it was made with, as equals does', () => {
+    let held = { x1: 0.2, y1: 0, x2: 0, y2: 1 };
+    const same = equalsGroup(held);
+    held = { x1: 0, y1: 0, x2: 0, y2: 1 };
+
+    expect(same({ x1: 0.2, y1: 0, x2: 0, y2: 1 })).toBe(true);
+    expect(same(held)).toBe(false);
+    expect(same('standard')).toBe(false);
   });
 });

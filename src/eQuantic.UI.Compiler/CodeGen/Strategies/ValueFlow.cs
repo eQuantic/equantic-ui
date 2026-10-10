@@ -71,7 +71,10 @@ public static class ValueFlow
     /// <summary>Whether this operation's value is on its way into TEXT: through the boxing a
     /// concatenation wraps it in, directly as a string operand of one, or as a plain hole of an
     /// interpolated string (a hole with a format or an alignment hands the raw value to the
-    /// formatter instead).</summary>
+    /// formatter instead). A hole of an interpolated string a HANDLER takes
+    /// (<c>sb.Append($"{flag}")</c>) is the argument of the handler's <c>AppendFormatted</c> rather
+    /// than of an interpolation, and plain when it is that call's only argument: it printed an enum
+    /// as its camelCase key and a double as JavaScript writes it (#679's review).</summary>
     private static bool FlowsIntoText(IOperation operation)
     {
         var parent = operation.Parent;
@@ -86,6 +89,9 @@ public static class ValueFlow
             ICompoundAssignmentOperation { OperatorKind: BinaryOperatorKind.Add, Type.SpecialType: SpecialType.System_String } compound
                 => ReferenceEquals(compound.Value, operation),
             IInterpolationOperation { FormatString: null, Alignment: null } hole => ReferenceEquals(hole.Expression, operation),
+            IArgumentOperation { Parent: IInvocationOperation { Parent: IInterpolatedStringAppendOperation } call } argument
+                => ReferenceEquals(argument.Value, operation)
+                    && call.Arguments.All(other => ReferenceEquals(other, argument) || other.ArgumentKind == ArgumentKind.DefaultValue),
             _ => false,
         };
     }
@@ -154,10 +160,10 @@ public static class ValueFlow
             var toUnwrapped = to.UnwrapNullable();
             if (!ReferenceEquals(fromUnwrapped, from))
             {
-                var name = JsExpr.Identifier("__v");
+                var name = JsExpr.Identifier("$v");
                 var converted = Numeric(fromUnwrapped, toUnwrapped, name, null, isChecked, context);
                 if (ReferenceEquals(converted, name)) return translated;   // identity under the lift
-                return JsExpr.Callish($"((__v) => __v == null ? null : {JsExprWriter.Write(converted)})"
+                return JsExpr.Callish($"(($v) => $v == null ? null : {JsExprWriter.Write(converted)})"
                     + $"({JsExprWriter.Write(translated)})");
             }
             return Numeric(fromUnwrapped, toUnwrapped, translated, operandConstant, isChecked, context);

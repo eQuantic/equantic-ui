@@ -1,7 +1,7 @@
 # eqc BCL surface audit — the coverage DENOMINATOR, one verdict per probed member.
 # native = a strategy mapped it to plain JS · eq = routed through a $eq compat helper
 # fenced:EQxxxx = refused with that diagnostic · invalid-probe = the probe itself doesn't compile
-# totals: eq=244 · fenced=89 · invalid-probe=6 · native=694
+# totals: eq=249 · fenced=90 · invalid-probe=6 · native=688
 native         Array.MaxLength
 native         Boolean.CompareTo(Boolean)
 native         Boolean.CompareTo(Object)
@@ -897,17 +897,17 @@ native         StringBuilder.Append(Single)
 native         StringBuilder.Append(String)
 native         StringBuilder.Append(String,Int32,Int32)
 native         StringBuilder.Append(UInt32)
-native         StringBuilder.AppendFormat(String,Object)
-native         StringBuilder.AppendFormat(String,Object,Object)
-native         StringBuilder.AppendFormat(String,Object,Object,Object)
-native         StringBuilder.AppendJoin(Char,String[])
-native         StringBuilder.AppendJoin(String,String[])
+eq             StringBuilder.AppendFormat(String,Object)
+eq             StringBuilder.AppendFormat(String,Object,Object)
+eq             StringBuilder.AppendFormat(String,Object,Object,Object)
+eq             StringBuilder.AppendJoin(Char,String[])
+eq             StringBuilder.AppendJoin(String,String[])
 native         StringBuilder.AppendLine()
 native         StringBuilder.AppendLine(String)
 native         StringBuilder.Capacity
 native         StringBuilder.Clear()
 native         StringBuilder.EnsureCapacity(Int32)
-native         StringBuilder.GetChunks()
+fenced:EQ1004  StringBuilder.GetChunks()
 native         StringBuilder.Insert(Int32,Boolean)
 native         StringBuilder.Insert(Int32,Byte)
 native         StringBuilder.Insert(Int32,Char)

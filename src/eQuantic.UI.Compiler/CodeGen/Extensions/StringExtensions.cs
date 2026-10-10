@@ -37,9 +37,31 @@ public static class StringExtensions
     };
 
     /// <summary>
+    /// The globals the EMITTED code reads, which C# never declared: <c>Math</c>, <c>Number</c> and
+    /// <c>String</c> (the numeric and text lowerings), <c>console</c> (Console.WriteLine),
+    /// <c>parseInt</c> and <c>parseFloat</c> (the number parses), <c>crypto</c> (Guid.NewGuid),
+    /// <c>undefined</c> (an argument a named one skips), and the rest a lowering calls. A C# local or
+    /// parameter keeps its spelling, so one named like these hid the global from every lowering in its
+    /// scope: <c>var crypto = "xy";</c> beside <c>Guid.NewGuid()</c> threw, and
+    /// <c>int undefined = 5;</c> filled the parameter a named argument skipped (#397). The list is not
+    /// trusted to stay complete: <c>EmittedGlobalsTests</c> reads the compiler's own source for every
+    /// global it writes, and fails on one missing here.
+    /// </summary>
+    internal static readonly IReadOnlySet<string> EmittedGlobals = new HashSet<string>(StringComparer.Ordinal)
+    {
+        "console", "parseInt", "parseFloat", "isNaN", "crypto", "setTimeout", "encodeURI", "decodeURI",
+        "encodeURIComponent", "decodeURIComponent", "undefined",
+        "Array", "BigInt", "Boolean", "Date", "Error", "Infinity", "JSON", "Map", "Math", "NaN", "Number",
+        "Object", "Promise", "RegExp", "Set", "String", "Symbol", "TextDecoder", "TextEncoder",
+        "Int8Array", "Uint8Array", "Int16Array", "Uint16Array", "Int32Array", "Uint32Array",
+        "Float32Array", "Float64Array",
+    };
+
+    /// <summary>
     /// A C# LOCAL/PARAMETER name as a legal JS identifier: the verbatim escape comes off first
     /// (`@checked` → `checked` — the `@` is C#'s keyword escape and a syntax error in JS), then a
-    /// reserved word takes a trailing `$` (`package` → `package$`). Renaming must be applied
+    /// reserved word, or a global the emitted code reads, takes a trailing `$` (`package` →
+    /// `package$`, `crypto` → `crypto$`). Renaming must be applied
     /// at BOTH the declaration and every reference — which is why it lives here, on the one path
     /// both go through. Anything else passes back unchanged, so ordinary names read as authored.
     /// <para>
@@ -51,6 +73,6 @@ public static class StringExtensions
     public static string ToJsIdentifier(this string name)
     {
         if (name.StartsWith('@')) name = name[1..];
-        return JsReserved.Contains(name) ? name + "$" : name;
+        return JsReserved.Contains(name) || EmittedGlobals.Contains(name) ? name + "$" : name;
     }
 }

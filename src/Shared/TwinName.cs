@@ -14,9 +14,18 @@ namespace eQuantic.UI;
 /// </summary>
 internal static class TwinName
 {
-    /// <summary>The twin's name for <paramref name="name"/>. Empty or null comes back unchanged.</summary>
-    public static string Of(string name) =>
-        string.IsNullOrEmpty(name) ? name : char.ToLowerInvariant(name[0]) + name.Substring(1);
+    /// <summary>
+    /// The twin's name for <paramref name="name"/>. Empty or null comes back unchanged. The verbatim
+    /// escape is C#'s syntax and never part of a name, as a symbol's name already says: a member
+    /// written <c>@class</c> is the member <c>class</c>, and it went out as <c>r.@class</c> and
+    /// <c>{ @class: 5 }</c>, which no module parses (#467).
+    /// </summary>
+    public static string Of(string name)
+    {
+        if (string.IsNullOrEmpty(name)) return name;
+        if (name[0] == '@') name = name.Substring(1);
+        return name.Length == 0 ? name : char.ToLowerInvariant(name[0]) + name.Substring(1);
+    }
 
     /// <summary>
     /// The slot a twin keeps a property's own store in when its accessors read or write it through C#'s

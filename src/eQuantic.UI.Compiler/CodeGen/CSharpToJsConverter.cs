@@ -319,6 +319,7 @@ public class CSharpToJsConverter
         _strategyRegistry.Register<AnonymousMethodExpressionStrategy>();
         
         // Additional Types
+        _strategyRegistry.Register<DateTimeConstructionStrategy>(); // a constructor's shape, by its parameters (#606)
         _strategyRegistry.Register<DateTimeStrategy>();
         _strategyRegistry.Register<TimeSpanStrategy>();
         _strategyRegistry.Register<DateOnlyTimeOnlyStrategy>();

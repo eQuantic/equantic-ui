@@ -148,18 +148,18 @@ public class NumberMethodStrategy : IExpressionIrStrategy
         if (name == "Parse")
         {
             return JsExpr.Template(Call(reader.Parse, Hole(at), style is { } s ? Hole(s) : null),
-                parts, context.TypeAnnotations);
+                parts);
         }
 
         var parsed = Call(reader.TryParse, Hole(at), style is { } styleArgument ? Hole(styleArgument) : null);
         var outArgument = arguments[result!.Value];
         if (OutArgument.IsDiscard(outArgument, context))
-            return JsExpr.Template($"({parsed} !== undefined)", parts, context.TypeAnnotations);
+            return JsExpr.Template($"({parsed} !== undefined)", parts);
         var target = OutArgument.Target(outArgument, context);
         if (OutArgument.IsBareName(target))
             return JsExpr.Template(
                 $"(({target} = {parsed}) !== undefined || (({target} = {reader.Zero}), false))",
-                parts, context.TypeAnnotations);
+                parts);
         // A target with an effect of its own (`out values[index++]`) is written by ONE branch, once
         // the parsed value is bound, so its effect runs once, as C#'s out does: named in both halves
         // of an `||`, a failed parse stepped `index` twice and left the zero in the next element.
@@ -181,7 +181,7 @@ public class NumberMethodStrategy : IExpressionIrStrategy
         var value = context.TypeAnnotations ? "($r: any)" : "($r)";
         return JsExpr.Template(
             Numbered($"({value} => ($r !== undefined ? (({place} = $r), true) : (({place} = {reader.Zero}), false)))({call})"),
-            [.. ordered.Select(entry => entry.Part)], context.TypeAnnotations);
+            [.. ordered.Select(entry => entry.Part)]);
     }
 
     private static bool IsSpanOfChar(ITypeSymbol type) =>

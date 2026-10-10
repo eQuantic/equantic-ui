@@ -50,7 +50,7 @@ public class FinalPolishTests
     {
         var code = "Task.Delay(100)";
         var js = ConvertExpression(code);
-        Assert.Contains("new Promise(resolve => setTimeout(resolve, 100))", js);
+        Assert.Contains("new Promise(($resolve) => setTimeout($resolve, 100))", js);
     }
     
     [Fact]

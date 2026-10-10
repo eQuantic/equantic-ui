@@ -6,12 +6,14 @@ namespace eQuantic.UI.Native.Components;
 
 /// <summary>A pressable region registered by the realizer — hit rect expanded to the §08 contract.</summary>
 /// <param name="Bounds">The hit rect, already expanded to the §08 minimum target.</param>
+/// <param name="Drawn">Where the pressable is drawn: its own box, without the slop that grows its
+/// target. A press inside it is this pressable's before it is a neighbour's slop (#630).</param>
 /// <param name="Node">The pressable this region belongs to.</param>
 /// <param name="Path">Where the pressable sits in the tree. A press outlives the frame it began in
 /// — the pressed state repaints, and the next Build makes fresh nodes — so the target is remembered
 /// by PATH. Remembering the object meant every press that spanned a frame quietly did nothing, and
 /// a real click always spans one.</param>
-public readonly record struct HitRegion(Rect Bounds, Pressable Node, string Path = "");
+public readonly record struct HitRegion(Rect Bounds, Rect Drawn, Pressable Node, string Path = "");
 
 /// <summary>Spec S5/gestures: a hover-reactive region — a Box carrying a Hover diff. The host's
 /// pointer tracking resolves the TOPMOST region under the pointer (paint order = registration
@@ -65,13 +67,17 @@ public readonly record struct ShortcutBinding(KeyChord Chord, Action OnPressed, 
 /// <summary>An editable field. A text entry is not a pressable — a click puts a CARET in it and the
 /// keys that follow belong to it — so it registers its own kind of region, and the host keeps the
 /// caret against the <paramref name="Path"/> for the same reason the press does: the tree is rebuilt
-/// on every keystroke.</summary>
-public readonly record struct TextRegion(Rect Bounds, TextEntry Entry, string Path);
+/// on every keystroke. <paramref name="Visible"/> is the part of <paramref name="Bounds"/> the clips
+/// around the field leave on screen, which is all a press can land on, as a code surface's. Null where
+/// nothing clips it.</summary>
+public readonly record struct TextRegion(Rect Bounds, TextEntry Entry, string Path, Rect? Visible = null);
 
 /// <summary>An editable SPREADSHEET surface: a click takes the selection (a cell resolved by
 /// prefix-sum arithmetic over the window), a drag extends it, and the keys that follow speak
-/// Excel through the shared controller.</summary>
-public readonly record struct SheetRegion(Rect Bounds, SheetSurface Surface, string Path);
+/// Excel through the shared controller. <paramref name="Visible"/> is the part of
+/// <paramref name="Bounds"/> on screen, which is all a press can land on. Null where nothing clips
+/// it.</summary>
+public readonly record struct SheetRegion(Rect Bounds, SheetSurface Surface, string Path, Rect? Visible = null);
 
 /// <summary>A surface that changes what the mouse pointer looks like (BoxStyle.Cursor — the CSS
 /// cursor mirror). The host answers CursorAt from these, topmost first.</summary>
@@ -79,8 +85,14 @@ public readonly record struct CursorRegion(Rect Bounds, PointerCursor Cursor);
 
 /// <summary>An editable CODE surface. Like a text region it takes the caret on a click and the keys
 /// that follow, but what those keys mean lives in its controller, so the region only has to carry
-/// the path and the geometry that turns a point into a (line, column).</summary>
-public readonly record struct CodeRegion(Rect Bounds, CodeSurface Surface, string Path);
+/// the path and the geometry that turns a point into a (line, column). <paramref name="Offered"/> is
+/// where what the surface offers at its caret landed (<see cref="CodeSurface.Options"/>), on screen: a
+/// press there that no row of it took is the list's, and never moves the caret under it.
+/// <paramref name="Visible"/> is the part of <paramref name="Bounds"/> the clips around the surface
+/// leave on screen, which is all a press can land on: a long file's surface runs far past the viewport
+/// that shows it. Null where nothing clips it.</summary>
+public readonly record struct CodeRegion(Rect Bounds, CodeSurface Surface, string Path, Rect? Offered = null,
+    Rect? Visible = null);
 
 /// <summary>
 /// One stop on the Tab route. Buttons and fields are different kinds of region and are dispatched
@@ -145,6 +157,10 @@ public sealed class RealizeResult
     /// (<see cref="LiveAnnouncement"/>), which is strings and outlives anything.
     /// </summary>
     internal IReadOnlyList<LiveRegionMark> LiveRegions { get; init; } = Array.Empty<LiveRegionMark>();
+
+    /// <summary>The regions registered under a transform, and what turns a point on screen back into
+    /// each one's own space (#513). Empty in a frame that transforms nothing interactive.</summary>
+    internal IReadOnlyList<TransformedRegion> TransformedRegions { get; init; } = Array.Empty<TransformedRegion>();
 
     /// <summary>Editable code surfaces, in paint order (topmost last).</summary>
     public IReadOnlyList<CodeRegion> CodeRegions { get; }
@@ -294,7 +310,9 @@ public static class PhotonRealizer
         IReadOnlyList<string>? hoveredPaths = null,
         // Where the system's window controls sit under a unified desktop chrome (see
         // LayoutContext.WindowControlsInsets) — zero everywhere else.
-        EdgeInsets windowControlsInsets = default)
+        EdgeInsets windowControlsInsets = default,
+        // The frame before this one, whose region counts size this frame's lists (FrameRegions).
+        RealizeResult? sizedLike = null)
     {
         var context = new LayoutContext(theme, measurer ?? ApproximateTextMeasurer.Instance, typeScale,
             density)
@@ -326,7 +344,7 @@ public static class PhotonRealizer
         var layout = LayoutEngine.Layout(root, viewportWidth, viewportHeight, context,
             rootStretch: StretchKind.Block);
 
-        var regions = new FrameRegions();
+        var regions = new FrameRegions(sizedLike);
         var motion = new MotionScope(timeMs, reducedMotion)
         {
             Presences = presences,
@@ -411,6 +429,7 @@ public static class PhotonRealizer
             // of this frame), and a public constructor cannot take one. The public shape is
             // unchanged, which is also what every existing caller wants.
             LiveRegions = regions.LivesOrEmpty,
+            TransformedRegions = regions.TransformedOrEmpty,
         };
     }
 

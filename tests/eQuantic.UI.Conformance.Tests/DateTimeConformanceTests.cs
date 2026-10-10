@@ -113,4 +113,22 @@ public class DateTimeConformanceTests
         Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
         ConformanceRunner.AssertStatementsSameAsDotNet(statements);
     }
+
+    /// <summary>A date's text is read as .NET reads it: a date or a clock that does not exist is
+    /// refused, each in its own words, where it normalized into the next day or month, and the
+    /// invariant form reads nothing after it (found by review, #606).</summary>
+    [SkippableTheory]
+    [InlineData("return DateTime.Parse(\"2028-02-29\").ToString(\"o\");")]                                                        // "2028-02-29T00:00:00.0000000": a leap day
+    [InlineData("try { DateTime.Parse(\"2026-02-29\"); return \"no\"; } catch (FormatException e) { return e.Message; }")]          // "String '2026-02-29' was not recognized as a valid DateTime."
+    [InlineData("try { DateTime.Parse(\"2026-04-31\"); return \"no\"; } catch (FormatException e) { return e.Message; }")]          // the same
+    [InlineData("try { DateTime.Parse(\"2026-13-01\"); return \"no\"; } catch (FormatException e) { return e.Message; }")]          // the same
+    [InlineData("try { DateTime.Parse(\"0000-01-01\"); return \"no\"; } catch (FormatException e) { return e.Message; }")]          // the same
+    [InlineData("try { DateTime.Parse(\"2026-01-01T24:00:00\"); return \"no\"; } catch (FormatException e) { return e.Message; }")] // "The DateTime represented by the string … is not supported in calendar 'System.Globalization.GregorianCalendar'."
+    [InlineData("try { DateTime.Parse(\"2026-01-01T23:60:00\"); return \"no\"; } catch (FormatException e) { return e.Message; }")] // the same
+    [InlineData("try { DateTime.Parse(\"2026-01-15T09:30:00 junk\"); return \"no\"; } catch (FormatException e) { return e.Message; }")] // "String '…' was not recognized as a valid DateTime."
+    public void ADatesText_IsReadAsDotNetReadsIt(string statements)
+    {
+        Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
+        ConformanceRunner.AssertStatementsSameAsDotNet(statements);
+    }
 }

@@ -11,9 +11,13 @@
  * is the ELEMENT — a layer that survives a pass keeps its trap and its recorded invoker; a layer
  * that stops being marked (closed, unmounted, or reparented for its exit animation) is a close.
  *
- * One capture-phase keydown serves the page (the `Shortcut` controller's shape), plus a `focusin`
- * guard that pulls focus back when it escapes by any route a Tab cycle cannot see — a click on the
- * page behind, a return from browser chrome, a programmatic focus.
+ * One keydown serves the page, heard on its way back UP, plus a capture-phase `focusin` guard that
+ * pulls focus back when it escapes by any route a Tab cycle cannot see — a click on the page behind,
+ * a return from browser chrome, a programmatic focus. The keydown bubbles because the focused control
+ * hears Tab first: a Tab it consumed (a code editor indenting) is not the trap's to cycle, which is the
+ * question Photon's host asks its code target before it moves the focus. Heard in the capture phase,
+ * before the editor, the trap took the Tab of a code editor at either end of a dialog, and the line
+ * was never indented (#598).
  */
 
 /** What CAN take focus inside a trap. `[data-eq-trap]` itself is excluded: it is the fallback. */
@@ -66,7 +70,7 @@ function restore(layer: Element): void {
 }
 
 function onKeyDown(event: KeyboardEvent): void {
-  if (event.key !== 'Tab') return;
+  if (event.key !== 'Tab' || event.defaultPrevented) return;
   const layer = topmost();
   if (!layer) return;
 
@@ -108,7 +112,7 @@ function onFocusIn(event: FocusEvent): void {
 function install(): void {
   if (installed || typeof window === 'undefined') return;
   installed = true;
-  window.addEventListener('keydown', onKeyDown, true);
+  window.addEventListener('keydown', onKeyDown);
   window.addEventListener('focusin', onFocusIn, true);
 }
 

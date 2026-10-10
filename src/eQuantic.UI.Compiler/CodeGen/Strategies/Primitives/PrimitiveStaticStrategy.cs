@@ -70,7 +70,7 @@ public class PrimitiveStaticStrategy : IExpressionIrStrategy
         var emit = BindNamedArguments(TemplateFor(method, method.ContainingType.SpecialType, args.Length)!,
             invocation, method);
         if (emit.Contains("$eq.")) context.UsedHelpers.Add(Eq.Import);
-        return JsExpr.Template(emit, args, context.TypeAnnotations);
+        return JsExpr.Template(emit, args);
     }
 
     /// <summary>

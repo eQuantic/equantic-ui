@@ -38,7 +38,7 @@ describe('a hash agrees with equals ($eq.hash)', () => {
 
   it('hashes a decimal by its value, whatever its scale, and a date by its ticks', () => {
     hashesAlike(dec('1.0'), dec('1.00'));
-    hashesAlike(dateTime(2020, 1, 1), dateTime(2020, 1, 1));
+    hashesAlike(dateTime.of(2020, 1, 1), dateTime.of(2020, 1, 1));
   });
 
   it("asks a value's own getHashCode, and hashes any other class by its identity", () => {

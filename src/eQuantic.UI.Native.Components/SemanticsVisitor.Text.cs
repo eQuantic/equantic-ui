@@ -39,9 +39,15 @@ internal sealed partial class SemanticsVisitor
             node.Label ?? node.Placeholder ?? "", node.Value, node.Disabled));
 
     /// <summary>A multiline editable code surface — a text area to a screen reader.</summary>
-    public bool Visit(CodeSurface node, LayoutNode laidOut) =>
+    public bool Visit(CodeSurface node, LayoutNode laidOut)
+    {
         Announce(new(SemanticRole.CodeField, laidOut.Path ?? "", laidOut.Bounds,
             node.Label ?? "", null, false));
+        // What the surface OFFERS at its caret is no part of the code's text: after the field it
+        // belongs to, its rows announce as options, the one the keyboard is on selected.
+        for (var i = 1; i < laidOut.Children.Count; i++) SemanticsTree.Walk(laidOut.Children[i], this);
+        return Consumed;
+    }
 
     /// <summary>
     /// v1: a grid announces as an editable region with its label; per-cell semantics (the real AX

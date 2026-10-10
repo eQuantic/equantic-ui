@@ -94,7 +94,7 @@ export class CodeLanguages {
     static for(name: string | null) {
         if ((!$eq.text.hasNonWhiteSpace(name))) return CodeLanguages.plainText;
         let language: any; 
-        return (($0: any, $1: any) => ($0.has($1) ? ((language = $0.get($1)), true) : ((language = null), false)))(CodeLanguages.known, CodeLanguages.keyOf(name)) ? language : CodeLanguages.plainText;
+        return (($0, $1) => ($0.has($1) ? ((language = $0.get($1)), true) : ((language = null), false)))(CodeLanguages.known, CodeLanguages.keyOf(name)) ? language : CodeLanguages.plainText;
     }
 
     static keyOf(name: string) {

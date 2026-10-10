@@ -18,10 +18,23 @@ internal sealed partial class MeasureVisitor
         var style = text.Resolve(ctx.Theme);
         var maxLines = LineCap(text, constraints);
         if (text.Spans is { Count: > 0 } spans)
-            return MeasureRuns(result, text, spans, style, maxW, maxLines, ctx);
-        var measurement = ctx.Measurer.Measure(text.PlainContent, style, ctx.TypeScale, maxW, maxLines);
-        result.Text = measurement;
-        result.Bounds = new Rect(0, 0, measurement.Width, measurement.Height);
+        {
+            MeasureRuns(result, text, spans, style, maxW, maxLines, ctx);
+        }
+        else
+        {
+            var measurement = ctx.Measurer.Measure(text.PlainContent, style, ctx.TypeScale, maxW, maxLines);
+            result.Text = measurement;
+            result.Bounds = new Rect(0, 0, measurement.Width, measurement.Height);
+        }
+        // The width its parent DECIDED, where the parent decided one (#659): a Box's block stretch,
+        // a Row's or a Column's cross stretch, the page's body. A Text is a block on the web, which
+        // takes the width of a block parent and is stretched as a flex item, and Flutter's takes the
+        // width a tight constraint hands it, so its alignment reads across that width rather than
+        // across a box as wide as its own longest line. The HEIGHT stays its lines', as a block's
+        // does; a stretching Row hands a flex item its height in the arrange pass.
+        if (constraints.Width.IsStretched && !constraints.Width.IsUnbounded)
+            result.Bounds = result.Bounds with { Width = MathF.Max(result.Bounds.Width, constraints.MaxWidth) };
         return result;
     }
 
@@ -71,6 +84,17 @@ internal sealed partial class MeasureVisitor
         var line = 0;
         float widest = 0;
         var cut = false;
+        var lineHasWord = false;
+        // The spaces since the line's last word, already among the fragments: the next word on the
+        // line takes them, the paragraph's end keeps them, and a break leaves them hanging past the
+        // end of its line, out of the width, which is what the plain measurer charges (WrapParagraph)
+        // and how CSS hangs them. They stay fragments because a link's name is its fragments joined:
+        // dropped, a link wrapped after "alpha" was read as "alphabeta". Added to the line as they
+        // came, a break committed the space it fell on, so a paragraph wrapped after "alpha" claimed
+        // the width of "alpha "; and skipped at the start of a line, the spaces a paragraph opens with
+        // were never charged at all.
+        var spaces = 0;
+        var spacesWidth = 0f;
 
         // EVERY line is reported at no more than the room it had, which is what the plain path does
         // with `Min(candidate, maxWidth)` on each line it commits. The runs path clamped none of
@@ -92,15 +116,28 @@ internal sealed partial class MeasureVisitor
 
             foreach (var word in Words(run.Content))
             {
-                // A space that lands at a break is DROPPED rather than carried to the next line,
-                // which is what keeps a wrapped paragraph's left edge straight.
                 var width = ctx.Measurer.Measure(word, runStyle, ctx.TypeScale, float.PositiveInfinity, 1).Width;
-                if (x > 0 && x + width > limit && word != " ")
+                var fragment = new TextFragment(word, runStyle, x + spacesWidth, line * lineHeight, width, line,
+                    run.Color, run.Destination is { Length: > 0 } ? run.Destination : null);
+                if (word == " ")
                 {
+                    fragments.Add(fragment);
+                    spaces++;
+                    spacesWidth += width;
+                    continue;
+                }
+                if (lineHasWord && x + spacesWidth + width > limit)
+                {
+                    // A space that lands at a break is never carried to the next line, which is
+                    // what keeps a wrapped paragraph's left edge straight.
+                    var hanging = spaces;
+                    spaces = 0;
+                    spacesWidth = 0;
                     // The line is full, and a cap says there is no next one: the paragraph ends
-                    // HERE, with the mark inside the measurement.
+                    // HERE, with the mark inside the measurement, right after the last word.
                     if (maxLines > 0 && line + 1 >= maxLines)
                     {
+                        fragments.RemoveRange(fragments.Count - hanging, hanging);
                         x = Ellipsize(fragments, runStyle, x, limit, line, lineHeight, ctx);
                         cut = true;
                         break;
@@ -108,16 +145,19 @@ internal sealed partial class MeasureVisitor
                     CommitLine(x, ellipsized: false);
                     line++;
                     x = 0;
+                    fragment = fragment with { X = 0, Y = line * lineHeight, Line = line };
                 }
-                if (x == 0 && word == " ") continue;
 
-                fragments.Add(new TextFragment(word, runStyle, x, line * lineHeight, width, line,
-                    run.Color, run.Destination is { Length: > 0 } ? run.Destination : null));
-                x += width;
+                fragments.Add(fragment);
+                x += spacesWidth + width;
+                spaces = 0;
+                spacesWidth = 0;
+                lineHasWord = true;
             }
         }
 
-        CommitLine(x, cut);
+        // The spaces a paragraph ends with are charged, as the plain path charges them.
+        CommitLine(x + spacesWidth, cut);
 
         result.TextRuns = fragments;
         result.Text = new TextMeasurement(widest, lines.Count * lineHeight, lineHeight, lines);

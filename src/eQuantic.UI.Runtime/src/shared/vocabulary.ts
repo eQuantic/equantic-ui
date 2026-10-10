@@ -17,6 +17,7 @@ import type {
   ColorTokenValue,
   ColorValue,
   CrossAlignValue,
+  CurveValue,
   EdgeInsetsValue,
   LiveRegionUrgencyValue,
   MainAlignValue,
@@ -26,8 +27,9 @@ import { CanvasPointer } from './canvas-pointer';
 export { CanvasPointer };
 import { lowerVisualNode } from './lowering';
 import { ambientLoweringContext } from './photon-context';
-import { CornerRadii, EdgeInsets, SizeValue, StyleChannels, WebContent } from './value-types';
+import { CornerRadii, EdgeInsets, Point, SizeValue, StyleChannels, WebContent } from './value-types';
 import { Curve, Motion } from './design-system.generated';
+import type { MotionSpec } from './primitive-values';
 import { hashesByValue } from '../utils/hash';
 
 export { StyleChannels } from './value-types';
@@ -407,6 +409,11 @@ export class SafeArea extends VisualNode {
 }
 
 export class Pinned extends VisualNode {
+  /** C# `Pinned.ScrolledThreshold`: how far, in dp, a header's surface scrolls before its scrolled style applies. */
+  static readonly ScrolledThreshold = 8;
+  /** C# `Pinned.ScrolledBase`: what the scrolled style is laid over, the hairline along the bottom edge
+   * (BorderSides.Bottom = 4). */
+  static readonly ScrolledBase = { borderSides: 4 } as const;
   readonly nodeKind = 'pinned';
   float = false;
   scrolledStyle: StyleDiff | null = null;
@@ -686,6 +693,8 @@ interface PressableConfig {
   expanded?: boolean | null;
   /** §10 initial focus — the trap prefers this pressable when it opens. */
   initialFocus?: boolean;
+  /** False: a press leaves the keyboard where it is (Flutter's canRequestFocus). */
+  canRequestFocus?: boolean;
   /** Composite-item role — the C# initializer `{ Role = PressableRole.Radio }` lands here. */
   role?: string;
 }
@@ -704,6 +713,8 @@ export class Pressable extends VisualNode {
   expanded: boolean | null = null;
   /** §10 initial focus: when a trap opens around this pressable, focus lands here first. */
   initialFocus = false;
+  /** False: a press leaves the keyboard where it is, and the pressable leaves the Tab order. */
+  canRequestFocus = true;
   role = 'button';
 
   constructor(child: VisualChild, onPressed: (() => void) | null = null, config?: PressableConfig) {
@@ -726,6 +737,12 @@ export class CodeSurface extends VisualNode {
   onChanged: (() => void) | null = null;
   label: string | null = null;
   autofocus = false;
+  /** What the surface offers at its caret (C# `CodeSurface.Options`), over the code, at `optionsOrigin`. */
+  options: VisualChild | null = null;
+  /** Where the options stand, in the surface's coordinates. */
+  optionsOrigin: Point = Point.zero;
+  /** The option row the keyboard is on, in tree order over the options' option rows, or -1. */
+  highlightedOption = -1;
 
   constructor(child: VisualChild, model: unknown, config?: EqConfig) {
     super();
@@ -1045,7 +1062,7 @@ export class LinearGradient {
 }
 
 interface TransitionSpecConfig {
-  easing?: readonly number[];
+  easing?: CurveValue;
 }
 
 /**
@@ -1059,12 +1076,12 @@ export const CuratedIcons = {
 };
 
 /** Mirror of the C# `TransitionSpec` record struct (spec S6): which channels glide, for how long,
- * along which bezier. `easing` is the 4-number control-point tuple the generated `Curve` exports. */
+ * along which bezier. `easing` is the curve's own data, as the generated `Curve` exports a preset. */
 export class TransitionSpec {
   channels: number;
   durationMs: number;
   delayMs: number;
-  easing: readonly number[] = Curve.standard;
+  easing: CurveValue = Curve.standard;
 
   constructor(
     channels: number,
@@ -1079,10 +1096,7 @@ export class TransitionSpec {
   }
 
   /** C# twin: `TransitionSpec.Of(channels, Motion.Press)` — a NAMED role, duration AND curve. */
-  static of(
-    channels: number,
-    motion: { durationMs: number; curve: readonly number[] },
-  ): TransitionSpec {
+  static of(channels: number, motion: MotionSpec): TransitionSpec {
     return new TransitionSpec(channels, motion.durationMs, 0, { easing: motion.curve });
   }
 

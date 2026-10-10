@@ -94,7 +94,8 @@ public class DictionaryStrategyTests
     [InlineData("char", "$eq.collections.dictionary()")]
     [InlineData("DayOfWeek", "$eq.collections.dictionary()")]
     [InlineData("Guid", "$eq.collections.dictionary()")]
-    [InlineData("TestClass", "$eq.collections.dictionary(null, 'own')")]
+    [InlineData("TestClass", "$eq.collections.dictionary(null, 'item')")]
+    [InlineData("List<int>", "$eq.collections.dictionary(null, 'item')")]
     [InlineData("object", "$eq.collections.dictionary(null, 'own')")]
     [InlineData("IComparable", "$eq.collections.dictionary(null, 'own')")]
     public void AKey_IsFound_AsItsDefaultComparerFindsIt(string key, string factory)
@@ -114,8 +115,8 @@ public class DictionaryStrategyTests
     }
 
     [Theory]
-    // A capacity has no meaning here; a copy copies; an initializer seeds after what is copied.
-    [InlineData("new Dictionary<string, string>(16)", "$eq.collections.dictionary()")]
+    // A capacity sizes the dictionary as .NET's (#463); a copy copies; an initializer seeds after what is copied.
+    [InlineData("new Dictionary<string, string>(16)", "$eq.collections.dictionary(16)")]
     [InlineData("new Dictionary<string, string>(dict)", "$eq.collections.dictionary(this.dict)")]
     [InlineData("new Dictionary<string, string>(dict) { [\"a\"] = \"b\" }", "$eq.collections.dictionary(this.dict).set('a', 'b')")]  // an indexer overwrites what the copy has
     [InlineData("new Dictionary<string, int> { { \"a\", 1 }, { \"b\", 2 } }", "$eq.collections.dictionary().add('a', 1).add('b', 2)")]  // one Add per entry, in order

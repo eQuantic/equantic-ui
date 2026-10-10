@@ -136,6 +136,10 @@ public class ServerRenderingService : IServerRenderingService
             // Where a component in the MIDDLE of the tree finds a capability — the REQUEST's
             // container, so a scoped one resolves and a page's own registrations win.
             Primitives.CapabilityScope.Current = context.RequestServices.GetService;
+            // And the density the browser reported (#623), for the whole request: every write-once
+            // bridge is built at it, the drawing's and the navigation's discovery walk alike, or a page
+            // that composes by its density answers a navigation from a tree the browser never builds.
+            Web.VisualNodeComponent.AmbientDensity = DensityCookie.Resolve(context);
             // Every in-app href picks up THIS request's language prefix. The culture is the one
             // UseRequestLocalization negotiated — from the path segment first — so a page served
             // at /pt-BR/pricing links to /pt-BR/about without any page saying so.
@@ -406,6 +410,7 @@ public class ServerRenderingService : IServerRenderingService
                 RenderContext.SetLinkPolicy(null);
                 Primitives.RouteValues.ClearCurrent();
                 Primitives.CapabilityScope.Current = null;
+                Web.VisualNodeComponent.AmbientDensity = null;
             }
         }
         catch (Exception ex)
@@ -891,6 +896,11 @@ public class ServerRenderingService : IServerRenderingService
     /// name would overwrite each other, silently and in whichever order reflection happened to
     /// return them.
     /// </para>
+    /// <para>
+    /// The payload and each component's fields are OBJECTS, written here by name rather than handed to
+    /// the serializer whole: the browser reads them by name, while a dictionary held in a field crosses
+    /// as its pairs (#437), and the two are the same .NET type.
+    /// </para>
     /// </summary>
     private string? SerializeState(IReadOnlyDictionary<string, IReadOnlyDictionary<string, object?>> byComponent)
     {
@@ -898,8 +908,25 @@ public class ServerRenderingService : IServerRenderingService
 
         try
         {
-            var json = System.Text.Json.JsonSerializer.Serialize(
-                byComponent, eQuantic.UI.Server.Json.EqJson.Options);
+            var options = eQuantic.UI.Server.Json.EqJson.Options;
+            using var buffer = new MemoryStream();
+            using (var writer = new System.Text.Json.Utf8JsonWriter(buffer,
+                       new System.Text.Json.JsonWriterOptions { Encoder = options.Encoder, Indented = options.WriteIndented }))
+            {
+                writer.WriteStartObject();
+                foreach (var (component, fields) in byComponent)
+                {
+                    writer.WriteStartObject(component);
+                    foreach (var (name, value) in fields)
+                    {
+                        writer.WritePropertyName(name);
+                        System.Text.Json.JsonSerializer.Serialize(writer, value, options);
+                    }
+                    writer.WriteEndObject();
+                }
+                writer.WriteEndObject();
+            }
+            var json = System.Text.Encoding.UTF8.GetString(buffer.ToArray());
             _logger.LogDebug("[SSR Hydration] Serialized state for {Count} component(s)", byComponent.Count);
             return json;
         }

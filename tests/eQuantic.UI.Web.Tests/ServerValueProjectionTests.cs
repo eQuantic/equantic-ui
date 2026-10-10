@@ -920,6 +920,72 @@ public class ServerValueProjectionTests
         generated.Manifest.Should().Contain(Projected("AccountView", "identity", "CapturedParameter", ""));
     }
 
+    /// <summary>
+    /// A project the app references, compiled once for each reader the generator has. A command-line
+    /// build hands it over as metadata, with no syntax at all; the workspace of an IDE or of dotnet watch
+    /// hands it over as another compilation, whose syntax trees the app's compilation does not hold.
+    /// </summary>
+    private static (MetadataReference Built, MetadataReference Watched) AnotherProject(string source)
+    {
+        var library = CSharpCompilation.Create("Shell",
+            [CSharpSyntaxTree.ParseText(source)],
+            ((string)AppContext.GetData("TRUSTED_PLATFORM_ASSEMBLIES")!).Split(Path.PathSeparator)
+                .Where(p => p.EndsWith(".dll", StringComparison.OrdinalIgnoreCase))
+                .Select(p => (MetadataReference)TestReferences.Of(p))
+                .Append(TestReferences.Of(typeof(eQuantic.UI.Primitives.VisualNode).Assembly.Location)),
+            new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
+        library.GetDiagnostics().Where(d => d.Severity == DiagnosticSeverity.Error).Should().BeEmpty();
+        using var image = new MemoryStream();
+        library.Emit(image).Success.Should().BeTrue();
+        return (MetadataReference.CreateFromImage(image.ToArray()), library.ToMetadataReference());
+    }
+
+    [Theory]
+    [InlineData("a page on another project's base", """
+        [Page("/framed")]
+        public sealed class FramedPage(SiteOptions options) : Shell.Framed
+        {
+            public override VisualNode Build(ComponentContext context) => new Text(Frame(options.Title), TypeRole.BodyM);
+        }
+        """, "Projection = \"Title\"")]
+    [InlineData("a server value handed to another project's method", """
+        [Page("/labelled")]
+        public sealed class LabelledPage(SiteOptions options) : StatelessComponent
+        {
+            public override VisualNode Build(ComponentContext context) => new Text(Shell.Labels.Of(options), TypeRole.BodyM);
+        }
+        """, "whose source the build does not have")]
+    public void AWorkspace_ReadsTheAppTheBuildReads(string name, string page, string built)
+    {
+        // Under dotnet watch every edit ran the generator in a workspace, where the referenced project's
+        // syntax trees are another compilation's: asking a semantic model of one threw, the manifest was
+        // not written, and hot reload went on without it (CS8785, #627).
+        var (asMetadata, asCompilation) = AnotherProject("""
+            using eQuantic.UI.Primitives;
+
+            namespace Shell;
+
+            public abstract class Framed : StatelessComponent
+            {
+                protected string Frame(string title) => "[" + title + "]";
+            }
+
+            public static class Labels
+            {
+                public static string Of(object value) => value.ToString() ?? "";
+            }
+            """);
+
+        var asBuilt = Run(page, referenced: asMetadata);
+        var asWatched = Run(page, referenced: asCompilation);
+
+        asWatched.Reported.Should().NotContain(d => d.Id == "CS8785", name);
+        asWatched.Manifest.Should().Be(asBuilt.Manifest, name);
+        asWatched.Reported.Select(d => d.GetMessage()).Should().Equal(asBuilt.Reported.Select(d => d.GetMessage()), name);
+        // What the build itself says, so the two can never agree on nothing.
+        (asBuilt.Manifest + string.Join("\n", asBuilt.Reported.Select(d => d.GetMessage()))).Should().Contain(built, name);
+    }
+
     [Fact]
     public void APrefetchingPage_SendsItsDataWhole_AndItsServerValueAsAProjection()
     {

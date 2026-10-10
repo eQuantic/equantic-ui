@@ -72,7 +72,7 @@ internal static class EnumShape
     internal static JsExpr ValueOf(INamedTypeSymbol enumType, JsExpr held, ConversionContext context) =>
         enumType.IsFlagsEnum()
             ? held
-            : JsExpr.Template($"(({KeyToValue(enumType)})[{{0}}] ?? {{0}})", [held], context.TypeAnnotations);
+            : JsExpr.Template($"(({KeyToValue(enumType)})[{{0}}] ?? {{0}})", [held]);
 
     /// <summary>
     /// What the browser holds for a number: its member's key, or the number itself where no member has
@@ -81,7 +81,7 @@ internal static class EnumShape
     internal static JsExpr Held(INamedTypeSymbol enumType, JsExpr number, ConversionContext context) =>
         enumType.IsFlagsEnum()
             ? number
-            : JsExpr.Template($"(({ValueToKey(enumType)})[{{0}}] ?? {{0}})", [number], context.TypeAnnotations);
+            : JsExpr.Template($"(({ValueToKey(enumType)})[{{0}}] ?? {{0}})", [number]);
 
     /// <summary>The key of the first member with this value, or null where no member has it.</summary>
     internal static string? KeyOf(INamedTypeSymbol enumType, decimal value) =>

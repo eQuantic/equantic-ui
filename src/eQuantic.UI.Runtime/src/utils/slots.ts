@@ -21,7 +21,7 @@
  * whether `TrimExcess` compacts it.
  */
 import { hash } from './hash';
-import { hasOwnEquality, sameBy, sameKey, type Equality, type KeyEquality } from './key-equality';
+import { hasEquals, hasOwnEquality, sameBy, sameKey, type Equality, type KeyEquality } from './key-equality';
 
 /** An entry: the key it is found by. A dictionary's carries its value beside it. */
 export interface Slot<K> {
@@ -47,6 +47,22 @@ function isPrime(candidate: number): boolean {
   return true;
 }
 
+/**
+ * How many a collection holds, where .NET reads an `ICollection<T>`'s `Count` to size what it copies
+ * into: an array (a list, an array, a dictionary's keys or values), a set or a dictionary by its
+ * size, a linked list or a sorted set by its count. Null for any other sequence, which .NET reads
+ * only by walking it, a queue and a stack among them, which are no `ICollection<T>`. A dictionary and
+ * a set both copy by it, so it lives where both find it.
+ */
+export function collectionCount(source: unknown): number | null {
+  if (Array.isArray(source)) return source.length;
+  if (source == null || typeof source !== 'object') return null;
+  const counted = source as { size?: unknown; count?: unknown; dequeue?: unknown; pop?: unknown };
+  if (typeof counted.size === 'number') return counted.size;
+  if (typeof counted.count !== 'number') return null;
+  return typeof counted.dequeue === 'function' || typeof counted.pop === 'function' ? null : counted.count;
+}
+
 /** .NET's `HashHelpers.GetPrime`: the size a table asked to hold `min` entries allocates. */
 export function getPrime(min: number): number {
   for (const prime of PRIMES) if (prime >= min) return prime;
@@ -70,8 +86,9 @@ export class SlotTable<K, E extends Slot<K>> {
   freed: number[] = [];
   /** How a key is found. */
   readonly equality: KeyEquality;
-  /** Each slot of a key found by identity: every key, none when keys are found by a comparison, and
-   *  under `'own'` every key but one with an equality of its own. */
+  /** Each slot of a key found by identity: every key, none when keys are found by a comparison, under
+   *  `'own'` every key but one with an equality of its own, and under `'item'` every key but one whose
+   *  twin carries an `equals`. */
   private readonly index: Map<K, number> | null;
   /** The slots of the keys found by a comparison, by their hash: the keys a comparison may find. */
   private readonly buckets = new Map<number, number[]>();
@@ -108,7 +125,9 @@ export class SlotTable<K, E extends Slot<K>> {
 
   /** Whether the index holds this key's slot, rather than a walk over the slots finding it. */
   private indexes(key: K): boolean {
-    return this.index !== null && !(this.equality === 'own' && hasOwnEquality(key));
+    if (this.index === null) return false;
+    if (this.equality === 'own') return !hasOwnEquality(key);
+    return this.equality !== 'item' || !hasEquals(key);
   }
 
   /**
