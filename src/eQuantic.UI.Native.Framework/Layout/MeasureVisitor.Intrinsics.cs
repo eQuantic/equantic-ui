@@ -38,7 +38,8 @@ internal sealed partial class MeasureVisitor
         Image image => image.Width,
         Icon icon => icon.Size,
         Vector vector => vector.Size,
-        Drawing drawing => drawing.Width,
+        // A drawing's floor is its dp width, or nothing when it fills — a canvas's rule.
+        Drawing drawing => drawing.Width.Kind == SizeKind.Fixed ? drawing.Width.Value : 0,
         // A canvas's floor is whatever it was told to be, or nothing when it fills.
         Canvas canvas => canvas.Width.Kind == SizeKind.Fixed ? canvas.Width.Value : 0,
         Spinner spinner => spinner.Size,
@@ -174,6 +175,7 @@ internal sealed partial class MeasureVisitor
         Box box => box.Style.Width.Kind,
         FlexNode flex => flex.Width.Kind,
         Grid grid => grid.Width.Kind,
+        Drawing drawing => drawing.Width.Kind,
         _ => SizeKind.Hug,
     };
 
@@ -190,7 +192,8 @@ internal sealed partial class MeasureVisitor
         Image => SizeKind.Fixed,
         Icon => SizeKind.Fixed,
         Vector => SizeKind.Fixed,
-        Drawing => SizeKind.Fixed,
+        // A drawing's height always follows from its width, so only its width can stretch.
+        Drawing drawing => horizontal ? SizeKind.Fixed : drawing.Width.Kind,
         Spinner => SizeKind.Fixed,
         Grid grid => (horizontal ? grid.Height : grid.Width).Kind,
         Anchored anchored => CrossSizeKind(anchored.Anchor, horizontal),

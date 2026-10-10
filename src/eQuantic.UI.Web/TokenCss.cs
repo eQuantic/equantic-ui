@@ -105,6 +105,24 @@ public static class TokenCss
     public static string Percent(float fraction) =>
         $"{(fraction * 100).ToString("0.##", CultureInfo.InvariantCulture)}%";
 
+    /// <summary>
+    /// One edge of a positioned box: a point offset, a fraction of the containing box, or both
+    /// added (<c>calc(30% - 16px)</c>); null when neither is set. The TS <c>edge()</c> twin writes
+    /// the same string.
+    /// </summary>
+    public static string? Edge(float? point, float? fraction) => (point, fraction) switch
+    {
+        (null, null) => null,
+        ({ } p, null) => Px(p),
+        (null, { } f) => Percent(f),
+        ({ } p, { } f) when p == 0 => Percent(f),
+        ({ } p, { } f) => $"calc({Percent(f)} {(p < 0 ? "-" : "+")} {Px(Math.Abs(p))})",
+    };
+
+    /// <summary>A shift by fractions of the box's OWN size, or null for none (<c>translate(-50%, -100%)</c>).</summary>
+    public static string? Shift(float x, float y) =>
+        x == 0 && y == 0 ? null : $"translate({(x == 0 ? "0" : Percent(x))}, {(y == 0 ? "0" : Percent(y))})";
+
     /// <summary>A bare invariant number ("0.####") — opacity, aspect-ratio, scale factors.</summary>
     public static string Number(float value) => value.ToString("0.####", CultureInfo.InvariantCulture);
 

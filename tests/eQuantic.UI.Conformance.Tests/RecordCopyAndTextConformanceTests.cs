@@ -44,6 +44,36 @@ public class RecordCopyAndTextConformanceTests
         ConformanceRunner.AssertStatementsSameAsDotNet(statements, prelude);
     }
 
+    /// <summary>
+    /// `with` copies through a record's own copy constructor, as C#'s does (#589): a declared one runs no
+    /// initializer and copies nothing it does not assign, chains to its base's with `: base(original)`,
+    /// and a deep copy it writes is the copy's own. A derived record whose copy constructor is
+    /// synthesized runs its base's declared one, then copies its own members. The twin's `with` copied
+    /// every member onto the prototype and never ran a declared one.
+    /// </summary>
+    [SkippableTheory]
+    [InlineData("public record Base1 { public int B = 7; public int Copied; public Base1() { } protected Base1(Base1 o) { Copied = o.B + 100; } } public record Derived1 : Base1 { public int D = 3; public Derived1() { } protected Derived1(Derived1 o) : base(o) { D = o.D * 10; } }",
+        "var x = new Derived1(); x.B = 1; var y = x with { }; return y.B + \"|\" + y.Copied + \"|\" + y.D;")]   // "0|101|30"
+    [InlineData("public record Lines { public System.Collections.Generic.List<int> Items = new(); public Lines() { } protected Lines(Lines o) { Items = new(); foreach (var item in o.Items) Items.Add(item); } }",
+        "var a = new Lines(); a.Items.Add(1); var b = a with { }; b.Items.Add(2); return a.Items.Count + \"|\" + b.Items.Count;")] // "1|2"
+    [InlineData("public record Base2 { public int B = 7; public int Copied; public Base2() { } protected Base2(Base2 o) { Copied = o.B + 100; } } public record Derived2 : Base2 { public int D = 3; }",
+        "var x = new Derived2(); x.D = 5; var y = x with { }; return y.B + \"|\" + y.Copied + \"|\" + y.D;")]   // "0|107|5"
+    [InlineData("public record Counter { public int N; public int Copies; public Counter() { } protected Counter(Counter o) { N = o.N; Copies = o.Copies + 1; } }",
+        "var c = new Counter { N = 4 }; var d = c with { N = 9 }; var e = d with { }; return d.N + \"|\" + d.Copies + \"|\" + e.N + \"|\" + e.Copies + \"|\" + c.Copies;")] // "9|1|9|2|0"
+    [InlineData("public record B0 { public int A = 1; } public record D0 : B0 { public int X = 5; public int Y; public D0() { } protected D0(D0 o) : base(o) { Y = o.X; } }",
+        "var x = new D0(); x.A = 2; x.X = 7; var y = x with { }; return y.A + \"|\" + y.X + \"|\" + y.Y;")]   // "2|0|7"
+    [InlineData("public record P6(int X) { public int Extra = 5; protected P6(P6 o) { X = o.X * 2; } }",
+        "var p = new P6(3) with { }; return p.X + \"|\" + p.Extra;")]                // "6|0"
+    [InlineData("public record VBase { public int Seen; public VBase() { } protected VBase(VBase o) { Seen = Peek(); } protected virtual int Peek() => -1; } public record VDerived : VBase { public int D = 5; public VDerived() { } protected VDerived(VDerived o) : base(o) { D = o.D; } protected override int Peek() => D; }",
+        "var x = new VDerived(); var y = x with { }; return y.Seen + \"|\" + y.D;")]   // "0|5": the base's step meets the derived level's zero
+    [InlineData("public record WBase { public int Seen; public WBase() { } protected WBase(WBase o) { Seen = Peek(); } protected virtual int Peek() => -1; } public record WDerived : WBase { public int D = 5; protected override int Peek() => D; }",
+        "var x = new WDerived(); var y = x with { }; return y.Seen + \"|\" + y.D;")]   // "0|5": a synthesized step's level is zeroed before the base's runs
+    public void AWith_CopiesThroughTheRecordsOwnCopyConstructor(string prelude, string statements)
+    {
+        Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
+        ConformanceRunner.AssertStatementsSameAsDotNet(statements, prelude);
+    }
+
     /// <summary>A record of the code engine, which the compiler transpiles whole although its namespace
     /// is the vocabulary's, reached as metadata: its `with` is its twin's own copy.</summary>
     private const string Engine = """

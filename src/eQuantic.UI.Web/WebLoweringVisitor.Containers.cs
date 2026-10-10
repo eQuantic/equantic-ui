@@ -86,24 +86,46 @@ internal sealed partial class WebLoweringVisitor
                 // here — the same tree, two geometries. Pinning the opposite edge gives the box the
                 // definite width its filling child is asking to be 100% of.
                 var (fillsWidth, fillsHeight) = Fills(positioned.Child);
-                var spanX = fillsWidth && positioned.Start is null != positioned.End is null;
-                var spanY = fillsHeight && positioned.Top is null != positioned.Bottom is null;
+                var spanX = fillsWidth && positioned.AnchorsStart != positioned.AnchorsEnd;
+                var spanY = fillsHeight && positioned.AnchorsTop != positioned.AnchorsBottom;
+                // A translate's percentages are of the element's own box. The anchor shrink-wraps
+                // its child, except when both edges of an axis stretch it around a child that does
+                // not fill: then the shift goes on a child-sized wrapper, so -0.5 is half the CHILD,
+                // as Photon moves it.
+                var stretched = (positioned.AnchorsStart && positioned.AnchorsEnd && !fillsWidth)
+                    || (positioned.AnchorsTop && positioned.AnchorsBottom && !fillsHeight);
+                var shift = TokenCss.Shift(positioned.ShiftX, positioned.ShiftY);
                 var anchor = new RealizedElement("div")
                 {
                     Style = new HtmlStyle
                     {
                         Position = Position.Absolute,
-                        Top = positioned.Top is { } top ? TokenCss.Px(top) : spanY ? "0" : null,
-                        Right = positioned.End is { } end ? TokenCss.Px(end) : spanX ? "0" : null,
-                        Bottom = positioned.Bottom is { } bottom ? TokenCss.Px(bottom) : spanY ? "0" : null,
-                        Left = positioned.Start is { } start ? TokenCss.Px(start) : spanX ? "0" : null,
+                        // A point, a fraction of the stack, or both (`calc`); the stack is the
+                        // containing block, so a percentage is of ITS box, as on Photon.
+                        Top = TokenCss.Edge(positioned.Top, positioned.TopFraction) ?? (spanY ? "0" : null),
+                        Right = TokenCss.Edge(positioned.End, positioned.EndFraction) ?? (spanX ? "0" : null),
+                        Bottom = TokenCss.Edge(positioned.Bottom, positioned.BottomFraction) ?? (spanY ? "0" : null),
+                        Left = TokenCss.Edge(positioned.Start, positioned.StartFraction) ?? (spanX ? "0" : null),
+                        Transform = stretched ? null : shift,
                         // Spec S7: explicit stacking WINS; otherwise the child's own depth.
                         ZIndex = (positioned.Layer != 0 ? positioned.Layer : depth).ToString(),
                     },
                 };
                 // The ANCHOR is marked, not what it holds: its offsets came from the same Build.
                 if (unmeasured) MarkUnmeasured(anchor);
-                anchor.Children.Add(lowered);
+                if (stretched && shift is not null)
+                {
+                    var shifted = new RealizedElement("div")
+                    {
+                        Style = new HtmlStyle { Width = fillsWidth ? null : "fit-content", Transform = shift },
+                    };
+                    shifted.Children.Add(lowered);
+                    anchor.Children.Add(shifted);
+                }
+                else
+                {
+                    anchor.Children.Add(lowered);
+                }
                 element.Children.Add(anchor);
             }
             else
@@ -1017,11 +1039,15 @@ internal sealed partial class WebLoweringVisitor
         return wrapper;
     }
 
-    /// <summary>Spec S4: CSS Grid — tracks as "px | Nfr | auto", the gap pair, spans per child.</summary>
+    /// <summary>Spec S4: CSS Grid — tracks as "px | Nfr | auto" or one auto-fill repeat, the gap pair, spans per child.</summary>
     private HtmlElement LowerGrid(Grid grid)
     {
         var tracks = string.Join(" ", grid.Columns.Select(t => t.Kind switch
         {
+            // An auto-fill track is the whole list: as many columns as fit the minimum, sharing the rest.
+            // `min(…, 100%)`: in a grid narrower than one track the column is the grid's width, as
+            // Photon draws it, rather than the minimum overflowing it.
+            _ when t.Repeats => $"repeat(auto-fill, minmax(min({TokenCss.Px(t.Min)}, 100%), {TokenCss.Number(t.Value)}fr))",
             SizeKind.Fixed => TokenCss.Px(t.Value),
             SizeKind.Fill => $"{TokenCss.Number(t.Value)}fr",
             _ => "auto",
