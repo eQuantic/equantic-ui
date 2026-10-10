@@ -1,5 +1,7 @@
 using eQuantic.UI.Compiler.Services;
 using FluentAssertions;
+using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
 using Xunit;
 
 namespace eQuantic.UI.Compiler.Tests;
@@ -36,6 +38,40 @@ public class TypeImportScopeTests
         room.TypeScript.Should().NotContain("from \"./List\"").And.NotContain("from \"./Math\"");
     }
 
+    /// <summary>
+    /// A vocabulary type the runtime ships no twin for is refused however it is named (Copilot's second
+    /// review of #705). <c>CurveEvaluator</c> lives in a namespace the runtime provides, so its name
+    /// routed to <c>@equantic/runtime</c> written bare or qualified, and through an alias once this change
+    /// resolved aliases, and the module died at load on an export the bundle has not. It carries
+    /// <c>[ServerOnly]</c> now, as <c>RRect</c> and <c>Matrix2D</c> do, so each spelling fails the build
+    /// where it is written instead.
+    /// </summary>
+    [Theory]
+    [InlineData("CurveEvaluator.Ease(curve, t)")]
+    [InlineData("eQuantic.UI.Primitives.CurveEvaluator.Ease(curve, t)")]
+    [InlineData("Ev.Ease(curve, t)")]
+    public void AVocabularyTypeTheRuntimeShipsNoTwinFor_IsRefusedHoweverItIsNamed(string call)
+    {
+        var source = $$"""
+            using eQuantic.UI.Primitives;
+            using Ev = eQuantic.UI.Primitives.CurveEvaluator;
+
+            namespace App;
+
+            public static class Curves
+            {
+                public static float At(Curve curve, float t) => {{call}};
+            }
+            """;
+
+        var curves = CompileWithVocabulary(source, "Curves");
+
+        curves.Errors.Should().Contain(error => error.Code == "EQ2010",
+            "the runtime exports no CurveEvaluator, so naming it is refused at the build");
+        curves.TypeScript.Should().NotMatchRegex(@"import \{[^}]*\bCurveEvaluator\b",
+            "and no module imports a name the bundle has not");
+    }
+
     /// <summary>A file compiled as eqc compiles a project's: scanned by the dependency resolver first, whose
     /// module set decides every import, then compiled with it.</summary>
     private static CompilationResult CompileScanned(string source, string component)
@@ -55,5 +91,23 @@ public class TypeImportScopeTests
         {
             Directory.Delete(dir, recursive: true);
         }
+    }
+
+    /// <summary>A file compiled against the real vocabulary assembly, which the scanned compile above does
+    /// not bind: a Primitives type has to resolve to its symbol for the routing to be asked at all.</summary>
+    private static CompilationResult CompileWithVocabulary(string source, string component)
+    {
+        var path = Path.Combine(Path.GetTempPath(), "eq-imports-vocabulary", "Probe.cs");
+        var references = ((string)AppContext.GetData("TRUSTED_PLATFORM_ASSEMBLIES")!)
+            .Split(Path.PathSeparator)
+            .Where(reference => reference.EndsWith(".dll", StringComparison.OrdinalIgnoreCase))
+            .Select(reference => (MetadataReference)TestReferences.Of(reference))
+            .Append(TestReferences.Of(typeof(eQuantic.UI.Primitives.Curve).Assembly.Location));
+        var compilation = CSharpCompilation.Create("VocabularyProbe",
+            [CSharpSyntaxTree.ParseText(source, path: path)], references,
+            new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
+        var compiler = new ComponentCompiler { SymbolsAreAuthoritative = false };
+        compiler.SetProjectCompilation(compilation);
+        return compiler.CompileSource(source, path).Single(result => result.ComponentName == component);
     }
 }
