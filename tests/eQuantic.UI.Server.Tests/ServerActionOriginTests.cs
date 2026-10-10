@@ -9,6 +9,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using Xunit;
@@ -43,6 +44,18 @@ public class ServerActionOriginTests
         public override VisualNode Build(ComponentContext context) => new Column(gap: 0);
     }
 
+    private sealed class RecordingLogger : ILogger<ServerActionsMiddleware>
+    {
+        public List<string> Messages { get; } = [];
+
+        public IDisposable? BeginScope<TState>(TState state) where TState : notnull => null;
+
+        public bool IsEnabled(LogLevel logLevel) => true;
+
+        public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception? exception,
+            Func<TState, Exception?, string> formatter) => Messages.Add(formatter(state, exception));
+    }
+
     private sealed class AlwaysAllowed : IServerActionAuthorizationService
     {
         public Task<ServerActionAuthorizationResult> AuthorizeAsync(
@@ -56,6 +69,9 @@ public class ServerActionOriginTests
     [InlineData("https://app.example:443", "app.example")]
     [InlineData("https://app.example:8443", "app.example:8443")]
     [InlineData("http://app.example", "app.example")]
+    [InlineData("https://[::1]:8443", "[::1]:8443")]
+    [InlineData("http://[::1]", "[::1]")]
+    [InlineData("https://[::1]:8443", "[0:0:0:0:0:0:0:1]:8443")]
     public async Task TheAppsOwnPage_Runs(string origin, string host)
     {
         var (status, calls) = await Invoke(host, ("Origin", origin));
@@ -72,6 +88,15 @@ public class ServerActionOriginTests
     public async Task AnotherSite_IsRefused_AndTheActionNeverRuns(string origin)
     {
         var (status, calls) = await Invoke("app.example", ("Origin", origin));
+
+        status.Should().Be(StatusCodes.Status403Forbidden);
+        calls.Should().Be(0);
+    }
+
+    [Fact]
+    public async Task AnotherIPv6Address_IsRefused()
+    {
+        var (status, calls) = await Invoke("[::1]:8443", ("Origin", "https://[::2]:8443"));
 
         status.Should().Be(StatusCodes.Status403Forbidden);
         calls.Should().Be(0);
@@ -174,26 +199,71 @@ public class ServerActionOriginTests
         await app.StartAsync();
         var client = app.GetTestClient();
 
-        async Task<HttpStatusCode> Post(string origin)
-        {
-            using var request = new HttpRequestMessage(HttpMethod.Post, "/api/_equantic/actions")
-            {
-                Content = new StringContent(Body, Encoding.UTF8, "text/plain"),
-            };
-            request.Headers.Add("Origin", origin);
-            return (await client.SendAsync(request)).StatusCode;
-        }
-
-        (await Post("https://evil.example")).Should().Be(HttpStatusCode.Forbidden);
-        (await Post("https://admin.example")).Should().Be(HttpStatusCode.OK);
+        (await PostFrom(client, "https://evil.example")).Should().Be(HttpStatusCode.Forbidden);
+        (await PostFrom(client, "https://admin.example")).Should().Be(HttpStatusCode.OK);
         app.Services.GetRequiredService<ActionLog>().Calls.Should().Be(1);
+    }
+
+    [Fact]
+    public async Task AReloadedConfiguration_ChangesTheAllowedOrigins_WithoutARestart()
+    {
+        var builder = WebApplication.CreateBuilder();
+        builder.WebHost.UseTestServer();
+        builder.Configuration.AddInMemoryCollection(new Dictionary<string, string?>
+        {
+            [$"{ServerActionsOptions.SectionName}:AllowedOrigins:0"] = "https://staging.example",
+        });
+        builder.Services.AddSingleton<ActionLog>();
+        builder.Services.AddSingleton<IServerActionAuthorizationService, AlwaysAllowed>();
+        builder.Services.AddUI(options => options.ScanAssembly(typeof(ServerActionOriginTests).Assembly));
+        await using var app = builder.Build();
+        app.UseServerActions();
+        await app.StartAsync();
+        var client = app.GetTestClient();
+        (await PostFrom(client, "https://admin.example")).Should().Be(HttpStatusCode.Forbidden);
+
+        app.Configuration[$"{ServerActionsOptions.SectionName}:AllowedOrigins:0"] = "https://admin.example";
+        ((IConfigurationRoot)app.Configuration).Reload();
+
+        (await PostFrom(client, "https://admin.example")).Should().Be(HttpStatusCode.OK);
+        (await PostFrom(client, "https://staging.example")).Should().Be(HttpStatusCode.Forbidden);
+    }
+
+    [Fact]
+    public async Task ARefusal_LogsTheRequestsHeadersOnOneLine()
+    {
+        // The headers are the request's own text: a CR or an LF in them would start a line of its own
+        // in a plain-text log.
+        var logger = new RecordingLogger();
+
+        var (status, _) = await Invoke("app.example", [], logger,
+            [("Origin", "https://evil.example\r\nForged entry"), ("Sec-Fetch-Site", "cross-site\nForged")]);
+
+        status.Should().Be(StatusCodes.Status403Forbidden);
+        logger.Messages.Should().ContainSingle()
+            .Which.Should().Contain("https://evil.exampleForged entry").And.NotContainAny("\r", "\n");
+    }
+
+    private static async Task<HttpStatusCode> PostFrom(HttpClient client, string origin)
+    {
+        using var request = new HttpRequestMessage(HttpMethod.Post, "/api/_equantic/actions")
+        {
+            Content = new StringContent(Body, Encoding.UTF8, "text/plain"),
+        };
+        request.Headers.Add("Origin", origin);
+        return (await client.SendAsync(request)).StatusCode;
     }
 
     private static Task<(int Status, int Calls)> Invoke(string host, params (string Name, string Value)[] headers) =>
         Invoke(host, [], headers);
 
+    private static Task<(int Status, int Calls)> Invoke(
+        string host, string[] allowedOrigins, params (string Name, string Value)[] headers) =>
+        Invoke(host, allowedOrigins, NullLogger<ServerActionsMiddleware>.Instance, headers);
+
     private static async Task<(int Status, int Calls)> Invoke(
-        string host, string[] allowedOrigins, params (string Name, string Value)[] headers)
+        string host, string[] allowedOrigins, ILogger<ServerActionsMiddleware> logger,
+        (string Name, string Value)[] headers)
     {
         var registry = new ServerActionRegistry();
         registry.ScanAssembly(typeof(ServerActionOriginTests).Assembly);
@@ -209,7 +279,7 @@ public class ServerActionOriginTests
             authorizationService: new AlwaysAllowed(),
             options: new UIOptions(),
             actions: new FixedOptions<ServerActionsOptions>(actions),
-            logger: NullLogger<ServerActionsMiddleware>.Instance);
+            logger: logger);
 
         using var scope = root.CreateScope();
         var context = new DefaultHttpContext { RequestServices = scope.ServiceProvider };
