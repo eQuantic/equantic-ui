@@ -72,6 +72,8 @@ public class ServerActionOriginTests
     [InlineData("https://[::1]:8443", "[::1]:8443")]
     [InlineData("http://[::1]", "[::1]")]
     [InlineData("https://[::1]:8443", "[0:0:0:0:0:0:0:1]:8443")]
+    [InlineData("https://app.example", "app.example:443")]
+    [InlineData("http://app.example:443", "app.example:443")]
     public async Task TheAppsOwnPage_Runs(string origin, string host)
     {
         var (status, calls) = await Invoke(host, ("Origin", origin));
@@ -88,6 +90,20 @@ public class ServerActionOriginTests
     public async Task AnotherSite_IsRefused_AndTheActionNeverRuns(string origin)
     {
         var (status, calls) = await Invoke("app.example", ("Origin", origin));
+
+        status.Should().Be(StatusCodes.Status403Forbidden);
+        calls.Should().Be(0);
+    }
+
+    [Theory]
+    [InlineData("https://app.example", "app.example:80")]
+    [InlineData("http://app.example", "app.example:443")]
+    [InlineData("https://app.example:8443", "app.example")]
+    public async Task TheSameHostOnAnotherPort_IsAnotherSite(string origin, string host)
+    {
+        // A Host that names a port is compared with the origin's own, and one without stands for the
+        // origin scheme's default: https://app.example is not the app at app.example:80.
+        var (status, calls) = await Invoke(host, ("Origin", origin));
 
         status.Should().Be(StatusCodes.Status403Forbidden);
         calls.Should().Be(0);
