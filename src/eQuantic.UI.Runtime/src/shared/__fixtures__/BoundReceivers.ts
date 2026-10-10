@@ -17,7 +17,7 @@ export class BoundReceivers extends StatelessComponent {
         (($0) => ($0._seen = $eq.logic.or($0._seen, distinct > 1)))(this.self());
         let value: any; 
         let count = (($0) => ($0.has(first) ? ((value = $0.get(first)), true) : ((value = 0), false)))(this._counts) ? value : 0;
-        return new Text(`${$eq.num.double(average)} ${$eq.num.double(doubled)} ${sum} ${total} ${first} ${distinct} ${$eq.text.format(this._seen, null)} ${count}`, 'caption');
+        return new Text(`${$eq.text.format(average, null)} ${$eq.text.format(doubled, null)} ${$eq.text.format(sum, null, undefined, undefined, 'int32')} ${$eq.text.format(total, null, undefined, undefined, 'int32')} ${first} ${$eq.text.format(distinct, null, undefined, undefined, 'int32')} ${$eq.text.format(this._seen, null)} ${$eq.text.format(count, null, undefined, undefined, 'int32')}`, 'caption');
     }
 
     items() {
