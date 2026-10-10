@@ -1837,6 +1837,28 @@ record of a release, the wiki's Upgrading page is the distillate.
   under any runner ([#664](https://github.com/eQuantic/equantic-ui/issues/664)).
   Proposed and archived through OpenSpec (`openspec/specs/hot-reload`, `generated-files` and
   `hydration-contract`).
+- **2026-10-07 · A hot reload keeps the page's state**: the reload captured the page's `_state` bag,
+  which no write-once page has, and sent it back through the server-data door, which takes only what
+  the hydration manifest lists, so a page's own fields went back to their initializers on every save:
+  the dashboard's `Count: 3` came back `Count: 0`, under `dotnet run` and under `dotnet watch` alike
+  ([#664](https://github.com/eQuantic/equantic-ui/issues/664)). The page's own fields cross now,
+  without the runtime's beside them, and the reloaded page gets them before it builds, each rebuilt
+  in the shape its initializer gives it: data only, a record and a `long` included, since a
+  controller rebuilt from its JSON came back with maps no map method accepts, as the review before
+  the pull request found. Copilot's first round found four values the reload changed instead of
+  keeping (a NaN back as null, a controller inside a dictionary back as a plain object, the
+  vocabulary's `Point` back at its initializer, a `long[]` back as strings), so each value now crosses
+  with the hydration spec of its runtime type and comes back through `hydrate` as the type it was, or
+  keeps its initializer. The second round found four more (a negative zero back as 0, a record's store
+  back through its setter, `FRec`'s 10 as 20, BigInts handed to a list the edit had made text, and the
+  first render's server adoption writing back a field the replay had refused), so a record crosses as
+  its stores, a value comes back only into the type the reloaded page declares or initializes there,
+  and the server's payload never writes a field the replay decided. The third round found two more:
+  an app's class with an `Equals` override and a `With(...)` of its own passed for a record, so eqc's
+  record and struct twins now say they are one (`static $record`), and a list with a hole or an
+  undefined element, which eqc writes for `Array.Resize` and a vocabulary struct's `default`, came back
+  with nulls, so it keeps its initializer. Proposed and archived through OpenSpec
+  (`openspec/specs/hot-reload`).
 
 - **2026-10-10 · A layout follows its box**: the first external consumer, falei.pt, needed three
   things a fixed point could not say. A `Drawing` takes a `SizeValue` width, so `SizeValue.Fill` draws

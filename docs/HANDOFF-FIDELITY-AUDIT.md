@@ -74,7 +74,7 @@ the pill's 40 down.
 
 - **Component**: `src/eQuantic.UI.Native.Framework/Layout/LayoutEngine.cs`
 - **Handoff**: Positioned(top/end/bottom/start, width?, height?) — inset-anchored children; two opposite insets stretch the child.
-- **Code**: The native MeasureStack never stretches: with both Start and End set, End is discarded (`Start ??` short-circuits) and the child keeps the width it measured intrinsically; same for Top/Bottom (MeasureVisitor.Containers.cs:117-118 MeasureStack). The web realizer DOES honour it — it emits both left and right so CSS spans the box (WebLoweringVisitor.Containers.cs:103-106 LowerStack) — so the same tree has two geometries.
+- **Code**: The native MeasureStack never stretches: with both Start and End set, End is discarded (`Start ??` short-circuits) and the child keeps the width it measured intrinsically; same for Top/Bottom (MeasureVisitor.Containers.cs:96-97 MeasureStack). The web realizer DOES honour it — it emits both left and right so CSS spans the box (WebLoweringVisitor.Containers.cs:96-99 LowerStack) — so the same tree has two geometries.
 - **Evidence**:
 
   ```
