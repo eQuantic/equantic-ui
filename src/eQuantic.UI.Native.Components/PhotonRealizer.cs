@@ -79,8 +79,14 @@ public readonly record struct CursorRegion(Rect Bounds, PointerCursor Cursor);
 
 /// <summary>An editable CODE surface. Like a text region it takes the caret on a click and the keys
 /// that follow, but what those keys mean lives in its controller, so the region only has to carry
-/// the path and the geometry that turns a point into a (line, column).</summary>
-public readonly record struct CodeRegion(Rect Bounds, CodeSurface Surface, string Path);
+/// the path and the geometry that turns a point into a (line, column). <paramref name="Offered"/> is
+/// where what the surface offers at its caret landed (<see cref="CodeSurface.Options"/>), on screen: a
+/// press there that no row of it took is the list's, and never moves the caret under it.
+/// <paramref name="Visible"/> is the part of <paramref name="Bounds"/> the clips around the surface
+/// leave on screen, which is all a press can land on: a long file's surface runs far past the viewport
+/// that shows it. Null where nothing clips it.</summary>
+public readonly record struct CodeRegion(Rect Bounds, CodeSurface Surface, string Path, Rect? Offered = null,
+    Rect? Visible = null);
 
 /// <summary>
 /// One stop on the Tab route. Buttons and fields are different kinds of region and are dispatched

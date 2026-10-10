@@ -16,7 +16,7 @@ import { lowerVisualNode } from './lowering';
 import { setPhotonTheme } from './photon-context';
 import { effectiveStyle } from './style-atomizer';
 import { CodeSurface, Text, type VisualNode } from './vocabulary';
-import { Point, Size } from './value-types';
+import { Point, Size, SizeValue } from './value-types';
 import { CodeEditorController } from './components/CodeEditorController';
 import { CodeGrid } from './components/CodeGrid';
 import { CodePosition } from './components/CodePosition';
@@ -1256,5 +1256,190 @@ describe('the find bar', () => {
       parent.remove();
       resetShortcuts();
     }
+  });
+});
+
+/** Every node under `node` that `test` accepts, in tree order. */
+function nodesWhere(node: HtmlNode, test: (candidate: HtmlNode) => boolean): HtmlNode[] {
+  const found: HtmlNode[] = test(node) ? [node] : [];
+  for (const child of node.children) found.push(...nodesWhere(child, test));
+  return found;
+}
+
+/**
+ * The completion list (#297) on the web, through the transpiled CodeEditor; the C# twins are
+ * CodeEditorCompletionTests, on Photon. The list is the code input's listbox, its rows are options
+ * the keyboard never lands on, and a press on one accepts it while the input keeps the keyboard.
+ */
+describe('the completion list', () => {
+  /** An editor holding `code` and nineteen empty lines under it (room for a page of rows under
+   * its second line), completing from the document's words, with `typed` typed on the second line
+   * as a browser types it: a `beforeinput` per character on the input. */
+  async function typedInto(code: string, typed: string) {
+    const { materializeTheme } = await import('./theme-bridge');
+    const photonData = (await import('./theme-bridge.photon.json')).default;
+    const { CodeEditor } = await import('./components/CodeEditor');
+    const { CodeWordCompletionProvider } = await import('./components/CodeWordCompletionProvider');
+    const theme = materializeTheme(photonData as never);
+    setPhotonTheme(theme);
+    const context = {
+      theme,
+      textPrimary: theme.textPrimary,
+      density: 'comfortable',
+      typeScale: 1,
+      measureText: (text: string) => text.length * 7,
+      monoAdvance: () => 7,
+    };
+    const component = new CodeEditor(code + '\n'.repeat(19), 'csharp');
+    component.completions = [new CodeWordCompletionProvider()];
+    const lower = () => lowerVisualNode(component.build(context as never) as never, context as never);
+    const editor = component.editor;
+    editor.selection = new CodeRange(new CodePosition(1, 0));
+    const input = nodesWhere(lower(), (node) => node.tag === 'textarea')[0];
+    for (const c of typed) {
+      (input.events['beforeinput'] as unknown as (event: unknown) => void)({
+        inputType: 'insertText',
+        data: c,
+        target: { value: '' },
+        preventDefault: () => {},
+      });
+    }
+    // The providers answer through a promise, as a language server does.
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    return { component, editor, lower };
+  }
+
+  const listOf = (lowered: HtmlNode) => nodesWhere(lowered, (node) => node.attributes['role'] === 'listbox')[0];
+  const optionsOf = (lowered: HtmlNode) => nodesWhere(lowered, (node) => node.attributes['role'] === 'option');
+  const inputIn = (lowered: HtmlNode) => nodesWhere(lowered, (node) => node.tag === 'textarea')[0];
+
+  it("is the code input's listbox, and the input points at the selected option", async () => {
+    const { lower } = await typedInto('var Column = 1; var ColorToken = 2;', 'Co');
+
+    const lowered = lower();
+    const list = listOf(lowered);
+    expect(list, 'a word typed opens the list').toBeDefined();
+    const options = optionsOf(list);
+    expect(options.map((option) => option.attributes['aria-label'])).toEqual(['ColorToken', 'Column']);
+    const input = inputIn(lowered);
+    expect(input.attributes['aria-autocomplete']).toBe('list');
+    expect(input.attributes['aria-expanded'], 'ARIA allows it on a combobox, not on a textbox').toBeUndefined();
+    expect(input.attributes['aria-controls']).toBe(list.attributes['id']);
+    expect(input.attributes['aria-activedescendant']).toBe(options[0].attributes['id']);
+    expect(options[0].attributes['aria-selected']).toBe('true');
+    expect(options[1].attributes['aria-selected']).toBe('false');
+    expect(options.every((option) => option.attributes['tabindex'] === '-1'), 'Tab never lands on a row').toBe(true);
+  });
+
+  it('follows the arrows: the input points at the option the keyboard is on', async () => {
+    const { lower } = await typedInto('var Column = 1; var ColorToken = 2;', 'Co');
+
+    let prevented = false;
+    (inputIn(lower()).events['keydown'] as unknown as (event: unknown) => void)({
+      key: 'ArrowDown',
+      shiftKey: false,
+      altKey: false,
+      metaKey: false,
+      ctrlKey: false,
+      isComposing: false,
+      keyCode: 0,
+      target: { value: '' },
+      preventDefault: () => {
+        prevented = true;
+      },
+    });
+
+    expect(prevented, 'the list claims the arrow, so the caret does not move').toBe(true);
+    const lowered = lower();
+    expect(inputIn(lowered).attributes['aria-activedescendant']).toBe(optionsOf(lowered)[1].attributes['id']);
+  });
+
+  it('a press on a row accepts it, and the input keeps the keyboard', async () => {
+    const { editor, lower } = await typedInto('var Column = 1; var ColorToken = 2;', 'Co');
+    const parent = document.createElement('div');
+    document.body.appendChild(parent);
+    try {
+      new Reconciler().reconcile(parent, null, lower());
+      const input = parent.querySelector('textarea')!;
+      input.focus();
+      const row = parent.querySelectorAll('[role="option"]')[1] as HTMLElement;
+
+      const down = new MouseEvent('mousedown', { bubbles: true, cancelable: true });
+      row.dispatchEvent(down);
+      expect(down.defaultPrevented, 'the browser would move the focus to the row').toBe(true);
+      expect(document.activeElement).toBe(input);
+      expect(editor.caret, 'the code under the list was not pressed').toEqual({ line: 1, column: 2 });
+
+      row.click();
+
+      expect(editor.document.line(1)).toBe('Column');
+      expect(editor.caret).toEqual({ line: 1, column: 6 });
+      expect(document.activeElement).toBe(input);
+    } finally {
+      parent.remove();
+    }
+  });
+
+  it('a press on the list that no row takes stays the list’s, and moves no caret', async () => {
+    const { editor, lower } = await typedInto('var Column = 1; var ColorToken = 2;', 'Co');
+
+    const list = listOf(lower());
+    let stopped = false;
+    let prevented = false;
+    const event = {
+      type: 'mousedown',
+      stopPropagation: () => {
+        stopped = true;
+      },
+      preventDefault: () => {
+        prevented = true;
+      },
+    };
+    (list.events['pointerdown'] as unknown as (event: unknown) => void)({ ...event, type: 'pointerdown' });
+    (list.events['mousedown'] as unknown as (event: unknown) => void)(event);
+
+    expect(stopped, 'the surface around the list never hears it').toBe(true);
+    expect(prevented, 'and the input keeps the keyboard').toBe(true);
+    expect(editor.caret).toEqual({ line: 1, column: 2 });
+  });
+});
+
+/**
+ * A press under a bounded editor's code (#599), on the web; the C# twins are in
+ * CodeEditorComponentTests, on Photon. The code's box was as tall as the file, so the room under a
+ * short file was the scroll view's and a press there moved nothing.
+ */
+describe('a press under the code', () => {
+  it('is the end of the document, wherever across the line it lands', () => {
+    const { editor, lowered } = surfaceFor('one\ntwo three');
+
+    pressAt(lowered, [12 + COLUMN, 12 + 10 * LINE]);
+
+    expect(editor.caret).toEqual({ line: 1, column: 9 });
+  });
+
+  it("lands in the code, since a bounded editor's code is as tall as its viewport", async () => {
+    const { materializeTheme } = await import('./theme-bridge');
+    const photonData = (await import('./theme-bridge.photon.json')).default;
+    const { CodeEditor } = await import('./components/CodeEditor');
+    const theme = materializeTheme(photonData as never);
+    setPhotonTheme(theme);
+    const context = {
+      theme,
+      textPrimary: theme.textPrimary,
+      density: 'comfortable',
+      typeScale: 1,
+      measureText: (text: string) => text.length * 7,
+      monoAdvance: () => 7,
+    };
+    const component = new CodeEditor('one\ntwo three', 'csharp');
+    component.height = SizeValue.fill;
+    component.build(context as never);
+    // What the vertical scroll view reports once it is laid out: the pane is 400 tall.
+    (component as unknown as { _viewport: number })._viewport = 400;
+
+    const lowered = lowerVisualNode(component.build(context as never) as never, context as never);
+
+    expect(nodesWhere(lowered, (node) => effectiveStyle(node).includes('min-height: 400px'))).toHaveLength(1);
   });
 });
