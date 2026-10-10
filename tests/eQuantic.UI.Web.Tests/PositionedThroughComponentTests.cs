@@ -137,4 +137,66 @@ public class PositionedSpanTests
 
         Css(stack).Should().Contain("left:8px").And.Contain("right:8px");
     }
+
+    /// <summary>
+    /// An edge is a point, a fraction of the stack, or both added; the shift is a fraction of the
+    /// child's own box — a tooltip centred 16 above a point at 50% / 25% of a map.
+    /// </summary>
+    [Fact]
+    public void FractionsOfTheStackAndAShiftOfTheChild_LowerToPercentagesCalcAndATranslate()
+    {
+        var stack = new Stack { Width = SizeValue.Fill };
+        stack.Add(new Positioned(new Primitives.Box(new BoxStyle { Width = 100, Height = 30 }), top: -16)
+        {
+            StartFraction = 0.5f,
+            TopFraction = 0.25f,
+            ShiftX = -0.5f,
+            ShiftY = -1f,
+        });
+
+        Css(stack).Should().Contain("left:50%")
+            .And.Contain("top:calc(25% - 16px)")
+            .And.Contain("transform:translate(-50%, -100%)");
+    }
+
+    /// <summary>
+    /// A drawing at its parent's width fills, through a pressable too: its anchor pins the opposite
+    /// edge, so `width: 100%` is the room between the two (the TS `fills` twin, #648 review).
+    /// </summary>
+    [Fact]
+    public void AFillingDrawing_ThroughAPressable_PinsTheOppositeEdge()
+    {
+        var art = new VectorDrawing(0, 0, 10, 10, [new VectorShape("M0 0L10 0L10 10Z", VectorPaint.Solid(Color.FromRgb(0, 0, 0)))]);
+        var stack = new Stack { Width = SizeValue.Fill };
+        stack.Add(new Positioned(new Pressable(new Drawing(art, SizeValue.Fill), () => { })) { StartFraction = 0.5f });
+
+        var css = Css(stack);
+        css.Should().Contain("left:50%").And.Contain("right:0");
+    }
+
+    /// <summary>
+    /// Both edges stretch the anchor around a child that does not fill, so the shift goes on a
+    /// child-sized wrapper: -0.5 is half the child, as Photon moves it (#648 review).
+    /// </summary>
+    [Fact]
+    public void AShiftInAStretchedAnchor_MovesByTheChild()
+    {
+        var stack = new Stack { Width = SizeValue.Fill };
+        stack.Add(new Positioned(new Primitives.Box(new BoxStyle { Width = 100, Height = 30 }), start: 10, end: 10) { ShiftX = -0.5f });
+
+        var css = Css(stack);
+        css.Should().Contain("width:fit-content").And.Contain("transform:translate(-50%, 0)");
+    }
+
+    /// <summary>A fraction alone on the end edge, and no shift means no transform.</summary>
+    [Fact]
+    public void AnEndFractionAlone_IsAPercentage_AndNoShiftIsNoTransform()
+    {
+        var stack = new Stack { Width = SizeValue.Fill };
+        stack.Add(new Positioned(new Primitives.Box(new BoxStyle { Width = 40, Height = 20 })) { EndFraction = 0.1f });
+
+        var css = Css(stack);
+        css.Should().Contain("right:10%");
+        css.Should().NotContain("translate(");
+    }
 }
