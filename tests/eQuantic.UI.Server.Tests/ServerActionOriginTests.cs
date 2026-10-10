@@ -44,6 +44,28 @@ public class ServerActionOriginTests
         public override VisualNode Build(ComponentContext context) => new Column(gap: 0);
     }
 
+    /// <summary>
+    /// A monitor whose configuration reloads just as a listener subscribes, before that listener is in
+    /// place: what a reload between reading the value and subscribing looks like from the subscriber.
+    /// </summary>
+    private sealed class ReloadAsItSubscribes(ServerActionsOptions first, ServerActionsOptions reloaded)
+        : IOptionsMonitor<ServerActionsOptions>
+    {
+        private readonly List<Action<ServerActionsOptions, string?>> _listeners = [];
+
+        public ServerActionsOptions CurrentValue { get; private set; } = first;
+
+        public ServerActionsOptions Get(string? name) => CurrentValue;
+
+        public IDisposable? OnChange(Action<ServerActionsOptions, string?> listener)
+        {
+            CurrentValue = reloaded;
+            foreach (var heard in _listeners.ToArray()) heard(reloaded, null);
+            _listeners.Add(listener);
+            return null;
+        }
+    }
+
     private sealed class RecordingLogger : ILogger<ServerActionsMiddleware>
     {
         public List<string> Messages { get; } = [];
@@ -245,6 +267,23 @@ public class ServerActionOriginTests
         (await PostFrom(client, "https://staging.example")).Should().Be(HttpStatusCode.Forbidden);
     }
 
+    /// <summary>
+    /// A reload in the window between reading the allowed origins and subscribing to their changes is
+    /// not lost (Copilot's third review of #737): the middleware subscribes first and reads the latest
+    /// value after, so it ends on the reloaded list rather than the one a read before the reload saw.
+    /// </summary>
+    [Fact]
+    public async Task AReloadAsTheMiddlewareSubscribes_IsNotLost()
+    {
+        var actions = new ReloadAsItSubscribes(Allowing(), Allowing("https://admin.example"));
+
+        var (status, calls) = await Invoke("api.example", actions, NullLogger<ServerActionsMiddleware>.Instance,
+            [("Origin", "https://admin.example")]);
+
+        status.Should().Be(StatusCodes.Status200OK);
+        calls.Should().Be(1);
+    }
+
     [Fact]
     public async Task ARefusal_LogsTheRequestsHeadersOnOneLine()
     {
@@ -277,16 +316,26 @@ public class ServerActionOriginTests
         string host, string[] allowedOrigins, params (string Name, string Value)[] headers) =>
         Invoke(host, allowedOrigins, NullLogger<ServerActionsMiddleware>.Instance, headers);
 
-    private static async Task<(int Status, int Calls)> Invoke(
+    private static Task<(int Status, int Calls)> Invoke(
         string host, string[] allowedOrigins, ILogger<ServerActionsMiddleware> logger,
+        (string Name, string Value)[] headers) =>
+        Invoke(host, new FixedOptions<ServerActionsOptions>(Allowing(allowedOrigins)), logger, headers);
+
+    private static ServerActionsOptions Allowing(params string[] origins)
+    {
+        var actions = new ServerActionsOptions();
+        foreach (var origin in origins) actions.AllowedOrigins.Add(origin);
+        return actions;
+    }
+
+    private static async Task<(int Status, int Calls)> Invoke(
+        string host, IOptionsMonitor<ServerActionsOptions> actions, ILogger<ServerActionsMiddleware> logger,
         (string Name, string Value)[] headers)
     {
         var registry = new ServerActionRegistry();
         registry.ScanAssembly(typeof(ServerActionOriginTests).Assembly);
         var log = new ActionLog();
         var root = new ServiceCollection().AddSingleton(log).BuildServiceProvider(validateScopes: true);
-        var actions = new ServerActionsOptions();
-        foreach (var origin in allowedOrigins) actions.AllowedOrigins.Add(origin);
 
         var middleware = new ServerActionsMiddleware(
             next: _ => Task.CompletedTask,
@@ -294,7 +343,7 @@ public class ServerActionOriginTests
             serviceProvider: root,
             authorizationService: new AlwaysAllowed(),
             options: new UIOptions(),
-            actions: new FixedOptions<ServerActionsOptions>(actions),
+            actions: actions,
             logger: logger);
 
         using var scope = root.CreateScope();
