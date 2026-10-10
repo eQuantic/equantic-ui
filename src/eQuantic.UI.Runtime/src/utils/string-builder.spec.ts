@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest';
+import { is } from './exceptions';
 import { StringBuilder, stringBuilder } from './string-builder';
 
 describe('StringBuilder — .NET-compat', () => {
@@ -266,3 +267,87 @@ describe('StringBuilder — capacity, indexer, length, equality and copy', () =>
   });
 });
 
+/** What #679's second review and the measurements around it found on .NET 10. */
+describe('StringBuilder — the appends .NET makes of several, and the longest string a browser holds', () => {
+  const x = (n: number) => 'x'.repeat(n);
+  const refusal = (act: () => unknown): string => {
+    try {
+      act();
+      return 'no throw';
+    } catch (e) {
+      return (e as Error).message;
+    }
+  };
+
+  it('appends a line, an aligned hole and another builder as .NET does, each append on its own', () => {
+    expect(stringBuilder().appendLine(x(100)).capacity).toBe(200);
+    const line = stringBuilder(4, 4);
+    expect(refusal(() => line.appendLine('abcd'))).toBe(
+      "The length cannot be greater than the capacity. (Parameter 'valueCount')",
+    );
+    expect(line.toString()).toBe('abcd');
+    const aligned = stringBuilder().append('[').appendAligned('y', 3).append('][').appendAligned('y', -3).append(']');
+    expect(aligned.toString()).toBe('[  y][y  ]');
+    const over = stringBuilder(16, 20).append(x(17));
+    expect(refusal(() => over.appendBuilder(stringBuilder('yyyy')))).toBe(
+      "Capacity exceeds maximum capacity. (Parameter 'Capacity')",
+    );
+    expect([over.length, over.append('yyyy').length]).toEqual([17, 21]);
+    const self = stringBuilder(2, 3).append('ab');
+    expect(refusal(() => self.appendBuilder(self))).toBe(
+      "The length cannot be greater than the capacity. (Parameter 'valueCount')",
+    );
+  });
+
+  it('keeps the chunks a Replace past the maximum replaced first', () => {
+    const b = stringBuilder(16, 40)
+      .append('a' + '-'.repeat(15))
+      .append('a' + '-'.repeat(15));
+    expect(refusal(() => b.replace('a', 'aaaaaa'))).toBe(
+      "capacity was less than the current size. (Parameter 'requiredLength')",
+    );
+    expect([b.toString(), b.capacity]).toEqual(['aaaaaa' + '-'.repeat(15) + 'a' + '-'.repeat(15), 37]);
+  });
+
+  it("is out of memory where the browser's string cannot hold the text, and leaves its chunks as they were", () => {
+    // Doubling makes a rope, which an engine lays out only when it is read, so a text as long as the
+    // engine's longest string costs nothing here, and that longest one is found by halving: 2^29 - 24
+    // characters in V8, 2^31 - 1 in JavaScriptCore, each shorter than what .NET holds. The first append
+    // reaches it and opens a chunk; the second fits that chunk, and the text it makes is a RangeError.
+    const rope = (length: number): string => {
+      let text = '';
+      let piece = 'x';
+      for (let bit = 1; ; bit *= 2) {
+        if (Math.floor(length / bit) % 2 === 1) text += piece;
+        if (bit * 2 > length) return text;
+        piece += piece;
+      }
+    };
+    const holds = (length: number): boolean => {
+      try {
+        return rope(length).length === length;
+      } catch (e) {
+        if (e instanceof RangeError) return false;
+        throw e;
+      }
+    };
+    let longest = 1;
+    for (let past = 2 ** 31; past - longest > 1; ) {
+      const middle = Math.floor((longest + past) / 2);
+      if (holds(middle)) longest = middle;
+      else past = middle;
+    }
+    // .NET allocates the first chunk whole, so it is at most an array's longest length.
+    const b = stringBuilder(rope(Math.min(longest - 1, 0x7fffffc7))).append('y');
+    const before = [b.length, b.capacity];
+    let thrown: unknown = null;
+    try {
+      b.append(x(5000));
+    } catch (e) {
+      thrown = e;
+    }
+    expect(is(thrown, 'System.OutOfMemoryException')).toBe(true);
+    expect((thrown as Error).message).toBe('Insufficient memory to continue the execution of the program.');
+    expect([b.length, b.capacity]).toEqual(before);
+  });
+});

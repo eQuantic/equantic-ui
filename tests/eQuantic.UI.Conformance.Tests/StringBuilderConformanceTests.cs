@@ -175,6 +175,50 @@ public class StringBuilderConformanceTests
         ConformanceRunner.AssertStatementsSameAsDotNet(statements);
     }
 
+    /// <summary>
+    /// What #679's second review and the measurements around it found on .NET 10: a call that names its
+    /// arguments binds each to its parameter, evaluated in the order written; an interpolated Append or
+    /// AppendLine appends each part in turn, so a hole that reads the builder sees the parts before it,
+    /// each part grows the chunks and a refusal keeps the parts before it; AppendLine appends the line's
+    /// end on its own; Append(StringBuilder) checks the maximum before it copies, where Append(object)
+    /// holding a builder is a string's append; and a Replace past the maximum keeps the chunks it
+    /// replaced first.
+    /// </summary>
+    [SkippableTheory]
+    [InlineData("var a = new[] { '-', '-', '-', '-' }; var log = new List<int>(); int L(int v) { log.Add(v); return v; } new StringBuilder(\"12\").CopyTo(count: L(2), destination: a, destinationIndex: L(1), sourceIndex: L(0)); return new string(a) + \",\" + string.Join(\"\", log);")] // "-12-,210"
+    [InlineData("var b = new StringBuilder(capacity: 50, value: \"ab\"); return b + \",\" + b.Capacity;")] // "ab,50"
+    [InlineData("var b = new StringBuilder(\"abc\"); b.Insert(value: \"x\", index: 1).Append(count: 1, startIndex: 1, value: \"yz\").Replace(newValue: \"B\", oldValue: \"b\").Remove(length: 1, startIndex: 0); return b + \",\" + b.ToString(length: 2, startIndex: 1);")] // "xBcz,Bc"
+    [InlineData("var b = new StringBuilder(); b.Append($\"{b.Length}{b.Length}-{b.Length}\"); return b.ToString();")] // "01-3"
+    [InlineData("var b = new StringBuilder(); b.Append($\"{b.Length}\" + $\"{b.Length}\"); b.Append(System.Globalization.CultureInfo.CurrentCulture, $\"{b.Length}\"); return b.ToString();")] // "012"
+    [InlineData("var s = new string('x', 100); var y = \"y\"; return new StringBuilder().Append($\"{s}{y}\").Capacity;")] // 200
+    [InlineData("var s = new string('x', 100); var y = \"y\"; return new StringBuilder().AppendLine($\"{s}{y}\").Capacity;")] // 200, whatever the host's newline
+    [InlineData("string n = null; var y = \"y\"; var b = new StringBuilder(); b.Append($\"[{n,4}][{n,-4}][{y,3}][{y,-3}][{b.Length,3}]\"); return b + \",\" + b.Capacity;")] // "[    ][    ][  y][y  ][ 23],32"
+    [InlineData("var cd = \"cd\"; var b = new StringBuilder(3, 3); try { b.Append($\"ab{cd}\"); return \"no\"; } catch (ArgumentOutOfRangeException e) { return b + \",\" + e.ParamName; }")] // "ab,valueCount"
+    [InlineData("return new StringBuilder().AppendLine(new string('x', 100)).Capacity;")] // 200
+    [InlineData("var b = new StringBuilder(4, 4); try { b.AppendLine(\"abcd\"); return \"no\"; } catch (ArgumentOutOfRangeException e) { return b + \",\" + e.ParamName; }")] // "abcd,valueCount"
+    [InlineData("var b = new StringBuilder(16, 20).Append(new string('x', 17)); try { b.Append(new StringBuilder(\"yyyy\")); return \"no\"; } catch (ArgumentOutOfRangeException e) { return b.Length + \",\" + e.Message; }")] // "17,Capacity exceeds maximum capacity. (Parameter 'Capacity')"
+    [InlineData("var b = new StringBuilder(16, 20).Append(new string('x', 17)); object o = new StringBuilder(\"yyyy\"); return b.Append(o).Length;")] // 21
+    [InlineData("var b = new StringBuilder(2, 3).Append(\"ab\"); try { b.Append(b); return \"no\"; } catch (ArgumentOutOfRangeException e) { return e.ParamName; }")] // "valueCount"
+    [InlineData("var b = new StringBuilder(16, 40); b.Append(\"a\" + new string('-', 15)); b.Append(\"a\" + new string('-', 15)); try { b.Replace(\"a\", \"aaaaaa\"); return \"no\"; } catch (ArgumentOutOfRangeException e) { return b + \",\" + b.Capacity + \",\" + e.ParamName; }")] // "aaaaaa---------------a---------------,37,requiredLength"
+    public void WhatTheReviewMeasured_AnswersAsDotNet(string statements)
+    {
+        Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
+        ConformanceRunner.AssertStatementsSameAsDotNet(statements);
+    }
+
+    /// <summary>A hole of an interpolated append prints as a plain interpolation's does: an enum as its
+    /// member name, a bool as True, a float as its own digits and a double in .NET's notation. Each
+    /// reached the builder as the browser holds it, a camelCase key or a JavaScript number.</summary>
+    [SkippableFact]
+    public void AnInterpolatedAppendsHole_PrintsAsDotNet()
+    {
+        Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
+        ConformanceRunner.AssertStatementsSameAsDotNet(
+            "var b = new StringBuilder(); var tone = Tone.Warm; var flag = true; var f = 0.1f; var d = 1e21; "
+            + "b.Append($\"{tone}|{flag}|{f}|{d}\").AppendLine($\"|{tone}\"); return b.ToString().TrimEnd();", // "Warm|True|0.1|1E+21|Warm"
+            "public enum Tone { Warm, Cool }");
+    }
+
     /// <summary>The refusals that write their actual value on a line of their own.</summary>
     [SkippableTheory]
     [InlineData("var b = new StringBuilder(\"12\"); try { b.Length = -1; return \"no\"; } catch (ArgumentOutOfRangeException e) { return e.Message; }")]      // "value ('-1') must be a non-negative value. …"

@@ -49,8 +49,46 @@ public class StringBuilderStrategyTests
     [InlineData("new System.Text.StringBuilder()[0]", "$eq.text.stringBuilder().item(0)")]
     [InlineData("new System.Text.StringBuilder().Capacity", "$eq.text.stringBuilder().capacity")]
     [InlineData("new System.Text.StringBuilder().EnsureCapacity(10)", "$eq.text.stringBuilder().ensureCapacity(10)")]
-    [InlineData("new System.Text.StringBuilder().Append(System.Globalization.CultureInfo.CurrentCulture, $\"x{Id}\")", "$eq.text.stringBuilder().append(`x${this.id}`)")]
     public void AMemberThePageReaches_IsTheTwinsOwn(string code, string expected)
+    {
+        TestHelper.ConvertExpression(code).Should().Be(expected);
+    }
+
+    /// <summary>An interpolated <c>Append</c> or <c>AppendLine</c> appends each part in turn, as .NET's
+    /// interpolation handler does, so a hole that reads the builder sees the parts before it; a hole's
+    /// alignment pads in an append of its own, a provider that is the current culture adds nothing, and
+    /// a hole prints as a plain interpolation's does: an enum as its member name, a bool as True. A
+    /// string's append stays one append (#679's review).</summary>
+    [Theory]
+    [InlineData("new System.Text.StringBuilder().Append($\"a{Id}b\")", "$eq.text.stringBuilder().append('a').append(this.id).append('b')")]
+    [InlineData("new System.Text.StringBuilder().AppendLine($\"{Name,5}|{Amount:F2}\")", "$eq.text.stringBuilder().appendAligned($eq.text.format(this.name, null), 5).append('|').append($eq.text.format(this.amount, 'F2')).appendLine()")]
+    [InlineData("new System.Text.StringBuilder().Append($\"a{Id}\" + $\"b{Name}\")", "$eq.text.stringBuilder().append('a').append(this.id).append('b').append(this.name ?? '')")]
+    [InlineData("new System.Text.StringBuilder().Append($\"{Size.Small}{Active}\")", "$eq.text.stringBuilder().append('Small').append($eq.text.format(this.active, null))")]
+    [InlineData("new System.Text.StringBuilder().Append(System.Globalization.CultureInfo.CurrentCulture, $\"x{Id}\")", "$eq.text.stringBuilder().append('x').append(this.id)")]
+    [InlineData("new System.Text.StringBuilder().Append(\"a\" + Id)", "$eq.text.stringBuilder().append('a' + this.id)")]
+    public void AnInterpolatedAppend_AppendsEachPartInTurn(string code, string expected)
+    {
+        TestHelper.ConvertExpression(code).Should().Be(expected);
+    }
+
+    /// <summary><c>Append(StringBuilder)</c> is its own method, refused in words of its own; a builder
+    /// typed as an object is a string's append, as C# binds it.</summary>
+    [Theory]
+    [InlineData("new System.Text.StringBuilder().Append(new System.Text.StringBuilder())", "$eq.text.stringBuilder().appendBuilder($eq.text.stringBuilder())")]
+    [InlineData("new System.Text.StringBuilder().Append(new System.Text.StringBuilder(), 0, 0)", "$eq.text.stringBuilder().appendBuilder($eq.text.stringBuilder(), 0, 0)")]
+    [InlineData("new System.Text.StringBuilder().Append((object)new System.Text.StringBuilder())", "$eq.text.stringBuilder().append($eq.text.stringBuilder())")]
+    public void AppendOfABuilder_IsItsOwnMethod(string code, string expected)
+    {
+        TestHelper.ConvertExpression(code).Should().Be(expected);
+    }
+
+    /// <summary>The twin takes C#'s parameters by position, so a named argument is bound to its
+    /// parameter wherever it is written, each still evaluated in the order written.</summary>
+    [Theory]
+    [InlineData("new System.Text.StringBuilder(capacity: 50, value: \"ab\")", "$eq.text.stringBuilder('ab', 50)")]
+    [InlineData("new System.Text.StringBuilder(\"12\").Insert(value: Name, index: Id)", "(($0, $1, $2) => $0.insert($2, $1))($eq.text.stringBuilder('12'), this.name, this.id)")]
+    [InlineData("new System.Text.StringBuilder(\"12\").Append(count: 1, startIndex: 0, value: Name)", "$eq.text.stringBuilder('12').append(this.name, 0, 1)")]
+    public void ANamedArgument_IsBoundToItsParameter(string code, string expected)
     {
         TestHelper.ConvertExpression(code).Should().Be(expected);
     }

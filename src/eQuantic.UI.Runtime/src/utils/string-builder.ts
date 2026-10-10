@@ -23,6 +23,13 @@
  * anywhere else; a removal takes from the chunks it crosses; and shortening the text keeps
  * `min(Capacity, max(Length * 6 / 5, the last chunk))`. The members a page reaches were missing
  * altogether, so `Capacity` read undefined and `EnsureCapacity` was a TypeError (#679).
+ *
+ * A member that .NET makes of several appends makes them here too, each growing the chunks and each
+ * refused on its own, so a refusal keeps what the appends before it added: `AppendLine(value)` is the
+ * value and then the line's end, an interpolated `Append($"…")` each of its parts in turn
+ * (`appendAligned` for a hole with an alignment), and a `Replace` past the maximum leaves replaced the
+ * chunks it reached first. Every text is built before the chunks change, and a text longer than the
+ * browser's string can hold is .NET's OutOfMemoryException rather than JavaScript's RangeError.
  */
 
 import { exception } from './exceptions';
@@ -55,11 +62,15 @@ function allocated(size: number): number {
   return size;
 }
 
-/** `text` `count` times, and .NET's OutOfMemoryException where the browser's string cannot hold it,
- *  in place of JavaScript's RangeError, which no catch of a .NET exception would see. */
-function repeated(text: string, count: number): string {
+/**
+ * The text `build` makes, and .NET's OutOfMemoryException where the browser's string cannot hold it,
+ * in place of JavaScript's RangeError, which no catch of a .NET exception would see. An engine's
+ * longest string is shorter than .NET's (2^29 characters in V8), so a text .NET holds can be one the
+ * browser cannot make.
+ */
+function materialized(build: () => string): string {
   try {
-    return text.repeat(count);
+    return build();
   } catch (error) {
     if (error instanceof RangeError) throw outOfMemory(INSUFFICIENT_MEMORY);
     throw error;
@@ -77,8 +88,30 @@ function nullValue(parameter: string): Error {
 }
 
 /** The characters of a `char[]` from `startIndex`, `charCount` of them. */
-function charsOf(value: readonly string[], startIndex: number, charCount: number): string {
-  return value.slice(startIndex, startIndex + charCount).join('');
+function charsOf(value: readonly string[], startIndex = 0, charCount = value.length): string {
+  return materialized(() => value.slice(startIndex, startIndex + charCount).join(''));
+}
+
+/** The matches of a `Replace` that start in one chunk, which .NET replaces together. */
+interface Matches {
+  chunk: number;
+  at: number[];
+}
+
+/**
+ * The range `Append(value, startIndex, count)` takes of a string's or a builder's text, refused as
+ * .NET refuses it, its count of zero and a null value with an empty range being nothing (null).
+ */
+function ranged(value: string | null, startIndex: number, count: number): string | null {
+  requireNonNegative('startIndex', startIndex);
+  requireNonNegative('count', count);
+  if (value === null) {
+    if (startIndex === 0 && count === 0) return null;
+    throw nullValue('value');
+  }
+  if (count === 0) return null;
+  if (startIndex > value.length - count) throw outOfRange('startIndex', INDEX_AT_MOST_LENGTH);
+  return value.slice(startIndex, startIndex + count);
 }
 
 export class StringBuilder {
@@ -200,17 +233,27 @@ export class StringBuilder {
       requireNonNegative('repeatCount', startOrCount);
       return this.appendRepeated(stringify(value), startOrCount, 'repeatCount');
     }
-    const startIndex = startOrCount;
-    requireNonNegative('startIndex', startIndex);
-    requireNonNegative('count', count);
-    if (value == null) {
-      if (startIndex === 0 && count === 0) return this;
-      throw nullValue('value');
+    const text = ranged(value == null ? null : String(value), startOrCount, count);
+    return text === null ? this : this.appendText(text, 'valueCount');
+  }
+
+  /**
+   * `Append(StringBuilder)` and `Append(StringBuilder, startIndex, count)`, which the transpiler names
+   * for the overload the call binds, since `Append(object)` holding a builder is a string's append.
+   * .NET copies another builder's chunks after checking the whole length against the maximum, even
+   * where it would fit the last chunk, and refuses it in words of its own; a builder appended to
+   * itself is appended as its text.
+   */
+  appendBuilder(value: StringBuilder | null, startIndex?: number, count?: number): StringBuilder {
+    const text =
+      startIndex === undefined || count === undefined
+        ? value?.value || null
+        : ranged(value == null ? null : value.value, startIndex, count);
+    if (text === null) return this;
+    if (value !== this && this.value.length + text.length > this.max) {
+      throw outOfRange('Capacity', 'Capacity exceeds maximum capacity.');
     }
-    if (count === 0) return this;
-    const text = String(value);
-    if (startIndex > text.length - count) throw outOfRange('startIndex', INDEX_AT_MOST_LENGTH);
-    return this.appendText(text.slice(startIndex, startIndex + count), 'valueCount');
+    return this.appendText(text, 'valueCount');
   }
 
   /**
@@ -220,7 +263,7 @@ export class StringBuilder {
    */
   appendChars(value: readonly string[] | null, startIndex?: number, charCount?: number): StringBuilder {
     if (startIndex === undefined || charCount === undefined) {
-      return value == null ? this : this.appendText(value.join(''), 'valueCount');
+      return value == null ? this : this.appendText(charsOf(value), 'valueCount');
     }
     requireNonNegative('startIndex', startIndex);
     requireNonNegative('charCount', charCount);
@@ -232,8 +275,22 @@ export class StringBuilder {
     return this.appendText(charsOf(value, startIndex, charCount), 'valueCount');
   }
 
+  /** `AppendLine(value)`: the value, then the line's end, an append of its own as on .NET. */
   appendLine(value: unknown = ''): StringBuilder {
-    return this.appendText(stringify(value) + '\n', 'valueCount');
+    return this.appendText(stringify(value), 'valueCount').appendText('\n', 'valueCount');
+  }
+
+  /**
+   * A hole of an interpolated `Append($"…")` written with an alignment, as .NET's handler appends it:
+   * the padding is an append of its own, before the text when it aligns right and after it when it
+   * aligns left.
+   */
+  appendAligned(value: string, alignment: number): StringBuilder {
+    const padding = Math.abs(alignment) - value.length;
+    if (padding <= 0) return this.appendText(value, 'valueCount');
+    return alignment < 0
+      ? this.appendText(value, 'valueCount').appendRepeated(' ', padding, 'repeatCount')
+      : this.appendRepeated(' ', padding, 'repeatCount').appendText(value, 'valueCount');
   }
 
   /** `Insert(index, value)`, and `Insert(index, string, count)`, which inserts it `count` times. */
@@ -246,7 +303,7 @@ export class StringBuilder {
     // .NET counts what the copies need before it makes room for them, and past the maximum it is out
     // of memory there, where a single insert is refused as too long.
     if (text.length * count > this.max - this.value.length) throw outOfMemory(INSUFFICIENT_MEMORY);
-    return this.insertText(index, repeated(text, count));
+    return this.insertText(index, materialized(() => text.repeat(count)));
   }
 
   /** `Insert(index, char[])` and `Insert(index, char[], startIndex, charCount)`. */
@@ -258,7 +315,7 @@ export class StringBuilder {
   ): StringBuilder {
     this.requireIndex(index);
     if (startIndex === undefined || charCount === undefined) {
-      return this.insertText(index, value == null ? '' : value.join(''));
+      return this.insertText(index, value == null ? '' : charsOf(value));
     }
     if (value == null) {
       if (startIndex === 0 && charCount === 0) return this;
@@ -279,8 +336,9 @@ export class StringBuilder {
       this.length = 0;
       return this;
     }
+    const value = this.value.slice(0, startIndex) + this.value.slice(startIndex + length);
     this.taken(startIndex, length);
-    this.value = this.value.slice(0, startIndex) + this.value.slice(startIndex + length);
+    this.value = value;
     return this;
   }
 
@@ -288,7 +346,8 @@ export class StringBuilder {
    * `Replace(oldValue, newValue)` and `Replace(oldValue, newValue, startIndex, count)`, for a string
    * or a char: every occurrence that lies inside the range, left to right, and a null new value
    * removes them. An old value that is null or empty is refused before the range is read. A longer
-   * replacement takes a chunk of its own, as .NET's does.
+   * replacement takes a chunk of its own, as .NET's does, and .NET replaces chunk by chunk, so past
+   * the maximum it refuses at the first chunk that does not fit, the ones before it replaced.
    */
   replace(oldValue: string, newValue: string | null, startIndex?: number, count?: number): StringBuilder {
     if (oldValue == null) throw nullValue('oldValue');
@@ -307,31 +366,26 @@ export class StringBuilder {
     }
     const replacement = newValue ?? '';
     const delta = replacement.length - oldValue.length;
-    // The matches, each with the chunk it starts in: .NET scans chunk by chunk and replaces a chunk's
-    // matches together (ReplaceAllInChunk).
-    const groups: { chunk: number; count: number }[] = [];
-    let text = '';
-    let from = start;
+    // The matches, grouped by the chunk each starts in: .NET scans chunk by chunk and replaces a
+    // chunk's matches together (ReplaceAllInChunk), checking each group's room as it goes.
+    const groups: Matches[] = [];
     for (let at = this.value.indexOf(oldValue, start); at >= 0 && at + oldValue.length <= end; at = this.value.indexOf(oldValue, at + oldValue.length)) {
-      text += this.value.slice(from, at) + replacement;
-      from = at + oldValue.length;
       const chunk = this.chunkAt(at);
       const group = groups[groups.length - 1];
-      if (group?.chunk === chunk) group.count++;
-      else groups.push({ chunk, count: 1 });
+      if (group?.chunk === chunk) group.at.push(at);
+      else groups.push({ chunk, at: [at] });
     }
-    const matches = groups.reduce((sum, group) => sum + group.count, 0);
-    if (delta > 0 && this.value.length + delta * matches > this.max) {
-      throw outOfRange('requiredLength', 'capacity was less than the current size.');
+    let fit = groups.length;
+    let grown = length;
+    for (let i = 0; delta > 0 && i < groups.length; i++) {
+      grown += delta * groups[i].at.length;
+      if (grown > this.max) {
+        fit = i;
+        break;
+      }
     }
-    // Right to left, so a chunk opened before one group leaves the indices of the groups before it.
-    for (let i = groups.length - 1; i >= 0; i--) {
-      const total = delta * groups[i].count;
-      if (total > 0) this.chunks.splice(groups[i].chunk, 0, { size: Math.max(total, DEFAULT_CAPACITY), used: total });
-      else if (total < 0) this.takenFrom(groups[i].chunk, -total);
-    }
-    this.dropEmpty();
-    this.value = this.value.slice(0, start) + text + this.value.slice(from);
+    this.replaced(groups.slice(0, fit), oldValue.length, replacement);
+    if (fit < groups.length) throw outOfRange('requiredLength', 'capacity was less than the current size.');
     return this;
   }
 
@@ -360,8 +414,9 @@ export class StringBuilder {
 
   private appendText(text: string, parameter: string): StringBuilder {
     this.room(text.length, parameter);
+    const value = materialized(() => this.value + text);
     this.grow(text.length);
-    this.value += text;
+    this.value = value;
     return this;
   }
 
@@ -369,9 +424,9 @@ export class StringBuilder {
   private appendRepeated(text: string, count: number, parameter: string): StringBuilder {
     if (text.length === 0 || count === 0) return this;
     this.room(text.length * count, parameter);
-    const built = repeated(text, count);
-    this.grow(built.length);
-    this.value += built;
+    const value = materialized(() => this.value + text.repeat(count));
+    this.grow(text.length * count);
+    this.value = value;
     return this;
   }
 
@@ -381,12 +436,38 @@ export class StringBuilder {
     if (this.value.length + text.length > this.max) {
       throw outOfRange('requiredLength', 'capacity was less than the current size.');
     }
+    const value = materialized(() => this.value.slice(0, index) + text + this.value.slice(index));
     const at = this.chunkAt(index);
     const chunk = this.chunks[at];
     if (chunk.used <= SMALL_CHUNK && chunk.size - chunk.used >= text.length) chunk.used += text.length;
     else this.chunks.splice(at, 0, { size: Math.max(text.length, DEFAULT_CAPACITY), used: text.length });
-    this.value = this.value.slice(0, index) + text + this.value.slice(index);
+    this.value = value;
     return this;
+  }
+
+  /** The matches of `groups` replaced, `width` characters each: the text first, then the chunks. */
+  private replaced(groups: readonly Matches[], width: number, replacement: string): void {
+    if (groups.length === 0) return;
+    const value = materialized(() => {
+      let text = '';
+      let from = 0;
+      for (const group of groups) {
+        for (const at of group.at) {
+          text += this.value.slice(from, at) + replacement;
+          from = at + width;
+        }
+      }
+      return text + this.value.slice(from);
+    });
+    const delta = replacement.length - width;
+    // Right to left, so a chunk opened before one group leaves the indices of the groups before it.
+    for (let i = groups.length - 1; i >= 0; i--) {
+      const total = delta * groups[i].at.length;
+      if (total > 0) this.chunks.splice(groups[i].chunk, 0, { size: Math.max(total, DEFAULT_CAPACITY), used: total });
+      else if (total < 0) this.takenFrom(groups[i].chunk, -total);
+    }
+    this.dropEmpty();
+    this.value = value;
   }
 
   /**
