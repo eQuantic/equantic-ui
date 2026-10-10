@@ -61,14 +61,14 @@ public class ListStrategyTests
         TestHelper.ConvertExpression("points.IndexOf(new DistinctPoint(1))")
             .Should().Be("$eq.collections.indexOf(this.points, new DistinctPoint(1), true)");
         TestHelper.ConvertExpression("list.IndexOf(item)")
-            .Should().Be("$eq.collections.indexOf(this.list, this.item, 'own')");
+            .Should().Be("$eq.collections.indexOf(this.list, this.item, 'item')");
     }
 
     [Fact]
     public void LastIndexOf_ComparesAsTheDefaultComparer()
     {
         var result = TestHelper.ConvertExpression("list.LastIndexOf(item)");
-        result.Should().Be("$eq.collections.lastIndexOf(this.list, this.item, 'own')");
+        result.Should().Be("$eq.collections.lastIndexOf(this.list, this.item, 'item')");
     }
 
     [Fact]

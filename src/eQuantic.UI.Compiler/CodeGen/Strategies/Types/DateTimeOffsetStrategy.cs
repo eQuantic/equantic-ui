@@ -5,11 +5,11 @@ using Microsoft.CodeAnalysis.CSharp.Syntax;
 namespace eQuantic.UI.Compiler.CodeGen.Strategies.Types;
 
 /// <summary>
-/// Maps <c>System.DateTimeOffset</c> to the runtime <c>dateTimeOffset</c> compat type.
-/// <c>new DateTimeOffset(...)</c> -> <c>$eq.time.dateTimeOffset(...)</c>; statics (<c>Now</c>,
-/// <c>FromUnixTimeSeconds</c>, <c>Parse</c>, …) -> factory members; instance members/methods ->
+/// Maps <c>System.DateTimeOffset</c> to the runtime <c>dateTimeOffset</c> compat type: statics
+/// (<c>Now</c>, <c>FromUnixTimeSeconds</c>, <c>Parse</c>, …) -> factory members; instance members/methods ->
 /// camelCase. Operators (+ - and comparisons) are handled by BinaryExpressionStrategy. Priority 15,
-/// gated on the receiver type (robust against members resolving to interfaces).
+/// gated on the receiver type (robust against members resolving to interfaces). A constructor is
+/// <see cref="DateTimeConstructionStrategy"/>'s.
 /// </summary>
 public class DateTimeOffsetStrategy : ConversionStrategyBase
 {
@@ -19,10 +19,6 @@ public class DateTimeOffsetStrategy : ConversionStrategyBase
     {
         switch (node)
         {
-            // Target-typed `new(…)` included — see DateTimeStrategy for what missing it costs.
-            case BaseObjectCreationExpressionSyntax oc:
-                return IsType(context.SemanticHelper.GetType(oc))
-                    || (oc is ObjectCreationExpressionSyntax named && named.Type.ToString() == "DateTimeOffset");
             case InvocationExpressionSyntax { Expression: MemberAccessExpressionSyntax ma }:
                 return IsMember(ma, context);
             case MemberAccessExpressionSyntax member:
@@ -37,9 +33,6 @@ public class DateTimeOffsetStrategy : ConversionStrategyBase
         context.UsedHelpers.Add(Eq.Import);
         switch (node)
         {
-            case BaseObjectCreationExpressionSyntax oc:
-                return $"{Eq.DateTimeOffset}({ConvertArgs(oc.ArgumentList, context)})";
-
             case InvocationExpressionSyntax { Expression: MemberAccessExpressionSyntax ma } inv:
             {
                 var name = ma.Name.Identifier.Text;

@@ -28,10 +28,10 @@ describe('$eq namespace', () => {
     expect($eq.text.stringBuilder()).toBeInstanceOf(StringBuilder);
   });
 
-  it('time.dateTime — factory keeps its statics', () => {
-    expect($eq.time.dateTime(2024, 1, 15).toString()).toBe('01/15/2024 00:00:00');
-    expect($eq.time.dateTime(2024, 1, 15)).toBeInstanceOf(DateTime);
-    expect($eq.time.dateTime.daysInMonth(2024, 2)).toBe(29); // static still attached
+  it('time.dateTime — one factory per constructor shape, beside the statics', () => {
+    expect($eq.time.dateTime.of(2024, 1, 15).toString()).toBe('01/15/2024 00:00:00');
+    expect($eq.time.dateTime.of(2024, 1, 15)).toBeInstanceOf(DateTime);
+    expect($eq.time.dateTime.daysInMonth(2024, 2)).toBe(29);
   });
 
   it('time.timeSpan — factory keeps its statics', () => {

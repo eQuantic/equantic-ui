@@ -42,8 +42,8 @@ describe('Structural equality ($eq.equals)', () => {
   it('delegates to compat types own .equals (Decimal, DateTime)', () => {
     expect(equals(dec('1.10'), dec('1.10'))).toBe(true);
     expect(equals(dec('1.10'), dec('1.11'))).toBe(false);
-    expect(equals(dateTime(2024, 1, 15), dateTime(2024, 1, 15))).toBe(true);
-    expect(equals(dateTime(2024, 1, 15), dateTime(2024, 1, 16))).toBe(false);
+    expect(equals(dateTime.of(2024, 1, 15), dateTime.of(2024, 1, 15))).toBe(true);
+    expect(equals(dateTime.of(2024, 1, 15), dateTime.of(2024, 1, 16))).toBe(false);
     // record holding a decimal field
     expect(equals({ price: dec('9.99') }, { price: dec('9.99') })).toBe(true);
   });

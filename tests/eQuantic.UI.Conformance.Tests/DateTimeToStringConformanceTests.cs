@@ -41,6 +41,10 @@ public class DateTimeToStringConformanceTests
     // The harness runs the invariant culture, where the twin's text was G's too: this proves the
     // call runs, and CultureCrossingTests what it asks for.
     [InlineData(Moment + "string f = null; return $\"{d.ToString((string)null)}|{d.ToString(\"\")}|{d.ToString(f)}|{d.ToString(f, System.Globalization.CultureInfo.InvariantCulture)}\";")]
+    // A letter alone is a standard specifier, and one .NET does not have is refused: `K` and `z` are
+    // written `%K` and `%z`, where the runtime drew them as a picture.
+    [InlineData(Moment + "try { d.ToString(\"K\"); return \"no\"; } catch (FormatException e) { return e.Message; }")]
+    [InlineData(Moment + "try { d.ToString(\"z\"); return \"no\"; } catch (FormatException e) { return e.Message; }")]
     // A null DateTime? writes nothing, and its conditional ToString is null.
     [InlineData("DateTime? n = null; return $\"[{n.ToString()}]|{n?.ToString(\"D\") ?? \"none\"}\";")]
     public void ADateTimesToString_PrintsAsDotNet(string statements)
