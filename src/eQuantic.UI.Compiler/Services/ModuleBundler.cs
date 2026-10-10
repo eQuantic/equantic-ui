@@ -24,12 +24,12 @@ public static class ModuleBundler
         // common ancestor of the absolute entry paths (the repo/cwd) and nests entries under that
         // relative path (e.g. wwwroot/_equantic/samples/.../ts/Dashboard.js), which the boot — loading
         // the flat "/_equantic/<Page>.js" — then 404s on.
-        // A map this build does not write must not survive from one that did: the output folder
-        // is shared by every configuration, so a Debug build's maps would ride out with a Release
-        // publish. Every map here is eqc's own; the ones this build writes are written again.
-        if (Directory.Exists(outputDir))
-            foreach (var stale in Directory.GetFiles(outputDir, "*.js.map", SearchOption.AllDirectories))
-                File.Delete(stale);
+        // The maps already here, and when each was written: once bun has run, that is what tells its
+        // maps from the rest. Nothing is removed before it runs, so the folder holds every map while
+        // it runs and a bundle that fails leaves the folder as it found it, the contract the SDK
+        // keeps for the whole folder (the generated-files spec).
+        var started = DateTime.UtcNow.AddSeconds(-2);
+        var before = Maps(outputDir);
         var mapArg = sourceMaps switch
         {
             SourceMapMode.Full => " --sourcemap",
@@ -59,12 +59,27 @@ public static class ModuleBundler
         process.WaitForExit();
         if (process.ExitCode != 0) return error;
 
+        // A map is this bundle's when bun wrote it, new or written again; any other is removed now,
+        // after bun has written. A map this build does not write must not survive from one that
+        // did: the output folder is shared by every configuration, so a Debug build's maps would
+        // ride out with a Release publish. Every map here is eqc's own. One written in the two
+        // seconds before the bundle started is kept, as the SDK's prune keeps one: a file system
+        // that stores whole seconds cannot tell it from a map bun wrote again, and composing an
+        // earlier bundle's map again leaves it as it was.
+        var written = new List<string>();
+        foreach (var (map, time) in Maps(outputDir))
+        {
+            if (before.TryGetValue(map, out var earlier) && earlier == time && time < started) File.Delete(map);
+            else written.Add(map);
+        }
+
         // A module's map leads to the TypeScript eqc wrote (bun), and that TypeScript's map to the
         // C# (eqc): composed here, so a debugger lands on the C#. This was a script over an npm
-        // package that bun's auto-install fetched on a developer's first Debug build (#356).
+        // package that bun's auto-install fetched on a developer's first Debug build (#356). Only
+        // this bundle's maps: an earlier bundle's leads to the C# already.
         if (sourceMaps != SourceMapMode.None)
         {
-            foreach (var mapFile in Directory.GetFiles(outputDir, "*.js.map", SearchOption.AllDirectories))
+            foreach (var mapFile in written)
             {
                 var mapDir = Path.GetDirectoryName(mapFile)!;
                 try
@@ -85,4 +100,11 @@ public static class ModuleBundler
         }
         return null;
     }
+
+    /// <summary>Every map under <paramref name="outputDir"/>, with the time it was last written.</summary>
+    private static Dictionary<string, DateTime> Maps(string outputDir) =>
+        Directory.Exists(outputDir)
+            ? Directory.GetFiles(outputDir, "*.js.map", SearchOption.AllDirectories)
+                .ToDictionary(map => map, File.GetLastWriteTimeUtc, StringComparer.Ordinal)
+            : new Dictionary<string, DateTime>(StringComparer.Ordinal);
 }

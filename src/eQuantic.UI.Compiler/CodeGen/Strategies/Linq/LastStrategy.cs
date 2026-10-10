@@ -61,8 +61,8 @@ public class LastStrategy : IConversionStrategy
         // into one twice.
         var source = LinqSource.Ir(memberAccess.Expression, context);
         return JsExprWriter.Write(elementDefault is null
-            ? JsExpr.Template("({0}[{0}.length - 1])", [source], context.TypeAnnotations)
-            : JsExpr.Template("({0}[{0}.length - 1] ?? {1})", [source, JsExpr.Opaque(elementDefault)], context.TypeAnnotations));
+            ? JsExpr.Template("({0}[{0}.length - 1])", [source])
+            : JsExpr.Template("({0}[{0}.length - 1] ?? {1})", [source, JsExpr.Opaque(elementDefault)]));
     }
 
     public int Priority => 10;

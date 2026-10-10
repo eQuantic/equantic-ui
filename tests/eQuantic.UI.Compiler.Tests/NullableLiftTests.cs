@@ -52,34 +52,34 @@ public class NullableLiftTests
     public void ACompoundOnANullableInt_IsLifted()
     {
         var js = Compile("int? x = null; x += 1;");
-        Assert.Contains("x = $eq.nullable.arith(x, 1, (a, b) => a + b)", js);
+        Assert.Contains("x = $eq.nullable.arith(x, 1, ($a, $b) => $a + $b)", js);
     }
 
     [Fact]
     public void ACompoundOnANullableByte_WrapsInsideTheLift()
     {
         var js = Compile("byte? b = 250; b += 10;");
-        Assert.Contains("$eq.nullable.arith(b, 10, (a, b) => (a + b & 0xFF))", js);
+        Assert.Contains("$eq.nullable.arith(b, 10, ($a, $b) => ($a + $b & 0xFF))", js);
     }
 
     [Fact]
     public void ACompoundOnANullableDecimal_UsesTheDecimalInsideTheLift()
     {
         var js = Compile("decimal? m = null; m += 1m;");
-        Assert.Contains("(a, b) => a.add(b))", js);
+        Assert.Contains("($a, $b) => $a.add($b))", js);
     }
 
     [Fact]
     public void AnIncrementOnANullableFloat_RoundsInsideTheLift()
     {
         var js = Compile("float? f = 0.1f; f++;");
-        Assert.Contains("f = $eq.nullable.unary(f, (a) => Math.fround(a + 1))", js);
+        Assert.Contains("f = $eq.nullable.unary(f, ($a) => Math.fround($a + 1))", js);
     }
 
     [Fact]
     public void ANegatedNullableInt_IsLifted()
     {
         var js = Compile("int? x = null; var y = -x;");
-        Assert.Contains("$eq.nullable.unary(x, (a) => -a)", js);
+        Assert.Contains("$eq.nullable.unary(x, ($a) => -$a)", js);
     }
 }
