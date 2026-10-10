@@ -10,8 +10,8 @@ public class AdvancedLinqTests2 : StrategyTestBase
         var code = "list.TakeWhile(x => x < 5)";
         var js = Convert(code);
         
-        Assert.Contains("function(arr)", js);
-        Assert.Contains("return res", js);
+        Assert.Contains("function($arr)", js);
+        Assert.Contains("return $res", js);
         // We verify logic structure roughly
         Assert.Contains("else break", js);
         Assert.Contains("x < 5", js);
@@ -23,7 +23,7 @@ public class AdvancedLinqTests2 : StrategyTestBase
         var code = "list.SkipWhile(x => x < 5)";
         var js = Convert(code);
         
-        Assert.Contains("let skipping = true", js);
+        Assert.Contains("let $skipping = true", js);
         Assert.Contains("continue", js);
         Assert.Contains("x < 5", js);
     }
@@ -34,9 +34,9 @@ public class AdvancedLinqTests2 : StrategyTestBase
         var code = "list.DistinctBy(x => x.Id)";
         var js = Convert(code);
         
-        Assert.Contains("const seen = new Set()", js);
-        Assert.Contains("seen.add(k)", js);
-        Assert.Contains("seen.has(k)", js);
+        Assert.Contains("const $seen = new Set()", js);
+        Assert.Contains("$seen.add($k)", js);
+        Assert.Contains("$seen.has($k)", js);
         Assert.Contains("x.id", js.ToLower()); // Property access case normalization
     }
 }

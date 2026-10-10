@@ -330,7 +330,7 @@ public class StringStaticStrategy : IConversionStrategy
         string Passed((int Slot, ExpressionSyntax Value, bool Spread) value, string text) =>
             value.Spread
                 ? BoxOf(ElementTypeOf(context.SemanticHelper.GetType(value.Value))) is { } spreadBox
-                    ? $"...Array.from({text}, (value) => {spreadBox("value")})"
+                    ? $"...Array.from({text}, ($value) => {spreadBox("$value")})"
                     : $"...{text}"
                 : BoxOf(Boxed(value.Value, context)) is { } box
                     ? box(text)
@@ -352,7 +352,7 @@ public class StringStaticStrategy : IConversionStrategy
         string Hole(ExpressionSyntax argument) => "{" + written.IndexOf(argument) + "}";
         var holes = passed.Select(value => Passed(value, Hole(value.Value)));
         var call = $"{function}({string.Join(", ", holes.Prepend(Hole(template)))})";
-        return JsExprWriter.Write(JsExpr.Template(call, parts, context.TypeAnnotations));
+        return JsExprWriter.Write(JsExpr.Template(call, parts));
     }
 
     /// <summary>Whether the spelling alone proves an array written in place binds as the params
@@ -549,7 +549,7 @@ public class StringStaticStrategy : IConversionStrategy
         var template = "''" + string.Concat(Enumerable.Range(0, parts.Length).Select(i => " + {" + i + "}"));
         if (context.SemanticHelper.GetSymbol(node) is IMethodSymbol method)
             template = PrimitiveStaticStrategy.BindNamedArguments(template, node, method);
-        return JsExprWriter.Write(JsExpr.Template(template, parts, context.TypeAnnotations));
+        return JsExprWriter.Write(JsExpr.Template(template, parts));
     }
 
     /// <summary>
@@ -631,15 +631,15 @@ public class StringStaticStrategy : IConversionStrategy
             var template = IsConstantText(separatorArgument.Expression, context)
                 ? $"[{holes}].join({{0}})"
                 : $"{Eq.StringJoin}({{0}}, [{holes}])";
-            return JsExprWriter.Write(JsExpr.Template(template, parts, context.TypeAnnotations));
+            return JsExprWriter.Write(JsExpr.Template(template, parts));
         }
 
         var valuesType = context.SemanticHelper.GetType((ExpressionSyntax)bound.Value.Syntax) ?? valuesParameter.Type;
         // The runtime asks the conversion of a value that is not null, so a nullable element type is
         // its value type, and a string needs none.
         var element = valuesType.GetEnumerableElementType()?.UnwrapNullable()?.WithNullableAnnotation(NullableAnnotation.NotAnnotated);
-        var probe = element is null ? null : StringConversion.Of(element, JsExpr.Identifier("value"), context);
-        var text = probe is null or JsIdentifier { Name: "value" } ? null : JsExpr.Arrow("value", probe);
+        var probe = element is null ? null : StringConversion.Of(element, JsExpr.Identifier("$value"), context);
+        var text = probe is null or JsIdentifier { Name: "$value" } ? null : JsExpr.Arrow("$value", probe);
         var parameter = valuesParameter.Name == "value" ? "'value'" : null;
 
         var call = (text, parameter) switch
@@ -663,6 +663,6 @@ public class StringStaticStrategy : IConversionStrategy
         context.UsedHelpers.Add(Eq.Import);
         var parts = node.ArgumentList.Arguments.Select(argument => context.Converter.ConvertIr(argument.Expression)).ToArray();
         return JsExprWriter.Write(JsExpr.Template(PrimitiveStaticStrategy.BindNamedArguments(template, node, method),
-            parts, context.TypeAnnotations));
+            parts));
     }
 }

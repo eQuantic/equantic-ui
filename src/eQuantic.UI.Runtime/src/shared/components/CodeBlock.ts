@@ -302,7 +302,7 @@ export class CodeBlock extends StatelessComponent {
 
     cellsOf(line: number) {
         let cells: any; 
-        if ((($0: any) => ($0.has(line) ? ((cells = $0.get(line)), true) : ((cells = null), false)))(this._cells)) return cells;
+        if ((($0) => ($0.has(line) ? ((cells = $0.get(line)), true) : ((cells = null), false)))(this._cells)) return cells;
         cells = new CodeLineCells(this.document.line(line), this.tabSize);
         $eq.mapSet(this._cells, line, cells);
         return cells;
@@ -310,7 +310,7 @@ export class CodeBlock extends StatelessComponent {
 
     fillerCellsOf(line: number) {
         let cells: any; 
-        if ((($0: any) => ($0.has(line) ? ((cells = $0.get(line)), true) : ((cells = null), false)))(this._fillerCells)) return cells;
+        if ((($0) => ($0.has(line) ? ((cells = $0.get(line)), true) : ((cells = null), false)))(this._fillerCells)) return cells;
         cells = new CodeLineCells((this.fillerDocument!).line(line), this.tabSize);
         $eq.mapSet(this._fillerCells, line, cells);
         return cells;

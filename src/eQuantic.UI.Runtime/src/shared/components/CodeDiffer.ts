@@ -39,7 +39,7 @@ export class CodeDiffer {
         let next = ids.size;
         for (let i = 0; i < items.length; i++) {
             let id: any; 
-            if (!(($0: any, $1: any) => ($0.has($1) ? ((id = $0.get($1)), true) : ((id = 0), false)))(ids, items[i])) {
+            if (!(($0, $1) => ($0.has($1) ? ((id = $0.get($1)), true) : ((id = 0), false)))(ids, items[i])) {
                 id = next++;
                 $eq.mapSet(ids, items[i], id);
             }

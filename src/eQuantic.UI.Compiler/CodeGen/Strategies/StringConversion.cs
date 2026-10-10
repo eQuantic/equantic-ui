@@ -109,8 +109,8 @@ public static class StringConversion
             var label = JsStringLiteral.Quote(member.Name);
             var real = member.Type.UnwrapNullable() ?? member.Type;
             if (real is INamedTypeSymbol named && (named.TypeKind == TypeKind.Enum || named.TwinIsData()))
-                return $"[{label}, {JsExprWriter.Write(JsExpr.Arrow(context.TypeAnnotations ? "v: any" : "v",
-                    Of(member.Type!, JsExpr.Identifier("v"), context)))}]";
+                return $"[{label}, {JsExprWriter.Write(JsExpr.Arrow(context.TypeAnnotations ? "$v: any" : "$v",
+                    Of(member.Type!, JsExpr.Identifier("$v"), context)))}]";
             return real is not null && WritesInTheCulture(real) && FormatKind.OfText(real) is { } kind
                 ? $"[{label}, '{kind}']"
                 : label;

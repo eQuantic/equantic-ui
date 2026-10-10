@@ -71,7 +71,7 @@ public class StringBuilderStrategy : ConversionStrategyBase
                         : context.Converter.ConvertIr(argument)) is { } bound)
                 {
                     return Ir.JsExprWriter.Write(bound.Call(context.Converter.ConvertIr(ma.Expression),
-                        runtimeName, context.TypeAnnotations));
+                        runtimeName));
                 }
                 var receiver = context.Converter.ConvertExpression(ma.Expression);
                 return $"{receiver}.{runtimeName}({ConvertArgs(inv.ArgumentList, context)})";

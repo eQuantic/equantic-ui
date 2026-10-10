@@ -2247,6 +2247,14 @@ public class TypeScriptEmitter
             ? lifted.TypeArguments[0]
             : resolvedRaw;
 
+        // A type parameter is named as its declaration names it: `@class` is declared `class$`, a name
+        // TypeScript takes, and a parameter of that type said `class`, which it does not (#467).
+        if (resolved is ITypeParameterSymbol typeParameter)
+        {
+            var named = typeParameter.Name.ToJsIdentifier();
+            return nullable ? OrNull(named) : named;
+        }
+
         // A generic's TYPE ARGUMENTS are symbols here even when the string mapper already rewrote
         // the shape around them (`Action<IPainter>` → `(iPainter: IPainter) => void`). An interface
         // among them must answer the same `any` a bare interface parameter does, or the module
@@ -2277,6 +2285,16 @@ public class TypeScriptEmitter
             }
         }
 
+        // ...and at any depth: `IReadOnlyList<@class>` and `@class[]` mapped to `@class[]`, which
+        // TypeScript cannot parse, and a parameter named like a global (`Math`) named the global.
+        foreach (var parameter in TypeParametersIn(resolved))
+        {
+            var named = parameter.Name.ToJsIdentifier();
+            if (named == parameter.Name) continue;
+            mapped = System.Text.RegularExpressions.Regex.Replace(mapped,
+                $@"(?<![\w$.])@?{System.Text.RegularExpressions.Regex.Escape(parameter.Name)}(?![\w$])", named);
+        }
+
         var core = (echoed ? resolved : null) switch
         {
             // An enum crosses as its member STRING (or the number a [Flags] one combines into), an
@@ -2300,6 +2318,16 @@ public class TypeScriptEmitter
     /// function that returns null rather than a function that may be missing.
     /// </summary>
     internal static string OrNull(string type) => type.Contains("=>") ? $"({type}) | null" : $"{type} | null";
+
+    /// <summary>The type parameters <paramref name="type"/> names, to any depth: in its type
+    /// arguments and in an array's element.</summary>
+    private static IEnumerable<ITypeParameterSymbol> TypeParametersIn(ITypeSymbol? type) => type switch
+    {
+        ITypeParameterSymbol parameter => [parameter],
+        IArrayTypeSymbol array => TypeParametersIn(array.ElementType),
+        INamedTypeSymbol { TypeArguments.Length: > 0 } generic => generic.TypeArguments.SelectMany(TypeParametersIn).Distinct<ITypeParameterSymbol>(SymbolEqualityComparer.Default),
+        _ => [],
+    };
 
     /// <summary>
     /// A type and every type argument BELOW it, to any depth — `IReadOnlyList&lt;NavigableMove&gt;`

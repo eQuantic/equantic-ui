@@ -72,7 +72,7 @@ public class RealWorldUITests
         // `_a + _b` here would concatenate their text instead of adding them. This assertion used
         // to demand exactly that, which is how a payments total reached the browser reading
         // "R$ 01240.50640.00". The elements ARE Decimals (typed world): the method applies direct.
-        result.Should().Contain("_a.add(_b)");
+        result.Should().Contain("$a.add($b)");
         result.Should().Contain("$eq.num.dec(0)");
     }
 
@@ -165,7 +165,7 @@ public class RealWorldUITests
         var result = TestHelper.ConvertCodeBlock(code);
 
         result.Should().Contain("new Set");
-        result.Should().Contain("filter(x => !");
+        result.Should().Contain("filter(($x) => !$1.includes($x))");
         result.Should().Contain("includes");
     }
 
@@ -361,7 +361,7 @@ public class RealWorldUITests
 
         var result = TestHelper.ConvertCodeBlock(code);
 
-        result.Should().Contain("filter(x => x instanceof User)");
+        result.Should().Contain("filter(($x) => $x instanceof User)");
         result.Should().Contain("filter((u) =>");
         result.Should().Contain("sort");
     }

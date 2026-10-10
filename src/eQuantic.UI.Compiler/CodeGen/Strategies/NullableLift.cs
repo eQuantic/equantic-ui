@@ -38,9 +38,9 @@ internal static class NullableLift
         ConversionContext context)
     {
         context.UsedHelpers.Add(Eq.Import);
-        var body = JsExprWriter.Write(rule(JsExpr.Identifier("a"), JsExpr.Identifier("b")));
+        var body = JsExprWriter.Write(rule(JsExpr.Identifier("$a"), JsExpr.Identifier("$b")));
         return JsExpr.Callish(
-            $"{Eq.LiftArith}({JsExprWriter.WriteIn(left, JsPrecedence.Assignment)}, {JsExprWriter.WriteIn(right, JsPrecedence.Assignment)}, (a, b) => {body})");
+            $"{Eq.LiftArith}({JsExprWriter.WriteIn(left, JsPrecedence.Assignment)}, {JsExprWriter.WriteIn(right, JsPrecedence.Assignment)}, ($a, $b) => {body})");
     }
 
     /// <summary>A lifted unary operator (an increment, a negation): <paramref name="rule"/> over the
@@ -48,7 +48,7 @@ internal static class NullableLift
     public static JsExpr Unary(JsExpr operand, Func<JsExpr, JsExpr> rule, ConversionContext context)
     {
         context.UsedHelpers.Add(Eq.Import);
-        var body = JsExprWriter.Write(rule(JsExpr.Identifier("a")));
-        return JsExpr.Callish($"{Eq.LiftUnary}({JsExprWriter.WriteIn(operand, JsPrecedence.Assignment)}, (a) => {body})");
+        var body = JsExprWriter.Write(rule(JsExpr.Identifier("$a")));
+        return JsExpr.Callish($"{Eq.LiftUnary}({JsExprWriter.WriteIn(operand, JsPrecedence.Assignment)}, ($a) => {body})");
     }
 }

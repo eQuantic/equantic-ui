@@ -29,35 +29,35 @@ public class CastOfTypeLinqTests
     public void OfType_WithPrimitiveString_MapsToTypeofFilter()
     {
         var result = TestHelper.ConvertExpression("items.OfType<string>()");
-        result.Should().Be("this.items.filter(x => typeof x === 'string')");
+        result.Should().Be("this.items.filter(($x) => typeof $x === 'string')");
     }
 
     [Fact]
     public void OfType_WithPrimitiveNumber_MapsToTypeofFilter()
     {
         var result = TestHelper.ConvertExpression("items.OfType<int>()");
-        result.Should().Be("this.items.filter(x => typeof x === 'number')");
+        result.Should().Be("this.items.filter(($x) => typeof $x === 'number')");
     }
 
     [Fact]
     public void OfType_WithPrimitiveBool_MapsToTypeofFilter()
     {
         var result = TestHelper.ConvertExpression("items.OfType<bool>()");
-        result.Should().Be("this.items.filter(x => typeof x === 'boolean')");
+        result.Should().Be("this.items.filter(($x) => typeof $x === 'boolean')");
     }
 
     [Fact]
     public void OfType_WithReferenceType_MapsToInstanceofFilter()
     {
         var result = TestHelper.ConvertExpression("list.OfType<Order>()");
-        result.Should().Be("this.list.filter(x => x instanceof Order)");
+        result.Should().Be("this.list.filter(($x) => $x instanceof Order)");
     }
 
     [Fact]
     public void OfType_WithChaining_MapsCorrectly()
     {
         var result = TestHelper.ConvertExpression("list.OfType<Order>().Select(x => x.Id)");
-        result.Should().Contain("filter(x => x instanceof Order)");
+        result.Should().Contain("filter(($x) => $x instanceof Order)");
         result.Should().Contain("map");
     }
 
@@ -69,14 +69,14 @@ public class CastOfTypeLinqTests
         // Cast followed by OfType
         var result = TestHelper.ConvertExpression("items.Cast<object>().OfType<string>()");
         result.Should().Contain("this.items");
-        result.Should().Contain("filter(x => typeof x === 'string')");
+        result.Should().Contain("filter(($x) => typeof $x === 'string')");
     }
 
     [Fact]
     public void OfType_WithCount_MapsCorrectly()
     {
         var result = TestHelper.ConvertExpression("items.OfType<string>().Count()");
-        result.Should().Contain("filter(x => typeof x === 'string')");
+        result.Should().Contain("filter(($x) => typeof $x === 'string')");
         result.Should().Contain(".length");
     }
 }

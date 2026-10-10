@@ -215,7 +215,7 @@ public class StringStrategyTests
     {
         // A bool as True or False: the conversion a concatenation applies, per element (#441).
         TestHelper.ConvertExpression("string.Join(\",\", new[] { true, false })")
-            .Should().Be("$eq.text.join(',', [true, false], (value) => $eq.text.format(value, null))");
+            .Should().Be("$eq.text.join(',', [true, false], ($value) => $eq.text.format($value, null))");
     }
 
     [Fact]

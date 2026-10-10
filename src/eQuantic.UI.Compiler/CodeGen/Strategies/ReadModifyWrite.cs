@@ -59,7 +59,7 @@ public static class ReadModifyWrite
             return JsExpr.Binary(target, "=", next(target, operands));
 
         var (text, all) = Spelled(parts, value => $"{place} = {value}", place, operands, next, answerOld, context);
-        return JsExpr.Template(text, all, context.TypeAnnotations);
+        return JsExpr.Template(text, all);
     }
 
     /// <summary>
@@ -81,11 +81,10 @@ public static class ReadModifyWrite
             parts.Add(operand);
         }
 
-        var annotate = context.TypeAnnotations;
         var current = answerOld ? JsExpr.Identifier(Old) : JsExpr.Callish(read);
         var written = write(JsExprWriter.Write(next(current, holes)));
         var text = answerOld
-            ? $"(({Old}{(annotate ? ": any" : "")}) => ({written}, {Old}))({read})"
+            ? $"(({Old}) => ({written}, {Old}))({read})"
             : $"({written})";
         return (text, parts);
     }

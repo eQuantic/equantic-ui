@@ -150,7 +150,7 @@ public class BinaryExpressionStrategy : IExpressionIrStrategy
                 if (op is "<" or ">" or "<=" or ">=")
                 {
                     context.UsedHelpers.Add(Eq.Import);
-                    return JsExpr.Callish($"{Eq.LiftCmp}({left}, {right}, (a, b) => a {op} b)");
+                    return JsExpr.Callish($"{Eq.LiftCmp}({left}, {right}, ($a, $b) => $a {op} $b)");
                 }
                 if (op is "+" or "-" or "*" or "/" or "%")
                 {
@@ -160,12 +160,12 @@ public class BinaryExpressionStrategy : IExpressionIrStrategy
                     var underlying = context.SemanticHelper.GetType(binary).UnwrapNullable();
                     var body = (op is "/" or "%") && underlying.IsIntegral()
                         ? IntegerDivision.NeedsCheck(binary.Right, context)
-                            ? $"{(op == "/" ? Eq.IntDiv : Eq.IntRem)}(a, b)"
-                            : (op == "/" ? "Math.trunc(a / b)" : "(a % b)")
+                            ? $"{(op == "/" ? Eq.IntDiv : Eq.IntRem)}($a, $b)"
+                            : (op == "/" ? "Math.trunc($a / $b)" : "($a % $b)")
                         : op is not "%" && SinglePrecision.Is(underlying)
-                            ? $"Math.fround(a {op} b)"
-                            : $"a {op} b";
-                    return JsExpr.Callish($"{Eq.LiftArith}({left}, {right}, (a, b) => {body})");
+                            ? $"Math.fround($a {op} $b)"
+                            : $"$a {op} $b";
+                    return JsExpr.Callish($"{Eq.LiftArith}({left}, {right}, ($a, $b) => {body})");
                 }
                 // == != fall through: strict ===/!== already match .NET nullable equality
                 // (null===null is true; value===null is false).
@@ -345,10 +345,10 @@ public class BinaryExpressionStrategy : IExpressionIrStrategy
             case "<" or ">" or "<=" or ">=":
                 context.UsedHelpers.Add(Eq.Import);
                 var relation = JsExprWriter.Write(operand.IsDecimal()
-                    ? ConvertDecimal(JsExpr.Identifier("a"), JsExpr.Identifier("b"), op)!
-                    : JsExpr.Binary(JsExpr.Identifier("a"), op, JsExpr.Identifier("b")));
+                    ? ConvertDecimal(JsExpr.Identifier("$a"), JsExpr.Identifier("$b"), op)!
+                    : JsExpr.Binary(JsExpr.Identifier("$a"), op, JsExpr.Identifier("$b")));
                 return JsExpr.Callish(
-                    $"{Eq.LiftCmp}({JsExprWriter.WriteIn(leftIr, JsPrecedence.Assignment)}, {JsExprWriter.WriteIn(rightIr, JsPrecedence.Assignment)}, (a, b) => {relation})");
+                    $"{Eq.LiftCmp}({JsExprWriter.WriteIn(leftIr, JsPrecedence.Assignment)}, {JsExprWriter.WriteIn(rightIr, JsPrecedence.Assignment)}, ($a, $b) => {relation})");
             case "+" or "-" or "*" or "/" or "%" or "&" or "|" or "^" or "<<" or ">>" or ">>>":
                 var result = bound.Type.UnwrapNullable();
                 return NullableLift.Binary(leftIr, rightIr,

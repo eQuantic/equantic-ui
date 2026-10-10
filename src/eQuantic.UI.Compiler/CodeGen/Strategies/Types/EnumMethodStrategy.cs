@@ -62,7 +62,7 @@ public class EnumMethodStrategy : IConversionStrategy
             parts.Add(context.Converter.ConvertIr(value));
         }
         string IgnoreCase() => holes.TryGetValue("ignoreCase", out var ignoreCase) ? $", {ignoreCase.Hole}" : "";
-        string Write(string template) => JsExprWriter.Write(JsExpr.Template(template, parts, context.TypeAnnotations));
+        string Write(string template) => JsExprWriter.Write(JsExpr.Template(template, parts));
 
         switch (name)
         {
@@ -106,10 +106,9 @@ public class EnumMethodStrategy : IConversionStrategy
                 // generic overload's default, and null for the one that takes a Type. A discard
                 // receives nothing, and a bare name is assigned in place.
                 var failed = call.TargetMethod.IsGenericMethod ? $"{Eq.EnumZero}({shape})" : "null";
-                var parse = JsExpr.Template($"{Eq.EnumTryParse}({input.Hole}, {shape}{IgnoreCase()})", parts,
-                    context.TypeAnnotations);
+                var parse = JsExpr.Template($"{Eq.EnumTryParse}({input.Hole}, {shape}{IgnoreCase()})", parts);
                 string Answer(string template, List<JsExpr> answerParts) =>
-                    JsExprWriter.Write(JsExpr.Template(template, answerParts, context.TypeAnnotations));
+                    JsExprWriter.Write(JsExpr.Template(template, answerParts));
                 if (OutArgument.IsDiscard(result, context)) return Answer("({0} !== undefined)", [parse]);
                 var target = OutArgument.Target(result, context);
                 if (OutArgument.IsBareName(target))
@@ -139,12 +138,11 @@ public class EnumMethodStrategy : IConversionStrategy
                     if (argument.Parameter.Name == "value") text = $"${bound.Count - 1}";
                     else if (argument.Parameter.Name == "ignoreCase") ignoreCase = $"${bound.Count - 1}";
                 }
-                var annotate = context.TypeAnnotations ? ": any" : "";
-                var parameters = string.Join(", ", bound.Select((_, at) => $"${at}{annotate}"));
+                var parameters = string.Join(", ", bound.Select((_, at) => $"${at}"));
                 var arguments = string.Join(", ", bound.Select((_, at) => $"{{{at}}}"));
                 var read = $"{Eq.EnumTryParse}({text}, {shape}{(ignoreCase is null ? "" : $", {ignoreCase}")})";
                 return Answer(
-                    $"(({parameters}) => (($r{annotate}) => ($r !== undefined ? (({place} = $r), true) : (({place} = {failed}), false)))({read}))({arguments})",
+                    $"(({parameters}) => (($r) => ($r !== undefined ? (({place} = $r), true) : (({place} = {failed}), false)))({read}))({arguments})",
                     bound);
             }
             default:
