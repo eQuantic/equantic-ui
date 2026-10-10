@@ -81,12 +81,8 @@ export class CancellationTokenSource {
       }
     }
     if (errors.length === 0) return;
-    const aggregate = exception(
-      'System.AggregateException',
-      `One or more errors occurred. ${errors.map((error) => `(${messageOf(error)})`).join(' ')}`,
-    );
-    Object.defineProperty(aggregate, 'innerExceptions', { value: errors });
-    throw aggregate;
+    // Built as `new AggregateException(errors)` is, so its InnerException is the first of them.
+    throw exception('System.AggregateException', 'One or more errors occurred.', { innerExceptions: errors });
   }
 
   /**
@@ -258,11 +254,6 @@ export class CancellationTokenRegistration {
   dispose(): void {
     this.unregister();
   }
-}
-
-/** A thrown value's message, as an AggregateException quotes its inner ones. */
-function messageOf(error: unknown): string {
-  return error instanceof Error ? error.message : String(error);
 }
 
 const hashes = new WeakMap<object, number>();
