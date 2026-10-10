@@ -469,6 +469,97 @@ public class OverloadedMethodTests
         error.Message.Should().Contain("'Answering.Name' answers 'ITitled.Name'").And.Contain("explicit implementation of 'INamedThing.Name'");
     }
 
+    private const string Sequences = """
+        using System.Collections;
+        using System.Collections.Generic;
+        public class Both : IEnumerable<int>, IEnumerable<string>
+        {
+            IEnumerator<int> IEnumerable<int>.GetEnumerator() { yield return 1; }
+            IEnumerator<string> IEnumerable<string>.GetEnumerator() { yield return "a"; }
+            IEnumerator IEnumerable.GetEnumerator() => ((IEnumerable<int>)this).GetEnumerator();
+        }
+        public class Ints : IEnumerable<int>
+        {
+            public IEnumerator<int> GetEnumerator() { yield return 7; }
+            IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+        }
+        public class IntsAndNames : Ints, IEnumerable<string>
+        {
+            IEnumerator<string> IEnumerable<string>.GetEnumerator() { yield return "c"; }
+        }
+        public class TwoWalks : IEnumerator<int>, IEnumerator<string>
+        {
+            int IEnumerator<int>.Current => 1;
+            string IEnumerator<string>.Current => "a";
+            object IEnumerator.Current => 1;
+            public bool MoveNext() => false;
+            public void Reset() { }
+            public void Dispose() { }
+        }
+        public class Odd : IEnumerable<int>
+        {
+            public IEnumerator<int> GetEnumerator() { yield return 1; }
+            IEnumerator IEnumerable.GetEnumerator() { yield return "x"; }
+        }
+        public class OddCurrent : IEnumerator<int>
+        {
+            private int at;
+            public int Current => at;
+            object IEnumerator.Current => "other";
+            public bool MoveNext() => ++at <= 2;
+            public void Reset() { }
+            public void Dispose() { }
+        }
+        public class OddGenericCurrent : IEnumerator<int>
+        {
+            private int at;
+            public int Current => at;
+            int IEnumerator<int>.Current => at * 10;
+            object IEnumerator.Current => Current;
+            public bool MoveNext() => ++at <= 2;
+            public void Reset() { }
+            public void Dispose() { }
+        }
+        public class Alike : IEnumerable<string>, IEnumerator<string>
+        {
+            private int at;
+            IEnumerator<string> IEnumerable<string>.GetEnumerator() => this;
+            IEnumerator IEnumerable.GetEnumerator() { return ((IEnumerable<string>)this).GetEnumerator(); }
+            public string Current => "s" + at;
+            string IEnumerator<string>.Current { get { return Current; } }
+            object IEnumerator.Current => ((IEnumerator<string>)this).Current;
+            public bool MoveNext() => ++at <= 2;
+            public void Reset() { }
+            public void Dispose() { }
+        }
+        """;
+
+    /// <summary>
+    /// A sequence's twin has ONE iteration, which LINQ, a spread, <c>string.Join</c> and a <c>foreach</c>
+    /// over each interface walk, and ONE <c>current</c>, while C# lets a type implement
+    /// <c>IEnumerable&lt;T&gt;</c> over two types, and its members answer apart: the non-generic
+    /// <c>GetEnumerator()</c> and a <c>Current</c> are held as one with the member the twin keeps. Each walked,
+    /// or read, the other's answer in the browser (Copilot's second review of #708), so each is refused
+    /// (EQ1007), where a member that hands back the other's answer is held as one (<c>Alike</c>).
+    /// </summary>
+    [Theory]
+    [InlineData("Both", "implements 'IEnumerable<int>' and 'IEnumerable<string>'")]
+    [InlineData("IntsAndNames", "and its twin has one iteration")]
+    [InlineData("TwoWalks", "implements 'IEnumerator<int>' and 'IEnumerator<string>'")]
+    [InlineData("Odd", "'IEnumerable.GetEnumerator()' does not return it through 'GetEnumerator()'")]
+    [InlineData("OddCurrent", "'IEnumerator.Current' does not read it through 'Current'")]
+    [InlineData("OddGenericCurrent", "'IEnumerator<int>.Current' does not read it through 'Current'")]
+    public void ASequenceItsTwinWouldWalkOtherwise_IsRefused(string name, string said)
+    {
+        var results = new ComponentCompiler().CompileSource(Sequences, "Probe.cs");
+
+        var error = results.Single(result => result.ComponentName == name).Errors.Should().ContainSingle().Subject;
+        error.Code.Should().Be("EQ1007");
+        error.Message.Should().Contain(said);
+        results.Where(result => result.ComponentName is "Ints" or "Alike").SelectMany(result => result.Errors)
+            .Should().BeEmpty("a member that hands back what the other answers answers alike");
+    }
+
     /// <summary>An override is the method it overrides, and replacing it is what it is for.</summary>
     [Fact]
     public void AnOverride_IsNotASecondMethod()

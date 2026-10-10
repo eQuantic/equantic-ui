@@ -67,6 +67,7 @@ internal static class OverloadedMethods
         CheckOne(type, sourcePath, isComponent, model, errors);
         if (errors.Count == 0) CheckState(type, sourcePath, model, errors);
         if (errors.Count == 0 && model is not null) CheckInherited(type, sourcePath, isComponent, model, errors);
+        if (errors.Count == 0 && model is not null) CheckSequences(type, sourcePath, model, errors);
         if (errors.Count == 0 && model is not null) CheckHidingImplementations(type, sourcePath, model, errors);
         if (errors.Count == 0 && model is not null) CheckDefaults(type, sourcePath, isComponent, model, errors);
         if (errors.Count == 0 && model is not null) CheckInterfaceIndexers(type, sourcePath, model, errors);
@@ -637,6 +638,119 @@ internal static class OverloadedMethods
             return;
         }
     }
+
+    /// <summary>
+    /// A sequence's twin has ONE iteration and ONE <c>current</c> where C# lets members answer apart
+    /// (<see cref="IterableTwin"/>, #612): LINQ, a spread, <c>string.Join</c> and a <c>foreach</c> over each
+    /// interface of the type walk its <c>[Symbol.iterator]</c>, and a walk of an enumerator reads its
+    /// <c>current</c>. So a type that implements <c>IEnumerable&lt;T&gt;</c>, or <c>IEnumerator&lt;T&gt;</c>,
+    /// over two types walked one sequence for both, and a member the twin holds once with another, the
+    /// non-generic <c>GetEnumerator()</c> or a <c>Current</c>, answered as that one: refused, each where C#
+    /// may answer otherwise (Copilot's second review of #708). A member that hands back what the other
+    /// answers (<c>=&gt; GetEnumerator();</c>, <c>=&gt; Current;</c>) answers alike, which is what the
+    /// interfaces' contract asks and what the shapes C# writes do. A type is refused for what it adds: a
+    /// base refused on its own is not refused again in each type derived from it, nor a pair of members
+    /// it inherits whole.
+    /// </summary>
+    private static void CheckSequences(TypeDeclarationSyntax type, string sourcePath, SemanticModel model,
+        List<CompilationError> errors)
+    {
+        if (model.SyntaxTree != type.SyntaxTree || model.GetDeclaredSymbol(type) is not INamedTypeSymbol declared) return;
+        void Refuse(SyntaxToken at, string message)
+        {
+            var position = at.GetLocation().GetLineSpan().StartLinePosition;
+            errors.Add(new CompilationError
+            {
+                Code = "EQ1007",
+                Message = message,
+                SourcePath = sourcePath,
+                Line = position.Line + 1,
+                Column = position.Character + 1,
+            });
+        }
+
+        foreach (var kind in new[] { SpecialType.System_Collections_Generic_IEnumerable_T, SpecialType.System_Collections_Generic_IEnumerator_T })
+        {
+            var faces = IterableTwin.Over(declared, kind);
+            if (faces.Count < 2 || declared.BaseType is { } inherited && IterableTwin.Over(inherited, kind).Count > 1) continue;
+            var listed = string.Join(" and ", faces.Select(face => $"'{Display(face)}'"));
+            Refuse(type.Identifier, kind == SpecialType.System_Collections_Generic_IEnumerable_T
+                ? $"'{declared.Name}' implements {listed}, and its twin has one iteration, `[Symbol.iterator]`, which LINQ, "
+                    + "a spread, `string.Join` and a `foreach` over each of them walk, so one of them would walk the other's "
+                    + "sequence. Implement one of them, and hand the other out through a member of its own."
+                : $"'{declared.Name}' implements {listed}, and its twin has one `current`, which every walk of it reads, so "
+                    + "one of them would read the other's. Implement one of them, and hand the other out through a member of "
+                    + "its own.");
+            return;
+        }
+
+        foreach (var (member, held) in IterableTwin.HeldOnce(declared))
+        {
+            if (!DeclaredIn(member, declared) && !DeclaredIn(held, declared)) continue;
+            if (IterableTwin.AnswersAs(member, held, model.Compilation)) continue;
+            var (one, does, walk) = member is IMethodSymbol
+                ? ($"walks one sequence in the browser, the one its twin's iteration gets from '{Answering(held)}'",
+                    "return it", "walk")
+                : ($"has one `current` in the browser, its twin's '{Answering(held)}'", "read it", "read");
+            Refuse(DeclaredIn(member, declared) ? Identifier(member) ?? type.Identifier : type.Identifier,
+                $"'{declared.Name}' {one}, and '{Answering(member)}' does not {does} through '{Answering(held)}', so it may "
+                + $"answer otherwise, which C# allows, where a walk through it would {walk} the twin's. Return what "
+                + $"'{Answering(held)}' returns, through it: `{Form(member, held)}`.");
+            return;
+        }
+    }
+
+    /// <summary>The declaration of <paramref name="member"/> that hands back what <paramref name="held"/>
+    /// answers: <c>IEnumerator IEnumerable.GetEnumerator() =&gt; GetEnumerator();</c>, and an explicit
+    /// <paramref name="held"/> through its interface.</summary>
+    private static string Form(ISymbol member, ISymbol held)
+    {
+        ITypeSymbol? type = member switch
+        {
+            IMethodSymbol method => method.ReturnType,
+            IPropertySymbol property => property.Type,
+            _ => null,
+        };
+        var call = member is IMethodSymbol ? "()" : "";
+        var face = held switch
+        {
+            IMethodSymbol { ExplicitInterfaceImplementations: [var method, ..] } => method.ContainingType,
+            IPropertySymbol { ExplicitInterfaceImplementations: [var property, ..] } => property.ContainingType,
+            _ => null,
+        };
+        var through = face is null ? held.Name : $"(({Display(face)})this).{held.DeclaredName()}";
+        return $"{(type is null ? "" : Display(type) + " ")}{Answering(member)} => {through}{call};";
+    }
+
+    /// <summary>Whether <paramref name="member"/> is declared by <paramref name="type"/> itself.</summary>
+    private static bool DeclaredIn(ISymbol member, INamedTypeSymbol type) =>
+        SymbolEqualityComparer.Default.Equals(member.ContainingType.OriginalDefinition, type.OriginalDefinition);
+
+    /// <summary>Where a member's name is written, for an error that points at it.</summary>
+    private static SyntaxToken? Identifier(ISymbol member) =>
+        member.DeclaringSyntaxReferences.FirstOrDefault()?.GetSyntax() switch
+        {
+            MethodDeclarationSyntax method => method.Identifier,
+            PropertyDeclarationSyntax property => property.Identifier,
+            _ => null,
+        };
+
+    /// <summary>How an interface member's implementation reads in a message: an explicit one by its
+    /// interface as C# writes it (<c>IEnumerator&lt;int&gt;.Current</c>), any other by its own name.</summary>
+    private static string Answering(ISymbol member)
+    {
+        var face = member switch
+        {
+            IMethodSymbol { ExplicitInterfaceImplementations: [var method, ..] } => method.ContainingType,
+            IPropertySymbol { ExplicitInterfaceImplementations: [var property, ..] } => property.ContainingType,
+            _ => null,
+        };
+        var name = member.DeclaredName() + (member is IMethodSymbol ? "()" : "");
+        return face is null ? name : $"{Display(face)}.{name}";
+    }
+
+    /// <summary>A type as C# writes it, its namespace left out.</summary>
+    private static string Display(ITypeSymbol type) => type.ToDisplayString(SymbolDisplayFormat.MinimallyQualifiedFormat);
 
     private static bool Overrides(IMethodSymbol method, IMethodSymbol candidate)
     {
