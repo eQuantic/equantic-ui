@@ -88,6 +88,19 @@ public class WikiClaimsCompile
                 : Text("No library here", TypeRole.BodyM);
     }
 
+    /// <summary>Icons and Components (0.2.0-preview.61): a drawing at its column's width, a
+    /// child placed by fraction and shifted by its own size, and an auto-filling grid.</summary>
+    [Fact]
+    public void TheLayoutThatFollowsItsBox_Compiles()
+    {
+        var mark = new VectorDrawing(0, 0, 3, 1, []);
+        var tooltip = Text("Lisboa", TypeRole.Label);
+
+        _ = new Drawing(mark, SizeValue.Fill, label: "eQuantic");
+        _ = Positioned(tooltip, top: -16, startFraction: 0.5f, topFraction: 0.25f, shiftX: -0.5f, shiftY: -1f);
+        _ = Grid([GridTrack.AutoFill(210)], gap: 10, width: SizeValue.Fill, children: [tooltip]);
+    }
+
     [Fact]
     public void TheDeclarativeSnippets_Compile()
     {

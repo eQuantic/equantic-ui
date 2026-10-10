@@ -2081,6 +2081,16 @@ record of a release, the wiki's Upgrading page is the distillate.
   delegate and `ToString` answered `[object Object]`, on a `Color` as on a `Curve`: each group answers
   through the helper its call uses, the receiver read once. Proposed and archived through OpenSpec
   (`openspec/specs/transpiler-vocabulary-values`).
+- **2026-10-10 · A layout follows its box**: the first external consumer, falei.pt, needed three
+  things a fixed point could not say. A `Drawing` takes a `SizeValue` width, so `SizeValue.Fill` draws
+  it at its column's width with the height its artwork's aspect gives; a `Positioned` child is placed
+  by a fraction of its stack (`TopFraction`, `StartFraction`, …) plus a point offset, and shifted by a
+  fraction of its own size (`ShiftX`, `ShiftY`), the way a label centres on a map point; and
+  `GridTrack.AutoFill(min)` repeats a column as often as it fits, `repeat(auto-fill, minmax(…))` on the
+  web and the same count on Photon. Both web targets lower byte-identically and Photon measures the
+  same boxes. `Drawing.Width` is now a `SizeValue`, the one break, listed in Upgrading
+  ([#636](https://github.com/eQuantic/equantic-ui/issues/636)). Proposed and archived
+  through OpenSpec (`openspec/specs/layout`).
 - **2026-10-06 · A nested class is a module of its own, named by its owner**: a class declared inside
   another one had no module, so `Roster.First()` building a private `Row` threw, and where a top-level
   class had its name the nested one resolved to it, so `new Cart().Size()` read the top-level `Item`'s
