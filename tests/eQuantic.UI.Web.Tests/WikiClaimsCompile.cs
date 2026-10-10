@@ -175,6 +175,25 @@ public class WikiClaimsCompile
             Pressed = new StyleDiff { Transform = Transform2D.Scale(0.985f) },
             Focus = new StyleDiff { BorderColor = theme.FocusRing, BorderWidth = 2 },
         }, Text("label", TypeRole.BodyM)), onPressed: save);
+
+        // Styling, "A header the content scrolls under" (preview.61): a floating header that frosts,
+        // raises and draws its bottom hairline once the page scrolls under it.
+        var header = Text("header", TypeRole.BodyM);
+        _ = new Pinned(header)
+        {
+            Float = true,
+            ScrolledStyle = new StyleDiff
+            {
+                Background = theme.Surface,
+                Elevation = 2,
+                BorderWidth = 1,
+                BorderColor = theme.Border,
+                BackdropBlur = 24,
+            },
+            Transition = new TransitionSpec(StyleChannels.Colors | StyleChannels.Shadow),
+        };
+        _ = Primitives.Pinned.ScrolledThreshold;
+        _ = Primitives.Pinned.ScrolledBase;
     }
 
     /// <summary>Security, "A page that requires authorization" (preview.61): a page that only the

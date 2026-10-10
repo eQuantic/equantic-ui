@@ -2,3 +2,9 @@
 static eQuantic.UI.Web.TokenCss.FontSize(eQuantic.UI.Primitives.TypeStyle style) -> string!
 static eQuantic.UI.Web.TokenCss.LetterSpacing(eQuantic.UI.Primitives.TypeStyle style) -> string!
 static eQuantic.UI.Web.TokenCss.LineHeight(eQuantic.UI.Primitives.TypeStyle style) -> string!
+eQuantic.UI.Web.HtmlStyle.Translate.get -> string?
+eQuantic.UI.Web.HtmlStyle.Translate.set -> void
+static eQuantic.UI.Web.VisualNodeComponent.AmbientDensity.get -> eQuantic.UI.Primitives.Density?
+static eQuantic.UI.Web.VisualNodeComponent.AmbientDensity.set -> void
+*REMOVED*static eQuantic.UI.Web.WebRealizer.Lower(eQuantic.UI.Primitives.VisualNode! node, eQuantic.UI.Primitives.IAppTheme! theme, float typeScale = 1, eQuantic.UI.Web.StyleSink? styles = null) -> eQuantic.UI.Web.HtmlElement!
+static eQuantic.UI.Web.WebRealizer.Lower(eQuantic.UI.Primitives.VisualNode! node, eQuantic.UI.Primitives.IAppTheme! theme, float typeScale = 1, eQuantic.UI.Web.StyleSink? styles = null, eQuantic.UI.Primitives.Density density = eQuantic.UI.Primitives.Density.Comfortable) -> eQuantic.UI.Web.HtmlElement!

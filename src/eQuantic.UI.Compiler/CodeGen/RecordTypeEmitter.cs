@@ -321,6 +321,12 @@ public class RecordTypeEmitter
             sb.Append(tsTypeDeclarations ? $"with(patch: any): {name} {{ return {Eq.With}(this, patch); }} "
                 : $"with(patch) {{ return {Eq.With}(this, patch); }} ");
 
+            // The twin of a record or a struct SAYS so, which no method can: `with` and `equals` are
+            // names any class may declare (an `Equals` override, a `With(...)` of its own), and a hot
+            // reload carries a value's twin as its data while it leaves a class's object to its
+            // initializer (dev/hot-reload-state.ts).
+            sb.Append("static $record = true; ");
+
             // The zero C# gives a struct: `default(S)`, an array's slot, an OrDefault, and `new S()`
             // where S declares no parameterless constructor. Every struct twin carries it, built
             // without the constructor, which runs no initializer, no constructor and no static

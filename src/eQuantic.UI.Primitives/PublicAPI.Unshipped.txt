@@ -80,3 +80,5 @@ eQuantic.UI.Primitives.TypeStyle.Fluid.get -> eQuantic.UI.Primitives.FluidSize?
 eQuantic.UI.Primitives.TypeStyle.Fluid.init -> void
 eQuantic.UI.Primitives.TypeStyle.WithFluidSize(float min, float percentOfWindow, float max) -> eQuantic.UI.Primitives.TypeStyle
 eQuantic.UI.Primitives.TypeStyle.AtWindow(float windowWidth) -> eQuantic.UI.Primitives.TypeStyle
+const eQuantic.UI.Primitives.Pinned.ScrolledThreshold = 8 -> float
+static eQuantic.UI.Primitives.Pinned.ScrolledBase.get -> eQuantic.UI.Primitives.BoxStyle
