@@ -31,7 +31,12 @@ public class StructuralEqualsStrategy : IConversionStrategy
         var receiver = context.Converter.ConvertExpression(ma.Expression);
         var other = context.Converter.ConvertExpression(inv.ArgumentList.Arguments[0].Expression);
         context.UsedHelpers.Add(Eq.Import);
-        return $"{Eq.Equals}({receiver}, {other})";
+        // A tuple's Equals compares each element with that element type's default comparer, an array
+        // by reference, which only the static type says: a tuple is an array here (#554).
+        var type = context.SemanticHelper.GetType(ma.Expression);
+        return type.UnwrapNullable() is INamedTypeSymbol { IsTupleType: true }
+            ? ElementEquality.Compare(type, receiver, other)
+            : $"{Eq.Equals}({receiver}, {other})";
     }
 
     public int Priority => 12;
