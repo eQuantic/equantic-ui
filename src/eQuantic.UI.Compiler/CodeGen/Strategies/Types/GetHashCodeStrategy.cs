@@ -90,7 +90,7 @@ public class GetHashCodeStrategy : IExpressionIrStrategy
         var holes = string.Join(", ", Enumerable.Range(0, arguments.Count).Select(slot => $"{{{slot}}}"));
         var template = PrimitiveStaticStrategy.BindNamedArguments($"{Eq.HashCombine}({holes})", invocation, method);
         var parts = arguments.Select(argument => context.Converter.ConvertIr(argument.Expression)).ToArray();
-        return JsExpr.Template(template, parts, context.TypeAnnotations);
+        return JsExpr.Template(template, parts);
     }
 
     /// <summary>

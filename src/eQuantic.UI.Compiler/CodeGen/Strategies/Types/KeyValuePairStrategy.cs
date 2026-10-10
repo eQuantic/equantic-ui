@@ -46,7 +46,7 @@ public class KeyValuePairStrategy : IExpressionIrStrategy
         var key = ordered.FindIndex(argument => argument.Parameter?.Ordinal == 0);
         var value = ordered.FindIndex(argument => argument.Parameter?.Ordinal == 1);
         if (key < 0 || value < 0) return JsExpr.Opaque(context.Unhandled(node, "KeyValuePair"));
-        return JsExpr.Template($"{Eq.Pair}({{{key}}}, {{{value}}})", parts, context.TypeAnnotations);
+        return JsExpr.Template($"{Eq.Pair}({{{key}}}, {{{value}}})", parts);
     }
 
     private static bool IsPair(ITypeSymbol? type) =>

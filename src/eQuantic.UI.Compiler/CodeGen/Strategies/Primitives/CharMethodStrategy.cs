@@ -135,7 +135,7 @@ public class CharMethodStrategy : IExpressionIrStrategy
             _ => c,
         };
         if (name == "IsWhiteSpace") context.UsedHelpers.Add(Eq.Import);
-        return JsExpr.Template(place(template), args, context.TypeAnnotations);
+        return JsExpr.Template(place(template), args);
     }
 
     /// <summary>A pattern tested against the character, which is an argument of the test.</summary>

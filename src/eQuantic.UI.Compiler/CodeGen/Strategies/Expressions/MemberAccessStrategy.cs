@@ -23,7 +23,7 @@ public class MemberAccessStrategy : IExpressionIrStrategy
     public JsExpr ConvertIr(SyntaxNode node, ConversionContext context)
     {
         var memberAccess = (MemberAccessExpressionSyntax)node;
-        var name = memberAccess.Name.Identifier.Text;
+        var name = memberAccess.Name.Identifier.ValueText;
         var receiver = context.Converter.ConvertIr(memberAccess.Expression);
         // The receiver's text, fenced for receiver position — what the template branches splice.
         var expr = JsExprWriter.WriteIn(receiver, JsPrecedence.Call);

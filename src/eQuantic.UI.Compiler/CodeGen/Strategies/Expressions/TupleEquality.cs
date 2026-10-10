@@ -33,7 +33,7 @@ internal static class TupleEquality
             ? $"$a == null || $b == null ? $a == null && $b == null : {elements}"
             : elements;
         var compare = $"(($a, $b) => {body})({{0}}, {{1}})";
-        return JsExpr.Template(op == "==" ? compare : $"!{compare}", new[] { leftIr, rightIr }, context.TypeAnnotations);
+        return JsExpr.Template(op == "==" ? compare : $"!{compare}", new[] { leftIr, rightIr });
     }
 
     /// <summary>Each pair of elements by its own <c>==</c>, joined as C# joins them; null when an

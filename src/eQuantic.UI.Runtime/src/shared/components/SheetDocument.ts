@@ -25,7 +25,7 @@ export class SheetDocument {
 
     getCell(cell: CellRef) {
         let value: any; 
-        return (($0: any, $1: any) => ($0.has($1) ? ((value = $0.get($1)), true) : ((value = null), false)))(this._cells, cell.key) ? value : '';
+        return (($0, $1) => ($0.has($1) ? ((value = $0.get($1)), true) : ((value = null), false)))(this._cells, cell.key) ? value : '';
     }
 
     setCell(cell: CellRef, value: string) {
@@ -34,12 +34,12 @@ export class SheetDocument {
 
     rowHeight(row: number) {
         let height: any; 
-        return (($0: any) => ($0.has(row) ? ((height = $0.get(row)), true) : ((height = 0), false)))(this._rowHeights) ? height : SheetDocument.defaultRowHeight;
+        return (($0) => ($0.has(row) ? ((height = $0.get(row)), true) : ((height = 0), false)))(this._rowHeights) ? height : SheetDocument.defaultRowHeight;
     }
 
     colWidth(col: number) {
         let width: any; 
-        return (($0: any) => ($0.has(col) ? ((width = $0.get(col)), true) : ((width = 0), false)))(this._colWidths) ? width : SheetDocument.defaultColWidth;
+        return (($0) => ($0.has(col) ? ((width = $0.get(col)), true) : ((width = 0), false)))(this._colWidths) ? width : SheetDocument.defaultColWidth;
     }
 
     setRowHeight(row: number, height: number) {
