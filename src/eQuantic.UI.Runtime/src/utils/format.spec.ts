@@ -231,10 +231,10 @@ describe('a date with no culture in force', () => {
   });
 });
 
-// A DateTime keeps no time zone (found in review, #472): its parts print as they are, where a local
-// Date built from them was normalised by the host's zone, and in New York's spring-forward gap 02:30
-// became 03:30. Only U reads the value as local time, as .NET does. The expected strings are .NET 10's
-// with TZ=America/New_York.
+// A DateTime of no kind prints its own parts (found in review, #472), where a local Date built from
+// them was normalised by the host's zone, and in New York's spring-forward gap 02:30 became 03:30.
+// U reads it as local time, as .NET does. The expected strings are .NET 10's with
+// TZ=America/New_York.
 describe('a date in a time zone that skips or repeats an hour', () => {
   const zone = process.env.TZ;
   afterEach(() => {
@@ -246,13 +246,13 @@ describe('a date in a time zone that skips or repeats an hour', () => {
   it('prints its own parts, and U moves it to UTC as .NET does', () => {
     process.env.TZ = 'America/New_York';
     installCulture('', '', {});
-    const gap = dateTime(2026, 3, 8, 2, 30, 0);
+    const gap = dateTime.of(2026, 3, 8, 2, 30, 0);
     expect(format(gap, 'HH:mm')).toBe('02:30');
     expect(format(gap, 's')).toBe('2026-03-08T02:30:00');
     expect(format(gap, 'o')).toBe('2026-03-08T02:30:00.0000000');
     expect(format(gap, 'F')).toBe('Sunday, 08 March 2026 02:30:00');
     expect(format(gap, 'U')).toBe('Sunday, 08 March 2026 07:30:00');
-    expect(format(dateTime(2026, 7, 1, 12, 0, 0), 'U')).toBe('Wednesday, 01 July 2026 16:00:00');
+    expect(format(dateTime.of(2026, 7, 1, 12, 0, 0), 'U')).toBe('Wednesday, 01 July 2026 16:00:00');
   });
 
   // A repeated hour is standard time to .NET's ToUniversalTime, where the Date constructor took the
@@ -260,10 +260,10 @@ describe('a date in a time zone that skips or repeats an hour', () => {
   it('reads the hour a fall-back repeats as standard time for U, as .NET does', () => {
     process.env.TZ = 'America/New_York';
     installCulture('', '', {});
-    expect(format(dateTime(2026, 11, 1, 1, 30, 0), 'U')).toBe('Sunday, 01 November 2026 06:30:00');
-    expect(format(dateTime(2026, 11, 1, 0, 59, 59), 'U')).toBe('Sunday, 01 November 2026 04:59:59');
-    expect(format(dateTime(2026, 11, 1, 2, 0, 0), 'U')).toBe('Sunday, 01 November 2026 07:00:00');
-    expect(format(dateTime(2026, 11, 1, 1, 30, 0), 'HH:mm')).toBe('01:30');
+    expect(format(dateTime.of(2026, 11, 1, 1, 30, 0), 'U')).toBe('Sunday, 01 November 2026 06:30:00');
+    expect(format(dateTime.of(2026, 11, 1, 0, 59, 59), 'U')).toBe('Sunday, 01 November 2026 04:59:59');
+    expect(format(dateTime.of(2026, 11, 1, 2, 0, 0), 'U')).toBe('Sunday, 01 November 2026 07:00:00');
+    expect(format(dateTime.of(2026, 11, 1, 1, 30, 0), 'HH:mm')).toBe('01:30');
   });
 });
 
@@ -353,10 +353,72 @@ describe('a date picture in a culture whose data did not travel', () => {
   afterEach(() => installCulture('', '', {}));
 
   it('takes the separators and the era from Intl', () => {
-    const moment = dateTime(2026, 9, 24, 10, 30, 15);
+    const moment = dateTime.of(2026, 9, 24, 10, 30, 15);
     installCulture('de-DE', 'de-DE', {});
     expect(format(moment, 'dd/MM/yyyy HH:mm g')).toBe('24.09.2026 10:30 n. Chr.');
     installCulture('fi-FI', 'fi-FI', {});
     expect(format(moment, 'HH:mm')).toBe('10.30');
+  });
+});
+
+// A DateTime's kind, which the formatter did not track: a UTC time's `o` had no `Z`, its `U` was moved
+// by the browser's offset a second time, `K` wrote nothing and `z` was copied as a letter (#606).
+// .NET 10's strings with TZ=Europe/Lisbon, where 2026-10-25 01:00 to 01:59 happens twice.
+describe("a date's kind, which o, K, z and U read", () => {
+  const zone = process.env.TZ;
+  afterEach(() => {
+    if (zone === undefined) delete process.env.TZ;
+    else process.env.TZ = zone;
+    installCulture('', '', {});
+  });
+
+  it('writes each kind as .NET does', () => {
+    process.env.TZ = 'Europe/Lisbon';
+    installCulture('', '', {});
+    const kinds = [
+      dateTime.of(2026, 7, 1, 12, 0, 0, 0, 0, 'utc'),
+      dateTime.of(2026, 7, 1, 12, 0, 0, 0, 0, 'local'),
+      dateTime.of(2026, 7, 1, 12, 0, 0),
+    ];
+    const each = (pattern: string) => kinds.map((value) => format(value, pattern));
+    expect(each('o')).toEqual([
+      '2026-07-01T12:00:00.0000000Z',
+      '2026-07-01T12:00:00.0000000+01:00',
+      '2026-07-01T12:00:00.0000000',
+    ]);
+    expect(each('%K')).toEqual(['Z', '+01:00', '']);
+    expect(each('%z')).toEqual(['+0', '+1', '+1']);
+    expect(each('zz')).toEqual(['+00', '+01', '+01']);
+    expect(each('HH:mm zzz')).toEqual(['12:00 +00:00', '12:00 +01:00', '12:00 +01:00']);
+    expect(each('U')).toEqual([
+      'Wednesday, 01 July 2026 12:00:00',
+      'Wednesday, 01 July 2026 11:00:00',
+      'Wednesday, 01 July 2026 11:00:00',
+    ]);
+  });
+
+  it("writes a repeated hour's daylight occurrence as the instant it came from", () => {
+    process.env.TZ = 'Europe/Lisbon';
+    installCulture('', '', {});
+    const first = dateTime.of(2026, 10, 25, 0, 30, 0, 0, 0, 'utc').toLocalTime();
+    const second = dateTime.of(2026, 10, 25, 1, 30, 0, 0, 0, 'utc').toLocalTime();
+    expect(format(first, 'o')).toBe('2026-10-25T01:30:00.0000000+01:00');
+    expect(format(first, 'U')).toBe('Sunday, 25 October 2026 00:30:00');
+    expect(format(second, 'o')).toBe('2026-10-25T01:30:00.0000000+00:00');
+    expect(format(second, 'U')).toBe('Sunday, 25 October 2026 01:30:00');
+  });
+
+  it('clamps U to the calendar, as ToUniversalTime clamps', () => {
+    process.env.TZ = 'Asia/Kolkata';
+    installCulture('', '', {});
+    expect(format(dateTime.minValue(), 'U')).toBe('Monday, 01 January 0001 00:00:00');
+    expect(format(dateTime.maxValue(), 'U')).toBe('Friday, 31 December 9999 18:29:59');
+    process.env.TZ = 'America/Sao_Paulo';
+    installCulture('', '', {});
+    expect(format(dateTime.maxValue(), 'U')).toBe('Friday, 31 December 9999 23:59:59');
+  });
+
+  it('refuses a letter alone that is no standard specifier, as .NET does', () => {
+    expect(() => format(dateTime.of(2026, 7, 1, 12, 0, 0), 'K')).toThrow('Input string was not in a correct format.');
   });
 });

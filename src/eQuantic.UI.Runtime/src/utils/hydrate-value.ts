@@ -58,9 +58,10 @@ export function hydrateValue(current: unknown, incoming: unknown): unknown {
     return long(incoming);
   }
 
-  // DateTime field: parse the ISO-8601 string the server emitted back into the compat type.
+  // DateTime field: the ISO-8601 string the server emitted, read as System.Text.Json reads it, its
+  // zone included.
   if (current instanceof DateTime && typeof incoming === 'string') {
-    return dateTime.parse(incoming);
+    return dateTime.fromJson(incoming);
   }
 
   // TimeSpan field: parse the .NET "c" string ([-][d.]hh:mm:ss[.fffffff]) back into the compat type.

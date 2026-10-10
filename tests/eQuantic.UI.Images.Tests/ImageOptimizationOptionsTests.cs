@@ -103,7 +103,7 @@ public class ImageOptimizationOptionsTests
             CacheTtlSeconds = 86400,
             CacheDirectory = "/tmp/cache",
             MaxSourceSize = 5 * 1024 * 1024,
-            Formats = ["image/avif", "image/webp"],
+            Formats = ["image/png", "image/webp"],
             DeviceSizes = [1024, 2048],
             ImageSizes = [64, 128]
         };
@@ -112,8 +112,30 @@ public class ImageOptimizationOptionsTests
         options.CacheTtlSeconds.Should().Be(86400);
         options.CacheDirectory.Should().Be("/tmp/cache");
         options.MaxSourceSize.Should().Be(5 * 1024 * 1024);
-        options.Formats.Should().BeEquivalentTo(["image/avif", "image/webp"]);
+        options.Formats.Should().BeEquivalentTo(["image/png", "image/webp"]);
         options.DeviceSizes.Should().BeEquivalentTo([1024, 2048]);
         options.ImageSizes.Should().BeEquivalentTo([64, 128]);
+    }
+
+    [Theory]
+    [InlineData("image/webp")]
+    [InlineData("image/png")]
+    [InlineData("image/jpeg")]
+    public void Validate_TakesEveryFormatAnEncoderWrites(string format)
+    {
+        var options = new ImageOptimizationOptions { Formats = [format] };
+
+        options.Invoking(o => o.Validate()).Should().NotThrow();
+    }
+
+    [Fact]
+    public void Validate_RefusesAvif_WhichNoEncoderWrites()
+    {
+        // Listed first, AVIF was negotiated with every browser that takes it and answered with
+        // JPEG, past the WebP listed after it.
+        var options = new ImageOptimizationOptions { Formats = ["image/avif", "image/webp"] };
+
+        options.Invoking(o => o.Validate()).Should().Throw<ArgumentException>()
+            .WithMessage("Invalid format 'image/avif'*");
     }
 }

@@ -1,8 +1,7 @@
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
-using SixLabors.ImageSharp;
-using SixLabors.ImageSharp.PixelFormats;
+using SkiaSharp;
 
 namespace eQuantic.UI.Images.Tests;
 
@@ -17,9 +16,13 @@ public class ImageOptimizationMiddlewareTests : IDisposable
         _cacheDir = Path.Combine(Path.GetTempPath(), $"equantic-cache-{Guid.NewGuid():N}");
         Directory.CreateDirectory(Path.Combine(_webRoot, "images"));
 
-        // Create a test image in wwwroot/images/
-        using var image = new Image<Rgba32>(1920, 1080, Color.Red);
-        image.SaveAsJpeg(Path.Combine(_webRoot, "images", "test.jpg"));
+        // Create the test images in wwwroot/images/
+        var images = Path.Combine(_webRoot, "images");
+        File.WriteAllBytes(Path.Combine(images, "test.jpg"), TestImages.Solid(1920, 1080, SKColors.Red));
+        File.WriteAllBytes(Path.Combine(images, "animated.gif"), TestImages.AnimatedGif());
+        File.WriteAllBytes(Path.Combine(images, "huge.png"), TestImages.PngHeaderOnly(20_000, 20_000));
+        File.WriteAllBytes(Path.Combine(images, "scan.tiff"), [0x49, 0x49, 0x2A, 0x00, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00]);
+        File.WriteAllText(Path.Combine(images, "not-an-image.jpg"), "plain text under an image's name");
     }
 
     public void Dispose()
@@ -241,8 +244,56 @@ public class ImageOptimizationMiddlewareTests : IDisposable
 
         await ImageOptimizationMiddleware.HandleAsync(context);
 
-        context.Response.Body.Position = 0;
-        using var optimized = await Image.LoadAsync(context.Response.Body);
-        optimized.Width.Should().Be(640);
+        var optimized = ((MemoryStream)context.Response.Body).ToArray();
+        TestImages.SizeOf(optimized).Width.Should().Be(640);
+    }
+
+    [Fact]
+    public async Task HandleAsync_TiffSource_Returns400()
+    {
+        // SkiaSharp reads no TIFF, so the extension is refused before the file is opened.
+        var context = CreateHttpContext(url: "/images/scan.tiff", width: "640");
+
+        await ImageOptimizationMiddleware.HandleAsync(context);
+
+        context.Response.StatusCode.Should().Be(400);
+        var body = await ReadResponseBody(context);
+        body.Should().Contain("image file");
+    }
+
+    [Fact]
+    public async Task HandleAsync_BytesThatAreNotAnImage_Returns400()
+    {
+        var context = CreateHttpContext(url: "/images/not-an-image.jpg", width: "640");
+
+        await ImageOptimizationMiddleware.HandleAsync(context);
+
+        context.Response.StatusCode.Should().Be(400, "a source the optimizer cannot read is the request's fault, not the server's");
+        var body = await ReadResponseBody(context);
+        body.Should().Contain("JPEG, PNG, GIF, WebP or BMP");
+    }
+
+    [Fact]
+    public async Task HandleAsync_SourceWithMorePixelsThanItMayDecode_Returns400()
+    {
+        var context = CreateHttpContext(url: "/images/huge.png", width: "640");
+
+        await ImageOptimizationMiddleware.HandleAsync(context);
+
+        context.Response.StatusCode.Should().Be(400);
+        var body = await ReadResponseBody(context);
+        body.Should().Contain("20000 × 20000 pixels");
+    }
+
+    [Fact]
+    public async Task HandleAsync_AnimatedSource_IsServedAsItIs_WithItsOwnType()
+    {
+        var context = CreateHttpContext(url: "/images/animated.gif", width: "640");
+
+        await ImageOptimizationMiddleware.HandleAsync(context);
+
+        context.Response.StatusCode.Should().Be(200);
+        context.Response.ContentType.Should().Be("image/gif");
+        ((MemoryStream)context.Response.Body).ToArray().Should().Equal(TestImages.AnimatedGif());
     }
 }

@@ -61,7 +61,15 @@ function activeFormatLocale(): string {
 function cultureFormat(): CultureFormat | null {
   return invariantDepth > 0 ? INVARIANT_FORMAT : activeFormatData();
 }
-import { DateOnly, DateTime as DotNetDateTime, DateTimeOffset, TimeOnly } from './datetime';
+import {
+  DateOnly,
+  DateTime as DotNetDateTime,
+  DateTimeOffset,
+  TimeOnly,
+  utcOffsetOf,
+  wallOffsetMs,
+  type DateTimeKind,
+} from './datetime';
 import { Decimal } from './decimal';
 import {
   exactOfBigInt,
@@ -774,13 +782,19 @@ interface Moment {
   readonly date: Date;
   /** The fraction of a second as the seven digits `f` and `o` write, asked only by what writes it. */
   readonly fraction: () => string;
-  /** A DateTimeOffset's offset from UTC, in minutes. Null for the other types, whose offset — what
-   * `z` writes — is the host's at that time, as .NET's is for a DateTime of no kind. */
-  readonly offset: number | null;
+  /** A DateTime's kind, which its round trip, `K` and `U` read (#606). Every other value is of no
+   * kind: a native Date, whose parts are read as a clock time, a DateOnly and a TimeOnly, which .NET
+   * formats as a DateTime of none, and a DateTimeOffset, which writes its own offset instead. */
+  readonly kind: DateTimeKind;
+  /** The offset east of UTC, in milliseconds, asked only by what writes it (`z`, `K`, `o`, `U`): a
+   * DateTimeOffset's own, nothing for a UTC time, and for any other the browser's zone's at that
+   * clock time, as `TimeZoneInfo.GetUtcOffset` reads it, a repeated hour marked as its daylight
+   * occurrence taking the daylight one (`utcOffsetOf`, #606). */
+  readonly offset: () => number;
 }
 
 const TICKS_PER_SECOND = 10_000_000n;
-const TICKS_PER_MINUTE = 600_000_000n;
+const TICKS_PER_MILLISECOND = 10_000n;
 
 /** The fraction of a second in a tick count, as seven digits. */
 function sevenDigits(ticks: bigint): string {
@@ -807,37 +821,38 @@ function momentOf(value: unknown): Moment | null {
     );
     // A native Date has its milliseconds, which is all it has.
     const fraction = () => String(value.getMilliseconds()).padStart(3, '0') + '0000';
-    return { type: 'dateTime', date, fraction, offset: null };
+    return { type: 'dateTime', date, fraction, ...ofNoKind(date) };
   }
   if (value instanceof DotNetDateTime)
     return {
       type: 'dateTime',
       date: wallClock(value.year, value.month - 1, value.day, value.hour, value.minute, value.second, value.millisecond),
       fraction: () => sevenDigits(value.ticks),
-      offset: null,
+      kind: value.kind,
+      offset: () => Number(utcOffsetOf(value) / TICKS_PER_MILLISECOND),
     };
-  if (value instanceof DateOnly)
-    return {
-      type: 'dateOnly',
-      date: wallClock(value.year, value.month - 1, value.day, 0, 0, 0, 0),
-      fraction: () => '0000000',
-      offset: null,
-    };
-  if (value instanceof TimeOnly)
-    return {
-      type: 'timeOnly',
-      date: wallClock(1, 0, 1, value.hour, value.minute, value.second, value.millisecond),
-      fraction: () => sevenDigits(value.ticks),
-      offset: null,
-    };
+  if (value instanceof DateOnly) {
+    const date = wallClock(value.year, value.month - 1, value.day, 0, 0, 0, 0);
+    return { type: 'dateOnly', date, fraction: () => '0000000', ...ofNoKind(date) };
+  }
+  if (value instanceof TimeOnly) {
+    const date = wallClock(1, 0, 1, value.hour, value.minute, value.second, value.millisecond);
+    return { type: 'timeOnly', date, fraction: () => sevenDigits(value.ticks), ...ofNoKind(date) };
+  }
   if (value instanceof DateTimeOffset)
     return {
       type: 'dateTimeOffset',
       date: wallClock(value.year, value.month - 1, value.day, value.hour, value.minute, value.second, value.millisecond),
       fraction: () => sevenDigits(value.localTicks),
-      offset: Number(value.offsetTicks / TICKS_PER_MINUTE),
+      kind: 'unspecified',
+      offset: () => Number(value.offsetTicks / TICKS_PER_MILLISECOND),
     };
   return null;
+}
+
+/** A clock time of no kind, its offset the browser's zone's at that clock time. */
+function ofNoKind(date: Date): Pick<Moment, 'kind' | 'offset'> {
+  return { kind: 'unspecified', offset: () => wallOffsetMs(date.getTime()) };
 }
 
 /** The wall-clock parts as a Date's UTC fields. `Date.UTC` reads a year from 0 to 99 as 1900 plus
@@ -855,6 +870,10 @@ function wallClock(
   date.setUTCFullYear(year);
   return date;
 }
+
+/** DateTime.MinValue's and MaxValue's wall clocks, which a conversion to UTC stays between. */
+const FIRST_WALL = wallClock(1, 0, 1, 0, 0, 0, 0).getTime();
+const LAST_WALL = wallClock(9999, 11, 31, 23, 59, 59, 999).getTime();
 
 /**
  * The standard date/time specifiers .NET spells with ONE letter, as the culture PATTERNS they
@@ -986,29 +1005,33 @@ function digits(value: number, length: number, unlimited = false): string {
   return String(value).padStart(unlimited ? length : Math.min(length, 2), '0');
 }
 
-/** The moment's offset from UTC, in minutes: a DateTimeOffset's own, and for every other type the
- * host's at that time, as .NET reads it for a DateTime of no kind. */
-function offsetMinutes(moment: Moment): number {
-  return moment.offset ?? Math.round(localOffset(moment.date.getTime()) / 60_000);
-}
-
-/** An offset as `z` (`+1`), `zz` (`+01`) and `zzz` (`+01:00`) write it: always signed, its minutes
- * after a colon that is not the culture's time separator. */
-function offsetText(minutes: number, length: number): string {
-  const sign = minutes < 0 ? '-' : '+';
-  const hours = Math.trunc(Math.abs(minutes) / 60);
+/** An offset as `z` (`+1`), `zz` (`+01`) and `zzz` (`+01:00`) write it, from its milliseconds:
+ * always signed, its minutes after a colon that is not the culture's time separator. */
+function offsetText(milliseconds: number, length: number): string {
+  const sign = milliseconds < 0 ? '-' : '+';
+  const minutes = Math.abs(Math.trunc(milliseconds / 60_000));
+  const hours = Math.trunc(minutes / 60);
   if (length <= 1) return sign + String(hours);
   const whole = sign + String(hours).padStart(2, '0');
-  return length < 3 ? whole : `${whole}:${String(Math.abs(minutes) % 60).padStart(2, '0')}`;
+  return length < 3 ? whole : `${whole}:${String(minutes % 60).padStart(2, '0')}`;
+}
+
+/** The zone a round trip writes after a clock time, as .NET's `o` and `K` write it: a
+ * DateTimeOffset's own offset, `Z` for a UTC time, the offset for a local one, and nothing for a
+ * time of no kind (#606). */
+function roundTripZone(moment: Moment): string {
+  if (moment.type === 'dateTimeOffset' || moment.kind === 'local') return offsetText(moment.offset(), 3);
+  return moment.kind === 'utc' ? 'Z' : '';
 }
 
 /**
  * Renders a .NET date/time PATTERN as .NET's `FormatCustomized` does, token by token: a run of one
  * letter is one token whose length decides what it writes (`yyyyy` is a five-digit year, `hhh` a
  * two-digit hour, `MMMMM` the month's name), `/` and `:` are the culture's date and time separators
- * (de-DE writes `dd/MM/yyyy` as `24.09.2026`), `z` the offset, `K` a DateTimeOffset's offset and
- * nothing for a DateTime of no kind, `g` the era, a quoted run and a `\`-escaped character are text,
- * and `%` makes the character after it a token of its own. They were written as they stand (#470).
+ * (de-DE writes `dd/MM/yyyy` as `24.09.2026`), `z` the offset, a UTC time's zero and any other's
+ * own or its zone's, `K` the zone a round trip writes (#606), `g` the era, a quoted run and a
+ * `\`-escaped character are text, and `%` makes the character after it a token of its own. They were
+ * written as they stand (#470).
  */
 function renderPattern(moment: Moment, pattern: string): string {
   const value = moment.date;
@@ -1103,11 +1126,11 @@ function renderPattern(moment: Moment, pattern: string): string {
         return;
       }
       case 'z':
-        out += offsetText(offsetMinutes(moment), run);
+        // A UTC time's zero, and any other's offset: a DateTimeOffset's own and the zone's (#606).
+        out += offsetText(moment.offset(), run);
         return;
       case 'K':
-        // A DateTime keeps no kind, and .NET writes nothing for one of no kind.
-        if (moment.type === 'dateTimeOffset') out += offsetText(moment.offset ?? 0, 3);
+        out += roundTripZone(moment);
         return;
       case ':':
         out += dateSymbol('timeSeparator');
@@ -1214,39 +1237,25 @@ function sortableParts(value: Date): { date: string; time: string } {
   };
 }
 
-const DAY_MS = 86_400_000;
-
 /**
- * The host zone's offset, in milliseconds east of UTC, for wall-clock parts held as a Date's UTC
- * fields (`wall` is their time value), read as .NET's TimeZoneInfo.GetUtcOffset reads it: the
- * one offset that names those parts, or, for a time a transition skips or repeats, the standard one,
- * the smaller of the two around it. The Date constructor took the daylight instant of a repeated
- * hour, so 2026-11-01 01:30 in New York printed 05:30 UTC where .NET prints 06:30 (found in
- * Copilot's second round, #472).
+ * The same moment at UTC, as .NET's ToUniversalTime moves it: a DateTimeOffset's clock less its own
+ * offset, a UTC time as it is, and any other less its zone's offset, a time of no kind read as local
+ * and a repeated hour as its standard occurrence unless it is marked as its daylight one (#606).
+ * Clamped to the calendar, as ToUniversalTime clamps: DateTime.MinValue east of UTC printed year 0000.
  */
-function localOffset(wall: number): number {
-  const offsetAt = (instant: number) => -new Date(instant).getTimezoneOffset() * 60_000;
-  const before = offsetAt(wall - DAY_MS);
-  const after = offsetAt(wall + DAY_MS);
-  const naming = [before, after].filter((offset) => offsetAt(wall - offset) === offset);
-  return naming.length === 1 ? naming[0] : Math.min(before, after);
-}
-
-/** The same moment at UTC: a DateTimeOffset's clock less its own offset, and any other's read as
- * local time and moved, as .NET's ToUniversalTime moves a DateTime of no kind. */
 function universal(moment: Moment): Moment {
-  const wall = moment.date.getTime();
-  const shift = moment.offset !== null ? moment.offset * 60_000 : localOffset(wall);
-  return { ...moment, date: new Date(wall - shift), offset: 0 };
+  const moved = moment.date.getTime() - moment.offset();
+  const date = new Date(Math.min(Math.max(moved, FIRST_WALL), LAST_WALL));
+  return { ...moment, date, kind: 'utc', offset: () => 0 };
 }
 
 /**
  * Formats a date through a standard specifier or a custom picture, as .NET formats the type it is
- * (#388, #469). A DateTime's kind is not tracked (a wall-clock value, .NET's `Unspecified`), so the
- * round-trip, sortable and RFC 1123 forms write its own parts and only `U` converts, reading it as
- * local time as .NET does; a DateTimeOffset's `o` and `K` write its offset, and its `u` and `R`
- * convert it by it. No format, or an empty one, is the type's own text: `G` of a DateTime, `d` of a
- * DateOnly, `t` of a TimeOnly, and a DateTimeOffset's `G` with its offset after it.
+ * (#388, #469). A DateTime's sortable and RFC 1123 forms write its own parts, its round trip ends
+ * them with the zone its kind names, and `U` converts to UTC a time that is not UTC already, a time
+ * of no kind read as local, as .NET does (#606); a DateTimeOffset's `o` and `K` write its offset, and
+ * its `u` and `R` convert it by it. No format, or an empty one, is the type's own text: `G` of a
+ * DateTime, `d` of a DateOnly, `t` of a TimeOnly, and a DateTimeOffset's `G` with its offset after it.
  */
 function formatDate(moment: Moment, format: string | null): string {
   if (!format) {
@@ -1306,8 +1315,7 @@ function standardDate(moment: Moment, letter: string): string {
       const { date, time } = sortableParts(value);
       if (moment.type === 'dateOnly') return date;
       if (moment.type === 'timeOnly') return `${time}.${moment.fraction()}`;
-      const offset = moment.type === 'dateTimeOffset' ? offsetText(moment.offset ?? 0, 3) : '';
-      return `${date}T${time}.${moment.fraction()}${offset}`;
+      return `${date}T${time}.${moment.fraction()}${roundTripZone(moment)}`;
     }
     case 's': {
       const { date, time } = sortableParts(value);
@@ -1327,8 +1335,8 @@ function standardDate(moment: Moment, letter: string): string {
       return moment.type === 'dateOnly' ? day : `${day} ${time} GMT`;
     }
     case 'U':
-      // The full date and time of the value read as local time and moved to UTC, as .NET's
-      // ToUniversalTime moves an unspecified one.
+      // The full date and time of the value in UTC, as .NET's ToUniversalTime moves it: a UTC time
+      // as it is, and any other by its offset (#606).
       return standardDate(universal(moment), 'F');
   }
 
