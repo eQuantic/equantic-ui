@@ -2,7 +2,6 @@ AddChildStrategy
 ArrayCreationStrategy
 ArrayStaticStrategy
 AsExpressionStrategy
-AverageStrategy
 CastStrategy
 CollectionMaterializationStrategy
 ConditionalAccessStrategy
@@ -15,7 +14,6 @@ DateTimeStrategy
 DeclarationExpressionStrategy
 DefaultIfEmptyStrategy
 DefaultKeywordStrategy
-DistinctStrategy
 ElementAtStrategy
 EnumHasFlagStrategy
 EnumMethodStrategy
@@ -24,21 +22,18 @@ EventSubscriptionStrategy
 FieldExpressionStrategy
 FirstStrategy
 GenericNameStrategy
-GroupByStrategy
 HtmlNodeStrategy
 IndexFromEndStrategy
 InlinedConstantStrategy
 InterpolatedStringStrategy
 IsPatternStrategy
 LastStrategy
-LookupIndexerStrategy
 MinMaxStrategy
 NameofStrategy
 NamespaceRemovalStrategy
 NullableStrategy
 NumericConstantStrategy
 OfTypeStrategy
-OrderByStrategy
 QueryExpressionStrategy
 QueueStackStrategy
 RangeExpressionStrategy
@@ -58,7 +53,6 @@ StringBuilderStrategy
 StringMethodStrategy
 StringStaticStrategy
 StructuralEqualsStrategy
-SumStrategy
 SwitchExpressionStrategy
 TakeStrategy
 TaskMethodStrategy

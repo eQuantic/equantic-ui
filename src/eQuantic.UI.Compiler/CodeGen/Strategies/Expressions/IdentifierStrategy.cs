@@ -87,8 +87,10 @@ public class IdentifierStrategy : IExpressionIrStrategy
                     if (!isMemberName && symbol is IFieldSymbol { ContainingType.TypeKind: TypeKind.Enum } enumMember)
                         return JsExpr.Literal(Types.EnumStrategy.MemberLiteral(enumMember));
 
-                    // A .NET type's member reached bare that no strategy claimed has no translation:
-                    // the class-static rule below is for the types the transpiler EMITS (#485).
+                    // A .NET type's member reached bare goes where its qualified spelling goes (#556),
+                    // and one that spelling does not translate either has no translation: the
+                    // class-static rule below is for the types the transpiler EMITS (#485).
+                    if (!isMemberName && symbol.AsQualified(identifier, context) is { } qualified) return qualified;
                     if (!isMemberName && symbol.ReportIfPlatformReachedBare(identifier, context))
                         return JsExpr.Literal("undefined");
                     return isMemberName

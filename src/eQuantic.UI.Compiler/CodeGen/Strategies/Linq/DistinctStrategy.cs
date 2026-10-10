@@ -1,13 +1,14 @@
 using System.Linq;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using eQuantic.UI.Compiler.CodeGen.Ir;
 
 namespace eQuantic.UI.Compiler.CodeGen.Strategies.Linq;
 
 /// <summary>
 /// Converts LINQ .Distinct() to JavaScript [...new Set(array)]
 /// </summary>
-public class DistinctStrategy : IConversionStrategy
+public class DistinctStrategy : IExpressionIrStrategy
 {
     public bool CanConvert(SyntaxNode node, ConversionContext context)
     {
@@ -37,26 +38,27 @@ public class DistinctStrategy : IConversionStrategy
         return false;
     }
 
-    public string Convert(SyntaxNode node, ConversionContext context)
+    public JsExpr ConvertIr(SyntaxNode node, ConversionContext context)
     {
         var invocation = (InvocationExpressionSyntax)node;
         var memberAccess = (MemberAccessExpressionSyntax)invocation.Expression;
 
-        var caller = LinqSource.Text(memberAccess.Expression, context);
+        var source = LinqSource.Ir(memberAccess.Expression, context);
 
         // JS Set dedups by SameValueZero, which matches C# Distinct for primitives, strings,
         // enums AND plain reference types (reference equality). Only records and structs use
         // structural/value equality, where Set would keep equal-but-distinct instances — those
-        // need a value-based dedup (keeping the first occurrence, like Distinct).
+        // need a value-based dedup (keeping the first occurrence, like Distinct). The filter's
+        // names take a `$`, which no C# name holds (#397), and the set it remembers is made once.
         var elementType = context.SemanticHelper.GetType(memberAccess.Expression).GetEnumerableElementType();
         if (elementType is { } et && !IsPrimitiveOrString(et) && (et.IsRecord || et.TypeKind == TypeKind.Struct))
         {
-            return $"(() => {{ const _seen = new Set(); return {caller}.filter(_x => {{ " +
-                   $"const _k = JSON.stringify(_x); if (_seen.has(_k)) return false; _seen.add(_k); return true; }}); }})()";
+            return JsExpr.Template("{0}.filter((($seen) => ($x) => { const $k = JSON.stringify($x); " +
+                                   "if ($seen.has($k)) return false; $seen.add($k); return true; })(new Set()))", [source]);
         }
 
         // [...new Set(array)] creates a new array with unique values
-        return $"[...new Set({caller})]";
+        return JsExpr.Template("[...new Set({0})]", [source]);
     }
 
     private static bool IsPrimitiveOrString(ITypeSymbol type)

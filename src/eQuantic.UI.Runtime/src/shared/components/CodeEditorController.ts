@@ -174,7 +174,7 @@ export class CodeEditorController {
         let text = this._document.line(line);
         let tabSize = this.rules.indentWidth;
         let cells: any; 
-        if ((($0: any) => ($0.has(line) ? ((cells = $0.get(line)), true) : ((cells = null), false)))(this._cells) && cells.text === text && cells.tabSize === tabSize) return cells;
+        if ((($0) => ($0.has(line) ? ((cells = $0.get(line)), true) : ((cells = null), false)))(this._cells) && cells.text === text && cells.tabSize === tabSize) return cells;
         cells = new CodeLineCells(text, tabSize);
         $eq.mapSet(this._cells, line, cells);
         return cells;

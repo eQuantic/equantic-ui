@@ -144,18 +144,18 @@ internal sealed class BoundArguments
     /// the order the arguments are written. It kept the parameter order instead, so eleven named
     /// arguments out of their order ran in the signature's (found by Copilot's review of #608).
     /// </summary>
-    public JsExpr New(string type, bool annotate)
+    public JsExpr New(string type)
     {
         // Literals and names alone can be read in any order: nothing among them runs.
         if (InWrittenOrder || Written.All(part => part is JsLiteral or JsIdentifier))
             return JsExpr.New(JsExpr.Identifier(type), InParameterOrder());
         if (Written.Count > 10)
         {
-            var parameters = string.Join(", ", Written.Select((_, index) => $"$a{index}" + (annotate ? ": any" : "")));
+            var parameters = string.Join(", ", Written.Select((_, index) => $"$a{index}"));
             var construction = JsExpr.New(JsExpr.Identifier(type), InParameterOrder(index => JsExpr.Identifier($"$a{index}")));
             return JsExpr.Call(JsExpr.Arrow(parameters, construction), Written);
         }
         var holes = Slots.Select(slot => slot.Written < 0 ? "undefined" : (slot.Spread ? "..." : "") + $"{{{slot.Written}}}");
-        return JsExpr.Template($"(new {type}({string.Join(", ", holes)}))", Written, annotate);
+        return JsExpr.Template($"(new {type}({string.Join(", ", holes)}))", Written);
     }
 }

@@ -93,7 +93,7 @@ public class MinMaxStrategy : IConversionStrategy
             var selector = parameters.Length > 0 ? "{1}" : "undefined";
             var template = PrimitiveStaticStrategy.BindNamedArguments($"{helper}({{0}}, {selector}, {how})", invocation, method);
             var parts = arguments.Select(argument => context.Converter.ConvertIr(argument.Expression)).ToArray();
-            return JsExprWriter.Write(JsExpr.Template(template, parts, context.TypeAnnotations));
+            return JsExprWriter.Write(JsExpr.Template(template, parts));
         }
         var source = LinqSource.Text(access.Expression, context);
         var projection = arguments.Count > 0 ? context.Converter.ConvertExpression(arguments[0].Expression) : "undefined";
