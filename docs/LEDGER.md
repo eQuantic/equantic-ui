@@ -1703,6 +1703,14 @@ record of a release, the wiki's Upgrading page is the distillate.
   1970 toward the epoch; it answers a BigInt cut as .NET cuts it now. Found on the way: the date
   constructors past the second ([#606](https://github.com/eQuantic/equantic-ui/issues/606)).
   Proposed and archived through OpenSpec (`openspec/specs/runtime-dates`).
+- **2026-10-07 · A spreadsheet cell sits under its header**: on the web the spreadsheet drew every
+  cell one column left of its header, over the row numbers
+  ([#613](https://github.com/eQuantic/equantic-ui/issues/613)). The row number strip hugged its row
+  headers, whose Stack layers may not grow past them, so its minimum was zero and the browser shrank it
+  to 0px beside a wider grid. It is as wide as its header now, a Fixed size that shrinks on neither
+  target, measured in Chromium on the dashboard sample. The general case, a hugging Stack that a flex
+  line can squeeze to nothing on the web, is [#698](https://github.com/eQuantic/equantic-ui/issues/698).
+  Proposed and archived through OpenSpec (`openspec/specs/spreadsheet`).
 - **2026-10-07 · Every producer draws the same tree**: five places where the server's realizer,
   its browser twin and Photon drew one tree three ways, one family of the bug sweep. A Text lowers
   as a block on the web, so a 10/15 label in a padded pill is 21px where it sat on the body font's
