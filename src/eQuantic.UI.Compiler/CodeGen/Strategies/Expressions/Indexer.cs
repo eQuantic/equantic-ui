@@ -80,7 +80,8 @@ internal static class Indexer
         var ns = declaring.ContainingNamespace?.ToDisplayString() ?? "";
         return declaring.Locations.Any(location => location.IsInSource)
             || Services.RuntimeProvidedTypeScanner.IsTranspiledNamespace(ns)
-            || declaring.TwinIsTranspiled();
+            || declaring.TwinIsTranspiled()
+            || Types.StringBuilderStrategy.CarriesIndexer(indexer);
     }
 
     /// <summary>

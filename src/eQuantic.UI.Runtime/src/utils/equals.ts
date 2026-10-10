@@ -63,3 +63,14 @@ export function equals(a: unknown, b: unknown): boolean {
   }
   return true;
 }
+
+/**
+ * The method group `value.Equals` of a value the browser holds as data, `Func<object, bool> same =
+ * color.Equals`: a delegate over the value as it is when the delegate is made, comparing as
+ * {@link equals} does. The compiler passes the receiver here, so it is read once, where C# copies it
+ * into the delegate: a receiver that is a call runs once, and a local reassigned afterwards leaves the
+ * delegate holding the value it was made with. A value type is never null, so there is no refusal.
+ */
+export function equalsGroup(value: unknown): (other: unknown) => boolean {
+  return (other) => equals(value, other);
+}

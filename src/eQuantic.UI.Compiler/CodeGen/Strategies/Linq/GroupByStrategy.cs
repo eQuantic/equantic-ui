@@ -2,6 +2,7 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Operations;
 using eQuantic.UI.Compiler.CodeGen.Extensions;
+using eQuantic.UI.Compiler.CodeGen.Ir;
 
 namespace eQuantic.UI.Compiler.CodeGen.Strategies.Linq;
 
@@ -21,26 +22,34 @@ namespace eQuantic.UI.Compiler.CodeGen.Strategies.Linq;
 /// grouped the raw words — which the query-syntax differential (<c>group w.ToUpper() by w.Length</c>
 /// lowers to exactly that call) was the first to catch.
 /// </para>
+/// <para>
+/// The names the reduce declares take a `$`, which no C# name holds: a key selector that read a captured
+/// <c>key</c> met the reduce's own <c>const key</c> before it was set and threw (#397). A selector that is
+/// not a lambda is evaluated once, before the reduce runs, where it ran once per element.
+/// </para>
 /// </summary>
-public class GroupByStrategy : IConversionStrategy
+public class GroupByStrategy : IExpressionIrStrategy
 {
     public bool CanConvert(SyntaxNode node, ConversionContext context)
     {
         return context.IsLinqMethod(node, "GroupBy");
     }
 
-    public string Convert(SyntaxNode node, ConversionContext context)
+    public JsExpr ConvertIr(SyntaxNode node, ConversionContext context)
     {
         var invocation = (InvocationExpressionSyntax)node;
         var memberAccess = (MemberAccessExpressionSyntax)invocation.Expression;
-        var source = LinqSource.Text(memberAccess.Expression, context);
+        var source = LinqSource.Ir(memberAccess.Expression, context);
         var args = invocation.ArgumentList.Arguments;
 
         if (args.Count == 0) return source;
 
-        string? keySelector = null;
-        string? elementSelector = null;
-        string? resultSelector = null;
+        // {0} is the source and the selectors follow it, in the order C# evaluates them: the order they
+        // are written, whatever part each plays.
+        var parts = new List<JsExpr> { source };
+        int? keySelector = null;
+        int? elementSelector = null;
+        int? resultSelector = null;
 
         var bound = context.SemanticHelper.GetSymbol(invocation) as IMethodSymbol;
         var roles = Roles(invocation, context);
@@ -49,13 +58,16 @@ public class GroupByStrategy : IConversionStrategy
             switch (roles[i])
             {
                 case "keySelector":
-                    keySelector = context.Converter.ConvertExpression(args[i].Expression);
+                    keySelector = parts.Count;
+                    parts.Add(context.Converter.ConvertIr(args[i].Expression));
                     break;
                 case "elementSelector":
-                    elementSelector = context.Converter.ConvertExpression(args[i].Expression);
+                    elementSelector = parts.Count;
+                    parts.Add(context.Converter.ConvertIr(args[i].Expression));
                     break;
                 case "resultSelector":
-                    resultSelector = context.Converter.ConvertExpression(args[i].Expression);
+                    resultSelector = parts.Count;
+                    parts.Add(context.Converter.ConvertIr(args[i].Expression));
                     break;
                 default:
                     // A key comparer is the collection fence's to judge (#578): one that asks for the
@@ -63,27 +75,29 @@ public class GroupByStrategy : IConversionStrategy
                     // other is refused, as a ToDictionary's is. Every comparer was refused here,
                     // StringComparer.Ordinal included.
                     if (context.SemanticHelper.GetOperation(args[i].Expression) is not { } comparer)
-                        return context.Unhandled(invocation, "GroupBy with a comparer");
-                    if (comparer.RefusesAsUntranslatable("GroupBy", context)) return invocation.ToString();
+                        return JsExpr.Opaque(context.Unhandled(invocation, "GroupBy with a comparer"));
+                    if (comparer.RefusesAsUntranslatable("GroupBy", context)) return JsExpr.Opaque(invocation.ToString());
                     break;
             }
         }
-        if (keySelector is null) return context.Unhandled(invocation, "GroupBy without a key selector");
+        if (keySelector is not { } keyAt)
+            return JsExpr.Opaque(context.Unhandled(invocation, "GroupBy without a key selector"));
 
-        var pushed = elementSelector is null ? "item" : $"({elementSelector})(item)";
+        var pushed = elementSelector is { } element ? $"({{{element}}})($item)" : "$item";
         // A key that is an object here (a record, a date, a decimal) groups by its VALUE, as .NET's
         // default equality does: by === two equal records were two groups.
         var key = bound is { TypeArguments.Length: > 1 } ? bound.TypeArguments[1] : null;
         if (LinqKeys.ComparesByValue(key)) context.UsedHelpers.Add(Eq.Import);
-        var grouped = $"{source}.reduce((groups, item) => {{ " +
-                      $"const key = ({keySelector})(item); " +
-                      $"let g = groups.find(x => {LinqKeys.Matches(key, "x.key", "key")}); " +
-                      "if (!g) { g = []; g.key = key; groups.push(g); } " +
-                      $"g.push({pushed}); return groups; }}, [])";
+        var grouped = "{0}.reduce(($groups, $item) => { " +
+                      $"const $key = ({{{keyAt}}})($item); " +
+                      $"let $g = $groups.find(($x) => {LinqKeys.Matches(key, "$x.key", "$key")}); " +
+                      "if (!$g) { $g = []; $g.key = $key; $groups.push($g); } " +
+                      $"$g.push({pushed}); return $groups; }}, [])";
 
-        return resultSelector is null
-            ? grouped
-            : $"{grouped}.map((g) => ({resultSelector})(g.key, g))";
+        // A selector that is a lambda is written where it is called; the writer binds any other.
+        return JsExpr.Template(
+            resultSelector is { } result ? $"{grouped}.map(($g) => ({{{result}}})($g.key, $g))" : grouped,
+            parts);
     }
 
     /// <summary>

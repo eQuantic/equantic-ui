@@ -111,6 +111,30 @@ describe('modal focus trap (§10)', () => {
     expect(dialog.contains(document.activeElement)).toBe(true);
   });
 
+  // The focused control hears Tab before the trap does (#598): a code editor at either end of a
+  // dialog indents on Tab, and the trap cycles only a Tab nothing consumed. Heard in the capture
+  // phase, the trap moved the focus and prevented the key before the editor ever saw it.
+  it('cycles only a Tab the focused control did not consume', () => {
+    const first = button('Cancel');
+    const editor = document.createElement('textarea');
+    let keeps = true;
+    editor.addEventListener('keydown', (event) => {
+      if (event.key === 'Tab' && keeps) event.preventDefault();
+    });
+    document.body.appendChild(layer(first, editor));
+    commitFocusTraps();
+    const tabOn = (target: HTMLElement) =>
+      target.dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab', bubbles: true, cancelable: true }));
+
+    editor.focus();
+    tabOn(editor);
+    expect(document.activeElement, 'the editor kept the Tab it consumed').toBe(editor);
+
+    keeps = false;
+    tabOn(editor);
+    expect(document.activeElement, 'a Tab it let go wraps to the first focusable').toBe(first);
+  });
+
   it('the topmost layer owns the keyboard when dialogs stack', () => {
     const outerButton = button('Outer');
     const outer = layer(outerButton);

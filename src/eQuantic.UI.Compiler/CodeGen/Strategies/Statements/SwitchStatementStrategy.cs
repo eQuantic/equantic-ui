@@ -95,52 +95,61 @@ public class SwitchStatementStrategy : IStatementStrategy
             if (seen.Add(name)) hoist.Add(name);
         SwitchSectionSyntax? defaultSection = null;
 
-        foreach (var section in switchStmt.Sections)
+        // The chain is ONE pattern-matching operation: a Deconstruct the app wrote is called once for the
+        // value, however many labels read its parts, and held where the chain's block declares it
+        // (MatchParts), fresh each time the switch runs.
+        var (_, held) = context.MatchParts.In(switchStmt.SpanStart, () =>
         {
-            if (section.Labels.Any(l => l is DefaultSwitchLabelSyntax))
+            foreach (var section in switchStmt.Sections)
             {
-                defaultSection = section;
-                continue;
-            }
-
-            var labelConditions = new List<string>();
-            foreach (var label in section.Labels)
-            {
-                switch (label)
+                if (section.Labels.Any(l => l is DefaultSwitchLabelSyntax))
                 {
-                    case CaseSwitchLabelSyntax constant:
-                        labelConditions.Add(PatternConverter.ConstantMatch(constant, constant.Value, Subject, context));
-                        break;
-
-                    case CasePatternSwitchLabelSyntax pat:
-                        var cond = PatternConverter.BuildCondition(pat.Pattern, Subject, context, governingType);
-                        var bindings = new List<(string Name, string Access)>();
-                        PatternConverter.CollectBindings(pat.Pattern, Subject, context, bindings, governingType);
-                        foreach (var b in bindings) if (seen.Add(b.Name)) hoist.Add(b.Name);
-
-                        // Assign the pattern's bindings AND evaluate the when-clause inside the condition (a
-                        // comma sequence, guarded by `&&` so it only runs when the pattern matched): this
-                        // puts the bound variables in scope for `when`, and a failing `when` makes the whole
-                        // condition false so control falls to the next arm — exactly the C# semantics.
-                        var whenExpr = pat.WhenClause != null
-                            ? context.Converter.ConvertExpression(pat.WhenClause.Condition)
-                            : null;
-                        // What the guard itself declares (`when int.TryParse(s, out var n)`) belongs
-                        // to the section, and the chain's one declaration covers every section.
-                        foreach (var name in ExpressionVariableScanner.Names(pat.WhenClause?.Condition))
-                            if (seen.Add(name)) hoist.Add(name);
-                        if (bindings.Count > 0 || whenExpr != null)
-                        {
-                            var assigns = string.Concat(bindings.Select(b => $"{b.Name} = {b.Access}, "));
-                            cond = $"({cond} && ({assigns}{whenExpr ?? "true"}))";
-                        }
-                        labelConditions.Add(cond);
-                        break;
+                    defaultSection = section;
+                    continue;
                 }
-            }
 
-            arms.Add((string.Join(" || ", labelConditions), ConvertSectionBody(section, context), section));
-        }
+                var labelConditions = new List<string>();
+                foreach (var label in section.Labels)
+                {
+                    switch (label)
+                    {
+                        case CaseSwitchLabelSyntax constant:
+                            labelConditions.Add(PatternConverter.ConstantMatch(constant, constant.Value, Subject, context));
+                            break;
+
+                        case CasePatternSwitchLabelSyntax pat:
+                            var cond = PatternConverter.BuildCondition(pat.Pattern, Subject, context, governingType);
+                            var bindings = new List<(string Name, string Access)>();
+                            PatternConverter.CollectBindings(pat.Pattern, Subject, context, bindings, governingType);
+                            foreach (var b in bindings) if (seen.Add(b.Name)) hoist.Add(b.Name);
+
+                            // Assign the pattern's bindings AND evaluate the when-clause inside the condition (a
+                            // comma sequence, guarded by `&&` so it only runs when the pattern matched): this
+                            // puts the bound variables in scope for `when`, and a failing `when` makes the whole
+                            // condition false so control falls to the next arm — exactly the C# semantics.
+                            var whenExpr = pat.WhenClause != null
+                                ? context.Converter.ConvertExpression(pat.WhenClause.Condition)
+                                : null;
+                            // What the guard itself declares (`when int.TryParse(s, out var n)`) belongs
+                            // to the section, and the chain's one declaration covers every section.
+                            foreach (var name in ExpressionVariableScanner.Names(pat.WhenClause?.Condition))
+                                if (seen.Add(name)) hoist.Add(name);
+                            if (bindings.Count > 0 || whenExpr != null)
+                            {
+                                var assigns = string.Concat(bindings.Select(b => $"{b.Name} = {b.Access}, "));
+                                cond = $"({cond} && ({assigns}{whenExpr ?? "true"}))";
+                            }
+                            labelConditions.Add(cond);
+                            break;
+                    }
+                }
+
+                arms.Add((string.Join(" || ", labelConditions), ConvertSectionBody(section, context), section));
+            }
+            return arms.Count;
+        });
+        foreach (var name in held)
+            if (seen.Add(name)) hoist.Add(name);
 
         // The chain, innermost first: the default is the last else, each arm an `else if` above it.
         // An arm's test is its section's labels, so its line maps to them (#293): the switch's own

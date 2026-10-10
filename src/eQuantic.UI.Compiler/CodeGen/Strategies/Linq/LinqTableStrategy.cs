@@ -81,13 +81,13 @@ public class LinqTableStrategy : IExpressionIrStrategy
         if (name.Identifier.Text == "ToLookup"
             && context.SemanticHelper.GetSymbol(invocation) is IMethodSymbol { TypeArguments: [_, var lookupKey, ..] })
         {
-            template = template.Replace("x.key === key", LinqKeys.Matches(lookupKey, "x.key", "key"));
+            template = template.Replace("$x.key === $key", LinqKeys.Matches(lookupKey, "$x.key", "$key"));
         }
         if (template.Contains("$eq.")) context.UsedHelpers.Add(Eq.Import);
 
         // {0} is the receiver; {1}… the arguments. The writer binds whatever is reused.
         return JsExpr.Template(BindNamedArguments(template, shaped, invocation, context),
-            new[] { receiver }.Concat(args).ToArray(), context.TypeAnnotations);
+            new[] { receiver }.Concat(args).ToArray());
     }
 
     /// <summary>The operators of the table that take a key COMPARER beside their selectors, whose
@@ -214,51 +214,51 @@ public class LinqTableStrategy : IExpressionIrStrategy
         // arrived here from a strategy each, whose twenty lines of gate said what the gate above
         // now says once; the shape is what was actually theirs.
         ("Where", 1) => "{0}.filter({1})",
-        ("Where", 0) => "{0}.filter(x => true)",
+        ("Where", 0) => "{0}.filter(($x) => true)",
         ("Select", 1) => "{0}.map({1})",
-        ("Select", 0) => "{0}.map(x => x)",
+        ("Select", 0) => "{0}.map(($x) => $x)",
         ("Any", 1) => "{0}.some({1})",
         ("Any", 0) => "({0}.length > 0)",
         ("All", 1) => "{0}.every({1})",
-        ("All", 0) => "{0}.every(x => true)",
+        ("All", 0) => "{0}.every(($x) => true)",
         ("Concat", 1) => "[...{0}, ...{1}]",
         // Reverse is deliberately NOT here: `List<T>.Reverse()` is an INSTANCE method that
         // reverses in place and returns void, and only `Enumerable.Reverse()` returns a new
         // sequence. One name, two meanings decided by the receiver — a reason, not a shape.
         // Set operations: a Set dedupes the source, the other side is a membership test.
         ("Union", 1) => "[...new Set([...{0}, ...{1}])]",
-        ("Intersect", 1) => "[...new Set({0})].filter(x => {1}.includes(x))",
-        ("Except", 1) => "[...new Set({0})].filter(x => !{1}.includes(x))",
+        ("Intersect", 1) => "[...new Set({0})].filter(($x) => {1}.includes($x))",
+        ("Except", 1) => "[...new Set({0})].filter(($x) => !{1}.includes($x))",
         // Folding and flattening. Aggregate's arguments swap: C# takes (seed, func), reduce (func, seed).
         ("Aggregate", 2) => "{0}.reduce({2}, {1})",
         ("Aggregate", 1) => "{0}.reduce({1})",
         ("SelectMany", 1) => "{0}.flatMap({1})",
-        ("SelectMany", 0) => "{0}.flatMap((x) => x)",
+        ("SelectMany", 0) => "{0}.flatMap(($x) => $x)",
         // A key wins by comparing the SELECTED value; reduce keeps the first of equals, as .NET does.
-        ("MaxBy", 1) => "{0}.reduce((_a, _b) => (({1})(_b) > ({1})(_a) ? _b : _a))",
-        ("MinBy", 1) => "{0}.reduce((_a, _b) => (({1})(_b) < ({1})(_a) ? _b : _a))",
+        ("MaxBy", 1) => "{0}.reduce(($a, $b) => (({1})($b) > ({1})($a) ? $b : $a))",
+        ("MinBy", 1) => "{0}.reduce(($a, $b) => (({1})($b) < ({1})($a) ? $b : $a))",
         ("ToDictionary", 2) => $"{Eq.LinqToDictionary}({{0}}, {{1}}, {{2}})",
         ("ToDictionary", 1) => $"{Eq.LinqToDictionary}({{0}}, {{1}})",
         // Partitioning by predicate: neither has an array method, so each is a loop that stops.
         ("TakeWhile", 1) =>
-            "(function(arr) { const res = []; for(const x of arr) { if(({1})(x)) res.push(x); else break; } return res; })({0})",
+            "(function($arr) { const $res = []; for (const $x of $arr) { if (({1})($x)) $res.push($x); else break; } return $res; })({0})",
         ("SkipWhile", 1) =>
-            "(function(arr) { const res = []; let skipping = true; for(const x of arr) { if(skipping && ({1})(x)) continue; skipping = false; res.push(x); } return res; })({0})",
+            "(function($arr) { const $res = []; let $skipping = true; for (const $x of $arr) { if ($skipping && ({1})($x)) continue; $skipping = false; $res.push($x); } return $res; })({0})",
         ("DistinctBy", 1) =>
-            "(arr => { const seen = new Set(); return arr.filter(x => { const k = ({1})(x); if(seen.has(k)) return false; seen.add(k); return true; }); })({0})",
+            "(($arr) => { const $seen = new Set(); return $arr.filter(($x) => { const $k = ({1})($x); if ($seen.has($k)) return false; $seen.add($k); return true; }); })({0})",
         ("Chunk", 1) =>
-            "(arr => { const n = {1}; const out = []; for (let i = 0; i < arr.length; i += n) out.push(arr.slice(i, i + n)); return out; })({0})",
+            "(($arr) => { const $n = {1}; const $out = []; for (let $i = 0; $i < $arr.length; $i += $n) $out.push($arr.slice($i, $i + $n)); return $out; })({0})",
         // A lookup is an array of arrays, each carrying its key — what a grouping is on this side.
         ("ToLookup", 2) =>
-            "{0}.reduce((groups, item) => { const key = ({1})(item); let g = groups.find(x => x.key === key); if (!g) { g = []; g.key = key; groups.push(g); } g.push(({2})(item)); return groups; }, [])",
+            "{0}.reduce(($groups, $item) => { const $key = ({1})($item); let $g = $groups.find(($x) => $x.key === $key); if (!$g) { $g = []; $g.key = $key; $groups.push($g); } $g.push(({2})($item)); return $groups; }, [])",
         ("ToLookup", 1) =>
-            "{0}.reduce((groups, item) => { const key = ({1})(item); let g = groups.find(x => x.key === key); if (!g) { g = []; g.key = key; groups.push(g); } g.push((x => x)(item)); return groups; }, [])",
+            "{0}.reduce(($groups, $item) => { const $key = ({1})($item); let $g = $groups.find(($x) => $x.key === $key); if (!$g) { $g = []; $g.key = $key; $groups.push($g); } $g.push($item); return $groups; }, [])",
         // Both joins index the INNER sequence once and then walk the outer, which is the shape
         // that keeps a join linear instead of quadratic.
         ("Join", 4) =>
-            "(() => { const _m = new Map(); for (const _x of {1}) { const _k = ({3})(_x); let _g = _m.get(_k); if (!_g) _m.set(_k, _g = []); _g.push(_x); } const _r = []; for (const _y of {0}) { const _g = _m.get(({2})(_y)); if (_g) for (const _z of _g) _r.push(({4})(_y, _z)); } return _r; })()",
+            "(() => { const $m = new Map(); for (const $x of {1}) { const $k = ({3})($x); let $g = $m.get($k); if (!$g) $m.set($k, $g = []); $g.push($x); } const $r = []; for (const $y of {0}) { const $g = $m.get(({2})($y)); if ($g) for (const $z of $g) $r.push(({4})($y, $z)); } return $r; })()",
         ("GroupJoin", 4) =>
-            "(() => { const _m = new Map(); for (const _x of {1}) { const _k = ({3})(_x); let _g = _m.get(_k); if (!_g) _m.set(_k, _g = []); _g.push(_x); } return {0}.map(_y => ({4})(_y, _m.get(({2})(_y)) ?? [])); })()",
+            "(() => { const $m = new Map(); for (const $x of {1}) { const $k = ({3})($x); let $g = $m.get($k); if (!$g) $m.set($k, $g = []); $g.push($x); } return {0}.map(($y) => ({4})($y, $m.get(({2})($y)) ?? [])); })()",
         ("Append", 1) => "[...{0}, {1}]",
         ("Prepend", 1) => "[{1}, ...{0}]",
         ("AsEnumerable", 0) => "{0}",

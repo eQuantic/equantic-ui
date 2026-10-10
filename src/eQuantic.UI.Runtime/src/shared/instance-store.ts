@@ -24,6 +24,7 @@ import { scheduleScrollViewportCommit } from './scroll-viewports';
 import { scheduleInViewCommit } from './in-view';
 import { scheduleCanvasCommit } from './canvas-surface';
 import { scheduleAnchorOffset } from './sticky-offset';
+import { scheduleScrolledSync } from './scrolled-pinned';
 
 /** The duck-typed surface of a transpiled shared-stateful instance (marker set by the base class). */
 interface SharedStatefulLike {
@@ -167,6 +168,9 @@ export function exitPass(): void {
   // is not in the document until the render manager writes this pass's tree, so measuring here
   // would find nothing on a client-only render. Costs a write only when the number moved.
   scheduleAnchorOffset();
+  // A pinned header mounted this pass is set from its surface once the pass is WRITTEN, so one on a
+  // page that is already scrolled is scrolled from its first frame (#506).
+  scheduleScrolledSync();
   activePass = null;
 }
 

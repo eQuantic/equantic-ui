@@ -159,7 +159,7 @@ internal sealed class Place
     };
 
     private JsExpr Template(string text, IReadOnlyList<JsExpr> parts) =>
-        JsExpr.Template(text, parts, _context.TypeAnnotations);
+        JsExpr.Template(text, parts);
 
     private static Place Entry(JsExpr receiver, ExpressionSyntax key, ConversionContext context)
     {

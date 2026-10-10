@@ -156,6 +156,39 @@ public class HydrationSpecEmissionTests
         Assert.Contains("_box: { of: Rect, members: { x: 'single', y: 'single', width: 'single', height: 'single' } }", page.TypeScript);
     }
 
+    /// <summary>
+    /// …and one the browser holds as DATA (<c>[TwinIsData]</c>) crosses as its members alone, naming
+    /// no twin to build on: its export is a companion of statics, never a class. A <c>Curve</c> in a
+    /// page's state named <c>of: Curve</c>, the design system's object, and the hydration's
+    /// <c>instanceof</c> over it threw before the page could hydrate (#518).
+    /// </summary>
+    [Fact]
+    public void ARuntimeValueTypeHeldAsData_CrossesAsItsMembers()
+    {
+        const string source = """
+            using eQuantic.UI.Primitives;
+
+            [Page("/glide")]
+            public sealed class Glide : StatefulComponent, IServerPrefetch
+            {
+                private Curve _easing;
+
+                [ServerOnly]
+                public System.Threading.Tasks.Task PrefetchAsync(System.IServiceProvider services, System.Threading.CancellationToken cancellationToken)
+                    => System.Threading.Tasks.Task.CompletedTask;
+
+                public override VisualNode Build(ComponentContext context)
+                    => new Text("x", TypeRole.BodyM, context.Theme.TextPrimary);
+            }
+            """;
+        var compiler = new ComponentCompiler();
+        compiler.SetProjectCompilation(GeneratedProject.Of(source, "Glide.cs"));
+        var page = compiler.CompileSource(source, "Glide.cs").Single(r => r.ComponentName == "Glide");
+        Assert.True(page.Success, string.Join("\n", page.Errors.Select(e => e.Message)));
+        Assert.Contains("_easing: { members: { x1: 'single', y1: 'single', x2: 'single', y2: 'single' } }", page.TypeScript);
+        Assert.DoesNotContain("of: Curve", page.TypeScript);
+    }
+
     [Fact]
     public void AFloat_HydratesAsASingle_AndADoubleDoesNot()
     {

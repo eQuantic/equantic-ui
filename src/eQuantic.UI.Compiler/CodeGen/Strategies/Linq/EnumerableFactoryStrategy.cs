@@ -58,7 +58,7 @@ public class EnumerableFactoryStrategy : IExpressionIrStrategy
                 && method?.Parameters.FirstOrDefault(parameter => parameter.Name == name) is { } parameter)
                 holes[parameter.Ordinal] = i;
         }
-        return JsExpr.Template($"{helper}({{{holes[0]}}}, {{{holes[1]}}})", parts, context.TypeAnnotations);
+        return JsExpr.Template($"{helper}({{{holes[0]}}}, {{{holes[1]}}})", parts);
     }
 
     /// <summary>The member name, with any type argument (<c>Empty&lt;string&gt;</c>) set aside.</summary>

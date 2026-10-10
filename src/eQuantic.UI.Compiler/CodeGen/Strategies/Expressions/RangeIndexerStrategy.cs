@@ -94,8 +94,8 @@ public class RangeIndexerStrategy : IExpressionIrStrategy
         if (!startFromEnd && !endFromEnd && end is not null)
         {
             return start is null
-                ? JsExpr.Template($"{{0}}.{member}(0, {{1}})", [receiver, end], context.TypeAnnotations)
-                : JsExpr.Template($"{{0}}.{member}({{1}}, {{2}} - {{1}})", [receiver, start, end], context.TypeAnnotations);
+                ? JsExpr.Template($"{{0}}.{member}(0, {{1}})", [receiver, end])
+                : JsExpr.Template($"{{0}}.{member}({{1}}, {{2}} - {{1}})", [receiver, start, end]);
         }
 
         // `this` and `super` are read where they stand, an arrow taking them from its function: `super`

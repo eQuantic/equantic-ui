@@ -93,3 +93,10 @@ eQuantic.UI.Server.ServerTopicRule.Authorize(System.Func<eQuantic.UI.Server.Serv
 eQuantic.UI.Server.ServerTopicRule.Authorize(System.Func<eQuantic.UI.Server.ServerTopicContext!, bool>! authorize) -> eQuantic.UI.Server.ServerTopicRule!
 eQuantic.UI.Server.ServerTopicRule
 eQuantic.UI.Server.UIOptions.UseServerEvents(System.Action<eQuantic.UI.Server.ServerEventsBuilder!>! configure) -> eQuantic.UI.Server.UIOptions!
+*REMOVED*eQuantic.UI.Server.ServerActionsMiddleware.ServerActionsMiddleware(Microsoft.AspNetCore.Http.RequestDelegate! next, eQuantic.UI.Server.IServerActionRegistry! registry, System.IServiceProvider! serviceProvider, eQuantic.UI.Server.Authorization.IServerActionAuthorizationService! authorizationService, eQuantic.UI.Server.UIOptions! options, Microsoft.Extensions.Logging.ILogger<eQuantic.UI.Server.ServerActionsMiddleware!>! logger) -> void
+const eQuantic.UI.Server.ServerActionsOptions.SectionName = "EQuantic:ServerActions" -> string!
+eQuantic.UI.Server.ServerActionsOptions.AllowedOrigins.get -> System.Collections.Generic.IList<string!>!
+eQuantic.UI.Server.ServerActionsOptions
+eQuantic.UI.Server.ServerActionsOptions.ServerActionsOptions() -> void
+eQuantic.UI.Server.UIOptions.AllowServerActionOrigins(params string![]! origins) -> eQuantic.UI.Server.UIOptions!
+eQuantic.UI.Server.ServerActionsMiddleware.ServerActionsMiddleware(Microsoft.AspNetCore.Http.RequestDelegate! next, eQuantic.UI.Server.IServerActionRegistry! registry, System.IServiceProvider! serviceProvider, eQuantic.UI.Server.Authorization.IServerActionAuthorizationService! authorizationService, eQuantic.UI.Server.UIOptions! options, Microsoft.Extensions.Options.IOptionsMonitor<eQuantic.UI.Server.ServerActionsOptions!>! actions, Microsoft.Extensions.Logging.ILogger<eQuantic.UI.Server.ServerActionsMiddleware!>! logger) -> void

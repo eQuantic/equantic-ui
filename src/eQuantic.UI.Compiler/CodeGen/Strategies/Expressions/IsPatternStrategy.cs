@@ -50,9 +50,16 @@ public class IsPatternStrategy : IConversionStrategy
             // reads it (see Once).
             var once = IsPath(expr) ? null : $"$v{isPattern.SpanStart}";
             var access = once ?? expr;
-            var condition = PatternConverter.BuildCondition(pattern, access, context, exprType);
-            var bindings = new List<(string Name, string Access)>();
-            PatternConverter.CollectBindings(pattern, access, context, bindings, exprType);
+            // The test is ONE pattern-matching operation: a Deconstruct the app wrote is called once for the
+            // value, however many alternatives read its parts (`t is (1, _) or (_, 4)`), and held where the
+            // test's own arrow declares it (MatchParts, Holding).
+            var ((condition, bindings), held) = context.MatchParts.In(isPattern.SpanStart, () =>
+            {
+                var built = PatternConverter.BuildCondition(pattern, access, context, exprType);
+                var collected = new List<(string Name, string Access)>();
+                PatternConverter.CollectBindings(pattern, access, context, collected, exprType);
+                return (built, collected);
+            });
 
             // `x is { } y` over a CALL — the shape that reads "if this returns something, name it".
             // The subject appears in the condition and again in the binding, so it used to run
@@ -74,6 +81,7 @@ public class IsPatternStrategy : IConversionStrategy
                 ? condition
                 : $"({condition} && ({string.Concat(bindings.Select(b => $"{b.Name} = {b.Access}, "))}true))";
             var tested = negated ? $"!({bound})" : bound;
+            if (held.Count > 0) return Holding(tested, held, once, expr, context);
             return once is null ? tested : Once(tested, once, expr);
         }
 
@@ -152,6 +160,23 @@ public class IsPatternStrategy : IConversionStrategy
         var uses = System.Text.RegularExpressions.Regex.Matches(tested,
             System.Text.RegularExpressions.Regex.Escape(subject) + @"(?![\w$])").Count;
         return uses > 1 ? $"(({subject}) => {tested})({expr})" : tested.Replace(subject, expr);
+    }
+
+    /// <summary>
+    /// A test whose operation holds the parts a <c>Deconstruct</c> the app wrote hands back
+    /// (<see cref="MatchParts"/>), in an arrow of its own that declares where it holds them, fresh each
+    /// time the test runs, so it needs no statement around it: an initializer called the
+    /// <c>Deconstruct</c> once per part where no statement could declare a temporary (Copilot's second
+    /// review of #696). A subject that is not a plain path is the arrow's argument, read once, and an
+    /// <c>await</c> in it stays in the function it is written in.
+    /// </summary>
+    private static string Holding(string tested, IReadOnlyList<string> held, string? subject, string expr,
+        ConversionContext context)
+    {
+        var declared = ExpressionVariableScanner.Declarations(held, context.TypeAnnotations);
+        return subject is null
+            ? $"(() => {{ {declared}return {tested}; }})()"
+            : $"(({subject}) => {{ {declared}return {tested}; }})({expr})";
     }
 
     /// <summary>A name, or names joined by dots (<c>this.items</c>): read again, it reads the same

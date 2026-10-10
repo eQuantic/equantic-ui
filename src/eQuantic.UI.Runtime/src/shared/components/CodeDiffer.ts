@@ -35,13 +35,13 @@ export class CodeDiffer {
     }
 
     static idsOf(items: string[], ids: any) {
-        let result = new Array($eq.collections.count(items)).fill(0);
+        let result = new Array(items.length).fill(0);
         let next = ids.size;
-        for (let i = 0; i < $eq.collections.count(items); i++) {
+        for (let i = 0; i < items.length; i++) {
             let id: any; 
-            if (!(($0: any, $1: any) => ($0.has($1) ? ((id = $0.get($1)), true) : ((id = 0), false)))(ids, $eq.collections.item(items, i))) {
+            if (!(($0, $1) => ($0.has($1) ? ((id = $0.get($1)), true) : ((id = 0), false)))(ids, items[i])) {
                 id = next++;
-                $eq.mapSet(ids, $eq.collections.item(items, i), id);
+                $eq.mapSet(ids, items[i], id);
             }
             result[i] = id;
         }
@@ -158,8 +158,8 @@ export class CodeDiffer {
         let removed = new Array(a.length).fill(false);
         let added = new Array(b.length).fill(false);
         CodeDiffer.diff(a, 0, a.length, b, 0, b.length, removed, added);
-        let originalEnd = new CodePosition(originalStart + originalCount - 1, $eq.collections.item(original, originalStart + originalCount - 1).length);
-        let modifiedEnd = new CodePosition(modifiedStart + modifiedCount - 1, $eq.collections.item(modified, modifiedStart + modifiedCount - 1).length);
+        let originalEnd = new CodePosition(originalStart + originalCount - 1, original[originalStart + originalCount - 1].length);
+        let modifiedEnd = new CodePosition(modifiedStart + modifiedCount - 1, modified[modifiedStart + modifiedCount - 1].length);
         let inner: CodeInnerChange[] = [];
         let i = 0;
         let j = 0;
@@ -184,10 +184,10 @@ export class CodeDiffer {
             if (line > start) {
                 texts.push('\n');
                 tokenLines.push(line - 1);
-                tokenColumns.push($eq.collections.item(lines, line - 1).length);
+                tokenColumns.push(lines[line - 1].length);
                 if (texts.length > CodeDiffer.innerTokenLimit) return false;
             }
-            let text = $eq.collections.item(lines, line);
+            let text = lines[line];
             let column = 0;
             while (column < text.length) {
                 let begin = column;

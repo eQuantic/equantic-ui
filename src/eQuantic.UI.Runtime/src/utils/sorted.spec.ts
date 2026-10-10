@@ -89,12 +89,19 @@ describe('SortedMap<K, V> — key-sorted dictionary (SortedDictionary / SortedLi
     expect(m.size).toBe(1);
   });
 
-  it('writes the JSON object of its entries in key order, and equals only itself', () => {
+  it('writes its pairs in key order, and equals only itself', () => {
     const m = sortedDictionary<string, number>([
       ['b', 2],
       ['a', 1],
     ]);
-    expect(JSON.stringify(m)).toBe('{"a":1,"b":2}');
+    expect(JSON.stringify(m)).toBe('[["a",1],["b",2]]');
+    // A JSON object would have listed "9" before "10", ahead of the order the keys sort in (#437).
+    const digits = sortedDictionary<string, number>([
+      ['b', 3],
+      ['9', 1],
+      ['10', 2],
+    ]);
+    expect(JSON.stringify(digits)).toBe('[["10",2],["9",1],["b",3]]');
     expect(m.equals(m)).toBe(true);
     expect(m.equals(sortedDictionary<string, number>([['a', 1], ['b', 2]]))).toBe(false);
   });
