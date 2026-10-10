@@ -305,7 +305,7 @@ export class CodeEditorController {
         this.widthsChanged(line, linesInserted, linesRemoved);
         this._revealVersion++;
         this._desiredCell = -1;
-        let edit = new CodeEdit(ordered, removed, text, before, this._selection, false);
+        let edit = new CodeEdit(ordered, removed, next.textIn(new CodeRange(ordered.start, caret)), before, this._selection, false);
         this.changed?.(edit);
         this.selectionChanged?.(this._selection);
         return new CodeRange(ordered.start, caret);
@@ -371,7 +371,7 @@ export class CodeEditorController {
         this._document = next;
         this._selection = new CodeRange(caret);
         this._revealVersion++;
-        let edit = new CodeEdit(ordered, removed, text, before, this._selection, typed);
+        let edit = new CodeEdit(ordered, removed, next.textIn(new CodeRange(ordered.start, caret)), before, this._selection, typed);
         this.history.record(edit);
         this.highlighter.lineChanged(this._document, line, linesInserted, linesRemoved);
         this.widthsChanged(line, linesInserted, linesRemoved);
