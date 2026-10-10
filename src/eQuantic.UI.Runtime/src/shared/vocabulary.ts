@@ -407,6 +407,11 @@ export class SafeArea extends VisualNode {
 }
 
 export class Pinned extends VisualNode {
+  /** C# `Pinned.ScrolledThreshold`: how far, in dp, a header's surface scrolls before its scrolled style applies. */
+  static readonly ScrolledThreshold = 8;
+  /** C# `Pinned.ScrolledBase`: what the scrolled style is laid over, the hairline along the bottom edge
+   * (BorderSides.Bottom = 4). */
+  static readonly ScrolledBase = { borderSides: 4 } as const;
   readonly nodeKind = 'pinned';
   float = false;
   scrolledStyle: StyleDiff | null = null;
