@@ -2197,6 +2197,12 @@ function lowerStack(node: StackNode, context: LoweringContext, path: string): Ht
         point != null || fraction != null;
       const spanX = filling.width && has(positioned.start, positioned.startFraction) !== has(positioned.end, positioned.endFraction);
       const spanY = filling.height && has(positioned.top, positioned.topFraction) !== has(positioned.bottom, positioned.bottomFraction);
+      // A translate is of the element's own box: when both edges of an axis stretch the anchor
+      // around a child that does not fill, the shift goes on a child-sized wrapper (C# twin).
+      const stretched =
+        (has(positioned.start, positioned.startFraction) && has(positioned.end, positioned.endFraction) && !filling.width) ||
+        (has(positioned.top, positioned.topFraction) && has(positioned.bottom, positioned.bottomFraction) && !filling.height);
+      const shifted = shift(positioned.shiftX ?? 0, positioned.shiftY ?? 0);
       children.push(
         element(
           'div',
@@ -2209,9 +2215,13 @@ function lowerStack(node: StackNode, context: LoweringContext, path: string): Ht
             right: edge(positioned.end, positioned.endFraction) ?? (spanX ? '0' : undefined),
             bottom: edge(positioned.bottom, positioned.bottomFraction) ?? (spanY ? '0' : undefined),
             left: edge(positioned.start, positioned.startFraction) ?? (spanX ? '0' : undefined),
-            transform: shift(positioned.shiftX ?? 0, positioned.shiftY ?? 0),
+            transform: stretched ? undefined : shifted,
           },
-          [lowered],
+          [
+            stretched && shifted
+              ? element('div', { width: filling.width ? undefined : 'fit-content', transform: shifted }, [lowered])
+              : lowered,
+          ],
         ),
       );
     } else if (child) {

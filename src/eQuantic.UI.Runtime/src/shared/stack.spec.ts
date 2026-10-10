@@ -62,6 +62,17 @@ describe('Stack (spec A3) client lowering', () => {
     expect(anchor).toContain('right: 0');
   });
 
+  it('shifts by the child on a wrapper when both edges stretch the anchor (C# twin)', () => {
+    const stack = new Stack();
+    stack.add(new Positioned(new Box(new BoxStyle({ width: 100, height: 30 })), null, 10, null, 10, { shiftX: -0.5 }));
+
+    const anchor = stack.render().children[0];
+    expect(effectiveStyle(anchor)).not.toContain('transform');
+    const wrapper = effectiveStyle(anchor.children[0]);
+    expect(wrapper).toContain('width: fit-content');
+    expect(wrapper).toContain('transform: translate(-50%, 0)');
+  });
+
   it('lowers an end fraction alone to a percentage, and no shift to no transform', () => {
     const stack = new Stack();
     stack.add(new Positioned(new Box(new BoxStyle({ width: 40, height: 20 })), null, null, null, null, { endFraction: 0.1 }));

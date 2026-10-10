@@ -119,6 +119,28 @@ public class StackLayoutTests
         child.Bounds.Width.Should().Be(width);
     }
 
+    /// <summary>
+    /// The same through a component that builds the Positioned: the contract is the parent's, and
+    /// the web resolves it through the component too (#648 review).
+    /// </summary>
+    [Fact]
+    public void AFillingChildPositionedByAComponent_FillsToTheOppositeEdge()
+    {
+        var stack = new Stack { Width = SizeValue.Fixed(400), Height = SizeValue.Fixed(100) };
+        stack.Add(new HalfwayBar());
+
+        var child = Layout(stack).Children[0];
+
+        child.Bounds.X.Should().Be(200);
+        child.Bounds.Width.Should().Be(200);
+    }
+
+    private sealed class HalfwayBar : StatelessComponent
+    {
+        public override VisualNode Build(ComponentContext context) =>
+            new Positioned(new Primitives.Box(new BoxStyle { Width = SizeValue.Fill, Height = 20 })) { StartFraction = 0.5f };
+    }
+
     [Fact]
     public void CenterAlignment_CentersNonPositionedChildren()
     {

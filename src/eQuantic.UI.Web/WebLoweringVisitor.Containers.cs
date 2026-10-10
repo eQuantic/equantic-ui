@@ -88,6 +88,13 @@ internal sealed partial class WebLoweringVisitor
                 var (fillsWidth, fillsHeight) = Fills(positioned.Child);
                 var spanX = fillsWidth && positioned.AnchorsStart != positioned.AnchorsEnd;
                 var spanY = fillsHeight && positioned.AnchorsTop != positioned.AnchorsBottom;
+                // A translate's percentages are of the element's own box. The anchor shrink-wraps
+                // its child, except when both edges of an axis stretch it around a child that does
+                // not fill: then the shift goes on a child-sized wrapper, so -0.5 is half the CHILD,
+                // as Photon moves it.
+                var stretched = (positioned.AnchorsStart && positioned.AnchorsEnd && !fillsWidth)
+                    || (positioned.AnchorsTop && positioned.AnchorsBottom && !fillsHeight);
+                var shift = TokenCss.Shift(positioned.ShiftX, positioned.ShiftY);
                 var anchor = new RealizedElement("div")
                 {
                     Style = new HtmlStyle
@@ -99,16 +106,26 @@ internal sealed partial class WebLoweringVisitor
                         Right = TokenCss.Edge(positioned.End, positioned.EndFraction) ?? (spanX ? "0" : null),
                         Bottom = TokenCss.Edge(positioned.Bottom, positioned.BottomFraction) ?? (spanY ? "0" : null),
                         Left = TokenCss.Edge(positioned.Start, positioned.StartFraction) ?? (spanX ? "0" : null),
-                        // A translate's percentages are of the element's own box, and the anchor
-                        // shrink-wraps its child: the shift is a fraction of the child.
-                        Transform = TokenCss.Shift(positioned.ShiftX, positioned.ShiftY),
+                        Transform = stretched ? null : shift,
                         // Spec S7: explicit stacking WINS; otherwise the child's own depth.
                         ZIndex = (positioned.Layer != 0 ? positioned.Layer : depth).ToString(),
                     },
                 };
                 // The ANCHOR is marked, not what it holds: its offsets came from the same Build.
                 if (unmeasured) MarkUnmeasured(anchor);
-                anchor.Children.Add(lowered);
+                if (stretched && shift is not null)
+                {
+                    var shifted = new RealizedElement("div")
+                    {
+                        Style = new HtmlStyle { Width = fillsWidth ? null : "fit-content", Transform = shift },
+                    };
+                    shifted.Children.Add(lowered);
+                    anchor.Children.Add(shifted);
+                }
+                else
+                {
+                    anchor.Children.Add(lowered);
+                }
                 element.Children.Add(anchor);
             }
             else

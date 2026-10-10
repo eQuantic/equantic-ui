@@ -174,6 +174,20 @@ public class PositionedSpanTests
         css.Should().Contain("left:50%").And.Contain("right:0");
     }
 
+    /// <summary>
+    /// Both edges stretch the anchor around a child that does not fill, so the shift goes on a
+    /// child-sized wrapper: -0.5 is half the child, as Photon moves it (#648 review).
+    /// </summary>
+    [Fact]
+    public void AShiftInAStretchedAnchor_MovesByTheChild()
+    {
+        var stack = new Stack { Width = SizeValue.Fill };
+        stack.Add(new Positioned(new Primitives.Box(new BoxStyle { Width = 100, Height = 30 }), start: 10, end: 10) { ShiftX = -0.5f });
+
+        var css = Css(stack);
+        css.Should().Contain("width:fit-content").And.Contain("transform:translate(-50%, 0)");
+    }
+
     /// <summary>A fraction alone on the end edge, and no shift means no transform.</summary>
     [Fact]
     public void AnEndFractionAlone_IsAPercentage_AndNoShiftIsNoTransform()

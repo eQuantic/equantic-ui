@@ -37,7 +37,27 @@ public class IconRasterCacheTests
         for (var w = 1; w <= 600; w++) cache.Get(rasterizer, Glyph, w, 10, 1);
         cache.Get(rasterizer, Glyph, 1, 10, 1);
 
-        rasterizer.Calls.Should().Be(601, "the cache started over past its cap, so the first width is rasterized again");
+        rasterizer.Calls.Should().Be(601, "the oldest widths were evicted, the first among them");
+    }
+
+    /// <summary>
+    /// What is in use stays: a shape asked for every frame survives a sweep of 600 others, because
+    /// the least recently used goes first, not everything at once.
+    /// </summary>
+    [Fact]
+    public void AShapeInUse_SurvivesASweep()
+    {
+        var cache = new IconRasterCache();
+        var rasterizer = new CountingRasterizer();
+
+        cache.Get(rasterizer, Glyph, 24, 24, 1);
+        for (var w = 1; w <= 600; w++)
+        {
+            cache.Get(rasterizer, Glyph, 1000 + w, 10, 1);
+            cache.Get(rasterizer, Glyph, 24, 24, 1); // the shape on screen, every frame
+        }
+
+        rasterizer.Calls.Should().Be(601, "the shape in use was rasterized once, the 600 widths once each");
     }
 
     private sealed class CountingRasterizer : IIconRasterizer

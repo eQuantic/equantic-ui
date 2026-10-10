@@ -78,10 +78,22 @@ internal sealed partial class MeasureVisitor
             var (roomW, roomH) = child is Positioned anchored
                 ? PositionedRoom(anchored, childMaxW, childMaxH, knownW, knownH)
                 : (childMaxW, childMaxH);
+            var childPath = ctx.ChildPath(path, stackIndex, child);
             var measured = Measure(
                 child,
                 constraints.ForChild(roomW, roomH).DecidedByContent(stackIndetW, stackIndetH),
-                ctx, ctx.ChildPath(path, stackIndex, child));
+                ctx, childPath);
+            // A component that builds a Positioned is one only once it has built: measured again in
+            // the room its anchors leave, when that room is not the one it was offered.
+            if (child is not Positioned && PositionedOf(child, measured) is { } built)
+            {
+                var (builtW, builtH) = PositionedRoom(built, childMaxW, childMaxH, knownW, knownH);
+                if (builtW != roomW || builtH != roomH)
+                    measured = Measure(
+                        child,
+                        constraints.ForChild(builtW, builtH).DecidedByContent(stackIndetW, stackIndetH),
+                        ctx, childPath);
+            }
             result.Adopt(measured);
             if (PositionedOf(child, measured) is not null) continue;
             contentW = MathF.Max(contentW, measured.Bounds.Width);

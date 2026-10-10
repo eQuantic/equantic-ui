@@ -55,7 +55,7 @@ refused at construction.
 
 - **WHEN** a grid of `GridTrack.AutoFill(210)` with a 10dp gap is laid out 820dp wide
 - **THEN** it has 3 columns of 266.67dp on Photon, and the web lowers it to
-  `grid-template-columns: repeat(auto-fill, minmax(210px, 1fr))`
+  `grid-template-columns: repeat(auto-fill, minmax(min(210px, 100%), 1fr))`
 
 #### Scenario: Narrower than one track
 
