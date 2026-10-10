@@ -12,8 +12,8 @@ namespace eQuantic.UI.Web.Tests;
 /// compiler — the same pipeline an app build runs — and pins the emitted modules committed at
 /// <c>src/eQuantic.UI.Runtime/src/shared/components/</c>, where the runtime's vitest suite EXECUTES
 /// them against the vocabulary classes and the generated theme (the write-once proof on web: C#
-/// source → eqc → JS → the same DOM the C# WebRealizer produces). The three app-shaped fixtures sit
-/// in <c>shared/__fixtures__/</c> instead, keeping the package import that is the thing they prove.
+/// source → eqc → JS → the same DOM the C# WebRealizer produces). The app-shaped fixtures sit in
+/// <c>shared/__fixtures__/</c> instead, keeping the package import that is the thing they prove.
 /// Refresh both with <c>EQ_UPDATE_TRANSPILED=1</c> after compiler or component changes.
 /// </summary>
 public class SharedComponentTranspilationTests
@@ -152,6 +152,54 @@ public class SharedComponentTranspilationTests
         }
         """;
 
+    /// <summary>
+    /// The receivers a translation binds once, TYPE-CHECKED: every one of these binds a call's result
+    /// as the parameter of an arrow the writer introduces, and most hand that parameter a callback of
+    /// the template's own (<c>$0.reduce(($a, $b) => …)</c>). The runtime's strict tsc reads this module
+    /// like the components, so a bound parameter that loses its type fails the type-check with TS7006,
+    /// which no text pin and no execution can see. TypeScript types an immediately-invoked arrow's
+    /// parameters from its arguments; the <c>any</c> once written there threw that type away
+    /// (Copilot's third review of #661). Never executed: what it proves is the type-check.
+    /// </summary>
+    private const string BoundReceiversSource = """
+        using eQuantic.UI.Components;
+        using eQuantic.UI.Primitives;
+
+        namespace eQuantic.UI.Web.Tests.Fixtures;
+
+        public sealed class BoundReceivers : StatelessComponent
+        {
+            private readonly List<int> _items = [3, 1, 2];
+            private readonly List<(int Key, string Name)> _pairs = [(1, "a"), (1, "a"), (2, "b")];
+            private readonly Dictionary<string, int> _counts = new() { ["a"] = 1 };
+            private bool _seen;
+
+            private List<int> Items() => _items;
+
+            private List<(int Key, string Name)> Pairs() => _pairs;
+
+            private BoundReceivers Self() => this;
+
+            private static int Twice(int value) => value * 2;
+
+            private static int KeyOf((int Key, string Name) pair) => pair.Key;
+
+            public override VisualNode Build(ComponentContext context)
+            {
+                var average = Items().Average();
+                var doubled = Items().Average(Twice);
+                var sum = Items().Sum();
+                var total = Pairs().Sum(pair => pair.Key);
+                var first = Pairs().OrderBy(KeyOf).First().Name;
+                var distinct = Pairs().Distinct().Count();
+                Self()._seen |= distinct > 1;
+                var count = _counts.TryGetValue(first, out var value) ? value : 0;
+                return new Text($"{average} {doubled} {sum} {total} {first} {distinct} {_seen} {count}",
+                    TypeRole.Caption);
+            }
+        }
+        """;
+
     private static Dictionary<string, string> TranspileSharedComponents()
     {
         var modules = new Dictionary<string, string>();
@@ -175,11 +223,13 @@ public class SharedComponentTranspilationTests
         // silently fail to bind (breaking, e.g., named-argument reordering).
         var counterPath = Path.Combine(root, "tests", "eQuantic.UI.Web.Tests", "Fixtures", "SharedCounter.cs");
         var nestedPath = Path.Combine(root, "tests", "eQuantic.UI.Web.Tests", "Fixtures", "NestedReconciler.cs");
+        var boundPath = Path.Combine(root, "tests", "eQuantic.UI.Web.Tests", "Fixtures", "BoundReceivers.cs");
         var trees = sourcePaths
             .Select(path => CSharpSyntaxTree.ParseText(File.ReadAllText(path), path: path))
             .ToList();
         trees.Add(CSharpSyntaxTree.ParseText(SharedCounterSource, path: counterPath));
         trees.Add(CSharpSyntaxTree.ParseText(NestedReconcilerSource, path: nestedPath));
+        trees.Add(CSharpSyntaxTree.ParseText(BoundReceiversSource, path: boundPath));
         // The shared sources build with <ImplicitUsings> — mirror the generated global usings, or
         // `Action?` fails to bind (CS0246) and the semantic paths silently degrade.
         trees.Add(SdkImplicitUsings.Tree());
@@ -207,7 +257,8 @@ public class SharedComponentTranspilationTests
         var compilations = sourcePaths
             .Select(path => (Path: path, Results: compiler.CompileFile(path)))
             .Append((counterPath, compiler.CompileSource(SharedCounterSource, counterPath)))
-            .Append((nestedPath, compiler.CompileSource(NestedReconcilerSource, nestedPath)));
+            .Append((nestedPath, compiler.CompileSource(NestedReconcilerSource, nestedPath)))
+            .Append((boundPath, compiler.CompileSource(BoundReceiversSource, boundPath)));
         foreach (var (path, results) in compilations)
         {
             foreach (var result in results)
@@ -223,7 +274,7 @@ public class SharedComponentTranspilationTests
 
     /// <summary>The in-test proofs: they are transpiled and executed, but they are not library
     /// surface and must not be embedded in the runtime a consumer ships.</summary>
-    private static readonly string[] Fixtures = ["SharedCounter", "NestedChild", "NestedHost"];
+    private static readonly string[] Fixtures = ["SharedCounter", "NestedChild", "NestedHost", "BoundReceivers"];
 
     /// <summary>The source this asks about, kept HERE rather than pointed at a production class.
     /// <para>
@@ -471,7 +522,7 @@ public class SharedComponentTranspilationTests
         // - components/<N>.ts — every LIBRARY component, embedded in the runtime and re-exported
         //   from its index, with the import source rewritten to the internal aggregator. This set
         //   has to be on disk whatever else is true: the bundle imports it.
-        // - __fixtures__/<N>.ts — the three app-shaped FIXTURES, keeping "@equantic/runtime",
+        // - __fixtures__/<N>.ts — the app-shaped FIXTURES, keeping "@equantic/runtime",
         //   because what they exist to prove IS the per-app emission. Names carry no suffix so the
         //   relative imports between them resolve.
         //

@@ -42,7 +42,7 @@ public class ConvertStrategy : IExpressionIrStrategy
             context.UsedHelpers.Add(Eq.Import);
             var parts = args.Select(argument => context.Converter.ConvertIr(argument.Expression)).ToArray();
             return JsExpr.Template(PrimitiveStaticStrategy.BindNamedArguments(template, invocation, method),
-                parts, context.TypeAnnotations);
+                parts);
         }
 
         var (argExpr, providerExpr) = Arguments(invocation, context);
@@ -77,7 +77,7 @@ public class ConvertStrategy : IExpressionIrStrategy
             var reads = ReadsText(invocation, argExpr, context);
             if (reads) context.UsedHelpers.Add(Eq.Import);
             JsExpr Of(JsExpr value) => reads
-                ? JsExpr.Template($"{Eq.BoolConvert}({{0}})", [value], context.TypeAnnotations)
+                ? JsExpr.Template($"{Eq.BoolConvert}({{0}})", [value])
                 : ToBoolean(value, context.SemanticHelper.GetType(argExpr), context);
             if (provider is null) return Of(context.Converter.ConvertIr(argExpr));
             // Both arguments in the order they are WRITTEN, which a named argument may reverse
@@ -93,8 +93,7 @@ public class ConvertStrategy : IExpressionIrStrategy
                 (false, false) => "($v, _provider)",
             };
             return JsExpr.Template($"({parameters} => {{0}})({{1}}, {{2}})",
-                [Of(JsExpr.Identifier("$v")), providerFirst ? provider : value, providerFirst ? value : provider],
-                context.TypeAnnotations);
+                [Of(JsExpr.Identifier("$v")), providerFirst ? provider : value, providerFirst ? value : provider]);
         }
         if (ReadsText(invocation, argExpr, context) && TextReader(name) is { } text)
         {
@@ -103,8 +102,7 @@ public class ConvertStrategy : IExpressionIrStrategy
             if (!argExpr.IsKind(SyntaxKind.NullLiteralExpression))
                 ParseCulture.Check(invocation, providerExpr, context);
             context.UsedHelpers.Add(Eq.Import);
-            return JsExpr.Template($"{text.Reader}({{0}}, '{text.Tag}')", [context.Converter.ConvertIr(argExpr)],
-                context.TypeAnnotations);
+            return JsExpr.Template($"{text.Reader}({{0}}, '{text.Tag}')", [context.Converter.ConvertIr(argExpr)]);
         }
         return JsExpr.Opaque(Converted(name, argExpr, context));
     }
@@ -251,14 +249,14 @@ public class ConvertStrategy : IExpressionIrStrategy
             case SpecialType.System_Single:
                 return Call(Eq.DecFromSingle);
             case SpecialType.System_Boolean:
-                return JsExpr.Template($"{Eq.Dec}({{0}} ? 1 : 0)", [value], context.TypeAnnotations);
+                return JsExpr.Template($"{Eq.Dec}({{0}} ? 1 : 0)", [value]);
             case SpecialType.System_Char or SpecialType.System_DateTime:
                 var from = type.SpecialType == SpecialType.System_Char ? "Char" : "DateTime";
                 var parameter = context.TypeAnnotations ? "(_: unknown)" : "(_)";
                 context.UsedHelpers.Add(Eq.Import);
                 return JsExpr.Template(
                     $"({parameter} => {{ throw {Eq.ExceptionOf}('System.InvalidCastException', \"Invalid cast from '{from}' to 'Decimal'.\"); }})({{0}})",
-                    [value], context.TypeAnnotations);
+                    [value]);
         }
         return type.IsIntegral() ? Call(Eq.Dec) : Call(Eq.DecConvert);
     }
@@ -280,7 +278,7 @@ public class ConvertStrategy : IExpressionIrStrategy
     /// </summary>
     private static JsExpr ToBoolean(JsExpr value, ITypeSymbol? type, ConversionContext context)
     {
-        JsExpr Template(string template) => JsExpr.Template(template, [value], context.TypeAnnotations);
+        JsExpr Template(string template) => JsExpr.Template(template, [value]);
         switch (type?.SpecialType)
         {
             case SpecialType.System_Boolean:
