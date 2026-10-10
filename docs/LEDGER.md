@@ -1703,6 +1703,14 @@ record of a release, the wiki's Upgrading page is the distillate.
   1970 toward the epoch; it answers a BigInt cut as .NET cuts it now. Found on the way: the date
   constructors past the second ([#606](https://github.com/eQuantic/equantic-ui/issues/606)).
   Proposed and archived through OpenSpec (`openspec/specs/runtime-dates`).
+- **2026-10-07 · A spreadsheet cell sits under its header**: on the web the spreadsheet drew every
+  cell one column left of its header, over the row numbers
+  ([#613](https://github.com/eQuantic/equantic-ui/issues/613)). The row number strip hugged its row
+  headers, whose Stack layers may not grow past them, so its minimum was zero and the browser shrank it
+  to 0px beside a wider grid. It is as wide as its header now, a Fixed size that shrinks on neither
+  target, measured in Chromium on the dashboard sample. The general case, a hugging Stack that a flex
+  line can squeeze to nothing on the web, is [#698](https://github.com/eQuantic/equantic-ui/issues/698).
+  Proposed and archived through OpenSpec (`openspec/specs/spreadsheet`).
 - **2026-10-07 · Every producer draws the same tree**: five places where the server's realizer,
   its browser twin and Photon drew one tree three ways, one family of the bug sweep. A Text lowers
   as a block on the web, so a 10/15 label in a padded pill is 21px where it sat on the body font's
@@ -1917,6 +1925,17 @@ record of a release, the wiki's Upgrading page is the distillate.
   imported the runtime's `BuildContext`, which an app's own class of that name then declared twice,
   and the list measured all its entries on every arrow key. Proposed and archived through OpenSpec
   (`openspec/specs/code-completion`, `openspec/specs/code-editor`).
+- **2026-10-07 · A generic record equals only its own closed type**: .NET compares a record's
+  EqualityContract, its closed type, and the twin is one class for every type argument, so
+  `new Box<int>(1).Equals((object)new Box<double>(1))`, a `List<object>`'s `Contains` and a `with` copy
+  answered true where .NET answers false ([#651](https://github.com/eQuantic/equantic-ui/issues/651)).
+  Where C# names the type arguments the value is marked with them (`$eq.closing`), held aside so its
+  members and JSON stay its own, and a generic record's or struct's `equals` compares the marks; a
+  value built inside generic code carries none and is not taken for another type. The mark is the
+  closed type as .NET erases it, a tuple's element names and `dynamic` gone. Of the nine conformance
+  cases, the five across type arguments fail on main, and the tuple and `dynamic` cases fail on the
+  first mark, which kept the display text. Proposed and archived through OpenSpec
+  (`openspec/specs/transpiler-records`).
 - **2026-10-07 · A builder has the members a page reaches**: `AppendFormat`, `AppendJoin`,
   `Capacity`, `MaxCapacity`, `EnsureCapacity`, the `Chars` indexer, `Length`'s setter,
   `Equals(StringBuilder)` and `CopyTo` transpiled to members the runtime's builder did not have, a
