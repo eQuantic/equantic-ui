@@ -17,8 +17,9 @@ namespace eQuantic.UI.Server;
 /// The app's own host is the request's <c>Host</c>. Behind a proxy that rewrites it, ASP.NET Core's
 /// <c>UseForwardedHeaders</c> restores it from the proxies the app trusts; the raw
 /// <c>X-Forwarded-Host</c> is never read here, since a site the app's CORS policy lets through could
-/// write its own host into it. Only the host and the port are compared, a scheme's default port left out, since a proxy that ends
-/// TLS hands the app an <c>http</c> request for an <c>https</c> page.
+/// write its own host into it. The host and the port are compared, a <c>Host</c> without a port standing
+/// for the origin scheme's default one, since a proxy that ends TLS hands the app an <c>http</c> request
+/// for an <c>https</c> page and keeps the <c>Host</c> the browser sent.
 /// </summary>
 internal sealed class ServerActionOrigins(IEnumerable<string> allowed)
 {
@@ -34,9 +35,7 @@ internal sealed class ServerActionOrigins(IEnumerable<string> allowed)
             return request.Headers["Sec-Fetch-Site"].ToString() is not ("cross-site" or "same-site");
 
         if (!TryParse(origin, out var uri)) return false;
-        if (_allowed.Contains(OriginOf(uri))) return true;
-        var host = HostOf(uri);
-        return string.Equals(host, OwnHost(request.Host), StringComparison.OrdinalIgnoreCase);
+        return _allowed.Contains(OriginOf(uri)) || IsOwnHost(uri, request.Host);
     }
 
     /// <summary>
@@ -58,15 +57,18 @@ internal sealed class ServerActionOrigins(IEnumerable<string> allowed)
     private static string HostOf(Uri uri) => uri.IsDefaultPort ? Literal(uri) : $"{Literal(uri)}:{uri.Port}";
 
     /// <summary>
-    /// The request's <c>Host</c>, read by the same parser as an origin, so the two sides compare in one
-    /// form, its port left out when it is 80 or 443. A host that does not parse is no host of the app's.
+    /// Whether the origin is the request's <c>Host</c>: the same host, read by the same parser so the
+    /// two sides compare in one form, and the same port. A <c>Host</c> that names a port is compared with
+    /// the origin's own, and one without stands for the origin scheme's default. A host that does not
+    /// parse is no host of the app's.
     /// </summary>
-    private static string OwnHost(HostString host)
+    private static bool IsOwnHost(Uri origin, HostString host)
     {
-        if (!host.HasValue || !Uri.TryCreate($"http://{host.Host}", UriKind.Absolute, out var uri))
-            return "";
-        var literal = Literal(uri);
-        return host.Port is null or 80 or 443 ? literal : $"{literal}:{host.Port}";
+        if (!host.HasValue || !Uri.TryCreate($"http://{host.Host}", UriKind.Absolute, out var own))
+            return false;
+        if (!string.Equals(Literal(origin), Literal(own), StringComparison.OrdinalIgnoreCase))
+            return false;
+        return host.Port is { } port ? port == origin.Port : origin.IsDefaultPort;
     }
 
     /// <summary>

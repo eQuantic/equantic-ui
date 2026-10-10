@@ -34,7 +34,8 @@ public class ServerActionsMiddleware
     private readonly IServerActionAuthorizationService _authorizationService;
     private readonly ILogger<ServerActionsMiddleware> _logger;
     private readonly HashSet<Assembly> _allowedAssemblies;
-    private ServerActionOrigins _origins;
+    // Volatile: a reloaded configuration replaces the allow-list on its own thread while requests read it.
+    private volatile ServerActionOrigins _origins;
 
     private const string ActionsPath = "/api/_equantic/actions";
 
