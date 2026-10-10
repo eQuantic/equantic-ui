@@ -1778,6 +1778,32 @@ record of a release, the wiki's Upgrading page is the distillate.
   source before its first callback is [#685](https://github.com/eQuantic/equantic-ui/issues/685).
   Proposed and archived through OpenSpec (`openspec/specs/runtime-collections`, `runtime-dictionaries`,
   `transpiler-records`).
+- **2026-10-07 · A name in the browser is the name C# means**: the emitted code declared bindings of
+  its own as a C# local would be named and read globals no C# name was kept away from, so a captured
+  `_sum` read the running total, a captured `key` threw before the reduce had set its own, a captured
+  `a` sorted by the comparator's element, and a local named `crypto`, `undefined` or `Math` hid the
+  global a lowering beside it read ([#397](https://github.com/eQuantic/equantic-ui/issues/397)). Every
+  binding the output declares now starts with a `$`, a local named like a global it reads takes one,
+  and two guards read the compiler's source for both. A label, a member, a `with` key and a type
+  parameter written with the verbatim escape are written without it
+  ([#467](https://github.com/eQuantic/equantic-ui/issues/467)); a member reached bare through
+  `using static` converts as its qualified spelling, `Now` as `DateTime.Now`
+  ([#556](https://github.com/eQuantic/equantic-ui/issues/556)); and a part of a template that sits
+  inside the template's own function is bound outside it, so `Intersect`'s and `Except`'s second
+  sequence, `Average`'s source and a selector that is a call run once, in C#'s order
+  ([#657](https://github.com/eQuantic/equantic-ui/issues/657)). `Sum`, `Average`, `OrderBy`, `GroupBy`,
+  `Distinct` and the lookup's indexer moved to the IR. The runtime's twins are regenerated. Copilot's
+  first round found four more, each measured: a plain name inside the template's function was read
+  per call (a selector that reassigned its own variable summed 201 where .NET sums 6), a part holding
+  a lowering of its own was taken to read the function's `$x` and called `Other()` per element, a
+  hole past `{9}` stayed text in a comparator of eleven keys, and a type parameter written `@class`
+  kept its spelling one level down and in a component's declaration. The second round found a source
+  a selector reassigns and a string that quotes a lowering's name. The third found that a receiver
+  bound once was typed `any` in TypeScript, which left the callbacks a lowering hands it untyped
+  under a strict tsc: it is written bare now, typed by its argument, and a fixture the runtime's tsc
+  reads proves it. Found on the way: a grouping's accumulator has no type tsc accepts
+  ([#727](https://github.com/eQuantic/equantic-ui/issues/727)). Proposed and archived through
+  OpenSpec (`openspec/specs/transpiler-names`, `openspec/specs/transpiler-sequences`).
 
 ## Retired documents
 

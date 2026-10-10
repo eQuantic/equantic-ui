@@ -1,14 +1,18 @@
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using eQuantic.UI.Compiler.CodeGen.Ir;
 
 namespace eQuantic.UI.Compiler.CodeGen.Strategies.Linq;
 
 /// <summary>
 /// Converts LINQ .Average() to JavaScript reduce + divide.
-/// - Average() -> array.reduce((a, b) => a + b, 0) / array.length
-/// - Average(selector) -> array.reduce((sum, x) => sum + selector(x), 0) / array.length
+/// - Average() -> array.reduce(($a, $b) => $a + $b, 0) / array.length
+/// - Average(selector) -> array.reduce(($sum, $x) => $sum + selector($x), 0) / array.length
+/// The source is read once, though the division names it twice, and so is a selector that is not a
+/// lambda: a call there ran once for the total and once more for the count. The names the reduce
+/// declares take a `$`, which no C# name holds (#397).
 /// </summary>
-public class AverageStrategy : IConversionStrategy
+public class AverageStrategy : IExpressionIrStrategy
 {
     public bool CanConvert(SyntaxNode node, ConversionContext context)
     {
@@ -31,12 +35,12 @@ public class AverageStrategy : IConversionStrategy
         return false;
     }
 
-    public string Convert(SyntaxNode node, ConversionContext context)
+    public JsExpr ConvertIr(SyntaxNode node, ConversionContext context)
     {
         var invocation = (InvocationExpressionSyntax)node;
         var memberAccess = (MemberAccessExpressionSyntax)invocation.Expression;
 
-        var caller = LinqSource.Text(memberAccess.Expression, context);
+        var source = LinqSource.Ir(memberAccess.Expression, context);
         var args = invocation.ArgumentList.Arguments;
 
         // Same rule as Sum: a decimal is a runtime Decimal, so `+` concatenates. Averaging then
@@ -51,39 +55,38 @@ public class AverageStrategy : IConversionStrategy
 
         // The accumulator starts as the Decimal seed and each element IS a Decimal (typed world).
         // The COUNT is a plain number, so the divisor converts — that one dec() is a conversion.
-        string Add(string left, string right) => exact
-            ? $"{left}.add({right})"
-            : $"{left} + {right}";
         var seed = exact ? $"{Eq.Dec}(0)" : longElements ? "0n" : "0";
         // A FLOAT average is .NET's: the sum and the division in DOUBLE, converted once at the end
         // (`(float)Average<float, double, double>(source)`) — SinglePrecision.
         var single = SinglePrecision.Is(context.SemanticHelper.GetType(invocation));
+        // {0} is the source, named twice and read once: the template writer binds it.
         string Divide(string sum) => exact
-            ? $"{sum}.div({Eq.Dec}({caller}.length))"
+            ? $"{sum}.div({Eq.Dec}({{0}}.length))"
             : longElements
-                ? $"(Number({sum}) / {caller}.length)"
+                ? $"(Number({sum}) / {{0}}.length)"
                 : single
-                    ? $"Math.fround({sum} / {caller}.length)"
-                    : $"({sum} / {caller}.length)";
+                    ? $"Math.fround({sum} / {{0}}.length)"
+                    : $"({sum} / {{0}}.length)";
 
-        if (args.Count > 0)
+        // Average(x => x.Value): the lambda's body is the callback's, its parameter the element. A lambda
+        // with a block goes down the selector's path, where it stays a lambda written in place.
+        if (args.Count > 0 && args[0].Expression is SimpleLambdaExpressionSyntax { ExpressionBody: { } expression } lambda)
         {
-            // Average(x => x.Value) -> reduce then divide
-            var selector = args[0].Expression;
-
-            if (selector is SimpleLambdaExpressionSyntax lambda)
-            {
-                var param = lambda.Parameter.Identifier.Text.ToJsIdentifier();
-                var body = context.Converter.ConvertExpression(lambda.Body as ExpressionSyntax ?? lambda.ExpressionBody!);
-                return Divide($"{caller}.reduce((_sum, {param}) => {Add("_sum", body)}, {seed})");
-            }
-
-            var selectorConverted = context.Converter.ConvertExpression(selector);
-            return Divide($"{caller}.reduce((_sum, _x) => {Add("_sum", $"{selectorConverted}(_x)")}, {seed})");
+            var param = lambda.Parameter.Identifier.Text.ToJsIdentifier();
+            var body = context.Converter.ConvertIr(expression);
+            var callback = JsExpr.Arrow($"$sum, {param}", LinqAccumulation.Add(JsExpr.Identifier("$sum"), body, exact));
+            return JsExpr.Template(Divide($"{{0}}.reduce({{1}}, {seed})"), [source, callback]);
         }
 
+        // Any other selector is evaluated once, before the reduce runs, as C# evaluates an argument.
+        if (args.Count > 0)
+            return JsExpr.Template(
+                Divide($"{{0}}.reduce(($sum, $x) => {LinqAccumulation.Add("$sum", "{1}($x)", exact)}, {seed})"),
+                [source, context.Converter.ConvertIr(args[0].Expression)]);
+
         // Average() without selector
-        return Divide($"{caller}.reduce((_a, _b) => {Add("_a", "_b")}, {seed})");
+        return JsExpr.Template(Divide($"{{0}}.reduce(($a, $b) => {LinqAccumulation.Add("$a", "$b", exact)}, {seed})"),
+            [source]);
     }
 
     public int Priority => 10;

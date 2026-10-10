@@ -42,7 +42,7 @@ internal static class ParameterTemplate
         var bound = Bind(template, arguments, method, offset);
         // Text inserted after the parameters are bound: its holes already name written positions.
         if (insert is { } inserted) bound = bound.Replace(inserted.Name, inserted.Text);
-        return JsExpr.Template(bound, parts, context.TypeAnnotations);
+        return JsExpr.Template(bound, parts);
     }
 
     /// <summary>The written position of the argument that fills each parameter, -1 for one not passed.</summary>

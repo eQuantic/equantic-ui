@@ -134,7 +134,7 @@ internal sealed class Place
         _entry ? DictionaryEntry.Write("{0}", keys[0], value) : $"{{0}}.{_names.Set}({string.Join(", ", keys.Append(value))})";
 
     private JsExpr Template(string text, IReadOnlyList<JsExpr> parts) =>
-        JsExpr.Template(text, parts, _context.TypeAnnotations);
+        JsExpr.Template(text, parts);
 
     private static Place Entry(JsExpr receiver, ExpressionSyntax key, ConversionContext context)
     {

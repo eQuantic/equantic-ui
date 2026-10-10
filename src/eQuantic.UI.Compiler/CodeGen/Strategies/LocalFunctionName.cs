@@ -33,21 +33,12 @@ namespace eQuantic.UI.Compiler.CodeGen.Strategies;
 internal static class LocalFunctionName
 {
     /// <summary>
-    /// The lowercase names the EMITTER puts in a member's scope, which C# never declared: the globals
-    /// the output reads, <c>console</c> (Console.WriteLine), <c>parseInt</c>, <c>parseFloat</c> and
-    /// <c>isNaN</c> (the number parses), <c>crypto</c> (Guid.NewGuid), <c>setTimeout</c> (Task.Delay
-    /// and Task.Yield), <c>encodeURI</c>, <c>decodeURI</c>, <c>encodeURIComponent</c> and
-    /// <c>decodeURIComponent</c> (Uri) and <c>undefined</c>, and <c>props</c>, the parameter a
-    /// constructor takes. A function on one of these breaks code beside it that never named it, so
-    /// even a name the casing left alone yields to them. The globals are not trusted to this list staying
-    /// complete: <c>LocalFunctionNameTests</c> reads the compiler's own source for every one it
-    /// emits, and fails on one missing here.
+    /// The names the EMITTER puts in a member's scope, which C# never declared: the globals the output
+    /// reads (<see cref="StringExtensions.EmittedGlobals"/>), and <c>props</c>, the parameter a
+    /// component's constructor takes. A function on one of these breaks code beside it that never named
+    /// it, so even a name the casing left alone yields to them.
     /// </summary>
-    private static readonly HashSet<string> EmittedNames = new(StringComparer.Ordinal)
-    {
-        "console", "parseInt", "parseFloat", "isNaN", "crypto", "setTimeout", "encodeURI", "decodeURI",
-        "encodeURIComponent", "decodeURIComponent", "undefined", "props",
-    };
+    private static readonly HashSet<string> EmittedNames = new(StringExtensions.EmittedGlobals.Append("props"), StringComparer.Ordinal);
 
     /// <summary>
     /// The names every local function of a member takes, assigned once per member. A function of the
