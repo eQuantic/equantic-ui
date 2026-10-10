@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { $eq } from '@equantic/runtime';
 import { StatefulComponent } from '../core/component';
 import type { Component } from '../core/types';
 import { Color, ColorToken, EdgeInsets, Point, Rect } from '../shared/value-types';
@@ -204,7 +205,7 @@ describe('a hot reload gives back each value as it was, or leaves its initialize
     expect(after._count).toBe(1);
   });
 
-  it('carries the vocabulary value types as themselves, alone, in a list and in a record', () => {
+  it('carries the vocabulary value types as themselves, alone, in a list the page declares and in a record', () => {
     class Frame {
       constructor(
         public box = new Rect(),
@@ -219,6 +220,11 @@ describe('a hot reload gives back each value as it was, or leaves its initialize
     }
     class Canvas extends StatefulComponent {
       static $typeId = 'App.Canvas';
+      // An empty list types nothing, so a list of Points crosses where the page declares it, as eqc
+      // declares `List<Point>` for a member its manifest carries.
+      static get $hydration() {
+        return { _path: [{ of: Point, members: { x: 'single', y: 'single' } }] };
+      }
       _at = new Point();
       _pad = new EdgeInsets();
       _ink = new ColorToken(Color.black);
@@ -256,9 +262,21 @@ describe('a hot reload gives back each value as it was, or leaves its initialize
     expect(after._frame.box.right).toBe(31);
   });
 
-  it('carries each value as its type at every depth, into collections and fields the initializer left empty', () => {
+  it('carries each value as its type at every depth, into the empty and null fields the page declares', () => {
     class Ledger extends StatefulComponent {
       static $typeId = 'App.Ledger';
+      // As eqc declares these members for a page whose members cross: an empty or a null initializer
+      // types nothing, and the declaration says what each one holds.
+      static get $hydration() {
+        return {
+          _ids: ['long'],
+          _totals: { dict: 'long', key: 'number' },
+          _prices: { dict: null, key: 'decimal', byValue: true },
+          _meta: 'declared',
+          _maybe: 'long',
+          _due: 'dateTime',
+        };
+      }
       _ids: bigint[] = [];
       _totals = new Dictionary<number, bigint>();
       _prices = new Dictionary<Decimal, string>(null, true);
@@ -346,5 +364,307 @@ describe('a hot reload gives back each value as it was, or leaves its initialize
 
     expect(after._size).toBe('large');
     expect(after._name).toBe('z');
+  });
+});
+
+/**
+ * eqc's output for the two records `PropertyStoreConformanceTests` runs on both sides, from
+ * `ComponentCompiler.CompileSource`, laid out by the formatter and its `patch: any` typed. `FRec`'s
+ * setter doubles what it is given, `GRec`'s getter adds one to what it keeps, and both keep the value
+ * in the store `$x`, which their `equals` and `getHashCode` read and their `toJSON` reads through the
+ * getter.
+ *
+ *     public record FRec { public int X { get; set => field = value * 2; } }
+ *     public record GRec { public int X { get => field + 1; set => field = value; } }
+ */
+class FRec {
+  declare $x: number;
+  constructor() {
+    this.$x = 0;
+  }
+  equals(o: unknown) {
+    return o instanceof FRec && o.constructor === this.constructor && $eq.equals(this.$x, o.$x);
+  }
+  with(patch: Partial<this>): FRec {
+    return $eq.withPatch(this, patch);
+  }
+  getHashCode(): number {
+    return $eq.hash.combine(this.$x);
+  }
+  toJSON(): Record<string, unknown> {
+    return $eq.json(this);
+  }
+  set x(value: number) {
+    this.$x = value * 2;
+  }
+  get x() {
+    return this.$x;
+  }
+  toString() {
+    return `FRec { X = ${this.x} }`;
+  }
+}
+class GRec {
+  declare $x: number;
+  constructor() {
+    this.$x = 0;
+  }
+  equals(o: unknown) {
+    return o instanceof GRec && o.constructor === this.constructor && $eq.equals(this.$x, o.$x);
+  }
+  with(patch: Partial<this>): GRec {
+    return $eq.withPatch(this, patch);
+  }
+  getHashCode(): number {
+    return $eq.hash.combine(this.$x);
+  }
+  toJSON(): Record<string, unknown> {
+    return $eq.json(this);
+  }
+  get x() {
+    return this.$x + 1;
+  }
+  set x(value: number) {
+    this.$x = value;
+  }
+  toString() {
+    return `GRec { X = ${this.x} }`;
+  }
+}
+
+/**
+ * What crosses comes back exactly, and only into a field the reloaded page still types the same way.
+ * Each case was a finding of Copilot's second round on #672, or one of its kind, and fails on the
+ * commit before the fix.
+ */
+describe('a hot reload gives back a value exactly, into the type the reloaded page gives it', () => {
+  it('leaves a negative zero with its initializer, alone, in a list, in a record and as a key', () => {
+    class Signed extends StatefulComponent {
+      static $typeId = 'App.Signed';
+      _zero = 1;
+      _list: number[] = [];
+      _at = new Spot();
+      _byZero = new Dictionary<number, string>();
+      _byName = new Dictionary<string, string | undefined>();
+      _count = 0;
+      build(): Component {
+        throw new Error('not built here');
+      }
+    }
+
+    const before = new Signed();
+    before._zero = -0;
+    before._list = [1, -0];
+    before._at = new Spot(-0, 2);
+    before._byZero.set(-0, 'z');
+    // An object drops a member that holds undefined, so the entry would not come back at all.
+    before._byName.set('a', undefined);
+    before._count = 3;
+
+    const after = new Signed();
+    const list = after._list;
+    const byZero = after._byZero;
+    const byName = after._byName;
+    restorePageState(after, throughJson(capturePageState(before)));
+
+    expect(Object.is(after._zero, 1)).toBe(true);
+    expect(after._list).toBe(list);
+    expect(after._at.equals(new Spot())).toBe(true);
+    expect(after._byZero).toBe(byZero);
+    expect(after._byName).toBe(byName);
+    expect(after._count).toBe(3);
+  });
+
+  it('gives back a record that keeps a store as the store held it, through none of its accessors', () => {
+    class Stores extends StatefulComponent {
+      static $typeId = 'App.Stores';
+      _f = new FRec();
+      _g = new GRec();
+      build(): Component {
+        throw new Error('not built here');
+      }
+    }
+
+    const before = new Stores();
+    before._f = new FRec();
+    before._f.x = 5;
+    before._g = new GRec();
+    before._g.x = 3;
+
+    const after = new Stores();
+    restorePageState(after, throughJson(capturePageState(before)));
+
+    expect(after._f).toBeInstanceOf(FRec);
+    expect(after._f.x).toBe(10);
+    expect(after._f.equals(before._f)).toBe(true);
+    expect(after._g).toBeInstanceOf(GRec);
+    expect(after._g.x).toBe(4);
+    expect(after._g.equals(before._g)).toBe(true);
+  });
+
+  it('leaves a record whose member the edit made a property with its initializer, running no setter', () => {
+    const ran: string[] = [];
+    // The same record before and after an edit that gave `x` accessors over a store.
+    const before = (() => {
+      class Mark {
+        constructor(public x = 0) {}
+        with(patch: Partial<Mark>): Mark {
+          return Object.assign(new Mark(this.x), patch);
+        }
+        equals(other: unknown): boolean {
+          return other instanceof Mark && other.x === this.x;
+        }
+      }
+      return Mark;
+    })();
+    const after = (() => {
+      class Mark {
+        declare $x: number;
+        constructor() {
+          this.$x = 0;
+        }
+        get x(): number {
+          return this.$x;
+        }
+        set x(value: number) {
+          ran.push('set x');
+          this.$x = value * 2;
+        }
+        with(patch: Record<string, unknown>): Mark {
+          return Object.assign(new Mark(), this, patch);
+        }
+        equals(other: unknown): boolean {
+          return other instanceof Mark && other.$x === this.$x;
+        }
+      }
+      return Mark;
+    })();
+    class Marked extends StatefulComponent {
+      static $typeId = 'App.Marked';
+      _mark: object = new before();
+      build(): Component {
+        throw new Error('not built here');
+      }
+    }
+    class Remarked extends StatefulComponent {
+      static $typeId = 'App.Marked';
+      _mark: object = new after();
+      build(): Component {
+        throw new Error('not built here');
+      }
+    }
+
+    const page = new Marked();
+    page._mark = new before(5);
+    const reloaded = new Remarked();
+    const mark = reloaded._mark;
+    restorePageState(reloaded, throughJson(capturePageState(page)));
+
+    expect(reloaded._mark).toBe(mark);
+    expect(ran).toEqual([]);
+  });
+
+  it('leaves a list, a dictionary or a null field whose type the edit changed with its initializer', () => {
+    class Ledger extends StatefulComponent {
+      static $typeId = 'App.Retyped';
+      _ids: bigint[] = [];
+      _codes: bigint[] = [0n];
+      _byId = new Dictionary<number, bigint>();
+      _maybe: bigint | null = null;
+      _names: string[] = [];
+      build(): Component {
+        throw new Error('not built here');
+      }
+    }
+    /** The same page after an edit that made each of them text. */
+    class Retyped extends StatefulComponent {
+      static $typeId = 'App.Retyped';
+      _ids: string[] = [];
+      _codes: string[] = [''];
+      _byId = new Dictionary<string, string>();
+      _maybe: string | null = null;
+      _names: string[] = [];
+      build(): Component {
+        throw new Error('not built here');
+      }
+    }
+
+    const before = new Ledger();
+    before._ids = [5n];
+    before._codes = [7n];
+    before._byId.set(1, 5n);
+    before._maybe = 6n;
+    before._names = ['a'];
+
+    const after = new Retyped();
+    const ids = after._ids;
+    const codes = after._codes;
+    const byId = after._byId;
+    restorePageState(after, throughJson(capturePageState(before)));
+
+    expect(after._ids).toBe(ids);
+    expect(after._codes).toBe(codes);
+    expect(after._byId).toBe(byId);
+    expect(after._maybe).toBeNull();
+    // A list of text into a list of text, which nothing on the page contradicts, still crosses.
+    expect(after._names).toEqual(['a']);
+  });
+
+  it('decides by the type the reloaded page declares, for an empty or a null initializer too', () => {
+    class Declared extends StatefulComponent {
+      static $typeId = 'App.Declared';
+      static get $hydration() {
+        return {
+          _ids: ['long'],
+          _due: 'dateTime',
+          _byId: { dict: 'long', key: 'number' },
+          _names: 'declared',
+        };
+      }
+      _ids: bigint[] | null = null;
+      _due: DateTime | null = null;
+      _byId = new Dictionary<number, bigint>();
+      _names: string[] = [];
+      build(): Component {
+        throw new Error('not built here');
+      }
+    }
+    /** The same page after an edit that changed each type, as eqc declares the new ones. */
+    class Redeclared extends StatefulComponent {
+      static $typeId = 'App.Declared';
+      static get $hydration() {
+        return { _ids: 'declared', _due: 'declared', _byId: { dict: null }, _names: ['long'] };
+      }
+      _ids: string[] | null = null;
+      _due: string | null = null;
+      _byId = new Dictionary<string, string>();
+      _names: bigint[] = [];
+      build(): Component {
+        throw new Error('not built here');
+      }
+    }
+
+    const before = new Declared();
+    before._ids = [5n];
+    before._due = dateTime(2026, 10, 8);
+    before._byId.set(1, 5n);
+    before._names = ['a'];
+    const state = throughJson(capturePageState(before));
+
+    const same = new Declared();
+    restorePageState(same, state);
+    expect(same._ids).toEqual([5n]);
+    expect(same._due).toBeInstanceOf(DateTime);
+    expect(same._byId.get(1)).toBe(5n);
+    expect(same._names).toEqual(['a']);
+
+    const changed = new Redeclared();
+    const byId = changed._byId;
+    const names = changed._names;
+    restorePageState(changed, state);
+    expect(changed._ids).toBeNull();
+    expect(changed._due).toBeNull();
+    expect(changed._byId).toBe(byId);
+    expect(changed._names).toBe(names);
   });
 });
