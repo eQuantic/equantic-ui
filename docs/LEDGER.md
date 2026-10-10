@@ -1821,6 +1821,39 @@ record of a release, the wiki's Upgrading page is the distillate.
   reads proves it. Found on the way: a grouping's accumulator has no type tsc accepts
   ([#727](https://github.com/eQuantic/equantic-ui/issues/727)). Proposed and archived through
   OpenSpec (`openspec/specs/transpiler-names`, `openspec/specs/transpiler-sequences`).
+- **2026-10-07 · An edit under dotnet watch reaches the browser**: hot reload was on in the
+  Development environment alone, and an app run under `dotnet watch` without a launch profile is a
+  Production one, so eqc never ran again and the page kept the module from before the edit
+  ([#627](https://github.com/eQuantic/equantic-ui/issues/627)). It is on under `dotnet watch` too,
+  read from the `DOTNET_WATCH` the watcher sets, and that one decision (`UIOptions.HotReloads`) maps
+  the stream, sets the modules' cache and tells the page, whose boot listened by `__EQ_DEV__` before.
+  Two more defects stood in the way, measured on the dashboard sample. Every file eqc wrote again was
+  a file added to the project, and `dotnet watch` stopped on the first one (dotnet/sdk#55335; a plain
+  `dotnet new web` app stops the same way): eqc's output folder is declared in `DefaultItemExcludes`,
+  which `dotnet watch` ignores, in place of the Content removal, and eqc writes it in place, removing
+  what it stopped writing after the rest, where the folder was emptied first and every module
+  answered 404 while eqc compiled. And in the watcher's workspace, where a referenced project is
+  another compilation, the hydration manifest asked a semantic model of that project's tree and threw
+  on every edit (CS8785, [#663](https://github.com/eQuantic/equantic-ui/issues/663)); it reads the
+  declarations the compilation holds now (`CompilationSource`). On the sample under
+  `dotnet watch --no-launch-profile`, an edit reloads the page with it and `dotnet watch` stays up, a
+  shared component's renamed chunk included. The review before it opened found three more: the
+  folder's Content removal stays beside the exclusion, for an app that includes wwwroot by hand; the
+  stage-one maps, which carry the C#, are served in Development alone, where the overlay reading them
+  installs; and stopping the app stops a rebuild still running and ends the streams, where SIGTERM
+  mid-rebuild, as `dotnet watch` restarts an app, left eqc writing beside the next build and the app
+  took 14 s to exit (3 s now). Copilot's first round found two more in that shutdown: a rebuild past
+  its two-minute limit was released, not stopped, and a stream that registered as the app stopped
+  waited out the host. Its second round found one more: a shutdown that came while the rebuild's
+  process was starting returned before the process existed, and the host waits for nothing after it,
+  so the rebuild now starts under the gate the shutdown takes, and the shutdown returns once it ended.
+  Its third found eqc itself emptying part of the folder first: the bundler deleted every map before
+  bun ran, so a bundle that failed left none; it removes the maps bun did not write only after bun
+  has written now, through the real bundler in its tests. Found on the way: a write-once page's state
+  does not survive a hot reload
+  under any runner ([#664](https://github.com/eQuantic/equantic-ui/issues/664)).
+  Proposed and archived through OpenSpec (`openspec/specs/hot-reload`, `generated-files` and
+  `hydration-contract`).
 
 ## Retired documents
 

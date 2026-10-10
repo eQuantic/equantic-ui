@@ -301,6 +301,12 @@ export interface EqConfig {
    * reading a cookie nobody writes.
    */
   themeCookie?: { name: string; days: number } | false;
+  /**
+   * Whether the server streams rebuilds at `/_equantic/hmr`, which it decides once: in Development,
+   * under `dotnet watch`, or as the app's `HotReload` says. The boot listens, and replays a page's
+   * state after a reload, only then.
+   */
+  hotReload?: boolean;
   /** Client route table (generated from `[Page]` attributes) — enables SPA navigation. */
   routes?: import('./router/route-table').RouteEntry[];
   /**
