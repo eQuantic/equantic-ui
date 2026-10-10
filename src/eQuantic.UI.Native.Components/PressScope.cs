@@ -118,4 +118,12 @@ internal sealed class PressScope
     /// press, pictured or real, whatever control around it is in that state (#508). The web twin
     /// lowers no focus or press rule for them.</summary>
     public bool InDisabledControl { get; set; }
+
+    /// <summary>
+    /// True while the subtree of a vertical <see cref="ScrollView"/> scrolled past
+    /// <see cref="Pinned.ScrolledThreshold"/> is drawn: a pinned header in it draws its
+    /// <c>ScrolledStyle</c> (#506). The nearest scroll view decides, and outside every one the page
+    /// does not scroll on Photon. The web twin is the header's <c>data-eq-scrolled</c>.
+    /// </summary>
+    public bool SurfaceScrolled { get; set; }
 }

@@ -150,7 +150,7 @@ public class EqJsonTests
     /// <summary>
     /// A dictionary keyed by an enum crosses both ways, each key written as the transpiled side holds
     /// it: a member's camelCase name, and a flags enum's number. EqJson refused the first both ways,
-    /// and wrote the second by its names (#442).
+    /// and wrote the second by its names (#442). Both cross as their pairs (#437).
     /// </summary>
     [Fact]
     public void ADictionaryKeyedByAnEnum_CrossesBothWays_AsTheBrowserHoldsItsKeys()
@@ -161,8 +161,8 @@ public class EqJsonTests
         var shelfJson = JsonSerializer.Serialize(byShelf, EqJson.Options);
         var channelsJson = JsonSerializer.Serialize(byChannels, EqJson.Options);
 
-        shelfJson.Should().Be("{\"dataAccess\":1,\"core\":2}");
-        channelsJson.Should().Be("{\"1\":1,\"3\":3}");
+        shelfJson.Should().Be("[[\"dataAccess\",1],[\"core\",2]]");
+        channelsJson.Should().Be("[[1,1],[3,3]]");
         JsonSerializer.Deserialize<Dictionary<Shelf, int>>(shelfJson, EqJson.Options).Should().Equal(byShelf);
         JsonSerializer.Deserialize<Dictionary<Channels, int>>(channelsJson, EqJson.Options).Should().Equal(byChannels);
     }
@@ -176,8 +176,8 @@ public class EqJsonTests
     public void AnEnumTextNoMemberHas_IsRefused_AsAValueAndAsAKey()
     {
         var asValue = () => JsonSerializer.Deserialize<Shelf>("\"gone\"", EqJson.Options);
-        var asKey = () => JsonSerializer.Deserialize<Dictionary<Shelf, int>>("{\"gone\":1,\"old\":2}", EqJson.Options);
-        var asFlagsKey = () => JsonSerializer.Deserialize<Dictionary<Channels, int>>("{\"Nope\":1}", EqJson.Options);
+        var asKey = () => JsonSerializer.Deserialize<Dictionary<Shelf, int>>("[[\"gone\",1],[\"old\",2]]", EqJson.Options);
+        var asFlagsKey = () => JsonSerializer.Deserialize<Dictionary<Channels, int>>("[[\"Nope\",1]]", EqJson.Options);
 
         asValue.Should().Throw<JsonException>().WithMessage("*'gone'*");
         asKey.Should().Throw<JsonException>().WithMessage("*'gone'*");

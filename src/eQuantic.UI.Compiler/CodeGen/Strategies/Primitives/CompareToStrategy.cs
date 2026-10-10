@@ -47,7 +47,7 @@ public class CompareToStrategy : IExpressionIrStrategy
                 return JsExpr.Opaque(context.Unhandled(invocation, "string.CompareTo(object)"));
             }
             context.UsedHelpers.Add(Eq.Import);
-            return JsExpr.Template($"{Eq.StringCompareTo}({{0}}, {{1}})", new[] { left, right }, context.TypeAnnotations);
+            return JsExpr.Template($"{Eq.StringCompareTo}({{0}}, {{1}})", new[] { left, right });
         }
 
         // Numbers subtract; everything else ordered (chars by code unit, longs-as-BigInts) is a
@@ -68,7 +68,7 @@ public class CompareToStrategy : IExpressionIrStrategy
         // answered -1 (#569).
         if (context.SemanticHelper.GetSymbol(invocation) is IMethodSymbol { Parameters: [{ Type.SpecialType: SpecialType.System_Object }] })
             template = $"({{1}} == null ? 1 : {template})";
-        return JsExpr.Template(template, new[] { left, right }, context.TypeAnnotations);
+        return JsExpr.Template(template, new[] { left, right });
     }
 
     /// <summary>The receiver's comparison FAMILY (subtraction, ordered, boolean), or null when it

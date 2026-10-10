@@ -154,6 +154,9 @@ public static class Eq
     /// <summary>The record text .NET writes (<c>Color { R = 1, G = 2, B = 3, A = 4 }</c>) for a value the
     /// browser holds as plain data, and the empty string for a null one.</summary>
     public const string RecordText = "$eq.text.record";
+    /// <summary>The method group <c>value.ToString</c> of a value the browser holds as plain data: a
+    /// delegate writing <see cref="RecordText"/> of the value it was made with.</summary>
+    public const string RecordTextGroup = "$eq.text.recordGroup";
     public const string StringFormat = "$eq.text.stringFormat";
     /// <summary><c>string.Compare</c> by a <c>StringComparison</c>: a null first, a culture comparison
     /// by the platform's collator, an ordinal one answering .NET's difference.</summary>
@@ -281,6 +284,15 @@ public static class Eq
     /// twin has no generated <c>with</c>, and a spread would drop its prototype and its methods.</summary>
     public const string With = "$eq.withPatch";
 
+    /// <summary>A generic record or struct built as the closed type C# names (<c>new Box&lt;int&gt;(1)</c>),
+    /// marked with its type arguments, which its <c>equals</c> compares through <see cref="SameClosure"/>:
+    /// one twin class serves every type argument, and <c>Box&lt;int&gt;</c> equalled <c>Box&lt;double&gt;</c> (#651).</summary>
+    public const string Closing = "$eq.closing";
+
+    /// <summary>Whether two values of one generic record or struct are of one closed type; an unmarked
+    /// value (built in generic code, or rebuilt from the wire) is not taken for another.</summary>
+    public const string SameClosure = "$eq.sameClosure";
+
     /// <summary>A twin's JSON, as System.Text.Json writes the C# value: the twin's own properties, a
     /// property's store (<c>$name</c>) written under the property's name and read through it (#591).
     /// What a twin that keeps a store answers <c>toJSON</c> with.</summary>
@@ -291,6 +303,10 @@ public static class Eq
     /// <c>object</c> calls a method — hiding it is the point, and saying so is what stops the
     /// warning travelling to everyone who builds this assembly.</summary>
     public new const string Equals = "$eq.equals";
+
+    /// <summary>The method group <c>value.Equals</c> of a value the browser holds as plain data: a
+    /// delegate comparing the value it was made with as <see cref="Equals"/> does.</summary>
+    public const string EqualsGroup = "$eq.equalsGroup";
 
     /// <summary><c>GetHashCode()</c> by .NET's contract: values <see cref="Equals"/> finds equal hash
     /// equal, and a value with its own <c>getHashCode</c> answers it.</summary>
@@ -406,6 +422,11 @@ public static class Eq
     /// <summary><c>EqualityComparer&lt;T&gt;.Default</c> for a type compared by reference or by its own
     /// <c>Equals</c>: identity, NaN equal to NaN, and a twin's own <c>equals</c>.</summary>
     public const string SameItem = "$eq.collections.sameItem";
+
+    /// <summary><c>EqualityComparer&lt;T&gt;.Default</c> for a type that does not decide (<c>object</c>,
+    /// an interface, a type parameter): a twin's own <c>equals</c>, a tuple's or an anonymous type's
+    /// members, and identity for anything else.</summary>
+    public const string SameKey = "$eq.collections.sameKey";
 
     /// <summary>A <c>KeyValuePair&lt;K, V&gt;</c>'s comparer, from each half's (#421).</summary>
     public const string PairComparer = "$eq.collections.pairComparer";

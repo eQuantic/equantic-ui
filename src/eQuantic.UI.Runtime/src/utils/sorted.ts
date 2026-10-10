@@ -16,8 +16,8 @@ import {
   containsValue,
   keyText,
   pair,
+  pairsOf,
   requireKey,
-  wireObject,
   type KeyEquality,
   type Pair,
 } from './dictionary';
@@ -105,6 +105,12 @@ export class SortedSet<T> implements Iterable<T> {
 
   toArray(): T[] {
     return this.items.slice();
+  }
+
+  /** The array System.Text.Json writes for a sorted set, in its order: with no `toJSON` it was
+   * written as the class's fields (#597). */
+  toJSON(): T[] {
+    return this.toArray();
   }
 }
 
@@ -256,9 +262,9 @@ export class SortedMap<K, V> implements Iterable<Pair<K, V>> {
     return identityHash(this);
   }
 
-  /** The JSON object System.Text.Json writes for it, in key order. */
-  toJSON(): Record<string, V> {
-    return wireObject(this.entries);
+  /** Its pairs in key order, as the server writes and reads a sorted dictionary (#437). */
+  toJSON(): [K | string, V][] {
+    return pairsOf(this.entries);
   }
 }
 

@@ -128,7 +128,7 @@ export class BarChart extends StatefulComponent {
         return Math.max(BarChart.minValueAxisWidth, Math.fround(Math.fround(Math.fround(longest) * BarChart.captionCharWidth) + 8));
     }
 
-    plot(context: any) {
+    plot(context: BuildContext) {
         let theme = context.theme;
         let vertical = this._orientation === 'vertical';
         let canvas = new Canvas(this.draw.bind(this), SizeValue.fill, SizeValue.fill, { label: this._title, onPointerMove: this.pointer.bind(this), onPointerLeave: () => {
@@ -160,7 +160,7 @@ export class BarChart extends StatefulComponent {
         return column;
     }
 
-    valueLabelsBeside(context: any, ticks: ValueTicks, band: number) {
+    valueLabelsBeside(context: BuildContext, ticks: ValueTicks, band: number) {
         let theme = context.theme;
         let lineHeight = Math.fround(theme.type('caption').lineHeight * context.typeScale);
         let stack = new Stack('topStart', { width: SizeValue.fixed(band), height: SizeValue.fixed(this._plotHeight) });
@@ -180,7 +180,7 @@ export class BarChart extends StatefulComponent {
         return row;
     }
 
-    categoryLabelsBeside(context: any) {
+    categoryLabelsBeside(context: BuildContext) {
         let theme = context.theme;
         let count = this._categories.categories.length;
         let slot = count === 0 ? this._plotHeight : Math.fround(this._plotHeight / Math.fround(count));
