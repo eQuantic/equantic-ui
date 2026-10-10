@@ -1751,7 +1751,12 @@ record of a release, the wiki's Upgrading page is the distillate.
   line that holds still giving a Flexible its child's width instead of its basis: the ceiling now
   reaches the scroller while it measures, a wrapping line builds its items as the slot does, and
   the zero-weight shrink contract is stated for rows, Photon's single-line column taking nothing
-  back from an overflow yet. The same question, asked of the other flex numbers, found two more. A Spacer raised a weight below 1 to 1,
+  back from an overflow yet. A rehearsal of the merge with #739, which lays an AdaptiveNode's arm out
+  in the node's place, found the classifier asking the AdaptiveNode, which declares no size, so an
+  arm of 400 was drawn at 300, and a scroller capped on a wrapping line scrolling by 400 where Chrome
+  scrolls by 500, because a scroller kept the range of its first measure: the classifiers now ask
+  the node a child measured to, the arm for an AdaptiveNode, and a scroller registers the range of
+  the measure the tree keeps. The same question, asked of the other flex numbers, found two more. A Spacer raised a weight below 1 to 1,
   in C# and in the twin, and now refuses it where it is written, as Flutter asserts `flex > 0`
   ([#691](https://github.com/eQuantic/equantic-ui/issues/691)). And the twin wrote a basis raw where
   the server wrote it through `TokenCss.Px`, so a basis of 540.125, or the float 540.12 the twin
@@ -1762,7 +1767,7 @@ record of a release, the wiki's Upgrading page is the distillate.
   requires ([#684](https://github.com/eQuantic/equantic-ui/issues/684)); and its button is a Link
   around a painted Box, because an email refuses a Button
   ([#694](https://github.com/eQuantic/equantic-ui/issues/694)). Proposed and archived through
-  OpenSpec in six changes (`openspec/specs/flex-layout`).
+  OpenSpec in seven changes (`openspec/specs/flex-layout`).
 
 ## Retired documents
 

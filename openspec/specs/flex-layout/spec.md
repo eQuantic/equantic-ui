@@ -160,9 +160,11 @@ line neither grows nor shrinks), and its child SHALL keep a main size its node d
 the item or narrower, as a browser keeps such a child inside its flex item and lets it overflow: a
 fixed or window-relative `SizeValue` it carries (a box's style, a flex container, a grid, a stack, a
 scroller, a canvas, a web frame) or a size its constructor demands (an image, an icon, a vector, a
-drawing, a spinner, a camera preview), seen through transparent wrappers. A `ScrollView` SHALL keep
+drawing, a spinner, a camera preview), read of the node the child measured to: through transparent
+wrappers, and through an `AdaptiveNode` to the arm laid out in its place. A `ScrollView` SHALL keep
 its declared width only up to the item, as the web's `max-width: 100%` caps it, and SHALL be capped
-itself, through any transparent wrapper, so it paints, clips and scrolls at that width. A child that
+itself, through any transparent wrapper and as an arm, so it paints, clips and scrolls at that width,
+its scroll range taken at that width on a single line and on a wrapping one. A child that
 declares no main size SHALL fill the item: an auto or Fill box, and a `Text`, whose line box the item
 is. Every node type of the vocabulary that declares a main size SHALL be read as declaring it.
 
@@ -201,6 +203,21 @@ is. Every node type of the vocabulary that declares a main size SHALL be read as
 - **WHEN** the first Flexible holds `Pinned(ScrollView { Width = 400 })`, or a horizontal `ScrollView` 400 wide around 800 of content
 - **THEN** the wrapper and the scroller are both 300 wide, and the horizontal scroller's range is 500
 
+#### Scenario: A child that declares its size through an arm
+
+- **WHEN** the first Flexible holds an `AdaptiveNode` whose arm is a box 400 wide, or one whose arm is a box 100 wide
+- **THEN** the arm is 400 wide in its 300 item, or 100
+
+#### Scenario: A scroller arm
+
+- **WHEN** the first Flexible holds an `AdaptiveNode` whose arm is a horizontal `ScrollView` 400 wide around 800 of content, or one 100 wide
+- **THEN** the first arm is 300 wide and scrolls by 500, and the second is 100 wide and scrolls by 700
+
+#### Scenario: A scroller on a wrapping line
+
+- **WHEN** a wrapping row 300 wide holds `Flexible(ScrollView { Width = 400 }, flex: 1, basis: 300)` around 800 of content, or the same with a basis of 200
+- **THEN** the scroller is 300 wide and scrolls by 500
+
 #### Scenario: A wrapping line that holds still
 
 - **WHEN** a wrapping row 540 wide holds `Flexible(box 400 wide, flex: 0, basis: 540)`, `Flexible(box 600 wide, flex: 0, basis: 540)` or `Flexible(box 400 wide, flex: 1, basis: 540)`, and a wrapping row 1000 wide holds `Flexible(box 400 wide, flex: 0, basis: 540)` and `Flexible(box 100 wide, flex: 0, basis: 200)`
@@ -209,4 +226,4 @@ is. Every node type of the vocabulary that declares a main size SHALL be read as
 #### Scenario: Every node type that declares a size
 
 - **WHEN** the vocabulary's node types are taken from the Primitives assembly, and each one that declares a width or a height is given a fixed one
-- **THEN** `MainSizeKind` reads each as Fixed, and a `SizeValue` declared as Fill as Fill
+- **THEN** `MainSizeKind` reads each as Fixed, and a `SizeValue` declared as Fill as Fill, through every node type that takes its one child's size

@@ -1142,7 +1142,7 @@ the pill's 40 down.
 
 - **Component**: `src/eQuantic.UI.Native.Framework/Layout/LayoutEngine.cs`
 - **Handoff**: Truncation contract: text children shrink to ellipsis before any sibling is pushed out; fixed children (icons, avatars) never shrink.
-- **Code**: The whole truncation block (text-to-ellipsis pass AND the flex-shrink pass that follows it at MeasureVisitor.Flex.cs:216-335 MeasureFlex) is gated on `&& horizontal`, so it runs for Row only. An overflowing Column never clamps its text and never shrinks a child — siblings are pushed past the bottom edge and clipped. The comment two lines above claims the opposite ("Applies whenever the available extent is finite"), and the web realizer emits a plain column flex whose items shrink by default.
+- **Code**: The whole truncation block (text-to-ellipsis pass AND the flex-shrink pass that follows it at MeasureVisitor.Flex.cs:221-340 MeasureFlex) is gated on `&& horizontal`, so it runs for Row only. An overflowing Column never clamps its text and never shrinks a child — siblings are pushed past the bottom edge and clipped. The comment two lines above claims the opposite ("Applies whenever the available extent is finite"), and the web realizer emits a plain column flex whose items shrink by default.
 - **Evidence**:
 
   ```
@@ -1153,7 +1153,7 @@ the pill's 40 down.
 
 - **Component**: `src/eQuantic.UI.Primitives/Layout/LayoutTypes.cs`
 - **Handoff**: RTL — Row mirrors automatically in RTL locales; reading/focus order stays = child order.
-- **Code**: No realizer mirrors. The native layout maps Start to X unconditionally (MeasureVisitor.Flex.cs:416 MeasureFlex, and Padding.Start→X at 891/927/1473), and the web shell emits lang but never dir (src/eQuantic.UI.Server/Templates/app-shell.html:2 with the culture at UIExtensions.cs:561), so an ar/he culture renders LTR there too. LayoutTypes.cs:5 documents the v1 limit for the insets, while Row's own doc (src/eQuantic.UI.Primitives/Nodes/Row.cs) still asserts mirroring happens.
+- **Code**: No realizer mirrors. The native layout maps Start to X unconditionally (MeasureVisitor.Flex.cs:421 MeasureFlex, and Padding.Start→X at 891/927/1473), and the web shell emits lang but never dir (src/eQuantic.UI.Server/Templates/app-shell.html:2 with the culture at UIExtensions.cs:561), so an ar/he culture renders LTR there too. LayoutTypes.cs:5 documents the v1 limit for the insets, while Row's own doc (src/eQuantic.UI.Primitives/Nodes/Row.cs) still asserts mirroring happens.
 - **Evidence**:
 
   ```
@@ -2773,7 +2773,7 @@ the pill's 40 down.
 
 - **Component**: `src/eQuantic.UI.Primitives/Nodes/FlexNode.cs`
 - **Handoff**: wrap — … Line spacing = gap.
-- **Code**: RunGap lets line spacing differ from gap (src/eQuantic.UI.Primitives/Nodes/FlexNode.cs); the web emits the "run main" pair when they differ (WebLoweringVisitor.Containers.cs:1055-1065 GapValue) and native uses `flex.RunGap ?? flex.Gap` (MeasureVisitor.Flex.cs:486 MeasureFlexWrapped). The default matches the handoff, so this is an added override rather than a wrong default.
+- **Code**: RunGap lets line spacing differ from gap (src/eQuantic.UI.Primitives/Nodes/FlexNode.cs); the web emits the "run main" pair when they differ (WebLoweringVisitor.Containers.cs:1055-1065 GapValue) and native uses `flex.RunGap ?? flex.Gap` (MeasureVisitor.Flex.cs:491 MeasureFlexWrapped). The default matches the handoff, so this is an added override rather than a wrong default.
 - **Evidence**:
 
   ```
@@ -2881,7 +2881,7 @@ the pill's 40 down.
 
 - **Component**: `src/eQuantic.UI.Native.Components/PhotonHost.cs`
 - **Handoff**: Scroll = translated rrect clip. The compositor caches the content layer; a scroll frame re-encodes zero widgets — it updates one transform.
-- **Code**: A scroll frame re-encodes the WHOLE tree. ScrollTo/ScrollBy only set NeedsRender, and RenderFrame then re-runs PhotonRealizer.Realize over _root, which re-measures the ScrollView's child from scratch and moves it by writing child.Bounds (MeasureVisitor.Containers.cs:163-167 MeasureScrollView, 668-672) — the offset is a layout translate, not a retained transform on a cached layer. There is object recycling (nodePool) and raster caching (text/icon), but no content-layer cache and no transform-only path, so the 8.33ms 120Hz claim is not what the code buys.
+- **Code**: A scroll frame re-encodes the WHOLE tree. ScrollTo/ScrollBy only set NeedsRender, and RenderFrame then re-runs PhotonRealizer.Realize over _root, which re-measures the ScrollView's child from scratch and moves it by writing child.Bounds (MeasureVisitor.Containers.cs:166-170 MeasureScrollView, 668-672) — the offset is a layout translate, not a retained transform on a cached layer. There is object recycling (nodePool) and raster caching (text/icon), but no content-layer cache and no transform-only path, so the 8.33ms 120Hz claim is not what the code buys.
 - **Evidence**:
 
   ```
