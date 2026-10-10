@@ -2142,7 +2142,7 @@ record of a release, the wiki's Upgrading page is the distillate.
   translates, and calls each member with a null for each reference parameter on both sides, a control
   without the null beside it. LINQ's `Max`, `Min` and `ToDictionary`, a sequence named by its
   parameter, `CompareTo(object)`, `new Guid(text)`, `GetUnicodeCategory` and the cancellation pair refuse
-  a null as .NET does now, 67 probes. The 443 left are a baseline that only shrinks, each with its
+  a null as .NET does now, 67 probes. The 402 left are a baseline that only shrinks, each with its
   reason, most of them members lowered to JavaScript's own method, where refusing a null by name is a
   guard at every call, a decision. Proposed and archived through OpenSpec
   (`openspec/specs/transpiler-exceptions`).

@@ -418,12 +418,20 @@ internal static class NullArgumentSurface
         || (type.IsGenericType && type.GetGenericArguments().Any(inner => Mentions(inner, argument)));
 
     /// <summary>
-    /// A member whose answer both sides print alike: a string, a bool, a char or a number. A collection,
-    /// a builder or a lazy sequence prints as each side holds it, so for those only the throw is compared.
+    /// A member whose answer both sides print alike: a string, a bool, a char or a number, and an array
+    /// of those, which both sides write as a JSON array. An array's answer went uncompared, so a split
+    /// that .NET makes on white space for a null separator passed whatever the browser made of it (found
+    /// by Copilot's review of #715). A byte array is base64 text on .NET's side, and a collection, a
+    /// builder or a lazy sequence prints as each side holds it, so for those only the throw is compared.
     /// </summary>
     private static bool ComparesValue(MethodBase member) =>
         (member is ConstructorInfo constructor ? constructor.DeclaringType : ((MethodInfo)member).ReturnType) is { } answer
-        && (Nullable.GetUnderlyingType(answer) ?? answer) is var plain
+        && (PrintsAlike(answer)
+            || (answer.IsArray && answer.GetArrayRank() == 1 && answer.GetElementType() is { } element
+                && element != typeof(byte) && PrintsAlike(element)));
+
+    private static bool PrintsAlike(Type answer) =>
+        (Nullable.GetUnderlyingType(answer) ?? answer) is var plain
         && (plain == typeof(string) || plain == typeof(bool) || plain == typeof(char) || plain == typeof(decimal)
             || (plain.IsPrimitive && plain != typeof(IntPtr) && plain != typeof(UIntPtr)));
 
@@ -431,11 +439,14 @@ internal static class NullArgumentSurface
 
     /// <summary>
     /// What a receiver of the owner holds: enough that an index and a count of 2 are in range, so a null
-    /// is what the call meets first.
+    /// is what the call meets first. A text holds the canonical string and white space around and inside
+    /// it, which is what a null separator or a null set of trimmed characters stands for in .NET: over a
+    /// text without any, a split or a trim by null answered the same whatever it took the null for (found
+    /// by Copilot's review of #715).
     /// </summary>
     internal static string? Receiver(Type owner)
     {
-        if (owner == typeof(string)) return "\"abcd\"";
+        if (owner == typeof(string)) return "\" abcd ef \"";
         if (owner == typeof(StringBuilder)) return "new StringBuilder(\"abcd\")";
         if (owner.IsGenericType && owner.GetGenericTypeDefinition() is var definition
             && (definition == typeof(List<>) || definition == typeof(HashSet<>) || definition == typeof(SortedSet<>))
