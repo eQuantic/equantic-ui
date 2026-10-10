@@ -39,8 +39,10 @@ public class ExceptionCreationStrategy : IExpressionIrStrategy
     {
         var creation = (BaseObjectCreationExpressionSyntax)node;
         var type = (INamedTypeSymbol)context.SemanticHelper.GetType(node)!;
-        // The types it carries cannot be a type parameter (EQ2013).
+        // The types it carries cannot be a type parameter (EQ2013), nor its constructor one only .NET's
+        // serialization calls (EQ1009).
         ExceptionTypes.RefuseOpen(type, creation, tested: false, context);
+        TwinConstructor.RefuseSerializationNew(creation, context);
         var built = ExceptionTypes.Construction(ExceptionTypes.ChainOf(type), creation, context);
         // Its object initializer, applied to what that built, as a record's is (#587): it was dropped,
         // so `new Retry { Attempts = 3 }.Attempts` read nothing.

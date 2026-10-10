@@ -214,6 +214,57 @@ public class TwinConstructorTests
             .And.NotContain("constructor(original");
     }
 
+    private const string SerializationCalls = """
+        using System;
+        using System.Runtime.Serialization;
+        #pragma warning disable SYSLIB0051
+        public class Snap
+        {
+            public string Kind = "";
+            public Snap(string a, string b) { Kind = "strings"; }
+            public Snap(SerializationInfo info, StreamingContext context) { Kind = "serialization"; }
+        }
+        public static class Maker { public static Snap Make() => new Snap(null!, new StreamingContext()); }
+        public class Base : Exception
+        {
+            public Base() { }
+            public Base(string message, Exception inner) : base(message, inner) { }
+            protected Base(SerializationInfo info, StreamingContext context) : base(info, context) { }
+        }
+        public class Derived : Base { public Derived(SerializationInfo info) : base(info, new StreamingContext()) { } }
+        public class Again
+        {
+            public Again(int a, int b) { }
+            protected Again(SerializationInfo info, StreamingContext context) { }
+            public Again(SerializationInfo info) : this(info, new StreamingContext()) { }
+        }
+        public class Clause(SerializationInfo info, StreamingContext context) : Exception(info, context);
+        """;
+
+    /// <summary>
+    /// A constructor only .NET's serialization calls is no branch of its twin, so a call of one the browser
+    /// would make is refused (EQ1009): C# calls a public one by a <c>new</c>, and a protected one by a derived
+    /// constructor's base call, a chain or a base clause, and with no branch for it the twin ran another
+    /// constructor of two arguments, <c>new Snap(null!, new StreamingContext())</c> the
+    /// <c>(string, string)</c> one (Copilot's second review of #708). The template's own calls its base's,
+    /// and is no branch, so that call is never made and the template's class builds.
+    /// </summary>
+    [Theory]
+    [InlineData("Maker", "'Snap(SerializationInfo, StreamingContext)'")]
+    [InlineData("Derived", "'Base(SerializationInfo, StreamingContext)'")]
+    [InlineData("Again", "'Again(SerializationInfo, StreamingContext)'")]
+    [InlineData("Clause", "'Exception(SerializationInfo, StreamingContext)'")]
+    public void ACallOfASerializationConstructor_IsRefused(string name, string called)
+    {
+        var results = new ComponentCompiler().CompileSource(SerializationCalls, "Probe.cs");
+
+        results.Single(result => result.ComponentName == name).Errors.Should().Contain(error =>
+            error.Code == "EQ1009" && error.Message.StartsWith(called + " is no constructor the browser has"),
+            "the twin has no branch for it, so the call would run another constructor");
+        results.Where(result => result.ComponentName is "Snap" or "Base").SelectMany(result => result.Errors)
+            .Should().BeEmpty("a class that only declares one, the template's included, calls nothing");
+    }
+
     /// <summary>
     /// The constructor only .NET's serialization calls is no branch of the twin, and only the model can say
     /// its types are .NET's. With none to ask, a constructor whose own types the app happened to name

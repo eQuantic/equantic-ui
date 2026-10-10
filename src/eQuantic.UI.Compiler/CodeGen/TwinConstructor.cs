@@ -250,6 +250,7 @@ internal sealed class TwinConstructor
         foreach (var constructor in declared.Where(Chains))
         {
             var signature = $"'{type.Identifier.Text}{constructor.ParameterList}'";
+            if (RefuseSerializationCall(constructor.Initializer!)) continue;
             if (TargetOf(constructor.Initializer!, roots) is not { } target)
             {
                 _converter.Report(constructor, ConversionSeverity.Error, "EQ1009",
@@ -274,18 +275,57 @@ internal sealed class TwinConstructor
     /// <summary>
     /// Whether a constructor is the one only .NET's serialization calls: the <c>ISerializable</c>
     /// pattern's <c>(SerializationInfo info, StreamingContext context)</c>, which Visual Studio's
-    /// exception template writes beside <c>()</c>, <c>(string)</c> and <c>(string, Exception)</c>. No
-    /// <c>new</c> in the browser reaches it, since the browser has no <c>SerializationInfo</c>, so it is no
-    /// branch of the twin, as a record's copy constructor is not. Taken for one, it met
-    /// <c>(string, Exception)</c>, which takes as many arguments, and refused the class (EQ1009), so the
-    /// template had to be edited before the class could build. Only the model can say the two types are
-    /// .NET's: with none to ask, a constructor whose own types the app happened to name so is one C# can
-    /// call, and it stays a branch, where matching the names erased it (Copilot's review of #708).
+    /// exception template writes beside <c>()</c>, <c>(string)</c> and <c>(string, Exception)</c>. The
+    /// browser has no <c>SerializationInfo</c>, so it is no branch of the twin, as a record's copy
+    /// constructor is not. Taken for one, it met <c>(string, Exception)</c>, which takes as many arguments,
+    /// and refused the class (EQ1009), so the template had to be edited before the class could build. Only
+    /// the model can say the two types are .NET's: with none to ask, a constructor whose own types the app
+    /// happened to name so is one C# can call, and it stays a branch, where matching the names erased it
+    /// (Copilot's review of #708).
+    /// <para>
+    /// C# can still call one, a public one by a <c>new</c> and a protected one by the base call of a
+    /// derived constructor, and the twin, with no branch for it, ran another constructor that takes two
+    /// arguments: <c>new Snapshot(null!, new StreamingContext())</c> ran <c>(string, string)</c> (Copilot's
+    /// second review of #708). So every call of one the browser would make is refused
+    /// (<see cref="SerializationCall"/>): a <c>new</c>, and the <c>: base(…)</c>, the base clause or the
+    /// <c>: this(…)</c> of a constructor the twin writes. The template's own calls its base's, and is no
+    /// branch, so that call is never made, and the template builds as it is written.
+    /// </para>
     /// </summary>
+    internal static bool IsSerializationConstructor(IMethodSymbol? constructor) =>
+        constructor is { MethodKind: MethodKind.Constructor, Parameters: [var info, var context] }
+        && IsSerialization(info.Type, "SerializationInfo") && IsSerialization(context.Type, "StreamingContext");
+
+    /// <summary>A declared constructor that <see cref="IsSerializationConstructor(IMethodSymbol?)"/>, asked of
+    /// its symbol.</summary>
     private bool IsSerializationConstructor(ConstructorDeclarationSyntax constructor) =>
         constructor.ParameterList.Parameters.Count == 2
-        && _modelFor(constructor)?.GetDeclaredSymbol(constructor) is IMethodSymbol { Parameters: [var info, var context] }
-        && IsSerialization(info.Type, "SerializationInfo") && IsSerialization(context.Type, "StreamingContext");
+        && IsSerializationConstructor(_modelFor(constructor)?.GetDeclaredSymbol(constructor) as IMethodSymbol);
+
+    /// <summary>The refusal (EQ1009) of a call of <paramref name="called"/>, a constructor only .NET's
+    /// serialization calls (<see cref="IsSerializationConstructor(IMethodSymbol?)"/>).</summary>
+    internal static string SerializationCall(IMethodSymbol called) =>
+        $"'{called.ContainingType.Name}(SerializationInfo, StreamingContext)' is no constructor the browser has: only .NET's "
+        + "serialization calls a constructor of that shape, and the browser has no SerializationInfo, so no twin has a branch "
+        + "for it and this call would run another constructor. Call another one.";
+
+    /// <summary>Refuses (EQ1009) a <c>new</c> that binds a constructor only .NET's serialization calls,
+    /// whatever builds it: a class's, a record's, a struct's or an exception's.</summary>
+    internal static void RefuseSerializationNew(SyntaxNode creation, ConversionContext context)
+    {
+        if (context.SemanticHelper.GetSymbol(creation) is IMethodSymbol called && IsSerializationConstructor(called))
+            context.Report(creation, ConversionSeverity.Error, "EQ1009", SerializationCall(called));
+    }
+
+    /// <summary>Refuses (EQ1009) a <c>: base(…)</c>, a base clause or a <c>: this(…)</c> of a constructor the
+    /// twin writes that binds a constructor only .NET's serialization calls. True where it refused.</summary>
+    private bool RefuseSerializationCall(SyntaxNode at)
+    {
+        if (_modelFor(at)?.GetOperation(at) is not IInvocationOperation { TargetMethod: var called } || !IsSerializationConstructor(called))
+            return false;
+        _converter.Report(at, ConversionSeverity.Error, "EQ1009", SerializationCall(called));
+        return true;
+    }
 
     /// <summary>Whether <paramref name="type"/> is the type of <c>System.Runtime.Serialization</c> named
     /// <paramref name="name"/>.</summary>
@@ -552,12 +592,14 @@ internal sealed class TwinConstructor
     {
         if (root.Explicit?.Initializer is { } chain && chain.ThisOrBaseKeyword.IsKind(SyntaxKind.BaseKeyword))
         {
+            RefuseSerializationCall(chain);
             var called = _modelFor(chain)?.GetOperation(chain);
             return Super(chain.ArgumentList, BoundArguments.Of(called, argument => JsExpr.Opaque(_converter.ConvertExpression(argument))),
                 argument => _converter.ConvertExpression(argument), ExceptionBase(called));
         }
         if (clause?.ArgumentList is { } list)
         {
+            RefuseSerializationCall(clause);
             var called = _modelFor(clause)?.GetOperation(clause);
             return Super(list, BoundArguments.Of(called, argument => JsExpr.Opaque(InPrimaryScope(argument))),
                 InPrimaryScope, ExceptionBase(called));

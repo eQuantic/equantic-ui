@@ -34,6 +34,9 @@ public class ObjectCreationStrategy : IExpressionIrStrategy
 
     public JsExpr ConvertIr(SyntaxNode node, ConversionContext context)
     {
+        // A constructor only .NET's serialization calls is no branch of a twin, so a `new` of it would run
+        // another (TwinConstructor.IsSerializationConstructor).
+        TwinConstructor.RefuseSerializationNew(node, context);
         var built = Build(node, context);
         // A generic record or struct built as the closed type C# names carries its type arguments: one
         // twin class serves every one of them, and `Box<int>` equalled `Box<double>` holding the same 1
