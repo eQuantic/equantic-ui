@@ -80,11 +80,6 @@ public class ValueShapeCollisionTests
             + "theirs: a now-min-max triple is ordered and bounded, where a motion vector's axes "
             + "are independent and a spring's three are unrelated units. None of them adds to, "
             + "converts to, or is ever passed as another."),
-        ["SizeKind,Single"] = (
-            ["GridTrack", "SizeValue"],
-            "how wide a thing wants to be, and how wide a grid COLUMN wants to be. The second is "
-            + "the first plus what a track may do that a box may not (fractional units), and it "
-            + "stays its own type because a track is authored in a place a SizeValue is not."),
     };
 
     /// <summary>

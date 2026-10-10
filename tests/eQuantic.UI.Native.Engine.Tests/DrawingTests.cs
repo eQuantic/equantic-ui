@@ -63,6 +63,20 @@ public class DrawingTests
         node.Bounds.Height.Should().Be(80, "the viewBox is 3:1");
     }
 
+    /// <summary>A fill width takes the width offered and the artwork's aspect decides the height:
+    /// a 480 × 832 map in a 400dp column is 400 × 693.33 — the web's `width: 100%` and
+    /// `aspect-ratio` on the same tree.</summary>
+    [Fact]
+    public void AFillWidthTakesTheOfferedWidthAndTheArtworksAspect()
+    {
+        var map = new VectorDrawing(0, 8, 480, 832, Mark().Shapes);
+
+        var node = LayoutEngine.Layout(new Drawing(map, SizeValue.Fill), 400, 900, Ctx);
+
+        node.Bounds.Width.Should().Be(400);
+        node.Bounds.Height.Should().BeApproximately(693.33f, 0.01f);
+    }
+
     /// <summary>Both numbers letterbox or stretch deliberately — the author's call, never the
     /// framework's guess.</summary>
     [Fact]

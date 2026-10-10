@@ -2082,6 +2082,17 @@ record of a release, the wiki's Upgrading page is the distillate.
   through the helper its call uses, the receiver read once. Proposed and archived through OpenSpec
   (`openspec/specs/transpiler-vocabulary-values`).
 
+- **2026-10-10 · A layout follows its box**: the first external consumer, falei.pt, needed three
+  things a fixed point could not say. A `Drawing` takes a `SizeValue` width, so `SizeValue.Fill` draws
+  it at its column's width with the height its artwork's aspect gives; a `Positioned` child is placed
+  by a fraction of its stack (`TopFraction`, `StartFraction`, …) plus a point offset, and shifted by a
+  fraction of its own size (`ShiftX`, `ShiftY`), the way a label centres on a map point; and
+  `GridTrack.AutoFill(min)` repeats a column as often as it fits, `repeat(auto-fill, minmax(…))` on the
+  web and the same count on Photon. Both web targets lower byte-identically and Photon measures the
+  same boxes. `Drawing.Width` is now a `SizeValue`, the one break, listed in Upgrading
+  ([#636](https://github.com/eQuantic/equantic-ui/issues/636)). Proposed and archived
+  through OpenSpec (`openspec/specs/layout`).
+
 ## Retired documents
 
 | document | what it was | where its substance lives now |
