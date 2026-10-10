@@ -1,5 +1,12 @@
 import { describe, it, expect, afterEach, vi } from 'vitest';
-import { format, stringFormat, stringFormatInvariant, asNumber, recordText } from './format';
+import {
+  format,
+  stringFormat,
+  stringFormatInvariant,
+  asNumber,
+  recordText,
+  recordTextGroup,
+} from './format';
 import { INVARIANT_FORMAT, installCulture, type CultureFormat } from './culture';
 
 /** pt-BR as .NET 10 writes it on ICU, as far as these specs read it: its separators, digits and
@@ -292,10 +299,44 @@ describe('recordText', () => {
     ).toBe('Reading { Ratio = 0.1, Half = 0, Kind = Large }');
   });
 
+  // A curve's points are floats (#518): without its kind a member writes the double's digits.
+  it("writes a member by the number kind the compiler names, a single's own digits", () => {
+    const curve = { x1: Math.fround(0.2), y1: 0, x2: Math.fround(0.3), y2: 1.25 };
+
+    expect(
+      recordText(curve, 'Curve', [
+        ['X1', 'single'],
+        ['Y1', 'single'],
+        ['X2', 'single'],
+        ['Y2', 'single'],
+      ]),
+    ).toBe('Curve { X1 = 0.2, Y1 = 0, X2 = 0.3, Y2 = 1.25 }');
+    expect(recordText(curve, 'Curve', ['X1', 'Y1', 'X2', 'Y2'])).toBe(
+      'Curve { X1 = 0.20000000298023224, Y1 = 0, X2 = 0.30000001192092896, Y2 = 1.25 }',
+    );
+    expect(recordText(curve, 'Curve', [['X1', 'single'], 'Y1', 'X2', 'Y2'])).toBe(
+      'Curve { X1 = 0.2, Y1 = 0, X2 = 0.30000001192092896, Y2 = 1.25 }',
+    );
+  });
+
   it('writes a record with no members, and nothing for a null value', () => {
     expect(recordText({}, 'Empty', [])).toBe('Empty { }');
     expect(recordText(null, 'Color', ['R'])).toBe('');
     expect(recordText(undefined, 'Color', ['R'])).toBe('');
+  });
+
+  // The method group `value.ToString`: the delegate writes the record text of the value it was made
+  // with, over the same members a call passes (#731).
+  it('makes the delegate of a ToString method group, over the value it was made with', () => {
+    const text = recordTextGroup({ x1: Math.fround(0.2), y1: 0, x2: 0, y2: 1 }, 'Curve', [
+      ['X1', 'single'],
+      ['Y1', 'single'],
+      ['X2', 'single'],
+      ['Y2', 'single'],
+    ]);
+
+    expect(text()).toBe('Curve { X1 = 0.2, Y1 = 0, X2 = 0, Y2 = 1 }');
+    expect(text()).toBe(text());
   });
 });
 

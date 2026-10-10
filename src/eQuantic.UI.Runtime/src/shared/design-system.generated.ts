@@ -8,6 +8,7 @@ import { ColorToken, TypeStyle, VariantColors, codeTokenColor } from './value-ty
 import type { AppTheme, ShadowSpec } from './value-types';
 import type { ColorValue } from './nodes';
 import { DataPalette, DivergingScale, StatusScale } from './data-palette';
+import { MotionSpec } from './primitive-values';
 
 const c = (r: number, g: number, b: number, a: number): ColorValue => ({ r, g, b, a });
 const t = (light: ColorValue, dark: ColorValue): ColorToken => new ColorToken(light, dark);
@@ -50,9 +51,9 @@ export const Touch = {
 } as const;
 
 export const Curve = {
-  standard: [0.2, 0, 0, 1],
-  decelerate: [0, 0, 0, 1],
-  accelerate: [0.3, 0, 1, 1],
+  standard: { x1: 0.20000000298023224, y1: 0, x2: 0, y2: 1 },
+  decelerate: { x1: 0, y1: 0, x2: 0, y2: 1 },
+  accelerate: { x1: 0.30000001192092896, y1: 0, x2: 1, y2: 1 },
 } as const;
 
 export const Motion = {
@@ -60,10 +61,10 @@ export const Motion = {
   baseMs: 200,
   slowMs: 300,
   reducedCrossfadeMs: 120,
-  press: { durationMs: 100, curve: Curve.standard },
-  state: { durationMs: 200, curve: Curve.standard },
-  enter: { durationMs: 300, curve: Curve.decelerate },
-  exit: { durationMs: 200, curve: Curve.accelerate },
+  press: new MotionSpec(100, Curve.standard),
+  state: new MotionSpec(200, Curve.standard),
+  enter: new MotionSpec(300, Curve.decelerate),
+  exit: new MotionSpec(200, Curve.accelerate),
 } as const;
 
 /** The control ladder — every control of a given size measures the same (spec A12). */

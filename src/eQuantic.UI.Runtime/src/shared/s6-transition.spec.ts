@@ -82,7 +82,7 @@ describe('S6 transitions (C# cross-pin)', () => {
             channels: StyleChannels.opacity,
             durationMs: 100,
             delayMs: 40,
-            easing: [0, 0, 0, 1],
+            easing: { x1: 0, y1: 0, x2: 0, y2: 1 },
           },
         },
       } as unknown as VisualNodeValue,
@@ -91,6 +91,29 @@ describe('S6 transitions (C# cross-pin)', () => {
 
     expect(classesOf(node)).toContain(
       transitionClass('opacity 100ms cubic-bezier(0, 0, 0, 1) 40ms'),
+    );
+  });
+
+  // The curve is the record's data, as a component makes it (#518): `new Curve(0.2f, 0.9f, 0.3f,
+  // 1.25f)` arrives holding each point's single, and CSS reads it in C#'s four places. The C# twin
+  // pins the same literal (S6TransitionRealizerTests).
+  it('a curve made in code writes its own control points', () => {
+    const node = lowerVisualNode(
+      {
+        nodeKind: 'box',
+        style: {
+          transition: {
+            channels: StyleChannels.opacity,
+            durationMs: 150,
+            easing: { x1: Math.fround(0.2), y1: Math.fround(0.9), x2: Math.fround(0.3), y2: 1.25 },
+          },
+        },
+      } as unknown as VisualNodeValue,
+      ctx,
+    );
+
+    expect(classesOf(node)).toContain(
+      transitionClass('opacity 150ms cubic-bezier(0.2, 0.9, 0.3, 1.25)'),
     );
   });
 

@@ -179,6 +179,46 @@ public class HostOnlyFrameworkTypeTests
     }
 
     /// <summary>
+    /// An EXTENSION on a host-only home, which the fence did not count: the reduced call and its
+    /// method group. Both name the HOME in C# (<c>curve.Ease(t)</c> is
+    /// <c>CurveEvaluator.Ease(curve, t)</c>), and the receiver is only its first argument, so the
+    /// question "what was this reached through" asked about the wrong type: the receiver crosses,
+    /// and the call was waved on. The home has no export to go to, so the call stayed on the
+    /// receiver as <c>curve.ease(t)</c>, built with no diagnostic and threw in the browser (#518).
+    /// <para>
+    /// A curve's reduced GROUP is not here because C# refuses it (CS1113: an extension on a value
+    /// type makes no delegate), so the group that names this home is the qualified one. The last
+    /// three rows are the same hole under the homes fenced before it, a reduced group among them: a
+    /// <c>TypeStyle</c> and a <c>Text</c> cross, and <c>EffectiveTypeStyle</c> does not.
+    /// </para>
+    /// </summary>
+    [Theory]
+    [InlineData("var eased = Curve.Standard.Ease(0.5f);")]
+    [InlineData("var eased = ((Curve?)Curve.Standard)?.Ease(0.5f);")]
+    [InlineData("var eased = CurveEvaluator.Ease(Curve.Standard, 0.5f);")]
+    [InlineData("Func<Curve, float, float> ease = CurveEvaluator.Ease;")]
+    [InlineData("var face = ((IAppTheme)null!).Type(TypeRole.BodyM).WithCodeFace((IAppTheme)null!);")]
+    [InlineData("var style = new Text(\"hi\").Resolve((IAppTheme)null!);")]
+    [InlineData("Func<IAppTheme, TypeStyle> resolve = new Text(\"hi\").Resolve;")]
+    public void AnExtensionOnAHostOnlyHome_IsNamingTheHome(string statement)
+    {
+        Diagnostics(statement).Should().Contain(d => d.Code == "EQ2010" && d.Message.Contains("HOST ONLY"));
+    }
+
+    /// <summary>
+    /// …and the record the evaluator reads still crosses: the browser holds a curve as its data, and
+    /// a web transition hands it to CSS, which evaluates it.
+    /// </summary>
+    [Theory]
+    [InlineData("var x1 = Curve.Standard.X1;")]
+    [InlineData("var made = new Curve(0.2f, 0.9f, 0.3f, 1.25f);")]
+    [InlineData("var spec = new TransitionSpec(StyleChannels.Colors) { Easing = Curve.Decelerate };")]
+    public void TheCurveTheEvaluatorReads_StillCrosses(string statement)
+    {
+        Diagnostics(statement).Should().BeEmpty("only the evaluator stays on the host, never the curve");
+    }
+
+    /// <summary>
     /// An OPERATOR, which the fence did not count either — and this one fails SILENTLY rather than
     /// loudly, which makes it the worse half. JavaScript cannot overload an operator, so `a + b` on
     /// two framework values emits JavaScript's own `+`: two `Point` objects concatenate into

@@ -68,11 +68,11 @@ public static class StringConversion
 
         // A value the browser holds as DATA (`[TwinIsData]`, `Color`) is a plain object, whose own
         // string is `[object Object]`. It reads as the record text .NET writes, from the members
-        // .NET prints, and a null one as nothing.
+        // .NET prints, and a null one as nothing. A member whose own text its type decides says so,
+        // as RecordText writes it: a `Curve`'s points are floats, and JavaScript's digits for 0.2f
+        // are the double's, 0.20000000298023224 (#518).
         if (real is INamedTypeSymbol data && data.TwinIsData())
-            return JsExpr.Callish(RecordText(text, data.Name, data.PrintedMembers()
-                .Select(member => (member.Name, (ITypeSymbol?)(member as IFieldSymbol)?.Type ?? (member as IPropertySymbol)?.Type)),
-                context));
+            return RecordText(data, converted, Eq.RecordText, context);
 
         // A number or a date is its text in the culture in force, through the formatter that writes
         // every other number and date (#454): JavaScript's own string of it is invariant, so a
@@ -92,15 +92,27 @@ public static class StringConversion
     }
 
     /// <summary>
+    /// The record text of a value the browser holds as data, written by <paramref name="helper"/> over
+    /// the members .NET prints: <see cref="Eq.RecordText"/> for the text itself, and
+    /// <see cref="Eq.RecordTextGroup"/> for the delegate a <c>ToString</c> method group is, which writes
+    /// the same text of the value it was made with (#518).
+    /// </summary>
+    internal static JsExpr RecordText(INamedTypeSymbol data, JsExpr value, string helper, ConversionContext context) =>
+        JsExpr.Callish(RecordText(helper, JsExprWriter.Write(value), data.Name,
+            data.PrintedMembers().Select(member => (member.Name, (ITypeSymbol?)TwinData.TypeOf(member))), context));
+
+    /// <summary>
     /// A record's text, as its PrintMembers writes it (<c>Name { A = 1, B = x }</c>), through the
     /// runtime's record text, which reads each member under its twin's name: a record the browser holds
-    /// as a class (its <c>toString</c>) and one it holds as data alike. Each member is written as a
-    /// concatenation would write it, which the runtime's formatter answers from the value alone where
-    /// its type says nothing more, and from the member's kind or a function of the value where it does:
-    /// a float's own digits, an integer's unsigned zero, an enum's member name, a data twin's own text.
-    /// A member whose type is not known is written from its value.
+    /// as a class (its <c>toString</c>) and one it holds as data alike, and the delegate of a data
+    /// twin's <c>ToString</c> method group, which <paramref name="helper"/> names. Each member is
+    /// written as a concatenation would write it, which the runtime's formatter answers from the value
+    /// alone where its type says nothing more, and from the member's kind or a function of the value
+    /// where it does: a float's own digits (a <c>Curve</c>'s points), an integer's unsigned zero, an
+    /// enum's member name, a data twin's own text. A member whose type is not known is written from
+    /// its value. One call shape for all three, <c>helper(value, 'Name', [members])</c>.
     /// </summary>
-    internal static string RecordText(string value, string name,
+    internal static string RecordText(string helper, string value, string name,
         IEnumerable<(string Name, ITypeSymbol? Type)> members, ConversionContext context)
     {
         context.UsedHelpers.Add(Eq.Import);
@@ -115,7 +127,7 @@ public static class StringConversion
                 ? $"[{label}, '{kind}']"
                 : label;
         }
-        return $"{Eq.RecordText}({value}, {JsStringLiteral.Quote(name)}, [{string.Join(", ", members.Select(Member))}])";
+        return $"{helper}({value}, {JsStringLiteral.Quote(name)}, [{string.Join(", ", members.Select(Member))}])";
     }
 
     /// <summary>

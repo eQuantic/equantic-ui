@@ -15,7 +15,16 @@ namespace eQuantic.UI.Primitives;
 /// does what every browser does: Newton-Raphson from a good guess, falling back to bisection where
 /// the curve is too flat for the derivative to help.
 /// </para>
+/// <para>
+/// HOST ONLY, because the web never asks it: a transition there IS a CSS timing function, so the
+/// realizer hands the curve to the browser and the browser evaluates it. The runtime ships no twin,
+/// and a component that names it, as <c>curve.Ease(t)</c> or <c>CurveEvaluator.Ease</c>, fails the
+/// build (EQ2010). It used to build with no diagnostic and throw in the browser, where the call
+/// stayed on the curve as <c>curve.ease(t)</c> (#518). The curve itself crosses: what stays on the
+/// host is the arithmetic, which only the targets that draw their own frames do.
+/// </para>
 /// </summary>
+[ServerOnly]
 public static class CurveEvaluator
 {
     // Browsers converge in a handful of steps; more iterations buy nothing a pixel can show.

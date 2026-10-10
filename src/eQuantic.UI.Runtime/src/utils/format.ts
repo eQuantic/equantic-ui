@@ -189,10 +189,14 @@ function formatCore(value: any, format: string | null, kind: NumberKind): string
 }
 
 /**
+/**
  * A member a record's text prints: its C# name, read under its twin's name (the name with its first
  * letter lowered, as `TwinName` names it), with what the type says that the value cannot: a number's
  * kind (a float's own digits, an integer's unsigned zero), or a function that writes a value the
- * formatter cannot read (an enum's member name, a data twin's own record text).
+ * formatter cannot read (an enum's member name, a data twin's own record text). A `Curve`'s points
+ * are floats, `['X1', 'single']`, and a float writes the single's own digits, `0.2` where the double
+ * under it reads `0.20000000298023224` (#518). A member that says nothing is written from its value,
+ * a number as a double.
  */
 export type PrintedMember = string | readonly [string, NumberKind | ((value: any) => string)];
 
@@ -201,7 +205,8 @@ export type PrintedMember = string | readonly [string, NumberKind | ((value: any
  * .NET prints, in its order, each written as a concatenation writes it (#454), a number in the
  * culture in force, a null as nothing, a bool as `True`. A record the browser holds as a class and one
  * it holds as plain data (`[TwinIsData]`, whose own string would be `[object Object]`) both write it
- * here. A null value is the empty string, as `$"{value}"` is.
+ * here, from the same members the compiler writes for its `ToString` method group
+ * ({@link recordTextGroup}). A null value is the empty string, as `$"{value}"` is.
  */
 export function recordText(value: unknown, name: string, members: readonly PrintedMember[]): string {
   if (value === null || value === undefined) return '';
@@ -212,6 +217,20 @@ export function recordText(value: unknown, name: string, members: readonly Print
     return `${label} = ${typeof how === 'function' ? how(held) : format(held, null, undefined, undefined, how)}`;
   });
   return written.length === 0 ? `${name} { }` : `${name} { ${written.join(', ')} }`;
+}
+
+/**
+ * The method group `value.ToString` of a value the browser holds as data, `Func<string> text =
+ * curve.ToString`: a delegate writing the {@link recordText} of the value as it is when the delegate
+ * is made, over the members a call writes. The compiler passes the receiver here, so it is read once,
+ * where C# copies it into the delegate.
+ */
+export function recordTextGroup(
+  value: unknown,
+  name: string,
+  members: readonly PrintedMember[],
+): () => string {
+  return () => recordText(value, name, members);
 }
 
 /** Text in a field of `|alignment|` characters: a positive width aligns right, a negative left. */

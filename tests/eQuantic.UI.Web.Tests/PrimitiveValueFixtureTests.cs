@@ -23,6 +23,14 @@ public class PrimitiveValueFixtureTests
     private static object WideCorners(Rect rect) =>
         new { x = (double)rect.X, y = (double)rect.Y, width = (double)rect.Width, height = (double)rect.Height };
 
+    /// <summary>A curve as the record's data the browser holds, each point widened to the double
+    /// that holds its single, for the reason the fractional Rect values are.</summary>
+    private static object Points(Curve curve) =>
+        new { x1 = (double)curve.X1, y1 = (double)curve.Y1, x2 = (double)curve.X2, y2 = (double)curve.Y2 };
+
+    /// <summary>A motion role: its duration, and the curve's data.</summary>
+    private static object Role(MotionSpec role) => new { durationMs = role.DurationMs, curve = Points(role.Curve) };
+
     private static string FixturePath()
     {
         var here = new DirectoryInfo(AppContext.BaseDirectory);
@@ -117,6 +125,24 @@ public class PrimitiveValueFixtureTests
                 // The readable one: inflating by exactly the x it sits at lands on ZERO in floats,
                 // and on 1.49e-09 if the amount was never rounded.
                 fractionalInflatedByItsOwnX = WideCorners(new Rect(0.1f, 0.2f, 0.3f, 0.4f).Inflate(0.1f)),
+            },
+            // THE CURVES, as the browser holds them (#518): the record's data, each point the single
+            // C# holds. The design system exported a preset as an array, so `Curve.Standard.X1` read
+            // undefined in browser code, and a motion role's curve with it. A point widened to double,
+            // because 0.2f is 0.20000000298023224 and a preset holding 0.2 is a different curve from
+            // the one a component makes with `new Curve(0.2f, 0f, 0f, 1f)`.
+            curves = new
+            {
+                standard = Points(Curve.Standard),
+                decelerate = Points(Curve.Decelerate),
+                accelerate = Points(Curve.Accelerate),
+            },
+            motion = new
+            {
+                press = Role(Motion.Press),
+                state = Role(Motion.State),
+                enter = Role(Motion.Enter),
+                exit = Role(Motion.Exit),
             },
             windowSizeClasses = new
             {
