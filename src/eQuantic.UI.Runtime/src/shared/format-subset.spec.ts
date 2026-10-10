@@ -111,7 +111,7 @@ describe('D7 formatting subset (cross-pinned with FormatSubsetTests.cs)', () => 
     // String(value) — the invariant default — so the most naturally written date on a page was
     // the one that ignored the culture.
     installCulture('pt-BR', 'pt-BR', facts['pt-BR']);
-    const moment = dateTime(2026, 8, 13, 15, 45, 7);
+    const moment = dateTime.of(2026, 8, 13, 15, 45, 7);
     expect(format(moment, 'd')).toBe('13/08/2026');
     expect(format(moment, 't')).toBe('15:45');
     expect(normalize(stringFormat('{0:d}', moment))).toBe('13/08/2026');
