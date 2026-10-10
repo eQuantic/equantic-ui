@@ -41,6 +41,16 @@ public class FluidTypeTests
         tight.AtWindow(2000).Tracking.Should().BeApproximately(-1.89f, 0.001f);
     }
 
+    /// <summary>The values the TS twin pins in fluid-type.spec.ts, from the same single-precision arithmetic.</summary>
+    [Fact]
+    public void TheSinglePrecisionValues_TheTwinPins()
+    {
+        var style = new TypeStyle(32, 41, FontWeight.Regular, 0, 1.3f).WithFluidSize(34, 4.2f, 54.1f);
+
+        ((double)style.LineHeight).Should().Be(69.31562042236328);
+        style.Fluid!.Value.At(1000).Should().Be(42);
+    }
+
     [Fact]
     public void ASizeInDp_GivesTheFluidSizeWayAndStaysPut()
     {

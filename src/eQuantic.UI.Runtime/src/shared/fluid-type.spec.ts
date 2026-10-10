@@ -48,6 +48,13 @@ describe('fluid type', () => {
     expect(display.withSize(20).atWindow(2000).size).toBe(20);
   });
 
+  it('rounds in single precision as the C# does, from single-rounded arguments', () => {
+    // C#: WithFluidSize(34, 4.2f, 54.1f) on a 32dp style with a 41dp line box.
+    const style = new TypeStyle(32, 41, 'regular', 0, 1.3).withFluidSize(34, Math.fround(4.2), Math.fround(54.1));
+    expect(style.lineHeight).toBe(69.31562042236328);
+    expect(style.fluid!.at(1000)).toBe(42);
+  });
+
   it('refuses a size that cannot be, as the C# does', () => {
     expect(() => display.withFluidSize(0, 4, 54)).toThrow(/positive floor/);
     expect(() => display.withFluidSize(34, 0, 54)).toThrow(/share of the window/);

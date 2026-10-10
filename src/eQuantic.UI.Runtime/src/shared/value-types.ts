@@ -422,7 +422,9 @@ export class TypeStyle implements TypeStyleValue {
     if (!(max >= min)) throw new RangeError("A fluid size's ceiling cannot be under its floor.");
     // The ceiling keeps the EXACT ratios (C# twin): the web writes them unitless and in em, and
     // atWindow rounds once, at the size it resolves to.
-    const ratio = (value: number) => (this.size > 0 ? (value * max) / this.size : value);
+    // In single precision, each operation rounded as C# rounds it: a double here leaves a value a bit
+    // away from the server's, and that bit can change a ratio's last printed digit on hydration.
+    const ratio = (value: number) => (this.size > 0 ? Math.fround(Math.fround(value * max) / this.size) : value);
     return Object.assign(
       new TypeStyle(max, ratio(this.lineHeight), this.weight, ratio(this.tracking), this.maxScale, this.mono, this.italic, this.family),
       { fluid: new FluidSize(min, percentOfWindow, max) },
@@ -434,7 +436,9 @@ export class TypeStyle implements TypeStyleValue {
     if (!this.fluid || this.size <= 0) return this;
     const size = this.fluid.at(windowWidth);
     // The tracking follows the size at the style's own ratio, as the line box does.
-    return Object.assign(this.withSize(size), { tracking: (this.tracking * size) / this.size });
+    return Object.assign(this.withSize(size), {
+      tracking: Math.fround(Math.fround(this.tracking * size) / this.size),
+    });
   }
 
   /** A style from a SIZE alone, with the typographic default line box (1.25×). */
@@ -456,7 +460,9 @@ export class FluidSize {
 
   /** The size at a window `windowWidth` dp wide. */
   at(windowWidth: number): number {
-    return Math.min(Math.max((windowWidth * this.percentOfWindow) / 100, this.min), this.max);
+    // Single precision, as C#'s `windowWidth * PercentOfWindow / 100f`: 1000 × 4.2f is 42 there.
+    const share = Math.fround(Math.fround(windowWidth * this.percentOfWindow) / 100);
+    return Math.min(Math.max(share, this.min), this.max);
   }
 }
 
