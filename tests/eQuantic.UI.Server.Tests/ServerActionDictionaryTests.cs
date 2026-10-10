@@ -70,6 +70,7 @@ public class ServerActionDictionaryTests
             serviceProvider: root,
             authorizationService: new AlwaysAllowed(),
             options: new UIOptions(),
+            actions: new FixedOptions<ServerActionsOptions>(new ServerActionsOptions()),
             logger: NullLogger<ServerActionsMiddleware>.Instance);
 
         using var scope = root.CreateScope();
