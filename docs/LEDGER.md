@@ -1950,6 +1950,17 @@ record of a release, the wiki's Upgrading page is the distillate.
   the symbol's interface-qualified name (`IReads.Value`): a member's twin name is derived in one place
   now, an explicit implementation's under the name of the member it implements, as the emitter writes
   it. Proposed and archived through OpenSpec (`openspec/specs/transpiler-classes`).
+- **2026-10-07 · A generic record equals only its own closed type**: .NET compares a record's
+  EqualityContract, its closed type, and the twin is one class for every type argument, so
+  `new Box<int>(1).Equals((object)new Box<double>(1))`, a `List<object>`'s `Contains` and a `with` copy
+  answered true where .NET answers false ([#651](https://github.com/eQuantic/equantic-ui/issues/651)).
+  Where C# names the type arguments the value is marked with them (`$eq.closing`), held aside so its
+  members and JSON stay its own, and a generic record's or struct's `equals` compares the marks; a
+  value built inside generic code carries none and is not taken for another type. The mark is the
+  closed type as .NET erases it, a tuple's element names and `dynamic` gone. Of the nine conformance
+  cases, the five across type arguments fail on main, and the tuple and `dynamic` cases fail on the
+  first mark, which kept the display text. Proposed and archived through OpenSpec
+  (`openspec/specs/transpiler-records`).
 
 ## Retired documents
 
