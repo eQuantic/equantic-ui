@@ -1923,9 +1923,12 @@ record of a release, the wiki's Upgrading page is the distillate.
   TypeError or an undefined behind a green build
   ([#679](https://github.com/eQuantic/equantic-ui/issues/679)). `AppendFormat` and `AppendJoin`
   append what `string.Format` and `string.Join` write, by the same lowering, and `Capacity` follows the
-  chunks .NET allocates through every edit, matching .NET on 41 measured sequences. A provider other
-  than the current culture on `Append`, `GetChunks` and the span overloads fail the build. Proposed and
-  archived through OpenSpec (`openspec/specs/transpiler-bcl`).
+  chunks .NET allocates through every edit, matching .NET on 41 measured sequences. An interpolated
+  `Append` appends each part in turn, as .NET's handler does, where every hole was read first
+  (`$"{b.Length}{b.Length}"` held "00"), a named argument is bound to its parameter, and a text longer
+  than the browser's string is .NET's `OutOfMemoryException`. A provider other than the current
+  culture on `Append`, `GetChunks` and the span overloads fail the build. Proposed and archived
+  through OpenSpec (`openspec/specs/transpiler-bcl`).
 
 ## Retired documents
 
