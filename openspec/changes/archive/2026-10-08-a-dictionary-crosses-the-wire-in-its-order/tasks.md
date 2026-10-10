@@ -6,8 +6,8 @@
       their own converters, read back only as pairs, for every dictionary of .NET's own collections
 - [x] 1.2 The state payload written as objects by name, each field's value through `EqJson`
 - [x] 1.3 A projected service's members as `ProjectedMembers`, which the converter does not match
-- [x] 1.4 `EqJsonTests`: integer and integer-like string keys in slot order, each key type, both
-      reads, the sorted two, and the state payload's objects
+- [x] 1.4 `EqJsonTests`: integer and integer-like string keys in slot order, each key type, the
+      read of the pairs and the refusal of an object, the sorted two, and the state payload's objects
 - [x] 1.5 Check: `eQuantic.UI.Server.Tests`, with the payload fixture regenerated and read back
 
 ## 2. The browser writes and reads the pairs
