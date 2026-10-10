@@ -161,8 +161,15 @@ public class PerfHarnessTests
     /// 16 bytes per box for the pair, paid in full only by a box that declares one — and the frame
     /// measured 73.2 KB, under the 74.0 it started from.
     /// </para>
+    /// <para>
+    /// LOWERED to 72 KB on 2026-10-07 (#630). A hit region now carries the box its pressable is drawn
+    /// in beside the target its slop grows, 16 bytes more per region, and the frame paid for it by
+    /// sizing its region lists like the frame before's (<c>FrameRegions</c>): each list used to grow
+    /// from empty by doubling, the hit regions alone four arrays a frame of which three were thrown
+    /// away. With both, the frame measured 71.2 KB.
+    /// </para>
     /// </summary>
-    private const long PooledAllocationCeilingBytesPerFrame = 74 * 1024;
+    private const long PooledAllocationCeilingBytesPerFrame = 72 * 1024;
 
     /// <summary>
     /// What an open LAYER costs a frame, with the shells' configuration (#290). <see cref="DenseScene"/>

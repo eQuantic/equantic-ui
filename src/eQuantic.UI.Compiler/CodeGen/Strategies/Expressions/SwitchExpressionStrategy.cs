@@ -30,6 +30,43 @@ public class SwitchExpressionStrategy : IConversionStrategy
         var governingExpr = context.Converter.ConvertExpression(switchExpr.GoverningExpression);
         var governingType = context.SemanticHelper.GetType(switchExpr.GoverningExpression);
 
+        // The arms are ONE pattern-matching operation: a Deconstruct the app wrote is called once for the
+        // value, however many arms read its parts, and held where the arrow declares it (MatchParts),
+        // fresh each time the switch runs, an initializer's included.
+        var (arms, held) = context.MatchParts.In(switchExpr.SpanStart, () =>
+        {
+            var built = new StringBuilder();
+            foreach (var arm in switchExpr.Arms)
+            {
+                if (arm.Pattern is DiscardPatternSyntax && arm.WhenClause == null)
+                {
+                    built.Append($" return {context.Converter.ConvertExpression(arm.Expression)};");
+                    break; // discard matches everything
+                }
+
+                var condition = PatternConverter.BuildCondition(arm.Pattern, Subject, context, governingType);
+                var bindings = new List<(string Name, string Access)>();
+                PatternConverter.CollectBindings(arm.Pattern, Subject, context, bindings, governingType);
+                var armResult = context.Converter.ConvertExpression(arm.Expression);
+
+                if (bindings.Count > 0)
+                {
+                    var declare = string.Concat(bindings.Select(b => $"const {b.Name} = {b.Access}; "));
+                    var inner = $"return {armResult};";
+                    if (arm.WhenClause != null)
+                        inner = $"if ({context.Converter.ConvertExpression(arm.WhenClause.Condition)}) return {armResult};";
+                    built.Append($" if ({condition}) {{ {declare}{inner} }}");
+                }
+                else
+                {
+                    if (arm.WhenClause != null)
+                        condition = $"({condition}) && ({context.Converter.ConvertExpression(arm.WhenClause.Condition)})";
+                    built.Append($" if ({condition}) return {armResult};");
+                }
+            }
+            return built.ToString();
+        });
+
         var sb = new StringBuilder();
         sb.Append("(() => {");
         // Variables declared inside an ARM'S OWN expression or guard (`… => Maybe(v) is { } bound ? …`,
@@ -40,38 +77,11 @@ public class SwitchExpressionStrategy : IConversionStrategy
         // per arm was two `let`s of one name in one function.
         sb.Append(ExpressionVariableScanner.Declarations(switchExpr.Arms
             .SelectMany(arm => ExpressionVariableScanner.Names(arm.Expression)
-                .Concat(ExpressionVariableScanner.Names(arm.WhenClause?.Condition))),
+                .Concat(ExpressionVariableScanner.Names(arm.WhenClause?.Condition)))
+            .Concat(held),
             context.TypeAnnotations));
         sb.Append($" const {Subject} = {governingExpr};");
-
-        foreach (var arm in switchExpr.Arms)
-        {
-            if (arm.Pattern is DiscardPatternSyntax && arm.WhenClause == null)
-            {
-                sb.Append($" return {context.Converter.ConvertExpression(arm.Expression)};");
-                break; // discard matches everything
-            }
-
-            var condition = PatternConverter.BuildCondition(arm.Pattern, Subject, context, governingType);
-            var bindings = new List<(string Name, string Access)>();
-            PatternConverter.CollectBindings(arm.Pattern, Subject, context, bindings, governingType);
-            var armResult = context.Converter.ConvertExpression(arm.Expression);
-
-            if (bindings.Count > 0)
-            {
-                var declare = string.Concat(bindings.Select(b => $"const {b.Name} = {b.Access}; "));
-                var inner = $"return {armResult};";
-                if (arm.WhenClause != null)
-                    inner = $"if ({context.Converter.ConvertExpression(arm.WhenClause.Condition)}) return {armResult};";
-                sb.Append($" if ({condition}) {{ {declare}{inner} }}");
-            }
-            else
-            {
-                if (arm.WhenClause != null)
-                    condition = $"({condition}) && ({context.Converter.ConvertExpression(arm.WhenClause.Condition)})";
-                sb.Append($" if ({condition}) return {armResult};");
-            }
-        }
+        sb.Append(arms);
 
         if (!switchExpr.Arms.Any(a => a.Pattern is DiscardPatternSyntax && a.WhenClause == null))
             sb.Append(" return null;");

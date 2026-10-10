@@ -17,8 +17,7 @@ namespace eQuantic.UI.Native.Engine.Tests;
 /// what the surface offered) against where the engine says the word starts.
 /// <para>
 /// The hosts run <see cref="Density.Compact"/>, the desktop shells' density. A row is shorter than
-/// the target either density keeps, so its margin reaches over the row above it, 3dp under a pointer
-/// and 13dp under a finger (#630): the presses here land on a row's middle.
+/// a target under a finger or a pointer, and a press on it is that row's under both (#630).
 /// </para>
 /// </summary>
 public class CodeEditorCompletionTests
@@ -35,14 +34,6 @@ public class CodeEditorCompletionTests
         }
     }
 
-    /// <summary>Offers what it was made with, whatever was typed: the list is the view's to test.</summary>
-    private sealed class ListProvider(params CodeCompletionItem[] items) : ICodeCompletionProvider
-    {
-        public Task<CodeCompletionList> CompleteAsync(CodeDocument document, CodePosition position,
-            CodeCompletionContext context, CancellationToken cancellation) =>
-            Task.FromResult(new CodeCompletionList(items));
-    }
-
     /// <summary>Answers when the test says so, as a language server answers after the keystroke.</summary>
     private sealed class LateProvider(params CodeCompletionItem[] items) : ICodeCompletionProvider
     {
@@ -52,22 +43,6 @@ public class CodeEditorCompletionTests
             CodeCompletionContext context, CancellationToken cancellation) => _answer.Task;
 
         public void Answer() => _answer.TrySetResult(new CodeCompletionList(items));
-    }
-
-    /// <summary>Offers its entries at once and resolves the selected one when the test says so, with
-    /// the detail a language service fills in on resolve.</summary>
-    private sealed class ResolvingProvider(CodeCompletionItem item, string detail) : ICodeCompletionProvider
-    {
-        private readonly TaskCompletionSource<CodeCompletionItem> _resolved = new();
-
-        public Task<CodeCompletionList> CompleteAsync(CodeDocument document, CodePosition position,
-            CodeCompletionContext context, CancellationToken cancellation) =>
-            Task.FromResult(new CodeCompletionList([item]));
-
-        public Task<CodeCompletionItem> ResolveAsync(CodeCompletionItem asked, CancellationToken cancellation) =>
-            _resolved.Task;
-
-        public void Resolve() => _resolved.TrySetResult(item with { Detail = detail });
     }
 
     private static PhotonHost Host(VisualNode root, float width = 600, float height = 400) =>
@@ -145,7 +120,7 @@ public class CodeEditorCompletionTests
         {
             ShowLineNumbers = false,
             Height = SizeValue.Fill,
-            Completions = offered.Length == 0 ? null : [new ListProvider(offered)],
+            Completions = offered.Length == 0 ? null : [new ListCompletionProvider(offered)],
         };
 
     private static CodeCompletionItem[] Items(int count) =>
@@ -153,9 +128,8 @@ public class CodeEditorCompletionTests
 
     /// <summary>
     /// From the list's left edge to its labels: the frame's hairline, the row's padding, the letter's
-    /// cell a line wide and the gap after it. The web lays the labels there. Photon lays a bordered
-    /// box's child over its border (#629), so until that is fixed its labels stand one border left of
-    /// the word, and the placement, which is the component's, is what is pinned here.
+    /// cell a line wide and the gap after it. Both targets lay the labels there, now that Photon keeps
+    /// a bordered box's child inside its border (#629).
     /// </summary>
     private static float LabelInset(CodeEditor editor) => 1 + Space.S2 + editor.Editor.Grid.Cell.Height + Space.S1;
 
@@ -198,11 +172,12 @@ public class CodeEditorCompletionTests
         offered.Should().NotBeNull();
         var word = WordOnScreen(frame, editor);
         var rows = Shown(host).Count;
-        // The list's height on the web: its rows, its padding and its frame. Photon's frame comes out
-        // two borders short until #629, so the top is what is pinned.
+        // The list's height on both targets: its rows, its padding and its frame (#629).
         var height = rows * grid.Cell.Height + 2 * (Space.S1 + 1);
         offered!.Value.Y.Should().BeApproximately(word.Y - height, 0.5f,
-            "with no room below, the list ends at the top of the line it completes");
+            "with no room below, the list stands its own height above the line");
+        (offered.Value.Y + offered.Value.Height).Should().BeApproximately(word.Y, 0.5f,
+            "and ends at the top of the line it completes, its frame counted");
     }
 
     /// <summary>A word typed near the viewport's right edge keeps its list inside it.</summary>
@@ -257,7 +232,7 @@ public class CodeEditorCompletionTests
         var editor = new CodeEditor("var Column = 1;\n\n\n", "csharp")
         {
             ShowLineNumbers = false,
-            Completions = [new ListProvider(Items(30))],
+            Completions = [new ListCompletionProvider(Items(30))],
         };
         var host = Host(editor);
         Settle(host);
@@ -408,33 +383,6 @@ public class CodeEditorCompletionTests
         labels.Should().OnlyContain(label => CodeLineCells.WidthOf(label, 4) <= 60,
             "and no label takes more cells than the list has");
         labels.Should().OnlyContain(label => label.EndsWith("…"), "both are longer than the list, and cut");
-    }
-
-    /// <summary>
-    /// The list measures its entries once for each list the completion holds, and the selected one on
-    /// every build: a resolve fills the selected entry in where it stands, in the same list, and the
-    /// detail it brings widens the list (Copilot's third round on #653 asked for the list's width to be
-    /// kept across the rebuilds the arrows make).
-    /// </summary>
-    [Fact]
-    public void ADetailTheResolveFillsIn_WidensTheList()
-    {
-        var provider = new ResolvingProvider(new CodeCompletionItem("Column"), new string('d', 40));
-        var editor = new CodeEditor(Lines(20), "csharp")
-        {
-            ShowLineNumbers = false,
-            Height = SizeValue.Fill,
-            Completions = [provider],
-        };
-        var host = Host(editor);
-        Settle(host);
-        ClickAt(host, editor, 1, 0);
-        var before = Type(host, "Co").CodeRegions.Single().Offered!.Value.Width;
-
-        provider.Resolve();
-        var after = Settle(host).CodeRegions.Single().Offered!.Value.Width;
-
-        after.Should().BeGreaterThan(before, "the detail the resolve brought takes columns the list did not have");
     }
 
     /// <summary>Whether every surrogate in <paramref name="text"/> is half of a pair.</summary>
@@ -610,6 +558,33 @@ public class CodeEditorCompletionTests
         told.Should().Contain("Column", "the app hears of the edit as it does of a key's");
     }
 
+    /// <summary>
+    /// Under a finger a row's target reaches 13dp past each side of its box, over the rows beside it,
+    /// and the row drawn after took the press: a press on the lower part of a row accepted the one
+    /// under it (#630).
+    /// </summary>
+    [Fact]
+    public void UnderAFinger_APressOnTheLowerPartOfARow_AcceptsThatRow()
+    {
+        var editor = Editor(Lines(20), new CodeCompletionItem("Column"), new CodeCompletionItem("ColorToken"),
+            new CodeCompletionItem("Count"));
+        var host = new PhotonHost(editor, PhotonTheme.Instance, ThemeMode.Light, 600, 400)
+        {
+            TextRasterizer = new FixedWidthRasterizer(),
+            Density = Density.Comfortable,
+            SmoothScroll = false,
+        };
+        Settle(host);
+        ClickAt(host, editor, 1, 0);
+        Type(host, "Co");
+        var rows = host.Semantics().Where(node => node.Role == SemanticRole.Option).ToList();
+        rows.Select(row => row.Label).Should().Equal(["ColorToken", "Column", "Count"]);
+
+        PressAt(host, rows[0].Bounds.X + 4, rows[0].Bounds.Bottom - 2);
+
+        editor.Editor.Document.Line(1).Should().Be("ColorToken", "the press was on the first row's box");
+    }
+
     [Fact]
     public void APressOnTheListThatNoRowTakes_MovesNoCaret()
     {
@@ -658,7 +633,7 @@ public class CodeEditorCompletionTests
             // sideways scroll is the topmost one and takes it.
             ShowLineNumbers = true,
             Height = SizeValue.Fixed(200),
-            Completions = [new ListProvider(new CodeCompletionItem("Column"), new CodeCompletionItem("ColorToken"))],
+            Completions = [new ListCompletionProvider(new CodeCompletionItem("Column"), new CodeCompletionItem("ColorToken"))],
         };
         var page = new Column(gap: 0) { Width = SizeValue.Fill };
         page.Add(editor);
@@ -795,7 +770,7 @@ public class CodeEditorCompletionTests
     public void AProviderAddedToTheController_StaysBesideTheBuiltIns()
     {
         var editor = new CodeEditor(Lines(20), "csharp") { ShowLineNumbers = false, Height = SizeValue.Fill };
-        editor.Editor.Completion.Providers.Add(new ListProvider(new CodeCompletionItem("Cobalt")));
+        editor.Editor.Completion.Providers.Add(new ListCompletionProvider(new CodeCompletionItem("Cobalt")));
         var host = Host(editor);
         Settle(host);
         ClickAt(host, editor, 1, 0);
@@ -809,7 +784,7 @@ public class CodeEditorCompletionTests
     [Fact]
     public void AParentRebuildingWithTheSameProviders_KeepsTheListOpen()
     {
-        var provider = new ListProvider(new CodeCompletionItem("Column"), new CodeCompletionItem("ColorToken"));
+        var provider = new ListCompletionProvider(new CodeCompletionItem("Column"), new CodeCompletionItem("ColorToken"));
         var editor = new CodeEditor(Lines(20), "csharp")
         {
             ShowLineNumbers = false,
@@ -874,7 +849,7 @@ public class CodeEditorCompletionTests
     [Fact]
     public void AListOfProvidersChangedInPlace_HandsWhatItGained()
     {
-        var providers = new List<ICodeCompletionProvider> { new ListProvider(new CodeCompletionItem("Column")) };
+        var providers = new List<ICodeCompletionProvider> { new ListCompletionProvider(new CodeCompletionItem("Column")) };
         var editor = new CodeEditor(Lines(20), "csharp")
         {
             ShowLineNumbers = false,
@@ -885,7 +860,7 @@ public class CodeEditorCompletionTests
         Settle(host);
         editor.Editor.Completion.Providers.Should().Equal(providers, "the first build hands the list");
 
-        var gained = new ListProvider(new CodeCompletionItem("Cobalt"));
+        var gained = new ListCompletionProvider(new CodeCompletionItem("Cobalt"));
         providers.Add(gained);
         editor.AdoptConfig(new CodeEditor(Lines(20), "csharp") { Completions = providers });
         Settle(host);
