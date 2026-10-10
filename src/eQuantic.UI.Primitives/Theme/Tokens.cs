@@ -242,7 +242,14 @@ public readonly record struct ShadowSpec(float OffsetY, float Blur, float Spread
 }
 
 /// <summary>Easing curves (spec §06): cubic-bézier control points and nothing else. The spring is a
-/// separate type, <see cref="SpringSpec"/>, which nothing consumes yet.</summary>
+/// separate type, <see cref="SpringSpec"/>, which nothing consumes yet.
+/// <para>
+/// The browser holds a curve as the record's data, <c>{ x1, y1, x2, y2 }</c>, wherever it meets one:
+/// a preset, a motion role's curve, a transition's easing, a curve a component makes. Until #518 the
+/// design system exported a preset as an array and the runtime's motion role declared a preset name,
+/// so a component that read a point read undefined, and one that made a curve threw.
+/// </para></summary>
+[TwinIsData("The browser makes a curve as { x1, y1, x2, y2 } in the generated design system's presets and motion roles, in the runtime's transition default and in a hydration payload, and none of them constructs one.")]
 public readonly record struct Curve(float X1, float Y1, float X2, float Y2)
 {
     /// <summary>On-screen moves: tab indicator, segmented thumb, reorder.</summary>

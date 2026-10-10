@@ -18,8 +18,16 @@ import { describe, expect, it } from 'vitest';
 import * as runtimeExports from './runtime-exports';
 import primitivesTypes from './primitives-types.fixture.json';
 import pinnedValues from './primitive-values.fixture.json';
-import { ImageData, NetworkState, SpringSpec, WindowSizeClasses } from './primitive-values';
+import {
+  ImageData,
+  MotionSpec,
+  NetworkState,
+  SpringSpec,
+  WindowSizeClasses,
+} from './primitive-values';
 import { Point, Rect } from './value-types';
+import { Curve, Motion } from './design-system.generated';
+import { TransitionSpec } from './vocabulary';
 
 /**
  * Types that owe no export, each for a stated reason — a list of names, so the next one cannot slip
@@ -68,10 +76,10 @@ const NO_TWIN_OWED = new Set([
   // and the browser has no IWorkspace at all — a link there is an anchor the browser already
   // routes, and nothing in a page bundle ever asks this.
   'OpenUrlPolicy',
-  // The cubic-bezier solver behind `Curve`. On the web a transition IS a CSS
-  // `transition-timing-function`, so the browser evaluates the curve and nothing in a page bundle
-  // ever asks this — it exists for the targets that have to do the arithmetic themselves.
-  'CurveEvaluator',
+  // `CurveEvaluator`, the cubic-bezier solver behind `Curve`, used to be named here. A web transition
+  // IS a CSS timing function, so nothing in a page bundle asks it, and it is `[ServerOnly]` now: the
+  // compiler REFUSES `curve.Ease(t)` in a component (EQ2010), where the call built and threw in the
+  // browser (#518), and the C# side drops it from the pinned list by that rule.
   // The frame clock's tick payload. `IFrameTicker` is realized per target (requestAnimationFrame
   // here), and the web realization defines its own tick shape in devices/frame-ticker.ts rather
   // than importing a C# record's twin.
@@ -137,6 +145,39 @@ describe('Primitives value twins carry the C# values', () => {
       damping: SpringSpec.default.damping,
       mass: SpringSpec.default.mass,
     }).toEqual(pinnedValues.springDefault);
+  });
+
+  // ONE shape for a curve, the record's data, holding the singles C# holds (#518). A preset was an
+  // array, so `Curve.Standard.X1` read undefined in browser code, and a motion role's curve was
+  // declared a preset name, a shape no C# `MotionSpec` has.
+  it('Curve presets are the C# records, as data', () => {
+    expect({
+      standard: { ...Curve.standard },
+      decelerate: { ...Curve.decelerate },
+      accelerate: { ...Curve.accelerate },
+    }).toEqual(pinnedValues.curves);
+  });
+
+  it('a motion role is a MotionSpec holding the C# duration and curve', () => {
+    const roles = {
+      press: Motion.press,
+      state: Motion.state,
+      enter: Motion.enter,
+      exit: Motion.exit,
+    };
+    for (const role of Object.values(roles)) expect(role).toBeInstanceOf(MotionSpec);
+    expect(
+      Object.fromEntries(
+        Object.entries(roles).map(([name, role]) => [
+          name,
+          { durationMs: role.durationMs, curve: { ...role.curve } },
+        ]),
+      ),
+    ).toEqual(pinnedValues.motion);
+  });
+
+  it("a transition's default easing is the standard curve, as C#'s is", () => {
+    expect(new TransitionSpec(1).easing).toEqual(pinnedValues.curves.standard);
   });
 
   it('NetworkState.offline is the C# NetworkState.Offline', () => {

@@ -231,7 +231,9 @@ public sealed class HydrationManifestGenerator : IIncrementalGenerator
         INamedTypeSymbol symbol, string component, Compilation compilation, System.Threading.CancellationToken token)
     {
         var entries = new List<Entry>();
-        for (var type = symbol; type is not null && IsDeclaredInSource(type); type = type.BaseType)
+        // The app's own types are described; a framework base's fields belong to the framework, and a
+        // referenced assembly's private members are not even visible to this compilation.
+        for (var type = symbol; type is not null && type.IsDeclaredIn(compilation); type = type.BaseType)
         {
             var declaring = MetadataName(type);
             foreach (var member in type.GetMembers())
@@ -273,7 +275,7 @@ public sealed class HydrationManifestGenerator : IIncrementalGenerator
     private static IEnumerable<IParameterSymbol> CapturedParameters(
         INamedTypeSymbol type, Compilation compilation, System.Threading.CancellationToken token)
     {
-        var declarations = type.DeclaringSyntaxReferences
+        var declarations = type.SourceIn(compilation)
             .Select(reference => reference.GetSyntax(token))
             .OfType<TypeDeclarationSyntax>()
             .ToList();
@@ -325,13 +327,6 @@ public sealed class HydrationManifestGenerator : IIncrementalGenerator
 
     private static bool Prefetches(INamedTypeSymbol symbol) =>
         symbol.AllInterfaces.Any(i => i.ToDisplayString() == PrefetchInterface);
-
-    /// <summary>
-    /// The app's own types are described; a framework base's fields belong to the framework, and a
-    /// referenced assembly's private members are not even visible to this compilation.
-    /// </summary>
-    private static bool IsDeclaredInSource(INamedTypeSymbol type) =>
-        type.Locations.Any(location => location.IsInSource);
 
     /// <summary>
     /// The name the runtime gives the type's definition (<see cref="System.Type.FullName"/>): its

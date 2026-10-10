@@ -649,6 +649,75 @@ property's name.
   `new FSt { X = 5 }`, and `FSt z = default;`
 - **THEN** the first holds `10` and `z.X` is `0`, as in .NET
 
+### Requirement: A member is compared by its type's default comparer
+
+A record's and a struct's equality, and a value tuple's `Equals`, SHALL compare each member as
+`EqualityComparer<T>.Default` compares its type: an array, a class and an interface no tuple
+implements (a collection's, an app's) by reference or their own `Equals`, and a tuple holding an array
+element by element with each element's own comparer. A tuple's `Equals(object)` SHALL find a tuple of
+another arity unequal, and a null `Nullable` pair SHALL be equal only to another.
+
+#### Scenario: An array member
+
+- **WHEN** `new Items(new[] { 1 }) == new Items(new[] { 1 })` is computed for `record Items(int[] Values)`
+- **THEN** it is false, as in .NET, where the arrays were compared element by element
+
+#### Scenario: A tuple holding an array
+
+- **WHEN** `(new[] { 1 }, 1).Equals((new[] { 1 }, 1))` is computed
+- **THEN** it is false, as in .NET
+
+#### Scenario: A collection behind its interface
+
+- **WHEN** `new Viewed(new List<int> { 1 }) == new Viewed(new List<int> { 1 })` is computed for
+  `record Viewed(IReadOnlyList<int> Values)`
+- **THEN** it is false, as in .NET, where the lists were compared element by element
+
+#### Scenario: A tuple of another arity
+
+- **WHEN** `(a, 1).Equals((object)(a, 1, 2))` is computed
+- **THEN** it is false, as in .NET, where the elements past the receiver's were not read
+
+#### Scenario: A null pair
+
+- **WHEN** `new Paired(null) == new Paired(null)` is computed for `record Paired(KeyValuePair<int, int[]>? Value)`
+- **THEN** it is true, as in .NET, where reading the null pair threw
+
+### Requirement: A generic record equals only a value of its own closed type
+
+A generic record's or struct's equality SHALL compare the closed type a value was built as, as .NET
+compares a record's EqualityContract, wherever C# names the type arguments at the construction; `with`
+SHALL keep the closed type of the value it copies. A value whose type arguments the build cannot know
+(built inside generic code) SHALL NOT be taken for another type.
+
+#### Scenario: One value under two type arguments
+
+- **WHEN** `record Box<T>(T Value);` and `new Box<int>(1).Equals((object)new Box<double>(1))` runs
+- **THEN** it answers false, as in .NET, and so does a `List<object>` holding the first asked to
+  `Contains` the second, and `(new Box<int>(1) with { Value = 2 })` against `new Box<double>(2)`
+
+#### Scenario: A generic struct
+
+- **WHEN** `record struct Pair<T>(T A);` and `new Pair<int>(1).Equals((object)new Pair<double>(1))` runs
+- **THEN** it answers false, as in .NET
+
+#### Scenario: One closed type under two spellings
+
+- **WHEN** `new Box<(int A, int B)>((1, 2)).Equals((object)new Box<(int, int)>((1, 2)))` runs
+- **THEN** it answers true, as in .NET, whose closed type erases a tuple's element names (and takes
+  `dynamic` as `object`)
+
+#### Scenario: A target-typed construction
+
+- **WHEN** `Box<int> box = new(1);` is compared with `new Box<double>(1)`
+- **THEN** it answers false, as in .NET
+
+#### Scenario: One closed type
+
+- **WHEN** `new Box<int>(1)` is compared with `new Box<int>(1)`, and with a `Box<int>` built by
+  `Make.Boxed(1)`, a generic method
+- **THEN** both answer true, as in .NET
+
 ### Requirement: A mutable struct and a value tuple are copied where C# copies them
 
 A value tuple, and a struct of the compilation that is not readonly, SHALL behave as values: a write of

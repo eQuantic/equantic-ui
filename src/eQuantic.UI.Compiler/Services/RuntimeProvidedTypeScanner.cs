@@ -87,6 +87,20 @@ public static class RuntimeProvidedTypeScanner
         || ns == "eQuantic.UI.Charts"
         || ns.StartsWith("eQuantic.UI.Charts.");
 
+    /// <summary>
+    /// The name the runtime exports <paramref name="type"/> under, which is what a module imports.
+    /// One vocabulary type crosses under another name: the context a component builds with is
+    /// <c>ComponentContext</c> in C# and <c>BuildContext</c> in the runtime, the name every
+    /// annotation of it is written with. Imported by its C# name, a helper that took the context
+    /// imported nothing its annotation named, and a seed that imported <c>BuildContext</c> into every
+    /// module clashed with an app's own class of that name (found by Copilot reviewing #653).
+    /// </summary>
+    internal static string ExportedName(INamedTypeSymbol type) =>
+        type is { Name: "ComponentContext", ContainingNamespace: { } ns }
+        && ns.ToDisplayString() == "eQuantic.UI.Primitives"
+            ? "BuildContext"
+            : type.Name;
+
     /// <summary>Walks every identifier under <paramref name="root"/>, resolving symbols through
     /// <paramref name="model"/>, and buckets runtime-provided type names, enum type names, and —
     /// when <paramref name="appTypes"/> is supplied — APP-LEVEL types declared in this compilation's
@@ -109,10 +123,10 @@ public static class RuntimeProvidedTypeScanner
     /// types are kept OUT of <paramref name="runtimeProvided"/>: the runtime ships no export for
     /// them, so importing the name is the hydration failure the fence exists to prevent.
     /// <para>
-    /// A type POSITION is the seventh way to name a symbol, and the one no expression strategy can
+    /// A type POSITION is the eighth way to name a symbol, and the one no expression strategy can
     /// see — `public Matrix2D Placement { get; init; }` on a component compiled, emitted
     /// `import { Matrix2D } from "@equantic/runtime"`, and took the page down. Measured. The other
-    /// six are counted in <c>HostOnlySymbolExtensions</c>.
+    /// seven are counted in <c>HostOnlySymbolExtensions</c>.
     /// </para>
     /// </param>
     public static void Collect(SyntaxNode root, SemanticModel model,
@@ -146,7 +160,7 @@ public static class RuntimeProvidedTypeScanner
             if (IsRuntimeProvidedNamespace(rebuiltNamespace))
             {
                 if (IsFenced(named)) Fence(named, with);
-                else runtimeProvided.Add(named.Name);
+                else runtimeProvided.Add(ExportedName(named));
             }
             else if (appTypes is not null && named.Locations.Any(l => l.IsInSource))
                 appTypes.Add(named.Name);
@@ -208,7 +222,7 @@ public static class RuntimeProvidedTypeScanner
             if (isRuntimeProvided)
             {
                 if (IsFenced(type)) Fence(type, identifier);
-                else runtimeProvided.Add(type.Name);
+                else runtimeProvided.Add(ExportedName(type));
                 continue;
             }
 

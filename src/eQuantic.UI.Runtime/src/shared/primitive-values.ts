@@ -15,6 +15,7 @@
 import { exception } from '../utils/exceptions';
 import { hashesByValue } from '../utils/hash';
 import type { HydrationSpec } from '../utils/hydrate';
+import type { CurveValue } from './nodes';
 
 /** The C# `ImageData` — a picture the user chose, as bytes plus what they are. */
 export class ImageData {
@@ -83,11 +84,13 @@ export class SpringSpec {
   static readonly default = new SpringSpec(380, 34, 1);
 }
 
-/** The C# `MotionSpec` — a duration and the curve it runs on ('standard' | 'emphasized' | …). */
+/** The C# `MotionSpec` — a duration and the curve it runs on, the curve's own data (`Curve.standard`
+ * is `{ x1: 0.2…, y1: 0, x2: 0, y2: 1 }`). It was declared a preset NAME until #518, a shape no C#
+ * `MotionSpec` has. The design system's motion roles (`Motion.press` …) are instances of it. */
 export class MotionSpec {
   constructor(
     readonly durationMs: number,
-    readonly curve: string,
+    readonly curve: CurveValue,
   ) {}
 }
 

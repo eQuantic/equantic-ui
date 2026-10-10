@@ -62,6 +62,17 @@ public class S6TransitionRealizerTests
         }).Should().Be("opacity 100ms cubic-bezier(0, 0, 0, 1) 40ms");
     }
 
+    /// <summary>A curve a component makes, its points written in four places, as the TS lowering
+    /// writes the browser's record of it (s6-transition.spec.ts pins the same literal, #518).</summary>
+    [Fact]
+    public void ACurveMadeInCode_WritesItsOwnControlPoints()
+    {
+        TransitionOf(new BoxStyle
+        {
+            Transition = new TransitionSpec(StyleChannels.Opacity, 150) { Easing = new Curve(0.2f, 0.9f, 0.3f, 1.25f) },
+        }).Should().Be("opacity 150ms cubic-bezier(0.2, 0.9, 0.3, 1.25)");
+    }
+
     [Fact]
     public void Size_IsTheMorphChannel()
     {

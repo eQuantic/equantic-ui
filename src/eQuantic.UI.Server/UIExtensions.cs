@@ -20,6 +20,7 @@ using Microsoft.AspNetCore.ResponseCompression;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.Options;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 
@@ -83,6 +84,18 @@ public static class UIExtensions
             services.AddTransient<Microsoft.AspNetCore.Hosting.IStartupFilter, PoweredByHeader>();
 
         services.AddSingleton(options);
+        // The origins whose pages may call the app's actions besides its own host (#678): read from
+        // configuration, added to in Program.cs, and checked at start, so a malformed one stops the app
+        // instead of refusing the page it was written for.
+        services.AddOptions<ServerActionsOptions>()
+            .BindConfiguration(ServerActionsOptions.SectionName)
+            .Configure(actions =>
+            {
+                foreach (var origin in options.ServerActionOrigins) actions.AllowedOrigins.Add(origin);
+            })
+            .ValidateOnStart();
+        services.TryAddEnumerable(
+            ServiceDescriptor.Singleton<IValidateOptions<ServerActionsOptions>, ServerActionsOptionsValidator>());
         services.AddSingleton<IServerActionRegistry>(sp =>
         {
             var registry = new ServerActionRegistry();
@@ -99,6 +112,11 @@ public static class UIExtensions
         // Add authorization service for Server Actions
         // TryAdd allows users to override with their own implementation
         services.TryAddSingleton<IServerActionAuthorizationService, ServerActionAuthorizationService>();
+        // A refused CLIENT NAVIGATION into a page that requires authorization is answered 401 or 403,
+        // which the router acts on, instead of a challenge a fetch cannot follow (#673).
+        // It WRAPS the handler the app registered before AddUI, so the app's own answers stand for
+        // every request that is not a navigation; the framework's when there is none.
+        NavigationAuthorizationResultHandler.Decorate(services);
 
         // Add SSR rendering service
         services.TryAddSingleton<IServerRenderingService, ServerRenderingService>();
@@ -236,8 +254,10 @@ public static class UIExtensions
         options.DeclareRoute(route, pageType, title);
 
         // The same two endpoints a [Page] gets — the route, and its language-prefixed twin.
+        // The page's own [Authorize] travels with it, wherever it is routed from (#673).
         foreach (var pattern in CultureEndpointPatterns(options, route))
-            endpoints.MapGetAndHead(pattern, async context => await ServeAppShell(context, pageType, new DeclaredPage(title, null)));
+            endpoints.MapGetAndHead(pattern, async context => await ServeAppShell(context, pageType, new DeclaredPage(title, null)))
+                .WithPageAuthorization(pageType);
         return endpoints;
     }
 
@@ -302,8 +322,11 @@ public static class UIExtensions
                     var declared = new DeclaredPage(pageAttr.Title, pageAttr.Description);
                     // The endpoint carries the page's TYPE: by its simple name, two pages of one name in
                     // two namespaces rendered as one (#514).
+                    // And its [Authorize], as the endpoint's metadata: the app's authorization
+                    // middleware refuses a request before the page is built (#673).
                     foreach (var route in CultureEndpointPatterns(options, pageAttr.Route))
-                        endpoints.MapGetAndHead(route, async context => await ServeAppShell(context, pageType, declared));
+                        endpoints.MapGetAndHead(route, async context => await ServeAppShell(context, pageType, declared))
+                            .WithPageAuthorization(pageType);
                 }
             }
         }
@@ -325,23 +348,28 @@ public static class UIExtensions
                 return;
             }
             await stream.CopyToAsync(context.Response.Body);
-        });
+        })
+        // The SDK's own code is public: a sign-in page under an app's fallback policy has to load it
+        // to come alive (#673). What a page may show is the page's route's to decide.
+        .AllowAnonymous();
 
         // Debug/Fallback: Manually serve component files if StaticFiles misses them
         endpoints.MapGetAndHead("/_equantic/{name}.js", async context =>
         {
             var name = (string?)context.GetRouteValue("name");
-            var path = Path.Combine(context.RequestServices.GetRequiredService<IWebHostEnvironment>().WebRootPath, "_equantic", $"{name}.js");
+            var path = AssetPaths.Resolve(
+                Path.Combine(context.RequestServices.GetRequiredService<IWebHostEnvironment>().WebRootPath, "_equantic"),
+                name, ".js");
 
-            if (File.Exists(path))
+            if (path is not null && File.Exists(path))
             {
                 context.Response.ContentType = "application/javascript";
-                // Hot reload rewrites fixed-name bundles in place — immutable caching would pin the
-                // browser to the pre-edit code forever. Dev revalidates; prod stays immutable.
-                var uiOptions = context.RequestServices.GetRequiredService<UIOptions>();
-                var dev = uiOptions.HotReload
-                    ?? context.RequestServices.GetRequiredService<IWebHostEnvironment>().IsDevelopment();
-                context.Response.Headers["Cache-Control"] = dev
+                // Hot reload rewrites fixed-name bundles in place, and the build id in their URL is
+                // the process's — immutable caching would pin the browser to the pre-edit code
+                // forever. A rebuilding app revalidates; any other stays immutable.
+                var hotReloads = context.RequestServices.GetRequiredService<UIOptions>()
+                    .HotReloads(context.RequestServices.GetRequiredService<IWebHostEnvironment>());
+                context.Response.Headers["Cache-Control"] = hotReloads
                     ? "no-cache"
                     : "public, max-age=31536000, immutable";
                 await context.Response.SendFileAsync(path);
@@ -350,18 +378,25 @@ public static class UIExtensions
             {
                 context.Response.StatusCode = 404;
                 // Try finding it in the local directory (Dev scenario)
-                var localPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "_equantic", $"{name}.js");
-                 if (File.Exists(localPath))
+                var localPath = AssetPaths.Resolve(
+                    Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "_equantic"), name, ".js");
+                if (localPath is not null && File.Exists(localPath))
                 {
                     context.Response.ContentType = "application/javascript";
                     await context.Response.SendFileAsync(localPath);
                 }
-                else
+                else if (path is not null)
                 {
-                    await context.Response.WriteAsync($"// 404: Component {name} not found at {path} or {localPath}");
+                    // The paths are the server's own, and this route serves anyone: they are for a
+                    // developer, so only Development writes them.
+                    context.Response.ContentType = "application/javascript";
+                    await context.Response.WriteAsync(
+                        context.RequestServices.GetRequiredService<IWebHostEnvironment>().IsDevelopment()
+                            ? $"// 404: Component {name} not found at {path} or {localPath}"
+                            : $"// 404: Component {name} not found");
                 }
             }
-        });
+        }).AllowAnonymous();
 
         // Debug/Fallback: serve component source maps so C# breakpoints bind — including on pages reached
         // via client-side (SPA) navigation, where the page bundle is dynamically imported. Without this,
@@ -373,10 +408,10 @@ public static class UIExtensions
             var webRoot = context.RequestServices.GetRequiredService<IWebHostEnvironment>().WebRootPath;
             var candidates = new[]
             {
-                Path.Combine(webRoot, "_equantic", $"{name}.js.map"),
-                Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "_equantic", $"{name}.js.map"),
+                AssetPaths.Resolve(Path.Combine(webRoot, "_equantic"), name, ".js.map"),
+                AssetPaths.Resolve(Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "_equantic"), name, ".js.map"),
             };
-            var mapPath = candidates.FirstOrDefault(File.Exists);
+            var mapPath = candidates.FirstOrDefault(candidate => candidate is not null && File.Exists(candidate));
 
             if (mapPath != null)
             {
@@ -388,7 +423,7 @@ public static class UIExtensions
             {
                 context.Response.StatusCode = 404;
             }
-        });
+        }).AllowAnonymous();
 
         return endpoints;
     }
@@ -404,18 +439,29 @@ public static class UIExtensions
     {
         var options = endpoints.ServiceProvider.GetRequiredService<UIOptions>();
 
-        // Phase 3 hot reload — DEVELOPMENT only unless forced: watch sources, re-run the SDK's
-        // eqc target, notify browsers over SSE (the runtime replays live state after the reload).
+        // Phase 3 hot reload — in Development and under dotnet watch, unless the app says: watch
+        // sources, re-run the SDK's eqc target, notify browsers over SSE (the runtime replays live
+        // state after the reload).
         var environment = endpoints.ServiceProvider.GetRequiredService<Microsoft.AspNetCore.Hosting.IWebHostEnvironment>();
-        if (options.HotReload ?? environment.IsDevelopment())
+        if (options.HotReloads(environment))
         {
             var hotReload = new HotReload.HotReloadService(environment.ContentRootPath);
             hotReload.Start();
-            endpoints.MapGet("/_equantic/hmr", hotReload.HandleClient);
+            // Its lifetime is the app's. dotnet watch stops an app it restarts with SIGTERM to that
+            // process alone, and a rebuild still running would go on writing the files the restart's
+            // own build writes.
+            endpoints.ServiceProvider.GetRequiredService<IHostApplicationLifetime>()
+                .ApplicationStopping.Register(hotReload.Dispose);
+            endpoints.MapGet("/_equantic/hmr", hotReload.HandleClient).AllowAnonymous();
+        }
 
+        if (environment.IsDevelopment())
+        {
             // The stage-one source maps (TS intermediate → C#, C# text embedded) for the error
-            // overlay's second hop. Name-only — no separators survive the check, so nothing above
-            // obj/eQuantic/ts is reachable. 404s in production along with the whole dev block.
+            // overlay's second hop, mapped where the overlay installs, in Development alone: the
+            // maps carry the app's C#, and a run under dotnet watch in another environment streams
+            // rebuilds without serving its source. Name-only — no separators survive the check, so
+            // nothing above obj/eQuantic/ts is reachable.
             endpoints.MapGet("/_equantic/src-map/{name}", async context =>
             {
                 var name = context.Request.RouteValues["name"] as string ?? "";
@@ -432,7 +478,7 @@ public static class UIExtensions
                 context.Response.ContentType = "application/json";
                 context.Response.Headers.CacheControl = "no-cache";
                 await context.Response.SendFileAsync(path);
-            });
+            }).AllowAnonymous();
         }
 
         // Apply package endpoint configurations
@@ -753,7 +799,9 @@ public static class UIExtensions
         {
             // 404 Not Found Handling — the fallback endpoint already set the status; here the
             // app's registered /404 page (if any) takes over the CONTENT.
-            if (options.NotFoundPageType != null)
+            // Only one the visitor may see: no endpoint carries its requirement on this path (#673).
+            if (options.NotFoundPageType != null
+                && await PageAuthorization.AllowsAsync(context, options.NotFoundPageType))
             {
                 page = options.NotFoundPageType;
                 
@@ -803,7 +851,8 @@ public static class UIExtensions
             // Actually, the SSR catch block above sets ssrEnabled = false.
             // If we are in Production and SSR failed, we should render the 500 page.
             var isDev = context.RequestServices.GetRequiredService<IWebHostEnvironment>().IsDevelopment();
-            if (!isDev && options.ErrorPageType != null && ssrContent.Contains("Loading..."))
+            if (!isDev && options.ErrorPageType != null && ssrContent.Contains("Loading...")
+                && await PageAuthorization.AllowsAsync(context, options.ErrorPageType))
             {
                 // Re-attempt SSR with the 500 page
                 try
@@ -852,6 +901,11 @@ public static class UIExtensions
             Page: page?.Name,
             Version: BuildId,
             Ssr: ssrEnabled,
+            // Whether this server streams rebuilds, so the page listens exactly when there is a stream.
+            HotReload: options.HotReloads(context.RequestServices.GetRequiredService<IWebHostEnvironment>()),
+            // What the page was rendered at: hydration adopts this markup, so it lowers at the same
+            // density and then switches the whole page to the browser's own at once (#623).
+            Density: DensityCookie.NameOf(DensityCookie.Resolve(context)),
             // The cookie config crosses to the browser because the browser is what WRITES it while the
             // server READS it. Two places to configure would drift, and a drifted name fails silently:
             // the server reads a cookie nobody writes, so persistence stops while everything still
@@ -1041,6 +1095,20 @@ public class UIOptions
     /// </summary>
     public HashSet<Assembly> AllowedDeserializationAssemblies { get; } = new();
 
+    /// <summary>
+    /// Lets pages served from <paramref name="origins"/> call the app's Server Actions besides its own
+    /// host: a page on another domain than its actions. Each is a bare <c>scheme://host[:port]</c>, and
+    /// they add to <c>EQuantic:ServerActions:AllowedOrigins</c> in configuration.
+    /// </summary>
+    public UIOptions AllowServerActionOrigins(params string[] origins)
+    {
+        ArgumentNullException.ThrowIfNull(origins);
+        ServerActionOrigins.AddRange(origins);
+        return this;
+    }
+
+    internal List<string> ServerActionOrigins { get; } = new();
+
     internal List<(Type ServiceType, Type ImplementationType)> AssetProviders { get; } = new();
     internal List<Action<IServiceCollection>> ServiceRegistrations { get; } = new();
     internal List<Action<IEndpointRouteBuilder>> EndpointConfigurations { get; } = new();
@@ -1065,8 +1133,30 @@ public class UIOptions
     /// </remarks>
     public bool EnableSsr { get; set; } = true;
 
-    /// <summary>Phase 3 hot reload (SSE + eqc rebuild on save). Null = auto: ON in Development.</summary>
+    /// <summary>
+    /// Phase 3 hot reload (SSE + eqc rebuild on save). Null = auto: on in Development, and under
+    /// <c>dotnet watch</c> whatever the environment, since an app run without a launch profile is a
+    /// Production one.
+    /// </summary>
     public bool? HotReload { get; set; }
+
+    /// <summary>
+    /// Whether this app rebuilds its modules on a save and reloads the browsers watching it:
+    /// <see cref="HotReload"/> when the app says, otherwise the Development environment or a run under
+    /// <c>dotnet watch</c>, which sets <c>DOTNET_WATCH</c> to 1 on the app it runs. One decision, read
+    /// by the stream that announces a rebuild, the cache of the modules a rebuild rewrites and the
+    /// client that listens, which agreed before only while nothing set them apart (#627). Its first
+    /// answer, the one MapUI maps the stream by at startup, is every later reader's, whatever the
+    /// process's environment does after.
+    /// </summary>
+    internal bool HotReloads(IHostEnvironment environment) =>
+        _hotReloads ??= HotReloads(environment, Environment.GetEnvironmentVariable("DOTNET_WATCH"));
+
+    private bool? _hotReloads;
+
+    /// <summary><see cref="HotReloads(IHostEnvironment)"/> with the variable dotnet watch sets given.</summary>
+    internal bool HotReloads(IHostEnvironment environment, string? dotnetWatch) =>
+        HotReload ?? (environment.IsDevelopment() || dotnetWatch == "1");
 
     public UIOptions WithSsr(bool enabled = true)
     {
