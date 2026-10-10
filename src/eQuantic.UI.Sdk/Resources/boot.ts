@@ -27,6 +27,7 @@ import { EscapeHatchPage, componentIdentity } from '../../eQuantic.UI.Runtime/sr
 import {
   applyPageState,
   fetchPageState,
+  leaveForRefusal,
   warmPageState,
 } from '../../eQuantic.UI.Runtime/src/router/page-state';
 import { Component } from '../../eQuantic.UI.Runtime/src/core/types';
@@ -231,7 +232,7 @@ export async function boot(): Promise<void> {
         onNavigate: (match, url, isCurrent) =>
           // The same STRING the hover warmed under, or the click looks in the wrong drawer and
           // fetches a second time — which made a warmed navigation the slower one.
-          navigateToPage(root, match.page, config, isCurrent, url.pathname + url.search),
+          navigateToPage(root, match.page, config, isCurrent, url.pathname + url.search, url.hash),
         // Hover/focus prefetch: warm the page bundle so a click navigates instantly. loadPageModule's
         // dynamic import is cached by the browser, so the later navigation resolves without a round-trip.
         onPrefetch: (match, url) => {
@@ -405,15 +406,22 @@ async function navigateToPage(
   config: EqConfig,
   isCurrent?: () => boolean,
   url?: string,
+  fragment?: string,
 ): Promise<void> {
   try {
     // The bundle and the page's SERVER DATA at the same time — the fetch is not on the critical
-    // path behind the import, and neither is behind the other.
-    const [ComponentClass, payload] = await Promise.all([
-      loadPageModule(pageName, config),
-      fetchPageState(url),
-    ]);
-    // A newer navigation started while this bundle was loading — don't clobber it.
+    // path behind the import, and neither is behind the other. The STATE is awaited first: a refusal
+    // decides the navigation whatever happens to the bundle, which may fail to load for a visitor the
+    // page refuses (#673). The bundle's failure, if it comes, is reported where it is awaited.
+    const bundle = loadPageModule(pageName, config);
+    bundle.catch(() => {});
+    const payload = await fetchPageState(url);
+    // A newer navigation started while this was loading — don't clobber it.
+    if (isCurrent && !isCurrent()) return;
+    // The server REFUSED this route (#673): the page requires an authorization the visitor does not
+    // have, and it is loaded in full instead of rendered (leaveForRefusal says how), fragment and all.
+    if (leaveForRefusal(payload, url === undefined ? undefined : url + (fragment ?? ''))) return;
+    const ComponentClass = await bundle;
     if (isCurrent && !isCurrent()) return;
     if (!ComponentClass) {
       render404(root, pageName);

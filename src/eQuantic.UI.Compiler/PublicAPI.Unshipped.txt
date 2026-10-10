@@ -56,3 +56,28 @@ eQuantic.UI.Compiler.CodeGen.ValueMember.ValueMember(string! Display, string! Js
 eQuantic.UI.Compiler.CodeGen.ValueMember.Store.get -> string!
 eQuantic.UI.Compiler.CodeGen.ValueMember.Store.init -> void
 eQuantic.UI.Compiler.Services.TypeScriptCodeBuilder.ClassBuilder.State(string! name, string? type, Microsoft.CodeAnalysis.SyntaxNode? sourceNode = null) -> void
+*REMOVED*eQuantic.UI.Compiler.CodeGen.Strategies.Linq.DistinctStrategy.Convert(Microsoft.CodeAnalysis.SyntaxNode! node, eQuantic.UI.Compiler.CodeGen.ConversionContext! context) -> string!
+*REMOVED*eQuantic.UI.Compiler.CodeGen.Strategies.Linq.GroupByStrategy.Convert(Microsoft.CodeAnalysis.SyntaxNode! node, eQuantic.UI.Compiler.CodeGen.ConversionContext! context) -> string!
+*REMOVED*eQuantic.UI.Compiler.CodeGen.Strategies.Linq.LookupIndexerStrategy.Convert(Microsoft.CodeAnalysis.SyntaxNode! node, eQuantic.UI.Compiler.CodeGen.ConversionContext! context) -> string!
+*REMOVED*eQuantic.UI.Compiler.CodeGen.Strategies.Linq.OrderByStrategy.Convert(Microsoft.CodeAnalysis.SyntaxNode! node, eQuantic.UI.Compiler.CodeGen.ConversionContext! context) -> string!
+*REMOVED*eQuantic.UI.Compiler.CodeGen.Strategies.Linq.SumStrategy.Convert(Microsoft.CodeAnalysis.SyntaxNode! node, eQuantic.UI.Compiler.CodeGen.ConversionContext! context) -> string!
+*REMOVED*eQuantic.UI.Compiler.CodeGen.Strategies.Linq.AverageStrategy.Convert(Microsoft.CodeAnalysis.SyntaxNode! node, eQuantic.UI.Compiler.CodeGen.ConversionContext! context) -> string!
+eQuantic.UI.Compiler.CodeGen.Strategies.Linq.AverageStrategy.ConvertIr(Microsoft.CodeAnalysis.SyntaxNode! node, eQuantic.UI.Compiler.CodeGen.ConversionContext! context) -> eQuantic.UI.Compiler.CodeGen.Ir.JsExpr!
+eQuantic.UI.Compiler.CodeGen.Strategies.Linq.DistinctStrategy.ConvertIr(Microsoft.CodeAnalysis.SyntaxNode! node, eQuantic.UI.Compiler.CodeGen.ConversionContext! context) -> eQuantic.UI.Compiler.CodeGen.Ir.JsExpr!
+eQuantic.UI.Compiler.CodeGen.Strategies.Linq.GroupByStrategy.ConvertIr(Microsoft.CodeAnalysis.SyntaxNode! node, eQuantic.UI.Compiler.CodeGen.ConversionContext! context) -> eQuantic.UI.Compiler.CodeGen.Ir.JsExpr!
+eQuantic.UI.Compiler.CodeGen.Strategies.Linq.LookupIndexerStrategy.ConvertIr(Microsoft.CodeAnalysis.SyntaxNode! node, eQuantic.UI.Compiler.CodeGen.ConversionContext! context) -> eQuantic.UI.Compiler.CodeGen.Ir.JsExpr!
+eQuantic.UI.Compiler.CodeGen.Strategies.Linq.OrderByStrategy.ConvertIr(Microsoft.CodeAnalysis.SyntaxNode! node, eQuantic.UI.Compiler.CodeGen.ConversionContext! context) -> eQuantic.UI.Compiler.CodeGen.Ir.JsExpr!
+eQuantic.UI.Compiler.CodeGen.Strategies.Linq.SumStrategy.ConvertIr(Microsoft.CodeAnalysis.SyntaxNode! node, eQuantic.UI.Compiler.CodeGen.ConversionContext! context) -> eQuantic.UI.Compiler.CodeGen.Ir.JsExpr!
+*REMOVED*static eQuantic.UI.Compiler.CodeGen.Ir.JsExpr.Template(string! template, System.Collections.Generic.IReadOnlyList<eQuantic.UI.Compiler.CodeGen.Ir.JsExpr!>! parts, bool annotate) -> eQuantic.UI.Compiler.CodeGen.Ir.JsExpr!
+*REMOVED*eQuantic.UI.Compiler.CodeGen.Ir.JsTemplate.Annotate.get -> bool
+*REMOVED*eQuantic.UI.Compiler.CodeGen.Ir.JsTemplate.Annotate.init -> void
+*REMOVED*eQuantic.UI.Compiler.CodeGen.Ir.JsTemplate.Deconstruct(out string! Text, out System.Collections.Generic.IReadOnlyList<eQuantic.UI.Compiler.CodeGen.Ir.JsExpr!>! Parts, out bool Annotate) -> void
+*REMOVED*eQuantic.UI.Compiler.CodeGen.Ir.JsTemplate.JsTemplate(string! Text, System.Collections.Generic.IReadOnlyList<eQuantic.UI.Compiler.CodeGen.Ir.JsExpr!>! Parts, bool Annotate) -> void
+eQuantic.UI.Compiler.CodeGen.Ir.JsTemplate.Deconstruct(out string! Text, out System.Collections.Generic.IReadOnlyList<eQuantic.UI.Compiler.CodeGen.Ir.JsExpr!>! Parts) -> void
+eQuantic.UI.Compiler.CodeGen.Ir.JsTemplate.JsTemplate(string! Text, System.Collections.Generic.IReadOnlyList<eQuantic.UI.Compiler.CodeGen.Ir.JsExpr!>! Parts) -> void
+const eQuantic.UI.Compiler.CodeGen.Eq.SameKey = "$eq.collections.sameKey" -> string!
+eQuantic.UI.Compiler.CodeGen.Strategies.Types.DateTimeConstructionStrategy
+eQuantic.UI.Compiler.CodeGen.Strategies.Types.DateTimeConstructionStrategy.DateTimeConstructionStrategy() -> void
+eQuantic.UI.Compiler.CodeGen.Strategies.Types.DateTimeConstructionStrategy.Priority.get -> int
+eQuantic.UI.Compiler.CodeGen.Strategies.Types.DateTimeConstructionStrategy.CanConvert(Microsoft.CodeAnalysis.SyntaxNode! node, eQuantic.UI.Compiler.CodeGen.ConversionContext! context) -> bool
+eQuantic.UI.Compiler.CodeGen.Strategies.Types.DateTimeConstructionStrategy.ConvertIr(Microsoft.CodeAnalysis.SyntaxNode! node, eQuantic.UI.Compiler.CodeGen.ConversionContext! context) -> eQuantic.UI.Compiler.CodeGen.Ir.JsExpr!

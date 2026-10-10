@@ -19,6 +19,12 @@ export interface PageStatePayload {
    * two components holding a field of the same name keep their own values.
    */
   state?: Record<string, Record<string, unknown>>;
+  /**
+   * Set when the server REFUSED the navigation (#673): 401 when the visitor is not signed in, 403 when
+   * they lack the page's policy. The page is never rendered from it: the router loads the route in
+   * full instead, which the server challenges or forbids as it would any visit.
+   */
+  refused?: 401 | 403;
 }
 
 /**
@@ -58,6 +64,10 @@ export async function fetchPageState(url?: string): Promise<PageStatePayload | n
       headers: { [NAVIGATION_HEADER]: '1' },
       credentials: 'same-origin',
     });
+    // A page that requires authorization refuses a visitor without it, marked like every answer: a
+    // fetch cannot follow a sign-in redirect, so the router is told, and loads the route in full.
+    if ((response.status === 401 || response.status === 403) && response.headers.get(NAVIGATION_HEADER) === '1')
+      return { refused: response.status };
     // A page answers with its own status, a 404 for content that does not exist among them, and
     // still sends its payload, which the server marks with the header the request carried. Anything
     // else that fails (a proxy's error page) is no payload.
@@ -66,6 +76,29 @@ export async function fetchPageState(url?: string): Promise<PageStatePayload | n
   } catch {
     return null;
   }
+}
+
+/**
+ * Leaves for a route the server REFUSED (#673), and answers whether it did. The route is loaded in
+ * full, which the server challenges (a sign-in) or forbids (a 403), and never rendered client-side,
+ * where its empty state would stand in for a refusal. The load REPLACES the entry the router already
+ * pushed for this URL: a second entry would send Back from the sign-in page into another challenge.
+ *
+ * It is a RELOAD of that entry, at the URL the navigation asked for. A `location.replace` to it was
+ * the first answer, and the router has pushed the URL before it asks: a replace to the URL the
+ * document is already at, fragment and all, is a same-document navigation, which only scrolls to the
+ * fragment and never asks the server (measured in Chromium, found by Copilot on #686).
+ */
+export function leaveForRefusal(
+  payload: PageStatePayload | null,
+  url: string | undefined,
+  location: Pick<Location, 'reload'> = window.location,
+  history: Pick<History, 'replaceState' | 'state'> = window.history,
+): boolean {
+  if (!payload?.refused || !url) return false;
+  history.replaceState(history.state, '', url);
+  location.reload();
+  return true;
 }
 
 /**

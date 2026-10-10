@@ -106,6 +106,12 @@ export class SortedSet<T> implements Iterable<T> {
   toArray(): T[] {
     return this.items.slice();
   }
+
+  /** The array System.Text.Json writes for a sorted set, in its order: with no `toJSON` it was
+   * written as the class's fields (#597). */
+  toJSON(): T[] {
+    return this.toArray();
+  }
 }
 
 export function sortedSet<T>(

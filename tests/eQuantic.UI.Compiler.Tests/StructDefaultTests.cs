@@ -133,7 +133,7 @@ public class StructDefaultTests
 
         board.Should().MatchRegex(@"fresh\(\)[^{]*\{\s*return Counter\.\$zero\(\);");
         counter.Should().Contain(
-            "static $zero(): Counter { const zero: any = Object.create(Counter.prototype); zero.step = 0; zero.total = $eq.num.long(0); return zero; }");
+            "static $zero(): Counter { const $self: any = Object.create(Counter.prototype); $self.step = 0; $self.total = $eq.num.long(0); return $self; }");
         counter.Should().Contain("constructor() {this.step = 2;this.total = $eq.num.long(0);}",
             "`new Counter()` runs the initializer, and the zero does not");
     }

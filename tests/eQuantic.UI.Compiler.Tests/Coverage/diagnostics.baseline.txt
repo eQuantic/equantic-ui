@@ -4,7 +4,7 @@ EQ0002 eQuantic.Build/Program.cs
 EQ1001 eQuantic.UI.Compiler/CodeGen/CSharpToJsConverter.cs
 EQ1002 eQuantic.UI.Compiler/CodeGen/CSharpToJsConverter.cs
 EQ1003 eQuantic.UI.Compiler/CodeGen/CSharpToJsConverter.cs
-EQ1004 eQuantic.UI.Compiler/CodeGen/ConversionContext.cs eQuantic.UI.Compiler/CodeGen/Strategies/Expressions/ObjectCreationStrategy.cs eQuantic.UI.Compiler/CodeGen/Strategies/Expressions/ObjectInitializer.cs
+EQ1004 eQuantic.UI.Compiler/CodeGen/ConversionContext.cs eQuantic.UI.Compiler/CodeGen/Strategies/Expressions/ObjectCreationStrategy.cs eQuantic.UI.Compiler/CodeGen/Strategies/Expressions/ObjectInitializer.cs eQuantic.UI.Compiler/CodeGen/Strategies/Types/DateTimeConstructionStrategy.cs
 EQ1005 eQuantic.Build/Program.cs
 EQ1006 eQuantic.Build/Program.cs
 EQ1007 eQuantic.UI.Compiler/Services/OverloadedMethods.cs

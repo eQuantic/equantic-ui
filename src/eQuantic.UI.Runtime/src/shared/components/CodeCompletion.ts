@@ -362,7 +362,7 @@ export class CodeCompletion {
         CodeCompletion.onUiThread(() => {
             if (!this._active || (resolved === offer.item)) return;
             offer.item = resolved;
-            let at = $eq.collections.indexOf(this._shown, offer, 'own');
+            let at = $eq.collections.indexOf(this._shown, offer, 'item');
             if (at < 0) return;
             this._items[at] = $eq.withPatch(this._items[at], { item: resolved });
             this.changed?.();
