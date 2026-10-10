@@ -7,6 +7,12 @@ namespace eQuantic.UI.Primitives;
 /// sibling spacing — it never collapses), <see cref="Flexible"/> children sharing leftover space by
 /// weight. Truncation contract: TEXT children shrink to ellipsis before any sibling is pushed out;
 /// fixed children (icons, avatars) never shrink.
+/// <para>
+/// An overflowing line is taken back on the web in a row and in a column alike. Photon takes it
+/// back in a ROW (the truncation contract, and a Flexible's shrink); a single-line column takes
+/// nothing back from any item yet, so its content runs past the column's end where a browser
+/// shrinks it.
+/// </para>
 /// </summary>
 /// <remarks>
 /// HOST ONLY, for the reason <see cref="SingleChildNode"/> carries the same attribute, and this one

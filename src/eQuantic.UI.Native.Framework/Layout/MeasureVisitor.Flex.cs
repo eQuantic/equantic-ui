@@ -209,7 +209,10 @@ internal sealed partial class MeasureVisitor
 
         // Truncation contract (spec A2): on overflow, TEXT children shrink to ellipsis before any
         // sibling is pushed out; fixed children never shrink. Applies whenever the available extent is
-        // finite — a Hug row inside a bounded parent must not overflow it either.
+        // finite — a Hug row inside a bounded parent must not overflow it either. ROWS ONLY, for every
+        // item: a single-line column takes nothing back from an overflow here yet, so a zero weight
+        // at a basis of 540 after a fixed 100, in a column 400 tall, stays 540 and runs 240 past the
+        // column's end, where a browser shrinks it to 300 (`min-height: 0`).
         if (!float.IsPositiveInfinity(mainAvail) && rigidSum + gapTotal > mainAvail && horizontal)
         {
             // A TEXT CHILD, seen through layout-transparent wrappers. Asking `is Text` here is what
