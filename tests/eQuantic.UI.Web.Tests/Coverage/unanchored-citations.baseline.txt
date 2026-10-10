@@ -29,7 +29,7 @@ docs/HANDOFF-FIDELITY-AUDIT.md Chip.cs 10
 docs/HANDOFF-FIDELITY-AUDIT.md ColorToken.cs 1
 docs/HANDOFF-FIDELITY-AUDIT.md CoreTextService.cs 2
 docs/HANDOFF-FIDELITY-AUDIT.md Dialog.cs 7
-docs/HANDOFF-FIDELITY-AUDIT.md EmitVisitor.Chrome.cs 6
+docs/HANDOFF-FIDELITY-AUDIT.md EmitVisitor.Chrome.cs 5
 docs/HANDOFF-FIDELITY-AUDIT.md EmitVisitor.Containers.cs 1
 docs/HANDOFF-FIDELITY-AUDIT.md EmitVisitor.Interaction.cs 4
 docs/HANDOFF-FIDELITY-AUDIT.md EmitVisitor.Media.cs 1
