@@ -148,6 +148,10 @@ internal sealed partial class MeasureVisitor
         result.Adopt(child);
 
         var width = ResolveSelf(scroll.Width, maxW, MathF.Min(child.Bounds.Width, maxW));
+        // A Flexible's slot caps a scroller's declared width at the slot, the web's `max-width:
+        // 100%` (LayoutConstraints.WidthIsACeiling): capped HERE, before the scroll range below is
+        // taken from it, so a horizontal scroller scrolls as far as its capped viewport needs.
+        if (constraints.WidthIsACeiling) width = MathF.Min(width, maxW);
         var height = ResolveSelf(scroll.Height, maxH, MathF.Min(child.Bounds.Height, maxH));
         result.Bounds = new Rect(0, 0, width, height);
 

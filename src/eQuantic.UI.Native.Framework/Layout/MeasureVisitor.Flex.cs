@@ -96,13 +96,14 @@ internal sealed partial class MeasureVisitor
         // opposite case: its main size is its content's, so that axis is decided by the content.
         LayoutNode MeasureChild(VisualNode child, float w, float h, string childPath,
             bool mainGranted = false, StretchKind stretchW = StretchKind.None,
-            StretchKind stretchH = StretchKind.None, bool truncating = false, bool contentMain = false)
+            StretchKind stretchH = StretchKind.None, bool truncating = false, bool contentMain = false,
+            bool ceiling = false)
         {
             var forChild = constraints.ForChild(w, h)
                 .DecidedByContent(
                     (childIndetW && !(mainGranted && horizontal)) || (contentMain && horizontal),
                     (childIndetH && !(mainGranted && !horizontal)) || (contentMain && !horizontal))
-                .Stretched(stretchW, stretchH);
+                .Stretched(stretchW, stretchH) with { WidthIsACeiling = ceiling };
             return Measure(child, truncating ? forChild.Truncated() : forChild, ctx, childPath);
         }
 
@@ -121,35 +122,18 @@ internal sealed partial class MeasureVisitor
             // stretches THROUGH it. Without this the wrapper grew to the cell and the content
             // inside it stayed at its own width, which is exactly what the tab labels did.
             var (fsW, fsH) = CrossStretch(flexible);
-            // The extent IS the slot's main size (the bounds are pinned to it below), so the child
-            // is stretched on the main axis too, on top of whatever the cross axis granted: an
+            // The extent IS the slot's main size (the item is pinned to it below), so the child is
+            // stretched on the main axis too, on top of whatever the cross axis granted: an
             // auto-sized cell takes the extent and lays out inside it — a flex item's autos fill
-            // the cell, per CSS.
+            // the cell, per CSS. A scroller whose width is a ceiling in the slot (the web's
+            // `max-width: 100%`) is told so, and the word reaches it through transparent wrappers.
             var child = MeasureChild(flexible.Child, horizontal ? main : crossAvail,
                 horizontal ? crossAvail : main,
                 ctx.ChildPath(ctx.ChildPath(path, i, flexible), 0), mainGranted: true,
                 stretchW: horizontal ? StretchKind.Flex : fsW,
-                stretchH: horizontal ? fsH : StretchKind.Flex, truncating: truncating);
-            // The WRAPPER is the item and takes the slot. A child that declares its own main size
-            // (a fixed or window-relative width, an Image, a CameraPreview: whatever MainSizeKind
-            // reads as declared) keeps the size it measured, wider than the slot or narrower: the
-            // web keeps such a child at its width inside the item and lets it overflow, so a 400 box
-            // in an item shrunk to 300 is still 400 there. A ScrollView keeps its width only up to
-            // the slot, which the web's `max-width: 100%` makes a ceiling. Any other child is pinned
-            // to the slot. An auto or Fill child measured to it already, being stretched, and a Text
-            // sizes itself to its lines, so the slot is the line box it fills and aligns them in.
-            var measuredMain = horizontal ? child.Bounds.Width : child.Bounds.Height;
-            var childMain = MainSizeKind(flexible.Child, horizontal) is not (SizeKind.Fixed or SizeKind.WindowMinus) ? main
-                : MainSizeIsACeiling(flexible.Child, horizontal) ? MathF.Min(measuredMain, main)
-                : measuredMain;
-            child.Bounds = horizontal
-                ? child.Bounds with { Width = childMain }
-                : child.Bounds with { Height = childMain };
-            var wrapper = ctx.Node(flexible, horizontal
-                ? child.Bounds with { Width = main }
-                : child.Bounds with { Height = main });
-            wrapper.Adopt(child);
-            return wrapper;
+                stretchH: horizontal ? fsH : StretchKind.Flex, truncating: truncating,
+                ceiling: MainSizeIsACeiling(flexible.Child, horizontal));
+            return FlexItem(flexible, child, main, horizontal, ctx);
         }
 
         // A RIGID item measured again inside the extent an overflowing line leaves it. A zero

@@ -121,6 +121,36 @@ public class FlexLayoutTests
             .Should().Be(600 - 32, "a width the window decides is the box's own");
     }
 
+    /// <summary>
+    /// A scroller's ceiling reaches the scroller, through a transparent wrapper, and while it
+    /// measures. In a share of 300, Chrome 154 draws <c>Pinned(ScrollView { Width = 400 })</c> with
+    /// the wrapper and the scroller both at 300; Photon capped the wrapper and left the scroller
+    /// painting and clipping at 400. And a horizontal scroller of 400 around 800 of content is 300
+    /// wide there and scrolls by 500; capped only after it measured, its range was taken from 400.
+    /// </summary>
+    [Fact]
+    public void AScrollersCeiling_ReachesItThroughAWrapper_AndSetsItsRange()
+    {
+        static Row InAShareOf300(VisualNode child)
+        {
+            var row = new Row(gap: 0) { Width = 600 };
+            row.Add(new Flexible(child, flex: 1));
+            row.Add(new Flexible(new Box(new BoxStyle { Width = SizeValue.Fill, Height = 20 }), flex: 1));
+            return row;
+        }
+
+        var pinned = Layout(InAShareOf300(new Pinned(new ScrollView(FixedBox(50, 20)) { Width = 400, Height = 20 })), w: 600)
+            .Children[0].Children[0];
+        pinned.Bounds.Width.Should().BeApproximately(300, 0.01f);
+        pinned.Children[0].Bounds.Width.Should().BeApproximately(300, 0.01f, "the scroller itself is capped, not only its wrapper");
+
+        var sideways = new ScrollView(FixedBox(800, 20), ScrollAxis.Horizontal) { Width = 400, Height = 20 };
+        var ranges = new Dictionary<ScrollView, (string Path, float MaxOffset)>();
+        LayoutEngine.Layout(InAShareOf300(sideways), 600, 300,
+            new LayoutContext(PhotonTheme.Instance, ApproximateTextMeasurer.Instance) { ScrollMeta = ranges });
+        ranges[sideways].MaxOffset.Should().BeApproximately(500, 0.01f, "800 of content in a 300 viewport");
+    }
+
     [Fact]
     public void Row_SpaceBetween_DistributesFreeSpace()
     {

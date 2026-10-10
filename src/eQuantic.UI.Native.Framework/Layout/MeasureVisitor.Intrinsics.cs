@@ -236,6 +236,26 @@ internal sealed partial class MeasureVisitor
     };
 
     /// <summary>
+    /// A Flexible's ITEM around its measured child, the one shape the single-line slot and the
+    /// wrapping pass both build. The item takes the extent its line gave it. The child keeps a main
+    /// size its node declares (<see cref="MainSizeKind"/> reads it as fixed or window-relative),
+    /// wider than the item or narrower, as the web keeps such a child inside the flex item and lets
+    /// it overflow: a 400 box in an item of 300 is still 400, and in an item of 540 still 400. Any
+    /// other child is pinned to the item: an auto or Fill child measured to it already, and a
+    /// <see cref="Text"/> sizes itself to its lines, so the item is the line box it fills and aligns
+    /// them in. A scroller's ceiling is applied while it measures, not here (see
+    /// <see cref="LayoutConstraints.WidthIsACeiling"/>).
+    /// </summary>
+    private static LayoutNode FlexItem(Flexible flexible, LayoutNode child, float main, bool horizontal, LayoutContext ctx)
+    {
+        if (MainSizeKind(flexible.Child, horizontal) is not (SizeKind.Fixed or SizeKind.WindowMinus))
+            child.Bounds = horizontal ? child.Bounds with { Width = main } : child.Bounds with { Height = main };
+        var item = ctx.Node(flexible, horizontal ? child.Bounds with { Width = main } : child.Bounds with { Height = main });
+        item.Adopt(child);
+        return item;
+    }
+
+    /// <summary>
     /// Whether a node's declared main size is a CEILING inside its container rather than a size it
     /// keeps whatever the container gives it. A <see cref="ScrollView"/>'s width is one: the web
     /// realizer writes it <c>max-width: 100%</c> beside its width, so in a 300 item a 400-wide
