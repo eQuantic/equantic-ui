@@ -135,8 +135,8 @@ public interface IPseudoStyled
     List<(string Pseudo, string Prop, string Value)> PseudoDeclarations { get; }
 }
 
-/// <summary>Scroll-linked channel (Pinned.ScrolledStyle): declarations gated by the root's
-/// <c>eq-scrolled</c> class.</summary>
+/// <summary>Scroll-linked channel (Pinned.ScrolledStyle): declarations gated by the header's own
+/// <c>data-eq-scrolled</c>.</summary>
 public interface IScrolledStyled
 {
     List<(string Prop, string Value)> ScrolledDeclarations { get; }
@@ -218,9 +218,14 @@ public sealed class StyleSink
     /// class, byte-identical to the TS twin.</summary>
     public void AddAdaptiveGate(string gate) => _rules.TryAdd(gate, "\u0002" + AdaptiveGates.Css(gate));
 
+    /// <summary>The attribute the runtime sets on a pinned header while its surface has scrolled
+    /// past <see cref="Primitives.Pinned.ScrolledThreshold"/> (markers.ts' <c>SCROLLED_MARKER</c>).</summary>
+    internal const string ScrolledMarker = "data-eq-scrolled";
+
     /// <summary>SCROLL-LINKED variant (Pinned.ScrolledStyle): the declaration only applies while
-    /// the root carries <c>eq-scrolled</c> (the runtime's scroll listener toggles it). Root-gated
-    /// selector, same hash family as pseudo variants ("scrolled|" prefix).</summary>
+    /// the header carries <c>data-eq-scrolled</c>, which the runtime sets from the surface the header
+    /// pins to, its own ScrollView or the page (#506). The same hash family as the pseudo variants
+    /// ("scrolled|" prefix).</summary>
     public string ClassForScrolled(string property, string value)
     {
         var declaration = Declaration(property, value);
@@ -264,7 +269,7 @@ public sealed class StyleSink
                 if (rule.Value.StartsWith('\u0002')) { css.Append(rule.Value[1..]); continue; }
                 if (rule.Value.StartsWith('\u0003'))
                 {
-                    css.Append("html.eq-scrolled .").Append(rule.Key)
+                    css.Append('.').Append(rule.Key).Append('[').Append(ScrolledMarker).Append(']')
                        .Append('{').Append(rule.Value[1..]).Append('}');
                     continue;
                 }
