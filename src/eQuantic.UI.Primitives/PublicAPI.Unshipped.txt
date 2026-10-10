@@ -1,4 +1,62 @@
 #nullable enable
+eQuantic.UI.Primitives.BoxStyle.Pressed.get -> eQuantic.UI.Primitives.StyleDiff?
+eQuantic.UI.Primitives.BoxStyle.Pressed.init -> void
+eQuantic.UI.Primitives.HydratesTypeArgumentAttribute
+eQuantic.UI.Primitives.HydratesTypeArgumentAttribute.HydratesTypeArgumentAttribute() -> void
+eQuantic.UI.Primitives.IServerEvents
+eQuantic.UI.Primitives.IServerEvents.Connection.get -> eQuantic.UI.Primitives.ServerConnection
+eQuantic.UI.Primitives.IServerEvents.Subscribe<T>(eQuantic.UI.Primitives.ServerTopic<T>! topic, System.Action<T>! onEvent, System.Action<eQuantic.UI.Primitives.ServerTopicRefusal>? onRefused = null) -> System.IDisposable!
+eQuantic.UI.Primitives.IServerEvents.OnConnectionChanged(System.Action<eQuantic.UI.Primitives.ServerConnection>! onChanged) -> System.IDisposable!
+static readonly eQuantic.UI.Primitives.ServerConnection.Disconnected -> eQuantic.UI.Primitives.ServerConnection
+eQuantic.UI.Primitives.ServerConnection
+eQuantic.UI.Primitives.ServerConnection.Deconstruct(out eQuantic.UI.Primitives.ServerConnectionState State, out string? LastEventId) -> void
+eQuantic.UI.Primitives.ServerConnection.Equals(eQuantic.UI.Primitives.ServerConnection other) -> bool
+eQuantic.UI.Primitives.ServerConnection.ServerConnection() -> void
+eQuantic.UI.Primitives.ServerConnection.ServerConnection(eQuantic.UI.Primitives.ServerConnectionState State, string? LastEventId) -> void
+override eQuantic.UI.Primitives.ServerConnection.GetHashCode() -> int
+static eQuantic.UI.Primitives.ServerConnection.operator !=(eQuantic.UI.Primitives.ServerConnection left, eQuantic.UI.Primitives.ServerConnection right) -> bool
+static eQuantic.UI.Primitives.ServerConnection.operator ==(eQuantic.UI.Primitives.ServerConnection left, eQuantic.UI.Primitives.ServerConnection right) -> bool
+~override eQuantic.UI.Primitives.ServerConnection.Equals(object obj) -> bool
+~override eQuantic.UI.Primitives.ServerConnection.ToString() -> string
+eQuantic.UI.Primitives.ServerConnection.State.get -> eQuantic.UI.Primitives.ServerConnectionState
+eQuantic.UI.Primitives.ServerConnection.State.init -> void
+eQuantic.UI.Primitives.ServerConnection.LastEventId.get -> string?
+eQuantic.UI.Primitives.ServerConnection.LastEventId.init -> void
+eQuantic.UI.Primitives.ServerConnectionState.Connecting = 1 -> eQuantic.UI.Primitives.ServerConnectionState
+eQuantic.UI.Primitives.ServerConnectionState.Connected = 2 -> eQuantic.UI.Primitives.ServerConnectionState
+eQuantic.UI.Primitives.ServerConnectionState.Reconnecting = 3 -> eQuantic.UI.Primitives.ServerConnectionState
+eQuantic.UI.Primitives.ServerConnectionState
+eQuantic.UI.Primitives.ServerConnectionState.Disconnected = 0 -> eQuantic.UI.Primitives.ServerConnectionState
+eQuantic.UI.Primitives.ServerTopic<T>
+eQuantic.UI.Primitives.ServerTopic<T>.<Clone>$() -> eQuantic.UI.Primitives.ServerTopic<T>!
+eQuantic.UI.Primitives.ServerTopic<T>.Equals(eQuantic.UI.Primitives.ServerTopic<T>? other) -> bool
+override eQuantic.UI.Primitives.ServerTopic<T>.Equals(object? obj) -> bool
+override eQuantic.UI.Primitives.ServerTopic<T>.GetHashCode() -> int
+static eQuantic.UI.Primitives.ServerTopic<T>.operator !=(eQuantic.UI.Primitives.ServerTopic<T>? left, eQuantic.UI.Primitives.ServerTopic<T>? right) -> bool
+static eQuantic.UI.Primitives.ServerTopic<T>.operator ==(eQuantic.UI.Primitives.ServerTopic<T>? left, eQuantic.UI.Primitives.ServerTopic<T>? right) -> bool
+eQuantic.UI.Primitives.ServerTopic<T>.ServerTopic(string! name) -> void
+eQuantic.UI.Primitives.ServerTopic<T>.Name.get -> string!
+override eQuantic.UI.Primitives.ServerTopic<T>.ToString() -> string!
+eQuantic.UI.Primitives.ServerTopicRefusal
+eQuantic.UI.Primitives.ServerTopicRefusal.Deconstruct(out string! Topic, out eQuantic.UI.Primitives.ServerTopicRefusalReason Reason) -> void
+eQuantic.UI.Primitives.ServerTopicRefusal.Equals(eQuantic.UI.Primitives.ServerTopicRefusal other) -> bool
+eQuantic.UI.Primitives.ServerTopicRefusal.ServerTopicRefusal() -> void
+eQuantic.UI.Primitives.ServerTopicRefusal.ServerTopicRefusal(string! Topic, eQuantic.UI.Primitives.ServerTopicRefusalReason Reason) -> void
+override eQuantic.UI.Primitives.ServerTopicRefusal.GetHashCode() -> int
+static eQuantic.UI.Primitives.ServerTopicRefusal.operator !=(eQuantic.UI.Primitives.ServerTopicRefusal left, eQuantic.UI.Primitives.ServerTopicRefusal right) -> bool
+static eQuantic.UI.Primitives.ServerTopicRefusal.operator ==(eQuantic.UI.Primitives.ServerTopicRefusal left, eQuantic.UI.Primitives.ServerTopicRefusal right) -> bool
+~override eQuantic.UI.Primitives.ServerTopicRefusal.Equals(object obj) -> bool
+~override eQuantic.UI.Primitives.ServerTopicRefusal.ToString() -> string
+eQuantic.UI.Primitives.ServerTopicRefusal.Topic.get -> string!
+eQuantic.UI.Primitives.ServerTopicRefusal.Topic.init -> void
+eQuantic.UI.Primitives.ServerTopicRefusal.Reason.get -> eQuantic.UI.Primitives.ServerTopicRefusalReason
+eQuantic.UI.Primitives.ServerTopicRefusal.Reason.init -> void
+eQuantic.UI.Primitives.ServerTopicRefusalReason.Unknown = 1 -> eQuantic.UI.Primitives.ServerTopicRefusalReason
+eQuantic.UI.Primitives.ServerTopicRefusalReason.LimitReached = 2 -> eQuantic.UI.Primitives.ServerTopicRefusalReason
+eQuantic.UI.Primitives.ServerTopicRefusalReason.Failed = 3 -> eQuantic.UI.Primitives.ServerTopicRefusalReason
+eQuantic.UI.Primitives.ServerTopicRefusalReason
+eQuantic.UI.Primitives.ServerTopicRefusalReason.Forbidden = 0 -> eQuantic.UI.Primitives.ServerTopicRefusalReason
+const eQuantic.UI.Primitives.Touch.MinPointerTarget = 24 -> float
 eQuantic.UI.Primitives.TwinIsTranspiledAttribute
 eQuantic.UI.Primitives.TwinIsTranspiledAttribute.TwinIsTranspiledAttribute() -> void
 eQuantic.UI.Primitives.FluidSize

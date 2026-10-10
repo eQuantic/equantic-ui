@@ -119,6 +119,11 @@ export type SemanticRoleValue =
   | 'switch' | 'gridCell' | 'progressIndicator' | 'group' | 'radio' | 'tab' | 'menuItem' | 'option'
   | 'destination' | 'tabBar' | 'radioGroup' | 'comboBox' | 'dialog' | 'alertDialog';
 
+export type ServerConnectionStateValue =
+  'disconnected' | 'connecting' | 'connected' | 'reconnecting';
+
+export type ServerTopicRefusalReasonValue = 'forbidden' | 'unknown' | 'limitReached' | 'failed';
+
 export type ShapeScaleValue =
   'none' | 'extraSmall' | 'small' | 'medium' | 'large' | 'extraLarge' | 'full';
 

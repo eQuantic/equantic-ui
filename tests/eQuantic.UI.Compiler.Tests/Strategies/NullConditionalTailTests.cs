@@ -101,10 +101,51 @@ public class NullConditionalTailTests
         diagnostics.Should().BeEmpty();
     }
 
+    private const string Bell = "public class Bell { public string? Tag; public Bell? Next; public void Ring() { } }";
+
+    /// <summary>
+    /// An optional chain answers null where its value is used, as C# does, and stays bare where nothing
+    /// can tell undefined from null: a call that returns nothing, a statement, the left of a
+    /// <c>??</c>, and the tail of another chain (#633).
+    /// </summary>
+    [Fact]
+    public void AChain_AnswersNullWhereItsValueIsUsed_AndOnlyThere()
+    {
+        var js = Convert(
+            "Bell? b = null; string? tag = b?.Tag; string? deep = b?.Next?.Tag; var named = b?.Tag ?? \"none\"; "
+            + "b?.Ring(); System.Action ring = () => b?.Ring(); return tag + deep + named;", Bell).Js;
+
+        js.Should().Contain("let tag = (b?.tag ?? null);");
+        js.Should().Contain("let deep = (b?.next?.tag ?? null);", "the chain answers null where it ends, once");
+        js.Should().Contain("let named = b?.tag ?? 'none';");
+        js.Should().Contain("b?.ring();");
+        js.Should().Contain("() => b?.ring()");
+        js.Should().NotContain("ring() ?? null", "a call that returns nothing has no value to tell apart");
+    }
+
+    private const string Pick = "public static class Ext { public static string? Pick(this string s) => null; }";
+
+    /// <summary>
+    /// A chain whose outer link is a guard, because the call between the links is not rooted at the
+    /// receiver, answers null too: the guard handed the inner chain's undefined out as it was (#633).
+    /// </summary>
+    [Fact]
+    public void AChainBehindAGuard_AnswersNullWhereItsValueIsUsed()
+    {
+        var local = Convert(
+            "Holder? h = new Holder(); int? n = h?.Name.Pick()?.Length; var k = h?.Name.Pick()?.Length ?? 0; return n + k;",
+            Holder + Pick).Js;
+        var call = Convert("Holder Get() => new Holder(); int? m = Get()?.Name.Pick()?.Length; return m;", Holder + Pick).Js;
+
+        local.Should().Contain("let n = (h == null ? null : (Ext.pick(h.name)?.length ?? null));");
+        local.Should().Contain("let k = (h == null ? null : Ext.pick(h.name)?.length) ?? 0;", "the left of a ?? is settled by it");
+        call.Should().Contain("let m = (($n0 = get()) == null ? null : (Ext.pick($n0.name)?.length ?? null));");
+    }
+
     [Fact]
     public void AConciseLambda_ThatBindsNothing_StaysAnExpression() =>
         Convert("Func<Holder, int?> f = h => h.Name?.Length; return f(new Holder());", Holder).Js
-            .Should().Contain("(h) => h.name?.length");
+            .Should().Contain("(h) => (h.name?.length ?? null)", "the lambda answers null where h.Name is, as C# does (#633)");
 
     [Fact]
     public void AStatementConvertedAgain_DeclaresTheTemporaryItsTranslationNames()

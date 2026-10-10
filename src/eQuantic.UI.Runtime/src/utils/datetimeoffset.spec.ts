@@ -43,7 +43,7 @@ describe('DateTimeOffset — .NET semantics', () => {
     expect(dateTimeOffset.fromUnixTimeSeconds(0).utcDateTime.toString()).toBe(
       '01/01/1970 00:00:00',
     );
-    expect(dateTimeOffset(1970, 1, 1, 0, 0, 0, timeSpan.zero).toUnixTimeSeconds()).toBe(0);
+    expect(dateTimeOffset(1970, 1, 1, 0, 0, 0, timeSpan.zero).toUnixTimeSeconds()).toBe(0n);
   });
 
   it('builds from a DateTime + offset and serializes ISO with offset', () => {
