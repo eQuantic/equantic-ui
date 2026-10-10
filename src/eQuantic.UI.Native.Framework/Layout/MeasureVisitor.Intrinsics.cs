@@ -211,9 +211,10 @@ internal sealed partial class MeasureVisitor
     /// <summary>
     /// The size KIND a node declares along the flex MAIN axis (its width in a row, its height in a
     /// column), for every node type of the vocabulary that declares one: a <see cref="SizeValue"/> it
-    /// carries (a box's style, a flex container, a grid, a stack, a scroller, a canvas, a web frame),
-    /// or a size its constructor demands (an image, an icon, a vector, a drawing, a spinner, a camera
-    /// preview). Anything else declares nothing of its own, which reads as Hug. It is asked of the
+    /// carries (a box's style, a flex container, a grid, a stack, a scroller, a canvas, a web frame,
+    /// a drawing's width), or a size its constructor demands (an image, an icon, a vector, a spinner,
+    /// a camera preview, a drawing's height, which follows from its width). Anything else declares
+    /// nothing of its own, which reads as Hug. It is asked of the
     /// node a child MEASURED to (<see cref="SizedBy"/>), never of the child as written.
     /// <para>
     /// It is a list of arms, and a list is how a camera preview went unread when this asked
@@ -232,7 +233,10 @@ internal sealed partial class MeasureVisitor
         ScrollView scroll => (horizontal ? scroll.Width : scroll.Height).Kind,
         Canvas canvas => (horizontal ? canvas.Width : canvas.Height).Kind,
         WebFrame frame => (horizontal ? frame.Width : frame.Height).Kind,
-        Image or Icon or Vector or Drawing or Spinner or CameraPreview => SizeKind.Fixed,
+        Image or Icon or Vector or Spinner or CameraPreview => SizeKind.Fixed,
+        // A drawing's width is dp or a fill of what its parent offers; its height always follows
+        // from that width, so the drawing is sized on that axis whatever its width is.
+        Drawing drawing => horizontal ? drawing.Width.Kind : SizeKind.Fixed,
         _ => SizeKind.Hug,
     };
 
