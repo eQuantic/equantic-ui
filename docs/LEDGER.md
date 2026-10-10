@@ -1733,17 +1733,6 @@ record of a release, the wiki's Upgrading page is the distillate.
   46 new conformance cases fail on the base. The members the runtime does not have are
   [#679](https://github.com/eQuantic/equantic-ui/issues/679). Proposed and archived through OpenSpec
   (`openspec/specs/transpiler-bcl`).
-- **2026-10-07 · A generic record equals only its own closed type**: .NET compares a record's
-  EqualityContract, its closed type, and the twin is one class for every type argument, so
-  `new Box<int>(1).Equals((object)new Box<double>(1))`, a `List<object>`'s `Contains` and a `with` copy
-  answered true where .NET answers false ([#651](https://github.com/eQuantic/equantic-ui/issues/651)).
-  Where C# names the type arguments the value is marked with them (`$eq.closing`), held aside so its
-  members and JSON stay its own, and a generic record's or struct's `equals` compares the marks; a
-  value built inside generic code carries none and is not taken for another type. The mark is the
-  closed type as .NET erases it, a tuple's element names and `dynamic` gone. Of the nine conformance
-  cases, the five across type arguments fail on main, and the tuple and `dynamic` cases fail on the
-  first mark, which kept the display text. Proposed and archived through OpenSpec
-  (`openspec/specs/transpiler-records`).
 - **2026-10-08 · The image optimizer runs on SkiaSharp**: seven GitHub advisories against
   SixLabors.ImageSharp, five of them reaching the 3.1.12 `eQuantic.UI.Images` resolved, failed
   `build-packages` on every pull request through NuGet's audit, and the only patched version needs a
@@ -1870,6 +1859,17 @@ record of a release, the wiki's Upgrading page is the distillate.
   undefined element, which eqc writes for `Array.Resize` and a vocabulary struct's `default`, came back
   with nulls, so it keeps its initializer. Proposed and archived through OpenSpec
   (`openspec/specs/hot-reload`).
+- **2026-10-07 · A generic record equals only its own closed type**: .NET compares a record's
+  EqualityContract, its closed type, and the twin is one class for every type argument, so
+  `new Box<int>(1).Equals((object)new Box<double>(1))`, a `List<object>`'s `Contains` and a `with` copy
+  answered true where .NET answers false ([#651](https://github.com/eQuantic/equantic-ui/issues/651)).
+  Where C# names the type arguments the value is marked with them (`$eq.closing`), held aside so its
+  members and JSON stay its own, and a generic record's or struct's `equals` compares the marks; a
+  value built inside generic code carries none and is not taken for another type. The mark is the
+  closed type as .NET erases it, a tuple's element names and `dynamic` gone. Of the nine conformance
+  cases, the five across type arguments fail on main, and the tuple and `dynamic` cases fail on the
+  first mark, which kept the display text. Proposed and archived through OpenSpec
+  (`openspec/specs/transpiler-records`).
 
 ## Retired documents
 
