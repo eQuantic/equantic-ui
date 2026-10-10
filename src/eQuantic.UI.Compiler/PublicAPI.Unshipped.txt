@@ -75,6 +75,7 @@ eQuantic.UI.Compiler.CodeGen.Strategies.Linq.SumStrategy.ConvertIr(Microsoft.Cod
 *REMOVED*eQuantic.UI.Compiler.CodeGen.Ir.JsTemplate.JsTemplate(string! Text, System.Collections.Generic.IReadOnlyList<eQuantic.UI.Compiler.CodeGen.Ir.JsExpr!>! Parts, bool Annotate) -> void
 eQuantic.UI.Compiler.CodeGen.Ir.JsTemplate.Deconstruct(out string! Text, out System.Collections.Generic.IReadOnlyList<eQuantic.UI.Compiler.CodeGen.Ir.JsExpr!>! Parts) -> void
 eQuantic.UI.Compiler.CodeGen.Ir.JsTemplate.JsTemplate(string! Text, System.Collections.Generic.IReadOnlyList<eQuantic.UI.Compiler.CodeGen.Ir.JsExpr!>! Parts) -> void
+const eQuantic.UI.Compiler.CodeGen.Eq.SameKey = "$eq.collections.sameKey" -> string!
 eQuantic.UI.Compiler.CodeGen.Strategies.Types.DateTimeConstructionStrategy
 eQuantic.UI.Compiler.CodeGen.Strategies.Types.DateTimeConstructionStrategy.DateTimeConstructionStrategy() -> void
 eQuantic.UI.Compiler.CodeGen.Strategies.Types.DateTimeConstructionStrategy.Priority.get -> int
