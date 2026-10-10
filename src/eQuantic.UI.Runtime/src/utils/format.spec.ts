@@ -1,5 +1,12 @@
 import { describe, it, expect, afterEach, vi } from 'vitest';
-import { format, stringFormat, stringFormatInvariant, asSingle, recordText } from './format';
+import {
+  format,
+  stringFormat,
+  stringFormatInvariant,
+  asSingle,
+  recordText,
+  recordTextGroup,
+} from './format';
 import { installCulture } from './culture';
 import { dateTime } from './datetime';
 
@@ -272,5 +279,19 @@ describe('recordText', () => {
     expect(recordText({}, 'Empty', [])).toBe('Empty { }');
     expect(recordText(null, 'Color', ['R'])).toBe('');
     expect(recordText(undefined, 'Color', ['R'])).toBe('');
+  });
+
+  // The method group `value.ToString`: the delegate writes the record text of the value it was made
+  // with, by the same kinds a call passes (#731).
+  it('makes the delegate of a ToString method group, over the value it was made with', () => {
+    const text = recordTextGroup(
+      { x1: Math.fround(0.2), y1: 0, x2: 0, y2: 1 },
+      'Curve',
+      ['X1', 'Y1', 'X2', 'Y2'],
+      ['single', 'single', 'single', 'single'],
+    );
+
+    expect(text()).toBe('Curve { X1 = 0.2, Y1 = 0, X2 = 0, Y2 = 1 }');
+    expect(text()).toBe(text());
   });
 });

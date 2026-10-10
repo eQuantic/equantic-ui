@@ -154,6 +154,9 @@ public static class Eq
     /// <summary>The record text .NET writes (<c>Color { R = 1, G = 2, B = 3, A = 4 }</c>) for a value the
     /// browser holds as plain data, and the empty string for a null one.</summary>
     public const string RecordText = "$eq.text.record";
+    /// <summary>The method group <c>value.ToString</c> of a value the browser holds as plain data: a
+    /// delegate writing <see cref="RecordText"/> of the value it was made with.</summary>
+    public const string RecordTextGroup = "$eq.text.recordGroup";
     public const string StringFormat = "$eq.text.stringFormat";
     /// <summary><c>string.Compare</c> by a <c>StringComparison</c>: a null first, a culture comparison
     /// by the platform's collator, an ordinal one answering .NET's difference.</summary>
@@ -291,6 +294,10 @@ public static class Eq
     /// <c>object</c> calls a method — hiding it is the point, and saying so is what stops the
     /// warning travelling to everyone who builds this assembly.</summary>
     public new const string Equals = "$eq.equals";
+
+    /// <summary>The method group <c>value.Equals</c> of a value the browser holds as plain data: a
+    /// delegate comparing the value it was made with as <see cref="Equals"/> does.</summary>
+    public const string EqualsGroup = "$eq.equalsGroup";
 
     /// <summary><c>GetHashCode()</c> by .NET's contract: values <see cref="Equals"/> finds equal hash
     /// equal, and a value with its own <c>getHashCode</c> answers it.</summary>

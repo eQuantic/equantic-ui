@@ -149,15 +149,17 @@ public class MemberAccessStrategy : IExpressionIrStrategy
 
     /// <summary>
     /// The method group of a record member of a value the browser holds as DATA (<c>[TwinIsData]</c>,
-    /// <c>Color</c> and <c>Curve</c>): the delegate its call is. <c>Equals</c> answers through
-    /// <c>$eq.equals</c>, as <c>StructuralEqualsStrategy</c> lowers <c>a.Equals(b)</c>, and
-    /// <c>ToString</c> through the record text <c>ToStringStrategy</c> writes, each member's number
-    /// kind included, so a <c>Curve</c>'s points print as singles. The receiver is the argument of the
-    /// function that makes the delegate, so it is read once, when the delegate is made, as C# copies it
-    /// into the delegate: a receiver that is a call runs once, and a local reassigned afterwards leaves
-    /// the delegate holding the value it was made with. <c>GetHashCode</c> never reaches here: its group
-    /// is <c>GetHashCodeStrategy</c>'s. Null for any other member, and for a receiver of another type,
-    /// a <c>Nullable</c> of a data twin among them, whose members are <c>Nullable</c>'s.
+    /// <c>Color</c> and <c>Curve</c>): the delegate its call is, made by the runtime as
+    /// <c>$eq.hash.group</c> makes <c>GetHashCode</c>'s. <c>Equals</c> compares as <c>$eq.equals</c>,
+    /// which <c>StructuralEqualsStrategy</c> lowers <c>a.Equals(b)</c> to, and <c>ToString</c> writes
+    /// the record text <c>ToStringStrategy</c> writes, each member's number kind included, so a
+    /// <c>Curve</c>'s points print as singles. The receiver is the helper's ARGUMENT, so it is read
+    /// once, when the delegate is made, as C# copies it into the delegate: a receiver that is a call
+    /// runs once, and a local reassigned afterwards leaves the delegate holding the value it was made
+    /// with. No function is written here as text (<c>IntroducedFunctionsCoverageTests</c>).
+    /// <c>GetHashCode</c> never reaches here: its group is <c>GetHashCodeStrategy</c>'s. Null for any
+    /// other member, and for a receiver of another type, a <c>Nullable</c> of a data twin among them,
+    /// whose members are <c>Nullable</c>'s.
     /// </summary>
     private static JsExpr? RecordMemberGroup(IMethodSymbol method, MemberAccessExpressionSyntax group,
         JsExpr receiver, ConversionContext context)
@@ -167,19 +169,14 @@ public class MemberAccessStrategy : IExpressionIrStrategy
             || !data.TwinIsData())
             return null;
 
-        // `$value` and `$other`: no C# name can take either, so nothing the receiver names is shadowed.
         if (method is { Name: "Equals", Parameters.Length: 1 })
         {
             context.UsedHelpers.Add(Eq.Import);
-            var other = context.TypeAnnotations ? "$other: unknown" : "$other";
-            return JsExpr.Template($"(($value) => ({other}) => {Eq.Equals}($value, $other))({{0}})", receiver);
+            return JsExpr.Call(JsExpr.Identifier(Eq.EqualsGroup), receiver);
         }
-        if (method is { Name: "ToString", Parameters.Length: 0 })
-        {
-            var text = StringConversion.ToDotNetString(group.Expression, JsExpr.Identifier("$value"), context);
-            return JsExpr.Template($"(($value) => () => {JsExprWriter.Write(text)})({{0}})", receiver);
-        }
-        return null;
+        return method is { Name: "ToString", Parameters.Length: 0 }
+            ? StringConversion.RecordText(data, receiver, Eq.RecordTextGroup, context)
+            : null;
     }
 
     public int Priority => 0; // Low priority (fallback)

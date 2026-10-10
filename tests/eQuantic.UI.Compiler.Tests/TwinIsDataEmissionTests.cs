@@ -98,23 +98,25 @@ public class TwinIsDataEmissionTests
         """;
 
     /// <summary>
-    /// A record member of a data twin as a METHOD GROUP is the delegate its call is: <c>Equals</c>
-    /// over <c>$eq.equals</c> and <c>ToString</c> over the record text, each member's number kind
-    /// included, the receiver passed once to the function that makes the delegate. Bound to the
-    /// companion, which carries neither, <c>Curve.equals.bind(…)</c> threw making the delegate and
-    /// <c>Curve.toString.bind(…)</c> answered <c>[object Object]</c>, on a <c>Color</c> as on a
-    /// <c>Curve</c>. <c>VocabularyValueConformanceTests</c> runs the delegates on both sides.
+    /// A record member of a data twin as a METHOD GROUP is the delegate its call is, which the
+    /// runtime makes, as it makes <c>GetHashCode</c>'s: <c>Equals</c> comparing as <c>$eq.equals</c>
+    /// and <c>ToString</c> writing the record text, each member's number kind included, over the
+    /// receiver passed to the helper once. Bound to the companion, which carries neither,
+    /// <c>Curve.equals.bind(…)</c> threw making the delegate and <c>Curve.toString.bind(…)</c>
+    /// answered <c>[object Object]</c>, on a <c>Color</c> as on a <c>Curve</c>. The module writes no
+    /// function of its own for them. <c>VocabularyValueConformanceTests</c> runs the delegates on both
+    /// sides.
     /// </summary>
     [Fact]
     public void ARecordMemberGroupOfADataTwin_IsTheDelegateItsCallIs()
     {
         var ts = Compile(Groups, "Groups");
 
-        ts.Should().Contain("(($value) => ($other: unknown) => $eq.equals($value, $other))(Curve.standard)");
-        ts.Should().Contain("(($value) => () => $eq.text.record($value, 'Curve', ['X1', 'Y1', 'X2', 'Y2'], ['single', 'single', 'single', 'single']))(Curve.standard)");
-        ts.Should().Contain("(($value) => ($other: unknown) => $eq.equals($value, $other))(Color.white)");
-        ts.Should().Contain("(($value) => () => $eq.text.record($value, 'Color', ['R', 'G', 'B', 'A']))(Color.white)");
-        ts.Should().NotContain(".equals.bind(").And.NotContain(".toString.bind(");
+        ts.Should().Contain("let sameCurve = $eq.equalsGroup(Curve.standard);");
+        ts.Should().Contain("let curveText = $eq.text.recordGroup(Curve.standard, 'Curve', ['X1', 'Y1', 'X2', 'Y2'], ['single', 'single', 'single', 'single']);");
+        ts.Should().Contain("let sameColor = $eq.equalsGroup(Color.white);");
+        ts.Should().Contain("let colorText = $eq.text.recordGroup(Color.white, 'Color', ['R', 'G', 'B', 'A']);");
+        ts.Should().NotContain(".equals.bind(").And.NotContain(".toString.bind(").And.NotContain("=> $eq.");
     }
 
     [Fact]

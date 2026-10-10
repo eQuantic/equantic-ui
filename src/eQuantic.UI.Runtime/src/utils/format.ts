@@ -256,6 +256,21 @@ export function recordText(
   return written.length === 0 ? `${name} { }` : `${name} { ${written.join(', ')} }`;
 }
 
+/**
+ * The method group `value.ToString` of a value the browser holds as data, `Func<string> text =
+ * curve.ToString`: a delegate writing the {@link recordText} of the value as it is when the delegate
+ * is made, each member by its kind. The compiler passes the receiver here, so it is read once, where
+ * C# copies it into the delegate.
+ */
+export function recordTextGroup(
+  value: unknown,
+  name: string,
+  members: readonly string[],
+  kinds?: readonly (NumberKind | null)[],
+): () => string {
+  return () => recordText(value, name, members, kinds);
+}
+
 /** Text in a field of `|alignment|` characters: a positive width aligns right, a negative left. */
 function pad(result: string, alignment?: number): string {
   if (alignment) {

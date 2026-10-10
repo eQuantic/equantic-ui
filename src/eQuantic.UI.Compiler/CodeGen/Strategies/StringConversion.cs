@@ -68,17 +68,7 @@ public static class StringConversion
         // integer's text is its digits whatever its width, so only a single is named, and a type
         // with none passes no kinds at all.
         if (real is INamedTypeSymbol data && data.TwinIsData())
-        {
-            context.UsedHelpers.Add(Eq.Import);
-            var printed = data.PrintedMembers();
-            var members = string.Join(", ", printed.Select(member => $"'{member.Name}'"));
-            var kinds = printed.Select(member => FormatKind.Of(TwinData.TypeOf(member)) is { } kind && !FormatKind.IsInteger(kind)
-                ? $"'{kind}'"
-                : "null").ToList();
-            return JsExpr.Callish(kinds.All(kind => kind == "null")
-                ? $"{Eq.RecordText}({text}, '{data.Name}', [{members}])"
-                : $"{Eq.RecordText}({text}, '{data.Name}', [{members}], [{string.Join(", ", kinds)}])");
-        }
+            return RecordText(data, converted, Eq.RecordText, context);
 
         if (real.SpecialType is SpecialType.System_Double or SpecialType.System_Single)
         {
@@ -93,6 +83,26 @@ public static class StringConversion
 
         context.UsedHelpers.Add(Eq.Import);
         return JsExpr.Callish($"{Eq.Format}({text}, null)");
+    }
+
+    /// <summary>
+    /// The record text of a value the browser holds as data, written by <paramref name="helper"/> over
+    /// the members .NET prints and, where a member's text is its kind's, the kinds: <see cref="Eq.RecordText"/>
+    /// for the text itself, and <see cref="Eq.RecordTextGroup"/> for the delegate a <c>ToString</c> method
+    /// group is, which writes the same text of the value it was made with.
+    /// </summary>
+    internal static JsExpr RecordText(INamedTypeSymbol data, JsExpr value, string helper, ConversionContext context)
+    {
+        context.UsedHelpers.Add(Eq.Import);
+        var text = JsExprWriter.Write(value);
+        var printed = data.PrintedMembers();
+        var members = string.Join(", ", printed.Select(member => $"'{member.Name}'"));
+        var kinds = printed.Select(member => FormatKind.Of(TwinData.TypeOf(member)) is { } kind && !FormatKind.IsInteger(kind)
+            ? $"'{kind}'"
+            : "null").ToList();
+        return JsExpr.Callish(kinds.All(kind => kind == "null")
+            ? $"{helper}({text}, '{data.Name}', [{members}])"
+            : $"{helper}({text}, '{data.Name}', [{members}], [{string.Join(", ", kinds)}])");
     }
 
     /// <summary>Whether JavaScript's own string of this type differs from .NET's: booleans, anything
