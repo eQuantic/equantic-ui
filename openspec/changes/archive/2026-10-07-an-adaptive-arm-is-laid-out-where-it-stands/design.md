@@ -51,7 +51,10 @@ container with a rule for its children would have needed one more.
 **Photon reads the arm where it reads the child.** `LaidOutChildren` is a struct over a container's
 list that answers the resolved arm in an AdaptiveNode's place, and the path the node's own
 measurement gives that arm, so nothing remembered by path moves and nothing is allocated. A line and
-a grid read through it. The frame got cheaper on the way: the line asked its node for its children
+a grid read through it. A wrapping line that measures an item again does it at the path it gave the
+item the first time, kept in a list beside the items: the node an AdaptiveNode measures to is its
+ARM's, stamped one level under the node's own path, and measuring the node again at the path read
+back off it put an arm the line grew or shrank at `r/0/0/0` where it had stood at `r/0/0`. The frame got cheaper on the way: the line asked its node for its children
 with `foreach`, which boxes the list's enumerator on every measure, and the perf harness's pooled
 frame is 71.1 KB where it was 73.2 (73.2 again with that one loop put back), 506 bytes a layer
 either way. A Stack asks one question, whether a child is Positioned, after measuring it, so

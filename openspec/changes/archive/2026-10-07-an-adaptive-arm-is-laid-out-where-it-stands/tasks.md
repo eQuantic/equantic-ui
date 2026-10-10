@@ -16,6 +16,7 @@
 - [x] 2.5 Say on `AdaptiveNode` that the arm, not the node, carries `AlignSelf` and `GridSpan`
 - [x] 2.6 Measure it in Chromium on the server's own output (`WebRealizer.Lower` and `HtmlRenderer`) of the issues' three trees, with the same script on each side: before the fix the Gap arm leaves 0px between "above" and "below" at 703 and at 1100px, "narrow" and "wide" both show at both widths, and "corner" sits at the stack's start; with the fix the gap is 24px at 703 and 900px and 64px at 1100px, one arm shows at a time on either side of 703.7037px, and "corner" is hidden at 703, 704 and 900px and at the top end corner at 980 and 1100px
 - [x] 2.7 The perf harness, before and after: 73.2 KB a pooled frame before and 71.1 after, 73.2 again with only the line's `foreach` over its node put back (it boxes the list's enumerator), and 506 bytes a layer throughout
+- [x] 2.8 Keep each item's path beside it when the wrapping line first measures it, and measure it again there: the merge rehearsal with #741 found an AdaptiveNode's arm measured again one level down, at `r/0/0/0` where it stands at `r/0/0`, because the node it measures to carries the arm's path; `FlexBasisWrapLayoutTests` pins a line that grows it, holds it still and shrinks it, and the first and the last fail on 67ede240c; the list costs the perf harness's pooled frame 0.2 KB, 71.3 where it was 71.1, and 514 bytes a layer where it was 506, under ceilings of 74 KB and 528 bytes
 
 ## 3. Documentation and the suites
 

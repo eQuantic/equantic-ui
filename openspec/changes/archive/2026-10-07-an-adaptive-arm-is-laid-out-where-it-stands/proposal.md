@@ -63,7 +63,9 @@ None.
 - Photon: `LaidOutChildren` (new), `LayoutContext.ArmOf`, the flex, wrapped-flex and grid passes, and
   `PositionedOf`. On the way, the wrapping line measures a child again at the path it measured it at
   first: its count skips a Spacer, and a pane that grew behind one was measured again at the
-  Spacer's path.
+  Spacer's path. The path is kept beside the item when the line first measures it, never read back
+  off the node it measured to: an AdaptiveNode measures to its arm, stamped one level under the
+  node's own path, so an arm the line grew or shrank was measured again a level further down.
 - Primitives: `AdaptiveNode`'s XML docs say where an arm's placement is read.
 - Not reached: eqc, the transpiled twins, the shells, the SDKs and the templates.
 - The public surface and the developer surface do not move.
