@@ -202,12 +202,8 @@ import { ClassBuilder, joinClasses, whenClass } from './utils/class-builder';
  * plain object spread would drop the prototype, taking every method on it. This copies the
  * prototype, then the fields, then the patch.
  */
-export const withPatch = <T extends object>(value: T, patch: Partial<T>): T => {
-  const copy = Object.assign(Object.create(Object.getPrototypeOf(value)), value, patch) as T;
-  const closure = closures.get(value);
-  if (closure !== undefined) closures.set(copy, closure);
-  return copy;
-};
+export const withPatch = <T extends object>(value: T, patch: Partial<T>): T =>
+  closingLike(Object.assign(Object.create(Object.getPrototypeOf(value)), value, patch) as T, value);
 
 /**
  * The closed type a generic record or struct was built as, by instance (#651). C# compares a
@@ -222,6 +218,17 @@ const closures = new WeakMap<object, string>();
 export const closing = <T extends object>(value: T, typeArguments: string): T => {
   closures.set(value, typeArguments);
   return value;
+};
+
+/**
+ * `copy` as built for the closed type `source` was built as: a copy of a generic record or struct is a
+ * value of its source's type. A struct's `$clone` and a record's `with` build the copy without its
+ * constructor, so the copy went unmarked, and a boxed `Pair<double>` equalled a `Pair<int>` (#751).
+ */
+export const closingLike = <T extends object>(copy: T, source: object): T => {
+  const closure = closures.get(source);
+  if (closure !== undefined) closures.set(copy, closure);
+  return copy;
 };
 
 /**
@@ -294,6 +301,7 @@ export const $eq = {
   withPatch,
   /** A generic record's closed type, by value, and the comparison of two — see `closing`. */
   closing,
+  closingLike,
   sameClosure,
   /** A twin's JSON, a property's store under the property's name — see utils/twin-json. */
   json: twinJson,

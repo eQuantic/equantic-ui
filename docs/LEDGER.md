@@ -2135,6 +2135,13 @@ record of a release, the wiki's Upgrading page is the distillate.
   builds a Spacer takes no space in a Photon column
   ([#736](https://github.com/eQuantic/equantic-ui/issues/736)). Proposed and
   archived through OpenSpec (`openspec/specs/adaptive-layout`).
+- **2026-10-10 · A copy of a generic record or struct keeps its closed type**: main was red since #697
+  ([#751](https://github.com/eQuantic/equantic-ui/issues/751)). A mutable struct's `$clone` and a
+  record's `with` through a declared copy constructor build the copy without its constructor, so the
+  copy carried no closed type, and #689's `sameClosure` takes an unmarked value for any other: a boxed
+  `Pair<double>` equalled a `Pair<int>`. The copy is marked as its source was (`$eq.closingLike`, which
+  `withPatch` uses too), and both name their binding `$copied`, as #661's guard asks. Main's CI runs had
+  stayed queued, so the suites of the pull requests that merged main found it.
 
 ## Retired documents
 
