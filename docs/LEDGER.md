@@ -2188,6 +2188,17 @@ record of a release, the wiki's Upgrading page is the distillate.
   (`$eq.closingLike`, which `withPatch` uses too), so a copy constructor or an `init` accessor that
   compares the copy meets its closed type, and both name their binding `$copied`, as #661's guard asks.
   Main's CI runs had stayed queued, so the suites of the pull requests that merged main found it.
+- **2026-10-08 · A null argument is measured over the translated surface, and a twin refuses it by
+  name**: one measurement instead of one fix per report
+  ([#569](https://github.com/eQuantic/equantic-ui/issues/569)). `NullArgumentConformanceTests` derives
+  the surface from the BCL audit's record and reflection, lets eqc's own diagnostics say what it
+  translates, and calls each member with a null for each reference parameter on both sides, a control
+  without the null beside it. LINQ's `Max`, `Min` and `ToDictionary`, a sequence named by its
+  parameter, `CompareTo(object)`, `new Guid(text)`, `GetUnicodeCategory` and the cancellation pair refuse
+  a null as .NET does now, 67 probes. The 402 left are a baseline that only shrinks, each with its
+  reason, most of them members lowered to JavaScript's own method, where refusing a null by name is a
+  guard at every call, a decision. Proposed and archived through OpenSpec
+  (`openspec/specs/transpiler-exceptions`).
 
 ## Retired documents
 

@@ -42,9 +42,18 @@ function dashed(digits: string): string {
   return `${lower.slice(0, 8)}-${lower.slice(8, 12)}-${lower.slice(12, 16)}-${lower.slice(16, 20)}-${lower.slice(20)}`;
 }
 
-/** `Guid.Parse` and `new Guid(string)`: the canonical text, or .NET's refusal. */
+/** `Guid.Parse`: the canonical text, or .NET's refusal. */
 export function guidParse(text: string | null | undefined): string {
-  if (text == null) throw exception('System.ArgumentNullException', "Value cannot be null. (Parameter 'input')");
+  return parsed(text, 'input');
+}
+
+/** `new Guid(string)`, which reads its text as `Parse` does and names it `g` where it refuses a null (#569). */
+export function guidOf(text: string | null | undefined): string {
+  return parsed(text, 'g');
+}
+
+function parsed(text: string | null | undefined, parameter: string): string {
+  if (text == null) throw exception('System.ArgumentNullException', `Value cannot be null. (Parameter '${parameter}')`);
   const guid = read(text);
   if (guid === undefined) throw exception('System.FormatException', 'Unrecognized Guid format.');
   return guid;
