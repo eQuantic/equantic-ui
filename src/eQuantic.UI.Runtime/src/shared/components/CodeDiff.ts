@@ -116,7 +116,7 @@ export class CodeDiff extends StatefulComponent {
         let body = new Row(0, 'start', 'center', false, null, null, { width: SizeValue.fill, cross: 'stretch' });
         if (inline) {
             body.add(modifiedBlock.gutter(context, (row) => CodeDiff.originalNumberOf(source, row)));
-            body.add(modifiedBlock.gutter(context, (row) => row.kind === 'line' ? $eq.text.format(source.modifiedNumber(row.line), null, undefined, undefined, 'int32') : null));
+            body.add(modifiedBlock.gutter(context, (row) => row.kind === 'line' ? String(source.modifiedNumber(row.line)) : null));
             body.add(new Flexible(modifiedScroll));
         } else {
             let originalLines = layout.original.linesIn(first, last);
@@ -127,10 +127,10 @@ export class CodeDiff extends StatefulComponent {
                 this.setState(() => this._originalWidth = width);
             } });
             let originalSide = new Row(0, 'start', 'center', false, null, null, { width: SizeValue.fill, cross: 'start' });
-            originalSide.add(originalBlock.gutter(context, (row) => row.kind === 'line' ? $eq.text.format(source.originalNumber(row.line), null, undefined, undefined, 'int32') : null));
+            originalSide.add(originalBlock.gutter(context, (row) => row.kind === 'line' ? String(source.originalNumber(row.line)) : null));
             originalSide.add(new Flexible(originalScroll));
             let modifiedSide = new Row(0, 'start', 'center', false, null, null, { width: SizeValue.fill, cross: 'start' });
-            modifiedSide.add(modifiedBlock.gutter(context, (row) => row.kind === 'line' ? $eq.text.format(source.modifiedNumber(row.line), null, undefined, undefined, 'int32') : null));
+            modifiedSide.add(modifiedBlock.gutter(context, (row) => row.kind === 'line' ? String(source.modifiedNumber(row.line)) : null));
             modifiedSide.add(new Flexible(modifiedScroll));
             body.add(new Flexible(originalSide));
             body.add(new Box(new BoxStyle({ width: 1, background: theme.border })));
@@ -233,8 +233,8 @@ export class CodeDiff extends StatefulComponent {
     }
 
     startAtTheFirstChange(source: CodeDiffSource) {
-        if (source.changes.length === 0) return;
-        let change = source.changes[0];
+        if ($eq.collections.count(source.changes) === 0) return;
+        let change = $eq.collections.item(source.changes, 0);
         (this._modified!).selection = new CodeRange(new CodePosition(Math.min(change.modifiedStart, this._modified.document.lineCount - 1), 0));
         (this._original!).selection = new CodeRange(new CodePosition(Math.min(change.originalStart, this._original.document.lineCount - 1), 0));
     }
@@ -260,9 +260,9 @@ export class CodeDiff extends StatefulComponent {
         let bar = new Row(8, 'start', 'center', false, null, null, { width: SizeValue.fill, cross: 'center' });
         let title = this.modifiedCaption ?? this.originalCaption;
         bar.add(new Flexible(new Text(title ?? '', 'label', theme.textSecondary, 1, 'start', false, false, null, 0, { mono: true })));
-        bar.add(new Text(`+${$eq.text.format(addedLines, null, undefined, undefined, 'int32')}`, 'labelSmall', theme.colors('success').base, 1, 'start', false, false, null, 0, { tabular: true }));
-        bar.add(new Text(`−${$eq.text.format(removedLines, null, undefined, undefined, 'int32')}`, 'labelSmall', theme.colors('destructive').base, 1, 'start', false, false, null, 0, { tabular: true }));
-        let none = source.changes.length === 0;
+        bar.add(new Text(`+${addedLines}`, 'labelSmall', theme.colors('success').base, 1, 'start', false, false, null, 0, { tabular: true }));
+        bar.add(new Text(`−${removedLines}`, 'labelSmall', theme.colors('destructive').base, 1, 'start', false, false, null, 0, { tabular: true }));
+        let none = $eq.collections.count(source.changes) === 0;
         bar.add(new IconButton(new Icon(IconGlyph.fromIcons('chevronUp')), SdkStrings.previousChange, 'standard', 'medium', null, { size: 'small', disabled: none, onPressed: () => this.stepTo(false) }));
         bar.add(new IconButton(new Icon(IconGlyph.fromIcons('chevronDown')), SdkStrings.nextChange, 'standard', 'medium', null, { size: 'small', disabled: none, onPressed: () => this.stepTo(true) }));
         bar.add(new Button(inline ? SdkStrings.showSideBySide : SdkStrings.showInline, 'ghost', 'small', null, { onPressed: () => this.setState(() => {
@@ -277,9 +277,9 @@ export class CodeDiff extends StatefulComponent {
             return Math.min(change.modifiedStart, modified.document.lineCount - 1);
         };
         let source: any; let modified: any; let original: any; 
-        if (!(((this._source != null && this._source.changes != null && this._source.changes.length > 0) && (source = this._source, true))) || !((modified = this._modified) != null) || !((original = this._original) != null)) return;
+        if (!(((this._source != null && this._source.changes != null && $eq.collections.count(this._source.changes) > 0) && (source = this._source, true))) || !((modified = this._modified) != null) || !((original = this._original) != null)) return;
         let caret = modified.caret.line;
-        let target = forward ? source.changes[0] : source.changes[source.changes.length - 1];
+        let target = forward ? $eq.collections.item(source.changes, 0) : $eq.collections.item(source.changes, $eq.collections.count(source.changes) - 1);
         if (forward) {
             for (const change of source.changes) {
                 if (lineOf(change) <= caret) continue;
@@ -287,9 +287,9 @@ export class CodeDiff extends StatefulComponent {
                 break;
             }
         } else {
-            for (let i = source.changes.length - 1; i >= 0; i--) {
-                if (lineOf(source.changes[i]) >= caret) continue;
-                target = source.changes[i];
+            for (let i = $eq.collections.count(source.changes) - 1; i >= 0; i--) {
+                if (lineOf($eq.collections.item(source.changes, i)) >= caret) continue;
+                target = $eq.collections.item(source.changes, i);
                 break;
             }
         }
@@ -329,10 +329,10 @@ export class CodeDiff extends StatefulComponent {
     }
 
     static originalNumberOf(source: CodeDiffSource, row: CodeRow) {
-        if (row.kind === 'filler' && row.sourceLine >= 0) return $eq.text.format(source.originalNumber(row.sourceLine), null, undefined, undefined, 'int32');
+        if (row.kind === 'filler' && row.sourceLine >= 0) return String(source.originalNumber(row.sourceLine));
         if (row.kind !== 'line') return null;
         let line = source.originalLineOf(row.line);
-        return line < 0 ? null : $eq.text.format(source.originalNumber(line), null, undefined, undefined, 'int32');
+        return line < 0 ? null : String(source.originalNumber(line));
     }
 }
 

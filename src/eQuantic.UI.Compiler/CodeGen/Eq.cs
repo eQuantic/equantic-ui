@@ -422,6 +422,27 @@ public static class Eq
     /// finds equal to the value, and answers whether there was one (#400).</summary>
     public const string ListRemove = "$eq.collections.remove";
 
+    /// <summary><c>ICollection&lt;T&gt;.Add</c>, as the collection the interface holds when the call runs
+    /// adds: an array appends, a set adds a value it lacks, a linked list adds last, a dictionary adds the
+    /// pair, and a twin calls its own <c>add</c> (#593).</summary>
+    public const string CollectionAdd = "$eq.collections.add";
+
+    /// <summary><c>ICollection&lt;T&gt;.Clear</c>, as the collection the interface holds when the call runs
+    /// empties itself (#593).</summary>
+    public const string CollectionClear = "$eq.collections.clear";
+
+    /// <summary>A list face's indexer read (<c>IList&lt;T&gt;</c>, <c>IReadOnlyList&lt;T&gt;</c>), for the
+    /// list the face holds when it runs: an array's subscript, a twin's <c>item</c> (#586).</summary>
+    public const string ListItem = "$eq.collections.item";
+
+    /// <summary>A list face's indexer write, an array's subscript or a twin's <c>setItem</c>, which answers
+    /// the value written, as C#'s assignment does (#586).</summary>
+    public const string ListSetItem = "$eq.collections.setItem";
+
+    /// <summary><c>new List&lt;T&gt;(capacity)</c>'s check, which refuses a negative capacity in .NET's words:
+    /// the capacity is evaluated where C# evaluates it, before the list's elements, and sizes nothing.</summary>
+    public const string ListCapacity = "$eq.collections.listCapacity";
+
     /// <summary><c>EqualityComparer&lt;T&gt;.Default</c> for a type compared by reference or by its own
     /// <c>Equals</c>: identity, NaN equal to NaN, and a twin's own <c>equals</c>.</summary>
     public const string SameItem = "$eq.collections.sameItem";

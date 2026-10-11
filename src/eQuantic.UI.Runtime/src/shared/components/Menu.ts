@@ -1,4 +1,4 @@
-import { Anchored, AnchorPlacementValue, Box, BoxStyle, BuildContext, Column, CornerRadii, EdgeInsets, Icon, IconGlyph, KeyChord, MenuItem, Pressable, Row, Shortcut, SizeValue, Sizing, StatefulComponent, StyleDiff, Text, UiComponent, VisualNode } from "../runtime-exports";
+import { $eq, Anchored, AnchorPlacementValue, Box, BoxStyle, BuildContext, Column, CornerRadii, EdgeInsets, Icon, IconGlyph, KeyChord, MenuItem, Pressable, Row, Shortcut, SizeValue, Sizing, StatefulComponent, StyleDiff, Text, UiComponent, VisualNode } from "../runtime-exports";
 
 export class Menu extends StatefulComponent {
     static $typeId = 'eQuantic.UI.Components.Menu';
@@ -24,8 +24,8 @@ export class Menu extends StatefulComponent {
     build(context: BuildContext) {
         let theme = context.theme;
         let list = new Column(0, 'start', 'stretch', false, null, null, { width: SizeValue.fill });
-        for (let i = 0; i < this.items.length; i++) {
-            let item = this.items[i];
+        for (let i = 0; i < $eq.collections.count(this.items); i++) {
+            let item = $eq.collections.item(this.items, i);
             let index = i;
             let row = new Row(8, 'start', 'center', false, null, null, { cross: 'center', width: SizeValue.fill, height: SizeValue.fill });
             let glyph: any; 
@@ -36,7 +36,7 @@ export class Menu extends StatefulComponent {
         }
         let panel = new Box(new BoxStyle({ minWidth: 180, background: theme.surface, cornerRadius: new CornerRadii(theme.shape('medium')), borderWidth: 1, borderColor: theme.border, elevation: 2, padding: EdgeInsets.symmetric(0, 4), clip: true }), list);
         let menu: VisualNode = new Anchored(new Pressable(this.trigger, this.toggle.bind(this), { expanded: this._open }), panel, { placement: this.placement, open: this._open, onDismiss: () => this.setState(() => this._open = false), panelRole: 'menu', activeIndex: this._open ? this._highlight : -1 });
-        let live = this._open && this.items.length > 0;
+        let live = this._open && $eq.collections.count(this.items) > 0;
         menu = new Shortcut(menu, KeyChord.arrowDown, () => this.setState(() => this._highlight = this.step(+1)), { enabled: live });
         menu = new Shortcut(menu, KeyChord.arrowUp, () => this.setState(() => this._highlight = this.step(-1)), { enabled: live });
         menu = new Shortcut(menu, KeyChord.enter, () => this.choose(this._highlight), { enabled: live });
@@ -59,18 +59,18 @@ export class Menu extends StatefulComponent {
     }
 
     choose(index: number) {
-        if (index < 0 || index >= this.items.length || this.items[index].disabled) return;
+        if (index < 0 || index >= $eq.collections.count(this.items) || $eq.collections.item(this.items, index).disabled) return;
         this.onSelect?.(index);
         this.setState(() => this._open = false);
     }
 
     firstEnabled() {
-        for (let i = 0; i < this.items.length; i++) if (!this.items[i].disabled) return i;
+        for (let i = 0; i < $eq.collections.count(this.items); i++) if (!$eq.collections.item(this.items, i).disabled) return i;
         return 0;
     }
 
     step(direction: number) {
-        for (let i = this._highlight + direction; i >= 0 && i < this.items.length; i += direction) if (!this.items[i].disabled) return i;
+        for (let i = this._highlight + direction; i >= 0 && i < $eq.collections.count(this.items); i += direction) if (!$eq.collections.item(this.items, i).disabled) return i;
         return this._highlight;
     }
 }
