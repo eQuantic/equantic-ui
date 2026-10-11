@@ -258,8 +258,8 @@ internal sealed partial class EmitVisitor
         // desktop's sits at the caret outside the value; a phone keyboard's is a range of the value.
         var (underlineFrom, underlineTo) = marked.Length > 0
             ? (caretInValue, caretInValue + marked.Length)
-            : !entry.Obscure && press.Composing is { } composing && composing.End <= value.Length
-                ? composing
+            : !entry.Obscure && press.Composing is { } composing && composing.Text == entry.Value
+                ? (composing.Start, composing.End)
                 : (0, 0);
         if (underlineTo > underlineFrom && motion.TextRasterizer is { } markedRasterizer)
         {

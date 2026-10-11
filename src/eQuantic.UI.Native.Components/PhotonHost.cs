@@ -274,6 +274,9 @@ public sealed class PhotonHost
             nodePool: RecycleFrames ? _nodePool : null, inViewStore: _inView,
             windowControlsInsets: WindowControlsInsets, sizedLike: previousFrame);
         if (RenderScale != 1f) builder.Pop();
+        // The frame shows what the app made of the keyboard's edit. A composition in a text the app
+        // did not keep is over (see _composing): the keyboard is about to be told that text.
+        if (_composing is { } composing && TextTarget?.Value != composing.Text) _composing = null;
         // The frame we just replaced is OURS to discard — nobody else holds production frames.
         // (Opt-in: anything that retains RealizeResults — tests, tooling — leaves this off and
         // every tree stays untouched forever.)
@@ -807,7 +810,15 @@ public sealed class PhotonHost
         entry.Obscure ? new string('•', value.Length) : value;
 
     /// <summary>The field being edited in the CURRENT frame, or null. Resolved by path every time
-    /// rather than remembered: the node handed out last frame is already stale.</summary>
+    /// rather than remembered: the node handed out last frame is already stale.
+    /// <para>
+    /// A field scrolled out of view is still the one being edited. Its region is clipped away, so
+    /// nobody can tap what they cannot see, but its focus stop is registered wherever it is and
+    /// still names it. A phone's keyboard rising over the field is that case in every form: the
+    /// frame that lays out above the keyboard clips the field before the reveal scrolls it back,
+    /// and reading it as no field there would turn the keyboard into a key pad for that frame and
+    /// drop what was typed into it.
+    /// </para></summary>
     public TextEntry? TextTarget
     {
         get
@@ -816,6 +827,9 @@ public sealed class PhotonHost
             var fields = _lastFrame.TextRegions;
             for (var i = 0; i < fields.Count; i++)
                 if (fields[i].Path == _textPath) return fields[i].Entry;
+            var stops = _lastFrame.FocusStops;
+            for (var i = 0; i < stops.Count; i++)
+                if (stops[i].Path == _textPath && stops[i].Entry is { } entry) return entry;
             return null;
         }
     }
@@ -942,8 +956,11 @@ public sealed class PhotonHost
     private string? EditedValue => _edited ?? TextTarget?.Value;
 
     /// <summary>A phone keyboard's composition, as a range of the value (see
-    /// <see cref="TextEditingValue"/>), or null. Drawn underlined, like the desktop's marked text.</summary>
-    private (int Start, int End)? _composing;
+    /// <see cref="TextEditingValue"/>), or null. Drawn underlined, like the desktop's marked text.
+    /// It carries the text it marks a range OF: an app that rewrites the value (a formatter, an
+    /// upper-caser) ends it, as setting a controller's text does in Flutter, because the keyboard is
+    /// then told a text it never composed in.</summary>
+    private (int Start, int End, string Text)? _composing;
 
     /// <summary>
     /// Half-second on, half-second off, off the frame clock — the rate every desktop uses. A caret
@@ -1215,7 +1232,7 @@ public sealed class PhotonHost
             var text = EditedValue ?? entry.Value;
             var caret = CaretIndex;
             var anchor = _anchor is { } held ? Math.Clamp(held, 0, text.Length) : caret;
-            return _composing is { } composing && composing.End <= text.Length
+            return _composing is { } composing && composing.Text == text
                 ? new TextEditingValue(text, anchor, caret, composing.Start, composing.End)
                 : new TextEditingValue(text, anchor, caret);
         }
@@ -1240,7 +1257,9 @@ public sealed class PhotonHost
         Caret = extent;
         _anchor = anchor == extent ? null : anchor;
         // After the caret, whose every move drops it: this is the one move that keeps it.
-        _composing = (value with { Text = text }).HasComposing ? (value.ComposingStart, value.ComposingEnd) : null;
+        _composing = (value with { Text = text }).HasComposing
+            ? (value.ComposingStart, value.ComposingEnd, text)
+            : null;
         _marked = "";
         NeedsRender = true;
         return true;

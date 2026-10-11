@@ -298,7 +298,7 @@ public static class PhotonRealizer
         // underlined, without the value changing (the value only changes on commit).
         string markedText = "",
         // A phone keyboard's composition: a range OF the value, drawn underlined the same way.
-        (int Start, int End)? composing = null,
+        (int Start, int End, string Text)? composing = null,
         // The host's cross-frame path-string cache (see LayoutContext.PathCache).
         Dictionary<(string Parent, int Index, string? Key), string>? pathCache = null,
         // The owning host's node recycler (see LayoutNodePool) — null allocates fresh.

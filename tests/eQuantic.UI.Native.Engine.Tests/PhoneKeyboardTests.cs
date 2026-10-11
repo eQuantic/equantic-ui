@@ -150,7 +150,7 @@ public class PhoneKeyboardTests
     [Fact]
     public void TheCaret_IsDrawnWhereTheEditPutIt_InTheFrameThatShowsIt()
     {
-        var (host, bounds) = OpenMeasured("ab");
+        var (host, bounds, _) = OpenMeasured("ab");
         host.TextInput("c");
 
         var drawn = Drawn(host, 32);
@@ -162,7 +162,7 @@ public class PhoneKeyboardTests
     [Fact]
     public void AComposition_IsDrawnUnderlined_AcrossItsRange()
     {
-        var (host, bounds) = OpenMeasured("say ");
+        var (host, bounds, _) = OpenMeasured("say ");
         host.UpdateEditingValue(new TextEditingValue("say hel", 7, 7, 4, 7));
 
         var underline = Drawn(host, 32).Single(command =>
@@ -170,6 +170,25 @@ public class PhoneKeyboardTests
 
         underline.Shape.Rect.X.Should().Be(bounds.X + 4 * 8);
         underline.Shape.Rect.Width.Should().Be(3 * 8);
+    }
+
+    /// <summary>
+    /// A composition is a range of the text the keyboard composed in. An app that rewrites that text
+    /// ends it, as setting a controller's text does in Flutter: the keyboard is about to be told a
+    /// text it never composed in, and an underline over it would mark a word nobody is suggesting.
+    /// </summary>
+    [Fact]
+    public void AnAppThatRewritesTheText_EndsTheComposition()
+    {
+        var (host, _, form) = OpenMeasured("");
+        form.Rewrite = value => value.ToUpperInvariant();
+        host.UpdateEditingValue(new TextEditingValue("hel", 3, 3, 0, 3));
+
+        var drawn = Drawn(host, 32);
+
+        drawn.Should().NotContain(command => command.Kind == DrawCommandKind.FillRRect
+            && MathF.Abs(command.Shape.Rect.Height - 1.5f) < 0.01f, "the field shows HEL, which nobody composed");
+        host.EditingValue.Should().Be(TextEditingValue.Collapsed("HEL", 3));
     }
 
     private sealed class FixedWidthRasterizer : Framework.ITextRasterizer
@@ -184,16 +203,17 @@ public class PhoneKeyboardTests
         }
     }
 
-    private static (PhotonHost Host, Rect Bounds) OpenMeasured(string initial)
+    private static (PhotonHost Host, Rect Bounds, Form Form) OpenMeasured(string initial)
     {
-        var host = new PhotonHost(new Form { Value = initial }, PhotonTheme.Instance, ThemeMode.Light, 400, 300)
+        var form = new Form { Value = initial };
+        var host = new PhotonHost(form, PhotonTheme.Instance, ThemeMode.Light, 400, 300)
         {
             TextRasterizer = new FixedWidthRasterizer(),
         };
         var field = host.RenderFrame(new DisplayListBuilder()).TextRegions[0].Bounds;
         Tap(host, new Point(field.Right - 1, field.Center.Y));
         host.RenderFrame(new DisplayListBuilder(), 16);
-        return (host, field);
+        return (host, field, form);
     }
 
     private static IReadOnlyList<DrawCommand> Drawn(PhotonHost host, float timeMs)
@@ -377,6 +397,32 @@ public class PhoneKeyboardTests
         var field = frame.TextRegions.Single(region => region.Path == low.Path);
         field.Bounds.Bottom.Should().BeLessThanOrEqualTo(300, "the field is scrolled above the keyboard");
         field.Bounds.Top.Should().BeGreaterThanOrEqualTo(0);
+    }
+
+    /// <summary>
+    /// The frame laid out above the rising keyboard clips the field under it before the reveal
+    /// scrolls it back. It is still the field being edited: the keyboard stays a text keyboard, and
+    /// what is typed in that frame reaches it.
+    /// </summary>
+    [Fact]
+    public void AFieldTheKeyboardCovers_IsStillTheOneBeingEdited()
+    {
+        var host = new PhotonHost(new LongForm(), PhotonTheme.Instance, ThemeMode.Light, 390, 600);
+        var session = new TextInputSession(host);
+        var frame = host.RenderFrame(new DisplayListBuilder());
+        var low = frame.TextRegions.Last(region => region.Bounds.Bottom <= 600);
+        Tap(host, low.Bounds.Center);
+        host.RenderFrame(new DisplayListBuilder(), 16);
+        session.Poll().Should().Be(TextInputChange.Began);
+
+        host.ViewInsets = new EdgeInsets(0, 0, 0, 300);
+        frame = host.RenderFrame(new DisplayListBuilder(), 32);
+        frame.TextRegions.Should().NotContain(region => region.Path == low.Path,
+            "the field is under the keyboard in this frame");
+
+        session.Poll().Should().Be(TextInputChange.None);
+        session.Target.Should().Be(TextInputTarget.Text);
+        host.TextInput("x").Should().BeTrue();
     }
 
     private sealed class Padded : Primitives.StatefulComponent
