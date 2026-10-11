@@ -340,11 +340,18 @@ public sealed class PhotonProgramGenerator : IIncrementalGenerator
             activity.AppendLine("    // The app draws its OWN chrome: a system title bar would sit on top of a header the");
             activity.AppendLine("    // design already accounts for, and no tree would know it was there.");
             activity.AppendLine("    Theme = \"@android:style/Theme.Material.Light.NoActionBar\",");
+            // Each change listed here is the HOST's to follow, so Android keeps the activity, and the
+            // app's state with it, instead of building a new one: a rotation, a window resized into
+            // split screen or onto a foldable's other display (screen size and smallest screen
+            // size), a hardware keyboard attached, the system's dark mode, a new density.
             activity.AppendLine("    ConfigurationChanges =");
             activity.AppendLine("        global::Android.Content.PM.ConfigChanges.Orientation");
             activity.AppendLine("        | global::Android.Content.PM.ConfigChanges.ScreenSize");
-            activity.AppendLine("        | global::Android.Content.PM.ConfigChanges.UiMode");
+            activity.AppendLine("        | global::Android.Content.PM.ConfigChanges.SmallestScreenSize");
             activity.AppendLine("        | global::Android.Content.PM.ConfigChanges.ScreenLayout");
+            activity.AppendLine("        | global::Android.Content.PM.ConfigChanges.Keyboard");
+            activity.AppendLine("        | global::Android.Content.PM.ConfigChanges.KeyboardHidden");
+            activity.AppendLine("        | global::Android.Content.PM.ConfigChanges.UiMode");
             activity.AppendLine("        | global::Android.Content.PM.ConfigChanges.Density)]");
             activity.AppendLine("public sealed class MainActivity : global::eQuantic.UI.Native.Shell.Android.PhotonActivity");
             activity.AppendLine("{");
