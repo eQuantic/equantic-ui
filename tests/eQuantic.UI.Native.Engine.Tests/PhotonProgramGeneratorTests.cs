@@ -1,3 +1,4 @@
+using System.Text.RegularExpressions;
 using eQuantic.UI.Native.Generators;
 using FluentAssertions;
 using Microsoft.CodeAnalysis;
@@ -161,5 +162,49 @@ public class PhotonProgramGeneratorTests
             """);
 
         diagnostics.Should().ContainSingle().Which.Id.Should().Be("EQ3002");
+    }
+
+    /// <summary>
+    /// The launcher activity an Android app gets, read as the text the generator writes: the test
+    /// host has no Android, so a stand-in <c>ActivityAttribute</c> is what tells the generator it is
+    /// building one. What the manifest then says is proved on the emulator, from the APK.
+    /// </summary>
+    private static string AndroidLauncher()
+    {
+        var app = CSharpSyntaxTree.ParseText(WellFormed, path: "Program.cs");
+        var android = CSharpSyntaxTree.ParseText(
+            "namespace Android.App { public sealed class ActivityAttribute : System.Attribute { } }",
+            path: "Android.cs");
+        var references = ((string)AppContext.GetData("TRUSTED_PLATFORM_ASSEMBLIES")!)
+            .Split(Path.PathSeparator)
+            .Where(p => p.EndsWith(".dll", StringComparison.OrdinalIgnoreCase))
+            .Select(p => (MetadataReference)TestReferences.Of(p))
+            .Append(TestReferences.Of(
+                typeof(eQuantic.UI.Native.Hosting.PhotonApplication).Assembly.Location));
+        var compilation = CSharpCompilation.Create("App", [app, android], references,
+            new CSharpCompilationOptions(OutputKind.ConsoleApplication));
+
+        return CSharpGeneratorDriver.Create(new PhotonProgramGenerator())
+            .RunGenerators(compilation)
+            .GetRunResult().Results.Single().GeneratedSources
+            .Single(source => source.HintName == "PhotonMainActivity.g.cs")
+            .SourceText.ToString();
+    }
+
+    /// <summary>
+    /// The activity keeps itself, and the app's state, through every change the host follows; and it
+    /// declares predictive back, so the shell's back callback is the one Android 14 and later ask
+    /// before the gesture ends (#771, #772).
+    /// </summary>
+    [Fact]
+    public void TheAndroidLauncherFollowsItsOwnChangesAndDeclaresPredictiveBack()
+    {
+        var launcher = AndroidLauncher();
+
+        launcher.Should().Contain("EnableOnBackInvokedCallback = true");
+        foreach (var change in new[] { "Orientation", "ScreenSize", "SmallestScreenSize", "ScreenLayout",
+                     "Keyboard", "KeyboardHidden", "UiMode", "Density" })
+            Regex.IsMatch(launcher, $@"ConfigChanges\.{change}\b").Should().BeTrue(
+                $"a {change} change is the host's to follow, not a reason to rebuild the activity");
     }
 }

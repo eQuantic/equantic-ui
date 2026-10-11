@@ -340,6 +340,12 @@ public sealed class PhotonProgramGenerator : IIncrementalGenerator
             activity.AppendLine("    // The app draws its OWN chrome: a system title bar would sit on top of a header the");
             activity.AppendLine("    // design already accounts for, and no tree would know it was there.");
             activity.AppendLine("    Theme = \"@android:style/Theme.Material.Light.NoActionBar\",");
+            // Predictive back: the shell registers for back only while something is open, so the
+            // system can show "leave the app" under the finger before the gesture ends. Android 16
+            // assumes it for an app that targets it; Android 14 and 15 only for one that says so.
+            // The application-level spelling Android 13 also reads has no attribute in .NET for
+            // Android, and there the back KEY reaches the same handler.
+            activity.AppendLine("    EnableOnBackInvokedCallback = true,");
             // Each change listed here is the HOST's to follow, so Android keeps the activity, and the
             // app's state with it, instead of building a new one: a rotation, a window resized into
             // split screen or onto a foldable's other display (screen size and smallest screen
