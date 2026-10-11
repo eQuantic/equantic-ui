@@ -2217,6 +2217,36 @@ record of a release, the wiki's Upgrading page is the distillate.
   class asked the browser for a module named by its simple name, which nothing writes any more, and
   one inside an owner that never crosses has no route and cannot be mapped. Proposed and archived through OpenSpec
   (`openspec/specs/transpiler-classes`).
+- **2026-10-07 · A collection and an indexer answer as .NET's do**: a list built with an argument and
+  an initializer took one or the other, `new List<int>(10) { 1, 2 }` empty and
+  `new List<int>(source) { 3 }` a second declarator
+  ([#564](https://github.com/eQuantic/equantic-ui/issues/564));
+  `ToDictionary` refused every comparer, `StringComparer.Ordinal` included, `GroupBy` too, `ToLookup`
+  called one as an element selector and `Distinct` dropped whatever it was handed
+  ([#578](https://github.com/eQuantic/equantic-ui/issues/578)); a range over a type with a
+  `Slice(int start, int length)` called JavaScript's `slice(start, end)` on the twin, three elements
+  where .NET slices two ([#585](https://github.com/eQuantic/equantic-ui/issues/585)); a twin read
+  through `IReadOnlyList<T>` or `IList<T>` read a subscript and a `length`, null where .NET says 19
+  ([#586](https://github.com/eQuantic/equantic-ui/issues/586)); and `ICollection<T>`'s `Add` and
+  `Clear` were an array's `push` and `splice`, which a set, a linked list and a dictionary's pairs
+  lack ([#593](https://github.com/eQuantic/equantic-ui/issues/593)). A list is one array, what its
+  constructor copies and then its elements; a LINQ operator's comparer passes the collection fence
+  (EQ2007), dropped where it asks for the default; a range over a twin calls its `Slice` with a
+  length, in the order C# reads its parts, and one handed to an indexer over `Range` fails the build
+  (EQ2004); a list's face reads, writes and counts through the runtime's `item`, `setItem` and
+  `count`, which answer an array and a twin alike, a twin counted by its own `Count` before a `Length`
+  beside it; and `ICollection<T>`'s `Add` and `Clear` reach the runtime's `add` and `clear`. The
+  review before the pull request opened found a complex element initializer written as an empty object
+  and an indexer over `Range?` taking the slice path, Copilot's first round a read through a null face
+  answering 0 and GroupBy's named arguments read by their position, and its second a list's capacity
+  dropped unread, which never ran its call and built a list where a negative one throws, all fixed; a
+  `T[]` behind the faces grows where .NET refuses, as it did before,
+  [#711](https://github.com/eQuantic/equantic-ui/issues/711). 97 of the 115 new conformance cases fail
+  on main, and 14 of the 16 new Compiler cases; all of them pass here. One gap of the null-argument
+  baseline closes with it, ToLookup's null comparer, 402 entries to 401. The served runtime grows 686
+  gzipped bytes over what main serves, the twins' reads through a list's face and the runtime's
+  helpers behind it. Proposed and archived through OpenSpec (`openspec/specs/transpiler-bcl`,
+  `transpiler-sequences` and `transpiler-expressions`).
 
 ## Retired documents
 

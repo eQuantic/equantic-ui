@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
-import { sortedDictionary } from './sorted';
-import { dictionary } from './dictionary';
+import { sortedDictionary, sortedList, sortedSet } from './sorted';
+import { dictionary, pair } from './dictionary';
+import { hashSetOf } from './hash-set';
 import {
   Queue,
   queue,
@@ -9,6 +10,11 @@ import {
   LinkedList,
   linkedList,
   remove,
+  add,
+  clear,
+  count,
+  item,
+  setItem,
 } from './collections';
 
 describe('Queue<T> — FIFO', () => {
@@ -169,5 +175,122 @@ describe('remove over a dictionary, as ICollection<KeyValuePair<K, V>> removes',
     expect(remove(sorted as never, { key: 2, value: 'b' } as never)).toBe(true);
     expect(sorted.size).toBe(1);
     expect(sorted.has(2)).toBe(false);
+  });
+});
+
+// ICollection<T>'s Add and Clear, which reach the runtime with whichever collection the interface holds
+// when the call runs (#593): an array's push and splice were all they had.
+describe("ICollection<T>'s Add and Clear, as the collection behind the interface answers them", () => {
+  it('adds as each collection adds its own: appended, a value a set holds ignored, a linked list last', () => {
+    const list = [1];
+    add(list, 2);
+    expect(list).toEqual([1, 2]);
+    const set = hashSetOf([1]);
+    add(set, 2);
+    add(set, 1);
+    expect([...set]).toEqual([1, 2]);
+    const linked = linkedList([1]);
+    add(linked, 2);
+    expect(linked.toArray()).toEqual([1, 2]);
+    const sorted = sortedSet([3]);
+    add(sorted, 1);
+    add(sorted, 3);
+    expect(sorted.toArray()).toEqual([1, 3]);
+  });
+
+  it("adds a dictionary's pair, and refuses a key already there in each dictionary's words", () => {
+    const dict = dictionary<string, number>();
+    add(dict, pair('a', 1));
+    expect(dict.get('a')).toBe(1);
+    expect(() => add(dict, pair('a', 2))).toThrow('An item with the same key has already been added. Key: a');
+    const sorted = sortedDictionary<number, string>();
+    add(sorted, pair(2, 'b'));
+    add(sorted, pair(1, 'a'));
+    expect(sorted.keys()).toEqual([1, 2]);
+    expect(() => add(sortedList<number, string>([[2, 'b']]), pair(2, 'c'))).toThrow("Key: 2 (Parameter 'key')");
+  });
+
+  it('clears each in place, and a twin through its own members', () => {
+    const list = [1, 2];
+    clear(list);
+    expect(list).toEqual([]);
+    const set = hashSetOf([1]);
+    clear(set);
+    expect(set.size).toBe(0);
+    const linked = linkedList([1, 2]);
+    clear(linked);
+    expect(linked.count).toBe(0);
+    const held: number[] = [];
+    const twin = {
+      add: (item: number) => held.push(item),
+      clear: () => (held.length = 0),
+      get count() {
+        return held.length;
+      },
+    };
+    add(twin, 7);
+    expect(count(twin)).toBe(1);
+    clear(twin);
+    expect(count(twin)).toBe(0);
+  });
+});
+
+// A list face's indexer (IList<T>, IReadOnlyList<T>), which reaches the runtime with whichever list the
+// face holds when it runs (#586): a subscript was all it had, which a twin does not answer.
+describe("a list face's indexer, as the list behind the face answers it", () => {
+  it('reads and writes an array or an array-like by subscript, a twin by item and setItem', () => {
+    const array = [1, 2, 3];
+    expect(item(array, 1)).toBe(2);
+    expect(setItem(array, 1, 5)).toBe(5);
+    expect(array).toEqual([1, 5, 3]);
+    const held = [7, 8, 9];
+    const twin = {
+      item: (index: number) => held[index],
+      setItem: (index: number, value: number) => {
+        held[index] = Math.min(value, 10);
+      },
+      get count() {
+        return held.length;
+      },
+    };
+    expect(item(twin, 2)).toBe(9);
+    expect(setItem(twin, 0, 42)).toBe(42);
+    expect(held[0]).toBe(10);
+    expect(count(twin)).toBe(3);
+    const typed = new Float64Array([1, 2]);
+    expect(item(typed, 1)).toBe(2);
+    expect(setItem(typed, 0, 3)).toBe(3);
+    expect(typed[0]).toBe(3);
+  });
+
+  it('counts a twin by its own count, never by a length or a size beside it', () => {
+    const polyline = {
+      item: (index: number) => [3, 4][index],
+      get length() {
+        return 12.5;
+      },
+      get size() {
+        return 7;
+      },
+      get count() {
+        return 2;
+      },
+    };
+    expect(count(polyline)).toBe(2);
+    expect(count(new Float64Array([1, 2, 3]))).toBe(3);
+    expect(count(new Set([1, 2]))).toBe(2);
+  });
+
+  // A read or a call through null throws .NET's NullReferenceException in its words: the count of null
+  // was none, 0 where `xs.Count` throws, and the others threw JavaScript's own TypeError. A
+  // null-conditional and a pattern test the receiver before they reach any of them.
+  it('refuses a null as .NET does, for a count, a read, a write, an Add and a Clear', () => {
+    const message = 'Object reference not set to an instance of an object.';
+    expect(() => count(null)).toThrow(message);
+    expect(() => count(undefined)).toThrow(message);
+    expect(() => item(null as unknown as number[], 0)).toThrow(message);
+    expect(() => setItem(null as unknown as number[], 0, 1)).toThrow(message);
+    expect(() => add(null, 1)).toThrow(message);
+    expect(() => clear(null)).toThrow(message);
   });
 });

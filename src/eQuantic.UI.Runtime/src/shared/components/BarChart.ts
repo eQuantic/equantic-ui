@@ -1,4 +1,4 @@
-import { BarChartLayout, Box, BoxStyle, BuildContext, Button, Canvas, CanvasPointer, CategoryAxis, ChartSeries, Column, CornerRadii, DataColumn, DataRow, DataTable, EdgeInsets, Flexible, GridTrack, Point, Positioned, Pressable, Rect, Row, SdkStrings, SizeValue, Stack, StatefulComponent, Text, UiComponent, ValueAxis, ValueTicks, VisualNode } from "../runtime-exports";
+import { $eq, BarChartLayout, Box, BoxStyle, BuildContext, Button, Canvas, CanvasPointer, CategoryAxis, ChartSeries, Column, CornerRadii, DataColumn, DataRow, DataTable, EdgeInsets, Flexible, GridTrack, Point, Positioned, Pressable, Rect, Row, SdkStrings, SizeValue, Stack, StatefulComponent, Text, UiComponent, ValueAxis, ValueTicks, VisualNode } from "../runtime-exports";
 
 export class BarChart extends StatefulComponent {
     static $typeId = 'eQuantic.UI.Charts.BarChart';
@@ -32,7 +32,7 @@ export class BarChart extends StatefulComponent {
         this._title = title;
         this._subtitle = subtitle;
         this._plotHeight = plotHeight;
-        this._hidden = BarChart.hidden(series.length);
+        this._hidden = BarChart.hidden($eq.collections.count(series));
         if (props && typeof props === 'object') Object.assign(this, props);
     }
 
@@ -42,7 +42,7 @@ export class BarChart extends StatefulComponent {
         let root = new Column(8, 'start', 'stretch', false, null, null, { width: SizeValue.fill });
         if (this._title != null) root.add(new Text(this._title, 'title', theme.textPrimary, 1));
         if (this._subtitle != null) root.add(new Text(this._subtitle, 'caption', theme.textMuted, 2));
-        if (this._series.length > 1) root.add(this.legend(theme));
+        if ($eq.collections.count(this._series) > 1) root.add(this.legend(theme));
         root.add(this._table ? BarChart.table(this._series, this._categories, this._values, theme) : this.plot(context));
         root.add(this.footer());
         return root;
@@ -51,7 +51,7 @@ export class BarChart extends StatefulComponent {
     adoptConfig(next: UiComponent) {
         let fresh: any; 
         if (!((next instanceof BarChart && (fresh = next, true)))) return;
-        let reshaped = fresh._series.length !== this._series.length || fresh._categories.categories.length !== this._categories.categories.length;
+        let reshaped = $eq.collections.count(fresh._series) !== $eq.collections.count(this._series) || $eq.collections.count(fresh._categories.categories) !== $eq.collections.count(this._categories.categories);
         this._series = fresh._series;
         this._categories = fresh._categories;
         this._values = fresh._values;
@@ -60,7 +60,7 @@ export class BarChart extends StatefulComponent {
         this._title = fresh._title;
         this._subtitle = fresh._subtitle;
         this._plotHeight = fresh._plotHeight;
-        if (this._hidden.length !== this._series.length) this._hidden = BarChart.hidden(this._series.length);
+        if (this._hidden.length !== $eq.collections.count(this._series)) this._hidden = BarChart.hidden($eq.collections.count(this._series));
         if (reshaped) this._hover = -1;
     }
 
@@ -69,13 +69,13 @@ export class BarChart extends StatefulComponent {
         columns.push(new DataColumn(categories.title ?? '', GridTrack.flex(2)));
         for (const s of series) columns.push(new DataColumn(s.name, GridTrack.flex(1), 'end'));
         let rows: DataRow[] = [];
-        for (let c = 0; c < categories.categories.length; c++) {
+        for (let c = 0; c < $eq.collections.count(categories.categories); c++) {
             let cells: VisualNode[] = [];
-            cells.push(new Text(categories.categories[c], 'bodyM', theme.textPrimary, 1));
+            cells.push(new Text($eq.collections.item(categories.categories, c), 'bodyM', theme.textPrimary, 1));
             for (const s of series) {
                 cells.push(new Text(values.label(s.at(c)), 'bodyM', theme.textPrimary, 1, 'end', false, true));
             }
-            rows.push(new DataRow(categories.categories[c], cells));
+            rows.push(new DataRow($eq.collections.item(categories.categories, c), cells));
         }
         return new DataTable(columns, rows);
     }
@@ -93,19 +93,19 @@ export class BarChart extends StatefulComponent {
     }
 
     seriesColor(theme: any, index: number) {
-        return theme.data.seriesColor(this._series[index].slotAt(index));
+        return theme.data.seriesColor($eq.collections.item(this._series, index).slotAt(index));
     }
 
     legend(theme: any) {
         let row = new Row(12, 'start', 'center', true, 4);
-        for (let i = 0; i < this._series.length; i++) {
+        for (let i = 0; i < $eq.collections.count(this._series); i++) {
             let index = i;
             let hidden = this._hidden[i];
             let swatch = new Box(new BoxStyle({ width: SizeValue.fixed(12), height: SizeValue.fixed(12), background: hidden ? theme.border : this.seriesColor(theme, i), cornerRadius: new CornerRadii(2) }));
             let entry = new Row(4, 'start', 'center');
             entry.add(swatch);
-            entry.add(new Text(this._series[i].name, 'labelSmall', hidden ? theme.textMuted : theme.textSecondary, 1));
-            row.add(new Pressable(entry, () => this.setState(() => this.isolate(index)), { label: this._series[i].name }));
+            entry.add(new Text($eq.collections.item(this._series, i).name, 'labelSmall', hidden ? theme.textMuted : theme.textSecondary, 1));
+            row.add(new Pressable(entry, () => this.setState(() => this.isolate(index)), { label: $eq.collections.item(this._series, i).name }));
         }
         return row;
     }
@@ -142,7 +142,7 @@ export class BarChart extends StatefulComponent {
         let plotRow = new Row(0, 'start', 'stretch');
         let axisRow = new Row(0, 'start', 'start');
         if (vertical) {
-            let ticks = BarChartLayout.ticks(this._series, this.visible(), this._categories.categories.length, this._layout, this._values);
+            let ticks = BarChartLayout.ticks(this._series, this.visible(), $eq.collections.count(this._categories.categories), this._layout, this._values);
             let band = BarChart.valueBandWidth(this._values, ticks);
             plotRow.add(this.valueLabelsBeside(context, ticks, band));
             plotRow.add(new Flexible(stack));
@@ -182,19 +182,19 @@ export class BarChart extends StatefulComponent {
 
     categoryLabelsBeside(context: BuildContext) {
         let theme = context.theme;
-        let count = this._categories.categories.length;
+        let count = $eq.collections.count(this._categories.categories);
         let slot = count === 0 ? this._plotHeight : Math.fround(this._plotHeight / Math.fround(count));
         let lineHeight = Math.fround(theme.type('caption').lineHeight * context.typeScale);
         let stack = new Stack('topStart', { width: SizeValue.fixed(BarChart.categoryAxisWidth), height: SizeValue.fixed(this._plotHeight) });
         for (let c = 0; c < count; c++) {
-            let label = new Box(new BoxStyle({ width: SizeValue.fixed(Math.fround(BarChart.categoryAxisWidth - 8)) }), new Text(this._categories.categories[c], 'caption', theme.textMuted, 1, 'end'));
+            let label = new Box(new BoxStyle({ width: SizeValue.fixed(Math.fround(BarChart.categoryAxisWidth - 8)) }), new Text($eq.collections.item(this._categories.categories, c), 'caption', theme.textMuted, 1, 'end'));
             stack.add(new Positioned(label, Math.fround(Math.fround(Math.fround(Math.fround(c) * slot) + Math.fround(slot / 2)) - Math.fround(lineHeight / 2)), null, null, 0));
         }
         return stack;
     }
 
     valueLabelsBelow(theme: any) {
-        let ticks = BarChartLayout.ticks(this._series, this.visible(), this._categories.categories.length, this._layout, this._values);
+        let ticks = BarChartLayout.ticks(this._series, this.visible(), $eq.collections.count(this._categories.categories), this._layout, this._values);
         let row = new Row(0, 'spaceBetween');
         for (let i = 0; i < ticks.count; i++) {
             row.add(new Text(this._values.label(ticks.at(i)), 'caption', theme.textMuted, 1, 'start', false, true));
@@ -215,15 +215,15 @@ export class BarChart extends StatefulComponent {
         let theme = this._theme;
         if (theme == null) return;
         let vertical = this._orientation === 'vertical';
-        let geometry = BarChartLayout.solve(this._series, this.visible(), this._categories.categories.length, this._layout, this._orientation, this._values, p.size.width, p.size.height);
+        let geometry = BarChartLayout.solve(this._series, this.visible(), $eq.collections.count(this._categories.categories), this._layout, this._orientation, this._values, p.size.width, p.size.height);
         this._geometry = geometry;
         for (let i = 0; i < geometry.ticks.count; i++) {
             let at = geometry.tickPosition(i);
             if (vertical) p.line(new Point(0, at), new Point(p.size.width, at), theme.border, 1); else p.line(new Point(at, 0), new Point(at, p.size.height), theme.border, 1);
         }
         if (vertical) p.line(new Point(0, geometry.baseline), new Point(p.size.width, geometry.baseline), theme.borderStrong, 1); else p.line(new Point(geometry.baseline, 0), new Point(geometry.baseline, p.size.height), theme.borderStrong, 1);
-        for (let i = 0; i < geometry.bars.length; i++) {
-            let b = geometry.bars[i];
+        for (let i = 0; i < $eq.collections.count(geometry.bars); i++) {
+            let b = $eq.collections.item(geometry.bars, i);
             if (b.box.isEmpty) continue;
             let color = this.seriesColor(theme, b.series);
             if (i === this._hover) color = color.withOpacity(Math.fround(0.8));
@@ -257,11 +257,11 @@ export class BarChart extends StatefulComponent {
 
     tooltip(theme: any) {
         let geometry = this._geometry;
-        if (this._hover < 0 || geometry == null || this._hover >= geometry.bars.length) return null;
-        let bar = geometry.bars[this._hover];
-        let series = this._series[bar.series];
+        if (this._hover < 0 || geometry == null || this._hover >= $eq.collections.count(geometry.bars)) return null;
+        let bar = $eq.collections.item(geometry.bars, this._hover);
+        let series = $eq.collections.item(this._series, bar.series);
         let card = new Column(4);
-        card.add(new Text(this._categories.categories[bar.category], 'caption', theme.textMuted, 1));
+        card.add(new Text($eq.collections.item(this._categories.categories, bar.category), 'caption', theme.textMuted, 1));
         let line = new Row(8, 'start', 'center');
         line.add(new Box(new BoxStyle({ width: SizeValue.fixed(8), height: SizeValue.fixed(8), background: this.seriesColor(theme, bar.series), cornerRadius: new CornerRadii(2) })));
         line.add(new Text(this._values.label(series.at(bar.category)), 'label', theme.textPrimary, 1, 'start', false, true));

@@ -95,20 +95,20 @@ export class CodeEditor extends StatefulComponent {
                 this._measured = items;
                 this._listColumns = Math.max(this._listColumns, CodeCompletionView.columnsOf(items));
             }
-            this._listColumns = Math.max(this._listColumns, CodeCompletionView.entryColumns(items[completion.selected].item));
+            this._listColumns = Math.max(this._listColumns, CodeCompletionView.entryColumns($eq.collections.item(items, completion.selected).item));
             let width = CodeCompletionView.widthOf(metrics, this._listColumns);
             if (this._viewportWidth > 0) width = Math.min(width, this._viewportWidth);
-            let documentation = items[completion.selected].item.documentation;
+            let documentation = $eq.collections.item(items, completion.selected).item.documentation;
             let documentationLines = (documentation != null && documentation.length > 0) ? CodeCompletionView.documentationLinesOf(context, metrics, documentation, width) : 0;
             let codeHeight = Math.fround(Math.fround(2 * metrics.contentTop) + Math.fround(Math.fround(editor.document.lineCount) * metrics.lineHeight));
             let surfaceHeight = bounded ? Math.max(codeHeight, this._viewport) : codeHeight;
             let viewTop = windowed ? this._offset : 0;
             let viewBottom = windowed && this._viewport > 0 ? Math.min(Math.fround(this._offset + this._viewport), surfaceHeight) : surfaceHeight;
-            let [x, y, rows, above, documentationShown] = CodeCompletionView.place(metrics, editor.caretRect(completion.start), viewTop, viewBottom, this._scrollX, this._viewportWidth, Math.min(12, items.length), width, documentationLines, CodeCompletionView.documentationLineOf(context, metrics));
+            let [x, y, rows, above, documentationShown] = CodeCompletionView.place(metrics, editor.caretRect(completion.start), viewTop, viewBottom, this._scrollX, this._viewportWidth, Math.min(12, $eq.collections.count(items)), width, documentationLines, CodeCompletionView.documentationLineOf(context, metrics));
             let selected = completion.selected;
             if (selected < this._listTop) this._listTop = selected;
             if (selected >= this._listTop + rows) this._listTop = selected - rows + 1;
-            this._listTop = Math.max(0, Math.min(this._listTop, items.length - rows));
+            this._listTop = Math.max(0, Math.min(this._listTop, $eq.collections.count(items) - rows));
             completion.pageSize = rows;
             offered = CodeCompletionView.build(context, completion, metrics, this._listTop, rows, width, above, documentation, documentationShown, (index: number) => this.pick(editor, index));
             offeredAt = new Point(x, y);
@@ -172,12 +172,12 @@ export class CodeEditor extends StatefulComponent {
         for (const provider of this._put) CodeEditor.removeInstance(providers, provider);
         this._put = this.completions == null ? [new CodeKeywordCompletionProvider(), new CodeWordCompletionProvider()] : [...this.completions];
         this._handed = this.completions == null ? null : this._put;
-        for (const provider of this._put) providers.push(provider);
+        for (const provider of this._put) $eq.collections.add(providers, provider);
     }
 
     static removeInstance(providers: any[], provider: any) {
-        for (let i = 0; i < providers.length; i++) {
-            if (!(providers[i] === provider)) continue;
+        for (let i = 0; i < $eq.collections.count(providers); i++) {
+            if (!($eq.collections.item(providers, i) === provider)) continue;
             providers.splice(i, 1);
             return;
         }
@@ -185,9 +185,9 @@ export class CodeEditor extends StatefulComponent {
 
     static sameProviders(one: any, other: any) {
         if (one == null || other == null) return one == null && other == null;
-        if (one.length !== other.length) return false;
-        for (let i = 0; i < one.length; i++) {
-            if (!(one[i] === other[i])) return false;
+        if ($eq.collections.count(one) !== $eq.collections.count(other)) return false;
+        for (let i = 0; i < $eq.collections.count(one); i++) {
+            if (!($eq.collections.item(one, i) === $eq.collections.item(other, i))) return false;
         }
         return true;
     }
@@ -211,14 +211,14 @@ export class CodeEditor extends StatefulComponent {
     }
 
     marks(editor: CodeEditorController, matches: CodeRange[], first: number, last: number) {
-        if (matches.length === 0 && !this.matchBrackets && editor.composition == null) return this.decorations;
+        if ($eq.collections.count(matches) === 0 && !this.matchBrackets && editor.composition == null) return this.decorations;
         let marks: CodeDecoration[] = [...this.decorations];
         let composition: any; 
         if ((composition = editor.composition) != null) marks.push(new CodeDecoration(composition, 'underline'));
-        if (matches.length > 0) {
+        if ($eq.collections.count(matches) > 0) {
             let current = editor.selection;
-            for (let i = CodeEditor.firstEndingOnOrAfter(matches, first); i < matches.length && matches[i].start.line <= last; i++) {
-                let match = matches[i];
+            for (let i = CodeEditor.firstEndingOnOrAfter(matches, first); i < $eq.collections.count(matches) && $eq.collections.item(matches, i).start.line <= last; i++) {
+                let match = $eq.collections.item(matches, i);
                 marks.push(new CodeDecoration(match, $eq.equals(match.start, current.start) && $eq.equals(match.end, current.end) ? 'outline' : 'highlight'));
             }
         }
@@ -267,10 +267,10 @@ export class CodeEditor extends StatefulComponent {
 
     static firstEndingOnOrAfter(matches: CodeRange[], line: number) {
         let low = 0;
-        let high = matches.length;
+        let high = $eq.collections.count(matches);
         while (low < high) {
             let middle = Math.trunc((low + high) / 2);
-            if (matches[middle].end.line < line) low = middle + 1; else high = middle;
+            if ($eq.collections.item(matches, middle).end.line < line) low = middle + 1; else high = middle;
         }
         return low;
     }
@@ -297,15 +297,15 @@ export class CodeEditor extends StatefulComponent {
         let index = 0;
         let current = editor.selection.start;
         let low = 0;
-        let high = matches.length;
+        let high = $eq.collections.count(matches);
         while (low < high) {
             let middle = Math.trunc((low + high) / 2);
-            if (matches[middle].start.compareTo(current) < 0) low = middle + 1; else high = middle;
+            if ($eq.collections.item(matches, middle).start.compareTo(current) < 0) low = middle + 1; else high = middle;
         }
-        if (low < matches.length && $eq.equals(matches[low].start, current)) index = low + 1;
+        if (low < $eq.collections.count(matches) && $eq.equals($eq.collections.item(matches, low).start, current)) index = low + 1;
         let row = new Row(8, 'start', 'center', false, null, null, { cross: 'center' });
         row.add(new Box(new BoxStyle({ width: 168 }), new TextEntry(this._findText, (value: string) => this.setState(() => this._findText = value), { placeholder: SdkStrings.find, label: SdkStrings.find, autofocus: true, onSubmit: () => step(true) })));
-        row.add(new Text(matches.length === 0 ? this._findText.length === 0 ? '' : '0' : `${index}/${matches.length}`, 'labelSmall', theme.textMuted, 1, 'start', false, false, null, 0, { tabular: true }));
+        row.add(new Text($eq.collections.count(matches) === 0 ? this._findText.length === 0 ? '' : '0' : `${index}/${$eq.collections.count(matches)}`, 'labelSmall', theme.textMuted, 1, 'start', false, false, null, 0, { tabular: true }));
         row.add(new IconButton(new Icon(IconGlyph.fromIcons('chevronUp')), SdkStrings.previousMatch, 'standard', 'medium', null, { size: 'small', onPressed: () => step(false) }));
         row.add(new IconButton(new Icon(IconGlyph.fromIcons('chevronDown')), SdkStrings.nextMatch, 'standard', 'medium', null, { size: 'small', onPressed: () => step(true) }));
         row.add(new IconButton(new Icon(IconGlyph.fromIcons('close')), SdkStrings.closeFind, 'standard', 'medium', null, { size: 'small', onPressed: () => this.closeFind(editor) }));
