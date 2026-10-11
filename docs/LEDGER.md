@@ -2353,6 +2353,26 @@ record of a release, the wiki's Upgrading page is the distillate.
   or an enum boxed into `object` prints as the browser holds it
   ([#768](https://github.com/eQuantic/equantic-ui/issues/768)). Proposed and archived through OpenSpec
   (`openspec/specs/transpiler-bcl`).
+- **2026-10-11 · An Android app keeps its screen, turns, and answers back**: three of the blockers
+  between an app built with the SDK and the Play Store, measured on the Android emulator (API 36,
+  Vulkan) at 1850922. The Wallet sample came back on its first tab after Home, because the activity
+  built a new host whenever Android handed its surface back
+  ([#771](https://github.com/eQuantic/equantic-ui/issues/771)); the host now lives as long as the
+  activity, follows dark mode and density itself, and the generated launcher handles a resize and a
+  hardware keyboard too. Back left the app with a dialog still open
+  ([#772](https://github.com/eQuantic/equantic-ui/issues/772)): `PhotonHost.Back()` now runs the
+  Escape binding the open layer already declares, `CanGoBack` says up front whether there is one, the
+  activity registers for back only while it is true so predictive back keeps its "leave the app"
+  animation, the back key takes the same path, the launcher declares predictive back, and a
+  `ListDetail`'s compact detail binds Escape to `OnBack`. Every rotation crashed the app, on `main`
+  as well ([#794](https://github.com/eQuantic/equantic-ui/issues/794)): the swapchain tested for
+  `VK_SUBOPTIMAL_KHR` under a value Vulkan does not define, and with that fixed the buffer was still
+  one rotation behind the window. It now declares its images upright and takes the window's own size.
+  Found on the way: a local function's return type is lost in the transpiled TypeScript
+  ([#793](https://github.com/eQuantic/equantic-ui/issues/793)), and a screen's state resets when the
+  window crosses an adaptive breakpoint, as a phone does when it turns
+  ([#797](https://github.com/eQuantic/equantic-ui/issues/797)). Proposed and archived through
+  OpenSpec (`openspec/specs/system-back`, `openspec/specs/native-app-lifecycle`).
 
 ## Retired documents
 
