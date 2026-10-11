@@ -41,13 +41,27 @@ owed. A package pushed a moment ago and not listed yet is pushed again and answe
 `--skip-duplicate` counts as pushed. The index's base URL comes from the environment, so the check
 can point it at files.
 
-**Only the key's refusal stops the loop at once. Every other failure is tried again.** A 401 or a 403
-means every other push fails the same way, so the script stops and says the key was refused (the
-gallery's own sentence, "The specified API key is invalid, has expired, or does not have
-permission", and the client's `Forbidden`/`Unauthorized` are what it reads). A 5xx, a timeout and a
-dropped connection are tried again. Retrying only on a 5xx was considered and rejected: a timeout has
+**A push refused for the key is not tried again, and the list still goes on. Every other failure is
+tried again.** Waiting does not change a 401 or a 403 (the gallery's own sentence, "The specified API
+key is invalid, has expired, or does not have permission", and the client's `Forbidden`/`Unauthorized`
+are what the script reads), so the package is named as refused and the loop moves on. Stopping at
+once was the first design, and the review of this change turned it down: nuget.org also answers 403
+to one package the key's scope does not cover, as the first release met with a key scoped to new
+versions only, and the packages after it would then have gone unpublished although they are
+accepted. An expired key costs one fast request per package. A 5xx, a timeout and a dropped
+connection are tried again. Retrying only on a 5xx was considered and rejected: a timeout has
 no status. The cost is that a package nuget.org rejects as invalid (400) is tried again a few times
 before the loop names it at the end.
+
+**A package at another version fails the publish, and a version is compared as the index writes
+it.** The loop this replaces pushed every `.nupkg` of the artifact. Taking only the ones at the
+release's version would leave any other out without a word, so the script refuses such a directory
+before it pushes anything. The index lists a version lower-cased and without its build metadata, and
+the script compares it that way, or a version with a capital letter would never be found listed.
+
+**The manual workflow refuses a run that is not the tag's own.** It asks GitHub for the run and
+requires the push of that tag at the tag's commit. A pull request's run or main's packs the same
+version from another commit, and nuget.org never takes a version back.
 
 **Waits of 30, 60, 120 and 240 seconds, and a 15-second pause between packages.** On 2026-10-11 the
 one package that failed in the one-off run went through 30 seconds later. Seven and a half minutes
@@ -89,8 +103,8 @@ script adds the waiting and the list-continuing it lacks.
   real run, and its log is read for the waits it took.
 - [The index lags right after a push] → The package is pushed again and answers 409, which
   `--skip-duplicate` counts as pushed.
-- [A run id whose packages carry another version] → The script finds no package at the tag's version
-  and fails before pushing anything.
+- [A run id that is not the release's] → The workflow refuses it before the download, and a
+  directory holding a package at another version is refused by the script before any push.
 - [The manual workflow is run with a tag that has no release page yet, or one that exists] → The page
   script creates it or edits it, so a second run changes nothing.
 - [A person runs the manual workflow while the tag's own run is still publishing] → Both skip what is

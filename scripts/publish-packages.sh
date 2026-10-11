@@ -8,12 +8,15 @@
 # there before it reached one still owed: nuget.org answered 500 where a duplicate answers 409.
 # So this one reads what nuget.org already lists and leaves it alone, waits before it tries a
 # failed push again, goes on to the next package when one never goes through, and fails at the END,
-# naming what is still owed. Only a refused key stops it at once, since every other push would be
-# refused the same way.
+# naming what is still owed. A push nuget.org refuses for the key (401, 403) is not tried again,
+# since waiting changes nothing, but the list goes on: a key whose scope lacks one new package id
+# is refused for that package alone.
 #
 #   scripts/publish-packages.sh <packages-dir> <version> [package-id ...]
 #
-# With no package id it takes every `*.<version>.nupkg` of the directory. An id that has no package
+# With no package id it takes every `*.<version>.nupkg` of the directory, and refuses a directory
+# that holds a package at any other version: a release publishes everything its run packed, and a
+# package left out without a word is a release that went out incomplete. An id that has no package
 # there at that version is refused before anything is pushed.
 #
 # NUGET_API_KEY   the key. Read from the environment, handed to the client, never printed.
@@ -39,7 +42,7 @@ shift 2
 source_url=${PUBLISH_SOURCE:-https://api.nuget.org/v3/index.json}
 index_url=${PUBLISH_INDEX:-https://api.nuget.org/v3-flatcontainer}
 waits=${PUBLISH_WAITS-30 60 120 240}
-pause=${PUBLISH_PAUSE-15}
+pause=${PUBLISH_PAUSE:-15}
 
 [ -d "$dir" ] || { echo "::error::$dir is not a directory." >&2; exit 2; }
 # A version and an id become part of a file name and of a URL, and an id can be text a person typed
@@ -71,9 +74,18 @@ if [ $# -gt 0 ]; then
     exit 1
   fi
 else
-  for file in "$dir"/*."$version".nupkg; do
-    [ -f "$file" ] && packages="$packages$file"$'\n'
+  strays=""
+  for file in "$dir"/*.nupkg; do
+    [ -f "$file" ] || continue
+    case "${file##*/}" in
+      *."$version".nupkg) packages="$packages$file"$'\n' ;;
+      *) strays="$strays ${file##*/}" ;;
+    esac
   done
+  if [ -n "$strays" ]; then
+    echo "::error::$dir holds packages that are not at $version:$strays. Nothing was pushed." >&2
+    exit 1
+  fi
   if [ -z "$packages" ]; then
     echo "::error::No package at $version in $dir. Nothing was pushed." >&2
     exit 1
@@ -82,13 +94,15 @@ fi
 
 # Whether nuget.org lists <id> at the version already. An id it has never seen answers 404, and an
 # index that cannot be read says nothing: both are "not listed", and the push then tells.
+# The index writes a version lower-cased and without its build metadata, so it is compared that way.
+listed_version=$(printf '%s' "${version%%+*}" | tr '[:upper:]' '[:lower:]')
 listed() {
   local lower body
   lower=$(printf '%s' "$1" | tr '[:upper:]' '[:lower:]')
   # Read whole, then matched in the shell: a `grep -q` that stops at its first match can fail the
   # pipeline under pipefail, and a listed package would then be pushed again.
   body=$(curl -fsS --max-time 30 "$index_url/$lower/index.json" 2>/dev/null) || return 1
-  case "$body" in *"\"$version\""*) return 0 ;; esac
+  case "$body" in *"\"$listed_version\""*) return 0 ;; esac
   return 1
 }
 
@@ -96,7 +110,7 @@ output=$(mktemp)
 trap 'rm -f "$output"' EXIT
 
 # One push. Answers 0 when nuget.org has the package (pushed now, or a duplicate), 1 when the try
-# failed and another is worth making, and 2 when nuget.org refused the key. The client reads
+# failed and another is worth making, and 2 when nuget.org refused it for the key. The client reads
 # nothing from its input, which is closed so that it cannot eat the list the loop below reads.
 push() {
   dotnet nuget push "$1" --source "$source_url" --api-key "$NUGET_API_KEY" --skip-duplicate < /dev/null 2>&1 | tee "$output"
@@ -112,6 +126,7 @@ push() {
 already=0
 pushed=0
 owed=""
+refused=""
 first=1
 
 while IFS= read -r package <&3; do
@@ -141,10 +156,7 @@ while IFS= read -r package <&3; do
 
   case "$result" in
     0) pushed=$((pushed + 1)) ;;
-    2)
-      echo "::error::nuget.org refused the key on $id (401 or 403). Nothing else was tried: every other push would be refused the same way." >&2
-      exit 1
-      ;;
+    2) refused="$refused $id" ;;
     *) owed="$owed $id" ;;
   esac
 done 3<<EOF
@@ -153,7 +165,13 @@ EOF
 
 echo "listed on nuget.org already: $already"
 echo "pushed now, or found there by the push: $pushed"
+failed=0
+if [ -n "$refused" ]; then
+  echo "::error::nuget.org refused the key (401 or 403), and these were not tried again:$refused. Check that the key is valid and that its scope covers them." >&2
+  failed=1
+fi
 if [ -n "$owed" ]; then
   echo "::error::Not pushed after every try:$owed. Run this again once nuget.org answers: what is listed by then is skipped." >&2
-  exit 1
+  failed=1
 fi
+exit "$failed"

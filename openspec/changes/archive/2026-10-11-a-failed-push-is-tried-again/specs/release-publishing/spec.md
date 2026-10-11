@@ -42,20 +42,41 @@ pushed. Publishing SHALL then fail, naming every package it could not push.
 - **THEN** the packages after it are pushed, and publishing exits with a failure that names that
   package
 
-### Requirement: A refused key stops publishing at once
+### Requirement: A push refused for the key is not tried again, and the list goes on
 
-When nuget.org refuses the key (401 or 403), publishing SHALL stop without trying that package
-again or pushing any other, and SHALL fail saying that the key was refused.
+When nuget.org refuses a push for the key (401 or 403), publishing SHALL NOT try that package
+again, since waiting changes nothing, SHALL go on to the packages after it, and SHALL fail at the
+end naming each package that was refused and saying the key refused them.
+
+#### Scenario: A key whose scope lacks one new package
+
+- **WHEN** nuget.org answers 403 to one package and accepts the others
+- **THEN** that package is pushed once, the others are published, and publishing fails naming it
+  as refused for the key
 
 #### Scenario: The key has expired
 
-- **WHEN** nuget.org answers 403 to the first push
-- **THEN** no other push is made, and publishing fails saying the key was refused
+- **WHEN** nuget.org answers 403 to every push
+- **THEN** each package is pushed once with no wait spent on any, and publishing fails naming all
+  of them
+
+### Requirement: Everything the run packed is published or publishing fails
+
+Publishing a release with no package ids given SHALL refuse, before any push, a set of packages
+that holds one at a version other than the release's, naming it. A version SHALL be found listed
+as the index writes it, lower-cased and without build metadata.
+
+#### Scenario: A package packed at another version
+
+- **WHEN** the run's packages hold `Gamma.1.0.0.nupkg` beside the release's own
+- **THEN** publishing fails naming that file, and nothing is pushed
 
 ### Requirement: A release that stopped halfway is finished by hand from its own run's packages
 
 A workflow run by hand SHALL take the id of the run that built a release, the release's tag and,
-optionally, the ids of the packages to publish. It SHALL download that run's packages and publish,
+optionally, the ids of the packages to publish. It SHALL refuse, before it downloads anything, a
+run that is not the push of that tag at the tag's commit, since another run's packages at the same
+version are other bytes. It SHALL download that run's packages and publish,
 by the requirements above, the packages it was given, or every one of them nuget.org does not list
 yet when it was given none, and SHALL then write the tag's release page. It SHALL refuse a package
 id that the run's packages do not hold before it pushes anything, and the key SHALL be read only
@@ -66,6 +87,12 @@ from the repository's secrets.
 - **WHEN** the workflow is run with run 38132878034, tag `v0.2.0-preview.61` and no package ids
 - **THEN** it pushes the packages nuget.org does not list at `0.2.0-preview.61` and writes the
   release page of `v0.2.0-preview.61`
+
+#### Scenario: A pull request's run at the same version
+
+- **WHEN** the workflow is run with the id of a pull request's run and tag `v0.2.0-preview.61`
+- **THEN** it fails saying which run it was given and which one the release's is, and nothing is
+  downloaded or pushed
 
 #### Scenario: A package id the run did not build
 

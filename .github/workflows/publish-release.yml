@@ -4,8 +4,8 @@
 # reason outside the tree, a rerun cannot help: it replays the workflow as it was at the tag, from
 # the top of the list. 0.2.0-preview.61 stopped after 33 of 50 packages on three 500s from
 # nuget.org, and five reruns died on packages that were already there. This workflow takes the run
-# that built the release and its tag, pushes the packages it is given, or every one nuget.org does
-# not list yet, with the loop the pipeline itself runs (scripts/publish-packages.sh), and then
+# that built the release and its tag, refuses a run that is not that tag's own, pushes the packages
+# it is given, or every one nuget.org does not list yet, with the loop the pipeline itself runs (scripts/publish-packages.sh), and then
 # writes the tag's release page (scripts/release-page.sh). No new version is cut, and the key never
 # leaves the repository's secrets.
 #
@@ -49,6 +49,30 @@ jobs:
         with:
           fetch-depth: 0
 
+      # A release publishes what ITS run packed. Another run's packages at the same version (a pull
+      # request's, main's) are other bytes under the same name, and nuget.org never takes a version
+      # back, so any run that is not the push of this tag at the tag's commit is refused before a
+      # package is downloaded. The inputs are compared and passed as arguments, never interpolated.
+      - name: The run is the tag's own
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          EQ_TAG: ${{ inputs.tag }}
+          EQ_RUN: ${{ inputs.run-id }}
+        run: |
+          set -euo pipefail
+          case "$EQ_TAG" in v[0-9]*) ;; *) echo "::error::'$EQ_TAG' is not a framework tag (v<version>)."; exit 2 ;; esac
+          case "$EQ_TAG" in *[!A-Za-z0-9.+-]*) echo "::error::'$EQ_TAG' is not a tag name."; exit 2 ;; esac
+          case "$EQ_RUN" in ""|*[!0-9]*) echo "::error::'$EQ_RUN' is not a run id."; exit 2 ;; esac
+          git fetch --force origin "+refs/tags/${EQ_TAG}:refs/tags/${EQ_TAG}"
+          commit=$(git rev-parse "refs/tags/${EQ_TAG}^{commit}")
+          run=$(gh api "repos/${GITHUB_REPOSITORY}/actions/runs/${EQ_RUN}" --jq '[.event, .head_branch, .head_sha] | join(" ")')
+          if [ "$run" != "push $EQ_TAG $commit" ]; then
+            echo "::error::Run $EQ_RUN is '$run', and the release's own run is 'push $EQ_TAG $commit'. Nothing was downloaded or pushed."
+            exit 1
+          fi
+          echo "run $EQ_RUN is the push of $EQ_TAG at $commit"
+
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
@@ -74,7 +98,6 @@ jobs:
           EQ_PACKAGES: ${{ inputs.packages }}
         run: |
           set -euo pipefail
-          case "$EQ_TAG" in v[0-9]*) ;; *) echo "::error::'$EQ_TAG' is not a framework tag (v<version>)."; exit 2 ;; esac
           set -f
           # shellcheck disable=SC2086
           ./scripts/publish-packages.sh nupkgs "${EQ_TAG#v}" $EQ_PACKAGES

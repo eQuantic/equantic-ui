@@ -29,11 +29,13 @@ pipeline had no way to finish the release from the packages it had already built
 
 - One script, `scripts/publish-packages.sh`, pushes a release's packages to nuget.org. It skips a
   package nuget.org already lists at that version, pauses between pushes, tries a push that fails
-  again after a wait that grows, stops at once when nuget.org refuses the key, goes on to the rest
-  of the list after a package it could not push, and fails at the end naming each one.
+  again after a wait that grows, does not try again a push refused for the key, goes on to the rest
+  of the list after a package it could not push, and fails at the end naming each one. A package at
+  another version in the run's packages fails the publish before anything is pushed.
 - `publish-nuget` runs that script, in place of its inline loop.
 - A workflow run by hand, `Publish a release`, takes a run id, a tag and optionally the package ids.
-  It downloads that run's `nupkgs` artifact, runs the same script over the packages it was given, or
+  It refuses a run that is not the push of that tag, downloads that run's `nupkgs` artifact, runs the
+  same script over the packages it was given, or
   over every package nuget.org does not list yet, and then writes the tag's release page. A release
   that stops halfway is finished from the packages its own run built, with no new version, and the
   key never leaves GitHub's secrets.

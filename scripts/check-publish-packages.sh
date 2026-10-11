@@ -100,9 +100,12 @@ plan() {
 }
 
 # publish [package-id ...]: runs the script under test over the fixture. Sets $status, and leaves
-# what it printed in $fx/output.
+# what it printed in $fx/output. The key is the fixture's own ($handed), never one the caller's
+# environment happens to export.
+handed=$key
 publish() {
-  PATH="$fx/stub:$PATH" NUGET_API_KEY=${NUGET_API_KEY-$key} PUBLISH_INDEX="file://$fx/index" \
+  PATH="$fx/stub:$PATH" NUGET_API_KEY=$handed PUBLISH_INDEX="file://$fx/index" \
+    PUBLISH_WAITS="30 60 120 240" PUBLISH_PAUSE=15 PUBLISH_SOURCE="" \
     "$shell" "$script" "$fx/packages" "$version" "$@" > "$fx/output" 2>&1
   status=$?
 }
@@ -149,16 +152,51 @@ case_goes_on_and_fails_at_the_end() {
   grep -q 'Not pushed after every try: Beta\.' "$fx/output" || problem "the failure does not name Beta alone"
 }
 
-case_refused_key_stops_at_once() {
-  case_name="a refused key stops publishing at once"
+case_refused_push_is_not_tried_again() {
+  case_name="a push refused for the key is not tried again, and the list goes on"
+  # A key whose scope lacks one package: that one is refused once, and the rest go through.
   fixture key
-  package Alpha; package Beta
-  plan Alpha 403
+  package Alpha; package Beta; package Gamma
+  plan Beta 403
   publish
   expect "exit" "$status" 1
-  expect "pushes" "$(calls)" "Alpha"
-  expect "waits" "$(sleeps)" ""
-  grep -q 'refused the key' "$fx/output" || problem "the failure does not say the key was refused"
+  expect "pushes" "$(calls)" "Alpha Beta Gamma"
+  expect "waits" "$(sleeps)" "15 15"
+  grep -q 'refused the key (401 or 403), and these were not tried again: Beta\.' "$fx/output" || problem "the failure does not name Beta as refused"
+  # An expired key: every package is refused once, with no wait spent on any.
+  fixture expired
+  package Alpha; package Beta
+  plan Alpha 403; plan Beta 403
+  publish
+  expect "exit with an expired key" "$status" 1
+  expect "pushes with an expired key" "$(calls)" "Alpha Beta"
+  expect "waits with an expired key" "$(sleeps)" "15"
+}
+
+case_stray_version_is_refused() {
+  case_name="a package at another version is refused, not left out"
+  fixture stray
+  package Alpha; package Beta
+  : > "$fx/packages/Gamma.1.0.0.nupkg"
+  publish
+  expect "exit" "$status" 1
+  expect "pushes" "$(calls)" ""
+  grep -q 'Gamma.1.0.0.nupkg' "$fx/output" || problem "the failure does not name the stray package"
+}
+
+case_index_version_is_compared_as_the_index_writes_it() {
+  case_name="a version is found listed as the index writes it"
+  # The index lower-cases a version and drops its build metadata.
+  fixture written
+  local release=$version
+  version=9.9.9-check.1
+  package Alpha listed
+  mv "$fx/packages/Alpha.$version.nupkg" "$fx/packages/Alpha.9.9.9-CHECK.1+build.7.nupkg"
+  version=9.9.9-CHECK.1+build.7
+  publish
+  version=$release
+  expect "exit" "$status" 0
+  expect "pushes" "$(calls)" ""
 }
 
 case_given_ids_only() {
@@ -210,7 +248,9 @@ case_nothing_to_publish_fails() {
   publish
   expect "exit with no package" "$status" 1
   package Alpha
-  NUGET_API_KEY="" publish
+  handed=""
+  publish
+  handed=$key
   expect "exit with no key" "$status" 1
   expect "pushes" "$(calls)" ""
 }
@@ -220,7 +260,9 @@ run_cases() {
   case_listed_is_skipped
   case_failed_push_is_tried_again
   case_goes_on_and_fails_at_the_end
-  case_refused_key_stops_at_once
+  case_refused_push_is_not_tried_again
+  case_stray_version_is_refused
+  case_index_version_is_compared_as_the_index_writes_it
   case_given_ids_only
   case_unknown_id_is_refused_first
   case_duplicate_counts_as_pushed
@@ -237,7 +279,7 @@ if [ -n "$problems" ]; then
   echo "$problems" | sed 's/^/FAIL: /' >&2
   failures=$((failures + $(echo "$problems" | wc -l)))
 else
-  echo "ok: the nine promises hold for scripts/publish-packages.sh under $("$shell" --version | head -n 1)"
+  echo "ok: every promise holds for scripts/publish-packages.sh under $("$shell" --version | head -n 1)"
 fi
 
 # --- the controls ----------------------------------------------------------------------------------
@@ -271,8 +313,17 @@ control "pushes what nuget.org already lists" \
   "a package nuget.org already lists is not pushed again" \
   's/^listed() {$/listed() { return 1/'
 control "tries a refused key again" \
-  "a refused key stops publishing at once" \
+  "a push refused for the key is not tried again, and the list goes on" \
   's/^    return 2$/    return 1/'
+control "stops at a refused key" \
+  "a push refused for the key is not tried again, and the list goes on" \
+  's/^    2) refused="\$refused \$id" ;;$/    2) echo "refused on $id"; exit 1 ;;/'
+control "leaves out a package at another version" \
+  "a package at another version is refused, not left out" \
+  's/^      \*) strays="\$strays \${file##\*\/}" ;;$/      *) : ;;/'
+control "compares the version as it was typed" \
+  "a version is found listed as the index writes it" \
+  's/^listed_version=.*$/listed_version=$version/'
 control "tries again without waiting" \
   "a push that fails for a reason outside the package is tried again" \
   's/^      sleep "\$delay"$/      :/'
