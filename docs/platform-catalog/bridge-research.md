@@ -38,11 +38,12 @@ shims. **§14 ("MAUI audit")** names each item and says where it comes from.
 * **The developer's machine needs nothing new.** That means Xcode for iOS, and the Android SDK plus
   a JDK for Android. Gradle, Kotlin and Objective Sharpie are needed only on the SDK's CI and on
   framework contributors' machines.
-* **Hard limits.** Some UI is drawn in another process by SwiftUI or RemoteViews: widgets, Live
-  Activities, Control Center controls. Some APIs exist only as compile-time metadata: App Intents,
-  `@Generable`, SwiftData `@Model`, Android AppFunctions (KSP), Compose and Glance. None of this can
-  run C# or Photon. It can be reached only through a **generic precompiled extension driven by data**
-  or through **per-app generated Swift**. Android KSP and Compose are a real wall.
+* **Hard limits.** Some UI is drawn in another process by SwiftUI or RemoteViews: WidgetKit's Home
+  Screen and Lock Screen surfaces, Live Activities, Control Center controls. Some APIs exist only as
+  compile-time metadata: App Intents, `@Generable`, SwiftData `@Model`, Android AppFunctions (KSP),
+  Compose and Glance. None of this can run C# or Photon. It can be reached only through a **generic
+  precompiled extension driven by data** or through **per-app generated Swift**. Android KSP and
+  Compose are a real wall.
 
 ---
 
@@ -208,9 +209,17 @@ associated types, an `async` function, a macro, or a SwiftUI `View` has no Objec
               "\(error)".withCString { done(ctx, nil, code(of: error), $0) }
           }
       }
-      return OpaquePointer(Unmanaged.passRetained(TaskBox(task)).toOpaque()) // cancel handle
+      return OpaquePointer(Unmanaged.passRetained(TaskBox(task)).toOpaque()) // owned by C# until eq_release
   }
-  @c(eq_cancel) public func eqCancel(_ h: OpaquePointer) { Unmanaged<TaskBox>.fromOpaque(UnsafeRawPointer(h)).takeRetainedValue().task.cancel() }
+  // Borrows the box: any number of calls, all before eq_release.
+  @c(eq_cancel) public func eqCancel(_ h: OpaquePointer) {
+      Unmanaged<TaskBox>.fromOpaque(UnsafeRawPointer(h)).takeUnretainedValue().task.cancel()
+  }
+  // Ends the ownership passRetained took. C# calls it exactly once, after `done` has run and the
+  // CancellationToken registration that calls eq_cancel is disposed, whichever way the call ended.
+  @c(eq_release) public func eqRelease(_ h: OpaquePointer) {
+      Unmanaged<TaskBox>.fromOpaque(UnsafeRawPointer(h)).release()
+  }
   ```
 
   ```csharp
@@ -234,7 +243,10 @@ associated types, an `async` function, a macro, or a SwiftUI `View` has no Objec
   * anything structured crosses as **JSON**, through `System.Text.Json` source generation (trim-
     and AOT-safe), or a blittable struct;
   * errors cross as `(code, message)`, or `SwiftError` for synchronous `throws`;
-  * cancellation is an exported `eq_cancel(handle)` hooked to `CancellationToken.Register`;
+  * cancellation is an exported `eq_cancel(handle)` hooked to `CancellationToken.Register`, which
+    borrows the handle; ownership is separate, and one `eq_release(handle)` ends it after the
+    completion callback ran and the registration is disposed, so a call that completes normally
+    leaks nothing;
   * `AsyncSequence` becomes a per-element callback feeding a bounded
     `System.Threading.Channels.Channel<T>`, exposed as `IAsyncEnumerable<T>`;
   * `@MainActor` APIs are hopped *inside Swift* (`Task { @MainActor in … }`), so C# never has to
@@ -271,11 +283,17 @@ associated types, an `async` function, a macro, or a SwiftUI `View` has no Objec
   compatibility static libs (`libswiftCompatibility*`) are found through the `-L` paths .NET now
   always adds.
 * **Static vs dynamic, for this SDK specifically.** eQuantic deliberately does not dictate the
-  developer's Xcode (`ValidateXcodeVersion=false` in `Sdk.targets`). A **static** archive built by
-  Xcode N can fail or warn when linked by an older Xcode's `ld`. A **dynamic framework** is linked
-  once, at our build, and only needs dyld at run time. → Ship **dynamic** for precompiled shims;
-  swift-dotnet-bindings made the same choice. Static is fine for *per-app* Swift, because the
-  developer's own Xcode compiles it.
+  developer's Xcode (`ValidateXcodeVersion=false` in `Sdk.targets`). Both kinds are linked by the
+  app's `ld` (dotnet/macios links with dynamic frameworks before embedding them, above), so neither
+  is free of the developer's toolchain. They differ in what that `ld` must read: a **static**
+  archive hands it Xcode N's object code, compiler-emitted Swift compatibility references included,
+  and an older `ld` can refuse or mis-link it; a **dynamic framework** hands it only load commands
+  and an export table, which is a far narrower contract, and its code is bound by dyld at run time.
+  → Ship **dynamic** for precompiled shims (swift-dotnet-bindings made the same choice), and state
+  the compatibility instead of assuming it: CI builds the bridge with the Xcode whose SDK it needs,
+  and a guard links a probe app against it with the OLDEST Xcode the SDK supports, failing when
+  that `ld` refuses it. Static is fine for *per-app* Swift, because the developer's own Xcode
+  compiles it.
 * **Weak linking is mandatory.** FoundationModels, Translation's direct initializer and
   SpeechAnalyzer exist only on iOS 26 or 26.4+; the app floor is 15.0. The shim must be linked
   with `-weak_framework X`, or use `@_weakLinked import`, and every entry point must be guarded
@@ -295,17 +313,18 @@ associated types, an `async` function, a macro, or a SwiftUI `View` has no Objec
   extensions. Each embeds a whole .NET runtime in a process with a small memory ceiling (tens of
   MB). Photon is unavailable there, and each needs its own project, which conflicts with
   "`<Project Sdk=…>` and nothing else".
-* **WidgetKit, Live Activity / Dynamic Island UI and Control widgets cannot be C#.** Their UI is a
-  SwiftUI view tree archived and rendered by the system. Microsoft's own Dec 2025 sample writes the
-  widget in **Swift in Xcode**, builds the `.appex` with `xcodebuild`, embeds it with
-  **`AdditionalAppExtensions`** (`Include` = build dir, `Name`, `BuildOutput` per
+* **WidgetKit surfaces, Live Activity / Dynamic Island UI and Control Center controls cannot be
+  C#.** Their UI is a SwiftUI view tree archived and rendered by the system. Microsoft's own Dec
+  2025 sample writes the extension in **Swift in Xcode**, builds the `.appex` with `xcodebuild`,
+  embeds it with **`AdditionalAppExtensions`** (`Include` = build dir, `Name`, `BuildOutput` per
   device/simulator, `CodesignEntitlements`), shares data through an **App Group** `UserDefaults`,
   and reloads timelines from C# via a third-party NuGet proxy
   ([devblog](https://devblogs.microsoft.com/dotnet/how-to-build-ios-widgets-with-dotnet-maui/)).
-  Flutter's `home_widget` makes the same admission: "does not allow writing Widgets with Flutter
-  itself" ([skills.sh](https://www.skills.sh/flutter/skills/flutter-home-screen-widget)).
+  Flutter's `home_widget` package makes the same admission: the Home Screen surface itself cannot
+  be written in Flutter
+  ([skills.sh](https://www.skills.sh/flutter/skills/flutter-home-screen-widget)).
 * **Live Activities.** `ActivityAttributes` is a Swift `Codable` type that must be *the same type*
-  in the app (to `request` the activity) and in the widget extension (to render it). C# cannot
+  in the app (to `request` the activity) and in the WidgetKit extension (to render it). C# cannot
   define it. The only general solution is a **fixed SDK-defined attributes type** whose
   `ContentState` carries a payload (a kind plus key/values or small JSON), as swift-dotnet-bindings
   concluded independently.
@@ -508,7 +527,9 @@ Bridge implications:
 IMPs in AppleLocation, AppleCamera and AppleDeepLinks. A C# `static` lambda still compiles to an
 *instance* method on a cached closure class. Under Mono full-AOT, which is what an iOS **device**
 Release build runs on .NET 10, this is the documented unsupported shape. The simulator uses the JIT
-and will not show it. No test project references the shells. **Measure on a device in Release**.
+and will not show it. `ObjCBlockTests` exercises the delegate-to-block path through the Apple shell,
+but on macOS under the JIT: nothing runs it under an iOS device's full AOT. **Measure on a device in
+Release**.
 The robust form is `[UnmanagedCallersOnly]` static entry points plus a `GCHandle` (or a static
 instance registry) passed as context. The same form is what every new bridge callback should use.
 
@@ -547,10 +568,10 @@ instance registry) passed as context. The same form is what every new bridge cal
   
   The exact internal hook before native-reference expansion must be verified against dotnet/macios.
   `CollectAppManifestsDependsOn` is the documented hook for manifests only.
-* **Per-app extensions (iOS).** A **generic precompiled** `EqWidgets.appex` (Swift/SwiftUI) ships
+* **Per-app extensions (iOS).** A **generic precompiled** `EqSurfaces.appex` (Swift/SwiftUI) ships
   zipped in the bridge NuGet. It renders timeline entries from App Group storage: images the app
   pre-renders with Photon, or a constrained subset of the vocabulary as JSON. Per app, the SDK:
-  * rewrites its `Info.plist` (`CFBundleIdentifier=$(ApplicationId).widgets`, versions);
+  * rewrites its `Info.plist` (`CFBundleIdentifier=$(ApplicationId).surfaces`, versions);
   * writes its entitlements (`group.$(ApplicationId)`);
   * adds it as `AdditionalAppExtensions`, plus `CustomEntitlements` for the host app.
   
@@ -574,8 +595,8 @@ instance registry) passed as context. The same form is what every new bridge cal
   * **jnigen** binds Java/Kotlin over JNI and turns `suspend fun` into Dart `Future` with a custom
     `Continuation` (`suspend_fun_to_async`)
     ([jnigen example](https://dart.googlesource.com/native.git/+show/HEAD/pkgs/jnigen/example/kotlin_plugin/README.md)).
-  * Plugins ship native source compiled by the app developer's Xcode and Gradle. Home-screen
-    widgets stay native.
+  * Plugins ship native source compiled by the app developer's Xcode and Gradle. Home Screen
+    surfaces stay native.
   
   *Copy:* one schema generating both native ends; jnigen's Continuation trick, if we ever bind
   `suspend` directly. *Avoid:* source plugins that make the developer's machine compile native
@@ -618,11 +639,11 @@ instance registry) passed as context. The same form is what every new bridge cal
 ## 15. Hard limits (C# cannot do these even with bridges)
 
 1. **UI rendered by the system in another process:**
-   * WidgetKit widgets, Live Activities and the Dynamic Island, Control Center and Lock Screen
+   * WidgetKit's surfaces, Live Activities and the Dynamic Island, Control Center and Lock Screen
      controls, Siri snippets, watch complications: SwiftUI only;
    * Android Glance: Compose → RemoteViews, so Kotlin plus the Compose compiler;
-   * classic RemoteViews widgets: the *provider* can be C#, but the views are a fixed set and
-     bitmaps are size-capped by IPC.
+   * a classic `AppWidgetProvider` over RemoteViews: the provider can be C#, but the views are a
+     fixed set and bitmaps are size-capped by IPC.
    
    Photon cannot draw live in any of them. The options are pre-rendered images, or an SDK-generated
    view from a constrained vocabulary subset.
@@ -635,9 +656,9 @@ instance registry) passed as context. The same form is what every new bridge cal
    
    iOS: reachable by generating Swift per app. Android KSP/Compose: **not reachable** without
    shipping a Kotlin toolchain, or re-implementing the processor's output ourselves (fragile).
-3. **Type identity shared between app and extension.** `ActivityAttributes`, widget configuration
+3. **Type identity shared between app and extension.** `ActivityAttributes`, WidgetKit configuration
    intents and `AppEntity` types must be *Swift* types. Only fixed SDK-defined generic types work.
-4. **C#-authored code inside extension processes** (widget timeline providers, intents
+4. **C#-authored code inside extension processes** (WidgetKit timeline providers, intents
    extensions): the memory ceilings and the absence of Photon make it impractical even where
    .NET technically supports the extension type.
 5. **Unprojectable language features at a call site:**

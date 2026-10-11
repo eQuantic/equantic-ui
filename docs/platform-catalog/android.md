@@ -2,7 +2,7 @@
 
 As of 2026-10-11. Written for a .NET UI SDK whose native track runs C# through .NET for Android (`net10.0-android`) Java bindings.
 
-Every row keeps the platform's own names, "widget" included: a row names what Google ships, never an eQuantic.UI component.
+The catalog keeps Google's own names, "widget" included, where it names what Google ships or cites it: such a name is Google's product, never an eQuantic.UI component.
 
 ## Release facts (verified)
 
@@ -65,7 +65,7 @@ Every row keeps the platform's own names, "widget" included: a row names what Go
   - `value-class`: name-mangled members that the binder skips.
 - `play-services`: absent on Huawei, Amazon and AOSP devices.
 - `policy (…)`: a restricted permission or a Play Console declaration.
-- `separate-process`: rendered or run by the system or a host, outside the app's activity (widget, tile, complication, service bound by the OS).
+- `separate-process`: rendered or run by the system or a host, outside the app's activity (a Home Screen surface, tile, complication, service bound by the OS).
 
 **New** marks: `NEW 16` = API 36, `NEW 16-QPR2` = 36.1, `NEW 17` = API 37, `NEW 17-QPR1` = 37.1, `NEW 17-QPR2` = 37.2 (beta).
 

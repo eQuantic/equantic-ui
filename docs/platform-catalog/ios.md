@@ -2,7 +2,7 @@
 
 Compiled 2026-10-11 for eQuantic.UI's native track. 355 rows. iOS 27 shipped on 14 September 2026; iOS 27.1 is in beta. Its foldable-iPhone APIs are marked "27.1, beta".
 
-Every row keeps Apple's own names, "widget" included: a row names what Apple ships, never an eQuantic.UI component.
+The catalog keeps Apple's own names, "widget" included, where it names what Apple ships or cites it: such a name is Apple's product, never an eQuantic.UI component.
 
 ## Sources
 

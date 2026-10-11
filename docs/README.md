@@ -53,5 +53,5 @@ owed turned into an issue — unless code or another document cites it.
 - **Bilingual where the wiki is.** This folder is English, as the code is. The wiki is English with a
   Portuguese twin per page, edited in the same commit.
 - **Never "widget".** The project's word is *component*; Flutter's word appears only in Flutter's
-  column of the parity audit, and Apple's and Google's only in the rows of the platform catalogs
-  that name what they ship.
+  column of the parity audit, and Apple's and Google's only where `platform-catalog/` names what
+  they ship or cites them.

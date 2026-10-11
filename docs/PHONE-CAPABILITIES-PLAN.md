@@ -75,9 +75,12 @@ dotnet/java-interop and dotnet/android-libraries; the audit is section 14 of the
   an `eq_<family>_is_available()` guarded by `if #available`.
 - Compiled by the SDK's CI on a macOS runner, with a pinned toolchain in the manner of
   `slang-toolchain.sh`, into a **dynamic, weak-linked** `EqBridge.xcframework`. Dynamic because the
-  SDK does not dictate the developer's Xcode (`ValidateXcodeVersion=false`): a static archive from
-  Xcode N can fail in an older `ld`, a framework needs only dyld. Weak because the app's floor is
-  iOS 15 and Foundation Models starts at 26.
+  SDK does not dictate the developer's Xcode (`ValidateXcodeVersion=false`): the app's `ld` links
+  either kind, but a static archive hands it Xcode N's object code, which an older `ld` can refuse,
+  while a framework hands it only load commands and exports. That narrows the dependency without
+  removing it, so a guard links a probe app against the framework with the oldest Xcode the SDK
+  supports and fails when that `ld` refuses it. Weak because the app's floor is iOS 15 and
+  Foundation Models starts at 26.
 - Carried as a `NativeReference` of an `IsBindingProject=true` project, the one shape in which
   .NET for iOS packs a native framework into a NuGet, referenced by `Shell.iOS` so an app links and
   embeds it without declaring anything.
@@ -125,12 +128,14 @@ bound today.
 
 ### The developer's machine
 
-Nothing new. Xcode and the Android SDK with a JDK are already required; Swift, Kotlin and Gradle run
-on the SDK's CI. The csproj stays `<Project Sdk="eQuantic.UI.Sdk">`. Heavy dependencies (ML Kit
-GenAI's fourteen packages, Health Connect, Play Billing) are opt-in packs on the icon-pack
-precedent, since a `PackageReference` is settled at restore before any generator runs, with an
-analyzer error when a builder call needs a pack the project does not reference. The SDK logs what it
-adds to a manifest, a plist or the entitlements, as it does for entitlements on macOS.
+Nothing new. Xcode and the Android SDK with a JDK are already required. The bridge's Swift, and all
+of its Kotlin and Gradle, are compiled on the SDK's CI; the one Swift compiled per app, App Intents'
+generated types, is compiled by the Xcode the developer already has. The csproj stays
+`<Project Sdk="eQuantic.UI.Sdk">`. Heavy dependencies (ML Kit GenAI's fourteen packages, Health
+Connect, Play Billing) are opt-in packs on the icon-pack precedent, since a `PackageReference` is
+settled at restore before any generator runs, with an analyzer error when a builder call needs a
+pack the project does not reference. The SDK logs what it adds to a manifest, a plist or the
+entitlements, as it does for entitlements on macOS.
 
 ## On-device AI
 
