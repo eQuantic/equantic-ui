@@ -56,6 +56,140 @@ public class FlexLayoutTests
         node.Bounds.Width.Should().Be(200);
     }
 
+    /// <summary>
+    /// The ITEM takes its share and a child with a fixed width keeps it, wider than the share or
+    /// narrower. Two weights of one in 600 share 300 each. In Chrome 154 a 400-wide box stays 400 in
+    /// its 300 item, overflowing it, and a 100-wide box stays 100; Photon used to pin both to 300. A
+    /// box that fills, and a Text, still span the slot, which they always did.
+    /// </summary>
+    [Fact]
+    public void AFlexibleTakesItsShare_AndAFixedChildKeepsItsWidth()
+    {
+        static (LayoutNode Item, LayoutNode Child) First(VisualNode child)
+        {
+            var row = new Row(gap: 0) { Width = 600 };
+            row.Add(new Flexible(child, flex: 1));
+            row.Add(new Flexible(new Box(new BoxStyle { Width = SizeValue.Fill, Height = 20 }), flex: 1));
+            var item = Layout(row, w: 600).Children[0];
+            return (item, item.Children[0]);
+        }
+
+        var (widerItem, wider) = First(FixedBox(400, 20));
+        widerItem.Bounds.Width.Should().BeApproximately(300, 0.01f, "the item takes its share");
+        wider.Bounds.X.Should().BeApproximately(0, 0.01f);
+        wider.Bounds.Width.Should().Be(400, "a fixed child keeps its width and overflows the item");
+
+        var (narrowerItem, narrower) = First(FixedBox(100, 20));
+        narrowerItem.Bounds.Width.Should().BeApproximately(300, 0.01f);
+        narrower.Bounds.Width.Should().Be(100, "a fixed child is not stretched to the item either");
+
+        First(new Box(new BoxStyle { Width = SizeValue.Fill, Height = 20 })).Child.Bounds.Width
+            .Should().BeApproximately(300, 0.01f, "a box that fills fills the slot");
+        First(new Text("Title", TypeRole.BodyM, align: TextAlignment.Center)).Child.Bounds.Width
+            .Should().BeApproximately(300, 0.01f, "a Text's line box is the slot, where its lines align");
+    }
+
+    /// <summary>
+    /// The same rule for every node type that declares a width, not only a box: in a share of 300,
+    /// Chrome 154 keeps a 320 camera preview at 320, a stack and a canvas at 400 and at 100, a scroller
+    /// at 100, and a box as wide as the window less 32 at that width. A scroller of 400 is 300 there,
+    /// because the web writes it <c>max-width: 100%</c>: its width is a ceiling in its item. Photon
+    /// pinned all of these to 300, because its classifier did not read their widths.
+    /// </summary>
+    [Fact]
+    public void AFlexibleChild_KeepsTheSizeItDeclares_WhateverNodeDeclaresIt()
+    {
+        static float ChildIn300(VisualNode child)
+        {
+            var row = new Row(gap: 0) { Width = 600 };
+            row.Add(new Flexible(child, flex: 1));
+            row.Add(new Flexible(new Box(new BoxStyle { Width = SizeValue.Fill, Height = 20 }), flex: 1));
+            var item = Layout(row, w: 600).Children[0];
+            item.Bounds.Width.Should().BeApproximately(300, 0.01f, "the item takes its share");
+            return item.Children[0].Bounds.Width;
+        }
+
+        ChildIn300(new CameraPreview(null, 320, 240)).Should().Be(320);
+        ChildIn300(new Stack { Width = 400, Height = 20 }).Should().Be(400);
+        ChildIn300(new Stack { Width = 100, Height = 20 }).Should().Be(100);
+        ChildIn300(new Canvas(_ => { }, 400, 20)).Should().Be(400);
+        ChildIn300(new Canvas(_ => { }, 100, 20)).Should().Be(100);
+        ChildIn300(new ScrollView(FixedBox(50, 20)) { Width = 100, Height = 20 }).Should().Be(100);
+        ChildIn300(new ScrollView(FixedBox(50, 20)) { Width = 400, Height = 20 })
+            .Should().Be(300, "a scroller's width is a ceiling in its item");
+        ChildIn300(new Box(new BoxStyle { Width = SizeValue.WindowMinus(32), Height = 20 }))
+            .Should().Be(600 - 32, "a width the window decides is the box's own");
+    }
+
+    /// <summary>
+    /// A scroller's ceiling reaches the scroller, through a transparent wrapper, and while it
+    /// measures. In a share of 300, Chrome 154 draws <c>Pinned(ScrollView { Width = 400 })</c> with
+    /// the wrapper and the scroller both at 300; Photon capped the wrapper and left the scroller
+    /// painting and clipping at 400. And a horizontal scroller of 400 around 800 of content is 300
+    /// wide there and scrolls by 500; capped only after it measured, its range was taken from 400.
+    /// </summary>
+    [Fact]
+    public void AScrollersCeiling_ReachesItThroughAWrapper_AndSetsItsRange()
+    {
+        static Row InAShareOf300(VisualNode child)
+        {
+            var row = new Row(gap: 0) { Width = 600 };
+            row.Add(new Flexible(child, flex: 1));
+            row.Add(new Flexible(new Box(new BoxStyle { Width = SizeValue.Fill, Height = 20 }), flex: 1));
+            return row;
+        }
+
+        var pinned = Layout(InAShareOf300(new Pinned(new ScrollView(FixedBox(50, 20)) { Width = 400, Height = 20 })), w: 600)
+            .Children[0].Children[0];
+        pinned.Bounds.Width.Should().BeApproximately(300, 0.01f);
+        pinned.Children[0].Bounds.Width.Should().BeApproximately(300, 0.01f, "the scroller itself is capped, not only its wrapper");
+
+        var sideways = new ScrollView(FixedBox(800, 20), ScrollAxis.Horizontal) { Width = 400, Height = 20 };
+        var ranges = new Dictionary<ScrollView, (string Path, float MaxOffset)>();
+        LayoutEngine.Layout(InAShareOf300(sideways), 600, 300,
+            new LayoutContext(PhotonTheme.Instance, ApproximateTextMeasurer.Instance) { ScrollMeta = ranges });
+        ranges[sideways].MaxOffset.Should().BeApproximately(500, 0.01f, "800 of content in a 300 viewport");
+    }
+
+    /// <summary>
+    /// A child that declares its size through an AdaptiveNode's arm keeps it as it would on its own:
+    /// the arm is what is laid out in the node's place. In a share of 300, Chrome 154 keeps an arm of
+    /// 400 at 400 and one of 100 at 100, caps a scroller arm of 400 at 300 and scrolls its 800 of
+    /// content by 500, and leaves a scroller arm of 100 at 100, scrolling by 700. Photon asked the
+    /// AdaptiveNode, which declares no size of its own, so it pinned all four to 300, and the capped
+    /// scroller kept the range it had measured at 400.
+    /// </summary>
+    [Fact]
+    public void AFlexibleChild_KeepsTheSizeItsArmDeclares()
+    {
+        static (float Width, float Range) ArmIn300(Func<VisualNode> arm)
+        {
+            var compact = arm();
+            var row = new Row(gap: 0) { Width = 600 };
+            row.Add(new Flexible(new AdaptiveNode(compact, medium: null, expanded: arm()), flex: 1));
+            row.Add(new Flexible(new Box(new BoxStyle { Width = SizeValue.Fill, Height = 20 }), flex: 1));
+            var ranges = new Dictionary<ScrollView, (string Path, float MaxOffset)>();
+            var item = LayoutEngine.Layout(row, 600, 300,
+                new LayoutContext(PhotonTheme.Instance, ApproximateTextMeasurer.Instance) { ScrollMeta = ranges }).Children[0];
+            item.Bounds.Width.Should().BeApproximately(300, 0.01f, "the item takes its share");
+            return (item.Children[0].Bounds.Width, compact is ScrollView scroller ? ranges[scroller].MaxOffset : 0);
+        }
+
+        static ScrollView Scroller(float width) =>
+            new(FixedBox(800, 20), ScrollAxis.Horizontal) { Width = width, Height = 20 };
+
+        ArmIn300(() => FixedBox(400, 20)).Width.Should().Be(400, "the arm keeps its width and overflows the item");
+        ArmIn300(() => FixedBox(100, 20)).Width.Should().Be(100, "the arm is not stretched to the item either");
+
+        var (capped, cappedRange) = ArmIn300(() => Scroller(400));
+        capped.Should().BeApproximately(300, 0.01f, "a scroller arm's width is a ceiling in its item");
+        cappedRange.Should().BeApproximately(500, 0.01f, "800 of content in a 300 viewport");
+
+        var (narrow, narrowRange) = ArmIn300(() => Scroller(100));
+        narrow.Should().BeApproximately(100, 0.01f, "a scroller arm under its ceiling keeps its width");
+        narrowRange.Should().BeApproximately(700, 0.01f, "800 of content in a 100 viewport");
+    }
+
     [Fact]
     public void Row_SpaceBetween_DistributesFreeSpace()
     {

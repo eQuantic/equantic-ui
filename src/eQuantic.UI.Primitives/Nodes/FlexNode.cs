@@ -7,6 +7,12 @@ namespace eQuantic.UI.Primitives;
 /// sibling spacing — it never collapses), <see cref="Flexible"/> children sharing leftover space by
 /// weight. Truncation contract: TEXT children shrink to ellipsis before any sibling is pushed out;
 /// fixed children (icons, avatars) never shrink.
+/// <para>
+/// An overflowing line is taken back on the web in a row and in a column alike. Photon takes it
+/// back in a ROW (the truncation contract, and a Flexible's shrink); a single-line column takes
+/// nothing back from any item yet, so its content runs past the column's end where a browser
+/// shrinks it.
+/// </para>
 /// </summary>
 /// <remarks>
 /// HOST ONLY, for the reason <see cref="SingleChildNode"/> carries the same attribute, and this one
@@ -47,8 +53,18 @@ public abstract class FlexNode : VisualNode, IEnumerable<VisualNode>
 
     /// <summary>
     /// Spec S3 flow wrapping (the CSS <c>flex-wrap: wrap</c> twin): children that overflow the main
-    /// extent break onto the next line. v1 scope: children keep their NATURAL main size — Flexible
-    /// weights don't distribute inside a wrapping container (use a non-wrapping Row for that).
+    /// extent break onto the next line. The contract is CSS's, and the web realizes it as written. A
+    /// child breaks against its hypothetical size: a <see cref="Flexible"/>'s basis when it declares
+    /// one, zero for a weighted Flexible that declares none, and its natural size otherwise. Each line
+    /// is then resolved on its own: its leftover goes to its Flexibles by weight, and an overflow is
+    /// taken back from them by shrink times basis, as far as nothing, because a Flexible's minimum
+    /// width is zero.
+    /// <para>
+    /// Photon does not follow the contract in two places yet. It breaks a weighted Flexible without
+    /// a basis at its natural size, so two that share a line in a browser can take a line each there
+    /// (#728). And it stops a shrinking Flexible at its child's min-content, where a browser lets the
+    /// item shrink past it and the child overflow it.
+    /// </para>
     /// </summary>
     public bool Wrap { get; init; }
 

@@ -44,4 +44,39 @@ describe('$eq namespace', () => {
     expect($eq.enums.text('pending', shape)).toBe('Pending');
     expect($eq.enums.zero(shape)).toBe('active');
   });
+
+  it('closingLike — a copy is of the closed type its source was built as (#751)', () => {
+    class Pair {
+      a: number;
+      constructor(a: number) {
+        this.a = a;
+      }
+    }
+    const ints = $eq.closing(new Pair(1), 'int');
+    const doubles = $eq.closing(new Pair(1), 'double');
+    const copy = $eq.closingLike(Object.assign(Object.create(Pair.prototype), ints), ints);
+    expect($eq.sameClosure(copy, doubles)).toBe(false);
+    expect($eq.sameClosure(copy, ints)).toBe(true);
+    expect($eq.sameClosure($eq.withPatch(ints, { a: 2 }), doubles)).toBe(false);
+    // An unmarked source makes an unmarked copy, which is not taken for another type.
+    expect($eq.sameClosure($eq.closingLike(new Pair(1), new Pair(1)), doubles)).toBe(true);
+  });
+
+  it('withPatch — the copy is of its closed type before its patch is written (#751)', () => {
+    let seen: boolean | undefined;
+    class Step {
+      _at = 0;
+      get at() {
+        return this._at;
+      }
+      set at(value: number) {
+        this._at = value;
+        seen = $eq.sameClosure(this, doubles);
+      }
+    }
+    const doubles = $eq.closing(new Step(), 'double');
+    const ints = $eq.closing(new Step(), 'int');
+    expect($eq.withPatch(ints, { at: 2 }).at).toBe(2);
+    expect(seen).toBe(false);
+  });
 });

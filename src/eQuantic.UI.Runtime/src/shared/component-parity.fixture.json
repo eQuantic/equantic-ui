@@ -13442,6 +13442,250 @@
       ]
     }
   ],
+  "flexible-zero-weight-at-a-basis": [
+    {
+      "tag": "div",
+      "attrs": {
+        "class": "eq-1eb13m5 eq-1uhnwvg eq-4lve5x eq-ewlixa eq-kngwsg eq-m92pvu eq-mc2xdp"
+      },
+      "events": [],
+      "children": [
+        {
+          "tag": "div",
+          "attrs": {
+            "class": "eq-5ew4ww eq-gitzpc"
+          },
+          "events": [],
+          "children": [
+            {
+              "tag": "span",
+              "attrs": {
+                "class": "eq-16x7aca eq-7gvrt4 eq-type-bodym"
+              },
+              "events": [],
+              "children": [
+                {
+                  "tag": "#text",
+                  "text": "picture",
+                  "attrs": {},
+                  "events": [],
+                  "children": []
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "tag": "div",
+          "attrs": {
+            "class": "eq-1atufi1 eq-5ew4ww"
+          },
+          "events": [],
+          "children": [
+            {
+              "tag": "span",
+              "attrs": {
+                "class": "eq-16x7aca eq-7gvrt4 eq-type-bodym"
+              },
+              "events": [],
+              "children": [
+                {
+                  "tag": "#text",
+                  "text": "story",
+                  "attrs": {},
+                  "events": [],
+                  "children": []
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "flexible-zero-weight-from-content": [
+    {
+      "tag": "div",
+      "attrs": {
+        "class": "eq-1eb13m5 eq-1uhnwvg eq-ewlixa eq-kngwsg eq-m92pvu eq-mc2xdp"
+      },
+      "events": [],
+      "children": [
+        {
+          "tag": "div",
+          "attrs": {
+            "class": "eq-5ew4ww eq-a5mb4a"
+          },
+          "events": [],
+          "children": [
+            {
+              "tag": "span",
+              "attrs": {
+                "class": "eq-16x7aca eq-7gvrt4 eq-type-bodym"
+              },
+              "events": [],
+              "children": [
+                {
+                  "tag": "#text",
+                  "text": "label",
+                  "attrs": {},
+                  "events": [],
+                  "children": []
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "tag": "div",
+          "attrs": {
+            "class": "eq-168ghzj eq-5ew4ww"
+          },
+          "events": [],
+          "children": [
+            {
+              "tag": "span",
+              "attrs": {
+                "class": "eq-16x7aca eq-7gvrt4 eq-type-bodym"
+              },
+              "events": [],
+              "children": [
+                {
+                  "tag": "#text",
+                  "text": "rest",
+                  "attrs": {},
+                  "events": [],
+                  "children": []
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "flexible-fractional-basis": [
+    {
+      "tag": "div",
+      "attrs": {
+        "class": "eq-1eb13m5 eq-1uhnwvg eq-4lve5x eq-ewlixa eq-kngwsg eq-m92pvu eq-mc2xdp"
+      },
+      "events": [],
+      "children": [
+        {
+          "tag": "div",
+          "attrs": {
+            "class": "eq-17rf7tf eq-5ew4ww"
+          },
+          "events": [],
+          "children": [
+            {
+              "tag": "span",
+              "attrs": {
+                "class": "eq-16x7aca eq-7gvrt4 eq-type-bodym"
+              },
+              "events": [],
+              "children": [
+                {
+                  "tag": "#text",
+                  "text": "half",
+                  "attrs": {},
+                  "events": [],
+                  "children": []
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "tag": "div",
+          "attrs": {
+            "class": "eq-5ew4ww eq-d2rcrc"
+          },
+          "events": [],
+          "children": [
+            {
+              "tag": "span",
+              "attrs": {
+                "class": "eq-16x7aca eq-7gvrt4 eq-type-bodym"
+              },
+              "events": [],
+              "children": [
+                {
+                  "tag": "#text",
+                  "text": "float",
+                  "attrs": {},
+                  "events": [],
+                  "children": []
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "flexible-zero-weight-shrink-factor": [
+    {
+      "tag": "div",
+      "attrs": {
+        "class": "eq-1eb13m5 eq-1uhnwvg eq-ewlixa eq-kngwsg eq-m92pvu eq-mc2xdp"
+      },
+      "events": [],
+      "children": [
+        {
+          "tag": "div",
+          "attrs": {
+            "class": "eq-5ew4ww eq-gmho7i"
+          },
+          "events": [],
+          "children": [
+            {
+              "tag": "span",
+              "attrs": {
+                "class": "eq-16x7aca eq-7gvrt4 eq-type-bodym"
+              },
+              "events": [],
+              "children": [
+                {
+                  "tag": "#text",
+                  "text": "three",
+                  "attrs": {},
+                  "events": [],
+                  "children": []
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "tag": "div",
+          "attrs": {
+            "class": "eq-5ew4ww eq-gitzpc"
+          },
+          "events": [],
+          "children": [
+            {
+              "tag": "span",
+              "attrs": {
+                "class": "eq-16x7aca eq-7gvrt4 eq-type-bodym"
+              },
+              "events": [],
+              "children": [
+                {
+                  "tag": "#text",
+                  "text": "one",
+                  "attrs": {},
+                  "events": [],
+                  "children": []
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
   "adaptive-fractional-thresholds": [
     {
       "tag": "div",
