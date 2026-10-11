@@ -72,17 +72,18 @@ function base64Length(length: number, lineBreaks: boolean): number {
   return size;
 }
 
-/** `ConvertToBase64Array`: the characters of `length` bytes from `offset`, a line break before every
- * group of four that would start a line past the 76th character. */
-function base64(bytes: Bytes, offset: number, length: number, lineBreaks: boolean): string[] {
-  const out: string[] = [];
+/** `ConvertToBase64Array`: the text of `length` bytes from `offset`, a line break before every group
+ * of four that would start a line past the 76th character. Built as one string, not a character at a
+ * time, so a photograph's bytes cost their text and not an array of a few million entries. */
+function base64(bytes: Bytes, offset: number, length: number, lineBreaks: boolean): string {
+  let out = '';
   const whole = offset + length - (length % 3);
   let column = 0;
   let i = offset;
   for (; i < whole; i += 3) {
     if (lineBreaks) {
       if (column === LINE) {
-        out.push('\r', '\n');
+        out += '\r\n';
         column = 0;
       }
       column += 4;
@@ -90,27 +91,22 @@ function base64(bytes: Bytes, offset: number, length: number, lineBreaks: boolea
     const a = bytes[i];
     const b = bytes[i + 1];
     const c = bytes[i + 2];
-    out.push(
-      ALPHABET[a >> 2],
-      ALPHABET[((a & 0x03) << 4) | (b >> 4)],
-      ALPHABET[((b & 0x0f) << 2) | (c >> 6)],
-      ALPHABET[c & 0x3f],
-    );
+    out +=
+      ALPHABET[a >> 2] +
+      ALPHABET[((a & 0x03) << 4) | (b >> 4)] +
+      ALPHABET[((b & 0x0f) << 2) | (c >> 6)] +
+      ALPHABET[c & 0x3f];
   }
   const rest = length % 3;
-  if (lineBreaks && rest !== 0 && column === LINE) out.push('\r', '\n');
+  if (lineBreaks && rest !== 0 && column === LINE) out += '\r\n';
   if (rest === 2) {
     const a = bytes[i];
     const b = bytes[i + 1];
-    out.push(
-      ALPHABET[a >> 2],
-      ALPHABET[((a & 0x03) << 4) | (b >> 4)],
-      ALPHABET[(b & 0x0f) << 2],
-      '=',
-    );
+    out +=
+      ALPHABET[a >> 2] + ALPHABET[((a & 0x03) << 4) | (b >> 4)] + ALPHABET[(b & 0x0f) << 2] + '=';
   } else if (rest === 1) {
     const a = bytes[i];
-    out.push(ALPHABET[a >> 2], ALPHABET[(a & 0x03) << 4], '=', '=');
+    out += ALPHABET[a >> 2] + ALPHABET[(a & 0x03) << 4] + '==';
   }
   return out;
 }
@@ -132,7 +128,7 @@ export function toBase64String(
   const count = length ?? bytes.length;
   if (offset !== undefined) requireRange(bytes, start, count);
   requireOptions(options);
-  return base64(bytes, start, count, options === INSERT_LINE_BREAKS).join('');
+  return base64(bytes, start, count, options === INSERT_LINE_BREAKS);
 }
 
 /**
@@ -161,7 +157,7 @@ export function toBase64CharArray(
   const required = base64Length(length, lineBreaks);
   requireAtMost('offsetOut', offsetOut, chars.length - required);
   const written = base64(bytes, offsetIn, length, lineBreaks);
-  for (let i = 0; i < written.length; i++) chars[offsetOut + i] = written[i];
+  for (let i = 0; i < written.length; i++) chars[offsetOut + i] = written.charAt(i);
   return written.length;
 }
 
