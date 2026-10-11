@@ -40,6 +40,10 @@ internal sealed class PressScope
     /// <summary>The IME composition in flight for the focused field ("" when none).</summary>
     public string MarkedText { get; init; } = "";
 
+    /// <summary>A phone keyboard's composition in the focused field, as a range of its value, or
+    /// null (see <see cref="TextEditingValue"/>).</summary>
+    public (int Start, int End)? Composing { get; init; }
+
     public float? ScrollOffsetOf(string path) => ScrollOffset?.Invoke(path);
 
     /// <summary>The selected range in the field under edit (equal = no selection).</summary>

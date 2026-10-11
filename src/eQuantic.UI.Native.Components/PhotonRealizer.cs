@@ -297,6 +297,8 @@ public static class PhotonRealizer
         // The IME composition in flight for the focused field — rendered inline at the caret,
         // underlined, without the value changing (the value only changes on commit).
         string markedText = "",
+        // A phone keyboard's composition: a range OF the value, drawn underlined the same way.
+        (int Start, int End)? composing = null,
         // The host's cross-frame path-string cache (see LayoutContext.PathCache).
         Dictionary<(string Parent, int Index, string? Key), string>? pathCache = null,
         // The owning host's node recycler (see LayoutNodePool) — null allocates fresh.
@@ -362,7 +364,7 @@ public static class PhotonRealizer
         };
         var overlays = new List<Overlay>();
         var input = new InputSink(regions);
-        EmitVisitor.Shared.Emit(new EmitState(layout, input, new PressScope(pressed, focused, hovered, pressedPath, focusedPath, textPath, caretIndex, caretVisible, selectionStart, selectionEnd, density, hoveredPaths) { ScrollOffset = scrollOffset, MarkedText = markedText, Surface = new Rect(0, 0, viewportWidth, viewportHeight), InView = inViewStore },
+        EmitVisitor.Shared.Emit(new EmitState(layout, input, new PressScope(pressed, focused, hovered, pressedPath, focusedPath, textPath, caretIndex, caretVisible, selectionStart, selectionEnd, density, hoveredPaths) { ScrollOffset = scrollOffset, MarkedText = markedText, Composing = composing, Surface = new Rect(0, 0, viewportWidth, viewportHeight), InView = inViewStore },
             theme, mode, builder, context.ScrollMeta!, motion, overlays));
 
         // Overlay pass (Phase C): each queued layer lays out against the VIEWPORT and paints ABOVE
@@ -392,7 +394,7 @@ public static class PhotonRealizer
             realizedLayers.Add(overlays[i]);
             // The UNCLIPPED sink: a layer lays out against the viewport, not inside whatever the
             // page happens to be scrolling.
-            EmitVisitor.Shared.Emit(new EmitState(overlayLayout, input, new PressScope(pressed, focused, hovered, pressedPath, focusedPath, textPath, caretIndex, caretVisible, selectionStart, selectionEnd, density, hoveredPaths) { ScrollOffset = scrollOffset, MarkedText = markedText, Surface = new Rect(0, 0, viewportWidth, viewportHeight), InView = inViewStore },
+            EmitVisitor.Shared.Emit(new EmitState(overlayLayout, input, new PressScope(pressed, focused, hovered, pressedPath, focusedPath, textPath, caretIndex, caretVisible, selectionStart, selectionEnd, density, hoveredPaths) { ScrollOffset = scrollOffset, MarkedText = markedText, Composing = composing, Surface = new Rect(0, 0, viewportWidth, viewportHeight), InView = inViewStore },
                 theme, mode, builder, context.ScrollMeta!, motion, overlays));
         }
 

@@ -254,11 +254,17 @@ internal sealed partial class EmitVisitor
 
         var caretHeight = node.Text?.LineHeight ?? style.LineHeight;
 
-        // The composition's underline — the one visual that says "this text is not yours yet".
-        if (marked.Length > 0 && motion.TextRasterizer is { } markedRasterizer)
+        // The composition's underline — the one visual that says "this text is not yours yet". The
+        // desktop's sits at the caret outside the value; a phone keyboard's is a range of the value.
+        var (underlineFrom, underlineTo) = marked.Length > 0
+            ? (caretInValue, caretInValue + marked.Length)
+            : !entry.Obscure && press.Composing is { } composing && composing.End <= value.Length
+                ? composing
+                : (0, 0);
+        if (underlineTo > underlineFrom && motion.TextRasterizer is { } markedRasterizer)
         {
-            var from = MeasureUpTo(markedRasterizer, value, caretInValue, style, motion) - shift;
-            var to = MeasureUpTo(markedRasterizer, value, caretInValue + marked.Length, style, motion) - shift;
+            var from = MeasureUpTo(markedRasterizer, value, underlineFrom, style, motion) - shift;
+            var to = MeasureUpTo(markedRasterizer, value, underlineTo, style, motion) - shift;
             from = MathF.Max(from, 0);
             to = MathF.Min(to, node.Bounds.Width);
             if (to > from)
