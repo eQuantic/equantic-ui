@@ -69,29 +69,36 @@ public sealed class TextInputSession
     /// <summary>
     /// The keyboard's edit, as the field's whole new state. The host applies it
     /// (<see cref="PhotonHost.UpdateEditingValue"/>); this remembers it as the state the keyboard
-    /// has, so a host that took it as it came reports nothing, and one that took it otherwise (a
-    /// read-only field, a line break flattened, the app's own rewrite on the next frame) reports
-    /// <see cref="TextInputChange.ValueChanged"/> at the next <see cref="Poll"/>. Answers false when
-    /// the keyboard is not editing a field.
+    /// has, whether the host took it or not, so a host that took it as it came reports nothing, and
+    /// one that took it otherwise (a read-only or disabled field, a line break flattened, the app's
+    /// own rewrite on the next frame) reports <see cref="TextInputChange.ValueChanged"/> at the next
+    /// <see cref="Poll"/>. Answers false, and changes nothing, when the keyboard is not editing a
+    /// field or the caret has left the one it was editing (a dictation that finished after another
+    /// field was tapped): the next <see cref="Poll"/> starts the keyboard over on the new one.
     /// </summary>
     public bool Update(TextEditingValue value)
     {
-        if (Target != TextInputTarget.Text || !_host.UpdateEditingValue(value)) return false;
+        if (!OnItsField) return false;
         Value = value;
-        return true;
+        return _host.UpdateEditingValue(value);
     }
 
     /// <summary>
     /// The keyboard's action key on a single-line field (Done): the field submits, as Enter does on a
     /// desktop, and then the edit ends and the keyboard goes down, which is what that key does on a
     /// phone (Flutter's <c>TextInputAction.done</c> unfocuses the same way). A submit that moved the
-    /// caret to another field keeps it there. Answers false when the keyboard is not editing a field.
+    /// caret to another field keeps it there. Answers false when the keyboard is not editing a field,
+    /// or the caret has left the one it was editing.
     /// </summary>
     public bool Submit()
     {
-        if (Target != TextInputTarget.Text || _host.FocusedPath is not { } path) return false;
+        if (!OnItsField) return false;
         _host.KeyDown("Enter");
-        if (_host.FocusedPath == path) _host.EndEditing();
+        if (_host.FocusedPath == _path) _host.EndEditing();
         return true;
     }
+
+    /// <summary>Whether the keyboard is editing a field and the caret is still in it: what the keyboard
+    /// sends is for the field it was opened on, as of the last <see cref="Poll"/>.</summary>
+    private bool OnItsField => Target == TextInputTarget.Text && _path is not null && _host.FocusedPath == _path;
 }

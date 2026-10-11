@@ -322,6 +322,28 @@ public class PhoneKeyboardTests
         session.Value.Text.Should().Be("fixed");
     }
 
+    /// <summary>
+    /// A dictation into one field finishes after the person tapped another. Its text is the first
+    /// field's, and it went into the second; it now goes nowhere, and the keyboard starts over on the
+    /// field the caret is in.
+    /// </summary>
+    [Fact]
+    public void AnEditThatArrivesAfterTheCaretMoved_GoesNowhere()
+    {
+        var (host, form) = Open("first");
+        var session = new TextInputSession(host);
+        session.Poll();
+        Tap(host, host.LastFrame!.TextRegions[1].Bounds.Center);
+
+        session.Update(TextEditingValue.Collapsed("first words", 11)).Should().BeFalse();
+        session.Submit().Should().BeFalse();
+
+        host.EditingValue!.Value.Text.Should().BeEmpty("the field tapped holds what it held");
+        form.Changes.Should().BeEmpty();
+        host.RenderFrame(new DisplayListBuilder(), 32);
+        session.Poll().Should().Be(TextInputChange.Retargeted);
+    }
+
     /// <summary>A phone's Done submits the field and puts the keyboard away with the edit.</summary>
     [Fact]
     public void TheActionKey_SubmitsTheField_AndEndsTheEdit()
