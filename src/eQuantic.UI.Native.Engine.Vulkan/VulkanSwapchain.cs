@@ -89,11 +89,10 @@ public sealed unsafe class VulkanSwapchain : IDisposable
         Vk.Check(VkSurface.vkGetPhysicalDeviceSurfaceCapabilitiesKHR(
             _device.PhysicalDevice, _surface, &capabilities), "surface capabilities");
 
-        // The surface's own extent wins when it states one: on a phone it always does, and a size
-        // we picked ourselves would simply be rejected.
-        var extent = capabilities.CurrentExtent.Width != uint.MaxValue
-            ? capabilities.CurrentExtent
-            : new VkExtent2D { Width = (uint)width, Height = (uint)height };
+        var (extentWidth, extentHeight) = SwapchainShape.Extent(width, height,
+            (capabilities.MinImageExtent.Width, capabilities.MinImageExtent.Height),
+            (capabilities.MaxImageExtent.Width, capabilities.MaxImageExtent.Height));
+        var extent = new VkExtent2D { Width = extentWidth, Height = extentHeight };
         Width = (int)extent.Width;
         Height = (int)extent.Height;
 
@@ -115,7 +114,7 @@ public sealed unsafe class VulkanSwapchain : IDisposable
             ImageArrayLayers = 1,
             ImageUsage = 0x10,          // COLOR_ATTACHMENT
             ImageSharingMode = 0,       // EXCLUSIVE — one queue family draws and presents
-            PreTransform = SwapchainStatus.PreTransform(capabilities.SupportedTransforms,
+            PreTransform = SwapchainShape.PreTransform(capabilities.SupportedTransforms,
                 capabilities.CurrentTransform),
             CompositeAlpha = 0x1,       // OPAQUE — the app owns every pixel of its window
             PresentMode = PresentModeFifo,

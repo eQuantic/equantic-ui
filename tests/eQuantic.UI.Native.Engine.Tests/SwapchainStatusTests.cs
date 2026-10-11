@@ -36,13 +36,4 @@ public class SwapchainStatusTests
         var lost = () => SwapchainStatus.Usable(-1000000000, "queue present"); // SURFACE_LOST
         lost.Should().Throw<InvalidOperationException>().WithMessage("*queue present*-1000000000*");
     }
-
-    /// <summary>The renderer draws upright, so the swapchain says so, and the compositor turns the
-    /// image; only a surface that cannot take IDENTITY gets what it asks for.</summary>
-    [Theory]
-    [InlineData(0x1FFu, 0x2u, 0x1u)] // a phone held sideways: ROTATE_90 current, IDENTITY declared
-    [InlineData(0x1FFu, 0x1u, 0x1u)]
-    [InlineData(0x2u, 0x2u, 0x2u)]   // a surface that offers only its rotation
-    public void TheSwapchainDeclaresTheImageUpright(uint supported, uint current, uint declared) =>
-        SwapchainStatus.PreTransform(supported, current).Should().Be(declared);
 }
