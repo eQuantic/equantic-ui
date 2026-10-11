@@ -22,6 +22,9 @@ public class ConvertStrategy : IExpressionIrStrategy
 
         var expr = memberAccess.Expression.ToString();
         if (expr is not ("Convert" or "System.Convert")) return false;
+        // A class of the app's that shares the name is its own, as its methods are.
+        if (context.SemanticHelper.GetSymbol(invocation) is IMethodSymbol { ContainingType: { } type }
+            && type.ToDisplayString() != "System.Convert") return false;
 
         return memberAccess.Name.Identifier.Text.StartsWith("To");
     }
@@ -32,6 +35,8 @@ public class ConvertStrategy : IExpressionIrStrategy
         var memberAccess = (MemberAccessExpressionSyntax)invocation.Expression;
         var name = memberAccess.Name.Identifier.Text;
         var args = invocation.ArgumentList.Arguments;
+        if (Encodings.TryGetValue(name, out var encoding))
+            return Encoded(invocation, name, encoding, context);
         if (args.Count == 0) return JsExpr.Identifier("undefined");
 
         // Reading or writing an integer in a BASE is settled by the overload C# bound, which the
@@ -111,6 +116,90 @@ public class ConvertStrategy : IExpressionIrStrategy
             return JsExpr.Template($"{text.Reader}({{0}}, '{text.Tag}')", [context.Converter.ConvertIr(argExpr)]);
         }
         return JsExpr.Opaque(Converted(name, argExpr, context));
+    }
+
+    /// <summary>
+    /// The encodings, each the twin it calls and the twin's parameters in order, by the names .NET gives
+    /// them. The overloads over a span name their array <c>bytes</c>, which is the twin's
+    /// <c>inArray</c> (see <see cref="SlotOf"/>).
+    /// </summary>
+    private static readonly Dictionary<string, (string Twin, string[] Slots)> Encodings = new(StringComparer.Ordinal)
+    {
+        ["ToBase64String"] = (Eq.ToBase64String, ["inArray", "offset", "length", "options"]),
+        ["ToBase64CharArray"] = (Eq.ToBase64CharArray, ["inArray", "offsetIn", "length", "outArray", "offsetOut", "options"]),
+        ["ToHexString"] = (Eq.ToHexString, ["inArray", "offset", "length"]),
+        ["ToHexStringLower"] = (Eq.ToHexStringLower, ["inArray", "offset", "length"]),
+    };
+
+    /// <summary>The twin's parameter a .NET parameter of <paramref name="parameter"/>'s name fills, or -1.</summary>
+    private static int SlotOf(string[] slots, string parameter) =>
+        Array.IndexOf(slots, parameter == "bytes" ? "inArray" : parameter);
+
+    /// <summary>
+    /// The parameters an encoding's overload takes, in order, where its argument count settles which
+    /// overload it is: only the count is there to read when no model can be asked, and every count of
+    /// these four names one overload.
+    /// </summary>
+    private static string[]? Spelled(string name, int count) => (name, count) switch
+    {
+        ("ToBase64String" or "ToHexString" or "ToHexStringLower", 1) => ["inArray"],
+        ("ToBase64String", 2) => ["inArray", "options"],
+        ("ToBase64String" or "ToHexString" or "ToHexStringLower", 3) => ["inArray", "offset", "length"],
+        ("ToBase64String", 4) => ["inArray", "offset", "length", "options"],
+        ("ToBase64CharArray", 5) => ["inArray", "offsetIn", "length", "outArray", "offsetOut"],
+        ("ToBase64CharArray", 6) => ["inArray", "offsetIn", "length", "outArray", "offsetOut", "options"],
+        _ => null,
+    };
+
+    /// <summary>
+    /// <c>Convert.ToBase64String</c>, <c>ToBase64CharArray</c>, <c>ToHexString</c> and
+    /// <c>ToHexStringLower</c>, every overload, as the runtime's twin of each (#716): each argument handed
+    /// to the parameter it fills, the ones the overload does not take <c>undefined</c>, and all of them
+    /// evaluated in the order they are written. They were <c>String()</c> of the array, so
+    /// <c>new byte[] { 1, 2, 255 }</c> was <c>1,2,255</c> where .NET writes <c>AQL/</c>. A span that is
+    /// not a collection expression has no JavaScript form, and is EQ1004.
+    /// </summary>
+    private static JsExpr Encoded(InvocationExpressionSyntax invocation, string name, (string Twin, string[] Slots) encoding,
+        ConversionContext context)
+    {
+        var arguments = invocation.ArgumentList.Arguments;
+        var filling = Enumerable.Repeat(-1, encoding.Slots.Length).ToArray();
+        JsExpr Refused(string form) => JsExpr.Opaque(context.Unhandled(invocation, $"Convert.{name} {form}"));
+        if (context.SemanticHelper.GetSymbol(invocation) is IMethodSymbol method)
+        {
+            var written = ParameterTemplate.WrittenFor(arguments, method);
+            foreach (var parameter in method.Parameters)
+            {
+                var slot = SlotOf(encoding.Slots, parameter.Name);
+                if (slot < 0) return Refused($"with a parameter, '{parameter.Name}', its twin does not take");
+                if (written[parameter.Ordinal] < 0) continue;
+                if (encoding.Slots[slot] == "inArray" && parameter.Type is not IArrayTypeSymbol
+                    && arguments[written[parameter.Ordinal]].Expression is not CollectionExpressionSyntax)
+                    return Refused("over a span, which JavaScript does not have");
+                filling[slot] = written[parameter.Ordinal];
+            }
+        }
+        else
+        {
+            // No model: the count settles the overload, and a named argument fills the parameter it
+            // names, which must be one that overload takes.
+            if (!context.CanGuess(invocation) || Spelled(name, arguments.Count) is not { } shape)
+                return Refused("whose overload the spelling cannot settle");
+            for (var i = 0; i < arguments.Count; i++)
+            {
+                var parameter = arguments[i].NameColon?.Name.Identifier.ValueText ?? shape[i];
+                var slot = SlotOf(encoding.Slots, parameter);
+                if (slot < 0 || !shape.Contains(encoding.Slots[slot]) || filling[slot] >= 0)
+                    return Refused("whose overload the spelling cannot settle");
+                filling[slot] = i;
+            }
+        }
+
+        // The holes name WRITTEN positions already, so the template is not bound again.
+        var holes = filling.Select(at => at < 0 ? "undefined" : "{" + at + "}").ToList();
+        while (holes.Count > 1 && holes[^1] == "undefined") holes.RemoveAt(holes.Count - 1);
+        context.UsedHelpers.Add(Eq.Import);
+        return ParameterTemplate.Call($"{encoding.Twin}({string.Join(", ", holes)})", null, invocation, null, context);
     }
 
     /// <summary>
