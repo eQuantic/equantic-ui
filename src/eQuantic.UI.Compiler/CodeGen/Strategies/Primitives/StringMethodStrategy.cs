@@ -446,8 +446,8 @@ public class StringMethodStrategy : IConversionStrategy
     /// <summary>
     /// <c>string.Split</c> with no model to say which overload it is. No argument is white space; chars
     /// written one by one are a set of them, and so are more than three arguments, which only the
-    /// params overload takes; one argument is a set where it is an array and the one separator
-    /// otherwise. After the separator, the options are spelled or named as such and a count is a
+    /// params overload takes; one argument is a set where it is spelled as an array
+    /// (<see cref="SpelledAsArray"/>) and the one separator otherwise. After the separator, the options are spelled or named as such and a count is a
     /// number or named as one (<see cref="IsANumber"/>), and three arguments are a separator, a count
     /// and options where the separator is an array or either of the others says what it is. A name
     /// could hold a count or options, and three of them could be three chars, so what the spelling
@@ -477,8 +477,7 @@ public class StringMethodStrategy : IConversionStrategy
             ? JsExpr.Literal(options.ToString(System.Globalization.CultureInfo.InvariantCulture))
             : context.Converter.ConvertIr(argument.Expression)));
         var holes = Enumerable.Range(1, arguments.Count).Select(index => "{" + index + "}").ToList();
-        var isSet = arguments.Count > 0 && arguments[0].Expression is ArrayCreationExpressionSyntax
-            or ImplicitArrayCreationExpressionSyntax or CollectionExpressionSyntax;
+        var isSet = arguments.Count > 0 && SpelledAsArray(arguments[0].Expression);
         var helper = isSet ? Eq.StringSplitAny : Eq.StringSplit;
         var template = arguments.Count switch
         {
@@ -495,6 +494,23 @@ public class StringMethodStrategy : IConversionStrategy
         return template is null
             ? context.Unhandled(invocation, "string.Split whose separator, count and options the spelling cannot tell apart")
             : JsExprWriter.Write(JsExpr.Template(template, parts));
+    }
+
+    /// <summary>Whether an expression is spelled as an array: one created, a collection expression, or a
+    /// value cast, defaulted or converted with <c>as</c> to an array type. <c>s.Split(null)</c> is
+    /// ambiguous in C#, so <c>(char[])null</c> is how a set left to white space is written.</summary>
+    private static bool SpelledAsArray(ExpressionSyntax expression)
+    {
+        static bool IsArray(TypeSyntax type) => (type is NullableTypeSyntax nullable ? nullable.ElementType : type) is ArrayTypeSyntax;
+        return expression switch
+        {
+            ParenthesizedExpressionSyntax parenthesized => SpelledAsArray(parenthesized.Expression),
+            ArrayCreationExpressionSyntax or ImplicitArrayCreationExpressionSyntax or CollectionExpressionSyntax => true,
+            CastExpressionSyntax cast => IsArray(cast.Type),
+            DefaultExpressionSyntax @default => IsArray(@default.Type),
+            BinaryExpressionSyntax { Right: TypeSyntax type } binary => binary.IsKind(SyntaxKind.AsExpression) && IsArray(type),
+            _ => false,
+        };
     }
 
     /// <summary>The value of <c>StringSplitOptions</c> members spelled out and joined by <c>|</c>, or null

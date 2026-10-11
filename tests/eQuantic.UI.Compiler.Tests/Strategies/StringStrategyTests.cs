@@ -58,8 +58,19 @@ public class StringStrategyTests
     [InlineData("s.Split(separator: ',', options: o)", "$eq.text.split(s, ',', undefined, o)")]
     [InlineData("s.Split(',', count: n)", "$eq.text.split(s, ',', n)")]
     [InlineData("s.Split(sep, count: n, options: o)", "$eq.text.split(s, sep, n, o)")]
+    [InlineData("s.Split((char[])null)", "$eq.text.splitAny(s, null)")]
+    [InlineData("s.Split(((char[]?)null))", "$eq.text.splitAny(s, null)")]
+    [InlineData("s.Split(default(char[]))", "$eq.text.splitAny(s, null)")]
+    [InlineData("s.Split((string[])parts, StringSplitOptions.None)", "$eq.text.splitAny(s, parts, undefined, 0)")]
+    [InlineData("s.Split((char[])x, n, o)", "$eq.text.splitAny(s, x, n, o)")]
     public void Split_WithNoModel_PlacesWhatItsSpellingSays(string code, string expected) =>
         new CSharpToJsConverter().ConvertExpression(SyntaxFactory.ParseExpression(code)).Should().Be(expected);
+
+    /// <summary>A value converted with <c>as</c> to an array is a set of separators too, with no model.</summary>
+    [Fact]
+    public void Split_WithNoModel_OfAValueAsAnArray_IsASetOfThem() =>
+        new CSharpToJsConverter().ConvertExpression(SyntaxFactory.ParseExpression("s.Split(x as string[], n, o)"))
+            .Should().StartWith("$eq.text.splitAny(s, ").And.EndWith(", n, o)");
 
     /// <summary>With no model, a search's start, count and comparison are placed where the spelling
     /// settles them: a number or a name is a start or a count, a spelled or named comparison is one, and
