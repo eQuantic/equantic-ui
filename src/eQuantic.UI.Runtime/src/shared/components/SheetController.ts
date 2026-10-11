@@ -377,5 +377,9 @@ export class SheetController {
         this.history.push(edit);
         this.changed?.(edit);
     }
+
+    toString(): string {
+        return 'eQuantic.UI.Primitives.SheetController';
+    }
 }
 

@@ -14,5 +14,9 @@ export class MermaidCurve {
     h!: number;
     path!: string;
     viewBox!: string;
+
+    toString(): string {
+        return 'eQuantic.UI.Components.MermaidCurve';
+    }
 }
 

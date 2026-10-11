@@ -87,5 +87,9 @@ export class CodeHistory {
         this._future.splice(0);
         this.break();
     }
+
+    toString(): string {
+        return 'eQuantic.UI.Code.CodeHistory';
+    }
 }
 

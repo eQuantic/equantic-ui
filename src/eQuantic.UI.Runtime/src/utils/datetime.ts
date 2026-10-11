@@ -17,7 +17,7 @@
  * time zone the browser runs in, read through `Date`.
  */
 
-import { activePattern } from './culture';
+import { activeFormatData } from './culture';
 import { hash } from './hash';
 import { exception } from './exceptions';
 
@@ -72,8 +72,8 @@ function localOffsetAt(utcTicks: bigint): bigint {
  * `TimeZoneInfo.GetUtcOffset` reads a local time: the one offset that names that clock time, or, for
  * a clock time a transition skips or repeats, the standard one, the smaller of the two around it.
  * A repeated clock time marked as its daylight occurrence (`daylight`, see {@link localOf}) takes
- * the daylight one, the larger. The formatter's `U` reads a clock time the same way (`localOffset`
- * in format.ts, #472).
+ * the daylight one, the larger. The formatter reads a clock time's offset through it, by
+ * {@link utcOffsetOf} and {@link wallOffsetMs} (#472).
  */
 function localOffsetFor(localTicks: bigint, daylight = false): bigint {
   const before = localOffsetAt(localTicks - TICKS_PER_DAY);
@@ -977,9 +977,9 @@ dateOnly.parse = (text: string): DateOnly => {
  * `07/08` is July 8th to a reader in Chicago and August 7th to one in São Paulo, and a parser that
  * picks one silently is wrong twelve times a year for half the world.
  *
- * The order comes from the culture's own short-date pattern (`$dateShort`, shipped beside the
- * string catalog — see culture.ts), which is `DateTimeFormatInfo`'s, so the client reads a typed
- * date exactly as the server would. ISO is accepted everywhere: it is unambiguous by construction
+ * The order comes from the culture's own short-date pattern, `DateTimeFormatInfo`'s, which travels
+ * with every page (`CultureFormat`, #471), so the client reads a typed date exactly as the server
+ * would. ISO is accepted everywhere: it is unambiguous by construction
  * and it is what a date input hands over.
  */
 function tryParseDateOnly(text: string): DateOnly | null {
@@ -993,9 +993,10 @@ function tryParseDateOnly(text: string): DateOnly | null {
   if (!parts) return null;
 
   // Which slot holds what, read off the pattern: "M/d/yyyy" is month-first, "dd/MM/yyyy" is
-  // day-first, "yyyy/MM/dd" leads with the year. Without a catalog (a page with no server behind
-  // it) the invariant order applies, which is what .NET's own invariant culture does.
-  const pattern = (activePattern('dateShort') ?? 'M/d/yyyy').toLowerCase();
+  // day-first, "yyyy/MM/dd" leads with the year. For a culture whose data did not travel (a switch
+  // with no server to ask), the invariant order applies, which is what .NET's own invariant
+  // culture does.
+  const pattern = (activeFormatData()?.dateTimeFormat.shortDatePattern ?? 'M/d/yyyy').toLowerCase();
   const dayAt = pattern.indexOf('d');
   const monthAt = pattern.indexOf('m');
   const yearAt = pattern.indexOf('y');

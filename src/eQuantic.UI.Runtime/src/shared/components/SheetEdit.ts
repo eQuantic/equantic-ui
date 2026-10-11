@@ -24,5 +24,9 @@ export class SheetEdit {
     newSize!: number;
     selectionBefore!: SheetRange;
     selectionAfter!: SheetRange;
+
+    toString(): string {
+        return 'eQuantic.UI.Primitives.SheetEdit';
+    }
 }
 

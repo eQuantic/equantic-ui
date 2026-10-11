@@ -1,19 +1,21 @@
-import { activePattern, calendarCatalog, formatLocale } from '../utils/culture';
+import { activeFormatData, formatLocale, type DateTimeFormatData } from '../utils/culture';
 
 /**
  * Client twin of the C# `eQuantic.UI.Primitives.CalendarNames` — what a calendar has to say in the
  * reader's language.
  *
- * The SERVER's answer wins when there is one. That is not deference for its own sake: the two
- * sides read different ICU builds and they do not always agree. `ar-EG` abbreviates Sunday as
+ * The SERVER's answer wins: the format culture's own `DateTimeFormatInfo`, which travels with every
+ * page (`CultureFormat`, #471) and which the formatter writes a date's names from too, so a calendar
+ * and a date never name one month two ways. That is not deference for its own sake: the two sides
+ * read different ICU builds and they do not always agree. `ar-EG` abbreviates Sunday as
  * "أحد" in .NET and "الأحد" in a JS runtime's ICU — both correct Arabic, one with the definite
  * article — and the probe found two JS engines disagreeing with each other as well. Deriving
  * independently would put one label in the SSR HTML and a different one in the hydrated tree, and
  * the only symptom would be a flicker on a page nobody debugs in Arabic.
  *
- * `Intl` is the FALLBACK, for the render with no server behind it: a client-only mount, or a
- * culture switched in the browser before any request carried the new catalog. There, nothing
- * exists to disagree with.
+ * `Intl` is the FALLBACK, for a culture whose data did not travel: a switch in the browser with no
+ * server to ask. There, nothing exists to disagree with. A page with no culture installed is in the
+ * invariant culture, whose data the runtime carries, and never in the host's locale (#471).
  *
  * NARROW day names are absent from both sides. .NET's `ShortestDayNames` and CLDR's
  * `weekday: "narrow"` are different data — they differ for seven of the ten cultures probed — and
@@ -23,12 +25,6 @@ import { activePattern, calendarCatalog, formatLocale } from '../utils/culture';
 
 /** Where the host cannot say: ISO-8601's answer, and what most locales say. */
 const MONDAY = 1;
-
-/** What `Intl` resolves to with no locale asked for — the host's own, which is what the day and
- * month names below already follow when no culture is installed. */
-function hostLocale(): string {
-  return new Intl.DateTimeFormat().resolvedOptions().locale;
-}
 
 /** A Sunday, so index 0..6 walks Sunday..Saturday — System.DayOfWeek's own numbering. */
 const SUNDAY = Date.UTC(2026, 7, 16);
@@ -46,6 +42,11 @@ function months(style: 'short' | 'long'): string[] {
   );
 }
 
+/** The format culture's date data, or null for a culture whose data did not travel. */
+function shipped(): DateTimeFormatData | null {
+  return activeFormatData()?.dateTimeFormat ?? null;
+}
+
 export class CalendarNames {
   /**
    * The day the week starts on, in System.DayOfWeek's numbering (0 = Sunday). `Intl.Locale`
@@ -54,17 +55,16 @@ export class CalendarNames {
    * and what the majority of locales answer.
    */
   static get firstDayOfWeek(): number {
-    const shipped = calendarCatalog();
-    if (shipped) return shipped.firstDayOfWeek;
+    const data = shipped();
+    if (data) return data.firstDayOfWeek;
     // `Intl.Locale` is the NEWEST part of Intl and week data is newer still: a minimal build (or
     // an older browser) may have neither, and constructing it blind would throw where the whole
     // point of this branch is to answer without a server.
     if (typeof Intl.Locale !== 'function') return MONDAY;
     try {
-      // The HOST's locale when nothing is installed — the same default `Intl.DateTimeFormat`
-      // resolves for the names below. Hard-coding en-US here made the two disagree inside one
-      // render: German day names above a week that starts on Sunday.
-      const locale = new Intl.Locale(formatLocale() ?? hostLocale()) as Intl.Locale & {
+      // The culture installed with no data: a page with none installed is the invariant culture,
+      // whose data the runtime carries, so a culture is always named here.
+      const locale = new Intl.Locale(formatLocale() ?? 'en-US') as Intl.Locale & {
         weekInfo?: { firstDay: number };
         getWeekInfo?: () => { firstDay: number };
       };
@@ -78,22 +78,22 @@ export class CalendarNames {
 
   /** The seven day names abbreviated, ALWAYS Sunday-first — the calendar rotates them itself. */
   static get dayNamesShort(): string[] {
-    return calendarCatalog()?.dayNamesShort ?? weekdays('short');
+    return shipped()?.abbreviatedDayNames ?? weekdays('short');
   }
 
   /** The seven day names in full, Sunday-first — what a cell announces to a screen reader. */
   static get dayNamesLong(): string[] {
-    return calendarCatalog()?.dayNamesLong ?? weekdays('long');
+    return shipped()?.dayNames ?? weekdays('long');
   }
 
   /** The twelve month names in full, January-first. */
   static get monthNames(): string[] {
-    return calendarCatalog()?.monthNames ?? months('long');
+    return shipped()?.monthNames ?? months('long');
   }
 
   /** The twelve month names abbreviated, January-first. */
   static get monthNamesShort(): string[] {
-    return calendarCatalog()?.monthNamesShort ?? months('short');
+    return shipped()?.abbreviatedMonthNames ?? months('short');
   }
 
   /**
@@ -101,9 +101,9 @@ export class CalendarNames {
    * hint derived from it can never ask for an order the parser refuses.
    */
   static get shortDatePattern(): string {
-    return activePattern('dateShort') ?? INVARIANT_SHORT_DATE;
+    return shipped()?.shortDatePattern ?? INVARIANT_SHORT_DATE;
   }
 }
 
-/** What .NET's invariant culture answers, for the page with no catalog behind it. */
+/** What .NET's invariant culture answers, for a culture whose data did not travel. */
 const INVARIANT_SHORT_DATE = 'MM/dd/yyyy';

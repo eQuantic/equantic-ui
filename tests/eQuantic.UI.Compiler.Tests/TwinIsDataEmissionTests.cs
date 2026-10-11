@@ -76,7 +76,7 @@ public class TwinIsDataEmissionTests
         ts.Should().MatchRegex(@"\{ x1: [^,]+, y1: [^,]+, x2: [^,]+, y2: [^}]+ \}");
         ts.Should().NotContain("new Curve(");
         ts.Should().Contain("{ easing: easing }");
-        ts.Should().Contain("$eq.text.record(easing, 'Curve', ['X1', 'Y1', 'X2', 'Y2'], ['single', 'single', 'single', 'single'])");
+        ts.Should().Contain("$eq.text.record(easing, 'Curve', [['X1', 'single'], ['Y1', 'single'], ['X2', 'single'], ['Y2', 'single']])");
         ts.Should().Contain("Curve.standard.x1");
     }
 
@@ -113,7 +113,7 @@ public class TwinIsDataEmissionTests
         var ts = Compile(Groups, "Groups");
 
         ts.Should().Contain("let sameCurve = $eq.equalsGroup(Curve.standard);");
-        ts.Should().Contain("let curveText = $eq.text.recordGroup(Curve.standard, 'Curve', ['X1', 'Y1', 'X2', 'Y2'], ['single', 'single', 'single', 'single']);");
+        ts.Should().Contain("let curveText = $eq.text.recordGroup(Curve.standard, 'Curve', [['X1', 'single'], ['Y1', 'single'], ['X2', 'single'], ['Y2', 'single']]);");
         ts.Should().Contain("let sameColor = $eq.equalsGroup(Color.white);");
         ts.Should().Contain("let colorText = $eq.text.recordGroup(Color.white, 'Color', ['R', 'G', 'B', 'A']);");
         ts.Should().NotContain(".equals.bind(").And.NotContain(".toString.bind(").And.NotContain("=> $eq.");

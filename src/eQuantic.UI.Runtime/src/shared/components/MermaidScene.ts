@@ -18,5 +18,9 @@ export class MermaidScene {
     curves!: MermaidCurve[];
     arrows!: MermaidArrowhead[];
     labels!: MermaidLabel[];
+
+    toString(): string {
+        return 'eQuantic.UI.Components.MermaidScene';
+    }
 }
 

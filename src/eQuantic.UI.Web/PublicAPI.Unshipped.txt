@@ -1,4 +1,6 @@
 #nullable enable
+eQuantic.UI.Web.CultureFormatBridge
+static eQuantic.UI.Web.CultureFormatBridge.SerializeJson(System.Globalization.CultureInfo! culture) -> string!
 static eQuantic.UI.Web.TokenCss.FontSize(eQuantic.UI.Primitives.TypeStyle style) -> string!
 static eQuantic.UI.Web.TokenCss.LetterSpacing(eQuantic.UI.Primitives.TypeStyle style) -> string!
 static eQuantic.UI.Web.TokenCss.LineHeight(eQuantic.UI.Primitives.TypeStyle style) -> string!

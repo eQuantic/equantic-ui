@@ -110,5 +110,9 @@ export class CodeDiffSource {
         }
         return new CodeDiffSource(CodeDocument.fromLines(originalLines), originalLines.length, CodeDocument.fromLines(modifiedLines), modifiedLines.length, changes, originalNumbers, modifiedNumbers, gaps);
     }
+
+    toString(): string {
+        return 'eQuantic.UI.Code.CodeDiffSource';
+    }
 }
 

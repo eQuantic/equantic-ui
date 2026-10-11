@@ -10,5 +10,9 @@ export class MarkdownListItem {
     runs!: MarkdownRun[];
     depth!: number;
     marker!: string;
+
+    toString(): string {
+        return 'eQuantic.UI.Components.MarkdownListItem';
+    }
 }
 

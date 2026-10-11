@@ -2273,6 +2273,30 @@ record of a release, the wiki's Upgrading page is the distillate.
   The served runtime grows 500 gzipped bytes over what that head serves, the exception base and the
   walk of an enumerator the app wrote. Proposed and archived through OpenSpec
   (`openspec/specs/transpiler-classes`, `transpiler-sequences` and `transpiler-exceptions`).
+- **2026-10-06 · A number and a date print in the page's culture**: the browser wrote a number with no
+  specifier as JavaScript's invariant text wherever C# writes one, a concatenation, an interpolation
+  hole, `ToString()`, `Convert.ToString`, a `StringBuilder` and a record's text
+  ([#454](https://github.com/eQuantic/equantic-ui/issues/454)); the formatter guessed what the compiler
+  knew, so a whole double took `D`, a `nint` was a double and the per mille sign was `‰` everywhere
+  ([#455](https://github.com/eQuantic/equantic-ui/issues/455)); `DateOnly`, `TimeOnly` and
+  `DateTimeOffset` printed through twins that knew no culture
+  ([#469](https://github.com/eQuantic/equantic-ui/issues/469)); a custom date picture wrote `/`, `:`,
+  `z` and `g` as they stand ([#470](https://github.com/eQuantic/equantic-ui/issues/470)); a page had a
+  culture only when the app had a string catalog, and formatted in its host's locale otherwise
+  ([#471](https://github.com/eQuantic/equantic-ui/issues/471)); `N`, `F`, `C` and `P` were laid out
+  by `Intl`, with ar-EG's own digits, a no-break space and two digits where .NET reads three
+  ([#634](https://github.com/eQuantic/equantic-ui/issues/634)); and a plain class wrote `[object Object]`
+  and a plain struct a record's text, where .NET writes the type's full name
+  ([#570](https://github.com/eQuantic/equantic-ui/issues/570)). The server writes the format culture's
+  `NumberFormatInfo` and `DateTimeFormatInfo` on every page and answers a switch from
+  `/_equantic/culture/{name}.json`; the browser draws every number and date from them, a calendar's
+  names among them, and a page with no culture installed is in the invariant culture. 176 of the 222
+  conformance cases, run on both sides, failed against main with the culture installed as main installs
+  it on a page with a catalog; the other 46 are neighbours that already held, kept as pins. EQ2109 is
+  retired. Ten entries leave #715's null-argument baseline, seven that now answer as .NET does and
+  three the build now refuses. The served runtime grew 3,834 gzipped bytes. Proposed and archived
+  through OpenSpec (`openspec/specs/page-culture`, `runtime-dates`, `transpiler-bcl`,
+  `transpiler-records`).
 
 ## Retired documents
 

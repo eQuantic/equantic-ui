@@ -19,5 +19,9 @@ export class PlainTextLanguage {
     get keywords(): string[] {
         return [];
     }
+
+    toString(): string {
+        return 'eQuantic.UI.Code.PlainTextLanguage';
+    }
 }
 

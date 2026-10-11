@@ -20,5 +20,9 @@ export class MarkdownStyle {
     blockGap!: number;
     codeLineNumbers!: boolean;
     codeInverse!: boolean;
+
+    toString(): string {
+        return 'eQuantic.UI.Components.MarkdownStyle';
+    }
 }
 

@@ -113,5 +113,9 @@ export class CodeLineCells {
     static isZeroWidth(codePoint: number) {
         return ((((((((codePoint === 0xAD || (codePoint >= 0x600 && codePoint <= 0x605)) || codePoint === 0x6DD) || codePoint === 0x70F) || codePoint === 0x8E2) || (codePoint >= 0x200B && codePoint <= 0x200F)) || (codePoint >= 0x2060 && codePoint <= 0x2064)) || codePoint === 0xFEFF) || (codePoint >= 0xE0001 && codePoint <= 0xE007F));
     }
+
+    toString(): string {
+        return 'eQuantic.UI.Code.CodeLineCells';
+    }
 }
 

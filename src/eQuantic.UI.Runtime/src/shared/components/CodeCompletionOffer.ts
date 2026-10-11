@@ -16,5 +16,9 @@ export class CodeCompletionOffer {
     resolving!: boolean;
     group!: number;
     sortKey!: string;
+
+    toString(): string {
+        return 'eQuantic.UI.Code.CodeCompletionOffer';
+    }
 }
 

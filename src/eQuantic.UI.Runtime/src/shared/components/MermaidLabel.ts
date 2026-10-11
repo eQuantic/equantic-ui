@@ -8,5 +8,9 @@ export class MermaidLabel {
     text!: string;
     x!: number;
     y!: number;
+
+    toString(): string {
+        return 'eQuantic.UI.Components.MermaidLabel';
+    }
 }
 

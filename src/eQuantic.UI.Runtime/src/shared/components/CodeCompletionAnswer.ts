@@ -16,5 +16,9 @@ export class CodeCompletionAnswer {
     askedLineLength!: number;
     isIncomplete!: boolean;
     offers!: CodeCompletionOffer[];
+
+    toString(): string {
+        return 'eQuantic.UI.Code.CodeCompletionAnswer';
+    }
 }
 

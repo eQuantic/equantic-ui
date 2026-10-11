@@ -14,5 +14,9 @@ export class MermaidGraph {
     nodes!: MermaidNode[];
     edges!: MermaidEdge[];
     messages!: MermaidMessage[];
+
+    toString(): string {
+        return 'eQuantic.UI.Components.MermaidGraph';
+    }
 }
 

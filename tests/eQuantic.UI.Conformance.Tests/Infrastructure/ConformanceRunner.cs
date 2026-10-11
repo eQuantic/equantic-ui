@@ -27,14 +27,22 @@ public static class ConformanceRunner
     /// As <see cref="AssertSameAsDotNet(string,string)"/> but for a block of C# <b>statements</b>
     /// (control flow). The block must <c>return</c> a value; the transpiled block is wrapped in an
     /// IIFE to capture it, and the .NET side runs the same block as a script (top-level return).
+    /// <para>
+    /// Both sides run in the invariant culture, unless <paramref name="culture"/> names another: then
+    /// the .NET side runs in it and the browser side installs it as a page boots in it, with the data
+    /// the server writes for it (<see cref="CultureInstall"/>). With none named, the browser side
+    /// installs nothing, which is the invariant culture there by the runtime's own rule, and never the
+    /// host's locale (<c>CultureHarnessTests</c> proves it).
+    /// </para>
     /// </summary>
-    public static void AssertStatementsSameAsDotNet(string csharpStatements, string prelude = "")
+    public static void AssertStatementsSameAsDotNet(string csharpStatements, string prelude = "", string? culture = null)
     {
-        var (jsBlock, actual, expected) = RunStatements(csharpStatements, prelude);
+        var (jsBlock, actual, expected) = RunStatements(csharpStatements, prelude, culture);
 
         actual.Should().Be(
             expected,
-            $"C# block `{csharpStatements}` (transpiled to JS `{jsBlock}`) must behave identically to .NET");
+            $"C# block `{csharpStatements}` (transpiled to JS `{jsBlock}`) must behave identically to .NET"
+            + (culture is null ? "" : $" in {culture}"));
     }
 
     /// <summary>
@@ -52,15 +60,34 @@ public static class ConformanceRunner
             + $"host's newline, which is the only difference this overload excuses: {why}");
     }
 
-    private static (string JsBlock, string Actual, string Expected) RunStatements(string csharpStatements, string prelude)
+    private static (string JsBlock, string Actual, string Expected) RunStatements(string csharpStatements, string prelude,
+        string? culture = null)
     {
         var jsBlock = Transpiler.TranspileStatements(csharpStatements, prelude);
         var types = Transpiler.EmitDeclaredRecordTypes(prelude);
         // Top-level undefined canonicalizes to null: the transpiled world treats them as ONE
         // (the `== null` doctrine), and C#'s side of a guarded chain answers null.
-        var program = $"{BuildHelperImport(jsBlock + types)}{types}{Log(jsBlock)}";
+        var install = culture is null ? "" : CultureInstall(culture);
+        var program = $"{BuildHelperImport(jsBlock + types)}{install}{types}{Log(jsBlock)}";
 
-        return (jsBlock, JsExecutor.Run(program), DotNetEvaluator.EvaluateToJson(csharpStatements, prelude));
+        return (jsBlock, JsExecutor.Run(program), DotNetEvaluator.EvaluateToJson(csharpStatements, prelude,
+            culture is null ? null : System.Globalization.CultureInfo.GetCultureInfo(culture)));
+    }
+
+    /// <summary>
+    /// The lines that put the browser side in a culture the way boot does for a page the server
+    /// rendered in it: the culture installed with the format data the server writes for it
+    /// (<see cref="eQuantic.UI.Web.CultureFormatBridge"/>), imported from the served bundle.
+    /// </summary>
+    public static string CultureInstall(string culture)
+    {
+        var url = RuntimeJsUrl()
+            ?? throw new InvalidOperationException("Could not locate the bundled runtime.js.");
+        var name = System.Text.Json.JsonSerializer.Serialize(culture);
+        var data = eQuantic.UI.Web.CultureFormatBridge.SerializeJson(
+            System.Globalization.CultureInfo.GetCultureInfo(culture));
+        return $"import {{ installCulture as $installCulture }} from '{url}';\n"
+            + $"$installCulture({name}, {name}, {{}}, {data});\n";
     }
 
     /// <summary>

@@ -19,6 +19,10 @@ public class DateTimeOffsetStrategy : ConversionStrategyBase
     {
         switch (node)
         {
+            // A value's ToString is the formatter's (ToStringStrategy), as a DateTime's is (#469): the
+            // twin's toString wrote the invariant text, and ignored a format and a provider.
+            case InvocationExpressionSyntax { Expression: MemberAccessExpressionSyntax { Name.Identifier.Text: "ToString" } }:
+                return false;
             case InvocationExpressionSyntax { Expression: MemberAccessExpressionSyntax ma }:
                 return IsMember(ma, context);
             case MemberAccessExpressionSyntax member:

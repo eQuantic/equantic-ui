@@ -90,5 +90,9 @@ export class FormField {
             return;
         }
     }
+
+    toString(): string {
+        return 'eQuantic.UI.Primitives.FormField';
+    }
 }
 

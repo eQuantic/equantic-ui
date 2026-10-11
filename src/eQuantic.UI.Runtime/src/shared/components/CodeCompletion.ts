@@ -202,7 +202,7 @@ export class CodeCompletion {
         for (const answer of this._answers) {
             for (const offer of answer.offers) {
                 let item = offer.item;
-                let key = item.label.length + ':' + item.label + (item.insertText ?? item.label);
+                let key = $eq.text.format(item.label.length, null, undefined, undefined, 'int32') + ':' + item.label + (item.insertText ?? item.label);
                 let group: any; 
                 if (!(groups.has(key) ? ((group = groups.get(key)), true) : ((group = 0), false))) {
                     group = groups.size;
@@ -404,6 +404,10 @@ export class CodeCompletion {
     static onUiThread(work: () => void) {
         let dispatcher: any; 
         if (((UiDispatcher.current != null && UiDispatcher.current.isOnUiThread === false) && (dispatcher = UiDispatcher.current, true))) dispatcher.post(work); else work();
+    }
+
+    toString(): string {
+        return 'eQuantic.UI.Code.CodeCompletion';
     }
 }
 

@@ -69,5 +69,9 @@ export class CodeHighlighter {
         this._tokens.splice(line, this._tokens.length - line);
         this._endStates.splice(line, this._endStates.length - line);
     }
+
+    toString(): string {
+        return 'eQuantic.UI.Code.CodeHighlighter';
+    }
 }
 

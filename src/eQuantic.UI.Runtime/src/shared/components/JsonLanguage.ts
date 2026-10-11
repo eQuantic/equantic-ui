@@ -68,5 +68,9 @@ export class JsonLanguage {
         for (let i = from; i < line.length; i++) if (!$eq.text.isWhiteSpace(line[i])) return line[i];
         return '\u0000';
     }
+
+    toString(): string {
+        return 'eQuantic.UI.Code.JsonLanguage';
+    }
 }
 

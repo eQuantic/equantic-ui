@@ -12,5 +12,9 @@ export class MermaidNodeRef {
     shape!: string;
     shaped!: boolean;
     end!: number;
+
+    toString(): string {
+        return 'eQuantic.UI.Components.MermaidNodeRef';
+    }
 }
 

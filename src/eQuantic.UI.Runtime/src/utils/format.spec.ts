@@ -3,11 +3,40 @@ import {
   format,
   stringFormat,
   stringFormatInvariant,
-  asSingle,
+  asNumber,
   recordText,
   recordTextGroup,
 } from './format';
-import { installCulture } from './culture';
+import { INVARIANT_FORMAT, installCulture, type CultureFormat } from './culture';
+
+/** pt-BR as .NET 10 writes it on ICU, as far as these specs read it: its separators, digits and
+ * patterns, its currency, its symbols and its short date and long time patterns. */
+const PT_BR: CultureFormat = {
+  numberFormat: {
+    ...INVARIANT_FORMAT.numberFormat,
+    numberDecimalSeparator: ',',
+    numberGroupSeparator: '.',
+    numberDecimalDigits: 3,
+    currencySymbol: 'R$',
+    currencyDecimalSeparator: ',',
+    currencyGroupSeparator: '.',
+    currencyPositivePattern: 2,
+    currencyNegativePattern: 9,
+    percentDecimalSeparator: ',',
+    percentGroupSeparator: '.',
+    percentDecimalDigits: 3,
+    percentPositivePattern: 1,
+    percentNegativePattern: 1,
+    positiveInfinitySymbol: '∞',
+    negativeInfinitySymbol: '-∞',
+  },
+  dateTimeFormat: {
+    ...INVARIANT_FORMAT.dateTimeFormat,
+    shortDatePattern: 'dd/MM/yyyy',
+    longTimePattern: 'HH:mm:ss',
+    eraName: 'd.C.',
+  },
+};
 import { dateTime } from './datetime';
 
 describe('format (existing tests)', () => {
@@ -95,9 +124,13 @@ describe('stringFormat, as .NET writes its placeholders', () => {
 
   it('writes a float boxed for the call with its own digits, specifier or not', () => {
     expect(
-      stringFormatInvariant('{0}|{1:G}', asSingle(Math.fround(0.1)), asSingle(Math.fround(0.1))),
+      stringFormatInvariant(
+        '{0}|{1:G}',
+        asNumber(Math.fround(0.1), 'single'),
+        asNumber(Math.fround(0.1), 'single'),
+      ),
     ).toBe('0.1|0.1');
-    expect(asSingle(null)).toBeNull();
+    expect(asNumber(null, 'single')).toBeNull();
   });
 
   it('aligns a placeholder by its width, right for a positive one and left for a negative one', () => {
@@ -143,12 +176,7 @@ describe('custom numeric formats (digit pictures)', () => {
 describe('an invariant conversion ignores the culture reading it', () => {
   afterEach(() => installCulture('', '', {}));
 
-  const reading = () =>
-    installCulture('pt-BR', 'pt-BR', {
-      $dateShort: 'dd/MM/yyyy',
-      $timeLong: 'HH:mm:ss',
-      $currency: 'BRL',
-    });
+  const reading = () => installCulture('pt-BR', 'pt-BR', {}, PT_BR);
 
   it('writes the invariant date patterns', () => {
     reading();
@@ -165,34 +193,32 @@ describe('an invariant conversion ignores the culture reading it', () => {
   });
 });
 
-// Past the 100 digits Intl writes after the point, the value is rounded here and Intl lays out the
-// rest, a culture's currency and percent patterns included (#445). The expected strings are what
-// .NET 10 writes for the same value in pt-BR, its no-break spaces folded to a space.
+// Past the 100 digits Intl writes after the point (#445), the culture's patterns still hold around
+// every digit. The expected strings are what .NET 10 writes for the same value in pt-BR, byte for
+// byte: the space in its currency pattern is a plain one (#634).
 describe('a precision past 100 digits, in a culture', () => {
   afterEach(() => installCulture('', '', {}));
 
-  const folded = (value: string): string => value.replace(/[\u00a0\u202f]/g, ' ');
-
   it('keeps the culture’s currency and percent patterns around every digit', () => {
-    installCulture('pt-BR', 'pt-BR', { $currency: 'BRL' });
+    installCulture('pt-BR', 'pt-BR', {}, PT_BR);
     const zeros = (count: number): string => '0'.repeat(count);
     expect(format(0.125, 'P101')).toBe(`12,5${zeros(100)}%`);
-    expect(folded(format(-1234.5, 'C101'))).toBe(`-R$ 1.234,5${zeros(100)}`);
+    expect(format(-1234.5, 'C101')).toBe(`-R$ 1.234,5${zeros(100)}`);
     expect(format(-1234.5, 'N101')).toBe(`-1.234,5${zeros(100)}`);
   });
 });
 
 // With no culture in force a date's patterns are the invariant culture's, and so are its names
 // (#388): `Intl` was asked in the host's default locale, which wrote a Portuguese machine's day and
-// month names into the invariant layout. The host here speaks English either way, so the proof is
-// the locale the formatter asks for.
+// month names into the invariant layout. The names are the invariant culture's own data now (#471),
+// so the proof is that `Intl` is not asked at all.
 describe('a date with no culture in force', () => {
   afterEach(() => {
     vi.restoreAllMocks();
     installCulture('', '', {});
   });
 
-  it('asks for the invariant culture’s names, not the host’s', () => {
+  it('writes the invariant culture’s names, asking nothing of the host', () => {
     installCulture('', '', {});
     const asked: (string | string[] | undefined)[] = [];
     const DateTimeFormat = Intl.DateTimeFormat;
@@ -204,9 +230,11 @@ describe('a date with no culture in force', () => {
       asked.push(locale);
       return new DateTimeFormat(locale, options);
     } as unknown as typeof Intl.DateTimeFormat);
-    expect(format(new Date(2026, 8, 24), 'D')).toBe('Thursday, 24 September 2026');
-    expect(asked.length).toBeGreaterThan(0);
-    expect(asked.every((locale) => locale === 'en-US')).toBe(true);
+    expect(format(new Date(2026, 8, 24, 22, 5), 'D')).toBe('Thursday, 24 September 2026');
+    expect(format(new Date(2026, 8, 24, 22, 5), 'ddd, MMM d h:mm tt g')).toBe(
+      'Thu, Sep 24 10:05 PM A.D.',
+    );
+    expect(asked).toEqual([]);
   });
 });
 
@@ -259,18 +287,34 @@ describe('recordText', () => {
     );
   });
 
+  it('writes a member with what its type says: a number\u2019s kind, or a function of the value', () => {
+    // A float in its own digits, an integer with no sign on the zero JavaScript made of `-1 / 2`, and
+    // an enum by the function the compiler writes for its member names.
+    expect(
+      recordText({ ratio: Math.fround(0.1), half: -0, kind: 1 }, 'Reading', [
+        ['Ratio', 'single'],
+        ['Half', 'int32'],
+        ['Kind', (value: number) => (value === 1 ? 'Large' : 'Small')],
+      ]),
+    ).toBe('Reading { Ratio = 0.1, Half = 0, Kind = Large }');
+  });
+
   // A curve's points are floats (#518): without its kind a member writes the double's digits.
   it("writes a member by the number kind the compiler names, a single's own digits", () => {
     const curve = { x1: Math.fround(0.2), y1: 0, x2: Math.fround(0.3), y2: 1.25 };
-    const members = ['X1', 'Y1', 'X2', 'Y2'];
 
-    expect(recordText(curve, 'Curve', members, ['single', 'single', 'single', 'single'])).toBe(
-      'Curve { X1 = 0.2, Y1 = 0, X2 = 0.3, Y2 = 1.25 }',
-    );
-    expect(recordText(curve, 'Curve', members)).toBe(
+    expect(
+      recordText(curve, 'Curve', [
+        ['X1', 'single'],
+        ['Y1', 'single'],
+        ['X2', 'single'],
+        ['Y2', 'single'],
+      ]),
+    ).toBe('Curve { X1 = 0.2, Y1 = 0, X2 = 0.3, Y2 = 1.25 }');
+    expect(recordText(curve, 'Curve', ['X1', 'Y1', 'X2', 'Y2'])).toBe(
       'Curve { X1 = 0.20000000298023224, Y1 = 0, X2 = 0.30000001192092896, Y2 = 1.25 }',
     );
-    expect(recordText(curve, 'Curve', members, ['single', null, null, null])).toBe(
+    expect(recordText(curve, 'Curve', [['X1', 'single'], 'Y1', 'X2', 'Y2'])).toBe(
       'Curve { X1 = 0.2, Y1 = 0, X2 = 0.30000001192092896, Y2 = 1.25 }',
     );
   });
@@ -282,17 +326,79 @@ describe('recordText', () => {
   });
 
   // The method group `value.ToString`: the delegate writes the record text of the value it was made
-  // with, by the same kinds a call passes (#731).
+  // with, over the same members a call passes (#731).
   it('makes the delegate of a ToString method group, over the value it was made with', () => {
-    const text = recordTextGroup(
-      { x1: Math.fround(0.2), y1: 0, x2: 0, y2: 1 },
-      'Curve',
-      ['X1', 'Y1', 'X2', 'Y2'],
-      ['single', 'single', 'single', 'single'],
-    );
+    const text = recordTextGroup({ x1: Math.fround(0.2), y1: 0, x2: 0, y2: 1 }, 'Curve', [
+      ['X1', 'single'],
+      ['Y1', 'single'],
+      ['X2', 'single'],
+      ['Y2', 'single'],
+    ]);
 
     expect(text()).toBe('Curve { X1 = 0.2, Y1 = 0, X2 = 0, Y2 = 1 }');
     expect(text()).toBe(text());
+  });
+});
+
+// A value's text with no format is its culture's, in the data the server wrote for the culture
+// (#454, #471): the general digits with its separator and signs, a negative integer's minus sign.
+describe('a value’s own text, in the culture in force', () => {
+  afterEach(() => installCulture('', '', {}));
+
+  const SV_SE: CultureFormat = {
+    ...INVARIANT_FORMAT,
+    numberFormat: {
+      ...INVARIANT_FORMAT.numberFormat,
+      numberDecimalSeparator: ',',
+      numberGroupSeparator: ' ',
+      negativeSign: '−',
+    },
+  };
+
+  it('writes a number with no format in the culture’s symbols, whatever its type', () => {
+    installCulture('sv-SE', 'sv-SE', {}, SV_SE);
+    expect(format(-1.5, null)).toBe('−1,5');
+    expect(format(-5, null, undefined, undefined, 'int32')).toBe('−5');
+    expect(format(-5n, null)).toBe('−5');
+    expect(format(1e-5, null, 8)).toBe('   1E−05');
+    expect(stringFormat('{0}|{1}', -1.5, -2)).toBe('−1,5|−2');
+  });
+
+  it('writes the invariant text in an invariant conversion, whoever is reading', () => {
+    installCulture('sv-SE', 'sv-SE', {}, SV_SE);
+    expect(format(-1.5, null, undefined, true)).toBe('-1.5');
+    expect(stringFormatInvariant('{0}', -1.5)).toBe('-1.5');
+  });
+});
+
+// The formatter knows a number's type where the compiler passes it (#455).
+describe('a number’s kind', () => {
+  it('refuses D, X and B for a double whatever it holds, and takes them for a whole value of no kind', () => {
+    expect(() => format(2, 'D', undefined, undefined, 'double')).toThrow('Format specifier was invalid.');
+    expect(() => format(2, 'X', undefined, undefined, 'single')).toThrow('Format specifier was invalid.');
+    expect(format(2, 'D3')).toBe('002');
+    expect(() => format(2.5, 'D')).toThrow('Format specifier was invalid.');
+  });
+
+  it('writes a nint and a nuint at the platform’s width, rounding a half as an integer does', () => {
+    expect(format(-1, 'X', undefined, undefined, 'nint')).toBe('FFFFFFFFFFFFFFFF');
+    expect(format(255, 'X', undefined, undefined, 'nuint')).toBe('FF');
+    expect(format(125, 'E1', undefined, undefined, 'nint')).toBe('1.3E+002');
+    expect(format(125, 'E1', undefined, undefined, 'double')).toBe('1.2E+002');
+  });
+});
+
+// A culture whose data did not travel — a switch with no server to ask — still writes `/`, `:` and
+// `g` in its own symbols, as `Intl` writes them (#470).
+describe('a date picture in a culture whose data did not travel', () => {
+  afterEach(() => installCulture('', '', {}));
+
+  it('takes the separators and the era from Intl', () => {
+    const moment = dateTime.of(2026, 9, 24, 10, 30, 15);
+    installCulture('de-DE', 'de-DE', {});
+    expect(format(moment, 'dd/MM/yyyy HH:mm g')).toBe('24.09.2026 10:30 n. Chr.');
+    installCulture('fi-FI', 'fi-FI', {});
+    expect(format(moment, 'HH:mm')).toBe('10.30');
   });
 });
 

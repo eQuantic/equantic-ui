@@ -29,6 +29,10 @@ namespace eQuantic.UI.Compiler.CodeGen.Strategies.Types;
 /// interpolation handler does (<see cref="Interpolated"/>), and a call that names its arguments binds
 /// each to its parameter, since the twin takes them by position.
 /// </para>
+/// <para>
+/// The value <c>Append</c> and <c>Insert</c> write is its text in the culture in force, as a
+/// concatenation writes it (<see cref="ValueInTheCulture"/>, #454), unless it is text already.
+/// </para>
 /// </summary>
 /// <remarks>
 /// Priority 15 so it wins over the generic ToString (10), ObjectCreation (5) and member-access (0)
@@ -74,6 +78,19 @@ public class StringBuilderStrategy : ConversionStrategyBase
                 var method = context.SemanticHelper.GetSymbol(ma) as IMethodSymbol;
                 if (method is not null && Uncrossable(method, context.SemanticHelper.GetOperation(inv) as IInvocationOperation) is { } why)
                     return context.Unhandled(node, why);
+                // The VALUE `Append`, `AppendLine` and `Insert` write is its ToString, in the culture in
+                // force: what a concatenation writes (StringConversion), a number in the culture's
+                // symbols (#454), a bool as True, an enum as its name, a null as nothing. The runtime's
+                // builder took JavaScript's String() of it, so `Append(1.5)` read `1.5` on a pt-BR page.
+                // The call binds every argument to its parameter as a named one is bound below, each
+                // evaluated in the order it is written.
+                if (method is not null && !BindsItsOwnArguments(method) && ValueInTheCulture(inv, method, context) is { } value)
+                    return JsExprWriter.Write(ParameterTemplate.Call(
+                        $"{{0}}.{RuntimeName(method, ma.Name.Identifier.Text)}({Holes(1, inv.ArgumentList.Arguments.Count)})",
+                        context.Converter.ConvertIr(ma.Expression), inv, method, context,
+                        argument => argument.Expression == value
+                            ? StringConversion.ToDotNetString(value, context.Converter.ConvertIr(value), context)
+                            : context.Converter.ConvertIr(argument.Expression)));
                 // The twin takes C#'s parameters by position, so a named argument written out of their
                 // order (sb.CopyTo(count: 2, destination: a, …)) is bound to its parameter, each still
                 // evaluated in the order written. The members below bind their own arguments.
@@ -231,6 +248,32 @@ public class StringBuilderStrategy : ConversionStrategyBase
     /// as <c>item</c> and <c>setItem</c>: read through JavaScript's subscript, <c>sb[0]</c> was a
     /// property no builder had, and a write set one nobody read (#679).</summary>
     internal static bool CarriesIndexer(IPropertySymbol indexer) => IsType(indexer.ContainingType);
+
+    /// <summary>
+    /// The argument <c>Append</c>, <c>AppendLine</c> and <c>Insert</c> write in the culture: the one
+    /// the bound tree binds to the <c>value</c> parameter, written by position or by name, unless it is
+    /// text already (<see cref="IsText"/>), which passes as it is, a null included, as a ranged
+    /// overload refuses it as .NET does (#650). Null for any other call.
+    /// </summary>
+    private static ExpressionSyntax? ValueInTheCulture(InvocationExpressionSyntax invocation, IMethodSymbol method,
+        ConversionContext context) =>
+        method.Name is "Append" or "AppendLine" or "Insert"
+        && context.SemanticHelper.GetOperation(invocation) is IInvocationOperation operation
+            ? operation.Arguments.FirstOrDefault(argument => argument.Parameter is { Name: "value" } parameter
+                && !IsText(parameter.Type) && argument.ArgumentKind == ArgumentKind.Explicit)?.Value.Syntax as ExpressionSyntax
+            : null;
+
+    /// <summary>
+    /// Whether a builder's <c>value</c> is text already, written as it is: a string, a char, a char[],
+    /// another builder or a span of chars. Only the rest (a number, a bool, an enum, an object) is a
+    /// value whose text the culture writes. A null string or builder handed to a ranged overload is a
+    /// refusal .NET makes, which the text conversion turned into an empty string.
+    /// </summary>
+    private static bool IsText(ITypeSymbol type) =>
+        type.SpecialType is SpecialType.System_String or SpecialType.System_Char
+        || type is IArrayTypeSymbol
+        || type is INamedTypeSymbol { Name: "StringBuilder", ContainingNamespace: { Name: "Text", ContainingNamespace.Name: "System" } }
+        || type is INamedTypeSymbol { Name: "ReadOnlySpan" or "ReadOnlyMemory", TypeArguments: [{ SpecialType: SpecialType.System_Char }] };
 
     private static bool IsMember(MemberAccessExpressionSyntax ma, ConversionContext context)
     {

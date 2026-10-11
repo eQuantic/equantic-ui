@@ -8,5 +8,9 @@ export class MermaidEdgeRef {
     arrow!: boolean;
     label!: string;
     end!: number;
+
+    toString(): string {
+        return 'eQuantic.UI.Components.MermaidEdgeRef';
+    }
 }
 

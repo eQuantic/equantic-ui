@@ -10,5 +10,9 @@ export class MermaidSegment {
     y!: number;
     w!: number;
     h!: number;
+
+    toString(): string {
+        return 'eQuantic.UI.Components.MermaidSegment';
+    }
 }
 

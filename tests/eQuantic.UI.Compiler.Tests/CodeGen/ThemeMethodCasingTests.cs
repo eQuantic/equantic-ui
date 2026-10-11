@@ -16,9 +16,10 @@ public class ThemeMethodCasingTests
         var result = TestHelper.ConvertCodeBlock(code);
 
         // The guarded ToString routes through the SAME strategy as the plain one now: a
-        // null-answering conditional over String(theme), never a camelCase rename. A local is read
-        // again rather than bound by an arrow (#536).
-        result.Should().Contain("(theme == null ? null : String(theme))");
+        // null-answering conditional over the value's text, never a camelCase rename. A local is read
+        // again rather than bound by an arrow (#536), and an object may hold a number, whose text is
+        // the culture's (#454), so the formatter writes it.
+        result.Should().Contain("(theme == null ? null : $eq.text.format(theme, null))");
     }
 
     [Fact]
