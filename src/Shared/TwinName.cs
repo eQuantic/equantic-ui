@@ -46,8 +46,9 @@ internal static class TwinName
 
     /// <summary>
     /// Whether a type's owners let it cross (#584): one declared inside a type marked <c>[ServerOnly]</c>
-    /// or <c>[RuntimeProvided]</c>, or inside an exception or an attribute, has no twin, as its owner has
-    /// none, the rule eqc writes modules by. The server publishes no route and maps no page for it.
+    /// or <c>[RuntimeProvided]</c>, or inside an attribute, has no twin, as its owner has none, the rule
+    /// eqc writes modules by. The server publishes no route and maps no page for it. An exception class
+    /// of the app's is a class with a module (#611), so what it declares crosses as it does.
     /// </summary>
     public static bool OwnersCross(System.Type type)
     {
@@ -55,7 +56,7 @@ internal static class TwinName
         {
             if (owner.GetCustomAttributes(true).Any(attribute => attribute.GetType().Name is "ServerOnlyAttribute" or "RuntimeProvidedAttribute"))
                 return false;
-            if (typeof(System.Exception).IsAssignableFrom(owner) || typeof(System.Attribute).IsAssignableFrom(owner)) return false;
+            if (typeof(System.Attribute).IsAssignableFrom(owner)) return false;
         }
         return true;
     }

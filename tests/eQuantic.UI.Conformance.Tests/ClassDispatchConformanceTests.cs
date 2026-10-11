@@ -279,6 +279,22 @@ public class ClassDispatchConformanceTests
                 public Keyed(string text) : base("base " + text) { message = "own " + text; }
                 public string Own => message;
             }
+            public class Outer
+            {
+                public class Inner : Exception
+                {
+                    public int Code = 5;
+                    public Inner(string message) : base(message) { }
+                    public string Describe() => "i" + Code;
+                }
+            }
+            public class Rejected : Exception
+            {
+                public record Reason(string Code);
+                public Reason Why { get; }
+                public Rejected(string code) : base("rejected") { Why = new Reason(code); }
+            }
+            public class Cache<T> { public class Missing : Exception { } }
         }
         """;
 
@@ -319,6 +335,15 @@ public class ClassDispatchConformanceTests
         ("a nested class's default message", "return new Holder.Nested().Message;"),
         // A field a case apart from a member the base answers keeps a slot of its own (#696).
         ("a field named like a member its base answers", "var k = new Keyed(\"x\"); return k.Message + \"|\" + k.Own;"),
+        // A class declared inside another type is a module of its own (#584), an exception class too,
+        // and what an exception class declares crosses as it does.
+        ("a nested exception class's members", "var e = new Outer.Inner(\"m\"); return e.Code + \"|\" + e.Describe() + \"|\" + e.Message;"),
+        ("a nested exception class, caught by its type",
+            "try { throw new Outer.Inner(\"x\"); } catch (Holder.Nested) { return \"other\"; } catch (Outer.Inner i) { return i.Describe() + \"|\" + i.Message; }"),
+        ("a record declared in an exception class",
+            "var r = new Rejected(\"r1\"); return r.Why.Code + \"|\" + (r.Why == new Rejected.Reason(\"r1\")) + \"|\" + r.Message;"),
+        ("an exception nested in a generic class, caught by its construction",
+            "try { throw new Cache<int>.Missing(); } catch (Cache<string>.Missing) { return \"string\"; } catch (Cache<int>.Missing) { return \"int\"; }"),
     ];
 
     [SkippableTheory]

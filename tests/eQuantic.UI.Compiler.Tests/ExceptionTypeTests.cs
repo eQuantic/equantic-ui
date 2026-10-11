@@ -52,6 +52,39 @@ public class ExceptionTypeTests
     }
 
     /// <summary>
+    /// A class declared inside another type is a module of its own, named by its owner (#584), and an
+    /// exception class is a class (#611), so the two hold together: an exception declared in a class is
+    /// built as its twin, and a type declared in an exception class crosses as it does, where #584 kept
+    /// both out while an exception had no module. Each fence still says its own: an exception nested in
+    /// a generic class, built where its type argument is a type parameter, is EQ2013 and never EQ2010,
+    /// and a nested type of a server-only owner is EQ2010.
+    /// </summary>
+    [Fact]
+    public void AnExceptionDeclaredInAClass_AndATypeDeclaredInAnException_AreModules()
+    {
+        var results = ProjectProbe.Compile("""
+            using System;
+            public class Holder
+            {
+                public class Nested : Exception { public int Code = 5; }
+                public Exception Make() => new Nested();
+            }
+            public class Rejected : Exception { public record Reason(string Code); public Reason Why = new Reason("r"); }
+            [eQuantic.UI.Primitives.ServerOnly] public class Vault { public class Key { } }
+            public class Client { public object Key() => new Vault.Key(); }
+            """);
+
+        results.Select(result => result.ComponentName).Should().Contain(["Holder$Nested", "Rejected", "Rejected$Reason"]);
+        results.Where(result => result.ComponentName is "Holder" or "Holder$Nested" or "Rejected" or "Rejected$Reason")
+            .SelectMany(result => result.Errors).Should().BeEmpty();
+        results.Single(result => result.ComponentName == "Holder$Nested").TypeScript.Should()
+            .Contain("class Holder$Nested extends $eq.exceptions.Exception").And.Contain("'Holder+Nested'");
+        results.Single(result => result.ComponentName == "Holder").TypeScript.Should().Contain("new Holder$Nested()");
+        results.Single(result => result.ComponentName == "Client").Errors.Select(error => error.Code).Should().Contain("EQ2010");
+        Compile("Cache").Errors.Select(error => error.Code).Should().Contain("EQ2013").And.NotContain("EQ2010");
+    }
+
+    /// <summary>
     /// A snippet compiled on its own has no project's compilation, and the module rule there keeps an
     /// exception class out by its base's name: nothing writes its twin, so a construction is the
     /// runtime's exception, the <c>Error</c> that carries its types, as it was before an exception was a

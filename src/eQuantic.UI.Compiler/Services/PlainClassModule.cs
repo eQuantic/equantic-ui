@@ -1,6 +1,5 @@
 using eQuantic.UI.Compiler.CodeGen;
 using eQuantic.UI.Compiler.CodeGen.Extensions;
-using eQuantic.UI.Compiler.CodeGen.Strategies;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
@@ -139,8 +138,9 @@ internal static class PlainClassModule
     /// </summary>
     private static bool KeptOut(INamedTypeSymbol type, Scan scan)
     {
-        // A nested class crosses only where its owner does (#584): one inside a server-only class, an
-        // exception or an attribute has none, as its owner has none.
+        // A nested class crosses only where its owner does (#584): one inside a server-only class or an
+        // attribute has none, as its owner has none. An exception class is a class (#611), so what it
+        // declares crosses as it does.
         if (type.ContainingType is { } owner && KeptOut(owner, scan)) return true;
         for (var at = type; at is not null; at = at.BaseType)
         {
@@ -164,9 +164,11 @@ internal static class PlainClassModule
     }
 
     /// <summary>
-    /// Whether a type a nested record or struct sits in never crosses: it, or a type it derives from, is
-    /// marked <c>[ServerOnly]</c>, or it is an exception or an attribute, which have no twin (#584). A
-    /// nested record has a twin where its owner would have a module.
+    /// Whether a type a nested type sits in never crosses: it, or a type it derives from, is marked
+    /// <c>[ServerOnly]</c>, or it is an attribute, which has no twin (#584). A nested type has a twin
+    /// where its owner would have a module, and an exception class of the app's has one (#611): it was
+    /// kept out with the attribute while an exception had none, so a record declared in one, the reason
+    /// it carries, was refused (EQ2010) beside a class the build writes.
     /// </summary>
     internal static bool OwnerKeptOut(INamedTypeSymbol type)
     {
@@ -174,7 +176,7 @@ internal static class PlainClassModule
         {
             if (ServerOnlyAlongChain(owner)) return true;
             for (var at = owner; at is not null; at = at.BaseType)
-                if (ExceptionTypes.IsRoot(at) || IsAttributeRoot(at)) return true;
+                if (IsAttributeRoot(at)) return true;
         }
         return false;
     }

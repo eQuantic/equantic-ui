@@ -39,17 +39,21 @@ internal static class ExceptionTypes
     }
 
     /// <summary>
-    /// Whether <paramref name="type"/> is an exception class whose twin eqc writes, one the app declares
-    /// on its own: a class like any other (#611), its members, its constructors and its methods its
-    /// twin's, built with <c>new</c> as a class is. It was an <c>Error</c> built by its symbol, with no
-    /// member of its own. A class with no module of its own (<see cref="Services.PlainClassModule"/>), a
-    /// nested one or one that stays on the server, is still built as that <c>Error</c>.
+    /// Whether <paramref name="type"/> is an exception class whose twin eqc writes, one the app declares:
+    /// a class like any other (#611), its members, its constructors and its methods its twin's, built
+    /// with <c>new</c> as a class is. It was an <c>Error</c> built by its symbol, with no member of its
+    /// own. One declared inside another type is a class too, its twin named by its owner
+    /// (<c>Holder$Nested</c>, #584): it was the one kind left as that <c>Error</c>, while a nested class
+    /// had no module. A class with no module of its own (<see cref="Services.PlainClassModule"/>), one
+    /// that stays on the server or that the runtime provides, itself or through a type it is declared
+    /// in, is still built as that <c>Error</c>.
     /// </summary>
     public static bool HasTwin(ITypeSymbol? type) =>
-        type is INamedTypeSymbol { TypeKind: TypeKind.Class, ContainingType: null } named && Is(named)
+        type is INamedTypeSymbol { TypeKind: TypeKind.Class } named && Is(named)
         && Expressions.ObjectCreationStrategy.TwinIsWritten(named)
         && !Services.PlainClassModule.ServerOnlyAlongChain(named)
-        && !named.GetAttributes().Any(attribute => attribute.AttributeClass?.Name is "RuntimeProvided" or "RuntimeProvidedAttribute");
+        && !Services.PlainClassModule.OwnerKeptOut(named)
+        && !RuntimeProvides(named);
 
     /// <summary>
     /// Whether this host BUILDS <paramref name="type"/> as its twin (<see cref="HasTwin(ITypeSymbol?)"/>):
@@ -62,6 +66,16 @@ internal static class ExceptionTypes
     /// </summary>
     public static bool HasTwin(ITypeSymbol? type, ConversionContext context) =>
         context.HasProjectCompilation && HasTwin(type);
+
+    /// <summary>Whether <paramref name="type"/>, or a type it is declared in, is marked
+    /// <c>[RuntimeProvided]</c>: its twin is the runtime's, and eqc writes none.</summary>
+    private static bool RuntimeProvides(INamedTypeSymbol type)
+    {
+        for (var at = type; at is not null; at = at.ContainingType)
+            if (at.GetAttributes().Any(attribute => attribute.AttributeClass?.Name is "RuntimeProvided" or "RuntimeProvidedAttribute"))
+                return true;
+        return false;
+    }
 
     /// <summary>
     /// The twin's <c>static $types</c>: the chain of the class the twin is written from, which the
