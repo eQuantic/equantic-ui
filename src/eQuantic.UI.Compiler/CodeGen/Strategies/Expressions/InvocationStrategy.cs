@@ -258,10 +258,12 @@ public class InvocationStrategy : IExpressionIrStrategy
                 return JsExpr.Literal("undefined");
             // A nested type whose owner never crosses has no twin to call (EQ2010).
             if (declaring.ReportIfKeptOut(invocation, context)) return JsExpr.Literal("undefined");
-            var declaringNamespace = declaring.ContainingNamespace?.ToDisplayString() ?? string.Empty;
             // One name for the import and the call (#584): a nested type's twin, or the name a top-level
-            // type and a hand-written runtime twin keep.
-            if (RuntimeProvidedTypeScanner.IsRuntimeProvidedNamespace(declaringNamespace))
+            // type and a hand-written runtime twin keep. From the runtime where the SYMBOL says so, its
+            // owners included: read from the namespace alone, a nested type of a [RuntimeProvided] owner
+            // in an app's namespace was imported as a module of the app's, which nothing writes (found
+            // by Copilot's third review of #708).
+            if (declaring.IsRuntimeProvided())
                 context.UsedRuntimeTypes.Add(declaring.TwinReference());
             else
                 context.UsedAppTypes.Add(declaring.TwinReference());
